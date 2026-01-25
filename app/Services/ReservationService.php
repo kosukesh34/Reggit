@@ -66,10 +66,17 @@ class ReservationService
             ->get();
 
         return $reservations->map(function ($reservation) {
+            $reservedAt = $reservation->reserved_at;
+            if ($reservedAt instanceof \Carbon\Carbon) {
+                $reservedAtStr = $reservedAt->toIso8601String();
+            } else {
+                $reservedAtStr = is_string($reservedAt) ? $reservedAt : (string) $reservedAt;
+            }
+
             return [
                 'id' => $reservation->id,
                 'reservation_number' => $reservation->reservation_number,
-                'reserved_at' => $reservation->reserved_at->toIso8601String(),
+                'reserved_at' => $reservedAtStr,
                 'number_of_people' => $reservation->number_of_people,
                 'status' => $reservation->status,
                 'notes' => $reservation->notes,

@@ -82,11 +82,18 @@ class ReservationController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'reserved_at' => 'required|date|after:now',
-            'number_of_people' => 'required|integer|min:1|max:10',
-            'notes' => 'nullable|string|max:500',
-        ]);
+        try {
+            $validated = $request->validate([
+                'reserved_at' => 'required|date|after:now',
+                'number_of_people' => 'required|integer|min:1|max:10',
+                'notes' => 'nullable|string|max:500',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'error' => 'バリデーションエラー',
+                'errors' => $e->errors(),
+            ], 422);
+        }
 
         try {
             $user = $this->userService->getOrCreateUser($request);
