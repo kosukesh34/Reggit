@@ -61,27 +61,37 @@ class ReservationService
 
     public function getUserReservations(User $user): array
     {
-        $reservations = $user->reservations()
-            ->orderBy('reserved_at', 'desc')
-            ->get();
+        try {
+            $reservations = $user->reservations()
+                ->orderBy('reserved_at', 'desc')
+                ->get();
 
-        return $reservations->map(function ($reservation) {
-            $reservedAt = $reservation->reserved_at;
-            if ($reservedAt instanceof \Carbon\Carbon) {
-                $reservedAtStr = $reservedAt->toIso8601String();
-            } else {
-                $reservedAtStr = is_string($reservedAt) ? $reservedAt : (string) $reservedAt;
-            }
+            return $reservations->map(function ($reservation) {
+                $reservedAt = $reservation->reserved_at;
+                if ($reservedAt === null) {
+                    $reservedAtStr = null;
+                } elseif ($reservedAt instanceof \Carbon\Carbon || $reservedAt instanceof \DateTime) {
+                    $reservedAtStr = $reservedAt->format('c');
+                } else {
+                    $reservedAtStr = is_string($reservedAt) ? $reservedAt : (string) $reservedAt;
+                }
 
-            return [
-                'id' => $reservation->id,
-                'reservation_number' => $reservation->reservation_number,
-                'reserved_at' => $reservedAtStr,
-                'number_of_people' => $reservation->number_of_people,
-                'status' => $reservation->status,
-                'notes' => $reservation->notes,
-            ];
-        })->toArray();
+                return [
+                    'id' => $reservation->id,
+                    'reservation_number' => $reservation->reservation_number ?? '',
+                    'reserved_at' => $reservedAtStr,
+                    'number_of_people' => $reservation->number_of_people ?? 1,
+                    'status' => $reservation->status ?? ReservationStatus::PENDING,
+                    'notes' => $reservation->notes ?? null,
+                ];
+            })->toArray();
+        } catch (\Exception $e) {
+            Log::error('Failed to get user reservations: ' . $e->getMessage(), [
+                'user_id' => $user->id,
+                'trace' => $e->getTraceAsString(),
+            ]);
+            throw $e;
+        }
     }
 }
 
