@@ -35,3 +35,4 @@ class PointTransaction extends Model
     }
 }
 
+
