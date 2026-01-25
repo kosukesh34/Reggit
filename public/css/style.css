@@ -653,6 +653,127 @@ body {
     border-radius: 4px;
 }
 
+.tooltip {
+    position: fixed;
+    background: var(--text-primary);
+    color: var(--bg-light);
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    pointer-events: none;
+    z-index: 10000;
+    opacity: 0;
+    transition: opacity 0.2s;
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.tooltip.show {
+    opacity: 1;
+}
+
+.tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 4px solid transparent;
+    border-top-color: var(--text-primary);
+}
+
+.toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--bg-light);
+    color: var(--text-primary);
+    padding: 14px 18px;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-lg);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 10000;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.3s ease;
+    border-left: 4px solid var(--primary-color);
+    min-width: 280px;
+    max-width: 400px;
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.toast-success {
+    border-left-color: var(--success-color);
+}
+
+.toast-error {
+    border-left-color: #dc2626;
+}
+
+.toast-warning {
+    border-left-color: var(--warning);
+}
+
+.toast-info {
+    border-left-color: var(--info);
+}
+
+.toast i {
+    font-size: 16px;
+}
+
+.toast-success i {
+    color: var(--success-color);
+}
+
+.toast-error i {
+    color: #dc2626;
+}
+
+.toast-warning i {
+    color: var(--warning);
+}
+
+.toast-info i {
+    color: var(--info);
+}
+
+.toast span {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.product-add-btn {
+    position: relative;
+}
+
+.product-add-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.quantity-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+    .toast {
+        bottom: 80px;
+        right: 16px;
+        left: 16px;
+        min-width: auto;
+        max-width: none;
+    }
+}
+
 /* 決済方法選択モーダル */
 .payment-method-modal {
     position: fixed;
