@@ -28,8 +28,8 @@
                 </td>
                 <td><?php echo e($member->created_at->format('Y/m/d')); ?></td>
                 <td>
-                    <a href="<?php echo e(route('admin.members.detail', $member->id)); ?>" class="btn btn-sm btn-primary" data-tooltip="会員の詳細を表示">
-                        <i class="fas fa-eye"></i>
+                    <a href="<?php echo e(route('admin.members.detail', $member->id)); ?>" class="btn btn-sm btn-primary">
+                        <i class="fas fa-eye"></i> 詳細
                     </a>
                 </td>
             </tr>
