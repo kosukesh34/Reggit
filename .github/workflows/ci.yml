@@ -30,6 +30,9 @@ jobs:
         extensions: mbstring, xml, mysql, pdo, pdo_mysql
         coverage: none
 
+    - name: Install Dependencies
+      run: composer install --prefer-dist --no-progress --no-interaction
+
     - name: Setup Environment
       run: |
         if [ -f .env.example ]; then
@@ -51,9 +54,6 @@ jobs:
           echo "QUEUE_CONNECTION=sync" >> .env
         fi
         php artisan key:generate
-
-    - name: Install Dependencies
-      run: composer install --prefer-dist --no-progress --no-interaction
 
     - name: Setup Database
       env:
