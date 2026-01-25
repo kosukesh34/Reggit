@@ -2,16 +2,44 @@ class MobileOrderApp {
     constructor() {
         this.productManager = new ProductManager();
         this.cartManager = new CartManager();
+        this.reservationManager = new ReservationManager(this);
         this.apiClient = new ApiClient();
         this.currentTab = AppConstants.TABS.PRODUCTS;
         this.memberData = null;
-        this.userId = 'test-user';
         this.init();
     }
 
     init() {
+        this.preventZoom();
         this.setupEventListeners();
         this.loadProductsWhenReady();
+    }
+
+    preventZoom() {
+        document.addEventListener('gesturestart', (e) => {
+            e.preventDefault();
+        });
+        document.addEventListener('gesturechange', (e) => {
+            e.preventDefault();
+        });
+        document.addEventListener('gestureend', (e) => {
+            e.preventDefault();
+        });
+        document.addEventListener('touchstart', (e) => {
+            if (e.touches.length > 1) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+        document.addEventListener('touchmove', (e) => {
+            if (e.touches.length > 1) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+        document.addEventListener('touchend', (e) => {
+            if (e.touches.length > 1) {
+                e.preventDefault();
+            }
+        }, { passive: false });
     }
 
     loadProductsWhenReady() {
@@ -37,6 +65,7 @@ class MobileOrderApp {
         const overlay = DomHelper.getElementById(AppConstants.ELEMENT_IDS.OVERLAY);
 
         if (cartBtn) {
+            cartBtn.setAttribute('data-tooltip', AppConstants.MESSAGES.CART_OPEN_TOOLTIP);
             cartBtn.addEventListener('click', () => this.openCart());
         }
         if (closeCartBtn) {
@@ -161,7 +190,8 @@ class MobileOrderApp {
                         </div>
                     ` : ''}
                     <button class="product-add-btn ${isInCart ? AppConstants.CSS_CLASSES.ADDED : ''}" 
-                            onclick="app.addToCart(${product.id})">
+                            onclick="app.addToCart(${product.id})"
+                            data-tooltip="${isInCart ? AppConstants.MESSAGES.CART_REMOVE_TOOLTIP : AppConstants.MESSAGES.CART_ADD_TOOLTIP}">
                         ${isInCart ? '<i class="fas fa-check"></i> 追加済み' : '<i class="fas fa-cart-plus"></i> カートに追加'}
                     </button>
                 </div>
@@ -179,18 +209,26 @@ class MobileOrderApp {
 
     addToCart(productId) {
         const product = this.productManager.getProductById(productId);
-        if (!product) return;
+        if (!product) {
+            ToastManager.error('商品が見つかりませんでした');
+            return;
+        }
 
         this.cartManager.addItem(product);
         this.updateCartUI();
         this.showCartNotification();
         this.renderProducts();
+        ToastManager.success(`${product.name}をカートに追加しました`);
     }
 
     removeFromCart(productId) {
+        const item = this.cartManager.getItem(productId);
         this.cartManager.removeItem(productId);
         this.updateCartUI();
         this.renderProducts();
+        if (item) {
+            ToastManager.info(`${item.name}をカートから削除しました`);
+        }
     }
 
     updateQuantity(productId, change) {
@@ -247,14 +285,14 @@ class MobileOrderApp {
                     <div class="cart-item-name">${DomHelper.escapeHtml(item.name)}</div>
                     <div class="cart-item-price">${DomHelper.formatPrice(item.price)}</div>
                     <div class="cart-item-controls">
-                        <button class="quantity-btn" onclick="app.updateQuantity(${item.id}, -1)">
+                        <button class="quantity-btn" onclick="app.updateQuantity(${item.id}, -1)" data-tooltip="数量を減らす">
                             <i class="fas fa-minus"></i>
                         </button>
                         <span class="quantity">${item.quantity}</span>
-                        <button class="quantity-btn" onclick="app.updateQuantity(${item.id}, 1)">
+                        <button class="quantity-btn" onclick="app.updateQuantity(${item.id}, 1)" data-tooltip="数量を増やす">
                             <i class="fas fa-plus"></i>
                         </button>
-                        <button class="remove-btn" onclick="app.removeFromCart(${item.id})" title="削除">
+                        <button class="remove-btn" onclick="app.removeFromCart(${item.id})" data-tooltip="${AppConstants.MESSAGES.CART_REMOVE_BUTTON}">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
@@ -316,7 +354,6 @@ class MobileOrderApp {
             const result = await this.apiClient.post(
                 AppConstants.API_ENDPOINTS.ORDERS,
                 orderData,
-                { userId: this.userId }
             );
 
             if (!result.success) {
@@ -332,12 +369,12 @@ class MobileOrderApp {
             }
         } catch (error) {
             console.error('Order error:', error);
-            alert(`注文に失敗しました: ${error.message || 'エラーが発生しました'}`);
+            ToastManager.error(`${AppConstants.MESSAGES.ORDER_ERROR}: ${error.message || AppConstants.MESSAGES.ORDER_ERROR_DEFAULT}`);
         }
     }
 
     handleOrderSuccess() {
-        alert('注文が完了しました！');
+        ToastManager.success(AppConstants.MESSAGES.ORDER_SUCCESS);
         this.cartManager.clear();
         this.updateCartUI();
         this.renderProducts();
@@ -586,7 +623,7 @@ class MobileOrderApp {
                             <span>${DomHelper.formatPrice(amount)}</span>
                         </div>
                     </div>
-                    <button class="success-close-btn" onclick="this.closest('.payment-modal').remove(); app.cartManager.clear(); app.updateCartUI(); app.renderProducts(); app.closeCart();">
+                    <button class="success-close-btn" onclick="app.handlePaymentSuccess(${orderId}, ${amount})">
                         <i class="fas fa-check"></i>
                         閉じる
                     </button>
@@ -596,6 +633,7 @@ class MobileOrderApp {
     }
 
     handlePaymentError(confirmBtn, modal, amount, error) {
+        ToastManager.error(error.message || '決済に失敗しました。もう一度お試しください。');
         confirmBtn.disabled = false;
         confirmBtn.innerHTML = `
             <i class="fas fa-lock"></i>
@@ -640,6 +678,12 @@ class MobileOrderApp {
                 DomHelper.addClass(memberTab, AppConstants.CSS_CLASSES.ACTIVE);
             }
             this.loadMemberCard();
+        } else if (tab === AppConstants.TABS.RESERVATIONS) {
+            const reservationsTab = DomHelper.getElementById(AppConstants.ELEMENT_IDS.RESERVATIONS_TAB);
+            if (reservationsTab) {
+                DomHelper.addClass(reservationsTab, AppConstants.CSS_CLASSES.ACTIVE);
+            }
+            this.checkMembershipAndLoadReservations();
         }
     }
 
@@ -652,7 +696,6 @@ class MobileOrderApp {
         try {
             const result = await this.apiClient.get(
                 AppConstants.API_ENDPOINTS.MEMBERS_ME,
-                { userId: this.userId }
             );
 
             if (!result.success) {
@@ -663,6 +706,7 @@ class MobileOrderApp {
 
             if (!data.is_member) {
                 container.innerHTML = this.getNonMemberTemplate();
+                this.memberData = null;
             } else {
                 this.memberData = data;
                 this.renderMemberCard(data);
@@ -670,6 +714,27 @@ class MobileOrderApp {
         } catch (error) {
             console.error('Failed to load member card:', error);
             container.innerHTML = this.getMemberCardErrorTemplate(error);
+        }
+    }
+
+    async checkMembershipAndLoadReservations() {
+        try {
+            const result = await this.apiClient.get(AppConstants.API_ENDPOINTS.MEMBERS_ME);
+            if (result.success && result.data.is_member) {
+                this.memberData = result.data;
+                this.reservationManager.loadReservations();
+            } else {
+                const reservationsSection = DomHelper.getElementById(AppConstants.ELEMENT_IDS.RESERVATIONS_SECTION);
+                if (reservationsSection) {
+                    reservationsSection.innerHTML = this.reservationManager.getMembershipRequiredTemplate();
+                }
+            }
+        } catch (error) {
+            console.error('Failed to check membership:', error);
+            const reservationsSection = DomHelper.getElementById(AppConstants.ELEMENT_IDS.RESERVATIONS_SECTION);
+            if (reservationsSection) {
+                reservationsSection.innerHTML = this.reservationManager.getMembershipRequiredTemplate();
+            }
         }
     }
 
@@ -762,18 +827,17 @@ class MobileOrderApp {
             const result = await this.apiClient.post(
                 AppConstants.API_ENDPOINTS.MEMBERS_REGISTER,
                 {},
-                { userId: this.userId }
             );
 
             if (!result.success) {
                 throw new Error(result.error || 'Failed to register member');
             }
 
-            alert('会員登録が完了しました！');
+            ToastManager.success('会員登録が完了しました！');
             this.loadMemberCard();
         } catch (error) {
             console.error('Member registration error:', error);
-            alert(`会員登録に失敗しました: ${error.message || 'エラーが発生しました'}`);
+            ToastManager.error(`会員登録に失敗しました: ${error.message || 'エラーが発生しました'}`);
         }
     }
 

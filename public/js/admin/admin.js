@@ -1,3 +1,32 @@
+function preventZoom() {
+    document.addEventListener('gesturestart', (e) => {
+        e.preventDefault();
+    });
+    document.addEventListener('gesturechange', (e) => {
+        e.preventDefault();
+    });
+    document.addEventListener('gestureend', (e) => {
+        e.preventDefault();
+    });
+    document.addEventListener('touchstart', (e) => {
+        if (e.touches.length > 1) {
+            e.preventDefault();
+        }
+    }, { passive: false });
+    document.addEventListener('touchmove', (e) => {
+        if (e.touches.length > 1) {
+            e.preventDefault();
+        }
+    }, { passive: false });
+    document.addEventListener('touchend', (e) => {
+        if (e.touches.length > 1) {
+            e.preventDefault();
+        }
+    }, { passive: false });
+}
+
+preventZoom();
+
 document.addEventListener('DOMContentLoaded', () => {
     initDeleteConfirmations();
     initTooltips();
