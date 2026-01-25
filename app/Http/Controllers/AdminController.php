@@ -6,6 +6,7 @@ use App\Models\Product;
 use App\Models\Order;
 use App\Models\User;
 use App\Models\Member;
+use App\Models\ShopSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -169,6 +170,38 @@ class AdminController extends Controller
         $member = Member::with('user', 'pointTransactions.order')
             ->findOrFail($id);
         return view('admin.member-detail', compact('member'));
+    }
+
+    public function settings()
+    {
+        $businessHours = ShopSetting::getBusinessHours();
+        $timeSlots = ShopSetting::getReservationTimeSlots();
+        $closedDays = ShopSetting::getClosedDays();
+        $advanceDays = ShopSetting::getAdvanceBookingDays();
+
+        return view('admin.settings', compact('businessHours', 'timeSlots', 'closedDays', 'advanceDays'));
+    }
+
+    public function updateSettings(Request $request)
+    {
+        $request->validate([
+            'business_hours_start' => 'required|date_format:H:i',
+            'business_hours_end' => 'required|date_format:H:i|after:business_hours_start',
+            'reservation_time_slots' => 'required|array|min:1',
+            'reservation_time_slots.*' => 'required|date_format:H:i',
+            'closed_days' => 'nullable|array',
+            'closed_days.*' => 'integer|min:0|max:6',
+            'advance_booking_days' => 'required|integer|min:1|max:365',
+        ]);
+
+        ShopSetting::setValue('business_hours_start', $request->business_hours_start, 'time');
+        ShopSetting::setValue('business_hours_end', $request->business_hours_end, 'time');
+        ShopSetting::setValue('reservation_time_slots', $request->reservation_time_slots, 'json');
+        ShopSetting::setValue('closed_days', $request->closed_days ?? [], 'json');
+        ShopSetting::setValue('advance_booking_days', $request->advance_booking_days, 'integer');
+
+        return redirect()->route('admin.settings')
+            ->with('success', '設定を更新しました');
     }
 }
 
