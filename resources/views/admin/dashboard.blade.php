@@ -5,40 +5,77 @@
 
 @section('content')
 <div class="stats-grid">
-    <div class="stat-card">
-        <div class="stat-label">総商品数</div>
-        <div class="stat-value">{{ $stats['total_products'] }}</div>
+    <div class="stat-card stat-card-primary">
+        <div class="stat-icon">
+            <i class="fas fa-box"></i>
+        </div>
+        <div class="stat-content">
+            <div class="stat-label">総商品数</div>
+            <div class="stat-value">{{ $stats['total_products'] }}</div>
+        </div>
     </div>
-    <div class="stat-card">
-        <div class="stat-label">総注文数</div>
-        <div class="stat-value">{{ $stats['total_orders'] }}</div>
+    <div class="stat-card stat-card-info">
+        <div class="stat-icon">
+            <i class="fas fa-shopping-cart"></i>
+        </div>
+        <div class="stat-content">
+            <div class="stat-label">総注文数</div>
+            <div class="stat-value">{{ $stats['total_orders'] }}</div>
+        </div>
     </div>
-    <div class="stat-card">
-        <div class="stat-label">総ユーザー数</div>
-        <div class="stat-value">{{ $stats['total_users'] }}</div>
+    <div class="stat-card stat-card-success">
+        <div class="stat-icon">
+            <i class="fas fa-user"></i>
+        </div>
+        <div class="stat-content">
+            <div class="stat-label">総ユーザー数</div>
+            <div class="stat-value">{{ $stats['total_users'] }}</div>
+        </div>
     </div>
-    <div class="stat-card">
-        <div class="stat-label">総会員数</div>
-        <div class="stat-value">{{ $stats['total_members'] }}</div>
+    <div class="stat-card stat-card-warning">
+        <div class="stat-icon">
+            <i class="fas fa-id-card"></i>
+        </div>
+        <div class="stat-content">
+            <div class="stat-label">総会員数</div>
+            <div class="stat-value">{{ $stats['total_members'] }}</div>
+        </div>
     </div>
-    <div class="stat-card">
-        <div class="stat-label">本日の注文</div>
-        <div class="stat-value">{{ $stats['today_orders'] }}</div>
+    <div class="stat-card stat-card-danger">
+        <div class="stat-icon">
+            <i class="fas fa-calendar-day"></i>
+        </div>
+        <div class="stat-content">
+            <div class="stat-label">本日の注文</div>
+            <div class="stat-value">{{ $stats['today_orders'] }}</div>
+        </div>
     </div>
-    <div class="stat-card">
-        <div class="stat-label">本日の売上</div>
-        <div class="stat-value">¥{{ number_format($stats['today_revenue']) }}</div>
+    <div class="stat-card stat-card-success">
+        <div class="stat-icon">
+            <i class="fas fa-yen-sign"></i>
+        </div>
+        <div class="stat-content">
+            <div class="stat-label">本日の売上</div>
+            <div class="stat-value">¥{{ number_format($stats['today_revenue']) }}</div>
+        </div>
     </div>
-    <div class="stat-card">
-        <div class="stat-label">未処理注文</div>
-        <div class="stat-value">{{ $stats['pending_orders'] }}</div>
+    <div class="stat-card stat-card-warning">
+        <div class="stat-icon">
+            <i class="fas fa-clock"></i>
+        </div>
+        <div class="stat-content">
+            <div class="stat-label">未処理注文</div>
+            <div class="stat-value">{{ $stats['pending_orders'] }}</div>
+        </div>
     </div>
 </div>
 
 <div class="card">
     <div class="card-header">
-        <h3 class="card-title">最近の注文</h3>
-        <a href="{{ route('admin.orders') }}" class="btn btn-secondary">すべて見る</a>
+        <h3 class="card-title"><i class="fas fa-list"></i> 最近の注文</h3>
+        <a href="{{ route('admin.orders') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-right"></i> すべて見る
+        </a>
     </div>
     <table class="table">
         <thead>
@@ -65,7 +102,10 @@
             </tr>
             @empty
             <tr>
-                <td colspan="5" style="text-align: center; padding: 40px;">注文がありません</td>
+                <td colspan="5" class="empty-state">
+                    <i class="fas fa-inbox"></i>
+                    <p>注文がありません</p>
+                </td>
             </tr>
             @endforelse
         </tbody>
