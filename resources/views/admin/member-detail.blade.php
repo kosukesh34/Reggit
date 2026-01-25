@@ -6,27 +6,33 @@
 @section('content')
 <div class="card">
     <div class="card-header">
-        <h3 class="card-title">会員情報</h3>
+        <h3 class="card-title"><i class="fas fa-user"></i> 会員情報</h3>
     </div>
-    <div style="padding: 20px;">
-        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-bottom: 20px;">
-            <div>
-                <strong>会員番号:</strong> {{ $member->member_number }}
+    <div style="padding: 24px;">
+        <div class="info-grid">
+            <div class="info-item">
+                <div class="info-label">会員番号</div>
+                <div class="info-value">{{ $member->member_number }}</div>
             </div>
-            <div>
-                <strong>ユーザー名:</strong> {{ $member->user->name ?? 'N/A' }}
+            <div class="info-item">
+                <div class="info-label">ユーザー名</div>
+                <div class="info-value">{{ $member->user->name ?? 'N/A' }}</div>
             </div>
-            <div>
-                <strong>現在のポイント:</strong> {{ number_format($member->points) }}pt
+            <div class="info-item">
+                <div class="info-label">現在のポイント</div>
+                <div class="info-value">{{ number_format($member->points) }}pt</div>
             </div>
-            <div>
-                <strong>ステータス:</strong> 
-                <span class="badge badge-{{ $member->status === 'active' ? 'success' : 'danger' }}">
-                    {{ $member->status === 'active' ? '有効' : '無効' }}
-                </span>
+            <div class="info-item">
+                <div class="info-label">ステータス</div>
+                <div class="info-value">
+                    <span class="badge badge-{{ $member->status === 'active' ? 'success' : 'danger' }}">
+                        {{ $member->status === 'active' ? '有効' : '無効' }}
+                    </span>
+                </div>
             </div>
-            <div>
-                <strong>登録日:</strong> {{ $member->created_at->format('Y/m/d H:i:s') }}
+            <div class="info-item">
+                <div class="info-label">登録日</div>
+                <div class="info-value">{{ $member->created_at->format('Y/m/d H:i:s') }}</div>
             </div>
         </div>
     </div>
@@ -34,7 +40,7 @@
 
 <div class="card">
     <div class="card-header">
-        <h3 class="card-title">ポイント履歴</h3>
+        <h3 class="card-title"><i class="fas fa-coins"></i> ポイント履歴</h3>
     </div>
     <table class="table">
         <thead>
@@ -61,15 +67,20 @@
             </tr>
             @empty
             <tr>
-                <td colspan="5" style="text-align: center; padding: 40px;">ポイント履歴がありません</td>
+                <td colspan="5" class="empty-state">
+                    <i class="fas fa-coins"></i>
+                    <p>ポイント履歴がありません</p>
+                </td>
             </tr>
             @endforelse
         </tbody>
     </table>
 </div>
 
-<div style="margin-top: 20px;">
-    <a href="{{ route('admin.members') }}" class="btn btn-secondary">戻る</a>
+<div class="form-actions">
+    <a href="{{ route('admin.members') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> 戻る
+    </a>
 </div>
 @endsection
 

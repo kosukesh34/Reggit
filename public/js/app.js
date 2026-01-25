@@ -37,6 +37,7 @@ class MobileOrderApp {
         const overlay = DomHelper.getElementById(AppConstants.ELEMENT_IDS.OVERLAY);
 
         if (cartBtn) {
+            cartBtn.setAttribute('data-tooltip', 'カートを開く');
             cartBtn.addEventListener('click', () => this.openCart());
         }
         if (closeCartBtn) {
@@ -161,7 +162,8 @@ class MobileOrderApp {
                         </div>
                     ` : ''}
                     <button class="product-add-btn ${isInCart ? AppConstants.CSS_CLASSES.ADDED : ''}" 
-                            onclick="app.addToCart(${product.id})">
+                            onclick="app.addToCart(${product.id})"
+                            data-tooltip="${isInCart ? 'カートから削除するには、カートを開いてください' : 'カートに追加'}">
                         ${isInCart ? '<i class="fas fa-check"></i> 追加済み' : '<i class="fas fa-cart-plus"></i> カートに追加'}
                     </button>
                 </div>
@@ -179,18 +181,26 @@ class MobileOrderApp {
 
     addToCart(productId) {
         const product = this.productManager.getProductById(productId);
-        if (!product) return;
+        if (!product) {
+            ToastManager.error('商品が見つかりませんでした');
+            return;
+        }
 
         this.cartManager.addItem(product);
         this.updateCartUI();
         this.showCartNotification();
         this.renderProducts();
+        ToastManager.success(`${product.name}をカートに追加しました`);
     }
 
     removeFromCart(productId) {
+        const item = this.cartManager.getItem(productId);
         this.cartManager.removeItem(productId);
         this.updateCartUI();
         this.renderProducts();
+        if (item) {
+            ToastManager.info(`${item.name}をカートから削除しました`);
+        }
     }
 
     updateQuantity(productId, change) {
@@ -247,14 +257,14 @@ class MobileOrderApp {
                     <div class="cart-item-name">${DomHelper.escapeHtml(item.name)}</div>
                     <div class="cart-item-price">${DomHelper.formatPrice(item.price)}</div>
                     <div class="cart-item-controls">
-                        <button class="quantity-btn" onclick="app.updateQuantity(${item.id}, -1)">
+                        <button class="quantity-btn" onclick="app.updateQuantity(${item.id}, -1)" data-tooltip="数量を減らす">
                             <i class="fas fa-minus"></i>
                         </button>
                         <span class="quantity">${item.quantity}</span>
-                        <button class="quantity-btn" onclick="app.updateQuantity(${item.id}, 1)">
+                        <button class="quantity-btn" onclick="app.updateQuantity(${item.id}, 1)" data-tooltip="数量を増やす">
                             <i class="fas fa-plus"></i>
                         </button>
-                        <button class="remove-btn" onclick="app.removeFromCart(${item.id})" title="削除">
+                        <button class="remove-btn" onclick="app.removeFromCart(${item.id})" data-tooltip="カートから削除">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
@@ -332,12 +342,12 @@ class MobileOrderApp {
             }
         } catch (error) {
             console.error('Order error:', error);
-            alert(`注文に失敗しました: ${error.message || 'エラーが発生しました'}`);
+            ToastManager.error(`注文に失敗しました: ${error.message || 'エラーが発生しました'}`);
         }
     }
 
     handleOrderSuccess() {
-        alert('注文が完了しました！');
+        ToastManager.success('注文が完了しました！');
         this.cartManager.clear();
         this.updateCartUI();
         this.renderProducts();
@@ -586,7 +596,7 @@ class MobileOrderApp {
                             <span>${DomHelper.formatPrice(amount)}</span>
                         </div>
                     </div>
-                    <button class="success-close-btn" onclick="this.closest('.payment-modal').remove(); app.cartManager.clear(); app.updateCartUI(); app.renderProducts(); app.closeCart();">
+                    <button class="success-close-btn" onclick="app.handlePaymentSuccess(${orderId}, ${amount})">
                         <i class="fas fa-check"></i>
                         閉じる
                     </button>
@@ -596,6 +606,7 @@ class MobileOrderApp {
     }
 
     handlePaymentError(confirmBtn, modal, amount, error) {
+        ToastManager.error(error.message || '決済に失敗しました。もう一度お試しください。');
         confirmBtn.disabled = false;
         confirmBtn.innerHTML = `
             <i class="fas fa-lock"></i>
@@ -769,11 +780,11 @@ class MobileOrderApp {
                 throw new Error(result.error || 'Failed to register member');
             }
 
-            alert('会員登録が完了しました！');
+            ToastManager.success('会員登録が完了しました！');
             this.loadMemberCard();
         } catch (error) {
             console.error('Member registration error:', error);
-            alert(`会員登録に失敗しました: ${error.message || 'エラーが発生しました'}`);
+            ToastManager.error(`会員登録に失敗しました: ${error.message || 'エラーが発生しました'}`);
         }
     }
 
