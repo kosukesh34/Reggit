@@ -50,7 +50,7 @@ class AdminController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'price' => 'required|numeric|min:0',
-            'category' => 'required|in:food,drink,dessert,other',
+            'category' => 'required|in:food,drink,dessert,side,other',
             'is_available' => 'boolean',
             'stock' => 'integer|min:0',
             'image_url' => 'nullable|url',
@@ -74,7 +74,7 @@ class AdminController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'price' => 'required|numeric|min:0',
-            'category' => 'required|in:food,drink,dessert,other',
+            'category' => 'required|in:food,drink,dessert,side,other',
             'is_available' => 'boolean',
             'stock' => 'integer|min:0',
             'image_url' => 'nullable|url',
@@ -96,12 +96,27 @@ class AdminController extends Controller
             ->with('success', '商品を削除しました');
     }
 
-    public function orders()
+    public function orders(Request $request)
     {
-        $orders = Order::with('user', 'items.product')
-            ->latest()
-            ->paginate(20);
-        return view('admin.orders', compact('orders'));
+        $query = Order::with('user', 'items.product');
+        
+        if ($request->has('status') && $request->status !== 'all') {
+            $query->where('status', $request->status);
+        }
+        
+        $orders = $query->latest()->paginate(20)->appends($request->query());
+        
+        $statusCounts = [
+            'all' => Order::count(),
+            'pending' => Order::where('status', 'pending')->count(),
+            'confirmed' => Order::where('status', 'confirmed')->count(),
+            'preparing' => Order::where('status', 'preparing')->count(),
+            'ready' => Order::where('status', 'ready')->count(),
+            'completed' => Order::where('status', 'completed')->count(),
+            'cancelled' => Order::where('status', 'cancelled')->count(),
+        ];
+        
+        return view('admin.orders', compact('orders', 'statusCounts'));
     }
 
     public function orderDetail($id)
@@ -119,8 +134,26 @@ class AdminController extends Controller
         $order = Order::findOrFail($id);
         $order->update(['status' => $request->status]);
 
+        $statusLabels = [
+            'pending' => '未処理',
+            'confirmed' => '確認済み',
+            'preparing' => '準備中',
+            'ready' => '準備完了',
+            'completed' => '完了',
+            'cancelled' => 'キャンセル',
+        ];
+
         return redirect()->back()
-            ->with('success', '注文ステータスを更新しました');
+            ->with('success', "注文ステータスを「{$statusLabels[$request->status]}」に更新しました");
+    }
+
+    public function completeOrder($id)
+    {
+        $order = Order::findOrFail($id);
+        $order->update(['status' => 'completed']);
+
+        return redirect()->back()
+            ->with('success', '注文を完了しました');
     }
 
     public function members()

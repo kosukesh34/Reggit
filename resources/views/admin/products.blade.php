@@ -6,8 +6,10 @@
 @section('content')
 <div class="card">
     <div class="card-header">
-        <h3 class="card-title">商品一覧</h3>
-        <a href="{{ route('admin.products.create') }}" class="btn btn-primary">新規追加</a>
+        <h3 class="card-title"><i class="fas fa-list"></i> 商品一覧</h3>
+        <a href="{{ route('admin.products.create') }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> 新規追加
+        </a>
     </div>
     <table class="table">
         <thead>
@@ -39,17 +41,26 @@
                     </span>
                 </td>
                 <td>
-                    <a href="{{ route('admin.products.edit', $product->id) }}" class="btn btn-primary" style="padding: 6px 12px; font-size: 12px;">編集</a>
-                    <form action="{{ route('admin.products.delete', $product->id) }}" method="POST" style="display: inline;" onsubmit="return confirm('本当に削除しますか？')">
+                    <div class="action-buttons">
+                        <a href="{{ route('admin.products.edit', $product->id) }}" class="btn btn-sm btn-primary">
+                            <i class="fas fa-edit"></i> 編集
+                        </a>
+                    <form action="{{ route('admin.products.delete', $product->id) }}" method="POST" style="display: inline;" class="delete-form" data-item-name="{{ $product->name }}">
                         @csrf
                         @method('DELETE')
-                        <button type="submit" class="btn btn-danger" style="padding: 6px 12px; font-size: 12px;">削除</button>
+                        <button type="submit" class="btn btn-sm btn-danger">
+                            <i class="fas fa-trash"></i> 削除
+                        </button>
                     </form>
+                    </div>
                 </td>
             </tr>
             @empty
             <tr>
-                <td colspan="8" style="text-align: center; padding: 40px;">商品がありません</td>
+                <td colspan="8" class="empty-state">
+                    <i class="fas fa-box-open"></i>
+                    <p>商品がありません</p>
+                </td>
             </tr>
             @endforelse
         </tbody>

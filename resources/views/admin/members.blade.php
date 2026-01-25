@@ -29,12 +29,17 @@
                 </td>
                 <td>{{ $member->created_at->format('Y/m/d') }}</td>
                 <td>
-                    <a href="{{ route('admin.members.detail', $member->id) }}" class="btn btn-primary" style="padding: 6px 12px; font-size: 12px;">詳細</a>
+                    <a href="{{ route('admin.members.detail', $member->id) }}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-eye"></i> 詳細
+                    </a>
                 </td>
             </tr>
             @empty
             <tr>
-                <td colspan="6" style="text-align: center; padding: 40px;">会員がありません</td>
+                <td colspan="6" class="empty-state">
+                    <i class="fas fa-user-slash"></i>
+                    <p>会員がありません</p>
+                </td>
             </tr>
             @endforelse
         </tbody>

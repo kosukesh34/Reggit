@@ -85,10 +85,13 @@
     <script src="<?php echo e(asset('js/constants.js')); ?>"></script>
     <script src="<?php echo e(asset('js/utils/apiClient.js')); ?>"></script>
     <script src="<?php echo e(asset('js/utils/domHelper.js')); ?>"></script>
+    <script src="<?php echo e(asset('js/utils/tooltip.js')); ?>"></script>
+    <script src="<?php echo e(asset('js/utils/toast.js')); ?>"></script>
+    <script src="<?php echo e(asset('js/utils/confirmDialog.js')); ?>"></script>
     <script src="<?php echo e(asset('js/managers/CartManager.js')); ?>"></script>
     <script src="<?php echo e(asset('js/managers/ProductManager.js')); ?>"></script>
     <script src="<?php echo e(asset('js/stripe.js')); ?>"></script>
-    <script src="<?php echo e(asset('js/app.refactored.js')); ?>"></script>
+    <script src="<?php echo e(asset('js/app.js')); ?>"></script>
 </body>
 </html>
 

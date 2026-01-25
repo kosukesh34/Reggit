@@ -27,19 +27,20 @@
         </div>
 
         <div class="form-group">
-            <label class="form-label">カテゴリ</label>
+            <label class="form-label"><i class="fas fa-tags"></i> カテゴリ</label>
             <select name="category" class="form-select" required>
                 <option value="food" {{ old('category', $product->category ?? '') === 'food' ? 'selected' : '' }}>フード</option>
                 <option value="drink" {{ old('category', $product->category ?? '') === 'drink' ? 'selected' : '' }}>ドリンク</option>
                 <option value="dessert" {{ old('category', $product->category ?? '') === 'dessert' ? 'selected' : '' }}>デザート</option>
+                <option value="side" {{ old('category', $product->category ?? '') === 'side' ? 'selected' : '' }}>サイドメニュー</option>
                 <option value="other" {{ old('category', $product->category ?? '') === 'other' ? 'selected' : '' }}>その他</option>
             </select>
         </div>
 
         <div class="form-group">
-            <label class="form-label">画像URL</label>
+            <label class="form-label"><i class="fas fa-image"></i> 画像URL</label>
             <input type="url" name="image_url" class="form-control" value="{{ old('image_url', $product->image_url ?? '') }}" placeholder="https://...">
-            <small style="color: #7f8c8d; font-size: 12px;">画像を追加後、php artisan products:download-images を実行してください</small>
+            <small class="form-help"><i class="fas fa-info-circle"></i> 画像を追加後、php artisan products:download-images を実行してください</small>
         </div>
 
         <div class="form-group">
@@ -54,9 +55,13 @@
             </div>
         </div>
 
-        <div style="display: flex; gap: 10px;">
-            <button type="submit" class="btn btn-success">保存</button>
-            <a href="{{ route('admin.products') }}" class="btn btn-secondary">キャンセル</a>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-success">
+                <i class="fas fa-save"></i> 保存
+            </button>
+            <a href="{{ route('admin.products') }}" class="btn btn-secondary">
+                <i class="fas fa-times"></i> キャンセル
+            </a>
         </div>
     </form>
 </div>
