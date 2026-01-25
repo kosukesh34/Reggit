@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>モバイルオーダー</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- ヘッダー -->
+        <header class="header">
+            <div class="header-content">
+                <h1 class="logo">モバイルオーダー</h1>
+                <button class="cart-btn" id="cartBtn">
+                    <span class="cart-icon">🛒</span>
+                    <span class="cart-count" id="cartCount">0</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- メインコンテンツ -->
+        <main class="main-content">
+            <!-- カテゴリータブ -->
+            <div class="category-tabs">
+                <button class="tab-btn active" data-category="all">すべて</button>
+                <button class="tab-btn" data-category="food">フード</button>
+                <button class="tab-btn" data-category="drink">ドリンク</button>
+            </div>
+
+            <!-- 商品一覧 -->
+            <div class="products-section">
+                <div class="products-grid" id="productsGrid">
+                    <!-- 商品がここに動的に表示されます -->
+                </div>
+            </div>
+        </main>
+
+        <!-- カートサイドバー -->
+        <div class="cart-sidebar" id="cartSidebar">
+            <div class="cart-header">
+                <h2>注文内容</h2>
+                <button class="close-btn" id="closeCartBtn">×</button>
+            </div>
+            <div class="cart-items" id="cartItems">
+                <div class="empty-cart">カートは空です</div>
+            </div>
+            <div class="cart-footer">
+                <div class="cart-total">
+                    <span>合計: </span>
+                    <span class="total-price" id="totalPrice">¥0</span>
+                </div>
+                <button class="order-btn" id="orderBtn" disabled>注文する</button>
+            </div>
+        </div>
+
+        <!-- オーバーレイ -->
+        <div class="overlay" id="overlay"></div>
+    </div>
+
+    <script src="/js/app.js"></script>
+</body>
+</html>
+

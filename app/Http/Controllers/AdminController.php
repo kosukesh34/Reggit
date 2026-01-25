@@ -1,0 +1,141 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Product;
+use App\Models\Order;
+use App\Models\User;
+use App\Models\Member;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+
+class AdminController extends Controller
+{
+    public function dashboard()
+    {
+        $stats = [
+            'total_products' => Product::count(),
+            'total_orders' => Order::count(),
+            'total_users' => User::count(),
+            'total_members' => Member::count(),
+            'today_orders' => Order::whereDate('created_at', today())->count(),
+            'today_revenue' => Order::whereDate('created_at', today())
+                ->where('status', '!=', 'cancelled')
+                ->sum('total_amount'),
+            'pending_orders' => Order::where('status', 'pending')->count(),
+        ];
+
+        $recent_orders = Order::with('user', 'items.product')
+            ->latest()
+            ->take(10)
+            ->get();
+
+        return view('admin.dashboard', compact('stats', 'recent_orders'));
+    }
+
+    public function products()
+    {
+        $products = Product::orderBy('created_at', 'desc')->paginate(20);
+        return view('admin.products', compact('products'));
+    }
+
+    public function createProduct()
+    {
+        return view('admin.product-form');
+    }
+
+    public function storeProduct(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'price' => 'required|numeric|min:0',
+            'category' => 'required|in:food,drink,dessert,other',
+            'is_available' => 'boolean',
+            'stock' => 'integer|min:0',
+            'image_url' => 'nullable|url',
+        ]);
+
+        Product::create($request->all());
+
+        return redirect()->route('admin.products')
+            ->with('success', '商品を追加しました');
+    }
+
+    public function editProduct($id)
+    {
+        $product = Product::findOrFail($id);
+        return view('admin.product-form', compact('product'));
+    }
+
+    public function updateProduct(Request $request, $id)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'price' => 'required|numeric|min:0',
+            'category' => 'required|in:food,drink,dessert,other',
+            'is_available' => 'boolean',
+            'stock' => 'integer|min:0',
+            'image_url' => 'nullable|url',
+        ]);
+
+        $product = Product::findOrFail($id);
+        $product->update($request->all());
+
+        return redirect()->route('admin.products')
+            ->with('success', '商品を更新しました');
+    }
+
+    public function deleteProduct($id)
+    {
+        $product = Product::findOrFail($id);
+        $product->delete();
+
+        return redirect()->route('admin.products')
+            ->with('success', '商品を削除しました');
+    }
+
+    public function orders()
+    {
+        $orders = Order::with('user', 'items.product')
+            ->latest()
+            ->paginate(20);
+        return view('admin.orders', compact('orders'));
+    }
+
+    public function orderDetail($id)
+    {
+        $order = Order::with('user', 'items.product')->findOrFail($id);
+        return view('admin.order-detail', compact('order'));
+    }
+
+    public function updateOrderStatus(Request $request, $id)
+    {
+        $request->validate([
+            'status' => 'required|in:pending,confirmed,preparing,ready,completed,cancelled',
+        ]);
+
+        $order = Order::findOrFail($id);
+        $order->update(['status' => $request->status]);
+
+        return redirect()->back()
+            ->with('success', '注文ステータスを更新しました');
+    }
+
+    public function members()
+    {
+        $members = Member::with('user')
+            ->latest()
+            ->paginate(20);
+        return view('admin.members', compact('members'));
+    }
+
+    public function memberDetail($id)
+    {
+        $member = Member::with('user', 'pointTransactions.order')
+            ->findOrFail($id);
+        return view('admin.member-detail', compact('member'));
+    }
+}
+
