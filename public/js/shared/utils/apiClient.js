@@ -8,17 +8,12 @@ class ApiClient {
             method = AppConstants.HTTP_METHODS.GET,
             body = null,
             headers = {},
-            userId = null,
         } = options;
 
         const requestHeaders = {
             ...this.baseHeaders,
             ...headers,
         };
-
-        if (userId) {
-            requestHeaders['X-Line-User-Id'] = userId;
-        }
 
         const config = {
             method,

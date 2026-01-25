@@ -2,10 +2,10 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>モバイルオーダー</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/frontend/style.css') }}">
 </head>
 <body>
     <div class="app-container">
@@ -44,6 +44,11 @@
                 <div class="member-section" id="memberSection">
                 </div>
             </div>
+
+            <div class="tab-content" id="reservationsTab">
+                <div class="reservations-section" id="reservationsSection">
+                </div>
+            </div>
         </main>
 
         
@@ -72,6 +77,10 @@
                 <i class="fas fa-utensils"></i>
                 <span>商品</span>
             </button>
+            <button class="main-tab-btn" data-tab="reservations">
+                <i class="fas fa-calendar-check"></i>
+                <span>予約</span>
+            </button>
             <button class="main-tab-btn" data-tab="member">
                 <i class="fas fa-id-card"></i>
                 <span>会員証</span>
@@ -82,16 +91,17 @@
     <meta name="stripe-key" content="{{ env('STRIPE_KEY', '') }}">
     <script src="https://js.stripe.com/v3/"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
-    <script src="{{ asset('js/constants.js') }}"></script>
-    <script src="{{ asset('js/utils/apiClient.js') }}"></script>
-    <script src="{{ asset('js/utils/domHelper.js') }}"></script>
-    <script src="{{ asset('js/utils/tooltip.js') }}"></script>
-    <script src="{{ asset('js/utils/toast.js') }}"></script>
-    <script src="{{ asset('js/utils/confirmDialog.js') }}"></script>
-    <script src="{{ asset('js/managers/CartManager.js') }}"></script>
-    <script src="{{ asset('js/managers/ProductManager.js') }}"></script>
-    <script src="{{ asset('js/stripe.js') }}"></script>
-    <script src="{{ asset('js/app.js') }}"></script>
+    <script src="{{ asset('js/shared/constants.js') }}"></script>
+    <script src="{{ asset('js/shared/utils/apiClient.js') }}"></script>
+    <script src="{{ asset('js/shared/utils/domHelper.js') }}"></script>
+    <script src="{{ asset('js/shared/utils/tooltip.js') }}"></script>
+    <script src="{{ asset('js/shared/utils/toast.js') }}"></script>
+    <script src="{{ asset('js/shared/utils/confirmDialog.js') }}"></script>
+    <script src="{{ asset('js/frontend/managers/CartManager.js') }}"></script>
+    <script src="{{ asset('js/frontend/managers/ProductManager.js') }}"></script>
+    <script src="{{ asset('js/frontend/managers/ReservationManager.js') }}"></script>
+    <script src="{{ asset('js/frontend/stripe.js') }}"></script>
+    <script src="{{ asset('js/frontend/app.js') }}"></script>
 </body>
 </html>
 

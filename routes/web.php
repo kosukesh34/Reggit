@@ -37,5 +37,8 @@ Route::prefix('admin')->group(function () {
     
     Route::get('/members', [AdminController::class, 'members'])->name('admin.members');
     Route::get('/members/{id}', [AdminController::class, 'memberDetail'])->name('admin.members.detail');
+    
+    Route::get('/settings', [AdminController::class, 'settings'])->name('admin.settings');
+    Route::post('/settings', [AdminController::class, 'updateSettings'])->name('admin.settings.update');
 });
 

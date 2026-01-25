@@ -49,7 +49,7 @@ class Order extends Model
         parent::boot();
 
         static::creating(function ($order) {
-            if (empty($order->order_number)) {
+            if ($order->order_number === null || $order->order_number === '') {
                 $order->order_number = 'ORD-' . date('Ymd') . '-' . strtoupper(uniqid());
             }
         });
