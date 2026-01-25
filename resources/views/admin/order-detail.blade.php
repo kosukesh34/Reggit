@@ -6,58 +6,138 @@
 @section('content')
 <div class="card">
     <div class="card-header">
-        <h3 class="card-title">注文情報</h3>
+        <h3 class="card-title"><i class="fas fa-info-circle"></i> 注文情報</h3>
     </div>
-    <div style="padding: 20px;">
-        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-bottom: 20px;">
-            <div>
-                <strong>注文番号:</strong> {{ $order->order_number }}
+    <div style="padding: 24px;">
+        <div class="info-grid">
+            <div class="info-item">
+                <div class="info-label">注文番号</div>
+                <div class="info-value">{{ $order->order_number }}</div>
             </div>
-            <div>
-                <strong>ユーザー:</strong> {{ $order->user->name ?? 'N/A' }}
+            <div class="info-item">
+                <div class="info-label">ユーザー</div>
+                <div class="info-value">{{ $order->user->name ?? 'N/A' }}</div>
             </div>
-            <div>
-                <strong>合計金額:</strong> ¥{{ number_format($order->total_amount) }}
+            <div class="info-item">
+                <div class="info-label">合計金額</div>
+                <div class="info-value">¥{{ number_format($order->total_amount) }}</div>
             </div>
-            <div>
-                <strong>支払い方法:</strong> {{ $order->payment_method ?? 'N/A' }}
+            <div class="info-item">
+                <div class="info-label">支払い方法</div>
+                <div class="info-value">{{ $order->payment_method ?? 'N/A' }}</div>
             </div>
-            <div>
-                <strong>ステータス:</strong> 
-                <span class="badge badge-{{ 
-                    $order->status === 'completed' ? 'success' : 
-                    ($order->status === 'pending' ? 'warning' : 
-                    ($order->status === 'cancelled' ? 'danger' : 'info')) 
-                }}">
-                    {{ $order->status }}
-                </span>
+            <div class="info-item">
+                <div class="info-label">ステータス</div>
+                <div class="info-value">
+                    @php
+                        $statusLabels = [
+                            'pending' => '未処理',
+                            'confirmed' => '確認済み',
+                            'preparing' => '準備中',
+                            'ready' => '準備完了',
+                            'completed' => '完了',
+                            'cancelled' => 'キャンセル',
+                        ];
+                        $statusColors = [
+                            'pending' => 'warning',
+                            'confirmed' => 'info',
+                            'preparing' => 'info',
+                            'ready' => 'info',
+                            'completed' => 'success',
+                            'cancelled' => 'danger',
+                        ];
+                    @endphp
+                    <span class="badge badge-{{ $statusColors[$order->status] ?? 'info' }}">
+                        {{ $statusLabels[$order->status] ?? $order->status }}
+                    </span>
+                </div>
             </div>
-            <div>
-                <strong>注文日時:</strong> {{ $order->created_at->format('Y/m/d H:i:s') }}
+            <div class="info-item">
+                <div class="info-label">注文日時</div>
+                <div class="info-value">{{ $order->created_at->format('Y/m/d H:i:s') }}</div>
             </div>
         </div>
 
-        <form action="{{ route('admin.orders.status', $order->id) }}" method="POST" style="margin-bottom: 20px;">
-            @csrf
-            <div style="display: flex; gap: 10px; align-items: center;">
-                <label class="form-label" style="margin: 0;">ステータス変更:</label>
-                <select name="status" class="form-select" style="width: auto;">
-                    <option value="pending" {{ $order->status === 'pending' ? 'selected' : '' }}>pending</option>
-                    <option value="confirmed" {{ $order->status === 'confirmed' ? 'selected' : '' }}>confirmed</option>
-                    <option value="preparing" {{ $order->status === 'preparing' ? 'selected' : '' }}>preparing</option>
-                    <option value="ready" {{ $order->status === 'ready' ? 'selected' : '' }}>ready</option>
-                    <option value="completed" {{ $order->status === 'completed' ? 'selected' : '' }}>completed</option>
-                    <option value="cancelled" {{ $order->status === 'cancelled' ? 'selected' : '' }}>cancelled</option>
-                </select>
-                <button type="submit" class="btn btn-primary">更新</button>
+        <div class="order-status-actions">
+            @if($order->status !== 'completed' && $order->status !== 'cancelled')
+            <form action="{{ route('admin.orders.complete', $order->id) }}" method="POST" class="complete-form">
+                @csrf
+                <button type="submit" class="btn btn-success btn-large" onclick="return confirm('この注文を完了にしますか？')">
+                    <i class="fas fa-check-double"></i> 完了にする
+                </button>
+            </form>
+            @endif
+            
+            <div class="quick-actions">
+                <h4><i class="fas fa-bolt"></i> クイックアクション</h4>
+                <div class="quick-action-buttons">
+                    @if($order->status === 'pending')
+                    <form action="{{ route('admin.orders.status', $order->id) }}" method="POST" style="display: inline;">
+                        @csrf
+                        <input type="hidden" name="status" value="confirmed">
+                        <button type="submit" class="btn btn-info">
+                            <i class="fas fa-check-circle"></i> 確認済み
+                        </button>
+                    </form>
+                    @endif
+                    
+                    @if($order->status === 'confirmed')
+                    <form action="{{ route('admin.orders.status', $order->id) }}" method="POST" style="display: inline;">
+                        @csrf
+                        <input type="hidden" name="status" value="preparing">
+                        <button type="submit" class="btn btn-info">
+                            <i class="fas fa-utensils"></i> 準備中
+                        </button>
+                    </form>
+                    @endif
+                    
+                    @if($order->status === 'preparing')
+                    <form action="{{ route('admin.orders.status', $order->id) }}" method="POST" style="display: inline;">
+                        @csrf
+                        <input type="hidden" name="status" value="ready">
+                        <button type="submit" class="btn btn-info">
+                            <i class="fas fa-check"></i> 準備完了
+                        </button>
+                    </form>
+                    @endif
+                    
+                    @if($order->status === 'ready')
+                    <form action="{{ route('admin.orders.complete', $order->id) }}" method="POST" style="display: inline;">
+                        @csrf
+                        <button type="submit" class="btn btn-success" onclick="return confirm('この注文を完了にしますか？')">
+                            <i class="fas fa-check-double"></i> 完了
+                        </button>
+                    </form>
+                    @endif
+                </div>
             </div>
-        </form>
+            
+            <div class="status-selector">
+                <h4><i class="fas fa-cog"></i> ステータス変更</h4>
+                <form action="{{ route('admin.orders.status', $order->id) }}" method="POST">
+                    @csrf
+                    <div class="form-group">
+                        <select name="status" class="form-select">
+                            <option value="pending" {{ $order->status === 'pending' ? 'selected' : '' }}>未処理 (pending)</option>
+                            <option value="confirmed" {{ $order->status === 'confirmed' ? 'selected' : '' }}>確認済み (confirmed)</option>
+                            <option value="preparing" {{ $order->status === 'preparing' ? 'selected' : '' }}>準備中 (preparing)</option>
+                            <option value="ready" {{ $order->status === 'ready' ? 'selected' : '' }}>準備完了 (ready)</option>
+                            <option value="completed" {{ $order->status === 'completed' ? 'selected' : '' }}>完了 (completed)</option>
+                            <option value="cancelled" {{ $order->status === 'cancelled' ? 'selected' : '' }}>キャンセル (cancelled)</option>
+                        </select>
+                        <button type="submit" class="btn btn-primary" style="margin-top: 10px;">
+                            <i class="fas fa-save"></i> 更新
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 </div>
 
 <div class="card">
     <div class="card-header">
-        <h3 class="card-title">注文明細</h3>
+        <h3 class="card-title"><i class="fas fa-list"></i> 注文明細</h3>
     </div>
     <table class="table">
         <thead>
@@ -87,8 +167,10 @@
     </table>
 </div>
 
-<div style="margin-top: 20px;">
-    <a href="{{ route('admin.orders') }}" class="btn btn-secondary">戻る</a>
+<div class="form-actions">
+    <a href="{{ route('admin.orders') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> 戻る
+    </a>
 </div>
 @endsection
 
