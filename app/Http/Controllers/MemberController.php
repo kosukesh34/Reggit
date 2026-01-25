@@ -2,156 +2,137 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Member;
 use App\Models\PointTransaction;
+use App\Services\MemberService;
+use App\Services\UserService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 
 class MemberController extends Controller
 {
+    private MemberService $memberService;
+    private UserService $userService;
+
+    public function __construct(MemberService $memberService, UserService $userService)
+    {
+        $this->memberService = $memberService;
+        $this->userService = $userService;
+    }
+
     public function me(Request $request)
     {
-        // テスト用: 認証がない場合はテストユーザーを使用
-        $userId = $request->header('X-Line-User-Id');
-        if ($userId) {
-            $user = \App\Models\User::where('line_user_id', $userId)->first();
-            if (!$user) {
-                // テストユーザーを作成
-                $user = \App\Models\User::create([
-                    'line_user_id' => $userId,
-                    'name' => 'Test User',
-                ]);
-            }
-        } else {
-            $user = $request->user();
-        }
-
-        if (!$user) {
+        try {
+            $user = $this->userService->getOrCreateUser($request);
+            $data = $this->memberService->getMemberData($user);
+            
+            return response()->json($data);
+        } catch (\Exception $e) {
+            Log::error('Failed to get member data: ' . $e->getMessage());
             return response()->json([
                 'message' => '認証が必要です',
                 'is_member' => false,
             ], 401);
         }
-
-        $member = $user->member;
-
-        if (!$member) {
-            return response()->json([
-                'message' => '会員登録がまだです',
-                'is_member' => false,
-            ]);
-        }
-
-        return response()->json([
-            'is_member' => true,
-            'member' => $member->load('user'),
-            'points' => $member->points,
-        ]);
     }
 
     public function register(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'birthday' => 'nullable|date',
             'address' => 'nullable|string',
             'phone' => 'nullable|string',
         ]);
 
-        // テスト用: 認証がない場合はテストユーザーを使用
-        $userId = $request->header('X-Line-User-Id');
-        if ($userId) {
-            $user = \App\Models\User::where('line_user_id', $userId)->first();
-            if (!$user) {
-                // テストユーザーを作成
-                $user = \App\Models\User::create([
-                    'line_user_id' => $userId,
-                    'name' => 'Test User',
-                ]);
+        try {
+            $user = $this->userService->getOrCreateUser($request);
+            $member = $this->memberService->registerMember($user, $validated);
+
+            return response()->json([
+                'message' => '会員登録が完了しました',
+                'member' => $member,
+            ], 201);
+        } catch (\Exception $e) {
+            Log::error('Member registration error: ' . $e->getMessage());
+            
+            if ($e->getMessage() === '既に会員登録済みです') {
+                try {
+                    $user = $this->userService->getOrCreateUser($request);
+                    return response()->json([
+                        'message' => $e->getMessage(),
+                        'member' => $user->member,
+                    ], 200);
+                } catch (\Exception $innerException) {
+                    return response()->json([
+                        'error' => $e->getMessage(),
+                    ], 400);
+                }
             }
-        } else {
-            $user = $request->user();
-        }
 
-        if (!$user) {
             return response()->json([
-                'error' => '認証が必要です',
-            ], 401);
+                'error' => $e->getMessage(),
+            ], 400);
         }
-
-        if ($user->member) {
-            return response()->json([
-                'message' => '既に会員登録済みです',
-                'member' => $user->member,
-            ]);
-        }
-
-        // 会員番号を生成
-        $memberNumber = 'MEM-' . date('Ymd') . '-' . strtoupper(Str::random(6));
-
-        $member = Member::create([
-            'user_id' => $user->id,
-            'member_number' => $memberNumber,
-            'points' => 0,
-            'status' => 'active',
-            'birthday' => $request->birthday,
-            'address' => $request->address,
-        ]);
-
-        if ($request->phone) {
-            $user->update(['phone' => $request->phone]);
-        }
-
-        return response()->json([
-            'message' => '会員登録が完了しました',
-            'member' => $member->load('user'),
-        ], 201);
     }
 
     public function getPoints(Request $request)
     {
-        $user = $request->user();
-        $member = $user->member;
+        try {
+            $user = $this->userService->getOrCreateUser($request);
+            $member = $user->member;
 
-        if (!$member) {
+            if (!$member) {
+                return response()->json([
+                    'error' => '会員登録が必要です',
+                ], 404);
+            }
+
+            $transactions = PointTransaction::where('member_id', $member->id)
+                ->with('order')
+                ->latest()
+                ->take(20)
+                ->get();
+
             return response()->json([
-                'error' => '会員登録が必要です',
-            ], 404);
+                'points' => $member->points,
+                'transactions' => $transactions,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to get points: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'ポイント情報の取得に失敗しました',
+            ], 500);
         }
-
-        $transactions = PointTransaction::where('member_id', $member->id)
-            ->with('order')
-            ->latest()
-            ->take(20)
-            ->get();
-
-        return response()->json([
-            'points' => $member->points,
-            'transactions' => $transactions,
-        ]);
     }
 
     public function addPoints(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'points' => 'required|integer|min:1',
             'description' => 'nullable|string',
         ]);
 
-        $user = $request->user();
-        $member = $user->member;
+        try {
+            $user = $this->userService->getOrCreateUser($request);
+            $member = $user->member;
 
-        if (!$member) {
+            if (!$member) {
+                return response()->json([
+                    'error' => '会員登録が必要です',
+                ], 404);
+            }
+
+            $member->addPoints($validated['points'], $validated['description'] ?? null);
+
             return response()->json([
-                'error' => '会員登録が必要です',
-            ], 404);
+                'message' => 'ポイントが追加されました',
+                'points' => $member->fresh()->points,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to add points: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'ポイントの追加に失敗しました',
+            ], 500);
         }
-
-        $member->addPoints($request->points, $request->description);
-
-        return response()->json([
-            'message' => 'ポイントが追加されました',
-            'points' => $member->fresh()->points,
-        ]);
     }
 }
 
