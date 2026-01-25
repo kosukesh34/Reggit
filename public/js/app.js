@@ -9,7 +9,6 @@ class MobileOrderApp {
     }
 
     init() {
-        console.log('MobileOrderApp initialized');
         this.setupEventListeners();
         // DOMContentLoadedを待ってから商品を読み込む
         if (document.readyState === 'loading') {

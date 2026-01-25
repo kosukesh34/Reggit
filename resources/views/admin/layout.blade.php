@@ -8,7 +8,7 @@
 </head>
 <body>
     <div class="admin-container">
-        <!-- サイドバー -->
+        
         <aside class="sidebar">
             <div class="sidebar-header">
                 <h1>管理画面</h1>
@@ -32,7 +32,7 @@
             </nav>
         </aside>
 
-        <!-- メインコンテンツ -->
+        
         <main class="main-content">
             <header class="content-header">
                 <h2>@yield('page-title', 'ダッシュボード')</h2>
