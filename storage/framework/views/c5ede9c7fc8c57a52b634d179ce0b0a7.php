@@ -9,7 +9,7 @@
 </head>
 <body>
     <div class="app-container">
-        <!-- ヘッダー -->
+        
         <header class="header">
             <div class="header-content">
                 <h1 class="logo">モバイルオーダー</h1>
@@ -20,46 +20,33 @@
             </div>
         </header>
 
-        <!-- メインコンテンツ -->
+        
         <main class="main-content">
-            <!-- メインタブ -->
-            <div class="main-tabs">
-                <button class="main-tab-btn active" data-tab="products">
-                    <i class="fas fa-utensils"></i>
-                    <span>商品</span>
-                </button>
-                <button class="main-tab-btn" data-tab="member">
-                    <i class="fas fa-id-card"></i>
-                    <span>会員証</span>
-                </button>
-            </div>
-
-            <!-- 商品タブ -->
+            
             <div class="tab-content active" id="productsTab">
-                <!-- カテゴリータブ -->
+                
                 <div class="category-tabs">
                     <button class="tab-btn active" data-category="all">すべて</button>
                     <button class="tab-btn" data-category="food">フード</button>
                     <button class="tab-btn" data-category="drink">ドリンク</button>
+                    <button class="tab-btn" data-category="side">サイドメニュー</button>
                 </div>
 
-                <!-- 商品一覧 -->
+                
                 <div class="products-section">
                     <div class="products-grid" id="productsGrid">
-                        <div class="loading">読み込み中...</div>
                     </div>
                 </div>
             </div>
 
-            <!-- 会員証タブ -->
+            
             <div class="tab-content" id="memberTab">
                 <div class="member-section" id="memberSection">
-                    <div class="loading">読み込み中...</div>
                 </div>
             </div>
         </main>
 
-        <!-- カートサイドバー -->
+        
         <div class="cart-sidebar" id="cartSidebar">
             <div class="cart-header">
                 <h2><i class="fas fa-shopping-bag"></i> 注文内容</h2>
@@ -77,15 +64,31 @@
             </div>
         </div>
 
-        <!-- オーバーレイ -->
+        
         <div class="overlay" id="overlay"></div>
+        
+        <footer class="main-tabs">
+            <button class="main-tab-btn active" data-tab="products">
+                <i class="fas fa-utensils"></i>
+                <span>商品</span>
+            </button>
+            <button class="main-tab-btn" data-tab="member">
+                <i class="fas fa-id-card"></i>
+                <span>会員証</span>
+            </button>
+        </footer>
     </div>
 
     <meta name="stripe-key" content="<?php echo e(env('STRIPE_KEY', '')); ?>">
     <script src="https://js.stripe.com/v3/"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <script src="<?php echo e(asset('js/constants.js')); ?>"></script>
+    <script src="<?php echo e(asset('js/utils/apiClient.js')); ?>"></script>
+    <script src="<?php echo e(asset('js/utils/domHelper.js')); ?>"></script>
+    <script src="<?php echo e(asset('js/managers/CartManager.js')); ?>"></script>
+    <script src="<?php echo e(asset('js/managers/ProductManager.js')); ?>"></script>
     <script src="<?php echo e(asset('js/stripe.js')); ?>"></script>
-    <script src="<?php echo e(asset('js/app.js')); ?>"></script>
+    <script src="<?php echo e(asset('js/app.refactored.js')); ?>"></script>
 </body>
 </html>
 
