@@ -1,16 +1,20 @@
 class MobileOrderApp {
     constructor() {
-        this.products = [];
-        this.cart = [];
-        this.currentCategory = 'all';
-        this.currentTab = 'products';
+        this.productManager = new ProductManager();
+        this.cartManager = new CartManager();
+        this.apiClient = new ApiClient();
+        this.currentTab = AppConstants.TABS.PRODUCTS;
         this.memberData = null;
+        this.userId = 'test-user';
         this.init();
     }
 
     init() {
         this.setupEventListeners();
-        // DOMContentLoadedを待ってから商品を読み込む
+        this.loadProductsWhenReady();
+    }
+
+    loadProductsWhenReady() {
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => {
                 this.loadProducts();
@@ -21,408 +25,433 @@ class MobileOrderApp {
     }
 
     setupEventListeners() {
-        // カートボタン
-        document.getElementById('cartBtn').addEventListener('click', () => {
-            this.openCart();
-        });
+        this.setupCartEventListeners();
+        this.setupTabEventListeners();
+        this.setupCategoryEventListeners();
+        this.setupOrderEventListeners();
+    }
 
-        // カートを閉じる
-        document.getElementById('closeCartBtn').addEventListener('click', () => {
-            this.closeCart();
-        });
+    setupCartEventListeners() {
+        const cartBtn = DomHelper.getElementById(AppConstants.ELEMENT_IDS.CART_BTN);
+        const closeCartBtn = DomHelper.getElementById(AppConstants.ELEMENT_IDS.CLOSE_CART_BTN);
+        const overlay = DomHelper.getElementById(AppConstants.ELEMENT_IDS.OVERLAY);
 
-        // オーバーレイクリック
-        document.getElementById('overlay').addEventListener('click', () => {
-            this.closeCart();
-        });
+        if (cartBtn) {
+            cartBtn.addEventListener('click', () => this.openCart());
+        }
+        if (closeCartBtn) {
+            closeCartBtn.addEventListener('click', () => this.closeCart());
+        }
+        if (overlay) {
+            overlay.addEventListener('click', () => this.closeCart());
+        }
+    }
 
-        // メインタブ
-        document.querySelectorAll('.main-tab-btn').forEach(btn => {
+    setupTabEventListeners() {
+        DomHelper.querySelectorAll('.main-tab-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const tab = e.currentTarget.dataset.tab;
                 this.switchTab(tab);
             });
         });
+    }
 
-        // カテゴリータブ
-        document.querySelectorAll('.tab-btn').forEach(btn => {
+    setupCategoryEventListeners() {
+        DomHelper.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                e.target.classList.add('active');
-                this.currentCategory = e.target.dataset.category;
+                DomHelper.querySelectorAll('.tab-btn').forEach(b => 
+                    DomHelper.removeClass(b, AppConstants.CSS_CLASSES.ACTIVE)
+                );
+                DomHelper.addClass(e.target, AppConstants.CSS_CLASSES.ACTIVE);
+                
+                const category = e.target.dataset.category;
+                this.productManager.setCurrentCategory(category);
                 this.renderProducts();
             });
         });
+    }
 
-        // 注文ボタン
-        document.getElementById('orderBtn').addEventListener('click', () => {
-            this.placeOrder();
-        });
+    setupOrderEventListeners() {
+        const orderBtn = DomHelper.getElementById(AppConstants.ELEMENT_IDS.ORDER_BTN);
+        if (orderBtn) {
+            orderBtn.addEventListener('click', () => this.placeOrder());
+        }
     }
 
     async loadProducts() {
+        const grid = DomHelper.getElementById(AppConstants.ELEMENT_IDS.PRODUCTS_GRID);
+        if (grid) {
+            grid.innerHTML = this.productManager.getProductSkeleton();
+        }
+
         try {
-            const response = await fetch('/api/products', {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                },
-            });
-
-            // レスポンスがJSONかどうか確認
-            const contentType = response.headers.get('content-type');
-            if (!contentType || !contentType.includes('application/json')) {
-                const text = await response.text();
-                console.error('Non-JSON response:', text);
-                throw new Error('サーバーエラーが発生しました');
-            }
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            this.products = await response.json();
-            
-            if (!Array.isArray(this.products)) {
-                throw new Error('商品データの形式が正しくありません');
-            }
-
+            await this.productManager.loadProducts();
             this.renderProducts();
         } catch (error) {
-            console.error('商品の読み込みに失敗しました:', error);
-            const grid = document.getElementById('productsGrid');
-            if (grid) {
-                grid.innerHTML = `
-                    <div class="loading" style="color: #e60012;">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <p>商品の読み込みに失敗しました</p>
-                        <p style="font-size: 12px; margin-top: 8px;">${error.message || 'エラーが発生しました'}</p>
-                        <button onclick="location.reload()" style="margin-top: 12px; padding: 8px 16px; background: #e60012; color: white; border: none; border-radius: 6px; cursor: pointer;">
-                            <i class="fas fa-redo"></i> 再読み込み
-                        </button>
-                    </div>
-                `;
-            }
+            this.handleProductLoadError(error);
         }
     }
 
+    handleProductLoadError(error) {
+        console.error('Failed to load products:', error);
+        const grid = DomHelper.getElementById(AppConstants.ELEMENT_IDS.PRODUCTS_GRID);
+        if (grid) {
+            grid.innerHTML = this.getErrorTemplate(
+                '商品の読み込みに失敗しました',
+                error.message || 'エラーが発生しました'
+            );
+        }
+    }
+
+    getErrorTemplate(title, message) {
+        return `
+            <div class="loading" style="color: #e60012;">
+                <i class="fas fa-exclamation-triangle"></i>
+                <p>${DomHelper.escapeHtml(title)}</p>
+                <p style="font-size: 12px; margin-top: 8px;">${DomHelper.escapeHtml(message)}</p>
+                <button onclick="location.reload()" style="margin-top: 12px; padding: 8px 16px; background: #e60012; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                    <i class="fas fa-redo"></i> 再読み込み
+                </button>
+            </div>
+        `;
+    }
+
     renderProducts() {
-        const grid = document.getElementById('productsGrid');
-        
+        const grid = DomHelper.getElementById(AppConstants.ELEMENT_IDS.PRODUCTS_GRID);
         if (!grid) {
-            console.error('productsGrid element not found');
+            console.error('Products grid element not found');
             return;
         }
 
-        if (!this.products || !Array.isArray(this.products)) {
-            grid.innerHTML = '<div class="loading">商品データがありません</div>';
-            return;
-        }
+        const products = this.productManager.getProductsByCategory(
+            this.productManager.getCurrentCategory()
+        );
 
-        const filtered = this.currentCategory === 'all' 
-            ? this.products 
-            : this.products.filter(p => p.category === this.currentCategory);
-
-        if (filtered.length === 0) {
+        if (products.length === 0) {
             grid.innerHTML = '<div class="loading">商品が見つかりませんでした</div>';
             return;
         }
 
-        grid.innerHTML = filtered.map(product => {
-            // 画像URLの処理: 相対パスの場合はそのまま使用
-            let imageUrl = product.image_url || '';
-            if (imageUrl && !imageUrl.startsWith('http') && !imageUrl.startsWith('//')) {
-                // 相対パスの場合はそのまま使用（Laravelのasset()で処理済み）
-                imageUrl = imageUrl;
-            }
-            
-            const cartItem = this.cart.find(item => item.id === product.id);
-            const isInCart = cartItem !== undefined;
-            const cartQuantity = isInCart ? cartItem.quantity : 0;
-            
-            return `
-            <div class="product-card ${isInCart ? 'in-cart' : ''}" data-product-id="${product.id}">
+        grid.innerHTML = products.map(product => this.renderProductCard(product)).join('');
+    }
+
+    renderProductCard(product) {
+        const cartItem = this.cartManager.getItem(product.id);
+        const isInCart = cartItem !== undefined;
+        const cartQuantity = isInCart ? cartItem.quantity : 0;
+        const imageUrl = this.getProductImageUrl(product.image_url);
+
+        return `
+            <div class="product-card ${isInCart ? AppConstants.CSS_CLASSES.IN_CART : ''}" 
+                 data-product-id="${product.id}">
                 <div class="product-image-wrapper">
                     ${isInCart ? `<div class="cart-badge"><i class="fas fa-check"></i> ${cartQuantity}</div>` : ''}
                     <img src="${imageUrl}" 
-                         alt="${this.escapeHtml(product.name)}" 
+                         alt="${DomHelper.escapeHtml(product.name)}" 
                          class="product-image"
                          loading="lazy"
                          onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22150%22%3E%3Crect fill=%22%23f0f0f0%22 width=%22200%22 height=%22150%22/%3E%3Ctext fill=%22%23999%22 font-family=%22sans-serif%22 font-size=%2214%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22%3E画像なし%3C/text%3E%3C/svg%3E'">
                 </div>
                 <div class="product-info">
-                    <div class="product-name">${this.escapeHtml(product.name)}</div>
-                    <div class="product-price">¥${parseInt(product.price).toLocaleString()}</div>
+                    <div class="product-name">${DomHelper.escapeHtml(product.name)}</div>
+                    <div class="product-price">${DomHelper.formatPrice(product.price)}</div>
                     ${isInCart ? `
                         <div class="cart-quantity-info">
                             <span class="cart-quantity-badge">${cartQuantity}個追加済み</span>
                         </div>
                     ` : ''}
-                    <button class="product-add-btn ${isInCart ? 'added' : ''}" onclick="app.addToCart(${product.id})">
+                    <button class="product-add-btn ${isInCart ? AppConstants.CSS_CLASSES.ADDED : ''}" 
+                            onclick="app.addToCart(${product.id})">
                         ${isInCart ? '<i class="fas fa-check"></i> 追加済み' : '<i class="fas fa-cart-plus"></i> カートに追加'}
                     </button>
                 </div>
             </div>
         `;
-        }).join('');
     }
 
-    escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
+    getProductImageUrl(imageUrl) {
+        if (!imageUrl) return '';
+        if (imageUrl.startsWith('http') || imageUrl.startsWith('//')) {
+            return imageUrl;
+        }
+        return imageUrl;
     }
 
     addToCart(productId) {
-        const product = this.products.find(p => p.id === productId);
+        const product = this.productManager.getProductById(productId);
         if (!product) return;
 
-        const existingItem = this.cart.find(item => item.id === productId);
-        if (existingItem) {
-            existingItem.quantity++;
-        } else {
-            this.cart.push({
-                ...product,
-                quantity: 1
-            });
-        }
-
+        this.cartManager.addItem(product);
         this.updateCartUI();
         this.showCartNotification();
-        this.renderProducts(); // 商品一覧を再描画してチェックマークを更新
+        this.renderProducts();
     }
 
     removeFromCart(productId) {
-        this.cart = this.cart.filter(item => item.id !== productId);
+        this.cartManager.removeItem(productId);
         this.updateCartUI();
-        this.renderProducts(); // 商品一覧を再描画してチェックマークを更新
+        this.renderProducts();
     }
 
     updateQuantity(productId, change) {
-        const item = this.cart.find(item => item.id === productId);
-        if (!item) return;
-
-        item.quantity += change;
-        if (item.quantity <= 0) {
-            this.removeFromCart(productId);
-        } else {
-            this.updateCartUI();
-            this.renderProducts(); // 商品一覧を再描画して数量を更新
-        }
+        const updated = this.cartManager.updateQuantity(productId, change);
+        this.updateCartUI();
+        this.renderProducts();
+        return updated;
     }
 
     updateCartUI() {
-        const count = this.cart.reduce((sum, item) => sum + item.quantity, 0);
-        document.getElementById('cartCount').textContent = count;
-
-        const cartItems = document.getElementById('cartItems');
-        const total = this.cart.reduce((sum, item) => sum + (parseInt(item.price) * item.quantity), 0);
-
-        if (this.cart.length === 0) {
-            cartItems.innerHTML = '<div class="empty-cart">カートは空です</div>';
-            document.getElementById('orderBtn').disabled = true;
-        } else {
-            cartItems.innerHTML = this.cart.map(item => {
-                const imageUrl = item.image_url 
-                    ? (item.image_url.startsWith('http') ? item.image_url : item.image_url)
-                    : '';
-                return `
-                <div class="cart-item">
-                    <img src="${imageUrl}" 
-                         alt="${item.name}" 
-                         class="cart-item-image"
-                         onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2280%22 height=%2280%22%3E%3Crect fill=%22%23f0f0f0%22 width=%2280%22 height=%2280%22/%3E%3C/svg%3E'">
-                    <div class="cart-item-info">
-                        <div class="cart-item-name">${item.name}</div>
-                        <div class="cart-item-price">¥${parseInt(item.price).toLocaleString()}</div>
-                        <div class="cart-item-controls">
-                            <button class="quantity-btn" onclick="app.updateQuantity(${item.id}, -1)"><i class="fas fa-minus"></i></button>
-                            <span class="quantity">${item.quantity}</span>
-                            <button class="quantity-btn" onclick="app.updateQuantity(${item.id}, 1)"><i class="fas fa-plus"></i></button>
-                            <button class="remove-btn" onclick="app.removeFromCart(${item.id})" title="削除"><i class="fas fa-trash"></i></button>
-                        </div>
-                    </div>
-                </div>
-            `;
-            }).join('');
-            document.getElementById('orderBtn').disabled = false;
+        const count = this.cartManager.getTotalCount();
+        const countElement = DomHelper.getElementById(AppConstants.ELEMENT_IDS.CART_COUNT);
+        if (countElement) {
+            countElement.textContent = count;
         }
 
-        document.getElementById('totalPrice').textContent = `¥${total.toLocaleString()}`;
+        const cartItems = DomHelper.getElementById(AppConstants.ELEMENT_IDS.CART_ITEMS);
+        const total = this.cartManager.getTotalAmount();
+        const orderBtn = DomHelper.getElementById(AppConstants.ELEMENT_IDS.ORDER_BTN);
+        const totalPrice = DomHelper.getElementById(AppConstants.ELEMENT_IDS.TOTAL_PRICE);
+
+        if (this.cartManager.isEmpty()) {
+            if (cartItems) {
+                cartItems.innerHTML = '<div class="empty-cart">カートは空です</div>';
+            }
+            if (orderBtn) {
+                orderBtn.disabled = true;
+            }
+        } else {
+            if (cartItems) {
+                cartItems.innerHTML = this.cartManager.items.map(item => 
+                    this.renderCartItem(item)
+                ).join('');
+            }
+            if (orderBtn) {
+                orderBtn.disabled = false;
+            }
+        }
+
+        if (totalPrice) {
+            totalPrice.textContent = DomHelper.formatPrice(total);
+        }
+    }
+
+    renderCartItem(item) {
+        const imageUrl = this.getProductImageUrl(item.image_url);
+        return `
+            <div class="cart-item">
+                <img src="${imageUrl}" 
+                     alt="${DomHelper.escapeHtml(item.name)}" 
+                     class="cart-item-image"
+                     onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2280%22 height=%2280%22%3E%3Crect fill=%22%23f0f0f0%22 width=%2280%22 height=%2280%22/%3E%3C/svg%3E'">
+                <div class="cart-item-info">
+                    <div class="cart-item-name">${DomHelper.escapeHtml(item.name)}</div>
+                    <div class="cart-item-price">${DomHelper.formatPrice(item.price)}</div>
+                    <div class="cart-item-controls">
+                        <button class="quantity-btn" onclick="app.updateQuantity(${item.id}, -1)">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                        <span class="quantity">${item.quantity}</span>
+                        <button class="quantity-btn" onclick="app.updateQuantity(${item.id}, 1)">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                        <button class="remove-btn" onclick="app.removeFromCart(${item.id})" title="削除">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
     }
 
     openCart() {
-        document.getElementById('cartSidebar').classList.add('open');
-        document.getElementById('overlay').classList.add('active');
+        const sidebar = DomHelper.getElementById(AppConstants.ELEMENT_IDS.CART_SIDEBAR);
+        const overlay = DomHelper.getElementById(AppConstants.ELEMENT_IDS.OVERLAY);
+        
+        if (sidebar) {
+            DomHelper.addClass(sidebar, AppConstants.CSS_CLASSES.OPEN);
+        }
+        if (overlay) {
+            DomHelper.addClass(overlay, AppConstants.CSS_CLASSES.ACTIVE);
+        }
         document.body.style.overflow = 'hidden';
     }
 
     closeCart() {
-        document.getElementById('cartSidebar').classList.remove('open');
-        document.getElementById('overlay').classList.remove('active');
+        const sidebar = DomHelper.getElementById(AppConstants.ELEMENT_IDS.CART_SIDEBAR);
+        const overlay = DomHelper.getElementById(AppConstants.ELEMENT_IDS.OVERLAY);
+        
+        if (sidebar) {
+            DomHelper.removeClass(sidebar, AppConstants.CSS_CLASSES.OPEN);
+        }
+        if (overlay) {
+            DomHelper.removeClass(overlay, AppConstants.CSS_CLASSES.ACTIVE);
+        }
         document.body.style.overflow = '';
     }
 
     showCartNotification() {
-        const btn = document.getElementById('cartBtn');
-        btn.style.transform = 'scale(1.1)';
-        setTimeout(() => {
-            btn.style.transform = 'scale(1)';
-        }, 200);
+        const btn = DomHelper.getElementById(AppConstants.ELEMENT_IDS.CART_BTN);
+        if (btn) {
+            btn.style.transform = 'scale(1.1)';
+            setTimeout(() => {
+                btn.style.transform = 'scale(1)';
+            }, AppConstants.ANIMATION_DURATION.CART_NOTIFICATION);
+        }
     }
 
     async placeOrder() {
-        if (this.cart.length === 0) return;
+        if (this.cartManager.isEmpty()) return;
 
-        const total = this.cart.reduce((sum, item) => sum + (parseInt(item.price) * item.quantity), 0);
-        
-        // 決済方法を選択
+        const total = this.cartManager.getTotalAmount();
         const paymentMethod = await this.selectPaymentMethod();
         if (!paymentMethod) return;
 
         const orderData = {
-            items: this.cart.map(item => ({
-                product_id: item.id,
-                quantity: item.quantity
-            })),
+            items: this.cartManager.getItemsForOrder(),
             payment_method: paymentMethod,
-            points_used: 0
+            points_used: 0,
         };
 
         try {
-            // 注文を作成
-            const response = await fetch('/api/orders', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-Line-User-Id': 'test-user' // テスト用
-                },
-                body: JSON.stringify(orderData)
-            });
+            const result = await this.apiClient.post(
+                AppConstants.API_ENDPOINTS.ORDERS,
+                orderData,
+                { userId: this.userId }
+            );
 
-            // レスポンスがJSONかどうか確認
-            const contentType = response.headers.get('content-type');
-            if (!contentType || !contentType.includes('application/json')) {
-                const text = await response.text();
-                console.error('Non-JSON response:', text);
-                throw new Error('サーバーエラーが発生しました。JSON形式のレスポンスが返されませんでした。');
+            if (!result.success) {
+                throw new Error(result.error || 'Failed to create order');
             }
 
-            const orderResult = await response.json();
-            
-            if (!response.ok) {
-                throw new Error(orderResult.error || '注文の作成に失敗しました');
-            }
+            const order = result.data.order;
 
-            const order = orderResult.order;
-
-            // Stripe決済の場合
-            if (paymentMethod === 'stripe') {
+            if (paymentMethod === AppConstants.PAYMENT_METHODS.STRIPE) {
                 await this.processStripePayment(order.id, total);
             } else {
-                alert('注文が完了しました！');
-                this.cart = [];
-                this.updateCartUI();
-                this.renderProducts();
-                this.closeCart();
+                this.handleOrderSuccess();
             }
         } catch (error) {
-            console.error('注文エラー:', error);
+            console.error('Order error:', error);
             alert(`注文に失敗しました: ${error.message || 'エラーが発生しました'}`);
         }
     }
 
+    handleOrderSuccess() {
+        alert('注文が完了しました！');
+        this.cartManager.clear();
+        this.updateCartUI();
+        this.renderProducts();
+        this.closeCart();
+    }
+
     async selectPaymentMethod() {
         return new Promise((resolve) => {
-            const modal = document.createElement('div');
-            modal.className = 'payment-method-modal';
-            modal.innerHTML = `
-                <div class="payment-method-modal-content">
-                    <div class="payment-method-header">
-                        <h2><i class="fas fa-credit-card"></i> 決済方法を選択</h2>
-                        <button class="close-payment-method-btn" id="closePaymentMethodBtn">
-                            <i class="fas fa-times"></i>
+            const modal = this.createPaymentMethodModal(resolve);
+            document.body.appendChild(modal);
+        });
+    }
+
+    createPaymentMethodModal(resolve) {
+        const modal = DomHelper.createElement('div', 'payment-method-modal');
+        modal.innerHTML = this.getPaymentMethodModalTemplate();
+        
+        this.setupPaymentMethodModalEvents(modal, resolve);
+        return modal;
+    }
+
+    getPaymentMethodModalTemplate() {
+        const total = this.cartManager.getTotalAmount();
+        return `
+            <div class="payment-method-modal-content">
+                <div class="payment-method-header">
+                    <h2><i class="fas fa-credit-card"></i> 決済方法を選択</h2>
+                    <button class="close-payment-method-btn" id="closePaymentMethodBtn">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="payment-method-body">
+                    <div class="order-summary">
+                        <h3>注文内容</h3>
+                        <div class="order-items-list">
+                            ${this.cartManager.items.map(item => `
+                                <div class="order-item-summary">
+                                    <span class="order-item-name">${DomHelper.escapeHtml(item.name)} × ${item.quantity}</span>
+                                    <span class="order-item-price">${DomHelper.formatPrice(item.price * item.quantity)}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <div class="order-total-summary">
+                            <span class="total-label">合計金額</span>
+                            <span class="total-amount">${DomHelper.formatPrice(total)}</span>
+                        </div>
+                    </div>
+                    <div class="payment-methods">
+                        <button class="payment-method-btn" data-method="${AppConstants.PAYMENT_METHODS.CASH}">
+                            <i class="fas fa-money-bill-wave"></i>
+                            <div class="payment-method-info">
+                                <div class="payment-method-name">現金</div>
+                                <div class="payment-method-desc">店頭でお支払い</div>
+                            </div>
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                        <button class="payment-method-btn" data-method="${AppConstants.PAYMENT_METHODS.STRIPE}">
+                            <i class="fas fa-credit-card"></i>
+                            <div class="payment-method-info">
+                                <div class="payment-method-name">クレジットカード</div>
+                                <div class="payment-method-desc">Stripeで安全にお支払い</div>
+                            </div>
+                            <i class="fas fa-chevron-right"></i>
                         </button>
                     </div>
-                    <div class="payment-method-body">
-                        <div class="order-summary">
-                            <h3>注文内容</h3>
-                            <div class="order-items-list">
-                                ${this.cart.map(item => `
-                                    <div class="order-item-summary">
-                                        <span class="order-item-name">${item.name} × ${item.quantity}</span>
-                                        <span class="order-item-price">¥${(parseInt(item.price) * item.quantity).toLocaleString()}</span>
-                                    </div>
-                                `).join('')}
-                            </div>
-                            <div class="order-total-summary">
-                                <span class="total-label">合計金額</span>
-                                <span class="total-amount">¥${this.cart.reduce((sum, item) => sum + (parseInt(item.price) * item.quantity), 0).toLocaleString()}</span>
-                            </div>
-                        </div>
-                        <div class="payment-methods">
-                            <button class="payment-method-btn" data-method="cash">
-                                <i class="fas fa-money-bill-wave"></i>
-                                <div class="payment-method-info">
-                                    <div class="payment-method-name">現金</div>
-                                    <div class="payment-method-desc">店頭でお支払い</div>
-                                </div>
-                                <i class="fas fa-chevron-right"></i>
-                            </button>
-                            <button class="payment-method-btn" data-method="stripe">
-                                <i class="fas fa-credit-card"></i>
-                                <div class="payment-method-info">
-                                    <div class="payment-method-name">クレジットカード</div>
-                                    <div class="payment-method-desc">Stripeで安全にお支払い</div>
-                                </div>
-                                <i class="fas fa-chevron-right"></i>
-                            </button>
-                        </div>
-                    </div>
                 </div>
-            `;
-            document.body.appendChild(modal);
+            </div>
+        `;
+    }
 
-            const closeModal = () => {
+    setupPaymentMethodModalEvents(modal, resolve) {
+        const closeModal = () => {
+            modal.remove();
+            resolve(null);
+        };
+
+        modal.querySelectorAll('.payment-method-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const method = btn.dataset.method;
                 modal.remove();
-                resolve(null);
-            };
-
-            // 決済方法ボタンのイベント
-            modal.querySelectorAll('.payment-method-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const method = btn.dataset.method;
-                    modal.remove();
-                    resolve(method);
-                });
+                resolve(method);
             });
+        });
 
-            // 閉じるボタンのイベント
-            const closeBtn = modal.querySelector('#closePaymentMethodBtn');
-            if (closeBtn) {
-                closeBtn.addEventListener('click', closeModal);
+        const closeBtn = modal.querySelector('#closePaymentMethodBtn');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', closeModal);
+        }
+
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal();
             }
-
-            // オーバーレイクリックで閉じる
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) {
-                    closeModal();
-                }
-            });
         });
     }
 
     async processStripePayment(orderId, amount) {
-        // 決済モーダルを表示
         this.showPaymentModal(orderId, amount);
     }
 
     showPaymentModal(orderId, amount) {
-        const modal = document.createElement('div');
-        modal.className = 'payment-modal';
-        modal.innerHTML = `
+        const modal = this.createPaymentModal(orderId, amount);
+        document.body.appendChild(modal);
+        this.setupPaymentModal(modal, orderId, amount);
+    }
+
+    createPaymentModal(orderId, amount) {
+        const modal = DomHelper.createElement('div', 'payment-modal');
+        modal.innerHTML = this.getPaymentModalTemplate(orderId, amount);
+        return modal;
+    }
+
+    getPaymentModalTemplate(orderId, amount) {
+        return `
             <div class="payment-modal-content">
                 <div class="payment-modal-header">
                     <h2><i class="fas fa-credit-card"></i> お支払い</h2>
@@ -438,7 +467,7 @@ class MobileOrderApp {
                         </div>
                         <div class="payment-summary-item">
                             <span>合計金額</span>
-                            <span class="payment-amount">¥${amount.toLocaleString()}</span>
+                            <span class="payment-amount">${DomHelper.formatPrice(amount)}</span>
                         </div>
                     </div>
                     <div class="payment-form-section">
@@ -453,7 +482,7 @@ class MobileOrderApp {
                     <div class="payment-actions">
                         <button class="confirm-payment-btn" id="confirmPaymentBtn" disabled>
                             <i class="fas fa-lock"></i>
-                            <span>¥${amount.toLocaleString()} を支払う</span>
+                            <span>${DomHelper.formatPrice(amount)} を支払う</span>
                         </button>
                         <button class="cancel-payment-btn" id="cancelPaymentBtn">
                             <i class="fas fa-times"></i>
@@ -467,211 +496,223 @@ class MobileOrderApp {
                 </div>
             </div>
         `;
-        document.body.appendChild(modal);
+    }
 
+    setupPaymentModal(modal, orderId, amount) {
         const closeBtn = modal.querySelector('#closePaymentModalBtn');
         const cancelBtn = modal.querySelector('#cancelPaymentBtn');
         const confirmBtn = modal.querySelector('#confirmPaymentBtn');
         const paymentElement = modal.querySelector('#payment-element');
 
-        // 閉じるボタンのイベント
-        const closeModal = () => {
-            modal.remove();
-        };
-        closeBtn.addEventListener('click', closeModal);
-        cancelBtn.addEventListener('click', closeModal);
+        const closeModal = () => modal.remove();
+        
+        if (closeBtn) closeBtn.addEventListener('click', closeModal);
+        if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+        
         modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                closeModal();
-            }
+            if (e.target === modal) closeModal();
         });
 
-        // Stripe決済フォームをセットアップ
         const stripePayment = new StripePayment();
         stripePayment.setupPaymentForm('payment-element', amount, orderId)
             .then(() => {
-                // ローディングを非表示
                 const loading = paymentElement.querySelector('.payment-loading');
-                if (loading) {
-                    loading.remove();
+                if (loading) loading.remove();
+                if (confirmBtn) {
+                    confirmBtn.disabled = false;
+                    confirmBtn.innerHTML = `
+                        <i class="fas fa-lock"></i>
+                        <span>${DomHelper.formatPrice(amount)} を支払う</span>
+                    `;
                 }
-                // 決済ボタンを有効化
-                confirmBtn.disabled = false;
-                confirmBtn.innerHTML = `
-                    <i class="fas fa-lock"></i>
-                    <span>¥${amount.toLocaleString()} を支払う</span>
-                `;
             })
             .catch((error) => {
-                paymentElement.innerHTML = `
-                    <div class="payment-error">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <p>決済フォームの読み込みに失敗しました</p>
-                        <p class="error-message">${error.message || 'エラーが発生しました'}</p>
-                        <button class="retry-btn" onclick="location.reload()">
-                            <i class="fas fa-redo"></i> 再試行
-                        </button>
-                    </div>
-                `;
+                paymentElement.innerHTML = this.getPaymentErrorTemplate(error);
             });
 
-        // 決済確認ボタンのイベント
-        confirmBtn.addEventListener('click', async () => {
-            if (confirmBtn.disabled) return;
+        if (confirmBtn) {
+            confirmBtn.addEventListener('click', async () => {
+                if (confirmBtn.disabled) return;
 
-            // ローディング状態
-            confirmBtn.disabled = true;
-            confirmBtn.innerHTML = `
-                <i class="fas fa-spinner fa-spin"></i>
-                <span>処理中...</span>
-            `;
-
-            try {
-                const result = await stripePayment.confirmPayment(orderId);
-                if (result.success) {
-                    // 成功メッセージ
-                    modal.innerHTML = `
-                        <div class="payment-modal-content">
-                            <div class="payment-success">
-                                <div class="success-icon">
-                                    <i class="fas fa-check-circle"></i>
-                                </div>
-                                <h2>決済が完了しました！</h2>
-                                <p class="success-message">ご注文ありがとうございます</p>
-                                <div class="success-details">
-                                    <div class="success-detail-item">
-                                        <span>注文番号</span>
-                                        <span>#${orderId}</span>
-                                    </div>
-                                    <div class="success-detail-item">
-                                        <span>支払い金額</span>
-                                        <span>¥${amount.toLocaleString()}</span>
-                                    </div>
-                                </div>
-                                <button class="success-close-btn" onclick="this.closest('.payment-modal').remove(); app.cart = []; app.updateCartUI(); app.renderProducts(); app.closeCart();">
-                                    <i class="fas fa-check"></i>
-                                    閉じる
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                } else {
-                    throw new Error('決済が完了しませんでした');
-                }
-            } catch (error) {
-                confirmBtn.disabled = false;
+                confirmBtn.disabled = true;
                 confirmBtn.innerHTML = `
-                    <i class="fas fa-lock"></i>
-                    <span>¥${amount.toLocaleString()} を支払う</span>
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <span>処理中...</span>
                 `;
-                
-                // エラーメッセージを表示
-                const errorMsg = document.createElement('div');
-                errorMsg.className = 'payment-error-message';
-                errorMsg.innerHTML = `
-                    <i class="fas fa-exclamation-circle"></i>
-                    <span>${error.message || '決済に失敗しました。もう一度お試しください。'}</span>
-                `;
-                modal.querySelector('.payment-actions').prepend(errorMsg);
-                
-                setTimeout(() => {
-                    errorMsg.remove();
-                }, 5000);
-            }
-        });
+
+                try {
+                    const result = await stripePayment.confirmPayment(orderId);
+                    if (result.success) {
+                        modal.innerHTML = this.getPaymentSuccessTemplate(orderId, amount);
+                    } else {
+                        throw new Error('Payment was not completed');
+                    }
+                } catch (error) {
+                    this.handlePaymentError(confirmBtn, modal, amount, error);
+                }
+            });
+        }
+    }
+
+    getPaymentErrorTemplate(error) {
+        return `
+            <div class="payment-error">
+                <i class="fas fa-exclamation-triangle"></i>
+                <p>決済フォームの読み込みに失敗しました</p>
+                <p class="error-message">${DomHelper.escapeHtml(error.message || 'エラーが発生しました')}</p>
+                <button class="retry-btn" onclick="location.reload()">
+                    <i class="fas fa-redo"></i> 再試行
+                </button>
+            </div>
+        `;
+    }
+
+    getPaymentSuccessTemplate(orderId, amount) {
+        return `
+            <div class="payment-modal-content">
+                <div class="payment-success">
+                    <div class="success-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <h2>決済が完了しました！</h2>
+                    <p class="success-message">ご注文ありがとうございます</p>
+                    <div class="success-details">
+                        <div class="success-detail-item">
+                            <span>注文番号</span>
+                            <span>#${orderId}</span>
+                        </div>
+                        <div class="success-detail-item">
+                            <span>支払い金額</span>
+                            <span>${DomHelper.formatPrice(amount)}</span>
+                        </div>
+                    </div>
+                    <button class="success-close-btn" onclick="this.closest('.payment-modal').remove(); app.cartManager.clear(); app.updateCartUI(); app.renderProducts(); app.closeCart();">
+                        <i class="fas fa-check"></i>
+                        閉じる
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    handlePaymentError(confirmBtn, modal, amount, error) {
+        confirmBtn.disabled = false;
+        confirmBtn.innerHTML = `
+            <i class="fas fa-lock"></i>
+            <span>${DomHelper.formatPrice(amount)} を支払う</span>
+        `;
+
+        const errorMsg = DomHelper.createElement('div', 'payment-error-message');
+        errorMsg.innerHTML = `
+            <i class="fas fa-exclamation-circle"></i>
+            <span>${DomHelper.escapeHtml(error.message || '決済に失敗しました。もう一度お試しください。')}</span>
+        `;
+        
+        const actions = modal.querySelector('.payment-actions');
+        if (actions) {
+            actions.prepend(errorMsg);
+            setTimeout(() => errorMsg.remove(), 5000);
+        }
     }
 
     switchTab(tab) {
         this.currentTab = tab;
-        
-        // タブボタンの状態を更新
-        document.querySelectorAll('.main-tab-btn').forEach(btn => {
-            btn.classList.remove('active');
+
+        DomHelper.querySelectorAll('.main-tab-btn').forEach(btn => {
+            DomHelper.removeClass(btn, AppConstants.CSS_CLASSES.ACTIVE);
             if (btn.dataset.tab === tab) {
-                btn.classList.add('active');
+                DomHelper.addClass(btn, AppConstants.CSS_CLASSES.ACTIVE);
             }
         });
 
-        // タブコンテンツの表示を切り替え
-        document.querySelectorAll('.tab-content').forEach(content => {
-            content.classList.remove('active');
+        DomHelper.querySelectorAll('.tab-content').forEach(content => {
+            DomHelper.removeClass(content, AppConstants.CSS_CLASSES.ACTIVE);
         });
 
-        if (tab === 'products') {
-            document.getElementById('productsTab').classList.add('active');
-        } else if (tab === 'member') {
-            document.getElementById('memberTab').classList.add('active');
+        if (tab === AppConstants.TABS.PRODUCTS) {
+            const productsTab = DomHelper.getElementById(AppConstants.ELEMENT_IDS.PRODUCTS_TAB);
+            if (productsTab) {
+                DomHelper.addClass(productsTab, AppConstants.CSS_CLASSES.ACTIVE);
+            }
+        } else if (tab === AppConstants.TABS.MEMBER) {
+            const memberTab = DomHelper.getElementById(AppConstants.ELEMENT_IDS.MEMBER_TAB);
+            if (memberTab) {
+                DomHelper.addClass(memberTab, AppConstants.CSS_CLASSES.ACTIVE);
+            }
             this.loadMemberCard();
         }
     }
 
     async loadMemberCard() {
-        const container = document.getElementById('memberSection');
+        const container = DomHelper.getElementById(AppConstants.ELEMENT_IDS.MEMBER_SECTION);
         if (!container) return;
 
-        container.innerHTML = '<div class="loading">読み込み中...</div>';
+        container.innerHTML = this.getMemberCardSkeleton();
 
         try {
-            // テスト用: 認証がない場合はテストユーザーを使用
-            const userId = 'test-user';
-            const response = await fetch(`/api/members/me`, {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                    'X-Line-User-Id': userId,
-                },
-            });
+            const result = await this.apiClient.get(
+                AppConstants.API_ENDPOINTS.MEMBERS_ME,
+                { userId: this.userId }
+            );
 
-            if (!response.ok) {
-                throw new Error('会員情報の取得に失敗しました');
+            if (!result.success) {
+                throw new Error(result.error || 'Failed to load member data');
             }
 
-            const data = await response.json();
+            const data = result.data;
 
             if (!data.is_member) {
-                container.innerHTML = `
-                    <div class="member-card-container">
-                        <div class="member-card">
-                            <div class="member-card-header">
-                                <h2 class="member-card-title"><i class="fas fa-id-card"></i> 会員証</h2>
-                            </div>
-                            <div style="text-align: center; padding: 40px 20px;">
-                                <p style="margin-bottom: 20px; color: var(--text-primary);">会員登録がまだです</p>
-                                <button class="register-member-btn" onclick="app.registerMember()">
-                                    <i class="fas fa-user-plus"></i> 会員登録する
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `;
+                container.innerHTML = this.getNonMemberTemplate();
             } else {
                 this.memberData = data;
                 this.renderMemberCard(data);
             }
         } catch (error) {
-            console.error('会員証の読み込みに失敗しました:', error);
-            container.innerHTML = `
-                <div class="loading" style="color: var(--text-primary);">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <p>会員証の読み込みに失敗しました</p>
-                    <p style="font-size: 12px; margin-top: 8px;">${error.message || 'エラーが発生しました'}</p>
-                    <button onclick="app.loadMemberCard()" style="margin-top: 12px; padding: 8px 16px; background: var(--primary-color); color: white; border: none; border-radius: 6px; cursor: pointer;">
-                        <i class="fas fa-redo"></i> 再読み込み
-                    </button>
-                </div>
-            `;
+            console.error('Failed to load member card:', error);
+            container.innerHTML = this.getMemberCardErrorTemplate(error);
         }
     }
 
+    getNonMemberTemplate() {
+        return `
+            <div class="member-card-container">
+                <div class="member-card">
+                    <div class="member-card-header">
+                        <h2 class="member-card-title"><i class="fas fa-id-card"></i> 会員証</h2>
+                    </div>
+                    <div style="text-align: center; padding: 40px 20px;">
+                        <p style="margin-bottom: 12px; color: var(--text-secondary); font-size: 14px;">会員登録は任意です</p>
+                        <p style="margin-bottom: 20px; color: var(--text-primary); font-size: 13px;">会員登録をすると、ポイントが貯まります</p>
+                        <button class="register-member-btn" onclick="app.registerMember()">
+                            <i class="fas fa-user-plus"></i> 会員登録する
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    getMemberCardErrorTemplate(error) {
+        return `
+            <div class="loading" style="color: var(--text-primary);">
+                <i class="fas fa-exclamation-triangle"></i>
+                <p>会員証の読み込みに失敗しました</p>
+                <p style="font-size: 12px; margin-top: 8px;">${DomHelper.escapeHtml(error.message || 'エラーが発生しました')}</p>
+                <button onclick="app.loadMemberCard()" style="margin-top: 12px; padding: 8px 16px; background: var(--primary-color); color: white; border: none; border-radius: 6px; cursor: pointer;">
+                    <i class="fas fa-redo"></i> 再読み込み
+                </button>
+            </div>
+        `;
+    }
+
     renderMemberCard(data) {
-        const container = document.getElementById('memberSection');
+        const container = DomHelper.getElementById(AppConstants.ELEMENT_IDS.MEMBER_SECTION);
         const member = data.member;
         const points = data.points || member.points || 0;
         const memberNumber = member.member_number || '';
 
         const barcodeId = `barcode-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        
+
         container.innerHTML = `
             <div class="member-card-container">
                 <div class="member-card">
@@ -689,58 +730,74 @@ class MobileOrderApp {
             </div>
         `;
 
-        // バーコードを生成
-        if (typeof JsBarcode !== 'undefined' && memberNumber) {
-            setTimeout(() => {
-                try {
-                    const barcodeElement = document.getElementById(barcodeId);
-                    if (barcodeElement) {
-                        JsBarcode(`#${barcodeId}`, memberNumber, {
-                            format: "CODE128",
-                            width: 2,
-                            height: 80,
-                            displayValue: true,
-                            fontSize: 14,
-                            margin: 10,
-                            background: "#ffffff",
-                            lineColor: "#000000"
-                        });
-                    }
-                } catch (error) {
-                    console.error('バーコード生成エラー:', error);
+        this.generateBarcode(barcodeId, memberNumber);
+    }
+
+    generateBarcode(barcodeId, memberNumber) {
+        if (typeof JsBarcode === 'undefined' || !memberNumber) return;
+
+        setTimeout(() => {
+            try {
+                const barcodeElement = document.getElementById(barcodeId);
+                if (barcodeElement) {
+                    JsBarcode(`#${barcodeId}`, memberNumber, {
+                        format: "CODE128",
+                        width: 2,
+                        height: 80,
+                        displayValue: true,
+                        fontSize: 14,
+                        margin: 10,
+                        background: "#ffffff",
+                        lineColor: "#000000"
+                    });
                 }
-            }, 100);
-        }
+            } catch (error) {
+                console.error('Barcode generation error:', error);
+            }
+        }, AppConstants.ANIMATION_DURATION.BARCODE_DELAY);
     }
 
     async registerMember() {
         try {
-            const userId = 'test-user';
-            const response = await fetch('/api/members/register', {
-                method: 'POST',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                    'X-Line-User-Id': userId,
-                },
-                body: JSON.stringify({}),
-            });
+            const result = await this.apiClient.post(
+                AppConstants.API_ENDPOINTS.MEMBERS_REGISTER,
+                {},
+                { userId: this.userId }
+            );
 
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.message || '会員登録に失敗しました');
+            if (!result.success) {
+                throw new Error(result.error || 'Failed to register member');
             }
 
-            const data = await response.json();
             alert('会員登録が完了しました！');
             this.loadMemberCard();
         } catch (error) {
-            console.error('会員登録エラー:', error);
+            console.error('Member registration error:', error);
             alert(`会員登録に失敗しました: ${error.message || 'エラーが発生しました'}`);
         }
     }
-}
 
+    getMemberCardSkeleton() {
+        return `
+            <div class="member-card-container">
+                <div class="member-card">
+                    <div class="member-card-header">
+                        <div class="skeleton-line skeleton-header"></div>
+                    </div>
+                    <div class="barcode-container">
+                        <div class="skeleton-barcode">
+                            <div class="skeleton-shimmer"></div>
+                        </div>
+                    </div>
+                    <div class="points-display">
+                        <div class="skeleton-line skeleton-points-value"></div>
+                        <div class="skeleton-line skeleton-points-label"></div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+}
 
 const app = new MobileOrderApp();
 

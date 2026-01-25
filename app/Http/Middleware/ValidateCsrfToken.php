@@ -7,3 +7,7 @@ use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken as Middleware;
 class ValidateCsrfToken extends Middleware
 {
     protected $except = [
+        'api/*',
+        'api/payment/webhook',
+    ];
+}
