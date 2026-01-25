@@ -14,7 +14,7 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->decimal('price', 10, 2);
             $table->string('image_url')->nullable();
-            $table->enum('category', ['food', 'drink', 'dessert', 'other'])->default('other');
+            $table->enum('category', ['food', 'drink', 'dessert', 'side', 'other'])->default('other');
             $table->boolean('is_available')->default(true);
             $table->integer('stock')->default(0);
             $table->timestamps();
@@ -26,4 +26,5 @@ return new class extends Migration
         Schema::dropIfExists('products');
     }
 };
+
 

@@ -23,30 +23,18 @@
         
         <main class="main-content">
             
-            <div class="main-tabs">
-                <button class="main-tab-btn active" data-tab="products">
-                    <i class="fas fa-utensils"></i>
-                    <span>商品</span>
-                </button>
-                <button class="main-tab-btn" data-tab="member">
-                    <i class="fas fa-id-card"></i>
-                    <span>会員証</span>
-                </button>
-            </div>
-
-            
             <div class="tab-content active" id="productsTab">
                 
                 <div class="category-tabs">
                     <button class="tab-btn active" data-category="all">すべて</button>
                     <button class="tab-btn" data-category="food">フード</button>
                     <button class="tab-btn" data-category="drink">ドリンク</button>
+                    <button class="tab-btn" data-category="side">サイドメニュー</button>
                 </div>
 
                 
                 <div class="products-section">
                     <div class="products-grid" id="productsGrid">
-                        <div class="loading">読み込み中...</div>
                     </div>
                 </div>
             </div>
@@ -54,7 +42,6 @@
             
             <div class="tab-content" id="memberTab">
                 <div class="member-section" id="memberSection">
-                    <div class="loading">読み込み中...</div>
                 </div>
             </div>
         </main>
@@ -79,13 +66,29 @@
 
         
         <div class="overlay" id="overlay"></div>
+        
+        <footer class="main-tabs">
+            <button class="main-tab-btn active" data-tab="products">
+                <i class="fas fa-utensils"></i>
+                <span>商品</span>
+            </button>
+            <button class="main-tab-btn" data-tab="member">
+                <i class="fas fa-id-card"></i>
+                <span>会員証</span>
+            </button>
+        </footer>
     </div>
 
     <meta name="stripe-key" content="{{ env('STRIPE_KEY', '') }}">
     <script src="https://js.stripe.com/v3/"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <script src="{{ asset('js/constants.js') }}"></script>
+    <script src="{{ asset('js/utils/apiClient.js') }}"></script>
+    <script src="{{ asset('js/utils/domHelper.js') }}"></script>
+    <script src="{{ asset('js/managers/CartManager.js') }}"></script>
+    <script src="{{ asset('js/managers/ProductManager.js') }}"></script>
     <script src="{{ asset('js/stripe.js') }}"></script>
-    <script src="{{ asset('js/app.js') }}"></script>
+    <script src="{{ asset('js/app.refactored.js') }}"></script>
 </body>
 </html>
 
