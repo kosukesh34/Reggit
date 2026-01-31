@@ -53,6 +53,13 @@
                     <i class="fas fa-plus"></i> 時間帯を追加
                 </button>
             </div>
+
+            <div class="form-group">
+                <label class="form-label">予約枠上限（1時間帯あたり）</label>
+                <input type="number" name="reservation_capacity_per_slot" class="form-control" 
+                    value="{{ $reservationCapacity }}" min="1" required>
+                <small class="form-text">時間帯ごとの予約上限を設定します</small>
+            </div>
             
             <div class="form-group">
                 <label class="form-label">休業日（曜日）</label>
@@ -68,6 +75,33 @@
                     </label>
                     @endforeach
                 </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">休業日（特定日）</label>
+                <div id="closedDatesContainer" class="closed-dates-container">
+                    @if(count($closedDates) > 0)
+                        @foreach($closedDates as $date)
+                        <div class="closed-date-item">
+                            <input type="date" name="closed_dates[]" class="form-control closed-date-input" value="{{ $date }}">
+                            <button type="button" class="btn btn-sm btn-danger remove-closed-date" onclick="removeClosedDate(this)">
+                                <i class="fas fa-times"></i> 削除
+                            </button>
+                        </div>
+                        @endforeach
+                    @else
+                        <div class="closed-date-item">
+                            <input type="date" name="closed_dates[]" class="form-control closed-date-input">
+                            <button type="button" class="btn btn-sm btn-danger remove-closed-date" onclick="removeClosedDate(this)">
+                                <i class="fas fa-times"></i> 削除
+                            </button>
+                        </div>
+                    @endif
+                </div>
+                <button type="button" class="btn btn-sm btn-secondary" onclick="addClosedDate()">
+                    <i class="fas fa-plus"></i> 休業日を追加
+                </button>
+                <small class="form-text">臨時休業や特別営業日に合わせて設定できます</small>
             </div>
             
             <div class="form-group">
@@ -110,6 +144,23 @@ function removeTimeSlot(button) {
         alert('最低1つの時間帯が必要です');
     }
 }
+
+function addClosedDate() {
+    const container = document.getElementById('closedDatesContainer');
+    if (!container) return;
+    const newItem = document.createElement('div');
+    newItem.className = 'closed-date-item';
+    newItem.innerHTML = `
+        <input type="date" name="closed_dates[]" class="form-control closed-date-input">
+        <button type="button" class="btn btn-sm btn-danger remove-closed-date" onclick="removeClosedDate(this)">
+            <i class="fas fa-times"></i> 削除
+        </button>
+    `;
+    container.appendChild(newItem);
+}
+
+function removeClosedDate(button) {
+    button.closest('.closed-date-item').remove();
+}
 </script>
 @endsection
-

@@ -72,4 +72,10 @@ class Reservation extends Model
         return $this->status !== ReservationStatus::CANCELLED 
             && $this->status !== ReservationStatus::COMPLETED;
     }
+
+    public function canEdit(): bool
+    {
+        return $this->status !== ReservationStatus::CANCELLED
+            && $this->status !== ReservationStatus::COMPLETED;
+    }
 }
