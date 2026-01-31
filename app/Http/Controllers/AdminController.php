@@ -8,7 +8,13 @@ use App\Models\User;
 use App\Models\Member;
 use App\Models\Reservation;
 use App\Models\ShopSetting;
+use App\Models\StampCard;
+use App\Models\Coupon;
+use App\Models\Announcement;
+use App\Models\QueueEntry;
 use App\Enums\ReservationStatus;
+use App\Services\OrderService;
+use App\Services\SettingsService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -16,6 +22,16 @@ use Illuminate\Support\Facades\DB;
 class AdminController extends Controller
 {
     private const RESERVATION_CAPACITY_MIN = 1;
+
+    private SettingsService $settingsService;
+
+    private OrderService $orderService;
+
+    public function __construct(SettingsService $settingsService, OrderService $orderService)
+    {
+        $this->settingsService = $settingsService;
+        $this->orderService = $orderService;
+    }
 
     public function dashboard()
     {
@@ -29,6 +45,10 @@ class AdminController extends Controller
                 ->where('status', '!=', 'cancelled')
                 ->sum('total_amount'),
             'pending_orders' => Order::where('status', 'pending')->count(),
+            'today_reservations' => Reservation::whereDate('reserved_at', today())
+                ->whereIn('status', [ReservationStatus::PENDING, ReservationStatus::CONFIRMED])
+                ->count(),
+            'queue_waiting' => QueueEntry::where('status', 'waiting')->count(),
         ];
 
         $recent_orders = Order::with('user', 'items.product')
@@ -140,6 +160,10 @@ class AdminController extends Controller
         $order = Order::findOrFail($id);
         $order->update(['status' => $request->status]);
 
+        if ($request->status === 'cancelled') {
+            $this->orderService->handleOrderCancellation($order);
+        }
+
         $statusLabels = [
             'pending' => '未処理',
             'confirmed' => '確認済み',
@@ -177,21 +201,15 @@ class AdminController extends Controller
         return view('admin.member-detail', compact('member'));
     }
 
-    public function settings()
+    public function settingsBasic()
     {
-        $businessHours = ShopSetting::getBusinessHours();
-        $timeSlots = ShopSetting::getReservationTimeSlots();
-        $closedDays = ShopSetting::getClosedDays();
-        $closedDates = ShopSetting::getClosedDates();
-        $advanceDays = ShopSetting::getAdvanceBookingDays();
-        $reservationCapacity = ShopSetting::getReservationCapacityPerSlot();
-
-        return view('admin.settings', compact('businessHours', 'timeSlots', 'closedDays', 'closedDates', 'advanceDays', 'reservationCapacity'));
+        $settings = $this->settingsService->getBasicSettings();
+        return view('admin.settings.basic', ['settings' => $settings]);
     }
 
-    public function updateSettings(Request $request)
+    public function updateSettingsBasic(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'business_hours_start' => 'required|date_format:H:i',
             'business_hours_end' => 'required|date_format:H:i|after:business_hours_start',
             'reservation_time_slots' => 'required|array|min:1',
@@ -199,24 +217,54 @@ class AdminController extends Controller
             'closed_days' => 'nullable|array',
             'closed_days.*' => 'integer|min:0|max:6',
             'closed_dates' => 'nullable|array',
-            'closed_dates.*' => 'date_format:Y-m-d',
+            'closed_dates.*' => 'nullable|date_format:Y-m-d',
             'advance_booking_days' => 'required|integer|min:1|max:365',
             'reservation_capacity_per_slot' => 'required|integer|min:' . self::RESERVATION_CAPACITY_MIN,
         ]);
+        $this->settingsService->updateReservationSettings($validated);
+        return redirect()->route('admin.settings.basic')->with('success', '基本設定を更新しました');
+    }
 
-        ShopSetting::setValue('business_hours_start', $request->business_hours_start, 'time');
-        ShopSetting::setValue('business_hours_end', $request->business_hours_end, 'time');
-        ShopSetting::setValue('reservation_time_slots', $request->reservation_time_slots, 'json');
-        ShopSetting::setValue('closed_days', $request->closed_days ?? [], 'json');
-        $closedDates = array_values(array_filter($request->closed_dates ?? [], function ($date) {
-            return $date !== null && $date !== '';
-        }));
-        ShopSetting::setValue('closed_dates', $closedDates, 'json');
-        ShopSetting::setValue('advance_booking_days', $request->advance_booking_days, 'integer');
-        ShopSetting::setValue('reservation_capacity_per_slot', $request->reservation_capacity_per_slot, 'integer');
+    public function settingsAdvanced()
+    {
+        $settings = $this->settingsService->getAdvancedSettings();
+        return view('admin.settings.advanced', ['settings' => $settings]);
+    }
 
-        return redirect()->route('admin.settings')
-            ->with('success', '設定を更新しました');
+    public function updateSettingsAdvanced(Request $request)
+    {
+        $validated = $request->validate([
+            'line_primary_color' => 'nullable|string|regex:/^#[0-9A-Fa-f]{6}$/',
+            'line_primary_dark' => 'nullable|string|regex:/^#[0-9A-Fa-f]{6}$/',
+            'line_success_color' => 'nullable|string|regex:/^#[0-9A-Fa-f]{6}$/',
+            'line_danger_color' => 'nullable|string|regex:/^#[0-9A-Fa-f]{6}$/',
+        ]);
+        $this->settingsService->updateLineThemeSettings($validated);
+        return redirect()->route('admin.settings.advanced')->with('success', '配色設定を更新しました');
+    }
+
+    public function stamps()
+    {
+        $stampCards = StampCard::orderBy('created_at', 'desc')->paginate(20);
+        return view('admin.stamps.index', compact('stampCards'));
+    }
+
+    public function coupons()
+    {
+        $coupons = Coupon::orderBy('created_at', 'desc')->paginate(20);
+        return view('admin.coupons.index', compact('coupons'));
+    }
+
+    public function announcements()
+    {
+        $announcements = Announcement::orderBy('is_pinned', 'desc')->orderBy('published_at', 'desc')->paginate(20);
+        return view('admin.announcements.index', compact('announcements'));
+    }
+
+    public function queue()
+    {
+        $entries = QueueEntry::with('member')->where('status', 'waiting')->orderBy('queue_number')->paginate(20);
+        return view('admin.queue.index', compact('entries'));
     }
 
     public function reservations(Request $request)

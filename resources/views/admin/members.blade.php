@@ -5,9 +5,13 @@
 
 @section('content')
 <div class="card">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-users"></i> 会員一覧</h3>
+    </div>
     <table class="table">
         <thead>
             <tr>
+                <th>ID</th>
                 <th>会員番号</th>
                 <th>ユーザー名</th>
                 <th>ポイント</th>
@@ -19,7 +23,8 @@
         <tbody>
             @forelse($members as $member)
             <tr>
-                <td>{{ $member->member_number }}</td>
+                <td><span class="id-badge">{{ $member->id }}</span></td>
+                <td><code class="member-number">{{ $member->member_number }}</code></td>
                 <td>{{ $member->user->name ?? 'N/A' }}</td>
                 <td>{{ number_format($member->points) }}pt</td>
                 <td>
@@ -36,7 +41,7 @@
             </tr>
             @empty
             <tr>
-                <td colspan="6" class="empty-state">
+                <td colspan="7" class="empty-state">
                     <i class="fas fa-user-slash"></i>
                     <p>会員がありません</p>
                 </td>
