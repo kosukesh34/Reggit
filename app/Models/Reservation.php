@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToProject;
 use App\Enums\ReservationStatus;
 use Database\Factories\ReservationFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -9,7 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Reservation extends Model
 {
-    use HasFactory;
+    use BelongsToProject, HasFactory;
 
     protected static function newFactory()
     {
@@ -17,6 +18,7 @@ class Reservation extends Model
     }
 
     protected $fillable = [
+        'project_id',
         'user_id',
         'reservation_number',
         'reserved_at',
@@ -31,6 +33,11 @@ class Reservation extends Model
             'reserved_at' => 'datetime',
             'number_of_people' => 'integer',
         ];
+    }
+
+    public function project()
+    {
+        return $this->belongsTo(Project::class);
     }
 
     public function user()

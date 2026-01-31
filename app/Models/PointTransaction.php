@@ -2,14 +2,16 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToProject;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class PointTransaction extends Model
 {
-    use HasFactory;
+    use BelongsToProject, HasFactory;
 
     protected $fillable = [
+        'project_id',
         'member_id',
         'type',
         'points',
@@ -24,6 +26,11 @@ class PointTransaction extends Model
             'points' => 'integer',
             'expires_at' => 'date',
         ];
+    }
+
+    public function project()
+    {
+        return $this->belongsTo(Project::class);
     }
 
     public function member()

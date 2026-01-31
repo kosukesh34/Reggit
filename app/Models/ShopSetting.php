@@ -2,24 +2,31 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToProject;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class ShopSetting extends Model
 {
-    use HasFactory;
+    use BelongsToProject, HasFactory;
 
     private const DEFAULT_RESERVATION_CAPACITY = 20;
 
     protected $fillable = [
+        'project_id',
         'key',
         'value',
         'type',
     ];
 
-    public static function getValue(string $key, $default = null)
+    public function project()
     {
-        $setting = self::where('key', $key)->first();
+        return $this->belongsTo(Project::class);
+    }
+
+    public static function getValue(string $key, $default = null, ?int $projectId = 1)
+    {
+        $setting = self::where('project_id', $projectId)->where('key', $key)->first();
         
         if ($setting === null) {
             return $default;
@@ -40,14 +47,14 @@ class ShopSetting extends Model
         return $setting->value;
     }
 
-    public static function setValue(string $key, $value, string $type = 'string'): void
+    public static function setValue(string $key, $value, string $type = 'string', ?int $projectId = 1): void
     {
         if ($type === 'json') {
             $value = json_encode($value);
         }
 
         self::updateOrCreate(
-            ['key' => $key],
+            ['project_id' => $projectId, 'key' => $key],
             ['value' => $value, 'type' => $type]
         );
     }
@@ -83,6 +90,30 @@ class ShopSetting extends Model
     public static function getReservationCapacityPerSlot(): int
     {
         return self::getValue('reservation_capacity_per_slot', self::DEFAULT_RESERVATION_CAPACITY);
+    }
+
+    public static function getLineThemeColors(): array
+    {
+        $primary = self::getValue('line_primary_color', '#000000');
+        return [
+            'primary' => $primary,
+            'primary_rgb' => self::hexToRgb($primary),
+            'primary_dark' => self::getValue('line_primary_dark', '#333333'),
+            'success' => self::getValue('line_success_color', '#000000'),
+            'danger' => self::getValue('line_danger_color', '#dc3545'),
+        ];
+    }
+
+    private static function hexToRgb(string $hex): string
+    {
+        $hex = ltrim($hex, '#');
+        if (strlen($hex) !== 6) {
+            return '0, 0, 0';
+        }
+        $r = (int) hexdec(substr($hex, 0, 2));
+        $g = (int) hexdec(substr($hex, 2, 2));
+        $b = (int) hexdec(substr($hex, 4, 2));
+        return "{$r}, {$g}, {$b}";
     }
 
     public static function isDateAvailable(string $date): bool
