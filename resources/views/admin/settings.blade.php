@@ -1,11 +1,21 @@
 @extends('admin.layout')
 
 @section('title', '店舗設定')
+@section('page-title', '店舗設定')
 
 @section('content')
+@php
+    $businessHours = $settings['businessHours'] ?? ['start' => '10:00', 'end' => '22:00'];
+    $timeSlots = $settings['timeSlots'] ?? [];
+    $closedDays = $settings['closedDays'] ?? [];
+    $closedDates = $settings['closedDates'] ?? [];
+    $advanceDays = $settings['advanceDays'] ?? 30;
+    $reservationCapacity = $settings['reservationCapacity'] ?? 20;
+    $lineTheme = $settings['lineTheme'] ?? [];
+@endphp
 <div class="page-header">
-    <h1><i class="fas fa-cog"></i> 店舗設定</h1>
-    <p class="page-description">予約に関する設定を管理します</p>
+    <h1 class="page-header-title"><i class="fas fa-cog"></i> 店舗設定</h1>
+    <p class="page-header-desc">予約とLINEアプリの見た目を管理します</p>
 </div>
 
 @if(session('success'))
@@ -14,24 +24,60 @@
     </div>
 @endif
 
-<div class="card">
-    <div class="card-header">
-        <h2><i class="fas fa-clock"></i> 営業時間設定</h2>
+<form action="{{ route('admin.settings.update') }}" method="POST" id="settingsForm">
+    @csrf
+
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title"><i class="fas fa-palette"></i> LINEアプリの配色</h2>
+        </div>
+        <div class="card-body">
+            <p class="form-section-desc">お客様がLINEで開くアプリのボタンや強調色を変更できます。未設定の項目はデフォルトの色になります。</p>
+            <div class="line-theme-grid">
+                <div class="form-group">
+                    <label class="form-label">メイン色</label>
+                    <div class="color-input-row">
+                        <input type="color" id="line_primary_color" class="color-picker" value="{{ $lineTheme['primary'] ?? '#000000' }}" aria-label="メイン色">
+                        <input type="text" name="line_primary_color" class="form-control color-hex" value="{{ $lineTheme['primary'] ?? '#000000' }}" maxlength="7">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">メイン色（濃いめ）</label>
+                    <div class="color-input-row">
+                        <input type="color" id="line_primary_dark" class="color-picker" value="{{ $lineTheme['primary_dark'] ?? '#333333' }}" aria-label="メイン色（濃いめ）">
+                        <input type="text" name="line_primary_dark" class="form-control color-hex" value="{{ $lineTheme['primary_dark'] ?? '#333333' }}" maxlength="7">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">成功・ポイント色</label>
+                    <div class="color-input-row">
+                        <input type="color" id="line_success_color" class="color-picker" value="{{ $lineTheme['success'] ?? '#000000' }}" aria-label="成功色">
+                        <input type="text" name="line_success_color" class="form-control color-hex" value="{{ $lineTheme['success'] ?? '#000000' }}" maxlength="7">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">注意・キャンセル色</label>
+                    <div class="color-input-row">
+                        <input type="color" id="line_danger_color" class="color-picker" value="{{ $lineTheme['danger'] ?? '#dc3545' }}" aria-label="注意色">
+                        <input type="text" name="line_danger_color" class="form-control color-hex" value="{{ $lineTheme['danger'] ?? '#dc3545' }}" maxlength="7">
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="card-body">
-        <form action="{{ route('admin.settings.update') }}" method="POST" id="settingsForm">
-            @csrf
-            
+
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title"><i class="fas fa-clock"></i> 営業時間・予約設定</h2>
+        </div>
+        <div class="card-body">
             <div class="form-group">
                 <label class="form-label">開始時間</label>
-                <input type="time" name="business_hours_start" class="form-control" 
-                    value="{{ $businessHours['start'] }}" required>
+                <input type="time" name="business_hours_start" class="form-control" value="{{ $businessHours['start'] }}" required>
             </div>
-            
             <div class="form-group">
                 <label class="form-label">終了時間</label>
-                <input type="time" name="business_hours_end" class="form-control" 
-                    value="{{ $businessHours['end'] }}" required>
+                <input type="time" name="business_hours_end" class="form-control" value="{{ $businessHours['end'] }}" required>
             </div>
             
             <div class="form-group">
@@ -111,16 +157,32 @@
                 <small class="form-text">何日先まで予約を受け付けるか設定します</small>
             </div>
             
-            <div class="form-actions">
-                <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-save"></i> 設定を保存
-                </button>
-            </div>
-        </form>
+        </div>
     </div>
-</div>
+
+    <div class="form-actions form-actions-sticky">
+        <button type="submit" class="btn btn-primary btn-lg">
+            <i class="fas fa-save"></i> 設定を保存
+        </button>
+    </div>
+</form>
 
 <script>
+document.querySelectorAll('.color-picker').forEach(function(picker) {
+    const hexInput = picker.closest('.color-input-row').querySelector('.color-hex');
+    picker.addEventListener('input', function() {
+        hexInput.value = picker.value;
+    });
+});
+document.querySelectorAll('.color-hex').forEach(function(hexInput) {
+    const picker = hexInput.closest('.color-input-row').querySelector('.color-picker');
+    hexInput.addEventListener('input', function() {
+        if (/^#[0-9A-Fa-f]{6}$/.test(hexInput.value)) {
+            picker.value = hexInput.value;
+        }
+    });
+});
+
 function addTimeSlot() {
     const container = document.getElementById('timeSlotsContainer');
     const newItem = document.createElement('div');

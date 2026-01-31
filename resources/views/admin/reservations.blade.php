@@ -7,7 +7,7 @@
 <div class="card">
     <div class="card-header">
         <h3 class="card-title"><i class="fas fa-sliders-h"></i> 絞り込み</h3>
-        <a href="{{ route('admin.settings') }}" class="btn btn-sm btn-secondary">
+        <a href="{{ route('admin.settings.basic') }}" class="btn btn-sm btn-secondary">
             <i class="fas fa-cog"></i> 予約枠設定へ
         </a>
     </div>

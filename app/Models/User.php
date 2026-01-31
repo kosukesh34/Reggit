@@ -2,15 +2,17 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToProject;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable;
+    use BelongsToProject, HasApiTokens, HasFactory, Notifiable, SoftDeletes;
 
     protected static function newFactory()
     {
@@ -18,11 +20,13 @@ class User extends Authenticatable
     }
 
     protected $fillable = [
+        'project_id',
         'line_user_id',
         'name',
         'email',
         'phone',
         'profile_image_url',
+        'last_login_at',
     ];
 
     protected $hidden = [
@@ -33,7 +37,13 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'last_login_at' => 'datetime',
         ];
+    }
+
+    public function project()
+    {
+        return $this->belongsTo(Project::class);
     }
 
     public function member()
@@ -49,6 +59,11 @@ class User extends Authenticatable
     public function reservations()
     {
         return $this->hasMany(Reservation::class);
+    }
+
+    public function devices()
+    {
+        return $this->hasMany(UserDevice::class);
     }
 }
 

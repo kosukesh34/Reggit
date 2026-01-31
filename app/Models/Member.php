@@ -2,14 +2,16 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToProject;
 use Carbon\Carbon;
 use Database\Factories\MemberFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Member extends Model
 {
-    use HasFactory;
+    use BelongsToProject, HasFactory, SoftDeletes;
 
     protected static function newFactory()
     {
@@ -17,6 +19,7 @@ class Member extends Model
     }
 
     protected $fillable = [
+        'project_id',
         'user_id',
         'member_number',
         'points',
@@ -34,6 +37,11 @@ class Member extends Model
         ];
     }
 
+    public function project()
+    {
+        return $this->belongsTo(Project::class);
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class);
@@ -44,13 +52,19 @@ class Member extends Model
         return $this->hasMany(PointTransaction::class);
     }
 
-    /**
-     * トランザクションの合計から現在の保有ポイントを算出する。
-     * earned/refunded は加算、used/expired は減算。
-     */
+    public function memberCoupons()
+    {
+        return $this->hasMany(MemberCoupon::class);
+    }
+
     public function getTotalPointsFromTransactions(): int
     {
         return (int) $this->pointTransactions()->sum('points');
+    }
+
+    public function recalcPointsFromTransactions(): void
+    {
+        $this->update(['points' => $this->getTotalPointsFromTransactions()]);
     }
 
     public function addPoints(int $points, string $description = null, $orderId = null, $expiresAt = null)
@@ -61,6 +75,7 @@ class Member extends Model
         $expiresAt = $expiresAt ?? Carbon::now()->addYear();
 
         PointTransaction::create([
+            'project_id' => $this->project_id,
             'member_id' => $this->id,
             'type' => 'earned',
             'points' => $points,
@@ -82,6 +97,7 @@ class Member extends Model
         $this->save();
 
         PointTransaction::create([
+            'project_id' => $this->project_id,
             'member_id' => $this->id,
             'type' => 'used',
             'points' => -$points,
