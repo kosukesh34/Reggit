@@ -35,32 +35,52 @@ class MemberController extends Controller
         }
     }
 
-    public function register(Request $request)
+    public function update(Request $request)
     {
         $validated = $request->validate([
+            'name' => 'nullable|string|max:255',
+            'phone' => 'nullable|string|max:50',
             'birthday' => 'nullable|date',
-            'address' => 'nullable|string',
-            'phone' => 'nullable|string',
+            'address' => 'nullable|string|max:500',
         ]);
 
         try {
             $user = $this->userService->getOrCreateUser($request);
-            $member = $this->memberService->registerMember($user, $validated);
+            $data = $this->memberService->updateProfile($user, $validated);
 
+            return response()->json($data);
+        } catch (\Exception $e) {
+            Log::error('Member profile update error: ' . $e->getMessage());
             return response()->json([
-                'message' => '会員登録が完了しました',
-                'member' => $member,
-            ], 201);
+                'error' => $e->getMessage(),
+            ], 400);
+        }
+    }
+
+    public function register(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'nullable|string|max:255',
+            'birthday' => 'nullable|date',
+            'address' => 'nullable|string|max:500',
+            'phone' => 'nullable|string|max:50',
+        ]);
+
+        try {
+            $user = $this->userService->getOrCreateUser($request);
+            $this->memberService->registerMember($user, $validated);
+            $user->refresh();
+            $data = $this->memberService->getMemberData($user);
+
+            return response()->json($data, 201);
         } catch (\Exception $e) {
             Log::error('Member registration error: ' . $e->getMessage());
-            
+
             if ($e->getMessage() === '既に会員登録済みです') {
                 try {
                     $user = $this->userService->getOrCreateUser($request);
-                    return response()->json([
-                        'message' => $e->getMessage(),
-                        'member' => $user->member,
-                    ], 200);
+                    $data = $this->memberService->getMemberData($user);
+                    return response()->json($data, 200);
                 } catch (\Exception $innerException) {
                     return response()->json([
                         'error' => $e->getMessage(),

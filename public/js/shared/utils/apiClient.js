@@ -14,6 +14,9 @@ class ApiClient {
             ...this.baseHeaders,
             ...headers,
         };
+        if (typeof window !== 'undefined' && window.__LINE_USER_ID__) {
+            requestHeaders['X-Line-User-Id'] = window.__LINE_USER_ID__;
+        }
 
         const config = {
             method,
@@ -52,6 +55,10 @@ class ApiClient {
 
     async post(endpoint, body, options = {}) {
         return this.request(endpoint, { ...options, method: AppConstants.HTTP_METHODS.POST, body });
+    }
+
+    async put(endpoint, body, options = {}) {
+        return this.request(endpoint, { ...options, method: AppConstants.HTTP_METHODS.PUT, body });
     }
 }
 

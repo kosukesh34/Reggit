@@ -15,6 +15,7 @@ return new class extends Migration
             $table->integer('points');
             $table->text('description')->nullable();
             $table->foreignId('order_id')->nullable()->constrained()->onDelete('set null');
+            $table->date('expires_at')->nullable();
             $table->timestamps();
         });
     }
