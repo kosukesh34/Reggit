@@ -5,7 +5,9 @@ namespace Tests\Feature;
 use App\Enums\ReservationStatus;
 use App\Models\Member;
 use App\Models\Reservation;
+use App\Models\ShopSetting;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -35,7 +37,9 @@ class ReservationControllerTest extends TestCase
     {
         $user = User::factory()->create(['line_user_id' => self::TEST_USER_ID]);
         $member = Member::factory()->create(['user_id' => $user->id]);
-        $reservedAt = now()->addDay()->format('Y-m-d\TH:i');
+        $timeSlots = ShopSetting::getReservationTimeSlots();
+        $timeSlot = $timeSlots[0];
+        $reservedAt = now()->addDay()->format('Y-m-d') . 'T' . $timeSlot;
 
         $response = $this->withSession(['mobile_order_user_id' => $user->id])
             ->withHeaders(['X-Line-User-Id' => self::TEST_USER_ID])
@@ -120,7 +124,9 @@ class ReservationControllerTest extends TestCase
     public function testStoreRequiresMembership(): void
     {
         $user = User::factory()->create(['line_user_id' => self::TEST_USER_ID]);
-        $reservedAt = now()->addDay()->format('Y-m-d\TH:i');
+        $timeSlots = ShopSetting::getReservationTimeSlots();
+        $timeSlot = $timeSlots[0];
+        $reservedAt = now()->addDay()->format('Y-m-d') . 'T' . $timeSlot;
 
         $response = $this->withSession(['mobile_order_user_id' => $user->id])
             ->withHeaders(['X-Line-User-Id' => self::TEST_USER_ID])
@@ -131,5 +137,51 @@ class ReservationControllerTest extends TestCase
 
         $response->assertStatus(403)
             ->assertJson(['error' => '会員登録が必要です']);
+    }
+
+    public function testStoreRejectsClosedDate(): void
+    {
+        $user = User::factory()->create(['line_user_id' => self::TEST_USER_ID]);
+        $member = Member::factory()->create(['user_id' => $user->id]);
+        $closedDate = now()->addDay()->format('Y-m-d');
+        $timeSlots = ShopSetting::getReservationTimeSlots();
+        $timeSlot = $timeSlots[0];
+        ShopSetting::setValue('closed_dates', [$closedDate], 'json');
+
+        $response = $this->withSession(['mobile_order_user_id' => $user->id])
+            ->withHeaders(['X-Line-User-Id' => self::TEST_USER_ID])
+            ->post(self::RESERVATION_ENDPOINT, [
+                'reserved_at' => $closedDate . 'T' . $timeSlot,
+                'number_of_people' => 2,
+            ]);
+
+        $response->assertStatus(400)
+            ->assertJson(['error' => '選択した日は予約できません']);
+    }
+
+    public function testStoreRejectsFullSlot(): void
+    {
+        $user = User::factory()->create(['line_user_id' => self::TEST_USER_ID]);
+        $member = Member::factory()->create(['user_id' => $user->id]);
+        $timeSlots = ShopSetting::getReservationTimeSlots();
+        $timeSlot = $timeSlots[0];
+        $reservedAt = Carbon::parse(now()->addDay()->format('Y-m-d') . ' ' . $timeSlot);
+
+        ShopSetting::setValue('reservation_capacity_per_slot', 1, 'integer');
+
+        Reservation::factory()->create([
+            'reserved_at' => $reservedAt,
+            'status' => ReservationStatus::PENDING,
+        ]);
+
+        $response = $this->withSession(['mobile_order_user_id' => $user->id])
+            ->withHeaders(['X-Line-User-Id' => self::TEST_USER_ID])
+            ->post(self::RESERVATION_ENDPOINT, [
+                'reserved_at' => $reservedAt->format('Y-m-d\TH:i'),
+                'number_of_people' => 2,
+            ]);
+
+        $response->assertStatus(400)
+            ->assertJson(['error' => '選択した時間帯は満席です']);
     }
 }

@@ -19,6 +19,7 @@ Route::middleware(['web'])->group(function () {
     Route::get('/orders/{id}', [OrderController::class, 'show']);
     
     Route::get('/members/me', [MemberController::class, 'me']);
+    Route::put('/members/me', [MemberController::class, 'update']);
     Route::post('/members/register', [MemberController::class, 'register']);
     Route::get('/members/points', [MemberController::class, 'getPoints']);
     Route::post('/members/points/add', [MemberController::class, 'addPoints']);
@@ -29,6 +30,7 @@ Route::middleware(['web'])->group(function () {
     Route::get('/reservations', [ReservationController::class, 'index']);
     Route::get('/reservations/available-dates', [ReservationController::class, 'getAvailableDates']);
     Route::post('/reservations', [ReservationController::class, 'store']);
+    Route::put('/reservations/{id}', [ReservationController::class, 'update']);
     Route::post('/reservations/{id}/cancel', [ReservationController::class, 'cancel']);
 });
 

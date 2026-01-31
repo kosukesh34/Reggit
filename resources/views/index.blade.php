@@ -3,12 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="line-liff-id" content="{{ config('line.liff_id', '') }}">
     <title>モバイルオーダー</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="{{ asset('css/frontend/style.css') }}">
 </head>
 <body>
-    <div class="app-container">
+    <div id="liff-loading" class="liff-loading" aria-live="polite">
+        <div class="liff-loading-inner">
+            <div class="liff-loading-spinner"></div>
+            <p class="liff-loading-text">読み込み中...</p>
+        </div>
+    </div>
+
+    <div class="app-container" id="app-container">
         
         <header class="header">
             <div class="header-content">
@@ -72,6 +80,11 @@
         
         <div class="overlay" id="overlay"></div>
         
+        <div id="profileEditModal" class="member-modal" aria-hidden="true">
+            <div class="member-modal-backdrop" data-close="profileEdit"></div>
+            <div class="member-modal-content" id="profileEditModalContent"></div>
+        </div>
+
         <footer class="main-tabs">
             <button class="main-tab-btn active" data-tab="products">
                 <i class="fas fa-utensils"></i>
@@ -89,6 +102,7 @@
     </div>
 
     <meta name="stripe-key" content="{{ env('STRIPE_KEY', '') }}">
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/versions/2.22.3/sdk.js"></script>
     <script src="https://js.stripe.com/v3/"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <script src="{{ asset('js/shared/constants.js') }}"></script>
@@ -101,6 +115,7 @@
     <script src="{{ asset('js/frontend/managers/ProductManager.js') }}"></script>
     <script src="{{ asset('js/frontend/managers/ReservationManager.js') }}"></script>
     <script src="{{ asset('js/frontend/stripe.js') }}"></script>
+    <script src="{{ asset('js/frontend/liff-init.js') }}"></script>
     <script src="{{ asset('js/frontend/app.js') }}"></script>
 </body>
 </html>

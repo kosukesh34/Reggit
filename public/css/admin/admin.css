@@ -633,6 +633,106 @@ html {
     padding: 2px 5px;
 }
 
+.card-header-note {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    font-weight: 500;
+}
+
+.reservation-filter-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.filter-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    align-items: end;
+}
+
+.filter-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+}
+
+.quick-date-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.reservation-summary {
+    margin-bottom: 16px;
+}
+
+.summary-date {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.time-slot-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+}
+
+.time-slot-card {
+    border: 1px solid var(--border);
+    background: var(--bg-tertiary);
+    border-radius: var(--radius);
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.time-slot-card.is-open {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+}
+
+.time-slot-card.is-full {
+    background: #fef2f2;
+    border-color: #fecaca;
+}
+
+.time-slot-time {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.time-slot-count {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.time-slot-status {
+    font-size: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-secondary);
+}
+
+.time-slot-card.is-open .time-slot-status {
+    color: var(--success);
+}
+
+.time-slot-card.is-full .time-slot-status {
+    color: var(--danger);
+}
+
 .order-status-actions {
     padding: 20px;
     background: var(--bg-tertiary);
@@ -838,6 +938,20 @@ textarea.form-control {
     .status-filter {
         width: 100%;
         justify-content: space-between;
+    }
+
+    .filter-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .quick-date-links {
+        width: 100%;
+    }
+
+    .quick-date-links .btn {
+        flex: 1;
+        justify-content: center;
     }
     
     .quick-action-buttons {
@@ -1109,6 +1223,24 @@ textarea.form-control {
     grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
     gap: 12px;
     margin-top: 8px;
+}
+
+.closed-dates-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.closed-date-item {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.closed-date-input {
+    flex: 1;
+    max-width: 220px;
 }
 
 .checkbox-label {

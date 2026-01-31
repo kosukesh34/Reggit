@@ -6,12 +6,17 @@ use App\Models\Product;
 use App\Models\Order;
 use App\Models\User;
 use App\Models\Member;
+use App\Models\Reservation;
 use App\Models\ShopSetting;
+use App\Enums\ReservationStatus;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class AdminController extends Controller
 {
+    private const RESERVATION_CAPACITY_MIN = 1;
+
     public function dashboard()
     {
         $stats = [
@@ -177,9 +182,11 @@ class AdminController extends Controller
         $businessHours = ShopSetting::getBusinessHours();
         $timeSlots = ShopSetting::getReservationTimeSlots();
         $closedDays = ShopSetting::getClosedDays();
+        $closedDates = ShopSetting::getClosedDates();
         $advanceDays = ShopSetting::getAdvanceBookingDays();
+        $reservationCapacity = ShopSetting::getReservationCapacityPerSlot();
 
-        return view('admin.settings', compact('businessHours', 'timeSlots', 'closedDays', 'advanceDays'));
+        return view('admin.settings', compact('businessHours', 'timeSlots', 'closedDays', 'closedDates', 'advanceDays', 'reservationCapacity'));
     }
 
     public function updateSettings(Request $request)
@@ -191,18 +198,143 @@ class AdminController extends Controller
             'reservation_time_slots.*' => 'required|date_format:H:i',
             'closed_days' => 'nullable|array',
             'closed_days.*' => 'integer|min:0|max:6',
+            'closed_dates' => 'nullable|array',
+            'closed_dates.*' => 'date_format:Y-m-d',
             'advance_booking_days' => 'required|integer|min:1|max:365',
+            'reservation_capacity_per_slot' => 'required|integer|min:' . self::RESERVATION_CAPACITY_MIN,
         ]);
 
         ShopSetting::setValue('business_hours_start', $request->business_hours_start, 'time');
         ShopSetting::setValue('business_hours_end', $request->business_hours_end, 'time');
         ShopSetting::setValue('reservation_time_slots', $request->reservation_time_slots, 'json');
         ShopSetting::setValue('closed_days', $request->closed_days ?? [], 'json');
+        $closedDates = array_values(array_filter($request->closed_dates ?? [], function ($date) {
+            return $date !== null && $date !== '';
+        }));
+        ShopSetting::setValue('closed_dates', $closedDates, 'json');
         ShopSetting::setValue('advance_booking_days', $request->advance_booking_days, 'integer');
+        ShopSetting::setValue('reservation_capacity_per_slot', $request->reservation_capacity_per_slot, 'integer');
 
         return redirect()->route('admin.settings')
             ->with('success', '設定を更新しました');
     }
+
+    public function reservations(Request $request)
+    {
+        $query = Reservation::with('user');
+        
+        if ($request->has('status') && $request->status !== 'all') {
+            $query->where('status', $request->status);
+        }
+        
+        if ($request->has('date')) {
+            $query->whereDate('reserved_at', $request->date);
+        }
+        
+        $reservations = $query->orderBy('reserved_at', 'desc')->paginate(20)->appends($request->query());
+        
+        $statusCounts = [
+            'all' => Reservation::count(),
+            'pending' => Reservation::where('status', ReservationStatus::PENDING)->count(),
+            'confirmed' => Reservation::where('status', ReservationStatus::CONFIRMED)->count(),
+            'completed' => Reservation::where('status', ReservationStatus::COMPLETED)->count(),
+            'cancelled' => Reservation::where('status', ReservationStatus::CANCELLED)->count(),
+        ];
+
+        $selectedDate = $request->date;
+        $dateStatusCounts = null;
+        $timeSlotSummary = [];
+        $selectedDateLabel = null;
+        $reservationCapacity = ShopSetting::getReservationCapacityPerSlot();
+        $timeSlots = ShopSetting::getReservationTimeSlots();
+
+        if ($selectedDate !== null && $selectedDate !== '') {
+            $dateInstance = Carbon::parse($selectedDate);
+            $selectedDateLabel = $dateInstance->format('Y年m月d日');
+
+            $dateStatusCounts = [
+                'all' => Reservation::whereDate('reserved_at', $selectedDate)->count(),
+                'pending' => Reservation::whereDate('reserved_at', $selectedDate)
+                    ->where('status', ReservationStatus::PENDING)
+                    ->count(),
+                'confirmed' => Reservation::whereDate('reserved_at', $selectedDate)
+                    ->where('status', ReservationStatus::CONFIRMED)
+                    ->count(),
+                'completed' => Reservation::whereDate('reserved_at', $selectedDate)
+                    ->where('status', ReservationStatus::COMPLETED)
+                    ->count(),
+                'cancelled' => Reservation::whereDate('reserved_at', $selectedDate)
+                    ->where('status', ReservationStatus::CANCELLED)
+                    ->count(),
+            ];
+
+            $activeReservations = Reservation::whereDate('reserved_at', $selectedDate)
+                ->whereIn('status', [ReservationStatus::PENDING, ReservationStatus::CONFIRMED])
+                ->get(['reserved_at']);
+
+            $slotCounts = [];
+            foreach ($activeReservations as $reservation) {
+                $reservedAt = $reservation->reserved_at instanceof Carbon
+                    ? $reservation->reserved_at
+                    : Carbon::parse($reservation->reserved_at);
+                $timeKey = $reservedAt->format('H:i');
+                if (!isset($slotCounts[$timeKey])) {
+                    $slotCounts[$timeKey] = 0;
+                }
+                $slotCounts[$timeKey] += 1;
+            }
+
+            foreach ($timeSlots as $slot) {
+                $slotCount = $slotCounts[$slot] ?? 0;
+                $timeSlotSummary[] = [
+                    'time' => $slot,
+                    'count' => $slotCount,
+                    'capacity' => $reservationCapacity,
+                    'is_full' => $slotCount >= $reservationCapacity,
+                ];
+            }
+        }
+        
+        return view('admin.reservations', compact('reservations', 'statusCounts', 'selectedDate', 'selectedDateLabel', 'dateStatusCounts', 'timeSlotSummary', 'reservationCapacity'));
+    }
+
+    public function reservationDetail($id)
+    {
+        $reservation = Reservation::with('user')->findOrFail($id);
+        return view('admin.reservation-detail', compact('reservation'));
+    }
+
+    public function updateReservationStatus(Request $request, $id)
+    {
+        $request->validate([
+            'status' => 'required|in:' . implode(',', [
+                ReservationStatus::PENDING,
+                ReservationStatus::CONFIRMED,
+                ReservationStatus::COMPLETED,
+                ReservationStatus::CANCELLED,
+            ]),
+        ]);
+
+        $reservation = Reservation::findOrFail($id);
+        $reservation->update(['status' => $request->status]);
+
+        $statusLabels = [
+            ReservationStatus::PENDING => '予約待ち',
+            ReservationStatus::CONFIRMED => '確認済み',
+            ReservationStatus::COMPLETED => '完了',
+            ReservationStatus::CANCELLED => 'キャンセル',
+        ];
+
+        return redirect()->back()
+            ->with('success', "予約ステータスを「{$statusLabels[$request->status]}」に更新しました");
+    }
+
+    public function completeReservation($id)
+    {
+        $reservation = Reservation::findOrFail($id);
+        $reservation->update(['status' => ReservationStatus::COMPLETED]);
+
+        return redirect()->back()
+            ->with('success', '予約を完了しました');
+    }
 }
-
-
