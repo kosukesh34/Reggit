@@ -33,6 +33,14 @@
                     <i class="fas fa-users"></i>
                     <span>会員管理</span>
                 </a>
+                <a href="{{ route('admin.reservations') }}" class="nav-item {{ request()->routeIs('admin.reservations*') ? 'active' : '' }}">
+                    <i class="fas fa-calendar-check"></i>
+                    <span>予約管理</span>
+                </a>
+                <a href="{{ route('admin.settings') }}" class="nav-item {{ request()->routeIs('admin.settings*') ? 'active' : '' }}">
+                    <i class="fas fa-cog"></i>
+                    <span>店舗設定</span>
+                </a>
                 <a href="/" class="nav-item">
                     <i class="fas fa-home"></i>
                     <span>フロントに戻る</span>

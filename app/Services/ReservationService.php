@@ -59,6 +59,30 @@ class ReservationService
         return $reservation;
     }
 
+    public function updateReservation(int $reservationId, User $user, array $data): Reservation
+    {
+        $reservation = Reservation::where('id', $reservationId)
+            ->where('user_id', $user->id)
+            ->firstOrFail();
+
+        if (!$reservation->canEdit()) {
+            throw new \Exception('この予約は編集できません');
+        }
+
+        $reservation->update([
+            'reserved_at' => $data['reserved_at'],
+            'number_of_people' => $data['number_of_people'] ?? $reservation->number_of_people,
+            'notes' => $data['notes'] ?? null,
+        ]);
+
+        Log::info('Reservation updated', [
+            'reservation_id' => $reservation->id,
+            'user_id' => $user->id,
+        ]);
+
+        return $reservation;
+    }
+
     public function getUserReservations(User $user): array
     {
         try {

@@ -9,6 +9,8 @@ class ShopSetting extends Model
 {
     use HasFactory;
 
+    private const DEFAULT_RESERVATION_CAPACITY = 20;
+
     protected $fillable = [
         'key',
         'value',
@@ -68,9 +70,19 @@ class ShopSetting extends Model
         return self::getValue('closed_days', []);
     }
 
+    public static function getClosedDates(): array
+    {
+        return self::getValue('closed_dates', []);
+    }
+
     public static function getAdvanceBookingDays(): int
     {
         return self::getValue('advance_booking_days', 30);
+    }
+
+    public static function getReservationCapacityPerSlot(): int
+    {
+        return self::getValue('reservation_capacity_per_slot', self::DEFAULT_RESERVATION_CAPACITY);
     }
 
     public static function isDateAvailable(string $date): bool
@@ -83,7 +95,7 @@ class ShopSetting extends Model
         }
 
         $dateStr = date('Y-m-d', strtotime($date));
-        $closedDates = self::getValue('closed_dates', []);
+        $closedDates = self::getClosedDates();
         
         if (in_array($dateStr, $closedDates, true)) {
             return false;

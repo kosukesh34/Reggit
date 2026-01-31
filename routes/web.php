@@ -38,6 +38,11 @@ Route::prefix('admin')->group(function () {
     Route::get('/members', [AdminController::class, 'members'])->name('admin.members');
     Route::get('/members/{id}', [AdminController::class, 'memberDetail'])->name('admin.members.detail');
     
+    Route::get('/reservations', [AdminController::class, 'reservations'])->name('admin.reservations');
+    Route::get('/reservations/{id}', [AdminController::class, 'reservationDetail'])->name('admin.reservations.detail');
+    Route::post('/reservations/{id}/status', [AdminController::class, 'updateReservationStatus'])->name('admin.reservations.status');
+    Route::post('/reservations/{id}/complete', [AdminController::class, 'completeReservation'])->name('admin.reservations.complete');
+    
     Route::get('/settings', [AdminController::class, 'settings'])->name('admin.settings');
     Route::post('/settings', [AdminController::class, 'updateSettings'])->name('admin.settings.update');
 });
