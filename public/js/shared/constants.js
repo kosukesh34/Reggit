@@ -86,6 +86,8 @@ const AppConstants = {
         CANCEL_ERROR: '予約のキャンセルに失敗しました',
         CREATE_SUCCESS: '予約が完了しました',
         CREATE_ERROR: '予約に失敗しました',
+        UPDATE_SUCCESS: '予約を更新しました',
+        UPDATE_ERROR: '予約の更新に失敗しました',
         CANCEL_CONFIRM_TITLE: '予約キャンセルの確認',
         CANCEL_CONFIRM_MESSAGE: 'この予約をキャンセルしますか？',
         EMPTY_TITLE: '予約がありません',
@@ -100,6 +102,9 @@ const AppConstants = {
         LIST_TITLE: '予約一覧',
         CREATE_BUTTON: '新規予約',
         CREATE_TITLE: '新規予約',
+        EDIT_TITLE: '予約を編集',
+        EDIT_BUTTON: '編集',
+        UPDATE_BUTTON: '更新する',
         DATE_TIME: '予約日時',
         NUMBER_OF_PEOPLE: '人数',
         NOTES: '備考',
@@ -174,7 +179,7 @@ const AppConstants = {
     
     MESSAGES: {
         CART_OPEN_TOOLTIP: 'カートを開く',
-        CART_REMOVE_TOOLTIP: 'カートから削除するには、カートを開いてください',
+        CART_REMOVE_TOOLTIP: '数量変更はカートでできます',
         CART_ADD_TOOLTIP: 'カートに追加',
         ORDER_SUCCESS: '注文が完了しました！',
     },
@@ -183,4 +188,3 @@ const AppConstants = {
         USER_ID: 'test-user',
     },
 };
-

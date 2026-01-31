@@ -15,12 +15,14 @@ class PointTransaction extends Model
         'points',
         'description',
         'order_id',
+        'expires_at',
     ];
 
     protected function casts(): array
     {
         return [
             'points' => 'integer',
+            'expires_at' => 'date',
         ];
     }
 

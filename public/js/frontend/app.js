@@ -13,6 +13,17 @@ class MobileOrderApp {
         this.preventZoom();
         this.setupEventListeners();
         this.loadProductsWhenReady();
+        this.preloadMemberData();
+    }
+
+    preloadMemberData() {
+        if (typeof window === 'undefined' || !window.__LINE_USER_ID__) return;
+        const self = this;
+        this.apiClient.get(AppConstants.API_ENDPOINTS.MEMBERS_ME).then(function (result) {
+            if (result.success && result.data && typeof result.data.is_member !== 'undefined') {
+                self.memberData = result.data;
+            }
+        });
     }
 
     preventZoom() {
@@ -57,6 +68,10 @@ class MobileOrderApp {
         this.setupTabEventListeners();
         this.setupCategoryEventListeners();
         this.setupOrderEventListeners();
+        const backdrop = document.querySelector('[data-close="profileEdit"]');
+        if (backdrop) {
+            backdrop.addEventListener('click', () => this.closeProfileEdit());
+        }
     }
 
     setupCartEventListeners() {
@@ -169,6 +184,7 @@ class MobileOrderApp {
         const isInCart = cartItem !== undefined;
         const cartQuantity = isInCart ? cartItem.quantity : 0;
         const imageUrl = this.getProductImageUrl(product.image_url);
+        const tooltipAttribute = isInCart ? '' : `data-tooltip="${AppConstants.MESSAGES.CART_ADD_TOOLTIP}"`;
 
         return `
             <div class="product-card ${isInCart ? AppConstants.CSS_CLASSES.IN_CART : ''}" 
@@ -191,7 +207,7 @@ class MobileOrderApp {
                     ` : ''}
                     <button class="product-add-btn ${isInCart ? AppConstants.CSS_CLASSES.ADDED : ''}" 
                             onclick="app.addToCart(${product.id})"
-                            data-tooltip="${isInCart ? AppConstants.MESSAGES.CART_REMOVE_TOOLTIP : AppConstants.MESSAGES.CART_ADD_TOOLTIP}">
+                            ${tooltipAttribute}>
                         ${isInCart ? '<i class="fas fa-check"></i> 追加済み' : '<i class="fas fa-cart-plus"></i> カートに追加'}
                     </button>
                 </div>
@@ -677,7 +693,12 @@ class MobileOrderApp {
             if (memberTab) {
                 DomHelper.addClass(memberTab, AppConstants.CSS_CLASSES.ACTIVE);
             }
-            this.loadMemberCard();
+            if (this.memberData && this.memberData.is_member) {
+                this.renderMemberCard(this.memberData);
+                this.loadMemberCardInBackground();
+            } else {
+                this.loadMemberCard();
+            }
         } else if (tab === AppConstants.TABS.RESERVATIONS) {
             const reservationsTab = DomHelper.getElementById(AppConstants.ELEMENT_IDS.RESERVATIONS_TAB);
             if (reservationsTab) {
@@ -687,9 +708,49 @@ class MobileOrderApp {
         }
     }
 
+    isInLineClient() {
+        return typeof window !== 'undefined' && typeof liff !== 'undefined' && liff.isInClient && liff.isInClient() === true;
+    }
+
+    async waitForLineUserId(maxWaitMs) {
+        const maxWait = maxWaitMs || 8000;
+        const interval = 300;
+        let elapsed = 0;
+        while (elapsed < maxWait) {
+            if (window.__LINE_USER_ID__) return true;
+            await new Promise(function (r) { setTimeout(r, interval); });
+            elapsed += interval;
+        }
+        return !!window.__LINE_USER_ID__;
+    }
+
+    loadMemberCardInBackground() {
+        const self = this;
+        this.apiClient.get(AppConstants.API_ENDPOINTS.MEMBERS_ME).then(function (result) {
+            if (!result.success || !result.data) return;
+            const data = result.data;
+            if (data.is_member && self.currentTab === AppConstants.TABS.MEMBER) {
+                self.memberData = data;
+                self.renderMemberCard(data);
+            }
+        });
+    }
+
     async loadMemberCard() {
         const container = DomHelper.getElementById(AppConstants.ELEMENT_IDS.MEMBER_SECTION);
         if (!container) return;
+
+        if (typeof window === 'undefined' || !window.__LINE_USER_ID__) {
+            container.innerHTML = this.getLineOnlyTemplate();
+            this.memberData = null;
+            return;
+        }
+
+        if (this.memberData && this.memberData.is_member) {
+            this.renderMemberCard(this.memberData);
+            this.loadMemberCardInBackground();
+            return;
+        }
 
         container.innerHTML = this.getMemberCardSkeleton();
 
@@ -699,57 +760,56 @@ class MobileOrderApp {
             );
 
             if (!result.success) {
-                throw new Error(result.error || 'Failed to load member data');
+                throw new Error(result.error || result.data?.message || '会員情報の取得に失敗しました');
             }
 
             const data = result.data;
+            if (!data || typeof data.is_member === 'undefined') {
+                throw new Error('会員情報の形式が正しくありません');
+            }
 
             if (!data.is_member) {
-                container.innerHTML = this.getNonMemberTemplate();
-                this.memberData = null;
-            } else {
-                this.memberData = data;
-                this.renderMemberCard(data);
+                await this.autoRegisterAndLoadMemberCard();
+                return;
             }
+
+            this.memberData = data;
+            this.renderMemberCard(data);
         } catch (error) {
             console.error('Failed to load member card:', error);
             container.innerHTML = this.getMemberCardErrorTemplate(error);
         }
     }
 
-    async checkMembershipAndLoadReservations() {
-        try {
-            const result = await this.apiClient.get(AppConstants.API_ENDPOINTS.MEMBERS_ME);
-            if (result.success && result.data.is_member) {
-                this.memberData = result.data;
-                this.reservationManager.loadReservations();
-            } else {
-                const reservationsSection = DomHelper.getElementById(AppConstants.ELEMENT_IDS.RESERVATIONS_SECTION);
-                if (reservationsSection) {
-                    reservationsSection.innerHTML = this.reservationManager.getMembershipRequiredTemplate();
-                }
-            }
-        } catch (error) {
-            console.error('Failed to check membership:', error);
-            const reservationsSection = DomHelper.getElementById(AppConstants.ELEMENT_IDS.RESERVATIONS_SECTION);
-            if (reservationsSection) {
-                reservationsSection.innerHTML = this.reservationManager.getMembershipRequiredTemplate();
-            }
-        }
-    }
-
-    getNonMemberTemplate() {
+    getLineOnlyTemplate() {
         return `
             <div class="member-card-container">
-                <div class="member-card">
+                <div class="member-card member-card--line-only">
                     <div class="member-card-header">
                         <h2 class="member-card-title"><i class="fas fa-id-card"></i> 会員証</h2>
                     </div>
-                    <div style="text-align: center; padding: 40px 20px;">
-                        <p style="margin-bottom: 12px; color: var(--text-secondary); font-size: 14px;">会員登録は任意です</p>
-                        <p style="margin-bottom: 20px; color: var(--text-primary); font-size: 13px;">会員登録をすると、ポイントが貯まります</p>
-                        <button class="register-member-btn" onclick="app.registerMember()">
-                            <i class="fas fa-user-plus"></i> 会員登録する
+                    <div class="member-card-line-only-body">
+                        <p class="member-card-line-only-icon"><i class="fab fa-line"></i></p>
+                        <p class="member-card-line-only-message">LINEアプリから開いてください</p>
+                        <p class="member-card-line-only-sub">会員証はLINEアプリ内でのみご利用いただけます。</p>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    getPermissionDeniedTemplate() {
+        return `
+            <div class="member-card-container">
+                <div class="member-card permission-denied-notice">
+                    <div class="member-card-header">
+                        <h2 class="member-card-title"><i class="fas fa-id-card"></i> 会員証</h2>
+                    </div>
+                    <div style="text-align: center; padding: 24px 20px;">
+                        <p style="margin-bottom: 12px; color: var(--text-secondary); font-size: 14px;">LINEの表示名を表示するには、アクセス許可が必要です。</p>
+                        <p style="margin-bottom: 20px; color: var(--text-primary); font-size: 13px;">再読み込みすると、再度許可を求めます。</p>
+                        <button type="button" class="register-member-btn" onclick="location.reload()">
+                            <i class="fas fa-redo"></i> 再読み込み
                         </button>
                     </div>
                 </div>
@@ -757,15 +817,68 @@ class MobileOrderApp {
         `;
     }
 
-    getMemberCardErrorTemplate(error) {
+    async checkMembershipAndLoadReservations() {
+        const reservationsSection = DomHelper.getElementById(AppConstants.ELEMENT_IDS.RESERVATIONS_SECTION);
+        if (!reservationsSection) return;
+
+        if (typeof window === 'undefined' || !window.__LINE_USER_ID__) {
+            if (this.isInLineClient()) {
+                reservationsSection.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i><p>読み込み中...</p></div>';
+                var hasUserId = await this.waitForLineUserId(5000);
+                if (hasUserId && window.__LINE_USER_ID__) {
+                    return this.checkMembershipAndLoadReservations();
+                }
+            }
+            reservationsSection.innerHTML = this.getLineOnlyTemplateReservations();
+            return;
+        }
+
+        try {
+            const result = await this.apiClient.get(AppConstants.API_ENDPOINTS.MEMBERS_ME);
+            if (result.success && result.data && result.data.is_member) {
+                this.memberData = result.data;
+                this.reservationManager.loadReservations();
+            } else {
+                reservationsSection.innerHTML = this.reservationManager.getMembershipRequiredTemplate();
+            }
+        } catch (error) {
+            console.error('Failed to check membership:', error);
+            reservationsSection.innerHTML = this.reservationManager.getMembershipRequiredTemplate();
+        }
+    }
+
+    getLineOnlyTemplateReservations() {
         return `
-            <div class="loading" style="color: var(--text-primary);">
-                <i class="fas fa-exclamation-triangle"></i>
-                <p>会員証の読み込みに失敗しました</p>
-                <p style="font-size: 12px; margin-top: 8px;">${DomHelper.escapeHtml(error.message || 'エラーが発生しました')}</p>
-                <button onclick="app.loadMemberCard()" style="margin-top: 12px; padding: 8px 16px; background: var(--primary-color); color: white; border: none; border-radius: 6px; cursor: pointer;">
-                    <i class="fas fa-redo"></i> 再読み込み
-                </button>
+            <div class="member-card-container">
+                <div class="member-card member-card--line-only">
+                    <div class="member-card-line-only-body">
+                        <p class="member-card-line-only-icon"><i class="fab fa-line"></i></p>
+                        <p class="member-card-line-only-message">LINEアプリから開いてください</p>
+                        <p class="member-card-line-only-sub">予約はLINEアプリ内でのみご利用いただけます。</p>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    getMemberCardErrorTemplate(error) {
+        const message = error && error.message ? error.message : 'エラーが発生しました';
+        const isLineHint = message.indexOf('認証') !== -1 || message.indexOf('401') !== -1;
+        return `
+            <div class="member-card-container">
+                <div class="member-card member-card--error">
+                    <div class="member-card-header">
+                        <h2 class="member-card-title"><i class="fas fa-id-card"></i> 会員証</h2>
+                    </div>
+                    <div class="member-card-error-body">
+                        <p class="member-card-error-icon"><i class="fas fa-exclamation-circle"></i></p>
+                        <p class="member-card-error-message">${DomHelper.escapeHtml(message)}</p>
+                        ${isLineHint ? '<p class="member-card-error-hint">LINEアプリから再度お試しください。</p>' : ''}
+                        <button type="button" class="register-member-btn" onclick="window.app.loadMemberCard()">
+                            <i class="fas fa-redo"></i> 再読み込み
+                        </button>
+                    </div>
+                </div>
             </div>
         `;
     }
@@ -773,21 +886,48 @@ class MobileOrderApp {
     renderMemberCard(data) {
         const container = DomHelper.getElementById(AppConstants.ELEMENT_IDS.MEMBER_SECTION);
         const member = data.member;
+        const user = data.user || (member && member.user);
+        const displayName = (user && user.name) || (typeof window !== 'undefined' && window.__LINE_PROFILE__ && window.__LINE_PROFILE__.displayName) || '';
         const points = data.points || member.points || 0;
         const memberNumber = member.member_number || '';
+        const currentRankLabel = data.current_rank_label || 'ブロンズ';
+        const nextRankLabel = data.next_rank_label || null;
+        const pointsToNextRank = data.points_to_next_rank != null ? data.points_to_next_rank : null;
+        const pointsExpiry = data.points_expiry || null;
 
         const barcodeId = `barcode-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        const permissionDeniedNotice = (typeof window !== 'undefined' && window.__LIFF_PERMISSION_DENIED__) ?
+            '<p class="member-card-profile-notice">LINEの表示名は取得していません。<button type="button" class="link-btn" onclick="location.reload()">再読み込み</button></p>' : '';
+
+        const currentRankKey = data.current_rank || 'bronze';
+        let rankHtml = '<p class="member-card-rank"><span class="member-card-rank-badge" data-rank="' + DomHelper.escapeHtml(currentRankKey) + '">' + DomHelper.escapeHtml(currentRankLabel) + '</span></p>';
+        if (nextRankLabel && pointsToNextRank !== null) {
+            rankHtml += '<p class="member-card-next-rank">次のランク（' + DomHelper.escapeHtml(nextRankLabel) + '）まで <strong>' + pointsToNextRank.toLocaleString() + '</strong> pt</p>';
+        }
+        let expiryHtml = '';
+        if (pointsExpiry && pointsExpiry.expires_at_label) {
+            expiryHtml = '<p class="member-card-expiry">ポイント有効期限: ' + DomHelper.escapeHtml(pointsExpiry.expires_at_label) + (pointsExpiry.points_expiring ? ' <span class="member-card-expiry-pts">(' + pointsExpiry.points_expiring + ' pt)</span>' : '') + '</p>';
+        }
 
         container.innerHTML = `
             <div class="member-card-container">
                 <div class="member-card">
                     <div class="member-card-header">
-                        <h2 class="member-card-title"><i class="fas fa-id-card"></i> 会員証</h2>
+                        <div class="member-card-header-inner">
+                            <h2 class="member-card-title"><i class="fas fa-id-card"></i> 会員証</h2>
+                            ${displayName ? '<p class="member-card-display-name">' + DomHelper.escapeHtml(displayName) + '</p>' : ''}
+                            ${rankHtml}
+                        </div>
+                        <button type="button" class="member-card-edit-btn" onclick="window.app.openProfileEdit()" aria-label="プロフィール編集"><i class="fas fa-pen"></i></button>
                     </div>
-                    <div class="barcode-container">
+                    ${permissionDeniedNotice}
+                    <div class="barcode-container barcode-container--large">
                         <svg id="${barcodeId}" class="barcode-svg"></svg>
                     </div>
-                    <div class="points-display">
+                    <div class="member-card-meta">
+                        ${expiryHtml}
+                    </div>
+                    <div class="points-display points-display--compact">
                         <div class="points-value">${points.toLocaleString()}</div>
                         <div class="points-label">ポイント</div>
                     </div>
@@ -796,6 +936,94 @@ class MobileOrderApp {
         `;
 
         this.generateBarcode(barcodeId, memberNumber);
+    }
+
+    openProfileEdit() {
+        if (!this.memberData) return;
+        const user = this.memberData.user || (this.memberData.member && this.memberData.member.user);
+        const member = this.memberData.member;
+        const content = document.getElementById('profileEditModalContent');
+        const modal = document.getElementById('profileEditModal');
+        if (!content || !modal) return;
+        content.innerHTML = this.getProfileEditFormHtml(user, member);
+        const form = document.getElementById('profileEditForm');
+        if (form) {
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                window.app.saveProfileEdit(e);
+            });
+        }
+        modal.setAttribute('aria-hidden', 'false');
+        modal.classList.add('member-modal--open');
+    }
+
+    closeProfileEdit() {
+        const modal = document.getElementById('profileEditModal');
+        if (modal) {
+            modal.setAttribute('aria-hidden', 'true');
+            modal.classList.remove('member-modal--open');
+        }
+    }
+
+    getProfileEditFormHtml(user, member) {
+        const name = (user && user.name) || '';
+        const phone = (user && user.phone) || '';
+        const birthday = member && member.birthday ? member.birthday.split('T')[0] : '';
+        const address = (member && member.address) || '';
+        return `
+            <div class="member-modal-inner">
+                <h3 class="member-modal-title"><i class="fas fa-user-edit"></i> プロフィール編集</h3>
+                <form id="profileEditForm" class="member-form">
+                    <div class="member-form-group">
+                        <label for="profileEditName">お名前</label>
+                        <input type="text" id="profileEditName" name="name" value="${DomHelper.escapeHtml(name)}" maxlength="255">
+                    </div>
+                    <div class="member-form-group">
+                        <label for="profileEditPhone">電話番号</label>
+                        <input type="tel" id="profileEditPhone" name="phone" value="${DomHelper.escapeHtml(phone)}" maxlength="50">
+                    </div>
+                    <div class="member-form-group">
+                        <label for="profileEditBirthday">誕生日</label>
+                        <input type="date" id="profileEditBirthday" name="birthday" value="${DomHelper.escapeHtml(birthday)}">
+                    </div>
+                    <div class="member-form-group">
+                        <label for="profileEditAddress">住所</label>
+                        <input type="text" id="profileEditAddress" name="address" value="${DomHelper.escapeHtml(address)}" maxlength="500">
+                    </div>
+                    <div class="member-form-actions">
+                        <button type="button" class="member-btn member-btn--secondary" onclick="window.app.closeProfileEdit()">キャンセル</button>
+                        <button type="submit" class="member-btn member-btn--primary"><i class="fas fa-check"></i> 保存</button>
+                    </div>
+                </form>
+            </div>
+        `;
+    }
+
+    async saveProfileEdit(e) {
+        if (e) e.preventDefault();
+        const form = document.getElementById('profileEditForm');
+        if (!form) return;
+        const payload = {
+            name: (form.querySelector('#profileEditName') || {}).value || '',
+            phone: (form.querySelector('#profileEditPhone') || {}).value || '',
+            birthday: (form.querySelector('#profileEditBirthday') || {}).value || null,
+            address: (form.querySelector('#profileEditAddress') || {}).value || null,
+        };
+        if (!payload.birthday) payload.birthday = null;
+        try {
+            const result = await this.apiClient.request(AppConstants.API_ENDPOINTS.MEMBERS_ME, { method: 'PUT', body: payload });
+            if (result.success) {
+                this.memberData = result.data;
+                this.renderMemberCard(result.data);
+                this.closeProfileEdit();
+                ToastManager.success('プロフィールを更新しました');
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('Profile update error:', error);
+            ToastManager.error('更新に失敗しました: ' + (error.message || 'エラーが発生しました'));
+        }
     }
 
     generateBarcode(barcodeId, memberNumber) {
@@ -807,11 +1035,11 @@ class MobileOrderApp {
                 if (barcodeElement) {
                     JsBarcode(`#${barcodeId}`, memberNumber, {
                         format: "CODE128",
-                        width: 2,
-                        height: 80,
+                        width: 3,
+                        height: 150,
                         displayValue: true,
-                        fontSize: 14,
-                        margin: 10,
+                        fontSize: 18,
+                        margin: 14,
                         background: "#ffffff",
                         lineColor: "#000000"
                     });
@@ -822,22 +1050,31 @@ class MobileOrderApp {
         }, AppConstants.ANIMATION_DURATION.BARCODE_DELAY);
     }
 
-    async registerMember() {
+    async autoRegisterAndLoadMemberCard() {
+        const payload = {};
+        if (typeof window !== 'undefined' && window.__LINE_PROFILE__ && window.__LINE_PROFILE__.displayName) {
+            payload.name = window.__LINE_PROFILE__.displayName;
+        }
         try {
             const result = await this.apiClient.post(
                 AppConstants.API_ENDPOINTS.MEMBERS_REGISTER,
-                {},
+                payload,
             );
-
-            if (!result.success) {
-                throw new Error(result.error || 'Failed to register member');
+            if (result.success && result.data && result.data.is_member) {
+                this.memberData = result.data;
+                this.renderMemberCard(result.data);
+                ToastManager.success('会員証を作成しました');
+            } else if (result.success) {
+                await this.loadMemberCard();
+            } else {
+                throw new Error(result.error);
             }
-
-            ToastManager.success('会員登録が完了しました！');
-            this.loadMemberCard();
         } catch (error) {
-            console.error('Member registration error:', error);
-            ToastManager.error(`会員登録に失敗しました: ${error.message || 'エラーが発生しました'}`);
+            console.error('Auto register error:', error);
+            const container = DomHelper.getElementById(AppConstants.ELEMENT_IDS.MEMBER_SECTION);
+            if (container) {
+                container.innerHTML = this.getMemberCardErrorTemplate(error);
+            }
         }
     }
 
@@ -863,5 +1100,28 @@ class MobileOrderApp {
     }
 }
 
-const app = new MobileOrderApp();
+if (typeof window !== 'undefined' && !window.__LIFF_APP_BOOTSTRAP__) {
+    window.__LIFF_APP_BOOTSTRAP__ = true;
 
+    function hideLiffLoading() {
+        var el = document.getElementById('liff-loading');
+        if (el) el.classList.add('liff-loading--hidden');
+    }
+
+    function createApp() {
+        if (window.app) return;
+        window.app = new MobileOrderApp();
+        hideLiffLoading();
+    }
+
+    document.addEventListener('liff-ready', function fn() {
+        document.removeEventListener('liff-ready', fn);
+        createApp();
+    }, { once: true });
+
+    setTimeout(function () {
+        if (!window.app && typeof MobileOrderApp !== 'undefined') {
+            createApp();
+        }
+    }, 15000);
+}
