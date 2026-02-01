@@ -1,18 +1,25 @@
 @extends('admin.layout')
 
 @section('title', '会員詳細')
-@section('page-title', '会員詳細: ' . $member->member_number)
+@section('page-title', '会員詳細 #' . $member->id)
 
 @section('content')
 <div class="card">
     <div class="card-header">
         <h3 class="card-title"><i class="fas fa-user"></i> 会員情報</h3>
+        <a href="{{ route('admin.members') }}" class="btn btn-secondary btn-sm">
+            <i class="fas fa-arrow-left"></i> 一覧に戻る
+        </a>
     </div>
-    <div style="padding: 24px;">
+    <div class="card-body">
         <div class="info-grid">
             <div class="info-item">
+                <div class="info-label">ID（内部）</div>
+                <div class="info-value"><span class="id-badge">{{ $member->id }}</span></div>
+            </div>
+            <div class="info-item">
                 <div class="info-label">会員番号</div>
-                <div class="info-value">{{ $member->member_number }}</div>
+                <div class="info-value"><code class="member-number">{{ $member->member_number }}</code></div>
             </div>
             <div class="info-item">
                 <div class="info-label">ユーザー名</div>

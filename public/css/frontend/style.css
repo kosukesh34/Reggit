@@ -46,7 +46,7 @@ input, textarea, select {
     user-select: text;
 }
 
-/* LIFF 初期化中のフル画面ローディング（owlshop-server と同様） */
+/* LIFF 初期化中のフル画面ローディング */
 .liff-loading {
     position: fixed;
     inset: 0;

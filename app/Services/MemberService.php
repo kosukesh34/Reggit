@@ -179,6 +179,20 @@ class MemberService
 
     private function generateMemberNumber(): string
     {
-        return 'MEM-' . date('Ymd') . '-' . strtoupper(Str::random(6));
+        $digits = '0123456789';
+        $length = 10;
+        $maxAttempts = 10;
+
+        for ($i = 0; $i < $maxAttempts; $i++) {
+            $candidate = '';
+            for ($j = 0; $j < $length; $j++) {
+                $candidate .= $digits[random_int(0, 9)];
+            }
+            if (!Member::where('member_number', $candidate)->exists()) {
+                return $candidate;
+            }
+        }
+
+        return sprintf('%010d', (time() + random_int(0, 999999)) % 10000000000);
     }
 }
