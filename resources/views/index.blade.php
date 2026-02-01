@@ -7,6 +7,18 @@
     <title>モバイルオーダー</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="{{ asset('css/frontend/style.css') }}">
+    @isset($lineTheme)
+    <style>
+    :root {
+        --primary-color: {{ $lineTheme['primary'] }};
+        --primary-rgb: {{ $lineTheme['primary_rgb'] ?? '0, 0, 0' }};
+        --primary-dark: {{ $lineTheme['primary_dark'] }};
+        --success-color: {{ $lineTheme['success'] }};
+        --success-dark: {{ $lineTheme['success'] }};
+        --danger: {{ $lineTheme['danger'] }};
+    }
+    </style>
+    @endisset
 </head>
 <body>
     <div id="liff-loading" class="liff-loading" aria-live="polite">

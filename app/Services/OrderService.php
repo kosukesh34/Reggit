@@ -2,8 +2,10 @@
 
 namespace App\Services;
 
+use App\Models\Member;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\PointTransaction;
 use App\Models\Product;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -12,6 +14,9 @@ use Illuminate\Support\Facades\Log;
 class OrderService
 {
     private const POINTS_EARN_RATE = 100;
+
+    private const DESC_REFUND_CANCEL = '注文キャンセルによる返却';
+    private const DESC_REVERSED_CANCEL = '注文キャンセルによる取り消し';
 
     public function createOrder(array $orderData, User $user): Order
     {
@@ -143,6 +148,88 @@ class OrderService
         if ($pointsEarned > 0) {
             $member->addPoints($pointsEarned, '購入で獲得', $order->id);
             $order->update(['points_earned' => $pointsEarned]);
+        }
+    }
+
+    public function handleOrderCancellation(Order $order): void
+    {
+        if ($order->status !== 'cancelled') {
+            return;
+        }
+
+        $order->load('user.member', 'items.product');
+        $member = $order->user?->member;
+
+        DB::beginTransaction();
+        try {
+            if ($member) {
+                $this->refundPointsUsed($order, $member);
+                $this->reversePointsEarned($order, $member);
+                $member->recalcPointsFromTransactions();
+            }
+
+            $this->restoreProductStock($order);
+
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Order cancellation handling failed: ' . $e->getMessage(), ['order_id' => $order->id]);
+            throw $e;
+        }
+    }
+
+    private function refundPointsUsed(Order $order, Member $member): void
+    {
+        if ($order->points_used <= 0) {
+            return;
+        }
+        $already = PointTransaction::where('order_id', $order->id)
+            ->where('type', 'refunded')
+            ->where('description', self::DESC_REFUND_CANCEL)
+            ->exists();
+        if ($already) {
+            return;
+        }
+
+        PointTransaction::create([
+            'project_id' => $member->project_id,
+            'member_id' => $member->id,
+            'type' => 'refunded',
+            'points' => $order->points_used,
+            'description' => self::DESC_REFUND_CANCEL,
+            'order_id' => $order->id,
+        ]);
+    }
+
+    private function reversePointsEarned(Order $order, Member $member): void
+    {
+        if ($order->points_earned <= 0) {
+            return;
+        }
+        $already = PointTransaction::where('order_id', $order->id)
+            ->where('type', 'reversed')
+            ->exists();
+        if ($already) {
+            return;
+        }
+
+        PointTransaction::create([
+            'project_id' => $member->project_id,
+            'member_id' => $member->id,
+            'type' => 'reversed',
+            'points' => -$order->points_earned,
+            'description' => self::DESC_REVERSED_CANCEL,
+            'order_id' => $order->id,
+        ]);
+    }
+
+    private function restoreProductStock(Order $order): void
+    {
+        foreach ($order->items as $item) {
+            $product = $item->product;
+            if ($product) {
+                $product->increment('stock', $item->quantity);
+            }
         }
     }
 }
