@@ -5,7 +5,6 @@ namespace Database\Factories;
 use App\Models\Member;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Illuminate\Support\Str;
 
 class MemberFactory extends Factory
 {
@@ -15,7 +14,7 @@ class MemberFactory extends Factory
     {
         return [
             'user_id' => User::factory(),
-            'member_number' => 'MEM-' . date('Ymd') . '-' . strtoupper(Str::random(6)),
+            'member_number' => (string) $this->faker->unique()->numerify('##########'),
             'points' => 0,
             'status' => 'active',
             'birthday' => $this->faker->optional()->date(),

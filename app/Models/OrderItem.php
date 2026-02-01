@@ -7,9 +7,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class OrderItem extends Model
 {
-    use HasFactory;
+    use BelongsToProject, HasFactory;
 
     protected $fillable = [
+        'project_id',
         'order_id',
         'product_id',
         'quantity',
@@ -25,6 +26,11 @@ class OrderItem extends Model
         ];
     }
 
+    public function project()
+    {
+        return $this->belongsTo(Project::class);
+    }
+
     public function order()
     {
         return $this->belongsTo(Order::class);
@@ -33,6 +39,18 @@ class OrderItem extends Model
     public function product()
     {
         return $this->belongsTo(Product::class);
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (OrderItem $item) {
+            if ($item->project_id === null && $item->order_id !== null) {
+                $order = Order::find($item->order_id);
+                if ($order) {
+                    $item->project_id = $order->project_id;
+                }
+            }
+        });
     }
 }
 
