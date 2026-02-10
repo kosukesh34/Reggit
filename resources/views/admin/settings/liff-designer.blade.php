@@ -137,7 +137,7 @@
 }
 .liff-designer-shell {
     min-height: 100vh;
-    background: #eef0f6;
+    background: #e6e9f0;
 }
 .liff-designer-stage {
     display: flex;
@@ -146,13 +146,14 @@
 }
 .liff-designer-topbar {
     height: 64px;
-    background: #101827;
+    background: #0f172a;
     color: #fff;
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 0 16px;
     gap: 16px;
+    box-shadow: 0 6px 20px rgba(15, 23, 42, 0.2);
 }
 .topbar-left {
     display: flex;
@@ -203,10 +204,11 @@
 .liff-designer-properties {
     background: #fff;
     border-radius: 12px;
-    border: 1px solid #e5e7eb;
+    border: 1px solid #d0d7e2;
     padding: 14px;
     height: calc(100vh - 96px);
     overflow: auto;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
 }
 .css-panel {
     display: none;
@@ -233,11 +235,11 @@
     gap: 8px;
 }
 .palette-item {
-    border: 1px solid #e5e7eb;
+    border: 1px solid #cbd5e1;
     border-radius: 10px;
     padding: 8px;
     font-size: 12px;
-    background: #f8fafc;
+    background: #f1f5f9;
     cursor: grab;
     text-align: center;
     user-select: none;
@@ -318,8 +320,8 @@
     width: min(440px, 100%);
     background: #fff;
     border-radius: 18px;
-    border: 1px solid #e5e7eb;
-    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.1);
+    border: 1px solid #cbd5e1;
+    box-shadow: 0 20px 40px rgba(15, 23, 42, 0.2);
     display: flex;
     flex-direction: column;
     height: calc(100vh - 120px);
@@ -334,9 +336,23 @@
 .canvas-body {
     padding: 12px;
     overflow: auto;
-    background: #f5f6fb;
+    background: #f1f5f9;
     border-radius: 0 0 18px 18px;
     height: 100%;
+}
+.drop-area.is-over {
+    outline: 2px dashed #2563eb;
+    outline-offset: -6px;
+    background: #e0e7ff;
+}
+.drop-hint {
+    text-align: center;
+    color: #475569;
+    font-size: 12px;
+    padding: 16px 10px;
+    border: 1px dashed #cbd5e1;
+    border-radius: 12px;
+    background: #ffffff;
 }
 .drop-area {
     min-height: 100%;
@@ -644,9 +660,9 @@ function getBlocks() {
 
 function createDefaultBlock(type) {
     if (type === 'label') return { type: 'label', title: 'ラベル' };
-    if (type === 'hero') return { type: 'hero', title: 'タイトル', body: '説明文', image_url: '', button_label: 'ボタン', button_url: '#products' };
+    if (type === 'hero') return { type: 'hero', title: 'タイトル', body: '説明文', image_url: '', button_label: 'ボタン', button_action: 'tab', button_target: 'products' };
     if (type === 'image') return { type: 'image', title: '画像', body: '', image_url: '' };
-    if (type === 'button') return { type: 'button', title: 'ボタン', body: '', button_label: 'クリック', button_url: '#home' };
+    if (type === 'button') return { type: 'button', title: 'ボタン', body: '', button_label: 'クリック', button_action: 'tab', button_target: 'home' };
     if (type === 'list') return { type: 'list', title: 'リスト', list_items: ['項目1', '項目2', '項目3'] };
     if (type === 'slider') return { type: 'slider', title: 'スライダー', slider_images: [] };
     if (type === 'form') return { type: 'form', title: 'フォーム', form_fields: [{ label: 'お名前', type: 'text', placeholder: '例: 山田 太郎', required: true }], form_button_label: '送信' };
@@ -804,9 +820,16 @@ function renderEditor() {
         </div>
         <div class="form-group">
             <label class="form-label">ボタン</label>
-            <div style="display:flex; gap:8px;">
+            <div style="display:flex; gap:8px; margin-bottom:8px;">
                 <input type="text" class="form-control" id="editButtonLabel" placeholder="ラベル" value="${escapeHtml(block.button_label || '')}">
-                <input type="text" class="form-control" id="editButtonUrl" placeholder="#tab or URL" value="${escapeHtml(block.button_url || '')}">
+            </div>
+            <div style="display:flex; gap:8px;">
+                <select class="form-control" id="editButtonAction">
+                    <option value="none" ${block.button_action === 'none' ? 'selected' : ''}>なし</option>
+                    <option value="tab" ${block.button_action === 'tab' ? 'selected' : ''}>タブ切替</option>
+                    <option value="url" ${block.button_action === 'url' ? 'selected' : ''}>URL</option>
+                </select>
+                <input type="text" class="form-control" id="editButtonTarget" placeholder="tab名 or URL" value="${escapeHtml(block.button_target || '')}">
             </div>
         </div>
         <div class="form-group">
@@ -875,7 +898,8 @@ function renderEditor() {
     const bodyEl = blockEditor.querySelector('#editBody');
     const imageEl = blockEditor.querySelector('#editImage');
     const buttonLabelEl = blockEditor.querySelector('#editButtonLabel');
-    const buttonUrlEl = blockEditor.querySelector('#editButtonUrl');
+    const buttonActionEl = blockEditor.querySelector('#editButtonAction');
+    const buttonTargetEl = blockEditor.querySelector('#editButtonTarget');
     const listEl = blockEditor.querySelector('#editList');
     const sliderEl = blockEditor.querySelector('#editSlider');
     const sourceEl = blockEditor.querySelector('#editSource');
@@ -898,7 +922,8 @@ function renderEditor() {
         block.body = bodyEl.value;
         block.image_url = imageEl.value;
         block.button_label = buttonLabelEl.value;
-        block.button_url = buttonUrlEl.value;
+        block.button_action = buttonActionEl.value;
+        block.button_target = buttonTargetEl.value;
         block.list_items = listEl.value ? listEl.value.split(/\n/).map((v) => v.trim()).filter(Boolean) : [];
         block.slider_images = sliderEl.value ? sliderEl.value.split(/\n/).map((v) => v.trim()).filter(Boolean) : [];
         block.source = sourceEl.value;
@@ -916,7 +941,7 @@ function renderEditor() {
         renderPreview();
     };
 
-    [typeEl, titleEl, bodyEl, imageEl, buttonLabelEl, buttonUrlEl, listEl, sliderEl, sourceEl, paddingYEl, paddingXEl, alignEl, bgEl, textColorEl, borderColorEl, borderWidthEl, radiusEl, heightEl, formButtonEl]
+    [typeEl, titleEl, bodyEl, imageEl, buttonLabelEl, buttonActionEl, buttonTargetEl, listEl, sliderEl, sourceEl, paddingYEl, paddingXEl, alignEl, bgEl, textColorEl, borderColorEl, borderWidthEl, radiusEl, heightEl, formButtonEl]
         .forEach((el) => el.addEventListener('input', update));
 
     const buildFormFieldRow = (field = {}) => {
@@ -977,7 +1002,8 @@ function updateEditorVisibility(type) {
     show('#editBody', ['text', 'hero', 'image', 'button', 'list'].includes(type));
     show('#editImage', ['hero', 'image'].includes(type));
     show('#editButtonLabel', ['hero', 'button'].includes(type));
-    show('#editButtonUrl', ['hero', 'button'].includes(type));
+    show('#editButtonAction', ['hero', 'button'].includes(type));
+    show('#editButtonTarget', ['hero', 'button'].includes(type));
     show('#editList', type === 'list');
     show('#editSlider', type === 'slider');
     show('#editSource', ['data', 'collection', 'table', 'gallery'].includes(type));
@@ -998,7 +1024,7 @@ function updateEditorVisibility(type) {
 function renderPreview() {
     const blocks = getBlocks();
     if (!blocks.length) {
-        previewArea.innerHTML = '<div class="text-muted">ブロックを追加してください。</div>';
+        previewArea.innerHTML = '<div class="drop-hint">左からブロックをドラッグして追加してください</div>';
         return;
     }
     previewArea.innerHTML = `<div class="builder-container">${blocks.map((block, idx) => renderPreviewBlock(block, idx)).join('')}</div>`;
@@ -1217,6 +1243,7 @@ function initDnD() {
 
     const handleDrop = (indexOverride) => (e) => {
         e.preventDefault();
+        previewArea.classList.remove('is-over');
         const payload = e.dataTransfer.getData('text/plain');
         if (!payload) return;
         let data;
@@ -1248,9 +1275,13 @@ function initDnD() {
 
     previewArea.addEventListener('dragover', (e) => {
         e.preventDefault();
+        previewArea.classList.add('is-over');
         showIndicator(getDropIndex(e));
     });
-    previewArea.addEventListener('dragleave', () => dropIndicator.remove());
+    previewArea.addEventListener('dragleave', () => {
+        previewArea.classList.remove('is-over');
+        dropIndicator.remove();
+    });
     previewArea.addEventListener('drop', handleDrop());
 
     blockList.addEventListener('dragover', (e) => e.preventDefault());
