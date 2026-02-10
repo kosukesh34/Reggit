@@ -25,9 +25,16 @@
         <section class="liff-designer-main">
             <aside class="liff-designer-palette">
                 <div class="palette-section">
+                    <div class="palette-title">テンプレート</div>
+                    <div class="template-list">
+                        @foreach($templates as $template)
+                            <button type="button" class="btn btn-secondary btn-sm template-btn" data-template-id="{{ $template['id'] }}">{{ $template['name'] }}</button>
+                        @endforeach
+                    </div>
+                </div>
+                <div class="palette-section">
                     <div class="palette-title">ブロック追加</div>
-                    <select id="blockTypeSelect" class="form-control"></select>
-                    <button type="button" class="btn btn-secondary btn-sm" id="addBlockBtn" style="margin-top:10px; width:100%;"><i class="fas fa-plus"></i> 追加</button>
+                    <div id="paletteBlocks" class="palette-blocks"></div>
                 </div>
                 <div class="palette-section">
                     <div class="palette-title">ブロック一覧</div>
@@ -44,7 +51,7 @@
             <div class="liff-designer-canvas">
                 <div class="canvas-shell">
                     <div class="canvas-header">キャンバス</div>
-                    <div id="previewArea" class="canvas-body"></div>
+                    <div id="previewArea" class="canvas-body drop-area"></div>
                 </div>
             </div>
 
@@ -96,6 +103,14 @@
         </section>
     </div>
 </form>
+
+<div class="property-drawer" id="propertyDrawer">
+    <div class="drawer-header">
+        <div class="drawer-title">プロパティ</div>
+        <button type="button" class="btn btn-secondary btn-sm" id="closeDrawerBtn">閉じる</button>
+    </div>
+    <div id="blockEditor" class="liff-designer__editor-body"></div>
+</div>
 
 <template id="formFieldRowTemplate">
     <div class="form-field-row">
@@ -186,6 +201,29 @@
     font-weight: 700;
     margin-bottom: 12px;
 }
+.template-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.palette-blocks {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+}
+.palette-item {
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 8px;
+    font-size: 12px;
+    background: #f8fafc;
+    cursor: grab;
+    text-align: center;
+    user-select: none;
+}
+.palette-item:active {
+    cursor: grabbing;
+}
 .liff-tab-btn {
     border: 1px solid #253047;
     border-radius: 999px;
@@ -216,6 +254,10 @@
     align-items: center;
     justify-content: space-between;
     cursor: pointer;
+}
+.block-card.drag-over {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
 }
 .block-card.active {
     border-color: #1d4ed8;
@@ -275,6 +317,15 @@
     border-radius: 0 0 18px 18px;
     height: 100%;
 }
+.drop-area {
+    min-height: 100%;
+}
+.drop-indicator {
+    height: 6px;
+    background: #2563eb;
+    border-radius: 999px;
+    margin: 6px 0;
+}
 .screen-list {
     display: flex;
     flex-direction: column;
@@ -309,6 +360,34 @@
     display: flex;
     align-items: center;
     justify-content: center;
+}
+.property-drawer {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 360px;
+    height: 100vh;
+    background: #ffffff;
+    border-left: 1px solid #e5e7eb;
+    box-shadow: -8px 0 24px rgba(15, 23, 42, 0.12);
+    transform: translateX(100%);
+    transition: transform 0.2s ease;
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+}
+.property-drawer.is-open {
+    transform: translateX(0);
+}
+.drawer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px;
+    border-bottom: 1px solid #e5e7eb;
+}
+.drawer-title {
+    font-weight: 700;
 }
 .preview-block {
     background: #fff;
@@ -448,6 +527,7 @@ const DATA_SOURCES = [
 ];
 
 const initialLayouts = @json($layouts);
+const templates = @json($templates);
 const initialTabSettings = @json($tabSettings ?? []);
 
 const state = {
@@ -461,7 +541,7 @@ const tabList = document.getElementById('tabList');
 const blockList = document.getElementById('blockList');
 const blockEditor = document.getElementById('blockEditor');
 const previewArea = document.getElementById('previewArea');
-const blockTypeSelect = document.getElementById('blockTypeSelect');
+const paletteBlocks = document.getElementById('paletteBlocks');
 const layoutsJson = document.getElementById('layoutsJson');
 const tabSettingsJson = document.getElementById('tabSettingsJson');
 const customCssInput = document.getElementById('customCssInput');
@@ -477,6 +557,8 @@ const screenPadding = document.getElementById('screenPadding');
 const leftResizer = document.getElementById('leftResizer');
 const rightResizer = document.getElementById('rightResizer');
 const designerMain = document.querySelector('.liff-designer-main');
+const propertyDrawer = document.getElementById('propertyDrawer');
+const closeDrawerBtn = document.getElementById('closeDrawerBtn');
 
 function ensureTabLayouts() {
     Object.keys(TAB_LABELS).forEach((key) => {
@@ -520,13 +602,18 @@ function updateActiveThumb() {
     }
 }
 
-function renderBlockTypeSelect() {
-    blockTypeSelect.innerHTML = '';
+function renderPalette() {
+    paletteBlocks.innerHTML = '';
     BLOCK_TYPES.forEach((type) => {
-        const opt = document.createElement('option');
-        opt.value = type.value;
-        opt.textContent = type.label;
-        blockTypeSelect.appendChild(opt);
+        const btn = document.createElement('div');
+        btn.className = 'palette-item';
+        btn.setAttribute('draggable', 'true');
+        btn.dataset.blockType = type.value;
+        btn.textContent = type.label;
+        btn.addEventListener('dragstart', (e) => {
+            e.dataTransfer.setData('text/plain', JSON.stringify({ source: 'palette', type: type.value }));
+        });
+        paletteBlocks.appendChild(btn);
     });
 }
 
@@ -577,6 +664,7 @@ function renderBlockList() {
         card.addEventListener('click', (e) => {
             if (e.target && e.target.dataset.action) return;
             state.activeIndex = idx;
+            openDrawer();
             renderBlockList();
             renderEditor();
             renderPreview();
@@ -625,6 +713,12 @@ function renderBlockList() {
             renderBlockList();
             renderEditor();
             renderPreview();
+        });
+        card.addEventListener('dragenter', () => {
+            card.classList.add('drag-over');
+        });
+        card.addEventListener('dragleave', () => {
+            card.classList.remove('drag-over');
         });
         blockList.appendChild(card);
     });
@@ -965,6 +1059,14 @@ function bindPreviewInteractions() {
     });
 }
 
+function openDrawer() {
+    if (propertyDrawer) propertyDrawer.classList.add('is-open');
+}
+
+function closeDrawer() {
+    if (propertyDrawer) propertyDrawer.classList.remove('is-open');
+}
+
 function applyScreenSettings() {
     const settings = state.tabSettings[state.activeTab] || {};
     if (screenBgColor) screenBgColor.value = settings.background_color || '#ffffff';
@@ -1035,6 +1137,53 @@ document.getElementById('liffDesignerForm').addEventListener('submit', () => {
     }
 });
 
+if (closeDrawerBtn) {
+    closeDrawerBtn.addEventListener('click', closeDrawer);
+}
+
+function initDnD() {
+    const handleDrop = (index) => (e) => {
+        e.preventDefault();
+        const payload = e.dataTransfer.getData('text/plain');
+        if (!payload) return;
+        let data;
+        try { data = JSON.parse(payload); } catch { return; }
+        if (data.source === 'palette') {
+            const blocks = getBlocks();
+            const newBlock = createDefaultBlock(data.type);
+            if (typeof index === 'number') {
+                blocks.splice(index, 0, newBlock);
+            } else {
+                blocks.push(newBlock);
+            }
+            state.activeIndex = blocks.indexOf(newBlock);
+            openDrawer();
+            renderBlockList();
+            renderEditor();
+            renderPreview();
+        }
+    };
+
+    previewArea.addEventListener('dragover', (e) => e.preventDefault());
+    previewArea.addEventListener('drop', handleDrop());
+
+    blockList.addEventListener('dragover', (e) => e.preventDefault());
+    blockList.addEventListener('drop', handleDrop());
+}
+
+document.querySelectorAll('.template-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+        const id = btn.dataset.templateId;
+        const template = templates.find((t) => t.id === id);
+        if (!template) return;
+        state.layouts[state.activeTab] = JSON.parse(JSON.stringify(template.blocks || []));
+        state.activeIndex = 0;
+        renderBlockList();
+        renderEditor();
+        renderPreview();
+        openDrawer();
+    });
+});
 if (toggleCssBtn && cssPanel) {
     toggleCssBtn.addEventListener('click', () => {
         cssPanel.classList.toggle('is-open');
@@ -1089,11 +1238,12 @@ function bindResizers() {
 }
 
 renderTabs();
-renderBlockTypeSelect();
+renderPalette();
 renderBlockList();
 renderEditor();
 renderPreview();
 bindScreenSettings();
 bindResizers();
+initDnD();
 </script>
 @endsection
