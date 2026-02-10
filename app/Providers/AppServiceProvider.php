@@ -52,6 +52,8 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('frontendHeaderText', ShopSetting::getFrontendHeaderText($projectId));
                 $view->with('liffBuilderBlocks', ShopSetting::getLiffBuilderBlocks($projectId));
                 $view->with('liffTabLayouts', ShopSetting::getLiffTabLayouts($projectId));
+                $view->with('liffCustomCss', ShopSetting::getLiffCustomCss($projectId));
+                $view->with('liffTabSettings', ShopSetting::getLiffTabSettings($projectId));
             } catch (\Throwable $e) {
                 $view->with('lineTheme', [
                     'primary' => '#000000',
@@ -65,6 +67,8 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('projectName', 'モバイルオーダー');
                 $view->with('liffBuilderBlocks', ShopSetting::defaultLiffBuilderTemplates()[0]['blocks']);
                 $view->with('liffTabLayouts', ShopSetting::defaultLiffTabLayouts());
+                $view->with('liffCustomCss', '');
+                $view->with('liffTabSettings', []);
             }
         });
 
