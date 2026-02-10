@@ -155,6 +155,15 @@ class LiffLayoutManager {
                 </section>
             `;
         }
+        if (type === 'html') {
+            const html = block.html || '';
+            return `
+                <section class="builder-block builder-html-block align-${align}" style="${style}">
+                    ${title}
+                    ${html}
+                </section>
+            `;
+        }
         if (type === 'spacer') {
             const height = block.height || 24;
             return `<div class="builder-spacer" style="height:${height}px;"></div>`;
