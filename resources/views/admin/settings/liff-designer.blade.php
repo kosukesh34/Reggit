@@ -37,6 +37,10 @@
                     <div id="paletteBlocks" class="palette-blocks"></div>
                 </div>
                 <div class="palette-section">
+                    <div class="palette-title">HTML</div>
+                    <div class="palette-item palette-item-wide" data-block-type="html" draggable="true">HTMLブロック</div>
+                </div>
+                <div class="palette-section">
                     <div class="palette-title">ブロック一覧</div>
                     <div id="blockList" class="liff-designer__blocklist"></div>
                 </div>
@@ -243,6 +247,9 @@
     cursor: grab;
     text-align: center;
     user-select: none;
+}
+.palette-item-wide {
+    grid-column: span 2;
 }
 .palette-item:active {
     cursor: grabbing;
@@ -548,6 +555,7 @@ const BLOCK_TYPES = [
     { value: 'table', label: 'テーブル' },
     { value: 'data', label: 'データ表示' },
     { value: 'gallery', label: 'ギャラリー' },
+    { value: 'html', label: 'HTML' },
     { value: 'spacer', label: 'スペーサー' },
 ];
 
@@ -665,6 +673,7 @@ function createDefaultBlock(type) {
     if (type === 'button') return { type: 'button', title: 'ボタン', body: '', button_label: 'クリック', button_action: 'tab', button_target: 'home' };
     if (type === 'list') return { type: 'list', title: 'リスト', list_items: ['項目1', '項目2', '項目3'] };
     if (type === 'slider') return { type: 'slider', title: 'スライダー', slider_images: [] };
+    if (type === 'html') return { type: 'html', title: 'HTML', html: '<div>カスタムHTML</div>' };
     if (type === 'form') return { type: 'form', title: 'フォーム', form_fields: [{ label: 'お名前', type: 'text', placeholder: '例: 山田 太郎', required: true }], form_button_label: '送信' };
     if (type === 'collection') return { type: 'collection', source: 'products', title: 'コレクション' };
     if (type === 'table') return { type: 'table', source: 'orders', title: 'テーブル' };
@@ -837,6 +846,10 @@ function renderEditor() {
             <textarea class="form-control" rows="3" id="editList">${escapeHtml(Array.isArray(block.list_items) ? block.list_items.join('\n') : (block.list_items || ''))}</textarea>
         </div>
         <div class="form-group">
+            <label class="form-label">HTML</label>
+            <textarea class="form-control" rows="6" id="editHtml">${escapeHtml(block.html || '')}</textarea>
+        </div>
+        <div class="form-group">
             <label class="form-label">スライダー画像URL（改行区切り）</label>
             <textarea class="form-control" rows="3" id="editSlider">${escapeHtml(Array.isArray(block.slider_images) ? block.slider_images.join('\n') : (block.slider_images || ''))}</textarea>
         </div>
@@ -901,6 +914,7 @@ function renderEditor() {
     const buttonActionEl = blockEditor.querySelector('#editButtonAction');
     const buttonTargetEl = blockEditor.querySelector('#editButtonTarget');
     const listEl = blockEditor.querySelector('#editList');
+    const htmlEl = blockEditor.querySelector('#editHtml');
     const sliderEl = blockEditor.querySelector('#editSlider');
     const sourceEl = blockEditor.querySelector('#editSource');
     const paddingYEl = blockEditor.querySelector('#editPaddingY');
@@ -925,6 +939,7 @@ function renderEditor() {
         block.button_action = buttonActionEl.value;
         block.button_target = buttonTargetEl.value;
         block.list_items = listEl.value ? listEl.value.split(/\n/).map((v) => v.trim()).filter(Boolean) : [];
+        block.html = htmlEl.value;
         block.slider_images = sliderEl.value ? sliderEl.value.split(/\n/).map((v) => v.trim()).filter(Boolean) : [];
         block.source = sourceEl.value;
         block.padding_y = parseInt(paddingYEl.value || '0', 10) || 0;
@@ -941,7 +956,7 @@ function renderEditor() {
         renderPreview();
     };
 
-    [typeEl, titleEl, bodyEl, imageEl, buttonLabelEl, buttonActionEl, buttonTargetEl, listEl, sliderEl, sourceEl, paddingYEl, paddingXEl, alignEl, bgEl, textColorEl, borderColorEl, borderWidthEl, radiusEl, heightEl, formButtonEl]
+    [typeEl, titleEl, bodyEl, imageEl, buttonLabelEl, buttonActionEl, buttonTargetEl, listEl, htmlEl, sliderEl, sourceEl, paddingYEl, paddingXEl, alignEl, bgEl, textColorEl, borderColorEl, borderWidthEl, radiusEl, heightEl, formButtonEl]
         .forEach((el) => el.addEventListener('input', update));
 
     const buildFormFieldRow = (field = {}) => {
@@ -1005,6 +1020,7 @@ function updateEditorVisibility(type) {
     show('#editButtonAction', ['hero', 'button'].includes(type));
     show('#editButtonTarget', ['hero', 'button'].includes(type));
     show('#editList', type === 'list');
+    show('#editHtml', type === 'html');
     show('#editSlider', type === 'slider');
     show('#editSource', ['data', 'collection', 'table', 'gallery'].includes(type));
     show('#editHeight', type === 'spacer');
@@ -1049,6 +1065,10 @@ function renderPreviewBlock(block, idx) {
         const fields = Array.isArray(block.form_fields) ? block.form_fields : [];
         const fieldList = fields.map((f) => `<div class="preview-card">${escapeHtml(f.label || '項目')}</div>`).join('');
         return `<div class="builder-block preview-block" draggable="true" data-index="${idx}"><span class="preview-block__handle">↕</span>${title}${body}<div class="preview-grid">${fieldList}</div></div>`;
+    }
+    if (block.type === 'html') {
+        const htmlPreview = block.html ? `<div class="preview-card">HTML: ${escapeHtml(block.html).slice(0, 80)}</div>` : '<div class="preview-card">HTMLなし</div>';
+        return `<div class="builder-block preview-block" draggable="true" data-index="${idx}"><span class="preview-block__handle">↕</span>${title}${htmlPreview}</div>`;
     }
     if (block.type === 'slider') {
         const images = Array.isArray(block.slider_images) ? block.slider_images : [];
