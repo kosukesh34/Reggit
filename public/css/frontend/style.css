@@ -3666,6 +3666,10 @@ input, textarea, select {
     flex-direction: column;
     gap: 16px;
     padding: 20px;
+    max-width: var(--content-max-width, 100%);
+    margin: 0 auto;
+    padding-left: var(--content-padding, 20px);
+    padding-right: var(--content-padding, 20px);
 }
 
 .builder-block {

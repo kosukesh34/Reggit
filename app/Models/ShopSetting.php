@@ -339,6 +339,27 @@ class ShopSetting extends Model
         return $layouts;
     }
 
+    public static function getLiffCustomCss(?int $projectId = null): string
+    {
+        return (string) self::getValue('liff_custom_css', '', $projectId);
+    }
+
+    public static function setLiffCustomCss(string $css, ?int $projectId = null): void
+    {
+        self::setValue('liff_custom_css', $css, 'string', $projectId);
+    }
+
+    public static function getLiffTabSettings(?int $projectId = null): array
+    {
+        $settings = self::getValue('liff_tab_settings', null, $projectId);
+        return is_array($settings) ? $settings : [];
+    }
+
+    public static function setLiffTabSettings(array $settings, ?int $projectId = null): void
+    {
+        self::setValue('liff_tab_settings', $settings, 'json', $projectId);
+    }
+
     public static function setLiffTabLayouts(array $layouts, ?int $projectId = null): void
     {
         self::setValue('liff_tab_layouts', $layouts, 'json', $projectId);

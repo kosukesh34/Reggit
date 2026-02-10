@@ -4,63 +4,96 @@
 @section('page-title', 'LIFFデザイン')
 
 @section('content')
-<nav class="breadcrumb" aria-label="パンくず">
-    <a href="{{ admin_route('admin.settings.basic') }}">設定</a>
-    <span class="breadcrumb-sep">/</span>
-    <span>LIFFデザイン</span>
-</nav>
 <link rel="stylesheet" href="{{ asset('css/frontend/style.css') }}">
 
-<div class="card" style="margin-bottom:20px;">
-    <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-lightbulb"></i> サンプル</h3>
-    </div>
-    <div class="card-body" style="display:flex; gap:10px; flex-wrap:wrap;">
-        @foreach($templates as $template)
-            <button type="button" class="btn btn-secondary btn-sm" data-template-id="{{ $template['id'] }}">{{ $template['name'] }}</button>
-        @endforeach
-        <div class="form-text text-muted" style="width:100%; margin-top:6px;">現在選択中のタブにサンプルが適用されます。</div>
-    </div>
-</div>
-
-<form action="{{ admin_route('admin.settings.liff-designer.update') }}" method="POST" id="liffDesignerForm">
+<form action="{{ admin_route('admin.settings.liff-designer.update') }}" method="POST" id="liffDesignerForm" class="liff-designer-shell">
     @csrf
     <input type="hidden" name="layouts_json" id="layoutsJson" value="">
+    <input type="hidden" name="custom_css" id="customCssInput" value="{{ $customCss ?? '' }}">
+    <input type="hidden" name="tab_settings_json" id="tabSettingsJson" value="">
+    <div class="liff-designer-stage">
+        <header class="liff-designer-topbar">
+            <div class="topbar-left">
+                <div class="topbar-title">LIFF デザイン</div>
+            </div>
+            <div class="topbar-right">
+                <button type="button" class="btn btn-secondary btn-sm" id="toggleCssBtn">CSS</button>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> 保存</button>
+            </div>
+        </header>
 
-    <div class="liff-designer">
-        <aside class="liff-designer__sidebar">
-            <div class="liff-designer__panel">
-                <div class="liff-designer__panel-title">タブ</div>
-                <div id="tabList" class="liff-designer__tablist"></div>
-            </div>
-            <div class="liff-designer__panel">
-                <div class="liff-designer__panel-title">ブロック追加</div>
-                <select id="blockTypeSelect" class="form-control"></select>
-                <button type="button" class="btn btn-secondary btn-sm" id="addBlockBtn" style="margin-top:10px; width:100%;"><i class="fas fa-plus"></i> 追加</button>
-            </div>
-        </aside>
+        <section class="liff-designer-main">
+            <aside class="liff-designer-palette">
+                <div class="palette-section">
+                    <div class="palette-title">ブロック追加</div>
+                    <select id="blockTypeSelect" class="form-control"></select>
+                    <button type="button" class="btn btn-secondary btn-sm" id="addBlockBtn" style="margin-top:10px; width:100%;"><i class="fas fa-plus"></i> 追加</button>
+                </div>
+                <div class="palette-section">
+                    <div class="palette-title">ブロック一覧</div>
+                    <div id="blockList" class="liff-designer__blocklist"></div>
+                </div>
+                <div class="palette-section css-panel" id="cssPanel">
+                    <div class="palette-title">カスタムCSS</div>
+                    <textarea id="customCssEditor" class="form-control" rows="8" placeholder="例: .builder-block { border-radius: 20px; }">{{ $customCss ?? '' }}</textarea>
+                </div>
+            </aside>
 
-        <section class="liff-designer__editor">
-            <div class="liff-designer__panel">
-                <div class="liff-designer__panel-title">ブロック一覧</div>
-                <div id="blockList" class="liff-designer__blocklist"></div>
+            <div class="panel-resizer" id="leftResizer" aria-hidden="true"></div>
+
+            <div class="liff-designer-canvas">
+                <div class="canvas-shell">
+                    <div class="canvas-header">キャンバス</div>
+                    <div id="previewArea" class="canvas-body"></div>
+                </div>
             </div>
-            <div class="liff-designer__panel">
-                <div class="liff-designer__panel-title">プロパティ</div>
+
+            <div class="panel-resizer" id="rightResizer" aria-hidden="true"></div>
+
+            <aside class="liff-designer-properties">
+                <div class="properties-header">画面</div>
+                <div id="tabList" class="screen-list"></div>
+                <div class="properties-header" style="margin-top:16px;">画面設定</div>
+                <div class="screen-settings">
+                    <div class="form-group">
+                        <label class="form-label">背景色</label>
+                        <input type="color" id="screenBgColor" class="form-control" value="#ffffff">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">背景画像URL</label>
+                        <input type="text" id="screenBgImage" class="form-control" placeholder="https://...">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">背景表示</label>
+                        <select id="screenBgSize" class="form-control">
+                            <option value="cover">cover</option>
+                            <option value="contain">contain</option>
+                            <option value="auto">auto</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">背景位置</label>
+                        <select id="screenBgPos" class="form-control">
+                            <option value="center">center</option>
+                            <option value="top">top</option>
+                            <option value="bottom">bottom</option>
+                            <option value="left">left</option>
+                            <option value="right">right</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">コンテンツ幅</label>
+                        <input type="range" id="screenMaxWidth" class="form-control" min="320" max="720" value="440">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">左右余白</label>
+                        <input type="range" id="screenPadding" class="form-control" min="8" max="40" value="20">
+                    </div>
+                </div>
+                <div class="properties-header" style="margin-top:16px;">プロパティ</div>
                 <div id="blockEditor" class="liff-designer__editor-body"></div>
-            </div>
+            </aside>
         </section>
-
-        <section class="liff-designer__preview">
-            <div class="liff-designer__panel">
-                <div class="liff-designer__panel-title">プレビュー</div>
-                <div id="previewArea" class="liff-designer__preview-body"></div>
-            </div>
-        </section>
-    </div>
-
-    <div class="form-actions" style="margin-top:20px;">
-        <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> 保存</button>
     </div>
 </form>
 
@@ -80,49 +113,93 @@
 </template>
 
 <style>
-.liff-designer {
-    display: grid;
-    grid-template-columns: 200px minmax(360px, 1fr) minmax(320px, 1fr);
+.admin-container .sidebar,
+.admin-container .content-header {
+    display: none;
+}
+.admin-container .content {
+    padding: 0;
+}
+.liff-designer-shell {
+    min-height: 100vh;
+    background: #eef0f6;
+}
+.liff-designer-stage {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+.liff-designer-topbar {
+    height: 64px;
+    background: #101827;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
     gap: 16px;
 }
-.liff-designer__panel {
-    background: #fff;
-    border-radius: 10px;
-    border: 1px solid #e6e8ee;
-    padding: 14px;
+.topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    min-width: 0;
 }
-.liff-designer__panel-title {
+.topbar-title {
+    font-weight: 700;
+    font-size: 16px;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+.topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.liff-designer-main {
+    display: grid;
+    grid-template-columns: var(--left-width, 240px) 8px minmax(520px, 1fr) 8px var(--right-width, 320px);
+    gap: 16px;
+    padding: 16px;
+    flex: 1;
+}
+.liff-designer-palette,
+.liff-designer-properties {
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    padding: 14px;
+    height: calc(100vh - 96px);
+    overflow: auto;
+}
+.css-panel {
+    display: none;
+}
+.css-panel.is-open {
+    display: block;
+}
+.palette-section + .palette-section {
+    margin-top: 16px;
+}
+.palette-title,
+.properties-header {
     font-weight: 700;
     margin-bottom: 12px;
 }
-.liff-designer__sidebar {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-}
-.liff-designer__tablist {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
 .liff-tab-btn {
-    border: 1px solid #e1e4ea;
-    border-radius: 8px;
-    background: #f6f7fb;
-    padding: 8px 10px;
-    text-align: left;
+    border: 1px solid #253047;
+    border-radius: 999px;
+    background: #1f2937;
+    padding: 6px 12px;
+    color: #cbd5f5;
     font-weight: 600;
     cursor: pointer;
+    font-size: 12px;
 }
 .liff-tab-btn.active {
-    background: #1d4ed8;
+    background: #2563eb;
     color: #fff;
-    border-color: #1d4ed8;
-}
-.liff-designer__editor {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
+    border-color: #2563eb;
 }
 .liff-designer__blocklist {
     display: flex;
@@ -160,11 +237,78 @@
 .liff-designer__editor-body .form-group {
     margin-bottom: 12px;
 }
-.liff-designer__preview-body {
+.liff-designer-canvas {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.panel-resizer {
+    width: 8px;
+    cursor: col-resize;
+    background: transparent;
+    border-radius: 999px;
+}
+.panel-resizer:hover {
+    background: rgba(37, 99, 235, 0.2);
+}
+.canvas-shell {
+    width: min(440px, 100%);
+    background: #fff;
+    border-radius: 18px;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.1);
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 120px);
+}
+.canvas-header {
+    padding: 10px 14px;
+    border-bottom: 1px solid #e5e7eb;
+    font-size: 12px;
+    color: #6b7280;
+    text-align: center;
+}
+.canvas-body {
+    padding: 12px;
+    overflow: auto;
     background: #f5f6fb;
+    border-radius: 0 0 18px 18px;
+    height: 100%;
+}
+.screen-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.screen-settings .form-group {
+    margin-bottom: 10px;
+}
+.screen-card {
+    border: 1px solid #e5e7eb;
     border-radius: 12px;
-    padding: 16px;
-    min-height: 480px;
+    padding: 10px;
+    background: #f9fafb;
+    cursor: pointer;
+}
+.screen-card.active {
+    border-color: #2563eb;
+    background: #eef2ff;
+}
+.screen-label {
+    font-weight: 600;
+    font-size: 12px;
+    margin-bottom: 6px;
+}
+.screen-thumb {
+    height: 80px;
+    border-radius: 10px;
+    border: 1px dashed #cbd5e1;
+    background: #fff;
+    font-size: 10px;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 .preview-block {
     background: #fff;
@@ -248,8 +392,15 @@
     font-size: 12px;
 }
 @media (max-width: 1200px) {
-    .liff-designer {
+    .liff-designer-main {
         grid-template-columns: 1fr;
+    }
+    .liff-designer-palette,
+    .liff-designer-properties {
+        height: auto;
+    }
+    .canvas-shell {
+        height: auto;
     }
 }
 </style>
@@ -296,13 +447,14 @@ const DATA_SOURCES = [
     { value: 'announcements', label: 'お知らせ' },
 ];
 
-const templates = @json($templates);
 const initialLayouts = @json($layouts);
+const initialTabSettings = @json($tabSettings ?? []);
 
 const state = {
     layouts: JSON.parse(JSON.stringify(initialLayouts || {})),
     activeTab: Object.keys(initialLayouts || {})[0] || 'home',
     activeIndex: 0,
+    tabSettings: JSON.parse(JSON.stringify(initialTabSettings || {})),
 };
 
 const tabList = document.getElementById('tabList');
@@ -311,10 +463,25 @@ const blockEditor = document.getElementById('blockEditor');
 const previewArea = document.getElementById('previewArea');
 const blockTypeSelect = document.getElementById('blockTypeSelect');
 const layoutsJson = document.getElementById('layoutsJson');
+const tabSettingsJson = document.getElementById('tabSettingsJson');
+const customCssInput = document.getElementById('customCssInput');
+const customCssEditor = document.getElementById('customCssEditor');
+const toggleCssBtn = document.getElementById('toggleCssBtn');
+const cssPanel = document.getElementById('cssPanel');
+const screenBgColor = document.getElementById('screenBgColor');
+const screenBgImage = document.getElementById('screenBgImage');
+const screenBgSize = document.getElementById('screenBgSize');
+const screenBgPos = document.getElementById('screenBgPos');
+const screenMaxWidth = document.getElementById('screenMaxWidth');
+const screenPadding = document.getElementById('screenPadding');
+const leftResizer = document.getElementById('leftResizer');
+const rightResizer = document.getElementById('rightResizer');
+const designerMain = document.querySelector('.liff-designer-main');
 
 function ensureTabLayouts() {
     Object.keys(TAB_LABELS).forEach((key) => {
         if (!state.layouts[key]) state.layouts[key] = [];
+        if (!state.tabSettings[key]) state.tabSettings[key] = {};
     });
 }
 
@@ -322,11 +489,13 @@ function renderTabs() {
     ensureTabLayouts();
     tabList.innerHTML = '';
     Object.keys(TAB_LABELS).forEach((key) => {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'liff-tab-btn' + (state.activeTab === key ? ' active' : '');
-        btn.textContent = TAB_LABELS[key];
-        btn.addEventListener('click', () => {
+        const card = document.createElement('div');
+        card.className = 'screen-card' + (state.activeTab === key ? ' active' : '');
+        card.innerHTML = `
+            <div class="screen-label">${TAB_LABELS[key]}</div>
+            <div class="screen-thumb">${renderScreenThumb(key)}</div>
+        `;
+        card.addEventListener('click', () => {
             state.activeTab = key;
             state.activeIndex = 0;
             renderTabs();
@@ -334,8 +503,21 @@ function renderTabs() {
             renderEditor();
             renderPreview();
         });
-        tabList.appendChild(btn);
+        tabList.appendChild(card);
     });
+}
+
+function renderScreenThumb(tab) {
+    const blocks = state.layouts[tab] || [];
+    const labels = blocks.slice(0, 3).map((b) => b.title || b.type || 'block');
+    return labels.length ? labels.join(' / ') : 'Empty';
+}
+
+function updateActiveThumb() {
+    const active = tabList.querySelector('.screen-card.active .screen-thumb');
+    if (active) {
+        active.innerHTML = renderScreenThumb(state.activeTab);
+    }
 }
 
 function renderBlockTypeSelect() {
@@ -386,11 +568,14 @@ function renderBlockList() {
                 <span class="block-card__type">${escapeHtml(block.type || 'text')}</span>
             </div>
             <div class="block-card__actions">
+                <button type="button" class="btn btn-secondary btn-sm" data-action="duplicate">複製</button>
+                <button type="button" class="btn btn-secondary btn-sm" data-action="toggle">${block.hidden ? '表示' : '非表示'}</button>
+                <button type="button" class="btn btn-secondary btn-sm" data-action="lock">${block.locked ? '解除' : 'ロック'}</button>
                 <button type="button" class="btn btn-danger btn-sm" data-action="remove">削除</button>
             </div>
         `;
         card.addEventListener('click', (e) => {
-            if (e.target && e.target.dataset.action === 'remove') return;
+            if (e.target && e.target.dataset.action) return;
             state.activeIndex = idx;
             renderBlockList();
             renderEditor();
@@ -404,7 +589,28 @@ function renderBlockList() {
             renderEditor();
             renderPreview();
         });
+        card.querySelector('[data-action="duplicate"]').addEventListener('click', (e) => {
+            e.stopPropagation();
+            const copy = JSON.parse(JSON.stringify(block));
+            blocks.splice(idx + 1, 0, copy);
+            state.activeIndex = idx + 1;
+            renderBlockList();
+            renderEditor();
+            renderPreview();
+        });
+        card.querySelector('[data-action="toggle"]').addEventListener('click', (e) => {
+            e.stopPropagation();
+            block.hidden = !block.hidden;
+            renderBlockList();
+            renderPreview();
+        });
+        card.querySelector('[data-action="lock"]').addEventListener('click', (e) => {
+            e.stopPropagation();
+            block.locked = !block.locked;
+            renderBlockList();
+        });
         card.addEventListener('dragstart', (e) => {
+            if (block.locked) return e.preventDefault();
             e.dataTransfer.setData('text/plain', idx.toString());
         });
         card.addEventListener('dragover', (e) => e.preventDefault());
@@ -429,6 +635,10 @@ function renderEditor() {
     const block = blocks[state.activeIndex];
     if (!block) {
         blockEditor.innerHTML = '<div class="text-muted">ブロックを選択してください。</div>';
+        return;
+    }
+    if (block.locked) {
+        blockEditor.innerHTML = '<div class="text-muted">このブロックはロックされています。</div>';
         return;
     }
     const typeOptions = BLOCK_TYPES.map((t) => `<option value="${t.value}" ${block.type === t.value ? 'selected' : ''}>${t.label}</option>`).join('');
@@ -652,9 +862,12 @@ function renderPreview() {
     }
     previewArea.innerHTML = `<div class="builder-container">${blocks.map((block, idx) => renderPreviewBlock(block, idx)).join('')}</div>`;
     bindPreviewInteractions();
+    applyScreenSettings();
+    updateActiveThumb();
 }
 
 function renderPreviewBlock(block, idx) {
+    if (block.hidden) return '';
     const title = `<h3 class="builder-title preview-editable" contenteditable="true" data-field="title">${escapeHtml(block.title || '')}</h3>`;
     const body = `<p class="builder-body preview-editable" contenteditable="true" data-field="body">${escapeHtml(block.body || '')}</p>`;
     if (block.type === 'spacer') {
@@ -699,7 +912,11 @@ function renderPreviewBlock(block, idx) {
 
 function bindPreviewInteractions() {
     previewArea.querySelectorAll('.preview-block').forEach((blockEl) => {
+        const idx = parseInt(blockEl.dataset.index, 10);
+        const blocks = getBlocks();
+        const block = blocks[idx];
         blockEl.addEventListener('dragstart', (e) => {
+            if (block && block.locked) return e.preventDefault();
             blockEl.classList.add('dragging');
             e.dataTransfer.setData('text/plain', blockEl.dataset.index);
         });
@@ -707,6 +924,7 @@ function bindPreviewInteractions() {
         blockEl.addEventListener('dragover', (e) => e.preventDefault());
         blockEl.addEventListener('drop', (e) => {
             e.preventDefault();
+            if (block && block.locked) return;
             const from = parseInt(e.dataTransfer.getData('text/plain'), 10);
             const to = parseInt(blockEl.dataset.index, 10);
             if (Number.isNaN(from) || Number.isNaN(to) || from === to) return;
@@ -727,7 +945,7 @@ function bindPreviewInteractions() {
             const idx = parseInt(parent.dataset.index, 10);
             const field = el.dataset.field;
             const blocks = getBlocks();
-            if (!blocks[idx] || !field) return;
+            if (!blocks[idx] || blocks[idx].locked || !field) return;
             blocks[idx][field] = el.textContent.trim();
             renderBlockList();
         });
@@ -739,7 +957,7 @@ function bindPreviewInteractions() {
             if (!parent) return;
             const idx = parseInt(parent.dataset.index, 10);
             const blocks = getBlocks();
-            if (!blocks[idx]) return;
+            if (!blocks[idx] || blocks[idx].locked) return;
             blocks[idx].image_url = input.value;
             renderBlockList();
             renderPreview();
@@ -747,14 +965,46 @@ function bindPreviewInteractions() {
     });
 }
 
-function applyTemplate(templateId) {
-    const template = templates.find((t) => t.id === templateId);
-    if (!template) return;
-    state.layouts[state.activeTab] = JSON.parse(JSON.stringify(template.blocks || []));
-    state.activeIndex = 0;
-    renderBlockList();
-    renderEditor();
-    renderPreview();
+function applyScreenSettings() {
+    const settings = state.tabSettings[state.activeTab] || {};
+    if (screenBgColor) screenBgColor.value = settings.background_color || '#ffffff';
+    if (screenBgImage) screenBgImage.value = settings.background_image || '';
+    if (screenBgSize) screenBgSize.value = settings.background_size || 'cover';
+    if (screenBgPos) screenBgPos.value = settings.background_position || 'center';
+    if (screenMaxWidth) screenMaxWidth.value = settings.content_max_width || 440;
+    if (screenPadding) screenPadding.value = settings.content_padding || 20;
+
+    if (previewArea) {
+        previewArea.style.background = settings.background_color || '#f5f6fb';
+        if (settings.background_image) {
+            previewArea.style.backgroundImage = `url('${settings.background_image}')`;
+            previewArea.style.backgroundSize = settings.background_size || 'cover';
+            previewArea.style.backgroundPosition = settings.background_position || 'center';
+            previewArea.style.backgroundRepeat = 'no-repeat';
+        } else {
+            previewArea.style.backgroundImage = '';
+        }
+    }
+}
+
+function bindScreenSettings() {
+    const update = () => {
+        const settings = state.tabSettings[state.activeTab] || {};
+        settings.background_color = screenBgColor?.value || '';
+        settings.background_image = screenBgImage?.value || '';
+        settings.background_size = screenBgSize?.value || 'cover';
+        settings.background_position = screenBgPos?.value || 'center';
+        settings.content_max_width = parseInt(screenMaxWidth?.value || '440', 10);
+        settings.content_padding = parseInt(screenPadding?.value || '20', 10);
+        state.tabSettings[state.activeTab] = settings;
+        renderPreview();
+        renderTabs();
+    };
+    [screenBgColor, screenBgImage, screenBgSize, screenBgPos, screenMaxWidth, screenPadding].forEach((el) => {
+        if (!el) return;
+        el.addEventListener('input', update);
+        el.addEventListener('change', update);
+    });
 }
 
 function escapeHtml(str) {
@@ -765,10 +1015,6 @@ function escapeHtml(str) {
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
 }
-
-document.querySelectorAll('[data-template-id]').forEach((btn) => {
-    btn.addEventListener('click', () => applyTemplate(btn.dataset.templateId));
-});
 
 document.getElementById('addBlockBtn').addEventListener('click', () => {
     const blocks = getBlocks();
@@ -781,12 +1027,73 @@ document.getElementById('addBlockBtn').addEventListener('click', () => {
 
 document.getElementById('liffDesignerForm').addEventListener('submit', () => {
     layoutsJson.value = JSON.stringify(state.layouts);
+    if (customCssInput && customCssEditor) {
+        customCssInput.value = customCssEditor.value;
+    }
+    if (tabSettingsJson) {
+        tabSettingsJson.value = JSON.stringify(state.tabSettings);
+    }
 });
+
+if (toggleCssBtn && cssPanel) {
+    toggleCssBtn.addEventListener('click', () => {
+        cssPanel.classList.toggle('is-open');
+    });
+}
+
+if (customCssEditor) {
+    const styleTag = document.getElementById('designer-custom-style') || (() => {
+        const style = document.createElement('style');
+        style.id = 'designer-custom-style';
+        document.head.appendChild(style);
+        return style;
+    })();
+    const updateCss = () => {
+        styleTag.textContent = customCssEditor.value || '';
+    };
+    customCssEditor.addEventListener('input', updateCss);
+    updateCss();
+}
+
+function bindResizers() {
+    if (!designerMain) return;
+    const startDrag = (resizer, side) => {
+        let startX = 0;
+        let startLeft = 240;
+        let startRight = 320;
+        const onMouseMove = (e) => {
+            const dx = e.clientX - startX;
+            if (side === 'left') {
+                const next = Math.max(180, Math.min(360, startLeft + dx));
+                designerMain.style.setProperty('--left-width', `${next}px`);
+            } else {
+                const next = Math.max(240, Math.min(420, startRight - dx));
+                designerMain.style.setProperty('--right-width', `${next}px`);
+            }
+        };
+        const onMouseUp = () => {
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+        };
+        resizer.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            startX = e.clientX;
+            startLeft = parseInt(getComputedStyle(designerMain).getPropertyValue('--left-width')) || 240;
+            startRight = parseInt(getComputedStyle(designerMain).getPropertyValue('--right-width')) || 320;
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        });
+    };
+    if (leftResizer) startDrag(leftResizer, 'left');
+    if (rightResizer) startDrag(rightResizer, 'right');
+}
 
 renderTabs();
 renderBlockTypeSelect();
 renderBlockList();
 renderEditor();
 renderPreview();
+bindScreenSettings();
+bindResizers();
 </script>
 @endsection
