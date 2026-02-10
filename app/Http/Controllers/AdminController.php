@@ -330,7 +330,9 @@ class AdminController extends Controller
         $projectId = $this->resolveAdminProjectId();
         $layouts = ShopSetting::getLiffTabLayouts($projectId);
         $templates = ShopSetting::defaultLiffDesignerTemplates();
-        return view('admin.settings.liff-designer', compact('layouts', 'templates'));
+        $customCss = ShopSetting::getLiffCustomCss($projectId);
+        $tabSettings = ShopSetting::getLiffTabSettings($projectId);
+        return view('admin.settings.liff-designer', compact('layouts', 'templates', 'customCss', 'tabSettings'));
     }
 
     public function updateSettingsLiffDesigner(Request $request)
@@ -342,6 +344,14 @@ class AdminController extends Controller
             return redirect()->back()->withErrors(['layouts' => 'レイアウトが不正です']);
         }
         ShopSetting::setLiffTabLayouts($decoded, $projectId);
+        ShopSetting::setLiffCustomCss((string) $request->input('custom_css', ''), $projectId);
+        $tabSettingsJson = $request->input('tab_settings_json');
+        if ($tabSettingsJson) {
+            $settings = json_decode($tabSettingsJson, true);
+            if (is_array($settings)) {
+                ShopSetting::setLiffTabSettings($settings, $projectId);
+            }
+        }
         return redirect()->route('admin.settings.liff-designer', $this->buildAdminRouteParams())
             ->with('success', 'LIFFデザインを更新しました');
     }
