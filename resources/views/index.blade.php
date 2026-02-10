@@ -9,6 +9,9 @@
     <title>{{ $projectName ?? 'モバイルオーダー' }}</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="{{ asset('css/frontend/style.css') }}?v={{ time() }}">
+    @if(!empty($liffCustomCss))
+        <style id="liff-custom-style">{!! $liffCustomCss !!}</style>
+    @endif
     @isset($lineTheme)
     <style>
     :root {
@@ -156,6 +159,7 @@
         window.__API_BASE__ = document.querySelector('meta[name="api-base"]')?.getAttribute('content') || '/api';
         window.__LIFF_BUILDER__ = @json($liffBuilderBlocks ?? []);
         window.__LIFF_TAB_LAYOUTS__ = @json($liffTabLayouts ?? []);
+        window.__LIFF_TAB_SETTINGS__ = @json($liffTabSettings ?? []);
     </script>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/versions/2.22.3/sdk.js"></script>
     <script src="https://js.stripe.com/v3/"></script>

@@ -4,6 +4,9 @@ class LiffLayoutManager {
         this.layouts = (typeof window !== 'undefined' && window.__LIFF_TAB_LAYOUTS__)
             ? window.__LIFF_TAB_LAYOUTS__
             : {};
+        this.tabSettings = (typeof window !== 'undefined' && window.__LIFF_TAB_SETTINGS__)
+            ? window.__LIFF_TAB_SETTINGS__
+            : {};
         this.renderedTabs = {};
     }
 
@@ -13,6 +16,7 @@ class LiffLayoutManager {
         const section = document.querySelector(`.tab-section[data-tab="${tab}"]`);
         if (!section) return;
         const blocks = this.layouts[tab] || [];
+        this.applyTabSettings(section, tab);
         section.innerHTML = this.renderBlocks(blocks, tab);
         this.bindInlineHandlers(section);
         this.renderedTabs[tab] = true;
@@ -28,6 +32,7 @@ class LiffLayoutManager {
 
     renderBlock(block) {
         const type = block.type || 'text';
+        if (block.hidden) return '';
         const title = block.title ? `<h3 class="builder-title">${DomHelper.escapeHtml(block.title)}</h3>` : '';
         const body = block.body ? `<p class="builder-body">${DomHelper.escapeHtml(block.body)}</p>` : '';
         const align = block.align || 'left';
@@ -166,6 +171,23 @@ class LiffLayoutManager {
             styles.push(`padding:${py}px ${px}px`);
         }
         return styles.join(';');
+    }
+
+    applyTabSettings(section, tab) {
+        const settings = this.tabSettings?.[tab] || {};
+        if (settings.background_color) section.style.background = settings.background_color;
+        if (settings.background_image) {
+            section.style.backgroundImage = `url('${settings.background_image}')`;
+            section.style.backgroundSize = settings.background_size || 'cover';
+            section.style.backgroundPosition = settings.background_position || 'center';
+            section.style.backgroundRepeat = settings.background_repeat || 'no-repeat';
+        }
+        if (settings.content_max_width) {
+            section.style.setProperty('--content-max-width', `${settings.content_max_width}px`);
+        }
+        if (settings.content_padding) {
+            section.style.setProperty('--content-padding', `${settings.content_padding}px`);
+        }
     }
 
     mountDataSources(section) {
