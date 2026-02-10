@@ -9,23 +9,10 @@ use Illuminate\Support\Str;
 
 class MemberService
 {
-    /** ランク閾値: キー=ランク名, 値=必要な累計ポイント（以上） */
-    private const RANK_TIERS = [
-        'bronze' => 0,
-        'silver' => 1000,
-        'gold' => 5000,
-        'platinum' => 10000,
-    ];
-
-    private const RANK_LABELS = [
-        'bronze' => 'ブロンズ',
-        'silver' => 'シルバー',
-        'gold' => 'ゴールド',
-        'platinum' => 'プラチナ',
-    ];
-
-    /** ポイント有効期限（獲得から何日後） */
-    private const POINTS_VALID_DAYS = 365;
+    public function __construct(
+        private CouponIssueService $couponIssueService
+    ) {
+    }
 
     public function getMemberData(User $user): array
     {
@@ -45,7 +32,7 @@ class MemberService
         $this->syncMemberRank($member);
         $member->refresh();
 
-        $rankInfo = $this->getRankInfo($totalPoints, $member->rank);
+        $rankInfo = $this->getRankInfo($member);
         $expiryInfo = $this->getPointsExpiryInfo($member);
 
         return [
@@ -55,9 +42,13 @@ class MemberService
             'points' => $member->getTotalPointsFromTransactions(),
             'current_rank' => $rankInfo['current_rank'],
             'current_rank_label' => $rankInfo['current_rank_label'],
+            'current_rank_icon' => $rankInfo['current_rank_icon'],
+            'current_rank_background' => $rankInfo['current_rank_background'],
             'next_rank' => $rankInfo['next_rank'],
             'next_rank_label' => $rankInfo['next_rank_label'],
             'points_to_next_rank' => $rankInfo['points_to_next_rank'],
+            'rank_basis' => $rankInfo['rank_basis'],
+            'rank_metric' => $rankInfo['rank_metric'],
             'points_expiry' => $expiryInfo,
         ];
     }
@@ -93,15 +84,21 @@ class MemberService
 
         $memberNumber = $this->generateMemberNumber();
 
+        $projectId = $user->project_id ?? \App\Util\AdminContext::getCurrentProjectId() ?? 1;
+        $rankSettings = \App\Models\ShopSetting::getMemberRankSettings($projectId);
+        $defaultRankKey = collect($rankSettings)->first(fn ($r) => !empty($r['is_active']))['key'] ?? 'bronze';
         $member = Member::create([
+            'project_id' => $projectId,
             'user_id' => $user->id,
             'member_number' => $memberNumber,
             'points' => 0,
             'status' => 'active',
-            'rank' => 'bronze',
+            'rank' => $defaultRankKey,
             'birthday' => $data['birthday'] ?? null,
             'address' => $data['address'] ?? null,
         ]);
+
+        $this->couponIssueService->issueForFirstRegistration($member);
 
         if (isset($data['phone'])) {
             $user->update(['phone' => $data['phone']]);
@@ -115,40 +112,68 @@ class MemberService
 
     private function syncMemberRank(Member $member): void
     {
-        $rankInfo = $this->getRankInfo($member->points, $member->rank);
-        if ($rankInfo['current_rank'] !== $member->rank) {
+        $rankInfo = $this->getRankInfo($member);
+        if (!empty($rankInfo['current_rank']) && $rankInfo['current_rank'] !== $member->rank) {
             $member->update(['rank' => $rankInfo['current_rank']]);
         }
     }
 
-    private function getRankInfo(int $points, string $currentRank): array
+    private function getRankInfo(Member $member): array
     {
-        $tiers = self::RANK_TIERS;
-        $labels = self::RANK_LABELS;
-        $rankKeys = array_keys($tiers);
-        $resolvedRank = 'bronze';
+        $projectId = $member->project_id ?? \App\Util\AdminContext::getCurrentProjectId() ?? 1;
+        $ranks = \App\Models\ShopSetting::getMemberRankSettings($projectId);
+        $basis = \App\Models\ShopSetting::getRankBasis($projectId);
 
-        foreach ($rankKeys as $key) {
-            if ($points >= $tiers[$key]) {
-                $resolvedRank = $key;
+        $points = $member->points ?? 0;
+        $stamps = $member->getTotalStamps();
+        $metric = $basis === 'stamps' ? $stamps : ($basis === 'max' ? max($points, $stamps) : $points);
+
+        $active = array_values(array_filter($ranks, fn ($r) => !empty($r['is_active'])));
+        if (empty($active)) {
+            return [
+                'current_rank' => $member->rank ?? 'bronze',
+                'current_rank_label' => $member->rank ?? 'bronze',
+                'current_rank_icon' => null,
+                'current_rank_background' => null,
+                'next_rank' => null,
+                'next_rank_label' => null,
+                'points_to_next_rank' => null,
+                'rank_basis' => $basis,
+                'rank_metric' => $metric,
+            ];
+        }
+
+        usort($active, fn ($a, $b) => ($a['min_points'] <=> $b['min_points']) ?: ($a['order'] <=> $b['order']));
+        $resolved = $active[0];
+        foreach ($active as $rank) {
+            if ($metric >= ($rank['min_points'] ?? 0)) {
+                $resolved = $rank;
             }
         }
 
-        $nextRank = null;
+        $next = null;
+        foreach ($active as $rank) {
+            if (($rank['min_points'] ?? 0) > ($resolved['min_points'] ?? 0)) {
+                $next = $rank;
+                break;
+            }
+        }
+
         $pointsToNext = null;
-        $nextIndex = array_search($resolvedRank, $rankKeys);
-        if ($nextIndex !== false && $nextIndex < count($rankKeys) - 1) {
-            $nextRank = $rankKeys[$nextIndex + 1];
-            $nextThreshold = $tiers[$nextRank];
-            $pointsToNext = max(0, $nextThreshold - $points);
+        if ($next) {
+            $pointsToNext = max(0, ($next['min_points'] ?? 0) - $metric);
         }
 
         return [
-            'current_rank' => $resolvedRank,
-            'current_rank_label' => $labels[$resolvedRank] ?? $resolvedRank,
-            'next_rank' => $nextRank,
-            'next_rank_label' => $nextRank ? ($labels[$nextRank] ?? $nextRank) : null,
+            'current_rank' => $resolved['key'] ?? 'bronze',
+            'current_rank_label' => $resolved['label'] ?? ($resolved['key'] ?? 'bronze'),
+            'current_rank_icon' => $resolved['icon_url'] ?? null,
+            'current_rank_background' => $resolved['stamp_background_url'] ?? null,
+            'next_rank' => $next['key'] ?? null,
+            'next_rank_label' => $next ? ($next['label'] ?? ($next['key'] ?? null)) : null,
             'points_to_next_rank' => $pointsToNext,
+            'rank_basis' => $basis,
+            'rank_metric' => $metric,
         ];
     }
 
