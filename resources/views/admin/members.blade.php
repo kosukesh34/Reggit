@@ -17,7 +17,7 @@
                 <th>ポイント</th>
                 <th>ステータス</th>
                 <th>登録日</th>
-                <th>操作</th>
+                <th class="table-actions-cell">操作</th>
             </tr>
         </thead>
         <tbody>
@@ -33,10 +33,10 @@
                     </span>
                 </td>
                 <td>{{ $member->created_at->format('Y/m/d') }}</td>
-                <td>
-                    <a href="{{ route('admin.members.detail', $member->id) }}" class="btn btn-sm btn-primary">
-                        <i class="fas fa-eye"></i> 詳細
-                    </a>
+                <td class="table-actions-cell">
+                    <div class="table-actions">
+                        <a href="{{ admin_route('admin.members.detail', ['id' => $member->id]) }}" class="btn btn-action btn-edit"><i class="fas fa-eye"></i> 詳細</a>
+                    </div>
                 </td>
             </tr>
             @empty
@@ -49,10 +49,7 @@
             @endforelse
         </tbody>
     </table>
-    <div class="pagination">
-        {{ $members->links() }}
-    </div>
+    {{ $members->links('vendor.pagination.admin') }}
 </div>
 @endsection
-
 

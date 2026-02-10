@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\Product;
 use App\Models\Order;
 use App\Models\Member;
+use App\Util\AdminContext;
 
 class LiffController extends Controller
 {
@@ -38,7 +39,8 @@ class LiffController extends Controller
             return response()->json(['error' => 'User ID required'], 400);
         }
 
-        $user = User::where('line_user_id', $lineUserId)->first();
+        $projectId = AdminContext::getCurrentProjectId() ?? 1;
+        $user = User::where('line_user_id', $lineUserId)->where('project_id', $projectId)->first();
         
         if (!$user) {
             return response()->json(['error' => 'User not found'], 404);
@@ -75,7 +77,8 @@ class LiffController extends Controller
             return response()->json(['error' => 'User ID required'], 400);
         }
 
-        $user = User::where('line_user_id', $lineUserId)->first();
+        $projectId = AdminContext::getCurrentProjectId() ?? 1;
+        $user = User::where('line_user_id', $lineUserId)->where('project_id', $projectId)->first();
         
         if (!$user) {
             return response()->json(['error' => 'User not found'], 404);
@@ -90,4 +93,3 @@ class LiffController extends Controller
         return response()->json($orders);
     }
 }
-

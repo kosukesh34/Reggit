@@ -8,6 +8,7 @@ return [
     'env' => env('APP_ENV', 'production'),
     'debug' => (bool) env('APP_DEBUG', false),
     'url' => env('APP_URL', 'http://localhost'),
+    'api_base' => env('APP_API_BASE', '/api'),
     'timezone' => 'Asia/Tokyo',
     'locale' => 'ja',
     'fallback_locale' => 'en',
@@ -51,4 +52,3 @@ return [
     ])->toArray(),
 
 ];
-

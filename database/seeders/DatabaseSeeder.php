@@ -3,12 +3,32 @@
 namespace Database\Seeders;
 
 use App\Models\Product;
+use App\Models\Project;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
+        $this->call(AdminUserSeeder::class);
+        $this->call(DemoAdminUsersSeeder::class);
+
+        // デフォルトプロジェクトを取得（なければ作成）
+        $project = Project::where('is_active', true)->orderBy('id')->first();
+        if (!$project) {
+            $project = Project::create([
+                'project_key' => 'default',
+                'name' => 'デフォルト店舗',
+                'description' => 'デモ用プロジェクト',
+                'is_active' => true,
+            ]);
+        }
+
+        // 既に商品がある場合はスキップ
+        if (Product::withoutGlobalScopes()->where('project_id', $project->id)->count() > 0) {
+            return;
+        }
+
         $products = [
             [
                 'name' => 'ハンバーガー',
@@ -85,8 +105,9 @@ class DatabaseSeeder extends Seeder
         ];
 
         foreach ($products as $product) {
-            Product::create($product);
+            Product::withoutGlobalScopes()->create(array_merge($product, [
+                'project_id' => $project->id,
+            ]));
         }
     }
 }
-

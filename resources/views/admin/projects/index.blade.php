@@ -1,0 +1,61 @@
+@extends('admin.layout')
+
+@section('title', 'プロジェクト管理')
+@section('page-title', 'プロジェクト管理')
+
+@section('content')
+<div class="page-header system-admin-page-header">
+    <p class="page-header-desc">店舗（プロジェクト）の作成・編集。各プロジェクトごとに商品・注文・会員データが分離されます。</p>
+</div>
+<div class="card">
+    <div class="card-header card-header-with-action">
+        <h3 class="card-title"><i class="fas fa-building"></i> プロジェクト一覧</h3>
+        <a href="{{ route('system-admin.projects.create') }}" class="btn btn-primary"><i class="fas fa-plus"></i> 新規作成</a>
+    </div>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>プロジェクト名</th>
+                <th>キー</th>
+                <th>状態</th>
+                <th class="table-actions-cell">操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            @forelse($projects as $project)
+                <tr>
+                    <td><span class="id-badge">{{ $project->id }}</span></td>
+                    <td>{{ $project->name }}</td>
+                    <td><code>{{ $project->project_key }}</code></td>
+                    <td>
+                        @if($project->is_active)
+                            <span class="badge badge-success">有効</span>
+                        @else
+                            <span class="badge badge-secondary">無効</span>
+                        @endif
+                    </td>
+                    <td class="table-actions-cell">
+                        <div class="table-actions">
+                            @if($project->is_active)
+                                <a href="{{ url('/admin/' . $project->project_key) }}" class="btn btn-action btn-edit"><i class="fas fa-th-large"></i> ダッシュボード</a>
+                            @endif
+                            <a href="{{ route('system-admin.projects.edit', $project->id) }}" class="btn btn-action btn-outline"><i class="fas fa-edit"></i> 編集</a>
+                        </div>
+                    </td>
+                </tr>
+            @empty
+                <tr>
+                    <td colspan="5" class="empty-state">
+                        <i class="fas fa-building"></i>
+                        <p>プロジェクトがありません</p>
+                    </td>
+                </tr>
+            @endforelse
+        </tbody>
+    </table>
+    <div class="pagination">
+        {{ $projects->links('vendor.pagination.admin') }}
+    </div>
+</div>
+@endsection
