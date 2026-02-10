@@ -15,6 +15,51 @@
 
 ---
 
+## BtoB の役割と管理者・セキュリティ
+
+本アプリは **BtoB** を想定し、次の4つの役割でデータを分離・管理します。
+
+| 役割 | 説明 | アクセス範囲 |
+|------|------|--------------|
+| **お客様** | モバイルアプリ・LIFF を利用するエンドユーザー（会員・非会員） | 自分が属する **1プロジェクト** 内の注文・予約・会員証など |
+| **店舗管理者** | 1つ以上の店舗（プロジェクト）の運用担当 | **割り当てられたプロジェクト** のみ。店舗管理画面（/admin/*）で注文・商品・会員・設定などを管理。アカウント管理は不可。 |
+| **プロジェクト管理者** | 1つ以上のプロジェクトの責任者 | **割り当てられたプロジェクト** のみ。店舗管理者と同様に店舗管理画面でデータ管理。アカウント管理は不可。 |
+| **システム管理者** | プラットフォーム全体の運用・自分自身の管理用 | **全プロジェクト**。店舗管理画面に加え、システム管理画面（/system-admin/*）で管理者アカウントの作成・編集・削除。プロジェクト別のURL（**project_key**）で移動（例: /admin/default, /admin/default/orders, /admin/shop_tokyo）。 |
+
+**権限の表示名（管理画面で統一）**
+
+- **システム管理者（全プロジェクト操作・アカウント管理可）** … `system_admin`
+- **プロジェクト管理者（担当プロジェクトのみ操作可）** … `project_admin`
+- **店舗管理者（担当店舗のみ操作可）** … `admin`
+
+これらは `AdminUser::ROLE_LABELS` / `ROLE_LABELS_SHORT` で定義し、一覧・ヘッダー・作成フォームで同じ名前を表示する。
+
+**データベースでの表現**
+
+- **お客様**: `users` / `members` に `project_id` で紐づき、注文・予約などはすべてそのプロジェクト内のみ。
+- **管理者**: `admin_users` テーブルで `role`（`system_admin` / `project_admin` / `admin`）と、`project_id` または中間テーブル **admin_user_projects** で「アクセス可能なプロジェクト」を保持。全業務データ（orders, products, members 等）は **project_id** でスコープされ、他プロジェクトのデータは参照・更新できない。
+
+**セキュリティの実施内容**
+
+1. **ルート・ミドルウェア**
+   - `/system-admin/*`（アカウント管理）: **システム管理者のみ**（`EnsureSystemAdmin`）。プロジェクト・店舗管理者は 403。
+   - `/admin/*`（店舗管理）: **システム・プロジェクト・店舗管理者**（`EnsureStoreAdmin`）。未ログインはログイン画面へ。
+
+2. **プロジェクトスコープの強制（グローバルスコープ）**
+   - **ProjectScope** を `BelongsToProject` トレイト経由で全プロジェクト紐づきモデルに適用。店舗管理画面で **AdminContext** に現在プロジェクトが設定されている間は、`Product::all()` 等のクエリが自動で `where('project_id', 現在プロジェクトID)` され、**他プロジェクトのデータは取得できない**。
+   - 現在プロジェクトは **BindAdminProject** ミドルウェアで URL の `{project_key}` から解決され、`AdminContext::setCurrentProject($project)` でセットされる。
+   - プロジェクト切替は「表示プロジェクト」ドロップダウンで **project_key 付きURL**（例: `/admin/default`）へ遷移するだけなので、常にURLと表示が一致する。
+
+3. **データの参照・更新**
+   - 一覧・詳細・更新はいずれも `where('project_id', $this->getCurrentProjectId())` でスコープ。他プロジェクトの ID を URL で指定されても取得できない（findOrFail で 404）。
+
+**URL と project_key**
+
+- 店舗管理画面のURLは **/admin/{project_key}/...** の形（例: `/admin/default`, `/admin/default/orders`）。`project_key` は `projects.project_key`（英数字のキー）で、どのプロジェクトを操作しているかがURLで分かる。
+- ビューでは `admin_route('admin.orders')` のようにヘルパーを使うと、現在のプロジェクトの `project_key` が自動で付与される。
+
+---
+
 ## データベース設計の考え方
 
 設計時に「何を正とするか」「誰のデータか」「履歴を残すか」を決め、責務を分けると一貫しやすい。
@@ -59,6 +104,10 @@
 | テーブル名 | 用途 |
 |-----------|------|
 | **projects** | 店舗・プロジェクト（project_key / project_id の親） |
+| **admin_users** | 管理者（システム・プロジェクト・店舗）。role と project_id / admin_user_projects でスコープ |
+| **admin_user_projects** | 管理者とプロジェクトの多対多（複数店舗担当用） |
+| **api_tokens** | モバイルアプリ/API 用のプロジェクト別アクセストークン |
+| **admin_audit_logs** | 管理画面の操作監査ログ（重要操作） |
 | users | 利用者（LINE/モバイルアプリ・プロジェクト別） |
 | user_devices | 端末情報（モバイルアプリ用・1ユーザー複数端末可） |
 | members | 会員（ポイント・会員証） |
@@ -85,6 +134,8 @@
 | テーブル | project_id | PII の扱い | ポイント正 | 論理削除 | 備考 |
 |----------|:---------:|:----------:|:----------:|:--------:|------|
 | **projects** | －（親） | なし | － | ○ deleted_at | 店舗マスタ。子はすべて project_id でスコープ。 |
+| **api_tokens** | ○ | なし | － | なし | APIトークン。token_hash を保存し平文は保持しない。 |
+| **admin_audit_logs** | △ | なし | － | なし | 管理操作ログ。admin_user_id と project_id を保持。 |
 | **users** | ○ | ○ 名前・メール・電話はここだけ | － | ○ deleted_at | 利用者。他テーブルは user_id 参照のみ。 |
 | **user_devices** | ○ | なし | － | なし | 端末情報。user_id 参照。 |
 | **members** | ○ | ○ 誕生日・住所はここだけ | キャッシュのみ | ○ deleted_at | 会員。ポイント正は point_transactions。 |

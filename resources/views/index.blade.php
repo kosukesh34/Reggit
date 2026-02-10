@@ -4,9 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="line-liff-id" content="{{ config('line.liff_id', '') }}">
-    <title>モバイルオーダー</title>
+    <meta name="project-key" content="{{ $projectKey ?? 'default' }}">
+    <meta name="api-base" content="{{ config('app.api_base', '/api') }}">
+    <title>{{ $projectName ?? 'モバイルオーダー' }}</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="{{ asset('css/frontend/style.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/frontend/style.css') }}?v={{ time() }}">
     @isset($lineTheme)
     <style>
     :root {
@@ -32,7 +34,10 @@
         
         <header class="header">
             <div class="header-content">
-                <h1 class="logo">モバイルオーダー</h1>
+                @if(!empty($frontendLogoUrl))
+                    <img src="{{ $frontendLogoUrl }}" alt="{{ $frontendHeaderText ?? $projectName ?? 'ロゴ' }}" class="header-logo" style="max-height:36px; margin-right:8px;">
+                @endif
+                <h1 class="logo">{{ $frontendHeaderText ?? $projectName ?? 'モバイルオーダー' }}</h1>
                 <button class="cart-btn" id="cartBtn">
                     <i class="fas fa-shopping-cart"></i>
                     <span class="cart-count" id="cartCount">0</span>
@@ -40,34 +45,72 @@
             </div>
         </header>
 
+        @php
+            $flags = $featureFlags ?? [];
+            $tabFeatureMap = [
+                'home' => 'feature_home_enabled',
+                'products' => 'feature_orders_enabled',
+                'orders' => 'feature_orders_enabled',
+                'stamps' => 'feature_stamps_enabled',
+                'coupons' => 'feature_coupons_enabled',
+                'queue' => 'feature_queue_enabled',
+                'reservations' => 'feature_reservations_enabled',
+                'member' => 'feature_members_enabled',
+                'gallery' => 'feature_gallery_enabled',
+            ];
+            $filteredMenu = array_filter(
+                $frontendMenu ?? \App\Models\ShopSetting::defaultFrontendMenuItems(),
+                fn($item) => ($flags[$tabFeatureMap[$item['tab']] ?? ''] ?? true)
+            );
+        @endphp
+        <nav class="banner-menu" aria-label="メニュー">
+            @foreach($filteredMenu as $i => $item)
+            <button type="button" class="banner-menu-btn {{ $loop->first ? 'active' : '' }}" data-tab="{{ $item['tab'] }}" aria-label="{{ $item['label'] }}">
+                <i class="fas {{ $item['icon'] ?? 'fa-circle' }}"></i>
+                <span>{{ $item['label'] }}</span>
+            </button>
+            @endforeach
+        </nav>
+
         
         <main class="main-content">
-            
-            <div class="tab-content active" id="productsTab">
-                
-                <div class="category-tabs">
-                    <button class="tab-btn active" data-category="all">すべて</button>
-                    <button class="tab-btn" data-category="food">フード</button>
-                    <button class="tab-btn" data-category="drink">ドリンク</button>
-                    <button class="tab-btn" data-category="side">サイドメニュー</button>
-                </div>
+            <div id="announcementsSection" class="announcements-section" aria-label="お知らせ"></div>
 
-                
-                <div class="products-section">
-                    <div class="products-grid" id="productsGrid">
-                    </div>
-                </div>
+            @php $firstTab = ($filteredMenu[0]['tab'] ?? ($frontendMenu ?? \App\Models\ShopSetting::defaultFrontendMenuItems())[0]['tab'] ?? 'products'); @endphp
+            <div class="tab-content {{ $firstTab === 'home' ? 'active' : '' }}" id="homeTab">
+                <div class="tab-section" id="homeSection" data-tab="home"></div>
+            </div>
+            <div class="tab-content {{ $firstTab === 'products' ? 'active' : '' }}" id="productsTab">
+                <div class="tab-section" id="productsSection" data-tab="products"></div>
             </div>
 
             
-            <div class="tab-content" id="memberTab">
-                <div class="member-section" id="memberSection">
-                </div>
+            <div class="tab-content {{ $firstTab === 'orders' ? 'active' : '' }}" id="ordersTab">
+                <div class="tab-section" id="ordersSection" data-tab="orders"></div>
             </div>
 
-            <div class="tab-content" id="reservationsTab">
-                <div class="reservations-section" id="reservationsSection">
-                </div>
+            <div class="tab-content {{ $firstTab === 'stamps' ? 'active' : '' }}" id="stampsTab">
+                <div class="tab-section" id="stampsSection" data-tab="stamps"></div>
+            </div>
+
+            <div class="tab-content {{ $firstTab === 'coupons' ? 'active' : '' }}" id="couponsTab">
+                <div class="tab-section" id="couponsSection" data-tab="coupons"></div>
+            </div>
+
+            <div class="tab-content {{ $firstTab === 'queue' ? 'active' : '' }}" id="queueTab">
+                <div class="tab-section" id="queueSection" data-tab="queue"></div>
+            </div>
+
+            <div class="tab-content {{ $firstTab === 'member' ? 'active' : '' }}" id="memberTab">
+                <div class="tab-section" id="memberSection" data-tab="member"></div>
+            </div>
+
+            <div class="tab-content {{ $firstTab === 'reservations' ? 'active' : '' }}" id="reservationsTab">
+                <div class="tab-section" id="reservationsSection" data-tab="reservations"></div>
+            </div>
+
+            <div class="tab-content {{ $firstTab === 'gallery' ? 'active' : '' }}" id="galleryTab">
+                <div class="tab-section" id="gallerySection" data-tab="gallery"></div>
             </div>
         </main>
 
@@ -98,37 +141,46 @@
         </div>
 
         <footer class="main-tabs">
-            <button class="main-tab-btn active" data-tab="products">
-                <i class="fas fa-utensils"></i>
-                <span>商品</span>
+            @foreach($filteredMenu as $i => $item)
+            <button type="button" class="main-tab-btn {{ $i === 0 ? 'active' : '' }}" data-tab="{{ $item['tab'] }}">
+                <i class="fas {{ $item['icon'] ?? 'fa-circle' }}"></i>
+                <span>{{ $item['label'] }}</span>
             </button>
-            <button class="main-tab-btn" data-tab="reservations">
-                <i class="fas fa-calendar-check"></i>
-                <span>予約</span>
-            </button>
-            <button class="main-tab-btn" data-tab="member">
-                <i class="fas fa-id-card"></i>
-                <span>会員証</span>
-            </button>
+            @endforeach
         </footer>
     </div>
 
     <meta name="stripe-key" content="{{ env('STRIPE_KEY', '') }}">
+    <script>
+        window.__PROJECT_KEY__ = "{{ $projectKey ?? 'default' }}";
+        window.__API_BASE__ = document.querySelector('meta[name="api-base"]')?.getAttribute('content') || '/api';
+        window.__LIFF_BUILDER__ = @json($liffBuilderBlocks ?? []);
+        window.__LIFF_TAB_LAYOUTS__ = @json($liffTabLayouts ?? []);
+    </script>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/versions/2.22.3/sdk.js"></script>
     <script src="https://js.stripe.com/v3/"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
-    <script src="{{ asset('js/shared/constants.js') }}"></script>
-    <script src="{{ asset('js/shared/utils/apiClient.js') }}"></script>
-    <script src="{{ asset('js/shared/utils/domHelper.js') }}"></script>
-    <script src="{{ asset('js/shared/utils/tooltip.js') }}"></script>
-    <script src="{{ asset('js/shared/utils/toast.js') }}"></script>
-    <script src="{{ asset('js/shared/utils/confirmDialog.js') }}"></script>
-    <script src="{{ asset('js/frontend/managers/CartManager.js') }}"></script>
-    <script src="{{ asset('js/frontend/managers/ProductManager.js') }}"></script>
-    <script src="{{ asset('js/frontend/managers/ReservationManager.js') }}"></script>
-    <script src="{{ asset('js/frontend/stripe.js') }}"></script>
-    <script src="{{ asset('js/frontend/liff-init.js') }}"></script>
-    <script src="{{ asset('js/frontend/app.js') }}"></script>
+    @php $v = '?v=' . time(); @endphp
+    <script src="{{ asset('js/shared/constants.js') }}{{ $v }}"></script>
+    <script src="{{ asset('js/shared/utils/apiClient.js') }}{{ $v }}"></script>
+    <script src="{{ asset('js/shared/utils/domHelper.js') }}{{ $v }}"></script>
+    <script src="{{ asset('js/shared/utils/tooltip.js') }}{{ $v }}"></script>
+    <script src="{{ asset('js/shared/utils/toast.js') }}{{ $v }}"></script>
+    <script src="{{ asset('js/shared/utils/confirmDialog.js') }}{{ $v }}"></script>
+    <script src="{{ asset('js/frontend/managers/CartManager.js') }}{{ $v }}"></script>
+    <script src="{{ asset('js/frontend/managers/ProductManager.js') }}{{ $v }}"></script>
+    <script src="{{ asset('js/frontend/managers/OrderManager.js') }}{{ $v }}"></script>
+    <script src="{{ asset('js/frontend/managers/MemberManager.js') }}{{ $v }}"></script>
+    <script src="{{ asset('js/frontend/managers/StampsManager.js') }}{{ $v }}"></script>
+    <script src="{{ asset('js/frontend/managers/CouponsManager.js') }}{{ $v }}"></script>
+    <script src="{{ asset('js/frontend/managers/QueueManager.js') }}{{ $v }}"></script>
+    <script src="{{ asset('js/frontend/managers/AnnouncementManager.js') }}{{ $v }}"></script>
+    <script src="{{ asset('js/frontend/managers/GalleryManager.js') }}{{ $v }}"></script>
+    <script src="{{ asset('js/frontend/managers/LiffLayoutManager.js') }}{{ $v }}"></script>
+    <script src="{{ asset('js/frontend/managers/CheckoutManager.js') }}{{ $v }}"></script>
+    <script src="{{ asset('js/frontend/managers/ReservationManager.js') }}{{ $v }}"></script>
+    <script src="{{ asset('js/frontend/stripe.js') }}{{ $v }}"></script>
+    <script src="{{ asset('js/frontend/liff-init.js') }}{{ $v }}"></script>
+    <script src="{{ asset('js/frontend/app.js') }}{{ $v }}"></script>
 </body>
 </html>
-

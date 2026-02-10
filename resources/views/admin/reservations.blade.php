@@ -7,12 +7,12 @@
 <div class="card">
     <div class="card-header">
         <h3 class="card-title"><i class="fas fa-sliders-h"></i> 絞り込み</h3>
-        <a href="{{ route('admin.settings.basic') }}" class="btn btn-sm btn-secondary">
+        <a href="{{ admin_route('admin.settings.basic') }}" class="btn btn-sm btn-secondary">
             <i class="fas fa-cog"></i> 予約枠設定へ
         </a>
     </div>
     <div class="card-body">
-        <form action="{{ route('admin.reservations') }}" method="GET" class="reservation-filter-form">
+        <form action="{{ admin_route('admin.reservations') }}" method="GET" class="reservation-filter-form">
             <div class="filter-grid">
                 <div class="form-group">
                     <label class="form-label">予約日</label>
@@ -24,17 +24,17 @@
                 <button type="submit" class="btn btn-primary">
                     <i class="fas fa-filter"></i> 絞り込み
                 </button>
-                <a href="{{ route('admin.reservations') }}" class="btn btn-secondary">
+                <a href="{{ admin_route('admin.reservations') }}" class="btn btn-secondary">
                     <i class="fas fa-undo"></i> リセット
                 </a>
                 <div class="quick-date-links">
-                    <a href="{{ route('admin.reservations', ['date' => now()->format('Y-m-d'), 'status' => request('status', 'all')]) }}" class="btn btn-sm btn-secondary">
+                    <a href="{{ admin_route('admin.reservations', ['date' => now()->format('Y-m-d'), 'status' => request('status', 'all')]) }}" class="btn btn-sm btn-secondary">
                         今日
                     </a>
-                    <a href="{{ route('admin.reservations', ['date' => now()->addDay()->format('Y-m-d'), 'status' => request('status', 'all')]) }}" class="btn btn-sm btn-secondary">
+                    <a href="{{ admin_route('admin.reservations', ['date' => now()->addDay()->format('Y-m-d'), 'status' => request('status', 'all')]) }}" class="btn btn-sm btn-secondary">
                         明日
                     </a>
-                    <a href="{{ route('admin.reservations', ['date' => now()->addDays(7)->format('Y-m-d'), 'status' => request('status', 'all')]) }}" class="btn btn-sm btn-secondary">
+                    <a href="{{ admin_route('admin.reservations', ['date' => now()->addDays(7)->format('Y-m-d'), 'status' => request('status', 'all')]) }}" class="btn btn-sm btn-secondary">
                         1週間後
                     </a>
                 </div>
@@ -51,27 +51,27 @@
         @php
             $filterQuery = request()->except('page', 'status');
         @endphp
-        <a href="{{ route('admin.reservations', array_merge($filterQuery, ['status' => 'all'])) }}" 
+        <a href="{{ admin_route('admin.reservations', array_merge($filterQuery, ['status' => 'all'])) }}" 
            class="status-filter {{ !request('status') || request('status') === 'all' ? 'active' : '' }}">
             <i class="fas fa-list"></i> すべて
             <span class="badge">{{ $statusCounts['all'] }}</span>
         </a>
-        <a href="{{ route('admin.reservations', array_merge($filterQuery, ['status' => 'pending'])) }}" 
+        <a href="{{ admin_route('admin.reservations', array_merge($filterQuery, ['status' => 'pending'])) }}" 
            class="status-filter {{ request('status') === 'pending' ? 'active' : '' }}">
             <i class="fas fa-clock"></i> 予約待ち
             <span class="badge badge-warning">{{ $statusCounts['pending'] }}</span>
         </a>
-        <a href="{{ route('admin.reservations', array_merge($filterQuery, ['status' => 'confirmed'])) }}" 
+        <a href="{{ admin_route('admin.reservations', array_merge($filterQuery, ['status' => 'confirmed'])) }}" 
            class="status-filter {{ request('status') === 'confirmed' ? 'active' : '' }}">
             <i class="fas fa-check-circle"></i> 確認済み
             <span class="badge badge-info">{{ $statusCounts['confirmed'] }}</span>
         </a>
-        <a href="{{ route('admin.reservations', array_merge($filterQuery, ['status' => 'completed'])) }}" 
+        <a href="{{ admin_route('admin.reservations', array_merge($filterQuery, ['status' => 'completed'])) }}" 
            class="status-filter {{ request('status') === 'completed' ? 'active' : '' }}">
             <i class="fas fa-check-double"></i> 完了
             <span class="badge badge-success">{{ $statusCounts['completed'] }}</span>
         </a>
-        <a href="{{ route('admin.reservations', array_merge($filterQuery, ['status' => 'cancelled'])) }}" 
+        <a href="{{ admin_route('admin.reservations', array_merge($filterQuery, ['status' => 'cancelled'])) }}" 
            class="status-filter {{ request('status') === 'cancelled' ? 'active' : '' }}">
             <i class="fas fa-times-circle"></i> キャンセル
             <span class="badge badge-danger">{{ $statusCounts['cancelled'] }}</span>
@@ -164,13 +164,13 @@
                 <th>人数</th>
                 <th>ステータス</th>
                 <th>備考</th>
-                <th>操作</th>
+                <th class="table-actions-cell">操作</th>
             </tr>
         </thead>
         <tbody>
             @forelse($reservations as $reservation)
             <tr>
-                <td><a href="{{ route('admin.reservations.detail', $reservation->id) }}">{{ $reservation->reservation_number }}</a></td>
+                <td><a href="{{ admin_route('admin.reservations.detail', ['id' => $reservation->id]) }}">{{ $reservation->reservation_number }}</a></td>
                 <td>{{ $reservation->user->name ?? 'N/A' }}</td>
                 <td>
                     @php
@@ -208,17 +208,13 @@
                         <span class="text-muted">-</span>
                     @endif
                 </td>
-                <td>
-                    <div class="action-buttons">
-                        <a href="{{ route('admin.reservations.detail', $reservation->id) }}" class="btn btn-sm btn-primary">
-                            <i class="fas fa-eye"></i> 詳細
-                        </a>
+                <td class="table-actions-cell">
+                    <div class="table-actions">
+                        <a href="{{ admin_route('admin.reservations.detail', ['id' => $reservation->id]) }}" class="btn btn-action btn-edit"><i class="fas fa-eye"></i> 詳細</a>
                         @if($reservation->status !== 'completed' && $reservation->status !== 'cancelled')
-                        <form action="{{ route('admin.reservations.complete', $reservation->id) }}" method="POST" style="display: inline;" onsubmit="return confirm('この予約を完了にしますか？')">
+                        <form action="{{ admin_route('admin.reservations.complete', ['id' => $reservation->id]) }}" method="POST" class="d-inline" onsubmit="return confirm('この予約を完了にしますか？')">
                             @csrf
-                            <button type="submit" class="btn btn-sm btn-success">
-                                <i class="fas fa-check-double"></i> 完了
-                            </button>
+                            <button type="submit" class="btn btn-action btn-success"><i class="fas fa-check-double"></i> 完了</button>
                         </form>
                         @endif
                     </div>
@@ -235,7 +231,7 @@
         </tbody>
     </table>
     <div class="pagination">
-        {{ $reservations->links() }}
+        {{ $reservations->links('vendor.pagination.admin') }}
     </div>
 </div>
 @endsection

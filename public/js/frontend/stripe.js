@@ -31,12 +31,16 @@ class StripePayment {
 
     async createPaymentIntent(amount, orderId = null) {
         try {
+            const headers = {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+            };
+            if (typeof window !== 'undefined' && window.__PROJECT_KEY__) {
+                headers['X-Project-Key'] = window.__PROJECT_KEY__;
+            }
             const response = await fetch('/api/payment/create-intent', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                },
+                headers,
                 body: JSON.stringify({
                     amount: amount,
                     order_id: orderId,
@@ -118,12 +122,16 @@ class StripePayment {
 
             if (paymentIntent.status === 'succeeded') {
                 // サーバー側で決済を確認
+                const headers = {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                };
+                if (typeof window !== 'undefined' && window.__PROJECT_KEY__) {
+                    headers['X-Project-Key'] = window.__PROJECT_KEY__;
+                }
                 const response = await fetch('/api/payment/confirm', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                    },
+                    headers,
                     body: JSON.stringify({
                         payment_intent_id: paymentIntent.id,
                         order_id: orderId,
@@ -157,4 +165,3 @@ class StripePayment {
 
 
 window.StripePayment = StripePayment;
-
