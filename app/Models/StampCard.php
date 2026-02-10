@@ -10,7 +10,7 @@ class StampCard extends Model
 {
     use BelongsToProject;
 
-    protected $fillable = ['project_id', 'name', 'required_stamps', 'reward_description', 'is_active'];
+    protected $fillable = ['project_id', 'name', 'required_stamps', 'reward_description', 'image_url', 'is_active'];
 
     protected function casts(): array
     {

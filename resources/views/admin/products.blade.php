@@ -7,7 +7,7 @@
 <div class="card">
     <div class="card-header">
         <h3 class="card-title"><i class="fas fa-list"></i> 商品一覧</h3>
-        <a href="{{ route('admin.products.create') }}" class="btn btn-primary">
+        <a href="{{ admin_route('admin.products.create') }}" class="btn btn-primary">
             <i class="fas fa-plus"></i> 新規追加
         </a>
     </div>
@@ -21,7 +21,7 @@
                 <th>カテゴリ</th>
                 <th>在庫</th>
                 <th>ステータス</th>
-                <th>操作</th>
+                <th class="table-actions-cell">操作</th>
             </tr>
         </thead>
         <tbody>
@@ -40,18 +40,14 @@
                         {{ $product->is_available ? '販売中' : '販売停止' }}
                     </span>
                 </td>
-                <td>
-                    <div class="action-buttons">
-                        <a href="{{ route('admin.products.edit', $product->id) }}" class="btn btn-sm btn-primary">
-                            <i class="fas fa-edit"></i> 編集
-                        </a>
-                    <form action="{{ route('admin.products.delete', $product->id) }}" method="POST" style="display: inline;" class="delete-form" data-item-name="{{ $product->name }}">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="btn btn-sm btn-danger">
-                            <i class="fas fa-trash"></i> 削除
-                        </button>
-                    </form>
+                <td class="table-actions-cell">
+                    <div class="table-actions">
+                        <a href="{{ admin_route('admin.products.edit', ['id' => $product->id]) }}" class="btn btn-action btn-edit"><i class="fas fa-edit"></i> 編集</a>
+                        <form action="{{ admin_route('admin.products.delete', ['id' => $product->id]) }}" method="POST" class="d-inline delete-form" data-item-name="{{ $product->name }}">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn btn-action btn-danger"><i class="fas fa-trash"></i> 削除</button>
+                        </form>
                     </div>
                 </td>
             </tr>
@@ -65,10 +61,7 @@
             @endforelse
         </tbody>
     </table>
-    <div class="pagination">
-        {{ $products->links() }}
-    </div>
+    {{ $products->links('vendor.pagination.admin') }}
 </div>
 @endsection
-
 
