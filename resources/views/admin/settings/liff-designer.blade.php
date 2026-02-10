@@ -171,6 +171,27 @@
     align-items: center;
     gap: 12px;
 }
+.liff-designer-shell .btn {
+    border-radius: 8px;
+    border: 1px solid transparent;
+    font-size: 12px;
+    padding: 6px 10px;
+}
+.liff-designer-shell .btn.btn-primary {
+    background: #2563eb;
+    color: #fff;
+    border-color: #2563eb;
+}
+.liff-designer-shell .btn.btn-secondary {
+    background: #f1f5f9;
+    color: #1f2937;
+    border-color: #e2e8f0;
+}
+.liff-designer-shell .btn.btn-danger {
+    background: #ef4444;
+    color: #fff;
+    border-color: #ef4444;
+}
 .liff-designer-main {
     display: grid;
     grid-template-columns: var(--left-width, 240px) 8px minmax(520px, 1fr) 8px var(--right-width, 320px);
@@ -655,6 +676,8 @@ function renderBlockList() {
                 <span class="block-card__type">${escapeHtml(block.type || 'text')}</span>
             </div>
             <div class="block-card__actions">
+                <button type="button" class="btn btn-secondary btn-sm" data-action="up">↑</button>
+                <button type="button" class="btn btn-secondary btn-sm" data-action="down">↓</button>
                 <button type="button" class="btn btn-secondary btn-sm" data-action="duplicate">複製</button>
                 <button type="button" class="btn btn-secondary btn-sm" data-action="toggle">${block.hidden ? '表示' : '非表示'}</button>
                 <button type="button" class="btn btn-secondary btn-sm" data-action="lock">${block.locked ? '解除' : 'ロック'}</button>
@@ -673,6 +696,26 @@ function renderBlockList() {
             e.stopPropagation();
             blocks.splice(idx, 1);
             state.activeIndex = Math.max(0, idx - 1);
+            renderBlockList();
+            renderEditor();
+            renderPreview();
+        });
+        card.querySelector('[data-action="up"]').addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (idx === 0) return;
+            const moved = blocks.splice(idx, 1)[0];
+            blocks.splice(idx - 1, 0, moved);
+            state.activeIndex = idx - 1;
+            renderBlockList();
+            renderEditor();
+            renderPreview();
+        });
+        card.querySelector('[data-action="down"]').addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (idx >= blocks.length - 1) return;
+            const moved = blocks.splice(idx, 1)[0];
+            blocks.splice(idx + 1, 0, moved);
+            state.activeIndex = idx + 1;
             renderBlockList();
             renderEditor();
             renderPreview();
@@ -699,12 +742,16 @@ function renderBlockList() {
         });
         card.addEventListener('dragstart', (e) => {
             if (block.locked) return e.preventDefault();
-            e.dataTransfer.setData('text/plain', idx.toString());
+            e.dataTransfer.setData('text/plain', JSON.stringify({ source: 'list', index: idx }));
         });
         card.addEventListener('dragover', (e) => e.preventDefault());
         card.addEventListener('drop', (e) => {
             e.preventDefault();
-            const from = parseInt(e.dataTransfer.getData('text/plain'), 10);
+            const payload = e.dataTransfer.getData('text/plain');
+            let data;
+            try { data = JSON.parse(payload); } catch { return; }
+            if (!data || typeof data.index !== 'number') return;
+            const from = data.index;
             const to = idx;
             if (Number.isNaN(from) || from === to) return;
             const moved = blocks.splice(from, 1)[0];
@@ -1012,7 +1059,7 @@ function bindPreviewInteractions() {
         blockEl.addEventListener('dragstart', (e) => {
             if (block && block.locked) return e.preventDefault();
             blockEl.classList.add('dragging');
-            e.dataTransfer.setData('text/plain', blockEl.dataset.index);
+            e.dataTransfer.setData('text/plain', JSON.stringify({ source: 'canvas', index: idx }));
         });
         blockEl.addEventListener('dragend', () => blockEl.classList.remove('dragging'));
         blockEl.addEventListener('dragover', (e) => e.preventDefault());
@@ -1142,29 +1189,68 @@ if (closeDrawerBtn) {
 }
 
 function initDnD() {
-    const handleDrop = (index) => (e) => {
+    const dropIndicator = document.createElement('div');
+    dropIndicator.className = 'drop-indicator';
+
+    const getDropIndex = (e) => {
+        const blocks = [...previewArea.querySelectorAll('.preview-block')];
+        if (!blocks.length) return 0;
+        for (let i = 0; i < blocks.length; i += 1) {
+            const rect = blocks[i].getBoundingClientRect();
+            if (e.clientY < rect.top + rect.height / 2) return i;
+        }
+        return blocks.length;
+    };
+
+    const showIndicator = (index) => {
+        const blocks = previewArea.querySelectorAll('.preview-block');
+        if (blocks.length === 0) {
+            previewArea.appendChild(dropIndicator);
+            return;
+        }
+        if (index >= blocks.length) {
+            blocks[blocks.length - 1].after(dropIndicator);
+        } else {
+            blocks[index].before(dropIndicator);
+        }
+    };
+
+    const handleDrop = (indexOverride) => (e) => {
         e.preventDefault();
         const payload = e.dataTransfer.getData('text/plain');
         if (!payload) return;
         let data;
         try { data = JSON.parse(payload); } catch { return; }
+        const index = typeof indexOverride === 'number' ? indexOverride : getDropIndex(e);
         if (data.source === 'palette') {
             const blocks = getBlocks();
             const newBlock = createDefaultBlock(data.type);
-            if (typeof index === 'number') {
-                blocks.splice(index, 0, newBlock);
-            } else {
-                blocks.push(newBlock);
-            }
+            blocks.splice(index, 0, newBlock);
             state.activeIndex = blocks.indexOf(newBlock);
             openDrawer();
             renderBlockList();
             renderEditor();
             renderPreview();
+        } else if (data.source === 'canvas' || data.source === 'list') {
+            const blocks = getBlocks();
+            const from = data.index;
+            if (typeof from !== 'number') return;
+            const moved = blocks.splice(from, 1)[0];
+            const targetIndex = index > from ? index - 1 : index;
+            blocks.splice(targetIndex, 0, moved);
+            state.activeIndex = targetIndex;
+            renderBlockList();
+            renderEditor();
+            renderPreview();
         }
+        dropIndicator.remove();
     };
 
-    previewArea.addEventListener('dragover', (e) => e.preventDefault());
+    previewArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        showIndicator(getDropIndex(e));
+    });
+    previewArea.addEventListener('dragleave', () => dropIndicator.remove());
     previewArea.addEventListener('drop', handleDrop());
 
     blockList.addEventListener('dragover', (e) => e.preventDefault());
