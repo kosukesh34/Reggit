@@ -7,7 +7,7 @@
 <div class="card">
     <div class="card-header">
         <h3 class="card-title"><i class="fas fa-user"></i> 会員情報</h3>
-        <a href="{{ admin_admin_route('admin.members') }}" class="btn btn-secondary btn-sm">
+        <a href="{{ admin_route('admin.members') }}" class="btn btn-secondary btn-sm">
             <i class="fas fa-arrow-left"></i> 一覧に戻る
         </a>
     </div>
@@ -89,9 +89,8 @@
 </div>
 
 <div class="form-actions">
-    <a href="{{ admin_admin_route('admin.members') }}" class="btn btn-secondary">
+    <a href="{{ admin_route('admin.members') }}" class="btn btn-secondary">
         <i class="fas fa-arrow-left"></i> 戻る
     </a>
 </div>
 @endsection
-
