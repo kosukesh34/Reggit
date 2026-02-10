@@ -37,9 +37,19 @@ class LiffLayoutManager {
         const body = block.body ? `<p class="builder-body">${DomHelper.escapeHtml(block.body)}</p>` : '';
         const align = block.align || 'left';
         const style = this.buildStyle(block);
-        const button = block.button_label
-            ? `<a class="builder-btn" href="${DomHelper.escapeHtml(block.button_url || '#')}">${DomHelper.escapeHtml(block.button_label)}</a>`
-            : '';
+        let button = '';
+        if (block.button_label) {
+            let href = '#';
+            const action = block.button_action || '';
+            if (action === 'tab' && block.button_target) {
+                href = `#${DomHelper.escapeHtml(block.button_target)}`;
+            } else if (action === 'url' && block.button_target) {
+                href = DomHelper.escapeHtml(block.button_target);
+            } else if (block.button_url) {
+                href = DomHelper.escapeHtml(block.button_url);
+            }
+            button = `<a class="builder-btn" href="${href}">${DomHelper.escapeHtml(block.button_label)}</a>`;
+        }
 
         if (['data', 'collection', 'table', 'gallery'].includes(type)) {
             const source = block.source || (type === 'gallery' ? 'gallery' : '');
