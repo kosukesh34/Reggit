@@ -17,7 +17,7 @@
 
                 @if (is_array($element))
                     @foreach ($element as $page => $url)
-                        @if ($page == $paginator->currentPage())
+                        @if ((int) $page === (int) $paginator->currentPage())
                             <span class="pagination-item is-active" aria-current="page">{{ $page }}</span>
                         @else
                             <a class="pagination-item" href="{{ $url }}">{{ $page }}</a>

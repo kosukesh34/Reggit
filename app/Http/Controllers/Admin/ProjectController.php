@@ -5,13 +5,24 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ProjectStoreRequest;
 use App\Http\Requests\Admin\ProjectUpdateRequest;
-use App\Models\Project;
+use App\UseCases\Admin\Project\ProjectEditUseCase;
+use App\UseCases\Admin\Project\ProjectIndexUseCase;
+use App\UseCases\Admin\Project\ProjectStoreUseCase;
+use App\UseCases\Admin\Project\ProjectUpdateUseCase;
 
 class ProjectController extends Controller
 {
+    public function __construct(
+        private ProjectIndexUseCase $indexUseCase,
+        private ProjectStoreUseCase $storeUseCase,
+        private ProjectEditUseCase $editUseCase,
+        private ProjectUpdateUseCase $updateUseCase
+    ) {
+    }
+
     public function index()
     {
-        $projects = Project::orderBy('name')->paginate(20);
+        $projects = $this->indexUseCase->handle();
         return view('admin.projects.index', compact('projects'));
     }
 
@@ -22,20 +33,19 @@ class ProjectController extends Controller
 
     public function store(ProjectStoreRequest $request)
     {
-        Project::create($request->toProjectPayload());
+        $this->storeUseCase->handle($request->toProjectPayload());
         return redirect()->route('system-admin.projects.index')->with('success', 'プロジェクトを作成しました');
     }
 
     public function edit(int $id)
     {
-        $project = Project::findOrFail($id);
+        $project = $this->editUseCase->handle($id);
         return view('admin.projects.edit', compact('project'));
     }
 
     public function update(ProjectUpdateRequest $request, int $id)
     {
-        $project = Project::findOrFail($id);
-        $project->update($request->toProjectPayload());
+        $this->updateUseCase->handle($id, $request->toProjectPayload());
         return redirect()->route('system-admin.projects.index')->with('success', 'プロジェクトを更新しました');
     }
 }

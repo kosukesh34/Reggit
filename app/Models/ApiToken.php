@@ -17,14 +17,12 @@ class ApiToken extends Model
         'expires_at',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'is_active' => 'boolean',
-            'last_used_at' => 'datetime',
-            'expires_at' => 'datetime',
-        ];
-    }
+    /** @var array<string, string> */
+    protected $casts = [
+        'is_active' => 'boolean',
+        'last_used_at' => 'datetime',
+        'expires_at' => 'datetime',
+    ];
 
     public function project(): BelongsTo
     {

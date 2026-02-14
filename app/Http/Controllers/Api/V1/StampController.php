@@ -2,56 +2,37 @@
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Models\StampCard;
-use App\Services\UserService;
+use App\UseCases\Stamp\StampIndexUseCase;
+use App\Util\AdminContext;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
+use App\Util\LogHelper;
 
 class StampController extends BaseApiController
 {
-    public function __construct(private UserService $userService)
+    public function __construct(private StampIndexUseCase $indexUseCase)
     {
     }
 
     public function index(Request $request)
     {
         try {
-            $user = $this->userService->getOrCreateUser($request);
-            $member = $user->member;
-            if (!$member) {
+            $result = $this->indexUseCase->handle($request);
+            if ($result->requiresMembership) {
                 return $this->success([
                     'stamp_cards' => [],
                     'message' => '会員登録が必要です',
                 ]);
             }
 
-            $cards = StampCard::where('project_id', $member->project_id)
-                ->where('is_active', true)
-                ->orderBy('name')
-                ->get();
-
-            $memberStamps = $member->memberStamps()->with('stampCard')->get()->keyBy('stamp_card_id');
-            $defaultImageUrl = \App\Models\ShopSetting::getStampDefaultImageUrl($member->project_id);
-
-            $stampCards = $cards->map(function ($card) use ($memberStamps) {
-                $ms = $memberStamps->get($card->id);
-                return [
-                    'id' => $card->id,
-                    'name' => $card->name,
-                    'required_stamps' => $card->required_stamps,
-                    'reward_description' => $card->reward_description,
-                    'image_url' => $card->image_url,
-                    'current_stamps' => $ms ? $ms->current_stamps : 0,
-                    'completed_at' => $ms && $ms->completed_at ? $ms->completed_at->toIso8601String() : null,
-                ];
-            });
-
             return $this->success([
-                'stamp_cards' => $stampCards,
-                'default_image_url' => $defaultImageUrl,
+                'stamp_cards' => $result->stampCardsToArray(),
+                'default_image_url' => $result->defaultImageUrl,
             ]);
         } catch (\Exception $e) {
-            Log::error('Stamps index error: ' . $e->getMessage());
+            LogHelper::error('[Stamp] index failed', [
+                'project_id' => AdminContext::getCurrentProjectId() ?? 1,
+                'error' => $e->getMessage(),
+            ]);
             return $this->error('スタンプの取得に失敗しました', 500);
         }
     }

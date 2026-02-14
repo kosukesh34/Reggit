@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToProject;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -18,13 +19,11 @@ class OrderItem extends Model
         'notes',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'quantity' => 'integer',
-            'price' => 'decimal:2',
-        ];
-    }
+    /** @var array<string, string> */
+    protected $casts = [
+        'quantity' => 'integer',
+        'price' => 'decimal:2',
+    ];
 
     public function project()
     {
@@ -53,5 +52,4 @@ class OrderItem extends Model
         });
     }
 }
-
 

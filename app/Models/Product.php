@@ -21,14 +21,12 @@ class Product extends Model
         'stock',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'price' => 'decimal:2',
-            'is_available' => 'boolean',
-            'stock' => 'integer',
-        ];
-    }
+    /** @var array<string, string> */
+    protected $casts = [
+        'price' => 'decimal:2',
+        'is_available' => 'boolean',
+        'stock' => 'integer',
+    ];
 
     public function project()
     {

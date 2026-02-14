@@ -31,7 +31,19 @@
             </div>
             <div class="info-item">
                 <div class="info-label">ランク</div>
-                <div class="info-value">{{ $member->rank ?? '—' }}</div>
+                <div class="info-value">{{ $member->rank_label ?? ($member->rank ?? '—') }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">ポイント有効期限</div>
+                <div class="info-value">
+                    {{ $member->points_expiry['expires_at_label'] ?? '—' }}
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">期限切れ予定ポイント</div>
+                <div class="info-value">
+                    {{ number_format($member->points_expiry['points_expiring'] ?? 0) }}pt
+                </div>
             </div>
             <div class="info-item">
                 <div class="info-label">ステータス</div>

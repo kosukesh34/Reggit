@@ -13,22 +13,21 @@ class BaseApiController extends Controller
             'success' => true,
             'message' => $message,
             'data' => $data,
+            'errors' => [],
+            'meta' => $meta,
         ];
-        if (!empty($meta)) {
-            $payload['meta'] = $meta;
-        }
         return response()->json($payload, $status);
     }
 
-    protected function error(string $message, int $status = 400, array $errors = []): JsonResponse
+    protected function error(string $message, int $status = 400, array $data = [], array $errors = [], array $meta = []): JsonResponse
     {
         $payload = [
             'success' => false,
             'message' => $message,
+            'data' => $data,
+            'errors' => $errors,
+            'meta' => $meta,
         ];
-        if (!empty($errors)) {
-            $payload['errors'] = $errors;
-        }
         return response()->json($payload, $status);
     }
 }

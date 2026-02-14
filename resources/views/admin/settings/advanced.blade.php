@@ -66,11 +66,11 @@
 
 <script>
 document.querySelectorAll('.color-picker').forEach(function(p) {
-    var h = p.closest('.color-input-row').querySelector('.color-hex');
+    const h = p.closest('.color-input-row').querySelector('.color-hex');
     p.addEventListener('input', function() { h.value = p.value; });
 });
 document.querySelectorAll('.color-hex').forEach(function(h) {
-    var p = h.closest('.color-input-row').querySelector('.color-picker');
+    const p = h.closest('.color-input-row').querySelector('.color-picker');
     h.addEventListener('input', function() {
         if (/^#[0-9A-Fa-f]{6}$/.test(h.value)) p.value = h.value;
     });
