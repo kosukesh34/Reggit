@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToProject;
+use App\Util\AdminContext;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -24,8 +25,9 @@ class ShopSetting extends Model
         return $this->belongsTo(Project::class);
     }
 
-    public static function getValue(string $key, $default = null, ?int $projectId = 1)
+    public static function getValue(string $key, $default = null, ?int $projectId = null)
     {
+        $projectId = $projectId ?? AdminContext::getCurrentProjectId() ?? 1;
         $setting = self::where('project_id', $projectId)->where('key', $key)->first();
         
         if ($setting === null) {
@@ -49,6 +51,7 @@ class ShopSetting extends Model
 
     public static function setValue(string $key, $value, string $type = 'string', ?int $projectId = 1): void
     {
+        $projectId = $projectId ?? AdminContext::getCurrentProjectId() ?? 1;
         if ($type === 'json') {
             $value = json_encode($value);
         }
@@ -59,48 +62,54 @@ class ShopSetting extends Model
         );
     }
 
-    public static function getBusinessHours(): array
+    public static function getBusinessHours(?int $projectId = 1): array
     {
         return [
-            'start' => self::getValue('business_hours_start', '10:00'),
-            'end' => self::getValue('business_hours_end', '22:00'),
+            'start' => self::getValue('business_hours_start', '10:00', $projectId),
+            'end' => self::getValue('business_hours_end', '22:00', $projectId),
         ];
     }
 
-    public static function getReservationTimeSlots(): array
+    public static function getReservationTimeSlots(?int $projectId = 1): array
     {
-        return self::getValue('reservation_time_slots', ['10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00']);
+        return self::getValue('reservation_time_slots', ['10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00'], $projectId);
     }
 
-    public static function getClosedDays(): array
+    public static function getClosedDays(?int $projectId = 1): array
     {
-        return self::getValue('closed_days', []);
+        return self::getValue('closed_days', [], $projectId);
     }
 
-    public static function getClosedDates(): array
+    public static function getClosedDates(?int $projectId = 1): array
     {
-        return self::getValue('closed_dates', []);
+        return self::getValue('closed_dates', [], $projectId);
     }
 
-    public static function getAdvanceBookingDays(): int
+    public static function getAdvanceBookingDays(?int $projectId = 1): int
     {
-        return self::getValue('advance_booking_days', 30);
+        return self::getValue('advance_booking_days', 30, $projectId);
     }
 
-    public static function getReservationCapacityPerSlot(): int
+    public static function getReservationCapacityPerSlot(?int $projectId = 1): int
     {
-        return self::getValue('reservation_capacity_per_slot', self::DEFAULT_RESERVATION_CAPACITY);
+        return self::getValue('reservation_capacity_per_slot', self::DEFAULT_RESERVATION_CAPACITY, $projectId);
     }
 
-    public static function getLineThemeColors(): array
+    /** 順番待ち 1組あたりの平均対応時間（分）。予測待ち時間の計算に使用。 */
+    public static function getQueueAvgServeMinutes(?int $projectId = 1): int
     {
-        $primary = self::getValue('line_primary_color', '#000000');
+        return self::getValue('queue_avg_serve_minutes', 10, $projectId);
+    }
+
+    public static function getLineThemeColors(?int $projectId = 1): array
+    {
+        $primary = self::getValue('line_primary_color', '#000000', $projectId);
         return [
             'primary' => $primary,
             'primary_rgb' => self::hexToRgb($primary),
-            'primary_dark' => self::getValue('line_primary_dark', '#333333'),
-            'success' => self::getValue('line_success_color', '#000000'),
-            'danger' => self::getValue('line_danger_color', '#dc3545'),
+            'primary_dark' => self::getValue('line_primary_dark', '#333333', $projectId),
+            'success' => self::getValue('line_success_color', '#000000', $projectId),
+            'danger' => self::getValue('line_danger_color', '#dc3545', $projectId),
         ];
     }
 
@@ -114,6 +123,404 @@ class ShopSetting extends Model
         $g = (int) hexdec(substr($hex, 2, 2));
         $b = (int) hexdec(substr($hex, 4, 2));
         return "{$r}, {$g}, {$b}";
+    }
+
+    /** フロント（ユーザー向け）のヘッダー・フッターに表示するメニュー項目のデフォルト */
+    public static function defaultFrontendMenuItems(): array
+    {
+        return [
+            ['tab' => 'home', 'label' => 'ホーム', 'icon' => 'fa-house', 'order' => 0],
+            ['tab' => 'products', 'label' => '商品', 'icon' => 'fa-utensils', 'order' => 1],
+            ['tab' => 'orders', 'label' => '注文', 'icon' => 'fa-receipt', 'order' => 2],
+            ['tab' => 'stamps', 'label' => 'スタンプ', 'icon' => 'fa-stamp', 'order' => 3],
+            ['tab' => 'coupons', 'label' => 'クーポン', 'icon' => 'fa-ticket-alt', 'order' => 4],
+            ['tab' => 'queue', 'label' => '順番待ち', 'icon' => 'fa-list-ol', 'order' => 5],
+            ['tab' => 'reservations', 'label' => '予約', 'icon' => 'fa-calendar-check', 'order' => 6],
+            ['tab' => 'member', 'label' => '会員証', 'icon' => 'fa-id-card', 'order' => 7],
+            ['tab' => 'gallery', 'label' => 'ギャラリー', 'icon' => 'fa-images', 'order' => 8],
+        ];
+    }
+
+    /** フロントメニュー項目を取得（表示するもののみ・order でソート） */
+    public static function getFrontendMenuItems(?int $projectId = null): array
+    {
+        $projectId = $projectId ?? 1;
+        $items = self::getValue('frontend_menu_items', null, $projectId);
+        if ($items === null || ! is_array($items)) {
+            return self::defaultFrontendMenuItems();
+        }
+        $defaults = collect(self::defaultFrontendMenuItems())->keyBy('tab');
+        $merged = [];
+        foreach ($items as $item) {
+            $tab = $item['tab'] ?? null;
+            if (! $tab || ! $defaults->has($tab)) {
+                continue;
+            }
+            $merged[] = array_merge($defaults->get($tab), $item);
+        }
+        if (empty($merged)) {
+            return self::defaultFrontendMenuItems();
+        }
+        usort($merged, fn ($a, $b) => ($a['order'] ?? 999) <=> ($b['order'] ?? 999));
+        return $merged;
+    }
+
+    /** フロントメニュー項目を保存 */
+    public static function setFrontendMenuItems(array $items, ?int $projectId = null): void
+    {
+        $projectId = $projectId ?? 1;
+        self::setValue('frontend_menu_items', $items, 'json', $projectId);
+    }
+
+    // ── 機能フラグ ──
+
+    /** 機能フラグのデフォルト値 */
+    public const FEATURE_FLAGS = [
+        'feature_home_enabled'          => true,
+        'feature_orders_enabled'        => true,
+        'feature_reservations_enabled'  => true,
+        'feature_queue_enabled'         => true,
+        'feature_stamps_enabled'        => true,
+        'feature_coupons_enabled'       => true,
+        'feature_members_enabled'       => true,
+        'feature_announcements_enabled' => true,
+        'feature_payments_enabled'      => true,
+        'feature_gallery_enabled'       => true,
+    ];
+
+    /** 機能フラグの表示名 */
+    public const FEATURE_FLAG_LABELS = [
+        'feature_home_enabled'          => 'ホーム',
+        'feature_orders_enabled'        => 'モバイルオーダー',
+        'feature_reservations_enabled'  => '予約',
+        'feature_queue_enabled'         => '順番待ち',
+        'feature_stamps_enabled'        => 'スタンプカード',
+        'feature_coupons_enabled'       => 'クーポン',
+        'feature_members_enabled'       => '会員管理',
+        'feature_announcements_enabled' => 'お知らせ',
+        'feature_payments_enabled'      => '決済（Stripe等）',
+        'feature_gallery_enabled'       => 'ギャラリー',
+    ];
+
+    // ── LIFF ビルダー ──
+
+    public static function getLiffBuilderBlocks(?int $projectId = null): array
+    {
+        $blocks = self::getValue('liff_builder_blocks', null, $projectId);
+        if (!is_array($blocks) || empty($blocks)) {
+            return self::defaultLiffBuilderTemplates()[0]['blocks'];
+        }
+        return $blocks;
+    }
+
+    public static function setLiffBuilderBlocks(array $blocks, ?int $projectId = null): void
+    {
+        self::setValue('liff_builder_blocks', $blocks, 'json', $projectId);
+    }
+
+    public static function defaultLiffBuilderTemplates(): array
+    {
+        return [
+            [
+                'id' => 'welcome',
+                'name' => 'ウェルカム',
+                'blocks' => [
+                    ['type' => 'hero', 'title' => 'ようこそ', 'body' => 'スマホで快適に注文・予約ができます。', 'image_url' => 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=1200', 'button_label' => 'メニューを見る', 'button_url' => '#products'],
+                    ['type' => 'text', 'title' => 'お知らせ', 'body' => '初回登録でクーポン配布中。'],
+                    ['type' => 'button', 'title' => '会員登録', 'button_label' => '会員証を作成', 'button_url' => '#member'],
+                ],
+            ],
+            [
+                'id' => 'campaign',
+                'name' => 'キャンペーン',
+                'blocks' => [
+                    ['type' => 'hero', 'title' => '期間限定キャンペーン', 'body' => '今週だけの特別メニュー。', 'image_url' => 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=1200'],
+                    ['type' => 'list', 'title' => 'おすすめ', 'list_items' => ['季節限定バーガー', 'スペシャルドリンク', '数量限定クーポン']],
+                    ['type' => 'button', 'button_label' => 'クーポンを確認', 'button_url' => '#coupons'],
+                ],
+            ],
+            [
+                'id' => 'reservation',
+                'name' => '予約案内',
+                'blocks' => [
+                    ['type' => 'hero', 'title' => '事前予約でスムーズに', 'body' => '予約枠を確認して、希望の時間を押さえましょう。', 'image_url' => 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1200'],
+                    ['type' => 'button', 'button_label' => '予約する', 'button_url' => '#reservations'],
+                    ['type' => 'text', 'title' => '注意事項', 'body' => '当日キャンセルはお控えください。'],
+                ],
+            ],
+            [
+                'id' => 'gallery',
+                'name' => 'ギャラリー',
+                'blocks' => [
+                    ['type' => 'text', 'title' => '店内・商品ギャラリー', 'body' => '最新の写真をチェック。'],
+                    ['type' => 'gallery', 'source' => 'gallery'],
+                ],
+            ],
+            [
+                'id' => 'form',
+                'name' => '問い合わせ',
+                'blocks' => [
+                    ['type' => 'text', 'title' => 'お問い合わせ', 'body' => 'ご意見・ご要望をお聞かせください。'],
+                    ['type' => 'form', 'title' => '簡単フォーム', 'form_fields' => [
+                        ['label' => 'お名前', 'type' => 'text', 'placeholder' => '例: 山田 太郎', 'required' => true],
+                        ['label' => 'メール', 'type' => 'email', 'placeholder' => 'example@example.com', 'required' => true],
+                        ['label' => '内容', 'type' => 'textarea', 'placeholder' => 'ご用件', 'required' => true],
+                    ]],
+                ],
+            ],
+        ];
+    }
+
+    public static function defaultLiffDesignerTemplates(): array
+    {
+        return [
+            [
+                'id' => 'simple-home',
+                'name' => 'シンプルホーム',
+                'blocks' => [
+                    ['type' => 'label', 'title' => 'ようこそ'],
+                    ['type' => 'text', 'body' => '簡単に注文や予約ができます。'],
+                    ['type' => 'button', 'button_label' => 'メニュー', 'button_url' => '#products'],
+                    ['type' => 'collection', 'source' => 'products', 'title' => '人気商品'],
+                ],
+            ],
+            [
+                'id' => 'story',
+                'name' => 'ストーリー',
+                'blocks' => [
+                    ['type' => 'hero', 'title' => '本日のおすすめ', 'body' => '季節の食材を使用した特別メニュー', 'image_url' => 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1200', 'button_label' => '予約', 'button_url' => '#reservations'],
+                    ['type' => 'text', 'title' => 'こだわり', 'body' => '丁寧に仕上げた料理と落ち着いた空間。'],
+                    ['type' => 'gallery', 'source' => 'gallery', 'title' => 'ギャラリー'],
+                ],
+            ],
+            [
+                'id' => 'member',
+                'name' => '会員案内',
+                'blocks' => [
+                    ['type' => 'label', 'title' => '会員サービス'],
+                    ['type' => 'text', 'body' => 'ポイントやスタンプでお得に。'],
+                    ['type' => 'data', 'source' => 'member', 'title' => '会員情報'],
+                    ['type' => 'data', 'source' => 'stamps', 'title' => 'スタンプ'],
+                    ['type' => 'data', 'source' => 'coupons', 'title' => 'クーポン'],
+                ],
+            ],
+            [
+                'id' => 'order-flow',
+                'name' => '注文フロー',
+                'blocks' => [
+                    ['type' => 'label', 'title' => '注文の流れ'],
+                    ['type' => 'list', 'title' => 'ステップ', 'list_items' => ['メニューを見る', 'カートに追加', '注文確定', '受け取り'] ],
+                    ['type' => 'data', 'source' => 'orders', 'title' => '注文状況'],
+                ],
+            ],
+            [
+                'id' => 'contact',
+                'name' => 'お問い合わせ',
+                'blocks' => [
+                    ['type' => 'label', 'title' => 'お問い合わせ'],
+                    ['type' => 'form', 'title' => 'フォーム', 'form_fields' => [
+                        ['label' => 'お名前', 'type' => 'text', 'placeholder' => '山田 太郎', 'required' => true],
+                        ['label' => 'メール', 'type' => 'email', 'placeholder' => 'example@example.com', 'required' => true],
+                        ['label' => '内容', 'type' => 'textarea', 'placeholder' => 'お問い合わせ内容', 'required' => true],
+                    ], 'form_button_label' => '送信'],
+                ],
+            ],
+        ];
+    }
+
+    // ── LIFF タブレイアウト ──
+
+    public static function getLiffTabLayouts(?int $projectId = null): array
+    {
+        $layouts = self::getValue('liff_tab_layouts', null, $projectId);
+        if (!is_array($layouts) || empty($layouts)) {
+            return self::defaultLiffTabLayouts();
+        }
+        return $layouts;
+    }
+
+    public static function getLiffCustomCss(?int $projectId = null): string
+    {
+        return (string) self::getValue('liff_custom_css', '', $projectId);
+    }
+
+    public static function setLiffCustomCss(string $css, ?int $projectId = null): void
+    {
+        self::setValue('liff_custom_css', $css, 'string', $projectId);
+    }
+
+    public static function getLiffTabSettings(?int $projectId = null): array
+    {
+        $settings = self::getValue('liff_tab_settings', null, $projectId);
+        return is_array($settings) ? $settings : [];
+    }
+
+    public static function setLiffTabSettings(array $settings, ?int $projectId = null): void
+    {
+        self::setValue('liff_tab_settings', $settings, 'json', $projectId);
+    }
+
+    public static function setLiffTabLayouts(array $layouts, ?int $projectId = null): void
+    {
+        self::setValue('liff_tab_layouts', $layouts, 'json', $projectId);
+    }
+
+    public static function defaultLiffTabLayouts(): array
+    {
+        return [
+            'home' => self::defaultLiffBuilderTemplates()[0]['blocks'],
+            'products' => [
+                ['type' => 'data', 'source' => 'products'],
+            ],
+            'orders' => [
+                ['type' => 'data', 'source' => 'orders'],
+            ],
+            'stamps' => [
+                ['type' => 'data', 'source' => 'stamps'],
+            ],
+            'coupons' => [
+                ['type' => 'data', 'source' => 'coupons'],
+            ],
+            'queue' => [
+                ['type' => 'data', 'source' => 'queue'],
+            ],
+            'reservations' => [
+                ['type' => 'data', 'source' => 'reservations'],
+            ],
+            'member' => [
+                ['type' => 'data', 'source' => 'member'],
+            ],
+            'gallery' => [
+                ['type' => 'data', 'source' => 'gallery'],
+            ],
+            'announcements' => [
+                ['type' => 'data', 'source' => 'announcements'],
+            ],
+        ];
+    }
+
+    /** 全機能フラグを取得 */
+    public static function getFeatureFlags(?int $projectId = null): array
+    {
+        $flags = [];
+        foreach (self::FEATURE_FLAGS as $key => $default) {
+            $flags[$key] = (bool) self::getValue($key, $default, $projectId);
+        }
+        return $flags;
+    }
+
+    /** 指定機能が有効か */
+    public static function isFeatureEnabled(string $featureKey, ?int $projectId = null): bool
+    {
+        $default = self::FEATURE_FLAGS[$featureKey] ?? true;
+        return (bool) self::getValue($featureKey, $default, $projectId);
+    }
+
+    /** 機能フラグを一括更新 */
+    public static function setFeatureFlags(array $flags, ?int $projectId = null): void
+    {
+        foreach (self::FEATURE_FLAGS as $key => $default) {
+            $value = isset($flags[$key]) ? '1' : '0';
+            self::setValue($key, $value, 'boolean', $projectId);
+        }
+    }
+
+    // ── UI カスタマイズ（管理画面） ──
+
+    public static function getAdminSidebarColor(?int $projectId = null): ?string
+    {
+        return self::getValue('admin_sidebar_color', null, $projectId);
+    }
+
+    public static function getAdminHeaderColor(?int $projectId = null): ?string
+    {
+        return self::getValue('admin_header_color', null, $projectId);
+    }
+
+    public static function getStampDefaultImageUrl(?int $projectId = null): ?string
+    {
+        return self::getValue('stamp_default_image_url', null, $projectId);
+    }
+
+    public static function getCouponDefaultImageUrl(?int $projectId = null): ?string
+    {
+        return self::getValue('coupon_default_image_url', null, $projectId);
+    }
+
+    public static function getPointEarnRate(?int $projectId = null): int
+    {
+        return (int) self::getValue('point_earn_rate', 100, $projectId);
+    }
+
+    public static function getPointsValidDays(?int $projectId = null): int
+    {
+        return (int) self::getValue('points_valid_days', 365, $projectId);
+    }
+
+    public static function getRankBasis(?int $projectId = null): string
+    {
+        return (string) self::getValue('member_rank_basis', 'points', $projectId);
+    }
+
+    public static function getMemberRankSettings(?int $projectId = null): array
+    {
+        $settings = self::getValue('member_rank_settings', null, $projectId);
+        if (!is_array($settings) || empty($settings)) {
+            return self::defaultMemberRankSettings();
+        }
+        $normalized = [];
+        foreach ($settings as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $key = $row['key'] ?? null;
+            if (!$key) {
+                continue;
+            }
+            $normalized[] = [
+                'key' => (string) $key,
+                'label' => (string) ($row['label'] ?? $key),
+                'min_points' => (int) ($row['min_points'] ?? 0),
+                'is_active' => isset($row['is_active']) ? (bool) $row['is_active'] : true,
+                'icon_url' => $row['icon_url'] ?? null,
+                'stamp_background_url' => $row['stamp_background_url'] ?? null,
+                'order' => (int) ($row['order'] ?? 0),
+            ];
+        }
+        if (empty($normalized)) {
+            return self::defaultMemberRankSettings();
+        }
+        usort($normalized, fn ($a, $b) => ($a['min_points'] <=> $b['min_points']) ?: ($a['order'] <=> $b['order']));
+        return $normalized;
+    }
+
+    public static function setMemberRankSettings(array $settings, ?int $projectId = null): void
+    {
+        self::setValue('member_rank_settings', $settings, 'json', $projectId);
+    }
+
+    public static function defaultMemberRankSettings(): array
+    {
+        return [
+            ['key' => 'bronze', 'label' => 'ブロンズ', 'min_points' => 0, 'is_active' => true, 'icon_url' => null, 'stamp_background_url' => null, 'order' => 1],
+            ['key' => 'silver', 'label' => 'シルバー', 'min_points' => 1000, 'is_active' => true, 'icon_url' => null, 'stamp_background_url' => null, 'order' => 2],
+            ['key' => 'gold', 'label' => 'ゴールド', 'min_points' => 5000, 'is_active' => true, 'icon_url' => null, 'stamp_background_url' => null, 'order' => 3],
+            ['key' => 'platinum', 'label' => 'プラチナ', 'min_points' => 10000, 'is_active' => true, 'icon_url' => null, 'stamp_background_url' => null, 'order' => 4],
+        ];
+    }
+    public static function getAdminPrimaryColor(?int $projectId = null): ?string
+    {
+        return self::getValue('admin_primary_color', null, $projectId);
+    }
+
+    public static function getFrontendLogoUrl(?int $projectId = null): ?string
+    {
+        return self::getValue('frontend_logo_url', null, $projectId);
+    }
+
+    public static function getFrontendHeaderText(?int $projectId = null): ?string
+    {
+        return self::getValue('frontend_header_text', null, $projectId);
     }
 
     public static function isDateAvailable(string $date): bool

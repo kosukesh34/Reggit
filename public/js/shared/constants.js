@@ -1,11 +1,21 @@
+const API_BASE = (typeof window !== 'undefined' && window.__API_BASE__) ? window.__API_BASE__ : '/api';
+
 const AppConstants = {
+    API_BASE,
     API_ENDPOINTS: {
-        PRODUCTS: '/api/products',
-        ORDERS: '/api/orders',
-        MEMBERS_ME: '/api/members/me',
-        MEMBERS_REGISTER: '/api/members/register',
-        RESERVATIONS: '/api/reservations',
-        RESERVATIONS_AVAILABLE_DATES: '/api/reservations/available-dates',
+        PRODUCTS: `${API_BASE}/products`,
+        ORDERS: `${API_BASE}/orders`,
+        MEMBERS_ME: `${API_BASE}/members/me`,
+        MEMBERS_REGISTER: `${API_BASE}/members/register`,
+        MEMBERS_POINTS: `${API_BASE}/members/points`,
+        RESERVATIONS: `${API_BASE}/reservations`,
+        RESERVATIONS_AVAILABLE_DATES: `${API_BASE}/reservations/available-dates`,
+        ANNOUNCEMENTS: `${API_BASE}/announcements`,
+        STAMPS: `${API_BASE}/stamps`,
+        MY_COUPONS: `${API_BASE}/members/me/coupons`,
+        GALLERY: `${API_BASE}/gallery`,
+        QUEUE: `${API_BASE}/queue`,
+        QUEUE_ME: `${API_BASE}/queue/me`,
     },
     
     HTTP_METHODS: {
@@ -27,9 +37,15 @@ const AppConstants = {
     },
     
     TABS: {
+        HOME: 'home',
         PRODUCTS: 'products',
+        ORDERS: 'orders',
+        STAMPS: 'stamps',
+        COUPONS: 'coupons',
+        QUEUE: 'queue',
         MEMBER: 'member',
         RESERVATIONS: 'reservations',
+        GALLERY: 'gallery',
     },
     
     CATEGORIES: {
@@ -46,8 +62,27 @@ const AppConstants = {
     
     ORDER_STATUS: {
         PENDING: 'pending',
+        CONFIRMED: 'confirmed',
+        PREPARING: 'preparing',
+        READY: 'ready',
         COMPLETED: 'completed',
         CANCELLED: 'cancelled',
+    },
+    ORDER_STATUS_LABELS: {
+        pending: '受付中',
+        confirmed: '確認済み',
+        preparing: '準備中',
+        ready: '準備完了',
+        completed: '完了',
+        cancelled: 'キャンセル',
+    },
+    ORDER_TYPE: {
+        MOBILE: 'mobile',
+        IN_STORE: 'in_store',
+    },
+    ORDER_TYPE_LABELS: {
+        mobile: 'モバイルオーダー',
+        in_store: '店内注文',
     },
     
     RESERVATION_STATUS: {
@@ -140,6 +175,8 @@ const AppConstants = {
     },
     
     ELEMENT_IDS: {
+        ANNOUNCEMENTS_SECTION: 'announcementsSection',
+        HOME_SECTION: 'homeSection',
         PRODUCTS_GRID: 'productsGrid',
         CART_BTN: 'cartBtn',
         CART_COUNT: 'cartCount',
@@ -151,9 +188,20 @@ const AppConstants = {
         TOTAL_PRICE: 'totalPrice',
         MEMBER_SECTION: 'memberSection',
         PRODUCTS_TAB: 'productsTab',
+        ORDERS_TAB: 'ordersTab',
+        ORDERS_SECTION: 'ordersSection',
+        STAMPS_TAB: 'stampsTab',
+        STAMPS_SECTION: 'stampsSection',
+        COUPONS_TAB: 'couponsTab',
+        COUPONS_SECTION: 'couponsSection',
+        QUEUE_TAB: 'queueTab',
+        QUEUE_SECTION: 'queueSection',
         MEMBER_TAB: 'memberTab',
         RESERVATIONS_TAB: 'reservationsTab',
         RESERVATIONS_SECTION: 'reservationsSection',
+        HOME_TAB: 'homeTab',
+        GALLERY_TAB: 'galleryTab',
+        GALLERY_SECTION: 'gallerySection',
     },
     
     CSS_CLASSES: {
@@ -180,8 +228,11 @@ const AppConstants = {
     MESSAGES: {
         CART_OPEN_TOOLTIP: 'カートを開く',
         CART_REMOVE_TOOLTIP: '数量変更はカートでできます',
+        CART_REMOVE_BUTTON: 'カートから削除',
         CART_ADD_TOOLTIP: 'カートに追加',
         ORDER_SUCCESS: '注文が完了しました！',
+        ORDER_ERROR: '注文に失敗しました',
+        ORDER_ERROR_DEFAULT: 'しばらくしてから再度お試しください',
     },
     
     DEFAULT_VALUES: {

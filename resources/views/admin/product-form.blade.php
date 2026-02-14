@@ -5,7 +5,7 @@
 
 @section('content')
 <div class="card">
-    <form action="{{ isset($product) ? route('admin.products.update', $product->id) : route('admin.products.store') }}" method="POST">
+    <form action="{{ isset($product) ? admin_route('admin.products.update', ['id' => $product->id]) : admin_route('admin.products.store') }}" method="POST">
         @csrf
         @if(isset($product))
             @method('PUT')
@@ -59,12 +59,11 @@
             <button type="submit" class="btn btn-success">
                 <i class="fas fa-save"></i> 保存
             </button>
-            <a href="{{ route('admin.products') }}" class="btn btn-secondary">
+            <a href="{{ admin_route('admin.products') }}" class="btn btn-secondary">
                 <i class="fas fa-times"></i> キャンセル
             </a>
         </div>
     </form>
 </div>
 @endsection
-
 
