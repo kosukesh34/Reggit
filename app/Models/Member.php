@@ -28,13 +28,11 @@ class Member extends Model
         'address',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'points' => 'integer',
-            'birthday' => 'date',
-        ];
-    }
+    /** @var array<string, string> */
+    protected $casts = [
+        'points' => 'integer',
+        'birthday' => 'date',
+    ];
 
     public function project()
     {

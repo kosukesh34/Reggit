@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="{{ asset('css/admin/admin.css') }}">
     <script src="{{ asset('js/shared/utils/confirmDialog.js') }}"></script>
     <script src="{{ asset('js/admin/admin.js') }}"></script>
+    @stack('styles')
 </head>
 <body>
     <div class="admin-container">
