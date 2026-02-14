@@ -13,13 +13,11 @@ class StampCard extends Model
 
     protected $fillable = ['project_id', 'name', 'required_stamps', 'reward_description', 'image_url', 'is_active'];
 
-    protected function casts(): array
-    {
-        return [
-            'required_stamps' => 'integer',
-            'is_active' => 'boolean',
-        ];
-    }
+    /** @var array<string, string> */
+    protected $casts = [
+        'required_stamps' => 'integer',
+        'is_active' => 'boolean',
+    ];
 
     public function project()
     {

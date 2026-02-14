@@ -158,7 +158,7 @@ class ShopSetting extends Model
             }
             $merged[] = array_merge($defaults->get($tab), $item);
         }
-        if (empty($merged)) {
+        if ($merged === []) {
             return self::defaultFrontendMenuItems();
         }
         usort($merged, fn ($a, $b) => ($a['order'] ?? 999) <=> ($b['order'] ?? 999));
@@ -207,7 +207,7 @@ class ShopSetting extends Model
     public static function getLiffBuilderBlocks(?int $projectId = null): array
     {
         $blocks = self::getValue('liff_builder_blocks', null, $projectId);
-        if (!is_array($blocks) || empty($blocks)) {
+        if (!is_array($blocks) || $blocks === []) {
             return self::defaultLiffBuilderTemplates()[0]['blocks'];
         }
         return $blocks;
@@ -333,7 +333,7 @@ class ShopSetting extends Model
     public static function getLiffTabLayouts(?int $projectId = null): array
     {
         $layouts = self::getValue('liff_tab_layouts', null, $projectId);
-        if (!is_array($layouts) || empty($layouts)) {
+        if (!is_array($layouts) || $layouts === []) {
             return self::defaultLiffTabLayouts();
         }
         return $layouts;
@@ -465,7 +465,7 @@ class ShopSetting extends Model
     public static function getMemberRankSettings(?int $projectId = null): array
     {
         $settings = self::getValue('member_rank_settings', null, $projectId);
-        if (!is_array($settings) || empty($settings)) {
+        if (!is_array($settings) || $settings === []) {
             return self::defaultMemberRankSettings();
         }
         $normalized = [];
@@ -487,7 +487,7 @@ class ShopSetting extends Model
                 'order' => (int) ($row['order'] ?? 0),
             ];
         }
-        if (empty($normalized)) {
+        if ($normalized === []) {
             return self::defaultMemberRankSettings();
         }
         usort($normalized, fn ($a, $b) => ($a['min_points'] <=> $b['min_points']) ?: ($a['order'] <=> $b['order']));

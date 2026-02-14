@@ -17,12 +17,10 @@ class Announcement extends Model
         return $this->belongsTo(Project::class);
     }
 
-    protected function casts(): array
-    {
-        return [
-            'published_at' => 'datetime',
-            'expires_at' => 'datetime',
-            'is_pinned' => 'boolean',
-        ];
-    }
+    /** @var array<string, string> */
+    protected $casts = [
+        'published_at' => 'datetime',
+        'expires_at' => 'datetime',
+        'is_pinned' => 'boolean',
+    ];
 }
