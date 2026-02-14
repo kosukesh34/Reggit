@@ -19,65 +19,65 @@
             <nav class="sidebar-nav">
                 <div class="nav-group">
                     <div class="nav-group-label">メニュー</div>
-                    <a href="{{ route('admin.dashboard') }}" class="nav-item {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
+                    <a href="{{ admin_route('admin.dashboard') }}" class="nav-item {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
                         <i class="fas fa-th-large"></i>
                         <span>ダッシュボード</span>
                     </a>
                 </div>
                 <div class="nav-group">
                     <div class="nav-group-label">注文・商品</div>
-                    <a href="{{ route('admin.orders') }}" class="nav-item {{ request()->routeIs('admin.orders*') ? 'active' : '' }}">
+                    <a href="{{ admin_route('admin.orders') }}" class="nav-item {{ request()->routeIs('admin.orders*') ? 'active' : '' }}">
                         <i class="fas fa-shopping-cart"></i>
                         <span>注文（モバイル・店内）</span>
                     </a>
-                    <a href="{{ route('admin.products') }}" class="nav-item {{ request()->routeIs('admin.products*') ? 'active' : '' }}">
+                    <a href="{{ admin_route('admin.products') }}" class="nav-item {{ request()->routeIs('admin.products*') ? 'active' : '' }}">
                         <i class="fas fa-utensils"></i>
                         <span>商品管理</span>
                     </a>
                 </div>
                 <div class="nav-group">
                     <div class="nav-group-label">会員・ポイント</div>
-                    <a href="{{ route('admin.members') }}" class="nav-item {{ request()->routeIs('admin.members*') ? 'active' : '' }}">
+                    <a href="{{ admin_route('admin.members') }}" class="nav-item {{ request()->routeIs('admin.members*') ? 'active' : '' }}">
                         <i class="fas fa-id-card"></i>
                         <span>会員管理</span>
                     </a>
                 </div>
                 <div class="nav-group">
                     <div class="nav-group-label">予約・順番待ち</div>
-                    <a href="{{ route('admin.reservations') }}" class="nav-item {{ request()->routeIs('admin.reservations*') ? 'active' : '' }}">
+                    <a href="{{ admin_route('admin.reservations') }}" class="nav-item {{ request()->routeIs('admin.reservations*') ? 'active' : '' }}">
                         <i class="fas fa-calendar-check"></i>
                         <span>予約</span>
                     </a>
-                    <a href="{{ route('admin.queue') }}" class="nav-item {{ request()->routeIs('admin.queue*') ? 'active' : '' }}">
+                    <a href="{{ admin_route('admin.queue') }}" class="nav-item {{ request()->routeIs('admin.queue*') ? 'active' : '' }}">
                         <i class="fas fa-list-ol"></i>
                         <span>順番待ち</span>
                     </a>
                 </div>
                 <div class="nav-group">
                     <div class="nav-group-label">スタンプ・クーポン</div>
-                    <a href="{{ route('admin.stamps') }}" class="nav-item {{ request()->routeIs('admin.stamps*') ? 'active' : '' }}">
+                    <a href="{{ admin_route('admin.stamps') }}" class="nav-item {{ request()->routeIs('admin.stamps*') ? 'active' : '' }}">
                         <i class="fas fa-stamp"></i>
                         <span>スタンプ</span>
                     </a>
-                    <a href="{{ route('admin.coupons') }}" class="nav-item {{ request()->routeIs('admin.coupons*') ? 'active' : '' }}">
+                    <a href="{{ admin_route('admin.coupons') }}" class="nav-item {{ request()->routeIs('admin.coupons*') ? 'active' : '' }}">
                         <i class="fas fa-ticket-alt"></i>
                         <span>クーポン</span>
                     </a>
                 </div>
                 <div class="nav-group">
                     <div class="nav-group-label">お知らせ</div>
-                    <a href="{{ route('admin.announcements') }}" class="nav-item {{ request()->routeIs('admin.announcements*') ? 'active' : '' }}">
+                    <a href="{{ admin_route('admin.announcements') }}" class="nav-item {{ request()->routeIs('admin.announcements*') ? 'active' : '' }}">
                         <i class="fas fa-bullhorn"></i>
                         <span>お知らせ</span>
                     </a>
                 </div>
                 <div class="nav-group">
                     <div class="nav-group-label">設定</div>
-                    <a href="{{ route('admin.settings.basic') }}" class="nav-item {{ request()->routeIs('admin.settings.basic*') ? 'active' : '' }}">
+                    <a href="{{ admin_route('admin.settings.basic') }}" class="nav-item {{ request()->routeIs('admin.settings.basic*') ? 'active' : '' }}">
                         <i class="fas fa-sliders-h"></i>
                         <span>基本設定</span>
                     </a>
-                    <a href="{{ route('admin.settings.advanced') }}" class="nav-item {{ request()->routeIs('admin.settings.advanced*') ? 'active' : '' }}">
+                    <a href="{{ admin_route('admin.settings.advanced') }}" class="nav-item {{ request()->routeIs('admin.settings.advanced*') ? 'active' : '' }}">
                         <i class="fas fa-palette"></i>
                         <span>詳細設定（配色）</span>
                     </a>
