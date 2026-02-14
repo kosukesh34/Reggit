@@ -51,6 +51,20 @@ class LiffDesigner {
             { value: 'right', label: '右' },
         ];
 
+        this.TAB_FEATURE_MAP = {
+            home: 'feature_home_enabled',
+            products: 'feature_orders_enabled',
+            orders: 'feature_orders_enabled',
+            stamps: 'feature_stamps_enabled',
+            coupons: 'feature_coupons_enabled',
+            queue: 'feature_queue_enabled',
+            reservations: 'feature_reservations_enabled',
+            member: 'feature_members_enabled',
+            gallery: 'feature_gallery_enabled',
+            announcements: 'feature_announcements_enabled',
+        };
+
+        this.featureFlags = config.featureFlags || {};
         this.idCounter = 1;
         this.state = { layouts: {}, tabSettings: {}, activeTab: 'home', selectedId: null };
         this.history = [];
@@ -251,21 +265,40 @@ class LiffDesigner {
         const c = this.els.screenList; c.innerHTML = '';
         Object.keys(this.TAB_LABELS).forEach(key => {
             const active = this.state.activeTab === key;
+            const isEnabled = this.isTabEnabled(key);
             const count = (this.state.layouts[key] || []).length;
             const el = document.createElement('div');
-            el.className = 'ld-screen-item' + (active ? ' is-active' : '');
-            el.innerHTML = '<div class="ld-screen-item__icon"><i class="fas ' + (this.TAB_ICONS[key] || 'fa-circle') + '"></i></div><span class="ld-screen-item__label">' + this.esc(this.TAB_LABELS[key]) + '</span><span class="ld-screen-item__count">' + count + '</span>';
+            el.className = 'ld-screen-item' + (active ? ' is-active' : '') + (isEnabled ? '' : ' is-disabled');
+            const badge = isEnabled ? '' : '<span class="ld-screen-item__badge">OFF</span>';
+            el.innerHTML = '<div class="ld-screen-item__icon"><i class="fas ' + (this.TAB_ICONS[key] || 'fa-circle') + '"></i></div><span class="ld-screen-item__label">' + this.esc(this.TAB_LABELS[key]) + '</span>' + badge + '<span class="ld-screen-item__count">' + count + '</span>';
             el.addEventListener('click', () => { this.state.activeTab = key; this.state.selectedId = null; this.render(); });
             c.appendChild(el);
         });
     }
 
+    isTabEnabled(key) {
+        const flagKey = this.TAB_FEATURE_MAP[key];
+        if (!flagKey) return true;
+        const val = this.featureFlags[flagKey];
+        return val === undefined || val === true || val === '1' || val === 1;
+    }
+
+    getEnabledTabs() {
+        return Object.keys(this.TAB_LABELS).filter(key => this.isTabEnabled(key));
+    }
+
     renderPhoneNav() {
         const c = this.els.phoneNav; c.innerHTML = '';
-        Object.keys(this.TAB_LABELS).forEach(key => {
+        const enabledTabs = this.getEnabledTabs();
+        enabledTabs.forEach(key => {
             const el = document.createElement('div');
             el.className = 'ld-phone__nav-item' + (this.state.activeTab === key ? ' is-active' : '');
             el.innerHTML = '<i class="fas ' + (this.TAB_ICONS[key] || 'fa-circle') + '"></i><span>' + this.esc(this.TAB_LABELS[key]) + '</span>';
+            el.addEventListener('click', () => {
+                this.state.activeTab = key;
+                this.state.selectedId = null;
+                this.render();
+            });
             c.appendChild(el);
         });
         this.els.phoneHeaderTitle.textContent = this.TAB_LABELS[this.state.activeTab] || '';
