@@ -20,7 +20,7 @@ return new class extends Migration
 
         if (DB::getDriverName() === 'mysql') {
             $hasTypeIndex = DB::select("SHOW INDEX FROM shop_settings WHERE Column_name = 'type'");
-            if (empty($hasTypeIndex)) {
+            if (count($hasTypeIndex) === 0) {
                 Schema::table('shop_settings', function (Blueprint $table) {
                     $table->index('type');
                 });

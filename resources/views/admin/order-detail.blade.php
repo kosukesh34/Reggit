@@ -8,7 +8,7 @@
     <div class="card-header">
         <h3 class="card-title"><i class="fas fa-info-circle"></i> 注文情報</h3>
     </div>
-    <div style="padding: 24px;">
+    <div class="order-detail-padding">
         <div class="info-grid">
             <div class="info-item">
                 <div class="info-label">注文番号</div>
@@ -60,7 +60,7 @@
 
         <div class="order-status-actions">
             @if($order->status !== 'completed' && $order->status !== 'cancelled')
-            <form action="{{ route('admin.orders.complete', $order->id) }}" method="POST" class="complete-form">
+            <form action="{{ admin_route('admin.orders.complete', ['id' => $order->id]) }}" method="POST" class="complete-form">
                 @csrf
                 <button type="submit" class="btn btn-success btn-large" onclick="return confirm('この注文を完了にしますか？')">
                     <i class="fas fa-check-double"></i> 完了にする
@@ -72,7 +72,7 @@
                 <h4><i class="fas fa-bolt"></i> クイックアクション</h4>
                 <div class="quick-action-buttons">
                     @if($order->status === 'pending')
-                    <form action="{{ route('admin.orders.status', $order->id) }}" method="POST" style="display: inline;">
+                    <form action="{{ admin_route('admin.orders.status', ['id' => $order->id]) }}" method="POST" class="form-inline">
                         @csrf
                         <input type="hidden" name="status" value="confirmed">
                         <button type="submit" class="btn btn-info">
@@ -82,7 +82,7 @@
                     @endif
                     
                     @if($order->status === 'confirmed')
-                    <form action="{{ route('admin.orders.status', $order->id) }}" method="POST" style="display: inline;">
+                    <form action="{{ admin_route('admin.orders.status', ['id' => $order->id]) }}" method="POST" class="form-inline">
                         @csrf
                         <input type="hidden" name="status" value="preparing">
                         <button type="submit" class="btn btn-info">
@@ -92,7 +92,7 @@
                     @endif
                     
                     @if($order->status === 'preparing')
-                    <form action="{{ route('admin.orders.status', $order->id) }}" method="POST" style="display: inline;">
+                    <form action="{{ admin_route('admin.orders.status', ['id' => $order->id]) }}" method="POST" class="form-inline">
                         @csrf
                         <input type="hidden" name="status" value="ready">
                         <button type="submit" class="btn btn-info">
@@ -102,7 +102,7 @@
                     @endif
                     
                     @if($order->status === 'ready')
-                    <form action="{{ route('admin.orders.complete', $order->id) }}" method="POST" style="display: inline;">
+                    <form action="{{ admin_route('admin.orders.complete', ['id' => $order->id]) }}" method="POST" class="form-inline">
                         @csrf
                         <button type="submit" class="btn btn-success" onclick="return confirm('この注文を完了にしますか？')">
                             <i class="fas fa-check-double"></i> 完了
@@ -114,7 +114,7 @@
             
             <div class="status-selector">
                 <h4><i class="fas fa-cog"></i> ステータス変更</h4>
-                <form action="{{ route('admin.orders.status', $order->id) }}" method="POST">
+                <form action="{{ admin_route('admin.orders.status', ['id' => $order->id]) }}" method="POST">
                     @csrf
                     <div class="form-group">
                         <select name="status" class="form-select">
@@ -125,7 +125,7 @@
                             <option value="completed" {{ $order->status === 'completed' ? 'selected' : '' }}>完了 (completed)</option>
                             <option value="cancelled" {{ $order->status === 'cancelled' ? 'selected' : '' }}>キャンセル (cancelled)</option>
                         </select>
-                        <button type="submit" class="btn btn-primary" style="margin-top: 10px;">
+                        <button type="submit" class="btn btn-primary btn-mt-10">
                             <i class="fas fa-save"></i> 更新
                         </button>
                     </div>
@@ -160,18 +160,16 @@
         </tbody>
         <tfoot>
             <tr>
-                <td colspan="3" style="text-align: right; font-weight: 700;">合計:</td>
-                <td style="font-weight: 700;">¥{{ number_format($order->total_amount) }}</td>
+                <td colspan="3" class="table-right-bold">合計:</td>
+                <td class="table-bold">¥{{ number_format($order->total_amount) }}</td>
             </tr>
         </tfoot>
     </table>
 </div>
 
 <div class="form-actions">
-    <a href="{{ route('admin.orders') }}" class="btn btn-secondary">
+    <a href="{{ admin_route('admin.orders') }}" class="btn btn-secondary">
         <i class="fas fa-arrow-left"></i> 戻る
     </a>
 </div>
 @endsection
-
-

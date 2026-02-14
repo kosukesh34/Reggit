@@ -3,16 +3,21 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToProject;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Coupon extends Model
 {
-    use BelongsToProject;
+    use BelongsToProject, HasFactory;
+
+    public const ISSUE_TRIGGER_MANUAL = 'manual';
+    public const ISSUE_TRIGGER_FIRST_REGISTRATION = 'first_registration';
+    public const ISSUE_TRIGGER_STAMP_COMPLETED = 'stamp_completed';
 
     protected $fillable = [
-        'project_id', 'code', 'name', 'type', 'value', 'min_order_amount',
-        'usage_limit', 'used_count', 'start_at', 'end_at', 'is_active',
+        'project_id', 'code', 'name', 'image_url', 'type', 'value', 'min_order_amount',
+        'usage_limit', 'used_count', 'start_at', 'end_at', 'is_active', 'issue_trigger', 'stamp_card_id',
     ];
 
     protected function casts(): array

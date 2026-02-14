@@ -2,13 +2,16 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\ShopSetting;
+use App\Util\StrHelper;
 
 class Project extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, HasFactory;
 
     protected $fillable = [
         'project_key',
@@ -87,5 +90,11 @@ class Project extends Model
     public function shopSettings(): HasMany
     {
         return $this->hasMany(ShopSetting::class);
+    }
+
+    public function isSmaregiLinked(): bool
+    {
+        $contractId = ShopSetting::getValue('smaregi_contract_id', null, $this->id);
+        return !StrHelper::isEmptyStringOrNull($contractId);
     }
 }

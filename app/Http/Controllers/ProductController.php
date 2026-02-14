@@ -2,33 +2,37 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Product;
+use App\UseCases\Product\ProductIndexUseCase;
+use App\UseCases\Product\ProductShowUseCase;
 use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
+    public function __construct(
+        private ProductIndexUseCase $indexUseCase,
+        private ProductShowUseCase $showUseCase
+    ) {
+    }
+
     public function index(Request $request)
     {
-        $query = Product::query();
-
-        if ($request->has('category')) {
-            $query->where('category', $request->category);
+        $category = $request->query('category');
+        if ($category === null) {
+            $category = $request->get('category');
         }
 
-        if ($request->has('available')) {
-            $query->where('is_available', $request->available === 'true');
-        }
+        $result = $this->indexUseCase->handle($category, true, true);
 
-        $products = $query->orderBy('category')->orderBy('name')->get();
-
-        return response()->json($products);
+        return response()->json([
+            'products' => $result->products,
+            'categories' => $result->categoriesToArray(),
+        ]);
     }
 
     public function show($id)
     {
-        $product = Product::findOrFail($id);
+        $product = $this->showUseCase->handle((int) $id);
         return response()->json($product);
     }
 }
-
 

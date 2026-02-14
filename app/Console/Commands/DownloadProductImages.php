@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Product;
+use App\Util\StrHelper;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Http;
@@ -59,7 +60,7 @@ class DownloadProductImages extends Command
         $extension = pathinfo($path, PATHINFO_EXTENSION);
         
         // 拡張子がない場合やクエリパラメータがある場合の処理
-        if (empty($extension) || strpos($extension, '?') !== false) {
+        if (StrHelper::isEmptyStringOrNull($extension) || strpos($extension, '?') !== false) {
             // URLから推測
             if (strpos($url, '.webp') !== false) {
                 return 'webp';
@@ -74,5 +75,4 @@ class DownloadProductImages extends Command
         return $extension;
     }
 }
-
 
