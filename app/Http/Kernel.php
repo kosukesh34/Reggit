@@ -39,6 +39,14 @@ class Kernel extends HttpKernel
         'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,
         'password.confirm' => \Illuminate\Auth\Middleware\RequirePassword::class,
         'signed' => \Illuminate\Routing\Middleware\ValidateSignature::class,
+        'system.admin' => \App\Http\Middleware\EnsureSystemAdmin::class,
+        'store.admin' => \App\Http\Middleware\EnsureStoreAdmin::class,
+        'set.admin.project' => \App\Http\Middleware\SetAdminProjectFromQuery::class,
+        'bind.admin.project' => \App\Http\Middleware\BindAdminProject::class,
+        'bind.project' => \App\Http\Middleware\BindProjectFromRequest::class,
+        'api.auth' => \App\Http\Middleware\AuthenticateApiToken::class,
+        'admin.audit' => \App\Http\Middleware\AdminAuditLogger::class,
+        'admin.permission' => \App\Http\Middleware\CheckAdminPermission::class,
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         // 管理画面用
@@ -48,4 +56,3 @@ class Kernel extends HttpKernel
         'admin.permission' => \App\Http\Middleware\CheckAdminPermission::class,
     ];
 }
-
