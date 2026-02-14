@@ -24,7 +24,7 @@
     </div>
 @endif
 
-<form action="{{ route('admin.settings.update') }}" method="POST" id="settingsForm">
+<form action="{{ admin_route('admin.settings.update') }}" method="POST" id="settingsForm">
     @csrf
 
     <div class="card">

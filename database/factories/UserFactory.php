@@ -12,6 +12,7 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
+            'project_id' => 1,
             'line_user_id' => 'test-user-' . $this->faker->unique()->randomNumber(6),
             'name' => $this->faker->name(),
             'email' => $this->faker->unique()->safeEmail(),
@@ -19,4 +20,3 @@ class UserFactory extends Factory
         ];
     }
 }
-

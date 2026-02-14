@@ -1,0 +1,291 @@
+class QueueManager {
+    constructor(apiClient) {
+        this.apiClient = apiClient;
+    }
+
+    getSection() {
+        return DomHelper.getElementById(AppConstants.ELEMENT_IDS.QUEUE_SECTION);
+    }
+
+    getLoginTemplate() {
+        return `
+            <div class="queue-card">
+                <h2 class="section-title"><i class="fas fa-users"></i> 順番待ち</h2>
+                <p>ログインすると順番待ちを利用できます。</p>
+            </div>
+        `;
+    }
+
+    getEmptyTemplate(updatedAt = null, stats = null) {
+        const updated = updatedAt ? `<div class="queue-updated-at">最終更新: ${DomHelper.escapeHtml(this.formatUpdatedAt(updatedAt))}</div>` : '';
+        return `
+            <div class="queue-card">
+                <h2 class="section-title"><i class="fas fa-users"></i> 順番待ち</h2>
+                <p>現在の順番待ちはありません。</p>
+                ${this.getCreateFormTemplate(stats)}
+                ${this.getHelpTemplate()}
+                <div class="queue-actions">
+                    <button class="queue-button queue-button-secondary" data-queue-action="refresh">更新</button>
+                </div>
+                ${updated}
+            </div>
+        `;
+    }
+
+    getErrorTemplate(message) {
+        const msg = message || '順番待ちの情報を取得できませんでした。';
+        return `
+            <div class="queue-card">
+                <h2 class="section-title"><i class="fas fa-users"></i> 順番待ち</h2>
+                <p class="queue-error">${DomHelper.escapeHtml(msg)}</p>
+                ${this.getHelpTemplate()}
+                <div class="queue-actions">
+                    <button class="queue-button queue-button-secondary" data-queue-action="refresh">更新</button>
+                </div>
+            </div>
+        `;
+    }
+
+    getCreateFormTemplate(stats = null) {
+        const waitingCount = stats?.waiting_count ?? stats?.waitingCount ?? null;
+        const estimated = stats?.estimated_wait_minutes ?? stats?.estimatedWaitMinutes ?? null;
+        const statsHtml = waitingCount !== null || estimated !== null
+            ? `<div class="queue-stats">
+                    <div>待ち人数: <strong>${DomHelper.escapeHtml(waitingCount ?? '-')}</strong> 組</div>
+                    <div>予想待ち時間: <strong>${DomHelper.escapeHtml(estimated ?? '-')}</strong> 分</div>
+               </div>`
+            : '';
+        return `
+            <div class="queue-form">
+                ${statsHtml}
+                <label class="queue-label" for="queuePartySize">人数</label>
+                <div class="queue-form-row">
+                    <input id="queuePartySize" class="queue-input" type="number" min="1" max="20" value="1" />
+                    <button class="queue-button" data-queue-action="create">受付する</button>
+                </div>
+                <p class="queue-hint">人数を入力して順番待ちに登録できます。</p>
+            </div>
+        `;
+    }
+
+    getQueueTokenFromUrl() {
+        if (typeof window === 'undefined') return null;
+        const params = new URLSearchParams(window.location.search || '');
+        return params.get('queue_token') || params.get('queue_id');
+    }
+
+    clearQueueTokenFromUrl() {
+        if (typeof window === 'undefined' || !window.history) return;
+        const url = new URL(window.location.href);
+        url.searchParams.delete('queue_token');
+        window.history.replaceState({}, '', url.toString());
+    }
+
+    async load() {
+        const section = this.getSection();
+        if (!section) return;
+        if (typeof window === 'undefined' || !window.__LINE_USER_ID__) {
+            section.innerHTML = this.getLoginTemplate();
+            return;
+        }
+        const queueToken = this.getQueueTokenFromUrl();
+        if (queueToken) {
+            await this.loadByToken(queueToken, section);
+            return;
+        }
+        section.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i><p>読み込み中...</p></div>';
+        try {
+            const result = await this.apiClient.get(AppConstants.API_ENDPOINTS.QUEUE_ME);
+            const data = result.data || {};
+            if (!data || Object.keys(data).length === 0 || data.queue_entry === null) {
+                section.innerHTML = this.getEmptyTemplate(data.updated_at || null, data);
+                this.attachQueueHandlers(section);
+                return;
+            }
+            const entry = data.queue_entry || data;
+            if (entry.status === 'cancelled' || entry.status === 'entered') {
+                section.innerHTML = this.getEmptyTemplate(data.updated_at || null, data);
+                this.attachQueueHandlers(section);
+                return;
+            }
+            section.innerHTML = this.renderQueueCard(entry, false, data.updated_at || null);
+            this.attachQueueHandlers(section, entry);
+        } catch (error) {
+            console.error('Failed to load queue:', error);
+            section.innerHTML = this.getErrorTemplate();
+        }
+    }
+
+    async loadByToken(token, section) {
+        section.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i><p>読み込み中...</p></div>';
+        try {
+            const result = await this.apiClient.get(`${AppConstants.API_ENDPOINTS.QUEUE_QR}/${encodeURIComponent(token)}`);
+            if (!result.success) {
+                section.innerHTML = this.getErrorTemplate(result.error);
+                this.attachQueueHandlers(section);
+                return;
+            }
+            const entry = result.data?.queue_entry;
+            if (!entry) {
+                section.innerHTML = this.getErrorTemplate('順番待ちが見つかりませんでした。');
+                this.attachQueueHandlers(section);
+                return;
+            }
+            if (entry.status === 'cancelled' || entry.status === 'entered') {
+                section.innerHTML = this.getEmptyTemplate(result.data?.updated_at || null, result.data);
+                this.attachQueueHandlers(section);
+                return;
+            }
+            section.innerHTML = this.renderQueueCard(entry, true, result.data?.updated_at || null);
+            this.attachQueueHandlers(section, entry);
+        } catch (error) {
+            console.error('Failed to load queue by token:', error);
+            section.innerHTML = this.getErrorTemplate(error.message);
+            this.attachQueueHandlers(section);
+        }
+    }
+
+    renderQueueCard(entry, isQrView = false, updatedAt = null) {
+        const queueNumber = entry.queue_number ?? entry.queueNumber ?? entry.id ?? '-';
+        const status = entry.status || '-';
+        const partySize = entry.party_size ?? entry.partySize ?? '-';
+        const waitingCount = entry.waiting_count ?? entry.waitingCount ?? '-';
+        const aheadCount = entry.ahead_count ?? entry.aheadCount ?? '-';
+        const estimated = entry.estimated_wait_minutes ?? entry.estimatedWaitMinutes ?? '-';
+        const canCancel = entry.id && (status === 'waiting' || status === 'called');
+        const updated = updatedAt ? `<div class="queue-updated-at">最終更新: ${DomHelper.escapeHtml(this.formatUpdatedAt(updatedAt))}</div>` : '';
+        const statusInfo = this.getStatusInfo(status);
+        return `
+            <div class="queue-card">
+                <h2 class="section-title"><i class="fas fa-users"></i> 順番待ち</h2>
+                ${isQrView ? '<p class="queue-subtitle">QRから登録済みの待ち状況です。</p>' : ''}
+                <div class="queue-info">
+                    <div class="queue-row">
+                        <div class="queue-label">受付番号</div>
+                        <div class="queue-value"><strong>${DomHelper.escapeHtml(queueNumber)}</strong></div>
+                    </div>
+                    <div class="queue-row">
+                        <div class="queue-label">状態</div>
+                        <div class="queue-value"><span class="queue-badge ${statusInfo.className}">${DomHelper.escapeHtml(statusInfo.label)}</span></div>
+                    </div>
+                    <div class="queue-row">
+                        <div class="queue-label">人数</div>
+                        <div class="queue-value">${DomHelper.escapeHtml(partySize)} 名</div>
+                    </div>
+                    <div class="queue-row">
+                        <div class="queue-label">待ち人数</div>
+                        <div class="queue-value">${DomHelper.escapeHtml(waitingCount)} 組</div>
+                    </div>
+                    <div class="queue-row">
+                        <div class="queue-label">あと</div>
+                        <div class="queue-value">${DomHelper.escapeHtml(aheadCount)} 組</div>
+                    </div>
+                    <div class="queue-row">
+                        <div class="queue-label">予想待ち時間</div>
+                        <div class="queue-value">${DomHelper.escapeHtml(estimated)} 分</div>
+                    </div>
+                </div>
+                <div class="queue-actions">
+                    ${canCancel ? `<button class="queue-button queue-button-secondary" data-queue-action="cancel" data-queue-id="${DomHelper.escapeHtml(entry.id)}">キャンセル</button>` : ''}
+                    <button class="queue-button queue-button-secondary" data-queue-action="refresh">更新</button>
+                </div>
+                ${updated}
+            </div>
+        `;
+    }
+
+    attachQueueHandlers(section, entry = null) {
+        const createButton = section.querySelector('[data-queue-action="create"]');
+        if (createButton) {
+            createButton.addEventListener('click', async () => {
+                const input = section.querySelector('#queuePartySize');
+                const value = input ? Number(input.value) : NaN;
+                if (!Number.isInteger(value) || value < 1 || value > 20) {
+                    alert('人数は1〜20で入力してください。');
+                    return;
+                }
+                createButton.disabled = true;
+                createButton.classList.add('is-loading');
+                const result = await this.apiClient.post(AppConstants.API_ENDPOINTS.QUEUE, {
+                    party_size: value,
+                });
+                createButton.disabled = false;
+                createButton.classList.remove('is-loading');
+                if (!result.success) {
+                    section.innerHTML = this.getErrorTemplate(result.error);
+                    return;
+                }
+                const created = result.data?.queue_entry;
+                if (!created) {
+                    section.innerHTML = this.getErrorTemplate();
+                    return;
+                }
+                section.innerHTML = this.renderQueueCard(created);
+                this.attachQueueHandlers(section, created);
+            });
+        }
+
+        const cancelButton = section.querySelector('[data-queue-action="cancel"]');
+        if (cancelButton && entry?.id) {
+            cancelButton.addEventListener('click', async () => {
+                if (!confirm('この順番待ちをキャンセルしますか？')) {
+                    return;
+                }
+                cancelButton.disabled = true;
+                cancelButton.classList.add('is-loading');
+                const result = await this.apiClient.post(`${AppConstants.API_ENDPOINTS.QUEUE}/${entry.id}/cancel`);
+                cancelButton.disabled = false;
+                cancelButton.classList.remove('is-loading');
+                if (!result.success) {
+                    section.innerHTML = this.getErrorTemplate(result.error);
+                    return;
+                }
+                this.clearQueueTokenFromUrl();
+                await this.load();
+            });
+        }
+
+        const refreshButton = section.querySelector('[data-queue-action="refresh"]');
+        if (refreshButton) {
+            refreshButton.addEventListener('click', async () => {
+                refreshButton.disabled = true;
+                refreshButton.classList.add('is-loading');
+                await this.load();
+            });
+        }
+    }
+
+    getStatusInfo(status) {
+        const map = {
+            waiting: { label: '待機中', className: 'queue-badge-waiting' },
+            called: { label: '呼び出し済', className: 'queue-badge-called' },
+            entered: { label: '入店済', className: 'queue-badge-entered' },
+            cancelled: { label: 'キャンセル', className: 'queue-badge-cancelled' },
+        };
+        return map[status] || { label: status || '-', className: 'queue-badge-default' };
+    }
+
+    getHelpTemplate() {
+        return `
+            <div class="queue-help">
+                <div class="queue-help-title">使い方</div>
+                <ol class="queue-help-list">
+                    <li>人数を入力して「受付する」を押します。</li>
+                    <li>表示されたQRをLINEで読み取ると通知対象になります。</li>
+                    <li>店舗側で呼び出すとLINEに通知が届きます。</li>
+                </ol>
+                <p class="queue-help-note">同じLINEユーザーで複数の順番待ち登録が可能です。</p>
+            </div>
+        `;
+    }
+
+    formatUpdatedAt(value) {
+        try {
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) return value;
+            return date.toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+        } catch (e) {
+            return value;
+        }
+    }
+}

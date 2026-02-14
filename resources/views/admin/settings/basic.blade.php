@@ -14,7 +14,7 @@
 @endphp
 
 <nav class="breadcrumb" aria-label="パンくず">
-    <a href="{{ route('admin.dashboard') }}">ダッシュボード</a>
+    <a href="{{ admin_route('admin.dashboard') }}">ダッシュボード</a>
     <span class="breadcrumb-sep">/</span>
     <span>基本設定</span>
 </nav>
@@ -28,7 +28,7 @@
     <div class="alert alert-success"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>
 @endif
 
-<form action="{{ route('admin.settings.basic.update') }}" method="POST" id="settingsBasicForm">
+<form action="{{ admin_route('admin.settings.basic.update') }}" method="POST" id="settingsBasicForm">
     @csrf
     <div class="card">
         <div class="card-header">
@@ -96,7 +96,7 @@
             </div>
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> 保存</button>
-                <a href="{{ route('admin.settings.advanced') }}" class="btn btn-secondary">詳細設定（配色）へ</a>
+                <a href="{{ admin_route('admin.settings.advanced') }}" class="btn btn-secondary">詳細設定（配色）へ</a>
             </div>
         </div>
     </div>
@@ -104,20 +104,20 @@
 
 <script>
 function addTimeSlot() {
-    var c = document.getElementById('timeSlotsContainer');
-    var d = document.createElement('div');
+    const c = document.getElementById('timeSlotsContainer');
+    const d = document.createElement('div');
     d.className = 'time-slot-item';
     d.innerHTML = '<input type="time" name="reservation_time_slots[]" class="form-control time-slot-input" required> <button type="button" class="btn btn-sm btn-danger remove-time-slot" onclick="removeTimeSlot(this)"><i class="fas fa-times"></i> 削除</button>';
     c.appendChild(d);
 }
 function removeTimeSlot(btn) {
-    var c = document.getElementById('timeSlotsContainer');
+    const c = document.getElementById('timeSlotsContainer');
     if (c.children.length > 1) btn.closest('.time-slot-item').remove();
     else alert('最低1つの時間帯が必要です');
 }
 function addClosedDate() {
-    var c = document.getElementById('closedDatesContainer');
-    var d = document.createElement('div');
+    const c = document.getElementById('closedDatesContainer');
+    const d = document.createElement('div');
     d.className = 'closed-date-item';
     d.innerHTML = '<input type="date" name="closed_dates[]" class="form-control closed-date-input"> <button type="button" class="btn btn-sm btn-danger remove-closed-date" onclick="removeClosedDate(this)"><i class="fas fa-times"></i> 削除</button>';
     c.appendChild(d);

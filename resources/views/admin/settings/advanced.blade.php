@@ -7,7 +7,7 @@
 @php $lineTheme = $settings['lineTheme'] ?? []; @endphp
 
 <nav class="breadcrumb" aria-label="パンくず">
-    <a href="{{ route('admin.dashboard') }}">ダッシュボード</a>
+    <a href="{{ admin_route('admin.dashboard') }}">ダッシュボード</a>
     <span class="breadcrumb-sep">/</span>
     <span>詳細設定（配色）</span>
 </nav>
@@ -21,7 +21,7 @@
     <div class="alert alert-success"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>
 @endif
 
-<form action="{{ route('admin.settings.advanced.update') }}" method="POST" id="settingsAdvancedForm">
+<form action="{{ admin_route('admin.settings.advanced.update') }}" method="POST" id="settingsAdvancedForm">
     @csrf
     <div class="card">
         <div class="card-body">
@@ -58,7 +58,7 @@
             </div>
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> 保存</button>
-                <a href="{{ route('admin.settings.basic') }}" class="btn btn-secondary">基本設定へ</a>
+                <a href="{{ admin_route('admin.settings.basic') }}" class="btn btn-secondary">基本設定へ</a>
             </div>
         </div>
     </div>
@@ -66,11 +66,11 @@
 
 <script>
 document.querySelectorAll('.color-picker').forEach(function(p) {
-    var h = p.closest('.color-input-row').querySelector('.color-hex');
+    const h = p.closest('.color-input-row').querySelector('.color-hex');
     p.addEventListener('input', function() { h.value = p.value; });
 });
 document.querySelectorAll('.color-hex').forEach(function(h) {
-    var p = h.closest('.color-input-row').querySelector('.color-picker');
+    const p = h.closest('.color-input-row').querySelector('.color-picker');
     h.addEventListener('input', function() {
         if (/^#[0-9A-Fa-f]{6}$/.test(h.value)) p.value = h.value;
     });

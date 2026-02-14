@@ -107,7 +107,7 @@ return new class extends Migration
                 'order_type' => '注文種別。mobile: モバイルオーダー, in_store: 店内注文',
                 'total_amount' => '合計金額',
                 'status' => 'ステータス。pending, confirmed, preparing, ready, completed, cancelled',
-                'payment_method' => '支払方法。cash, card, line_pay, points, stripe',
+                'payment_method' => '支払方法。cash, points, stripe',
                 'notes' => '備考',
                 'points_used' => '利用ポイント数',
                 'points_earned' => '付与ポイント数',

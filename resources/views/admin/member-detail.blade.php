@@ -7,7 +7,7 @@
 <div class="card">
     <div class="card-header">
         <h3 class="card-title"><i class="fas fa-user"></i> 会員情報</h3>
-        <a href="{{ route('admin.members') }}" class="btn btn-secondary btn-sm">
+        <a href="{{ admin_route('admin.members') }}" class="btn btn-secondary btn-sm">
             <i class="fas fa-arrow-left"></i> 一覧に戻る
         </a>
     </div>
@@ -28,6 +28,22 @@
             <div class="info-item">
                 <div class="info-label">現在のポイント</div>
                 <div class="info-value">{{ number_format($member->points) }}pt</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">ランク</div>
+                <div class="info-value">{{ $member->rank_label ?? ($member->rank ?? '—') }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">ポイント有効期限</div>
+                <div class="info-value">
+                    {{ $member->points_expiry['expires_at_label'] ?? '—' }}
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">期限切れ予定ポイント</div>
+                <div class="info-value">
+                    {{ number_format($member->points_expiry['points_expiring'] ?? 0) }}pt
+                </div>
             </div>
             <div class="info-item">
                 <div class="info-label">ステータス</div>
@@ -85,10 +101,8 @@
 </div>
 
 <div class="form-actions">
-    <a href="{{ route('admin.members') }}" class="btn btn-secondary">
+    <a href="{{ admin_route('admin.members') }}" class="btn btn-secondary">
         <i class="fas fa-arrow-left"></i> 戻る
     </a>
 </div>
 @endsection
-
-

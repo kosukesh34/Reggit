@@ -8,39 +8,43 @@ class SettingsService
 {
     private const HEX_REGEX = '/^#[0-9A-Fa-f]{6}$/';
 
-    public function getBasicSettings(): array
+    public function getBasicSettings(?int $projectId = null): array
     {
+        $projectId = $projectId ?? 1;
         return [
-            'businessHours' => ShopSetting::getBusinessHours(),
-            'timeSlots' => ShopSetting::getReservationTimeSlots(),
-            'closedDays' => ShopSetting::getClosedDays(),
-            'closedDates' => ShopSetting::getClosedDates(),
-            'advanceDays' => ShopSetting::getAdvanceBookingDays(),
-            'reservationCapacity' => ShopSetting::getReservationCapacityPerSlot(),
+            'businessHours' => ShopSetting::getBusinessHours($projectId),
+            'timeSlots' => ShopSetting::getReservationTimeSlots($projectId),
+            'closedDays' => ShopSetting::getClosedDays($projectId),
+            'closedDates' => ShopSetting::getClosedDates($projectId),
+            'advanceDays' => ShopSetting::getAdvanceBookingDays($projectId),
+            'reservationCapacity' => ShopSetting::getReservationCapacityPerSlot($projectId),
         ];
     }
 
-    public function getAdvancedSettings(): array
+    public function getAdvancedSettings(?int $projectId = null): array
     {
-        return ['lineTheme' => ShopSetting::getLineThemeColors()];
+        $projectId = $projectId ?? 1;
+        return ['lineTheme' => ShopSetting::getLineThemeColors($projectId)];
     }
 
-    public function updateReservationSettings(array $validated): void
+    public function updateReservationSettings(array $validated, ?int $projectId = null): void
     {
-        ShopSetting::setValue('business_hours_start', $validated['business_hours_start'], 'time');
-        ShopSetting::setValue('business_hours_end', $validated['business_hours_end'], 'time');
-        ShopSetting::setValue('reservation_time_slots', $validated['reservation_time_slots'], 'json');
-        ShopSetting::setValue('closed_days', $validated['closed_days'] ?? [], 'json');
+        $projectId = $projectId ?? 1;
+        ShopSetting::setValue('business_hours_start', $validated['business_hours_start'], 'time', $projectId);
+        ShopSetting::setValue('business_hours_end', $validated['business_hours_end'], 'time', $projectId);
+        ShopSetting::setValue('reservation_time_slots', $validated['reservation_time_slots'], 'json', $projectId);
+        ShopSetting::setValue('closed_days', $validated['closed_days'] ?? [], 'json', $projectId);
         $closedDates = array_values(array_filter($validated['closed_dates'] ?? [], function ($date) {
             return $date !== null && $date !== '';
         }));
-        ShopSetting::setValue('closed_dates', $closedDates, 'json');
-        ShopSetting::setValue('advance_booking_days', $validated['advance_booking_days'], 'integer');
-        ShopSetting::setValue('reservation_capacity_per_slot', $validated['reservation_capacity_per_slot'], 'integer');
+        ShopSetting::setValue('closed_dates', $closedDates, 'json', $projectId);
+        ShopSetting::setValue('advance_booking_days', $validated['advance_booking_days'], 'integer', $projectId);
+        ShopSetting::setValue('reservation_capacity_per_slot', $validated['reservation_capacity_per_slot'], 'integer', $projectId);
     }
 
-    public function updateLineThemeSettings(array $validated): void
+    public function updateLineThemeSettings(array $validated, ?int $projectId = null): void
     {
+        $projectId = $projectId ?? 1;
         $keys = [
             'line_primary_color' => 'line_primary_color',
             'line_primary_dark' => 'line_primary_dark',
@@ -49,8 +53,45 @@ class SettingsService
         ];
         foreach ($keys as $key) {
             if (isset($validated[$key]) && $validated[$key] !== '' && preg_match(self::HEX_REGEX, $validated[$key]) === 1) {
-                ShopSetting::setValue($key, $validated[$key], 'string');
+                ShopSetting::setValue($key, $validated[$key], 'string', $projectId);
             }
         }
+    }
+
+    public function getMenuSettings(?int $projectId = null): array
+    {
+        $projectId = $projectId ?? 1;
+        $defaults = ShopSetting::defaultFrontendMenuItems();
+        $availableTabs = collect($defaults)->map(function ($item) {
+            return [
+                'tab' => $item['tab'],
+                'label' => $item['label'],
+            ];
+        })->values()->all();
+        $availableIcons = collect($defaults)->pluck('icon')->unique()->values()->all();
+        return [
+            'menuItems' => ShopSetting::getFrontendMenuItems($projectId),
+            'availableTabs' => $availableTabs,
+            'availableIcons' => $availableIcons,
+        ];
+    }
+
+    public function updateMenuSettings(array $validated, ?int $projectId = null): void
+    {
+        $projectId = $projectId ?? 1;
+        $items = collect($validated['menu_items'] ?? [])
+            ->map(function ($item) {
+                return [
+                    'tab' => $item['tab'] ?? '',
+                    'label' => $item['label'] ?? null,
+                    'icon' => $item['icon'] ?? null,
+                    'enabled' => isset($item['enabled']) ? (bool) $item['enabled'] : false,
+                    'order' => isset($item['order']) ? (int) $item['order'] : 999,
+                ];
+            })
+            ->values()
+            ->all();
+
+        ShopSetting::setFrontendMenuItems($items, $projectId);
     }
 }

@@ -3,14 +3,15 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToProject;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class StampCard extends Model
 {
-    use BelongsToProject;
+    use BelongsToProject, HasFactory;
 
-    protected $fillable = ['project_id', 'name', 'required_stamps', 'reward_description', 'is_active'];
+    protected $fillable = ['project_id', 'name', 'required_stamps', 'reward_description', 'image_url', 'is_active'];
 
     protected function casts(): array
     {
