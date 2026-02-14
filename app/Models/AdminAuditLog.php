@@ -19,12 +19,10 @@ class AdminAuditLog extends Model
         'payload',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'payload' => 'array',
-        ];
-    }
+    /** @var array<string, string> */
+    protected $casts = [
+        'payload' => 'array',
+    ];
 
     /** 保存時に payload が配列なら必ず JSON 文字列に変換（Array to string conversion 防止） */
     protected function setPayloadAttribute($value): void

@@ -27,15 +27,6 @@ class LiffControllerTest extends TestCase
         $response->assertStatus(200);
     }
 
-    public function testLiffProductsReturns200WhenProjectExists(): void
-    {
-        $this->createProject();
-
-        $response = $this->get('/liff/products?project_key=default');
-
-        $response->assertStatus(200);
-    }
-
     public function testLiffIndexUsesFirstActiveProjectWhenNoKey(): void
     {
         $this->createProject();

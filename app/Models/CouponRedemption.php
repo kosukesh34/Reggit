@@ -12,10 +12,8 @@ class CouponRedemption extends Model
 
     protected $fillable = ['project_id', 'coupon_id', 'member_id', 'member_coupon_id', 'order_id', 'used_at'];
 
-    protected function casts(): array
-    {
-        return ['used_at' => 'datetime'];
-    }
+    /** @var array<string, string> */
+    protected $casts = ['used_at' => 'datetime'];
 
     public function project()
     {

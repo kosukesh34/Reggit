@@ -21,12 +21,10 @@ class UserDevice extends Model
         'last_used_at',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'last_used_at' => 'datetime',
-        ];
-    }
+    /** @var array<string, string> */
+    protected $casts = [
+        'last_used_at' => 'datetime',
+    ];
 
     public function project(): BelongsTo
     {

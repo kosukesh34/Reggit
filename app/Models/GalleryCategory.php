@@ -18,13 +18,11 @@ class GalleryCategory extends Model
         'is_active',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'sort_order' => 'integer',
-            'is_active' => 'boolean',
-        ];
-    }
+    /** @var array<string, string> */
+    protected $casts = [
+        'sort_order' => 'integer',
+        'is_active' => 'boolean',
+    ];
 
     public function items(): HasMany
     {

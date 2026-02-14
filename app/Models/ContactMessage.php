@@ -19,12 +19,10 @@ class ContactMessage extends Model
         'payload',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'payload' => 'array',
-        ];
-    }
+    /** @var array<string, string> */
+    protected $casts = [
+        'payload' => 'array',
+    ];
 
     public function setPayloadAttribute($value): void
     {

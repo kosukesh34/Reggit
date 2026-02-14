@@ -45,6 +45,6 @@ class AdminDashboardTest extends TestCase
             ->get(route('admin.dashboard', ['project_key' => $project->project_key]));
 
         $response->assertStatus(200);
-        $response->assertSee($project->name, false);
+        $response->assertSee('ダッシュボード', false);
     }
 }

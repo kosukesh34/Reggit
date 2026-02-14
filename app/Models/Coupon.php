@@ -20,18 +20,16 @@ class Coupon extends Model
         'usage_limit', 'used_count', 'start_at', 'end_at', 'is_active', 'issue_trigger', 'stamp_card_id',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'value' => 'decimal:2',
-            'min_order_amount' => 'decimal:2',
-            'usage_limit' => 'integer',
-            'used_count' => 'integer',
-            'start_at' => 'datetime',
-            'end_at' => 'datetime',
-            'is_active' => 'boolean',
-        ];
-    }
+    /** @var array<string, string> */
+    protected $casts = [
+        'value' => 'decimal:2',
+        'min_order_amount' => 'decimal:2',
+        'usage_limit' => 'integer',
+        'used_count' => 'integer',
+        'start_at' => 'datetime',
+        'end_at' => 'datetime',
+        'is_active' => 'boolean',
+    ];
 
     public function project()
     {

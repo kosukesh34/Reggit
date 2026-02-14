@@ -88,8 +88,8 @@ class LiffDesigner {
 
         switch (type) {
             case 'hero':
-                block.title = item.title || 'タイトル';
-                block.subtitle = item.subtitle || item.text || '';
+                block.title = item.title || 'ようこそ！';
+                block.subtitle = item.subtitle || item.text || 'モバイルオーダーへ';
                 block.image_url = item.image_url || '';
                 block.gradient_start = item.gradient_start || '#667eea';
                 block.gradient_end = item.gradient_end || '#764ba2';
@@ -106,8 +106,8 @@ class LiffDesigner {
                 block.font_size = item.font_size || 13;
                 break;
             case 'image':
-                block.image_url = item.image_url || '';
-                block.alt = item.alt || '';
+                block.image_url = item.image_url || 'https://picsum.photos/seed/img1/750/400';
+                block.alt = item.alt || 'サンプル画像';
                 block.fit = item.fit || 'cover';
                 break;
             case 'button':
@@ -119,26 +119,31 @@ class LiffDesigner {
                 block.text_align = 'center';
                 break;
             case 'card':
-                block.title = item.title || 'タイトル';
-                block.description = item.description || '';
-                block.image_url = item.image_url || '';
+                block.title = item.title || '本日のおすすめ';
+                block.description = item.description || 'シェフが厳選した季節の素材を使った一品です。';
+                block.image_url = item.image_url || 'https://picsum.photos/seed/card1/600/300';
                 block.image_height = item.image_height || 140;
                 break;
             case 'collection':
                 block.items = item.items || [
-                    { title: 'アイテム1', image_url: '', description: '' },
-                    { title: 'アイテム2', image_url: '', description: '' },
-                    { title: 'アイテム3', image_url: '', description: '' },
+                    { title: 'おすすめ商品', image_url: 'https://picsum.photos/seed/col1/300/300', description: '人気No.1' },
+                    { title: '季節限定', image_url: 'https://picsum.photos/seed/col2/300/300', description: '期間限定メニュー' },
+                    { title: '新メニュー', image_url: 'https://picsum.photos/seed/col3/300/300', description: 'NEW' },
+                    { title: 'セット割', image_url: 'https://picsum.photos/seed/col4/300/300', description: 'お得なセット' },
                 ];
+                block.layout = item.layout || 'scroll';
+                block.columns = item.columns ?? 2;
+                block.max_rows = item.max_rows ?? 0;
                 block.item_width = item.item_width || 140;
                 block.item_image_height = item.item_image_height || 100;
+                block.gap = item.gap ?? 8;
                 block.show_description = item.show_description !== false;
                 break;
             case 'slider':
                 block.slides = item.slides || [
-                    { image_url: '', caption: 'スライド1' },
-                    { image_url: '', caption: 'スライド2' },
-                    { image_url: '', caption: 'スライド3' },
+                    { image_url: 'https://picsum.photos/seed/slide1/750/400', caption: 'キャンペーン実施中' },
+                    { image_url: 'https://picsum.photos/seed/slide2/750/400', caption: '新メニュー登場' },
+                    { image_url: 'https://picsum.photos/seed/slide3/750/400', caption: 'ポイント2倍デー' },
                 ];
                 block.slide_height = item.slide_height || 160;
                 block.auto_play = item.auto_play !== false;
@@ -372,8 +377,18 @@ class LiffDesigner {
 
     buildCollection(el, b) {
         const items = b.items || [];
-        let html = '<div class="ld-block__body ld-collection" style="--item-w:' + (b.item_width || 140) + 'px">';
-        items.forEach(item => {
+        const isGrid = b.layout === 'grid';
+        const cols = b.columns || 2;
+        const gap = b.gap ?? 8;
+        const maxRows = b.max_rows || 0;
+        const visibleCount = (isGrid && maxRows > 0) ? maxRows * cols : items.length;
+        const visible = items.slice(0, visibleCount);
+        const cls = isGrid ? 'ld-collection ld-collection--grid' : 'ld-collection';
+        const style = isGrid
+            ? '--col-count:' + cols + ';--col-gap:' + gap + 'px'
+            : '--item-w:' + (b.item_width || 140) + 'px;--col-gap:' + gap + 'px';
+        let html = '<div class="ld-block__body ' + cls + '" style="' + style + '">';
+        visible.forEach(item => {
             let ih = '<div class="ld-collection__item">';
             ih += '<div class="ld-collection__img" style="height:' + (b.item_image_height || 100) + 'px">';
             ih += item.image_url ? '<img src="' + this.esc(item.image_url) + '" alt="">' : '<i class="fas fa-image"></i>';
@@ -580,10 +595,22 @@ class LiffDesigner {
     }
 
     sCollection(p, b) {
-        this.addRange(p, 'アイテム幅', b.item_width, 80, 240, v => { b.item_width = v; });
+        this.addSel(p, 'レイアウト', b.layout, [
+            { value: 'scroll', label: '横スクロール' },
+            { value: 'grid', label: 'グリッド（折り返し）' },
+        ], v => { b.layout = v; });
+        if (b.layout === 'grid') {
+            this.addSel(p, '列数', String(b.columns), [
+                { value: '2', label: '2列' }, { value: '3', label: '3列' }, { value: '4', label: '4列' },
+            ], v => { b.columns = parseInt(v, 10); });
+            this.addRange(p, '表示行数 (0=全て)', b.max_rows, 0, 10, v => { b.max_rows = v; });
+        } else {
+            this.addRange(p, 'アイテム幅', b.item_width, 80, 240, v => { b.item_width = v; });
+        }
         this.addRange(p, '画像の高さ', b.item_image_height, 40, 200, v => { b.item_image_height = v; });
+        this.addRange(p, '間隔', b.gap, 0, 24, v => { b.gap = v; });
         this.addCheckbox(p, '説明を表示', b.show_description, v => { b.show_description = v; });
-        this.addArrayItems(p, 'アイテム', b.items, () => ({ title: '新規', image_url: '', description: '' }), ['title', 'image_url', 'description'], ['タイトル', '画像URL', '説明']);
+        this.addArrayItems(p, 'アイテム', b.items, () => ({ title: '新規', image_url: 'https://picsum.photos/seed/' + Date.now() + '/300/300', description: '' }), ['title', 'image_url', 'description'], ['タイトル', '画像URL', '説明']);
     }
 
     sSlider(p, b) {

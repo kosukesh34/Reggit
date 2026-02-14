@@ -17,15 +17,13 @@ class QueueEntry extends Model
         'status', 'queue_number', 'qr_token', 'called_at', 'entered_at',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'party_size' => 'integer',
-            'queue_number' => 'integer',
-            'called_at' => 'datetime',
-            'entered_at' => 'datetime',
-        ];
-    }
+    /** @var array<string, string> */
+    protected $casts = [
+        'party_size' => 'integer',
+        'queue_number' => 'integer',
+        'called_at' => 'datetime',
+        'entered_at' => 'datetime',
+    ];
 
     public function project(): BelongsTo
     {

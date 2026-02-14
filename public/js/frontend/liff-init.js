@@ -10,7 +10,7 @@
  */
 (function () {
     function getLiffId() {
-        var meta = document.querySelector('meta[name="line-liff-id"]');
+        const meta = document.querySelector('meta[name="line-liff-id"]');
         return meta ? (meta.getAttribute('content') || '').trim() : '';
     }
 
@@ -23,20 +23,20 @@
     }
 
     function setLoadingText(text) {
-        var el = document.querySelector('.liff-loading-text');
+        const el = document.querySelector('.liff-loading-text');
         if (el) el.textContent = text;
     }
 
     /** LINEアプリ内かどうかを判定（LIFF SDK読み込み前でも使用可能） */
     function isInLineApp() {
-        var ua = navigator.userAgent || '';
+        const ua = navigator.userAgent || '';
         return /Line/i.test(ua) || /LIFF/i.test(ua);
     }
 
     function getLineUserIdFromToken() {
         if (typeof liff === 'undefined' || !liff.isLoggedIn()) return null;
         try {
-            var decoded = liff.getDecodedIDToken();
+            const decoded = liff.getDecodedIDToken();
             return decoded && decoded.sub ? decoded.sub : null;
         } catch (e) {
             console.warn('LIFF getDecodedIDToken error:', e);
@@ -97,7 +97,7 @@
     // ─── メイン初期化ロジック ───
 
     window.__IS_LIFF__ = isInLineApp();
-    var liffId = getLiffId();
+    const liffId = getLiffId();
 
     // (A) LIFF ID 未設定 or 外部ブラウザ
     if (!liffId || !window.__IS_LIFF__) {
@@ -125,7 +125,7 @@
             liffId: liffId,
             withLoginOnExternalBrowser: false   // 外部ブラウザでの自動ログインリダイレクトを無効化
         }).then(function () {
-            var userId = liff.isLoggedIn() ? getLineUserIdFromToken() : null;
+            const userId = liff.isLoggedIn() ? getLineUserIdFromToken() : null;
             setLineUserId(userId);
             if (userId) {
                 getProfileWithPermissionHandling()
@@ -162,7 +162,7 @@
     // LIFF SDKの読み込みを待機（最大3秒）
     function waitForLiff(callback, maxWaitMs) {
         maxWaitMs = maxWaitMs || 3000;
-        var start = Date.now();
+        const start = Date.now();
         function check() {
             if (typeof window.liff !== 'undefined') {
                 callback();

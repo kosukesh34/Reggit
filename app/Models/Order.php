@@ -23,14 +23,12 @@ class Order extends Model
         'points_earned',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'total_amount' => 'decimal:2',
-            'points_used' => 'integer',
-            'points_earned' => 'integer',
-        ];
-    }
+    /** @var array<string, string> */
+    protected $casts = [
+        'total_amount' => 'decimal:2',
+        'points_used' => 'integer',
+        'points_earned' => 'integer',
+    ];
 
     public function project()
     {

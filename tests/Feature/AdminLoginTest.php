@@ -18,16 +18,19 @@ class AdminLoginTest extends TestCase
         $response->assertStatus(200);
     }
 
-    public function testSystemAdminLoginPageIsAccessible(): void
+    public function testSystemAdminLoginPageRedirectsToAdminLogin(): void
     {
         $response = $this->get(route('system-admin.login'));
 
-        $response->assertStatus(200);
+        $response->assertRedirect(route('admin.login'));
     }
 
     public function testStoreAdminLoginRedirectsToDashboardWhenValid(): void
     {
-        $project = Project::factory()->create(['project_key' => 'default', 'is_active' => true]);
+        $project = Project::firstOrCreate(
+            ['project_key' => 'default'],
+            ['name' => 'Default Project', 'description' => 'Test', 'is_active' => true]
+        );
         AdminUser::factory()->create([
             'login_id' => 'store_admin',
             'password' => 'password',
@@ -46,10 +49,15 @@ class AdminLoginTest extends TestCase
 
     public function testSystemAdminLoginRedirectsWhenValid(): void
     {
+        $project = Project::firstOrCreate(
+            ['project_key' => 'default'],
+            ['name' => 'Default Project', 'description' => 'Test', 'is_active' => true]
+        );
         AdminUser::factory()->create([
             'login_id' => 'sys_admin',
             'password' => 'password',
             'role' => AdminUser::ROLE_SYSTEM_ADMIN,
+            'project_id' => $project->id,
         ]);
 
         $response = $this->post(route('system-admin.login.submit'), [
