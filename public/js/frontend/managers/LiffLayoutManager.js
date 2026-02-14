@@ -2,8 +2,7 @@
  * LiffLayoutManager
  *
  * LIFF Builder のカスタムレイアウトを描画するマネージャー。
- * app.js の _mountTab() からカスタムレイアウトがある場合に呼ばれる。
- * デフォルトデータソースのマウントは app.js 側で行う。
+ * admin の LIFF Designer で保存したブロック配列をユーザー画面に反映する。
  */
 class LiffLayoutManager {
     constructor(app) {
@@ -18,11 +17,8 @@ class LiffLayoutManager {
      */
     renderCustomLayout(container, tab, blocks) {
         if (!container || !Array.isArray(blocks)) return;
-
-        // タブ設定を適用（背景色など）
         this._applyTabSettings(container, tab);
 
-        // データブロックが必要な場合は追加
         const defaultSource = LiffLayoutManager.DEFAULT_TAB_SOURCES[tab];
         if (defaultSource && !this._hasDataBlock(blocks, defaultSource)) {
             blocks = [...blocks, { type: 'data', source: defaultSource }];
@@ -30,29 +26,40 @@ class LiffLayoutManager {
 
         container.innerHTML = this._renderBlocks(blocks);
         this._bindInlineHandlers(container);
+        this._initSliders(container);
         this._mountDataSources(container);
     }
 
-    /** 後方互換: 旧 render(tab) メソッド - app.js からは使わないが念のため */
+    /**
+     * タブ切替時にカスタムレイアウトを描画する。
+     */
     render(tab) {
-        // 新しい app.js では _mountTab() が呼ばれるため何もしない
+        const layouts = (typeof window !== 'undefined' && window.__LIFF_TAB_LAYOUTS__)
+            ? window.__LIFF_TAB_LAYOUTS__
+            : {};
+        const blocks = layouts[tab];
+        if (!Array.isArray(blocks) || blocks.length === 0) return;
+
+        const sectionId = tab + 'Section';
+        const container = document.getElementById(sectionId);
+        if (!container) return;
+        if (container.dataset.layoutRendered === '1') return;
+        container.dataset.layoutRendered = '1';
+
+        this.renderCustomLayout(container, tab, blocks);
     }
 
-    /* ─── 内部メソッド ─── */
+    /* ─── 定数 ─── */
 
     static get DEFAULT_TAB_SOURCES() {
         return {
-            home: 'announcements',
-            products: 'products',
-            orders: 'orders',
-            stamps: 'stamps',
-            coupons: 'coupons',
-            queue: 'queue',
-            member: 'member',
-            reservations: 'reservations',
-            gallery: 'gallery',
+            home: 'announcements', products: 'products', orders: 'orders',
+            stamps: 'stamps', coupons: 'coupons', queue: 'queue',
+            member: 'member', reservations: 'reservations', gallery: 'gallery',
         };
     }
+
+    /* ─── 内部メソッド ─── */
 
     _hasDataBlock(blocks, source) {
         return blocks.some(b => b && b.type === 'data' && b.source === source);
@@ -63,97 +70,155 @@ class LiffLayoutManager {
         return `<div class="builder-container">${blocks.map(b => this._renderBlock(b)).join('')}</div>`;
     }
 
+    _esc(s) {
+        return DomHelper.escapeHtml(s || '');
+    }
+
     _renderBlock(block) {
         const type = block.type || 'text';
         if (block.hidden) return '';
-        const title = block.title ? `<h3 class="builder-title">${DomHelper.escapeHtml(block.title)}</h3>` : '';
-        const body = block.body ? `<p class="builder-body">${DomHelper.escapeHtml(block.body)}</p>` : '';
-        const align = block.align || 'left';
-        const style = this._buildStyle(block);
-        let button = '';
-        if (block.button_label) {
-            let href = '#';
-            const action = block.button_action || '';
-            if (action === 'tab' && block.button_target) {
-                href = `#${DomHelper.escapeHtml(block.button_target)}`;
-            } else if (action === 'url' && block.button_target) {
-                href = DomHelper.escapeHtml(block.button_target);
-            } else if (block.button_url) {
-                href = DomHelper.escapeHtml(block.button_url);
-            }
-            button = `<a class="builder-btn" href="${href}">${DomHelper.escapeHtml(block.button_label)}</a>`;
-        }
+        const esc = (s) => this._esc(s);
+        const br = block.border_radius ?? 10;
+        const mb = block.margin_bottom ? `margin-bottom:${block.margin_bottom}px;` : '';
+        const opacity = (block.opacity !== undefined && block.opacity < 100) ? `opacity:${block.opacity / 100};` : '';
+        const shadow = block.shadow ? 'box-shadow:0 4px 12px rgba(0,0,0,0.1);' : '';
+        const pad = block.padding !== undefined && block.padding !== null ? `padding:${block.padding}px;` : '';
+        const bgColor = block.background_color ? `background-color:${block.background_color};` : '';
+        const baseStyle = `border-radius:${br}px;${mb}${opacity}${shadow}${pad}${bgColor}`;
 
-        if (['data', 'collection', 'table', 'gallery'].includes(type)) {
-            const source = block.source || (type === 'gallery' ? 'gallery' : '');
-            return `<section class="builder-block builder-data-block align-${align}" style="${style}" data-source="${DomHelper.escapeHtml(source)}">${title}${body}</section>`;
-        }
-        if (type === 'label') {
-            return `<section class="builder-block builder-label-block align-${align}" style="${style}">${title || '<h3 class="builder-title">ラベル</h3>'}</section>`;
+        if (type === 'data') {
+            return `<section class="builder-block builder-data-block" style="${baseStyle}" data-source="${esc(block.source || '')}"></section>`;
         }
         if (type === 'hero') {
-            const image = block.image_url ? `<img class="builder-hero-image" src="${DomHelper.escapeHtml(block.image_url)}" alt="">` : '';
-            return `<section class="builder-block builder-hero align-${align}" style="${style}">${image}<div class="builder-hero-content">${title}${body}${button}</div></section>`;
+            const bg = block.image_url
+                ? `background-image:url('${esc(block.image_url)}');background-size:cover;background-position:center;`
+                : `background:linear-gradient(135deg,${block.gradient_start || '#667eea'} 0%,${block.gradient_end || '#764ba2'} 100%);`;
+            return `<section class="builder-block builder-hero" style="${bg}color:#fff;padding:32px 20px;text-align:center;${baseStyle}">
+                <h2 style="font-size:18px;font-weight:700;margin:0 0 4px;">${esc(block.title)}</h2>
+                <p style="font-size:12px;opacity:0.85;margin:0;">${esc(block.subtitle || block.text)}</p>
+            </section>`;
+        }
+        if (type === 'heading') {
+            const sizes = { small: 14, medium: 16, large: 20 };
+            const fs = sizes[block.size] || 16;
+            return `<section class="builder-block" style="background:#fff;padding:12px 14px;font-size:${fs}px;font-weight:700;color:${block.text_color || '#1f2937'};text-align:${block.text_align || 'left'};${baseStyle}">${esc(block.text)}</section>`;
+        }
+        if (type === 'text') {
+            return `<section class="builder-block" style="background:#fff;padding:12px 14px;font-size:${block.font_size || 13}px;color:${block.text_color || '#4b5563'};line-height:1.6;text-align:${block.text_align || 'left'};${baseStyle}">${esc(block.text || block.body)}</section>`;
         }
         if (type === 'image') {
-            const image = block.image_url ? `<img class="builder-image" src="${DomHelper.escapeHtml(block.image_url)}" alt="">` : '';
-            return `<section class="builder-block builder-image-block align-${align}" style="${style}">${title}${image}${body}</section>`;
+            const img = block.image_url
+                ? `<img src="${esc(block.image_url)}" alt="${esc(block.alt)}" style="width:100%;height:auto;display:block;object-fit:${block.fit || 'cover'};">`
+                : '';
+            return `<section class="builder-block" style="overflow:hidden;${baseStyle}">${img}</section>`;
         }
         if (type === 'button') {
-            return `<section class="builder-block builder-button-block align-${align}" style="${style}">${title}${body}${button}</section>`;
+            const w = block.full_width !== false ? 'display:block;width:100%;box-sizing:border-box;' : 'display:inline-block;';
+            return `<section class="builder-block" style="text-align:center;padding:8px;${baseStyle}">
+                <a href="${esc(block.action) || '#'}" class="builder-btn" style="${w}padding:12px 24px;border-radius:8px;background:${block.color || '#06C755'};color:${block.text_color || '#fff'};font-size:14px;font-weight:700;text-decoration:none;text-align:center;">${esc(block.text)}</a>
+            </section>`;
         }
-        if (type === 'list') {
-            const items = Array.isArray(block.list_items)
-                ? block.list_items
-                : (block.list_items ? String(block.list_items).split(',') : []);
-            const list = items.length
-                ? `<ul class="builder-list">${items.map(i => `<li>${DomHelper.escapeHtml(i.trim())}</li>`).join('')}</ul>`
-                : '';
-            return `<section class="builder-block builder-list-block align-${align}" style="${style}">${title}${body}${list}</section>`;
+        if (type === 'card') {
+            const img = block.image_url
+                ? `<img src="${esc(block.image_url)}" alt="" style="width:100%;height:${block.image_height || 140}px;object-fit:cover;display:block;">`
+                : `<div style="width:100%;height:${block.image_height || 140}px;background:#f3f4f6;"></div>`;
+            return `<section class="builder-block" style="background:#fff;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06);${baseStyle}">
+                ${img}
+                <div style="padding:12px;">
+                    <div style="font-size:15px;font-weight:700;color:#1f2937;margin-bottom:4px;">${esc(block.title)}</div>
+                    ${block.description ? `<div style="font-size:12px;color:#6b7280;">${esc(block.description)}</div>` : ''}
+                </div>
+            </section>`;
+        }
+        if (type === 'collection') {
+            return this._renderCollection(block, baseStyle);
         }
         if (type === 'slider') {
-            const images = Array.isArray(block.slider_images) ? block.slider_images : [];
-            const slides = images.length
-                ? images.map(url => `<div class="builder-slider-slide"><img src="${DomHelper.escapeHtml(url)}" alt=""></div>`).join('')
-                : '<div class="builder-slider-slide is-empty">画像を設定してください</div>';
-            return `<section class="builder-block builder-slider align-${align}" style="${style}">${title}${body}<div class="builder-slider-track">${slides}</div></section>`;
+            return this._renderSlider(block, baseStyle);
         }
-        if (type === 'form') {
-            const fields = Array.isArray(block.form_fields) ? block.form_fields : [];
-            const formFields = fields.map((field, idx) => {
-                const label = DomHelper.escapeHtml(field.label || `項目${idx + 1}`);
-                const placeholder = DomHelper.escapeHtml(field.placeholder || '');
-                const required = field.required ? 'required' : '';
-                const name = field.name || `field_${idx}`;
-                if (field.type === 'textarea') {
-                    return `<label class="builder-form-label">${label}<textarea name="${name}" placeholder="${placeholder}" ${required}></textarea></label>`;
-                }
-                const typeAttr = DomHelper.escapeHtml(field.type || 'text');
-                return `<label class="builder-form-label">${label}<input type="${typeAttr}" name="${name}" placeholder="${placeholder}" ${required} /></label>`;
-            }).join('');
-            return `<section class="builder-block builder-form-block align-${align}" style="${style}">${title}${body}<form class="builder-form" data-action="/api/contact">${formFields}<button type="submit" class="builder-btn">${DomHelper.escapeHtml(block.form_button_label || '送信')}</button></form></section>`;
+        if (type === 'icon_text') {
+            const rows = Array.isArray(block.rows) ? block.rows : [];
+            const html = rows.map(r =>
+                `<div style="display:flex;align-items:center;gap:10px;font-size:13px;color:#374151;">` +
+                `<i class="fas ${r.icon || 'fa-check'}" style="color:${r.color || '#06C755'};font-size:16px;flex-shrink:0;"></i>` +
+                `<span>${esc(r.text)}</span></div>`
+            ).join('');
+            return `<section class="builder-block" style="background:#fff;padding:12px 14px;display:flex;flex-direction:column;gap:8px;${baseStyle}">${html}</section>`;
         }
-        if (type === 'html') {
-            return `<section class="builder-block builder-html-block align-${align}" style="${style}">${title}${block.html || ''}</section>`;
+        if (type === 'list') {
+            const items = Array.isArray(block.items) ? block.items : [];
+            const tag = block.style === 'number' ? 'ol' : 'ul';
+            const listHtml = items.length > 0
+                ? `<${tag} style="margin:0;padding-left:20px;font-size:13px;line-height:1.8;color:${block.text_color || '#374151'};">${items.map(i => `<li>${esc(i)}</li>`).join('')}</${tag}>`
+                : '';
+            return `<section class="builder-block" style="background:#fff;padding:12px 14px;${baseStyle}">${listHtml}</section>`;
+        }
+        if (type === 'banner') {
+            return `<section class="builder-block" style="display:flex;align-items:center;gap:8px;padding:12px 14px;font-size:13px;font-weight:600;background:${block.color || '#eef2ff'};color:${block.text_color || '#374151'};${baseStyle}">
+                ${block.icon ? `<i class="fas ${block.icon}" style="font-size:16px;flex-shrink:0;"></i>` : ''}
+                <span>${esc(block.text)}</span>
+            </section>`;
         }
         if (type === 'spacer') {
-            return `<div class="builder-spacer" style="height:${block.height || 24}px;"></div>`;
+            return `<div style="height:${block.height || 16}px;${mb}"></div>`;
         }
-        return `<section class="builder-block builder-text-block align-${align}" style="${style}">${title}${body}${button}</section>`;
+        if (type === 'divider') {
+            return `<div style="padding:8px 0;${mb}"><hr style="border:none;border-top:1px ${block.divider_style || 'solid'} ${block.divider_color || '#e5e7eb'};margin:0;"></div>`;
+        }
+        return `<section class="builder-block" style="background:#fff;padding:12px 14px;${baseStyle}">${esc(block.text || block.body || '')}</section>`;
+    }
+
+    _renderCollection(block, baseStyle) {
+        const esc = (s) => this._esc(s);
+        const items = Array.isArray(block.items) ? block.items : [];
+        const isGrid = block.layout === 'grid';
+        const cols = block.columns || 2;
+        const gap = block.gap ?? 8;
+        const maxRows = block.max_rows || 0;
+        const visibleCount = (isGrid && maxRows > 0) ? maxRows * cols : items.length;
+        const visible = items.slice(0, visibleCount);
+        const containerStyle = isGrid
+            ? `display:grid;grid-template-columns:repeat(${cols},1fr);gap:${gap}px;`
+            : `display:flex;gap:${gap}px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch;`;
+        const itemStyle = isGrid
+            ? 'background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06);'
+            : `flex-shrink:0;width:${block.item_width || 140}px;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06);`;
+        const imgH = block.item_image_height || 100;
+        const itemsHtml = visible.map(item => {
+            const img = item.image_url
+                ? `<img src="${esc(item.image_url)}" alt="" style="width:100%;height:${imgH}px;object-fit:cover;display:block;">`
+                : `<div style="width:100%;height:${imgH}px;background:#f3f4f6;display:flex;align-items:center;justify-content:center;color:#9ca3af;"><i class="fas fa-image"></i></div>`;
+            const desc = (block.show_description && item.description)
+                ? `<div style="padding:0 8px 6px;font-size:10px;color:#6b7280;">${esc(item.description)}</div>` : '';
+            return `<div style="${itemStyle}">${img}<div style="padding:6px 8px;font-size:12px;font-weight:600;color:#1f2937;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(item.title)}</div>${desc}</div>`;
+        }).join('');
+        return `<section class="builder-block" style="${baseStyle}"><div style="${containerStyle}">${itemsHtml}</div></section>`;
+    }
+
+    _renderSlider(block, baseStyle) {
+        const esc = (s) => this._esc(s);
+        const slides = Array.isArray(block.slides) ? block.slides : [];
+        const h = block.slide_height || 160;
+        if (slides.length === 0) {
+            return `<section class="builder-block" style="height:${h}px;background:#f3f4f6;display:flex;align-items:center;justify-content:center;color:#9ca3af;${baseStyle}"><i class="fas fa-images" style="font-size:28px;"></i></section>`;
+        }
+        const slideHtml = slides.map((s, i) => {
+            const display = i === 0 ? '' : 'display:none;';
+            const img = s.image_url ? `<img src="${esc(s.image_url)}" alt="" style="width:100%;height:100%;object-fit:cover;">` : '';
+            const caption = s.caption ? `<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,0.5));color:#fff;padding:24px 12px 10px;font-size:13px;font-weight:600;">${esc(s.caption)}</div>` : '';
+            return `<div class="builder-slide" data-slide-index="${i}" style="position:absolute;inset:0;${display}">${img}${caption}</div>`;
+        }).join('');
+        const dots = (block.show_dots !== false && slides.length > 1)
+            ? `<div style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);display:flex;gap:5px;">${slides.map((_, i) => `<span class="builder-slider-dot" data-slide-index="${i}" style="width:6px;height:6px;border-radius:50%;background:${i === 0 ? '#fff' : 'rgba(255,255,255,0.4)'};cursor:pointer;transition:background 0.2s;"></span>`).join('')}</div>`
+            : '';
+        return `<section class="builder-block builder-slider-block" style="position:relative;overflow:hidden;height:${h}px;${baseStyle}" data-auto-play="${block.auto_play !== false ? '1' : '0'}" data-slide-count="${slides.length}">${slideHtml}${dots}</section>`;
     }
 
     _buildStyle(block) {
         const styles = [];
         if (block.background_color) styles.push(`background:${block.background_color}`);
         if (block.text_color) styles.push(`color:${block.text_color}`);
-        if (block.border_color) styles.push(`border-color:${block.border_color}`);
-        if (block.border_width) styles.push(`border-width:${Number(block.border_width)}px`);
         if (block.border_radius) styles.push(`border-radius:${Number(block.border_radius)}px`);
-        if (block.padding_y || block.padding_x) {
-            const py = Number(block.padding_y || 0);
-            const px = Number(block.padding_x || 0);
-            styles.push(`padding:${py}px ${px}px`);
-        }
         return styles.join(';');
     }
 
@@ -168,6 +233,30 @@ class LiffLayoutManager {
         }
     }
 
+    /** スライダーの自動再生とドットナビゲーションを初期化 */
+    _initSliders(container) {
+        container.querySelectorAll('.builder-slider-block').forEach(slider => {
+            const count = parseInt(slider.dataset.slideCount, 10) || 0;
+            if (count <= 1) return;
+            let current = 0;
+            const showSlide = (idx) => {
+                slider.querySelectorAll('.builder-slide').forEach(s => { s.style.display = 'none'; });
+                slider.querySelectorAll('.builder-slider-dot').forEach(d => { d.style.background = 'rgba(255,255,255,0.4)'; });
+                const slide = slider.querySelector(`.builder-slide[data-slide-index="${idx}"]`);
+                const dot = slider.querySelector(`.builder-slider-dot[data-slide-index="${idx}"]`);
+                if (slide) slide.style.display = '';
+                if (dot) dot.style.background = '#fff';
+                current = idx;
+            };
+            slider.querySelectorAll('.builder-slider-dot').forEach(dot => {
+                dot.addEventListener('click', () => showSlide(parseInt(dot.dataset.slideIndex, 10)));
+            });
+            if (slider.dataset.autoPlay === '1') {
+                setInterval(() => { showSlide((current + 1) % count); }, 4000);
+            }
+        });
+    }
+
     _mountDataSources(container) {
         container.querySelectorAll('[data-source]').forEach(el => {
             const source = el.getAttribute('data-source');
@@ -179,7 +268,7 @@ class LiffLayoutManager {
                     </div>
                     <div class="products-section"><div class="products-grid" id="productsGrid"></div></div>
                 `;
-                this.app._loadProducts();
+                this.app.loadProducts();
                 return;
             }
             if (source === 'orders') {
@@ -233,27 +322,6 @@ class LiffLayoutManager {
                     e.preventDefault();
                     const tab = href.replace('#', '');
                     if (this.app && tab) this.app.switchTab(tab);
-                }
-            });
-        });
-
-        section.querySelectorAll('.builder-form').forEach(form => {
-            form.addEventListener('submit', async e => {
-                e.preventDefault();
-                const action = form.getAttribute('data-action');
-                const data = {};
-                new FormData(form).forEach((value, key) => { data[key] = value; });
-                try {
-                    const res = await fetch(action, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(data),
-                    });
-                    if (!res.ok) throw new Error('送信に失敗しました');
-                    ToastManager.success('送信しました');
-                    form.reset();
-                } catch (err) {
-                    ToastManager.error(err.message || '送信に失敗しました');
                 }
             });
         });

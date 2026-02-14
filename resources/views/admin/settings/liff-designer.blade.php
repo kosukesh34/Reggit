@@ -15,6 +15,7 @@
     <input type="hidden" name="tab_settings_json" id="tabSettingsJson">
 
     <div class="ld-topbar">
+        <a href="{{ admin_route('admin.settings.basic') }}" class="ld-btn ld-btn--ghost" title="設定に戻る"><i class="fas fa-arrow-left"></i></a>
         <h1 class="ld-topbar__title"><i class="fas fa-palette"></i> LINE画面デザイン</h1>
         <div class="ld-topbar__actions">
             <button type="button" class="ld-btn ld-btn--ghost" id="undoBtn" title="元に戻す" disabled><i class="fas fa-undo"></i></button>
@@ -99,7 +100,8 @@
             layouts: @json($layouts ?? []),
             tabSettings: @json($tabSettings ?? []),
             templates: @json($templates ?? []),
-            customCss: @json($customCss ?? '')
+            customCss: @json($customCss ?? ''),
+            featureFlags: @json($featureFlags ?? [])
         });
     });
 </script>
