@@ -1,0 +1,41 @@
+<?php
+
+namespace App\Http\Controllers\Api\V1\Reservation;
+
+use App\Http\Controllers\Api\V1\BaseApiController;
+use App\UseCases\Reservation\ReservationAvailableDatesUseCase;
+use App\Util\AdminContext;
+use App\Util\LogHelper;
+use Illuminate\Http\Request;
+
+class ReservationAvailableDatesController extends BaseApiController
+{
+    public function __construct(
+        private ReservationAvailableDatesUseCase $availableDatesUseCase
+    ) {
+    }
+
+    public function __invoke(Request $request)
+    {
+        try {
+            $excludeReservationId = $request->query('exclude_reservation_id');
+            if ($excludeReservationId !== null) {
+                $excludeReservationId = filter_var($excludeReservationId, FILTER_VALIDATE_INT) ?: null;
+            }
+
+            $result = $this->availableDatesUseCase->handle($excludeReservationId);
+
+            return $this->success([
+                'available_dates' => $result->availableDates,
+                'start_date' => $result->startDate,
+                'end_date' => $result->endDate,
+            ]);
+        } catch (\Exception $e) {
+            LogHelper::error('[Reservation] available dates failed', [
+                'project_id' => AdminContext::getCurrentProjectId() ?? 1,
+                'error' => $e->getMessage(),
+            ]);
+            return $this->error('利用可能日の取得に失敗しました', 500);
+        }
+    }
+}

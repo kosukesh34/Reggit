@@ -92,43 +92,43 @@
     <h3 class="quick-menu-title"><i class="fas fa-th-large"></i> クイックメニュー</h3>
     <p class="quick-menu-desc">各機能へ素早く移動できます</p>
     <div class="quick-menu-grid">
-        <a href="{{ route('admin.orders') }}" class="quick-menu-item">
+        <a href="{{ admin_route('admin.orders') }}" class="quick-menu-item">
             <i class="fas fa-shopping-cart"></i>
             <span>注文（モバイル・店内）</span>
         </a>
-        <a href="{{ route('admin.products') }}" class="quick-menu-item">
+        <a href="{{ admin_route('admin.products') }}" class="quick-menu-item">
             <i class="fas fa-utensils"></i>
             <span>商品管理</span>
         </a>
-        <a href="{{ route('admin.members') }}" class="quick-menu-item">
+        <a href="{{ admin_route('admin.members') }}" class="quick-menu-item">
             <i class="fas fa-id-card"></i>
             <span>会員管理</span>
         </a>
-        <a href="{{ route('admin.reservations') }}" class="quick-menu-item">
+        <a href="{{ admin_route('admin.reservations') }}" class="quick-menu-item">
             <i class="fas fa-calendar-check"></i>
             <span>予約</span>
         </a>
-        <a href="{{ route('admin.queue') }}" class="quick-menu-item">
+        <a href="{{ admin_route('admin.queue') }}" class="quick-menu-item">
             <i class="fas fa-list-ol"></i>
             <span>順番待ち</span>
         </a>
-        <a href="{{ route('admin.stamps') }}" class="quick-menu-item">
+        <a href="{{ admin_route('admin.stamps') }}" class="quick-menu-item">
             <i class="fas fa-stamp"></i>
             <span>スタンプ</span>
         </a>
-        <a href="{{ route('admin.coupons') }}" class="quick-menu-item">
+        <a href="{{ admin_route('admin.coupons') }}" class="quick-menu-item">
             <i class="fas fa-ticket-alt"></i>
             <span>クーポン</span>
         </a>
-        <a href="{{ route('admin.announcements') }}" class="quick-menu-item">
+        <a href="{{ admin_route('admin.announcements') }}" class="quick-menu-item">
             <i class="fas fa-bullhorn"></i>
             <span>お知らせ</span>
         </a>
-        <a href="{{ route('admin.settings.basic') }}" class="quick-menu-item">
+        <a href="{{ admin_route('admin.settings.basic') }}" class="quick-menu-item">
             <i class="fas fa-sliders-h"></i>
             <span>基本設定</span>
         </a>
-        <a href="{{ route('admin.settings.advanced') }}" class="quick-menu-item">
+        <a href="{{ admin_route('admin.settings.advanced') }}" class="quick-menu-item">
             <i class="fas fa-palette"></i>
             <span>詳細設定（配色）</span>
         </a>
@@ -139,10 +139,10 @@
     <div class="card-header">
         <h3 class="card-title"><i class="fas fa-list"></i> 最近の注文</h3>
         <div class="card-header-actions">
-            <a href="{{ route('admin.reservations', ['date' => now()->format('Y-m-d')]) }}" class="btn btn-secondary btn-sm">
+            <a href="{{ admin_route('admin.reservations', ['date' => now()->format('Y-m-d')]) }}" class="btn btn-secondary btn-sm">
                 <i class="fas fa-calendar-day"></i> 本日の予約
             </a>
-            <a href="{{ route('admin.orders') }}" class="btn btn-secondary">
+            <a href="{{ admin_route('admin.orders') }}" class="btn btn-secondary">
                 <i class="fas fa-arrow-right"></i> すべて見る
             </a>
         </div>
@@ -160,7 +160,7 @@
         <tbody>
             @forelse($recent_orders as $order)
             <tr>
-                <td><a href="{{ route('admin.orders.detail', $order->id) }}">{{ $order->order_number }}</a></td>
+                <td><a href="{{ admin_route('admin.orders.detail', ['id' => $order->id]) }}">{{ $order->order_number }}</a></td>
                 <td>{{ $order->user->name ?? 'N/A' }}</td>
                 <td>¥{{ number_format($order->total_amount) }}</td>
                 <td>
@@ -182,5 +182,3 @@
     </table>
 </div>
 @endsection
-
-

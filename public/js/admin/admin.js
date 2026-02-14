@@ -32,6 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initTooltips();
     initFormValidation();
     initLoadingStates();
+    initSidebarCollapsibleGroups();
 });
 
 function initDeleteConfirmations() {
@@ -123,6 +124,36 @@ function initLoadingStates() {
                 }
             });
         }
+    });
+}
+
+function initSidebarCollapsibleGroups() {
+    const groups = document.querySelectorAll('.nav-group-collapsible');
+    if (!groups.length) return;
+
+    const nav = document.querySelector('.sidebar-nav');
+    if (nav) {
+        const savedScroll = sessionStorage.getItem('adminSidebarScroll');
+        if (savedScroll) {
+            nav.scrollTop = parseInt(savedScroll, 10);
+        }
+        nav.addEventListener('scroll', () => {
+            sessionStorage.setItem('adminSidebarScroll', String(nav.scrollTop));
+        });
+    }
+
+    groups.forEach((group) => {
+        const toggle = group.querySelector('[data-nav-group-toggle]');
+        if (!toggle) return;
+
+        const hasActive = !!group.querySelector('.nav-item.active');
+        if (!hasActive) {
+            group.classList.add('is-collapsed');
+        }
+
+        toggle.addEventListener('click', () => {
+            group.classList.toggle('is-collapsed');
+        });
     });
 }
 
@@ -218,4 +249,3 @@ const ConfirmDialog = {
         });
     }
 };
-
