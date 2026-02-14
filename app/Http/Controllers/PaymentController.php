@@ -3,11 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Util\AdminContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Stripe\Stripe;
 use Stripe\PaymentIntent;
 use Stripe\Exception\ApiErrorException;
+use Illuminate\Validation\Rule;
 
 class PaymentController extends Controller
 {
@@ -18,9 +20,13 @@ class PaymentController extends Controller
 
     public function createPaymentIntent(Request $request)
     {
+        $projectId = AdminContext::getCurrentProjectId() ?? 1;
         $request->validate([
             'amount' => 'required|numeric|min:1',
-            'order_id' => 'nullable|exists:orders,id',
+            'order_id' => [
+                'nullable',
+                Rule::exists('orders', 'id')->where('project_id', $projectId),
+            ],
         ]);
 
         try {
@@ -47,9 +53,13 @@ class PaymentController extends Controller
 
     public function confirmPayment(Request $request)
     {
+        $projectId = AdminContext::getCurrentProjectId() ?? 1;
         $request->validate([
             'payment_intent_id' => 'required|string',
-            'order_id' => 'required|exists:orders,id',
+            'order_id' => [
+                'required',
+                Rule::exists('orders', 'id')->where('project_id', $projectId),
+            ],
         ]);
 
         try {
@@ -126,4 +136,3 @@ class PaymentController extends Controller
         return response()->json(['received' => true]);
     }
 }
-

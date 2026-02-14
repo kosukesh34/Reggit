@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToProject;
-use Carbon\Carbon;
 use Database\Factories\MemberFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -32,8 +31,8 @@ class Member extends Model
     protected function casts(): array
     {
         return [
-            'birthday' => 'date',
             'points' => 'integer',
+            'birthday' => 'date',
         ];
     }
 
@@ -52,9 +51,29 @@ class Member extends Model
         return $this->hasMany(PointTransaction::class);
     }
 
+    public function memberStamps()
+    {
+        return $this->hasMany(MemberStamp::class);
+    }
+
     public function memberCoupons()
     {
         return $this->hasMany(MemberCoupon::class);
+    }
+
+    public function couponRedemptions()
+    {
+        return $this->hasMany(CouponRedemption::class);
+    }
+
+    public function queueEntries()
+    {
+        return $this->hasMany(QueueEntry::class);
+    }
+
+    public function getTotalStamps(): int
+    {
+        return (int) $this->memberStamps()->sum('current_stamps');
     }
 
     public function getTotalPointsFromTransactions(): int
@@ -62,18 +81,12 @@ class Member extends Model
         return (int) $this->pointTransactions()->sum('points');
     }
 
-    public function recalcPointsFromTransactions(): void
+    public function addPoints(int $points, ?string $description = null, ?int $orderId = null): void
     {
-        $this->update(['points' => $this->getTotalPointsFromTransactions()]);
-    }
-
-    public function addPoints(int $points, string $description = null, $orderId = null, $expiresAt = null)
-    {
-        $this->points += $points;
-        $this->save();
-
-        $expiresAt = $expiresAt ?? Carbon::now()->addYear();
-
+        if ($points <= 0) {
+            return;
+        }
+        $expiresAt = now()->addDays(ShopSetting::getPointsValidDays($this->project_id));
         PointTransaction::create([
             'project_id' => $this->project_id,
             'member_id' => $this->id,
@@ -83,30 +96,27 @@ class Member extends Model
             'order_id' => $orderId,
             'expires_at' => $expiresAt,
         ]);
-
-        return $this;
+        $this->recalcPointsFromTransactions();
     }
 
-    public function usePoints(int $points, string $description = null, $orderId = null)
+    public function usePoints(int $points, ?string $description = null, ?int $orderId = null): void
     {
-        if ($this->points < $points) {
-            throw new \Exception('Insufficient points');
+        if ($points <= 0) {
+            return;
         }
-
-        $this->points -= $points;
-        $this->save();
-
         PointTransaction::create([
             'project_id' => $this->project_id,
             'member_id' => $this->id,
             'type' => 'used',
-            'points' => -$points,
+            'points' => -abs($points),
             'description' => $description,
             'order_id' => $orderId,
         ]);
+        $this->recalcPointsFromTransactions();
+    }
 
-        return $this;
+    public function recalcPointsFromTransactions(): void
+    {
+        $this->update(['points' => $this->getTotalPointsFromTransactions()]);
     }
 }
-
-
