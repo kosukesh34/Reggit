@@ -90,6 +90,25 @@ html {
     color: var(--primary);
 }
 
+.nav-item--system {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 20px;
+    margin: 8px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #6366f1;
+    background: #eef2ff;
+    border: 1px solid #c7d2fe;
+    text-decoration: none;
+    transition: background 0.15s, color 0.15s;
+}
+.nav-item--system:hover { background: #c7d2fe; color: #4338ca; }
+.nav-item--system.active { background: #6366f1; color: #fff; border-color: #6366f1; }
+.nav-item--system i { font-size: 14px; }
+
 .sidebar-nav {
     padding: 16px 12px;
 }
