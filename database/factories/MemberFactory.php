@@ -13,6 +13,7 @@ class MemberFactory extends Factory
     public function definition(): array
     {
         return [
+            'project_id' => 1,
             'user_id' => User::factory(),
             'member_number' => (string) $this->faker->unique()->numerify('##########'),
             'points' => 0,

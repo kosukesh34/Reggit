@@ -10,12 +10,12 @@
     <span>画像一覧</span>
 </nav>
 
-<div class="card" style="margin-bottom:24px;">
+<div class="card card-mb-24">
     <div class="card-header">
         <h3 class="card-title"><i class="fas fa-plus"></i> 画像追加</h3>
     </div>
     <div class="card-body">
-        <form method="POST" action="{{ admin_route('admin.gallery.items.store') }}" class="form-inline" style="display:flex; gap:12px; flex-wrap:wrap;">
+        <form method="POST" action="{{ admin_route('admin.gallery.items.store') }}" class="form-inline form-inline-flex">
             @csrf
             <div class="form-group">
                 <label class="form-label">カテゴリ</label>
@@ -30,7 +30,7 @@
                 <label class="form-label">タイトル</label>
                 <input type="text" name="title" class="form-control" maxlength="150">
             </div>
-            <div class="form-group" style="min-width:240px;">
+            <div class="form-group min-w-240">
                 <label class="form-label">画像URL</label>
                 <input type="url" name="image_url" class="form-control" required maxlength="500" placeholder="https://...">
             </div>
@@ -50,11 +50,11 @@
                 <label class="form-label">並び順</label>
                 <input type="number" name="sort_order" class="form-control" value="0" min="0" max="999">
             </div>
-            <div class="form-group form-check" style="padding-top:30px;">
+            <div class="form-group form-check pt-30">
                 <input type="checkbox" name="is_active" class="form-check-input" value="1" checked>
                 <label class="form-check-label">表示</label>
             </div>
-            <div class="form-actions" style="margin:0;">
+            <div class="form-actions form-actions-zero">
                 <button type="submit" class="btn btn-primary"><i class="fas fa-plus"></i> 追加</button>
             </div>
         </form>
@@ -85,21 +85,21 @@
                     @method('PUT')
                     <td>{{ $item->id }}</td>
                     <td>
-                        <img src="{{ $item->image_url }}" alt="" style="width:64px; height:64px; object-fit:cover; border-radius:8px;">
+                        <img src="{{ $item->image_url }}" alt="" class="gallery-thumb">
                     </td>
                     <td>
                         <select name="category_id" class="form-control">
                             <option value="">未設定</option>
                             @foreach($categories as $cat)
-                                <option value="{{ $cat->id }}" {{ $item->category_id == $cat->id ? 'selected' : '' }}>{{ $cat->name }}</option>
+                                <option value="{{ $cat->id }}" {{ (int) $item->category_id === (int) $cat->id ? 'selected' : '' }}>{{ $cat->name }}</option>
                             @endforeach
                         </select>
                     </td>
                     <td>
                         <input type="text" name="title" class="form-control" value="{{ $item->title }}" maxlength="150">
-                        <input type="text" name="description" class="form-control" value="{{ $item->description }}" maxlength="1000" placeholder="説明" style="margin-top:6px;">
-                        <input type="url" name="image_url" class="form-control" value="{{ $item->image_url }}" maxlength="500" style="margin-top:6px;">
-                        <select name="size" class="form-control" style="margin-top:6px;">
+                        <input type="text" name="description" class="form-control input-mt-6" value="{{ $item->description }}" maxlength="1000" placeholder="説明">
+                        <input type="url" name="image_url" class="form-control input-mt-6" value="{{ $item->image_url }}" maxlength="500">
+                        <select name="size" class="form-control select-mt-6">
                             <option value="small" {{ $item->size === 'small' ? 'selected' : '' }}>小</option>
                             <option value="medium" {{ $item->size === 'medium' ? 'selected' : '' }}>中</option>
                             <option value="large" {{ $item->size === 'large' ? 'selected' : '' }}>大</option>

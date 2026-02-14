@@ -11,7 +11,7 @@ class RedirectIfAuthenticated
 {
     public function handle(Request $request, Closure $next, string ...$guards): Response
     {
-        $guards = empty($guards) ? [null] : $guards;
+        $guards = count($guards) === 0 ? [null] : $guards;
 
         foreach ($guards as $guard) {
             if (Auth::guard($guard)->check()) {
@@ -22,5 +22,4 @@ class RedirectIfAuthenticated
         return $next($request);
     }
 }
-
 

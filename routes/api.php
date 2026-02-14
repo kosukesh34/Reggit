@@ -1,85 +1,104 @@
 <?php
 
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\LineWebhookController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\OrderController;
-use App\Http\Controllers\MemberController;
-use App\Http\Controllers\ReservationController;
-use App\Http\Controllers\Api\V1\ProductController as V1ProductController;
-use App\Http\Controllers\Api\V1\OrderController as V1OrderController;
-use App\Http\Controllers\Api\V1\MemberController as V1MemberController;
-use App\Http\Controllers\Api\V1\ReservationController as V1ReservationController;
-use App\Http\Controllers\Api\V1\AnnouncementController as V1AnnouncementController;
-use App\Http\Controllers\Api\V1\StampController as V1StampController;
-use App\Http\Controllers\Api\V1\CouponController as V1CouponController;
-use App\Http\Controllers\Api\V1\QueueController as V1QueueController;
-use App\Http\Controllers\Api\V1\PaymentController as V1PaymentController;
+use App\Http\Controllers\Member\MemberMeController;
+use App\Http\Controllers\Member\MemberUpdateController;
+use App\Http\Controllers\Member\MemberRegisterController;
+use App\Http\Controllers\Member\MemberPointsController;
+use App\Http\Controllers\Member\MemberAddPointsController;
+use App\Http\Controllers\Payment\PaymentCreateIntentController;
+use App\Http\Controllers\Payment\PaymentConfirmController;
+use App\Http\Controllers\Payment\PaymentWebhookController;
+use App\Http\Controllers\Reservation\ReservationIndexController;
+use App\Http\Controllers\Reservation\ReservationAvailableDatesController;
+use App\Http\Controllers\Reservation\ReservationStoreController;
+use App\Http\Controllers\Reservation\ReservationUpdateController;
+use App\Http\Controllers\Reservation\ReservationCancelController;
+use App\Http\Controllers\AnnouncementController;
+use App\Http\Controllers\ContactController;
+use App\Http\Controllers\CouponController;
+use App\Http\Controllers\GalleryController;
+use App\Http\Controllers\StampController;
+use App\Http\Controllers\Member\MemberPointCardController;
+use App\Http\Controllers\Member\MemberPointHistoryController;
+use App\Http\Controllers\Queue\QueueStoreController;
+use App\Http\Controllers\Queue\QueueMeController;
+use App\Http\Controllers\Queue\QueueCancelController;
+use App\Http\Controllers\Queue\QueueCallNextController;
+use App\Http\Controllers\Queue\QueueQrStatusController;
+use App\Http\Middleware\AuthenticateApiToken;
+use App\Http\Controllers\Api\V1\AnnouncementController as ApiV1AnnouncementController;
+use App\Http\Controllers\Api\V1\CouponController as ApiV1CouponController;
+use App\Http\Controllers\Api\V1\OrderController as ApiV1OrderController;
+use App\Http\Controllers\Api\V1\PaymentController as ApiV1PaymentController;
+use App\Http\Controllers\Api\V1\ProductController as ApiV1ProductController;
+use App\Http\Controllers\Api\V1\StampController as ApiV1StampController;
+use App\Http\Controllers\Api\V1\Member\MemberMeController as ApiV1MemberMeController;
+use App\Http\Controllers\Api\V1\Member\MemberPointsController as ApiV1MemberPointsController;
+use App\Http\Controllers\Api\V1\Member\MemberPointCardController as ApiV1MemberPointCardController;
+use App\Http\Controllers\Api\V1\Member\MemberPointHistoryController as ApiV1MemberPointHistoryController;
+use App\Http\Controllers\Api\V1\Reservation\ReservationIndexController as ApiV1ReservationIndexController;
 
 Route::match(['get', 'post'], '/line/webhook', [LineWebhookController::class, 'handle']);
 
+// API v1（Bearer トークン認証・モバイルアプリ用）
+Route::prefix('v1')->middleware([AuthenticateApiToken::class])->group(function () {
+    Route::get('/products', [ApiV1ProductController::class, 'index']);
+    Route::get('/products/{id}', [ApiV1ProductController::class, 'show']);
+    Route::post('/orders', [ApiV1OrderController::class, 'store']);
+    Route::get('/orders', [ApiV1OrderController::class, 'index']);
+    Route::get('/orders/{id}', [ApiV1OrderController::class, 'show']);
+    Route::get('/members/me', [ApiV1MemberMeController::class, '__invoke']);
+    Route::get('/members/points', [ApiV1MemberPointsController::class, '__invoke']);
+    Route::get('/members/points/card', [ApiV1MemberPointCardController::class, '__invoke']);
+    Route::get('/members/points/history', [ApiV1MemberPointHistoryController::class, '__invoke']);
+    Route::get('/members/me/coupons', [ApiV1CouponController::class, 'myCoupons']);
+    Route::get('/stamps', [ApiV1StampController::class, 'index']);
+    Route::get('/announcements', [ApiV1AnnouncementController::class, 'index']);
+    Route::get('/reservations', [ApiV1ReservationIndexController::class, '__invoke']);
+    Route::post('/payment/create-intent', [ApiV1PaymentController::class, 'createPaymentIntent']);
+    Route::post('/payment/confirm', [ApiV1PaymentController::class, 'confirmPayment']);
+});
+
 Route::middleware(['web', 'bind.project'])->group(function () {
-    Route::get('/announcements', [\App\Http\Controllers\AnnouncementController::class, 'index']);
     Route::get('/products', [ProductController::class, 'index']);
     Route::get('/products/{id}', [ProductController::class, 'show']);
-    Route::get('/gallery', [\App\Http\Controllers\GalleryController::class, 'index']);
-    Route::post('/contact', [\App\Http\Controllers\ContactController::class, 'store']);
 
     Route::post('/orders', [OrderController::class, 'store']);
     Route::get('/orders', [OrderController::class, 'index']);
     Route::get('/orders/{id}', [OrderController::class, 'show']);
 
-    Route::get('/members/me', [MemberController::class, 'me']);
-    Route::put('/members/me', [MemberController::class, 'update']);
-    Route::post('/members/register', [MemberController::class, 'register']);
-    Route::get('/members/points', [MemberController::class, 'getPoints']);
-    Route::post('/members/points/add', [MemberController::class, 'addPoints']);
+    Route::get('/members/me', [MemberMeController::class, '__invoke']);
+    Route::put('/members/me', [MemberUpdateController::class, '__invoke']);
+    Route::post('/members/register', [MemberRegisterController::class, '__invoke']);
+    Route::get('/members/points', [MemberPointsController::class, '__invoke']);
+    Route::get('/members/points/history', [MemberPointHistoryController::class, '__invoke']);
+    Route::get('/members/points/card', [MemberPointCardController::class, '__invoke']);
+    Route::post('/members/points/add', [MemberAddPointsController::class, '__invoke']);
+    Route::get('/members/me/coupons', [CouponController::class, 'myCoupons']);
 
-    Route::get('/stamps', [\App\Http\Controllers\StampController::class, 'index']);
-    Route::get('/members/me/coupons', [\App\Http\Controllers\CouponController::class, 'myCoupons']);
-    Route::post('/queue', [\App\Http\Controllers\QueueController::class, 'store']);
-    Route::get('/queue/me', [\App\Http\Controllers\QueueController::class, 'me']);
+    Route::post('/payment/create-intent', [PaymentCreateIntentController::class, '__invoke']);
+    Route::post('/payment/confirm', [PaymentConfirmController::class, '__invoke']);
 
-    Route::post('/payment/create-intent', [\App\Http\Controllers\PaymentController::class, 'createPaymentIntent']);
-    Route::post('/payment/confirm', [\App\Http\Controllers\PaymentController::class, 'confirmPayment']);
+    Route::get('/reservations', [ReservationIndexController::class, '__invoke']);
+    Route::get('/reservations/available-dates', [ReservationAvailableDatesController::class, '__invoke']);
+    Route::post('/reservations', [ReservationStoreController::class, '__invoke']);
+    Route::put('/reservations/{id}', [ReservationUpdateController::class, '__invoke']);
+    Route::post('/reservations/{id}/cancel', [ReservationCancelController::class, '__invoke']);
 
-    Route::get('/reservations', [ReservationController::class, 'index']);
-    Route::get('/reservations/available-dates', [ReservationController::class, 'getAvailableDates']);
-    Route::post('/reservations', [ReservationController::class, 'store']);
-    Route::put('/reservations/{id}', [ReservationController::class, 'update']);
-    Route::post('/reservations/{id}/cancel', [ReservationController::class, 'cancel']);
+    Route::get('/announcements', [AnnouncementController::class, 'index']);
+    Route::post('/contact', [ContactController::class, 'store']);
+    Route::get('/gallery', [GalleryController::class, 'index']);
+    Route::get('/stamps', [StampController::class, 'index']);
+
+    Route::post('/queue', [QueueStoreController::class, '__invoke']);
+    Route::get('/queue/me', [QueueMeController::class, '__invoke']);
+    Route::post('/queue/{id}/cancel', [QueueCancelController::class, '__invoke']);
+    Route::post('/queue/call-next', [QueueCallNextController::class, '__invoke']);
+    Route::get('/queue/qr/{token}', [QueueQrStatusController::class, '__invoke']);
 });
 
-Route::post('/payment/webhook', [\App\Http\Controllers\PaymentController::class, 'handleWebhook']);
-
-// API v1 (token-based)
-Route::prefix('v1')->middleware(['api', 'api.auth'])->group(function () {
-    Route::get('/announcements', [V1AnnouncementController::class, 'index']);
-    Route::get('/products', [V1ProductController::class, 'index']);
-    Route::get('/products/{id}', [V1ProductController::class, 'show']);
-
-    Route::post('/orders', [V1OrderController::class, 'store']);
-    Route::get('/orders', [V1OrderController::class, 'index']);
-    Route::get('/orders/{id}', [V1OrderController::class, 'show']);
-
-    Route::get('/members/me', [V1MemberController::class, 'me']);
-    Route::put('/members/me', [V1MemberController::class, 'update']);
-    Route::post('/members/register', [V1MemberController::class, 'register']);
-    Route::get('/members/points', [V1MemberController::class, 'getPoints']);
-    Route::post('/members/points/add', [V1MemberController::class, 'addPoints']);
-
-    Route::get('/stamps', [V1StampController::class, 'index']);
-    Route::get('/members/me/coupons', [V1CouponController::class, 'myCoupons']);
-    Route::post('/queue', [V1QueueController::class, 'store']);
-    Route::get('/queue/me', [V1QueueController::class, 'me']);
-
-    Route::post('/payment/create-intent', [V1PaymentController::class, 'createPaymentIntent']);
-    Route::post('/payment/confirm', [V1PaymentController::class, 'confirmPayment']);
-
-    Route::get('/reservations', [V1ReservationController::class, 'index']);
-    Route::get('/reservations/available-dates', [V1ReservationController::class, 'getAvailableDates']);
-    Route::post('/reservations', [V1ReservationController::class, 'store']);
-    Route::put('/reservations/{id}', [V1ReservationController::class, 'update']);
-    Route::post('/reservations/{id}/cancel', [V1ReservationController::class, 'cancel']);
-});
+Route::post('/payment/webhook', [PaymentWebhookController::class, '__invoke']);

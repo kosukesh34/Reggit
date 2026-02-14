@@ -2,32 +2,36 @@
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Models\Product;
+use App\UseCases\Product\ProductIndexUseCase;
+use App\UseCases\Product\ProductShowUseCase;
 use Illuminate\Http\Request;
 
 class ProductController extends BaseApiController
 {
+    public function __construct(
+        private ProductIndexUseCase $indexUseCase,
+        private ProductShowUseCase $showUseCase
+    ) {
+    }
+
     public function index(Request $request)
     {
-        $query = Product::query();
+        $category = $request->query('category');
+        $availableQuery = $request->query('available');
 
-        if ($request->has('category')) {
-            $query->where('category', $request->query('category'));
+        $available = null;
+        if ($availableQuery !== null) {
+            $available = $availableQuery === 'true' || $availableQuery === '1';
         }
 
-        if ($request->has('available')) {
-            $available = $request->query('available') === 'true' || $request->query('available') === '1';
-            $query->where('is_available', $available);
-        }
+        $result = $this->indexUseCase->handle($category, $available, false);
 
-        $products = $query->orderBy('category')->orderBy('name')->get();
-
-        return $this->success(['products' => $products]);
+        return $this->success(['products' => $result->products]);
     }
 
     public function show(int $id)
     {
-        $product = Product::findOrFail($id);
+        $product = $this->showUseCase->handle($id);
         return $this->success(['product' => $product]);
     }
 }

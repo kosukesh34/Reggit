@@ -30,30 +30,38 @@ jobs:
         extensions: mbstring, xml, mysql, pdo, pdo_mysql
         coverage: none
 
-    - name: Install Dependencies
-      run: composer install --prefer-dist --no-progress --no-interaction
-
-    - name: Setup Environment
+    # .env を composer install より前に用意（post-autoload-dump で artisan package:discover が動くため）
+    - name: Prepare environment file
       run: |
         if [ -f .env.example ]; then
           cp .env.example .env
+          sed -i 's/^APP_ENV=.*/APP_ENV=testing/' .env
+          sed -i 's|^DB_HOST=.*|DB_HOST=127.0.0.1|' .env
+          sed -i 's/^DB_DATABASE=.*/DB_DATABASE=mobile_order_test/' .env
+          sed -i 's/^DB_USERNAME=.*/DB_USERNAME=root/' .env
+          sed -i 's/^DB_PASSWORD=.*/DB_PASSWORD=root/' .env
         else
-          echo "APP_NAME=\"Mobile Order\"" > .env
-          echo "APP_ENV=testing" >> .env
-          echo "APP_KEY=" >> .env
-          echo "APP_DEBUG=true" >> .env
-          echo "APP_URL=http://localhost" >> .env
-          echo "DB_CONNECTION=mysql" >> .env
-          echo "DB_HOST=127.0.0.1" >> .env
-          echo "DB_PORT=3306" >> .env
-          echo "DB_DATABASE=mobile_order_test" >> .env
-          echo "DB_USERNAME=root" >> .env
-          echo "DB_PASSWORD=root" >> .env
-          echo "SESSION_DRIVER=array" >> .env
-          echo "CACHE_DRIVER=array" >> .env
-          echo "QUEUE_CONNECTION=sync" >> .env
+          echo 'APP_NAME="Mobile Order"' > .env
+          echo 'APP_ENV=testing' >> .env
+          echo 'APP_KEY=' >> .env
+          echo 'APP_DEBUG=true' >> .env
+          echo 'APP_URL=http://localhost' >> .env
+          echo 'DB_CONNECTION=mysql' >> .env
+          echo 'DB_HOST=127.0.0.1' >> .env
+          echo 'DB_PORT=3306' >> .env
+          echo 'DB_DATABASE=mobile_order_test' >> .env
+          echo 'DB_USERNAME=root' >> .env
+          echo 'DB_PASSWORD=root' >> .env
+          echo 'SESSION_DRIVER=array' >> .env
+          echo 'CACHE_DRIVER=array' >> .env
+          echo 'QUEUE_CONNECTION=sync' >> .env
         fi
-        php artisan key:generate
+
+    - name: Install Dependencies
+      run: composer install --prefer-dist --no-progress --no-interaction
+
+    - name: Generate application key
+      run: php artisan key:generate --force
 
     - name: Setup Database
       env:

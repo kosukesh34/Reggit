@@ -2,32 +2,29 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\ContactMessage;
+use App\UseCases\Contact\ContactStoreUseCase;
 use App\Util\AdminContext;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
+use App\Util\LogHelper;
 
 class ContactController extends Controller
 {
+    public function __construct(private ContactStoreUseCase $storeUseCase)
+    {
+    }
+
     public function store(Request $request)
     {
         try {
-            $projectId = AdminContext::getCurrentProjectId() ?? 1;
             $data = $request->all();
-
-            ContactMessage::create([
-                'project_id' => $projectId,
-                'name' => $data['name'] ?? null,
-                'email' => $data['email'] ?? null,
-                'phone' => $data['phone'] ?? null,
-                'subject' => $data['subject'] ?? null,
-                'message' => $data['message'] ?? ($data['body'] ?? null),
-                'payload' => $data,
-            ]);
+            $this->storeUseCase->handle($data);
 
             return response()->json(['success' => true]);
         } catch (\Exception $e) {
-            Log::error('Contact store error: ' . $e->getMessage());
+            LogHelper::error('[Contact] store failed', [
+                'project_id' => AdminContext::getCurrentProjectId() ?? 1,
+                'error' => $e->getMessage(),
+            ]);
             return response()->json(['error' => '送信に失敗しました'], 500);
         }
     }

@@ -27,13 +27,11 @@ class Reservation extends Model
         'notes',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'reserved_at' => 'datetime',
-            'number_of_people' => 'integer',
-        ];
-    }
+    /** @var array<string, string> */
+    protected $casts = [
+        'reserved_at' => 'datetime',
+        'number_of_people' => 'integer',
+    ];
 
     public function project()
     {

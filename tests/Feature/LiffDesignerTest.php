@@ -14,12 +14,10 @@ class LiffDesignerTest extends TestCase
 
     public function test_liff_designer_page_is_accessible_for_admin(): void
     {
-        $project = Project::create([
-            'project_key' => 'default',
-            'name' => 'Default Project',
-            'description' => 'Test',
-            'is_active' => true,
-        ]);
+        $project = Project::firstOrCreate(
+            ['project_key' => 'default'],
+            ['name' => 'Default Project', 'description' => 'Test', 'is_active' => true]
+        );
 
         $admin = AdminUser::create([
             'login_id' => 'admin',
@@ -39,12 +37,10 @@ class LiffDesignerTest extends TestCase
 
     public function test_liff_designer_layouts_can_be_saved(): void
     {
-        $project = Project::create([
-            'project_key' => 'default',
-            'name' => 'Default Project',
-            'description' => 'Test',
-            'is_active' => true,
-        ]);
+        $project = Project::firstOrCreate(
+            ['project_key' => 'default'],
+            ['name' => 'Default Project', 'description' => 'Test', 'is_active' => true]
+        );
 
         $admin = AdminUser::create([
             'login_id' => 'admin2',

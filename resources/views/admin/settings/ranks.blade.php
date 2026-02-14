@@ -13,7 +13,7 @@
 <form action="{{ admin_route('admin.settings.ranks.update') }}" method="POST">
     @csrf
 
-    <div class="card" style="margin-bottom:24px;">
+    <div class="card card-mb-24">
         <div class="card-header">
             <h3 class="card-title"><i class="fas fa-layer-group"></i> ランク基準</h3>
         </div>
@@ -21,33 +21,33 @@
             <div class="form-group">
                 <label for="rank_basis" class="form-label">ランク判定基準</label>
                 <select name="rank_basis" id="rank_basis" class="form-control" required>
-                    <option value="points" {{ ($rankBasis ?? 'points') === 'points' ? 'selected' : '' }}>ポイント</option>
-                    <option value="stamps" {{ ($rankBasis ?? '') === 'stamps' ? 'selected' : '' }}>スタンプ</option>
-                    <option value="max" {{ ($rankBasis ?? '') === 'max' ? 'selected' : '' }}>ポイント/スタンプ（多い方）</option>
+                    <option value="points" {{ ($view->rankBasis ?? 'points') === 'points' ? 'selected' : '' }}>ポイント</option>
+                    <option value="stamps" {{ ($view->rankBasis ?? '') === 'stamps' ? 'selected' : '' }}>スタンプ</option>
+                    <option value="max" {{ ($view->rankBasis ?? '') === 'max' ? 'selected' : '' }}>ポイント/スタンプ（多い方）</option>
                 </select>
                 <p class="form-text text-muted">スタンプ基準は会員の現在スタンプ合計で判定します。</p>
             </div>
         </div>
     </div>
 
-    <div class="card" style="margin-bottom:24px;">
+    <div class="card card-mb-24">
         <div class="card-header">
             <h3 class="card-title"><i class="fas fa-coins"></i> ポイント設定</h3>
         </div>
         <div class="card-body">
             <div class="form-group">
                 <label for="point_earn_rate" class="form-label">ポイント付与レート（円/1pt）</label>
-                <input type="number" name="point_earn_rate" id="point_earn_rate" class="form-control" value="{{ old('point_earn_rate', $pointEarnRate ?? 100) }}" min="1" max="100000" required>
+                <input type="number" name="point_earn_rate" id="point_earn_rate" class="form-control" value="{{ old('point_earn_rate', $view->pointEarnRate ?? 100) }}" min="1" max="100000" required>
             </div>
             <div class="form-group">
                 <label for="points_valid_days" class="form-label">ポイント有効期限（日）</label>
-                <input type="number" name="points_valid_days" id="points_valid_days" class="form-control" value="{{ old('points_valid_days', $pointsValidDays ?? 365) }}" min="1" max="3650" required>
+                <input type="number" name="points_valid_days" id="points_valid_days" class="form-control" value="{{ old('points_valid_days', $view->pointsValidDays ?? 365) }}" min="1" max="3650" required>
             </div>
         </div>
     </div>
 
-    <div class="card" style="margin-bottom:24px;">
-        <div class="card-header" style="display:flex; align-items:center; justify-content:space-between;">
+    <div class="card card-mb-24">
+        <div class="card-header tabs-header-row">
             <h3 class="card-title"><i class="fas fa-medal"></i> ランク設定</h3>
             <button type="button" class="btn btn-secondary btn-sm" id="addRankRow"><i class="fas fa-plus"></i> ランク追加</button>
         </div>
@@ -66,7 +66,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach($rankSettings as $i => $rank)
+                        @foreach($view->rankSettings as $i => $rank)
                         <tr>
                             <td><input type="text" name="ranks[{{ $i }}][key]" class="form-control" value="{{ old('ranks.' . $i . '.key', $rank['key'] ?? '') }}" required></td>
                             <td><input type="text" name="ranks[{{ $i }}][label]" class="form-control" value="{{ old('ranks.' . $i . '.label', $rank['label'] ?? '') }}"></td>

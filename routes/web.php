@@ -1,15 +1,41 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\AdminController;
-use App\Http\Controllers\Admin\LoginController;
-use App\Http\Controllers\Admin\AccountController;
-use App\Http\Controllers\Admin\ProjectController;
-use App\Http\Controllers\Admin\ApiTokenController;
-use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\LiffController;
+use App\Http\Controllers\Admin\Auth\AdminLoginController;
+use App\Http\Controllers\Admin\Auth\LogoutController;
+use App\Http\Controllers\Admin\Auth\SystemAdminLoginController;
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\OrderController as AdminOrderController;
+use App\Http\Controllers\Admin\ProductController as AdminProductController;
+use App\Http\Controllers\Admin\MemberController as AdminMemberController;
+use App\Http\Controllers\Admin\ReservationController as AdminReservationController;
+use App\Http\Controllers\Admin\StampController as AdminStampController;
+use App\Http\Controllers\Admin\CouponController as AdminCouponController;
+use App\Http\Controllers\Admin\AnnouncementController as AdminAnnouncementController;
+use App\Http\Controllers\Admin\QueueController as AdminQueueController;
+use App\Http\Controllers\Admin\Settings\BasicController as SettingsBasicController;
+use App\Http\Controllers\Admin\Settings\AdvancedController as SettingsAdvancedController;
+use App\Http\Controllers\Admin\Settings\MenuController as SettingsMenuController;
+use App\Http\Controllers\Admin\Settings\FeaturesController as SettingsFeaturesController;
+use App\Http\Controllers\Admin\Settings\RanksController as SettingsRanksController;
+use App\Http\Controllers\Admin\Settings\LiffDesignerController as SettingsLiffDesignerController;
+use App\Http\Controllers\Admin\AnalyticsController as AdminAnalyticsController;
+use App\Http\Controllers\Admin\Gallery\CategoryController as GalleryCategoryController;
+use App\Http\Controllers\Admin\Gallery\ItemController as GalleryItemController;
+use App\Http\Controllers\Admin\ProjectController as AdminProjectController;
+use App\Http\Controllers\Admin\Account\AccountIndexController;
+use App\Http\Controllers\Admin\Account\AccountFormController;
+use App\Http\Controllers\Admin\Account\AccountStoreController;
+use App\Http\Controllers\Admin\Account\AccountUpdateController;
+use App\Http\Controllers\Admin\Account\AccountDestroyController;
+use App\Http\Controllers\Admin\ApiTokenController as AdminApiTokenController;
+use App\Http\Controllers\Admin\AuditLogController as AdminAuditLogController;
+use App\Http\Controllers\Admin\SystemAdminDashboardController;
+use App\Models\Project;
 
-Route::middleware('bind.project')->get('/', function () {
+// ========== 公開 ==========
+Route::get('/', function () {
     return view('index');
 });
 
@@ -17,275 +43,136 @@ Route::get('/api', function () {
     return response()->json(['message' => 'Mobile Order API']);
 });
 
-
+// ========== LIFF ==========
 Route::prefix('liff')->middleware('bind.project')->group(function () {
     Route::get('/', [LiffController::class, 'index'])->name('liff.index');
-    Route::get('/products', [LiffController::class, 'products'])->name('liff.products');
-    Route::get('/member', [LiffController::class, 'memberCard'])->name('liff.member');
-    Route::get('/orders', [LiffController::class, 'orders'])->name('liff.orders');
 });
 
+// ========== 管理画面ログイン（認証不要・スロットリング適用） ==========
+Route::get('/admin/login', [AdminLoginController::class, 'show'])->name('admin.login');
+Route::post('/admin/login', [AdminLoginController::class, 'login'])->name('admin.login.submit')->middleware('throttle:admin-login');
 
-Route::prefix('store')->name('store.')->group(function () {
-    Route::get('/login', [LoginController::class, 'showStoreLoginForm'])->name('login');
-    Route::post('/login', [LoginController::class, 'loginStore'])->name('login.submit');
-});
+Route::get('/system-admin/login', [SystemAdminLoginController::class, 'show'])->name('system-admin.login');
+Route::post('/system-admin/login', [SystemAdminLoginController::class, 'login'])->name('system-admin.login.submit')->middleware('throttle:admin-login');
 
-// 店舗管理者（admin）: /admin および /admin/{project_key}/...
-Route::prefix('admin')->name('admin.')->group(function () {
-    Route::get('/login', [LoginController::class, 'showAdminLoginForm'])->name('login');
-    Route::post('/login', [LoginController::class, 'loginAdmin'])->name('login.submit');
-    Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->middleware('auth:admin');
+// /admin のみのアクセス時はアクセス可能な先頭プロジェクトへリダイレクト
+Route::get('/admin', function () {
+    if (!auth('admin')->check()) {
+        return redirect()->route('admin.login');
+    }
+    $admin = auth('admin')->user();
+    $first = Project::whereIn('id', $admin->getAllowedProjectIds())
+        ->where('is_active', true)
+        ->orderBy('name')
+        ->first();
+    $projectKey = $first ? $first->project_key : 'default';
+    return redirect()->route('admin.dashboard', ['project_key' => $projectKey]);
+})->middleware('web')->name('admin.root');
 
-    // URL に project_key を含める（例: /admin/default, /admin/default/orders）
-    Route::middleware(['auth:admin', 'store.admin', 'bind.admin.project', 'admin.audit'])->prefix('{project_key}')->group(function () {
-        // ダッシュボード
-        Route::get('/', [AdminController::class, 'dashboard'])
-            ->name('dashboard')
-            ->middleware('admin.permission:dashboard.view');
+// ========== 店舗管理画面（project_key 必須） ==========
+Route::prefix('admin')->middleware(['web', 'auth:admin', 'bind.admin.project', 'admin.audit'])->group(function () {
+    Route::post('/logout', [LogoutController::class, '__invoke'])->name('admin.logout')->withoutMiddleware('bind.admin.project');
 
-        // 注文管理
-        Route::get('/orders', [AdminController::class, 'orders'])
-            ->name('orders')
-            ->middleware('admin.permission:orders.view');
-        Route::get('/orders/{id}', [AdminController::class, 'orderDetail'])
-            ->name('orders.detail')
-            ->middleware('admin.permission:orders.view');
-        Route::post('/orders/{id}/status', [AdminController::class, 'updateOrderStatus'])
-            ->name('orders.status')
-            ->middleware('admin.permission:orders.update');
-        Route::post('/orders/{id}/complete', [AdminController::class, 'completeOrder'])
-            ->name('orders.complete')
-            ->middleware('admin.permission:orders.update');
+    Route::prefix('{project_key}')->group(function () {
+        Route::get('/dashboard', [DashboardController::class, 'dashboard'])
+            ->name('admin.dashboard')->middleware('admin.permission:dashboard.view');
 
-        // 商品管理
-        Route::get('/products', [AdminController::class, 'products'])
-            ->name('products')
-            ->middleware('admin.permission:products.view');
-        Route::get('/products/create', [AdminController::class, 'createProduct'])
-            ->name('products.create')
-            ->middleware('admin.permission:products.manage');
-        Route::post('/products', [AdminController::class, 'storeProduct'])
-            ->name('products.store')
-            ->middleware('admin.permission:products.manage');
-        Route::get('/products/{id}/edit', [AdminController::class, 'editProduct'])
-            ->name('products.edit')
-            ->middleware('admin.permission:products.manage');
-        Route::put('/products/{id}', [AdminController::class, 'updateProduct'])
-            ->name('products.update')
-            ->middleware('admin.permission:products.manage');
-        Route::delete('/products/{id}', [AdminController::class, 'deleteProduct'])
-            ->name('products.delete')
-            ->middleware('admin.permission:products.manage');
+        Route::get('/orders', [AdminOrderController::class, 'orders'])->name('admin.orders')->middleware('admin.permission:orders.view');
+        Route::get('/orders/{id}', [AdminOrderController::class, 'orderDetail'])->name('admin.orders.detail')->middleware('admin.permission:orders.view');
+        Route::post('/orders/{id}/status', [AdminOrderController::class, 'updateOrderStatus'])->name('admin.orders.status')->middleware('admin.permission:orders.update');
+        Route::post('/orders/{id}/complete', [AdminOrderController::class, 'completeOrder'])->name('admin.orders.complete')->middleware('admin.permission:orders.update');
 
-        // 会員管理
-        Route::get('/members', [AdminController::class, 'members'])
-            ->name('members')
-            ->middleware('admin.permission:members.view');
-        Route::get('/members/{id}', [AdminController::class, 'memberDetail'])
-            ->name('members.detail')
-            ->middleware('admin.permission:members.view');
+        Route::get('/products', [AdminProductController::class, 'products'])->name('admin.products')->middleware('admin.permission:products.view');
+        Route::get('/products/create', [AdminProductController::class, 'createProduct'])->name('admin.products.create')->middleware('admin.permission:products.manage');
+        Route::post('/products', [AdminProductController::class, 'storeProduct'])->name('admin.products.store')->middleware('admin.permission:products.manage');
+        Route::get('/products/{id}/edit', [AdminProductController::class, 'editProduct'])->name('admin.products.edit')->middleware('admin.permission:products.manage');
+        Route::put('/products/{id}', [AdminProductController::class, 'updateProduct'])->name('admin.products.update')->middleware('admin.permission:products.manage');
+        Route::delete('/products/{id}', [AdminProductController::class, 'deleteProduct'])->name('admin.products.delete')->middleware('admin.permission:products.manage');
 
-        // 予約管理
-        Route::get('/reservations', [AdminController::class, 'reservations'])
-            ->name('reservations')
-            ->middleware('admin.permission:reservations.view');
-        Route::get('/reservations/{id}', [AdminController::class, 'reservationDetail'])
-            ->name('reservations.detail')
-            ->middleware('admin.permission:reservations.view');
-        Route::post('/reservations/{id}/status', [AdminController::class, 'updateReservationStatus'])
-            ->name('reservations.status')
-            ->middleware('admin.permission:reservations.update');
-        Route::post('/reservations/{id}/complete', [AdminController::class, 'completeReservation'])
-            ->name('reservations.complete')
-            ->middleware('admin.permission:reservations.update');
+        Route::get('/members', [AdminMemberController::class, 'members'])->name('admin.members')->middleware('admin.permission:members.view');
+        Route::get('/members/{id}', [AdminMemberController::class, 'memberDetail'])->name('admin.members.detail')->middleware('admin.permission:members.view');
 
-        // スタンプ管理
-        Route::get('/stamps', [AdminController::class, 'stamps'])
-            ->name('stamps')
-            ->middleware('admin.permission:stamps.view');
-        Route::get('/stamps/create', [AdminController::class, 'createStamp'])
-            ->name('stamps.create')
-            ->middleware('admin.permission:stamps.manage');
-        Route::post('/stamps', [AdminController::class, 'storeStamp'])
-            ->name('stamps.store')
-            ->middleware('admin.permission:stamps.manage');
-        Route::get('/stamps/{id}/edit', [AdminController::class, 'editStamp'])
-            ->name('stamps.edit')
-            ->middleware('admin.permission:stamps.manage');
-        Route::put('/stamps/{id}', [AdminController::class, 'updateStamp'])
-            ->name('stamps.update')
-            ->middleware('admin.permission:stamps.manage');
-        Route::delete('/stamps/{id}', [AdminController::class, 'deleteStamp'])
-            ->name('stamps.delete')
-            ->middleware('admin.permission:stamps.manage');
+        Route::get('/reservations', [AdminReservationController::class, 'reservations'])->name('admin.reservations')->middleware('admin.permission:reservations.view');
+        Route::get('/reservations/{id}', [AdminReservationController::class, 'reservationDetail'])->name('admin.reservations.detail')->middleware('admin.permission:reservations.view');
+        Route::post('/reservations/{id}/status', [AdminReservationController::class, 'updateReservationStatus'])->name('admin.reservations.status')->middleware('admin.permission:reservations.update');
+        Route::post('/reservations/{id}/complete', [AdminReservationController::class, 'completeReservation'])->name('admin.reservations.complete')->middleware('admin.permission:reservations.update');
 
-        // クーポン管理
-        Route::get('/coupons', [AdminController::class, 'coupons'])
-            ->name('coupons')
-            ->middleware('admin.permission:coupons.view');
-        Route::get('/coupons/create', [AdminController::class, 'createCoupon'])
-            ->name('coupons.create')
-            ->middleware('admin.permission:coupons.manage');
-        Route::post('/coupons', [AdminController::class, 'storeCoupon'])
-            ->name('coupons.store')
-            ->middleware('admin.permission:coupons.manage');
-        Route::get('/coupons/{id}/edit', [AdminController::class, 'editCoupon'])
-            ->name('coupons.edit')
-            ->middleware('admin.permission:coupons.manage');
-        Route::put('/coupons/{id}', [AdminController::class, 'updateCoupon'])
-            ->name('coupons.update')
-            ->middleware('admin.permission:coupons.manage');
-        Route::delete('/coupons/{id}', [AdminController::class, 'deleteCoupon'])
-            ->name('coupons.delete')
-            ->middleware('admin.permission:coupons.manage');
+        Route::get('/stamps', [AdminStampController::class, 'stamps'])->name('admin.stamps')->middleware('admin.permission:stamps.view');
+        Route::get('/stamps/create', [AdminStampController::class, 'createStamp'])->name('admin.stamps.create')->middleware('admin.permission:stamps.manage');
+        Route::post('/stamps', [AdminStampController::class, 'storeStamp'])->name('admin.stamps.store')->middleware('admin.permission:stamps.manage');
+        Route::get('/stamps/{id}/edit', [AdminStampController::class, 'editStamp'])->name('admin.stamps.edit')->middleware('admin.permission:stamps.manage');
+        Route::put('/stamps/{id}', [AdminStampController::class, 'updateStamp'])->name('admin.stamps.update')->middleware('admin.permission:stamps.manage');
+        Route::delete('/stamps/{id}', [AdminStampController::class, 'deleteStamp'])->name('admin.stamps.delete')->middleware('admin.permission:stamps.manage');
 
-        // お知らせ管理
-        Route::get('/announcements', [AdminController::class, 'announcements'])
-            ->name('announcements')
-            ->middleware('admin.permission:announcements.view');
-        Route::get('/announcements/create', [AdminController::class, 'createAnnouncement'])
-            ->name('announcements.create')
-            ->middleware('admin.permission:announcements.manage');
-        Route::post('/announcements', [AdminController::class, 'storeAnnouncement'])
-            ->name('announcements.store')
-            ->middleware('admin.permission:announcements.manage');
-        Route::get('/announcements/{id}/edit', [AdminController::class, 'editAnnouncement'])
-            ->name('announcements.edit')
-            ->middleware('admin.permission:announcements.manage');
-        Route::put('/announcements/{id}', [AdminController::class, 'updateAnnouncement'])
-            ->name('announcements.update')
-            ->middleware('admin.permission:announcements.manage');
-        Route::delete('/announcements/{id}', [AdminController::class, 'deleteAnnouncement'])
-            ->name('announcements.delete')
-            ->middleware('admin.permission:announcements.manage');
+        Route::get('/coupons', [AdminCouponController::class, 'coupons'])->name('admin.coupons')->middleware('admin.permission:coupons.view');
+        Route::get('/coupons/create', [AdminCouponController::class, 'createCoupon'])->name('admin.coupons.create')->middleware('admin.permission:coupons.manage');
+        Route::post('/coupons', [AdminCouponController::class, 'storeCoupon'])->name('admin.coupons.store')->middleware('admin.permission:coupons.manage');
+        Route::get('/coupons/{id}/edit', [AdminCouponController::class, 'editCoupon'])->name('admin.coupons.edit')->middleware('admin.permission:coupons.manage');
+        Route::put('/coupons/{id}', [AdminCouponController::class, 'updateCoupon'])->name('admin.coupons.update')->middleware('admin.permission:coupons.manage');
+        Route::delete('/coupons/{id}', [AdminCouponController::class, 'deleteCoupon'])->name('admin.coupons.delete')->middleware('admin.permission:coupons.manage');
 
-        // 順番待ち管理
-        Route::get('/queue', [AdminController::class, 'queue'])
-            ->name('queue')
-            ->middleware('admin.permission:queue.view');
-        Route::post('/queue/{id}/status', [AdminController::class, 'updateQueueStatus'])
-            ->name('queue.status')
-            ->middleware('admin.permission:queue.update');
+        Route::get('/announcements', [AdminAnnouncementController::class, 'announcements'])->name('admin.announcements')->middleware('admin.permission:announcements.view');
+        Route::get('/announcements/create', [AdminAnnouncementController::class, 'createAnnouncement'])->name('admin.announcements.create')->middleware('admin.permission:announcements.manage');
+        Route::post('/announcements', [AdminAnnouncementController::class, 'storeAnnouncement'])->name('admin.announcements.store')->middleware('admin.permission:announcements.manage');
+        Route::get('/announcements/{id}/edit', [AdminAnnouncementController::class, 'editAnnouncement'])->name('admin.announcements.edit')->middleware('admin.permission:announcements.manage');
+        Route::put('/announcements/{id}', [AdminAnnouncementController::class, 'updateAnnouncement'])->name('admin.announcements.update')->middleware('admin.permission:announcements.manage');
+        Route::delete('/announcements/{id}', [AdminAnnouncementController::class, 'deleteAnnouncement'])->name('admin.announcements.delete')->middleware('admin.permission:announcements.manage');
 
-        // 設定
-        Route::get('/settings', [AdminController::class, 'settingsBasic'])
-            ->name('settings.basic')
-            ->middleware('admin.permission:settings.view');
-        Route::post('/settings/basic', [AdminController::class, 'updateSettingsBasic'])
-            ->name('settings.basic.update')
-            ->middleware('admin.permission:settings.manage');
-        Route::get('/settings/advanced', [AdminController::class, 'settingsAdvanced'])
-            ->name('settings.advanced')
-            ->middleware('admin.permission:settings.view');
-        Route::post('/settings/advanced', [AdminController::class, 'updateSettingsAdvanced'])
-            ->name('settings.advanced.update')
-            ->middleware('admin.permission:settings.manage');
-        Route::get('/settings/menu', [AdminController::class, 'settingsMenu'])
-            ->name('settings.menu')
-            ->middleware('admin.permission:settings.view');
-        Route::post('/settings/menu', [AdminController::class, 'updateSettingsMenu'])
-            ->name('settings.menu.update')
-            ->middleware('admin.permission:settings.manage');
-        Route::get('/settings/ranks', [AdminController::class, 'settingsRanks'])
-            ->name('settings.ranks')
-            ->middleware('admin.permission:settings.view');
-        Route::post('/settings/ranks', [AdminController::class, 'updateSettingsRanks'])
-            ->name('settings.ranks.update')
-            ->middleware('admin.permission:settings.manage');
-        Route::get('/settings/features', [AdminController::class, 'settingsFeatures'])
-            ->name('settings.features')
-            ->middleware('admin.permission:settings.view');
-        Route::post('/settings/features', [AdminController::class, 'updateSettingsFeatures'])
-            ->name('settings.features.update')
-            ->middleware('admin.permission:settings.manage');
-        Route::get('/settings/liff-designer', [AdminController::class, 'settingsLiffDesigner'])
-            ->name('settings.liff-designer');
-        Route::post('/settings/liff-designer', [AdminController::class, 'updateSettingsLiffDesigner'])
-            ->name('settings.liff-designer.update');
+        Route::get('/queue', [AdminQueueController::class, 'queue'])->name('admin.queue')->middleware('admin.permission:queue.view');
+        Route::post('/queue/{id}/status', [AdminQueueController::class, 'updateQueueStatus'])->name('admin.queue.status')->middleware('admin.permission:queue.update');
 
-        Route::get('/analytics', [AdminController::class, 'analytics'])
-            ->name('analytics')
-            ->middleware('admin.permission:analytics.view');
+        Route::get('/settings', [SettingsBasicController::class, 'index'])->name('admin.settings.basic')->middleware('admin.permission:settings.view');
+        Route::post('/settings/basic', [SettingsBasicController::class, 'update'])->name('admin.settings.basic.update')->middleware('admin.permission:settings.manage');
+        Route::get('/settings/advanced', [SettingsAdvancedController::class, 'index'])->name('admin.settings.advanced')->middleware('admin.permission:settings.view');
+        Route::post('/settings/advanced', [SettingsAdvancedController::class, 'update'])->name('admin.settings.advanced.update')->middleware('admin.permission:settings.manage');
+        Route::get('/settings/menu', [SettingsMenuController::class, 'index'])->name('admin.settings.menu')->middleware('admin.permission:settings.view');
+        Route::post('/settings/menu', [SettingsMenuController::class, 'update'])->name('admin.settings.menu.update')->middleware('admin.permission:settings.manage');
+        Route::get('/settings/features', [SettingsFeaturesController::class, 'index'])->name('admin.settings.features')->middleware('admin.permission:settings.view');
+        Route::post('/settings/features', [SettingsFeaturesController::class, 'update'])->name('admin.settings.features.update')->middleware('admin.permission:settings.manage');
+        Route::get('/settings/ranks', [SettingsRanksController::class, 'index'])->name('admin.settings.ranks')->middleware('admin.permission:settings.view');
+        Route::post('/settings/ranks', [SettingsRanksController::class, 'update'])->name('admin.settings.ranks.update')->middleware('admin.permission:settings.manage');
+        Route::get('/settings/liff-designer', [SettingsLiffDesignerController::class, 'index'])->name('admin.settings.liff-designer')->middleware('admin.permission:liff_designer.manage');
+        Route::post('/settings/liff-designer', [SettingsLiffDesignerController::class, 'update'])->name('admin.settings.liff-designer.update')->middleware('admin.permission:liff_designer.manage');
 
-        Route::prefix('gallery')->name('gallery.')->group(function () {
-            Route::get('/categories', [AdminController::class, 'galleryCategories'])
-                ->name('categories')
-                ->middleware('admin.permission:gallery.view');
-            Route::post('/categories', [AdminController::class, 'storeGalleryCategory'])
-                ->name('categories.store')
-                ->middleware('admin.permission:gallery.manage');
-            Route::put('/categories/{id}', [AdminController::class, 'updateGalleryCategory'])
-                ->name('categories.update')
-                ->middleware('admin.permission:gallery.manage');
-            Route::delete('/categories/{id}', [AdminController::class, 'deleteGalleryCategory'])
-                ->name('categories.delete')
-                ->middleware('admin.permission:gallery.manage');
+        Route::get('/analytics', [AdminAnalyticsController::class, 'analytics'])->name('admin.analytics')->middleware('admin.permission:analytics.view');
 
-            Route::get('/items', [AdminController::class, 'galleryItems'])
-                ->name('items')
-                ->middleware('admin.permission:gallery.view');
-            Route::post('/items', [AdminController::class, 'storeGalleryItem'])
-                ->name('items.store')
-                ->middleware('admin.permission:gallery.manage');
-            Route::put('/items/{id}', [AdminController::class, 'updateGalleryItem'])
-                ->name('items.update')
-                ->middleware('admin.permission:gallery.manage');
-            Route::delete('/items/{id}', [AdminController::class, 'deleteGalleryItem'])
-                ->name('items.delete')
-                ->middleware('admin.permission:gallery.manage');
-        });
-
-        // プロジェクト内アカウント管理（project_admin / admin が使用）
-        Route::prefix('accounts')->name('accounts.')->group(function () {
-            Route::get('/', [AccountController::class, 'index'])->name('index');
-            Route::get('/create', [AccountController::class, 'create'])->name('create');
-            Route::post('/', [AccountController::class, 'store'])->name('store');
-            Route::get('/{id}/edit', [AccountController::class, 'edit'])->name('edit');
-            Route::put('/{id}', [AccountController::class, 'update'])->name('update');
-            Route::delete('/{id}', [AccountController::class, 'destroy'])->name('destroy');
-        });
+        Route::get('/gallery/categories', [GalleryCategoryController::class, 'index'])->name('admin.gallery.categories')->middleware('admin.permission:gallery.view');
+        Route::post('/gallery/categories', [GalleryCategoryController::class, 'store'])->name('admin.gallery.categories.store')->middleware('admin.permission:gallery.manage');
+        Route::put('/gallery/categories/{id}', [GalleryCategoryController::class, 'update'])->name('admin.gallery.categories.update')->middleware('admin.permission:gallery.manage');
+        Route::delete('/gallery/categories/{id}', [GalleryCategoryController::class, 'delete'])->name('admin.gallery.categories.delete')->middleware('admin.permission:gallery.manage');
+        Route::get('/gallery/items', [GalleryItemController::class, 'index'])->name('admin.gallery.items')->middleware('admin.permission:gallery.view');
+        Route::post('/gallery/items', [GalleryItemController::class, 'store'])->name('admin.gallery.items.store')->middleware('admin.permission:gallery.manage');
+        Route::put('/gallery/items/{id}', [GalleryItemController::class, 'update'])->name('admin.gallery.items.update')->middleware('admin.permission:gallery.manage');
+        Route::delete('/gallery/items/{id}', [GalleryItemController::class, 'delete'])->name('admin.gallery.items.delete')->middleware('admin.permission:gallery.manage');
     });
 });
 
-// システムアドミン（system-admin）: /system-admin
-Route::prefix('system-admin')->name('system-admin.')->group(function () {
-    Route::get('/login', [LoginController::class, 'showSystemAdminLoginForm'])->name('login');
-    Route::post('/login', [LoginController::class, 'loginSystemAdmin'])->name('login.submit');
-    Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->middleware('auth:admin');
+// ========== システム管理画面（システム管理者のみ） ==========
+Route::prefix('system-admin')->middleware(['web', 'auth:admin', 'system.admin', 'admin.audit'])->group(function () {
+    Route::post('/logout', [LogoutController::class, '__invoke'])->name('system-admin.logout');
 
-    Route::middleware(['auth:admin', 'system.admin', 'admin.audit'])->group(function () {
-        Route::get('/', function () {
-            $projectsCount = \App\Models\Project::where('is_active', true)->count();
-            $accountsCount = \App\Models\AdminUser::count();
-            $apiTokensCount = \App\Models\ApiToken::where('is_active', true)->count();
-            return view('admin.system-admin.dashboard', compact('projectsCount', 'accountsCount', 'apiTokensCount'));
-        })->name('dashboard');
-        Route::prefix('projects')->name('projects.')->group(function () {
-            Route::get('/', [ProjectController::class, 'index'])->name('index');
-            Route::get('/create', [ProjectController::class, 'create'])->name('create');
-            Route::post('/', [ProjectController::class, 'store'])->name('store');
-            Route::get('/{id}/edit', [ProjectController::class, 'edit'])->name('edit');
-            Route::put('/{id}', [ProjectController::class, 'update'])->name('update');
-        });
-        Route::prefix('api-tokens')->name('api-tokens.')->group(function () {
-            Route::get('/', [ApiTokenController::class, 'index'])->name('index');
-            Route::get('/create', [ApiTokenController::class, 'create'])->name('create');
-            Route::post('/', [ApiTokenController::class, 'store'])->name('store');
-            Route::post('/{id}/revoke', [ApiTokenController::class, 'revoke'])->name('revoke');
-            Route::get('/{id}/edit', [ApiTokenController::class, 'edit'])->name('edit');
-            Route::put('/{id}', [ApiTokenController::class, 'update'])->name('update');
-            Route::post('/{id}/rotate', [ApiTokenController::class, 'rotate'])->name('rotate');
-        });
-        Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
-        Route::get('/audit-logs/{id}', [AuditLogController::class, 'show'])->name('audit-logs.show');
-        Route::prefix('accounts')->name('accounts.')->group(function () {
-            Route::get('/', [AccountController::class, 'index'])->name('index');
-            Route::get('/create', [AccountController::class, 'create'])->name('create');
-            Route::post('/', [AccountController::class, 'store'])->name('store');
-            Route::get('/{id}/edit', [AccountController::class, 'edit'])->name('edit');
-            Route::put('/{id}', [AccountController::class, 'update'])->name('update');
-            Route::delete('/{id}', [AccountController::class, 'destroy'])->name('destroy');
-        });
-    });
+    Route::get('/dashboard', [SystemAdminDashboardController::class, 'dashboard'])->name('system-admin.dashboard');
+    Route::get('/projects', [AdminProjectController::class, 'index'])->name('system-admin.projects.index');
+    Route::get('/projects/create', [AdminProjectController::class, 'create'])->name('system-admin.projects.create');
+    Route::post('/projects', [AdminProjectController::class, 'store'])->name('system-admin.projects.store');
+    Route::get('/projects/{id}/edit', [AdminProjectController::class, 'edit'])->name('system-admin.projects.edit');
+    Route::put('/projects/{id}', [AdminProjectController::class, 'update'])->name('system-admin.projects.update');
+
+    Route::get('/accounts', [AccountIndexController::class, '__invoke'])->name('system-admin.accounts.index');
+    Route::get('/accounts/create', [AccountFormController::class, 'create'])->name('system-admin.accounts.create');
+    Route::post('/accounts', [AccountStoreController::class, '__invoke'])->name('system-admin.accounts.store');
+    Route::get('/accounts/{id}/edit', [AccountFormController::class, 'edit'])->name('system-admin.accounts.edit');
+    Route::put('/accounts/{id}', [AccountUpdateController::class, '__invoke'])->name('system-admin.accounts.update');
+    Route::delete('/accounts/{id}', [AccountDestroyController::class, '__invoke'])->name('system-admin.accounts.destroy');
+
+    Route::get('/api-tokens', [AdminApiTokenController::class, 'index'])->name('system-admin.api-tokens.index');
+    Route::get('/api-tokens/create', [AdminApiTokenController::class, 'create'])->name('system-admin.api-tokens.create');
+    Route::get('/api-tokens/{id}/edit', [AdminApiTokenController::class, 'edit'])->name('system-admin.api-tokens.edit');
+    Route::post('/api-tokens', [AdminApiTokenController::class, 'store'])->name('system-admin.api-tokens.store');
+    Route::put('/api-tokens/{id}', [AdminApiTokenController::class, 'update'])->name('system-admin.api-tokens.update');
+    Route::post('/api-tokens/{id}/revoke', [AdminApiTokenController::class, 'revoke'])->name('system-admin.api-tokens.revoke');
+    Route::post('/api-tokens/{id}/rotate', [AdminApiTokenController::class, 'rotate'])->name('system-admin.api-tokens.rotate');
+
+    Route::get('/audit-logs', [AdminAuditLogController::class, 'index'])->name('system-admin.audit-logs.index');
+    Route::get('/audit-logs/{id}', [AdminAuditLogController::class, 'show'])->name('system-admin.audit-logs.show');
 });
