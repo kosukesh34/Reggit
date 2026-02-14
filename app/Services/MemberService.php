@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\MemberStatus;
 use App\Models\Member;
 use App\Models\PointTransaction;
 use App\Models\User;
@@ -86,13 +87,13 @@ class MemberService
 
         $projectId = $user->project_id ?? \App\Util\AdminContext::getCurrentProjectId() ?? 1;
         $rankSettings = \App\Models\ShopSetting::getMemberRankSettings($projectId);
-        $defaultRankKey = collect($rankSettings)->first(fn ($r) => !empty($r['is_active']))['key'] ?? 'bronze';
+        $defaultRankKey = collect($rankSettings)->first(fn ($r) => ($r['is_active'] ?? false) === true)['key'] ?? 'bronze';
         $member = Member::create([
             'project_id' => $projectId,
             'user_id' => $user->id,
             'member_number' => $memberNumber,
             'points' => 0,
-            'status' => 'active',
+            'status' => MemberStatus::ACTIVE,
             'rank' => $defaultRankKey,
             'birthday' => $data['birthday'] ?? null,
             'address' => $data['address'] ?? null,
@@ -113,7 +114,7 @@ class MemberService
     private function syncMemberRank(Member $member): void
     {
         $rankInfo = $this->getRankInfo($member);
-        if (!empty($rankInfo['current_rank']) && $rankInfo['current_rank'] !== $member->rank) {
+        if (($rankInfo['current_rank'] ?? '') !== '' && $rankInfo['current_rank'] !== $member->rank) {
             $member->update(['rank' => $rankInfo['current_rank']]);
         }
     }
@@ -128,8 +129,8 @@ class MemberService
         $stamps = $member->getTotalStamps();
         $metric = $basis === 'stamps' ? $stamps : ($basis === 'max' ? max($points, $stamps) : $points);
 
-        $active = array_values(array_filter($ranks, fn ($r) => !empty($r['is_active'])));
-        if (empty($active)) {
+        $active = array_values(array_filter($ranks, fn ($r) => ($r['is_active'] ?? false) === true));
+        if ($active === []) {
             return [
                 'current_rank' => $member->rank ?? 'bronze',
                 'current_rank_label' => $member->rank ?? 'bronze',

@@ -5,8 +5,8 @@ namespace App\Services;
 use App\Enums\ReservationStatus;
 use App\Models\Reservation;
 use App\Models\User;
+use App\Util\LogHelper;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 
 class ReservationService
 {
@@ -23,7 +23,7 @@ class ReservationService
             ]);
 
             DB::commit();
-            Log::info('Reservation created', [
+            LogHelper::info('[Reservation] created', [
                 'reservation_id' => $reservation->id,
                 'user_id' => $user->id,
             ]);
@@ -31,7 +31,7 @@ class ReservationService
             return $reservation;
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Reservation creation failed', [
+            LogHelper::error('[Reservation] create failed', [
                 'user_id' => $user->id,
                 'error' => $e->getMessage(),
             ]);
@@ -51,7 +51,7 @@ class ReservationService
 
         $reservation->update(['status' => ReservationStatus::CANCELLED]);
 
-        Log::info('Reservation cancelled', [
+        LogHelper::info('[Reservation] cancelled', [
             'reservation_id' => $reservation->id,
             'user_id' => $user->id,
         ]);
@@ -75,7 +75,7 @@ class ReservationService
             'notes' => $data['notes'] ?? null,
         ]);
 
-        Log::info('Reservation updated', [
+        LogHelper::info('[Reservation] updated', [
             'reservation_id' => $reservation->id,
             'user_id' => $user->id,
         ]);
@@ -110,12 +110,11 @@ class ReservationService
                 ];
             })->toArray();
         } catch (\Exception $e) {
-            Log::error('Failed to get user reservations: ' . $e->getMessage(), [
+            LogHelper::error('[Reservation] get user reservations failed', [
                 'user_id' => $user->id,
-                'trace' => $e->getTraceAsString(),
+                'error' => $e->getMessage(),
             ]);
             throw $e;
         }
     }
 }
-

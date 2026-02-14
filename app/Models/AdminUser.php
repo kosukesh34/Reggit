@@ -69,12 +69,10 @@ class AdminUser extends Authenticatable
         'remember_token',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'password' => 'hashed',
-        ];
-    }
+    /** @var array<string, string> */
+    protected $casts = [
+        'password' => 'hashed',
+    ];
 
     // ── リレーション ──
 
@@ -111,7 +109,7 @@ class AdminUser extends Authenticatable
             return Project::where('is_active', true)->pluck('id')->all();
         }
         $pivotIds = $this->projects()->pluck('projects.id')->all();
-        if (!empty($pivotIds)) {
+        if ($pivotIds !== []) {
             return $pivotIds;
         }
         if ($this->project_id) {

@@ -3,13 +3,14 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToProject;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class MemberCoupon extends Model
 {
-    use BelongsToProject;
+    use BelongsToProject, HasFactory;
 
     protected $fillable = [
         'project_id',
@@ -24,15 +25,13 @@ class MemberCoupon extends Model
         'order_id',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'issued_at' => 'datetime',
-            'valid_from' => 'datetime',
-            'valid_until' => 'datetime',
-            'used_at' => 'datetime',
-        ];
-    }
+    /** @var array<string, string> */
+    protected $casts = [
+        'issued_at' => 'datetime',
+        'valid_from' => 'datetime',
+        'valid_until' => 'datetime',
+        'used_at' => 'datetime',
+    ];
 
     public const STATUS_UNUSED = 'unused';
     public const STATUS_USED = 'used';

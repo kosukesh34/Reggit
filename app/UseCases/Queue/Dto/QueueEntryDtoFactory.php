@@ -1,0 +1,39 @@
+<?php
+
+namespace App\UseCases\Queue\Dto;
+
+use App\Models\QueueEntry;
+
+class QueueEntryDtoFactory
+{
+    public function create(QueueEntry $entry, array $stats): QueueEntryDto
+    {
+        return new QueueEntryDto(
+            $entry->id,
+            $entry->queue_number ?? 0,
+            $entry->status,
+            $entry->party_size,
+            $entry->qr_token,
+            $this->formatDate($entry->created_at) ?? now()->toIso8601String(),
+            $this->formatDate($entry->updated_at) ?? now()->toIso8601String(),
+            $this->formatDate($entry->called_at),
+            $stats['waiting_count'],
+            $stats['ahead_count'],
+            $stats['estimated_wait_minutes']
+        );
+    }
+
+    private function formatDate($value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+        if ($value instanceof \DateTimeInterface) {
+            return $value->format(\DateTimeInterface::ATOM);
+        }
+        if (is_string($value)) {
+            return $value;
+        }
+        return null;
+    }
+}

@@ -4,7 +4,7 @@ namespace App\Services\Admin;
 
 use App\Models\Order;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Collection;
+use App\Enums\OrderStatus;
 
 class OrderAdminService
 {
@@ -20,7 +20,7 @@ class OrderAdminService
 
     public function getStatusCounts(): array
     {
-        $statuses = ['pending', 'confirmed', 'preparing', 'ready', 'completed', 'cancelled'];
+        $statuses = array_keys(OrderStatus::getValues());
         $counts = ['all' => Order::count()];
         foreach ($statuses as $status) {
             $counts[$status] = Order::where('status', $status)->count();
@@ -40,6 +40,6 @@ class OrderAdminService
 
     public function complete(int $id): void
     {
-        Order::whereKey($id)->update(['status' => 'completed']);
+        Order::whereKey($id)->update(['status' => OrderStatus::COMPLETED]);
     }
 }

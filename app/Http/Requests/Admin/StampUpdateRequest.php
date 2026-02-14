@@ -15,15 +15,10 @@ class StampUpdateRequest extends FormRequest
     {
         return [
             'name' => 'required|string|max:255',
-            'required_stamps' => 'required|integer|min:1|max:100',
+            'required_stamps' => 'required|integer|min:1|max:999',
             'reward_description' => 'nullable|string|max:500',
-            'image_url' => 'nullable|url|max:500',
-            'is_active' => 'nullable',
+            'image_url' => 'nullable|string|url|max:500',
+            'is_active' => 'nullable|boolean',
         ];
-    }
-
-    protected function prepareForValidation(): void
-    {
-        $this->merge(['is_active' => $this->boolean('is_active')]);
     }
 }

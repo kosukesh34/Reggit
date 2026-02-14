@@ -14,7 +14,14 @@ class ReservationManager {
         this.currentModal = null;
         this.editingReservationId = null;
         this.apiClient = new ApiClient();
-        this.reservationsSection = DomHelper.getElementById(AppConstants.ELEMENT_IDS.RESERVATIONS_SECTION);
+        this.reservationsSection = null;
+    }
+
+    _getSection() {
+        if (!this.reservationsSection) {
+            this.reservationsSection = document.getElementById(AppConstants.ELEMENT_IDS.RESERVATIONS_SECTION) || null;
+        }
+        return this.reservationsSection;
     }
 
     getReservationById(id) {
@@ -22,6 +29,7 @@ class ReservationManager {
     }
 
     async loadReservations() {
+        this.reservationsSection = this._getSection();
         if (this.reservationsSection) {
             this.reservationsSection.innerHTML = this.getReservationSkeleton();
         }
@@ -53,6 +61,7 @@ class ReservationManager {
     }
 
     renderReservations() {
+        this.reservationsSection = this._getSection();
         if (!this.reservationsSection) return;
 
         if (this.reservations.length === 0) {
@@ -273,7 +282,7 @@ class ReservationManager {
 
     getEditFormHtml(reservation) {
         const numPeople = Math.min(Math.max(Number(reservation.number_of_people) || 1, AppConstants.RESERVATION_VALIDATION.MIN_PEOPLE), AppConstants.RESERVATION_VALIDATION.MAX_PEOPLE);
-        const notes = (reservation.notes != null && reservation.notes !== '') ? DomHelper.escapeHtml(reservation.notes) : '';
+        const notes = (reservation.notes !== null && reservation.notes !== undefined && reservation.notes !== '') ? DomHelper.escapeHtml(reservation.notes) : '';
         return `
             <div class="modal-content reservation-modal-content">
                 <div class="modal-header">

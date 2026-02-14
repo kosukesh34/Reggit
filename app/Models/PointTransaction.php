@@ -20,13 +20,11 @@ class PointTransaction extends Model
         'expires_at',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'points' => 'integer',
-            'expires_at' => 'date',
-        ];
-    }
+    /** @var array<string, string> */
+    protected $casts = [
+        'points' => 'integer',
+        'expires_at' => 'date',
+    ];
 
     public function project()
     {

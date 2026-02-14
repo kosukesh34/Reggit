@@ -10,12 +10,12 @@
     <span>カテゴリ</span>
 </nav>
 
-<div class="card" style="margin-bottom:24px;">
+<div class="card card-mb-24">
     <div class="card-header">
         <h3 class="card-title"><i class="fas fa-tags"></i> 新規カテゴリ</h3>
     </div>
     <div class="card-body">
-        <form method="POST" action="{{ admin_route('admin.gallery.categories.store') }}" class="form-inline" style="display:flex; gap:12px; flex-wrap:wrap;">
+        <form method="POST" action="{{ admin_route('admin.gallery.categories.store') }}" class="form-inline form-inline-flex">
             @csrf
             <div class="form-group">
                 <label class="form-label">名前</label>
@@ -25,11 +25,11 @@
                 <label class="form-label">並び順</label>
                 <input type="number" name="sort_order" class="form-control" value="0" min="0" max="999">
             </div>
-            <div class="form-group form-check" style="padding-top:30px;">
+            <div class="form-group form-check pt-30">
                 <input type="checkbox" name="is_active" class="form-check-input" value="1" checked>
                 <label class="form-check-label">表示</label>
             </div>
-            <div class="form-actions" style="margin:0;">
+            <div class="form-actions form-actions-zero">
                 <button type="submit" class="btn btn-primary"><i class="fas fa-plus"></i> 追加</button>
             </div>
         </form>

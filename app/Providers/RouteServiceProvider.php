@@ -18,6 +18,12 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
         });
 
+        // 管理画面ログイン: 5回/分まで（ブルートフォース対策）
+        RateLimiter::for('admin-login', function (Request $request) {
+            $key = $request->input('login_id', '') . '|' . $request->ip();
+            return Limit::perMinute(5)->by($key);
+        });
+
         $this->routes(function () {
             Route::middleware('api')
                 ->prefix('api')

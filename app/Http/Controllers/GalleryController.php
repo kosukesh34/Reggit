@@ -2,41 +2,34 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\GalleryCategory;
-use App\Models\GalleryItem;
+use App\UseCases\Gallery\GalleryIndexUseCase;
 use App\Util\AdminContext;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
+use App\Util\LogHelper;
 
 class GalleryController extends Controller
 {
+    public function __construct(private GalleryIndexUseCase $indexUseCase)
+    {
+    }
+
     public function index(Request $request)
     {
         try {
-            $projectId = AdminContext::getCurrentProjectId() ?? 1;
             $categoryId = $request->query('category_id');
+            $categoryId = $categoryId !== null ? (int) $categoryId : null;
 
-            $categories = GalleryCategory::where('project_id', $projectId)
-                ->where('is_active', true)
-                ->orderBy('sort_order')
-                ->orderBy('id')
-                ->get();
-
-            $itemsQuery = GalleryItem::where('project_id', $projectId)
-                ->where('is_active', true)
-                ->orderBy('sort_order')
-                ->orderBy('id');
-            if ($categoryId) {
-                $itemsQuery->where('category_id', $categoryId);
-            }
-            $items = $itemsQuery->get();
+            $result = $this->indexUseCase->handle($categoryId);
 
             return response()->json([
-                'categories' => $categories,
-                'items' => $items,
+                'categories' => $result->categories,
+                'items' => $result->items,
             ]);
         } catch (\Exception $e) {
-            Log::error('Gallery index error: ' . $e->getMessage());
+            LogHelper::error('[Gallery] index failed', [
+                'project_id' => AdminContext::getCurrentProjectId() ?? 1,
+                'error' => $e->getMessage(),
+            ]);
             return response()->json(['error' => 'ギャラリーの取得に失敗しました'], 500);
         }
     }
