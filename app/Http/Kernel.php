@@ -54,5 +54,6 @@ class Kernel extends HttpKernel
         'admin.audit' => \App\Http\Middleware\AdminAuditLogger::class,
         'system.admin' => \App\Http\Middleware\EnsureSystemAdmin::class,
         'admin.permission' => \App\Http\Middleware\CheckAdminPermission::class,
+        'api.token' => \App\Http\Middleware\AuthenticateApiToken::class,
     ];
 }

@@ -51,12 +51,12 @@ Route::prefix('liff')->group(function () {
     Route::get('/orders', [LiffController::class, 'orders'])->name('liff.orders');
 });
 
-// ========== 管理画面ログイン（認証不要） ==========
+// ========== 管理画面ログイン（認証不要・スロットリング適用） ==========
 Route::get('/admin/login', [AdminLoginController::class, 'show'])->name('admin.login');
-Route::post('/admin/login', [AdminLoginController::class, 'login'])->name('admin.login.submit');
+Route::post('/admin/login', [AdminLoginController::class, 'login'])->name('admin.login.submit')->middleware('throttle:admin-login');
 
 Route::get('/system-admin/login', [SystemAdminLoginController::class, 'show'])->name('system-admin.login');
-Route::post('/system-admin/login', [SystemAdminLoginController::class, 'login'])->name('system-admin.login.submit');
+Route::post('/system-admin/login', [SystemAdminLoginController::class, 'login'])->name('system-admin.login.submit')->middleware('throttle:admin-login');
 
 // /admin のみのアクセス時はアクセス可能な先頭プロジェクトへリダイレクト
 Route::get('/admin', function () {
@@ -134,8 +134,8 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'bind.admin.project', '
         Route::post('/settings/features', [SettingsFeaturesController::class, 'update'])->name('admin.settings.features.update')->middleware('admin.permission:settings.manage');
         Route::get('/settings/ranks', [SettingsRanksController::class, 'index'])->name('admin.settings.ranks')->middleware('admin.permission:settings.view');
         Route::post('/settings/ranks', [SettingsRanksController::class, 'update'])->name('admin.settings.ranks.update')->middleware('admin.permission:settings.manage');
-        Route::get('/settings/liff-designer', [SettingsLiffDesignerController::class, 'index'])->name('admin.settings.liff-designer')->middleware('admin.permission:settings.view');
-        Route::post('/settings/liff-designer', [SettingsLiffDesignerController::class, 'update'])->name('admin.settings.liff-designer.update')->middleware('admin.permission:settings.manage');
+        Route::get('/settings/liff-designer', [SettingsLiffDesignerController::class, 'index'])->name('admin.settings.liff-designer')->middleware('admin.permission:liff_designer.manage');
+        Route::post('/settings/liff-designer', [SettingsLiffDesignerController::class, 'update'])->name('admin.settings.liff-designer.update')->middleware('admin.permission:liff_designer.manage');
 
         Route::get('/analytics', [AdminAnalyticsController::class, 'analytics'])->name('admin.analytics')->middleware('admin.permission:analytics.view');
 
