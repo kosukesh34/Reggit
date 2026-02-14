@@ -32,6 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initTooltips();
     initFormValidation();
     initLoadingStates();
+    initSidebarCollapsibleGroups();
 });
 
 function initDeleteConfirmations() {
@@ -123,6 +124,25 @@ function initLoadingStates() {
                 }
             });
         }
+    });
+}
+
+function initSidebarCollapsibleGroups() {
+    const groups = document.querySelectorAll('.nav-group-collapsible');
+    if (!groups.length) return;
+
+    groups.forEach((group) => {
+        const toggle = group.querySelector('[data-nav-group-toggle]');
+        if (!toggle) return;
+
+        const hasActive = !!group.querySelector('.nav-item.active');
+        if (!hasActive) {
+            group.classList.add('is-collapsed');
+        }
+
+        toggle.addEventListener('click', () => {
+            group.classList.toggle('is-collapsed');
+        });
     });
 }
 
@@ -218,4 +238,3 @@ const ConfirmDialog = {
         });
     }
 };
-

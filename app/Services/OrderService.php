@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Log;
 
 class OrderService
 {
-    private const POINTS_EARN_RATE = 100;
+    private const DEFAULT_POINTS_EARN_RATE = 100;
 
     private const DESC_REFUND_CANCEL = '注文キャンセルによる返却';
     private const DESC_REVERSED_CANCEL = '注文キャンセルによる取り消し';
@@ -105,6 +105,7 @@ class OrderService
     private function createOrderRecord(User $user, float $finalAmount, array $orderData, int $pointsUsed): Order
     {
         return Order::create([
+            'project_id' => $user->project_id ?? \App\Util\AdminContext::getCurrentProjectId() ?? 1,
             'user_id' => $user->id,
             'total_amount' => $finalAmount,
             'status' => 'pending',
@@ -112,6 +113,7 @@ class OrderService
             'points_used' => $pointsUsed,
             'points_earned' => 0,
             'notes' => $orderData['notes'] ?? null,
+            'order_type' => $orderData['order_type'] ?? 'mobile',
         ]);
     }
 
@@ -144,11 +146,17 @@ class OrderService
             return;
         }
 
-        $pointsEarned = floor($finalAmount / self::POINTS_EARN_RATE);
+        $pointsEarned = floor($finalAmount / $this->getPointsEarnRate($user->project_id ?? null));
         if ($pointsEarned > 0) {
             $member->addPoints($pointsEarned, '購入で獲得', $order->id);
             $order->update(['points_earned' => $pointsEarned]);
         }
+    }
+
+    private function getPointsEarnRate(?int $projectId): int
+    {
+        $rate = \App\Models\ShopSetting::getPointEarnRate($projectId);
+        return $rate > 0 ? $rate : self::DEFAULT_POINTS_EARN_RATE;
     }
 
     public function handleOrderCancellation(Order $order): void
@@ -233,4 +241,3 @@ class OrderService
         }
     }
 }
-

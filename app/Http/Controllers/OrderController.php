@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\Order;
 use App\Services\OrderService;
 use App\Services\UserService;
+use App\Util\AdminContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 
 class OrderController extends Controller
 {
@@ -52,14 +54,22 @@ class OrderController extends Controller
 
     public function store(Request $request)
     {
+        $projectId = AdminContext::getCurrentProjectId() ?? 1;
         $validated = $request->validate([
             'items' => 'required|array|min:1',
-            'items.*.product_id' => 'required|exists:products,id',
+            'items.*.product_id' => [
+                'required',
+                Rule::exists('products', 'id')->where('project_id', $projectId),
+            ],
             'items.*.quantity' => 'required|integer|min:1',
             'payment_method' => 'required|in:cash,card,line_pay,points,stripe',
             'points_used' => 'integer|min:0',
             'notes' => 'nullable|string',
+            'order_type' => 'nullable|in:mobile,in_store',
         ]);
+        if (empty($validated['order_type'])) {
+            $validated['order_type'] = 'mobile';
+        }
 
         try {
             $user = $this->userService->getOrCreateUser($request);
@@ -77,4 +87,3 @@ class OrderController extends Controller
         }
     }
 }
-

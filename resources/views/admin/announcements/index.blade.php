@@ -5,7 +5,7 @@
 
 @section('content')
 <nav class="breadcrumb" aria-label="パンくず">
-    <a href="{{ route('admin.dashboard') }}">ダッシュボード</a>
+    <a href="{{ admin_route('admin.dashboard') }}">ダッシュボード</a>
     <span class="breadcrumb-sep">/</span>
     <span>お知らせ</span>
 </nav>
@@ -16,8 +16,9 @@
 </div>
 
 <div class="card">
-    <div class="card-header">
+    <div class="card-header card-header-with-action">
         <h2 class="card-title">お知らせ一覧</h2>
+        <a href="{{ admin_route('admin.announcements.create') }}" class="btn btn-primary"><i class="fas fa-plus"></i> 追加</a>
     </div>
     <div class="card-body">
         @if($announcements->isEmpty())
@@ -34,6 +35,7 @@
                     <th>公開日</th>
                     <th>掲載終了</th>
                     <th>固定</th>
+                    <th class="table-actions-cell">操作</th>
                 </tr>
             </thead>
             <tbody>
@@ -43,11 +45,17 @@
                     <td>{{ $a->published_at ? $a->published_at->format('Y/m/d') : '—' }}</td>
                     <td>{{ $a->expires_at ? $a->expires_at->format('Y/m/d') : '—' }}</td>
                     <td>@if($a->is_pinned)<i class="fas fa-thumbtack"></i>@else—@endif</td>
+                    <td class="table-actions-cell">
+                        <div class="table-actions">
+                            <a href="{{ admin_route('admin.announcements.edit', ['id' => $a->id]) }}" class="btn btn-action btn-edit"><i class="fas fa-edit"></i> 編集</a>
+                            <form action="{{ admin_route('admin.announcements.delete', ['id' => $a->id]) }}" method="POST" class="d-inline" onsubmit="return confirm('削除しますか？');">@csrf @method('DELETE')<button type="submit" class="btn btn-action btn-danger"><i class="fas fa-trash"></i> 削除</button></form>
+                        </div>
+                    </td>
                 </tr>
                 @endforeach
             </tbody>
         </table>
-        <div class="pagination">{{ $announcements->links() }}</div>
+        {{ $announcements->links('vendor.pagination.admin') }}
         @endif
     </div>
 </div>
