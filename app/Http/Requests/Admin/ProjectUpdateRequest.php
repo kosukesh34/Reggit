@@ -27,6 +27,7 @@ class ProjectUpdateRequest extends FormRequest
             'name' => 'required|string|max:255',
             'description' => 'nullable|string|max:255',
             'is_active' => 'nullable|boolean',
+            'plan' => 'required|string|in:normal,distribution,premium',
         ];
     }
 
@@ -37,6 +38,7 @@ class ProjectUpdateRequest extends FormRequest
             'name' => $this->validated('name'),
             'description' => $this->validated('description'),
             'is_active' => (bool) ($this->validated('is_active') ?? false),
+            'plan' => $this->validated('plan') ?? 'normal',
         ];
     }
 }
