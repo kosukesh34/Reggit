@@ -10,32 +10,32 @@
     <span>LIFFデザイン</span>
 </nav>
 
-<div class="card" style="margin-bottom:24px;">
+<div class="card card-mb-24">
     <div class="card-header">
         <h3 class="card-title"><i class="fas fa-layer-group"></i> テンプレート</h3>
     </div>
     <div class="card-body">
-        <div style="display:flex; gap:12px; flex-wrap:wrap;">
+        <div class="builder-row-gap-12">
             @foreach($templates as $template)
                 <button type="button" class="btn btn-secondary btn-sm" data-template-id="{{ $template['id'] }}">{{ $template['name'] }}</button>
             @endforeach
         </div>
-        <p class="form-text text-muted" style="margin-top:10px;">テンプレートを選ぶと下の編集内容が置き換わります。</p>
+        <p class="form-text text-muted builder-mt-8">テンプレートを選ぶと下の編集内容が置き換わります。</p>
     </div>
 </div>
 
 <form action="{{ admin_route('admin.settings.liff-builder.update') }}" method="POST" id="liffBuilderForm">
     @csrf
 
-    <div class="card" style="margin-bottom:24px;">
-        <div class="card-header" style="display:flex; align-items:center; justify-content:space-between;">
+    <div class="card card-mb-24">
+        <div class="card-header tabs-header-row">
             <h3 class="card-title"><i class="fas fa-pen"></i> ブロック編集</h3>
             <button type="button" class="btn btn-secondary btn-sm" id="addBlockBtn"><i class="fas fa-plus"></i> ブロック追加</button>
         </div>
         <div class="card-body" id="builderBlocks"></div>
     </div>
 
-    <div class="card" style="margin-bottom:24px;">
+    <div class="card card-mb-24">
         <div class="card-header">
             <h3 class="card-title"><i class="fas fa-eye"></i> プレビュー</h3>
         </div>
@@ -50,8 +50,8 @@
 </form>
 
 <template id="blockTemplate">
-    <div class="builder-block-editor card" style="margin-bottom:16px;">
-        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+    <div class="builder-block-editor card builder-mb-16">
+        <div class="card-header tabs-header-row">
             <strong class="builder-block-title">ブロック</strong>
             <button type="button" class="btn btn-danger btn-sm btn-remove-block"><i class="fas fa-trash"></i> 削除</button>
         </div>
@@ -83,7 +83,7 @@
             </div>
             <div class="form-group">
                 <label class="form-label">ボタン</label>
-                <div style="display:flex; gap:8px;">
+                <div class="builder-row-gap-8">
                     <input type="text" class="form-control block-button-label" placeholder="ラベル" maxlength="50">
                     <input type="text" class="form-control block-button-url" placeholder="URL or #tab" maxlength="500">
                 </div>
@@ -108,9 +108,9 @@
                 <label class="form-label">フォーム項目</label>
                 <div class="form-fields-list"></div>
                 <button type="button" class="btn btn-secondary btn-sm add-form-field"><i class="fas fa-plus"></i> 項目追加</button>
-                <div style="margin-top:8px;">
+                <div class="builder-mt-8">
                     <input type="text" class="form-control block-form-action" placeholder="送信先URL">
-                    <input type="text" class="form-control block-form-button" placeholder="送信ボタンラベル" style="margin-top:8px;">
+                    <input type="text" class="form-control block-form-button builder-mt-8" placeholder="送信ボタンラベル">
                 </div>
             </div>
             <div class="form-group block-spacer-field">
@@ -122,7 +122,7 @@
 </template>
 
 <template id="formFieldTemplate">
-    <div class="form-field-row" style="display:flex; gap:8px; margin-bottom:8px;">
+    <div class="form-field-row builder-row-gap-8 builder-mb-8">
         <input type="text" class="form-control field-label" placeholder="ラベル">
         <select class="form-control field-type">
             <option value="text">テキスト</option>
@@ -131,7 +131,7 @@
             <option value="textarea">テキストエリア</option>
         </select>
         <input type="text" class="form-control field-placeholder" placeholder="プレースホルダー">
-        <label style="display:flex; align-items:center; gap:4px;">
+        <label class="builder-inline-flex">
             <input type="checkbox" class="field-required"> 必須
         </label>
         <button type="button" class="btn btn-danger btn-sm remove-form-field"><i class="fas fa-times"></i></button>

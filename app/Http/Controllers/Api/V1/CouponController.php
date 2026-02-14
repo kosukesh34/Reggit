@@ -2,51 +2,37 @@
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Services\UserService;
+use App\UseCases\Coupon\CouponMyCouponsUseCase;
+use App\Util\AdminContext;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
+use App\Util\LogHelper;
 
 class CouponController extends BaseApiController
 {
-    public function __construct(private UserService $userService)
+    public function __construct(private CouponMyCouponsUseCase $myCouponsUseCase)
     {
     }
 
     public function myCoupons(Request $request)
     {
         try {
-            $user = $this->userService->getOrCreateUser($request);
-            $member = $user->member;
-            if (!$member) {
+            $result = $this->myCouponsUseCase->handle($request);
+            if ($result->requiresMembership) {
                 return $this->success([
                     'coupons' => [],
                     'message' => '会員登録が必要です',
                 ]);
             }
 
-            $coupons = $member->memberCoupons()
-                ->with('coupon')
-                ->orderBy('issued_at', 'desc')
-                ->get()
-                ->map(function ($mc) {
-                    return [
-                        'id' => $mc->id,
-                        'coupon_name' => $mc->coupon_name_snapshot ?? $mc->coupon?->name,
-                        'image_url' => $mc->coupon?->image_url,
-                        'status' => $mc->status,
-                        'issued_at' => $mc->issued_at?->toIso8601String(),
-                        'valid_from' => $mc->valid_from?->toIso8601String(),
-                        'valid_until' => $mc->valid_until?->toIso8601String(),
-                        'used_at' => $mc->used_at?->toIso8601String(),
-                    ];
-                });
-
             return $this->success([
-                'coupons' => $coupons,
-                'default_image_url' => \App\Models\ShopSetting::getCouponDefaultImageUrl($member->project_id),
+                'coupons' => $result->couponsToArray(),
+                'default_image_url' => $result->defaultImageUrl,
             ]);
         } catch (\Exception $e) {
-            Log::error('My coupons error: ' . $e->getMessage());
+            LogHelper::error('[Coupon] my coupons failed', [
+                'project_id' => AdminContext::getCurrentProjectId() ?? 1,
+                'error' => $e->getMessage(),
+            ]);
             return $this->error('クーポンの取得に失敗しました', 500);
         }
     }

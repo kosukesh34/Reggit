@@ -31,7 +31,7 @@
                     <td>
                         <a href="{{ route('system-admin.audit-logs.show', $log->id) }}">{{ $log->getActionLabel() }}</a>
                         @if($log->route_name)
-                            <div class="text-muted" style="font-size:11px;">{{ $log->route_name }}</div>
+                            <div class="text-muted text-muted-xs">{{ $log->route_name }}</div>
                         @endif
                     </td>
                     <td>{{ $log->adminUser?->name ?? '－' }}</td>

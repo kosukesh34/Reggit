@@ -48,7 +48,7 @@ class GalleryManager {
         const categoryTabs = `
             <div class="gallery-tabs">
                 <button class="gallery-tab ${!this.currentCategoryId ? 'active' : ''}" data-category="">すべて</button>
-                ${categories.map((cat) => `<button class="gallery-tab ${this.currentCategoryId == cat.id ? 'active' : ''}" data-category="${cat.id}">${DomHelper.escapeHtml(cat.name)}</button>`).join('')}
+                ${categories.map((cat) => `<button class="gallery-tab ${String(this.currentCategoryId ?? '') === String(cat.id) ? 'active' : ''}" data-category="${cat.id}">${DomHelper.escapeHtml(cat.name)}</button>`).join('')}
             </div>
         `;
         const grid = `

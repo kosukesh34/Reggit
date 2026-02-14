@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Util\StrHelper;
 
 class AdminAuditLog extends Model
 {
@@ -18,12 +19,10 @@ class AdminAuditLog extends Model
         'payload',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'payload' => 'array',
-        ];
-    }
+    /** @var array<string, string> */
+    protected $casts = [
+        'payload' => 'array',
+    ];
 
     /** 保存時に payload が配列なら必ず JSON 文字列に変換（Array to string conversion 防止） */
     protected function setPayloadAttribute($value): void
@@ -47,7 +46,7 @@ class AdminAuditLog extends Model
     public function getActionLabel(): string
     {
         $payload = $this->payload;
-        if (is_array($payload) && !empty($payload['event'])) {
+        if (is_array($payload) && !StrHelper::isEmptyStringOrNull($payload['event'] ?? null)) {
             return match ((string) $payload['event']) {
                 'login_success' => 'ログイン',
                 'logout' => 'ログアウト',

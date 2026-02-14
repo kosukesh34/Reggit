@@ -3,7 +3,7 @@
 namespace App\Http\Services;
 
 use GuzzleHttp\Client;
-use Illuminate\Support\Facades\Log;
+use App\Util\LogHelper;
 
 class LineService
 {
@@ -43,7 +43,9 @@ class LineService
 
             return json_decode($response->getBody()->getContents(), true);
         } catch (\Exception $e) {
-            Log::error('LINE Reply Error: ' . $e->getMessage());
+            LogHelper::error('[LINE] reply failed', [
+                'error' => $e->getMessage(),
+            ]);
             throw $e;
         }
     }
@@ -60,7 +62,9 @@ class LineService
 
             return json_decode($response->getBody()->getContents(), true);
         } catch (\Exception $e) {
-            Log::error('LINE Push Error: ' . $e->getMessage());
+            LogHelper::error('[LINE] push failed', [
+                'error' => $e->getMessage(),
+            ]);
             throw $e;
         }
     }
@@ -71,7 +75,9 @@ class LineService
             $response = $this->client->get("bot/profile/{$userId}");
             return json_decode($response->getBody()->getContents(), true);
         } catch (\Exception $e) {
-            Log::error('LINE Profile Error: ' . $e->getMessage());
+            LogHelper::error('[LINE] profile failed', [
+                'error' => $e->getMessage(),
+            ]);
             return null;
         }
     }
@@ -104,5 +110,4 @@ class LineService
         ];
     }
 }
-
 

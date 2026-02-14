@@ -2,20 +2,19 @@
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Models\Order;
 use App\Util\AdminContext;
+use App\UseCases\Payment\PaymentConfirmUseCase;
+use App\UseCases\Payment\PaymentCreateIntentUseCase;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
+use App\Util\LogHelper;
 use Illuminate\Validation\Rule;
-use Stripe\Exception\ApiErrorException;
-use Stripe\PaymentIntent;
-use Stripe\Stripe;
 
 class PaymentController extends BaseApiController
 {
-    public function __construct()
-    {
-        Stripe::setApiKey(env('STRIPE_SECRET'));
+    public function __construct(
+        private PaymentCreateIntentUseCase $createIntentUseCase,
+        private PaymentConfirmUseCase $confirmUseCase
+    ) {
     }
 
     public function createPaymentIntent(Request $request)
@@ -30,21 +29,14 @@ class PaymentController extends BaseApiController
         ]);
 
         try {
-            $paymentIntent = PaymentIntent::create([
-                'amount' => (int) ($request->amount * 100),
-                'currency' => 'jpy',
-                'metadata' => [
-                    'order_id' => $request->order_id ?? null,
-                ],
+            $dto = $this->createIntentUseCase->handle((float) $request->amount, $request->order_id);
+            return $this->success($dto->toArray());
+        } catch (\Exception $e) {
+            LogHelper::error('[Payment] create intent failed', [
+                'project_id' => $projectId,
+                'error' => $e->getMessage(),
             ]);
-
-            return $this->success([
-                'clientSecret' => $paymentIntent->client_secret,
-                'paymentIntentId' => $paymentIntent->id,
-            ]);
-        } catch (ApiErrorException $e) {
-            Log::error('Stripe Payment Intent Error: ' . $e->getMessage());
-            return $this->error('決済の作成に失敗しました', 400, ['detail' => $e->getMessage()]);
+            return $this->error('決済の作成に失敗しました', 400);
         }
     }
 
@@ -60,24 +52,17 @@ class PaymentController extends BaseApiController
         ]);
 
         try {
-            $paymentIntent = PaymentIntent::retrieve($request->payment_intent_id);
-
-            if ($paymentIntent->status === 'succeeded') {
-                $order = Order::findOrFail($request->order_id);
-                $order->update([
-                    'status' => 'confirmed',
-                    'payment_method' => 'card',
-                ]);
-
-                return $this->success([
-                    'order' => $order,
-                ], '決済が完了しました');
+            $result = $this->confirmUseCase->handle($request->payment_intent_id, (int) $request->order_id);
+            if (!$result->isSuccess) {
+                return $this->error($result->message, 400, ['status' => $result->status]);
             }
-
-            return $this->error('決済が完了していません', 400, ['status' => $paymentIntent->status]);
-        } catch (ApiErrorException $e) {
-            Log::error('Stripe Payment Confirmation Error: ' . $e->getMessage());
-            return $this->error('決済の確認に失敗しました', 400, ['detail' => $e->getMessage()]);
+            return $this->success(['order' => $result->order], $result->message);
+        } catch (\Exception $e) {
+            LogHelper::error('[Payment] confirm failed', [
+                'project_id' => $projectId,
+                'error' => $e->getMessage(),
+            ]);
+            return $this->error('決済の確認に失敗しました', 400);
         }
     }
 }

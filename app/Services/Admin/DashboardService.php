@@ -2,8 +2,10 @@
 
 namespace App\Services\Admin;
 
+use App\Enums\QueueStatus;
 use App\Enums\ReservationStatus;
 use App\Models\Order;
+use App\Enums\OrderStatus;
 use App\Models\Product;
 use App\Models\QueueEntry;
 use App\Models\Reservation;
@@ -22,13 +24,13 @@ class DashboardService
             'total_members' => Member::count(),
             'today_orders' => Order::whereDate('created_at', today())->count(),
             'today_revenue' => Order::whereDate('created_at', today())
-                ->where('status', '!=', 'cancelled')
+                ->where('status', '!=', OrderStatus::CANCELLED)
                 ->sum('total_amount'),
-            'pending_orders' => Order::where('status', 'pending')->count(),
+            'pending_orders' => Order::where('status', OrderStatus::PENDING)->count(),
             'today_reservations' => Reservation::whereDate('reserved_at', today())
                 ->whereIn('status', [ReservationStatus::PENDING, ReservationStatus::CONFIRMED])
                 ->count(),
-            'queue_waiting' => QueueEntry::where('status', 'waiting')->count(),
+            'queue_waiting' => QueueEntry::where('status', QueueStatus::WAITING)->count(),
         ];
     }
 

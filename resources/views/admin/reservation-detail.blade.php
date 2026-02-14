@@ -60,7 +60,7 @@
                 </div>
             </div>
             @if($reservation->notes)
-            <div class="info-item" style="grid-column: 1 / -1;">
+            <div class="info-item info-item-full">
                 <div class="info-label">備考</div>
                 <div class="info-value">{{ $reservation->notes }}</div>
             </div>
