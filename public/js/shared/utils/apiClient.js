@@ -14,6 +14,17 @@ class ApiClient {
             ...this.baseHeaders,
             ...headers,
         };
+        const projectKey = (typeof window !== 'undefined' && window.__PROJECT_KEY__)
+            ? window.__PROJECT_KEY__
+            : (typeof document !== 'undefined'
+                ? document.querySelector('meta[name="project-key"]')?.getAttribute('content')
+                : null);
+        if (projectKey) {
+            requestHeaders['X-Project-Key'] = projectKey;
+        }
+        if (typeof window !== 'undefined' && window.__API_TOKEN__) {
+            requestHeaders['Authorization'] = `Bearer ${window.__API_TOKEN__}`;
+        }
         if (typeof window !== 'undefined' && window.__LINE_USER_ID__) {
             requestHeaders['X-Line-User-Id'] = window.__LINE_USER_ID__;
         }
@@ -61,4 +72,3 @@ class ApiClient {
         return this.request(endpoint, { ...options, method: AppConstants.HTTP_METHODS.PUT, body });
     }
 }
-

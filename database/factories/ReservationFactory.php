@@ -14,6 +14,7 @@ class ReservationFactory extends Factory
     public function definition(): array
     {
         return [
+            'project_id' => 1,
             'user_id' => User::factory(),
             'reserved_at' => $this->faker->dateTimeBetween('+1 day', '+30 days'),
             'number_of_people' => $this->faker->numberBetween(1, 10),

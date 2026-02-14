@@ -7,7 +7,7 @@
 <div class="card">
     <div class="card-header">
         <h3 class="card-title"><i class="fas fa-calendar-check"></i> 予約情報</h3>
-        <a href="{{ route('admin.reservations') }}" class="btn btn-secondary btn-sm">
+        <a href="{{ admin_route('admin.reservations') }}" class="btn btn-secondary btn-sm">
             <i class="fas fa-arrow-left"></i> 一覧に戻る
         </a>
     </div>
@@ -60,7 +60,7 @@
                 </div>
             </div>
             @if($reservation->notes)
-            <div class="info-item" style="grid-column: 1 / -1;">
+            <div class="info-item info-item-full">
                 <div class="info-label">備考</div>
                 <div class="info-value">{{ $reservation->notes }}</div>
             </div>
@@ -82,7 +82,7 @@
         <h3 class="card-title"><i class="fas fa-cog"></i> ステータス変更</h3>
     </div>
     <div class="card-body">
-        <form action="{{ route('admin.reservations.status', $reservation->id) }}" method="POST">
+        <form action="{{ admin_route('admin.reservations.status', ['id' => $reservation->id]) }}" method="POST">
             @csrf
             <div class="form-group">
                 <label for="status">ステータス</label>
@@ -105,7 +105,7 @@
 @if($reservation->status !== 'completed' && $reservation->status !== 'cancelled')
 <div class="card">
     <div class="card-body">
-        <form action="{{ route('admin.reservations.complete', $reservation->id) }}" method="POST" onsubmit="return confirm('この予約を完了にしますか？')">
+        <form action="{{ admin_route('admin.reservations.complete', ['id' => $reservation->id]) }}" method="POST" onsubmit="return confirm('この予約を完了にしますか？')">
             @csrf
             <button type="submit" class="btn btn-success btn-lg btn-block">
                 <i class="fas fa-check-double"></i> 予約を完了にする
@@ -115,4 +115,3 @@
 </div>
 @endif
 @endsection
-
