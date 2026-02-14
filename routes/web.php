@@ -44,7 +44,7 @@ Route::get('/api', function () {
 });
 
 // ========== LIFF ==========
-Route::prefix('liff')->group(function () {
+Route::prefix('liff')->middleware('bind.project')->group(function () {
     Route::get('/', [LiffController::class, 'index'])->name('liff.index');
     Route::get('/products', [LiffController::class, 'products'])->name('liff.products');
     Route::get('/member', [LiffController::class, 'memberCard'])->name('liff.member');
