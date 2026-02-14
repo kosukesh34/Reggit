@@ -1,0 +1,302 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+
+class AdminUser extends Authenticatable
+{
+    use HasFactory;
+
+    public const ROLE_SYSTEM_ADMIN = 'system_admin';
+    public const ROLE_PROJECT_ADMIN = 'project_admin';
+    public const ROLE_ADMIN = 'admin';
+    public const ROLE_STAFF = 'staff';
+
+    /** ロール階層（数値が大きいほど権限が強い） */
+    public const ROLE_HIERARCHY = [
+        self::ROLE_STAFF => 1,
+        self::ROLE_ADMIN => 2,
+        self::ROLE_PROJECT_ADMIN => 3,
+        self::ROLE_SYSTEM_ADMIN => 4,
+    ];
+
+    /** 権限の表示名（管理画面・一覧で統一して表示） */
+    public const ROLE_LABELS = [
+        self::ROLE_SYSTEM_ADMIN  => 'システム管理者（全プロジェクト操作・アカウント管理可）',
+        self::ROLE_PROJECT_ADMIN => 'プロジェクト管理者（担当プロジェクトのみ操作可）',
+        self::ROLE_ADMIN         => '店舗管理者（担当店舗のみ操作可）',
+        self::ROLE_STAFF         => 'スタッフ（カスタム権限）',
+    ];
+
+    /** 短い表示名（ヘッダー等） */
+    public const ROLE_LABELS_SHORT = [
+        self::ROLE_SYSTEM_ADMIN  => 'システム管理者',
+        self::ROLE_PROJECT_ADMIN => 'プロジェクト管理者',
+        self::ROLE_ADMIN         => '店舗管理者',
+        self::ROLE_STAFF         => 'スタッフ',
+    ];
+
+    public static function getRoleLabel(string $role): string
+    {
+        return self::ROLE_LABELS[$role] ?? $role;
+    }
+
+    public static function getRoleLabelShort(string $role): string
+    {
+        return self::ROLE_LABELS_SHORT[$role] ?? $role;
+    }
+
+    /** 指定ロールの階層レベルを返す（static） */
+    public static function getRoleLevelFor(string $role): int
+    {
+        return self::ROLE_HIERARCHY[$role] ?? 0;
+    }
+
+    protected $fillable = [
+        'login_id',
+        'email',
+        'password',
+        'name',
+        'role',
+        'project_id',
+        'created_by_id',
+    ];
+
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'password' => 'hashed',
+        ];
+    }
+
+    // ── リレーション ──
+
+    public function project()
+    {
+        return $this->belongsTo(Project::class);
+    }
+
+    /** 担当店舗（複数可） */
+    public function projects()
+    {
+        return $this->belongsToMany(Project::class, 'admin_user_projects')
+            ->withTimestamps();
+    }
+
+    /** スタッフ権限 */
+    public function permissions()
+    {
+        return $this->hasMany(AdminUserPermission::class);
+    }
+
+    /** 作成者 */
+    public function createdBy()
+    {
+        return $this->belongsTo(self::class, 'created_by_id');
+    }
+
+    // ── プロジェクトアクセス ──
+
+    /** アクセス可能なプロジェクトID一覧 */
+    public function getAllowedProjectIds(): array
+    {
+        if ($this->isSystemAdmin()) {
+            return Project::where('is_active', true)->pluck('id')->all();
+        }
+        $pivotIds = $this->projects()->pluck('projects.id')->all();
+        if (!empty($pivotIds)) {
+            return $pivotIds;
+        }
+        if ($this->project_id) {
+            return [$this->project_id];
+        }
+        return [];
+    }
+
+    /** 指定プロジェクトにアクセス可能か */
+    public function canAccessProject(int $projectId): bool
+    {
+        return in_array($projectId, $this->getAllowedProjectIds(), true);
+    }
+
+    public static function resolveCurrentProjectId(self $admin, ?int $sessionProjectId, $requestProjectId): int
+    {
+        $allowedIds = $admin->getAllowedProjectIds();
+        $sessionId = (int) $sessionProjectId;
+
+        if ($admin->isSystemAdmin()) {
+            $projectId = $requestProjectId ?? ($sessionId ?: null);
+            if ($projectId && in_array((int) $projectId, $allowedIds, true)) {
+                return (int) $projectId;
+            }
+            $fallback = Project::where('is_active', true)->min('id');
+            return (int) ($fallback ?? 1);
+        }
+
+        if ($sessionId && $admin->canAccessProject($sessionId)) {
+            return $sessionId;
+        }
+        if ($allowedIds !== []) {
+            return (int) $allowedIds[0];
+        }
+        if ($admin->project_id) {
+            return (int) $admin->project_id;
+        }
+        return 1;
+    }
+
+    // ── ロール判定 ──
+
+    public function isSystemAdmin(): bool
+    {
+        return $this->role === self::ROLE_SYSTEM_ADMIN;
+    }
+
+    public function isProjectAdmin(): bool
+    {
+        return $this->role === self::ROLE_PROJECT_ADMIN;
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->role === self::ROLE_ADMIN;
+    }
+
+    public function isStaff(): bool
+    {
+        return $this->role === self::ROLE_STAFF;
+    }
+
+    /** 店舗管理画面（/admin/*）にアクセス可能か。全ロール許可。 */
+    public function canAccessStoreAdmin(): bool
+    {
+        return in_array($this->role, [
+            self::ROLE_SYSTEM_ADMIN,
+            self::ROLE_PROJECT_ADMIN,
+            self::ROLE_ADMIN,
+            self::ROLE_STAFF,
+        ], true);
+    }
+
+    // ── 権限（パーミッション） ──
+
+    /** キャッシュ用 */
+    private ?array $cachedPermissions = null;
+
+    /** スタッフの保有する権限キー一覧を取得（キャッシュ） */
+    public function getPermissionKeys(): array
+    {
+        if ($this->cachedPermissions !== null) {
+            return $this->cachedPermissions;
+        }
+        if (!$this->isStaff()) {
+            return $this->cachedPermissions = array_keys(AdminUserPermission::ALL_PERMISSIONS);
+        }
+        return $this->cachedPermissions = $this->permissions()->pluck('permission')->all();
+    }
+
+    /** 指定権限を保有しているか。staff 以外は全権限を持つとみなす。 */
+    public function hasPermission(string $permission): bool
+    {
+        if (!$this->isStaff()) {
+            return true;
+        }
+        return in_array($permission, $this->getPermissionKeys(), true);
+    }
+
+    /** 複数権限のうちいずれかを持つか */
+    public function hasAnyPermission(array $permissions): bool
+    {
+        foreach ($permissions as $p) {
+            if ($this->hasPermission($p)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** 権限を同期する（スタッフ用） */
+    public function syncPermissions(array $permissionKeys): void
+    {
+        $valid = array_intersect($permissionKeys, array_keys(AdminUserPermission::ALL_PERMISSIONS));
+        $this->permissions()->delete();
+        foreach ($valid as $key) {
+            $this->permissions()->create(['permission' => $key]);
+        }
+        $this->cachedPermissions = null;
+    }
+
+    // ── アカウント作成権限 ──
+
+    /** 自分の階層レベル */
+    public function getRoleLevel(): int
+    {
+        return self::ROLE_HIERARCHY[$this->role] ?? 0;
+    }
+
+    /** 指定ロールのアカウントを作成できるか */
+    public function canCreateRole(string $targetRole): bool
+    {
+        if ($this->isStaff()) {
+            return false;
+        }
+        $myLevel = $this->getRoleLevel();
+        $targetLevel = self::ROLE_HIERARCHY[$targetRole] ?? 0;
+
+        // system_admin: 全ロール作成可
+        if ($this->isSystemAdmin()) {
+            return true;
+        }
+        // project_admin: admin, staff を作成可
+        if ($this->isProjectAdmin()) {
+            return in_array($targetRole, [self::ROLE_ADMIN, self::ROLE_STAFF], true);
+        }
+        // admin: staff のみ作成可
+        if ($this->isAdmin()) {
+            return $targetRole === self::ROLE_STAFF;
+        }
+        return false;
+    }
+
+    /** 作成可能なロール一覧を返す */
+    public function getCreatableRoles(): array
+    {
+        return array_filter(
+            array_keys(self::ROLE_LABELS),
+            fn(string $role) => $this->canCreateRole($role)
+        );
+    }
+
+    /** 指定ユーザーを編集できるか */
+    public function canEditUser(self $target): bool
+    {
+        if ($this->isStaff()) {
+            return false;
+        }
+        if ($this->isSystemAdmin()) {
+            return true;
+        }
+        $targetLevel = self::ROLE_HIERARCHY[$target->role] ?? 0;
+        $myLevel = $this->getRoleLevel();
+        return $myLevel > $targetLevel;
+    }
+
+    // ── スコープ ──
+
+    public function scopeAdmins($query)
+    {
+        return $query->where('role', self::ROLE_ADMIN);
+    }
+
+    public function scopeStaff($query)
+    {
+        return $query->where('role', self::ROLE_STAFF);
+    }
+}

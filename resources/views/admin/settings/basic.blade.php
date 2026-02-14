@@ -14,7 +14,7 @@
 @endphp
 
 <nav class="breadcrumb" aria-label="パンくず">
-    <a href="{{ route('admin.dashboard') }}">ダッシュボード</a>
+    <a href="{{ admin_route('admin.dashboard') }}">ダッシュボード</a>
     <span class="breadcrumb-sep">/</span>
     <span>基本設定</span>
 </nav>
@@ -28,7 +28,7 @@
     <div class="alert alert-success"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>
 @endif
 
-<form action="{{ route('admin.settings.basic.update') }}" method="POST" id="settingsBasicForm">
+<form action="{{ admin_route('admin.settings.basic.update') }}" method="POST" id="settingsBasicForm">
     @csrf
     <div class="card">
         <div class="card-header">
@@ -96,7 +96,7 @@
             </div>
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> 保存</button>
-                <a href="{{ route('admin.settings.advanced') }}" class="btn btn-secondary">詳細設定（配色）へ</a>
+                <a href="{{ admin_route('admin.settings.advanced') }}" class="btn btn-secondary">詳細設定（配色）へ</a>
             </div>
         </div>
     </div>
