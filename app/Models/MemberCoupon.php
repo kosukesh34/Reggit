@@ -25,15 +25,13 @@ class MemberCoupon extends Model
         'order_id',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'issued_at' => 'datetime',
-            'valid_from' => 'datetime',
-            'valid_until' => 'datetime',
-            'used_at' => 'datetime',
-        ];
-    }
+    /** @var array<string, string> */
+    protected $casts = [
+        'issued_at' => 'datetime',
+        'valid_from' => 'datetime',
+        'valid_until' => 'datetime',
+        'used_at' => 'datetime',
+    ];
 
     public const STATUS_UNUSED = 'unused';
     public const STATUS_USED = 'used';

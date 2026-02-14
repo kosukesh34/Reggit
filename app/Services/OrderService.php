@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\OrderStatus;
 use App\Models\Member;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -108,7 +109,7 @@ class OrderService
             'project_id' => $user->project_id ?? \App\Util\AdminContext::getCurrentProjectId() ?? 1,
             'user_id' => $user->id,
             'total_amount' => $finalAmount,
-            'status' => 'pending',
+            'status' => OrderStatus::PENDING,
             'payment_method' => $orderData['payment_method'],
             'points_used' => $pointsUsed,
             'points_earned' => 0,
@@ -161,7 +162,7 @@ class OrderService
 
     public function handleOrderCancellation(Order $order): void
     {
-        if ($order->status !== 'cancelled') {
+        if ($order->status !== OrderStatus::CANCELLED) {
             return;
         }
 

@@ -46,9 +46,6 @@ Route::get('/api', function () {
 // ========== LIFF ==========
 Route::prefix('liff')->middleware('bind.project')->group(function () {
     Route::get('/', [LiffController::class, 'index'])->name('liff.index');
-    Route::get('/products', [LiffController::class, 'products'])->name('liff.products');
-    Route::get('/member', [LiffController::class, 'memberCard'])->name('liff.member');
-    Route::get('/orders', [LiffController::class, 'orders'])->name('liff.orders');
 });
 
 // ========== 管理画面ログイン（認証不要・スロットリング適用） ==========

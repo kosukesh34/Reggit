@@ -4,7 +4,8 @@
 
 .admin-container .sidebar,
 .admin-container .content-header { display: none; }
-.admin-container .content { padding: 0; }
+.admin-container .main-content { margin-left: 0; }
+.admin-container .content-body { padding: 0; max-width: none; }
 
 .ld {
     height: 100vh; display: flex; flex-direction: column;
@@ -115,8 +116,8 @@
 .ld-block--data { background: #fff; padding: 16px; text-align: center; color: #6b7280; font-size: 13px; border: 2px dashed #d1d5db; }
 .ld-block--data i { font-size: 20px; display: block; margin-bottom: 6px; color: #9ca3af; }
 
-/* --- Collection --- */
-.ld-collection { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+/* --- Collection (scroll) --- */
+.ld-collection { display: flex; gap: var(--col-gap, 8px); overflow-x: auto; padding-bottom: 4px; }
 .ld-collection::-webkit-scrollbar { height: 4px; }
 .ld-collection::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 2px; }
 .ld-collection__item { flex-shrink: 0; width: var(--item-w, 140px); background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
@@ -124,6 +125,10 @@
 .ld-collection__img img { width: 100%; height: 100%; object-fit: cover; }
 .ld-collection__title { padding: 6px 8px; font-size: 12px; font-weight: 600; color: #1f2937; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ld-collection__desc { padding: 0 8px 6px; font-size: 10px; color: #6b7280; }
+
+/* --- Collection (grid) --- */
+.ld-collection--grid { display: grid; grid-template-columns: repeat(var(--col-count, 2), 1fr); gap: var(--col-gap, 8px); overflow-x: visible; }
+.ld-collection--grid .ld-collection__item { width: auto; flex-shrink: unset; }
 
 /* --- Slider --- */
 .ld-slider { position: relative; overflow: hidden; background: #f3f4f6; border-radius: inherit; display: flex; align-items: center; justify-content: center; }

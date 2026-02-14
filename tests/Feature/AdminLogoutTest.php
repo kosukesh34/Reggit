@@ -13,7 +13,10 @@ class AdminLogoutTest extends TestCase
 
     public function testStoreAdminCanLogout(): void
     {
-        $project = Project::factory()->create(['project_key' => 'default', 'is_active' => true]);
+        $project = Project::firstOrCreate(
+            ['project_key' => 'default'],
+            ['name' => 'Default Project', 'description' => 'Test', 'is_active' => true]
+        );
         $admin = AdminUser::factory()->create([
             'role' => AdminUser::ROLE_ADMIN,
             'project_id' => $project->id,

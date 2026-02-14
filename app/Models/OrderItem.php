@@ -19,13 +19,11 @@ class OrderItem extends Model
         'notes',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'quantity' => 'integer',
-            'price' => 'decimal:2',
-        ];
-    }
+    /** @var array<string, string> */
+    protected $casts = [
+        'quantity' => 'integer',
+        'price' => 'decimal:2',
+    ];
 
     public function project()
     {

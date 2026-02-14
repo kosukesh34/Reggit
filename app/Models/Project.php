@@ -20,12 +20,10 @@ class Project extends Model
         'is_active',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'is_active' => 'boolean',
-        ];
-    }
+    /** @var array<string, string> */
+    protected $casts = [
+        'is_active' => 'boolean',
+    ];
 
     public function users(): HasMany
     {

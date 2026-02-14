@@ -13,13 +13,11 @@ class MemberStamp extends Model
 
     protected $fillable = ['project_id', 'member_id', 'stamp_card_id', 'current_stamps', 'completed_at'];
 
-    protected function casts(): array
-    {
-        return [
-            'current_stamps' => 'integer',
-            'completed_at' => 'datetime',
-        ];
-    }
+    /** @var array<string, string> */
+    protected $casts = [
+        'current_stamps' => 'integer',
+        'completed_at' => 'datetime',
+    ];
 
     public function project()
     {

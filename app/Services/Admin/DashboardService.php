@@ -2,6 +2,7 @@
 
 namespace App\Services\Admin;
 
+use App\Enums\QueueStatus;
 use App\Enums\ReservationStatus;
 use App\Models\Order;
 use App\Enums\OrderStatus;
@@ -29,7 +30,7 @@ class DashboardService
             'today_reservations' => Reservation::whereDate('reserved_at', today())
                 ->whereIn('status', [ReservationStatus::PENDING, ReservationStatus::CONFIRMED])
                 ->count(),
-            'queue_waiting' => QueueEntry::where('status', 'waiting')->count(),
+            'queue_waiting' => QueueEntry::where('status', QueueStatus::WAITING)->count(),
         ];
     }
 
