@@ -19,7 +19,7 @@
     display: flex; align-items: center; justify-content: space-between;
     padding: 0 20px; flex-shrink: 0; box-shadow: 0 1px 3px rgba(0,0,0,0.04);
 }
-.ld-topbar__title { font-size: 16px; font-weight: 700; color: #1f2937; display: flex; align-items: center; gap: 8px; }
+.ld-topbar__title { font-size: 16px; font-weight: 700; color: #1f2937; display: flex; align-items: center; gap: 8px; flex: 1; }
 .ld-topbar__title i { color: #6366f1; }
 .ld-topbar__actions { display: flex; align-items: center; gap: 8px; }
 
@@ -63,6 +63,8 @@
 .ld-screen-item.is-active .ld-screen-item__label { color: #4338ca; }
 .ld-screen-item__count { margin-left: auto; font-size: 11px; color: #9ca3af; background: #f3f4f6; padding: 2px 6px; border-radius: 10px; }
 .ld-screen-item.is-active .ld-screen-item__count { background: #c7d2fe; color: #4338ca; }
+.ld-screen-item.is-disabled { opacity: 0.5; }
+.ld-screen-item__badge { font-size: 9px; font-weight: 700; color: #ef4444; background: #fef2f2; border: 1px solid #fecaca; padding: 1px 5px; border-radius: 4px; margin-left: 4px; }
 
 /* --- Center: Phone --- */
 .ld-editor { display: flex; align-items: center; justify-content: center; padding: 24px; overflow: auto; background: #f0f2f5; }
@@ -74,7 +76,8 @@
 .ld-phone__body { flex: 1; overflow-y: auto; background: #f5f5f5; min-height: 400px; max-height: 520px; }
 .ld-phone__content { padding: 12px; min-height: 100%; display: flex; flex-direction: column; gap: 8px; transition: background 0.2s; }
 .ld-phone__nav { display: flex; border-top: 1px solid #e5e7eb; background: #fff; padding: 8px 0 12px; }
-.ld-phone__nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 9px; color: #9ca3af; padding: 4px 2px; cursor: default; }
+.ld-phone__nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 9px; color: #9ca3af; padding: 4px 2px; cursor: pointer; transition: color 0.15s; }
+.ld-phone__nav-item:hover { color: #6b7280; }
 .ld-phone__nav-item i { font-size: 16px; }
 .ld-phone__nav-item.is-active { color: #06C755; }
 

@@ -18,6 +18,12 @@
                 <h1><i class="fas fa-store"></i> 管理画面</h1>
             </div>
             @php $adminUser = auth('admin')->user(); @endphp
+            @if($adminUser && $adminUser->isSystemAdmin())
+            <a href="{{ route('system-admin.dashboard') }}" class="nav-item nav-item--system {{ request()->routeIs('system-admin.*') ? 'active' : '' }}">
+                <i class="fas fa-shield-alt"></i>
+                <span>システム管理</span>
+            </a>
+            @endif
             <nav class="sidebar-nav" aria-label="メインメニュー">
                 <div class="nav-group">
                     <div class="nav-group-label">メニュー</div>
@@ -151,6 +157,11 @@
                 <h2>@yield('page-title', 'ダッシュボード')</h2>
                 @auth('admin')
                 <div class="content-header-actions">
+                    @if(auth('admin')->user()->isSystemAdmin() && !request()->routeIs('system-admin.*'))
+                    <a href="{{ route('system-admin.dashboard') }}" class="btn btn-sm btn-outline-primary" title="システム管理画面へ">
+                        <i class="fas fa-shield-alt"></i> システム管理
+                    </a>
+                    @endif
                     <span class="content-header-user" title="{{ auth('admin')->user()->name }}">
                         <i class="fas fa-user-shield"></i>
                         {{ Str::limit(auth('admin')->user()->name, 12) }}

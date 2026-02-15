@@ -13,7 +13,8 @@ class GetLiffDesignerUseCase
             ShopSetting::getLiffTabLayouts($projectId),
             ShopSetting::defaultLiffDesignerTemplates(),
             ShopSetting::getLiffCustomCss($projectId),
-            ShopSetting::getLiffTabSettings($projectId)
+            ShopSetting::getLiffTabSettings($projectId),
+            ShopSetting::getFeatureFlags($projectId)
         );
     }
 }
