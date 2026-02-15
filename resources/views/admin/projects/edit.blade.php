@@ -34,6 +34,15 @@
                 @error('description')<span class="invalid-feedback">{{ $message }}</span>@enderror
             </div>
             <div class="form-group">
+                <label for="plan" class="form-label">プラン <span class="text-danger">*</span></label>
+                <select name="plan" id="plan" class="form-control" required>
+                    @foreach(\App\Enums\ProjectPlan::getValues() as $value => $label)
+                        <option value="{{ $value }}" {{ old('plan', $project->plan ?? 'normal') === $value ? 'selected' : '' }}>{{ $label }}</option>
+                    @endforeach
+                </select>
+                @error('plan')<span class="invalid-feedback">{{ $message }}</span>@enderror
+            </div>
+            <div class="form-group">
                 <label class="checkbox-label">
                     <input type="checkbox" name="is_active" value="1" {{ old('is_active', $project->is_active) ? 'checked' : '' }}>
                     <span>有効化する</span>

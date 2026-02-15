@@ -18,6 +18,7 @@
                 <th>ID</th>
                 <th>プロジェクト名</th>
                 <th>キー</th>
+                <th>プラン</th>
                 <th>状態</th>
                 <th class="table-actions-cell">操作</th>
             </tr>
@@ -28,6 +29,16 @@
                     <td><span class="id-badge">{{ $project->id }}</span></td>
                     <td>{{ $project->name }}</td>
                     <td><code>{{ $project->project_key }}</code></td>
+                    <td>
+                        @php $planLabel = \App\Enums\ProjectPlan::getLabel($project->plan ?? 'normal'); @endphp
+                        @if(($project->plan ?? 'normal') === 'premium')
+                            <span class="badge badge-warning">{{ $planLabel }}</span>
+                        @elseif(($project->plan ?? 'normal') === 'distribution')
+                            <span class="badge badge-info">{{ $planLabel }}</span>
+                        @else
+                            <span class="badge badge-secondary">{{ $planLabel }}</span>
+                        @endif
+                    </td>
                     <td>
                         @if($project->is_active)
                             <span class="badge badge-success">有効</span>
@@ -46,7 +57,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="5" class="empty-state">
+                    <td colspan="6" class="empty-state">
                         <i class="fas fa-building"></i>
                         <p>プロジェクトがありません</p>
                     </td>

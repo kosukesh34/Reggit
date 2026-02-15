@@ -102,6 +102,29 @@
     </div>
 </form>
 
+<div class="card" style="margin-top:24px;">
+    <div class="card-header">
+        <h2 class="card-title"><i class="fas fa-toggle-on"></i> 利用機能</h2>
+    </div>
+    <div class="card-body">
+        <p class="form-text" style="margin-bottom:12px;">LINE アプリで利用できる機能の ON / OFF を切り替えます。</p>
+        <form action="{{ admin_route('admin.settings.feature-flags.update') }}" method="POST">
+            @csrf
+            <div class="feature-flags-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px 16px;">
+                @foreach(\App\Models\ShopSetting::FEATURE_FLAG_LABELS as $key => $label)
+                <label class="checkbox-label">
+                    <input type="checkbox" name="feature_flags[{{ $key }}]" value="1" {{ ($featureFlags[$key] ?? false) ? 'checked' : '' }}>
+                    <span>{{ $label }}</span>
+                </label>
+                @endforeach
+            </div>
+            <div class="form-actions" style="margin-top:16px;">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> 利用機能を保存</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
 function addTimeSlot() {
     const c = document.getElementById('timeSlotsContainer');

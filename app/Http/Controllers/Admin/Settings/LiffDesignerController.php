@@ -18,6 +18,7 @@ class LiffDesignerController extends AdminBaseController
             'templates' => $dto->templates,
             'customCss' => $dto->customCss,
             'tabSettings' => $dto->tabSettings,
+            'featureFlags' => $dto->featureFlags,
         ]);
     }
 
