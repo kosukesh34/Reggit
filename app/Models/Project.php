@@ -18,11 +18,13 @@ class Project extends Model
         'name',
         'description',
         'is_active',
+        'plan',
     ];
 
     /** @var array<string, string> */
     protected $casts = [
         'is_active' => 'boolean',
+        'plan' => 'string',
     ];
 
     public function users(): HasMany

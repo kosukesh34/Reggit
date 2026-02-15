@@ -36,6 +36,7 @@ class AdminProjectControllerTest extends TestCase
             'name' => 'Test Project',
             'description' => 'Desc',
             'is_active' => true,
+            'plan' => 'normal',
         ]);
 
         $response->assertRedirect('/system-admin/projects');
@@ -52,6 +53,7 @@ class AdminProjectControllerTest extends TestCase
             'name' => 'New',
             'description' => 'Updated',
             'is_active' => true,
+            'plan' => 'premium',
         ]);
 
         $response->assertRedirect('/system-admin/projects');
