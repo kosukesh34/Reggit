@@ -3,8 +3,8 @@
 namespace App\UseCases\Product;
 
 use App\Models\Product;
-use App\UseCases\Product\Dto\ProductCategoryDto;
-use App\UseCases\Product\Dto\ProductIndexResultDto;
+use App\UseCases\Product\Data\ProductCategory;
+use App\UseCases\Product\Data\ProductIndexResult;
 use Illuminate\Support\Facades\DB;
 
 class ProductIndexUseCase
@@ -17,7 +17,7 @@ class ProductIndexUseCase
         'other' => ['label' => 'その他', 'icon' => 'fa-ellipsis-h', 'sort' => 99],
     ];
 
-    public function handle(?string $category, ?bool $availableOnly, bool $includeCategories): ProductIndexResultDto
+    public function handle(?string $category, ?bool $availableOnly, bool $includeCategories): ProductIndexResult
     {
         $query = Product::query();
         if ($availableOnly === true) {
@@ -31,7 +31,7 @@ class ProductIndexUseCase
         $products = $query->orderBy('category')->orderBy('name')->get();
 
         if ($includeCategories === false) {
-            return new ProductIndexResultDto($products, []);
+            return new ProductIndexResult($products, []);
         }
 
         $categoryCounts = Product::query()
@@ -41,7 +41,7 @@ class ProductIndexUseCase
             ->pluck('count', 'category');
 
         $categories = [];
-        $categories[] = new ProductCategoryDto(
+        $categories[] = new ProductCategory(
             'all',
             'すべて',
             'fa-th-large',
@@ -51,7 +51,7 @@ class ProductIndexUseCase
 
         foreach ($categoryCounts as $catKey => $count) {
             $meta = self::CATEGORY_META[$catKey] ?? self::CATEGORY_META['other'];
-            $categories[] = new ProductCategoryDto(
+            $categories[] = new ProductCategory(
                 $catKey,
                 $meta['label'],
                 $meta['icon'],
@@ -60,8 +60,8 @@ class ProductIndexUseCase
             );
         }
 
-        usort($categories, fn (ProductCategoryDto $a, ProductCategoryDto $b) => $a->sort <=> $b->sort);
+        usort($categories, fn (ProductCategory $a, ProductCategory $b) => $a->sort <=> $b->sort);
 
-        return new ProductIndexResultDto($products, $categories);
+        return new ProductIndexResult($products, $categories);
     }
 }

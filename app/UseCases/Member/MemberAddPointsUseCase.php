@@ -3,7 +3,7 @@
 namespace App\UseCases\Member;
 
 use App\Services\UserService;
-use App\UseCases\Member\Dto\MemberPointsResultDto;
+use App\UseCases\Member\Data\MemberPointsResult;
 use Illuminate\Http\Request;
 
 class MemberAddPointsUseCase
@@ -12,17 +12,17 @@ class MemberAddPointsUseCase
     {
     }
 
-    public function handle(Request $request, int $points, ?string $description): MemberPointsResultDto
+    public function handle(Request $request, int $points, ?string $description): MemberPointsResult
     {
         $user = $this->userService->getOrCreateUser($request);
         $member = $user->member;
 
         if ($member === null) {
-            return new MemberPointsResultDto(false, 0, collect());
+            return new MemberPointsResult(false, 0, collect());
         }
 
         $member->addPoints($points, $description);
 
-        return new MemberPointsResultDto(true, (int) $member->fresh()->points, collect());
+        return new MemberPointsResult(true, (int) $member->fresh()->points, collect());
     }
 }

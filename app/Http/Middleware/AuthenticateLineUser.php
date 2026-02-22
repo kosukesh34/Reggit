@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\User;
+use App\Util\StrHelper;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -13,13 +14,13 @@ class AuthenticateLineUser
     {
         $lineUserId = $request->header('X-Line-User-Id');
 
-        if (!$lineUserId) {
+        if (StrHelper::isEmptyStringOrNull($lineUserId)) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
         $user = User::where('line_user_id', $lineUserId)->first();
 
-        if (!$user) {
+        if ($user === null) {
             return response()->json(['error' => 'User not found'], 404);
         }
 

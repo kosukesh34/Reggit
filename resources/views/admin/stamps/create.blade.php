@@ -30,7 +30,7 @@
                 @error('image_url')<span class="invalid-feedback">{{ $message }}</span>@enderror
             </div>
             <div class="form-group form-check">
-                <input type="checkbox" name="is_active" id="is_active" class="form-check-input" value="1" {{ old('is_active', true) ? 'checked' : '' }}>
+                <input type="checkbox" name="is_active" id="is_active" class="form-check-input" value="1" {{ ((bool) old('is_active', true)) ? 'checked' : '' }}>
                 <label for="is_active" class="form-check-label">有効</label>
             </div>
             <div class="form-actions">

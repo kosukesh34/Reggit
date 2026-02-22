@@ -27,23 +27,23 @@
             <nav class="sidebar-nav" aria-label="メインメニュー">
                 <div class="nav-group">
                     <div class="nav-group-label">メニュー</div>
-                    @if(!$adminUser || $adminUser->hasPermission('dashboard.view'))
+                    @if($adminUser === null || $adminUser->hasPermission('dashboard.view'))
                     <a href="{{ admin_route('admin.dashboard') }}" class="nav-item {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
                         <i class="fas fa-th-large"></i>
                         <span>ダッシュボード</span>
                     </a>
                     @endif
                 </div>
-                @if(!$adminUser || $adminUser->hasPermission('orders.view') || $adminUser->hasPermission('products.view'))
+                @if($adminUser === null || $adminUser->hasPermission('orders.view') || $adminUser->hasPermission('products.view'))
                 <div class="nav-group">
                     <div class="nav-group-label">注文・商品</div>
-                    @if(!$adminUser || $adminUser->hasPermission('orders.view'))
+                    @if($adminUser === null || $adminUser->hasPermission('orders.view'))
                     <a href="{{ admin_route('admin.orders') }}" class="nav-item {{ request()->routeIs('admin.orders*') ? 'active' : '' }}">
                         <i class="fas fa-shopping-cart"></i>
                         <span>注文（モバイル・店内）</span>
                     </a>
                     @endif
-                    @if(!$adminUser || $adminUser->hasPermission('products.view'))
+                    @if($adminUser === null || $adminUser->hasPermission('products.view'))
                     <a href="{{ admin_route('admin.products') }}" class="nav-item {{ request()->routeIs('admin.products*') ? 'active' : '' }}">
                         <i class="fas fa-utensils"></i>
                         <span>商品管理</span>
@@ -51,7 +51,7 @@
                     @endif
                 </div>
                 @endif
-                @if(!$adminUser || $adminUser->hasPermission('members.view'))
+                @if($adminUser === null || $adminUser->hasPermission('members.view'))
                 <div class="nav-group">
                     <div class="nav-group-label">会員・ポイント</div>
                     <a href="{{ admin_route('admin.members') }}" class="nav-item {{ request()->routeIs('admin.members*') ? 'active' : '' }}">
@@ -60,16 +60,16 @@
                     </a>
                 </div>
                 @endif
-                @if(!$adminUser || $adminUser->hasPermission('reservations.view') || $adminUser->hasPermission('queue.view'))
+                @if($adminUser === null || $adminUser->hasPermission('reservations.view') || $adminUser->hasPermission('queue.view'))
                 <div class="nav-group">
                     <div class="nav-group-label">予約・順番待ち</div>
-                    @if(!$adminUser || $adminUser->hasPermission('reservations.view'))
+                    @if($adminUser === null || $adminUser->hasPermission('reservations.view'))
                     <a href="{{ admin_route('admin.reservations') }}" class="nav-item {{ request()->routeIs('admin.reservations*') ? 'active' : '' }}">
                         <i class="fas fa-calendar-check"></i>
                         <span>予約</span>
                     </a>
                     @endif
-                    @if(!$adminUser || $adminUser->hasPermission('queue.view'))
+                    @if($adminUser === null || $adminUser->hasPermission('queue.view'))
                     <a href="{{ admin_route('admin.queue') }}" class="nav-item {{ request()->routeIs('admin.queue*') ? 'active' : '' }}">
                         <i class="fas fa-list-ol"></i>
                         <span>順番待ち</span>
@@ -77,16 +77,16 @@
                     @endif
                 </div>
                 @endif
-                @if(!$adminUser || $adminUser->hasPermission('stamps.view') || $adminUser->hasPermission('coupons.view'))
+                @if($adminUser === null || $adminUser->hasPermission('stamps.view') || $adminUser->hasPermission('coupons.view'))
                 <div class="nav-group">
                     <div class="nav-group-label">スタンプ・クーポン</div>
-                    @if(!$adminUser || $adminUser->hasPermission('stamps.view'))
+                    @if($adminUser === null || $adminUser->hasPermission('stamps.view'))
                     <a href="{{ admin_route('admin.stamps') }}" class="nav-item {{ request()->routeIs('admin.stamps*') ? 'active' : '' }}">
                         <i class="fas fa-stamp"></i>
                         <span>スタンプ</span>
                     </a>
                     @endif
-                    @if(!$adminUser || $adminUser->hasPermission('coupons.view'))
+                    @if($adminUser === null || $adminUser->hasPermission('coupons.view'))
                     <a href="{{ admin_route('admin.coupons') }}" class="nav-item {{ request()->routeIs('admin.coupons*') ? 'active' : '' }}">
                         <i class="fas fa-ticket-alt"></i>
                         <span>クーポン</span>
@@ -94,7 +94,7 @@
                     @endif
                 </div>
                 @endif
-                @if(!$adminUser || $adminUser->hasPermission('announcements.view'))
+                @if($adminUser === null || $adminUser->hasPermission('announcements.view'))
                 <div class="nav-group">
                     <div class="nav-group-label">お知らせ</div>
                     <a href="{{ admin_route('admin.announcements') }}" class="nav-item {{ request()->routeIs('admin.announcements*') ? 'active' : '' }}">
@@ -103,7 +103,7 @@
                     </a>
                 </div>
                 @endif
-                @if(!$adminUser || $adminUser->hasPermission('analytics.view'))
+                @if($adminUser === null || $adminUser->hasPermission('analytics.view'))
                 <div class="nav-group">
                     <div class="nav-group-label">分析</div>
                     <a href="{{ admin_route('admin.analytics') }}" class="nav-item {{ request()->routeIs('admin.analytics*') ? 'active' : '' }}">
@@ -112,7 +112,7 @@
                     </a>
                 </div>
                 @endif
-                @if(!$adminUser || $adminUser->hasPermission('gallery.view'))
+                @if($adminUser === null || $adminUser->hasPermission('gallery.view'))
                 <div class="nav-group">
                     <div class="nav-group-label">ギャラリー</div>
                     <a href="{{ admin_route('admin.gallery.categories') }}" class="nav-item {{ request()->routeIs('admin.gallery*') ? 'active' : '' }}">
@@ -121,10 +121,10 @@
                     </a>
                 </div>
                 @endif
-                @if(!$adminUser || $adminUser->hasPermission('settings.view') || $adminUser->hasPermission('liff_designer.manage'))
+                @if($adminUser === null || $adminUser->hasPermission('settings.view') || $adminUser->hasPermission('liff_designer.manage'))
                 <div class="nav-group">
                     <div class="nav-group-label">設定</div>
-                    @if(!$adminUser || $adminUser->hasPermission('settings.view'))
+                    @if($adminUser === null || $adminUser->hasPermission('settings.view'))
                     <a href="{{ admin_route('admin.settings.basic') }}" class="nav-item {{ request()->routeIs('admin.settings.basic*') ? 'active' : '' }}">
                         <i class="fas fa-sliders-h"></i>
                         <span>基本設定</span>
@@ -134,7 +134,7 @@
                         <span>詳細設定（配色）</span>
                     </a>
                     @endif
-                    @if(!$adminUser || $adminUser->hasPermission('liff_designer.manage'))
+                    @if($adminUser === null || $adminUser->hasPermission('liff_designer.manage'))
                     <a href="{{ admin_route('admin.settings.liff-designer') }}" class="nav-item {{ request()->routeIs('admin.settings.liff-designer*') ? 'active' : '' }}">
                         <i class="fas fa-paint-brush"></i>
                         <span>LIFFデザイン</span>

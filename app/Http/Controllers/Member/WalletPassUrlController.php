@@ -3,51 +3,48 @@
 namespace App\Http\Controllers\Member;
 
 use App\Http\Controllers\Controller;
+use App\Services\MemberService;
 use App\Services\UserService;
+use App\UseCases\Member\WalletPass\WalletPassUrlIssueUseCase;
 use App\Util\AdminContext;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 
+/**
+ * Safari で開く用のワンタイム URL を返す（LINE アプリ内では .pkpass が開けないため）。
+ */
 class WalletPassUrlController extends Controller
 {
-    private const TOKEN_CACHE_PREFIX = 'wallet_pass_token:';
-    private const TOKEN_TTL_MINUTES = 3;
+    public function __construct(
+        private WalletPassUrlIssueUseCase $urlIssueUseCase,
+        private UserService $userService,
+        private MemberService $memberService
+    ) {
+    }
 
-    /**
-     * Safari で開く用のワンタイム URL を返す（LINE アプリ内では .pkpass が開けないため）
-     */
-    public function __invoke(Request $request)
+    public function __invoke(Request $request): Response
     {
-        if (!config('wallet_pass.enabled')) {
+        if (config('wallet_pass.enabled') !== true) {
             return response()->json(['error' => 'Wallet Pass は無効です'], Response::HTTP_FORBIDDEN);
         }
 
-        $userService = app(UserService::class);
-        $user = $userService->getOrCreateUser($request);
-        $memberData = app(\App\Services\MemberService::class)->getMemberData($user);
-        if (empty($memberData['is_member'])) {
+        $user = $this->userService->getOrCreateUser($request);
+        $memberData = $this->memberService->getMemberData($user);
+        if (!isset($memberData['is_member']) || $memberData['is_member'] === false) {
             return response()->json(['error' => '会員登録が必要です'], Response::HTTP_FORBIDDEN);
         }
 
         $project = AdminContext::getCurrentProject();
-        if (!$project) {
+        if ($project === null) {
             return response()->json(['error' => 'プロジェクトが特定できません'], Response::HTTP_BAD_REQUEST);
         }
 
-        $token = Str::random(64);
-        $key = self::TOKEN_CACHE_PREFIX . $token;
-        Cache::put($key, [
-            'user_id' => $user->id,
-            'project_id' => $project->id,
-        ], now()->addMinutes(self::TOKEN_TTL_MINUTES));
+        $result = $this->urlIssueUseCase->handle(
+            $user->id,
+            $project->id,
+            $project->project_key
+        );
 
-        $url = url('/api/members/me/wallet-pass?' . http_build_query([
-            'project_key' => $project->project_key,
-            'token' => $token,
-        ]));
-
-        return response()->json(['url' => $url]);
+        return response()->json(['url' => $result->url]);
     }
 }

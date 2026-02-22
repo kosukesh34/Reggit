@@ -6,7 +6,7 @@ use App\Enums\OrderStatus;
 use App\Enums\PaymentIntentStatus;
 use App\Enums\PaymentMethod;
 use App\Models\Order;
-use App\UseCases\Payment\Dto\PaymentConfirmResultDto;
+use App\UseCases\Payment\Data\PaymentConfirmResult;
 
 class PaymentConfirmUseCase
 {
@@ -14,13 +14,13 @@ class PaymentConfirmUseCase
     {
     }
 
-    public function handle(string $paymentIntentId, int $orderId): PaymentConfirmResultDto
+    public function handle(string $paymentIntentId, int $orderId): PaymentConfirmResult
     {
         $payment = $this->gateway->retrievePaymentIntent($paymentIntentId);
         $status = $payment['status'] ?? null;
 
         if ($status !== PaymentIntentStatus::SUCCEEDED) {
-            return new PaymentConfirmResultDto(false, '決済が完了していません', $status, null);
+            return new PaymentConfirmResult(false, '決済が完了していません', $status, null);
         }
 
         $order = Order::findOrFail($orderId);
@@ -29,6 +29,6 @@ class PaymentConfirmUseCase
             'payment_method' => PaymentMethod::STRIPE,
         ]);
 
-        return new PaymentConfirmResultDto(true, '決済が完了しました', $status, $order);
+        return new PaymentConfirmResult(true, '決済が完了しました', $status, $order);
     }
 }

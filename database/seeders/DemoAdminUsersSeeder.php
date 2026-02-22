@@ -18,7 +18,7 @@ class DemoAdminUsersSeeder extends Seeder
         AdminUser::where('login_id', '1')->delete();
 
         $project = Project::where('is_active', true)->orderBy('id')->first();
-        if (!$project) {
+        if ($project === null) {
             $project = Project::create([
                 'project_key' => 'default',
                 'name' => 'デモ店舗',

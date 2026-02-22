@@ -3,13 +3,13 @@
 namespace App\UseCases\Admin\Settings;
 
 use App\Models\ShopSetting;
-use App\UseCases\Admin\Settings\Dto\FeatureSettingsViewDto;
+use App\UseCases\Admin\Settings\Data\FeatureSettingsView;
 
 class GetFeatureSettingsUseCase
 {
-    public function handle(int $projectId): FeatureSettingsViewDto
+    public function handle(int $projectId): FeatureSettingsView
     {
-        return new FeatureSettingsViewDto(
+        return new FeatureSettingsView(
             ShopSetting::getFeatureFlags($projectId),
             ShopSetting::FEATURE_FLAG_LABELS,
             ShopSetting::getAdminSidebarColor($projectId),

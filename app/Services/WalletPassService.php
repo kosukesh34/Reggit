@@ -3,7 +3,9 @@
 namespace App\Services;
 
 use App\Models\Member;
+use App\Models\User;
 use App\Util\AdminContext;
+use App\Util\StrHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 
@@ -36,7 +38,7 @@ class WalletPassService
      * Apple Wallet 用パス（.pkpass）を組み立ててバイナリで返す。
      * 失敗時は null を返し、getLastError() で理由を取得できる。
      *
-     * @param  array<string, mixed>  $extraFields  例: ['points' => 100, 'rank_label' => 'ゴールド']
+     * @param  array<string, string|int|float|bool|null>  $extraFields  例: ['points' => 100, 'rank_label' => 'ゴールド', 'rank_key' => 'gold']
      */
     public function buildMembershipPass(
         string $barcodeMessage,
@@ -68,19 +70,51 @@ class WalletPassService
         $user = $this->userService->getOrCreateUser($request);
         $data = $this->memberService->getMemberData($user);
 
-        if (empty($data['is_member']) || empty($data['member'])) {
+        if (!isset($data['is_member']) || $data['is_member'] === false || !isset($data['member']) || $data['member'] === null) {
             $this->setLastError('会員情報が見つかりません。');
             return null;
         }
 
         $member = $data['member'];
-        if (!$member instanceof Member) {
+        if (!($member instanceof Member)) {
             $this->setLastError('会員データが不正です。');
             return null;
         }
 
         $project = AdminContext::getCurrentProject();
-        $organizationName = $project ? $project->name : config('app.name', '会員証');
+        $organizationName = $project !== null ? $project->name : config('app.name', '会員証');
+        $barcodeMessage = $member->member_number ?? (string) $member->id;
+        $serialNumber = 'member-' . (string) $member->id;
+
+        $extraFields = [
+            'points' => $data['points'] ?? $member->getTotalPointsFromTransactions(),
+            'rank_label' => $data['current_rank_label'] ?? $member->rank ?? '',
+            'rank_key' => $data['current_rank'] ?? $member->rank ?? 'bronze',
+        ];
+
+        return $this->buildMembershipPass($barcodeMessage, $organizationName, $serialNumber, $extraFields);
+    }
+
+    /**
+     * 既に解決済みの User で .pkpass を生成する（UseCase から呼ぶ用）。project は AdminContext に設定済みであること。
+     */
+    public function generateFromUser(User $user): ?string
+    {
+        $data = $this->memberService->getMemberData($user);
+
+        if (!isset($data['is_member']) || $data['is_member'] === false || !isset($data['member']) || $data['member'] === null) {
+            $this->setLastError('会員情報が見つかりません。');
+            return null;
+        }
+
+        $member = $data['member'];
+        if (!($member instanceof Member)) {
+            $this->setLastError('会員データが不正です。');
+            return null;
+        }
+
+        $project = AdminContext::getCurrentProject();
+        $organizationName = $project !== null ? $project->name : config('app.name', '会員証');
         $barcodeMessage = $member->member_number ?? (string) $member->id;
         $serialNumber = 'member-' . (string) $member->id;
 
@@ -99,27 +133,27 @@ class WalletPassService
     public function generateForUser(int $userId): ?string
     {
         $projectId = AdminContext::getCurrentProjectId();
-        if (!$projectId) {
+        if ($projectId === null || $projectId === false) {
             $this->setLastError('プロジェクトが特定できません。');
             return null;
         }
         $user = \App\Models\User::where('id', $userId)->where('project_id', $projectId)->first();
-        if (!$user) {
+        if ($user === null) {
             $this->setLastError('ユーザーが見つかりません。');
             return null;
         }
         $data = $this->memberService->getMemberData($user);
-        if (empty($data['is_member']) || empty($data['member'])) {
+        if (!isset($data['is_member']) || $data['is_member'] === false || !isset($data['member']) || $data['member'] === null) {
             $this->setLastError('会員情報が見つかりません。');
             return null;
         }
         $member = $data['member'];
-        if (!$member instanceof Member) {
+        if (!($member instanceof Member)) {
             $this->setLastError('会員データが不正です。');
             return null;
         }
         $project = AdminContext::getCurrentProject();
-        $organizationName = $project ? $project->name : config('app.name', '会員証');
+        $organizationName = $project !== null ? $project->name : config('app.name', '会員証');
         $barcodeMessage = $member->member_number ?? (string) $member->id;
         $serialNumber = 'member-' . (string) $member->id;
         $extraFields = [
@@ -130,7 +164,7 @@ class WalletPassService
         return $this->buildMembershipPass($barcodeMessage, $organizationName, $serialNumber, $extraFields);
     }
 
-    /** ランク別カード色（背景・文字・ラベル） */
+    /** ランク別カード色（背景・文字・ラベル） @return array{bg: string, fg: string, label: string} */
     private static function getRankColors(string $rankKey): array
     {
         $map = [
@@ -146,7 +180,7 @@ class WalletPassService
     /**
      * buildMembershipPass 用の pass.json を書き出す（Member に依存しない）
      *
-     * @param  array<string, mixed>  $extraFields
+     * @param  array<string, string|int|float|bool|null>  $extraFields  パス用追加フィールド（points, rank_label, rank_key 等）
      */
     private function writePassJsonFromParams(
         string $dir,
@@ -202,7 +236,7 @@ class WalletPassService
     }
 
     /**
-     * @param array<string, mixed> $extraFields
+     * @param array<string, string|int|float|bool|null> $extraFields パス用追加フィールド
      */
     private function ensureAssets(string $dir, array $extraFields = []): void
     {
@@ -287,7 +321,7 @@ class WalletPassService
         imagedestroy($im);
     }
 
-    /** ランクキーから RGB [r,g,b] を返す（ストリップ用） */
+    /** ランクキーから RGB [r,g,b] を返す（ストリップ用） @return array{0: int, 1: int, 2: int} */
     private static function getRankRgb(string $rankKey): array
     {
         $map = [
@@ -369,7 +403,7 @@ class WalletPassService
             @unlink($wwdrPem);
         }
 
-        if (!$ok) {
+        if ($ok === false) {
             $msg = openssl_error_string() ?: '署名に失敗しました。';
             throw new \RuntimeException('Wallet Pass の署名に失敗しました: ' . $msg);
         }
@@ -484,6 +518,42 @@ class WalletPassService
                 'ZIP の作成に失敗しました。PHP の zip 拡張を有効にするか、システムに zip コマンドをインストールしてください。'
             );
         }
+    }
+
+    /**
+     * Wallet Pass が利用できない理由の一覧を返す（503 用）。config やファイルの状態をチェックする。
+     *
+     * @return array<int, string>
+     */
+    public function getUnavailabilityReasons(): array
+    {
+        $reasons = [];
+        if (config('wallet_pass.enabled', false) !== true) {
+            $reasons[] = 'WALLET_PASS_ENABLED is not true in .env';
+        }
+        if (StrHelper::isEmptyStringOrNull(config('wallet_pass.team_id', null))) {
+            $reasons[] = 'WALLET_PASS_TEAM_ID is not set in .env';
+        }
+        if (StrHelper::isEmptyStringOrNull(config('wallet_pass.type_id', null))) {
+            $reasons[] = 'WALLET_PASS_TYPE_ID is not set in .env';
+        }
+        $certPath = $this->resolvePath(config('wallet_pass.cert_path', ''));
+        $keyPath = $this->resolvePath(config('wallet_pass.key_path', ''));
+        $wwdrPath = $this->resolvePath(config('wallet_pass.wwdr_path', ''));
+        if ($certPath !== '' && !is_readable($certPath)) {
+            $reasons[] = 'pass.cer not found or not readable: ' . $certPath;
+        }
+        if ($keyPath !== '' && !is_readable($keyPath)) {
+            $reasons[] = 'iOS-Passkey-Key.key not found or not readable: ' . $keyPath;
+        }
+        if ($wwdrPath !== '' && !is_readable($wwdrPath)) {
+            $reasons[] = 'AppleWWDRCAG3.cer not found or not readable: ' . $wwdrPath;
+        }
+        if ($reasons === []) {
+            $lastError = self::getLastError();
+            $reasons[] = $lastError !== null && $lastError !== '' ? $lastError : 'Build failed. Check storage/logs/laravel.log';
+        }
+        return $reasons;
     }
 
     private function resolvePath(string $path): string
