@@ -27,6 +27,9 @@
         </ul>
 
         <p class="admin-login-switch">
+            <a href="{{ route('admin.login.form') }}"><i class="fas fa-key"></i> ID・パスワードでログイン</a>
+        </p>
+        <p class="admin-login-switch">
             <a href="{{ route('system-admin.login') }}"><i class="fas fa-cog"></i> システム管理者はこちら</a>
         </p>
     </div>
