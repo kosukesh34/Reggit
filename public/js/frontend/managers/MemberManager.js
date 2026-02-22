@@ -5,6 +5,16 @@ class MemberManager {
         this.memberData = null;
     }
 
+    static isIOS() {
+        if (typeof navigator === 'undefined') return false;
+        return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+            (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    }
+
+    static isWalletPassEnabled() {
+        return typeof window !== 'undefined' && window.__WALLET_PASS_ENABLED__ === true;
+    }
+
     getMemberData() {
         return this.memberData;
     }
@@ -180,6 +190,17 @@ class MemberManager {
             typeof window !== 'undefined' && window.__LIFF_PERMISSION_DENIED__
                 ? '<p class="member-card-profile-notice">LINEの表示名は取得していません。<button type="button" class="link-btn" onclick="location.reload()">再読み込み</button></p>'
                 : '';
+        const showAddToWallet = MemberManager.isIOS() && MemberManager.isWalletPassEnabled();
+        const walletPassImageUrl = (typeof window !== 'undefined' && window.__WALLET_PASS_ADD_BUTTON_IMAGE__) || '/images/add-to-apple-wallet-logo.png';
+        const projectKey = (typeof window !== 'undefined' && window.__PROJECT_KEY__) ? window.__PROJECT_KEY__ : 'default';
+        const walletPassUrl = AppConstants.API_ENDPOINTS.MEMBERS_WALLET_PASS + '?project_key=' + encodeURIComponent(projectKey);
+        const addToWalletBlock = showAddToWallet
+            ? `<div class="member-card-add-to-wallet-wrap">
+                <button type="button" class="member-card-add-to-wallet-btn" data-wallet-pass-url="${DomHelper.escapeHtml(walletPassUrl)}" aria-label="Walletに追加">
+                    <img src="${DomHelper.escapeHtml(walletPassImageUrl)}" alt="Walletに追加" class="member-card-add-to-wallet-img">
+                </button>
+            </div>`
+            : '';
 
         container.innerHTML = `
             <div class="member-card-container">
@@ -218,6 +239,7 @@ class MemberManager {
                         </div>
                     </div>
                 </div>
+                ${addToWalletBlock}
                 <div class="member-purchase-history">
                     <button type="button" class="member-purchase-history-toggle" aria-expanded="false" aria-controls="memberPurchaseHistoryList" id="memberPurchaseHistoryToggle">
                         <span class="member-purchase-history-toggle-label">購入履歴</span>
@@ -237,8 +259,89 @@ class MemberManager {
 
         this._generateBarcode(barcodeId, memberNumber);
         this._setupFlip();
+        this._setupAddToWallet();
         this._setupPurchaseHistoryToggle();
         this._setupPointHistoryToggle();
+    }
+
+    _setupAddToWallet() {
+        const btn = document.querySelector('.member-card-add-to-wallet-btn[data-wallet-pass-url]');
+        if (!btn) return;
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const projectKey = (typeof window !== 'undefined' && window.__PROJECT_KEY__) ? window.__PROJECT_KEY__ : 'default';
+            const originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="member-card-add-to-wallet-loading"><i class="fas fa-spinner fa-spin"></i> 取得中...</span>';
+
+            if (typeof window !== 'undefined' && window.__IS_LIFF__ && typeof liff !== 'undefined' && liff.openWindow) {
+                var passUrlApi = (window.location.origin + (AppConstants.API_ENDPOINTS.MEMBERS_WALLET_PASS_URL.startsWith('/') ? '' : '/') + AppConstants.API_ENDPOINTS.MEMBERS_WALLET_PASS_URL) + '?project_key=' + encodeURIComponent(projectKey);
+                fetch(passUrlApi, { credentials: 'include', method: 'GET' })
+                    .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+                    .then(function (result) {
+                        if (!result.ok || !result.data || !result.data.url) {
+                            throw new Error(result.data && result.data.error ? result.data.error : 'URLの取得に失敗しました');
+                        }
+                        liff.openWindow({ url: result.data.url, external: true });
+                        if (typeof ToastManager !== 'undefined') ToastManager.success('Safariで開きます。表示されたら「追加」をタップしてください。');
+                    })
+                    .catch(function (err) {
+                        if (typeof ToastManager !== 'undefined') ToastManager.error(err.message || 'Wallet Pass の取得に失敗しました');
+                    })
+                    .finally(function () {
+                        btn.disabled = false;
+                        btn.innerHTML = originalHtml;
+                    });
+                return;
+            }
+
+            const url = btn.getAttribute('data-wallet-pass-url');
+            if (!url) {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+                return;
+            }
+            const fullUrl = url.startsWith('http') ? url : (window.location.origin + (url.startsWith('/') ? '' : '/') + url);
+            fetch(fullUrl, { credentials: 'include', method: 'GET' })
+                .then(function (res) {
+                    if (!res.ok) {
+                        return res.text().then(function (text) {
+                            var msg = text && text.length < 200 ? text.trim() : (res.status === 503 ? 'Wallet Pass を利用できません' : '取得に失敗しました');
+                            throw new Error(msg);
+                        });
+                    }
+                    var ct = res.headers.get('Content-Type') || '';
+                    if (ct.indexOf('application/vnd.apple.pkpass') === -1 && ct.indexOf('application/zip') === -1) {
+                        return res.text().then(function (text) { throw new Error(text && text.length < 200 ? text.trim() : '不正なレスポンスです'); });
+                    }
+                    return res.blob();
+                })
+                .then(function (blob) {
+                    var blobUrl = URL.createObjectURL(blob);
+                    if (MemberManager.isIOS()) {
+                        var w = window.open(blobUrl, '_blank');
+                        if (!w || w.closed) window.location.href = blobUrl;
+                        setTimeout(function () { URL.revokeObjectURL(blobUrl); }, 2000);
+                    } else {
+                        var a = document.createElement('a');
+                        a.href = blobUrl;
+                        a.download = 'membership.pkpass';
+                        a.style.display = 'none';
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        setTimeout(function () { URL.revokeObjectURL(blobUrl); }, 500);
+                    }
+                    if (typeof ToastManager !== 'undefined') ToastManager.success('パスを開きました。表示されたら「追加」をタップしてください。');
+                })
+                .catch(function (err) {
+                    if (typeof ToastManager !== 'undefined') ToastManager.error(err.message || 'Wallet Pass の取得に失敗しました');
+                })
+                .finally(function () {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+                });
+        });
     }
 
     _generateBarcode(barcodeId, memberNumber) {
