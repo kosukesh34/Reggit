@@ -3,10 +3,10 @@
 namespace App\UseCases\Member\WalletPass\Data;
 
 /**
- * Wallet Pass ダウンロード UseCase の結果。
+ * Wallet Pass ダウンロード UseCase の出力。
  * content が null のときは unavailableReasons に理由が入る。
  */
-final class WalletPassDownloadResult
+final class WalletPassDownloadOutput
 {
     /**
      * @param array<int, string> $unavailableReasons
