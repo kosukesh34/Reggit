@@ -8,6 +8,8 @@ const AppConstants = {
         MEMBERS_ME: `${API_BASE}/members/me`,
         MEMBERS_REGISTER: `${API_BASE}/members/register`,
         MEMBERS_POINTS: `${API_BASE}/members/points`,
+        MEMBERS_WALLET_PASS: `${API_BASE}/members/me/wallet-pass`,
+        MEMBERS_WALLET_PASS_URL: `${API_BASE}/members/me/wallet-pass-url`,
         RESERVATIONS: `${API_BASE}/reservations`,
         RESERVATIONS_AVAILABLE_DATES: `${API_BASE}/reservations/available-dates`,
         ANNOUNCEMENTS: `${API_BASE}/announcements`,
