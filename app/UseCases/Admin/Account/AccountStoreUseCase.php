@@ -3,11 +3,11 @@
 namespace App\UseCases\Admin\Account;
 
 use App\Models\AdminUser;
-use App\UseCases\Admin\Account\Dto\AccountStoreInputDto;
+use App\UseCases\Admin\Account\Data\AccountStoreInput;
 
 class AccountStoreUseCase
 {
-    public function handle(AccountStoreInputDto $input): AdminUser
+    public function handle(AccountStoreInput $input): AdminUser
     {
         $admin = AdminUser::create($input->accountPayload);
 

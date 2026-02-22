@@ -19,11 +19,11 @@ class ItemController extends AdminBaseController
             ? (int) $request->query('category_id')
             : null;
 
-        $viewDto = $useCase->handle($categoryId);
+        $view = $useCase->handle($categoryId);
 
         return view('admin.gallery.items', [
-            'items' => $viewDto->items,
-            'categories' => $viewDto->categories,
+            'items' => $view->items,
+            'categories' => $view->categories,
         ]);
     }
 

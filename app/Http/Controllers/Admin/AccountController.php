@@ -72,7 +72,7 @@ class AccountController extends Controller
         $admin = AdminUser::create($request->toAccountPayload());
 
         $projectIds = $request->toProjectIds();
-        if (!empty($projectIds)) {
+        if (is_array($projectIds) && count($projectIds) > 0) {
             $admin->projects()->sync($projectIds);
         }
 
@@ -92,7 +92,7 @@ class AccountController extends Controller
         $me = $request->user('admin');
         $adminUser = AdminUser::with('permissions')->findOrFail($id);
 
-        if (!$me->canEditUser($adminUser)) {
+        if ($me->canEditUser($adminUser) === false) {
             abort(403, 'このアカウントを編集する権限がありません。');
         }
 
@@ -146,7 +146,7 @@ class AccountController extends Controller
                 ->with('error', '自分自身のアカウントは削除できません。');
         }
 
-        if (!$me->canEditUser($adminUser)) {
+        if ($me->canEditUser($adminUser) === false) {
             abort(403, 'このアカウントを削除する権限がありません。');
         }
 

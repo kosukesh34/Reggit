@@ -21,7 +21,7 @@ class AuthenticateApiToken
         $hash = hash('sha256', $token);
         $apiToken = ApiToken::where('token_hash', $hash)->first();
 
-        if (!$apiToken || !$apiToken->is_active) {
+        if ($apiToken === null || $apiToken->is_active === false) {
             return response()->json(['success' => false, 'message' => 'APIトークンが無効です'], 401);
         }
 
@@ -30,7 +30,7 @@ class AuthenticateApiToken
         }
 
         $project = Project::find($apiToken->project_id);
-        if (!$project || !$project->is_active) {
+        if ($project === null || $project->is_active === false) {
             return response()->json(['success' => false, 'message' => 'プロジェクトが無効です'], 403);
         }
 

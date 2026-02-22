@@ -52,7 +52,7 @@
                         <option value="{{ $roleKey }}" {{ old('role', $adminUser->role) === $roleKey ? 'selected' : '' }}>{{ \App\Models\AdminUser::getRoleLabel($roleKey) }}</option>
                     @endforeach
                     {{-- 現在のロールが作成可能リストにない場合でも表示（変更不可） --}}
-                    @if(!in_array($adminUser->role, $creatableRoles))
+                    @if(in_array($adminUser->role, $creatableRoles, true) === false)
                         <option value="{{ $adminUser->role }}" selected>{{ \App\Models\AdminUser::getRoleLabel($adminUser->role) }}（変更不可）</option>
                     @endif
                 </select>

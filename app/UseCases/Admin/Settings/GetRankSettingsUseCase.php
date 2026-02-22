@@ -3,13 +3,13 @@
 namespace App\UseCases\Admin\Settings;
 
 use App\Models\ShopSetting;
-use App\UseCases\Admin\Settings\Dto\RankSettingsViewDto;
+use App\UseCases\Admin\Settings\Data\RankSettingsView;
 
 class GetRankSettingsUseCase
 {
-    public function handle(int $projectId): RankSettingsViewDto
+    public function handle(int $projectId): RankSettingsView
     {
-        return new RankSettingsViewDto(
+        return new RankSettingsView(
             ShopSetting::getMemberRankSettings($projectId),
             ShopSetting::getRankBasis($projectId),
             ShopSetting::getPointEarnRate($projectId),

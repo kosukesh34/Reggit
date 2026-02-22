@@ -20,19 +20,19 @@ class BindProjectFromRequest
         $projectKey = $this->normalizeProjectKey($projectKey);
         $isExplicitProjectKey = !StrHelper::isEmptyStringOrNull($projectKey);
 
-        if (!$isExplicitProjectKey) {
+        if ($isExplicitProjectKey === false) {
             $projectKey = $this->extractProjectKeyFromLiffRedirect($request);
             $projectKey = $this->normalizeProjectKey($projectKey);
             $isExplicitProjectKey = !StrHelper::isEmptyStringOrNull($projectKey);
         }
 
-        if (!$isExplicitProjectKey) {
+        if ($isExplicitProjectKey === false) {
             $projectKey = $this->extractProjectKeyFromLiffState($request);
             $projectKey = $this->normalizeProjectKey($projectKey);
             $isExplicitProjectKey = !StrHelper::isEmptyStringOrNull($projectKey);
         }
 
-        if (!$isExplicitProjectKey) {
+        if ($isExplicitProjectKey === false) {
             $projectKey = config('app.default_project_key', 'default');
         }
 
@@ -40,11 +40,11 @@ class BindProjectFromRequest
             ->where('is_active', true)
             ->first();
 
-        if (!$project && !$isExplicitProjectKey) {
+        if ($project === null && $isExplicitProjectKey === false) {
             $project = Project::where('is_active', true)->orderBy('id')->first();
         }
 
-        if (!$project) {
+        if ($project === null) {
             if ($request->expectsJson()) {
                 return response()->json(['error' => 'プロジェクトが見つかりません。'], 404);
             }
@@ -68,7 +68,7 @@ class BindProjectFromRequest
         }
         $decoded = urldecode((string) $liffRedirectUri);
         $parts = parse_url($decoded);
-        if (!$parts || !isset($parts['query'])) {
+        if ($parts === false || !isset($parts['query'])) {
             return null;
         }
         $queryParams = [];
@@ -87,7 +87,7 @@ class BindProjectFromRequest
         $query = $decoded;
         if (str_contains($decoded, '?')) {
             $parts = parse_url($decoded);
-            if (!$parts || !isset($parts['query'])) {
+            if ($parts === false || !isset($parts['query'])) {
                 return null;
             }
             $query = $parts['query'];

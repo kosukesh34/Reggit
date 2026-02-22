@@ -19,7 +19,7 @@ class AdminAuthService
             ->where('is_active', true)
             ->orderBy('name')
             ->first();
-        if ($first) {
+        if ($first !== null) {
             return redirect()->route('admin.dashboard', ['project_key' => $first->project_key]);
         }
         return redirect()->route('admin.login');
@@ -28,7 +28,7 @@ class AdminAuthService
     public function loginAdmin(Request $request)
     {
         $user = AdminUser::where('login_id', $request->login_id)->first();
-        if ($user === null || !Hash::check($request->password, $user->password)) {
+        if ($user === null || Hash::check($request->password, $user->password) === false) {
             throw ValidationException::withMessages([
                 'login_id' => ['IDまたはパスワードが正しくありません。'],
             ]);

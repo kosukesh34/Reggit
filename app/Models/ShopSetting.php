@@ -153,7 +153,7 @@ class ShopSetting extends Model
         $merged = [];
         foreach ($items as $item) {
             $tab = $item['tab'] ?? null;
-            if (! $tab || ! $defaults->has($tab)) {
+            if (\App\Util\StrHelper::isEmptyStringOrNull($tab) || $defaults->has($tab) === false) {
                 continue;
             }
             $merged[] = array_merge($defaults->get($tab), $item);
@@ -474,7 +474,7 @@ class ShopSetting extends Model
                 continue;
             }
             $key = $row['key'] ?? null;
-            if (!$key) {
+            if (\App\Util\StrHelper::isEmptyStringOrNull($key)) {
                 continue;
             }
             $normalized[] = [
