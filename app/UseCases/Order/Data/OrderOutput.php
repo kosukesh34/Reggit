@@ -2,8 +2,8 @@
 
 namespace App\UseCases\Order\Data;
 
-/** 注文1件の表示用データ（Model の Order と区別するため Result）。 @param OrderItem[] $items */
-class OrderResult
+/** 注文1件の表示用データ（Model の Order と区別するため Output）。 @param OrderItem[] $items */
+class OrderOutput
 {
     public function __construct(
         public int $id,

@@ -4,7 +4,7 @@ namespace App\UseCases\Product;
 
 use App\Models\Product;
 use App\UseCases\Product\Data\ProductCategory;
-use App\UseCases\Product\Data\ProductIndexResult;
+use App\UseCases\Product\Data\ProductIndexOutput;
 use Illuminate\Support\Facades\DB;
 
 class ProductIndexUseCase
@@ -17,7 +17,7 @@ class ProductIndexUseCase
         'other' => ['label' => 'その他', 'icon' => 'fa-ellipsis-h', 'sort' => 99],
     ];
 
-    public function handle(?string $category, ?bool $availableOnly, bool $includeCategories): ProductIndexResult
+    public function handle(?string $category, ?bool $availableOnly, bool $includeCategories): ProductIndexOutput
     {
         $query = Product::query();
         if ($availableOnly === true) {
@@ -31,7 +31,7 @@ class ProductIndexUseCase
         $products = $query->orderBy('category')->orderBy('name')->get();
 
         if ($includeCategories === false) {
-            return new ProductIndexResult($products, []);
+            return new ProductIndexOutput($products, []);
         }
 
         $categoryCounts = Product::query()
@@ -62,6 +62,6 @@ class ProductIndexUseCase
 
         usort($categories, fn (ProductCategory $a, ProductCategory $b) => $a->sort <=> $b->sort);
 
-        return new ProductIndexResult($products, $categories);
+        return new ProductIndexOutput($products, $categories);
     }
 }

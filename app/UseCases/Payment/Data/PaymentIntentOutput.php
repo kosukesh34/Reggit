@@ -2,8 +2,8 @@
 
 namespace App\UseCases\Payment\Data;
 
-/** 決済 Intent 作成の結果。不変。 */
-class PaymentIntentResult
+/** 決済 Intent 作成の出力。不変。 */
+class PaymentIntentOutput
 {
     public function __construct(
         public string $clientSecret,

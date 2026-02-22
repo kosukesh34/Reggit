@@ -6,7 +6,7 @@ use App\Models\QueueEntry as QueueEntryModel;
 use App\Services\UserService;
 use App\UseCases\Queue\Data\QueueEntry;
 use App\UseCases\Queue\Data\QueueEntryFactory;
-use App\UseCases\Queue\Data\QueueMeResult;
+use App\UseCases\Queue\Data\QueueMeOutput;
 use App\Util\AdminContext;
 use App\Enums\QueueStatus;
 use Illuminate\Http\Request;
@@ -20,7 +20,7 @@ class QueueMeUseCase
     ) {
     }
 
-    public function handle(Request $request): QueueMeResult
+    public function handle(Request $request): QueueMeOutput
     {
         $user = $this->userService->getOrCreateUser($request);
         $member = $user->member;
@@ -30,11 +30,11 @@ class QueueMeUseCase
         $stats = $this->statsService->getStats($projectId, $entry?->queue_number);
 
         if ($entry === null) {
-            return new QueueMeResult(null, $stats['waiting_count'], $stats['estimated_wait_minutes']);
+            return new QueueMeOutput(null, $stats['waiting_count'], $stats['estimated_wait_minutes']);
         }
 
         $queueEntry = $this->entryFactory->create($entry, $stats);
-        return new QueueMeResult($queueEntry, $stats['waiting_count'], $stats['estimated_wait_minutes']);
+        return new QueueMeOutput($queueEntry, $stats['waiting_count'], $stats['estimated_wait_minutes']);
     }
 
     private function getLatestEntry(int $userId, ?int $memberId): ?QueueEntryModel

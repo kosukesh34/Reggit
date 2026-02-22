@@ -4,22 +4,22 @@ namespace App\UseCases\Admin\Settings;
 
 use App\Models\ShopSetting;
 use App\UseCases\Admin\Settings\Data\SaveLiffScreenInput;
-use App\UseCases\Admin\Settings\Data\SaveLiffScreenResult;
+use App\UseCases\Admin\Settings\Data\SaveLiffScreenOutput;
 use App\Util\StrHelper;
 use Illuminate\Support\Str;
 
 class SaveLiffScreenUseCase
 {
     /**
-     * 現在の画面を保存（上限10件・超えたら古いものを削除）。実行結果を Result で返す。
+     * 現在の画面を保存（上限10件・超えたら古いものを削除）。実行結果を Output で返す。
      */
-    public function handle(int $projectId, SaveLiffScreenInput $input): SaveLiffScreenResult
+    public function handle(int $projectId, SaveLiffScreenInput $input): SaveLiffScreenOutput
     {
         $trimmedName = trim($input->name);
         $screens = ShopSetting::getLiffSavedScreens($projectId);
 
         if (StrHelper::isEmptyStringOrNull($trimmedName)) {
-            return new SaveLiffScreenResult(false, count($screens));
+            return new SaveLiffScreenOutput(false, count($screens));
         }
 
         $layouts = $this->decodeJsonArray($input->layoutsJson);
@@ -37,7 +37,7 @@ class SaveLiffScreenUseCase
         $screens = array_slice($screens, 0, ShopSetting::LIFF_SAVED_SCREENS_MAX);
         ShopSetting::setLiffSavedScreens($screens, $projectId);
 
-        return new SaveLiffScreenResult(true, count($screens));
+        return new SaveLiffScreenOutput(true, count($screens));
     }
 
     /**

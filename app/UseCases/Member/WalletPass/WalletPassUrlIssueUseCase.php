@@ -2,7 +2,7 @@
 
 namespace App\UseCases\Member\WalletPass;
 
-use App\UseCases\Member\WalletPass\Data\WalletPassUrlIssueResult;
+use App\UseCases\Member\WalletPass\Data\WalletPassUrlIssueOutput;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
@@ -15,7 +15,7 @@ class WalletPassUrlIssueUseCase
     private const TOKEN_CACHE_PREFIX = 'wallet_pass_token:';
     private const TOKEN_TTL_MINUTES = 3;
 
-    public function handle(int $userId, int $projectId, string $projectKey): WalletPassUrlIssueResult
+    public function handle(int $userId, int $projectId, string $projectKey): WalletPassUrlIssueOutput
     {
         $token = Str::random(64);
         $key = self::TOKEN_CACHE_PREFIX . $token;
@@ -29,6 +29,6 @@ class WalletPassUrlIssueUseCase
             'token' => $token,
         ]));
 
-        return new WalletPassUrlIssueResult($url);
+        return new WalletPassUrlIssueOutput($url);
     }
 }

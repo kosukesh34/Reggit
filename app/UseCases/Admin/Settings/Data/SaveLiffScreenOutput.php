@@ -3,9 +3,9 @@
 namespace App\UseCases\Admin\Settings\Data;
 
 /**
- * SaveLiffScreenUseCase の実行結果。不変。
+ * SaveLiffScreenUseCase の出力。不変。
  */
-class SaveLiffScreenResult
+class SaveLiffScreenOutput
 {
     public function __construct(
         public readonly bool $saved,
