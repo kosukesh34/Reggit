@@ -38,7 +38,7 @@
                        class="form-control" autocomplete="current-password">
             </div>
             <div class="form-group form-check">
-                <input type="checkbox" name="remember" id="remember" class="form-check-input" value="1" {{ old('remember', true) ? 'checked' : '' }}>
+                <input type="checkbox" name="remember" id="remember" class="form-check-input" value="1" {{ ((bool) old('remember', true)) ? 'checked' : '' }}>
                 <label for="remember" class="form-check-label">ログイン状態を保持する（推奨）</label>
             </div>
             <button type="submit" class="btn btn-primary btn-block">ログイン</button>

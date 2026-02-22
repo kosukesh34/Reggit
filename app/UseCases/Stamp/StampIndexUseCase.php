@@ -5,8 +5,8 @@ namespace App\UseCases\Stamp;
 use App\Models\ShopSetting;
 use App\Models\StampCard;
 use App\Services\UserService;
-use App\UseCases\Stamp\Dto\StampCardDto;
-use App\UseCases\Stamp\Dto\StampListDto;
+use App\UseCases\Stamp\Data\StampCardView;
+use App\UseCases\Stamp\Data\StampListView;
 use Illuminate\Http\Request;
 
 class StampIndexUseCase
@@ -15,13 +15,13 @@ class StampIndexUseCase
     {
     }
 
-    public function handle(Request $request): StampListDto
+    public function handle(Request $request): StampListView
     {
         $user = $this->userService->getOrCreateUser($request);
         $member = $user->member;
 
         if ($member === null) {
-            return new StampListDto([], null, true);
+            return new StampListView([], null, true);
         }
 
         $cards = StampCard::where('project_id', $member->project_id)
@@ -40,7 +40,7 @@ class StampIndexUseCase
                 $completedAt = $memberStamp->completed_at->toIso8601String();
             }
 
-            return new StampCardDto(
+            return new StampCardView(
                 (int) $card->id,
                 (string) $card->name,
                 (int) $card->required_stamps,
@@ -51,6 +51,6 @@ class StampIndexUseCase
             );
         })->all();
 
-        return new StampListDto($stampCards, $defaultImageUrl, false);
+        return new StampListView($stampCards, $defaultImageUrl, false);
     }
 }

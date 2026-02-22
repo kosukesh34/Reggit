@@ -13,7 +13,7 @@ class AccountStoreRequest extends FormRequest
     {
         /** @var AdminUser $admin */
         $admin = $this->user('admin');
-        if (!$admin) {
+        if ($admin === null) {
             return false;
         }
         // 作成しようとしているロールを作成可能か
@@ -41,7 +41,7 @@ class AccountStoreRequest extends FormRequest
         $validator->after(function (Validator $validator) {
             if ($this->role !== AdminUser::ROLE_SYSTEM_ADMIN) {
                 $ids = array_values(array_unique($this->project_ids ?? []));
-                if (empty($ids)) {
+                if ($ids === []) {
                     $validator->errors()->add(
                         'project_ids',
                         'システム管理者以外は1つ以上のプロジェクトを選択してください。'

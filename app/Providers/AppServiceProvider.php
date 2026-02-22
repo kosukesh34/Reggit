@@ -24,7 +24,7 @@ class AppServiceProvider extends ServiceProvider
         Project::observe(ProjectObserver::class);
         MemberStamp::observe(MemberStampObserver::class);
 
-        if (!$this->app->runningInConsole()) {
+        if ($this->app->runningInConsole() === false) {
             if (request()->isSecure() ||
                 request()->header('X-Forwarded-Proto') === 'https' ||
                 request()->header('X-Forwarded-Ssl') === 'on') {
@@ -33,7 +33,7 @@ class AppServiceProvider extends ServiceProvider
         }
 
         // CLI（composer, package:discover 等）では DB 未接続のためスキップ
-        if (!$this->app->runningInConsole()) {
+        if ($this->app->runningInConsole() === false) {
             try {
                 if (Schema::hasTable('projects') && Project::count() === 0) {
                     Project::create([
@@ -49,7 +49,7 @@ class AppServiceProvider extends ServiceProvider
         }
 
         // View composer は Web リクエスト時のみ登録（CLI で package:discover 等実行時に DB 接続を避ける）
-        if (!$this->app->runningInConsole()) {
+        if ($this->app->runningInConsole() === false) {
             View::composer('index', function ($view) {
                 try {
                     // LIFF は bind.project で request にプロジェクトがセットされる。それを優先する

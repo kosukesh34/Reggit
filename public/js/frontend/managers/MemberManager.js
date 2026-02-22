@@ -275,7 +275,7 @@ class MemberManager {
             btn.innerHTML = '<span class="member-card-add-to-wallet-loading"><i class="fas fa-spinner fa-spin"></i> 取得中...</span>';
 
             if (typeof window !== 'undefined' && window.__IS_LIFF__ && typeof liff !== 'undefined' && liff.openWindow) {
-                var passUrlApi = (window.location.origin + (AppConstants.API_ENDPOINTS.MEMBERS_WALLET_PASS_URL.startsWith('/') ? '' : '/') + AppConstants.API_ENDPOINTS.MEMBERS_WALLET_PASS_URL) + '?project_key=' + encodeURIComponent(projectKey);
+                const passUrlApi = (window.location.origin + (AppConstants.API_ENDPOINTS.MEMBERS_WALLET_PASS_URL.startsWith('/') ? '' : '/') + AppConstants.API_ENDPOINTS.MEMBERS_WALLET_PASS_URL) + '?project_key=' + encodeURIComponent(projectKey);
                 fetch(passUrlApi, { credentials: 'include', method: 'GET' })
                     .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
                     .then(function (result) {
@@ -306,24 +306,24 @@ class MemberManager {
                 .then(function (res) {
                     if (!res.ok) {
                         return res.text().then(function (text) {
-                            var msg = text && text.length < 200 ? text.trim() : (res.status === 503 ? 'Wallet Pass を利用できません' : '取得に失敗しました');
+                            const msg = text && text.length < 200 ? text.trim() : (res.status === 503 ? 'Wallet Pass を利用できません' : '取得に失敗しました');
                             throw new Error(msg);
                         });
                     }
-                    var ct = res.headers.get('Content-Type') || '';
+                    const ct = res.headers.get('Content-Type') || '';
                     if (ct.indexOf('application/vnd.apple.pkpass') === -1 && ct.indexOf('application/zip') === -1) {
                         return res.text().then(function (text) { throw new Error(text && text.length < 200 ? text.trim() : '不正なレスポンスです'); });
                     }
                     return res.blob();
                 })
                 .then(function (blob) {
-                    var blobUrl = URL.createObjectURL(blob);
+                    const blobUrl = URL.createObjectURL(blob);
                     if (MemberManager.isIOS()) {
-                        var w = window.open(blobUrl, '_blank');
+                        const w = window.open(blobUrl, '_blank');
                         if (!w || w.closed) window.location.href = blobUrl;
                         setTimeout(function () { URL.revokeObjectURL(blobUrl); }, 2000);
                     } else {
-                        var a = document.createElement('a');
+                        const a = document.createElement('a');
                         a.href = blobUrl;
                         a.download = 'membership.pkpass';
                         a.style.display = 'none';

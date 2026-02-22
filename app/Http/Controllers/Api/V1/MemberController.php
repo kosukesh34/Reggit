@@ -85,7 +85,7 @@ class MemberController extends BaseApiController
             $user = $this->userService->getOrCreateUser($request);
             $member = $user->member;
 
-            if (!$member) {
+            if ($member === null) {
                 return $this->error('会員登録が必要です', 404);
             }
 
@@ -116,7 +116,7 @@ class MemberController extends BaseApiController
             $user = $this->userService->getOrCreateUser($request);
             $member = $user->member;
 
-            if (!$member) {
+            if ($member === null) {
                 return $this->error('会員登録が必要です', 404);
             }
 

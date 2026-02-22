@@ -3,10 +3,10 @@
 namespace App\UseCases\Queue;
 
 use App\Enums\QueueStatus;
-use App\Models\QueueEntry;
+use App\Models\QueueEntry as QueueEntryModel;
 use App\Services\UserService;
-use App\UseCases\Queue\Dto\QueueEntryDto;
-use App\UseCases\Queue\Dto\QueueEntryDtoFactory;
+use App\UseCases\Queue\Data\QueueEntry;
+use App\UseCases\Queue\Data\QueueEntryFactory;
 use App\Util\StrHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -16,15 +16,15 @@ class QueueQrStatusUseCase
     public function __construct(
         private UserService $userService,
         private QueueStatsService $statsService,
-        private QueueEntryDtoFactory $dtoFactory
+        private QueueEntryFactory $entryFactory
     ) {
     }
 
-    public function handle(Request $request, string $token): ?QueueEntryDto
+    public function handle(Request $request, string $token): ?QueueEntry
     {
-        $entry = QueueEntry::where('qr_token', $token)->first();
+        $entry = QueueEntryModel::where('qr_token', $token)->first();
         if ($entry === null && ctype_digit($token)) {
-            $entry = QueueEntry::whereKey((int) $token)->first();
+            $entry = QueueEntryModel::whereKey((int) $token)->first();
             if ($entry !== null && StrHelper::isEmptyStringOrNull($entry->qr_token)) {
                 $entry->qr_token = $this->generateQrToken();
                 $entry->save();
@@ -48,7 +48,7 @@ class QueueQrStatusUseCase
         }
 
         if ($entry->user_id === null) {
-            $existing = QueueEntry::where('project_id', $projectId)
+            $existing = QueueEntryModel::where('project_id', $projectId)
                 ->where('user_id', $user->id)
                 ->whereIn('status', [QueueStatus::WAITING, QueueStatus::CALLED])
                 ->where('id', '!=', $entry->id)
@@ -66,7 +66,7 @@ class QueueQrStatusUseCase
         }
 
         $stats = $this->statsService->getStats($projectId, $entry->queue_number);
-        return $this->dtoFactory->create($entry, $stats);
+        return $this->entryFactory->create($entry, $stats);
     }
 
     private function generateQrToken(): string
@@ -74,7 +74,7 @@ class QueueQrStatusUseCase
         $maxAttempts = 5;
         for ($i = 0; $i < $maxAttempts; $i++) {
             $token = Str::random(32);
-            if (!QueueEntry::where('qr_token', $token)->exists()) {
+            if (!QueueEntryModel::where('qr_token', $token)->exists()) {
                 return $token;
             }
         }

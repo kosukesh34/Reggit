@@ -21,7 +21,7 @@
                 <label for="project_id" class="form-label">プロジェクト <span class="text-danger">*</span></label>
                 <select name="project_id" id="project_id" class="form-control" required>
                     @foreach($projects as $project)
-                        <option value="{{ $project->id }}" {{ (int) old('project_id') === $project->id ? 'selected' : '' }}>
+                        <option value="{{ $project->id }}" {{ (int) old('project_id') === (int) $project->id ? 'selected' : '' }}>
                             {{ $project->name }} ({{ $project->project_key }})
                         </option>
                     @endforeach

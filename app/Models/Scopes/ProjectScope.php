@@ -12,7 +12,7 @@ class ProjectScope implements Scope
     public function apply(Builder $builder, Model $model): void
     {
         $projectId = AdminContext::getCurrentProjectId();
-        if ($projectId) {
+        if ($projectId !== null && $projectId !== false) {
             $builder->where($model->getTable() . '.project_id', $projectId);
         }
     }

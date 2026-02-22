@@ -39,6 +39,7 @@ use App\Services\Admin\StampAdminService;
 use App\Services\SettingsService;
 use App\Util\AdminContext;
 use App\Util\AdminStatusLabels;
+use App\Util\StrHelper;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Http\Request;
@@ -255,13 +256,13 @@ class AdminController extends Controller
         ]);
 
         $rows = collect($validated['ranks'] ?? [])
-            ->filter(fn ($row) => !empty($row['key']))
+            ->filter(fn ($row) => !StrHelper::isEmptyStringOrNull($row['key'] ?? null))
             ->map(function ($row, $index) {
                 return [
                     'key' => (string) $row['key'],
                     'label' => (string) ($row['label'] ?? $row['key']),
                     'min_points' => (int) ($row['min_points'] ?? 0),
-                    'is_active' => !empty($row['is_active']),
+                    'is_active' => (bool) ($row['is_active'] ?? false),
                     'icon_url' => $row['icon_url'] ?? null,
                     'stamp_background_url' => $row['stamp_background_url'] ?? null,
                     'order' => (int) ($row['order'] ?? ($index + 1)),
@@ -346,7 +347,7 @@ class AdminController extends Controller
         ShopSetting::setLiffTabLayouts($decoded, $projectId);
         ShopSetting::setLiffCustomCss((string) $request->input('custom_css', ''), $projectId);
         $tabSettingsJson = $request->input('tab_settings_json');
-        if ($tabSettingsJson) {
+        if ($tabSettingsJson !== null && $tabSettingsJson !== '') {
             $settings = json_decode($tabSettingsJson, true);
             if (is_array($settings)) {
                 ShopSetting::setLiffTabSettings($settings, $projectId);

@@ -44,7 +44,7 @@
             </div>
             <div class="form-group">
                 <label class="checkbox-label">
-                    <input type="checkbox" name="is_active" value="1" {{ old('is_active', 1) ? 'checked' : '' }}>
+                    <input type="checkbox" name="is_active" value="1" {{ ((bool) old('is_active', true)) ? 'checked' : '' }}>
                     <span>有効化する</span>
                 </label>
                 @error('is_active')<span class="invalid-feedback">{{ $message }}</span>@enderror

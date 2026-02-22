@@ -4,7 +4,7 @@ namespace App\UseCases\Reservation;
 
 use App\Services\ReservationService;
 use App\Services\UserService;
-use App\UseCases\Reservation\Dto\ReservationActionResultDto;
+use App\UseCases\Reservation\Data\ReservationActionResult;
 use Illuminate\Http\Request;
 
 class ReservationCancelUseCase
@@ -15,15 +15,15 @@ class ReservationCancelUseCase
     ) {
     }
 
-    public function handle(Request $request, int $reservationId): ReservationActionResultDto
+    public function handle(Request $request, int $reservationId): ReservationActionResult
     {
         $user = $this->userService->getOrCreateUser($request);
         if ($user->member === null) {
-            return new ReservationActionResultDto(true, null, null);
+            return new ReservationActionResult(true, null, null);
         }
 
         $reservation = $this->reservationService->cancelReservation($reservationId, $user);
 
-        return new ReservationActionResultDto(false, $reservation, null);
+        return new ReservationActionResult(false, $reservation, null);
     }
 }

@@ -7,7 +7,7 @@ use App\Util\StrHelper;
 
 class UpdateRankSettingsUseCase
 {
-    /** @param array<string, mixed> $payload */
+    /** @param array{rank_basis: string, point_earn_rate: int, points_valid_days: int, ranks: array<int, array{key?: string, label?: string, min_points?: int, order?: int, is_active?: bool, icon_url?: string|null, stamp_background_url?: string|null}>} $payload 検証済みランク設定 */
     public function handle(int $projectId, array $payload): void
     {
         $rows = collect($payload['ranks'] ?? [])

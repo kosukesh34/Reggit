@@ -11,7 +11,7 @@ class EnsureSystemAdmin
     public function handle(Request $request, Closure $next): Response
     {
         $admin = $request->user('admin');
-        if (!$admin || !$admin->isSystemAdmin()) {
+        if ($admin === null || $admin->isSystemAdmin() === false) {
             abort(403, 'この操作を行う権限がありません。');
         }
         return $next($request);

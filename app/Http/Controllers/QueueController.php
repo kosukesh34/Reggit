@@ -100,17 +100,17 @@ class QueueController extends Controller
             $member = $user->member;
 
             $entry = null;
-            if ($member) {
+            if ($member !== null) {
                 $entry = QueueEntry::where('member_id', $member->id)
                     ->whereIn('status', ['waiting', 'called'])
                     ->orderBy('created_at', 'desc')
                     ->first();
             }
 
-            $projectId = $entry ? $entry->project_id : ($member ? $member->project_id : (AdminContext::getCurrentProjectId() ?? 1));
-            $stats = $this->getQueueStats($projectId, $entry ? $entry->queue_number : null);
+            $projectId = $entry !== null ? $entry->project_id : ($member !== null ? $member->project_id : (AdminContext::getCurrentProjectId() ?? 1));
+            $stats = $this->getQueueStats($projectId, $entry !== null ? $entry->queue_number : null);
 
-            if (!$entry) {
+            if ($entry === null) {
                 return response()->json([
                     'queue_entry' => null,
                     'message' => '待ち番号はありません',

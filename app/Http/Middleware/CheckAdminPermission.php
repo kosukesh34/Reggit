@@ -16,12 +16,12 @@ class CheckAdminPermission
     public function handle(Request $request, Closure $next, string ...$permissions): Response
     {
         $admin = $request->user('admin');
-        if (!$admin) {
+        if ($admin === null) {
             abort(403, 'ログインが必要です。');
         }
 
         // スタッフ以外は全権限を持つ
-        if (!$admin->isStaff()) {
+        if ($admin->isStaff() === false) {
             return $next($request);
         }
 

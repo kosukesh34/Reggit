@@ -45,7 +45,7 @@ class OrderItem extends Model
         static::creating(function (OrderItem $item) {
             if ($item->project_id === null && $item->order_id !== null) {
                 $order = Order::find($item->order_id);
-                if ($order) {
+                if ($order !== null) {
                     $item->project_id = $order->project_id;
                 }
             }

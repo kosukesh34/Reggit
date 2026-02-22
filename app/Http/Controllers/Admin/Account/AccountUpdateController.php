@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Admin\Account;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\AccountUpdateRequest;
 use App\UseCases\Admin\Account\AccountUpdateUseCase;
-use App\UseCases\Admin\Account\Dto\AccountUpdateInputDto;
+use App\UseCases\Admin\Account\Data\AccountUpdateInput;
 use App\UseCases\Admin\RouteContextResolver;
 
 class AccountUpdateController extends Controller
@@ -18,7 +18,7 @@ class AccountUpdateController extends Controller
 
     public function __invoke(AccountUpdateRequest $request, int $id)
     {
-        $input = new AccountUpdateInputDto(
+        $input = new AccountUpdateInput(
             $request->toAccountPayload(),
             $request->toProjectIds(),
             $request->toPermissions(),

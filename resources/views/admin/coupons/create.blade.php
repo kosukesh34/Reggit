@@ -70,12 +70,12 @@
                 <select name="stamp_card_id" id="stamp_card_id" class="form-control">
                     <option value="">選択してください</option>
                     @foreach($stampCards ?? [] as $card)
-                    <option value="{{ $card->id }}" {{ old('stamp_card_id') == $card->id ? 'selected' : '' }}>{{ $card->name }}（{{ $card->required_stamps }}個で達成）</option>
+                    <option value="{{ $card->id }}" {{ (int) old('stamp_card_id') === (int) $card->id ? 'selected' : '' }}>{{ $card->name }}（{{ $card->required_stamps }}個で達成）</option>
                     @endforeach
                 </select>
             </div>
             <div class="form-group form-check">
-                <input type="checkbox" name="is_active" id="is_active" class="form-check-input" value="1" {{ old('is_active', true) ? 'checked' : '' }}>
+                <input type="checkbox" name="is_active" id="is_active" class="form-check-input" value="1" {{ ((bool) old('is_active', true)) ? 'checked' : '' }}>
                 <label for="is_active" class="form-check-label">有効</label>
             </div>
             <div class="form-actions">
