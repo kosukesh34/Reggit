@@ -6,7 +6,7 @@ use App\Models\Project;
 
 class ProjectUpdateUseCase
 {
-    /** @param array<string, mixed> $payload */
+    /** @param array<string, string|int|float|bool|array|null> $payload 検証済みプロジェクト更新データ */
     public function handle(int $id, array $payload): Project
     {
         $project = Project::findOrFail($id);

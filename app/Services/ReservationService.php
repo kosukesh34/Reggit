@@ -6,37 +6,25 @@ use App\Enums\ReservationStatus;
 use App\Models\Reservation;
 use App\Models\User;
 use App\Util\LogHelper;
-use Illuminate\Support\Facades\DB;
 
 class ReservationService
 {
     public function createReservation(User $user, array $data): Reservation
     {
-        DB::beginTransaction();
-        try {
-            $reservation = Reservation::create([
-                'user_id' => $user->id,
-                'reserved_at' => $data['reserved_at'],
-                'number_of_people' => $data['number_of_people'] ?? 1,
-                'status' => ReservationStatus::PENDING,
-                'notes' => $data['notes'] ?? null,
-            ]);
+        $reservation = Reservation::create([
+            'user_id' => $user->id,
+            'reserved_at' => $data['reserved_at'],
+            'number_of_people' => $data['number_of_people'] ?? 1,
+            'status' => ReservationStatus::PENDING,
+            'notes' => $data['notes'] ?? null,
+        ]);
 
-            DB::commit();
-            LogHelper::info('[Reservation] created', [
-                'reservation_id' => $reservation->id,
-                'user_id' => $user->id,
-            ]);
+        LogHelper::info('[Reservation] created', [
+            'reservation_id' => $reservation->id,
+            'user_id' => $user->id,
+        ]);
 
-            return $reservation;
-        } catch (\Exception $e) {
-            DB::rollBack();
-            LogHelper::error('[Reservation] create failed', [
-                'user_id' => $user->id,
-                'error' => $e->getMessage(),
-            ]);
-            throw $e;
-        }
+        return $reservation;
     }
 
     public function cancelReservation(int $reservationId, User $user): Reservation
@@ -45,7 +33,7 @@ class ReservationService
             ->where('user_id', $user->id)
             ->firstOrFail();
 
-        if (!$reservation->canCancel()) {
+        if ($reservation->canCancel() === false) {
             throw new \Exception('この予約はキャンセルできません');
         }
 
@@ -65,7 +53,7 @@ class ReservationService
             ->where('user_id', $user->id)
             ->firstOrFail();
 
-        if (!$reservation->canEdit()) {
+        if ($reservation->canEdit() === false) {
             throw new \Exception('この予約は編集できません');
         }
 

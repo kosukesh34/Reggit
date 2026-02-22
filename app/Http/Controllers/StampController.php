@@ -17,7 +17,7 @@ class StampController extends Controller
         try {
             $user = $this->userService->getOrCreateUser($request);
             $member = $user->member;
-            if (!$member) {
+            if ($member === null) {
                 return response()->json([
                     'stamp_cards' => [],
                     'message' => '会員登録が必要です',

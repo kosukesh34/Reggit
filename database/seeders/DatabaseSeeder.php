@@ -15,7 +15,7 @@ class DatabaseSeeder extends Seeder
 
         // デフォルトプロジェクトを取得（なければ作成）
         $project = Project::where('is_active', true)->orderBy('id')->first();
-        if (!$project) {
+        if ($project === null) {
             $project = Project::create([
                 'project_key' => 'default',
                 'name' => 'デフォルト店舗',

@@ -194,7 +194,7 @@ class AdminUser extends Authenticatable
         if ($this->cachedPermissions !== null) {
             return $this->cachedPermissions;
         }
-        if (!$this->isStaff()) {
+        if ($this->isStaff() === false) {
             return $this->cachedPermissions = array_keys(AdminUserPermission::ALL_PERMISSIONS);
         }
         return $this->cachedPermissions = $this->permissions()->pluck('permission')->all();
@@ -203,7 +203,7 @@ class AdminUser extends Authenticatable
     /** 指定権限を保有しているか。staff 以外は全権限を持つとみなす。 */
     public function hasPermission(string $permission): bool
     {
-        if (!$this->isStaff()) {
+        if ($this->isStaff() === false) {
             return true;
         }
         return in_array($permission, $this->getPermissionKeys(), true);

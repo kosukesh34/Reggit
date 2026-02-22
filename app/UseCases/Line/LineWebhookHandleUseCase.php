@@ -30,7 +30,7 @@ class LineWebhookHandleUseCase
         $signature = $request->header('X-Line-Signature');
         $body = $request->getContent();
 
-        if (!$this->lineService->verifySignature($body, $signature)) {
+        if ($this->lineService->verifySignature($body, $signature) === false) {
             LogHelper::warning('[LINE] invalid signature');
             return [
                 'status' => 401,
@@ -80,7 +80,7 @@ class LineWebhookHandleUseCase
         );
 
         $profile = $this->lineService->getProfile($userId);
-        if ($profile) {
+        if ($profile !== null && $profile !== false) {
             $user->update([
                 'name' => $profile['displayName'] ?? $user->name,
                 'profile_image_url' => $profile['pictureUrl'] ?? null,

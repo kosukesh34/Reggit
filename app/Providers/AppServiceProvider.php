@@ -24,7 +24,7 @@ class AppServiceProvider extends ServiceProvider
         Project::observe(ProjectObserver::class);
         MemberStamp::observe(MemberStampObserver::class);
 
-        if (!$this->app->runningInConsole()) {
+        if ($this->app->runningInConsole() === false) {
             if (request()->isSecure() ||
                 request()->header('X-Forwarded-Proto') === 'https' ||
                 request()->header('X-Forwarded-Ssl') === 'on') {
@@ -33,7 +33,7 @@ class AppServiceProvider extends ServiceProvider
         }
 
         // CLI（composer, package:discover 等）では DB 未接続のためスキップ
-        if (!$this->app->runningInConsole()) {
+        if ($this->app->runningInConsole() === false) {
             try {
                 if (Schema::hasTable('projects') && Project::count() === 0) {
                     Project::create([
@@ -49,7 +49,7 @@ class AppServiceProvider extends ServiceProvider
         }
 
         // View composer は Web リクエスト時のみ登録（CLI で package:discover 等実行時に DB 接続を避ける）
-        if (!$this->app->runningInConsole()) {
+        if ($this->app->runningInConsole() === false) {
             View::composer('index', function ($view) {
                 try {
                     // LIFF は bind.project で request にプロジェクトがセットされる。それを優先する
@@ -61,15 +61,13 @@ class AppServiceProvider extends ServiceProvider
                     $view->with('projectName', $project?->name ?? 'モバイルオーダー');
                     $view->with('featureFlags', ShopSetting::getFeatureFlags($projectId));
                     $view->with('walletPassEnabled', config('wallet_pass.enabled', false));
+                    $view->with('googleWalletEnabled', config('google_wallet.enabled', false));
                     $view->with('frontendLogoUrl', ShopSetting::getFrontendLogoUrl($projectId));
                     $view->with('frontendHeaderText', ShopSetting::getFrontendHeaderText($projectId));
                     $view->with('liffBuilderBlocks', ShopSetting::getLiffBuilderBlocks($projectId));
-                    // LIFF レイアウトは LiffController で request のプロジェクトを元に渡すため、composer では上書きしない（/ ルート用のみセット）
-                    if (request()->attributes->get('currentProject') === null) {
-                        $view->with('liffTabLayouts', ShopSetting::getLiffTabLayouts($projectId));
-                        $view->with('liffCustomCss', ShopSetting::getLiffCustomCss($projectId));
-                        $view->with('liffTabSettings', ShopSetting::getLiffTabSettings($projectId));
-                    }
+                    $view->with('liffTabLayouts', ShopSetting::getLiffTabLayouts($projectId));
+                    $view->with('liffCustomCss', ShopSetting::getLiffCustomCss($projectId));
+                    $view->with('liffTabSettings', ShopSetting::getLiffTabSettings($projectId));
                 } catch (\Throwable $e) {
                     $view->with('lineTheme', [
                         'primary' => '#000000',
@@ -82,6 +80,7 @@ class AppServiceProvider extends ServiceProvider
                     $view->with('projectKey', 'default');
                     $view->with('projectName', 'モバイルオーダー');
                     $view->with('walletPassEnabled', false);
+                    $view->with('googleWalletEnabled', false);
                     $view->with('liffBuilderBlocks', ShopSetting::defaultLiffBuilderTemplates()[0]['blocks']);
                     $view->with('liffTabLayouts', ShopSetting::defaultLiffTabLayouts());
                     $view->with('liffCustomCss', '');

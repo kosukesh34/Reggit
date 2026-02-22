@@ -13,10 +13,10 @@ class ReservationAdminService
     public function getReservationIndexPayload(?string $status, ?string $selectedDate, int $projectId, int $perPage = 20): array
     {
         $query = Reservation::with('user')->orderByDesc('reserved_at');
-        if ($status && $status !== 'all') {
+        if ($status !== null && $status !== '' && $status !== 'all') {
             $query->where('status', $status);
         }
-        if ($selectedDate) {
+        if ($selectedDate !== null && $selectedDate !== '') {
             $query->whereDate('reserved_at', $selectedDate);
         }
         $reservations = $query->paginate($perPage);
@@ -28,7 +28,7 @@ class ReservationAdminService
         $selectedDateLabel = null;
         $reservationCapacity = ShopSetting::getReservationCapacityPerSlot($projectId);
 
-        if ($selectedDate) {
+        if ($selectedDate !== null && $selectedDate !== '') {
             $date = Carbon::parse($selectedDate);
             $selectedDateLabel = $date->format('Y年m月d日');
             $dateStatusCounts = $this->getStatusCounts($selectedDate);
@@ -60,7 +60,7 @@ class ReservationAdminService
     public function getStatusCounts(?string $date = null): array
     {
         $query = Reservation::query();
-        if ($date) {
+        if ($date !== null && $date !== '') {
             $query->whereDate('reserved_at', $date);
         }
         return [

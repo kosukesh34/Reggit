@@ -50,7 +50,7 @@
 
         <div class="form-group">
             <div class="form-check">
-                <input type="checkbox" name="is_available" id="is_available" value="1" {{ old('is_available', $product->is_available ?? true) ? 'checked' : '' }}>
+                <input type="checkbox" name="is_available" id="is_available" value="1" {{ ((bool) old('is_available', $product->is_available ?? true)) ? 'checked' : '' }}>
                 <label for="is_available">販売中</label>
             </div>
         </div>
