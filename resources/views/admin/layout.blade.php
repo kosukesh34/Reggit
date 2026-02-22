@@ -133,6 +133,22 @@
                         <i class="fas fa-palette"></i>
                         <span>詳細設定（配色）</span>
                     </a>
+                    <a href="{{ admin_route('admin.settings.menu') }}" class="nav-item {{ request()->routeIs('admin.settings.menu*') ? 'active' : '' }}">
+                        <i class="fas fa-bars"></i>
+                        <span>メニュー設定</span>
+                    </a>
+                    <a href="{{ admin_route('admin.settings.home') }}" class="nav-item {{ request()->routeIs('admin.settings.home*') ? 'active' : '' }}">
+                        <i class="fas fa-home"></i>
+                        <span>ホーム設定</span>
+                    </a>
+                    <a href="{{ admin_route('admin.settings.features') }}" class="nav-item {{ request()->routeIs('admin.settings.features*') ? 'active' : '' }}">
+                        <i class="fas fa-toggle-on"></i>
+                        <span>機能設定</span>
+                    </a>
+                    <a href="{{ admin_route('admin.settings.ranks') }}" class="nav-item {{ request()->routeIs('admin.settings.ranks*') ? 'active' : '' }}">
+                        <i class="fas fa-crown"></i>
+                        <span>ランク設定</span>
+                    </a>
                     @endif
                     @if($adminUser === null || $adminUser->hasPermission('liff_designer.manage'))
                     <a href="{{ admin_route('admin.settings.liff-designer') }}" class="nav-item {{ request()->routeIs('admin.settings.liff-designer*') ? 'active' : '' }}">

@@ -19,6 +19,7 @@ use App\Http\Controllers\Admin\Settings\AdvancedController as SettingsAdvancedCo
 use App\Http\Controllers\Admin\Settings\MenuController as SettingsMenuController;
 use App\Http\Controllers\Admin\Settings\FeaturesController as SettingsFeaturesController;
 use App\Http\Controllers\Admin\Settings\RanksController as SettingsRanksController;
+use App\Http\Controllers\Admin\Settings\HomeController as SettingsHomeController;
 use App\Http\Controllers\Admin\Settings\LiffDesignerController as SettingsLiffDesignerController;
 use App\Http\Controllers\Admin\AnalyticsController as AdminAnalyticsController;
 use App\Http\Controllers\Admin\Gallery\CategoryController as GalleryCategoryController;
@@ -46,11 +47,15 @@ Route::get('/api', function () {
 // ========== LIFF ==========
 Route::prefix('liff')->middleware('bind.project')->group(function () {
     Route::get('/', [LiffController::class, 'index'])->name('liff.index');
+    Route::get('/{project_key}', [LiffController::class, 'index'])->name('liff.project');
 });
 
 // ========== 管理画面ログイン（認証不要・スロットリング適用） ==========
 Route::get('/admin/login', [AdminLoginController::class, 'show'])->name('admin.login');
+Route::get('/admin/login/form', [AdminLoginController::class, 'showLoginForm'])->name('admin.login.form');
 Route::post('/admin/login', [AdminLoginController::class, 'login'])->name('admin.login.submit')->middleware('throttle:admin-login');
+Route::get('/admin/{project_key}/login', [AdminLoginController::class, 'showProject'])->name('admin.project.login');
+Route::post('/admin/{project_key}/login', [AdminLoginController::class, 'login'])->name('admin.project.login.submit')->middleware('throttle:admin-login');
 
 Route::get('/system-admin/login', [SystemAdminLoginController::class, 'show'])->name('system-admin.login');
 Route::post('/system-admin/login', [SystemAdminLoginController::class, 'login'])->name('system-admin.login.submit')->middleware('throttle:admin-login');
@@ -128,6 +133,8 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'bind.admin.project', '
         Route::post('/settings/advanced', [SettingsAdvancedController::class, 'update'])->name('admin.settings.advanced.update')->middleware('admin.permission:settings.manage');
         Route::get('/settings/menu', [SettingsMenuController::class, 'index'])->name('admin.settings.menu')->middleware('admin.permission:settings.view');
         Route::post('/settings/menu', [SettingsMenuController::class, 'update'])->name('admin.settings.menu.update')->middleware('admin.permission:settings.manage');
+        Route::get('/settings/home', [SettingsHomeController::class, 'index'])->name('admin.settings.home')->middleware('admin.permission:settings.view');
+        Route::post('/settings/home', [SettingsHomeController::class, 'update'])->name('admin.settings.home.update')->middleware('admin.permission:settings.manage');
         Route::get('/settings/features', [SettingsFeaturesController::class, 'index'])->name('admin.settings.features')->middleware('admin.permission:settings.view');
         Route::post('/settings/features', [SettingsFeaturesController::class, 'update'])->name('admin.settings.features.update')->middleware('admin.permission:settings.manage');
         Route::get('/settings/ranks', [SettingsRanksController::class, 'index'])->name('admin.settings.ranks')->middleware('admin.permission:settings.view');
