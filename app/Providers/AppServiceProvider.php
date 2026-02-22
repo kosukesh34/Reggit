@@ -52,19 +52,24 @@ class AppServiceProvider extends ServiceProvider
         if (!$this->app->runningInConsole()) {
             View::composer('index', function ($view) {
                 try {
-                    $project = AdminContext::getCurrentProject();
+                    // LIFF は bind.project で request にプロジェクトがセットされる。それを優先する
+                    $project = request()->attributes->get('currentProject') ?? AdminContext::getCurrentProject();
                     $projectId = $project?->id ?? 1;
                     $view->with('lineTheme', ShopSetting::getLineThemeColors($projectId));
                     $view->with('frontendMenu', ShopSetting::getFrontendMenuItems($projectId));
                     $view->with('projectKey', $project?->project_key ?? 'default');
                     $view->with('projectName', $project?->name ?? 'モバイルオーダー');
                     $view->with('featureFlags', ShopSetting::getFeatureFlags($projectId));
+                    $view->with('walletPassEnabled', config('wallet_pass.enabled', false));
                     $view->with('frontendLogoUrl', ShopSetting::getFrontendLogoUrl($projectId));
                     $view->with('frontendHeaderText', ShopSetting::getFrontendHeaderText($projectId));
                     $view->with('liffBuilderBlocks', ShopSetting::getLiffBuilderBlocks($projectId));
-                    $view->with('liffTabLayouts', ShopSetting::getLiffTabLayouts($projectId));
-                    $view->with('liffCustomCss', ShopSetting::getLiffCustomCss($projectId));
-                    $view->with('liffTabSettings', ShopSetting::getLiffTabSettings($projectId));
+                    // LIFF レイアウトは LiffController で request のプロジェクトを元に渡すため、composer では上書きしない（/ ルート用のみセット）
+                    if (request()->attributes->get('currentProject') === null) {
+                        $view->with('liffTabLayouts', ShopSetting::getLiffTabLayouts($projectId));
+                        $view->with('liffCustomCss', ShopSetting::getLiffCustomCss($projectId));
+                        $view->with('liffTabSettings', ShopSetting::getLiffTabSettings($projectId));
+                    }
                 } catch (\Throwable $e) {
                     $view->with('lineTheme', [
                         'primary' => '#000000',
@@ -76,6 +81,7 @@ class AppServiceProvider extends ServiceProvider
                     $view->with('frontendMenu', ShopSetting::defaultFrontendMenuItems());
                     $view->with('projectKey', 'default');
                     $view->with('projectName', 'モバイルオーダー');
+                    $view->with('walletPassEnabled', false);
                     $view->with('liffBuilderBlocks', ShopSetting::defaultLiffBuilderTemplates()[0]['blocks']);
                     $view->with('liffTabLayouts', ShopSetting::defaultLiffTabLayouts());
                     $view->with('liffCustomCss', '');

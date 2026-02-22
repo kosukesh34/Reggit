@@ -3282,6 +3282,37 @@ input, textarea, select {
     font-weight: 700;
 }
 
+.member-card-add-to-wallet-wrap {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.member-card-add-to-wallet-btn {
+    display: inline-block;
+    line-height: 0;
+    text-decoration: none;
+    border-radius: 8px;
+    transition: opacity 0.2s;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    font-size: inherit;
+}
+
+.member-card-add-to-wallet-btn:hover,
+.member-card-add-to-wallet-btn:focus {
+    opacity: 0.9;
+}
+
+.member-card-add-to-wallet-img {
+    display: block;
+    height: 40px;
+    width: auto;
+    max-width: 100%;
+    object-fit: contain;
+}
+
 .member-purchase-history {
     margin-top: 20px;
     border-top: 1px solid var(--border-color);
@@ -3734,6 +3765,48 @@ input, textarea, select {
 
 .builder-label-block .builder-title {
     margin: 0;
+}
+
+/* LIFF Designer スライダー（アニメーション付き） */
+.builder-slider-block .builder-slider-track {
+    flex-shrink: 0;
+    gap: 0;
+    overflow: visible;
+}
+.builder-slider-block .builder-slide--track {
+    overflow: hidden;
+}
+.builder-slider-block .builder-slide--track img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.builder-slider-block.builder-slider--fade .builder-slide:not(.builder-slide--track) {
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+.builder-slider-block.builder-slider--none .builder-slide:not(.builder-slide--track) {
+    transition: none;
+}
+
+/* LIFF Designer コレクション（横スワイプ） */
+.builder-collection-block .builder-collection-swipe {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+.builder-collection-block .builder-collection-swipe::-webkit-scrollbar {
+    display: none;
+}
+.builder-collection-block .builder-collection-swipe {
+    touch-action: pan-x;
+    cursor: grab;
+    user-select: none;
+}
+.builder-collection-block .builder-collection-swipe:active {
+    cursor: grabbing;
 }
 
 .builder-slider-track {
