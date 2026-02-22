@@ -24,6 +24,8 @@ use App\Http\Controllers\GalleryController;
 use App\Http\Controllers\StampController;
 use App\Http\Controllers\Member\MemberPointCardController;
 use App\Http\Controllers\Member\MemberPointHistoryController;
+use App\Http\Controllers\Member\WalletPassController;
+use App\Http\Controllers\Member\WalletPassUrlController;
 use App\Http\Controllers\Queue\QueueStoreController;
 use App\Http\Controllers\Queue\QueueMeController;
 use App\Http\Controllers\Queue\QueueCancelController;
@@ -73,6 +75,8 @@ Route::middleware(['web', 'bind.project'])->group(function () {
 
     Route::get('/members/me', [MemberMeController::class, '__invoke']);
     Route::put('/members/me', [MemberUpdateController::class, '__invoke']);
+    Route::get('/members/me/wallet-pass', [WalletPassController::class, '__invoke']);
+    Route::get('/members/me/wallet-pass-url', [WalletPassUrlController::class, '__invoke']);
     Route::post('/members/register', [MemberRegisterController::class, '__invoke']);
     Route::get('/members/points', [MemberPointsController::class, '__invoke']);
     Route::get('/members/points/history', [MemberPointHistoryController::class, '__invoke']);
