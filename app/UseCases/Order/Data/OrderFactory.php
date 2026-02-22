@@ -4,10 +4,10 @@ namespace App\UseCases\Order\Data;
 
 use App\Models\Order as OrderModel;
 
-/** Order モデルから表示用 OrderResult を組み立てる。 */
+/** Order モデルから表示用 OrderOutput を組み立てる。 */
 class OrderFactory
 {
-    public function create(OrderModel $order): OrderResult
+    public function create(OrderModel $order): OrderOutput
     {
         $order->loadMissing('items.product');
         $items = [];
@@ -22,7 +22,7 @@ class OrderFactory
             );
         }
 
-        return new OrderResult(
+        return new OrderOutput(
             $order->id,
             (float) $order->total_amount,
             $order->status,

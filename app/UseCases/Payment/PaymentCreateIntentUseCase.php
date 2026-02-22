@@ -2,7 +2,7 @@
 
 namespace App\UseCases\Payment;
 
-use App\UseCases\Payment\Data\PaymentIntentResult;
+use App\UseCases\Payment\Data\PaymentIntentOutput;
 
 class PaymentCreateIntentUseCase
 {
@@ -10,9 +10,9 @@ class PaymentCreateIntentUseCase
     {
     }
 
-    public function handle(float $amount, ?int $orderId): PaymentIntentResult
+    public function handle(float $amount, ?int $orderId): PaymentIntentOutput
     {
         $result = $this->gateway->createPaymentIntent((int) ($amount * 100), $orderId);
-        return new PaymentIntentResult($result['client_secret'], $result['id']);
+        return new PaymentIntentOutput($result['client_secret'], $result['id']);
     }
 }

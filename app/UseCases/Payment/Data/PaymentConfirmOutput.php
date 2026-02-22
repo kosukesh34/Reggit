@@ -4,8 +4,8 @@ namespace App\UseCases\Payment\Data;
 
 use App\Models\Order;
 
-/** 決済確認 UseCase の実行結果。不変。 */
-class PaymentConfirmResult
+/** 決済確認 UseCase の出力。不変。 */
+class PaymentConfirmOutput
 {
     public function __construct(
         public bool $isSuccess,

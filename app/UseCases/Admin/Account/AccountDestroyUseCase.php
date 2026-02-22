@@ -3,16 +3,16 @@
 namespace App\UseCases\Admin\Account;
 
 use App\Models\AdminUser;
-use App\UseCases\Admin\Account\Data\AccountDestroyResult;
+use App\UseCases\Admin\Account\Data\AccountDestroyOutput;
 
 class AccountDestroyUseCase
 {
-    public function handle(AdminUser $me, int $id): AccountDestroyResult
+    public function handle(AdminUser $me, int $id): AccountDestroyOutput
     {
         $adminUser = AdminUser::findOrFail($id);
 
         if ($adminUser->id === $me->id) {
-            return new AccountDestroyResult(false, '自分自身のアカウントは削除できません。');
+            return new AccountDestroyOutput(false, '自分自身のアカウントは削除できません。');
         }
 
         if ($me->canEditUser($adminUser) === false) {
@@ -22,6 +22,6 @@ class AccountDestroyUseCase
         $adminUser->permissions()->delete();
         $adminUser->delete();
 
-        return new AccountDestroyResult(true, 'アカウントを削除しました');
+        return new AccountDestroyOutput(true, 'アカウントを削除しました');
     }
 }
