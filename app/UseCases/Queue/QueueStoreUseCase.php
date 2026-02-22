@@ -3,10 +3,10 @@
 namespace App\UseCases\Queue;
 
 use App\Enums\QueueStatus;
-use App\Models\QueueEntry;
+use App\Models\QueueEntry as QueueEntryModel;
 use App\Services\UserService;
-use App\UseCases\Queue\Dto\QueueEntryDto;
-use App\UseCases\Queue\Dto\QueueEntryDtoFactory;
+use App\UseCases\Queue\Data\QueueEntry;
+use App\UseCases\Queue\Data\QueueEntryFactory;
 use App\Util\AdminContext;
 use App\Util\StrHelper;
 use Illuminate\Http\Request;
@@ -17,11 +17,11 @@ class QueueStoreUseCase
     public function __construct(
         private UserService $userService,
         private QueueStatsService $statsService,
-        private QueueEntryDtoFactory $dtoFactory
+        private QueueEntryFactory $entryFactory
     ) {
     }
 
-    public function handle(Request $request, int $partySize, ?string $guestName, ?string $guestPhone): QueueEntryDto
+    public function handle(Request $request, int $partySize, ?string $guestName, ?string $guestPhone): QueueEntry
     {
         $user = $this->userService->getOrCreateUser($request);
         $member = $user->member;
@@ -37,13 +37,13 @@ class QueueStoreUseCase
                     $existing->update(['qr_token' => $this->generateQrToken()]);
                 }
                 $existing->refresh();
-                return $this->dtoFactory->create($existing, $stats);
+                return $this->entryFactory->create($existing, $stats);
             }
         }
 
         $nextNumber = $this->getNextQueueNumber($projectId);
 
-        $entry = QueueEntry::create([
+        $entry = QueueEntryModel::create([
             'project_id' => $projectId,
             'member_id' => $member?->id,
             'user_id' => StrHelper::isEmptyStringOrNull($lineUserId) ? null : $user->id,
@@ -58,12 +58,12 @@ class QueueStoreUseCase
         $stats = $this->statsService->getStats($projectId, $entry->queue_number);
         $entry->refresh();
 
-        return $this->dtoFactory->create($entry, $stats);
+        return $this->entryFactory->create($entry, $stats);
     }
 
-    private function getActiveEntryForUser(int $userId, int $projectId): ?QueueEntry
+    private function getActiveEntryForUser(int $userId, int $projectId): ?QueueEntryModel
     {
-        return QueueEntry::where('project_id', $projectId)
+        return QueueEntryModel::where('project_id', $projectId)
             ->where('user_id', $userId)
             ->whereIn('status', [QueueStatus::WAITING, QueueStatus::CALLED])
             ->orderByDesc('created_at')
@@ -72,7 +72,7 @@ class QueueStoreUseCase
 
     private function getNextQueueNumber(int $projectId): int
     {
-        $maxNumber = QueueEntry::where('project_id', $projectId)
+        $maxNumber = QueueEntryModel::where('project_id', $projectId)
             ->whereDate('created_at', today())
             ->max('queue_number') ?? 0;
         return $maxNumber + 1;
@@ -83,7 +83,7 @@ class QueueStoreUseCase
         $maxAttempts = 5;
         for ($i = 0; $i < $maxAttempts; $i++) {
             $token = Str::random(32);
-            if (!QueueEntry::where('qr_token', $token)->exists()) {
+            if (!QueueEntryModel::where('qr_token', $token)->exists()) {
                 return $token;
             }
         }

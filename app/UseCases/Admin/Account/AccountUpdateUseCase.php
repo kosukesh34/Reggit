@@ -3,11 +3,11 @@
 namespace App\UseCases\Admin\Account;
 
 use App\Models\AdminUser;
-use App\UseCases\Admin\Account\Dto\AccountUpdateInputDto;
+use App\UseCases\Admin\Account\Data\AccountUpdateInput;
 
 class AccountUpdateUseCase
 {
-    public function handle(int $id, AccountUpdateInputDto $input): AdminUser
+    public function handle(int $id, AccountUpdateInput $input): AdminUser
     {
         $adminUser = AdminUser::findOrFail($id);
 

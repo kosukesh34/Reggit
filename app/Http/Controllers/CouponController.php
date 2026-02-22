@@ -17,7 +17,7 @@ class CouponController extends Controller
         try {
             $user = $this->userService->getOrCreateUser($request);
             $member = $user->member;
-            if (!$member) {
+            if ($member === null) {
                 return response()->json([
                     'coupons' => [],
                     'message' => '会員登録が必要です',

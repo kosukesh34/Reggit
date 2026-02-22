@@ -28,7 +28,7 @@ class SettingsRanksRequest extends FormRequest
         ];
     }
 
-    /** @return array<string, mixed> */
+    /** @return array{rank_basis: string, point_earn_rate: int, points_valid_days: int, ranks: array<int, array{key?: string, label?: string, min_points?: int, order?: int, is_active?: bool, icon_url?: string|null, stamp_background_url?: string|null}>} */
     public function toPayload(): array
     {
         return $this->validated();

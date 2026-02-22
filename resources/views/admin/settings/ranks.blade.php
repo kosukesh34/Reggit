@@ -72,7 +72,7 @@
                             <td><input type="text" name="ranks[{{ $i }}][label]" class="form-control" value="{{ old('ranks.' . $i . '.label', $rank['label'] ?? '') }}"></td>
                             <td><input type="number" name="ranks[{{ $i }}][min_points]" class="form-control" value="{{ old('ranks.' . $i . '.min_points', $rank['min_points'] ?? 0) }}" min="0"></td>
                             <td class="text-center">
-                                <input type="checkbox" name="ranks[{{ $i }}][is_active]" value="1" {{ old('ranks.' . $i . '.is_active', $rank['is_active'] ?? true) ? 'checked' : '' }}>
+                                <input type="checkbox" name="ranks[{{ $i }}][is_active]" value="1" {{ ((bool) old('ranks.' . $i . '.is_active', $rank['is_active'] ?? true)) ? 'checked' : '' }}>
                             </td>
                             <td><input type="url" name="ranks[{{ $i }}][icon_url]" class="form-control" value="{{ old('ranks.' . $i . '.icon_url', $rank['icon_url'] ?? '') }}" placeholder="https://..."></td>
                             <td><input type="url" name="ranks[{{ $i }}][stamp_background_url]" class="form-control" value="{{ old('ranks.' . $i . '.stamp_background_url', $rank['stamp_background_url'] ?? '') }}" placeholder="https://..."></td>

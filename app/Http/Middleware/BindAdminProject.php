@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\Project;
 use App\Util\AdminContext;
+use App\Util\StrHelper;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\View;
@@ -14,17 +15,17 @@ class BindAdminProject
     public function handle(Request $request, Closure $next): Response
     {
         $projectKey = $request->route('project_key');
-        if (!$projectKey) {
+        if (StrHelper::isEmptyStringOrNull($projectKey)) {
             return $next($request);
         }
 
         $project = Project::where('project_key', $projectKey)->where('is_active', true)->first();
-        if (!$project) {
+        if ($project === null) {
             abort(404, 'プロジェクトが見つかりません。');
         }
 
         $admin = $request->user('admin');
-        if (!$admin || !$admin->canAccessProject((int) $project->id)) {
+        if ($admin === null || $admin->canAccessProject((int) $project->id) === false) {
             abort(403, 'このプロジェクトへのアクセス権がありません。');
         }
 

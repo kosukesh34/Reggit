@@ -22,7 +22,7 @@ class LoginController extends Controller
             ->where('is_active', true)
             ->orderBy('name')
             ->first();
-        if ($first) {
+        if ($first !== null) {
             return redirect()->route('admin.dashboard', ['project_key' => $first->project_key]);
         }
         return redirect()->route('admin.login');
@@ -64,7 +64,7 @@ class LoginController extends Controller
     public function loginAdmin(LoginRequest $request)
     {
         $user = AdminUser::where('login_id', $request->login_id)->first();
-        if (!$user || !Hash::check($request->password, $user->password)) {
+        if ($user === null || Hash::check($request->password, $user->password) === false) {
             throw ValidationException::withMessages([
                 'login_id' => ['IDまたはパスワードが正しくありません。'],
             ]);
@@ -98,7 +98,7 @@ class LoginController extends Controller
     public function logout(Request $request)
     {
         $admin = $request->user('admin');
-        if ($admin) {
+        if ($admin !== null) {
             $this->writeLoginAuditLog($request, $admin->id, 'logout', []);
         }
 

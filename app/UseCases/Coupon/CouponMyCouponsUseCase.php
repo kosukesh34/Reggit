@@ -4,8 +4,8 @@ namespace App\UseCases\Coupon;
 
 use App\Models\ShopSetting;
 use App\Services\UserService;
-use App\UseCases\Coupon\Dto\CouponListDto;
-use App\UseCases\Coupon\Dto\MemberCouponDto;
+use App\UseCases\Coupon\Data\CouponListView;
+use App\UseCases\Coupon\Data\MemberCoupon;
 use Illuminate\Http\Request;
 
 class CouponMyCouponsUseCase
@@ -14,13 +14,13 @@ class CouponMyCouponsUseCase
     {
     }
 
-    public function handle(Request $request): CouponListDto
+    public function handle(Request $request): CouponListView
     {
         $user = $this->userService->getOrCreateUser($request);
         $member = $user->member;
 
         if ($member === null) {
-            return new CouponListDto([], null, true);
+            return new CouponListView([], null, true);
         }
 
         $coupons = $member->memberCoupons()
@@ -33,7 +33,7 @@ class CouponMyCouponsUseCase
                     $couponName = $memberCoupon->coupon?->name ?? '';
                 }
 
-                return new MemberCouponDto(
+                return new MemberCoupon(
                     (int) $memberCoupon->id,
                     $couponName,
                     $memberCoupon->coupon?->image_url,
@@ -48,7 +48,7 @@ class CouponMyCouponsUseCase
 
         $defaultImageUrl = ShopSetting::getCouponDefaultImageUrl($member->project_id);
 
-        return new CouponListDto($coupons, $defaultImageUrl, false);
+        return new CouponListView($coupons, $defaultImageUrl, false);
     }
 
     private function toIsoString($value): ?string

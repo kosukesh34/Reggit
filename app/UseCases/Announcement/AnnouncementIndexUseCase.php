@@ -3,12 +3,12 @@
 namespace App\UseCases\Announcement;
 
 use App\Models\Announcement;
-use App\UseCases\Announcement\Dto\AnnouncementIndexDto;
+use App\UseCases\Announcement\Data\AnnouncementIndexView;
 use App\Util\AdminContext;
 
 class AnnouncementIndexUseCase
 {
-    public function handle(): AnnouncementIndexDto
+    public function handle(): AnnouncementIndexView
     {
         $projectId = AdminContext::getCurrentProjectId() ?? 1;
 
@@ -24,6 +24,6 @@ class AnnouncementIndexUseCase
             ->take(10)
             ->get(['id', 'title', 'body', 'published_at', 'is_pinned']);
 
-        return new AnnouncementIndexDto($announcements);
+        return new AnnouncementIndexView($announcements);
     }
 }

@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Admin\Account;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\AccountStoreRequest;
 use App\UseCases\Admin\Account\AccountStoreUseCase;
-use App\UseCases\Admin\Account\Dto\AccountStoreInputDto;
+use App\UseCases\Admin\Account\Data\AccountStoreInput;
 use App\UseCases\Admin\RouteContextResolver;
 
 class AccountStoreController extends Controller
@@ -18,7 +18,7 @@ class AccountStoreController extends Controller
 
     public function __invoke(AccountStoreRequest $request)
     {
-        $input = new AccountStoreInputDto(
+        $input = new AccountStoreInput(
             $request->toAccountPayload(),
             $request->toProjectIds(),
             $request->toPermissions()

@@ -12,7 +12,7 @@
 <div class="card">
     <div class="card-header card-header-with-action">
         <h3 class="card-title"><i class="fas fa-user-cog"></i> 管理者アカウント一覧</h3>
-        @if(!$me->isStaff())
+        @if($me->isStaff() === false)
             <a href="{{ route("{$routePrefix}.accounts.create", $routePrefix === 'admin' ? ['project_key' => request()->route('project_key')] : []) }}" class="btn btn-primary"><i class="fas fa-plus"></i> 新規作成</a>
         @endif
     </div>

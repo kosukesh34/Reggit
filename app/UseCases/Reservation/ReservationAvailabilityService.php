@@ -5,7 +5,7 @@ namespace App\UseCases\Reservation;
 use App\Enums\ReservationStatus;
 use App\Models\Reservation;
 use App\Models\ShopSetting;
-use App\UseCases\Reservation\Dto\ReservationAvailabilityDto;
+use App\UseCases\Reservation\Data\ReservationAvailability;
 use Carbon\Carbon;
 
 class ReservationAvailabilityService
@@ -17,7 +17,7 @@ class ReservationAvailabilityService
         ReservationStatus::CONFIRMED,
     ];
 
-    public function getAvailableDates(?int $excludeReservationId): ReservationAvailabilityDto
+    public function getAvailableDates(?int $excludeReservationId): ReservationAvailability
     {
         $timeSlots = ShopSetting::getReservationTimeSlots();
         $advanceDays = ShopSetting::getAdvanceBookingDays();
@@ -56,7 +56,7 @@ class ReservationAvailabilityService
             ];
         }
 
-        return new ReservationAvailabilityDto(
+        return new ReservationAvailability(
             $availableDates,
             $startDate->format(self::DATE_FORMAT),
             $endDate->format(self::DATE_FORMAT)
@@ -85,7 +85,7 @@ class ReservationAvailabilityService
         }
 
         $reservationCapacity = ShopSetting::getReservationCapacityPerSlot();
-        if (!$this->isSlotAvailable($reservedAt, $reservationCapacity, $excludeReservationId)) {
+        if ($this->isSlotAvailable($reservedAt, $reservationCapacity, $excludeReservationId) === false) {
             return '選択した時間帯は満席です';
         }
 
