@@ -19,7 +19,7 @@ class MemberService
     {
         $member = $user->member;
 
-        if (!$member) {
+        if ($member === null) {
             return [
                 'is_member' => false,
                 'message' => '会員登録がまだです',
@@ -57,7 +57,7 @@ class MemberService
     public function updateProfile(User $user, array $data): array
     {
         $member = $user->member;
-        if (!$member) {
+        if ($member === null) {
             throw new \Exception('会員登録が必要です');
         }
 
@@ -161,7 +161,7 @@ class MemberService
         }
 
         $pointsToNext = null;
-        if ($next) {
+        if ($next !== null) {
             $pointsToNext = max(0, ($next['min_points'] ?? 0) - $metric);
         }
 
@@ -170,8 +170,8 @@ class MemberService
             'current_rank_label' => $resolved['label'] ?? ($resolved['key'] ?? 'bronze'),
             'current_rank_icon' => $resolved['icon_url'] ?? null,
             'current_rank_background' => $resolved['stamp_background_url'] ?? null,
-            'next_rank' => $next['key'] ?? null,
-            'next_rank_label' => $next ? ($next['label'] ?? ($next['key'] ?? null)) : null,
+            'next_rank' => $next !== null ? ($next['key'] ?? null) : null,
+            'next_rank_label' => $next !== null ? ($next['label'] ?? ($next['key'] ?? null)) : null,
             'points_to_next_rank' => $pointsToNext,
             'rank_basis' => $basis,
             'rank_metric' => $metric,
@@ -187,7 +187,7 @@ class MemberService
             ->orderBy('expires_at')
             ->first();
 
-        if (!$earliest) {
+        if ($earliest === null) {
             return null;
         }
 

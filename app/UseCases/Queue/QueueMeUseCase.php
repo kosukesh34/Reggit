@@ -2,11 +2,11 @@
 
 namespace App\UseCases\Queue;
 
-use App\Models\QueueEntry;
+use App\Models\QueueEntry as QueueEntryModel;
 use App\Services\UserService;
-use App\UseCases\Queue\Dto\QueueEntryDto;
-use App\UseCases\Queue\Dto\QueueEntryDtoFactory;
-use App\UseCases\Queue\Dto\QueueMeResultDto;
+use App\UseCases\Queue\Data\QueueEntry;
+use App\UseCases\Queue\Data\QueueEntryFactory;
+use App\UseCases\Queue\Data\QueueMeResult;
 use App\Util\AdminContext;
 use App\Enums\QueueStatus;
 use Illuminate\Http\Request;
@@ -16,11 +16,11 @@ class QueueMeUseCase
     public function __construct(
         private UserService $userService,
         private QueueStatsService $statsService,
-        private QueueEntryDtoFactory $dtoFactory
+        private QueueEntryFactory $entryFactory
     ) {
     }
 
-    public function handle(Request $request): QueueMeResultDto
+    public function handle(Request $request): QueueMeResult
     {
         $user = $this->userService->getOrCreateUser($request);
         $member = $user->member;
@@ -30,16 +30,16 @@ class QueueMeUseCase
         $stats = $this->statsService->getStats($projectId, $entry?->queue_number);
 
         if ($entry === null) {
-            return new QueueMeResultDto(null, $stats['waiting_count'], $stats['estimated_wait_minutes']);
+            return new QueueMeResult(null, $stats['waiting_count'], $stats['estimated_wait_minutes']);
         }
 
-        $dto = $this->dtoFactory->create($entry, $stats);
-        return new QueueMeResultDto($dto, $stats['waiting_count'], $stats['estimated_wait_minutes']);
+        $queueEntry = $this->entryFactory->create($entry, $stats);
+        return new QueueMeResult($queueEntry, $stats['waiting_count'], $stats['estimated_wait_minutes']);
     }
 
-    private function getLatestEntry(int $userId, ?int $memberId): ?QueueEntry
+    private function getLatestEntry(int $userId, ?int $memberId): ?QueueEntryModel
     {
-        $entry = QueueEntry::where('user_id', $userId)
+        $entry = QueueEntryModel::where('user_id', $userId)
             ->whereIn('status', [QueueStatus::WAITING, QueueStatus::CALLED])
             ->orderBy('created_at', 'desc')
             ->first();
@@ -49,7 +49,7 @@ class QueueMeUseCase
         if ($memberId === null) {
             return null;
         }
-        return QueueEntry::where('member_id', $memberId)
+        return QueueEntryModel::where('member_id', $memberId)
             ->whereIn('status', [QueueStatus::WAITING, QueueStatus::CALLED])
             ->orderBy('created_at', 'desc')
             ->first();

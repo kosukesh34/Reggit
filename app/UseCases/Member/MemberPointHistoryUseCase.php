@@ -4,7 +4,7 @@ namespace App\UseCases\Member;
 
 use App\Models\PointTransaction;
 use App\Services\UserService;
-use App\UseCases\Member\Dto\MemberPointHistoryResultDto;
+use App\UseCases\Member\Data\MemberPointHistoryResult;
 use Illuminate\Http\Request;
 
 class MemberPointHistoryUseCase
@@ -13,13 +13,13 @@ class MemberPointHistoryUseCase
     {
     }
 
-    public function handle(Request $request, int $perPage = 20): MemberPointHistoryResultDto
+    public function handle(Request $request, int $perPage = 20): MemberPointHistoryResult
     {
         $user = $this->userService->getOrCreateUser($request);
         $member = $user->member;
 
         if ($member === null) {
-            return new MemberPointHistoryResultDto(true, null);
+            return new MemberPointHistoryResult(true, null);
         }
 
         $transactions = PointTransaction::where('member_id', $member->id)
@@ -27,6 +27,6 @@ class MemberPointHistoryUseCase
             ->orderByDesc('created_at')
             ->paginate($perPage);
 
-        return new MemberPointHistoryResultDto(false, $transactions);
+        return new MemberPointHistoryResult(false, $transactions);
     }
 }

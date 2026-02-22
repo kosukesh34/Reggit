@@ -5,7 +5,7 @@ namespace App\UseCases\Member;
 use App\Services\MemberPointsExpiryCalculator;
 use App\Services\MemberRankCalculator;
 use App\Services\UserService;
-use App\UseCases\Member\Dto\MemberPointCardDto;
+use App\UseCases\Member\Data\MemberPointCardView;
 use Illuminate\Http\Request;
 
 class MemberPointCardUseCase
@@ -17,19 +17,19 @@ class MemberPointCardUseCase
     ) {
     }
 
-    public function handle(Request $request): MemberPointCardDto
+    public function handle(Request $request): MemberPointCardView
     {
         $user = $this->userService->getOrCreateUser($request);
         $member = $user->member;
 
         if ($member === null) {
-            return new MemberPointCardDto(true, []);
+            return new MemberPointCardView(true, []);
         }
 
         $rankInfo = $this->rankCalculator->getRankInfo($member);
         $expiryInfo = $this->expiryCalculator->getExpiryInfo($member);
 
-        return new MemberPointCardDto(false, [
+        return new MemberPointCardView(false, [
             'member_number' => $member->member_number,
             'points' => (int) $member->points,
             'rank' => $rankInfo['current_rank'] ?? null,

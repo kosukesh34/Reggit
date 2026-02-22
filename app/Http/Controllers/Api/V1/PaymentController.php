@@ -53,7 +53,7 @@ class PaymentController extends BaseApiController
 
         try {
             $result = $this->confirmUseCase->handle($request->payment_intent_id, (int) $request->order_id);
-            if (!$result->isSuccess) {
+            if ($result->isSuccess === false) {
                 return $this->error($result->message, 400, ['status' => $result->status]);
             }
             return $this->success(['order' => $result->order], $result->message);

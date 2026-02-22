@@ -4,12 +4,12 @@ namespace App\UseCases\Gallery;
 
 use App\Models\GalleryCategory;
 use App\Models\GalleryItem;
-use App\UseCases\Gallery\Dto\GalleryIndexDto;
+use App\UseCases\Gallery\Data\GalleryIndexView;
 use App\Util\AdminContext;
 
 class GalleryIndexUseCase
 {
-    public function handle(?int $categoryId): GalleryIndexDto
+    public function handle(?int $categoryId): GalleryIndexView
     {
         $projectId = AdminContext::getCurrentProjectId() ?? 1;
 
@@ -30,6 +30,6 @@ class GalleryIndexUseCase
 
         $items = $itemsQuery->get();
 
-        return new GalleryIndexDto($categories, $items);
+        return new GalleryIndexView($categories, $items);
     }
 }

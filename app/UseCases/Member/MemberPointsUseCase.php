@@ -4,7 +4,7 @@ namespace App\UseCases\Member;
 
 use App\Models\PointTransaction;
 use App\Services\UserService;
-use App\UseCases\Member\Dto\MemberPointsResultDto;
+use App\UseCases\Member\Data\MemberPointsResult;
 use Illuminate\Http\Request;
 
 class MemberPointsUseCase
@@ -13,13 +13,13 @@ class MemberPointsUseCase
     {
     }
 
-    public function handle(Request $request): MemberPointsResultDto
+    public function handle(Request $request): MemberPointsResult
     {
         $user = $this->userService->getOrCreateUser($request);
         $member = $user->member;
 
         if ($member === null) {
-            return new MemberPointsResultDto(false, 0, collect());
+            return new MemberPointsResult(false, 0, collect());
         }
 
         $transactions = PointTransaction::where('member_id', $member->id)
@@ -28,6 +28,6 @@ class MemberPointsUseCase
             ->take(20)
             ->get();
 
-        return new MemberPointsResultDto(true, (int) $member->points, $transactions);
+        return new MemberPointsResult(true, (int) $member->points, $transactions);
     }
 }

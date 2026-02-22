@@ -15,7 +15,7 @@ class QueueCancelUseCase
         if ($entry === null) {
             return null;
         }
-        if (!$this->canCancel($entry->status)) {
+        if ($this->canCancel($entry->status) === false) {
             return $entry;
         }
         $entry->status = QueueStatus::CANCELLED;

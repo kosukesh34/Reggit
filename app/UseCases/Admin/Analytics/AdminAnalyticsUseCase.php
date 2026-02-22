@@ -14,7 +14,7 @@ use App\Models\PointTransaction;
 use App\Models\Product;
 use App\Models\QueueEntry;
 use App\Models\Reservation;
-use App\UseCases\Admin\Analytics\Dto\AdminAnalyticsViewDto;
+use App\UseCases\Admin\Analytics\Data\AdminAnalyticsView;
 use App\Util\AdminStatusLabels;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
@@ -40,7 +40,7 @@ class AdminAnalyticsUseCase
 
     private const TOP_PRODUCTS_LIMIT = 5;
 
-    public function handle(int $projectId, string $start, string $end): AdminAnalyticsViewDto
+    public function handle(int $projectId, string $start, string $end): AdminAnalyticsView
     {
         $startDate = Carbon::parse($start)->startOfDay();
         $endDate = Carbon::parse($end)->endOfDay();
@@ -48,7 +48,7 @@ class AdminAnalyticsUseCase
         $ordersBase = Order::where('project_id', $projectId)
             ->whereBetween('created_at', [$startDate, $endDate]);
 
-        return new AdminAnalyticsViewDto(
+        return new AdminAnalyticsView(
             $startDate->toDateString(),
             $endDate->toDateString(),
             $this->buildSummary($projectId, $ordersBase, $startDate, $endDate),
@@ -57,7 +57,7 @@ class AdminAnalyticsUseCase
         );
     }
 
-    /** @return array<string, mixed> */
+    /** @return array{orders: int, revenue: float, avg_order_value: float, new_members: int, reservations: int, queue: int, coupons_issued: int, coupons_used: int, points_earned: float, points_used: float} */
     private function buildSummary(int $projectId, $ordersBase, Carbon $startDate, Carbon $endDate): array
     {
         $ordersCount = (clone $ordersBase)->count();
@@ -88,7 +88,7 @@ class AdminAnalyticsUseCase
         ];
     }
 
-    /** @return array<string, mixed> */
+    /** @return array{labels: array<int, string>, orders: array<int, int>, revenue: array<int, float>, members: array<int, int>} */
     private function buildTimeSeries(int $projectId, $ordersBase, Carbon $startDate, Carbon $endDate): array
     {
         $labels = [];
@@ -147,7 +147,7 @@ class AdminAnalyticsUseCase
         }
     }
 
-    /** @return array<string, mixed> */
+    /** @return array{order_statuses: array, payment_methods: array, hourly_orders: array, category_sales: array, order_value_buckets: array, top_products: array} */
     private function buildBreakdowns(int $projectId, $ordersBase, Carbon $startDate, Carbon $endDate): array
     {
         return [
@@ -160,7 +160,7 @@ class AdminAnalyticsUseCase
         ];
     }
 
-    /** @return array<int, array<string, mixed>> */
+    /** @return array<int, array{status: string, label: string, count: int}> */
     private function buildOrderStatusSummary($ordersBase): array
     {
         $result = [];
@@ -175,7 +175,7 @@ class AdminAnalyticsUseCase
         return $result;
     }
 
-    /** @return array<int, array<string, mixed>> */
+    /** @return array<int, array{method: string, label: string, count: int}> */
     private function buildPaymentSummary($ordersBase): array
     {
         $result = [];
@@ -202,7 +202,7 @@ class AdminAnalyticsUseCase
         return $hourly;
     }
 
-    /** @return array<int, array<string, mixed>> */
+    /** @return array<int, array{category: string, label: string, quantity: int, revenue: float}> */
     private function buildCategorySummary(int $projectId, Carbon $startDate, Carbon $endDate): array
     {
         $rows = OrderItem::query()
@@ -250,7 +250,7 @@ class AdminAnalyticsUseCase
         return $buckets;
     }
 
-    /** @return array<int, array<string, mixed>> */
+    /** @return array<int, array{product_id: int, name: string, quantity: int, revenue: float}> */
     private function buildTopProducts(int $projectId, Carbon $startDate, Carbon $endDate): array
     {
         $rows = OrderItem::query()
