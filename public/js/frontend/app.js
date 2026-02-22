@@ -37,6 +37,18 @@ class MobileOrderApp {
         this.memberManager.preload();
     }
 
+    onLiffReady() {
+        this.memberManager.preload();
+        const hasQueueToken = this.queueManager.getQueueTokenFromUrl() !== null;
+        if (hasQueueToken) {
+            this.switchTab(AppConstants.TABS.QUEUE);
+            return;
+        }
+        if (this.currentTab === AppConstants.TABS.QUEUE) {
+            this.queueManager.load();
+        }
+    }
+
     preventZoom() {
         document.addEventListener('gesturestart', (e) => e.preventDefault());
         document.addEventListener('gesturechange', (e) => e.preventDefault());
@@ -468,7 +480,11 @@ if (typeof window !== 'undefined' && !window.__LIFF_APP_BOOTSTRAP__) {
         'liff-ready',
         function fn() {
             document.removeEventListener('liff-ready', fn);
-            createApp();
+            if (!window.app) {
+                createApp();
+            } else if (typeof window.app.onLiffReady === 'function') {
+                window.app.onLiffReady();
+            }
         },
         { once: true }
     );

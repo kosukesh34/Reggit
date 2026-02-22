@@ -65,8 +65,14 @@ class LiffDesigner {
         };
 
         this.featureFlags = config.featureFlags || {};
+        this.templates = Array.isArray(config.templates) ? config.templates : [];
         this.idCounter = 1;
         this.state = { layouts: {}, tabSettings: {}, activeTab: 'home', selectedId: null };
+        this.ui = {
+            paletteSearch: '',
+            paletteCategory: 'all',
+            zoom: 100,
+        };
         this.history = [];
         this.historyIndex = -1;
         this.maxHistory = 50;
@@ -97,7 +103,10 @@ class LiffDesigner {
 
     normalizeBlock(item) {
         const id = item.id || this.nextId();
-        const type = item.type || 'text';
+        let type = item.type || 'text';
+        if (type === 'label') type = 'heading';
+        if (type === 'gallery') type = 'data';
+        if (type === 'form') type = 'text';
         const block = { id, type, border_radius: item.border_radius ?? 10, padding: item.padding ?? null, margin_bottom: item.margin_bottom ?? 0, text_align: item.text_align || 'left', background_color: item.background_color || '', opacity: item.opacity ?? 100, shadow: item.shadow ?? false };
 
         switch (type) {
@@ -171,7 +180,7 @@ class LiffDesigner {
                 ];
                 break;
             case 'list':
-                block.items = item.items || ['項目1', '項目2', '項目3'];
+                block.items = item.items || item.list_items || ['項目1', '項目2', '項目3'];
                 block.style = item.style || 'bullet';
                 block.text_color = item.text_color || '#374151';
                 break;
@@ -190,10 +199,10 @@ class LiffDesigner {
                 block.divider_style = item.divider_style || 'solid';
                 break;
             case 'data':
-                block.source = item.source || 'products';
+                block.source = item.source === 'member' ? 'member_card' : (item.source || 'products');
                 break;
             default:
-                block.text = item.text || '';
+                block.text = item.text || item.body || '';
         }
         return block;
     }
@@ -225,6 +234,18 @@ class LiffDesigner {
             undoBtn: document.getElementById('undoBtn'),
             redoBtn: document.getElementById('redoBtn'),
             previewBtn: document.getElementById('previewBtn'),
+            templateBtn: document.getElementById('templateBtn'),
+            importBtn: document.getElementById('importBtn'),
+            exportBtn: document.getElementById('exportBtn'),
+            importJsonFile: document.getElementById('importJsonFile'),
+            paletteSearch: document.getElementById('paletteSearch'),
+            paletteCategories: document.getElementById('paletteCategories'),
+            activeTabLabel: document.getElementById('activeTabLabel'),
+            zoomOutBtn: document.getElementById('zoomOutBtn'),
+            zoomInBtn: document.getElementById('zoomInBtn'),
+            zoomRange: document.getElementById('zoomRange'),
+            zoomValue: document.getElementById('zoomValue'),
+            phoneFrame: document.querySelector('.ld-phone__frame'),
         };
     }
 
@@ -256,9 +277,12 @@ class LiffDesigner {
         this.renderScreenList();
         this.renderPhoneNav();
         this.renderPhoneContent();
+        this.renderPaletteCategories();
         this.renderBlockPalette();
         this.renderBlockSettings();
         this.applyScreenSettings();
+        this.applyZoom();
+        this.applyCustomCssPreview();
     }
 
     renderScreenList() {
@@ -302,6 +326,9 @@ class LiffDesigner {
             c.appendChild(el);
         });
         this.els.phoneHeaderTitle.textContent = this.TAB_LABELS[this.state.activeTab] || '';
+        if (this.els.activeTabLabel) {
+            this.els.activeTabLabel.textContent = this.TAB_LABELS[this.state.activeTab] || '';
+        }
     }
 
     renderPhoneContent() {
@@ -507,7 +534,20 @@ class LiffDesigner {
 
     renderBlockPalette() {
         const c = this.els.blockPalette; c.innerHTML = '';
-        this.BLOCK_TYPES.forEach(bt => {
+        const kw = (this.ui.paletteSearch || '').trim().toLowerCase();
+        const list = this.BLOCK_TYPES.filter(bt => {
+            const categoryMatched = this.ui.paletteCategory === 'all' || bt.category === this.ui.paletteCategory;
+            if (!categoryMatched) return false;
+            if (!kw) return true;
+            return (bt.label + ' ' + bt.desc + ' ' + bt.type).toLowerCase().includes(kw);
+        });
+
+        if (list.length === 0) {
+            c.innerHTML = '<div class="ld-palette-empty">該当するブロックがありません</div>';
+            return;
+        }
+
+        list.forEach(bt => {
             const el = document.createElement('div');
             el.className = 'ld-palette-item';
             el.dataset.blockType = bt.type;
@@ -515,6 +555,30 @@ class LiffDesigner {
             el.innerHTML = '<div class="ld-palette-item__icon"><i class="fas ' + bt.icon + '"></i></div><span class="ld-palette-item__label">' + this.esc(bt.label) + '</span>';
             el.addEventListener('click', () => this.addBlock(bt.type));
             c.appendChild(el);
+        });
+    }
+
+    renderPaletteCategories() {
+        const c = this.els.paletteCategories;
+        if (!c) return;
+        const defs = [
+            { id: 'all', label: 'すべて' },
+            { id: 'basic', label: '基本' },
+            { id: 'layout', label: 'レイアウト' },
+            { id: 'data', label: '連携' },
+        ];
+        c.innerHTML = '';
+        defs.forEach(def => {
+            const b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'ld-chip' + (this.ui.paletteCategory === def.id ? ' is-active' : '');
+            b.textContent = def.label;
+            b.addEventListener('click', () => {
+                this.ui.paletteCategory = def.id;
+                this.renderPaletteCategories();
+                this.renderBlockPalette();
+            });
+            c.appendChild(b);
         });
     }
 
@@ -949,11 +1013,47 @@ class LiffDesigner {
         this.els.screenBgImage.addEventListener('input', () => this.onScreenChange());
         this.els.form.addEventListener('submit', () => { this.els.layoutsJson.value = JSON.stringify(this.state.layouts); this.els.tabSettingsJson.value = JSON.stringify(this.state.tabSettings); if (this.els.customCssInput && this.els.customCssEditor) this.els.customCssInput.value = this.els.customCssEditor.value; });
         this.els.toggleCssBtn.addEventListener('click', () => { this.els.cssSection.hidden = !this.els.cssSection.hidden; });
+        if (this.els.customCssEditor) this.els.customCssEditor.addEventListener('input', () => this.applyCustomCssPreview());
         this.els.undoBtn.addEventListener('click', () => this.undo());
         this.els.redoBtn.addEventListener('click', () => this.redo());
         this.els.previewBtn.addEventListener('click', () => this.openPreview());
+        if (this.els.templateBtn) this.els.templateBtn.addEventListener('click', () => this.openTemplateModal());
+        if (this.els.exportBtn) this.els.exportBtn.addEventListener('click', () => this.exportJson());
+        if (this.els.importBtn && this.els.importJsonFile) {
+            this.els.importBtn.addEventListener('click', () => this.els.importJsonFile.click());
+            this.els.importJsonFile.addEventListener('change', () => {
+                const file = this.els.importJsonFile.files && this.els.importJsonFile.files[0];
+                if (file) this.importJson(file);
+                this.els.importJsonFile.value = '';
+            });
+        }
+        if (this.els.paletteSearch) {
+            this.els.paletteSearch.addEventListener('input', () => {
+                this.ui.paletteSearch = this.els.paletteSearch.value || '';
+                this.renderBlockPalette();
+            });
+        }
+        if (this.els.zoomRange) {
+            this.els.zoomRange.addEventListener('input', () => {
+                this.ui.zoom = parseInt(this.els.zoomRange.value || '100', 10);
+                this.applyZoom();
+            });
+        }
+        if (this.els.zoomOutBtn) {
+            this.els.zoomOutBtn.addEventListener('click', () => {
+                this.ui.zoom = Math.max(60, (this.ui.zoom || 100) - 5);
+                this.applyZoom();
+            });
+        }
+        if (this.els.zoomInBtn) {
+            this.els.zoomInBtn.addEventListener('click', () => {
+                this.ui.zoom = Math.min(120, (this.ui.zoom || 100) + 5);
+                this.applyZoom();
+            });
+        }
         document.addEventListener('keydown', (e) => {
             if ((e.metaKey || e.ctrlKey) && e.key === 'z') { e.preventDefault(); e.shiftKey ? this.redo() : this.undo(); }
+            if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') { e.preventDefault(); this.els.form.requestSubmit(); }
             if (this.state.selectedId && (e.key === 'Delete' || e.key === 'Backspace')) { const t = e.target.tagName; if (t === 'INPUT' || t === 'TEXTAREA' || t === 'SELECT') return; e.preventDefault(); this.deleteBlock(this.state.selectedId); }
         });
         this.els.phoneContent.addEventListener('click', (e) => { if (e.target === this.els.phoneContent || e.target.closest('.ld-phone__empty')) { this.state.selectedId = null; this.renderPhoneContent(); this.renderBlockSettings(); } });
@@ -962,6 +1062,135 @@ class LiffDesigner {
     onScreenChange() {
         const s = this.getSettings(); s.background_color = this.els.screenBgColor.value; s.background_image = this.els.screenBgImage.value;
         this.els.screenBgColorHex.value = this.els.screenBgColor.value; this.state.tabSettings[this.state.activeTab] = s; this.renderPhoneContent();
+    }
+
+    applyZoom() {
+        if (!this.els.phoneFrame) return;
+        const scale = (this.ui.zoom || 100) / 100;
+        this.els.phoneFrame.style.transform = 'scale(' + scale + ')';
+        if (this.els.zoomValue) this.els.zoomValue.textContent = Math.round(this.ui.zoom || 100) + '%';
+        if (this.els.zoomRange) this.els.zoomRange.value = String(Math.round(this.ui.zoom || 100));
+    }
+
+    applyCustomCssPreview() {
+        const css = this.els.customCssEditor ? this.els.customCssEditor.value : '';
+        let style = document.getElementById('ldCustomCssPreview');
+        if (!style) {
+            style = document.createElement('style');
+            style.id = 'ldCustomCssPreview';
+            document.head.appendChild(style);
+        }
+        style.textContent = css || '';
+        if (this.els.customCssInput) this.els.customCssInput.value = css || '';
+    }
+
+    openTemplateModal() {
+        const templates = this.templates || [];
+        if (templates.length === 0) {
+            alert('利用可能なテンプレートがありません。');
+            return;
+        }
+        const modal = document.createElement('div');
+        modal.className = 'ld-modal';
+        const cards = templates.map((tpl, index) => {
+            const blocks = Array.isArray(tpl.blocks) ? tpl.blocks : [];
+            return (
+                '<div class="ld-template-card">' +
+                    '<div>' +
+                        '<div class="ld-template-card__name">' + this.esc(tpl.name || ('テンプレート' + (index + 1))) + '</div>' +
+                        '<div class="ld-template-card__meta">ブロック数: ' + blocks.length + '</div>' +
+                    '</div>' +
+                    '<div class="ld-template-card__preview">' +
+                        '<span class="ld-template-card__line wide"></span>' +
+                        '<span class="ld-template-card__line mid"></span>' +
+                        '<span class="ld-template-card__line short"></span>' +
+                    '</div>' +
+                    '<button type="button" class="ld-btn ld-btn--primary ld-btn--block" data-template-index="' + index + '">このタブに適用</button>' +
+                '</div>'
+            );
+        }).join('');
+
+        modal.innerHTML =
+            '<div class="ld-modal__dialog">' +
+                '<div class="ld-modal__head">' +
+                    '<h3 class="ld-modal__title"><i class="fas fa-layer-group"></i> テンプレートを適用</h3>' +
+                    '<button type="button" class="ld-btn ld-btn--ghost" data-close-modal><i class="fas fa-times"></i></button>' +
+                '</div>' +
+                '<div class="ld-modal__body"><div class="ld-template-grid">' + cards + '</div></div>' +
+            '</div>';
+
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal || e.target.closest('[data-close-modal]')) modal.remove();
+            const applyBtn = e.target.closest('[data-template-index]');
+            if (!applyBtn) return;
+            const idx = parseInt(applyBtn.dataset.templateIndex || '-1', 10);
+            const tpl = templates[idx];
+            if (!tpl || !Array.isArray(tpl.blocks)) return;
+            this.state.layouts[this.state.activeTab] = tpl.blocks.map(item => this.normalizeBlock(item));
+            this.state.selectedId = null;
+            this.pushHistory();
+            this.render();
+            modal.remove();
+        });
+
+        document.body.appendChild(modal);
+    }
+
+    exportJson() {
+        const payload = {
+            exported_at: new Date().toISOString(),
+            active_tab: this.state.activeTab,
+            layouts: this.state.layouts,
+            tab_settings: this.state.tabSettings,
+            custom_css: this.els.customCssEditor ? this.els.customCssEditor.value : '',
+        };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const date = new Date().toISOString().slice(0, 10);
+        a.href = url;
+        a.download = 'liff-designer-' + date + '.json';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 500);
+    }
+
+    importJson(file) {
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+            try {
+                const data = JSON.parse(String(reader.result || '{}'));
+                if (!data || typeof data !== 'object') throw new Error('JSON形式が不正です');
+                if (!data.layouts || typeof data.layouts !== 'object') throw new Error('layouts がありません');
+
+                const layouts = {};
+                Object.keys(this.TAB_LABELS).forEach(key => {
+                    const rows = Array.isArray(data.layouts[key]) ? data.layouts[key] : [];
+                    layouts[key] = rows.map(item => this.normalizeBlock(item || {}));
+                });
+                this.state.layouts = layouts;
+
+                if (data.tab_settings && typeof data.tab_settings === 'object') {
+                    Object.keys(this.TAB_LABELS).forEach(key => {
+                        const src = data.tab_settings[key];
+                        if (src && typeof src === 'object') this.state.tabSettings[key] = { ...this.state.tabSettings[key], ...src };
+                    });
+                }
+                if (typeof data.custom_css === 'string' && this.els.customCssEditor) {
+                    this.els.customCssEditor.value = data.custom_css;
+                }
+
+                this.state.selectedId = null;
+                this.pushHistory();
+                this.render();
+                alert('JSONを読み込みました。必要なら保存してください。');
+            } catch (err) {
+                alert('JSON読み込みに失敗しました: ' + (err && err.message ? err.message : '不明なエラー'));
+            }
+        };
+        reader.readAsText(file);
     }
 
     openPreview() {

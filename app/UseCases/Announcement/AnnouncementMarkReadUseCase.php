@@ -1,0 +1,52 @@
+<?php
+
+namespace App\UseCases\Announcement;
+
+use App\Models\Announcement;
+use App\Models\AnnouncementRead;
+use App\Services\UserService;
+use App\Util\AdminContext;
+use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
+
+class AnnouncementMarkReadUseCase
+{
+    public function __construct(private UserService $userService)
+    {
+    }
+
+    /** @return array{announcement_id: int, read_at: string} */
+    public function handle(Request $request, int $announcementId): array
+    {
+        $projectId = AdminContext::getCurrentProjectId() ?? 1;
+        $announcement = Announcement::where('project_id', $projectId)
+            ->where('id', $announcementId)
+            ->whereNotNull('published_at')
+            ->where('published_at', '<=', now())
+            ->where(function ($query) {
+                $query->whereNull('expires_at')->orWhere('expires_at', '>=', now());
+            })
+            ->first();
+
+        if ($announcement === null) {
+            throw ValidationException::withMessages([
+                'announcement_id' => ['対象のお知らせが見つかりません'],
+            ]);
+        }
+
+        $user = $this->userService->getOrCreateUser($request);
+        $read = AnnouncementRead::updateOrCreate(
+            [
+                'project_id' => $projectId,
+                'announcement_id' => $announcement->id,
+                'user_id' => $user->id,
+            ],
+            ['read_at' => now()]
+        );
+
+        return [
+            'announcement_id' => $announcement->id,
+            'read_at' => $read->read_at->toIso8601String(),
+        ];
+    }
+}

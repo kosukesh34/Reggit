@@ -7,7 +7,7 @@ class StampsManager {
         return DomHelper.getElementById(AppConstants.ELEMENT_IDS.STAMPS_SECTION);
     }
 
-    getLoginTemplate() {
+    getGuestTemplate() {
         return `
             <div class="member-card-container">
                 <div class="member-card member-card--line-only">
@@ -15,9 +15,26 @@ class StampsManager {
                         <h2 class="member-card-title"><i class="fas fa-stamp"></i> スタンプカード</h2>
                     </div>
                     <div class="member-card-line-only-body">
-                        <p class="member-card-line-only-message">ログインするとスタンプをご利用いただけます。</p>
+                        <p class="member-card-line-only-message">この端末はゲスト状態です。</p>
+                        <p class="member-card-line-only-sub">会員登録するとスタンプ履歴を引き継げます。</p>
+                        <button type="button" class="btn btn-secondary mt-2" onclick="app.switchTab('${AppConstants.TABS.MEMBER}')">
+                            <i class="fas fa-user-plus"></i> 会員登録へ
+                        </button>
                     </div>
                 </div>
+            </div>
+        `;
+    }
+
+    getMemberRequiredTemplate(message = '会員登録が必要です') {
+        return `
+            <div class="stamps-empty">
+                <i class="fas fa-id-card"></i>
+                <p>${DomHelper.escapeHtml(message)}</p>
+                <p class="stamps-empty-sub">会員登録後にスタンプカードを利用できます</p>
+                <button type="button" class="btn btn-primary mt-2" onclick="app.switchTab('${AppConstants.TABS.MEMBER}')">
+                    <i class="fas fa-user-plus"></i> 会員登録する
+                </button>
             </div>
         `;
     }
@@ -38,16 +55,23 @@ class StampsManager {
     async load() {
         const section = this.getSection();
         if (!section) return;
-        if (typeof window === 'undefined' || !window.__LINE_USER_ID__) {
-            section.innerHTML = this.getLoginTemplate();
-            return;
-        }
         section.innerHTML =
             '<div class="loading"><i class="fas fa-spinner fa-spin"></i><p>読み込み中...</p></div>';
         try {
             const result = await this.apiClient.get(AppConstants.API_ENDPOINTS.STAMPS);
+            if (!result.success) {
+                section.innerHTML = this.getErrorTemplate({ message: result.error });
+                return;
+            }
+
             const cards = (result.data && result.data.stamp_cards) ? result.data.stamp_cards : [];
             const defaultImage = result.data && result.data.default_image_url ? result.data.default_image_url : null;
+            const message = result.data && result.data.message ? result.data.message : null;
+            if ((!cards || cards.length === 0) && message) {
+                section.innerHTML = this.getMemberRequiredTemplate(message);
+                return;
+            }
+
             this.render(cards, defaultImage);
         } catch (error) {
             console.error('Failed to load stamps:', error);
@@ -77,7 +101,7 @@ class StampsManager {
                 const imageUrl = card.image_url || defaultImage;
                 return `
                     <div class="stamp-card-item ${completed ? 'stamp-card-item--completed' : ''}">
-                        ${imageUrl ? `<div class="stamp-card-image"><img src="${DomHelper.escapeHtml(imageUrl)}" alt="スタンプカード"></div>` : ''}
+                        ${imageUrl ? `<div class="stamp-card-image"><img src="${DomHelper.escapeHtml(imageUrl)}" alt="スタンプカード" loading="lazy" onerror="this.closest('.stamp-card-image').style.display='none'"></div>` : ''}
                         <div class="stamp-card-header">
                             <h3 class="stamp-card-name">${DomHelper.escapeHtml(card.name || 'スタンプカード')}</h3>
                             ${completed ? '<span class="stamp-card-badge"><i class="fas fa-check-circle"></i> 達成</span>' : ''}

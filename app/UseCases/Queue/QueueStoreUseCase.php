@@ -28,8 +28,9 @@ class QueueStoreUseCase
 
         $projectId = $member ? $member->project_id : (AdminContext::getCurrentProjectId() ?? 1);
         $lineUserId = $request->header('X-Line-User-Id');
+        $effectiveLineUserId = $this->resolveLineUserId($lineUserId, $user->line_user_id);
 
-        if (!StrHelper::isEmptyStringOrNull($lineUserId)) {
+        if (!StrHelper::isEmptyStringOrNull($effectiveLineUserId)) {
             $existing = $this->getActiveEntryForUser($user->id, $projectId);
             if ($existing !== null) {
                 $stats = $this->statsService->getStats($projectId, $existing->queue_number);
@@ -46,7 +47,7 @@ class QueueStoreUseCase
         $entry = QueueEntryModel::create([
             'project_id' => $projectId,
             'member_id' => $member?->id,
-            'user_id' => StrHelper::isEmptyStringOrNull($lineUserId) ? null : $user->id,
+            'user_id' => StrHelper::isEmptyStringOrNull($effectiveLineUserId) ? null : $user->id,
             'guest_name' => $guestName ?? $user->name,
             'guest_phone' => $guestPhone ?? $user->phone,
             'party_size' => $partySize,
@@ -88,5 +89,22 @@ class QueueStoreUseCase
             }
         }
         return (string) Str::uuid();
+    }
+
+    private function resolveLineUserId(?string $headerLineUserId, ?string $userLineUserId): ?string
+    {
+        if (is_string($headerLineUserId) && $this->isValidLineUserId($headerLineUserId)) {
+            return $headerLineUserId;
+        }
+        if (is_string($userLineUserId) && $this->isValidLineUserId($userLineUserId)) {
+            return $userLineUserId;
+        }
+
+        return null;
+    }
+
+    private function isValidLineUserId(string $lineUserId): bool
+    {
+        return preg_match('/^U[0-9a-f]{32}$/i', $lineUserId) === 1;
     }
 }

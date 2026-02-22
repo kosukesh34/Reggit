@@ -55,6 +55,28 @@ class AdminAccountControllerTest extends TestCase
         $this->assertDatabaseHas('admin_users', ['login_id' => 'test_admin']);
     }
 
+    public function testStoreSystemAdminAssignsAllProjects(): void
+    {
+        $this->loginSystemAdmin();
+        $projectA = Project::factory()->create(['is_active' => true]);
+        $projectB = Project::factory()->create(['is_active' => true]);
+
+        $response = $this->post('/system-admin/accounts', [
+            'login_id' => 'sys_all_projects',
+            'email' => 'sys_all_projects@example.com',
+            'password' => 'Password123!',
+            'password_confirmation' => 'Password123!',
+            'name' => 'System All',
+            'role' => AdminUser::ROLE_SYSTEM_ADMIN,
+        ]);
+
+        $response->assertRedirect('/system-admin/accounts');
+        $created = AdminUser::where('login_id', 'sys_all_projects')->firstOrFail();
+        $this->assertSame(AdminUser::ROLE_SYSTEM_ADMIN, $created->role);
+        $this->assertTrue($created->projects()->where('projects.id', $projectA->id)->exists());
+        $this->assertTrue($created->projects()->where('projects.id', $projectB->id)->exists());
+    }
+
     public function testUpdateUpdatesAccount(): void
     {
         $this->loginSystemAdmin();
@@ -87,5 +109,31 @@ class AdminAccountControllerTest extends TestCase
 
         $response->assertRedirect('/system-admin/accounts');
         $this->assertDatabaseMissing('admin_users', ['id' => $target->id]);
+    }
+
+    public function testUpdateSystemAdminAssignsAllProjects(): void
+    {
+        $this->loginSystemAdmin();
+        $projectA = Project::factory()->create(['is_active' => true]);
+        $projectB = Project::factory()->create(['is_active' => true]);
+        $target = AdminUser::factory()->create([
+            'login_id' => 'target_sys',
+            'email' => 'target_sys@example.com',
+            'role' => AdminUser::ROLE_ADMIN,
+            'project_id' => $projectA->id,
+        ]);
+
+        $response = $this->put('/system-admin/accounts/' . $target->id, [
+            'login_id' => $target->login_id,
+            'email' => $target->email,
+            'name' => 'System Updated',
+            'role' => AdminUser::ROLE_SYSTEM_ADMIN,
+        ]);
+
+        $response->assertRedirect('/system-admin/accounts');
+        $target->refresh();
+        $this->assertSame(AdminUser::ROLE_SYSTEM_ADMIN, $target->role);
+        $this->assertTrue($target->projects()->where('projects.id', $projectA->id)->exists());
+        $this->assertTrue($target->projects()->where('projects.id', $projectB->id)->exists());
     }
 }

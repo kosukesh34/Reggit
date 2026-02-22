@@ -17,7 +17,9 @@ class LiffDesignerView
         public readonly array $templates,
         public readonly string $customCss,
         public readonly array $tabSettings,
-        public readonly array $featureFlags = []
+        public readonly array $featureFlags = [],
+        public readonly string $liffId = '',
+        public readonly string $liffUrl = ''
     ) {
     }
 }

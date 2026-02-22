@@ -68,6 +68,8 @@ class AppServiceProvider extends ServiceProvider
                     $view->with('liffTabLayouts', ShopSetting::getLiffTabLayouts($projectId));
                     $view->with('liffCustomCss', ShopSetting::getLiffCustomCss($projectId));
                     $view->with('liffTabSettings', ShopSetting::getLiffTabSettings($projectId));
+                    $view->with('liffId', ShopSetting::getLineLiffId($projectId));
+                    $view->with('liffUrl', ShopSetting::getLineLiffUrl($projectId));
                 } catch (\Throwable $e) {
                     $view->with('lineTheme', [
                         'primary' => '#000000',
@@ -85,6 +87,8 @@ class AppServiceProvider extends ServiceProvider
                     $view->with('liffTabLayouts', ShopSetting::defaultLiffTabLayouts());
                     $view->with('liffCustomCss', '');
                     $view->with('liffTabSettings', []);
+                    $view->with('liffId', trim((string) config('line.liff_id', '')));
+                    $view->with('liffUrl', trim((string) config('line.liff_url', '')));
                 }
             });
 

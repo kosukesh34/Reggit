@@ -143,6 +143,8 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'bind.admin.project', '
         Route::post('/settings/liff-designer', [SettingsLiffDesignerController::class, 'update'])->name('admin.settings.liff-designer.update')->middleware('admin.permission:liff_designer.manage');
 
         Route::get('/analytics', [AdminAnalyticsController::class, 'analytics'])->name('admin.analytics')->middleware('admin.permission:analytics.view');
+        Route::get('/audit-logs', [AdminAuditLogController::class, 'index'])->name('admin.audit-logs.index')->middleware('admin.permission:audit_logs.view');
+        Route::get('/audit-logs/{id}', [AdminAuditLogController::class, 'show'])->name('admin.audit-logs.show')->middleware('admin.permission:audit_logs.view');
 
         Route::get('/gallery/categories', [GalleryCategoryController::class, 'index'])->name('admin.gallery.categories')->middleware('admin.permission:gallery.view');
         Route::post('/gallery/categories', [GalleryCategoryController::class, 'store'])->name('admin.gallery.categories.store')->middleware('admin.permission:gallery.manage');
@@ -161,6 +163,7 @@ Route::prefix('system-admin')->middleware(['web', 'auth:admin', 'system.admin', 
 
     Route::get('/dashboard', [SystemAdminDashboardController::class, 'dashboard'])->name('system-admin.dashboard');
     Route::get('/projects', [AdminProjectController::class, 'index'])->name('system-admin.projects.index');
+    Route::get('/projects/input-home', [AdminProjectController::class, 'create'])->name('system-admin.projects.input-home');
     Route::get('/projects/create', [AdminProjectController::class, 'create'])->name('system-admin.projects.create');
     Route::post('/projects', [AdminProjectController::class, 'store'])->name('system-admin.projects.store');
     Route::get('/projects/{id}/edit', [AdminProjectController::class, 'edit'])->name('system-admin.projects.edit');
