@@ -4,7 +4,7 @@ namespace App\UseCases\Reservation;
 
 use App\Services\ReservationService;
 use App\Services\UserService;
-use App\UseCases\Reservation\Data\ReservationMemberResult;
+use App\UseCases\Reservation\Data\ReservationMemberOutput;
 use Illuminate\Http\Request;
 
 class ReservationIndexUseCase
@@ -15,11 +15,11 @@ class ReservationIndexUseCase
     ) {
     }
 
-    public function handle(Request $request): ReservationMemberResult
+    public function handle(Request $request): ReservationMemberOutput
     {
         $user = $this->userService->getOrCreateUser($request);
         if ($user->member === null) {
-            return new ReservationMemberResult(true, collect());
+            return new ReservationMemberOutput(true, collect());
         }
 
         $reservations = $this->reservationService->getUserReservations($user);
@@ -27,6 +27,6 @@ class ReservationIndexUseCase
             $reservations = collect($reservations);
         }
 
-        return new ReservationMemberResult(false, $reservations);
+        return new ReservationMemberOutput(false, $reservations);
     }
 }

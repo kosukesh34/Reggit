@@ -4,8 +4,8 @@ namespace App\UseCases\Member\Data;
 
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
-/** ポイント履歴 UseCase の実行結果。不変。 */
-class MemberPointHistoryResult
+/** ポイント履歴 UseCase の出力。不変。 */
+class MemberPointHistoryOutput
 {
     public function __construct(
         public bool $requiresMembership,
