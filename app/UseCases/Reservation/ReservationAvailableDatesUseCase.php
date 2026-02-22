@@ -2,7 +2,7 @@
 
 namespace App\UseCases\Reservation;
 
-use App\UseCases\Reservation\Dto\ReservationAvailabilityDto;
+use App\UseCases\Reservation\Data\ReservationAvailability;
 
 class ReservationAvailableDatesUseCase
 {
@@ -10,7 +10,7 @@ class ReservationAvailableDatesUseCase
     {
     }
 
-    public function handle(?int $excludeReservationId): ReservationAvailabilityDto
+    public function handle(?int $excludeReservationId): ReservationAvailability
     {
         return $this->availabilityService->getAvailableDates($excludeReservationId);
     }

@@ -15,7 +15,7 @@ class EnsureStoreAdmin
     public function handle(Request $request, Closure $next): Response
     {
         $admin = $request->user('admin');
-        if (!$admin || !$admin->canAccessStoreAdmin()) {
+        if ($admin === null || $admin->canAccessStoreAdmin() === false) {
             abort(403, 'この操作を行う権限がありません。');
         }
         return $next($request);

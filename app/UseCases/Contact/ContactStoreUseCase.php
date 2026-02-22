@@ -3,13 +3,13 @@
 namespace App\UseCases\Contact;
 
 use App\Models\ContactMessage;
-use App\UseCases\Contact\Dto\ContactStoreResultDto;
+use App\UseCases\Contact\Data\ContactStoreOutput;
 use App\Util\AdminContext;
 
 class ContactStoreUseCase
 {
-    /** @param array<string, mixed> $data */
-    public function handle(array $data): ContactStoreResultDto
+    /** @param array<string, string|int|float|bool|array|null> $data お問い合わせフォームの入力（検証前） */
+    public function handle(array $data): ContactStoreOutput
     {
         $projectId = AdminContext::getCurrentProjectId() ?? 1;
 
@@ -23,6 +23,6 @@ class ContactStoreUseCase
             'payload' => $data,
         ]);
 
-        return new ContactStoreResultDto(true);
+        return new ContactStoreOutput(true);
     }
 }

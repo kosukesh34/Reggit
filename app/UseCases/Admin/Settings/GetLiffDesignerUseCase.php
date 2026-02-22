@@ -3,13 +3,13 @@
 namespace App\UseCases\Admin\Settings;
 
 use App\Models\ShopSetting;
-use App\UseCases\Admin\Settings\Dto\LiffDesignerViewDto;
+use App\UseCases\Admin\Settings\Data\LiffDesignerView;
 
 class GetLiffDesignerUseCase
 {
-    public function handle(int $projectId): LiffDesignerViewDto
+    public function handle(int $projectId): LiffDesignerView
     {
-        return new LiffDesignerViewDto(
+        return new LiffDesignerView(
             ShopSetting::getLiffTabLayouts($projectId),
             ShopSetting::defaultLiffDesignerTemplates(),
             ShopSetting::getLiffCustomCss($projectId),

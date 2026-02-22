@@ -6,7 +6,7 @@ use App\Models\ApiToken;
 
 class ApiTokenUpdateUseCase
 {
-    /** @param array<string, mixed> $payload */
+    /** @param array<string, string|int|float|bool|array|null> $payload トークン更新用ペイロード */
     public function handle(int $id, array $payload): ApiToken
     {
         $token = ApiToken::findOrFail($id);

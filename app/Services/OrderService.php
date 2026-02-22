@@ -66,7 +66,7 @@ class OrderService
 
     private function validateProductAvailability(Product $product, int $quantity): void
     {
-        if (!$product->is_available) {
+        if ($product->is_available === false) {
             throw new \Exception("商品 {$product->name} は現在利用できません");
         }
 
@@ -91,7 +91,7 @@ class OrderService
         }
 
         $member = $user->member;
-        if (!$member) {
+        if ($member === null) {
             throw new \Exception('会員登録が必要です');
         }
 
@@ -143,7 +143,7 @@ class OrderService
     private function awardPoints(User $user, Order $order, float $finalAmount): void
     {
         $member = $user->member;
-        if (!$member || $finalAmount <= 0) {
+        if ($member === null || $finalAmount <= 0) {
             return;
         }
 
@@ -171,7 +171,7 @@ class OrderService
 
         DB::beginTransaction();
         try {
-            if ($member) {
+            if ($member !== null) {
                 $this->refundPointsUsed($order, $member);
                 $this->reversePointsEarned($order, $member);
                 $member->recalcPointsFromTransactions();
@@ -236,7 +236,7 @@ class OrderService
     {
         foreach ($order->items as $item) {
             $product = $item->product;
-            if ($product) {
+            if ($product !== null) {
                 $product->increment('stock', $item->quantity);
             }
         }

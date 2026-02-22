@@ -9,7 +9,7 @@
     <title>{{ $projectName ?? 'モバイルオーダー' }}</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="{{ asset('css/frontend/style.css') }}?v={{ time() }}">
-    @if(!empty($liffCustomCss))
+    @if(isset($liffCustomCss) && $liffCustomCss !== null && $liffCustomCss !== '')
         <style id="liff-custom-style">{!! $liffCustomCss !!}</style>
     @endif
     @isset($lineTheme)
@@ -37,7 +37,7 @@
         
         <header class="header">
             <div class="header-content">
-                @if(!empty($frontendLogoUrl))
+                @if(isset($frontendLogoUrl) && $frontendLogoUrl !== null && $frontendLogoUrl !== '')
                     <img src="{{ $frontendLogoUrl }}" alt="{{ $frontendHeaderText ?? $projectName ?? 'ロゴ' }}" class="header-logo" style="max-height:36px; margin-right:8px;">
                 @endif
                 <h1 class="logo">{{ $frontendHeaderText ?? $projectName ?? 'モバイルオーダー' }}</h1>
@@ -159,6 +159,8 @@
         window.__API_BASE__ = document.querySelector('meta[name="api-base"]')?.getAttribute('content') || '/api';
         window.__WALLET_PASS_ENABLED__ = {{ ($walletPassEnabled ?? false) ? 'true' : 'false' }};
         window.__WALLET_PASS_ADD_BUTTON_IMAGE__ = "{{ asset('images/add-to-apple-wallet-logo.png') }}";
+        window.__GOOGLE_WALLET_ENABLED__ = {{ ($googleWalletEnabled ?? false) ? 'true' : 'false' }};
+        window.__GOOGLE_WALLET_ADD_BUTTON_IMAGE__ = "{{ asset('images/add-to-google-wallet-button.png') }}";
         window.__LIFF_BUILDER__ = @json($liffBuilderBlocks ?? []);
         window.__LIFF_TAB_LAYOUTS__ = @json($liffTabLayouts ?? []);
         window.__LIFF_TAB_SETTINGS__ = @json($liffTabSettings ?? []);

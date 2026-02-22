@@ -7,7 +7,9 @@ use App\Models\ShopSetting;
 
 class MemberRankCalculator
 {
-    /** @return array<string, mixed> */
+    /**
+     * @return array{current_rank: string, current_rank_label: string, current_rank_icon: string|null, current_rank_background: string|null, next_rank: string|null, next_rank_label: string|null, points_to_next_rank: int|null, rank_basis: string, rank_metric: int}
+     */
     public function getRankInfo(Member $member): array
     {
         $projectId = $member->project_id ?? (\App\Util\AdminContext::getCurrentProjectId() ?? 1);
@@ -50,7 +52,7 @@ class MemberRankCalculator
         }
 
         $pointsToNext = null;
-        if ($next) {
+        if ($next !== null) {
             $pointsToNext = max(0, ($next['min_points'] ?? 0) - $metric);
         }
 
@@ -59,8 +61,8 @@ class MemberRankCalculator
             'current_rank_label' => $resolved['label'] ?? ($resolved['key'] ?? 'bronze'),
             'current_rank_icon' => $resolved['icon_url'] ?? null,
             'current_rank_background' => $resolved['stamp_background_url'] ?? null,
-            'next_rank' => $next['key'] ?? null,
-            'next_rank_label' => $next ? ($next['label'] ?? ($next['key'] ?? null)) : null,
+            'next_rank' => $next !== null ? ($next['key'] ?? null) : null,
+            'next_rank_label' => $next !== null ? ($next['label'] ?? ($next['key'] ?? null)) : null,
             'points_to_next_rank' => $pointsToNext,
             'rank_basis' => $basis,
             'rank_metric' => $metric,
@@ -73,7 +75,7 @@ class MemberRankCalculator
         return (string) ($info['current_rank'] ?? $member->rank ?? 'bronze');
     }
 
-    /** @param array<string, mixed> $rank */
+    /** @param array{is_active?: bool|int|string, min_points?: int, order?: int, key?: string, label?: string} $rank */
     private function isRankActive(array $rank): bool
     {
         if (!array_key_exists('is_active', $rank)) {

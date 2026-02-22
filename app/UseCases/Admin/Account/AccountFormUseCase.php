@@ -5,12 +5,12 @@ namespace App\UseCases\Admin\Account;
 use App\Models\AdminUser;
 use App\Models\AdminUserPermission;
 use App\Models\Project;
-use App\UseCases\Admin\Account\Dto\AccountFormViewDto;
-use App\UseCases\Admin\Dto\RouteContextDto;
+use App\UseCases\Admin\Account\Data\AccountFormView;
+use App\UseCases\Admin\Data\RouteContext;
 
 class AccountFormUseCase
 {
-    public function getCreateView(AdminUser $me, RouteContextDto $context): AccountFormViewDto
+    public function getCreateView(AdminUser $me, RouteContext $context): AccountFormView
     {
         if ($me->isStaff()) {
             abort(403);
@@ -18,7 +18,7 @@ class AccountFormUseCase
 
         $projects = $this->getAccessibleProjects($me);
 
-        return new AccountFormViewDto(
+        return new AccountFormView(
             null,
             $projects,
             $me->getCreatableRoles(),
@@ -31,17 +31,17 @@ class AccountFormUseCase
         );
     }
 
-    public function getEditView(AdminUser $me, int $id, RouteContextDto $context): AccountFormViewDto
+    public function getEditView(AdminUser $me, int $id, RouteContext $context): AccountFormView
     {
         $adminUser = AdminUser::with('permissions')->findOrFail($id);
 
-        if (!$me->canEditUser($adminUser)) {
+        if ($me->canEditUser($adminUser) === false) {
             abort(403, 'このアカウントを編集する権限がありません。');
         }
 
         $projects = $this->getAccessibleProjects($me);
 
-        return new AccountFormViewDto(
+        return new AccountFormView(
             $adminUser,
             $projects,
             $me->getCreatableRoles(),

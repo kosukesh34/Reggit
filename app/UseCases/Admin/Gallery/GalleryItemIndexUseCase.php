@@ -4,11 +4,11 @@ namespace App\UseCases\Admin\Gallery;
 
 use App\Models\GalleryCategory;
 use App\Models\GalleryItem;
-use App\UseCases\Admin\Gallery\Dto\GalleryItemIndexViewDto;
+use App\UseCases\Admin\Gallery\Data\GalleryItemIndexView;
 
 class GalleryItemIndexUseCase
 {
-    public function handle(?int $categoryId): GalleryItemIndexViewDto
+    public function handle(?int $categoryId): GalleryItemIndexView
     {
         $categories = GalleryCategory::orderBy('sort_order')
             ->orderBy('id')
@@ -22,7 +22,7 @@ class GalleryItemIndexUseCase
             $query->where('category_id', $categoryId);
         }
 
-        return new GalleryItemIndexViewDto(
+        return new GalleryItemIndexView(
             $query->get(),
             $categories
         );

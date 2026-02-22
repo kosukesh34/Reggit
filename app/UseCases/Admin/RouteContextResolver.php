@@ -2,12 +2,12 @@
 
 namespace App\UseCases\Admin;
 
-use App\UseCases\Admin\Dto\RouteContextDto;
+use App\UseCases\Admin\Data\RouteContext;
 use Illuminate\Http\Request;
 
 class RouteContextResolver
 {
-    public function resolve(Request $request): RouteContextDto
+    public function resolve(Request $request): RouteContext
     {
         $routeName = $request->route()?->getName() ?? '';
         $routePrefix = str_starts_with($routeName, 'system-admin.') ? 'system-admin' : 'admin';
@@ -20,6 +20,6 @@ class RouteContextResolver
             }
         }
 
-        return new RouteContextDto($routePrefix, $params);
+        return new RouteContext($routePrefix, $params);
     }
 }
