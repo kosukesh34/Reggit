@@ -1,7 +1,8 @@
 <?php
 
-use App\Util\AdminContext;
 use App\Models\Project;
+use App\Util\AdminContext;
+use App\Util\StrHelper;
 
 if (!function_exists('admin_route')) {
     /**
@@ -15,22 +16,22 @@ if (!function_exists('admin_route')) {
             if (is_string($routeProjectKey) && $routeProjectKey !== '') {
                 $projectKey = $routeProjectKey;
             }
-            if (!$projectKey) {
+            if (StrHelper::isEmptyStringOrNull($projectKey)) {
                 $queryProjectKey = request()?->query('project_key');
                 if (is_string($queryProjectKey) && $queryProjectKey !== '') {
                     $projectKey = $queryProjectKey;
                 }
             }
-            if (!$projectKey) {
+            if (StrHelper::isEmptyStringOrNull($projectKey)) {
                 $projectKey = AdminContext::getCurrentProject()?->project_key ?? null;
             }
-            if (!$projectKey) {
+            if (StrHelper::isEmptyStringOrNull($projectKey)) {
                 $projectId = session('admin_project_id');
-                if ($projectId) {
+                if ($projectId !== null) {
                     $projectKey = Project::where('id', (int) $projectId)->value('project_key');
                 }
             }
-            if ($projectKey) {
+            if (!StrHelper::isEmptyStringOrNull($projectKey)) {
                 $params['project_key'] = $projectKey;
             } else {
                 $defaultKey = Project::where('is_active', true)->orderBy('id')->value('project_key');

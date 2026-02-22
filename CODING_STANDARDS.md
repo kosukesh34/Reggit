@@ -13,15 +13,19 @@
 - `Log::info()` で成功時の重要な操作を記録
 - `Log::error()` でエラー時の情報を記録
 - ログには配列形式でコンテキスト情報を含める
+- 検索しやすい文言を使う（例: プロジェクトIDをキーに含める）
+- スマレジPOSのログ形式がある場合はその踏襲を検討する
 
 ```php
 // 良い例
 Log::info('Reservation created', [
+    'project_id' => $project->id,
     'reservation_id' => $reservation->id,
     'user_id' => $user->id,
 ]);
 
 Log::error('Reservation creation failed', [
+    'project_id' => $project->id ?? null,
     'user_id' => $user->id,
     'error' => $e->getMessage(),
 ]);
@@ -158,12 +162,23 @@ public function hasMember(): bool
 - PHPDocの有効活用
 - メソッドの引数と戻り値に型ヒントを使用
 
+### PHPDoc の型
+- **`mixed` は避ける**: 引数・戻り値は可能な限り具体的な型で書く。やむを得ず「何でもあり」な配列の値だけ `array<string, mixed>` とする（例: ログコンテキスト、ルートパラメータ）。
+- **配列の形が決まっているとき**: `@param array<int, string>` や `@return array{key: string, count: int}` のようにキー・要素の型を書く。
+- **クラス・Data の array プロパティ**: コンストラクタの上に `@param array<キー型, 値型>` または `@param array{キー: 型, ...}` で説明する。
+
 ```php
 // 良い例
 public function createReservation(User $user, array $data): Reservation
 {
     // ...
 }
+
+/** @return array{orders: int, revenue: float} */
+private function buildSummary(): array { ... }
+
+/** @param array<string, mixed> $context ログ用のキー・値（値は任意型） */
+public static function error(string $message, array $context = []): void { ... }
 ```
 
 ## 12. 命名規則
@@ -204,7 +219,24 @@ public function createReservation(User $user, array $data): Reservation
 - 略語は避け、意味が明確な変数名を使用する
 - ループカウンタなどは `$i`, `$j` など短い名前でも可
 
-## 17. 依存関係の注入
+## 17. 他コードへの準拠・StrHelper
+
+- provider メソッド名など、既存の命名・パターンに準拠する。他ファイルを参考にコードを書く。
+- null/空文字の判定は `StrHelper` を使う。`empty()` や直接比較より `StrHelper::isEmptyStringOrNull()` などを優先する。
+
+```php
+// 良い例
+$canEditLinePlan = !StrHelper::isEmptyStringOrNull($project->smaregi_contract_id);
+```
+
+## 18. Controller と UseCase（クリーンアーキテクチャ）
+
+- Controller に直接処理を書かず、UseCase に実装する。一つのファイルが長くならないようにする。
+- **層の依存**: Controller → UseCase → Service / Model。UseCase は `Request` に依存せず、**Input** クラスまたはプリミティブで受け取る。
+- 新規 UseCase では `handle(○○Input $input): ○○Result` または `○○View` の形を推奨。入出力用クラスは UseCases 配下の **Data** フォルダに置き、名前は **Input**（入力）・**Result**（結果）・**View**（画面用）など役割で付ける（「DTO」という名前は使わない）。既存の `handle(Request $request, ...)` はリファクタ時に Input 化する。
+- 詳細は **docs/CLEAN_ARCHITECTURE.md** を参照。
+
+## 19. 依存関係の注入
 
 - コントローラーやサービスクラスでは、コンストラクタインジェクションを使用
 - 依存関係はprivateプロパティで保持
@@ -224,7 +256,7 @@ class OrderController extends Controller
 }
 ```
 
-## 18. 例外処理
+## 20. 例外処理
 
 - try-catchで例外をキャッチし、適切に処理する
 - エラー時は `Log::error()` でログ出力
@@ -242,7 +274,7 @@ try {
 }
 ```
 
-## 19. バリデーション
+## 21. バリデーション
 
 - Requestの `validate()` メソッドを使用
 - バリデーションルールは明示的に記述
@@ -256,26 +288,12 @@ $validated = $request->validate([
 ]);
 ```
 
-## 20. トランザクション処理
+## 22. トランザクション処理
 
-- 複数のDB操作を行う場合は、トランザクションを使用
-- `DB::beginTransaction()`, `DB::commit()`, `DB::rollBack()` を使用
+- **複数テーブルをまたぐ更新**で整合性を保ちたい場合にのみトランザクションを使う。単一テーブルだけの更新で、複数テーブル対応の名残のトランザクションは削除してよい。
+- `DB::beginTransaction()`, `DB::commit()`, `DB::rollBack()` を使用する。
 
-```php
-// 良い例
-DB::beginTransaction();
-try {
-    // DB操作
-    DB::commit();
-    return $result;
-} catch (\Exception $e) {
-    DB::rollBack();
-    Log::error('Operation failed: ' . $e->getMessage());
-    throw $e;
-}
-```
-
-## 21. フロントエンド（JavaScript）
+## 23. フロントエンド（JavaScript）
 
 ### クラス構造
 - Managerクラス: 特定の機能を管理（CartManager, ProductManager, ReservationManager）
@@ -289,10 +307,59 @@ try {
 - `AppConstants` オブジェクトで定数を管理
 - APIエンドポイント、DOM要素ID、HTTPメソッドなどを定義
 
-## 22. その他
+## 24. その他
 
 - 可能な限りコードを増やさない
 - Laravelのみで実装できそうな機能はそれを追加する必要は全くない
 - 他の部分のコードを参考にコード規則には従うようにする
 - 変更は最小限に、コードは保守性と可読性がなく冗長ではないのが最低条件です
 - 基本的に新規のコメントアウトは不要なのと、コードレビューを行うのは変更した部分だけでお願いします（影響範囲を小さくするため）
+
+---
+
+## コードレビュー指摘事項（繰り返さないためのまとめ）
+
+**目的**: 過去のレビュー指摘を共通ルールとして共有し、同じ指摘を繰り返さないようにする。
+
+### 1. ルートパラメータの冗長な null/空チェック
+
+- ルートで `{projectKey}` のように**必須パラメータ**を受け取っている場合、そのパラメータが無ければ 404 となり、コントローラに到達しない。
+- **対応**: ルートで必須になっているパラメータに対して、コントローラ内で `StrHelper::isEmptyStringOrNull($projectKey)` などのチェックは**不要**。ルート定義で担保されているなら削除してよい。
+- **例外**: オプショナルパラメータやクエリパラメータの場合は必要に応じてチェックする。
+
+### 2. Input クラスを try で囲まない
+
+- Input クラス（`UpdateProjectInput` など）のインスタンス化を `try { ... } catch` で囲まない。
+- バリデーションは Laravel の Validation に沿い、Input のコンストラクタで `ValidationException` を投げる設計。try で囲む必要はない。
+
+### 3. 例外の catch は必要以上に細かくしない
+
+- 金融システムのような厳密な後処理分岐が無い限り、多数の例外型を個別に catch する必要はない。
+- `\Exception` でまとめて扱ってよい。**例外の型ごとに後処理やメッセージを変える**場合だけ、個別 catch を検討する。
+- 細かい例外型を並べて同じような処理を重複させない。
+
+### 4. ViewItem / DTO の static は意味があるときだけ
+
+- ViewItem の private メソッドを `static` にする必然性が無いなら `static` にしない。
+- `$this` を使わないからといって安易に `static` にしない。インスタンスメソッドでよい場合が多い。static にするなら「状態に依存しないユーティリティ」である理由を説明できるようにする。
+
+### 5. View には「表示用の文字列」を渡す
+
+- View で `$viewItem->contractStopOptions[$viewItem->contractStopValue] ?? '-'` のように「配列 + キー」でラベルを組み立てるより、ViewItem 側でラベル文字列まで用意して渡す方がよい。
+- **対応**: 表示用ラベルは **ViewItem（または DTO）のプロパティとして文字列で持たせる**（例: `contractStopLabel`）。View では `{{ $viewItem->contractStopLabel }}` のように参照するだけにする。
+- **例外**: フォームの select の option 一覧など、意図的に「配列 + 現在値」を渡す場合はその限りではない。
+
+### 6. UseCase で Validator クラスを使わない
+
+- UseCase 内で `Validator::make(...)->validate()` のように Laravel の Validator を直接使わない。Input クラス側のバリデーションと役割が被る。
+- **対応**: バリデーションは **Input クラスのコンストラクタ**で行い、UseCase では「Input が渡ってくる = すでに検証済み」を前提にする。UseCase 内で追加のチェックが必要な場合は、Validator に頼らず条件分岐などで行う。
+
+### 7. 定数化は過剰にしない
+
+- `SQLSTATE_*` やテーブル名・カラム名の定数化が、このコードベースでは過剰と判断される場合がある。
+- 定数化するなら**プロジェクト全体で一貫した方針**が必要。一箇所だけ定数化するとかえって不揃いになる。**マジックナンバー・文字列の排除**が目的なら、既存の Enum やモデル定数で足りる範囲はそちらを優先する。
+
+### 8. トランザクションは「複数テーブル更新」のときだけ
+
+- 単一テーブル更新でも `DB::beginTransaction()` を貼っていた場合は、「複数テーブルを更新するならトランザクション」という観点で見直す。
+- **複数テーブルをまたぐ更新**で整合性を保ちたい場合にトランザクションを使う。単一テーブルだけの更新で、過去の「複数テーブル対応」の名残のトランザクションは削除してよい。

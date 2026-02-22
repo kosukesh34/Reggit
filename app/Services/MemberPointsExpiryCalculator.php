@@ -7,7 +7,7 @@ use App\Models\PointTransaction;
 
 class MemberPointsExpiryCalculator
 {
-    /** @return array<string, mixed>|null */
+    /** @return array{expires_at: string, expires_at_label: string, points_expiring: int}|null */
     public function getExpiryInfo(Member $member): ?array
     {
         $earliest = PointTransaction::where('member_id', $member->id)

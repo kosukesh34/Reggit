@@ -203,7 +203,7 @@ class ReservationController extends BaseApiController
         }
 
         $reservationCapacity = ShopSetting::getReservationCapacityPerSlot();
-        if (!$this->isSlotAvailable($reservedAt, $reservationCapacity, $excludeReservationId)) {
+        if ($this->isSlotAvailable($reservedAt, $reservationCapacity, $excludeReservationId) === false) {
             return '選択した時間帯は満席です';
         }
 

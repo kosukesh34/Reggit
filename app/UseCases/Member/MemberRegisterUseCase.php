@@ -4,8 +4,8 @@ namespace App\UseCases\Member;
 
 use App\Services\MemberService;
 use App\Services\UserService;
-use App\UseCases\Member\Dto\MemberDataDto;
-use App\UseCases\Member\Dto\MemberRegisterResultDto;
+use App\UseCases\Member\Data\MemberData;
+use App\UseCases\Member\Data\MemberRegisterOutput;
 use Illuminate\Http\Request;
 
 class MemberRegisterUseCase
@@ -18,8 +18,8 @@ class MemberRegisterUseCase
     ) {
     }
 
-    /** @param array<string, mixed> $validated */
-    public function handle(Request $request, array $validated): MemberRegisterResultDto
+    /** @param array<string, string|int|float|bool|array|null> $validated 検証済み会員登録データ（name, phone, email 等） */
+    public function handle(Request $request, array $validated): MemberRegisterOutput
     {
         $user = $this->userService->getOrCreateUser($request);
 
@@ -32,12 +32,12 @@ class MemberRegisterUseCase
 
             $user->refresh();
             $data = $this->memberService->getMemberData($user);
-            return new MemberRegisterResultDto(new MemberDataDto($data), true);
+            return new MemberRegisterOutput(new MemberData($data), true);
         }
 
         $user->refresh();
         $data = $this->memberService->getMemberData($user);
 
-        return new MemberRegisterResultDto(new MemberDataDto($data), false);
+        return new MemberRegisterOutput(new MemberData($data), false);
     }
 }

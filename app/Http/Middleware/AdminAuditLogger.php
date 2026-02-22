@@ -22,7 +22,7 @@ class AdminAuditLogger
         }
 
         $admin = $request->user('admin');
-        if (!$admin) {
+        if ($admin === null) {
             return $response;
         }
 

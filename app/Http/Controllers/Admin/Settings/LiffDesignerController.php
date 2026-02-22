@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin\Settings;
 
 use App\Http\Controllers\Admin\AdminBaseController;
+use App\UseCases\Admin\Settings\Data\UpdateLiffDesignerInput;
 use App\UseCases\Admin\Settings\GetLiffDesignerUseCase;
 use App\UseCases\Admin\Settings\UpdateLiffDesignerUseCase;
 use Illuminate\Http\Request;
@@ -29,26 +30,26 @@ class LiffDesignerController extends AdminBaseController
         $layoutsJson = $request->input('layouts_json');
         $decoded = json_decode($layoutsJson, true);
 
-        if (!is_array($decoded)) {
+        if (is_array($decoded) === false) {
             return redirect()->back()
                 ->withErrors(['layouts' => 'レイアウトが不正です']);
         }
 
         $tabSettings = null;
         $tabSettingsJson = $request->input('tab_settings_json');
-        if ($tabSettingsJson !== null) {
+        if ($tabSettingsJson !== null && $tabSettingsJson !== '') {
             $parsed = json_decode($tabSettingsJson, true);
             if (is_array($parsed)) {
                 $tabSettings = $parsed;
             }
         }
 
-        $useCase->handle(
-            $this->resolveAdminProjectId(),
+        $input = new UpdateLiffDesignerInput(
             $decoded,
             (string) $request->input('custom_css', ''),
             $tabSettings
         );
+        $useCase->handle($this->resolveAdminProjectId(), $input);
 
         return redirect()
             ->route('admin.settings.liff-designer', $this->buildAdminRouteParams())
