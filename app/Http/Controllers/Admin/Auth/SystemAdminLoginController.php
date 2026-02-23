@@ -22,11 +22,13 @@ class SystemAdminLoginController extends Controller
                 ? redirect()->route('system-admin.projects.index')
                 : $this->authService->getAdminDashboardRedirect();
         }
-        return redirect()->route('admin.login');
+        return view('admin.system-admin.login', [
+            'submitRoute' => route('system-admin.login.submit'),
+        ]);
     }
 
     public function login(LoginRequest $request)
     {
-        return $this->authService->loginAdmin($request);
+        return $this->authService->loginSystemAdmin($request);
     }
 }

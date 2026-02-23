@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Admin;
 
 use App\Models\AdminUser;
+use App\Models\Project;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 use Illuminate\Validation\Rules\Password;
@@ -72,7 +73,7 @@ class AccountUpdateRequest extends FormRequest
     public function toProjectIds(): array
     {
         if ($this->role === AdminUser::ROLE_SYSTEM_ADMIN) {
-            return [];
+            return Project::pluck('id')->all();
         }
         return array_values(array_unique($this->validated('project_ids') ?? []));
     }

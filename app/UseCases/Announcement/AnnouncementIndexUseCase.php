@@ -3,14 +3,22 @@
 namespace App\UseCases\Announcement;
 
 use App\Models\Announcement;
+use App\Models\AnnouncementRead;
+use App\Services\UserService;
 use App\UseCases\Announcement\Data\AnnouncementIndexView;
 use App\Util\AdminContext;
+use Illuminate\Http\Request;
 
 class AnnouncementIndexUseCase
 {
-    public function handle(): AnnouncementIndexView
+    public function __construct(private UserService $userService)
+    {
+    }
+
+    public function handle(Request $request): AnnouncementIndexView
     {
         $projectId = AdminContext::getCurrentProjectId() ?? 1;
+        $user = $this->userService->findUser($request);
 
         $announcements = Announcement::where('project_id', $projectId)
             ->whereNotNull('published_at')
@@ -24,6 +32,27 @@ class AnnouncementIndexUseCase
             ->take(10)
             ->get(['id', 'title', 'body', 'published_at', 'is_pinned']);
 
-        return new AnnouncementIndexView($announcements);
+        $readAtByAnnouncement = collect();
+        if ($user !== null && $announcements->isNotEmpty()) {
+            $readAtByAnnouncement = AnnouncementRead::where('project_id', $projectId)
+                ->where('user_id', $user->id)
+                ->whereIn('announcement_id', $announcements->pluck('id')->all())
+                ->pluck('read_at', 'announcement_id');
+        }
+
+        $rows = $announcements->map(function (Announcement $announcement) use ($readAtByAnnouncement) {
+            $readAt = $readAtByAnnouncement->get($announcement->id);
+            return [
+                'id' => $announcement->id,
+                'title' => $announcement->title,
+                'body' => $announcement->body,
+                'published_at' => $announcement->published_at?->toIso8601String(),
+                'is_pinned' => (bool) $announcement->is_pinned,
+                'is_read' => $readAt !== null,
+                'read_at' => $readAt,
+            ];
+        });
+
+        return new AnnouncementIndexView($rows);
     }
 }

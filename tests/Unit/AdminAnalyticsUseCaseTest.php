@@ -3,6 +3,8 @@
 namespace Tests\Unit;
 
 use App\Enums\OrderStatus;
+use App\Models\Announcement;
+use App\Models\AnnouncementRead;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
@@ -39,11 +41,26 @@ class AdminAnalyticsUseCaseTest extends TestCase
             'price' => 750,
         ]);
 
+        $announcement = Announcement::factory()->create([
+            'project_id' => $project->id,
+            'published_at' => now()->subHours(2),
+        ]);
+        AnnouncementRead::create([
+            'project_id' => $project->id,
+            'announcement_id' => $announcement->id,
+            'user_id' => $user->id,
+            'read_at' => now()->subHour(),
+        ]);
+
         $useCase = app(AdminAnalyticsUseCase::class);
         $view = $useCase->handle($project->id, now()->subDay()->toDateString(), now()->toDateString());
 
         $this->assertArrayHasKey('category_sales', $view->breakdowns);
         $this->assertArrayHasKey('hourly_orders', $view->breakdowns);
+        $this->assertArrayHasKey('announcement_reads', $view->breakdowns);
+        $this->assertArrayHasKey('announcements_published', $view->summary);
+        $this->assertArrayHasKey('announcement_avg_read_rate', $view->summary);
         $this->assertNotEmpty($view->breakdowns['category_sales']);
+        $this->assertNotEmpty($view->breakdowns['announcement_reads']['top_announcements']);
     }
 }

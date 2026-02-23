@@ -13,11 +13,13 @@ const AppConstants = {
         RESERVATIONS: `${API_BASE}/reservations`,
         RESERVATIONS_AVAILABLE_DATES: `${API_BASE}/reservations/available-dates`,
         ANNOUNCEMENTS: `${API_BASE}/announcements`,
+        ANNOUNCEMENT_READ: (id) => `${API_BASE}/announcements/${id}/read`,
         STAMPS: `${API_BASE}/stamps`,
         MY_COUPONS: `${API_BASE}/members/me/coupons`,
         GALLERY: `${API_BASE}/gallery`,
         QUEUE: `${API_BASE}/queue`,
         QUEUE_ME: `${API_BASE}/queue/me`,
+        QUEUE_QR: `${API_BASE}/queue/qr`,
     },
     
     HTTP_METHODS: {

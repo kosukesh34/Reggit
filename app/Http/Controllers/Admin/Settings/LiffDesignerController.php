@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Admin\Settings;
 
 use App\Http\Controllers\Admin\AdminBaseController;
+use App\Support\LiffDesignerSanitizer;
 use App\UseCases\Admin\Settings\Data\UpdateLiffDesignerInput;
 use App\UseCases\Admin\Settings\GetLiffDesignerUseCase;
 use App\UseCases\Admin\Settings\UpdateLiffDesignerUseCase;
 use Illuminate\Http\Request;
+use InvalidArgumentException;
 
 class LiffDesignerController extends AdminBaseController
 {
@@ -20,6 +22,8 @@ class LiffDesignerController extends AdminBaseController
             'customCss' => $dto->customCss,
             'tabSettings' => $dto->tabSettings,
             'featureFlags' => $dto->featureFlags,
+            'liffId' => $dto->liffId,
+            'liffUrl' => $dto->liffUrl,
         ]);
     }
 
@@ -44,11 +48,19 @@ class LiffDesignerController extends AdminBaseController
             }
         }
 
-        $input = new UpdateLiffDesignerInput(
-            $decoded,
-            (string) $request->input('custom_css', ''),
-            $tabSettings
-        );
+        try {
+            $input = new UpdateLiffDesignerInput(
+                LiffDesignerSanitizer::sanitizeLayouts($decoded),
+                LiffDesignerSanitizer::sanitizeCustomCss((string) $request->input('custom_css', '')),
+                LiffDesignerSanitizer::sanitizeTabSettings($tabSettings),
+                trim((string) $request->input('line_liff_id', '')),
+                trim((string) $request->input('line_liff_url', ''))
+            );
+        } catch (InvalidArgumentException $e) {
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['liff_designer' => $e->getMessage()]);
+        }
         $useCase->handle($this->resolveAdminProjectId(), $input);
 
         return redirect()
