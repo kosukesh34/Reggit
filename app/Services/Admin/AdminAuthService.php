@@ -12,9 +12,17 @@ use Illuminate\Validation\ValidationException;
 
 class AdminAuthService
 {
+    public function getSystemAdminDashboardRedirect()
+    {
+        return redirect()->route('system-admin.projects.index');
+    }
+
     public function getAdminDashboardRedirect()
     {
         $admin = Auth::guard('admin')->user();
+        if ($admin->isSystemAdmin()) {
+            return $this->getSystemAdminDashboardRedirect();
+        }
         $first = Project::whereIn('id', $admin->getAllowedProjectIds())
             ->where('is_active', true)
             ->orderBy('name')
@@ -33,6 +41,11 @@ class AdminAuthService
                 'login_id' => ['IDまたはパスワードが正しくありません。'],
             ]);
         }
+        if ($user->isSystemAdmin()) {
+            throw ValidationException::withMessages([
+                'login_id' => ['システム管理者は /system-admin/login からログインしてください。'],
+            ]);
+        }
 
         $remember = $request->boolean('remember');
         Auth::guard('admin')->login($user, $remember);
@@ -45,6 +58,33 @@ class AdminAuthService
         ]);
 
         return $this->getAdminDashboardRedirect();
+    }
+
+    public function loginSystemAdmin(Request $request)
+    {
+        $user = AdminUser::where('login_id', $request->login_id)->first();
+        if ($user === null || Hash::check($request->password, $user->password) === false) {
+            throw ValidationException::withMessages([
+                'login_id' => ['IDまたはパスワードが正しくありません。'],
+            ]);
+        }
+        if ($user->isSystemAdmin() === false) {
+            throw ValidationException::withMessages([
+                'login_id' => ['システム管理者アカウントでログインしてください。'],
+            ]);
+        }
+
+        $remember = $request->boolean('remember');
+        Auth::guard('admin')->login($user, $remember);
+        $request->session()->regenerate();
+        $request->session()->put('admin_login_via', 'system-admin');
+
+        $this->writeLoginAuditLog($request, $user->id, 'login_success', [
+            'login_id' => $request->login_id,
+            'remember' => $remember,
+        ]);
+
+        return $this->getSystemAdminDashboardRedirect();
     }
 
     public function logout(Request $request)

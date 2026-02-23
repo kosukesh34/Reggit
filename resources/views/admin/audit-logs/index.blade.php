@@ -4,8 +4,18 @@
 @section('page-title', '監査ログ')
 
 @section('content')
+@php
+    $isSystemContext = request()->routeIs('system-admin.*');
+@endphp
 <div class="page-header system-admin-page-header">
-    <p class="page-header-desc">重要な操作の履歴を確認できます。</p>
+    <p class="page-header-desc">
+        重要な操作の履歴を確認できます。
+        @if($isSystemContext)
+            （全プロジェクト）
+        @else
+            （現在のプロジェクトのみ）
+        @endif
+    </p>
 </div>
 <div class="card">
     <div class="card-header">
@@ -29,7 +39,7 @@
                     <td><span class="id-badge">{{ $log->id }}</span></td>
                     <td>{{ $log->created_at?->format('Y-m-d H:i:s') }}</td>
                     <td>
-                        <a href="{{ route('system-admin.audit-logs.show', $log->id) }}">{{ $log->getActionLabel() }}</a>
+                        <a href="{{ $isSystemContext ? route('system-admin.audit-logs.show', $log->id) : admin_route('admin.audit-logs.show', ['id' => $log->id]) }}">{{ $log->getActionLabel() }}</a>
                         @if($log->route_name)
                             <div class="text-muted text-muted-xs">{{ $log->route_name }}</div>
                         @endif

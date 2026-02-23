@@ -16,10 +16,10 @@ class QueueController extends AdminBaseController
     public function queue()
     {
         $projectId = $this->resolveAdminProjectId();
-        $entries = $this->queueAdminService->getPaginatedList(50);
-        $waitingCount = $this->queueAdminService->getWaitingCount();
+        $entries = $this->queueAdminService->getPaginatedList($projectId, 50);
+        $waitingCount = $this->queueAdminService->getWaitingCount($projectId);
         $estimatedWaitMinutes = $this->queueAdminService->getEstimatedWaitMinutes($projectId);
-        $waitingQueueNumbers = $this->queueAdminService->getWaitingQueueNumbers();
+        $waitingQueueNumbers = $this->queueAdminService->getWaitingQueueNumbers($projectId);
         return view('admin.queue.index', compact('entries', 'waitingCount', 'estimatedWaitMinutes', 'waitingQueueNumbers'));
     }
 

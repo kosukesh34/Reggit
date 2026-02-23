@@ -11,34 +11,46 @@ class UserService
 {
     private const SESSION_USER_ID_KEY_PREFIX = 'mobile_order_user_id';
 
-    public function getOrCreateUser(Request $request): User
+    public function findUser(Request $request): ?User
     {
         $projectId = AdminContext::getCurrentProjectId() ?? 1;
         $lineUserId = $request->header('X-Line-User-Id');
-        
+
         if ($lineUserId !== null && $lineUserId !== '') {
             $user = User::where('line_user_id', $lineUserId)->where('project_id', $projectId)->first();
             if ($user !== null) {
                 Session::put($this->getSessionKey($projectId), $user->id);
                 return $user;
             }
-            $user = $this->createGuestUser($lineUserId, $projectId);
-            Session::put($this->getSessionKey($projectId), $user->id);
-            return $user;
         }
 
         $user = $request->user();
-        if ($user !== null) {
+        if ($user !== null && (int) $user->project_id === $projectId) {
             Session::put($this->getSessionKey($projectId), $user->id);
             return $user;
         }
 
         $sessionUserId = Session::get($this->getSessionKey($projectId));
         if ($sessionUserId !== null) {
-            $user = User::where('id', $sessionUserId)->where('project_id', $projectId)->first();
-            if ($user !== null) {
-                return $user;
-            }
+            return User::where('id', $sessionUserId)->where('project_id', $projectId)->first();
+        }
+
+        return null;
+    }
+
+    public function getOrCreateUser(Request $request): User
+    {
+        $projectId = AdminContext::getCurrentProjectId() ?? 1;
+        $lineUserId = $request->header('X-Line-User-Id');
+        $existing = $this->findUser($request);
+        if ($existing !== null) {
+            return $existing;
+        }
+
+        if ($lineUserId !== null && $lineUserId !== '') {
+            $user = $this->createGuestUser($lineUserId, $projectId);
+            Session::put($this->getSessionKey($projectId), $user->id);
+            return $user;
         }
 
         $user = $this->createGuestUser('guest-' . uniqid(), $projectId);

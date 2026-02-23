@@ -365,6 +365,36 @@ class ShopSetting extends Model
         self::setValue('liff_tab_layouts', $layouts, 'json', $projectId);
     }
 
+    public static function getLineLiffId(?int $projectId = null): string
+    {
+        $value = trim((string) self::getValue('line_liff_id', '', $projectId));
+        if ($value !== '') {
+            return $value;
+        }
+
+        return trim((string) config('line.liff_id', ''));
+    }
+
+    public static function setLineLiffId(?string $liffId, ?int $projectId = null): void
+    {
+        self::setValue('line_liff_id', trim((string) ($liffId ?? '')), 'string', $projectId);
+    }
+
+    public static function getLineLiffUrl(?int $projectId = null): string
+    {
+        $value = trim((string) self::getValue('line_liff_url', '', $projectId));
+        if ($value !== '') {
+            return $value;
+        }
+
+        return trim((string) config('line.liff_url', ''));
+    }
+
+    public static function setLineLiffUrl(?string $liffUrl, ?int $projectId = null): void
+    {
+        self::setValue('line_liff_url', trim((string) ($liffUrl ?? '')), 'string', $projectId);
+    }
+
     public static function defaultLiffTabLayouts(): array
     {
         return [

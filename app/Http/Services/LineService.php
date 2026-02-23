@@ -4,6 +4,7 @@ namespace App\Http\Services;
 
 use GuzzleHttp\Client;
 use App\Util\LogHelper;
+use RuntimeException;
 
 class LineService
 {
@@ -26,6 +27,7 @@ class LineService
 
     public function verifySignature($body, $signature)
     {
+        $this->ensureConfigured(true);
         $hash = hash_hmac('sha256', $body, $this->channelSecret, true);
         $expectedSignature = base64_encode($hash);
         return hash_equals($expectedSignature, $signature);
@@ -33,11 +35,14 @@ class LineService
 
     public function replyMessage($replyToken, $messages)
     {
+        $this->ensureConfigured();
+        $normalizedMessages = $this->normalizeMessages($messages);
+
         try {
             $response = $this->client->post('bot/message/reply', [
                 'json' => [
                     'replyToken' => $replyToken,
-                    'messages' => is_array($messages) ? $messages : [$messages],
+                    'messages' => $normalizedMessages,
                 ],
             ]);
 
@@ -52,11 +57,14 @@ class LineService
 
     public function pushMessage($userId, $messages)
     {
+        $this->ensureConfigured();
+        $normalizedMessages = $this->normalizeMessages($messages);
+
         try {
             $response = $this->client->post('bot/message/push', [
                 'json' => [
                     'to' => $userId,
-                    'messages' => is_array($messages) ? $messages : [$messages],
+                    'messages' => $normalizedMessages,
                 ],
             ]);
 
@@ -109,5 +117,29 @@ class LineService
             ],
         ];
     }
-}
 
+    private function ensureConfigured(bool $requireSecret = false): void
+    {
+        if (empty($this->channelAccessToken)) {
+            throw new RuntimeException('LINE Messaging API access token is not configured.');
+        }
+        if ($requireSecret && empty($this->channelSecret)) {
+            throw new RuntimeException('LINE Messaging API credentials are not configured.');
+        }
+    }
+
+    private function normalizeMessages($messages): array
+    {
+        if (!is_array($messages)) {
+            return [$messages];
+        }
+
+        // 単一メッセージ連想配列（例: ['type' => 'text', 'text' => '...']）
+        if (array_key_exists('type', $messages)) {
+            return [$messages];
+        }
+
+        // 複数メッセージ配列
+        return $messages;
+    }
+}

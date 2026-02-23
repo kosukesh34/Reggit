@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="line-liff-id" content="{{ config('line.liff_id', '') }}">
+    <meta name="line-liff-id" content="{{ $liffId ?? config('line.liff_id', '') }}">
     <meta name="project-key" content="{{ $projectKey ?? 'default' }}">
     <meta name="api-base" content="{{ config('app.api_base', '/api') }}">
     <title>{{ $projectName ?? 'モバイルオーダー' }}</title>
@@ -159,8 +159,6 @@
         window.__API_BASE__ = document.querySelector('meta[name="api-base"]')?.getAttribute('content') || '/api';
         window.__WALLET_PASS_ENABLED__ = {{ ($walletPassEnabled ?? false) ? 'true' : 'false' }};
         window.__WALLET_PASS_ADD_BUTTON_IMAGE__ = "{{ asset('images/add-to-apple-wallet-logo.png') }}";
-        window.__GOOGLE_WALLET_ENABLED__ = {{ ($googleWalletEnabled ?? false) ? 'true' : 'false' }};
-        window.__GOOGLE_WALLET_ADD_BUTTON_IMAGE__ = "{{ asset('images/add-to-google-wallet-button.png') }}";
         window.__LIFF_BUILDER__ = @json($liffBuilderBlocks ?? []);
         window.__LIFF_TAB_LAYOUTS__ = @json($liffTabLayouts ?? []);
         window.__LIFF_TAB_SETTINGS__ = @json($liffTabSettings ?? []);

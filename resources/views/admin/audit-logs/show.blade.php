@@ -4,8 +4,14 @@
 @section('page-title', '監査ログ詳細')
 
 @section('content')
+@php
+    $isSystemContext = request()->routeIs('system-admin.*');
+    $indexUrl = $isSystemContext
+        ? route('system-admin.audit-logs.index')
+        : admin_route('admin.audit-logs.index');
+@endphp
 <nav class="breadcrumb" aria-label="パンくず">
-    <a href="{{ route('system-admin.audit-logs.index') }}">監査ログ</a>
+    <a href="{{ $indexUrl }}">監査ログ</a>
     <span class="breadcrumb-sep">/</span>
     <span>詳細</span>
 </nav>
@@ -56,7 +62,7 @@
             <pre class="code-block">{{ json_encode($log->payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
         </div>
         <div class="form-actions">
-            <a href="{{ route('system-admin.audit-logs.index') }}" class="btn btn-secondary">戻る</a>
+            <a href="{{ $indexUrl }}" class="btn btn-secondary">戻る</a>
         </div>
     </div>
 </div>
