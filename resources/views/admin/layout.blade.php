@@ -112,6 +112,15 @@
                     </a>
                 </div>
                 @endif
+                @if($adminUser === null || $adminUser->hasPermission('audit_logs.view'))
+                <div class="nav-group">
+                    <div class="nav-group-label">セキュリティ</div>
+                    <a href="{{ admin_route('admin.audit-logs.index') }}" class="nav-item {{ request()->routeIs('admin.audit-logs*') ? 'active' : '' }}">
+                        <i class="fas fa-clipboard-list"></i>
+                        <span>監査ログ</span>
+                    </a>
+                </div>
+                @endif
                 @if($adminUser === null || $adminUser->hasPermission('gallery.view'))
                 <div class="nav-group">
                     <div class="nav-group-label">ギャラリー</div>
@@ -170,7 +179,14 @@
         
         <main class="main-content">
             <header class="content-header content-header-with-actions">
-                <h2>@yield('page-title', 'ダッシュボード')</h2>
+                <div class="content-header-title-wrap">
+                    <h2>@yield('page-title', 'ダッシュボード')</h2>
+                    @if(request()->routeIs('system-admin.*'))
+                        <span class="badge badge-warning">システム管理モード</span>
+                    @else
+                        <span class="badge badge-info">店舗管理モード</span>
+                    @endif
+                </div>
                 @auth('admin')
                 <div class="content-header-actions">
                     @if(auth('admin')->user()->isSystemAdmin() && !request()->routeIs('system-admin.*'))
@@ -208,5 +224,4 @@
     </div>
 </body>
 </html>
-
 

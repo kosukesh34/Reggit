@@ -8,12 +8,15 @@ use App\Enums\PointTransactionType;
 use App\Models\CouponRedemption;
 use App\Models\Member;
 use App\Models\MemberCoupon;
+use App\Models\Announcement;
+use App\Models\AnnouncementRead;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\PointTransaction;
 use App\Models\Product;
 use App\Models\QueueEntry;
 use App\Models\Reservation;
+use App\Models\User;
 use App\UseCases\Admin\Analytics\Data\AdminAnalyticsView;
 use App\Util\AdminStatusLabels;
 use Carbon\Carbon;
@@ -57,13 +60,14 @@ class AdminAnalyticsUseCase
         );
     }
 
-    /** @return array{orders: int, revenue: float, avg_order_value: float, new_members: int, reservations: int, queue: int, coupons_issued: int, coupons_used: int, points_earned: float, points_used: float} */
+    /** @return array{orders: int, revenue: float, avg_order_value: float, new_members: int, reservations: int, queue: int, coupons_issued: int, coupons_used: int, points_earned: float, points_used: float, announcements_published: int, announcement_read_users: int, announcement_avg_read_rate: float} */
     private function buildSummary(int $projectId, $ordersBase, Carbon $startDate, Carbon $endDate): array
     {
         $ordersCount = (clone $ordersBase)->count();
         $revenue = (clone $ordersBase)
             ->where('status', '!=', OrderStatus::CANCELLED)
             ->sum('total_amount');
+        $announcementSummary = $this->buildAnnouncementReadSummary($projectId, $startDate, $endDate);
 
         return [
             'orders' => $ordersCount,
@@ -85,6 +89,9 @@ class AdminAnalyticsUseCase
             'points_used' => abs(PointTransaction::where('project_id', $projectId)
                 ->whereBetween('created_at', [$startDate, $endDate])
                 ->where('type', PointTransactionType::USED)->sum('points')),
+            'announcements_published' => $announcementSummary['published_count'],
+            'announcement_read_users' => $announcementSummary['read_users_in_period'],
+            'announcement_avg_read_rate' => $announcementSummary['average_read_rate'],
         ];
     }
 
@@ -147,7 +154,7 @@ class AdminAnalyticsUseCase
         }
     }
 
-    /** @return array{order_statuses: array, payment_methods: array, hourly_orders: array, category_sales: array, order_value_buckets: array, top_products: array} */
+    /** @return array{order_statuses: array, payment_methods: array, hourly_orders: array, category_sales: array, order_value_buckets: array, top_products: array, announcement_reads: array} */
     private function buildBreakdowns(int $projectId, $ordersBase, Carbon $startDate, Carbon $endDate): array
     {
         return [
@@ -157,6 +164,7 @@ class AdminAnalyticsUseCase
             'category_sales' => $this->buildCategorySummary($projectId, $startDate, $endDate),
             'order_value_buckets' => $this->buildBucketSummary($ordersBase),
             'top_products' => $this->buildTopProducts($projectId, $startDate, $endDate),
+            'announcement_reads' => $this->buildAnnouncementReadSummary($projectId, $startDate, $endDate),
         ];
     }
 
@@ -275,5 +283,69 @@ class AdminAnalyticsUseCase
             ];
         }
         return $result;
+    }
+
+    /** @return array{published_count: int, total_users: int, read_users_in_period: int, average_read_rate: float, top_announcements: array<int, array{announcement_id: int, title: string, published_at: string, read_users: int, read_rate: float}>} */
+    private function buildAnnouncementReadSummary(int $projectId, Carbon $startDate, Carbon $endDate): array
+    {
+        $announcements = Announcement::query()
+            ->where('project_id', $projectId)
+            ->whereBetween('published_at', [$startDate, $endDate])
+            ->orderByDesc('published_at')
+            ->get(['id', 'title', 'published_at']);
+
+        $publishedCount = $announcements->count();
+        $totalUsers = User::where('project_id', $projectId)->count();
+        $readUsersInPeriod = AnnouncementRead::where('project_id', $projectId)
+            ->whereBetween('read_at', [$startDate, $endDate])
+            ->distinct('user_id')
+            ->count('user_id');
+
+        if ($publishedCount === 0) {
+            return [
+                'published_count' => 0,
+                'total_users' => $totalUsers,
+                'read_users_in_period' => $readUsersInPeriod,
+                'average_read_rate' => 0,
+                'top_announcements' => [],
+            ];
+        }
+
+        $readCountByAnnouncement = AnnouncementRead::query()
+            ->select('announcement_id', DB::raw('COUNT(DISTINCT user_id) as read_users'))
+            ->where('project_id', $projectId)
+            ->whereIn('announcement_id', $announcements->pluck('id')->all())
+            ->groupBy('announcement_id')
+            ->pluck('read_users', 'announcement_id');
+
+        $top = [];
+        $rateTotal = 0.0;
+        foreach ($announcements as $announcement) {
+            $readUsers = (int) ($readCountByAnnouncement[$announcement->id] ?? 0);
+            $readRate = $totalUsers > 0 ? round(($readUsers / $totalUsers) * 100, 1) : 0.0;
+            $rateTotal += $readRate;
+            $top[] = [
+                'announcement_id' => (int) $announcement->id,
+                'title' => (string) $announcement->title,
+                'published_at' => $announcement->published_at?->format('Y-m-d') ?? '',
+                'read_users' => $readUsers,
+                'read_rate' => $readRate,
+            ];
+        }
+
+        usort($top, static function (array $a, array $b): int {
+            if ($a['read_users'] === $b['read_users']) {
+                return strcmp($b['published_at'], $a['published_at']);
+            }
+            return $b['read_users'] <=> $a['read_users'];
+        });
+
+        return [
+            'published_count' => $publishedCount,
+            'total_users' => $totalUsers,
+            'read_users_in_period' => $readUsersInPeriod,
+            'average_read_rate' => round($rateTotal / $publishedCount, 1),
+            'top_announcements' => array_slice($top, 0, self::TOP_PRODUCTS_LIMIT),
+        ];
     }
 }
