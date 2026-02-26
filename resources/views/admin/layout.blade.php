@@ -158,6 +158,10 @@
                         <i class="fas fa-crown"></i>
                         <span>ランク設定</span>
                     </a>
+                    <a href="{{ admin_route('admin.settings.smaregi') }}" class="nav-item {{ request()->routeIs('admin.settings.smaregi*') ? 'active' : '' }}">
+                        <i class="fas fa-plug"></i>
+                        <span>スマレジ連携</span>
+                    </a>
                     @endif
                     @if($adminUser === null || $adminUser->hasPermission('liff_designer.manage'))
                     <a href="{{ admin_route('admin.settings.liff-designer') }}" class="nav-item {{ request()->routeIs('admin.settings.liff-designer*') ? 'active' : '' }}">

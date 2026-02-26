@@ -23,7 +23,7 @@ class OrderApiV1Test extends TestCase
         );
     }
 
-    public function test_store_defaults_order_type(): void
+    public function test_store_注文タイプがデフォルトで設定されること(): void
     {
         $this->withoutMiddleware(\App\Http\Middleware\AuthenticateApiToken::class);
         $this->createProject();

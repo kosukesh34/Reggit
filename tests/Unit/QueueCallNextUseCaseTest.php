@@ -16,7 +16,7 @@ class QueueCallNextUseCaseTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_call_next_only_affects_current_project(): void
+    public function test_callNext_現在のプロジェクトの待ち合わせのみ対象になること(): void
     {
         $project = Project::firstOrCreate(
             ['project_key' => 'default'],

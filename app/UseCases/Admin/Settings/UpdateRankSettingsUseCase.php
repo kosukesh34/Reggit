@@ -14,6 +14,7 @@ class UpdateRankSettingsUseCase
             ->filter(fn ($row) => !StrHelper::isEmptyStringOrNull($row['key'] ?? null))
             ->map(function ($row, $index) {
                 $isActive = $row['is_active'] ?? false;
+                $color = $row['card_color'] ?? null;
                 return [
                     'key' => (string) $row['key'],
                     'label' => (string) ($row['label'] ?? $row['key']),
@@ -21,6 +22,7 @@ class UpdateRankSettingsUseCase
                     'is_active' => $isActive === true || $isActive === 1 || $isActive === '1',
                     'icon_url' => $row['icon_url'] ?? null,
                     'stamp_background_url' => $row['stamp_background_url'] ?? null,
+                    'card_color' => $color !== null && $color !== '' ? (string) $color : null,
                     'order' => (int) ($row['order'] ?? ($index + 1)),
                 ];
             })

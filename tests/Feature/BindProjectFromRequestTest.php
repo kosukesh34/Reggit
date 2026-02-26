@@ -10,7 +10,7 @@ class BindProjectFromRequestTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function testUsesFirstActiveProjectWhenNoKeyProvided(): void
+    public function test_bind_キー未指定時に最初の有効プロジェクトが使われること(): void
     {
         Project::factory()->create([
             'project_key' => 'alpha',
@@ -22,7 +22,7 @@ class BindProjectFromRequestTest extends TestCase
         $response->assertStatus(200);
     }
 
-    public function testUsesProjectKeyFromLiffRedirectUri(): void
+    public function test_bind_LiffリダイレクトURIからプロジェクトキーが使われること(): void
     {
         Project::factory()->create([
             'project_key' => 'liff-key',
@@ -35,7 +35,7 @@ class BindProjectFromRequestTest extends TestCase
         $response->assertStatus(200);
     }
 
-    public function testUsesProjectKeyFromLiffState(): void
+    public function test_bind_Liffのstateからプロジェクトキーが使われること(): void
     {
         Project::factory()->create([
             'project_key' => 'state-key',
@@ -48,7 +48,7 @@ class BindProjectFromRequestTest extends TestCase
         $response->assertStatus(200);
     }
 
-    public function testTreatsUndefinedProjectKeyAsMissing(): void
+    public function test_bind_未定義のプロジェクトキーは存在しないとみなすこと(): void
     {
         Project::factory()->create([
             'project_key' => 'alpha',
@@ -60,7 +60,7 @@ class BindProjectFromRequestTest extends TestCase
         $response->assertStatus(200);
     }
 
-    public function testReturns404ForInvalidExplicitProjectKey(): void
+    public function test_bind_不正なプロジェクトキー指定で404を返すこと(): void
     {
         Project::factory()->create([
             'project_key' => 'alpha',

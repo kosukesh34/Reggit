@@ -8,7 +8,7 @@ use Tests\TestCase;
 
 class PaymentCreateIntentUseCaseTest extends TestCase
 {
-    public function test_create_intent_returns_dto(): void
+    public function test_createIntent_決済IntentのDTOを返すこと(): void
     {
         $gateway = new FakePaymentGateway();
         $useCase = new PaymentCreateIntentUseCase($gateway);

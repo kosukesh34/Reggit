@@ -28,7 +28,7 @@ class AdminProductsTest extends TestCase
         ]);
     }
 
-    public function testProductsListIsAccessible(): void
+    public function test_products_商品一覧にアクセスできること(): void
     {
         $project = $this->createProject();
         $admin = $this->createAdmin($project);
@@ -40,7 +40,7 @@ class AdminProductsTest extends TestCase
         $response->assertStatus(200);
     }
 
-    public function testProductCreatePageIsAccessible(): void
+    public function test_products_商品作成ページにアクセスできること(): void
     {
         $project = $this->createProject();
         $admin = $this->createAdmin($project);

@@ -15,13 +15,15 @@ class CouponController extends AdminBaseController
 
     public function coupons()
     {
-        $coupons = $this->couponAdminService->getPaginatedList(20);
+        $projectId = $this->resolveAdminProjectId();
+        $coupons = $this->couponAdminService->getPaginatedList($projectId, 20);
         return view('admin.coupons.index', compact('coupons'));
     }
 
     public function createCoupon()
     {
-        $stampCards = $this->couponAdminService->getActiveStampCardsForSelect();
+        $projectId = $this->resolveAdminProjectId();
+        $stampCards = $this->couponAdminService->getActiveStampCardsForSelect($projectId);
         return view('admin.coupons.create', compact('stampCards'));
     }
 
@@ -32,23 +34,26 @@ class CouponController extends AdminBaseController
             ->with('success', 'クーポンを作成しました');
     }
 
-    public function editCoupon(int $id)
+    public function editCoupon(string|int $id)
     {
-        $coupon = $this->couponAdminService->findOrFail($id);
-        $stampCards = $this->couponAdminService->getActiveStampCardsForSelect();
+        $projectId = $this->resolveAdminProjectId();
+        $coupon = $this->couponAdminService->findOrFail((int) $id, $projectId);
+        $stampCards = $this->couponAdminService->getActiveStampCardsForSelect($projectId);
         return view('admin.coupons.edit', compact('coupon', 'stampCards'));
     }
 
-    public function updateCoupon(CouponUpdateRequest $request, int $id)
+    public function updateCoupon(CouponUpdateRequest $request, string|int $id)
     {
-        $this->couponAdminService->update($id, $request->validated());
+        $projectId = $this->resolveAdminProjectId();
+        $this->couponAdminService->update((int) $id, $request->validated(), $projectId);
         return redirect()->route('admin.coupons', $this->buildAdminRouteParams())
             ->with('success', 'クーポンを更新しました');
     }
 
-    public function deleteCoupon(int $id)
+    public function deleteCoupon(string|int $id)
     {
-        $this->couponAdminService->delete($id);
+        $projectId = $this->resolveAdminProjectId();
+        $this->couponAdminService->delete((int) $id, $projectId);
         return redirect()->route('admin.coupons', $this->buildAdminRouteParams())
             ->with('success', 'クーポンを削除しました');
     }

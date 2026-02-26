@@ -39,10 +39,10 @@ class ReservationManager {
                 AppConstants.API_ENDPOINTS.RESERVATIONS
             );
             if (response.success) {
-                this.reservations = response.data?.reservations || [];
+                this.reservations = (response.data && response.data.reservations) || [];
                 this.renderReservations();
             } else {
-                if (response.data?.requires_membership === true) {
+                if (response.data && response.data.requires_membership === true) {
                     this.reservationsSection.innerHTML = this.getMembershipRequiredTemplate();
                     return;
                 }
@@ -355,12 +355,12 @@ class ReservationManager {
         try {
             const response = await this.apiClient.get(url);
             if (response.success) {
-                this.availableDates = response.data?.available_dates || [];
+                this.availableDates = (response.data && response.data.available_dates) || [];
                 this.availableDateMap = new Map(
                     this.availableDates.map(dateInfo => [dateInfo.date, dateInfo])
                 );
-                this.calendarStartDate = this.parseDate(response.data?.start_date) ?? this.getDefaultCalendarStart();
-                this.calendarEndDate = this.parseDate(response.data?.end_date) ?? this.getDefaultCalendarEnd();
+                this.calendarStartDate = this.parseDate(response.data && response.data.start_date) || this.getDefaultCalendarStart();
+                this.calendarEndDate = this.parseDate(response.data && response.data.end_date) || this.getDefaultCalendarEnd();
                 this.setInitialCalendarMonth();
                 if (this.selectedDate && !this.availableDateMap.has(this.selectedDate)) {
                     this.selectedDate = null;
@@ -550,7 +550,7 @@ class ReservationManager {
         const baseDate = this.selectedDate
             ? this.parseDate(this.selectedDate)
             : this.calendarStartDate;
-        const normalizedBase = baseDate ?? new Date();
+        const normalizedBase = baseDate || new Date();
         this.currentCalendarMonth = new Date(
             normalizedBase.getFullYear(),
             normalizedBase.getMonth(),
@@ -650,7 +650,7 @@ class ReservationManager {
     }
 
     renderTimeSelector(timeSlots, emptyMessage = '日付を選択してください') {
-        const timeSelector = this.currentModal?.querySelector('#timeSelector');
+        const timeSelector = this.currentModal ? this.currentModal.querySelector('#timeSelector') : null;
         if (!timeSelector) return;
 
         if (!Array.isArray(timeSlots) || timeSlots.length === 0) {
@@ -679,7 +679,8 @@ class ReservationManager {
     selectTime(time) {
         this.selectedTime = time;
 
-        this.currentModal?.querySelectorAll('.time-option').forEach(btn => {
+        const timeButtons = this.currentModal ? this.currentModal.querySelectorAll('.time-option') : [];
+        timeButtons.forEach(btn => {
             const isTarget = btn.dataset.time === time;
             btn.classList.toggle('selected', isTarget);
         });
@@ -688,7 +689,7 @@ class ReservationManager {
     }
 
     updateSubmitButton() {
-        const submitBtn = this.currentModal?.querySelector('#submitReservationBtn');
+        const submitBtn = this.currentModal ? this.currentModal.querySelector('#submitReservationBtn') : null;
         if (submitBtn) {
             submitBtn.disabled = !(this.selectedDate && this.selectedTime);
         }
@@ -699,7 +700,7 @@ class ReservationManager {
         if (!form) return;
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const editId = form.dataset?.editId || modal.dataset?.editId;
+            const editId = (form.dataset && form.dataset.editId) || (modal.dataset && modal.dataset.editId);
             if (editId) {
                 await this.submitUpdate(parseInt(editId, 10), form, modal);
             } else {
@@ -750,13 +751,13 @@ class ReservationManager {
     }
 
     setTimeSectionDisabled(isDisabled) {
-        const timeSection = this.currentModal?.querySelector('#timeSection');
+        const timeSection = this.currentModal ? this.currentModal.querySelector('#timeSection') : null;
         if (!timeSection) return;
         timeSection.classList.toggle('is-disabled', isDisabled);
     }
 
     updateSelectedDateLabel() {
-        const label = this.currentModal?.querySelector('#selectedDateLabel');
+        const label = this.currentModal ? this.currentModal.querySelector('#selectedDateLabel') : null;
         if (!label) return;
         if (!this.selectedDate) {
             label.textContent = '日付を選択してください';
@@ -764,7 +765,7 @@ class ReservationManager {
         }
         const dateInfo = this.availableDateMap.get(this.selectedDate);
         const parsedDate = this.parseDate(this.selectedDate);
-        label.textContent = dateInfo?.display || (parsedDate ? this.formatDateDisplay(parsedDate) : this.selectedDate);
+        label.textContent = (dateInfo && dateInfo.display) || (parsedDate ? this.formatDateDisplay(parsedDate) : this.selectedDate);
     }
 
     async submitUpdate(reservationId, form, modal) {

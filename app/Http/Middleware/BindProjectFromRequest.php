@@ -7,6 +7,7 @@ use App\Util\AdminContext;
 use App\Util\StrHelper;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\View;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -56,6 +57,16 @@ class BindProjectFromRequest
         View::share('currentProject', $project);
         View::share('currentProjectId', $project->id);
         View::share('adminProjectId', $project->id);
+        if ($request->is('liff') || $request->is('liff/*')) {
+            Log::info('[LIFF] request', [
+                'project_id' => (int) $project->id,
+                'project_key' => (string) $project->project_key,
+                'path' => (string) $request->path(),
+                'has_queue_token' => (bool) $request->query('queue_token'),
+                'has_queue_id' => (bool) $request->query('queue_id'),
+                'ua' => (string) $request->userAgent(),
+            ]);
+        }
 
         return $next($request);
     }

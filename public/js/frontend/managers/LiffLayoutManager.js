@@ -78,7 +78,7 @@ class LiffLayoutManager {
         const type = block.type || 'text';
         if (block.hidden) return '';
         const esc = (s) => this._esc(s);
-        const br = block.border_radius ?? 10;
+        const br = block.border_radius != null ? block.border_radius : 10;
         const mb = block.margin_bottom ? `margin-bottom:${block.margin_bottom}px;` : '';
         const opacity = (block.opacity !== undefined && block.opacity < 100) ? `opacity:${block.opacity / 100};` : '';
         const shadow = block.shadow ? 'box-shadow:0 4px 12px rgba(0,0,0,0.1);' : '';
@@ -173,7 +173,7 @@ class LiffLayoutManager {
         const items = Array.isArray(block.items) ? block.items : [];
         const isGrid = block.layout === 'grid';
         const cols = block.columns || 2;
-        const gap = block.gap ?? 8;
+        const gap = block.gap != null ? block.gap : 8;
         const maxRows = block.max_rows || 0;
         const visibleCount = (isGrid && maxRows > 0) ? maxRows * cols : items.length;
         const visible = items.slice(0, visibleCount);
@@ -223,7 +223,7 @@ class LiffLayoutManager {
     }
 
     _applyTabSettings(section, tab) {
-        const settings = this.tabSettings?.[tab] || {};
+        const settings = (this.tabSettings && this.tabSettings[tab]) ? this.tabSettings[tab] : {};
         if (settings.background_color) section.style.background = settings.background_color;
         if (settings.background_image) {
             section.style.backgroundImage = `url('${settings.background_image}')`;

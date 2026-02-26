@@ -32,16 +32,22 @@ class CouponMyCouponsUseCase
                 if ($couponName === null || $couponName === '') {
                     $couponName = $memberCoupon->coupon?->name ?? '';
                 }
+                $displayStatus = $this->resolveDisplayStatus($memberCoupon);
+
+                $designTemplate = (string) ($memberCoupon->coupon?->design_template ?? 'classic');
+                $themeColor = $memberCoupon->coupon?->theme_color;
 
                 return new MemberCoupon(
                     (int) $memberCoupon->id,
                     $couponName,
                     $memberCoupon->coupon?->image_url,
-                    (string) $memberCoupon->status,
+                    $displayStatus,
                     $this->toIsoString($memberCoupon->issued_at),
                     $this->toIsoString($memberCoupon->valid_from),
                     $this->toIsoString($memberCoupon->valid_until),
-                    $this->toIsoString($memberCoupon->used_at)
+                    $this->toIsoString($memberCoupon->used_at),
+                    $designTemplate,
+                    $themeColor
                 );
             })
             ->all();
@@ -49,6 +55,22 @@ class CouponMyCouponsUseCase
         $defaultImageUrl = ShopSetting::getCouponDefaultImageUrl($member->project_id);
 
         return new CouponListView($coupons, $defaultImageUrl, false);
+    }
+
+    /** 表示用: available / used / expired */
+    private function resolveDisplayStatus(\App\Models\MemberCoupon $memberCoupon): string
+    {
+        if ($memberCoupon->status === \App\Models\MemberCoupon::STATUS_USED) {
+            return 'used';
+        }
+        $validUntil = $memberCoupon->valid_until;
+        if ($validUntil !== null) {
+            $end = $validUntil instanceof \DateTimeInterface ? $validUntil : new \DateTimeImmutable($validUntil);
+            if ($end->getTimestamp() < time()) {
+                return 'expired';
+            }
+        }
+        return 'available';
     }
 
     private function toIsoString($value): ?string

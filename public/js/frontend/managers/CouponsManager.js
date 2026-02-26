@@ -80,6 +80,8 @@ class CouponsManager {
 
         const renderCoupon = (cp) => {
             const status = cp.status || 'available';
+            const design = cp.design_template || 'classic';
+            const themeColor = cp.theme_color && /^#[0-9A-Fa-f]{6}$/.test(cp.theme_color) ? cp.theme_color : '';
             const label = statusLabels[status] || status;
             const validUntil = cp.valid_until
                 ? new Date(cp.valid_until).toLocaleDateString('ja-JP', {
@@ -87,14 +89,26 @@ class CouponsManager {
                   })
                 : '';
             const imageUrl = cp.image_url || defaultImage;
+            const accentStyle = themeColor ? ` style="--coupon-accent: ${DomHelper.escapeHtml(themeColor)}"` : '';
+            const iconClass = design === 'barcode' ? 'fa-barcode' : design === 'qr' ? 'fa-qrcode' : 'fa-ticket-alt';
+            let imageBlock;
+            if (design === 'barcode') {
+                imageBlock = '<div class="coupon-item-barcode"><div class="coupon-item-barcode-lines"></div><span class="coupon-item-barcode-code">' + DomHelper.escapeHtml(cp.coupon_name || 'クーポン') + '</span></div>';
+            } else if (design === 'qr') {
+                imageBlock = '<div class="coupon-item-qr"><div class="coupon-item-qr-grid"></div></div>';
+            } else if (imageUrl) {
+                imageBlock = '<div class="coupon-item-image"><img src="' + DomHelper.escapeHtml(imageUrl) + '" alt="クーポン"></div>';
+            } else {
+                imageBlock = '<div class="coupon-item-image coupon-item-image--icon"><i class="fas ' + iconClass + '" aria-hidden="true"></i></div>';
+            }
             return `
-                <div class="coupon-item coupon-item--${status}">
-                    ${imageUrl ? `<div class="coupon-item-image"><img src="${DomHelper.escapeHtml(imageUrl)}" alt="クーポン"></div>` : ''}
+                <div class="coupon-item coupon-item--${status} coupon-item--design-${design}"${accentStyle}>
+                    ${imageBlock}
                     <div class="coupon-item-header">
-                        <span class="coupon-item-name">${DomHelper.escapeHtml(cp.coupon_name || 'クーポン')}</span>
+                        <span class="coupon-item-name"><i class="fas ${iconClass} coupon-item-name-icon" aria-hidden="true"></i>${DomHelper.escapeHtml(cp.coupon_name || 'クーポン')}</span>
                         <span class="coupon-item-status">${DomHelper.escapeHtml(label)}</span>
                     </div>
-                    ${validUntil ? `<p class="coupon-item-valid">有効期限: ${DomHelper.escapeHtml(validUntil)}</p>` : ''}
+                    ${validUntil ? '<p class="coupon-item-valid">有効期限: ' + DomHelper.escapeHtml(validUntil) + '</p>' : ''}
                 </div>
             `;
         };

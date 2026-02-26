@@ -11,11 +11,34 @@ class StampCard extends Model
 {
     use BelongsToProject, HasFactory;
 
-    protected $fillable = ['project_id', 'name', 'required_stamps', 'reward_description', 'image_url', 'is_active'];
+    public const LAYOUT_GRID = 'grid';
+    public const LAYOUT_ROW = 'row';
+    public const LAYOUT_CIRCLE = 'circle';
+    public const LAYOUT_MINIMAL = 'minimal';
+    public const LAYOUT_CARD = 'card';
+
+    /** @var array<string> */
+    public static function getLayoutOptions(): array
+    {
+        return [
+            self::LAYOUT_GRID => 'グリッド（2列）',
+            self::LAYOUT_ROW => '横一列',
+            self::LAYOUT_CIRCLE => '円形',
+            self::LAYOUT_MINIMAL => 'ミニマル（コンパクト）',
+            self::LAYOUT_CARD => 'カード（枠付き）',
+        ];
+    }
+
+    protected $fillable = [
+        'project_id', 'name', 'required_stamps', 'reward_description', 'image_url',
+        'layout_style', 'valid_days', 'valid_until', 'is_active',
+    ];
 
     /** @var array<string, string> */
     protected $casts = [
         'required_stamps' => 'integer',
+        'valid_days' => 'integer',
+        'valid_until' => 'date',
         'is_active' => 'boolean',
     ];
 
