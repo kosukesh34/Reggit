@@ -3,11 +3,18 @@
 namespace App\Services\Admin;
 
 use App\Models\Order;
+use App\Services\CouponIssueService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use App\Enums\OrderStatus;
 
 class OrderAdminService
 {
+    public function __construct(
+        private ?CouponIssueService $couponIssueService = null
+    ) {
+        $this->couponIssueService = $couponIssueService ?? app(CouponIssueService::class);
+    }
+
     public function getPaginatedList(?string $status, int $perPage = 20): LengthAwarePaginator
     {
         $query = Order::with('user')
@@ -40,6 +47,14 @@ class OrderAdminService
 
     public function complete(int $id): void
     {
+        $order = Order::with('user.member')->findOrFail($id);
         Order::whereKey($id)->update(['status' => OrderStatus::COMPLETED]);
+        $member = $order->user?->member;
+        if ($member !== null) {
+            $completedCount = Order::where('user_id', $order->user_id)->where('status', OrderStatus::COMPLETED)->count();
+            if ($completedCount === 1) {
+                $this->couponIssueService->issueForFirstOrder($member);
+            }
+        }
     }
 }

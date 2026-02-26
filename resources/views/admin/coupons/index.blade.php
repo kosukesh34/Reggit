@@ -4,6 +4,11 @@
 @section('page-title', 'クーポン')
 
 @section('content')
+@if(session('success'))
+<div class="alert alert-success" role="alert">
+    <i class="fas fa-check-circle"></i> {{ session('success') }}
+</div>
+@endif
 <nav class="breadcrumb" aria-label="パンくず">
     <a href="{{ admin_route('admin.dashboard') }}">ダッシュボード</a>
     <span class="breadcrumb-sep">/</span>
@@ -49,13 +54,18 @@
                     <td>{{ $coupon->type === 'percent' ? '％' : '円' }}</td>
                     <td>{{ $coupon->type === 'percent' ? $coupon->value . '%' : '¥' . number_format($coupon->value) }}</td>
                     <td>
-                        @if(($coupon->issue_trigger ?? 'manual') === 'first_registration')
-                            <span class="badge badge-info">初回登録時</span>
-                        @elseif(($coupon->issue_trigger ?? '') === 'stamp_completed')
+                        @php $trigger = $coupon->issue_trigger ?? 'manual'; @endphp
+                        @if($trigger === 'first_registration')
+                            <span class="badge badge-info">入会時</span>
+                        @elseif($trigger === 'first_order')
+                            <span class="badge badge-info">初回注文時</span>
+                        @elseif($trigger === 'stamp_completed')
                             <span class="badge badge-info">スタンプ達成</span>
                             @if($coupon->stampCard)
                                 <small class="d-block text-muted">{{ $coupon->stampCard->name }}</small>
                             @endif
+                        @elseif($trigger === 'birthday')
+                            <span class="badge badge-info">誕生月</span>
                         @else
                             <span class="badge badge-secondary">手動</span>
                         @endif

@@ -22,13 +22,14 @@ class QueueApiTest extends TestCase
         );
     }
 
-    public function test_store_creates_queue_entry(): void
+    public function test_store_待ち合わせ登録が作成されること(): void
     {
         $this->createProject();
-        $user = User::factory()->create(['line_user_id' => 'line-queue-1', 'project_id' => 1]);
+        $lineUserId = 'U11111111111111111111111111111111';
+        $user = User::factory()->create(['line_user_id' => $lineUserId, 'project_id' => 1]);
         Member::factory()->create(['user_id' => $user->id, 'project_id' => 1]);
 
-        $response = $this->withHeaders(['X-Line-User-Id' => 'line-queue-1'])
+        $response = $this->withHeaders(['X-Line-User-Id' => $lineUserId])
             ->post('/api/queue?project_key=default', ['party_size' => 2]);
 
         $response->assertStatus(201)
@@ -46,10 +47,41 @@ class QueueApiTest extends TestCase
         $this->assertSame($user->id, $entry->user_id);
     }
 
-    public function test_me_returns_current_queue_entry(): void
+    public function test_store_同一LINEユーザーで複数件登録できること(): void
     {
         $this->createProject();
-        $user = User::factory()->create(['line_user_id' => 'line-queue-2', 'project_id' => 1]);
+        $lineUserId = 'U22222222222222222222222222222222';
+        $user = User::factory()->create(['line_user_id' => $lineUserId, 'project_id' => 1]);
+        Member::factory()->create(['user_id' => $user->id, 'project_id' => 1]);
+
+        $first = $this->withHeaders(['X-Line-User-Id' => $lineUserId])
+            ->post('/api/queue?project_key=default', ['party_size' => 2]);
+        $first->assertStatus(201);
+
+        $second = $this->withHeaders(['X-Line-User-Id' => $lineUserId])
+            ->post('/api/queue?project_key=default', ['party_size' => 3]);
+        $second->assertStatus(201);
+
+        $this->assertDatabaseCount('queue_entries', 2);
+        $this->assertDatabaseHas('queue_entries', [
+            'project_id' => 1,
+            'user_id' => $user->id,
+            'party_size' => 2,
+            'status' => QueueStatus::WAITING,
+        ]);
+        $this->assertDatabaseHas('queue_entries', [
+            'project_id' => 1,
+            'user_id' => $user->id,
+            'party_size' => 3,
+            'status' => QueueStatus::WAITING,
+        ]);
+    }
+
+    public function test_me_現在の待ち合わせ情報を返すこと(): void
+    {
+        $this->createProject();
+        $lineUserId = 'U33333333333333333333333333333333';
+        $user = User::factory()->create(['line_user_id' => $lineUserId, 'project_id' => 1]);
         $member = Member::factory()->create(['user_id' => $user->id, 'project_id' => 1]);
         $entry = QueueEntry::factory()->create([
             'project_id' => 1,
@@ -58,14 +90,14 @@ class QueueApiTest extends TestCase
             'queue_number' => 3,
         ]);
 
-        $response = $this->withHeaders(['X-Line-User-Id' => 'line-queue-2'])
+        $response = $this->withHeaders(['X-Line-User-Id' => $lineUserId])
             ->get('/api/queue/me?project_key=default');
 
         $response->assertStatus(200)
             ->assertJsonPath('queue_entry.id', $entry->id);
     }
 
-    public function test_cancel_updates_status(): void
+    public function test_cancel_キャンセルでステータスが更新されること(): void
     {
         $this->createProject();
         $entry = QueueEntry::factory()->create([
@@ -84,7 +116,7 @@ class QueueApiTest extends TestCase
         ]);
     }
 
-    public function test_call_next_marks_called(): void
+    public function test_call_next_次の呼び出しでcalledになること(): void
     {
         $this->createProject();
         $entry = QueueEntry::factory()->create([
@@ -100,7 +132,7 @@ class QueueApiTest extends TestCase
             ->assertJsonPath('queue_entry.status', QueueStatus::CALLED);
     }
 
-    public function test_qr_status_requires_line_login(): void
+    public function test_qr_status_LINEログイン必須で未ログインなら403を返すこと(): void
     {
         $this->createProject();
         $entry = QueueEntry::factory()->create([
@@ -114,10 +146,11 @@ class QueueApiTest extends TestCase
             ->assertJsonPath('error', 'LINEログインが必要です');
     }
 
-    public function test_qr_status_binds_user(): void
+    public function test_qr_status_QRアクセスでユーザーが紐づくこと(): void
     {
         $this->createProject();
-        $user = User::factory()->create(['line_user_id' => 'line-queue-qr', 'project_id' => 1]);
+        $lineUserId = 'U44444444444444444444444444444444';
+        $user = User::factory()->create(['line_user_id' => $lineUserId, 'project_id' => 1]);
         Member::factory()->create(['user_id' => $user->id, 'project_id' => 1]);
         $entry = QueueEntry::factory()->create([
             'project_id' => 1,
@@ -126,7 +159,7 @@ class QueueApiTest extends TestCase
             'qr_token' => 'token-bind',
         ]);
 
-        $response = $this->withHeaders(['X-Line-User-Id' => 'line-queue-qr'])
+        $response = $this->withHeaders(['X-Line-User-Id' => $lineUserId])
             ->get("/api/queue/qr/{$entry->qr_token}?project_key=default");
 
         $response->assertStatus(200)
@@ -137,10 +170,11 @@ class QueueApiTest extends TestCase
         $this->assertSame($user->id, $entry->user_id);
     }
 
-    public function test_qr_status_blocks_multiple_entries_for_same_user(): void
+    public function test_qr_status_同一ユーザーで複数件あっても紐づくこと(): void
     {
         $this->createProject();
-        $user = User::factory()->create(['line_user_id' => 'line-queue-multi', 'project_id' => 1]);
+        $lineUserId = 'U55555555555555555555555555555555';
+        $user = User::factory()->create(['line_user_id' => $lineUserId, 'project_id' => 1]);
         Member::factory()->create(['user_id' => $user->id, 'project_id' => 1]);
         QueueEntry::factory()->create([
             'project_id' => 1,
@@ -155,35 +189,41 @@ class QueueApiTest extends TestCase
             'qr_token' => 'token-new',
         ]);
 
-        $response = $this->withHeaders(['X-Line-User-Id' => 'line-queue-multi'])
+        $response = $this->withHeaders(['X-Line-User-Id' => $lineUserId])
             ->get("/api/queue/qr/{$entry->qr_token}?project_key=default");
 
-        $response->assertStatus(403)
-            ->assertJsonPath('error', '同じLINEアカウントで複数登録できません');
+        $response->assertStatus(200)
+            ->assertJsonPath('queue_entry.id', $entry->id);
+
+        $entry->refresh();
+        $this->assertSame($user->id, $entry->user_id);
     }
 
-    public function test_qr_status_blocks_other_user(): void
+    public function test_qr_status_別ユーザーのQRは403を返すこと(): void
     {
         $this->createProject();
-        $owner = User::factory()->create(['line_user_id' => 'line-queue-owner', 'project_id' => 1]);
-        $other = User::factory()->create(['line_user_id' => 'line-queue-other', 'project_id' => 1]);
+        $ownerLineUserId = 'U66666666666666666666666666666666';
+        $otherLineUserId = 'U77777777777777777777777777777777';
+        $owner = User::factory()->create(['line_user_id' => $ownerLineUserId, 'project_id' => 1]);
+        $other = User::factory()->create(['line_user_id' => $otherLineUserId, 'project_id' => 1]);
         $entry = QueueEntry::factory()->create([
             'project_id' => 1,
             'user_id' => $owner->id,
             'qr_token' => 'token-locked',
         ]);
 
-        $response = $this->withHeaders(['X-Line-User-Id' => 'line-queue-other'])
+        $response = $this->withHeaders(['X-Line-User-Id' => $otherLineUserId])
             ->get("/api/queue/qr/{$entry->qr_token}?project_key=default");
 
         $response->assertStatus(403)
             ->assertJsonPath('error', '別のLINEアカウントで登録済みです');
     }
 
-    public function test_qr_status_accepts_queue_id(): void
+    public function test_qr_status_queue_idパラメータで指定した待ち合わせを返すこと(): void
     {
         $this->createProject();
-        $user = User::factory()->create(['line_user_id' => 'line-queue-id', 'project_id' => 1]);
+        $lineUserId = 'U88888888888888888888888888888888';
+        $user = User::factory()->create(['line_user_id' => $lineUserId, 'project_id' => 1]);
         Member::factory()->create(['user_id' => $user->id, 'project_id' => 1]);
         $entry = QueueEntry::factory()->create([
             'project_id' => 1,
@@ -191,7 +231,7 @@ class QueueApiTest extends TestCase
             'qr_token' => null,
         ]);
 
-        $response = $this->withHeaders(['X-Line-User-Id' => 'line-queue-id'])
+        $response = $this->withHeaders(['X-Line-User-Id' => $lineUserId])
             ->get("/api/queue/qr/{$entry->id}?project_key=default");
 
         $response->assertStatus(200)

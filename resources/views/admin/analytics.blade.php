@@ -77,6 +77,18 @@
                 <div class="info-label">ポイント使用</div>
                 <div class="info-value">{{ number_format($view->summary['points_used']) }}pt</div>
             </div>
+            <div class="info-item">
+                <div class="info-label">配信お知らせ数</div>
+                <div class="info-value">{{ number_format($view->summary['announcements_published']) }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">既読ユーザー数</div>
+                <div class="info-value">{{ number_format($view->summary['announcement_read_users']) }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">平均既読率</div>
+                <div class="info-value">{{ number_format($view->summary['announcement_avg_read_rate'], 1) }}%</div>
+            </div>
         </div>
     </div>
 </div>
@@ -223,6 +235,46 @@
                 </tbody>
             </table>
         </div>
+    </div>
+</div>
+
+<div class="card card-mb-24">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-bullhorn"></i> お知らせ既読状況（上位）</h3>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>タイトル</th>
+                        <th>公開日</th>
+                        <th>既読ユーザー</th>
+                        <th>既読率</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($view->breakdowns['announcement_reads']['top_announcements'] as $row)
+                    <tr>
+                        <td>{{ $row['title'] }}</td>
+                        <td>{{ $row['published_at'] }}</td>
+                        <td>{{ number_format($row['read_users']) }}</td>
+                        <td>{{ number_format($row['read_rate'], 1) }}%</td>
+                    </tr>
+                    @empty
+                    <tr>
+                        <td colspan="4" class="empty-state">
+                            <i class="fas fa-bullhorn"></i>
+                            <p>対象期間に配信されたお知らせがありません</p>
+                        </td>
+                    </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+        <p class="text-muted" style="margin-top: 8px;">
+            対象ユーザー数: {{ number_format($view->breakdowns['announcement_reads']['total_users']) }}人
+        </p>
     </div>
 </div>
 

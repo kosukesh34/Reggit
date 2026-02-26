@@ -15,6 +15,58 @@
 
     <div class="card card-mb-24">
         <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-id-card"></i> 会員コード設定</h3>
+        </div>
+        <div class="card-body">
+            <p class="form-text text-muted">新規会員登録時に発行する会員番号の生成方法を設定します。スマレジ連携時は20文字以内で送信されます。</p>
+            <div class="form-group">
+                <label for="member_code_type" class="form-label">生成方式</label>
+                <select name="member_code_type" id="member_code_type" class="form-control">
+                    <option value="random" {{ ($memberCodeType ?? 'random') === 'random' ? 'selected' : '' }}>ランダム</option>
+                    <option value="sequential" {{ ($memberCodeType ?? '') === 'sequential' ? 'selected' : '' }}>連番</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="member_code_format" class="form-label">形式</label>
+                <select name="member_code_format" id="member_code_format" class="form-control">
+                    <option value="numeric" {{ ($memberCodeFormat ?? 'numeric') === 'numeric' ? 'selected' : '' }}>数字のみ</option>
+                    <option value="alphanumeric" {{ ($memberCodeFormat ?? '') === 'alphanumeric' ? 'selected' : '' }}>英数字混在</option>
+                </select>
+                <p class="form-text text-muted">英数字混在は大文字英字と数字（I,O,1,0 を除く）を使用します。</p>
+            </div>
+            <div class="form-group">
+                <label for="member_code_length" class="form-label">桁数（プレフィックス除く）</label>
+                <input type="number" name="member_code_length" id="member_code_length" class="form-control" value="{{ old('member_code_length', $memberCodeLength ?? 10) }}" min="1" max="20">
+            </div>
+            <div class="form-group">
+                <label for="member_code_prefix" class="form-label">プレフィックス（任意・英数字のみ・10文字以内）</label>
+                <input type="text" name="member_code_prefix" id="member_code_prefix" class="form-control" value="{{ old('member_code_prefix', $memberCodePrefix ?? '') }}" maxlength="10" pattern="[A-Za-z0-9]*" placeholder="例: M">
+            </div>
+        </div>
+    </div>
+
+    <div class="card card-mb-24">
+        <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-eye"></i> 会員カード表示設定</h3>
+        </div>
+        <div class="card-body">
+            <div class="form-group">
+                <label class="form-check">
+                    <input type="checkbox" name="show_points_display" value="1" {{ ($showPointsDisplay ?? true) ? 'checked' : '' }}>
+                    ポイント数を表示する
+                </label>
+            </div>
+            <div class="form-group">
+                <label class="form-check">
+                    <input type="checkbox" name="show_rank_progress" value="1" {{ ($showRankProgress ?? true) ? 'checked' : '' }}>
+                    「次のランクまで」を表示する
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <div class="card card-mb-24">
+        <div class="card-header">
             <h3 class="card-title"><i class="fas fa-layer-group"></i> ランク基準</h3>
         </div>
         <div class="card-body">
@@ -60,6 +112,7 @@
                             <th>表示名</th>
                             <th>基準値</th>
                             <th>有効</th>
+                            <th>カード色</th>
                             <th>アイコンURL</th>
                             <th>スタンプ背景URL</th>
                             <th>順序</th>
@@ -74,6 +127,7 @@
                             <td class="text-center">
                                 <input type="checkbox" name="ranks[{{ $i }}][is_active]" value="1" {{ ((bool) old('ranks.' . $i . '.is_active', $rank['is_active'] ?? true)) ? 'checked' : '' }}>
                             </td>
+                            <td><input type="text" name="ranks[{{ $i }}][card_color]" class="form-control" value="{{ old('ranks.' . $i . '.card_color', $rank['card_color'] ?? '') }}" placeholder="#cd7f32" maxlength="20" style="max-width:8em;"></td>
                             <td><input type="url" name="ranks[{{ $i }}][icon_url]" class="form-control" value="{{ old('ranks.' . $i . '.icon_url', $rank['icon_url'] ?? '') }}" placeholder="https://..."></td>
                             <td><input type="url" name="ranks[{{ $i }}][stamp_background_url]" class="form-control" value="{{ old('ranks.' . $i . '.stamp_background_url', $rank['stamp_background_url'] ?? '') }}" placeholder="https://..."></td>
                             <td><input type="number" name="ranks[{{ $i }}][order]" class="form-control" value="{{ old('ranks.' . $i . '.order', $rank['order'] ?? ($i + 1)) }}" min="0"></td>
@@ -98,6 +152,7 @@
         <td><input type="text" name="__NAME__[label]" class="form-control"></td>
         <td><input type="number" name="__NAME__[min_points]" class="form-control" value="0" min="0"></td>
         <td class="text-center"><input type="checkbox" name="__NAME__[is_active]" value="1" checked></td>
+        <td><input type="text" name="__NAME__[card_color]" class="form-control" placeholder="#cd7f32" maxlength="20" style="max-width:8em;"></td>
         <td><input type="url" name="__NAME__[icon_url]" class="form-control" placeholder="https://..."></td>
         <td><input type="url" name="__NAME__[stamp_background_url]" class="form-control" placeholder="https://..."></td>
         <td><input type="number" name="__NAME__[order]" class="form-control" value="0" min="0"></td>

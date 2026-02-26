@@ -11,13 +11,13 @@ class DatabaseMigrationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_projects_table_exists_before_member_coupons(): void
+    public function test_migration_member_couponsより前にprojectsテーブルが存在すること(): void
     {
         $this->assertTrue(Schema::hasTable('projects'));
         $this->assertTrue(Schema::hasTable('member_coupons'));
     }
 
-    public function test_member_coupons_has_project_id_foreign_key(): void
+    public function test_migration_member_couponsにproject_id外部キーが存在すること(): void
     {
         $this->assertTrue(Schema::hasTable('member_coupons'));
         $this->assertTrue(Schema::hasColumn('member_coupons', 'project_id'));
@@ -32,7 +32,7 @@ class DatabaseMigrationTest extends TestCase
         $this->assertNotEmpty($foreignKeys, 'member_coupons.project_id should reference projects.id');
     }
 
-    public function test_default_project_exists_after_migration(): void
+    public function test_migration_マイグレーション後にデフォルトプロジェクトが存在すること(): void
     {
         $project = DB::table('projects')->where('id', 1)->first();
         $this->assertNotNull($project);

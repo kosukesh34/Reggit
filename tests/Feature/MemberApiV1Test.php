@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Http\Middleware\AuthenticateApiToken;
 use App\Models\Member;
 use App\Models\PointTransaction;
+use App\Models\Project;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -13,12 +14,17 @@ class MemberApiV1Test extends TestCase
 {
     use RefreshDatabase;
 
-    private const LINE_USER_ID = 'line-member-v1';
+    /** 有効な形式（U + 32桁 hex）でないと UserService がユーザーを特定できない */
+    private const LINE_USER_ID = 'U00000000000000000000000000000001';
 
-    public function testMeReturnsMemberData(): void
+    public function test_me_会員データを返すこと(): void
     {
-        $user = User::factory()->create(['line_user_id' => self::LINE_USER_ID, 'project_id' => 1]);
-        Member::factory()->create(['user_id' => $user->id, 'project_id' => 1]);
+        $project = Project::firstOrCreate(
+            ['project_key' => 'default'],
+            ['name' => 'Default', 'description' => '', 'is_active' => true]
+        );
+        $user = User::factory()->create(['line_user_id' => self::LINE_USER_ID, 'project_id' => $project->id]);
+        Member::factory()->create(['user_id' => $user->id, 'project_id' => $project->id]);
 
         $response = $this->withoutMiddleware(AuthenticateApiToken::class)
             ->withHeaders(['X-Line-User-Id' => self::LINE_USER_ID])
@@ -28,12 +34,16 @@ class MemberApiV1Test extends TestCase
             ->assertJsonPath('data.member.is_member', true);
     }
 
-    public function testGetPointsReturnsPoints(): void
+    public function test_getPoints_ポイントを返すこと(): void
     {
-        $user = User::factory()->create(['line_user_id' => self::LINE_USER_ID, 'project_id' => 1]);
-        $member = Member::factory()->create(['user_id' => $user->id, 'project_id' => 1, 'points' => 30]);
+        $project = Project::firstOrCreate(
+            ['project_key' => 'default'],
+            ['name' => 'Default', 'description' => '', 'is_active' => true]
+        );
+        $user = User::factory()->create(['line_user_id' => self::LINE_USER_ID, 'project_id' => $project->id]);
+        $member = Member::factory()->create(['user_id' => $user->id, 'project_id' => $project->id, 'points' => 30]);
         PointTransaction::create([
-            'project_id' => 1,
+            'project_id' => $project->id,
             'member_id' => $member->id,
             'type' => 'earned',
             'points' => 30,

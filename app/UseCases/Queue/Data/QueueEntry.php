@@ -10,6 +10,7 @@ class QueueEntry
         public int $queueNumber,
         public string $status,
         public int $partySize,
+        public bool $lineLinked,
         public ?string $qrToken,
         public string $createdAt,
         public string $updatedAt,
@@ -20,7 +21,7 @@ class QueueEntry
     ) {
     }
 
-    /** @return array{id: int, queue_number: int, status: string, party_size: int, qr_token: string|null, created_at: string, updated_at: string, called_at: string|null, waiting_count: int, ahead_count: int|null, estimated_wait_minutes: int} */
+    /** @return array{id: int, queue_number: int, status: string, party_size: int, line_linked: bool, qr_token: string|null, created_at: string, updated_at: string, called_at: string|null, waiting_count: int, ahead_count: int|null, estimated_wait_minutes: int} */
     public function toArray(): array
     {
         return [
@@ -28,6 +29,7 @@ class QueueEntry
             'queue_number' => $this->queueNumber,
             'status' => $this->status,
             'party_size' => $this->partySize,
+            'line_linked' => $this->lineLinked,
             'qr_token' => $this->qrToken,
             'created_at' => $this->createdAt,
             'updated_at' => $this->updatedAt,
