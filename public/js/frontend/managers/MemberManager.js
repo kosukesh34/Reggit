@@ -568,6 +568,7 @@ class MemberManager {
                 window.app.memberManager.saveProfileEdit(e);
             });
         }
+        this._setupPostalCodeLookup();
         modal.setAttribute('aria-hidden', 'false');
         modal.classList.add('member-modal--open');
     }
@@ -578,6 +579,57 @@ class MemberManager {
             modal.setAttribute('aria-hidden', 'true');
             modal.classList.remove('member-modal--open');
         }
+    }
+
+    _setupPostalCodeLookup() {
+        const postalInput = document.getElementById('profileEditPostalCode');
+        const addressInput = document.getElementById('profileEditAddress');
+        if (!postalInput || !addressInput) return;
+
+        const fetchAddress = () => {
+            const raw = (postalInput.value || '').trim().replace(/[‐－−ー]/g, '-');
+            const digits = raw.replace(/\D/g, '');
+            if (digits.length < 3) return;
+
+            const url = AppConstants.API_ENDPOINTS.POSTAL_CODE + '?postal_code=' + encodeURIComponent(digits);
+            postalInput.disabled = true;
+            this.apiClient.get(url)
+                .then((result) => {
+                    if (result && result.success === false) {
+                        if (typeof ToastManager !== 'undefined') ToastManager.error(result.error || '住所の取得に失敗しました');
+                        return;
+                    }
+                    const data = (result && result.data) || result || {};
+                    const serverError = data.error || null;
+                    const addresses = Array.isArray(data.addresses) ? data.addresses : (Array.isArray(data) ? data : []);
+                    if (addresses.length > 0) {
+                        const first = addresses[0];
+                        const full = (first && (first.full_address || first.fullAddress)) ? (first.full_address || first.fullAddress) : '';
+                        if (full) {
+                            addressInput.value = full;
+                            if (addresses.length > 1 && typeof ToastManager !== 'undefined') {
+                                ToastManager.success('住所を入力しました。複数候補がある場合は修正してください。');
+                            } else if (typeof ToastManager !== 'undefined') {
+                                ToastManager.success('住所を入力しました');
+                            }
+                        } else if (digits.length >= 7 && typeof ToastManager !== 'undefined') {
+                            ToastManager.error(serverError || '該当する住所が見つかりませんでした');
+                        }
+                    } else if (digits.length >= 7 && typeof ToastManager !== 'undefined') {
+                        ToastManager.error(serverError || '該当する住所が見つかりませんでした');
+                    }
+                })
+                .catch(() => {
+                    if (typeof ToastManager !== 'undefined') ToastManager.error('住所の取得に失敗しました');
+                })
+                .finally(() => { postalInput.disabled = false; });
+        };
+
+        postalInput.addEventListener('blur', fetchAddress);
+        postalInput.addEventListener('input', function () {
+            const digits = (this.value || '').replace(/\D/g, '');
+            if (digits.length === 7) fetchAddress();
+        });
     }
 
     _getProfileEditFormHtml(user, member) {
@@ -602,8 +654,13 @@ class MemberManager {
                         <input type="date" id="profileEditBirthday" name="birthday" value="${DomHelper.escapeHtml(birthday)}">
                     </div>
                     <div class="member-form-group">
+                        <label for="profileEditPostalCode">郵便番号</label>
+                        <input type="text" id="profileEditPostalCode" name="postal_code" value="" placeholder="例: 100-0001" maxlength="8" inputmode="numeric" autocomplete="postal-code">
+                        <p class="member-form-hint">郵便番号を入力すると住所が自動で入力されます</p>
+                    </div>
+                    <div class="member-form-group">
                         <label for="profileEditAddress">住所</label>
-                        <input type="text" id="profileEditAddress" name="address" value="${DomHelper.escapeHtml(address)}" maxlength="500">
+                        <input type="text" id="profileEditAddress" name="address" value="${DomHelper.escapeHtml(address)}" maxlength="500" autocomplete="street-address">
                     </div>
                     <div class="member-form-actions">
                         <button type="button" class="member-btn member-btn--secondary" onclick="window.app.memberManager.closeProfileEdit()">キャンセル</button>
