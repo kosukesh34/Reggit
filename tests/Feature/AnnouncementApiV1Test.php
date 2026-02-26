@@ -37,9 +37,10 @@ class AnnouncementApiV1Test extends TestCase
     public function test_index_ユーザーごとの既読状態が含まれること(): void
     {
         $project = $this->createProject();
+        $lineUserId = 'U00000000000000000000000000000003';
         $user = User::factory()->create([
             'project_id' => $project->id,
-            'line_user_id' => 'line-user-read-state',
+            'line_user_id' => $lineUserId,
         ]);
         $announcement = Announcement::factory()->create(['project_id' => $project->id]);
         AnnouncementRead::create([
@@ -50,7 +51,7 @@ class AnnouncementApiV1Test extends TestCase
         ]);
 
         $response = $this->withoutMiddleware(AuthenticateApiToken::class)
-            ->withHeader('X-Line-User-Id', 'line-user-read-state')
+            ->withHeader('X-Line-User-Id', $lineUserId)
             ->get('/api/v1/announcements');
 
         $response->assertStatus(200)
