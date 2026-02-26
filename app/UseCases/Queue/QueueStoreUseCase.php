@@ -28,25 +28,14 @@ class QueueStoreUseCase
 
         $projectId = $member ? $member->project_id : (AdminContext::getCurrentProjectId() ?? 1);
         $lineUserId = $request->header('X-Line-User-Id');
-
-        if (!StrHelper::isEmptyStringOrNull($lineUserId)) {
-            $existing = $this->getActiveEntryForUser($user->id, $projectId);
-            if ($existing !== null) {
-                $stats = $this->statsService->getStats($projectId, $existing->queue_number);
-                if (StrHelper::isEmptyStringOrNull($existing->qr_token)) {
-                    $existing->update(['qr_token' => $this->generateQrToken()]);
-                }
-                $existing->refresh();
-                return $this->entryFactory->create($existing, $stats);
-            }
-        }
+        $effectiveLineUserId = $this->resolveLineUserId($lineUserId, $user->line_user_id);
 
         $nextNumber = $this->getNextQueueNumber($projectId);
 
         $entry = QueueEntryModel::create([
             'project_id' => $projectId,
             'member_id' => $member?->id,
-            'user_id' => StrHelper::isEmptyStringOrNull($lineUserId) ? null : $user->id,
+            'user_id' => StrHelper::isEmptyStringOrNull($effectiveLineUserId) ? null : $user->id,
             'guest_name' => $guestName ?? $user->name,
             'guest_phone' => $guestPhone ?? $user->phone,
             'party_size' => $partySize,
@@ -59,15 +48,6 @@ class QueueStoreUseCase
         $entry->refresh();
 
         return $this->entryFactory->create($entry, $stats);
-    }
-
-    private function getActiveEntryForUser(int $userId, int $projectId): ?QueueEntryModel
-    {
-        return QueueEntryModel::where('project_id', $projectId)
-            ->where('user_id', $userId)
-            ->whereIn('status', [QueueStatus::WAITING, QueueStatus::CALLED])
-            ->orderByDesc('created_at')
-            ->first();
     }
 
     private function getNextQueueNumber(int $projectId): int
@@ -88,5 +68,22 @@ class QueueStoreUseCase
             }
         }
         return (string) Str::uuid();
+    }
+
+    private function resolveLineUserId(?string $headerLineUserId, ?string $userLineUserId): ?string
+    {
+        if (is_string($headerLineUserId) && $this->isValidLineUserId($headerLineUserId)) {
+            return $headerLineUserId;
+        }
+        if (is_string($userLineUserId) && $this->isValidLineUserId($userLineUserId)) {
+            return $userLineUserId;
+        }
+
+        return null;
+    }
+
+    private function isValidLineUserId(string $lineUserId): bool
+    {
+        return preg_match('/^U[0-9a-f]{32}$/i', $lineUserId) === 1;
     }
 }

@@ -27,7 +27,7 @@ class AdminAnnouncementsTest extends TestCase
         ]);
     }
 
-    public function testAnnouncementsListIsAccessible(): void
+    public function test_announcements_お知らせ一覧にアクセスできること(): void
     {
         $project = $this->createProject();
         $admin = $this->createAdmin($project);

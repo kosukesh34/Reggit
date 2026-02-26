@@ -14,7 +14,9 @@ class GetLiffDesignerUseCase
             ShopSetting::defaultLiffDesignerTemplates(),
             ShopSetting::getLiffCustomCss($projectId),
             ShopSetting::getLiffTabSettings($projectId),
-            ShopSetting::getFeatureFlags($projectId)
+            ShopSetting::getFeatureFlags($projectId),
+            ShopSetting::getLineLiffId($projectId),
+            ShopSetting::getLineLiffUrl($projectId)
         );
     }
 }

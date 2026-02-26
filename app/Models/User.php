@@ -63,6 +63,10 @@ class User extends Authenticatable
     {
         return $this->hasMany(UserDevice::class);
     }
-}
 
+    public function announcementReads()
+    {
+        return $this->hasMany(AnnouncementRead::class);
+    }
+}
 

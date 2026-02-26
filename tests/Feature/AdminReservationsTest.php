@@ -27,7 +27,7 @@ class AdminReservationsTest extends TestCase
         ]);
     }
 
-    public function testReservationsListIsAccessible(): void
+    public function test_reservations_予約一覧にアクセスできること(): void
     {
         $project = $this->createProject();
         $admin = $this->createAdmin($project);

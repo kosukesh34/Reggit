@@ -27,7 +27,7 @@ class AdminOrdersTest extends TestCase
         ]);
     }
 
-    public function testOrdersListIsAccessible(): void
+    public function test_orders_注文一覧にアクセスできること(): void
     {
         $project = $this->createProject();
         $admin = $this->createAdmin($project);

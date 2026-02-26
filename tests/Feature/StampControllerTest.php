@@ -24,7 +24,7 @@ class StampControllerTest extends TestCase
         );
     }
 
-    public function testIndexReturnsStampCards(): void
+    public function test_index_スタンプカード一覧を返すこと(): void
     {
         $this->createProject();
         $user = User::factory()->create(['line_user_id' => self::LINE_USER_ID, 'project_id' => 1]);

@@ -117,7 +117,7 @@ class MemberManager {
         try {
             const result = await this.apiClient.get(AppConstants.API_ENDPOINTS.MEMBERS_ME);
             if (!result.success) {
-                throw new Error(result.error || result.data?.message || '会員情報の取得に失敗しました');
+                throw new Error(result.error || (result.data && result.data.message) || '会員情報の取得に失敗しました');
             }
             const data = result.data;
             if (!data || typeof data.is_member === 'undefined') {
@@ -172,10 +172,16 @@ class MemberManager {
         const memberNumber = member.member_number || '';
         const currentRankLabel = data.current_rank_label || 'ブロンズ';
         const currentRankIcon = data.current_rank_icon || null;
+        const currentRankColor = data.current_rank_color || null;
         const nextRankLabel = data.next_rank_label || null;
         const pointsToNextRank = data.points_to_next_rank != null ? data.points_to_next_rank : null;
+        const daysToNextRank = data.days_to_next_rank != null ? data.days_to_next_rank : null;
+        const daysRequiredForNextRank = data.days_required_for_next_rank != null ? data.days_required_for_next_rank : null;
+        const rankUpHistory = Array.isArray(data.rank_up_history) ? data.rank_up_history : [];
         const pointsExpiry = data.points_expiry || null;
         const currentRankKey = data.current_rank || 'bronze';
+        const showPointsDisplay = data.show_points_display !== false;
+        const showRankProgress = data.show_rank_progress !== false;
 
         let expiryText = '';
         if (pointsExpiry && pointsExpiry.expires_at_label) {
@@ -194,6 +200,7 @@ class MemberManager {
         const walletPassImageUrl = (typeof window !== 'undefined' && window.__WALLET_PASS_ADD_BUTTON_IMAGE__) || '/images/add-to-apple-wallet-logo.png';
         const projectKey = (typeof window !== 'undefined' && window.__PROJECT_KEY__) ? window.__PROJECT_KEY__ : 'default';
         const walletPassUrl = AppConstants.API_ENDPOINTS.MEMBERS_WALLET_PASS + '?project_key=' + encodeURIComponent(projectKey);
+        const cardStyle = currentRankColor ? ` data-rank-color="true" style="--idnect-card-rank-color: ${DomHelper.escapeHtml(currentRankColor)}"` : '';
         const addToWalletBlock = showAddToWallet
             ? `<div class="member-card-add-to-wallet-wrap">
                 <button type="button" class="member-card-add-to-wallet-btn" data-wallet-pass-url="${DomHelper.escapeHtml(walletPassUrl)}" aria-label="Walletに追加">
@@ -209,32 +216,33 @@ class MemberManager {
                     <button type="button" class="member-card-edit-btn" onclick="window.app.memberManager.openProfileEdit()" aria-label="プロフィール編集"><i class="fas fa-pen"></i></button>
                 </div>
                 ${permissionDeniedNotice}
-                <div class="idnect-card-wrapper" role="button" tabindex="0" aria-label="カードをタップで裏返します">
+                <div class="idnect-card-wrapper" role="button" tabindex="0" aria-label="カードをタップで裏返します"${cardStyle}>
                     <div class="idnect-card" data-rank="${DomHelper.escapeHtml(currentRankKey)}">
                         <div class="idnect-card-shimmer" aria-hidden="true"></div>
                         <div class="idnect-card-face idnect-card-face--front">
                             <div class="idnect-card-front-inner">
                                 ${displayName ? '<p class="idnect-card-display-name">' + DomHelper.escapeHtml(displayName) + '</p>' : ''}
-                                <div class="idnect-card-rank-wrap">
-                                    ${currentRankIcon ? `<img src="${DomHelper.escapeHtml(currentRankIcon)}" class="idnect-card-rank-icon" alt="ランク">` : ''}
-                                    <p class="idnect-card-rank-badge" data-rank="${DomHelper.escapeHtml(currentRankKey)}">${DomHelper.escapeHtml(currentRankLabel)}</p>
+                                <div class="idnect-card-meta-row">
+                                    <div class="idnect-card-rank-wrap">
+                                        ${currentRankIcon ? `<img src="${DomHelper.escapeHtml(currentRankIcon)}" class="idnect-card-rank-icon" alt="ランク">` : ''}
+                                        <span class="idnect-card-rank-badge" data-rank="${DomHelper.escapeHtml(currentRankKey)}">${DomHelper.escapeHtml(currentRankLabel)}</span>
+                                    </div>
+                                    ${showPointsDisplay ? '<div class="idnect-card-points idnect-card-points--front"><span class="idnect-card-points-value">' + points.toLocaleString() + '</span><span class="idnect-card-points-label">pt</span></div>' : ''}
                                 </div>
                                 <div class="idnect-card-barcode-wrap">
                                     <svg id="${barcodeId}" class="idnect-card-barcode-svg"></svg>
                                 </div>
-                                <p class="idnect-card-tap-hint">タップで裏面を見る</p>
+                                <p class="idnect-card-tap-hint"><i class="fas fa-sync-alt idnect-card-tap-hint-icon" aria-hidden="true"></i> タップで裏面を見る</p>
                             </div>
                         </div>
                         <div class="idnect-card-face idnect-card-face--back">
                             <div class="idnect-card-back-inner">
                                 <p class="idnect-card-back-title">会員情報</p>
-                                <div class="idnect-card-points idnect-card-points--large">
-                                    <span class="idnect-card-points-value">${points.toLocaleString()}</span>
-                                    <span class="idnect-card-points-label">ポイント</span>
-                                </div>
+                                ${showPointsDisplay ? '<div class="idnect-card-points idnect-card-points--large"><span class="idnect-card-points-value">' + points.toLocaleString() + '</span><span class="idnect-card-points-label">ポイント</span></div>' : ''}
                                 ${expiryText ? '<p class="idnect-card-expiry">' + DomHelper.escapeHtml(expiryText) + '</p>' : ''}
-                                ${nextRankLabel && pointsToNextRank !== null ? '<p class="idnect-card-next-rank">次のランク（' + DomHelper.escapeHtml(nextRankLabel) + '）まで <strong>' + pointsToNextRank.toLocaleString() + '</strong> pt</p>' : ''}
-                                <p class="idnect-card-tap-hint">タップで表に戻る</p>
+                                ${showRankProgress && nextRankLabel && pointsToNextRank !== null ? '<p class="idnect-card-next-rank">次のランク（' + DomHelper.escapeHtml(nextRankLabel) + '）まで <strong>' + pointsToNextRank.toLocaleString() + '</strong> pt</p>' : ''}
+                                ${showRankProgress && daysRequiredForNextRank !== null && daysToNextRank !== null ? '<p class="idnect-card-next-rank idnect-card-days-to-rank">次のランクまで あと <strong>' + daysToNextRank + '</strong> 日</p>' : ''}
+                                <p class="idnect-card-tap-hint"><i class="fas fa-sync-alt idnect-card-tap-hint-icon" aria-hidden="true"></i> タップで表に戻る</p>
                             </div>
                         </div>
                     </div>
@@ -254,6 +262,13 @@ class MemberManager {
                     </button>
                     <div id="memberPointHistoryList" class="member-purchase-history-list" hidden aria-labelledby="memberPointHistoryToggle"></div>
                 </div>
+                <div class="member-rank-history">
+                    <button type="button" class="member-purchase-history-toggle" aria-expanded="false" aria-controls="memberRankHistoryList" id="memberRankHistoryToggle">
+                        <span class="member-purchase-history-toggle-label">ランクアップ履歴</span>
+                        <i class="fas fa-chevron-down member-purchase-history-toggle-icon" aria-hidden="true"></i>
+                    </button>
+                    <div id="memberRankHistoryList" class="member-purchase-history-list member-rank-history-list" hidden aria-labelledby="memberRankHistoryToggle">${this._formatRankUpHistoryHtml(rankUpHistory)}</div>
+                </div>
             </div>
         `;
 
@@ -262,6 +277,49 @@ class MemberManager {
         this._setupAddToWallet();
         this._setupPurchaseHistoryToggle();
         this._setupPointHistoryToggle();
+        this._setupRankHistoryToggle();
+    }
+
+    _formatRankUpHistoryHtml(history) {
+        if (!history || history.length === 0) {
+            return '<div class="member-rank-history-empty">まだランクアップ履歴がありません</div>';
+        }
+        return history.map(function (item) {
+            const date = item.achieved_at || '';
+            const fromLabel = (item.from_rank_label || '—');
+            const toLabel = (item.to_rank_label || '—');
+            return '<div class="member-rank-history-item">' +
+                '<span class="member-rank-history-from">' + DomHelper.escapeHtml(fromLabel) + '</span>' +
+                ' <i class="fas fa-arrow-right member-rank-history-arrow" aria-hidden="true"></i> ' +
+                '<span class="member-rank-history-to">' + DomHelper.escapeHtml(toLabel) + '</span>' +
+                '<span class="member-rank-history-date">' + DomHelper.escapeHtml(date) + '</span>' +
+                '</div>';
+        }).join('');
+    }
+
+    _setupRankHistoryToggle() {
+        const toggle = document.getElementById('memberRankHistoryToggle');
+        const listEl = document.getElementById('memberRankHistoryList');
+        const icon = toggle ? toggle.querySelector('.member-purchase-history-toggle-icon') : null;
+        if (!toggle || !listEl) return;
+        toggle.addEventListener('click', function () {
+            const isExpanded = toggle.getAttribute('aria-expanded') === 'true';
+            if (isExpanded) {
+                toggle.setAttribute('aria-expanded', 'false');
+                listEl.hidden = true;
+                if (icon) {
+                    icon.classList.remove('fa-chevron-up');
+                    icon.classList.add('fa-chevron-down');
+                }
+                return;
+            }
+            toggle.setAttribute('aria-expanded', 'true');
+            listEl.hidden = false;
+            if (icon) {
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-up');
+            }
+        });
     }
 
     _setupAddToWallet() {

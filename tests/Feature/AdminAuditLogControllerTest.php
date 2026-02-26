@@ -18,7 +18,7 @@ class AdminAuditLogControllerTest extends TestCase
         return $admin;
     }
 
-    public function testIndexShowsLogs(): void
+    public function test_index_監査ログ一覧が表示されること(): void
     {
         $admin = $this->loginSystemAdmin();
         AdminAuditLog::create([
@@ -37,7 +37,7 @@ class AdminAuditLogControllerTest extends TestCase
         $response->assertStatus(200);
     }
 
-    public function testShowShowsLog(): void
+    public function test_show_監査ログ詳細が表示されること(): void
     {
         $admin = $this->loginSystemAdmin();
         $log = AdminAuditLog::create([

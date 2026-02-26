@@ -11,7 +11,7 @@ class ProductApiV1Test extends TestCase
 {
     use RefreshDatabase;
 
-    public function testIndexReturnsProducts(): void
+    public function test_index_商品一覧を返すこと(): void
     {
         Product::factory()->create(['project_id' => 1]);
 
@@ -22,7 +22,7 @@ class ProductApiV1Test extends TestCase
             ->assertJsonStructure(['success', 'data' => ['products']]);
     }
 
-    public function testShowReturnsProduct(): void
+    public function test_show_商品詳細を返すこと(): void
     {
         $product = Product::factory()->create(['project_id' => 1]);
 

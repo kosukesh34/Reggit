@@ -50,6 +50,7 @@
                     <th>番号</th>
                     <th>名前</th>
                     <th>人数</th>
+                    <th>LINE連携</th>
                     <th>あと</th>
                     <th>状態</th>
                     <th>登録日時</th>
@@ -60,6 +61,8 @@
             <tbody>
                 @foreach($entries as $e)
                 @php
+                    $lineUserId = $e->user?->line_user_id ?? $e->member?->user?->line_user_id;
+                    $isLineLinked = is_string($lineUserId) && preg_match('/^U[0-9a-f]{32}$/i', $lineUserId) === 1;
                     $aheadCount = ($e->status === 'waiting' && $e->created_at->isToday() && isset($waitingQueueNumbers))
                         ? $waitingQueueNumbers->filter(fn($n) => $n < ($e->queue_number ?? 0))->count()
                         : null;
@@ -68,6 +71,13 @@
                     <td><strong>{{ $e->queue_number ?? $e->id }}</strong></td>
                     <td>{{ $e->member?->user?->name ?? $e->guest_name ?? '—' }}</td>
                     <td>{{ $e->party_size }}名</td>
+                    <td>
+                        @if($isLineLinked)
+                            <span class="badge badge-success">連携済み</span>
+                        @else
+                            <span class="badge badge-secondary">未連携</span>
+                        @endif
+                    </td>
                     <td>@if($aheadCount !== null)<span class="queue-ahead-badge">あと{{ $aheadCount }}組</span>@else—@endif</td>
                     <td>
                         @if($e->status === 'waiting')<span class="badge badge-warning">待機中</span>
