@@ -80,49 +80,49 @@ class AppServiceProvider extends ServiceProvider
             }
         });
 
-        // index の View composer は Web リクエスト時のみ（CLI で package:discover 等実行時に DB 接続を避ける）
-        if ($this->app->runningInConsole() === false) {
-            View::composer('index', function ($view) {
-                try {
-                    // LIFF は bind.project で request にプロジェクトがセットされる。それを優先する
-                    $project = request()->attributes->get('currentProject') ?? AdminContext::getCurrentProject();
-                    $projectId = $project?->id ?? 1;
-                    $view->with('lineTheme', ShopSetting::getLineThemeColors($projectId));
-                    $view->with('frontendMenu', ShopSetting::getFrontendMenuItems($projectId));
-                    $view->with('projectKey', $project?->project_key ?? 'default');
-                    $view->with('projectName', $project?->name ?? 'モバイルオーダー');
-                    $view->with('featureFlags', ShopSetting::getFeatureFlags($projectId));
-                    $view->with('walletPassEnabled', config('wallet_pass.enabled', false));
-                    $view->with('googleWalletEnabled', config('google_wallet.enabled', false));
-                    $view->with('frontendLogoUrl', ShopSetting::getFrontendLogoUrl($projectId));
-                    $view->with('frontendHeaderText', ShopSetting::getFrontendHeaderText($projectId));
-                    $view->with('liffBuilderBlocks', ShopSetting::getLiffBuilderBlocks($projectId));
-                    $view->with('liffTabLayouts', ShopSetting::getLiffTabLayouts($projectId));
-                    $view->with('liffCustomCss', ShopSetting::getLiffCustomCss($projectId));
-                    $view->with('liffTabSettings', ShopSetting::getLiffTabSettings($projectId));
-                    $view->with('liffId', ShopSetting::getLineLiffId($projectId));
-                    $view->with('liffUrl', ShopSetting::getLineLiffUrl($projectId));
-                } catch (\Throwable $e) {
-                    $view->with('lineTheme', [
-                        'primary' => '#000000',
-                        'primary_rgb' => '0, 0, 0',
-                        'primary_dark' => '#333333',
-                        'success' => '#000000',
-                        'danger' => '#dc3545',
-                    ]);
-                    $view->with('frontendMenu', ShopSetting::defaultFrontendMenuItems());
-                    $view->with('projectKey', 'default');
-                    $view->with('projectName', 'モバイルオーダー');
-                    $view->with('walletPassEnabled', false);
-                    $view->with('googleWalletEnabled', false);
-                    $view->with('liffBuilderBlocks', ShopSetting::defaultLiffBuilderTemplates()[0]['blocks']);
-                    $view->with('liffTabLayouts', ShopSetting::defaultLiffTabLayouts());
-                    $view->with('liffCustomCss', '');
-                    $view->with('liffTabSettings', []);
-                    $view->with('liffId', trim((string) config('line.liff_id', '')));
-                    $view->with('liffUrl', trim((string) config('line.liff_url', '')));
-                }
-            });
-        }
+        // index の View composer（テスト時 /liff でもレンダリングするため常に登録。コールバックはビュー描画時のみ実行され DB はその時のみ）
+        View::composer('index', function ($view) {
+            try {
+                $project = request()?->attributes?->get('currentProject') ?? AdminContext::getCurrentProject();
+                $projectId = $project?->id ?? 1;
+                $view->with('lineTheme', ShopSetting::getLineThemeColors($projectId));
+                $view->with('frontendMenu', ShopSetting::getFrontendMenuItems($projectId));
+                $view->with('projectKey', $project?->project_key ?? 'default');
+                $view->with('projectName', $project?->name ?? 'モバイルオーダー');
+                $view->with('featureFlags', ShopSetting::getFeatureFlags($projectId));
+                $view->with('walletPassEnabled', config('wallet_pass.enabled', false));
+                $view->with('googleWalletEnabled', config('google_wallet.enabled', false));
+                $view->with('frontendLogoUrl', ShopSetting::getFrontendLogoUrl($projectId));
+                $view->with('frontendHeaderText', ShopSetting::getFrontendHeaderText($projectId));
+                $view->with('liffBuilderBlocks', ShopSetting::getLiffBuilderBlocks($projectId));
+                $view->with('liffTabLayouts', ShopSetting::getLiffTabLayouts($projectId));
+                $view->with('liffCustomCss', ShopSetting::getLiffCustomCss($projectId));
+                $view->with('liffTabSettings', ShopSetting::getLiffTabSettings($projectId));
+                $view->with('liffId', ShopSetting::getLineLiffId($projectId));
+                $view->with('liffUrl', ShopSetting::getLineLiffUrl($projectId));
+            } catch (\Throwable $e) {
+                $view->with('lineTheme', [
+                    'primary' => '#000000',
+                    'primary_rgb' => '0, 0, 0',
+                    'primary_dark' => '#333333',
+                    'success' => '#000000',
+                    'danger' => '#dc3545',
+                ]);
+                $view->with('frontendMenu', ShopSetting::defaultFrontendMenuItems());
+                $view->with('projectKey', 'default');
+                $view->with('projectName', 'モバイルオーダー');
+                $view->with('featureFlags', []);
+                $view->with('walletPassEnabled', false);
+                $view->with('googleWalletEnabled', false);
+                $view->with('frontendLogoUrl', '');
+                $view->with('frontendHeaderText', 'モバイルオーダー');
+                $view->with('liffBuilderBlocks', ShopSetting::defaultLiffBuilderTemplates()[0]['blocks']);
+                $view->with('liffTabLayouts', ShopSetting::defaultLiffTabLayouts());
+                $view->with('liffCustomCss', '');
+                $view->with('liffTabSettings', []);
+                $view->with('liffId', trim((string) config('line.liff_id', '')));
+                $view->with('liffUrl', trim((string) config('line.liff_url', '')));
+            }
+        });
     }
 }
