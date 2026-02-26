@@ -31,22 +31,22 @@ class StampController extends AdminBaseController
             ->with('success', 'スタンプカードを追加しました');
     }
 
-    public function editStamp(int $id)
+    public function editStamp(string|int $id)
     {
-        $stampCard = $this->stampAdminService->findOrFail($id);
+        $stampCard = $this->stampAdminService->findOrFail((int) $id);
         return view('admin.stamps.edit', compact('stampCard'));
     }
 
-    public function updateStamp(StampUpdateRequest $request, int $id)
+    public function updateStamp(StampUpdateRequest $request, string|int $id)
     {
-        $this->stampAdminService->update($id, $request->validated());
+        $this->stampAdminService->update((int) $id, $request->validated());
         return redirect()->route('admin.stamps', $this->buildAdminRouteParams())
             ->with('success', 'スタンプカードを更新しました');
     }
 
-    public function deleteStamp(int $id)
+    public function deleteStamp(string|int $id)
     {
-        $this->stampAdminService->delete($id);
+        $this->stampAdminService->delete((int) $id);
         return redirect()->route('admin.stamps', $this->buildAdminRouteParams())
             ->with('success', 'スタンプカードを削除しました');
     }

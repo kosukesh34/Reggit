@@ -14,7 +14,9 @@ class UpdateLiffDesignerInput
     public function __construct(
         public readonly array $layouts,
         public readonly string $customCss,
-        public readonly ?array $tabSettings
+        public readonly ?array $tabSettings,
+        public readonly string $liffId = '',
+        public readonly string $liffUrl = ''
     ) {
     }
 }

@@ -13,7 +13,7 @@ class QueueStatsServiceTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_stats_are_scoped_to_project(): void
+    public function test_getStats_統計がプロジェクト単位で集計されること(): void
     {
         $project = Project::firstOrCreate(
             ['project_key' => 'default'],
@@ -41,7 +41,7 @@ class QueueStatsServiceTest extends TestCase
         $this->assertSame(2, $stats['waiting_count']);
     }
 
-    public function test_ahead_count_is_calculated(): void
+    public function test_getStats_前の待ち人数が計算されること(): void
     {
         $project = Project::firstOrCreate(
             ['project_key' => 'default'],

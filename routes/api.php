@@ -12,6 +12,7 @@ use App\Http\Controllers\Member\MemberAddPointsController;
 use App\Http\Controllers\Payment\PaymentCreateIntentController;
 use App\Http\Controllers\Payment\PaymentConfirmController;
 use App\Http\Controllers\Payment\PaymentWebhookController;
+use App\Http\Controllers\Diagnostics\ClientDebugController;
 use App\Http\Controllers\Reservation\ReservationIndexController;
 use App\Http\Controllers\Reservation\ReservationAvailableDatesController;
 use App\Http\Controllers\Reservation\ReservationStoreController;
@@ -31,6 +32,7 @@ use App\Http\Controllers\Queue\QueueMeController;
 use App\Http\Controllers\Queue\QueueCancelController;
 use App\Http\Controllers\Queue\QueueCallNextController;
 use App\Http\Controllers\Queue\QueueQrStatusController;
+use App\Http\Controllers\Queue\QueueStatusController;
 use App\Http\Middleware\AuthenticateApiToken;
 use App\Http\Controllers\Api\V1\AnnouncementController as ApiV1AnnouncementController;
 use App\Http\Controllers\Api\V1\CouponController as ApiV1CouponController;
@@ -46,6 +48,10 @@ use App\Http\Controllers\Api\V1\Reservation\ReservationIndexController as ApiV1R
 
 Route::match(['get', 'post'], '/line/webhook', [LineWebhookController::class, 'handle']);
 
+// スマレジ・プラットフォームAPI 連携（利用者契約通知・Webhook）
+Route::post('/smaregi/idp', [\App\Http\Controllers\Smaregi\SmaregiIdpController::class, '__invoke'])->name('smaregi.idp');
+Route::post('/smaregi/webhook', [\App\Http\Controllers\Smaregi\SmaregiWebhookController::class, '__invoke'])->name('smaregi.webhook');
+
 // API v1（Bearer トークン認証・モバイルアプリ用）
 Route::prefix('v1')->middleware([AuthenticateApiToken::class])->group(function () {
     Route::get('/products', [ApiV1ProductController::class, 'index']);
@@ -60,6 +66,7 @@ Route::prefix('v1')->middleware([AuthenticateApiToken::class])->group(function (
     Route::get('/members/me/coupons', [ApiV1CouponController::class, 'myCoupons']);
     Route::get('/stamps', [ApiV1StampController::class, 'index']);
     Route::get('/announcements', [ApiV1AnnouncementController::class, 'index']);
+    Route::post('/announcements/{id}/read', [ApiV1AnnouncementController::class, 'markRead']);
     Route::get('/reservations', [ApiV1ReservationIndexController::class, '__invoke']);
     Route::post('/payment/create-intent', [ApiV1PaymentController::class, 'createPaymentIntent']);
     Route::post('/payment/confirm', [ApiV1PaymentController::class, 'confirmPayment']);
@@ -94,15 +101,18 @@ Route::middleware(['web', 'bind.project'])->group(function () {
     Route::post('/reservations/{id}/cancel', [ReservationCancelController::class, '__invoke']);
 
     Route::get('/announcements', [AnnouncementController::class, 'index']);
+    Route::post('/announcements/{id}/read', [AnnouncementController::class, 'markRead']);
     Route::post('/contact', [ContactController::class, 'store']);
     Route::get('/gallery', [GalleryController::class, 'index']);
     Route::get('/stamps', [StampController::class, 'index']);
 
     Route::post('/queue', [QueueStoreController::class, '__invoke']);
     Route::get('/queue/me', [QueueMeController::class, '__invoke']);
+    Route::get('/queue/{id}', [QueueStatusController::class, '__invoke']);
     Route::post('/queue/{id}/cancel', [QueueCancelController::class, '__invoke']);
     Route::post('/queue/call-next', [QueueCallNextController::class, '__invoke']);
     Route::get('/queue/qr/{token}', [QueueQrStatusController::class, '__invoke']);
 });
 
 Route::post('/payment/webhook', [PaymentWebhookController::class, '__invoke']);
+Route::match(['get', 'post'], '/client-debug', ClientDebugController::class);

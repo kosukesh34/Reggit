@@ -19,7 +19,7 @@ class AdminDashboardTest extends TestCase
         );
     }
 
-    public function testDashboardIsAccessibleForProjectAdmin(): void
+    public function test_dashboard_プロジェクト管理者がダッシュボードにアクセスできること(): void
     {
         $project = $this->createProject();
         $admin = AdminUser::factory()->create([
@@ -33,7 +33,7 @@ class AdminDashboardTest extends TestCase
         $response->assertStatus(200);
     }
 
-    public function testDashboardShowsContent(): void
+    public function test_dashboard_ダッシュボードにコンテンツが表示されること(): void
     {
         $project = $this->createProject();
         $admin = AdminUser::factory()->create([

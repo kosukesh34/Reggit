@@ -19,7 +19,7 @@ class AdminApiTokenControllerTest extends TestCase
         return $admin;
     }
 
-    public function testIndexShowsTokens(): void
+    public function test_index_APIトークン一覧が表示されること(): void
     {
         $this->loginSystemAdmin();
 
@@ -28,7 +28,7 @@ class AdminApiTokenControllerTest extends TestCase
         $response->assertStatus(200);
     }
 
-    public function testCreateShowsForm(): void
+    public function test_create_トークン作成フォームが表示されること(): void
     {
         $this->loginSystemAdmin();
 
@@ -37,7 +37,7 @@ class AdminApiTokenControllerTest extends TestCase
         $response->assertStatus(200);
     }
 
-    public function testStoreCreatesToken(): void
+    public function test_store_トークンが作成されること(): void
     {
         $this->loginSystemAdmin();
         $project = Project::factory()->create();
@@ -51,7 +51,7 @@ class AdminApiTokenControllerTest extends TestCase
         $this->assertDatabaseHas('api_tokens', ['project_id' => $project->id, 'name' => 'Test Token']);
     }
 
-    public function testRevokeDisablesToken(): void
+    public function test_revoke_トークンが無効化されること(): void
     {
         $this->loginSystemAdmin();
         $project = Project::factory()->create();
@@ -63,7 +63,7 @@ class AdminApiTokenControllerTest extends TestCase
         $this->assertDatabaseHas('api_tokens', ['id' => $issued['token']->id, 'is_active' => false]);
     }
 
-    public function testRotateCreatesNewToken(): void
+    public function test_rotate_新しいトークンが発行されること(): void
     {
         $this->loginSystemAdmin();
         $project = Project::factory()->create();

@@ -18,7 +18,7 @@ class ContactControllerTest extends TestCase
         );
     }
 
-    public function testStoreReturnsSuccess(): void
+    public function test_store_問い合わせ送信が成功すること(): void
     {
         $this->createProject();
 

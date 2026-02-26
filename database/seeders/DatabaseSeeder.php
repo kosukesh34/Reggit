@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Coupon;
 use App\Models\Product;
 use App\Models\Project;
 use Illuminate\Database\Seeder;
@@ -23,6 +24,8 @@ class DatabaseSeeder extends Seeder
                 'is_active' => true,
             ]);
         }
+
+        $this->seedSampleCoupons($project);
 
         // 既に商品がある場合はスキップ
         if (Product::withoutGlobalScopes()->where('project_id', $project->id)->count() > 0) {
@@ -108,6 +111,46 @@ class DatabaseSeeder extends Seeder
             Product::withoutGlobalScopes()->create(array_merge($product, [
                 'project_id' => $project->id,
             ]));
+        }
+    }
+
+    /** サンプル・デモ用クーポンを1件以上作る（同一プロジェクトに未作成の場合のみ） */
+    private function seedSampleCoupons(Project $project): void
+    {
+        if (Coupon::where('project_id', $project->id)->exists()) {
+            return;
+        }
+        $now = now();
+        $coupons = [
+            [
+                'code' => 'SAMPLE100',
+                'name' => 'サンプル 100円オフ',
+                'type' => 'fixed',
+                'value' => 100,
+                'min_order_amount' => 500,
+                'usage_limit' => null,
+                'used_count' => 0,
+                'start_at' => $now,
+                'end_at' => $now->copy()->addMonths(3),
+                'is_active' => true,
+                'issue_trigger' => Coupon::ISSUE_TRIGGER_MANUAL,
+            ],
+            [
+                'code' => 'SAMPLE10PCT',
+                'name' => 'サンプル 10%オフ',
+                'type' => 'percent',
+                'value' => 10,
+                'min_order_amount' => 300,
+                'usage_limit' => 100,
+                'used_count' => 0,
+                'start_at' => $now,
+                'end_at' => $now->copy()->addMonths(1),
+                'is_active' => true,
+                'issue_trigger' => Coupon::ISSUE_TRIGGER_MANUAL,
+            ],
+        ];
+        foreach ($coupons as $c) {
+            Coupon::create(array_merge($c, ['project_id' => $project->id]));
         }
     }
 }

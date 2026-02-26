@@ -3,6 +3,40 @@ class ApiClient {
         this.baseHeaders = AppConstants.HEADERS.JSON;
     }
 
+    debugLog(eventName, payload) {
+        if (typeof window !== 'undefined' && typeof window.__clientDebugLog === 'function') {
+            try {
+                window.__clientDebugLog(eventName, payload || {});
+            } catch (e) {
+                // ignore
+            }
+        }
+    }
+
+    resolveLineUserId() {
+        if (typeof window === 'undefined') return null;
+        if (window.__LINE_USER_ID__) return window.__LINE_USER_ID__;
+
+        if (typeof window.liff !== 'undefined') {
+            try {
+                if (typeof liff.isLoggedIn === 'function' && liff.isLoggedIn()) {
+                    const decoded = typeof liff.getDecodedIDToken === 'function'
+                        ? liff.getDecodedIDToken()
+                        : null;
+                    const sub = decoded && decoded.sub ? String(decoded.sub) : null;
+                    if (sub) {
+                        window.__LINE_USER_ID__ = sub;
+                        return sub;
+                    }
+                }
+            } catch (e) {
+                // LIFF未初期化中などの例外は無視
+            }
+        }
+
+        return null;
+    }
+
     async request(endpoint, options = {}) {
         const {
             method = AppConstants.HTTP_METHODS.GET,
@@ -17,7 +51,10 @@ class ApiClient {
         const projectKey = (typeof window !== 'undefined' && window.__PROJECT_KEY__)
             ? window.__PROJECT_KEY__
             : (typeof document !== 'undefined'
-                ? document.querySelector('meta[name="project-key"]')?.getAttribute('content')
+                ? ((function () {
+                    const meta = document.querySelector('meta[name=\"project-key\"]');
+                    return meta ? meta.getAttribute('content') : null;
+                })())
                 : null);
         if (projectKey) {
             requestHeaders['X-Project-Key'] = projectKey;
@@ -25,13 +62,16 @@ class ApiClient {
         if (typeof window !== 'undefined' && window.__API_TOKEN__) {
             requestHeaders['Authorization'] = `Bearer ${window.__API_TOKEN__}`;
         }
-        if (typeof window !== 'undefined' && window.__LINE_USER_ID__) {
-            requestHeaders['X-Line-User-Id'] = window.__LINE_USER_ID__;
+        const lineUserId = this.resolveLineUserId();
+        if (lineUserId) {
+            requestHeaders['X-Line-User-Id'] = lineUserId;
         }
+        requestHeaders['ngrok-skip-browser-warning'] = 'true';
 
         const config = {
             method,
             headers: requestHeaders,
+            credentials: 'same-origin',
         };
 
         if (body) {
@@ -44,17 +84,35 @@ class ApiClient {
             const contentType = response.headers.get('content-type');
             if (!contentType || !contentType.includes(AppConstants.CONTENT_TYPES.JSON)) {
                 const text = await response.text();
+                this.debugLog('api_non_json', {
+                    endpoint: endpoint,
+                    method: method,
+                    status: response.status,
+                    contentType: contentType || '',
+                    bodyHead: text ? String(text).slice(0, 300) : '',
+                });
                 throw new Error(`Invalid response format. Expected JSON, got: ${contentType}`);
             }
 
             const data = await response.json();
 
             if (!response.ok) {
+                this.debugLog('api_http_error', {
+                    endpoint: endpoint,
+                    method: method,
+                    status: response.status,
+                    message: data && (data.error || data.message) ? String(data.error || data.message) : '',
+                });
                 throw new Error(data.error || data.message || `HTTP error! status: ${response.status}`);
             }
 
             return { success: true, data };
         } catch (error) {
+            this.debugLog('api_request_failed', {
+                endpoint: endpoint,
+                method: method,
+                message: error && error.message ? String(error.message) : 'unknown',
+            });
             console.error(`API request failed: ${endpoint}`, error);
             return { success: false, error: error.message || 'An error occurred' };
         }

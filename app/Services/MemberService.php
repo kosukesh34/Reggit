@@ -36,6 +36,7 @@ class MemberService
         $rankInfo = $this->getRankInfo($member);
         $expiryInfo = $this->getPointsExpiryInfo($member);
 
+        $projectId = $member->project_id ?? \App\Util\AdminContext::getCurrentProjectId() ?? 1;
         return [
             'is_member' => true,
             'member' => $member->load('user'),
@@ -45,12 +46,15 @@ class MemberService
             'current_rank_label' => $rankInfo['current_rank_label'],
             'current_rank_icon' => $rankInfo['current_rank_icon'],
             'current_rank_background' => $rankInfo['current_rank_background'],
+            'current_rank_color' => $rankInfo['current_rank_color'] ?? null,
             'next_rank' => $rankInfo['next_rank'],
             'next_rank_label' => $rankInfo['next_rank_label'],
             'points_to_next_rank' => $rankInfo['points_to_next_rank'],
             'rank_basis' => $rankInfo['rank_basis'],
             'rank_metric' => $rankInfo['rank_metric'],
             'points_expiry' => $expiryInfo,
+            'show_points_display' => \App\Models\ShopSetting::getShowPointsDisplay($projectId),
+            'show_rank_progress' => \App\Models\ShopSetting::getShowRankProgress($projectId),
         ];
     }
 
@@ -83,9 +87,8 @@ class MemberService
             throw new \Exception('既に会員登録済みです');
         }
 
-        $memberNumber = $this->generateMemberNumber();
-
         $projectId = $user->project_id ?? \App\Util\AdminContext::getCurrentProjectId() ?? 1;
+        $memberNumber = $this->generateMemberNumber($projectId);
         $rankSettings = \App\Models\ShopSetting::getMemberRankSettings($projectId);
         $defaultRankKey = collect($rankSettings)->first(fn ($r) => ($r['is_active'] ?? false) === true)['key'] ?? 'bronze';
         $member = Member::create([
@@ -136,6 +139,7 @@ class MemberService
                 'current_rank_label' => $member->rank ?? 'bronze',
                 'current_rank_icon' => null,
                 'current_rank_background' => null,
+                'current_rank_color' => null,
                 'next_rank' => null,
                 'next_rank_label' => null,
                 'points_to_next_rank' => null,
@@ -170,6 +174,7 @@ class MemberService
             'current_rank_label' => $resolved['label'] ?? ($resolved['key'] ?? 'bronze'),
             'current_rank_icon' => $resolved['icon_url'] ?? null,
             'current_rank_background' => $resolved['stamp_background_url'] ?? null,
+            'current_rank_color' => $resolved['card_color'] ?? null,
             'next_rank' => $next !== null ? ($next['key'] ?? null) : null,
             'next_rank_label' => $next !== null ? ($next['label'] ?? ($next['key'] ?? null)) : null,
             'points_to_next_rank' => $pointsToNext,
@@ -203,22 +208,64 @@ class MemberService
         ];
     }
 
-    private function generateMemberNumber(): string
+    private function generateMemberNumber(int $projectId): string
     {
-        $digits = '0123456789';
-        $length = 10;
-        $maxAttempts = 10;
+        $type = \App\Models\ShopSetting::getMemberCodeType($projectId);
+        $format = \App\Models\ShopSetting::getMemberCodeFormat($projectId);
+        $length = max(1, min(20, \App\Models\ShopSetting::getMemberCodeLength($projectId)));
+        $prefix = \App\Models\ShopSetting::getMemberCodePrefix($projectId);
+        $prefix = preg_replace('/[^A-Za-z0-9]/', '', $prefix);
+        $prefixLen = strlen($prefix);
+        $bodyLen = min($length, 20 - $prefixLen);
+        if ($bodyLen < 1) {
+            $bodyLen = 1;
+        }
 
-        for ($i = 0; $i < $maxAttempts; $i++) {
-            $candidate = '';
-            for ($j = 0; $j < $length; $j++) {
-                $candidate .= $digits[random_int(0, 9)];
+        $charsNumeric = '0123456789';
+        $charsAlpha = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // 英大文字+数字（紛らわしいI,O,1,0を除く）
+
+        if ($type === 'sequential') {
+            $next = \App\Models\ShopSetting::getMemberCodeNextNumber($projectId);
+            $maxExisting = Member::where('project_id', $projectId)
+                ->whereNotNull('member_number')
+                ->where('member_number', '!=', '')
+                ->get()
+                ->map(function (Member $m) use ($prefix) {
+                    $num = $m->member_number;
+                    if ($prefix !== '' && str_starts_with($num, $prefix)) {
+                        $num = substr($num, strlen($prefix));
+                    }
+                    return ctype_digit($num) ? (int) $num : 0;
+                })
+                ->max();
+            $next = max($next, ($maxExisting ?? 0) + 1);
+            \App\Models\ShopSetting::setMemberCodeNextNumber($next + 1, $projectId);
+            $body = sprintf('%0' . $bodyLen . 'd', $next);
+            if (strlen($body) > $bodyLen) {
+                $body = substr($body, -$bodyLen);
             }
-            if (!Member::where('member_number', $candidate)->exists()) {
+            $candidate = $prefix . $body;
+            return strlen($candidate) <= 20 ? $candidate : substr($candidate, 0, 20);
+        }
+
+        $chars = ($format === 'alphanumeric') ? $charsAlpha : $charsNumeric;
+        $maxAttempts = 20;
+        for ($i = 0; $i < $maxAttempts; $i++) {
+            $body = '';
+            $charLen = strlen($chars);
+            for ($j = 0; $j < $bodyLen; $j++) {
+                $body .= $chars[random_int(0, $charLen - 1)];
+            }
+            $candidate = $prefix . $body;
+            if (strlen($candidate) > 20) {
+                $candidate = substr($candidate, 0, 20);
+            }
+            $exists = Member::where('project_id', $projectId)->where('member_number', $candidate)->exists();
+            if (!$exists) {
                 return $candidate;
             }
         }
 
-        return sprintf('%010d', (time() + random_int(0, 999999)) % 10000000000);
+        return $prefix . sprintf('%0' . $bodyLen . 'd', (time() + random_int(0, 9999)) % (10 ** $bodyLen));
     }
 }
