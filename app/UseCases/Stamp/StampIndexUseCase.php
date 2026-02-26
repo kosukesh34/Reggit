@@ -24,8 +24,12 @@ class StampIndexUseCase
             return new StampListView([], null, true);
         }
 
+        $today = now()->startOfDay();
         $cards = StampCard::where('project_id', $member->project_id)
             ->where('is_active', true)
+            ->where(function ($q) use ($today) {
+                $q->whereNull('valid_until')->orWhere('valid_until', '>=', $today);
+            })
             ->orderBy('name')
             ->get();
 
@@ -39,6 +43,10 @@ class StampIndexUseCase
             if ($memberStamp !== null && $memberStamp->completed_at !== null) {
                 $completedAt = $memberStamp->completed_at->toIso8601String();
             }
+            $memberStampValidUntil = $memberStamp && $memberStamp->valid_until
+                ? $memberStamp->valid_until->toIso8601String()
+                : null;
+            $validUntil = $card->valid_until ? $card->valid_until->format('Y-m-d') : null;
 
             return new StampCardView(
                 (int) $card->id,
@@ -47,7 +55,11 @@ class StampIndexUseCase
                 $card->reward_description,
                 $card->image_url,
                 $memberStamp ? (int) $memberStamp->current_stamps : 0,
-                $completedAt
+                $completedAt,
+                (string) ($card->layout_style ?? 'grid'),
+                $card->valid_days ? (int) $card->valid_days : null,
+                $validUntil,
+                $memberStampValidUntil
             );
         })->all();
 

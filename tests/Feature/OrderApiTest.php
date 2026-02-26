@@ -23,7 +23,7 @@ class OrderApiTest extends TestCase
         );
     }
 
-    public function test_store_creates_order(): void
+    public function test_store_注文が作成されること(): void
     {
         $this->createProject();
         $user = User::factory()->create(['line_user_id' => 'line-order-1', 'project_id' => 1]);
@@ -44,7 +44,7 @@ class OrderApiTest extends TestCase
             ->assertJsonStructure(['message', 'order' => ['id', 'items']]);
     }
 
-    public function test_index_returns_only_user_orders(): void
+    public function test_index_自分の注文のみ返すこと(): void
     {
         $this->createProject();
         $user = User::factory()->create(['line_user_id' => 'line-order-2', 'project_id' => 1]);

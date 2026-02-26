@@ -15,8 +15,9 @@ class GalleryManager {
         try {
             const url = categoryId ? `${AppConstants.API_ENDPOINTS.GALLERY}?category_id=${encodeURIComponent(categoryId)}` : AppConstants.API_ENDPOINTS.GALLERY;
             const result = await this.apiClient.get(url);
-            const categories = result.data?.categories || [];
-            const items = result.data?.items || [];
+            const data = result.data || {};
+            const categories = data.categories || [];
+            const items = data.items || [];
             this.render(section, categories, items);
         } catch (error) {
             section.innerHTML = '<div class="gallery-error"><p>ギャラリーの読み込みに失敗しました</p></div>';
@@ -28,7 +29,8 @@ class GalleryManager {
         container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i><p>読み込み中...</p></div>';
         try {
             const result = await this.apiClient.get(AppConstants.API_ENDPOINTS.GALLERY);
-            const items = result.data?.items || [];
+            const data = result.data || {};
+            const items = data.items || [];
             container.innerHTML = `
                 <div class="gallery-grid">
                     ${items.map((item) => `
@@ -48,7 +50,7 @@ class GalleryManager {
         const categoryTabs = `
             <div class="gallery-tabs">
                 <button class="gallery-tab ${!this.currentCategoryId ? 'active' : ''}" data-category="">すべて</button>
-                ${categories.map((cat) => `<button class="gallery-tab ${String(this.currentCategoryId ?? '') === String(cat.id) ? 'active' : ''}" data-category="${cat.id}">${DomHelper.escapeHtml(cat.name)}</button>`).join('')}
+                ${categories.map((cat) => `<button class="gallery-tab ${String(this.currentCategoryId == null ? '' : this.currentCategoryId) === String(cat.id) ? 'active' : ''}" data-category="${cat.id}">${DomHelper.escapeHtml(cat.name)}</button>`).join('')}
             </div>
         `;
         const grid = `

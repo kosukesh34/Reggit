@@ -23,7 +23,7 @@ class MemberControllerTest extends TestCase
         );
     }
 
-    public function testRegisterCreatesMember(): void
+    public function test_register_会員登録が作成されること(): void
     {
         $this->createProject();
 
@@ -34,7 +34,7 @@ class MemberControllerTest extends TestCase
             ->assertJsonPath('is_member', true);
     }
 
-    public function testMeReturnsMemberData(): void
+    public function test_me_会員データを返すこと(): void
     {
         $this->createProject();
         $user = User::factory()->create(['line_user_id' => self::LINE_USER_ID, 'project_id' => 1]);
@@ -47,7 +47,7 @@ class MemberControllerTest extends TestCase
             ->assertJsonPath('is_member', true);
     }
 
-    public function testGetPointsReturnsPoints(): void
+    public function test_getPoints_ポイント情報を返すこと(): void
     {
         $this->createProject();
         $user = User::factory()->create(['line_user_id' => self::LINE_USER_ID, 'project_id' => 1]);

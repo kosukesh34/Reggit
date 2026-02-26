@@ -18,7 +18,7 @@ class AdminAnalyticsUseCaseTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function testAnalyticsIncludesCategoryAndHourlyData(): void
+    public function test_analytics_カテゴリと時間帯データが含まれること(): void
     {
         $project = Project::factory()->create();
         $user = User::factory()->create(['project_id' => $project->id]);

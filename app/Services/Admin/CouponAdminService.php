@@ -9,14 +9,20 @@ use Illuminate\Support\Collection;
 
 class CouponAdminService
 {
-    public function getPaginatedList(int $perPage = 20): LengthAwarePaginator
+    public function getPaginatedList(int $projectId, int $perPage = 20): LengthAwarePaginator
     {
-        return Coupon::orderByDesc('id')->paginate($perPage);
+        return Coupon::where('project_id', $projectId)
+            ->with('stampCard')
+            ->orderByDesc('id')
+            ->paginate($perPage);
     }
 
-    public function getActiveStampCardsForSelect(): Collection
+    public function getActiveStampCardsForSelect(int $projectId): Collection
     {
-        return StampCard::where('is_active', true)->orderBy('name')->get();
+        return StampCard::where('project_id', $projectId)
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
     }
 
     public function create(int $projectId, array $data): Coupon
@@ -25,20 +31,26 @@ class CouponAdminService
         return Coupon::create($data);
     }
 
-    public function findOrFail(int $id): Coupon
+    /** @param int|null $projectId 指定時はそのプロジェクトのクーポンのみ取得（他プロジェクトは404） */
+    public function findOrFail(int $id, ?int $projectId = null): Coupon
     {
-        return Coupon::findOrFail($id);
+        $query = Coupon::with('stampCard');
+        if ($projectId !== null) {
+            $query->where('project_id', $projectId);
+        }
+        return $query->findOrFail($id);
     }
 
-    public function update(int $id, array $data): Coupon
+    public function update(int $id, array $data, ?int $projectId = null): Coupon
     {
-        $coupon = Coupon::findOrFail($id);
+        $coupon = $this->findOrFail($id, $projectId);
         $coupon->update($data);
         return $coupon;
     }
 
-    public function delete(int $id): void
+    public function delete(int $id, ?int $projectId = null): void
     {
-        Coupon::whereKey($id)->delete();
+        $coupon = $this->findOrFail($id, $projectId);
+        $coupon->delete();
     }
 }

@@ -1,6 +1,4 @@
 class QueueManager {
-    static PENDING_QUEUE_TOKEN_KEY = 'mobile_order_pending_queue_token';
-
     constructor(apiClient) {
         this.apiClient = apiClient;
         this._waitingLiffRetryRegistered = false;
@@ -52,12 +50,12 @@ class QueueManager {
     }
 
     getCreateFormTemplate(stats = null) {
-        const waitingCount = stats?.waiting_count ?? stats?.waitingCount ?? null;
-        const estimated = stats?.estimated_wait_minutes ?? stats?.estimatedWaitMinutes ?? null;
+        const waitingCount = stats ? ((stats.waiting_count != null) ? stats.waiting_count : ((stats.waitingCount != null) ? stats.waitingCount : null)) : null;
+        const estimated = stats ? ((stats.estimated_wait_minutes != null) ? stats.estimated_wait_minutes : ((stats.estimatedWaitMinutes != null) ? stats.estimatedWaitMinutes : null)) : null;
         const statsHtml = waitingCount !== null || estimated !== null
             ? `<div class="queue-stats">
-                    <div>待ち人数: <strong>${DomHelper.escapeHtml(waitingCount ?? '-')}</strong> 組</div>
-                    <div>予想待ち時間: <strong>${DomHelper.escapeHtml(estimated ?? '-')}</strong> 分</div>
+                    <div>待ち人数: <strong>${DomHelper.escapeHtml(waitingCount != null ? waitingCount : '-')}</strong> 組</div>
+                    <div>予想待ち時間: <strong>${DomHelper.escapeHtml(estimated != null ? estimated : '-')}</strong> 分</div>
                </div>`
             : '';
         return `
@@ -242,26 +240,57 @@ class QueueManager {
                 this.attachQueueHandlers(section);
                 return;
             }
-            const entry = result.data?.queue_entry;
+            const entry = result.data && result.data.queue_entry;
             if (!entry) {
                 section.innerHTML = this.getErrorTemplate('順番待ちが見つかりませんでした。');
                 this.attachQueueHandlers(section);
                 return;
             }
             if (entry.status === 'cancelled' || entry.status === 'entered') {
-                section.innerHTML = this.getEmptyTemplate(result.data?.updated_at || null, result.data);
+                section.innerHTML = this.getEmptyTemplate((result.data && result.data.updated_at) || null, result.data);
                 this.attachQueueHandlers(section);
                 return;
             }
             if (entry.line_linked === true || entry.lineLinked === true) {
                 this.clearQueueTokenFromUrl();
             }
-            section.innerHTML = this.renderQueueCard(entry, true, result.data?.updated_at || null);
+            section.innerHTML = this.renderQueueCard(entry, true, (result.data && result.data.updated_at) || null);
             this.attachQueueHandlers(section, entry);
         } catch (error) {
             console.error('Failed to load queue by token:', error);
             section.innerHTML = this.getErrorTemplate(error.message);
             this.attachQueueHandlers(section);
+        }
+    }
+
+    async linkPendingQueueOnStartup() {
+        const token = this.getQueueTokenFromUrl();
+        if (!token) {
+            return { linked: false, reason: 'no_token' };
+        }
+        if (typeof window !== 'undefined' && window.__IS_LIFF__ && !window.__LINE_USER_ID__) {
+            this.registerLiffReadyRetry();
+            return { linked: false, reason: 'line_not_ready' };
+        }
+
+        try {
+            const endpointBase = `${AppConstants.API_ENDPOINTS.QUEUE_QR}/${encodeURIComponent(token)}`;
+            const lineUserId = (typeof window !== 'undefined' && window.__LINE_USER_ID__)
+                ? encodeURIComponent(window.__LINE_USER_ID__)
+                : '';
+            const endpoint = lineUserId ? `${endpointBase}?line_user_id=${lineUserId}` : endpointBase;
+            const result = await this.apiClient.get(endpoint);
+            if (!result.success || !(result.data && result.data.queue_entry)) {
+                return { linked: false, reason: 'api_failed', error: result.error || 'link failed' };
+            }
+
+            const entry = result.data.queue_entry;
+            if (entry.line_linked === true || entry.lineLinked === true) {
+                this.clearQueueTokenFromUrl();
+            }
+            return { linked: true, entry };
+        } catch (error) {
+            return { linked: false, reason: 'exception', error: (error && error.message) || 'link failed' };
         }
     }
 
@@ -283,12 +312,12 @@ class QueueManager {
     }
 
     renderQueueCard(entry, isQrView = false, updatedAt = null) {
-        const queueNumber = entry.queue_number ?? entry.queueNumber ?? entry.id ?? '-';
+        const queueNumber = entry.queue_number != null ? entry.queue_number : (entry.queueNumber != null ? entry.queueNumber : (entry.id != null ? entry.id : '-'));
         const status = entry.status || '-';
-        const partySize = entry.party_size ?? entry.partySize ?? '-';
-        const waitingCount = entry.waiting_count ?? entry.waitingCount ?? '-';
-        const aheadCount = entry.ahead_count ?? entry.aheadCount ?? '-';
-        const estimated = entry.estimated_wait_minutes ?? entry.estimatedWaitMinutes ?? '-';
+        const partySize = entry.party_size != null ? entry.party_size : (entry.partySize != null ? entry.partySize : '-');
+        const waitingCount = entry.waiting_count != null ? entry.waiting_count : (entry.waitingCount != null ? entry.waitingCount : '-');
+        const aheadCount = entry.ahead_count != null ? entry.ahead_count : (entry.aheadCount != null ? entry.aheadCount : '-');
+        const estimated = entry.estimated_wait_minutes != null ? entry.estimated_wait_minutes : (entry.estimatedWaitMinutes != null ? entry.estimatedWaitMinutes : '-');
         const canCancel = entry.id && (status === 'waiting' || status === 'called');
         const updated = updatedAt ? `<div class="queue-updated-at">最終更新: ${DomHelper.escapeHtml(this.formatUpdatedAt(updatedAt))}</div>` : '';
         const statusInfo = this.getStatusInfo(status);
@@ -354,7 +383,7 @@ class QueueManager {
                     this.attachQueueHandlers(section);
                     return;
                 }
-                const created = result.data?.queue_entry;
+                const created = result.data && result.data.queue_entry;
                 if (!created) {
                     section.innerHTML = this.getErrorTemplate();
                     this.attachQueueHandlers(section);
@@ -366,7 +395,7 @@ class QueueManager {
         }
 
         const cancelButton = section.querySelector('[data-queue-action="cancel"]');
-        if (cancelButton && entry?.id) {
+        if (cancelButton && entry && entry.id) {
             cancelButton.addEventListener('click', async () => {
                 if (!confirm('この順番待ちをキャンセルしますか？')) {
                     return;
@@ -439,3 +468,5 @@ class QueueManager {
         }
     }
 }
+
+QueueManager.PENDING_QUEUE_TOKEN_KEY = 'mobile_order_pending_queue_token';

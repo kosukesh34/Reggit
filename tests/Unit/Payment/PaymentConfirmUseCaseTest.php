@@ -16,7 +16,7 @@ class PaymentConfirmUseCaseTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_confirm_updates_order_when_succeeded(): void
+    public function test_confirm_成功時に注文が更新されること(): void
     {
         Project::firstOrCreate(
             ['project_key' => 'default'],

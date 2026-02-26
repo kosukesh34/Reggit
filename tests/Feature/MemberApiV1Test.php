@@ -15,7 +15,7 @@ class MemberApiV1Test extends TestCase
 
     private const LINE_USER_ID = 'line-member-v1';
 
-    public function testMeReturnsMemberData(): void
+    public function test_me_会員データを返すこと(): void
     {
         $user = User::factory()->create(['line_user_id' => self::LINE_USER_ID, 'project_id' => 1]);
         Member::factory()->create(['user_id' => $user->id, 'project_id' => 1]);
@@ -28,7 +28,7 @@ class MemberApiV1Test extends TestCase
             ->assertJsonPath('data.member.is_member', true);
     }
 
-    public function testGetPointsReturnsPoints(): void
+    public function test_getPoints_ポイントを返すこと(): void
     {
         $user = User::factory()->create(['line_user_id' => self::LINE_USER_ID, 'project_id' => 1]);
         $member = Member::factory()->create(['user_id' => $user->id, 'project_id' => 1, 'points' => 30]);

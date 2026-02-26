@@ -47,8 +47,10 @@ class AdminLoginController extends Controller
         ]);
     }
 
+    /** POST /admin/login（プロジェクト未指定）または POST /admin/{project_key}/login（プロジェクト指定） */
     public function login(LoginRequest $request)
     {
-        return $this->authService->loginAdmin($request);
+        $projectKey = $request->route('project_key');
+        return $this->authService->loginAdmin($request, $projectKey);
     }
 }

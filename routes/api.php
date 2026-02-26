@@ -12,6 +12,7 @@ use App\Http\Controllers\Member\MemberAddPointsController;
 use App\Http\Controllers\Payment\PaymentCreateIntentController;
 use App\Http\Controllers\Payment\PaymentConfirmController;
 use App\Http\Controllers\Payment\PaymentWebhookController;
+use App\Http\Controllers\Diagnostics\ClientDebugController;
 use App\Http\Controllers\Reservation\ReservationIndexController;
 use App\Http\Controllers\Reservation\ReservationAvailableDatesController;
 use App\Http\Controllers\Reservation\ReservationStoreController;
@@ -46,6 +47,10 @@ use App\Http\Controllers\Api\V1\Member\MemberPointHistoryController as ApiV1Memb
 use App\Http\Controllers\Api\V1\Reservation\ReservationIndexController as ApiV1ReservationIndexController;
 
 Route::match(['get', 'post'], '/line/webhook', [LineWebhookController::class, 'handle']);
+
+// スマレジ・プラットフォームAPI 連携（利用者契約通知・Webhook）
+Route::post('/smaregi/idp', [\App\Http\Controllers\Smaregi\SmaregiIdpController::class, '__invoke'])->name('smaregi.idp');
+Route::post('/smaregi/webhook', [\App\Http\Controllers\Smaregi\SmaregiWebhookController::class, '__invoke'])->name('smaregi.webhook');
 
 // API v1（Bearer トークン認証・モバイルアプリ用）
 Route::prefix('v1')->middleware([AuthenticateApiToken::class])->group(function () {
@@ -110,3 +115,4 @@ Route::middleware(['web', 'bind.project'])->group(function () {
 });
 
 Route::post('/payment/webhook', [PaymentWebhookController::class, '__invoke']);
+Route::match(['get', 'post'], '/client-debug', ClientDebugController::class);

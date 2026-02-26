@@ -18,7 +18,7 @@ class AdminAccountControllerTest extends TestCase
         return $admin;
     }
 
-    public function testIndexShowsAccounts(): void
+    public function test_index_アカウント一覧が表示されること(): void
     {
         $this->loginSystemAdmin();
 
@@ -27,7 +27,7 @@ class AdminAccountControllerTest extends TestCase
         $response->assertStatus(200);
     }
 
-    public function testCreateShowsForm(): void
+    public function test_create_作成フォームが表示されること(): void
     {
         $this->loginSystemAdmin();
 
@@ -36,7 +36,7 @@ class AdminAccountControllerTest extends TestCase
         $response->assertStatus(200);
     }
 
-    public function testStoreCreatesAccount(): void
+    public function test_store_アカウントが作成されること(): void
     {
         $this->loginSystemAdmin();
         $project = Project::factory()->create();
@@ -55,7 +55,7 @@ class AdminAccountControllerTest extends TestCase
         $this->assertDatabaseHas('admin_users', ['login_id' => 'test_admin']);
     }
 
-    public function testStoreSystemAdminAssignsAllProjects(): void
+    public function test_store_システム管理者作成時は全プロジェクトが割り当てられること(): void
     {
         $this->loginSystemAdmin();
         $projectA = Project::factory()->create(['is_active' => true]);
@@ -77,7 +77,7 @@ class AdminAccountControllerTest extends TestCase
         $this->assertTrue($created->projects()->where('projects.id', $projectB->id)->exists());
     }
 
-    public function testUpdateUpdatesAccount(): void
+    public function test_update_アカウントが更新されること(): void
     {
         $this->loginSystemAdmin();
         $project = Project::factory()->create();
@@ -100,7 +100,7 @@ class AdminAccountControllerTest extends TestCase
         $this->assertDatabaseHas('admin_users', ['id' => $target->id, 'name' => 'Updated']);
     }
 
-    public function testDestroyDeletesAccount(): void
+    public function test_destroy_アカウントが削除されること(): void
     {
         $this->loginSystemAdmin();
         $target = AdminUser::factory()->create(['role' => AdminUser::ROLE_ADMIN]);
@@ -111,7 +111,7 @@ class AdminAccountControllerTest extends TestCase
         $this->assertDatabaseMissing('admin_users', ['id' => $target->id]);
     }
 
-    public function testUpdateSystemAdminAssignsAllProjects(): void
+    public function test_update_システム管理者更新時は全プロジェクトが割り当てられること(): void
     {
         $this->loginSystemAdmin();
         $projectA = Project::factory()->create(['is_active' => true]);

@@ -23,7 +23,7 @@ class MemberPointsHistoryTest extends TestCase
         );
     }
 
-    public function testPointHistoryReturnsTransactions(): void
+    public function test_pointHistory_ポイント履歴が返ること(): void
     {
         $this->createProject();
         $user = User::factory()->create(['line_user_id' => self::LINE_USER_ID, 'project_id' => 1]);
@@ -43,7 +43,7 @@ class MemberPointsHistoryTest extends TestCase
             ->assertJsonStructure(['transactions', 'pagination']);
     }
 
-    public function testPointCardReturnsSummary(): void
+    public function test_pointCard_ポイントカード要約が返ること(): void
     {
         $this->createProject();
         $user = User::factory()->create(['line_user_id' => self::LINE_USER_ID, 'project_id' => 1]);

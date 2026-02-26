@@ -27,7 +27,7 @@ class AdminSettingsTest extends TestCase
         ]);
     }
 
-    public function testSettingsBasicPageIsAccessible(): void
+    public function test_settings_基本設定ページにアクセスできること(): void
     {
         $project = $this->createProject();
         $admin = $this->createAdmin($project);
@@ -38,7 +38,7 @@ class AdminSettingsTest extends TestCase
         $response->assertStatus(200);
     }
 
-    public function testSettingsAdvancedPageIsAccessible(): void
+    public function test_settings_詳細設定ページにアクセスできること(): void
     {
         $project = $this->createProject();
         $admin = $this->createAdmin($project);
@@ -49,7 +49,7 @@ class AdminSettingsTest extends TestCase
         $response->assertStatus(200);
     }
 
-    public function testSettingsRanksPageIsAccessible(): void
+    public function test_settings_ランク設定ページにアクセスできること(): void
     {
         $project = $this->createProject();
         $admin = $this->createAdmin($project);

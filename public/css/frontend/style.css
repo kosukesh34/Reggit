@@ -93,6 +93,7 @@ input, textarea, select {
     margin: 0 auto;
     background: white;
     min-height: 100vh;
+    min-height: 100dvh;
     position: relative;
     box-shadow: var(--shadow-lg);
     overflow-x: hidden;
@@ -491,6 +492,7 @@ input, textarea, select {
     width: 100%;
     max-width: 100%;
     height: 100vh;
+    height: 100dvh;
     background: white;
     z-index: 1000;
     display: flex;
@@ -3115,6 +3117,23 @@ input, textarea, select {
     color: #333;
 }
 
+/* 管理画面で設定したランク色（card_color）がある場合はそちらを優先 */
+.idnect-card-wrapper[data-rank-color="true"] .idnect-card-face--front,
+.idnect-card-wrapper[data-rank-color="true"] .idnect-card-face--back {
+    background: linear-gradient(
+        135deg,
+        var(--idnect-card-rank-color) 0%,
+        color-mix(in srgb, var(--idnect-card-rank-color) 85%, #000) 50%,
+        color-mix(in srgb, var(--idnect-card-rank-color) 60%, #000) 100%
+    );
+    color: #fff;
+}
+
+.idnect-card-wrapper[data-rank-color="true"] .idnect-card-rank-wrap .idnect-card-rank-badge {
+    background: rgba(255, 255, 255, 0.25);
+    color: #fff;
+}
+
 .idnect-card-shimmer {
     position: absolute;
     inset: 0;
@@ -3790,6 +3809,21 @@ input, textarea, select {
     object-fit: cover;
 }
 
+.stamp-card-image--icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100px;
+    color: var(--primary-color);
+    font-size: 2.5rem;
+}
+
+.stamp-card-name-icon {
+    margin-right: 6px;
+    color: var(--primary-color);
+    font-size: 0.9em;
+}
+
 .stamp-card-item--completed {
     border-color: var(--success-color);
     background: linear-gradient(to bottom, #f8fff8, #fff);
@@ -3828,10 +3862,126 @@ input, textarea, select {
     transition: width 0.3s ease;
 }
 
+.stamp-slots {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+    justify-content: center;
+}
+
+.stamp-slot {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 2px solid var(--border-color);
+    background: var(--bg-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: var(--text-tertiary);
+}
+
+.stamp-slot--filled {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: #fff;
+}
+
+/* グリッド（2列） */
+.stamp-slots--grid {
+    gap: 10px;
+    max-width: 280px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.stamp-slots--grid .stamp-slot {
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
+}
+
+/* 横一列 */
+.stamp-slots--row {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    gap: 6px;
+}
+
+.stamp-slots--row .stamp-slot {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    font-size: 12px;
+}
+
+/* 円形（スロットを円状に並べる見た目） */
+.stamp-slots--circle {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    max-width: 200px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.stamp-slots--circle .stamp-slot {
+    width: 34px;
+    height: 34px;
+    margin: 0 auto;
+    font-size: 12px;
+}
+
+/* ミニマル：スロットを小さくコンパクトに */
+.stamp-card-item--layout-minimal .stamp-slots {
+    flex-direction: row;
+    gap: 4px;
+    margin-bottom: 8px;
+}
+
+.stamp-card-item--layout-minimal .stamp-slot {
+    width: 24px;
+    height: 24px;
+    font-size: 10px;
+}
+
+.stamp-card-item--layout-minimal .stamp-card-progress {
+    margin-bottom: 6px;
+}
+
+/* カード（枠付き） */
+.stamp-card-item--layout-card .stamp-slots {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 12px;
+    gap: 10px;
+}
+
+.stamp-card-item--layout-card .stamp-slot {
+    width: 38px;
+    height: 38px;
+    font-size: 15px;
+}
+
+.stamp-card-meta {
+    margin-bottom: 4px;
+}
+
 .stamp-card-count {
     font-size: 14px;
     color: var(--text-secondary);
-    margin-bottom: 4px;
+    margin-bottom: 2px;
+}
+
+.stamp-card-valid {
+    font-size: 12px;
+    color: var(--primary-color);
+    margin: 0;
 }
 
 .stamp-card-reward {
@@ -4160,6 +4310,21 @@ input, textarea, select {
     object-fit: cover;
 }
 
+.coupon-item-image--icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100px;
+    color: var(--primary-color);
+    font-size: 2.5rem;
+}
+
+.coupon-item-name-icon {
+    margin-right: 6px;
+    color: var(--primary-color);
+    font-size: 0.9em;
+}
+
 .coupon-item--available {
     border-color: var(--success-color);
 }
@@ -4204,6 +4369,199 @@ input, textarea, select {
     font-size: 13px;
     color: var(--text-tertiary);
 }
+
+/* クーポン デザインテンプレート */
+.coupon-item--design-classic {
+    border-width: 2px;
+}
+
+.coupon-item--design-modern {
+    border-radius: 16px;
+    border: none;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+
+.coupon-item--design-modern.coupon-item--available {
+    box-shadow: 0 4px 20px rgba(6, 199, 85, 0.15);
+}
+
+.coupon-item--design-minimal {
+    padding: 12px;
+    border-width: 1px;
+    border-radius: 8px;
+}
+
+.coupon-item--design-minimal .coupon-item-image {
+    margin-bottom: 8px;
+    border-radius: 8px;
+}
+
+.coupon-item--design-gradient {
+    border: none;
+    background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+
+.coupon-item--design-gradient.coupon-item--available {
+    background: linear-gradient(135deg, #f0fff4 0%, #e6ffed 100%);
+}
+
+.coupon-item--design-card {
+    border: 1px solid var(--border-color);
+    background: #fafafa;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.04);
+}
+
+.coupon-item--design-card .coupon-item-header {
+    padding: 8px 0;
+    border-bottom: 1px dashed var(--border-color);
+}
+
+.coupon-item--design-card.coupon-item--available {
+    background: #fff;
+    border-color: var(--primary-color);
+}
+
+/* クーポン 配色（管理画面で設定したアクセント色） */
+.coupon-item[style*="--coupon-accent"] {
+    --coupon-accent: var(--primary-color);
+}
+.coupon-item[style*="--coupon-accent"] .coupon-item-name-icon,
+.coupon-item[style*="--coupon-accent"] .coupon-item-image--icon { color: var(--coupon-accent); }
+.coupon-item[style*="--coupon-accent"].coupon-item--available { border-color: var(--coupon-accent); }
+.coupon-item[style*="--coupon-accent"].coupon-item--design-card.coupon-item--available { border-color: var(--coupon-accent); }
+.coupon-item[style*="--coupon-accent"].coupon-item--design-gradient.coupon-item--available {
+    background: linear-gradient(135deg, color-mix(in srgb, var(--coupon-accent) 15%, #fff) 0%, color-mix(in srgb, var(--coupon-accent) 8%, #fff) 100%);
+}
+.coupon-item[style*="--coupon-accent"].coupon-item--design-barcode { border-left-color: var(--coupon-accent); }
+.coupon-item[style*="--coupon-accent"].coupon-item--design-neon {
+    border-color: var(--coupon-accent);
+    box-shadow: 0 0 14px color-mix(in srgb, var(--coupon-accent) 0.4);
+}
+.coupon-item[style*="--coupon-accent"].coupon-item--design-neon .coupon-item-name-icon,
+.coupon-item[style*="--coupon-accent"].coupon-item--design-neon .coupon-item-image--icon { color: var(--coupon-accent); }
+.coupon-item[style*="--coupon-accent"].coupon-item--design-neon .coupon-item-status {
+    background: color-mix(in srgb, var(--coupon-accent) 0.25);
+    color: var(--coupon-accent);
+}
+
+/* クーポン バーコード風 */
+.coupon-item--design-barcode {
+    border-left: 4px solid var(--primary-color);
+    background: var(--bg-secondary);
+}
+.coupon-item-barcode {
+    margin-bottom: 10px;
+}
+.coupon-item-barcode-lines {
+    height: 6px;
+    margin: 3px 0;
+    background: repeating-linear-gradient(90deg, #333 0, #333 2px, transparent 2px, transparent 5px);
+}
+.coupon-item-barcode-code {
+    font-family: monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: var(--text-tertiary);
+}
+
+/* クーポン QRコード風 */
+.coupon-item--design-qr {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: flex-start;
+}
+.coupon-item-qr {
+    width: 100%;
+    margin-bottom: 8px;
+}
+.coupon-item-qr-grid {
+    width: 72px;
+    height: 72px;
+    margin: 0 auto;
+    background: #fff;
+    padding: 6px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background-image:
+        linear-gradient(#333 1px, transparent 1px),
+        linear-gradient(90deg, #333 1px, transparent 1px);
+    background-size: calc(100% / 5) calc(100% / 5);
+    background-position: 0 0;
+}
+.coupon-item--design-qr .coupon-item-header { width: 100%; }
+
+/* クーポン ストライプ */
+.coupon-item--design-stripe {
+    border: none;
+    background: repeating-linear-gradient(
+        -45deg,
+        #fff,
+        #fff 10px,
+        color-mix(in srgb, var(--primary-color) 0.1, #fff) 10px,
+        color-mix(in srgb, var(--primary-color) 0.1, #fff) 20px
+    );
+}
+.coupon-item[style*="--coupon-accent"].coupon-item--design-stripe {
+    background: repeating-linear-gradient(
+        -45deg,
+        #fff,
+        #fff 10px,
+        color-mix(in srgb, var(--coupon-accent) 0.12, #fff) 10px,
+        color-mix(in srgb, var(--coupon-accent) 0.12, #fff) 20px
+    );
+}
+.coupon-item--design-stripe .coupon-item-header,
+.coupon-item--design-stripe .coupon-item-image,
+.coupon-item--design-stripe .coupon-item-valid {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 6px;
+    border-radius: 8px;
+}
+
+/* クーポン チケット風 */
+.coupon-item--design-ticket {
+    border: 2px dashed var(--primary-color);
+    border-radius: 6px;
+    background: linear-gradient(#fff 0%, var(--bg-secondary) 100%);
+}
+.coupon-item[style*="--coupon-accent"].coupon-item--design-ticket { border-color: var(--coupon-accent); }
+.coupon-item--design-ticket .coupon-item-header {
+    border-bottom: 1px dashed var(--border-color);
+    padding-bottom: 8px;
+}
+
+/* クーポン ヴィンテージ */
+.coupon-item--design-vintage {
+    background: #f5f0e6;
+    border: 1px solid #d4c4a0;
+    border-radius: 6px;
+    color: #5c4a32;
+}
+.coupon-item--design-vintage .coupon-item-name { color: #3d3225; }
+.coupon-item--design-vintage .coupon-item-status {
+    background: #e8dfc8;
+    color: #5c4a32;
+}
+.coupon-item[style*="--coupon-accent"].coupon-item--design-vintage.coupon-item--available { border-color: var(--coupon-accent); }
+
+/* クーポン ネオン */
+.coupon-item--design-neon {
+    background: #1a1a2e;
+    border: 2px solid var(--primary-color);
+    border-radius: 14px;
+    color: #eee;
+    box-shadow: 0 0 14px rgba(6, 199, 85, 0.35);
+}
+.coupon-item--design-neon .coupon-item-name { color: #fff; }
+.coupon-item--design-neon .coupon-item-name-icon,
+.coupon-item--design-neon .coupon-item-image--icon { color: var(--primary-color); }
+.coupon-item--design-neon .coupon-item-status {
+    background: rgba(6, 199, 85, 0.3);
+    color: var(--primary-color);
+}
+.coupon-item--design-neon .coupon-item-valid { color: #aaa; }
 
 /* 順番待ち */
 .queue-card {

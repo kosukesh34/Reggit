@@ -171,14 +171,18 @@ class AdminController extends Controller
     // --- 会員 ---
     public function members()
     {
-        $members = $this->memberAdminService->getPaginatedList(20);
+        $projectId = $this->resolveAdminProjectId();
+        $members = $this->memberAdminService->getPaginatedList($projectId, 20);
         return view('admin.members', compact('members'));
     }
 
     public function memberDetail($id)
     {
-        $member = $this->memberAdminService->findOrFail((int) $id);
-        return view('admin.member-detail', compact('member'));
+        $projectId = $this->resolveAdminProjectId();
+        $member = $this->memberAdminService->findOrFail((int) $id, $projectId);
+        $activeCoupons = $this->memberAdminService->getActiveCouponsForSelect($projectId);
+        $activeStampCards = $this->memberAdminService->getActiveStampCardsForSelect($projectId);
+        return view('admin.member-detail', compact('member', 'activeCoupons', 'activeStampCards'));
     }
 
     // --- 設定 ---
@@ -228,12 +232,24 @@ class AdminController extends Controller
         $rankBasis = ShopSetting::getRankBasis($projectId);
         $pointEarnRate = ShopSetting::getPointEarnRate($projectId);
         $pointsValidDays = ShopSetting::getPointsValidDays($projectId);
+        $memberCodeType = ShopSetting::getMemberCodeType($projectId);
+        $memberCodeFormat = ShopSetting::getMemberCodeFormat($projectId);
+        $memberCodeLength = ShopSetting::getMemberCodeLength($projectId);
+        $memberCodePrefix = ShopSetting::getMemberCodePrefix($projectId);
+        $showPointsDisplay = ShopSetting::getShowPointsDisplay($projectId);
+        $showRankProgress = ShopSetting::getShowRankProgress($projectId);
 
         return view('admin.settings.ranks', compact(
             'rankSettings',
             'rankBasis',
             'pointEarnRate',
-            'pointsValidDays'
+            'pointsValidDays',
+            'memberCodeType',
+            'memberCodeFormat',
+            'memberCodeLength',
+            'memberCodePrefix',
+            'showPointsDisplay',
+            'showRankProgress'
         ));
     }
 
@@ -245,6 +261,12 @@ class AdminController extends Controller
             'rank_basis' => 'required|in:points,stamps,max',
             'point_earn_rate' => 'required|integer|min:1|max:100000',
             'points_valid_days' => 'required|integer|min:1|max:3650',
+            'member_code_type' => 'nullable|in:sequential,random',
+            'member_code_format' => 'nullable|in:numeric,alphanumeric',
+            'member_code_length' => 'nullable|integer|min:1|max:20',
+            'member_code_prefix' => 'nullable|string|max:10|regex:/^[A-Za-z0-9]*$/',
+            'show_points_display' => 'nullable|boolean',
+            'show_rank_progress' => 'nullable|boolean',
             'ranks' => 'array',
             'ranks.*.key' => 'nullable|string|max:50',
             'ranks.*.label' => 'nullable|string|max:50',
@@ -253,11 +275,20 @@ class AdminController extends Controller
             'ranks.*.is_active' => 'nullable',
             'ranks.*.icon_url' => 'nullable|url|max:500',
             'ranks.*.stamp_background_url' => 'nullable|url|max:500',
+            'ranks.*.card_color' => 'nullable|string|max:20|regex:/^#[0-9A-Fa-f]{3,6}$/',
         ]);
+
+        ShopSetting::setValue('member_code_type', $validated['member_code_type'] ?? 'random', 'string', $projectId);
+        ShopSetting::setValue('member_code_format', $validated['member_code_format'] ?? 'numeric', 'string', $projectId);
+        ShopSetting::setValue('member_code_length', (int) ($validated['member_code_length'] ?? 10), 'integer', $projectId);
+        ShopSetting::setValue('member_code_prefix', (string) ($validated['member_code_prefix'] ?? ''), 'string', $projectId);
+        ShopSetting::setValue('show_points_display', $request->boolean('show_points_display', true), 'boolean', $projectId);
+        ShopSetting::setValue('show_rank_progress', $request->boolean('show_rank_progress', true), 'boolean', $projectId);
 
         $rows = collect($validated['ranks'] ?? [])
             ->filter(fn ($row) => !StrHelper::isEmptyStringOrNull($row['key'] ?? null))
             ->map(function ($row, $index) {
+                $color = $row['card_color'] ?? null;
                 return [
                     'key' => (string) $row['key'],
                     'label' => (string) ($row['label'] ?? $row['key']),
@@ -265,6 +296,7 @@ class AdminController extends Controller
                     'is_active' => (bool) ($row['is_active'] ?? false),
                     'icon_url' => $row['icon_url'] ?? null,
                     'stamp_background_url' => $row['stamp_background_url'] ?? null,
+                    'card_color' => $color !== null && $color !== '' ? (string) $color : null,
                     'order' => (int) ($row['order'] ?? ($index + 1)),
                 ];
             })
@@ -586,13 +618,15 @@ class AdminController extends Controller
     // --- クーポン ---
     public function coupons()
     {
-        $coupons = $this->couponAdminService->getPaginatedList(20);
+        $projectId = $this->resolveAdminProjectId();
+        $coupons = $this->couponAdminService->getPaginatedList($projectId, 20);
         return view('admin.coupons.index', compact('coupons'));
     }
 
     public function createCoupon()
     {
-        $stampCards = $this->couponAdminService->getActiveStampCardsForSelect();
+        $projectId = $this->resolveAdminProjectId();
+        $stampCards = $this->couponAdminService->getActiveStampCardsForSelect($projectId);
         return view('admin.coupons.create', compact('stampCards'));
     }
 
@@ -605,21 +639,24 @@ class AdminController extends Controller
 
     public function editCoupon(int $id)
     {
-        $coupon = $this->couponAdminService->findOrFail($id);
-        $stampCards = $this->couponAdminService->getActiveStampCardsForSelect();
+        $projectId = $this->resolveAdminProjectId();
+        $coupon = $this->couponAdminService->findOrFail($id, $projectId);
+        $stampCards = $this->couponAdminService->getActiveStampCardsForSelect($projectId);
         return view('admin.coupons.edit', compact('coupon', 'stampCards'));
     }
 
     public function updateCoupon(CouponUpdateRequest $request, int $id)
     {
-        $this->couponAdminService->update($id, $request->validated());
+        $projectId = $this->resolveAdminProjectId();
+        $this->couponAdminService->update($id, $request->validated(), $projectId);
         return redirect()->route('admin.coupons', $this->buildAdminRouteParams())
             ->with('success', 'クーポンを更新しました');
     }
 
     public function deleteCoupon(int $id)
     {
-        $this->couponAdminService->delete($id);
+        $projectId = $this->resolveAdminProjectId();
+        $this->couponAdminService->delete($id, $projectId);
         return redirect()->route('admin.coupons', $this->buildAdminRouteParams())
             ->with('success', 'クーポンを削除しました');
     }
