@@ -8,6 +8,7 @@ use App\Models\ShopSetting;
 use App\Models\User;
 use App\Services\Smaregi\SmaregiApiService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Config;
 use Tests\TestCase;
 
 /**
@@ -28,18 +29,45 @@ class SmaregiApiIntegrationTest extends TestCase
 
     private ?string $contractId = null;
 
+    /** config / env / getenv の順で参照（Docker や .env.testing 利用時も値が拾えるようにする） */
+    private static function readEnv(string $key): string
+    {
+        $configKey = match ($key) {
+            'SMAREGI_CLIENT_ID' => 'smaregi.client_id',
+            'SMAREGI_CLIENT_SECRET' => 'smaregi.client_secret',
+            default => null,
+        };
+        $v = $configKey ? (config($configKey) ?: null) : null;
+        $v = $v !== null && $v !== '' ? $v : env($key, '');
+        $v = $v !== null && $v !== '' ? $v : (getenv($key) ?: '');
+        return trim((string) $v);
+    }
+
     protected function setUp(): void
     {
         parent::setUp();
 
-        $clientId = config('smaregi.client_id');
-        $clientSecret = config('smaregi.client_secret');
-        if ($clientId === '' || $clientSecret === '') {
-            $this->markTestSkipped('.env に SMAREGI_CLIENT_ID と SMAREGI_CLIENT_SECRET を設定してください。');
+        // テスト実行時に env を config へ反映（config キャッシュや読み込み順の影響を避ける）
+        $clientIdEnv = env('SMAREGI_CLIENT_ID') ?: getenv('SMAREGI_CLIENT_ID');
+        $clientSecretEnv = env('SMAREGI_CLIENT_SECRET') ?: getenv('SMAREGI_CLIENT_SECRET');
+        if ($clientIdEnv !== null && $clientIdEnv !== '') {
+            Config::set('smaregi.client_id', $clientIdEnv);
+        }
+        if ($clientSecretEnv !== null && $clientSecretEnv !== '') {
+            Config::set('smaregi.client_secret', $clientSecretEnv);
         }
 
-        $this->contractId = env('SMAREGI_TEST_CONTRACT_ID') ?: config('smaregi.contract_id');
-        if ($this->contractId === null || $this->contractId === '') {
+        $clientId = self::readEnv('SMAREGI_CLIENT_ID');
+        $clientSecret = self::readEnv('SMAREGI_CLIENT_SECRET');
+        if ($clientId === '' || $clientSecret === '') {
+            $this->markTestSkipped(
+                '.env に SMAREGI_CLIENT_ID と SMAREGI_CLIENT_SECRET を設定してください。'
+                . ' Docker の場合はコンテナに .env がマウントされているか、または docker-compose の environment で渡しているか確認してください。'
+            );
+        }
+
+        $this->contractId = trim((string) (env('SMAREGI_TEST_CONTRACT_ID') ?: env('SMAREGI_CONTRACT_ID') ?: config('smaregi.contract_id') ?: ''));
+        if ($this->contractId === '') {
             $service = app(SmaregiApiService::class);
             $this->contractId = $service->getContractIdForProject(1);
         }
