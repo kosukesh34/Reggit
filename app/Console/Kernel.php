@@ -9,7 +9,7 @@ class Kernel extends ConsoleKernel
 {
     protected function schedule(Schedule $schedule): void
     {
-        //
+        $schedule->command('coupons:issue-birthday')->daily();
     }
 
     protected function commands(): void

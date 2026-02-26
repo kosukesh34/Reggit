@@ -30,18 +30,6 @@ class QueueStoreUseCase
         $lineUserId = $request->header('X-Line-User-Id');
         $effectiveLineUserId = $this->resolveLineUserId($lineUserId, $user->line_user_id);
 
-        if (!StrHelper::isEmptyStringOrNull($effectiveLineUserId)) {
-            $existing = $this->getActiveEntryForUser($user->id, $projectId);
-            if ($existing !== null) {
-                $stats = $this->statsService->getStats($projectId, $existing->queue_number);
-                if (StrHelper::isEmptyStringOrNull($existing->qr_token)) {
-                    $existing->update(['qr_token' => $this->generateQrToken()]);
-                }
-                $existing->refresh();
-                return $this->entryFactory->create($existing, $stats);
-            }
-        }
-
         $nextNumber = $this->getNextQueueNumber($projectId);
 
         $entry = QueueEntryModel::create([
@@ -60,15 +48,6 @@ class QueueStoreUseCase
         $entry->refresh();
 
         return $this->entryFactory->create($entry, $stats);
-    }
-
-    private function getActiveEntryForUser(int $userId, int $projectId): ?QueueEntryModel
-    {
-        return QueueEntryModel::where('project_id', $projectId)
-            ->where('user_id', $userId)
-            ->whereIn('status', [QueueStatus::WAITING, QueueStatus::CALLED])
-            ->orderByDesc('created_at')
-            ->first();
     }
 
     private function getNextQueueNumber(int $projectId): int

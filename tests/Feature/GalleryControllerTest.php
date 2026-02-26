@@ -20,7 +20,7 @@ class GalleryControllerTest extends TestCase
         );
     }
 
-    public function testIndexReturnsGalleryData(): void
+    public function test_index_ギャラリーデータを返すこと(): void
     {
         $this->createProject();
         $category = GalleryCategory::factory()->create(['project_id' => 1]);

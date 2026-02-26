@@ -492,6 +492,53 @@ class ShopSetting extends Model
         return (string) self::getValue('member_rank_basis', 'points', $projectId);
     }
 
+    /** 会員コード生成: sequential=連番, random=ランダム */
+    public static function getMemberCodeType(?int $projectId = null): string
+    {
+        return (string) self::getValue('member_code_type', 'random', $projectId);
+    }
+
+    /** 会員コード形式: numeric=数字のみ, alphanumeric=英数字混在 */
+    public static function getMemberCodeFormat(?int $projectId = null): string
+    {
+        return (string) self::getValue('member_code_format', 'numeric', $projectId);
+    }
+
+    /** 会員コード桁数（プレフィックス除く） */
+    public static function getMemberCodeLength(?int $projectId = null): int
+    {
+        return (int) self::getValue('member_code_length', 10, $projectId);
+    }
+
+    /** 会員コード先頭プレフィックス（任意） */
+    public static function getMemberCodePrefix(?int $projectId = null): string
+    {
+        return (string) self::getValue('member_code_prefix', '', $projectId);
+    }
+
+    /** 連番時の次に使う番号（内部用） */
+    public static function getMemberCodeNextNumber(?int $projectId = null): int
+    {
+        return (int) self::getValue('member_code_next_number', 1, $projectId);
+    }
+
+    public static function setMemberCodeNextNumber(int $next, ?int $projectId = null): void
+    {
+        self::setValue('member_code_next_number', $next, 'integer', $projectId);
+    }
+
+    /** フロントでポイント数を表示するか */
+    public static function getShowPointsDisplay(?int $projectId = null): bool
+    {
+        return (bool) self::getValue('show_points_display', true, $projectId);
+    }
+
+    /** フロントで「次のランクまで」を表示するか */
+    public static function getShowRankProgress(?int $projectId = null): bool
+    {
+        return (bool) self::getValue('show_rank_progress', true, $projectId);
+    }
+
     public static function getMemberRankSettings(?int $projectId = null): array
     {
         $settings = self::getValue('member_rank_settings', null, $projectId);
@@ -514,6 +561,7 @@ class ShopSetting extends Model
                 'is_active' => isset($row['is_active']) ? (bool) $row['is_active'] : true,
                 'icon_url' => $row['icon_url'] ?? null,
                 'stamp_background_url' => $row['stamp_background_url'] ?? null,
+                'card_color' => isset($row['card_color']) && $row['card_color'] !== '' ? (string) $row['card_color'] : null,
                 'order' => (int) ($row['order'] ?? 0),
             ];
         }
@@ -532,10 +580,10 @@ class ShopSetting extends Model
     public static function defaultMemberRankSettings(): array
     {
         return [
-            ['key' => 'bronze', 'label' => 'ブロンズ', 'min_points' => 0, 'is_active' => true, 'icon_url' => null, 'stamp_background_url' => null, 'order' => 1],
-            ['key' => 'silver', 'label' => 'シルバー', 'min_points' => 1000, 'is_active' => true, 'icon_url' => null, 'stamp_background_url' => null, 'order' => 2],
-            ['key' => 'gold', 'label' => 'ゴールド', 'min_points' => 5000, 'is_active' => true, 'icon_url' => null, 'stamp_background_url' => null, 'order' => 3],
-            ['key' => 'platinum', 'label' => 'プラチナ', 'min_points' => 10000, 'is_active' => true, 'icon_url' => null, 'stamp_background_url' => null, 'order' => 4],
+            ['key' => 'bronze', 'label' => 'ブロンズ', 'min_points' => 0, 'is_active' => true, 'icon_url' => null, 'stamp_background_url' => null, 'card_color' => '#cd7f32', 'order' => 1],
+            ['key' => 'silver', 'label' => 'シルバー', 'min_points' => 1000, 'is_active' => true, 'icon_url' => null, 'stamp_background_url' => null, 'card_color' => '#c0c0c0', 'order' => 2],
+            ['key' => 'gold', 'label' => 'ゴールド', 'min_points' => 5000, 'is_active' => true, 'icon_url' => null, 'stamp_background_url' => null, 'card_color' => '#ffd700', 'order' => 3],
+            ['key' => 'platinum', 'label' => 'プラチナ', 'min_points' => 10000, 'is_active' => true, 'icon_url' => null, 'stamp_background_url' => null, 'card_color' => '#e5e4e2', 'order' => 4],
         ];
     }
     public static function getAdminPrimaryColor(?int $projectId = null): ?string

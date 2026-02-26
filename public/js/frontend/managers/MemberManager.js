@@ -117,7 +117,7 @@ class MemberManager {
         try {
             const result = await this.apiClient.get(AppConstants.API_ENDPOINTS.MEMBERS_ME);
             if (!result.success) {
-                throw new Error(result.error || result.data?.message || '会員情報の取得に失敗しました');
+                throw new Error(result.error || (result.data && result.data.message) || '会員情報の取得に失敗しました');
             }
             const data = result.data;
             if (!data || typeof data.is_member === 'undefined') {
@@ -172,6 +172,7 @@ class MemberManager {
         const memberNumber = member.member_number || '';
         const currentRankLabel = data.current_rank_label || 'ブロンズ';
         const currentRankIcon = data.current_rank_icon || null;
+        const currentRankColor = data.current_rank_color || null;
         const nextRankLabel = data.next_rank_label || null;
         const pointsToNextRank = data.points_to_next_rank != null ? data.points_to_next_rank : null;
         const daysToNextRank = data.days_to_next_rank != null ? data.days_to_next_rank : null;
@@ -179,6 +180,8 @@ class MemberManager {
         const rankUpHistory = Array.isArray(data.rank_up_history) ? data.rank_up_history : [];
         const pointsExpiry = data.points_expiry || null;
         const currentRankKey = data.current_rank || 'bronze';
+        const showPointsDisplay = data.show_points_display !== false;
+        const showRankProgress = data.show_rank_progress !== false;
 
         let expiryText = '';
         if (pointsExpiry && pointsExpiry.expires_at_label) {
@@ -197,6 +200,7 @@ class MemberManager {
         const walletPassImageUrl = (typeof window !== 'undefined' && window.__WALLET_PASS_ADD_BUTTON_IMAGE__) || '/images/add-to-apple-wallet-logo.png';
         const projectKey = (typeof window !== 'undefined' && window.__PROJECT_KEY__) ? window.__PROJECT_KEY__ : 'default';
         const walletPassUrl = AppConstants.API_ENDPOINTS.MEMBERS_WALLET_PASS + '?project_key=' + encodeURIComponent(projectKey);
+        const cardStyle = currentRankColor ? ` data-rank-color="true" style="--idnect-card-rank-color: ${DomHelper.escapeHtml(currentRankColor)}"` : '';
         const addToWalletBlock = showAddToWallet
             ? `<div class="member-card-add-to-wallet-wrap">
                 <button type="button" class="member-card-add-to-wallet-btn" data-wallet-pass-url="${DomHelper.escapeHtml(walletPassUrl)}" aria-label="Walletに追加">
@@ -212,7 +216,7 @@ class MemberManager {
                     <button type="button" class="member-card-edit-btn" onclick="window.app.memberManager.openProfileEdit()" aria-label="プロフィール編集"><i class="fas fa-pen"></i></button>
                 </div>
                 ${permissionDeniedNotice}
-                <div class="idnect-card-wrapper" role="button" tabindex="0" aria-label="カードをタップで裏返します">
+                <div class="idnect-card-wrapper" role="button" tabindex="0" aria-label="カードをタップで裏返します"${cardStyle}>
                     <div class="idnect-card" data-rank="${DomHelper.escapeHtml(currentRankKey)}">
                         <div class="idnect-card-shimmer" aria-hidden="true"></div>
                         <div class="idnect-card-face idnect-card-face--front">
@@ -223,10 +227,7 @@ class MemberManager {
                                         ${currentRankIcon ? `<img src="${DomHelper.escapeHtml(currentRankIcon)}" class="idnect-card-rank-icon" alt="ランク">` : ''}
                                         <span class="idnect-card-rank-badge" data-rank="${DomHelper.escapeHtml(currentRankKey)}">${DomHelper.escapeHtml(currentRankLabel)}</span>
                                     </div>
-                                    <div class="idnect-card-points idnect-card-points--front">
-                                        <span class="idnect-card-points-value">${points.toLocaleString()}</span>
-                                        <span class="idnect-card-points-label">pt</span>
-                                    </div>
+                                    ${showPointsDisplay ? '<div class="idnect-card-points idnect-card-points--front"><span class="idnect-card-points-value">' + points.toLocaleString() + '</span><span class="idnect-card-points-label">pt</span></div>' : ''}
                                 </div>
                                 <div class="idnect-card-barcode-wrap">
                                     <svg id="${barcodeId}" class="idnect-card-barcode-svg"></svg>
@@ -237,13 +238,10 @@ class MemberManager {
                         <div class="idnect-card-face idnect-card-face--back">
                             <div class="idnect-card-back-inner">
                                 <p class="idnect-card-back-title">会員情報</p>
-                                <div class="idnect-card-points idnect-card-points--large">
-                                    <span class="idnect-card-points-value">${points.toLocaleString()}</span>
-                                    <span class="idnect-card-points-label">ポイント</span>
-                                </div>
+                                ${showPointsDisplay ? '<div class="idnect-card-points idnect-card-points--large"><span class="idnect-card-points-value">' + points.toLocaleString() + '</span><span class="idnect-card-points-label">ポイント</span></div>' : ''}
                                 ${expiryText ? '<p class="idnect-card-expiry">' + DomHelper.escapeHtml(expiryText) + '</p>' : ''}
-                                ${nextRankLabel && pointsToNextRank !== null ? '<p class="idnect-card-next-rank">次のランク（' + DomHelper.escapeHtml(nextRankLabel) + '）まで <strong>' + pointsToNextRank.toLocaleString() + '</strong> pt</p>' : ''}
-                                ${daysRequiredForNextRank !== null && daysToNextRank !== null ? '<p class="idnect-card-next-rank idnect-card-days-to-rank">次のランクまで あと <strong>' + daysToNextRank + '</strong> 日</p>' : ''}
+                                ${showRankProgress && nextRankLabel && pointsToNextRank !== null ? '<p class="idnect-card-next-rank">次のランク（' + DomHelper.escapeHtml(nextRankLabel) + '）まで <strong>' + pointsToNextRank.toLocaleString() + '</strong> pt</p>' : ''}
+                                ${showRankProgress && daysRequiredForNextRank !== null && daysToNextRank !== null ? '<p class="idnect-card-next-rank idnect-card-days-to-rank">次のランクまで あと <strong>' + daysToNextRank + '</strong> 日</p>' : ''}
                                 <p class="idnect-card-tap-hint"><i class="fas fa-sync-alt idnect-card-tap-hint-icon" aria-hidden="true"></i> タップで表に戻る</p>
                             </div>
                         </div>

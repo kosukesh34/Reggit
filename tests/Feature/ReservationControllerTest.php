@@ -19,7 +19,7 @@ class ReservationControllerTest extends TestCase
     private const RESERVATION_ENDPOINT = '/api/reservations';
 
 
-    public function testIndexReturnsReservations(): void
+    public function test_index_予約一覧を返すこと(): void
     {
         $user = User::factory()->create(['line_user_id' => self::TEST_USER_ID]);
         $member = Member::factory()->create(['user_id' => $user->id]);
@@ -33,7 +33,7 @@ class ReservationControllerTest extends TestCase
             ->assertJsonStructure(['reservations' => []]);
     }
 
-    public function testStoreCreatesReservation(): void
+    public function test_store_予約が作成されること(): void
     {
         $user = User::factory()->create(['line_user_id' => self::TEST_USER_ID]);
         $member = Member::factory()->create(['user_id' => $user->id]);
@@ -59,7 +59,7 @@ class ReservationControllerTest extends TestCase
         ]);
     }
 
-    public function testStoreValidatesRequiredFields(): void
+    public function test_store_必須項目のバリデーションが行われること(): void
     {
         $user = User::factory()->create(['line_user_id' => self::TEST_USER_ID]);
         $member = Member::factory()->create(['user_id' => $user->id]);
@@ -71,7 +71,7 @@ class ReservationControllerTest extends TestCase
         $response->assertStatus(422);
     }
 
-    public function testCancelCancelsReservation(): void
+    public function test_cancel_予約がキャンセルされること(): void
     {
         $user = User::factory()->create(['line_user_id' => self::TEST_USER_ID]);
         $member = Member::factory()->create(['user_id' => $user->id]);
@@ -93,7 +93,7 @@ class ReservationControllerTest extends TestCase
         ]);
     }
 
-    public function testCancelFailsForCompletedReservation(): void
+    public function test_cancel_完了済み予約のキャンセルは失敗すること(): void
     {
         $user = User::factory()->create(['line_user_id' => self::TEST_USER_ID]);
         $member = Member::factory()->create(['user_id' => $user->id]);
@@ -109,7 +109,7 @@ class ReservationControllerTest extends TestCase
         $response->assertStatus(400);
     }
 
-    public function testIndexRequiresMembership(): void
+    public function test_index_会員登録が必須であること(): void
     {
         $user = User::factory()->create(['line_user_id' => self::TEST_USER_ID]);
 
@@ -121,7 +121,7 @@ class ReservationControllerTest extends TestCase
             ->assertJson(['error' => '会員登録が必要です']);
     }
 
-    public function testStoreRequiresMembership(): void
+    public function test_store_会員登録が必須であること(): void
     {
         $user = User::factory()->create(['line_user_id' => self::TEST_USER_ID]);
         $timeSlots = ShopSetting::getReservationTimeSlots();
@@ -139,7 +139,7 @@ class ReservationControllerTest extends TestCase
             ->assertJson(['error' => '会員登録が必要です']);
     }
 
-    public function testStoreRejectsClosedDate(): void
+    public function test_store_休業日の予約は拒否されること(): void
     {
         $user = User::factory()->create(['line_user_id' => self::TEST_USER_ID]);
         $member = Member::factory()->create(['user_id' => $user->id]);
@@ -159,7 +159,7 @@ class ReservationControllerTest extends TestCase
             ->assertJson(['error' => '選択した日は予約できません']);
     }
 
-    public function testStoreRejectsFullSlot(): void
+    public function test_store_満席の枠は拒否されること(): void
     {
         $user = User::factory()->create(['line_user_id' => self::TEST_USER_ID]);
         $member = Member::factory()->create(['user_id' => $user->id]);

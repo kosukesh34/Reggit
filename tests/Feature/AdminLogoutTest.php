@@ -11,7 +11,7 @@ class AdminLogoutTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function testStoreAdminCanLogout(): void
+    public function test_logout_店舗管理者がログアウトできること(): void
     {
         $project = Project::firstOrCreate(
             ['project_key' => 'default'],
@@ -29,7 +29,7 @@ class AdminLogoutTest extends TestCase
         $this->assertGuest('admin');
     }
 
-    public function testSystemAdminCanLogout(): void
+    public function test_logout_システム管理者がログアウトできること(): void
     {
         $admin = AdminUser::factory()->create(['role' => AdminUser::ROLE_SYSTEM_ADMIN]);
 

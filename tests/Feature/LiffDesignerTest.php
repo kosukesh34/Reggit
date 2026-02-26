@@ -12,7 +12,7 @@ class LiffDesignerTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_liff_designer_page_is_accessible_for_admin(): void
+    public function test_liff_designer_管理者がLIFFデザイナー画面にアクセスできること(): void
     {
         $project = Project::firstOrCreate(
             ['project_key' => 'default'],
@@ -35,7 +35,7 @@ class LiffDesignerTest extends TestCase
         $response->assertSee('LIFFデザイン');
     }
 
-    public function test_liff_designer_layouts_can_be_saved(): void
+    public function test_liff_designer_レイアウトを保存できること(): void
     {
         $project = Project::firstOrCreate(
             ['project_key' => 'default'],

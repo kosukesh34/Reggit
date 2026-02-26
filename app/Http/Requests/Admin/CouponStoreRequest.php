@@ -24,7 +24,9 @@ class CouponStoreRequest extends FormRequest
             'start_at' => 'nullable|date',
             'end_at' => 'nullable|date|after_or_equal:start_at',
             'is_active' => 'nullable|boolean',
-            'issue_trigger' => 'nullable|string|in:manual,first_registration,stamp_completed',
+            'issue_trigger' => 'nullable|string|in:manual,first_registration,first_order,stamp_completed,birthday',
+            'design_template' => 'nullable|string|in:classic,modern,minimal,gradient,card,barcode,qr,stripe,ticket,vintage,neon',
+            'theme_color' => 'nullable|string|regex:/^#[0-9A-Fa-f]{6}$/|max:7',
             'stamp_card_id' => 'nullable|integer|exists:stamp_cards,id',
         ];
     }

@@ -10,6 +10,11 @@
  */
 (function () {
     const QUEUE_TOKEN_STORAGE_KEY = 'mobile_order_pending_queue_token';
+    const debug = function (eventName, payload) {
+        if (typeof window !== 'undefined' && typeof window.__clientDebugLog === 'function') {
+            window.__clientDebugLog(eventName, payload || {});
+        }
+    };
 
     function persistQueueTokenIfPresent() {
         if (typeof window === 'undefined' || typeof window.sessionStorage === 'undefined') return;
@@ -86,6 +91,16 @@
         window.__LINE_PROFILE__ = profile || null;
     }
 
+    function dispatchProfileReady() {
+        document.dispatchEvent(new CustomEvent('liff-profile-ready', {
+            detail: {
+                lineUserId: window.__LINE_USER_ID__,
+                lineProfile: window.__LINE_PROFILE__,
+                isLiff: !!window.__IS_LIFF__
+            }
+        }));
+    }
+
     function setLoadingText(text) {
         const el = document.querySelector('.liff-loading-text');
         if (el) el.textContent = text;
@@ -118,19 +133,18 @@
                 if (permissionStatus.state === 'granted') {
                     return liff.getProfile().then(resolve).catch(reject);
                 }
-                if (permissionStatus.state === 'prompt') {
-                    return liff.permission.requestAll().then(function () {
-                        return liff.permission.query('profile');
-                    }).then(function (newStatus) {
-                        if (newStatus.state === 'granted') {
-                            return liff.getProfile().then(resolve).catch(reject);
-                        }
-                        reject(new Error('PERMISSION_DENIED'));
-                    }).catch(function (err) {
-                        reject(err);
-                    });
-                }
-                reject(new Error('PERMISSION_DENIED'));
+
+                // prompt / denied を問わず、未許可時は必ず再リクエストする
+                return liff.permission.requestAll().then(function () {
+                    return liff.permission.query('profile');
+                }).then(function (newStatus) {
+                    if (newStatus.state === 'granted') {
+                        return liff.getProfile().then(resolve).catch(reject);
+                    }
+                    reject(new Error('PERMISSION_DENIED'));
+                }).catch(function (err) {
+                    reject(err);
+                });
             }).catch(reject);
         });
     }
@@ -179,6 +193,10 @@
     }
 
     function dispatchReady() {
+        debug('liff_dispatch_ready', {
+            hasLineUserId: !!window.__LINE_USER_ID__,
+            isLiff: !!window.__IS_LIFF__
+        });
         shortenUrl();
         document.dispatchEvent(new CustomEvent('liff-ready', {
             detail: {
@@ -191,6 +209,85 @@
 
     function showPermissionDeniedScreen() {
         window.__LIFF_PERMISSION_DENIED__ = true;
+        debug('liff_permission_denied_screen', {});
+    }
+
+    function removePermissionPrompt() {
+        var existing = document.getElementById('liff-permission-prompt');
+        if (existing && existing.parentNode) {
+            existing.parentNode.removeChild(existing);
+        }
+    }
+
+    function showPermissionPrompt(message) {
+        if (typeof document === 'undefined') return;
+        removePermissionPrompt();
+
+        var wrapper = document.createElement('div');
+        wrapper.id = 'liff-permission-prompt';
+        wrapper.style.position = 'fixed';
+        wrapper.style.left = '0';
+        wrapper.style.right = '0';
+        wrapper.style.bottom = '0';
+        wrapper.style.zIndex = '10001';
+        wrapper.style.padding = '12px 16px calc(12px + env(safe-area-inset-bottom, 0px))';
+        wrapper.style.background = 'rgba(0,0,0,0.86)';
+        wrapper.style.color = '#fff';
+        wrapper.style.fontSize = '14px';
+        wrapper.style.lineHeight = '1.5';
+        wrapper.style.boxSizing = 'border-box';
+
+        var text = document.createElement('div');
+        text.textContent = message || 'LINEのアクセス許可が必要です。許可してください。';
+        text.style.marginBottom = '10px';
+
+        var button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = 'アクセスを許可する';
+        button.style.border = 'none';
+        button.style.borderRadius = '8px';
+        button.style.padding = '10px 12px';
+        button.style.background = '#06C755';
+        button.style.color = '#fff';
+        button.style.fontWeight = '700';
+        button.style.cursor = 'pointer';
+        button.style.width = '100%';
+
+        button.addEventListener('click', function () {
+            if (typeof liff === 'undefined' || !liff.isLoggedIn()) {
+                text.textContent = 'LINEログインが必要です。再度開き直してください。';
+                return;
+            }
+            button.disabled = true;
+            button.textContent = '確認中...';
+
+            liff.permission.requestAll()
+                .then(function () {
+                    return liff.permission.query('profile');
+                })
+                .then(function (status) {
+                    if (status && status.state === 'granted') {
+                        return liff.getProfile().then(function (profile) {
+                            setLineProfile(profile || null);
+                            window.__LIFF_PERMISSION_DENIED__ = false;
+                            dispatchProfileReady();
+                            removePermissionPrompt();
+                        });
+                    }
+                    throw new Error('PERMISSION_DENIED');
+                })
+                .catch(function () {
+                    text.textContent = 'アクセス許可が必要です。LINE側で許可後に再度お試しください。';
+                })
+                .finally(function () {
+                    button.disabled = false;
+                    button.textContent = 'アクセスを許可する';
+                });
+        });
+
+        wrapper.appendChild(text);
+        wrapper.appendChild(button);
+        document.body.appendChild(wrapper);
     }
 
     // ─── メイン初期化ロジック ───
@@ -198,6 +295,7 @@
 
     window.__IS_LIFF__ = isInLineApp();
     const liffId = getLiffId();
+    debug('liff_boot_start', { isLiff: !!window.__IS_LIFF__, hasLiffId: !!liffId });
 
     // (A) LIFF ID 未設定 or 外部ブラウザ
     if (!liffId || !window.__IS_LIFF__) {
@@ -225,23 +323,30 @@
             liffId: liffId,
             withLoginOnExternalBrowser: false   // 外部ブラウザでの自動ログインリダイレクトを無効化
         }).then(function () {
+            debug('liff_init_success', {});
             const userId = liff.isLoggedIn() ? getLineUserIdFromToken() : null;
             setLineUserId(userId);
+            debug('liff_user_resolved', { hasUserId: !!userId });
             if (userId) {
+                // 初期表示を優先: プロフィール取得完了を待たずにアプリを起動
+                dispatchReady();
                 getProfileWithPermissionHandling()
                     .then(function (profile) {
                         setLineProfile(profile || null);
-                        dispatchReady();
+                        debug('liff_profile_success', { hasProfile: !!profile });
+                        dispatchProfileReady();
                     })
                     .catch(function (err) {
+                        debug('liff_profile_failed', { message: err && err.message ? err.message : 'unknown' });
                         if (err && err.message === 'PERMISSION_DENIED') {
                             showPermissionDeniedScreen();
+                            showPermissionPrompt('プロフィール連携の許可が必要です。');
                         }
-                        dispatchReady();
                     });
             } else {
                 // LINEアプリ内だがログインしていない → 常にログインへ
                 if (window.__IS_LIFF__) {
+                    debug('liff_not_logged_in_login_redirect', {});
                     liff.login();
                     return;
                 }
@@ -249,6 +354,7 @@
             }
         }).catch(function (err) {
             console.warn('LIFF init failed:', err);
+            debug('liff_init_failed', { message: err && err.message ? err.message : 'unknown' });
             // LIFF初期化失敗 → LINEアプリ内ならログインへ、外部ならアプリ起動
             if (window.__IS_LIFF__) {
                 try { liff.login(); } catch (e) { /* ignore */ }

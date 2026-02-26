@@ -18,7 +18,7 @@ class AdminProjectControllerTest extends TestCase
         return $admin;
     }
 
-    public function testIndexShowsProjects(): void
+    public function test_index_プロジェクト一覧が表示されること(): void
     {
         $this->loginSystemAdmin();
 
@@ -27,7 +27,7 @@ class AdminProjectControllerTest extends TestCase
         $response->assertStatus(200);
     }
 
-    public function testStoreCreatesProject(): void
+    public function test_store_プロジェクトが作成されること(): void
     {
         $this->loginSystemAdmin();
 
@@ -43,7 +43,7 @@ class AdminProjectControllerTest extends TestCase
         $this->assertDatabaseHas('projects', ['project_key' => 'proj-test']);
     }
 
-    public function testUpdateUpdatesProject(): void
+    public function test_update_プロジェクトが更新されること(): void
     {
         $this->loginSystemAdmin();
         $project = Project::factory()->create(['name' => 'Old']);

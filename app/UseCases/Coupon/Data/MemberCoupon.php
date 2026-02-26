@@ -13,11 +13,13 @@ class MemberCoupon
         public ?string $issuedAt,
         public ?string $validFrom,
         public ?string $validUntil,
-        public ?string $usedAt
+        public ?string $usedAt,
+        public string $designTemplate = 'classic',
+        public ?string $themeColor = null
     ) {
     }
 
-    /** @return array{id: int, coupon_name: string, image_url: string|null, status: string, issued_at: string|null, valid_from: string|null, valid_until: string|null, used_at: string|null} */
+    /** @return array{id: int, coupon_name: string, image_url: string|null, status: string, issued_at: string|null, valid_from: string|null, valid_until: string|null, used_at: string|null, design_template: string, theme_color: string|null} */
     public function toArray(): array
     {
         return [
@@ -29,6 +31,8 @@ class MemberCoupon
             'valid_from' => $this->validFrom,
             'valid_until' => $this->validUntil,
             'used_at' => $this->usedAt,
+            'design_template' => $this->designTemplate,
+            'theme_color' => $this->themeColor,
         ];
     }
 }

@@ -32,7 +32,7 @@ class AdminSettingsMenuTest extends TestCase
         ]);
     }
 
-    public function test_menu_settings_page_is_accessible(): void
+    public function test_menu_settings_メニュー設定画面にアクセスできること(): void
     {
         $project = $this->createProject();
         $admin = $this->createAdmin($project->id);
@@ -44,7 +44,7 @@ class AdminSettingsMenuTest extends TestCase
             ->assertSee('メニュー設定');
     }
 
-    public function test_menu_settings_can_be_saved(): void
+    public function test_menu_settings_メニュー設定を保存できること(): void
     {
         $project = $this->createProject();
         $admin = $this->createAdmin($project->id);

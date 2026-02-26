@@ -8,7 +8,7 @@ use Tests\TestCase;
 
 class RouteContextResolverTest extends TestCase
 {
-    public function testResolvesSystemAdminPrefix(): void
+    public function test_resolve_システム管理者プレフィックスが解決されること(): void
     {
         $resolver = new RouteContextResolver();
         $request = Request::create('/system-admin/accounts');
@@ -25,7 +25,7 @@ class RouteContextResolverTest extends TestCase
         $this->assertSame([], $context->params);
     }
 
-    public function testResolvesAdminPrefixWithProjectKey(): void
+    public function test_resolve_プロジェクトキー付き管理画面プレフィックスが解決されること(): void
     {
         $resolver = new RouteContextResolver();
         $request = Request::create('/admin/default/dashboard');

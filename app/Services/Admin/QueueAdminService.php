@@ -3,6 +3,7 @@
 namespace App\Services\Admin;
 
 use App\Models\QueueEntry;
+use App\Models\QueueCallLog;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use App\Enums\QueueStatus;
 use Illuminate\Support\Collection;
@@ -59,7 +60,25 @@ class QueueAdminService
 
         if ($status === QueueStatus::CALLED) {
             $lineUserId = $entry->user?->line_user_id ?? $entry->member?->user?->line_user_id;
+            $callLog = QueueCallLog::firstOrCreate(
+                ['queue_entry_id' => $entry->id],
+                [
+                    'project_id' => (int) $entry->project_id,
+                    'queue_number' => $entry->queue_number,
+                    'line_user_id' => $lineUserId,
+                    'called_at' => now(),
+                    'push_status' => 'pending',
+                ]
+            );
+            if ($callLog->wasRecentlyCreated === false) {
+                return;
+            }
+
             if ($lineUserId === null || $lineUserId === '' || !$this->isValidLineUserId($lineUserId)) {
+                $callLog->update([
+                    'push_status' => 'skipped',
+                    'error_message' => 'invalid line user id',
+                ]);
                 LogHelper::warning('[Queue] line push skipped: invalid line user id', [
                     'queue_id' => $entry->id,
                     'line_user_id' => $lineUserId,
@@ -67,12 +86,26 @@ class QueueAdminService
                 return;
             }
             if (app()->environment('testing')) {
+                $callLog->update([
+                    'push_status' => 'skipped',
+                    'error_message' => 'testing environment',
+                ]);
                 return;
             }
             $message = sprintf('順番が近づきました。受付番号: %s', $entry->queue_number ?? $entry->id);
             try {
                 app(LineService::class)->pushMessage($lineUserId, ['type' => 'text', 'text' => $message]);
+                $callLog->update([
+                    'push_status' => 'sent',
+                    'error_message' => null,
+                    'line_user_id' => $lineUserId,
+                ]);
             } catch (\Exception $e) {
+                $callLog->update([
+                    'push_status' => 'failed',
+                    'error_message' => mb_substr($e->getMessage(), 0, 255),
+                    'line_user_id' => $lineUserId,
+                ]);
                 LogHelper::error('[Queue] line push failed', [
                     'queue_id' => $entry->id,
                     'line_user_id' => $lineUserId,
