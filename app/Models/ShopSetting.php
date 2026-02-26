@@ -28,7 +28,11 @@ class ShopSetting extends Model
     public static function getValue(string $key, $default = null, ?int $projectId = null)
     {
         $projectId = $projectId ?? AdminContext::getCurrentProjectId() ?? 1;
-        $setting = self::where('project_id', $projectId)->where('key', $key)->first();
+        $query = self::query();
+        if (func_num_args() >= 3 && $projectId !== null) {
+            $query->withoutGlobalScopes();
+        }
+        $setting = $query->where('project_id', $projectId)->where('key', $key)->first();
         
         if ($setting === null) {
             return $default;

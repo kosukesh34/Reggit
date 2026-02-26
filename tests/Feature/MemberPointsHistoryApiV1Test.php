@@ -13,14 +13,18 @@ class MemberPointsHistoryApiV1Test extends TestCase
 {
     use RefreshDatabase;
 
-    private const LINE_USER_ID = 'line-member-history-v1';
+    private const LINE_USER_ID = 'U00000000000000000000000000000004';
 
     public function test_pointHistory_ポイント履歴が返ること(): void
     {
-        $user = User::factory()->create(['line_user_id' => self::LINE_USER_ID, 'project_id' => 1]);
-        $member = Member::factory()->create(['user_id' => $user->id, 'project_id' => 1]);
+        $project = \App\Models\Project::firstOrCreate(
+            ['project_key' => 'default'],
+            ['name' => 'Default', 'description' => '', 'is_active' => true]
+        );
+        $user = User::factory()->create(['line_user_id' => self::LINE_USER_ID, 'project_id' => $project->id]);
+        $member = Member::factory()->create(['user_id' => $user->id, 'project_id' => $project->id]);
         PointTransaction::create([
-            'project_id' => 1,
+            'project_id' => $project->id,
             'member_id' => $member->id,
             'type' => 'earned',
             'points' => 10,
@@ -37,8 +41,12 @@ class MemberPointsHistoryApiV1Test extends TestCase
 
     public function test_pointCard_ポイントカード要約が返ること(): void
     {
-        $user = User::factory()->create(['line_user_id' => self::LINE_USER_ID, 'project_id' => 1]);
-        Member::factory()->create(['user_id' => $user->id, 'project_id' => 1, 'points' => 30]);
+        $project = \App\Models\Project::firstOrCreate(
+            ['project_key' => 'default'],
+            ['name' => 'Default', 'description' => '', 'is_active' => true]
+        );
+        $user = User::factory()->create(['line_user_id' => self::LINE_USER_ID, 'project_id' => $project->id]);
+        Member::factory()->create(['user_id' => $user->id, 'project_id' => $project->id, 'points' => 30]);
 
         $response = $this->withoutMiddleware(AuthenticateApiToken::class)
             ->withHeaders(['X-Line-User-Id' => self::LINE_USER_ID])

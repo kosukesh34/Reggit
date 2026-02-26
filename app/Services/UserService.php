@@ -33,10 +33,17 @@ class UserService
         $sessionUserId = Session::get($this->getSessionKey($projectId));
         if ($sessionUserId !== null) {
             $sessionUser = User::where('id', $sessionUserId)->where('project_id', $projectId)->first();
-            if ($sessionUser !== null && $lineUserId !== null) {
-                $this->linkLineUserIdIfPossible($sessionUser, $lineUserId, $projectId);
+            if ($sessionUser !== null) {
+                $rawLineId = $this->normalizeLineUserId($request->header('X-Line-User-Id'));
+                $requestLineId = is_string($request->header('X-Line-User-Id')) ? trim($request->header('X-Line-User-Id')) : '';
+                if ($requestLineId !== '' && $sessionUser->line_user_id !== $requestLineId && $rawLineId !== $sessionUser->line_user_id) {
+                    return null;
+                }
+                if ($rawLineId !== null) {
+                    $this->linkLineUserIdIfPossible($sessionUser, $rawLineId, $projectId);
+                }
+                return $sessionUser;
             }
-            return $sessionUser;
         }
 
         return null;
