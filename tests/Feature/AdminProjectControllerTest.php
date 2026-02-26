@@ -39,7 +39,7 @@ class AdminProjectControllerTest extends TestCase
             'plan' => 'normal',
         ]);
 
-        $response->assertRedirect('/system-admin/projects');
+        $response->assertRedirect(route('system-admin.projects.index'));
         $this->assertDatabaseHas('projects', ['project_key' => 'proj-test']);
     }
 
@@ -56,7 +56,7 @@ class AdminProjectControllerTest extends TestCase
             'plan' => 'premium',
         ]);
 
-        $response->assertRedirect('/system-admin/projects');
+        $response->assertRedirect(route('system-admin.projects.index'));
         $this->assertDatabaseHas('projects', ['id' => $project->id, 'name' => 'New']);
     }
 }

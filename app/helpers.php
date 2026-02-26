@@ -35,9 +35,7 @@ if (!function_exists('admin_route')) {
                 $params['project_key'] = $projectKey;
             } else {
                 $defaultKey = Project::where('is_active', true)->orderBy('id')->value('project_key');
-                if ($defaultKey !== null) {
-                    $params['project_key'] = $defaultKey;
-                }
+                $params['project_key'] = $defaultKey ?? 'default';
             }
         }
         return route($name, $params, $absolute);
