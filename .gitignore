@@ -14,4 +14,6 @@ yarn-error.log
 /.idea
 /.vscode
 
-
+# Laravel runtime (cache, sessions, compiled views, logs)
+/storage/framework/
+/storage/logs/
