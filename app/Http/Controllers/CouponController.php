@@ -18,9 +18,11 @@ class CouponController extends Controller
             $user = $this->userService->getOrCreateUser($request);
             $member = $user->member;
             if ($member === null) {
+                $projectId = $user->project_id ?? 1;
                 return response()->json([
                     'coupons' => [],
                     'message' => '会員登録が必要です',
+                    'default_image_url' => \App\Models\ShopSetting::getCouponDefaultImageUrl($projectId),
                 ]);
             }
 
