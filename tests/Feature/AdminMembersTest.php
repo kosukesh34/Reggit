@@ -29,7 +29,7 @@ class AdminMembersTest extends TestCase
         ]);
     }
 
-    public function testMembersListIsAccessible(): void
+    public function test_members_会員一覧にアクセスできること(): void
     {
         $project = $this->createProject();
         $admin = $this->createAdmin($project);

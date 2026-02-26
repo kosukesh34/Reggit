@@ -33,7 +33,7 @@ class AdminQueueTest extends TestCase
         ]);
     }
 
-    public function test_admin_can_update_queue_status(): void
+    public function test_admin_管理者が待ち合わせステータスを更新できること(): void
     {
         $project = $this->createProject();
         $admin = $this->createAdmin($project->id);

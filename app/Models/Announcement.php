@@ -17,6 +17,11 @@ class Announcement extends Model
         return $this->belongsTo(Project::class);
     }
 
+    public function reads()
+    {
+        return $this->hasMany(AnnouncementRead::class);
+    }
+
     /** @var array<string, string> */
     protected $casts = [
         'published_at' => 'datetime',

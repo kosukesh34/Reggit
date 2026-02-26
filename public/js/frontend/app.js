@@ -37,6 +37,23 @@ class MobileOrderApp {
         this.memberManager.preload();
     }
 
+    async onLiffReady() {
+        this.memberManager.preload();
+        const hasQueueToken = this.queueManager.getQueueTokenFromUrl() !== null;
+
+        if (hasQueueToken) {
+            await this.queueManager.linkPendingQueueOnStartup();
+        }
+
+        if (hasQueueToken) {
+            this.switchTab(AppConstants.TABS.QUEUE);
+            return;
+        }
+        if (this.currentTab === AppConstants.TABS.QUEUE) {
+            this.queueManager.load();
+        }
+    }
+
     preventZoom() {
         document.addEventListener('gesturestart', (e) => e.preventDefault());
         document.addEventListener('gesturechange', (e) => e.preventDefault());
@@ -349,7 +366,10 @@ class MobileOrderApp {
     }
 
     handlePaymentSuccess() {
-        document.querySelector('.payment-modal')?.remove();
+        const paymentModal = document.querySelector('.payment-modal');
+        if (paymentModal && typeof paymentModal.remove === 'function') {
+            paymentModal.remove();
+        }
         this.handleOrderSuccess();
     }
 
@@ -452,6 +472,9 @@ class MobileOrderApp {
 
 if (typeof window !== 'undefined' && !window.__LIFF_APP_BOOTSTRAP__) {
     window.__LIFF_APP_BOOTSTRAP__ = true;
+    if (typeof window.__clientDebugLog === 'function') {
+        window.__clientDebugLog('app_bootstrap_set', {});
+    }
 
     function hideLiffLoading() {
         const el = document.getElementById('liff-loading');
@@ -461,6 +484,9 @@ if (typeof window !== 'undefined' && !window.__LIFF_APP_BOOTSTRAP__) {
     function createApp() {
         if (window.app) return;
         window.app = new MobileOrderApp();
+        if (typeof window.__clientDebugLog === 'function') {
+            window.__clientDebugLog('app_created', {});
+        }
         hideLiffLoading();
     }
 
@@ -468,7 +494,15 @@ if (typeof window !== 'undefined' && !window.__LIFF_APP_BOOTSTRAP__) {
         'liff-ready',
         function fn() {
             document.removeEventListener('liff-ready', fn);
-            createApp();
+            if (!window.app) {
+                createApp();
+            }
+            if (window.app && typeof window.app.onLiffReady === 'function') {
+                if (typeof window.__clientDebugLog === 'function') {
+                    window.__clientDebugLog('app_on_liff_ready_called', {});
+                }
+                window.app.onLiffReady();
+            }
         },
         { once: true }
     );

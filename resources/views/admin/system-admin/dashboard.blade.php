@@ -49,8 +49,8 @@
     </div>
     <div class="card-body">
         <div class="quick-actions-grid">
-            <a href="{{ route('system-admin.projects.create') }}" class="btn btn-primary btn-lg">
-                <i class="fas fa-plus"></i> 新規プロジェクト
+            <a href="{{ route('system-admin.projects.input-home') }}" class="btn btn-primary btn-lg">
+                <i class="fas fa-plus"></i> プロジェクト入力ホーム
             </a>
             <a href="{{ route('system-admin.accounts.create') }}" class="btn btn-info btn-lg">
                 <i class="fas fa-user-plus"></i> 新規アカウント

@@ -3,27 +3,38 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Util\AdminContext;
 use App\UseCases\Admin\AuditLog\AuditLogIndexUseCase;
 use App\UseCases\Admin\AuditLog\AuditLogShowUseCase;
+use Illuminate\Http\Request;
 
 class AuditLogController extends Controller
 {
+    private AuditLogIndexUseCase $indexUseCase;
+    private AuditLogShowUseCase $showUseCase;
+
     public function __construct(
-        private AuditLogIndexUseCase $indexUseCase,
-        private AuditLogShowUseCase $showUseCase
+        AuditLogIndexUseCase $indexUseCase,
+        AuditLogShowUseCase $showUseCase
     ) {
+        $this->indexUseCase = $indexUseCase;
+        $this->showUseCase = $showUseCase;
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $logs = $this->indexUseCase->handle();
+        $isSystemContext = $request->routeIs('system-admin.*');
+        $projectId = $isSystemContext ? null : AdminContext::getCurrentProjectId();
+        $logs = $this->indexUseCase->handle($projectId, $isSystemContext);
 
         return view('admin.audit-logs.index', compact('logs'));
     }
 
-    public function show(int $id)
+    public function show(Request $request, int $id)
     {
-        $log = $this->showUseCase->handle($id);
+        $isSystemContext = $request->routeIs('system-admin.*');
+        $projectId = $isSystemContext ? null : AdminContext::getCurrentProjectId();
+        $log = $this->showUseCase->handle($id, $projectId, $isSystemContext);
         return view('admin.audit-logs.show', compact('log'));
     }
 }

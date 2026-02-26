@@ -7,10 +7,19 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class AuditLogIndexUseCase
 {
-    public function handle(): LengthAwarePaginator
+    public function handle(?int $projectId = null, bool $systemContext = false): LengthAwarePaginator
     {
-        return AdminAuditLog::with(['adminUser', 'project'])
-            ->orderByDesc('id')
-            ->paginate(30);
+        $query = AdminAuditLog::with(['adminUser', 'project'])
+            ->orderByDesc('id');
+
+        if ($systemContext === false && $projectId !== null) {
+            $query->where('project_id', $projectId)
+                ->where(function ($q) {
+                    $q->whereNull('route_name')
+                        ->orWhere('route_name', 'like', 'admin.%');
+                });
+        }
+
+        return $query->paginate(30);
     }
 }

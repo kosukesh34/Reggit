@@ -11,6 +11,8 @@ class UpdateLiffDesignerUseCase
     {
         ShopSetting::setLiffTabLayouts($input->layouts, $projectId);
         ShopSetting::setLiffCustomCss($input->customCss, $projectId);
+        ShopSetting::setLineLiffId($input->liffId, $projectId);
+        ShopSetting::setLineLiffUrl($input->liffUrl, $projectId);
 
         if ($input->tabSettings !== null) {
             ShopSetting::setLiffTabSettings($input->tabSettings, $projectId);

@@ -28,6 +28,9 @@ class MemberPointCardUseCase
 
         $rankInfo = $this->rankCalculator->getRankInfo($member);
         $expiryInfo = $this->expiryCalculator->getExpiryInfo($member);
+        $projectId = $member->project_id ?? 1;
+        $showPoints = \App\Models\ShopSetting::getShowPointsDisplay($projectId);
+        $showRankProgress = \App\Models\ShopSetting::getShowRankProgress($projectId);
 
         return new MemberPointCardView(false, [
             'member_number' => $member->member_number,
@@ -36,7 +39,12 @@ class MemberPointCardUseCase
             'rank_label' => $rankInfo['current_rank_label'] ?? null,
             'rank_icon' => $rankInfo['current_rank_icon'] ?? null,
             'rank_background' => $rankInfo['current_rank_background'] ?? null,
+            'rank_color' => $rankInfo['current_rank_color'] ?? null,
             'points_expiry' => $expiryInfo,
+            'show_points_display' => $showPoints,
+            'show_rank_progress' => $showRankProgress,
+            'points_to_next_rank' => $rankInfo['points_to_next_rank'] ?? null,
+            'next_rank_label' => $rankInfo['next_rank_label'] ?? null,
         ]);
     }
 }

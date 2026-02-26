@@ -18,7 +18,7 @@ class LiffControllerTest extends TestCase
         );
     }
 
-    public function testLiffIndexReturns200WhenProjectExists(): void
+    public function test_liff_プロジェクトが存在するとき200を返すこと(): void
     {
         $this->createProject();
 
@@ -27,7 +27,7 @@ class LiffControllerTest extends TestCase
         $response->assertStatus(200);
     }
 
-    public function testLiffIndexUsesFirstActiveProjectWhenNoKey(): void
+    public function test_liff_キー未指定時は最初の有効プロジェクトが使われること(): void
     {
         $this->createProject();
 

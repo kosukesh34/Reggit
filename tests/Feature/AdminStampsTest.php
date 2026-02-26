@@ -27,7 +27,7 @@ class AdminStampsTest extends TestCase
         ]);
     }
 
-    public function testStampsListIsAccessible(): void
+    public function test_stamps_スタンプ一覧にアクセスできること(): void
     {
         $project = $this->createProject();
         $admin = $this->createAdmin($project);

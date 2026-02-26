@@ -2,12 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use Illuminate\Http\Response as HttpResponse;
 
 class LiffController extends Controller
 {
-    public function index(): \Illuminate\View\View
+    public function index(): HttpResponse
     {
-        return view('index');
+        return response()
+            ->view('index')
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', '0');
     }
 }

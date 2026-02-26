@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Announcement;
 use App\Models\Project;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -19,7 +20,7 @@ class AnnouncementControllerTest extends TestCase
         );
     }
 
-    public function testIndexReturnsAnnouncements(): void
+    public function test_index_お知らせ一覧を返すこと(): void
     {
         $this->createProject();
         Announcement::factory()->create(['project_id' => 1]);
@@ -28,5 +29,26 @@ class AnnouncementControllerTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJsonStructure(['announcements']);
+    }
+
+    public function test_markRead_既読エンドポイントが成功を返すこと(): void
+    {
+        $this->createProject();
+        $announcement = Announcement::factory()->create(['project_id' => 1]);
+        User::factory()->create([
+            'project_id' => 1,
+            'line_user_id' => 'line-user-web-read',
+        ]);
+
+        $response = $this->withHeader('X-Line-User-Id', 'line-user-web-read')
+            ->post("/api/announcements/{$announcement->id}/read?project_key=default");
+
+        $response->assertStatus(200)
+            ->assertJsonPath('success', true);
+
+        $this->assertDatabaseHas('announcement_reads', [
+            'project_id' => 1,
+            'announcement_id' => $announcement->id,
+        ]);
     }
 }
