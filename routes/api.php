@@ -27,6 +27,7 @@ use App\Http\Controllers\Member\MemberPointCardController;
 use App\Http\Controllers\Member\MemberPointHistoryController;
 use App\Http\Controllers\Member\WalletPassController;
 use App\Http\Controllers\Member\WalletPassUrlController;
+use App\Http\Controllers\PostalCodeController;
 use App\Http\Controllers\Queue\QueueStoreController;
 use App\Http\Controllers\Queue\QueueMeController;
 use App\Http\Controllers\Queue\QueueCancelController;
@@ -34,6 +35,7 @@ use App\Http\Controllers\Queue\QueueCallNextController;
 use App\Http\Controllers\Queue\QueueQrStatusController;
 use App\Http\Controllers\Queue\QueueStatusController;
 use App\Http\Middleware\AuthenticateApiToken;
+use App\Http\Middleware\CheckApiProject;
 use App\Http\Controllers\Api\V1\AnnouncementController as ApiV1AnnouncementController;
 use App\Http\Controllers\Api\V1\CouponController as ApiV1CouponController;
 use App\Http\Controllers\Api\V1\OrderController as ApiV1OrderController;
@@ -52,7 +54,7 @@ Route::match(['get', 'post'], '/line/webhook', [LineWebhookController::class, 'h
 Route::post('/smaregi/idp', [\App\Http\Controllers\Smaregi\SmaregiIdpController::class, '__invoke'])->name('smaregi.idp');
 Route::post('/smaregi/webhook', [\App\Http\Controllers\Smaregi\SmaregiWebhookController::class, '__invoke'])->name('smaregi.webhook');
 
-// API v1（Bearer トークン認証・モバイルアプリ用）
+// API v1（Bearer トークン認証・モバイルアプリ用）※従来: トークンの project でコンテキスト設定
 Route::prefix('v1')->middleware([AuthenticateApiToken::class])->group(function () {
     Route::get('/products', [ApiV1ProductController::class, 'index']);
     Route::get('/products/{id}', [ApiV1ProductController::class, 'show']);
@@ -72,6 +74,26 @@ Route::prefix('v1')->middleware([AuthenticateApiToken::class])->group(function (
     Route::post('/payment/confirm', [ApiV1PaymentController::class, 'confirmPayment']);
 });
 
+// API v1（SaaS: URL に project_key を含む）api/v1/{project_key}/...
+Route::prefix('v1')->middleware([CheckApiProject::class, AuthenticateApiToken::class])->group(function () {
+    Route::get('/{project_key}/products', [ApiV1ProductController::class, 'index']);
+    Route::get('/{project_key}/products/{id}', [ApiV1ProductController::class, 'show']);
+    Route::post('/{project_key}/orders', [ApiV1OrderController::class, 'store']);
+    Route::get('/{project_key}/orders', [ApiV1OrderController::class, 'index']);
+    Route::get('/{project_key}/orders/{id}', [ApiV1OrderController::class, 'show']);
+    Route::get('/{project_key}/members/me', [ApiV1MemberMeController::class, '__invoke']);
+    Route::get('/{project_key}/members/points', [ApiV1MemberPointsController::class, '__invoke']);
+    Route::get('/{project_key}/members/points/card', [ApiV1MemberPointCardController::class, '__invoke']);
+    Route::get('/{project_key}/members/points/history', [ApiV1MemberPointHistoryController::class, '__invoke']);
+    Route::get('/{project_key}/members/me/coupons', [ApiV1CouponController::class, 'myCoupons']);
+    Route::get('/{project_key}/stamps', [ApiV1StampController::class, 'index']);
+    Route::get('/{project_key}/announcements', [ApiV1AnnouncementController::class, 'index']);
+    Route::post('/{project_key}/announcements/{id}/read', [ApiV1AnnouncementController::class, 'markRead']);
+    Route::get('/{project_key}/reservations', [ApiV1ReservationIndexController::class, '__invoke']);
+    Route::post('/{project_key}/payment/create-intent', [ApiV1PaymentController::class, 'createPaymentIntent']);
+    Route::post('/{project_key}/payment/confirm', [ApiV1PaymentController::class, 'confirmPayment']);
+});
+
 Route::middleware(['web', 'bind.project'])->group(function () {
     Route::get('/products', [ProductController::class, 'index']);
     Route::get('/products/{id}', [ProductController::class, 'show']);
@@ -82,6 +104,7 @@ Route::middleware(['web', 'bind.project'])->group(function () {
 
     Route::get('/members/me', [MemberMeController::class, '__invoke']);
     Route::put('/members/me', [MemberUpdateController::class, '__invoke']);
+    Route::get('/postal-code', [PostalCodeController::class, '__invoke']);
     Route::get('/members/me/wallet-pass', [WalletPassController::class, '__invoke']);
     Route::get('/members/me/wallet-pass-url', [WalletPassUrlController::class, '__invoke']);
     Route::post('/members/register', [MemberRegisterController::class, '__invoke']);

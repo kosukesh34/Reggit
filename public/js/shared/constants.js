@@ -7,6 +7,7 @@ const AppConstants = {
         ORDERS: `${API_BASE}/orders`,
         MEMBERS_ME: `${API_BASE}/members/me`,
         MEMBERS_REGISTER: `${API_BASE}/members/register`,
+        POSTAL_CODE: `${API_BASE}/postal-code`,
         MEMBERS_POINTS: `${API_BASE}/members/points`,
         MEMBERS_WALLET_PASS: `${API_BASE}/members/me/wallet-pass`,
         MEMBERS_WALLET_PASS_URL: `${API_BASE}/members/me/wallet-pass-url`,
