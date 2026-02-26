@@ -66,6 +66,11 @@ class LiffDesignerTest extends TestCase
         $response->assertRedirect(route('admin.settings.liff-designer', ['project_key' => $project->project_key]));
 
         $stored = ShopSetting::getLiffTabLayouts($project->id);
-        $this->assertSame($layouts, $stored);
+        $this->assertArrayHasKey('home', $stored);
+        $this->assertCount(2, $stored['home']);
+        $this->assertSame('text', $stored['home'][0]['type']);
+        $this->assertSame('World', $stored['home'][0]['text']);
+        $this->assertSame('slider', $stored['home'][1]['type']);
+        $this->assertArrayHasKey('slides', $stored['home'][1]);
     }
 }

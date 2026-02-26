@@ -5,8 +5,12 @@
 以下を設定してください。スマレジ・デベロッパーズの「環境設定」で確認できます。
 
 ```env
-SMAREGI_CLIENT_ID=84cfca5d1e33f9f027e30b2f019db903
-SMAREGI_CLIENT_SECRET=fd9690fc640f616cb17c2d4c7ab00635e188d6f91efbb6cfb9564e6977225318
+# スマレジ・デベロッパーズの「環境設定」で表示される値を設定
+SMAREGI_CLIENT_ID=あなたのクライアントID
+SMAREGI_CLIENT_SECRET=あなたのクライアントシークレット
+
+# ngrok などで公開しているURL（スマレジ側の「アプリURL」と同じにする）
+APP_URL=https://あなたのngrokサブドメイン.ngrok-free.dev
 ```
 
 - **開発環境（サンドボックス）**（デフォルト）  
@@ -18,10 +22,9 @@ SMAREGI_CLIENT_SECRET=fd9690fc640f616cb17c2d4c7ab00635e188d6f91efbb6cfb9564e6977
   SMAREGI_API_BASE_URL=https://api.smaregi.jp
   ```
 
-- **アプリのベースURL**  
-  ngrok などで公開しているURLを `APP_URL` に設定してください。  
-  例: `APP_URL=https://unadministrable-idiocratically-annalee.ngrok-free.dev`  
-  これが「スマレジ・デベロッパーズ」で設定する「アプリURL」のベースになります。
+- **アプリのベースURL（APP_URL）**  
+  ngrok の URL（例: `https://xxxx.ngrok-free.dev`）を設定してください。  
+  スマレジ・デベロッパーズの「アプリURL」に登録する値と同じにします。
 
 ## 2. スマレジ・デベロッパーズで設定するURL
 
@@ -31,11 +34,15 @@ SMAREGI_CLIENT_SECRET=fd9690fc640f616cb17c2d4c7ab00635e188d6f91efbb6cfb9564e6977
 | **利用者契約通知先URL（必須）** | `{APP_URL}/api/smaregi/idp` |
 | **Webhook送信先エンドポイント** | `{APP_URL}/api/smaregi/webhook`（任意） |
 
-例（ngrok の場合）:
+例（ngrok で `https://あなたのサブドメイン.ngrok-free.dev` → `http://localhost:8080` で公開している場合）:
 
-- 利用者契約通知先URL: `https://unadministrable-idiocratically-annalee.ngrok-free.dev/api/smaregi/idp`
-- Webhook送信先: `https://unadministrable-idiocratically-annalee.ngrok-free.dev/api/smaregi/webhook`
+| スマレジ・デベロッパーズの項目 | 設定する値 |
+|------------------------------|------------|
+| **アプリURL（必須）** | `https://あなたのサブドメイン.ngrok-free.dev` |
+| **利用者契約通知先URL（必須）** | `https://あなたのサブドメイン.ngrok-free.dev/api/smaregi/idp` |
+| **Webhook送信先エンドポイント** | `https://あなたのサブドメイン.ngrok-free.dev/api/smaregi/webhook` |
 
+上記の「あなたのサブドメイン」を実際の ngrok のサブドメインに置き換えてください。  
 リダイレクトURIは認可コードフロー用です。アプリアクセストークン（Client Credentials）のみ使う場合は `urn:ietf:wg:oauth:2.0:oob` のままで問題ありません。
 
 ## 3. マイグレーション
