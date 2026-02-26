@@ -15,6 +15,9 @@ class AdminLoginTest extends TestCase
     {
         $response = $this->get(route('admin.login'));
 
+        if ($response->status() === 500) {
+            $this->fail('Expected 200 but got 500. Response body: ' . substr((string) $response->getContent(), 0, 2000));
+        }
         $response->assertStatus(200);
     }
 
@@ -22,6 +25,9 @@ class AdminLoginTest extends TestCase
     {
         $response = $this->get(route('system-admin.login'));
 
+        if ($response->status() === 500) {
+            $this->fail('Expected 200 but got 500. Response body: ' . substr((string) $response->getContent(), 0, 2000));
+        }
         $response->assertStatus(200);
         $response->assertSee('システム管理画面');
     }
