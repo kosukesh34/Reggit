@@ -21,7 +21,8 @@ class StripePayment {
     }
 
     setupStripe() {
-        const stripeKey = document.querySelector('meta[name="stripe-key"]')?.content;
+        const stripeMeta = document.querySelector('meta[name="stripe-key"]');
+        const stripeKey = stripeMeta ? stripeMeta.content : null;
         if (!stripeKey) {
             console.error('Stripe key not found. Please set STRIPE_KEY in .env file.');
             return;
@@ -34,6 +35,7 @@ class StripePayment {
             const headers = {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
+                'ngrok-skip-browser-warning': 'true',
             };
             if (typeof window !== 'undefined' && window.__PROJECT_KEY__) {
                 headers['X-Project-Key'] = window.__PROJECT_KEY__;
@@ -41,6 +43,7 @@ class StripePayment {
             const response = await fetch('/api/payment/create-intent', {
                 method: 'POST',
                 headers,
+                credentials: 'same-origin',
                 body: JSON.stringify({
                     amount: amount,
                     order_id: orderId,
@@ -52,6 +55,14 @@ class StripePayment {
             if (!contentType || !contentType.includes('application/json')) {
                 const text = await response.text();
                 console.error('Non-JSON response:', text);
+                if (typeof window.__clientDebugLog === 'function') {
+                    window.__clientDebugLog('stripe_non_json', {
+                        endpoint: '/api/payment/create-intent',
+                        status: response.status,
+                        contentType: contentType || '',
+                        bodyHead: text ? String(text).slice(0, 300) : '',
+                    });
+                }
                 throw new Error('サーバーエラーが発生しました。JSON形式のレスポンスが返されませんでした。');
             }
 
@@ -125,6 +136,7 @@ class StripePayment {
                 const headers = {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
+                    'ngrok-skip-browser-warning': 'true',
                 };
                 if (typeof window !== 'undefined' && window.__PROJECT_KEY__) {
                     headers['X-Project-Key'] = window.__PROJECT_KEY__;
@@ -132,6 +144,7 @@ class StripePayment {
                 const response = await fetch('/api/payment/confirm', {
                     method: 'POST',
                     headers,
+                    credentials: 'same-origin',
                     body: JSON.stringify({
                         payment_intent_id: paymentIntent.id,
                         order_id: orderId,
@@ -143,6 +156,14 @@ class StripePayment {
                 if (!contentType || !contentType.includes('application/json')) {
                     const text = await response.text();
                     console.error('Non-JSON response:', text);
+                    if (typeof window.__clientDebugLog === 'function') {
+                        window.__clientDebugLog('stripe_non_json', {
+                            endpoint: '/api/payment/confirm',
+                            status: response.status,
+                            contentType: contentType || '',
+                            bodyHead: text ? String(text).slice(0, 300) : '',
+                        });
+                    }
                     throw new Error('サーバーエラーが発生しました。JSON形式のレスポンスが返されませんでした。');
                 }
 

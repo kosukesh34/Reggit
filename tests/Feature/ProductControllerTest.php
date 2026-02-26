@@ -19,7 +19,7 @@ class ProductControllerTest extends TestCase
         );
     }
 
-    public function testIndexReturnsProductsAndCategories(): void
+    public function test_index_商品とカテゴリを返すこと(): void
     {
         $this->createProject();
         Product::factory()->create(['project_id' => 1, 'category' => 'food']);
@@ -31,7 +31,7 @@ class ProductControllerTest extends TestCase
             ->assertJsonStructure(['products', 'categories']);
     }
 
-    public function testShowReturnsProduct(): void
+    public function test_show_商品詳細を返すこと(): void
     {
         $this->createProject();
         $product = Product::factory()->create(['project_id' => 1]);

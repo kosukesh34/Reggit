@@ -31,7 +31,7 @@ class AdminAnalyticsControllerTest extends TestCase
         ]);
     }
 
-    public function testAnalyticsPageIsAccessible(): void
+    public function test_analytics_分析ページにアクセスできること(): void
     {
         $project = $this->createProject();
         $admin = $this->createAdmin($project->id);

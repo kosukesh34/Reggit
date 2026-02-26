@@ -10,7 +10,7 @@ class SystemAdminDashboardTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function testSystemAdminDashboardIsAccessible(): void
+    public function test_dashboard_システム管理者用ダッシュボードにアクセスできること(): void
     {
         $admin = AdminUser::factory()->create(['role' => AdminUser::ROLE_SYSTEM_ADMIN]);
 

@@ -11,7 +11,7 @@ class ReservationApiV1Test extends TestCase
 {
     use RefreshDatabase;
 
-    public function testIndexRequiresMembership(): void
+    public function test_index_会員登録が必須であること(): void
     {
         $user = User::factory()->create(['line_user_id' => 'line-resv-v1', 'project_id' => 1]);
 

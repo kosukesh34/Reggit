@@ -22,7 +22,7 @@ class AnnouncementApiV1Test extends TestCase
         );
     }
 
-    public function testIndexReturnsAnnouncements(): void
+    public function test_index_お知らせ一覧を返すこと(): void
     {
         $project = $this->createProject();
         Announcement::factory()->create(['project_id' => $project->id]);
@@ -34,7 +34,7 @@ class AnnouncementApiV1Test extends TestCase
             ->assertJsonStructure(['success', 'data' => ['announcements']]);
     }
 
-    public function testIndexContainsReadStateForUser(): void
+    public function test_index_ユーザーごとの既読状態が含まれること(): void
     {
         $project = $this->createProject();
         $user = User::factory()->create([
@@ -57,7 +57,7 @@ class AnnouncementApiV1Test extends TestCase
             ->assertJsonPath('data.announcements.0.is_read', true);
     }
 
-    public function testMarkReadCreatesReadRecord(): void
+    public function test_markRead_既読レコードが作成されること(): void
     {
         $project = $this->createProject();
         $announcement = Announcement::factory()->create(['project_id' => $project->id]);

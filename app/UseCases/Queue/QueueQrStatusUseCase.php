@@ -2,7 +2,6 @@
 
 namespace App\UseCases\Queue;
 
-use App\Enums\QueueStatus;
 use App\Http\Services\LineService;
 use App\Models\Project;
 use App\Models\QueueEntry as QueueEntryModel;
@@ -68,29 +67,28 @@ class QueueQrStatusUseCase
         $projectId = $entry->project_id;
         $linkedNow = false;
 
+        // 既に同一ユーザーで紐づいている場合は何もせず通知も送らない
+        if ($entry->user_id !== null && (int) $entry->user_id === (int) $user->id) {
+            $stats = $this->statsService->getStats($projectId, $entry->queue_number);
+            $this->rememberEntryInSession($request, $projectId, (int) $entry->id);
+
+            return $this->entryFactory->create($entry->refresh(), $stats);
+        }
+
         if ($entry->user_id !== null && $entry->user_id !== $user->id) {
             $entryLineUserId = (string) ($entry->user?->line_user_id ?? '');
             if ($entryLineUserId !== '' && hash_equals($entryLineUserId, (string) $lineUserId)) {
-                // 既存顧客で user レコードが重複しているケースは同一 LINE とみなして再紐付け
+                // 既存顧客で user レコードが重複しているケースは同一 LINE とみなして再紐付け（通知は送らない）
                 $entry->user_id = $user->id;
                 $entry->save();
                 $entry->refresh();
-                $linkedNow = true;
+                // 既に紐づき済みのため linkedNow は false のまま（重複通知を防ぐ）
             } else {
                 throw new \RuntimeException('別のLINEアカウントで登録済みです');
             }
         }
 
         if ($entry->user_id === null) {
-            $existing = QueueEntryModel::where('project_id', $projectId)
-                ->where('user_id', $user->id)
-                ->whereIn('status', [QueueStatus::WAITING, QueueStatus::CALLED])
-                ->where('id', '!=', $entry->id)
-                ->first();
-            if ($existing !== null) {
-                throw new \RuntimeException('同じLINEアカウントで複数登録できません');
-            }
-
             $entry->user_id = $user->id;
             if ($user->member !== null) {
                 $entry->member_id = $user->member->id;

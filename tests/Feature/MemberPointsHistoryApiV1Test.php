@@ -15,7 +15,7 @@ class MemberPointsHistoryApiV1Test extends TestCase
 
     private const LINE_USER_ID = 'line-member-history-v1';
 
-    public function testPointHistoryReturnsTransactions(): void
+    public function test_pointHistory_ポイント履歴が返ること(): void
     {
         $user = User::factory()->create(['line_user_id' => self::LINE_USER_ID, 'project_id' => 1]);
         $member = Member::factory()->create(['user_id' => $user->id, 'project_id' => 1]);
@@ -35,7 +35,7 @@ class MemberPointsHistoryApiV1Test extends TestCase
             ->assertJsonStructure(['success', 'data' => ['transactions', 'pagination']]);
     }
 
-    public function testPointCardReturnsSummary(): void
+    public function test_pointCard_ポイントカード要約が返ること(): void
     {
         $user = User::factory()->create(['line_user_id' => self::LINE_USER_ID, 'project_id' => 1]);
         Member::factory()->create(['user_id' => $user->id, 'project_id' => 1, 'points' => 30]);

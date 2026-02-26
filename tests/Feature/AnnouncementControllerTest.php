@@ -20,7 +20,7 @@ class AnnouncementControllerTest extends TestCase
         );
     }
 
-    public function testIndexReturnsAnnouncements(): void
+    public function test_index_お知らせ一覧を返すこと(): void
     {
         $this->createProject();
         Announcement::factory()->create(['project_id' => 1]);
@@ -31,7 +31,7 @@ class AnnouncementControllerTest extends TestCase
             ->assertJsonStructure(['announcements']);
     }
 
-    public function testMarkReadEndpointReturnsSuccess(): void
+    public function test_markRead_既読エンドポイントが成功を返すこと(): void
     {
         $this->createProject();
         $announcement = Announcement::factory()->create(['project_id' => 1]);

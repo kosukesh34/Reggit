@@ -79,6 +79,28 @@ class StampsManager {
         }
     }
 
+    renderSlot(i, filled) {
+        return `<div class="stamp-slot ${filled ? 'stamp-slot--filled' : ''}" aria-hidden="true">${filled ? '<i class="fas fa-stamp"></i>' : ''}</div>`;
+    }
+
+    renderSlots(current, required, layoutStyle) {
+        const slots = [];
+        for (let i = 0; i < required; i++) {
+            slots.push(this.renderSlot(i, i < current));
+        }
+        return `<div class="stamp-slots stamp-slots--${layoutStyle || 'grid'}" role="img" aria-label="${current}/${required} スタンプ">${slots.join('')}</div>`;
+    }
+
+    formatValidUntil(isoString) {
+        if (!isoString) return null;
+        const d = new Date(isoString);
+        const now = new Date();
+        if (d <= now) return null;
+        const days = Math.ceil((d - now) / (1000 * 60 * 60 * 24));
+        if (days <= 0) return null;
+        return days === 1 ? 'あと1日' : `あと${days}日`;
+    }
+
     render(cards, defaultImage) {
         const section = this.getSection();
         if (!section) return;
@@ -98,18 +120,22 @@ class StampsManager {
                 const required = card.required_stamps || 10;
                 const progress = Math.min(100, (current / required) * 100);
                 const completed = !!card.completed_at;
+                const layoutStyle = card.layout_style || 'grid';
                 const imageUrl = card.image_url || defaultImage;
+                const validDaysLabel = this.formatValidUntil(card.member_stamp_valid_until);
                 return `
-                    <div class="stamp-card-item ${completed ? 'stamp-card-item--completed' : ''}">
-                        ${imageUrl ? `<div class="stamp-card-image"><img src="${DomHelper.escapeHtml(imageUrl)}" alt="スタンプカード" loading="lazy" onerror="this.closest('.stamp-card-image').style.display='none'"></div>` : ''}
+                    <div class="stamp-card-item stamp-card-item--layout-${layoutStyle} ${completed ? 'stamp-card-item--completed' : ''}">
+                        ${imageUrl ? `<div class="stamp-card-image"><img src="${DomHelper.escapeHtml(imageUrl)}" alt="スタンプカード" loading="lazy" onerror="this.closest('.stamp-card-image').style.display='none'"></div>` : '<div class="stamp-card-image stamp-card-image--icon"><i class="fas fa-stamp" aria-hidden="true"></i></div>'}
                         <div class="stamp-card-header">
-                            <h3 class="stamp-card-name">${DomHelper.escapeHtml(card.name || 'スタンプカード')}</h3>
+                            <h3 class="stamp-card-name"><i class="fas fa-stamp stamp-card-name-icon" aria-hidden="true"></i>${DomHelper.escapeHtml(card.name || 'スタンプカード')}</h3>
                             ${completed ? '<span class="stamp-card-badge"><i class="fas fa-check-circle"></i> 達成</span>' : ''}
                         </div>
-                        <div class="stamp-card-progress">
-                            <div class="stamp-card-progress-bar" style="width: ${progress}%"></div>
+                        ${this.renderSlots(current, required, layoutStyle)}
+                        <div class="stamp-card-meta">
+                            <p class="stamp-card-count">${current} / ${required} スタンプ</p>
+                            ${validDaysLabel ? `<p class="stamp-card-valid">${DomHelper.escapeHtml(validDaysLabel)}</p>` : ''}
                         </div>
-                        <p class="stamp-card-count">${current} / ${required} スタンプ</p>
+                        ${layoutStyle !== 'minimal' ? `<div class="stamp-card-progress"><div class="stamp-card-progress-bar" style="width: ${progress}%"></div></div>` : ''}
                         ${card.reward_description ? `<p class="stamp-card-reward">${DomHelper.escapeHtml(card.reward_description)}</p>` : ''}
                     </div>
                 `;

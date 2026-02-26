@@ -27,7 +27,7 @@ class AdminCouponsTest extends TestCase
         ]);
     }
 
-    public function testCouponsListIsAccessible(): void
+    public function test_coupons_クーポン一覧にアクセスできること(): void
     {
         $project = $this->createProject();
         $admin = $this->createAdmin($project);
