@@ -48,7 +48,39 @@ class AppServiceProvider extends ServiceProvider
             }
         }
 
-        // View composer は Web リクエスト時のみ登録（CLI で package:discover 等実行時に DB 接続を避ける）
+        // admin.layout はテスト時にも必要（認証済み管理画面で $projects 等を渡す）
+        View::composer('admin.layout', function ($view) {
+            if (!auth('admin')->check()) {
+                return;
+            }
+            $adminUser = auth('admin')->user();
+            $isSystemAdmin = $adminUser->isSystemAdmin();
+            $allowedIds = $adminUser->getAllowedProjectIds();
+            $projects = $isSystemAdmin
+                ? Project::where('is_active', true)->orderBy('name')->get()
+                : Project::whereIn('id', $allowedIds)->where('is_active', true)->orderBy('name')->get();
+            $sessionProjectId = (int) session('admin_project_id');
+            if ($sessionProjectId && $adminUser->canAccessProject($sessionProjectId)) {
+                $currentProjectId = $sessionProjectId;
+            } elseif ($projects->isNotEmpty()) {
+                $currentProjectId = (int) $projects->first()->id;
+            } else {
+                $currentProjectId = $adminUser->project_id ? (int) $adminUser->project_id : 1;
+            }
+            $view->with(compact('adminUser', 'currentProjectId', 'projects', 'isSystemAdmin'));
+
+            try {
+                $view->with('adminSidebarColor', ShopSetting::getAdminSidebarColor($currentProjectId));
+                $view->with('adminHeaderColor', ShopSetting::getAdminHeaderColor($currentProjectId));
+                $view->with('adminPrimaryColor', ShopSetting::getAdminPrimaryColor($currentProjectId));
+            } catch (\Throwable $e) {
+                $view->with('adminSidebarColor', null);
+                $view->with('adminHeaderColor', null);
+                $view->with('adminPrimaryColor', null);
+            }
+        });
+
+        // index の View composer は Web リクエスト時のみ（CLI で package:discover 等実行時に DB 接続を避ける）
         if ($this->app->runningInConsole() === false) {
             View::composer('index', function ($view) {
                 try {
@@ -89,37 +121,6 @@ class AppServiceProvider extends ServiceProvider
                     $view->with('liffTabSettings', []);
                     $view->with('liffId', trim((string) config('line.liff_id', '')));
                     $view->with('liffUrl', trim((string) config('line.liff_url', '')));
-                }
-            });
-
-            View::composer('admin.layout', function ($view) {
-                if (!auth('admin')->check()) {
-                    return;
-                }
-                $adminUser = auth('admin')->user();
-                $isSystemAdmin = $adminUser->isSystemAdmin();
-                $allowedIds = $adminUser->getAllowedProjectIds();
-                $projects = $isSystemAdmin
-                    ? Project::where('is_active', true)->orderBy('name')->get()
-                    : Project::whereIn('id', $allowedIds)->where('is_active', true)->orderBy('name')->get();
-                $sessionProjectId = (int) session('admin_project_id');
-                if ($sessionProjectId && $adminUser->canAccessProject($sessionProjectId)) {
-                    $currentProjectId = $sessionProjectId;
-                } elseif ($projects->isNotEmpty()) {
-                    $currentProjectId = (int) $projects->first()->id;
-                } else {
-                    $currentProjectId = $adminUser->project_id ? (int) $adminUser->project_id : 1;
-                }
-                $view->with(compact('adminUser', 'currentProjectId', 'projects', 'isSystemAdmin'));
-
-                try {
-                    $view->with('adminSidebarColor', ShopSetting::getAdminSidebarColor($currentProjectId));
-                    $view->with('adminHeaderColor', ShopSetting::getAdminHeaderColor($currentProjectId));
-                    $view->with('adminPrimaryColor', ShopSetting::getAdminPrimaryColor($currentProjectId));
-                } catch (\Throwable $e) {
-                    $view->with('adminSidebarColor', null);
-                    $view->with('adminHeaderColor', null);
-                    $view->with('adminPrimaryColor', null);
                 }
             });
         }
