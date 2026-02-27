@@ -3113,6 +3113,37 @@ input, textarea, select {
     gap: 0;
 }
 
+/* 会員証デザイン：ロゴエリア（標準は非表示） */
+.idnect-card-wrapper--design-default .idnect-card-logo-wrap {
+    display: none;
+}
+.idnect-card-logo-wrap {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+}
+.idnect-card-logo {
+    max-height: 32px;
+    width: auto;
+    max-width: 120px;
+    object-fit: contain;
+    filter: brightness(0) invert(1);
+    opacity: 0.9;
+}
+.idnect-card[data-rank="silver"] .idnect-card-logo,
+.idnect-card[data-rank="gold"] .idnect-card-logo,
+.idnect-card[data-rank="platinum"] .idnect-card-logo {
+    filter: none;
+    opacity: 0.85;
+}
+.idnect-card-wrapper--design-logo_top .idnect-card-logo-wrap {
+    justify-content: flex-start;
+}
+.idnect-card-wrapper--design-logo_center .idnect-card-logo-wrap {
+    justify-content: center;
+    margin: 8px 0;
+}
+
 .idnect-card-front-top {
     display: flex;
     justify-content: space-between;

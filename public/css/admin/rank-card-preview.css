@@ -1,0 +1,295 @@
+/**
+ * 管理画面・ランク設定のカードプレビュー用スタイル
+ * フロントの idnect-card と同じ見た目を再現（.rank-card-preview-wrap 内でスケールダウン）
+ */
+.rank-card-preview-wrap .idnect-card-wrapper {
+    perspective: 1200px;
+    cursor: default;
+    outline: none;
+}
+
+.rank-card-preview-wrap .idnect-card {
+    position: relative;
+    width: 100%;
+    max-width: 220px;
+    margin: 0 auto;
+    aspect-ratio: 360 / 240;
+    min-height: 147px;
+    transform-style: preserve-3d;
+}
+
+.rank-card-preview-wrap .idnect-card-face {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.15) inset,
+        0 2px 4px rgba(0, 0, 0, 0.08),
+        0 8px 16px rgba(0, 0, 0, 0.12);
+}
+
+.rank-card-preview-wrap .idnect-card-face::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 16px;
+    pointer-events: none;
+    background: linear-gradient(
+        165deg,
+        rgba(255, 255, 255, 0.35) 0%,
+        rgba(255, 255, 255, 0.18) 15%,
+        rgba(255, 255, 255, 0.06) 30%,
+        transparent 50%
+    );
+    z-index: 2;
+}
+
+.rank-card-preview-wrap .idnect-card-face::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 16px;
+    pointer-events: none;
+    background: linear-gradient(
+        105deg,
+        transparent 0%,
+        transparent 35%,
+        rgba(255, 255, 255, 0.12) 45%,
+        rgba(255, 255, 255, 0.2) 50%,
+        rgba(255, 255, 255, 0.08) 55%,
+        transparent 65%,
+        transparent 100%
+    );
+    z-index: 2;
+}
+
+.rank-card-preview-wrap .idnect-card-face--front {
+    background: linear-gradient(145deg, #6d3a1a 0%, #5c2e0a 35%, #4a2508 65%, #3d1f07 100%);
+    color: #fff;
+}
+
+.rank-card-preview-wrap .idnect-card[data-rank="bronze"] .idnect-card-face--front {
+    background: linear-gradient(145deg, #c98b4a 0%, #a0522d 35%, #8b4513 65%, #5c2e0a 100%);
+}
+
+.rank-card-preview-wrap .idnect-card[data-rank="silver"] .idnect-card-face--front {
+    background: linear-gradient(145deg, #f0f0f0 0%, #d8d8d8 35%, #c0c0c0 65%, #909090 100%);
+    color: #333;
+}
+
+.rank-card-preview-wrap .idnect-card[data-rank="gold"] .idnect-card-face--front {
+    background: linear-gradient(145deg, #fff4b0 0%, #ffd700 35%, #daa520 65%, #b8860b 100%);
+    color: #333;
+}
+
+.rank-card-preview-wrap .idnect-card[data-rank="platinum"] .idnect-card-face--front {
+    background: linear-gradient(145deg, #fafafa 0%, #e8e8e8 35%, #d4d4d8 65%, #a8a8b0 100%);
+    color: #333;
+}
+
+.rank-card-preview-wrap .idnect-card-wrapper[data-rank-color="true"] .idnect-card-face--front {
+    background: linear-gradient(
+        145deg,
+        color-mix(in srgb, var(--idnect-card-rank-color) 85%, #fff) 0%,
+        var(--idnect-card-rank-color) 35%,
+        color-mix(in srgb, var(--idnect-card-rank-color) 90%, #000) 65%,
+        color-mix(in srgb, var(--idnect-card-rank-color) 65%, #000) 100%
+    );
+    color: #fff;
+}
+
+.rank-card-preview-wrap .idnect-card-shimmer {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        105deg,
+        transparent 0%,
+        transparent 38%,
+        rgba(255, 255, 255, 0.08) 42%,
+        rgba(255, 255, 255, 0.22) 50%,
+        rgba(255, 255, 255, 0.08) 58%,
+        transparent 62%,
+        transparent 100%
+    );
+    background-size: 200% 100%;
+    pointer-events: none;
+    border-radius: 16px;
+    z-index: 1;
+}
+
+.rank-card-preview-wrap .idnect-card-front-inner {
+    position: relative;
+    z-index: 1;
+    padding: 12px 14px 10px;
+    height: 100%;
+    min-height: 147px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+}
+
+/* 会員証デザイン：ロゴエリア（プレビュー共通） */
+.rank-card-preview-wrap .idnect-card-logo-wrap {
+    display: flex;
+    align-items: center;
+    margin-bottom: 6px;
+}
+.rank-card-preview-wrap .idnect-card-logo {
+    max-height: 24px;
+    width: auto;
+    max-width: 80px;
+    object-fit: contain;
+    filter: brightness(0) invert(1);
+    opacity: 0.9;
+}
+.rank-card-preview-wrap .idnect-card[data-rank="silver"] .idnect-card-logo,
+.rank-card-preview-wrap .idnect-card[data-rank="gold"] .idnect-card-logo,
+.rank-card-preview-wrap .idnect-card[data-rank="platinum"] .idnect-card-logo {
+    filter: none;
+    opacity: 0.85;
+}
+/* 標準デザイン：ロゴ非表示 */
+.rank-card-preview-wrap .idnect-card-wrapper--design-default .idnect-card-logo-wrap {
+    display: none;
+}
+/* ロゴ上部デザイン */
+.rank-card-preview-wrap .idnect-card-wrapper--design-logo_top .idnect-card-logo-wrap {
+    justify-content: flex-start;
+}
+/* ロゴ中央デザイン */
+.rank-card-preview-wrap .idnect-card-wrapper--design-logo_center .idnect-card-logo-wrap {
+    justify-content: center;
+    margin: 6px 0;
+}
+
+.rank-card-preview-wrap .idnect-card-front-inner .idnect-card-display-name {
+    margin: 0 0 6px 0;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    line-height: 1.3;
+}
+
+.rank-card-preview-wrap .idnect-card-meta-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.rank-card-preview-wrap .idnect-card-rank-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.rank-card-preview-wrap .idnect-card-rank-wrap .idnect-card-rank-badge {
+    padding: 4px 10px;
+    border-radius: 14px;
+    font-size: 10px;
+    font-weight: 700;
+    background: rgba(255, 255, 255, 0.28);
+    color: inherit;
+}
+
+.rank-card-preview-wrap .idnect-card[data-rank="silver"] .idnect-card-rank-wrap .idnect-card-rank-badge,
+.rank-card-preview-wrap .idnect-card[data-rank="gold"] .idnect-card-rank-wrap .idnect-card-rank-badge,
+.rank-card-preview-wrap .idnect-card[data-rank="platinum"] .idnect-card-rank-wrap .idnect-card-rank-badge {
+    background: rgba(0, 0, 0, 0.18);
+}
+
+.rank-card-preview-wrap .idnect-card-wrapper[data-rank-color="true"] .idnect-card-rank-wrap .idnect-card-rank-badge {
+    background: rgba(255, 255, 255, 0.25);
+    color: #fff;
+}
+
+.rank-card-preview-wrap .idnect-card-rank-icon {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.35);
+    padding: 2px;
+}
+
+.rank-card-preview-wrap .idnect-card-points--front {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 10px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+.rank-card-preview-wrap .idnect-card[data-rank="silver"] .idnect-card-points--front,
+.rank-card-preview-wrap .idnect-card[data-rank="gold"] .idnect-card-points--front,
+.rank-card-preview-wrap .idnect-card[data-rank="platinum"] .idnect-card-points--front {
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+}
+
+.rank-card-preview-wrap .idnect-card-points--front .idnect-card-points-value {
+    font-size: 16px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    color: #1a1a1a;
+}
+
+.rank-card-preview-wrap .idnect-card-points--front .idnect-card-points-label {
+    font-size: 10px;
+    font-weight: 600;
+    margin-top: 0;
+    color: #555;
+}
+
+.rank-card-preview-wrap .idnect-card-barcode-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 50px;
+    max-height: 60px;
+    padding: 8px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 8px;
+    margin-bottom: 4px;
+}
+
+.rank-card-preview-wrap .idnect-card-barcode-placeholder {
+    font-size: 10px;
+    color: #999;
+    letter-spacing: 0.05em;
+}
+
+.rank-card-preview-wrap .idnect-card-tap-hint {
+    margin: 0;
+    font-size: 9px;
+    opacity: 0.85;
+    text-align: center;
+}
+
+.rank-card-preview-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    align-items: flex-start;
+}
+
+.rank-card-preview-item {
+    flex: 0 0 auto;
+}
+
+.rank-card-preview-item .rank-card-preview-label {
+    display: block;
+    margin-top: 8px;
+    font-size: 12px;
+    color: #666;
+    text-align: center;
+}

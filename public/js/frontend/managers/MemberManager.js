@@ -63,6 +63,26 @@ class MemberManager {
         `;
     }
 
+    /** 会員未登録（ゲスト）で会員証を表示しない設定のときの表示 */
+    getGuestNoCardTemplate() {
+        return `
+            <div class="member-card-container">
+                <div class="member-card member-card--line-only">
+                    <div class="member-card-header">
+                        <h2 class="member-card-title"><i class="fas fa-id-card"></i> 会員証</h2>
+                    </div>
+                    <div class="member-card-line-only-body">
+                        <p class="member-card-line-only-message">会員登録されていません。</p>
+                        <p class="member-card-line-only-sub">会員登録すると会員証が表示されます。</p>
+                        <button type="button" class="btn btn-primary mt-2" onclick="window.app.memberManager.openRegisterModal()">
+                            <i class="fas fa-user-plus"></i> 会員登録する
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
     getErrorTemplate(error) {
         const message = error && error.message ? error.message : 'エラーが発生しました';
         return `
@@ -134,6 +154,11 @@ class MemberManager {
                 throw new Error('会員情報の形式が正しくありません');
             }
             if (!payload.is_member) {
+                if (payload.show_member_card_for_guest === false) {
+                    container.innerHTML = this.getGuestNoCardTemplate();
+                    this.memberData = payload;
+                    return;
+                }
                 await this.autoRegister();
                 return;
             }
@@ -192,6 +217,8 @@ class MemberManager {
         const currentRankKey = data.current_rank || 'bronze';
         const showPointsDisplay = data.show_points_display !== false;
         const showRankProgress = data.show_rank_progress !== false;
+        const memberCardDesign = data.member_card_design || 'default';
+        const memberCardLogoUrl = data.member_card_logo_url || null;
 
         let expiryText = '';
         if (pointsExpiry && pointsExpiry.expires_at_label) {
@@ -212,6 +239,11 @@ class MemberManager {
         const projectKey = (typeof window !== 'undefined' && window.__PROJECT_KEY__) ? window.__PROJECT_KEY__ : 'default';
         const walletPassUrl = AppConstants.API_ENDPOINTS.MEMBERS_WALLET_PASS + '?project_key=' + encodeURIComponent(projectKey);
         const cardStyle = currentRankColor ? ` data-rank-color="true" style="--idnect-card-rank-color: ${DomHelper.escapeHtml(currentRankColor)}"` : '';
+        const cardDesignClass = 'idnect-card-wrapper--design-' + (['default', 'logo_top', 'logo_center'].indexOf(memberCardDesign) >= 0 ? memberCardDesign : 'default');
+        const showLogoOnCard = (memberCardDesign === 'logo_top' || memberCardDesign === 'logo_center') && memberCardLogoUrl;
+        const logoBlock = showLogoOnCard
+            ? `<div class="idnect-card-logo-wrap"><img src="${DomHelper.escapeHtml(memberCardLogoUrl)}" class="idnect-card-logo" alt="" onerror="this.parentElement.style.display='none'"></div>`
+            : '';
         let addToWalletBlock = '';
         if (showAddToAppleWallet) {
             addToWalletBlock += `<div class="member-card-add-to-wallet-wrap">
@@ -235,11 +267,12 @@ class MemberManager {
                     <button type="button" class="member-card-edit-btn" onclick="window.app.memberManager.openProfileEdit()" aria-label="プロフィール編集"><i class="fas fa-pen"></i></button>
                 </div>
                 ${permissionDeniedNotice}
-                <div class="idnect-card-wrapper" role="button" tabindex="0" aria-label="カードをタップで裏返します"${cardStyle}>
+                <div class="idnect-card-wrapper ${cardDesignClass}" role="button" tabindex="0" aria-label="カードをタップで裏返します"${cardStyle}>
                     <div class="idnect-card" data-rank="${DomHelper.escapeHtml(currentRankKey)}">
                         <div class="idnect-card-shimmer" aria-hidden="true"></div>
                         <div class="idnect-card-face idnect-card-face--front">
                             <div class="idnect-card-front-inner">
+                                ${logoBlock}
                                 ${displayName ? '<p class="idnect-card-display-name">' + DomHelper.escapeHtml(displayName) + '</p>' : ''}
                                 <div class="idnect-card-meta-row">
                                     <div class="idnect-card-rank-wrap">
@@ -631,9 +664,10 @@ class MemberManager {
         }
     }
 
-    _setupPostalCodeLookup() {
-        const postalInput = document.getElementById('profileEditPostalCode');
-        const addressInput = document.getElementById('profileEditAddress');
+    _setupPostalCodeLookup(container) {
+        const doc = container || document;
+        const postalInput = doc.getElementById('profileEdit_postal_code') || doc.getElementById('profileEditPostalCode');
+        const addressInput = doc.getElementById('profileEdit_address') || doc.getElementById('profileEditAddress');
         if (!postalInput || !addressInput) return;
 
         const fetchAddress = () => {
@@ -646,7 +680,7 @@ class MemberManager {
             this.apiClient.get(url)
                 .then((result) => {
                     if (result && result.success === false) {
-                        if (typeof ToastManager !== 'undefined') ToastManager.error(result.error || '住所の取得に失敗しました');
+                        if (typeof ToastManager !== 'undefined') ToastManager.info(result.error || '住所を自動入力できませんでした。手入力してください。');
                         return;
                     }
                     const data = (result && result.data) || result || {};
@@ -657,20 +691,31 @@ class MemberManager {
                         const full = (first && (first.full_address || first.fullAddress)) ? (first.full_address || first.fullAddress) : '';
                         if (full) {
                             addressInput.value = full;
+                            const prefectureInput = doc.getElementById('profileEdit_prefecture') || doc.getElementById('profileEditPrefecture');
+                            const cityInput = doc.getElementById('profileEdit_city') || doc.getElementById('profileEditCity');
+                            const streetInput = doc.getElementById('profileEdit_street') || doc.getElementById('profileEditStreet');
+                            const pref = first.pref_name || first.prefName || '';
+                            const city = first.city_name || first.cityName || '';
+                            const town = first.town_name || first.townName || '';
+                            const block = first.block_name || first.blockName || '';
+                            const streetPart = [town, block].filter(Boolean).join('');
+                            if (prefectureInput) prefectureInput.value = pref;
+                            if (cityInput) cityInput.value = city;
+                            if (streetInput) streetInput.value = streetPart;
                             if (addresses.length > 1 && typeof ToastManager !== 'undefined') {
                                 ToastManager.success('住所を入力しました。複数候補がある場合は修正してください。');
                             } else if (typeof ToastManager !== 'undefined') {
                                 ToastManager.success('住所を入力しました');
                             }
                         } else if (digits.length >= 7 && typeof ToastManager !== 'undefined') {
-                            ToastManager.error(serverError || '該当する住所が見つかりませんでした');
+                            ToastManager.info(serverError || '該当する住所がありません。手入力してください。');
                         }
                     } else if (digits.length >= 7 && typeof ToastManager !== 'undefined') {
-                        ToastManager.error(serverError || '該当する住所が見つかりませんでした');
+                        ToastManager.info(serverError || '住所を自動入力できませんでした。手入力してください。');
                     }
                 })
                 .catch(() => {
-                    if (typeof ToastManager !== 'undefined') ToastManager.error('住所の取得に失敗しました');
+                    if (typeof ToastManager !== 'undefined') ToastManager.info('住所を自動入力できませんでした。手入力してください。');
                 })
                 .finally(() => { postalInput.disabled = false; });
         };
@@ -682,22 +727,46 @@ class MemberManager {
         });
     }
 
-    _getProfileEditFormHtml(user, member) {
+    _getProfileEditFormHtml(user, member, options) {
+        options = options || {};
+        const isRegister = options.isRegister === true;
         const root = (this.memberData && this.memberData.member) ? this.memberData.member : this.memberData;
         const fields = (root && root.profile_field_settings) ? root.profile_field_settings : [
             { key: 'name', label: 'お名前', required: true },
+            { key: 'kana', label: 'お名前（カナ）', required: false },
             { key: 'phone', label: '電話番号', required: false },
+            { key: 'email', label: 'メールアドレス', required: false },
             { key: 'birthday', label: '誕生日', required: false },
             { key: 'postal_code', label: '郵便番号', required: false },
+            { key: 'prefecture', label: '都道府県', required: false },
+            { key: 'city', label: '市区町村', required: false },
+            { key: 'street', label: '番地・建物名', required: false },
             { key: 'address', label: '住所', required: false },
+            { key: 'sex', label: '性別', required: false },
         ];
-        const profile = (root && root.profile) ? root.profile : {};
+        let profile = (root && root.profile) ? root.profile : {};
+        if (isRegister && options.initialProfile && typeof options.initialProfile === 'object') {
+            profile = Object.assign({}, profile, options.initialProfile);
+        }
         const birthdayVal = (member && member.birthday) ? String(member.birthday).split('T')[0] : (profile.birthday || '');
-        const rows = fields.map(function (f) {
+        const nameParts = (profile.name != null && String(profile.name).trim() !== '') ? String(profile.name).trim().split(/\s+/) : ['', ''];
+        const nameLast = nameParts[0] || '';
+        const nameFirst = nameParts.slice(1).join(' ') || '';
+        const rows = fields.flatMap(function (f) {
             const key = f.key;
             const label = f.label || key;
             const required = f.required ? ' required' : '';
             const val = profile[key] != null ? String(profile[key]) : '';
+            if (key === 'name') {
+                const idLast = 'profileEdit_name_last';
+                const idFirst = 'profileEdit_name_first';
+                const inputLast = '<input type="text" id="' + idLast + '" name="name_last" value="' + DomHelper.escapeHtml(nameLast) + '" maxlength="128" placeholder="例: 山田" autocomplete="family-name"' + required + '>';
+                const inputFirst = '<input type="text" id="' + idFirst + '" name="name_first" value="' + DomHelper.escapeHtml(nameFirst) + '" maxlength="128" placeholder="例: 太郎" autocomplete="given-name"' + required + '>';
+                return [
+                    '<div class="member-form-group"><label for="' + idLast + '">姓' + (f.required ? ' <span class="required">*</span>' : '') + '</label>' + inputLast + '</div>',
+                    '<div class="member-form-group"><label for="' + idFirst + '">名' + (f.required ? ' <span class="required">*</span>' : '') + '</label>' + inputFirst + '</div>',
+                ];
+            }
             const id = 'profileEdit_' + key.replace(/[^a-z0-9_]/gi, '_');
             let input = '';
             if (key === 'sex') {
@@ -718,31 +787,63 @@ class MemberManager {
                 const maxLen = (key === 'address' || key === 'street') ? 500 : 255;
                 input = '<input type="text" id="' + id + '" name="' + DomHelper.escapeHtml(key) + '" value="' + DomHelper.escapeHtml(val) + '" maxlength="' + maxLen + '"' + (key === 'address' ? ' autocomplete="street-address"' : '') + required + '>';
             }
-            return '<div class="member-form-group"><label for="' + id + '">' + DomHelper.escapeHtml(label) + (f.required ? ' <span class="required">*</span>' : '') + '</label>' + input + '</div>';
+            return ['<div class="member-form-group"><label for="' + id + '">' + DomHelper.escapeHtml(label) + (f.required ? ' <span class="required">*</span>' : '') + '</label>' + input + '</div>'];
         });
+        const title = isRegister ? '会員登録' : 'プロフィール編集';
+        const formId = isRegister ? 'registerForm' : 'profileEditForm';
+        const submitLabel = isRegister ? '登録する' : '保存';
+        const titleIcon = isRegister ? 'fa-user-plus' : 'fa-user-edit';
         return `
             <div class="member-modal-inner">
-                <h3 class="member-modal-title"><i class="fas fa-user-edit"></i> プロフィール編集</h3>
-                <form id="profileEditForm" class="member-form">
+                <h3 class="member-modal-title"><i class="fas ${titleIcon}"></i> ${DomHelper.escapeHtml(title)}</h3>
+                <form id="${formId}" class="member-form">
                     ${rows.join('')}
                     <div class="member-form-actions">
                         <button type="button" class="member-btn member-btn--secondary" onclick="window.app.memberManager.closeProfileEdit()">キャンセル</button>
-                        <button type="submit" class="member-btn member-btn--primary"><i class="fas fa-check"></i> 保存</button>
+                        <button type="submit" class="member-btn member-btn--primary"><i class="fas fa-check"></i> ${DomHelper.escapeHtml(submitLabel)}</button>
                     </div>
                 </form>
             </div>
         `;
     }
 
-    async saveProfileEdit(e) {
+    openRegisterModal() {
+        if (!this.memberData || this.memberData.is_member) return;
+        const content = document.getElementById('profileEditModalContent');
+        const modal = document.getElementById('profileEditModal');
+        if (!content || !modal) return;
+        const initialProfile = (typeof window !== 'undefined' && window.__LINE_PROFILE__ && window.__LINE_PROFILE__.displayName)
+            ? { name: window.__LINE_PROFILE__.displayName } : {};
+        content.innerHTML = this._getProfileEditFormHtml(null, null, { isRegister: true, initialProfile: initialProfile });
+        const form = document.getElementById('registerForm');
+        if (form) {
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                window.app.memberManager.saveRegisterForm(e);
+            });
+        }
+        this._setupPostalCodeLookup(document);
+        modal.setAttribute('aria-hidden', 'false');
+        modal.classList.add('member-modal--open');
+    }
+
+    async saveRegisterForm(e) {
         if (e) e.preventDefault();
-        const form = document.getElementById('profileEditForm');
+        const form = document.getElementById('registerForm');
         if (!form) return;
         const payload = {};
-        const root = (this.memberData && this.memberData.member) ? this.memberData.member : this.memberData;
-        const fields = (root && root.profile_field_settings) ? root.profile_field_settings : [];
+        const root = this.memberData || {};
+        const fields = (root.profile_field_settings) ? root.profile_field_settings : [];
         const keys = fields.map(function (f) { return f.key; });
         keys.forEach(function (key) {
+            if (key === 'name') {
+                const elLast = form.querySelector('[name="name_last"]');
+                const elFirst = form.querySelector('[name="name_first"]');
+                const lastVal = elLast ? (elLast.value || '').trim() : '';
+                const firstVal = elFirst ? (elFirst.value || '').trim() : '';
+                payload.name = (lastVal + ' ' + firstVal).trim() || null;
+                return;
+            }
             const el = form.querySelector('[name="' + key.replace(/"/g, '\\"') + '"]');
             if (el) {
                 let v = (el.value || '').trim();
@@ -759,6 +860,79 @@ class MemberManager {
                     payload[el.name] = v || null;
                 }
             }
+        }
+        const nameLast = form.querySelector('[name="name_last"]');
+        const nameFirst = form.querySelector('[name="name_first"]');
+        if (nameLast || nameFirst) {
+            const lastVal = nameLast ? (nameLast.value || '').trim() : '';
+            const firstVal = nameFirst ? (nameFirst.value || '').trim() : '';
+            payload.name = (lastVal + ' ' + firstVal).trim() || null;
+        }
+        if (typeof window !== 'undefined' && window.__LINE_PROFILE__ && window.__LINE_PROFILE__.displayName && !payload.name) {
+            payload.name = window.__LINE_PROFILE__.displayName;
+        }
+        try {
+            const result = await this.apiClient.post(AppConstants.API_ENDPOINTS.MEMBERS_REGISTER, payload);
+            const data = (result && result.data) || result;
+            if (data && data.is_member) {
+                this.memberData = data;
+                this.render(data);
+                this.closeProfileEdit();
+                ToastManager.success('会員登録が完了しました');
+            } else if (data) {
+                this.memberData = data;
+                this.render(data);
+                this.closeProfileEdit();
+                ToastManager.success(result.message || '会員登録が完了しました');
+            } else {
+                throw new Error(result.error || result.message || '登録に失敗しました');
+            }
+        } catch (error) {
+            console.error('Register error:', error);
+            ToastManager.error('登録に失敗しました: ' + (error.message || 'エラーが発生しました'));
+        }
+    }
+
+    async saveProfileEdit(e) {
+        if (e) e.preventDefault();
+        const form = document.getElementById('profileEditForm');
+        if (!form) return;
+        const payload = {};
+        const root = (this.memberData && this.memberData.member) ? this.memberData.member : this.memberData;
+        const fields = (root && root.profile_field_settings) ? root.profile_field_settings : [];
+        const keys = fields.map(function (f) { return f.key; });
+        keys.forEach(function (key) {
+            if (key === 'name') {
+                const elLast = form.querySelector('[name="name_last"]');
+                const elFirst = form.querySelector('[name="name_first"]');
+                const lastVal = elLast ? (elLast.value || '').trim() : '';
+                const firstVal = elFirst ? (elFirst.value || '').trim() : '';
+                payload.name = (lastVal + ' ' + firstVal).trim() || null;
+                return;
+            }
+            const el = form.querySelector('[name="' + key.replace(/"/g, '\\"') + '"]');
+            if (el) {
+                let v = (el.value || '').trim();
+                if (key === 'birthday' && !v) v = null;
+                payload[key] = v || null;
+            }
+        });
+        if (Object.keys(payload).length === 0 && form.elements.length) {
+            for (let i = 0; i < form.elements.length; i++) {
+                const el = form.elements[i];
+                if (el.name && el.name !== '_token') {
+                    let v = (el.value || '').trim();
+                    if (el.name === 'birthday' && !v) v = null;
+                    payload[el.name] = v || null;
+                }
+            }
+        }
+        const nameLast = form.querySelector('[name="name_last"]');
+        const nameFirst = form.querySelector('[name="name_first"]');
+        if (nameLast || nameFirst) {
+            const lastVal = nameLast ? (nameLast.value || '').trim() : '';
+            const firstVal = nameFirst ? (nameFirst.value || '').trim() : '';
+            payload.name = (lastVal + ' ' + firstVal).trim() || null;
         }
         try {
             const result = await this.apiClient.request(AppConstants.API_ENDPOINTS.MEMBERS_ME, {
