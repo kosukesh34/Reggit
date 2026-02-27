@@ -37,10 +37,16 @@ class MemberService
         $expiryInfo = $this->getPointsExpiryInfo($member);
 
         $projectId = $member->project_id ?? \App\Util\AdminContext::getCurrentProjectId() ?? 1;
+        $profileSettings = \App\Models\ShopSetting::getProfileFieldSettings($projectId);
+        $profileFormFields = $this->buildProfileFormFields($profileSettings);
+        $profileValues = $this->getProfileValues($member->user, $member);
+
         return [
             'is_member' => true,
             'member' => $member->load('user'),
             'user' => $member->user,
+            'profile_field_settings' => $profileFormFields,
+            'profile' => $profileValues,
             'points' => $member->getTotalPointsFromTransactions(),
             'current_rank' => $rankInfo['current_rank'],
             'current_rank_label' => $rankInfo['current_rank_label'],
@@ -58,6 +64,91 @@ class MemberService
         ];
     }
 
+    /** プロフィール設定に基づくバリデーションルールを組み立て */
+    public function getProfileValidationRules(int $projectId): array
+    {
+        $settings = \App\Models\ShopSetting::getProfileFieldSettings($projectId);
+        $rules = [];
+        $stringMax = ['name' => 255, 'kana' => 255, 'phone' => 50, 'email' => 255, 'postal_code' => 16, 'prefecture' => 64, 'city' => 128, 'street' => 256, 'address' => 500, 'sex' => 16];
+        foreach ($settings['smaregi_fields'] ?? [] as $key => $field) {
+            if (empty($field['enabled'])) {
+                continue;
+            }
+            $rule = ['nullable'];
+            if (! empty($field['required'])) {
+                $rule = ['required'];
+            }
+            if ($key === 'email') {
+                $rule[] = 'email';
+            }
+            if ($key === 'birthday') {
+                $rule[] = 'date';
+            }
+            if (isset($stringMax[$key])) {
+                $rule[] = 'string';
+                $rule[] = 'max:' . $stringMax[$key];
+            }
+            $rules[$key] = $rule;
+        }
+        foreach ($settings['custom_fields'] ?? [] as $cf) {
+            $key = $cf['key'] ?? null;
+            if ($key === null) {
+                continue;
+            }
+            $rules[$key] = ! empty($cf['required']) ? ['required', 'string', 'max:500'] : ['nullable', 'string', 'max:500'];
+        }
+        return $rules;
+    }
+
+    /** プロフィール設定で有効な項目のみのフォーム用定義（キー・ラベル・必須） */
+    private function buildProfileFormFields(array $profileSettings): array
+    {
+        $out = [];
+        foreach ($profileSettings['smaregi_fields'] ?? [] as $key => $field) {
+            if (empty($field['enabled'])) {
+                continue;
+            }
+            $out[] = [
+                'key' => $key,
+                'label' => $field['label'] ?? $key,
+                'required' => ! empty($field['required']),
+            ];
+        }
+        foreach ($profileSettings['custom_fields'] ?? [] as $cf) {
+            $out[] = [
+                'key' => $cf['key'] ?? '',
+                'label' => $cf['label'] ?? '',
+                'required' => ! empty($cf['required']),
+            ];
+        }
+        return $out;
+    }
+
+    /** 会員・ユーザーからプロフィール値を配列で取得 */
+    private function getProfileValues(User $user, Member $member): array
+    {
+        $profile = [
+            'name' => $user->name,
+            'kana' => $user->kana ?? null,
+            'phone' => $user->phone,
+            'email' => $user->email,
+            'postal_code' => $member->postal_code ?? null,
+            'prefecture' => $member->prefecture ?? null,
+            'city' => $member->city ?? null,
+            'street' => $member->street ?? null,
+            'address' => $member->address,
+            'birthday' => $member->birthday ? $member->birthday->format('Y-m-d') : null,
+            'sex' => $member->sex ?? null,
+        ];
+        $extra = $member->profile_extra ?? [];
+        if (is_array($extra)) {
+            foreach ($extra as $k => $v) {
+                $profile[$k] = $v;
+            }
+        }
+        return $profile;
+    }
+
     public function updateProfile(User $user, array $data): array
     {
         $member = $user->member;
@@ -65,20 +156,71 @@ class MemberService
             throw new \Exception('会員登録が必要です');
         }
 
-        if (isset($data['name'])) {
-            $user->update(['name' => $data['name']]);
+        $projectId = $member->project_id ?? \App\Util\AdminContext::getCurrentProjectId() ?? 1;
+        $settings = \App\Models\ShopSetting::getProfileFieldSettings($projectId);
+
+        $userUpdates = [];
+        $memberUpdates = [];
+        $extraUpdates = [];
+
+        $userKeys = ['name', 'kana', 'email', 'phone'];
+        foreach ($userKeys as $key) {
+            if (! array_key_exists($key, $data)) {
+                continue;
+            }
+            $val = $data[$key];
+            if ($key === 'email' && $val === '') {
+                $val = null;
+            }
+            $userUpdates[$key] = $val === '' ? null : $val;
         }
-        if (array_key_exists('phone', $data)) {
-            $user->update(['phone' => $data['phone']]);
+
+        $memberKeys = ['birthday', 'address', 'postal_code', 'prefecture', 'city', 'street', 'sex'];
+        foreach ($memberKeys as $key) {
+            if (! array_key_exists($key, $data)) {
+                continue;
+            }
+            $val = $data[$key];
+            if ($key === 'birthday') {
+                $memberUpdates[$key] = $val ?: null;
+            } else {
+                $memberUpdates[$key] = $val === '' ? null : $val;
+            }
         }
-        if (array_key_exists('birthday', $data)) {
-            $member->update(['birthday' => $data['birthday'] ?: null]);
+
+        $customKeys = array_column($settings['custom_fields'] ?? [], 'key');
+        foreach ($customKeys as $key) {
+            if (array_key_exists($key, $data)) {
+                $extraUpdates[$key] = $data[$key] === '' ? null : $data[$key];
+            }
         }
-        if (array_key_exists('address', $data)) {
-            $member->update(['address' => $data['address'] ?: null]);
+
+        if ($userUpdates !== []) {
+            $user->update($userUpdates);
+        }
+        if ($memberUpdates !== []) {
+            $member->update($memberUpdates);
+        }
+        if ($extraUpdates !== []) {
+            $current = $member->profile_extra ?? [];
+            $member->update(['profile_extra' => array_merge($current, $extraUpdates)]);
         }
 
         return $this->getMemberData($user);
+    }
+
+    /** 登録データから任意項目のみ抽出 */
+    private function extractCustomProfileExtra(int $projectId, array $data): array
+    {
+        $settings = \App\Models\ShopSetting::getProfileFieldSettings($projectId);
+        $customKeys = array_column($settings['custom_fields'] ?? [], 'key');
+        $out = [];
+        foreach ($customKeys as $key) {
+            if (array_key_exists($key, $data) && $data[$key] !== null && $data[$key] !== '') {
+                $out[$key] = $data[$key];
+            }
+        }
+        return $out;
     }
 
     public function registerMember(User $user, array $data): Member
@@ -100,15 +242,24 @@ class MemberService
             'rank' => $defaultRankKey,
             'birthday' => $data['birthday'] ?? null,
             'address' => $data['address'] ?? null,
+            'postal_code' => $data['postal_code'] ?? null,
+            'prefecture' => $data['prefecture'] ?? null,
+            'city' => $data['city'] ?? null,
+            'street' => $data['street'] ?? null,
+            'sex' => $data['sex'] ?? null,
+            'profile_extra' => $this->extractCustomProfileExtra($projectId, $data),
         ]);
 
         $this->couponIssueService->issueForFirstRegistration($member);
 
-        if (isset($data['phone'])) {
-            $user->update(['phone' => $data['phone']]);
-        }
-        if (isset($data['name'])) {
-            $user->update(['name' => $data['name']]);
+        $userUpdates = array_filter([
+            'name' => $data['name'] ?? null,
+            'kana' => $data['kana'] ?? null,
+            'email' => $data['email'] ?? null,
+            'phone' => $data['phone'] ?? null,
+        ], fn ($v) => $v !== null && $v !== '');
+        if ($userUpdates !== []) {
+            $user->update($userUpdates);
         }
 
         return $member->load('user');
