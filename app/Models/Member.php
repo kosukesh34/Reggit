@@ -21,6 +21,7 @@ class Member extends Model
         'project_id',
         'user_id',
         'member_number',
+        'smaregi_customer_id',
         'points',
         'status',
         'rank',

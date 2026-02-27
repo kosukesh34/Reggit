@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Member;
 
 use App\Http\Controllers\Controller;
+use App\Services\MemberService;
+use App\Services\UserService;
 use App\UseCases\Member\MemberRegisterUseCase;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
@@ -11,18 +13,19 @@ use Illuminate\Http\Request;
 class MemberRegisterController extends Controller
 {
     public function __construct(
-        private MemberRegisterUseCase $registerUseCase
+        private MemberRegisterUseCase $registerUseCase,
+        private UserService $userService,
+        private MemberService $memberService
     ) {
+        // Constructor dependencies injected by container
     }
 
     public function __invoke(Request $request)
     {
-        $validated = $request->validate([
-            'name' => 'nullable|string|max:255',
-            'birthday' => 'nullable|date',
-            'address' => 'nullable|string|max:500',
-            'phone' => 'nullable|string|max:50',
-        ]);
+        $user = $this->userService->getOrCreateUser($request);
+        $projectId = (int) ($user->project_id ?? 1);
+        $rules = $this->memberService->getProfileValidationRules($projectId);
+        $validated = $request->validate($rules);
 
         try {
             $result = $this->registerUseCase->handle($request, $validated);

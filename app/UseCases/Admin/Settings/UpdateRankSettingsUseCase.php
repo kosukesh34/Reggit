@@ -38,5 +38,30 @@ class UpdateRankSettingsUseCase
         ShopSetting::setValue('member_rank_basis', (string) $payload['rank_basis'], 'string', $projectId);
         ShopSetting::setValue('point_earn_rate', (int) $payload['point_earn_rate'], 'integer', $projectId);
         ShopSetting::setValue('points_valid_days', (int) $payload['points_valid_days'], 'integer', $projectId);
+
+        if (isset($payload['member_code_type'])) {
+            ShopSetting::setValue('member_code_type', (string) $payload['member_code_type'], 'string', $projectId);
+        }
+        if (isset($payload['member_code_format'])) {
+            ShopSetting::setValue('member_code_format', (string) $payload['member_code_format'], 'string', $projectId);
+        }
+        if (isset($payload['member_code_length'])) {
+            ShopSetting::setValue('member_code_length', (int) $payload['member_code_length'], 'integer', $projectId);
+        }
+        if (array_key_exists('member_code_prefix', $payload)) {
+            ShopSetting::setValue('member_code_prefix', (string) ($payload['member_code_prefix'] ?? ''), 'string', $projectId);
+        }
+        if (array_key_exists('show_points_display', $payload)) {
+            ShopSetting::setValue('show_points_display', (bool) $payload['show_points_display'], 'boolean', $projectId);
+        }
+        if (array_key_exists('show_rank_progress', $payload)) {
+            ShopSetting::setValue('show_rank_progress', (bool) $payload['show_rank_progress'], 'boolean', $projectId);
+        }
+        if (array_key_exists('show_member_card_for_guest', $payload)) {
+            ShopSetting::setShowMemberCardForGuest((bool) $payload['show_member_card_for_guest'], $projectId);
+        }
+        if (array_key_exists('member_card_design', $payload) && in_array($payload['member_card_design'] ?? '', ['default', 'logo_top', 'logo_center'], true)) {
+            ShopSetting::setMemberCardDesign((string) $payload['member_card_design'], $projectId);
+        }
     }
 }

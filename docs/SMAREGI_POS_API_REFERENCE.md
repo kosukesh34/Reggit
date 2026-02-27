@@ -14,23 +14,23 @@ $data = $service->request($contractId, 'POST', 'pos/部門パス', ['key' => 'va
 
 ---
 
-## 部門（departments）
+## 部門（categories。公式APIは categories）
 | 操作 | Method | path |
 |------|--------|------|
-| 一覧取得 | GET | `pos/departments` |
-| 登録 | POST | `pos/departments` |
-| 取得 | GET | `pos/departments/{department_id}` |
-| 更新 | PATCH | `pos/departments/{department_id}` |
-| 削除 | DELETE | `pos/departments/{department_id}` |
+| 一覧取得 | GET | `pos/categories` |
+| 登録 | POST | `pos/categories` |
+| 取得 | GET | `pos/categories/{category_id}` |
+| 更新 | PATCH | `pos/categories/{category_id}` |
+| 削除 | DELETE | `pos/categories/{category_id}` |
 
-## 部門グループ（department_groups）
+## 部門グループ（category_groups）
 | 操作 | Method | path |
 |------|--------|------|
-| 一覧取得 | GET | `pos/department_groups` |
-| 登録 | POST | `pos/department_groups` |
-| 取得 | GET | `pos/department_groups/{id}` |
-| 更新 | PATCH | `pos/department_groups/{id}` |
-| 削除 | DELETE | `pos/department_groups/{id}` |
+| 一覧取得 | GET | `pos/category_groups` |
+| 登録 | POST | `pos/category_groups` |
+| 取得 | GET | `pos/category_groups/{id}` |
+| 更新 | PATCH | `pos/category_groups/{id}` |
+| 削除 | DELETE | `pos/category_groups/{id}` |
 
 ## 商品（products）
 | 操作 | Method | path |
