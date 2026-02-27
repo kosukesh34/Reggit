@@ -16,11 +16,14 @@ class GetSmaregiPosDataUseCase
 {
     private const LIST_LIMIT = 30;
 
-    /** POS 一覧取得API: path => [表示ラベル, レスポンスのリストキー] */
+    /**
+     * POS 一覧取得API: path => [表示ラベル, レスポンスのリストキー]
+     * 公式仕様: 店舗=pos/stores, 部門=pos/categories, 部門グループ=pos/category_groups
+     */
     private const POS_LIST_ENDPOINTS = [
         'pos/stores' => ['店舗', 'stores'],
-        'pos/departments' => ['部門', 'departments'],
-        'pos/department_groups' => ['部門グループ', 'department_groups'],
+        'pos/categories' => ['部門', 'categories'],
+        'pos/category_groups' => ['部門グループ', 'category_groups'],
         'pos/products' => ['商品', 'products'],
         'pos/sales' => ['セール', 'sales'],
         'pos/customers' => ['会員', 'customers'],
@@ -61,14 +64,20 @@ class GetSmaregiPosDataUseCase
             $clientSecret = config('smaregi.client_secret');
             $envCheck = 'SMAREGI_CLIENT_ID: ' . (is_string($clientId) && trim($clientId) !== '' ? '設定済み' : '未設定')
                 . ' / SMAREGI_CLIENT_SECRET: ' . (is_string($clientSecret) && trim($clientSecret) !== '' ? '設定済み' : '未設定');
-            return new SmaregiPosDataView($contractId, 'トークン取得に失敗しました。.env の SMAREGI_CLIENT_ID / SMAREGI_CLIENT_SECRET および契約IDを確認してください。詳細は storage/logs/laravel.log の [Smaregi] を参照してください。', envCheck: $envCheck);
+            return new SmaregiPosDataView($contractId, 'トークン取得に失敗しました。.env の SMAREGI_CLIENT_ID / SMAREGI_CLIENT_SECRET および契約IDを確認してください。接続タイムアウトの場合は id.smaregi.dev へのネットワーク到達性（ファイアウォール・VPN）を確認してください。詳細は storage/logs/laravel.log の [Smaregi] を参照してください。', envCheck: $envCheck);
         }
 
         $sections = [];
         foreach (self::POS_LIST_ENDPOINTS as $path => $config) {
             $label = $config[0];
             $listKey = $config[1];
-            $result = $this->smaregiApi->request($contractId, 'GET', $path, ['limit' => self::LIST_LIMIT]);
+            $query = ['limit' => self::LIST_LIMIT];
+            // 取引一覧は日付範囲のいずれかが必須のため、締め日で指定
+            if ($path === 'pos/transactions') {
+                $query['sum_date-from'] = now()->startOfMonth()->format('Y-m-d');
+                $query['sum_date-to'] = now()->format('Y-m-d');
+            }
+            $result = $this->smaregiApi->request($contractId, 'GET', $path, $query);
             if ($result === null) {
                 $sections[] = [
                     'label' => $label,
@@ -79,10 +88,7 @@ class GetSmaregiPosDataUseCase
                 ];
                 continue;
             }
-            $list = $result[$listKey] ?? [];
-            if (!is_array($list)) {
-                $list = [];
-            }
+            $list = $this->extractListFromResponse($result, $listKey);
             $total = (int) ($result['total'] ?? count($list));
             $sections[] = [
                 'label' => $label,
@@ -94,5 +100,21 @@ class GetSmaregiPosDataUseCase
         }
 
         return new SmaregiPosDataView($contractId, null, null, $sections);
+    }
+
+    /**
+     * スマレジAPIは一覧取得で「配列をそのまま返す」場合と「{ key: [] } の形で返す」場合があるため両方に対応する。
+     *
+     * @param array<int|string, mixed> $result
+     * @return array<int, mixed>
+     */
+    private function extractListFromResponse(array $result, string $listKey): array
+    {
+        // レスポンスが先頭からキー 0,1,2... の配列（リスト）の場合
+        if (array_keys($result) === range(0, count($result) - 1) || $result === []) {
+            return $result;
+        }
+        $list = $result[$listKey] ?? [];
+        return is_array($list) ? $list : [];
     }
 }

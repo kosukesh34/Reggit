@@ -3,6 +3,10 @@
 @section('title', 'ランク・ポイント設定')
 @section('page-title', 'ランク・ポイント設定')
 
+@push('styles')
+<link rel="stylesheet" href="{{ asset('css/admin/rank-card-preview.css') }}">
+@endpush
+
 @section('content')
 <nav class="breadcrumb" aria-label="パンくず">
     <a href="{{ admin_route('admin.settings.basic') }}">設定</a>
@@ -22,25 +26,25 @@
             <div class="form-group">
                 <label for="member_code_type" class="form-label">生成方式</label>
                 <select name="member_code_type" id="member_code_type" class="form-control">
-                    <option value="random" {{ ($memberCodeType ?? 'random') === 'random' ? 'selected' : '' }}>ランダム</option>
-                    <option value="sequential" {{ ($memberCodeType ?? '') === 'sequential' ? 'selected' : '' }}>連番</option>
+                    <option value="random" {{ old('member_code_type', $view->memberCodeType ?? 'random') === 'random' ? 'selected' : '' }}>ランダム</option>
+                    <option value="sequential" {{ old('member_code_type', $view->memberCodeType ?? '') === 'sequential' ? 'selected' : '' }}>連番</option>
                 </select>
             </div>
             <div class="form-group">
                 <label for="member_code_format" class="form-label">形式</label>
                 <select name="member_code_format" id="member_code_format" class="form-control">
-                    <option value="numeric" {{ ($memberCodeFormat ?? 'numeric') === 'numeric' ? 'selected' : '' }}>数字のみ</option>
-                    <option value="alphanumeric" {{ ($memberCodeFormat ?? '') === 'alphanumeric' ? 'selected' : '' }}>英数字混在</option>
+                    <option value="numeric" {{ old('member_code_format', $view->memberCodeFormat ?? 'numeric') === 'numeric' ? 'selected' : '' }}>数字のみ</option>
+                    <option value="alphanumeric" {{ old('member_code_format', $view->memberCodeFormat ?? '') === 'alphanumeric' ? 'selected' : '' }}>英数字混在</option>
                 </select>
                 <p class="form-text text-muted">英数字混在は大文字英字と数字（I,O,1,0 を除く）を使用します。</p>
             </div>
             <div class="form-group">
                 <label for="member_code_length" class="form-label">桁数（プレフィックス除く）</label>
-                <input type="number" name="member_code_length" id="member_code_length" class="form-control" value="{{ old('member_code_length', $memberCodeLength ?? 10) }}" min="1" max="20">
+                <input type="number" name="member_code_length" id="member_code_length" class="form-control" value="{{ old('member_code_length', $view->memberCodeLength ?? 10) }}" min="1" max="20">
             </div>
             <div class="form-group">
                 <label for="member_code_prefix" class="form-label">プレフィックス（任意・英数字のみ・10文字以内）</label>
-                <input type="text" name="member_code_prefix" id="member_code_prefix" class="form-control" value="{{ old('member_code_prefix', $memberCodePrefix ?? '') }}" maxlength="10" pattern="[A-Za-z0-9]*" placeholder="例: M">
+                <input type="text" name="member_code_prefix" id="member_code_prefix" class="form-control" value="{{ old('member_code_prefix', $view->memberCodePrefix ?? '') }}" maxlength="10" pattern="[A-Za-z0-9]*" placeholder="例: M">
             </div>
         </div>
     </div>
@@ -52,15 +56,31 @@
         <div class="card-body">
             <div class="form-group">
                 <label class="form-check">
-                    <input type="checkbox" name="show_points_display" value="1" {{ ($showPointsDisplay ?? true) ? 'checked' : '' }}>
+                    <input type="checkbox" name="show_points_display" value="1" {{ old('show_points_display', $view->showPointsDisplay ?? true) ? 'checked' : '' }}>
                     ポイント数を表示する
                 </label>
             </div>
             <div class="form-group">
                 <label class="form-check">
-                    <input type="checkbox" name="show_rank_progress" value="1" {{ ($showRankProgress ?? true) ? 'checked' : '' }}>
-                    「次のランクまで」を表示する
+                    <input type="checkbox" name="show_rank_progress" value="1" {{ old('show_rank_progress', $view->showRankProgress ?? true) ? 'checked' : '' }}>
+                    ランクアップまでの条件（「次のランクまで XXX pt」「あと X 日」など）を表示する
                 </label>
+            </div>
+            <div class="form-group">
+                <label class="form-check">
+                    <input type="checkbox" name="show_member_card_for_guest" value="1" {{ old('show_member_card_for_guest', $view->showMemberCardForGuest ?? true) ? 'checked' : '' }}>
+                    会員未登録（ゲスト）のときも会員証エリアを表示する
+                </label>
+                <p class="form-text text-muted">オフにすると、端末は認証済みだが会員登録していない場合、会員証カードは表示せず「会員登録すると会員証が表示されます」などのメッセージのみ表示します。オンの場合は従来どおり会員登録を促す表示になります。</p>
+            </div>
+            <div class="form-group">
+                <label for="member_card_design" class="form-label">会員証デザイン</label>
+                <select name="member_card_design" id="member_card_design" class="form-control">
+                    <option value="default" {{ old('member_card_design', $view->memberCardDesign ?? 'default') === 'default' ? 'selected' : '' }}>標準（名前・ランク・バーコード）</option>
+                    <option value="logo_top" {{ old('member_card_design', $view->memberCardDesign ?? '') === 'logo_top' ? 'selected' : '' }}>ロゴ上部（店舗ロゴをカード上部に表示）</option>
+                    <option value="logo_center" {{ old('member_card_design', $view->memberCardDesign ?? '') === 'logo_center' ? 'selected' : '' }}>ロゴ中央（店舗ロゴを中央に表示）</option>
+                </select>
+                <p class="form-text text-muted">会員証のレイアウトです。ロゴはプロジェクト設定の「フロント用ロゴURL」を使用します。</p>
             </div>
         </div>
     </div>
@@ -140,6 +160,67 @@
         </div>
     </div>
 
+    <div class="card card-mb-24">
+        <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-image"></i> ランクカード プレビュー</h3>
+        </div>
+        <div class="card-body">
+            <p class="form-text text-muted mb-3">会員アプリで表示される会員証カードの見た目です。各ランクのカード色・表示名・アイコンが反映されます。「会員証デザイン」で選択したレイアウトでプレビューされます。</p>
+            @php
+                $previewDesign = old('member_card_design', $view->memberCardDesign ?? 'default');
+                $previewLogoUrl = $view->memberCardLogoUrl ?? null;
+            @endphp
+            <div class="rank-card-preview-wrap" data-preview-design="{{ e($previewDesign) }}">
+                <div class="rank-card-preview-grid" id="rankCardPreviewGrid">
+                    @foreach($view->rankSettings as $rank)
+                    @php
+                        $key = $rank['key'] ?? 'bronze';
+                        $label = $rank['label'] ?? $key;
+                        $cardColor = $rank['card_color'] ?? null;
+                        $iconUrl = $rank['icon_url'] ?? null;
+                        $wrapperAttr = $cardColor ? ' data-rank-color="true" style="--idnect-card-rank-color: ' . e($cardColor) . '"' : '';
+                        $designClass = 'idnect-card-wrapper--design-' . $previewDesign;
+                    @endphp
+                    <div class="rank-card-preview-item" data-rank-index="{{ $loop->index }}">
+                        <div class="idnect-card-wrapper {{ $designClass }}" data-rank-key="{{ e($key) }}"{!! $wrapperAttr !!}>
+                            <div class="idnect-card" data-rank="{{ e($key) }}">
+                                <div class="idnect-card-shimmer" aria-hidden="true"></div>
+                                <div class="idnect-card-face idnect-card-face--front">
+                                    <div class="idnect-card-front-inner">
+                                        @if(!empty($previewLogoUrl))
+                                        <div class="idnect-card-logo-wrap" data-preview-logo>
+                                            <img src="{{ $previewLogoUrl }}" class="idnect-card-logo" alt="" onerror="this.parentElement.style.display='none'">
+                                        </div>
+                                        @endif
+                                        <p class="idnect-card-display-name">会員名サンプル</p>
+                                        <div class="idnect-card-meta-row">
+                                            <div class="idnect-card-rank-wrap">
+                                                @if(!empty($iconUrl))
+                                                <img src="{{ $iconUrl }}" class="idnect-card-rank-icon" alt="" onerror="this.style.display='none'">
+                                                @endif
+                                                <span class="idnect-card-rank-badge" data-rank="{{ e($key) }}">{{ e($label) }}</span>
+                                            </div>
+                                            <div class="idnect-card-points idnect-card-points--front">
+                                                <span class="idnect-card-points-value">1,234</span>
+                                                <span class="idnect-card-points-label">pt</span>
+                                            </div>
+                                        </div>
+                                        <div class="idnect-card-barcode-wrap">
+                                            <span class="idnect-card-barcode-placeholder">会員証バーコード</span>
+                                        </div>
+                                        <p class="idnect-card-tap-hint"><i class="fas fa-sync-alt idnect-card-tap-hint-icon" aria-hidden="true"></i> タップで裏面を見る</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <span class="rank-card-preview-label">{{ e($label) }}（{{ e($key) }}）</span>
+                    </div>
+                    @endforeach
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="form-actions">
         <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> 保存</button>
         <a href="{{ admin_route('admin.settings.basic') }}" class="btn btn-secondary">戻る</a>
@@ -170,5 +251,99 @@ document.getElementById('addRankRow')?.addEventListener('click', function() {
     temp.innerHTML = html.trim();
     tableBody.appendChild(temp.firstElementChild);
 });
+
+// ランク設定の入力変更時にプレビューを更新
+(function() {
+    const table = document.getElementById('rankSettingsTable');
+    const grid = document.getElementById('rankCardPreviewGrid');
+    if (!table || !grid) return;
+
+    function updatePreview(index) {
+        const item = grid.querySelector('.rank-card-preview-item[data-rank-index="' + index + '"]');
+        if (!item) return;
+        const tbody = table.querySelector('tbody');
+        const row = tbody && tbody.rows[index];
+        if (!row) return;
+        const cells = row.cells;
+        const keyInput = row.querySelector('input[name$="[key]"]');
+        const labelInput = row.querySelector('input[name$="[label]"]');
+        const colorInput = row.querySelector('input[name$="[card_color]"]');
+        const iconInput = row.querySelector('input[name$="[icon_url]"]');
+        const key = (keyInput && keyInput.value) ? keyInput.value.trim() : '';
+        const label = (labelInput && labelInput.value) ? labelInput.value.trim() : key;
+        const color = (colorInput && colorInput.value) ? colorInput.value.trim() : '';
+        const iconUrl = (iconInput && iconInput.value) ? iconInput.value.trim() : '';
+
+        const wrapper = item.querySelector('.idnect-card-wrapper');
+        const card = item.querySelector('.idnect-card');
+        const badge = item.querySelector('.idnect-card-rank-badge');
+        const labelSpan = item.querySelector('.rank-card-preview-label');
+        const iconImg = item.querySelector('.idnect-card-rank-icon');
+
+        if (card) card.setAttribute('data-rank', key || 'bronze');
+        if (badge) {
+            badge.textContent = label || key || '—';
+            badge.setAttribute('data-rank', key || 'bronze');
+        }
+        if (labelSpan) labelSpan.textContent = (label || key || '—') + (key ? '（' + key + '）' : '');
+
+        if (wrapper) {
+            if (color && /^#[0-9A-Fa-f]{3,6}$/.test(color)) {
+                wrapper.setAttribute('data-rank-color', 'true');
+                wrapper.style.setProperty('--idnect-card-rank-color', color);
+            } else {
+                wrapper.removeAttribute('data-rank-color');
+                wrapper.style.removeProperty('--idnect-card-rank-color');
+            }
+        }
+
+        const rankWrap = item.querySelector('.idnect-card-rank-wrap');
+        if (rankWrap) {
+            if (iconUrl) {
+                let img = iconImg;
+                if (!img) {
+                    img = document.createElement('img');
+                    img.className = 'idnect-card-rank-icon';
+                    img.alt = '';
+                    img.onerror = function() { this.style.display = 'none'; };
+                    rankWrap.insertBefore(img, badge);
+                }
+                img.src = iconUrl;
+                img.style.display = '';
+            } else if (iconImg) {
+                iconImg.remove();
+            }
+        }
+    }
+
+    table.addEventListener('input', function(e) {
+        const name = e.target && e.target.getAttribute('name');
+        if (!name || name.indexOf('ranks[') !== 0) return;
+        const m = name.match(/^ranks\[(\d+)\]/);
+        if (m) updatePreview(parseInt(m[1], 10));
+    });
+    table.addEventListener('change', function(e) {
+        const name = e.target && e.target.getAttribute('name');
+        if (!name || name.indexOf('ranks[') !== 0) return;
+        const m = name.match(/^ranks\[(\d+)\]/);
+        if (m) updatePreview(parseInt(m[1], 10));
+    });
+})();
+
+// 会員証デザイン変更時にプレビューを更新
+(function() {
+    const designSelect = document.getElementById('member_card_design');
+    const wrap = document.querySelector('.rank-card-preview-wrap');
+    const wrappers = document.querySelectorAll('.rank-card-preview-wrap .idnect-card-wrapper');
+    if (!designSelect || !wrap || !wrappers.length) return;
+    designSelect.addEventListener('change', function() {
+        const design = this.value || 'default';
+        wrap.setAttribute('data-preview-design', design);
+        wrappers.forEach(function(w) {
+            w.classList.remove('idnect-card-wrapper--design-default', 'idnect-card-wrapper--design-logo_top', 'idnect-card-wrapper--design-logo_center');
+            w.classList.add('idnect-card-wrapper--design-' + design);
+        });
+    });
+})();
 </script>
 @endsection
