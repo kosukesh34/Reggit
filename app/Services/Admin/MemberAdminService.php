@@ -6,6 +6,7 @@ use App\Models\Coupon;
 use App\Models\Member;
 use App\Models\MemberCoupon;
 use App\Models\MemberStamp;
+use App\Models\ShopSetting;
 use App\Models\StampCard;
 use App\Services\MemberPointsExpiryCalculator;
 use App\Services\MemberRankCalculator;
@@ -78,6 +79,33 @@ class MemberAdminService
         ]);
     }
 
+    /** 複数会員にクーポンを一括発行（プレゼント配信）。$memberIds が空の場合は全員に配布。 */
+    public function issueCouponToMembers(int $projectId, int $couponId, array $memberIds = []): int
+    {
+        $coupon = Coupon::where('project_id', $projectId)->findOrFail($couponId);
+        $query = Member::where('project_id', $projectId);
+        if ($memberIds !== []) {
+            $query->whereIn('id', $memberIds);
+        }
+        $members = $query->get();
+        $validUntil = $coupon->end_at ?? Carbon::now()->addDays(30);
+        $issued = 0;
+        foreach ($members as $member) {
+            $already = MemberCoupon::where('member_id', $member->id)
+                ->where('coupon_id', $couponId)
+                ->where('status', MemberCoupon::STATUS_UNUSED)
+                ->where(function ($q) use ($validUntil) {
+                    $q->whereNull('valid_until')->orWhere('valid_until', '>=', now());
+                })->exists();
+            if ($already) {
+                continue;
+            }
+            $this->issueCouponToMember($member, $couponId, null, $validUntil);
+            $issued++;
+        }
+        return $issued;
+    }
+
     /** 会員のスタンプカードにスタンプを追加（管理画面からの手動付与） */
     public function addStampsToMember(Member $member, int $stampCardId, int $count = 1): MemberStamp
     {
@@ -103,5 +131,44 @@ class MemberAdminService
             $memberStamp->update(['completed_at' => now()]);
         }
         return $memberStamp->refresh();
+    }
+
+    /** 会員編集フォーム用：ランク選択肢（key => label） */
+    public function getRankOptionsForSelect(int $projectId): array
+    {
+        $ranks = ShopSetting::getMemberRankSettings($projectId);
+        $options = [];
+        foreach ($ranks as $r) {
+            if (empty($r['key'])) {
+                continue;
+            }
+            $options[(string) $r['key']] = (string) ($r['label'] ?? $r['key']);
+        }
+        return $options;
+    }
+
+    /**
+     * 会員のユーザー情報・会員情報を一括更新する。
+     * ポイントの加算・減算は Controller から別途 addPoints/usePoints で行う想定。
+     */
+    public function updateMemberProfile(Member $member, array $userData, array $memberData): void
+    {
+        $user = $member->user;
+        if ($user !== null) {
+            $allowedUser = ['name', 'kana', 'email', 'phone'];
+            $updateUser = array_intersect_key($userData, array_flip($allowedUser));
+            if ($updateUser !== []) {
+                $user->update($updateUser);
+            }
+        }
+
+        $allowedMember = [
+            'member_number', 'status', 'rank', 'birthday', 'address',
+            'postal_code', 'prefecture', 'city', 'street', 'sex', 'profile_extra',
+        ];
+        $updateMember = array_intersect_key($memberData, array_flip($allowedMember));
+        if ($updateMember !== []) {
+            $member->update($updateMember);
+        }
     }
 }

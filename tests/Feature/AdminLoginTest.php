@@ -54,9 +54,10 @@ class AdminLoginTest extends TestCase
         $this->assertAuthenticated('admin');
     }
 
-    public function test_login_店舗管理者ログインでシステム管理者アカウントは拒否されること(): void
+    /** 共通「ID・パスワードでログイン」からシステム管理者でログインするとシステム管理画面へリダイレクトされる（拒否しない） */
+    public function test_login_共通ログイン画面からシステム管理者はシステム管理へリダイレクトされること(): void
     {
-        $project = Project::firstOrCreate(
+        Project::firstOrCreate(
             ['project_key' => 'default'],
             ['name' => 'Default Project', 'description' => 'Test', 'is_active' => true]
         );
@@ -64,7 +65,7 @@ class AdminLoginTest extends TestCase
             'login_id' => 'sys_for_admin_login',
             'password' => 'password',
             'role' => AdminUser::ROLE_SYSTEM_ADMIN,
-            'project_id' => $project->id,
+            'project_id' => null,
         ]);
 
         $response = $this->from(route('admin.login.form'))->post(route('admin.login.submit'), [
@@ -72,9 +73,8 @@ class AdminLoginTest extends TestCase
             'password' => 'password',
         ]);
 
-        $response->assertRedirect(route('admin.login.form'));
-        $response->assertSessionHasErrors('login_id');
-        $this->assertGuest('admin');
+        $response->assertRedirect(route('system-admin.projects.index'));
+        $this->assertAuthenticated('admin');
     }
 
     /** システム管理者はプロジェクト指定ログイン（/admin/{project_key}/login）でログインでき、そのプロジェクトのダッシュボードへリダイレクトされる */
@@ -114,6 +114,76 @@ class AdminLoginTest extends TestCase
         ]);
 
         $response = $this->post(route('system-admin.login.submit'), [
+            'login_id' => 'sys_admin',
+            'password' => 'password',
+        ]);
+
+        $response->assertRedirect(route('system-admin.projects.index'));
+        $this->assertAuthenticated('admin');
+    }
+
+    /** デモ用システム管理者（demo_sys / DemoSys#2026）でログインできること */
+    public function test_login_デモシステム管理者demo_sysでログインできること(): void
+    {
+        Project::firstOrCreate(
+            ['project_key' => 'default'],
+            ['name' => 'Default', 'description' => 'Test', 'is_active' => true]
+        );
+        AdminUser::factory()->create([
+            'login_id' => 'demo_sys',
+            'email' => 'demo_sys@example.com',
+            'password' => 'DemoSys#2026',
+            'role' => AdminUser::ROLE_SYSTEM_ADMIN,
+            'project_id' => null,
+        ]);
+
+        $response = $this->post(route('admin.login.submit'), [
+            'login_id' => 'demo_sys',
+            'password' => 'DemoSys#2026',
+        ]);
+
+        $response->assertRedirect(route('system-admin.projects.index'));
+        $this->assertAuthenticated('admin');
+    }
+
+    /** /admin/default/login からシステム管理者でログインすると default のダッシュボードへリダイレクトされること */
+    public function test_login_プロジェクトdefaultログインでシステム管理者がダッシュボードへ遷移できること(): void
+    {
+        $project = Project::firstOrCreate(
+            ['project_key' => 'default'],
+            ['name' => 'Default Project', 'description' => 'Test', 'is_active' => true]
+        );
+        AdminUser::factory()->create([
+            'login_id' => 'sys_default',
+            'password' => 'password',
+            'role' => AdminUser::ROLE_SYSTEM_ADMIN,
+            'project_id' => null,
+        ]);
+
+        $response = $this->post(route('admin.project.login.submit', ['project_key' => 'default']), [
+            'login_id' => 'sys_default',
+            'password' => 'password',
+        ]);
+
+        $response->assertRedirect(route('admin.dashboard', ['project_key' => 'default']));
+        $this->assertAuthenticated('admin');
+    }
+
+    /** 「ID・パスワードでログイン」画面（admin.login.submit）からシステム管理者でログインできること */
+    public function test_login_システム管理者がIDパスワード画面からログインできること(): void
+    {
+        Project::firstOrCreate(
+            ['project_key' => 'default'],
+            ['name' => 'Default Project', 'description' => 'Test', 'is_active' => true]
+        );
+        AdminUser::factory()->create([
+            'login_id' => 'sys_admin',
+            'password' => 'password',
+            'role' => AdminUser::ROLE_SYSTEM_ADMIN,
+            'project_id' => null,
+        ]);
+
+        $response = $this->post(route('admin.login.submit'), [
             'login_id' => 'sys_admin',
             'password' => 'password',
         ]);

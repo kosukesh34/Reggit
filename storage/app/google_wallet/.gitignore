@@ -1,0 +1,3 @@
+# 秘密鍵を含むためリポジトリに含めない
+credentials.json
+*.json

@@ -55,7 +55,7 @@ input, textarea, select {
     align-items: center;
     justify-content: center;
     background: #fff;
-    transition: opacity 0.3s ease, visibility 0.3s ease;
+    transition: none;
 }
 
 .liff-loading--hidden {
@@ -75,16 +75,12 @@ input, textarea, select {
     border: 3px solid var(--border-color);
     border-top-color: var(--primary-color);
     border-radius: 50%;
-    animation: liff-spin 0.8s linear infinite;
+    animation: none;
 }
 
 .liff-loading-text {
     font-size: 14px;
     color: var(--text-secondary);
-}
-
-@keyframes liff-spin {
-    to { transform: rotate(360deg); }
 }
 
 .app-container {
@@ -133,7 +129,7 @@ input, textarea, select {
     align-items: center;
     gap: 8px;
     font-size: 14px;
-    transition: background 0.2s;
+    transition: none;
 }
 
 .cart-btn:hover {
@@ -159,57 +155,6 @@ input, textarea, select {
     font-weight: 700;
     min-width: 20px;
     text-align: center;
-}
-
-/* バナーメニュー（ヘッダー直下の横スクロールメニュー） */
-.banner-menu {
-    display: flex;
-    gap: 0;
-    padding: 12px 16px;
-    background: var(--bg-light);
-    border-bottom: 1px solid var(--border-color);
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    position: sticky;
-    top: 0;
-    z-index: 90;
-    box-shadow: 0 1px 0 rgba(0,0,0,0.05);
-}
-
-.banner-menu::-webkit-scrollbar {
-    display: none;
-}
-
-.banner-menu-btn {
-    flex: 0 0 auto;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    padding: 8px 14px;
-    min-width: 56px;
-    background: transparent;
-    border: none;
-    border-radius: var(--radius);
-    color: var(--text-secondary);
-    font-size: 11px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: color 0.2s, background 0.2s;
-}
-
-.banner-menu-btn i {
-    font-size: 18px;
-}
-
-.banner-menu-btn.active {
-    color: var(--primary-color);
-    background: rgba(var(--primary-rgb, 0, 0, 0), 0.08);
-}
-
-.banner-menu-btn:hover:not(.active) {
-    color: var(--text-primary);
-    background: rgba(0, 0, 0, 0.05);
 }
 
 /* メインコンテンツ */
@@ -248,7 +193,7 @@ input, textarea, select {
     color: var(--text-secondary);
     cursor: pointer;
     white-space: nowrap;
-    transition: all 0.2s;
+    transition: none;
     flex-shrink: 0;
 }
 
@@ -337,7 +282,7 @@ input, textarea, select {
     border-radius: 12px;
     overflow: hidden;
     box-shadow: var(--shadow);
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition: none;
     cursor: pointer;
     position: relative;
 }
@@ -385,20 +330,11 @@ input, textarea, select {
     justify-content: center;
     z-index: 2;
     box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-    animation: scaleIn 0.3s ease;
+    animation: none;
 }
 
 .cart-badge i {
     font-size: 18px;
-}
-
-@keyframes scaleIn {
-    from {
-        transform: scale(0);
-    }
-    to {
-        transform: scale(1);
-    }
 }
 
 .product-image {
@@ -461,7 +397,7 @@ input, textarea, select {
     font-size: 12px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: none;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -497,7 +433,7 @@ input, textarea, select {
     z-index: 1000;
     display: flex;
     flex-direction: column;
-    transition: right 0.3s ease;
+    transition: none;
     box-shadow: -4px 0 16px rgba(0,0,0,0.2);
 }
 
@@ -537,7 +473,7 @@ input, textarea, select {
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    transition: background 0.2s;
+    transition: none;
 }
 
 .close-btn:hover {
@@ -609,7 +545,7 @@ input, textarea, select {
     align-items: center;
     justify-content: center;
     font-size: 14px;
-    transition: all 0.2s;
+    transition: none;
     color: var(--text-primary);
 }
 
@@ -644,7 +580,7 @@ input, textarea, select {
     align-items: center;
     justify-content: center;
     border-radius: 6px;
-    transition: all 0.2s;
+    transition: none;
 }
 
 .remove-btn:hover {
@@ -686,7 +622,7 @@ input, textarea, select {
     font-size: 16px;
     font-weight: 700;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: none;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -714,7 +650,7 @@ input, textarea, select {
     z-index: 999;
     opacity: 0;
     visibility: hidden;
-    transition: opacity 0.3s, visibility 0.3s;
+    transition: none;
 }
 
 .overlay.active {
@@ -730,7 +666,7 @@ input, textarea, select {
 }
 
 .skeleton {
-    animation: skeleton-loading 1.5s ease-in-out infinite;
+    animation: none;
 }
 
 .skeleton-shimmer {
@@ -741,16 +677,7 @@ input, textarea, select {
         #f0f0f0 100%
     );
     background-size: 200% 100%;
-    animation: shimmer 1.5s infinite;
-}
-
-@keyframes shimmer {
-    0% {
-        background-position: -200% 0;
-    }
-    100% {
-        background-position: 200% 0;
-    }
+    animation: none;
 }
 
 .skeleton-image {
@@ -784,7 +711,7 @@ input, textarea, select {
         rgba(255,255,255,0.6) 50%,
         transparent 100%
     );
-    animation: shimmer 1.5s infinite;
+    animation: none;
 }
 
 .skeleton-title {
@@ -856,7 +783,7 @@ input, textarea, select {
     pointer-events: none;
     z-index: 10000;
     opacity: 0;
-    transition: opacity 0.2s;
+    transition: none;
     white-space: nowrap;
     box-shadow: 0 2px 8px rgba(0,0,0,0.2);
 }
@@ -890,7 +817,7 @@ input, textarea, select {
     z-index: 10000;
     opacity: 0;
     transform: translateY(20px);
-    transition: all 0.3s ease;
+    transition: none;
     border-left: 4px solid var(--primary-color);
     min-width: 280px;
     max-width: 400px;
@@ -990,18 +917,7 @@ input, textarea, select {
     max-height: 90vh;
     overflow-y: auto;
     box-shadow: var(--shadow-lg);
-    animation: slideUp 0.3s ease;
-}
-
-@keyframes slideUp {
-    from {
-        transform: translateY(50px);
-        opacity: 0;
-    }
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
+    animation: none;
 }
 
 .payment-method-header {
@@ -1034,7 +950,7 @@ input, textarea, select {
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    transition: background 0.2s;
+    transition: none;
 }
 
 .close-payment-method-btn:hover {
@@ -1120,7 +1036,7 @@ input, textarea, select {
     border: 2px solid var(--border-color);
     border-radius: 12px;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: none;
     text-align: left;
     width: 100%;
 }
@@ -1183,7 +1099,7 @@ input, textarea, select {
     max-height: 90vh;
     overflow-y: auto;
     box-shadow: var(--shadow-lg);
-    animation: slideUp 0.3s ease;
+    animation: none;
 }
 
 .payment-modal-header {
@@ -1216,7 +1132,7 @@ input, textarea, select {
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    transition: background 0.2s;
+    transition: none;
 }
 
 .close-payment-btn:hover {
@@ -1339,7 +1255,7 @@ input, textarea, select {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    transition: background 0.2s;
+    transition: none;
 }
 
 .retry-btn:hover {
@@ -1362,7 +1278,7 @@ input, textarea, select {
     font-size: 16px;
     font-weight: 700;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: none;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1391,7 +1307,7 @@ input, textarea, select {
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: none;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1431,18 +1347,7 @@ input, textarea, select {
     color: var(--text-primary);
     font-size: 14px;
     margin-bottom: 12px;
-    animation: slideDown 0.3s ease;
-}
-
-@keyframes slideDown {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    animation: none;
 }
 
 .payment-error-message i {
@@ -1464,7 +1369,7 @@ input, textarea, select {
     align-items: center;
     justify-content: center;
     margin: 0 auto 24px;
-    animation: scaleIn 0.5s ease;
+    animation: none;
 }
 
 .success-icon i {
@@ -1524,7 +1429,7 @@ input, textarea, select {
     font-size: 16px;
     font-weight: 700;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: none;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1564,7 +1469,7 @@ input, textarea, select {
     flex-direction: column;
     align-items: center;
     gap: 4px;
-    transition: all 0.2s;
+    transition: none;
 }
 
 .main-tab-btn i {
@@ -1647,7 +1552,7 @@ input, textarea, select {
     display: flex;
     align-items: center;
     gap: 8px;
-    transition: all 0.2s;
+    transition: none;
 }
 
 .btn-create-reservation:hover {
@@ -1867,7 +1772,7 @@ input, textarea, select {
     border-radius: var(--radius-lg);
     padding: 20px;
     box-shadow: var(--shadow);
-    transition: all 0.3s ease;
+    transition: none;
     display: flex;
     flex-direction: column;
     min-width: 0;
@@ -2073,7 +1978,7 @@ input, textarea, select {
     display: flex;
     align-items: center;
     gap: 8px;
-    transition: all 0.2s;
+    transition: none;
 }
 
 .btn-cancel-reservation:hover {
@@ -2151,7 +2056,7 @@ input, textarea, select {
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: none;
     text-decoration: none;
     line-height: 1.4;
 }
@@ -2358,7 +2263,7 @@ input, textarea, select {
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s;
+    transition: none;
     font-size: 14px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
@@ -2479,7 +2384,7 @@ input, textarea, select {
     gap: 6px;
     font-size: 12px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: none;
     min-height: 56px;
     font-family: inherit;
     appearance: none;
@@ -2594,7 +2499,7 @@ input, textarea, select {
     border-radius: 12px;
     background: white;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: none;
     text-align: center;
     font-size: 14px;
     font-weight: 600;
@@ -2755,7 +2660,7 @@ input, textarea, select {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    transition: all 0.2s;
+    transition: none;
 }
 
 .btn-empty-action:hover,
@@ -3003,7 +2908,7 @@ input, textarea, select {
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: background 0.2s, color 0.2s;
+    transition: none;
 }
 
 .member-card-edit-btn:hover {
@@ -3055,7 +2960,48 @@ input, textarea, select {
     -webkit-backface-visibility: hidden;
     border-radius: 24px;
     overflow: hidden;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.15) inset,
+        0 2px 4px rgba(0, 0, 0, 0.08),
+        0 12px 24px rgba(0, 0, 0, 0.12),
+        0 24px 48px rgba(0, 0, 0, 0.18);
+}
+
+/* 光の反射・艶（高級感のあるカード表面） */
+.idnect-card-face::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 24px;
+    pointer-events: none;
+    background: linear-gradient(
+        165deg,
+        rgba(255, 255, 255, 0.35) 0%,
+        rgba(255, 255, 255, 0.18) 15%,
+        rgba(255, 255, 255, 0.06) 30%,
+        transparent 50%
+    );
+    z-index: 2;
+}
+
+/* 斜めの光沢ストリーク */
+.idnect-card-face::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 24px;
+    pointer-events: none;
+    background: linear-gradient(
+        105deg,
+        transparent 0%,
+        transparent 35%,
+        rgba(255, 255, 255, 0.12) 45%,
+        rgba(255, 255, 255, 0.2) 50%,
+        rgba(255, 255, 255, 0.08) 55%,
+        transparent 65%,
+        transparent 100%
+    );
+    z-index: 2;
 }
 
 .idnect-card.is-flipped .idnect-card-face--front {
@@ -3069,51 +3015,51 @@ input, textarea, select {
 }
 
 .idnect-card-face--front {
-    background: linear-gradient(135deg, #8b4513 0%, #5c2e0a 50%, #3d1f07 100%);
+    background: linear-gradient(145deg, #6d3a1a 0%, #5c2e0a 35%, #4a2508 65%, #3d1f07 100%);
     color: #fff;
 }
 
 .idnect-card-face--back {
     transform: rotateY(180deg);
-    background: linear-gradient(135deg, #8b4513 0%, #5c2e0a 50%, #3d1f07 100%);
+    background: linear-gradient(145deg, #6d3a1a 0%, #5c2e0a 35%, #4a2508 65%, #3d1f07 100%);
     color: #fff;
 }
 
 .idnect-card[data-rank="bronze"] .idnect-card-face--front {
-    background: linear-gradient(135deg, #b87333 0%, #8b4513 50%, #5c2e0a 100%);
+    background: linear-gradient(145deg, #c98b4a 0%, #a0522d 35%, #8b4513 65%, #5c2e0a 100%);
 }
 
 .idnect-card[data-rank="bronze"] .idnect-card-face--back {
-    background: linear-gradient(135deg, #b87333 0%, #8b4513 50%, #5c2e0a 100%);
+    background: linear-gradient(145deg, #c98b4a 0%, #a0522d 35%, #8b4513 65%, #5c2e0a 100%);
 }
 
 .idnect-card[data-rank="silver"] .idnect-card-face--front {
-    background: linear-gradient(135deg, #e8e8e8 0%, #c0c0c0 50%, #909090 100%);
+    background: linear-gradient(145deg, #f0f0f0 0%, #d8d8d8 35%, #c0c0c0 65%, #909090 100%);
     color: #333;
 }
 
 .idnect-card[data-rank="silver"] .idnect-card-face--back {
-    background: linear-gradient(135deg, #e8e8e8 0%, #c0c0c0 50%, #909090 100%);
+    background: linear-gradient(145deg, #f0f0f0 0%, #d8d8d8 35%, #c0c0c0 65%, #909090 100%);
     color: #333;
 }
 
 .idnect-card[data-rank="gold"] .idnect-card-face--front {
-    background: linear-gradient(135deg, #ffec8b 0%, #ffd700 50%, #b8860b 100%);
+    background: linear-gradient(145deg, #fff4b0 0%, #ffd700 35%, #daa520 65%, #b8860b 100%);
     color: #333;
 }
 
 .idnect-card[data-rank="gold"] .idnect-card-face--back {
-    background: linear-gradient(135deg, #ffec8b 0%, #ffd700 50%, #b8860b 100%);
+    background: linear-gradient(145deg, #fff4b0 0%, #ffd700 35%, #daa520 65%, #b8860b 100%);
     color: #333;
 }
 
 .idnect-card[data-rank="platinum"] .idnect-card-face--front {
-    background: linear-gradient(135deg, #f5f5f5 0%, #e5e4e2 50%, #b8b8b8 100%);
+    background: linear-gradient(145deg, #fafafa 0%, #e8e8e8 35%, #d4d4d8 65%, #a8a8b0 100%);
     color: #333;
 }
 
 .idnect-card[data-rank="platinum"] .idnect-card-face--back {
-    background: linear-gradient(135deg, #f5f5f5 0%, #e5e4e2 50%, #b8b8b8 100%);
+    background: linear-gradient(145deg, #fafafa 0%, #e8e8e8 35%, #d4d4d8 65%, #a8a8b0 100%);
     color: #333;
 }
 
@@ -3121,10 +3067,11 @@ input, textarea, select {
 .idnect-card-wrapper[data-rank-color="true"] .idnect-card-face--front,
 .idnect-card-wrapper[data-rank-color="true"] .idnect-card-face--back {
     background: linear-gradient(
-        135deg,
-        var(--idnect-card-rank-color) 0%,
-        color-mix(in srgb, var(--idnect-card-rank-color) 85%, #000) 50%,
-        color-mix(in srgb, var(--idnect-card-rank-color) 60%, #000) 100%
+        145deg,
+        color-mix(in srgb, var(--idnect-card-rank-color) 85%, #fff) 0%,
+        var(--idnect-card-rank-color) 35%,
+        color-mix(in srgb, var(--idnect-card-rank-color) 90%, #000) 65%,
+        color-mix(in srgb, var(--idnect-card-rank-color) 65%, #000) 100%
     );
     color: #fff;
 }
@@ -3140,22 +3087,18 @@ input, textarea, select {
     background: linear-gradient(
         105deg,
         transparent 0%,
-        transparent 40%,
-        rgba(255, 255, 255, 0.12) 45%,
-        rgba(255, 255, 255, 0.18) 50%,
-        rgba(255, 255, 255, 0.12) 55%,
-        transparent 60%,
+        transparent 38%,
+        rgba(255, 255, 255, 0.08) 42%,
+        rgba(255, 255, 255, 0.22) 50%,
+        rgba(255, 255, 255, 0.08) 58%,
+        transparent 62%,
         transparent 100%
     );
     background-size: 200% 100%;
-    animation: idnect-shimmer 2.5s ease-in-out infinite;
+    animation: none;
     pointer-events: none;
     border-radius: 24px;
-}
-
-@keyframes idnect-shimmer {
-    0% { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
+    z-index: 1;
 }
 
 .idnect-card-front-inner {
@@ -3385,7 +3328,7 @@ input, textarea, select {
     line-height: 0;
     text-decoration: none;
     border-radius: 8px;
-    transition: opacity 0.2s;
+    transition: none;
     background: none;
     border: none;
     padding: 0;
@@ -3425,7 +3368,7 @@ input, textarea, select {
     font-weight: 600;
     color: var(--text-primary);
     cursor: pointer;
-    transition: background 0.2s, border-color 0.2s;
+    transition: none;
 }
 
 .member-purchase-history-toggle:hover {
@@ -3441,7 +3384,7 @@ input, textarea, select {
 .member-purchase-history-toggle-icon {
     font-size: 12px;
     color: var(--text-secondary);
-    transition: transform 0.2s;
+    transition: none;
 }
 
 .member-purchase-history-toggle[aria-expanded="true"] .member-purchase-history-toggle-icon {
@@ -3553,7 +3496,7 @@ input, textarea, select {
     font-weight: 600;
     color: var(--text-primary);
     cursor: pointer;
-    transition: background 0.2s, border-color 0.2s;
+    transition: none;
 }
 
 .member-purchase-history-toggle:hover {
@@ -3568,7 +3511,7 @@ input, textarea, select {
 .member-purchase-history-toggle-icon {
     font-size: 14px;
     color: var(--text-secondary);
-    transition: transform 0.2s;
+    transition: none;
 }
 
 .member-purchase-history-list {
@@ -3653,7 +3596,7 @@ input, textarea, select {
     font-size: 16px;
     font-weight: 700;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: none;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -3678,7 +3621,7 @@ input, textarea, select {
     padding: 16px;
     opacity: 0;
     visibility: hidden;
-    transition: opacity 0.2s, visibility 0.2s;
+    transition: none;
 }
 
 .member-modal--open {
@@ -3865,7 +3808,7 @@ input, textarea, select {
     height: 100%;
     background: var(--primary-color);
     border-radius: 5px;
-    transition: width 0.3s ease;
+    transition: none;
 }
 
 .stamp-slots {
@@ -4799,7 +4742,7 @@ input, textarea, select {
     font-weight: 700;
     padding: 10px 14px;
     cursor: pointer;
-    transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+    transition: none;
 }
 
 .queue-button:hover {
