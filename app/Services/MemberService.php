@@ -5,13 +5,16 @@ namespace App\Services;
 use App\Enums\MemberStatus;
 use App\Models\Member;
 use App\Models\PointTransaction;
+use App\Models\ShopSetting;
 use App\Models\User;
+use App\Services\Smaregi\SmaregiApiService;
 use Illuminate\Support\Str;
 
 class MemberService
 {
     public function __construct(
-        private CouponIssueService $couponIssueService
+        private CouponIssueService $couponIssueService,
+        private SmaregiApiService $smaregiApi,
     ) {
     }
 
@@ -20,9 +23,16 @@ class MemberService
         $member = $user->member;
 
         if ($member === null) {
+            $projectId = $user->project_id ?? \App\Util\AdminContext::getCurrentProjectId() ?? 1;
+            $profileSettings = \App\Models\ShopSetting::getProfileFieldSettings($projectId);
+            $profileFormFields = $this->buildProfileFormFields($profileSettings);
+
             return [
                 'is_member' => false,
                 'message' => '会員登録がまだです',
+                'show_member_card_for_guest' => \App\Models\ShopSetting::getShowMemberCardForGuest($projectId),
+                'profile_field_settings' => $profileFormFields,
+                'profile' => [],
             ];
         }
 
@@ -61,6 +71,8 @@ class MemberService
             'points_expiry' => $expiryInfo,
             'show_points_display' => \App\Models\ShopSetting::getShowPointsDisplay($projectId),
             'show_rank_progress' => \App\Models\ShopSetting::getShowRankProgress($projectId),
+            'member_card_design' => \App\Models\ShopSetting::getMemberCardDesign($projectId),
+            'member_card_logo_url' => \App\Models\ShopSetting::getFrontendLogoUrl($projectId),
         ];
     }
 
@@ -157,7 +169,22 @@ class MemberService
         }
 
         $projectId = $member->project_id ?? \App\Util\AdminContext::getCurrentProjectId() ?? 1;
-        $settings = \App\Models\ShopSetting::getProfileFieldSettings($projectId);
+        $settings = ShopSetting::getProfileFieldSettings($projectId);
+
+        $smaregiCustomerId = $member->smaregi_customer_id ?? '';
+        if ($smaregiCustomerId !== '') {
+            $contractId = ShopSetting::getValue('smaregi_contract_id', null, $projectId);
+            $contractId = is_string($contractId) ? trim($contractId) : '';
+            if ($contractId !== '') {
+                $body = $this->buildSmaregiCustomerUpdateBody($data);
+                if ($body !== []) {
+                    $result = $this->smaregiApi->updateCustomer($contractId, $smaregiCustomerId, $body);
+                    if ($result === null) {
+                        throw new \Exception('スマレジの会員情報更新に失敗しました。storage/logs/laravel.log の [Smaregi] を参照してください。');
+                    }
+                }
+            }
+        }
 
         $userUpdates = [];
         $memberUpdates = [];
@@ -209,6 +236,31 @@ class MemberService
         return $this->getMemberData($user);
     }
 
+    /** スマレジ会員更新用のリクエストボディ（変更された項目のみ） */
+    private function buildSmaregiCustomerUpdateBody(array $data): array
+    {
+        $body = [];
+        $name = trim((string) ($data['name'] ?? ''));
+        if ($name !== '') {
+            $parts = preg_split('/\s+/u', $name, 2);
+            $body['lastName'] = $parts[0] ?? $name;
+            $body['firstName'] = $parts[1] ?? '';
+        }
+        $kana = trim((string) ($data['kana'] ?? ''));
+        if ($kana !== '') {
+            $kanaParts = preg_split('/\s+/u', $kana, 2);
+            $body['lastKana'] = $kanaParts[0] ?? $kana;
+            $body['firstKana'] = $kanaParts[1] ?? '';
+        }
+        if (array_key_exists('email', $data)) {
+            $body['mailAddress'] = trim((string) $data['email']);
+        }
+        if (array_key_exists('phone', $data)) {
+            $body['phoneNumber'] = trim((string) $data['phone']);
+        }
+        return $body;
+    }
+
     /** 登録データから任意項目のみ抽出 */
     private function extractCustomProfileExtra(int $projectId, array $data): array
     {
@@ -231,12 +283,26 @@ class MemberService
 
         $projectId = $user->project_id ?? \App\Util\AdminContext::getCurrentProjectId() ?? 1;
         $memberNumber = $this->generateMemberNumber($projectId);
-        $rankSettings = \App\Models\ShopSetting::getMemberRankSettings($projectId);
+        $smaregiCustomerId = null;
+
+        $contractId = ShopSetting::getValue('smaregi_contract_id', null, $projectId);
+        $contractId = is_string($contractId) ? trim($contractId) : '';
+        if ($contractId !== '') {
+            $body = $this->buildSmaregiCustomerBody($memberNumber, $data);
+            $result = $this->smaregiApi->createCustomer($contractId, $body);
+            if ($result === null || empty($result['customerId'])) {
+                throw new \Exception('スマレジへの会員登録に失敗しました。スコープ pos.customers:write と必須項目を確認し、storage/logs/laravel.log の [Smaregi] を参照してください。');
+            }
+            $smaregiCustomerId = (string) $result['customerId'];
+        }
+
+        $rankSettings = ShopSetting::getMemberRankSettings($projectId);
         $defaultRankKey = collect($rankSettings)->first(fn ($r) => ($r['is_active'] ?? false) === true)['key'] ?? 'bronze';
         $member = Member::create([
             'project_id' => $projectId,
             'user_id' => $user->id,
             'member_number' => $memberNumber,
+            'smaregi_customer_id' => $smaregiCustomerId,
             'points' => 0,
             'status' => MemberStatus::ACTIVE,
             'rank' => $defaultRankKey,
@@ -263,6 +329,44 @@ class MemberService
         }
 
         return $member->load('user');
+    }
+
+    /** スマレジ会員登録用のリクエストボディを組み立て（会員コードは20文字以内） */
+    private function buildSmaregiCustomerBody(string $memberNumber, array $data): array
+    {
+        $name = trim((string) ($data['name'] ?? ''));
+        $kana = trim((string) ($data['kana'] ?? ''));
+        $parts = $name !== '' ? preg_split('/\s+/u', $name, 2) : ['', ''];
+        $lastName = $parts[0] ?? '';
+        $firstName = $parts[1] ?? '';
+        if ($lastName === '' && $name !== '') {
+            $lastName = $name;
+        }
+        // スマレジの lastKana/firstKana はカタカナのみ受け付けるため、空や漢字のときはカタカナの 'ー' を送る
+        $kanaParts = $kana !== '' ? preg_split('/\s+/u', $kana, 2) : ['', ''];
+        $lastKana = trim((string) ($kanaParts[0] ?? ''));
+        $firstKana = trim((string) ($kanaParts[1] ?? ''));
+        if ($lastKana === '' && $kana !== '') {
+            $lastKana = trim($kana);
+        }
+        $kanaPlaceholder = 'ー'; // カタカナ長音（入力内容に誤りがありますを防ぐ）
+
+        $body = [
+            'customerCode' => Str::limit($memberNumber, 20, ''),
+            'lastName' => $lastName !== '' ? $lastName : '—',
+            'firstName' => $firstName !== '' ? $firstName : '—',
+            'lastKana' => $lastKana !== '' ? $lastKana : $kanaPlaceholder,
+            'firstKana' => $firstKana !== '' ? $firstKana : $kanaPlaceholder,
+        ];
+        $email = trim((string) ($data['email'] ?? ''));
+        if ($email !== '') {
+            $body['mailAddress'] = $email;
+        }
+        $phone = trim((string) ($data['phone'] ?? ''));
+        if ($phone !== '') {
+            $body['phoneNumber'] = $phone;
+        }
+        return $body;
     }
 
     private function syncMemberRank(Member $member): void

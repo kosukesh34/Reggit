@@ -612,6 +612,30 @@ class ShopSetting extends Model
         return (bool) self::getValue('show_rank_progress', true, $projectId);
     }
 
+    /** 会員未登録（ゲスト）のときに会員証カードを表示するか。false のときはカードを表示せずメッセージのみ */
+    public static function getShowMemberCardForGuest(?int $projectId = null): bool
+    {
+        return (bool) self::getValue('show_member_card_for_guest', true, $projectId);
+    }
+
+    public static function setShowMemberCardForGuest(bool $value, ?int $projectId = null): void
+    {
+        self::setValue('show_member_card_for_guest', $value, 'boolean', $projectId ?? 1);
+    }
+
+    /** 会員証のレイアウトデザイン。default=標準, logo_top=ロゴ上部, logo_center=ロゴ中央 */
+    public static function getMemberCardDesign(?int $projectId = null): string
+    {
+        $v = self::getValue('member_card_design', 'default', $projectId);
+        return in_array($v, ['default', 'logo_top', 'logo_center'], true) ? $v : 'default';
+    }
+
+    public static function setMemberCardDesign(string $value, ?int $projectId = null): void
+    {
+        $value = in_array($value, ['default', 'logo_top', 'logo_center'], true) ? $value : 'default';
+        self::setValue('member_card_design', $value, 'string', $projectId ?? 1);
+    }
+
     public static function getMemberRankSettings(?int $projectId = null): array
     {
         $settings = self::getValue('member_rank_settings', null, $projectId);
