@@ -23,6 +23,7 @@ class User extends Authenticatable
         'project_id',
         'line_user_id',
         'name',
+        'kana',
         'email',
         'phone',
         'profile_image_url',

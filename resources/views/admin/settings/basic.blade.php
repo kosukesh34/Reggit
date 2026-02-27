@@ -21,7 +21,7 @@
 
 <div class="page-header">
     <h1 class="page-header-title"><i class="fas fa-sliders-h"></i> 基本設定</h1>
-    <p class="page-header-desc">営業時間と予約の受け付け条件を設定します</p>
+    <p class="page-header-desc">営業時間と利用機能を設定します。予約の時間帯・休業日・枠数は「予約」メニュー内の「予約設定」から変更できます。</p>
 </div>
 
 @if(session('success'))

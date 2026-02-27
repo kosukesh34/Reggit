@@ -8,7 +8,7 @@ LINE を起点としたモバイルオーダーと会員証（ポイントカー
 - **DB**: MySQL 8.0
 - **認証**: Laravel Sanctum（API Bearer トークン）、管理画面セッション
 - **決済**: Stripe（Payment Intents）
-- **連携**: LINE（LIFF・Webhook）、スマレジ（プラットフォーム API）、日本郵便（郵便番号・住所 API）、Apple Wallet（会員証パス）
+- **連携**: LINE（LIFF・Webhook）、スマレジ（プラットフォーム API）、日本郵便（郵便番号・住所 API）、Apple Wallet / Google Wallet（会員証パス）
 
 ## 主な機能
 
@@ -45,7 +45,8 @@ LINE を起点としたモバイルオーダーと会員証（ポイントカー
 - **スマレジ**: 利用者契約通知（IDP）、Webhook、POS 連携
 - **Stripe**: 決済・Webhook
 - **日本郵便**: 郵便番号・デジタルアドレス API（住所自動入力）
-- **Apple Wallet**: 会員証パス（オプション）
+- **Apple Wallet**: 会員証パス（iOS・オプション）
+- **Google Wallet**: 会員証パス（Android 等・オプション）
 
 ### iPad アプリ（順番待ち）
 
@@ -89,6 +90,7 @@ DB 接続エラー時は `docs/DOCKER_DB_FIX.md` を参照してください。
 | `SMAREGI_*` | スマレジ クライアント・Webhook（連携時） |
 | `JAPANPOST_*` | 日本郵便 API（住所検索、スタブ/本番） |
 | `WALLET_PASS_*` | Apple Wallet 会員証（任意） |
+| `GOOGLE_WALLET_*` | Google Wallet 会員証（任意。Issuer ID・サービスアカウント JSON・ORIGINS を設定） |
 
 ## API
 
@@ -121,12 +123,29 @@ DB 接続エラー時は `docs/DOCKER_DB_FIX.md` を参照してください。
 - お知らせ・お問い合わせ・ギャラリー・スタンプ
 - 順番待ち（登録・自分の番・ステータス・キャンセル・次番呼び出し・QR）
 
+### Wallet（Apple / Google）
+
+- **iOS**: Apple Wallet に会員証を追加可能（`WALLET_PASS_*` 設定時）。会員証タブで「Walletに追加」をタップすると .pkpass を取得して追加できる。
+- **Android**: Google Wallet に会員証を追加可能（`GOOGLE_WALLET_*` 設定時）。会員証タブに「Google Walletに追加」が表示され、タップで API から URL を取得し Google Wallet の保存画面へ遷移する。端末種別に応じて Apple / Google のいずれかが表示される。
+
+Google Wallet を有効にするには、[Google Pay & Wallet Console](https://pay.google.com/business/console) で Issuer を登録し、Issuer ID とサービスアカウントの秘密鍵 JSON を取得して `.env` の `GOOGLE_WALLET_*` を設定する。`GOOGLE_WALLET_ORIGINS` には会員証を表示するドメイン（LIFF の URL など）をカンマ区切りで指定する。
+
 ## 管理画面 URL
 
-- ログイン: `/admin/login` または `/admin/{project_key}/login`
+- ログイン: `/admin/login` または `/admin/{project_key}/login`（例: `/admin/default/login`）
 - 店舗管理: `/admin/{project_key}/dashboard` など
 - システム管理: `/system-admin/login` → `/system-admin/dashboard`
 - LIFF エントリ: `/liff` または `/liff/{project_key}`
+
+**ログインできない場合**  
+- パスワードに `#` を含む場合、.env で値全体を `"` で囲んでください（例: `DEMO_SYSTEM_PASSWORD="DemoSys#2026"`）。`#` はコメント扱いされ、それ以降が無視されます。  
+- .env を直したら、DB に反映するため次を実行してください。
+
+```bash
+docker compose exec app php artisan admin:sync-password
+```
+
+（省略時は `DEMO_SYSTEM_LOGIN_ID` のユーザーを `DEMO_SYSTEM_PASSWORD` で更新します。別の login_id を指定する場合は `admin:sync-password <login_id>`）
 
 ## ドキュメント
 
@@ -135,6 +154,7 @@ DB 接続エラー時は `docs/DOCKER_DB_FIX.md` を参照してください。
 - [URL 一覧](docs/URL_LIST.md)
 - [スマレジ連携](docs/SMAREGI_SETUP.md) / [Webhook テスト](docs/SMAREGI_WEBHOOK_TEST.md) / [POS API リファレンス](docs/SMAREGI_POS_API_REFERENCE.md)
 - [日本郵便 API](docs/JAPANPOST_API.md)
+- [Google Wallet 会員証セットアップ](docs/GOOGLE_WALLET_SETUP.md) / [**やることチェックリスト**](docs/GOOGLE_WALLET_CHECKLIST.md) / [**Wallet 追加のアクセス用URL一覧**](docs/WALLET_ADD_URLS.md)
 - [Docker DB 接続トラブル](docs/DOCKER_DB_FIX.md)
 - [セキュリティ](docs/SECURITY.md)
 - [クリーンアーキテクチャ](docs/CLEAN_ARCHITECTURE.md)

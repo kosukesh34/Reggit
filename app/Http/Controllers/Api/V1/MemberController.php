@@ -30,17 +30,20 @@ class MemberController extends BaseApiController
 
     public function update(Request $request)
     {
-        $validated = $request->validate([
-            'name' => 'nullable|string|max:255',
-            'phone' => 'nullable|string|max:50',
-            'birthday' => 'nullable|date',
-            'address' => 'nullable|string|max:500',
-        ]);
-
         try {
             $user = $this->userService->getOrCreateUser($request);
+            $member = $user->member;
+            if ($member === null) {
+                return $this->error('会員登録が必要です', 400);
+            }
+            $projectId = (int) $member->project_id;
+            $rules = $this->memberService->getProfileValidationRules($projectId);
+            $validated = $request->validate($rules);
+
             $data = $this->memberService->updateProfile($user, $validated);
             return $this->success(['member' => $data], '更新しました');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            throw $e;
         } catch (\Exception $e) {
             Log::error('Member profile update error: ' . $e->getMessage());
             return $this->error($e->getMessage(), 400);
@@ -49,15 +52,12 @@ class MemberController extends BaseApiController
 
     public function register(Request $request)
     {
-        $validated = $request->validate([
-            'name' => 'nullable|string|max:255',
-            'birthday' => 'nullable|date',
-            'address' => 'nullable|string|max:500',
-            'phone' => 'nullable|string|max:50',
-        ]);
-
         try {
             $user = $this->userService->getOrCreateUser($request);
+            $projectId = (int) ($user->project_id ?? 1);
+            $rules = $this->memberService->getProfileValidationRules($projectId);
+            $validated = $request->validate($rules);
+
             $this->memberService->registerMember($user, $validated);
             $user->refresh();
             $data = $this->memberService->getMemberData($user);

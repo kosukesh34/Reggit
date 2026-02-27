@@ -459,6 +459,75 @@ class ShopSetting extends Model
         }
     }
 
+    // ── プロフィール項目設定（スマレジ連携・必須/任意・任意項目） ──
+
+    /** スマレジと同一内容で登録できるプロフィール項目のキーとラベル */
+    public const PROFILE_SMAREGI_FIELDS = [
+        'name' => 'お名前',
+        'kana' => 'お名前（カナ）',
+        'phone' => '電話番号',
+        'email' => 'メールアドレス',
+        'postal_code' => '郵便番号',
+        'prefecture' => '都道府県',
+        'city' => '市区町村',
+        'street' => '番地・建物名',
+        'address' => '住所（自由入力）',
+        'birthday' => '生年月日',
+        'sex' => '性別',
+    ];
+
+    /** プロフィール項目設定のデフォルト（スマレジ項目は表示ON・名前と電話は必須、任意項目は空） */
+    public static function defaultProfileFieldSettings(): array
+    {
+        $smaregi = [];
+        foreach (self::PROFILE_SMAREGI_FIELDS as $key => $label) {
+            $smaregi[$key] = [
+                'label' => $label,
+                'enabled' => true,
+                'required' => in_array($key, ['name', 'phone'], true),
+            ];
+        }
+        return [
+            'smaregi_fields' => $smaregi,
+            'custom_fields' => [],
+        ];
+    }
+
+    /** プロフィール項目設定を取得（会員登録・編集フォームの表示とバリデーションに使用） */
+    public static function getProfileFieldSettings(?int $projectId = null): array
+    {
+        $projectId = $projectId ?? 1;
+        $raw = self::getValue('profile_field_settings', null, $projectId);
+        if (! is_array($raw)) {
+            return self::defaultProfileFieldSettings();
+        }
+        $defaults = self::defaultProfileFieldSettings();
+        $smaregi = $defaults['smaregi_fields'];
+        foreach ($defaults['smaregi_fields'] as $key => $def) {
+            if (isset($raw['smaregi_fields'][$key]) && is_array($raw['smaregi_fields'][$key])) {
+                $smaregi[$key] = [
+                    'label' => $raw['smaregi_fields'][$key]['label'] ?? $def['label'],
+                    'enabled' => (bool) ($raw['smaregi_fields'][$key]['enabled'] ?? $def['enabled']),
+                    'required' => (bool) ($raw['smaregi_fields'][$key]['required'] ?? $def['required']),
+                ];
+            }
+        }
+        $custom = isset($raw['custom_fields']) && is_array($raw['custom_fields'])
+            ? $raw['custom_fields']
+            : [];
+        return [
+            'smaregi_fields' => $smaregi,
+            'custom_fields' => $custom,
+        ];
+    }
+
+    /** プロフィール項目設定を保存 */
+    public static function setProfileFieldSettings(array $settings, ?int $projectId = null): void
+    {
+        $projectId = $projectId ?? 1;
+        self::setValue('profile_field_settings', $settings, 'json', $projectId);
+    }
+
     // ── UI カスタマイズ（管理画面） ──
 
     public static function getAdminSidebarColor(?int $projectId = null): ?string
@@ -598,6 +667,30 @@ class ShopSetting extends Model
     public static function getFrontendLogoUrl(?int $projectId = null): ?string
     {
         return self::getValue('frontend_logo_url', null, $projectId);
+    }
+
+    /** Google Wallet プログラムロゴ画像URL（管理画面で設定、未設定時は config を使用） */
+    public static function getWalletGoogleProgramLogoUrl(?int $projectId = null): ?string
+    {
+        $v = self::getValue('wallet_google_program_logo_url', null, $projectId);
+        return is_string($v) && $v !== '' ? trim($v) : null;
+    }
+
+    /** Google Wallet ヒーロー画像URL（管理画面で設定、未設定時は config を使用） */
+    public static function getWalletGoogleHeroImageUrl(?int $projectId = null): ?string
+    {
+        $v = self::getValue('wallet_google_hero_image_url', null, $projectId);
+        return is_string($v) && $v !== '' ? trim($v) : null;
+    }
+
+    public static function setWalletGoogleProgramLogoUrl(?string $url, ?int $projectId = null): void
+    {
+        self::setValue('wallet_google_program_logo_url', trim((string) ($url ?? '')), 'string', $projectId ?? 1);
+    }
+
+    public static function setWalletGoogleHeroImageUrl(?string $url, ?int $projectId = null): void
+    {
+        self::setValue('wallet_google_hero_image_url', trim((string) ($url ?? '')), 'string', $projectId ?? 1);
     }
 
     public static function getFrontendHeaderText(?int $projectId = null): ?string

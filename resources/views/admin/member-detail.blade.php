@@ -10,11 +10,19 @@
 </div>
 @endif
 <div class="card">
-    <div class="card-header">
+    <div class="card-header card-header-with-action">
         <h3 class="card-title"><i class="fas fa-user"></i> 会員情報</h3>
-        <a href="{{ admin_route('admin.members') }}" class="btn btn-secondary btn-sm">
-            <i class="fas fa-arrow-left"></i> 一覧に戻る
-        </a>
+        <div>
+            @php $adminUser = auth('admin')->user(); @endphp
+            @if($adminUser === null || $adminUser->hasPermission('members.manage'))
+            <a href="{{ admin_route('admin.members.edit', ['id' => $member->id]) }}" class="btn btn-primary btn-sm me-1">
+                <i class="fas fa-edit"></i> 編集
+            </a>
+            @endif
+            <a href="{{ admin_route('admin.members') }}" class="btn btn-secondary btn-sm">
+                <i class="fas fa-arrow-left"></i> 一覧に戻る
+            </a>
+        </div>
     </div>
     <div class="card-body">
         <div class="info-grid">
