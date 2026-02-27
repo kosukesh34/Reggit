@@ -7,6 +7,7 @@ use App\Http\Requests\Admin\LoginRequest;
 use App\Models\Project;
 use App\Services\Admin\AdminAuthService;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class AdminLoginController extends Controller
 {
@@ -51,6 +52,15 @@ class AdminLoginController extends Controller
     public function login(LoginRequest $request)
     {
         $projectKey = $request->route('project_key');
+        // ルートパラメータが取れない場合（キャッシュ等）は URL パスから取得
+        if ($projectKey === null && preg_match('#^admin/([^/]+)/login$#', $request->path(), $m)) {
+            $projectKey = $m[1];
+        }
+        Log::info('[AdminLogin] controller', [
+            'path' => $request->path(),
+            'route_project_key' => $request->route('project_key'),
+            'resolved_project_key' => $projectKey,
+        ]);
         return $this->authService->loginAdmin($request, $projectKey);
     }
 }

@@ -42,6 +42,31 @@ class SettingsService
         ShopSetting::setValue('reservation_capacity_per_slot', $validated['reservation_capacity_per_slot'], 'integer', $projectId);
     }
 
+    /** 予約設定のみ取得（予約メニュー下の設定用） */
+    public function getReservationOnlySettings(?int $projectId = null): array
+    {
+        $projectId = $projectId ?? 1;
+        return [
+            'timeSlots' => ShopSetting::getReservationTimeSlots($projectId),
+            'closedDays' => ShopSetting::getClosedDays($projectId),
+            'closedDates' => ShopSetting::getClosedDates($projectId),
+            'advanceDays' => ShopSetting::getAdvanceBookingDays($projectId),
+            'reservationCapacity' => ShopSetting::getReservationCapacityPerSlot($projectId),
+        ];
+    }
+
+    /** 予約設定のみ更新（営業時間は基本設定で管理） */
+    public function updateReservationOnlySettings(array $validated, ?int $projectId = null): void
+    {
+        $projectId = $projectId ?? 1;
+        ShopSetting::setValue('reservation_time_slots', $validated['reservation_time_slots'] ?? [], 'json', $projectId);
+        ShopSetting::setValue('closed_days', $validated['closed_days'] ?? [], 'json', $projectId);
+        $closedDates = array_values(array_filter($validated['closed_dates'] ?? [], fn ($date) => $date !== null && $date !== ''));
+        ShopSetting::setValue('closed_dates', $closedDates, 'json', $projectId);
+        ShopSetting::setValue('advance_booking_days', (int) ($validated['advance_booking_days'] ?? 30), 'integer', $projectId);
+        ShopSetting::setValue('reservation_capacity_per_slot', (int) ($validated['reservation_capacity_per_slot'] ?? 20), 'integer', $projectId);
+    }
+
     public function updateLineThemeSettings(array $validated, ?int $projectId = null): void
     {
         $projectId = $projectId ?? 1;

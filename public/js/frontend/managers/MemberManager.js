@@ -11,8 +11,17 @@ class MemberManager {
             (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     }
 
+    static isAndroid() {
+        if (typeof navigator === 'undefined') return false;
+        return /Android/.test(navigator.userAgent);
+    }
+
     static isWalletPassEnabled() {
         return typeof window !== 'undefined' && window.__WALLET_PASS_ENABLED__ === true;
+    }
+
+    static isGoogleWalletEnabled() {
+        return typeof window !== 'undefined' && window.__GOOGLE_WALLET_ENABLED__ === true;
     }
 
     getMemberData() {
@@ -120,15 +129,16 @@ class MemberManager {
                 throw new Error(result.error || (result.data && result.data.message) || '会員情報の取得に失敗しました');
             }
             const data = result.data;
-            if (!data || typeof data.is_member === 'undefined') {
+            const payload = (data && data.member) ? data.member : data;
+            if (!payload || typeof payload.is_member === 'undefined') {
                 throw new Error('会員情報の形式が正しくありません');
             }
-            if (!data.is_member) {
+            if (!payload.is_member) {
                 await this.autoRegister();
                 return;
             }
-            this.memberData = data;
-            this.render(data);
+            this.memberData = payload;
+            this.render(payload);
         } catch (error) {
             console.error('Failed to load member card:', error);
             container.innerHTML = this.getErrorTemplate(error);
@@ -196,18 +206,27 @@ class MemberManager {
             typeof window !== 'undefined' && window.__LIFF_PERMISSION_DENIED__
                 ? '<p class="member-card-profile-notice">LINEの表示名は取得していません。<button type="button" class="link-btn" onclick="location.reload()">再読み込み</button></p>'
                 : '';
-        const showAddToWallet = MemberManager.isIOS() && MemberManager.isWalletPassEnabled();
+        const showAddToAppleWallet = MemberManager.isIOS() && MemberManager.isWalletPassEnabled();
+        const showAddToGoogleWallet = MemberManager.isAndroid() && MemberManager.isGoogleWalletEnabled();
         const walletPassImageUrl = (typeof window !== 'undefined' && window.__WALLET_PASS_ADD_BUTTON_IMAGE__) || '/images/add-to-apple-wallet-logo.png';
         const projectKey = (typeof window !== 'undefined' && window.__PROJECT_KEY__) ? window.__PROJECT_KEY__ : 'default';
         const walletPassUrl = AppConstants.API_ENDPOINTS.MEMBERS_WALLET_PASS + '?project_key=' + encodeURIComponent(projectKey);
         const cardStyle = currentRankColor ? ` data-rank-color="true" style="--idnect-card-rank-color: ${DomHelper.escapeHtml(currentRankColor)}"` : '';
-        const addToWalletBlock = showAddToWallet
-            ? `<div class="member-card-add-to-wallet-wrap">
-                <button type="button" class="member-card-add-to-wallet-btn" data-wallet-pass-url="${DomHelper.escapeHtml(walletPassUrl)}" aria-label="Walletに追加">
-                    <img src="${DomHelper.escapeHtml(walletPassImageUrl)}" alt="Walletに追加" class="member-card-add-to-wallet-img">
+        let addToWalletBlock = '';
+        if (showAddToAppleWallet) {
+            addToWalletBlock += `<div class="member-card-add-to-wallet-wrap">
+                <button type="button" class="member-card-add-to-wallet-btn member-card-add-to-wallet-btn--apple" data-wallet-pass-url="${DomHelper.escapeHtml(walletPassUrl)}" aria-label="Apple Walletに追加">
+                    <img src="${DomHelper.escapeHtml(walletPassImageUrl)}" alt="Apple Walletに追加" class="member-card-add-to-wallet-img">
                 </button>
-            </div>`
-            : '';
+            </div>`;
+        }
+        if (showAddToGoogleWallet) {
+            addToWalletBlock += `<div class="member-card-add-to-wallet-wrap">
+                <button type="button" class="member-card-add-to-wallet-btn member-card-add-to-wallet-btn--google" data-google-wallet aria-label="Google Walletに追加">
+                    <img src="https://pay.google.com/static/images/badges/ja/add_to_google_wallet.svg" alt="Google Walletに追加" class="member-card-add-to-wallet-img" style="height:40px;width:auto;" onerror="this.parentElement.innerHTML='Google Walletに追加'">
+                </button>
+            </div>`;
+        }
 
         container.innerHTML = `
             <div class="member-card-container">
@@ -323,74 +342,29 @@ class MemberManager {
     }
 
     _setupAddToWallet() {
-        const btn = document.querySelector('.member-card-add-to-wallet-btn[data-wallet-pass-url]');
-        if (!btn) return;
-        btn.addEventListener('click', (e) => {
-            e.preventDefault();
-            const projectKey = (typeof window !== 'undefined' && window.__PROJECT_KEY__) ? window.__PROJECT_KEY__ : 'default';
-            const originalHtml = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = '<span class="member-card-add-to-wallet-loading"><i class="fas fa-spinner fa-spin"></i> 取得中...</span>';
+        const projectKey = (typeof window !== 'undefined' && window.__PROJECT_KEY__) ? window.__PROJECT_KEY__ : 'default';
+        const appleBtn = document.querySelector('.member-card-add-to-wallet-btn[data-wallet-pass-url]');
+        if (appleBtn) appleBtn.addEventListener('click', (e) => this._onAddToAppleWallet(e, appleBtn, projectKey));
+        const googleBtn = document.querySelector('.member-card-add-to-wallet-btn[data-google-wallet]');
+        if (googleBtn) googleBtn.addEventListener('click', (e) => this._onAddToGoogleWallet(e, googleBtn, projectKey));
+    }
 
-            if (typeof window !== 'undefined' && window.__IS_LIFF__ && typeof liff !== 'undefined' && liff.openWindow) {
-                const passUrlApi = (window.location.origin + (AppConstants.API_ENDPOINTS.MEMBERS_WALLET_PASS_URL.startsWith('/') ? '' : '/') + AppConstants.API_ENDPOINTS.MEMBERS_WALLET_PASS_URL) + '?project_key=' + encodeURIComponent(projectKey);
-                fetch(passUrlApi, { credentials: 'include', method: 'GET' })
-                    .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
-                    .then(function (result) {
-                        if (!result.ok || !result.data || !result.data.url) {
-                            throw new Error(result.data && result.data.error ? result.data.error : 'URLの取得に失敗しました');
-                        }
-                        liff.openWindow({ url: result.data.url, external: true });
-                        if (typeof ToastManager !== 'undefined') ToastManager.success('Safariで開きます。表示されたら「追加」をタップしてください。');
-                    })
-                    .catch(function (err) {
-                        if (typeof ToastManager !== 'undefined') ToastManager.error(err.message || 'Wallet Pass の取得に失敗しました');
-                    })
-                    .finally(function () {
-                        btn.disabled = false;
-                        btn.innerHTML = originalHtml;
-                    });
-                return;
-            }
+    _onAddToAppleWallet(e, btn, projectKey) {
+        e.preventDefault();
+        const originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="member-card-add-to-wallet-loading"><i class="fas fa-spinner fa-spin"></i> 取得中...</span>';
 
-            const url = btn.getAttribute('data-wallet-pass-url');
-            if (!url) {
-                btn.disabled = false;
-                btn.innerHTML = originalHtml;
-                return;
-            }
-            const fullUrl = url.startsWith('http') ? url : (window.location.origin + (url.startsWith('/') ? '' : '/') + url);
-            fetch(fullUrl, { credentials: 'include', method: 'GET' })
-                .then(function (res) {
-                    if (!res.ok) {
-                        return res.text().then(function (text) {
-                            const msg = text && text.length < 200 ? text.trim() : (res.status === 503 ? 'Wallet Pass を利用できません' : '取得に失敗しました');
-                            throw new Error(msg);
-                        });
+        if (typeof window !== 'undefined' && window.__IS_LIFF__ && typeof liff !== 'undefined' && liff.openWindow) {
+            const passUrlApi = (window.location.origin + (AppConstants.API_ENDPOINTS.MEMBERS_WALLET_PASS_URL.startsWith('/') ? '' : '/') + AppConstants.API_ENDPOINTS.MEMBERS_WALLET_PASS_URL) + '?project_key=' + encodeURIComponent(projectKey);
+            fetch(passUrlApi, { credentials: 'include', method: 'GET' })
+                .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+                .then(function (result) {
+                    if (!result.ok || !result.data || !result.data.url) {
+                        throw new Error(result.data && result.data.error ? result.data.error : 'URLの取得に失敗しました');
                     }
-                    const ct = res.headers.get('Content-Type') || '';
-                    if (ct.indexOf('application/vnd.apple.pkpass') === -1 && ct.indexOf('application/zip') === -1) {
-                        return res.text().then(function (text) { throw new Error(text && text.length < 200 ? text.trim() : '不正なレスポンスです'); });
-                    }
-                    return res.blob();
-                })
-                .then(function (blob) {
-                    const blobUrl = URL.createObjectURL(blob);
-                    if (MemberManager.isIOS()) {
-                        const w = window.open(blobUrl, '_blank');
-                        if (!w || w.closed) window.location.href = blobUrl;
-                        setTimeout(function () { URL.revokeObjectURL(blobUrl); }, 2000);
-                    } else {
-                        const a = document.createElement('a');
-                        a.href = blobUrl;
-                        a.download = 'membership.pkpass';
-                        a.style.display = 'none';
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-                        setTimeout(function () { URL.revokeObjectURL(blobUrl); }, 500);
-                    }
-                    if (typeof ToastManager !== 'undefined') ToastManager.success('パスを開きました。表示されたら「追加」をタップしてください。');
+                    liff.openWindow({ url: result.data.url, external: true });
+                    if (typeof ToastManager !== 'undefined') ToastManager.success('ブラウザで開きます。表示されたら「追加」をタップしてください。');
                 })
                 .catch(function (err) {
                     if (typeof ToastManager !== 'undefined') ToastManager.error(err.message || 'Wallet Pass の取得に失敗しました');
@@ -399,7 +373,83 @@ class MemberManager {
                     btn.disabled = false;
                     btn.innerHTML = originalHtml;
                 });
-        });
+            return;
+        }
+
+        const url = btn.getAttribute('data-wallet-pass-url');
+        if (!url) {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+            return;
+        }
+        const fullUrl = url.startsWith('http') ? url : (window.location.origin + (url.startsWith('/') ? '' : '/') + url);
+        fetch(fullUrl, { credentials: 'include', method: 'GET' })
+            .then(function (res) {
+                if (!res.ok) {
+                    return res.text().then(function (text) {
+                        const msg = text && text.length < 200 ? text.trim() : (res.status === 503 ? 'Wallet Pass を利用できません' : '取得に失敗しました');
+                        throw new Error(msg);
+                    });
+                }
+                const ct = res.headers.get('Content-Type') || '';
+                if (ct.indexOf('application/vnd.apple.pkpass') === -1 && ct.indexOf('application/zip') === -1) {
+                    return res.text().then(function (text) { throw new Error(text && text.length < 200 ? text.trim() : '不正なレスポンスです'); });
+                }
+                return res.blob();
+            })
+            .then(function (blob) {
+                const blobUrl = URL.createObjectURL(blob);
+                if (MemberManager.isIOS()) {
+                    const w = window.open(blobUrl, '_blank');
+                    if (!w || w.closed) window.location.href = blobUrl;
+                    setTimeout(function () { URL.revokeObjectURL(blobUrl); }, 2000);
+                } else {
+                    const a = document.createElement('a');
+                    a.href = blobUrl;
+                    a.download = 'membership.pkpass';
+                    a.style.display = 'none';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    setTimeout(function () { URL.revokeObjectURL(blobUrl); }, 500);
+                }
+                if (typeof ToastManager !== 'undefined') ToastManager.success('パスを開きました。表示されたら「追加」をタップしてください。');
+            })
+            .catch(function (err) {
+                if (typeof ToastManager !== 'undefined') ToastManager.error(err.message || 'Wallet Pass の取得に失敗しました');
+            })
+            .finally(function () {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            });
+    }
+
+    _onAddToGoogleWallet(e, btn, projectKey) {
+        e.preventDefault();
+        const originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="member-card-add-to-wallet-loading"><i class="fas fa-spinner fa-spin"></i> 取得中...</span>';
+        const googleWalletUrlApi = (window.location.origin + (AppConstants.API_ENDPOINTS.MEMBERS_GOOGLE_WALLET_URL.startsWith('/') ? '' : '') + AppConstants.API_ENDPOINTS.MEMBERS_GOOGLE_WALLET_URL) + '?project_key=' + encodeURIComponent(projectKey);
+        fetch(googleWalletUrlApi, { credentials: 'include', method: 'GET' })
+            .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+            .then(function (result) {
+                if (!result.ok || !result.data || !result.data.url) {
+                    throw new Error(result.data && result.data.error ? result.data.error : 'URLの取得に失敗しました');
+                }
+                if (typeof window !== 'undefined' && window.__IS_LIFF__ && typeof liff !== 'undefined' && liff.openWindow) {
+                    liff.openWindow({ url: result.data.url, external: true });
+                    if (typeof ToastManager !== 'undefined') ToastManager.success('Google Wallet を開きます。表示されたら「追加」をタップしてください。');
+                } else {
+                    window.location.href = result.data.url;
+                }
+            })
+            .catch(function (err) {
+                if (typeof ToastManager !== 'undefined') ToastManager.error(err.message || 'Google Wallet の取得に失敗しました');
+            })
+            .finally(function () {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            });
     }
 
     _generateBarcode(barcodeId, memberNumber) {
@@ -633,35 +683,48 @@ class MemberManager {
     }
 
     _getProfileEditFormHtml(user, member) {
-        const name = (user && user.name) || '';
-        const phone = (user && user.phone) || '';
-        const birthday = member && member.birthday ? member.birthday.split('T')[0] : '';
-        const address = (member && member.address) || '';
+        const root = (this.memberData && this.memberData.member) ? this.memberData.member : this.memberData;
+        const fields = (root && root.profile_field_settings) ? root.profile_field_settings : [
+            { key: 'name', label: 'お名前', required: true },
+            { key: 'phone', label: '電話番号', required: false },
+            { key: 'birthday', label: '誕生日', required: false },
+            { key: 'postal_code', label: '郵便番号', required: false },
+            { key: 'address', label: '住所', required: false },
+        ];
+        const profile = (root && root.profile) ? root.profile : {};
+        const birthdayVal = (member && member.birthday) ? String(member.birthday).split('T')[0] : (profile.birthday || '');
+        const rows = fields.map(function (f) {
+            const key = f.key;
+            const label = f.label || key;
+            const required = f.required ? ' required' : '';
+            const val = profile[key] != null ? String(profile[key]) : '';
+            const id = 'profileEdit_' + key.replace(/[^a-z0-9_]/gi, '_');
+            let input = '';
+            if (key === 'sex') {
+                input = '<select id="' + id + '" name="' + DomHelper.escapeHtml(key) + '"' + required + '>' +
+                    '<option value="">選択してください</option>' +
+                    '<option value="1"' + (val === '1' ? ' selected' : '') + '>男性</option>' +
+                    '<option value="2"' + (val === '2' ? ' selected' : '') + '>女性</option></select>';
+            } else if (key === 'birthday') {
+                input = '<input type="date" id="' + id + '" name="' + DomHelper.escapeHtml(key) + '" value="' + DomHelper.escapeHtml(val || birthdayVal) + '"' + required + '>';
+            } else if (key === 'email') {
+                input = '<input type="email" id="' + id + '" name="' + DomHelper.escapeHtml(key) + '" value="' + DomHelper.escapeHtml(val) + '" maxlength="255"' + required + '>';
+            } else if (key === 'postal_code') {
+                input = '<input type="text" id="' + id + '" name="' + DomHelper.escapeHtml(key) + '" value="' + DomHelper.escapeHtml(val) + '" placeholder="例: 100-0001" maxlength="8" inputmode="numeric" autocomplete="postal-code"' + required + '>' +
+                    '<p class="member-form-hint">郵便番号を入力すると住所が自動で入力されます</p>';
+            } else if (key === 'phone') {
+                input = '<input type="tel" id="' + id + '" name="' + DomHelper.escapeHtml(key) + '" value="' + DomHelper.escapeHtml(val) + '" maxlength="50"' + required + '>';
+            } else {
+                const maxLen = (key === 'address' || key === 'street') ? 500 : 255;
+                input = '<input type="text" id="' + id + '" name="' + DomHelper.escapeHtml(key) + '" value="' + DomHelper.escapeHtml(val) + '" maxlength="' + maxLen + '"' + (key === 'address' ? ' autocomplete="street-address"' : '') + required + '>';
+            }
+            return '<div class="member-form-group"><label for="' + id + '">' + DomHelper.escapeHtml(label) + (f.required ? ' <span class="required">*</span>' : '') + '</label>' + input + '</div>';
+        });
         return `
             <div class="member-modal-inner">
                 <h3 class="member-modal-title"><i class="fas fa-user-edit"></i> プロフィール編集</h3>
                 <form id="profileEditForm" class="member-form">
-                    <div class="member-form-group">
-                        <label for="profileEditName">お名前</label>
-                        <input type="text" id="profileEditName" name="name" value="${DomHelper.escapeHtml(name)}" maxlength="255">
-                    </div>
-                    <div class="member-form-group">
-                        <label for="profileEditPhone">電話番号</label>
-                        <input type="tel" id="profileEditPhone" name="phone" value="${DomHelper.escapeHtml(phone)}" maxlength="50">
-                    </div>
-                    <div class="member-form-group">
-                        <label for="profileEditBirthday">誕生日</label>
-                        <input type="date" id="profileEditBirthday" name="birthday" value="${DomHelper.escapeHtml(birthday)}">
-                    </div>
-                    <div class="member-form-group">
-                        <label for="profileEditPostalCode">郵便番号</label>
-                        <input type="text" id="profileEditPostalCode" name="postal_code" value="" placeholder="例: 100-0001" maxlength="8" inputmode="numeric" autocomplete="postal-code">
-                        <p class="member-form-hint">郵便番号を入力すると住所が自動で入力されます</p>
-                    </div>
-                    <div class="member-form-group">
-                        <label for="profileEditAddress">住所</label>
-                        <input type="text" id="profileEditAddress" name="address" value="${DomHelper.escapeHtml(address)}" maxlength="500" autocomplete="street-address">
-                    </div>
+                    ${rows.join('')}
                     <div class="member-form-actions">
                         <button type="button" class="member-btn member-btn--secondary" onclick="window.app.memberManager.closeProfileEdit()">キャンセル</button>
                         <button type="submit" class="member-btn member-btn--primary"><i class="fas fa-check"></i> 保存</button>
@@ -675,21 +738,38 @@ class MemberManager {
         if (e) e.preventDefault();
         const form = document.getElementById('profileEditForm');
         if (!form) return;
-        const payload = {
-            name: (form.querySelector('#profileEditName') || {}).value || '',
-            phone: (form.querySelector('#profileEditPhone') || {}).value || '',
-            birthday: (form.querySelector('#profileEditBirthday') || {}).value || null,
-            address: (form.querySelector('#profileEditAddress') || {}).value || null,
-        };
-        if (!payload.birthday) payload.birthday = null;
+        const payload = {};
+        const root = (this.memberData && this.memberData.member) ? this.memberData.member : this.memberData;
+        const fields = (root && root.profile_field_settings) ? root.profile_field_settings : [];
+        const keys = fields.map(function (f) { return f.key; });
+        keys.forEach(function (key) {
+            const el = form.querySelector('[name="' + key.replace(/"/g, '\\"') + '"]');
+            if (el) {
+                let v = (el.value || '').trim();
+                if (key === 'birthday' && !v) v = null;
+                payload[key] = v || null;
+            }
+        });
+        if (Object.keys(payload).length === 0 && form.elements.length) {
+            for (let i = 0; i < form.elements.length; i++) {
+                const el = form.elements[i];
+                if (el.name && el.name !== '_token') {
+                    let v = (el.value || '').trim();
+                    if (el.name === 'birthday' && !v) v = null;
+                    payload[el.name] = v || null;
+                }
+            }
+        }
         try {
             const result = await this.apiClient.request(AppConstants.API_ENDPOINTS.MEMBERS_ME, {
                 method: 'PUT',
-                body: payload,
+                body: JSON.stringify(payload),
+                headers: { 'Content-Type': 'application/json' },
             });
             if (result.success) {
-                this.memberData = result.data;
-                this.render(result.data);
+                const next = (result.data && result.data.member) ? result.data.member : result.data;
+                this.memberData = next;
+                this.render(next);
                 this.closeProfileEdit();
                 ToastManager.success('プロフィールを更新しました');
             } else {

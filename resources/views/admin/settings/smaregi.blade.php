@@ -19,6 +19,23 @@
     <div class="alert alert-success"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>
 @endif
 
+{{-- 開発用: 接続・POS状態の確認（本番デプロイ時はこのブロックを削除可） --}}
+@if(isset($view->posStatusMessage) && $view->posStatusMessage !== null)
+<div class="card mb-4 border-info">
+    <div class="card-header bg-light"><i class="fas fa-info-circle text-info"></i> 接続・POS状態（開発用）</div>
+    <div class="card-body">
+        <p class="mb-2">{{ $view->posStatusMessage }}</p>
+        @if(isset($view->posStatusEnvCheck) && $view->posStatusEnvCheck !== null)
+        <p class="mb-1 small"><strong>.env の読み込み状況:</strong> {{ $view->posStatusEnvCheck }}</p>
+        <p class="mb-0 small text-muted">SMAREGI_CLIENT_ID / SMAREGI_CLIENT_SECRET は <strong>.env にのみ</strong>設定します（管理画面・DBでは設定できません）。プロジェクト直下の <code>.env</code> に記載し、変更後は <code>php artisan config:clear</code> を実行してから再読み込みしてください。</p>
+        @endif
+    </div>
+</div>
+@endif
+<div class="mb-4">
+    <a href="{{ admin_route('admin.settings.smaregi.pos-data') }}" class="btn btn-outline-secondary btn-sm"><i class="fas fa-database"></i> 仮想POSデータ確認（サーバー取得データの疎通確認）</a>
+</div>
+
 <div class="card mb-4">
     <div class="card-header"><i class="fas fa-link"></i> スマレジ・デベロッパーズで設定するURL</div>
     <div class="card-body">
