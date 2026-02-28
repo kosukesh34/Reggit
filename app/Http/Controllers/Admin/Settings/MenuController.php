@@ -4,24 +4,35 @@ namespace App\Http\Controllers\Admin\Settings;
 
 use App\Http\Controllers\Admin\AdminBaseController;
 use App\Http\Requests\Admin\SettingsMenuRequest;
-use App\Services\SettingsService;
+use App\UseCases\Admin\Settings\GetMenuSettingsUseCase;
+use App\UseCases\Admin\Settings\UpdateMenuSettingsUseCase;
 
 class MenuController extends AdminBaseController
 {
+    private GetMenuSettingsUseCase $getMenuSettingsUseCase;
+    private UpdateMenuSettingsUseCase $updateMenuSettingsUseCase;
+
     public function __construct(
-        private SettingsService $settingsService
+        GetMenuSettingsUseCase $getMenuSettingsUseCase,
+        UpdateMenuSettingsUseCase $updateMenuSettingsUseCase
     ) {
+        $this->getMenuSettingsUseCase = $getMenuSettingsUseCase;
+        $this->updateMenuSettingsUseCase = $updateMenuSettingsUseCase;
     }
 
     public function index()
     {
-        $settings = $this->settingsService->getMenuSettings($this->resolveAdminProjectId());
+        $projectId = $this->resolveAdminProjectId();
+        $settings = $this->getMenuSettingsUseCase->handle($projectId);
+
         return view('admin.settings.menu', ['settings' => $settings]);
     }
 
     public function update(SettingsMenuRequest $request)
     {
-        $this->settingsService->updateMenuSettings($request->validated(), $this->resolveAdminProjectId());
+        $projectId = $this->resolveAdminProjectId();
+        $this->updateMenuSettingsUseCase->handle($projectId, $request->validated());
+
         return redirect()->route('admin.settings.menu', $this->buildAdminRouteParams())
             ->with('success', 'メニュー設定を更新しました');
     }

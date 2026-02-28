@@ -2,57 +2,42 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\UserService;
+use App\UseCases\Stamp\StampIndexUseCase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * スタンプ一覧 Web API。責務は UseCase に委譲する。
+ */
 class StampController extends Controller
 {
-    public function __construct(private UserService $userService)
+    private StampIndexUseCase $stampIndexUseCase;
+
+    public function __construct(StampIndexUseCase $stampIndexUseCase)
     {
+        $this->stampIndexUseCase = $stampIndexUseCase;
     }
 
     public function index(Request $request)
     {
         try {
-            $user = $this->userService->getOrCreateUser($request);
-            $member = $user->member;
-            if ($member === null) {
-                $projectId = $user->project_id ?? 1;
+            $output = $this->stampIndexUseCase->handle($request);
+
+            if ($output->requiresMembership) {
                 return response()->json([
                     'stamp_cards' => [],
                     'message' => '会員登録が必要です',
-                    'default_image_url' => \App\Models\ShopSetting::getStampDefaultImageUrl($projectId),
+                    'default_image_url' => $output->defaultImageUrl,
                 ]);
             }
 
-            $cards = \App\Models\StampCard::where('project_id', $member->project_id)
-                ->where('is_active', true)
-                ->orderBy('name')
-                ->get();
-
-            $memberStamps = $member->memberStamps()->with('stampCard')->get()->keyBy('stamp_card_id');
-            $defaultImageUrl = \App\Models\ShopSetting::getStampDefaultImageUrl($member->project_id);
-
-            $stampCards = $cards->map(function ($card) use ($memberStamps) {
-                $ms = $memberStamps->get($card->id);
-                return [
-                    'id' => $card->id,
-                    'name' => $card->name,
-                    'required_stamps' => $card->required_stamps,
-                    'reward_description' => $card->reward_description,
-                    'image_url' => $card->image_url,
-                    'current_stamps' => $ms ? $ms->current_stamps : 0,
-                    'completed_at' => $ms && $ms->completed_at ? $ms->completed_at->toIso8601String() : null,
-                ];
-            });
-
             return response()->json([
-                'stamp_cards' => $stampCards,
-                'default_image_url' => $defaultImageUrl,
+                'stamp_cards' => $output->stampCardsToArray(),
+                'default_image_url' => $output->defaultImageUrl,
             ]);
         } catch (\Exception $e) {
             Log::error('Stamps index error: ' . $e->getMessage());
+
             return response()->json(['error' => 'スタンプの取得に失敗しました'], 500);
         }
     }

@@ -3,17 +3,28 @@
 namespace App\Http\Controllers\Admin\Settings;
 
 use App\Http\Controllers\Admin\AdminBaseController;
-use App\Services\SettingsService;
+use App\UseCases\Admin\Settings\GetReservationOnlySettingsUseCase;
+use App\UseCases\Admin\Settings\UpdateReservationOnlySettingsUseCase;
 use Illuminate\Http\Request;
 
 class ReservationsController extends AdminBaseController
 {
-    public function __construct(private SettingsService $settingsService) {}
+    private GetReservationOnlySettingsUseCase $getReservationOnlySettingsUseCase;
+    private UpdateReservationOnlySettingsUseCase $updateReservationOnlySettingsUseCase;
+
+    public function __construct(
+        GetReservationOnlySettingsUseCase $getReservationOnlySettingsUseCase,
+        UpdateReservationOnlySettingsUseCase $updateReservationOnlySettingsUseCase
+    ) {
+        $this->getReservationOnlySettingsUseCase = $getReservationOnlySettingsUseCase;
+        $this->updateReservationOnlySettingsUseCase = $updateReservationOnlySettingsUseCase;
+    }
 
     public function index()
     {
         $projectId = $this->resolveAdminProjectId();
-        $settings = $this->settingsService->getReservationOnlySettings($projectId);
+        $settings = $this->getReservationOnlySettingsUseCase->handle($projectId);
+
         return view('admin.settings.reservations', compact('settings'));
     }
 
@@ -30,7 +41,8 @@ class ReservationsController extends AdminBaseController
             'advance_booking_days' => 'required|integer|min:1|max:365',
             'reservation_capacity_per_slot' => 'required|integer|min:1|max:999',
         ]);
-        $this->settingsService->updateReservationOnlySettings($validated, $projectId);
+        $this->updateReservationOnlySettingsUseCase->handle($projectId, $validated);
+
         return redirect()->route('admin.settings.reservations', $this->buildAdminRouteParams())
             ->with('success', '予約設定を更新しました');
     }

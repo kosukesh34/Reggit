@@ -2,19 +2,24 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Services\Admin\DashboardService;
+use App\UseCases\Admin\Dashboard\AdminDashboardIndexUseCase;
 
 class DashboardController extends AdminBaseController
 {
-    public function __construct(
-        private DashboardService $dashboardService
-    ) {
+    private AdminDashboardIndexUseCase $dashboardIndexUseCase;
+
+    public function __construct(AdminDashboardIndexUseCase $dashboardIndexUseCase)
+    {
+        $this->dashboardIndexUseCase = $dashboardIndexUseCase;
     }
 
     public function dashboard()
     {
-        $stats = $this->dashboardService->getStats();
-        $recent_orders = $this->dashboardService->getRecentOrders(10);
-        return view('admin.dashboard', compact('stats', 'recent_orders'));
+        $output = $this->dashboardIndexUseCase->handle();
+
+        return view('admin.dashboard', [
+            'stats' => $output->stats,
+            'recent_orders' => $output->recentOrders,
+        ]);
     }
 }

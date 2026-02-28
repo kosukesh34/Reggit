@@ -2,28 +2,41 @@
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Models\PointTransaction;
 use App\Services\MemberService;
 use App\Services\UserService;
+use App\UseCases\Member\MemberAddPointsUseCase;
+use App\UseCases\Member\MemberMeUseCase;
+use App\UseCases\Member\MemberPointsUseCase;
+use App\UseCases\Member\MemberRegisterUseCase;
+use App\UseCases\Member\MemberUpdateUseCase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * 会員 API（レガシー互換）。責務は UseCase に委譲する。
+ */
 class MemberController extends BaseApiController
 {
     public function __construct(
-        private MemberService $memberService,
-        private UserService $userService
+        private MemberMeUseCase $meUseCase,
+        private MemberUpdateUseCase $updateUseCase,
+        private MemberRegisterUseCase $registerUseCase,
+        private MemberPointsUseCase $pointsUseCase,
+        private MemberAddPointsUseCase $addPointsUseCase,
+        private UserService $userService,
+        private MemberService $memberService
     ) {
     }
 
     public function me(Request $request)
     {
         try {
-            $user = $this->userService->getOrCreateUser($request);
-            $data = $this->memberService->getMemberData($user);
-            return $this->success(['member' => $data]);
+            $dto = $this->meUseCase->handle($request);
+
+            return $this->success(['member' => $dto->toArray()]);
         } catch (\Exception $e) {
             Log::error('Failed to get member data: ' . $e->getMessage());
+
             return $this->error('認証が必要です', 401);
         }
     }
@@ -36,16 +49,18 @@ class MemberController extends BaseApiController
             if ($member === null) {
                 return $this->error('会員登録が必要です', 400);
             }
-            $projectId = (int) $member->project_id;
-            $rules = $this->memberService->getProfileValidationRules($projectId);
+
+            $rules = $this->memberService->getProfileValidationRules((int) $member->project_id);
             $validated = $request->validate($rules);
 
-            $data = $this->memberService->updateProfile($user, $validated);
-            return $this->success(['member' => $data], '更新しました');
+            $dto = $this->updateUseCase->handle($request, $validated);
+
+            return $this->success(['member' => $dto->toArray()], '更新しました');
         } catch (\Illuminate\Validation\ValidationException $e) {
             throw $e;
         } catch (\Exception $e) {
             Log::error('Member profile update error: ' . $e->getMessage());
+
             return $this->error($e->getMessage(), 400);
         }
     }
@@ -58,22 +73,15 @@ class MemberController extends BaseApiController
             $rules = $this->memberService->getProfileValidationRules($projectId);
             $validated = $request->validate($rules);
 
-            $this->memberService->registerMember($user, $validated);
-            $user->refresh();
-            $data = $this->memberService->getMemberData($user);
+            $output = $this->registerUseCase->handle($request, $validated);
+            $message = $output->alreadyRegistered ? '既に会員登録済みです' : '会員登録が完了しました';
+            $status = $output->alreadyRegistered ? 200 : 201;
 
-            return $this->success(['member' => $data], '会員登録が完了しました', 201);
+            return $this->success(['member' => $output->member->toArray()], $message, $status);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            throw $e;
         } catch (\Exception $e) {
             Log::error('Member registration error: ' . $e->getMessage());
-            if ($e->getMessage() === '既に会員登録済みです') {
-                try {
-                    $user = $this->userService->getOrCreateUser($request);
-                    $data = $this->memberService->getMemberData($user);
-                    return $this->success(['member' => $data], '既に会員登録済みです');
-                } catch (\Exception $innerException) {
-                    return $this->error($e->getMessage(), 400);
-                }
-            }
 
             return $this->error($e->getMessage(), 400);
         }
@@ -82,25 +90,18 @@ class MemberController extends BaseApiController
     public function getPoints(Request $request)
     {
         try {
-            $user = $this->userService->getOrCreateUser($request);
-            $member = $user->member;
-
-            if ($member === null) {
+            $output = $this->pointsUseCase->handle($request);
+            if (! $output->hasMember) {
                 return $this->error('会員登録が必要です', 404);
             }
 
-            $transactions = PointTransaction::where('member_id', $member->id)
-                ->with('order')
-                ->latest()
-                ->take(20)
-                ->get();
-
             return $this->success([
-                'points' => $member->points,
-                'transactions' => $transactions,
+                'points' => $output->points,
+                'transactions' => $output->transactions->toArray(),
             ]);
         } catch (\Exception $e) {
             Log::error('Failed to get points: ' . $e->getMessage());
+
             return $this->error('ポイント情報の取得に失敗しました', 500);
         }
     }
@@ -113,20 +114,21 @@ class MemberController extends BaseApiController
         ]);
 
         try {
-            $user = $this->userService->getOrCreateUser($request);
-            $member = $user->member;
-
-            if ($member === null) {
+            $output = $this->addPointsUseCase->handle(
+                $request,
+                (int) $validated['points'],
+                isset($validated['description']) ? (string) $validated['description'] : null
+            );
+            if (! $output->hasMember) {
                 return $this->error('会員登録が必要です', 404);
             }
 
-            $member->addPoints($validated['points'], $validated['description'] ?? null);
-
             return $this->success([
-                'points' => $member->fresh()->points,
+                'points' => $output->points,
             ], 'ポイントが追加されました');
         } catch (\Exception $e) {
             Log::error('Failed to add points: ' . $e->getMessage());
+
             return $this->error('ポイントの追加に失敗しました', 500);
         }
     }
