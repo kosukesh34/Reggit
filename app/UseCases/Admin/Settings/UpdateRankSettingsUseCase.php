@@ -60,8 +60,14 @@ class UpdateRankSettingsUseCase
         if (array_key_exists('show_member_card_for_guest', $payload)) {
             ShopSetting::setShowMemberCardForGuest((bool) $payload['show_member_card_for_guest'], $projectId);
         }
-        if (array_key_exists('member_card_design', $payload) && in_array($payload['member_card_design'] ?? '', ['default', 'logo_top', 'logo_center'], true)) {
+        if (array_key_exists('member_card_design', $payload) && in_array($payload['member_card_design'] ?? '', ['default', 'logo_top', 'logo_center', 'logo_header', 'compact'], true)) {
             ShopSetting::setMemberCardDesign((string) $payload['member_card_design'], $projectId);
+        }
+        if (array_key_exists('member_card_display_type', $payload) && in_array($payload['member_card_display_type'] ?? '', ['card', 'sheet'], true)) {
+            ShopSetting::setMemberCardDisplayType((string) $payload['member_card_display_type'], $projectId);
+        }
+        if (array_key_exists('member_card_code_type', $payload) && in_array($payload['member_card_code_type'] ?? '', ['barcode', 'qrcode'], true)) {
+            ShopSetting::setMemberCardCodeType((string) $payload['member_card_code_type'], $projectId);
         }
     }
 }

@@ -152,6 +152,22 @@
     filter: none;
     opacity: 0.85;
 }
+/* ロゴ未設定時のプレースホルダー */
+.rank-card-preview-wrap .idnect-card-logo-placeholder {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 4px 10px;
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 6px;
+    color: inherit;
+    min-width: 40px;
+    text-align: center;
+}
+.rank-card-preview-wrap .idnect-card-logo-placeholder.d-none {
+    display: none !important;
+}
+
 /* 標準デザイン：ロゴ非表示 */
 .rank-card-preview-wrap .idnect-card-wrapper--design-default .idnect-card-logo-wrap {
     display: none;
@@ -164,6 +180,74 @@
 .rank-card-preview-wrap .idnect-card-wrapper--design-logo_center .idnect-card-logo-wrap {
     justify-content: center;
     margin: 6px 0;
+}
+/* ロゴヘッダー：1行にロゴ＋ランク・ポイント */
+.rank-card-preview-wrap .idnect-card-wrapper--design-logo_header .idnect-card-front-inner {
+    display: flex;
+    flex-wrap: wrap;
+}
+.rank-card-preview-wrap .idnect-card-wrapper--design-logo_header .idnect-card-logo-wrap {
+    order: 1;
+    flex: 0 1 45%;
+    margin-bottom: 4px;
+}
+.rank-card-preview-wrap .idnect-card-wrapper--design-logo_header .idnect-card-meta-row {
+    order: 2;
+    flex: 0 1 55%;
+    margin-bottom: 8px;
+    justify-content: flex-end;
+}
+.rank-card-preview-wrap .idnect-card-wrapper--design-logo_header .idnect-card-display-name {
+    order: 3;
+    flex: 1 1 100%;
+}
+.rank-card-preview-wrap .idnect-card-wrapper--design-logo_header .idnect-card-barcode-wrap {
+    order: 4;
+    flex: 1 1 100%;
+}
+.rank-card-preview-wrap .idnect-card-wrapper--design-logo_header .idnect-card-tap-hint {
+    order: 5;
+    flex: 1 1 100%;
+}
+/* コンパクトデザイン */
+.rank-card-preview-wrap .idnect-card-wrapper--design-compact .idnect-card-front-inner {
+    padding: 8px 10px 6px;
+    min-height: 120px;
+}
+.rank-card-preview-wrap .idnect-card-wrapper--design-compact .idnect-card-logo-wrap {
+    display: none;
+}
+.rank-card-preview-wrap .idnect-card-wrapper--design-compact .idnect-card-front-inner .idnect-card-display-name {
+    margin: 0 0 4px 0;
+    font-size: 11px;
+}
+.rank-card-preview-wrap .idnect-card-wrapper--design-compact .idnect-card-meta-row {
+    margin-bottom: 4px;
+}
+.rank-card-preview-wrap .idnect-card-wrapper--design-compact .idnect-card-rank-wrap .idnect-card-rank-badge {
+    padding: 2px 8px;
+    font-size: 9px;
+}
+.rank-card-preview-wrap .idnect-card-wrapper--design-compact .idnect-card-points--front {
+    padding: 3px 6px;
+}
+.rank-card-preview-wrap .idnect-card-wrapper--design-compact .idnect-card-points--front .idnect-card-points-value {
+    font-size: 12px;
+}
+.rank-card-preview-wrap .idnect-card-wrapper--design-compact .idnect-card-points--front .idnect-card-points-label {
+    font-size: 8px;
+}
+.rank-card-preview-wrap .idnect-card-wrapper--design-compact .idnect-card-barcode-wrap {
+    min-height: 36px;
+    max-height: 44px;
+    padding: 4px;
+    margin-bottom: 2px;
+}
+.rank-card-preview-wrap .idnect-card-wrapper--design-compact .idnect-card-barcode-placeholder {
+    font-size: 8px;
+}
+.rank-card-preview-wrap .idnect-card-wrapper--design-compact .idnect-card-tap-hint {
+    font-size: 8px;
 }
 
 .rank-card-preview-wrap .idnect-card-front-inner .idnect-card-display-name {
@@ -282,10 +366,31 @@
     align-items: flex-start;
 }
 
-.rank-card-preview-item {
+/* 全デザイン比較：5枚を横並び */
+.rank-card-preview-grid--multiple {
+    gap: 16px;
+    justify-content: flex-start;
+}
+.rank-card-preview-grid--multiple .rank-card-preview-item {
     flex: 0 0 auto;
 }
 
+.rank-card-preview-item {
+    flex: 0 0 auto;
+    cursor: pointer;
+    border: 2px solid transparent;
+    border-radius: 12px;
+    padding: 6px;
+    margin: -6px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.rank-card-preview-item:hover {
+    border-color: rgba(0, 0, 0, 0.12);
+}
+.rank-card-preview-item--selected {
+    border-color: var(--bs-primary, #0d6efd);
+    box-shadow: 0 0 0 1px var(--bs-primary, #0d6efd);
+}
 .rank-card-preview-item .rank-card-preview-label {
     display: block;
     margin-top: 8px;

@@ -22,7 +22,9 @@ class GetRankSettingsUseCase
             ShopSetting::getShowRankProgress($projectId),
             ShopSetting::getShowMemberCardForGuest($projectId),
             ShopSetting::getMemberCardDesign($projectId),
-            ShopSetting::getFrontendLogoUrl($projectId)
+            ShopSetting::getFrontendLogoUrl($projectId),
+            ShopSetting::getMemberCardDisplayType($projectId),
+            ShopSetting::getMemberCardCodeType($projectId)
         );
     }
 }

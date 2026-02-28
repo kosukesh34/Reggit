@@ -33,6 +33,8 @@ class MemberPointCardUseCase
         $showRankProgress = \App\Models\ShopSetting::getShowRankProgress($projectId);
         $memberCardDesign = \App\Models\ShopSetting::getMemberCardDesign($projectId);
         $memberCardLogoUrl = \App\Models\ShopSetting::getFrontendLogoUrl($projectId);
+        $memberCardDisplayType = \App\Models\ShopSetting::getMemberCardDisplayType($projectId);
+        $memberCardCodeType = \App\Models\ShopSetting::getMemberCardCodeType($projectId);
 
         return new MemberPointCardView(false, [
             'member_number' => $member->member_number,
@@ -49,6 +51,8 @@ class MemberPointCardUseCase
             'next_rank_label' => $rankInfo['next_rank_label'] ?? null,
             'member_card_design' => $memberCardDesign,
             'member_card_logo_url' => $memberCardLogoUrl,
+            'member_card_display_type' => $memberCardDisplayType,
+            'member_card_code_type' => $memberCardCodeType,
         ]);
     }
 }

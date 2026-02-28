@@ -7,6 +7,7 @@ use App\Models\ShopSetting;
 use App\Models\User;
 use App\Util\AdminContext;
 use Firebase\JWT\JWT;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -40,7 +41,8 @@ class GoogleWalletPassService
         $project = AdminContext::getCurrentProject();
         $organizationName = $project !== null ? $project->name : config('app.name', '会員証');
         $barcodeValue = $member->member_number ?? (string) $member->id;
-        $objectSuffix = 'member-' . (string) $member->id;
+        // オブジェクトIDに -b を付与し、既存のQRオブジェクトと区別してバーコードの新オブジェクトとして発行する
+        $objectSuffix = 'member-' . (string) $member->id . '-b';
         $points = $data['points'] ?? $member->getTotalPointsFromTransactions();
         $rankLabel = $data['current_rank_label'] ?? $member->rank ?? '';
         $accountName = $user->name ?? '';
@@ -106,43 +108,80 @@ class GoogleWalletPassService
         $programLogoUri = $projectId !== null ? (ShopSetting::getWalletGoogleProgramLogoUrl($projectId) ?? config('google_wallet.program_logo_uri', 'https://storage.googleapis.com/wallet-lab-tools-codelab-artifacts-public/pass_google_logo.jpg')) : config('google_wallet.program_logo_uri', 'https://storage.googleapis.com/wallet-lab-tools-codelab-artifacts-public/pass_google_logo.jpg');
         $heroImageUri = $projectId !== null ? (ShopSetting::getWalletGoogleHeroImageUrl($projectId) ?? config('google_wallet.hero_image_uri', 'https://storage.googleapis.com/wallet-lab-tools-codelab-artifacts-public/pass_google_logo.jpg')) : config('google_wallet.hero_image_uri', 'https://storage.googleapis.com/wallet-lab-tools-codelab-artifacts-public/pass_google_logo.jpg');
 
-        // クラスが既に存在すれば JWT では Object のみ送る（class must already exist and be approved に従う）
-        $classExists = $this->ensureLoyaltyClassExists($classId, $programName, $programLogoUri);
+        // クラスが存在しなければ REST で先に作成する（JWT 発行時は class が存在している必要がある）
+        $this->ensureLoyaltyClassExists($classId, $programName, $programLogoUri);
 
-        $loyaltyClass = null;
-        if (! $classExists) {
-            $loyaltyClass = [
-                'id' => $classId,
-                'programName' => $programName,
-                'issuerName' => $issuerName,
-                'reviewStatus' => 'UNDER_REVIEW',
-                'programLogo' => [
-                    'sourceUri' => ['uri' => $programLogoUri],
-                    'contentDescription' => [
-                        'defaultValue' => ['language' => 'en-US', 'value' => $programName . ' logo'],
-                    ],
-                ],
-            ];
+        // JWT には常にクラス定義を含め、表示（日本語ラベル・背景色・バーコード等）を確実に反映させる
+        $logoImage = [
+            'sourceUri' => ['uri' => $programLogoUri],
+            'contentDescription' => [
+                'defaultValue' => ['language' => 'en-US', 'value' => $programName . ' logo'],
+            ],
+        ];
+        $loyaltyClass = [
+            'id' => $classId,
+            'programName' => $programName,
+            'issuerName' => $issuerName,
+            'reviewStatus' => 'UNDER_REVIEW',
+            'programLogo' => $logoImage,
+            'wideProgramLogo' => $logoImage,
+            'accountNameLabel' => '会員名',
+            'accountIdLabel' => '会員番号',
+            'rewardsTierLabel' => 'ランク',
+        ];
+        $hexBg = config('google_wallet.hex_background_color', '');
+        if ($hexBg !== '' && preg_match('/^#[0-9A-Fa-f]{3}([0-9A-Fa-f]{3})?$/', $hexBg)) {
+            $loyaltyClass['hexBackgroundColor'] = $hexBg;
         }
 
-        // LoyaltyObject: 公式サンプル準拠（textModulesData に id 必須、barcode は type/value のみ、label は Points）
+        // Android / Web / iOS で同じレイアウトにするため classTemplateInfo でカード・リスト・詳細の表示順を統一
+        $loyaltyClass['classTemplateInfo'] = [
+            'cardTemplateOverride' => [
+                'cardRowTemplateInfos' => [
+                    [
+                        'twoItems' => [
+                            'startItem' => ['firstValue' => ['fields' => [['fieldPath' => 'object.accountName']]]],
+                            'endItem' => ['firstValue' => ['fields' => [['fieldPath' => 'object.loyaltyPoints']]]],
+                        ],
+                    ],
+                    [
+                        'oneItem' => [
+                            'item' => ['firstValue' => ['fields' => [['fieldPath' => 'object.accountId']]]],
+                        ],
+                    ],
+                ],
+            ],
+            'listTemplateOverride' => [
+                'firstRowOption' => ['fieldOption' => ['fields' => [['fieldPath' => 'object.accountName']]]],
+                'secondRowOption' => ['fields' => [['fieldPath' => 'object.loyaltyPoints.balance']]],
+            ],
+            'detailsTemplateOverride' => [
+                'detailsItemInfos' => [
+                    ['item' => ['firstValue' => ['fields' => [['fieldPath' => 'object.textModulesData[\'rank\']']]]]],
+                    ['item' => ['firstValue' => ['fields' => [['fieldPath' => 'object.textModulesData[\'points\']']]]]],
+                    ['item' => ['firstValue' => ['fields' => [['fieldPath' => 'object.textModulesData[\'member_info\']']]]]],
+                ],
+            ],
+        ];
+
+        // LoyaltyObject: ポイントカードUIに合わせる（会員証・ランク・ポイント pt・会員番号、バーコードは CODE_128）
         $textModules = [];
         if ($rankLabel !== '') {
             $textModules[] = [
                 'id' => 'rank',
-                'header' => 'Rank',
+                'header' => 'ランク',
                 'body' => $rankLabel,
             ];
         }
         $textModules[] = [
             'id' => 'points',
-            'header' => $programName,
-            'body' => (string) $points . ' pts' . ($rankLabel !== '' ? ' · ' . $rankLabel : ''),
+            'header' => 'ポイント',
+            'body' => (string) $points . ' pt' . ($rankLabel !== '' ? ' · ' . $rankLabel : ''),
         ];
         $textModules[] = [
             'id' => 'member_info',
-            'header' => 'Member ID',
-            'body' => $barcodeValue . ($rankLabel !== '' ? ' · ' . $rankLabel : ''),
+            'header' => '会員番号',
+            'body' => $barcodeValue,
         ];
 
         $loyaltyObject = [
@@ -152,11 +191,12 @@ class GoogleWalletPassService
             'accountId' => $accountIdDisplay,
             'accountName' => $accountNameDisplay,
             'barcode' => [
-                'type' => 'QR_CODE',
+                'type' => 'CODE_128',
                 'value' => $barcodeValue,
+                'alternateText' => $barcodeValue,
             ],
             'loyaltyPoints' => [
-                'label' => 'Points',
+                'label' => 'ポイント',
                 'balance' => ['int' => (int) $points],
             ],
             'textModulesData' => $textModules,
@@ -194,10 +234,10 @@ class GoogleWalletPassService
             $origins = [$fallback];
         }
 
-        $payload = ['loyaltyObjects' => [$loyaltyObject]];
-        if ($loyaltyClass !== null) {
-            $payload['loyaltyClasses'] = [$loyaltyClass];
-        }
+        $payload = [
+            'loyaltyClasses' => [$loyaltyClass],
+            'loyaltyObjects' => [$loyaltyObject],
+        ];
 
         $claims = [
             'iss' => $credentials['client_email'],
@@ -367,6 +407,11 @@ class GoogleWalletPassService
             ->get(self::WALLET_OBJECTS_BASE . '/loyaltyClass/' . $classId);
 
         if ($get->successful()) {
+            $cacheKey = 'google_wallet_class_patched:' . $classId;
+            if (Cache::get($cacheKey) !== true) {
+                $this->patchLoyaltyClassDisplayLabels($token, $classId);
+                Cache::put($cacheKey, true, now()->addDay());
+            }
             return true;
         }
 
@@ -399,7 +444,14 @@ class GoogleWalletPassService
                     'defaultValue' => ['language' => 'en-US', 'value' => $programName . ' logo'],
                 ],
             ],
+            'accountNameLabel' => '会員名',
+            'accountIdLabel' => '会員番号',
+            'rewardsTierLabel' => 'ランク',
         ];
+        $hexBg = config('google_wallet.hex_background_color', '');
+        if ($hexBg !== '' && preg_match('/^#[0-9A-Fa-f]{3}([0-9A-Fa-f]{3})?$/', $hexBg)) {
+            $body['hexBackgroundColor'] = $hexBg;
+        }
 
         $insert = Http::withToken($token)
             ->withHeaders(['Content-Type' => 'application/json'])
@@ -426,5 +478,38 @@ class GoogleWalletPassService
         Log::info('google-wallet loyaltyClass created', ['classId' => $classId]);
 
         return true;
+    }
+
+    /**
+     * 既存の LoyaltyClass に表示用ラベル（日本語）と背景色を PATCH で反映する。
+     * 既に追加済みのパスは「削除して再度追加」すると更新された表示になる。
+     */
+    private function patchLoyaltyClassDisplayLabels(?string $token, string $classId): void
+    {
+        if ($token === null) {
+            return;
+        }
+        $body = [
+            'accountNameLabel' => '会員名',
+            'accountIdLabel' => '会員番号',
+            'rewardsTierLabel' => 'ランク',
+        ];
+        $hexBg = config('google_wallet.hex_background_color', '');
+        if ($hexBg !== '' && preg_match('/^#[0-9A-Fa-f]{3}([0-9A-Fa-f]{3})?$/', $hexBg)) {
+            $body['hexBackgroundColor'] = $hexBg;
+        }
+        $patch = Http::withToken($token)
+            ->withHeaders(['Content-Type' => 'application/json'])
+            ->patch(self::WALLET_OBJECTS_BASE . '/loyaltyClass/' . $classId, $body);
+
+        if ($patch->successful()) {
+            Log::info('google-wallet loyaltyClass display labels patched', ['classId' => $classId]);
+        } else {
+            Log::warning('google-wallet loyaltyClass patch (display labels) failed', [
+                'classId' => $classId,
+                'status' => $patch->status(),
+                'body' => $patch->body(),
+            ]);
+        }
     }
 }

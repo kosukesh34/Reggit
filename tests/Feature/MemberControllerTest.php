@@ -29,7 +29,10 @@ class MemberControllerTest extends TestCase
         $this->createProject();
 
         $response = $this->withHeaders(['X-Line-User-Id' => self::LINE_USER_ID])
-            ->post('/api/members/register?project_key=default', ['name' => 'Test User']);
+            ->post('/api/members/register?project_key=default', [
+                'name' => 'Test User',
+                'phone' => '090-1234-5678',
+            ]);
 
         $response->assertStatus(201)
             ->assertJsonPath('is_member', true);
