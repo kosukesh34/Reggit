@@ -73,6 +73,8 @@ class MemberService
             'show_rank_progress' => \App\Models\ShopSetting::getShowRankProgress($projectId),
             'member_card_design' => \App\Models\ShopSetting::getMemberCardDesign($projectId),
             'member_card_logo_url' => \App\Models\ShopSetting::getFrontendLogoUrl($projectId),
+            'member_card_display_type' => \App\Models\ShopSetting::getMemberCardDisplayType($projectId),
+            'member_card_code_type' => \App\Models\ShopSetting::getMemberCardCodeType($projectId),
         ];
     }
 

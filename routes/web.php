@@ -41,7 +41,7 @@ Route::get('/', function () {
 });
 
 Route::get('/api', function () {
-    return response()->json(['message' => 'Mobile Order API']);
+    return response()->json(['message' => 'reggit API']);
 });
 
 // ========== LIFF ==========

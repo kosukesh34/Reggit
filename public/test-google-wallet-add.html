@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Wallet 追加（検証用・自動リダイレクト）</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; max-width: 480px; margin: 0 auto; }
+        .loading { color: #666; }
+        .error { color: #c00; white-space: pre-wrap; }
+        .success { color: #060; }
+    </style>
+</head>
+<body>
+    <p id="msg" class="loading">Google Wallet 用 URL を取得しています…</p>
+    <script>
+        (function () {
+            var params = new URLSearchParams(window.location.search);
+            var projectKey = params.get('project_key') || 'default';
+            var debug = params.get('debug') === '1' || params.get('debug') === 'true';
+            var apiUrl = '/api/members/me/google-wallet-url?project_key=' + encodeURIComponent(projectKey) + '&_t=' + Date.now();
+
+            fetch(apiUrl, { credentials: 'include', method: 'GET', cache: 'no-store' })
+                .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+                .then(function (result) {
+                    var msg = document.getElementById('msg');
+                    if (result.ok && result.data && result.data.url) {
+                        if (debug) {
+                            try {
+                                var jwt = result.data.url.replace(/^https:\/\/pay\.google\.com\/gp\/v\/save\//, '');
+                                var parts = jwt.split('.');
+                                var payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+                                var obj = payload.payload && payload.payload.loyaltyObjects && payload.payload.loyaltyObjects[0];
+                                var cls = payload.payload && payload.payload.loyaltyClasses && payload.payload.loyaltyClasses[0];
+                                var html = '<p class="success">JWT の内容（debug）</p><pre style="text-align:left;font-size:12px;overflow:auto;">';
+                                html += 'barcode.type: ' + (obj && obj.barcode ? obj.barcode.type : '—') + '\n';
+                                html += 'accountNameLabel: ' + (cls && cls.accountNameLabel ? cls.accountNameLabel : '—') + '\n';
+                                html += 'accountIdLabel: ' + (cls && cls.accountIdLabel ? cls.accountIdLabel : '—') + '\n';
+                                html += 'rewardsTierLabel: ' + (cls && cls.rewardsTierLabel ? cls.rewardsTierLabel : '—') + '\n';
+                                html += 'loyaltyPoints.label: ' + (obj && obj.loyaltyPoints ? obj.loyaltyPoints.label : '—') + '\n';
+                                html += 'classId: ' + (obj && obj.classId ? obj.classId : '—') + '\n';
+                                html += '</pre><p><a href="' + result.data.url + '">追加画面へ進む</a></p>';
+                                msg.outerHTML = html;
+                            } catch (e) {
+                                msg.textContent = 'デバッグ解析エラー: ' + e.message;
+                                msg.className = 'error';
+                            }
+                        } else {
+                            msg.textContent = 'Google Wallet の追加画面に移動します…';
+                            msg.className = 'success';
+                            window.location.href = result.data.url;
+                        }
+                    } else {
+                        msg.className = 'error';
+                        msg.textContent = result.data && result.data.error
+                            ? result.data.error
+                            : (result.data && result.data.reasons ? result.data.reasons.join('\n') : 'URL を取得できませんでした');
+                    }
+                })
+                .catch(function (err) {
+                    document.getElementById('msg').className = 'error';
+                    document.getElementById('msg').textContent = 'エラー: ' + (err.message || '通信に失敗しました');
+                });
+        })();
+    </script>
+</body>
+</html>
