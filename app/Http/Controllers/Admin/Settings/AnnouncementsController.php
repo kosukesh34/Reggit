@@ -3,18 +3,33 @@
 namespace App\Http\Controllers\Admin\Settings;
 
 use App\Http\Controllers\Admin\AdminBaseController;
-use App\Models\ShopSetting;
+use App\UseCases\Admin\Settings\GetAnnouncementsSettingsUseCase;
+use App\UseCases\Admin\Settings\UpdateAnnouncementsSettingsUseCase;
 use Illuminate\Http\Request;
 
 class AnnouncementsController extends AdminBaseController
 {
+    private GetAnnouncementsSettingsUseCase $getAnnouncementsSettingsUseCase;
+    private UpdateAnnouncementsSettingsUseCase $updateAnnouncementsSettingsUseCase;
+
+    public function __construct(
+        GetAnnouncementsSettingsUseCase $getAnnouncementsSettingsUseCase,
+        UpdateAnnouncementsSettingsUseCase $updateAnnouncementsSettingsUseCase
+    ) {
+        $this->getAnnouncementsSettingsUseCase = $getAnnouncementsSettingsUseCase;
+        $this->updateAnnouncementsSettingsUseCase = $updateAnnouncementsSettingsUseCase;
+    }
+
     public function index()
     {
         $projectId = $this->resolveAdminProjectId();
-        $featureEnabled = ShopSetting::isFeatureEnabled('feature_announcements_enabled', $projectId);
-        $defaultPinned = (bool) ShopSetting::getValue('announcement_default_pinned', false, $projectId);
-        $defaultExpiryDays = (int) ShopSetting::getValue('announcement_default_expiry_days', 0, $projectId);
-        return view('admin.settings.announcements', compact('featureEnabled', 'defaultPinned', 'defaultExpiryDays'));
+        $view = $this->getAnnouncementsSettingsUseCase->handle($projectId);
+
+        return view('admin.settings.announcements', [
+            'featureEnabled' => $view->featureEnabled,
+            'defaultPinned' => $view->defaultPinned,
+            'defaultExpiryDays' => $view->defaultExpiryDays,
+        ]);
     }
 
     public function update(Request $request)
@@ -25,11 +40,8 @@ class AnnouncementsController extends AdminBaseController
             'announcement_default_pinned' => 'nullable|boolean',
             'announcement_default_expiry_days' => 'nullable|integer|min:0|max:365',
         ]);
-        $flags = ShopSetting::getFeatureFlags($projectId);
-        $flags['feature_announcements_enabled'] = (bool) ($validated['feature_announcements_enabled'] ?? false);
-        ShopSetting::setFeatureFlags($flags, $projectId);
-        ShopSetting::setValue('announcement_default_pinned', isset($validated['announcement_default_pinned']) ? '1' : '0', 'boolean', $projectId);
-        ShopSetting::setValue('announcement_default_expiry_days', (int) ($validated['announcement_default_expiry_days'] ?? 0), 'integer', $projectId);
+        $this->updateAnnouncementsSettingsUseCase->handle($projectId, $validated);
+
         return redirect()->route('admin.settings.announcements', $this->buildAdminRouteParams())
             ->with('success', 'お知らせの設定を更新しました');
     }

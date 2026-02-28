@@ -5,24 +5,32 @@ namespace App\Http\Controllers\Admin\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\LoginRequest;
 use App\Models\Project;
-use App\Services\Admin\AdminAuthService;
+use App\UseCases\Admin\Auth\AdminLoginUseCase;
+use App\UseCases\Admin\Auth\GetAdminDashboardRedirectUseCase;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
 class AdminLoginController extends Controller
 {
+    private GetAdminDashboardRedirectUseCase $getDashboardRedirectUseCase;
+    private AdminLoginUseCase $adminLoginUseCase;
+
     public function __construct(
-        private AdminAuthService $authService
+        GetAdminDashboardRedirectUseCase $getDashboardRedirectUseCase,
+        AdminLoginUseCase $adminLoginUseCase
     ) {
+        $this->getDashboardRedirectUseCase = $getDashboardRedirectUseCase;
+        $this->adminLoginUseCase = $adminLoginUseCase;
     }
 
     /** プロジェクト選択画面（/admin/login） */
     public function show()
     {
         if (Auth::guard('admin')->check()) {
-            return $this->authService->getAdminDashboardRedirect();
+            return $this->getDashboardRedirectUseCase->handle();
         }
         $projects = Project::where('is_active', true)->orderBy('name')->get();
+
         return view('admin.project-login-select', ['projects' => $projects]);
     }
 
@@ -30,8 +38,9 @@ class AdminLoginController extends Controller
     public function showLoginForm()
     {
         if (Auth::guard('admin')->check()) {
-            return $this->authService->getAdminDashboardRedirect();
+            return $this->getDashboardRedirectUseCase->handle();
         }
+
         return view('admin.login', [
             'submitRoute' => route('admin.login.submit'),
         ]);
@@ -41,8 +50,9 @@ class AdminLoginController extends Controller
     public function showProject(string $project_key)
     {
         if (Auth::guard('admin')->check()) {
-            return $this->authService->getAdminDashboardRedirect();
+            return $this->getDashboardRedirectUseCase->handle();
         }
+
         return view('admin.login', [
             'submitRoute' => route('admin.project.login.submit', ['project_key' => $project_key]),
         ]);
@@ -52,7 +62,6 @@ class AdminLoginController extends Controller
     public function login(LoginRequest $request)
     {
         $projectKey = $request->route('project_key');
-        // ルートパラメータが取れない場合（キャッシュ等）は URL パスから取得
         if ($projectKey === null && preg_match('#^admin/([^/]+)/login$#', $request->path(), $m)) {
             $projectKey = $m[1];
         }
@@ -61,6 +70,7 @@ class AdminLoginController extends Controller
             'route_project_key' => $request->route('project_key'),
             'resolved_project_key' => $projectKey,
         ]);
-        return $this->authService->loginAdmin($request, $projectKey);
+
+        return $this->adminLoginUseCase->handle($request, $projectKey);
     }
 }
