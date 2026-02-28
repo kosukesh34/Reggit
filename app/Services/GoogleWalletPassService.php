@@ -2,11 +2,15 @@
 
 namespace App\Services;
 
+use App\Enums\GoogleWalletApi;
 use App\Models\Member;
 use App\Models\ShopSetting;
 use App\Models\User;
+use App\Services\GoogleWallet\GoogleWalletLoyaltyPayloadBuilder;
 use App\Util\AdminContext;
+use App\Util\StrHelper;
 use Firebase\JWT\JWT;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -24,6 +28,20 @@ class GoogleWalletPassService
 
     private const WALLET_OBJECTS_BASE = 'https://walletobjects.googleapis.com/walletobjects/v1';
 
+    private const JWT_AUDIENCE = 'google';
+
+    private const JWT_TYPE_SAVE_TO_WALLET = 'savetowallet';
+
+    private const JWT_ALGORITHM = 'RS256';
+
+    /** 設定未指定時に使うデフォルト画像 URL（config の default と一致させる） */
+    private const DEFAULT_LOGO_URI = 'https://storage.googleapis.com/wallet-lab-tools-codelab-artifacts-public/pass_google_logo.jpg';
+
+    public function __construct(
+        private readonly GoogleWalletLoyaltyPayloadBuilder $payloadBuilder
+    ) {
+    }
+
     /**
      * 会員用の Add to Google Wallet URL を生成する。
      * 失敗時は null を返す。
@@ -31,8 +49,13 @@ class GoogleWalletPassService
     public function createSaveUrlForUser(User $user): ?string
     {
         $data = $this->getMemberService()->getMemberData($user);
-        if (! isset($data['is_member']) || $data['is_member'] !== true || ! isset($data['member']) || ! $data['member'] instanceof Member) {
-            Log::info('google-wallet createSaveUrlForUser: not a member or no member data', ['user_id' => $user->id]);
+        if (! $this->isValidMemberData($data)) {
+            $projectId = AdminContext::getCurrentProjectId();
+            Log::info('google-wallet createSaveUrlForUser: not a member or no member data', [
+                'user_id' => $user->id,
+                'project_id' => $projectId,
+            ]);
+
             return null;
         }
 
@@ -40,7 +63,8 @@ class GoogleWalletPassService
         $project = AdminContext::getCurrentProject();
         $organizationName = $project !== null ? $project->name : config('app.name', '会員証');
         $barcodeValue = $member->member_number ?? (string) $member->id;
-        $objectSuffix = 'member-' . (string) $member->id;
+        // オブジェクトIDに -b を付与し、既存のQRオブジェクトと区別してバーコードの新オブジェクトとして発行する
+        $objectSuffix = 'member-' . (string) $member->id . '-b';
         $points = $data['points'] ?? $member->getTotalPointsFromTransactions();
         $rankLabel = $data['current_rank_label'] ?? $member->rank ?? '';
         $accountName = $user->name ?? '';
@@ -56,7 +80,7 @@ class GoogleWalletPassService
     {
         $projectId = AdminContext::getCurrentProjectId();
         if ($projectId === null || $projectId === false) {
-            Log::info('google-wallet createSaveUrlForUserId: no project in context');
+            Log::info('google-wallet createSaveUrlForUserId: no project in context', ['user_id' => $userId]);
             return null;
         }
         $user = User::where('id', $userId)->where('project_id', $projectId)->first();
@@ -67,7 +91,7 @@ class GoogleWalletPassService
 
         $url = $this->createSaveUrlForUser($user);
         if ($url === null) {
-            Log::info('google-wallet createSaveUrlForUserId: createSaveUrlForUser returned null', ['user_id' => $userId]);
+            Log::info('google-wallet createSaveUrlForUserId: createSaveUrlForUser returned null', ['user_id' => $userId, 'project_id' => $projectId]);
         }
         return $url;
     }
@@ -95,125 +119,69 @@ class GoogleWalletPassService
         $classSuffix = config('google_wallet.class_suffix', 'membership');
         $classId = $issuerId . '.' . $classSuffix;
         $objectId = $issuerId . '.' . $objectSuffix;
+        $maxLen = GoogleWalletApi::MAX_DISPLAY_LENGTH;
 
-        // 推奨文字数以内に収める（API の Recommended maximum length に従う）
-        $programName = $this->truncateForWallet(mb_strimwidth($organizationName, 0, 20, ''), 20);
-        $issuerName = $this->truncateForWallet($programName, 20);
-        $accountNameDisplay = $accountName !== '' ? $this->truncateForWallet($accountName, 20) : ('会員#' . $barcodeValue);
-        $accountIdDisplay = $this->truncateForWallet($barcodeValue, 20);
+        $programName = $this->payloadBuilder->truncateForWallet(
+            mb_strimwidth($organizationName, 0, $maxLen, ''),
+            $maxLen
+        );
+        $accountNameDisplay = $accountName !== ''
+            ? $this->payloadBuilder->truncateForWallet($accountName, $maxLen)
+            : (GoogleWalletApi::ACCOUNT_NAME_FALLBACK_PREFIX . $barcodeValue);
+        $accountIdDisplay = $this->payloadBuilder->truncateForWallet($barcodeValue, $maxLen);
 
-        // 管理画面で設定した画像URLを優先、未設定時は config
-        $programLogoUri = $projectId !== null ? (ShopSetting::getWalletGoogleProgramLogoUrl($projectId) ?? config('google_wallet.program_logo_uri', 'https://storage.googleapis.com/wallet-lab-tools-codelab-artifacts-public/pass_google_logo.jpg')) : config('google_wallet.program_logo_uri', 'https://storage.googleapis.com/wallet-lab-tools-codelab-artifacts-public/pass_google_logo.jpg');
-        $heroImageUri = $projectId !== null ? (ShopSetting::getWalletGoogleHeroImageUrl($projectId) ?? config('google_wallet.hero_image_uri', 'https://storage.googleapis.com/wallet-lab-tools-codelab-artifacts-public/pass_google_logo.jpg')) : config('google_wallet.hero_image_uri', 'https://storage.googleapis.com/wallet-lab-tools-codelab-artifacts-public/pass_google_logo.jpg');
+        $programLogoUri = $this->resolveProgramLogoUri($projectId);
+        $heroImageUri = $this->resolveHeroImageUri($projectId);
 
-        // クラスが既に存在すれば JWT では Object のみ送る（class must already exist and be approved に従う）
-        $classExists = $this->ensureLoyaltyClassExists($classId, $programName, $programLogoUri);
+        $this->ensureLoyaltyClassExists($classId, $programName, $programLogoUri);
 
-        $loyaltyClass = null;
-        if (! $classExists) {
-            $loyaltyClass = [
-                'id' => $classId,
-                'programName' => $programName,
-                'issuerName' => $issuerName,
-                'reviewStatus' => 'UNDER_REVIEW',
-                'programLogo' => [
-                    'sourceUri' => ['uri' => $programLogoUri],
-                    'contentDescription' => [
-                        'defaultValue' => ['language' => 'en-US', 'value' => $programName . ' logo'],
-                    ],
-                ],
-            ];
-        }
-
-        // LoyaltyObject: 公式サンプル準拠（textModulesData に id 必須、barcode は type/value のみ、label は Points）
-        $textModules = [];
-        if ($rankLabel !== '') {
-            $textModules[] = [
-                'id' => 'rank',
-                'header' => 'Rank',
-                'body' => $rankLabel,
-            ];
-        }
-        $textModules[] = [
-            'id' => 'points',
-            'header' => $programName,
-            'body' => (string) $points . ' pts' . ($rankLabel !== '' ? ' · ' . $rankLabel : ''),
-        ];
-        $textModules[] = [
-            'id' => 'member_info',
-            'header' => 'Member ID',
-            'body' => $barcodeValue . ($rankLabel !== '' ? ' · ' . $rankLabel : ''),
-        ];
-
-        $loyaltyObject = [
-            'id' => $objectId,
+        $payloadParams = [
             'classId' => $classId,
-            'state' => 'ACTIVE',
-            'accountId' => $accountIdDisplay,
-            'accountName' => $accountNameDisplay,
-            'barcode' => [
-                'type' => 'QR_CODE',
-                'value' => $barcodeValue,
-            ],
-            'loyaltyPoints' => [
-                'label' => 'Points',
-                'balance' => ['int' => (int) $points],
-            ],
-            'textModulesData' => $textModules,
-            'heroImage' => [
-                'sourceUri' => ['uri' => $heroImageUri],
-                'contentDescription' => [
-                    'defaultValue' => ['language' => 'en-US', 'value' => $programName . ' card'],
-                ],
-            ],
+            'objectId' => $objectId,
+            'programName' => $programName,
+            'programLogoUri' => $programLogoUri,
+            'heroImageUri' => $heroImageUri,
+            'accountNameDisplay' => $accountNameDisplay,
+            'accountIdDisplay' => $accountIdDisplay,
+            'barcodeValue' => $barcodeValue,
+            'points' => $points,
+            'rankLabel' => $rankLabel,
         ];
+        $built = $this->payloadBuilder->build($payloadParams);
 
         $credentials = $this->loadCredentials();
         if ($credentials === null) {
             return null;
         }
 
-        $origins = config('google_wallet.origins', []);
-        if (! is_array($origins)) {
-            $origins = $origins === '' ? [] : [$origins];
-        }
-        $origins = array_values(array_unique(array_filter(array_map('trim', $origins))));
+        $origins = $this->buildOrigins();
 
-        if (! app()->runningInConsole() && request()) {
-            $requestOrigin = request()->getSchemeAndHttpHost();
-            if ($requestOrigin !== '' && ! in_array($requestOrigin, $origins, true)) {
-                $origins[] = $requestOrigin;
-            }
-        }
-        if ($origins === []) {
-            $appUrl = config('app.url', 'http://localhost');
-            $host = parse_url($appUrl, PHP_URL_HOST);
-            $scheme = parse_url($appUrl, PHP_URL_SCHEME) ?: 'http';
-            $port = parse_url($appUrl, PHP_URL_PORT);
-            $fallback = $host ? ($scheme . '://' . $host . ($port ? ':' . $port : '')) : 'http://localhost';
-            $origins = [$fallback];
-        }
-
-        $payload = ['loyaltyObjects' => [$loyaltyObject]];
-        if ($loyaltyClass !== null) {
-            $payload['loyaltyClasses'] = [$loyaltyClass];
-        }
+        $payload = [
+            'loyaltyClasses' => [$built['loyaltyClass']],
+            'loyaltyObjects' => [$built['loyaltyObject']],
+        ];
 
         $claims = [
             'iss' => $credentials['client_email'],
-            'aud' => 'google',
-            'typ' => 'savetowallet',
+            'aud' => self::JWT_AUDIENCE,
+            'typ' => self::JWT_TYPE_SAVE_TO_WALLET,
             'iat' => time(),
             'origins' => $origins,
             'payload' => $payload,
         ];
 
+        return $this->encodeJwtAndBuildSaveUrl($claims, $credentials['private_key'], $projectId);
+    }
+
+    /**
+     * JWT を署名し、Add to Google Wallet の URL を返す。失敗時は null。
+     *
+     * @param  array<string, mixed>  $claims
+     */
+    private function encodeJwtAndBuildSaveUrl(array $claims, string $privateKey, ?int $projectId): ?string
+    {
         try {
-            $token = JWT::encode(
-                $claims,
-                $credentials['private_key'],
-                'RS256'
-            );
+            $token = JWT::encode($claims, $privateKey, self::JWT_ALGORITHM);
 
             return self::SAVE_URL_PREFIX . $token;
         } catch (\Throwable $e) {
@@ -221,11 +189,25 @@ class GoogleWalletPassService
                 'message' => $e->getMessage(),
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
+                'project_id' => $projectId,
             ]);
             report($e);
 
             return null;
         }
+    }
+
+    /**
+     * getMemberData の戻り値が会員かつ member インスタンスを持つか。
+     *
+     * @param  mixed  $data  MemberService::getMemberData の戻り値
+     */
+    private function isValidMemberData($data): bool
+    {
+        return isset($data['is_member'])
+            && $data['is_member'] === true
+            && isset($data['member'])
+            && $data['member'] instanceof Member;
     }
 
     public function isAvailable(): bool
@@ -268,6 +250,11 @@ class GoogleWalletPassService
         return $reasons;
     }
 
+    /**
+     * サービスアカウント JSON から client_email と private_key を読む。
+     *
+     * @return array{client_email: string, private_key: string}|null
+     */
     private function loadCredentials(): ?array
     {
         $path = config('google_wallet.credentials_path', '');
@@ -276,7 +263,9 @@ class GoogleWalletPassService
         }
         $json = File::get($path);
         $data = json_decode($json, true);
-        if (! is_array($data) || empty($data['client_email']) || empty($data['private_key'])) {
+        if (! is_array($data)
+            || StrHelper::isEmptyStringOrNull($data['client_email'] ?? null)
+            || StrHelper::isEmptyStringOrNull($data['private_key'] ?? null)) {
             return null;
         }
 
@@ -288,16 +277,63 @@ class GoogleWalletPassService
         return app(MemberService::class);
     }
 
-    /**
-     * 表示用文字列を指定長以内に収める（マルチバイト考慮）。
-     */
-    private function truncateForWallet(string $s, int $maxLen): string
+    private function resolveProgramLogoUri(?int $projectId): string
     {
-        if (mb_strlen($s) <= $maxLen) {
-            return $s;
+        $default = config('google_wallet.program_logo_uri', self::DEFAULT_LOGO_URI);
+
+        return $projectId !== null
+            ? (ShopSetting::getWalletGoogleProgramLogoUrl($projectId) ?? $default)
+            : $default;
+    }
+
+    private function resolveHeroImageUri(?int $projectId): string
+    {
+        $default = config('google_wallet.hero_image_uri', self::DEFAULT_LOGO_URI);
+
+        return $projectId !== null
+            ? (ShopSetting::getWalletGoogleHeroImageUrl($projectId) ?? $default)
+            : $default;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function buildOrigins(): array
+    {
+        $origins = config('google_wallet.origins', []);
+        if (! is_array($origins)) {
+            $origins = $origins === '' ? [] : [$origins];
+        }
+        $origins = array_values(array_unique(array_filter(array_map('trim', $origins))));
+
+        if (! app()->runningInConsole() && request() !== null) {
+            $requestOrigin = request()->getSchemeAndHttpHost();
+            if ($requestOrigin !== '' && ! in_array($requestOrigin, $origins, true)) {
+                $origins[] = $requestOrigin;
+            }
+        }
+        if ($origins === []) {
+            $origins = [$this->getFallbackOrigin()];
         }
 
-        return mb_substr($s, 0, $maxLen);
+        return $origins;
+    }
+
+    /**
+     * config(app.url) からオリジン文字列を組み立てる。
+     */
+    private function getFallbackOrigin(): string
+    {
+        $appUrl = config('app.url', 'http://localhost');
+        $host = parse_url($appUrl, PHP_URL_HOST);
+        $scheme = parse_url($appUrl, PHP_URL_SCHEME) ?: 'http';
+        $port = parse_url($appUrl, PHP_URL_PORT);
+
+        if (is_string($host) && $host !== '') {
+            return $scheme . '://' . $host . ($port !== null && $port !== false ? ':' . $port : '');
+        }
+
+        return 'http://localhost';
     }
 
     /**
@@ -316,7 +352,7 @@ class GoogleWalletPassService
             'sub' => $credentials['client_email'],
             'aud' => 'https://oauth2.googleapis.com/token',
             'iat' => $now,
-            'exp' => $now + 3600,
+            'exp' => $now + GoogleWalletApi::OAUTH2_TOKEN_TTL_SECONDS,
             'scope' => self::WALLET_OBJECT_SCOPE,
         ];
 
@@ -324,7 +360,7 @@ class GoogleWalletPassService
             $jwt = JWT::encode(
                 $assertion,
                 $credentials['private_key'],
-                'RS256'
+                self::JWT_ALGORITHM
             );
         } catch (\Throwable $e) {
             Log::warning('google-wallet OAuth2 JWT encode failed', ['error' => $e->getMessage()]);
@@ -367,6 +403,11 @@ class GoogleWalletPassService
             ->get(self::WALLET_OBJECTS_BASE . '/loyaltyClass/' . $classId);
 
         if ($get->successful()) {
+            $cacheKey = 'google_wallet_class_patched:' . $classId;
+            if (Cache::get($cacheKey) !== true) {
+                $this->patchLoyaltyClassDisplayLabels($token, $classId);
+                Cache::put($cacheKey, true, now()->addDay());
+            }
             return true;
         }
 
@@ -388,18 +429,26 @@ class GoogleWalletPassService
             return false;
         }
 
+        $maxLen = GoogleWalletApi::MAX_DISPLAY_LENGTH;
         $body = [
             'id' => $classId,
-            'programName' => $this->truncateForWallet($programName, 20),
-            'issuerName' => $this->truncateForWallet($programName, 20),
-            'reviewStatus' => 'UNDER_REVIEW',
+            'programName' => $this->payloadBuilder->truncateForWallet($programName, $maxLen),
+            'issuerName' => $this->payloadBuilder->truncateForWallet($programName, $maxLen),
+            'reviewStatus' => GoogleWalletApi::REVIEW_STATUS_UNDER_REVIEW,
             'programLogo' => [
                 'sourceUri' => ['uri' => $programLogoUri],
                 'contentDescription' => [
-                    'defaultValue' => ['language' => 'en-US', 'value' => $programName . ' logo'],
+                    'defaultValue' => ['language' => GoogleWalletApi::DEFAULT_LANGUAGE, 'value' => $programName . ' logo'],
                 ],
             ],
+            'accountNameLabel' => GoogleWalletApi::LABEL_ACCOUNT_NAME,
+            'accountIdLabel' => GoogleWalletApi::LABEL_ACCOUNT_ID,
+            'rewardsTierLabel' => GoogleWalletApi::LABEL_RANK,
         ];
+        $hexBg = config('google_wallet.hex_background_color', '');
+        if ($hexBg !== '' && preg_match('/^#[0-9A-Fa-f]{3}([0-9A-Fa-f]{3})?$/', $hexBg)) {
+            $body['hexBackgroundColor'] = $hexBg;
+        }
 
         $insert = Http::withToken($token)
             ->withHeaders(['Content-Type' => 'application/json'])
@@ -426,5 +475,38 @@ class GoogleWalletPassService
         Log::info('google-wallet loyaltyClass created', ['classId' => $classId]);
 
         return true;
+    }
+
+    /**
+     * 既存の LoyaltyClass に表示用ラベル（日本語）と背景色を PATCH で反映する。
+     * 既に追加済みのパスは「削除して再度追加」すると更新された表示になる。
+     */
+    private function patchLoyaltyClassDisplayLabels(?string $token, string $classId): void
+    {
+        if ($token === null) {
+            return;
+        }
+        $body = [
+            'accountNameLabel' => GoogleWalletApi::LABEL_ACCOUNT_NAME,
+            'accountIdLabel' => GoogleWalletApi::LABEL_ACCOUNT_ID,
+            'rewardsTierLabel' => GoogleWalletApi::LABEL_RANK,
+        ];
+        $hexBg = config('google_wallet.hex_background_color', '');
+        if ($hexBg !== '' && preg_match('/^#[0-9A-Fa-f]{3}([0-9A-Fa-f]{3})?$/', $hexBg)) {
+            $body['hexBackgroundColor'] = $hexBg;
+        }
+        $patch = Http::withToken($token)
+            ->withHeaders(['Content-Type' => 'application/json'])
+            ->patch(self::WALLET_OBJECTS_BASE . '/loyaltyClass/' . $classId, $body);
+
+        if ($patch->successful()) {
+            Log::info('google-wallet loyaltyClass display labels patched', ['classId' => $classId]);
+        } else {
+            Log::warning('google-wallet loyaltyClass patch (display labels) failed', [
+                'classId' => $classId,
+                'status' => $patch->status(),
+                'body' => $patch->body(),
+            ]);
+        }
     }
 }
