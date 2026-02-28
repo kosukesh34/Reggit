@@ -632,13 +632,15 @@ class AdminController extends Controller
 
     public function storeCoupon(CouponStoreRequest $request)
     {
-        $result = $this->couponAdminService->create($this->resolveAdminProjectId(), $request->validated());
-        $redirect = redirect()->route('admin.coupons', $this->buildAdminRouteParams())
-            ->with('success', 'クーポンを作成しました');
-        if ($result['smaregi_warning']) {
-            $redirect->with('warning', 'クーポンは保存しましたが、スマレジPOSには反映されていません。API仕様（クーポン登録）をご確認ください。');
+        try {
+            $this->couponAdminService->create($this->resolveAdminProjectId(), $request->validated());
+        } catch (\RuntimeException $e) {
+            return redirect()->route('admin.coupons.create', $this->buildAdminRouteParams())
+                ->withInput()
+                ->with('error', $e->getMessage());
         }
-        return $redirect;
+        return redirect()->route('admin.coupons', $this->buildAdminRouteParams())
+            ->with('success', 'クーポンを作成しました');
     }
 
     public function editCoupon(int $id)
@@ -652,13 +654,15 @@ class AdminController extends Controller
     public function updateCoupon(CouponUpdateRequest $request, int $id)
     {
         $projectId = $this->resolveAdminProjectId();
-        $result = $this->couponAdminService->update($id, $request->validated(), $projectId);
-        $redirect = redirect()->route('admin.coupons', $this->buildAdminRouteParams())
-            ->with('success', 'クーポンを更新しました');
-        if ($result['smaregi_warning']) {
-            $redirect->with('warning', 'クーポンは保存しましたが、スマレジPOSへの反映に失敗しています。ログ・API仕様をご確認ください。');
+        try {
+            $this->couponAdminService->update($id, $request->validated(), $projectId);
+        } catch (\RuntimeException $e) {
+            return redirect()->route('admin.coupons.edit', array_merge($this->buildAdminRouteParams(), ['id' => $id]))
+                ->withInput()
+                ->with('error', $e->getMessage());
         }
-        return $redirect;
+        return redirect()->route('admin.coupons', $this->buildAdminRouteParams())
+            ->with('success', 'クーポンを更新しました');
     }
 
     public function deleteCoupon(int $id)
