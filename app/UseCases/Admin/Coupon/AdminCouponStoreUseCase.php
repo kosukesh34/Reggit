@@ -2,6 +2,7 @@
 
 namespace App\UseCases\Admin\Coupon;
 
+use App\Models\Coupon;
 use App\Services\Admin\CouponAdminService;
 
 class AdminCouponStoreUseCase
@@ -14,8 +15,8 @@ class AdminCouponStoreUseCase
     }
 
     /** @param array<string, mixed> $validated */
-    public function handle(int $projectId, array $validated): void
+    public function handle(int $projectId, array $validated): Coupon
     {
-        $this->couponAdminService->create($projectId, $validated);
+        return $this->couponAdminService->create($projectId, $validated);
     }
 }

@@ -16,7 +16,10 @@ class CouponStoreRequest extends FormRequest
         return [
             'code' => 'required|string|max:64',
             'name' => 'required|string|max:255',
+            'description' => 'nullable|string|max:2000',
             'image_url' => 'nullable|string|url|max:500',
+            'image' => 'nullable|file|image|max:2048',
+            'use_display' => 'nullable|string|in:none,barcode,qr',
             'type' => 'required|string|in:percent,fixed',
             'value' => 'required|numeric|min:0',
             'min_order_amount' => 'nullable|numeric|min:0',

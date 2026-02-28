@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Coupon;
 use App\Models\Product;
 use App\Models\Project;
+use App\Models\ShopSetting;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -29,6 +30,12 @@ class DatabaseSeeder extends Seeder
 
         // 既に商品がある場合はスキップ
         if (Product::withoutGlobalScopes()->where('project_id', $project->id)->count() > 0) {
+            return;
+        }
+
+        // スマレジ契約が紐づいている場合は商品を直打ちしない（管理画面の「スマレジから商品を同期」で登録する）
+        $contractId = ShopSetting::getValue('smaregi_contract_id', null, $project->id);
+        if (is_string($contractId) && trim($contractId) !== '') {
             return;
         }
 
