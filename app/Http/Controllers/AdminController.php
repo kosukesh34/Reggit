@@ -632,7 +632,13 @@ class AdminController extends Controller
 
     public function storeCoupon(CouponStoreRequest $request)
     {
-        $this->couponAdminService->create($this->resolveAdminProjectId(), $request->validated());
+        try {
+            $this->couponAdminService->create($this->resolveAdminProjectId(), $request->validated());
+        } catch (\RuntimeException $e) {
+            return redirect()->route('admin.coupons.create', $this->buildAdminRouteParams())
+                ->withInput()
+                ->with('error', $e->getMessage());
+        }
         return redirect()->route('admin.coupons', $this->buildAdminRouteParams())
             ->with('success', 'クーポンを作成しました');
     }
@@ -648,7 +654,13 @@ class AdminController extends Controller
     public function updateCoupon(CouponUpdateRequest $request, int $id)
     {
         $projectId = $this->resolveAdminProjectId();
-        $this->couponAdminService->update($id, $request->validated(), $projectId);
+        try {
+            $this->couponAdminService->update($id, $request->validated(), $projectId);
+        } catch (\RuntimeException $e) {
+            return redirect()->route('admin.coupons.edit', array_merge($this->buildAdminRouteParams(), ['id' => $id]))
+                ->withInput()
+                ->with('error', $e->getMessage());
+        }
         return redirect()->route('admin.coupons', $this->buildAdminRouteParams())
             ->with('success', 'クーポンを更新しました');
     }
