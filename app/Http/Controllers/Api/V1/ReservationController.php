@@ -2,42 +2,53 @@
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Enums\ReservationStatus;
-use App\Models\Reservation;
-use App\Models\ShopSetting;
-use App\Services\ReservationService;
-use App\Services\UserService;
-use Carbon\Carbon;
+use App\UseCases\Reservation\ReservationAvailableDatesUseCase;
+use App\UseCases\Reservation\ReservationCancelUseCase;
+use App\UseCases\Reservation\ReservationIndexUseCase;
+use App\UseCases\Reservation\ReservationStoreUseCase;
+use App\UseCases\Reservation\ReservationUpdateUseCase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * 予約 API（レガシー互換）。責務は UseCase に委譲する。
+ */
 class ReservationController extends BaseApiController
 {
-    private const DATE_FORMAT = 'Y-m-d';
-    private const TIME_FORMAT = 'H:i';
-    private const ACTIVE_STATUSES = [
-        ReservationStatus::PENDING,
-        ReservationStatus::CONFIRMED,
-    ];
+    private ReservationIndexUseCase $indexUseCase;
+    private ReservationAvailableDatesUseCase $availableDatesUseCase;
+    private ReservationStoreUseCase $storeUseCase;
+    private ReservationUpdateUseCase $updateUseCase;
+    private ReservationCancelUseCase $cancelUseCase;
 
     public function __construct(
-        private ReservationService $reservationService,
-        private UserService $userService
+        ReservationIndexUseCase $indexUseCase,
+        ReservationAvailableDatesUseCase $availableDatesUseCase,
+        ReservationStoreUseCase $storeUseCase,
+        ReservationUpdateUseCase $updateUseCase,
+        ReservationCancelUseCase $cancelUseCase
     ) {
+        $this->indexUseCase = $indexUseCase;
+        $this->availableDatesUseCase = $availableDatesUseCase;
+        $this->storeUseCase = $storeUseCase;
+        $this->updateUseCase = $updateUseCase;
+        $this->cancelUseCase = $cancelUseCase;
     }
 
     public function index(Request $request)
     {
         try {
-            $user = $this->userService->getOrCreateUser($request);
-            if ($user->member === null) {
+            $result = $this->indexUseCase->handle($request);
+            if ($result->requiresMembership) {
                 return $this->error('会員登録が必要です', 403, ['requires_membership' => true]);
             }
 
-            $reservations = $this->reservationService->getUserReservations($user);
+            $reservations = $result->reservations->map(fn ($r) => $r->toArray())->all();
+
             return $this->success(['reservations' => $reservations]);
         } catch (\Exception $e) {
             Log::error('Failed to get reservations: ' . $e->getMessage());
+
             return $this->error('予約の取得に失敗しました', 500);
         }
     }
@@ -45,54 +56,21 @@ class ReservationController extends BaseApiController
     public function getAvailableDates(Request $request)
     {
         try {
-            $timeSlots = ShopSetting::getReservationTimeSlots();
-            $advanceDays = ShopSetting::getAdvanceBookingDays();
-            $reservationCapacity = ShopSetting::getReservationCapacityPerSlot();
             $excludeReservationId = $request->query('exclude_reservation_id');
-            if ($excludeReservationId !== null) {
-                $excludeReservationId = filter_var($excludeReservationId, FILTER_VALIDATE_INT) ?: null;
-            }
+            $excludeId = filter_var($excludeReservationId, FILTER_VALIDATE_INT) !== false
+                ? (int) $excludeReservationId
+                : null;
 
-            $availableDates = [];
-            $today = now();
-            $startDate = $today->copy()->addDay()->startOfDay();
-            $endDate = $today->copy()->addDays($advanceDays)->endOfDay();
-            $slotCounts = $this->getSlotCounts($startDate, $endDate, $excludeReservationId);
-
-            for ($i = 1; $i <= $advanceDays; $i++) {
-                $date = $today->copy()->addDays($i);
-                $dateStr = $date->format(self::DATE_FORMAT);
-                if (!ShopSetting::isDateAvailable($dateStr)) {
-                    continue;
-                }
-
-                $availableSlots = [];
-                foreach ($timeSlots as $slot) {
-                    $slotCount = $slotCounts[$dateStr][$slot] ?? 0;
-                    if ($slotCount < $reservationCapacity) {
-                        $availableSlots[] = $slot;
-                    }
-                }
-
-                if (count($availableSlots) === 0) {
-                    continue;
-                }
-
-                $availableDates[] = [
-                    'date' => $dateStr,
-                    'day_of_week' => $date->format('w'),
-                    'display' => $date->format('Y年m月d日') . '(' . $this->getDayOfWeekName($date->dayOfWeek) . ')',
-                    'time_slots' => $availableSlots,
-                ];
-            }
+            $result = $this->availableDatesUseCase->handle($excludeId);
 
             return $this->success([
-                'available_dates' => $availableDates,
-                'start_date' => $startDate->format(self::DATE_FORMAT),
-                'end_date' => $endDate->format(self::DATE_FORMAT),
+                'available_dates' => $result->availableDates,
+                'start_date' => $result->startDate,
+                'end_date' => $result->endDate,
             ]);
         } catch (\Exception $e) {
             Log::error('Failed to get available dates: ' . $e->getMessage());
+
             return $this->error('利用可能日の取得に失敗しました', 500);
         }
     }
@@ -110,23 +88,22 @@ class ReservationController extends BaseApiController
         }
 
         try {
-            $user = $this->userService->getOrCreateUser($request);
-            if ($user->member === null) {
+            $output = $this->storeUseCase->handle($request, $validated);
+            if ($output->requiresMembership) {
                 return $this->error('会員登録が必要です', 403, ['requires_membership' => true]);
             }
-
-            $reservedAt = Carbon::parse($validated['reserved_at']);
-            $availabilityError = $this->getReservationAvailabilityError($reservedAt);
-            if ($availabilityError !== null) {
-                return $this->error($availabilityError, 400);
+            if ($output->availabilityError !== null) {
+                return $this->error($output->availabilityError, 400);
             }
 
-            $validated['reserved_at'] = $reservedAt->format('Y-m-d H:i:s');
-            $reservation = $this->reservationService->createReservation($user, $validated);
-
-            return $this->success(['reservation' => $reservation], '予約が完了しました', 201);
+            return $this->success(
+                ['reservation' => $output->reservation->toArray()],
+                '予約が完了しました',
+                201
+            );
         } catch (\Exception $e) {
             Log::error('Reservation creation failed: ' . $e->getMessage());
+
             return $this->error('予約に失敗しました', 400);
         }
     }
@@ -144,23 +121,21 @@ class ReservationController extends BaseApiController
         }
 
         try {
-            $user = $this->userService->getOrCreateUser($request);
-            if ($user->member === null) {
+            $output = $this->updateUseCase->handle($request, $id, $validated);
+            if ($output->requiresMembership) {
                 return $this->error('会員登録が必要です', 403, ['requires_membership' => true]);
             }
-
-            $reservedAt = Carbon::parse($validated['reserved_at']);
-            $availabilityError = $this->getReservationAvailabilityError($reservedAt, $id);
-            if ($availabilityError !== null) {
-                return $this->error($availabilityError, 400);
+            if ($output->availabilityError !== null) {
+                return $this->error($output->availabilityError, 400);
             }
 
-            $validated['reserved_at'] = $reservedAt->format('Y-m-d H:i:s');
-            $reservation = $this->reservationService->updateReservation($id, $user, $validated);
-
-            return $this->success(['reservation' => $reservation], '予約を更新しました');
+            return $this->success(
+                ['reservation' => $output->reservation->toArray()],
+                '予約を更新しました'
+            );
         } catch (\Exception $e) {
             Log::error('Reservation update failed: ' . $e->getMessage());
+
             return $this->error($e->getMessage(), 400);
         }
     }
@@ -168,93 +143,19 @@ class ReservationController extends BaseApiController
     public function cancel(Request $request, int $id)
     {
         try {
-            $user = $this->userService->getOrCreateUser($request);
-            if ($user->member === null) {
+            $output = $this->cancelUseCase->handle($request, $id);
+            if ($output->requiresMembership) {
                 return $this->error('会員登録が必要です', 403, ['requires_membership' => true]);
             }
 
-            $reservation = $this->reservationService->cancelReservation($id, $user);
-            return $this->success(['reservation' => $reservation], '予約をキャンセルしました');
+            return $this->success(
+                ['reservation' => $output->reservation->toArray()],
+                '予約をキャンセルしました'
+            );
         } catch (\Exception $e) {
             Log::error('Reservation cancellation failed: ' . $e->getMessage());
+
             return $this->error($e->getMessage(), 400);
         }
-    }
-
-    private function getReservationAvailabilityError(Carbon $reservedAt, ?int $excludeReservationId = null): ?string
-    {
-        $advanceDays = ShopSetting::getAdvanceBookingDays();
-        $startDate = now()->addDay()->startOfDay();
-        $endDate = now()->addDays($advanceDays)->endOfDay();
-
-        if ($reservedAt->lt($startDate) || $reservedAt->gt($endDate)) {
-            return '予約可能な期間外です';
-        }
-
-        $dateStr = $reservedAt->format(self::DATE_FORMAT);
-        if (!ShopSetting::isDateAvailable($dateStr)) {
-            return '選択した日は予約できません';
-        }
-
-        $timeStr = $reservedAt->format(self::TIME_FORMAT);
-        $timeSlots = ShopSetting::getReservationTimeSlots();
-        if (!in_array($timeStr, $timeSlots, true)) {
-            return '選択した時間は予約できません';
-        }
-
-        $reservationCapacity = ShopSetting::getReservationCapacityPerSlot();
-        if ($this->isSlotAvailable($reservedAt, $reservationCapacity, $excludeReservationId) === false) {
-            return '選択した時間帯は満席です';
-        }
-
-        return null;
-    }
-
-    private function isSlotAvailable(Carbon $reservedAt, int $reservationCapacity, ?int $excludeReservationId = null): bool
-    {
-        $slotStart = $reservedAt->copy()->startOfMinute();
-        $slotEnd = $reservedAt->copy()->endOfMinute();
-        $query = Reservation::whereBetween('reserved_at', [$slotStart, $slotEnd])
-            ->whereIn('status', self::ACTIVE_STATUSES);
-        if ($excludeReservationId !== null) {
-            $query->where('id', '!=', $excludeReservationId);
-        }
-        $reservedCount = $query->count();
-
-        return $reservedCount < $reservationCapacity;
-    }
-
-    private function getDayOfWeekName(int $dayOfWeek): string
-    {
-        $days = ['日', '月', '火', '水', '木', '金', '土'];
-        return $days[$dayOfWeek] ?? '';
-    }
-
-    private function getSlotCounts(Carbon $startDate, Carbon $endDate, ?int $excludeReservationId = null): array
-    {
-        $query = Reservation::whereBetween('reserved_at', [$startDate, $endDate])
-            ->whereIn('status', self::ACTIVE_STATUSES);
-        $reservations = $query->get(['id', 'reserved_at']);
-
-        $slotCounts = [];
-        foreach ($reservations as $reservation) {
-            if ($excludeReservationId !== null && (int) $reservation->id === $excludeReservationId) {
-                continue;
-            }
-            $reservedAt = $reservation->reserved_at instanceof Carbon
-                ? $reservation->reserved_at
-                : Carbon::parse($reservation->reserved_at);
-            $dateKey = $reservedAt->format(self::DATE_FORMAT);
-            $timeKey = $reservedAt->format(self::TIME_FORMAT);
-            if (!isset($slotCounts[$dateKey])) {
-                $slotCounts[$dateKey] = [];
-            }
-            if (!isset($slotCounts[$dateKey][$timeKey])) {
-                $slotCounts[$dateKey][$timeKey] = 0;
-            }
-            $slotCounts[$dateKey][$timeKey] += 1;
-        }
-
-        return $slotCounts;
     }
 }
