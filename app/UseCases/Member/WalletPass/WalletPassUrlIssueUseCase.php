@@ -24,6 +24,7 @@ class WalletPassUrlIssueUseCase
             'project_id' => $projectId,
         ], now()->addMinutes(self::TOKEN_TTL_MINUTES));
 
+        // Safari 等で開いたときに .pkpass を直接取得できる URL
         $url = url('/api/members/me/wallet-pass?' . http_build_query([
             'project_key' => $projectKey,
             'token' => $token,

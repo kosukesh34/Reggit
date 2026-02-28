@@ -21,17 +21,25 @@ class Member extends Model
         'project_id',
         'user_id',
         'member_number',
+        'smaregi_customer_id',
         'points',
         'status',
         'rank',
         'birthday',
         'address',
+        'postal_code',
+        'prefecture',
+        'city',
+        'street',
+        'sex',
+        'profile_extra',
     ];
 
     /** @var array<string, string> */
     protected $casts = [
         'points' => 'integer',
         'birthday' => 'date',
+        'profile_extra' => 'array',
     ];
 
     public function project()

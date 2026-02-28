@@ -82,16 +82,7 @@
                 fn($item) => ($flags[$tabFeatureMap[$item['tab']] ?? ''] ?? true)
             );
         @endphp
-        <nav class="banner-menu" aria-label="メニュー">
-            @foreach($filteredMenu as $i => $item)
-            <button type="button" class="banner-menu-btn {{ $loop->first ? 'active' : '' }}" data-tab="{{ $item['tab'] }}" aria-label="{{ $item['label'] }}">
-                <i class="fas {{ $item['icon'] ?? 'fa-circle' }}"></i>
-                <span>{{ $item['label'] }}</span>
-            </button>
-            @endforeach
-        </nav>
 
-        
         <main class="main-content">
             <div id="announcementsSection" class="announcements-section" aria-label="お知らせ"></div>
 
@@ -177,6 +168,7 @@
             window.__API_BASE__ = (apiBaseMeta ? apiBaseMeta.getAttribute('content') : null) || '/api';
         })();
         window.__WALLET_PASS_ENABLED__ = {{ ($walletPassEnabled ?? false) ? 'true' : 'false' }};
+        window.__GOOGLE_WALLET_ENABLED__ = {{ ($googleWalletEnabled ?? false) ? 'true' : 'false' }};
         window.__WALLET_PASS_ADD_BUTTON_IMAGE__ = "/images/add-to-apple-wallet-logo.png";
         window.__LIFF_BUILDER__ = @json($liffBuilderBlocks ?? []);
         window.__LIFF_TAB_LAYOUTS__ = @json($liffTabLayouts ?? []);
