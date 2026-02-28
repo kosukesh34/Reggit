@@ -21,6 +21,7 @@ use App\Http\Controllers\Reservation\ReservationCancelController;
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\CouponController;
+use App\Http\Controllers\DeviceRegisterController;
 use App\Http\Controllers\GalleryController;
 use App\Http\Controllers\StampController;
 use App\Http\Controllers\Member\MemberPointCardController;
@@ -110,6 +111,7 @@ Route::middleware(['web', 'bind.project'])->group(function () {
     Route::get('/members/me/wallet-pass-url', [WalletPassUrlController::class, '__invoke']);
     Route::get('/members/me/google-wallet-url', [GoogleWalletUrlController::class, '__invoke']);
     Route::post('/members/register', [MemberRegisterController::class, '__invoke']);
+    Route::post('/devices/register', DeviceRegisterController::class);
     Route::get('/members/points', [MemberPointsController::class, '__invoke']);
     Route::get('/members/points/history', [MemberPointHistoryController::class, '__invoke']);
     Route::get('/members/points/card', [MemberPointCardController::class, '__invoke']);

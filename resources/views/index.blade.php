@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="line-liff-id" content="{{ $liffId ?? config('line.liff_id', '') }}">
     <meta name="project-key" content="{{ $projectKey ?? 'default' }}">
     <meta name="api-base" content="{{ config('app.api_base', '/api') }}">
@@ -263,6 +263,7 @@
             'js/frontend/managers/CartManager.js',
             'js/frontend/managers/ProductManager.js',
             'js/frontend/managers/OrderManager.js',
+            'js/frontend/managers/DeviceManager.js',
             'js/frontend/managers/MemberManager.js',
             'js/frontend/managers/StampsManager.js',
             'js/frontend/managers/CouponsManager.js',
@@ -294,6 +295,7 @@
         <script defer src="/js/frontend/managers/CartManager.js{{ $v }}"></script>
         <script defer src="/js/frontend/managers/ProductManager.js{{ $v }}"></script>
         <script defer src="/js/frontend/managers/OrderManager.js{{ $v }}"></script>
+        <script defer src="/js/frontend/managers/DeviceManager.js{{ $v }}"></script>
         <script defer src="/js/frontend/managers/MemberManager.js{{ $v }}"></script>
         <script defer src="/js/frontend/managers/StampsManager.js{{ $v }}"></script>
         <script defer src="/js/frontend/managers/CouponsManager.js{{ $v }}"></script>

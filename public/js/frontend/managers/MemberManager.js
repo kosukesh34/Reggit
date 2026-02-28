@@ -24,6 +24,10 @@ class MemberManager {
         return typeof window !== 'undefined' && window.__GOOGLE_WALLET_ENABLED__ === true;
     }
 
+    static isMobileAppMode() {
+        return typeof window !== 'undefined' && window.__MOBILE_APP_MODE__ === true;
+    }
+
     getMemberData() {
         return this.memberData;
     }
@@ -33,13 +37,49 @@ class MemberManager {
     }
 
     preload() {
-        if (typeof window === 'undefined' || !window.__LINE_USER_ID__) return;
+        if (!this.canUseMemberFeature()) return;
         const self = this;
         this.apiClient.get(AppConstants.API_ENDPOINTS.MEMBERS_ME).then(function (result) {
             if (result.success && result.data && typeof result.data.is_member !== 'undefined') {
                 self.memberData = result.data;
             }
         });
+    }
+
+    canUseMemberFeature() {
+        if (typeof window === 'undefined') return false;
+        return !!window.__LINE_USER_ID__ || MemberManager.isMobileAppMode();
+    }
+
+    canAutoRegister() {
+        if (typeof window === 'undefined') return false;
+        return !!(window.__LINE_PROFILE__ && window.__LINE_PROFILE__.displayName);
+    }
+
+    async ensureGuestMemberContext() {
+        if (this.memberData && typeof this.memberData.is_member !== 'undefined') {
+            return this.memberData;
+        }
+
+        try {
+            const result = await this.apiClient.get(AppConstants.API_ENDPOINTS.MEMBERS_ME);
+            if (result && result.success && result.data) {
+                const payload = (result.data && result.data.member) ? result.data.member : result.data;
+                if (payload && typeof payload.is_member !== 'undefined') {
+                    this.memberData = payload;
+                    return payload;
+                }
+            }
+        } catch (error) {
+            console.warn('Failed to fetch member context for register modal:', error);
+        }
+
+        this.memberData = this.memberData || {
+            is_member: false,
+            profile_field_settings: [],
+            profile: {},
+        };
+        return this.memberData;
     }
 
     getContainer() {
@@ -65,6 +105,25 @@ class MemberManager {
 
     /** 会員未登録（ゲスト）で会員証を表示しない設定のときの表示 */
     getGuestNoCardTemplate() {
+        return `
+            <div class="member-card-container">
+                <div class="member-card member-card--line-only">
+                    <div class="member-card-header">
+                        <h2 class="member-card-title"><i class="fas fa-id-card"></i> 会員証</h2>
+                    </div>
+                    <div class="member-card-line-only-body">
+                        <p class="member-card-line-only-message">会員登録されていません。</p>
+                        <p class="member-card-line-only-sub">会員登録すると会員証が表示されます。</p>
+                        <button type="button" class="btn btn-primary mt-2" onclick="window.app.memberManager.openRegisterModal()">
+                            <i class="fas fa-user-plus"></i> 会員登録する
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    getGuestRegisterTemplate() {
         return `
             <div class="member-card-container">
                 <div class="member-card member-card--line-only">
@@ -129,7 +188,7 @@ class MemberManager {
         const container = this.getContainer();
         if (!container) return;
 
-        if (typeof window === 'undefined' || !window.__LINE_USER_ID__) {
+        if (!this.canUseMemberFeature()) {
             container.innerHTML = this.getLoginOptionalTemplate('会員証', 'ログインすると会員証をご利用いただけます。');
             this.memberData = null;
             return;
@@ -159,7 +218,12 @@ class MemberManager {
                     this.memberData = payload;
                     return;
                 }
-                await this.autoRegister();
+                this.memberData = payload;
+                if (this.canAutoRegister()) {
+                    await this.autoRegister();
+                } else {
+                    container.innerHTML = this.getGuestRegisterTemplate();
+                }
                 return;
             }
             this.memberData = payload;
@@ -189,7 +253,11 @@ class MemberManager {
         } catch (error) {
             console.error('Auto register error:', error);
             const container = this.getContainer();
-            if (container) container.innerHTML = this.getErrorTemplate(error);
+            if (container) container.innerHTML = this.getGuestRegisterTemplate();
+            if (typeof ToastManager !== 'undefined') {
+                ToastManager.info('会員情報を入力して登録してください');
+            }
+            this.openRegisterModal();
         }
     }
 
@@ -856,8 +924,9 @@ class MemberManager {
         `;
     }
 
-    openRegisterModal() {
-        if (!this.memberData || this.memberData.is_member) return;
+    async openRegisterModal() {
+        await this.ensureGuestMemberContext();
+        if (this.memberData && this.memberData.is_member) return;
         const content = document.getElementById('profileEditModalContent');
         const modal = document.getElementById('profileEditModal');
         if (!content || !modal) return;
