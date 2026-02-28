@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\UserDevice;
 use App\Models\User;
 use App\Util\AdminContext;
 use Illuminate\Http\Request;
@@ -15,12 +16,28 @@ class UserService
     {
         $projectId = AdminContext::getCurrentProjectId() ?? 1;
         $lineUserId = $this->normalizeLineUserId($request->header('X-Line-User-Id'));
+        $deviceIdentifier = $this->normalizeDeviceIdentifier($request->header('X-Device-Identifier'));
 
         if ($lineUserId !== null) {
             $user = User::where('line_user_id', $lineUserId)->where('project_id', $projectId)->first();
             if ($user !== null) {
                 Session::put($this->getSessionKey($projectId), $user->id);
                 return $user;
+            }
+        }
+
+        if ($deviceIdentifier !== null) {
+            $device = UserDevice::where('project_id', $projectId)
+                ->where('device_identifier', $deviceIdentifier)
+                ->orderByDesc('last_used_at')
+                ->first();
+            if ($device !== null) {
+                $deviceUser = User::where('id', $device->user_id)->where('project_id', $projectId)->first();
+                if ($deviceUser !== null) {
+                    Session::put($this->getSessionKey($projectId), $deviceUser->id);
+                    $device->forceFill(['last_used_at' => now()])->save();
+                    return $deviceUser;
+                }
             }
         }
 
@@ -96,6 +113,15 @@ class UserService
             return null;
         }
         return $lineUserId;
+    }
+
+    private function normalizeDeviceIdentifier(?string $deviceIdentifier): ?string
+    {
+        if (!is_string($deviceIdentifier)) {
+            return null;
+        }
+        $deviceIdentifier = trim($deviceIdentifier);
+        return $deviceIdentifier === '' ? null : $deviceIdentifier;
     }
 
     private function isValidLineUserId(string $lineUserId): bool
