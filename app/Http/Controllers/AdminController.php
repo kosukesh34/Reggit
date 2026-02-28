@@ -632,9 +632,13 @@ class AdminController extends Controller
 
     public function storeCoupon(CouponStoreRequest $request)
     {
-        $this->couponAdminService->create($this->resolveAdminProjectId(), $request->validated());
-        return redirect()->route('admin.coupons', $this->buildAdminRouteParams())
+        $result = $this->couponAdminService->create($this->resolveAdminProjectId(), $request->validated());
+        $redirect = redirect()->route('admin.coupons', $this->buildAdminRouteParams())
             ->with('success', 'クーポンを作成しました');
+        if ($result['smaregi_warning']) {
+            $redirect->with('warning', 'クーポンは保存しましたが、スマレジPOSには反映されていません。API仕様（クーポン登録）をご確認ください。');
+        }
+        return $redirect;
     }
 
     public function editCoupon(int $id)
@@ -648,9 +652,13 @@ class AdminController extends Controller
     public function updateCoupon(CouponUpdateRequest $request, int $id)
     {
         $projectId = $this->resolveAdminProjectId();
-        $this->couponAdminService->update($id, $request->validated(), $projectId);
-        return redirect()->route('admin.coupons', $this->buildAdminRouteParams())
+        $result = $this->couponAdminService->update($id, $request->validated(), $projectId);
+        $redirect = redirect()->route('admin.coupons', $this->buildAdminRouteParams())
             ->with('success', 'クーポンを更新しました');
+        if ($result['smaregi_warning']) {
+            $redirect->with('warning', 'クーポンは保存しましたが、スマレジPOSへの反映に失敗しています。ログ・API仕様をご確認ください。');
+        }
+        return $redirect;
     }
 
     public function deleteCoupon(int $id)
