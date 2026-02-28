@@ -12,6 +12,7 @@ class Product extends Model
 
     protected $fillable = [
         'project_id',
+        'smaregi_product_id',
         'name',
         'description',
         'price',
