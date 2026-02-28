@@ -10,7 +10,27 @@ class Announcement extends Model
 {
     use BelongsToProject, HasFactory;
 
-    protected $fillable = ['project_id', 'title', 'body', 'published_at', 'expires_at', 'is_pinned'];
+    public const DELIVERY_TYPE_IMMEDIATE_BULK = 'immediate_bulk';
+    public const DELIVERY_TYPE_PERSONAL = 'personal';
+    public const DELIVERY_TYPE_SCHEDULED = 'scheduled';
+
+    public const DELIVERY_STATUS_DRAFT = 'draft';
+    public const DELIVERY_STATUS_SENT = 'sent';
+    public const DELIVERY_STATUS_SCHEDULED = 'scheduled';
+
+    protected $fillable = [
+        'project_id',
+        'title',
+        'body',
+        'published_at',
+        'expires_at',
+        'is_pinned',
+        'delivery_type',
+        'scheduled_at',
+        'sent_at',
+        'target_member_ids',
+        'delivery_status',
+    ];
 
     public function project()
     {
@@ -27,5 +47,8 @@ class Announcement extends Model
         'published_at' => 'datetime',
         'expires_at' => 'datetime',
         'is_pinned' => 'boolean',
+        'scheduled_at' => 'datetime',
+        'sent_at' => 'datetime',
+        'target_member_ids' => 'array',
     ];
 }
