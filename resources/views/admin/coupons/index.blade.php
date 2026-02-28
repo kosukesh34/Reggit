@@ -9,6 +9,11 @@
     <i class="fas fa-check-circle"></i> {{ session('success') }}
 </div>
 @endif
+@if(session('warning'))
+<div class="alert alert-warning" role="alert">
+    <i class="fas fa-exclamation-triangle"></i> {{ session('warning') }}
+</div>
+@endif
 <nav class="breadcrumb" aria-label="パンくず">
     <a href="{{ admin_route('admin.dashboard') }}">ダッシュボード</a>
     <span class="breadcrumb-sep">/</span>

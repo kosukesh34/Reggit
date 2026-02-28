@@ -82,9 +82,10 @@ class SmaregiApiService
      *
      * @param string $path pos/ から始まるパス（例: pos/stores, pos/customers/1）
      * @param array<string, mixed> $body GET の場合はクエリ、POST/PATCH/PUT の場合は JSON ボディ
+     * @param bool $bodyAsRequestJsonForm true の場合 POST/PATCH を application/x-www-form-urlencoded で request_json に JSON 文字列を載せて送信
      * @return array<int|string, mixed>|null
      */
-    public function request(string $contractId, string $method, string $path, array $body = []): ?array
+    public function request(string $contractId, string $method, string $path, array $body = [], bool $bodyAsRequestJsonForm = false): ?array
     {
         $token = $this->getAppAccessToken($contractId);
         if ($token === null) {
@@ -103,21 +104,30 @@ class SmaregiApiService
         if ($methodLower === 'get') {
             $response = $request->get($url, $body);
         } elseif ($body !== [] && in_array($methodLower, ['post', 'put', 'patch'], true)) {
-            $response = $request->withBody(json_encode($body), 'application/json')
-                ->{$methodLower}($url);
+            if ($bodyAsRequestJsonForm) {
+                $response = $request->asForm()
+                    ->{$methodLower}($url, ['request_json' => json_encode($body)]);
+            } else {
+                $response = $request->withBody(json_encode($body), 'application/json')
+                    ->{$methodLower}($url);
+            }
         } else {
             $response = $request->{$methodLower}($url, $body);
         }
 
         if (!$response->successful()) {
-            $body = $response->body();
-            Log::warning('[Smaregi] API request failed', [
+            $responseBody = $response->body();
+            $context = [
                 'smaregi_contract_id' => $contractId,
                 'method' => $method,
                 'path' => $path,
                 'status' => $response->status(),
-                'response_body' => $body !== '' ? $body : null,
-            ]);
+                'response_body' => $responseBody !== '' ? $responseBody : null,
+            ];
+            if ($path === 'pos/coupons' && $body !== [] && in_array(strtolower($method), ['post', 'patch'], true)) {
+                $context['request_body_sent'] = $body;
+            }
+            Log::warning('[Smaregi] API request failed', $context);
             return null;
         }
 
@@ -312,6 +322,35 @@ class SmaregiApiService
     public function getCoupons(string $contractId, array $query = []): ?array
     {
         return $this->request($contractId, 'GET', 'pos/coupons', $query);
+    }
+
+    /** クーポン1件取得（pos.transactions:read） */
+    public function getCoupon(string $contractId, string $couponId): ?array
+    {
+        return $this->request($contractId, 'GET', 'pos/coupons/' . $couponId);
+    }
+
+    /**
+     * クーポン登録（pos.transactions:write）
+     * 仕様: https://developers.smaregi.dev/platform-api-reference/apis/pos/ のクーポン登録を参照
+     *
+     * @param array<string, mixed> $body 例: couponCode, couponName, discountDivision, discountValue, startDate, endDate 等
+     * @return array<int|string, mixed>|null 登録後のクーポン（couponId 含む）
+     */
+    public function createCoupon(string $contractId, array $body): ?array
+    {
+        return $this->request($contractId, 'POST', 'pos/coupons', $body);
+    }
+
+    /**
+     * クーポン更新（pos.transactions:write）
+     *
+     * @param array<string, mixed> $body 更新する項目のみ
+     * @return array<int|string, mixed>|null
+     */
+    public function updateCoupon(string $contractId, string $couponId, array $body): ?array
+    {
+        return $this->request($contractId, 'PATCH', 'pos/coupons/' . $couponId, $body);
     }
 
     /** スタッフ一覧取得（pos.staffs:read） */

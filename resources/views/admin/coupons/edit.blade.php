@@ -9,33 +9,84 @@
         <a href="{{ admin_route('admin.coupons') }}" class="btn btn-secondary btn-sm"><i class="fas fa-arrow-left"></i> 一覧へ</a>
     </div>
     <div class="card-body">
-        <form action="{{ admin_route('admin.coupons.update', ['id' => $coupon->id]) }}" method="POST">
+        @if(session('error'))
+        <div class="alert alert-danger" role="alert">
+            <i class="fas fa-exclamation-circle"></i> {{ session('error') }}
+        </div>
+        @endif
+        <form action="{{ admin_route('admin.coupons.update', ['id' => $coupon->id]) }}" method="POST" enctype="multipart/form-data">
             @csrf
             @method('PUT')
             <section class="form-section mb-4">
                 <h4 class="form-section-title"><span class="form-section-num">1</span> 表示の選択</h4>
-                <p class="text-muted small mb-3">会員アプリで表示されるクーポンのデザインとアクセント色を選びます。選択後、下のプレビューで見た目を確認できます。</p>
+                <p class="text-muted small mb-3">会員アプリで表示されるクーポンのデザインとアクセント色を選びます。選択すると下のプレビューに即時反映されます。</p>
                 @include('admin.coupons._ui_picker', [
                     'selectedDesign' => old('design_template', $coupon->design_template ?? 'classic'),
                     'selectedColor' => old('theme_color', $coupon->theme_color ?? '')
                 ])
             </section>
             @include('admin.coupons._preview')
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fab fa-line"></i> LINEアプリでの表示</h3>
+                    <p class="card-desc text-muted small mb-0 mt-1">会員の「マイクーポン」画面では上記の見た目で表示されます。</p>
+                </div>
+                <div class="card-body">
+                    <div class="line-app-preview-wrap">
+                        <div class="line-app-mock">
+                            <div class="line-app-mock-bar"><span>マイクーポン</span></div>
+                            <div id="line-coupon-preview-inner" class="line-app-mock-body"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <section class="form-section mt-4">
-                <h4 class="form-section-title"><span class="form-section-num">2</span> クーポン情報の入力</h4>
+                <h4 class="form-section-title"><span class="form-section-num">2</span> クーポン情報</h4>
                 <div class="form-group">
-                    <label for="code" class="form-label">コード <span class="text-danger">*</span></label>
+                    <label for="code" class="form-label">クーポンコード <span class="text-danger">*</span></label>
                     <input type="text" name="code" id="code" class="form-control" value="{{ old('code', $coupon->code) }}" required maxlength="50">
                     @error('code')<span class="invalid-feedback">{{ $message }}</span>@enderror
                 </div>
                 <div class="form-group">
                     <label for="name" class="form-label">名前</label>
                     <input type="text" name="name" id="name" class="form-control" value="{{ old('name', $coupon->name) }}" maxlength="255">
+                    @error('name')<span class="invalid-feedback">{{ $message }}</span>@enderror
                 </div>
                 <div class="form-group">
-                    <label for="image_url" class="form-label">画像URL</label>
+                    <label for="description" class="form-label">説明文</label>
+                    <textarea name="description" id="description" class="form-control" rows="3" maxlength="2000">{{ old('description', $coupon->description) }}</textarea>
+                    <p class="form-text text-muted">会員のマイクーポン画面に表示する説明文。</p>
+                    @error('description')<span class="invalid-feedback">{{ $message }}</span>@enderror
+                </div>
+                <div class="form-group">
+                    <span class="form-label d-block">クーポン画像</span>
+                    <p class="text-muted small mb-2">画像をドラッグ＆ドロップするか、ファイルを選ぶか、URLを入力してください。</p>
+                    <div class="coupon-image-upload-wrap mb-2">
+                        <input type="file" name="image" id="coupon_image" class="d-none" accept="image/*">
+                        <label for="coupon_image" class="coupon-image-dropzone" id="coupon_image_dropzone">
+                            <span class="coupon-image-dropzone-icon"><i class="fas fa-cloud-upload-alt"></i></span>
+                            <span class="coupon-image-dropzone-text">クリックまたはドラッグ＆ドロップで画像を選択</span>
+                            <span class="coupon-image-dropzone-hint">PNG / JPG 2MBまで</span>
+                        </label>
+                        <div class="coupon-image-preview mt-2" id="coupon_image_preview" style="display:none;">
+                            <img id="coupon_image_preview_img" src="" alt="" style="max-width:200px;max-height:120px;object-fit:contain;">
+                            <button type="button" class="btn btn-sm btn-outline-secondary mt-1" id="coupon_image_clear">画像を解除</button>
+                        </div>
+                    </div>
+                    <label for="image_url" class="form-label small">または 画像URL</label>
                     <input type="url" name="image_url" id="image_url" class="form-control" value="{{ old('image_url', $coupon->image_url) }}" maxlength="500" placeholder="https://example.com/coupon.png">
-                    <p class="form-text text-muted">未入力の場合はデフォルト画像が使用されます。</p>
+                    @error('image_url')<span class="invalid-feedback">{{ $message }}</span>@enderror
+                    @error('image')<span class="invalid-feedback">{{ $message }}</span>@enderror
+                </div>
+                <div class="form-group">
+                    <label for="use_display" class="form-label">使用時の表示</label>
+                    <select name="use_display" id="use_display" class="form-control">
+                        @foreach(\App\Models\Coupon::getUseDisplayOptions() as $value => $label)
+                            <option value="{{ $value }}" {{ old('use_display', $coupon->use_display ?? 'none') === $value ? 'selected' : '' }}>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                    <p class="form-text text-muted">会員が「使用する」を押したときにバーコード・QRコードを表示するか選べます。</p>
+                    @error('use_display')<span class="invalid-feedback">{{ $message }}</span>@enderror
                 </div>
                 <div class="form-group">
                     <label for="type" class="form-label">種別 <span class="text-danger">*</span></label>
@@ -91,13 +142,13 @@
                 <div class="form-actions">
                     <button type="submit" class="btn btn-primary"><i class="fas fa-check me-1"></i>変更を保存</button>
                     <a href="{{ admin_route('admin.coupons') }}" class="btn btn-secondary">キャンセル</a>
-                    <form action="{{ admin_route('admin.coupons.delete', ['id' => $coupon->id]) }}" method="POST" class="d-inline" onsubmit="return confirm('このクーポンを削除しますか？\n既に会員に発行済みのクーポンは残りますが、マスタからは削除されます。');">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="btn btn-danger"><i class="fas fa-trash me-1"></i>削除</button>
-                    </form>
+                    <button type="button" class="btn btn-danger" onclick="if(confirm('このクーポンを削除しますか？\n既に会員に発行済みのクーポンは残りますが、マスタからは削除されます。')) document.getElementById('coupon-delete-form').submit();"><i class="fas fa-trash me-1"></i>削除</button>
                 </div>
             </section>
+        </form>
+        <form id="coupon-delete-form" action="{{ admin_route('admin.coupons.delete', ['id' => $coupon->id]) }}" method="POST" class="d-none">
+            @csrf
+            @method('DELETE')
         </form>
     </div>
 </div>
@@ -146,5 +197,60 @@ document.getElementById('issue_trigger').addEventListener('change', function() {
         });
     });
 })();
+// 画像ドラッグ＆ドロップ・プレビュー
+(function() {
+    var fileInput = document.getElementById('coupon_image');
+    var dropzone = document.getElementById('coupon_image_dropzone');
+    var preview = document.getElementById('coupon_image_preview');
+    var previewImg = document.getElementById('coupon_image_preview_img');
+    var clearBtn = document.getElementById('coupon_image_clear');
+    if (!fileInput || !dropzone) return;
+    function showPreview(src) {
+        if (preview && previewImg) {
+            previewImg.src = src || '';
+            preview.style.display = src ? 'block' : 'none';
+        }
+    }
+    function readFile(file) {
+        if (!file || !file.type.match(/^image\//)) return;
+        var r = new FileReader();
+        r.onload = function() { showPreview(r.result); };
+        r.readAsDataURL(file);
+    }
+    dropzone.addEventListener('click', function(e) { if (e.target === dropzone || dropzone.contains(e.target)) fileInput.click(); });
+    dropzone.addEventListener('dragover', function(e) { e.preventDefault(); dropzone.classList.add('is-dragover'); });
+    dropzone.addEventListener('dragleave', function() { dropzone.classList.remove('is-dragover'); });
+    dropzone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        dropzone.classList.remove('is-dragover');
+        var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+        if (f) { fileInput.files = e.dataTransfer.files; readFile(f); if (typeof updateCouponPreview === 'function') updateCouponPreview(); }
+    });
+    fileInput.addEventListener('change', function() {
+        var f = this.files && this.files[0];
+        if (f) readFile(f);
+        else showPreview(null);
+        if (typeof updateCouponPreview === 'function') updateCouponPreview();
+    });
+    if (clearBtn) clearBtn.addEventListener('click', function() {
+        fileInput.value = '';
+        showPreview(null);
+        if (typeof updateCouponPreview === 'function') updateCouponPreview();
+    });
+})();
 </script>
+@push('styles')
+<style>
+.coupon-image-dropzone { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; border: 2px dashed #dee2e6; border-radius: 12px; background: #f8f9fa; cursor: pointer; }
+.coupon-image-dropzone:hover, .coupon-image-dropzone.is-dragover { border-color: #0d6efd; background: rgba(13, 110, 253, 0.05); }
+.coupon-image-dropzone-icon { font-size: 2rem; color: #6c757d; margin-bottom: 8px; }
+.coupon-image-dropzone-text { font-size: 14px; }
+.coupon-image-dropzone-hint { font-size: 12px; color: #6c757d; margin-top: 4px; }
+.line-app-preview-wrap { display: flex; justify-content: center; padding: 12px 0; }
+.line-app-mock { width: 100%; max-width: 320px; border-radius: 24px; border: 12px solid #333; background: #fff; overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,0.15); }
+.line-app-mock-bar { padding: 12px 16px; background: #06c755; color: #fff; font-size: 14px; font-weight: 600; text-align: center; }
+.line-app-mock-body { padding: 16px; min-height: 120px; background: #f5f5f5; }
+.line-app-mock-body .cp-card { max-width: 100%; }
+</style>
+@endpush
 @endsection
