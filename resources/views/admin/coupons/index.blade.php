@@ -23,7 +23,10 @@
 <div class="card">
     <div class="card-header card-header-with-action">
         <h2 class="card-title">クーポン一覧</h2>
-        <a href="{{ admin_route('admin.coupons.create') }}" class="btn btn-primary"><i class="fas fa-plus"></i> 作成</a>
+        <div>
+            <a href="{{ admin_route('admin.coupons.bulk-issue') }}" class="btn btn-outline-primary"><i class="fas fa-gift"></i> 一括配布</a>
+            <a href="{{ admin_route('admin.coupons.create') }}" class="btn btn-primary"><i class="fas fa-plus"></i> 作成</a>
+        </div>
     </div>
     <div class="card-body">
         @if($coupons->isEmpty())

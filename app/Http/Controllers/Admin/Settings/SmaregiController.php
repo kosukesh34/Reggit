@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin\Settings;
 
 use App\Http\Controllers\Admin\AdminBaseController;
+use App\UseCases\Admin\Settings\GetSmaregiPosDataUseCase;
 use App\UseCases\Admin\Settings\GetSmaregiSettingsUseCase;
 use App\UseCases\Admin\Settings\UpdateSmaregiLinkUseCase;
 use Illuminate\Http\Request;
@@ -11,8 +12,17 @@ class SmaregiController extends AdminBaseController
 {
     public function __construct(
         private GetSmaregiSettingsUseCase $getSmaregiSettingsUseCase,
+        private GetSmaregiPosDataUseCase $getSmaregiPosDataUseCase,
         private UpdateSmaregiLinkUseCase $updateSmaregiLinkUseCase,
     ) {
+    }
+
+    /** 仮想POSデータ確認（開発用・後で削除可） */
+    public function posData()
+    {
+        $projectId = $this->resolveAdminProjectId();
+        $view = $this->getSmaregiPosDataUseCase->handle($projectId);
+        return view('admin.settings.smaregi-pos-data', ['view' => $view]);
     }
 
     public function index()

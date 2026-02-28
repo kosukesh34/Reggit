@@ -96,14 +96,16 @@ class DemoAdminUsersSeeder extends Seeder
         string $role,
         ?int $projectId
     ): AdminUser {
-        $user = AdminUser::firstOrNew(['login_id' => $loginId]);
-        $user->email = $email;
-        $user->password = $password; // Will be auto-hashed by the 'hashed' cast
-        $user->name = $name;
-        $user->role = $role;
-        $user->project_id = $projectId;
-        $user->save();
-        
+        $user = AdminUser::updateOrCreate(
+            ['login_id' => $loginId],
+            [
+                'email' => $email,
+                'password' => $password, // 'hashed' cast でハッシュ化される
+                'name' => $name,
+                'role' => $role,
+                'project_id' => $projectId,
+            ]
+        );
         return $user;
     }
 }

@@ -185,6 +185,15 @@ html {
     flex: 1;
 }
 
+.nav-item--sub {
+    padding-left: 2.25rem;
+    font-size: 0.9rem;
+}
+
+.nav-item--sub i {
+    font-size: 13px;
+}
+
 .main-content {
     flex: 1;
     margin-left: var(--sidebar-width);

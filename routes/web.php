@@ -95,7 +95,9 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'bind.admin.project', '
         Route::delete('/products/{id}', [AdminProductController::class, 'deleteProduct'])->name('admin.products.delete')->middleware('admin.permission:products.manage');
 
         Route::get('/members', [AdminMemberController::class, 'members'])->name('admin.members')->middleware('admin.permission:members.view');
+        Route::get('/members/{id}/edit', [AdminMemberController::class, 'editMember'])->name('admin.members.edit')->middleware('admin.permission:members.manage');
         Route::get('/members/{id}', [AdminMemberController::class, 'memberDetail'])->name('admin.members.detail')->middleware('admin.permission:members.view');
+        Route::put('/members/{id}', [AdminMemberController::class, 'updateMember'])->name('admin.members.update')->middleware('admin.permission:members.manage');
         Route::post('/members/{id}/issue-coupon', [AdminMemberController::class, 'issueCoupon'])->name('admin.members.issue-coupon')->middleware('admin.permission:members.view');
         Route::post('/members/{id}/add-stamps', [AdminMemberController::class, 'addStamps'])->name('admin.members.add-stamps')->middleware('admin.permission:members.view');
 
@@ -114,6 +116,8 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'bind.admin.project', '
         Route::get('/coupons', [AdminCouponController::class, 'coupons'])->name('admin.coupons')->middleware('admin.permission:coupons.view');
         Route::get('/coupons/create', [AdminCouponController::class, 'createCoupon'])->name('admin.coupons.create')->middleware('admin.permission:coupons.manage');
         Route::post('/coupons', [AdminCouponController::class, 'storeCoupon'])->name('admin.coupons.store')->middleware('admin.permission:coupons.manage');
+        Route::get('/coupons/bulk-issue', [AdminCouponController::class, 'bulkIssueForm'])->name('admin.coupons.bulk-issue')->middleware('admin.permission:coupons.manage');
+        Route::post('/coupons/bulk-issue', [AdminCouponController::class, 'bulkIssue'])->name('admin.coupons.bulk-issue.store')->middleware('admin.permission:coupons.manage');
         Route::get('/coupons/{id}/edit', [AdminCouponController::class, 'editCoupon'])->name('admin.coupons.edit')->middleware('admin.permission:coupons.manage');
         Route::put('/coupons/{id}', [AdminCouponController::class, 'updateCoupon'])->name('admin.coupons.update')->middleware('admin.permission:coupons.manage');
         Route::delete('/coupons/{id}', [AdminCouponController::class, 'deleteCoupon'])->name('admin.coupons.delete')->middleware('admin.permission:coupons.manage');
@@ -121,6 +125,9 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'bind.admin.project', '
         Route::get('/announcements', [AdminAnnouncementController::class, 'announcements'])->name('admin.announcements')->middleware('admin.permission:announcements.view');
         Route::get('/announcements/create', [AdminAnnouncementController::class, 'createAnnouncement'])->name('admin.announcements.create')->middleware('admin.permission:announcements.manage');
         Route::post('/announcements', [AdminAnnouncementController::class, 'storeAnnouncement'])->name('admin.announcements.store')->middleware('admin.permission:announcements.manage');
+        Route::get('/announcements/delivery', [AdminAnnouncementController::class, 'createDelivery'])->name('admin.announcements.delivery.create')->middleware('admin.permission:announcements.manage');
+        Route::post('/announcements/delivery', [AdminAnnouncementController::class, 'storeDelivery'])->name('admin.announcements.delivery.store')->middleware('admin.permission:announcements.manage');
+        Route::get('/announcements/ajax/members', [AdminAnnouncementController::class, 'searchMembers'])->name('admin.announcements.ajax.members')->middleware('admin.permission:announcements.view');
         Route::get('/announcements/{id}/edit', [AdminAnnouncementController::class, 'editAnnouncement'])->name('admin.announcements.edit')->middleware('admin.permission:announcements.manage');
         Route::put('/announcements/{id}', [AdminAnnouncementController::class, 'updateAnnouncement'])->name('admin.announcements.update')->middleware('admin.permission:announcements.manage');
         Route::delete('/announcements/{id}', [AdminAnnouncementController::class, 'deleteAnnouncement'])->name('admin.announcements.delete')->middleware('admin.permission:announcements.manage');
@@ -142,9 +149,24 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'bind.admin.project', '
         Route::get('/settings/ranks', [SettingsRanksController::class, 'index'])->name('admin.settings.ranks')->middleware('admin.permission:settings.view');
         Route::post('/settings/ranks', [SettingsRanksController::class, 'update'])->name('admin.settings.ranks.update')->middleware('admin.permission:settings.manage');
         Route::get('/settings/smaregi', [\App\Http\Controllers\Admin\Settings\SmaregiController::class, 'index'])->name('admin.settings.smaregi')->middleware('admin.permission:settings.view');
+        Route::get('/settings/smaregi/pos-data', [\App\Http\Controllers\Admin\Settings\SmaregiController::class, 'posData'])->name('admin.settings.smaregi.pos-data')->middleware('admin.permission:settings.view');
         Route::post('/settings/smaregi', [\App\Http\Controllers\Admin\Settings\SmaregiController::class, 'update'])->name('admin.settings.smaregi.update')->middleware('admin.permission:settings.manage');
         Route::get('/settings/liff-designer', [SettingsLiffDesignerController::class, 'index'])->name('admin.settings.liff-designer')->middleware('admin.permission:liff_designer.manage');
         Route::post('/settings/liff-designer', [SettingsLiffDesignerController::class, 'update'])->name('admin.settings.liff-designer.update')->middleware('admin.permission:liff_designer.manage');
+        Route::get('/settings/reservations', [\App\Http\Controllers\Admin\Settings\ReservationsController::class, 'index'])->name('admin.settings.reservations')->middleware('admin.permission:reservations.view');
+        Route::post('/settings/reservations', [\App\Http\Controllers\Admin\Settings\ReservationsController::class, 'update'])->name('admin.settings.reservations.update')->middleware('admin.permission:settings.manage');
+        Route::get('/settings/queue', [\App\Http\Controllers\Admin\Settings\QueueController::class, 'index'])->name('admin.settings.queue')->middleware('admin.permission:queue.view');
+        Route::post('/settings/queue', [\App\Http\Controllers\Admin\Settings\QueueController::class, 'update'])->name('admin.settings.queue.update')->middleware('admin.permission:settings.manage');
+        Route::get('/settings/coupons', [\App\Http\Controllers\Admin\Settings\CouponsController::class, 'index'])->name('admin.settings.coupons')->middleware('admin.permission:coupons.view');
+        Route::post('/settings/coupons', [\App\Http\Controllers\Admin\Settings\CouponsController::class, 'update'])->name('admin.settings.coupons.update')->middleware('admin.permission:settings.manage');
+        Route::get('/settings/announcements', [\App\Http\Controllers\Admin\Settings\AnnouncementsController::class, 'index'])->name('admin.settings.announcements')->middleware('admin.permission:announcements.view');
+        Route::post('/settings/announcements', [\App\Http\Controllers\Admin\Settings\AnnouncementsController::class, 'update'])->name('admin.settings.announcements.update')->middleware('admin.permission:settings.manage');
+        Route::get('/settings/gallery', [\App\Http\Controllers\Admin\Settings\GalleryController::class, 'index'])->name('admin.settings.gallery')->middleware('admin.permission:gallery.view');
+        Route::post('/settings/gallery', [\App\Http\Controllers\Admin\Settings\GalleryController::class, 'update'])->name('admin.settings.gallery.update')->middleware('admin.permission:settings.manage');
+        Route::get('/settings/profile', [\App\Http\Controllers\Admin\Settings\ProfileController::class, 'index'])->name('admin.settings.profile')->middleware('admin.permission:settings.view');
+        Route::post('/settings/profile', [\App\Http\Controllers\Admin\Settings\ProfileController::class, 'update'])->name('admin.settings.profile.update')->middleware('admin.permission:settings.manage');
+        Route::get('/settings/wallet', [\App\Http\Controllers\Admin\Settings\WalletController::class, 'index'])->name('admin.settings.wallet')->middleware('admin.permission:settings.view');
+        Route::post('/settings/wallet', [\App\Http\Controllers\Admin\Settings\WalletController::class, 'update'])->name('admin.settings.wallet.update')->middleware('admin.permission:settings.manage');
 
         Route::get('/analytics', [AdminAnalyticsController::class, 'analytics'])->name('admin.analytics')->middleware('admin.permission:analytics.view');
         Route::get('/audit-logs', [AdminAuditLogController::class, 'index'])->name('admin.audit-logs.index')->middleware('admin.permission:audit_logs.view');

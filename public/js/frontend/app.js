@@ -105,7 +105,7 @@ class MobileOrderApp {
     }
 
     setupTabEventListeners() {
-        document.querySelectorAll('.main-tab-btn, .banner-menu-btn').forEach((btn) => {
+        document.querySelectorAll('.main-tab-btn').forEach((btn) => {
             btn.addEventListener('click', (e) => {
                 const tab = e.currentTarget.dataset.tab;
                 if (tab) this.switchTab(tab);
@@ -376,7 +376,7 @@ class MobileOrderApp {
     switchTab(tab) {
         this.currentTab = tab;
 
-        DomHelper.querySelectorAll('.main-tab-btn, .banner-menu-btn').forEach((btn) => {
+        DomHelper.querySelectorAll('.main-tab-btn').forEach((btn) => {
             DomHelper.removeClass(btn, AppConstants.CSS_CLASSES.ACTIVE);
             if (btn.dataset.tab === tab) DomHelper.addClass(btn, AppConstants.CSS_CLASSES.ACTIVE);
         });

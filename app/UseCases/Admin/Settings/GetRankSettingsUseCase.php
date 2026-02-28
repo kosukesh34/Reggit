@@ -13,7 +13,16 @@ class GetRankSettingsUseCase
             ShopSetting::getMemberRankSettings($projectId),
             ShopSetting::getRankBasis($projectId),
             ShopSetting::getPointEarnRate($projectId),
-            ShopSetting::getPointsValidDays($projectId)
+            ShopSetting::getPointsValidDays($projectId),
+            ShopSetting::getMemberCodeType($projectId),
+            ShopSetting::getMemberCodeFormat($projectId),
+            ShopSetting::getMemberCodeLength($projectId),
+            ShopSetting::getMemberCodePrefix($projectId),
+            ShopSetting::getShowPointsDisplay($projectId),
+            ShopSetting::getShowRankProgress($projectId),
+            ShopSetting::getShowMemberCardForGuest($projectId),
+            ShopSetting::getMemberCardDesign($projectId),
+            ShopSetting::getFrontendLogoUrl($projectId)
         );
     }
 }
