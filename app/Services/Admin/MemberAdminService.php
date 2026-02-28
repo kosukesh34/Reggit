@@ -6,15 +6,21 @@ use App\Models\Coupon;
 use App\Models\Member;
 use App\Models\MemberCoupon;
 use App\Models\MemberStamp;
+use App\Models\ShopSetting;
 use App\Models\StampCard;
 use App\Services\MemberPointsExpiryCalculator;
 use App\Services\MemberRankCalculator;
+use App\Services\Smaregi\SmaregiApiService;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
 class MemberAdminService
 {
+    public function __construct(
+        private SmaregiApiService $smaregiApi,
+    ) {
+    }
     public function getPaginatedList(int $projectId, int $perPage = 20): LengthAwarePaginator
     {
         return Member::with('user')
@@ -78,6 +84,33 @@ class MemberAdminService
         ]);
     }
 
+    /** 複数会員にクーポンを一括発行（プレゼント配信）。$memberIds が空の場合は全員に配布。 */
+    public function issueCouponToMembers(int $projectId, int $couponId, array $memberIds = []): int
+    {
+        $coupon = Coupon::where('project_id', $projectId)->findOrFail($couponId);
+        $query = Member::where('project_id', $projectId);
+        if ($memberIds !== []) {
+            $query->whereIn('id', $memberIds);
+        }
+        $members = $query->get();
+        $validUntil = $coupon->end_at ?? Carbon::now()->addDays(30);
+        $issued = 0;
+        foreach ($members as $member) {
+            $already = MemberCoupon::where('member_id', $member->id)
+                ->where('coupon_id', $couponId)
+                ->where('status', MemberCoupon::STATUS_UNUSED)
+                ->where(function ($q) use ($validUntil) {
+                    $q->whereNull('valid_until')->orWhere('valid_until', '>=', now());
+                })->exists();
+            if ($already) {
+                continue;
+            }
+            $this->issueCouponToMember($member, $couponId, null, $validUntil);
+            $issued++;
+        }
+        return $issued;
+    }
+
     /** 会員のスタンプカードにスタンプを追加（管理画面からの手動付与） */
     public function addStampsToMember(Member $member, int $stampCardId, int $count = 1): MemberStamp
     {
@@ -103,5 +136,86 @@ class MemberAdminService
             $memberStamp->update(['completed_at' => now()]);
         }
         return $memberStamp->refresh();
+    }
+
+    /** 会員編集フォーム用：ランク選択肢（key => label） */
+    public function getRankOptionsForSelect(int $projectId): array
+    {
+        $ranks = ShopSetting::getMemberRankSettings($projectId);
+        $options = [];
+        foreach ($ranks as $r) {
+            if (empty($r['key'])) {
+                continue;
+            }
+            $options[(string) $r['key']] = (string) ($r['label'] ?? $r['key']);
+        }
+        return $options;
+    }
+
+    /**
+     * 会員のユーザー情報・会員情報を一括更新する。
+     * ポイントの加算・減算は Controller から別途 addPoints/usePoints で行う想定。
+     * スマレジ連携時はAPI更新を成功確認してからローカルを更新する。
+     */
+    public function updateMemberProfile(Member $member, array $userData, array $memberData): void
+    {
+        $user = $member->user;
+        $allowedUser = ['name', 'kana', 'email', 'phone'];
+        $updateUser = array_intersect_key($userData, array_flip($allowedUser));
+
+        $smaregiCustomerId = $member->smaregi_customer_id ?? '';
+        $contractId = ShopSetting::getValue('smaregi_contract_id', null, $member->project_id);
+        $contractId = is_string($contractId) ? trim($contractId) : '';
+        if ($contractId !== '' && $smaregiCustomerId !== '' && $updateUser !== [] && $user !== null) {
+            $merged = array_merge($user->only(['name', 'kana', 'email', 'phone']), $updateUser);
+            $body = $this->buildSmaregiUpdateBody($merged);
+            if ($body !== []) {
+                $result = $this->smaregiApi->updateCustomer($contractId, $smaregiCustomerId, $body);
+                if ($result === null) {
+                    throw new \Exception('スマレジの会員情報更新に失敗しました。storage/logs/laravel.log の [Smaregi] を参照してください。');
+                }
+            }
+        }
+
+        if ($user !== null && $updateUser !== []) {
+            $user->update($updateUser);
+        }
+
+        $allowedMember = [
+            'member_number', 'status', 'rank', 'birthday', 'address',
+            'postal_code', 'prefecture', 'city', 'street', 'sex', 'profile_extra',
+        ];
+        $updateMember = array_intersect_key($memberData, array_flip($allowedMember));
+        if ($updateMember !== []) {
+            // rank_label / points_expiry は findOrFail で付与した仮想属性のため、DBに存在しない。update 前に外す。
+            $member->offsetUnset('rank_label');
+            $member->offsetUnset('points_expiry');
+            $member->update($updateMember);
+        }
+    }
+
+    /** スマレジ会員更新用ボディ（name → lastName/firstName 等） */
+    private function buildSmaregiUpdateBody(array $userFields): array
+    {
+        $body = [];
+        $name = trim((string) ($userFields['name'] ?? ''));
+        if ($name !== '') {
+            $parts = preg_split('/\s+/u', $name, 2);
+            $body['lastName'] = $parts[0] ?? $name;
+            $body['firstName'] = $parts[1] ?? '';
+        }
+        $kana = trim((string) ($userFields['kana'] ?? ''));
+        if ($kana !== '') {
+            $kanaParts = preg_split('/\s+/u', $kana, 2);
+            $body['lastKana'] = $kanaParts[0] ?? $kana;
+            $body['firstKana'] = $kanaParts[1] ?? '';
+        }
+        if (array_key_exists('email', $userFields)) {
+            $body['mailAddress'] = trim((string) $userFields['email']);
+        }
+        if (array_key_exists('phone', $userFields)) {
+            $body['phoneNumber'] = trim((string) $userFields['phone']);
+        }
+        return $body;
     }
 }

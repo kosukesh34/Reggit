@@ -8,6 +8,7 @@ use App\Models\Project;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 class AdminAuthService
@@ -39,27 +40,47 @@ class AdminAuthService
      */
     public function loginAdmin(Request $request, ?string $projectKey = null)
     {
-        $user = AdminUser::where('login_id', $request->login_id)->first();
-        if ($user === null || Hash::check($request->password, $user->password) === false) {
+        $projectKey = $projectKey !== null ? trim($projectKey) : null;
+        $projectKey = $projectKey === '' ? null : $projectKey;
+
+        Log::info('[AdminLogin] attempt', [
+            'path' => $request->path(),
+            'project_key' => $projectKey,
+            'login_id' => $request->input('login_id'),
+        ]);
+
+        $user = AdminUser::where('login_id', $request->login_id)->first()
+            ?? AdminUser::where('email', $request->login_id)->first();
+        if ($user === null) {
+            Log::warning('[AdminLogin] user not found', ['login_id' => $request->input('login_id')]);
             throw ValidationException::withMessages([
                 'login_id' => ['IDまたはパスワードが正しくありません。'],
             ]);
         }
-        // システム管理者はプロジェクト指定ログイン（/admin/{project_key}/login）の場合のみ許可
-        if ($user->isSystemAdmin()) {
-            if ($projectKey === null || $projectKey === '') {
-                throw ValidationException::withMessages([
-                    'login_id' => ['システム管理者は /system-admin/login からログインするか、プロジェクトを選んでから（例: /admin/default/login）ログインしてください。'],
-                ]);
-            }
-            // 指定プロジェクトが有効か確認
+        if (Hash::check($request->password, $user->password) === false) {
+            Log::warning('[AdminLogin] password mismatch', ['login_id' => $request->input('login_id')]);
+            throw ValidationException::withMessages([
+                'login_id' => ['IDまたはパスワードが正しくありません。'],
+            ]);
+        }
+        // プロジェクト指定時: 存在・有効確認（システム管理者は全プロジェクトにログイン可）
+        if ($projectKey !== null) {
             $project = Project::where('project_key', $projectKey)->where('is_active', true)->first();
+            if ($project === null && $projectKey === 'default') {
+                $project = Project::firstOrCreate(
+                    ['project_key' => 'default'],
+                    ['name' => 'デフォルト店舗', 'description' => 'デモ用プロジェクト', 'is_active' => true]
+                );
+            }
             if ($project === null) {
+                Log::warning('[AdminLogin] project not found', ['project_key' => $projectKey]);
                 throw ValidationException::withMessages([
                     'login_id' => ['指定されたプロジェクトが見つかりません。'],
                 ]);
             }
         }
+
+        Log::info('[AdminLogin] success', ['login_id' => $user->login_id, 'project_key' => $projectKey]);
 
         $remember = $request->boolean('remember');
         Auth::guard('admin')->login($user, $remember);
@@ -81,7 +102,8 @@ class AdminAuthService
 
     public function loginSystemAdmin(Request $request)
     {
-        $user = AdminUser::where('login_id', $request->login_id)->first();
+        $user = AdminUser::where('login_id', $request->login_id)->first()
+            ?? AdminUser::where('email', $request->login_id)->first();
         if ($user === null || Hash::check($request->password, $user->password) === false) {
             throw ValidationException::withMessages([
                 'login_id' => ['IDまたはパスワードが正しくありません。'],

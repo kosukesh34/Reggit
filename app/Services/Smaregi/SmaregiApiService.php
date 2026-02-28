@@ -4,6 +4,7 @@ namespace App\Services\Smaregi;
 
 use App\Models\ShopSetting;
 use App\Models\SmaregiContract;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -36,12 +37,22 @@ class SmaregiApiService
         }
 
         $url = "{$idBaseUrl}/app/{$contractId}/token";
-        $response = Http::asForm()
-            ->withBasicAuth($clientId, $clientSecret)
-            ->post($url, [
-                'grant_type' => 'client_credentials',
-                'scope' => $scope,
+        try {
+            $response = Http::asForm()
+                ->withBasicAuth($clientId, $clientSecret)
+                ->timeout(30)
+                ->connectTimeout(15)
+                ->post($url, [
+                    'grant_type' => 'client_credentials',
+                    'scope' => $scope,
+                ]);
+        } catch (ConnectionException $e) {
+            Log::warning('[Smaregi] token request connection failed (timeout or unreachable)', [
+                'smaregi_contract_id' => $contractId,
+                'message' => $e->getMessage(),
             ]);
+            return null;
+        }
 
         if (!$response->successful()) {
             Log::error('[Smaregi] token request failed', [
@@ -110,7 +121,8 @@ class SmaregiApiService
             return null;
         }
 
-        return $response->json();
+        // 204 No Content 等で body が空の場合は [] を返し、呼び出し側で null=失敗 と区別できるようにする
+        return $response->json() ?? [];
     }
 
     /** 店舗一覧を取得（pos.stores:read スコープ必要） */
@@ -212,34 +224,40 @@ class SmaregiApiService
         return $this->request($contractId, 'PATCH', 'pos/transactions/' . $transactionId, $body);
     }
 
-    /** 部門一覧取得（pos.products:read） */
+    /** 部門一覧取得（pos.products:read）。公式APIは pos/categories */
     public function getDepartments(string $contractId, array $query = []): ?array
     {
-        return $this->request($contractId, 'GET', 'pos/departments', $query);
+        return $this->request($contractId, 'GET', 'pos/categories', $query);
     }
 
     /** 部門1件取得（pos.products:read） */
     public function getDepartment(string $contractId, string $departmentId): ?array
     {
-        return $this->request($contractId, 'GET', 'pos/departments/' . $departmentId);
+        return $this->request($contractId, 'GET', 'pos/categories/' . $departmentId);
     }
 
     /** 部門登録（pos.products:write） */
     public function createDepartment(string $contractId, array $body): ?array
     {
-        return $this->request($contractId, 'POST', 'pos/departments', $body);
+        return $this->request($contractId, 'POST', 'pos/categories', $body);
     }
 
     /** 部門更新（pos.products:write） */
     public function updateDepartment(string $contractId, string $departmentId, array $body): ?array
     {
-        return $this->request($contractId, 'PATCH', 'pos/departments/' . $departmentId, $body);
+        return $this->request($contractId, 'PATCH', 'pos/categories/' . $departmentId, $body);
     }
 
     /** 部門削除（pos.products:write） */
     public function deleteDepartment(string $contractId, string $departmentId): ?array
     {
-        return $this->request($contractId, 'DELETE', 'pos/departments/' . $departmentId);
+        return $this->request($contractId, 'DELETE', 'pos/categories/' . $departmentId);
+    }
+
+    /** 部門グループ一覧取得（pos.products:read）。公式APIは pos/category_groups */
+    public function getCategoryGroups(string $contractId, array $query = []): ?array
+    {
+        return $this->request($contractId, 'GET', 'pos/category_groups', $query);
     }
 
     /** 商品1件取得（pos.products:read） */
