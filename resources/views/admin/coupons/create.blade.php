@@ -7,21 +7,35 @@
     <div class="card-header card-header--stack">
         <div>
             <h3 class="card-title"><i class="fas fa-ticket-alt"></i> 新規クーポン</h3>
-            <p class="card-desc text-muted small mb-0 mt-1">会員に配布するクーポンを作成します。表示デザインと内容を設定してください。</p>
+            <p class="card-desc text-muted small mb-0 mt-1">会員に配布するクーポンを作成します。まず表示デザインを選び、プレビューで「配布されるクーポン」を確認しながら、割引内容と発行条件を入力してください。</p>
         </div>
     </div>
     <div class="card-body">
-        <form action="{{ admin_route('admin.coupons.store') }}" method="POST">
+        <form action="{{ admin_route('admin.coupons.store') }}" method="POST" enctype="multipart/form-data">
             @csrf
-            <section class="form-section mb-4">
-                <h4 class="form-section-title"><span class="form-section-num">1</span> 表示の選択</h4>
-                <p class="text-muted small mb-3">会員アプリで表示されるクーポンのデザインとアクセント色を選びます。選択後、下のプレビューで見た目を確認できます。</p>
+            <section class="form-section mb-4" aria-labelledby="section-display-heading">
+                <h4 id="section-display-heading" class="form-section-title"><span class="form-section-num">1</span> 表示の選択</h4>
+                <p class="text-muted small mb-3">会員アプリに表示されるデザインとアクセント色を1つ選んでください。選択すると下の「配布されるクーポンの見た目」に即時反映されます。</p>
                 @include('admin.coupons._ui_picker', ['selectedDesign' => old('design_template', 'classic'), 'selectedColor' => old('theme_color', '')])
             </section>
             @include('admin.coupons._preview')
-            <section class="form-section mt-4">
-                <h4 class="form-section-title"><span class="form-section-num">2</span> クーポン情報</h4>
-                <p class="text-muted small mb-3">割引内容・有効期間・発行条件を設定します。</p>
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fab fa-line"></i> LINEアプリでの表示</h3>
+                    <p class="card-desc text-muted small mb-0 mt-1">会員がLINEで開く「マイクーポン」画面では、上記「配布されるクーポンの見た目」のとおり表示されます。説明文・使用するボタン・バーコード/QRも反映されます。</p>
+                </div>
+                <div class="card-body">
+                    <div class="line-app-preview-wrap">
+                        <div class="line-app-mock">
+                            <div class="line-app-mock-bar"><span>マイクーポン</span></div>
+                            <div id="line-coupon-preview-inner" class="line-app-mock-body"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <section class="form-section mt-4" aria-labelledby="section-info-heading">
+                <h4 id="section-info-heading" class="form-section-title"><span class="form-section-num">2</span> クーポン情報</h4>
+                <p class="text-muted small mb-3">割引内容・有効期間・発行条件を設定します。名前・種別・値・有効期限はプレビューに表示されます。</p>
                 <div class="form-group">
                     <label for="code" class="form-label">クーポンコード <span class="text-danger">*</span></label>
                     <input type="text" name="code" id="code" class="form-control" value="{{ old('code') }}" required maxlength="50" placeholder="例: WELCOME10" aria-describedby="code-help">
@@ -30,25 +44,59 @@
                 </div>
                 <div class="form-group">
                     <label for="name" class="form-label">名前</label>
-                    <input type="text" name="name" id="name" class="form-control" value="{{ old('name') }}" maxlength="255">
+                    <input type="text" name="name" id="name" class="form-control" value="{{ old('name') }}" maxlength="255" placeholder="例: 新規会員10%オフ" aria-describedby="name-help">
+                    <p id="name-help" class="form-text text-muted">会員に表示するクーポン名。プレビューに反映されます。</p>
                     @error('name')<span class="invalid-feedback">{{ $message }}</span>@enderror
                 </div>
                 <div class="form-group">
-                    <label for="image_url" class="form-label">画像URL</label>
+                    <label for="description" class="form-label">説明文</label>
+                    <textarea name="description" id="description" class="form-control" rows="3" maxlength="2000" placeholder="例: ご来店の際、スタッフにこの画面をご提示ください。" aria-describedby="description-help">{{ old('description') }}</textarea>
+                    <p id="description-help" class="form-text text-muted">会員のマイクーポン画面に表示する説明文。使い方や注意事項を入力できます。</p>
+                    @error('description')<span class="invalid-feedback">{{ $message }}</span>@enderror
+                </div>
+                <div class="form-group">
+                    <span class="form-label d-block">クーポン画像</span>
+                    <p class="text-muted small mb-2">画像をドラッグ＆ドロップするか、ファイルを選ぶか、URLを入力してください。</p>
+                    <div class="coupon-image-upload-wrap mb-2">
+                        <input type="file" name="image" id="coupon_image" class="d-none" accept="image/*">
+                        <label for="coupon_image" class="coupon-image-dropzone" id="coupon_image_dropzone">
+                            <span class="coupon-image-dropzone-icon"><i class="fas fa-cloud-upload-alt"></i></span>
+                            <span class="coupon-image-dropzone-text">クリックまたはドラッグ＆ドロップで画像を選択</span>
+                            <span class="coupon-image-dropzone-hint">PNG / JPG 2MBまで</span>
+                        </label>
+                        <div class="coupon-image-preview mt-2" id="coupon_image_preview" style="display:none;">
+                            <img id="coupon_image_preview_img" src="" alt="" style="max-width:200px;max-height:120px;object-fit:contain;">
+                            <button type="button" class="btn btn-sm btn-outline-secondary mt-1" id="coupon_image_clear">画像を解除</button>
+                        </div>
+                    </div>
+                    <label for="image_url" class="form-label small">または 画像URL</label>
                     <input type="url" name="image_url" id="image_url" class="form-control" value="{{ old('image_url') }}" maxlength="500" placeholder="https://example.com/coupon.png">
-                    <p class="form-text text-muted">未入力の場合はデフォルト画像が使用されます。</p>
+                    <p class="form-text text-muted">URLを入力しても画像を設定できます。ファイルを選択した場合はURLより優先されます。</p>
                     @error('image_url')<span class="invalid-feedback">{{ $message }}</span>@enderror
+                    @error('image')<span class="invalid-feedback">{{ $message }}</span>@enderror
                 </div>
                 <div class="form-group">
-                    <label for="type" class="form-label">種別 <span class="text-danger">*</span></label>
-                    <select name="type" id="type" class="form-control" required>
-                        <option value="percent" {{ old('type') === 'percent' ? 'selected' : '' }}>パーセント</option>
-                        <option value="fixed" {{ old('type') === 'fixed' ? 'selected' : '' }}>固定額</option>
+                    <label for="use_display" class="form-label">使用時の表示</label>
+                    <select name="use_display" id="use_display" class="form-control" aria-describedby="use_display-help">
+                        @foreach(\App\Models\Coupon::getUseDisplayOptions() as $value => $label)
+                            <option value="{{ $value }}" {{ old('use_display', 'none') === $value ? 'selected' : '' }}>{{ $label }}</option>
+                        @endforeach
                     </select>
+                    <p id="use_display-help" class="form-text text-muted">会員が「使用する」を押したときに、バーコード・QRコード・またはコード番号を表示できます。レジで読み取る場合に便利です。</p>
+                    @error('use_display')<span class="invalid-feedback">{{ $message }}</span>@enderror
                 </div>
                 <div class="form-group">
-                    <label for="value" class="form-label">値 <span class="text-danger">*</span></label>
-                    <input type="number" name="value" id="value" class="form-control" value="{{ old('value', 0) }}" min="0" step="0.01" required>
+                    <label for="type" class="form-label">割引種別 <span class="text-danger">*</span></label>
+                    <select name="type" id="type" class="form-control" required aria-describedby="type-help">
+                        <option value="percent" {{ old('type') === 'percent' ? 'selected' : '' }}>パーセント（%）</option>
+                        <option value="fixed" {{ old('type') === 'fixed' ? 'selected' : '' }}>固定額（円）</option>
+                    </select>
+                    <p id="type-help" class="form-text text-muted">割引の計算方法。プレビューに「〇%オフ」「〇円オフ」と表示されます。</p>
+                </div>
+                <div class="form-group">
+                    <label for="value" class="form-label">割引値 <span class="text-danger">*</span></label>
+                    <input type="number" name="value" id="value" class="form-control" value="{{ old('value', 0) }}" min="0" step="0.01" required placeholder="例: 10 または 500" aria-describedby="value-help">
+                    <p id="value-help" class="form-text text-muted">パーセントの場合は 1〜100、固定額の場合は円単位で入力。プレビューに反映されます。</p>
                     @error('value')<span class="invalid-feedback">{{ $message }}</span>@enderror
                 </div>
                 <div class="form-group">
@@ -146,5 +194,88 @@ document.getElementById('issue_trigger').addEventListener('change', function() {
         });
     });
 })();
+// 画像ドラッグ＆ドロップ・プレビュー
+(function() {
+    var fileInput = document.getElementById('coupon_image');
+    var dropzone = document.getElementById('coupon_image_dropzone');
+    var preview = document.getElementById('coupon_image_preview');
+    var previewImg = document.getElementById('coupon_image_preview_img');
+    var urlInput = document.getElementById('image_url');
+    var clearBtn = document.getElementById('coupon_image_clear');
+    if (!fileInput || !dropzone) return;
+    function showPreview(src) {
+        if (preview && previewImg) {
+            previewImg.src = src || '';
+            preview.style.display = src ? 'block' : 'none';
+        }
+    }
+    function readFile(file) {
+        if (!file || !file.type.match(/^image\//)) return;
+        var r = new FileReader();
+        r.onload = function() { showPreview(r.result); };
+        r.readAsDataURL(file);
+    }
+    dropzone.addEventListener('click', function(e) { if (e.target === dropzone || dropzone.contains(e.target)) fileInput.click(); });
+    dropzone.addEventListener('dragover', function(e) { e.preventDefault(); dropzone.classList.add('is-dragover'); });
+    dropzone.addEventListener('dragleave', function() { dropzone.classList.remove('is-dragover'); });
+    dropzone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        dropzone.classList.remove('is-dragover');
+        var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+        if (f) { fileInput.files = e.dataTransfer.files; readFile(f); if (typeof updateCouponPreview === 'function') updateCouponPreview(); }
+    });
+    fileInput.addEventListener('change', function() {
+        var f = this.files && this.files[0];
+        if (f) readFile(f);
+        else showPreview(null);
+        if (typeof updateCouponPreview === 'function') updateCouponPreview();
+    });
+    if (clearBtn) clearBtn.addEventListener('click', function() {
+        fileInput.value = '';
+        showPreview(null);
+        if (typeof updateCouponPreview === 'function') updateCouponPreview();
+    });
+    if (urlInput) urlInput.addEventListener('input', function() { if (typeof updateCouponPreview === 'function') updateCouponPreview(); });
+})();
 </script>
+@push('styles')
+<style>
+.coupon-image-dropzone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    border: 2px dashed var(--border, #dee2e6);
+    border-radius: 12px;
+    background: var(--bg-secondary, #f8f9fa);
+    cursor: pointer;
+    transition: border-color .2s, background .2s;
+}
+.coupon-image-dropzone:hover, .coupon-image-dropzone.is-dragover { border-color: var(--primary, #0d6efd); background: rgba(13, 110, 253, 0.05); }
+.coupon-image-dropzone-icon { font-size: 2rem; color: var(--text-secondary); margin-bottom: 8px; }
+.coupon-image-dropzone-text { font-size: 14px; color: var(--text-primary); }
+.coupon-image-dropzone-hint { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+.line-app-preview-wrap { display: flex; justify-content: center; padding: 12px 0; }
+.line-app-mock {
+    width: 100%;
+    max-width: 320px;
+    border-radius: 24px;
+    border: 12px solid #333;
+    background: #fff;
+    overflow: hidden;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+}
+.line-app-mock-bar {
+    padding: 12px 16px;
+    background: #06c755;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+}
+.line-app-mock-body { padding: 16px; min-height: 120px; background: #f5f5f5; }
+.line-app-mock-body .cp-card { max-width: 100%; }
+</style>
+@endpush
 @endsection
