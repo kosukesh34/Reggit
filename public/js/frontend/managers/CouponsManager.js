@@ -101,6 +101,13 @@ class CouponsManager {
             } else {
                 imageBlock = '<div class="coupon-item-image coupon-item-image--icon"><i class="fas ' + iconClass + '" aria-hidden="true"></i></div>';
             }
+            const descriptionBlock = (cp.description && cp.description.trim()) ? '<p class="coupon-item-description">' + DomHelper.escapeHtml(cp.description) + '</p>' : '';
+            const useDisplay = cp.use_display || 'none';
+            const code = (cp.code && String(cp.code).trim()) ? cp.code : '';
+            const showUseButton = status === 'available' && (useDisplay !== 'none' || code);
+            const useBtnBlock = showUseButton
+                ? '<div class="coupon-item-actions"><button type="button" class="btn btn-primary coupon-use-btn" data-member-coupon-id="' + DomHelper.escapeHtml(String(cp.id)) + '" data-use-display="' + DomHelper.escapeHtml(useDisplay) + '" data-code="' + DomHelper.escapeHtml(code) + '" data-coupon-name="' + DomHelper.escapeHtml(cp.coupon_name || 'クーポン') + '"><i class="fas fa-hand-holding-usd me-1"></i>使用する</button></div>'
+                : '';
             return `
                 <div class="coupon-item coupon-item--${status} coupon-item--design-${design}"${accentStyle}>
                     ${imageBlock}
@@ -109,6 +116,8 @@ class CouponsManager {
                         <span class="coupon-item-status">${DomHelper.escapeHtml(label)}</span>
                     </div>
                     ${validUntil ? '<p class="coupon-item-valid">有効期限: ' + DomHelper.escapeHtml(validUntil) + '</p>' : ''}
+                    ${descriptionBlock}
+                    ${useBtnBlock}
                 </div>
             `;
         };
@@ -149,6 +158,75 @@ class CouponsManager {
             </div>`;
         }
 
+        html += `
+            <div id="coupon-use-modal" class="coupon-use-modal" aria-hidden="true">
+                <div class="coupon-use-modal-backdrop"></div>
+                <div class="coupon-use-modal-content">
+                    <div class="coupon-use-modal-header">
+                        <h3 class="coupon-use-modal-title">クーポンを使用</h3>
+                        <button type="button" class="coupon-use-modal-close" aria-label="閉じる">&times;</button>
+                    </div>
+                    <div class="coupon-use-modal-body">
+                        <p class="coupon-use-modal-name" id="coupon-use-modal-name"></p>
+                        <div id="coupon-use-modal-code-area"></div>
+                    </div>
+                </div>
+            </div>`;
         section.innerHTML = html;
+
+        this._bindUseButtons(section);
+    }
+
+    _bindUseButtons(section) {
+        const modal = section.querySelector('#coupon-use-modal');
+        if (!modal) return;
+        const backdrop = modal.querySelector('.coupon-use-modal-backdrop');
+        const closeBtn = modal.querySelector('.coupon-use-modal-close');
+        const nameEl = modal.querySelector('#coupon-use-modal-name');
+        const codeArea = modal.querySelector('#coupon-use-modal-code-area');
+        const showModal = (name, useDisplay, code) => {
+            nameEl.textContent = name;
+            codeArea.innerHTML = '';
+            if (useDisplay === 'barcode' && code && typeof JsBarcode !== 'undefined') {
+                const svg = document.createElement('svg');
+                svg.id = 'coupon-use-barcode-svg';
+                codeArea.appendChild(svg);
+                try {
+                    JsBarcode('#coupon-use-barcode-svg', code, { format: 'CODE128', width: 2, height: 60, displayValue: true });
+                } catch (e) {
+                    codeArea.innerHTML = '<p class="coupon-use-code-text">' + DomHelper.escapeHtml(code) + '</p>';
+                }
+            } else if (useDisplay === 'qr' && code && typeof QRCode !== 'undefined') {
+                const div = document.createElement('div');
+                div.id = 'coupon-use-qr-container';
+                div.className = 'coupon-use-qr-wrap';
+                codeArea.appendChild(div);
+                try {
+                    new QRCode(div, { text: code, width: 160, height: 160 });
+                } catch (e) {
+                    codeArea.innerHTML = '<p class="coupon-use-code-text">' + DomHelper.escapeHtml(code) + '</p>';
+                }
+            } else if (code) {
+                codeArea.innerHTML = '<p class="coupon-use-code-label">クーポンコード</p><p class="coupon-use-code-text">' + DomHelper.escapeHtml(code) + '</p>';
+            } else {
+                codeArea.innerHTML = '<p class="coupon-use-code-text text-muted">表示するコードはありません</p>';
+            }
+            modal.classList.add('is-open');
+            modal.setAttribute('aria-hidden', 'false');
+        };
+        const hideModal = () => {
+            modal.classList.remove('is-open');
+            modal.setAttribute('aria-hidden', 'true');
+        };
+        section.querySelectorAll('.coupon-use-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const name = btn.getAttribute('data-coupon-name') || 'クーポン';
+                const useDisplay = btn.getAttribute('data-use-display') || 'none';
+                const code = btn.getAttribute('data-code') || '';
+                showModal(name, useDisplay, code);
+            });
+        });
+        if (backdrop) backdrop.addEventListener('click', hideModal);
+        if (closeBtn) closeBtn.addEventListener('click', hideModal);
     }
 }

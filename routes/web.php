@@ -151,6 +151,7 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'bind.admin.project', '
         Route::get('/settings/smaregi', [\App\Http\Controllers\Admin\Settings\SmaregiController::class, 'index'])->name('admin.settings.smaregi')->middleware('admin.permission:settings.view');
         Route::get('/settings/smaregi/pos-data', [\App\Http\Controllers\Admin\Settings\SmaregiController::class, 'posData'])->name('admin.settings.smaregi.pos-data')->middleware('admin.permission:settings.view');
         Route::post('/settings/smaregi', [\App\Http\Controllers\Admin\Settings\SmaregiController::class, 'update'])->name('admin.settings.smaregi.update')->middleware('admin.permission:settings.manage');
+        Route::post('/settings/smaregi/sync-products', [\App\Http\Controllers\Admin\Settings\SmaregiController::class, 'syncProducts'])->name('admin.settings.smaregi.sync-products')->middleware('admin.permission:settings.manage');
         Route::get('/settings/liff-designer', [SettingsLiffDesignerController::class, 'index'])->name('admin.settings.liff-designer')->middleware('admin.permission:liff_designer.manage');
         Route::post('/settings/liff-designer', [SettingsLiffDesignerController::class, 'update'])->name('admin.settings.liff-designer.update')->middleware('admin.permission:liff_designer.manage');
         Route::get('/settings/reservations', [\App\Http\Controllers\Admin\Settings\ReservationsController::class, 'index'])->name('admin.settings.reservations')->middleware('admin.permission:reservations.view');

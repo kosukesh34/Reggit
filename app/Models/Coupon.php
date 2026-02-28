@@ -30,6 +30,21 @@ class Coupon extends Model
     public const DESIGN_VINTAGE = 'vintage';
     public const DESIGN_NEON = 'neon';
 
+    /** 使用時の表示: なし / バーコード / QRコード */
+    public const USE_DISPLAY_NONE = 'none';
+    public const USE_DISPLAY_BARCODE = 'barcode';
+    public const USE_DISPLAY_QR = 'qr';
+
+    /** @return array<string, string> */
+    public static function getUseDisplayOptions(): array
+    {
+        return [
+            self::USE_DISPLAY_NONE => '表示しない',
+            self::USE_DISPLAY_BARCODE => 'バーコードを表示',
+            self::USE_DISPLAY_QR => 'QRコードを表示',
+        ];
+    }
+
     /** @return array<string, string> */
     public static function getIssueTriggerOptions(): array
     {
@@ -77,8 +92,9 @@ class Coupon extends Model
     }
 
     protected $fillable = [
-        'project_id', 'code', 'name', 'image_url', 'design_template', 'theme_color', 'type', 'value', 'min_order_amount',
-        'usage_limit', 'used_count', 'start_at', 'end_at', 'is_active', 'issue_trigger', 'stamp_card_id',
+        'project_id', 'code', 'name', 'description', 'image_url', 'design_template', 'theme_color', 'use_display',
+        'type', 'value', 'min_order_amount', 'usage_limit', 'used_count', 'start_at', 'end_at', 'is_active', 'issue_trigger', 'stamp_card_id',
+        'smaregi_coupon_id',
     ];
 
     /** @var array<string, string> */

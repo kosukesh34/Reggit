@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin\Settings;
 
 use App\Http\Controllers\Admin\AdminBaseController;
+use App\Services\Smaregi\SmaregiProductSyncService;
 use App\UseCases\Admin\Settings\GetSmaregiPosDataUseCase;
 use App\UseCases\Admin\Settings\GetSmaregiSettingsUseCase;
 use App\UseCases\Admin\Settings\UpdateSmaregiLinkUseCase;
@@ -14,6 +15,7 @@ class SmaregiController extends AdminBaseController
         private GetSmaregiSettingsUseCase $getSmaregiSettingsUseCase,
         private GetSmaregiPosDataUseCase $getSmaregiPosDataUseCase,
         private UpdateSmaregiLinkUseCase $updateSmaregiLinkUseCase,
+        private SmaregiProductSyncService $smaregiProductSyncService,
     ) {
     }
 
@@ -42,5 +44,31 @@ class SmaregiController extends AdminBaseController
         $this->updateSmaregiLinkUseCase->handle($projectId, is_string($contractId) ? $contractId : null);
         return redirect()->route('admin.settings.smaregi', $this->buildAdminRouteParams())
             ->with('success', 'スマレジ連携を更新しました');
+    }
+
+    /** スマレジの商品をDBに同期する */
+    public function syncProducts(Request $request)
+    {
+        $projectId = $this->resolveAdminProjectId();
+        try {
+            $result = $this->smaregiProductSyncService->sync($projectId);
+            $msg = sprintf(
+                '商品を同期しました（新規: %d、更新: %d、失敗: %d）',
+                $result['created'],
+                $result['updated'],
+                $result['failed']
+            );
+            if ($result['failed'] > 0 && !empty($result['errors'])) {
+                $msg .= '。失敗詳細: ' . implode('; ', array_slice($result['errors'], 0, 5));
+                if (count($result['errors']) > 5) {
+                    $msg .= ' …';
+                }
+            }
+            return redirect()->route('admin.settings.smaregi', $this->buildAdminRouteParams())
+                ->with('success', $msg);
+        } catch (\Throwable $e) {
+            return redirect()->route('admin.settings.smaregi', $this->buildAdminRouteParams())
+                ->with('error', $e->getMessage());
+        }
     }
 }
