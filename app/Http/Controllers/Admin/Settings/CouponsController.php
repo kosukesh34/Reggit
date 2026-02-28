@@ -3,17 +3,32 @@
 namespace App\Http\Controllers\Admin\Settings;
 
 use App\Http\Controllers\Admin\AdminBaseController;
-use App\Models\ShopSetting;
+use App\UseCases\Admin\Settings\GetCouponsSettingsUseCase;
+use App\UseCases\Admin\Settings\UpdateCouponsSettingsUseCase;
 use Illuminate\Http\Request;
 
 class CouponsController extends AdminBaseController
 {
+    private GetCouponsSettingsUseCase $getCouponsSettingsUseCase;
+    private UpdateCouponsSettingsUseCase $updateCouponsSettingsUseCase;
+
+    public function __construct(
+        GetCouponsSettingsUseCase $getCouponsSettingsUseCase,
+        UpdateCouponsSettingsUseCase $updateCouponsSettingsUseCase
+    ) {
+        $this->getCouponsSettingsUseCase = $getCouponsSettingsUseCase;
+        $this->updateCouponsSettingsUseCase = $updateCouponsSettingsUseCase;
+    }
+
     public function index()
     {
         $projectId = $this->resolveAdminProjectId();
-        $couponDefaultImageUrl = ShopSetting::getCouponDefaultImageUrl($projectId);
-        $featureCouponsEnabled = ShopSetting::isFeatureEnabled('feature_coupons_enabled', $projectId);
-        return view('admin.settings.coupons', compact('couponDefaultImageUrl', 'featureCouponsEnabled'));
+        $view = $this->getCouponsSettingsUseCase->handle($projectId);
+
+        return view('admin.settings.coupons', [
+            'couponDefaultImageUrl' => $view->couponDefaultImageUrl,
+            'featureCouponsEnabled' => $view->featureCouponsEnabled,
+        ]);
     }
 
     public function update(Request $request)
@@ -23,10 +38,8 @@ class CouponsController extends AdminBaseController
             'coupon_default_image_url' => 'nullable|url|max:500',
             'feature_coupons_enabled' => 'nullable|boolean',
         ]);
-        ShopSetting::setValue('coupon_default_image_url', $validated['coupon_default_image_url'] ?? '', 'string', $projectId);
-        $flags = ShopSetting::getFeatureFlags($projectId);
-        $flags['feature_coupons_enabled'] = (bool) ($validated['feature_coupons_enabled'] ?? false);
-        ShopSetting::setFeatureFlags($flags, $projectId);
+        $this->updateCouponsSettingsUseCase->handle($projectId, $validated);
+
         return redirect()->route('admin.settings.coupons', $this->buildAdminRouteParams())
             ->with('success', 'クーポン設定を更新しました');
     }

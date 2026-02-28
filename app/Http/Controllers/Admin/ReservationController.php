@@ -3,45 +3,75 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Requests\Admin\ReservationStatusRequest;
-use App\Services\Admin\ReservationAdminService;
+use App\UseCases\Admin\Reservation\AdminReservationCompleteUseCase;
+use App\UseCases\Admin\Reservation\AdminReservationDetailUseCase;
+use App\UseCases\Admin\Reservation\AdminReservationIndexUseCase;
+use App\UseCases\Admin\Reservation\AdminReservationUpdateStatusUseCase;
 use App\Util\AdminStatusLabels;
 use Illuminate\Http\Request;
 
 class ReservationController extends AdminBaseController
 {
+    private AdminReservationIndexUseCase $indexUseCase;
+    private AdminReservationDetailUseCase $detailUseCase;
+    private AdminReservationUpdateStatusUseCase $updateStatusUseCase;
+    private AdminReservationCompleteUseCase $completeUseCase;
+
     public function __construct(
-        private ReservationAdminService $reservationAdminService
+        AdminReservationIndexUseCase $indexUseCase,
+        AdminReservationDetailUseCase $detailUseCase,
+        AdminReservationUpdateStatusUseCase $updateStatusUseCase,
+        AdminReservationCompleteUseCase $completeUseCase
     ) {
+        $this->indexUseCase = $indexUseCase;
+        $this->detailUseCase = $detailUseCase;
+        $this->updateStatusUseCase = $updateStatusUseCase;
+        $this->completeUseCase = $completeUseCase;
     }
 
     public function reservations(Request $request)
     {
-        $payload = $this->reservationAdminService->getReservationIndexPayload(
+        $projectId = $this->resolveAdminProjectId();
+        $output = $this->indexUseCase->handle(
             $request->query('status'),
             $request->query('date'),
-            $this->resolveAdminProjectId(),
-            (int) $request->query('per_page', 20)
+            $projectId
         );
+
+        $payload = [
+            'reservations' => $output->reservations,
+            'statusCounts' => $output->statusCounts,
+            'selectedDate' => $output->selectedDate,
+            'selectedDateLabel' => $output->selectedDateLabel,
+            'dateStatusCounts' => $output->dateStatusCounts,
+            'timeSlotSummary' => $output->timeSlotSummary,
+            'reservationCapacity' => $output->reservationCapacity,
+        ];
+        $output->reservations->appends($request->query());
+
         return view('admin.reservations', $payload);
     }
 
     public function reservationDetail($id)
     {
-        $reservation = $this->reservationAdminService->findOrFail((int) $id);
+        $reservation = $this->detailUseCase->handle((int) $id);
+
         return view('admin.reservation-detail', compact('reservation'));
     }
 
     public function updateReservationStatus(ReservationStatusRequest $request, $id)
     {
         $status = $request->validated('status');
-        $this->reservationAdminService->updateStatus((int) $id, $status);
+        $this->updateStatusUseCase->handle((int) $id, $status);
+
         return redirect()->back()
             ->with('success', '予約ステータスを「' . AdminStatusLabels::reservationStatusLabel($status) . '」に更新しました');
     }
 
     public function completeReservation($id)
     {
-        $this->reservationAdminService->complete((int) $id);
+        $this->completeUseCase->handle((int) $id);
+
         return redirect()->back()->with('success', '予約を完了しました');
     }
 }

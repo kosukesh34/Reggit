@@ -2,42 +2,25 @@
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Models\QueueEntry;
-use App\Models\ShopSetting;
-use App\Services\UserService;
-use App\Util\AdminContext;
+use App\UseCases\Queue\QueueMeUseCase;
+use App\UseCases\Queue\QueueStoreUseCase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * 順番待ち API（レガシー互換）。責務は UseCase に委譲する。
+ */
 class QueueController extends BaseApiController
 {
-    public function __construct(private UserService $userService)
-    {
-    }
+    private QueueStoreUseCase $storeUseCase;
+    private QueueMeUseCase $meUseCase;
 
-    private function getQueueStats(int $projectId, ?int $beforeQueueNumber = null): array
-    {
-        $base = QueueEntry::where('project_id', $projectId)
-            ->whereDate('created_at', today())
-            ->where('status', 'waiting');
-
-        $waitingCount = (clone $base)->count();
-
-        $aheadCount = null;
-        if ($beforeQueueNumber !== null) {
-            $aheadCount = (clone $base)->where('queue_number', '<', $beforeQueueNumber)->count();
-        }
-
-        $avgMinutes = ShopSetting::getQueueAvgServeMinutes($projectId);
-        $estimatedMinutes = $beforeQueueNumber !== null
-            ? $aheadCount * $avgMinutes
-            : $waitingCount * $avgMinutes;
-
-        return [
-            'waiting_count' => $waitingCount,
-            'ahead_count' => $aheadCount,
-            'estimated_wait_minutes' => $estimatedMinutes,
-        ];
+    public function __construct(
+        QueueStoreUseCase $storeUseCase,
+        QueueMeUseCase $meUseCase
+    ) {
+        $this->storeUseCase = $storeUseCase;
+        $this->meUseCase = $meUseCase;
     }
 
     public function store(Request $request)
@@ -49,42 +32,20 @@ class QueueController extends BaseApiController
         ]);
 
         try {
-            $user = $this->userService->getOrCreateUser($request);
-            $member = $user->member;
-
-            $projectId = $member ? $member->project_id : (AdminContext::getCurrentProjectId() ?? 1);
-            $maxNumber = QueueEntry::where('project_id', $projectId)->whereDate('created_at', today())->max('queue_number') ?? 0;
-            $nextNumber = $maxNumber + 1;
-
-            $entry = QueueEntry::create([
-                'project_id' => $projectId,
-                'member_id' => $member?->id,
-                'guest_name' => $validated['guest_name'] ?? ($user->name ?? null),
-                'guest_phone' => $validated['guest_phone'] ?? ($user->phone ?? null),
-                'party_size' => $validated['party_size'],
-                'status' => 'waiting',
-                'queue_number' => $nextNumber,
-            ]);
-
-            $stats = $this->getQueueStats($projectId, $entry->queue_number);
-            $entry->refresh();
+            $dto = $this->storeUseCase->handle(
+                $request,
+                (int) $validated['party_size'],
+                isset($validated['guest_name']) ? (string) $validated['guest_name'] : null,
+                isset($validated['guest_phone']) ? (string) $validated['guest_phone'] : null
+            );
 
             return $this->success([
-                'queue_entry' => [
-                    'id' => $entry->id,
-                    'queue_number' => $entry->queue_number,
-                    'status' => $entry->status,
-                    'party_size' => $entry->party_size,
-                    'created_at' => $entry->created_at->toIso8601String(),
-                    'updated_at' => $entry->updated_at->toIso8601String(),
-                    'waiting_count' => $stats['waiting_count'],
-                    'ahead_count' => $stats['ahead_count'],
-                    'estimated_wait_minutes' => $stats['estimated_wait_minutes'],
-                ],
+                'queue_entry' => $dto->toArray(),
                 'updated_at' => now()->toIso8601String(),
             ], '順番待ちに登録しました', 201);
         } catch (\Exception $e) {
             Log::error('Queue store error: ' . $e->getMessage());
+
             return $this->error('順番待ちの登録に失敗しました', 500);
         }
     }
@@ -92,47 +53,25 @@ class QueueController extends BaseApiController
     public function me(Request $request)
     {
         try {
-            $user = $this->userService->getOrCreateUser($request);
-            $member = $user->member;
+            $output = $this->meUseCase->handle($request);
 
-            $entry = null;
-            if ($member !== null) {
-                $entry = QueueEntry::where('member_id', $member->id)
-                    ->whereIn('status', ['waiting', 'called'])
-                    ->orderBy('created_at', 'desc')
-                    ->first();
-            }
-
-            $projectId = $entry !== null ? $entry->project_id : ($member !== null ? $member->project_id : (AdminContext::getCurrentProjectId() ?? 1));
-            $stats = $this->getQueueStats($projectId, $entry !== null ? $entry->queue_number : null);
-
-            if ($entry === null) {
+            if ($output->queueEntry === null) {
                 return $this->success([
                     'queue_entry' => null,
                     'message' => '待ち番号はありません',
-                    'waiting_count' => $stats['waiting_count'],
-                    'estimated_wait_minutes' => $stats['estimated_wait_minutes'],
+                    'waiting_count' => $output->waitingCount,
+                    'estimated_wait_minutes' => $output->estimatedWaitMinutes,
                     'updated_at' => now()->toIso8601String(),
                 ]);
             }
 
             return $this->success([
-                'queue_entry' => [
-                    'id' => $entry->id,
-                    'queue_number' => $entry->queue_number,
-                    'status' => $entry->status,
-                    'party_size' => $entry->party_size,
-                    'created_at' => $entry->created_at->toIso8601String(),
-                    'updated_at' => $entry->updated_at->toIso8601String(),
-                    'called_at' => $entry->called_at?->toIso8601String(),
-                    'waiting_count' => $stats['waiting_count'],
-                    'ahead_count' => $stats['ahead_count'],
-                    'estimated_wait_minutes' => $stats['estimated_wait_minutes'],
-                ],
+                'queue_entry' => $output->queueEntry->toArray(),
                 'updated_at' => now()->toIso8601String(),
             ]);
         } catch (\Exception $e) {
             Log::error('Queue me error: ' . $e->getMessage());
+
             return $this->error('取得に失敗しました', 500);
         }
     }
