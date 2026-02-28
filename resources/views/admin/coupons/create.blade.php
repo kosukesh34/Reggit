@@ -11,6 +11,11 @@
         </div>
     </div>
     <div class="card-body">
+        @if(session('error'))
+        <div class="alert alert-danger" role="alert">
+            <i class="fas fa-exclamation-circle"></i> {{ session('error') }}
+        </div>
+        @endif
         <form action="{{ admin_route('admin.coupons.store') }}" method="POST" enctype="multipart/form-data">
             @csrf
             <section class="form-section mb-4" aria-labelledby="section-display-heading">
