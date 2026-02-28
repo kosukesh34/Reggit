@@ -18,6 +18,9 @@
 @if(session('success'))
     <div class="alert alert-success"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>
 @endif
+@if(session('error'))
+    <div class="alert alert-danger"><i class="fas fa-exclamation-triangle"></i> {{ session('error') }}</div>
+@endif
 
 {{-- 開発用: 接続・POS状態の確認（本番デプロイ時はこのブロックを削除可） --}}
 @if(isset($view->posStatusMessage) && $view->posStatusMessage !== null)
@@ -32,8 +35,12 @@
     </div>
 </div>
 @endif
-<div class="mb-4">
+<div class="mb-4 d-flex flex-wrap gap-2 align-items-center">
     <a href="{{ admin_route('admin.settings.smaregi.pos-data') }}" class="btn btn-outline-secondary btn-sm"><i class="fas fa-database"></i> 仮想POSデータ確認（サーバー取得データの疎通確認）</a>
+    <form action="{{ admin_route('admin.settings.smaregi.sync-products') }}" method="POST" class="d-inline" onsubmit="return confirm('スマレジに登録されている商品をこのプロジェクトの商品一覧に同期します。既存の同名商品は更新されます。よろしいですか？');">
+        @csrf
+        <button type="submit" class="btn btn-outline-primary btn-sm"><i class="fas fa-sync-alt"></i> スマレジから商品を同期</button>
+    </form>
 </div>
 
 <div class="card mb-4">
