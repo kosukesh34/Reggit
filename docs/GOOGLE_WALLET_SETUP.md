@@ -107,6 +107,12 @@ GET /api/members/me/google-wallet-url?project_key=default
 
 （token の場合は `&token=発行されたトークン` を付与）
 
+### デザイン変更が反映されない場合
+
+カードの表示（日本語ラベル・バーコード・背景色など）を変えても、**すでに追加済みのパスは自動では更新されません**。  
+Google Wallet アプリでその会員証を**削除**し、会員証画面からもう一度「Google Walletに追加」で追加し直すと、新しいデザインが反映されます。  
+背景色は `.env` の `GOOGLE_WALLET_HEX_BACKGROUND_COLOR`（例: `#1a73e8`）で指定できます。
+
 ## トラブルシューティング
 
 | 現象 | 確認すること |
