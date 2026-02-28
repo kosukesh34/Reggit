@@ -10,22 +10,30 @@ class AdminUserSeeder extends Seeder
 {
     public function run(): void
     {
-        $loginId = env('ADMIN_EMAIL', 'reserve');
-        $password = env('ADMIN_PASSWORD', 'reserve');
-        $name = env('ADMIN_NAME', 'システムアドミン');
-
-        if (AdminUser::where('login_id', $loginId)->exists()) {
-            return;
+        // .env の認証情報でシステム管理者を1件必ず作成/更新（DEMO_SEED 時は DEMO_SYSTEM_*、それ以外は ADMIN_*）
+        $useDemo = filter_var(env('DEMO_SEED', false), FILTER_VALIDATE_BOOLEAN);
+        if ($useDemo) {
+            $loginId = env('DEMO_SYSTEM_LOGIN_ID', 'demo_sys');
+            $password = env('DEMO_SYSTEM_PASSWORD', 'DemoSys#2026');
+            $name = env('DEMO_SYSTEM_NAME', 'デモシステム管理者');
+            $email = env('DEMO_SYSTEM_EMAIL', $loginId . '@example.com');
+        } else {
+            $loginId = env('ADMIN_LOGIN_ID', env('ADMIN_EMAIL', 'reserve'));
+            $password = env('ADMIN_PASSWORD', 'reserve');
+            $name = env('ADMIN_NAME', 'システムアドミン');
+            $email = $loginId . '@system.local';
         }
 
-        AdminUser::create([
-            'login_id' => $loginId,
-            'email' => $loginId . '@system.local',
-            'password' => $password,
-            'name' => $name,
-            'role' => AdminUser::ROLE_SYSTEM_ADMIN,
-            'project_id' => null,
-        ]);
+        AdminUser::updateOrCreate(
+            ['login_id' => $loginId],
+            [
+                'email' => $email,
+                'password' => $password,
+                'name' => $name,
+                'role' => AdminUser::ROLE_SYSTEM_ADMIN,
+                'project_id' => null,
+            ]
+        );
 
         // 初回のみデフォルトプロジェクトを作成（DemoAdminUsersSeeder で使う）
         if (!Project::where('is_active', true)->exists()) {

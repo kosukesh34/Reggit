@@ -39,18 +39,20 @@ class WalletPassService
      * 失敗時は null を返し、getLastError() で理由を取得できる。
      *
      * @param  array<string, string|int|float|bool|null>  $extraFields  例: ['points' => 100, 'rank_label' => 'ゴールド', 'rank_key' => 'gold']
+     * @param  int|null  $projectId  プロジェクトID（指定時は管理画面でアップロードした画像を優先）
      */
     public function buildMembershipPass(
         string $barcodeMessage,
         string $organizationName,
         string $serialNumber,
-        array $extraFields = []
+        array $extraFields = [],
+        ?int $projectId = null
     ): ?string {
         self::$lastError = null;
         $workDir = $this->createWorkDir();
         try {
             $this->writePassJsonFromParams($workDir, $barcodeMessage, $organizationName, $serialNumber, $extraFields);
-            $this->ensureAssets($workDir, $extraFields);
+            $this->ensureAssets($workDir, $extraFields, $projectId);
             $this->writeManifest($workDir);
             $this->signManifest($workDir);
             return $this->createZip($workDir);
@@ -92,7 +94,9 @@ class WalletPassService
             'rank_key' => $data['current_rank'] ?? $member->rank ?? 'bronze',
         ];
 
-        return $this->buildMembershipPass($barcodeMessage, $organizationName, $serialNumber, $extraFields);
+        $projectId = $project !== null ? $project->id : null;
+
+        return $this->buildMembershipPass($barcodeMessage, $organizationName, $serialNumber, $extraFields, $projectId);
     }
 
     /**
@@ -124,7 +128,9 @@ class WalletPassService
             'rank_key' => $data['current_rank'] ?? $member->rank ?? 'bronze',
         ];
 
-        return $this->buildMembershipPass($barcodeMessage, $organizationName, $serialNumber, $extraFields);
+        $projectId = $project !== null ? $project->id : null;
+
+        return $this->buildMembershipPass($barcodeMessage, $organizationName, $serialNumber, $extraFields, $projectId);
     }
 
     /**
@@ -161,17 +167,50 @@ class WalletPassService
             'rank_label' => $data['current_rank_label'] ?? $member->rank ?? '',
             'rank_key' => $data['current_rank'] ?? $member->rank ?? 'bronze',
         ];
-        return $this->buildMembershipPass($barcodeMessage, $organizationName, $serialNumber, $extraFields);
+        return $this->buildMembershipPass($barcodeMessage, $organizationName, $serialNumber, $extraFields, (int) $projectId);
     }
 
-    /** ランク別カード色（背景・文字・ラベル） @return array{bg: string, fg: string, label: string} */
+    /** ランク別カード色（ウェブ会員証のグラデーション末尾色に合わせた背景・文字・ラベル） @return array{bg: string, fg: string, label: string} */
     private static function getRankColors(string $rankKey): array
     {
         $map = [
-            'bronze' => ['bg' => 'rgb(165, 105, 60)', 'fg' => 'rgb(255, 255, 255)', 'label' => 'rgb(255, 235, 210)'],
-            'silver' => ['bg' => 'rgb(192, 192, 192)', 'fg' => 'rgb(45, 45, 45)', 'label' => 'rgb(90, 90, 90)'],
-            'gold' => ['bg' => 'rgb(205, 170, 65)', 'fg' => 'rgb(50, 42, 25)', 'label' => 'rgb(95, 78, 45)'],
-            'platinum' => ['bg' => 'rgb(175, 185, 200)', 'fg' => 'rgb(35, 40, 50)', 'label' => 'rgb(95, 105, 120)'],
+            'bronze' => ['bg' => 'rgb(92, 46, 10)', 'fg' => 'rgb(255, 255, 255)', 'label' => 'rgb(255, 235, 210)'],
+            'silver' => ['bg' => 'rgb(144, 144, 144)', 'fg' => 'rgb(33, 33, 33)', 'label' => 'rgb(80, 80, 80)'],
+            'gold' => ['bg' => 'rgb(184, 134, 11)', 'fg' => 'rgb(50, 42, 25)', 'label' => 'rgb(255, 248, 220)'],
+            'platinum' => ['bg' => 'rgb(168, 168, 176)', 'fg' => 'rgb(35, 40, 50)', 'label' => 'rgb(95, 105, 120)'],
+        ];
+        $key = strtolower($rankKey);
+        return $map[$key] ?? $map['bronze'];
+    }
+
+    /** ウェブ会員証と同じ 4 段階グラデーション（0%, 35%, 65%, 100%）@return array<int, array{0: float, 1: int, 2: int, 3: int}> */
+    private static function getRankStripGradientStops(string $rankKey): array
+    {
+        $map = [
+            'bronze' => [
+                [0.00, 201, 139, 74],   // #c98b4a
+                [0.35, 160, 82, 45],    // #a0522d
+                [0.65, 139, 69, 19],    // #8b4513
+                [1.00, 92, 46, 10],     // #5c2e0a
+            ],
+            'silver' => [
+                [0.00, 240, 240, 240], // #f0f0f0
+                [0.35, 216, 216, 216],  // #d8d8d8
+                [0.65, 192, 192, 192],  // #c0c0c0
+                [1.00, 144, 144, 144], // #909090
+            ],
+            'gold' => [
+                [0.00, 255, 244, 176], // #fff4b0
+                [0.35, 255, 215, 0],   // #ffd700
+                [0.65, 218, 165, 32],  // #daa520
+                [1.00, 184, 134, 11],  // #b8860b
+            ],
+            'platinum' => [
+                [0.00, 250, 250, 250], // #fafafa
+                [0.35, 232, 232, 232], // #e8e8e8
+                [0.65, 212, 212, 216], // #d4d4d8
+                [1.00, 168, 168, 176], // #a8a8b0
+            ],
         ];
         $key = strtolower($rankKey);
         return $map[$key] ?? $map['bronze'];
@@ -235,12 +274,25 @@ class WalletPassService
         return $dir;
     }
 
+    /** プロジェクト別アセット（管理画面アップロード）があればそのパス、なければ config の assets_path */
+    private function resolveProjectAssetsPath(?int $projectId): string
+    {
+        if ($projectId !== null) {
+            $projectDir = storage_path('app/public/wallet_assets/' . (string) $projectId);
+            if (File::isDirectory($projectDir) && (File::isFile($projectDir . '/icon.png') || File::isFile($projectDir . '/logo.png'))) {
+                return $projectDir;
+            }
+        }
+        return $this->resolvePath(config('wallet_pass.assets_path'));
+    }
+
     /**
      * @param array<string, string|int|float|bool|null> $extraFields パス用追加フィールド
+     * @param int|null $projectId プロジェクトID（指定時は管理画面アップロード画像を優先）
      */
-    private function ensureAssets(string $dir, array $extraFields = []): void
+    private function ensureAssets(string $dir, array $extraFields = [], ?int $projectId = null): void
     {
-        $assetsPath = $this->resolvePath(config('wallet_pass.assets_path'));
+        $assetsPath = $this->resolveProjectAssetsPath($projectId);
         $rankKey = isset($extraFields['rank_key']) ? (string) $extraFields['rank_key'] : 'bronze';
 
         $required = [
@@ -291,47 +343,52 @@ class WalletPassService
         imagedestroy($im);
     }
 
-    /** ランク色のストリップ画像を生成（カード上部バナー用） */
+    /** ランク色のストリップ画像を生成（ウェブ会員証と同じ 4 段階グラデーション＋上部光沢で高級感） */
     private function createStripPlaceholder(string $path, int $width, int $height, string $rankKey): void
     {
-        if (!extension_loaded('gd')) {
+        if (! extension_loaded('gd')) {
             throw new \RuntimeException('Wallet Pass の画像生成に GD 拡張が必要です。');
         }
-        $rgb = self::getRankRgb($rankKey);
-        $darkR = max(0, $rgb[0] - 28);
-        $darkG = max(0, $rgb[1] - 28);
-        $darkB = max(0, $rgb[2] - 28);
+        $stops = self::getRankStripGradientStops($rankKey);
         $im = imagecreatetruecolor($width, $height);
         if ($im === false) {
             throw new \RuntimeException('画像の作成に失敗しました。');
         }
-        $main = imagecolorallocate($im, $rgb[0], $rgb[1], $rgb[2]);
-        imagefill($im, 0, 0, $main);
-        $startY = (int) ($height * 0.55);
-        $range = $height - $startY;
-        for ($y = $startY; $y < $height; $y++) {
-            $ratio = $range > 0 ? ($y - $startY) / $range : 1;
-            $r = (int) ($rgb[0] + ($darkR - $rgb[0]) * $ratio);
-            $g = (int) ($rgb[1] + ($darkG - $rgb[1]) * $ratio);
-            $b = (int) ($rgb[2] + ($darkB - $rgb[2]) * $ratio);
+        for ($y = 0; $y < $height; $y++) {
+            $t = $height > 0 ? $y / $height : 0;
+            $r = $g = $b = 0;
+            for ($i = 0; $i < count($stops) - 1; $i++) {
+                $a = $stops[$i][0];
+                $b0 = $stops[$i + 1][0];
+                if ($t >= $a && $t <= $b0) {
+                    $local = $b0 > $a ? ($t - $a) / ($b0 - $a) : 0;
+                    $r = (int) ($stops[$i][1] + ($stops[$i + 1][1] - $stops[$i][1]) * $local);
+                    $g = (int) ($stops[$i][2] + ($stops[$i + 1][2] - $stops[$i][2]) * $local);
+                    $b = (int) ($stops[$i][3] + ($stops[$i + 1][3] - $stops[$i][3]) * $local);
+                    break;
+                }
+            }
+            if ($r === 0 && $g === 0 && $b === 0) {
+                $last = $stops[count($stops) - 1];
+                $r = $last[1];
+                $g = $last[2];
+                $b = $last[3];
+            }
             $c = imagecolorallocate($im, min(255, max(0, $r)), min(255, max(0, $g)), min(255, max(0, $b)));
+            imageline($im, 0, $y, $width, $y, $c);
+        }
+        $glossTop = (int) ($height * 0.28);
+        for ($y = 0; $y < $glossTop; $y++) {
+            $ratio = $glossTop > 0 ? 1 - ($y / $glossTop) : 1;
+            $base = $stops[0];
+            $r = (int) min(255, $base[1] + (255 - $base[1]) * $ratio * 0.45);
+            $g = (int) min(255, $base[2] + (255 - $base[2]) * $ratio * 0.45);
+            $b = (int) min(255, $base[3] + (255 - $base[3]) * $ratio * 0.45);
+            $c = imagecolorallocate($im, $r, $g, $b);
             imageline($im, 0, $y, $width, $y, $c);
         }
         imagepng($im, $path);
         imagedestroy($im);
-    }
-
-    /** ランクキーから RGB [r,g,b] を返す（ストリップ用） @return array{0: int, 1: int, 2: int} */
-    private static function getRankRgb(string $rankKey): array
-    {
-        $map = [
-            'bronze' => [165, 105, 60],
-            'silver' => [192, 192, 192],
-            'gold' => [205, 170, 65],
-            'platinum' => [175, 185, 200],
-        ];
-        $key = strtolower($rankKey);
-        return $map[$key] ?? $map['bronze'];
     }
 
     private function writeManifest(string $dir): void

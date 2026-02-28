@@ -9,4 +9,5 @@ return [
     'wwdr_path' => env('WALLET_PASS_WWDR_PATH', storage_path('app/wallet_pass/certificates/AppleWWDRCAG3.cer')),
     'assets_path' => env('WALLET_PASS_ASSETS_PATH', storage_path('app/wallet_pass/assets')),
     'key_passphrase' => env('WALLET_PASS_KEY_PASSPHRASE', ''),
+    'allow_demo_user' => filter_var(env('WALLET_ADD_DEMO_USER', false), FILTER_VALIDATE_BOOLEAN),
 ];
