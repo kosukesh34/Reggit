@@ -20,7 +20,10 @@ class CouponMyCouponsUseCase
         $member = $user->member;
 
         if ($member === null) {
-            return new CouponListView([], null, true);
+            $projectId = $user->project_id ?? 1;
+            $defaultImageUrl = ShopSetting::getCouponDefaultImageUrl($projectId);
+
+            return new CouponListView([], $defaultImageUrl, true);
         }
 
         $coupons = $member->memberCoupons()

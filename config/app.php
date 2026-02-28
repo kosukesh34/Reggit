@@ -4,10 +4,10 @@ use Illuminate\Support\Facades\Facade;
 
 return [
 
-    'name' => env('APP_NAME', 'Mobile Order'),
+    'name' => env('APP_NAME', 'reggit'),
     'env' => env('APP_ENV', 'production'),
     'debug' => (bool) env('APP_DEBUG', false),
-    'url' => env('APP_URL', 'http://localhost'),
+    'url' => env('APP_URL', 'http://reggit.test'),
     'api_base' => env('APP_API_BASE', '/api'),
     'timezone' => 'Asia/Tokyo',
     'locale' => 'ja',

@@ -3143,6 +3143,70 @@ input, textarea, select {
     justify-content: center;
     margin: 8px 0;
 }
+/* ロゴヘッダー：1行にロゴ＋ランク・ポイント */
+.idnect-card-wrapper--design-logo_header .idnect-card-front-inner {
+    display: flex;
+    flex-wrap: wrap;
+}
+.idnect-card-wrapper--design-logo_header .idnect-card-logo-wrap {
+    order: 1;
+    flex: 0 1 45%;
+    margin-bottom: 6px;
+}
+.idnect-card-wrapper--design-logo_header .idnect-card-meta-row {
+    order: 2;
+    flex: 0 1 55%;
+    margin-bottom: 10px;
+    justify-content: flex-end;
+}
+.idnect-card-wrapper--design-logo_header .idnect-card-display-name {
+    order: 3;
+    flex: 1 1 100%;
+}
+.idnect-card-wrapper--design-logo_header .idnect-card-barcode-wrap {
+    order: 4;
+    flex: 1 1 100%;
+}
+.idnect-card-wrapper--design-logo_header .idnect-card-tap-hint {
+    order: 5;
+    flex: 1 1 100%;
+}
+/* コンパクトデザイン */
+.idnect-card-wrapper--design-compact .idnect-card-front-inner {
+    padding: 12px 16px 10px;
+    min-height: 200px;
+}
+.idnect-card-wrapper--design-compact .idnect-card-logo-wrap {
+    display: none;
+}
+.idnect-card-wrapper--design-compact .idnect-card-front-inner .idnect-card-display-name {
+    margin: 0 0 6px 0;
+    font-size: 15px;
+}
+.idnect-card-wrapper--design-compact .idnect-card-meta-row {
+    margin-bottom: 8px;
+}
+.idnect-card-wrapper--design-compact .idnect-card-rank-wrap .idnect-card-rank-badge {
+    padding: 4px 10px;
+    font-size: 11px;
+}
+.idnect-card-wrapper--design-compact .idnect-card-points--front {
+    padding: 6px 10px;
+}
+.idnect-card-wrapper--design-compact .idnect-card-points--front .idnect-card-points-value {
+    font-size: 20px;
+}
+.idnect-card-wrapper--design-compact .idnect-card-points--front .idnect-card-points-label {
+    font-size: 10px;
+}
+.idnect-card-wrapper--design-compact .idnect-card-barcode-wrap {
+    min-height: 80px;
+    max-height: 96px;
+    padding: 8px;
+}
+.idnect-card-wrapper--design-compact .idnect-card-tap-hint {
+    font-size: 11px;
+}
 
 .idnect-card-front-top {
     display: flex;
@@ -3225,6 +3289,33 @@ input, textarea, select {
     height: auto;
     max-height: 92px;
     object-fit: contain;
+}
+
+.idnect-card-code-wrap--qrcode .idnect-card-qrcode-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.idnect-card-code-wrap--qrcode .idnect-card-qrcode-wrap img,
+.idnect-card-code-wrap--qrcode .idnect-card-qrcode-wrap canvas {
+    max-width: 100%;
+    max-height: 92px;
+    width: auto !important;
+    height: auto !important;
+}
+
+.member-card-sheet-wrap {
+    margin-bottom: 0;
+}
+.idnect-card-wrapper--sheet {
+    cursor: default;
+    perspective: none;
+}
+.idnect-card-wrapper--sheet .idnect-card {
+    transform: none;
+}
+.idnect-card--sheet .idnect-card-face--back {
+    display: none;
 }
 
 .idnect-card-tap-hint {
