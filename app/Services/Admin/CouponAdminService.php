@@ -45,24 +45,20 @@ class CouponAdminService
     }
 
     /**
-     * クーポン作成。スマレジ契約ありの場合はPOSへ登録を試み、失敗時はDBのみ保存して警告を返す。
-     *
-     * @return array{coupon: Coupon, smaregi_warning: bool} smaregi_warning=true は「POS未反映」の警告あり
+     * クーポン作成。スマレジ契約ありの場合は先にPOSへ登録し、成功時のみDBに保存する。
+     * API が失敗した場合は RuntimeException を投げ、DB には保存しない。
      */
-    public function create(int $projectId, array $data): array
+    public function create(int $projectId, array $data): Coupon
     {
         $data['project_id'] = $projectId;
-        $smaregiWarning = false;
         if ($this->smaregiCouponSync->hasSmaregiContract($projectId)) {
             $result = $this->smaregiCouponSync->registerToSmaregi($projectId, $data);
-            if ($result !== null) {
-                $data['smaregi_coupon_id'] = $result['smaregi_coupon_id'];
-            } else {
-                $smaregiWarning = true;
+            if ($result === null) {
+                throw new \RuntimeException('スマレジへのクーポン登録に失敗しました。契約ID・スコープ(pos.transactions:write)・ログ(storage/logs/laravel.log)を確認してください。');
             }
+            $data['smaregi_coupon_id'] = $result['smaregi_coupon_id'];
         }
-        $coupon = Coupon::create($data);
-        return ['coupon' => $coupon, 'smaregi_warning' => $smaregiWarning];
+        return Coupon::create($data);
     }
 
     /** @param int|null $projectId 指定時はそのプロジェクトのクーポンのみ取得（他プロジェクトは404） */
@@ -76,33 +72,30 @@ class CouponAdminService
     }
 
     /**
-     * クーポン更新。スマレジ登録・更新に失敗した場合はDBのみ更新し、警告を返す。
-     *
-     * @return array{coupon: Coupon, smaregi_warning: bool}
+     * クーポン更新。スマレジ契約ありの場合は先にPOSへ更新/登録し、成功時のみDBを更新する。
+     * API が失敗した場合は RuntimeException を投げ、DB は更新しない。
      */
-    public function update(int $id, array $data, ?int $projectId = null): array
+    public function update(int $id, array $data, ?int $projectId = null): Coupon
     {
         $coupon = $this->findOrFail($id, $projectId);
         $projectId = $projectId ?? $coupon->project_id;
-        $smaregiWarning = false;
         if ($this->smaregiCouponSync->hasSmaregiContract($projectId)) {
             $smaregiId = $coupon->smaregi_coupon_id;
             if ($smaregiId !== null && $smaregiId !== '') {
                 $ok = $this->smaregiCouponSync->updateOnSmaregi($projectId, $smaregiId, $data);
                 if (!$ok) {
-                    $smaregiWarning = true;
+                    throw new \RuntimeException('スマレジのクーポン更新に失敗しました。ログ(storage/logs/laravel.log)を確認してください。');
                 }
             } else {
                 $result = $this->smaregiCouponSync->registerToSmaregi($projectId, $data);
-                if ($result !== null) {
-                    $data['smaregi_coupon_id'] = $result['smaregi_coupon_id'];
-                } else {
-                    $smaregiWarning = true;
+                if ($result === null) {
+                    throw new \RuntimeException('スマレジへのクーポン登録に失敗しました。契約ID・スコープ(pos.transactions:write)・ログ(storage/logs/laravel.log)を確認してください。');
                 }
+                $data['smaregi_coupon_id'] = $result['smaregi_coupon_id'];
             }
         }
         $coupon->update($data);
-        return ['coupon' => $coupon, 'smaregi_warning' => $smaregiWarning];
+        return $coupon;
     }
 
     public function delete(int $id, ?int $projectId = null): void
