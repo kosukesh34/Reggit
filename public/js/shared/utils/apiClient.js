@@ -66,6 +66,12 @@ class ApiClient {
         if (lineUserId) {
             requestHeaders['X-Line-User-Id'] = lineUserId;
         }
+        if (typeof window !== 'undefined' && window.__MOBILE_DEVICE_INFO__) {
+            const deviceIdentifier = String(window.__MOBILE_DEVICE_INFO__.device_identifier || '').trim();
+            if (deviceIdentifier) {
+                requestHeaders['X-Device-Identifier'] = deviceIdentifier;
+            }
+        }
         requestHeaders['ngrok-skip-browser-warning'] = 'true';
 
         const config = {
