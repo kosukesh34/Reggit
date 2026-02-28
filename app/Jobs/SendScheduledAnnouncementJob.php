@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\Announcement;
+use App\Services\PushNotificationService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -17,12 +18,15 @@ class SendScheduledAnnouncementJob implements ShouldQueue
         public int $announcementId
     ) {}
 
-    public function handle(): void
+    public function handle(PushNotificationService $pushNotificationService): void
     {
         $announcement = Announcement::withoutGlobalScopes()->find($this->announcementId);
         if (! $announcement || $announcement->delivery_status !== Announcement::DELIVERY_STATUS_SCHEDULED) {
             return;
         }
+
+        $pushNotificationService->sendAnnouncement($announcement);
+
         $announcement->update([
             'delivery_status' => Announcement::DELIVERY_STATUS_SENT,
             'published_at' => $announcement->published_at ?? now(),

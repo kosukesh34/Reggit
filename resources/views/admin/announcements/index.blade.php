@@ -18,7 +18,10 @@
 <div class="card">
     <div class="card-header card-header-with-action">
         <h2 class="card-title">お知らせ一覧</h2>
-        <a href="{{ admin_route('admin.announcements.create') }}" class="btn btn-primary"><i class="fas fa-plus"></i> 追加</a>
+        <div class="table-actions">
+            <a href="{{ admin_route('admin.announcements.delivery.create') }}" class="btn btn-secondary"><i class="fas fa-paper-plane"></i> 配信</a>
+            <a href="{{ admin_route('admin.announcements.create') }}" class="btn btn-primary"><i class="fas fa-plus"></i> 追加</a>
+        </div>
     </div>
     <div class="card-body">
         @if($announcements->isEmpty())

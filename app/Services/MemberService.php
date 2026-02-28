@@ -8,6 +8,7 @@ use App\Models\PointTransaction;
 use App\Models\ShopSetting;
 use App\Models\User;
 use App\Services\Smaregi\SmaregiApiService;
+use App\Util\LogHelper;
 use Illuminate\Support\Str;
 
 class MemberService
@@ -292,10 +293,16 @@ class MemberService
         if ($contractId !== '') {
             $body = $this->buildSmaregiCustomerBody($memberNumber, $data);
             $result = $this->smaregiApi->createCustomer($contractId, $body);
-            if ($result === null || empty($result['customerId'])) {
-                throw new \Exception('スマレジへの会員登録に失敗しました。スコープ pos.customers:write と必須項目を確認し、storage/logs/laravel.log の [Smaregi] を参照してください。');
+            if ($result !== null && ! empty($result['customerId'])) {
+                $smaregiCustomerId = (string) $result['customerId'];
+            } else {
+                // スマレジ連携失敗時でも会員登録自体は継続し、後続運用で再同期できるようにする。
+                LogHelper::warning('[Member] smaregi create customer failed. fallback to local registration', [
+                    'project_id' => $projectId,
+                    'user_id' => (int) $user->id,
+                    'member_number' => $memberNumber,
+                ]);
             }
-            $smaregiCustomerId = (string) $result['customerId'];
         }
 
         $rankSettings = ShopSetting::getMemberRankSettings($projectId);
