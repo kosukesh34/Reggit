@@ -59,10 +59,28 @@ class GoogleWalletUrlController extends Controller
             $user = $this->userService->getOrCreateUser($request);
             $memberData = $this->memberService->getMemberData($user);
             if (! isset($memberData['is_member']) || $memberData['is_member'] === false) {
-                Log::info('google-wallet-url not a member', ['user_id' => $user->id ?? null]);
-                return response()->json(['error' => '会員登録が必要です'], Response::HTTP_FORBIDDEN);
+                if (config('google_wallet.allow_demo_user', false)) {
+                    $project = AdminContext::getCurrentProject();
+                    $organizationName = $project !== null ? $project->name : config('app.name', '会員証');
+                    $userId = $user->id ?? 0;
+                    // オブジェクトIDを demo-{id}-b にし、既存のQRオブジェクトと区別してバーコードの新オブジェクトとして発行する
+                    $url = $this->googleWalletPassService->createSaveUrl(
+                        $organizationName,
+                        'demo-' . $userId,
+                        'demo-' . $userId . '-b',
+                        0,
+                        '',
+                        $user->name ?? '',
+                        AdminContext::getCurrentProjectId()
+                    );
+                    Log::info('google-wallet-url demo user url issued', ['user_id' => $userId]);
+                } else {
+                    Log::info('google-wallet-url not a member', ['user_id' => $user->id ?? null]);
+                    return response()->json(['error' => '会員登録が必要です'], Response::HTTP_FORBIDDEN);
+                }
+            } else {
+                $url = $this->googleWalletPassService->createSaveUrlForUser($user);
             }
-            $url = $this->googleWalletPassService->createSaveUrlForUser($user);
         }
 
         if ($url === null) {

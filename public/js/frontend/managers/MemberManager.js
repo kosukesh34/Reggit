@@ -219,6 +219,8 @@ class MemberManager {
         const showRankProgress = data.show_rank_progress !== false;
         const memberCardDesign = data.member_card_design || 'default';
         const memberCardLogoUrl = data.member_card_logo_url || null;
+        const memberCardDisplayType = data.member_card_display_type || 'card';
+        const memberCardCodeType = data.member_card_code_type || 'barcode';
 
         let expiryText = '';
         if (pointsExpiry && pointsExpiry.expires_at_label) {
@@ -228,7 +230,62 @@ class MemberManager {
                 (pointsExpiry.points_expiring ? ' (' + pointsExpiry.points_expiring + ' pt)' : '');
         }
 
-        const barcodeId = `barcode-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        const codeId = `member-code-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        const isQR = memberCardCodeType === 'qrcode';
+        const codeBlock = isQR
+            ? `<div class="idnect-card-barcode-wrap idnect-card-code-wrap--qrcode"><div id="${codeId}" class="idnect-card-qrcode-wrap" aria-label="会員番号QRコード"></div></div>`
+            : `<div class="idnect-card-barcode-wrap idnect-card-code-wrap--barcode"><svg id="${codeId}" class="idnect-card-barcode-svg"></svg></div>`;
+        const isSheet = memberCardDisplayType === 'sheet';
+        const cardBlock = isSheet
+            ? `<div class="member-card-sheet-wrap"><div class="idnect-card-wrapper idnect-card-wrapper--sheet ${cardDesignClass}"${cardStyle}>
+                <div class="idnect-card idnect-card--sheet" data-rank="${DomHelper.escapeHtml(currentRankKey)}">
+                    <div class="idnect-card-shimmer" aria-hidden="true"></div>
+                    <div class="idnect-card-face idnect-card-face--front">
+                        <div class="idnect-card-front-inner">
+                            ${logoBlock}
+                            ${displayName ? '<p class="idnect-card-display-name">' + DomHelper.escapeHtml(displayName) + '</p>' : ''}
+                            <div class="idnect-card-meta-row">
+                                <div class="idnect-card-rank-wrap">
+                                    ${currentRankIcon ? `<img src="${DomHelper.escapeHtml(currentRankIcon)}" class="idnect-card-rank-icon" alt="ランク">` : ''}
+                                    <span class="idnect-card-rank-badge" data-rank="${DomHelper.escapeHtml(currentRankKey)}">${DomHelper.escapeHtml(currentRankLabel)}</span>
+                                </div>
+                                ${showPointsDisplay ? '<div class="idnect-card-points idnect-card-points--front"><span class="idnect-card-points-value">' + points.toLocaleString() + '</span><span class="idnect-card-points-label">pt</span></div>' : ''}
+                            </div>
+                            ${codeBlock}
+                        </div>
+                    </div>
+                </div>
+            </div></div>`
+            : `<div class="idnect-card-wrapper ${cardDesignClass}" role="button" tabindex="0" aria-label="カードをタップで裏返します"${cardStyle}>
+                <div class="idnect-card" data-rank="${DomHelper.escapeHtml(currentRankKey)}">
+                    <div class="idnect-card-shimmer" aria-hidden="true"></div>
+                    <div class="idnect-card-face idnect-card-face--front">
+                        <div class="idnect-card-front-inner">
+                            ${logoBlock}
+                            ${displayName ? '<p class="idnect-card-display-name">' + DomHelper.escapeHtml(displayName) + '</p>' : ''}
+                            <div class="idnect-card-meta-row">
+                                <div class="idnect-card-rank-wrap">
+                                    ${currentRankIcon ? `<img src="${DomHelper.escapeHtml(currentRankIcon)}" class="idnect-card-rank-icon" alt="ランク">` : ''}
+                                    <span class="idnect-card-rank-badge" data-rank="${DomHelper.escapeHtml(currentRankKey)}">${DomHelper.escapeHtml(currentRankLabel)}</span>
+                                </div>
+                                ${showPointsDisplay ? '<div class="idnect-card-points idnect-card-points--front"><span class="idnect-card-points-value">' + points.toLocaleString() + '</span><span class="idnect-card-points-label">pt</span></div>' : ''}
+                            </div>
+                            ${codeBlock}
+                            <p class="idnect-card-tap-hint"><i class="fas fa-sync-alt idnect-card-tap-hint-icon" aria-hidden="true"></i> タップで裏面を見る</p>
+                        </div>
+                    </div>
+                    <div class="idnect-card-face idnect-card-face--back">
+                        <div class="idnect-card-back-inner">
+                            <p class="idnect-card-back-title">会員情報</p>
+                            ${showPointsDisplay ? '<div class="idnect-card-points idnect-card-points--large"><span class="idnect-card-points-value">' + points.toLocaleString() + '</span><span class="idnect-card-points-label">ポイント</span></div>' : ''}
+                            ${expiryText ? '<p class="idnect-card-expiry">' + DomHelper.escapeHtml(expiryText) + '</p>' : ''}
+                            ${showRankProgress && nextRankLabel && pointsToNextRank !== null ? '<p class="idnect-card-next-rank">次のランク（' + DomHelper.escapeHtml(nextRankLabel) + '）まで <strong>' + pointsToNextRank.toLocaleString() + '</strong> pt</p>' : ''}
+                            ${showRankProgress && daysRequiredForNextRank !== null && daysToNextRank !== null ? '<p class="idnect-card-next-rank idnect-card-days-to-rank">次のランクまで あと <strong>' + daysToNextRank + '</strong> 日</p>' : ''}
+                            <p class="idnect-card-tap-hint"><i class="fas fa-sync-alt idnect-card-tap-hint-icon" aria-hidden="true"></i> タップで表に戻る</p>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
         const permissionDeniedNotice =
             typeof window !== 'undefined' && window.__LIFF_PERMISSION_DENIED__
                 ? '<p class="member-card-profile-notice">LINEの表示名は取得していません。<button type="button" class="link-btn" onclick="location.reload()">再読み込み</button></p>'
@@ -239,8 +296,8 @@ class MemberManager {
         const projectKey = (typeof window !== 'undefined' && window.__PROJECT_KEY__) ? window.__PROJECT_KEY__ : 'default';
         const walletPassUrl = AppConstants.API_ENDPOINTS.MEMBERS_WALLET_PASS + '?project_key=' + encodeURIComponent(projectKey);
         const cardStyle = currentRankColor ? ` data-rank-color="true" style="--idnect-card-rank-color: ${DomHelper.escapeHtml(currentRankColor)}"` : '';
-        const cardDesignClass = 'idnect-card-wrapper--design-' + (['default', 'logo_top', 'logo_center'].indexOf(memberCardDesign) >= 0 ? memberCardDesign : 'default');
-        const showLogoOnCard = (memberCardDesign === 'logo_top' || memberCardDesign === 'logo_center') && memberCardLogoUrl;
+        const cardDesignClass = 'idnect-card-wrapper--design-' + (['default', 'logo_top', 'logo_center', 'logo_header', 'compact'].indexOf(memberCardDesign) >= 0 ? memberCardDesign : 'default');
+        const showLogoOnCard = (memberCardDesign === 'logo_top' || memberCardDesign === 'logo_center' || memberCardDesign === 'logo_header') && memberCardLogoUrl;
         const logoBlock = showLogoOnCard
             ? `<div class="idnect-card-logo-wrap"><img src="${DomHelper.escapeHtml(memberCardLogoUrl)}" class="idnect-card-logo" alt="" onerror="this.parentElement.style.display='none'"></div>`
             : '';
@@ -267,38 +324,7 @@ class MemberManager {
                     <button type="button" class="member-card-edit-btn" onclick="window.app.memberManager.openProfileEdit()" aria-label="プロフィール編集"><i class="fas fa-pen"></i></button>
                 </div>
                 ${permissionDeniedNotice}
-                <div class="idnect-card-wrapper ${cardDesignClass}" role="button" tabindex="0" aria-label="カードをタップで裏返します"${cardStyle}>
-                    <div class="idnect-card" data-rank="${DomHelper.escapeHtml(currentRankKey)}">
-                        <div class="idnect-card-shimmer" aria-hidden="true"></div>
-                        <div class="idnect-card-face idnect-card-face--front">
-                            <div class="idnect-card-front-inner">
-                                ${logoBlock}
-                                ${displayName ? '<p class="idnect-card-display-name">' + DomHelper.escapeHtml(displayName) + '</p>' : ''}
-                                <div class="idnect-card-meta-row">
-                                    <div class="idnect-card-rank-wrap">
-                                        ${currentRankIcon ? `<img src="${DomHelper.escapeHtml(currentRankIcon)}" class="idnect-card-rank-icon" alt="ランク">` : ''}
-                                        <span class="idnect-card-rank-badge" data-rank="${DomHelper.escapeHtml(currentRankKey)}">${DomHelper.escapeHtml(currentRankLabel)}</span>
-                                    </div>
-                                    ${showPointsDisplay ? '<div class="idnect-card-points idnect-card-points--front"><span class="idnect-card-points-value">' + points.toLocaleString() + '</span><span class="idnect-card-points-label">pt</span></div>' : ''}
-                                </div>
-                                <div class="idnect-card-barcode-wrap">
-                                    <svg id="${barcodeId}" class="idnect-card-barcode-svg"></svg>
-                                </div>
-                                <p class="idnect-card-tap-hint"><i class="fas fa-sync-alt idnect-card-tap-hint-icon" aria-hidden="true"></i> タップで裏面を見る</p>
-                            </div>
-                        </div>
-                        <div class="idnect-card-face idnect-card-face--back">
-                            <div class="idnect-card-back-inner">
-                                <p class="idnect-card-back-title">会員情報</p>
-                                ${showPointsDisplay ? '<div class="idnect-card-points idnect-card-points--large"><span class="idnect-card-points-value">' + points.toLocaleString() + '</span><span class="idnect-card-points-label">ポイント</span></div>' : ''}
-                                ${expiryText ? '<p class="idnect-card-expiry">' + DomHelper.escapeHtml(expiryText) + '</p>' : ''}
-                                ${showRankProgress && nextRankLabel && pointsToNextRank !== null ? '<p class="idnect-card-next-rank">次のランク（' + DomHelper.escapeHtml(nextRankLabel) + '）まで <strong>' + pointsToNextRank.toLocaleString() + '</strong> pt</p>' : ''}
-                                ${showRankProgress && daysRequiredForNextRank !== null && daysToNextRank !== null ? '<p class="idnect-card-next-rank idnect-card-days-to-rank">次のランクまで あと <strong>' + daysToNextRank + '</strong> 日</p>' : ''}
-                                <p class="idnect-card-tap-hint"><i class="fas fa-sync-alt idnect-card-tap-hint-icon" aria-hidden="true"></i> タップで表に戻る</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                ${cardBlock}
                 ${addToWalletBlock}
                 <div class="member-purchase-history">
                     <button type="button" class="member-purchase-history-toggle" aria-expanded="false" aria-controls="memberPurchaseHistoryList" id="memberPurchaseHistoryToggle">
@@ -324,8 +350,12 @@ class MemberManager {
             </div>
         `;
 
-        this._generateBarcode(barcodeId, memberNumber);
-        this._setupFlip();
+        if (isQR) {
+            this._generateQR(codeId, memberNumber);
+        } else {
+            this._generateBarcode(codeId, memberNumber);
+        }
+        if (!isSheet) this._setupFlip();
         this._setupAddToWallet();
         this._setupPurchaseHistoryToggle();
         this._setupPointHistoryToggle();
@@ -504,6 +534,25 @@ class MemberManager {
                 }
             } catch (err) {
                 console.error('Barcode generation error:', err);
+            }
+        }, AppConstants.ANIMATION_DURATION.BARCODE_DELAY);
+    }
+
+    _generateQR(containerId, memberNumber) {
+        if (!memberNumber) return;
+        setTimeout(() => {
+            const container = document.getElementById(containerId);
+            if (!container || typeof QRCode === 'undefined') return;
+            try {
+                new QRCode(container, {
+                    text: memberNumber,
+                    width: 120,
+                    height: 120,
+                    colorDark: '#000000',
+                    colorLight: '#ffffff',
+                });
+            } catch (err) {
+                console.error('QR generation error:', err);
             }
         }, AppConstants.ANIMATION_DURATION.BARCODE_DELAY);
     }

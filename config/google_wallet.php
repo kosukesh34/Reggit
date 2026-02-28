@@ -34,9 +34,10 @@ return [
 
     /*
     | 会員証パスのクラス識別子（issuer_id の後ろに付くサフィックス）。
-    | 同一プロジェクトで共通のクラスを使う場合は固定でよい。
+    | 値を変えると「別のカード」として新規クラスが作られ、新しいデザインで発行される。
+    | 例: membership_v2 → 新デザイン（日本語ラベル・バーコード）のカードとして追加される。
     */
-    'class_suffix' => env('GOOGLE_WALLET_CLASS_SUFFIX', 'membership'),
+    'class_suffix' => env('GOOGLE_WALLET_CLASS_SUFFIX', 'membership_v3'),
 
     /*
     | LoyaltyClass で必須のプログラムロゴ画像の URL。
@@ -49,4 +50,15 @@ return [
     | 未設定時は program_logo_uri と同じ画像を使用。
     */
     'hero_image_uri' => env('GOOGLE_WALLET_HERO_IMAGE_URI', 'https://placehold.co/660x660.png'),
+
+    /*
+    | 検証用: 会員未登録でも Google Wallet 追加用 URL を発行する。
+    | true のときは未会員ユーザーにもデモ用の会員証 URL を返す（本番では false にすること）。
+    */
+    'allow_demo_user' => filter_var(env('GOOGLE_WALLET_ALLOW_DEMO_USER', false), FILTER_VALIDATE_BOOLEAN),
+
+    /*
+    | カードの背景色（LoyaltyClass）。#rrggbb 形式。未設定時はヒーロー画像の主色などが使われる。
+    */
+    'hex_background_color' => env('GOOGLE_WALLET_HEX_BACKGROUND_COLOR', ''),
 ];

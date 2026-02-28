@@ -623,17 +623,43 @@ class ShopSetting extends Model
         self::setValue('show_member_card_for_guest', $value, 'boolean', $projectId ?? 1);
     }
 
-    /** 会員証のレイアウトデザイン。default=標準, logo_top=ロゴ上部, logo_center=ロゴ中央 */
+    /** 会員証のレイアウトデザイン。default, logo_top, logo_center, logo_header, compact */
     public static function getMemberCardDesign(?int $projectId = null): string
     {
         $v = self::getValue('member_card_design', 'default', $projectId);
-        return in_array($v, ['default', 'logo_top', 'logo_center'], true) ? $v : 'default';
+        return in_array($v, ['default', 'logo_top', 'logo_center', 'logo_header', 'compact'], true) ? $v : 'default';
     }
 
     public static function setMemberCardDesign(string $value, ?int $projectId = null): void
     {
-        $value = in_array($value, ['default', 'logo_top', 'logo_center'], true) ? $value : 'default';
+        $value = in_array($value, ['default', 'logo_top', 'logo_center', 'logo_header', 'compact'], true) ? $value : 'default';
         self::setValue('member_card_design', $value, 'string', $projectId ?? 1);
+    }
+
+    /** 会員証の表示形式。card=カード型（裏表あり）, sheet=シート型（1面表示） */
+    public static function getMemberCardDisplayType(?int $projectId = null): string
+    {
+        $v = self::getValue('member_card_display_type', 'card', $projectId);
+        return in_array($v, ['card', 'sheet'], true) ? $v : 'card';
+    }
+
+    public static function setMemberCardDisplayType(string $value, ?int $projectId = null): void
+    {
+        $value = in_array($value, ['card', 'sheet'], true) ? $value : 'card';
+        self::setValue('member_card_display_type', $value, 'string', $projectId ?? 1);
+    }
+
+    /** 会員証の会員番号表示。barcode=バーコード, qrcode=QRコード */
+    public static function getMemberCardCodeType(?int $projectId = null): string
+    {
+        $v = self::getValue('member_card_code_type', 'barcode', $projectId);
+        return in_array($v, ['barcode', 'qrcode'], true) ? $v : 'barcode';
+    }
+
+    public static function setMemberCardCodeType(string $value, ?int $projectId = null): void
+    {
+        $value = in_array($value, ['barcode', 'qrcode'], true) ? $value : 'barcode';
+        self::setValue('member_card_code_type', $value, 'string', $projectId ?? 1);
     }
 
     public static function getMemberRankSettings(?int $projectId = null): array

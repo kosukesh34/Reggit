@@ -20,10 +20,14 @@ class RankSettingsView
         public bool $showPointsDisplay,
         public bool $showRankProgress,
         public bool $showMemberCardForGuest,
-        /** 会員証デザイン: default, logo_top, logo_center */
+        /** 会員証デザイン: default, logo_top, logo_center, logo_header, compact */
         public string $memberCardDesign = 'default',
         /** プレビュー用・会員証に表示するロゴURL（frontend_logo_url） */
-        public ?string $memberCardLogoUrl = null
+        public ?string $memberCardLogoUrl = null,
+        /** 会員証表示形式: card, sheet */
+        public string $memberCardDisplayType = 'card',
+        /** 会員証コード表示: barcode, qrcode */
+        public string $memberCardCodeType = 'barcode'
     ) {
     }
 }
