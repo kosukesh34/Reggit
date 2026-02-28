@@ -21,7 +21,10 @@ class StampIndexUseCase
         $member = $user->member;
 
         if ($member === null) {
-            return new StampListView([], null, true);
+            $projectId = $user->project_id ?? 1;
+            $defaultImageUrl = ShopSetting::getStampDefaultImageUrl($projectId);
+
+            return new StampListView([], $defaultImageUrl, true);
         }
 
         $today = now()->startOfDay();
