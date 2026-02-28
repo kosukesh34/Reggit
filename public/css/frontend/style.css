@@ -4441,6 +4441,129 @@ input, textarea, select {
     color: var(--text-tertiary);
 }
 
+.coupon-item-description {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin: 8px 0 0;
+    line-height: 1.5;
+    white-space: pre-wrap;
+}
+
+.coupon-item-actions {
+    margin-top: 12px;
+}
+
+.coupon-item-actions .btn {
+    width: 100%;
+    padding: 12px 16px;
+    font-weight: 600;
+}
+
+/* クーポン使用モーダル */
+.coupon-use-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s, visibility 0.2s;
+}
+
+.coupon-use-modal.is-open {
+    opacity: 1;
+    visibility: visible;
+}
+
+.coupon-use-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.coupon-use-modal-content {
+    position: relative;
+    background: #fff;
+    border-radius: 16px;
+    max-width: 340px;
+    width: 100%;
+    max-height: 90vh;
+    overflow: auto;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.coupon-use-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.coupon-use-modal-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.coupon-use-modal-close {
+    width: 36px;
+    height: 36px;
+    border: none;
+    background: transparent;
+    font-size: 24px;
+    line-height: 1;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 0;
+    border-radius: 8px;
+}
+
+.coupon-use-modal-close:hover {
+    background: var(--bg-light);
+    color: var(--text-primary);
+}
+
+.coupon-use-modal-body {
+    padding: 20px;
+    text-align: center;
+}
+
+.coupon-use-modal-name {
+    margin: 0 0 16px;
+    font-weight: 700;
+    font-size: 16px;
+}
+
+.coupon-use-code-label {
+    margin: 0 0 4px;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.coupon-use-code-text {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    word-break: break-all;
+}
+
+.coupon-use-qr-wrap {
+    display: inline-block;
+    padding: 12px;
+    background: #fff;
+    border-radius: 8px;
+}
+
+.coupon-use-qr-wrap canvas,
+.coupon-use-qr-wrap img {
+    display: block;
+}
+
 /* クーポン デザインテンプレート */
 .coupon-item--design-classic {
     border-width: 2px;

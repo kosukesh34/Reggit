@@ -13,6 +13,7 @@ use App\UseCases\Admin\Coupon\AdminCouponEditFormUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponIndexUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponStoreUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponUpdateUseCase;
+use App\Services\Admin\CouponAdminService;
 use Illuminate\Http\Request;
 
 class CouponController extends AdminBaseController
@@ -20,6 +21,7 @@ class CouponController extends AdminBaseController
     private AdminCouponIndexUseCase $indexUseCase;
     private AdminCouponCreateFormUseCase $createFormUseCase;
     private AdminCouponStoreUseCase $storeUseCase;
+    private CouponAdminService $couponAdminService;
     private AdminCouponEditFormUseCase $editFormUseCase;
     private AdminCouponUpdateUseCase $updateUseCase;
     private AdminCouponDeleteUseCase $deleteUseCase;
@@ -34,7 +36,8 @@ class CouponController extends AdminBaseController
         AdminCouponUpdateUseCase $updateUseCase,
         AdminCouponDeleteUseCase $deleteUseCase,
         AdminCouponBulkIssueFormUseCase $bulkIssueFormUseCase,
-        AdminCouponBulkIssueUseCase $bulkIssueUseCase
+        AdminCouponBulkIssueUseCase $bulkIssueUseCase,
+        CouponAdminService $couponAdminService
     ) {
         $this->indexUseCase = $indexUseCase;
         $this->createFormUseCase = $createFormUseCase;
@@ -44,6 +47,7 @@ class CouponController extends AdminBaseController
         $this->deleteUseCase = $deleteUseCase;
         $this->bulkIssueFormUseCase = $bulkIssueFormUseCase;
         $this->bulkIssueUseCase = $bulkIssueUseCase;
+        $this->couponAdminService = $couponAdminService;
     }
 
     public function coupons()
@@ -64,10 +68,19 @@ class CouponController extends AdminBaseController
 
     public function storeCoupon(CouponStoreRequest $request)
     {
-        $this->storeUseCase->handle($this->resolveAdminProjectId(), $request->validated());
-
-        return redirect()->route('admin.coupons', $this->buildAdminRouteParams())
+        $projectId = $this->resolveAdminProjectId();
+        $validated = $request->validated();
+        if ($request->hasFile('image')) {
+            $validated['image_url'] = $this->couponAdminService->saveCouponImage($request->file('image'), $projectId);
+        }
+        unset($validated['image']);
+        $result = $this->storeUseCase->handle($projectId, $validated);
+        $redirect = redirect()->route('admin.coupons', $this->buildAdminRouteParams())
             ->with('success', 'クーポンを作成しました');
+        if ($result['smaregi_warning']) {
+            $redirect->with('warning', 'クーポンは保存しましたが、スマレジPOSには反映されていません。API仕様（クーポン登録）をご確認ください。');
+        }
+        return $redirect;
     }
 
     /** @param string|int $id */
@@ -86,10 +99,18 @@ class CouponController extends AdminBaseController
     public function updateCoupon(CouponUpdateRequest $request, $id)
     {
         $projectId = $this->resolveAdminProjectId();
-        $this->updateUseCase->handle((int) $id, $request->validated(), $projectId);
-
-        return redirect()->route('admin.coupons', $this->buildAdminRouteParams())
+        $validated = $request->validated();
+        if ($request->hasFile('image')) {
+            $validated['image_url'] = $this->couponAdminService->saveCouponImage($request->file('image'), $projectId);
+        }
+        unset($validated['image']);
+        $result = $this->updateUseCase->handle((int) $id, $validated, $projectId);
+        $redirect = redirect()->route('admin.coupons', $this->buildAdminRouteParams())
             ->with('success', 'クーポンを更新しました');
+        if ($result['smaregi_warning']) {
+            $redirect->with('warning', 'クーポンは保存しましたが、スマレジPOSへの反映に失敗しています。ログ・API仕様をご確認ください。');
+        }
+        return $redirect;
     }
 
     /** @param string|int $id */

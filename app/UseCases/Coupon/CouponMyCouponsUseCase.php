@@ -39,6 +39,8 @@ class CouponMyCouponsUseCase
 
                 $designTemplate = (string) ($memberCoupon->coupon?->design_template ?? 'classic');
                 $themeColor = $memberCoupon->coupon?->theme_color;
+                $useDisplay = (string) ($memberCoupon->coupon?->use_display ?? 'none');
+                $code = $memberCoupon->coupon?->code;
 
                 return new MemberCoupon(
                     (int) $memberCoupon->id,
@@ -50,7 +52,10 @@ class CouponMyCouponsUseCase
                     $this->toIsoString($memberCoupon->valid_until),
                     $this->toIsoString($memberCoupon->used_at),
                     $designTemplate,
-                    $themeColor
+                    $themeColor,
+                    $memberCoupon->coupon?->description,
+                    $useDisplay,
+                    $code
                 );
             })
             ->all();

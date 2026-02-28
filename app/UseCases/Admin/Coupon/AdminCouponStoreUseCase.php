@@ -14,8 +14,8 @@ class AdminCouponStoreUseCase
     }
 
     /** @param array<string, mixed> $validated */
-    public function handle(int $projectId, array $validated): void
+    public function handle(int $projectId, array $validated): array
     {
-        $this->couponAdminService->create($projectId, $validated);
+        return $this->couponAdminService->create($projectId, $validated);
     }
 }
