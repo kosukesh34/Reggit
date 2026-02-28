@@ -466,8 +466,8 @@ $couponId = $result['couponId'] ?? $result['coupon_id'] ?? null;
 
 - **ボディ組み立て**: `app/Services/Smaregi/SmaregiCouponSyncService.php` の `buildBodyFromArray()`。  
   フォームの `code`, `name`, `type`, `value`, `start_at`, `end_at`, `min_order_amount`, `description` などを、API の `serialNumber`, `couponName`, `awardType`, `awardValue`, `startDate`, `endDate`, `minTargetPrice`, `summary` などに変換している。
-- **登録**: `CouponAdminService::create()` が、スマレジ契約ありの場合に `SmaregiCouponSyncService::registerToSmaregi()` を呼び、成功時に返る `smaregi_coupon_id` を DB に保存する。失敗時は DB には保存するが、`smaregi_warning` を true で返し、画面に警告を表示する。
-- **更新**: `CouponAdminService::update()` が `updateOnSmaregi()` を呼ぶ。失敗時も DB は更新し、同様に警告を表示する。
+- **登録**: `CouponAdminService::create()` が、スマレジ契約ありの場合に先に `SmaregiCouponSyncService::registerToSmaregi()` を呼ぶ。**API が成功した場合のみ** DB に保存し、`smaregi_coupon_id` を付与する。失敗時は `RuntimeException` を投げ、**DB には保存しない**。コントローラーで catch し、作成画面にリダイレクトして `session('error')` でメッセージを表示する。
+- **更新**: `CouponAdminService::update()` が先に `updateOnSmaregi()` または `registerToSmaregi()` を呼ぶ。**API が成功した場合のみ** DB を更新する。失敗時は `RuntimeException` を投げ、**DB は更新しない**。コントローラーで catch し、編集画面にリダイレクトしてエラーメッセージを表示する。
 
 ---
 

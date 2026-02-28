@@ -9,6 +9,11 @@
         <a href="{{ admin_route('admin.coupons') }}" class="btn btn-secondary btn-sm"><i class="fas fa-arrow-left"></i> 一覧へ</a>
     </div>
     <div class="card-body">
+        @if(session('error'))
+        <div class="alert alert-danger" role="alert">
+            <i class="fas fa-exclamation-circle"></i> {{ session('error') }}
+        </div>
+        @endif
         <form action="{{ admin_route('admin.coupons.update', ['id' => $coupon->id]) }}" method="POST" enctype="multipart/form-data">
             @csrf
             @method('PUT')
