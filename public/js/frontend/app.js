@@ -1,6 +1,7 @@
 class MobileOrderApp {
     constructor() {
         this.apiClient = new ApiClient();
+        this.deviceManager = new DeviceManager(this.apiClient);
         this.productManager = new ProductManager();
         this.cartManager = new CartManager();
         this.orderManager = new OrderManager(this.apiClient);
@@ -29,6 +30,7 @@ class MobileOrderApp {
     }
 
     init() {
+        this.deviceManager.init();
         this.preventZoom();
         this.setupEventListeners();
         this.layoutManager.render(this.currentTab);
@@ -38,6 +40,7 @@ class MobileOrderApp {
     }
 
     async onLiffReady() {
+        this.deviceManager.registerDevice();
         this.memberManager.preload();
         const hasQueueToken = this.queueManager.getQueueTokenFromUrl() !== null;
 
@@ -76,6 +79,18 @@ class MobileOrderApp {
             'touchend',
             (e) => {
                 if (e.touches.length > 1) e.preventDefault();
+            },
+            { passive: false }
+        );
+        document.addEventListener(
+            'dblclick',
+            (e) => e.preventDefault(),
+            { passive: false }
+        );
+        window.addEventListener(
+            'wheel',
+            (e) => {
+                if (e.ctrlKey) e.preventDefault();
             },
             { passive: false }
         );
