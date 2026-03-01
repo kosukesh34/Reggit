@@ -24,7 +24,7 @@ class SettingsRanksRequest extends FormRequest
             'show_points_display' => 'nullable|boolean',
             'show_rank_progress' => 'nullable|boolean',
             'show_member_card_for_guest' => 'nullable|boolean',
-            'member_card_design' => 'nullable|string|in:default,logo_top,logo_center,logo_header,compact',
+            'member_card_design' => 'nullable|string|in:default,logo_top,logo_center,logo_header,compact,split_banner,minimal_line,emblem',
             'member_card_display_type' => 'nullable|string|in:card,sheet',
             'member_card_code_type' => 'nullable|string|in:barcode,qrcode',
             'ranks' => 'array',

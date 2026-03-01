@@ -20,7 +20,7 @@ class RankSettingsView
         public bool $showPointsDisplay,
         public bool $showRankProgress,
         public bool $showMemberCardForGuest,
-        /** 会員証デザイン: default, logo_top, logo_center, logo_header, compact */
+        /** 会員証デザイン: default, logo_top, logo_center, logo_header, compact, split_banner, minimal_line, emblem */
         public string $memberCardDesign = 'default',
         /** プレビュー用・会員証に表示するロゴURL（frontend_logo_url） */
         public ?string $memberCardLogoUrl = null,
