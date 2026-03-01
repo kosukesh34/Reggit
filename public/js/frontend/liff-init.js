@@ -251,7 +251,7 @@
     }
 
     function removePermissionPrompt() {
-        var existing = document.getElementById('liff-permission-prompt');
+        const existing = document.getElementById('liff-permission-prompt');
         if (existing && existing.parentNode) {
             existing.parentNode.removeChild(existing);
         }
@@ -261,7 +261,7 @@
         if (typeof document === 'undefined') return;
         removePermissionPrompt();
 
-        var wrapper = document.createElement('div');
+        const wrapper = document.createElement('div');
         wrapper.id = 'liff-permission-prompt';
         wrapper.style.position = 'fixed';
         wrapper.style.left = '0';
@@ -275,11 +275,11 @@
         wrapper.style.lineHeight = '1.5';
         wrapper.style.boxSizing = 'border-box';
 
-        var text = document.createElement('div');
+        const text = document.createElement('div');
         text.textContent = message || 'LINEのアクセス許可が必要です。許可してください。';
         text.style.marginBottom = '10px';
 
-        var button = document.createElement('button');
+        const button = document.createElement('button');
         button.type = 'button';
         button.textContent = 'アクセスを許可する';
         button.style.border = 'none';

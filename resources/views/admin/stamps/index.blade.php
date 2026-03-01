@@ -47,7 +47,7 @@
                         @php($milestones = is_array($card->reward_milestones ?? null) ? $card->reward_milestones : [])
                         @if($milestones !== [])
                             @foreach($milestones as $milestone)
-                                @if(is_array($milestone) && !empty($milestone['stamp_count']) && !empty($milestone['description']))
+                                @if(is_array($milestone) && isset($milestone['stamp_count'], $milestone['description']) && (string)($milestone['description'] ?? '') !== '')
                                     <div>{{ $milestone['stamp_count'] }}個: {{ $milestone['description'] }}</div>
                                 @endif
                             @endforeach
