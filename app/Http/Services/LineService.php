@@ -120,10 +120,10 @@ class LineService
 
     private function ensureConfigured(bool $requireSecret = false): void
     {
-        if (empty($this->channelAccessToken)) {
+        if (\App\Util\StrHelper::isEmptyStringOrNull($this->channelAccessToken ?? null)) {
             throw new RuntimeException('LINE Messaging API access token is not configured.');
         }
-        if ($requireSecret && empty($this->channelSecret)) {
+        if ($requireSecret && \App\Util\StrHelper::isEmptyStringOrNull($this->channelSecret ?? null)) {
             throw new RuntimeException('LINE Messaging API credentials are not configured.');
         }
     }

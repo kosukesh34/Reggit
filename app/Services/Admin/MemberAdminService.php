@@ -144,7 +144,7 @@ class MemberAdminService
         $ranks = ShopSetting::getMemberRankSettings($projectId);
         $options = [];
         foreach ($ranks as $r) {
-            if (empty($r['key'])) {
+            if (\App\Util\StrHelper::isEmptyStringOrNull($r['key'] ?? null)) {
                 continue;
             }
             $options[(string) $r['key']] = (string) ($r['label'] ?? $r['key']);

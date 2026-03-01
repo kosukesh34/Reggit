@@ -86,11 +86,11 @@ class MemberService
         $rules = [];
         $stringMax = ['name' => 255, 'kana' => 255, 'phone' => 50, 'email' => 255, 'postal_code' => 16, 'prefecture' => 64, 'city' => 128, 'street' => 256, 'address' => 500, 'sex' => 16];
         foreach ($settings['smaregi_fields'] ?? [] as $key => $field) {
-            if (empty($field['enabled'])) {
+            if ((bool) ($field['enabled'] ?? false) === false) {
                 continue;
             }
             $rule = ['nullable'];
-            if (! empty($field['required'])) {
+            if ((bool) ($field['required'] ?? false) === true) {
                 $rule = ['required'];
             }
             if ($key === 'email') {
@@ -110,7 +110,7 @@ class MemberService
             if ($key === null) {
                 continue;
             }
-            $rules[$key] = ! empty($cf['required']) ? ['required', 'string', 'max:500'] : ['nullable', 'string', 'max:500'];
+            $rules[$key] = (bool) ($cf['required'] ?? false) === true ? ['required', 'string', 'max:500'] : ['nullable', 'string', 'max:500'];
         }
         return $rules;
     }
@@ -120,20 +120,20 @@ class MemberService
     {
         $out = [];
         foreach ($profileSettings['smaregi_fields'] ?? [] as $key => $field) {
-            if (empty($field['enabled'])) {
+            if ((bool) ($field['enabled'] ?? false) === false) {
                 continue;
             }
             $out[] = [
                 'key' => $key,
                 'label' => $field['label'] ?? $key,
-                'required' => ! empty($field['required']),
+                'required' => (bool) ($field['required'] ?? false) === true,
             ];
         }
         foreach ($profileSettings['custom_fields'] ?? [] as $cf) {
             $out[] = [
                 'key' => $cf['key'] ?? '',
                 'label' => $cf['label'] ?? '',
-                'required' => ! empty($cf['required']),
+                'required' => (bool) ($cf['required'] ?? false) === true,
             ];
         }
         return $out;
@@ -293,7 +293,7 @@ class MemberService
         if ($contractId !== '') {
             $body = $this->buildSmaregiCustomerBody($memberNumber, $data);
             $result = $this->smaregiApi->createCustomer($contractId, $body);
-            if ($result !== null && ! empty($result['customerId'])) {
+            if ($result !== null && isset($result['customerId']) && (string) $result['customerId'] !== '') {
                 $smaregiCustomerId = (string) $result['customerId'];
             } else {
                 // スマレジ連携失敗時でも会員登録自体は継続し、後続運用で再同期できるようにする。
