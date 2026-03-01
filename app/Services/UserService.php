@@ -78,6 +78,19 @@ class UserService
             return $existing;
         }
 
+        // 退会済み（ソフトデリート）の同一 LINE ユーザーがいれば復元する。前回の会員（Member）は復元せず、再登録時に新規 Member になる。
+        if ($lineUserId !== null) {
+            $trashed = User::withTrashed()
+                ->where('project_id', $projectId)
+                ->where('line_user_id', $lineUserId)
+                ->first();
+            if ($trashed !== null && $trashed->trashed()) {
+                $trashed->restore();
+                Session::put($this->getSessionKey($projectId), $trashed->id);
+                return $trashed;
+            }
+        }
+
         if ($lineUserId !== null) {
             $user = $this->createGuestUser($lineUserId, $projectId);
             Session::put($this->getSessionKey($projectId), $user->id);
@@ -101,6 +114,13 @@ class UserService
     private function getSessionKey(int $projectId): string
     {
         return self::SESSION_USER_ID_KEY_PREFIX . '_' . $projectId;
+    }
+
+    /** 現在プロジェクトのユーザーセッションを削除（退会時など） */
+    public function clearUserSession(Request $request): void
+    {
+        $projectId = AdminContext::getCurrentProjectId() ?? 1;
+        Session::forget($this->getSessionKey($projectId));
     }
 
     private function normalizeLineUserId(?string $lineUserId): ?string

@@ -39,6 +39,36 @@ android {
         // applicationId = ANDROID_APPLICATION_ID ?? PRODUCT_BUNDLE_IDENTIFIER
         // versionCode = CURRENT_PROJECT_VERSION
         // versionName = MARKETING_VERSION
+        // LIFF_BASE_URL を Skip.env から読み、Bundle.main.infoDictionary で参照できるように manifest に渡す
+        val skipEnvFile = file("../../Skip.env")
+        fun readSkipEnvValue(key: String, defaultValue: String): String {
+            if (!skipEnvFile.isFile) return defaultValue
+            return skipEnvFile.readLines()
+                .asSequence()
+                .map { it.trim() }
+                .filter { it.isNotEmpty() && !it.startsWith("//") }
+                .firstOrNull { it.startsWith("$key ") || it.startsWith("$key=") }
+                ?.substringAfter("=", "")
+                ?.trim()
+                ?.trim('"', '\'')
+                ?.takeIf { it.isNotEmpty() }
+                ?: defaultValue
+        }
+
+        val liffBaseUrl = readSkipEnvValue("LIFF_BASE_URL", "https://unadministrable-idiocratically-annalee.ngrok-free.dev")
+        val liffBaseUrlAndroid = readSkipEnvValue("LIFF_BASE_URL_ANDROID", liffBaseUrl)
+        val liffProjectKey = readSkipEnvValue("LIFF_PROJECT_KEY", "default")
+        val liffProjectKeyAndroid = readSkipEnvValue("LIFF_PROJECT_KEY_ANDROID", liffProjectKey)
+        val liffFixedTab = readSkipEnvValue("LIFF_FIXED_TAB", "products")
+        val liffFixedTabAndroid = readSkipEnvValue("LIFF_FIXED_TAB_ANDROID", liffFixedTab)
+        // Android では Bundle 経由で共通キーを参照するケースがあるため、
+        // 共通キーにも Android 向け URL を設定して白画面（ngrok エラーページ遷移）を防ぐ。
+        manifestPlaceholders["LIFF_BASE_URL"] = liffBaseUrlAndroid
+        manifestPlaceholders["LIFF_BASE_URL_ANDROID"] = liffBaseUrlAndroid
+        manifestPlaceholders["LIFF_PROJECT_KEY"] = liffProjectKey
+        manifestPlaceholders["LIFF_PROJECT_KEY_ANDROID"] = liffProjectKeyAndroid
+        manifestPlaceholders["LIFF_FIXED_TAB"] = liffFixedTab
+        manifestPlaceholders["LIFF_FIXED_TAB_ANDROID"] = liffFixedTabAndroid
     }
 
     buildFeatures {

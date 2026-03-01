@@ -145,7 +145,7 @@ class ShopSetting extends Model
         ];
     }
 
-    /** フロントメニュー項目を取得（表示するもののみ・order でソート） */
+    /** フロントメニュー項目を取得（ホーム設定で「表示する」にしたもののみ・order でソート） */
     public static function getFrontendMenuItems(?int $projectId = null): array
     {
         $projectId = $projectId ?? 1;
@@ -160,7 +160,12 @@ class ShopSetting extends Model
             if (\App\Util\StrHelper::isEmptyStringOrNull($tab) || $defaults->has($tab) === false) {
                 continue;
             }
-            $merged[] = array_merge($defaults->get($tab), $item);
+            $row = array_merge($defaults->get($tab), $item);
+            // ホーム設定で「表示する」がオフのタブはユーザー画面に出さない
+            if (isset($row['enabled']) && $row['enabled'] === false) {
+                continue;
+            }
+            $merged[] = $row;
         }
         if ($merged === []) {
             return self::defaultFrontendMenuItems();
@@ -279,55 +284,104 @@ class ShopSetting extends Model
     {
         return [
             [
-                'id' => 'simple-home',
-                'name' => 'シンプルホーム',
+                'id' => 'welcome-home',
+                'name' => 'ようこそトップ',
                 'blocks' => [
-                    ['type' => 'label', 'title' => 'ようこそ'],
-                    ['type' => 'text', 'body' => '簡単に注文や予約ができます。'],
-                    ['type' => 'button', 'button_label' => 'メニュー', 'button_url' => '#products'],
-                    ['type' => 'collection', 'source' => 'products', 'title' => '人気商品'],
+                    ['type' => 'hero', 'title' => 'いらっしゃいませ', 'subtitle' => 'LINEから注文・予約・会員特典までまとめてご利用いただけます。', 'gradient_start' => '#0ea5e9', 'gradient_end' => '#22c55e'],
+                    ['type' => 'banner', 'icon' => 'fa-gift', 'text' => '初回登録でドリンククーポンを配布中', 'color' => '#0f766e'],
+                    ['type' => 'button', 'text' => 'メニューを見る', 'action' => '#products'],
+                    ['type' => 'button', 'text' => '予約する', 'action' => '#reservations', 'color' => '#1d4ed8'],
                 ],
             ],
             [
-                'id' => 'story',
-                'name' => 'ストーリー',
+                'id' => 'campaign-slider',
+                'name' => 'キャンペーン訴求',
                 'blocks' => [
-                    ['type' => 'hero', 'title' => '本日のおすすめ', 'body' => '季節の食材を使用した特別メニュー', 'image_url' => 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1200', 'button_label' => '予約', 'button_url' => '#reservations'],
-                    ['type' => 'text', 'title' => 'こだわり', 'body' => '丁寧に仕上げた料理と落ち着いた空間。'],
-                    ['type' => 'gallery', 'source' => 'gallery', 'title' => 'ギャラリー'],
+                    ['type' => 'slider', 'slide_height' => 180, 'slides' => [
+                        ['image_url' => 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=1200', 'caption' => '春の新メニュー公開中'],
+                        ['image_url' => 'https://images.unsplash.com/photo-1466978913421-dad2ebd01d17?w=1200', 'caption' => 'テイクアウト10%OFF'],
+                        ['image_url' => 'https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=1200', 'caption' => '週末限定セット販売'],
+                    ]],
+                    ['type' => 'heading', 'text' => '注目キャンペーン', 'size' => 'large'],
+                    ['type' => 'icon_text', 'rows' => [
+                        ['icon' => 'fa-check-circle', 'text' => '会員はポイント2倍デーあり', 'color' => '#06C755'],
+                        ['icon' => 'fa-check-circle', 'text' => '予約限定特典クーポン', 'color' => '#06C755'],
+                        ['icon' => 'fa-check-circle', 'text' => '新商品は毎週更新', 'color' => '#06C755'],
+                    ]],
                 ],
             ],
             [
-                'id' => 'member',
-                'name' => '会員案内',
+                'id' => 'quick-order',
+                'name' => 'クイック注文導線',
                 'blocks' => [
-                    ['type' => 'label', 'title' => '会員サービス'],
-                    ['type' => 'text', 'body' => 'ポイントやスタンプでお得に。'],
-                    ['type' => 'data', 'source' => 'member', 'title' => '会員情報'],
-                    ['type' => 'data', 'source' => 'stamps', 'title' => 'スタンプ'],
-                    ['type' => 'data', 'source' => 'coupons', 'title' => 'クーポン'],
+                    ['type' => 'heading', 'text' => 'すぐに注文する', 'size' => 'large'],
+                    ['type' => 'text', 'text' => '人気カテゴリから選んで最短で注文できます。'],
+                    ['type' => 'collection', 'layout' => 'grid', 'columns' => 2, 'items' => [
+                        ['title' => '定番メニュー', 'description' => '人気No.1', 'image_url' => 'https://images.unsplash.com/photo-1550547660-d9450f859349?w=600'],
+                        ['title' => '季節限定', 'description' => '期間限定', 'image_url' => 'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=600'],
+                        ['title' => 'ドリンク', 'description' => 'テイクアウト可', 'image_url' => 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=600'],
+                        ['title' => 'スイーツ', 'description' => '人気急上昇', 'image_url' => 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=600'],
+                    ]],
+                    ['type' => 'button', 'text' => '商品一覧へ', 'action' => '#products'],
                 ],
             ],
             [
-                'id' => 'order-flow',
-                'name' => '注文フロー',
+                'id' => 'member-benefits',
+                'name' => '会員特典',
                 'blocks' => [
-                    ['type' => 'label', 'title' => '注文の流れ'],
-                    ['type' => 'list', 'title' => 'ステップ', 'list_items' => ['メニューを見る', 'カートに追加', '注文確定', '受け取り'] ],
-                    ['type' => 'data', 'source' => 'orders', 'title' => '注文状況'],
+                    ['type' => 'heading', 'text' => '会員特典のご案内', 'size' => 'large'],
+                    ['type' => 'list', 'items' => ['来店ごとにスタンプを獲得', 'ランクアップで特典が増加', '会員限定クーポンを配信']],
+                    ['type' => 'button', 'text' => '会員証を確認する', 'action' => '#member'],
                 ],
             ],
             [
-                'id' => 'contact',
-                'name' => 'お問い合わせ',
-                'blocks' => [
-                    ['type' => 'label', 'title' => 'お問い合わせ'],
-                    ['type' => 'form', 'title' => 'フォーム', 'form_fields' => [
-                        ['label' => 'お名前', 'type' => 'text', 'placeholder' => '山田 太郎', 'required' => true],
-                        ['label' => 'メール', 'type' => 'email', 'placeholder' => 'example@example.com', 'required' => true],
-                        ['label' => '内容', 'type' => 'textarea', 'placeholder' => 'お問い合わせ内容', 'required' => true],
-                    ], 'form_button_label' => '送信'],
+                'id' => 'super-pattern-classic',
+                'name' => 'スーパターン: クラシックレストラン',
+                'scope' => 'all_tabs',
+                'description' => '温かみのある配色で、予約と会員導線を強化した標準構成です。',
+                'layouts' => self::defaultLiffTabLayouts(),
+                'tab_settings' => self::defaultLiffTabSettings(),
+                'custom_css' => '',
+            ],
+            [
+                'id' => 'super-pattern-cafe',
+                'name' => 'スーパターン: ナチュラルカフェ',
+                'scope' => 'all_tabs',
+                'description' => '軽やかな配色と写真訴求を中心にしたカフェ向け構成です。',
+                'layouts' => self::defaultLiffCafePatternLayouts(),
+                'tab_settings' => [
+                    'home' => ['background_color' => '#f7f6f1'],
+                    'products' => ['background_color' => '#f8faf7'],
+                    'orders' => ['background_color' => '#f5f8f6'],
+                    'stamps' => ['background_color' => '#f4fbf6'],
+                    'coupons' => ['background_color' => '#f7faf4'],
+                    'queue' => ['background_color' => '#f8f7f2'],
+                    'reservations' => ['background_color' => '#f4f9f8'],
+                    'member' => ['background_color' => '#f6f8f4'],
+                    'gallery' => ['background_color' => '#f9f8f4'],
+                    'announcements' => ['background_color' => '#f8f8f6'],
                 ],
+                'custom_css' => '',
+            ],
+            [
+                'id' => 'super-pattern-fast',
+                'name' => 'スーパターン: ファストカジュアル',
+                'scope' => 'all_tabs',
+                'description' => '注文速度を最優先にした、強いCTA中心の高速導線です。',
+                'layouts' => self::defaultLiffFastPatternLayouts(),
+                'tab_settings' => [
+                    'home' => ['background_color' => '#f3f6ff'],
+                    'products' => ['background_color' => '#f5f7ff'],
+                    'orders' => ['background_color' => '#f3f4f8'],
+                    'stamps' => ['background_color' => '#f6f6ff'],
+                    'coupons' => ['background_color' => '#fff7f2'],
+                    'queue' => ['background_color' => '#f7f7fa'],
+                    'reservations' => ['background_color' => '#f2f8ff'],
+                    'member' => ['background_color' => '#f5f5f7'],
+                    'gallery' => ['background_color' => '#f6f8ff'],
+                    'announcements' => ['background_color' => '#f5f7ff'],
+                ],
+                'custom_css' => '',
             ],
         ];
     }
@@ -356,7 +410,7 @@ class ShopSetting extends Model
     public static function getLiffTabSettings(?int $projectId = null): array
     {
         $settings = self::getValue('liff_tab_settings', null, $projectId);
-        return is_array($settings) ? $settings : [];
+        return is_array($settings) && $settings !== [] ? $settings : self::defaultLiffTabSettings();
     }
 
     public static function setLiffTabSettings(array $settings, ?int $projectId = null): void
@@ -402,35 +456,139 @@ class ShopSetting extends Model
     public static function defaultLiffTabLayouts(): array
     {
         return [
-            'home' => self::defaultLiffBuilderTemplates()[0]['blocks'],
+            'home' => [
+                ['type' => 'hero', 'title' => 'モバイルオーダーへようこそ', 'subtitle' => '注文・予約・会員特典をこの画面でまとめて利用できます。', 'gradient_start' => '#0ea5e9', 'gradient_end' => '#22c55e'],
+                ['type' => 'banner', 'icon' => 'fa-bell', 'text' => '本日限定: LINE会員はポイント2倍', 'color' => '#0f766e'],
+                ['type' => 'heading', 'text' => 'おすすめメニュー', 'size' => 'large'],
+                ['type' => 'collection', 'layout' => 'scroll', 'item_width' => 150, 'item_image_height' => 110, 'items' => [
+                    ['title' => 'シグネチャープレート', 'description' => '人気No.1', 'image_url' => 'https://images.unsplash.com/photo-1550547660-d9450f859349?w=800'],
+                    ['title' => '季節のサラダ', 'description' => '旬の素材', 'image_url' => 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800'],
+                    ['title' => '本日のパスタ', 'description' => '限定メニュー', 'image_url' => 'https://images.unsplash.com/photo-1621996346565-e3dbc353d2e5?w=800'],
+                ]],
+                ['type' => 'button', 'text' => '今すぐ注文する', 'action' => '#products', 'color' => '#06C755'],
+                ['type' => 'button', 'text' => '席を予約する', 'action' => '#reservations', 'color' => '#1d4ed8'],
+                ['type' => 'data', 'source' => 'announcements'],
+            ],
             'products' => [
+                ['type' => 'heading', 'text' => '商品一覧', 'size' => 'large'],
+                ['type' => 'text', 'text' => 'カテゴリから商品を選択し、カートに追加してください。'],
                 ['type' => 'data', 'source' => 'products'],
             ],
             'orders' => [
+                ['type' => 'heading', 'text' => '注文状況', 'size' => 'large'],
+                ['type' => 'text', 'text' => '注文履歴と現在のステータスを確認できます。'],
+                ['type' => 'banner', 'icon' => 'fa-clock', 'text' => '受け取り準備が完了すると通知します', 'color' => '#2563eb'],
                 ['type' => 'data', 'source' => 'orders'],
             ],
             'stamps' => [
+                ['type' => 'heading', 'text' => 'スタンプカード', 'size' => 'large'],
+                ['type' => 'icon_text', 'rows' => [
+                    ['icon' => 'fa-stamp', 'text' => '来店ごとにスタンプ獲得', 'color' => '#06C755'],
+                    ['icon' => 'fa-gift', 'text' => '満了で特典を獲得', 'color' => '#f59e0b'],
+                ]],
                 ['type' => 'data', 'source' => 'stamps'],
             ],
             'coupons' => [
+                ['type' => 'heading', 'text' => 'クーポン', 'size' => 'large'],
+                ['type' => 'banner', 'icon' => 'fa-ticket-alt', 'text' => '会員限定クーポンを配信中', 'color' => '#7c3aed'],
+                ['type' => 'text', 'text' => 'ご注文前に利用可能なクーポンをご確認ください。'],
                 ['type' => 'data', 'source' => 'coupons'],
             ],
             'queue' => [
+                ['type' => 'heading', 'text' => '順番待ち', 'size' => 'large'],
+                ['type' => 'text', 'text' => '混雑時は順番待ち受付をご利用ください。'],
+                ['type' => 'icon_text', 'rows' => [
+                    ['icon' => 'fa-user-check', 'text' => '人数を入力して受付', 'color' => '#0f766e'],
+                    ['icon' => 'fa-mobile-alt', 'text' => '呼び出し通知でお知らせ', 'color' => '#0f766e'],
+                ]],
                 ['type' => 'data', 'source' => 'queue'],
             ],
             'reservations' => [
+                ['type' => 'heading', 'text' => '来店予約', 'size' => 'large'],
+                ['type' => 'list', 'items' => ['日時を選択', '人数を指定', '内容を確認して確定']],
+                ['type' => 'banner', 'icon' => 'fa-calendar-check', 'text' => '予約変更・キャンセルは注文履歴から可能です', 'color' => '#1d4ed8'],
                 ['type' => 'data', 'source' => 'reservations'],
             ],
             'member' => [
-                ['type' => 'data', 'source' => 'member'],
+                ['type' => 'heading', 'text' => '会員ページ', 'size' => 'large'],
+                ['type' => 'text', 'text' => '会員証・ポイント・ランクを確認できます。'],
+                ['type' => 'icon_text', 'rows' => [
+                    ['icon' => 'fa-coins', 'text' => '購入でポイントが貯まります', 'color' => '#d97706'],
+                    ['icon' => 'fa-crown', 'text' => 'ランクアップで特典が増えます', 'color' => '#d97706'],
+                ]],
+                ['type' => 'data', 'source' => 'member_card'],
             ],
             'gallery' => [
+                ['type' => 'heading', 'text' => 'ギャラリー', 'size' => 'large'],
+                ['type' => 'text', 'text' => '店内・メニュー写真を随時更新しています。'],
                 ['type' => 'data', 'source' => 'gallery'],
             ],
             'announcements' => [
+                ['type' => 'heading', 'text' => 'お知らせ', 'size' => 'large'],
+                ['type' => 'banner', 'icon' => 'fa-bullhorn', 'text' => '営業時間や限定情報を配信しています', 'color' => '#0f766e'],
                 ['type' => 'data', 'source' => 'announcements'],
             ],
         ];
+    }
+
+    public static function defaultLiffTabSettings(): array
+    {
+        return [
+            'home' => ['background_color' => '#f2f9f6'],
+            'products' => ['background_color' => '#f7faf9'],
+            'orders' => ['background_color' => '#f5f7fa'],
+            'stamps' => ['background_color' => '#f8faf5'],
+            'coupons' => ['background_color' => '#faf6ff'],
+            'queue' => ['background_color' => '#f7f7f7'],
+            'reservations' => ['background_color' => '#f4f8ff'],
+            'member' => ['background_color' => '#f7f8f9'],
+            'gallery' => ['background_color' => '#fafaf8'],
+            'announcements' => ['background_color' => '#f6f9ff'],
+        ];
+    }
+
+    private static function defaultLiffCafePatternLayouts(): array
+    {
+        $layouts = self::defaultLiffTabLayouts();
+        $layouts['home'] = [
+            ['type' => 'hero', 'title' => 'Natural Cafe', 'subtitle' => 'ゆったりした時間を、LINEからスマートに。', 'gradient_start' => '#84cc16', 'gradient_end' => '#14b8a6'],
+            ['type' => 'heading', 'text' => '今週のおすすめ', 'size' => 'large'],
+            ['type' => 'slider', 'slide_height' => 180, 'slides' => [
+                ['image_url' => 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=1200', 'caption' => '季節のハンドドリップ'],
+                ['image_url' => 'https://images.unsplash.com/photo-1511920170033-f8396924c348?w=1200', 'caption' => 'スイーツセット'],
+            ]],
+            ['type' => 'button', 'text' => 'メニューを見る', 'action' => '#products'],
+            ['type' => 'data', 'source' => 'announcements'],
+        ];
+        $layouts['coupons'] = [
+            ['type' => 'heading', 'text' => 'カフェクーポン', 'size' => 'large'],
+            ['type' => 'banner', 'icon' => 'fa-mug-hot', 'text' => 'モーニング時間帯はドリンク50円OFF', 'color' => '#166534'],
+            ['type' => 'data', 'source' => 'coupons'],
+        ];
+        return $layouts;
+    }
+
+    private static function defaultLiffFastPatternLayouts(): array
+    {
+        $layouts = self::defaultLiffTabLayouts();
+        $layouts['home'] = [
+            ['type' => 'hero', 'title' => '最短30秒で注文', 'subtitle' => 'ピーク時でも、事前注文で待ち時間を短縮。', 'gradient_start' => '#2563eb', 'gradient_end' => '#ea580c'],
+            ['type' => 'button', 'text' => '商品を選ぶ', 'action' => '#products', 'color' => '#ea580c'],
+            ['type' => 'button', 'text' => '現在の注文を見る', 'action' => '#orders', 'color' => '#2563eb'],
+            ['type' => 'banner', 'icon' => 'fa-bolt', 'text' => '受取時間を選んで、店頭でスムーズ受取', 'color' => '#1d4ed8'],
+            ['type' => 'data', 'source' => 'announcements'],
+        ];
+        $layouts['products'] = [
+            ['type' => 'heading', 'text' => 'クイックメニュー', 'size' => 'large'],
+            ['type' => 'text', 'text' => '人気順で表示しています。まずはおすすめからどうぞ。'],
+            ['type' => 'data', 'source' => 'products'],
+        ];
+        $layouts['queue'] = [
+            ['type' => 'heading', 'text' => '待ち状況', 'size' => 'large'],
+            ['type' => 'banner', 'icon' => 'fa-users', 'text' => '呼び出し通知を受け取れます', 'color' => '#0f766e'],
+            ['type' => 'data', 'source' => 'queue'],
+        ];
+        return $layouts;
     }
 
     /** 全機能フラグを取得 */
@@ -623,16 +781,16 @@ class ShopSetting extends Model
         self::setValue('show_member_card_for_guest', $value, 'boolean', $projectId ?? 1);
     }
 
-    /** 会員証のレイアウトデザイン。default, logo_top, logo_center, logo_header, compact */
+    /** 会員証のレイアウトデザイン。default, logo_top, logo_center, logo_header, compact, split_banner, minimal_line, emblem */
     public static function getMemberCardDesign(?int $projectId = null): string
     {
         $v = self::getValue('member_card_design', 'default', $projectId);
-        return in_array($v, ['default', 'logo_top', 'logo_center', 'logo_header', 'compact'], true) ? $v : 'default';
+        return in_array($v, ['default', 'logo_top', 'logo_center', 'logo_header', 'compact', 'split_banner', 'minimal_line', 'emblem'], true) ? $v : 'default';
     }
 
     public static function setMemberCardDesign(string $value, ?int $projectId = null): void
     {
-        $value = in_array($value, ['default', 'logo_top', 'logo_center', 'logo_header', 'compact'], true) ? $value : 'default';
+        $value = in_array($value, ['default', 'logo_top', 'logo_center', 'logo_header', 'compact', 'split_banner', 'minimal_line', 'emblem'], true) ? $value : 'default';
         self::setValue('member_card_design', $value, 'string', $projectId ?? 1);
     }
 

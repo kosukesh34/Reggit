@@ -78,9 +78,9 @@
         </div>
         <div class="card-body">
             <div class="form-group">
-                <label for="frontend_logo_url" class="form-label">ロゴ画像URL</label>
+                <label for="frontend_logo_url" class="form-label">ヘッダー画像（ロゴ）</label>
                 <input type="url" name="frontend_logo_url" id="frontend_logo_url" class="form-control" value="{{ $view->frontendLogoUrl ?? '' }}" placeholder="https://example.com/logo.png">
-                <p class="form-text text-muted">フロントエンドのヘッダーに表示されるロゴ画像のURLを指定します。</p>
+                <p class="form-text text-muted">フロント・アプリのヘッダーに表示する画像のURL。未設定の場合はテキストのみ表示されます。</p>
             </div>
             <div class="form-group">
                 <label for="frontend_header_text" class="form-label">ヘッダーテキスト</label>

@@ -10,11 +10,33 @@
  */
 (function () {
     const QUEUE_TOKEN_STORAGE_KEY = 'mobile_order_pending_queue_token';
+    const uaString = (typeof navigator !== 'undefined' && navigator.userAgent) ? navigator.userAgent : '';
     const debug = function (eventName, payload) {
         if (typeof window !== 'undefined' && typeof window.__clientDebugLog === 'function') {
             window.__clientDebugLog(eventName, payload || {});
         }
     };
+
+    function isNativeMobileAppWebView() {
+        return /MobileOrderApp\/\d+/i.test(uaString);
+    }
+
+    function applyNativeEmbedClass() {
+        if (typeof document === 'undefined' || typeof window === 'undefined') return;
+        if (!isNativeMobileAppWebView()) return;
+        window.__MOBILE_APP_MODE__ = true;
+        if (typeof window.__mobileOrderLog === 'function') window.__mobileOrderLog('liff-init: native embed', { href: window.location.href });
+        if (document.documentElement) {
+            document.documentElement.classList.add('native-app-embed');
+        }
+        const applyBodyClass = function () {
+            if (document.body) document.body.classList.add('native-app-embed');
+        };
+        applyBodyClass();
+        if (!document.body) {
+            document.addEventListener('DOMContentLoaded', applyBodyClass, { once: true });
+        }
+    }
 
     function persistQueueTokenIfPresent() {
         if (typeof window === 'undefined' || typeof window.sessionStorage === 'undefined') return;
@@ -106,10 +128,25 @@
         if (el) el.textContent = text;
     }
 
+    function applyEmbedModeClass(isLiff) {
+        if (typeof document === 'undefined') return;
+        const root = document.documentElement;
+        const body = document.body;
+        const add = isLiff ? 'line-liff-embed' : 'line-web-embed';
+        const remove = isLiff ? 'line-web-embed' : 'line-liff-embed';
+        if (root) {
+            root.classList.remove(remove);
+            root.classList.add(add);
+        }
+        if (body) {
+            body.classList.remove(remove);
+            body.classList.add(add);
+        }
+    }
+
     /** LINEアプリ内かどうかを判定（LIFF SDK読み込み前でも使用可能） */
     function isInLineApp() {
-        const ua = navigator.userAgent || '';
-        return /Line/i.test(ua) || /LIFF/i.test(ua);
+        return /Line/i.test(uaString) || /LIFF/i.test(uaString);
     }
 
     function getLineUserIdFromToken() {
@@ -193,6 +230,7 @@
     }
 
     function dispatchReady() {
+        if (typeof window.__mobileOrderLog === 'function') window.__mobileOrderLog('liff-ready', { hasLineUserId: !!window.__LINE_USER_ID__ });
         debug('liff_dispatch_ready', {
             hasLineUserId: !!window.__LINE_USER_ID__,
             isLiff: !!window.__IS_LIFF__
@@ -291,9 +329,11 @@
     }
 
     // ─── メイン初期化ロジック ───
+    applyNativeEmbedClass();
     persistQueueTokenIfPresent();
 
     window.__IS_LIFF__ = isInLineApp();
+    applyEmbedModeClass(window.__IS_LIFF__);
     const liffId = getLiffId();
     debug('liff_boot_start', { isLiff: !!window.__IS_LIFF__, hasLiffId: !!liffId });
 
