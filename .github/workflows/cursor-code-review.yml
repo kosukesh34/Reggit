@@ -1,7 +1,6 @@
 # Cursor による PR 自動コードレビュー（オプション）
 # レビュー基準: リポジトリルートの CODING_STANDARDS.md（特に「コードレビュー指摘事項」）を参照して指摘する。
-# 注意: Cursor CLI は GitHub Actions の runner ではインストールに失敗する場合があります。
-# その場合でもジョブはスキップされ、PR は失敗しません。
+# 注意: Cursor CLI 未インストール時・CURSOR_API_KEY 未設定時はレビューをスキップし、ジョブは成功します。
 # 通常の CI（テスト・Lint）は .github/workflows/ci.yml で無料で実行されます。
 #
 # セットアップ: リポジトリの Settings → Secrets and variables → Actions で
@@ -50,13 +49,27 @@ jobs:
           echo "agent_available=true" >> $GITHUB_OUTPUT
           echo "Cursor CLI found: $(command -v agent)"
 
+      - name: Check Cursor API key
+        id: check_key
+        if: steps.verify.outputs.agent_available == 'true'
+        env:
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+        run: |
+          if [ -z "${CURSOR_API_KEY}" ]; then
+            echo "Cursor API key is not set. Skipping automated code review (configure CURSOR_API_KEY in repo Secrets to enable)."
+            echo "review_skipped=true" >> $GITHUB_OUTPUT
+            echo "CRITICAL_ISSUES_FOUND=false" >> $GITHUB_ENV
+          else
+            echo "review_skipped=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Configure git identity
         run: |
           git config user.name "Cursor Agent"
           git config user.email "cursoragent@cursor.com"
 
       - name: Perform automated code review
-        if: steps.verify.outputs.agent_available == 'true'
+        if: steps.verify.outputs.agent_available == 'true' && steps.check_key.outputs.review_skipped != 'true'
         env:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
           MODEL: ${{ vars.CURSOR_REVIEW_MODEL || 'gpt-4o' }}
