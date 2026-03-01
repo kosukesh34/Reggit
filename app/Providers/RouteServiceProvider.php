@@ -15,7 +15,23 @@ class RouteServiceProvider extends ServiceProvider
     public function boot(): void
     {
         RateLimiter::for('api', function (Request $request) {
-            return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
+            $path = trim((string) $request->path(), '/');
+            if ($path === 'api/client-debug') {
+                return Limit::perMinute(600)->by($request->ip());
+            }
+
+            $deviceIdentifier = trim((string) $request->header('X-Device-Identifier', ''));
+            $lineUserId = trim((string) $request->header('X-Line-User-Id', ''));
+            $projectKey = trim((string) $request->header('X-Project-Key', ''));
+            $key = $request->user()?->id
+                ?: ($lineUserId !== '' ? "line:{$lineUserId}" : null)
+                ?: ($deviceIdentifier !== '' ? "device:{$deviceIdentifier}" : null)
+                ?: "ip:{$request->ip()}";
+            if ($projectKey !== '') {
+                $key .= "|project:{$projectKey}";
+            }
+
+            return Limit::perMinute(240)->by($key);
         });
 
         // 管理画面ログイン: 5回/分まで（ブルートフォース対策）
@@ -34,5 +50,4 @@ class RouteServiceProvider extends ServiceProvider
         });
     }
 }
-
 

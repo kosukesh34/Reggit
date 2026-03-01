@@ -3,6 +3,17 @@
 @section('title', 'ホーム設定')
 @section('page-title', 'ホーム設定')
 
+@push('styles')
+<style>
+.home-settings-drag-handle { cursor: grab; color: var(--text-tertiary, #78716c); padding: 4px 8px; user-select: none; }
+.home-settings-drag-handle:active { cursor: grabbing; }
+.home-settings-tbody tr.home-settings-row--hidden { background: #f4f4f5 !important; opacity: 0.85; }
+.home-settings-tbody tr.home-settings-row--hidden td { color: #9ca3af; }
+.home-settings-tbody tr.home-settings-row--hidden .home-settings-drag-handle { color: #d1d5db; }
+.home-settings-tbody tr.home-settings-row--dragging { opacity: 0.6; }
+</style>
+@endpush
+
 @section('content')
 <nav class="breadcrumb" aria-label="パンくず">
     <a href="{{ admin_route('admin.dashboard') }}">ダッシュボード</a>
@@ -12,39 +23,43 @@
 
 <div class="page-header">
     <h1 class="page-header-title"><i class="fas fa-home"></i> ホーム設定</h1>
-    <p class="page-header-desc">LINE画面（LIFF）で表示するタブを選択し、並び順を設定できます。</p>
+    <p class="page-header-desc">LINE画面（LIFF）で表示するタブを選択し、ドラッグで並び順を変更できます。</p>
 </div>
 
 @if(session('success'))
     <div class="alert alert-success"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>
 @endif
 
-<form action="{{ admin_route('admin.settings.home.update') }}" method="POST">
+<form action="{{ admin_route('admin.settings.home.update') }}" method="POST" id="home-settings-form">
     @csrf
     <div class="card">
         <div class="card-header">
             <h2 class="card-title"><i class="fas fa-th-large"></i> 表示するタブ</h2>
         </div>
         <div class="card-body">
-            <p class="form-text mb-3">表示するタブにチェックを入れてください。並び順の番号が小さいほど左側に表示されます。</p>
+            <p class="form-text mb-3">表示するタブにチェックを入れてください。行をドラッグして並び順を変更できます。表示していないタブは灰色で表示されます。</p>
             <div class="table-responsive">
                 <table class="table table-striped">
                     <thead>
                         <tr>
+                            <th style="width:44px" aria-label="並び替え"></th>
                             <th style="width:80px">表示</th>
                             <th>タブ</th>
-                            <th style="width:100px">並び順</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody class="home-settings-tbody">
                         @foreach($tabs as $index => $tab)
-                        <tr>
+                        <tr class="home-settings-row {{ $tab['enabled'] ? '' : 'home-settings-row--hidden' }}" data-index="{{ $index }}" draggable="true">
+                            <td class="home-settings-drag-cell">
+                                <span class="home-settings-drag-handle" title="ドラッグして並び替え"><i class="fas fa-grip-vertical"></i></span>
+                            </td>
                             <td>
                                 <input type="hidden" name="tabs[{{ $index }}][tab]" value="{{ $tab['tab'] }}">
                                 <input type="hidden" name="tabs[{{ $index }}][label]" value="{{ $tab['label'] }}">
                                 <input type="hidden" name="tabs[{{ $index }}][icon]" value="{{ $tab['icon'] }}">
+                                <input type="hidden" class="home-settings-order-input" name="tabs[{{ $index }}][order]" value="{{ $tab['order'] }}">
                                 <label class="checkbox-label">
-                                    <input type="checkbox" name="tabs[{{ $index }}][enabled]" value="1" {{ $tab['enabled'] ? 'checked' : '' }}>
+                                    <input type="checkbox" name="tabs[{{ $index }}][enabled]" value="1" {{ $tab['enabled'] ? 'checked' : '' }} class="home-settings-enabled-cb">
                                     <span>表示する</span>
                                 </label>
                             </td>
@@ -52,9 +67,6 @@
                                 <i class="fas {{ $tab['icon'] ?? 'fa-circle' }}" style="margin-right:8px;color:#6b7280"></i>
                                 {{ $tab['label'] }}
                                 <span class="text-muted">({{ $tab['tab'] }})</span>
-                            </td>
-                            <td>
-                                <input type="number" class="form-control form-control-sm" name="tabs[{{ $index }}][order]" value="{{ $tab['order'] }}" min="0" style="width:70px">
                             </td>
                         </tr>
                         @endforeach
@@ -68,4 +80,66 @@
         </div>
     </div>
 </form>
+
+<script>
+(function() {
+    var tbody = document.querySelector('.home-settings-tbody');
+    if (!tbody) return;
+
+    function syncOrderInputs() {
+        var rows = tbody.querySelectorAll('tr.home-settings-row');
+        rows.forEach(function(row, i) {
+            var input = row.querySelector('.home-settings-order-input');
+            if (input) input.value = i;
+        });
+    }
+
+    function toggleRowHidden(row, enabled) {
+        if (enabled) row.classList.remove('home-settings-row--hidden');
+        else row.classList.add('home-settings-row--hidden');
+    }
+
+    tbody.addEventListener('change', function(e) {
+        if (e.target.classList.contains('home-settings-enabled-cb')) {
+            var tr = e.target.closest('tr');
+            if (tr) toggleRowHidden(tr, e.target.checked);
+        }
+    });
+
+    var dragged = null;
+    tbody.addEventListener('dragstart', function(e) {
+        var row = e.target.closest('tr');
+        if (!row || !row.classList.contains('home-settings-row')) return;
+        dragged = row;
+        row.classList.add('home-settings-row--dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', row.dataset.index || '');
+        e.dataTransfer.setDragImage(row, 0, 0);
+    });
+    tbody.addEventListener('dragend', function(e) {
+        if (dragged) {
+            dragged.classList.remove('home-settings-row--dragging');
+            dragged = null;
+        }
+        syncOrderInputs();
+    });
+    tbody.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        var row = e.target.closest('tr');
+        if (!row || row === dragged || !row.classList.contains('home-settings-row')) return;
+        var rect = row.getBoundingClientRect();
+        var mid = rect.top + rect.height / 2;
+        var next = e.clientY > mid ? row.nextElementSibling : row;
+        if (next && next.classList.contains('home-settings-row') && next !== dragged) {
+            tbody.insertBefore(dragged, next);
+        } else if (!next) {
+            tbody.appendChild(dragged);
+        }
+    });
+    tbody.addEventListener('drop', function(e) {
+        e.preventDefault();
+    });
+})();
+</script>
 @endsection
