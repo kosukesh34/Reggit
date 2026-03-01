@@ -10,6 +10,5 @@ class GalleryIndexView
     public function __construct(
         public Collection $categories,
         public Collection $items
-    ) {
-    }
+    ) {}
 }

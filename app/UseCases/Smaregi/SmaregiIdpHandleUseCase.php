@@ -27,12 +27,14 @@ class SmaregiIdpHandleUseCase
                 'event' => $event,
                 'has_contract_id_header' => $contractIdFromHeader !== null && $contractIdFromHeader !== '',
             ]);
+
             return ['status' => 400, 'body' => ''];
         }
 
         $contractId = $contractIdFromHeader ?? $request->input('contractId');
-        if (!is_string($contractId) || StrHelper::isEmptyStringOrNull($contractId)) {
+        if (! is_string($contractId) || StrHelper::isEmptyStringOrNull($contractId)) {
             Log::warning('[Smaregi] IDP missing contract_id');
+
             return ['status' => 400, 'body' => ''];
         }
 
@@ -56,6 +58,7 @@ class SmaregiIdpHandleUseCase
                 'smaregi_contract_id' => $contractId,
                 'error' => $e->getMessage(),
             ]);
+
             return ['status' => 500, 'body' => ''];
         }
 

@@ -22,6 +22,7 @@ class AdminSyncPasswordCommand extends Command
         $user = AdminUser::where('login_id', $loginId)->first();
         if ($user === null) {
             $this->error("login_id [{$loginId}] のユーザーが存在しません。先に db:seed --class=AdminUserSeeder を実行してください。");
+
             return self::FAILURE;
         }
 
@@ -31,6 +32,7 @@ class AdminSyncPasswordCommand extends Command
 
         if ($password === '' || $password === null) {
             $this->error('.env に DEMO_SYSTEM_PASSWORD または ADMIN_PASSWORD を設定してください。');
+
             return self::FAILURE;
         }
 
@@ -38,6 +40,7 @@ class AdminSyncPasswordCommand extends Command
         $user->save();
 
         $this->info("login_id [{$loginId}] のパスワードを .env の値で更新しました。");
+
         return self::SUCCESS;
     }
 }

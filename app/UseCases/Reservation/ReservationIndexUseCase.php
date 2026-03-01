@@ -12,8 +12,7 @@ class ReservationIndexUseCase
     public function __construct(
         private ReservationService $reservationService,
         private UserService $userService
-    ) {
-    }
+    ) {}
 
     public function handle(Request $request): ReservationMemberOutput
     {
@@ -23,7 +22,7 @@ class ReservationIndexUseCase
         }
 
         $reservations = $this->reservationService->getUserReservations($user);
-        if (!($reservations instanceof \Illuminate\Support\Collection)) {
+        if (! ($reservations instanceof \Illuminate\Support\Collection)) {
             $reservations = collect($reservations);
         }
 

@@ -12,8 +12,7 @@ class ReservationIndexController extends Controller
 {
     public function __construct(
         private ReservationIndexUseCase $indexUseCase
-    ) {
-    }
+    ) {}
 
     public function __invoke(Request $request)
     {
@@ -32,6 +31,7 @@ class ReservationIndexController extends Controller
                 'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'error' => $e->getMessage(),
             ]);
+
             return response()->json(['error' => '予約の取得に失敗しました'], 500);
         }
     }

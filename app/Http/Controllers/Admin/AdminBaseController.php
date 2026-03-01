@@ -16,6 +16,7 @@ class AdminBaseController extends Controller
             return $id;
         }
         $admin = auth('admin')->user();
+
         return AdminUser::resolveCurrentProjectId(
             $admin,
             (int) session('admin_project_id'),
@@ -27,6 +28,7 @@ class AdminBaseController extends Controller
     protected function resolveAdminProjectKey(): string
     {
         $project = AdminContext::getCurrentProject();
+
         return $project ? $project->project_key : 'default';
     }
 

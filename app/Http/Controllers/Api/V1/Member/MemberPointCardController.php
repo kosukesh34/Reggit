@@ -12,8 +12,7 @@ class MemberPointCardController extends BaseApiController
 {
     public function __construct(
         private MemberPointCardUseCase $pointCardUseCase
-    ) {
-    }
+    ) {}
 
     public function __invoke(Request $request)
     {
@@ -29,6 +28,7 @@ class MemberPointCardController extends BaseApiController
                 'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'error' => $e->getMessage(),
             ]);
+
             return $this->error('ポイント情報の取得に失敗しました', 500);
         }
     }

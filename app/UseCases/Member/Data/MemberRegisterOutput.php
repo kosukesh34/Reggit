@@ -8,6 +8,5 @@ class MemberRegisterOutput
     public function __construct(
         public MemberData $member,
         public bool $alreadyRegistered
-    ) {
-    }
+    ) {}
 }

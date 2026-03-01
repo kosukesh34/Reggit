@@ -25,6 +25,7 @@ class IssueBirthdayCouponsCommand extends Command
             if ($dryRun) {
                 $this->line("Member #{$member->id} (project: {$member->project_id})");
                 $count++;
+
                 continue;
             }
             $couponIssueService->issueForBirthday($member);
@@ -35,6 +36,7 @@ class IssueBirthdayCouponsCommand extends Command
         } else {
             $this->info("誕生日クーポン発行処理を完了しました（対象: {$count} 件）");
         }
+
         return self::SUCCESS;
     }
 }

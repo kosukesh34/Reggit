@@ -2,7 +2,6 @@
 
 namespace App\Services\Admin;
 
-use App\Models\ShopSetting;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
@@ -19,10 +18,10 @@ class WalletAssetService
 
     public function hasAppleAssets(int $projectId): bool
     {
-        $base = self::APPLE_ASSETS_DIR . '/' . (string) $projectId;
+        $base = self::APPLE_ASSETS_DIR.'/'.(string) $projectId;
 
-        return Storage::disk('public')->exists($base . '/icon.png')
-            || Storage::disk('public')->exists($base . '/logo.png');
+        return Storage::disk('public')->exists($base.'/icon.png')
+            || Storage::disk('public')->exists($base.'/logo.png');
     }
 
     public function saveAppleAssets(int $projectId, Request $request): bool
@@ -30,7 +29,7 @@ class WalletAssetService
         if (! extension_loaded('gd')) {
             return false;
         }
-        $base = self::APPLE_ASSETS_DIR . '/' . (string) $projectId;
+        $base = self::APPLE_ASSETS_DIR.'/'.(string) $projectId;
         Storage::disk('public')->makeDirectory($base);
 
         if ($request->hasFile('wallet_apple_icon')) {
@@ -48,19 +47,19 @@ class WalletAssetService
     /** @return string|null 保存後の URL、失敗時は null */
     public function saveGoogleAsset(int $projectId, UploadedFile $file, string $name): ?string
     {
-        $base = self::GOOGLE_ASSETS_DIR . '/' . (string) $projectId;
+        $base = self::GOOGLE_ASSETS_DIR.'/'.(string) $projectId;
         Storage::disk('public')->makeDirectory($base);
         $ext = strtolower($file->getClientOriginalExtension()) ?: 'png';
         if (! in_array($ext, ['png', 'jpg', 'jpeg'], true)) {
             $ext = 'png';
         }
-        $filename = $name . '.' . $ext;
+        $filename = $name.'.'.$ext;
         $path = $file->storeAs($base, $filename, 'public');
         if ($path === false) {
             return null;
         }
 
-        return asset('storage/' . $path);
+        return asset('storage/'.$path);
     }
 
     private function resizeAndSaveIcon(string $sourcePath, string $baseDir): void
@@ -70,12 +69,12 @@ class WalletAssetService
             'icon@2x.png' => 58,
             'icon@3x.png' => 87,
         ];
-        $fullPath = storage_path('app/public/' . $baseDir);
+        $fullPath = storage_path('app/public/'.$baseDir);
         if (! File::isDirectory($fullPath)) {
             File::makeDirectory($fullPath, 0755, true);
         }
         foreach ($sizes as $name => $size) {
-            $dest = $fullPath . '/' . $name;
+            $dest = $fullPath.'/'.$name;
             $this->resizeSquarePng($sourcePath, $dest, $size, $size);
         }
     }
@@ -86,12 +85,12 @@ class WalletAssetService
             'logo.png' => [160, 50],
             'logo@2x.png' => [320, 100],
         ];
-        $fullPath = storage_path('app/public/' . $baseDir);
+        $fullPath = storage_path('app/public/'.$baseDir);
         if (! File::isDirectory($fullPath)) {
             File::makeDirectory($fullPath, 0755, true);
         }
         foreach ($sizes as $name => $wH) {
-            $dest = $fullPath . '/' . $name;
+            $dest = $fullPath.'/'.$name;
             $this->resizeSquarePng($sourcePath, $dest, $wH[0], $wH[1]);
         }
     }

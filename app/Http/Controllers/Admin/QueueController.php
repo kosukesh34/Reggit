@@ -10,6 +10,7 @@ use App\Util\AdminStatusLabels;
 class QueueController extends AdminBaseController
 {
     private AdminQueueIndexUseCase $indexUseCase;
+
     private AdminQueueUpdateStatusUseCase $updateStatusUseCase;
 
     public function __construct(
@@ -39,6 +40,6 @@ class QueueController extends AdminBaseController
         $this->updateStatusUseCase->handle($id, $status);
 
         return redirect()->back()
-            ->with('success', 'ステータスを「' . AdminStatusLabels::queueStatusLabel($status) . '」に更新しました');
+            ->with('success', 'ステータスを「'.AdminStatusLabels::queueStatusLabel($status).'」に更新しました');
     }
 }

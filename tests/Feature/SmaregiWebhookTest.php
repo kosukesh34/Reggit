@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Enums\SmaregiEvent;
-use App\Models\SmaregiContract;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -47,7 +46,7 @@ class SmaregiWebhookTest extends TestCase
         $this->assertDatabaseMissing('smaregi_contracts', ['contract_id' => 'test_contract_002']);
     }
 
-    public function test_idp_契約IDがない場合は400を返すこと(): void
+    public function test_idp_契約_i_dがない場合は400を返すこと(): void
     {
         $response = $this->postJson('/api/smaregi/idp', [], [
             'smaregi-event' => SmaregiEvent::APP_SUBSCRIPTION,

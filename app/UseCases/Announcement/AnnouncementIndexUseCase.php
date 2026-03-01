@@ -11,9 +11,7 @@ use Illuminate\Http\Request;
 
 class AnnouncementIndexUseCase
 {
-    public function __construct(private UserService $userService)
-    {
-    }
+    public function __construct(private UserService $userService) {}
 
     public function handle(Request $request): AnnouncementIndexView
     {
@@ -42,6 +40,7 @@ class AnnouncementIndexUseCase
 
         $rows = $announcements->map(function (Announcement $announcement) use ($readAtByAnnouncement) {
             $readAt = $readAtByAnnouncement->get($announcement->id);
+
             return [
                 'id' => $announcement->id,
                 'title' => $announcement->title,

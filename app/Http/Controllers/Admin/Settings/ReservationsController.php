@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 class ReservationsController extends AdminBaseController
 {
     private GetReservationOnlySettingsUseCase $getReservationOnlySettingsUseCase;
+
     private UpdateReservationOnlySettingsUseCase $updateReservationOnlySettingsUseCase;
 
     public function __construct(

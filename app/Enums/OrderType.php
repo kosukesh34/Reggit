@@ -12,5 +12,6 @@ class OrderType extends EnumBase
     ];
 
     public const MOBILE = 'mobile';
+
     public const IN_STORE = 'in_store';
 }

@@ -33,7 +33,7 @@ class ShopSetting extends Model
             $query->withoutGlobalScopes();
         }
         $setting = $query->where('project_id', $projectId)->where('key', $key)->first();
-        
+
         if ($setting === null) {
             return $default;
         }
@@ -108,6 +108,7 @@ class ShopSetting extends Model
     public static function getLineThemeColors(?int $projectId = 1): array
     {
         $primary = self::getValue('line_primary_color', '#000000', $projectId);
+
         return [
             'primary' => $primary,
             'primary_rgb' => self::hexToRgb($primary),
@@ -126,6 +127,7 @@ class ShopSetting extends Model
         $r = (int) hexdec(substr($hex, 0, 2));
         $g = (int) hexdec(substr($hex, 2, 2));
         $b = (int) hexdec(substr($hex, 4, 2));
+
         return "{$r}, {$g}, {$b}";
     }
 
@@ -171,6 +173,7 @@ class ShopSetting extends Model
             return self::defaultFrontendMenuItems();
         }
         usort($merged, fn ($a, $b) => ($a['order'] ?? 999) <=> ($b['order'] ?? 999));
+
         return $merged;
     }
 
@@ -185,30 +188,30 @@ class ShopSetting extends Model
 
     /** 機能フラグのデフォルト値 */
     public const FEATURE_FLAGS = [
-        'feature_home_enabled'          => true,
-        'feature_orders_enabled'        => true,
-        'feature_reservations_enabled'  => true,
-        'feature_queue_enabled'         => true,
-        'feature_stamps_enabled'        => true,
-        'feature_coupons_enabled'       => true,
-        'feature_members_enabled'       => true,
+        'feature_home_enabled' => true,
+        'feature_orders_enabled' => true,
+        'feature_reservations_enabled' => true,
+        'feature_queue_enabled' => true,
+        'feature_stamps_enabled' => true,
+        'feature_coupons_enabled' => true,
+        'feature_members_enabled' => true,
         'feature_announcements_enabled' => true,
-        'feature_payments_enabled'      => true,
-        'feature_gallery_enabled'       => true,
+        'feature_payments_enabled' => true,
+        'feature_gallery_enabled' => true,
     ];
 
     /** 機能フラグの表示名 */
     public const FEATURE_FLAG_LABELS = [
-        'feature_home_enabled'          => 'ホーム',
-        'feature_orders_enabled'        => 'モバイルオーダー',
-        'feature_reservations_enabled'  => '予約',
-        'feature_queue_enabled'         => '順番待ち',
-        'feature_stamps_enabled'        => 'スタンプカード',
-        'feature_coupons_enabled'       => 'クーポン',
-        'feature_members_enabled'       => '会員管理',
+        'feature_home_enabled' => 'ホーム',
+        'feature_orders_enabled' => 'モバイルオーダー',
+        'feature_reservations_enabled' => '予約',
+        'feature_queue_enabled' => '順番待ち',
+        'feature_stamps_enabled' => 'スタンプカード',
+        'feature_coupons_enabled' => 'クーポン',
+        'feature_members_enabled' => '会員管理',
         'feature_announcements_enabled' => 'お知らせ',
-        'feature_payments_enabled'      => '決済（Stripe等）',
-        'feature_gallery_enabled'       => 'ギャラリー',
+        'feature_payments_enabled' => '決済（Stripe等）',
+        'feature_gallery_enabled' => 'ギャラリー',
     ];
 
     // ── LIFF ビルダー ──
@@ -216,9 +219,10 @@ class ShopSetting extends Model
     public static function getLiffBuilderBlocks(?int $projectId = null): array
     {
         $blocks = self::getValue('liff_builder_blocks', null, $projectId);
-        if (!is_array($blocks) || $blocks === []) {
+        if (! is_array($blocks) || $blocks === []) {
             return self::defaultLiffBuilderTemplates()[0]['blocks'];
         }
+
         return $blocks;
     }
 
@@ -391,9 +395,10 @@ class ShopSetting extends Model
     public static function getLiffTabLayouts(?int $projectId = null): array
     {
         $layouts = self::getValue('liff_tab_layouts', null, $projectId);
-        if (!is_array($layouts) || $layouts === []) {
+        if (! is_array($layouts) || $layouts === []) {
             return self::defaultLiffTabLayouts();
         }
+
         return $layouts;
     }
 
@@ -410,6 +415,7 @@ class ShopSetting extends Model
     public static function getLiffTabSettings(?int $projectId = null): array
     {
         $settings = self::getValue('liff_tab_settings', null, $projectId);
+
         return is_array($settings) && $settings !== [] ? $settings : self::defaultLiffTabSettings();
     }
 
@@ -565,6 +571,7 @@ class ShopSetting extends Model
             ['type' => 'banner', 'icon' => 'fa-mug-hot', 'text' => 'モーニング時間帯はドリンク50円OFF', 'color' => '#166534'],
             ['type' => 'data', 'source' => 'coupons'],
         ];
+
         return $layouts;
     }
 
@@ -588,6 +595,7 @@ class ShopSetting extends Model
             ['type' => 'banner', 'icon' => 'fa-users', 'text' => '呼び出し通知を受け取れます', 'color' => '#0f766e'],
             ['type' => 'data', 'source' => 'queue'],
         ];
+
         return $layouts;
     }
 
@@ -598,6 +606,7 @@ class ShopSetting extends Model
         foreach (self::FEATURE_FLAGS as $key => $default) {
             $flags[$key] = (bool) self::getValue($key, $default, $projectId);
         }
+
         return $flags;
     }
 
@@ -605,6 +614,7 @@ class ShopSetting extends Model
     public static function isFeatureEnabled(string $featureKey, ?int $projectId = null): bool
     {
         $default = self::FEATURE_FLAGS[$featureKey] ?? true;
+
         return (bool) self::getValue($featureKey, $default, $projectId);
     }
 
@@ -645,6 +655,7 @@ class ShopSetting extends Model
                 'required' => in_array($key, ['name', 'phone'], true),
             ];
         }
+
         return [
             'smaregi_fields' => $smaregi,
             'custom_fields' => [],
@@ -673,6 +684,7 @@ class ShopSetting extends Model
         $custom = isset($raw['custom_fields']) && is_array($raw['custom_fields'])
             ? $raw['custom_fields']
             : [];
+
         return [
             'smaregi_fields' => $smaregi,
             'custom_fields' => $custom,
@@ -785,6 +797,7 @@ class ShopSetting extends Model
     public static function getMemberCardDesign(?int $projectId = null): string
     {
         $v = self::getValue('member_card_design', 'default', $projectId);
+
         return in_array($v, ['default', 'logo_top', 'logo_center', 'logo_header', 'compact', 'split_banner', 'minimal_line', 'emblem'], true) ? $v : 'default';
     }
 
@@ -798,6 +811,7 @@ class ShopSetting extends Model
     public static function getMemberCardDisplayType(?int $projectId = null): string
     {
         $v = self::getValue('member_card_display_type', 'card', $projectId);
+
         return in_array($v, ['card', 'sheet'], true) ? $v : 'card';
     }
 
@@ -811,6 +825,7 @@ class ShopSetting extends Model
     public static function getMemberCardCodeType(?int $projectId = null): string
     {
         $v = self::getValue('member_card_code_type', 'barcode', $projectId);
+
         return in_array($v, ['barcode', 'qrcode'], true) ? $v : 'barcode';
     }
 
@@ -823,12 +838,12 @@ class ShopSetting extends Model
     public static function getMemberRankSettings(?int $projectId = null): array
     {
         $settings = self::getValue('member_rank_settings', null, $projectId);
-        if (!is_array($settings) || $settings === []) {
+        if (! is_array($settings) || $settings === []) {
             return self::defaultMemberRankSettings();
         }
         $normalized = [];
         foreach ($settings as $row) {
-            if (!is_array($row)) {
+            if (! is_array($row)) {
                 continue;
             }
             $key = $row['key'] ?? null;
@@ -850,6 +865,7 @@ class ShopSetting extends Model
             return self::defaultMemberRankSettings();
         }
         usort($normalized, fn ($a, $b) => ($a['min_points'] <=> $b['min_points']) ?: ($a['order'] <=> $b['order']));
+
         return $normalized;
     }
 
@@ -867,6 +883,7 @@ class ShopSetting extends Model
             ['key' => 'platinum', 'label' => 'プラチナ', 'min_points' => 10000, 'is_active' => true, 'icon_url' => null, 'stamp_background_url' => null, 'card_color' => '#e5e4e2', 'order' => 4],
         ];
     }
+
     public static function getAdminPrimaryColor(?int $projectId = null): ?string
     {
         return self::getValue('admin_primary_color', null, $projectId);
@@ -881,6 +898,7 @@ class ShopSetting extends Model
     public static function getWalletGoogleProgramLogoUrl(?int $projectId = null): ?string
     {
         $v = self::getValue('wallet_google_program_logo_url', null, $projectId);
+
         return is_string($v) && $v !== '' ? trim($v) : null;
     }
 
@@ -888,6 +906,7 @@ class ShopSetting extends Model
     public static function getWalletGoogleHeroImageUrl(?int $projectId = null): ?string
     {
         $v = self::getValue('wallet_google_hero_image_url', null, $projectId);
+
         return is_string($v) && $v !== '' ? trim($v) : null;
     }
 
@@ -910,14 +929,14 @@ class ShopSetting extends Model
     {
         $dayOfWeek = (int) date('w', strtotime($date));
         $closedDays = self::getClosedDays();
-        
+
         if (in_array($dayOfWeek, $closedDays, true)) {
             return false;
         }
 
         $dateStr = date('Y-m-d', strtotime($date));
         $closedDates = self::getClosedDates();
-        
+
         if (in_array($dateStr, $closedDates, true)) {
             return false;
         }

@@ -4,11 +4,11 @@ namespace App\Http\Controllers\Member;
 
 use App\Http\Controllers\Controller;
 use App\Services\UserService;
-use App\Util\AdminContext;
-use App\Util\StrHelper;
 use App\UseCases\Member\GoogleWallet\Data\GetGoogleWalletUrlInput;
 use App\UseCases\Member\GoogleWallet\Data\GetGoogleWalletUrlOutput;
 use App\UseCases\Member\GoogleWallet\GetGoogleWalletUrlUseCase;
+use App\Util\AdminContext;
+use App\Util\StrHelper;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -21,8 +21,7 @@ class GoogleWalletUrlController extends Controller
     public function __construct(
         private readonly GetGoogleWalletUrlUseCase $getGoogleWalletUrlUseCase,
         private readonly UserService $userService
-    ) {
-    }
+    ) {}
 
     public function __invoke(Request $request): Response
     {

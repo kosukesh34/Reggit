@@ -16,10 +16,15 @@ use Illuminate\Validation\Rule;
 class MemberController extends AdminBaseController
 {
     private AdminMemberListUseCase $listUseCase;
+
     private AdminMemberDetailUseCase $detailUseCase;
+
     private AdminMemberEditUseCase $editUseCase;
+
     private AdminMemberUpdateUseCase $updateUseCase;
+
     private AdminMemberIssueCouponUseCase $issueCouponUseCase;
+
     private AdminMemberAddStampsUseCase $addStampsUseCase;
 
     public function __construct(

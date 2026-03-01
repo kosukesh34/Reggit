@@ -10,9 +10,7 @@ use Illuminate\Http\Request;
 
 class CouponMyCouponsUseCase
 {
-    public function __construct(private UserService $userService)
-    {
-    }
+    public function __construct(private UserService $userService) {}
 
     public function handle(Request $request): CouponListView
     {
@@ -78,6 +76,7 @@ class CouponMyCouponsUseCase
                 return 'expired';
             }
         }
+
         return 'available';
     }
 
@@ -92,6 +91,7 @@ class CouponMyCouponsUseCase
         if (is_string($value)) {
             return $value;
         }
+
         return null;
     }
 }

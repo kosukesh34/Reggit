@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Log;
 class AdminLoginController extends Controller
 {
     private GetAdminDashboardRedirectUseCase $getDashboardRedirectUseCase;
+
     private AdminLoginUseCase $adminLoginUseCase;
 
     public function __construct(

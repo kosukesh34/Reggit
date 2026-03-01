@@ -9,9 +9,7 @@ use Illuminate\Http\Request;
 
 class MemberPointHistoryUseCase
 {
-    public function __construct(private UserService $userService)
-    {
-    }
+    public function __construct(private UserService $userService) {}
 
     public function handle(Request $request, int $perPage = 20): MemberPointHistoryOutput
     {

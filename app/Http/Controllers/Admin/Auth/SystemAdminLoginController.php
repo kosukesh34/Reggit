@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Auth;
 class SystemAdminLoginController extends Controller
 {
     private GetAdminDashboardRedirectUseCase $getDashboardRedirectUseCase;
+
     private SystemAdminLoginUseCase $systemAdminLoginUseCase;
 
     public function __construct(

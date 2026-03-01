@@ -13,9 +13,13 @@ use App\UseCases\Admin\Stamp\AdminStampUpdateUseCase;
 class StampController extends AdminBaseController
 {
     private AdminStampIndexUseCase $indexUseCase;
+
     private AdminStampStoreUseCase $storeUseCase;
+
     private AdminStampEditUseCase $editUseCase;
+
     private AdminStampUpdateUseCase $updateUseCase;
+
     private AdminStampDeleteUseCase $deleteUseCase;
 
     public function __construct(

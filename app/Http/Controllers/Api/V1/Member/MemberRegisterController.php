@@ -39,6 +39,7 @@ class MemberRegisterController extends BaseApiController
                 'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'error' => $e->getMessage(),
             ]);
+
             return $this->error($e->getMessage(), 400);
         }
     }

@@ -11,9 +11,7 @@ use Illuminate\Http\Request;
 
 class StampIndexUseCase
 {
-    public function __construct(private UserService $userService)
-    {
-    }
+    public function __construct(private UserService $userService) {}
 
     public function handle(Request $request): StampListView
     {
@@ -70,17 +68,17 @@ class StampIndexUseCase
         return new StampListView($stampCards, $defaultImageUrl, false);
     }
 
-    /** @param mixed $milestones
-     *  @return array<int, array{stamp_count: int, description: string}>
+    /**
+     * @return array<int, array{stamp_count: int, description: string}>
      */
     private function normalizeRewardMilestones(mixed $milestones): array
     {
-        if (!is_array($milestones)) {
+        if (! is_array($milestones)) {
             return [];
         }
         $normalized = [];
         foreach ($milestones as $milestone) {
-            if (!is_array($milestone)) {
+            if (! is_array($milestone)) {
                 continue;
             }
             $stampCount = (int) ($milestone['stamp_count'] ?? 0);
@@ -97,6 +95,7 @@ class StampIndexUseCase
             $normalized,
             static fn (array $a, array $b): int => (int) $a['stamp_count'] <=> (int) $b['stamp_count']
         );
+
         return $normalized;
     }
 }

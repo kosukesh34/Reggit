@@ -16,10 +16,15 @@ class SmaregiContractAction extends EnumBase
     ];
 
     public const START = 'start';
+
     public const END = 'end';
+
     public const CHANGE_PLAN = 'change-plan';
+
     public const CHANGE_OPTIONS = 'change-options';
+
     public const FORCE_STOP = 'force-stop';
+
     public const CANCEL_FORCE_STOP = 'cancel-force-stop';
 
     public static function isInactiveAction(string $action): bool
