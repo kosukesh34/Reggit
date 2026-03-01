@@ -243,7 +243,7 @@ class QueueMeUseCase
             }
         }
 
-        if (empty($params)) {
+        if (! is_array($params) || $params === []) {
             $query = str_contains($normalized, '?')
                 ? (string) parse_url($normalized, PHP_URL_QUERY)
                 : $normalized;

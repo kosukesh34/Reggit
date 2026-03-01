@@ -125,7 +125,7 @@ class LiffDesignerSanitizer
         $b['padding'] = self::num($row['padding'] ?? 0, 0, 48, 0);
         $b['margin_bottom'] = self::num($row['margin_bottom'] ?? 0, 0, 48, 0);
         $b['opacity'] = self::num($row['opacity'] ?? 100, 0, 100, 100);
-        $b['shadow'] = !empty($row['shadow']);
+        $b['shadow'] = (bool) ($row['shadow'] ?? false);
         $align = (string) ($row['text_align'] ?? 'left');
         $b['text_align'] = in_array($align, ['left', 'center', 'right'], true) ? $align : 'left';
         $bg = self::color($row['background_color'] ?? null);

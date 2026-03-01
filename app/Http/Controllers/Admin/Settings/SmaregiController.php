@@ -58,7 +58,7 @@ class SmaregiController extends AdminBaseController
                 $result['updated'],
                 $result['failed']
             );
-            if ($result['failed'] > 0 && !empty($result['errors'])) {
+            if ($result['failed'] > 0 && isset($result['errors']) && $result['errors'] !== []) {
                 $msg .= '。失敗詳細: ' . implode('; ', array_slice($result['errors'], 0, 5));
                 if (count($result['errors']) > 5) {
                     $msg .= ' …';
