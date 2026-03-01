@@ -38,6 +38,9 @@ class CouponsManager {
     async load() {
         const section = this.getSection();
         if (!section) return;
+        if (typeof window !== 'undefined' && window.__MOBILE_APP_MODE__ && !window.__LINE_USER_ID__ && window.app && window.app.memberManager) {
+            await window.app.memberManager.resolveLineUserIdForNativeApp();
+        }
         if (typeof window === 'undefined' || !window.__LINE_USER_ID__) {
             section.innerHTML = this.getLoginTemplate();
             return;

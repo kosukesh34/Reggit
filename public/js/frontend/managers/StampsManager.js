@@ -91,14 +91,39 @@ class StampsManager {
         return `<div class="stamp-slots stamp-slots--${layoutStyle || 'grid'}" role="img" aria-label="${current}/${required} スタンプ">${slots.join('')}</div>`;
     }
 
-    formatValidUntil(isoString) {
-        if (!isoString) return null;
-        const d = new Date(isoString);
-        const now = new Date();
-        if (d <= now) return null;
-        const days = Math.ceil((d - now) / (1000 * 60 * 60 * 24));
-        if (days <= 0) return null;
-        return days === 1 ? 'あと1日' : `あと${days}日`;
+    formatValidUntil(dateLike) {
+        if (!dateLike) return null;
+        const d = new Date(dateLike);
+        if (Number.isNaN(d.getTime())) return null;
+        return d.toLocaleDateString('ja-JP', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+        });
+    }
+
+    renderRewardMilestones(rewardMilestones, current) {
+        if (!Array.isArray(rewardMilestones) || rewardMilestones.length === 0) {
+            return '';
+        }
+        const items = rewardMilestones
+            .filter((m) => m && Number.parseInt(m.stamp_count, 10) > 0 && String(m.description || '').trim() !== '')
+            .sort((a, b) => Number(a.stamp_count) - Number(b.stamp_count))
+            .map((m) => {
+                const stampCount = Number.parseInt(m.stamp_count, 10);
+                const achieved = current >= stampCount;
+                return `
+                    <li class="stamp-card-milestone ${achieved ? 'stamp-card-milestone--achieved' : ''}">
+                        <span class="stamp-card-milestone-count">${stampCount}個</span>
+                        <span class="stamp-card-milestone-text">${DomHelper.escapeHtml(String(m.description))}</span>
+                    </li>
+                `;
+            })
+            .join('');
+        if (!items) {
+            return '';
+        }
+        return `<ul class="stamp-card-milestones">${items}</ul>`;
     }
 
     render(cards, defaultImage) {
@@ -122,7 +147,8 @@ class StampsManager {
                 const completed = !!card.completed_at;
                 const layoutStyle = card.layout_style || 'grid';
                 const imageUrl = card.image_url || defaultImage;
-                const validDaysLabel = this.formatValidUntil(card.member_stamp_valid_until);
+                const validUntilDate = this.formatValidUntil(card.member_stamp_valid_until || card.valid_until);
+                const rewardMilestones = Array.isArray(card.reward_milestones) ? card.reward_milestones : [];
                 return `
                     <div class="stamp-card-item stamp-card-item--layout-${layoutStyle} ${completed ? 'stamp-card-item--completed' : ''}">
                         ${imageUrl ? `<div class="stamp-card-image"><img src="${DomHelper.escapeHtml(imageUrl)}" alt="スタンプカード" loading="lazy" onerror="this.closest('.stamp-card-image').style.display='none'"></div>` : '<div class="stamp-card-image stamp-card-image--icon"><i class="fas fa-stamp" aria-hidden="true"></i></div>'}
@@ -133,9 +159,10 @@ class StampsManager {
                         ${this.renderSlots(current, required, layoutStyle)}
                         <div class="stamp-card-meta">
                             <p class="stamp-card-count">${current} / ${required} スタンプ</p>
-                            ${validDaysLabel ? `<p class="stamp-card-valid">${DomHelper.escapeHtml(validDaysLabel)}</p>` : ''}
+                            ${validUntilDate ? `<p class="stamp-card-valid">有効期限: ${DomHelper.escapeHtml(validUntilDate)}</p>` : ''}
                         </div>
                         ${layoutStyle !== 'minimal' ? `<div class="stamp-card-progress"><div class="stamp-card-progress-bar" style="width: ${progress}%"></div></div>` : ''}
+                        ${this.renderRewardMilestones(rewardMilestones, current)}
                         ${card.reward_description ? `<p class="stamp-card-reward">${DomHelper.escapeHtml(card.reward_description)}</p>` : ''}
                     </div>
                 `;

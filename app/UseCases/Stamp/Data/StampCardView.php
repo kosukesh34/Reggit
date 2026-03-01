@@ -10,6 +10,8 @@ class StampCardView
         public string $name,
         public int $requiredStamps,
         public ?string $rewardDescription,
+        /** @var array<int, array{stamp_count: int, description: string}> */
+        public array $rewardMilestones,
         public ?string $imageUrl,
         public int $currentStamps,
         public ?string $completedAt,
@@ -20,7 +22,7 @@ class StampCardView
     ) {
     }
 
-    /** @return array{id: int, name: string, required_stamps: int, reward_description: string|null, image_url: string|null, current_stamps: int, completed_at: string|null, layout_style: string, valid_days: int|null, valid_until: string|null, member_stamp_valid_until: string|null} */
+    /** @return array{id: int, name: string, required_stamps: int, reward_description: string|null, reward_milestones: array<int, array{stamp_count: int, description: string}>, image_url: string|null, current_stamps: int, completed_at: string|null, layout_style: string, valid_days: int|null, valid_until: string|null, member_stamp_valid_until: string|null} */
     public function toArray(): array
     {
         return [
@@ -28,6 +30,7 @@ class StampCardView
             'name' => $this->name,
             'required_stamps' => $this->requiredStamps,
             'reward_description' => $this->rewardDescription,
+            'reward_milestones' => $this->rewardMilestones,
             'image_url' => $this->imageUrl,
             'current_stamps' => $this->currentStamps,
             'completed_at' => $this->completedAt,
