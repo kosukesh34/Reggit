@@ -316,6 +316,14 @@ body.ld-is-dragging { user-select: none; }
 }
 .ld-modal__title { margin: 0; font-size: 16px; font-weight: 700; color: #111827; }
 .ld-modal__body { padding: 16px 18px 20px; }
+.ld-template-section { display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px; }
+.ld-template-section:last-child { margin-bottom: 0; }
+.ld-template-section__title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #334155;
+    letter-spacing: 0.03em;
+}
 .ld-template-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .ld-template-card {
     border: 1px solid #e5e7eb;
@@ -328,6 +336,19 @@ body.ld-is-dragging { user-select: none; }
 }
 .ld-template-card__name { font-size: 14px; font-weight: 700; color: #111827; }
 .ld-template-card__meta { font-size: 11px; color: #6b7280; }
+.ld-template-card__badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #dcfce7;
+    color: #166534;
+    border: 1px solid #86efac;
+    border-radius: 999px;
+    padding: 1px 7px;
+    font-size: 10px;
+    font-weight: 700;
+    margin-right: 4px;
+}
 .ld-template-card__preview {
     border-radius: 10px;
     border: 1px dashed #d1d5db;

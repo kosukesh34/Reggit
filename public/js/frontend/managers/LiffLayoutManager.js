@@ -34,19 +34,81 @@ class LiffLayoutManager {
      * タブ切替時にカスタムレイアウトを描画する。
      */
     render(tab) {
+        if (typeof window.__mobileOrderLog === 'function') window.__mobileOrderLog('LiffLayoutManager.render', { tab });
         const layouts = (typeof window !== 'undefined' && window.__LIFF_TAB_LAYOUTS__)
             ? window.__LIFF_TAB_LAYOUTS__
             : {};
         const blocks = layouts[tab];
-        if (!Array.isArray(blocks) || blocks.length === 0) return;
-
         const sectionId = tab + 'Section';
         const container = document.getElementById(sectionId);
-        if (!container) return;
+        if (!container) {
+            if (typeof window.__mobileOrderLog === 'function') window.__mobileOrderLog('LiffLayoutManager.render: no container', { sectionId });
+            return;
+        }
+        if (typeof window.__mobileOrderLog === 'function') window.__mobileOrderLog('LiffLayoutManager.render container found', { tab, hasBlocks: Array.isArray(blocks) && blocks.length > 0 });
+        if (!Array.isArray(blocks) || blocks.length === 0) {
+            this._loadDefaultTabContent(tab);
+            return;
+        }
         if (container.dataset.layoutRendered === '1') return;
         container.dataset.layoutRendered = '1';
 
         this.renderCustomLayout(container, tab, blocks);
+    }
+
+    _loadDefaultTabContent(tab) {
+        if (typeof window.__mobileOrderLog === 'function') window.__mobileOrderLog('_loadDefaultTabContent', { tab });
+        if (!this.app) return;
+        const sectionId = tab + 'Section';
+        const container = document.getElementById(sectionId);
+        // デフォルトレイアウト時も products タブには productsGrid が必要（Blade では空のためここで挿入）
+        if (tab === 'products' && container && !container.querySelector('#productsGrid')) {
+            container.innerHTML = `
+                <div class="category-tabs" id="categoryTabs">
+                    <button class="tab-btn active" data-category="all"><i class="fas fa-th-large"></i><span>すべて</span></button>
+                </div>
+                <div class="products-section"><div class="products-grid" id="productsGrid"></div></div>
+            `;
+        }
+        // ホームタブ: Blade の homeSection は空のため、プレースホルダを表示しつつお知らせを読み込む
+        if (tab === 'home' && container && !container.querySelector('.home-content')) {
+            container.innerHTML = `
+                <div class="home-content">
+                    <div class="loading home-loading"><i class="fas fa-spinner fa-spin"></i><p>お知らせを読み込み中...</p></div>
+                </div>
+            `;
+        }
+        const tabLoaders = {
+            home: () => {
+                this.app.announcementManager.load();
+                setTimeout(() => {
+                    const container = document.getElementById('homeSection');
+                    const loading = container && container.querySelector('.home-loading');
+                    if (!loading) return;
+                    const section = document.getElementById('announcementsSection');
+                    if (section && section.innerHTML.trim() !== '') {
+                        loading.outerHTML = '<p class="section-title" style="margin:0;padding:8px 0;"><i class="fas fa-bullhorn"></i> お知らせは上に表示されています</p>';
+                    } else {
+                        loading.innerHTML = '<p class="section-title" style="margin:0;"><i class="fas fa-bullhorn"></i> お知らせはありません</p>';
+                    }
+                }, 1200);
+            },
+            member: () => this.app.loadMemberTab(),
+            products: () => this.app.loadProducts(),
+            orders: () => this.app.loadOrdersTab(),
+            stamps: () => this.app.stampsManager.load(),
+            coupons: () => this.app.couponsManager.load(),
+            queue: () => this.app.queueManager.load(),
+            reservations: () => this.app.checkMembershipAndLoadReservations(),
+            gallery: () => this.app.galleryManager.load(),
+        };
+        const loader = tabLoaders[tab];
+        if (loader) {
+            if (typeof window.__mobileOrderLog === 'function') window.__mobileOrderLog('_loadDefaultTabContent run loader', { tab });
+            loader();
+        } else if (typeof window.__mobileOrderLog === 'function') {
+            window.__mobileOrderLog('_loadDefaultTabContent no loader', { tab });
+        }
     }
 
     /* ─── 定数 ─── */
@@ -296,7 +358,7 @@ class LiffLayoutManager {
                 this.app.checkMembershipAndLoadReservations();
                 return;
             }
-            if (source === 'member') {
+            if (source === 'member' || source === 'member_card') {
                 el.innerHTML += '<div class="member-section" id="memberSection"></div>';
                 this.app.loadMemberTab();
                 return;
