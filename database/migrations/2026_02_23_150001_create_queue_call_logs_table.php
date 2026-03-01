@@ -30,4 +30,3 @@ return new class extends Migration
         Schema::dropIfExists('queue_call_logs');
     }
 };
-

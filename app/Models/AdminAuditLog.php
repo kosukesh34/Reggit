@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
+use App\Util\StrHelper;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use App\Util\StrHelper;
 
 class AdminAuditLog extends Model
 {
@@ -46,7 +46,7 @@ class AdminAuditLog extends Model
     public function getActionLabel(): string
     {
         $payload = $this->payload;
-        if (is_array($payload) && !StrHelper::isEmptyStringOrNull($payload['event'] ?? null)) {
+        if (is_array($payload) && ! StrHelper::isEmptyStringOrNull($payload['event'] ?? null)) {
             return match ((string) $payload['event']) {
                 'login_success' => 'ログイン',
                 'logout' => 'ログアウト',
@@ -66,13 +66,13 @@ class AdminAuditLog extends Model
         }
 
         if (str_ends_with($route, '.store')) {
-            return self::routeSegmentToLabel($route, 'store') . 'を作成';
+            return self::routeSegmentToLabel($route, 'store').'を作成';
         }
         if (str_ends_with($route, '.update')) {
-            return self::routeSegmentToLabel($route, 'update') . 'を更新';
+            return self::routeSegmentToLabel($route, 'update').'を更新';
         }
         if (str_ends_with($route, '.destroy') || str_ends_with($route, '.delete')) {
-            return self::routeSegmentToLabel($route, 'destroy') . 'を削除';
+            return self::routeSegmentToLabel($route, 'destroy').'を削除';
         }
         if (str_ends_with($route, '.revoke')) {
             return 'APIトークンを失効';
@@ -94,6 +94,7 @@ class AdminAuditLog extends Model
     {
         $segments = explode('.', $route);
         $resource = $segments[count($segments) - 2] ?? 'データ';
+
         return self::RESOURCE_LABELS[$resource] ?? $resource;
     }
 

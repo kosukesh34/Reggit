@@ -3,7 +3,6 @@
 namespace App\Console\Commands;
 
 use App\Models\Member;
-use App\Models\ShopSetting;
 use App\Services\Smaregi\SmaregiApiService;
 use Illuminate\Console\Command;
 
@@ -34,12 +33,13 @@ class MembersDeleteAllCommand extends Command
 
         if ($smaregiAll) {
             $msg = "プロジェクト ID {$projectId} の会員をリセットします。";
-            $msg .= " スマレジ連携時は契約内の全会員をPOS側から削除し、続けてDBの会員をすべて削除します。";
+            $msg .= ' スマレジ連携時は契約内の全会員をPOS側から削除し、続けてDBの会員をすべて削除します。';
             if ($count > 0) {
                 $msg .= " DB会員: {$count} 件。";
             }
-            if (! $force && ! $this->confirm($msg . ' よろしいですか？', false)) {
+            if (! $force && ! $this->confirm($msg.' よろしいですか？', false)) {
                 $this->info('中止しました。');
+
                 return self::SUCCESS;
             }
 
@@ -52,18 +52,21 @@ class MembersDeleteAllCommand extends Command
             Member::where('project_id', $projectId)->forceDelete();
             $this->info("会員を削除しました。（DB: {$count} 件）");
             if ($contractId !== '') {
-                $this->line("  スマレジ削除: 成功 {$smaregiOk} 件" . ($smaregiFail > 0 ? " / 失敗 {$smaregiFail} 件" : ''));
+                $this->line("  スマレジ削除: 成功 {$smaregiOk} 件".($smaregiFail > 0 ? " / 失敗 {$smaregiFail} 件" : ''));
             }
+
             return self::SUCCESS;
         }
 
         if ($count === 0) {
             $this->info("プロジェクト ID {$projectId} の会員は0件です。");
+
             return self::SUCCESS;
         }
 
         if (! $force && ! $this->confirm("プロジェクト ID {$projectId} の会員を {$count} 件すべて削除します。よろしいですか？", false)) {
             $this->info('中止しました。');
+
             return self::SUCCESS;
         }
 
@@ -87,7 +90,7 @@ class MembersDeleteAllCommand extends Command
 
         $this->info("会員 {$count} 件を削除しました。");
         if ($contractId !== '') {
-            $this->line("  スマレジ削除: 成功 {$smaregiOk} 件" . ($smaregiFail > 0 ? " / 失敗 {$smaregiFail} 件" : ''));
+            $this->line("  スマレジ削除: 成功 {$smaregiOk} 件".($smaregiFail > 0 ? " / 失敗 {$smaregiFail} 件" : ''));
         }
 
         return self::SUCCESS;

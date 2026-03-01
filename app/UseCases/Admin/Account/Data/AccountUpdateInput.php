@@ -5,9 +5,9 @@ namespace App\UseCases\Admin\Account\Data;
 /**
  * アカウント更新 UseCase への入力。検証済み。不変。
  *
- * @param array<string, string|int|float|bool|array|null> $accountPayload 検証済みアカウント項目（login_id, name, role 等）
- * @param array<int, int> $projectIds
- * @param array<int, string> $permissions
+ * @param  array<string, string|int|float|bool|array|null>  $accountPayload  検証済みアカウント項目（login_id, name, role 等）
+ * @param  array<int, int>  $projectIds
+ * @param  array<int, string>  $permissions
  */
 class AccountUpdateInput
 {
@@ -17,6 +17,5 @@ class AccountUpdateInput
         public array $permissions,
         public ?string $password,
         public bool $passwordFilled
-    ) {
-    }
+    ) {}
 }

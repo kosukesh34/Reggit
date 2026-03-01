@@ -25,8 +25,7 @@ class MemberController extends BaseApiController
         private MemberAddPointsUseCase $addPointsUseCase,
         private UserService $userService,
         private MemberService $memberService
-    ) {
-    }
+    ) {}
 
     public function me(Request $request)
     {
@@ -35,7 +34,7 @@ class MemberController extends BaseApiController
 
             return $this->success(['member' => $dto->toArray()]);
         } catch (\Exception $e) {
-            Log::error('Failed to get member data: ' . $e->getMessage());
+            Log::error('Failed to get member data: '.$e->getMessage());
 
             return $this->error('認証が必要です', 401);
         }
@@ -59,7 +58,7 @@ class MemberController extends BaseApiController
         } catch (\Illuminate\Validation\ValidationException $e) {
             throw $e;
         } catch (\Exception $e) {
-            Log::error('Member profile update error: ' . $e->getMessage());
+            Log::error('Member profile update error: '.$e->getMessage());
 
             return $this->error($e->getMessage(), 400);
         }
@@ -81,7 +80,7 @@ class MemberController extends BaseApiController
         } catch (\Illuminate\Validation\ValidationException $e) {
             throw $e;
         } catch (\Exception $e) {
-            Log::error('Member registration error: ' . $e->getMessage());
+            Log::error('Member registration error: '.$e->getMessage());
 
             return $this->error($e->getMessage(), 400);
         }
@@ -100,7 +99,7 @@ class MemberController extends BaseApiController
                 'transactions' => $output->transactions->toArray(),
             ]);
         } catch (\Exception $e) {
-            Log::error('Failed to get points: ' . $e->getMessage());
+            Log::error('Failed to get points: '.$e->getMessage());
 
             return $this->error('ポイント情報の取得に失敗しました', 500);
         }
@@ -127,7 +126,7 @@ class MemberController extends BaseApiController
                 'points' => $output->points,
             ], 'ポイントが追加されました');
         } catch (\Exception $e) {
-            Log::error('Failed to add points: ' . $e->getMessage());
+            Log::error('Failed to add points: '.$e->getMessage());
 
             return $this->error('ポイントの追加に失敗しました', 500);
         }

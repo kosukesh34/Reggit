@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('gallery_items', function (Blueprint $table) {
-            if (!Schema::hasColumn('gallery_items', 'size')) {
+            if (! Schema::hasColumn('gallery_items', 'size')) {
                 $table->string('size', 20)->default('medium')->after('description');
             }
         });

@@ -8,6 +8,5 @@ class ApiTokenIssuedOutput
     public function __construct(
         public string $plain,
         public int $tokenId
-    ) {
-    }
+    ) {}
 }

@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 class StoreLoginController extends Controller
 {
     private GetAdminDashboardRedirectUseCase $getDashboardRedirectUseCase;
+
     private AdminLoginUseCase $adminLoginUseCase;
 
     public function __construct(

@@ -10,9 +10,7 @@ use App\UseCases\Payment\Data\PaymentConfirmOutput;
 
 class PaymentConfirmUseCase
 {
-    public function __construct(private PaymentGateway $gateway)
-    {
-    }
+    public function __construct(private PaymentGateway $gateway) {}
 
     public function handle(string $paymentIntentId, int $orderId): PaymentConfirmOutput
     {

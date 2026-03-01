@@ -16,8 +16,7 @@ class MemberService
     public function __construct(
         private CouponIssueService $couponIssueService,
         private SmaregiApiService $smaregiApi,
-    ) {
-    }
+    ) {}
 
     public function getMemberData(User $user): array
     {
@@ -101,7 +100,7 @@ class MemberService
             }
             if (isset($stringMax[$key])) {
                 $rule[] = 'string';
-                $rule[] = 'max:' . $stringMax[$key];
+                $rule[] = 'max:'.$stringMax[$key];
             }
             $rules[$key] = $rule;
         }
@@ -112,6 +111,7 @@ class MemberService
             }
             $rules[$key] = (bool) ($cf['required'] ?? false) === true ? ['required', 'string', 'max:500'] : ['nullable', 'string', 'max:500'];
         }
+
         return $rules;
     }
 
@@ -136,6 +136,7 @@ class MemberService
                 'required' => (bool) ($cf['required'] ?? false) === true,
             ];
         }
+
         return $out;
     }
 
@@ -161,6 +162,7 @@ class MemberService
                 $profile[$k] = $v;
             }
         }
+
         return $profile;
     }
 
@@ -261,6 +263,7 @@ class MemberService
         if (array_key_exists('phone', $data)) {
             $body['phoneNumber'] = trim((string) $data['phone']);
         }
+
         return $body;
     }
 
@@ -275,6 +278,7 @@ class MemberService
                 $out[$key] = $data[$key];
             }
         }
+
         return $out;
     }
 
@@ -375,6 +379,7 @@ class MemberService
         if ($phone !== '') {
             $body['phoneNumber'] = $phone;
         }
+
         return $body;
     }
 
@@ -499,16 +504,18 @@ class MemberService
                     if ($prefix !== '' && str_starts_with($num, $prefix)) {
                         $num = substr($num, strlen($prefix));
                     }
+
                     return ctype_digit($num) ? (int) $num : 0;
                 })
                 ->max();
             $next = max($next, ($maxExisting ?? 0) + 1);
             \App\Models\ShopSetting::setMemberCodeNextNumber($next + 1, $projectId);
-            $body = sprintf('%0' . $bodyLen . 'd', $next);
+            $body = sprintf('%0'.$bodyLen.'d', $next);
             if (strlen($body) > $bodyLen) {
                 $body = substr($body, -$bodyLen);
             }
-            $candidate = $prefix . $body;
+            $candidate = $prefix.$body;
+
             return strlen($candidate) <= 20 ? $candidate : substr($candidate, 0, 20);
         }
 
@@ -520,16 +527,16 @@ class MemberService
             for ($j = 0; $j < $bodyLen; $j++) {
                 $body .= $chars[random_int(0, $charLen - 1)];
             }
-            $candidate = $prefix . $body;
+            $candidate = $prefix.$body;
             if (strlen($candidate) > 20) {
                 $candidate = substr($candidate, 0, 20);
             }
             $exists = Member::where('project_id', $projectId)->where('member_number', $candidate)->exists();
-            if (!$exists) {
+            if (! $exists) {
                 return $candidate;
             }
         }
 
-        return $prefix . sprintf('%0' . $bodyLen . 'd', (time() + random_int(0, 9999)) % (10 ** $bodyLen));
+        return $prefix.sprintf('%0'.$bodyLen.'d', (time() + random_int(0, 9999)) % (10 ** $bodyLen));
     }
 }

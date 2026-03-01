@@ -46,7 +46,7 @@ class GoogleWalletLoyaltyPayloadBuilder
         $logoImage = [
             'sourceUri' => ['uri' => $params['programLogoUri']],
             'contentDescription' => [
-                'defaultValue' => ['language' => $lang, 'value' => $params['programName'] . ' logo'],
+                'defaultValue' => ['language' => $lang, 'value' => $params['programName'].' logo'],
             ],
         ];
         $class = [
@@ -132,7 +132,7 @@ class GoogleWalletLoyaltyPayloadBuilder
             'heroImage' => [
                 'sourceUri' => ['uri' => $params['heroImageUri']],
                 'contentDescription' => [
-                    'defaultValue' => ['language' => $lang, 'value' => $params['programName'] . ' card'],
+                    'defaultValue' => ['language' => $lang, 'value' => $params['programName'].' card'],
                 ],
             ],
         ];
@@ -154,7 +154,7 @@ class GoogleWalletLoyaltyPayloadBuilder
         $textModules[] = [
             'id' => 'points',
             'header' => GoogleWalletApi::LABEL_POINTS,
-            'body' => $pointsStr . ' pt' . ($rankLabel !== '' ? ' · ' . $rankLabel : ''),
+            'body' => $pointsStr.' pt'.($rankLabel !== '' ? ' · '.$rankLabel : ''),
         ];
         $textModules[] = [
             'id' => 'member_info',

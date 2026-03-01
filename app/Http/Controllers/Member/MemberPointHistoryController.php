@@ -12,8 +12,7 @@ class MemberPointHistoryController extends Controller
 {
     public function __construct(
         private MemberPointHistoryUseCase $pointHistoryUseCase
-    ) {
-    }
+    ) {}
 
     public function __invoke(Request $request)
     {
@@ -51,6 +50,7 @@ class MemberPointHistoryController extends Controller
                 'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'error' => $e->getMessage(),
             ]);
+
             return response()->json(['error' => 'ポイント履歴の取得に失敗しました'], 500);
         }
     }

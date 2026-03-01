@@ -9,6 +9,5 @@ class AdminMemberListOutput
 {
     public function __construct(
         public LengthAwarePaginator $members
-    ) {
-    }
+    ) {}
 }

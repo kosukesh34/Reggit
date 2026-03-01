@@ -12,8 +12,7 @@ class QueueQrStatusController extends Controller
 {
     public function __construct(
         private QueueQrStatusUseCase $qrStatusUseCase
-    ) {
-    }
+    ) {}
 
     public function __invoke(Request $request, string $token)
     {
@@ -22,6 +21,7 @@ class QueueQrStatusController extends Controller
             if ($dto === null) {
                 return response()->json(['error' => '対象が見つかりません。'], 404);
             }
+
             return response()->json([
                 'updated_at' => now()->toIso8601String(),
                 'queue_entry' => $dto->toArray(),
@@ -31,12 +31,14 @@ class QueueQrStatusController extends Controller
                 'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'error' => $e->getMessage(),
             ]);
+
             return response()->json(['error' => $e->getMessage()], 403);
         } catch (\Exception $e) {
             LogHelper::error('[Queue] qr status failed', [
                 'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'error' => $e->getMessage(),
             ]);
+
             return response()->json(['error' => '取得に失敗しました'], 500);
         }
     }

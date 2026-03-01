@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 class ProfileController extends AdminBaseController
 {
     private GetProfileSettingsUseCase $getProfileSettingsUseCase;
+
     private UpdateProfileSettingsUseCase $updateProfileSettingsUseCase;
 
     public function __construct(

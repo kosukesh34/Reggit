@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use App\Models\Concerns\BelongsToProject;
 use App\Enums\ReservationStatus;
+use App\Models\Concerns\BelongsToProject;
 use Database\Factories\ReservationFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -49,7 +49,7 @@ class Reservation extends Model
 
         static::creating(function ($reservation) {
             if ($reservation->reservation_number === null || $reservation->reservation_number === '') {
-                $reservation->reservation_number = 'RES-' . date('Ymd') . '-' . strtoupper(uniqid());
+                $reservation->reservation_number = 'RES-'.date('Ymd').'-'.strtoupper(uniqid());
             }
             if ($reservation->status === null || $reservation->status === '') {
                 $reservation->status = ReservationStatus::PENDING;
@@ -74,7 +74,7 @@ class Reservation extends Model
 
     public function canCancel(): bool
     {
-        return $this->status !== ReservationStatus::CANCELLED 
+        return $this->status !== ReservationStatus::CANCELLED
             && $this->status !== ReservationStatus::COMPLETED;
     }
 

@@ -78,7 +78,7 @@ return new class extends Migration
         ];
 
         foreach ($indexes as $table => $idxNames) {
-            if (!Schema::hasTable($table)) {
+            if (! Schema::hasTable($table)) {
                 continue;
             }
             Schema::table($table, function (Blueprint $t) use ($idxNames) {
@@ -95,7 +95,7 @@ return new class extends Migration
 
     private function addIndexSafely(string $table, array $columns, string $indexName): void
     {
-        if (!Schema::hasTable($table)) {
+        if (! Schema::hasTable($table)) {
             return;
         }
 

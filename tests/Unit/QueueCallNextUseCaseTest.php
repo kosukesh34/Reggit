@@ -5,9 +5,9 @@ namespace Tests\Unit;
 use App\Enums\QueueStatus;
 use App\Models\Project;
 use App\Models\QueueEntry;
+use App\UseCases\Queue\Dto\QueueEntryDtoFactory;
 use App\UseCases\Queue\QueueCallNextUseCase;
 use App\UseCases\Queue\QueueStatsService;
-use App\UseCases\Queue\Dto\QueueEntryDtoFactory;
 use App\Util\AdminContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -16,7 +16,7 @@ class QueueCallNextUseCaseTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_callNext_現在のプロジェクトの待ち合わせのみ対象になること(): void
+    public function test_call_next_現在のプロジェクトの待ち合わせのみ対象になること(): void
     {
         $project = Project::firstOrCreate(
             ['project_key' => 'default'],
@@ -41,7 +41,7 @@ class QueueCallNextUseCaseTest extends TestCase
         ]);
 
         AdminContext::setCurrentProject($project);
-        $useCase = new QueueCallNextUseCase(new QueueStatsService(), new QueueEntryDtoFactory());
+        $useCase = new QueueCallNextUseCase(new QueueStatsService, new QueueEntryDtoFactory);
         $result = $useCase->handle();
 
         $this->assertNotNull($result);

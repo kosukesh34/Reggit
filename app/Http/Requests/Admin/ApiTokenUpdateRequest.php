@@ -29,7 +29,7 @@ class ApiTokenUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'required|string|max:' . self::NAME_MAX_LENGTH,
+            'name' => 'required|string|max:'.self::NAME_MAX_LENGTH,
             'expires_at' => 'nullable|date',
             'is_active' => 'nullable|boolean',
         ];

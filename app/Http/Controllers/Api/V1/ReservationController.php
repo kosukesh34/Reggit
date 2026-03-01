@@ -16,9 +16,13 @@ use Illuminate\Support\Facades\Log;
 class ReservationController extends BaseApiController
 {
     private ReservationIndexUseCase $indexUseCase;
+
     private ReservationAvailableDatesUseCase $availableDatesUseCase;
+
     private ReservationStoreUseCase $storeUseCase;
+
     private ReservationUpdateUseCase $updateUseCase;
+
     private ReservationCancelUseCase $cancelUseCase;
 
     public function __construct(
@@ -47,7 +51,7 @@ class ReservationController extends BaseApiController
 
             return $this->success(['reservations' => $reservations]);
         } catch (\Exception $e) {
-            Log::error('Failed to get reservations: ' . $e->getMessage());
+            Log::error('Failed to get reservations: '.$e->getMessage());
 
             return $this->error('予約の取得に失敗しました', 500);
         }
@@ -69,7 +73,7 @@ class ReservationController extends BaseApiController
                 'end_date' => $result->endDate,
             ]);
         } catch (\Exception $e) {
-            Log::error('Failed to get available dates: ' . $e->getMessage());
+            Log::error('Failed to get available dates: '.$e->getMessage());
 
             return $this->error('利用可能日の取得に失敗しました', 500);
         }
@@ -102,7 +106,7 @@ class ReservationController extends BaseApiController
                 201
             );
         } catch (\Exception $e) {
-            Log::error('Reservation creation failed: ' . $e->getMessage());
+            Log::error('Reservation creation failed: '.$e->getMessage());
 
             return $this->error('予約に失敗しました', 400);
         }
@@ -134,7 +138,7 @@ class ReservationController extends BaseApiController
                 '予約を更新しました'
             );
         } catch (\Exception $e) {
-            Log::error('Reservation update failed: ' . $e->getMessage());
+            Log::error('Reservation update failed: '.$e->getMessage());
 
             return $this->error($e->getMessage(), 400);
         }
@@ -153,7 +157,7 @@ class ReservationController extends BaseApiController
                 '予約をキャンセルしました'
             );
         } catch (\Exception $e) {
-            Log::error('Reservation cancellation failed: ' . $e->getMessage());
+            Log::error('Reservation cancellation failed: '.$e->getMessage());
 
             return $this->error($e->getMessage(), 400);
         }

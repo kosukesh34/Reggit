@@ -7,12 +7,15 @@ use App\UseCases\Payment\PaymentGateway;
 class FakePaymentGateway implements PaymentGateway
 {
     public array $created = [];
+
     public array $intent = [];
+
     public array $event = [];
 
     public function createPaymentIntent(int $amount, ?int $orderId): array
     {
         $this->created = ['amount' => $amount, 'order_id' => $orderId];
+
         return [
             'client_secret' => 'cs_test_123',
             'id' => 'pi_test_123',
