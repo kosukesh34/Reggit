@@ -1086,13 +1086,16 @@ class LiffDesigner {
 
     openTemplateModal() {
         const templates = this.templates || [];
-        if (templates.length === 0) {
+        const tabTemplates = templates.filter(tpl => Array.isArray(tpl && tpl.blocks));
+        const superPatterns = templates.filter(tpl => tpl && tpl.scope === 'all_tabs' && tpl.layouts && typeof tpl.layouts === 'object');
+
+        if (tabTemplates.length === 0 && superPatterns.length === 0) {
             alert('利用可能なテンプレートがありません。');
             return;
         }
         const modal = document.createElement('div');
         modal.className = 'ld-modal';
-        const cards = templates.map((tpl, index) => {
+        const tabCards = tabTemplates.map((tpl, index) => {
             const blocks = Array.isArray(tpl.blocks) ? tpl.blocks : [];
             return (
                 '<div class="ld-template-card">' +
@@ -1109,6 +1112,27 @@ class LiffDesigner {
                 '</div>'
             );
         }).join('');
+        const superCards = superPatterns.map((tpl, index) => (
+            '<div class="ld-template-card">' +
+                '<div>' +
+                    '<div class="ld-template-card__name"><span class="ld-template-card__badge">SUPER</span> ' + this.esc(tpl.name || ('パターン' + (index + 1))) + '</div>' +
+                    '<div class="ld-template-card__meta">' + this.esc(tpl.description || '全タブに統一デザインを適用します。') + '</div>' +
+                '</div>' +
+                '<div class="ld-template-card__preview">' +
+                    '<span class="ld-template-card__line wide"></span>' +
+                    '<span class="ld-template-card__line mid"></span>' +
+                    '<span class="ld-template-card__line short"></span>' +
+                '</div>' +
+                '<button type="button" class="ld-btn ld-btn--outline ld-btn--block" data-super-index="' + index + '">全タブに適用</button>' +
+            '</div>'
+        )).join('');
+
+        const tabSection = tabCards
+            ? '<div class="ld-template-section"><div class="ld-template-section__title">タブ用テンプレート</div><div class="ld-template-grid">' + tabCards + '</div></div>'
+            : '';
+        const superSection = superCards
+            ? '<div class="ld-template-section"><div class="ld-template-section__title">スーパターン（全タブ一括）</div><div class="ld-template-grid">' + superCards + '</div></div>'
+            : '';
 
         modal.innerHTML =
             '<div class="ld-modal__dialog">' +
@@ -1116,24 +1140,64 @@ class LiffDesigner {
                     '<h3 class="ld-modal__title"><i class="fas fa-layer-group"></i> テンプレートを適用</h3>' +
                     '<button type="button" class="ld-btn ld-btn--ghost" data-close-modal><i class="fas fa-times"></i></button>' +
                 '</div>' +
-                '<div class="ld-modal__body"><div class="ld-template-grid">' + cards + '</div></div>' +
+                '<div class="ld-modal__body">' + superSection + tabSection + '</div>' +
             '</div>';
 
         modal.addEventListener('click', (e) => {
             if (e.target === modal || e.target.closest('[data-close-modal]')) modal.remove();
             const applyBtn = e.target.closest('[data-template-index]');
-            if (!applyBtn) return;
-            const idx = parseInt(applyBtn.dataset.templateIndex || '-1', 10);
-            const tpl = templates[idx];
-            if (!tpl || !Array.isArray(tpl.blocks)) return;
-            this.state.layouts[this.state.activeTab] = tpl.blocks.map(item => this.normalizeBlock(item));
-            this.state.selectedId = null;
-            this.pushHistory();
-            this.render();
+            if (applyBtn) {
+                const idx = parseInt(applyBtn.dataset.templateIndex || '-1', 10);
+                const tpl = tabTemplates[idx];
+                if (!tpl || !Array.isArray(tpl.blocks)) return;
+                this.state.layouts[this.state.activeTab] = tpl.blocks.map(item => this.normalizeBlock(item));
+                this.state.selectedId = null;
+                this.pushHistory();
+                this.render();
+                modal.remove();
+                return;
+            }
+            const superBtn = e.target.closest('[data-super-index]');
+            if (!superBtn) return;
+            const idx = parseInt(superBtn.dataset.superIndex || '-1', 10);
+            const pattern = superPatterns[idx];
+            if (!pattern || !pattern.layouts || typeof pattern.layouts !== 'object') return;
+            this.applySuperPattern(pattern);
             modal.remove();
         });
 
         document.body.appendChild(modal);
+    }
+
+    applySuperPattern(pattern) {
+        if (!confirm('現在の全タブレイアウトを上書きします。適用しますか？')) {
+            return;
+        }
+
+        const nextLayouts = {};
+        Object.keys(this.TAB_LABELS).forEach(key => {
+            const rows = Array.isArray(pattern.layouts[key]) ? pattern.layouts[key] : [];
+            nextLayouts[key] = rows.map(item => this.normalizeBlock(item || {}));
+        });
+        this.state.layouts = nextLayouts;
+
+        if (pattern.tab_settings && typeof pattern.tab_settings === 'object') {
+            Object.keys(this.TAB_LABELS).forEach(key => {
+                const src = pattern.tab_settings[key];
+                if (src && typeof src === 'object') {
+                    this.state.tabSettings[key] = { ...this.state.tabSettings[key], ...src };
+                }
+            });
+        }
+        if (typeof pattern.custom_css === 'string' && this.els.customCssEditor) {
+            this.els.customCssEditor.value = pattern.custom_css;
+            this.applyCustomCssPreview();
+        }
+
+        this.state.activeTab = 'home';
+        this.state.selectedId = null;
+        this.pushHistory();
+        this.render();
     }
 
     exportJson() {

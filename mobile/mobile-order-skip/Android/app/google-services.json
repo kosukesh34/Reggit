@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "456098361001",
+    "project_id": "reggit-dbb5a",
+    "storage_bucket": "reggit-dbb5a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:456098361001:android:49c45e4c96b6580b7e03b8",
+        "android_client_info": {
+          "package_name": "jp.reggit.com"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAII_cW4496zQcq_6cssWuNcbNmHDfZL80"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

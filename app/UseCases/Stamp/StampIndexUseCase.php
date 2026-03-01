@@ -56,6 +56,7 @@ class StampIndexUseCase
                 (string) $card->name,
                 (int) $card->required_stamps,
                 $card->reward_description,
+                $this->normalizeRewardMilestones($card->reward_milestones),
                 $card->image_url,
                 $memberStamp ? (int) $memberStamp->current_stamps : 0,
                 $completedAt,
@@ -67,5 +68,35 @@ class StampIndexUseCase
         })->all();
 
         return new StampListView($stampCards, $defaultImageUrl, false);
+    }
+
+    /** @param mixed $milestones
+     *  @return array<int, array{stamp_count: int, description: string}>
+     */
+    private function normalizeRewardMilestones(mixed $milestones): array
+    {
+        if (!is_array($milestones)) {
+            return [];
+        }
+        $normalized = [];
+        foreach ($milestones as $milestone) {
+            if (!is_array($milestone)) {
+                continue;
+            }
+            $stampCount = (int) ($milestone['stamp_count'] ?? 0);
+            $description = trim((string) ($milestone['description'] ?? ''));
+            if ($stampCount <= 0 || $description === '') {
+                continue;
+            }
+            $normalized[] = [
+                'stamp_count' => $stampCount,
+                'description' => $description,
+            ];
+        }
+        usort(
+            $normalized,
+            static fn (array $a, array $b): int => (int) $a['stamp_count'] <=> (int) $b['stamp_count']
+        );
+        return $normalized;
     }
 }
