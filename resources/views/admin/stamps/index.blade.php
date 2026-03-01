@@ -43,7 +43,21 @@
                 <tr>
                     <td>{{ $card->name }}</td>
                     <td>{{ $card->required_stamps }}個</td>
-                    <td>{{ $card->reward_description ?? '—' }}</td>
+                    <td>
+                        @php($milestones = is_array($card->reward_milestones ?? null) ? $card->reward_milestones : [])
+                        @if($milestones !== [])
+                            @foreach($milestones as $milestone)
+                                @if(is_array($milestone) && !empty($milestone['stamp_count']) && !empty($milestone['description']))
+                                    <div>{{ $milestone['stamp_count'] }}個: {{ $milestone['description'] }}</div>
+                                @endif
+                            @endforeach
+                            @if($card->reward_description)
+                                <div class="text-muted">補足: {{ $card->reward_description }}</div>
+                            @endif
+                        @else
+                            {{ $card->reward_description ?? '—' }}
+                        @endif
+                    </td>
                     <td><span class="badge badge-{{ $card->is_active ? 'success' : 'danger' }}">{{ $card->is_active ? '有効' : '無効' }}</span></td>
                     <td class="table-actions-cell">
                         <div class="table-actions">

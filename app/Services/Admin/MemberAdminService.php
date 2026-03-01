@@ -167,12 +167,24 @@ class MemberAdminService
         $contractId = ShopSetting::getValue('smaregi_contract_id', null, $member->project_id);
         $contractId = is_string($contractId) ? trim($contractId) : '';
         if ($contractId !== '' && $smaregiCustomerId !== '' && $updateUser !== [] && $user !== null) {
+            $clientId = config('smaregi.client_id');
+            $clientSecret = config('smaregi.client_secret');
+            if (!is_string($clientId) || $clientId === '' || !is_string($clientSecret) || $clientSecret === '') {
+                throw new \Exception(
+                    'スマレジの認証情報がアプリに読み込まれていません。'
+                    . ' .env の SMAREGI_CLIENT_ID と SMAREGI_CLIENT_SECRET を確認してください。'
+                    . ' Docker 利用時はコンテナに環境変数が渡るように（env_file や environment）設定してください。'
+                );
+            }
             $merged = array_merge($user->only(['name', 'kana', 'email', 'phone']), $updateUser);
             $body = $this->buildSmaregiUpdateBody($merged);
             if ($body !== []) {
                 $result = $this->smaregiApi->updateCustomer($contractId, $smaregiCustomerId, $body);
                 if ($result === null) {
-                    throw new \Exception('スマレジの会員情報更新に失敗しました。storage/logs/laravel.log の [Smaregi] を参照してください。');
+                    throw new \Exception(
+                        'スマレジの会員情報更新に失敗しました。'
+                        . ' 詳細は storage/logs/laravel.log の [Smaregi] を参照してください。'
+                    );
                 }
             }
         }
@@ -210,11 +222,13 @@ class MemberAdminService
             $body['lastKana'] = $kanaParts[0] ?? $kana;
             $body['firstKana'] = $kanaParts[1] ?? '';
         }
-        if (array_key_exists('email', $userFields)) {
-            $body['mailAddress'] = trim((string) $userFields['email']);
+        $email = trim((string) ($userFields['email'] ?? ''));
+        if ($email !== '' && $email !== 'null' && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $body['mailAddress'] = $email;
         }
-        if (array_key_exists('phone', $userFields)) {
-            $body['phoneNumber'] = trim((string) $userFields['phone']);
+        $phone = trim((string) ($userFields['phone'] ?? ''));
+        if ($phone !== '' && $phone !== 'null') {
+            $body['phoneNumber'] = $phone;
         }
         return $body;
     }

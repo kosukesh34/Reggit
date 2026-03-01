@@ -5,23 +5,53 @@
 ## 実装方針
 
 - 画面本体はすべて `WebView`
-- 下部のみネイティブタブボタン
-- タブ押下時に Web 側 (`/liff`) のタブを JavaScript で切り替え
-- 上部ヘッダーにネイティブの戻るボタンを配置
+- ネイティブ UI は最小化し、WebView を全画面表示
+- 表示タブは `Skip.env` の `LIFF_FIXED_TAB`（または iOS/Android 個別設定）に固定
+- LIFF 側のタブは非表示・遷移ロック（固定タブのみ表示）
 - 起動時に `window.__MOBILE_DEVICE_INFO__` へ端末情報を注入し、`/api/devices/register` へ送信
 - `window.__nativeSetPushToken(token)` を呼ぶと push token を更新して再登録
 
 ## URL設定
 
-`Sources/MobileOrderApp/ContentView.swift` の以下を変更してください。
+LIFF/WebView のベースURLは **プロジェクトルートの `.env` の `APP_URL`** に合わせてください。
 
-```swift
-static let liffURLString = "http://localhost:8080/liff/default"
-```
+- **Laravel（Web）**: `config('app.url')` で `APP_URL` を参照しています。
+- **モバイルアプリ**: ビルド時に `Skip.env` の `LIFF_BASE_URL` が使われます。`APP_URL` と揃えてください。
 
-実機からアクセスできる URL（本番または公開ステージング）を設定してください。
+ngrok のURLを変更したときは、次のいずれかを実行してください。
+
+1. **推奨**: プロジェクトルートで同期スクリプトを実行し、その後モバイルをビルドする。
+   ```bash
+   ./scripts/sync-liff-url-from-env.sh
+   ```
+2. 手動で `mobile/mobile-order-skip/Skip.env` の `LIFF_BASE_URL` を `.env` の `APP_URL` と同じ値に編集する。
+
+## プロジェクト/画面固定の設定
+
+`Skip.env` で、表示するプロジェクトと固定タブを指定できます。
+
+- 共通設定:
+  - `LIFF_PROJECT_KEY`（例: `default`）
+  - `LIFF_FIXED_TAB`（例: `member`）
+- OS別設定（必要な場合のみ）:
+  - `LIFF_PROJECT_KEY_IOS` / `LIFF_PROJECT_KEY_ANDROID`
+  - `LIFF_FIXED_TAB_IOS` / `LIFF_FIXED_TAB_ANDROID`
+
+優先順は「OS別 > 共通」です。
 
 ## 起動手順
+
+### 一括ビルド・インストール（iOS ＋ Android）
+
+プロジェクトルートで以下を実行すると、iOS と Android の両方をビルドし、起動中のシミュレータ／接続中の Android デバイスにインストールします。
+
+```bash
+./scripts/build-and-install-mobile.sh
+```
+
+- **iOS**: 起動中のシミュレータが 1 台あれば、そこにインストールしてアプリを起動します。
+- **Android**: `adb devices` で 1 台だけ接続されている状態で実行すると、そのデバイスに APK をインストールして起動します。
+- ビルド先のシミュレータを変えたい場合は `DESTINATION='platform=iOS Simulator,name=iPhone 16 Pro,OS=26.0' ./scripts/build-and-install-mobile.sh` のように指定できます。
 
 ### 共通の準備
 
@@ -104,3 +134,9 @@ adb shell am start -n jp.gamechanger.mobileorder/mobile.order.app.MainActivity
 ```
 
 `BUILT_PRODUCTS_DIR` の実際のパスは、Xcode でビルドしたあと `~/Library/Developer/Xcode/DerivedData/` 内の `Project-` で始まるフォルダを確認してください。
+
+### Android で画面が真っ白な場合
+
+- **ネットワーク**: エミュレータ／実機から `LIFF_BASE_URL`（例: ngrok の URL）に到達できるか確認してください。エミュレータのブラウザで同じ URL を開いてみます。
+- **ログ確認**: `adb logcat` で WebView や SSL 関連のエラーが出ていないか確認します。
+- **URL 設定**: `Skip.env` の `LIFF_BASE_URL` がプロジェクトの `.env` の `APP_URL` と一致しているか確認し、必要なら `./scripts/sync-liff-url-from-env.sh` で同期してから再ビルドします。

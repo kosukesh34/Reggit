@@ -9,13 +9,38 @@ class DeviceManager {
     }
 
     init() {
-        if (!this.isMobileApp()) return;
         this.installNativeBridge();
+        if (!this.isMobileApp()) {
+            return;
+        }
         this.registerDevice();
-
         if (typeof window !== 'undefined' && window.__MOBILE_PENDING_PUSH_TOKEN__) {
             this.updatePushToken(window.__MOBILE_PENDING_PUSH_TOKEN__);
         }
+        // ネイティブの注入が onNavigationFinished で遅れる場合に備え、遅延リトライ
+        this._scheduleRegisterRetries();
+        this._listenForNativeInjection();
+    }
+
+    _scheduleRegisterRetries() {
+        if (typeof window === 'undefined' || this._registerRetriesScheduled) return;
+        this._registerRetriesScheduled = true;
+        [300, 800].forEach((delayMs) => {
+            setTimeout(() => {
+                if (this.isMobileApp() && this.getPayload()) {
+                    this.registerDevice();
+                }
+            }, delayMs);
+        });
+    }
+
+    _listenForNativeInjection() {
+        if (typeof window === 'undefined') return;
+        document.addEventListener('mobile-device-info-injected', () => {
+            if (this.isMobileApp()) {
+                this.registerDevice();
+            }
+        });
     }
 
     installNativeBridge() {
