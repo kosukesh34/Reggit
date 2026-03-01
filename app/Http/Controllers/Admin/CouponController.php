@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Requests\Admin\CouponBulkIssueRequest;
 use App\Http\Requests\Admin\CouponStoreRequest;
 use App\Http\Requests\Admin\CouponUpdateRequest;
+use App\Services\Admin\CouponAdminService;
 use App\UseCases\Admin\Coupon\AdminCouponBulkIssueFormUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponBulkIssueUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponCreateFormUseCase;
@@ -13,19 +14,25 @@ use App\UseCases\Admin\Coupon\AdminCouponEditFormUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponIndexUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponStoreUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponUpdateUseCase;
-use App\Services\Admin\CouponAdminService;
-use Illuminate\Http\Request;
 
 class CouponController extends AdminBaseController
 {
     private AdminCouponIndexUseCase $indexUseCase;
+
     private AdminCouponCreateFormUseCase $createFormUseCase;
+
     private AdminCouponStoreUseCase $storeUseCase;
+
     private CouponAdminService $couponAdminService;
+
     private AdminCouponEditFormUseCase $editFormUseCase;
+
     private AdminCouponUpdateUseCase $updateUseCase;
+
     private AdminCouponDeleteUseCase $deleteUseCase;
+
     private AdminCouponBulkIssueFormUseCase $bulkIssueFormUseCase;
+
     private AdminCouponBulkIssueUseCase $bulkIssueUseCase;
 
     public function __construct(
@@ -81,6 +88,7 @@ class CouponController extends AdminBaseController
                 ->withInput()
                 ->with('error', $e->getMessage());
         }
+
         return redirect()->route('admin.coupons', $this->buildAdminRouteParams())
             ->with('success', 'クーポンを作成しました');
     }
@@ -113,6 +121,7 @@ class CouponController extends AdminBaseController
                 ->withInput()
                 ->with('error', $e->getMessage());
         }
+
         return redirect()->route('admin.coupons', $this->buildAdminRouteParams())
             ->with('success', 'クーポンを更新しました');
     }

@@ -53,6 +53,7 @@ class AuthenticateApiToken
             return $bearer;
         }
         $header = $request->header('X-Api-Token');
+
         return ($header !== null && $header !== '') ? $header : null;
     }
 }

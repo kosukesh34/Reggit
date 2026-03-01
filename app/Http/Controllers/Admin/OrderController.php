@@ -13,8 +13,11 @@ use Illuminate\Http\Request;
 class OrderController extends AdminBaseController
 {
     private AdminOrderIndexUseCase $indexUseCase;
+
     private AdminOrderDetailUseCase $detailUseCase;
+
     private AdminOrderUpdateStatusUseCase $updateStatusUseCase;
+
     private AdminOrderCompleteUseCase $completeUseCase;
 
     public function __construct(
@@ -53,7 +56,7 @@ class OrderController extends AdminBaseController
         $this->updateStatusUseCase->handle((int) $id, $status);
 
         return redirect()->back()
-            ->with('success', '注文ステータスを「' . AdminStatusLabels::orderStatusLabel($status) . '」に更新しました');
+            ->with('success', '注文ステータスを「'.AdminStatusLabels::orderStatusLabel($status).'」に更新しました');
     }
 
     public function completeOrder($id)

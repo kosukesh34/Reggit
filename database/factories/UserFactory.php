@@ -13,7 +13,7 @@ class UserFactory extends Factory
     {
         return [
             'project_id' => 1,
-            'line_user_id' => 'test-user-' . $this->faker->unique()->randomNumber(6),
+            'line_user_id' => 'test-user-'.$this->faker->unique()->randomNumber(6),
             'name' => $this->faker->name(),
             'email' => $this->faker->unique()->safeEmail(),
             'phone' => $this->faker->optional()->phoneNumber(),

@@ -34,13 +34,13 @@ class StampUpdateRequest extends FormRequest
         $validator->after(function (Validator $validator): void {
             $requiredStamps = (int) ($this->input('required_stamps') ?? 0);
             $milestones = $this->input('reward_milestones', []);
-            if (!is_array($milestones)) {
+            if (! is_array($milestones)) {
                 return;
             }
 
             $seen = [];
             foreach ($milestones as $index => $milestone) {
-                if (!is_array($milestone)) {
+                if (! is_array($milestone)) {
                     continue;
                 }
                 $stampCount = (int) ($milestone['stamp_count'] ?? 0);
@@ -53,6 +53,7 @@ class StampUpdateRequest extends FormRequest
                         "reward_milestones.{$index}.stamp_count",
                         '特典スタンプ数を入力してください。'
                     );
+
                     continue;
                 }
                 if ($description === '') {
@@ -60,6 +61,7 @@ class StampUpdateRequest extends FormRequest
                         "reward_milestones.{$index}.description",
                         '特典内容を入力してください。'
                     );
+
                     continue;
                 }
                 if ($requiredStamps > 0 && $stampCount > $requiredStamps) {

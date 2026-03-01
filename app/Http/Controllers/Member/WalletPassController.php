@@ -18,8 +18,7 @@ class WalletPassController extends Controller
     public function __construct(
         private WalletPassDownloadUseCase $downloadUseCase,
         private UserService $userService
-    ) {
-    }
+    ) {}
 
     public function __invoke(Request $request): Response
     {
@@ -37,16 +36,17 @@ class WalletPassController extends Controller
 
         if ($result->isAvailable() === false) {
             return response(
-                "Wallet pass is not available.\n\n" . implode("\n", $result->unavailableReasons),
+                "Wallet pass is not available.\n\n".implode("\n", $result->unavailableReasons),
                 Response::HTTP_SERVICE_UNAVAILABLE,
                 ['Content-Type' => 'text/plain; charset=UTF-8']
             );
         }
 
         $filename = 'membership.pkpass';
+
         return response($result->content, 200, [
             'Content-Type' => 'application/vnd.apple.pkpass',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
             'Content-Length' => (string) strlen($result->content),
             'Cache-Control' => 'no-cache, no-store, must-revalidate',
             'Pragma' => 'no-cache',

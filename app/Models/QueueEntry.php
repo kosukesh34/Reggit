@@ -9,8 +9,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class QueueEntry extends Model
 {
-    use HasFactory;
     use BelongsToProject;
+    use HasFactory;
 
     protected $fillable = [
         'project_id', 'member_id', 'user_id', 'guest_name', 'guest_phone', 'party_size',

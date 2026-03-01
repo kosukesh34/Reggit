@@ -18,6 +18,7 @@ class EnsureStoreAdmin
         if ($admin === null || $admin->canAccessStoreAdmin() === false) {
             abort(403, 'この操作を行う権限がありません。');
         }
+
         return $next($request);
     }
 }

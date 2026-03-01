@@ -9,8 +9,7 @@ class StampListView
         public array $stampCards,
         public ?string $defaultImageUrl,
         public bool $requiresMembership
-    ) {
-    }
+    ) {}
 
     /** @return array<int, array{id: int, name: string, required_stamps: int, reward_description: string|null, reward_milestones: array<int, array{stamp_count: int, description: string}>, image_url: string|null, current_stamps: int, completed_at: string|null}> */
     public function stampCardsToArray(): array
@@ -19,6 +18,7 @@ class StampListView
         foreach ($this->stampCards as $card) {
             $payload[] = $card->toArray();
         }
+
         return $payload;
     }
 }

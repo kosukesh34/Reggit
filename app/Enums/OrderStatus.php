@@ -16,9 +16,14 @@ class OrderStatus extends EnumBase
     ];
 
     public const PENDING = 'pending';
+
     public const CONFIRMED = 'confirmed';
+
     public const PREPARING = 'preparing';
+
     public const READY = 'ready';
+
     public const COMPLETED = 'completed';
+
     public const CANCELLED = 'cancelled';
 }

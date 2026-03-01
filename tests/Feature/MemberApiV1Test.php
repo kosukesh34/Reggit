@@ -34,7 +34,7 @@ class MemberApiV1Test extends TestCase
             ->assertJsonPath('data.member.is_member', true);
     }
 
-    public function test_getPoints_ポイントを返すこと(): void
+    public function test_get_points_ポイントを返すこと(): void
     {
         $project = Project::firstOrCreate(
             ['project_key' => 'default'],

@@ -10,6 +10,7 @@ use App\UseCases\Admin\Settings\UpdateMenuSettingsUseCase;
 class MenuController extends AdminBaseController
 {
     private GetMenuSettingsUseCase $getMenuSettingsUseCase;
+
     private UpdateMenuSettingsUseCase $updateMenuSettingsUseCase;
 
     public function __construct(

@@ -9,6 +9,5 @@ class AnnouncementsSettingsView
         public bool $featureEnabled,
         public bool $defaultPinned,
         public int $defaultExpiryDays
-    ) {
-    }
+    ) {}
 }

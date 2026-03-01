@@ -10,14 +10,13 @@ class GetSmaregiSettingsUseCase
 {
     public function __construct(
         private SmaregiApiService $smaregiApi,
-    ) {
-    }
+    ) {}
 
     public function handle(int $projectId): SmaregiSettingsView
     {
         $appUrl = rtrim(config('app.url'), '/');
-        $idpUrl = $appUrl . '/api/smaregi/idp';
-        $webhookUrl = $appUrl . '/api/smaregi/webhook';
+        $idpUrl = $appUrl.'/api/smaregi/idp';
+        $webhookUrl = $appUrl.'/api/smaregi/webhook';
         $linkedContractId = ShopSetting::getValue('smaregi_contract_id', null, $projectId);
         $linkedContractId = is_string($linkedContractId) ? trim($linkedContractId) : '';
 
@@ -30,8 +29,8 @@ class GetSmaregiSettingsUseCase
                 $posStatusMessage = '接続済み・トークン取得失敗（.env の SMAREGI_CLIENT_ID / SMAREGI_CLIENT_SECRET を確認。詳細は storage/logs/laravel.log の [Smaregi]）';
                 $clientId = config('smaregi.client_id');
                 $clientSecret = config('smaregi.client_secret');
-                $posStatusEnvCheck = 'SMAREGI_CLIENT_ID: ' . (is_string($clientId) && trim($clientId) !== '' ? '設定済み' : '未設定')
-                    . ' / SMAREGI_CLIENT_SECRET: ' . (is_string($clientSecret) && trim($clientSecret) !== '' ? '設定済み' : '未設定');
+                $posStatusEnvCheck = 'SMAREGI_CLIENT_ID: '.(is_string($clientId) && trim($clientId) !== '' ? '設定済み' : '未設定')
+                    .' / SMAREGI_CLIENT_SECRET: '.(is_string($clientSecret) && trim($clientSecret) !== '' ? '設定済み' : '未設定');
             } else {
                 $storesResult = $this->smaregiApi->getStores($linkedContractId);
                 if ($storesResult === null) {
@@ -42,7 +41,7 @@ class GetSmaregiSettingsUseCase
                     if (count($list) === 0) {
                         $posStatusMessage = '接続済み・POSなし（テスト環境のため店舗が存在しません）';
                     } else {
-                        $posStatusMessage = '接続済み・店舗数: ' . count($list);
+                        $posStatusMessage = '接続済み・店舗数: '.count($list);
                     }
                 }
             }

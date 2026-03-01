@@ -56,10 +56,8 @@ class Order extends Model
 
         static::creating(function ($order) {
             if ($order->order_number === null || $order->order_number === '') {
-                $order->order_number = 'ORD-' . date('Ymd') . '-' . strtoupper(uniqid());
+                $order->order_number = 'ORD-'.date('Ymd').'-'.strtoupper(uniqid());
             }
         });
     }
 }
-
-

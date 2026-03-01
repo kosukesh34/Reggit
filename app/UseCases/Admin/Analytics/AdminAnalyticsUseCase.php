@@ -5,11 +5,11 @@ namespace App\UseCases\Admin\Analytics;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\PointTransactionType;
+use App\Models\Announcement;
+use App\Models\AnnouncementRead;
 use App\Models\CouponRedemption;
 use App\Models\Member;
 use App\Models\MemberCoupon;
-use App\Models\Announcement;
-use App\Models\AnnouncementRead;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\PointTransaction;
@@ -180,6 +180,7 @@ class AdminAnalyticsUseCase
                 'count' => (int) $row->count,
             ];
         }
+
         return $result;
     }
 
@@ -195,6 +196,7 @@ class AdminAnalyticsUseCase
                 'count' => (int) $row->count,
             ];
         }
+
         return $result;
     }
 
@@ -207,6 +209,7 @@ class AdminAnalyticsUseCase
         foreach ($rows as $row) {
             $hourly[(int) $row->hour] = (int) $row->count;
         }
+
         return $hourly;
     }
 
@@ -234,6 +237,7 @@ class AdminAnalyticsUseCase
                 'revenue' => (float) $row->revenue,
             ];
         }
+
         return $result;
     }
 
@@ -255,6 +259,7 @@ class AdminAnalyticsUseCase
                 }
             }
         }
+
         return $buckets;
     }
 
@@ -282,6 +287,7 @@ class AdminAnalyticsUseCase
                 'revenue' => (float) $row->revenue,
             ];
         }
+
         return $result;
     }
 
@@ -337,6 +343,7 @@ class AdminAnalyticsUseCase
             if ($a['read_users'] === $b['read_users']) {
                 return strcmp($b['published_at'], $a['published_at']);
             }
+
             return $b['read_users'] <=> $a['read_users'];
         });
 

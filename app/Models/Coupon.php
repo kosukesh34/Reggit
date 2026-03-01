@@ -13,26 +13,42 @@ class Coupon extends Model
     use BelongsToProject, HasFactory;
 
     public const ISSUE_TRIGGER_MANUAL = 'manual';
+
     public const ISSUE_TRIGGER_FIRST_REGISTRATION = 'first_registration';
+
     public const ISSUE_TRIGGER_FIRST_ORDER = 'first_order';
+
     public const ISSUE_TRIGGER_STAMP_COMPLETED = 'stamp_completed';
+
     public const ISSUE_TRIGGER_BIRTHDAY = 'birthday';
 
     public const DESIGN_CLASSIC = 'classic';
+
     public const DESIGN_MODERN = 'modern';
+
     public const DESIGN_MINIMAL = 'minimal';
+
     public const DESIGN_GRADIENT = 'gradient';
+
     public const DESIGN_CARD = 'card';
+
     public const DESIGN_BARCODE = 'barcode';
+
     public const DESIGN_QR = 'qr';
+
     public const DESIGN_STRIPE = 'stripe';
+
     public const DESIGN_TICKET = 'ticket';
+
     public const DESIGN_VINTAGE = 'vintage';
+
     public const DESIGN_NEON = 'neon';
 
     /** 使用時の表示: なし / バーコード / QRコード */
     public const USE_DISPLAY_NONE = 'none';
+
     public const USE_DISPLAY_BARCODE = 'barcode';
+
     public const USE_DISPLAY_QR = 'qr';
 
     /** @return array<string, string> */

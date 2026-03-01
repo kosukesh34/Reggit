@@ -11,6 +11,5 @@ class ReservationActionOutput
         public bool $requiresMembership,
         public ?Reservation $reservation,
         public ?string $availabilityError
-    ) {
-    }
+    ) {}
 }

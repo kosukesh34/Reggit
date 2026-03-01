@@ -34,6 +34,7 @@ class StripePaymentGateway implements PaymentGateway
     public function retrievePaymentIntent(string $paymentIntentId): array
     {
         $intent = PaymentIntent::retrieve($paymentIntentId);
+
         return [
             'status' => $intent->status,
             'metadata' => $intent->metadata ? $intent->metadata->toArray() : [],

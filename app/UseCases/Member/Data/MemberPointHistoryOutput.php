@@ -10,6 +10,5 @@ class MemberPointHistoryOutput
     public function __construct(
         public bool $requiresMembership,
         public ?LengthAwarePaginator $transactions
-    ) {
-    }
+    ) {}
 }

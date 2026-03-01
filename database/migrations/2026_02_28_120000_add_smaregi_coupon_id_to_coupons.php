@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('coupons', function (Blueprint $table) {
-            if (!Schema::hasColumn('coupons', 'smaregi_coupon_id')) {
+            if (! Schema::hasColumn('coupons', 'smaregi_coupon_id')) {
                 $table->string('smaregi_coupon_id', 64)->nullable()->after('stamp_card_id')
                     ->comment('スマレジPOSに登録したクーポンID（同期用）');
             }

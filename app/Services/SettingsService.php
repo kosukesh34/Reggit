@@ -11,6 +11,7 @@ class SettingsService
     public function getBasicSettings(?int $projectId = null): array
     {
         $projectId = $projectId ?? 1;
+
         return [
             'businessHours' => ShopSetting::getBusinessHours($projectId),
             'timeSlots' => ShopSetting::getReservationTimeSlots($projectId),
@@ -24,6 +25,7 @@ class SettingsService
     public function getAdvancedSettings(?int $projectId = null): array
     {
         $projectId = $projectId ?? 1;
+
         return ['lineTheme' => ShopSetting::getLineThemeColors($projectId)];
     }
 
@@ -46,6 +48,7 @@ class SettingsService
     public function getReservationOnlySettings(?int $projectId = null): array
     {
         $projectId = $projectId ?? 1;
+
         return [
             'timeSlots' => ShopSetting::getReservationTimeSlots($projectId),
             'closedDays' => ShopSetting::getClosedDays($projectId),
@@ -94,6 +97,7 @@ class SettingsService
             ];
         })->values()->all();
         $availableIcons = collect($defaults)->pluck('icon')->unique()->values()->all();
+
         return [
             'menuItems' => ShopSetting::getFrontendMenuItems($projectId),
             'availableTabs' => $availableTabs,
