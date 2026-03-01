@@ -13,8 +13,7 @@ class MemberAddPointsUseCase
     public function __construct(
         private UserService $userService,
         private SmaregiSyncCustomerPointsUseCase $smaregiSyncPoints,
-    ) {
-    }
+    ) {}
 
     public function handle(Request $request, int $points, ?string $description): MemberPointsOutput
     {

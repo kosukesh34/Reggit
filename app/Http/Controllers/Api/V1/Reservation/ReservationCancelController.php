@@ -12,8 +12,7 @@ class ReservationCancelController extends BaseApiController
 {
     public function __construct(
         private ReservationCancelUseCase $cancelUseCase
-    ) {
-    }
+    ) {}
 
     public function __invoke(Request $request, int $id)
     {
@@ -29,6 +28,7 @@ class ReservationCancelController extends BaseApiController
                 'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'error' => $e->getMessage(),
             ]);
+
             return $this->error($e->getMessage(), 400);
         }
     }

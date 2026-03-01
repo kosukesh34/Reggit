@@ -18,8 +18,7 @@ class QueueStoreUseCase
         private UserService $userService,
         private QueueStatsService $statsService,
         private QueueEntryFactory $entryFactory
-    ) {
-    }
+    ) {}
 
     public function handle(Request $request, int $partySize, ?string $guestName, ?string $guestPhone): QueueEntry
     {
@@ -55,6 +54,7 @@ class QueueStoreUseCase
         $maxNumber = QueueEntryModel::where('project_id', $projectId)
             ->whereDate('created_at', today())
             ->max('queue_number') ?? 0;
+
         return $maxNumber + 1;
     }
 
@@ -63,10 +63,11 @@ class QueueStoreUseCase
         $maxAttempts = 5;
         for ($i = 0; $i < $maxAttempts; $i++) {
             $token = Str::random(32);
-            if (!QueueEntryModel::where('qr_token', $token)->exists()) {
+            if (! QueueEntryModel::where('qr_token', $token)->exists()) {
                 return $token;
             }
         }
+
         return (string) Str::uuid();
     }
 

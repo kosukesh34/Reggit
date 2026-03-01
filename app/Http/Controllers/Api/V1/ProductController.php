@@ -11,8 +11,7 @@ class ProductController extends BaseApiController
     public function __construct(
         private ProductIndexUseCase $indexUseCase,
         private ProductShowUseCase $showUseCase
-    ) {
-    }
+    ) {}
 
     public function index(Request $request)
     {
@@ -32,6 +31,7 @@ class ProductController extends BaseApiController
     public function show(int $id)
     {
         $product = $this->showUseCase->handle($id);
+
         return $this->success(['product' => $product]);
     }
 }

@@ -2,14 +2,16 @@
 
 namespace App\Http\Services;
 
-use GuzzleHttp\Client;
 use App\Util\LogHelper;
+use GuzzleHttp\Client;
 use RuntimeException;
 
 class LineService
 {
     private $client;
+
     private $channelAccessToken;
+
     private $channelSecret;
 
     public function __construct()
@@ -19,7 +21,7 @@ class LineService
         $this->client = new Client([
             'base_uri' => 'https://api.line.me/v2/',
             'headers' => [
-                'Authorization' => 'Bearer ' . $this->channelAccessToken,
+                'Authorization' => 'Bearer '.$this->channelAccessToken,
                 'Content-Type' => 'application/json',
             ],
         ]);
@@ -30,6 +32,7 @@ class LineService
         $this->ensureConfigured(true);
         $hash = hash_hmac('sha256', $body, $this->channelSecret, true);
         $expectedSignature = base64_encode($hash);
+
         return hash_equals($expectedSignature, $signature);
     }
 
@@ -81,11 +84,13 @@ class LineService
     {
         try {
             $response = $this->client->get("bot/profile/{$userId}");
+
             return json_decode($response->getBody()->getContents(), true);
         } catch (\Exception $e) {
             LogHelper::error('[LINE] profile failed', [
                 'error' => $e->getMessage(),
             ]);
+
             return null;
         }
     }
@@ -130,7 +135,7 @@ class LineService
 
     private function normalizeMessages($messages): array
     {
-        if (!is_array($messages)) {
+        if (! is_array($messages)) {
             return [$messages];
         }
 

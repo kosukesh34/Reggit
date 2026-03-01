@@ -3,14 +3,15 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Util\AdminContext;
 use App\UseCases\Admin\AuditLog\AuditLogIndexUseCase;
 use App\UseCases\Admin\AuditLog\AuditLogShowUseCase;
+use App\Util\AdminContext;
 use Illuminate\Http\Request;
 
 class AuditLogController extends Controller
 {
     private AuditLogIndexUseCase $indexUseCase;
+
     private AuditLogShowUseCase $showUseCase;
 
     public function __construct(
@@ -35,6 +36,7 @@ class AuditLogController extends Controller
         $isSystemContext = $request->routeIs('system-admin.*');
         $projectId = $isSystemContext ? null : AdminContext::getCurrentProjectId();
         $log = $this->showUseCase->handle($id, $projectId, $isSystemContext);
+
         return view('admin.audit-logs.show', compact('log'));
     }
 }

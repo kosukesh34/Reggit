@@ -15,6 +15,5 @@ class FeatureSettingsView
         public ?string $couponDefaultImageUrl,
         public ?string $frontendLogoUrl,
         public ?string $frontendHeaderText
-    ) {
-    }
+    ) {}
 }

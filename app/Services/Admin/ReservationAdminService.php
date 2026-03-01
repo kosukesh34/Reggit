@@ -6,7 +6,6 @@ use App\Enums\ReservationStatus;
 use App\Models\Reservation;
 use App\Models\ShopSetting;
 use Carbon\Carbon;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class ReservationAdminService
 {
@@ -34,7 +33,7 @@ class ReservationAdminService
             $dateStatusCounts = $this->getStatusCounts($selectedDate);
             $timeSlots = ShopSetting::getReservationTimeSlots($projectId);
             foreach ($timeSlots as $slot) {
-                $slotStart = Carbon::parse($date->format('Y-m-d') . ' ' . $slot);
+                $slotStart = Carbon::parse($date->format('Y-m-d').' '.$slot);
                 $slotEnd = $slotStart->copy()->addHour();
                 $count = Reservation::whereBetween('reserved_at', [$slotStart, $slotEnd])->count();
                 $timeSlotSummary[] = [
@@ -63,6 +62,7 @@ class ReservationAdminService
         if ($date !== null && $date !== '') {
             $query->whereDate('reserved_at', $date);
         }
+
         return [
             'all' => (clone $query)->count(),
             'pending' => (clone $query)->where('status', ReservationStatus::PENDING)->count(),

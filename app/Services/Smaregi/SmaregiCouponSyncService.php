@@ -31,7 +31,7 @@ class SmaregiCouponSyncService
      * スマレジに契約がある場合、フォームデータを先にスマレジへ登録し、成功時のみ返却する。
      * 新規作成時用。返却された smaregi_coupon_id を $data に含めてDB保存すること。
      *
-     * @param array<string, mixed> $data バリデーション済みフォームデータ（code, name, type, value, start_at, end_at 等）
+     * @param  array<string, mixed>  $data  バリデーション済みフォームデータ（code, name, type, value, start_at, end_at 等）
      * @return array{smaregi_coupon_id: string}|null 成功時は ['smaregi_coupon_id' => '...']、失敗または契約なしは null
      */
     public function registerToSmaregi(int $projectId, array $data): ?array
@@ -53,6 +53,7 @@ class SmaregiCouponSyncService
             return null;
         }
         Log::info('[Smaregi] Coupon registered on POS', ['smaregi_coupon_id' => $smaregiId]);
+
         return ['smaregi_coupon_id' => $smaregiId];
     }
 
@@ -60,7 +61,7 @@ class SmaregiCouponSyncService
      * スマレジに契約がある場合、フォームデータでスマレジを更新し、成功時のみ true を返す。
      * 更新時用。true の場合のみDBを更新すること。
      *
-     * @param array<string, mixed> $data バリデーション済みフォームデータ
+     * @param  array<string, mixed>  $data  バリデーション済みフォームデータ
      */
     public function updateOnSmaregi(int $projectId, string $smaregiCouponId, array $data): bool
     {
@@ -77,6 +78,7 @@ class SmaregiCouponSyncService
             return false;
         }
         Log::info('[Smaregi] Coupon updated on POS', ['smaregi_coupon_id' => $smaregiCouponId]);
+
         return true;
     }
 
@@ -86,6 +88,7 @@ class SmaregiCouponSyncService
     public function hasSmaregiContract(int $projectId): bool
     {
         $contractId = $this->smaregiApi->getContractIdForProject($projectId);
+
         return $contractId !== null && $contractId !== '';
     }
 
@@ -112,6 +115,7 @@ class SmaregiCouponSyncService
                     'coupon_id' => $coupon->id,
                     'smaregi_coupon_id' => $coupon->smaregi_coupon_id,
                 ]);
+
                 return true;
             }
             Log::warning('[Smaregi] Coupon update failed, may try create', [
@@ -128,6 +132,7 @@ class SmaregiCouponSyncService
                 'coupon_id' => $coupon->id,
                 'code' => $coupon->code,
             ]);
+
             return false;
         }
 
@@ -140,13 +145,14 @@ class SmaregiCouponSyncService
                 'smaregi_coupon_id' => $smaregiId,
             ]);
         }
+
         return true;
     }
 
     /**
      * フォームデータ（配列）をスマレジPOS API のリクエストボディに変換する。
      *
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
     /**
@@ -186,6 +192,7 @@ class SmaregiCouponSyncService
         if ($endAt !== null && $endAt !== '') {
             $body['endDate'] = $endAt instanceof \DateTimeInterface ? $endAt->format('Y-m-d') : (\Carbon\Carbon::parse($endAt)->format('Y-m-d'));
         }
+
         return $body;
     }
 
@@ -200,7 +207,7 @@ class SmaregiCouponSyncService
     }
 
     /**
-     * @param array<int|string, mixed> $response
+     * @param  array<int|string, mixed>  $response
      */
     private function extractCouponIdFromResponse(array $response): ?string
     {
@@ -211,6 +218,7 @@ class SmaregiCouponSyncService
         if (isset($response['id'])) {
             return (string) $response['id'];
         }
+
         return null;
     }
 }

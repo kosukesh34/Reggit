@@ -22,7 +22,7 @@ return new class extends Migration
             DB::statement("ALTER TABLE `users` MODIFY COLUMN `deleted_at` TIMESTAMP NULL COMMENT '論理削除日時（NULL=有効）'");
         }
 
-        if (!Schema::hasTable('user_devices')) {
+        if (! Schema::hasTable('user_devices')) {
             return;
         }
 
@@ -45,7 +45,7 @@ return new class extends Migration
         );
         foreach ($cols as $c) {
             $colName = $c->COLUMN_NAME;
-            if (!isset($comments[$colName])) {
+            if (! isset($comments[$colName])) {
                 continue;
             }
             $comment = addslashes($comments[$colName]);
@@ -54,9 +54,9 @@ return new class extends Migration
             $default = '';
             if ($c->COLUMN_DEFAULT !== null && strpos($c->EXTRA ?? '', 'auto_increment') === false) {
                 $d = $c->COLUMN_DEFAULT;
-                $default = is_numeric($d) ? " DEFAULT {$d}" : " DEFAULT '" . addslashes((string)$d) . "'";
+                $default = is_numeric($d) ? " DEFAULT {$d}" : " DEFAULT '".addslashes((string) $d)."'";
             }
-            $extra = $c->EXTRA ? ' ' . $c->EXTRA : '';
+            $extra = $c->EXTRA ? ' '.$c->EXTRA : '';
             DB::statement("ALTER TABLE `user_devices` MODIFY COLUMN `{$colName}` {$type}{$nullable}{$default}{$extra} COMMENT '{$comment}'");
         }
     }

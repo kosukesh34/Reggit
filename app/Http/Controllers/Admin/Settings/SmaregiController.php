@@ -16,14 +16,14 @@ class SmaregiController extends AdminBaseController
         private GetSmaregiPosDataUseCase $getSmaregiPosDataUseCase,
         private UpdateSmaregiLinkUseCase $updateSmaregiLinkUseCase,
         private SmaregiProductSyncService $smaregiProductSyncService,
-    ) {
-    }
+    ) {}
 
     /** 仮想POSデータ確認（開発用・後で削除可） */
     public function posData()
     {
         $projectId = $this->resolveAdminProjectId();
         $view = $this->getSmaregiPosDataUseCase->handle($projectId);
+
         return view('admin.settings.smaregi-pos-data', ['view' => $view]);
     }
 
@@ -31,6 +31,7 @@ class SmaregiController extends AdminBaseController
     {
         $projectId = $this->resolveAdminProjectId();
         $view = $this->getSmaregiSettingsUseCase->handle($projectId);
+
         return view('admin.settings.smaregi', ['view' => $view]);
     }
 
@@ -42,6 +43,7 @@ class SmaregiController extends AdminBaseController
         $projectId = $this->resolveAdminProjectId();
         $contractId = $request->input('smaregi_contract_id');
         $this->updateSmaregiLinkUseCase->handle($projectId, is_string($contractId) ? $contractId : null);
+
         return redirect()->route('admin.settings.smaregi', $this->buildAdminRouteParams())
             ->with('success', 'スマレジ連携を更新しました');
     }
@@ -59,11 +61,12 @@ class SmaregiController extends AdminBaseController
                 $result['failed']
             );
             if ($result['failed'] > 0 && isset($result['errors']) && $result['errors'] !== []) {
-                $msg .= '。失敗詳細: ' . implode('; ', array_slice($result['errors'], 0, 5));
+                $msg .= '。失敗詳細: '.implode('; ', array_slice($result['errors'], 0, 5));
                 if (count($result['errors']) > 5) {
                     $msg .= ' …';
                 }
             }
+
             return redirect()->route('admin.settings.smaregi', $this->buildAdminRouteParams())
                 ->with('success', $msg);
         } catch (\Throwable $e) {

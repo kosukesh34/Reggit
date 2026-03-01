@@ -12,8 +12,7 @@ class QueueStoreController extends Controller
 {
     public function __construct(
         private QueueStoreUseCase $storeUseCase
-    ) {
-    }
+    ) {}
 
     public function __invoke(Request $request)
     {
@@ -30,6 +29,7 @@ class QueueStoreController extends Controller
                 $validated['guest_name'] ?? null,
                 $validated['guest_phone'] ?? null
             );
+
             return response()->json([
                 'message' => '順番待ちに登録しました',
                 'updated_at' => now()->toIso8601String(),
@@ -40,6 +40,7 @@ class QueueStoreController extends Controller
                 'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'error' => $e->getMessage(),
             ]);
+
             return response()->json(['error' => '順番待ちの登録に失敗しました'], 500);
         }
     }

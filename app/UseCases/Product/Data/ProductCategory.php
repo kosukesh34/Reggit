@@ -11,8 +11,7 @@ class ProductCategory
         public string $icon,
         public int $count,
         public int $sort
-    ) {
-    }
+    ) {}
 
     /** @return array{key: string, label: string, icon: string, count: int, sort: int} */
     public function toArray(): array

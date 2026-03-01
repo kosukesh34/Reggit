@@ -36,7 +36,7 @@ class ProductControllerTest extends TestCase
         $this->createProject();
         $product = Product::factory()->create(['project_id' => 1]);
 
-        $response = $this->get('/api/products/' . $product->id . '?project_key=default');
+        $response = $this->get('/api/products/'.$product->id.'?project_key=default');
 
         $response->assertStatus(200)
             ->assertJsonPath('id', $product->id);

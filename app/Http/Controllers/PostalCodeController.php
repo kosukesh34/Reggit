@@ -11,9 +11,7 @@ use Illuminate\Http\Request;
  */
 class PostalCodeController extends Controller
 {
-    public function __construct(private readonly PostalCodeSearchUseCase $postalCodeSearchUseCase)
-    {
-    }
+    public function __construct(private readonly PostalCodeSearchUseCase $postalCodeSearchUseCase) {}
 
     public function __invoke(Request $request): JsonResponse
     {

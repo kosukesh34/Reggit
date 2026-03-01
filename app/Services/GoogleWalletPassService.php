@@ -39,8 +39,7 @@ class GoogleWalletPassService
 
     public function __construct(
         private readonly GoogleWalletLoyaltyPayloadBuilder $payloadBuilder
-    ) {
-    }
+    ) {}
 
     /**
      * 会員用の Add to Google Wallet URL を生成する。
@@ -64,7 +63,7 @@ class GoogleWalletPassService
         $organizationName = $project !== null ? $project->name : config('app.name', '会員証');
         $barcodeValue = $member->member_number ?? (string) $member->id;
         // オブジェクトIDに -b を付与し、既存のQRオブジェクトと区別してバーコードの新オブジェクトとして発行する
-        $objectSuffix = 'member-' . (string) $member->id . '-b';
+        $objectSuffix = 'member-'.(string) $member->id.'-b';
         $points = $data['points'] ?? $member->getTotalPointsFromTransactions();
         $rankLabel = $data['current_rank_label'] ?? $member->rank ?? '';
         $accountName = $user->name ?? '';
@@ -81,11 +80,13 @@ class GoogleWalletPassService
         $projectId = AdminContext::getCurrentProjectId();
         if ($projectId === null || $projectId === false) {
             Log::info('google-wallet createSaveUrlForUserId: no project in context', ['user_id' => $userId]);
+
             return null;
         }
         $user = User::where('id', $userId)->where('project_id', $projectId)->first();
         if ($user === null) {
             Log::info('google-wallet createSaveUrlForUserId: user not found', ['user_id' => $userId, 'project_id' => $projectId]);
+
             return null;
         }
 
@@ -93,6 +94,7 @@ class GoogleWalletPassService
         if ($url === null) {
             Log::info('google-wallet createSaveUrlForUserId: createSaveUrlForUser returned null', ['user_id' => $userId, 'project_id' => $projectId]);
         }
+
         return $url;
     }
 
@@ -117,8 +119,8 @@ class GoogleWalletPassService
 
         $issuerId = config('google_wallet.issuer_id');
         $classSuffix = config('google_wallet.class_suffix', 'membership');
-        $classId = $issuerId . '.' . $classSuffix;
-        $objectId = $issuerId . '.' . $objectSuffix;
+        $classId = $issuerId.'.'.$classSuffix;
+        $objectId = $issuerId.'.'.$objectSuffix;
         $maxLen = GoogleWalletApi::MAX_DISPLAY_LENGTH;
 
         $programName = $this->payloadBuilder->truncateForWallet(
@@ -127,7 +129,7 @@ class GoogleWalletPassService
         );
         $accountNameDisplay = $accountName !== ''
             ? $this->payloadBuilder->truncateForWallet($accountName, $maxLen)
-            : (GoogleWalletApi::ACCOUNT_NAME_FALLBACK_PREFIX . $barcodeValue);
+            : (GoogleWalletApi::ACCOUNT_NAME_FALLBACK_PREFIX.$barcodeValue);
         $accountIdDisplay = $this->payloadBuilder->truncateForWallet($barcodeValue, $maxLen);
 
         $programLogoUri = $this->resolveProgramLogoUri($projectId);
@@ -183,7 +185,7 @@ class GoogleWalletPassService
         try {
             $token = JWT::encode($claims, $privateKey, self::JWT_ALGORITHM);
 
-            return self::SAVE_URL_PREFIX . $token;
+            return self::SAVE_URL_PREFIX.$token;
         } catch (\Throwable $e) {
             Log::error('google-wallet JWT encode failed', [
                 'message' => $e->getMessage(),
@@ -244,7 +246,7 @@ class GoogleWalletPassService
         }
         $path = config('google_wallet.credentials_path', '');
         if ($path === '' || ! File::isFile($path) || ! File::isReadable($path)) {
-            $reasons[] = 'Service account credentials file not found or not readable: ' . $path;
+            $reasons[] = 'Service account credentials file not found or not readable: '.$path;
         }
 
         return $reasons;
@@ -330,7 +332,7 @@ class GoogleWalletPassService
         $port = parse_url($appUrl, PHP_URL_PORT);
 
         if (is_string($host) && $host !== '') {
-            return $scheme . '://' . $host . ($port !== null && $port !== false ? ':' . $port : '');
+            return $scheme.'://'.$host.($port !== null && $port !== false ? ':'.$port : '');
         }
 
         return 'http://localhost';
@@ -400,14 +402,15 @@ class GoogleWalletPassService
         }
 
         $get = Http::withToken($token)
-            ->get(self::WALLET_OBJECTS_BASE . '/loyaltyClass/' . $classId);
+            ->get(self::WALLET_OBJECTS_BASE.'/loyaltyClass/'.$classId);
 
         if ($get->successful()) {
-            $cacheKey = 'google_wallet_class_patched:' . $classId;
+            $cacheKey = 'google_wallet_class_patched:'.$classId;
             if (Cache::get($cacheKey) !== true) {
                 $this->patchLoyaltyClassDisplayLabels($token, $classId);
                 Cache::put($cacheKey, true, now()->addDay());
             }
+
             return true;
         }
 
@@ -422,7 +425,7 @@ class GoogleWalletPassService
                 $decoded = json_decode($body, true);
                 $url = $decoded['error']['details'][0]['metadata']['activationUrl'] ?? null;
                 if (is_string($url)) {
-                    Log::warning('google-wallet API が無効です。以下の URL で「Google Wallet API」を有効にしてください: ' . $url);
+                    Log::warning('google-wallet API が無効です。以下の URL で「Google Wallet API」を有効にしてください: '.$url);
                 }
             }
 
@@ -438,7 +441,7 @@ class GoogleWalletPassService
             'programLogo' => [
                 'sourceUri' => ['uri' => $programLogoUri],
                 'contentDescription' => [
-                    'defaultValue' => ['language' => GoogleWalletApi::DEFAULT_LANGUAGE, 'value' => $programName . ' logo'],
+                    'defaultValue' => ['language' => GoogleWalletApi::DEFAULT_LANGUAGE, 'value' => $programName.' logo'],
                 ],
             ],
             'accountNameLabel' => GoogleWalletApi::LABEL_ACCOUNT_NAME,
@@ -452,7 +455,7 @@ class GoogleWalletPassService
 
         $insert = Http::withToken($token)
             ->withHeaders(['Content-Type' => 'application/json'])
-            ->post(self::WALLET_OBJECTS_BASE . '/loyaltyClass', $body);
+            ->post(self::WALLET_OBJECTS_BASE.'/loyaltyClass', $body);
 
         if (! $insert->successful()) {
             $insertBody = $insert->body();
@@ -465,7 +468,7 @@ class GoogleWalletPassService
                 $decoded = json_decode($insertBody, true);
                 $url = $decoded['error']['details'][0]['metadata']['activationUrl'] ?? null;
                 if (is_string($url)) {
-                    Log::warning('google-wallet API が無効です。以下の URL で「Google Wallet API」を有効にしてください: ' . $url);
+                    Log::warning('google-wallet API が無効です。以下の URL で「Google Wallet API」を有効にしてください: '.$url);
                 }
             }
 
@@ -497,7 +500,7 @@ class GoogleWalletPassService
         }
         $patch = Http::withToken($token)
             ->withHeaders(['Content-Type' => 'application/json'])
-            ->patch(self::WALLET_OBJECTS_BASE . '/loyaltyClass/' . $classId, $body);
+            ->patch(self::WALLET_OBJECTS_BASE.'/loyaltyClass/'.$classId, $body);
 
         if ($patch->successful()) {
             Log::info('google-wallet loyaltyClass display labels patched', ['classId' => $classId]);

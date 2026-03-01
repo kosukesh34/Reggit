@@ -4,14 +4,12 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\UseCases\Stamp\StampIndexUseCase;
 use App\Util\AdminContext;
-use Illuminate\Http\Request;
 use App\Util\LogHelper;
+use Illuminate\Http\Request;
 
 class StampController extends BaseApiController
 {
-    public function __construct(private StampIndexUseCase $indexUseCase)
-    {
-    }
+    public function __construct(private StampIndexUseCase $indexUseCase) {}
 
     public function index(Request $request)
     {
@@ -33,6 +31,7 @@ class StampController extends BaseApiController
                 'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'error' => $e->getMessage(),
             ]);
+
             return $this->error('スタンプの取得に失敗しました', 500);
         }
     }

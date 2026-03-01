@@ -84,7 +84,7 @@ class PostalCodeSearchUseCase
                 $pref = (string) ($row['address1'] ?? '');
                 $city = (string) ($row['address2'] ?? '');
                 $town = (string) ($row['address3'] ?? '');
-                $full = $pref . $city . $town;
+                $full = $pref.$city.$town;
                 if ($full === '') {
                     continue;
                 }

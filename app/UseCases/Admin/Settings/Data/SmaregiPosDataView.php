@@ -18,8 +18,7 @@ class SmaregiPosDataView
         public readonly ?string $envCheck = null,
         /** POS 各APIの取得結果。label=表示名, path=APIパス, items=行配列, total=総数, error=取得失敗時メッセージ */
         public readonly array $sections = [],
-    ) {
-    }
+    ) {}
 
     public function hasError(): bool
     {
