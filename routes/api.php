@@ -26,6 +26,7 @@ use App\Http\Controllers\GalleryController;
 use App\Http\Controllers\StampController;
 use App\Http\Controllers\Member\MemberPointCardController;
 use App\Http\Controllers\Member\MemberPointHistoryController;
+use App\Http\Controllers\Member\MemberWithdrawController;
 use App\Http\Controllers\Member\WalletPassController;
 use App\Http\Controllers\Member\WalletPassUrlController;
 use App\Http\Controllers\Member\GoogleWalletUrlController;
@@ -48,6 +49,7 @@ use App\Http\Controllers\Api\V1\Member\MemberMeController as ApiV1MemberMeContro
 use App\Http\Controllers\Api\V1\Member\MemberPointsController as ApiV1MemberPointsController;
 use App\Http\Controllers\Api\V1\Member\MemberPointCardController as ApiV1MemberPointCardController;
 use App\Http\Controllers\Api\V1\Member\MemberPointHistoryController as ApiV1MemberPointHistoryController;
+use App\Http\Controllers\Api\V1\Member\MemberWithdrawController as ApiV1MemberWithdrawController;
 use App\Http\Controllers\Api\V1\Reservation\ReservationIndexController as ApiV1ReservationIndexController;
 
 Route::match(['get', 'post'], '/line/webhook', [LineWebhookController::class, 'handle']);
@@ -67,6 +69,7 @@ Route::prefix('v1')->middleware([AuthenticateApiToken::class])->group(function (
     Route::get('/members/points', [ApiV1MemberPointsController::class, '__invoke']);
     Route::get('/members/points/card', [ApiV1MemberPointCardController::class, '__invoke']);
     Route::get('/members/points/history', [ApiV1MemberPointHistoryController::class, '__invoke']);
+    Route::post('/members/withdraw', [ApiV1MemberWithdrawController::class, '__invoke']);
     Route::get('/members/me/coupons', [ApiV1CouponController::class, 'myCoupons']);
     Route::get('/stamps', [ApiV1StampController::class, 'index']);
     Route::get('/announcements', [ApiV1AnnouncementController::class, 'index']);
@@ -87,6 +90,7 @@ Route::prefix('v1')->middleware([CheckApiProject::class, AuthenticateApiToken::c
     Route::get('/{project_key}/members/points', [ApiV1MemberPointsController::class, '__invoke']);
     Route::get('/{project_key}/members/points/card', [ApiV1MemberPointCardController::class, '__invoke']);
     Route::get('/{project_key}/members/points/history', [ApiV1MemberPointHistoryController::class, '__invoke']);
+    Route::post('/{project_key}/members/withdraw', [ApiV1MemberWithdrawController::class, '__invoke']);
     Route::get('/{project_key}/members/me/coupons', [ApiV1CouponController::class, 'myCoupons']);
     Route::get('/{project_key}/stamps', [ApiV1StampController::class, 'index']);
     Route::get('/{project_key}/announcements', [ApiV1AnnouncementController::class, 'index']);
@@ -111,6 +115,7 @@ Route::middleware(['web', 'bind.project'])->group(function () {
     Route::get('/members/me/wallet-pass-url', [WalletPassUrlController::class, '__invoke']);
     Route::get('/members/me/google-wallet-url', [GoogleWalletUrlController::class, '__invoke']);
     Route::post('/members/register', [MemberRegisterController::class, '__invoke']);
+    Route::post('/members/withdraw', [MemberWithdrawController::class, '__invoke']);
     Route::post('/devices/register', DeviceRegisterController::class);
     Route::get('/members/points', [MemberPointsController::class, '__invoke']);
     Route::get('/members/points/history', [MemberPointHistoryController::class, '__invoke']);

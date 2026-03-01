@@ -2,6 +2,189 @@
  * 管理画面・ランク設定のカードプレビュー用スタイル
  * フロントの idnect-card と同じ見た目を再現（.rank-card-preview-wrap 内でスケールダウン）
  */
+
+/* ========== タブナビゲーション ========== */
+.ranks-settings-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 24px;
+    padding: 4px;
+    background: var(--bg-tertiary, #f5f5f4);
+    border-radius: var(--radius-md, 10px);
+    border: 1px solid var(--border, #e7e5e4);
+}
+
+.ranks-settings-tab {
+    padding: 10px 18px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary, #57534e);
+    background: transparent;
+    border: none;
+    border-radius: var(--radius, 8px);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.ranks-settings-tab:hover {
+    color: var(--text-primary, #1c1917);
+    background: rgba(255, 255, 255, 0.7);
+}
+
+.ranks-settings-tab--active {
+    color: var(--primary, #0d9488);
+    background: var(--bg-primary, #fff);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.ranks-settings-panels {
+    margin-bottom: 32px;
+}
+
+.ranks-settings-panel {
+    display: none;
+    animation: ranks-panel-in 0.2s ease;
+}
+
+.ranks-settings-panel--active {
+    display: block;
+}
+
+@keyframes ranks-panel-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.ranks-settings-lead {
+    font-size: 14px;
+    color: var(--text-secondary, #57534e);
+    margin-bottom: 20px;
+    line-height: 1.6;
+}
+
+.ranks-settings-subsection {
+    margin-bottom: 28px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border-light, #f0eeec);
+}
+
+.ranks-settings-subsection:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.ranks-settings-subtitle {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary, #1c1917);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ranks-settings-subtitle i {
+    color: var(--primary, #0d9488);
+    font-size: 14px;
+}
+
+.ranks-settings-fields {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px 24px;
+    margin-top: 12px;
+}
+
+.ranks-settings-fields--wide {
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+
+.ranks-settings-checkboxes {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.ranks-card-header-with-action {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+/* ランク一覧テーブル */
+.ranks-settings-table th {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: 0.02em;
+    color: var(--text-secondary, #57534e);
+}
+
+.ranks-th-basic {
+    min-width: 80px;
+}
+
+.ranks-th-design {
+    min-width: 100px;
+    border-left: 1px solid var(--border, #e7e5e4);
+}
+
+.ranks-th--center {
+    text-align: center;
+}
+
+.ranks-settings-table td {
+    vertical-align: middle;
+}
+
+.ranks-settings-table tbody td:nth-child(5) {
+    border-left: 1px solid var(--border-light, #f0eeec);
+}
+
+.ranks-input-color {
+    max-width: 120px;
+    font-family: ui-monospace, monospace;
+    font-size: 13px;
+}
+
+/* プレビューセクション（プロ仕様） */
+.ranks-preview-card .card-body {
+    padding: 28px 32px;
+}
+
+.ranks-preview-section {
+    margin-bottom: 36px;
+}
+
+.ranks-preview-section:last-child {
+    margin-bottom: 0;
+}
+
+.ranks-preview-section-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary, #1c1917);
+    margin-bottom: 6px;
+    letter-spacing: -0.01em;
+}
+
+.ranks-preview-desc {
+    font-size: 13px;
+    color: var(--text-secondary, #57534e);
+    margin-bottom: 16px;
+    line-height: 1.5;
+}
+
+.form-actions-ranks {
+    margin-top: 8px;
+}
+
+/* ========== カードプレビュー（会員証） ========== */
 .rank-card-preview-wrap .idnect-card-wrapper {
     perspective: 1200px;
     cursor: default;
@@ -175,21 +358,32 @@
 /* ロゴ上部デザイン */
 .rank-card-preview-wrap .idnect-card-wrapper--design-logo_top .idnect-card-logo-wrap {
     justify-content: flex-start;
+    margin-bottom: 10px;
+}
+.rank-card-preview-wrap .idnect-card-wrapper--design-logo_top .idnect-card-front-inner .idnect-card-display-name {
+    font-size: 14px;
 }
 /* ロゴ中央デザイン */
 .rank-card-preview-wrap .idnect-card-wrapper--design-logo_center .idnect-card-logo-wrap {
     justify-content: center;
-    margin: 6px 0;
+    margin: 8px 0 10px;
+}
+.rank-card-preview-wrap .idnect-card-wrapper--design-logo_center .idnect-card-logo-placeholder,
+.rank-card-preview-wrap .idnect-card-wrapper--design-logo_center .idnect-card-logo {
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 999px;
+    padding: 3px 10px;
 }
 /* ロゴヘッダー：1行にロゴ＋ランク・ポイント */
 .rank-card-preview-wrap .idnect-card-wrapper--design-logo_header .idnect-card-front-inner {
     display: flex;
     flex-wrap: wrap;
+    padding-top: 10px;
 }
 .rank-card-preview-wrap .idnect-card-wrapper--design-logo_header .idnect-card-logo-wrap {
     order: 1;
     flex: 0 1 45%;
-    margin-bottom: 4px;
+    margin-bottom: 6px;
 }
 .rank-card-preview-wrap .idnect-card-wrapper--design-logo_header .idnect-card-meta-row {
     order: 2;
@@ -200,6 +394,8 @@
 .rank-card-preview-wrap .idnect-card-wrapper--design-logo_header .idnect-card-display-name {
     order: 3;
     flex: 1 1 100%;
+    padding-top: 4px;
+    border-top: 1px solid rgba(255, 255, 255, 0.26);
 }
 .rank-card-preview-wrap .idnect-card-wrapper--design-logo_header .idnect-card-barcode-wrap {
     order: 4;
@@ -212,7 +408,7 @@
 /* コンパクトデザイン */
 .rank-card-preview-wrap .idnect-card-wrapper--design-compact .idnect-card-front-inner {
     padding: 8px 10px 6px;
-    min-height: 120px;
+    min-height: 116px;
 }
 .rank-card-preview-wrap .idnect-card-wrapper--design-compact .idnect-card-logo-wrap {
     display: none;
@@ -232,7 +428,7 @@
     padding: 3px 6px;
 }
 .rank-card-preview-wrap .idnect-card-wrapper--design-compact .idnect-card-points--front .idnect-card-points-value {
-    font-size: 12px;
+    font-size: 11px;
 }
 .rank-card-preview-wrap .idnect-card-wrapper--design-compact .idnect-card-points--front .idnect-card-points-label {
     font-size: 8px;
@@ -248,6 +444,136 @@
 }
 .rank-card-preview-wrap .idnect-card-wrapper--design-compact .idnect-card-tap-hint {
     font-size: 8px;
+}
+
+/* スプリットバナー */
+.rank-card-preview-wrap .idnect-card-wrapper--design-split_banner .idnect-card-front-inner {
+    position: relative;
+    padding-top: 28px;
+}
+.rank-card-preview-wrap .idnect-card-wrapper--design-split_banner .idnect-card-front-inner::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 22px;
+    background: rgba(255, 255, 255, 0.16);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.25);
+}
+.rank-card-preview-wrap .idnect-card-wrapper--design-split_banner .idnect-card-logo-wrap {
+    justify-content: flex-end;
+    position: absolute;
+    right: 10px;
+    top: 2px;
+    margin: 0;
+    z-index: 3;
+}
+.rank-card-preview-wrap .idnect-card-wrapper--design-split_banner .idnect-card-logo,
+.rank-card-preview-wrap .idnect-card-wrapper--design-split_banner .idnect-card-logo-placeholder {
+    max-height: 16px;
+    min-width: 34px;
+    padding: 1px 6px;
+    border-radius: 10px;
+}
+.rank-card-preview-wrap .idnect-card-wrapper--design-split_banner .idnect-card-meta-row {
+    margin-bottom: 6px;
+}
+.rank-card-preview-wrap .idnect-card-wrapper--design-split_banner .idnect-card-rank-wrap .idnect-card-rank-badge {
+    border-radius: 7px;
+}
+
+/* ミニマルライン */
+.rank-card-preview-wrap .idnect-card-wrapper--design-minimal_line .idnect-card-logo-wrap,
+.rank-card-preview-wrap .idnect-card-wrapper--design-minimal_line .idnect-card-tap-hint,
+.rank-card-preview-wrap .idnect-card-wrapper--design-minimal_line .idnect-card-shimmer {
+    display: none;
+}
+.rank-card-preview-wrap .idnect-card-wrapper--design-minimal_line .idnect-card-face::before,
+.rank-card-preview-wrap .idnect-card-wrapper--design-minimal_line .idnect-card-face::after {
+    display: none;
+}
+.rank-card-preview-wrap .idnect-card-wrapper--design-minimal_line .idnect-card-front-inner {
+    padding: 10px 12px;
+}
+.rank-card-preview-wrap .idnect-card-wrapper--design-minimal_line .idnect-card-front-inner .idnect-card-display-name {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 5px;
+}
+.rank-card-preview-wrap .idnect-card-wrapper--design-minimal_line .idnect-card-meta-row {
+    display: block;
+    margin-bottom: 5px;
+}
+.rank-card-preview-wrap .idnect-card-wrapper--design-minimal_line .idnect-card-rank-wrap {
+    margin-bottom: 4px;
+}
+.rank-card-preview-wrap .idnect-card-wrapper--design-minimal_line .idnect-card-rank-wrap .idnect-card-rank-badge {
+    background: transparent;
+    border: 1px solid rgba(0, 0, 0, 0.35);
+    border-radius: 0;
+    padding: 2px 6px;
+    font-size: 8px;
+}
+.rank-card-preview-wrap .idnect-card-wrapper--design-minimal_line .idnect-card-points--front {
+    background: transparent;
+    box-shadow: none;
+    border: 1px solid rgba(0, 0, 0, 0.35);
+    border-radius: 0;
+    padding: 2px 6px;
+}
+.rank-card-preview-wrap .idnect-card-wrapper--design-minimal_line .idnect-card-points--front .idnect-card-points-value {
+    font-size: 11px;
+}
+.rank-card-preview-wrap .idnect-card-wrapper--design-minimal_line .idnect-card-points--front .idnect-card-points-label {
+    font-size: 8px;
+}
+.rank-card-preview-wrap .idnect-card-wrapper--design-minimal_line .idnect-card-barcode-wrap {
+    border-radius: 0;
+    border: 1px solid rgba(0, 0, 0, 0.18);
+    min-height: 38px;
+    max-height: 42px;
+    margin-bottom: 0;
+}
+
+/* エンブレム */
+.rank-card-preview-wrap .idnect-card-wrapper--design-emblem .idnect-card-front-inner {
+    align-items: center;
+    text-align: center;
+    padding-top: 10px;
+}
+.rank-card-preview-wrap .idnect-card-wrapper--design-emblem .idnect-card-logo-wrap {
+    justify-content: center;
+    margin: 0 0 4px 0;
+}
+.rank-card-preview-wrap .idnect-card-wrapper--design-emblem .idnect-card-logo,
+.rank-card-preview-wrap .idnect-card-wrapper--design-emblem .idnect-card-logo-placeholder {
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+    max-width: 24px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    object-fit: cover;
+    padding: 0;
+}
+.rank-card-preview-wrap .idnect-card-wrapper--design-emblem .idnect-card-front-inner .idnect-card-display-name {
+    margin-bottom: 5px;
+}
+.rank-card-preview-wrap .idnect-card-wrapper--design-emblem .idnect-card-meta-row {
+    flex-direction: column;
+    margin-bottom: 4px;
+    gap: 4px;
+}
+.rank-card-preview-wrap .idnect-card-wrapper--design-emblem .idnect-card-points--front {
+    border-radius: 999px;
+    padding: 3px 8px;
+}
+.rank-card-preview-wrap .idnect-card-wrapper--design-emblem .idnect-card-barcode-wrap {
+    width: 100%;
+    min-height: 36px;
+    max-height: 40px;
 }
 
 .rank-card-preview-wrap .idnect-card-front-inner .idnect-card-display-name {
@@ -359,18 +685,83 @@
     text-align: center;
 }
 
+.rank-card-preview-wrap .idnect-card-code-sample {
+    width: 100%;
+    height: 100%;
+}
+
+.rank-card-preview-wrap .idnect-card-code-wrap--barcode .idnect-card-code-sample {
+    border-radius: 4px;
+    background:
+        repeating-linear-gradient(
+            90deg,
+            #1f2937 0,
+            #1f2937 1px,
+            transparent 1px,
+            transparent 3px,
+            #111827 3px,
+            #111827 5px,
+            transparent 5px,
+            transparent 7px
+        ),
+        linear-gradient(#f8fafc, #f8fafc);
+}
+
+.rank-card-preview-wrap .idnect-card-code-wrap--qrcode .idnect-card-code-sample {
+    width: 48px;
+    height: 48px;
+    background:
+        linear-gradient(90deg, #111 50%, transparent 50%) 0 0 / 8px 8px,
+        linear-gradient(#111 50%, transparent 50%) 0 0 / 8px 8px,
+        #fff;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    position: relative;
+}
+
+.rank-card-preview-wrap .idnect-card-code-wrap--qrcode .idnect-card-code-sample::before,
+.rank-card-preview-wrap .idnect-card-code-wrap--qrcode .idnect-card-code-sample::after {
+    content: "";
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border: 2px solid #111;
+    background: #fff;
+}
+
+.rank-card-preview-wrap .idnect-card-code-wrap--qrcode .idnect-card-code-sample::before {
+    top: 4px;
+    left: 4px;
+}
+
+.rank-card-preview-wrap .idnect-card-code-wrap--qrcode .idnect-card-code-sample::after {
+    right: 4px;
+    bottom: 4px;
+}
+
+.rank-card-preview-wrap {
+    background: var(--bg-secondary, #fafaf9);
+    border-radius: var(--radius-lg, 12px);
+    padding: 24px;
+    border: 1px solid var(--border, #e7e5e4);
+}
+
+.rank-card-preview-wrap--compare {
+    padding: 20px 24px;
+}
+
 .rank-card-preview-grid {
     display: flex;
     flex-wrap: wrap;
-    gap: 20px;
+    gap: 24px;
     align-items: flex-start;
 }
 
 /* 全デザイン比較：5枚を横並び */
 .rank-card-preview-grid--multiple {
-    gap: 16px;
+    gap: 20px;
     justify-content: flex-start;
 }
+
 .rank-card-preview-grid--multiple .rank-card-preview-item {
     flex: 0 0 auto;
 }
@@ -379,22 +770,48 @@
     flex: 0 0 auto;
     cursor: pointer;
     border: 2px solid transparent;
-    border-radius: 12px;
-    padding: 6px;
-    margin: -6px;
-    transition: border-color 0.2s, box-shadow 0.2s;
+    border-radius: 14px;
+    padding: 12px;
+    margin: -12px;
+    transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
 }
+
 .rank-card-preview-item:hover {
-    border-color: rgba(0, 0, 0, 0.12);
+    border-color: var(--border, #e7e5e4);
+    background: rgba(255, 255, 255, 0.6);
 }
+
 .rank-card-preview-item--selected {
-    border-color: var(--bs-primary, #0d6efd);
-    box-shadow: 0 0 0 1px var(--bs-primary, #0d6efd);
+    border-color: var(--primary, #0d9488);
+    box-shadow: 0 0 0 1px var(--primary, #0d9488);
+    background: var(--primary-bg, rgba(13, 148, 136, 0.08));
 }
+
 .rank-card-preview-item .rank-card-preview-label {
     display: block;
-    margin-top: 8px;
-    font-size: 12px;
-    color: #666;
+    margin-top: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary, #1c1917);
     text-align: center;
+    line-height: 1.35;
+}
+
+.rank-card-preview-item .rank-card-preview-key {
+    font-weight: 400;
+    font-size: 12px;
+    color: var(--text-tertiary, #78716c);
+}
+
+.rank-card-preview-item--static {
+    cursor: auto;
+}
+
+.rank-card-preview-item--static:hover {
+    border-color: transparent;
+    background: transparent;
+}
+
+.rank-card-preview-item--static .idnect-card-wrapper {
+    cursor: default;
 }

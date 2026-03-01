@@ -3,6 +3,10 @@ class ApiClient {
         this.baseHeaders = AppConstants.HEADERS.JSON;
     }
 
+    static get LINE_USER_ID_STORAGE_KEY() {
+        return 'mobile_order_line_user_id';
+    }
+
     debugLog(eventName, payload) {
         if (typeof window !== 'undefined' && typeof window.__clientDebugLog === 'function') {
             try {
@@ -15,7 +19,16 @@ class ApiClient {
 
     resolveLineUserId() {
         if (typeof window === 'undefined') return null;
-        if (window.__LINE_USER_ID__) return window.__LINE_USER_ID__;
+        if (window.__LINE_USER_ID__) {
+            this.persistLineUserId(window.__LINE_USER_ID__);
+            return window.__LINE_USER_ID__;
+        }
+
+        const cached = this.getPersistedLineUserId();
+        if (cached) {
+            window.__LINE_USER_ID__ = cached;
+            return cached;
+        }
 
         if (typeof window.liff !== 'undefined') {
             try {
@@ -26,6 +39,7 @@ class ApiClient {
                     const sub = decoded && decoded.sub ? String(decoded.sub) : null;
                     if (sub) {
                         window.__LINE_USER_ID__ = sub;
+                        this.persistLineUserId(sub);
                         return sub;
                     }
                 }
@@ -35,6 +49,27 @@ class ApiClient {
         }
 
         return null;
+    }
+
+    persistLineUserId(lineUserId) {
+        if (typeof window === 'undefined' || !window.localStorage) return;
+        const normalized = String(lineUserId || '').trim();
+        if (!/^U[0-9a-f]{32}$/i.test(normalized)) return;
+        try {
+            window.localStorage.setItem(ApiClient.LINE_USER_ID_STORAGE_KEY, normalized);
+        } catch (e) {
+            // ignore
+        }
+    }
+
+    getPersistedLineUserId() {
+        if (typeof window === 'undefined' || !window.localStorage) return null;
+        try {
+            const value = String(window.localStorage.getItem(ApiClient.LINE_USER_ID_STORAGE_KEY) || '').trim();
+            return /^U[0-9a-f]{32}$/i.test(value) ? value : null;
+        } catch (e) {
+            return null;
+        }
     }
 
     async request(endpoint, options = {}) {
@@ -84,8 +119,13 @@ class ApiClient {
             config.body = typeof body === 'string' ? body : JSON.stringify(body);
         }
 
+        // WebView では相対 URL を現在のオリジンに解決（念のため明示）
+        const url = (typeof window !== 'undefined' && window.location && (endpoint.startsWith('/') && !endpoint.startsWith('//')))
+            ? window.location.origin + endpoint
+            : endpoint;
+
         try {
-            const response = await fetch(endpoint, config);
+            const response = await fetch(url, config);
             
             const contentType = response.headers.get('content-type');
             if (!contentType || !contentType.includes(AppConstants.CONTENT_TYPES.JSON)) {

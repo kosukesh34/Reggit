@@ -20,9 +20,30 @@ class MobileOrderApp {
     }
 
     getInitialTab() {
+        const allowedTabs = new Set(['home', 'products', 'orders', 'stamps', 'coupons', 'queue', 'member', 'reservations', 'gallery']);
+        if (typeof window.__NATIVE_TARGET_TAB__ !== 'undefined' && window.__NATIVE_TARGET_TAB__ && allowedTabs.has(window.__NATIVE_TARGET_TAB__)) {
+            return window.__NATIVE_TARGET_TAB__;
+        }
+        const fromUrl = this.getTabFromUrl();
+        if (fromUrl) return fromUrl;
         const firstBtn = document.querySelector('.main-tab-btn.active') || document.querySelector('.main-tab-btn');
         if (firstBtn && firstBtn.dataset.tab) return firstBtn.dataset.tab;
         return AppConstants.TABS.PRODUCTS;
+    }
+
+    getTabFromUrl() {
+        if (typeof window === 'undefined') return null;
+        const params = new URLSearchParams(window.location.search || '');
+        const tab = params.get('tab');
+        if (!tab) return null;
+        const btn = document.querySelector('.main-tab-btn[data-tab="' + tab + '"]');
+        return btn ? tab : null;
+    }
+
+    shouldOpenMemberRegisterOnLoad() {
+        if (typeof window === 'undefined') return false;
+        const params = new URLSearchParams(window.location.search || '');
+        return params.get('member_register') === '1';
     }
 
     get memberData() {
@@ -30,17 +51,26 @@ class MobileOrderApp {
     }
 
     init() {
+        if (typeof window.__mobileOrderLog === 'function') {
+            window.__mobileOrderLog('app.init', { currentTab: this.currentTab, ua: typeof navigator !== 'undefined' ? navigator.userAgent : '' });
+        }
         this.deviceManager.init();
         this.preventZoom();
         this.setupEventListeners();
         this.layoutManager.render(this.currentTab);
+        if (typeof window.__mobileOrderLog === 'function') window.__mobileOrderLog('app.init render done', { tab: this.currentTab });
         this.loadProductsWhenReady();
         this.announcementManager.load();
         this.memberManager.preload();
+        if (this.shouldOpenMemberRegisterOnLoad()) {
+            this.switchTab(AppConstants.TABS.MEMBER);
+            this.memberManager.openRegisterFullScreen();
+        }
     }
 
     async onLiffReady() {
-        this.deviceManager.registerDevice();
+        // ネイティブアプリ内では注入タイミングが遅いことがあるため、ready 時にも init してデバイス登録を確実にする
+        this.deviceManager.init();
         this.memberManager.preload();
         const hasQueueToken = this.queueManager.getQueueTokenFromUrl() !== null;
 
@@ -101,10 +131,23 @@ class MobileOrderApp {
         this.setupTabEventListeners();
         this.setupCategoryEventListeners();
         this.setupOrderEventListeners();
-        const backdrop = document.querySelector('[data-close="profileEdit"]');
-        if (backdrop) {
-            backdrop.addEventListener('click', () => this.memberManager.closeProfileEdit());
-        }
+        this.setupNativeAppEventListeners();
+    }
+
+    /** ネイティブアプリでデバイス情報が注入されたあと、固定タブへ切り替え・会員タブのウォレット表示を更新する */
+    setupNativeAppEventListeners() {
+        const app = this;
+        const allowedTabs = new Set(['home', 'products', 'orders', 'stamps', 'coupons', 'queue', 'member', 'reservations', 'gallery']);
+        document.addEventListener('mobile-device-info-injected', () => {
+            if (typeof window.__MOBILE_APP_MODE__ === 'undefined' || !window.__MOBILE_APP_MODE__) return;
+            const targetTab = typeof window.__NATIVE_TARGET_TAB__ !== 'undefined' ? window.__NATIVE_TARGET_TAB__ : app.currentTab;
+            if (targetTab && allowedTabs.has(targetTab) && targetTab !== app.currentTab) {
+                app.switchTab(targetTab);
+            }
+            if (targetTab === AppConstants.TABS.MEMBER) {
+                app.memberManager.load();
+            }
+        });
     }
 
     setupCartEventListeners() {
@@ -154,16 +197,24 @@ class MobileOrderApp {
     }
 
     loadProductsWhenReady() {
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => this.loadProducts());
-        } else {
+        const run = () => {
+            if (this.currentTab !== AppConstants.TABS.PRODUCTS) return;
             this.loadProducts();
+        };
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', run);
+        } else {
+            run();
         }
     }
 
     async loadProducts() {
-        const grid = DomHelper.getElementById(AppConstants.ELEMENT_IDS.PRODUCTS_GRID);
-        if (grid) grid.innerHTML = this.productManager.getProductSkeleton();
+        const grid = document.getElementById(AppConstants.ELEMENT_IDS.PRODUCTS_GRID);
+        if (!grid) {
+            if (typeof window.__mobileOrderLog === 'function') window.__mobileOrderLog('loadProducts: productsGrid not found', { currentTab: this.currentTab });
+            return;
+        }
+        grid.innerHTML = this.productManager.getProductSkeleton();
         try {
             await this.productManager.loadProducts();
             this.renderCategoryTabs();
@@ -389,6 +440,7 @@ class MobileOrderApp {
     }
 
     switchTab(tab) {
+        if (typeof window.__mobileOrderLog === 'function') window.__mobileOrderLog('switchTab', { tab });
         this.currentTab = tab;
 
         DomHelper.querySelectorAll('.main-tab-btn').forEach((btn) => {
@@ -419,7 +471,13 @@ class MobileOrderApp {
     async loadOrdersTab() {
         const section = DomHelper.getElementById(AppConstants.ELEMENT_IDS.ORDERS_SECTION);
         if (!section) return;
-        if (typeof window === 'undefined' || !window.__LINE_USER_ID__) {
+        if (typeof window !== 'undefined' && window.__MOBILE_APP_MODE__ && !window.__LINE_USER_ID__ && this.memberManager) {
+            await this.memberManager.resolveLineUserIdForNativeApp();
+        }
+        const hasIdentity = this.memberManager && typeof this.memberManager.hasAuthenticatedIdentity === 'function'
+            ? this.memberManager.hasAuthenticatedIdentity()
+            : (typeof window !== 'undefined' && !!window.__LINE_USER_ID__);
+        if (!hasIdentity) {
             section.innerHTML = this.memberManager.getLoginOptionalTemplate(
                 '注文履歴',
                 'ログインすると注文履歴をご利用いただけます。'
@@ -463,7 +521,13 @@ class MobileOrderApp {
     async checkMembershipAndLoadReservations() {
         const section = DomHelper.getElementById(AppConstants.ELEMENT_IDS.RESERVATIONS_SECTION);
         if (!section) return;
-        if (typeof window === 'undefined' || !window.__LINE_USER_ID__) {
+        if (typeof window !== 'undefined' && window.__MOBILE_APP_MODE__ && !window.__LINE_USER_ID__ && this.memberManager) {
+            await this.memberManager.resolveLineUserIdForNativeApp();
+        }
+        const hasIdentity = this.memberManager && typeof this.memberManager.hasAuthenticatedIdentity === 'function'
+            ? this.memberManager.hasAuthenticatedIdentity()
+            : (typeof window !== 'undefined' && !!window.__LINE_USER_ID__);
+        if (!hasIdentity) {
             section.innerHTML = this.memberManager.getLoginOptionalTemplate(
                 '予約',
                 'ログインすると予約をご利用いただけます。'
@@ -524,6 +588,12 @@ if (typeof window !== 'undefined' && !window.__LIFF_APP_BOOTSTRAP__) {
 
     // フォールバック: 5秒以内にliff-readyが来なければ強制起動
     setTimeout(() => {
-        if (!window.app && typeof MobileOrderApp !== 'undefined') createApp();
+        if (!window.app && typeof MobileOrderApp !== 'undefined') {
+            createApp();
+        }
+        const loadingEl = document.getElementById('liff-loading');
+        if (loadingEl && !loadingEl.classList.contains('liff-loading--hidden')) {
+            loadingEl.classList.add('liff-loading--hidden');
+        }
     }, 5000);
 }

@@ -3,6 +3,34 @@ class MemberManager {
         this.apiClient = apiClient;
         this.orderManager = orderManager;
         this.memberData = null;
+        this._memberContextFetchedAt = 0;
+        this._memberContextFetchPromise = null;
+        this._registerFullScreen = false;
+        this._profileEditFullScreen = false;
+        this._historyHandlerBound = false;
+        this._bindScreenPopState();
+    }
+
+    _bindScreenPopState() {
+        if (this._historyHandlerBound || typeof window === 'undefined') return;
+        this._historyHandlerBound = true;
+        window.addEventListener('popstate', () => {
+            const registerMode = this.isRegisterPageMode();
+            const editMode = this.isEditPageMode();
+            if (registerMode) {
+                this.openRegisterFullScreen({ skipHistory: true });
+                return;
+            }
+            if (editMode) {
+                this.openProfileEdit({ skipHistory: true });
+                return;
+            }
+            if (this._registerFullScreen || this._profileEditFullScreen) {
+                this._registerFullScreen = false;
+                this._profileEditFullScreen = false;
+                this.load();
+            }
+        });
     }
 
     static isIOS() {
@@ -28,21 +56,132 @@ class MemberManager {
         return typeof window !== 'undefined' && window.__MOBILE_APP_MODE__ === true;
     }
 
+    /** ネイティブアプリ時は __MOBILE_DEVICE_INFO__.platform を優先。ブラウザ時は null。 */
+    static getNativePlatform() {
+        if (typeof window === 'undefined' || !window.__MOBILE_APP_MODE__ || !window.__MOBILE_DEVICE_INFO__) return null;
+        const p = window.__MOBILE_DEVICE_INFO__.platform;
+        return (p === 'ios' || p === 'android') ? p : null;
+    }
+
+    /** Apple Wallet ボタンを表示すべきか（iOS またはネイティブ iOS アプリかつ有効時） */
+    static shouldShowAppleWallet() {
+        if (!MemberManager.isWalletPassEnabled()) return false;
+        const nativePlatform = MemberManager.getNativePlatform();
+        if (nativePlatform === 'ios') return true;
+        if (nativePlatform === 'android') return false;
+        return MemberManager.isIOS();
+    }
+
+    /** Google Wallet ボタンを表示すべきか（Android またはネイティブ Android アプリかつ有効時） */
+    static shouldShowGoogleWallet() {
+        if (!MemberManager.isGoogleWalletEnabled()) return false;
+        const nativePlatform = MemberManager.getNativePlatform();
+        if (nativePlatform === 'android') return true;
+        if (nativePlatform === 'ios') return false;
+        return MemberManager.isAndroid();
+    }
+
     getMemberData() {
         return this.memberData;
     }
 
+    hasAuthenticatedIdentity() {
+        if (typeof window === 'undefined') return false;
+        if (window.__LINE_USER_ID__) return true;
+        return !!(this.memberData && this.memberData.is_member === true);
+    }
+
     setMemberData(data) {
         this.memberData = data;
+        this._syncLineUserIdFromMemberData(data);
+    }
+
+    /**
+     * ネイティブアプリで会員API取得後に __LINE_USER_ID__ を同期し、他タブ（クーポン・予約・注文履歴）でログイン扱いにする。
+     * @param {object} data - members/me の result.data または正規化済み payload
+     */
+    _syncLineUserIdFromMemberData(data) {
+        if (typeof window === 'undefined' || !window.__MOBILE_APP_MODE__ || !data || typeof data !== 'object') return;
+        const lineUserId = (data.user && data.user.line_user_id) ? String(data.user.line_user_id).trim() : null;
+        if (lineUserId) {
+            window.__LINE_USER_ID__ = lineUserId;
+            if (this.apiClient && typeof this.apiClient.persistLineUserId === 'function') {
+                this.apiClient.persistLineUserId(lineUserId);
+            }
+        } else if (!window.__LINE_USER_ID__ && this.apiClient && typeof this.apiClient.getPersistedLineUserId === 'function') {
+            const cached = this.apiClient.getPersistedLineUserId();
+            if (cached) {
+                window.__LINE_USER_ID__ = cached;
+            }
+        }
+    }
+
+    _setMemberContextCache(payload) {
+        if (payload && typeof payload === 'object') {
+            this.memberData = payload;
+            this._memberContextFetchedAt = Date.now();
+        }
+    }
+
+    async fetchMemberContext(options) {
+        const opts = options || {};
+        const force = !!opts.force;
+        const now = Date.now();
+        if (!force && this.memberData && (now - this._memberContextFetchedAt) < 5000) {
+            return this.memberData;
+        }
+        if (!force && this._memberContextFetchPromise) {
+            return this._memberContextFetchPromise;
+        }
+
+        this._memberContextFetchPromise = (async () => {
+            const result = await this.apiClient.get(AppConstants.API_ENDPOINTS.MEMBERS_ME);
+            if (!result.success || !result.data) {
+                throw new Error(result.error || (result.data && result.data.message) || '会員情報の取得に失敗しました');
+            }
+            const payload = this._normalizeMemberPayload(result.data);
+            if (!payload) {
+                throw new Error('会員情報の形式が正しくありません');
+            }
+            this._setMemberContextCache(payload);
+            this._syncLineUserIdFromMemberData(result.data);
+            return payload;
+        })();
+
+        try {
+            return await this._memberContextFetchPromise;
+        } finally {
+            this._memberContextFetchPromise = null;
+        }
+    }
+
+    /**
+     * ネイティブアプリで __LINE_USER_ID__ が未設定のとき、members/me を呼んで取得・設定する。
+     * @returns {Promise<boolean>} 呼び出し後に __LINE_USER_ID__ が設定されていれば true
+     */
+    async resolveLineUserIdForNativeApp() {
+        if (typeof window === 'undefined' || !window.__MOBILE_APP_MODE__ || window.__LINE_USER_ID__) {
+            return !!window.__LINE_USER_ID__;
+        }
+        if (this.apiClient && typeof this.apiClient.getPersistedLineUserId === 'function') {
+            const cached = this.apiClient.getPersistedLineUserId();
+            if (cached) {
+                window.__LINE_USER_ID__ = cached;
+                return true;
+            }
+        }
+        try {
+            await this.fetchMemberContext({ force: true });
+        } catch (e) {
+            // 未ログインなどは無視
+        }
+        return !!window.__LINE_USER_ID__;
     }
 
     preload() {
         if (!this.canUseMemberFeature()) return;
-        const self = this;
-        this.apiClient.get(AppConstants.API_ENDPOINTS.MEMBERS_ME).then(function (result) {
-            if (result.success && result.data && typeof result.data.is_member !== 'undefined') {
-                self.memberData = result.data;
-            }
+        this.fetchMemberContext().catch(function () {
+            // ignore preload errors
         });
     }
 
@@ -56,6 +195,27 @@ class MemberManager {
         return !!(window.__LINE_PROFILE__ && window.__LINE_PROFILE__.displayName);
     }
 
+    /**
+     * GET /members/me のレスポンスから is_member を持つ payload を取得する。
+     * フラット形式・{ member: ... }・{ data: ... } のいずれにも対応。
+     * @param {object} resultData - apiClient が返す result.data
+     * @returns {object|null} is_member を持つオブジェクト、または null
+     */
+    _normalizeMemberPayload(resultData) {
+        if (!resultData || typeof resultData !== 'object') return null;
+        let candidate = resultData;
+        if (resultData.data && typeof resultData.data === 'object') {
+            candidate = resultData.data;
+        }
+        if (candidate.member && typeof candidate.member === 'object' && typeof candidate.member.is_member !== 'undefined') {
+            return candidate.member;
+        }
+        if (typeof candidate.is_member !== 'undefined') {
+            return candidate;
+        }
+        return null;
+    }
+
     async ensureGuestMemberContext() {
         if (this.memberData && typeof this.memberData.is_member !== 'undefined') {
             return this.memberData;
@@ -64,8 +224,8 @@ class MemberManager {
         try {
             const result = await this.apiClient.get(AppConstants.API_ENDPOINTS.MEMBERS_ME);
             if (result && result.success && result.data) {
-                const payload = (result.data && result.data.member) ? result.data.member : result.data;
-                if (payload && typeof payload.is_member !== 'undefined') {
+                const payload = this._normalizeMemberPayload(result.data);
+                if (payload) {
                     this.memberData = payload;
                     return payload;
                 }
@@ -114,7 +274,7 @@ class MemberManager {
                     <div class="member-card-line-only-body">
                         <p class="member-card-line-only-message">会員登録されていません。</p>
                         <p class="member-card-line-only-sub">会員登録すると会員証が表示されます。</p>
-                        <button type="button" class="btn btn-primary mt-2" onclick="window.app.memberManager.openRegisterModal()">
+                        <button type="button" class="btn btn-primary mt-2 member-register-trigger" data-action="member-open-register" onclick="typeof window.app !== 'undefined' && window.app.memberManager && window.app.memberManager.navigateToRegisterPage()">
                             <i class="fas fa-user-plus"></i> 会員登録する
                         </button>
                     </div>
@@ -133,7 +293,7 @@ class MemberManager {
                     <div class="member-card-line-only-body">
                         <p class="member-card-line-only-message">会員登録されていません。</p>
                         <p class="member-card-line-only-sub">会員登録すると会員証が表示されます。</p>
-                        <button type="button" class="btn btn-primary mt-2" onclick="window.app.memberManager.openRegisterModal()">
+                        <button type="button" class="btn btn-primary mt-2 member-register-trigger" data-action="member-open-register" onclick="typeof window.app !== 'undefined' && window.app.memberManager && window.app.memberManager.navigateToRegisterPage()">
                             <i class="fas fa-user-plus"></i> 会員登録する
                         </button>
                     </div>
@@ -203,30 +363,21 @@ class MemberManager {
         container.innerHTML = this.getSkeletonHtml();
 
         try {
-            const result = await this.apiClient.get(AppConstants.API_ENDPOINTS.MEMBERS_ME);
-            if (!result.success) {
-                throw new Error(result.error || (result.data && result.data.message) || '会員情報の取得に失敗しました');
-            }
-            const data = result.data;
-            const payload = (data && data.member) ? data.member : data;
-            if (!payload || typeof payload.is_member === 'undefined') {
-                throw new Error('会員情報の形式が正しくありません');
-            }
+            const payload = await this.fetchMemberContext({ force: true });
             if (!payload.is_member) {
                 if (payload.show_member_card_for_guest === false) {
                     container.innerHTML = this.getGuestNoCardTemplate();
-                    this.memberData = payload;
+                    this._attachRegisterTrigger(container);
                     return;
                 }
-                this.memberData = payload;
                 if (this.canAutoRegister()) {
                     await this.autoRegister();
                 } else {
                     container.innerHTML = this.getGuestRegisterTemplate();
+                    this._attachRegisterTrigger(container);
                 }
                 return;
             }
-            this.memberData = payload;
             this.render(payload);
         } catch (error) {
             console.error('Failed to load member card:', error);
@@ -241,9 +392,10 @@ class MemberManager {
         }
         try {
             const result = await this.apiClient.post(AppConstants.API_ENDPOINTS.MEMBERS_REGISTER, payload);
-            if (result.success && result.data && result.data.is_member) {
-                this.memberData = result.data;
-                this.render(result.data);
+            const payload = result.success && result.data ? (this._normalizeMemberPayload(result.data) || result.data) : null;
+            if (payload && payload.is_member) {
+                this.memberData = payload;
+                this.render(payload);
                 ToastManager.success('会員証を作成しました');
             } else if (result.success) {
                 await this.load();
@@ -253,12 +405,66 @@ class MemberManager {
         } catch (error) {
             console.error('Auto register error:', error);
             const container = this.getContainer();
-            if (container) container.innerHTML = this.getGuestRegisterTemplate();
+            if (container) {
+                container.innerHTML = this.getGuestRegisterTemplate();
+                this._attachRegisterTrigger(container);
+            }
             if (typeof ToastManager !== 'undefined') {
                 ToastManager.info('会員情報を入力して登録してください');
             }
-            this.openRegisterModal();
+            this.openRegisterFullScreen();
         }
+    }
+
+    /** 会員登録ボタンにクリックを付与（Android WebView で onclick が効かない場合の対策） */
+    _attachRegisterTrigger(container) {
+        if (!container) return;
+        const btn = container.querySelector('.member-register-trigger, [data-action="member-open-register"]');
+        if (btn) {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.navigateToRegisterPage();
+            });
+        }
+    }
+
+    isRegisterPageMode() {
+        if (typeof window === 'undefined') return false;
+        const params = new URLSearchParams(window.location.search || '');
+        return params.get('member_register') === '1' || params.get('member_screen') === 'register';
+    }
+
+    isEditPageMode() {
+        if (typeof window === 'undefined') return false;
+        const params = new URLSearchParams(window.location.search || '');
+        return params.get('member_screen') === 'edit';
+    }
+
+    _updateMemberScreenUrl(screen, replaceHistory) {
+        if (typeof window === 'undefined') return;
+        const url = new URL(window.location.href);
+        url.searchParams.set('tab', 'member');
+        if (screen === 'register') {
+            url.searchParams.set('member_register', '1');
+            url.searchParams.set('member_screen', 'register');
+        } else if (screen === 'edit') {
+            url.searchParams.delete('member_register');
+            url.searchParams.set('member_screen', 'edit');
+        } else {
+            url.searchParams.delete('member_register');
+            url.searchParams.delete('member_screen');
+        }
+        const method = replaceHistory ? 'replaceState' : 'pushState';
+        window.history[method]({ memberScreen: screen || 'member' }, '', url.toString());
+    }
+
+    navigateToRegisterPage() {
+        if (typeof window === 'undefined') return;
+        if (window.app && typeof window.app.switchTab === 'function') {
+            window.app.switchTab(AppConstants.TABS.MEMBER);
+        }
+        this._updateMemberScreenUrl('register', false);
+        this.openRegisterFullScreen({ skipHistory: true });
     }
 
     render(data) {
@@ -303,6 +509,13 @@ class MemberManager {
         const codeBlock = isQR
             ? `<div class="idnect-card-barcode-wrap idnect-card-code-wrap--qrcode"><div id="${codeId}" class="idnect-card-qrcode-wrap" aria-label="会員番号QRコード"></div></div>`
             : `<div class="idnect-card-barcode-wrap idnect-card-code-wrap--barcode"><svg id="${codeId}" class="idnect-card-barcode-svg"></svg></div>`;
+        const cardStyle = currentRankColor ? ` data-rank-color="true" style="--idnect-card-rank-color: ${DomHelper.escapeHtml(currentRankColor)}"` : '';
+        const availableDesigns = ['default', 'logo_top', 'logo_center', 'logo_header', 'compact', 'split_banner', 'minimal_line', 'emblem'];
+        const cardDesignClass = 'idnect-card-wrapper--design-' + (availableDesigns.indexOf(memberCardDesign) >= 0 ? memberCardDesign : 'default');
+        const showLogoOnCard = (memberCardDesign === 'logo_top' || memberCardDesign === 'logo_center' || memberCardDesign === 'logo_header' || memberCardDesign === 'split_banner' || memberCardDesign === 'emblem') && memberCardLogoUrl;
+        const logoBlock = showLogoOnCard
+            ? `<div class="idnect-card-logo-wrap"><img src="${DomHelper.escapeHtml(memberCardLogoUrl)}" class="idnect-card-logo" alt="" onerror="this.parentElement.style.display='none'"></div>`
+            : '';
         const isSheet = memberCardDisplayType === 'sheet';
         const cardBlock = isSheet
             ? `<div class="member-card-sheet-wrap"><div class="idnect-card-wrapper idnect-card-wrapper--sheet ${cardDesignClass}"${cardStyle}>
@@ -358,17 +571,12 @@ class MemberManager {
             typeof window !== 'undefined' && window.__LIFF_PERMISSION_DENIED__
                 ? '<p class="member-card-profile-notice">LINEの表示名は取得していません。<button type="button" class="link-btn" onclick="location.reload()">再読み込み</button></p>'
                 : '';
-        const showAddToAppleWallet = MemberManager.isIOS() && MemberManager.isWalletPassEnabled();
-        const showAddToGoogleWallet = MemberManager.isAndroid() && MemberManager.isGoogleWalletEnabled();
+        const showAddToAppleWallet = MemberManager.shouldShowAppleWallet();
+        const showAddToGoogleWallet = MemberManager.shouldShowGoogleWallet();
         const walletPassImageUrl = (typeof window !== 'undefined' && window.__WALLET_PASS_ADD_BUTTON_IMAGE__) || '/images/add-to-apple-wallet-logo.png';
+        const googleWalletImageUrl = (typeof window !== 'undefined' && window.__GOOGLE_WALLET_ADD_BUTTON_IMAGE__) || '/images/add-to-google-wallet-logo.png';
         const projectKey = (typeof window !== 'undefined' && window.__PROJECT_KEY__) ? window.__PROJECT_KEY__ : 'default';
         const walletPassUrl = AppConstants.API_ENDPOINTS.MEMBERS_WALLET_PASS + '?project_key=' + encodeURIComponent(projectKey);
-        const cardStyle = currentRankColor ? ` data-rank-color="true" style="--idnect-card-rank-color: ${DomHelper.escapeHtml(currentRankColor)}"` : '';
-        const cardDesignClass = 'idnect-card-wrapper--design-' + (['default', 'logo_top', 'logo_center', 'logo_header', 'compact'].indexOf(memberCardDesign) >= 0 ? memberCardDesign : 'default');
-        const showLogoOnCard = (memberCardDesign === 'logo_top' || memberCardDesign === 'logo_center' || memberCardDesign === 'logo_header') && memberCardLogoUrl;
-        const logoBlock = showLogoOnCard
-            ? `<div class="idnect-card-logo-wrap"><img src="${DomHelper.escapeHtml(memberCardLogoUrl)}" class="idnect-card-logo" alt="" onerror="this.parentElement.style.display='none'"></div>`
-            : '';
         let addToWalletBlock = '';
         if (showAddToAppleWallet) {
             addToWalletBlock += `<div class="member-card-add-to-wallet-wrap">
@@ -380,7 +588,7 @@ class MemberManager {
         if (showAddToGoogleWallet) {
             addToWalletBlock += `<div class="member-card-add-to-wallet-wrap">
                 <button type="button" class="member-card-add-to-wallet-btn member-card-add-to-wallet-btn--google" data-google-wallet aria-label="Google Walletに追加">
-                    <img src="https://pay.google.com/static/images/badges/ja/add_to_google_wallet.svg" alt="Google Walletに追加" class="member-card-add-to-wallet-img" style="height:40px;width:auto;" onerror="this.parentElement.innerHTML='Google Walletに追加'">
+                    <img src="${DomHelper.escapeHtml(googleWalletImageUrl)}" alt="Google Walletに追加" class="member-card-add-to-wallet-img" onerror="this.src='https://pay.google.com/static/images/badges/ja/add_to_google_wallet.svg';this.onerror=function(){this.parentElement.innerHTML='Google Walletに追加';}">
                 </button>
             </div>`;
         }
@@ -415,6 +623,9 @@ class MemberManager {
                     </button>
                     <div id="memberRankHistoryList" class="member-purchase-history-list member-rank-history-list" hidden aria-labelledby="memberRankHistoryToggle">${this._formatRankUpHistoryHtml(rankUpHistory)}</div>
                 </div>
+                <div class="member-withdraw-wrap">
+                    <button type="button" class="member-withdraw-btn" id="memberWithdrawBtn" aria-label="退会する">退会する</button>
+                </div>
             </div>
         `;
 
@@ -428,6 +639,7 @@ class MemberManager {
         this._setupPurchaseHistoryToggle();
         this._setupPointHistoryToggle();
         this._setupRankHistoryToggle();
+        this._setupWithdrawButton();
     }
 
     _formatRankUpHistoryHtml(history) {
@@ -472,6 +684,48 @@ class MemberManager {
         });
     }
 
+    _setupWithdrawButton() {
+        const btn = document.getElementById('memberWithdrawBtn');
+        if (!btn) return;
+        const self = this;
+        btn.addEventListener('click', function () {
+            self.requestWithdraw();
+        });
+    }
+
+    /**
+     * 退会確認ダイアログを表示し、了承されたら退会APIを呼び出す。
+     */
+    async requestWithdraw() {
+        const message = '退会すると会員情報・ポイント・スタンプ等のデータは復元できません。本当に退会しますか？';
+        if (typeof window !== 'undefined' && window.confirm && !window.confirm(message)) {
+            return;
+        }
+        const btn = document.getElementById('memberWithdrawBtn');
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = '処理中...';
+        }
+        try {
+            const result = await this.apiClient.post(AppConstants.API_ENDPOINTS.MEMBERS_WITHDRAW, {});
+            if (result && result.success) {
+                this.memberData = null;
+                this._memberContextFetchedAt = 0;
+                if (typeof ToastManager !== 'undefined') ToastManager.success(result.message || '退会が完了しました');
+                this.load();
+            } else {
+                throw new Error(result && result.message ? result.message : '退会に失敗しました');
+            }
+        } catch (error) {
+            console.error('Withdraw error:', error);
+            if (typeof ToastManager !== 'undefined') ToastManager.error(error.message || '退会処理に失敗しました');
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = '退会する';
+            }
+        }
+    }
+
     _setupAddToWallet() {
         const projectKey = (typeof window !== 'undefined' && window.__PROJECT_KEY__) ? window.__PROJECT_KEY__ : 'default';
         const appleBtn = document.querySelector('.member-card-add-to-wallet-btn[data-wallet-pass-url]');
@@ -514,6 +768,12 @@ class MemberManager {
             return;
         }
         const fullUrl = url.startsWith('http') ? url : (window.location.origin + (url.startsWith('/') ? '' : '/') + url);
+        if (MemberManager.isMobileAppMode()) {
+            window.location.href = fullUrl;
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+            return;
+        }
         fetch(fullUrl, { credentials: 'include', method: 'GET' })
             .then(function (res) {
                 if (!res.ok) {
@@ -753,14 +1013,20 @@ class MemberManager {
         }
     }
 
-    openProfileEdit() {
+    openProfileEdit(options) {
+        options = options || {};
         if (!this.memberData) return;
         const user = this.memberData.user || (this.memberData.member && this.memberData.member.user);
         const member = this.memberData.member;
-        const content = document.getElementById('profileEditModalContent');
-        const modal = document.getElementById('profileEditModal');
-        if (!content || !modal) return;
-        content.innerHTML = this._getProfileEditFormHtml(user, member);
+        const container = this.getContainer();
+        if (!container) return;
+        if (!options.skipHistory && !this.isEditPageMode()) {
+            this._updateMemberScreenUrl('edit', false);
+        }
+        this._registerFullScreen = false;
+        this._profileEditFullScreen = true;
+        container.innerHTML = this._getProfileEditFormHtml(user, member, { fullScreen: true, isRegister: false });
+        container.scrollTop = 0;
         const form = document.getElementById('profileEditForm');
         if (form) {
             form.addEventListener('submit', (e) => {
@@ -768,16 +1034,25 @@ class MemberManager {
                 window.app.memberManager.saveProfileEdit(e);
             });
         }
-        this._setupPostalCodeLookup();
-        modal.setAttribute('aria-hidden', 'false');
-        modal.classList.add('member-modal--open');
+        this._setupPostalCodeLookup(container);
     }
 
-    closeProfileEdit() {
-        const modal = document.getElementById('profileEditModal');
-        if (modal) {
-            modal.setAttribute('aria-hidden', 'true');
-            modal.classList.remove('member-modal--open');
+    closeProfileEdit(options) {
+        options = options || {};
+        this._profileEditFullScreen = false;
+        if (!options.skipHistory) {
+            this._updateMemberScreenUrl('', true);
+        }
+        this.load();
+    }
+
+    closeMemberScreen() {
+        if (this._registerFullScreen) {
+            this.closeRegisterFullScreen();
+            return;
+        }
+        if (this._profileEditFullScreen) {
+            this.closeProfileEdit();
         }
     }
 
@@ -848,7 +1123,8 @@ class MemberManager {
         options = options || {};
         const isRegister = options.isRegister === true;
         const root = (this.memberData && this.memberData.member) ? this.memberData.member : this.memberData;
-        const fields = (root && root.profile_field_settings) ? root.profile_field_settings : [
+        // 会員APIは profile / profile_field_settings をトップレベルで返すため、memberData から直接参照する
+        const fields = (this.memberData && this.memberData.profile_field_settings) ? this.memberData.profile_field_settings : (root && root.profile_field_settings) ? root.profile_field_settings : [
             { key: 'name', label: 'お名前', required: true },
             { key: 'kana', label: 'お名前（カナ）', required: false },
             { key: 'phone', label: '電話番号', required: false },
@@ -861,7 +1137,7 @@ class MemberManager {
             { key: 'address', label: '住所', required: false },
             { key: 'sex', label: '性別', required: false },
         ];
-        let profile = (root && root.profile) ? root.profile : {};
+        let profile = (this.memberData && this.memberData.profile && typeof this.memberData.profile === 'object') ? this.memberData.profile : (root && root.profile) ? root.profile : {};
         if (isRegister && options.initialProfile && typeof options.initialProfile === 'object') {
             profile = Object.assign({}, profile, options.initialProfile);
         }
@@ -910,29 +1186,57 @@ class MemberManager {
         const formId = isRegister ? 'registerForm' : 'profileEditForm';
         const submitLabel = isRegister ? '登録する' : '保存';
         const titleIcon = isRegister ? 'fa-user-plus' : 'fa-user-edit';
-        return `
+        const isFullScreen = options.fullScreen === true;
+        const cancelLabel = 'キャンセル';
+        const cancelOnclick = isFullScreen ? 'window.app.memberManager.closeMemberScreen()' : 'window.app.memberManager.closeProfileEdit()';
+        const formInner = `
             <div class="member-modal-inner">
                 <h3 class="member-modal-title"><i class="fas ${titleIcon}"></i> ${DomHelper.escapeHtml(title)}</h3>
                 <form id="${formId}" class="member-form">
                     ${rows.join('')}
                     <div class="member-form-actions">
-                        <button type="button" class="member-btn member-btn--secondary" onclick="window.app.memberManager.closeProfileEdit()">キャンセル</button>
+                        <button type="button" class="member-btn member-btn--secondary" onclick="${cancelOnclick}">${DomHelper.escapeHtml(cancelLabel)}</button>
                         <button type="submit" class="member-btn member-btn--primary"><i class="fas fa-check"></i> ${DomHelper.escapeHtml(submitLabel)}</button>
                     </div>
                 </form>
             </div>
         `;
+        if (isFullScreen) {
+            return `
+                <div class="member-register-fullscreen">
+                    <div class="member-register-fullscreen-header">
+                        <h2 class="member-register-fullscreen-title">${DomHelper.escapeHtml(title)}</h2>
+                    </div>
+                    <div class="member-register-fullscreen-body">${formInner}</div>
+                </div>
+            `;
+        }
+        return formInner;
     }
 
     async openRegisterModal() {
-        await this.ensureGuestMemberContext();
+        await this.openRegisterFullScreen();
+    }
+
+    async openRegisterFullScreen(options) {
+        options = options || {};
+        try {
+            await this.ensureGuestMemberContext();
+        } catch (e) {
+            console.warn('ensureGuestMemberContext failed', e);
+        }
         if (this.memberData && this.memberData.is_member) return;
-        const content = document.getElementById('profileEditModalContent');
-        const modal = document.getElementById('profileEditModal');
-        if (!content || !modal) return;
+        if (!options.skipHistory && !this.isRegisterPageMode()) {
+            this._updateMemberScreenUrl('register', false);
+        }
+        const container = this.getContainer();
+        if (!container) return;
         const initialProfile = (typeof window !== 'undefined' && window.__LINE_PROFILE__ && window.__LINE_PROFILE__.displayName)
             ? { name: window.__LINE_PROFILE__.displayName } : {};
-        content.innerHTML = this._getProfileEditFormHtml(null, null, { isRegister: true, initialProfile: initialProfile });
+        this._registerFullScreen = true;
+        this._profileEditFullScreen = false;
+        container.innerHTML = this._getProfileEditFormHtml(null, null, { isRegister: true, initialProfile: initialProfile, fullScreen: true });
+        container.scrollTop = 0;
         const form = document.getElementById('registerForm');
         if (form) {
             form.addEventListener('submit', (e) => {
@@ -940,9 +1244,13 @@ class MemberManager {
                 window.app.memberManager.saveRegisterForm(e);
             });
         }
-        this._setupPostalCodeLookup(document);
-        modal.setAttribute('aria-hidden', 'false');
-        modal.classList.add('member-modal--open');
+        this._setupPostalCodeLookup(container);
+    }
+
+    closeRegisterFullScreen() {
+        this._registerFullScreen = false;
+        this._updateMemberScreenUrl('', true);
+        this.load();
     }
 
     async saveRegisterForm(e) {
@@ -991,16 +1299,25 @@ class MemberManager {
         }
         try {
             const result = await this.apiClient.post(AppConstants.API_ENDPOINTS.MEMBERS_REGISTER, payload);
-            const data = (result && result.data) || result;
-            if (data && data.is_member) {
+            const raw = (result && result.data) != null ? result.data : result;
+            const data = this._normalizeMemberPayload(raw) || raw;
+            if (data && (data.is_member === true || typeof data.is_member !== 'undefined')) {
                 this.memberData = data;
-                this.render(data);
-                this.closeProfileEdit();
+                if (this._registerFullScreen) {
+                    this.closeRegisterFullScreen();
+                } else {
+                    this.render(data);
+                    this.closeProfileEdit({ skipHistory: true });
+                }
                 ToastManager.success('会員登録が完了しました');
             } else if (data) {
                 this.memberData = data;
-                this.render(data);
-                this.closeProfileEdit();
+                if (this._registerFullScreen) {
+                    this.closeRegisterFullScreen();
+                } else {
+                    this.render(data);
+                    this.closeProfileEdit({ skipHistory: true });
+                }
                 ToastManager.success(result.message || '会員登録が完了しました');
             } else {
                 throw new Error(result.error || result.message || '登録に失敗しました');

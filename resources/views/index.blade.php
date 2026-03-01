@@ -1,5 +1,9 @@
 <!DOCTYPE html>
-<html lang="ja">
+@php
+    $userAgent = request()->header('User-Agent', '');
+    $isNativeApp = $userAgent && preg_match('/MobileOrderApp\/\d+/i', $userAgent);
+@endphp
+<html lang="ja" @if($isNativeApp) class="native-app-embed" @endif>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -40,21 +44,89 @@
     }
     </style>
     @endisset
+    @if($isNativeApp)
+    <style id="native-app-inline">
+        #liff-loading { display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; }
+        html.native-app-embed, body.native-app-embed { height: 100%; min-height: 100vh; margin: 0; padding: 0; }
+        .app-container { display: flex !important; flex-direction: column !important; min-height: 100vh !important; height: 100% !important; background: #fff !important; visibility: visible !important; }
+        .header { display: block !important; visibility: visible !important; background: #000 !important; color: #fff !important; }
+        .main-content { visibility: visible !important; }
+        .main-tabs { display: flex !important; visibility: visible !important; }
+        .tab-content.active { display: block !important; flex: 1 1 0 !important; min-height: 0 !important; overflow: auto !important; }
+        .tab-content.active .tab-section { min-height: 120px !important; background: #fff !important; }
+    </style>
+    @endif
 </head>
-<body>
-    <div id="liff-loading" class="liff-loading" aria-live="polite">
+<body @if($isNativeApp) class="native-app-embed" @endif>
+    <script>
+    (function() {
+        var ua = typeof navigator !== 'undefined' && navigator.userAgent ? navigator.userAgent : '';
+        if (/MobileOrderApp\/\d+/i.test(ua)) {
+            window.__MOBILE_APP_MODE__ = true;
+            var logMax = 50;
+            var logLines = [];
+            window.__mobileOrderLog = function(msg, data) {
+                var line = (typeof msg === 'string' ? msg : JSON.stringify(msg)) + (data !== undefined ? ' ' + (typeof data === 'object' ? JSON.stringify(data) : String(data)) : '');
+                var ts = new Date().toISOString().substr(11, 12);
+                console.log('[MobileOrder]', ts, msg, data !== undefined ? data : '');
+                logLines.push(ts + ' ' + line);
+                if (logLines.length > logMax) logLines.shift();
+                var el = document.getElementById('mobile-order-log-panel');
+                if (el && el.querySelector) {
+                    var body = el.querySelector('.mobile-order-log-body');
+                    if (body) body.textContent = logLines.join('\n');
+                }
+            };
+            document.documentElement.classList.add('native-app-embed');
+            (function() {
+                var s = document.createElement('style');
+                s.id = 'native-app-hide-loading';
+                s.textContent = 'html.native-app-embed #liff-loading { display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; }' +
+                    'html.native-app-embed .app-container { display: flex !important; visibility: visible !important; min-height: 100vh !important; background: #fff !important; }' +
+                    'html.native-app-embed .header { display: block !important; visibility: visible !important; }' +
+                    'html.native-app-embed .main-tabs { display: flex !important; visibility: visible !important; }';
+                (document.head || document.documentElement).appendChild(s);
+            })();
+            document.addEventListener('DOMContentLoaded', function() {
+                document.body.classList.add('native-app-embed');
+                var loadingEl = document.getElementById('liff-loading');
+                if (loadingEl) {
+                    loadingEl.classList.add('liff-loading--hidden');
+                    loadingEl.style.display = 'none';
+                }
+                var panel = document.createElement('div');
+                panel.id = 'mobile-order-log-panel';
+                panel.innerHTML = '<div class="mobile-order-log-header">ログ <button type="button" class="mobile-order-log-toggle">開く</button></div><pre class="mobile-order-log-body"></pre>';
+                panel.className = 'mobile-order-log-panel';
+                document.body.appendChild(panel);
+                panel.querySelector('.mobile-order-log-toggle').onclick = function() {
+                    panel.classList.toggle('mobile-order-log-open');
+                    this.textContent = panel.classList.contains('mobile-order-log-open') ? '閉じる' : '開く';
+                };
+                __mobileOrderLog('DOMContentLoaded', { path: window.location.pathname });
+                setTimeout(function() {
+                    if (typeof window.app === 'undefined' && typeof document.dispatchEvent === 'function') {
+                        __mobileOrderLog('dispatch liff-ready (fallback)');
+                        document.dispatchEvent(new CustomEvent('liff-ready'));
+                    }
+                }, 100);
+            });
+        }
+    })();
+    </script>
+    <div id="liff-loading" class="liff-loading" aria-live="polite" @if($isNativeApp) style="display: none !important; visibility: hidden !important;" @endif>
         <div class="liff-loading-inner">
             <div class="liff-loading-spinner"></div>
             <p class="liff-loading-text">読み込み中...</p>
         </div>
     </div>
 
-    <div class="app-container" id="app-container">
+    <div class="app-container" id="app-container" @if($isNativeApp) style="display: flex; flex-direction: column; min-height: 100vh; background: #fff; visibility: visible;" @endif>
         
-        <header class="header">
+        <header class="header" @if($isNativeApp) style="display: block; visibility: visible;" @endif>
             <div class="header-content">
                 @if(isset($frontendLogoUrl) && $frontendLogoUrl !== null && $frontendLogoUrl !== '')
-                    <img src="{{ $frontendLogoUrl }}" alt="{{ $frontendHeaderText ?? $projectName ?? 'ロゴ' }}" class="header-logo" style="max-height:36px; margin-right:8px;">
+                    <img src="{{ $frontendLogoUrl }}" alt="{{ $frontendHeaderText ?? $projectName ?? 'ロゴ' }}" class="header-logo">
                 @endif
                 <h1 class="logo">{{ $frontendHeaderText ?? $projectName ?? 'モバイルオーダー' }}</h1>
                 <button class="cart-btn" id="cartBtn">
@@ -83,7 +155,7 @@
             );
         @endphp
 
-        <main class="main-content">
+        <main class="main-content" @if($isNativeApp) style="flex: 1 1 0; min-height: 0; overflow: auto; background: #fff; visibility: visible; -webkit-overflow-scrolling: touch;" @endif>
             <div id="announcementsSection" class="announcements-section" aria-label="お知らせ"></div>
 
             @php $firstTab = ($filteredMenu[0]['tab'] ?? ($frontendMenu ?? \App\Models\ShopSetting::defaultFrontendMenuItems())[0]['tab'] ?? 'products'); @endphp
@@ -145,12 +217,7 @@
         
         <div class="overlay" id="overlay"></div>
         
-        <div id="profileEditModal" class="member-modal" aria-hidden="true">
-            <div class="member-modal-backdrop" data-close="profileEdit"></div>
-            <div class="member-modal-content" id="profileEditModalContent"></div>
-        </div>
-
-        <footer class="main-tabs">
+        <footer class="main-tabs" @if($isNativeApp) style="display: flex; visibility: visible; position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid #e0e0e0; z-index: 100;" @endif>
             @foreach($filteredMenu as $i => $item)
             <button type="button" class="main-tab-btn {{ $i === 0 ? 'active' : '' }}" data-tab="{{ $item['tab'] }}">
                 <i class="fas {{ $item['icon'] ?? 'fa-circle' }}"></i>
@@ -170,6 +237,7 @@
         window.__WALLET_PASS_ENABLED__ = {{ ($walletPassEnabled ?? false) ? 'true' : 'false' }};
         window.__GOOGLE_WALLET_ENABLED__ = {{ ($googleWalletEnabled ?? false) ? 'true' : 'false' }};
         window.__WALLET_PASS_ADD_BUTTON_IMAGE__ = "/images/add-to-apple-wallet-logo.png";
+        window.__GOOGLE_WALLET_ADD_BUTTON_IMAGE__ = "/images/add-to-google-wallet-logo.png";
         window.__LIFF_BUILDER__ = @json($liffBuilderBlocks ?? []);
         window.__LIFF_TAB_LAYOUTS__ = @json($liffTabLayouts ?? []);
         window.__LIFF_TAB_SETTINGS__ = @json($liffTabSettings ?? []);
@@ -311,6 +379,14 @@
     @endif
     <script>
         (function () {
+            function hasCoreScriptBindings() {
+                return (
+                    typeof ApiClient !== 'undefined' &&
+                    typeof DeviceManager !== 'undefined' &&
+                    typeof MobileOrderApp !== 'undefined'
+                );
+            }
+
             function appendStylesheet(href) {
                 var link = document.createElement('link');
                 link.rel = 'stylesheet';
@@ -328,7 +404,7 @@
                     return;
                 }
                 if (window.__clientDebugLog) window.__clientDebugLog('css_fallback_start', { detectedPosition: style ? style.position : 'unknown' });
-                appendStylesheet('/public/css/frontend/style.css{{ $v }}');
+                appendStylesheet('/css/frontend/style.css{{ $v }}');
                 appendStylesheet('{{ asset('css/frontend/style.css') }}{{ $v }}');
             }
 
@@ -345,8 +421,15 @@
                     done(false);
                     return;
                 }
+                var candidateSrc = candidates[index];
+                var canonical = candidateSrc.split('?')[0];
+                var existing = document.querySelector('script[src*="' + canonical + '"]');
+                if (existing) {
+                    done(true);
+                    return;
+                }
                 var script = document.createElement('script');
-                script.src = candidates[index];
+                script.src = candidateSrc;
                 script.defer = true;
                 script.onload = function () {
                     if (window.__clientDebugLog) window.__clientDebugLog('script_loaded', { src: script.src });
@@ -368,10 +451,14 @@
 
             function ensureScriptsLoaded() {
                 if (window.__INLINE_LOCAL_ASSETS__ === true) return;
-                if (window.__LIFF_APP_BOOTSTRAP__) {
+                if (window.__LIFF_APP_BOOTSTRAP__ || hasCoreScriptBindings()) {
                     if (window.__clientDebugLog) window.__clientDebugLog('app_bootstrap_already_done', {});
                     return;
                 }
+                if (window.__SCRIPT_FALLBACK_STARTED__) {
+                    return;
+                }
+                window.__SCRIPT_FALLBACK_STARTED__ = true;
                 if (window.__clientDebugLog) window.__clientDebugLog('script_fallback_start', {});
                 var paths = [
                     '/js/shared/constants.js{{ $v }}',
@@ -383,6 +470,7 @@
                     '/js/frontend/managers/CartManager.js{{ $v }}',
                     '/js/frontend/managers/ProductManager.js{{ $v }}',
                     '/js/frontend/managers/OrderManager.js{{ $v }}',
+                    '/js/frontend/managers/DeviceManager.js{{ $v }}',
                     '/js/frontend/managers/MemberManager.js{{ $v }}',
                     '/js/frontend/managers/StampsManager.js{{ $v }}',
                     '/js/frontend/managers/CouponsManager.js{{ $v }}',
@@ -403,7 +491,7 @@
                 if (window.__clientDebugLog) window.__clientDebugLog('fallback_timer_fired', {});
                 ensureStylesLoaded();
                 ensureScriptsLoaded();
-            }, 2500);
+            }, 5000);
         })();
     </script>
 </body>
