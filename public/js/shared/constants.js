@@ -193,6 +193,7 @@ const AppConstants = {
         CLOSE_CART_BTN: 'closeCartBtn',
         OVERLAY: 'overlay',
         ORDER_BTN: 'orderBtn',
+        IN_STORE_ORDER_BTN: 'inStoreOrderBtn',
         TOTAL_PRICE: 'totalPrice',
         MEMBER_SECTION: 'memberSection',
         PRODUCTS_TAB: 'productsTab',
