@@ -765,11 +765,11 @@ class ShopSetting extends Model
     }
 
     /**
-     * 既存プロジェクトでも各タブの主要機能が必ず使えるようにレイアウトを補完する。
+     * 保存済みレイアウトをタブ単位で正規化する。
      *
      * ルール:
      * - タブが空ならデフォルトレイアウトを採用
-     * - タブに主要データソースの data ブロックが無ければ末尾に追加
+     * - 既存ブロックは順序を変えずに維持する
      *
      * @param array<string, mixed> $layouts
      * @return array<string, array<int, array<string, mixed>>>
@@ -777,18 +777,6 @@ class ShopSetting extends Model
     public static function ensureLiffTabLayouts(array $layouts): array
     {
         $defaults = self::defaultLiffTabLayouts();
-        $requiredDataSourceByTab = [
-            'home' => 'announcements',
-            'products' => 'products',
-            'orders' => 'orders',
-            'stamps' => 'stamps',
-            'coupons' => 'coupons',
-            'queue' => 'queue',
-            'reservations' => 'reservations',
-            'member' => 'member_card',
-            'gallery' => 'gallery',
-            'announcements' => 'announcements',
-        ];
 
         $normalized = [];
         foreach ($defaults as $tab => $defaultBlocks) {
@@ -800,37 +788,10 @@ class ShopSetting extends Model
                 continue;
             }
 
-            $requiredSource = $requiredDataSourceByTab[$tab] ?? null;
-            if ($requiredSource !== null && !self::hasDataSourceBlock($blocks, $requiredSource)) {
-                $blocks[] = ['type' => 'data', 'source' => $requiredSource];
-            }
             $normalized[$tab] = $blocks;
         }
 
         return $normalized;
-    }
-
-    /**
-     * @param array<int, array<string, mixed>> $blocks
-     */
-    private static function hasDataSourceBlock(array $blocks, string $source): bool
-    {
-        foreach ($blocks as $block) {
-            if (($block['type'] ?? null) !== 'data') {
-                continue;
-            }
-            $current = (string) ($block['source'] ?? '');
-            if ($source === 'member_card') {
-                if ($current === 'member_card' || $current === 'member') {
-                    return true;
-                }
-                continue;
-            }
-            if ($current === $source) {
-                return true;
-            }
-        }
-        return false;
     }
 
     public static function defaultLiffTabSettings(): array
