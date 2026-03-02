@@ -13,8 +13,7 @@ class AccountUpdateController extends Controller
     public function __construct(
         private AccountUpdateUseCase $updateUseCase,
         private RouteContextResolver $routeContextResolver
-    ) {
-    }
+    ) {}
 
     public function __invoke(AccountUpdateRequest $request, int $id)
     {
@@ -28,6 +27,7 @@ class AccountUpdateController extends Controller
         $this->updateUseCase->handle($id, $input);
 
         $routeContext = $this->routeContextResolver->resolve($request);
+
         return redirect()->route("{$routeContext->routePrefix}.accounts.index", $routeContext->params)
             ->with('success', 'アカウントを更新しました');
     }

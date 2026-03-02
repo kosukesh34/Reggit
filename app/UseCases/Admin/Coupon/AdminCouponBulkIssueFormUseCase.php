@@ -10,6 +10,7 @@ use App\UseCases\Admin\Coupon\Data\AdminCouponBulkIssueFormOutput;
 class AdminCouponBulkIssueFormUseCase
 {
     private CouponAdminService $couponAdminService;
+
     private MemberAdminService $memberAdminService;
 
     public function __construct(

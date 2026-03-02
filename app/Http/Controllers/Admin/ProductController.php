@@ -13,9 +13,13 @@ use App\UseCases\Admin\Product\AdminProductUpdateUseCase;
 class ProductController extends AdminBaseController
 {
     private AdminProductIndexUseCase $indexUseCase;
+
     private AdminProductStoreUseCase $storeUseCase;
+
     private AdminProductEditUseCase $editUseCase;
+
     private AdminProductUpdateUseCase $updateUseCase;
+
     private AdminProductDeleteUseCase $deleteUseCase;
 
     public function __construct(

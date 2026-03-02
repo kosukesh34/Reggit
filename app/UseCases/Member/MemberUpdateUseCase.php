@@ -12,8 +12,7 @@ class MemberUpdateUseCase
     public function __construct(
         private MemberService $memberService,
         private UserService $userService
-    ) {
-    }
+    ) {}
 
     /** @param array<string, string|int|float|bool|array|null> $validated 検証済み会員更新データ */
     public function handle(Request $request, array $validated): MemberData

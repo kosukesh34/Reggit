@@ -18,11 +18,12 @@ class ReservationControllerTest extends TestCase
     use RefreshDatabase;
 
     private const TEST_USER_ID = 'test-user-123';
+
     private const RESERVATION_ENDPOINT = '/api/reservations';
 
     private function reservationUrl(string $path = ''): string
     {
-        return self::RESERVATION_ENDPOINT . $path . '?project_key=default';
+        return self::RESERVATION_ENDPOINT.$path.'?project_key=default';
     }
 
     private function createDefaultProject(): Project
@@ -36,7 +37,7 @@ class ReservationControllerTest extends TestCase
     /** UserService が使うセッションキーは mobile_order_user_id_{projectId} */
     private function sessionForUser(Project $project, User $user): array
     {
-        return ['mobile_order_user_id_' . $project->id => $user->id];
+        return ['mobile_order_user_id_'.$project->id => $user->id];
     }
 
     public function test_index_予約一覧を返すこと(): void
@@ -61,7 +62,7 @@ class ReservationControllerTest extends TestCase
         Member::factory()->create(['user_id' => $user->id, 'project_id' => $project->id]);
         $timeSlots = ShopSetting::getReservationTimeSlots($project->id);
         $timeSlot = $timeSlots[0];
-        $reservedAt = now()->addDay()->format('Y-m-d') . 'T' . $timeSlot;
+        $reservedAt = now()->addDay()->format('Y-m-d').'T'.$timeSlot;
 
         $response = $this->withSession($this->sessionForUser($project, $user))
             ->withHeaders(['X-Line-User-Id' => self::TEST_USER_ID])
@@ -106,7 +107,7 @@ class ReservationControllerTest extends TestCase
 
         $response = $this->withSession($this->sessionForUser($project, $user))
             ->withHeaders(['X-Line-User-Id' => self::TEST_USER_ID])
-            ->post($this->reservationUrl('/' . $reservation->id . '/cancel'));
+            ->post($this->reservationUrl('/'.$reservation->id.'/cancel'));
 
         $response->assertStatus(200)
             ->assertJsonStructure(['message', 'reservation']);
@@ -129,7 +130,7 @@ class ReservationControllerTest extends TestCase
 
         $response = $this->withSession($this->sessionForUser($project, $user))
             ->withHeaders(['X-Line-User-Id' => self::TEST_USER_ID])
-            ->post($this->reservationUrl('/' . $reservation->id . '/cancel'));
+            ->post($this->reservationUrl('/'.$reservation->id.'/cancel'));
 
         $response->assertStatus(Response::HTTP_BAD_REQUEST);
     }
@@ -153,7 +154,7 @@ class ReservationControllerTest extends TestCase
         $user = User::factory()->create(['line_user_id' => self::TEST_USER_ID, 'project_id' => $project->id]);
         $timeSlots = ShopSetting::getReservationTimeSlots($project->id);
         $timeSlot = $timeSlots[0];
-        $reservedAt = now()->addDay()->format('Y-m-d') . 'T' . $timeSlot;
+        $reservedAt = now()->addDay()->format('Y-m-d').'T'.$timeSlot;
 
         $response = $this->withSession($this->sessionForUser($project, $user))
             ->withHeaders(['X-Line-User-Id' => self::TEST_USER_ID])
@@ -179,7 +180,7 @@ class ReservationControllerTest extends TestCase
         $response = $this->withSession($this->sessionForUser($project, $user))
             ->withHeaders(['X-Line-User-Id' => self::TEST_USER_ID])
             ->post($this->reservationUrl(), [
-                'reserved_at' => $closedDate . 'T' . $timeSlot,
+                'reserved_at' => $closedDate.'T'.$timeSlot,
                 'number_of_people' => 2,
             ]);
 
@@ -194,7 +195,7 @@ class ReservationControllerTest extends TestCase
         Member::factory()->create(['user_id' => $user->id, 'project_id' => $project->id]);
         $timeSlots = ShopSetting::getReservationTimeSlots($project->id);
         $timeSlot = $timeSlots[0];
-        $reservedAt = Carbon::parse(now()->addDay()->format('Y-m-d') . ' ' . $timeSlot);
+        $reservedAt = Carbon::parse(now()->addDay()->format('Y-m-d').' '.$timeSlot);
 
         ShopSetting::setValue('reservation_capacity_per_slot', 1, 'integer', $project->id);
 

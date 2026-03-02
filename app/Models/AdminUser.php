@@ -10,8 +10,11 @@ class AdminUser extends Authenticatable
     use HasFactory;
 
     public const ROLE_SYSTEM_ADMIN = 'system_admin';
+
     public const ROLE_PROJECT_ADMIN = 'project_admin';
+
     public const ROLE_ADMIN = 'admin';
+
     public const ROLE_STAFF = 'staff';
 
     /** ロール階層（数値が大きいほど権限が強い） */
@@ -24,18 +27,18 @@ class AdminUser extends Authenticatable
 
     /** 権限の表示名（管理画面・一覧で統一して表示） */
     public const ROLE_LABELS = [
-        self::ROLE_SYSTEM_ADMIN  => 'システム管理者（全プロジェクト操作・アカウント管理可）',
+        self::ROLE_SYSTEM_ADMIN => 'システム管理者（全プロジェクト操作・アカウント管理可）',
         self::ROLE_PROJECT_ADMIN => 'プロジェクト管理者（担当プロジェクトのみ操作可）',
-        self::ROLE_ADMIN         => '店舗管理者（担当店舗のみ操作可）',
-        self::ROLE_STAFF         => 'スタッフ（カスタム権限）',
+        self::ROLE_ADMIN => '店舗管理者（担当店舗のみ操作可）',
+        self::ROLE_STAFF => 'スタッフ（カスタム権限）',
     ];
 
     /** 短い表示名（ヘッダー等） */
     public const ROLE_LABELS_SHORT = [
-        self::ROLE_SYSTEM_ADMIN  => 'システム管理者',
+        self::ROLE_SYSTEM_ADMIN => 'システム管理者',
         self::ROLE_PROJECT_ADMIN => 'プロジェクト管理者',
-        self::ROLE_ADMIN         => '店舗管理者',
-        self::ROLE_STAFF         => 'スタッフ',
+        self::ROLE_ADMIN => '店舗管理者',
+        self::ROLE_STAFF => 'スタッフ',
     ];
 
     public static function getRoleLabel(string $role): string
@@ -115,6 +118,7 @@ class AdminUser extends Authenticatable
         if ($this->project_id) {
             return [$this->project_id];
         }
+
         return [];
     }
 
@@ -135,6 +139,7 @@ class AdminUser extends Authenticatable
                 return (int) $projectId;
             }
             $fallback = Project::where('is_active', true)->min('id');
+
             return (int) ($fallback ?? 1);
         }
 
@@ -147,6 +152,7 @@ class AdminUser extends Authenticatable
         if ($admin->project_id) {
             return (int) $admin->project_id;
         }
+
         return 1;
     }
 
@@ -197,6 +203,7 @@ class AdminUser extends Authenticatable
         if ($this->isStaff() === false) {
             return $this->cachedPermissions = array_keys(AdminUserPermission::ALL_PERMISSIONS);
         }
+
         return $this->cachedPermissions = $this->permissions()->pluck('permission')->all();
     }
 
@@ -206,6 +213,7 @@ class AdminUser extends Authenticatable
         if ($this->isStaff() === false) {
             return true;
         }
+
         return in_array($permission, $this->getPermissionKeys(), true);
     }
 
@@ -217,6 +225,7 @@ class AdminUser extends Authenticatable
                 return true;
             }
         }
+
         return false;
     }
 
@@ -260,6 +269,7 @@ class AdminUser extends Authenticatable
         if ($this->isAdmin()) {
             return $targetRole === self::ROLE_STAFF;
         }
+
         return false;
     }
 
@@ -268,7 +278,7 @@ class AdminUser extends Authenticatable
     {
         return array_filter(
             array_keys(self::ROLE_LABELS),
-            fn(string $role) => $this->canCreateRole($role)
+            fn (string $role) => $this->canCreateRole($role)
         );
     }
 
@@ -283,6 +293,7 @@ class AdminUser extends Authenticatable
         }
         $targetLevel = self::ROLE_HIERARCHY[$target->role] ?? 0;
         $myLevel = $this->getRoleLevel();
+
         return $myLevel > $targetLevel;
     }
 

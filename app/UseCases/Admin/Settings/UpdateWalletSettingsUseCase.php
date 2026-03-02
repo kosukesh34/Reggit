@@ -22,8 +22,7 @@ class UpdateWalletSettingsUseCase
     }
 
     /**
-     * @param array<string, mixed> $validated
-     *
+     * @param  array<string, mixed>  $validated
      * @return array<int, string>
      */
     public function handle(int $projectId, Request $request, array $validated): array

@@ -1,39 +1,39 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\LiffController;
+use App\Http\Controllers\Admin\Account\AccountDestroyController;
+use App\Http\Controllers\Admin\Account\AccountFormController;
+use App\Http\Controllers\Admin\Account\AccountIndexController;
+use App\Http\Controllers\Admin\Account\AccountStoreController;
+use App\Http\Controllers\Admin\Account\AccountUpdateController;
+use App\Http\Controllers\Admin\AnalyticsController as AdminAnalyticsController;
+use App\Http\Controllers\Admin\AnnouncementController as AdminAnnouncementController;
+use App\Http\Controllers\Admin\ApiTokenController as AdminApiTokenController;
+use App\Http\Controllers\Admin\AuditLogController as AdminAuditLogController;
 use App\Http\Controllers\Admin\Auth\AdminLoginController;
 use App\Http\Controllers\Admin\Auth\LogoutController;
 use App\Http\Controllers\Admin\Auth\SystemAdminLoginController;
-use App\Http\Controllers\Admin\DashboardController;
-use App\Http\Controllers\Admin\OrderController as AdminOrderController;
-use App\Http\Controllers\Admin\ProductController as AdminProductController;
-use App\Http\Controllers\Admin\MemberController as AdminMemberController;
-use App\Http\Controllers\Admin\ReservationController as AdminReservationController;
-use App\Http\Controllers\Admin\StampController as AdminStampController;
 use App\Http\Controllers\Admin\CouponController as AdminCouponController;
-use App\Http\Controllers\Admin\AnnouncementController as AdminAnnouncementController;
-use App\Http\Controllers\Admin\QueueController as AdminQueueController;
-use App\Http\Controllers\Admin\Settings\BasicController as SettingsBasicController;
-use App\Http\Controllers\Admin\Settings\AdvancedController as SettingsAdvancedController;
-use App\Http\Controllers\Admin\Settings\MenuController as SettingsMenuController;
-use App\Http\Controllers\Admin\Settings\FeaturesController as SettingsFeaturesController;
-use App\Http\Controllers\Admin\Settings\RanksController as SettingsRanksController;
-use App\Http\Controllers\Admin\Settings\HomeController as SettingsHomeController;
-use App\Http\Controllers\Admin\Settings\LiffDesignerController as SettingsLiffDesignerController;
-use App\Http\Controllers\Admin\AnalyticsController as AdminAnalyticsController;
+use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\Gallery\CategoryController as GalleryCategoryController;
 use App\Http\Controllers\Admin\Gallery\ItemController as GalleryItemController;
+use App\Http\Controllers\Admin\MemberController as AdminMemberController;
+use App\Http\Controllers\Admin\OrderController as AdminOrderController;
+use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Admin\ProjectController as AdminProjectController;
-use App\Http\Controllers\Admin\Account\AccountIndexController;
-use App\Http\Controllers\Admin\Account\AccountFormController;
-use App\Http\Controllers\Admin\Account\AccountStoreController;
-use App\Http\Controllers\Admin\Account\AccountUpdateController;
-use App\Http\Controllers\Admin\Account\AccountDestroyController;
-use App\Http\Controllers\Admin\ApiTokenController as AdminApiTokenController;
-use App\Http\Controllers\Admin\AuditLogController as AdminAuditLogController;
+use App\Http\Controllers\Admin\QueueController as AdminQueueController;
+use App\Http\Controllers\Admin\ReservationController as AdminReservationController;
+use App\Http\Controllers\Admin\Settings\AdvancedController as SettingsAdvancedController;
+use App\Http\Controllers\Admin\Settings\BasicController as SettingsBasicController;
+use App\Http\Controllers\Admin\Settings\FeaturesController as SettingsFeaturesController;
+use App\Http\Controllers\Admin\Settings\HomeController as SettingsHomeController;
+use App\Http\Controllers\Admin\Settings\LiffDesignerController as SettingsLiffDesignerController;
+use App\Http\Controllers\Admin\Settings\MenuController as SettingsMenuController;
+use App\Http\Controllers\Admin\Settings\RanksController as SettingsRanksController;
+use App\Http\Controllers\Admin\StampController as AdminStampController;
 use App\Http\Controllers\Admin\SystemAdminDashboardController;
+use App\Http\Controllers\LiffController;
 use App\Models\Project;
+use Illuminate\Support\Facades\Route;
 
 // ========== 公開 ==========
 Route::get('/', function () {
@@ -62,7 +62,7 @@ Route::post('/system-admin/login', [SystemAdminLoginController::class, 'login'])
 
 // /admin のみのアクセス時はアクセス可能な先頭プロジェクトへリダイレクト
 Route::get('/admin', function () {
-    if (!auth('admin')->check()) {
+    if (! auth('admin')->check()) {
         return redirect()->route('admin.login');
     }
     $admin = auth('admin')->user();
@@ -71,6 +71,7 @@ Route::get('/admin', function () {
         ->orderBy('name')
         ->first();
     $projectKey = $first ? $first->project_key : 'default';
+
     return redirect()->route('admin.dashboard', ['project_key' => $projectKey]);
 })->middleware('web')->name('admin.root');
 

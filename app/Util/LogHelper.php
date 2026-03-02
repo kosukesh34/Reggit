@@ -27,7 +27,7 @@ final class LogHelper
     /** @param array<string, string|int|float|bool|array|null> $context ログコンテキスト */
     private static function write(string $level, string $message, array $context): void
     {
-        if (!array_key_exists('project_id', $context)) {
+        if (! array_key_exists('project_id', $context)) {
             $context['project_id'] = AdminContext::getCurrentProjectId() ?? 1;
         }
 

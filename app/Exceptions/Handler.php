@@ -30,7 +30,7 @@ class Handler extends ExceptionHandler
         if ($guard === 'admin') {
             return redirect()->guest(route('admin.login'));
         }
+
         return redirect()->guest(route('login'));
     }
 }
-

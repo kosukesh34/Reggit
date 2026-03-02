@@ -31,7 +31,7 @@ class AnnouncementControllerTest extends TestCase
             ->assertJsonStructure(['announcements']);
     }
 
-    public function test_markRead_既読エンドポイントが成功を返すこと(): void
+    public function test_mark_read_既読エンドポイントが成功を返すこと(): void
     {
         $this->createProject();
         $announcement = Announcement::factory()->create(['project_id' => 1]);

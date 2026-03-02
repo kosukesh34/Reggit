@@ -25,6 +25,7 @@ class LoginController extends Controller
         if ($first !== null) {
             return redirect()->route('admin.dashboard', ['project_key' => $first->project_key]);
         }
+
         return redirect()->route('admin.login');
     }
 
@@ -34,6 +35,7 @@ class LoginController extends Controller
         if (Auth::guard('admin')->check()) {
             return $this->getAdminDashboardRedirect();
         }
+
         return view('admin.login', [
             'submitRoute' => route('admin.login.submit'),
         ]);
@@ -44,10 +46,12 @@ class LoginController extends Controller
     {
         if (Auth::guard('admin')->check()) {
             $user = Auth::guard('admin')->user();
+
             return $user->isSystemAdmin()
                 ? redirect()->route('system-admin.projects.index')
                 : $this->getAdminDashboardRedirect();
         }
+
         return redirect()->route('admin.login');
     }
 
@@ -57,6 +61,7 @@ class LoginController extends Controller
         if (Auth::guard('admin')->check()) {
             return $this->getAdminDashboardRedirect();
         }
+
         return redirect()->route('admin.login');
     }
 
@@ -106,6 +111,7 @@ class LoginController extends Controller
         Auth::guard('admin')->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+
         return $isSystemAdminLogout
             ? redirect()->route('system-admin.login')
             : redirect()->route('admin.login');
@@ -122,7 +128,7 @@ class LoginController extends Controller
             'project_id' => null,
             'route_name' => $route ? $route->getName() : null,
             'method' => $request->getMethod(),
-            'url' => strlen($request->fullUrl()) > 500 ? substr($request->fullUrl(), 0, 497) . '...' : $request->fullUrl(),
+            'url' => strlen($request->fullUrl()) > 500 ? substr($request->fullUrl(), 0, 497).'...' : $request->fullUrl(),
             'ip' => $request->ip(),
             'user_agent' => substr((string) $request->userAgent(), 0, 500),
             'payload' => $payload,

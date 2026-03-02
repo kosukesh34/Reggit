@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Log;
 class QueueController extends BaseApiController
 {
     private QueueStoreUseCase $storeUseCase;
+
     private QueueMeUseCase $meUseCase;
 
     public function __construct(
@@ -44,7 +45,7 @@ class QueueController extends BaseApiController
                 'updated_at' => now()->toIso8601String(),
             ], '順番待ちに登録しました', 201);
         } catch (\Exception $e) {
-            Log::error('Queue store error: ' . $e->getMessage());
+            Log::error('Queue store error: '.$e->getMessage());
 
             return $this->error('順番待ちの登録に失敗しました', 500);
         }
@@ -70,7 +71,7 @@ class QueueController extends BaseApiController
                 'updated_at' => now()->toIso8601String(),
             ]);
         } catch (\Exception $e) {
-            Log::error('Queue me error: ' . $e->getMessage());
+            Log::error('Queue me error: '.$e->getMessage());
 
             return $this->error('取得に失敗しました', 500);
         }

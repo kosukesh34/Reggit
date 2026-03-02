@@ -9,6 +9,5 @@ class AdminCouponIndexOutput
 {
     public function __construct(
         public LengthAwarePaginator $coupons
-    ) {
-    }
+    ) {}
 }

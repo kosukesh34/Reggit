@@ -1,3 +1,5 @@
+# テスト・Lint 用 CI（GitHub 無料アカウントで利用可能）
+# パブリックリポジトリ: 実行時間無制限 / プライベート: 月 2,000 分まで無料
 name: CI
 
 on:
@@ -99,11 +101,11 @@ jobs:
     - name: Install Dependencies
       run: composer install --prefer-dist --no-progress --no-interaction
 
-    - name: Run PHP CS Fixer
+    - name: Run Laravel Pint (code style)
       run: |
-        if [ -f vendor/bin/php-cs-fixer ]; then
-          vendor/bin/php-cs-fixer fix --dry-run --diff
+        if [ -f vendor/bin/pint ]; then
+          vendor/bin/pint --test
         else
-          echo "PHP CS Fixer not installed, skipping..."
+          echo "Laravel Pint not installed, skipping..."
         fi
 

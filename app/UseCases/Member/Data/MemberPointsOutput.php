@@ -11,6 +11,5 @@ class MemberPointsOutput
         public bool $hasMember,
         public int $points,
         public Collection $transactions
-    ) {
-    }
+    ) {}
 }

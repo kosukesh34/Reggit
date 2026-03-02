@@ -10,7 +10,6 @@ use App\Services\GoogleWalletPassService;
 use App\Util\AdminContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 /**
@@ -23,10 +22,10 @@ class GoogleWalletPassServiceTest extends TestCase
 
     private function createService(): GoogleWalletPassService
     {
-        return new GoogleWalletPassService(new GoogleWalletLoyaltyPayloadBuilder());
+        return new GoogleWalletPassService(new GoogleWalletLoyaltyPayloadBuilder);
     }
 
-    public function test_isAvailable_無効設定でfalseを返すこと(): void
+    public function test_is_available_無効設定でfalseを返すこと(): void
     {
         Config::set('google_wallet.enabled', false);
         Config::set('google_wallet.issuer_id', '123');
@@ -36,7 +35,7 @@ class GoogleWalletPassServiceTest extends TestCase
         $this->assertFalse($service->isAvailable());
     }
 
-    public function test_isAvailable_issuer_id未設定でfalseを返すこと(): void
+    public function test_is_available_issuer_id未設定でfalseを返すこと(): void
     {
         Config::set('google_wallet.enabled', true);
         Config::set('google_wallet.issuer_id', '');
@@ -46,7 +45,7 @@ class GoogleWalletPassServiceTest extends TestCase
         $this->assertFalse($service->isAvailable());
     }
 
-    public function test_getUnavailabilityReasons_無効時に理由を返すこと(): void
+    public function test_get_unavailability_reasons_無効時に理由を返すこと(): void
     {
         Config::set('google_wallet.enabled', false);
 
@@ -58,7 +57,7 @@ class GoogleWalletPassServiceTest extends TestCase
         $this->assertStringContainsString('disabled', $reasons[0]);
     }
 
-    public function test_createSaveUrl_利用不可時はnullを返すこと(): void
+    public function test_create_save_url_利用不可時はnullを返すこと(): void
     {
         Config::set('google_wallet.enabled', false);
 
@@ -76,7 +75,7 @@ class GoogleWalletPassServiceTest extends TestCase
         $this->assertNull($url);
     }
 
-    public function test_createSaveUrlForUserId_プロジェクト未設定時はnullを返すこと(): void
+    public function test_create_save_url_for_user_id_プロジェクト未設定時はnullを返すこと(): void
     {
         Config::set('google_wallet.enabled', false);
         AdminContext::setCurrentProject(null);
@@ -87,7 +86,7 @@ class GoogleWalletPassServiceTest extends TestCase
         $this->assertNull($url);
     }
 
-    public function test_createSaveUrlForUserId_他プロジェクトのユーザーは参照しないこと(): void
+    public function test_create_save_url_for_user_id_他プロジェクトのユーザーは参照しないこと(): void
     {
         $projectA = Project::firstOrCreate(
             ['project_key' => 'proj-a'],
@@ -108,9 +107,9 @@ class GoogleWalletPassServiceTest extends TestCase
         $this->assertNull($url);
     }
 
-    public function test_truncateForWallet_ビルダー経由で文字列が切り詰められること(): void
+    public function test_truncate_for_wallet_ビルダー経由で文字列が切り詰められること(): void
     {
-        $builder = new GoogleWalletLoyaltyPayloadBuilder();
+        $builder = new GoogleWalletLoyaltyPayloadBuilder;
         $maxLen = GoogleWalletApi::MAX_DISPLAY_LENGTH;
 
         $this->assertSame('あいう', $builder->truncateForWallet('あいう', $maxLen));

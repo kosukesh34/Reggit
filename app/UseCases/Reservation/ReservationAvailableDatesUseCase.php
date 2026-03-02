@@ -6,9 +6,7 @@ use App\UseCases\Reservation\Data\ReservationAvailability;
 
 class ReservationAvailableDatesUseCase
 {
-    public function __construct(private ReservationAvailabilityService $availabilityService)
-    {
-    }
+    public function __construct(private ReservationAvailabilityService $availabilityService) {}
 
     public function handle(?int $excludeReservationId): ReservationAvailability
     {

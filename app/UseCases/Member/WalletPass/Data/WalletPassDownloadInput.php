@@ -13,6 +13,5 @@ final class WalletPassDownloadInput
     public function __construct(
         public readonly ?string $token = null,
         public readonly ?User $user = null,
-    ) {
-    }
+    ) {}
 }

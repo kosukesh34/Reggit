@@ -46,8 +46,7 @@ class GetSmaregiPosDataUseCase
 
     public function __construct(
         private SmaregiApiService $smaregiApi,
-    ) {
-    }
+    ) {}
 
     public function handle(int $projectId): SmaregiPosDataView
     {
@@ -62,8 +61,9 @@ class GetSmaregiPosDataUseCase
         if ($token === null) {
             $clientId = config('smaregi.client_id');
             $clientSecret = config('smaregi.client_secret');
-            $envCheck = 'SMAREGI_CLIENT_ID: ' . (is_string($clientId) && trim($clientId) !== '' ? '設定済み' : '未設定')
-                . ' / SMAREGI_CLIENT_SECRET: ' . (is_string($clientSecret) && trim($clientSecret) !== '' ? '設定済み' : '未設定');
+            $envCheck = 'SMAREGI_CLIENT_ID: '.(is_string($clientId) && trim($clientId) !== '' ? '設定済み' : '未設定')
+                .' / SMAREGI_CLIENT_SECRET: '.(is_string($clientSecret) && trim($clientSecret) !== '' ? '設定済み' : '未設定');
+
             return new SmaregiPosDataView($contractId, 'トークン取得に失敗しました。.env の SMAREGI_CLIENT_ID / SMAREGI_CLIENT_SECRET および契約IDを確認してください。接続タイムアウトの場合は id.smaregi.dev へのネットワーク到達性（ファイアウォール・VPN）を確認してください。詳細は storage/logs/laravel.log の [Smaregi] を参照してください。', envCheck: $envCheck);
         }
 
@@ -86,6 +86,7 @@ class GetSmaregiPosDataUseCase
                     'total' => 0,
                     'error' => '取得失敗（スコープまたはAPIエラー）',
                 ];
+
                 continue;
             }
             $list = $this->extractListFromResponse($result, $listKey);
@@ -105,7 +106,7 @@ class GetSmaregiPosDataUseCase
     /**
      * スマレジAPIは一覧取得で「配列をそのまま返す」場合と「{ key: [] } の形で返す」場合があるため両方に対応する。
      *
-     * @param array<int|string, mixed> $result
+     * @param  array<int|string, mixed>  $result
      * @return array<int, mixed>
      */
     private function extractListFromResponse(array $result, string $listKey): array
@@ -115,6 +116,7 @@ class GetSmaregiPosDataUseCase
             return $result;
         }
         $list = $result[$listKey] ?? [];
+
         return is_array($list) ? $list : [];
     }
 }

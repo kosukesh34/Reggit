@@ -2,9 +2,9 @@
 
 namespace Database\Factories;
 
-use App\Models\QueueEntry;
-use App\Models\Member;
 use App\Enums\QueueStatus;
+use App\Models\Member;
+use App\Models\QueueEntry;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class QueueEntryFactory extends Factory

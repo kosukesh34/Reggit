@@ -51,7 +51,7 @@ class MemberControllerTest extends TestCase
             ->assertJsonPath('is_member', true);
     }
 
-    public function test_getPoints_ポイント情報を返すこと(): void
+    public function test_get_points_ポイント情報を返すこと(): void
     {
         $project = $this->createProject();
         $user = User::factory()->create(['line_user_id' => self::LINE_USER_ID, 'project_id' => $project->id]);

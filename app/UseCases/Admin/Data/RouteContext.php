@@ -8,6 +8,5 @@ class RouteContext
     public function __construct(
         public string $routePrefix,
         public array $params
-    ) {
-    }
+    ) {}
 }

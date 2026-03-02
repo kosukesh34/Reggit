@@ -19,18 +19,18 @@ class BindProjectFromRequest
             ?? $request->header('X-Project-Key')
             ?? $request->query('project_key');
         $projectKey = $this->normalizeProjectKey($projectKey);
-        $isExplicitProjectKey = !StrHelper::isEmptyStringOrNull($projectKey);
+        $isExplicitProjectKey = ! StrHelper::isEmptyStringOrNull($projectKey);
 
         if ($isExplicitProjectKey === false) {
             $projectKey = $this->extractProjectKeyFromLiffRedirect($request);
             $projectKey = $this->normalizeProjectKey($projectKey);
-            $isExplicitProjectKey = !StrHelper::isEmptyStringOrNull($projectKey);
+            $isExplicitProjectKey = ! StrHelper::isEmptyStringOrNull($projectKey);
         }
 
         if ($isExplicitProjectKey === false) {
             $projectKey = $this->extractProjectKeyFromLiffState($request);
             $projectKey = $this->normalizeProjectKey($projectKey);
-            $isExplicitProjectKey = !StrHelper::isEmptyStringOrNull($projectKey);
+            $isExplicitProjectKey = ! StrHelper::isEmptyStringOrNull($projectKey);
         }
 
         if ($isExplicitProjectKey === false) {
@@ -79,12 +79,13 @@ class BindProjectFromRequest
         }
         $decoded = urldecode((string) $liffRedirectUri);
         $parts = parse_url($decoded);
-        if ($parts === false || !isset($parts['query'])) {
+        if ($parts === false || ! isset($parts['query'])) {
             return null;
         }
         $queryParams = [];
         parse_str($parts['query'], $queryParams);
         $key = $queryParams['project_key'] ?? null;
+
         return is_string($key) ? $key : null;
     }
 
@@ -98,7 +99,7 @@ class BindProjectFromRequest
         $query = $decoded;
         if (str_contains($decoded, '?')) {
             $parts = parse_url($decoded);
-            if ($parts === false || !isset($parts['query'])) {
+            if ($parts === false || ! isset($parts['query'])) {
                 return null;
             }
             $query = $parts['query'];
@@ -106,18 +107,20 @@ class BindProjectFromRequest
         $queryParams = [];
         parse_str($query, $queryParams);
         $key = $queryParams['project_key'] ?? null;
+
         return is_string($key) ? $key : null;
     }
 
     private function normalizeProjectKey($projectKey): ?string
     {
-        if (!is_string($projectKey)) {
+        if (! is_string($projectKey)) {
             return null;
         }
         $trimmed = trim($projectKey);
         if ($trimmed === '' || $trimmed === 'undefined' || $trimmed === 'null') {
             return null;
         }
+
         return $trimmed;
     }
 }

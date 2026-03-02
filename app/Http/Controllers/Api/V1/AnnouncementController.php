@@ -5,16 +5,15 @@ namespace App\Http\Controllers\Api\V1;
 use App\UseCases\Announcement\AnnouncementIndexUseCase;
 use App\UseCases\Announcement\AnnouncementMarkReadUseCase;
 use App\Util\AdminContext;
-use Illuminate\Http\Request;
 use App\Util\LogHelper;
+use Illuminate\Http\Request;
 
 class AnnouncementController extends BaseApiController
 {
     public function __construct(
         private AnnouncementIndexUseCase $indexUseCase,
         private AnnouncementMarkReadUseCase $markReadUseCase
-    ) {
-    }
+    ) {}
 
     public function index(Request $request)
     {
@@ -27,6 +26,7 @@ class AnnouncementController extends BaseApiController
                 'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'error' => $e->getMessage(),
             ]);
+
             return $this->error('お知らせの取得に失敗しました', 500);
         }
     }
@@ -35,6 +35,7 @@ class AnnouncementController extends BaseApiController
     {
         try {
             $result = $this->markReadUseCase->handle($request, $id);
+
             return $this->success($result, '既読にしました');
         } catch (\Illuminate\Validation\ValidationException $e) {
             return $this->error('対象のお知らせが見つかりません', 404, [], $e->errors());
@@ -44,6 +45,7 @@ class AnnouncementController extends BaseApiController
                 'announcement_id' => $id,
                 'error' => $e->getMessage(),
             ]);
+
             return $this->error('既読更新に失敗しました', 500);
         }
     }

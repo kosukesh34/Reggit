@@ -22,7 +22,7 @@ class GoogleWalletEnsureClassCommand extends Command
         if (! $wallet->isAvailable()) {
             $this->error('Google Wallet が無効か設定不足です。.env の GOOGLE_WALLET_* を確認してください。');
             foreach ($wallet->getUnavailabilityReasons() as $reason) {
-                $this->line('  - ' . $reason);
+                $this->line('  - '.$reason);
             }
 
             return self::FAILURE;
@@ -39,7 +39,7 @@ class GoogleWalletEnsureClassCommand extends Command
 
         $issuerId = config('google_wallet.issuer_id');
         $classSuffix = config('google_wallet.class_suffix', 'membership');
-        $classId = $issuerId . '.' . $classSuffix;
+        $classId = $issuerId.'.'.$classSuffix;
         $programLogoUri = config('google_wallet.program_logo_uri', 'https://storage.googleapis.com/wallet-lab-tools-codelab-artifacts-public/pass_google_logo.jpg');
 
         $this->info("Class ID: {$classId}");

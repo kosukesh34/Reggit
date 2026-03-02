@@ -11,11 +11,15 @@ class Announcement extends Model
     use BelongsToProject, HasFactory;
 
     public const DELIVERY_TYPE_IMMEDIATE_BULK = 'immediate_bulk';
+
     public const DELIVERY_TYPE_PERSONAL = 'personal';
+
     public const DELIVERY_TYPE_SCHEDULED = 'scheduled';
 
     public const DELIVERY_STATUS_DRAFT = 'draft';
+
     public const DELIVERY_STATUS_SENT = 'sent';
+
     public const DELIVERY_STATUS_SCHEDULED = 'scheduled';
 
     protected $fillable = [

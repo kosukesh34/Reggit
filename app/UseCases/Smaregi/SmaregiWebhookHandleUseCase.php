@@ -17,6 +17,7 @@ class SmaregiWebhookHandleUseCase
         $event = $request->header('smaregi-event');
         if ($event === null || $event === '') {
             Log::warning('[Smaregi] Webhook missing smaregi-event');
+
             return ['status' => 400, 'body' => ''];
         }
 
@@ -26,6 +27,7 @@ class SmaregiWebhookHandleUseCase
             $received = $request->header($secretHeaderName);
             if ($received === null || $received === '' || $received !== $secret) {
                 Log::warning('[Smaregi] Webhook secret mismatch');
+
                 return ['status' => 401, 'body' => ''];
             }
         }

@@ -10,6 +10,7 @@ use App\UseCases\Admin\Settings\UpdateAdvancedSettingsUseCase;
 class AdvancedController extends AdminBaseController
 {
     private GetAdvancedSettingsUseCase $getAdvancedSettingsUseCase;
+
     private UpdateAdvancedSettingsUseCase $updateAdvancedSettingsUseCase;
 
     public function __construct(

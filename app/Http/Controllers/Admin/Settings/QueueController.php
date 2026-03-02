@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 class QueueController extends AdminBaseController
 {
     private GetQueueSettingsUseCase $getQueueSettingsUseCase;
+
     private UpdateQueueSettingsUseCase $updateQueueSettingsUseCase;
 
     public function __construct(

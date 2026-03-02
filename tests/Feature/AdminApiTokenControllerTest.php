@@ -16,10 +16,11 @@ class AdminApiTokenControllerTest extends TestCase
     {
         $admin = AdminUser::factory()->create(['role' => AdminUser::ROLE_SYSTEM_ADMIN]);
         $this->actingAs($admin, 'admin');
+
         return $admin;
     }
 
-    public function test_index_APIトークン一覧が表示されること(): void
+    public function test_index_ap_iトークン一覧が表示されること(): void
     {
         $this->loginSystemAdmin();
 
@@ -57,7 +58,7 @@ class AdminApiTokenControllerTest extends TestCase
         $project = Project::factory()->create();
         $issued = ApiToken::issue($project, 'Test');
 
-        $response = $this->post('/system-admin/api-tokens/' . $issued['token']->id . '/revoke');
+        $response = $this->post('/system-admin/api-tokens/'.$issued['token']->id.'/revoke');
 
         $response->assertRedirect('/system-admin/api-tokens');
         $this->assertDatabaseHas('api_tokens', ['id' => $issued['token']->id, 'is_active' => false]);
@@ -69,7 +70,7 @@ class AdminApiTokenControllerTest extends TestCase
         $project = Project::factory()->create();
         $issued = ApiToken::issue($project, 'Test');
 
-        $response = $this->post('/system-admin/api-tokens/' . $issued['token']->id . '/rotate');
+        $response = $this->post('/system-admin/api-tokens/'.$issued['token']->id.'/rotate');
 
         $response->assertRedirect('/system-admin/api-tokens');
         $this->assertDatabaseHas('api_tokens', ['id' => $issued['token']->id, 'is_active' => false]);
