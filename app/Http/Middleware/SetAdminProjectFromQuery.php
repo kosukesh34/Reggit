@@ -20,6 +20,7 @@ class SetAdminProjectFromQuery
         if ($project !== null) {
             session(['admin_project_id' => $project->id]);
         }
+
         return $next($request);
     }
 }

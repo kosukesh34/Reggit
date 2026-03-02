@@ -22,11 +22,11 @@ class UpdateProfileSettingsUseCase
         $rawCustom = $request->input('custom_fields', []);
         if (is_array($rawCustom)) {
             foreach ($rawCustom as $i => $row) {
-                $key = $row['key'] ?? ('custom_' . ($i + 1));
-                $key = preg_replace('/[^a-z0-9_]/', '', $key) ?: ('custom_' . ($i + 1));
+                $key = $row['key'] ?? ('custom_'.($i + 1));
+                $key = preg_replace('/[^a-z0-9_]/', '', $key) ?: ('custom_'.($i + 1));
                 $custom[] = [
                     'key' => $key,
-                    'label' => $row['label'] ?? '項目' . ($i + 1),
+                    'label' => $row['label'] ?? '項目'.($i + 1),
                     'required' => (bool) ($row['required'] ?? false),
                 ];
             }

@@ -10,6 +10,5 @@ class AdminOrderIndexOutput
     public function __construct(
         public LengthAwarePaginator $orders,
         public array $statusCounts
-    ) {
-    }
+    ) {}
 }

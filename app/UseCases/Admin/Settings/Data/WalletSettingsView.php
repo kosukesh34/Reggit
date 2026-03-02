@@ -9,6 +9,5 @@ class WalletSettingsView
         public ?string $googleProgramLogoUrl,
         public ?string $googleHeroImageUrl,
         public bool $appleAssetsSet
-    ) {
-    }
+    ) {}
 }

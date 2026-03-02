@@ -60,6 +60,7 @@ class AccountFormUseCase
             return Project::where('is_active', true)->orderBy('name')->get();
         }
         $allowedIds = $me->getAllowedProjectIds();
+
         return Project::whereIn('id', $allowedIds)->where('is_active', true)->orderBy('name')->get();
     }
 }

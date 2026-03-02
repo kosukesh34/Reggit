@@ -13,6 +13,8 @@ class PaymentMethod extends EnumBase
     ];
 
     public const CASH = 'cash';
+
     public const POINTS = 'points';
+
     public const STRIPE = 'stripe';
 }

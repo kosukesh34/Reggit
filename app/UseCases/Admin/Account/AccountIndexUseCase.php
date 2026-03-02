@@ -3,7 +3,6 @@
 namespace App\UseCases\Admin\Account;
 
 use App\Models\AdminUser;
-use App\UseCases\Admin\Data\RouteContext;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class AccountIndexUseCase

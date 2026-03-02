@@ -46,6 +46,7 @@ class SettingsRanksRequest extends FormRequest
         $v['show_points_display'] = $this->boolean('show_points_display', true);
         $v['show_rank_progress'] = $this->boolean('show_rank_progress', true);
         $v['show_member_card_for_guest'] = $this->boolean('show_member_card_for_guest', true);
+
         return $v;
     }
 }

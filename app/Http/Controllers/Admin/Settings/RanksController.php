@@ -12,8 +12,7 @@ class RanksController extends AdminBaseController
     public function __construct(
         private GetRankSettingsUseCase $getRankSettingsUseCase,
         private UpdateRankSettingsUseCase $updateRankSettingsUseCase
-    ) {
-    }
+    ) {}
 
     public function index()
     {

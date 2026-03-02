@@ -8,26 +8,27 @@ use App\Services\Smaregi\SmaregiCouponSyncService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Storage;
 
 class CouponAdminService
 {
     public function __construct(
         private SmaregiCouponSyncService $smaregiCouponSync
-    ) {
-    }
+    ) {}
+
     private const COUPON_IMAGE_DIR = 'coupon_images';
 
     /** アップロードした画像を保存し、公開URLを返す */
     public function saveCouponImage(UploadedFile $file, int $projectId): string
     {
-        $dir = self::COUPON_IMAGE_DIR . '/' . (string) $projectId;
+        $dir = self::COUPON_IMAGE_DIR.'/'.(string) $projectId;
         $path = $file->store($dir, 'public');
         if ($path === false) {
             throw new \RuntimeException('Failed to store coupon image');
         }
-        return asset('storage/' . $path);
+
+        return asset('storage/'.$path);
     }
+
     public function getPaginatedList(int $projectId, int $perPage = 20): LengthAwarePaginator
     {
         return Coupon::where('project_id', $projectId)
@@ -58,6 +59,7 @@ class CouponAdminService
             }
             $data['smaregi_coupon_id'] = $result['smaregi_coupon_id'];
         }
+
         return Coupon::create($data);
     }
 
@@ -68,6 +70,7 @@ class CouponAdminService
         if ($projectId !== null) {
             $query->where('project_id', $projectId);
         }
+
         return $query->findOrFail($id);
     }
 
@@ -83,7 +86,7 @@ class CouponAdminService
             $smaregiId = $coupon->smaregi_coupon_id;
             if ($smaregiId !== null && $smaregiId !== '') {
                 $ok = $this->smaregiCouponSync->updateOnSmaregi($projectId, $smaregiId, $data);
-                if (!$ok) {
+                if (! $ok) {
                     throw new \RuntimeException('スマレジのクーポン更新に失敗しました。ログ(storage/logs/laravel.log)を確認してください。');
                 }
             } else {
@@ -95,6 +98,7 @@ class CouponAdminService
             }
         }
         $coupon->update($data);
+
         return $coupon;
     }
 
@@ -103,5 +107,4 @@ class CouponAdminService
         $coupon = $this->findOrFail($id, $projectId);
         $coupon->delete();
     }
-
 }

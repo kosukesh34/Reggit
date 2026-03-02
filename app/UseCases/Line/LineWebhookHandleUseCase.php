@@ -12,8 +12,7 @@ class LineWebhookHandleUseCase
 {
     public function __construct(
         private LineService $lineService
-    ) {
-    }
+    ) {}
 
     public function handle(Request $request): array
     {
@@ -32,6 +31,7 @@ class LineWebhookHandleUseCase
 
         if ($this->lineService->verifySignature($body, $signature) === false) {
             LogHelper::warning('[LINE] invalid signature');
+
             return [
                 'status' => 401,
                 'payload' => ['error' => 'Invalid signature'],
@@ -88,11 +88,11 @@ class LineWebhookHandleUseCase
         }
 
         $message = $this->lineService->createTextMessage(
-            "ようこそ！モバイルオーダーアプリへ\n\n" .
-            "以下のメニューからお選びください：\n" .
-            "・メニューを見る\n" .
-            "・会員証を見る\n" .
-            "・注文履歴"
+            "ようこそ！モバイルオーダーアプリへ\n\n".
+            "以下のメニューからお選びください：\n".
+            "・メニューを見る\n".
+            "・会員証を見る\n".
+            '・注文履歴'
         );
 
         $this->lineService->replyMessage($event['replyToken'] ?? '', $message);
@@ -112,14 +112,17 @@ class LineWebhookHandleUseCase
 
         if (str_contains($text, 'メニュー') || str_contains($text, 'menu')) {
             $this->sendMenu($replyToken, $userId);
+
             return;
         }
         if (str_contains($text, '会員証') || str_contains($text, 'member')) {
             $this->sendMemberCard($replyToken, $userId);
+
             return;
         }
         if (str_contains($text, '注文') || str_contains($text, 'order')) {
             $this->sendOrderHistory($replyToken, $userId);
+
             return;
         }
         $this->sendDefaultMessage($replyToken);
@@ -208,16 +211,16 @@ class LineWebhookHandleUseCase
         if ($member === null) {
             $liffUrl = env('LINE_LIFF_URL', url('/liff'));
             $message = $this->lineService->createTextMessage(
-                "会員登録がまだです。\n" .
-                "LIFFアプリで会員登録を行ってください。\n\n" .
+                "会員登録がまだです。\n".
+                "LIFFアプリで会員登録を行ってください。\n\n".
                 $liffUrl
             );
         } else {
             $message = $this->lineService->createTextMessage(
-                "会員証情報\n\n" .
-                "会員番号: {$member->member_number}\n" .
-                "ポイント: {$member->points}pt\n" .
-                "ステータス: " . ($member->status === MemberStatus::ACTIVE ? '有効' : '無効')
+                "会員証情報\n\n".
+                "会員番号: {$member->member_number}\n".
+                "ポイント: {$member->points}pt\n".
+                'ステータス: '.($member->status === MemberStatus::ACTIVE ? '有効' : '無効')
             );
         }
 
@@ -250,10 +253,10 @@ class LineWebhookHandleUseCase
     private function sendDefaultMessage(string $replyToken): void
     {
         $message = $this->lineService->createTextMessage(
-            "以下のコマンドが利用できます：\n" .
-            "・メニュー - 商品メニューを見る\n" .
-            "・会員証 - 会員証情報を見る\n" .
-            "・注文 - 注文履歴を見る"
+            "以下のコマンドが利用できます：\n".
+            "・メニュー - 商品メニューを見る\n".
+            "・会員証 - 会員証情報を見る\n".
+            '・注文 - 注文履歴を見る'
         );
 
         $this->lineService->replyMessage($replyToken, $message);

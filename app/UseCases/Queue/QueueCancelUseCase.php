@@ -20,6 +20,7 @@ class QueueCancelUseCase
         }
         $entry->status = QueueStatus::CANCELLED;
         $entry->save();
+
         return $entry;
     }
 

@@ -31,7 +31,7 @@ class SmaregiApiTest extends TestCase
     }
 
     /** プロジェクトに契約を紐づけ、トークン・API をフェイクして受信（GET）を検証 */
-    public function test_getStores_スマレジから店舗一覧を取得できること(): void
+    public function test_get_stores_スマレジから店舗一覧を取得できること(): void
     {
         $this->createProjectWithContract();
         $this->fakeSmaregiHttp([
@@ -51,7 +51,7 @@ class SmaregiApiTest extends TestCase
     }
 
     /** 会員一覧の受信（GET）を検証 */
-    public function test_getCustomers_スマレジから会員一覧を取得できること(): void
+    public function test_get_customers_スマレジから会員一覧を取得できること(): void
     {
         $this->createProjectWithContract();
         $this->fakeSmaregiHttp([
@@ -74,7 +74,7 @@ class SmaregiApiTest extends TestCase
     }
 
     /** 会員登録の送信（POST）を検証 */
-    public function test_createCustomer_スマレジに会員を登録できること(): void
+    public function test_create_customer_スマレジに会員を登録できること(): void
     {
         $this->createProjectWithContract();
         $this->fakeSmaregiHttp([
@@ -102,7 +102,7 @@ class SmaregiApiTest extends TestCase
     }
 
     /** 会員ポイント加算の送信（POST）を検証 */
-    public function test_addCustomerPoints_スマレジに会員ポイントを加算できること(): void
+    public function test_add_customer_points_スマレジに会員ポイントを加算できること(): void
     {
         $this->createProjectWithContract();
         $this->fakeSmaregiHttp([
@@ -122,7 +122,7 @@ class SmaregiApiTest extends TestCase
     }
 
     /** プロジェクトに紐づく契約IDを取得し、その契約でAPI送受信できることを検証 */
-    public function test_getContractIdForProject_契約IDを取得して会員の受信と登録ができること(): void
+    public function test_get_contract_id_for_project_契約_i_dを取得して会員の受信と登録ができること(): void
     {
         $project = $this->createProjectWithContract();
         $this->fakeSmaregiHttp([
@@ -160,7 +160,7 @@ class SmaregiApiTest extends TestCase
     /**
      * トークン取得 + 指定したPOS API のレスポンスをフェイクする。
      *
-     * @param array<string, array<int|string, mixed>> $responses キーは get_pos_stores, get_pos_customers, post_pos_customers, post_pos_customers_point_add など
+     * @param  array<string, array<int|string, mixed>>  $responses  キーは get_pos_stores, get_pos_customers, post_pos_customers, post_pos_customers_point_add など
      */
     private function fakeSmaregiHttp(array $responses): void
     {
@@ -174,23 +174,23 @@ class SmaregiApiTest extends TestCase
             // トークン取得
             if (str_contains($url, $idBase) && str_contains($url, '/token')) {
                 return Http::response([
-                    'access_token' => 'fake_access_token_' . self::CONTRACT_ID,
+                    'access_token' => 'fake_access_token_'.self::CONTRACT_ID,
                     'expires_in' => 3600,
                 ], 200);
             }
 
             // POS API
-            if (!str_contains($url, $apiBase) || !str_contains($url, self::CONTRACT_ID)) {
+            if (! str_contains($url, $apiBase) || ! str_contains($url, self::CONTRACT_ID)) {
                 return Http::response([], 404);
             }
 
             if ($method === 'GET' && str_contains($url, 'pos/stores')) {
                 return Http::response($responses['get_pos_stores'] ?? ['stores' => []], 200);
             }
-            if ($method === 'GET' && str_contains($url, 'pos/customers') && !preg_match('#/pos/customers/\d+($|\?)#', $url)) {
+            if ($method === 'GET' && str_contains($url, 'pos/customers') && ! preg_match('#/pos/customers/\d+($|\?)#', $url)) {
                 return Http::response($responses['get_pos_customers'] ?? ['customers' => [], 'total' => 0], 200);
             }
-            if ($method === 'POST' && str_contains($url, 'pos/customers') && !str_contains($url, '/point/add')) {
+            if ($method === 'POST' && str_contains($url, 'pos/customers') && ! str_contains($url, '/point/add')) {
                 return Http::response($responses['post_pos_customers'] ?? ['customerId' => '1'], 200);
             }
             if ($method === 'POST' && str_contains($url, '/point/add')) {

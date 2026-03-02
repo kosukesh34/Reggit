@@ -9,6 +9,5 @@ class QueueMeOutput
         public ?QueueEntry $queueEntry,
         public int $waitingCount,
         public int $estimatedWaitMinutes
-    ) {
-    }
+    ) {}
 }

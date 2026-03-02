@@ -34,7 +34,7 @@ class PaymentConfirmUseCaseTest extends TestCase
             'order_type' => 'mobile',
         ]);
 
-        $gateway = new FakePaymentGateway();
+        $gateway = new FakePaymentGateway;
         $gateway->intent = ['status' => 'succeeded', 'metadata' => []];
 
         $useCase = new PaymentConfirmUseCase($gateway);

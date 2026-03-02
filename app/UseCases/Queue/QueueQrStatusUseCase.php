@@ -25,8 +25,7 @@ class QueueQrStatusUseCase
         private QueueStatsService $statsService,
         private QueueEntryFactory $entryFactory,
         private LineService $lineService
-    ) {
-    }
+    ) {}
 
     public function handle(Request $request, string $token): ?QueueEntry
     {
@@ -52,12 +51,12 @@ class QueueQrStatusUseCase
         }
 
         $lineUserId = $this->resolveLineUserId($request);
-        if (!$this->isValidLineUserId($lineUserId)) {
+        if (! $this->isValidLineUserId($lineUserId)) {
             LogHelper::warning('[Queue] qr link rejected: missing line user id', [
                 'queue_id' => $entry->id,
                 'project_id' => $currentProjectId,
-                'has_header' => !StrHelper::isEmptyStringOrNull((string) $request->header('X-Line-User-Id')),
-                'has_query_line_user_id' => !StrHelper::isEmptyStringOrNull((string) $request->query('line_user_id')),
+                'has_header' => ! StrHelper::isEmptyStringOrNull((string) $request->header('X-Line-User-Id')),
+                'has_query_line_user_id' => ! StrHelper::isEmptyStringOrNull((string) $request->query('line_user_id')),
                 'user_agent' => (string) $request->userAgent(),
             ]);
             throw new \RuntimeException('LINEログインが必要です');
@@ -113,10 +112,11 @@ class QueueQrStatusUseCase
         $maxAttempts = 5;
         for ($i = 0; $i < $maxAttempts; $i++) {
             $token = Str::random(32);
-            if (!QueueEntryModel::where('qr_token', $token)->exists()) {
+            if (! QueueEntryModel::where('qr_token', $token)->exists()) {
                 return $token;
             }
         }
+
         return (string) Str::uuid();
     }
 
@@ -132,7 +132,7 @@ class QueueQrStatusUseCase
             }
             $liffUrl = ShopSetting::getLineLiffUrl((int) $entry->project_id);
             if (StrHelper::isEmptyStringOrNull($liffUrl)) {
-                $liffUrl = url('/liff/' . $projectKey);
+                $liffUrl = url('/liff/'.$projectKey);
             }
             $uri = $this->buildQueueLiffUri(
                 $liffUrl,
@@ -164,7 +164,7 @@ class QueueQrStatusUseCase
                                 'layout' => 'baseline',
                                 'contents' => [
                                     ['type' => 'text', 'text' => '受付番号', 'size' => 'sm', 'color' => '#777777', 'flex' => 2],
-                                    ['type' => 'text', 'text' => 'No.' . $queueNo, 'size' => 'md', 'weight' => 'bold', 'flex' => 3],
+                                    ['type' => 'text', 'text' => 'No.'.$queueNo, 'size' => 'md', 'weight' => 'bold', 'flex' => 3],
                                 ],
                             ],
                             ['type' => 'text', 'text' => '店舗が呼び出すと、このLINEに通知が届きます。', 'wrap' => true, 'size' => 'xs', 'color' => '#666666'],
@@ -200,7 +200,7 @@ class QueueQrStatusUseCase
 
     private function rememberEntryInSession(Request $request, int $projectId, int $entryId): void
     {
-        if (!$request->hasSession()) {
+        if (! $request->hasSession()) {
             return;
         }
         $request->session()->put($this->getSessionEntryKey($projectId), $entryId);
@@ -208,7 +208,7 @@ class QueueQrStatusUseCase
 
     private function getSessionEntryKey(int $projectId): string
     {
-        return self::SESSION_QUEUE_ENTRY_KEY_PREFIX . '_' . $projectId;
+        return self::SESSION_QUEUE_ENTRY_KEY_PREFIX.'_'.$projectId;
     }
 
     private function resolveLineUserId(Request $request): string
@@ -224,7 +224,7 @@ class QueueQrStatusUseCase
         }
 
         $user = $this->userService->findUser($request);
-        if ($user !== null && !StrHelper::isEmptyStringOrNull($user->line_user_id)) {
+        if ($user !== null && ! StrHelper::isEmptyStringOrNull($user->line_user_id)) {
             return (string) $user->line_user_id;
         }
 
@@ -268,14 +268,14 @@ class QueueQrStatusUseCase
             ? strtolower((string) $parsedForHost['host'])
             : '';
         if ($host === 'miniapp.line.me' || $host === 'liff.line.me') {
-            $liffUrl = url('/liff/' . $projectKey);
+            $liffUrl = url('/liff/'.$projectKey);
         }
 
         $parts = parse_url($liffUrl);
         if ($parts === false) {
-            return $liffUrl . (str_contains($liffUrl, '?') ? '&' : '?')
-                . 'project_key=' . urlencode($projectKey)
-                . '&queue_token=' . urlencode($queueToken);
+            return $liffUrl.(str_contains($liffUrl, '?') ? '&' : '?')
+                .'project_key='.urlencode($projectKey)
+                .'&queue_token='.urlencode($queueToken);
         }
 
         $queryParams = [];
@@ -292,12 +292,12 @@ class QueueQrStatusUseCase
 
         $uri = '';
         if (isset($parts['scheme'])) {
-            $uri .= $parts['scheme'] . '://';
+            $uri .= $parts['scheme'].'://';
         }
         if (isset($parts['user'])) {
             $uri .= $parts['user'];
             if (isset($parts['pass'])) {
-                $uri .= ':' . $parts['pass'];
+                $uri .= ':'.$parts['pass'];
             }
             $uri .= '@';
         }
@@ -305,14 +305,14 @@ class QueueQrStatusUseCase
             $uri .= $parts['host'];
         }
         if (isset($parts['port'])) {
-            $uri .= ':' . $parts['port'];
+            $uri .= ':'.$parts['port'];
         }
         $uri .= $parts['path'] ?? '';
         if ($query !== '') {
-            $uri .= '?' . $query;
+            $uri .= '?'.$query;
         }
         if (isset($parts['fragment'])) {
-            $uri .= '#' . $parts['fragment'];
+            $uri .= '#'.$parts['fragment'];
         }
 
         return $uri;

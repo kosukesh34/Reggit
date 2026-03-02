@@ -18,12 +18,12 @@ class ProjectController extends Controller
         private ProjectStoreUseCase $storeUseCase,
         private ProjectEditUseCase $editUseCase,
         private ProjectUpdateUseCase $updateUseCase
-    ) {
-    }
+    ) {}
 
     public function index()
     {
         $projects = $this->indexUseCase->handle();
+
         return view('admin.projects.index', compact('projects'));
     }
 
@@ -52,12 +52,14 @@ class ProjectController extends Controller
             $request->toProjectPayload(),
             $request->toProjectSettingsPayload()
         );
+
         return redirect()->route('system-admin.projects.index')->with('success', 'プロジェクトを作成しました');
     }
 
     public function edit(int $id)
     {
         $project = $this->editUseCase->handle($id);
+
         return view('admin.projects.edit', [
             'project' => $project,
             'projectSettings' => [
@@ -82,6 +84,7 @@ class ProjectController extends Controller
             $request->toProjectPayload(),
             $request->toProjectSettingsPayload()
         );
+
         return redirect()->route('system-admin.projects.index')->with('success', 'プロジェクトを更新しました');
     }
 }

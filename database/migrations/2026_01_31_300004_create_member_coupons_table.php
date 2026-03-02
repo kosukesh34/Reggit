@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (!Schema::hasTable('member_coupons')) {
+        if (! Schema::hasTable('member_coupons')) {
             Schema::create('member_coupons', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('project_id')->constrained()->cascadeOnDelete();
@@ -30,7 +30,7 @@ return new class extends Migration
             });
         }
 
-        if (Schema::hasTable('coupon_redemptions') && !Schema::hasColumn('coupon_redemptions', 'member_coupon_id')) {
+        if (Schema::hasTable('coupon_redemptions') && ! Schema::hasColumn('coupon_redemptions', 'member_coupon_id')) {
             Schema::table('coupon_redemptions', function (Blueprint $table) {
                 $table->foreignId('member_coupon_id')->nullable()->after('member_id')->constrained('member_coupons')->nullOnDelete();
             });

@@ -14,7 +14,7 @@ class ApiTokenRotateUseCase
         $token->update(['is_active' => false]);
 
         $project = Project::findOrFail($token->project_id);
-        $issued = ApiToken::issue($project, $token->name . ' (rotated)', $token->expires_at);
+        $issued = ApiToken::issue($project, $token->name.' (rotated)', $token->expires_at);
 
         return new ApiTokenIssuedOutput($issued['plain'], (int) $issued['token']->id);
     }

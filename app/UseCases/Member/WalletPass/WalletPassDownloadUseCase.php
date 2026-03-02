@@ -18,8 +18,7 @@ class WalletPassDownloadUseCase
 
     public function __construct(
         private WalletPassService $walletPassService
-    ) {
-    }
+    ) {}
 
     public function handle(WalletPassDownloadInput $input): WalletPassDownloadOutput
     {
@@ -28,16 +27,18 @@ class WalletPassDownloadUseCase
         }
         if ($input->user !== null) {
             $content = $this->walletPassService->generateFromUser($input->user);
+
             return $this->toOutput($content);
         }
+
         return $this->toOutput(null);
     }
 
     private function handleWithToken(string $token): WalletPassDownloadOutput
     {
-        $key = self::TOKEN_CACHE_PREFIX . $token;
+        $key = self::TOKEN_CACHE_PREFIX.$token;
         $data = Cache::get($key);
-        if ($data === null || !isset($data['user_id'], $data['project_id'])) {
+        if ($data === null || ! isset($data['user_id'], $data['project_id'])) {
             return $this->toOutput(null);
         }
         $projectId = AdminContext::getCurrentProjectId();
@@ -46,6 +47,7 @@ class WalletPassDownloadUseCase
         }
         Cache::forget($key);
         $content = $this->walletPassService->generateForUser((int) $data['user_id']);
+
         return $this->toOutput($content);
     }
 
@@ -55,6 +57,7 @@ class WalletPassDownloadUseCase
             return new WalletPassDownloadOutput($content, []);
         }
         $reasons = $this->walletPassService->getUnavailabilityReasons();
+
         return new WalletPassDownloadOutput(null, $reasons);
     }
 }

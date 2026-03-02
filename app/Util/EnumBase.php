@@ -21,4 +21,3 @@ abstract class EnumBase
         return static::$values[$value] ?? $value;
     }
 }
-

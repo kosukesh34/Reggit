@@ -2,15 +2,15 @@
 
 namespace App\Services\Admin;
 
+use App\Enums\OrderStatus;
 use App\Enums\QueueStatus;
 use App\Enums\ReservationStatus;
+use App\Models\Member;
 use App\Models\Order;
-use App\Enums\OrderStatus;
 use App\Models\Product;
 use App\Models\QueueEntry;
 use App\Models\Reservation;
 use App\Models\User;
-use App\Models\Member;
 use Illuminate\Database\Eloquent\Collection;
 
 class DashboardService

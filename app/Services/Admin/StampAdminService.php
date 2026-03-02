@@ -16,6 +16,7 @@ class StampAdminService
     {
         $data = $this->normalizePayload($data);
         $data['project_id'] = $projectId;
+
         return StampCard::create($data);
     }
 
@@ -29,6 +30,7 @@ class StampAdminService
         $data = $this->normalizePayload($data);
         $card = StampCard::findOrFail($id);
         $card->update($data);
+
         return $card;
     }
 
@@ -38,7 +40,7 @@ class StampAdminService
     }
 
     /** @param array<string, mixed> $data
-     *  @return array<string, mixed>
+     * @return array<string, mixed>
      */
     private function normalizePayload(array $data): array
     {
@@ -46,7 +48,7 @@ class StampAdminService
         if (is_array($milestones)) {
             $normalized = [];
             foreach ($milestones as $milestone) {
-                if (!is_array($milestone)) {
+                if (! is_array($milestone)) {
                     continue;
                 }
                 $stampCount = (int) ($milestone['stamp_count'] ?? 0);

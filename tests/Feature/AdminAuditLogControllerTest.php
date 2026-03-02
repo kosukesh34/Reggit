@@ -15,6 +15,7 @@ class AdminAuditLogControllerTest extends TestCase
     {
         $admin = AdminUser::factory()->create(['role' => AdminUser::ROLE_SYSTEM_ADMIN]);
         $this->actingAs($admin, 'admin');
+
         return $admin;
     }
 
@@ -51,7 +52,7 @@ class AdminAuditLogControllerTest extends TestCase
             'payload' => ['event' => 'test'],
         ]);
 
-        $response = $this->get('/system-admin/audit-logs/' . $log->id);
+        $response = $this->get('/system-admin/audit-logs/'.$log->id);
 
         $response->assertStatus(200);
     }
