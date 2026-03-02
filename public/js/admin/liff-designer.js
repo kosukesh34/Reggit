@@ -15,6 +15,11 @@ class LiffDesigner {
             reservations: 'fa-calendar-alt', member: 'fa-user',
             gallery: 'fa-images', announcements: 'fa-bullhorn'
         };
+        this.DEVICE_PROFILES = {
+            line: { label: 'LINE', frameClass: 'is-line' },
+            ios: { label: 'iOS', frameClass: 'is-ios' },
+            android: { label: 'Android', frameClass: 'is-android' },
+        };
 
         this.BLOCK_TYPES = [
             { type: 'hero', label: 'ヒーロー', icon: 'fa-star', desc: '大きな画像+テキスト', category: 'layout' },
@@ -66,6 +71,7 @@ class LiffDesigner {
 
         this.featureFlags = config.featureFlags || {};
         this.templates = Array.isArray(config.templates) ? config.templates : [];
+        this.previewNonce = Date.now();
         this.idCounter = 1;
         this.state = { layouts: {}, tabSettings: {}, activeTab: 'home', selectedId: null };
         this.ui = {
@@ -246,6 +252,7 @@ class LiffDesigner {
             zoomRange: document.getElementById('zoomRange'),
             zoomValue: document.getElementById('zoomValue'),
             phoneFrame: document.querySelector('.ld-phone__frame'),
+            tabTemplateList: document.getElementById('tabTemplateList'),
         };
     }
 
@@ -275,12 +282,14 @@ class LiffDesigner {
 
     render() {
         this.renderScreenList();
+        this.renderTabTemplateList();
         this.renderPhoneNav();
         this.renderPhoneContent();
         this.renderPaletteCategories();
         this.renderBlockPalette();
         this.renderBlockSettings();
         this.applyScreenSettings();
+        this.applyPreviewDevice();
         this.applyZoom();
         this.applyCustomCssPreview();
     }
@@ -510,8 +519,11 @@ class LiffDesigner {
     }
 
     buildData(el, b) {
-        const src = this.DATA_SOURCES.find(s => s.value === b.source);
-        el.innerHTML += '<div class="ld-block__body"><i class="fas fa-database"></i>' + this.esc(src ? src.label : b.source) + '（自動表示）</div>';
+        return window.LiffDesignerModules.dataPreview.buildData.call(this, el, b);
+    }
+
+    renderDataSourcePreview(source) {
+        return window.LiffDesignerModules.dataPreview.renderDataSourcePreview.call(this, source);
     }
 
     createToolbar(block, index) {
@@ -913,360 +925,140 @@ class LiffDesigner {
     /* ========== Drag & Drop ========== */
 
     bindDragSystem() {
-        document.addEventListener('pointerdown', this.handlePointerDown.bind(this));
-        document.addEventListener('pointermove', this.handlePointerMove.bind(this));
-        document.addEventListener('pointerup', this.handlePointerUp.bind(this));
-        document.addEventListener('pointercancel', this.handlePointerUp.bind(this));
+        return window.LiffDesignerModules.dragDrop.bindDragSystem.call(this);
     }
 
     handlePointerDown(e) {
-        const pi = e.target.closest('.ld-palette-item');
-        const bh = e.target.closest('.ld-block__handle');
-        if (!pi && !bh) return;
-        e.preventDefault();
-        this.drag.startX = e.clientX; this.drag.startY = e.clientY;
-        if (pi) { this.drag.source = 'palette'; this.drag.blockType = pi.dataset.blockType; this.drag.sourceElement = pi; }
-        else { const bl = bh.closest('.ld-block'); if (!bl) return; this.drag.source = 'reorder'; this.drag.blockId = bl.dataset.id; this.drag.sourceElement = bl; }
-        this.drag.pendingStart = true;
+        return window.LiffDesignerModules.dragDrop.handlePointerDown.call(this, e);
     }
 
     handlePointerMove(e) {
-        if (!this.drag.pendingStart && !this.drag.active) return;
-        if (this.drag.pendingStart) {
-            if (Math.abs(e.clientX - this.drag.startX) < 5 && Math.abs(e.clientY - this.drag.startY) < 5) return;
-            this.drag.pendingStart = false; this.drag.active = true;
-            document.body.classList.add('ld-is-dragging');
-            this.createGhost(e);
-            if (this.drag.source === 'reorder' && this.drag.sourceElement) this.drag.sourceElement.classList.add('ld-block--dragging');
-            this.els.phoneContent.classList.add('ld-drop-zone-active');
-        }
-        if (!this.drag.active) return;
-        if (this.drag.ghost) { this.drag.ghost.style.left = e.clientX + 'px'; this.drag.ghost.style.top = e.clientY + 'px'; }
-        this.updateDropTarget(e);
-        this.autoScroll(e);
+        return window.LiffDesignerModules.dragDrop.handlePointerMove.call(this, e);
     }
 
     handlePointerUp() {
-        if (this.drag.pendingStart) { this.drag.pendingStart = false; this.resetDrag(); return; }
-        if (!this.drag.active) return;
-        const di = this.drag.dropIndex;
-        if (this.drag.source === 'palette' && di >= 0) { this.addBlock(this.drag.blockType, di); }
-        else if (this.drag.source === 'reorder' && di >= 0) {
-            const blocks = this.getBlocks(); const fi = blocks.findIndex(b => b.id === this.drag.blockId);
-            if (fi >= 0) { const [m] = blocks.splice(fi, 1); blocks.splice(di > fi ? di - 1 : di, 0, m); this.pushHistory(); this.renderPhoneContent(); this.renderScreenList(); }
-        }
-        this.resetDrag();
+        return window.LiffDesignerModules.dragDrop.handlePointerUp.call(this);
     }
 
     createGhost(e) {
-        const g = document.createElement('div'); g.className = 'ld-drag-ghost';
-        const bt = this.drag.source === 'palette' ? this.BLOCK_TYPES.find(b => b.type === this.drag.blockType) : (() => { const bl = this.findBlock(this.drag.blockId); return bl ? this.BLOCK_TYPES.find(b => b.type === bl.type) : null; })();
-        g.innerHTML = '<i class="fas ' + (bt ? bt.icon : 'fa-cube') + '"></i> ' + this.esc(bt ? bt.label : '');
-        g.style.left = e.clientX + 'px'; g.style.top = e.clientY + 'px';
-        document.body.appendChild(g); this.drag.ghost = g;
-        requestAnimationFrame(() => g.classList.add('ld-drag-ghost--visible'));
+        return window.LiffDesignerModules.dragDrop.createGhost.call(this, e);
     }
 
     updateDropTarget(e) {
-        this.clearDropIndicators();
-        const body = this.els.phoneBody; const r = body.getBoundingClientRect();
-        if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) { this.drag.dropIndex = -1; return; }
-        const blocks = this.els.phoneContent.querySelectorAll('.ld-block');
-        if (blocks.length === 0) { this.drag.dropIndex = 0; this.els.phoneContent.classList.add('ld-drop-zone-highlight'); return; }
-        let ci = blocks.length, cd = Infinity;
-        blocks.forEach((b, i) => { const br = b.getBoundingClientRect(); const d = Math.abs(e.clientY - (br.top + br.height / 2)); if (d < cd) { cd = d; ci = e.clientY < br.top + br.height / 2 ? i : i + 1; } });
-        if (this.drag.source === 'reorder') { const cur = this.getBlocks().findIndex(b => b.id === this.drag.blockId); if (ci === cur || ci === cur + 1) { this.drag.dropIndex = -1; return; } }
-        this.drag.dropIndex = ci;
-        const ind = document.createElement('div'); ind.className = 'ld-drop-indicator';
-        ind.innerHTML = '<div class="ld-drop-indicator__dot"></div><div class="ld-drop-indicator__line"></div><div class="ld-drop-indicator__dot"></div>';
-        if (ci < blocks.length) blocks[ci].parentNode.insertBefore(ind, blocks[ci]); else this.els.phoneContent.appendChild(ind);
-        requestAnimationFrame(() => ind.classList.add('ld-drop-indicator--visible'));
+        return window.LiffDesignerModules.dragDrop.updateDropTarget.call(this, e);
     }
 
-    clearDropIndicators() { document.querySelectorAll('.ld-drop-indicator').forEach(e => e.remove()); this.els.phoneContent.classList.remove('ld-drop-zone-highlight'); }
+    clearDropIndicators() { return window.LiffDesignerModules.dragDrop.clearDropIndicators.call(this); }
 
     autoScroll(e) {
-        const b = this.els.phoneBody; const r = b.getBoundingClientRect();
-        if (this.drag.scrollTimer) { cancelAnimationFrame(this.drag.scrollTimer); this.drag.scrollTimer = null; }
-        const doUp = () => { b.scrollTop -= 8; if (this.drag.active) this.drag.scrollTimer = requestAnimationFrame(doUp); };
-        const doDown = () => { b.scrollTop += 8; if (this.drag.active) this.drag.scrollTimer = requestAnimationFrame(doDown); };
-        if (e.clientY < r.top + 40 && e.clientY > r.top) this.drag.scrollTimer = requestAnimationFrame(doUp);
-        else if (e.clientY > r.bottom - 40 && e.clientY < r.bottom) this.drag.scrollTimer = requestAnimationFrame(doDown);
+        return window.LiffDesignerModules.dragDrop.autoScroll.call(this, e);
     }
 
     resetDrag() {
-        if (this.drag.ghost) this.drag.ghost.remove();
-        if (this.drag.scrollTimer) cancelAnimationFrame(this.drag.scrollTimer);
-        if (this.drag.sourceElement) this.drag.sourceElement.classList.remove('ld-block--dragging');
-        this.clearDropIndicators();
-        document.body.classList.remove('ld-is-dragging');
-        this.els.phoneContent.classList.remove('ld-drop-zone-active');
-        this.drag = { active: false, source: null, blockType: null, blockId: null, ghost: null, dropIndex: -1, startX: 0, startY: 0, scrollTimer: null, pendingStart: false, sourceElement: null };
+        return window.LiffDesignerModules.dragDrop.resetDrag.call(this);
     }
 
     /* ========== Events ========== */
 
     bindEvents() {
-        this.els.closeSettings.addEventListener('click', () => { this.state.selectedId = null; this.renderPhoneContent(); this.renderBlockSettings(); });
-        this.els.screenBgColor.addEventListener('input', () => this.onScreenChange());
-        this.els.screenBgColorHex.addEventListener('input', () => { if (/^#[0-9a-fA-F]{6}$/.test(this.els.screenBgColorHex.value)) { this.els.screenBgColor.value = this.els.screenBgColorHex.value; this.onScreenChange(); } });
-        this.els.screenBgImage.addEventListener('input', () => this.onScreenChange());
-        this.els.form.addEventListener('submit', () => { this.els.layoutsJson.value = JSON.stringify(this.state.layouts); this.els.tabSettingsJson.value = JSON.stringify(this.state.tabSettings); if (this.els.customCssInput && this.els.customCssEditor) this.els.customCssInput.value = this.els.customCssEditor.value; });
-        this.els.toggleCssBtn.addEventListener('click', () => { this.els.cssSection.hidden = !this.els.cssSection.hidden; });
-        if (this.els.customCssEditor) this.els.customCssEditor.addEventListener('input', () => this.applyCustomCssPreview());
-        this.els.undoBtn.addEventListener('click', () => this.undo());
-        this.els.redoBtn.addEventListener('click', () => this.redo());
-        this.els.previewBtn.addEventListener('click', () => this.openPreview());
-        if (this.els.templateBtn) this.els.templateBtn.addEventListener('click', () => this.openTemplateModal());
-        if (this.els.exportBtn) this.els.exportBtn.addEventListener('click', () => this.exportJson());
-        if (this.els.importBtn && this.els.importJsonFile) {
-            this.els.importBtn.addEventListener('click', () => this.els.importJsonFile.click());
-            this.els.importJsonFile.addEventListener('change', () => {
-                const file = this.els.importJsonFile.files && this.els.importJsonFile.files[0];
-                if (file) this.importJson(file);
-                this.els.importJsonFile.value = '';
-            });
-        }
-        if (this.els.paletteSearch) {
-            this.els.paletteSearch.addEventListener('input', () => {
-                this.ui.paletteSearch = this.els.paletteSearch.value || '';
-                this.renderBlockPalette();
-            });
-        }
-        if (this.els.zoomRange) {
-            this.els.zoomRange.addEventListener('input', () => {
-                this.ui.zoom = parseInt(this.els.zoomRange.value || '100', 10);
-                this.applyZoom();
-            });
-        }
-        if (this.els.zoomOutBtn) {
-            this.els.zoomOutBtn.addEventListener('click', () => {
-                this.ui.zoom = Math.max(60, (this.ui.zoom || 100) - 5);
-                this.applyZoom();
-            });
-        }
-        if (this.els.zoomInBtn) {
-            this.els.zoomInBtn.addEventListener('click', () => {
-                this.ui.zoom = Math.min(120, (this.ui.zoom || 100) + 5);
-                this.applyZoom();
-            });
-        }
-        document.addEventListener('keydown', (e) => {
-            if ((e.metaKey || e.ctrlKey) && e.key === 'z') { e.preventDefault(); e.shiftKey ? this.redo() : this.undo(); }
-            if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') { e.preventDefault(); this.els.form.requestSubmit(); }
-            if (this.state.selectedId && (e.key === 'Delete' || e.key === 'Backspace')) { const t = e.target.tagName; if (t === 'INPUT' || t === 'TEXTAREA' || t === 'SELECT') return; e.preventDefault(); this.deleteBlock(this.state.selectedId); }
-        });
-        this.els.phoneContent.addEventListener('click', (e) => { if (e.target === this.els.phoneContent || e.target.closest('.ld-phone__empty')) { this.state.selectedId = null; this.renderPhoneContent(); this.renderBlockSettings(); } });
+        return window.LiffDesignerModules.uiEvents.bindEvents.call(this);
     }
 
     onScreenChange() {
-        const s = this.getSettings(); s.background_color = this.els.screenBgColor.value; s.background_image = this.els.screenBgImage.value;
-        this.els.screenBgColorHex.value = this.els.screenBgColor.value; this.state.tabSettings[this.state.activeTab] = s; this.renderPhoneContent();
+        return window.LiffDesignerModules.uiEvents.onScreenChange.call(this);
     }
 
     applyZoom() {
-        if (!this.els.phoneFrame) return;
-        const scale = (this.ui.zoom || 100) / 100;
-        this.els.phoneFrame.style.transform = 'scale(' + scale + ')';
-        if (this.els.zoomValue) this.els.zoomValue.textContent = Math.round(this.ui.zoom || 100) + '%';
-        if (this.els.zoomRange) this.els.zoomRange.value = String(Math.round(this.ui.zoom || 100));
+        return window.LiffDesignerModules.uiEvents.applyZoom.call(this);
+    }
+
+    applyPreviewDevice() {
+        return window.LiffDesignerModules.uiEvents.applyPreviewDevice.call(this);
     }
 
     applyCustomCssPreview() {
-        const css = this.els.customCssEditor ? this.els.customCssEditor.value : '';
-        let style = document.getElementById('ldCustomCssPreview');
-        if (!style) {
-            style = document.createElement('style');
-            style.id = 'ldCustomCssPreview';
-            document.head.appendChild(style);
-        }
-        style.textContent = css || '';
-        if (this.els.customCssInput) this.els.customCssInput.value = css || '';
+        return window.LiffDesignerModules.uiEvents.applyCustomCssPreview.call(this);
     }
 
     openTemplateModal() {
-        const templates = this.templates || [];
-        const tabTemplates = templates.filter(tpl => Array.isArray(tpl && tpl.blocks));
-        const superPatterns = templates.filter(tpl => tpl && tpl.scope === 'all_tabs' && tpl.layouts && typeof tpl.layouts === 'object');
+        return window.LiffDesignerModules.templateManager.openTemplateModal.call(this);
+    }
 
-        if (tabTemplates.length === 0 && superPatterns.length === 0) {
-            alert('利用可能なテンプレートがありません。');
-            return;
-        }
-        const modal = document.createElement('div');
-        modal.className = 'ld-modal';
-        const tabCards = tabTemplates.map((tpl, index) => {
-            const blocks = Array.isArray(tpl.blocks) ? tpl.blocks : [];
-            return (
-                '<div class="ld-template-card">' +
-                    '<div>' +
-                        '<div class="ld-template-card__name">' + this.esc(tpl.name || ('テンプレート' + (index + 1))) + '</div>' +
-                        '<div class="ld-template-card__meta">ブロック数: ' + blocks.length + '</div>' +
-                    '</div>' +
-                    '<div class="ld-template-card__preview">' +
-                        '<span class="ld-template-card__line wide"></span>' +
-                        '<span class="ld-template-card__line mid"></span>' +
-                        '<span class="ld-template-card__line short"></span>' +
-                    '</div>' +
-                    '<button type="button" class="ld-btn ld-btn--primary ld-btn--block" data-template-index="' + index + '">このタブに適用</button>' +
-                '</div>'
-            );
-        }).join('');
-        const superCards = superPatterns.map((tpl, index) => (
-            '<div class="ld-template-card">' +
-                '<div>' +
-                    '<div class="ld-template-card__name"><span class="ld-template-card__badge">SUPER</span> ' + this.esc(tpl.name || ('パターン' + (index + 1))) + '</div>' +
-                    '<div class="ld-template-card__meta">' + this.esc(tpl.description || '全タブに統一デザインを適用します。') + '</div>' +
-                '</div>' +
-                '<div class="ld-template-card__preview">' +
-                    '<span class="ld-template-card__line wide"></span>' +
-                    '<span class="ld-template-card__line mid"></span>' +
-                    '<span class="ld-template-card__line short"></span>' +
-                '</div>' +
-                '<button type="button" class="ld-btn ld-btn--outline ld-btn--block" data-super-index="' + index + '">全タブに適用</button>' +
-            '</div>'
-        )).join('');
+    renderTabTemplateList() {
+        return window.LiffDesignerModules.templateManager.renderTabTemplateList.call(this);
+    }
 
-        const tabSection = tabCards
-            ? '<div class="ld-template-section"><div class="ld-template-section__title">タブ用テンプレート</div><div class="ld-template-grid">' + tabCards + '</div></div>'
-            : '';
-        const superSection = superCards
-            ? '<div class="ld-template-section"><div class="ld-template-section__title">スーパターン（全タブ一括）</div><div class="ld-template-grid">' + superCards + '</div></div>'
-            : '';
+    renderTabTemplateMiniPreview(tpl) {
+        return window.LiffDesignerModules.templateManager.renderTabTemplateMiniPreview.call(this, tpl);
+    }
 
-        modal.innerHTML =
-            '<div class="ld-modal__dialog">' +
-                '<div class="ld-modal__head">' +
-                    '<h3 class="ld-modal__title"><i class="fas fa-layer-group"></i> テンプレートを適用</h3>' +
-                    '<button type="button" class="ld-btn ld-btn--ghost" data-close-modal><i class="fas fa-times"></i></button>' +
-                '</div>' +
-                '<div class="ld-modal__body">' + superSection + tabSection + '</div>' +
-            '</div>';
+    getTemplatesForTab(tabKey) {
+        return window.LiffDesignerModules.templateManager.getTemplatesForTab.call(this, tabKey);
+    }
 
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal || e.target.closest('[data-close-modal]')) modal.remove();
-            const applyBtn = e.target.closest('[data-template-index]');
-            if (applyBtn) {
-                const idx = parseInt(applyBtn.dataset.templateIndex || '-1', 10);
-                const tpl = tabTemplates[idx];
-                if (!tpl || !Array.isArray(tpl.blocks)) return;
-                this.state.layouts[this.state.activeTab] = tpl.blocks.map(item => this.normalizeBlock(item));
-                this.state.selectedId = null;
-                this.pushHistory();
-                this.render();
-                modal.remove();
-                return;
-            }
-            const superBtn = e.target.closest('[data-super-index]');
-            if (!superBtn) return;
-            const idx = parseInt(superBtn.dataset.superIndex || '-1', 10);
-            const pattern = superPatterns[idx];
-            if (!pattern || !pattern.layouts || typeof pattern.layouts !== 'object') return;
-            this.applySuperPattern(pattern);
-            modal.remove();
-        });
+    applyTabTemplate(tpl) {
+        return window.LiffDesignerModules.templateManager.applyTabTemplate.call(this, tpl);
+    }
 
-        document.body.appendChild(modal);
+    openTabTemplatePreview(tpl) {
+        return window.LiffDesignerModules.templateManager.openTabTemplatePreview.call(this, tpl);
+    }
+
+    getTemplateCategoryLabel(key) {
+        return window.LiffDesignerModules.templateManager.getTemplateCategoryLabel.call(this, key);
+    }
+
+    getPrimaryDeviceLabel(tpl) {
+        return window.LiffDesignerModules.templateManager.getPrimaryDeviceLabel.call(this, tpl);
     }
 
     applySuperPattern(pattern) {
-        if (!confirm('現在の全タブレイアウトを上書きします。適用しますか？')) {
-            return;
-        }
-
-        const nextLayouts = {};
-        Object.keys(this.TAB_LABELS).forEach(key => {
-            const rows = Array.isArray(pattern.layouts[key]) ? pattern.layouts[key] : [];
-            nextLayouts[key] = rows.map(item => this.normalizeBlock(item || {}));
-        });
-        this.state.layouts = nextLayouts;
-
-        if (pattern.tab_settings && typeof pattern.tab_settings === 'object') {
-            Object.keys(this.TAB_LABELS).forEach(key => {
-                const src = pattern.tab_settings[key];
-                if (src && typeof src === 'object') {
-                    this.state.tabSettings[key] = { ...this.state.tabSettings[key], ...src };
-                }
-            });
-        }
-        if (typeof pattern.custom_css === 'string' && this.els.customCssEditor) {
-            this.els.customCssEditor.value = pattern.custom_css;
-            this.applyCustomCssPreview();
-        }
-
-        this.state.activeTab = 'home';
-        this.state.selectedId = null;
-        this.pushHistory();
-        this.render();
+        return window.LiffDesignerModules.templateManager.applySuperPattern.call(this, pattern);
     }
 
     exportJson() {
-        const payload = {
-            exported_at: new Date().toISOString(),
-            active_tab: this.state.activeTab,
-            layouts: this.state.layouts,
-            tab_settings: this.state.tabSettings,
-            custom_css: this.els.customCssEditor ? this.els.customCssEditor.value : '',
-        };
-        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        const date = new Date().toISOString().slice(0, 10);
-        a.href = url;
-        a.download = 'liff-designer-' + date + '.json';
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        setTimeout(() => URL.revokeObjectURL(url), 500);
+        return window.LiffDesignerModules.io.exportJson.call(this);
     }
 
     importJson(file) {
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = () => {
-            try {
-                const data = JSON.parse(String(reader.result || '{}'));
-                if (!data || typeof data !== 'object') throw new Error('JSON形式が不正です');
-                if (!data.layouts || typeof data.layouts !== 'object') throw new Error('layouts がありません');
-
-                const layouts = {};
-                Object.keys(this.TAB_LABELS).forEach(key => {
-                    const rows = Array.isArray(data.layouts[key]) ? data.layouts[key] : [];
-                    layouts[key] = rows.map(item => this.normalizeBlock(item || {}));
-                });
-                this.state.layouts = layouts;
-
-                if (data.tab_settings && typeof data.tab_settings === 'object') {
-                    Object.keys(this.TAB_LABELS).forEach(key => {
-                        const src = data.tab_settings[key];
-                        if (src && typeof src === 'object') this.state.tabSettings[key] = { ...this.state.tabSettings[key], ...src };
-                    });
-                }
-                if (typeof data.custom_css === 'string' && this.els.customCssEditor) {
-                    this.els.customCssEditor.value = data.custom_css;
-                }
-
-                this.state.selectedId = null;
-                this.pushHistory();
-                this.render();
-                alert('JSONを読み込みました。必要なら保存してください。');
-            } catch (err) {
-                alert('JSON読み込みに失敗しました: ' + (err && err.message ? err.message : '不明なエラー'));
-            }
-        };
-        reader.readAsText(file);
+        return window.LiffDesignerModules.io.importJson.call(this, file);
     }
 
     openPreview() {
-        const ov = document.createElement('div'); ov.className = 'ld-preview-overlay';
-        const cl = document.createElement('button'); cl.className = 'ld-preview-overlay__close'; cl.innerHTML = '<i class="fas fa-times"></i>';
-        cl.addEventListener('click', () => ov.remove()); ov.appendChild(cl);
-        const ph = document.querySelector('.ld-phone').cloneNode(true);
-        ph.querySelectorAll('.ld-block__toolbar,.ld-block__handle').forEach(e => e.remove());
-        ph.querySelectorAll('.ld-block').forEach(e => { e.classList.remove('is-selected'); e.style.cursor = 'default'; });
-        ov.appendChild(ph);
-        ov.addEventListener('click', (e) => { if (e.target === ov) ov.remove(); });
-        document.body.appendChild(ov);
+        return window.LiffDesignerModules.io.openPreview.call(this);
+    }
+
+    getAdminProjectKey() {
+        const p = (window.location && window.location.pathname) ? window.location.pathname : '';
+        const m = p.match(/^\/admin\/([^/]+)\//);
+        return m && m[1] ? m[1] : 'default';
+    }
+
+    getDataPreviewFrameUrl(source) {
+        const map = {
+            products: 'products',
+            orders: 'orders',
+            stamps: 'stamps',
+            coupons: 'coupons',
+            queue: 'queue',
+            reservations: 'reservations',
+            member: 'member',
+            member_card: 'member',
+            gallery: 'gallery',
+            announcements: 'home',
+        };
+        const tab = map[source] || 'home';
+        const key = this.getAdminProjectKey();
+        const base = (window.location && window.location.origin ? window.location.origin : '') + '/liff/' + encodeURIComponent(key);
+        const params = new URLSearchParams({
+            tab,
+            designer_live_preview: '1',
+            designer_source: String(source || ''),
+            designer_embed: '1',
+            designer_sample: '1',
+            designer_rev: String(this.previewNonce || Date.now()),
+        });
+        return base + '?' + params.toString();
     }
 
     esc(str) { const d = document.createElement('div'); d.textContent = str || ''; return d.innerHTML; }

@@ -63,6 +63,7 @@ Route::prefix('v1')->middleware([AuthenticateApiToken::class])->group(function (
     Route::get('/products', [ApiV1ProductController::class, 'index']);
     Route::get('/products/{id}', [ApiV1ProductController::class, 'show']);
     Route::post('/orders', [ApiV1OrderController::class, 'store']);
+    Route::post('/orders/{id}/cancel-unpaid', [ApiV1OrderController::class, 'cancelUnpaid']);
     Route::get('/orders', [ApiV1OrderController::class, 'index']);
     Route::get('/orders/{id}', [ApiV1OrderController::class, 'show']);
     Route::get('/members/me', [ApiV1MemberMeController::class, '__invoke']);
@@ -84,6 +85,7 @@ Route::prefix('v1')->middleware([CheckApiProject::class, AuthenticateApiToken::c
     Route::get('/{project_key}/products', [ApiV1ProductController::class, 'index']);
     Route::get('/{project_key}/products/{id}', [ApiV1ProductController::class, 'show']);
     Route::post('/{project_key}/orders', [ApiV1OrderController::class, 'store']);
+    Route::post('/{project_key}/orders/{id}/cancel-unpaid', [ApiV1OrderController::class, 'cancelUnpaid']);
     Route::get('/{project_key}/orders', [ApiV1OrderController::class, 'index']);
     Route::get('/{project_key}/orders/{id}', [ApiV1OrderController::class, 'show']);
     Route::get('/{project_key}/members/me', [ApiV1MemberMeController::class, '__invoke']);
@@ -105,6 +107,7 @@ Route::middleware(['web', 'bind.project'])->group(function () {
     Route::get('/products/{id}', [ProductController::class, 'show']);
 
     Route::post('/orders', [OrderController::class, 'store']);
+    Route::post('/orders/{id}/cancel-unpaid', [OrderController::class, 'cancelUnpaid']);
     Route::get('/orders', [OrderController::class, 'index']);
     Route::get('/orders/{id}', [OrderController::class, 'show']);
 

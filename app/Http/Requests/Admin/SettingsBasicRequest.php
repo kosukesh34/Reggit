@@ -24,6 +24,7 @@ class SettingsBasicRequest extends FormRequest
             'closed_dates.*' => 'nullable|date',
             'advance_booking_days' => 'required|integer|min:1|max:365',
             'reservation_capacity_per_slot' => 'required|integer|min:1|max:999',
+            'order_mode' => 'required|string|in:both,mobile_only,in_store_only',
         ];
     }
 }
