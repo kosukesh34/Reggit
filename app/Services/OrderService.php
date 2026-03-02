@@ -142,8 +142,8 @@ class OrderService
         }
 
         if ($orderType === OrderType::MOBILE) {
-            if ($paymentMethod !== PaymentMethod::STRIPE) {
-                throw new \Exception('モバイルオーダーは注文時決済（Stripe）が必要です。');
+            if (!in_array($paymentMethod, [PaymentMethod::STRIPE, PaymentMethod::CASH], true)) {
+                throw new \Exception('モバイルオーダーの決済方法が不正です。');
             }
         }
     }
