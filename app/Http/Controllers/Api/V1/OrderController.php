@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Enums\OrderType;
 use App\Enums\PaymentMethod;
 use App\UseCases\Order\OrderIndexUseCase;
+use App\UseCases\Order\OrderCancelUnpaidUseCase;
 use App\UseCases\Order\OrderShowUseCase;
 use App\UseCases\Order\OrderStoreUseCase;
 use App\Util\AdminContext;
@@ -17,7 +18,8 @@ class OrderController extends BaseApiController
     public function __construct(
         private OrderIndexUseCase $indexUseCase,
         private OrderShowUseCase $showUseCase,
-        private OrderStoreUseCase $storeUseCase
+        private OrderStoreUseCase $storeUseCase,
+        private OrderCancelUnpaidUseCase $cancelUnpaidUseCase
     ) {}
 
     public function index(Request $request)
@@ -93,6 +95,19 @@ class OrderController extends BaseApiController
                 'error' => $e->getMessage(),
             ]);
 
+            return $this->error($e->getMessage(), 400);
+        }
+    }
+
+    public function cancelUnpaid(Request $request, int $id)
+    {
+        try {
+            $order = $this->cancelUnpaidUseCase->handle($request, $id);
+            return $this->success(
+                ['order' => $order],
+                '未決済注文をキャンセルしました'
+            );
+        } catch (\Exception $e) {
             return $this->error($e->getMessage(), 400);
         }
     }

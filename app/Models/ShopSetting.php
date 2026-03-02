@@ -214,6 +214,10 @@ class ShopSetting extends Model
         'feature_gallery_enabled' => 'ギャラリー',
     ];
 
+    public const ORDER_MODE_BOTH = 'both';
+    public const ORDER_MODE_MOBILE_ONLY = 'mobile_only';
+    public const ORDER_MODE_IN_STORE_ONLY = 'in_store_only';
+
     // ── LIFF ビルダー ──
 
     public static function getLiffBuilderBlocks(?int $projectId = null): array
@@ -224,6 +228,23 @@ class ShopSetting extends Model
         }
 
         return $blocks;
+    }
+
+    public static function getOrderMode(?int $projectId = null): string
+    {
+        $value = (string) self::getValue('order_mode', self::ORDER_MODE_BOTH, $projectId);
+        if (in_array($value, [self::ORDER_MODE_BOTH, self::ORDER_MODE_MOBILE_ONLY, self::ORDER_MODE_IN_STORE_ONLY], true)) {
+            return $value;
+        }
+        return self::ORDER_MODE_BOTH;
+    }
+
+    public static function setOrderMode(string $mode, ?int $projectId = null): void
+    {
+        if (!in_array($mode, [self::ORDER_MODE_BOTH, self::ORDER_MODE_MOBILE_ONLY, self::ORDER_MODE_IN_STORE_ONLY], true)) {
+            $mode = self::ORDER_MODE_BOTH;
+        }
+        self::setValue('order_mode', $mode, 'string', $projectId);
     }
 
     public static function setLiffBuilderBlocks(array $blocks, ?int $projectId = null): void
@@ -290,6 +311,10 @@ class ShopSetting extends Model
             [
                 'id' => 'welcome-home',
                 'name' => 'ようこそトップ',
+                'category' => 'home',
+                'description' => '初回訪問向けの定番トップ構成です。',
+                'target_tabs' => ['home'],
+                'device_support' => ['line', 'ios', 'android'],
                 'blocks' => [
                     ['type' => 'hero', 'title' => 'いらっしゃいませ', 'subtitle' => 'LINEから注文・予約・会員特典までまとめてご利用いただけます。', 'gradient_start' => '#0ea5e9', 'gradient_end' => '#22c55e'],
                     ['type' => 'banner', 'icon' => 'fa-gift', 'text' => '初回登録でドリンククーポンを配布中', 'color' => '#0f766e'],
@@ -300,6 +325,10 @@ class ShopSetting extends Model
             [
                 'id' => 'campaign-slider',
                 'name' => 'キャンペーン訴求',
+                'category' => 'campaign',
+                'description' => '写真を活かして販促情報を伝える構成です。',
+                'target_tabs' => ['home', 'announcements'],
+                'device_support' => ['line', 'ios', 'android'],
                 'blocks' => [
                     ['type' => 'slider', 'slide_height' => 180, 'slides' => [
                         ['image_url' => 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=1200', 'caption' => '春の新メニュー公開中'],
@@ -317,6 +346,10 @@ class ShopSetting extends Model
             [
                 'id' => 'quick-order',
                 'name' => 'クイック注文導線',
+                'category' => 'order',
+                'description' => '最短導線で注文開始させるための構成です。',
+                'target_tabs' => ['home', 'products'],
+                'device_support' => ['line', 'ios', 'android'],
                 'blocks' => [
                     ['type' => 'heading', 'text' => 'すぐに注文する', 'size' => 'large'],
                     ['type' => 'text', 'text' => '人気カテゴリから選んで最短で注文できます。'],
@@ -332,6 +365,10 @@ class ShopSetting extends Model
             [
                 'id' => 'member-benefits',
                 'name' => '会員特典',
+                'category' => 'member',
+                'description' => '会員登録・会員証導線を強化する構成です。',
+                'target_tabs' => ['member', 'home'],
+                'device_support' => ['line', 'ios', 'android'],
                 'blocks' => [
                     ['type' => 'heading', 'text' => '会員特典のご案内', 'size' => 'large'],
                     ['type' => 'list', 'items' => ['来店ごとにスタンプを獲得', 'ランクアップで特典が増加', '会員限定クーポンを配信']],
@@ -339,10 +376,200 @@ class ShopSetting extends Model
                 ],
             ],
             [
+                'id' => 'brand-story',
+                'name' => 'ブランドストーリー',
+                'category' => 'story',
+                'description' => '店舗紹介・こだわり訴求に向いた構成です。',
+                'target_tabs' => ['home', 'gallery'],
+                'device_support' => ['line', 'ios', 'android'],
+                'blocks' => [
+                    ['type' => 'hero', 'title' => '私たちのこだわり', 'subtitle' => '素材・製法・接客への想いをご紹介します。', 'image_url' => 'https://images.unsplash.com/photo-1466978913421-dad2ebd01d17?w=1200'],
+                    ['type' => 'card', 'title' => '毎朝仕込み', 'description' => '店内で毎朝丁寧に仕込んだメニューを提供します。', 'image_url' => 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1000'],
+                    ['type' => 'button', 'text' => 'ギャラリーを見る', 'action' => '#gallery', 'color' => '#0f766e'],
+                ],
+            ],
+            [
+                'id' => 'reservation-flow',
+                'name' => '予約フローテンプレ',
+                'category' => 'reservation',
+                'description' => '予約手順と注意点を1画面で伝える構成です。',
+                'target_tabs' => ['reservations'],
+                'device_support' => ['line', 'ios', 'android'],
+                'blocks' => [
+                    ['type' => 'heading', 'text' => '予約の流れ', 'size' => 'large'],
+                    ['type' => 'list', 'style' => 'number', 'items' => ['希望日時を選択', '人数と連絡先を入力', '内容確認して予約確定']],
+                    ['type' => 'banner', 'icon' => 'fa-info-circle', 'text' => '当日の変更はお電話がスムーズです。', 'color' => '#1d4ed8'],
+                    ['type' => 'button', 'text' => '予約画面へ進む', 'action' => '#reservations'],
+                ],
+            ],
+            [
+                'id' => 'queue-guide',
+                'name' => '順番待ちガイド',
+                'category' => 'support',
+                'description' => '混雑時の受付導線をわかりやすくする構成です。',
+                'target_tabs' => ['queue', 'home'],
+                'device_support' => ['line', 'ios', 'android'],
+                'blocks' => [
+                    ['type' => 'heading', 'text' => '順番待ち受付', 'size' => 'large'],
+                    ['type' => 'icon_text', 'rows' => [
+                        ['icon' => 'fa-user-friends', 'text' => '人数を入力して受付', 'color' => '#0f766e'],
+                        ['icon' => 'fa-mobile-alt', 'text' => '通知で呼び出しをお知らせ', 'color' => '#0f766e'],
+                        ['icon' => 'fa-check-circle', 'text' => '受付後は現在組数を確認可能', 'color' => '#0f766e'],
+                    ]],
+                    ['type' => 'button', 'text' => '順番待ちを開始', 'action' => '#queue'],
+                ],
+            ],
+            [
+                'id' => 'announcement-compact',
+                'name' => 'お知らせ一覧（コンパクト）',
+                'category' => 'campaign',
+                'description' => '新着情報を簡潔にまとめる軽量レイアウトです。',
+                'target_tabs' => ['announcements', 'home'],
+                'device_support' => ['line', 'ios', 'android'],
+                'blocks' => [
+                    ['type' => 'heading', 'text' => '最新のお知らせ', 'size' => 'large'],
+                    ['type' => 'banner', 'icon' => 'fa-bell', 'text' => '週替わりキャンペーン更新中', 'color' => '#7c3aed'],
+                    ['type' => 'data', 'source' => 'announcements'],
+                ],
+            ],
+            [
+                'id' => 'salon-home',
+                'name' => '業種別: サロン向けホーム',
+                'category' => 'industry',
+                'description' => '美容室・サロン向けの予約重視構成です。',
+                'target_tabs' => ['home', 'reservations', 'member'],
+                'device_support' => ['line', 'ios', 'android'],
+                'blocks' => [
+                    ['type' => 'hero', 'title' => '次回予約でキレイを継続', 'subtitle' => '担当スタイリストの空き状況を確認できます。', 'gradient_start' => '#f472b6', 'gradient_end' => '#fb7185'],
+                    ['type' => 'icon_text', 'rows' => [
+                        ['icon' => 'fa-cut', 'text' => '施術履歴から再予約', 'color' => '#db2777'],
+                        ['icon' => 'fa-ticket-alt', 'text' => '会員限定クーポンを配信', 'color' => '#db2777'],
+                    ]],
+                    ['type' => 'button', 'text' => '予約する', 'action' => '#reservations', 'color' => '#db2777'],
+                ],
+            ],
+            [
+                'id' => 'takeout-fast-lane',
+                'name' => '業種別: テイクアウト高速導線',
+                'category' => 'industry',
+                'description' => 'テイクアウト注文を最短化する構成です。',
+                'target_tabs' => ['home', 'products', 'orders'],
+                'device_support' => ['line', 'ios', 'android'],
+                'blocks' => [
+                    ['type' => 'heading', 'text' => '受け取り時間を選んですぐ注文', 'size' => 'large'],
+                    ['type' => 'collection', 'layout' => 'scroll', 'item_width' => 148, 'items' => [
+                        ['title' => 'ランチBOX', 'description' => '12:00受取', 'image_url' => 'https://images.unsplash.com/photo-1543332164-6e82f355bad5?w=800'],
+                        ['title' => 'パスタセット', 'description' => '12:30受取', 'image_url' => 'https://images.unsplash.com/photo-1621996346565-e3dbc353d2e5?w=800'],
+                        ['title' => 'サラダボウル', 'description' => '13:00受取', 'image_url' => 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800'],
+                    ]],
+                    ['type' => 'button', 'text' => '注文を開始', 'action' => '#products', 'color' => '#0ea5e9'],
+                ],
+            ],
+            [
+                'id' => 'products-catalog',
+                'name' => '商品カタログ（一覧重視）',
+                'category' => 'order',
+                'description' => '商品一覧を見やすく表示する標準テンプレートです。',
+                'target_tabs' => ['products'],
+                'device_support' => ['line', 'ios', 'android'],
+                'blocks' => [
+                    ['type' => 'heading', 'text' => '商品を選ぶ', 'size' => 'large'],
+                    ['type' => 'text', 'text' => 'カテゴリから商品を選んでカートに追加してください。'],
+                    ['type' => 'data', 'source' => 'products'],
+                ],
+            ],
+            [
+                'id' => 'orders-status-board',
+                'name' => '注文ステータス（進捗重視）',
+                'category' => 'order',
+                'description' => '現在注文と履歴を確認しやすいテンプレートです。',
+                'target_tabs' => ['orders'],
+                'device_support' => ['line', 'ios', 'android'],
+                'blocks' => [
+                    ['type' => 'heading', 'text' => '注文ステータス', 'size' => 'large'],
+                    ['type' => 'banner', 'icon' => 'fa-clock', 'text' => '受取準備完了時に通知します。', 'color' => '#2563eb'],
+                    ['type' => 'data', 'source' => 'orders'],
+                ],
+            ],
+            [
+                'id' => 'stamps-loyalty-board',
+                'name' => 'スタンプ特典（来店促進）',
+                'category' => 'member',
+                'description' => 'スタンプ進捗と特典案内を中心にしたテンプレートです。',
+                'target_tabs' => ['stamps'],
+                'device_support' => ['line', 'ios', 'android'],
+                'blocks' => [
+                    ['type' => 'heading', 'text' => 'スタンプカード', 'size' => 'large'],
+                    ['type' => 'icon_text', 'rows' => [
+                        ['icon' => 'fa-stamp', 'text' => '来店ごとにスタンプを付与', 'color' => '#06C755'],
+                        ['icon' => 'fa-gift', 'text' => '満了で特典クーポンを配布', 'color' => '#f59e0b'],
+                    ]],
+                    ['type' => 'data', 'source' => 'stamps'],
+                ],
+            ],
+            [
+                'id' => 'member-card-focus',
+                'name' => '会員証メイン（ポイント重視）',
+                'category' => 'member',
+                'description' => '会員証・ポイント・ランクの確認に最適化したテンプレートです。',
+                'target_tabs' => ['member'],
+                'device_support' => ['line', 'ios', 'android'],
+                'blocks' => [
+                    ['type' => 'heading', 'text' => '会員ページ', 'size' => 'large'],
+                    ['type' => 'text', 'text' => '会員証・ポイント・ランクをいつでも確認できます。'],
+                    ['type' => 'data', 'source' => 'member_card'],
+                ],
+            ],
+            [
+                'id' => 'reservations-quick-booking',
+                'name' => '予約導線（最短予約）',
+                'category' => 'reservation',
+                'description' => '予約手順を簡潔にし、離脱を減らすテンプレートです。',
+                'target_tabs' => ['reservations'],
+                'device_support' => ['line', 'ios', 'android'],
+                'blocks' => [
+                    ['type' => 'heading', 'text' => '来店予約', 'size' => 'large'],
+                    ['type' => 'list', 'style' => 'number', 'items' => ['日時を選択', '人数を入力', '内容を確認して確定']],
+                    ['type' => 'data', 'source' => 'reservations'],
+                ],
+            ],
+            [
+                'id' => 'coupon-showcase',
+                'name' => 'クーポン訴求（特典重視）',
+                'category' => 'campaign',
+                'description' => 'クーポン利用を促す販促向けテンプレートです。',
+                'target_tabs' => ['coupons'],
+                'device_support' => ['line', 'ios', 'android'],
+                'blocks' => [
+                    ['type' => 'heading', 'text' => '会員限定クーポン', 'size' => 'large'],
+                    ['type' => 'icon_text', 'rows' => [
+                        ['icon' => 'fa-ticket-alt', 'text' => '毎週新しいクーポンを配信', 'color' => '#7c3aed'],
+                        ['icon' => 'fa-bolt', 'text' => '今すぐ使えるクーポンを優先表示', 'color' => '#7c3aed'],
+                    ]],
+                    ['type' => 'data', 'source' => 'coupons'],
+                ],
+            ],
+            [
+                'id' => 'gallery-story',
+                'name' => 'ギャラリーストーリー',
+                'category' => 'story',
+                'description' => '写真と説明で雰囲気を伝えるテンプレートです。',
+                'target_tabs' => ['gallery'],
+                'device_support' => ['line', 'ios', 'android'],
+                'blocks' => [
+                    ['type' => 'heading', 'text' => 'ギャラリー', 'size' => 'large'],
+                    ['type' => 'text', 'text' => '店内や商品の写真をチェックできます。'],
+                    ['type' => 'data', 'source' => 'gallery'],
+                ],
+            ],
+            [
                 'id' => 'super-pattern-classic',
                 'name' => 'スーパターン: クラシックレストラン',
                 'scope' => 'all_tabs',
+                'category' => 'super',
                 'description' => '温かみのある配色で、予約と会員導線を強化した標準構成です。',
+                'target_tabs' => ['home', 'products', 'orders', 'stamps', 'coupons', 'queue', 'reservations', 'member', 'gallery', 'announcements'],
+                'device_support' => ['line', 'ios', 'android'],
                 'layouts' => self::defaultLiffTabLayouts(),
                 'tab_settings' => self::defaultLiffTabSettings(),
                 'custom_css' => '',
@@ -351,7 +578,10 @@ class ShopSetting extends Model
                 'id' => 'super-pattern-cafe',
                 'name' => 'スーパターン: ナチュラルカフェ',
                 'scope' => 'all_tabs',
+                'category' => 'super',
                 'description' => '軽やかな配色と写真訴求を中心にしたカフェ向け構成です。',
+                'target_tabs' => ['home', 'products', 'orders', 'stamps', 'coupons', 'queue', 'reservations', 'member', 'gallery', 'announcements'],
+                'device_support' => ['line', 'ios', 'android'],
                 'layouts' => self::defaultLiffCafePatternLayouts(),
                 'tab_settings' => [
                     'home' => ['background_color' => '#f7f6f1'],
@@ -371,7 +601,10 @@ class ShopSetting extends Model
                 'id' => 'super-pattern-fast',
                 'name' => 'スーパターン: ファストカジュアル',
                 'scope' => 'all_tabs',
+                'category' => 'super',
                 'description' => '注文速度を最優先にした、強いCTA中心の高速導線です。',
+                'target_tabs' => ['home', 'products', 'orders', 'stamps', 'coupons', 'queue', 'reservations', 'member', 'gallery', 'announcements'],
+                'device_support' => ['line', 'ios', 'android'],
                 'layouts' => self::defaultLiffFastPatternLayouts(),
                 'tab_settings' => [
                     'home' => ['background_color' => '#f3f6ff'],
@@ -398,8 +631,7 @@ class ShopSetting extends Model
         if (! is_array($layouts) || $layouts === []) {
             return self::defaultLiffTabLayouts();
         }
-
-        return $layouts;
+        return self::ensureLiffTabLayouts($layouts);
     }
 
     public static function getLiffCustomCss(?int $projectId = null): string
@@ -426,7 +658,7 @@ class ShopSetting extends Model
 
     public static function setLiffTabLayouts(array $layouts, ?int $projectId = null): void
     {
-        self::setValue('liff_tab_layouts', $layouts, 'json', $projectId);
+        self::setValue('liff_tab_layouts', self::ensureLiffTabLayouts($layouts), 'json', $projectId);
     }
 
     public static function getLineLiffId(?int $projectId = null): string
@@ -535,6 +767,36 @@ class ShopSetting extends Model
                 ['type' => 'data', 'source' => 'announcements'],
             ],
         ];
+    }
+
+    /**
+     * 保存済みレイアウトをタブ単位で正規化する。
+     *
+     * ルール:
+     * - タブが空ならデフォルトレイアウトを採用
+     * - 既存ブロックは順序を変えずに維持する
+     *
+     * @param array<string, mixed> $layouts
+     * @return array<string, array<int, array<string, mixed>>>
+     */
+    public static function ensureLiffTabLayouts(array $layouts): array
+    {
+        $defaults = self::defaultLiffTabLayouts();
+
+        $normalized = [];
+        foreach ($defaults as $tab => $defaultBlocks) {
+            $rows = $layouts[$tab] ?? null;
+            $blocks = is_array($rows) ? array_values(array_filter($rows, fn ($v) => is_array($v))) : [];
+
+            if ($blocks === []) {
+                $normalized[$tab] = $defaultBlocks;
+                continue;
+            }
+
+            $normalized[$tab] = $blocks;
+        }
+
+        return $normalized;
     }
 
     public static function defaultLiffTabSettings(): array
