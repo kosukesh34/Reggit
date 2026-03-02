@@ -38,20 +38,47 @@ class AdminUser extends Authenticatable
         self::ROLE_STAFF         => 'スタッフ',
     ];
 
+    /**
+     * 旧データ互換のロールエイリアス。
+     *
+     * 過去バージョン由来の値が残っていても、判定を壊さないように正規化する。
+     *
+     * @var array<string, string>
+     */
+    private const LEGACY_ROLE_ALIASES = [
+        'system' => self::ROLE_SYSTEM_ADMIN,
+        'sys_admin' => self::ROLE_SYSTEM_ADMIN,
+        'system-admin' => self::ROLE_SYSTEM_ADMIN,
+        'store_admin' => self::ROLE_ADMIN,
+    ];
+
+    private static function normalizeRoleValue(?string $role): string
+    {
+        $raw = strtolower(trim((string) $role));
+        if ($raw === '') {
+            return self::ROLE_STAFF;
+        }
+
+        return self::LEGACY_ROLE_ALIASES[$raw] ?? $raw;
+    }
+
     public static function getRoleLabel(string $role): string
     {
-        return self::ROLE_LABELS[$role] ?? $role;
+        $normalized = self::normalizeRoleValue($role);
+        return self::ROLE_LABELS[$normalized] ?? $role;
     }
 
     public static function getRoleLabelShort(string $role): string
     {
-        return self::ROLE_LABELS_SHORT[$role] ?? $role;
+        $normalized = self::normalizeRoleValue($role);
+        return self::ROLE_LABELS_SHORT[$normalized] ?? $role;
     }
 
     /** 指定ロールの階層レベルを返す（static） */
     public static function getRoleLevelFor(string $role): int
     {
-        return self::ROLE_HIERARCHY[$role] ?? 0;
+        $normalized = self::normalizeRoleValue($role);
+        return self::ROLE_HIERARCHY[$normalized] ?? 0;
     }
 
     protected $fillable = [
@@ -154,28 +181,28 @@ class AdminUser extends Authenticatable
 
     public function isSystemAdmin(): bool
     {
-        return $this->role === self::ROLE_SYSTEM_ADMIN;
+        return self::normalizeRoleValue($this->role) === self::ROLE_SYSTEM_ADMIN;
     }
 
     public function isProjectAdmin(): bool
     {
-        return $this->role === self::ROLE_PROJECT_ADMIN;
+        return self::normalizeRoleValue($this->role) === self::ROLE_PROJECT_ADMIN;
     }
 
     public function isAdmin(): bool
     {
-        return $this->role === self::ROLE_ADMIN;
+        return self::normalizeRoleValue($this->role) === self::ROLE_ADMIN;
     }
 
     public function isStaff(): bool
     {
-        return $this->role === self::ROLE_STAFF;
+        return self::normalizeRoleValue($this->role) === self::ROLE_STAFF;
     }
 
     /** 店舗管理画面（/admin/*）にアクセス可能か。全ロール許可。 */
     public function canAccessStoreAdmin(): bool
     {
-        return in_array($this->role, [
+        return in_array(self::normalizeRoleValue($this->role), [
             self::ROLE_SYSTEM_ADMIN,
             self::ROLE_PROJECT_ADMIN,
             self::ROLE_ADMIN,
@@ -236,7 +263,7 @@ class AdminUser extends Authenticatable
     /** 自分の階層レベル */
     public function getRoleLevel(): int
     {
-        return self::ROLE_HIERARCHY[$this->role] ?? 0;
+        return self::getRoleLevelFor($this->role);
     }
 
     /** 指定ロールのアカウントを作成できるか */
