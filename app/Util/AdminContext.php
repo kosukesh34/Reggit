@@ -20,6 +20,6 @@ class AdminContext
 
     public static function getCurrentProjectId(): ?int
     {
-        return self::$currentProject?->id;
+        return self::$currentProject ? self::$currentProject->id : null;
     }
 }

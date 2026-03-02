@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\OrderType;
 use App\Enums\PaymentMethod;
 use App\UseCases\Order\OrderIndexUseCase;
+use App\UseCases\Order\OrderCancelUnpaidUseCase;
 use App\UseCases\Order\OrderShowUseCase;
 use App\UseCases\Order\OrderStoreUseCase;
 use App\Util\AdminContext;
@@ -17,7 +18,8 @@ class OrderController extends Controller
     public function __construct(
         private OrderIndexUseCase $indexUseCase,
         private OrderShowUseCase $showUseCase,
-        private OrderStoreUseCase $storeUseCase
+        private OrderStoreUseCase $storeUseCase,
+        private OrderCancelUnpaidUseCase $cancelUnpaidUseCase
     ) {}
 
     public function index(Request $request)
@@ -82,6 +84,21 @@ class OrderController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
+            return response()->json([
+                'error' => $e->getMessage(),
+            ], 400);
+        }
+    }
+
+    public function cancelUnpaid(Request $request, int $id)
+    {
+        try {
+            $order = $this->cancelUnpaidUseCase->handle($request, $id);
+            return response()->json([
+                'message' => '未決済注文をキャンセルしました',
+                'order' => $order,
+            ]);
+        } catch (\Exception $e) {
             return response()->json([
                 'error' => $e->getMessage(),
             ], 400);

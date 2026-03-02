@@ -2,6 +2,7 @@
 
 namespace App\UseCases\Payment;
 
+use App\Enums\OrderType;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentIntentStatus;
 use App\Enums\PaymentMethod;
@@ -22,6 +23,9 @@ class PaymentConfirmUseCase
         }
 
         $order = Order::findOrFail($orderId);
+        if ($order->order_type !== OrderType::MOBILE) {
+            return new PaymentConfirmOutput(false, '店内注文は決済確認の対象外です', (string) $status, null);
+        }
         $order->update([
             'status' => OrderStatus::CONFIRMED,
             'payment_method' => PaymentMethod::STRIPE,

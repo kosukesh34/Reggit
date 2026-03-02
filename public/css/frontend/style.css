@@ -165,6 +165,27 @@ body.native-app-embed .main-content > #announcementsSection {
     flex-shrink: 0;
 }
 
+/* LIFFデザイナーの自動表示ライブプレビュー（埋め込み） */
+body.designer-live-preview-mode.designer-live-preview-embed .app-container {
+    max-width: 100%;
+    margin: 0;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+body.designer-live-preview-mode.designer-live-preview-embed .main-content {
+    padding: 0;
+}
+
+body.designer-live-preview-mode.designer-live-preview-embed .tab-content.active {
+    display: block;
+}
+
+body.designer-live-preview-mode.designer-live-preview-embed .tab-content.active .tab-section {
+    min-height: 0;
+    padding-bottom: 0;
+}
+
 body.native-app-embed .tab-content {
     display: none;
     max-width: 100%;
@@ -818,6 +839,20 @@ body.native-app-embed .header {
 .order-btn:disabled {
     background: var(--border-color);
     cursor: not-allowed;
+}
+
+.order-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.order-btn--in-store {
+    background: #4b5563;
+}
+
+.order-btn--in-store:hover:not(:disabled) {
+    background: #374151;
 }
 
 
