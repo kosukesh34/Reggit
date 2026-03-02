@@ -5,6 +5,8 @@ namespace App\Providers;
 use App\Models\MemberStamp;
 use App\Models\Project;
 use App\Models\ShopSetting;
+use App\UseCases\Payment\PaymentGateway;
+use App\UseCases\Payment\StripePaymentGateway;
 use App\Observers\MemberStampObserver;
 use App\Observers\ProjectObserver;
 use App\Util\AdminContext;
@@ -17,6 +19,10 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        $this->app->singleton(PaymentGateway::class, function () {
+            $secret = (string) config('services.stripe.secret', env('STRIPE_SECRET', ''));
+            return new StripePaymentGateway($secret);
+        });
     }
 
     public function boot(): void
@@ -83,17 +89,25 @@ class AppServiceProvider extends ServiceProvider
         // index の View composer（テスト時 /liff でもレンダリングするため常に登録。コールバックはビュー描画時のみ実行され DB はその時のみ）
         View::composer('index', function ($view) {
             try {
-                $project = request()?->attributes?->get('currentProject') ?? AdminContext::getCurrentProject();
-                $projectId = $project?->id ?? 1;
+                $req = request();
+                $project = null;
+                if ($req && $req->attributes) {
+                    $project = $req->attributes->get('currentProject');
+                }
+                if ($project === null) {
+                    $project = AdminContext::getCurrentProject();
+                }
+                $projectId = $project ? ((int) $project->id) : 1;
                 $view->with('lineTheme', ShopSetting::getLineThemeColors($projectId));
                 $view->with('frontendMenu', ShopSetting::getFrontendMenuItems($projectId));
-                $view->with('projectKey', $project?->project_key ?? 'default');
-                $view->with('projectName', $project?->name ?? 'モバイルオーダー');
+                $view->with('projectKey', $project ? ((string) $project->project_key) : 'default');
+                $view->with('projectName', $project ? ((string) $project->name) : 'モバイルオーダー');
                 $view->with('featureFlags', ShopSetting::getFeatureFlags($projectId));
                 $view->with('walletPassEnabled', config('wallet_pass.enabled', false));
                 $view->with('googleWalletEnabled', config('google_wallet.enabled', false));
                 $view->with('frontendLogoUrl', ShopSetting::getFrontendLogoUrl($projectId));
                 $view->with('frontendHeaderText', ShopSetting::getFrontendHeaderText($projectId));
+                $view->with('orderMode', ShopSetting::getOrderMode($projectId));
                 $view->with('liffBuilderBlocks', ShopSetting::getLiffBuilderBlocks($projectId));
                 $view->with('liffTabLayouts', ShopSetting::getLiffTabLayouts($projectId));
                 $view->with('liffCustomCss', ShopSetting::getLiffCustomCss($projectId));
@@ -116,6 +130,7 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('googleWalletEnabled', false);
                 $view->with('frontendLogoUrl', '');
                 $view->with('frontendHeaderText', 'モバイルオーダー');
+                $view->with('orderMode', \App\Models\ShopSetting::ORDER_MODE_BOTH);
                 $view->with('liffBuilderBlocks', ShopSetting::defaultLiffBuilderTemplates()[0]['blocks']);
                 $view->with('liffTabLayouts', ShopSetting::defaultLiffTabLayouts());
                 $view->with('liffCustomCss', '');
