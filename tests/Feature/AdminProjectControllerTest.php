@@ -15,6 +15,7 @@ class AdminProjectControllerTest extends TestCase
     {
         $admin = AdminUser::factory()->create(['role' => AdminUser::ROLE_SYSTEM_ADMIN]);
         $this->actingAs($admin, 'admin');
+
         return $admin;
     }
 
@@ -70,7 +71,7 @@ class AdminProjectControllerTest extends TestCase
         $this->loginSystemAdmin();
         $project = Project::factory()->create(['name' => 'Old']);
 
-        $response = $this->put('/system-admin/projects/' . $project->id, $this->projectFormPayload([
+        $response = $this->put('/system-admin/projects/'.$project->id, $this->projectFormPayload([
             'project_key' => $project->project_key,
             'name' => 'New',
             'description' => 'Updated',

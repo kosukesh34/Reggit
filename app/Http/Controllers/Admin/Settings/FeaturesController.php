@@ -12,8 +12,7 @@ class FeaturesController extends AdminBaseController
     public function __construct(
         private GetFeatureSettingsUseCase $getFeatureSettingsUseCase,
         private UpdateFeatureSettingsUseCase $updateFeatureSettingsUseCase
-    ) {
-    }
+    ) {}
 
     public function index()
     {

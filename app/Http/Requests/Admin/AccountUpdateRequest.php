@@ -5,8 +5,8 @@ namespace App\Http\Requests\Admin;
 use App\Models\AdminUser;
 use App\Models\Project;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Validator;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\Validation\Validator;
 
 class AccountUpdateRequest extends FormRequest
 {
@@ -18,6 +18,7 @@ class AccountUpdateRequest extends FormRequest
             return false;
         }
         $target = AdminUser::find($this->route('id'));
+
         return $target !== null && $admin->canEditUser($target);
     }
 
@@ -26,15 +27,15 @@ class AccountUpdateRequest extends FormRequest
         $id = (int) $this->route('id');
 
         return [
-            'login_id'       => 'required|string|max:100|unique:admin_users,login_id,' . $id . '|regex:/^[a-zA-Z0-9_-]+$/',
-            'email'          => 'required|email|unique:admin_users,email,' . $id,
-            'password'       => ['nullable', 'confirmed', Password::defaults()],
-            'name'           => 'required|string|max:255',
-            'role'           => 'required|in:system_admin,project_admin,admin,staff',
-            'project_ids'    => 'nullable|array',
-            'project_ids.*'  => 'exists:projects,id',
-            'permissions'    => 'nullable|array',
-            'permissions.*'  => 'string|max:50',
+            'login_id' => 'required|string|max:100|unique:admin_users,login_id,'.$id.'|regex:/^[a-zA-Z0-9_-]+$/',
+            'email' => 'required|email|unique:admin_users,email,'.$id,
+            'password' => ['nullable', 'confirmed', Password::defaults()],
+            'name' => 'required|string|max:255',
+            'role' => 'required|in:system_admin,project_admin,admin,staff',
+            'project_ids' => 'nullable|array',
+            'project_ids.*' => 'exists:projects,id',
+            'permissions' => 'nullable|array',
+            'permissions.*' => 'string|max:50',
         ];
     }
 
@@ -75,6 +76,7 @@ class AccountUpdateRequest extends FormRequest
         if ($this->role === AdminUser::ROLE_SYSTEM_ADMIN) {
             return Project::pluck('id')->all();
         }
+
         return array_values(array_unique($this->validated('project_ids') ?? []));
     }
 

@@ -13,6 +13,8 @@ class MemberStatus extends EnumBase
     ];
 
     public const ACTIVE = 'active';
+
     public const INACTIVE = 'inactive';
+
     public const SUSPENDED = 'suspended';
 }

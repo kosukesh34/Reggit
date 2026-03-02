@@ -15,6 +15,7 @@ class ProductAdminService
     public function create(int $projectId, array $data): Product
     {
         $data['project_id'] = $projectId;
+
         return Product::create($data);
     }
 
@@ -27,6 +28,7 @@ class ProductAdminService
     {
         $product = Product::findOrFail($id);
         $product->update($data);
+
         return $product;
     }
 

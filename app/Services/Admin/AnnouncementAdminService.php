@@ -15,6 +15,7 @@ class AnnouncementAdminService
     public function create(int $projectId, array $data): Announcement
     {
         $data['project_id'] = $projectId;
+
         return Announcement::create($data);
     }
 
@@ -27,6 +28,7 @@ class AnnouncementAdminService
     {
         $announcement = Announcement::findOrFail($id);
         $announcement->update($data);
+
         return $announcement;
     }
 

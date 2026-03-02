@@ -7,6 +7,5 @@ class AdvancedSettingsView
 {
     public function __construct(
         public array $settings
-    ) {
-    }
+    ) {}
 }

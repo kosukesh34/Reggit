@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 class HomeController extends AdminBaseController
 {
     private GetHomeSettingsUseCase $getHomeSettingsUseCase;
+
     private UpdateHomeSettingsUseCase $updateHomeSettingsUseCase;
 
     public function __construct(

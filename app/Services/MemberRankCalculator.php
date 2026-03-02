@@ -74,15 +74,17 @@ class MemberRankCalculator
     public function resolveCurrentRank(Member $member): string
     {
         $info = $this->getRankInfo($member);
+
         return (string) ($info['current_rank'] ?? $member->rank ?? 'bronze');
     }
 
     /** @param array{is_active?: bool|int|string, min_points?: int, order?: int, key?: string, label?: string} $rank */
     private function isRankActive(array $rank): bool
     {
-        if (!array_key_exists('is_active', $rank)) {
+        if (! array_key_exists('is_active', $rank)) {
             return false;
         }
+
         return $rank['is_active'] === true || $rank['is_active'] === 1 || $rank['is_active'] === '1';
     }
 }

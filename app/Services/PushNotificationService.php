@@ -33,6 +33,7 @@ class PushNotificationService
                 'project_id' => $announcement->project_id,
                 'target_tokens' => count($tokens),
             ]);
+
             return [
                 'target_tokens' => count($tokens),
                 'sent' => 0,
@@ -88,7 +89,7 @@ class PushNotificationService
         try {
             $response = $this->http->post((string) config('push.fcm.endpoint'), [
                 'headers' => [
-                    'Authorization' => 'key=' . (string) config('push.fcm.server_key'),
+                    'Authorization' => 'key='.(string) config('push.fcm.server_key'),
                     'Content-Type' => 'application/json',
                 ],
                 'json' => [
@@ -112,6 +113,7 @@ class PushNotificationService
                 'error' => $e->getMessage(),
                 'target_tokens' => count($tokens),
             ]);
+
             return ['sent' => 0, 'failed' => count($tokens)];
         }
 
@@ -126,6 +128,7 @@ class PushNotificationService
             $error = is_array($item) ? ($item['error'] ?? null) : null;
             if ($error === null) {
                 $sent++;
+
                 continue;
             }
             $failed++;
@@ -157,4 +160,3 @@ class PushNotificationService
         return (bool) config('push.fcm.enabled') && trim((string) config('push.fcm.server_key')) !== '';
     }
 }
-

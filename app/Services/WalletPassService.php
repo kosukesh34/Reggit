@@ -21,8 +21,7 @@ class WalletPassService
     public function __construct(
         private UserService $userService,
         private MemberService $memberService
-    ) {
-    }
+    ) {}
 
     public static function getLastError(): ?string
     {
@@ -55,9 +54,11 @@ class WalletPassService
             $this->ensureAssets($workDir, $extraFields, $projectId);
             $this->writeManifest($workDir);
             $this->signManifest($workDir);
+
             return $this->createZip($workDir);
         } catch (\Throwable $e) {
             $this->setLastError($e->getMessage());
+
             return null;
         } finally {
             File::deleteDirectory($workDir);
@@ -72,21 +73,23 @@ class WalletPassService
         $user = $this->userService->getOrCreateUser($request);
         $data = $this->memberService->getMemberData($user);
 
-        if (!isset($data['is_member']) || $data['is_member'] === false || !isset($data['member']) || $data['member'] === null) {
+        if (! isset($data['is_member']) || $data['is_member'] === false || ! isset($data['member']) || $data['member'] === null) {
             $this->setLastError('会員情報が見つかりません。');
+
             return null;
         }
 
         $member = $data['member'];
-        if (!($member instanceof Member)) {
+        if (! ($member instanceof Member)) {
             $this->setLastError('会員データが不正です。');
+
             return null;
         }
 
         $project = AdminContext::getCurrentProject();
         $organizationName = $project !== null ? $project->name : config('app.name', '会員証');
         $barcodeMessage = $member->member_number ?? (string) $member->id;
-        $serialNumber = 'member-' . (string) $member->id;
+        $serialNumber = 'member-'.(string) $member->id;
 
         $extraFields = [
             'points' => $data['points'] ?? $member->getTotalPointsFromTransactions(),
@@ -106,21 +109,23 @@ class WalletPassService
     {
         $data = $this->memberService->getMemberData($user);
 
-        if (!isset($data['is_member']) || $data['is_member'] === false || !isset($data['member']) || $data['member'] === null) {
+        if (! isset($data['is_member']) || $data['is_member'] === false || ! isset($data['member']) || $data['member'] === null) {
             $this->setLastError('会員情報が見つかりません。');
+
             return null;
         }
 
         $member = $data['member'];
-        if (!($member instanceof Member)) {
+        if (! ($member instanceof Member)) {
             $this->setLastError('会員データが不正です。');
+
             return null;
         }
 
         $project = AdminContext::getCurrentProject();
         $organizationName = $project !== null ? $project->name : config('app.name', '会員証');
         $barcodeMessage = $member->member_number ?? (string) $member->id;
-        $serialNumber = 'member-' . (string) $member->id;
+        $serialNumber = 'member-'.(string) $member->id;
 
         $extraFields = [
             'points' => $data['points'] ?? $member->getTotalPointsFromTransactions(),
@@ -141,32 +146,37 @@ class WalletPassService
         $projectId = AdminContext::getCurrentProjectId();
         if ($projectId === null || $projectId === false) {
             $this->setLastError('プロジェクトが特定できません。');
+
             return null;
         }
         $user = \App\Models\User::where('id', $userId)->where('project_id', $projectId)->first();
         if ($user === null) {
             $this->setLastError('ユーザーが見つかりません。');
+
             return null;
         }
         $data = $this->memberService->getMemberData($user);
-        if (!isset($data['is_member']) || $data['is_member'] === false || !isset($data['member']) || $data['member'] === null) {
+        if (! isset($data['is_member']) || $data['is_member'] === false || ! isset($data['member']) || $data['member'] === null) {
             $this->setLastError('会員情報が見つかりません。');
+
             return null;
         }
         $member = $data['member'];
-        if (!($member instanceof Member)) {
+        if (! ($member instanceof Member)) {
             $this->setLastError('会員データが不正です。');
+
             return null;
         }
         $project = AdminContext::getCurrentProject();
         $organizationName = $project !== null ? $project->name : config('app.name', '会員証');
         $barcodeMessage = $member->member_number ?? (string) $member->id;
-        $serialNumber = 'member-' . (string) $member->id;
+        $serialNumber = 'member-'.(string) $member->id;
         $extraFields = [
             'points' => $data['points'] ?? $member->getTotalPointsFromTransactions(),
             'rank_label' => $data['current_rank_label'] ?? $member->rank ?? '',
             'rank_key' => $data['current_rank'] ?? $member->rank ?? 'bronze',
         ];
+
         return $this->buildMembershipPass($barcodeMessage, $organizationName, $serialNumber, $extraFields, (int) $projectId);
     }
 
@@ -180,6 +190,7 @@ class WalletPassService
             'platinum' => ['bg' => 'rgb(168, 168, 176)', 'fg' => 'rgb(35, 40, 50)', 'label' => 'rgb(95, 105, 120)'],
         ];
         $key = strtolower($rankKey);
+
         return $map[$key] ?? $map['bronze'];
     }
 
@@ -213,6 +224,7 @@ class WalletPassService
             ],
         ];
         $key = strtolower($rankKey);
+
         return $map[$key] ?? $map['bronze'];
     }
 
@@ -262,15 +274,16 @@ class WalletPassService
             ],
         ];
 
-        File::put($dir . '/pass.json', json_encode($pass, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+        File::put($dir.'/pass.json', json_encode($pass, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
     }
 
     private function createWorkDir(): string
     {
-        $dir = storage_path('app/wallet_pass/build/' . uniqid('pass_', true));
-        if (!File::isDirectory($dir)) {
+        $dir = storage_path('app/wallet_pass/build/'.uniqid('pass_', true));
+        if (! File::isDirectory($dir)) {
             File::makeDirectory($dir, 0755, true);
         }
+
         return $dir;
     }
 
@@ -278,17 +291,18 @@ class WalletPassService
     private function resolveProjectAssetsPath(?int $projectId): string
     {
         if ($projectId !== null) {
-            $projectDir = storage_path('app/public/wallet_assets/' . (string) $projectId);
-            if (File::isDirectory($projectDir) && (File::isFile($projectDir . '/icon.png') || File::isFile($projectDir . '/logo.png'))) {
+            $projectDir = storage_path('app/public/wallet_assets/'.(string) $projectId);
+            if (File::isDirectory($projectDir) && (File::isFile($projectDir.'/icon.png') || File::isFile($projectDir.'/logo.png'))) {
                 return $projectDir;
             }
         }
+
         return $this->resolvePath(config('wallet_pass.assets_path'));
     }
 
     /**
-     * @param array<string, string|int|float|bool|null> $extraFields パス用追加フィールド
-     * @param int|null $projectId プロジェクトID（指定時は管理画面アップロード画像を優先）
+     * @param  array<string, string|int|float|bool|null>  $extraFields  パス用追加フィールド
+     * @param  int|null  $projectId  プロジェクトID（指定時は管理画面アップロード画像を優先）
      */
     private function ensureAssets(string $dir, array $extraFields = [], ?int $projectId = null): void
     {
@@ -304,8 +318,8 @@ class WalletPassService
         ];
 
         foreach ($required as $name => $size) {
-            $src = $assetsPath . '/' . $name;
-            $dst = $dir . '/' . $name;
+            $src = $assetsPath.'/'.$name;
+            $dst = $dir.'/'.$name;
             if (File::isFile($src)) {
                 File::copy($src, $dst);
             } else {
@@ -315,9 +329,9 @@ class WalletPassService
 
         $stripSizes = ['strip.png' => [375, 123], 'strip@2x.png' => [750, 246]];
         foreach ($stripSizes as $name => $size) {
-            $src = $assetsPath . '/' . $name;
-            $srcRank = $assetsPath . '/strip_' . $rankKey . '.png';
-            $dst = $dir . '/' . $name;
+            $src = $assetsPath.'/'.$name;
+            $srcRank = $assetsPath.'/strip_'.$rankKey.'.png';
+            $dst = $dir.'/'.$name;
             if (File::isFile($src)) {
                 File::copy($src, $dst);
             } elseif (File::isFile($srcRank)) {
@@ -330,7 +344,7 @@ class WalletPassService
 
     private function createPlaceholderPng(string $path, int $width, int $height): void
     {
-        if (!extension_loaded('gd')) {
+        if (! extension_loaded('gd')) {
             throw new \RuntimeException('Wallet Pass の画像生成に GD 拡張が必要です。');
         }
         $im = imagecreatetruecolor($width, $height);
@@ -395,17 +409,17 @@ class WalletPassService
     {
         $files = ['pass.json'];
         foreach (['icon.png', 'icon@2x.png', 'icon@3x.png', 'logo.png', 'logo@2x.png', 'strip.png', 'strip@2x.png'] as $f) {
-            if (File::isFile($dir . '/' . $f)) {
+            if (File::isFile($dir.'/'.$f)) {
                 $files[] = $f;
             }
         }
 
         $manifest = [];
         foreach ($files as $name) {
-            $path = $dir . '/' . $name;
+            $path = $dir.'/'.$name;
             $manifest[$name] = sha1_file($path);
         }
-        File::put($dir . '/manifest.json', json_encode($manifest, JSON_PRETTY_PRINT));
+        File::put($dir.'/manifest.json', json_encode($manifest, JSON_PRETTY_PRINT));
     }
 
     private function signManifest(string $dir): void
@@ -414,32 +428,32 @@ class WalletPassService
         $keyPath = $this->resolvePath(config('wallet_pass.key_path'));
         $wwdrPath = $this->resolvePath(config('wallet_pass.wwdr_path'));
 
-        if (!File::isFile($certPath) || !File::isReadable($certPath)) {
-            throw new \RuntimeException('Wallet Pass 証明書が見つかりません: ' . $certPath);
+        if (! File::isFile($certPath) || ! File::isReadable($certPath)) {
+            throw new \RuntimeException('Wallet Pass 証明書が見つかりません: '.$certPath);
         }
-        if (!File::isFile($keyPath) || !File::isReadable($keyPath)) {
-            throw new \RuntimeException('Wallet Pass 秘密鍵が見つかりません: ' . $keyPath);
+        if (! File::isFile($keyPath) || ! File::isReadable($keyPath)) {
+            throw new \RuntimeException('Wallet Pass 秘密鍵が見つかりません: '.$keyPath);
         }
-        if (!File::isFile($wwdrPath) || !File::isReadable($wwdrPath)) {
-            throw new \RuntimeException('WWDR 証明書が見つかりません: ' . $wwdrPath);
+        if (! File::isFile($wwdrPath) || ! File::isReadable($wwdrPath)) {
+            throw new \RuntimeException('WWDR 証明書が見つかりません: '.$wwdrPath);
         }
 
         $certPem = $this->ensurePemCertificate($certPath);
         $keyPem = $this->ensurePemKey($keyPath);
         $wwdrPem = $this->ensurePemCertificate($wwdrPath);
 
-        $manifestPath = $dir . '/manifest.json';
-        $signaturePath = $dir . '/signature';
+        $manifestPath = $dir.'/manifest.json';
+        $signaturePath = $dir.'/signature';
 
         $keyPassphrase = config('wallet_pass.key_passphrase', '');
-        $keyUri = 'file://' . str_replace('\\', '/', $keyPem);
+        $keyUri = 'file://'.str_replace('\\', '/', $keyPem);
         $keyForSign = $keyPassphrase !== '' ? [$keyUri, $keyPassphrase] : $keyUri;
 
         $headers = [
-            'signing-time' => (new \DateTime())->format('Y-m-d H:i:s'),
+            'signing-time' => (new \DateTime)->format('Y-m-d H:i:s'),
         ];
 
-        $certUri = 'file://' . str_replace('\\', '/', $certPem);
+        $certUri = 'file://'.str_replace('\\', '/', $certPem);
         $ok = @openssl_pkcs7_sign(
             $manifestPath,
             $signaturePath,
@@ -462,7 +476,7 @@ class WalletPassService
 
         if ($ok === false) {
             $msg = openssl_error_string() ?: '署名に失敗しました。';
-            throw new \RuntimeException('Wallet Pass の署名に失敗しました: ' . $msg);
+            throw new \RuntimeException('Wallet Pass の署名に失敗しました: '.$msg);
         }
 
         $this->stripSignatureToDer($signaturePath);
@@ -496,16 +510,17 @@ class WalletPassService
         if (str_contains($content, '-----BEGIN')) {
             return $path;
         }
-        $pem = '-----BEGIN CERTIFICATE-----' . "\n"
-            . chunk_split(base64_encode($content), 64, "\n")
-            . '-----END CERTIFICATE-----' . "\n";
+        $pem = '-----BEGIN CERTIFICATE-----'."\n"
+            .chunk_split(base64_encode($content), 64, "\n")
+            .'-----END CERTIFICATE-----'."\n";
         $cert = @openssl_x509_read($pem);
         if ($cert === false) {
-            throw new \RuntimeException('証明書の読み込みに失敗しました。PEM 形式か DER 形式の証明書を配置してください: ' . $path);
+            throw new \RuntimeException('証明書の読み込みに失敗しました。PEM 形式か DER 形式の証明書を配置してください: '.$path);
         }
-        $tmp = $path . '.pem.' . uniqid();
+        $tmp = $path.'.pem.'.uniqid();
         openssl_x509_export_to_file($cert, $tmp);
         openssl_x509_free($cert);
+
         return $tmp;
     }
 
@@ -515,13 +530,14 @@ class WalletPassService
         if (str_contains($content, '-----BEGIN')) {
             return $path;
         }
-        $key = @openssl_pkey_get_private('file://' . $path);
+        $key = @openssl_pkey_get_private('file://'.$path);
         if ($key === false) {
-            throw new \RuntimeException('秘密鍵の読み込みに失敗しました。PEM 形式の鍵を配置してください: ' . $path);
+            throw new \RuntimeException('秘密鍵の読み込みに失敗しました。PEM 形式の鍵を配置してください: '.$path);
         }
-        $tmp = $path . '.pem.' . uniqid();
+        $tmp = $path.'.pem.'.uniqid();
         openssl_pkey_export_to_file($key, $tmp);
         openssl_pkey_free($key);
+
         return $tmp;
     }
 
@@ -529,20 +545,20 @@ class WalletPassService
     {
         $files = ['pass.json', 'manifest.json', 'signature'];
         foreach (['icon.png', 'icon@2x.png', 'icon@3x.png', 'logo.png', 'logo@2x.png', 'strip.png', 'strip@2x.png'] as $f) {
-            if (File::isFile($dir . '/' . $f)) {
+            if (File::isFile($dir.'/'.$f)) {
                 $files[] = $f;
             }
         }
 
-        $zipPath = $dir . '/pass.zip';
+        $zipPath = $dir.'/pass.zip';
 
         if (class_exists(\ZipArchive::class)) {
-            $zip = new \ZipArchive();
+            $zip = new \ZipArchive;
             if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
                 throw new \RuntimeException('ZIP の作成に失敗しました。');
             }
             foreach ($files as $name) {
-                $zip->addFile($dir . '/' . $name, $name);
+                $zip->addFile($dir.'/'.$name, $name);
             }
             $zip->close();
         } else {
@@ -551,6 +567,7 @@ class WalletPassService
 
         $content = File::get($zipPath);
         @unlink($zipPath);
+
         return $content;
     }
 
@@ -569,8 +586,8 @@ class WalletPassService
         );
         $output = [];
         $ret = 0;
-        @exec($cmd . ' 2>&1', $output, $ret);
-        if ($ret !== 0 || !File::isFile($zipPath)) {
+        @exec($cmd.' 2>&1', $output, $ret);
+        if ($ret !== 0 || ! File::isFile($zipPath)) {
             throw new \RuntimeException(
                 'ZIP の作成に失敗しました。PHP の zip 拡張を有効にするか、システムに zip コマンドをインストールしてください。'
             );
@@ -597,19 +614,20 @@ class WalletPassService
         $certPath = $this->resolvePath(config('wallet_pass.cert_path', ''));
         $keyPath = $this->resolvePath(config('wallet_pass.key_path', ''));
         $wwdrPath = $this->resolvePath(config('wallet_pass.wwdr_path', ''));
-        if ($certPath !== '' && !is_readable($certPath)) {
-            $reasons[] = 'pass.cer not found or not readable: ' . $certPath;
+        if ($certPath !== '' && ! is_readable($certPath)) {
+            $reasons[] = 'pass.cer not found or not readable: '.$certPath;
         }
-        if ($keyPath !== '' && !is_readable($keyPath)) {
-            $reasons[] = 'iOS-Passkey-Key.key not found or not readable: ' . $keyPath;
+        if ($keyPath !== '' && ! is_readable($keyPath)) {
+            $reasons[] = 'iOS-Passkey-Key.key not found or not readable: '.$keyPath;
         }
-        if ($wwdrPath !== '' && !is_readable($wwdrPath)) {
-            $reasons[] = 'AppleWWDRCAG3.cer not found or not readable: ' . $wwdrPath;
+        if ($wwdrPath !== '' && ! is_readable($wwdrPath)) {
+            $reasons[] = 'AppleWWDRCAG3.cer not found or not readable: '.$wwdrPath;
         }
         if ($reasons === []) {
             $lastError = self::getLastError();
             $reasons[] = $lastError !== null && $lastError !== '' ? $lastError : 'Build failed. Check storage/logs/laravel.log';
         }
+
         return $reasons;
     }
 
@@ -621,6 +639,7 @@ class WalletPassService
         if (str_starts_with($path, '/') || (strlen($path) >= 2 && $path[1] === ':')) {
             return $path;
         }
+
         return base_path($path);
     }
 }

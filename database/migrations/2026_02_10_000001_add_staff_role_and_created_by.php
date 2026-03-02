@@ -15,7 +15,7 @@ return new class extends Migration
         }
 
         // created_by_id: 誰がこのアカウントを作成したか追跡
-        if (!Schema::hasColumn('admin_users', 'created_by_id')) {
+        if (! Schema::hasColumn('admin_users', 'created_by_id')) {
             Schema::table('admin_users', function (Blueprint $table) {
                 $table->foreignId('created_by_id')->nullable()->after('project_id')
                     ->constrained('admin_users')->nullOnDelete()

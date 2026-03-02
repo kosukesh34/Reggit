@@ -10,9 +10,7 @@ class PaymentWebhookUseCase
 {
     private const EVENT_SUCCEEDED = 'payment_intent.succeeded';
 
-    public function __construct(private PaymentGateway $gateway)
-    {
-    }
+    public function __construct(private PaymentGateway $gateway) {}
 
     public function handle(string $payload, string $sigHeader, string $secret): bool
     {

@@ -8,13 +8,14 @@ use App\Models\ShopSetting;
 class ProjectStoreUseCase
 {
     /**
-     * @param array<string, string|int|float|bool|array|null> $payload 検証済みプロジェクト作成データ
-     * @param array<string, string|int|float|bool|array|null> $settingsPayload 検証済み初期設定データ
+     * @param  array<string, string|int|float|bool|array|null>  $payload  検証済みプロジェクト作成データ
+     * @param  array<string, string|int|float|bool|array|null>  $settingsPayload  検証済み初期設定データ
      */
     public function handle(array $payload, array $settingsPayload): Project
     {
         $project = Project::create($payload);
         $this->syncProjectSettings((int) $project->id, $settingsPayload);
+
         return $project;
     }
 

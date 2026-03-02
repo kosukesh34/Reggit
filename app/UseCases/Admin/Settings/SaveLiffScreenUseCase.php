@@ -48,6 +48,7 @@ class SaveLiffScreenUseCase
     private function decodeJsonArray(string $json): array
     {
         $decoded = json_decode($json, true);
+
         return is_array($decoded) ? $decoded : [];
     }
 }

@@ -12,8 +12,7 @@ class MemberMeUseCase
     public function __construct(
         private MemberService $memberService,
         private UserService $userService
-    ) {
-    }
+    ) {}
 
     public function handle(Request $request): MemberData
     {

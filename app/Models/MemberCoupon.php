@@ -34,6 +34,7 @@ class MemberCoupon extends Model
     ];
 
     public const STATUS_UNUSED = 'unused';
+
     public const STATUS_USED = 'used';
 
     public function project(): BelongsTo

@@ -8,11 +8,11 @@ use Illuminate\Database\Eloquent\Collection;
 /**
  * アカウント作成・編集フォーム画面用の表示データ。
  *
- * @param Collection<int, \App\Models\Project> $projects
- * @param array<int, string> $creatableRoles
- * @param array<string, string> $allPermissions
- * @param array<string, array<int, string>> $permissionGroups
- * @param array<int, string> $currentPermissions
+ * @param  Collection<int, \App\Models\Project>  $projects
+ * @param  array<int, string>  $creatableRoles
+ * @param  array<string, string>  $allPermissions
+ * @param  array<string, array<int, string>>  $permissionGroups
+ * @param  array<int, string>  $currentPermissions
  */
 class AccountFormView
 {
@@ -26,6 +26,5 @@ class AccountFormView
         public AdminUser $me,
         public string $routePrefix,
         public array $routeParams
-    ) {
-    }
+    ) {}
 }

@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 class WalletController extends AdminBaseController
 {
     private GetWalletSettingsUseCase $getWalletSettingsUseCase;
+
     private UpdateWalletSettingsUseCase $updateWalletSettingsUseCase;
 
     public function __construct(

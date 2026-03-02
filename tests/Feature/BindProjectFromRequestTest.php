@@ -22,7 +22,7 @@ class BindProjectFromRequestTest extends TestCase
         $response->assertStatus(200);
     }
 
-    public function test_bind_LiffリダイレクトURIからプロジェクトキーが使われること(): void
+    public function test_bind_liffリダイレクト_ur_iからプロジェクトキーが使われること(): void
     {
         Project::factory()->create([
             'project_key' => 'liff-key',
@@ -30,12 +30,12 @@ class BindProjectFromRequestTest extends TestCase
         ]);
 
         $redirectUri = urlencode('https://example.com/liff?project_key=liff-key');
-        $response = $this->get('/liff?liffRedirectUri=' . $redirectUri);
+        $response = $this->get('/liff?liffRedirectUri='.$redirectUri);
 
         $response->assertStatus(200);
     }
 
-    public function test_bind_Liffのstateからプロジェクトキーが使われること(): void
+    public function test_bind_liffのstateからプロジェクトキーが使われること(): void
     {
         Project::factory()->create([
             'project_key' => 'state-key',
@@ -43,7 +43,7 @@ class BindProjectFromRequestTest extends TestCase
         ]);
 
         $state = urlencode('project_key=state-key');
-        $response = $this->get('/liff?state=' . $state);
+        $response = $this->get('/liff?state='.$state);
 
         $response->assertStatus(200);
     }

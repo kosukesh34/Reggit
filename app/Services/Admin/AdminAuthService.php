@@ -31,12 +31,14 @@ class AdminAuthService
         if ($first !== null) {
             return redirect()->route('admin.dashboard', ['project_key' => $first->project_key]);
         }
+
         return redirect()->route('admin.login');
     }
 
     /**
      * 店舗管理ログイン。
-     * @param string|null $projectKey プロジェクト指定ログイン（/admin/{project_key}/login）の場合は指定。システム管理者はこの場合のみここからログイン可能。
+     *
+     * @param  string|null  $projectKey  プロジェクト指定ログイン（/admin/{project_key}/login）の場合は指定。システム管理者はこの場合のみここからログイン可能。
      */
     public function loginAdmin(Request $request, ?string $projectKey = null)
     {
@@ -97,6 +99,7 @@ class AdminAuthService
         if ($projectKey !== null && $projectKey !== '') {
             return redirect()->route('admin.dashboard', ['project_key' => $projectKey]);
         }
+
         return $this->getAdminDashboardRedirect();
     }
 
@@ -139,6 +142,7 @@ class AdminAuthService
         Auth::guard('admin')->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+
         return $isSystemAdminLogout
             ? redirect()->route('system-admin.login')
             : redirect()->route('admin.login');
@@ -154,7 +158,7 @@ class AdminAuthService
             'project_id' => null,
             'route_name' => $route ? $route->getName() : null,
             'method' => $request->getMethod(),
-            'url' => strlen($request->fullUrl()) > 500 ? substr($request->fullUrl(), 0, 497) . '...' : $request->fullUrl(),
+            'url' => strlen($request->fullUrl()) > 500 ? substr($request->fullUrl(), 0, 497).'...' : $request->fullUrl(),
             'ip' => $request->ip(),
             'user_agent' => substr((string) $request->userAgent(), 0, 500),
             'payload' => $payload,

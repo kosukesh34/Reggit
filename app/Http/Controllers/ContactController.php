@@ -4,14 +4,12 @@ namespace App\Http\Controllers;
 
 use App\UseCases\Contact\ContactStoreUseCase;
 use App\Util\AdminContext;
-use Illuminate\Http\Request;
 use App\Util\LogHelper;
+use Illuminate\Http\Request;
 
 class ContactController extends Controller
 {
-    public function __construct(private ContactStoreUseCase $storeUseCase)
-    {
-    }
+    public function __construct(private ContactStoreUseCase $storeUseCase) {}
 
     public function store(Request $request)
     {
@@ -25,6 +23,7 @@ class ContactController extends Controller
                 'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'error' => $e->getMessage(),
             ]);
+
             return response()->json(['error' => '送信に失敗しました'], 500);
         }
     }

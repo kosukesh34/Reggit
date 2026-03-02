@@ -14,6 +14,7 @@ class CategoryController extends AdminBaseController
     public function index(GalleryCategoryIndexUseCase $useCase): \Illuminate\View\View
     {
         $categories = $useCase->handle();
+
         return view('admin.gallery.categories', compact('categories'));
     }
 

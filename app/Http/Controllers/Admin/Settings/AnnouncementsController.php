@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 class AnnouncementsController extends AdminBaseController
 {
     private GetAnnouncementsSettingsUseCase $getAnnouncementsSettingsUseCase;
+
     private UpdateAnnouncementsSettingsUseCase $updateAnnouncementsSettingsUseCase;
 
     public function __construct(

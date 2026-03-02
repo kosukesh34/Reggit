@@ -15,7 +15,7 @@ class MemberPointsHistoryApiV1Test extends TestCase
 
     private const LINE_USER_ID = 'U00000000000000000000000000000004';
 
-    public function test_pointHistory_ポイント履歴が返ること(): void
+    public function test_point_history_ポイント履歴が返ること(): void
     {
         $project = \App\Models\Project::firstOrCreate(
             ['project_key' => 'default'],
@@ -39,7 +39,7 @@ class MemberPointsHistoryApiV1Test extends TestCase
             ->assertJsonStructure(['success', 'data' => ['transactions', 'pagination']]);
     }
 
-    public function test_pointCard_ポイントカード要約が返ること(): void
+    public function test_point_card_ポイントカード要約が返ること(): void
     {
         $project = \App\Models\Project::firstOrCreate(
             ['project_key' => 'default'],

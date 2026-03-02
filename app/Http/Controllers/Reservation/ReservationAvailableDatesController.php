@@ -12,8 +12,7 @@ class ReservationAvailableDatesController extends Controller
 {
     public function __construct(
         private ReservationAvailableDatesUseCase $availableDatesUseCase
-    ) {
-    }
+    ) {}
 
     public function __invoke(Request $request)
     {
@@ -35,6 +34,7 @@ class ReservationAvailableDatesController extends Controller
                 'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'error' => $e->getMessage(),
             ]);
+
             return response()->json(['error' => '利用可能日の取得に失敗しました'], 500);
         }
     }

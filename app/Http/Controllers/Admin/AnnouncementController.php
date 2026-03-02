@@ -20,10 +20,15 @@ use Illuminate\Support\Carbon;
 class AnnouncementController extends AdminBaseController
 {
     private AdminAnnouncementIndexUseCase $indexUseCase;
+
     private AdminAnnouncementStoreUseCase $storeUseCase;
+
     private AdminAnnouncementEditUseCase $editUseCase;
+
     private AdminAnnouncementUpdateUseCase $updateUseCase;
+
     private AdminAnnouncementDeleteUseCase $deleteUseCase;
+
     private PushNotificationService $pushNotificationService;
 
     public function __construct(
@@ -104,9 +109,9 @@ class AnnouncementController extends AdminBaseController
 
         if ($q !== '') {
             $query->where(function ($inner) use ($q) {
-                $inner->where('member_number', 'like', '%' . $q . '%')
+                $inner->where('member_number', 'like', '%'.$q.'%')
                     ->orWhereHas('user', function ($userQuery) use ($q) {
-                        $userQuery->where('name', 'like', '%' . $q . '%');
+                        $userQuery->where('name', 'like', '%'.$q.'%');
                     });
             });
         }
@@ -179,14 +184,14 @@ class AnnouncementController extends AdminBaseController
 
         if ($isScheduled && $scheduledAt !== null) {
             SendScheduledAnnouncementJob::dispatch($announcement->id)->delay($scheduledAt);
-            $message = 'お知らせ配信を予約しました（' . $scheduledAt->format('Y/m/d H:i') . '）';
+            $message = 'お知らせ配信を予約しました（'.$scheduledAt->format('Y/m/d H:i').'）';
 
             return redirect()->route('admin.announcements', $this->buildAdminRouteParams())
                 ->with('success', $message);
         }
 
         $result = $this->pushNotificationService->sendAnnouncement($announcement);
-        $message = 'お知らせを配信しました（送信: ' . $result['sent'] . '件 / 失敗: ' . $result['failed'] . '件 / スキップ: ' . $result['skipped'] . '件）';
+        $message = 'お知らせを配信しました（送信: '.$result['sent'].'件 / 失敗: '.$result['failed'].'件 / スキップ: '.$result['skipped'].'件）';
 
         return redirect()->route('admin.announcements', $this->buildAdminRouteParams())
             ->with('success', $message);

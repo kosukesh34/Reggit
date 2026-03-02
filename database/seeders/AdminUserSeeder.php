@@ -16,12 +16,12 @@ class AdminUserSeeder extends Seeder
             $loginId = env('DEMO_SYSTEM_LOGIN_ID', 'demo_sys');
             $password = env('DEMO_SYSTEM_PASSWORD', 'DemoSys#2026');
             $name = env('DEMO_SYSTEM_NAME', 'デモシステム管理者');
-            $email = env('DEMO_SYSTEM_EMAIL', $loginId . '@example.com');
+            $email = env('DEMO_SYSTEM_EMAIL', $loginId.'@example.com');
         } else {
             $loginId = env('ADMIN_LOGIN_ID', env('ADMIN_EMAIL', 'reserve'));
             $password = env('ADMIN_PASSWORD', 'reserve');
             $name = env('ADMIN_NAME', 'システムアドミン');
-            $email = $loginId . '@system.local';
+            $email = $loginId.'@system.local';
         }
 
         AdminUser::updateOrCreate(
@@ -36,7 +36,7 @@ class AdminUserSeeder extends Seeder
         );
 
         // 初回のみデフォルトプロジェクトを作成（DemoAdminUsersSeeder で使う）
-        if (!Project::where('is_active', true)->exists()) {
+        if (! Project::where('is_active', true)->exists()) {
             Project::create([
                 'project_key' => 'default',
                 'name' => 'デフォルト店舗',
