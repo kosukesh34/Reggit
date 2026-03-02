@@ -17,8 +17,7 @@ class OrderOutput
         public string $createdAt,
         public string $updatedAt,
         public array $items
-    ) {
-    }
+    ) {}
 
     /** @return array{id: int, total_amount: float, status: string, payment_method: string, points_used: int, points_earned: int, notes: string|null, order_type: string, created_at: string, updated_at: string, items: array<int, array{product_id: int, product_name: string, quantity: int, price: float, notes: string|null}>} */
     public function toArray(): array

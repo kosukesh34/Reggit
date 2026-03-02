@@ -23,4 +23,3 @@ class DeviceRegisterRequest extends FormRequest
         ];
     }
 }
-

@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 class CouponsController extends AdminBaseController
 {
     private GetCouponsSettingsUseCase $getCouponsSettingsUseCase;
+
     private UpdateCouponsSettingsUseCase $updateCouponsSettingsUseCase;
 
     public function __construct(

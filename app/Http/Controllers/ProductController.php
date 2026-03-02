@@ -11,8 +11,7 @@ class ProductController extends Controller
     public function __construct(
         private ProductIndexUseCase $indexUseCase,
         private ProductShowUseCase $showUseCase
-    ) {
-    }
+    ) {}
 
     public function index(Request $request)
     {
@@ -32,7 +31,7 @@ class ProductController extends Controller
     public function show($id)
     {
         $product = $this->showUseCase->handle((int) $id);
+
         return response()->json($product);
     }
 }
-

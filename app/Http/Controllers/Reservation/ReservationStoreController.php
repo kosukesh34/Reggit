@@ -12,8 +12,7 @@ class ReservationStoreController extends Controller
 {
     public function __construct(
         private ReservationStoreUseCase $storeUseCase
-    ) {
-    }
+    ) {}
 
     public function __invoke(Request $request)
     {
@@ -52,6 +51,7 @@ class ReservationStoreController extends Controller
                 'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'error' => $e->getMessage(),
             ]);
+
             return response()->json(['error' => '予約に失敗しました'], 400);
         }
     }

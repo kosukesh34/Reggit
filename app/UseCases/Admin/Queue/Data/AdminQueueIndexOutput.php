@@ -8,7 +8,7 @@ use Illuminate\Support\Collection;
 /**
  * 管理画面順番待ち一覧 UseCase の出力。不変。
  *
- * @param Collection<int, int> $waitingQueueNumbers
+ * @param  Collection<int, int>  $waitingQueueNumbers
  */
 class AdminQueueIndexOutput
 {
@@ -17,6 +17,5 @@ class AdminQueueIndexOutput
         public int $waitingCount,
         public int $estimatedWaitMinutes,
         public Collection $waitingQueueNumbers
-    ) {
-    }
+    ) {}
 }

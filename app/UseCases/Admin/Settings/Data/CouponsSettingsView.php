@@ -8,6 +8,5 @@ class CouponsSettingsView
     public function __construct(
         public string $couponDefaultImageUrl,
         public bool $featureCouponsEnabled
-    ) {
-    }
+    ) {}
 }

@@ -9,13 +9,13 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('stamp_cards', function (Blueprint $table) {
-            if (!Schema::hasColumn('stamp_cards', 'image_url')) {
+            if (! Schema::hasColumn('stamp_cards', 'image_url')) {
                 $table->string('image_url', 500)->nullable()->after('reward_description');
             }
         });
 
         Schema::table('coupons', function (Blueprint $table) {
-            if (!Schema::hasColumn('coupons', 'image_url')) {
+            if (! Schema::hasColumn('coupons', 'image_url')) {
                 $table->string('image_url', 500)->nullable()->after('name');
             }
         });

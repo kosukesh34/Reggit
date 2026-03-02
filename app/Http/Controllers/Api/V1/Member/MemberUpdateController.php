@@ -12,8 +12,7 @@ class MemberUpdateController extends BaseApiController
 {
     public function __construct(
         private MemberUpdateUseCase $updateUseCase
-    ) {
-    }
+    ) {}
 
     public function __invoke(Request $request)
     {
@@ -26,12 +25,14 @@ class MemberUpdateController extends BaseApiController
 
         try {
             $dto = $this->updateUseCase->handle($request, $validated);
+
             return $this->success(['member' => $dto->toArray()], '更新しました');
         } catch (\Exception $e) {
             LogHelper::error('[Member] update failed', [
                 'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'error' => $e->getMessage(),
             ]);
+
             return $this->error($e->getMessage(), 400);
         }
     }

@@ -12,8 +12,7 @@ class ReservationIndexController extends BaseApiController
 {
     public function __construct(
         private ReservationIndexUseCase $indexUseCase
-    ) {
-    }
+    ) {}
 
     public function __invoke(Request $request)
     {
@@ -29,6 +28,7 @@ class ReservationIndexController extends BaseApiController
                 'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'error' => $e->getMessage(),
             ]);
+
             return $this->error('予約の取得に失敗しました', 500);
         }
     }

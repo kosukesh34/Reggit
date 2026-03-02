@@ -13,8 +13,7 @@ class AccountIndexController extends Controller
     public function __construct(
         private AccountIndexUseCase $indexUseCase,
         private RouteContextResolver $routeContextResolver
-    ) {
-    }
+    ) {}
 
     public function __invoke(Request $request)
     {

@@ -228,7 +228,7 @@
                     <div class="ranks-preview-section">
                         <h4 class="ranks-preview-section-title">選択中デザインで各ランクをプレビュー</h4>
                         <p class="ranks-preview-desc">「会員証レイアウト」で選んだデザインを、各ランクで表示します。</p>
-                        <p class="ranks-preview-desc">ロゴ画像URL: {{ !empty($previewLogoUrl) ? e($previewLogoUrl) : '未設定（機能設定で指定）' }}</p>
+                        <p class="ranks-preview-desc">ロゴ画像URL: {{ (isset($previewLogoUrl) && (string)$previewLogoUrl !== '') ? e($previewLogoUrl) : '未設定（機能設定で指定）' }}</p>
                         <div class="rank-card-preview-wrap" data-preview-design="{{ e($previewDesign) }}">
                             <div class="rank-card-preview-grid" id="rankCardPreviewGrid">
                                 @foreach($view->rankSettings as $rank)
@@ -248,16 +248,16 @@
                                                 <div class="idnect-card-front-inner">
                                                     @if(in_array($previewDesign, $logoEnabledDesigns, true))
                                                     <div class="idnect-card-logo-wrap">
-                                                        @if(!empty($previewLogoUrl))
+                                                        @if(isset($previewLogoUrl) && (string)$previewLogoUrl !== '')
                                                         <img src="{{ $previewLogoUrl }}" class="idnect-card-logo" alt="" onerror="this.nextElementSibling?.classList.remove('d-none')">
                                                         @endif
-                                                        <span class="idnect-card-logo-placeholder {{ !empty($previewLogoUrl) ? 'd-none' : '' }}">ロゴ</span>
+                                                        <span class="idnect-card-logo-placeholder {{ (isset($previewLogoUrl) && (string)$previewLogoUrl !== '') ? 'd-none' : '' }}">ロゴ</span>
                                                     </div>
                                                     @endif
                                                     <p class="idnect-card-display-name">会員名サンプル</p>
                                                     <div class="idnect-card-meta-row">
                                                         <div class="idnect-card-rank-wrap">
-                                                            @if(!empty($iconUrl))
+                                                            @if(isset($iconUrl) && (string)$iconUrl !== '')
                                                             <img src="{{ $iconUrl }}" class="idnect-card-rank-icon" alt="" onerror="this.style.display='none'">
                                                             @endif
                                                             <span class="idnect-card-rank-badge" data-rank="{{ e($key) }}">{{ e($label) }}</span>

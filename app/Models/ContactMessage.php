@@ -28,6 +28,7 @@ class ContactMessage extends Model
     {
         if (is_array($value)) {
             $this->attributes['payload'] = json_encode($value, JSON_UNESCAPED_UNICODE);
+
             return;
         }
         $this->attributes['payload'] = $value;

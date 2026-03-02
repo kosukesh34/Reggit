@@ -13,6 +13,8 @@ class ProjectPlan extends EnumBase
     ];
 
     public const NORMAL = 'normal';
+
     public const DISTRIBUTION = 'distribution';
+
     public const PREMIUM = 'premium';
 }

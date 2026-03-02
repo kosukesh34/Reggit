@@ -2,8 +2,8 @@
 
 namespace App\Http\Requests\Admin;
 
-use Illuminate\Foundation\Http\FormRequest;
 use App\Enums\OrderStatus;
+use Illuminate\Foundation\Http\FormRequest;
 
 class OrderStatusRequest extends FormRequest
 {
@@ -15,8 +15,9 @@ class OrderStatusRequest extends FormRequest
     public function rules(): array
     {
         $valid = array_keys(OrderStatus::getValues());
+
         return [
-            'status' => 'required|string|in:' . implode(',', $valid),
+            'status' => 'required|string|in:'.implode(',', $valid),
         ];
     }
 }

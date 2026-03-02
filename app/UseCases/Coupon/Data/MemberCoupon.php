@@ -19,8 +19,7 @@ class MemberCoupon
         public ?string $description = null,
         public string $useDisplay = 'none',
         public ?string $code = null
-    ) {
-    }
+    ) {}
 
     /** @return array<string, mixed> */
     public function toArray(): array

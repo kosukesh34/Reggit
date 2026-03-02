@@ -12,8 +12,7 @@ class MemberUpdateController extends Controller
 {
     public function __construct(
         private MemberUpdateUseCase $updateUseCase
-    ) {
-    }
+    ) {}
 
     public function __invoke(Request $request)
     {
@@ -25,6 +24,7 @@ class MemberUpdateController extends Controller
             $validated = $request->validate($rules);
 
             $dto = $this->updateUseCase->handle($request, $validated);
+
             return response()->json($dto->toArray());
         } catch (\Illuminate\Validation\ValidationException $e) {
             throw $e;
@@ -33,6 +33,7 @@ class MemberUpdateController extends Controller
                 'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'error' => $e->getMessage(),
             ]);
+
             return response()->json([
                 'error' => $e->getMessage(),
             ], 400);

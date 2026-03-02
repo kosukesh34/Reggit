@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 class GalleryController extends AdminBaseController
 {
     private GetGallerySettingsUseCase $getGallerySettingsUseCase;
+
     private UpdateGallerySettingsUseCase $updateGallerySettingsUseCase;
 
     public function __construct(

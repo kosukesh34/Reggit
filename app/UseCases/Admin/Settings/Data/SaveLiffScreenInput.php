@@ -11,6 +11,5 @@ class SaveLiffScreenInput
         public readonly string $name,
         public readonly string $layoutsJson,
         public readonly string $tabSettingsJson
-    ) {
-    }
+    ) {}
 }

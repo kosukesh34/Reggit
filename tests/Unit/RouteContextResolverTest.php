@@ -10,12 +10,13 @@ class RouteContextResolverTest extends TestCase
 {
     public function test_resolve_システム管理者プレフィックスが解決されること(): void
     {
-        $resolver = new RouteContextResolver();
+        $resolver = new RouteContextResolver;
         $request = Request::create('/system-admin/accounts');
         $request->setRouteResolver(function () {
             $route = $this->createMock(\Illuminate\Routing\Route::class);
             $route->method('getName')->willReturn('system-admin.accounts.index');
             $route->method('parameter')->willReturn(null);
+
             return $route;
         });
 
@@ -27,12 +28,13 @@ class RouteContextResolverTest extends TestCase
 
     public function test_resolve_プロジェクトキー付き管理画面プレフィックスが解決されること(): void
     {
-        $resolver = new RouteContextResolver();
+        $resolver = new RouteContextResolver;
         $request = Request::create('/admin/default/dashboard');
         $request->setRouteResolver(function () {
             $route = $this->createMock(\Illuminate\Routing\Route::class);
             $route->method('getName')->willReturn('admin.dashboard');
             $route->method('parameter')->with('project_key')->willReturn('default');
+
             return $route;
         });
 

@@ -23,7 +23,7 @@ class ClientDebugLogUseCase
         $ts = (string) ($body['ts'] ?? $request->query('ts', ''));
         $payload = (string) ($body['payload'] ?? $request->query('payload', ''));
 
-        Log::info('[ClientDebug] ' . $event, [
+        Log::info('[ClientDebug] '.$event, [
             'project_key' => $projectKey,
             'path' => $path,
             'ua' => $ua,

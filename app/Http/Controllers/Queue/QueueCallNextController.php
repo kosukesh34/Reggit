@@ -12,8 +12,7 @@ class QueueCallNextController extends Controller
 {
     public function __construct(
         private QueueCallNextUseCase $callNextUseCase
-    ) {
-    }
+    ) {}
 
     public function __invoke(Request $request)
     {
@@ -22,6 +21,7 @@ class QueueCallNextController extends Controller
             if ($dto === null) {
                 return response()->noContent();
             }
+
             return response()->json([
                 'message' => '呼び出しました',
                 'queue_entry' => $dto->toArray(),
@@ -31,6 +31,7 @@ class QueueCallNextController extends Controller
                 'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'error' => $e->getMessage(),
             ]);
+
             return response()->json(['error' => '呼び出しに失敗しました'], 500);
         }
     }
