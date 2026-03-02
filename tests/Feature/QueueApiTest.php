@@ -2,11 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Enums\QueueStatus;
 use App\Models\Member;
 use App\Models\Project;
 use App\Models\QueueEntry;
 use App\Models\User;
-use App\Enums\QueueStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -47,7 +47,7 @@ class QueueApiTest extends TestCase
         $this->assertSame($user->id, $entry->user_id);
     }
 
-    public function test_store_同一LINEユーザーで複数件登録できること(): void
+    public function test_store_同一_lin_eユーザーで複数件登録できること(): void
     {
         $this->createProject();
         $lineUserId = 'U22222222222222222222222222222222';
@@ -132,7 +132,7 @@ class QueueApiTest extends TestCase
             ->assertJsonPath('queue_entry.status', QueueStatus::CALLED);
     }
 
-    public function test_qr_status_LINEログイン必須で未ログインなら403を返すこと(): void
+    public function test_qr_status_lin_eログイン必須で未ログインなら403を返すこと(): void
     {
         $this->createProject();
         $entry = QueueEntry::factory()->create([
@@ -146,7 +146,7 @@ class QueueApiTest extends TestCase
             ->assertJsonPath('error', 'LINEログインが必要です');
     }
 
-    public function test_qr_status_QRアクセスでユーザーが紐づくこと(): void
+    public function test_qr_status_q_rアクセスでユーザーが紐づくこと(): void
     {
         $this->createProject();
         $lineUserId = 'U44444444444444444444444444444444';
@@ -199,7 +199,7 @@ class QueueApiTest extends TestCase
         $this->assertSame($user->id, $entry->user_id);
     }
 
-    public function test_qr_status_別ユーザーのQRは403を返すこと(): void
+    public function test_qr_status_別ユーザーの_q_rは403を返すこと(): void
     {
         $this->createProject();
         $ownerLineUserId = 'U66666666666666666666666666666666';

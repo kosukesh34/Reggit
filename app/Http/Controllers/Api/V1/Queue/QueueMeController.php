@@ -12,8 +12,7 @@ class QueueMeController extends BaseApiController
 {
     public function __construct(
         private QueueMeUseCase $meUseCase
-    ) {
-    }
+    ) {}
 
     public function __invoke(Request $request)
     {
@@ -28,6 +27,7 @@ class QueueMeController extends BaseApiController
                     'updated_at' => now()->toIso8601String(),
                 ]);
             }
+
             return $this->success([
                 'queue_entry' => $result->queueEntry->toArray(),
                 'updated_at' => now()->toIso8601String(),
@@ -37,6 +37,7 @@ class QueueMeController extends BaseApiController
                 'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'error' => $e->getMessage(),
             ]);
+
             return $this->error('取得に失敗しました', 500);
         }
     }

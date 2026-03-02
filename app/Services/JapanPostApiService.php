@@ -149,6 +149,7 @@ class JapanPostApiService
 
         if ($this->host === '' || $this->clientId === '' || $this->clientSecret === '') {
             Log::warning('JapanPost API credentials not configured');
+
             return null;
         }
 
@@ -169,6 +170,7 @@ class JapanPostApiService
                 'status' => $response->status(),
                 'body' => $response->body(),
             ]);
+
             return null;
         }
 

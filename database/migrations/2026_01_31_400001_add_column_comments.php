@@ -21,16 +21,16 @@ return new class extends Migration
         $comments = $this->getComments();
 
         foreach ($comments as $table => $columns) {
-            if (!Schema::hasTable($table)) {
+            if (! Schema::hasTable($table)) {
                 continue;
             }
             $cols = DB::select(
-                "SELECT COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE, COLUMN_DEFAULT, EXTRA FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?",
+                'SELECT COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE, COLUMN_DEFAULT, EXTRA FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?',
                 [$table]
             );
             foreach ($cols as $c) {
                 $colName = $c->COLUMN_NAME;
-                if (!isset($columns[$colName])) {
+                if (! isset($columns[$colName])) {
                     continue;
                 }
                 $comment = addslashes($columns[$colName]);
@@ -39,9 +39,9 @@ return new class extends Migration
                 $default = '';
                 if ($c->COLUMN_DEFAULT !== null && strpos($c->EXTRA ?? '', 'auto_increment') === false) {
                     $d = $c->COLUMN_DEFAULT;
-                    $default = is_numeric($d) ? " DEFAULT {$d}" : " DEFAULT '" . addslashes((string)$d) . "'";
+                    $default = is_numeric($d) ? " DEFAULT {$d}" : " DEFAULT '".addslashes((string) $d)."'";
                 }
-                $extra = $c->EXTRA ? ' ' . $c->EXTRA : '';
+                $extra = $c->EXTRA ? ' '.$c->EXTRA : '';
                 DB::statement("ALTER TABLE `{$table}` MODIFY COLUMN `{$colName}` {$type}{$nullable}{$default}{$extra} COMMENT '{$comment}'");
             }
         }
@@ -240,10 +240,10 @@ return new class extends Migration
         }
         $tables = ['projects', 'users', 'members', 'products', 'orders', 'order_items', 'reservations', 'point_transactions', 'shop_settings', 'stamp_cards', 'member_stamps', 'coupons', 'coupon_redemptions', 'announcements', 'queue_entries'];
         foreach ($tables as $table) {
-            if (!Schema::hasTable($table)) {
+            if (! Schema::hasTable($table)) {
                 continue;
             }
-            $cols = DB::select("SELECT COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE, COLUMN_DEFAULT, EXTRA FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?", [$table]);
+            $cols = DB::select('SELECT COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE, COLUMN_DEFAULT, EXTRA FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?', [$table]);
             foreach ($cols as $c) {
                 $name = $c->COLUMN_NAME;
                 $type = $c->COLUMN_TYPE;
@@ -251,9 +251,9 @@ return new class extends Migration
                 $default = '';
                 if ($c->COLUMN_DEFAULT !== null && strpos($c->EXTRA ?? '', 'auto_increment') === false) {
                     $d = $c->COLUMN_DEFAULT;
-                    $default = is_numeric($d) ? " DEFAULT {$d}" : " DEFAULT '" . addslashes((string)$d) . "'";
+                    $default = is_numeric($d) ? " DEFAULT {$d}" : " DEFAULT '".addslashes((string) $d)."'";
                 }
-                $extra = $c->EXTRA ? ' ' . $c->EXTRA : '';
+                $extra = $c->EXTRA ? ' '.$c->EXTRA : '';
                 DB::statement("ALTER TABLE `{$table}` MODIFY COLUMN `{$name}` {$type}{$nullable}{$default}{$extra} COMMENT ''");
             }
         }

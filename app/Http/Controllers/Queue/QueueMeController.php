@@ -12,8 +12,7 @@ class QueueMeController extends Controller
 {
     public function __construct(
         private QueueMeUseCase $meUseCase
-    ) {
-    }
+    ) {}
 
     public function __invoke(Request $request)
     {
@@ -28,6 +27,7 @@ class QueueMeController extends Controller
                     'updated_at' => now()->toIso8601String(),
                 ]);
             }
+
             return response()->json([
                 'updated_at' => now()->toIso8601String(),
                 'queue_entry' => $result->queueEntry->toArray(),
@@ -37,6 +37,7 @@ class QueueMeController extends Controller
                 'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'error' => $e->getMessage(),
             ]);
+
             return response()->json(['error' => '取得に失敗しました'], 500);
         }
     }

@@ -12,8 +12,7 @@ class QueueStoreController extends BaseApiController
 {
     public function __construct(
         private QueueStoreUseCase $storeUseCase
-    ) {
-    }
+    ) {}
 
     public function __invoke(Request $request)
     {
@@ -30,6 +29,7 @@ class QueueStoreController extends BaseApiController
                 $validated['guest_name'] ?? null,
                 $validated['guest_phone'] ?? null
             );
+
             return $this->success([
                 'queue_entry' => $dto->toArray(),
                 'updated_at' => now()->toIso8601String(),
@@ -39,6 +39,7 @@ class QueueStoreController extends BaseApiController
                 'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'error' => $e->getMessage(),
             ]);
+
             return $this->error('順番待ちの登録に失敗しました', 500);
         }
     }

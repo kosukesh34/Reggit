@@ -8,6 +8,5 @@ class AccountDestroyOutput
     public function __construct(
         public bool $success,
         public string $message
-    ) {
-    }
+    ) {}
 }

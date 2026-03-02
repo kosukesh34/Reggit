@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Queue;
 
 use App\Http\Controllers\Controller;
 use App\Models\QueueEntry as QueueEntryModel;
-use App\UseCases\Queue\QueueStatsService;
 use App\UseCases\Queue\Data\QueueEntryFactory;
+use App\UseCases\Queue\QueueStatsService;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
 use Illuminate\Http\Request;
@@ -15,8 +15,7 @@ class QueueStatusController extends Controller
     public function __construct(
         private QueueStatsService $statsService,
         private QueueEntryFactory $entryFactory
-    ) {
-    }
+    ) {}
 
     public function __invoke(Request $request, int $id)
     {

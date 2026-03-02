@@ -12,8 +12,7 @@ class ReservationUpdateController extends BaseApiController
 {
     public function __construct(
         private ReservationUpdateUseCase $updateUseCase
-    ) {
-    }
+    ) {}
 
     public function __invoke(Request $request, int $id)
     {
@@ -43,6 +42,7 @@ class ReservationUpdateController extends BaseApiController
                 'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'error' => $e->getMessage(),
             ]);
+
             return $this->error($e->getMessage(), 400);
         }
     }

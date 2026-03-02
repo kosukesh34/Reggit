@@ -13,8 +13,7 @@ class PaymentConfirmController extends Controller
 {
     public function __construct(
         private PaymentConfirmUseCase $confirmUseCase
-    ) {
-    }
+    ) {}
 
     public function __invoke(Request $request)
     {
@@ -36,6 +35,7 @@ class PaymentConfirmController extends Controller
                     'status' => $result->status,
                 ], 400);
             }
+
             return response()->json([
                 'success' => true,
                 'message' => $result->message,
@@ -46,6 +46,7 @@ class PaymentConfirmController extends Controller
                 'project_id' => $projectId,
                 'error' => $e->getMessage(),
             ]);
+
             return response()->json(['error' => '決済の確認に失敗しました'], 400);
         }
     }

@@ -9,8 +9,7 @@ class AnalyticsController extends AdminBaseController
 {
     public function __construct(
         private AdminAnalyticsUseCase $adminAnalyticsUseCase
-    ) {
-    }
+    ) {}
 
     public function analytics(Request $request)
     {

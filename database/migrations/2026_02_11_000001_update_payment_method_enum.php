@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (!Schema::hasTable('orders')) {
+        if (! Schema::hasTable('orders')) {
             return;
         }
         if (Schema::getConnection()->getDriverName() === 'mysql') {
@@ -18,7 +18,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        if (!Schema::hasTable('orders')) {
+        if (! Schema::hasTable('orders')) {
             return;
         }
         if (Schema::getConnection()->getDriverName() === 'mysql') {

@@ -9,8 +9,7 @@ class CouponListView
         public array $coupons,
         public ?string $defaultImageUrl,
         public bool $requiresMembership
-    ) {
-    }
+    ) {}
 
     /** @return array<int, array{id: int, coupon_name: string, image_url: string|null, status: string, issued_at: string|null, valid_from: string|null, valid_until: string|null, used_at: string|null}> */
     public function couponsToArray(): array
@@ -19,6 +18,7 @@ class CouponListView
         foreach ($this->coupons as $coupon) {
             $payload[] = $coupon->toArray();
         }
+
         return $payload;
     }
 }

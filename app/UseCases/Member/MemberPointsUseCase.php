@@ -9,9 +9,7 @@ use Illuminate\Http\Request;
 
 class MemberPointsUseCase
 {
-    public function __construct(private UserService $userService)
-    {
-    }
+    public function __construct(private UserService $userService) {}
 
     public function handle(Request $request): MemberPointsOutput
     {

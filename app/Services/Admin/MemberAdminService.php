@@ -19,8 +19,8 @@ class MemberAdminService
 {
     public function __construct(
         private SmaregiApiService $smaregiApi,
-    ) {
-    }
+    ) {}
+
     public function getPaginatedList(int $projectId, int $perPage = 20): LengthAwarePaginator
     {
         return Member::with('user')
@@ -99,7 +99,7 @@ class MemberAdminService
             $already = MemberCoupon::where('member_id', $member->id)
                 ->where('coupon_id', $couponId)
                 ->where('status', MemberCoupon::STATUS_UNUSED)
-                ->where(function ($q) use ($validUntil) {
+                ->where(function ($q) {
                     $q->whereNull('valid_until')->orWhere('valid_until', '>=', now());
                 })->exists();
             if ($already) {
@@ -108,6 +108,7 @@ class MemberAdminService
             $this->issueCouponToMember($member, $couponId, null, $validUntil);
             $issued++;
         }
+
         return $issued;
     }
 
@@ -135,6 +136,7 @@ class MemberAdminService
         if ($memberStamp->current_stamps >= $required && $memberStamp->completed_at === null) {
             $memberStamp->update(['completed_at' => now()]);
         }
+
         return $memberStamp->refresh();
     }
 
@@ -144,11 +146,12 @@ class MemberAdminService
         $ranks = ShopSetting::getMemberRankSettings($projectId);
         $options = [];
         foreach ($ranks as $r) {
-            if (empty($r['key'])) {
+            if (\App\Util\StrHelper::isEmptyStringOrNull($r['key'] ?? null)) {
                 continue;
             }
             $options[(string) $r['key']] = (string) ($r['label'] ?? $r['key']);
         }
+
         return $options;
     }
 
@@ -169,11 +172,11 @@ class MemberAdminService
         if ($contractId !== '' && $smaregiCustomerId !== '' && $updateUser !== [] && $user !== null) {
             $clientId = config('smaregi.client_id');
             $clientSecret = config('smaregi.client_secret');
-            if (!is_string($clientId) || $clientId === '' || !is_string($clientSecret) || $clientSecret === '') {
+            if (! is_string($clientId) || $clientId === '' || ! is_string($clientSecret) || $clientSecret === '') {
                 throw new \Exception(
                     'スマレジの認証情報がアプリに読み込まれていません。'
-                    . ' .env の SMAREGI_CLIENT_ID と SMAREGI_CLIENT_SECRET を確認してください。'
-                    . ' Docker 利用時はコンテナに環境変数が渡るように（env_file や environment）設定してください。'
+                    .' .env の SMAREGI_CLIENT_ID と SMAREGI_CLIENT_SECRET を確認してください。'
+                    .' Docker 利用時はコンテナに環境変数が渡るように（env_file や environment）設定してください。'
                 );
             }
             $merged = array_merge($user->only(['name', 'kana', 'email', 'phone']), $updateUser);
@@ -183,7 +186,7 @@ class MemberAdminService
                 if ($result === null) {
                     throw new \Exception(
                         'スマレジの会員情報更新に失敗しました。'
-                        . ' 詳細は storage/logs/laravel.log の [Smaregi] を参照してください。'
+                        .' 詳細は storage/logs/laravel.log の [Smaregi] を参照してください。'
                     );
                 }
             }
@@ -230,6 +233,7 @@ class MemberAdminService
         if ($phone !== '' && $phone !== 'null') {
             $body['phoneNumber'] = $phone;
         }
+
         return $body;
     }
 }

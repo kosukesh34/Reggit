@@ -21,8 +21,7 @@ final class GetGoogleWalletUrlOutput
         public ?string $errorType = null,
         public ?string $errorMessage = null,
         public array $reasons = [],
-    ) {
-    }
+    ) {}
 
     public static function success(string $url): self
     {

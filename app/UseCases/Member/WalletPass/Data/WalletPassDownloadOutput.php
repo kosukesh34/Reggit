@@ -9,13 +9,12 @@ namespace App\UseCases\Member\WalletPass\Data;
 final class WalletPassDownloadOutput
 {
     /**
-     * @param array<int, string> $unavailableReasons
+     * @param  array<int, string>  $unavailableReasons
      */
     public function __construct(
         public readonly ?string $content,
         public readonly array $unavailableReasons = [],
-    ) {
-    }
+    ) {}
 
     public function isAvailable(): bool
     {

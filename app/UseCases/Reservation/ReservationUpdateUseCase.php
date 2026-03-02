@@ -14,8 +14,7 @@ class ReservationUpdateUseCase
         private ReservationService $reservationService,
         private ReservationAvailabilityService $availabilityService,
         private UserService $userService
-    ) {
-    }
+    ) {}
 
     /** @param array<string, string|int|float|bool|array|null> $validated 検証済み予約更新データ */
     public function handle(Request $request, int $reservationId, array $validated): ReservationActionOutput

@@ -48,7 +48,7 @@ class GetGoogleWalletUrlUseCaseTest extends TestCase
         $this->assertSame(['disabled'], $output->reasons);
     }
 
-    public function test_handle_会員でない且つデモ不可でnotMemberを返すこと(): void
+    public function test_handle_会員でない且つデモ不可でnot_memberを返すこと(): void
     {
         $project = Project::firstOrCreate(
             ['project_key' => 'default'],
@@ -75,7 +75,7 @@ class GetGoogleWalletUrlUseCaseTest extends TestCase
         $this->assertSame(GetGoogleWalletUrlOutput::ERROR_NOT_MEMBER, $output->errorType);
     }
 
-    public function test_handle_トークンでキャッシュミス時はurlFailedを返すこと(): void
+    public function test_handle_トークンでキャッシュミス時はurl_failedを返すこと(): void
     {
         $walletService = Mockery::mock(GoogleWalletPassService::class);
         $walletService->shouldReceive('isAvailable')->once()->andReturn(true);

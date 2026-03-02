@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\UseCases\Coupon\CouponMyCouponsUseCase;
-use App\Util\LogHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -12,9 +11,7 @@ use Illuminate\Support\Facades\Log;
  */
 class CouponController extends Controller
 {
-    public function __construct(private CouponMyCouponsUseCase $myCouponsUseCase)
-    {
-    }
+    public function __construct(private CouponMyCouponsUseCase $myCouponsUseCase) {}
 
     public function myCoupons(Request $request)
     {
@@ -34,7 +31,7 @@ class CouponController extends Controller
                 'default_image_url' => $result->defaultImageUrl,
             ]);
         } catch (\Exception $e) {
-            Log::error('My coupons error: ' . $e->getMessage());
+            Log::error('My coupons error: '.$e->getMessage());
 
             return response()->json(['error' => 'クーポンの取得に失敗しました'], 500);
         }

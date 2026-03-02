@@ -15,6 +15,7 @@ class UpdateSmaregiLinkUseCase
         if (StrHelper::isEmptyStringOrNull($trimmed)) {
             ShopSetting::setValue('smaregi_contract_id', '', 'string', $projectId);
             SmaregiContract::where('project_id', $projectId)->update(['project_id' => null]);
+
             return;
         }
 

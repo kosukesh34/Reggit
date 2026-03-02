@@ -8,7 +8,7 @@ use Tests\TestCase;
 
 class LogHelperTest extends TestCase
 {
-    public function test_log_プロジェクトIDがコンテキストに含まれること(): void
+    public function test_log_プロジェクト_i_dがコンテキストに含まれること(): void
     {
         Log::spy();
 

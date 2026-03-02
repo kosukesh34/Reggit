@@ -12,5 +12,6 @@ class SmaregiContractStatus extends EnumBase
     ];
 
     public const ACTIVE = 'active';
+
     public const INACTIVE = 'inactive';
 }

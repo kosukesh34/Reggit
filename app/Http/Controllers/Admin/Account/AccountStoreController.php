@@ -13,8 +13,7 @@ class AccountStoreController extends Controller
     public function __construct(
         private AccountStoreUseCase $storeUseCase,
         private RouteContextResolver $routeContextResolver
-    ) {
-    }
+    ) {}
 
     public function __invoke(AccountStoreRequest $request)
     {
@@ -26,6 +25,7 @@ class AccountStoreController extends Controller
         $this->storeUseCase->handle($input);
 
         $routeContext = $this->routeContextResolver->resolve($request);
+
         return redirect()->route("{$routeContext->routePrefix}.accounts.index", $routeContext->params)
             ->with('success', 'アカウントを作成しました');
     }

@@ -14,8 +14,7 @@ class DeviceRegisterController extends Controller
     public function __construct(
         private UserService $userService,
         private DeviceService $deviceService
-    ) {
-    }
+    ) {}
 
     public function __invoke(DeviceRegisterRequest $request): JsonResponse
     {
@@ -40,4 +39,3 @@ class DeviceRegisterController extends Controller
         }
     }
 }
-

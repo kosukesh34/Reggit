@@ -11,10 +11,11 @@ class UpdateRankSettingsUseCase
     public function handle(int $projectId, array $payload): void
     {
         $rows = collect($payload['ranks'] ?? [])
-            ->filter(fn ($row) => !StrHelper::isEmptyStringOrNull($row['key'] ?? null))
+            ->filter(fn ($row) => ! StrHelper::isEmptyStringOrNull($row['key'] ?? null))
             ->map(function ($row, $index) {
                 $isActive = $row['is_active'] ?? false;
                 $color = $row['card_color'] ?? null;
+
                 return [
                     'key' => (string) $row['key'],
                     'label' => (string) ($row['label'] ?? $row['key']),

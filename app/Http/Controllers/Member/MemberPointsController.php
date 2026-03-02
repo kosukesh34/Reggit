@@ -12,8 +12,7 @@ class MemberPointsController extends Controller
 {
     public function __construct(
         private MemberPointsUseCase $pointsUseCase
-    ) {
-    }
+    ) {}
 
     public function __invoke(Request $request)
     {
@@ -34,6 +33,7 @@ class MemberPointsController extends Controller
                 'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'error' => $e->getMessage(),
             ]);
+
             return response()->json([
                 'error' => 'ポイント情報の取得に失敗しました',
             ], 500);

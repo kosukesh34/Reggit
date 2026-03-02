@@ -10,6 +10,5 @@ class SaveLiffScreenOutput
     public function __construct(
         public readonly bool $saved,
         public readonly int $savedScreensCount
-    ) {
-    }
+    ) {}
 }

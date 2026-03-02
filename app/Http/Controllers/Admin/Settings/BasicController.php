@@ -12,7 +12,9 @@ use Illuminate\Http\Request;
 class BasicController extends AdminBaseController
 {
     private GetBasicSettingsUseCase $getBasicSettingsUseCase;
+
     private UpdateBasicSettingsUseCase $updateBasicSettingsUseCase;
+
     private UpdateBasicFeatureFlagsUseCase $updateBasicFeatureFlagsUseCase;
 
     public function __construct(

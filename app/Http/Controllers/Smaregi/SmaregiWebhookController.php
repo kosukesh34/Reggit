@@ -11,12 +11,12 @@ class SmaregiWebhookController extends Controller
 {
     public function __construct(
         private SmaregiWebhookHandleUseCase $webhookHandleUseCase
-    ) {
-    }
+    ) {}
 
     public function __invoke(Request $request): Response
     {
         $result = $this->webhookHandleUseCase->handle($request);
+
         return response('', $result['status']);
     }
 }
