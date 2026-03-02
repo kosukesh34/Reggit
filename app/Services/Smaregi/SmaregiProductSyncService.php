@@ -16,8 +16,7 @@ class SmaregiProductSyncService
 
     public function __construct(
         private SmaregiApiService $smaregiApi,
-    ) {
-    }
+    ) {}
 
     /**
      * 指定プロジェクトのスマレジ契約の商品をDBに同期する。
@@ -50,7 +49,7 @@ class SmaregiProductSyncService
 
             $list = $this->extractListFromResponse($result, 'products');
             foreach ($list as $row) {
-                if (!is_array($row)) {
+                if (! is_array($row)) {
                     continue;
                 }
                 $productId = $row['productId'] ?? null;
@@ -96,7 +95,7 @@ class SmaregiProductSyncService
     /**
      * スマレジAPIの一覧レスポンスから商品配列を取り出す。
      *
-     * @param array<int|string, mixed> $result
+     * @param  array<int|string, mixed>  $result
      * @return array<int, mixed>
      */
     private function extractListFromResponse(array $result, string $listKey): array
@@ -105,13 +104,14 @@ class SmaregiProductSyncService
             return $result;
         }
         $list = $result[$listKey] ?? [];
+
         return is_array($list) ? $list : [];
     }
 
     /**
      * スマレジ商品1件をアプリの Product 用 attributes に変換する。
      *
-     * @param array<string, mixed> $row
+     * @param  array<string, mixed>  $row
      * @return array<string, mixed>
      */
     private function mapSmaregiProductToAttributes(array $row): array
@@ -145,6 +145,7 @@ class SmaregiProductSyncService
     private function mapCategoryIdToAppCategory(mixed $categoryId): string
     {
         $allowed = ['food', 'drink', 'dessert', 'side', 'other'];
+
         // 必要に応じて config や DB で部門ID→カテゴリのマッピングを追加可能
         return in_array((string) $categoryId, $allowed, true) ? (string) $categoryId : 'other';
     }

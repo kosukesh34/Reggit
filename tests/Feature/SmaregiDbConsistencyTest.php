@@ -33,7 +33,7 @@ class SmaregiDbConsistencyTest extends TestCase
     }
 
     /** DBの会員とスマレジ会員一覧の会員コードが一致することを検証（モック） */
-    public function test_getCustomers_DBの会員番号とスマレジ会員コードが一致すること(): void
+    public function test_get_customers_d_bの会員番号とスマレジ会員コードが一致すること(): void
     {
         $project = Project::factory()->create();
         ShopSetting::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
@@ -79,7 +79,7 @@ class SmaregiDbConsistencyTest extends TestCase
     }
 
     /** スマレジに登録した会員コードとDBで保持する会員番号が一致することを検証（モック） */
-    public function test_createCustomer_登録した会員コードとDB会員番号が一致すること(): void
+    public function test_create_customer_登録した会員コードと_d_b会員番号が一致すること(): void
     {
         $project = Project::factory()->create();
         ShopSetting::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
@@ -141,7 +141,7 @@ class SmaregiDbConsistencyTest extends TestCase
     }
 
     /** 複数会員がいる場合にDB会員とスマレジ会員を会員コードで突き合わせられることを検証 */
-    public function test_getCustomers_複数会員を会員コードで突き合わせられること(): void
+    public function test_get_customers_複数会員を会員コードで突き合わせられること(): void
     {
         $project = Project::factory()->create();
         ShopSetting::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
@@ -195,19 +195,19 @@ class SmaregiDbConsistencyTest extends TestCase
 
             if (str_contains($url, $idBase) && str_contains($url, '/token')) {
                 return Http::response([
-                    'access_token' => 'fake_access_token_' . self::CONTRACT_ID,
+                    'access_token' => 'fake_access_token_'.self::CONTRACT_ID,
                     'expires_in' => 3600,
                 ], 200);
             }
 
-            if (!str_contains($url, $apiBase) || !str_contains($url, self::CONTRACT_ID)) {
+            if (! str_contains($url, $apiBase) || ! str_contains($url, self::CONTRACT_ID)) {
                 return Http::response([], 404);
             }
 
-            if ($method === 'GET' && str_contains($url, 'pos/customers') && !preg_match('#/pos/customers/\d+($|\?)#', $url)) {
+            if ($method === 'GET' && str_contains($url, 'pos/customers') && ! preg_match('#/pos/customers/\d+($|\?)#', $url)) {
                 return Http::response($responses['get_pos_customers'] ?? ['customers' => [], 'total' => 0], 200);
             }
-            if ($method === 'POST' && str_contains($url, 'pos/customers') && !str_contains($url, '/point/add')) {
+            if ($method === 'POST' && str_contains($url, 'pos/customers') && ! str_contains($url, '/point/add')) {
                 return Http::response($responses['post_pos_customers'] ?? ['customerId' => '1', 'customerCode' => ''], 200);
             }
 

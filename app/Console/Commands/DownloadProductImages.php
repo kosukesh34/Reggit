@@ -5,12 +5,13 @@ namespace App\Console\Commands;
 use App\Models\Product;
 use App\Util\StrHelper;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 
 class DownloadProductImages extends Command
 {
     protected $signature = 'products:download-images';
+
     protected $description = 'Download product images from URLs and save locally';
 
     public function handle()
@@ -23,20 +24,20 @@ class DownloadProductImages extends Command
             try {
                 $imageUrl = $product->image_url;
                 $extension = $this->getExtensionFromUrl($imageUrl);
-                $filename = 'product_' . $product->id . '.' . $extension;
-                $path = 'images/products/' . $filename;
+                $filename = 'product_'.$product->id.'.'.$extension;
+                $path = 'images/products/'.$filename;
 
                 // 画像をダウンロード
                 $response = Http::timeout(30)->get($imageUrl);
-                
+
                 if ($response->successful()) {
                     // 画像を保存
                     Storage::disk('public')->put($path, $response->body());
-                    
+
                     // データベースを更新
                     $product->image_url = Storage::url($path);
                     $product->save();
-                    
+
                     $this->info("Downloaded: {$product->name} -> {$filename}");
                     $downloaded++;
                 } else {
@@ -44,12 +45,13 @@ class DownloadProductImages extends Command
                     $failed++;
                 }
             } catch (\Exception $e) {
-                $this->error("Error downloading {$product->name}: " . $e->getMessage());
+                $this->error("Error downloading {$product->name}: ".$e->getMessage());
                 $failed++;
             }
         }
 
         $this->info("\nDownloaded: {$downloaded}, Failed: {$failed}");
+
         return 0;
     }
 
@@ -58,7 +60,7 @@ class DownloadProductImages extends Command
         $parsed = parse_url($url);
         $path = $parsed['path'] ?? '';
         $extension = pathinfo($path, PATHINFO_EXTENSION);
-        
+
         // 拡張子がない場合やクエリパラメータがある場合の処理
         if (StrHelper::isEmptyStringOrNull($extension) || strpos($extension, '?') !== false) {
             // URLから推測
@@ -69,10 +71,10 @@ class DownloadProductImages extends Command
             } elseif (strpos($url, '.png') !== false) {
                 return 'png';
             }
+
             return 'jpg'; // デフォルト
         }
-        
+
         return $extension;
     }
 }
-

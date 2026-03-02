@@ -15,6 +15,7 @@ class AdminAccountControllerTest extends TestCase
     {
         $admin = AdminUser::factory()->create(['role' => AdminUser::ROLE_SYSTEM_ADMIN]);
         $this->actingAs($admin, 'admin');
+
         return $admin;
     }
 
@@ -88,7 +89,7 @@ class AdminAccountControllerTest extends TestCase
             'project_id' => $project->id,
         ]);
 
-        $response = $this->put('/system-admin/accounts/' . $target->id, [
+        $response = $this->put('/system-admin/accounts/'.$target->id, [
             'login_id' => $target->login_id,
             'email' => $target->email,
             'name' => 'Updated',
@@ -105,7 +106,7 @@ class AdminAccountControllerTest extends TestCase
         $this->loginSystemAdmin();
         $target = AdminUser::factory()->create(['role' => AdminUser::ROLE_ADMIN]);
 
-        $response = $this->delete('/system-admin/accounts/' . $target->id);
+        $response = $this->delete('/system-admin/accounts/'.$target->id);
 
         $response->assertRedirect('/system-admin/accounts');
         $this->assertDatabaseMissing('admin_users', ['id' => $target->id]);
@@ -123,7 +124,7 @@ class AdminAccountControllerTest extends TestCase
             'project_id' => $projectA->id,
         ]);
 
-        $response = $this->put('/system-admin/accounts/' . $target->id, [
+        $response = $this->put('/system-admin/accounts/'.$target->id, [
             'login_id' => $target->login_id,
             'email' => $target->email,
             'name' => 'System Updated',

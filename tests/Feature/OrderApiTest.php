@@ -46,6 +46,7 @@ class OrderApiTest extends TestCase
 
     /** 有効な形式（U + 32桁 hex）でないと UserService が同一ユーザーとして扱わない */
     private const LINE_USER_2 = 'U00000000000000000000000000000002';
+
     private const LINE_USER_3 = 'U00000000000000000000000000000003';
 
     public function test_index_自分の注文のみ返すこと(): void

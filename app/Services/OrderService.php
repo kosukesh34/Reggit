@@ -17,6 +17,7 @@ class OrderService
     private const DEFAULT_POINTS_EARN_RATE = 100;
 
     private const DESC_REFUND_CANCEL = '注文キャンセルによる返却';
+
     private const DESC_REVERSED_CANCEL = '注文キャンセルによる取り消し';
 
     public function createOrder(array $orderData, User $user): Order
@@ -25,7 +26,7 @@ class OrderService
         try {
             $orderItems = $this->validateAndPrepareOrderItems($orderData['items']);
             $totalAmount = $this->calculateTotalAmount($orderItems);
-            
+
             $pointsUsed = $orderData['points_used'] ?? 0;
             $finalAmount = $this->processPoints($user, $pointsUsed, $totalAmount);
 
@@ -35,10 +36,11 @@ class OrderService
             $this->awardPoints($user, $order, $finalAmount);
 
             DB::commit();
+
             return $order->load('items.product');
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Order creation error: ' . $e->getMessage());
+            Log::error('Order creation error: '.$e->getMessage());
             throw $e;
         }
     }
@@ -81,6 +83,7 @@ class OrderService
         foreach ($orderItems as $item) {
             $total += $item['product']->price * $item['quantity'];
         }
+
         return $total;
     }
 
@@ -100,6 +103,7 @@ class OrderService
         }
 
         $member->usePoints($pointsUsed, '注文で使用', null);
+
         return max(0, $totalAmount - $pointsUsed);
     }
 
@@ -157,6 +161,7 @@ class OrderService
     private function getPointsEarnRate(?int $projectId): int
     {
         $rate = \App\Models\ShopSetting::getPointEarnRate($projectId);
+
         return $rate > 0 ? $rate : self::DEFAULT_POINTS_EARN_RATE;
     }
 
@@ -182,7 +187,7 @@ class OrderService
             DB::commit();
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Order cancellation handling failed: ' . $e->getMessage(), ['order_id' => $order->id]);
+            Log::error('Order cancellation handling failed: '.$e->getMessage(), ['order_id' => $order->id]);
             throw $e;
         }
     }

@@ -5,9 +5,9 @@ namespace App\UseCases\Admin\Member\Data;
 /**
  * 管理画面会員更新 UseCase の入力。不変。
  *
- * @param array<string, string|null> $userData name, kana, email, phone
- * @param array<string, mixed> $memberData member_number, status, rank, birthday, address, ...
- * @param array{type: 'add'|'subtract', points: int, description: string|null}|null $pointAdjustment
+ * @param  array<string, string|null>  $userData  name, kana, email, phone
+ * @param  array<string, mixed>  $memberData  member_number, status, rank, birthday, address, ...
+ * @param  array{type: 'add'|'subtract', points: int, description: string|null}|null  $pointAdjustment
  */
 class AdminMemberUpdateInput
 {
@@ -17,6 +17,5 @@ class AdminMemberUpdateInput
         public array $userData,
         public array $memberData,
         public ?array $pointAdjustment
-    ) {
-    }
+    ) {}
 }

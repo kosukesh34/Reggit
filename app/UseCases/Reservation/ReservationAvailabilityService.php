@@ -11,7 +11,9 @@ use Carbon\Carbon;
 class ReservationAvailabilityService
 {
     private const DATE_FORMAT = 'Y-m-d';
+
     private const TIME_FORMAT = 'H:i';
+
     private const ACTIVE_STATUSES = [
         ReservationStatus::PENDING,
         ReservationStatus::CONFIRMED,
@@ -32,7 +34,7 @@ class ReservationAvailabilityService
         for ($i = 1; $i <= $advanceDays; $i++) {
             $date = $today->copy()->addDays($i);
             $dateStr = $date->format(self::DATE_FORMAT);
-            if (!ShopSetting::isDateAvailable($dateStr)) {
+            if (! ShopSetting::isDateAvailable($dateStr)) {
                 continue;
             }
 
@@ -51,7 +53,7 @@ class ReservationAvailabilityService
             $availableDates[] = [
                 'date' => $dateStr,
                 'day_of_week' => $date->format('w'),
-                'display' => $date->format('Y年m月d日') . '(' . $this->getDayOfWeekName($date->dayOfWeek) . ')',
+                'display' => $date->format('Y年m月d日').'('.$this->getDayOfWeekName($date->dayOfWeek).')',
                 'time_slots' => $availableSlots,
             ];
         }
@@ -74,13 +76,13 @@ class ReservationAvailabilityService
         }
 
         $dateStr = $reservedAt->format(self::DATE_FORMAT);
-        if (!ShopSetting::isDateAvailable($dateStr)) {
+        if (! ShopSetting::isDateAvailable($dateStr)) {
             return '選択した日は予約できません';
         }
 
         $timeStr = $reservedAt->format(self::TIME_FORMAT);
         $timeSlots = ShopSetting::getReservationTimeSlots();
-        if (!in_array($timeStr, $timeSlots, true)) {
+        if (! in_array($timeStr, $timeSlots, true)) {
             return '選択した時間は予約できません';
         }
 
@@ -109,6 +111,7 @@ class ReservationAvailabilityService
     private function getDayOfWeekName(int $dayOfWeek): string
     {
         $days = ['日', '月', '火', '水', '木', '金', '土'];
+
         return $days[$dayOfWeek] ?? '';
     }
 
@@ -128,10 +131,10 @@ class ReservationAvailabilityService
                 : Carbon::parse($reservation->reserved_at);
             $dateKey = $reservedAt->format(self::DATE_FORMAT);
             $timeKey = $reservedAt->format(self::TIME_FORMAT);
-            if (!isset($slotCounts[$dateKey])) {
+            if (! isset($slotCounts[$dateKey])) {
                 $slotCounts[$dateKey] = [];
             }
-            if (!isset($slotCounts[$dateKey][$timeKey])) {
+            if (! isset($slotCounts[$dateKey][$timeKey])) {
                 $slotCounts[$dateKey][$timeKey] = 0;
             }
             $slotCounts[$dateKey][$timeKey] += 1;

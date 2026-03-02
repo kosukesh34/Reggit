@@ -13,8 +13,7 @@ class PaymentCreateIntentController extends Controller
 {
     public function __construct(
         private PaymentCreateIntentUseCase $createIntentUseCase
-    ) {
-    }
+    ) {}
 
     public function __invoke(Request $request)
     {
@@ -29,12 +28,14 @@ class PaymentCreateIntentController extends Controller
 
         try {
             $dto = $this->createIntentUseCase->handle((float) $request->amount, $request->order_id);
+
             return response()->json($dto->toArray());
         } catch (\Exception $e) {
             LogHelper::error('[Payment] create intent failed', [
                 'project_id' => $projectId,
                 'error' => $e->getMessage(),
             ]);
+
             return response()->json(['error' => '決済の作成に失敗しました'], 400);
         }
     }

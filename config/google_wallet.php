@@ -23,6 +23,7 @@ return [
         if ($path[0] === '/' || (strlen($path) > 1 && $path[1] === ':')) {
             return $path;
         }
+
         return base_path($path);
     })(),
 

@@ -9,7 +9,7 @@ trait BelongsToProject
 {
     protected static function bootBelongsToProject(): void
     {
-        static::addGlobalScope(new ProjectScope());
+        static::addGlobalScope(new ProjectScope);
 
         static::creating(function ($model) {
             if ($model->project_id === null) {

@@ -14,6 +14,7 @@ class EnsureSystemAdmin
         if ($admin === null || $admin->isSystemAdmin() === false) {
             abort(403, 'この操作を行う権限がありません。');
         }
+
         return $next($request);
     }
 }

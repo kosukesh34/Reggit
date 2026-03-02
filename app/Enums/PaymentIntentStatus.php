@@ -15,8 +15,12 @@ class PaymentIntentStatus extends EnumBase
     ];
 
     public const SUCCEEDED = 'succeeded';
+
     public const REQUIRES_PAYMENT_METHOD = 'requires_payment_method';
+
     public const REQUIRES_ACTION = 'requires_action';
+
     public const PROCESSING = 'processing';
+
     public const CANCELED = 'canceled';
 }

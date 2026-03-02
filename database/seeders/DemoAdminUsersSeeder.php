@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Models\AdminUser;
-use App\Models\AdminUserPermission;
 use App\Models\Project;
 use Illuminate\Database\Seeder;
 
@@ -11,7 +10,7 @@ class DemoAdminUsersSeeder extends Seeder
 {
     public function run(): void
     {
-        if (!env('DEMO_SEED', false)) {
+        if (! env('DEMO_SEED', false)) {
             return;
         }
 
@@ -106,6 +105,7 @@ class DemoAdminUsersSeeder extends Seeder
                 'project_id' => $projectId,
             ]
         );
+
         return $user;
     }
 }

@@ -58,7 +58,7 @@ class AnnouncementApiV1Test extends TestCase
             ->assertJsonPath('data.announcements.0.is_read', true);
     }
 
-    public function test_markRead_既読レコードが作成されること(): void
+    public function test_mark_read_既読レコードが作成されること(): void
     {
         $project = $this->createProject();
         $announcement = Announcement::factory()->create(['project_id' => $project->id]);

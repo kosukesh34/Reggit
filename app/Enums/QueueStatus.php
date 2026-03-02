@@ -14,7 +14,10 @@ class QueueStatus extends EnumBase
     ];
 
     public const WAITING = 'waiting';
+
     public const CALLED = 'called';
+
     public const ENTERED = 'entered';
+
     public const CANCELLED = 'cancelled';
 }

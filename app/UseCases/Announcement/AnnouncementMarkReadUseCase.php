@@ -11,9 +11,7 @@ use Illuminate\Validation\ValidationException;
 
 class AnnouncementMarkReadUseCase
 {
-    public function __construct(private UserService $userService)
-    {
-    }
+    public function __construct(private UserService $userService) {}
 
     /** @return array{announcement_id: int, read_at: string} */
     public function handle(Request $request, int $announcementId): array

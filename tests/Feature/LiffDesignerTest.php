@@ -12,7 +12,7 @@ class LiffDesignerTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_liff_designer_管理者がLIFFデザイナー画面にアクセスできること(): void
+    public function test_liff_designer_管理者が_lif_fデザイナー画面にアクセスできること(): void
     {
         $project = Project::firstOrCreate(
             ['project_key' => 'default'],

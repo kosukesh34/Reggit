@@ -8,8 +8,7 @@ class PaymentIntentOutput
     public function __construct(
         public string $clientSecret,
         public string $paymentIntentId
-    ) {
-    }
+    ) {}
 
     /** @return array{clientSecret: string, paymentIntentId: string} */
     public function toArray(): array

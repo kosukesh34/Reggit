@@ -20,11 +20,11 @@ class SmaregiSyncCustomerPointsUseCase
     /**
      * 指定プロジェクトに紐づく契約の会員ポイントを加算・減算する。
      *
-     * @param int $projectId プロジェクトID
-     * @param string $smaregiCustomerId スマレジ会員ID（会員一覧取得で取得した customerId）
-     * @param int $pointDelta 加算するポイント（負の値で減算）
-     * @param int|null $mileDelta 加算するマイル（任意）
-     * @param string|null $pointExpireDate ポイント失効予定日 Y-m-d（任意）
+     * @param  int  $projectId  プロジェクトID
+     * @param  string  $smaregiCustomerId  スマレジ会員ID（会員一覧取得で取得した customerId）
+     * @param  int  $pointDelta  加算するポイント（負の値で減算）
+     * @param  int|null  $mileDelta  加算するマイル（任意）
+     * @param  string|null  $pointExpireDate  ポイント失効予定日 Y-m-d（任意）
      * @return array{customerId?: string, point?: string, mile?: string, transactionHeadIds?: array}|null 成功時はレスポンス、失敗時は null
      */
     public function execute(

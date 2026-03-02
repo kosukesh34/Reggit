@@ -9,8 +9,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class QueueCallLog extends Model
 {
-    use HasFactory;
     use BelongsToProject;
+    use HasFactory;
 
     protected $fillable = [
         'project_id',
@@ -32,4 +32,3 @@ class QueueCallLog extends Model
         return $this->belongsTo(QueueEntry::class);
     }
 }
-

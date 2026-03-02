@@ -14,8 +14,7 @@ class MemberPointCardUseCase
         private UserService $userService,
         private MemberRankCalculator $rankCalculator,
         private MemberPointsExpiryCalculator $expiryCalculator
-    ) {
-    }
+    ) {}
 
     public function handle(Request $request): MemberPointCardView
     {
