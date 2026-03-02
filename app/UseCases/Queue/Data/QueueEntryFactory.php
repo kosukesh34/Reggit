@@ -36,6 +36,7 @@ class QueueEntryFactory
         if (is_string($value)) {
             return $value;
         }
+
         return null;
     }
 
@@ -43,6 +44,7 @@ class QueueEntryFactory
     {
         if ($entry->relationLoaded('user') && $entry->user !== null) {
             $lineUserId = (string) ($entry->user->line_user_id ?? '');
+
             return preg_match('/^U[0-9a-f]{32}$/i', $lineUserId) === 1;
         }
 

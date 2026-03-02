@@ -12,8 +12,7 @@ class ReservationCancelUseCase
     public function __construct(
         private ReservationService $reservationService,
         private UserService $userService
-    ) {
-    }
+    ) {}
 
     public function handle(Request $request, int $reservationId): ReservationActionOutput
     {

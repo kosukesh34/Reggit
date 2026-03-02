@@ -12,8 +12,7 @@ class ReservationUpdateController extends Controller
 {
     public function __construct(
         private ReservationUpdateUseCase $updateUseCase
-    ) {
-    }
+    ) {}
 
     public function __invoke(Request $request, int $id)
     {
@@ -52,6 +51,7 @@ class ReservationUpdateController extends Controller
                 'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'error' => $e->getMessage(),
             ]);
+
             return response()->json(['error' => $e->getMessage()], 400);
         }
     }

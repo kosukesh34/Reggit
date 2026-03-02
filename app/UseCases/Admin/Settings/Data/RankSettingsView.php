@@ -4,7 +4,8 @@ namespace App\UseCases\Admin\Settings\Data;
 
 /**
  * ランク設定画面用の表示データ。
- * @param array<int, array{key: string, label: string, min_points: int, order: int, is_active: bool, icon_url?: string|null, stamp_background_url?: string|null, card_color?: string|null}> $rankSettings
+ *
+ * @param  array<int, array{key: string, label: string, min_points: int, order: int, is_active: bool, icon_url?: string|null, stamp_background_url?: string|null, card_color?: string|null}>  $rankSettings
  */
 class RankSettingsView
 {
@@ -28,6 +29,5 @@ class RankSettingsView
         public string $memberCardDisplayType = 'card',
         /** 会員証コード表示: barcode, qrcode */
         public string $memberCardCodeType = 'barcode'
-    ) {
-    }
+    ) {}
 }

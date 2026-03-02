@@ -4,9 +4,9 @@ namespace App\UseCases\Member\GoogleWallet;
 
 use App\Services\GoogleWalletPassService;
 use App\Services\MemberService;
-use App\Util\StrHelper;
 use App\UseCases\Member\GoogleWallet\Data\GetGoogleWalletUrlInput;
 use App\UseCases\Member\GoogleWallet\Data\GetGoogleWalletUrlOutput;
+use App\Util\StrHelper;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
@@ -21,8 +21,7 @@ class GetGoogleWalletUrlUseCase
     public function __construct(
         private readonly GoogleWalletPassService $googleWalletPassService,
         private readonly MemberService $memberService
-    ) {
-    }
+    ) {}
 
     public function handle(GetGoogleWalletUrlInput $input): GetGoogleWalletUrlOutput
     {
@@ -92,7 +91,7 @@ class GetGoogleWalletUrlUseCase
 
     private function resolveUrlByToken(GetGoogleWalletUrlInput $input): ?string
     {
-        $key = self::TOKEN_CACHE_PREFIX . $input->token;
+        $key = self::TOKEN_CACHE_PREFIX.$input->token;
         $data = Cache::get($key);
 
         if ($data === null || ! isset($data['user_id'], $data['project_id'])) {
@@ -121,7 +120,7 @@ class GetGoogleWalletUrlUseCase
     /**
      * セッションで URL を解決する。会員でない且つデモ不可の場合は notMember の Output を返す。
      *
-     * @return string|GetGoogleWalletUrlOutput|null  成功時は URL、会員登録必要時は Output、その他失敗時は null
+     * @return string|GetGoogleWalletUrlOutput|null 成功時は URL、会員登録必要時は Output、その他失敗時は null
      */
     private function resolveUrlBySession(GetGoogleWalletUrlInput $input): string|GetGoogleWalletUrlOutput|null
     {
@@ -144,11 +143,11 @@ class GetGoogleWalletUrlUseCase
 
         $organizationName = $input->projectName ?? config('app.name', '会員証');
         $userId = $input->user->id ?? 0;
-        $objectSuffix = 'demo-' . $userId . '-b';
+        $objectSuffix = 'demo-'.$userId.'-b';
         $projectIdInt = $input->projectId !== null && $input->projectId !== false ? (int) $input->projectId : null;
         $url = $this->googleWalletPassService->createSaveUrl(
             $organizationName,
-            'demo-' . $userId,
+            'demo-'.$userId,
             $objectSuffix,
             0,
             '',

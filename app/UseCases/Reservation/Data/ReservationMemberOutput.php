@@ -10,6 +10,5 @@ class ReservationMemberOutput
     public function __construct(
         public bool $requiresMembership,
         public Collection $reservations
-    ) {
-    }
+    ) {}
 }

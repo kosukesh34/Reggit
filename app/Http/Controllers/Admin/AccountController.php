@@ -82,6 +82,7 @@ class AccountController extends Controller
         }
 
         $routePrefix = $this->getRoutePrefix($request);
+
         return redirect()->route("{$routePrefix}.accounts.index", $this->routeParams($request))
             ->with('success', 'アカウントを作成しました');
     }
@@ -130,6 +131,7 @@ class AccountController extends Controller
         }
 
         $routePrefix = $this->getRoutePrefix($request);
+
         return redirect()->route("{$routePrefix}.accounts.index", $this->routeParams($request))
             ->with('success', 'アカウントを更新しました');
     }
@@ -142,6 +144,7 @@ class AccountController extends Controller
 
         if ($adminUser->id === $me->id) {
             $routePrefix = $this->getRoutePrefix($request);
+
             return redirect()->route("{$routePrefix}.accounts.index", $this->routeParams($request))
                 ->with('error', '自分自身のアカウントは削除できません。');
         }
@@ -154,6 +157,7 @@ class AccountController extends Controller
         $adminUser->delete();
 
         $routePrefix = $this->getRoutePrefix($request);
+
         return redirect()->route("{$routePrefix}.accounts.index", $this->routeParams($request))
             ->with('success', 'アカウントを削除しました');
     }
@@ -167,6 +171,7 @@ class AccountController extends Controller
         if (str_starts_with($routeName, 'system-admin.')) {
             return 'system-admin';
         }
+
         return 'admin';
     }
 
@@ -177,6 +182,7 @@ class AccountController extends Controller
         if ($prefix === 'admin') {
             return ['project_key' => $request->route('project_key')];
         }
+
         return [];
     }
 
@@ -187,6 +193,7 @@ class AccountController extends Controller
             return Project::where('is_active', true)->orderBy('name')->get();
         }
         $allowedIds = $me->getAllowedProjectIds();
+
         return Project::whereIn('id', $allowedIds)->where('is_active', true)->orderBy('name')->get();
     }
 }

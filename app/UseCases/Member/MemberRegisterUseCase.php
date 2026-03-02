@@ -15,8 +15,7 @@ class MemberRegisterUseCase
     public function __construct(
         private MemberService $memberService,
         private UserService $userService
-    ) {
-    }
+    ) {}
 
     /** @param array<string, string|int|float|bool|array|null> $validated 検証済み会員登録データ（name, phone, email 等） */
     public function handle(Request $request, array $validated): MemberRegisterOutput
@@ -32,6 +31,7 @@ class MemberRegisterUseCase
 
             $user->refresh();
             $data = $this->memberService->getMemberData($user);
+
             return new MemberRegisterOutput(new MemberData($data), true);
         }
 

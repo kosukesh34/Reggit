@@ -7,4 +7,3 @@ return [
         'endpoint' => env('PUSH_FCM_ENDPOINT', 'https://fcm.googleapis.com/fcm/send'),
     ],
 ];
-

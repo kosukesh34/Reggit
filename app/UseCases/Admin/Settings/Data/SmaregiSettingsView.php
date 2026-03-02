@@ -16,6 +16,5 @@ class SmaregiSettingsView
         public readonly ?string $posStatusMessage = null,
         /** トークン失敗時のみ。.env の読み込み状況（値は出さず設定済み/未設定のみ）。null のときは非表示 */
         public readonly ?string $posStatusEnvCheck = null,
-    ) {
-    }
+    ) {}
 }

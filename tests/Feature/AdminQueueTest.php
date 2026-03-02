@@ -2,10 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Enums\QueueStatus;
 use App\Models\AdminUser;
 use App\Models\Project;
 use App\Models\QueueEntry;
-use App\Enums\QueueStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

@@ -2,13 +2,13 @@
 
 namespace App\Services\Admin;
 
-use App\Models\QueueEntry;
-use App\Models\QueueCallLog;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use App\Enums\QueueStatus;
-use Illuminate\Support\Collection;
 use App\Http\Services\LineService;
+use App\Models\QueueCallLog;
+use App\Models\QueueEntry;
 use App\Util\LogHelper;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 
 class QueueAdminService
 {
@@ -30,6 +30,7 @@ class QueueAdminService
     public function getEstimatedWaitMinutes(int $projectId): int
     {
         $waiting = $this->getWaitingCount($projectId);
+
         return $waiting * 10;
     }
 
@@ -74,7 +75,7 @@ class QueueAdminService
                 return;
             }
 
-            if ($lineUserId === null || $lineUserId === '' || !$this->isValidLineUserId($lineUserId)) {
+            if ($lineUserId === null || $lineUserId === '' || ! $this->isValidLineUserId($lineUserId)) {
                 $callLog->update([
                     'push_status' => 'skipped',
                     'error_message' => 'invalid line user id',
@@ -83,6 +84,7 @@ class QueueAdminService
                     'queue_id' => $entry->id,
                     'line_user_id' => $lineUserId,
                 ]);
+
                 return;
             }
             if (app()->environment('testing')) {
@@ -90,6 +92,7 @@ class QueueAdminService
                     'push_status' => 'skipped',
                     'error_message' => 'testing environment',
                 ]);
+
                 return;
             }
             $message = sprintf('順番が近づきました。受付番号: %s', $entry->queue_number ?? $entry->id);

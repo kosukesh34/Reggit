@@ -12,6 +12,5 @@ class PaymentConfirmOutput
         public string $message,
         public ?string $status,
         public ?Order $order
-    ) {
-    }
+    ) {}
 }

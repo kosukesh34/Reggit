@@ -4,14 +4,12 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\UseCases\Coupon\CouponMyCouponsUseCase;
 use App\Util\AdminContext;
-use Illuminate\Http\Request;
 use App\Util\LogHelper;
+use Illuminate\Http\Request;
 
 class CouponController extends BaseApiController
 {
-    public function __construct(private CouponMyCouponsUseCase $myCouponsUseCase)
-    {
-    }
+    public function __construct(private CouponMyCouponsUseCase $myCouponsUseCase) {}
 
     public function myCoupons(Request $request)
     {
@@ -33,6 +31,7 @@ class CouponController extends BaseApiController
                 'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'error' => $e->getMessage(),
             ]);
+
             return $this->error('クーポンの取得に失敗しました', 500);
         }
     }

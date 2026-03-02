@@ -26,12 +26,13 @@ class SmaregiCreateCustomerCommand extends Command
 
         if ($contractId === null || $contractId === '') {
             $this->error("プロジェクト ID {$projectId} に紐づくスマレジ契約がありません。管理画面の「スマレジ連携」で契約を紐付けてください。");
+
             return self::FAILURE;
         }
 
         $code = $this->option('code');
         if ($code === null || $code === '') {
-            $code = 'TEST_' . date('YmdHis');
+            $code = 'TEST_'.date('YmdHis');
         }
 
         $firstName = $this->option('first_name');
@@ -73,6 +74,7 @@ class SmaregiCreateCustomerCommand extends Command
         if ($token === null || $token === '') {
             $this->error('アクセストークンを取得できませんでした。');
             $this->line('  .env に SMAREGI_CLIENT_ID と SMAREGI_CLIENT_SECRET を設定し、Docker を再起動（docker compose up -d --force-recreate app）してから再度実行してください。');
+
             return self::FAILURE;
         }
 
@@ -83,6 +85,7 @@ class SmaregiCreateCustomerCommand extends Command
             $this->error('登録に失敗しました。');
             $this->line('  storage/logs/laravel.log の [Smaregi] API request failed の response_body にスマレジからのエラー内容が記録されています。');
             $this->line('  スマレジ・デベロッパーズで pos.customers:write スコープが有効か確認してください。');
+
             return self::FAILURE;
         }
 
@@ -98,7 +101,7 @@ class SmaregiCreateCustomerCommand extends Command
             ]
         );
         $this->newLine();
-        $this->comment('登録の確認: php artisan smaregi:list-customers --project_id=' . $projectId . ' で会員一覧を表示できます。');
+        $this->comment('登録の確認: php artisan smaregi:list-customers --project_id='.$projectId.' で会員一覧を表示できます。');
         $this->comment('※ 開発環境（api.smaregi.dev）で登録した会員はサンドボックス契約のみに存在し、本番のスマレジ店舗管理画面の会員一覧には表示されません。');
 
         return self::SUCCESS;

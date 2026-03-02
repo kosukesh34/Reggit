@@ -9,8 +9,7 @@ class MemberStampObserver
 {
     public function __construct(
         private CouponIssueService $couponIssueService
-    ) {
-    }
+    ) {}
 
     public function saved(MemberStamp $memberStamp): void
     {

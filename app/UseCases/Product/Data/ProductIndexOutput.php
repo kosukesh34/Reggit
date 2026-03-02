@@ -10,8 +10,7 @@ class ProductIndexOutput
     public function __construct(
         public Collection $products,
         public array $categories
-    ) {
-    }
+    ) {}
 
     /** @return array<int, array{key: string, label: string, icon: string, count: int, sort: int}> */
     public function categoriesToArray(): array
@@ -20,6 +19,7 @@ class ProductIndexOutput
         foreach ($this->categories as $category) {
             $payload[] = $category->toArray();
         }
+
         return $payload;
     }
 }

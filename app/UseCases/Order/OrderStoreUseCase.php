@@ -2,11 +2,11 @@
 
 namespace App\UseCases\Order;
 
+use App\Enums\OrderType;
 use App\Services\OrderService;
 use App\Services\UserService;
 use App\UseCases\Order\Data\OrderFactory;
 use App\UseCases\Order\Data\OrderOutput;
-use App\Enums\OrderType;
 use App\Util\StrHelper;
 use Illuminate\Http\Request;
 
@@ -16,8 +16,7 @@ class OrderStoreUseCase
         private OrderService $orderService,
         private UserService $userService,
         private OrderFactory $orderFactory
-    ) {
-    }
+    ) {}
 
     /** @param array<string, string|int|float|bool|array|null> $validated 検証済み注文データ（items, payment_method, points_used 等） */
     public function handle(Request $request, array $validated): OrderOutput
@@ -27,6 +26,7 @@ class OrderStoreUseCase
         }
         $user = $this->userService->getOrCreateUser($request);
         $order = $this->orderService->createOrder($validated, $user);
+
         return $this->orderFactory->create($order);
     }
 }

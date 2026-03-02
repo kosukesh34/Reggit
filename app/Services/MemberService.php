@@ -16,8 +16,7 @@ class MemberService
     public function __construct(
         private CouponIssueService $couponIssueService,
         private SmaregiApiService $smaregiApi,
-    ) {
-    }
+    ) {}
 
     public function getMemberData(User $user): array
     {
@@ -86,11 +85,11 @@ class MemberService
         $rules = [];
         $stringMax = ['name' => 255, 'kana' => 255, 'phone' => 50, 'email' => 255, 'postal_code' => 16, 'prefecture' => 64, 'city' => 128, 'street' => 256, 'address' => 500, 'sex' => 16];
         foreach ($settings['smaregi_fields'] ?? [] as $key => $field) {
-            if (empty($field['enabled'])) {
+            if ((bool) ($field['enabled'] ?? false) === false) {
                 continue;
             }
             $rule = ['nullable'];
-            if (! empty($field['required'])) {
+            if ((bool) ($field['required'] ?? false) === true) {
                 $rule = ['required'];
             }
             if ($key === 'email') {
@@ -101,7 +100,7 @@ class MemberService
             }
             if (isset($stringMax[$key])) {
                 $rule[] = 'string';
-                $rule[] = 'max:' . $stringMax[$key];
+                $rule[] = 'max:'.$stringMax[$key];
             }
             $rules[$key] = $rule;
         }
@@ -110,8 +109,9 @@ class MemberService
             if ($key === null) {
                 continue;
             }
-            $rules[$key] = ! empty($cf['required']) ? ['required', 'string', 'max:500'] : ['nullable', 'string', 'max:500'];
+            $rules[$key] = (bool) ($cf['required'] ?? false) === true ? ['required', 'string', 'max:500'] : ['nullable', 'string', 'max:500'];
         }
+
         return $rules;
     }
 
@@ -120,22 +120,23 @@ class MemberService
     {
         $out = [];
         foreach ($profileSettings['smaregi_fields'] ?? [] as $key => $field) {
-            if (empty($field['enabled'])) {
+            if ((bool) ($field['enabled'] ?? false) === false) {
                 continue;
             }
             $out[] = [
                 'key' => $key,
                 'label' => $field['label'] ?? $key,
-                'required' => ! empty($field['required']),
+                'required' => (bool) ($field['required'] ?? false) === true,
             ];
         }
         foreach ($profileSettings['custom_fields'] ?? [] as $cf) {
             $out[] = [
                 'key' => $cf['key'] ?? '',
                 'label' => $cf['label'] ?? '',
-                'required' => ! empty($cf['required']),
+                'required' => (bool) ($cf['required'] ?? false) === true,
             ];
         }
+
         return $out;
     }
 
@@ -161,6 +162,7 @@ class MemberService
                 $profile[$k] = $v;
             }
         }
+
         return $profile;
     }
 
@@ -261,6 +263,7 @@ class MemberService
         if (array_key_exists('phone', $data)) {
             $body['phoneNumber'] = trim((string) $data['phone']);
         }
+
         return $body;
     }
 
@@ -275,6 +278,7 @@ class MemberService
                 $out[$key] = $data[$key];
             }
         }
+
         return $out;
     }
 
@@ -293,7 +297,7 @@ class MemberService
         if ($contractId !== '') {
             $body = $this->buildSmaregiCustomerBody($memberNumber, $data);
             $result = $this->smaregiApi->createCustomer($contractId, $body);
-            if ($result !== null && ! empty($result['customerId'])) {
+            if ($result !== null && isset($result['customerId']) && (string) $result['customerId'] !== '') {
                 $smaregiCustomerId = (string) $result['customerId'];
             } else {
                 // スマレジ連携失敗時でも会員登録自体は継続し、後続運用で再同期できるようにする。
@@ -375,6 +379,7 @@ class MemberService
         if ($phone !== '') {
             $body['phoneNumber'] = $phone;
         }
+
         return $body;
     }
 
@@ -499,16 +504,18 @@ class MemberService
                     if ($prefix !== '' && str_starts_with($num, $prefix)) {
                         $num = substr($num, strlen($prefix));
                     }
+
                     return ctype_digit($num) ? (int) $num : 0;
                 })
                 ->max();
             $next = max($next, ($maxExisting ?? 0) + 1);
             \App\Models\ShopSetting::setMemberCodeNextNumber($next + 1, $projectId);
-            $body = sprintf('%0' . $bodyLen . 'd', $next);
+            $body = sprintf('%0'.$bodyLen.'d', $next);
             if (strlen($body) > $bodyLen) {
                 $body = substr($body, -$bodyLen);
             }
-            $candidate = $prefix . $body;
+            $candidate = $prefix.$body;
+
             return strlen($candidate) <= 20 ? $candidate : substr($candidate, 0, 20);
         }
 
@@ -520,16 +527,16 @@ class MemberService
             for ($j = 0; $j < $bodyLen; $j++) {
                 $body .= $chars[random_int(0, $charLen - 1)];
             }
-            $candidate = $prefix . $body;
+            $candidate = $prefix.$body;
             if (strlen($candidate) > 20) {
                 $candidate = substr($candidate, 0, 20);
             }
             $exists = Member::where('project_id', $projectId)->where('member_number', $candidate)->exists();
-            if (!$exists) {
+            if (! $exists) {
                 return $candidate;
             }
         }
 
-        return $prefix . sprintf('%0' . $bodyLen . 'd', (time() + random_int(0, 9999)) % (10 ** $bodyLen));
+        return $prefix.sprintf('%0'.$bodyLen.'d', (time() + random_int(0, 9999)) % (10 ** $bodyLen));
     }
 }

@@ -2,10 +2,10 @@
 
 namespace App\Services\Admin;
 
+use App\Enums\OrderStatus;
 use App\Models\Order;
 use App\Services\CouponIssueService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use App\Enums\OrderStatus;
 
 class OrderAdminService
 {
@@ -22,6 +22,7 @@ class OrderAdminService
         if ($status && $status !== 'all') {
             $query->where('status', $status);
         }
+
         return $query->paginate($perPage);
     }
 
@@ -32,6 +33,7 @@ class OrderAdminService
         foreach ($statuses as $status) {
             $counts[$status] = Order::where('status', $status)->count();
         }
+
         return $counts;
     }
 

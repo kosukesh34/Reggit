@@ -56,7 +56,7 @@ class AppServiceProvider extends ServiceProvider
 
         // admin.layout はテスト時にも必要（認証済み管理画面で $projects 等を渡す）
         View::composer('admin.layout', function ($view) {
-            if (!auth('admin')->check()) {
+            if (! auth('admin')->check()) {
                 return;
             }
             $adminUser = auth('admin')->user();

@@ -11,8 +11,7 @@ class OrderItem
         public int $quantity,
         public float $price,
         public ?string $notes
-    ) {
-    }
+    ) {}
 
     /** @return array{product_id: int, product_name: string, quantity: int, price: float, notes: string|null} */
     public function toArray(): array

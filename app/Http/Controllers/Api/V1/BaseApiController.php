@@ -16,6 +16,7 @@ class BaseApiController extends Controller
             'errors' => [],
             'meta' => $meta,
         ];
+
         return response()->json($payload, $status);
     }
 
@@ -28,6 +29,7 @@ class BaseApiController extends Controller
             'errors' => $errors,
             'meta' => $meta,
         ];
+
         return response()->json($payload, $status);
     }
 }

@@ -5,9 +5,7 @@ namespace App\Services;
 use App\Models\Coupon;
 use App\Models\Member;
 use App\Models\MemberCoupon;
-use App\Models\Order;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
 
 class CouponIssueService
 {

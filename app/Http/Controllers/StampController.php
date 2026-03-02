@@ -36,7 +36,7 @@ class StampController extends Controller
                 'default_image_url' => $output->defaultImageUrl,
             ]);
         } catch (\Exception $e) {
-            Log::error('Stamps index error: ' . $e->getMessage());
+            Log::error('Stamps index error: '.$e->getMessage());
 
             return response()->json(['error' => 'スタンプの取得に失敗しました'], 500);
         }

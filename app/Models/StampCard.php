@@ -12,9 +12,13 @@ class StampCard extends Model
     use BelongsToProject, HasFactory;
 
     public const LAYOUT_GRID = 'grid';
+
     public const LAYOUT_ROW = 'row';
+
     public const LAYOUT_CIRCLE = 'circle';
+
     public const LAYOUT_MINIMAL = 'minimal';
+
     public const LAYOUT_CARD = 'card';
 
     /** @var array<string> */

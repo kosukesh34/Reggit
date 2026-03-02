@@ -16,9 +16,14 @@ class PointTransactionType extends EnumBase
     ];
 
     public const EARNED = 'earned';
+
     public const USED = 'used';
+
     public const REFUNDED = 'refunded';
+
     public const REVERSED = 'reversed';
+
     public const ADJUSTED = 'adjusted';
+
     public const EXPIRED = 'expired';
 }

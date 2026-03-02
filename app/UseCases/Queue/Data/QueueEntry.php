@@ -18,8 +18,7 @@ class QueueEntry
         public int $waitingCount,
         public ?int $aheadCount,
         public int $estimatedWaitMinutes
-    ) {
-    }
+    ) {}
 
     /** @return array{id: int, queue_number: int, status: string, party_size: int, line_linked: bool, qr_token: string|null, created_at: string, updated_at: string, called_at: string|null, waiting_count: int, ahead_count: int|null, estimated_wait_minutes: int} */
     public function toArray(): array

@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use App\Models\UserDevice;
 use App\Models\User;
+use App\Models\UserDevice;
 use App\Util\AdminContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
@@ -22,6 +22,7 @@ class UserService
             $user = User::where('line_user_id', $lineUserId)->where('project_id', $projectId)->first();
             if ($user !== null) {
                 Session::put($this->getSessionKey($projectId), $user->id);
+
                 return $user;
             }
         }
@@ -36,6 +37,7 @@ class UserService
                 if ($deviceUser !== null) {
                     Session::put($this->getSessionKey($projectId), $deviceUser->id);
                     $device->forceFill(['last_used_at' => now()])->save();
+
                     return $deviceUser;
                 }
             }
@@ -44,6 +46,7 @@ class UserService
         $user = $request->user();
         if ($user !== null && (int) $user->project_id === $projectId) {
             Session::put($this->getSessionKey($projectId), $user->id);
+
             return $user;
         }
 
@@ -59,6 +62,7 @@ class UserService
                 if ($rawLineId !== null) {
                     $this->linkLineUserIdIfPossible($sessionUser, $rawLineId, $projectId);
                 }
+
                 return $sessionUser;
             }
         }
@@ -75,6 +79,7 @@ class UserService
             if ($lineUserId !== null) {
                 $this->linkLineUserIdIfPossible($existing, $lineUserId, $projectId);
             }
+
             return $existing;
         }
 
@@ -87,6 +92,7 @@ class UserService
             if ($trashed !== null && $trashed->trashed()) {
                 $trashed->restore();
                 Session::put($this->getSessionKey($projectId), $trashed->id);
+
                 return $trashed;
             }
         }
@@ -94,11 +100,13 @@ class UserService
         if ($lineUserId !== null) {
             $user = $this->createGuestUser($lineUserId, $projectId);
             Session::put($this->getSessionKey($projectId), $user->id);
+
             return $user;
         }
 
-        $user = $this->createGuestUser('guest-' . uniqid(), $projectId);
+        $user = $this->createGuestUser('guest-'.uniqid(), $projectId);
         Session::put($this->getSessionKey($projectId), $user->id);
+
         return $user;
     }
 
@@ -113,7 +121,7 @@ class UserService
 
     private function getSessionKey(int $projectId): string
     {
-        return self::SESSION_USER_ID_KEY_PREFIX . '_' . $projectId;
+        return self::SESSION_USER_ID_KEY_PREFIX.'_'.$projectId;
     }
 
     /** 現在プロジェクトのユーザーセッションを削除（退会時など） */
@@ -125,22 +133,24 @@ class UserService
 
     private function normalizeLineUserId(?string $lineUserId): ?string
     {
-        if (!is_string($lineUserId)) {
+        if (! is_string($lineUserId)) {
             return null;
         }
         $lineUserId = trim($lineUserId);
-        if ($lineUserId === '' || !$this->isValidLineUserId($lineUserId)) {
+        if ($lineUserId === '' || ! $this->isValidLineUserId($lineUserId)) {
             return null;
         }
+
         return $lineUserId;
     }
 
     private function normalizeDeviceIdentifier(?string $deviceIdentifier): ?string
     {
-        if (!is_string($deviceIdentifier)) {
+        if (! is_string($deviceIdentifier)) {
             return null;
         }
         $deviceIdentifier = trim($deviceIdentifier);
+
         return $deviceIdentifier === '' ? null : $deviceIdentifier;
     }
 

@@ -11,13 +11,14 @@ use Symfony\Component\HttpFoundation\Response;
 class AdminAuditLogger
 {
     private const WRITE_METHODS = ['POST', 'PUT', 'PATCH', 'DELETE'];
+
     private const SENSITIVE_KEYS = ['password', 'password_confirmation'];
 
     public function handle(Request $request, Closure $next): Response
     {
         $response = $next($request);
 
-        if (!in_array($request->getMethod(), self::WRITE_METHODS, true)) {
+        if (! in_array($request->getMethod(), self::WRITE_METHODS, true)) {
             return $response;
         }
 
@@ -40,7 +41,7 @@ class AdminAuditLogger
         $routeName = $route ? $route->getName() : null;
         $url = $request->fullUrl();
         if (strlen($url) > 500) {
-            $url = substr($url, 0, 497) . '...';
+            $url = substr($url, 0, 497).'...';
         }
 
         AdminAuditLog::create([

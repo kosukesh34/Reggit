@@ -13,8 +13,7 @@ class PaymentWebhookController extends Controller
 {
     public function __construct(
         private PaymentWebhookUseCase $webhookUseCase
-    ) {
-    }
+    ) {}
 
     public function __invoke(Request $request)
     {
@@ -26,6 +25,7 @@ class PaymentWebhookController extends Controller
             LogHelper::warning('[Payment] webhook secret missing', [
                 'project_id' => AdminContext::getCurrentProjectId(),
             ]);
+
             return response()->json(['error' => 'Webhook secret not configured'], 400);
         }
 
@@ -36,6 +36,7 @@ class PaymentWebhookController extends Controller
                 'project_id' => AdminContext::getCurrentProjectId(),
                 'error' => $e->getMessage(),
             ]);
+
             return response()->json(['error' => 'Invalid signature'], 400);
         }
 

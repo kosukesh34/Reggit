@@ -31,5 +31,3 @@ class AuthenticateLineUser
         return $next($request);
     }
 }
-
-
