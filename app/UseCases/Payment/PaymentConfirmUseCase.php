@@ -2,6 +2,7 @@
 
 namespace App\UseCases\Payment;
 
+use App\Enums\OrderType;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentIntentStatus;
 use App\Enums\PaymentMethod;
@@ -10,8 +11,11 @@ use App\UseCases\Payment\Data\PaymentConfirmOutput;
 
 class PaymentConfirmUseCase
 {
-    public function __construct(private PaymentGateway $gateway)
+    private PaymentGateway $gateway;
+
+    public function __construct(PaymentGateway $gateway)
     {
+        $this->gateway = $gateway;
     }
 
     public function handle(string $paymentIntentId, int $orderId): PaymentConfirmOutput
@@ -24,6 +28,9 @@ class PaymentConfirmUseCase
         }
 
         $order = Order::findOrFail($orderId);
+        if ($order->order_type !== OrderType::MOBILE) {
+            return new PaymentConfirmOutput(false, '店内注文は決済確認の対象外です', (string) $status, null);
+        }
         $order->update([
             'status' => OrderStatus::CONFIRMED,
             'payment_method' => PaymentMethod::STRIPE,

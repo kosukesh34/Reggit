@@ -11,6 +11,7 @@
     $closedDates = $settings['closedDates'] ?? [];
     $advanceDays = $settings['advanceDays'] ?? 30;
     $reservationCapacity = $settings['reservationCapacity'] ?? 20;
+    $orderMode = $settings['orderMode'] ?? \App\Models\ShopSetting::ORDER_MODE_BOTH;
 @endphp
 
 <nav class="breadcrumb" aria-label="パンくず">
@@ -93,6 +94,15 @@
                 <label class="form-label">予約可能な日数（先まで）</label>
                 <input type="number" name="advance_booking_days" class="form-control" value="{{ $advanceDays }}" min="1" max="365" required>
                 <small class="form-text">何日先まで予約を受け付けるか</small>
+            </div>
+            <div class="form-group">
+                <label class="form-label">注文モード</label>
+                <select name="order_mode" class="form-control" required>
+                    <option value="both" {{ $orderMode === 'both' ? 'selected' : '' }}>両方（モバイル注文 + 店内注文）</option>
+                    <option value="mobile_only" {{ $orderMode === 'mobile_only' ? 'selected' : '' }}>モバイル注文のみ（注文時決済）</option>
+                    <option value="in_store_only" {{ $orderMode === 'in_store_only' ? 'selected' : '' }}>店内注文のみ（後で決済）</option>
+                </select>
+                <small class="form-text">LIFFのカート内ボタン表示と注文可否に反映されます。</small>
             </div>
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> 保存</button>
