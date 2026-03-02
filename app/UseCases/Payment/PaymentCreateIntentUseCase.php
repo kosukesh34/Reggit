@@ -6,8 +6,11 @@ use App\UseCases\Payment\Data\PaymentIntentOutput;
 
 class PaymentCreateIntentUseCase
 {
-    public function __construct(private PaymentGateway $gateway)
+    private PaymentGateway $gateway;
+
+    public function __construct(PaymentGateway $gateway)
     {
+        $this->gateway = $gateway;
     }
 
     public function handle(float $amount, ?int $orderId): PaymentIntentOutput

@@ -2,8 +2,13 @@
 @php
     $userAgent = request()->header('User-Agent', '');
     $isNativeApp = $userAgent && preg_match('/MobileOrderApp\/\d+/i', $userAgent);
+    $isDesignerEmbedPreview = request()->query('designer_live_preview') === '1'
+        && request()->query('designer_embed') === '1';
 @endphp
-<html lang="ja" @if($isNativeApp) class="native-app-embed" @endif>
+<html lang="ja" @class([
+    'native-app-embed' => $isNativeApp,
+    'designer-live-preview-embed' => $isDesignerEmbedPreview,
+])>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -18,8 +23,13 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     @php
         $configuredAssetVersion = (string) config('app.asset_version', env('APP_VERSION', ''));
-        $cssMtime = @filemtime(public_path('css/frontend/style.css')) ?: null;
-        $assetVersion = $configuredAssetVersion !== '' ? $configuredAssetVersion : (string) ($cssMtime ?? time());
+        $cssMtime = @filemtime(public_path('css/frontend/style.css')) ?: 0;
+        $appJsMtime = @filemtime(public_path('js/frontend/app.js')) ?: 0;
+        $layoutJsMtime = @filemtime(public_path('js/frontend/managers/LiffLayoutManager.js')) ?: 0;
+        $latestAssetMtime = max($cssMtime, $appJsMtime, $layoutJsMtime);
+        $assetVersion = $configuredAssetVersion !== ''
+            ? $configuredAssetVersion
+            : (string) ($latestAssetMtime > 0 ? $latestAssetMtime : time());
         $host = request()->getHost();
         $useInlineLocalAssets = str_contains($host, 'ngrok-free.dev') || str_contains($host, 'ngrok-free.app');
     @endphp
@@ -57,7 +67,10 @@
     </style>
     @endif
 </head>
-<body @if($isNativeApp) class="native-app-embed" @endif>
+<body @class([
+    'native-app-embed' => $isNativeApp,
+    'designer-live-preview-embed' => $isDesignerEmbedPreview,
+])>
     <script>
     (function() {
         var ua = typeof navigator !== 'undefined' && navigator.userAgent ? navigator.userAgent : '';
@@ -71,11 +84,6 @@
                 console.log('[MobileOrder]', ts, msg, data !== undefined ? data : '');
                 logLines.push(ts + ' ' + line);
                 if (logLines.length > logMax) logLines.shift();
-                var el = document.getElementById('mobile-order-log-panel');
-                if (el && el.querySelector) {
-                    var body = el.querySelector('.mobile-order-log-body');
-                    if (body) body.textContent = logLines.join('\n');
-                }
             };
             document.documentElement.classList.add('native-app-embed');
             (function() {
@@ -94,15 +102,6 @@
                     loadingEl.classList.add('liff-loading--hidden');
                     loadingEl.style.display = 'none';
                 }
-                var panel = document.createElement('div');
-                panel.id = 'mobile-order-log-panel';
-                panel.innerHTML = '<div class="mobile-order-log-header">ログ <button type="button" class="mobile-order-log-toggle">開く</button></div><pre class="mobile-order-log-body"></pre>';
-                panel.className = 'mobile-order-log-panel';
-                document.body.appendChild(panel);
-                panel.querySelector('.mobile-order-log-toggle').onclick = function() {
-                    panel.classList.toggle('mobile-order-log-open');
-                    this.textContent = panel.classList.contains('mobile-order-log-open') ? '閉じる' : '開く';
-                };
                 __mobileOrderLog('DOMContentLoaded', { path: window.location.pathname });
                 setTimeout(function() {
                     if (typeof window.app === 'undefined' && typeof document.dispatchEvent === 'function') {
@@ -123,6 +122,7 @@
 
     <div class="app-container" id="app-container" @if($isNativeApp) style="display: flex; flex-direction: column; min-height: 100vh; background: #fff; visibility: visible;" @endif>
         
+        @unless($isDesignerEmbedPreview)
         <header class="header" @if($isNativeApp) style="display: block; visibility: visible;" @endif>
             <div class="header-content">
                 @if(isset($frontendLogoUrl) && $frontendLogoUrl !== null && $frontendLogoUrl !== '')
@@ -135,6 +135,7 @@
                 </button>
             </div>
         </header>
+        @endunless
 
         @php
             $flags = $featureFlags ?? [];
@@ -196,7 +197,7 @@
             </div>
         </main>
 
-        
+        @unless($isDesignerEmbedPreview)
         <div class="cart-sidebar" id="cartSidebar">
             <div class="cart-header">
                 <h2><i class="fas fa-shopping-bag"></i> 注文内容</h2>
@@ -210,7 +211,10 @@
                     <span>合計: </span>
                     <span class="total-price" id="totalPrice">¥0</span>
                 </div>
-                <button class="order-btn" id="orderBtn" disabled><i class="fas fa-check-circle"></i> 注文する</button>
+                <div class="order-actions">
+                    <button class="order-btn order-btn--mobile" id="orderBtn" disabled><i class="fas fa-credit-card"></i> モバイル注文（今すぐ決済）</button>
+                    <button class="order-btn order-btn--in-store" id="inStoreOrderBtn" disabled><i class="fas fa-store"></i> 店内注文（後で決済）</button>
+                </div>
             </div>
         </div>
 
@@ -225,6 +229,7 @@
             </button>
             @endforeach
         </footer>
+        @endunless
     </div>
 
     <meta name="stripe-key" content="{{ env('STRIPE_KEY', '') }}">
@@ -238,6 +243,7 @@
         window.__GOOGLE_WALLET_ENABLED__ = {{ ($googleWalletEnabled ?? false) ? 'true' : 'false' }};
         window.__WALLET_PASS_ADD_BUTTON_IMAGE__ = "/images/add-to-apple-wallet-logo.png";
         window.__GOOGLE_WALLET_ADD_BUTTON_IMAGE__ = "/images/add-to-google-wallet-logo.png";
+        window.__ORDER_MODE__ = @json($orderMode ?? \App\Models\ShopSetting::ORDER_MODE_BOTH);
         window.__LIFF_BUILDER__ = @json($liffBuilderBlocks ?? []);
         window.__LIFF_TAB_LAYOUTS__ = @json($liffTabLayouts ?? []);
         window.__LIFF_TAB_SETTINGS__ = @json($liffTabSettings ?? []);

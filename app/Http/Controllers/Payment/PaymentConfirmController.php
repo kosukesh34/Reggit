@@ -11,9 +11,11 @@ use Illuminate\Validation\Rule;
 
 class PaymentConfirmController extends Controller
 {
-    public function __construct(
-        private PaymentConfirmUseCase $confirmUseCase
-    ) {
+    private PaymentConfirmUseCase $confirmUseCase;
+
+    public function __construct(PaymentConfirmUseCase $confirmUseCase)
+    {
+        $this->confirmUseCase = $confirmUseCase;
     }
 
     public function __invoke(Request $request)

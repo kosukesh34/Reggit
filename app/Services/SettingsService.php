@@ -18,6 +18,7 @@ class SettingsService
             'closedDates' => ShopSetting::getClosedDates($projectId),
             'advanceDays' => ShopSetting::getAdvanceBookingDays($projectId),
             'reservationCapacity' => ShopSetting::getReservationCapacityPerSlot($projectId),
+            'orderMode' => ShopSetting::getOrderMode($projectId),
         ];
     }
 
@@ -40,6 +41,7 @@ class SettingsService
         ShopSetting::setValue('closed_dates', $closedDates, 'json', $projectId);
         ShopSetting::setValue('advance_booking_days', $validated['advance_booking_days'], 'integer', $projectId);
         ShopSetting::setValue('reservation_capacity_per_slot', $validated['reservation_capacity_per_slot'], 'integer', $projectId);
+        ShopSetting::setOrderMode((string) ($validated['order_mode'] ?? ShopSetting::ORDER_MODE_BOTH), $projectId);
     }
 
     /** 予約設定のみ取得（予約メニュー下の設定用） */

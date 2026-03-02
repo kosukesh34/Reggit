@@ -19,7 +19,7 @@
         <a href="{{ admin_route('admin.settings.basic') }}" class="ld-btn ld-btn--ghost" title="設定に戻る"><i class="fas fa-arrow-left"></i></a>
         <h1 class="ld-topbar__title"><i class="fas fa-palette"></i> LINE画面デザイン</h1>
         <div class="ld-topbar__actions">
-            <button type="button" class="ld-btn ld-btn--outline" id="templateBtn"><i class="fas fa-layer-group"></i> テンプレート</button>
+            <button type="button" class="ld-btn ld-btn--outline" id="templateBtn"><i class="fas fa-layer-group"></i> 全テンプレート</button>
             <button type="button" class="ld-btn ld-btn--ghost" id="importBtn" title="JSONを読み込み"><i class="fas fa-file-import"></i></button>
             <button type="button" class="ld-btn ld-btn--ghost" id="exportBtn" title="JSONを書き出し"><i class="fas fa-file-export"></i></button>
             <button type="button" class="ld-btn ld-btn--ghost" id="undoBtn" title="元に戻す" disabled><i class="fas fa-undo"></i></button>
@@ -50,6 +50,8 @@
         <aside class="ld-screens">
             <div class="ld-screens__title">画面を選択</div>
             <div class="ld-screens__list" id="screenList"></div>
+            <div class="ld-screens__title ld-screens__title--templates">このタブですぐ使えるテンプレート</div>
+            <div class="ld-tab-templates" id="tabTemplateList"></div>
         </aside>
 
         {{-- 中央: スマホプレビュー --}}
@@ -129,6 +131,11 @@
     </div>
 </form>
 
+<script src="{{ asset('js/admin/liff-designer/modules/data-preview.js') }}?v={{ time() }}"></script>
+<script src="{{ asset('js/admin/liff-designer/modules/template-manager.js') }}?v={{ time() }}"></script>
+<script src="{{ asset('js/admin/liff-designer/modules/drag-drop.js') }}?v={{ time() }}"></script>
+<script src="{{ asset('js/admin/liff-designer/modules/ui-events.js') }}?v={{ time() }}"></script>
+<script src="{{ asset('js/admin/liff-designer/modules/io.js') }}?v={{ time() }}"></script>
 <script src="{{ asset('js/admin/liff-designer.js') }}?v={{ time() }}"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
