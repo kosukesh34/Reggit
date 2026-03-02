@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Enums\OrderType;
+use App\Enums\PaymentMethod;
 use App\Enums\OrderStatus;
 use App\Models\Member;
 use App\Models\Order;
@@ -24,6 +26,7 @@ class OrderService
     {
         DB::beginTransaction();
         try {
+            $this->validateOrderTypeAndPaymentMethod($orderData, $user->project_id ?? null);
             $orderItems = $this->validateAndPrepareOrderItems($orderData['items']);
             $totalAmount = $this->calculateTotalAmount($orderItems);
 
@@ -122,6 +125,33 @@ class OrderService
         ]);
     }
 
+    private function validateOrderTypeAndPaymentMethod(array $orderData, ?int $projectId): void
+    {
+        $orderType = (string) ($orderData['order_type'] ?? OrderType::MOBILE);
+        $paymentMethod = (string) ($orderData['payment_method'] ?? '');
+        $configuredOrderMode = \App\Models\ShopSetting::getOrderMode($projectId);
+
+        if ($configuredOrderMode === \App\Models\ShopSetting::ORDER_MODE_MOBILE_ONLY && $orderType !== OrderType::MOBILE) {
+            throw new \Exception('現在はモバイル注文のみ利用できます。');
+        }
+        if ($configuredOrderMode === \App\Models\ShopSetting::ORDER_MODE_IN_STORE_ONLY && $orderType !== OrderType::IN_STORE) {
+            throw new \Exception('現在は店内注文のみ利用できます。');
+        }
+
+        if ($orderType === OrderType::IN_STORE) {
+            if ($paymentMethod !== PaymentMethod::CASH) {
+                throw new \Exception('店内注文は後払い（現金）で作成してください。');
+            }
+            return;
+        }
+
+        if ($orderType === OrderType::MOBILE) {
+            if (!in_array($paymentMethod, [PaymentMethod::STRIPE, PaymentMethod::CASH], true)) {
+                throw new \Exception('モバイルオーダーの決済方法が不正です。');
+            }
+        }
+    }
+
     private function createOrderItems(Order $order, array $orderItems): void
     {
         foreach ($orderItems as $item) {
@@ -172,7 +202,7 @@ class OrderService
         }
 
         $order->load('user.member', 'items.product');
-        $member = $order->user?->member;
+        $member = $order->user ? $order->user->member : null;
 
         DB::beginTransaction();
         try {

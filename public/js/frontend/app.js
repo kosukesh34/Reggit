@@ -14,6 +14,11 @@ class MobileOrderApp {
         this.reservationManager = new ReservationManager(this);
         this.announcementManager = new AnnouncementManager(this.apiClient);
         this.checkoutManager = new CheckoutManager(this.apiClient, this.cartManager);
+        this.orderMode = this.getOrderMode();
+        this.designerPreviewSource = this.getDesignerPreviewSource();
+        this.designerPreviewEmbed = this.isDesignerPreviewEmbed();
+        this.designerPreviewSample = this.isDesignerPreviewSample();
+        this.designerPreviewBootstrappedSource = null;
 
         this.currentTab = this.getInitialTab();
         this.init();
@@ -40,6 +45,51 @@ class MobileOrderApp {
         return btn ? tab : null;
     }
 
+    getOrderMode() {
+        if (typeof window === 'undefined') return 'both';
+        const mode = String(window.__ORDER_MODE__ || 'both');
+        if (mode === 'mobile_only' || mode === 'in_store_only' || mode === 'both') return mode;
+        return 'both';
+    }
+
+    getDesignerPreviewSource() {
+        if (typeof window === 'undefined') return null;
+        const params = new URLSearchParams(window.location.search || '');
+        if (params.get('designer_live_preview') !== '1') return null;
+        const source = params.get('designer_source');
+        const allowed = new Set(['products', 'orders', 'stamps', 'coupons', 'queue', 'reservations', 'member', 'member_card', 'gallery', 'announcements']);
+        if (!source || !allowed.has(source)) return null;
+        return source;
+    }
+
+    isDesignerPreviewEmbed() {
+        if (typeof window === 'undefined') return false;
+        const params = new URLSearchParams(window.location.search || '');
+        return params.get('designer_embed') === '1';
+    }
+
+    isDesignerPreviewSample() {
+        if (typeof window === 'undefined') return false;
+        const params = new URLSearchParams(window.location.search || '');
+        return params.get('designer_sample') === '1';
+    }
+
+    getDesignerPreviewTab(source) {
+        const map = {
+            products: 'products',
+            orders: 'orders',
+            stamps: 'stamps',
+            coupons: 'coupons',
+            queue: 'queue',
+            reservations: 'reservations',
+            member: 'member',
+            member_card: 'member',
+            gallery: 'gallery',
+            announcements: 'home',
+        };
+        return map[source] || 'home';
+    }
+
     shouldOpenMemberRegisterOnLoad() {
         if (typeof window === 'undefined') return false;
         const params = new URLSearchParams(window.location.search || '');
@@ -57,8 +107,15 @@ class MobileOrderApp {
         this.deviceManager.init();
         this.preventZoom();
         this.setupEventListeners();
-        this.layoutManager.render(this.currentTab);
+        // デザイナー埋め込みプレビューではカスタムレイアウトを描画せず、
+        // 実画面ローダー（products/member/stamps など）だけを使って表示する
+        if (!(this.designerPreviewSource && this.designerPreviewEmbed)) {
+            this.layoutManager.render(this.currentTab);
+        }
         if (typeof window.__mobileOrderLog === 'function') window.__mobileOrderLog('app.init render done', { tab: this.currentTab });
+        if (this.designerPreviewSource) {
+            this.applyDesignerPreviewMode(false);
+        }
         this.loadProductsWhenReady();
         this.announcementManager.load();
         this.memberManager.preload();
@@ -155,7 +212,7 @@ class MobileOrderApp {
         const closeCartBtn = DomHelper.getElementById(AppConstants.ELEMENT_IDS.CLOSE_CART_BTN);
         const overlay = DomHelper.getElementById(AppConstants.ELEMENT_IDS.OVERLAY);
         if (cartBtn) {
-            cartBtn.setAttribute('data-tooltip', AppConstants.MESSAGES.CART_OPEN_TOOLTIP);
+            cartBtn.removeAttribute('data-tooltip');
             cartBtn.addEventListener('click', () => this.openCart());
         }
         if (closeCartBtn) closeCartBtn.addEventListener('click', () => this.closeCart());
@@ -169,6 +226,100 @@ class MobileOrderApp {
                 if (tab) this.switchTab(tab);
             });
         });
+    }
+
+    applyDesignerPreviewMode(fromSwitch) {
+        if (!this.designerPreviewSource) return;
+        const source = this.designerPreviewSource;
+        const targetTab = this.getDesignerPreviewTab(source);
+        const needsBootstrap = this.designerPreviewBootstrappedSource !== source;
+        document.body.classList.add('designer-live-preview-mode');
+        if (this.designerPreviewEmbed) {
+            document.body.classList.add('designer-live-preview-embed');
+        }
+        const header = document.querySelector('header.header');
+        const cart = document.getElementById('cartSidebar');
+        const overlay = document.getElementById('overlay');
+        const footer = document.querySelector('footer.main-tabs');
+        if (header) header.style.display = 'none';
+        if (cart) cart.style.display = 'none';
+        if (overlay) overlay.style.display = 'none';
+        if (footer) footer.style.display = 'none';
+
+        // 上部のお知らせバーは announcements 以外では非表示にする
+        const topAnnouncements = document.querySelector('main.main-content > #announcementsSection');
+        if (topAnnouncements) {
+            topAnnouncements.style.display = source === 'announcements' ? '' : 'none';
+        }
+
+        if (this.currentTab !== targetTab) {
+            this.switchTab(targetTab);
+            return;
+        }
+
+        // 対象タブ以外のコンテンツを非表示（描画ロジック自体は本番と同じ）
+        DomHelper.querySelectorAll('.tab-content').forEach((content) => {
+            const active = content.id === (targetTab + 'Tab');
+            content.style.display = active ? '' : 'none';
+        });
+
+        if (this.designerPreviewEmbed && needsBootstrap) {
+            this.mountDesignerPreviewSource(source);
+        }
+
+        if (!fromSwitch || needsBootstrap) {
+            const loaderBySource = {
+                products: () => this.loadProducts(),
+                orders: () => this.loadOrdersTab(),
+                stamps: () => this.stampsManager.load(),
+                coupons: () => this.couponsManager.load(),
+                queue: () => this.queueManager.load(),
+                reservations: () => this.checkMembershipAndLoadReservations(),
+                member: () => this.loadMemberTab(this.designerPreviewSample),
+                member_card: () => this.loadMemberTab(this.designerPreviewSample),
+                gallery: () => this.galleryManager.load(),
+                announcements: () => this.announcementManager.load(),
+            };
+            const loader = loaderBySource[source];
+            if (loader) loader();
+            this.designerPreviewBootstrappedSource = source;
+        }
+    }
+
+    mountDesignerPreviewSource(source) {
+        const targetTab = this.getDesignerPreviewTab(source);
+        const sectionIdMap = {
+            home: 'homeSection',
+            products: 'productsSection',
+            orders: 'ordersSection',
+            stamps: 'stampsSection',
+            coupons: 'couponsSection',
+            queue: 'queueSection',
+            member: 'memberSection',
+            reservations: 'reservationsSection',
+            gallery: 'gallerySection',
+        };
+        const sectionId = sectionIdMap[targetTab];
+        if (!sectionId) return;
+        const section = document.getElementById(sectionId);
+        if (!section) return;
+
+        if (source === 'products') {
+            section.innerHTML = `
+                <div class="category-tabs" id="categoryTabs">
+                    <button class="tab-btn active" data-category="all"><i class="fas fa-th-large"></i><span>すべて</span></button>
+                </div>
+                <div class="products-section"><div class="products-grid" id="productsGrid"></div></div>
+            `;
+            return;
+        }
+        if (source === 'announcements') {
+            const topAnnouncements = document.getElementById('announcementsSection');
+            if (topAnnouncements) topAnnouncements.innerHTML = '';
+            section.innerHTML = '';
+            return;
+        }
+        section.innerHTML = '';
     }
 
     setupCategoryEventListeners() {
@@ -191,9 +342,18 @@ class MobileOrderApp {
 
     setupOrderEventListeners() {
         const orderBtn = DomHelper.getElementById(AppConstants.ELEMENT_IDS.ORDER_BTN);
-        if (orderBtn) {
-            orderBtn.addEventListener('click', () => this.checkoutManager.placeOrder());
-        }
+        const inStoreOrderBtn = DomHelper.getElementById(AppConstants.ELEMENT_IDS.IN_STORE_ORDER_BTN);
+        if (orderBtn) orderBtn.addEventListener('click', () => this.checkoutManager.placeMobileOrder());
+        if (inStoreOrderBtn) inStoreOrderBtn.addEventListener('click', () => this.checkoutManager.placeInStoreOrder());
+        this.applyOrderModeButtons();
+    }
+
+    applyOrderModeButtons() {
+        const orderBtn = DomHelper.getElementById(AppConstants.ELEMENT_IDS.ORDER_BTN);
+        const inStoreOrderBtn = DomHelper.getElementById(AppConstants.ELEMENT_IDS.IN_STORE_ORDER_BTN);
+        const mode = this.orderMode || 'both';
+        if (orderBtn) orderBtn.style.display = (mode === 'in_store_only') ? 'none' : '';
+        if (inStoreOrderBtn) inStoreOrderBtn.style.display = (mode === 'mobile_only') ? 'none' : '';
     }
 
     loadProductsWhenReady() {
@@ -308,7 +468,6 @@ class MobileOrderApp {
         const isInCart = cartItem !== undefined;
         const cartQuantity = isInCart ? cartItem.quantity : 0;
         const imageUrl = product.image_url || '';
-        const tooltip = isInCart ? '' : `data-tooltip="${AppConstants.MESSAGES.CART_ADD_TOOLTIP}"`;
         return `
             <div class="product-card ${isInCart ? AppConstants.CSS_CLASSES.IN_CART : ''}" data-product-id="${product.id}">
                 <div class="product-image-wrapper">
@@ -320,7 +479,7 @@ class MobileOrderApp {
                     <div class="product-name">${DomHelper.escapeHtml(product.name)}</div>
                     <div class="product-price">${DomHelper.formatPrice(product.price)}</div>
                     ${isInCart ? `<div class="cart-quantity-info"><span class="cart-quantity-badge">${cartQuantity}個追加済み</span></div>` : ''}
-                    <button class="product-add-btn ${isInCart ? AppConstants.CSS_CLASSES.ADDED : ''}" onclick="app.addToCart(${product.id})" ${tooltip}>
+                    <button class="product-add-btn ${isInCart ? AppConstants.CSS_CLASSES.ADDED : ''}" onclick="app.addToCart(${product.id})">
                         ${isInCart ? '<i class="fas fa-check"></i> 追加済み' : '<i class="fas fa-cart-plus"></i> カートに追加'}
                     </button>
                 </div>
@@ -363,11 +522,13 @@ class MobileOrderApp {
         const cartItems = DomHelper.getElementById(AppConstants.ELEMENT_IDS.CART_ITEMS);
         const total = this.cartManager.getTotalAmount();
         const orderBtn = DomHelper.getElementById(AppConstants.ELEMENT_IDS.ORDER_BTN);
+        const inStoreOrderBtn = DomHelper.getElementById(AppConstants.ELEMENT_IDS.IN_STORE_ORDER_BTN);
         const totalPrice = DomHelper.getElementById(AppConstants.ELEMENT_IDS.TOTAL_PRICE);
 
         if (this.cartManager.isEmpty()) {
             if (cartItems) cartItems.innerHTML = '<div class="empty-cart">カートは空です</div>';
             if (orderBtn) orderBtn.disabled = true;
+            if (inStoreOrderBtn) inStoreOrderBtn.disabled = true;
         } else {
             if (cartItems) {
                 cartItems.innerHTML = this.cartManager.items
@@ -375,7 +536,10 @@ class MobileOrderApp {
                     .join('');
             }
             if (orderBtn) orderBtn.disabled = false;
+            if (inStoreOrderBtn) inStoreOrderBtn.disabled = false;
         }
+        if (this.orderMode === 'mobile_only' && inStoreOrderBtn) inStoreOrderBtn.disabled = true;
+        if (this.orderMode === 'in_store_only' && orderBtn) orderBtn.disabled = true;
         if (totalPrice) totalPrice.textContent = DomHelper.formatPrice(total);
     }
 
@@ -389,10 +553,10 @@ class MobileOrderApp {
                     <div class="cart-item-name">${DomHelper.escapeHtml(item.name)}</div>
                     <div class="cart-item-price">${DomHelper.formatPrice(item.price)}</div>
                     <div class="cart-item-controls">
-                        <button class="quantity-btn" onclick="app.updateQuantity(${item.id}, -1)" data-tooltip="数量を減らす"><i class="fas fa-minus"></i></button>
+                        <button class="quantity-btn" onclick="app.updateQuantity(${item.id}, -1)"><i class="fas fa-minus"></i></button>
                         <span class="quantity">${item.quantity}</span>
-                        <button class="quantity-btn" onclick="app.updateQuantity(${item.id}, 1)" data-tooltip="数量を増やす"><i class="fas fa-plus"></i></button>
-                        <button class="remove-btn" onclick="app.removeFromCart(${item.id})" data-tooltip="${AppConstants.MESSAGES.CART_REMOVE_TOOLTIP}"><i class="fas fa-trash"></i></button>
+                        <button class="quantity-btn" onclick="app.updateQuantity(${item.id}, 1)"><i class="fas fa-plus"></i></button>
+                        <button class="remove-btn" onclick="app.removeFromCart(${item.id})"><i class="fas fa-trash"></i></button>
                     </div>
                 </div>
             </div>
@@ -465,7 +629,12 @@ class MobileOrderApp {
         const tabEl = DomHelper.getElementById(tabIdMap[tab]);
         if (tabEl) DomHelper.addClass(tabEl, AppConstants.CSS_CLASSES.ACTIVE);
 
-        this.layoutManager.render(tab);
+        if (!(this.designerPreviewSource && this.designerPreviewEmbed)) {
+            this.layoutManager.render(tab);
+        }
+        if (this.designerPreviewSource) {
+            this.applyDesignerPreviewMode(true);
+        }
     }
 
     async loadOrdersTab() {
@@ -508,7 +677,12 @@ class MobileOrderApp {
         `;
     }
 
-    loadMemberTab() {
+    loadMemberTab(useSample) {
+        const shouldUseSample = !!useSample && !!this.designerPreviewSource && (this.designerPreviewSource === 'member' || this.designerPreviewSource === 'member_card');
+        if (shouldUseSample) {
+            this.memberManager.render(this.getDesignerSampleMemberData());
+            return;
+        }
         const data = this.memberManager.getMemberData();
         if (data && data.is_member) {
             this.memberManager.render(data);
@@ -516,6 +690,40 @@ class MobileOrderApp {
         } else {
             this.memberManager.load();
         }
+    }
+
+    getDesignerSampleMemberData() {
+        return {
+            is_member: true,
+            points: 1280,
+            current_rank: 'gold',
+            current_rank_label: 'ゴールド',
+            current_rank_color: '#d97706',
+            next_rank_label: 'プラチナ',
+            points_to_next_rank: 720,
+            days_to_next_rank: 18,
+            days_required_for_next_rank: 30,
+            show_points_display: true,
+            show_rank_progress: true,
+            member_card_design: 'default',
+            member_card_display_type: 'card',
+            member_card_code_type: 'barcode',
+            points_expiry: {
+                expires_at_label: '2026/12/31',
+                points_expiring: 200,
+            },
+            rank_up_history: [
+                { from_rank_label: 'ブロンズ', to_rank_label: 'シルバー', achieved_at: '2025/11/03' },
+                { from_rank_label: 'シルバー', to_rank_label: 'ゴールド', achieved_at: '2026/01/20' },
+            ],
+            user: {
+                name: 'サンプル会員',
+            },
+            member: {
+                member_number: '000123456789',
+                points: 1280,
+            },
+        };
     }
 
     async checkMembershipAndLoadReservations() {
