@@ -72,6 +72,7 @@ class MemberUpdateRequest extends FormRequest
         if ($sub > 0) {
             return ['type' => 'subtract', 'points' => $sub, 'description' => $this->input('point_description')];
         }
+
         return null;
     }
 
@@ -85,6 +86,7 @@ class MemberUpdateRequest extends FormRequest
             return null;
         }
         $decoded = json_decode($raw, true);
+
         return is_array($decoded) ? $decoded : null;
     }
 }

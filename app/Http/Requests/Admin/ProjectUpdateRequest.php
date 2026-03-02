@@ -36,10 +36,10 @@ class ProjectUpdateRequest extends FormRequest
             'frontend_logo_url' => 'nullable|url|max:2048',
             'business_hours_start' => 'required|date_format:H:i',
             'business_hours_end' => 'required|date_format:H:i|after:business_hours_start',
-            'line_primary_color' => ['nullable', 'string', 'regex:' . self::HEX_REGEX],
-            'line_primary_dark' => ['nullable', 'string', 'regex:' . self::HEX_REGEX],
-            'line_success_color' => ['nullable', 'string', 'regex:' . self::HEX_REGEX],
-            'line_danger_color' => ['nullable', 'string', 'regex:' . self::HEX_REGEX],
+            'line_primary_color' => ['nullable', 'string', 'regex:'.self::HEX_REGEX],
+            'line_primary_dark' => ['nullable', 'string', 'regex:'.self::HEX_REGEX],
+            'line_success_color' => ['nullable', 'string', 'regex:'.self::HEX_REGEX],
+            'line_danger_color' => ['nullable', 'string', 'regex:'.self::HEX_REGEX],
         ];
     }
 

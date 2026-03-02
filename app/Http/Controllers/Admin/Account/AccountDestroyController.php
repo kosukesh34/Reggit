@@ -13,8 +13,7 @@ class AccountDestroyController extends Controller
     public function __construct(
         private AccountDestroyUseCase $destroyUseCase,
         private RouteContextResolver $routeContextResolver
-    ) {
-    }
+    ) {}
 
     public function __invoke(Request $request, int $id)
     {

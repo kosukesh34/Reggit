@@ -15,8 +15,7 @@ class QueueCallNextUseCase
         private QueueStatsService $statsService,
         private QueueEntryFactory $entryFactory,
         private QueueAdminService $queueAdminService
-    ) {
-    }
+    ) {}
 
     public function handle(): ?QueueEntry
     {
@@ -30,6 +29,7 @@ class QueueCallNextUseCase
         $entry->refresh();
 
         $stats = $this->statsService->getStats($projectId, $entry->queue_number);
+
         return $this->entryFactory->create($entry, $stats);
     }
 

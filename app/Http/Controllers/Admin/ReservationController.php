@@ -13,8 +13,11 @@ use Illuminate\Http\Request;
 class ReservationController extends AdminBaseController
 {
     private AdminReservationIndexUseCase $indexUseCase;
+
     private AdminReservationDetailUseCase $detailUseCase;
+
     private AdminReservationUpdateStatusUseCase $updateStatusUseCase;
+
     private AdminReservationCompleteUseCase $completeUseCase;
 
     public function __construct(
@@ -65,7 +68,7 @@ class ReservationController extends AdminBaseController
         $this->updateStatusUseCase->handle((int) $id, $status);
 
         return redirect()->back()
-            ->with('success', '予約ステータスを「' . AdminStatusLabels::reservationStatusLabel($status) . '」に更新しました');
+            ->with('success', '予約ステータスを「'.AdminStatusLabels::reservationStatusLabel($status).'」に更新しました');
     }
 
     public function completeReservation($id)

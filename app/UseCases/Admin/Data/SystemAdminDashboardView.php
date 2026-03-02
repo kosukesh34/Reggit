@@ -9,6 +9,5 @@ class SystemAdminDashboardView
         public readonly int $projectsCount,
         public readonly int $accountsCount,
         public readonly int $apiTokensCount
-    ) {
-    }
+    ) {}
 }

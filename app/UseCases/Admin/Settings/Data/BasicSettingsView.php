@@ -8,6 +8,5 @@ class BasicSettingsView
     public function __construct(
         public array $settings,
         public array $featureFlags
-    ) {
-    }
+    ) {}
 }

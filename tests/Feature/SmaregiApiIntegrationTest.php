@@ -40,6 +40,7 @@ class SmaregiApiIntegrationTest extends TestCase
         $v = $configKey ? (config($configKey) ?: null) : null;
         $v = $v !== null && $v !== '' ? $v : env($key, '');
         $v = $v !== null && $v !== '' ? $v : (getenv($key) ?: '');
+
         return trim((string) $v);
     }
 
@@ -62,7 +63,7 @@ class SmaregiApiIntegrationTest extends TestCase
         if ($clientId === '' || $clientSecret === '') {
             $this->markTestSkipped(
                 '.env に SMAREGI_CLIENT_ID と SMAREGI_CLIENT_SECRET を設定してください。'
-                . ' Docker の場合はコンテナに .env がマウントされているか、または docker-compose の environment で渡しているか確認してください。'
+                .' Docker の場合はコンテナに .env がマウントされているか、または docker-compose の environment で渡しているか確認してください。'
             );
         }
 
@@ -77,7 +78,7 @@ class SmaregiApiIntegrationTest extends TestCase
     }
 
     /** 実際に店舗一覧を取得できる（受信） */
-    public function test_getStores_実接続で店舗一覧を取得できること(): void
+    public function test_get_stores_実接続で店舗一覧を取得できること(): void
     {
         $service = app(SmaregiApiService::class);
         $result = $service->getStores($this->contractId);
@@ -93,7 +94,7 @@ class SmaregiApiIntegrationTest extends TestCase
     }
 
     /** 実際に会員一覧を取得できる（受信） */
-    public function test_getCustomers_実接続で会員一覧を取得できること(): void
+    public function test_get_customers_実接続で会員一覧を取得できること(): void
     {
         $service = app(SmaregiApiService::class);
         $result = $service->getCustomers($this->contractId, ['limit' => 5]);
@@ -109,11 +110,11 @@ class SmaregiApiIntegrationTest extends TestCase
     }
 
     /** 実際に会員を1件登録できる（送信） */
-    public function test_createCustomer_実接続で会員を1件登録できること(): void
+    public function test_create_customer_実接続で会員を1件登録できること(): void
     {
         $service = app(SmaregiApiService::class);
         // 会員コードは20文字以内の制限あり
-        $code = 'TI' . date('YmdHis');
+        $code = 'TI'.date('YmdHis');
         $body = [
             'customerCode' => $code,
             'lastName' => '統合',
@@ -127,7 +128,7 @@ class SmaregiApiIntegrationTest extends TestCase
         $this->assertNotNull(
             $result,
             '会員登録に失敗しました。スコープ pos.customers:write を有効にし、スマレジの会員必須項目を確認してください。'
-            . ' 詳細は storage/logs/laravel.log の [Smaregi] API request failed を参照してください。'
+            .' 詳細は storage/logs/laravel.log の [Smaregi] API request failed を参照してください。'
         );
         $this->assertIsArray($result);
         $this->assertArrayHasKey('customerId', $result);
@@ -136,12 +137,12 @@ class SmaregiApiIntegrationTest extends TestCase
     }
 
     /** DBの会員とスマレジに登録した会員の会員コードが一致することを実APIで検証 */
-    public function test_integration_DBの会員番号とスマレジの会員コードが一致すること(): void
+    public function test_integration_d_bの会員番号とスマレジの会員コードが一致すること(): void
     {
         $project = Project::factory()->create();
         ShopSetting::setValue('smaregi_contract_id', $this->contractId, 'string', (int) $project->id);
 
-        $code = 'DC' . date('YmdHis');
+        $code = 'DC'.date('YmdHis');
         $user = User::factory()->create(['project_id' => $project->id]);
         $member = Member::factory()->create([
             'project_id' => $project->id,

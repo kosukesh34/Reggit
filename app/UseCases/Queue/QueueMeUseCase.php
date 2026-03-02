@@ -2,13 +2,12 @@
 
 namespace App\UseCases\Queue;
 
+use App\Enums\QueueStatus;
 use App\Models\QueueEntry as QueueEntryModel;
 use App\Services\UserService;
-use App\UseCases\Queue\Data\QueueEntry;
 use App\UseCases\Queue\Data\QueueEntryFactory;
 use App\UseCases\Queue\Data\QueueMeOutput;
 use App\Util\AdminContext;
-use App\Enums\QueueStatus;
 use App\Util\StrHelper;
 use Illuminate\Http\Request;
 
@@ -20,8 +19,7 @@ class QueueMeUseCase
         private UserService $userService,
         private QueueStatsService $statsService,
         private QueueEntryFactory $entryFactory
-    ) {
-    }
+    ) {}
 
     public function handle(Request $request): QueueMeOutput
     {
@@ -64,6 +62,7 @@ class QueueMeUseCase
         }
 
         $queueEntry = $this->entryFactory->create($entry, $stats);
+
         return new QueueMeOutput($queueEntry, $stats['waiting_count'], $stats['estimated_wait_minutes']);
     }
 
@@ -80,6 +79,7 @@ class QueueMeUseCase
         if ($memberId === null) {
             return null;
         }
+
         return QueueEntryModel::where('project_id', $projectId)
             ->where('member_id', $memberId)
             ->whereIn('status', [QueueStatus::WAITING, QueueStatus::CALLED])
@@ -141,7 +141,7 @@ class QueueMeUseCase
 
     private function findActiveEntryFromSession(Request $request, int $projectId): ?QueueEntryModel
     {
-        if (!$request->hasSession()) {
+        if (! $request->hasSession()) {
             return null;
         }
 
@@ -165,7 +165,7 @@ class QueueMeUseCase
 
     private function rememberEntryInSession(Request $request, QueueEntryModel $entry): void
     {
-        if (!$request->hasSession()) {
+        if (! $request->hasSession()) {
             return;
         }
         $request->session()->put($this->getSessionEntryKey((int) $entry->project_id), (int) $entry->id);
@@ -173,7 +173,7 @@ class QueueMeUseCase
 
     private function forgetEntryInSession(Request $request, int $projectId): void
     {
-        if (!$request->hasSession()) {
+        if (! $request->hasSession()) {
             return;
         }
         $request->session()->forget($this->getSessionEntryKey($projectId));
@@ -181,14 +181,15 @@ class QueueMeUseCase
 
     private function getSessionEntryKey(int $projectId): string
     {
-        return self::SESSION_QUEUE_ENTRY_KEY_PREFIX . '_' . $projectId;
+        return self::SESSION_QUEUE_ENTRY_KEY_PREFIX.'_'.$projectId;
     }
 
     private function normalizeString(mixed $value): string
     {
-        if (!is_string($value)) {
+        if (! is_string($value)) {
             return '';
         }
+
         return trim($value);
     }
 
@@ -197,7 +198,7 @@ class QueueMeUseCase
      */
     private function extractQueueIdentifierFromRaw(mixed $raw): array
     {
-        if (!is_string($raw)) {
+        if (! is_string($raw)) {
             return [null, null];
         }
 
@@ -243,7 +244,7 @@ class QueueMeUseCase
             }
         }
 
-        if (empty($params)) {
+        if (! is_array($params) || $params === []) {
             $query = str_contains($normalized, '?')
                 ? (string) parse_url($normalized, PHP_URL_QUERY)
                 : $normalized;
@@ -284,6 +285,7 @@ class QueueMeUseCase
         if (StrHelper::isEmptyStringOrNull($lineUserId)) {
             return false;
         }
+
         return preg_match('/^U[0-9a-f]{32}$/i', $lineUserId) === 1;
     }
 }

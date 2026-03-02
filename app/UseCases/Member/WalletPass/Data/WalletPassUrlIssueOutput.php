@@ -9,6 +9,5 @@ final class WalletPassUrlIssueOutput
 {
     public function __construct(
         public readonly string $url,
-    ) {
-    }
+    ) {}
 }

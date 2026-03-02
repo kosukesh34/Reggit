@@ -14,7 +14,7 @@ class GoogleWalletLoyaltyPayloadBuilderTest extends TestCase
 {
     public function test_build_期待する構造を返すこと(): void
     {
-        $builder = new GoogleWalletLoyaltyPayloadBuilder();
+        $builder = new GoogleWalletLoyaltyPayloadBuilder;
         $params = [
             'classId' => 'issuer.class1',
             'objectId' => 'issuer.obj1',
@@ -45,9 +45,9 @@ class GoogleWalletLoyaltyPayloadBuilderTest extends TestCase
         $this->assertSame(100, $object['loyaltyPoints']['balance']['int']);
     }
 
-    public function test_truncateForWallet_指定長で切り詰めること(): void
+    public function test_truncate_for_wallet_指定長で切り詰めること(): void
     {
-        $builder = new GoogleWalletLoyaltyPayloadBuilder();
+        $builder = new GoogleWalletLoyaltyPayloadBuilder;
 
         $this->assertSame('ab', $builder->truncateForWallet('abcd', 2));
         $this->assertSame('あ', $builder->truncateForWallet('あいう', 1));

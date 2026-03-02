@@ -13,8 +13,7 @@ class AccountFormController extends Controller
     public function __construct(
         private AccountFormUseCase $formUseCase,
         private RouteContextResolver $routeContextResolver
-    ) {
-    }
+    ) {}
 
     public function create(Request $request)
     {

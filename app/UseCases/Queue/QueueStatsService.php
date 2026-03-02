@@ -2,9 +2,9 @@
 
 namespace App\UseCases\Queue;
 
+use App\Enums\QueueStatus;
 use App\Models\QueueEntry;
 use App\Models\ShopSetting;
-use App\Enums\QueueStatus;
 
 class QueueStatsService
 {
@@ -31,6 +31,7 @@ class QueueStatsService
         if ($beforeQueueNumber === null) {
             return null;
         }
+
         return (clone $base)->where('queue_number', '<', $beforeQueueNumber)->count();
     }
 
@@ -40,6 +41,7 @@ class QueueStatsService
             return $waitingCount * $avgMinutes;
         }
         $count = $aheadCount ?? 0;
+
         return $count * $avgMinutes;
     }
 }

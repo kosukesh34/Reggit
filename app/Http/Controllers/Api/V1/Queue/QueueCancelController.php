@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Api\V1\Queue;
 
-use App\Http\Controllers\Api\V1\BaseApiController;
 use App\Enums\QueueStatus;
+use App\Http\Controllers\Api\V1\BaseApiController;
 use App\UseCases\Queue\QueueCancelUseCase;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
@@ -13,8 +13,7 @@ class QueueCancelController extends BaseApiController
 {
     public function __construct(
         private QueueCancelUseCase $cancelUseCase
-    ) {
-    }
+    ) {}
 
     public function __invoke(Request $request, int $id)
     {
@@ -24,7 +23,7 @@ class QueueCancelController extends BaseApiController
                 return $this->error('対象が見つかりません。', 404);
             }
 
-            if (!in_array($entry->status, [QueueStatus::WAITING, QueueStatus::CALLED, QueueStatus::CANCELLED], true)) {
+            if (! in_array($entry->status, [QueueStatus::WAITING, QueueStatus::CALLED, QueueStatus::CANCELLED], true)) {
                 return $this->error('キャンセルできません。', 409);
             }
 
@@ -42,6 +41,7 @@ class QueueCancelController extends BaseApiController
                 'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'error' => $e->getMessage(),
             ]);
+
             return $this->error('キャンセルに失敗しました', 500);
         }
     }

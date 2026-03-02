@@ -9,9 +9,10 @@ final class StrHelper
         if ($value === null) {
             return true;
         }
-        if (!is_string($value)) {
+        if (! is_string($value)) {
             return false;
         }
+
         return $value === '';
     }
 }

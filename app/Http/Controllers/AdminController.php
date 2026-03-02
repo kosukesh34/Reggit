@@ -61,8 +61,7 @@ class AdminController extends Controller
         private StampAdminService $stampAdminService,
         private CouponAdminService $couponAdminService,
         private AnnouncementAdminService $announcementAdminService,
-    ) {
-    }
+    ) {}
 
     /** 自作: 現在の管理コンテキストからプロジェクトIDを解決する */
     protected function resolveAdminProjectId(): int
@@ -72,6 +71,7 @@ class AdminController extends Controller
             return $id;
         }
         $admin = auth('admin')->user();
+
         return AdminUser::resolveCurrentProjectId(
             $admin,
             (int) session('admin_project_id'),
@@ -83,6 +83,7 @@ class AdminController extends Controller
     protected function resolveAdminProjectKey(): string
     {
         $project = AdminContext::getCurrentProject();
+
         return $project ? $project->project_key : 'default';
     }
 
@@ -97,6 +98,7 @@ class AdminController extends Controller
     {
         $stats = $this->dashboardService->getStats();
         $recent_orders = $this->dashboardService->getRecentOrders(10);
+
         return view('admin.dashboard', compact('stats', 'recent_orders'));
     }
 
@@ -104,6 +106,7 @@ class AdminController extends Controller
     public function products()
     {
         $products = $this->productAdminService->getPaginatedList(20);
+
         return view('admin.products', compact('products'));
     }
 
@@ -115,6 +118,7 @@ class AdminController extends Controller
     public function storeProduct(ProductStoreRequest $request)
     {
         $this->productAdminService->create($this->resolveAdminProjectId(), $request->validated());
+
         return redirect()->route('admin.products', $this->buildAdminRouteParams())
             ->with('success', '商品を追加しました');
     }
@@ -122,12 +126,14 @@ class AdminController extends Controller
     public function editProduct($id)
     {
         $product = $this->productAdminService->findOrFail((int) $id);
+
         return view('admin.product-form', compact('product'));
     }
 
     public function updateProduct(ProductUpdateRequest $request, $id)
     {
         $this->productAdminService->update((int) $id, $request->validated());
+
         return redirect()->route('admin.products', $this->buildAdminRouteParams())
             ->with('success', '商品を更新しました');
     }
@@ -135,6 +141,7 @@ class AdminController extends Controller
     public function deleteProduct($id)
     {
         $this->productAdminService->delete((int) $id);
+
         return redirect()->route('admin.products', $this->buildAdminRouteParams())
             ->with('success', '商品を削除しました');
     }
@@ -145,12 +152,14 @@ class AdminController extends Controller
         $orders = $this->orderAdminService->getPaginatedList($request->query('status'), 20);
         $orders->appends($request->query());
         $statusCounts = $this->orderAdminService->getStatusCounts();
+
         return view('admin.orders', compact('orders', 'statusCounts'));
     }
 
     public function orderDetail($id)
     {
         $order = $this->orderAdminService->findOrFail((int) $id);
+
         return view('admin.order-detail', compact('order'));
     }
 
@@ -158,13 +167,15 @@ class AdminController extends Controller
     {
         $status = $request->validated('status');
         $this->orderAdminService->updateStatus((int) $id, $status);
+
         return redirect()->back()
-            ->with('success', '注文ステータスを「' . AdminStatusLabels::orderStatusLabel($status) . '」に更新しました');
+            ->with('success', '注文ステータスを「'.AdminStatusLabels::orderStatusLabel($status).'」に更新しました');
     }
 
     public function completeOrder($id)
     {
         $this->orderAdminService->complete((int) $id);
+
         return redirect()->back()->with('success', '注文を完了しました');
     }
 
@@ -173,6 +184,7 @@ class AdminController extends Controller
     {
         $projectId = $this->resolveAdminProjectId();
         $members = $this->memberAdminService->getPaginatedList($projectId, 20);
+
         return view('admin.members', compact('members'));
     }
 
@@ -182,6 +194,7 @@ class AdminController extends Controller
         $member = $this->memberAdminService->findOrFail((int) $id, $projectId);
         $activeCoupons = $this->memberAdminService->getActiveCouponsForSelect($projectId);
         $activeStampCards = $this->memberAdminService->getActiveStampCardsForSelect($projectId);
+
         return view('admin.member-detail', compact('member', 'activeCoupons', 'activeStampCards'));
     }
 
@@ -189,12 +202,14 @@ class AdminController extends Controller
     public function settingsBasic()
     {
         $settings = $this->settingsService->getBasicSettings($this->resolveAdminProjectId());
+
         return view('admin.settings.basic', ['settings' => $settings]);
     }
 
     public function updateSettingsBasic(SettingsBasicRequest $request)
     {
         $this->settingsService->updateReservationSettings($request->validated(), $this->resolveAdminProjectId());
+
         return redirect()->route('admin.settings.basic', $this->buildAdminRouteParams())
             ->with('success', '基本設定を更新しました');
     }
@@ -202,12 +217,14 @@ class AdminController extends Controller
     public function settingsAdvanced()
     {
         $settings = $this->settingsService->getAdvancedSettings($this->resolveAdminProjectId());
+
         return view('admin.settings.advanced', ['settings' => $settings]);
     }
 
     public function updateSettingsAdvanced(SettingsAdvancedRequest $request)
     {
         $this->settingsService->updateLineThemeSettings($request->validated(), $this->resolveAdminProjectId());
+
         return redirect()->route('admin.settings.advanced', $this->buildAdminRouteParams())
             ->with('success', '配色設定を更新しました');
     }
@@ -215,12 +232,14 @@ class AdminController extends Controller
     public function settingsMenu()
     {
         $settings = $this->settingsService->getMenuSettings($this->resolveAdminProjectId());
+
         return view('admin.settings.menu', ['settings' => $settings]);
     }
 
     public function updateSettingsMenu(SettingsMenuRequest $request)
     {
         $this->settingsService->updateMenuSettings($request->validated(), $this->resolveAdminProjectId());
+
         return redirect()->route('admin.settings.menu', $this->buildAdminRouteParams())
             ->with('success', 'メニュー設定を更新しました');
     }
@@ -286,9 +305,10 @@ class AdminController extends Controller
         ShopSetting::setValue('show_rank_progress', $request->boolean('show_rank_progress', true), 'boolean', $projectId);
 
         $rows = collect($validated['ranks'] ?? [])
-            ->filter(fn ($row) => !StrHelper::isEmptyStringOrNull($row['key'] ?? null))
+            ->filter(fn ($row) => ! StrHelper::isEmptyStringOrNull($row['key'] ?? null))
             ->map(function ($row, $index) {
                 $color = $row['card_color'] ?? null;
+
                 return [
                     'key' => (string) $row['key'],
                     'label' => (string) ($row['label'] ?? $row['key']),
@@ -365,6 +385,7 @@ class AdminController extends Controller
         $templates = ShopSetting::defaultLiffDesignerTemplates();
         $customCss = ShopSetting::getLiffCustomCss($projectId);
         $tabSettings = ShopSetting::getLiffTabSettings($projectId);
+
         return view('admin.settings.liff-designer', compact('layouts', 'templates', 'customCss', 'tabSettings'));
     }
 
@@ -373,7 +394,7 @@ class AdminController extends Controller
         $projectId = $this->resolveAdminProjectId();
         $layoutsJson = $request->input('layouts_json');
         $decoded = json_decode($layoutsJson, true);
-        if (!is_array($decoded)) {
+        if (! is_array($decoded)) {
             return redirect()->back()->withErrors(['layouts' => 'レイアウトが不正です']);
         }
         ShopSetting::setLiffTabLayouts($decoded, $projectId);
@@ -385,6 +406,7 @@ class AdminController extends Controller
                 ShopSetting::setLiffTabSettings($settings, $projectId);
             }
         }
+
         return redirect()->route('admin.settings.liff-designer', $this->buildAdminRouteParams())
             ->with('success', 'LIFFデザインを更新しました');
     }
@@ -392,6 +414,7 @@ class AdminController extends Controller
     public function galleryCategories()
     {
         $categories = GalleryCategory::orderBy('sort_order')->orderBy('id')->get();
+
         return view('admin.gallery.categories', compact('categories'));
     }
 
@@ -405,6 +428,7 @@ class AdminController extends Controller
         $validated['is_active'] = $request->boolean('is_active');
         $validated['project_id'] = $this->resolveAdminProjectId();
         GalleryCategory::create($validated);
+
         return redirect()->route('admin.gallery.categories', $this->buildAdminRouteParams())
             ->with('success', 'カテゴリを追加しました');
     }
@@ -419,6 +443,7 @@ class AdminController extends Controller
         $validated['is_active'] = $request->boolean('is_active');
         $category = GalleryCategory::findOrFail($id);
         $category->update($validated);
+
         return redirect()->route('admin.gallery.categories', $this->buildAdminRouteParams())
             ->with('success', 'カテゴリを更新しました');
     }
@@ -427,6 +452,7 @@ class AdminController extends Controller
     {
         $category = GalleryCategory::findOrFail($id);
         $category->delete();
+
         return redirect()->route('admin.gallery.categories', $this->buildAdminRouteParams())
             ->with('success', 'カテゴリを削除しました');
     }
@@ -439,6 +465,7 @@ class AdminController extends Controller
             $query->where('category_id', $request->query('category_id'));
         }
         $items = $query->get();
+
         return view('admin.gallery.items', compact('items', 'categories'));
     }
 
@@ -456,6 +483,7 @@ class AdminController extends Controller
         $validated['is_active'] = $request->boolean('is_active');
         $validated['project_id'] = $this->resolveAdminProjectId();
         GalleryItem::create($validated);
+
         return redirect()->route('admin.gallery.items', $this->buildAdminRouteParams())
             ->with('success', '画像を追加しました');
     }
@@ -474,6 +502,7 @@ class AdminController extends Controller
         $validated['is_active'] = $request->boolean('is_active');
         $item = GalleryItem::findOrFail($id);
         $item->update($validated);
+
         return redirect()->route('admin.gallery.items', $this->buildAdminRouteParams())
             ->with('success', '画像を更新しました');
     }
@@ -482,6 +511,7 @@ class AdminController extends Controller
     {
         $item = GalleryItem::findOrFail($id);
         $item->delete();
+
         return redirect()->route('admin.gallery.items', $this->buildAdminRouteParams())
             ->with('success', '画像を削除しました');
     }
@@ -580,6 +610,7 @@ class AdminController extends Controller
     public function stamps()
     {
         $stampCards = $this->stampAdminService->getPaginatedList(20);
+
         return view('admin.stamps.index', compact('stampCards'));
     }
 
@@ -591,6 +622,7 @@ class AdminController extends Controller
     public function storeStamp(StampStoreRequest $request)
     {
         $this->stampAdminService->create($this->resolveAdminProjectId(), $request->validated());
+
         return redirect()->route('admin.stamps', $this->buildAdminRouteParams())
             ->with('success', 'スタンプカードを追加しました');
     }
@@ -598,12 +630,14 @@ class AdminController extends Controller
     public function editStamp(int $id)
     {
         $stampCard = $this->stampAdminService->findOrFail($id);
+
         return view('admin.stamps.edit', compact('stampCard'));
     }
 
     public function updateStamp(StampUpdateRequest $request, int $id)
     {
         $this->stampAdminService->update($id, $request->validated());
+
         return redirect()->route('admin.stamps', $this->buildAdminRouteParams())
             ->with('success', 'スタンプカードを更新しました');
     }
@@ -611,6 +645,7 @@ class AdminController extends Controller
     public function deleteStamp(int $id)
     {
         $this->stampAdminService->delete($id);
+
         return redirect()->route('admin.stamps', $this->buildAdminRouteParams())
             ->with('success', 'スタンプカードを削除しました');
     }
@@ -620,6 +655,7 @@ class AdminController extends Controller
     {
         $projectId = $this->resolveAdminProjectId();
         $coupons = $this->couponAdminService->getPaginatedList($projectId, 20);
+
         return view('admin.coupons.index', compact('coupons'));
     }
 
@@ -627,6 +663,7 @@ class AdminController extends Controller
     {
         $projectId = $this->resolveAdminProjectId();
         $stampCards = $this->couponAdminService->getActiveStampCardsForSelect($projectId);
+
         return view('admin.coupons.create', compact('stampCards'));
     }
 
@@ -639,6 +676,7 @@ class AdminController extends Controller
                 ->withInput()
                 ->with('error', $e->getMessage());
         }
+
         return redirect()->route('admin.coupons', $this->buildAdminRouteParams())
             ->with('success', 'クーポンを作成しました');
     }
@@ -648,6 +686,7 @@ class AdminController extends Controller
         $projectId = $this->resolveAdminProjectId();
         $coupon = $this->couponAdminService->findOrFail($id, $projectId);
         $stampCards = $this->couponAdminService->getActiveStampCardsForSelect($projectId);
+
         return view('admin.coupons.edit', compact('coupon', 'stampCards'));
     }
 
@@ -661,6 +700,7 @@ class AdminController extends Controller
                 ->withInput()
                 ->with('error', $e->getMessage());
         }
+
         return redirect()->route('admin.coupons', $this->buildAdminRouteParams())
             ->with('success', 'クーポンを更新しました');
     }
@@ -669,6 +709,7 @@ class AdminController extends Controller
     {
         $projectId = $this->resolveAdminProjectId();
         $this->couponAdminService->delete($id, $projectId);
+
         return redirect()->route('admin.coupons', $this->buildAdminRouteParams())
             ->with('success', 'クーポンを削除しました');
     }
@@ -677,6 +718,7 @@ class AdminController extends Controller
     public function announcements()
     {
         $announcements = $this->announcementAdminService->getPaginatedList(20);
+
         return view('admin.announcements.index', compact('announcements'));
     }
 
@@ -688,6 +730,7 @@ class AdminController extends Controller
     public function storeAnnouncement(AnnouncementStoreRequest $request)
     {
         $this->announcementAdminService->create($this->resolveAdminProjectId(), $request->validated());
+
         return redirect()->route('admin.announcements', $this->buildAdminRouteParams())
             ->with('success', 'お知らせを追加しました');
     }
@@ -695,12 +738,14 @@ class AdminController extends Controller
     public function editAnnouncement(int $id)
     {
         $announcement = $this->announcementAdminService->findOrFail($id);
+
         return view('admin.announcements.edit', compact('announcement'));
     }
 
     public function updateAnnouncement(AnnouncementUpdateRequest $request, int $id)
     {
         $this->announcementAdminService->update($id, $request->validated());
+
         return redirect()->route('admin.announcements', $this->buildAdminRouteParams())
             ->with('success', 'お知らせを更新しました');
     }
@@ -708,6 +753,7 @@ class AdminController extends Controller
     public function deleteAnnouncement(int $id)
     {
         $this->announcementAdminService->delete($id);
+
         return redirect()->route('admin.announcements', $this->buildAdminRouteParams())
             ->with('success', 'お知らせを削除しました');
     }
@@ -720,6 +766,7 @@ class AdminController extends Controller
         $waitingCount = $this->queueAdminService->getWaitingCount();
         $estimatedWaitMinutes = $this->queueAdminService->getEstimatedWaitMinutes($projectId);
         $waitingQueueNumbers = $this->queueAdminService->getWaitingQueueNumbers();
+
         return view('admin.queue.index', compact('entries', 'waitingCount', 'estimatedWaitMinutes', 'waitingQueueNumbers'));
     }
 
@@ -727,8 +774,9 @@ class AdminController extends Controller
     {
         $status = $request->validated('status');
         $this->queueAdminService->updateStatus($id, $status);
+
         return redirect()->back()
-            ->with('success', 'ステータスを「' . AdminStatusLabels::queueStatusLabel($status) . '」に更新しました');
+            ->with('success', 'ステータスを「'.AdminStatusLabels::queueStatusLabel($status).'」に更新しました');
     }
 
     // --- 予約 ---
@@ -740,12 +788,14 @@ class AdminController extends Controller
             $request->query('date'),
             $request->query()
         );
+
         return view('admin.reservations', $payload);
     }
 
     public function reservationDetail($id)
     {
         $reservation = $this->reservationAdminService->findOrFail((int) $id);
+
         return view('admin.reservation-detail', compact('reservation'));
     }
 
@@ -753,13 +803,15 @@ class AdminController extends Controller
     {
         $status = $request->validated('status');
         $this->reservationAdminService->updateStatus((int) $id, $status);
+
         return redirect()->back()
-            ->with('success', '予約ステータスを「' . AdminStatusLabels::reservationStatusLabel($status) . '」に更新しました');
+            ->with('success', '予約ステータスを「'.AdminStatusLabels::reservationStatusLabel($status).'」に更新しました');
     }
 
     public function completeReservation($id)
     {
         $this->reservationAdminService->complete((int) $id);
+
         return redirect()->back()->with('success', '予約を完了しました');
     }
 }

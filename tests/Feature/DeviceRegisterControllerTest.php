@@ -52,7 +52,7 @@ class DeviceRegisterControllerTest extends TestCase
         ]);
     }
 
-    public function test_register_同じ端末IDなら更新されること(): void
+    public function test_register_同じ端末_i_dなら更新されること(): void
     {
         $this->createProject();
 
@@ -86,4 +86,3 @@ class DeviceRegisterControllerTest extends TestCase
         ]);
     }
 }
-

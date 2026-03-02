@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Log;
 class QueueController extends Controller
 {
     private QueueStoreUseCase $storeUseCase;
+
     private QueueMeUseCase $meUseCase;
 
     public function __construct(
@@ -45,7 +46,7 @@ class QueueController extends Controller
                 'queue_entry' => $dto->toArray(),
             ], 201);
         } catch (\Exception $e) {
-            Log::error('Queue store error: ' . $e->getMessage());
+            Log::error('Queue store error: '.$e->getMessage());
 
             return response()->json(['error' => '順番待ちの登録に失敗しました'], 500);
         }
@@ -71,7 +72,7 @@ class QueueController extends Controller
                 'queue_entry' => $output->queueEntry->toArray(),
             ]);
         } catch (\Exception $e) {
-            Log::error('Queue me error: ' . $e->getMessage());
+            Log::error('Queue me error: '.$e->getMessage());
 
             return response()->json(['error' => '取得に失敗しました'], 500);
         }

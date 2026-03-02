@@ -19,8 +19,7 @@ class WalletPassUrlController extends Controller
         private WalletPassUrlIssueUseCase $urlIssueUseCase,
         private UserService $userService,
         private MemberService $memberService
-    ) {
-    }
+    ) {}
 
     public function __invoke(Request $request): Response
     {
@@ -30,7 +29,7 @@ class WalletPassUrlController extends Controller
 
         $user = $this->userService->getOrCreateUser($request);
         $memberData = $this->memberService->getMemberData($user);
-        if (!isset($memberData['is_member']) || $memberData['is_member'] === false) {
+        if (! isset($memberData['is_member']) || $memberData['is_member'] === false) {
             return response()->json(['error' => '会員登録が必要です'], Response::HTTP_FORBIDDEN);
         }
 

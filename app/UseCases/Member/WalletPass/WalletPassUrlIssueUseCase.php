@@ -13,19 +13,20 @@ use Illuminate\Support\Str;
 class WalletPassUrlIssueUseCase
 {
     private const TOKEN_CACHE_PREFIX = 'wallet_pass_token:';
+
     private const TOKEN_TTL_MINUTES = 3;
 
     public function handle(int $userId, int $projectId, string $projectKey): WalletPassUrlIssueOutput
     {
         $token = Str::random(64);
-        $key = self::TOKEN_CACHE_PREFIX . $token;
+        $key = self::TOKEN_CACHE_PREFIX.$token;
         Cache::put($key, [
             'user_id' => $userId,
             'project_id' => $projectId,
         ], now()->addMinutes(self::TOKEN_TTL_MINUTES));
 
         // Safari 等で開いたときに .pkpass を直接取得できる URL
-        $url = url('/api/members/me/wallet-pass?' . http_build_query([
+        $url = url('/api/members/me/wallet-pass?'.http_build_query([
             'project_key' => $projectKey,
             'token' => $token,
         ]));

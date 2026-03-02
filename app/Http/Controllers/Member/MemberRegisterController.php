@@ -30,12 +30,14 @@ class MemberRegisterController extends Controller
         try {
             $result = $this->registerUseCase->handle($request, $validated);
             $status = $result->alreadyRegistered ? 200 : 201;
+
             return response()->json($result->member->toArray(), $status);
         } catch (\Exception $e) {
             LogHelper::error('[Member] register failed', [
                 'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'error' => $e->getMessage(),
             ]);
+
             return response()->json(['error' => $e->getMessage()], 400);
         }
     }
