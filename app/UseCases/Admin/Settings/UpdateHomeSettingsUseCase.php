@@ -17,10 +17,11 @@ class UpdateHomeSettingsUseCase
             if (StrHelper::isEmptyStringOrNull($tab) || $defaults->has($tab) === false) {
                 continue;
             }
-            $items[] = array_merge($defaults->get($tab), [
+            $default = $defaults->get($tab);
+            $items[] = array_merge($default, [
                 'tab' => $tab,
-                'label' => $row['label'] ?? $defaults->get($tab)['label'],
-                'icon' => $row['icon'] ?? $defaults->get($tab)['icon'],
+                'label' => StrHelper::isEmptyStringOrNull($row['label'] ?? null) ? $default['label'] : (string) $row['label'],
+                'icon' => StrHelper::isEmptyStringOrNull($row['icon'] ?? null) ? $default['icon'] : (string) $row['icon'],
                 'order' => (int) ($row['order'] ?? $index),
                 'enabled' => isset($row['enabled']) && (bool) $row['enabled'],
             ]);

@@ -8,6 +8,7 @@
     <h1 class="page-header-title"><i class="fas fa-bullhorn"></i> お知らせの設定</h1>
     <p class="page-header-desc">お知らせ機能のON/OFFと新規作成時のデフォルトを設定します。</p>
 </div>
+@include('admin.settings._context', ['pageKey' => 'announcements'])
 @if(session('success'))<div class="alert alert-success"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>@endif
 <form action="{{ admin_route('admin.settings.announcements.update') }}" method="POST">
     @csrf

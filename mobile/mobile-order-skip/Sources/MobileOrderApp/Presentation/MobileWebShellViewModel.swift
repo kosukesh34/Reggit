@@ -54,6 +54,8 @@ final class MobileWebShellViewModel {
         config.liffURLString
     }
 
+    private var pushTokenObserver: (any NSObjectProtocol)?
+
     func onAppear() {
         isLoading = true
         showWhiteScreenFallback = false
@@ -61,10 +63,36 @@ final class MobileWebShellViewModel {
         didAutoReload = false
         startMonitoringWhiteScreen()
         onNavigationFinished()
+        observePushTokenUpdate()
     }
 
     func onDisappear() {
         stopMonitoringWhiteScreen()
+        if let observer = pushTokenObserver {
+            NotificationCenter.default.removeObserver(observer)
+            pushTokenObserver = nil
+        }
+    }
+
+    /// When native (OneSignal) provides a subscription ID after the page has loaded, inject it into the WebView.
+    private func observePushTokenUpdate() {
+        pushTokenObserver = NotificationCenter.default.addObserver(
+            forName: .oneSignalPushTokenDidUpdate,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            guard let self else { return }
+            let token = (notification.userInfo?["token"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard let token, !token.isEmpty else { return }
+            let escaped = token
+                .replacingOccurrences(of: "\\", with: "\\\\")
+                .replacingOccurrences(of: "\"", with: "\\\"")
+                .replacingOccurrences(of: "\n", with: "\\n")
+            let script = "typeof window.__nativeSetPushToken === 'function' && window.__nativeSetPushToken(\"\(escaped)\");"
+            Task { @MainActor in
+                _ = try? await self.navigator.evaluateJavaScript(script)
+            }
+        }
     }
 
     func onNavigationFinished() {

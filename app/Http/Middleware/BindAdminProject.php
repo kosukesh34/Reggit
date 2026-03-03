@@ -19,12 +19,21 @@ class BindAdminProject
             return $next($request);
         }
 
+        $admin = $request->user('admin');
         $project = Project::where('project_key', $projectKey)->where('is_active', true)->first();
+
+        // project_key が "default" で該当が無い場合、管理者がアクセス可能な先頭プロジェクトを使用する
+        if ($project === null && $projectKey === 'default' && $admin !== null) {
+            $project = Project::whereIn('id', $admin->getAllowedProjectIds())
+                ->where('is_active', true)
+                ->orderBy('name')
+                ->first();
+        }
+
         if ($project === null) {
             abort(404, 'プロジェクトが見つかりません。');
         }
 
-        $admin = $request->user('admin');
         if ($admin === null || $admin->canAccessProject((int) $project->id) === false) {
             abort(403, 'このプロジェクトへのアクセス権がありません。');
         }

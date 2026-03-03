@@ -468,6 +468,33 @@ $couponId = $result['couponId'] ?? $result['coupon_id'] ?? null;
   フォームの `code`, `name`, `type`, `value`, `start_at`, `end_at`, `min_order_amount`, `description` などを、API の `serialNumber`, `couponName`, `awardType`, `awardValue`, `startDate`, `endDate`, `minTargetPrice`, `summary` などに変換している。
 - **登録**: `CouponAdminService::create()` が、スマレジ契約ありの場合に先に `SmaregiCouponSyncService::registerToSmaregi()` を呼ぶ。**API が成功した場合のみ** DB に保存し、`smaregi_coupon_id` を付与する。失敗時は `RuntimeException` を投げ、**DB には保存しない**。コントローラーで catch し、作成画面にリダイレクトして `session('error')` でメッセージを表示する。
 - **更新**: `CouponAdminService::update()` が先に `updateOnSmaregi()` または `registerToSmaregi()` を呼ぶ。**API が成功した場合のみ** DB を更新する。失敗時は `RuntimeException` を投げ、**DB は更新しない**。コントローラーで catch し、編集画面にリダイレクトしてエラーメッセージを表示する。
+- **削除**: `CouponAdminService::delete()` が、スマレジ契約ありで `smaregi_coupon_id` がある場合に先に `SmaregiCouponSyncService::deleteOnSmaregi()` を呼ぶ。**API が成功した場合のみ** DB から削除する。失敗時は `RuntimeException` を投げ、コントローラーで catch して一覧にリダイレクトし `session('error')` で表示する。
+
+### 商品登録・更新・削除の実装箇所
+
+- **ボディ組み立て**: `app/Services/Smaregi/SmaregiProductRegisterService.php` の `buildBodyFromArray()`。  
+  フォームの `name`, `price`, `description`, `is_available` などを、API の `productName`, `price`（string）, `displayFlag`, `description` などに変換。`categoryId` はスマレジの部門一覧の先頭を利用（登録前にスマレジで部門が1件以上必要）。
+- **登録**: `ProductAdminService::create()` が、スマレジ契約ありの場合に先に `SmaregiProductRegisterService::registerToSmaregi()` を呼ぶ。**API が成功した場合のみ** DB に保存し、`smaregi_product_id` を付与する。失敗時は `RuntimeException` を投げ、**DB には保存しない**。コントローラーで catch し、作成画面にリダイレクトして `session('error')` でメッセージを表示する。
+- **更新**: `ProductAdminService::update()` が先に `updateOnSmaregi()` を呼ぶ（既存商品に `smaregi_product_id` がない場合は `registerToSmaregi()` で新規登録）。**API が成功した場合のみ** DB を更新する。
+- **削除**: `ProductAdminService::delete()` が、スマレジ連携済み商品の場合は先に `deleteOnSmaregi()` を呼ぶ。**API が成功した場合のみ** DB から削除する。
+- **スコープ**: 商品の登録・更新・削除には `.env` の `SMAREGI_SCOPE` に `pos.products:write` および部門取得のため `pos.products:read` が必要。
+- **在庫**: 商品の作成・更新時に `stock` が含まれる場合、`SmaregiProductRegisterService::syncStockToSmaregi()` で先頭店舗の在庫を `pos/stocks/{product_id}` に反映する。`pos.stock:write` スコープが必要。店舗が0件の場合は在庫同期はスキップされる。
+
+### 会員ランク設定の実装箇所
+
+- **同期**: 設定画面でランク・ポイント設定を保存する際、`UpdateRankSettingsUseCase::handle()` が**DB保存の前に** `SmaregiCustomerRankSyncService::sync()` を呼ぶ。スマレジ契約がある場合、ランク一覧を `pos/customer_ranks` に登録・更新・削除してから、ShopSetting に保存する。失敗時は `RuntimeException` を投げ、RanksController で catch して `session('error')` で表示する。スコープは `pos.customers:write`。
+
+### 会員（退会）の実装箇所
+
+- **退会**: `MemberWithdrawUseCase::handle()` が、会員に `smaregi_customer_id` がありかつプロジェクトにスマレジ契約がある場合、先に `SmaregiApiService::deleteCustomer()` を呼ぶ。**API が成功した場合のみ** 会員・ユーザーをソフトデリートする。失敗時は `RuntimeException` を投げ、退会APIのコントローラーで catch して 500 でメッセージを返す。会員の**新規登録・更新**は `MemberService::registerMember()` および `MemberAdminService::updateMemberProfile()` で、いずれもスマレジへ先に登録/更新してからDBを保存している。
+
+### 店舗・部門のAPI
+
+- `SmaregiApiService` に `createStore` / `updateStore` / `deleteStore`、`createDepartment` / `updateDepartment` / `deleteDepartment` を用意済み。管理画面で店舗・部門のCRUDを行う場合は、同様に「スマレジへ先に登録・更新・削除してからDB」の流れで連携できる。
+
+### スマレジに該当APIがないデータ（独自機能）
+
+スタンプカード・お知らせ・ギャラリー・予約設定・待ち行列など、スマレジPOS API に直接対応するエンドポイントがないデータは、**DB のみ**で管理し、スマレジ同期対象外である。これらはアプリ独自の機能としてそのまま利用できる。
 
 ---
 
@@ -488,8 +515,14 @@ $couponId = $result['couponId'] ?? $result['coupon_id'] ?? null;
 
 ### 403 Forbidden
 
-- スコープ不足の可能性。`.env` の `SMAREGI_SCOPE` に `pos.transactions:read` と `pos.transactions:write` が含まれているか確認する。
+- スコープ不足の可能性。`.env` の `SMAREGI_SCOPE` に `pos.transactions:read` / `pos.transactions:write`（クーポン）、`pos.products:read` / `pos.products:write`（商品）が含まれているか確認する。
 - プラン制限（例: giftee はプレミアムプラス以上）に違反していないか確認する。
+
+### 商品登録に失敗する
+
+- スマレジに**部門（カテゴリ）が1件以上**登録されていないと商品登録は失敗する。先にスマレジ管理画面で部門を作成する。
+- `pos.products:write` スコープが `SMAREGI_SCOPE` に含まれているか確認する。
+- ログに `[Smaregi]` で API エラー内容が出力される。`storage/logs/laravel.log` を確認する。
 
 ### 一覧取得で 404 や空になる
 
