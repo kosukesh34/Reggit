@@ -11,7 +11,7 @@
     <div class="status-filters">
         <a href="{{ admin_route('admin.orders', ['status' => 'all']) }}" 
            class="status-filter {{ !request('status') || request('status') === 'all' ? 'active' : '' }}">
-            <i class="fas fa-list"></i> すべて
+            <i class="fas fa-check-circle"></i> 決済済み
             <span class="badge">{{ $statusCounts['all'] }}</span>
         </a>
         <a href="{{ admin_route('admin.orders', ['status' => 'pending']) }}" 

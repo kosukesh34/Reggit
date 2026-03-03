@@ -13,6 +13,7 @@
     <span class="breadcrumb-sep">/</span>
     <span>ランク・ポイント</span>
 </nav>
+@include('admin.settings._context', ['pageKey' => 'ranks'])
 
 <form action="{{ admin_route('admin.settings.ranks.update') }}" method="POST" id="ranksSettingsForm">
     @csrf
@@ -78,14 +79,43 @@
 
                     <div class="ranks-settings-subsection">
                         <h4 class="ranks-settings-subtitle"><i class="fas fa-coins"></i> ポイント</h4>
+                        <p class="form-text text-muted">モバイルオーダーで注文完了時に付与するポイントを設定します。</p>
                         <div class="ranks-settings-fields">
+                            <div class="form-group">
+                                <label for="points_per_order" class="form-label">注文ごとの固定ポイント（pt）</label>
+                                <input type="number" name="points_per_order" id="points_per_order" class="form-control" value="{{ old('points_per_order', $view->pointsPerOrder ?? 0) }}" min="0" max="100000" placeholder="0で無効">
+                                <p class="form-text text-muted">例: 100 で毎回の注文に100pt付与。0の場合は付与しません。</p>
+                            </div>
                             <div class="form-group">
                                 <label for="point_earn_rate" class="form-label">付与レート（円/1pt）</label>
                                 <input type="number" name="point_earn_rate" id="point_earn_rate" class="form-control" value="{{ old('point_earn_rate', $view->pointEarnRate ?? 100) }}" min="1" max="100000" required>
+                                <p class="form-text text-muted">例: 100 で100円ごとに1pt付与（1000円で10pt）。</p>
                             </div>
                             <div class="form-group">
                                 <label for="points_valid_days" class="form-label">有効期限（日）</label>
                                 <input type="number" name="points_valid_days" id="points_valid_days" class="form-control" value="{{ old('points_valid_days', $view->pointsValidDays ?? 365) }}" min="1" max="3650" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="ranks-settings-subsection">
+                        <h4 class="ranks-settings-subtitle"><i class="fas fa-stamp"></i> スタンプ（注文時付与）</h4>
+                        <p class="form-text text-muted">モバイルオーダーで注文完了時にスタンプを付与する場合は設定します。未設定の場合は付与しません。</p>
+                        <div class="ranks-settings-fields">
+                            <div class="form-group">
+                                <label for="stamp_earn_per_amount" class="form-label">付与レート（円/1スタンプ）</label>
+                                <input type="number" name="stamp_earn_per_amount" id="stamp_earn_per_amount" class="form-control" value="{{ old('stamp_earn_per_amount', $view->stampEarnPerAmount ?? 0) }}" min="0" max="10000000" placeholder="0で無効">
+                                <p class="form-text text-muted">例: 1000 で1000円ごとに1スタンプ付与。0の場合は付与しません。</p>
+                            </div>
+                            <div class="form-group">
+                                <label for="order_stamp_card_id" class="form-label">付与先スタンプカード</label>
+                                <select name="order_stamp_card_id" id="order_stamp_card_id" class="form-control">
+                                    <option value="">付与しない</option>
+                                    @foreach($view->stampCardsForSelect ?? [] as $card)
+                                        <option value="{{ $card->id }}" {{ (string)old('order_stamp_card_id', $view->orderStampCardId ?? '') === (string)$card->id ? 'selected' : '' }}>{{ $card->name }}（{{ $card->required_stamps }}個で達成）</option>
+                                    @endforeach
+                                </select>
+                                <p class="form-text text-muted">スタンプカードが無い場合は <a href="{{ admin_route('admin.stamps.create') }}">スタンプ</a> から作成してください。</p>
                             </div>
                         </div>
                     </div>

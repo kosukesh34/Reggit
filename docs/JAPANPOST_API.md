@@ -9,6 +9,16 @@
   - 自宅PCで `php artisan serve` している → そのPCの回線の公衆IP
   - レンタルサーバーやVPSで動かしている → そのサーバーの固定IP（例: 162.120.184.21）
 
+### APP_URL（ngrok）の IP を確認したい場合
+
+別のサービス（コールバック先の許可など）で「ngrok 側の IP アドレス」の登録が必要なときは、次のコマンドで APP_URL のホスト名を解決した IP を表示できます。
+
+```bash
+php artisan app:show-ngrok-ip
+```
+
+ログにも出力する場合: `php artisan app:show-ngrok-ip --log`（`storage/logs/laravel.log` に追記されます）。
+
 ### 送信元IPの確認方法
 
 **Laravel や ngrok を動かしている同じマシン**で、次を実行すると「日本郵便APIに見えているはずのIP」が表示されます。

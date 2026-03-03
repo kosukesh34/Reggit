@@ -56,4 +56,15 @@ let logger: Logger = Logger(subsystem: "jp.gamechanger.mobileorder", category: "
     /* SKIP @bridge */public func onLowMemory() {
         logger.debug("onLowMemory")
     }
+
+    /// Called by native (Android) when OneSignal subscription ID is saved. Posts a notification so the WebView injects the token and the web sends it to the backend.
+    /* SKIP @bridge */public func onPushTokenReceived(_ token: String) {
+        let trimmed = token.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        NotificationCenter.default.post(
+            name: .oneSignalPushTokenDidUpdate,
+            object: nil,
+            userInfo: ["token": trimmed]
+        )
+    }
 }

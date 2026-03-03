@@ -50,7 +50,13 @@ class ProductController extends AdminBaseController
 
     public function storeProduct(ProductStoreRequest $request)
     {
-        $this->storeUseCase->handle($this->resolveAdminProjectId(), $request->validated());
+        try {
+            $this->storeUseCase->handle($this->resolveAdminProjectId(), $request->validated());
+        } catch (\RuntimeException $e) {
+            return redirect()->route('admin.products.create', $this->buildAdminRouteParams())
+                ->withInput()
+                ->with('error', $e->getMessage());
+        }
 
         return redirect()->route('admin.products', $this->buildAdminRouteParams())
             ->with('success', '商品を追加しました');
@@ -58,14 +64,20 @@ class ProductController extends AdminBaseController
 
     public function editProduct($id)
     {
-        $product = $this->editUseCase->handle((int) $id);
+        $product = $this->editUseCase->handle($this->resolveAdminProjectId(), (int) $id);
 
         return view('admin.product-form', compact('product'));
     }
 
     public function updateProduct(ProductUpdateRequest $request, $id)
     {
-        $this->updateUseCase->handle((int) $id, $request->validated());
+        try {
+            $this->updateUseCase->handle((int) $id, $request->validated());
+        } catch (\RuntimeException $e) {
+            return redirect()->route('admin.products.edit', array_merge($this->buildAdminRouteParams(), ['id' => $id]))
+                ->withInput()
+                ->with('error', $e->getMessage());
+        }
 
         return redirect()->route('admin.products', $this->buildAdminRouteParams())
             ->with('success', '商品を更新しました');
@@ -73,7 +85,12 @@ class ProductController extends AdminBaseController
 
     public function deleteProduct($id)
     {
-        $this->deleteUseCase->handle((int) $id);
+        try {
+            $this->deleteUseCase->handle((int) $id);
+        } catch (\RuntimeException $e) {
+            return redirect()->route('admin.products', $this->buildAdminRouteParams())
+                ->with('error', $e->getMessage());
+        }
 
         return redirect()->route('admin.products', $this->buildAdminRouteParams())
             ->with('success', '商品を削除しました');

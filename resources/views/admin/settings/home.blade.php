@@ -23,11 +23,15 @@
 
 <div class="page-header">
     <h1 class="page-header-title"><i class="fas fa-home"></i> ホーム設定</h1>
-    <p class="page-header-desc">LINE画面（LIFF）で表示するタブを選択し、ドラッグで並び順を変更できます。</p>
+    <p class="page-header-desc">LINE画面（LIFF）で表示するタブの表示ON/OFF・並び順・ラベル・アイコンを一括で設定できます。</p>
 </div>
+@include('admin.settings._context', ['pageKey' => 'home'])
 
 @if(session('success'))
     <div class="alert alert-success"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>
+@endif
+@if(session('info'))
+    <div class="alert alert-info"><i class="fas fa-info-circle"></i> {{ session('info') }}</div>
 @endif
 
 <form action="{{ admin_route('admin.settings.home.update') }}" method="POST" id="home-settings-form">
@@ -37,14 +41,16 @@
             <h2 class="card-title"><i class="fas fa-th-large"></i> 表示するタブ</h2>
         </div>
         <div class="card-body">
-            <p class="form-text mb-3">表示するタブにチェックを入れてください。行をドラッグして並び順を変更できます。表示していないタブは灰色で表示されます。</p>
+            <p class="form-text mb-3">表示するタブにチェックを入れ、行をドラッグして並び順を変更できます。ラベルとアイコンもここで編集できます。表示していないタブは灰色で表示されます。</p>
             <div class="table-responsive">
                 <table class="table table-striped">
                     <thead>
                         <tr>
                             <th style="width:44px" aria-label="並び替え"></th>
                             <th style="width:80px">表示</th>
-                            <th>タブ</th>
+                            <th style="width:100px">タブ（キー）</th>
+                            <th>ラベル</th>
+                            <th style="width:180px">アイコン</th>
                         </tr>
                     </thead>
                     <tbody class="home-settings-tbody">
@@ -55,18 +61,24 @@
                             </td>
                             <td>
                                 <input type="hidden" name="tabs[{{ $index }}][tab]" value="{{ $tab['tab'] }}">
-                                <input type="hidden" name="tabs[{{ $index }}][label]" value="{{ $tab['label'] }}">
-                                <input type="hidden" name="tabs[{{ $index }}][icon]" value="{{ $tab['icon'] }}">
                                 <input type="hidden" class="home-settings-order-input" name="tabs[{{ $index }}][order]" value="{{ $tab['order'] }}">
                                 <label class="checkbox-label">
                                     <input type="checkbox" name="tabs[{{ $index }}][enabled]" value="1" {{ $tab['enabled'] ? 'checked' : '' }} class="home-settings-enabled-cb">
-                                    <span>表示する</span>
+                                    <span>表示</span>
                                 </label>
                             </td>
                             <td>
-                                <i class="fas {{ $tab['icon'] ?? 'fa-circle' }}" style="margin-right:8px;color:#6b7280"></i>
-                                {{ $tab['label'] }}
-                                <span class="text-muted">({{ $tab['tab'] }})</span>
+                                <span class="text-muted">{{ $tab['tab'] }}</span>
+                            </td>
+                            <td>
+                                <input type="text" class="form-control" name="tabs[{{ $index }}][label]" value="{{ old("tabs.{$index}.label", $tab['label']) }}" placeholder="表示名">
+                            </td>
+                            <td>
+                                <select class="form-control" name="tabs[{{ $index }}][icon]">
+                                    @foreach($availableIcons ?? [] as $icon)
+                                        <option value="{{ $icon }}" {{ ($tab['icon'] ?? '') === $icon ? 'selected' : '' }}>{{ $icon }}</option>
+                                    @endforeach
+                                </select>
                             </td>
                         </tr>
                         @endforeach

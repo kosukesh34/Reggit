@@ -14,6 +14,7 @@
     <h1 class="page-header-title"><i class="fas fa-plug"></i> スマレジ・プラットフォームAPI 連携</h1>
     <p class="page-header-desc">スマレジのPOS・会員データと連携するための設定です。スマレジ・デベロッパーズでアプリを登録し、以下のURLを設定してください。</p>
 </div>
+@include('admin.settings._context', ['pageKey' => 'smaregi'])
 
 @if(session('success'))
     <div class="alert alert-success"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>
@@ -40,6 +41,10 @@
     <form action="{{ admin_route('admin.settings.smaregi.sync-products') }}" method="POST" class="d-inline" onsubmit="return confirm('スマレジに登録されている商品をこのプロジェクトの商品一覧に同期します。既存の同名商品は更新されます。よろしいですか？');">
         @csrf
         <button type="submit" class="btn btn-outline-primary btn-sm"><i class="fas fa-sync-alt"></i> スマレジから商品を同期</button>
+    </form>
+    <form action="{{ admin_route('admin.settings.smaregi.full-sync-products') }}" method="POST" class="d-inline" onsubmit="return confirm('DBとスマレジの商品を完全同期します。\n・スマレジにあってDBにない商品 → DBに登録\n・DBにあってスマレジにない商品 → スマレジに登録\nデータ漏れがないように両方を揃えます。よろしいですか？');">
+        @csrf
+        <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-exchange-alt"></i> 完全同期（双方向）</button>
     </form>
 </div>
 
