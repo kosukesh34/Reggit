@@ -14,8 +14,8 @@ return [
     'client_id' => env('SMAREGI_CLIENT_ID', ''),
     'client_secret' => env('SMAREGI_CLIENT_SECRET', ''),
 
-    /** 実接続テストやローカルで利用する契約ID（任意）。未設定時は DB のプロジェクト紐付けを参照 */
-    'contract_id' => env('SMAREGI_CONTRACT_ID', ''),
+    /** デフォルト契約ID（常に固定）。未設定時はこの値を使用。env で SMAREGI_CONTRACT_ID を指定すれば上書き可能 */
+    'contract_id' => env('SMAREGI_CONTRACT_ID', 'sb_skx928r2'),
 
     'id_base_url' => env('SMAREGI_ID_BASE_URL', 'https://id.smaregi.dev'),
     'api_base_url' => env('SMAREGI_API_BASE_URL', 'https://api.smaregi.dev'),

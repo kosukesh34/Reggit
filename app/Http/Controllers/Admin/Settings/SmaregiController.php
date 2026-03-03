@@ -48,7 +48,7 @@ class SmaregiController extends AdminBaseController
             ->with('success', 'スマレジ連携を更新しました');
     }
 
-    /** スマレジの商品をDBに同期する */
+    /** スマレジの商品をDBに同期する（スマレジ→DB のみ） */
     public function syncProducts(Request $request)
     {
         $projectId = $this->resolveAdminProjectId();
@@ -71,6 +71,37 @@ class SmaregiController extends AdminBaseController
                 ->with('success', $msg);
         } catch (\Throwable $e) {
             return redirect()->route('admin.settings.smaregi', $this->buildAdminRouteParams())
+                ->with('error', $e->getMessage());
+        }
+    }
+
+    /** DB とスマレジの商品を完全同期する（双方向・データ漏れなく両者を揃える） */
+    public function fullSyncProducts(Request $request)
+    {
+        $projectId = $this->resolveAdminProjectId();
+        $redirectTo = $request->get('from') === 'pos-data'
+            ? 'admin.settings.smaregi.pos-data'
+            : 'admin.settings.smaregi';
+        try {
+            $result = $this->smaregiProductSyncService->fullSync($projectId);
+            $msg = sprintf(
+                '完全同期しました（スマレジ→DB: 新規 %d・更新 %d、DB→スマレジ: %d 件登録、失敗: %d）',
+                $result['created'],
+                $result['updated'],
+                $result['pushed_to_smaregi'],
+                $result['failed']
+            );
+            if ($result['failed'] > 0 && isset($result['errors']) && $result['errors'] !== []) {
+                $msg .= '。失敗詳細: '.implode('; ', array_slice($result['errors'], 0, 5));
+                if (count($result['errors']) > 5) {
+                    $msg .= ' …';
+                }
+            }
+
+            return redirect()->route($redirectTo, $this->buildAdminRouteParams())
+                ->with('success', $msg);
+        } catch (\Throwable $e) {
+            return redirect()->route($redirectTo, $this->buildAdminRouteParams())
                 ->with('error', $e->getMessage());
         }
     }
