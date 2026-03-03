@@ -95,14 +95,17 @@ struct BundleMobileWebConfigRepository: MobileWebConfigRepository {
         return trimmed
     }
 
+    /// Info.plist に LIFF URL が一切入っていない場合のフォールバック（xcconfig の #include 失敗時など）。Skip.env の LIFF_BASE_URL と揃えること。
+    private static let fallbackBaseUrlIOS = "https://unadministrable-idiocratically-annalee.ngrok-free.dev"
+
     private func defaultBaseUrl() -> String {
         if isAndroidRuntime() {
             return "http://10.0.2.2:8080"
         }
         if isIOSRuntime() {
-            return "http://localhost:8080"
+            return Self.fallbackBaseUrlIOS
         }
-        return "http://localhost:8080"
+        return Self.fallbackBaseUrlIOS
     }
 }
 
@@ -151,7 +154,7 @@ struct DefaultNativeDeviceContextProvider: NativeDeviceContextProvider {
     var appVersion: String {
         let short = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
         let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String
-        let shortValue = (short?.isEmpty == false) ? short! : "1.0.0"
+        let shortValue = short.flatMap { $0.isEmpty ? nil : $0 } ?? "1.0.0"
         if let build, !build.isEmpty {
             return "\(shortValue)(\(build))"
         }

@@ -132,6 +132,15 @@
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1430;
 				LastUpgradeCheck = 1630;
+				TargetAttributes = {
+					499CD4382AC5B799001AE8D8 /* MobileOrderApp App */ = {
+						SystemCapabilities = {
+							com.apple.Push = {
+								enabled = 1;
+							};
+						};
+					};
+				};
 			};
 			buildConfigurationList = 49F90C232A52156200F06D93 /* Build configuration list for PBXProject "MobileOrderApp" */;
 			compatibilityVersion = "Xcode 14.0";
@@ -146,6 +155,7 @@
 			);
 			mainGroup = 49F90C1F2A52156200F06D93;
 			packageReferences = (
+				496B7EAE2A6B7EAE00C401E0 /* XCLocalSwiftPackageReference "mobile-order-skip" */,
 				49A1OSIG2E01000000000003 /* XCRemoteSwiftPackageReference "OneSignal-XCFramework" */,
 			);
 			productRefGroup = 496BDBEC2B89A47800C09264 /* Products */;
@@ -212,7 +222,6 @@
 				ENABLE_PREVIEWS = YES;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = com.reggit.default;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -228,7 +237,6 @@
 				ENABLE_PREVIEWS = YES;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = com.reggit.default;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -294,6 +302,13 @@
 		};
 /* End XCConfigurationList section */
 
+/* Begin XCLocalSwiftPackageReference section */
+		496B7EAE2A6B7EAE00C401E0 /* XCLocalSwiftPackageReference "mobile-order-skip" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ..;
+		};
+/* End XCLocalSwiftPackageReference section */
+
 /* Begin XCRemoteSwiftPackageReference section */
 		49A1OSIG2E01000000000003 /* XCRemoteSwiftPackageReference "OneSignal-XCFramework" */ = {
 			isa = XCRemoteSwiftPackageReference;
@@ -308,6 +323,7 @@
 /* Begin XCSwiftPackageProductDependency section */
 		491F27812DA55B72004926EE /* MobileOrderApp */ = {
 			isa = XCSwiftPackageProductDependency;
+			package = 496B7EAE2A6B7EAE00C401E0 /* XCLocalSwiftPackageReference "mobile-order-skip" */;
 			productName = MobileOrderApp;
 		};
 		49A1OSIG2E01000000000002 /* OneSignalFramework */ = {

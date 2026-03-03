@@ -53,6 +53,16 @@ struct BuildNativeInjectionScriptUseCase {
                 return true;
             };
 
+            // Apple Wallet 等を Safari で開くため。ネイティブが mobileorderapp://openExternal?url=... をハンドルして Safari を開く。
+            window.__nativeOpenExternalUrl__ = window.__nativeOpenExternalUrl__ || function(url) {
+                if (typeof url !== 'string' || !url) return false;
+                try {
+                    const encoded = encodeURIComponent(url);
+                    window.location.href = 'mobileorderapp://openExternal?url=' + encoded;
+                    return true;
+                } catch (e) { return false; }
+            };
+
             window.__NATIVE_TARGET_TAB__ = targetTab;
 
             const enforceViewport = () => {
@@ -119,19 +129,28 @@ struct BuildNativeInjectionScriptUseCase {
                     if (document.body) document.body.style.setProperty('--native-viewport-height', vh + 'px');
                 };
                 applyVisualViewportHeight();
-                if (typeof window.visualViewport !== 'undefined') {
+                if (typeof window.visualViewport !== 'undefined' && !window.__NATIVE_VISUAL_VIEWPORT_BOUND__) {
+                    window.__NATIVE_VISUAL_VIEWPORT_BOUND__ = true;
                     window.visualViewport.addEventListener('resize', applyVisualViewportHeight);
                     window.visualViewport.addEventListener('scroll', applyVisualViewportHeight);
                 }
-                // Android: WebView がレイアウトされて innerHeight が取れるようになったら viewport を再適用
-                if (isAndroidPlatform && typeof window.addEventListener === 'function') {
-                    const reapplyOnResize = () => {
-                        if (window.innerHeight > 0) {
-                            enforceViewport();
+                // Android: リスナーを一度だけバインド（再帰的な enforceViewport 呼び出しはしない）
+                if (isAndroidPlatform && typeof window.addEventListener === 'function' && !window.__NATIVE_ANDROID_RESIZE_BOUND__) {
+                    window.__NATIVE_ANDROID_RESIZE_BOUND__ = true;
+                    const applyAndroidViewport = () => {
+                        if (document.documentElement) {
+                            document.documentElement.style.overflowX = 'hidden';
+                            document.documentElement.style.touchAction = 'pan-y';
+                            document.documentElement.style.maxWidth = '100vw';
+                        }
+                        if (document.body) {
+                            document.body.style.overflowX = 'hidden';
+                            document.body.style.touchAction = 'pan-y';
+                            document.body.style.maxWidth = '100vw';
                         }
                     };
-                    window.addEventListener('resize', reapplyOnResize);
-                    if (window.innerHeight > 0) setTimeout(reapplyOnResize, 100);
+                    window.addEventListener('resize', applyAndroidViewport);
+                    setTimeout(applyAndroidViewport, 100);
                 }
             };
 
@@ -165,20 +184,32 @@ struct BuildNativeInjectionScriptUseCase {
                 }
 
                 if (window.app && typeof window.app.switchTab === 'function') {
-                    window.app.switchTab(targetTab);
+                    const current = String(window.app.currentTab || '');
+                    if (current !== targetTab) {
+                        window.app.switchTab(targetTab);
+                    }
+                    window.__NATIVE_LAST_APPLIED_TAB__ = targetTab;
                     return true;
                 }
                 const btn = document.querySelector(`.main-tab-btn[data-tab="${targetTab}"]`);
-                if (btn && typeof btn.click === 'function') {
+                if (btn && typeof btn.click === 'function' && !btn.classList.contains('active')) {
                     btn.click();
+                    window.__NATIVE_LAST_APPLIED_TAB__ = targetTab;
                     return true;
                 }
                 return false;
             };
 
-            if (!window.__NATIVE_TAB_SYNC_TIMER__) {
+            if (window.__NATIVE_LAST_APPLIED_TAB__ !== targetTab && !window.__NATIVE_TAB_SYNC_TIMER__) {
+                let retryCount = 0;
                 window.__NATIVE_TAB_SYNC_TIMER__ = setInterval(() => {
+                    retryCount += 1;
                     if (applyTab()) {
+                        clearInterval(window.__NATIVE_TAB_SYNC_TIMER__);
+                        window.__NATIVE_TAB_SYNC_TIMER__ = null;
+                        return;
+                    }
+                    if (retryCount >= 40) {
                         clearInterval(window.__NATIVE_TAB_SYNC_TIMER__);
                         window.__NATIVE_TAB_SYNC_TIMER__ = null;
                     }
