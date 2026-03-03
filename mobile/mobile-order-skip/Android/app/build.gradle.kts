@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.android.application)
     id("skip-build-plugin")
+    id("com.google.gms.google-services") version "4.4.2" apply true
 }
 
 skip {
@@ -61,9 +62,11 @@ android {
         val liffProjectKeyAndroid = readSkipEnvValue("LIFF_PROJECT_KEY_ANDROID", liffProjectKey)
         val liffFixedTab = readSkipEnvValue("LIFF_FIXED_TAB", "products")
         val liffFixedTabAndroid = readSkipEnvValue("LIFF_FIXED_TAB_ANDROID", liffFixedTab)
+        val oneSignalAppId = readSkipEnvValue("ONE_SIGNAL_APP_ID", "")
         // Android では Bundle 経由で共通キーを参照するケースがあるため、
         // 共通キーにも Android 向け URL を設定して白画面（ngrok エラーページ遷移）を防ぐ。
         manifestPlaceholders["LIFF_BASE_URL"] = liffBaseUrlAndroid
+        manifestPlaceholders["ONE_SIGNAL_APP_ID"] = oneSignalAppId
         manifestPlaceholders["LIFF_BASE_URL_ANDROID"] = liffBaseUrlAndroid
         manifestPlaceholders["LIFF_PROJECT_KEY"] = liffProjectKey
         manifestPlaceholders["LIFF_PROJECT_KEY_ANDROID"] = liffProjectKeyAndroid
@@ -118,4 +121,9 @@ android {
             proguardFiles(getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro")
         }
     }
+}
+
+dependencies {
+    // OneSignal push notifications (FCM is used under the hood; configure google-services.json)
+    implementation("com.onesignal:OneSignal:[5.0.0, 5.99.99]")
 }

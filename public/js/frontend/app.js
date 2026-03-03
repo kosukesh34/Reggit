@@ -678,8 +678,14 @@ class MobileOrderApp {
     }
 
     loadMemberTab(useSample) {
-        const shouldUseSample = !!useSample && !!this.designerPreviewSource && (this.designerPreviewSource === 'member' || this.designerPreviewSource === 'member_card');
-        if (shouldUseSample) {
+        const isDesignerPreviewMember = !!this.designerPreviewSource && (this.designerPreviewSource === 'member' || this.designerPreviewSource === 'member_card');
+        if (isDesignerPreviewMember && useSample) {
+            // デザイナー埋め込みプレビュー: バックエンドから渡されたランク設定ベースの実表示用ペイロードを優先（DBの会員証設定を反映）
+            const payload = typeof window !== 'undefined' && window.__DESIGNER_PREVIEW_MEMBER_PAYLOAD__;
+            if (payload && typeof payload === 'object' && payload.is_member) {
+                this.memberManager.render(payload);
+                return;
+            }
             this.memberManager.render(this.getDesignerSampleMemberData());
             return;
         }

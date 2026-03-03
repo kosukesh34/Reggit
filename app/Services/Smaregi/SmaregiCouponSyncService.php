@@ -3,22 +3,22 @@
 namespace App\Services\Smaregi;
 
 use App\Models\Coupon;
+use App\Util\StrHelper;
 use Illuminate\Support\Facades\Log;
 
-/**
- * アプリで作成・更新したクーポンをスマレジPOSに同期する。
- * プロジェクトにスマレジ契約が紐づいている場合のみ実行する。
- *
- * スマレジPOS API: https://developers.smaregi.dev/platform-api-reference/apis/pos/
- * クーポン登録・更新のパラメータは公式仕様書を参照。パラメータ名が異なる場合は要調整。
- */
 class SmaregiCouponSyncService
 {
-    /** 特典タイプ: 2=割引（率） */
     private const AWARD_TYPE_RATE = '2';
 
-    /** 特典タイプ: 1=値引（金額） */
     private const AWARD_TYPE_AMOUNT = '1';
+
+    private const SERIAL_NUMBER_MAX_LENGTH = 20;
+
+    private const COUPON_NAME_MAX_LENGTH = 85;
+
+    private const SUMMARY_MAX_LENGTH = 255;
+
+    private const MIN_TARGET_PRICE_MAX = 9999999999;
 
     private SmaregiApiService $smaregiApi;
 
@@ -28,16 +28,13 @@ class SmaregiCouponSyncService
     }
 
     /**
-     * スマレジに契約がある場合、フォームデータを先にスマレジへ登録し、成功時のみ返却する。
-     * 新規作成時用。返却された smaregi_coupon_id を $data に含めてDB保存すること。
-     *
-     * @param  array<string, mixed>  $data  バリデーション済みフォームデータ（code, name, type, value, start_at, end_at 等）
-     * @return array{smaregi_coupon_id: string}|null 成功時は ['smaregi_coupon_id' => '...']、失敗または契約なしは null
+     * @param array<string, string|int|float|bool|array|null> $data フォーム（code, name, type, value, start_at, end_at 等）
+     * @return array{smaregi_coupon_id: string}|null
      */
     public function registerToSmaregi(int $projectId, array $data): ?array
     {
         $contractId = $this->smaregiApi->getContractIdForProject($projectId);
-        if ($contractId === null || $contractId === '') {
+        if (StrHelper::isEmptyStringOrNull($contractId)) {
             return null;
         }
         $body = $this->buildBodyFromArray($data);
@@ -52,21 +49,17 @@ class SmaregiCouponSyncService
         if ($smaregiId === null) {
             return null;
         }
-        Log::info('[Smaregi] Coupon registered on POS', ['smaregi_coupon_id' => $smaregiId]);
 
         return ['smaregi_coupon_id' => $smaregiId];
     }
 
     /**
-     * スマレジに契約がある場合、フォームデータでスマレジを更新し、成功時のみ true を返す。
-     * 更新時用。true の場合のみDBを更新すること。
-     *
-     * @param  array<string, mixed>  $data  バリデーション済みフォームデータ
+     * @param array<string, string|int|float|bool|array|null> $data フォームデータ
      */
     public function updateOnSmaregi(int $projectId, string $smaregiCouponId, array $data): bool
     {
         $contractId = $this->smaregiApi->getContractIdForProject($projectId);
-        if ($contractId === null || $contractId === '') {
+        if (StrHelper::isEmptyStringOrNull($contractId)) {
             return true;
         }
         $body = $this->buildBodyFromArray($data);
@@ -74,12 +67,23 @@ class SmaregiCouponSyncService
             return false;
         }
         $result = $this->smaregiApi->updateCoupon($contractId, $smaregiCouponId, $body);
-        if ($result === null) {
-            return false;
-        }
-        Log::info('[Smaregi] Coupon updated on POS', ['smaregi_coupon_id' => $smaregiCouponId]);
 
-        return true;
+        return $result !== null;
+    }
+
+    /**
+     * スマレジに契約がある場合、スマレジ上のクーポンを削除する。成功時 true。
+     */
+    public function deleteOnSmaregi(int $projectId, string $smaregiCouponId): bool
+    {
+        $contractId = $this->smaregiApi->getContractIdForProject($projectId);
+        if (StrHelper::isEmptyStringOrNull($contractId)) {
+            return true;
+        }
+
+        $result = $this->smaregiApi->deleteCoupon($contractId, $smaregiCouponId);
+
+        return $result !== null;
     }
 
     /**
@@ -99,7 +103,7 @@ class SmaregiCouponSyncService
     public function sync(Coupon $coupon): bool
     {
         $contractId = $this->smaregiApi->getContractIdForProject($coupon->project_id);
-        if ($contractId === null || $contractId === '') {
+        if (StrHelper::isEmptyStringOrNull($contractId)) {
             return false;
         }
 
@@ -108,19 +112,15 @@ class SmaregiCouponSyncService
             return false;
         }
 
-        if ($coupon->smaregi_coupon_id !== null && $coupon->smaregi_coupon_id !== '') {
-            $result = $this->smaregiApi->updateCoupon($contractId, $coupon->smaregi_coupon_id, $body);
+        $smaregiId = $coupon->smaregi_coupon_id ?? '';
+        if (! StrHelper::isEmptyStringOrNull($smaregiId)) {
+            $result = $this->smaregiApi->updateCoupon($contractId, $smaregiId, $body);
             if ($result !== null) {
-                Log::info('[Smaregi] Coupon updated on POS', [
-                    'coupon_id' => $coupon->id,
-                    'smaregi_coupon_id' => $coupon->smaregi_coupon_id,
-                ]);
-
                 return true;
             }
-            Log::warning('[Smaregi] Coupon update failed, may try create', [
+            Log::warning('[Smaregi] coupon sync update failed', [
+                'project_id' => $coupon->project_id,
                 'coupon_id' => $coupon->id,
-                'smaregi_coupon_id' => $coupon->smaregi_coupon_id,
             ]);
             $coupon->smaregi_coupon_id = null;
             $coupon->save();
@@ -128,60 +128,52 @@ class SmaregiCouponSyncService
 
         $result = $this->smaregiApi->createCoupon($contractId, $body);
         if ($result === null) {
-            Log::warning('[Smaregi] Coupon create failed', [
+            Log::warning('[Smaregi] coupon sync create failed', [
+                'project_id' => $coupon->project_id,
                 'coupon_id' => $coupon->id,
-                'code' => $coupon->code,
             ]);
 
             return false;
         }
 
-        $smaregiId = $this->extractCouponIdFromResponse($result);
-        if ($smaregiId !== null) {
-            $coupon->smaregi_coupon_id = $smaregiId;
+        $newId = $this->extractCouponIdFromResponse($result);
+        if ($newId !== null) {
+            $coupon->smaregi_coupon_id = $newId;
             $coupon->save();
-            Log::info('[Smaregi] Coupon created on POS', [
-                'coupon_id' => $coupon->id,
-                'smaregi_coupon_id' => $smaregiId,
-            ]);
         }
 
         return true;
     }
 
     /**
-     * フォームデータ（配列）をスマレジPOS API のリクエストボディに変換する。
-     *
-     * @param  array<string, mixed>  $data
-     * @return array<string, mixed>
-     */
-    /**
-     * スマレジPOS API クーポン登録・更新用ボディ。公式仕様に準拠（required・文字数制限・型）。
+     * @param array<string, string|int|float|bool|array|null> $data
+     * @return array<string, string|int|float|bool|null>
      */
     private function buildBodyFromArray(array $data): array
     {
-        $code = trim((string) ($data['code'] ?? ''));
-        if ($code === '') {
+        $code = isset($data['code']) ? trim((string) $data['code']) : '';
+        if (StrHelper::isEmptyStringOrNull($code)) {
             return [];
         }
         $name = trim((string) ($data['name'] ?? $code));
         $awardType = ($data['type'] ?? 'percent') === 'percent' ? self::AWARD_TYPE_RATE : self::AWARD_TYPE_AMOUNT;
         $value = (float) ($data['value'] ?? 0);
+        $couponName = $name !== '' ? $name : $code;
         $body = [
-            'serialNumber' => mb_substr($code, 0, 20),
-            'couponName' => mb_substr($name !== '' ? $name : $code, 0, 85),
+            'serialNumber' => mb_substr($code, 0, self::SERIAL_NUMBER_MAX_LENGTH),
+            'couponName' => mb_substr($couponName, 0, self::COUPON_NAME_MAX_LENGTH),
             'awardType' => $awardType,
             'awardValue' => (string) (int) round($value),
             'applyConditionDivision' => '0',
             'couponDivision' => '0',
             'combineDivision' => '3',
         ];
-        $summary = trim((string) ($data['description'] ?? ''));
+        $summary = isset($data['description']) ? trim((string) $data['description']) : '';
         if ($summary !== '') {
-            $body['summary'] = mb_substr($summary, 0, 255);
+            $body['summary'] = mb_substr($summary, 0, self::SUMMARY_MAX_LENGTH);
         }
         $minOrder = (int) ($data['min_order_amount'] ?? 0);
-        if ($minOrder > 0 && $minOrder <= 9999999999) {
+        if ($minOrder > 0 && $minOrder <= self::MIN_TARGET_PRICE_MAX) {
             $body['minTargetPrice'] = (string) $minOrder;
         }
         $startAt = $data['start_at'] ?? null;
@@ -199,7 +191,7 @@ class SmaregiCouponSyncService
     /**
      * アプリの Coupon をスマレジPOS API のリクエストボディに変換する。
      *
-     * @return array<string, mixed>
+     * @return array<string, string|int|float|bool|null>
      */
     private function buildCouponBody(Coupon $coupon): array
     {
@@ -207,7 +199,7 @@ class SmaregiCouponSyncService
     }
 
     /**
-     * @param  array<int|string, mixed>  $response
+     * @param array<int|string, string|int|float|bool|array|null> $response スマレジAPI応答
      */
     private function extractCouponIdFromResponse(array $response): ?string
     {

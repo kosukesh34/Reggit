@@ -35,14 +35,32 @@ class SettingsService
         $projectId = $projectId ?? 1;
         ShopSetting::setValue('business_hours_start', $validated['business_hours_start'], 'time', $projectId);
         ShopSetting::setValue('business_hours_end', $validated['business_hours_end'], 'time', $projectId);
-        ShopSetting::setValue('reservation_time_slots', $validated['reservation_time_slots'], 'json', $projectId);
-        ShopSetting::setValue('closed_days', $validated['closed_days'] ?? [], 'json', $projectId);
-        $closedDates = array_values(array_filter($validated['closed_dates'] ?? [], function ($date) {
-            return $date !== null && $date !== '';
-        }));
-        ShopSetting::setValue('closed_dates', $closedDates, 'json', $projectId);
-        ShopSetting::setValue('advance_booking_days', $validated['advance_booking_days'], 'integer', $projectId);
-        ShopSetting::setValue('reservation_capacity_per_slot', $validated['reservation_capacity_per_slot'], 'integer', $projectId);
+
+        // 基本設定画面からは予約詳細項目を送らないため、送信された場合のみ更新する。
+        if (array_key_exists('reservation_time_slots', $validated) && is_array($validated['reservation_time_slots'])) {
+            ShopSetting::setValue('reservation_time_slots', $validated['reservation_time_slots'], 'json', $projectId);
+        }
+
+        if (array_key_exists('closed_days', $validated) && is_array($validated['closed_days'])) {
+            $closedDays = array_values(array_map('intval', $validated['closed_days']));
+            ShopSetting::setValue('closed_days', $closedDays, 'json', $projectId);
+        }
+
+        if (array_key_exists('closed_dates', $validated) && is_array($validated['closed_dates'])) {
+            $closedDates = array_values(array_filter($validated['closed_dates'], function ($date) {
+                return $date !== null && $date !== '';
+            }));
+            ShopSetting::setValue('closed_dates', $closedDates, 'json', $projectId);
+        }
+
+        if (array_key_exists('advance_booking_days', $validated) && $validated['advance_booking_days'] !== null) {
+            ShopSetting::setValue('advance_booking_days', (int) $validated['advance_booking_days'], 'integer', $projectId);
+        }
+
+        if (array_key_exists('reservation_capacity_per_slot', $validated) && $validated['reservation_capacity_per_slot'] !== null) {
+            ShopSetting::setValue('reservation_capacity_per_slot', (int) $validated['reservation_capacity_per_slot'], 'integer', $projectId);
+        }
+
         ShopSetting::setOrderMode((string) ($validated['order_mode'] ?? ShopSetting::ORDER_MODE_BOTH), $projectId);
     }
 

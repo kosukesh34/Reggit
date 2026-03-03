@@ -109,6 +109,8 @@ struct BundleMobileWebConfigRepository: MobileWebConfigRepository {
 struct DefaultNativeDeviceContextProvider: NativeDeviceContextProvider {
     private let defaults: UserDefaults
     private static let deviceIdentifierKey = "mobile_order_device_identifier"
+    /// Key for OneSignal subscription ID. Must match Darwin/Android native storage key.
+    private static let pushTokenKey = "mobile_order_push_token"
 
     init(defaults: UserDefaults) {
         self.defaults = defaults
@@ -116,6 +118,11 @@ struct DefaultNativeDeviceContextProvider: NativeDeviceContextProvider {
 
     init() {
         self.init(defaults: .standard)
+    }
+
+    var pushToken: String? {
+        guard let value = defaults.string(forKey: Self.pushTokenKey), !value.isEmpty else { return nil }
+        return value
     }
 
     var platform: NativePlatform {

@@ -7,9 +7,9 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:456098361001:android:49c45e4c96b6580b7e03b8",
+        "mobilesdk_app_id": "1:456098361001:android:d70b996d7a7618bc7e03b8",
         "android_client_info": {
-          "package_name": "jp.reggit.com"
+          "package_name": "com.reggit.default"
         }
       },
       "oauth_client": [],

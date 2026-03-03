@@ -93,10 +93,8 @@ class SmaregiProductSyncService
     }
 
     /**
-     * スマレジAPIの一覧レスポンスから商品配列を取り出す。
-     *
-     * @param  array<int|string, mixed>  $result
-     * @return array<int, mixed>
+     * @param array<int|string, string|int|float|bool|array|null> $result API一覧応答
+     * @return array<int|string, string|int|float|bool|array|null>
      */
     private function extractListFromResponse(array $result, string $listKey): array
     {
@@ -109,10 +107,8 @@ class SmaregiProductSyncService
     }
 
     /**
-     * スマレジ商品1件をアプリの Product 用 attributes に変換する。
-     *
-     * @param  array<string, mixed>  $row
-     * @return array<string, mixed>
+     * @param array<string, string|int|float|bool|array|null> $row スマレジ商品1件
+     * @return array<string, string|int|float|bool|null> Product用attributes
      */
     private function mapSmaregiProductToAttributes(array $row): array
     {
@@ -139,10 +135,9 @@ class SmaregiProductSyncService
     }
 
     /**
-     * スマレジの部門ID（categoryId）をアプリの category にマッピングする。
-     * 未設定時は 'other'。
+     * @param string|int|null $categoryId スマレジ部門ID
      */
-    private function mapCategoryIdToAppCategory(mixed $categoryId): string
+    private function mapCategoryIdToAppCategory(string|int|null $categoryId): string
     {
         $allowed = ['food', 'drink', 'dessert', 'side', 'other'];
 
