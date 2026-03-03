@@ -37,6 +37,16 @@ class MemberWithdrawController extends Controller
                 'success' => true,
                 'message' => '退会が完了しました。',
             ]);
+        } catch (\RuntimeException $e) {
+            LogHelper::error('[Member] withdraw failed (Smaregi or business)', [
+                'project_id' => AdminContext::getCurrentProjectId() ?? 1,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
         } catch (\Exception $e) {
             LogHelper::error('[Member] withdraw failed', [
                 'project_id' => AdminContext::getCurrentProjectId() ?? 1,

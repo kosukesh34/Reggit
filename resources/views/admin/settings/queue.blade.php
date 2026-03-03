@@ -8,6 +8,7 @@
     <h1 class="page-header-title"><i class="fas fa-list-ol"></i> 順番待ち設定</h1>
     <p class="page-header-desc">1組あたりの平均対応時間を設定します。待ち時間の目安計算に使用されます。</p>
 </div>
+@include('admin.settings._context', ['pageKey' => 'queue'])
 @if(session('success'))<div class="alert alert-success"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>@endif
 <form action="{{ admin_route('admin.settings.queue.update') }}" method="POST">
     @csrf

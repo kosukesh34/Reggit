@@ -34,9 +34,15 @@
                     </a>
                     @endif
                 </div>
-                @if($adminUser === null || $adminUser->hasPermission('orders.view') || $adminUser->hasPermission('products.view'))
+                @if(
+                    $adminUser === null
+                    || $adminUser->hasPermission('orders.view')
+                    || $adminUser->hasPermission('products.view')
+                    || $adminUser->hasPermission('settings.view')
+                    || $adminUser->hasPermission('liff_designer.manage')
+                )
                 <div class="nav-group">
-                    <div class="nav-group-label">注文・商品</div>
+                    <div class="nav-group-label">注文・商品・画面導線</div>
                     @if($adminUser === null || $adminUser->hasPermission('orders.view'))
                     <a href="{{ admin_route('admin.orders') }}" class="nav-item {{ request()->routeIs('admin.orders*') ? 'active' : '' }}">
                         <i class="fas fa-shopping-cart"></i>
@@ -49,15 +55,41 @@
                         <span>商品管理</span>
                     </a>
                     @endif
+                    @if($adminUser === null || $adminUser->hasPermission('settings.view'))
+                    <a href="{{ admin_route('admin.settings.home') }}" class="nav-item nav-item--sub {{ request()->routeIs('admin.settings.home*') ? 'active' : '' }}">
+                        <i class="fas fa-home"></i>
+                        <span>ホーム設定</span>
+                    </a>
+                    @endif
+                    @if($adminUser === null || $adminUser->hasPermission('liff_designer.manage'))
+                    <a href="{{ admin_route('admin.settings.liff-designer') }}" class="nav-item nav-item--sub {{ request()->routeIs('admin.settings.liff-designer*') ? 'active' : '' }}">
+                        <i class="fas fa-paint-brush"></i>
+                        <span>LIFFデザイン</span>
+                    </a>
+                    @endif
                 </div>
                 @endif
                 @if($adminUser === null || $adminUser->hasPermission('members.view'))
                 <div class="nav-group">
-                    <div class="nav-group-label">会員・ポイント</div>
+                    <div class="nav-group-label">会員・ポイント・ランク</div>
                     <a href="{{ admin_route('admin.members') }}" class="nav-item {{ request()->routeIs('admin.members*') ? 'active' : '' }}">
                         <i class="fas fa-id-card"></i>
                         <span>会員管理</span>
                     </a>
+                    @if($adminUser === null || $adminUser->hasPermission('settings.view'))
+                    <a href="{{ admin_route('admin.settings.ranks') }}" class="nav-item nav-item--sub {{ request()->routeIs('admin.settings.ranks*') ? 'active' : '' }}">
+                        <i class="fas fa-crown"></i>
+                        <span>ランク設定</span>
+                    </a>
+                    <a href="{{ admin_route('admin.settings.profile') }}" class="nav-item nav-item--sub {{ request()->routeIs('admin.settings.profile*') ? 'active' : '' }}">
+                        <i class="fas fa-user-cog"></i>
+                        <span>プロフィール設定</span>
+                    </a>
+                    <a href="{{ admin_route('admin.settings.wallet') }}" class="nav-item nav-item--sub {{ request()->routeIs('admin.settings.wallet*') ? 'active' : '' }}">
+                        <i class="fas fa-wallet"></i>
+                        <span>Wallet画像</span>
+                    </a>
+                    @endif
                 </div>
                 @endif
                 @if($adminUser === null || $adminUser->hasPermission('reservations.view') || $adminUser->hasPermission('queue.view'))
@@ -160,7 +192,7 @@
                 @endif
                 @if($adminUser === null || $adminUser->hasPermission('settings.view') || $adminUser->hasPermission('liff_designer.manage'))
                 <div class="nav-group">
-                    <div class="nav-group-label">設定</div>
+                    <div class="nav-group-label">共通設定</div>
                     @if($adminUser === null || $adminUser->hasPermission('settings.view'))
                     <a href="{{ admin_route('admin.settings.basic') }}" class="nav-item {{ request()->routeIs('admin.settings.basic*') ? 'active' : '' }}">
                         <i class="fas fa-sliders-h"></i>
@@ -170,39 +202,13 @@
                         <i class="fas fa-palette"></i>
                         <span>詳細設定（配色）</span>
                     </a>
-                    <a href="{{ admin_route('admin.settings.menu') }}" class="nav-item {{ request()->routeIs('admin.settings.menu*') ? 'active' : '' }}">
-                        <i class="fas fa-bars"></i>
-                        <span>メニュー設定</span>
-                    </a>
-                    <a href="{{ admin_route('admin.settings.home') }}" class="nav-item {{ request()->routeIs('admin.settings.home*') ? 'active' : '' }}">
-                        <i class="fas fa-home"></i>
-                        <span>ホーム設定</span>
-                    </a>
                     <a href="{{ admin_route('admin.settings.features') }}" class="nav-item {{ request()->routeIs('admin.settings.features*') ? 'active' : '' }}">
                         <i class="fas fa-toggle-on"></i>
                         <span>機能設定</span>
                     </a>
-                    <a href="{{ admin_route('admin.settings.ranks') }}" class="nav-item {{ request()->routeIs('admin.settings.ranks*') ? 'active' : '' }}">
-                        <i class="fas fa-crown"></i>
-                        <span>ランク設定</span>
-                    </a>
                     <a href="{{ admin_route('admin.settings.smaregi') }}" class="nav-item {{ request()->routeIs('admin.settings.smaregi*') ? 'active' : '' }}">
                         <i class="fas fa-plug"></i>
                         <span>スマレジ連携</span>
-                    </a>
-                    <a href="{{ admin_route('admin.settings.profile') }}" class="nav-item {{ request()->routeIs('admin.settings.profile*') ? 'active' : '' }}">
-                        <i class="fas fa-user-cog"></i>
-                        <span>プロフィール設定</span>
-                    </a>
-                    <a href="{{ admin_route('admin.settings.wallet') }}" class="nav-item {{ request()->routeIs('admin.settings.wallet*') ? 'active' : '' }}">
-                        <i class="fas fa-wallet"></i>
-                        <span>Wallet 画像</span>
-                    </a>
-                    @endif
-                    @if($adminUser === null || $adminUser->hasPermission('liff_designer.manage'))
-                    <a href="{{ admin_route('admin.settings.liff-designer') }}" class="nav-item {{ request()->routeIs('admin.settings.liff-designer*') ? 'active' : '' }}">
-                        <i class="fas fa-paint-brush"></i>
-                        <span>LIFFデザイン</span>
                     </a>
                     @endif
                 </div>
@@ -264,4 +270,3 @@
     </div>
 </body>
 </html>
-

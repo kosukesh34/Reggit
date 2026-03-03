@@ -11,7 +11,7 @@ struct BuildNativeInjectionScriptUseCase {
                 device_identifier: \(device.deviceIdentifier.jsStringLiteral),
                 os_version: \(device.osVersion.jsStringLiteral),
                 app_version: \(device.appVersion.jsStringLiteral),
-                push_token: window.__MOBILE_PENDING_PUSH_TOKEN__ || null
+                push_token: \(device.pushToken.map { $0.jsStringLiteral } ?? "window.__MOBILE_PENDING_PUSH_TOKEN__ || null")
             };
             const isAndroidPlatform = nativeDeviceInfo.platform === 'android';
 
@@ -89,7 +89,7 @@ struct BuildNativeInjectionScriptUseCase {
                     // Android WebView では初回レイアウトで 100vh が 0 になることがあるため、max(100vh, 600px) でフォールバック
                     const minHeightFallback = isAndroidPlatform ? 'max(100vh, 600px)' : '100vh';
                     const androidEmbedStyle = `
-                        html.native-app-embed, body.native-app-embed { --native-safe-bottom: max(env(safe-area-inset-bottom, 0px), 8px); --native-tab-height: calc(64px + var(--native-safe-bottom)); min-height: ${minHeightFallback} !important; height: 100% !important; width: 100% !important; margin: 0 !important; padding: 0 !important; overflow-x: hidden !important; }
+                        html.native-app-embed, body.native-app-embed { --native-safe-bottom: max(env(safe-area-inset-bottom, 0px), 8px); --native-tab-height: calc(64px + var(--native-safe-bottom)); min-height: ${minHeightFallback} !important; height: 100% !important; width: 100% !important; margin: 0 !important; padding: 0 !important; overflow-x: hidden !important; background: #f5f5f5 !important; }
                         .native-app-embed .app-container { display: block !important; min-height: ${minHeightFallback} !important; height: 100% !important; width: 100% !important; margin: 0 !important; padding: 0 !important; }
                         .native-app-embed .header { display: block !important; visibility: visible !important; }
                         .native-app-embed .main-content { display: block !important; min-height: min(68vh, calc(${minHeightFallback} - 120px)) !important; overflow-y: auto !important; padding-bottom: calc(var(--native-tab-height) + 12px) !important; }

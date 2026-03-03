@@ -14,6 +14,7 @@
     <h1 class="page-header-title"><i class="fas fa-plug"></i> スマレジ・プラットフォームAPI 連携</h1>
     <p class="page-header-desc">スマレジのPOS・会員データと連携するための設定です。スマレジ・デベロッパーズでアプリを登録し、以下のURLを設定してください。</p>
 </div>
+@include('admin.settings._context', ['pageKey' => 'smaregi'])
 
 @if(session('success'))
     <div class="alert alert-success"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>

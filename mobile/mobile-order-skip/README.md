@@ -10,6 +10,7 @@
 - LIFF 側のタブは非表示・遷移ロック（固定タブのみ表示）
 - 起動時に `window.__MOBILE_DEVICE_INFO__` へ端末情報を注入し、`/api/devices/register` へ送信
 - `window.__nativeSetPushToken(token)` を呼ぶと push token を更新して再登録
+- **OneSignal**: プッシュ通知は OneSignal で送信。アプリ側で取得した subscription ID を上記でバックエンドに送り、お知らせ配信時に OneSignal API で送信します。
 
 ## URL設定
 
@@ -134,6 +135,45 @@ adb shell am start -n jp.gamechanger.mobileorder/mobile.order.app.MainActivity
 ```
 
 `BUILT_PRODUCTS_DIR` の実際のパスは、Xcode でビルドしたあと `~/Library/Developer/Xcode/DerivedData/` 内の `Project-` で始まるフォルダを確認してください。
+
+### OneSignal プッシュ通知
+
+- **App ID**: `Skip.env` の `ONE_SIGNAL_APP_ID` に OneSignal ダッシュボードの App ID（UUID）を設定済みです。
+- **バックエンド**: プロジェクトルートの `.env` に `PUSH_ONESIGNAL_ENABLED=true`, `PUSH_ONESIGNAL_APP_ID`, `PUSH_ONESIGNAL_API_KEY` を設定し、お知らせ配信で OneSignal が使われます。
+- **iOS**: OneSignal SDK は Xcode の Swift Package で追加済み。APNs の証明書または p8 キーを OneSignal ダッシュボードで設定してください。
+- **Android**: OneSignal は FCM を使用します。`Android/app/google-services.json` の **package_name** と、アプリの **applicationId** を一致させてください。
+  - 現在の `google-services.json` は `com.reggit.default` 用です。このパッケージでビルドする場合は `Skip.env` に `ANDROID_APPLICATION_ID=com.reggit.default` を追加してください。
+  - 別の applicationId（例: `jp.gamechanger.mobileorder`）でビルドする場合は、Firebase コンソールでそのパッケージを追加し、ダウンロードした `google-services.json` で差し替えてください。
+
+### プッシュ通知のテスト手順（実際に通知が届くか確認する）
+
+1. **アプリをビルド・起動**
+   - プロジェクトルートで: `./scripts/build-and-install-mobile.sh`
+   - または Xcode で「MobileOrderApp App」を実機／シミュレータに Run、Android の場合は実機／エミュレータに APK をインストールして起動。
+
+2. **通知を許可**
+   - 初回起動時（または権限リセット後）に OneSignal の通知許可ダイアログが出たら「許可」をタップ。
+   - **iOS**: 実機でのみプッシュが届きます。シミュレータでは通知は届きません。
+   - **Android**: エミュレータ・実機どちらでも FCM 経由で届きます（Google Play 入りイメージ推奨）。
+
+3. **登録完了を待つ**
+   - 許可後、アプリが OneSignal に端末を登録するまで数秒〜数十秒かかることがあります。アプリを開いたまま少し待つか、一度バックグラウンドにしてから再度開くと登録されやすいです。
+
+4. **テスト通知を送信**
+   - プロジェクトルートで（Docker 利用時）:
+     ```bash
+     docker compose exec app php artisan push:onesignal-test --title="テスト通知" --body="確認用です" --force
+     ```
+   - ローカルで PHP 8.2 以上がある場合:
+     ```bash
+     php artisan push:onesignal-test --title="テスト通知" --body="確認用です" --force
+     ```
+   - 出力の「配信先: N 件」が 1 以上なら送信成功。端末に通知が表示されるはずです。
+
+5. **届かない場合**
+   - OneSignal ダッシュボードの「Audience → Subscriptions」で端末が 1 件以上表示されているか確認。
+   - `.env` の `PUSH_ONESIGNAL_APP_ID` が `Skip.env` の `ONE_SIGNAL_APP_ID` と同一か確認。
+   - Android は `google-services.json` の package と `Skip.env` の `ANDROID_APPLICATION_ID` が一致しているか確認。
 
 ### Android で画面が真っ白な場合
 

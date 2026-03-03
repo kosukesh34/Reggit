@@ -11,9 +11,13 @@ use Illuminate\Support\Collection;
 
 class CouponAdminService
 {
-    public function __construct(
-        private SmaregiCouponSyncService $smaregiCouponSync
-    ) {}
+    /** @var SmaregiCouponSyncService */
+    private $smaregiCouponSync;
+
+    public function __construct(SmaregiCouponSyncService $smaregiCouponSync)
+    {
+        $this->smaregiCouponSync = $smaregiCouponSync;
+    }
 
     private const COUPON_IMAGE_DIR = 'coupon_images';
 
@@ -102,9 +106,22 @@ class CouponAdminService
         return $coupon;
     }
 
+    /**
+     * クーポン削除。スマレジ契約ありでスマレジ連携済みの場合は先にPOSから削除し、成功時のみDBから削除する。
+     */
     public function delete(int $id, ?int $projectId = null): void
     {
         $coupon = $this->findOrFail($id, $projectId);
+        $projectId = $projectId ?? $coupon->project_id;
+        $smaregiId = $coupon->smaregi_coupon_id ?? '';
+
+        if ($smaregiId !== null && $smaregiId !== '' && $this->smaregiCouponSync->hasSmaregiContract($projectId)) {
+            $ok = $this->smaregiCouponSync->deleteOnSmaregi($projectId, $smaregiId);
+            if (! $ok) {
+                throw new \RuntimeException('スマレジのクーポン削除に失敗しました。ログ(storage/logs/laravel.log)を確認してください。');
+            }
+        }
+
         $coupon->delete();
     }
 }

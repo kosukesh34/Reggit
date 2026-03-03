@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Admin\Settings;
 
 use App\Http\Controllers\Admin\AdminBaseController;
+use App\Http\Requests\Admin\SettingsHomeRequest;
 use App\UseCases\Admin\Settings\GetHomeSettingsUseCase;
 use App\UseCases\Admin\Settings\UpdateHomeSettingsUseCase;
-use Illuminate\Http\Request;
 
 class HomeController extends AdminBaseController
 {
@@ -29,10 +29,10 @@ class HomeController extends AdminBaseController
         return view('admin.settings.home', $data);
     }
 
-    public function update(Request $request)
+    public function update(SettingsHomeRequest $request)
     {
         $projectId = $this->resolveAdminProjectId();
-        $raw = $request->input('tabs', []);
+        $raw = $request->validated()['tabs'] ?? [];
         $this->updateHomeSettingsUseCase->handle($projectId, is_array($raw) ? $raw : []);
 
         return redirect()->route('admin.settings.home', $this->buildAdminRouteParams())

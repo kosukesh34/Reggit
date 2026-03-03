@@ -84,10 +84,9 @@ class SmaregiApiService
      * 例: request('GET', 'pos/stores') => GET .../pos/stores
      * 例: request('POST', 'pos/customers', $body) => POST .../pos/customers
      *
-     * @param  string  $path  pos/ から始まるパス（例: pos/stores, pos/customers/1）
-     * @param  array<string, mixed>  $body  GET の場合はクエリ、POST/PATCH/PUT の場合は JSON ボディ
-     * @param  bool  $bodyAsRequestJsonForm  true の場合 POST/PATCH を application/x-www-form-urlencoded で request_json に JSON 文字列を載せて送信
-     * @return array<int|string, mixed>|null
+     * @param string $path pos/ から始まるパス
+     * @param array<string, string|int|float|bool|array|null> $body GET時はクエリ、POST/PATCH/PUT時はJSONボディ
+     * @return array<int|string, string|int|float|bool|array|null>|null
      */
     public function request(string $contractId, string $method, string $path, array $body = [], bool $bodyAsRequestJsonForm = false): ?array
     {
@@ -128,8 +127,10 @@ class SmaregiApiService
                 'status' => $response->status(),
                 'response_body' => $responseBody !== '' ? $responseBody : null,
             ];
-            if ($path === 'pos/coupons' && $body !== [] && in_array(strtolower($method), ['post', 'patch'], true)) {
-                $context['request_body_sent'] = $body;
+            if ($body !== [] && in_array(strtolower($method), ['post', 'patch'], true)) {
+                if ($path === 'pos/coupons' || str_starts_with($path, 'pos/products')) {
+                    $context['request_body_sent'] = $body;
+                }
             }
             Log::warning('[Smaregi] API request failed', $context);
 
@@ -144,6 +145,27 @@ class SmaregiApiService
     public function getStores(string $contractId): ?array
     {
         return $this->request($contractId, 'GET', 'pos/stores');
+    }
+
+    /**
+     * 在庫更新などで使用する先頭店舗IDを取得する。店舗が無い場合は null。
+     */
+    public function getFirstStoreId(string $contractId): ?string
+    {
+        $result = $this->getStores($contractId);
+        if ($result === null) {
+            return null;
+        }
+        $list = is_array($result) && ! isset($result[0]) && isset($result['stores'])
+            ? $result['stores']
+            : $result;
+        $first = is_array($list) ? ($list[0] ?? null) : null;
+        if (! is_array($first)) {
+            return null;
+        }
+        $id = $first['storeId'] ?? $first['store_id'] ?? $first['id'] ?? null;
+
+        return $id !== null ? (string) $id : null;
     }
 
     /** 商品一覧を取得（pos.products:read スコープ必要） */
@@ -318,6 +340,42 @@ class SmaregiApiService
         return $this->request($contractId, 'GET', 'pos/customer_ranks', $query);
     }
 
+    /** 会員ランク登録（pos.customers:write） */
+    public function createCustomerRank(string $contractId, array $body): ?array
+    {
+        return $this->request($contractId, 'POST', 'pos/customer_ranks', $body);
+    }
+
+    /** 会員ランク更新（pos.customers:write） */
+    public function updateCustomerRank(string $contractId, string $rank, array $body): ?array
+    {
+        return $this->request($contractId, 'PATCH', 'pos/customer_ranks/'.$rank, $body);
+    }
+
+    /** 会員ランク削除（pos.customers:write） */
+    public function deleteCustomerRank(string $contractId, string $rank): ?array
+    {
+        return $this->request($contractId, 'DELETE', 'pos/customer_ranks/'.$rank);
+    }
+
+    /** 店舗登録（pos.stores:write） */
+    public function createStore(string $contractId, array $body): ?array
+    {
+        return $this->request($contractId, 'POST', 'pos/stores', $body);
+    }
+
+    /** 店舗更新（pos.stores:write） */
+    public function updateStore(string $contractId, string $storeId, array $body): ?array
+    {
+        return $this->request($contractId, 'PATCH', 'pos/stores/'.$storeId, $body);
+    }
+
+    /** 店舗削除（pos.stores:write） */
+    public function deleteStore(string $contractId, string $storeId): ?array
+    {
+        return $this->request($contractId, 'DELETE', 'pos/stores/'.$storeId);
+    }
+
     /** 支払方法一覧取得（pos.transactions:read） */
     public function getPaymentMethods(string $contractId, array $query = []): ?array
     {
@@ -337,11 +395,8 @@ class SmaregiApiService
     }
 
     /**
-     * クーポン登録（pos.transactions:write）
-     * 仕様: https://developers.smaregi.dev/platform-api-reference/apis/pos/ のクーポン登録を参照
-     *
-     * @param  array<string, mixed>  $body  例: couponCode, couponName, discountDivision, discountValue, startDate, endDate 等
-     * @return array<int|string, mixed>|null 登録後のクーポン（couponId 含む）
+     * @param array<string, string|int|float|bool|array|null> $body クーポン登録ボディ
+     * @return array<int|string, string|int|float|bool|array|null>|null
      */
     public function createCoupon(string $contractId, array $body): ?array
     {
@@ -349,14 +404,18 @@ class SmaregiApiService
     }
 
     /**
-     * クーポン更新（pos.transactions:write）
-     *
-     * @param  array<string, mixed>  $body  更新する項目のみ
-     * @return array<int|string, mixed>|null
+     * @param array<string, string|int|float|bool|array|null> $body 更新する項目のみ
+     * @return array<int|string, string|int|float|bool|array|null>|null
      */
     public function updateCoupon(string $contractId, string $couponId, array $body): ?array
     {
         return $this->request($contractId, 'PATCH', 'pos/coupons/'.$couponId, $body);
+    }
+
+    /** クーポン削除（pos.transactions:write） */
+    public function deleteCoupon(string $contractId, string $couponId): ?array
+    {
+        return $this->request($contractId, 'DELETE', 'pos/coupons/'.$couponId);
     }
 
     /** スタッフ一覧取得（pos.staffs:read） */

@@ -30,6 +30,8 @@ class RanksController extends AdminBaseController
             $this->updateRankSettingsUseCase->handle($projectId, $request->toPayload());
         } catch (\InvalidArgumentException $e) {
             return redirect()->back()->withInput()->withErrors(['ranks' => $e->getMessage()]);
+        } catch (\RuntimeException $e) {
+            return redirect()->back()->withInput()->with('error', $e->getMessage());
         }
 
         return redirect()->route('admin.settings.ranks', $this->buildAdminRouteParams())

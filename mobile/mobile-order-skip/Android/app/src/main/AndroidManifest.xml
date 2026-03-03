@@ -7,6 +7,8 @@
 
     <!-- permissions needed for using the internet or an embedded WebKit browser -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Android 13+ でプッシュ通知に必要 -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" /> -->
 
     <application
@@ -31,10 +33,11 @@
         <meta-data android:name="LIFF_FIXED_TAB" android:value="${LIFF_FIXED_TAB}" />
         <meta-data android:name="LiffFixedTabAndroid" android:value="${LIFF_FIXED_TAB_ANDROID}" />
         <meta-data android:name="LIFF_FIXED_TAB_ANDROID" android:value="${LIFF_FIXED_TAB_ANDROID}" />
+        <meta-data android:name="ONE_SIGNAL_APP_ID" android:value="${ONE_SIGNAL_APP_ID}" />
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:hardwareAccelerated="false"
+            android:hardwareAccelerated="true"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|mnc|colorMode|density|fontScale|fontWeightAdjustment|keyboard|layoutDirection|locale|mcc|navigation|smallestScreenSize|touchscreen|uiMode"
             android:theme="@style/Theme.MobileOrderApp.Splash"
             android:windowSoftInputMode="adjustResize">

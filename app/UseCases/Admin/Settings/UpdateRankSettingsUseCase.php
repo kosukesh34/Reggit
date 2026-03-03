@@ -2,11 +2,20 @@
 
 namespace App\UseCases\Admin\Settings;
 
+use App\Models\StampCard;
 use App\Models\ShopSetting;
+use App\Services\Smaregi\SmaregiCustomerRankSyncService;
 use App\Util\StrHelper;
 
 class UpdateRankSettingsUseCase
 {
+    private SmaregiCustomerRankSyncService $smaregiRankSync;
+
+    public function __construct(SmaregiCustomerRankSyncService $smaregiRankSync)
+    {
+        $this->smaregiRankSync = $smaregiRankSync;
+    }
+
     /** @param array{rank_basis: string, point_earn_rate: int, points_valid_days: int, ranks: array<int, array{key?: string, label?: string, min_points?: int, order?: int, is_active?: bool, icon_url?: string|null, stamp_background_url?: string|null}>} $payload 検証済みランク設定 */
     public function handle(int $projectId, array $payload): void
     {
@@ -35,10 +44,27 @@ class UpdateRankSettingsUseCase
             throw new \InvalidArgumentException('ランクキーが重複しています');
         }
 
+        if ($this->smaregiRankSync->hasSmaregiContract($projectId) && $rows !== []) {
+            $this->smaregiRankSync->sync($projectId, $rows);
+        }
+
         ShopSetting::setMemberRankSettings($rows, $projectId);
         ShopSetting::setValue('member_rank_basis', (string) $payload['rank_basis'], 'string', $projectId);
         ShopSetting::setValue('point_earn_rate', (int) $payload['point_earn_rate'], 'integer', $projectId);
         ShopSetting::setValue('points_valid_days', (int) $payload['points_valid_days'], 'integer', $projectId);
+        ShopSetting::setValue('points_per_order', (int) ($payload['points_per_order'] ?? 0), 'integer', $projectId);
+        ShopSetting::setValue('stamp_earn_per_amount', (int) ($payload['stamp_earn_per_amount'] ?? 0), 'integer', $projectId);
+        $orderStampCardId = isset($payload['order_stamp_card_id']) && $payload['order_stamp_card_id'] !== '' && $payload['order_stamp_card_id'] !== null
+            ? (int) $payload['order_stamp_card_id']
+            : null;
+        if ($orderStampCardId !== null && ! StampCard::where('project_id', $projectId)->whereKey($orderStampCardId)->exists()) {
+            $orderStampCardId = null;
+        }
+        if ($orderStampCardId !== null) {
+            ShopSetting::setValue('order_stamp_card_id', $orderStampCardId, 'integer', $projectId);
+        } else {
+            ShopSetting::setValue('order_stamp_card_id', '', 'string', $projectId);
+        }
 
         if (isset($payload['member_code_type'])) {
             ShopSetting::setValue('member_code_type', (string) $payload['member_code_type'], 'string', $projectId);

@@ -8,6 +8,7 @@
     <h1 class="page-header-title"><i class="fas fa-ticket-alt"></i> クーポン設定</h1>
     <p class="page-header-desc">クーポンのデフォルト表示や機能のON/OFFを設定します。</p>
 </div>
+@include('admin.settings._context', ['pageKey' => 'coupons'])
 @if(session('success'))<div class="alert alert-success"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>@endif
 <form action="{{ admin_route('admin.settings.coupons.update') }}" method="POST">
     @csrf

@@ -11,12 +11,17 @@ use App\Models\OrderItem;
 use App\Models\PointTransaction;
 use App\Models\Product;
 use App\Models\User;
+use App\Services\Admin\MemberAdminService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class OrderService
 {
     private const DEFAULT_POINTS_EARN_RATE = 100;
+
+    public function __construct(
+        private MemberAdminService $memberAdminService
+    ) {}
 
     private const DESC_REFUND_CANCEL = '注文キャンセルによる返却';
 
@@ -37,6 +42,7 @@ class OrderService
             $this->createOrderItems($order, $orderItems);
             $this->updateProductStock($orderItems);
             $this->awardPoints($user, $order, $finalAmount);
+            $this->awardStamps($user, $order, $finalAmount);
 
             DB::commit();
 
@@ -177,14 +183,40 @@ class OrderService
     private function awardPoints(User $user, Order $order, float $finalAmount): void
     {
         $member = $user->member;
+        if ($member === null) {
+            return;
+        }
+
+        $projectId = $user->project_id ?? null;
+        $pointsPerOrder = (int) \App\Models\ShopSetting::getPointsPerOrder($projectId);
+        $rate = $this->getPointsEarnRate($projectId);
+        $pointsFromAmount = $rate > 0 && $finalAmount > 0 ? (int) floor($finalAmount / $rate) : 0;
+        $pointsEarned = $pointsPerOrder + $pointsFromAmount;
+
+        if ($pointsEarned > 0) {
+            $member->addPoints($pointsEarned, '購入で獲得', $order->id);
+            $order->update(['points_earned' => $pointsEarned]);
+        }
+    }
+
+    private function awardStamps(User $user, Order $order, float $finalAmount): void
+    {
+        $member = $user->member;
         if ($member === null || $finalAmount <= 0) {
             return;
         }
 
-        $pointsEarned = floor($finalAmount / $this->getPointsEarnRate($user->project_id ?? null));
-        if ($pointsEarned > 0) {
-            $member->addPoints($pointsEarned, '購入で獲得', $order->id);
-            $order->update(['points_earned' => $pointsEarned]);
+        $projectId = $user->project_id ?? null;
+        $stampCardId = \App\Models\ShopSetting::getOrderStampCardId($projectId);
+        $stampEarnPerAmount = (int) \App\Models\ShopSetting::getStampEarnPerAmount($projectId);
+
+        if ($stampCardId === null || $stampEarnPerAmount <= 0) {
+            return;
+        }
+
+        $stampCount = (int) floor($finalAmount / $stampEarnPerAmount);
+        if ($stampCount > 0) {
+            $this->memberAdminService->addStampsToMember($member, $stampCardId, $stampCount);
         }
     }
 

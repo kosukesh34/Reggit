@@ -247,6 +247,7 @@
         window.__LIFF_BUILDER__ = @json($liffBuilderBlocks ?? []);
         window.__LIFF_TAB_LAYOUTS__ = @json($liffTabLayouts ?? []);
         window.__LIFF_TAB_SETTINGS__ = @json($liffTabSettings ?? []);
+        window.__DESIGNER_PREVIEW_MEMBER_PAYLOAD__ = @json($designerPreviewMemberPayload ?? null);
         window.__INLINE_LOCAL_ASSETS__ = {{ $useInlineLocalAssets ? 'true' : 'false' }};
         window.__clientDebugLog = function (eventName, payloadObj) {
             try {
