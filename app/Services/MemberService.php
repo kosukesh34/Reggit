@@ -178,7 +178,7 @@ class MemberService
 
         $smaregiCustomerId = $member->smaregi_customer_id ?? '';
         if ($smaregiCustomerId !== '') {
-            $contractId = ShopSetting::getValue('smaregi_contract_id', null, $projectId);
+            $contractId = $this->smaregiApi->getContractIdForProject($projectId);
             $contractId = is_string($contractId) ? trim($contractId) : '';
             if ($contractId !== '') {
                 $body = $this->buildSmaregiCustomerUpdateBody($data);
@@ -292,7 +292,7 @@ class MemberService
         $memberNumber = $this->generateMemberNumber($projectId);
         $smaregiCustomerId = null;
 
-        $contractId = ShopSetting::getValue('smaregi_contract_id', null, $projectId);
+        $contractId = $this->smaregiApi->getContractIdForProject($projectId);
         $contractId = is_string($contractId) ? trim($contractId) : '';
         if ($contractId !== '') {
             $body = $this->buildSmaregiCustomerBody($memberNumber, $data);

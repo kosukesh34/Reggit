@@ -437,18 +437,26 @@ class SmaregiApiService
      */
 
     /**
-     * プロジェクトに紐づく契約IDを取得（ShopSetting または SmaregiContract.project_id）
+     * プロジェクトに紐づく契約IDを取得。
+     * 優先順: (1) ShopSetting (2) SmaregiContract (3) config のデフォルト契約ID（sb_skx928r2）
      */
     public function getContractIdForProject(int $projectId): ?string
     {
         $contractId = ShopSetting::getValue('smaregi_contract_id', null, $projectId);
-        if (is_string($contractId) && $contractId !== '') {
-            return $contractId;
+        if (is_string($contractId) && trim($contractId) !== '') {
+            return trim($contractId);
         }
         $contract = SmaregiContract::where('project_id', $projectId)
             ->where('status', \App\Enums\SmaregiContractStatus::ACTIVE)
             ->first();
 
-        return $contract !== null ? $contract->contract_id : null;
+        if ($contract !== null && $contract->contract_id !== '') {
+            return $contract->contract_id;
+        }
+
+        $default = config('smaregi.contract_id');
+        $default = is_string($default) ? trim($default) : '';
+
+        return $default !== '' ? $default : null;
     }
 }

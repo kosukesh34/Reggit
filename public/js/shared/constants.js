@@ -9,6 +9,7 @@ const AppConstants = {
         MEMBERS_REGISTER: `${API_BASE}/members/register`,
         MEMBERS_WITHDRAW: `${API_BASE}/members/withdraw`,
         DEVICE_REGISTER: `${API_BASE}/devices/register`,
+        DEVICE_SESSION: `${API_BASE}/devices/session`,
         POSTAL_CODE: `${API_BASE}/postal-code`,
         MEMBERS_POINTS: `${API_BASE}/members/points`,
         MEMBERS_WALLET_PASS: `${API_BASE}/members/me/wallet-pass`,
@@ -25,7 +26,10 @@ const AppConstants = {
         QUEUE_ME: `${API_BASE}/queue/me`,
         QUEUE_QR: `${API_BASE}/queue/qr`,
     },
-    
+
+    /** Wallet 追加後「アプリに戻る」でネイティブアプリを開くための URL スキーム */
+    WALLET_RETURN_APP_SCHEME: 'mobileorderapp://',
+
     HTTP_METHODS: {
         GET: 'GET',
         POST: 'POST',

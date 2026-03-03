@@ -94,7 +94,12 @@ class Project extends Model
     public function isSmaregiLinked(): bool
     {
         $contractId = ShopSetting::getValue('smaregi_contract_id', null, $this->id);
+        if (is_string($contractId) && trim($contractId) !== '') {
+            return true;
+        }
+        $default = config('smaregi.contract_id');
+        $default = is_string($default) ? trim($default) : '';
 
-        return ! StrHelper::isEmptyStringOrNull($contractId);
+        return $default !== '';
     }
 }
