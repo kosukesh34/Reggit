@@ -15,12 +15,22 @@ class OrderAdminService
         $this->couponIssueService = $couponIssueService ?? app(CouponIssueService::class);
     }
 
+    /** 決済済み = 確定・準備中・受け取り可能・完了 */
+    private const PAID_STATUSES = [
+        OrderStatus::CONFIRMED,
+        OrderStatus::PREPARING,
+        OrderStatus::READY,
+        OrderStatus::COMPLETED,
+    ];
+
     public function getPaginatedList(?string $status, int $perPage = 20): LengthAwarePaginator
     {
         $query = Order::with('user')
             ->orderByDesc('created_at');
         if ($status && $status !== 'all') {
             $query->where('status', $status);
+        } else {
+            $query->whereIn('status', self::PAID_STATUSES);
         }
 
         return $query->paginate($perPage);
@@ -29,7 +39,10 @@ class OrderAdminService
     public function getStatusCounts(): array
     {
         $statuses = array_keys(OrderStatus::getValues());
-        $counts = ['all' => Order::count()];
+        $counts = [
+            'all' => Order::whereIn('status', self::PAID_STATUSES)->count(),
+            'paid' => Order::whereIn('status', self::PAID_STATUSES)->count(),
+        ];
         foreach ($statuses as $status) {
             $counts[$status] = Order::where('status', $status)->count();
         }

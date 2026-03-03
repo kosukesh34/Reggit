@@ -130,7 +130,8 @@ class AdminAuditLog extends Model
         'admin.announcements.delete' => 'お知らせを削除',
         'admin.settings.basic.update' => '基本設定を更新',
         'admin.settings.advanced.update' => '詳細設定を更新',
-        'admin.settings.menu.update' => 'メニュー設定を更新',
+        'admin.settings.home.update' => 'ホーム設定を更新',
+        'admin.settings.menu.update' => 'メニュー設定を更新', // 廃止（ホームへリダイレクト。互換のためキーは残す）
         'admin.settings.features.update' => '機能・カスタマイズ設定を更新',
     ];
 

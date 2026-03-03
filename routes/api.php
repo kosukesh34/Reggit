@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\V1\StampController as ApiV1StampController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\CouponController;
 use App\Http\Controllers\DeviceRegisterController;
+use App\Http\Controllers\DeviceSessionController;
 use App\Http\Controllers\Diagnostics\ClientDebugController;
 use App\Http\Controllers\GalleryController;
 use App\Http\Controllers\LineWebhookController;
@@ -120,6 +121,7 @@ Route::middleware(['web', 'bind.project'])->group(function () {
     Route::post('/members/register', [MemberRegisterController::class, '__invoke']);
     Route::post('/members/withdraw', [MemberWithdrawController::class, '__invoke']);
     Route::post('/devices/register', DeviceRegisterController::class);
+    Route::get('/devices/session', DeviceSessionController::class);
     Route::get('/members/points', [MemberPointsController::class, '__invoke']);
     Route::get('/members/points/history', [MemberPointHistoryController::class, '__invoke']);
     Route::get('/members/points/card', [MemberPointCardController::class, '__invoke']);

@@ -8,7 +8,17 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MOBILE_DIR="${REPO_ROOT}/mobile/mobile-order-skip"
 APK_PATH="${MOBILE_DIR}/.build/Android/app/outputs/apk/debug/app-debug.apk"
 BUNDLE_ID="jp.gamechanger.mobileorder"
-ANDROID_ACTIVITY="jp.gamechanger.mobileorder/mobile.order.app.MainActivity"
+# Android: Skip.env の ANDROID_APPLICATION_ID を読み、起動コマンドで使用
+_android_app_id="jp.gamechanger.mobileorder"
+if [[ -f "${MOBILE_DIR}/Skip.env" ]]; then
+  _line=$(grep -E "^ANDROID_APPLICATION_ID[ =]" "${MOBILE_DIR}/Skip.env" 2>/dev/null | head -1)
+  if [[ -n "$_line" ]]; then
+    _val=$(echo "$_line" | sed 's/^ANDROID_APPLICATION_ID[= ]*//;s/^[ "]*//;s/[ "]*$//;s/\r//')
+    [[ -n "$_val" ]] && _android_app_id="$_val"
+  fi
+fi
+ANDROID_APP_ID="$_android_app_id"
+ANDROID_ACTIVITY="${ANDROID_APP_ID}/mobile.order.app.MainActivity"
 
 # iOS のビルド先（変更する場合は環境変数 DESTINATION を指定。例: 'platform=iOS Simulator,name=iPhone 16 Pro,OS=26.0'）
 IOS_DESTINATION="${DESTINATION:-platform=iOS Simulator,name=iPhone 16 Pro}"

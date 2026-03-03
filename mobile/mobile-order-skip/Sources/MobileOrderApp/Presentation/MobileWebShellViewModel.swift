@@ -12,11 +12,14 @@ final class MobileWebShellViewModel {
     var isLoading: Bool = true
     var showWhiteScreenFallback: Bool = false
     var fallbackMessage: String = ""
+    /// インクリメントすると SwiftUI が WebView を再生成し、URL を最初から再読み込みする。接続失敗（about:blank）時のリロードに使用。
+    var webViewReloadKey: Int = 0
 
     private let buildScriptUseCase: BuildNativeInjectionScriptUseCase
     private let deviceProvider: NativeDeviceContextProvider
     private var monitorTask: Task<Void, Never>?
     private var didAutoReload: Bool = false
+    private var didForceBootstrap: Bool = false
 
     init(
         config: MobileWebShellConfig,
@@ -54,17 +57,46 @@ final class MobileWebShellViewModel {
         config.liffURLString
     }
 
+    private var pushTokenObserver: (any NSObjectProtocol)?
+
     func onAppear() {
         isLoading = true
         showWhiteScreenFallback = false
         fallbackMessage = ""
         didAutoReload = false
+        didForceBootstrap = false
         startMonitoringWhiteScreen()
         onNavigationFinished()
+        observePushTokenUpdate()
     }
 
     func onDisappear() {
         stopMonitoringWhiteScreen()
+        if let observer = pushTokenObserver {
+            NotificationCenter.default.removeObserver(observer)
+            pushTokenObserver = nil
+        }
+    }
+
+    /// When native (OneSignal) provides a subscription ID after the page has loaded, inject it into the WebView.
+    private func observePushTokenUpdate() {
+        pushTokenObserver = NotificationCenter.default.addObserver(
+            forName: .oneSignalPushTokenDidUpdate,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            guard let self else { return }
+            let token = (notification.userInfo?["token"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard let token, !token.isEmpty else { return }
+            let escaped = token
+                .replacingOccurrences(of: "\\", with: "\\\\")
+                .replacingOccurrences(of: "\"", with: "\\\"")
+                .replacingOccurrences(of: "\n", with: "\\n")
+            let script = "typeof window.__nativeSetPushToken === 'function' && window.__nativeSetPushToken(\"\(escaped)\");"
+            Task { @MainActor in
+                _ = try? await self.navigator.evaluateJavaScript(script)
+            }
+        }
     }
 
     func onNavigationFinished() {
@@ -78,10 +110,9 @@ final class MobileWebShellViewModel {
         showWhiteScreenFallback = false
         isLoading = true
         didAutoReload = false
+        didForceBootstrap = false
+        webViewReloadKey += 1
         startMonitoringWhiteScreen()
-        Task { @MainActor in
-            _ = try? await self.navigator.evaluateJavaScript("window.location.reload();")
-        }
     }
 
     private func stopMonitoringWhiteScreen() {
@@ -106,13 +137,20 @@ final class MobileWebShellViewModel {
                     return
                 }
 
-                if elapsed >= 7, !self.didAutoReload {
-                    self.didAutoReload = true
-                    logger.warning("WebView content still not visible after 7s, auto reloading: \(inspection.summary)")
-                    _ = try? await self.navigator.evaluateJavaScript("window.location.reload();")
+                if elapsed >= 4, !self.didForceBootstrap {
+                    self.didForceBootstrap = true
+                    await self.forceBootstrapIfNeeded()
                 }
 
-                if elapsed >= 14 {
+                if elapsed >= 9, !self.didAutoReload {
+                    self.didAutoReload = true
+                    logger.warning("WebView content still not visible after 9s, auto reloading: \(inspection.summary)")
+                    // 読み込み中・about:blank・未描画のいずれでも evaluateJavaScript は SkipWeb で nil クラッシュする可能性があるため、常に WebView 再生成でリロードする
+                    self.webViewReloadKey += 1
+                    self.startMonitoringWhiteScreen()
+                }
+
+                if elapsed >= 16 {
                     self.isLoading = false
                     self.showWhiteScreenFallback = true
                     self.fallbackMessage = """
@@ -134,18 +172,23 @@ final class MobileWebShellViewModel {
         (() => {
             const appContainer = document.querySelector('.app-container');
             const activeTab = document.querySelector('.tab-content.active');
+            const activeTabSection = document.querySelector('.tab-content.active .tab-section');
             const footer = document.querySelector('.main-tabs');
             const loading = document.getElementById('liff-loading');
             const body = document.body;
-            const visible =
+            const appReady = !!(window.app && typeof window.app.switchTab === 'function');
+            const sectionChildren = activeTabSection ? activeTabSection.children.length : 0;
+            const sectionTextLength = activeTabSection && activeTabSection.textContent ? activeTabSection.textContent.trim().length : 0;
+            const layoutVisible =
                 (appContainer && appContainer.offsetHeight > 120) ||
                 (activeTab && activeTab.offsetHeight > 80) ||
                 (footer && footer.offsetHeight > 30);
+            const visible = appReady || !!layoutVisible;
             const loadingDisplay = loading ? getComputedStyle(loading).display : 'none';
             const bodyChildren = body ? body.children.length : 0;
             const href = window.location ? String(window.location.href || '') : '';
             const ready = document.readyState || 'unknown';
-            const summary = [ready, href, bodyChildren, appContainer ? appContainer.offsetHeight : 0, activeTab ? activeTab.offsetHeight : 0, footer ? footer.offsetHeight : 0, loadingDisplay, visible ? '1' : '0'].join('|');
+            const summary = [ready, href, bodyChildren, appContainer ? appContainer.offsetHeight : 0, activeTab ? activeTab.offsetHeight : 0, activeTabSection ? activeTabSection.offsetHeight : 0, footer ? footer.offsetHeight : 0, loadingDisplay, appReady ? '1' : '0', sectionChildren, sectionTextLength, visible ? '1' : '0'].join('|');
             return summary;
         })();
         """
@@ -158,6 +201,33 @@ final class MobileWebShellViewModel {
         let fields = summary.split(separator: "|", omittingEmptySubsequences: false).map(String.init)
         let visible = fields.last == "1"
         return PageInspection(visible: visible, summary: summary)
+    }
+
+    private func forceBootstrapIfNeeded() async {
+        let script = """
+        (() => {
+            try {
+                const targetTab = \(config.fixedTab.jsStringLiteral);
+                if (window.app && typeof window.app.switchTab === 'function') {
+                    window.app.switchTab(targetTab);
+                    return 'app_exists';
+                }
+                if (typeof document !== 'undefined' && typeof document.dispatchEvent === 'function') {
+                    document.dispatchEvent(new CustomEvent('liff-ready'));
+                }
+                return 'liff_ready_dispatched';
+            } catch (e) {
+                return 'bootstrap_error:' + String(e && e.message ? e.message : e);
+            }
+        })();
+        """
+        let result: String
+        if let value = try? await navigator.evaluateJavaScript(script) {
+            result = normalizeEvaluateResult(value)
+        } else {
+            result = "js_eval_failed"
+        }
+        logger.warning("Forced Android bootstrap result: \(result)")
     }
 
     private func normalizeEvaluateResult(_ value: Any) -> String {
@@ -179,4 +249,16 @@ final class MobileWebShellViewModel {
 private struct PageInspection {
     let visible: Bool
     let summary: String
+}
+
+private extension String {
+    var jsStringLiteral: String {
+        let escaped = self
+            .replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "\"", with: "\\\"")
+            .replacingOccurrences(of: "\n", with: "\\n")
+            .replacingOccurrences(of: "\r", with: "\\r")
+            .replacingOccurrences(of: "\t", with: "\\t")
+        return "\"\(escaped)\""
+    }
 }

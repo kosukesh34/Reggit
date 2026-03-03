@@ -3,38 +3,20 @@
 namespace App\Http\Controllers\Admin\Settings;
 
 use App\Http\Controllers\Admin\AdminBaseController;
-use App\Http\Requests\Admin\SettingsMenuRequest;
-use App\UseCases\Admin\Settings\GetMenuSettingsUseCase;
-use App\UseCases\Admin\Settings\UpdateMenuSettingsUseCase;
 
+/**
+ * メニュー設定はホーム設定に統合済み。旧URLはホーム設定へリダイレクトする。
+ */
 class MenuController extends AdminBaseController
 {
-    private GetMenuSettingsUseCase $getMenuSettingsUseCase;
-
-    private UpdateMenuSettingsUseCase $updateMenuSettingsUseCase;
-
-    public function __construct(
-        GetMenuSettingsUseCase $getMenuSettingsUseCase,
-        UpdateMenuSettingsUseCase $updateMenuSettingsUseCase
-    ) {
-        $this->getMenuSettingsUseCase = $getMenuSettingsUseCase;
-        $this->updateMenuSettingsUseCase = $updateMenuSettingsUseCase;
-    }
-
     public function index()
     {
-        $projectId = $this->resolveAdminProjectId();
-        $settings = $this->getMenuSettingsUseCase->handle($projectId);
-
-        return view('admin.settings.menu', ['settings' => $settings]);
+        return redirect()->route('admin.settings.home', $this->buildAdminRouteParams());
     }
 
-    public function update(SettingsMenuRequest $request)
+    public function update()
     {
-        $projectId = $this->resolveAdminProjectId();
-        $this->updateMenuSettingsUseCase->handle($projectId, $request->validated());
-
-        return redirect()->route('admin.settings.menu', $this->buildAdminRouteParams())
-            ->with('success', 'メニュー設定を更新しました');
+        return redirect()->route('admin.settings.home', $this->buildAdminRouteParams())
+            ->with('info', 'メニュー設定はホーム設定に統合されています。タブの表示・ラベル・アイコンはホーム設定で変更してください。');
     }
 }

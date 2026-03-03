@@ -9,6 +9,7 @@
     <span class="breadcrumb-sep">/</span>
     <span>機能・カスタマイズ</span>
 </nav>
+@include('admin.settings._context', ['pageKey' => 'features'])
 
 <form action="{{ admin_route('admin.settings.features.update') }}" method="POST">
     @csrf

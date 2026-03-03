@@ -987,6 +987,30 @@ class ShopSetting extends Model
         return (int) self::getValue('point_earn_rate', 100, $projectId);
     }
 
+    /** 注文ごとの固定ポイント（0で無効） */
+    public static function getPointsPerOrder(?int $projectId = null): int
+    {
+        return (int) self::getValue('points_per_order', 0, $projectId);
+    }
+
+    /** スタンプ1個付与につき何円か（0で無効）。例: 1000 = 1000円で1スタンプ */
+    public static function getStampEarnPerAmount(?int $projectId = null): int
+    {
+        return (int) self::getValue('stamp_earn_per_amount', 0, $projectId);
+    }
+
+    /** 注文時にスタンプを付与するスタンプカードID（nullで付与しない） */
+    public static function getOrderStampCardId(?int $projectId = null): ?int
+    {
+        $v = self::getValue('order_stamp_card_id', null, $projectId);
+        if ($v === null || $v === '') {
+            return null;
+        }
+        $id = (int) $v;
+
+        return $id > 0 ? $id : null;
+    }
+
     public static function getPointsValidDays(?int $projectId = null): int
     {
         return (int) self::getValue('points_valid_days', 365, $projectId);
