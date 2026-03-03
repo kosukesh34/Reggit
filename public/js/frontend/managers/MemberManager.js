@@ -761,6 +761,31 @@ class MemberManager {
             return;
         }
 
+        // ネイティブアプリ内 WebView では .pkpass を直接開いても Wallet に追加されないため、ワンタイム URL を取得して Safari で開く（LINE と同じ方式）
+        if (MemberManager.isMobileAppMode() && typeof window.__nativeOpenExternalUrl__ === 'function') {
+            const passUrlApi = (window.location.origin + (AppConstants.API_ENDPOINTS.MEMBERS_WALLET_PASS_URL.startsWith('/') ? '' : '/') + AppConstants.API_ENDPOINTS.MEMBERS_WALLET_PASS_URL) + '?project_key=' + encodeURIComponent(projectKey);
+            fetch(passUrlApi, { credentials: 'include', method: 'GET' })
+                .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+                .then(function (result) {
+                    if (!result.ok || !result.data || !result.data.url) {
+                        throw new Error(result.data && result.data.error ? result.data.error : 'URLの取得に失敗しました');
+                    }
+                    if (window.__nativeOpenExternalUrl__(result.data.url)) {
+                        if (typeof ToastManager !== 'undefined') ToastManager.success('Safariで開きます。表示されたら「追加」をタップしてください。');
+                    } else {
+                        throw new Error('外部ブラウザを開けませんでした');
+                    }
+                })
+                .catch(function (err) {
+                    if (typeof ToastManager !== 'undefined') ToastManager.error(err.message || 'Wallet Pass の取得に失敗しました');
+                })
+                .finally(function () {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+                });
+            return;
+        }
+
         const url = btn.getAttribute('data-wallet-pass-url');
         if (!url) {
             btn.disabled = false;
@@ -769,6 +794,7 @@ class MemberManager {
         }
         const fullUrl = url.startsWith('http') ? url : (window.location.origin + (url.startsWith('/') ? '' : '/') + url);
         if (MemberManager.isMobileAppMode()) {
+            // __nativeOpenExternalUrl__ が無いフォールバック（従来どおり同一 WebView で開く試み）
             window.location.href = fullUrl;
             btn.disabled = false;
             btn.innerHTML = originalHtml;
