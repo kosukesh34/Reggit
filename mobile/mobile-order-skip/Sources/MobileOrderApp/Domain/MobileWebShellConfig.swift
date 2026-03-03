@@ -18,7 +18,8 @@ struct MobileWebShellConfig {
     let fixedTab: String
 
     var liffURLString: String {
-        "\(baseUrl)/liff/\(projectKey)"
+        let tab = fixedTab.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? fixedTab
+        return "\(baseUrl)/liff/\(projectKey)?tab=\(tab)"
     }
 }
 
