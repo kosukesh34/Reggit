@@ -587,6 +587,12 @@ class MemberManager {
                     </div>
                 </div>
             </div>`;
+        const enlargeBtnLabel = isQR ? '会員証（QRコード）を拡大' : '会員証（バーコード）を拡大';
+        const cardVisualBlock =
+            '<div class="member-card-visual-wrap">' +
+            cardBlock +
+            '<button type="button" class="member-card-enlarge-code-btn" data-member-number="' + DomHelper.escapeHtml(memberNumber) + '" data-code-type="' + DomHelper.escapeHtml(memberCardCodeType) + '" aria-label="' + DomHelper.escapeHtml(enlargeBtnLabel) + '"><i class="fas fa-search-plus" aria-hidden="true"></i> 会員証拡大</button>' +
+            '</div>';
         const permissionDeniedNotice =
             typeof window !== 'undefined' && window.__LIFF_PERMISSION_DENIED__
                 ? '<p class="member-card-profile-notice">LINEの表示名は取得していません。<button type="button" class="link-btn" onclick="location.reload()">再読み込み</button></p>'
@@ -620,7 +626,7 @@ class MemberManager {
                     <button type="button" class="member-card-edit-btn" onclick="window.app.memberManager.openProfileEdit()" aria-label="プロフィール編集"><i class="fas fa-pen"></i></button>
                 </div>
                 ${permissionDeniedNotice}
-                ${cardBlock}
+                ${cardVisualBlock}
                 ${addToWalletBlock}
                 <div class="member-purchase-history">
                     <button type="button" class="member-purchase-history-toggle" aria-expanded="false" aria-controls="memberPurchaseHistoryList" id="memberPurchaseHistoryToggle">
@@ -655,6 +661,7 @@ class MemberManager {
             this._generateBarcode(codeId, memberNumber);
         }
         if (!isSheet) this._setupFlip();
+        this._setupCodeEnlargeButton();
         this._setupAddToWallet();
         this._setupPurchaseHistoryToggle();
         this._setupPointHistoryToggle();
@@ -963,6 +970,97 @@ class MemberManager {
                 flip();
             }
         });
+    }
+
+    _setupCodeEnlargeButton() {
+        const btn = document.querySelector('.member-card-enlarge-code-btn');
+        if (!btn) return;
+        const self = this;
+        btn.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const memberNumber = (btn.getAttribute('data-member-number') || '').trim();
+            const codeType = (btn.getAttribute('data-code-type') || 'barcode').toLowerCase();
+            if (!memberNumber) return;
+            self._showEnlargedCode(memberNumber, codeType === 'qrcode');
+        });
+    }
+
+    /**
+     * 会員証のバーコードまたはQRコードを拡大表示するモーダルを表示する。
+     * @param {string} memberNumber - 会員番号
+     * @param {boolean} isQR - true のときQRコード、false のときバーコード
+     */
+    _showEnlargedCode(memberNumber, isQR) {
+        const overlay = document.createElement('div');
+        overlay.className = 'member-code-enlarge-overlay';
+        overlay.setAttribute('role', 'dialog');
+        overlay.setAttribute('aria-modal', 'true');
+        overlay.setAttribute('aria-label', isQR ? '会員証 QRコード拡大' : '会員証 バーコード拡大');
+        const codeId = 'member-code-enlarge-' + Date.now();
+        const title = isQR ? '会員証（QRコード）' : '会員証（バーコード）';
+        overlay.innerHTML =
+            '<div class="member-code-enlarge-backdrop"></div>' +
+            '<div class="member-code-enlarge-content">' +
+            '<div class="member-code-enlarge-header">' +
+            '<h3 class="member-code-enlarge-title">' + DomHelper.escapeHtml(title) + '</h3>' +
+            '<button type="button" class="member-code-enlarge-close" aria-label="閉じる"><i class="fas fa-times" aria-hidden="true"></i></button>' +
+            '</div>' +
+            '<div class="member-code-enlarge-body">' +
+            (isQR
+                ? '<div id="' + codeId + '" class="member-code-enlarge-qr-wrap" aria-label="会員番号QRコード"></div>'
+                : '<div class="member-code-enlarge-barcode-wrap"><svg id="' + codeId + '" class="member-code-enlarge-barcode-svg"></svg></div>') +
+            '</div>' +
+            '</div>';
+        document.body.appendChild(overlay);
+
+        const close = function () {
+            overlay.remove();
+        };
+        overlay.querySelector('.member-code-enlarge-backdrop').addEventListener('click', close);
+        overlay.querySelector('.member-code-enlarge-close').addEventListener('click', close);
+        overlay.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                close();
+            }
+        });
+
+        if (isQR) {
+            if (typeof QRCode !== 'undefined') {
+                try {
+                    const container = document.getElementById(codeId);
+                    if (container) {
+                        new QRCode(container, {
+                            text: memberNumber,
+                            width: 280,
+                            height: 280,
+                            colorDark: '#000000',
+                            colorLight: '#ffffff',
+                        });
+                    }
+                } catch (err) {
+                    console.error('QR enlarge error:', err);
+                }
+            }
+        } else {
+            if (typeof JsBarcode !== 'undefined') {
+                try {
+                    JsBarcode('#' + codeId, memberNumber, {
+                        format: 'CODE128',
+                        width: 4,
+                        height: 220,
+                        displayValue: true,
+                        fontSize: 24,
+                        margin: 20,
+                        background: '#ffffff',
+                        lineColor: '#000000',
+                    });
+                } catch (err) {
+                    console.error('Barcode enlarge error:', err);
+                }
+            }
+        }
     }
 
     _setupPurchaseHistoryToggle() {
