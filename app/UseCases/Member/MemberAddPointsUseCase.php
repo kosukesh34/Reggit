@@ -2,7 +2,7 @@
 
 namespace App\UseCases\Member;
 
-use App\Models\ShopSetting;
+use App\Services\Smaregi\SmaregiApiService;
 use App\Services\UserService;
 use App\UseCases\Member\Data\MemberPointsOutput;
 use App\UseCases\Smaregi\SmaregiSyncCustomerPointsUseCase;
@@ -13,6 +13,7 @@ class MemberAddPointsUseCase
     public function __construct(
         private UserService $userService,
         private SmaregiSyncCustomerPointsUseCase $smaregiSyncPoints,
+        private SmaregiApiService $smaregiApi,
     ) {}
 
     public function handle(Request $request, int $points, ?string $description): MemberPointsOutput
@@ -25,7 +26,7 @@ class MemberAddPointsUseCase
         }
 
         $projectId = $member->project_id ?? 1;
-        $contractId = ShopSetting::getValue('smaregi_contract_id', null, $projectId);
+        $contractId = $this->smaregiApi->getContractIdForProject($projectId);
         $contractId = is_string($contractId) ? trim($contractId) : '';
         $smaregiCustomerId = $member->smaregi_customer_id ?? '';
 

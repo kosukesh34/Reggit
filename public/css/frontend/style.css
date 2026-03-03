@@ -109,7 +109,8 @@ input, textarea, select {
     overflow-x: hidden;
 }
 
-/* ネイティブアプリ内（WebView）: 全画面・横スクロール禁止・ズーム禁止・レイアウト固定 */
+/* ネイティブアプリ内（WebView）: 全画面・横スクロール禁止・ズーム禁止・レイアウト固定
+   Android では初回 100vh/100dvh が 0 になりやすいため px フォールバックを指定 */
 html.native-app-embed,
 body.native-app-embed {
     overflow: hidden !important;
@@ -118,16 +119,22 @@ body.native-app-embed {
     height: 100%;
     min-height: 100vh;
     min-height: 100dvh;
+    min-height: max(100vh, 800px);
+    min-height: max(100dvh, 800px);
     touch-action: pan-y;
     -webkit-overflow-scrolling: touch;
+    box-sizing: border-box;
 }
 
-/* ネイティブアプリ内: 画面が変わってもレイアウトを一定にする（ヘッダー・メイン・タブは最下部固定） */
+/* ネイティブアプリ内: 画面が変わってもレイアウトを一定にする（ヘッダー・メイン・タブは最下部固定）
+   Android WebView で 100vh が 0 の場合に備え min-height に px フォールバック */
 body.native-app-embed .app-container {
     display: flex !important;
     flex-direction: column;
     min-height: 100vh;
     min-height: 100dvh;
+    min-height: max(100vh, 800px);
+    min-height: max(100dvh, 800px);
     max-height: 100vh;
     max-height: 100dvh;
     height: 100%;
@@ -151,14 +158,19 @@ body.native-app-embed .header {
 body.native-app-embed .main-content {
     display: flex;
     flex-direction: column;
-    flex: 1 1 0;
+    flex: 1 1 auto;
     min-height: 0;
+    min-height: max(500px, 50vh);
+    min-height: max(500px, 50dvh);
     max-width: 100%;
     width: 100%;
-    overflow: hidden;
-    padding-bottom: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-bottom: calc(var(--main-tabs-height) + 12px);
     visibility: visible !important;
     background: #fff;
+    -webkit-overflow-scrolling: touch;
+    overflow-scrolling: touch;
 }
 
 body.native-app-embed .main-content > #announcementsSection {
@@ -195,18 +207,21 @@ body.native-app-embed .tab-content {
 body.native-app-embed .tab-content.active {
     display: flex;
     flex-direction: column;
-    flex: 1 1 0;
+    flex: 1 1 auto;
     min-height: 0;
-    overflow: hidden;
-}
-
-body.native-app-embed .tab-content.active {
+    min-height: max(500px, 50vh);
+    min-height: max(500px, 50dvh);
+    overflow-y: auto;
+    overflow-x: hidden;
     visibility: visible !important;
+    -webkit-overflow-scrolling: touch;
 }
 
 body.native-app-embed .tab-content.active .tab-section {
-    flex: 1 1 0;
+    flex: 1 1 auto;
     min-height: 120px;
+    min-height: max(400px, 45vh);
+    min-height: max(400px, 45dvh);
     max-width: 100%;
     width: 100%;
     position: relative;
@@ -4190,21 +4205,26 @@ body.native-app-embed .header {
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
 }
 
-/* 会員登録・全画面表示 */
+/* 会員登録・全画面表示（プロフィール編集が全て表示されるようスクロール・高さを確保） */
 .member-register-fullscreen {
-    position: absolute;
-    inset: 0;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     display: flex;
     flex-direction: column;
     background: var(--bg-primary, #fff);
     z-index: 100;
-    min-height: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
     padding-top: env(safe-area-inset-top, 0);
     padding-bottom: env(safe-area-inset-bottom, 0);
     padding-left: env(safe-area-inset-left, 0);
     padding-right: env(safe-area-inset-right, 0);
     box-sizing: border-box;
     overflow-x: hidden;
+    overflow-y: hidden;
 }
 
 .member-register-fullscreen-header {
@@ -4225,16 +4245,24 @@ body.native-app-embed .header {
 }
 
 .member-register-fullscreen-body {
-    flex: 1;
+    flex: 1 1 auto;
+    min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
     padding: 16px 20px 24px;
+    padding-bottom: max(24px, env(safe-area-inset-bottom, 0) + 24px);
 }
 
 .member-register-fullscreen-body .member-modal-inner {
     box-shadow: none;
     padding: 0;
+    padding-bottom: 40px;
+}
+
+/* ネイティブアプリ内でタブバー分の余白を確保 */
+body.native-app-embed .member-register-fullscreen-body {
+    padding-bottom: calc(var(--main-tabs-height, 72px) + 24px);
 }
 
 .member-modal-title {
@@ -4280,6 +4308,23 @@ body.native-app-embed .header {
     font-size: 12px;
     color: var(--text-secondary);
     margin: 6px 0 0;
+}
+
+.member-form-postal-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.member-form-postal-row input {
+    flex: 1;
+    min-width: 120px;
+}
+
+.member-form-postal-row .postal-code-lookup-btn {
+    flex: 0 0 auto;
+    white-space: nowrap;
 }
 
 .member-form-actions {

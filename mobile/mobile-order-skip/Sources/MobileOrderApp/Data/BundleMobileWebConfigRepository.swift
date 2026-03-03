@@ -95,20 +95,25 @@ struct BundleMobileWebConfigRepository: MobileWebConfigRepository {
         return trimmed
     }
 
+    /// Info.plist に LIFF URL が一切入っていない場合のフォールバック（xcconfig の #include 失敗時など）。Skip.env の LIFF_BASE_URL と揃えること。
+    private static let fallbackBaseUrlIOS = "https://unadministrable-idiocratically-annalee.ngrok-free.dev"
+
     private func defaultBaseUrl() -> String {
         if isAndroidRuntime() {
             return "http://10.0.2.2:8080"
         }
         if isIOSRuntime() {
-            return "http://localhost:8080"
+            return Self.fallbackBaseUrlIOS
         }
-        return "http://localhost:8080"
+        return Self.fallbackBaseUrlIOS
     }
 }
 
 struct DefaultNativeDeviceContextProvider: NativeDeviceContextProvider {
     private let defaults: UserDefaults
     private static let deviceIdentifierKey = "mobile_order_device_identifier"
+    /// Key for OneSignal subscription ID. Must match Darwin/Android native storage key.
+    private static let pushTokenKey = "mobile_order_push_token"
 
     init(defaults: UserDefaults) {
         self.defaults = defaults
@@ -116,6 +121,11 @@ struct DefaultNativeDeviceContextProvider: NativeDeviceContextProvider {
 
     init() {
         self.init(defaults: .standard)
+    }
+
+    var pushToken: String? {
+        guard let value = defaults.string(forKey: Self.pushTokenKey), !value.isEmpty else { return nil }
+        return value
     }
 
     var platform: NativePlatform {
@@ -144,7 +154,7 @@ struct DefaultNativeDeviceContextProvider: NativeDeviceContextProvider {
     var appVersion: String {
         let short = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
         let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String
-        let shortValue = (short?.isEmpty == false) ? short! : "1.0.0"
+        let shortValue = short.flatMap { $0.isEmpty ? nil : $0 } ?? "1.0.0"
         if let build, !build.isEmpty {
             return "\(shortValue)(\(build))"
         }

@@ -18,9 +18,42 @@ class DeviceRegisterController extends Controller
 
     public function __invoke(DeviceRegisterRequest $request): JsonResponse
     {
+        $validated = $request->validated();
+        $projectId = AdminContext::getCurrentProjectId() ?? 1;
+        $pushTokenRaw = $validated['push_token'] ?? null;
+        $hasPushToken = is_string($pushTokenRaw) && trim($pushTokenRaw) !== '';
+        $pushTokenLen = $hasPushToken ? strlen(trim($pushTokenRaw)) : 0;
+
+        LogHelper::info('[Device] register request', [
+            'project_id' => $projectId,
+            'has_push_token' => $hasPushToken,
+            'push_token_length' => $pushTokenLen,
+            'platform' => $validated['platform'] ?? null,
+            'device_identifier_preview' => isset($validated['device_identifier'])
+                ? substr((string) $validated['device_identifier'], 0, 8) . '...'
+                : null,
+        ]);
+
         try {
             $user = $this->userService->getOrCreateUser($request);
-            $device = $this->deviceService->register($user, $request->validated());
+            $device = $this->deviceService->register($user, $validated);
+
+            $savedTokenLen = $device->push_token !== null && $device->push_token !== ''
+                ? strlen($device->push_token)
+                : 0;
+            LogHelper::info('[Device] register success', [
+                'project_id' => $projectId,
+                'device_id' => $device->id,
+                'user_id' => $device->user_id,
+                'push_token_saved_length' => $savedTokenLen,
+            ]);
+
+            if ($hasPushToken && $savedTokenLen === 0) {
+                LogHelper::warning('[Device] push_token was sent but not saved', [
+                    'project_id' => $projectId,
+                    'device_id' => $device->id,
+                ]);
+            }
 
             return response()->json([
                 'success' => true,
@@ -28,7 +61,8 @@ class DeviceRegisterController extends Controller
             ]);
         } catch (\Throwable $e) {
             LogHelper::error('[Device] register failed', [
-                'project_id' => AdminContext::getCurrentProjectId() ?? 1,
+                'project_id' => $projectId,
+                'has_push_token' => $hasPushToken,
                 'error' => $e->getMessage(),
             ]);
 

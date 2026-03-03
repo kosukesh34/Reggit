@@ -10,6 +10,7 @@
 - LIFF 側のタブは非表示・遷移ロック（固定タブのみ表示）
 - 起動時に `window.__MOBILE_DEVICE_INFO__` へ端末情報を注入し、`/api/devices/register` へ送信
 - `window.__nativeSetPushToken(token)` を呼ぶと push token を更新して再登録
+- **OneSignal**: プッシュ通知は OneSignal で送信。アプリ側で取得した subscription ID を上記でバックエンドに送り、お知らせ配信時に OneSignal API で送信します。
 
 ## URL設定
 
@@ -87,8 +88,16 @@ xcodebuild -workspace Project.xcworkspace -scheme "MobileOrderApp App" \
 # ビルド成果物のパスは DerivedData により異なります
 APP_PATH=$(find ~/Library/Developer/Xcode/DerivedData -name "MobileOrderApp.app" -path "*Debug-iphonesimulator*" -type d | head -1)
 xcrun simctl install "iPhone 16 Pro" "$APP_PATH"
-xcrun simctl launch "iPhone 16 Pro" jp.gamechanger.mobileorder
+xcrun simctl launch "iPhone 16 Pro" com.reggit.default
 ```
+
+### Android での表示について
+
+Android の WebView では次の点が iOS と異なります。
+
+- **初回レイアウトで `100vh` が 0 になる**ことがあるため、注入スクリプトで `min-height` に px フォールバック（例: 800px）と `window.innerHeight` の遅延反映を行っています。
+- **Skip の Compose が親の制約を正しく受け取らない**場合があるため、`Main.kt` の `PresentationRootView` で `BoxWithConstraints` を使い、コンテンツに明示的なサイズ（`maxWidth` × `maxHeight`）を渡して WebView が画面全体を描画するようにしています。
+- タブバーは固定表示され、メインコンテンツ領域は `.main-content` / `.tab-content.active` に `min-height` を指定して潰れないようにしています。
 
 ### Android でビルド・起動する
 
@@ -130,10 +139,102 @@ APK はプロジェクトルート（mobile-order-skip）から次の場所に�
 ```bash
 # プロジェクトルート（mobile-order-skip）で実行。エミュレータまたは実機を 1 台だけ接続した状態で
 adb install -r .build/Android/app/outputs/apk/debug/app-debug.apk
-adb shell am start -n jp.gamechanger.mobileorder/mobile.order.app.MainActivity
+adb shell am start -n com.reggit.default/mobile.order.app.MainActivity
 ```
 
 `BUILT_PRODUCTS_DIR` の実際のパスは、Xcode でビルドしたあと `~/Library/Developer/Xcode/DerivedData/` 内の `Project-` で始まるフォルダを確認してください。
+
+### OneSignal プッシュ通知
+
+- **App ID**: `Skip.env` の `ONE_SIGNAL_APP_ID` に OneSignal ダッシュボードの App ID（UUID）を設定済みです。iOS では `Darwin/Info.plist` の `OneSignalAppId` にも同じ値を入れてあります（App ID を変えた場合は両方揃える）。
+- **バックエンド**: プロジェクトルートの `.env` に `PUSH_ONESIGNAL_ENABLED=true`, `PUSH_ONESIGNAL_APP_ID`, `PUSH_ONESIGNAL_API_KEY` を設定し、お知らせ配信で OneSignal が使われます。
+- **iOS**: OneSignal SDK は Xcode の Swift Package で追加済み。
+  - **Push Notifications 権限**: `Darwin/Entitlements.plist` に `aps-environment`（development / production）を設定済み。実機で「Apple iOS (APNs)」の購読者として登録されるために必須です。
+  - **APNs の設定**: OneSignal ダッシュボードの「Settings → Platforms → Apple iOS (APNs)」で p8 キー（推奨）または証明書を設定してください。未設定だと iOS 購読者が 0 のままになります。
+- **Android**: OneSignal は FCM を使用します。`Android/app/google-services.json` の **package_name** と、アプリの **applicationId** を一致させてください。
+  - 現在の `google-services.json` は `com.reggit.default` 用です。このパッケージでビルドする場合は `Skip.env` の `ANDROID_APPLICATION_ID=com.reggit.default` と `PRODUCT_BUNDLE_IDENTIFIER=com.reggit.default` をそのまま使います。
+  - 別の applicationId でビルドする場合は、Firebase コンソールでそのパッケージを追加し、ダウンロードした `google-services.json` で差し替えてください。
+
+### プッシュ通知のテスト手順（実際に通知が届くか確認する）
+
+1. **アプリをビルド・起動**
+   - プロジェクトルートで: `./scripts/build-and-install-mobile.sh`
+   - または Xcode で「MobileOrderApp App」を実機／シミュレータに Run、Android の場合は実機／エミュレータに APK をインストールして起動。
+
+2. **通知を許可**
+   - 初回起動時（または権限リセット後）に OneSignal の通知許可ダイアログが出たら「許可」をタップ。
+   - **iOS**: 実機でのみプッシュが届きます。シミュレータでは通知は届きません。
+   - **Android**: エミュレータ・実機どちらでも FCM 経由で届きます（Google Play 入りイメージ推奨）。
+
+3. **登録完了を待つ**
+   - 許可後、アプリが OneSignal に端末を登録するまで数秒〜数十秒かかることがあります。アプリを開いたまま少し待つか、一度バックグラウンドにしてから再度開くと登録されやすいです。
+
+4. **テスト通知を送信**
+   - プロジェクトルートで（Docker 利用時）:
+     ```bash
+     docker compose exec app php artisan push:onesignal-test --title="テスト通知" --body="確認用です" --force
+     ```
+   - ローカルで PHP 8.2 以上がある場合:
+     ```bash
+     php artisan push:onesignal-test --title="テスト通知" --body="確認用です" --force
+     ```
+   - 出力の「配信先: N 件」が 1 以上なら送信成功。端末に通知が表示されるはずです。
+
+5. **届かない場合**
+   - OneSignal ダッシュボードの「Audience → Subscriptions」で端末が 1 件以上表示されているか確認。「Apple iOS (APNs)」が 0 の場合は iOS 側の設定を確認。
+   - **iOS**: 下記「Apple iOS (APNs) が 0 のとき」を参照。
+   - `.env` の `PUSH_ONESIGNAL_APP_ID` が `Skip.env` の `ONE_SIGNAL_APP_ID` と同一か確認。
+   - Android は `google-services.json` の package と `Skip.env` の `ANDROID_APPLICATION_ID` が一致しているか確認。
+
+### 「Apple iOS (APNs) が 0 人」と表示されるとき
+
+OneSignal の「Test for Subscribed Users」で「none specifically for the Apple iOS (APNs) platform」と出る場合は、次を順に確認してください。
+
+1. **実機で実行しているか**
+   - シミュレータでは APNs トークンが発行されないため、必ず実機でビルド・実行してください。
+
+2. **Xcode で Push Notifications が有効か**
+   - プロジェクトに **Push Notifications** の capability を追加済みです（`project.pbxproj` の `SystemCapabilities`）。
+   - Xcode で `mobile/mobile-order-skip/Darwin/MobileOrderApp.xcodeproj` を開く。
+   - 左の **TARGETS** から **MobileOrderApp**（または **MobileOrderApp App**）を選択 → **Signing & Capabilities** タブ。
+   - **Push Notifications** が一覧に表示されていれば有効です。無い場合は **+ Capability** → **Push Notifications** を追加する。
+   - `Darwin/Entitlements.plist` に `aps-environment` が入っていることも確認する。
+
+3. **Apple Developer で App ID に Push を有効にしたか**（「Push notifications are not enabled for this app」と出る場合）
+   - [Apple Developer](https://developer.apple.com/account) → **Certificates, Identifiers & Profiles** → **Identifiers**。
+   - 対象の **App ID**（例: `com.reggit.default`）を選択。
+   - **Push Notifications** にチェックを入れ、**Save** する。
+   - Xcode で **Automatically manage signing** を使っている場合は、プロビジョニングプロファイルが自動更新される。使っていない場合は、該当プロファイルを再生成する。
+
+4. **OneSignal ダッシュボードで APNs を設定しているか**
+   - OneSignal ダッシュボード → **Settings** → **Platforms** → **Apple iOS (APNs)**。
+   - **p8 Auth Key**（推奨）または **p12 Certificate** を未設定のままにしない。未設定だと端末が登録されても「Apple iOS (APNs)」としてカウントされません。
+
+5. **通知を許可し、アプリを開いたまま待つ**
+   - 実機でアプリ起動 → 通知許可ダイアログで「許可」をタップ。
+   - アプリを**開いたまま** 15〜20 秒待ってから、OneSignal の **Audience → Subscriptions** を再読み込みする。
+
+6. **クリーンビルドして再実行**
+   - Xcode で **Product → Clean Build Folder** のあと、実機で再度 **Run** する。
+
+### p8 を設定したのにプッシュが送れないとき
+
+OneSignal に p8 を登録済みなのに通知が届かない場合は、次を確認してください。
+
+1. **Bundle ID の一致（最も多い原因）**
+   - アプリの **Bundle ID** と、OneSignal の **Apple iOS (APNs)** で p8 を設定したときの **Bundle ID** が**完全に同一**である必要があります。
+   - このプロジェクトの Bundle ID は **Skip.env** の `PRODUCT_BUNDLE_IDENTIFIER` で決まります（例: `com.reggit.default`）。
+   - OneSignal ダッシュボード → **Settings** → **Platforms** → **Apple iOS (APNs)** を開き、**Bundle ID** が上記と 1 文字も違わないか確認する。
+   - Xcode で実際の値を確認する: ターゲット **MobileOrderApp App** → **General** → **Bundle Identifier**。
+
+2. **Apple Developer の App ID**
+   - その Bundle ID の **App ID** が Apple Developer の **Identifiers** に存在し、**Push Notifications** がオンになっているか確認する。
+
+3. **送信先が 0 件になっていないか**
+   - 送信時に「配信先: 0 件」の場合は、**Audience → Subscriptions** で「Apple iOS (APNs)」が 1 以上あるか確認する。0 の場合は端末がまだ OneSignal に登録されていないので、上記「Apple iOS (APNs) が 0 のとき」の手順を行う。
+
+4. **開発環境と p8 の環境**
+   - 実機で **Debug ビルド**で動かしている場合は、APNs は **development**（Sandbox）を使います。p8 は Sandbox & Production 両方に対応しているので、通常はそのままで問題ありません。**Archive（配布）** の場合は **production** になります。
 
 ### Android で画面が真っ白な場合
 

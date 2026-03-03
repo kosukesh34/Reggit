@@ -63,6 +63,23 @@ class MemberManager {
         return (p === 'ios' || p === 'android') ? p : null;
     }
 
+    /**
+     * Wallet 追加用中間ページの return_url と return_target を返す。
+     * LINE の場合は LINE に、ネイティブアプリの場合はアプリに戻る URL を返す。
+     * @returns {{ returnUrl: string, returnTarget: 'line'|'app'|'web' }}
+     */
+    static getWalletReturnParams() {
+        const currentHref = typeof window !== 'undefined' && window.location && window.location.href ? window.location.href : '';
+        if (typeof window !== 'undefined' && window.__IS_LIFF__ === true) {
+            return { returnUrl: currentHref, returnTarget: 'line' };
+        }
+        if (MemberManager.isMobileAppMode()) {
+            const scheme = (typeof AppConstants !== 'undefined' && AppConstants.WALLET_RETURN_APP_SCHEME) ? AppConstants.WALLET_RETURN_APP_SCHEME : 'mobileorderapp://';
+            return { returnUrl: scheme, returnTarget: 'app' };
+        }
+        return { returnUrl: currentHref, returnTarget: 'web' };
+    }
+
     /** Apple Wallet ボタンを表示すべきか（iOS またはネイティブ iOS アプリかつ有効時） */
     static shouldShowAppleWallet() {
         if (!MemberManager.isWalletPassEnabled()) return false;
@@ -397,6 +414,9 @@ class MemberManager {
                 this.memberData = payload;
                 this.render(payload);
                 ToastManager.success('会員証を作成しました');
+                if (typeof window !== 'undefined' && window.app && typeof window.app.refreshCurrentTab === 'function') {
+                    window.app.refreshCurrentTab();
+                }
             } else if (result.success) {
                 await this.load();
             } else {
@@ -748,8 +768,37 @@ class MemberManager {
                     if (!result.ok || !result.data || !result.data.url) {
                         throw new Error(result.data && result.data.error ? result.data.error : 'URLの取得に失敗しました');
                     }
-                    liff.openWindow({ url: result.data.url, external: true });
-                    if (typeof ToastManager !== 'undefined') ToastManager.success('ブラウザで開きます。表示されたら「追加」をタップしてください。');
+                    const ret = MemberManager.getWalletReturnParams();
+                    const walletAddUrl = window.location.origin + '/wallet-add?wallet_url=' + encodeURIComponent(result.data.url) + '&return_url=' + encodeURIComponent(ret.returnUrl) + '&return_target=' + encodeURIComponent(ret.returnTarget) + '&type=apple';
+                    liff.openWindow({ url: walletAddUrl, external: true });
+                    if (typeof ToastManager !== 'undefined') ToastManager.success('ブラウザで開きます。追加後は「LINEに戻る」をタップしてください。');
+                })
+                .catch(function (err) {
+                    if (typeof ToastManager !== 'undefined') ToastManager.error(err.message || 'Wallet Pass の取得に失敗しました');
+                })
+                .finally(function () {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+                });
+            return;
+        }
+
+        // ネイティブアプリ内 WebView では .pkpass を直接開いても Wallet に追加されないため、ワンタイム URL を取得して Safari で開く（LINE と同じ方式）
+        if (MemberManager.isMobileAppMode() && typeof window.__nativeOpenExternalUrl__ === 'function') {
+            const passUrlApi = (window.location.origin + (AppConstants.API_ENDPOINTS.MEMBERS_WALLET_PASS_URL.startsWith('/') ? '' : '/') + AppConstants.API_ENDPOINTS.MEMBERS_WALLET_PASS_URL) + '?project_key=' + encodeURIComponent(projectKey);
+            fetch(passUrlApi, { credentials: 'include', method: 'GET' })
+                .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+                .then(function (result) {
+                    if (!result.ok || !result.data || !result.data.url) {
+                        throw new Error(result.data && result.data.error ? result.data.error : 'URLの取得に失敗しました');
+                    }
+                    const ret = MemberManager.getWalletReturnParams();
+                    const walletAddUrl = window.location.origin + '/wallet-add?wallet_url=' + encodeURIComponent(result.data.url) + '&return_url=' + encodeURIComponent(ret.returnUrl) + '&return_target=' + encodeURIComponent(ret.returnTarget) + '&type=apple';
+                    if (window.__nativeOpenExternalUrl__(walletAddUrl)) {
+                        if (typeof ToastManager !== 'undefined') ToastManager.success('Safariで開きます。追加後は「アプリに戻る」をタップしてください。');
+                    } else {
+                        throw new Error('外部ブラウザを開けませんでした');
+                    }
                 })
                 .catch(function (err) {
                     if (typeof ToastManager !== 'undefined') ToastManager.error(err.message || 'Wallet Pass の取得に失敗しました');
@@ -769,6 +818,7 @@ class MemberManager {
         }
         const fullUrl = url.startsWith('http') ? url : (window.location.origin + (url.startsWith('/') ? '' : '/') + url);
         if (MemberManager.isMobileAppMode()) {
+            // __nativeOpenExternalUrl__ が無いフォールバック（従来どおり同一 WebView で開く試み）
             window.location.href = fullUrl;
             btn.disabled = false;
             btn.innerHTML = originalHtml;
@@ -827,9 +877,21 @@ class MemberManager {
                 if (!result.ok || !result.data || !result.data.url) {
                     throw new Error(result.data && result.data.error ? result.data.error : 'URLの取得に失敗しました');
                 }
-                if (typeof window !== 'undefined' && window.__IS_LIFF__ && typeof liff !== 'undefined' && liff.openWindow) {
-                    liff.openWindow({ url: result.data.url, external: true });
-                    if (typeof ToastManager !== 'undefined') ToastManager.success('Google Wallet を開きます。表示されたら「追加」をタップしてください。');
+                const openExternal = (typeof window !== 'undefined' && window.__IS_LIFF__ && typeof liff !== 'undefined' && liff.openWindow) ||
+                    (MemberManager.isMobileAppMode() && typeof window.__nativeOpenExternalUrl__ === 'function');
+                if (openExternal) {
+                    const ret = MemberManager.getWalletReturnParams();
+                    const walletAddUrl = window.location.origin + '/wallet-add?wallet_url=' + encodeURIComponent(result.data.url) + '&return_url=' + encodeURIComponent(ret.returnUrl) + '&return_target=' + encodeURIComponent(ret.returnTarget) + '&type=google';
+                    if (typeof window !== 'undefined' && window.__IS_LIFF__ && typeof liff !== 'undefined' && liff.openWindow) {
+                        liff.openWindow({ url: walletAddUrl, external: true });
+                        if (typeof ToastManager !== 'undefined') ToastManager.success('Google Wallet を開きます。追加後は「LINEに戻る」をタップしてください。');
+                    } else if (MemberManager.isMobileAppMode() && typeof window.__nativeOpenExternalUrl__ === 'function') {
+                        if (window.__nativeOpenExternalUrl__(walletAddUrl)) {
+                            if (typeof ToastManager !== 'undefined') ToastManager.success('ブラウザで開きます。追加後は「アプリに戻る」をタップしてください。');
+                        } else {
+                            throw new Error('外部ブラウザを開けませんでした');
+                        }
+                    }
                 } else {
                     window.location.href = result.data.url;
                 }
@@ -1057,22 +1119,36 @@ class MemberManager {
     }
 
     _setupPostalCodeLookup(container) {
-        const doc = container || document;
+        // getElementById は document にしかないため、必ず document で取得する
+        const doc = typeof document !== 'undefined' ? document : null;
+        if (!doc) return;
         const postalInput = doc.getElementById('profileEdit_postal_code') || doc.getElementById('profileEditPostalCode');
         const addressInput = doc.getElementById('profileEdit_address') || doc.getElementById('profileEditAddress');
         if (!postalInput || !addressInput) return;
 
+        const showInputFailed = (message) => {
+            const msg = message || '入力に失敗しました。手動で入力してください。';
+            if (typeof ToastManager !== 'undefined') ToastManager.info(msg);
+        };
+
         const fetchAddress = () => {
             const raw = (postalInput.value || '').trim().replace(/[‐－−ー]/g, '-');
             const digits = raw.replace(/\D/g, '');
-            if (digits.length < 3) return;
+            if (digits.length < 3) {
+                showInputFailed('郵便番号を3桁以上入力してください。');
+                return;
+            }
+            if (digits.length < 7) {
+                showInputFailed('郵便番号は7桁で入力してください。');
+                return;
+            }
 
             const url = AppConstants.API_ENDPOINTS.POSTAL_CODE + '?postal_code=' + encodeURIComponent(digits);
             postalInput.disabled = true;
             this.apiClient.get(url)
                 .then((result) => {
                     if (result && result.success === false) {
-                        if (typeof ToastManager !== 'undefined') ToastManager.info(result.error || '住所を自動入力できませんでした。手入力してください。');
+                        showInputFailed();
                         return;
                     }
                     const data = (result && result.data) || result || {};
@@ -1099,16 +1175,16 @@ class MemberManager {
                             } else if (typeof ToastManager !== 'undefined') {
                                 ToastManager.success('住所を入力しました');
                             }
-                        } else if (digits.length >= 7 && typeof ToastManager !== 'undefined') {
-                            ToastManager.info(serverError || '該当する住所がありません。手入力してください。');
+                        } else {
+                            showInputFailed();
                         }
-                    } else if (digits.length >= 7 && typeof ToastManager !== 'undefined') {
-                        ToastManager.info(serverError || '住所を自動入力できませんでした。手入力してください。');
+                    } else {
+                        // API エラーや該当なし（IP制限の場合は serverError にメッセージが入る）
+                        const msg = serverError ? (serverError + ' 手動で入力してください。') : null;
+                        showInputFailed(msg);
                     }
                 })
-                .catch(() => {
-                    if (typeof ToastManager !== 'undefined') ToastManager.info('住所を自動入力できませんでした。手入力してください。');
-                })
+                .catch(() => { showInputFailed(); })
                 .finally(() => { postalInput.disabled = false; });
         };
 
@@ -1117,6 +1193,11 @@ class MemberManager {
             const digits = (this.value || '').replace(/\D/g, '');
             if (digits.length === 7) fetchAddress();
         });
+        const scope = container && container.querySelector ? container : doc;
+        const lookupBtn = scope.querySelector('.postal-code-lookup-btn') || scope.querySelector('[data-action="postal-code-lookup"]');
+        if (lookupBtn) {
+            lookupBtn.addEventListener('click', () => fetchAddress());
+        }
     }
 
     _getProfileEditFormHtml(user, member, options) {
@@ -1172,8 +1253,11 @@ class MemberManager {
             } else if (key === 'email') {
                 input = '<input type="email" id="' + id + '" name="' + DomHelper.escapeHtml(key) + '" value="' + DomHelper.escapeHtml(val) + '" maxlength="255"' + required + '>';
             } else if (key === 'postal_code') {
-                input = '<input type="text" id="' + id + '" name="' + DomHelper.escapeHtml(key) + '" value="' + DomHelper.escapeHtml(val) + '" placeholder="例: 100-0001" maxlength="8" inputmode="numeric" autocomplete="postal-code"' + required + '>' +
-                    '<p class="member-form-hint">郵便番号を入力すると住所が自動で入力されます</p>';
+                input = '<div class="member-form-postal-row">' +
+                    '<input type="text" id="' + id + '" name="' + DomHelper.escapeHtml(key) + '" value="' + DomHelper.escapeHtml(val) + '" placeholder="例: 100-0001" maxlength="8" inputmode="numeric" autocomplete="postal-code"' + required + '>' +
+                    '<button type="button" class="member-btn member-btn--secondary postal-code-lookup-btn" data-action="postal-code-lookup"><i class="fas fa-search-location"></i> 住所を自動入力</button>' +
+                    '</div>' +
+                    '<p class="member-form-hint">郵便番号を入力して「住所を自動入力」を押すと住所が入力されます</p>';
             } else if (key === 'phone') {
                 input = '<input type="tel" id="' + id + '" name="' + DomHelper.escapeHtml(key) + '" value="' + DomHelper.escapeHtml(val) + '" maxlength="50"' + required + '>';
             } else {
@@ -1310,6 +1394,9 @@ class MemberManager {
                     this.closeProfileEdit({ skipHistory: true });
                 }
                 ToastManager.success('会員登録が完了しました');
+                if (typeof window !== 'undefined' && window.app && typeof window.app.refreshCurrentTab === 'function') {
+                    window.app.refreshCurrentTab();
+                }
             } else if (data) {
                 this.memberData = data;
                 if (this._registerFullScreen) {
@@ -1319,6 +1406,9 @@ class MemberManager {
                     this.closeProfileEdit({ skipHistory: true });
                 }
                 ToastManager.success(result.message || '会員登録が完了しました');
+                if (typeof window !== 'undefined' && window.app && typeof window.app.refreshCurrentTab === 'function') {
+                    window.app.refreshCurrentTab();
+                }
             } else {
                 throw new Error(result.error || result.message || '登録に失敗しました');
             }
@@ -1381,6 +1471,9 @@ class MemberManager {
                 this.render(next);
                 this.closeProfileEdit();
                 ToastManager.success('プロフィールを更新しました');
+                if (typeof window !== 'undefined' && window.app && typeof window.app.refreshCurrentTab === 'function') {
+                    window.app.refreshCurrentTab();
+                }
             } else {
                 throw new Error(result.error);
             }
