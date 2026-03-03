@@ -130,7 +130,12 @@ class CouponController extends AdminBaseController
     public function deleteCoupon($id)
     {
         $projectId = $this->resolveAdminProjectId();
-        $this->deleteUseCase->handle((int) $id, $projectId);
+        try {
+            $this->deleteUseCase->handle((int) $id, $projectId);
+        } catch (\RuntimeException $e) {
+            return redirect()->route('admin.coupons', $this->buildAdminRouteParams())
+                ->with('error', $e->getMessage());
+        }
 
         return redirect()->route('admin.coupons', $this->buildAdminRouteParams())
             ->with('success', 'クーポンを削除しました');

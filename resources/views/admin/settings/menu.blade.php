@@ -20,6 +20,7 @@
     <h1 class="page-header-title"><i class="fas fa-bars"></i> メニュー設定</h1>
     <p class="page-header-desc">フロント（ユーザー側）で表示するメニュー項目を設定します</p>
 </div>
+@include('admin.settings._context', ['pageKey' => 'menu'])
 
 @if(session('success'))
     <div class="alert alert-success"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>

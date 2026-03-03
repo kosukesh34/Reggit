@@ -1,3 +1,7 @@
+// デフォルト値（#include がビルド環境で解決されない場合のフォールバック）
+LIFF_BASE_URL = https://unadministrable-idiocratically-annalee.ngrok-free.dev
+LIFF_BASE_URL_IOS = https://unadministrable-idiocratically-annalee.ngrok-free.dev
+LIFF_BASE_URL_ANDROID = http://10.0.2.2:8080
 #include "../Skip.env"
 
 // LIFF のベースURL（Skip.env の LIFF_BASE_URL を Info.plist に渡す）
@@ -47,7 +51,7 @@ SWIFT_EMIT_LOC_STRINGS = YES
 // the name of the product module; this can be anything, but cannot conflict with any Swift module names
 PRODUCT_MODULE_NAME = $(PRODUCT_NAME:c99extidentifier)App
 
-// On-device testing may need to override the bundle ID
+// Bundle ID は Skip.env の PRODUCT_BUNDLE_IDENTIFIER を使用。OneSignal p8 の Bundle ID と完全一致させること。
 // PRODUCT_BUNDLE_IDENTIFIER[config=Debug][sdk=iphoneos*] = cool.beans.BundleIdentifer
 
 SDKROOT = auto
@@ -55,6 +59,9 @@ SUPPORTED_PLATFORMS = iphoneos iphonesimulator macosx
 SWIFT_EMIT_LOC_STRINGS = YES
 
 SWIFT_VERSION = 6
+
+// OneSignal App ID (from Skip.env). Passed to Info.plist for runtime init.
+INFOPLIST_KEY_OneSignalAppId = $(ONE_SIGNAL_APP_ID)
 
 // Development team ID for on-device testing
 CODE_SIGNING_REQUIRED = NO

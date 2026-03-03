@@ -67,12 +67,16 @@ class JapanPostApiService
             ]);
 
         if (! $response->successful()) {
+            $status = $response->status();
             Log::warning('JapanPost searchcode failed', [
-                'status' => $response->status(),
+                'status' => $status,
                 'body' => $response->body(),
             ]);
             $body = $response->json();
             $msg = is_array($body) && isset($body['message']) ? (string) $body['message'] : '住所の取得に失敗しました';
+            if ($status === 403) {
+                $msg = 'アクセスが拒否されました。日本郵便のシステム情報に送信元IPを登録してください。（./scripts/test-japanpost-api.sh で送信元IPを確認できます）';
+            }
 
             return ['_error' => $msg];
         }

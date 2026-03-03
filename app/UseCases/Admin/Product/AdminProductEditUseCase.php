@@ -14,8 +14,8 @@ class AdminProductEditUseCase
         $this->productAdminService = $productAdminService;
     }
 
-    public function handle(int $id): Product
+    public function handle(int $projectId, int $id): Product
     {
-        return $this->productAdminService->findOrFail($id);
+        return $this->productAdminService->findForProjectOrFail($projectId, $id);
     }
 }

@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Models\AdminUser;
 use App\Models\Project;
-use App\Models\ShopSetting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -32,7 +31,8 @@ class AdminSettingsMenuTest extends TestCase
         ]);
     }
 
-    public function test_menu_settings_メニュー設定画面にアクセスできること(): void
+    /** メニュー設定URLはホーム設定へリダイレクトする（統合済み） */
+    public function test_menu_settings_メニュー設定にアクセスするとホーム設定にリダイレクトすること(): void
     {
         $project = $this->createProject();
         $admin = $this->createAdmin($project->id);
@@ -40,11 +40,11 @@ class AdminSettingsMenuTest extends TestCase
         $response = $this->actingAs($admin, 'admin')
             ->get(route('admin.settings.menu', ['project_key' => $project->project_key]));
 
-        $response->assertOk()
-            ->assertSee('メニュー設定');
+        $response->assertRedirect(route('admin.settings.home', ['project_key' => $project->project_key]));
     }
 
-    public function test_menu_settings_メニュー設定を保存できること(): void
+    /** メニュー設定のPOSTはホーム設定へリダイレクトする（保存はホーム設定で行う） */
+    public function test_menu_settings_メニュー設定のPOSTでホーム設定にリダイレクトすること(): void
     {
         $project = $this->createProject();
         $admin = $this->createAdmin($project->id);
@@ -59,9 +59,6 @@ class AdminSettingsMenuTest extends TestCase
         $response = $this->actingAs($admin, 'admin')
             ->post(route('admin.settings.menu.update', ['project_key' => $project->project_key]), $payload);
 
-        $response->assertRedirect();
-        $stored = ShopSetting::getFrontendMenuItems($project->id);
-        $this->assertSame('home', $stored[0]['tab']);
-        $this->assertSame('products', $stored[1]['tab']);
+        $response->assertRedirect(route('admin.settings.home', ['project_key' => $project->project_key]));
     }
 }

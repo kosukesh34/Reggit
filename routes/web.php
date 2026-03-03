@@ -32,6 +32,7 @@ use App\Http\Controllers\Admin\Settings\RanksController as SettingsRanksControll
 use App\Http\Controllers\Admin\StampController as AdminStampController;
 use App\Http\Controllers\Admin\SystemAdminDashboardController;
 use App\Http\Controllers\LiffController;
+use App\Http\Controllers\WalletAddPageController;
 use App\Models\Project;
 use Illuminate\Support\Facades\Route;
 
@@ -49,6 +50,9 @@ Route::prefix('liff')->middleware('bind.project')->group(function () {
     Route::get('/', [LiffController::class, 'index'])->name('liff.index');
     Route::get('/{project_key}', [LiffController::class, 'index'])->name('liff.project');
 });
+
+// Wallet 追加用の中間ページ（追加後にアプリへ戻るリンクを表示）
+Route::get('/wallet-add', WalletAddPageController::class)->name('wallet-add');
 
 // ========== 管理画面ログイン（認証不要・スロットリング適用） ==========
 Route::get('/admin/login', [AdminLoginController::class, 'show'])->name('admin.login');
@@ -153,6 +157,7 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'bind.admin.project', '
         Route::get('/settings/smaregi/pos-data', [\App\Http\Controllers\Admin\Settings\SmaregiController::class, 'posData'])->name('admin.settings.smaregi.pos-data')->middleware('admin.permission:settings.view');
         Route::post('/settings/smaregi', [\App\Http\Controllers\Admin\Settings\SmaregiController::class, 'update'])->name('admin.settings.smaregi.update')->middleware('admin.permission:settings.manage');
         Route::post('/settings/smaregi/sync-products', [\App\Http\Controllers\Admin\Settings\SmaregiController::class, 'syncProducts'])->name('admin.settings.smaregi.sync-products')->middleware('admin.permission:settings.manage');
+        Route::post('/settings/smaregi/full-sync-products', [\App\Http\Controllers\Admin\Settings\SmaregiController::class, 'fullSyncProducts'])->name('admin.settings.smaregi.full-sync-products')->middleware('admin.permission:settings.manage');
         Route::get('/settings/liff-designer', [SettingsLiffDesignerController::class, 'index'])->name('admin.settings.liff-designer')->middleware('admin.permission:liff_designer.manage');
         Route::post('/settings/liff-designer', [SettingsLiffDesignerController::class, 'update'])->name('admin.settings.liff-designer.update')->middleware('admin.permission:liff_designer.manage');
         Route::get('/settings/reservations', [\App\Http\Controllers\Admin\Settings\ReservationsController::class, 'index'])->name('admin.settings.reservations')->middleware('admin.permission:reservations.view');

@@ -24,6 +24,8 @@ class GetHomeSettingsUseCase
             ];
         })->sortBy('order')->values()->all();
 
-        return ['tabs' => $tabs];
+        $availableIcons = collect($defaults)->pluck('icon')->unique()->values()->all();
+
+        return ['tabs' => $tabs, 'availableIcons' => $availableIcons];
     }
 }
