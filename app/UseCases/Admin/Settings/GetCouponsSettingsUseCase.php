@@ -9,7 +9,7 @@ class GetCouponsSettingsUseCase
 {
     public function handle(int $projectId): CouponsSettingsView
     {
-        $couponDefaultImageUrl = ShopSetting::getCouponDefaultImageUrl($projectId);
+        $couponDefaultImageUrl = (string) (ShopSetting::getCouponDefaultImageUrl($projectId) ?? '');
         $featureCouponsEnabled = ShopSetting::isFeatureEnabled('feature_coupons_enabled', $projectId);
 
         return new CouponsSettingsView($couponDefaultImageUrl, $featureCouponsEnabled);

@@ -16,6 +16,7 @@
     <h1 class="page-header-title"><i class="fas fa-palette"></i> 配色</h1>
     <p class="page-header-desc">LINEアプリでお客様に表示するボタンや強調色を変更します</p>
 </div>
+@include('admin.settings._context', ['pageKey' => 'advanced'])
 
 @if(session('success'))
     <div class="alert alert-success"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>

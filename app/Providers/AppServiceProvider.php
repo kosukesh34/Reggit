@@ -114,6 +114,16 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('liffTabSettings', ShopSetting::getLiffTabSettings($projectId));
                 $view->with('liffId', ShopSetting::getLineLiffId($projectId));
                 $view->with('liffUrl', ShopSetting::getLineLiffUrl($projectId));
+
+                // LIFFデザイナー埋め込みプレビュー（会員証）: ランク設定から実際の表示用ペイロードを組み立てる
+                $designerPreviewMemberPayload = null;
+                if ($req && $req->query('designer_live_preview') === '1' && $req->query('designer_embed') === '1') {
+                    $src = $req->query('designer_source');
+                    if ($src === 'member' || $src === 'member_card') {
+                        $designerPreviewMemberPayload = self::buildDesignerPreviewMemberPayload($projectId);
+                    }
+                }
+                $view->with('designerPreviewMemberPayload', $designerPreviewMemberPayload);
             } catch (\Throwable $e) {
                 $view->with('lineTheme', [
                     'primary' => '#000000',
@@ -137,7 +147,72 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('liffTabSettings', []);
                 $view->with('liffId', trim((string) config('line.liff_id', '')));
                 $view->with('liffUrl', trim((string) config('line.liff_url', '')));
+                $view->with('designerPreviewMemberPayload', null);
             }
         });
+    }
+
+    /**
+     * LIFFデザイナー埋め込みプレビュー用に、DBのランク設定・会員証設定から会員証表示用のサンプルペイロードを組み立てる。
+     * 実際の画面で表示される会員証UIと同じ設定（レイアウト・ランク色・バーコード/QR等）でプレビューできるようにする。
+     */
+    private static function buildDesignerPreviewMemberPayload(int $projectId): array
+    {
+        $ranks = ShopSetting::getMemberRankSettings($projectId);
+        $activeRanks = array_values(array_filter($ranks, fn ($r) => ($r['is_active'] ?? false) === true));
+        usort($activeRanks, fn ($a, $b) => ($a['min_points'] <=> $b['min_points']) ?: (($a['order'] ?? 0) <=> ($b['order'] ?? 0)));
+
+        $displayRank = $activeRanks[0] ?? [
+            'key' => 'bronze',
+            'label' => 'ブロンズ',
+            'min_points' => 0,
+            'icon_url' => null,
+            'card_color' => '#cd7f32',
+        ];
+        $nextRank = null;
+        foreach ($activeRanks as $r) {
+            if (($r['min_points'] ?? 0) > ($displayRank['min_points'] ?? 0)) {
+                $nextRank = $r;
+                break;
+            }
+        }
+
+        $minPoints = (int) ($displayRank['min_points'] ?? 0);
+        $samplePoints = $minPoints + 500;
+        $pointsToNext = $nextRank !== null ? max(0, ((int) ($nextRank['min_points'] ?? 0)) - $samplePoints) : null;
+
+        return [
+            'is_member' => true,
+            'member' => [
+                'member_number' => '000123456789',
+                'points' => $samplePoints,
+            ],
+            'user' => [
+                'name' => 'プレビュー会員',
+            ],
+            'points' => $samplePoints,
+            'current_rank' => $displayRank['key'] ?? 'bronze',
+            'current_rank_label' => $displayRank['label'] ?? 'ブロンズ',
+            'current_rank_icon' => $displayRank['icon_url'] ?? null,
+            'current_rank_color' => isset($displayRank['card_color']) && $displayRank['card_color'] !== '' ? (string) $displayRank['card_color'] : null,
+            'next_rank_label' => $nextRank !== null ? ($nextRank['label'] ?? null) : null,
+            'points_to_next_rank' => $pointsToNext,
+            'days_to_next_rank' => 18,
+            'days_required_for_next_rank' => 30,
+            'show_points_display' => ShopSetting::getShowPointsDisplay($projectId),
+            'show_rank_progress' => ShopSetting::getShowRankProgress($projectId),
+            'member_card_design' => ShopSetting::getMemberCardDesign($projectId),
+            'member_card_logo_url' => ShopSetting::getFrontendLogoUrl($projectId),
+            'member_card_display_type' => ShopSetting::getMemberCardDisplayType($projectId),
+            'member_card_code_type' => ShopSetting::getMemberCardCodeType($projectId),
+            'points_expiry' => [
+                'expires_at_label' => '2026/12/31',
+                'points_expiring' => 200,
+            ],
+            'rank_up_history' => [
+                ['from_rank_label' => 'ブロンズ', 'to_rank_label' => 'シルバー', 'achieved_at' => '2025/11/03'],
+                ['from_rank_label' => 'シルバー', 'to_rank_label' => $displayRank['label'] ?? 'ゴールド', 'achieved_at' => '2026/01/20'],
+            ],
+        ];
     }
 }

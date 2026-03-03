@@ -8,6 +8,7 @@
     <h1 class="page-header-title"><i class="fas fa-calendar-check"></i> 予約設定</h1>
     <p class="page-header-desc">予約の受け付け条件を設定します。営業時間は基本設定で変更できます。</p>
 </div>
+@include('admin.settings._context', ['pageKey' => 'reservations'])
 @if(session('success'))<div class="alert alert-success"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>@endif
 @php
     $timeSlots = $settings['timeSlots'] ?? ['10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00','21:00'];

@@ -6,11 +6,6 @@
 @section('content')
 @php
     $businessHours = $settings['businessHours'] ?? ['start' => '10:00', 'end' => '22:00'];
-    $timeSlots = $settings['timeSlots'] ?? [];
-    $closedDays = $settings['closedDays'] ?? [];
-    $closedDates = $settings['closedDates'] ?? [];
-    $advanceDays = $settings['advanceDays'] ?? 30;
-    $reservationCapacity = $settings['reservationCapacity'] ?? 20;
     $orderMode = $settings['orderMode'] ?? \App\Models\ShopSetting::ORDER_MODE_BOTH;
 @endphp
 
@@ -22,8 +17,9 @@
 
 <div class="page-header">
     <h1 class="page-header-title"><i class="fas fa-sliders-h"></i> 基本設定</h1>
-    <p class="page-header-desc">営業時間と利用機能を設定します。予約の時間帯・休業日・枠数は「予約」メニュー内の「予約設定」から変更できます。</p>
+    <p class="page-header-desc">店舗全体で共通となる運用設定を管理します。予約詳細は「予約設定」に分離しています。</p>
 </div>
+@include('admin.settings._context', ['pageKey' => 'basic'])
 
 @if(session('success'))
     <div class="alert alert-success"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>
@@ -33,7 +29,7 @@
     @csrf
     <div class="card">
         <div class="card-header">
-            <h2 class="card-title"><i class="fas fa-clock"></i> 営業時間・予約</h2>
+            <h2 class="card-title"><i class="fas fa-clock"></i> 店舗運用</h2>
         </div>
         <div class="card-body">
             <div class="form-group">
@@ -45,57 +41,6 @@
                 <input type="time" name="business_hours_end" class="form-control" value="{{ $businessHours['end'] }}" required>
             </div>
             <div class="form-group">
-                <label class="form-label">予約可能な時間帯</label>
-                <div id="timeSlotsContainer" class="time-slots-container">
-                    @foreach($timeSlots as $slot)
-                    <div class="time-slot-item">
-                        <input type="time" name="reservation_time_slots[]" class="form-control time-slot-input" value="{{ $slot }}" required>
-                        <button type="button" class="btn btn-sm btn-danger remove-time-slot" onclick="removeTimeSlot(this)"><i class="fas fa-times"></i> 削除</button>
-                    </div>
-                    @endforeach
-                </div>
-                <button type="button" class="btn btn-sm btn-secondary" onclick="addTimeSlot()"><i class="fas fa-plus"></i> 時間帯を追加</button>
-            </div>
-            <div class="form-group">
-                <label class="form-label">予約枠上限（1時間帯あたり）</label>
-                <input type="number" name="reservation_capacity_per_slot" class="form-control" value="{{ $reservationCapacity }}" min="1" required>
-                <small class="form-text">時間帯ごとの予約上限です</small>
-            </div>
-            <div class="form-group">
-                <label class="form-label">休業日（曜日）</label>
-                <div class="closed-days-container">
-                    @php $days = ['日', '月', '火', '水', '木', '金', '土']; @endphp
-                    @foreach($days as $index => $day)
-                    <label class="checkbox-label">
-                        <input type="checkbox" name="closed_days[]" value="{{ $index }}" {{ in_array($index, $closedDays) ? 'checked' : '' }}>
-                        <span>{{ $day }}曜日</span>
-                    </label>
-                    @endforeach
-                </div>
-            </div>
-            <div class="form-group">
-                <label class="form-label">休業日（特定日）</label>
-                <div id="closedDatesContainer" class="closed-dates-container">
-                    @forelse($closedDates as $date)
-                    <div class="closed-date-item">
-                        <input type="date" name="closed_dates[]" class="form-control closed-date-input" value="{{ $date }}">
-                        <button type="button" class="btn btn-sm btn-danger remove-closed-date" onclick="removeClosedDate(this)"><i class="fas fa-times"></i> 削除</button>
-                    </div>
-                    @empty
-                    <div class="closed-date-item">
-                        <input type="date" name="closed_dates[]" class="form-control closed-date-input">
-                        <button type="button" class="btn btn-sm btn-danger remove-closed-date" onclick="removeClosedDate(this)"><i class="fas fa-times"></i> 削除</button>
-                    </div>
-                    @endforelse
-                </div>
-                <button type="button" class="btn btn-sm btn-secondary" onclick="addClosedDate()"><i class="fas fa-plus"></i> 休業日を追加</button>
-            </div>
-            <div class="form-group">
-                <label class="form-label">予約可能な日数（先まで）</label>
-                <input type="number" name="advance_booking_days" class="form-control" value="{{ $advanceDays }}" min="1" max="365" required>
-                <small class="form-text">何日先まで予約を受け付けるか</small>
-            </div>
-            <div class="form-group">
                 <label class="form-label">注文モード</label>
                 <select name="order_mode" class="form-control" required>
                     <option value="both" {{ $orderMode === 'both' ? 'selected' : '' }}>両方（モバイル注文 + 店内注文）</option>
@@ -103,6 +48,24 @@
                     <option value="in_store_only" {{ $orderMode === 'in_store_only' ? 'selected' : '' }}>店内注文のみ（後で決済）</option>
                 </select>
                 <small class="form-text">LIFFのカート内ボタン表示と注文可否に反映されます。</small>
+            </div>
+            <div class="quick-menu-section" style="margin-top:12px;">
+                <h3 class="quick-menu-title"><i class="fas fa-compass"></i> 機能別の設定へ</h3>
+                <p class="quick-menu-desc">重複を避けるため、各機能の詳細設定は専用画面に分けています。</p>
+                <div class="quick-menu-grid">
+                    <a href="{{ admin_route('admin.settings.reservations') }}" class="quick-menu-item">
+                        <i class="fas fa-calendar-check"></i>
+                        <span>予約設定</span>
+                    </a>
+                    <a href="{{ admin_route('admin.settings.queue') }}" class="quick-menu-item">
+                        <i class="fas fa-list-ol"></i>
+                        <span>順番待ち設定</span>
+                    </a>
+                    <a href="{{ admin_route('admin.settings.home') }}" class="quick-menu-item">
+                        <i class="fas fa-home"></i>
+                        <span>ホーム設定</span>
+                    </a>
+                </div>
             </div>
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> 保存</button>
@@ -120,7 +83,7 @@
         <p class="form-text" style="margin-bottom:12px;">LINE アプリで利用できる機能の ON / OFF を切り替えます。</p>
         <form action="{{ admin_route('admin.settings.feature-flags.update') }}" method="POST">
             @csrf
-            <div class="feature-flags-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px 16px;">
+            <div class="feature-flags-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px 16px;">
                 @foreach(\App\Models\ShopSetting::FEATURE_FLAG_LABELS as $key => $label)
                 <label class="checkbox-label">
                     <input type="checkbox" name="feature_flags[{{ $key }}]" value="1" {{ ($featureFlags[$key] ?? false) ? 'checked' : '' }}>
@@ -134,27 +97,4 @@
         </form>
     </div>
 </div>
-
-<script>
-function addTimeSlot() {
-    const c = document.getElementById('timeSlotsContainer');
-    const d = document.createElement('div');
-    d.className = 'time-slot-item';
-    d.innerHTML = '<input type="time" name="reservation_time_slots[]" class="form-control time-slot-input" required> <button type="button" class="btn btn-sm btn-danger remove-time-slot" onclick="removeTimeSlot(this)"><i class="fas fa-times"></i> 削除</button>';
-    c.appendChild(d);
-}
-function removeTimeSlot(btn) {
-    const c = document.getElementById('timeSlotsContainer');
-    if (c.children.length > 1) btn.closest('.time-slot-item').remove();
-    else alert('最低1つの時間帯が必要です');
-}
-function addClosedDate() {
-    const c = document.getElementById('closedDatesContainer');
-    const d = document.createElement('div');
-    d.className = 'closed-date-item';
-    d.innerHTML = '<input type="date" name="closed_dates[]" class="form-control closed-date-input"> <button type="button" class="btn btn-sm btn-danger remove-closed-date" onclick="removeClosedDate(this)"><i class="fas fa-times"></i> 削除</button>';
-    c.appendChild(d);
-}
-function removeClosedDate(btn) { btn.closest('.closed-date-item').remove(); }
-</script>
 @endsection

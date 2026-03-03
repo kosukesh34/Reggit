@@ -14,6 +14,7 @@
     <h1 class="page-header-title"><i class="fas fa-user-cog"></i> プロフィール設定</h1>
     <p class="page-header-desc">会員が登録・編集できる項目を設定します。スマレジと同じ内容を登録できる項目の表示ON/OFFと必須・任意を指定し、任意の追加項目も登録できます。</p>
 </div>
+@include('admin.settings._context', ['pageKey' => 'profile'])
 @if(session('success'))<div class="alert alert-success"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>@endif
 
 <form action="{{ admin_route('admin.settings.profile.update') }}" method="POST">
