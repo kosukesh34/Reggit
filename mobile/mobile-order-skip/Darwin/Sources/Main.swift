@@ -252,12 +252,17 @@ typealias AppType = NSApplication
     }
 
     /// WebView から「Safariで開く」用。mobileorderapp://openExternal?url=... で呼ばれる。
+    /// また Wallet 追加後「アプリに戻る」で mobileorderapp:// が開かれた場合はアプリを前面に出す。
     func application(_ application: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
-        guard url.scheme == "mobileorderapp", url.host == "openExternal" else { return false }
-        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
-              let externalString = components.queryItems?.first(where: { $0.name == "url" })?.value,
-              let externalURL = URL(string: externalString) else { return false }
-        application.open(externalURL)
+        guard url.scheme == "mobileorderapp" else { return false }
+        if url.host == "openExternal" {
+            guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+                  let externalString = components.queryItems?.first(where: { $0.name == "url" })?.value,
+                  let externalURL = URL(string: externalString) else { return false }
+            application.open(externalURL)
+            return true
+        }
+        // mobileorderapp:// のみ（Wallet 追加後の「アプリに戻る」）→ アプリを前面に出す
         return true
     }
     #elseif canImport(AppKit)

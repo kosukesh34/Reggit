@@ -65,6 +65,22 @@ struct BuildNativeInjectionScriptUseCase {
 
             window.__NATIVE_TARGET_TAB__ = targetTab;
 
+            // 初回表示で正しいタブが表示されるよう、app 初期化前に DOM の .active を同期する（タブ切り替えを待たずに最初の画面を表示）
+            const tabId = targetTab + 'Tab';
+            document.querySelectorAll('.tab-content').forEach(function(el) {
+                el.classList.remove('active');
+                if (el.id === tabId) el.classList.add('active');
+            });
+            document.querySelectorAll('.main-tab-btn').forEach(function(btn) {
+                btn.classList.remove('active');
+                if (btn.getAttribute('data-tab') === targetTab) btn.classList.add('active');
+            });
+            if (typeof requestAnimationFrame === 'function') {
+                requestAnimationFrame(function() {
+                    if (document.body) document.body.offsetHeight;
+                });
+            }
+
             const enforceViewport = () => {
                 const viewportContent = "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover";
                 let viewport = document.querySelector('meta[name="viewport"]');
@@ -79,7 +95,10 @@ struct BuildNativeInjectionScriptUseCase {
                     document.documentElement.style.overflowX = 'hidden';
                     document.documentElement.style.touchAction = 'pan-y';
                     document.documentElement.style.maxWidth = '100vw';
-                    if (!isAndroidPlatform) {
+                    if (isAndroidPlatform) {
+                        document.documentElement.style.minHeight = '800px';
+                        document.documentElement.style.height = '100%';
+                    } else {
                         document.documentElement.style.minHeight = '100%';
                         document.documentElement.style.height = '100%';
                     }
@@ -88,7 +107,10 @@ struct BuildNativeInjectionScriptUseCase {
                     document.body.style.overflowX = 'hidden';
                     document.body.style.touchAction = 'pan-y';
                     document.body.style.maxWidth = '100vw';
-                    if (!isAndroidPlatform) {
+                    if (isAndroidPlatform) {
+                        document.body.style.minHeight = '800px';
+                        document.body.style.height = '100%';
+                    } else {
                         document.body.style.minHeight = '100%';
                         document.body.style.height = '100%';
                     }
@@ -96,15 +118,16 @@ struct BuildNativeInjectionScriptUseCase {
 
                 if (!window.__NATIVE_VIEWPORT_STYLE_INSTALLED__) {
                     const style = document.createElement('style');
-                    // Android WebView では初回レイアウトで 100vh が 0 になることがあるため、max(100vh, 600px) でフォールバック
-                    const minHeightFallback = isAndroidPlatform ? 'max(100vh, 600px)' : '100vh';
+                    // Android WebView では初回レイアウトで 100vh が 0 になることがあるため、px フォールバックを必ず使う。
+                    const minHeightFallback = isAndroidPlatform ? 'max(100vh, 800px)' : '100vh';
+                    const mainContentMinHeight = isAndroidPlatform ? 'max(calc(max(100vh, 800px) - 120px), 500px)' : `min(68vh, calc(${minHeightFallback} - 120px))`;
                     const androidEmbedStyle = `
-                        html.native-app-embed, body.native-app-embed { --native-safe-bottom: max(env(safe-area-inset-bottom, 0px), 8px); --native-tab-height: calc(64px + var(--native-safe-bottom)); min-height: ${minHeightFallback} !important; height: 100% !important; width: 100% !important; margin: 0 !important; padding: 0 !important; overflow-x: hidden !important; background: #f5f5f5 !important; }
-                        .native-app-embed .app-container { display: block !important; min-height: ${minHeightFallback} !important; height: 100% !important; width: 100% !important; margin: 0 !important; padding: 0 !important; }
-                        .native-app-embed .header { display: block !important; visibility: visible !important; }
-                        .native-app-embed .main-content { display: block !important; min-height: min(68vh, calc(${minHeightFallback} - 120px)) !important; overflow-y: auto !important; padding-bottom: calc(var(--native-tab-height) + 12px) !important; }
-                        .native-app-embed .tab-content.active { display: block !important; min-height: min(64vh, calc(${minHeightFallback} - 120px)) !important; }
-                        .native-app-embed .tab-content.active .tab-section { display: block !important; min-height: min(64vh, calc(${minHeightFallback} - 120px)) !important; }
+                        html.native-app-embed, body.native-app-embed { --native-safe-bottom: max(env(safe-area-inset-bottom, 0px), 8px); --native-tab-height: calc(64px + var(--native-safe-bottom)); min-height: ${minHeightFallback} !important; height: 100% !important; width: 100% !important; margin: 0 !important; padding: 0 !important; overflow-x: hidden !important; background: #f5f5f5 !important; box-sizing: border-box !important; }
+                        .native-app-embed .app-container { display: flex !important; flex-direction: column !important; min-height: ${minHeightFallback} !important; height: 100% !important; width: 100% !important; margin: 0 !important; padding: 0 !important; box-sizing: border-box !important; }
+                        .native-app-embed .header { display: block !important; visibility: visible !important; flex-shrink: 0 !important; }
+                        .native-app-embed .main-content { display: block !important; flex: 1 1 auto !important; min-height: ${mainContentMinHeight} !important; height: auto !important; overflow-y: auto !important; padding-bottom: calc(var(--native-tab-height) + 12px) !important; box-sizing: border-box !important; }
+                        .native-app-embed .tab-content.active { display: block !important; min-height: ${mainContentMinHeight} !important; height: auto !important; }
+                        .native-app-embed .tab-content.active .tab-section { display: block !important; min-height: ${mainContentMinHeight} !important; height: auto !important; }
                         .native-app-embed .main-tabs { position: fixed !important; bottom: 0 !important; left: 0 !important; right: 0 !important; display: flex !important; visibility: visible !important; opacity: 1 !important; z-index: 100 !important; min-height: var(--native-tab-height) !important; padding-bottom: var(--native-safe-bottom) !important; }
                     `;
                     const iOSEmbedStyle = `
@@ -112,8 +135,8 @@ struct BuildNativeInjectionScriptUseCase {
                         .native-app-embed .app-container { display: flex !important; flex-direction: column !important; min-height: 100vh !important; height: auto !important; max-height: none !important; width: 100% !important; max-width: 100vw !important; box-sizing: border-box !important; padding: 0 !important; overflow: hidden !important; }
                         .native-app-embed .header { display: block !important; visibility: visible !important; }
                         .native-app-embed .main-content { flex: 1 1 auto !important; min-height: 72vh !important; overflow-x: hidden !important; overflow-y: auto !important; -webkit-overflow-scrolling: touch !important; width: 100% !important; max-width: 100vw !important; box-sizing: border-box !important; padding-bottom: calc(var(--native-tab-height) + 12px) !important; }
-                        .native-app-embed .tab-content.active { display: block !important; min-height: 68vh !important; height: auto !important; flex: none !important; }
-                        .native-app-embed .tab-content.active .tab-section { display: block !important; min-height: 68vh !important; height: auto !important; }
+                        .native-app-embed .tab-content.active { display: block !important; min-height: 68vh !important; height: auto !important; flex: none !important; overflow-y: auto !important; -webkit-overflow-scrolling: touch !important; }
+                        .native-app-embed .tab-content.active .tab-section { display: block !important; min-height: 68vh !important; height: auto !important; overflow-y: auto !important; -webkit-overflow-scrolling: touch !important; }
                         .native-app-embed .main-tabs { display: flex !important; visibility: visible !important; opacity: 1 !important; pointer-events: auto !important; flex-shrink: 0 !important; min-height: var(--native-tab-height) !important; padding-bottom: var(--native-safe-bottom) !important; }
                         .native-app-embed #app, .native-app-embed [data-v-app], .native-app-embed main { width: 100% !important; max-width: 100vw !important; box-sizing: border-box !important; overflow-x: hidden !important; }
                     `;
@@ -134,23 +157,31 @@ struct BuildNativeInjectionScriptUseCase {
                     window.visualViewport.addEventListener('resize', applyVisualViewportHeight);
                     window.visualViewport.addEventListener('scroll', applyVisualViewportHeight);
                 }
-                // Android: リスナーを一度だけバインド（再帰的な enforceViewport 呼び出しはしない）
+                // Android: 初回は 100vh が 0 になりやすいため、resize で実測の innerHeight を minHeight に反映する。
                 if (isAndroidPlatform && typeof window.addEventListener === 'function' && !window.__NATIVE_ANDROID_RESIZE_BOUND__) {
                     window.__NATIVE_ANDROID_RESIZE_BOUND__ = true;
                     const applyAndroidViewport = () => {
+                        var h = (typeof window.innerHeight === 'number' && window.innerHeight > 0) ? window.innerHeight : 800;
+                        var minH = h + 'px';
                         if (document.documentElement) {
                             document.documentElement.style.overflowX = 'hidden';
                             document.documentElement.style.touchAction = 'pan-y';
                             document.documentElement.style.maxWidth = '100vw';
+                            document.documentElement.style.minHeight = minH;
+                            document.documentElement.style.height = '100%';
                         }
                         if (document.body) {
                             document.body.style.overflowX = 'hidden';
                             document.body.style.touchAction = 'pan-y';
                             document.body.style.maxWidth = '100vw';
+                            document.body.style.minHeight = minH;
+                            document.body.style.height = '100%';
                         }
                     };
                     window.addEventListener('resize', applyAndroidViewport);
+                    setTimeout(applyAndroidViewport, 0);
                     setTimeout(applyAndroidViewport, 100);
+                    setTimeout(applyAndroidViewport, 400);
                 }
             };
 

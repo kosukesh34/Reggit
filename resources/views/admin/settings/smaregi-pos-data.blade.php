@@ -30,8 +30,21 @@
     </div>
     <p><a href="{{ admin_route('admin.settings.smaregi') }}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> スマレジ連携に戻る</a></p>
 @else
+    @if(session('success'))
+        <div class="alert alert-success mb-4"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>
+    @endif
+    @if(session('error'))
+        <div class="alert alert-danger mb-4"><i class="fas fa-exclamation-triangle"></i> {{ session('error') }}</div>
+    @endif
     <div class="card mb-4">
-        <div class="card-header bg-light">接続情報</div>
+        <div class="card-header bg-light d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <span>接続情報</span>
+            <form action="{{ admin_route('admin.settings.smaregi.full-sync-products') }}" method="POST" class="d-inline" onsubmit="return confirm('DBとスマレジの商品を完全同期します。\n・スマレジにあってDBにない商品 → DBに登録\n・DBにあってスマレジにない商品 → スマレジに登録\nデータ漏れがないように両方を揃えます。よろしいですか？');">
+                @csrf
+                <input type="hidden" name="from" value="pos-data">
+                <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-exchange-alt"></i> 完全同期（双方向）</button>
+            </form>
+        </div>
         <div class="card-body">
             <p class="mb-0">契約ID: <code>{{ $view->contractId }}</code></p>
         </div>

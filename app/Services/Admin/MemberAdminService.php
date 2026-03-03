@@ -17,9 +17,13 @@ use Illuminate\Support\Collection;
 
 class MemberAdminService
 {
-    public function __construct(
-        private SmaregiApiService $smaregiApi,
-    ) {}
+    /** @var SmaregiApiService */
+    private $smaregiApi;
+
+    public function __construct(SmaregiApiService $smaregiApi)
+    {
+        $this->smaregiApi = $smaregiApi;
+    }
 
     public function getPaginatedList(int $projectId, int $perPage = 20): LengthAwarePaginator
     {
@@ -167,7 +171,7 @@ class MemberAdminService
         $updateUser = array_intersect_key($userData, array_flip($allowedUser));
 
         $smaregiCustomerId = $member->smaregi_customer_id ?? '';
-        $contractId = ShopSetting::getValue('smaregi_contract_id', null, $member->project_id);
+        $contractId = $this->smaregiApi->getContractIdForProject($member->project_id);
         $contractId = is_string($contractId) ? trim($contractId) : '';
         if ($contractId !== '' && $smaregiCustomerId !== '' && $updateUser !== [] && $user !== null) {
             $clientId = config('smaregi.client_id');

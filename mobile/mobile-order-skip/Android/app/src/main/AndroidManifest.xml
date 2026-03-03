@@ -45,6 +45,13 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- Wallet 追加後の「アプリに戻る」で mobileorderapp:// を開いたときにアプリを起動 -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="mobileorderapp" />
+            </intent-filter>
         </activity>
     </application>
 </manifest>

@@ -2,22 +2,25 @@
 
 namespace App\UseCases\Admin\Settings;
 
-use App\Models\ShopSetting;
 use App\Services\Smaregi\SmaregiApiService;
 use App\UseCases\Admin\Settings\Data\SmaregiSettingsView;
 
 class GetSmaregiSettingsUseCase
 {
-    public function __construct(
-        private SmaregiApiService $smaregiApi,
-    ) {}
+    /** @var SmaregiApiService */
+    private $smaregiApi;
+
+    public function __construct(SmaregiApiService $smaregiApi)
+    {
+        $this->smaregiApi = $smaregiApi;
+    }
 
     public function handle(int $projectId): SmaregiSettingsView
     {
         $appUrl = rtrim(config('app.url'), '/');
         $idpUrl = $appUrl.'/api/smaregi/idp';
         $webhookUrl = $appUrl.'/api/smaregi/webhook';
-        $linkedContractId = ShopSetting::getValue('smaregi_contract_id', null, $projectId);
+        $linkedContractId = $this->smaregiApi->getContractIdForProject($projectId);
         $linkedContractId = is_string($linkedContractId) ? trim($linkedContractId) : '';
 
         // 開発用: 接続・POS状態を表示（後で削除可）

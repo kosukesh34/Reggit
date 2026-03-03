@@ -2,7 +2,6 @@
 
 namespace App\UseCases\Admin\Settings;
 
-use App\Models\ShopSetting;
 use App\Services\Smaregi\SmaregiApiService;
 use App\UseCases\Admin\Settings\Data\SmaregiPosDataView;
 
@@ -50,7 +49,7 @@ class GetSmaregiPosDataUseCase
 
     public function handle(int $projectId): SmaregiPosDataView
     {
-        $contractId = ShopSetting::getValue('smaregi_contract_id', null, $projectId);
+        $contractId = $this->smaregiApi->getContractIdForProject($projectId);
         $contractId = is_string($contractId) ? trim($contractId) : '';
 
         if ($contractId === '') {

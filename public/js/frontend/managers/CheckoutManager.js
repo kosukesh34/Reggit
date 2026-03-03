@@ -231,6 +231,10 @@ class CheckoutManager {
             if (typeof window.app.loadOrdersTab === 'function') {
                 window.app.loadOrdersTab();
             }
+            // 注文完了でポイント等が変わるため会員情報を再取得し、会員証・全タブの表示を更新する（非同期のため失敗してもタブ操作は維持）
+            if (typeof window.app.refreshAfterMemberUpdate === 'function') {
+                window.app.refreshAfterMemberUpdate().catch(function () {});
+            }
         }
     }
 
