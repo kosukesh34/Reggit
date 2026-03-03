@@ -19,8 +19,10 @@ import androidx.activity.ComponentActivity
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -29,6 +31,7 @@ import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material3.MaterialTheme
 import androidx.core.app.ActivityCompat
@@ -75,6 +78,8 @@ open class AndroidAppMain: Application {
         val prefs = applicationContext.getSharedPreferences(PUSH_TOKEN_PREFS_NAME, Context.MODE_PRIVATE)
         if (id == prefs.getString(PUSH_TOKEN_PREFS_KEY, null)) return
         prefs.edit().putString(PUSH_TOKEN_PREFS_KEY, id).apply()
+        // WebView にトークンを注入し、ウェブ側から /api/devices/register で送信されるようにする
+        AppDelegate.shared.onPushTokenReceived(id)
     }
 
     fun saveOneSignalSubscriptionIdIfNeededPublic() {
@@ -200,6 +205,8 @@ internal fun SyncSystemBarsWithTheme() {
     }
 }
 
+/// Android: Skip の Compose が親の制約を正しく受け取らない場合があるため、
+/// BoxWithConstraints で明示的なサイズを渡し、WebView が確実に画面全体を描画するようにする。
 @Composable
 internal fun PresentationRootView(context: ComposeContext) {
     val colorScheme = if (isSystemInDarkTheme()) ColorScheme.dark else ColorScheme.light
@@ -207,12 +214,14 @@ internal fun PresentationRootView(context: ComposeContext) {
         SyncSystemBarsWithTheme()
         val contentContext = ctx.content()
         Box(modifier = ctx.modifier.fillMaxSize(), contentAlignment = Alignment.TopStart) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color(0xFFF5F5F5))
-            ) {
-                AppRootView().Compose(context = contentContext)
+            BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                Box(
+                    modifier = Modifier
+                        .size(maxWidth, maxHeight.coerceAtLeast(400.dp))
+                        .background(Color(0xFFF5F5F5))
+                ) {
+                    AppRootView().Compose(context = contentContext)
+                }
             }
         }
     }

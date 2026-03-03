@@ -2,7 +2,6 @@
 
 namespace App\UseCases\Member;
 
-use App\Models\ShopSetting;
 use App\Services\Smaregi\SmaregiApiService;
 use App\Services\UserService;
 use App\Util\AdminContext;
@@ -41,7 +40,7 @@ class MemberWithdrawUseCase
         $member = $user->member;
         if ($member !== null) {
             $smaregiCustomerId = $member->smaregi_customer_id ?? '';
-            $contractId = ShopSetting::getValue('smaregi_contract_id', null, $projectId);
+            $contractId = $this->smaregiApi->getContractIdForProject($projectId);
             $contractId = is_string($contractId) ? trim($contractId) : '';
             if ($contractId !== '' && $smaregiCustomerId !== null && $smaregiCustomerId !== '') {
                 $result = $this->smaregiApi->deleteCustomer($contractId, $smaregiCustomerId);

@@ -91,6 +91,14 @@ xcrun simctl install "iPhone 16 Pro" "$APP_PATH"
 xcrun simctl launch "iPhone 16 Pro" com.reggit.default
 ```
 
+### Android での表示について
+
+Android の WebView では次の点が iOS と異なります。
+
+- **初回レイアウトで `100vh` が 0 になる**ことがあるため、注入スクリプトで `min-height` に px フォールバック（例: 800px）と `window.innerHeight` の遅延反映を行っています。
+- **Skip の Compose が親の制約を正しく受け取らない**場合があるため、`Main.kt` の `PresentationRootView` で `BoxWithConstraints` を使い、コンテンツに明示的なサイズ（`maxWidth` × `maxHeight`）を渡して WebView が画面全体を描画するようにしています。
+- タブバーは固定表示され、メインコンテンツ領域は `.main-content` / `.tab-content.active` に `min-height` を指定して潰れないようにしています。
+
 ### Android でビルド・起動する
 
 Android の APK をビルドするには、**あらかじめ Xcode で iOS を 1 回ビルドしておく**必要があります。Skip の Gradle ビルドが、その成果物（生成 Kotlin 等）を参照するためです。

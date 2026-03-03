@@ -55,15 +55,16 @@
     </style>
     @endisset
     @if($isNativeApp)
+    {{-- ネイティブアプリ（iOS/Android）: Android WebView では初回 100vh が 0 になりやすいため、px フォールバックを指定 --}}
     <style id="native-app-inline">
         #liff-loading { display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; }
-        html.native-app-embed, body.native-app-embed { height: 100%; min-height: 100vh; margin: 0; padding: 0; }
-        .app-container { display: flex !important; flex-direction: column !important; min-height: 100vh !important; height: 100% !important; background: #fff !important; visibility: visible !important; }
-        .header { display: block !important; visibility: visible !important; background: #000 !important; color: #fff !important; }
-        .main-content { visibility: visible !important; }
+        html.native-app-embed, body.native-app-embed { height: 100%; min-height: 100vh; min-height: max(100vh, 800px); margin: 0; padding: 0; box-sizing: border-box; }
+        .app-container { display: flex !important; flex-direction: column !important; min-height: 100vh !important; min-height: max(100vh, 800px) !important; height: 100% !important; background: #fff !important; visibility: visible !important; box-sizing: border-box !important; }
+        .header { display: block !important; visibility: visible !important; background: #000 !important; color: #fff !important; flex-shrink: 0 !important; }
+        .main-content { visibility: visible !important; flex: 1 1 auto !important; min-height: 0 !important; min-height: max(500px, 50vh) !important; overflow: auto !important; -webkit-overflow-scrolling: touch !important; }
         .main-tabs { display: flex !important; visibility: visible !important; }
-        .tab-content.active { display: block !important; flex: 1 1 0 !important; min-height: 0 !important; overflow: auto !important; }
-        .tab-content.active .tab-section { min-height: 120px !important; background: #fff !important; }
+        .tab-content.active { display: block !important; flex: 1 1 auto !important; min-height: 0 !important; min-height: max(500px, 50vh) !important; overflow: auto !important; }
+        .tab-content.active .tab-section { min-height: 120px !important; min-height: max(400px, 45vh) !important; background: #fff !important; }
     </style>
     @endif
 </head>
@@ -90,7 +91,8 @@
                 var s = document.createElement('style');
                 s.id = 'native-app-hide-loading';
                 s.textContent = 'html.native-app-embed #liff-loading { display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; }' +
-                    'html.native-app-embed .app-container { display: flex !important; visibility: visible !important; min-height: 100vh !important; background: #fff !important; }' +
+                    'html.native-app-embed .app-container { display: flex !important; visibility: visible !important; min-height: max(100vh, 800px) !important; background: #fff !important; }' +
+                    'html.native-app-embed .main-content { min-height: max(500px, 50vh) !important; }' +
                     'html.native-app-embed .header { display: block !important; visibility: visible !important; }' +
                     'html.native-app-embed .main-tabs { display: flex !important; visibility: visible !important; }';
                 (document.head || document.documentElement).appendChild(s);
@@ -120,7 +122,7 @@
         </div>
     </div>
 
-    <div class="app-container" id="app-container" @if($isNativeApp) style="display: flex; flex-direction: column; min-height: 100vh; background: #fff; visibility: visible;" @endif>
+    <div class="app-container" id="app-container" @if($isNativeApp) style="display: flex; flex-direction: column; min-height: max(100vh, 800px); height: 100%; background: #fff; visibility: visible; box-sizing: border-box;" @endif>
         
         @unless($isDesignerEmbedPreview)
         <header class="header" @if($isNativeApp) style="display: block; visibility: visible;" @endif>
@@ -156,7 +158,7 @@
             );
         @endphp
 
-        <main class="main-content" @if($isNativeApp) style="flex: 1 1 0; min-height: 0; overflow: auto; background: #fff; visibility: visible; -webkit-overflow-scrolling: touch;" @endif>
+        <main class="main-content" @if($isNativeApp) style="flex: 1 1 auto; min-height: max(500px, 50vh); overflow: auto; background: #fff; visibility: visible; -webkit-overflow-scrolling: touch; box-sizing: border-box;" @endif>
             <div id="announcementsSection" class="announcements-section" aria-label="お知らせ"></div>
 
             @php $firstTab = ($filteredMenu[0]['tab'] ?? ($frontendMenu ?? \App\Models\ShopSetting::defaultFrontendMenuItems())[0]['tab'] ?? 'products'); @endphp

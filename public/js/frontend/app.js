@@ -101,12 +101,21 @@ class MobileOrderApp {
     }
 
     init() {
+        const app = this;
         if (typeof window.__mobileOrderLog === 'function') {
-            window.__mobileOrderLog('app.init', { currentTab: this.currentTab, ua: typeof navigator !== 'undefined' ? navigator.userAgent : '' });
+            window.__mobileOrderLog('app.init', { currentTab: app.currentTab, ua: typeof navigator !== 'undefined' ? navigator.userAgent : '' });
         }
+        (async () => {
+            await app.deviceManager.restoreSessionIfNeeded();
+            app._continueInit();
+        })();
+    }
+
+    _continueInit() {
         this.deviceManager.init();
         this.preventZoom();
         this.setupEventListeners();
+        this.setupPullToRefresh();
         // デザイナー埋め込みプレビューではカスタムレイアウトを描画せず、
         // 実画面ローダー（products/member/stamps など）だけを使って表示する
         if (!(this.designerPreviewSource && this.designerPreviewEmbed)) {
@@ -122,6 +131,110 @@ class MobileOrderApp {
         if (this.shouldOpenMemberRegisterOnLoad()) {
             this.switchTab(AppConstants.TABS.MEMBER);
             this.memberManager.openRegisterFullScreen();
+        }
+    }
+
+    /** スワイプ（プル）で画面を更新する */
+    setupPullToRefresh() {
+        if (typeof window === 'undefined' || !window.__MOBILE_APP_MODE__) return;
+        const app = this;
+        let startY = 0;
+        let pullDistance = 0;
+        let refreshEl = null;
+        const MIN_PULL = 120;
+
+        const createRefreshIndicator = () => {
+            if (refreshEl) return refreshEl;
+            refreshEl = document.createElement('div');
+            refreshEl.className = 'pull-to-refresh-indicator';
+            refreshEl.setAttribute('aria-hidden', 'true');
+            refreshEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>更新中...</span>';
+            refreshEl.style.cssText = 'position:fixed;top:0;left:0;right:0;padding:12px;text-align:center;background:#f5f5f5;z-index:1000;transform:translateY(-100%);transition:transform 0.2s;font-size:14px;';
+            document.body.appendChild(refreshEl);
+            return refreshEl;
+        };
+
+        const getScrollContainer = () => document.querySelector('.tab-content.active .tab-section') || document.querySelector('.main-content');
+        const scrollContainer = document.querySelector('.main-content') || document.body;
+        scrollContainer.addEventListener('touchstart', (e) => {
+            if (e.touches.length !== 1) return;
+            const el = getScrollContainer();
+            if (!el) return;
+            const scrollTop = el.scrollTop || 0;
+            if (scrollTop <= 2) {
+                startY = e.touches[0].clientY;
+                pullDistance = 0;
+            }
+        }, { passive: true });
+
+        scrollContainer.addEventListener('touchmove', (e) => {
+            if (e.touches.length !== 1) return;
+            const el = getScrollContainer();
+            if (!el || (el.scrollTop || 0) > 2) return;
+            const y = e.touches[0].clientY;
+            pullDistance = y - startY;
+            if (pullDistance > 20) e.preventDefault();
+        }, { passive: false });
+
+        scrollContainer.addEventListener('touchend', () => {
+            const el = getScrollContainer();
+            if (!el || (el.scrollTop || 0) > 5) {
+                pullDistance = 0;
+                return;
+            }
+            const didPull = pullDistance >= MIN_PULL;
+            pullDistance = 0;
+            if (!didPull) return;
+            const indicator = createRefreshIndicator();
+            indicator.style.transform = 'translateY(0)';
+            indicator.querySelector('i').classList.add('fa-spin');
+            this.layoutManager.render(this.currentTab);
+            const loader = this.getTabLoader(this.currentTab);
+            if (loader) loader();
+            setTimeout(() => {
+                indicator.style.transform = 'translateY(-100%)';
+                indicator.querySelector('i').classList.remove('fa-spin');
+            }, 600);
+        }, { passive: true });
+    }
+
+    /** タブごとのデータローダー（プルリフレッシュ・情報更新時の再表示で共通利用） */
+    getTabLoader(tab) {
+        const loaders = {
+            home: () => this.announcementManager.load(),
+            products: () => this.loadProducts(),
+            orders: () => this.loadOrdersTab(),
+            stamps: () => this.stampsManager.load(),
+            coupons: () => this.couponsManager.load(),
+            queue: () => this.queueManager.load(),
+            member: () => this.loadMemberTab(),
+            reservations: () => this.checkMembershipAndLoadReservations(),
+            gallery: () => this.galleryManager.load(),
+        };
+        return loaders[tab] || null;
+    }
+
+    /** 情報更新時に現在表示中のタブのデータだけ再読み込みする（レイアウトは触らず表示を更新する） */
+    refreshCurrentTab() {
+        const loader = this.getTabLoader(this.currentTab);
+        if (loader) loader();
+    }
+
+    /** 会員情報が更新されたとき（注文完了・ポイント付与など）に会員データを再取得し、全画面の表示を更新する */
+    async refreshAfterMemberUpdate() {
+        try {
+            const payload = await this.memberManager.fetchMemberContext({ force: true });
+            if (payload) {
+                this.memberManager.setMemberData(payload);
+                this.memberManager.render(payload);
+            }
+        } catch (e) {
+            // 未ログインなどは無視
+        }
+        try {
+            this.refreshCurrentTab();
+        } catch (e) {
+            console.warn('refreshCurrentTab error:', e);
         }
     }
 
@@ -220,11 +333,14 @@ class MobileOrderApp {
     }
 
     setupTabEventListeners() {
-        document.querySelectorAll('.main-tab-btn').forEach((btn) => {
-            btn.addEventListener('click', (e) => {
-                const tab = e.currentTarget.dataset.tab;
-                if (tab) this.switchTab(tab);
-            });
+        // イベント委譲でタブボタンにバインド（注文後などでDOMが更新されても切り替え可能にする）
+        const delegateRoot = document.body;
+        if (!delegateRoot) return;
+        delegateRoot.addEventListener('click', (e) => {
+            const btn = e.target && e.target.closest && e.target.closest('.main-tab-btn');
+            if (!btn || !btn.dataset.tab) return;
+            e.preventDefault();
+            this.switchTab(btn.dataset.tab);
         });
     }
 
@@ -677,7 +793,7 @@ class MobileOrderApp {
         `;
     }
 
-    loadMemberTab(useSample) {
+    async loadMemberTab(useSample) {
         const isDesignerPreviewMember = !!this.designerPreviewSource && (this.designerPreviewSource === 'member' || this.designerPreviewSource === 'member_card');
         if (isDesignerPreviewMember && useSample) {
             // デザイナー埋め込みプレビュー: バックエンドから渡されたランク設定ベースの実表示用ペイロードを優先（DBの会員証設定を反映）
@@ -688,6 +804,18 @@ class MobileOrderApp {
             }
             this.memberManager.render(this.getDesignerSampleMemberData());
             return;
+        }
+        // 会員タブを開くたびに最新の会員情報を取得し、ポイント・ランクなどを反映する
+        try {
+            const payload = await this.memberManager.fetchMemberContext({ force: true });
+            if (payload && payload.is_member) {
+                this.memberManager.setMemberData(payload);
+                this.memberManager.render(payload);
+                this.memberManager.preload();
+                return;
+            }
+        } catch (e) {
+            // 未ログインなど
         }
         const data = this.memberManager.getMemberData();
         if (data && data.is_member) {
