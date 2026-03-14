@@ -312,6 +312,7 @@ class AdminAnalyticsUseCase
             $total = count($memberUserIds);
             if ($total === 0) {
                 $result[] = ['cohort' => $cohortStart->format('Y/m'), 'total' => 0, 'month0' => 0, 'month1' => 0, 'month2' => 0, 'month3' => 0, 'month4' => 0, 'month5' => 0];
+
                 continue;
             }
 
