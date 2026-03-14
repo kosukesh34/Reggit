@@ -9,7 +9,7 @@ use Illuminate\Support\Collection;
 class AfterRegistrationDeliveryEditOutput
 {
     /**
-     * @param Collection<int, Coupon> $coupons
+     * @param  Collection<int, Coupon>  $coupons
      */
     public function __construct(
         public AfterRegistrationDelivery $delivery,

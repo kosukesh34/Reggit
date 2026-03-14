@@ -62,7 +62,7 @@ class PushNotificationService
     /**
      * OneSignal でお知らせ配信（subscription_id は user_devices.push_token に保存されている想定）
      *
-     * @param list<string> $subscriptionIds
+     * @param  list<string>  $subscriptionIds
      * @return array{target_tokens:int,sent:int,failed:int,skipped:int}
      */
     private function sendAnnouncementViaOneSignal(Announcement $announcement, array $subscriptionIds): array
