@@ -103,6 +103,9 @@ Route::prefix('v1')->middleware([CheckApiProject::class, AuthenticateApiToken::c
     Route::post('/{project_key}/payment/confirm', [ApiV1PaymentController::class, 'confirmPayment']);
 });
 
+// ネイティブアプリ設定（認証不要・project_key クエリで取得）
+Route::get('/v1/app-config', \App\Http\Controllers\Api\V1\AppConfigController::class);
+
 Route::middleware(['web', 'bind.project'])->group(function () {
     Route::get('/products', [ProductController::class, 'index']);
     Route::get('/products/{id}', [ProductController::class, 'show']);
@@ -145,6 +148,7 @@ Route::middleware(['web', 'bind.project'])->group(function () {
 
     Route::post('/queue', [QueueStoreController::class, '__invoke']);
     Route::get('/queue/me', [QueueMeController::class, '__invoke']);
+    Route::get('/queue/list', [\App\Http\Controllers\Queue\QueueListController::class, '__invoke']);
     Route::get('/queue/{id}', [QueueStatusController::class, '__invoke']);
     Route::post('/queue/{id}/cancel', [QueueCancelController::class, '__invoke']);
     Route::post('/queue/call-next', [QueueCallNextController::class, '__invoke']);

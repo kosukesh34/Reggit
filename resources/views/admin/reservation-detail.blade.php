@@ -4,12 +4,34 @@
 @section('page-title', '予約詳細')
 
 @section('content')
-<div class="card">
-    <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-calendar-check"></i> 予約情報</h3>
-        <a href="{{ admin_route('admin.reservations') }}" class="btn btn-secondary btn-sm">
+<nav class="breadcrumb" aria-label="パンくず">
+    <a href="{{ admin_route('admin.dashboard') }}">ダッシュボード</a>
+    <span class="breadcrumb-sep">/</span>
+    <a href="{{ admin_route('admin.reservations') }}">予約管理</a>
+    <span class="breadcrumb-sep">/</span>
+    <span>{{ $reservation->reservation_number }}</span>
+</nav>
+
+<div class="page-header-row">
+    <div class="page-header">
+        <h1 class="page-header-title"><i class="fas fa-calendar-check"></i> 予約詳細</h1>
+        <p class="page-header-desc">予約番号: {{ $reservation->reservation_number }}</p>
+    </div>
+    <div class="page-header-actions">
+        @if($reservation->canEdit())
+        <a href="{{ admin_route('admin.reservations.edit', ['id' => $reservation->id]) }}" class="btn btn-primary">
+            <i class="fas fa-pen"></i> 編集
+        </a>
+        @endif
+        <a href="{{ admin_route('admin.reservations') }}" class="btn btn-outline-secondary">
             <i class="fas fa-arrow-left"></i> 一覧に戻る
         </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-info-circle"></i> 予約情報</h3>
     </div>
     <div class="card-body">
         <div class="info-grid">
@@ -105,12 +127,21 @@
 @if($reservation->status !== 'completed' && $reservation->status !== 'cancelled')
 <div class="card">
     <div class="card-body">
-        <form action="{{ admin_route('admin.reservations.complete', ['id' => $reservation->id]) }}" method="POST" onsubmit="return confirm('この予約を完了にしますか？')">
-            @csrf
-            <button type="submit" class="btn btn-success btn-lg btn-block">
-                <i class="fas fa-check-double"></i> 予約を完了にする
-            </button>
-        </form>
+        <div class="reservation-quick-actions">
+            <form action="{{ admin_route('admin.reservations.complete', ['id' => $reservation->id]) }}" method="POST" onsubmit="return confirm('この予約を完了にしますか？')">
+                @csrf
+                <button type="submit" class="btn btn-success btn-large">
+                    <i class="fas fa-check-double"></i> 予約を完了にする
+                </button>
+            </form>
+            <form action="{{ admin_route('admin.reservations.destroy', ['id' => $reservation->id]) }}" method="POST" onsubmit="return confirm('この予約を削除してもよろしいですか？')">
+                @csrf
+                @method('DELETE')
+                <button type="submit" class="btn btn-danger">
+                    <i class="fas fa-trash-alt"></i> 削除
+                </button>
+            </form>
+        </div>
     </div>
 </div>
 @endif
