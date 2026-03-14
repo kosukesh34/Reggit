@@ -12,7 +12,6 @@ final class MobileWebShellViewModel {
     var isLoading: Bool = true
     var showWhiteScreenFallback: Bool = false
     var fallbackMessage: String = ""
-    /// インクリメントすると SwiftUI が WebView を再生成し、URL を最初から再読み込みする。接続失敗（about:blank）時のリロードに使用。
     var webViewReloadKey: Int = 0
 
     private let buildScriptUseCase: BuildNativeInjectionScriptUseCase
@@ -78,7 +77,6 @@ final class MobileWebShellViewModel {
         }
     }
 
-    /// When native (OneSignal) provides a subscription ID after the page has loaded, inject it into the WebView.
     private func observePushTokenUpdate() {
         pushTokenObserver = NotificationCenter.default.addObserver(
             forName: .oneSignalPushTokenDidUpdate,
@@ -88,11 +86,7 @@ final class MobileWebShellViewModel {
             guard let self else { return }
             let token = (notification.userInfo?["token"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
             guard let token, !token.isEmpty else { return }
-            let escaped = token
-                .replacingOccurrences(of: "\\", with: "\\\\")
-                .replacingOccurrences(of: "\"", with: "\\\"")
-                .replacingOccurrences(of: "\n", with: "\\n")
-            let script = "typeof window.__nativeSetPushToken === 'function' && window.__nativeSetPushToken(\"\(escaped)\");"
+            let script = "typeof window.__nativeSetPushToken === 'function' && window.__nativeSetPushToken(\(token.jsStringLiteral));"
             Task { @MainActor in
                 _ = try? await self.navigator.evaluateJavaScript(script)
             }
@@ -145,7 +139,6 @@ final class MobileWebShellViewModel {
                 if elapsed >= 9, !self.didAutoReload {
                     self.didAutoReload = true
                     logger.warning("WebView content still not visible after 9s, auto reloading: \(inspection.summary)")
-                    // 読み込み中・about:blank・未描画のいずれでも evaluateJavaScript は SkipWeb で nil クラッシュする可能性があるため、常に WebView 再生成でリロードする
                     self.webViewReloadKey += 1
                     self.startMonitoringWhiteScreen()
                 }
@@ -168,7 +161,28 @@ final class MobileWebShellViewModel {
     }
 
     private func inspectPage() async -> PageInspection {
-        let script = """
+        guard let raw = try? await navigator.evaluateJavaScript(pageVisibilityInspectionScript()) else {
+            return PageInspection(visible: false, summary: "js_eval_failed")
+        }
+
+        let summary = normalizeEvaluateResult(raw)
+        let fields = summary.split(separator: "|", omittingEmptySubsequences: false).map(String.init)
+        let visible = fields.last == "1"
+        return PageInspection(visible: visible, summary: summary)
+    }
+
+    private func forceBootstrapIfNeeded() async {
+        let result: String
+        if let value = try? await navigator.evaluateJavaScript(forceBootstrapScript()) {
+            result = normalizeEvaluateResult(value)
+        } else {
+            result = "js_eval_failed"
+        }
+        logger.warning("Forced Android bootstrap result: \(result)")
+    }
+
+    private func pageVisibilityInspectionScript() -> String {
+        """
         (() => {
             const appContainer = document.querySelector('.app-container');
             const activeTab = document.querySelector('.tab-content.active');
@@ -192,19 +206,10 @@ final class MobileWebShellViewModel {
             return summary;
         })();
         """
-
-        guard let raw = try? await navigator.evaluateJavaScript(script) else {
-            return PageInspection(visible: false, summary: "js_eval_failed")
-        }
-
-        let summary = normalizeEvaluateResult(raw)
-        let fields = summary.split(separator: "|", omittingEmptySubsequences: false).map(String.init)
-        let visible = fields.last == "1"
-        return PageInspection(visible: visible, summary: summary)
     }
 
-    private func forceBootstrapIfNeeded() async {
-        let script = """
+    private func forceBootstrapScript() -> String {
+        """
         (() => {
             try {
                 const targetTab = \(config.fixedTab.jsStringLiteral);
@@ -221,13 +226,6 @@ final class MobileWebShellViewModel {
             }
         })();
         """
-        let result: String
-        if let value = try? await navigator.evaluateJavaScript(script) {
-            result = normalizeEvaluateResult(value)
-        } else {
-            result = "js_eval_failed"
-        }
-        logger.warning("Forced Android bootstrap result: \(result)")
     }
 
     private func normalizeEvaluateResult(_ value: Any) -> String {
@@ -249,16 +247,4 @@ final class MobileWebShellViewModel {
 private struct PageInspection {
     let visible: Bool
     let summary: String
-}
-
-private extension String {
-    var jsStringLiteral: String {
-        let escaped = self
-            .replacingOccurrences(of: "\\", with: "\\\\")
-            .replacingOccurrences(of: "\"", with: "\\\"")
-            .replacingOccurrences(of: "\n", with: "\\n")
-            .replacingOccurrences(of: "\r", with: "\\r")
-            .replacingOccurrences(of: "\t", with: "\\t")
-        return "\"\(escaped)\""
-    }
 }

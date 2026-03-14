@@ -1,0 +1,196 @@
+/* プロフィール編集モーダル（会員登録含む） */
+.member-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 10002;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    padding-top: max(16px, env(safe-area-inset-top));
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+    opacity: 0;
+    visibility: hidden;
+    transition: none;
+    box-sizing: border-box;
+}
+
+.member-modal--open {
+    opacity: 1;
+    visibility: visible;
+}
+
+.member-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    cursor: pointer;
+}
+
+.member-modal-content {
+    position: relative;
+    width: 100%;
+    max-width: 400px;
+    max-height: min(90vh, calc(100dvh - 32px));
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.member-modal-inner {
+    background: var(--bg-primary, #fff);
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+}
+
+/* 会員登録・全画面表示（プロフィール編集が全て表示されるようスクロール・高さを確保） */
+.member-register-fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-primary, #fff);
+    z-index: 100;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding-top: env(safe-area-inset-top, 0);
+    padding-bottom: env(safe-area-inset-bottom, 0);
+    padding-left: env(safe-area-inset-left, 0);
+    padding-right: env(safe-area-inset-right, 0);
+    box-sizing: border-box;
+    overflow-x: hidden;
+    overflow-y: hidden;
+}
+
+.member-register-fullscreen-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border-color, #e5e7eb);
+    flex-shrink: 0;
+}
+
+.member-register-fullscreen-title {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 600;
+    text-align: center;
+}
+
+.member-register-fullscreen-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    padding: 16px 20px 24px;
+    padding-bottom: max(24px, env(safe-area-inset-bottom, 0) + 24px);
+}
+
+.member-register-fullscreen-body .member-modal-inner {
+    box-shadow: none;
+    padding: 0;
+    padding-bottom: 40px;
+}
+
+/* ネイティブアプリ内でタブバー分の余白を確保 */
+body.native-app-embed .member-register-fullscreen-body {
+    padding-bottom: calc(var(--main-tabs-height, 72px) + 24px);
+}
+
+.member-modal-title {
+    margin: 0 0 20px 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.member-form-group {
+    margin-bottom: 16px;
+}
+
+.member-form-group label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+}
+
+.member-form-group input {
+    width: 100%;
+    max-width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 16px;
+    box-sizing: border-box;
+}
+
+.member-form-group select,
+.member-form-group textarea {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.member-form-hint {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin: 6px 0 0;
+}
+
+.member-form-postal-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.member-form-postal-row input {
+    flex: 1;
+    min-width: 120px;
+}
+
+.member-form-postal-row .postal-code-lookup-btn {
+    flex: 0 0 auto;
+    white-space: nowrap;
+}
+
+.member-form-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+}
+
+.member-btn {
+    flex: 1;
+    padding: 12px 16px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.member-btn--primary {
+    background: var(--primary-color);
+    color: #fff;
+}
+
+.member-btn--secondary {
+    background: var(--bg-light);
+    color: var(--text-primary);
+}
