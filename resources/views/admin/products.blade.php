@@ -34,7 +34,7 @@
                 <td>{{ $product->name }}</td>
                 <td>¥{{ number_format($product->price) }}</td>
                 <td>{{ $product->category }}</td>
-                <td>{{ $product->stock }}</td>
+                <td>{{ $product->stock === null ? '無制限' : $product->stock }}</td>
                 <td>
                     <span class="badge badge-{{ $product->is_available ? 'success' : 'danger' }}">
                         {{ $product->is_available ? '販売中' : '販売停止' }}

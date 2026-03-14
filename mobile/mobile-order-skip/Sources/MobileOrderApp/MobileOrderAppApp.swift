@@ -2,12 +2,8 @@ import Foundation
 import SkipFuse
 import SwiftUI
 
-/// A logger for the MobileOrderApp module.
 let logger: Logger = Logger(subsystem: "jp.gamechanger.mobileorder", category: "MobileOrderApp")
 
-/// The shared top-level view for the app, loaded from the platform-specific App delegates below.
-///
-/// The default implementation merely loads the `ContentView` for the app and logs a message.
 /* SKIP @bridge */public struct MobileOrderAppRootView : View {
     /* SKIP @bridge */public init() {
     }
@@ -20,9 +16,6 @@ let logger: Logger = Logger(subsystem: "jp.gamechanger.mobileorder", category: "
     }
 }
 
-/// Global application delegate functions.
-///
-/// These functions can update a shared observable object to communicate app state changes to interested views.
 /* SKIP @bridge */public final class MobileOrderAppAppDelegate : Sendable {
     /* SKIP @bridge */public static let shared = MobileOrderAppAppDelegate()
 
@@ -57,7 +50,6 @@ let logger: Logger = Logger(subsystem: "jp.gamechanger.mobileorder", category: "
         logger.debug("onLowMemory")
     }
 
-    /// Called by native (Android) when OneSignal subscription ID is saved. Posts a notification so the WebView injects the token and the web sends it to the backend.
     /* SKIP @bridge */public func onPushTokenReceived(_ token: String) {
         let trimmed = token.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
