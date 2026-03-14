@@ -19,12 +19,12 @@ use App\Http\Controllers\Admin\Gallery\CategoryController as GalleryCategoryCont
 use App\Http\Controllers\Admin\Gallery\ItemController as GalleryItemController;
 use App\Http\Controllers\Admin\MemberController as AdminMemberController;
 use App\Http\Controllers\Admin\MemberTagController as AdminMemberTagController;
-use App\Http\Controllers\Admin\RfmController as AdminRfmController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Admin\ProjectController as AdminProjectController;
 use App\Http\Controllers\Admin\QueueController as AdminQueueController;
 use App\Http\Controllers\Admin\ReservationController as AdminReservationController;
+use App\Http\Controllers\Admin\RfmController as AdminRfmController;
 use App\Http\Controllers\Admin\Settings\AdvancedController as SettingsAdvancedController;
 use App\Http\Controllers\Admin\Settings\BasicController as SettingsBasicController;
 use App\Http\Controllers\Admin\Settings\FeaturesController as SettingsFeaturesController;

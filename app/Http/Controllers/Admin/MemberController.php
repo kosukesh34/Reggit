@@ -35,7 +35,6 @@ class MemberController extends AdminBaseController
         private AdminMemberTagIndexUseCase $tagIndexUseCase
     ) {}
 
-
     public function members(Request $request)
     {
         $projectId = $this->resolveAdminProjectId();
