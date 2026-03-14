@@ -24,6 +24,7 @@ class AnnouncementDeliveryStoreRequest extends FormRequest
                 Announcement::DELIVERY_TYPE_IMMEDIATE_BULK,
                 Announcement::DELIVERY_TYPE_PERSONAL,
                 Announcement::DELIVERY_TYPE_SCHEDULED,
+                Announcement::DELIVERY_TYPE_SEGMENT,
             ])],
             'target_member_ids' => [
                 Rule::requiredIf($deliveryType === Announcement::DELIVERY_TYPE_PERSONAL),
@@ -38,6 +39,25 @@ class AnnouncementDeliveryStoreRequest extends FormRequest
                 'date',
                 'after:now',
             ],
+            'segment_period_days' => [
+                Rule::requiredIf($deliveryType === Announcement::DELIVERY_TYPE_SEGMENT),
+                'nullable',
+                'integer',
+                'min:1',
+                'max:365',
+            ],
+            'segment_condition' => [
+                Rule::requiredIf($deliveryType === Announcement::DELIVERY_TYPE_SEGMENT),
+                'nullable',
+                Rule::in(['min_amount', 'no_orders']),
+            ],
+            'segment_min_amount' => [
+                Rule::requiredIf($deliveryType === Announcement::DELIVERY_TYPE_SEGMENT && $this->input('segment_condition') === 'min_amount'),
+                'nullable',
+                'numeric',
+                'min:0',
+            ],
+            'delivery_coupon_id' => ['nullable', 'integer', 'min:1'],
             'is_pinned' => ['nullable', 'boolean'],
             'expires_at' => ['nullable', 'date'],
         ];
@@ -51,6 +71,9 @@ class AnnouncementDeliveryStoreRequest extends FormRequest
             'target_member_ids.required' => '個人宛配信では配信対象の会員を選択してください',
             'target_member_ids.min' => '個人宛配信では配信対象の会員を1人以上選択してください',
             'scheduled_at.required' => '予約配信では配信日時を指定してください',
+            'segment_period_days.required' => 'セグメント配信では対象期間を選択してください',
+            'segment_condition.required' => 'セグメント配信では条件を選択してください',
+            'segment_min_amount.required' => '購入額以上の場合は最低金額を入力してください',
         ];
     }
 }

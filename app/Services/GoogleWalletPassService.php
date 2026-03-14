@@ -202,9 +202,9 @@ class GoogleWalletPassService
     /**
      * getMemberData の戻り値が会員かつ member インスタンスを持つか。
      *
-     * @param  mixed  $data  MemberService::getMemberData の戻り値
+     * @param  array{is_member: bool, member?: \App\Models\Member, ...}  $data  MemberService::getMemberData の戻り値
      */
-    private function isValidMemberData($data): bool
+    private function isValidMemberData(array $data): bool
     {
         return isset($data['is_member'])
             && $data['is_member'] === true

@@ -2,10 +2,9 @@
 
 namespace App\UseCases\Admin\Settings;
 
-use App\Models\StampCard;
 use App\Models\ShopSetting;
+use App\Models\StampCard;
 use App\UseCases\Admin\Settings\Data\RankSettingsView;
-use Illuminate\Support\Collection;
 
 class GetRankSettingsUseCase
 {

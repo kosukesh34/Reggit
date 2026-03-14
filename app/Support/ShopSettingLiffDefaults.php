@@ -460,7 +460,7 @@ class ShopSettingLiffDefaults
      * - タブが空ならデフォルトレイアウトを採用
      * - 既存ブロックは順序を変えずに維持する
      *
-     * @param array<string, mixed> $layouts
+     * @param  array<string, mixed>  $layouts
      * @return array<string, array<int, array<string, mixed>>>
      */
     public static function ensureLiffTabLayouts(array $layouts): array
@@ -474,6 +474,7 @@ class ShopSettingLiffDefaults
 
             if ($blocks === []) {
                 $normalized[$tab] = $defaultBlocks;
+
                 continue;
             }
 

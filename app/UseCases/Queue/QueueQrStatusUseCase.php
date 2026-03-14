@@ -2,11 +2,11 @@
 
 namespace App\UseCases\Queue;
 
-use App\Services\Line\LineService;
 use App\Models\Project;
 use App\Models\QueueEntry as QueueEntryModel;
 use App\Models\ShopSetting;
 use App\Models\User;
+use App\Services\Line\LineService;
 use App\Services\UserService;
 use App\UseCases\Queue\Data\QueueEntry;
 use App\UseCases\Queue\Data\QueueEntryFactory;

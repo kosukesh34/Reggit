@@ -22,7 +22,7 @@ class PushEnvCheckCommand extends Command
             $this->error('PUSH_ONESIGNAL_APP_ID が未設定です。.env に設定してください。');
             $ok = false;
         } else {
-            $this->info('PUSH_ONESIGNAL_APP_ID: ' . substr($appId, 0, 8) . '...' . substr($appId, -4) . ' （iOS Info.plist の OneSignalAppId と一致させる）');
+            $this->info('PUSH_ONESIGNAL_APP_ID: '.substr($appId, 0, 8).'...'.substr($appId, -4).' （iOS Info.plist の OneSignalAppId と一致させる）');
         }
 
         if ($apiKey === '') {
@@ -33,7 +33,7 @@ class PushEnvCheckCommand extends Command
         }
 
         $deviceCount = UserDevice::query()->whereNotNull('push_token')->where('push_token', '!=', '')->count();
-        $this->info('登録端末（push_token あり）: ' . $deviceCount . ' 件');
+        $this->info('登録端末（push_token あり）: '.$deviceCount.' 件');
 
         if (! $ok) {
             return self::FAILURE;

@@ -8,8 +8,11 @@ use Illuminate\Support\Facades\Log;
 class JapanPostApiService
 {
     private ?string $cachedToken = null;
+
     private string $host;
+
     private string $clientId;
+
     private string $clientSecret;
 
     public function __construct(string $host, string $clientId, string $clientSecret)

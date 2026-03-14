@@ -56,16 +56,14 @@ class StampController extends AdminBaseController
             ->with('success', 'スタンプカードを追加しました');
     }
 
-    /** @param string|int $id */
-    public function editStamp($id)
+    public function editStamp(string $projectKey, $id)
     {
         $stampCard = $this->editUseCase->handle((int) $id);
 
         return view('admin.stamps.edit', compact('stampCard'));
     }
 
-    /** @param string|int $id */
-    public function updateStamp(StampUpdateRequest $request, $id)
+    public function updateStamp(StampUpdateRequest $request, string $projectKey, $id)
     {
         $this->updateUseCase->handle((int) $id, $request->validated());
 
@@ -73,8 +71,7 @@ class StampController extends AdminBaseController
             ->with('success', 'スタンプカードを更新しました');
     }
 
-    /** @param string|int $id */
-    public function deleteStamp($id)
+    public function deleteStamp(string $projectKey, $id)
     {
         $this->deleteUseCase->handle((int) $id);
 
