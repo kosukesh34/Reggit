@@ -19,6 +19,7 @@ class LiffDesignerView
         public readonly array $tabSettings,
         public readonly array $featureFlags = [],
         public readonly string $liffId = '',
-        public readonly string $liffUrl = ''
+        public readonly string $liffUrl = '',
+        public readonly string $lineFriendAddUrl = ''
     ) {}
 }

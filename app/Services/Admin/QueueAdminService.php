@@ -3,15 +3,19 @@
 namespace App\Services\Admin;
 
 use App\Enums\QueueStatus;
-use App\Http\Services\LineService;
 use App\Models\QueueCallLog;
 use App\Models\QueueEntry;
+use App\Services\Line\LineService;
 use App\Util\LogHelper;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
 class QueueAdminService
 {
+    public function __construct(
+        private LineService $lineService
+    ) {}
+
     public function getPaginatedList(int $projectId, int $perPage = 50): LengthAwarePaginator
     {
         return QueueEntry::with('member.user', 'user')
@@ -97,7 +101,7 @@ class QueueAdminService
             }
             $message = sprintf('順番が近づきました。受付番号: %s', $entry->queue_number ?? $entry->id);
             try {
-                app(LineService::class)->pushMessage($lineUserId, ['type' => 'text', 'text' => $message]);
+                $this->lineService->pushMessage($lineUserId, ['type' => 'text', 'text' => $message]);
                 $callLog->update([
                     'push_status' => 'sent',
                     'error_message' => null,

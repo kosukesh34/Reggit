@@ -23,7 +23,17 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     @php
         $configuredAssetVersion = (string) config('app.asset_version', env('APP_VERSION', ''));
-        $cssMtime = @filemtime(public_path('css/frontend/style.css')) ?: 0;
+        $cssDir = public_path('css/frontend');
+        $cssMtime = @filemtime($cssDir . '/style.css') ?: 0;
+        $componentsDir = $cssDir . '/components';
+        if (is_dir($componentsDir)) {
+            foreach (glob($componentsDir . '/*.css') ?: [] as $f) {
+                $t = @filemtime($f) ?: 0;
+                if ($t > $cssMtime) {
+                    $cssMtime = $t;
+                }
+            }
+        }
         $appJsMtime = @filemtime(public_path('js/frontend/app.js')) ?: 0;
         $layoutJsMtime = @filemtime(public_path('js/frontend/managers/LiffLayoutManager.js')) ?: 0;
         $latestAssetMtime = max($cssMtime, $appJsMtime, $layoutJsMtime);
@@ -34,7 +44,19 @@
         $useInlineLocalAssets = str_contains($host, 'ngrok-free.dev') || str_contains($host, 'ngrok-free.app');
     @endphp
     @if($useInlineLocalAssets)
-        @php $inlineCss = @file_get_contents(public_path('css/frontend/style.css')) ?: ''; @endphp
+        @php
+            $mainCss = @file_get_contents($cssDir . '/style.css') ?: '';
+            $inlineCss = $mainCss;
+            if (preg_match_all('/@import\s+url\([\'"]([^\'"]+)[\'"]\)\s*;/', $mainCss, $m)) {
+                $inlineCss = '';
+                foreach ($m[1] as $importPath) {
+                    $full = $cssDir . '/' . $importPath;
+                    if (is_file($full)) {
+                        $inlineCss .= file_get_contents($full) . "\n";
+                    }
+                }
+            }
+        @endphp
         <style id="inline-frontend-style">{!! $inlineCss !!}</style>
     @else
         <link rel="stylesheet" href="/css/frontend/style.css?v={{ urlencode($assetVersion) }}">
@@ -131,6 +153,9 @@
                     <img src="{{ $frontendLogoUrl }}" alt="{{ $frontendHeaderText ?? $projectName ?? 'ロゴ' }}" class="header-logo">
                 @endif
                 <h1 class="logo">{{ $frontendHeaderText ?? $projectName ?? 'モバイルオーダー' }}</h1>
+                @if(isset($lineFriendAddUrl) && $lineFriendAddUrl !== null && trim($lineFriendAddUrl) !== '')
+                <a href="{{ $lineFriendAddUrl }}" target="_blank" rel="noopener noreferrer" class="header-friend-add" id="headerFriendAdd" title="友だち追加でメッセージやクーポンを受け取れます"><i class="fab fa-line"></i> 友だち追加</a>
+                @endif
                 <button class="cart-btn" id="cartBtn">
                     <i class="fas fa-shopping-cart"></i>
                     <span class="cart-count" id="cartCount">0</span>
@@ -246,6 +271,7 @@
         window.__WALLET_PASS_ADD_BUTTON_IMAGE__ = "/images/add-to-apple-wallet-logo.png";
         window.__GOOGLE_WALLET_ADD_BUTTON_IMAGE__ = "/images/add-to-google-wallet-logo.png";
         window.__ORDER_MODE__ = @json($orderMode ?? \App\Models\ShopSetting::ORDER_MODE_BOTH);
+        window.__LINE_FRIEND_ADD_URL__ = @json($lineFriendAddUrl ?? '');
         window.__LIFF_BUILDER__ = @json($liffBuilderBlocks ?? []);
         window.__LIFF_TAB_LAYOUTS__ = @json($liffTabLayouts ?? []);
         window.__LIFF_TAB_SETTINGS__ = @json($liffTabSettings ?? []);

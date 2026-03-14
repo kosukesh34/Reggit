@@ -437,6 +437,32 @@ class SmaregiApiService
      */
 
     /**
+     * 指定プロジェクトに紐づく契約の会員ポイントを加算・減算する（プロジェクトIDから契約解決を行う）。
+     *
+     * @return array{customerId?: string, point?: string, mile?: string, transactionHeadIds?: array}|null 成功時はレスポンス、失敗時は null
+     */
+    public function syncCustomerPointsForProject(
+        int $projectId,
+        string $smaregiCustomerId,
+        int $pointDelta,
+        ?int $mileDelta = null,
+        ?string $pointExpireDate = null
+    ): ?array {
+        $contractId = $this->getContractIdForProject($projectId);
+        if ($contractId === null || $contractId === '') {
+            return null;
+        }
+
+        return $this->addCustomerPoints(
+            $contractId,
+            $smaregiCustomerId,
+            $pointDelta,
+            $mileDelta,
+            $pointExpireDate
+        );
+    }
+
+    /**
      * プロジェクトに紐づく契約IDを取得。
      * 優先順: (1) ShopSetting (2) SmaregiContract (3) config のデフォルト契約ID（sb_skx928r2）
      */

@@ -10,16 +10,22 @@ import UserNotifications
 private typealias AppRootView = MobileOrderAppRootView
 private typealias AppDelegate = MobileOrderAppAppDelegate
 
-/// Key for storing OneSignal subscription ID so WebView injection can send it to the backend. Must match Skip module's key.
-private let kPushTokenUserDefaultsKey = "mobile_order_push_token"
-/// Key for storing the currently configured OneSignal App ID to avoid reusing stale subscription IDs after App ID changes.
-private let kOneSignalAppIdUserDefaultsKey = "mobile_order_onesignal_app_id"
+#if canImport(UIKit)
+private typealias AppDelegateAdaptor = UIApplicationDelegateAdaptor
+private typealias AppMainDelegateBase = UIApplicationDelegate
+private typealias AppType = UIApplication
+#elseif canImport(AppKit)
+private typealias AppDelegateAdaptor = NSApplicationDelegateAdaptor
+private typealias AppMainDelegateBase = NSApplicationDelegate
+private typealias AppType = NSApplication
+#endif
 
-/// Notification name to show the Japanese "notification denied" alert (opens Settings).
+private let kPushTokenUserDefaultsKey = "mobile_order_push_token"
+private let kOneSignalAppIdUserDefaultsKey = "mobile_order_onesignal_app_id"
 private let kShowNotificationDeniedAlertName = Notification.Name("ShowNotificationDeniedAlert")
 
-/// The entry point to the app simply loads the App implementation from SPM module.
-@main struct AppMain: App {
+@main
+struct AppMain: App {
     @AppDelegateAdaptor(AppMainDelegate.self) var appDelegate
     @Environment(\.scenePhase) private var scenePhase
     #if canImport(UIKit)
@@ -34,16 +40,14 @@ private let kShowNotificationDeniedAlertName = Notification.Name("ShowNotificati
                 showNotificationDeniedAlert = true
             }
             .alert("通知がオフです", isPresented: $showNotificationDeniedAlert) {
-                Button("設定を開く") {
-                    openAppNotificationSettings()
-                }
+                Button("設定を開く") { openAppNotificationSettings() }
                 Button("あとで", role: .cancel) {}
             } message: {
                 Text("このアプリの通知がオフになっています。設定から通知を有効にできます。")
             }
             #endif
         }
-        .onChange(of: scenePhase) { oldPhase, newPhase in
+        .onChange(of: scenePhase) { _, newPhase in
             switch newPhase {
             case .active:
                 AppDelegate.shared.onResume()
@@ -62,7 +66,6 @@ private let kShowNotificationDeniedAlertName = Notification.Name("ShowNotificati
 }
 
 #if canImport(UIKit)
-/// Opens the app's notification settings (iOS 16+) or general app settings (older).
 @MainActor
 private func openAppNotificationSettings() {
     let urlString: String
@@ -78,7 +81,6 @@ private func openAppNotificationSettings() {
 #endif
 
 #if canImport(OneSignalFramework) && canImport(UserNotifications)
-/// 通知が本当に「オフ」のときだけアラートを出す。許可直後の誤表示を防ぐため、少し待ってから状態を再確認する。
 private func showNotificationDeniedAlertIfStillDenied() {
     DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
         UNUserNotificationCenter.current().getNotificationSettings { settings in
@@ -97,12 +99,7 @@ func requestNotificationPermissionIfNeeded() {
             showNotificationDeniedAlertIfStillDenied()
             return
         case .authorized, .provisional, .ephemeral:
-            DispatchQueue.main.async {
-                #if canImport(UIKit)
-                UIApplication.shared.registerForRemoteNotifications()
-                #endif
-                OneSignal.User.pushSubscription.optIn()
-            }
+            registerRemoteAndOptIn()
             return
         case .notDetermined:
             break
@@ -112,16 +109,20 @@ func requestNotificationPermissionIfNeeded() {
         OneSignal.Notifications.requestPermission({ granted in
             print("[OneSignal] Notification permission: \(granted ? "granted" : "denied")")
             if granted {
-                DispatchQueue.main.async {
-                    #if canImport(UIKit)
-                    UIApplication.shared.registerForRemoteNotifications()
-                    #endif
-                    OneSignal.User.pushSubscription.optIn()
-                }
+                DispatchQueue.main.async { registerRemoteAndOptIn() }
             } else {
                 showNotificationDeniedAlertIfStillDenied()
             }
         }, fallbackToSettings: false)
+    }
+}
+
+private func registerRemoteAndOptIn() {
+    DispatchQueue.main.async {
+        #if canImport(UIKit)
+        UIApplication.shared.registerForRemoteNotifications()
+        #endif
+        OneSignal.User.pushSubscription.optIn()
     }
 }
 #elseif canImport(OneSignalFramework)
@@ -130,47 +131,38 @@ func requestNotificationPermissionIfNeeded() {
 }
 #endif
 
-#if canImport(UIKit)
-typealias AppDelegateAdaptor = UIApplicationDelegateAdaptor
-typealias AppMainDelegateBase = UIApplicationDelegate
-typealias AppType = UIApplication
-#elseif canImport(AppKit)
-typealias AppDelegateAdaptor = NSApplicationDelegateAdaptor
-typealias AppMainDelegateBase = NSApplicationDelegate
-typealias AppType = NSApplication
-#endif
-
-@MainActor final class AppMainDelegate: NSObject, AppMainDelegateBase {
+@MainActor
+final class AppMainDelegate: NSObject, AppMainDelegateBase {
     let application = AppType.shared
     #if canImport(OneSignalFramework)
     private var oneSignalPushObserver: OneSignalPushObserver?
     #endif
 
     #if canImport(UIKit)
-    func application(_ application: UIApplication, willFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
+    func application(_ application: UIApplication, willFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
         AppDelegate.shared.onInit()
         return true
     }
 
-    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
+    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
         #if canImport(OneSignalFramework)
-        setupOneSignalIfAvailable(launchOptions: launchOptions)
+        setupOneSignalIfNeeded(launchOptions: launchOptions)
         #endif
         AppDelegate.shared.onLaunch()
         return true
     }
 
     #if canImport(OneSignalFramework)
-    private func setupOneSignalIfAvailable(launchOptions: [UIApplication.LaunchOptionsKey: Any]?) {
-        guard let appId = Bundle.main.object(forInfoDictionaryKey: "OneSignalAppId") as? String,
-              !appId.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+    private func setupOneSignalIfNeeded(launchOptions: [UIApplication.LaunchOptionsKey: Any]?) {
+        guard let appId = (Bundle.main.object(forInfoDictionaryKey: "OneSignalAppId") as? String)?
+            .trimmingCharacters(in: .whitespacesAndNewlines),
+              !appId.isEmpty else {
             print("[OneSignal] Skip: OneSignalAppId not set in Info.plist")
             return
         }
-        let normalizedAppId = appId.trimmingCharacters(in: .whitespacesAndNewlines)
-        resetStoredPushTokenIfAppIdChanged(currentAppId: normalizedAppId)
-        print("[OneSignal] Initializing with App ID: \(normalizedAppId.prefix(8))...\(normalizedAppId.suffix(4)) (Bundle ID: \(Bundle.main.bundleIdentifier ?? "?"))")
-        OneSignal.initialize(normalizedAppId, withLaunchOptions: launchOptions)
+        resetStoredPushTokenIfAppIdChanged(currentAppId: appId)
+        print("[OneSignal] Initializing with App ID: \(appId.prefix(8))...\(appId.suffix(4)) (Bundle ID: \(Bundle.main.bundleIdentifier ?? "?"))")
+        OneSignal.initialize(appId, withLaunchOptions: launchOptions)
         bindOneSignalPushObserverIfNeeded()
         OneSignal.User.pushSubscription.optIn()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
@@ -181,7 +173,7 @@ typealias AppType = NSApplication
         requestNotificationPermissionIfNeeded()
         for delay in [2.0, 5.0, 10.0, 15.0, 20.0] as [Double] {
             DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
-                self?.saveOneSignalSubscriptionIdIfNeeded(atDelay: delay)
+                self?.saveOneSignalSubscriptionIdIfNeeded(loggingDelay: delay)
             }
         }
     }
@@ -193,7 +185,7 @@ typealias AppType = NSApplication
             let currentId = state.current.id ?? "nil"
             let previousId = state.previous.id ?? "nil"
             print("[OneSignal] pushSubscription changed: previous=\(previousId), current=\(currentId), optedIn=\(state.current.optedIn ? "1" : "0")")
-            self.saveOneSignalSubscriptionIdIfNeeded(atDelay: 0)
+            saveOneSignalSubscriptionIdIfNeeded(loggingDelay: 0)
         }
         oneSignalPushObserver = observer
         OneSignal.User.pushSubscription.addObserver(observer)
@@ -202,31 +194,27 @@ typealias AppType = NSApplication
     private func resetStoredPushTokenIfAppIdChanged(currentAppId: String) {
         let defaults = UserDefaults.standard
         let previousAppId = defaults.string(forKey: kOneSignalAppIdUserDefaultsKey)?.trimmingCharacters(in: .whitespacesAndNewlines)
-        if previousAppId != nil, previousAppId != currentAppId {
+        if let prev = previousAppId, prev != currentAppId {
             defaults.removeObject(forKey: kPushTokenUserDefaultsKey)
-            print("[OneSignal] App ID changed (\(previousAppId ?? "nil") → \(currentAppId)). Cleared cached subscription ID.")
+            print("[OneSignal] App ID changed (\(prev) → \(currentAppId)). Cleared cached subscription ID.")
         }
         defaults.set(currentAppId, forKey: kOneSignalAppIdUserDefaultsKey)
     }
 
-    private func saveOneSignalSubscriptionIdIfNeeded(atDelay delay: Double = 0) {
-        let id = OneSignal.User.pushSubscription.id
-        if id == nil || (id ?? "").isEmpty {
-            print("[OneSignal] @\(Int(delay))s: pushSubscription.id is nil or empty → OneSignal に購読が作られていません。Dashboard の APNs (p8/Bundle ID) を確認してください")
+    private func saveOneSignalSubscriptionIdIfNeeded(loggingDelay: Double = 0) {
+        guard let id = OneSignal.User.pushSubscription.id, !id.isEmpty else {
+            print("[OneSignal] @\(Int(loggingDelay))s: pushSubscription.id is nil or empty → OneSignal に購読が作られていません。Dashboard の APNs (p8/Bundle ID) を確認してください")
             return
         }
-        let subscriptionId = id!
         let existing = UserDefaults.standard.string(forKey: kPushTokenUserDefaultsKey)
-        if subscriptionId == existing {
-            return
-        }
-        UserDefaults.standard.set(subscriptionId, forKey: kPushTokenUserDefaultsKey)
-        let preview = subscriptionId.count > 12 ? "\(subscriptionId.prefix(8))...\(subscriptionId.suffix(4))" : subscriptionId
-        print("[OneSignal] Saved subscription ID (\(subscriptionId.count) chars): \(preview) → will be sent to backend as push_token")
+        if id == existing { return }
+        UserDefaults.standard.set(id, forKey: kPushTokenUserDefaultsKey)
+        let preview = id.count > 12 ? "\(id.prefix(8))...\(id.suffix(4))" : id
+        print("[OneSignal] Saved subscription ID (\(id.count) chars): \(preview) → will be sent to backend as push_token")
         NotificationCenter.default.post(
             name: Notification.Name("OneSignalPushTokenDidUpdate"),
             object: nil,
-            userInfo: ["token": subscriptionId]
+            userInfo: ["token": id]
         )
     }
     #endif
@@ -239,20 +227,24 @@ typealias AppType = NSApplication
         AppDelegate.shared.onLowMemory()
     }
 
-    // support for SkipNotify.fetchNotificationToken()
-    // OneSignal は method swizzling でこのコールバックを横取りしてトークンを受け取る。当メソッドはその後に呼ばれ、NotificationCenter に投稿する。
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
         print("[OneSignal] APNs device token received (\(deviceToken.count) bytes) → OneSignal will register; subscription ID may appear after a few seconds")
-        NotificationCenter.default.post(name: NSNotification.Name("didRegisterForRemoteNotificationsWithDeviceToken"), object: application, userInfo: ["deviceToken": deviceToken])
+        NotificationCenter.default.post(
+            name: NSNotification.Name("didRegisterForRemoteNotificationsWithDeviceToken"),
+            object: application,
+            userInfo: ["deviceToken": deviceToken]
+        )
     }
 
     func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: any Error) {
         print("[OneSignal] APNs registration FAILED: \(error.localizedDescription) (simulator or missing capability?)")
-        NotificationCenter.default.post(name: NSNotification.Name("didFailToRegisterForRemoteNotificationsWithError"), object: application, userInfo: ["error": error])
+        NotificationCenter.default.post(
+            name: NSNotification.Name("didFailToRegisterForRemoteNotificationsWithError"),
+            object: application,
+            userInfo: ["error": error]
+        )
     }
 
-    /// WebView から「Safariで開く」用。mobileorderapp://openExternal?url=... で呼ばれる。
-    /// また Wallet 追加後「アプリに戻る」で mobileorderapp:// が開かれた場合はアプリを前面に出す。
     func application(_ application: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
         guard url.scheme == "mobileorderapp" else { return false }
         if url.host == "openExternal" {
@@ -262,9 +254,9 @@ typealias AppType = NSApplication
             application.open(externalURL)
             return true
         }
-        // mobileorderapp:// のみ（Wallet 追加後の「アプリに戻る」）→ アプリを前面に出す
         return true
     }
+
     #elseif canImport(AppKit)
     func applicationWillFinishLaunching(_ notification: Notification) {
         AppDelegate.shared.onInit()
@@ -278,7 +270,6 @@ typealias AppType = NSApplication
         AppDelegate.shared.onDestroy()
     }
     #endif
-
 }
 
 #if canImport(OneSignalFramework)

@@ -35,16 +35,22 @@ class SmaregiProductRegisterService
 
         $body = $this->buildBodyFromArray($projectId, $data, null);
         if ($body === null) {
+            Log::warning('[Smaregi] product register failed: could not build body (no category or department). See above for "product register skipped no category" or "create default department failed".', ['project_id' => $projectId]);
+
             return null;
         }
 
         $result = $this->smaregiApi->createProduct($contractId, $body);
         if ($result === null) {
+            Log::warning('[Smaregi] product register failed: createProduct API returned null. Check above for "API request failed" with path pos/products.', ['project_id' => $projectId]);
+
             return null;
         }
 
         $smaregiProductId = $this->extractProductIdFromResponse($result);
         if ($smaregiProductId === null) {
+            Log::warning('[Smaregi] product register failed: could not extract productId from API response.', ['project_id' => $projectId, 'response_keys' => array_keys($result)]);
+
             return null;
         }
 
@@ -122,22 +128,55 @@ class SmaregiProductRegisterService
 
     /**
      * 契約の部門一覧から先頭の部門IDを取得する（商品登録で categoryId 必須のため）。
+     * 部門が1件もない場合はデフォルト部門を自動作成してそのIDを返す。
      */
     private function getDefaultCategoryId(string $contractId): ?string
     {
         $result = $this->smaregiApi->getDepartments($contractId, ['limit' => 1]);
         if ($result === null) {
+            Log::warning('[Smaregi] getDefaultCategoryId: getDepartments (pos/categories) returned null. Check token and scope pos.products:read.', ['contract_id' => $contractId]);
+
             return null;
         }
 
         $list = $this->extractListFromResponse($result, 'categories');
         $first = $list[0] ?? null;
-        if (! is_array($first)) {
+        if (is_array($first)) {
+            $id = $first['categoryId'] ?? $first['category_id'] ?? $first['id'] ?? null;
+            if ($id !== null) {
+                return (string) $id;
+            }
+        }
+
+        // 部門が0件の場合はデフォルト部門を自動作成
+        return $this->createDefaultDepartment($contractId);
+    }
+
+    /**
+     * スマレジにデフォルト部門を1件登録し、その部門IDを返す。失敗時は null。
+     */
+    private function createDefaultDepartment(string $contractId): ?string
+    {
+        $body = [
+            'categoryCode' => 'APPDEF'.uniqid('', false),
+            'categoryName' => 'デフォルト部門',
+            'categoryAbbr' => 'デフォルト',
+            'displayFlag' => '1',
+            'taxDivision' => '0',
+            'pointNotApplicable' => '0',
+            'taxFreeDivision' => '0',
+        ];
+        $result = $this->smaregiApi->createDepartment($contractId, $body);
+        if ($result === null || ! is_array($result)) {
+            Log::warning('[Smaregi] create default department failed', ['contract_id' => $contractId]);
+
             return null;
         }
 
-        $id = $first['categoryId'] ?? $first['category_id'] ?? $first['id'] ?? null;
+        $id = $result['categoryId'] ?? $result['category_id'] ?? $result['id'] ?? null;
         if ($id !== null) {
+            Log::info('[Smaregi] default department created', ['contract_id' => $contractId, 'category_id' => $id]);
+
             return (string) $id;
         }
 
@@ -157,7 +196,7 @@ class SmaregiProductRegisterService
 
         $categoryId = $this->getDefaultCategoryId($contractId);
         if ($categoryId === null) {
-            Log::warning('[Smaregi] product register skipped no category', ['project_id' => $projectId]);
+            Log::warning('[Smaregi] product register skipped no category (部門が0件でデフォルト部門の自動作成にも失敗した可能性があります。直上の [Smaregi] ログを確認してください)', ['project_id' => $projectId]);
 
             return null;
         }
