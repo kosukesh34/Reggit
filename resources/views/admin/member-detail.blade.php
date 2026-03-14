@@ -9,6 +9,46 @@
     <i class="fas fa-check-circle"></i> {{ session('success') }}
 </div>
 @endif
+
+{{-- 購買サマリーKPI --}}
+<div class="member-kpi-grid">
+    <div class="member-kpi-card">
+        <div class="member-kpi-icon member-kpi-icon--ltv"><i class="fas fa-yen-sign"></i></div>
+        <div class="member-kpi-body">
+            <div class="member-kpi-label">累計購買額（LTV）</div>
+            <div class="member-kpi-value">¥{{ number_format($purchaseSummary['total_revenue'] ?? 0) }}</div>
+        </div>
+    </div>
+    <div class="member-kpi-card">
+        <div class="member-kpi-icon member-kpi-icon--orders"><i class="fas fa-shopping-cart"></i></div>
+        <div class="member-kpi-body">
+            <div class="member-kpi-label">総注文数</div>
+            <div class="member-kpi-value">{{ number_format($purchaseSummary['total_orders'] ?? 0) }}件</div>
+        </div>
+    </div>
+    <div class="member-kpi-card">
+        <div class="member-kpi-icon member-kpi-icon--avg"><i class="fas fa-chart-bar"></i></div>
+        <div class="member-kpi-body">
+            <div class="member-kpi-label">平均注文単価</div>
+            <div class="member-kpi-value">¥{{ number_format($purchaseSummary['avg_order_value'] ?? 0) }}</div>
+        </div>
+    </div>
+    <div class="member-kpi-card {{ isset($purchaseSummary['days_since_last_order']) && $purchaseSummary['days_since_last_order'] > 90 ? 'member-kpi-card--alert' : '' }}">
+        <div class="member-kpi-icon member-kpi-icon--last {{ isset($purchaseSummary['days_since_last_order']) && $purchaseSummary['days_since_last_order'] > 90 ? 'member-kpi-icon--danger' : '' }}"><i class="fas fa-clock"></i></div>
+        <div class="member-kpi-body">
+            <div class="member-kpi-label">最終購買日</div>
+            <div class="member-kpi-value">
+                @if(isset($purchaseSummary['last_order_at']) && $purchaseSummary['last_order_at'])
+                    {{ $purchaseSummary['last_order_at']->format('Y/m/d') }}
+                    <span class="member-kpi-sub">{{ $purchaseSummary['days_since_last_order'] }}日前</span>
+                @else
+                    <span class="text-muted">購買なし</span>
+                @endif
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="card">
     <div class="card-header card-header-with-action">
         <h3 class="card-title"><i class="fas fa-user"></i> 会員情報</h3>
@@ -73,6 +113,107 @@
         </div>
     </div>
 </div>
+
+{{-- タグ・メモ --}}
+@php $adminUser = auth('admin')->user(); $canManage = $adminUser === null || $adminUser->hasPermission('members.manage'); @endphp
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-tags"></i> タグ・メモ</h3>
+        <a href="{{ admin_route('admin.member-tags') }}" class="btn btn-sm btn-secondary">
+            <i class="fas fa-cog"></i> タグ管理
+        </a>
+    </div>
+    <div class="card-body">
+        <div class="member-tag-section">
+            <div class="member-tag-label-row">
+                <span class="form-label">付与中のタグ</span>
+            </div>
+            <div class="member-tag-list" id="member-tag-list">
+                @forelse($member->tags as $tag)
+                <span class="member-tag-item">
+                    <span class="member-tag-badge" style="background: {{ $tag->color }}">{{ $tag->name }}</span>
+                    @if($canManage)
+                    <form action="{{ admin_route('admin.members.tags.detach', ['id' => $member->id, 'tagId' => $tag->id]) }}" method="POST" class="d-inline">
+                        @csrf @method('DELETE')
+                        <button type="submit" class="member-tag-remove" title="解除"><i class="fas fa-times"></i></button>
+                    </form>
+                    @endif
+                </span>
+                @empty
+                <span class="text-muted small">タグなし</span>
+                @endforelse
+            </div>
+            @if($canManage && $allTags->isNotEmpty())
+            <form action="{{ admin_route('admin.members.tags.attach', ['id' => $member->id]) }}" method="POST" class="member-tag-attach-form">
+                @csrf
+                <select name="tag_id" class="form-control form-control-sm" required>
+                    <option value="">タグを付与...</option>
+                    @foreach($allTags as $tag)
+                    @if(!$member->tags->contains('id', $tag->id))
+                    <option value="{{ $tag->id }}">{{ $tag->name }}</option>
+                    @endif
+                    @endforeach
+                </select>
+                <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-plus"></i> 付与</button>
+            </form>
+            @endif
+        </div>
+        <div class="member-memo-section">
+            <div class="form-label">スタッフメモ</div>
+            @if($canManage)
+            <form action="{{ admin_route('admin.members.memo', ['id' => $member->id]) }}" method="POST">
+                @csrf @method('PUT')
+                <textarea name="memo" class="form-control" rows="3" maxlength="2000" placeholder="スタッフ向けのメモを入力（会員には表示されません）">{{ old('memo', $member->memo) }}</textarea>
+                <div class="form-actions" style="margin-top:8px;">
+                    <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-save"></i> メモを保存</button>
+                </div>
+            </form>
+            @else
+            <div class="form-control-static">{{ $member->memo ?? '—' }}</div>
+            @endif
+        </div>
+    </div>
+</div>
+
+{{-- 直近注文履歴 --}}
+@if(!empty($purchaseSummary['recent_orders']) && $purchaseSummary['recent_orders']->isNotEmpty())
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-shopping-bag"></i> 直近の注文</h3>
+        <a href="{{ admin_route('admin.orders', ['user_id' => $member->user_id]) }}" class="btn btn-sm btn-secondary">
+            <i class="fas fa-arrow-right"></i> すべての注文
+        </a>
+    </div>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>注文番号</th>
+                <th>金額</th>
+                <th>ステータス</th>
+                <th>日時</th>
+                <th class="table-actions-cell">操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($purchaseSummary['recent_orders'] as $order)
+            <tr>
+                <td><a href="{{ admin_route('admin.orders.detail', ['id' => $order->id]) }}">{{ $order->order_number }}</a></td>
+                <td>¥{{ number_format($order->total_amount) }}</td>
+                <td>
+                    <span class="badge badge-{{ $order->status === 'completed' ? 'success' : ($order->status === 'pending' ? 'warning' : ($order->status === 'cancelled' ? 'danger' : 'info')) }}">
+                        {{ $order->status }}
+                    </span>
+                </td>
+                <td>{{ $order->created_at->format('Y/m/d H:i') }}</td>
+                <td class="table-actions-cell">
+                    <a href="{{ admin_route('admin.orders.detail', ['id' => $order->id]) }}" class="btn btn-action btn-edit"><i class="fas fa-eye"></i></a>
+                </td>
+            </tr>
+            @endforeach
+        </tbody>
+    </table>
+</div>
+@endif
 
 <div class="card">
     <div class="card-header">

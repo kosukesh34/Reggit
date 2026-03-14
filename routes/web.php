@@ -18,11 +18,13 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\Gallery\CategoryController as GalleryCategoryController;
 use App\Http\Controllers\Admin\Gallery\ItemController as GalleryItemController;
 use App\Http\Controllers\Admin\MemberController as AdminMemberController;
+use App\Http\Controllers\Admin\MemberTagController as AdminMemberTagController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Admin\ProjectController as AdminProjectController;
 use App\Http\Controllers\Admin\QueueController as AdminQueueController;
 use App\Http\Controllers\Admin\ReservationController as AdminReservationController;
+use App\Http\Controllers\Admin\RfmController as AdminRfmController;
 use App\Http\Controllers\Admin\Settings\AdvancedController as SettingsAdvancedController;
 use App\Http\Controllers\Admin\Settings\BasicController as SettingsBasicController;
 use App\Http\Controllers\Admin\Settings\FeaturesController as SettingsFeaturesController;
@@ -101,11 +103,19 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'bind.admin.project', '
         Route::delete('/products/{id}', [AdminProductController::class, 'deleteProduct'])->name('admin.products.delete')->middleware('admin.permission:products.manage');
 
         Route::get('/members', [AdminMemberController::class, 'members'])->name('admin.members')->middleware('admin.permission:members.view');
+        Route::get('/members/export', [AdminMemberController::class, 'export'])->name('admin.members.export')->middleware('admin.permission:members.view');
         Route::get('/members/{id}/edit', [AdminMemberController::class, 'editMember'])->name('admin.members.edit')->middleware('admin.permission:members.manage');
         Route::get('/members/{id}', [AdminMemberController::class, 'memberDetail'])->name('admin.members.detail')->middleware('admin.permission:members.view');
         Route::put('/members/{id}', [AdminMemberController::class, 'updateMember'])->name('admin.members.update')->middleware('admin.permission:members.manage');
         Route::post('/members/{id}/issue-coupon', [AdminMemberController::class, 'issueCoupon'])->name('admin.members.issue-coupon')->middleware('admin.permission:members.view');
         Route::post('/members/{id}/add-stamps', [AdminMemberController::class, 'addStamps'])->name('admin.members.add-stamps')->middleware('admin.permission:members.view');
+        Route::post('/members/{id}/tags', [AdminMemberController::class, 'attachTag'])->name('admin.members.tags.attach')->middleware('admin.permission:members.manage');
+        Route::delete('/members/{id}/tags/{tagId}', [AdminMemberController::class, 'detachTag'])->name('admin.members.tags.detach')->middleware('admin.permission:members.manage');
+        Route::put('/members/{id}/memo', [AdminMemberController::class, 'updateMemo'])->name('admin.members.memo')->middleware('admin.permission:members.manage');
+        Route::get('/member-tags', [AdminMemberTagController::class, 'index'])->name('admin.member-tags')->middleware('admin.permission:members.view');
+        Route::post('/member-tags', [AdminMemberTagController::class, 'store'])->name('admin.member-tags.store')->middleware('admin.permission:members.manage');
+        Route::delete('/member-tags/{id}', [AdminMemberTagController::class, 'destroy'])->name('admin.member-tags.destroy')->middleware('admin.permission:members.manage');
+        Route::get('/rfm', [AdminRfmController::class, 'index'])->name('admin.rfm')->middleware('admin.permission:members.view');
 
         Route::get('/reservations', [AdminReservationController::class, 'reservations'])->name('admin.reservations')->middleware('admin.permission:reservations.view');
         Route::get('/reservations/create', [AdminReservationController::class, 'createReservation'])->name('admin.reservations.create')->middleware('admin.permission:reservations.update');

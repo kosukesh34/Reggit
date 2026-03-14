@@ -2,10 +2,12 @@
 
 namespace App\Services\Admin;
 
+use App\Enums\OrderStatus;
 use App\Models\Coupon;
 use App\Models\Member;
 use App\Models\MemberCoupon;
 use App\Models\MemberStamp;
+use App\Models\Order;
 use App\Models\ShopSetting;
 use App\Models\StampCard;
 use App\Services\MemberPointsExpiryCalculator;
@@ -23,12 +25,31 @@ class MemberAdminService
         private MemberPointsExpiryCalculator $expiryCalculator
     ) {}
 
-    public function getPaginatedList(int $projectId, int $perPage = 20): LengthAwarePaginator
+    public function getPaginatedList(int $projectId, int $perPage = 20, array $filters = []): LengthAwarePaginator
     {
-        return Member::with('user')
-            ->where('project_id', $projectId)
-            ->orderByDesc('created_at')
-            ->paginate($perPage);
+        $query = Member::with('user')
+            ->where('project_id', $projectId);
+
+        $keyword = trim((string) ($filters['keyword'] ?? ''));
+        if ($keyword !== '') {
+            $query->where(function ($q) use ($keyword) {
+                $q->where('member_number', 'like', '%'.$keyword.'%')
+                    ->orWhereHas('user', fn ($uq) => $uq->where('name', 'like', '%'.$keyword.'%')
+                        ->orWhere('phone', 'like', '%'.$keyword.'%'));
+            });
+        }
+
+        $status = (string) ($filters['status'] ?? '');
+        if ($status !== '') {
+            $query->where('status', $status);
+        }
+
+        $rank = (string) ($filters['rank'] ?? '');
+        if ($rank !== '') {
+            $query->where('rank', $rank);
+        }
+
+        return $query->orderByDesc('created_at')->paginate($perPage);
     }
 
     public function findOrFail(int $id, ?int $projectId = null): Member
@@ -44,6 +65,56 @@ class MemberAdminService
         $member->setAttribute('points_expiry', $this->expiryCalculator->getExpiryInfo($member));
 
         return $member;
+    }
+
+    /**
+     * 会員の購買サマリー（LTV・注文数・平均単価・最終購買日・最終来店からの経過日数）
+     *
+     * @return array{total_orders: int, total_revenue: float, avg_order_value: float, last_order_at: ?\Carbon\Carbon, days_since_last_order: int|null}
+     */
+    public function getPurchaseSummary(Member $member): array
+    {
+        $userId = $member->user_id;
+
+        if ($userId === null) {
+            return [
+                'total_orders' => 0,
+                'total_revenue' => 0,
+                'avg_order_value' => 0,
+                'last_order_at' => null,
+                'days_since_last_order' => null,
+                'recent_orders' => collect(),
+            ];
+        }
+
+        $baseQuery = Order::where('user_id', $userId)
+            ->where('status', '!=', OrderStatus::CANCELLED);
+
+        $totalOrders = $baseQuery->count();
+        $totalRevenue = (float) $baseQuery->sum('total_amount');
+        $avgOrderValue = $totalOrders > 0 ? round($totalRevenue / $totalOrders) : 0;
+        $lastOrder = Order::where('user_id', $userId)
+            ->where('status', '!=', OrderStatus::CANCELLED)
+            ->orderByDesc('created_at')
+            ->first();
+
+        $lastOrderAt = $lastOrder?->created_at;
+        $daysSinceLastOrder = $lastOrderAt ? (int) $lastOrderAt->diffInDays(now()) : null;
+
+        $recentOrders = Order::with('items.product')
+            ->where('user_id', $userId)
+            ->orderByDesc('created_at')
+            ->limit(5)
+            ->get();
+
+        return [
+            'total_orders' => $totalOrders,
+            'total_revenue' => $totalRevenue,
+            'avg_order_value' => $avgOrderValue,
+            'last_order_at' => $lastOrderAt,
+            'days_since_last_order' => $daysSinceLastOrder,
+            'recent_orders' => $recentOrders,
+        ];
     }
 
     /** 配布用の有効クーポン一覧（同一プロジェクト） */

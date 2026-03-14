@@ -4,6 +4,7 @@ namespace App\Services\Admin;
 
 use App\Models\Announcement;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Http\UploadedFile;
 
 class AnnouncementAdminService
 {
@@ -35,5 +36,15 @@ class AnnouncementAdminService
     public function delete(int $id): void
     {
         Announcement::whereKey($id)->delete();
+    }
+
+    public function saveAnnouncementImage(UploadedFile $file, int $projectId): string
+    {
+        $path = $file->store('announcements/'.(string) $projectId, 'public');
+        if ($path === false) {
+            throw new \RuntimeException('Failed to store announcement image');
+        }
+
+        return asset('storage/'.$path);
     }
 }
