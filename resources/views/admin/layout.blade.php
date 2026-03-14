@@ -153,6 +153,10 @@
                         <i class="fas fa-paper-plane"></i>
                         <span>配信</span>
                     </a>
+                    <a href="{{ admin_route('admin.after-registration-deliveries.index') }}" class="nav-item nav-item--sub {{ request()->routeIs('admin.after-registration-deliveries*') ? 'active' : '' }}">
+                        <i class="fas fa-clock"></i>
+                        <span>登録後配信</span>
+                    </a>
                     <a href="{{ admin_route('admin.settings.announcements') }}" class="nav-item nav-item--sub {{ request()->routeIs('admin.settings.announcements*') ? 'active' : '' }}">
                         <i class="fas fa-cog"></i>
                         <span>お知らせの設定</span>

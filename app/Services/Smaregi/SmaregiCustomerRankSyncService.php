@@ -23,7 +23,7 @@ class SmaregiCustomerRankSyncService
     }
 
     /**
-     * @param array<int, array{key: string, label: string, min_points: int, is_active: bool, ...}> $rows
+     * @param  array<int, array{key: string, label: string, min_points: int, is_active: bool, ...}>  $rows
      */
     public function sync(int $projectId, array $rows): void
     {
@@ -60,7 +60,7 @@ class SmaregiCustomerRankSyncService
     }
 
     /**
-     * @param array<string, array<string, string|int|float|bool|null>> $existing ランクkey => API応答1件
+     * @param  array<string, array<string, string|int|float|bool|null>>  $existing  ランクkey => API応答1件
      */
     private function deleteRemovedRanks(string $contractId, array $appKeys, array $existing, int $projectId): void
     {
@@ -124,7 +124,7 @@ class SmaregiCustomerRankSyncService
     }
 
     /**
-     * @param array<int|string, string|int|float|bool|array|null> $result API応答
+     * @param  array<int|string, string|int|float|bool|array|null>  $result  API応答
      * @return array<int|string, string|int|float|bool|array|null>
      */
     private function extractList(array $result, string $listKey): array

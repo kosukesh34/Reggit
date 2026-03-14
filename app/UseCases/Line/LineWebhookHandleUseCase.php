@@ -3,8 +3,8 @@
 namespace App\UseCases\Line;
 
 use App\Enums\MemberStatus;
-use App\Services\Line\LineService;
 use App\Models\User;
+use App\Services\Line\LineService;
 use App\Util\LogHelper;
 use Illuminate\Http\Request;
 

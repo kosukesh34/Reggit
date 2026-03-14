@@ -9,7 +9,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (!Schema::hasTable('admin_users')) {
+        if (! Schema::hasTable('admin_users')) {
             return;
         }
 
@@ -35,4 +35,3 @@ return new class extends Migration
         // no-op: legacy role valuesへ戻す運用は行わない
     }
 };
-

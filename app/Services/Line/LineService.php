@@ -22,7 +22,7 @@ class LineService
         $this->client = new Client([
             'base_uri' => 'https://api.line.me/v2/',
             'headers' => [
-                'Authorization' => 'Bearer ' . ($this->channelAccessToken ?? ''),
+                'Authorization' => 'Bearer '.($this->channelAccessToken ?? ''),
                 'Content-Type' => 'application/json',
             ],
         ]);

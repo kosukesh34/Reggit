@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\Product;
 use App\Models\Project;
 use App\Services\Smaregi\SmaregiProductRegisterService;
 use App\Services\Smaregi\SmaregiProductSyncService;
