@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Requests\Admin\AnnouncementDeliveryStoreRequest;
 use App\Http\Requests\Admin\AnnouncementStoreRequest;
 use App\Http\Requests\Admin\AnnouncementUpdateRequest;
+use App\Services\Admin\AnnouncementAdminService;
 use App\Services\Admin\MemberAdminService;
 use App\Services\Admin\SalesSegmentService;
 use App\UseCases\Admin\Announcement\AdminAnnouncementDeleteUseCase;
@@ -25,7 +26,8 @@ class AnnouncementController extends AdminBaseController
         private AdminAnnouncementDeleteUseCase $deleteUseCase,
         private AdminAnnouncementStoreDeliveryUseCase $storeDeliveryUseCase,
         private SalesSegmentService $salesSegmentService,
-        private MemberAdminService $memberAdminService
+        private MemberAdminService $memberAdminService,
+        private AnnouncementAdminService $announcementAdminService
     ) {}
 
     public function announcements()
@@ -42,7 +44,15 @@ class AnnouncementController extends AdminBaseController
 
     public function storeAnnouncement(AnnouncementStoreRequest $request)
     {
-        $this->storeUseCase->handle($this->resolveAdminProjectId(), $request->validated());
+        $projectId = $this->resolveAdminProjectId();
+        $validated = $request->validated();
+
+        if ($request->hasFile('image_file')) {
+            $validated['image_url'] = $this->announcementAdminService->saveAnnouncementImage($request->file('image_file'), $projectId);
+        }
+        unset($validated['image_file']);
+
+        $this->storeUseCase->handle($projectId, $validated);
 
         return redirect()->route('admin.announcements', $this->buildAdminRouteParams())
             ->with('success', 'お知らせを追加しました');

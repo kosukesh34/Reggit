@@ -10,6 +10,8 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule): void
     {
         $schedule->command('coupons:issue-birthday')->daily();
+        $schedule->command('crm:winback')->daily();
+        $schedule->command('crm:point-expiry-reminder')->daily();
     }
 
     protected function commands(): void

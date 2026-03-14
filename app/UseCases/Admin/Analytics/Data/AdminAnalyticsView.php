@@ -8,6 +8,7 @@ namespace App\UseCases\Admin\Analytics\Data;
  * @param  array{orders: int, revenue: float, avg_order_value: float, new_members: int, reservations: int, queue: int, coupons_issued: int, coupons_used: int, points_earned: float, points_used: float, announcements_published: int, announcement_read_users: int, announcement_avg_read_rate: float}  $summary
  * @param  array{labels: array<int, string>, orders: array<int, int>, revenue: array<int, float>, members: array<int, int>}  $chart
  * @param  array{order_statuses: array, payment_methods: array, hourly_orders: array, category_sales: array, order_value_buckets: array, top_products: array, announcement_reads: array}  $breakdowns
+ * @param  array<int, array{cohort: string, month0: int, month1: int, month2: int, month3: int, month4: int, month5: int}>  $cohort
  */
 class AdminAnalyticsView
 {
@@ -16,6 +17,7 @@ class AdminAnalyticsView
         public string $end,
         public array $summary,
         public array $chart,
-        public array $breakdowns
+        public array $breakdowns,
+        public array $cohort = []
     ) {}
 }

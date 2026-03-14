@@ -169,6 +169,20 @@ class SmaregiProductSyncService
         } while (count($list) === self::LIMIT);
 
         // 2. DB → スマレジ: DB にありスマレジにない商品をスマレジに登録
+        // 部門が取得できない場合は登録を試みずスキップする（失敗0で完了させる）
+        $defaultCategoryId = $this->smaregiProductRegister->resolveDefaultCategoryId($projectId);
+        if ($defaultCategoryId === null) {
+            Log::info('[Smaregi] fullSync: DB→スマレジの登録をスキップしました（部門の取得または自動作成に失敗）。', ['project_id' => $projectId]);
+
+            return [
+                'created' => $created,
+                'updated' => $updated,
+                'pushed_to_smaregi' => 0,
+                'failed' => $failed,
+                'errors' => $errors,
+            ];
+        }
+
         $dbProducts = Product::withoutGlobalScopes()
             ->where('project_id', $projectId)
             ->get();
