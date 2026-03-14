@@ -33,7 +33,7 @@ class ReservationAdminService
             $dateStatusCounts = $this->getStatusCounts($selectedDate);
             $timeSlots = ShopSetting::getReservationTimeSlots($projectId);
             foreach ($timeSlots as $slot) {
-                $slotStart = Carbon::parse($date->format('Y-m-d') . ' ' . $slot);
+                $slotStart = Carbon::parse($date->format('Y-m-d').' '.$slot);
                 $slotEnd = $slotStart->copy()->addHour();
                 $count = Reservation::whereBetween('reserved_at', [$slotStart, $slotEnd])->count();
                 $timeSlotSummary[] = [
@@ -89,7 +89,7 @@ class ReservationAdminService
 
     public function store(array $data, int $projectId): Reservation
     {
-        $reservedAt = Carbon::parse($data['reserved_at_date'] . ' ' . $data['reserved_at_time']);
+        $reservedAt = Carbon::parse($data['reserved_at_date'].' '.$data['reserved_at_time']);
 
         return Reservation::create([
             'project_id' => $projectId,
@@ -104,7 +104,7 @@ class ReservationAdminService
     {
         $reservation = Reservation::findOrFail($id);
 
-        $reservedAt = Carbon::parse($data['reserved_at_date'] . ' ' . $data['reserved_at_time']);
+        $reservedAt = Carbon::parse($data['reserved_at_date'].' '.$data['reserved_at_time']);
 
         $reservation->update([
             'reserved_at' => $reservedAt,
