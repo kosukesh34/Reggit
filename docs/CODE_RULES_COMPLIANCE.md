@@ -19,7 +19,7 @@
 | **Controller の DI** | ✅ | UseCase/Service は __construct 注入。Input の new は DTO として許容 |
 | **トランザクション** | ✅ | OrderService は複数テーブル更新のため DB::transaction 使用で妥当 |
 | **Validator を UseCase で使わない** | ✅ | UseCase 内に Validator::make なし |
-| **@param mixed 禁止** | ✅ | 該当なし |
+| **@param mixed 禁止** | ✅ | 1箇所修正済み（GoogleWalletPassService::isValidMemberData）。PHPDoc で array 形状を明示し引数型を array に変更 |
 | **Carbon 変換** | ⚠️ | 本プロジェクトに DateUtil クラスなし。Carbon::parse を直接使用している箇所あり（必要なら DateUtil 導入を検討） |
 
 ## 2. 500行超のファイル一覧と対応
@@ -138,9 +138,30 @@
 - **依存の向き**: 全体として一方向（Controller → UseCase/Service → Model）で、循環はなし。
 - **対応済み**: (1) QueueStatusController は QueueStatusUseCase 経由に変更。(2) LineService は `App\Services\Line\LineService` に移動済み。
 
-## 9. 今後の推奨
+## 9. テストコード作成方針
 
-- 新規・修正コードでは上記規則に従う。
+### 9.1 ルール（コーディング規則に準拠）
+
+- **既存コード**: あえてテストを追加する必要はない。
+- **新規・修正したコード**: 原則としてテストを追加する。スケジュールが厳しい場合などは例外可。
+- **Feature（≒Controller）テスト**: リクエストが正常に処理されること（処理落ちしないこと）を最低限担保する。ヘルスチェックに近いイメージ。
+- **Unit テスト**: Repository、UseCase、Model などを対象。網羅的が理想だが、効果の薄いテストは不要。以下は重要観点として必ずテストする。
+  - **他店舗（他プロジェクト）のデータへの干渉・参照**などクリティカルな部分。
+
+### 9.2 現状のテスト構成（抜粋）
+
+- **Feature**: Admin（Login, Logout, Orders, Products, Members, Queue, Reservations, Coupons, Settings, Dashboard, Analytics, Stamps, Announcements, AuditLog, ApiToken, Project, Account）, API（Order, Member, Reservation, Coupon, Stamp, Announcement, Queue, Payment）, Liff, Device, Contact, Gallery, Smaregi, Migration, AllScreensAccessible など。
+- **Unit**: AdminAnalyticsUseCase, QueueCallNextUseCase, QueueStatsService, Payment（CreateIntent / Confirm）, GetGoogleWalletUrlUseCase, GoogleWalletPassService, GoogleWalletLoyaltyPayloadBuilder, RouteContextResolver, LogHelper など。
+
+### 9.3 新規・修正時の対応
+
+- 新しく触る・新規作成する Controller / UseCase / Service には、上記方針に沿って Feature または Unit テストを追加する。
+- 他プロジェクトのデータを触る処理（project_id スコープ、BelongsToProject の利用）は、テストで「他店舗データに干渉しない」ことを検証する。
+
+## 10. 今後の推奨
+
+- 新規・修正コードでは上記規則（本ドキュメントおよび共有されたコーディング規則）に従う。
+- テストは「9. テストコード作成方針」に従い、新規・修正したコードには原則テストを追加する。
 - 500行超のファイルは、責務ごとに分割するか、既存の UseCase/Service/DTO に寄せる。
 - コードレビュー時は「変更した部分」を中心に、上記規則との整合を確認する。
 - 日付比較・Carbon 変換を統一する場合は `DateUtil::nullableCarbon` 等のユーティリティ導入を検討する。
