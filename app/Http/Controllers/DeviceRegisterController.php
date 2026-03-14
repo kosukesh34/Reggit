@@ -30,7 +30,7 @@ class DeviceRegisterController extends Controller
             'push_token_length' => $pushTokenLen,
             'platform' => $validated['platform'] ?? null,
             'device_identifier_preview' => isset($validated['device_identifier'])
-                ? substr((string) $validated['device_identifier'], 0, 8) . '...'
+                ? substr((string) $validated['device_identifier'], 0, 8).'...'
                 : null,
         ]);
 

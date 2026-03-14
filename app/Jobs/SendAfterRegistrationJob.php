@@ -2,8 +2,8 @@
 
 namespace App\Jobs;
 
-use App\Models\Announcement;
 use App\Models\AfterRegistrationDelivery;
+use App\Models\Announcement;
 use App\Models\Member;
 use App\Services\Admin\MemberAdminService;
 use App\Services\PushNotificationService;

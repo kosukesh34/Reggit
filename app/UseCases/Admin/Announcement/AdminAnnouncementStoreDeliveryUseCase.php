@@ -53,7 +53,7 @@ class AdminAnnouncementStoreDeliveryUseCase
     }
 
     /**
-     * @param array<string, string|string[]> $validated
+     * @param  array<string, string|string[]>  $validated
      * @return Collection<int, int>|null null = バリデーションエラー
      */
     private function resolveTargetMemberIds(int $projectId, string $deliveryType, array $validated): ?Collection
@@ -70,7 +70,7 @@ class AdminAnnouncementStoreDeliveryUseCase
     }
 
     /**
-     * @param array<string, string|string[]> $validated
+     * @param  array<string, string|string[]>  $validated
      * @return Collection<int, int>|null
      */
     private function resolvePersonalTargets(int $projectId, array $validated): ?Collection
@@ -88,7 +88,7 @@ class AdminAnnouncementStoreDeliveryUseCase
     }
 
     /**
-     * @param array<string, string|string[]> $validated
+     * @param  array<string, string|string[]>  $validated
      * @return Collection<int, int>
      */
     private function resolveSegmentTargets(int $projectId, array $validated): Collection
@@ -107,8 +107,8 @@ class AdminAnnouncementStoreDeliveryUseCase
     }
 
     /**
-     * @param array<string, string|string[]> $validated
-     * @param Collection<int, int> $targetMemberIds
+     * @param  array<string, string|string[]>  $validated
+     * @param  Collection<int, int>  $targetMemberIds
      */
     private function createAnnouncement(
         int $projectId,
@@ -166,7 +166,7 @@ class AdminAnnouncementStoreDeliveryUseCase
     }
 
     /**
-     * @param array<string, string|string[]> $validated
+     * @param  array<string, string|string[]>  $validated
      * @return array{period_days: int, no_orders: bool, min_total_amount?: float}|null
      */
     private function buildSegmentCriteria(string $deliveryType, array $validated): ?array

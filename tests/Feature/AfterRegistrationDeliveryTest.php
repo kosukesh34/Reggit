@@ -80,7 +80,7 @@ class AfterRegistrationDeliveryTest extends TestCase
         ]);
     }
 
-    public function test_SendAfterRegistrationJob_実行でお知らせとクーポンが作成されること(): void
+    public function test_send_after_registration_job_実行でお知らせとクーポンが作成されること(): void
     {
         $project = $this->createProject();
         $user = User::factory()->create(['project_id' => $project->id]);

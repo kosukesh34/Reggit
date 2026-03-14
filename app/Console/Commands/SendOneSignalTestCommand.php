@@ -26,6 +26,7 @@ class SendOneSignalTestCommand extends Command
 
         if ($appId === '' || $apiKey === '') {
             $this->error('OneSignal が未設定です。.env に PUSH_ONESIGNAL_APP_ID と PUSH_ONESIGNAL_API_KEY を設定してください。');
+
             return self::FAILURE;
         }
 
@@ -47,22 +48,24 @@ class SendOneSignalTestCommand extends Command
             ->all();
 
         $this->info("送信内容: タイトル={$title}, 本文={$body}");
-        $appIdPreview = strlen($appId) >= 8 ? substr($appId, 0, 8) . '...' . substr($appId, -4) : $appId;
-        $this->line('使用中の OneSignal App ID: ' . $appIdPreview . ' （iOS の Info.plist OneSignalAppId と一致しているか確認してください）');
-        $this->info('配信先: user_devices に登録された push_token ' . count($subscriptionIds) . ' 件');
+        $appIdPreview = strlen($appId) >= 8 ? substr($appId, 0, 8).'...'.substr($appId, -4) : $appId;
+        $this->line('使用中の OneSignal App ID: '.$appIdPreview.' （iOS の Info.plist OneSignalAppId と一致しているか確認してください）');
+        $this->info('配信先: user_devices に登録された push_token '.count($subscriptionIds).' 件');
         if (count($subscriptionIds) > 0) {
             $first = $subscriptionIds[0];
-            $preview = strlen($first) > 12 ? substr($first, 0, 8) . '...' . substr($first, -4) : substr($first, 0, 8) . '...';
-            $this->line('  (先頭の ID 例: ' . $preview . ', 長さ: ' . strlen($first) . ' 文字)');
+            $preview = strlen($first) > 12 ? substr($first, 0, 8).'...'.substr($first, -4) : substr($first, 0, 8).'...';
+            $this->line('  (先頭の ID 例: '.$preview.', 長さ: '.strlen($first).' 文字)');
         }
 
         if (count($subscriptionIds) === 0 && ! $this->option('segment')) {
             $this->warn('登録端末が 0 件です。アプリでログインし、通知を許可したうえでしばらく待ってから再度実行するか、--segment でセグメント送信を試してください。');
+
             return self::SUCCESS;
         }
 
         if (! $this->option('force') && ! $this->confirm('この内容で送信しますか？', true)) {
             $this->info('キャンセルしました。');
+
             return self::SUCCESS;
         }
 
@@ -74,7 +77,7 @@ class SendOneSignalTestCommand extends Command
             try {
                 $response = $client->post($apiUrl, [
                     'headers' => [
-                        'Authorization' => 'Key ' . $apiKey,
+                        'Authorization' => 'Key '.$apiKey,
                         'Content-Type' => 'application/json',
                     ],
                     'json' => [
@@ -87,7 +90,8 @@ class SendOneSignalTestCommand extends Command
                     ],
                 ]);
             } catch (\Throwable $e) {
-                $this->error('OneSignal リクエストに失敗しました: ' . $e->getMessage());
+                $this->error('OneSignal リクエストに失敗しました: '.$e->getMessage());
+
                 return self::FAILURE;
             }
 
@@ -100,7 +104,7 @@ class SendOneSignalTestCommand extends Command
             if ($recipients < count($chunk) && $response->getStatusCode() === 200) {
                 $errors = $payload['errors'] ?? null;
                 if ($errors !== null) {
-                    $this->warn('OneSignal レスポンスの errors: ' . json_encode($errors, JSON_UNESCAPED_UNICODE));
+                    $this->warn('OneSignal レスポンスの errors: '.json_encode($errors, JSON_UNESCAPED_UNICODE));
                 }
                 if ($recipients === 0 && count($chunk) > 0) {
                     $this->warn('配信先 0 件の主な原因: (1) subscription_id が無効・期限切れ (2) 別アプリのトークン (3) 端末で通知オフ (4) OneSignal ダッシュボードで購読なし。DB の push_token が OneSignal の subscription ID（UUID）か確認してください。');
@@ -108,7 +112,7 @@ class SendOneSignalTestCommand extends Command
             }
         }
 
-        $this->info('送信完了。送信先: ' . $totalSent . ' 件' . ($totalFailed > 0 ? ", 失敗: {$totalFailed} 件" : ''));
+        $this->info('送信完了。送信先: '.$totalSent.' 件'.($totalFailed > 0 ? ", 失敗: {$totalFailed} 件" : ''));
 
         if ($this->option('segment')) {
             $this->newLine();
@@ -116,7 +120,7 @@ class SendOneSignalTestCommand extends Command
             try {
                 $segResponse = $client->post($apiUrl, [
                     'headers' => [
-                        'Authorization' => 'Key ' . $apiKey,
+                        'Authorization' => 'Key '.$apiKey,
                         'Content-Type' => 'application/json',
                     ],
                     'json' => [
@@ -124,13 +128,13 @@ class SendOneSignalTestCommand extends Command
                         'included_segments' => ['Subscribed Users'],
                         'target_channel' => 'push',
                         'headings' => ['en' => $title],
-                        'contents' => ['en' => $body . ' (セグメント送信)'],
+                        'contents' => ['en' => $body.' (セグメント送信)'],
                         'data' => ['test' => true],
                     ],
                 ]);
                 $segPayload = json_decode((string) $segResponse->getBody(), true) ?? [];
                 $segRecipients = (int) ($segPayload['recipients'] ?? 0);
-                $this->info('セグメント送信結果: 配信先 ' . $segRecipients . ' 件');
+                $this->info('セグメント送信結果: 配信先 '.$segRecipients.' 件');
                 if ($segRecipients > 0 && $totalSent === 0) {
                     $this->warn('→ このアプリには購読端末がありますが、DB の subscription_id が一致していません。iOS の OneSignalAppId と .env の PUSH_ONESIGNAL_APP_ID が同じか、アプリで通知許可後に再起動して push_token を再登録してください。');
                 } elseif ($segRecipients === 0) {
@@ -143,7 +147,7 @@ class SendOneSignalTestCommand extends Command
                     $this->line('  詳細: mobile/mobile-order-skip/README.md の「Apple iOS (APNs) が 0 人」を参照');
                 }
             } catch (\Throwable $e) {
-                $this->error('セグメント送信エラー: ' . $e->getMessage());
+                $this->error('セグメント送信エラー: '.$e->getMessage());
             }
         }
 
