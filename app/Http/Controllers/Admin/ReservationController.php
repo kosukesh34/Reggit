@@ -55,14 +55,14 @@ class ReservationController extends AdminBaseController
         return view('admin.reservations', $payload);
     }
 
-    public function reservationDetail($id)
+    public function reservationDetail(string $projectKey, $id)
     {
         $reservation = $this->detailUseCase->handle((int) $id);
 
         return view('admin.reservation-detail', compact('reservation'));
     }
 
-    public function updateReservationStatus(ReservationStatusRequest $request, $id)
+    public function updateReservationStatus(ReservationStatusRequest $request, string $projectKey, $id)
     {
         $status = $request->validated('status');
         $this->updateStatusUseCase->handle((int) $id, $status);
@@ -71,7 +71,7 @@ class ReservationController extends AdminBaseController
             ->with('success', '予約ステータスを「'.AdminStatusLabels::reservationStatusLabel($status).'」に更新しました');
     }
 
-    public function completeReservation($id)
+    public function completeReservation(string $projectKey, $id)
     {
         $this->completeUseCase->handle((int) $id);
 

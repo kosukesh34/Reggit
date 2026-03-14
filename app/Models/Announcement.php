@@ -16,6 +16,10 @@ class Announcement extends Model
 
     public const DELIVERY_TYPE_SCHEDULED = 'scheduled';
 
+    public const DELIVERY_TYPE_SEGMENT = 'segment';
+
+    public const DELIVERY_TYPE_AFTER_REGISTRATION = 'after_registration';
+
     public const DELIVERY_STATUS_DRAFT = 'draft';
 
     public const DELIVERY_STATUS_SENT = 'sent';
@@ -33,6 +37,8 @@ class Announcement extends Model
         'scheduled_at',
         'sent_at',
         'target_member_ids',
+        'segment_criteria',
+        'delivery_coupon_id',
         'delivery_status',
     ];
 
@@ -46,6 +52,11 @@ class Announcement extends Model
         return $this->hasMany(AnnouncementRead::class);
     }
 
+    public function deliveryCoupon()
+    {
+        return $this->belongsTo(Coupon::class, 'delivery_coupon_id');
+    }
+
     /** @var array<string, string> */
     protected $casts = [
         'published_at' => 'datetime',
@@ -54,5 +65,6 @@ class Announcement extends Model
         'scheduled_at' => 'datetime',
         'sent_at' => 'datetime',
         'target_member_ids' => 'array',
+        'segment_criteria' => 'array',
     ];
 }

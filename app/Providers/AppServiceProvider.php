@@ -23,6 +23,10 @@ class AppServiceProvider extends ServiceProvider
             $secret = (string) config('services.stripe.secret', env('STRIPE_SECRET', ''));
             return new StripePaymentGateway($secret);
         });
+
+        $this->app->singleton(\GuzzleHttp\Client::class, function () {
+            return new \GuzzleHttp\Client(['timeout' => 15]);
+        });
     }
 
     public function boot(): void
