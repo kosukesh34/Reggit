@@ -86,4 +86,37 @@ class ReservationAdminService
     {
         Reservation::whereKey($id)->update(['status' => ReservationStatus::COMPLETED]);
     }
+
+    public function store(array $data, int $projectId): Reservation
+    {
+        $reservedAt = Carbon::parse($data['reserved_at_date'] . ' ' . $data['reserved_at_time']);
+
+        return Reservation::create([
+            'project_id' => $projectId,
+            'reserved_at' => $reservedAt,
+            'number_of_people' => $data['number_of_people'],
+            'notes' => $data['notes'] ?? null,
+            'status' => ReservationStatus::CONFIRMED,
+        ]);
+    }
+
+    public function update(int $id, array $data): Reservation
+    {
+        $reservation = Reservation::findOrFail($id);
+
+        $reservedAt = Carbon::parse($data['reserved_at_date'] . ' ' . $data['reserved_at_time']);
+
+        $reservation->update([
+            'reserved_at' => $reservedAt,
+            'number_of_people' => $data['number_of_people'],
+            'notes' => $data['notes'] ?? null,
+        ]);
+
+        return $reservation->fresh();
+    }
+
+    public function destroy(int $id): void
+    {
+        Reservation::findOrFail($id)->delete();
+    }
 }
