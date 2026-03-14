@@ -42,6 +42,10 @@
                 <label class="ld-form-label" for="lineLiffUrl">LIFF URL（このプロジェクト）</label>
                 <input type="url" id="lineLiffUrl" name="line_liff_url" class="ld-form-input" value="{{ old('line_liff_url', $liffUrl ?? '') }}" placeholder="例: https://example.com/liff/default">
             </div>
+            <div style="grid-column: 1 / -1;">
+                <label class="ld-form-label" for="lineFriendAddUrl">LINE友だち追加URL（メッセージ・クーポン配布用）</label>
+                <input type="url" id="lineFriendAddUrl" name="line_friend_add_url" class="ld-form-input" value="{{ old('line_friend_add_url', $lineFriendAddUrl ?? '') }}" placeholder="例: https://line.me/R/ti/p/@あなたの公式アカウントID">
+            </div>
         </div>
     </div>
 

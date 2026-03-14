@@ -86,9 +86,49 @@ class Project extends Model
         return $this->hasMany(UserDevice::class);
     }
 
-    public function shopSettings(): HasMany
+    public function businessSetting(): \Illuminate\Database\Eloquent\Relations\HasOne
     {
-        return $this->hasMany(ShopSetting::class);
+        return $this->hasOne(\App\Models\Settings\ProjectBusinessSetting::class);
+    }
+
+    public function lineLiffSetting(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(\App\Models\Settings\ProjectLineLiffSetting::class);
+    }
+
+    public function featureFlags(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(\App\Models\Settings\ProjectFeatureFlags::class);
+    }
+
+    public function adminUiSetting(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(\App\Models\Settings\ProjectAdminUiSetting::class);
+    }
+
+    public function profileSmaregiSetting(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(\App\Models\Settings\ProjectProfileSmaregiSetting::class);
+    }
+
+    public function memberPointsSetting(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(\App\Models\Settings\ProjectMemberPointsSetting::class);
+    }
+
+    public function memberRankSetting(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(\App\Models\Settings\ProjectMemberRankSetting::class);
+    }
+
+    public function walletSetting(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(\App\Models\Settings\ProjectWalletSetting::class);
+    }
+
+    public function announcementSetting(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(\App\Models\Settings\ProjectAnnouncementSetting::class);
     }
 
     public function isSmaregiLinked(): bool

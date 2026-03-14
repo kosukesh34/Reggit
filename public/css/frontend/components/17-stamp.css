@@ -1,0 +1,273 @@
+/* スタンプカード */
+.stamps-header,
+.coupons-header,
+.queue-header,
+.chat-header {
+    padding: 16px 20px 0;
+    margin-bottom: 12px;
+}
+
+.stamps-list,
+.coupons-list {
+    padding: 0 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.stamp-card-item {
+    background: white;
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    box-shadow: var(--shadow);
+}
+
+.stamp-card-image {
+    width: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 12px;
+    background: var(--bg-secondary);
+}
+
+.stamp-card-image img {
+    display: block;
+    width: 100%;
+    height: 140px;
+    object-fit: cover;
+}
+
+.stamp-card-image--icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100px;
+    color: var(--primary-color);
+    font-size: 2.5rem;
+}
+
+.stamp-card-name-icon {
+    margin-right: 6px;
+    color: var(--primary-color);
+    font-size: 0.9em;
+}
+
+.stamp-card-item--completed {
+    border-color: var(--success-color);
+    background: linear-gradient(to bottom, #f8fff8, #fff);
+}
+
+.stamp-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.stamp-card-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.stamp-card-badge {
+    font-size: 12px;
+    color: var(--success-color);
+}
+
+.stamp-card-progress {
+    height: 10px;
+    background: var(--border-color);
+    border-radius: 5px;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.stamp-card-progress-bar {
+    height: 100%;
+    background: var(--primary-color);
+    border-radius: 5px;
+    transition: none;
+}
+
+.stamp-slots {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+    justify-content: center;
+}
+
+.stamp-slot {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 2px solid var(--border-color);
+    background: var(--bg-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: var(--text-tertiary);
+}
+
+.stamp-slot--filled {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: #fff;
+}
+
+/* グリッド（2列） */
+.stamp-slots--grid {
+    gap: 10px;
+    max-width: 280px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.stamp-slots--grid .stamp-slot {
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
+}
+
+/* 横一列 */
+.stamp-slots--row {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    gap: 6px;
+}
+
+.stamp-slots--row .stamp-slot {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    font-size: 12px;
+}
+
+/* 円形（スロットを円状に並べる見た目） */
+.stamp-slots--circle {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    max-width: 200px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.stamp-slots--circle .stamp-slot {
+    width: 34px;
+    height: 34px;
+    margin: 0 auto;
+    font-size: 12px;
+}
+
+/* ミニマル：スロットを小さくコンパクトに */
+.stamp-card-item--layout-minimal .stamp-slots {
+    flex-direction: row;
+    gap: 4px;
+    margin-bottom: 8px;
+}
+
+.stamp-card-item--layout-minimal .stamp-slot {
+    width: 24px;
+    height: 24px;
+    font-size: 10px;
+}
+
+.stamp-card-item--layout-minimal .stamp-card-progress {
+    margin-bottom: 6px;
+}
+
+/* カード（枠付き） */
+.stamp-card-item--layout-card .stamp-slots {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 12px;
+    gap: 10px;
+}
+
+.stamp-card-item--layout-card .stamp-slot {
+    width: 38px;
+    height: 38px;
+    font-size: 15px;
+}
+
+.stamp-card-meta {
+    margin-bottom: 4px;
+}
+
+.stamp-card-count {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 2px;
+}
+
+.stamp-card-valid {
+    font-size: 12px;
+    color: var(--primary-color);
+    margin: 0;
+}
+
+.stamp-card-reward {
+    font-size: 13px;
+    color: var(--text-tertiary);
+}
+
+.stamp-card-milestones {
+    list-style: none;
+    margin: 8px 0 10px;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.stamp-card-milestone {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    border-radius: 10px;
+    background: #f8fafc;
+    border: 1px solid var(--border-color);
+    font-size: 12px;
+}
+
+.stamp-card-milestone--achieved {
+    background: #ecfdf5;
+    border-color: #a7f3d0;
+}
+
+.stamp-card-milestone-count {
+    min-width: 46px;
+    text-align: center;
+    border-radius: 999px;
+    background: #e2e8f0;
+    color: #0f172a;
+    font-weight: 700;
+    padding: 2px 8px;
+}
+
+.stamp-card-milestone--achieved .stamp-card-milestone-count {
+    background: #10b981;
+    color: #fff;
+}
+
+.stamp-card-milestone-text {
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+.stamps-empty,
+.coupons-empty,
+.queue-form-container,
+.chat-messages {
+    padding: 24px 20px;
+    text-align: center;
+    color: var(--text-secondary);
+}

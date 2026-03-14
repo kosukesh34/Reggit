@@ -15,7 +15,6 @@ struct BuildNativeInjectionScriptUseCase {
             };
             const isAndroidPlatform = nativeDeviceInfo.platform === 'android';
 
-            // If WebView lands on an unexpected host (e.g. ngrok warning page), force back to LIFF URL.
             try {
                 const currentHref = String(window.location && window.location.href ? window.location.href : '');
                 const currentUrl = currentHref ? new URL(currentHref) : null;
@@ -53,7 +52,6 @@ struct BuildNativeInjectionScriptUseCase {
                 return true;
             };
 
-            // Apple Wallet 等を Safari で開くため。ネイティブが mobileorderapp://openExternal?url=... をハンドルして Safari を開く。
             window.__nativeOpenExternalUrl__ = window.__nativeOpenExternalUrl__ || function(url) {
                 if (typeof url !== 'string' || !url) return false;
                 try {
@@ -65,7 +63,6 @@ struct BuildNativeInjectionScriptUseCase {
 
             window.__NATIVE_TARGET_TAB__ = targetTab;
 
-            // 初回表示で正しいタブが表示されるよう、app 初期化前に DOM の .active を同期する（タブ切り替えを待たずに最初の画面を表示）
             const tabId = targetTab + 'Tab';
             document.querySelectorAll('.tab-content').forEach(function(el) {
                 el.classList.remove('active');
@@ -118,7 +115,6 @@ struct BuildNativeInjectionScriptUseCase {
 
                 if (!window.__NATIVE_VIEWPORT_STYLE_INSTALLED__) {
                     const style = document.createElement('style');
-                    // Android WebView では初回レイアウトで 100vh が 0 になることがあるため、px フォールバックを必ず使う。
                     const minHeightFallback = isAndroidPlatform ? 'max(100vh, 800px)' : '100vh';
                     const mainContentMinHeight = isAndroidPlatform ? 'max(calc(max(100vh, 800px) - 120px), 500px)' : `min(68vh, calc(${minHeightFallback} - 120px))`;
                     const androidEmbedStyle = `
@@ -157,7 +153,6 @@ struct BuildNativeInjectionScriptUseCase {
                     window.visualViewport.addEventListener('resize', applyVisualViewportHeight);
                     window.visualViewport.addEventListener('scroll', applyVisualViewportHeight);
                 }
-                // Android: 初回は 100vh が 0 になりやすいため、resize で実測の innerHeight を minHeight に反映する。
                 if (isAndroidPlatform && typeof window.addEventListener === 'function' && !window.__NATIVE_ANDROID_RESIZE_BOUND__) {
                     window.__NATIVE_ANDROID_RESIZE_BOUND__ = true;
                     const applyAndroidViewport = () => {
@@ -255,17 +250,5 @@ struct BuildNativeInjectionScriptUseCase {
             return 'pending';
         })();
         """
-    }
-}
-
-private extension String {
-    var jsStringLiteral: String {
-        let escaped = self
-            .replacingOccurrences(of: "\\", with: "\\\\")
-            .replacingOccurrences(of: "\"", with: "\\\"")
-            .replacingOccurrences(of: "\n", with: "\\n")
-            .replacingOccurrences(of: "\r", with: "\\r")
-            .replacingOccurrences(of: "\t", with: "\\t")
-        return "\"\(escaped)\""
     }
 }

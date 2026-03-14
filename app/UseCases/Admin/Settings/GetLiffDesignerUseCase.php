@@ -16,7 +16,8 @@ class GetLiffDesignerUseCase
             ShopSetting::getLiffTabSettings($projectId),
             ShopSetting::getFeatureFlags($projectId),
             ShopSetting::getLineLiffId($projectId),
-            ShopSetting::getLineLiffUrl($projectId)
+            ShopSetting::getLineLiffUrl($projectId),
+            ShopSetting::getLineFriendAddUrl($projectId)
         );
     }
 }
