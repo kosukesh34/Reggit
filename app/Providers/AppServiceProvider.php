@@ -91,8 +91,8 @@ class AppServiceProvider extends ServiceProvider
             }
         });
 
-        // index の View composer（テスト時 /liff でもレンダリングするため常に登録。コールバックはビュー描画時のみ実行され DB はその時のみ）
-        View::composer('index', function ($view) {
+        // フロントエンドの View composer（LINE / ネイティブ両方に共通の変数を渡す）
+        View::composer(['index', 'frontend.line', 'frontend.native'], function ($view) {
             try {
                 $req = request();
                 $project = null;
