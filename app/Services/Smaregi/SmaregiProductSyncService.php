@@ -186,8 +186,10 @@ class SmaregiProductSyncService
                     'description' => $product->description ?? '',
                     'category' => $product->category ?? 'other',
                     'is_available' => $product->is_available,
-                    'stock' => $product->stock ?? 0,
                 ];
+                if ($product->stock !== null) {
+                    $data['stock'] = $product->stock;
+                }
                 $result = $this->smaregiProductRegister->registerToSmaregi($projectId, $data);
                 if ($result === null) {
                     $failed++;

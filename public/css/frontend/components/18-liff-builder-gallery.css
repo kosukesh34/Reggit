@@ -1,0 +1,287 @@
+/* LIFF Builder */
+.builder-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 20px;
+    max-width: var(--content-max-width, 100%);
+    margin: 0 auto;
+    padding-left: var(--content-padding, 20px);
+    padding-right: var(--content-padding, 20px);
+}
+
+.builder-block {
+    background: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: var(--shadow);
+}
+
+.builder-title {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.builder-body {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+}
+
+.builder-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 16px;
+    border-radius: 999px;
+    background: var(--primary-color);
+    color: #fff;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.builder-hero {
+    padding: 0;
+    overflow: hidden;
+}
+
+.builder-hero-image {
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+    display: block;
+}
+
+.builder-hero-content {
+    padding: 16px;
+}
+
+.builder-image {
+    width: 100%;
+    border-radius: 12px;
+    margin-bottom: 10px;
+}
+
+.builder-list {
+    margin: 0;
+    padding-left: 18px;
+    color: var(--text-secondary);
+}
+
+.builder-label-block .builder-title {
+    margin: 0;
+}
+
+/* LIFF Designer スライダー（アニメーション付き） */
+.builder-slider-block .builder-slider-track {
+    flex-shrink: 0;
+    gap: 0;
+    overflow: visible;
+}
+.builder-slider-block .builder-slide--track {
+    overflow: hidden;
+}
+.builder-slider-block .builder-slide--track img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.builder-slider-block.builder-slider--fade .builder-slide:not(.builder-slide--track) {
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+.builder-slider-block.builder-slider--none .builder-slide:not(.builder-slide--track) {
+    transition: none;
+}
+
+/* LIFF Designer コレクション（横スワイプ） */
+.builder-collection-block .builder-collection-swipe {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+.builder-collection-block .builder-collection-swipe::-webkit-scrollbar {
+    display: none;
+}
+.builder-collection-block .builder-collection-swipe {
+    touch-action: pan-x;
+    cursor: grab;
+    user-select: none;
+}
+.builder-collection-block .builder-collection-swipe:active {
+    cursor: grabbing;
+}
+
+.builder-slider-track {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding-bottom: 6px;
+}
+
+.builder-slider-slide {
+    min-width: 240px;
+    height: 140px;
+    border-radius: 12px;
+    background: #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    scroll-snap-align: start;
+    overflow: hidden;
+}
+
+.builder-slider-slide img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.builder-slider-slide.is-empty {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.builder-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.builder-form-label {
+    display: flex;
+    flex-direction: column;
+    font-size: 13px;
+    color: var(--text-secondary);
+    gap: 6px;
+}
+
+.builder-form input,
+.builder-form textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    background: #fff;
+}
+
+.builder-spacer {
+    width: 100%;
+}
+
+.align-center {
+    text-align: center;
+}
+
+.align-right {
+    text-align: right;
+}
+
+.builder-empty {
+    padding: 24px 20px;
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+/* Gallery */
+.gallery-header {
+    padding: 16px 20px 0;
+}
+
+.gallery-tabs {
+    display: flex;
+    gap: 8px;
+    padding: 12px 20px;
+    overflow-x: auto;
+}
+
+.gallery-tab {
+    border: 1px solid var(--border-color);
+    background: #fff;
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+.gallery-tab.active {
+    background: var(--primary-color);
+    color: #fff;
+    border-color: var(--primary-color);
+}
+
+.gallery-grid {
+    padding: 12px 20px 24px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.gallery-item {
+    background: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+}
+
+.gallery-item img {
+    width: 100%;
+    height: 140px;
+    object-fit: cover;
+    display: block;
+}
+
+.gallery-item--small img {
+    height: 100px;
+}
+
+.gallery-item--large {
+    grid-column: span 2;
+}
+
+.gallery-item--large img {
+    height: 220px;
+}
+
+.gallery-item-title {
+    padding: 8px 10px 0;
+    font-weight: 600;
+    font-size: 13px;
+}
+
+.gallery-item-desc {
+    padding: 4px 10px 10px;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.stamps-empty i,
+.coupons-empty i {
+    font-size: 48px;
+    margin-bottom: 16px;
+    color: var(--border-color);
+}
+
+.stamps-error,
+.coupons-error,
+.queue-error,
+.chat-error {
+    text-align: center;
+    padding: 40px 20px;
+}
+
+.stamps-error i,
+.coupons-error i,
+.queue-error i,
+.chat-error i {
+    font-size: 48px;
+    margin-bottom: 16px;
+    color: var(--danger);
+}

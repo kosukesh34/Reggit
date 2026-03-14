@@ -95,7 +95,6 @@ struct BundleMobileWebConfigRepository: MobileWebConfigRepository {
         return trimmed
     }
 
-    /// Info.plist に LIFF URL が一切入っていない場合のフォールバック（xcconfig の #include 失敗時など）。Skip.env の LIFF_BASE_URL と揃えること。
     private static let fallbackBaseUrlIOS = "https://unadministrable-idiocratically-annalee.ngrok-free.dev"
 
     private func defaultBaseUrl() -> String {
@@ -112,7 +111,6 @@ struct BundleMobileWebConfigRepository: MobileWebConfigRepository {
 struct DefaultNativeDeviceContextProvider: NativeDeviceContextProvider {
     private let defaults: UserDefaults
     private static let deviceIdentifierKey = "mobile_order_device_identifier"
-    /// Key for OneSignal subscription ID. Must match Darwin/Android native storage key.
     private static let pushTokenKey = "mobile_order_push_token"
 
     init(defaults: UserDefaults) {

@@ -11,8 +11,19 @@ class ProductStoreRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        if ($this->boolean('stock_unlimited')) {
+            $this->merge(['stock' => null]);
+        }
+    }
+
     public function rules(): array
     {
+        $stockRules = $this->boolean('stock_unlimited')
+            ? ['nullable', 'integer', 'min:0']
+            : ['required', 'integer', 'min:0'];
+
         return [
             'name' => 'required|string|max:255',
             'description' => 'nullable|string|max:2000',
@@ -20,7 +31,8 @@ class ProductStoreRequest extends FormRequest
             'image_url' => 'nullable|string|url|max:500',
             'category' => 'nullable|string|max:64',
             'is_available' => 'nullable|boolean',
-            'stock' => 'nullable|integer|min:0',
+            'stock_unlimited' => 'nullable|boolean',
+            'stock' => $stockRules,
         ];
     }
 }

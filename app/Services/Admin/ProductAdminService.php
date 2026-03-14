@@ -6,6 +6,7 @@ use App\Models\Product;
 use App\Models\Scopes\ProjectScope;
 use App\Services\Smaregi\SmaregiProductRegisterService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Log;
 
 class ProductAdminService
 {
@@ -19,8 +20,8 @@ class ProductAdminService
     }
 
     /**
-     * 商品作成。スマレジ契約ありの場合は先にPOSへ登録し、成功時のみDBに保存する。
-     * API が失敗した場合は RuntimeException を投げ、DB には保存しない。
+     * 商品作成。スマレジ契約ありの場合はPOSへ登録を試み、成功時はsmaregi_product_idを保存する。
+     * スマレジ登録に失敗してもDBには保存する（ベストエフォート）。
      */
     public function create(int $projectId, array $data): Product
     {
@@ -28,16 +29,17 @@ class ProductAdminService
 
         if ($this->smaregiProductRegister->hasSmaregiContract($projectId)) {
             $result = $this->smaregiProductRegister->registerToSmaregi($projectId, $data);
-            if ($result === null) {
-                throw new \RuntimeException('スマレジへの商品登録に失敗しました。契約ID・スコープ(pos.products:write)・部門の登録・ログ(storage/logs/laravel.log)を確認してください。');
-            }
-            $data['smaregi_product_id'] = $result['smaregi_product_id'];
-            if (array_key_exists('stock', $data)) {
-                $this->smaregiProductRegister->syncStockToSmaregi(
-                    $projectId,
-                    $result['smaregi_product_id'],
-                    (int) $data['stock']
-                );
+            if ($result !== null) {
+                $data['smaregi_product_id'] = $result['smaregi_product_id'];
+                if (array_key_exists('stock', $data) && $data['stock'] !== null) {
+                    $this->smaregiProductRegister->syncStockToSmaregi(
+                        $projectId,
+                        $result['smaregi_product_id'],
+                        (int) $data['stock']
+                    );
+                }
+            } else {
+                Log::warning('[ProductAdmin] スマレジへの商品登録はスキップしましたが、DBには保存します。', ['project_id' => $projectId]);
             }
         }
 
@@ -58,8 +60,8 @@ class ProductAdminService
     }
 
     /**
-     * 商品更新。スマレジ契約ありの場合は先にPOSへ更新/登録し、成功時のみDBを更新する。
-     * API が失敗した場合は RuntimeException を投げ、DB は更新しない。
+     * 商品更新。スマレジ契約ありの場合はPOSへ更新/登録を試み、成功時は反映する。
+     * スマレジ側の失敗時もDBは更新する。
      */
     public function update(int $id, array $data): Product
     {
@@ -71,23 +73,23 @@ class ProductAdminService
             if ($smaregiId !== null && $smaregiId !== '') {
                 $ok = $this->smaregiProductRegister->updateOnSmaregi($projectId, $smaregiId, $data);
                 if (! $ok) {
-                    throw new \RuntimeException('スマレジの商品更新に失敗しました。ログ(storage/logs/laravel.log)を確認してください。');
-                }
-                if (array_key_exists('stock', $data)) {
+                    Log::warning('[ProductAdmin] スマレジの商品更新はスキップしましたが、DBは更新します。', ['project_id' => $projectId, 'product_id' => $id]);
+                } elseif (array_key_exists('stock', $data) && $data['stock'] !== null) {
                     $this->smaregiProductRegister->syncStockToSmaregi($projectId, $smaregiId, (int) $data['stock']);
                 }
             } else {
                 $result = $this->smaregiProductRegister->registerToSmaregi($projectId, array_merge($data, ['project_id' => $projectId]));
-                if ($result === null) {
-                    throw new \RuntimeException('スマレジへの商品登録に失敗しました。契約ID・スコープ(pos.products:write)・部門の登録・ログ(storage/logs/laravel.log)を確認してください。');
-                }
-                $data['smaregi_product_id'] = $result['smaregi_product_id'];
-                if (array_key_exists('stock', $data)) {
-                    $this->smaregiProductRegister->syncStockToSmaregi(
-                        $projectId,
-                        $result['smaregi_product_id'],
-                        (int) $data['stock']
-                    );
+                if ($result !== null) {
+                    $data['smaregi_product_id'] = $result['smaregi_product_id'];
+                    if (array_key_exists('stock', $data) && $data['stock'] !== null) {
+                        $this->smaregiProductRegister->syncStockToSmaregi(
+                            $projectId,
+                            $result['smaregi_product_id'],
+                            (int) $data['stock']
+                        );
+                    }
+                } else {
+                    Log::warning('[ProductAdmin] スマレジへの商品登録（更新時）はスキップしましたが、DBは更新します。', ['project_id' => $projectId, 'product_id' => $id]);
                 }
             }
         }
@@ -98,7 +100,7 @@ class ProductAdminService
     }
 
     /**
-     * 商品削除。スマレジ契約ありでスマレジ連携済みの場合は先にPOSから削除し、成功時のみDBから削除する。
+     * 商品削除。スマレジ連携済みの場合はPOSからの削除を試みる。スマレジ側の失敗時もDBからは削除する。
      */
     public function delete(int $id): void
     {
@@ -109,7 +111,7 @@ class ProductAdminService
         if ($smaregiId !== null && $smaregiId !== '' && $this->smaregiProductRegister->hasSmaregiContract($projectId)) {
             $ok = $this->smaregiProductRegister->deleteOnSmaregi($projectId, $smaregiId);
             if (! $ok) {
-                throw new \RuntimeException('スマレジの商品削除に失敗しました。ログ(storage/logs/laravel.log)を確認してください。');
+                Log::warning('[ProductAdmin] スマレジの商品削除はスキップしましたが、DBからは削除します。', ['project_id' => $projectId, 'product_id' => $id]);
             }
         }
 

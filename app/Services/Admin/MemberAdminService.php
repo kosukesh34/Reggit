@@ -17,13 +17,11 @@ use Illuminate\Support\Collection;
 
 class MemberAdminService
 {
-    /** @var SmaregiApiService */
-    private $smaregiApi;
-
-    public function __construct(SmaregiApiService $smaregiApi)
-    {
-        $this->smaregiApi = $smaregiApi;
-    }
+    public function __construct(
+        private SmaregiApiService $smaregiApi,
+        private MemberRankCalculator $rankCalculator,
+        private MemberPointsExpiryCalculator $expiryCalculator
+    ) {}
 
     public function getPaginatedList(int $projectId, int $perPage = 20): LengthAwarePaginator
     {
@@ -41,12 +39,9 @@ class MemberAdminService
         }
         $member = $query->findOrFail($id);
 
-        $rankCalculator = app(MemberRankCalculator::class);
-        $expiryCalculator = app(MemberPointsExpiryCalculator::class);
-        $rankInfo = $rankCalculator->getRankInfo($member);
-
+        $rankInfo = $this->rankCalculator->getRankInfo($member);
         $member->setAttribute('rank_label', $rankInfo['current_rank_label'] ?? $member->rank);
-        $member->setAttribute('points_expiry', $expiryCalculator->getExpiryInfo($member));
+        $member->setAttribute('points_expiry', $this->expiryCalculator->getExpiryInfo($member));
 
         return $member;
     }

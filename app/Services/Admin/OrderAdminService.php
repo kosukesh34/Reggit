@@ -10,10 +10,8 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 class OrderAdminService
 {
     public function __construct(
-        private ?CouponIssueService $couponIssueService = null
-    ) {
-        $this->couponIssueService = $couponIssueService ?? app(CouponIssueService::class);
-    }
+        private CouponIssueService $couponIssueService
+    ) {}
 
     /** 決済済み = 確定・準備中・受け取り可能・完了 */
     private const PAID_STATUSES = [
