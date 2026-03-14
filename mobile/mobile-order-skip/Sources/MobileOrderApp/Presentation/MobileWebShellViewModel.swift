@@ -100,6 +100,30 @@ final class MobileWebShellViewModel {
         }
     }
 
+    func switchToTab(_ tabKey: String) {
+        let script = """
+        (() => {
+            if (window.app && typeof window.app.switchTab === 'function') {
+                window.app.switchTab(\(tabKey.jsStringLiteral));
+                return 'switched';
+            }
+            const tabId = \(tabKey.jsStringLiteral) + 'Tab';
+            document.querySelectorAll('.tab-content').forEach(el => {
+                el.classList.remove('active');
+                if (el.id === tabId) el.classList.add('active');
+            });
+            document.querySelectorAll('.main-tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.getAttribute('data-tab') === \(tabKey.jsStringLiteral)) btn.classList.add('active');
+            });
+            return 'dom_switched';
+        })();
+        """
+        Task { @MainActor in
+            _ = try? await self.navigator.evaluateJavaScript(script)
+        }
+    }
+
     func retryLoad() {
         showWhiteScreenFallback = false
         isLoading = true

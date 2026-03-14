@@ -7,3 +7,7 @@
 /storage/*.key
 /storage/framework/
 /storage/logs/
+.phpunit.result.cache
+/ios/build/
+**/xcuserdata/
+*.xcuserstate
