@@ -58,7 +58,46 @@
                         <span>予約配信</span>
                         <small class="d-block text-muted">指定日時に全員へ配信</small>
                     </label>
+                    <label class="radio-label">
+                        <input type="radio" name="delivery_type" value="segment" {{ old('delivery_type') === 'segment' ? 'checked' : '' }} data-target="segment">
+                        <span>セグメント配信（売上条件）</span>
+                        <small class="d-block text-muted">直近の売上条件に該当する会員のみに配信</small>
+                    </label>
                 </div>
+            </div>
+            <div id="segmentBlock" class="form-group" style="display: none;">
+                <label class="form-label">売上条件 <span class="text-danger">*</span></label>
+                <p class="form-text text-muted mb-2">対象期間と条件を指定すると、該当する会員にのみ配信されます</p>
+                <div class="row mb-2">
+                    <div class="col-md-4">
+                        <label for="segment_period_days" class="form-label">対象期間</label>
+                        <select name="segment_period_days" id="segment_period_days" class="form-control">
+                            <option value="7" {{ old('segment_period_days', 30) == 7 ? 'selected' : '' }}>直近7日間</option>
+                            <option value="30" {{ old('segment_period_days', 30) == 30 ? 'selected' : '' }}>直近30日間</option>
+                            <option value="90" {{ old('segment_period_days') == 90 ? 'selected' : '' }}>直近90日間</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">条件</label>
+                    <div>
+                        <label class="radio-inline mr-3">
+                            <input type="radio" name="segment_condition" value="min_amount" {{ old('segment_condition', 'min_amount') === 'min_amount' ? 'checked' : '' }} data-segment="min_amount">
+                            <span>購入額が</span>
+                        </label>
+                        <label class="radio-inline">
+                            <input type="radio" name="segment_condition" value="no_orders" {{ old('segment_condition') === 'no_orders' ? 'checked' : '' }} data-segment="no_orders">
+                            <span>未購入（1件も注文していない会員）</span>
+                        </label>
+                    </div>
+                </div>
+                <div id="segmentMinAmountBlock" class="row" style="display: none;">
+                    <div class="col-md-4">
+                        <label for="segment_min_amount" class="form-label">最低購入額（円）</label>
+                        <input type="number" name="segment_min_amount" id="segment_min_amount" class="form-control" value="{{ old('segment_min_amount', 5000) }}" min="0" step="1" placeholder="例: 5000">
+                    </div>
+                </div>
+                <p id="segmentPreview" class="form-text text-muted mt-2"></p>
             </div>
             <div id="personalTargetBlock" class="form-group" style="display: none;">
                 <label class="form-label">配信対象の会員</label>
@@ -71,6 +110,16 @@
             <div id="scheduledBlock" class="form-group" style="display: none;">
                 <label for="scheduled_at" class="form-label">配信日時</label>
                 <input type="datetime-local" name="scheduled_at" id="scheduled_at" class="form-control" value="{{ old('scheduled_at') }}" min="{{ now()->addMinute()->format('Y-m-d\TH:i') }}">
+            </div>
+            <div class="form-group">
+                <label for="delivery_coupon_id" class="form-label">配信と同時にクーポンを配布（任意）</label>
+                <select name="delivery_coupon_id" id="delivery_coupon_id" class="form-control">
+                    <option value="">配布しない</option>
+                    @foreach($coupons ?? [] as $coupon)
+                        <option value="{{ $coupon->id }}" {{ old('delivery_coupon_id') == $coupon->id ? 'selected' : '' }}>{{ $coupon->name }}</option>
+                    @endforeach
+                </select>
+                <p class="form-text text-muted mb-0">お知らせの配信対象と同じ会員に、選択したクーポンを1枚付与します</p>
             </div>
             <div class="form-group">
                 <label class="checkbox-label">
@@ -110,11 +159,42 @@
         const type = document.querySelector('input[name="delivery_type"]:checked')?.value;
         document.getElementById('personalTargetBlock').style.display = type === 'personal' ? 'block' : 'none';
         document.getElementById('scheduledBlock').style.display = type === 'scheduled' ? 'block' : 'none';
+        const segmentBlock = document.getElementById('segmentBlock');
+        segmentBlock.style.display = type === 'segment' ? 'block' : 'none';
+        toggleSegmentCondition();
+    }
+    function toggleSegmentCondition() {
+        const cond = document.querySelector('input[name="segment_condition"]:checked')?.value;
+        document.getElementById('segmentMinAmountBlock').style.display = cond === 'min_amount' ? 'block' : 'none';
     }
     document.querySelectorAll('input[name="delivery_type"]').forEach(function(radio) {
         radio.addEventListener('change', toggleBlocks);
     });
+    document.querySelectorAll('input[name="segment_condition"]').forEach(function(radio) {
+        radio.addEventListener('change', function() { toggleSegmentCondition(); updateSegmentPreview(); });
+    });
     toggleBlocks();
+
+    var segmentPreviewTimeout;
+    function updateSegmentPreview() {
+        if (document.querySelector('input[name="delivery_type"]:checked')?.value !== 'segment') return;
+        clearTimeout(segmentPreviewTimeout);
+        segmentPreviewTimeout = setTimeout(function() {
+            var periodDays = document.getElementById('segment_period_days').value;
+            var condition = document.querySelector('input[name="segment_condition"]:checked')?.value || 'min_amount';
+            var minAmount = document.getElementById('segment_min_amount').value || '0';
+            var url = '{{ admin_route("admin.announcements.segment.preview") }}?period_days=' + encodeURIComponent(periodDays) + '&condition=' + encodeURIComponent(condition) + '&min_amount=' + encodeURIComponent(minAmount);
+            fetch(url).then(function(r) { return r.json(); }).then(function(data) {
+                var el = document.getElementById('segmentPreview');
+                el.textContent = '対象会員: ' + (data.count || 0) + '人';
+            }).catch(function() {
+                document.getElementById('segmentPreview').textContent = '';
+            });
+        }, 400);
+    }
+    document.getElementById('segment_period_days').addEventListener('change', updateSegmentPreview);
+    document.getElementById('segment_min_amount').addEventListener('input', updateSegmentPreview);
+    if (document.querySelector('input[name="delivery_type"]:checked')?.value === 'segment') updateSegmentPreview();
 
     const searchInput = document.getElementById('memberSearch');
     const resultsDiv = document.getElementById('memberSearchResults');
@@ -179,9 +259,17 @@
         });
     }
     document.getElementById('deliveryForm').addEventListener('submit', function() {
-        if (document.querySelector('input[name="delivery_type"]:checked').value === 'personal' && selectedMembers.length === 0) {
+        const deliveryType = document.querySelector('input[name="delivery_type"]:checked').value;
+        if (deliveryType === 'personal' && selectedMembers.length === 0) {
             alert('個人宛配信の場合は配信対象の会員を1人以上選択してください');
             return false;
+        }
+        if (deliveryType === 'segment') {
+            const cond = document.querySelector('input[name="segment_condition"]:checked')?.value;
+            if (cond === 'min_amount' && (!document.getElementById('segment_min_amount').value || parseInt(document.getElementById('segment_min_amount').value, 10) < 0)) {
+                alert('セグメント配信で「購入額以上」を選んだ場合は、最低購入額を入力してください');
+                return false;
+            }
         }
     });
 })();

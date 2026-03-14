@@ -139,6 +139,54 @@ class MemberAdminService
         return $memberStamp->refresh();
     }
 
+    public function getCountByProject(int $projectId): int
+    {
+        return Member::where('project_id', $projectId)->count();
+    }
+
+    /**
+     * @param int[] $memberIds
+     * @return Collection<int, int>
+     */
+    public function filterValidMemberIds(int $projectId, array $memberIds): Collection
+    {
+        return Member::where('project_id', $projectId)
+            ->whereIn('id', $memberIds)
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->values();
+    }
+
+    /**
+     * @return Collection<int, array{id: int, member_number: string, name: string}>
+     */
+    public function searchByKeyword(int $projectId, string $keyword, int $limit = 20): Collection
+    {
+        $query = Member::query()
+            ->where('project_id', $projectId)
+            ->with(['user:id,name']);
+
+        if ($keyword !== '') {
+            $query->where(function ($inner) use ($keyword) {
+                $inner->where('member_number', 'like', '%'.$keyword.'%')
+                    ->orWhereHas('user', function ($userQuery) use ($keyword) {
+                        $userQuery->where('name', 'like', '%'.$keyword.'%');
+                    });
+            });
+        }
+
+        return $query
+            ->orderByDesc('id')
+            ->limit($limit)
+            ->get()
+            ->map(fn (Member $member) => [
+                'id' => (int) $member->id,
+                'member_number' => (string) ($member->member_number ?? ''),
+                'name' => (string) ($member->user?->name ?? ''),
+            ])
+            ->values();
+    }
+
     /** 会員編集フォーム用：ランク選択肢（key => label） */
     public function getRankOptionsForSelect(int $projectId): array
     {

@@ -62,14 +62,14 @@ class ProductController extends AdminBaseController
             ->with('success', '商品を追加しました');
     }
 
-    public function editProduct($id)
+    public function editProduct(string $projectKey, $id)
     {
         $product = $this->editUseCase->handle($this->resolveAdminProjectId(), (int) $id);
 
         return view('admin.product-form', compact('product'));
     }
 
-    public function updateProduct(ProductUpdateRequest $request, $id)
+    public function updateProduct(ProductUpdateRequest $request, string $projectKey, $id)
     {
         try {
             $this->updateUseCase->handle((int) $id, $request->validated());
@@ -83,7 +83,7 @@ class ProductController extends AdminBaseController
             ->with('success', '商品を更新しました');
     }
 
-    public function deleteProduct($id)
+    public function deleteProduct(string $projectKey, $id)
     {
         try {
             $this->deleteUseCase->handle((int) $id);

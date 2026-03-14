@@ -93,8 +93,7 @@ class CouponController extends AdminBaseController
             ->with('success', 'クーポンを作成しました');
     }
 
-    /** @param string|int $id */
-    public function editCoupon($id)
+    public function editCoupon(string $projectKey, $id)
     {
         $projectId = $this->resolveAdminProjectId();
         $output = $this->editFormUseCase->handle($projectId, (int) $id);
@@ -105,8 +104,7 @@ class CouponController extends AdminBaseController
         ]);
     }
 
-    /** @param string|int $id */
-    public function updateCoupon(CouponUpdateRequest $request, $id)
+    public function updateCoupon(CouponUpdateRequest $request, string $projectKey, $id)
     {
         $projectId = $this->resolveAdminProjectId();
         $validated = $request->validated();
@@ -126,8 +124,7 @@ class CouponController extends AdminBaseController
             ->with('success', 'クーポンを更新しました');
     }
 
-    /** @param string|int $id */
-    public function deleteCoupon($id)
+    public function deleteCoupon(string $projectKey, $id)
     {
         $projectId = $this->resolveAdminProjectId();
         try {

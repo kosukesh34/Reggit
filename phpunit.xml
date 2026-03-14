@@ -16,6 +16,7 @@
     </source>
     <php>
         <env name="APP_ENV" value="testing"/>
+        <env name="APP_URL" value="http://localhost"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="CACHE_DRIVER" value="array"/>
         <!-- DB_* は .env / CI の環境変数に任せ、phpunit では上書きしない（CI では DB_HOST=127.0.0.1 が必要） -->
