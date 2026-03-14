@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\AdminAuditLog;
 use App\Models\AdminUser;
+use App\Models\AfterRegistrationDelivery;
 use App\Models\ApiToken;
 use App\Models\Announcement;
 use App\Models\Coupon;
@@ -14,6 +15,7 @@ use App\Models\Project;
 use App\Models\Reservation;
 use App\Models\StampCard;
 use App\Models\User;
+use App\Util\AdminContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
@@ -25,6 +27,8 @@ use Tests\TestCase;
 class AllScreensAccessibleTest extends TestCase
 {
     use RefreshDatabase;
+
+    private const STORE_ADMIN_SKIP_ROUTES = [];
 
     private Project $project;
 
@@ -44,9 +48,13 @@ class AllScreensAccessibleTest extends TestCase
 
     private int $announcementId;
 
+    private int $afterRegistrationDeliveryId;
+
     protected function setUp(): void
     {
         parent::setUp();
+        config(['app.url' => 'http://localhost']);
+        AdminContext::setCurrentProject(null);
         $this->project = Project::firstOrCreate(
             ['project_key' => 'default'],
             ['name' => 'Default Project', 'description' => 'Test', 'is_active' => true]
@@ -55,6 +63,7 @@ class AllScreensAccessibleTest extends TestCase
             'role' => AdminUser::ROLE_ADMIN,
             'project_id' => $this->project->id,
         ]);
+        $this->storeAdmin->projects()->sync([$this->project->id]);
         $user = User::factory()->create();
         $order = Order::create([
             'project_id' => $this->project->id,
@@ -72,6 +81,14 @@ class AllScreensAccessibleTest extends TestCase
         $this->stampCardId = StampCard::factory()->create(['project_id' => $this->project->id])->id;
         $this->couponId = Coupon::factory()->create(['project_id' => $this->project->id])->id;
         $this->announcementId = Announcement::factory()->create(['project_id' => $this->project->id])->id;
+        $this->afterRegistrationDeliveryId = AfterRegistrationDelivery::create([
+            'project_id' => $this->project->id,
+            'delay_minutes' => 30,
+            'title' => 'Test',
+            'body' => null,
+            'coupon_id' => null,
+            'is_active' => true,
+        ])->id;
     }
 
     /**
@@ -104,6 +121,9 @@ class AllScreensAccessibleTest extends TestCase
             'announcements.create' => ['admin.announcements.create', ['project_key' => $key]],
             'announcements.delivery' => ['admin.announcements.delivery.create', ['project_key' => $key]],
             'announcements.edit' => ['admin.announcements.edit', ['project_key' => $key, 'id' => 1]],
+            'after-registration-deliveries' => ['admin.after-registration-deliveries.index', ['project_key' => $key]],
+            'after-registration-deliveries.create' => ['admin.after-registration-deliveries.create', ['project_key' => $key]],
+            'after-registration-deliveries.edit' => ['admin.after-registration-deliveries.edit', ['project_key' => $key, 'id' => 1]],
             'queue' => ['admin.queue', ['project_key' => $key]],
             'settings.basic' => ['admin.settings.basic', ['project_key' => $key]],
             'settings.advanced' => ['admin.settings.advanced', ['project_key' => $key]],
@@ -132,19 +152,26 @@ class AllScreensAccessibleTest extends TestCase
     /** @dataProvider storeAdminScreenProvider */
     public function test_store_admin_screen_opens(string $routeName, array $params): void
     {
-        $params = $this->resolveStoreAdminParams($params);
+        if (in_array($routeName, self::STORE_ADMIN_SKIP_ROUTES, true)) {
+            $this->markTestSkipped('要調査: 詳細/編集画面のID・プロジェクトコンテキスト（404/500）');
+        }
+        $params = $this->resolveStoreAdminParams($params, $routeName);
         $url = route($routeName, $params);
+        $path = parse_url($url, PHP_URL_PATH).(parse_url($url, PHP_URL_QUERY) ? '?'.parse_url($url, PHP_URL_QUERY) : '');
 
-        $response = $this->actingAs($this->storeAdmin, 'admin')->get($url);
+        $response = $this->actingAs($this->storeAdmin, 'admin')
+            ->withSession(['admin_project_id' => $this->project->id])
+            ->get($path);
 
-        $response->assertStatus(200, "画面が開けません: {$routeName} ({$url})");
+        $response->assertStatus(200, "画面が開けません: {$routeName} ({$path})");
     }
 
     /**
      * @return array<string, mixed>
      */
-    private function resolveStoreAdminParams(array $params): array
+    private function resolveStoreAdminParams(array $params, ?string $routeName = null): array
     {
+        $routeName = $routeName ?? request()->route()?->getName();
         $map = [
             'id' => [
                 'admin.orders.detail' => $this->orderId,
@@ -155,21 +182,15 @@ class AllScreensAccessibleTest extends TestCase
                 'admin.stamps.edit' => $this->stampCardId,
                 'admin.coupons.edit' => $this->couponId,
                 'admin.announcements.edit' => $this->announcementId,
+                'admin.after-registration-deliveries.edit' => $this->afterRegistrationDeliveryId,
                 'admin.audit-logs.show' => $this->createStoreAdminAuditLogId(),
-            ];
-        }
+            ],
+        ];
         $resolved = $params;
         foreach ($resolved as $key => $value) {
-            if ($key === 'id' && $value === 1) {
-                $routeName = request()->route()?->getName();
-                foreach ($map['id'] as $r => $id) {
-                    if ($routeName === $r) {
-                        $resolved['id'] = $id;
-                        break;
-                    }
-                }
-                if (isset($resolved['id']) && $resolved['id'] === 1 && in_array('admin.audit-logs.show', array_keys($map['id']), true)) {
-                    $resolved['id'] = $this->createStoreAdminAuditLogId();
+            if ($key === 'id' && $value === 1 && $routeName !== null) {
+                if (isset($map['id'][$routeName])) {
+                    $resolved['id'] = $map['id'][$routeName];
                 }
                 break;
             }
@@ -220,24 +241,25 @@ class AllScreensAccessibleTest extends TestCase
     public function test_system_admin_screen_opens(string $routeName, array $params): void
     {
         $systemAdmin = AdminUser::factory()->create(['role' => AdminUser::ROLE_SYSTEM_ADMIN]);
-        $params = $this->resolveSystemAdminParams($params, $systemAdmin);
+        $params = $this->resolveSystemAdminParams($params, $routeName, $systemAdmin);
         $url = route($routeName, $params);
+        $path = parse_url($url, PHP_URL_PATH).(parse_url($url, PHP_URL_QUERY) ? '?'.parse_url($url, PHP_URL_QUERY) : '');
 
-        $response = $this->actingAs($systemAdmin, 'admin')->get($url);
+        $response = $this->actingAs($systemAdmin, 'admin')->get($path);
 
-        $response->assertStatus(200, "画面が開けません: {$routeName} ({$url})");
+        $response->assertStatus(200, "画面が開けません: {$routeName} ({$path})");
     }
 
     /**
      * @return array<string, mixed>
      */
-    private function resolveSystemAdminParams(array $params, AdminUser $systemAdmin): array
+    private function resolveSystemAdminParams(array $params, string $routeName, AdminUser $systemAdmin): array
     {
-        if (isset($params['id']) && $params['id'] === 1) {
-            if (str_contains($params['id'] ?? '', '') || ! isset($params['id'])) {
-                // route name に応じて id を差し替え（テスト内でルート名が取れないので、別メソッドで id を渡す形にする）
-            }
+        $resolved = $params;
+        if (! isset($resolved['id']) || $resolved['id'] !== 1) {
+            return $resolved;
         }
+
         $projectId = $this->project->id;
         $accountId = $this->storeAdmin->id;
         $token = ApiToken::issue($this->project, 'Test');
@@ -253,13 +275,13 @@ class AllScreensAccessibleTest extends TestCase
             'payload' => ['event' => 'test'],
         ]);
 
-        $resolved = $params;
-        if (isset($resolved['id'])) {
-            $resolved['id'] = match ($resolved['id']) {
-                1 => $resolved['id'],
-                default => $resolved['id'],
-            };
-        }
+        $resolved['id'] = match ($routeName) {
+            'system-admin.projects.edit' => $projectId,
+            'system-admin.accounts.edit' => $accountId,
+            'system-admin.api-tokens.edit' => $tokenId,
+            'system-admin.audit-logs.show' => $auditLog->id,
+            default => $resolved['id'],
+        };
 
         return $resolved;
     }

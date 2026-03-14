@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Enums\MemberStatus;
+use App\Jobs\SendAfterRegistrationJob;
+use App\Models\AfterRegistrationDelivery;
 use App\Models\Member;
 use App\Models\PointTransaction;
 use App\Models\ShopSetting;
@@ -330,6 +332,14 @@ class MemberService
         ]);
 
         $this->couponIssueService->issueForFirstRegistration($member);
+
+        AfterRegistrationDelivery::where('project_id', $projectId)
+            ->where('is_active', true)
+            ->get()
+            ->each(function (AfterRegistrationDelivery $delivery) use ($member): void {
+                SendAfterRegistrationJob::dispatch($member->id, $delivery->id)
+                    ->delay(now()->addMinutes($delivery->delay_minutes));
+            });
 
         $userUpdates = array_filter([
             'name' => $data['name'] ?? null,
