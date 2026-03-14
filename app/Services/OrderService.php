@@ -81,7 +81,7 @@ class OrderService
             throw new \Exception("商品 {$product->name} は現在利用できません");
         }
 
-        if ($product->stock < $quantity) {
+        if ($product->stock !== null && $product->stock < $quantity) {
             throw new \Exception("商品 {$product->name} の在庫が不足しています");
         }
     }
@@ -175,6 +175,9 @@ class OrderService
     {
         foreach ($orderItems as $item) {
             $product = $item['product'];
+            if ($product->stock === null) {
+                continue;
+            }
             $product->stock -= $item['quantity'];
             $product->save();
         }
@@ -303,7 +306,7 @@ class OrderService
     {
         foreach ($order->items as $item) {
             $product = $item->product;
-            if ($product !== null) {
+            if ($product !== null && $product->stock !== null) {
                 $product->increment('stock', $item->quantity);
             }
         }

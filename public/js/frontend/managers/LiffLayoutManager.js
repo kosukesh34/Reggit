@@ -176,8 +176,19 @@ class LiffLayoutManager {
         }
         if (type === 'button') {
             const w = block.full_width !== false ? 'display:block;width:100%;box-sizing:border-box;' : 'display:inline-block;';
+            const action = block.action || '#';
+            const isExternal = action !== '#' && (action.startsWith('http://') || action.startsWith('https://'));
+            const dataExternal = isExternal ? ' data-builder-external="1"' : '';
             return `<section class="builder-block" style="text-align:center;padding:8px;${baseStyle}">
-                <a href="${esc(block.action) || '#'}" class="builder-btn" style="${w}padding:12px 24px;border-radius:8px;background:${block.color || '#06C755'};color:${block.text_color || '#fff'};font-size:14px;font-weight:700;text-decoration:none;text-align:center;">${esc(block.text)}</a>
+                <a href="${esc(action)}" class="builder-btn"${dataExternal} style="${w}padding:12px 24px;border-radius:8px;background:${block.color || '#06C755'};color:${block.text_color || '#fff'};font-size:14px;font-weight:700;text-decoration:none;text-align:center;">${esc(block.text)}</a>
+            </section>`;
+        }
+        if (type === 'friend_add') {
+            const friendAddUrl = (typeof window !== 'undefined' && window.__LINE_FRIEND_ADD_URL__) ? String(window.__LINE_FRIEND_ADD_URL__) : '';
+            if (!friendAddUrl) return '';
+            const text = block.text || '友だち追加';
+            return `<section class="builder-block builder-friend-add" style="text-align:center;padding:8px;${baseStyle}" data-friend-add-url="${esc(friendAddUrl)}">
+                <a href="${esc(friendAddUrl)}" class="builder-btn builder-btn--friend-add" data-builder-external="1" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 24px;border-radius:8px;background:${block.color || '#06C755'};color:${block.text_color || '#fff'};font-size:14px;font-weight:700;text-decoration:none;"><i class="fab fa-line"></i> ${esc(text)}</a>
             </section>`;
         }
         if (type === 'card') {
@@ -380,10 +391,17 @@ class LiffLayoutManager {
         section.querySelectorAll('.builder-btn').forEach(btn => {
             btn.addEventListener('click', e => {
                 const href = btn.getAttribute('href');
-                if (href && href.startsWith('#')) {
+                if (!href) return;
+                if (href.startsWith('#')) {
                     e.preventDefault();
                     const tab = href.replace('#', '');
                     if (this.app && tab) this.app.switchTab(tab);
+                    return;
+                }
+                // 外部URL（友だち追加など）: LINE内なら liff.openWindow でLINE内ブラウザに開く
+                if (btn.getAttribute('data-builder-external') === '1' && typeof window !== 'undefined' && window.__IS_LIFF__ && typeof liff !== 'undefined' && typeof liff.openWindow === 'function') {
+                    e.preventDefault();
+                    liff.openWindow({ url: href, external: false });
                 }
             });
         });

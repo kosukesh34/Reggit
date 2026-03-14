@@ -298,10 +298,25 @@ class MobileOrderApp {
 
     setupEventListeners() {
         this.setupCartEventListeners();
+        this.setupFriendAddLink();
         this.setupTabEventListeners();
         this.setupCategoryEventListeners();
         this.setupOrderEventListeners();
         this.setupNativeAppEventListeners();
+    }
+
+    /** 友だち追加リンク: LINE内なら liff.openWindow で開き、LINE内ブラウザで友だち追加画面を表示 */
+    setupFriendAddLink() {
+        const url = typeof window !== 'undefined' ? (window.__LINE_FRIEND_ADD_URL__ || '') : '';
+        if (!url) return;
+        const el = document.getElementById('headerFriendAdd');
+        if (!el) return;
+        el.addEventListener('click', (e) => {
+            if (typeof window !== 'undefined' && window.__IS_LIFF__ && typeof liff !== 'undefined' && typeof liff.openWindow === 'function') {
+                e.preventDefault();
+                liff.openWindow({ url: url, external: false });
+            }
+        });
     }
 
     /** ネイティブアプリでデバイス情報が注入されたあと、固定タブへ切り替え・会員タブのウォレット表示を更新する */
