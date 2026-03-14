@@ -17,32 +17,34 @@ class ShowNgrokIpCommand extends Command
         $appUrl = trim((string) config('app.url'));
         if ($appUrl === '') {
             $this->error('APP_URL が未設定です。.env を確認してください。');
+
             return self::FAILURE;
         }
 
         $host = parse_url($appUrl, PHP_URL_HOST);
         if (! is_string($host) || $host === '') {
-            $this->error('APP_URL からホスト名を取得できませんでした: ' . $appUrl);
+            $this->error('APP_URL からホスト名を取得できませんでした: '.$appUrl);
+
             return self::FAILURE;
         }
 
-        $this->info('APP_URL: ' . $appUrl);
-        $this->info('ホスト名: ' . $host);
+        $this->info('APP_URL: '.$appUrl);
+        $this->info('ホスト名: '.$host);
         $this->newLine();
 
         $ips = $this->resolveHostToIps($host);
         if ($ips === []) {
             $this->warn('IP アドレスを取得できませんでした（DNS 解決失敗または IPv6 のみの可能性）。');
-            $this->comment('手動で確認: nslookup ' . $host);
+            $this->comment('手動で確認: nslookup '.$host);
             $message = "ngrok IP resolve: host={$host} ips=(none)";
         } else {
             $this->info('登録用 IP アドレス（ngrok 側）:');
             foreach ($ips as $ip) {
-                $this->line('  ' . $ip);
+                $this->line('  '.$ip);
             }
             $this->newLine();
             $this->comment('上記の IP を、ngrok 側の IP 登録が必要なサービス（日本郵便など）に登録してください。');
-            $message = 'ngrok IP resolve: host=' . $host . ' ips=' . implode(',', $ips);
+            $message = 'ngrok IP resolve: host='.$host.' ips='.implode(',', $ips);
         }
 
         if ($this->option('log')) {

@@ -68,12 +68,14 @@ class AdminUser extends Authenticatable
     public static function getRoleLabel(string $role): string
     {
         $normalized = self::normalizeRoleValue($role);
+
         return self::ROLE_LABELS[$normalized] ?? $role;
     }
 
     public static function getRoleLabelShort(string $role): string
     {
         $normalized = self::normalizeRoleValue($role);
+
         return self::ROLE_LABELS_SHORT[$normalized] ?? $role;
     }
 
@@ -81,6 +83,7 @@ class AdminUser extends Authenticatable
     public static function getRoleLevelFor(string $role): int
     {
         $normalized = self::normalizeRoleValue($role);
+
         return self::ROLE_HIERARCHY[$normalized] ?? 0;
     }
 

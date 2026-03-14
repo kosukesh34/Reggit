@@ -277,7 +277,9 @@ class ShopSetting
     ];
 
     public const ORDER_MODE_BOTH = 'both';
+
     public const ORDER_MODE_MOBILE_ONLY = 'mobile_only';
+
     public const ORDER_MODE_IN_STORE_ONLY = 'in_store_only';
 
     // ── LIFF ビルダー ──
@@ -298,12 +300,13 @@ class ShopSetting
         if (in_array($value, [self::ORDER_MODE_BOTH, self::ORDER_MODE_MOBILE_ONLY, self::ORDER_MODE_IN_STORE_ONLY], true)) {
             return $value;
         }
+
         return self::ORDER_MODE_BOTH;
     }
 
     public static function setOrderMode(string $mode, ?int $projectId = null): void
     {
-        if (!in_array($mode, [self::ORDER_MODE_BOTH, self::ORDER_MODE_MOBILE_ONLY, self::ORDER_MODE_IN_STORE_ONLY], true)) {
+        if (! in_array($mode, [self::ORDER_MODE_BOTH, self::ORDER_MODE_MOBILE_ONLY, self::ORDER_MODE_IN_STORE_ONLY], true)) {
             $mode = self::ORDER_MODE_BOTH;
         }
         self::setValue('order_mode', $mode, 'string', $projectId);
@@ -332,6 +335,7 @@ class ShopSetting
         if (! is_array($layouts) || $layouts === []) {
             return \App\Support\ShopSettingLiffDefaults::defaultLiffTabLayouts();
         }
+
         return \App\Support\ShopSettingLiffDefaults::ensureLiffTabLayouts($layouts);
     }
 
@@ -430,7 +434,7 @@ class ShopSetting
      * - タブが空ならデフォルトレイアウトを採用
      * - 既存ブロックは順序を変えずに維持する
      *
-     * @param array<string, mixed> $layouts
+     * @param  array<string, mixed>  $layouts
      * @return array<string, array<int, array<string, mixed>>>
      */
     public static function ensureLiffTabLayouts(array $layouts): array

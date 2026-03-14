@@ -44,7 +44,7 @@ class AdminSettingsMenuTest extends TestCase
     }
 
     /** メニュー設定のPOSTはホーム設定へリダイレクトする（保存はホーム設定で行う） */
-    public function test_menu_settings_メニュー設定のPOSTでホーム設定にリダイレクトすること(): void
+    public function test_menu_settings_メニュー設定の_pos_tでホーム設定にリダイレクトすること(): void
     {
         $project = $this->createProject();
         $admin = $this->createAdmin($project->id);

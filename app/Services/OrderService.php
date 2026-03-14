@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
+use App\Enums\OrderStatus;
 use App\Enums\OrderType;
 use App\Enums\PaymentMethod;
-use App\Enums\OrderStatus;
 use App\Models\Member;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -148,11 +148,12 @@ class OrderService
             if ($paymentMethod !== PaymentMethod::CASH) {
                 throw new \Exception('店内注文は後払い（現金）で作成してください。');
             }
+
             return;
         }
 
         if ($orderType === OrderType::MOBILE) {
-            if (!in_array($paymentMethod, [PaymentMethod::STRIPE, PaymentMethod::CASH], true)) {
+            if (! in_array($paymentMethod, [PaymentMethod::STRIPE, PaymentMethod::CASH], true)) {
                 throw new \Exception('モバイルオーダーの決済方法が不正です。');
             }
         }

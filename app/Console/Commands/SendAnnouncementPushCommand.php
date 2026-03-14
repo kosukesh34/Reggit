@@ -37,17 +37,18 @@ class SendAnnouncementPushCommand extends Command
         ]);
 
         $this->info("送信内容: タイトル={$title}, 本文={$body}");
-        $this->info('配信: お知らせ配信と同じ経路（project_id=' . $projectId . ' の登録端末）');
+        $this->info('配信: お知らせ配信と同じ経路（project_id='.$projectId.' の登録端末）');
 
         if (! $this->option('force') && ! $this->confirm('送信しますか？', true)) {
             $announcement->delete();
             $this->info('キャンセルしました。');
+
             return self::SUCCESS;
         }
 
         $result = $pushService->sendAnnouncement($announcement);
 
-        $this->info('送信完了: 送信=' . $result['sent'] . ' 件, 失敗=' . $result['failed'] . ' 件, スキップ=' . $result['skipped'] . ' 件（対象端末: ' . $result['target_tokens'] . ' 件）');
+        $this->info('送信完了: 送信='.$result['sent'].' 件, 失敗='.$result['failed'].' 件, スキップ='.$result['skipped'].' 件（対象端末: '.$result['target_tokens'].' 件）');
 
         return self::SUCCESS;
     }

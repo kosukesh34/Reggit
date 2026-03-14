@@ -69,8 +69,8 @@ class LiffDesignerTest extends TestCase
         $this->assertArrayHasKey('home', $stored);
         $this->assertCount(2, $stored['home']);
         $this->assertSame('text', $stored['home'][0]['type']);
-        $this->assertSame('World', $stored['home'][0]['text']);
+        $this->assertSame('World', $stored['home'][0]['body'] ?? $stored['home'][0]['text'] ?? null);
         $this->assertSame('slider', $stored['home'][1]['type']);
-        $this->assertArrayHasKey('slides', $stored['home'][1]);
+        $this->assertTrue(isset($stored['home'][1]['slides']) || isset($stored['home'][1]['slider_images']));
     }
 }

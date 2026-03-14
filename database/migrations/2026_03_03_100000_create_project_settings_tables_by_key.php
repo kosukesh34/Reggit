@@ -214,6 +214,7 @@ return new class extends Migration
             }
             $collection->push($obj);
         }
+
         return $collection;
     }
 

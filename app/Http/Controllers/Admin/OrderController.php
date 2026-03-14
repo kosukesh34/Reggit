@@ -43,14 +43,14 @@ class OrderController extends AdminBaseController
         ]);
     }
 
-    public function orderDetail($id)
+    public function orderDetail(string $projectKey, $id)
     {
         $order = $this->detailUseCase->handle((int) $id);
 
         return view('admin.order-detail', compact('order'));
     }
 
-    public function updateOrderStatus(OrderStatusRequest $request, $id)
+    public function updateOrderStatus(OrderStatusRequest $request, string $projectKey, $id)
     {
         $status = $request->validated('status');
         $this->updateStatusUseCase->handle((int) $id, $status);
@@ -59,7 +59,7 @@ class OrderController extends AdminBaseController
             ->with('success', '注文ステータスを「'.AdminStatusLabels::orderStatusLabel($status).'」に更新しました');
     }
 
-    public function completeOrder($id)
+    public function completeOrder(string $projectKey, $id)
     {
         $this->completeUseCase->handle((int) $id);
 

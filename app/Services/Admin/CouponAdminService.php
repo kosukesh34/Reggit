@@ -67,6 +67,11 @@ class CouponAdminService
         return Coupon::create($data);
     }
 
+    public function existsForProject(int $projectId, int $couponId): bool
+    {
+        return Coupon::where('project_id', $projectId)->whereKey($couponId)->exists();
+    }
+
     /** @param int|null $projectId 指定時はそのプロジェクトのクーポンのみ取得（他プロジェクトは404） */
     public function findOrFail(int $id, ?int $projectId = null): Coupon
     {
