@@ -3,7 +3,7 @@
 namespace App\UseCases\Line;
 
 use App\Enums\MemberStatus;
-use App\Http\Services\LineService;
+use App\Services\Line\LineService;
 use App\Models\User;
 use App\Util\LogHelper;
 use Illuminate\Http\Request;

@@ -44,8 +44,16 @@
         </div>
 
         <div class="form-group">
-            <label class="form-label">在庫数</label>
-            <input type="number" name="stock" class="form-control" value="{{ old('stock', $product->stock ?? 0) }}" min="0" required>
+            <div class="form-check mb-2">
+                @php
+                    $stockUnlimited = old('stock_unlimited', isset($product) ? $product->stock === null : false);
+                @endphp
+                <input type="checkbox" name="stock_unlimited" id="stock_unlimited" value="1" {{ $stockUnlimited ? 'checked' : '' }}>
+                <label for="stock_unlimited">在庫無制限にする</label>
+            </div>
+            <label class="form-label" for="stock">在庫数</label>
+            <input type="number" name="stock" id="stock" class="form-control" value="{{ $stockUnlimited ? '' : old('stock', $product->stock ?? 0) }}" min="0" {{ $stockUnlimited ? '' : 'required' }} placeholder="{{ $stockUnlimited ? '無制限' : '' }}">
+            <small class="form-help">在庫無制限にした場合は在庫チェック・減算を行いません</small>
         </div>
 
         <div class="form-group">

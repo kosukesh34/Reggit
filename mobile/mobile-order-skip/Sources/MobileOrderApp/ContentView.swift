@@ -49,7 +49,6 @@ struct ContentView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        // WebView のビューポートと実フレームを一致させるため、safe area 内にレイアウト（ignoresSafeArea しない）
         .onAppear {
             viewModel.onAppear()
         }

@@ -2,7 +2,7 @@
 
 namespace App\UseCases\Queue;
 
-use App\Http\Services\LineService;
+use App\Services\Line\LineService;
 use App\Models\Project;
 use App\Models\QueueEntry as QueueEntryModel;
 use App\Models\ShopSetting;
