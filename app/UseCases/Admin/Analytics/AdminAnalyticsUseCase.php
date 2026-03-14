@@ -56,7 +56,8 @@ class AdminAnalyticsUseCase
             $endDate->toDateString(),
             $this->buildSummary($projectId, $ordersBase, $startDate, $endDate),
             $this->buildTimeSeries($projectId, $ordersBase, $startDate, $endDate),
-            $this->buildBreakdowns($projectId, $ordersBase, $startDate, $endDate)
+            $this->buildBreakdowns($projectId, $ordersBase, $startDate, $endDate),
+            $this->buildCohort($projectId)
         );
     }
 
@@ -286,6 +287,46 @@ class AdminAnalyticsUseCase
                 'quantity' => (int) $row->quantity,
                 'revenue' => (float) $row->revenue,
             ];
+        }
+
+        return $result;
+    }
+
+    /**
+     * 登録月コホート分析（直近6コホート × 6ヶ月後の再購買率）。
+     *
+     * @return array<int, array{cohort: string, total: int, month0: int, month1: int, month2: int, month3: int, month4: int, month5: int}>
+     */
+    private function buildCohort(int $projectId): array
+    {
+        $result = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $cohortStart = now()->subMonths($i)->startOfMonth();
+            $cohortEnd = $cohortStart->copy()->endOfMonth();
+            $memberUserIds = Member::where('project_id', $projectId)
+                ->whereBetween('created_at', [$cohortStart, $cohortEnd])
+                ->whereNotNull('user_id')
+                ->pluck('user_id')
+                ->all();
+
+            $total = count($memberUserIds);
+            if ($total === 0) {
+                $result[] = ['cohort' => $cohortStart->format('Y/m'), 'total' => 0, 'month0' => 0, 'month1' => 0, 'month2' => 0, 'month3' => 0, 'month4' => 0, 'month5' => 0];
+                continue;
+            }
+
+            $row = ['cohort' => $cohortStart->format('Y/m'), 'total' => $total];
+            for ($m = 0; $m <= 5; $m++) {
+                $windowStart = $cohortStart->copy()->addMonths($m)->startOfMonth();
+                $windowEnd = $windowStart->copy()->endOfMonth();
+                $count = Order::where('project_id', $projectId)
+                    ->whereIn('user_id', $memberUserIds)
+                    ->whereBetween('created_at', [$windowStart, $windowEnd])
+                    ->distinct('user_id')
+                    ->count('user_id');
+                $row["month{$m}"] = $total > 0 ? (int) round(($count / $total) * 100) : 0;
+            }
+            $result[] = $row;
         }
 
         return $result;

@@ -19,7 +19,8 @@ class AdminMemberDetailUseCase
         $member = $this->memberAdminService->findOrFail($memberId, $projectId);
         $activeCoupons = $this->memberAdminService->getActiveCouponsForSelect($projectId);
         $activeStampCards = $this->memberAdminService->getActiveStampCardsForSelect($projectId);
+        $purchaseSummary = $this->memberAdminService->getPurchaseSummary($member);
 
-        return new AdminMemberDetailOutput($member, $activeCoupons, $activeStampCards);
+        return new AdminMemberDetailOutput($member, $activeCoupons, $activeStampCards, $purchaseSummary);
     }
 }

@@ -32,6 +32,8 @@ class DatabaseSeeder extends Seeder
         $seeder = app(DefaultDataSeeder::class);
         $seeder->runForProject($project, false, false);
 
+        $this->call(AllSampleDataSeeder::class);
+
         // スマレジ契約が紐づいている場合は、投入した商品をスマレジにも登録する
         $registerService = app(SmaregiProductRegisterService::class);
         $syncService = app(SmaregiProductSyncService::class);

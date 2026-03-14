@@ -33,6 +33,7 @@ class Member extends Model
         'street',
         'sex',
         'profile_extra',
+        'memo',
     ];
 
     /** @var array<string, string> */
@@ -65,6 +66,12 @@ class Member extends Model
     public function memberCoupons()
     {
         return $this->hasMany(MemberCoupon::class);
+    }
+
+    /** @return \Illuminate\Database\Eloquent\Relations\BelongsToMany<MemberTag> */
+    public function tags()
+    {
+        return $this->belongsToMany(MemberTag::class, 'member_tag_members');
     }
 
     public function couponRedemptions()
