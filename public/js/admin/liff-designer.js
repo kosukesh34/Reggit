@@ -78,6 +78,7 @@ class LiffDesigner {
             paletteSearch: '',
             paletteCategory: 'all',
             zoom: 100,
+            previewDevice: 'line',
         };
         this.history = [];
         this.historyIndex = -1;
@@ -350,9 +351,17 @@ class LiffDesigner {
         if (s.background_image) { c.style.backgroundSize = 'cover'; c.style.backgroundPosition = 'center'; }
 
         if (blocks.length === 0) {
-            c.innerHTML = '<div class="ld-phone__empty"><i class="fas fa-hand-pointer"></i><div class="ld-phone__empty-title">ブロックを追加しましょう</div><div class="ld-phone__empty-hint">右のパネルから<strong>ドラッグ</strong>または<strong>クリック</strong>で追加</div></div>';
+            var tab = this.state.activeTab;
+            var tabLabel = this.TAB_LABELS[tab] || tab;
+            var hasTemplates = this.getTemplatesForTab && this.getTemplatesForTab(tab).length > 0;
+            var hint = hasTemplates
+                ? '<div class="ld-quickstart__desc">左パネルの<strong>テンプレート</strong>からワンクリックで始めるか、右パネルから<strong>ブロックを追加</strong>して自由にデザインできます</div><div class="ld-quickstart__actions"><button type="button" class="ld-btn ld-btn--primary ld-btn--block" onclick="if(window.__ldDesigner){var t=window.__ldDesigner.getTemplatesForTab(window.__ldDesigner.state.activeTab);if(t.length)window.__ldDesigner.applyTabTemplate(t[0]);}">テンプレートで始める</button><button type="button" class="ld-btn ld-btn--outline ld-btn--block" onclick="if(window.__ldDesigner)window.__ldDesigner.addBlock(\'hero\');">ヒーローブロックを追加</button></div>'
+                : '<div class="ld-quickstart__desc">右パネルから<strong>ブロックをドラッグ</strong>または<strong>クリック</strong>で追加してください</div><div class="ld-quickstart__actions"><button type="button" class="ld-btn ld-btn--primary ld-btn--block" onclick="if(window.__ldDesigner)window.__ldDesigner.addBlock(\'hero\');">ヒーローを追加</button><button type="button" class="ld-btn ld-btn--outline ld-btn--block" onclick="if(window.__ldDesigner)window.__ldDesigner.addBlock(\'data\');">データブロックを追加</button></div>';
+            c.innerHTML = '<div class="ld-quickstart"><i class="fas fa-wand-magic-sparkles ld-quickstart__icon"></i><div class="ld-quickstart__title">「' + this.esc(tabLabel) + '」画面をデザイン</div>' + hint + '</div>';
+            window.__ldDesigner = this;
             return;
         }
+        window.__ldDesigner = this;
         blocks.forEach((block, i) => c.appendChild(this.createBlockEl(block, i)));
     }
 

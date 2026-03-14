@@ -4,11 +4,29 @@
 @section('page-title', '予約管理')
 
 @section('content')
+<nav class="breadcrumb" aria-label="パンくず">
+    <a href="{{ admin_route('admin.dashboard') }}">ダッシュボード</a>
+    <span class="breadcrumb-sep">/</span>
+    <span>予約管理</span>
+</nav>
+
+<div class="page-header-row">
+    <div class="page-header">
+        <h1 class="page-header-title"><i class="fas fa-calendar-check"></i> 予約管理</h1>
+        <p class="page-header-desc">予約の確認・作成・管理を行います</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="{{ admin_route('admin.reservations.create') }}" class="btn btn-primary btn-large">
+            <i class="fas fa-plus"></i> 新規予約
+        </a>
+    </div>
+</div>
+
 <div class="card">
     <div class="card-header">
         <h3 class="card-title"><i class="fas fa-sliders-h"></i> 絞り込み</h3>
-        <a href="{{ admin_route('admin.settings.basic') }}" class="btn btn-sm btn-secondary">
-            <i class="fas fa-cog"></i> 予約枠設定へ
+        <a href="{{ admin_route('admin.settings.reservations') }}" class="btn btn-sm btn-outline-secondary">
+            <i class="fas fa-cog"></i> 予約設定
         </a>
     </div>
     <div class="card-body">
@@ -90,43 +108,28 @@
         @if($selectedDate && $dateStatusCounts)
             <div class="reservation-summary">
                 <div class="summary-date">
-                    <i class="fas fa-calendar-day"></i> {{ $selectedDateLabel }} の予約
+                    <i class="fas fa-calendar-day"></i> {{ $selectedDateLabel }} の予約状況
                 </div>
-                <div class="stats-grid">
-                    <div class="stat-card stat-card-primary">
-                        <div class="stat-icon"><i class="fas fa-list"></i></div>
-                        <div class="stat-content">
-                            <div class="stat-label">合計</div>
-                            <div class="stat-value">{{ $dateStatusCounts['all'] }}</div>
-                        </div>
+                <div class="reservation-stats-row">
+                    <div class="reservation-stat-pill reservation-stat-pill--total">
+                        <span class="reservation-stat-pill-label">合計</span>
+                        <span class="reservation-stat-pill-value">{{ $dateStatusCounts['all'] }}</span>
                     </div>
-                    <div class="stat-card stat-card-warning">
-                        <div class="stat-icon"><i class="fas fa-clock"></i></div>
-                        <div class="stat-content">
-                            <div class="stat-label">予約待ち</div>
-                            <div class="stat-value">{{ $dateStatusCounts['pending'] }}</div>
-                        </div>
+                    <div class="reservation-stat-pill reservation-stat-pill--pending">
+                        <span class="reservation-stat-pill-label"><i class="fas fa-clock"></i> 予約待ち</span>
+                        <span class="reservation-stat-pill-value">{{ $dateStatusCounts['pending'] }}</span>
                     </div>
-                    <div class="stat-card stat-card-info">
-                        <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
-                        <div class="stat-content">
-                            <div class="stat-label">確認済み</div>
-                            <div class="stat-value">{{ $dateStatusCounts['confirmed'] }}</div>
-                        </div>
+                    <div class="reservation-stat-pill reservation-stat-pill--confirmed">
+                        <span class="reservation-stat-pill-label"><i class="fas fa-check-circle"></i> 確認済み</span>
+                        <span class="reservation-stat-pill-value">{{ $dateStatusCounts['confirmed'] }}</span>
                     </div>
-                    <div class="stat-card stat-card-success">
-                        <div class="stat-icon"><i class="fas fa-check-double"></i></div>
-                        <div class="stat-content">
-                            <div class="stat-label">完了</div>
-                            <div class="stat-value">{{ $dateStatusCounts['completed'] }}</div>
-                        </div>
+                    <div class="reservation-stat-pill reservation-stat-pill--completed">
+                        <span class="reservation-stat-pill-label"><i class="fas fa-check-double"></i> 完了</span>
+                        <span class="reservation-stat-pill-value">{{ $dateStatusCounts['completed'] }}</span>
                     </div>
-                    <div class="stat-card stat-card-danger">
-                        <div class="stat-icon"><i class="fas fa-times-circle"></i></div>
-                        <div class="stat-content">
-                            <div class="stat-label">キャンセル</div>
-                            <div class="stat-value">{{ $dateStatusCounts['cancelled'] }}</div>
-                        </div>
+                    <div class="reservation-stat-pill reservation-stat-pill--cancelled">
+                        <span class="reservation-stat-pill-label"><i class="fas fa-times-circle"></i> キャンセル</span>
+                        <span class="reservation-stat-pill-value">{{ $dateStatusCounts['cancelled'] }}</span>
                     </div>
                 </div>
             </div>
@@ -212,6 +215,7 @@
                     <div class="table-actions">
                         <a href="{{ admin_route('admin.reservations.detail', ['id' => $reservation->id]) }}" class="btn btn-action btn-edit"><i class="fas fa-eye"></i> 詳細</a>
                         @if($reservation->status !== 'completed' && $reservation->status !== 'cancelled')
+                        <a href="{{ admin_route('admin.reservations.edit', ['id' => $reservation->id]) }}" class="btn btn-action btn-outline"><i class="fas fa-pen"></i> 編集</a>
                         <form action="{{ admin_route('admin.reservations.complete', ['id' => $reservation->id]) }}" method="POST" class="d-inline" onsubmit="return confirm('この予約を完了にしますか？')">
                             @csrf
                             <button type="submit" class="btn btn-action btn-success"><i class="fas fa-check-double"></i> 完了</button>
