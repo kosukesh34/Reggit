@@ -1,0 +1,356 @@
+/* ===== ページヘッダー（タイトル + アクションボタン横並び） ===== */
+.page-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 28px;
+}
+
+.page-header-row .page-header {
+    margin-bottom: 0;
+}
+
+.page-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+/* ===== 予約フォーム ===== */
+.reservation-form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 8px;
+}
+
+.form-required {
+    color: var(--danger);
+    font-weight: 700;
+}
+
+.reservation-quick-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+}
+
+/* ===== Danger Zone カード ===== */
+.card-danger-zone {
+    border-color: #fecaca;
+    border-left: 4px solid var(--danger);
+}
+
+.card-danger-zone .card-title {
+    color: var(--danger);
+}
+
+.card-danger-zone .card-title i {
+    color: var(--danger);
+}
+
+/* ===== 順番待ちダッシュボード ===== */
+.queue-dashboard {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 28px;
+}
+
+.queue-stat-hero {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 28px 32px;
+    background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
+    border-radius: var(--radius-lg);
+    color: #fff;
+    box-shadow: 0 8px 24px rgba(13, 148, 136, 0.25);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.queue-stat-hero:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 32px rgba(13, 148, 136, 0.3);
+}
+
+.queue-stat-hero--secondary {
+    background: linear-gradient(135deg, #1e40af 0%, #1d4ed8 100%);
+    box-shadow: 0 8px 24px rgba(30, 64, 175, 0.25);
+}
+
+.queue-stat-hero--secondary:hover {
+    box-shadow: 0 12px 32px rgba(30, 64, 175, 0.3);
+}
+
+.queue-stat-hero-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    flex-shrink: 0;
+    backdrop-filter: blur(8px);
+}
+
+.queue-stat-hero-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.queue-stat-hero-value {
+    font-size: 42px;
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+}
+
+.queue-stat-hero-unit {
+    font-size: 20px;
+    font-weight: 600;
+    opacity: 0.8;
+    margin-left: 2px;
+}
+
+.queue-stat-hero-label {
+    font-size: 14px;
+    font-weight: 500;
+    opacity: 0.85;
+    margin-top: 4px;
+}
+
+.queue-stat-updated {
+    grid-column: 1 / -1;
+    text-align: right;
+    font-size: 12px;
+    color: var(--text-tertiary);
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    margin-top: -8px;
+}
+
+.queue-stat-updated i {
+    font-size: 11px;
+}
+
+/* ===== 順番待ちテーブル行ステータス ===== */
+.queue-number-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 48px;
+    padding: 6px 12px;
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--primary);
+    background: var(--primary-bg);
+    border: 2px solid var(--primary);
+    border-radius: 10px;
+    letter-spacing: -0.02em;
+}
+
+/* ===== 予約タイムスロットグリッド改善 ===== */
+.time-slot-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+}
+
+.time-slot-card {
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.time-slot-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+}
+
+.time-slot-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+}
+
+.time-slot-card.is-open::before {
+    background: var(--success);
+}
+
+.time-slot-card.is-full::before {
+    background: var(--danger);
+}
+
+/* ===== ステータスフィルター改善 ===== */
+.status-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 16px 20px;
+    background: var(--bg-primary);
+    border-bottom: 1px solid var(--border);
+}
+
+.status-filter {
+    transition: all 0.2s ease;
+}
+
+.status-filter:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-xs);
+}
+
+.status-filter.active {
+    box-shadow: 0 2px 8px rgba(13, 148, 136, 0.25);
+}
+
+.status-filter.active .badge {
+    background: rgba(255, 255, 255, 0.3);
+    color: #fff;
+}
+
+/* ===== empty-state 改善 ===== */
+.empty-state-hint {
+    font-size: 13px;
+    color: var(--text-tertiary);
+    margin-top: 4px;
+}
+
+/* ===== 予約統計ピル ===== */
+.reservation-stats-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.reservation-stat-pill {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 18px;
+    border-radius: 40px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    transition: all 0.15s ease;
+}
+
+.reservation-stat-pill:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-xs);
+}
+
+.reservation-stat-pill-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.reservation-stat-pill-label i {
+    font-size: 12px;
+}
+
+.reservation-stat-pill-value {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
+}
+
+.reservation-stat-pill--total {
+    background: var(--primary-bg);
+    border-color: var(--primary);
+}
+.reservation-stat-pill--total .reservation-stat-pill-value {
+    color: var(--primary);
+}
+
+.reservation-stat-pill--pending {
+    background: #fef9c3;
+    border-color: #fde047;
+}
+.reservation-stat-pill--pending .reservation-stat-pill-value {
+    color: #854d0e;
+}
+
+.reservation-stat-pill--confirmed {
+    background: #ccfbf1;
+    border-color: #5eead4;
+}
+.reservation-stat-pill--confirmed .reservation-stat-pill-value {
+    color: #0f766e;
+}
+
+.reservation-stat-pill--completed {
+    background: #d1fae5;
+    border-color: #6ee7b7;
+}
+.reservation-stat-pill--completed .reservation-stat-pill-value {
+    color: #065f46;
+}
+
+.reservation-stat-pill--cancelled {
+    background: #fee2e2;
+    border-color: #fca5a5;
+}
+.reservation-stat-pill--cancelled .reservation-stat-pill-value {
+    color: #991b1b;
+}
+
+/* ===== text helper ===== */
+.text-muted {
+    color: var(--text-tertiary);
+}
+
+/* ===== レスポンシブ ===== */
+@media (max-width: 768px) {
+    .queue-dashboard {
+        grid-template-columns: 1fr;
+    }
+
+    .queue-stat-hero {
+        padding: 20px 24px;
+    }
+
+    .queue-stat-hero-value {
+        font-size: 32px;
+    }
+
+    .queue-stat-hero-icon {
+        width: 52px;
+        height: 52px;
+        font-size: 22px;
+    }
+
+    .page-header-row {
+        flex-direction: column;
+    }
+
+    .reservation-form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .reservation-quick-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .reservation-quick-actions .btn {
+        justify-content: center;
+    }
+}

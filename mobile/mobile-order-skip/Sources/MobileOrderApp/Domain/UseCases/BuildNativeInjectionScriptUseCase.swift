@@ -124,7 +124,8 @@ struct BuildNativeInjectionScriptUseCase {
                         .native-app-embed .main-content { display: block !important; flex: 1 1 auto !important; min-height: ${mainContentMinHeight} !important; height: auto !important; overflow-y: auto !important; padding-bottom: calc(var(--native-tab-height) + 12px) !important; box-sizing: border-box !important; }
                         .native-app-embed .tab-content.active { display: block !important; min-height: ${mainContentMinHeight} !important; height: auto !important; }
                         .native-app-embed .tab-content.active .tab-section { display: block !important; min-height: ${mainContentMinHeight} !important; height: auto !important; }
-                        .native-app-embed .main-tabs { position: fixed !important; bottom: 0 !important; left: 0 !important; right: 0 !important; display: flex !important; visibility: visible !important; opacity: 1 !important; z-index: 100 !important; min-height: var(--native-tab-height) !important; padding-bottom: var(--native-safe-bottom) !important; }
+                        .native-app-embed .main-tabs { display: none !important; visibility: hidden !important; height: 0 !important; overflow: hidden !important; pointer-events: none !important; }
+                        .native-app-embed .main-content { padding-bottom: 0 !important; }
                     `;
                     const iOSEmbedStyle = `
                         html.native-app-embed, body.native-app-embed { --native-safe-bottom: max(env(safe-area-inset-bottom, 0px), 8px); --native-tab-height: calc(64px + var(--native-safe-bottom)); min-height: 100vh !important; height: auto !important; width: 100% !important; max-width: 100vw !important; margin: 0 !important; padding: 0 !important; box-sizing: border-box !important; overflow-x: hidden !important; overflow-y: hidden !important; }
@@ -133,7 +134,8 @@ struct BuildNativeInjectionScriptUseCase {
                         .native-app-embed .main-content { flex: 1 1 auto !important; min-height: 72vh !important; overflow-x: hidden !important; overflow-y: auto !important; -webkit-overflow-scrolling: touch !important; width: 100% !important; max-width: 100vw !important; box-sizing: border-box !important; padding-bottom: calc(var(--native-tab-height) + 12px) !important; }
                         .native-app-embed .tab-content.active { display: block !important; min-height: 68vh !important; height: auto !important; flex: none !important; overflow-y: auto !important; -webkit-overflow-scrolling: touch !important; }
                         .native-app-embed .tab-content.active .tab-section { display: block !important; min-height: 68vh !important; height: auto !important; overflow-y: auto !important; -webkit-overflow-scrolling: touch !important; }
-                        .native-app-embed .main-tabs { display: flex !important; visibility: visible !important; opacity: 1 !important; pointer-events: auto !important; flex-shrink: 0 !important; min-height: var(--native-tab-height) !important; padding-bottom: var(--native-safe-bottom) !important; }
+                        .native-app-embed .main-tabs { display: none !important; visibility: hidden !important; height: 0 !important; overflow: hidden !important; pointer-events: none !important; }
+                        .native-app-embed .main-content { padding-bottom: 0 !important; }
                         .native-app-embed #app, .native-app-embed [data-v-app], .native-app-embed main { width: 100% !important; max-width: 100vw !important; box-sizing: border-box !important; overflow-x: hidden !important; }
                     `;
                     style.textContent = isAndroidPlatform ? androidEmbedStyle : iOSEmbedStyle;
@@ -203,10 +205,11 @@ struct BuildNativeInjectionScriptUseCase {
 
                 const footer = document.querySelector('.main-tabs');
                 if (footer) {
-                    footer.style.display = 'flex';
-                    footer.style.visibility = 'visible';
-                    footer.style.opacity = '1';
-                    footer.style.pointerEvents = 'auto';
+                    footer.style.display = 'none';
+                    footer.style.visibility = 'hidden';
+                    footer.style.height = '0';
+                    footer.style.overflow = 'hidden';
+                    footer.style.pointerEvents = 'none';
                 }
 
                 if (window.app && typeof window.app.switchTab === 'function') {
