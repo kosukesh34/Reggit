@@ -4,62 +4,62 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Requests\Admin\MemberUpdateRequest;
 use App\UseCases\Admin\Member\AdminMemberAddStampsUseCase;
+use App\UseCases\Admin\Member\AdminMemberAttachTagUseCase;
+use App\UseCases\Admin\Member\AdminMemberDetachTagUseCase;
 use App\UseCases\Admin\Member\AdminMemberDetailUseCase;
 use App\UseCases\Admin\Member\AdminMemberEditUseCase;
+use App\UseCases\Admin\Member\AdminMemberExportUseCase;
 use App\UseCases\Admin\Member\AdminMemberIssueCouponUseCase;
 use App\UseCases\Admin\Member\AdminMemberListUseCase;
+use App\UseCases\Admin\Member\AdminMemberUpdateMemoUseCase;
 use App\UseCases\Admin\Member\AdminMemberUpdateUseCase;
 use App\UseCases\Admin\Member\Data\AdminMemberUpdateInput;
+use App\UseCases\Admin\MemberTag\AdminMemberTagIndexUseCase;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Validation\Rule;
 
 class MemberController extends AdminBaseController
 {
-    private AdminMemberListUseCase $listUseCase;
-
-    private AdminMemberDetailUseCase $detailUseCase;
-
-    private AdminMemberEditUseCase $editUseCase;
-
-    private AdminMemberUpdateUseCase $updateUseCase;
-
-    private AdminMemberIssueCouponUseCase $issueCouponUseCase;
-
-    private AdminMemberAddStampsUseCase $addStampsUseCase;
-
     public function __construct(
-        AdminMemberListUseCase $listUseCase,
-        AdminMemberDetailUseCase $detailUseCase,
-        AdminMemberEditUseCase $editUseCase,
-        AdminMemberUpdateUseCase $updateUseCase,
-        AdminMemberIssueCouponUseCase $issueCouponUseCase,
-        AdminMemberAddStampsUseCase $addStampsUseCase
-    ) {
-        $this->listUseCase = $listUseCase;
-        $this->detailUseCase = $detailUseCase;
-        $this->editUseCase = $editUseCase;
-        $this->updateUseCase = $updateUseCase;
-        $this->issueCouponUseCase = $issueCouponUseCase;
-        $this->addStampsUseCase = $addStampsUseCase;
-    }
+        private AdminMemberListUseCase $listUseCase,
+        private AdminMemberDetailUseCase $detailUseCase,
+        private AdminMemberEditUseCase $editUseCase,
+        private AdminMemberUpdateUseCase $updateUseCase,
+        private AdminMemberIssueCouponUseCase $issueCouponUseCase,
+        private AdminMemberAddStampsUseCase $addStampsUseCase,
+        private AdminMemberAttachTagUseCase $attachTagUseCase,
+        private AdminMemberDetachTagUseCase $detachTagUseCase,
+        private AdminMemberUpdateMemoUseCase $updateMemoUseCase,
+        private AdminMemberExportUseCase $exportUseCase,
+        private AdminMemberTagIndexUseCase $tagIndexUseCase
+    ) {}
 
-    public function members()
+
+    public function members(Request $request)
     {
         $projectId = $this->resolveAdminProjectId();
-        $output = $this->listUseCase->handle($projectId);
+        $filters = $request->only(['keyword', 'status', 'rank']);
+        $output = $this->listUseCase->handle($projectId, $filters);
 
-        return view('admin.members', ['members' => $output->members]);
+        return view('admin.members', [
+            'members' => $output->members,
+            'filters' => $filters,
+        ]);
     }
 
-    public function memberDetail(string $project_key, $id)
+    public function memberDetail(string $project_key, int $id)
     {
         $projectId = $this->resolveAdminProjectId();
-        $output = $this->detailUseCase->handle($projectId, (int) $id);
+        $output = $this->detailUseCase->handle($projectId, $id);
+        $tags = $this->tagIndexUseCase->handle($projectId);
 
         return view('admin.member-detail', [
             'member' => $output->member,
             'activeCoupons' => $output->activeCoupons,
             'activeStampCards' => $output->activeStampCards,
+            'purchaseSummary' => $output->purchaseSummary,
+            'allTags' => $tags,
         ]);
     }
 
@@ -141,5 +141,63 @@ class MemberController extends AdminBaseController
 
         return redirect()->route('admin.members.detail', array_merge(['id' => $id], $this->buildAdminRouteParams()))
             ->with('success', 'スタンプを付与しました');
+    }
+
+    /** 会員にタグを付与 */
+    public function attachTag(Request $request, string $project_key, int $id)
+    {
+        $projectId = $this->resolveAdminProjectId();
+        $validated = $request->validate([
+            'tag_id' => ['required', 'integer', Rule::exists('member_tags', 'id')->where('project_id', $projectId)],
+        ]);
+        $this->attachTagUseCase->handle($projectId, $id, (int) $validated['tag_id']);
+
+        return redirect()->route('admin.members.detail', array_merge(['id' => $id], $this->buildAdminRouteParams()))
+            ->with('success', 'タグを付与しました');
+    }
+
+    /** 会員のタグを解除 */
+    public function detachTag(string $project_key, int $id, int $tagId)
+    {
+        $projectId = $this->resolveAdminProjectId();
+        $this->detachTagUseCase->handle($projectId, $id, $tagId);
+
+        return redirect()->route('admin.members.detail', array_merge(['id' => $id], $this->buildAdminRouteParams()))
+            ->with('success', 'タグを解除しました');
+    }
+
+    /** 会員メモ更新 */
+    public function updateMemo(Request $request, string $project_key, int $id)
+    {
+        $projectId = $this->resolveAdminProjectId();
+        $validated = $request->validate(['memo' => ['nullable', 'string', 'max:2000']]);
+        $this->updateMemoUseCase->handle($projectId, $id, $validated['memo'] ?? null);
+
+        return redirect()->route('admin.members.detail', array_merge(['id' => $id], $this->buildAdminRouteParams()))
+            ->with('success', 'メモを更新しました');
+    }
+
+    /** 会員一覧CSVエクスポート */
+    public function export(Request $request)
+    {
+        $projectId = $this->resolveAdminProjectId();
+        $filters = $request->only(['keyword', 'status']);
+        $rows = $this->exportUseCase->handle($projectId, $filters);
+
+        $csvHeader = array_keys($rows->first() ?? []);
+        $callback = function () use ($rows, $csvHeader): void {
+            $out = fopen('php://output', 'w');
+            fprintf($out, chr(0xEF).chr(0xBB).chr(0xBF));
+            fputcsv($out, $csvHeader);
+            foreach ($rows as $row) {
+                fputcsv($out, $row);
+            }
+            fclose($out);
+        };
+
+        return response()->stream($callback, Response::HTTP_OK, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="members_'.now()->format('Ymd_His').'.csv"',
+        ]);
     }
 }

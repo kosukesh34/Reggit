@@ -72,9 +72,17 @@
                 @if($adminUser === null || $adminUser->hasPermission('members.view'))
                 <div class="nav-group">
                     <div class="nav-group-label">会員・ポイント・ランク</div>
-                    <a href="{{ admin_route('admin.members') }}" class="nav-item {{ request()->routeIs('admin.members*') ? 'active' : '' }}">
+                    <a href="{{ admin_route('admin.members') }}" class="nav-item {{ request()->routeIs('admin.members') || request()->routeIs('admin.members.detail') || request()->routeIs('admin.members.edit') ? 'active' : '' }}">
                         <i class="fas fa-id-card"></i>
                         <span>会員管理</span>
+                    </a>
+                    <a href="{{ admin_route('admin.rfm') }}" class="nav-item nav-item--sub {{ request()->routeIs('admin.rfm*') ? 'active' : '' }}">
+                        <i class="fas fa-chart-pie"></i>
+                        <span>RFM分析</span>
+                    </a>
+                    <a href="{{ admin_route('admin.member-tags') }}" class="nav-item nav-item--sub {{ request()->routeIs('admin.member-tags*') ? 'active' : '' }}">
+                        <i class="fas fa-tags"></i>
+                        <span>タグ管理</span>
                     </a>
                     @if($adminUser === null || $adminUser->hasPermission('settings.view'))
                     <a href="{{ admin_route('admin.settings.ranks') }}" class="nav-item nav-item--sub {{ request()->routeIs('admin.settings.ranks*') ? 'active' : '' }}">
@@ -210,9 +218,13 @@
                         <i class="fas fa-toggle-on"></i>
                         <span>機能設定</span>
                     </a>
-                    <a href="{{ admin_route('admin.settings.smaregi') }}" class="nav-item {{ request()->routeIs('admin.settings.smaregi*') ? 'active' : '' }}">
+                    <a href="{{ admin_route('admin.settings.smaregi') }}" class="nav-item {{ request()->routeIs('admin.settings.smaregi') ? 'active' : '' }}">
                         <i class="fas fa-plug"></i>
                         <span>スマレジ連携</span>
+                    </a>
+                    <a href="{{ admin_route('admin.settings.smaregi.pos-data') }}" class="nav-item nav-item--sub {{ request()->routeIs('admin.settings.smaregi.pos-data') ? 'active' : '' }}">
+                        <i class="fas fa-database"></i>
+                        <span>仮想POSデータ確認</span>
                     </a>
                     @endif
                 </div>
