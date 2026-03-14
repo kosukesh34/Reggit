@@ -29,7 +29,7 @@ class SalesSegmentServiceTest extends TestCase
         $this->service = new SalesSegmentService;
     }
 
-    public function test_getMemberIdsBySalesCriteria_購入額以上で該当会員を返す(): void
+    public function test_get_member_ids_by_sales_criteria_購入額以上で該当会員を返す(): void
     {
         $user1 = User::factory()->create(['project_id' => $this->project->id]);
         $user2 = User::factory()->create(['project_id' => $this->project->id]);
@@ -59,7 +59,7 @@ class SalesSegmentServiceTest extends TestCase
         $this->assertTrue($ids->contains($member1->id));
     }
 
-    public function test_getMemberIdsBySalesCriteria_未購入で該当会員を返す(): void
+    public function test_get_member_ids_by_sales_criteria_未購入で該当会員を返す(): void
     {
         $user1 = User::factory()->create(['project_id' => $this->project->id]);
         $user2 = User::factory()->create(['project_id' => $this->project->id]);

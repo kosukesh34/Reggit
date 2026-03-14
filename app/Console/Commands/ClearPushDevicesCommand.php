@@ -18,6 +18,7 @@ class ClearPushDevicesCommand extends Command
 
         if ($count === 0) {
             $this->info('user_devices は既に 0 件です。');
+
             return self::SUCCESS;
         }
 
@@ -25,6 +26,7 @@ class ClearPushDevicesCommand extends Command
 
         if (! $this->option('force') && ! $this->confirm('実行しますか？', false)) {
             $this->info('キャンセルしました。');
+
             return self::SUCCESS;
         }
 

@@ -28,7 +28,7 @@ class SmaregiCouponSyncService
     }
 
     /**
-     * @param array<string, string|int|float|bool|array|null> $data フォーム（code, name, type, value, start_at, end_at 等）
+     * @param  array<string, string|int|float|bool|array|null>  $data  フォーム（code, name, type, value, start_at, end_at 等）
      * @return array{smaregi_coupon_id: string}|null
      */
     public function registerToSmaregi(int $projectId, array $data): ?array
@@ -54,7 +54,7 @@ class SmaregiCouponSyncService
     }
 
     /**
-     * @param array<string, string|int|float|bool|array|null> $data フォームデータ
+     * @param  array<string, string|int|float|bool|array|null>  $data  フォームデータ
      */
     public function updateOnSmaregi(int $projectId, string $smaregiCouponId, array $data): bool
     {
@@ -146,7 +146,7 @@ class SmaregiCouponSyncService
     }
 
     /**
-     * @param array<string, string|int|float|bool|array|null> $data
+     * @param  array<string, string|int|float|bool|array|null>  $data
      * @return array<string, string|int|float|bool|null>
      */
     private function buildBodyFromArray(array $data): array
@@ -199,7 +199,7 @@ class SmaregiCouponSyncService
     }
 
     /**
-     * @param array<int|string, string|int|float|bool|array|null> $response スマレジAPI応答
+     * @param  array<int|string, string|int|float|bool|array|null>  $response  スマレジAPI応答
      */
     private function extractCouponIdFromResponse(array $response): ?string
     {

@@ -84,8 +84,8 @@ class SmaregiApiService
      * 例: request('GET', 'pos/stores') => GET .../pos/stores
      * 例: request('POST', 'pos/customers', $body) => POST .../pos/customers
      *
-     * @param string $path pos/ から始まるパス
-     * @param array<string, string|int|float|bool|array|null> $body GET時はクエリ、POST/PATCH/PUT時はJSONボディ
+     * @param  string  $path  pos/ から始まるパス
+     * @param  array<string, string|int|float|bool|array|null>  $body  GET時はクエリ、POST/PATCH/PUT時はJSONボディ
      * @return array<int|string, string|int|float|bool|array|null>|null
      */
     public function request(string $contractId, string $method, string $path, array $body = [], bool $bodyAsRequestJsonForm = false): ?array
@@ -395,7 +395,7 @@ class SmaregiApiService
     }
 
     /**
-     * @param array<string, string|int|float|bool|array|null> $body クーポン登録ボディ
+     * @param  array<string, string|int|float|bool|array|null>  $body  クーポン登録ボディ
      * @return array<int|string, string|int|float|bool|array|null>|null
      */
     public function createCoupon(string $contractId, array $body): ?array
@@ -404,7 +404,7 @@ class SmaregiApiService
     }
 
     /**
-     * @param array<string, string|int|float|bool|array|null> $body 更新する項目のみ
+     * @param  array<string, string|int|float|bool|array|null>  $body  更新する項目のみ
      * @return array<int|string, string|int|float|bool|array|null>|null
      */
     public function updateCoupon(string $contractId, string $couponId, array $body): ?array

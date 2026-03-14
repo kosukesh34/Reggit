@@ -145,7 +145,7 @@ class MemberAdminService
     }
 
     /**
-     * @param int[] $memberIds
+     * @param  int[]  $memberIds
      * @return Collection<int, int>
      */
     public function filterValidMemberIds(int $projectId, array $memberIds): Collection
