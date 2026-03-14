@@ -88,8 +88,19 @@ window.LiffDesignerModules.uiEvents = {
 
     applyPreviewDevice() {
         if (!this.els.phoneFrame) return;
+        var device = this.ui.previewDevice || 'line';
         this.els.phoneFrame.classList.remove('is-line', 'is-ios', 'is-android');
-        this.els.phoneFrame.classList.add('is-line');
+        this.els.phoneFrame.classList.add('is-' + device);
+        var header = this.els.phoneFrame.querySelector('.ld-phone__header');
+        if (header) {
+            if (device === 'line') {
+                header.style.background = '#06C755';
+            } else if (device === 'ios') {
+                header.style.background = '#000';
+            } else if (device === 'android') {
+                header.style.background = '#1f2937';
+            }
+        }
     },
 
     applyCustomCssPreview() {
