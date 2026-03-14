@@ -109,26 +109,25 @@ function initFormValidation() {
 }
 
 function initLoadingStates() {
-    document.querySelectorAll('a.btn, button.btn').forEach(btn => {
-        if (btn.href || btn.type === 'submit') {
-            btn.addEventListener('click', function() {
-                if (!this.disabled && !this.classList.contains('no-loading')) {
-                    const originalHTML = this.innerHTML;
-                    this.disabled = true;
-                    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 処理中...';
-                    
-                    setTimeout(() => {
-                        this.disabled = false;
-                        this.innerHTML = originalHTML;
-                    }, 3000);
-                }
-            });
-        }
+    // フォーム送信ボタンのみローディング表示（a.btn には適用しない＝編集・詳細リンクが開かなくなるのを防ぐ）
+    document.querySelectorAll('form button[type="submit"], form input[type="submit"]').forEach(btn => {
+        if (btn.classList.contains('no-loading')) return;
+        btn.addEventListener('click', function() {
+            if (!this.disabled) {
+                const originalHTML = this.innerHTML;
+                this.disabled = true;
+                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 処理中...';
+                setTimeout(() => {
+                    this.disabled = false;
+                    this.innerHTML = originalHTML;
+                }, 3000);
+            }
+        });
     });
 }
 
 function initSidebarCollapsibleGroups() {
-    const groups = document.querySelectorAll('.nav-group-collapsible');
+    const groups = document.querySelectorAll('.sidebar-nav .nav-group');
     if (!groups.length) return;
 
     const nav = document.querySelector('.sidebar-nav');
@@ -143,16 +142,29 @@ function initSidebarCollapsibleGroups() {
     }
 
     groups.forEach((group) => {
-        const toggle = group.querySelector('[data-nav-group-toggle]');
+        const toggle = group.querySelector('.nav-group-label');
         if (!toggle) return;
+
+        group.classList.add('is-collapsible');
+        toggle.setAttribute('role', 'button');
+        toggle.setAttribute('tabindex', '0');
 
         const hasActive = !!group.querySelector('.nav-item.active');
         if (!hasActive) {
             group.classList.add('is-collapsed');
         }
+        toggle.setAttribute('aria-expanded', String(!group.classList.contains('is-collapsed')));
 
-        toggle.addEventListener('click', () => {
+        const toggleGroup = () => {
             group.classList.toggle('is-collapsed');
+            toggle.setAttribute('aria-expanded', String(!group.classList.contains('is-collapsed')));
+        };
+
+        toggle.addEventListener('click', toggleGroup);
+        toggle.addEventListener('keydown', (event) => {
+            if (event.key !== 'Enter' && event.key !== ' ') return;
+            event.preventDefault();
+            toggleGroup();
         });
     });
 }

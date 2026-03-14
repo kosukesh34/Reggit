@@ -1,12 +1,12 @@
 /**
  * LIFF 初期化
  *
- * - LINE アプリ内（LIFF ブラウザ）: LIFF SDK を初期化し、ログイン済みならユーザーIDを取得
- * - 外部ブラウザ: LIFF 初期化はスキップし、即座にアプリを表示（ログイン不要）
+ * - LINE アプリ内（LIFF URL から開いた場合）: LIFF SDK を初期化し、未ログインなら認証画面を表示
+ * - 外部ブラウザ・ネイティブアプリ: LIFF 初期化はスキップし、認証なしでアプリを表示
  *
  * window.__LINE_USER_ID__  = LINEユーザーID (null = 未ログイン/外部ブラウザ)
  * window.__LINE_PROFILE__  = LINEプロフィール情報 (null = 未取得)
- * window.__IS_LIFF__       = LINEアプリ内かどうか
+ * window.__IS_LIFF__       = LINEアプリ内かどうか（UA に Line/LIFF を含む場合 true）
  */
 (function () {
     const QUEUE_TOKEN_STORAGE_KEY = 'mobile_order_pending_queue_token';
@@ -126,6 +126,57 @@
     function setLoadingText(text) {
         const el = document.querySelector('.liff-loading-text');
         if (el) el.textContent = text;
+    }
+
+    /**
+     * 認証画面が表示されなかったときに表示するフォールバック。
+     * 「認証が必要です」と「LINEでログインする」ボタンを表示し、タップで liff.login() を再実行できるようにする。
+     */
+    function showLoginRequiredFallback() {
+        if (typeof document === 'undefined') return;
+        const wrapper = document.getElementById('liff-loading');
+        if (!wrapper) return;
+        const inner = wrapper.querySelector('.liff-loading-inner');
+        if (!inner) return;
+        inner.innerHTML = ''
+            + '<p class="liff-loading-text" style="margin-bottom:16px;">認証が必要です。</p>'
+            + '<p style="font-size:13px;color:rgba(255,255,255,0.9);margin-bottom:20px;">認証画面が表示されない場合は、下のボタンからもう一度お試しください。</p>'
+            + '<button type="button" id="liff-login-retry-btn" style="border:none;border-radius:8px;padding:14px 24px;background:#06C755;color:#fff;font-size:15px;font-weight:700;cursor:pointer;width:100%;max-width:280px;">LINEでログインする</button>';
+        const btn = document.getElementById('liff-login-retry-btn');
+        if (btn) {
+            btn.addEventListener('click', function () {
+                if (typeof liff !== 'undefined' && typeof liff.login === 'function') {
+                    try {
+                        liff.login();
+                    } catch (e) {
+                        setLoadingText('エラーが発生しました。画面を再読み込みしてください。');
+                    }
+                } else {
+                    setLoadingText('読み込み中です。しばらくお待ちください…');
+                    setTimeout(function () {
+                        if (typeof liff !== 'undefined' && typeof liff.login === 'function') {
+                            try { liff.login(); } catch (err) { /* ignore */ }
+                        } else {
+                            showLoginRequiredFallback();
+                        }
+                    }, 2000);
+                }
+            });
+        }
+        debug('liff_login_fallback_shown', {});
+    }
+
+    /** liff.login() 呼び出し後、リダイレクトされなかった場合にフォールバックを表示するタイマーを開始 */
+    function scheduleLoginFallback() {
+        var fallbackTimer = setTimeout(function () {
+            if (typeof window.__LINE_USER_ID__ !== 'undefined' && window.__LINE_USER_ID__) return;
+            showLoginRequiredFallback();
+        }, 8000);
+        if (typeof window !== 'undefined') {
+            window.addEventListener('beforeunload', function () {
+                clearTimeout(fallbackTimer);
+            }, { once: true });
+        }
     }
 
     function applyEmbedModeClass(isLiff) {
@@ -337,38 +388,36 @@
     const liffId = getLiffId();
     debug('liff_boot_start', { isLiff: !!window.__IS_LIFF__, hasLiffId: !!liffId });
 
-    // (A) LIFF ID 未設定 or 外部ブラウザ
-    if (!liffId || !window.__IS_LIFF__) {
-        if (!liffId) {
-            window.__LIFF_ID_MISSING__ = true;
-        }
-        // LINEアプリ内なのに LIFF ID が無い場合はログインできないため、起動を止めて明示
-        if (window.__IS_LIFF__ && !liffId) {
-            setLoadingText('LIFF ID が未設定です。管理画面で設定してください。');
-            return;
-        }
-        // 外部ブラウザではLINEログイン不要。即座にアプリを表示
+    // (A) LIFF ID 未設定
+    if (!liffId) {
+        window.__LIFF_ID_MISSING__ = true;
         setLineUserId(null);
         setLineProfile(null);
-        // 最小限の遅延で ready を発火（DOM読み込み待ち）
         setTimeout(dispatchReady, 50);
         return;
     }
 
-    // (B) LINEアプリ内 → LIFF初期化
+    // (B) 外部ブラウザ or ネイティブアプリ → LIFF 初期化せず、認証なしでアプリ表示
+    if (!window.__IS_LIFF__) {
+        setLineUserId(null);
+        setLineProfile(null);
+        setTimeout(dispatchReady, 50);
+        return;
+    }
+
+    // (C) LINEアプリ内（LIFF URL から開いた場合）→ LIFF 初期化し、未ログインなら認証画面を表示
     setLoadingText('読み込み中...');
 
     function runInit() {
         liff.init({
             liffId: liffId,
-            withLoginOnExternalBrowser: false   // 外部ブラウザでの自動ログインリダイレクトを無効化
+            withLoginOnExternalBrowser: false   // 外部ブラウザでは認証させない（(B)でスキップ済み）
         }).then(function () {
             debug('liff_init_success', {});
             const userId = liff.isLoggedIn() ? getLineUserIdFromToken() : null;
             setLineUserId(userId);
             debug('liff_user_resolved', { hasUserId: !!userId });
             if (userId) {
-                // 初期表示を優先: プロフィール取得完了を待たずにアプリを起動
                 dispatchReady();
                 getProfileWithPermissionHandling()
                     .then(function (profile) {
@@ -384,20 +433,19 @@
                         }
                     });
             } else {
-                // LINEアプリ内だがログインしていない → 常にログインへ
-                if (window.__IS_LIFF__) {
-                    debug('liff_not_logged_in_login_redirect', {});
-                    liff.login();
-                    return;
-                }
-                dispatchReady();
+                // LINEアプリ内で未ログイン → 認証画面へ（表示されない場合に備えフォールバックを予約）
+                debug('liff_not_logged_in_login_redirect', {});
+                liff.login();
+                scheduleLoginFallback();
             }
         }).catch(function (err) {
             console.warn('LIFF init failed:', err);
             debug('liff_init_failed', { message: err && err.message ? err.message : 'unknown' });
-            // LIFF初期化失敗 → LINEアプリ内ならログインへ、外部ならアプリ起動
             if (window.__IS_LIFF__) {
-                try { liff.login(); } catch (e) { /* ignore */ }
+                try {
+                    liff.login();
+                    scheduleLoginFallback();
+                } catch (e) { /* ignore */ }
                 return;
             }
             setLineUserId(null);
@@ -405,7 +453,6 @@
         });
     }
 
-    // LIFF SDKの読み込みを待機（最大3秒）
     function waitForLiff(callback, maxWaitMs) {
         maxWaitMs = maxWaitMs || 3000;
         const start = Date.now();
@@ -417,7 +464,12 @@
             if (Date.now() - start >= maxWaitMs) {
                 console.warn('LIFF SDK load timeout');
                 setLineUserId(null);
-                dispatchReady();
+                if (window.__IS_LIFF__) {
+                    setLoadingText('認証が必要です。');
+                    showLoginRequiredFallback();
+                } else {
+                    dispatchReady();
+                }
                 return;
             }
             setTimeout(check, 50);

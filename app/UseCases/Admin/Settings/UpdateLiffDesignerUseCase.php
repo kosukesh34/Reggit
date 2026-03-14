@@ -13,6 +13,7 @@ class UpdateLiffDesignerUseCase
         ShopSetting::setLiffCustomCss($input->customCss, $projectId);
         ShopSetting::setLineLiffId($input->liffId, $projectId);
         ShopSetting::setLineLiffUrl($input->liffUrl, $projectId);
+        ShopSetting::setLineFriendAddUrl($input->lineFriendAddUrl, $projectId);
 
         if ($input->tabSettings !== null) {
             ShopSetting::setLiffTabSettings($input->tabSettings, $projectId);

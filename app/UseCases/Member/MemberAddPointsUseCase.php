@@ -5,14 +5,12 @@ namespace App\UseCases\Member;
 use App\Services\Smaregi\SmaregiApiService;
 use App\Services\UserService;
 use App\UseCases\Member\Data\MemberPointsOutput;
-use App\UseCases\Smaregi\SmaregiSyncCustomerPointsUseCase;
 use Illuminate\Http\Request;
 
 class MemberAddPointsUseCase
 {
     public function __construct(
         private UserService $userService,
-        private SmaregiSyncCustomerPointsUseCase $smaregiSyncPoints,
         private SmaregiApiService $smaregiApi,
     ) {}
 
@@ -26,12 +24,11 @@ class MemberAddPointsUseCase
         }
 
         $projectId = $member->project_id ?? 1;
-        $contractId = $this->smaregiApi->getContractIdForProject($projectId);
-        $contractId = is_string($contractId) ? trim($contractId) : '';
         $smaregiCustomerId = $member->smaregi_customer_id ?? '';
+        $smaregiCustomerId = is_string($smaregiCustomerId) ? trim($smaregiCustomerId) : '';
 
-        if ($contractId !== '' && $smaregiCustomerId !== '' && $points > 0) {
-            $result = $this->smaregiSyncPoints->execute($projectId, $smaregiCustomerId, $points);
+        if ($smaregiCustomerId !== '' && $points > 0) {
+            $result = $this->smaregiApi->syncCustomerPointsForProject($projectId, $smaregiCustomerId, $points);
             if ($result === null) {
                 throw new \Exception('スマレジへのポイント反映に失敗しました。storage/logs/laravel.log の [Smaregi] を参照してください。');
             }
