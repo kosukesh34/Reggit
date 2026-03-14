@@ -43,7 +43,7 @@ class SecurityTest extends TestCase
         );
     }
 
-    public function test_未認証で管理画面のAPIトークン一覧にアクセスするとログインへリダイレクトされる(): void
+    public function test_未認証で管理画面の_ap_iトークン一覧にアクセスするとログインへリダイレクトされる(): void
     {
         $response = $this->get(route('system-admin.api-tokens.index'));
 

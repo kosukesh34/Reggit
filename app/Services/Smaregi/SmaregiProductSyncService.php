@@ -199,6 +199,7 @@ class SmaregiProductSyncService
                         'product_id' => $product->id,
                         'name' => $product->name,
                     ]);
+
                     continue;
                 }
                 $newSmaregiId = $result['smaregi_product_id'];
@@ -230,7 +231,7 @@ class SmaregiProductSyncService
     }
 
     /**
-     * @param array<int|string, string|int|float|bool|array|null> $result API一覧応答
+     * @param  array<int|string, string|int|float|bool|array|null>  $result  API一覧応答
      * @return array<int|string, string|int|float|bool|array|null>
      */
     private function extractListFromResponse(array $result, string $listKey): array
@@ -244,7 +245,7 @@ class SmaregiProductSyncService
     }
 
     /**
-     * @param array<string, string|int|float|bool|array|null> $row スマレジ商品1件
+     * @param  array<string, string|int|float|bool|array|null>  $row  スマレジ商品1件
      * @return array<string, string|int|float|bool|null> Product用attributes
      */
     private function mapSmaregiProductToAttributes(array $row): array
@@ -272,7 +273,7 @@ class SmaregiProductSyncService
     }
 
     /**
-     * @param string|int|null $categoryId スマレジ部門ID
+     * @param  string|int|null  $categoryId  スマレジ部門ID
      */
     private function mapCategoryIdToAppCategory(string|int|null $categoryId): string
     {

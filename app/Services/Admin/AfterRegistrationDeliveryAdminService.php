@@ -22,7 +22,7 @@ class AfterRegistrationDeliveryAdminService
     }
 
     /**
-     * @param array{delay_minutes: string, title: string, body?: string, coupon_id?: string, is_active?: string} $data
+     * @param  array{delay_minutes: string, title: string, body?: string, coupon_id?: string, is_active?: string}  $data
      */
     public function create(int $projectId, array $data): AfterRegistrationDelivery
     {
@@ -30,7 +30,7 @@ class AfterRegistrationDeliveryAdminService
     }
 
     /**
-     * @param array{delay_minutes: string, title: string, body?: string, coupon_id?: string, is_active?: string} $data
+     * @param  array{delay_minutes: string, title: string, body?: string, coupon_id?: string, is_active?: string}  $data
      */
     public function update(int $projectId, int $id, array $data): AfterRegistrationDelivery
     {
@@ -48,7 +48,7 @@ class AfterRegistrationDeliveryAdminService
     }
 
     /**
-     * @param array{delay_minutes: string, title: string, body?: string, coupon_id?: string, is_active?: string} $data
+     * @param  array{delay_minutes: string, title: string, body?: string, coupon_id?: string, is_active?: string}  $data
      * @return array<string, int|string|bool|null>
      */
     private function buildAttributes(int $projectId, array $data): array

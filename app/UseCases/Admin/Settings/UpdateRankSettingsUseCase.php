@@ -2,8 +2,8 @@
 
 namespace App\UseCases\Admin\Settings;
 
-use App\Models\StampCard;
 use App\Models\ShopSetting;
+use App\Models\StampCard;
 use App\Services\Smaregi\SmaregiCustomerRankSyncService;
 use App\Util\StrHelper;
 

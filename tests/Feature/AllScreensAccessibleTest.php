@@ -5,8 +5,8 @@ namespace Tests\Feature;
 use App\Models\AdminAuditLog;
 use App\Models\AdminUser;
 use App\Models\AfterRegistrationDelivery;
-use App\Models\ApiToken;
 use App\Models\Announcement;
+use App\Models\ApiToken;
 use App\Models\Coupon;
 use App\Models\Member;
 use App\Models\Order;
@@ -17,7 +17,6 @@ use App\Models\StampCard;
 use App\Models\User;
 use App\Util\AdminContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
 /**

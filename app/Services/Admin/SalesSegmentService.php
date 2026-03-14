@@ -21,7 +21,7 @@ class SalesSegmentService
      * @param  int  $periodDays  対象期間（直近何日間か）
      * @param  float|null  $minTotalAmount  この金額以上購入した会員（null のときは条件に含めない）
      * @param  bool  $noOrdersOnly  true のとき「期間内に1件も注文していない会員」のみ
-     * @return Collection<int, int>  会員IDのコレクション
+     * @return Collection<int, int> 会員IDのコレクション
      */
     public function getMemberIdsBySalesCriteria(
         int $projectId,
