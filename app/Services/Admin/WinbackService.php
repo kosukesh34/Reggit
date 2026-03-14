@@ -45,6 +45,7 @@ class WinbackService
 
             if ($alreadyIssued) {
                 $skipped++;
+
                 continue;
             }
             DB::transaction(function () use ($member, $coupon): void {

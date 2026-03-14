@@ -70,7 +70,7 @@ class RfmAnalysisService
         $summary = [];
         foreach ($rows as $row) {
             $seg = $row['segment'];
-            if (!isset($summary[$seg])) {
+            if (! isset($summary[$seg])) {
                 $summary[$seg] = ['label' => $row['segment_label'], 'count' => 0, 'color' => self::segmentColor($seg)];
             }
             $summary[$seg]['count']++;
@@ -130,7 +130,6 @@ class RfmAnalysisService
         return 'dormant';
     }
 
-    /** @param string $segment */
     public function segmentLabel(string $segment): string
     {
         $map = [
@@ -145,7 +144,6 @@ class RfmAnalysisService
         return $map[$segment] ?? $segment;
     }
 
-    /** @param string $segment */
     public function segmentColor(string $segment): string
     {
         $map = [
