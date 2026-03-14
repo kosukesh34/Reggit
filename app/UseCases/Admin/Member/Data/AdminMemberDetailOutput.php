@@ -10,12 +10,14 @@ use Illuminate\Support\Collection;
  *
  * @param  Collection<int, \App\Models\Coupon>  $activeCoupons
  * @param  Collection<int, \App\Models\StampCard>  $activeStampCards
+ * @param  array<string, mixed>  $purchaseSummary
  */
 class AdminMemberDetailOutput
 {
     public function __construct(
         public Member $member,
         public Collection $activeCoupons,
-        public Collection $activeStampCards
+        public Collection $activeStampCards,
+        public array $purchaseSummary = []
     ) {}
 }

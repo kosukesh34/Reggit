@@ -60,6 +60,8 @@ class AnnouncementDeliveryStoreRequest extends FormRequest
             'delivery_coupon_id' => ['nullable', 'integer', 'min:1'],
             'is_pinned' => ['nullable', 'boolean'],
             'expires_at' => ['nullable', 'date'],
+            'image_url' => ['nullable', 'url', 'max:500'],
+            'image_file' => ['nullable', 'image', 'max:2048'],
         ];
     }
 

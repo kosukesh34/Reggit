@@ -16,9 +16,9 @@ class AdminMemberListUseCase
         $this->memberAdminService = $memberAdminService;
     }
 
-    public function handle(int $projectId): AdminMemberListOutput
+    public function handle(int $projectId, array $filters = []): AdminMemberListOutput
     {
-        $members = $this->memberAdminService->getPaginatedList($projectId, self::PER_PAGE);
+        $members = $this->memberAdminService->getPaginatedList($projectId, self::PER_PAGE, $filters);
 
         return new AdminMemberListOutput($members);
     }
