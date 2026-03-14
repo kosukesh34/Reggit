@@ -4,86 +4,132 @@
 @section('page-title', 'ダッシュボード')
 
 @section('content')
-<div class="stats-grid">
-    <div class="stat-card stat-card-primary">
-        <div class="stat-icon">
-            <i class="fas fa-box"></i>
-        </div>
-        <div class="stat-content">
-            <div class="stat-label">総商品数</div>
-            <div class="stat-value">{{ $stats['total_products'] }}</div>
-        </div>
-    </div>
-    <div class="stat-card stat-card-info">
-        <div class="stat-icon">
-            <i class="fas fa-shopping-cart"></i>
-        </div>
-        <div class="stat-content">
-            <div class="stat-label">総注文数</div>
-            <div class="stat-value">{{ $stats['total_orders'] }}</div>
-        </div>
-    </div>
+
+{{-- 未処理注文が多い場合のアラートバナー --}}
+@if($stats['pending_orders'] > 0)
+<div class="alert alert-warning dashboard-alert" role="alert">
+    <i class="fas fa-exclamation-triangle"></i>
+    未処理の注文が <strong>{{ $stats['pending_orders'] }}件</strong> あります。
+    <a href="{{ admin_route('admin.orders', ['status' => 'pending']) }}" class="alert-link">確認する <i class="fas fa-arrow-right"></i></a>
+</div>
+@endif
+
+{{-- 今日・今月のKPIセクション --}}
+<div class="dashboard-section-label">本日の状況</div>
+<div class="stats-grid stats-grid--today">
     <div class="stat-card stat-card-success">
-        <div class="stat-icon">
-            <i class="fas fa-user"></i>
-        </div>
-        <div class="stat-content">
-            <div class="stat-label">総ユーザー数</div>
-            <div class="stat-value">{{ $stats['total_users'] }}</div>
-        </div>
-    </div>
-    <div class="stat-card stat-card-warning">
-        <div class="stat-icon">
-            <i class="fas fa-id-card"></i>
-        </div>
-        <div class="stat-content">
-            <div class="stat-label">総会員数</div>
-            <div class="stat-value">{{ $stats['total_members'] }}</div>
-        </div>
-    </div>
-    <div class="stat-card stat-card-danger">
-        <div class="stat-icon">
-            <i class="fas fa-calendar-day"></i>
-        </div>
-        <div class="stat-content">
-            <div class="stat-label">本日の注文</div>
-            <div class="stat-value">{{ $stats['today_orders'] }}</div>
-        </div>
-    </div>
-    <div class="stat-card stat-card-success">
-        <div class="stat-icon">
-            <i class="fas fa-yen-sign"></i>
-        </div>
+        <div class="stat-icon"><i class="fas fa-yen-sign"></i></div>
         <div class="stat-content">
             <div class="stat-label">本日の売上</div>
             <div class="stat-value">¥{{ number_format($stats['today_revenue']) }}</div>
+            @php $t = $stats['trend_today_revenue'] @endphp
+            @if($t['percent'] !== null)
+            <div class="stat-trend stat-trend--{{ $t['direction'] }}">
+                <i class="fas fa-arrow-{{ $t['direction'] === 'up' ? 'up' : 'down' }}"></i>
+                {{ $t['percent'] }}% <span class="stat-trend-label">前日比</span>
+            </div>
+            @endif
+        </div>
+    </div>
+    <div class="stat-card stat-card-danger">
+        <div class="stat-icon"><i class="fas fa-calendar-day"></i></div>
+        <div class="stat-content">
+            <div class="stat-label">本日の注文</div>
+            <div class="stat-value">{{ $stats['today_orders'] }}</div>
+            @php $t = $stats['trend_today_orders'] @endphp
+            @if($t['percent'] !== null)
+            <div class="stat-trend stat-trend--{{ $t['direction'] }}">
+                <i class="fas fa-arrow-{{ $t['direction'] === 'up' ? 'up' : 'down' }}"></i>
+                {{ $t['percent'] }}% <span class="stat-trend-label">前日比</span>
+            </div>
+            @endif
         </div>
     </div>
     <div class="stat-card stat-card-warning">
-        <div class="stat-icon">
-            <i class="fas fa-clock"></i>
-        </div>
+        <div class="stat-icon"><i class="fas fa-clock"></i></div>
         <div class="stat-content">
             <div class="stat-label">未処理注文</div>
-            <div class="stat-value">{{ $stats['pending_orders'] }}</div>
+            <div class="stat-value {{ $stats['pending_orders'] > 0 ? 'stat-value--alert' : '' }}">{{ $stats['pending_orders'] }}</div>
         </div>
     </div>
     <div class="stat-card stat-card-info">
-        <div class="stat-icon">
-            <i class="fas fa-calendar-check"></i>
-        </div>
+        <div class="stat-icon"><i class="fas fa-calendar-check"></i></div>
         <div class="stat-content">
             <div class="stat-label">本日の予約</div>
             <div class="stat-value">{{ $stats['today_reservations'] }}</div>
         </div>
     </div>
     <div class="stat-card stat-card-primary">
-        <div class="stat-icon">
-            <i class="fas fa-list-ol"></i>
-        </div>
+        <div class="stat-icon"><i class="fas fa-list-ol"></i></div>
         <div class="stat-content">
             <div class="stat-label">順番待ち（待機中）</div>
             <div class="stat-value">{{ $stats['queue_waiting'] ?? 0 }}</div>
+        </div>
+    </div>
+</div>
+
+{{-- 今月のKPIセクション --}}
+<div class="dashboard-section-label">今月の累計</div>
+<div class="stats-grid stats-grid--month">
+    <div class="stat-card stat-card-success">
+        <div class="stat-icon"><i class="fas fa-chart-line"></i></div>
+        <div class="stat-content">
+            <div class="stat-label">今月の売上</div>
+            <div class="stat-value">¥{{ number_format($stats['month_revenue']) }}</div>
+            @php $t = $stats['trend_month_revenue'] @endphp
+            @if($t['percent'] !== null)
+            <div class="stat-trend stat-trend--{{ $t['direction'] }}">
+                <i class="fas fa-arrow-{{ $t['direction'] === 'up' ? 'up' : 'down' }}"></i>
+                {{ $t['percent'] }}% <span class="stat-trend-label">前月比</span>
+            </div>
+            @endif
+        </div>
+    </div>
+    <div class="stat-card stat-card-primary">
+        <div class="stat-icon"><i class="fas fa-user-plus"></i></div>
+        <div class="stat-content">
+            <div class="stat-label">今月の新規会員</div>
+            <div class="stat-value">{{ $stats['month_new_members'] }}</div>
+            @php $t = $stats['trend_month_members'] @endphp
+            @if($t['percent'] !== null)
+            <div class="stat-trend stat-trend--{{ $t['direction'] }}">
+                <i class="fas fa-arrow-{{ $t['direction'] === 'up' ? 'up' : 'down' }}"></i>
+                {{ $t['percent'] }}% <span class="stat-trend-label">前月比</span>
+            </div>
+            @endif
+        </div>
+    </div>
+</div>
+
+{{-- 累計統計 --}}
+<div class="dashboard-section-label">累計</div>
+<div class="stats-grid stats-grid--totals">
+    <div class="stat-card stat-card-primary">
+        <div class="stat-icon"><i class="fas fa-box"></i></div>
+        <div class="stat-content">
+            <div class="stat-label">総商品数</div>
+            <div class="stat-value">{{ $stats['total_products'] }}</div>
+        </div>
+    </div>
+    <div class="stat-card stat-card-info">
+        <div class="stat-icon"><i class="fas fa-shopping-cart"></i></div>
+        <div class="stat-content">
+            <div class="stat-label">総注文数</div>
+            <div class="stat-value">{{ $stats['total_orders'] }}</div>
+        </div>
+    </div>
+    <div class="stat-card stat-card-success">
+        <div class="stat-icon"><i class="fas fa-user"></i></div>
+        <div class="stat-content">
+            <div class="stat-label">総ユーザー数</div>
+            <div class="stat-value">{{ $stats['total_users'] }}</div>
+        </div>
+    </div>
+    <div class="stat-card stat-card-warning">
+        <div class="stat-icon"><i class="fas fa-id-card"></i></div>
+        <div class="stat-content">
+            <div class="stat-label">総会員数</div>
+            <div class="stat-value">{{ $stats['total_members'] }}</div>
         </div>
     </div>
 </div>

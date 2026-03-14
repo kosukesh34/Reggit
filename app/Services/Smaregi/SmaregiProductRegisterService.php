@@ -103,6 +103,20 @@ class SmaregiProductRegisterService
     }
 
     /**
+     * 商品登録に必要な部門IDを取得する。取得できない場合（部門0件で自動作成も失敗）は null。
+     * fullSync で DB→スマレジ を試す前に呼び、null なら登録処理をスキップして失敗0で返すために使う。
+     */
+    public function resolveDefaultCategoryId(int $projectId): ?string
+    {
+        $contractId = $this->smaregiApi->getContractIdForProject($projectId);
+        if (StrHelper::isEmptyStringOrNull($contractId)) {
+            return null;
+        }
+
+        return $this->getDefaultCategoryId($contractId);
+    }
+
+    /**
      * 商品の在庫数をスマレジに反映する。先頭店舗の在庫として更新する。店舗が無い場合は何もしない。
      */
     public function syncStockToSmaregi(int $projectId, string $smaregiProductId, int $stockAmount): bool
@@ -140,6 +154,9 @@ class SmaregiProductRegisterService
         }
 
         $list = $this->extractListFromResponse($result, 'categories');
+        if ($list === []) {
+            $list = $this->extractListFromResponse($result, 'data');
+        }
         $first = $list[0] ?? null;
         if (is_array($first)) {
             $id = $first['categoryId'] ?? $first['category_id'] ?? $first['id'] ?? null;
@@ -161,6 +178,7 @@ class SmaregiProductRegisterService
             'categoryCode' => 'APPDEF'.uniqid('', false),
             'categoryName' => 'デフォルト部門',
             'categoryAbbr' => 'デフォルト',
+            'displaySequence' => '0',
             'displayFlag' => '1',
             'taxDivision' => '0',
             'pointNotApplicable' => '0',
@@ -223,7 +241,7 @@ class SmaregiProductRegisterService
         if ($smaregiProductId !== null && $smaregiProductId !== '') {
             // 更新時は productCode を送らなくてよい（PATCH は変更項目のみ）
         } else {
-            $body['productCode'] = 'APP-'.uniqid('', true);
+            $body['productCode'] = substr(uniqid('A'), 0, 20);
         }
 
         $description = trim((string) ($data['description'] ?? ''));

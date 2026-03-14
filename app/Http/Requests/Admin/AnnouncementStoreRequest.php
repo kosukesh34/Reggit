@@ -16,6 +16,8 @@ class AnnouncementStoreRequest extends FormRequest
         return [
             'title' => 'required|string|max:100',
             'body' => 'required|string|max:2000',
+            'image_url' => 'nullable|url|max:500',
+            'image_file' => 'nullable|image|max:2048',
             'is_active' => 'nullable|boolean',
             'published_at' => 'nullable|date',
             'expires_at' => 'nullable|date',

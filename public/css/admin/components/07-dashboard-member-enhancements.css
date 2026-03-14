@@ -1,0 +1,276 @@
+/* ===================================================================
+   ダッシュボード・会員管理 UI 強化
+   =================================================================== */
+
+/* ---- ダッシュボード: セクションラベル ---- */
+.dashboard-section-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    margin: 4px 0 12px;
+    padding-left: 2px;
+}
+
+/* ---- ダッシュボード: 今日・今月・累計グリッドの分割 ---- */
+.stats-grid--today {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    margin-bottom: 8px;
+}
+
+.stats-grid--month {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    margin-bottom: 8px;
+}
+
+.stats-grid--totals {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    margin-bottom: 28px;
+}
+
+/* ---- stat-card: トレンドバッジ ---- */
+.stat-trend {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-top: 6px;
+    padding: 2px 7px;
+    border-radius: 20px;
+    white-space: nowrap;
+}
+
+.stat-trend--up {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.stat-trend--down {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.stat-trend--flat {
+    background: var(--bg-tertiary);
+    color: var(--text-tertiary);
+}
+
+.stat-trend i {
+    font-size: 9px;
+}
+
+.stat-trend-label {
+    font-weight: 400;
+    opacity: 0.8;
+}
+
+/* ---- stat-value: アラート状態（未処理注文など） ---- */
+.stat-value--alert {
+    color: var(--danger);
+}
+
+/* ---- ダッシュボード: アラートバナー ---- */
+.dashboard-alert {
+    margin-bottom: 20px;
+}
+
+.alert-warning {
+    background: #fffbeb;
+    color: #92400e;
+    border-color: #fde68a;
+}
+
+.alert-link {
+    color: inherit;
+    font-weight: 600;
+    margin-left: 8px;
+    text-decoration: underline;
+}
+
+.alert-link:hover {
+    opacity: 0.8;
+}
+
+/* ---- 会員詳細: 購買サマリーKPIカード ---- */
+.member-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.member-kpi-card {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow 0.2s ease;
+}
+
+.member-kpi-card:hover {
+    box-shadow: var(--shadow);
+}
+
+.member-kpi-card--alert {
+    border-left: 3px solid var(--danger);
+    background: #fff5f5;
+}
+
+.member-kpi-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.member-kpi-icon--ltv    { background: var(--success); }
+.member-kpi-icon--orders { background: var(--info); }
+.member-kpi-icon--avg    { background: var(--primary); }
+.member-kpi-icon--last   { background: var(--secondary); }
+.member-kpi-icon--danger { background: var(--danger); }
+
+.member-kpi-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.member-kpi-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-tertiary);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.member-kpi-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.member-kpi-sub {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-tertiary);
+}
+
+/* ---- 会員一覧: 検索フォーム ---- */
+.member-search-form {
+    padding: 4px 0 8px;
+}
+
+.filter-grid--members {
+    grid-template-columns: 1fr 160px auto;
+    align-items: end;
+    gap: 16px;
+}
+
+@media (max-width: 640px) {
+    .filter-grid--members {
+        grid-template-columns: 1fr;
+    }
+}
+
+.form-group--action {
+    display: flex;
+    align-items: flex-end;
+}
+
+.card-mb-16 {
+    margin-bottom: 16px;
+}
+
+/* ---- 会員タグ ---- */
+.member-tag-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #fff;
+    white-space: nowrap;
+}
+
+.member-tag-section {
+    margin-bottom: 20px;
+}
+
+.member-tag-label-row {
+    margin-bottom: 8px;
+}
+
+.member-tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+    min-height: 30px;
+}
+
+.member-tag-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.member-tag-remove {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 10px;
+    color: rgba(255,255,255,0.8);
+    padding: 0 2px;
+    line-height: 1;
+}
+
+.member-tag-remove:hover {
+    color: #fff;
+}
+
+.member-tag-attach-form {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+
+.member-memo-section {
+    border-top: 1px solid var(--border-light);
+    padding-top: 16px;
+}
+
+/* ---- コホート分析テーブル ---- */
+.cohort-table td {
+    text-align: center;
+    white-space: nowrap;
+}
+
+.cohort-cell {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 600;
+    background: rgba(13, 148, 136, calc(var(--pct, 0) / 100));
+    color: var(--text-primary);
+}
+

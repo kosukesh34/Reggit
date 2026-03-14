@@ -240,6 +240,50 @@
 
 <div class="card card-mb-24">
     <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-th"></i> 登録月コホート分析（再購買率 %）</h3>
+    </div>
+    <div class="card-body">
+        <p class="text-muted small mb-3">登録月ごとの会員が、登録月・翌月・2ヶ月後…に注文した割合（%）です。</p>
+        <div class="table-responsive">
+            <table class="table cohort-table">
+                <thead>
+                    <tr>
+                        <th>コホート</th>
+                        <th>登録人数</th>
+                        <th>0ヶ月</th>
+                        <th>1ヶ月後</th>
+                        <th>2ヶ月後</th>
+                        <th>3ヶ月後</th>
+                        <th>4ヶ月後</th>
+                        <th>5ヶ月後</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($view->cohort as $row)
+                    <tr>
+                        <td>{{ $row['cohort'] }}</td>
+                        <td>{{ number_format($row['total']) }}人</td>
+                        @foreach(['month0','month1','month2','month3','month4','month5'] as $col)
+                        <td>
+                            @if($row['total'] > 0)
+                            <span class="cohort-cell" style="--pct: {{ $row[$col] }}">{{ $row[$col] }}%</span>
+                            @else
+                            <span class="text-muted">—</span>
+                            @endif
+                        </td>
+                        @endforeach
+                    </tr>
+                    @empty
+                    <tr><td colspan="8" class="empty-state"><i class="fas fa-chart-bar"></i><p>データがありません</p></td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="card card-mb-24">
+    <div class="card-header">
         <h3 class="card-title"><i class="fas fa-bullhorn"></i> お知らせ既読状況（上位）</h3>
     </div>
     <div class="card-body">

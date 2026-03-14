@@ -64,6 +64,13 @@ class CouponIssueService
         }
     }
 
+    /** 管理画面またはバッチから手動でクーポンを1件発行する */
+    public function issueManualCoupon(Member $member, Coupon $coupon): void
+    {
+        $now = now();
+        $this->createMemberCoupon($member, $coupon, $now);
+    }
+
     private function issueByTrigger(Member $member, string $trigger): void
     {
         $coupons = Coupon::where('project_id', $member->project_id)

@@ -30,6 +30,7 @@ class Announcement extends Model
         'project_id',
         'title',
         'body',
+        'image_url',
         'published_at',
         'expires_at',
         'is_pinned',
