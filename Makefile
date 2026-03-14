@@ -39,3 +39,11 @@ test-db:
 # テスト実行（要: make up & make test-db）
 test: test-db
 	docker-compose exec app php artisan test
+
+# 依存関係の脆弱性チェック（セキュリティ）
+audit:
+	docker-compose exec app composer audit
+
+# セキュリティテストのみ実行
+test-security: test-db
+	docker-compose exec app php artisan test tests/Feature/SecurityTest.php

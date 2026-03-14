@@ -23,7 +23,7 @@ class SmaregiProductRegisterService
     }
 
     /**
-     * @param array<string, string|int|float|bool|array|null> $data フォーム（name, price, description, category, is_available 等）
+     * @param  array<string, string|int|float|bool|array|null>  $data  フォーム（name, price, description, category, is_available 等）
      * @return array{smaregi_product_id: string}|null
      */
     public function registerToSmaregi(int $projectId, array $data): ?array
@@ -58,7 +58,7 @@ class SmaregiProductRegisterService
     }
 
     /**
-     * @param array<string, string|int|float|bool|array|null> $data フォームデータ
+     * @param  array<string, string|int|float|bool|array|null>  $data  フォームデータ
      */
     public function updateOnSmaregi(int $projectId, string $smaregiProductId, array $data): bool
     {
@@ -184,7 +184,7 @@ class SmaregiProductRegisterService
     }
 
     /**
-     * @param array<string, string|int|float|bool|array|null> $data
+     * @param  array<string, string|int|float|bool|array|null>  $data
      * @return array<string, string|int|float|bool|null>|null
      */
     private function buildBodyFromArray(int $projectId, array $data, ?string $smaregiProductId): ?array
@@ -235,7 +235,7 @@ class SmaregiProductRegisterService
     }
 
     /**
-     * @param array<int|string, string|int|float|bool|array|null> $result API一覧応答
+     * @param  array<int|string, string|int|float|bool|array|null>  $result  API一覧応答
      * @return array<int|string, string|int|float|bool|array|null>
      */
     private function extractListFromResponse(array $result, string $listKey): array
@@ -249,7 +249,7 @@ class SmaregiProductRegisterService
     }
 
     /**
-     * @param array<int|string, string|int|float|bool|array|null> $response スマレジAPI応答
+     * @param  array<int|string, string|int|float|bool|array|null>  $response  スマレジAPI応答
      */
     private function extractProductIdFromResponse(array $response): ?string
     {

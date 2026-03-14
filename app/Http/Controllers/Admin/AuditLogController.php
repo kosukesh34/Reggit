@@ -31,8 +31,9 @@ class AuditLogController extends Controller
         return view('admin.audit-logs.index', compact('logs'));
     }
 
-    public function show(Request $request, int $id)
+    public function show(Request $request)
     {
+        $id = (int) $request->route('id');
         $isSystemContext = $request->routeIs('system-admin.*');
         $projectId = $isSystemContext ? null : AdminContext::getCurrentProjectId();
         $log = $this->showUseCase->handle($id, $projectId, $isSystemContext);

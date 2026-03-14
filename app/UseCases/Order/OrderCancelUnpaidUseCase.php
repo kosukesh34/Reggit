@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 class OrderCancelUnpaidUseCase
 {
     private UserService $userService;
+
     private OrderService $orderService;
 
     public function __construct(UserService $userService, OrderService $orderService)
@@ -45,4 +46,3 @@ class OrderCancelUnpaidUseCase
         return $order->load('items.product');
     }
 }
-

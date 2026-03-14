@@ -17,9 +17,9 @@ class PushNotificationService
 
     private Client $http;
 
-    public function __construct()
+    public function __construct(Client $http)
     {
-        $this->http = new Client(['timeout' => 15]);
+        $this->http = $http;
     }
 
     /** @return array{target_tokens:int,sent:int,failed:int,skipped:int} */
@@ -62,7 +62,7 @@ class PushNotificationService
     /**
      * OneSignal でお知らせ配信（subscription_id は user_devices.push_token に保存されている想定）
      *
-     * @param list<string> $subscriptionIds
+     * @param  list<string>  $subscriptionIds
      * @return array{target_tokens:int,sent:int,failed:int,skipped:int}
      */
     private function sendAnnouncementViaOneSignal(Announcement $announcement, array $subscriptionIds): array
@@ -155,7 +155,12 @@ class PushNotificationService
         $targetMemberIds = is_array($announcement->target_member_ids)
             ? array_values(array_filter(array_map('intval', $announcement->target_member_ids), fn ($id) => $id > 0))
             : [];
-        if ($announcement->delivery_type === Announcement::DELIVERY_TYPE_PERSONAL && $targetMemberIds !== []) {
+        $isTargeted = in_array($announcement->delivery_type, [
+            Announcement::DELIVERY_TYPE_PERSONAL,
+            Announcement::DELIVERY_TYPE_SEGMENT,
+            Announcement::DELIVERY_TYPE_AFTER_REGISTRATION,
+        ], true);
+        if ($isTargeted && $targetMemberIds !== []) {
             $userIds = Member::where('project_id', (int) $announcement->project_id)
                 ->whereIn('id', $targetMemberIds)
                 ->pluck('user_id')

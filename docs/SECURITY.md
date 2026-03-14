@@ -47,8 +47,17 @@
 
 ---
 
-## 6. 推奨運用
+## 6. セキュリティチェック（開発・CI）
+
+- **依存関係の脆弱性**: `make audit`（Docker 内で `composer audit`）を定期的に実行する。問題があれば報告に従いアップデートする。
+- **認証・認可のテスト**: `make test-security` で未認証アクセスがログインへリダイレクトされることを検証する（`tests/Feature/SecurityTest.php`）。
+- **本番デプロイ前**: 上記に加え、`make test` で全テストが通ることを確認する。
+
+---
+
+## 7. 推奨運用
 
 - 本番では `APP_DEBUG=false`、`APP_ENV=production` にすること。
 - 管理画面は HTTPS で提供すること（`AppServiceProvider` で `URL::forceScheme('https')` を本番で有効化済み）。
 - API トークンは定期的にローテーションすること。無効化は「APIトークン」画面で revoke/rotate 可能。
+- 定期的に `make audit` と `make test-security` を実行し、依存関係と認証まわりを確認すること。

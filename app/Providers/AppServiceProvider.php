@@ -5,10 +5,10 @@ namespace App\Providers;
 use App\Models\MemberStamp;
 use App\Models\Project;
 use App\Models\ShopSetting;
-use App\UseCases\Payment\PaymentGateway;
-use App\UseCases\Payment\StripePaymentGateway;
 use App\Observers\MemberStampObserver;
 use App\Observers\ProjectObserver;
+use App\UseCases\Payment\PaymentGateway;
+use App\UseCases\Payment\StripePaymentGateway;
 use App\Util\AdminContext;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\URL;
@@ -21,7 +21,12 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->singleton(PaymentGateway::class, function () {
             $secret = (string) config('services.stripe.secret', env('STRIPE_SECRET', ''));
+
             return new StripePaymentGateway($secret);
+        });
+
+        $this->app->singleton(\GuzzleHttp\Client::class, function () {
+            return new \GuzzleHttp\Client(['timeout' => 15]);
         });
     }
 
