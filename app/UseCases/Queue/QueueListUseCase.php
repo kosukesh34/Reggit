@@ -4,7 +4,6 @@ namespace App\UseCases\Queue;
 
 use App\Models\QueueEntry;
 use App\Util\AdminContext;
-use Illuminate\Support\Collection;
 
 /**
  * キュー一覧取得（iPad・受付画面用）。project_key でスコープされた一覧を返す。
