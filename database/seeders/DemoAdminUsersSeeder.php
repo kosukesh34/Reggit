@@ -29,7 +29,7 @@ class DemoAdminUsersSeeder extends Seeder
         $this->upsertDemoUser(
             env('DEMO_SYSTEM_LOGIN_ID', 'demo_sys'),
             env('DEMO_SYSTEM_EMAIL', 'demo_sys@example.com'),
-            env('DEMO_SYSTEM_PASSWORD', 'DemoSys#2026'),
+            AdminUserSeeder::demoSystemPassword(),
             env('DEMO_SYSTEM_NAME', 'デモシステム管理者'),
             AdminUser::ROLE_SYSTEM_ADMIN,
             null

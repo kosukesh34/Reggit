@@ -354,9 +354,10 @@ class LiffDesigner {
             var tab = this.state.activeTab;
             var tabLabel = this.TAB_LABELS[tab] || tab;
             var hasTemplates = this.getTemplatesForTab && this.getTemplatesForTab(tab).length > 0;
+            var wizardBtn = '<button type="button" class="ld-btn ld-btn--outline ld-btn--block" onclick="if(window.__ldDesigner)window.__ldDesigner.showOnboarding();"><i class="fas fa-wand-magic-sparkles"></i> テンプレートウィザードで作成</button>';
             var hint = hasTemplates
-                ? '<div class="ld-quickstart__desc">左パネルの<strong>テンプレート</strong>からワンクリックで始めるか、右パネルから<strong>ブロックを追加</strong>して自由にデザインできます</div><div class="ld-quickstart__actions"><button type="button" class="ld-btn ld-btn--primary ld-btn--block" onclick="if(window.__ldDesigner){var t=window.__ldDesigner.getTemplatesForTab(window.__ldDesigner.state.activeTab);if(t.length)window.__ldDesigner.applyTabTemplate(t[0]);}">テンプレートで始める</button><button type="button" class="ld-btn ld-btn--outline ld-btn--block" onclick="if(window.__ldDesigner)window.__ldDesigner.addBlock(\'hero\');">ヒーローブロックを追加</button></div>'
-                : '<div class="ld-quickstart__desc">右パネルから<strong>ブロックをドラッグ</strong>または<strong>クリック</strong>で追加してください</div><div class="ld-quickstart__actions"><button type="button" class="ld-btn ld-btn--primary ld-btn--block" onclick="if(window.__ldDesigner)window.__ldDesigner.addBlock(\'hero\');">ヒーローを追加</button><button type="button" class="ld-btn ld-btn--outline ld-btn--block" onclick="if(window.__ldDesigner)window.__ldDesigner.addBlock(\'data\');">データブロックを追加</button></div>';
+                ? '<div class="ld-quickstart__desc">テンプレートを選ぶだけでプロ品質のデザインが完成します。<br>AI知識は不要。誰でもかんたんに使えます。</div><div class="ld-quickstart__actions"><button type="button" class="ld-btn ld-btn--primary ld-btn--block" onclick="if(window.__ldDesigner){var t=window.__ldDesigner.getTemplatesForTab(window.__ldDesigner.state.activeTab);if(t.length)window.__ldDesigner.applyTabTemplate(t[0]);}"><i class="fas fa-magic"></i> おすすめテンプレートを適用</button>' + wizardBtn + '<button type="button" class="ld-btn ld-btn--ghost ld-btn--block" onclick="if(window.__ldDesigner)window.__ldDesigner.addBlock(\'hero\');"><i class="fas fa-plus"></i> 白紙から始める</button></div>'
+                : '<div class="ld-quickstart__desc">右パネルから<strong>ブロックを追加</strong>してデザインを始めましょう。<br>ドラッグ＆ドロップにも対応しています。</div><div class="ld-quickstart__actions">' + wizardBtn + '<button type="button" class="ld-btn ld-btn--primary ld-btn--block" onclick="if(window.__ldDesigner)window.__ldDesigner.addBlock(\'hero\');"><i class="fas fa-plus"></i> ヒーローを追加</button><button type="button" class="ld-btn ld-btn--ghost ld-btn--block" onclick="if(window.__ldDesigner)window.__ldDesigner.addBlock(\'data\');"><i class="fas fa-database"></i> データブロックを追加</button></div>';
             c.innerHTML = '<div class="ld-quickstart"><i class="fas fa-wand-magic-sparkles ld-quickstart__icon"></i><div class="ld-quickstart__title">「' + this.esc(tabLabel) + '」画面をデザイン</div>' + hint + '</div>';
             window.__ldDesigner = this;
             return;
@@ -1021,8 +1022,8 @@ class LiffDesigner {
         return window.LiffDesignerModules.templateManager.getPrimaryDeviceLabel.call(this, tpl);
     }
 
-    applySuperPattern(pattern) {
-        return window.LiffDesignerModules.templateManager.applySuperPattern.call(this, pattern);
+    applySuperPattern(pattern, skipConfirm) {
+        return window.LiffDesignerModules.templateManager.applySuperPattern.call(this, pattern, skipConfirm);
     }
 
     exportJson() {
@@ -1035,6 +1036,28 @@ class LiffDesigner {
 
     openPreview() {
         return window.LiffDesignerModules.io.openPreview.call(this);
+    }
+
+    /* ========== Onboarding & Help ========== */
+
+    shouldShowOnboarding() {
+        return window.LiffDesignerModules.onboarding.shouldShowOnboarding.call(this);
+    }
+
+    showOnboarding() {
+        return window.LiffDesignerModules.onboarding.showOnboarding.call(this);
+    }
+
+    showHelpOverlay() {
+        return window.LiffDesignerModules.onboarding.showHelpOverlay.call(this);
+    }
+
+    renderTemplateVisualPreview(tpl, scope) {
+        return window.LiffDesignerModules.templateManager.renderTemplateVisualPreview.call(this, tpl, scope);
+    }
+
+    get INDUSTRY_PRESETS() {
+        return window.LiffDesignerModules.onboarding.INDUSTRY_PRESETS;
     }
 
     getAdminProjectKey() {

@@ -87,6 +87,7 @@ window.LiffDesignerModules.templateManager = {
                     : 'data-template-id="' + this.esc(tpl.id || String(i)) + '"';
                 const actionLabel = state.scope === 'super' ? '全タブに適用' : 'このタブに適用';
                 const desc = tpl.description || (state.scope === 'super' ? '全タブに統一デザインを適用します。' : 'テンプレ中心でノーコード編集できます。');
+                const visualPreview = this.renderTemplateVisualPreview(tpl, state.scope);
                 return (
                     '<div class="ld-template-card">' +
                         '<div>' +
@@ -98,11 +99,7 @@ window.LiffDesignerModules.templateManager = {
                             '<span class="ld-template-card__tag">対象: ' + this.esc(targetTabs) + '</span>' +
                             '<span class="ld-template-card__tag">要素数: ' + count + '</span>' +
                         '</div>' +
-                        '<div class="ld-template-card__preview">' +
-                            '<span class="ld-template-card__line wide"></span>' +
-                            '<span class="ld-template-card__line mid"></span>' +
-                            '<span class="ld-template-card__line short"></span>' +
-                        '</div>' +
+                        visualPreview +
                         '<div class="ld-template-card__supports">' + badge + '</div>' +
                         '<button type="button" class="ld-btn ' + applyBtnClass + ' ld-btn--block" ' + actionAttr + '>' + actionLabel + '</button>' +
                     '</div>'
@@ -282,6 +279,42 @@ window.LiffDesignerModules.templateManager = {
         document.body.appendChild(ov);
     },
 
+    renderTemplateVisualPreview(tpl, scope) {
+        var blocks = [];
+        if (scope === 'super' && tpl.layouts && typeof tpl.layouts === 'object') {
+            blocks = Array.isArray(tpl.layouts.home) ? tpl.layouts.home : [];
+        } else if (Array.isArray(tpl.blocks)) {
+            blocks = tpl.blocks;
+        }
+        var previewBlocks = blocks.slice(0, 4);
+        if (previewBlocks.length === 0) {
+            return '<div class="ld-template-card__preview"><span class="ld-template-card__line wide"></span><span class="ld-template-card__line mid"></span></div>';
+        }
+        var blockColorMap = {
+            hero: { bg: 'linear-gradient(135deg, #667eea, #764ba2)', color: '#fff', cls: '--hero' },
+            button: { bg: '#06C755', color: '#fff', cls: '--button' },
+            banner: { bg: '#3b82f6', color: '#fff', cls: '--banner' },
+            data: { bg: '#fff', color: '#6b7280', cls: '--data' },
+        };
+        var html = '<div class="ld-template-card__visual">';
+        html += '<div class="ld-template-card__visual-header" style="background:linear-gradient(135deg,#667eea,#764ba2)">ホーム</div>';
+        html += '<div class="ld-template-card__visual-blocks">';
+        for (var j = 0; j < previewBlocks.length; j++) {
+            var b = previewBlocks[j];
+            var bt = this.BLOCK_TYPES.find(function(x) { return x.type === (b.type || 'text'); });
+            var label = bt ? bt.label : (b.type || 'text');
+            var icon = bt ? bt.icon : 'fa-cube';
+            var cm = blockColorMap[b.type || ''];
+            var cls = cm ? ' ld-template-card__visual-block' + cm.cls : '';
+            html += '<div class="ld-template-card__visual-block' + cls + '"><i class="fas ' + icon + '"></i> ' + this.esc(label) + '</div>';
+        }
+        if (blocks.length > 4) {
+            html += '<div class="ld-template-card__visual-block" style="justify-content:center;color:#9ca3af;font-style:italic">+' + (blocks.length - 4) + ' ブロック</div>';
+        }
+        html += '</div></div>';
+        return html;
+    },
+
     getTemplateCategoryLabel(key) {
         const labels = {
             all: 'すべて',
@@ -307,8 +340,8 @@ window.LiffDesignerModules.templateManager = {
         return (this.DEVICE_PROFILES[first] || { label: first }).label;
     },
 
-    applySuperPattern(pattern) {
-        if (!confirm('現在の全タブレイアウトを上書きします。適用しますか？')) {
+    applySuperPattern(pattern, skipConfirm) {
+        if (!skipConfirm && !confirm('現在の全タブレイアウトを上書きします。適用しますか？')) {
             return;
         }
 
