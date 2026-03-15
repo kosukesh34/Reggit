@@ -1,7 +1,7 @@
 // デフォルト値（#include がビルド環境で解決されない場合のフォールバック）
-LIFF_BASE_URL = https://unadministrable-idiocratically-annalee.ngrok-free.dev
-LIFF_BASE_URL_IOS = https://unadministrable-idiocratically-annalee.ngrok-free.dev
-LIFF_BASE_URL_ANDROID = http://10.0.2.2:8080
+LIFF_BASE_URL = https://reggit.shop
+LIFF_BASE_URL_IOS = https://reggit.shop
+LIFF_BASE_URL_ANDROID = https://reggit.shop
 #include "../Skip.env"
 
 // LIFF のベースURL（Skip.env の LIFF_BASE_URL を Info.plist に渡す）

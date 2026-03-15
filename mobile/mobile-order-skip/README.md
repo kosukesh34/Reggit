@@ -27,6 +27,35 @@ ngrok のURLを変更したときは、次のいずれかを実行してくだ�
    ```
 2. 手動で `mobile/mobile-order-skip/Skip.env` の `LIFF_BASE_URL` を `.env` の `APP_URL` と同じ値に編集する。
 
+### AWS（本番）向けに接続して起動する
+
+接続先を **AWS EB**（ngrok ではなく）にして iPad や実機で動作確認する手順です。
+
+1. **接続先を AWS EB にしておく**  
+   `Skip.env` の `LIFF_BASE_URL` / `LIFF_BASE_URL_IOS` が **http://Reggit.ap-northeast-3.elasticbeanstalk.com** になっていることを確認。独自ドメイン運用時は `https://reggit.shop` に変更可。
+
+2. **パッケージ解決**
+   ```bash
+   cd mobile/mobile-order-skip
+   swift package resolve
+   ```
+
+3. **Xcode で開く**
+   ```bash
+   open Project.xcworkspace
+   ```
+
+4. **iPad / 実機を選んでビルド・起動**
+   - メニュー **Product** → **Destination** で接続した iPad または実機を選択。
+   - **Run (⌘R)** でビルドし、実機にインストールして起動する。
+   - 実機は **開発元を信頼**（設定 → 一般 → VPNとデバイス管理）が必要な場合があります。
+
+5. **動作確認**
+   - アプリ起動後、WebView が `LIFF_BASE_URL`（http://Reggit.ap-northeast-3.elasticbeanstalk.com）の LIFF を表示する。
+   - 商品一覧・注文・会員などが表示されれば AWS 接続は成功。
+
+ローカル（ngrok）に戻すときは、`Skip.env` の `LIFF_BASE_URL` を `.env` の `APP_URL`（ngrok の URL）に戻し、再度ビルドする。
+
 ## プロジェクト/画面固定の設定
 
 `Skip.env` で、表示するプロジェクトと固定タブを指定できます。
