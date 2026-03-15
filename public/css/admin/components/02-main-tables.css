@@ -320,19 +320,19 @@
 }
 
 .btn-action.btn-danger {
-    background: #fff;
-    color: var(--danger);
-    border: 1px solid #fecaca;
+    background: var(--danger);
+    color: #fff;
+    border: 1px solid var(--danger);
 }
 
 .btn-action.btn-danger:hover {
-    background: #fef2f2;
-    border-color: var(--danger);
-    box-shadow: 0 2px 6px rgba(220, 38, 38, 0.15);
+    background: var(--danger-hover);
+    border-color: var(--danger-hover);
+    box-shadow: 0 2px 6px rgba(220, 38, 38, 0.3);
 }
 
 .btn-action.btn-danger i {
-    color: var(--danger) !important;
+    color: #fff !important;
 }
 
 /* ===== Info Box ===== */
