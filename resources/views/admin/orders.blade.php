@@ -4,6 +4,11 @@
 @section('page-title', '注文管理')
 
 @section('content')
+<div class="page-header">
+    <h1 class="page-header-title"><i class="fas fa-shopping-cart"></i> 注文管理</h1>
+    <p class="page-header-desc">注文の確認とステータス管理を行います</p>
+</div>
+
 <div class="card">
     <div class="card-header">
         <h3 class="card-title"><i class="fas fa-filter"></i> ステータスフィルター</h3>
@@ -50,75 +55,77 @@
 <div class="card">
     <div class="card-header">
         <h3 class="card-title"><i class="fas fa-list"></i> 注文一覧</h3>
+        <span class="card-header-note">{{ $orders->total() }}件</span>
     </div>
-    <table class="table">
-        <thead>
-            <tr>
-                <th>注文番号</th>
-                <th>ユーザー</th>
-                <th>金額</th>
-                <th>支払い方法</th>
-                <th>ステータス</th>
-                <th>日時</th>
-                <th class="table-actions-cell">操作</th>
-            </tr>
-        </thead>
-        <tbody>
-            @forelse($orders as $order)
-            <tr>
-                <td><a href="{{ admin_route('admin.orders.detail', ['id' => $order->id]) }}">{{ $order->order_number }}</a></td>
-                <td>{{ $order->user->name ?? 'N/A' }}</td>
-                <td>¥{{ number_format($order->total_amount) }}</td>
-                <td>{{ $order->payment_method ?? 'N/A' }}</td>
-                <td>
-                    @php
-                        $statusLabels = [
-                            'pending' => '未処理',
-                            'confirmed' => '確認済み',
-                            'preparing' => '準備中',
-                            'ready' => '準備完了',
-                            'completed' => '完了',
-                            'cancelled' => 'キャンセル',
-                        ];
-                        $statusColors = [
-                            'pending' => 'warning',
-                            'confirmed' => 'info',
-                            'preparing' => 'info',
-                            'ready' => 'info',
-                            'completed' => 'success',
-                            'cancelled' => 'danger',
-                        ];
-                    @endphp
-                    <span class="badge badge-{{ $statusColors[$order->status] ?? 'info' }}">
-                        {{ $statusLabels[$order->status] ?? $order->status }}
-                    </span>
-                </td>
-                <td>{{ $order->created_at->format('Y/m/d H:i') }}</td>
-                <td class="table-actions-cell">
-                    <div class="table-actions">
-                        <a href="{{ admin_route('admin.orders.detail', ['id' => $order->id]) }}" class="btn btn-action btn-edit"><i class="fas fa-eye"></i> 詳細</a>
-                        @if($order->status !== 'completed' && $order->status !== 'cancelled')
-                        <form action="{{ admin_route('admin.orders.complete', ['id' => $order->id]) }}" method="POST" class="d-inline" onsubmit="return confirm('この注文を完了にしますか？')">
-                            @csrf
-                            <button type="submit" class="btn btn-action btn-success"><i class="fas fa-check-double"></i> 完了</button>
-                        </form>
-                        @endif
-                    </div>
-                </td>
-            </tr>
-            @empty
-            <tr>
-                <td colspan="7" class="empty-state">
-                    <i class="fas fa-inbox"></i>
-                    <p>注文がありません</p>
-                </td>
-            </tr>
-            @endforelse
-        </tbody>
-    </table>
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>注文番号</th>
+                    <th>ユーザー</th>
+                    <th>金額</th>
+                    <th>支払い方法</th>
+                    <th>ステータス</th>
+                    <th>日時</th>
+                    <th class="table-actions-cell">操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($orders as $order)
+                <tr>
+                    <td><a href="{{ admin_route('admin.orders.detail', ['id' => $order->id]) }}">{{ $order->order_number }}</a></td>
+                    <td>{{ $order->user->name ?? 'N/A' }}</td>
+                    <td><strong>¥{{ number_format($order->total_amount) }}</strong></td>
+                    <td>{{ $order->payment_method ?? 'N/A' }}</td>
+                    <td>
+                        @php
+                            $statusLabels = [
+                                'pending' => '未処理',
+                                'confirmed' => '確認済み',
+                                'preparing' => '準備中',
+                                'ready' => '準備完了',
+                                'completed' => '完了',
+                                'cancelled' => 'キャンセル',
+                            ];
+                            $statusColors = [
+                                'pending' => 'warning',
+                                'confirmed' => 'info',
+                                'preparing' => 'info',
+                                'ready' => 'info',
+                                'completed' => 'success',
+                                'cancelled' => 'danger',
+                            ];
+                        @endphp
+                        <span class="badge badge-{{ $statusColors[$order->status] ?? 'info' }}">
+                            {{ $statusLabels[$order->status] ?? $order->status }}
+                        </span>
+                    </td>
+                    <td>{{ $order->created_at->format('Y/m/d H:i') }}</td>
+                    <td class="table-actions-cell">
+                        <div class="table-actions">
+                            <a href="{{ admin_route('admin.orders.detail', ['id' => $order->id]) }}" class="btn btn-action btn-edit"><i class="fas fa-eye"></i> 詳細</a>
+                            @if($order->status !== 'completed' && $order->status !== 'cancelled')
+                            <form action="{{ admin_route('admin.orders.complete', ['id' => $order->id]) }}" method="POST" class="d-inline" onsubmit="return confirm('この注文を完了にしますか？')">
+                                @csrf
+                                <button type="submit" class="btn btn-action btn-success"><i class="fas fa-check-double"></i> 完了</button>
+                            </form>
+                            @endif
+                        </div>
+                    </td>
+                </tr>
+                @empty
+                <tr>
+                    <td colspan="7" class="empty-state">
+                        <i class="fas fa-inbox"></i>
+                        <p>注文がありません</p>
+                    </td>
+                </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
     <div class="pagination">
         {{ $orders->links('vendor.pagination.admin') }}
     </div>
 </div>
 @endsection
-
