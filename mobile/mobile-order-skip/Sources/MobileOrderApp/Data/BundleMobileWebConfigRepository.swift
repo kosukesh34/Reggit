@@ -95,7 +95,7 @@ struct BundleMobileWebConfigRepository: MobileWebConfigRepository {
         return trimmed
     }
 
-    private static let fallbackBaseUrlIOS = "https://unadministrable-idiocratically-annalee.ngrok-free.dev"
+    private static let fallbackBaseUrlIOS = "https://reggit.shop"
 
     private func defaultBaseUrl() -> String {
         if isAndroidRuntime() {
