@@ -8,13 +8,24 @@ use Illuminate\Database\Seeder;
 
 class AdminUserSeeder extends Seeder
 {
+    /** .env で # がコメント扱いされて切れた場合でもドキュメント通りのパスワードで作成する */
+    public static function demoSystemPassword(): string
+    {
+        $p = env('DEMO_SYSTEM_PASSWORD');
+        if ($p === null || $p === '' || $p === 'DemoSys') {
+            return 'DemoSys#2026';
+        }
+
+        return $p;
+    }
+
     public function run(): void
     {
         // .env の認証情報でシステム管理者を1件必ず作成/更新（DEMO_SEED 時は DEMO_SYSTEM_*、それ以外は ADMIN_*）
         $useDemo = filter_var(env('DEMO_SEED', false), FILTER_VALIDATE_BOOLEAN);
         if ($useDemo) {
             $loginId = env('DEMO_SYSTEM_LOGIN_ID', 'demo_sys');
-            $password = env('DEMO_SYSTEM_PASSWORD', 'DemoSys#2026');
+            $password = self::demoSystemPassword();
             $name = env('DEMO_SYSTEM_NAME', 'デモシステム管理者');
             $email = env('DEMO_SYSTEM_EMAIL', $loginId.'@example.com');
         } else {

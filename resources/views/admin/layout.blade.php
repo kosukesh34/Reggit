@@ -12,8 +12,10 @@
 </head>
 <body>
     <div class="admin-container">
-        
-        <aside class="sidebar">
+
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+        <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <h1><i class="fas fa-store"></i> 管理画面</h1>
             </div>
@@ -238,22 +240,22 @@
             </nav>
         </aside>
 
-        
         <main class="main-content">
             <header class="content-header content-header-with-actions">
                 <div class="content-header-title-wrap">
+                    <button type="button" class="sidebar-toggle" id="sidebarToggle" aria-label="メニューを開く">
+                        <i class="fas fa-bars"></i>
+                    </button>
                     <h2>@yield('page-title', 'ダッシュボード')</h2>
                     @if(request()->routeIs('system-admin.*'))
-                        <span class="badge badge-warning">システム管理モード</span>
-                    @else
-                        <span class="badge badge-info">店舗管理モード</span>
+                        <span class="badge badge-warning">システム管理</span>
                     @endif
                 </div>
                 @auth('admin')
                 <div class="content-header-actions">
                     @if(auth('admin')->user()->isSystemAdmin() && !request()->routeIs('system-admin.*'))
                     <a href="{{ route('system-admin.dashboard') }}" class="btn btn-sm btn-outline-primary" title="システム管理画面へ">
-                        <i class="fas fa-shield-alt"></i> システム管理
+                        <i class="fas fa-shield-alt"></i> <span class="hide-mobile">システム管理</span>
                     </a>
                     @endif
                     <span class="content-header-user" title="{{ auth('admin')->user()->name }}">
@@ -263,7 +265,9 @@
                     </span>
                     <form action="{{ request()->routeIs('system-admin.*') ? route('system-admin.logout') : route('admin.logout') }}" method="POST" class="content-header-logout-form" onsubmit="return confirm('ログアウトしますか？');">
                         @csrf
-                        <button type="submit" class="btn btn-sm btn-outline-secondary">ログアウト</button>
+                        <button type="submit" class="btn btn-sm btn-outline-secondary">
+                            <i class="fas fa-sign-out-alt"></i> <span class="hide-mobile">ログアウト</span>
+                        </button>
                     </form>
                 </div>
                 @endauth
@@ -284,5 +288,48 @@
             </div>
         </main>
     </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var toggle = document.getElementById('sidebarToggle');
+        var sidebar = document.getElementById('sidebar');
+        var overlay = document.getElementById('sidebarOverlay');
+
+        function openSidebar() {
+            sidebar.classList.add('is-open');
+            overlay.classList.add('is-visible');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeSidebar() {
+            sidebar.classList.remove('is-open');
+            overlay.classList.remove('is-visible');
+            document.body.style.overflow = '';
+        }
+
+        if (toggle) {
+            toggle.addEventListener('click', function() {
+                if (sidebar.classList.contains('is-open')) {
+                    closeSidebar();
+                } else {
+                    openSidebar();
+                }
+            });
+        }
+
+        if (overlay) {
+            overlay.addEventListener('click', closeSidebar);
+        }
+
+        var sidebarLinks = sidebar.querySelectorAll('.nav-item');
+        sidebarLinks.forEach(function(link) {
+            link.addEventListener('click', function() {
+                if (window.innerWidth <= 768) {
+                    closeSidebar();
+                }
+            });
+        });
+    });
+    </script>
 </body>
 </html>

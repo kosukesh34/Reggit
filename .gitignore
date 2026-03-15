@@ -11,3 +11,6 @@
 /ios/build/
 **/xcuserdata/
 *.xcuserstate
+
+# EB デプロイ用 zip（ビルド成果物）
+deploy-docker.zip
