@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\AdminUser;
+use Database\Seeders\AdminUserSeeder;
 use Illuminate\Console\Command;
 
 class AdminSyncPasswordCommand extends Command
@@ -27,7 +28,7 @@ class AdminSyncPasswordCommand extends Command
         }
 
         $password = $loginId === env('DEMO_SYSTEM_LOGIN_ID', 'demo_sys')
-            ? env('DEMO_SYSTEM_PASSWORD', 'DemoSys#2026')
+            ? AdminUserSeeder::demoSystemPassword()
             : env('ADMIN_PASSWORD', 'reserve');
 
         if ($password === '' || $password === null) {

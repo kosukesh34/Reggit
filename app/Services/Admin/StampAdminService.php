@@ -44,6 +44,16 @@ class StampAdminService
      */
     private function normalizePayload(array $data): array
     {
+        $data = $this->normalizeMilestones($data);
+        $data = $this->normalizeCardImage($data);
+        $data = $this->normalizeStampImages($data);
+
+        return $data;
+    }
+
+    /** @param array<string, mixed> $data */
+    private function normalizeMilestones(array $data): array
+    {
         $milestones = $data['reward_milestones'] ?? null;
         if (is_array($milestones)) {
             $normalized = [];
@@ -74,5 +84,89 @@ class StampAdminService
         }
 
         return $data;
+    }
+
+    /** @param array<string, mixed> $data */
+    private function normalizeCardImage(array $data): array
+    {
+        $imageData = $data['image_data'] ?? null;
+        unset($data['image_data']);
+
+        if (is_string($imageData) && $imageData !== '') {
+            if (str_starts_with($imageData, 'data:image/')) {
+                $url = $this->saveBase64Image($imageData, 'card');
+                if ($url !== null) {
+                    $data['image_url'] = $url;
+                }
+            } elseif (str_starts_with($imageData, 'http')) {
+                $data['image_url'] = $imageData;
+            }
+        }
+
+        return $data;
+    }
+
+    /** @param array<string, mixed> $data */
+    private function normalizeStampImages(array $data): array
+    {
+        $raw = $data['stamp_images_data'] ?? null;
+        unset($data['stamp_images_data']);
+
+        if (! is_string($raw) || $raw === '') {
+            return $data;
+        }
+
+        $decoded = json_decode($raw, true);
+        if (! is_array($decoded)) {
+            return $data;
+        }
+
+        $processed = [];
+        foreach ($decoded as $position => $imageData) {
+            if (! is_string($imageData) || $imageData === '') {
+                continue;
+            }
+
+            if (str_starts_with($imageData, 'data:image/')) {
+                $url = $this->saveBase64Image($imageData, 'stamp_' . $position);
+                if ($url !== null) {
+                    $processed[(string) $position] = $url;
+                }
+            } elseif (str_starts_with($imageData, 'http') || str_starts_with($imageData, '/uploads/')) {
+                $processed[(string) $position] = $imageData;
+            }
+        }
+
+        $data['stamp_images'] = $processed !== [] ? $processed : null;
+
+        return $data;
+    }
+
+    private function saveBase64Image(string $dataUrl, string $prefix = 'stamp'): ?string
+    {
+        if (! preg_match('/^data:image\/(png|jpe?g|gif|webp);base64,/', $dataUrl, $matches)) {
+            return null;
+        }
+
+        $ext = $matches[1];
+        if ($ext === 'jpeg') {
+            $ext = 'jpg';
+        }
+
+        $base64 = substr($dataUrl, strpos($dataUrl, ',') + 1);
+        $binary = base64_decode($base64, true);
+        if ($binary === false || strlen($binary) > 5 * 1024 * 1024) {
+            return null;
+        }
+
+        $dir = public_path('uploads/stamps');
+        if (! is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+
+        $filename = $prefix . '_' . uniqid() . '.' . $ext;
+        file_put_contents($dir . '/' . $filename, $binary);
+
+        return '/uploads/stamps/' . $filename;
     }
 }

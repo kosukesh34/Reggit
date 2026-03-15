@@ -4,8 +4,11 @@
 @section('page-title', '会員管理')
 
 @section('content')
+<div class="page-header">
+    <h1 class="page-header-title"><i class="fas fa-users"></i> 会員管理</h1>
+    <p class="page-header-desc">会員情報の検索・管理を行います</p>
+</div>
 
-{{-- 検索・フィルター --}}
 <div class="card card-mb-16">
     <div class="card-header">
         <h3 class="card-title"><i class="fas fa-search"></i> 検索・絞り込み</h3>
@@ -38,7 +41,7 @@
 
 <div class="card">
     <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-users"></i> 会員一覧</h3>
+        <h3 class="card-title"><i class="fas fa-id-card"></i> 会員一覧</h3>
         <div class="card-header-actions">
             <span class="card-header-note">{{ $members->total() }}件</span>
             <a href="{{ admin_route('admin.members.export', $filters) }}" class="btn btn-sm btn-secondary">
@@ -46,54 +49,55 @@
             </a>
         </div>
     </div>
-    <table class="table">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>会員番号</th>
-                <th>ユーザー名</th>
-                <th>ポイント</th>
-                <th>ステータス</th>
-                <th>登録日</th>
-                <th class="table-actions-cell">操作</th>
-            </tr>
-        </thead>
-        <tbody>
-            @forelse($members as $member)
-            <tr>
-                <td><span class="id-badge">{{ $member->id }}</span></td>
-                <td><code class="member-number">{{ $member->member_number }}</code></td>
-                <td>{{ $member->user->name ?? 'N/A' }}</td>
-                <td>{{ number_format($member->points) }}pt</td>
-                <td>
-                    <span class="badge badge-{{ $member->status === 'active' ? 'success' : 'danger' }}">
-                        {{ $member->status === 'active' ? '有効' : '無効' }}
-                    </span>
-                </td>
-                <td>{{ $member->created_at->format('Y/m/d') }}</td>
-                <td class="table-actions-cell">
-                    <div class="table-actions">
-                        <a href="{{ admin_route('admin.members.detail', ['id' => $member->id]) }}" class="btn btn-action btn-edit"><i class="fas fa-eye"></i> 詳細</a>
-                    </div>
-                </td>
-            </tr>
-            @empty
-            <tr>
-                <td colspan="7" class="empty-state">
-                    <i class="fas fa-user-slash"></i>
-                    <p>
-                        @if(collect($filters)->filter()->isNotEmpty())
-                            検索条件に一致する会員がいません
-                        @else
-                            会員がありません
-                        @endif
-                    </p>
-                </td>
-            </tr>
-            @endforelse
-        </tbody>
-    </table>
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>会員番号</th>
+                    <th>ユーザー名</th>
+                    <th>ポイント</th>
+                    <th>ステータス</th>
+                    <th>登録日</th>
+                    <th class="table-actions-cell">操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($members as $member)
+                <tr>
+                    <td><span class="id-badge">{{ $member->id }}</span></td>
+                    <td><code class="member-number">{{ $member->member_number }}</code></td>
+                    <td><strong>{{ $member->user->name ?? 'N/A' }}</strong></td>
+                    <td>{{ number_format($member->points) }}pt</td>
+                    <td>
+                        <span class="badge badge-{{ $member->status === 'active' ? 'success' : 'danger' }}">
+                            {{ $member->status === 'active' ? '有効' : '無効' }}
+                        </span>
+                    </td>
+                    <td>{{ $member->created_at->format('Y/m/d') }}</td>
+                    <td class="table-actions-cell">
+                        <div class="table-actions">
+                            <a href="{{ admin_route('admin.members.detail', ['id' => $member->id]) }}" class="btn btn-action btn-edit"><i class="fas fa-eye"></i> 詳細</a>
+                        </div>
+                    </td>
+                </tr>
+                @empty
+                <tr>
+                    <td colspan="7" class="empty-state">
+                        <i class="fas fa-user-slash"></i>
+                        <p>
+                            @if(collect($filters)->filter()->isNotEmpty())
+                                検索条件に一致する会員がいません
+                            @else
+                                会員がありません
+                            @endif
+                        </p>
+                    </td>
+                </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
     {{ $members->appends($filters)->links('vendor.pagination.admin') }}
 </div>
 @endsection
-
