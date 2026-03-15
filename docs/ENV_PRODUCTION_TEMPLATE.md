@@ -22,6 +22,28 @@
 
 ---
 
+## アクセスポイント一覧（本番: https://reggit.shop）
+
+本番のベースURLを **https://reggit.shop** とするときの主要な URL 一覧。**https://www.reggit.shop** でも同じパスでアクセス可能（DNS で www も同一 ALB に向けている場合）。
+
+| 用途 | URL（本番） |
+|------|-------------|
+| **トップ・モバイルオーダー** | https://reggit.shop |
+| **LIFF（プロジェクト指定）** | https://reggit.shop/liff/default |
+| **管理画面ログイン** | https://reggit.shop/admin/login |
+| **システム管理ログイン** | https://reggit.shop/system-admin/login |
+| **API ベース** | https://reggit.shop/api |
+| **アプリ設定取得（モバイル用）** | https://reggit.shop/api/v1/app-config?project_key=default |
+| **LINE Webhook** | https://reggit.shop/api/line/webhook |
+| **スマレジ 利用者契約通知** | https://reggit.shop/api/smaregi/idp |
+| **スマレジ Webhook** | https://reggit.shop/api/smaregi/webhook |
+| **Stripe Webhook** | https://reggit.shop/api/payment/webhook |
+| **デバイス登録** | https://reggit.shop/api/devices/register |
+
+**EB 環境プロパティ**の **APP_URL** は `https://reggit.shop` に設定する。スマレジ・LINE・Stripe の管理画面で登録する URL も上記のとおり。
+
+---
+
 ## AWS（Elastic Beanstalk 環境プロパティで設定）
 
 | 名前 | 説明 | 例（値は伏せてメモ） |
