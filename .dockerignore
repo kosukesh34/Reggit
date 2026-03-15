@@ -1,0 +1,15 @@
+# EB ビルド時のコンテキストを軽くするため
+.git
+.env
+.env.*
+node_modules
+tests
+docs
+.phpunit.result.cache
+docker-compose.yml
+*.md
+storage/logs/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+mobile/
