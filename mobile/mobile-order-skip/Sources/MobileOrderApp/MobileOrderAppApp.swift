@@ -18,6 +18,7 @@ let logger: Logger = Logger(subsystem: "jp.gamechanger.mobileorder", category: "
 
 /* SKIP @bridge */public final class MobileOrderAppAppDelegate : Sendable {
     /* SKIP @bridge */public static let shared = MobileOrderAppAppDelegate()
+    private static let pushTokenKey = "mobile_order_push_token"
 
     private init() {
     }
@@ -53,6 +54,7 @@ let logger: Logger = Logger(subsystem: "jp.gamechanger.mobileorder", category: "
     /* SKIP @bridge */public func onPushTokenReceived(_ token: String) {
         let trimmed = token.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
+        UserDefaults.standard.set(trimmed, forKey: Self.pushTokenKey)
         NotificationCenter.default.post(
             name: .oneSignalPushTokenDidUpdate,
             object: nil,

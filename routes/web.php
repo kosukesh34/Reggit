@@ -48,6 +48,11 @@ Route::get('/api', function () {
     return response()->json(['message' => 'reggit API']);
 });
 
+// ELB / ロードバランサー用ヘルスチェック（EB の「パス」を /health に設定すること）
+Route::get('/health', function () {
+    return response('ok', 200, ['Content-Type' => 'text/plain']);
+});
+
 // ========== LIFF ==========
 Route::prefix('liff')->middleware('bind.project')->group(function () {
     Route::get('/', [LiffController::class, 'index'])->name('liff.index');
