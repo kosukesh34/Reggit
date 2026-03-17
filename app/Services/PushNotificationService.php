@@ -59,6 +59,51 @@ class PushNotificationService
         return $result;
     }
 
+    /** @return array{target_tokens:int,sent:int,failed:int,skipped:int} */
+    public function sendQueueCalledToUser(int $projectId, int $userId, string $queueNumber): array
+    {
+        $tokens = UserDevice::query()
+            ->where('project_id', $projectId)
+            ->where('user_id', $userId)
+            ->whereNotNull('push_token')
+            ->where('push_token', '!=', '')
+            ->pluck('push_token')
+            ->map(fn ($token) => trim((string) $token))
+            ->filter(fn ($token) => $token !== '')
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($tokens === []) {
+            return ['target_tokens' => 0, 'sent' => 0, 'failed' => 0, 'skipped' => 0];
+        }
+
+        $title = '順番待ちのお知らせ';
+        $body = sprintf('順番が近づきました。受付番号: %s', $queueNumber);
+        $data = [
+            'type' => 'queue_called',
+            'queue_number' => (string) $queueNumber,
+            'project_id' => (string) $projectId,
+        ];
+
+        if ($this->isOneSignalEnabled()) {
+            return $this->sendOneSignalPush($tokens, $title, $body, $data);
+        }
+
+        LogHelper::warning('[Push] Queue call push skipped (OneSignal not enabled)', [
+            'project_id' => $projectId,
+            'user_id' => $userId,
+            'target_tokens' => count($tokens),
+        ]);
+
+        return [
+            'target_tokens' => count($tokens),
+            'sent' => 0,
+            'failed' => 0,
+            'skipped' => count($tokens),
+        ];
+    }
+
     /**
      * OneSignal でお知らせ配信（subscription_id は user_devices.push_token に保存されている想定）
      *
@@ -67,17 +112,30 @@ class PushNotificationService
      */
     private function sendAnnouncementViaOneSignal(Announcement $announcement, array $subscriptionIds): array
     {
+        return $this->sendOneSignalPush(
+            $subscriptionIds,
+            (string) $announcement->title,
+            (string) ($announcement->body ?? ''),
+            [
+                'announcement_id' => (string) $announcement->id,
+                'project_id' => (string) $announcement->project_id,
+                'delivery_type' => (string) $announcement->delivery_type,
+            ]
+        );
+    }
+
+    /**
+     * @param  list<string>  $subscriptionIds
+     * @param  array<string,string>  $data
+     * @return array{target_tokens:int,sent:int,failed:int,skipped:int}
+     */
+    private function sendOneSignalPush(array $subscriptionIds, string $title, string $body, array $data): array
+    {
         $appId = trim((string) config('push.onesignal.app_id'));
         $apiKey = trim((string) config('push.onesignal.api_key'));
         $apiUrl = rtrim((string) config('push.onesignal.api_url'), '/');
 
         if ($appId === '' || $apiKey === '') {
-            LogHelper::warning('[Push] OneSignal skipped (app_id or api_key missing)', [
-                'announcement_id' => $announcement->id,
-                'project_id' => $announcement->project_id,
-                'target_tokens' => count($subscriptionIds),
-            ]);
-
             return [
                 'target_tokens' => count($subscriptionIds),
                 'sent' => 0,
@@ -100,21 +158,16 @@ class PushNotificationService
                         'app_id' => $appId,
                         'include_subscription_ids' => $chunk,
                         'target_channel' => 'push',
-                        'headings' => ['en' => (string) $announcement->title],
-                        'contents' => ['en' => (string) ($announcement->body ?? '')],
-                        'data' => [
-                            'announcement_id' => (string) $announcement->id,
-                            'project_id' => (string) $announcement->project_id,
-                            'delivery_type' => (string) $announcement->delivery_type,
-                        ],
+                        'headings' => ['en' => $title],
+                        'contents' => ['en' => $body],
+                        'data' => $data,
                     ],
                 ]);
             } catch (\Throwable $e) {
                 LogHelper::error('[Push] OneSignal request failed', [
-                    'announcement_id' => $announcement->id,
-                    'project_id' => $announcement->project_id,
                     'error' => $e->getMessage(),
                     'chunk_size' => count($chunk),
+                    'title' => $title,
                 ]);
                 $totalFailed += count($chunk);
 
@@ -125,15 +178,6 @@ class PushNotificationService
             $recipients = $payload['recipients'] ?? 0;
             $totalSent += (int) $recipients;
             $totalFailed += count($chunk) - (int) $recipients;
-        }
-
-        if ($totalFailed > 0) {
-            LogHelper::warning('[Push] OneSignal partial failure', [
-                'announcement_id' => $announcement->id,
-                'project_id' => $announcement->project_id,
-                'sent' => $totalSent,
-                'failed' => $totalFailed,
-            ]);
         }
 
         return [

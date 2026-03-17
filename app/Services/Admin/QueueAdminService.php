@@ -6,15 +6,22 @@ use App\Enums\QueueStatus;
 use App\Models\QueueCallLog;
 use App\Models\QueueEntry;
 use App\Services\Line\LineService;
+use App\Services\PushNotificationService;
 use App\Util\LogHelper;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
 class QueueAdminService
 {
-    public function __construct(
-        private LineService $lineService
-    ) {}
+    private LineService $lineService;
+
+    private PushNotificationService $pushNotificationService;
+
+    public function __construct(LineService $lineService, PushNotificationService $pushNotificationService)
+    {
+        $this->lineService = $lineService;
+        $this->pushNotificationService = $pushNotificationService;
+    }
 
     public function getPaginatedList(int $projectId, int $perPage = 50): LengthAwarePaginator
     {
@@ -65,6 +72,7 @@ class QueueAdminService
 
         if ($status === QueueStatus::CALLED) {
             $lineUserId = $entry->user?->line_user_id ?? $entry->member?->user?->line_user_id;
+            $notifyUserId = (int) ($entry->user_id ?? ($entry->member?->user_id ?? 0));
             $callLog = QueueCallLog::firstOrCreate(
                 ['queue_entry_id' => $entry->id],
                 [
@@ -77,6 +85,19 @@ class QueueAdminService
             );
             if ($callLog->wasRecentlyCreated === false) {
                 return;
+            }
+            if ($notifyUserId > 0) {
+                $queueNumber = (string) ($entry->queue_number ?? $entry->id);
+                $pushResult = $this->pushNotificationService->sendQueueCalledToUser((int) $entry->project_id, $notifyUserId, $queueNumber);
+                LogHelper::info('[Queue] native push result', [
+                    'queue_id' => $entry->id,
+                    'project_id' => (int) $entry->project_id,
+                    'user_id' => $notifyUserId,
+                    'target_tokens' => $pushResult['target_tokens'],
+                    'sent' => $pushResult['sent'],
+                    'failed' => $pushResult['failed'],
+                    'skipped' => $pushResult['skipped'],
+                ]);
             }
 
             if ($lineUserId === null || $lineUserId === '' || ! $this->isValidLineUserId($lineUserId)) {
