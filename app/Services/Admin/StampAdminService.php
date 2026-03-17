@@ -58,7 +58,7 @@ class StampAdminService
         if (is_array($milestones)) {
             $normalized = [];
             foreach ($milestones as $milestone) {
-                if (! is_array($milestone)) {
+                if (!is_array($milestone)) {
                     continue;
                 }
                 $stampCount = (int) ($milestone['stamp_count'] ?? 0);
@@ -112,23 +112,23 @@ class StampAdminService
         $raw = $data['stamp_images_data'] ?? null;
         unset($data['stamp_images_data']);
 
-        if (! is_string($raw) || $raw === '') {
+        if (!is_string($raw) || $raw === '') {
             return $data;
         }
 
         $decoded = json_decode($raw, true);
-        if (! is_array($decoded)) {
+        if (!is_array($decoded)) {
             return $data;
         }
 
         $processed = [];
         foreach ($decoded as $position => $imageData) {
-            if (! is_string($imageData) || $imageData === '') {
+            if (!is_string($imageData) || $imageData === '') {
                 continue;
             }
 
             if (str_starts_with($imageData, 'data:image/')) {
-                $url = $this->saveBase64Image($imageData, 'stamp_' . $position);
+                $url = $this->saveBase64Image($imageData, 'stamp_'.$position);
                 if ($url !== null) {
                     $processed[(string) $position] = $url;
                 }
@@ -144,7 +144,7 @@ class StampAdminService
 
     private function saveBase64Image(string $dataUrl, string $prefix = 'stamp'): ?string
     {
-        if (! preg_match('/^data:image\/(png|jpe?g|gif|webp);base64,/', $dataUrl, $matches)) {
+        if (!preg_match('/^data:image\/(png|jpe?g|gif|webp);base64,/', $dataUrl, $matches)) {
             return null;
         }
 
@@ -160,13 +160,13 @@ class StampAdminService
         }
 
         $dir = public_path('uploads/stamps');
-        if (! is_dir($dir)) {
+        if (!is_dir($dir)) {
             mkdir($dir, 0755, true);
         }
 
-        $filename = $prefix . '_' . uniqid() . '.' . $ext;
-        file_put_contents($dir . '/' . $filename, $binary);
+        $filename = $prefix.'_'.uniqid().'.'.$ext;
+        file_put_contents($dir.'/'.$filename, $binary);
 
-        return '/uploads/stamps/' . $filename;
+        return '/uploads/stamps/'.$filename;
     }
 }
