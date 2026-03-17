@@ -372,6 +372,75 @@ class ShopSettingLiffDefaults
                 ],
                 'custom_css' => '',
             ],
+            [
+                'id' => 'super-pattern-salon',
+                'name' => 'スーパターン: 美容サロン',
+                'scope' => 'all_tabs',
+                'category' => 'super',
+                'description' => '予約導線と会員管理を重視した、サロン・美容室向け構成です。',
+                'target_tabs' => ['home', 'products', 'orders', 'stamps', 'coupons', 'queue', 'reservations', 'member', 'gallery', 'announcements'],
+                'device_support' => ['line', 'ios', 'android'],
+                'layouts' => self::defaultLiffSalonPatternLayouts(),
+                'tab_settings' => [
+                    'home' => ['background_color' => '#fdf2f8'],
+                    'products' => ['background_color' => '#fef7fb'],
+                    'orders' => ['background_color' => '#faf5f9'],
+                    'stamps' => ['background_color' => '#fdf4fa'],
+                    'coupons' => ['background_color' => '#fef6fa'],
+                    'queue' => ['background_color' => '#faf6f9'],
+                    'reservations' => ['background_color' => '#fdf2f8'],
+                    'member' => ['background_color' => '#fef7fb'],
+                    'gallery' => ['background_color' => '#fdf5f9'],
+                    'announcements' => ['background_color' => '#faf6fa'],
+                ],
+                'custom_css' => '',
+            ],
+            [
+                'id' => 'super-pattern-retail',
+                'name' => 'スーパターン: 小売・物販ショップ',
+                'scope' => 'all_tabs',
+                'category' => 'super',
+                'description' => '商品訴求と会員ロイヤリティを軸にした、物販店向け構成です。',
+                'target_tabs' => ['home', 'products', 'orders', 'stamps', 'coupons', 'queue', 'reservations', 'member', 'gallery', 'announcements'],
+                'device_support' => ['line', 'ios', 'android'],
+                'layouts' => self::defaultLiffRetailPatternLayouts(),
+                'tab_settings' => [
+                    'home' => ['background_color' => '#f5f3ff'],
+                    'products' => ['background_color' => '#f7f5ff'],
+                    'orders' => ['background_color' => '#f4f3f9'],
+                    'stamps' => ['background_color' => '#f6f5ff'],
+                    'coupons' => ['background_color' => '#faf5ff'],
+                    'queue' => ['background_color' => '#f5f5f8'],
+                    'reservations' => ['background_color' => '#f4f5ff'],
+                    'member' => ['background_color' => '#f6f5fa'],
+                    'gallery' => ['background_color' => '#f7f6ff'],
+                    'announcements' => ['background_color' => '#f5f5fa'],
+                ],
+                'custom_css' => '',
+            ],
+            [
+                'id' => 'super-pattern-fitness',
+                'name' => 'スーパターン: フィットネス・ジム',
+                'scope' => 'all_tabs',
+                'category' => 'super',
+                'description' => '予約管理と会員ステータスを中心にした、ジム・スタジオ向け構成です。',
+                'target_tabs' => ['home', 'products', 'orders', 'stamps', 'coupons', 'queue', 'reservations', 'member', 'gallery', 'announcements'],
+                'device_support' => ['line', 'ios', 'android'],
+                'layouts' => self::defaultLiffFitnessPatternLayouts(),
+                'tab_settings' => [
+                    'home' => ['background_color' => '#ecfeff'],
+                    'products' => ['background_color' => '#f0fdfa'],
+                    'orders' => ['background_color' => '#f0f9ff'],
+                    'stamps' => ['background_color' => '#ecfdf5'],
+                    'coupons' => ['background_color' => '#f0fdfa'],
+                    'queue' => ['background_color' => '#f0f9ff'],
+                    'reservations' => ['background_color' => '#ecfeff'],
+                    'member' => ['background_color' => '#f0fdfa'],
+                    'gallery' => ['background_color' => '#ecfeff'],
+                    'announcements' => ['background_color' => '#f0f9ff'],
+                ],
+                'custom_css' => '',
+            ],
         ];
     }
 
@@ -541,6 +610,125 @@ class ShopSettingLiffDefaults
             ['type' => 'heading', 'text' => '待ち状況', 'size' => 'large'],
             ['type' => 'banner', 'icon' => 'fa-users', 'text' => '呼び出し通知を受け取れます', 'color' => '#0f766e'],
             ['type' => 'data', 'source' => 'queue'],
+        ];
+
+        return $layouts;
+    }
+
+    private static function defaultLiffSalonPatternLayouts(): array
+    {
+        $layouts = self::defaultLiffTabLayouts();
+        $layouts['home'] = [
+            ['type' => 'hero', 'title' => 'あなたのキレイを叶える', 'subtitle' => 'LINEから予約・会員特典をまとめてご利用いただけます。', 'gradient_start' => '#ec4899', 'gradient_end' => '#f472b6'],
+            ['type' => 'slider', 'slide_height' => 180, 'slides' => [
+                ['image_url' => 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=1200', 'caption' => '今月のおすすめスタイル'],
+                ['image_url' => 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=1200', 'caption' => 'カラーキャンペーン実施中'],
+            ]],
+            ['type' => 'icon_text', 'rows' => [
+                ['icon' => 'fa-calendar-check', 'text' => 'LINEから24時間予約可能', 'color' => '#db2777'],
+                ['icon' => 'fa-cut', 'text' => '施術履歴からリピート予約', 'color' => '#db2777'],
+                ['icon' => 'fa-gift', 'text' => '会員限定の特典を多数ご用意', 'color' => '#db2777'],
+            ]],
+            ['type' => 'button', 'text' => '今すぐ予約する', 'action' => '#reservations', 'color' => '#db2777'],
+            ['type' => 'button', 'text' => '会員証を確認', 'action' => '#member', 'color' => '#9333ea'],
+            ['type' => 'data', 'source' => 'announcements'],
+        ];
+        $layouts['reservations'] = [
+            ['type' => 'heading', 'text' => 'ご予約', 'size' => 'large'],
+            ['type' => 'banner', 'icon' => 'fa-heart', 'text' => '担当スタイリストの空き状況を確認できます', 'color' => '#db2777'],
+            ['type' => 'list', 'style' => 'number', 'items' => ['メニューを選択', '日時を選択', '担当者を指名（任意）', '内容を確認して確定']],
+            ['type' => 'data', 'source' => 'reservations'],
+        ];
+        $layouts['member'] = [
+            ['type' => 'heading', 'text' => 'マイページ', 'size' => 'large'],
+            ['type' => 'icon_text', 'rows' => [
+                ['icon' => 'fa-crown', 'text' => '来店回数に応じてランクアップ', 'color' => '#d97706'],
+                ['icon' => 'fa-ticket-alt', 'text' => 'ランク別の限定クーポンを配信', 'color' => '#d97706'],
+            ]],
+            ['type' => 'data', 'source' => 'member_card'],
+        ];
+        $layouts['gallery'] = [
+            ['type' => 'heading', 'text' => 'スタイルギャラリー', 'size' => 'large'],
+            ['type' => 'text', 'text' => '施術例やスタッフのおすすめスタイルをご覧ください。'],
+            ['type' => 'data', 'source' => 'gallery'],
+        ];
+
+        return $layouts;
+    }
+
+    private static function defaultLiffRetailPatternLayouts(): array
+    {
+        $layouts = self::defaultLiffTabLayouts();
+        $layouts['home'] = [
+            ['type' => 'hero', 'title' => 'ようこそショップへ', 'subtitle' => 'LINE会員限定のお得な情報をお届けします。', 'gradient_start' => '#7c3aed', 'gradient_end' => '#a855f7'],
+            ['type' => 'heading', 'text' => '注目アイテム', 'size' => 'large'],
+            ['type' => 'collection', 'layout' => 'scroll', 'item_width' => 150, 'item_image_height' => 130, 'items' => [
+                ['title' => '新着アイテム', 'description' => 'NEW', 'image_url' => 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800'],
+                ['title' => '人気ランキング', 'description' => 'BEST', 'image_url' => 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=800'],
+                ['title' => 'セール', 'description' => 'SALE', 'image_url' => 'https://images.unsplash.com/photo-1607082349566-187342175e2f?w=800'],
+            ]],
+            ['type' => 'banner', 'icon' => 'fa-tags', 'text' => 'LINE会員限定セール開催中！', 'color' => '#7c3aed'],
+            ['type' => 'button', 'text' => '商品を見る', 'action' => '#products', 'color' => '#7c3aed'],
+            ['type' => 'data', 'source' => 'announcements'],
+        ];
+        $layouts['products'] = [
+            ['type' => 'heading', 'text' => '商品カタログ', 'size' => 'large'],
+            ['type' => 'text', 'text' => 'カテゴリから商品を探して、カートに追加できます。'],
+            ['type' => 'data', 'source' => 'products'],
+        ];
+        $layouts['member'] = [
+            ['type' => 'heading', 'text' => '会員ステータス', 'size' => 'large'],
+            ['type' => 'icon_text', 'rows' => [
+                ['icon' => 'fa-coins', 'text' => 'お買い物でポイントが貯まる', 'color' => '#7c3aed'],
+                ['icon' => 'fa-crown', 'text' => 'ランクアップで割引率UP', 'color' => '#7c3aed'],
+                ['icon' => 'fa-birthday-cake', 'text' => 'お誕生日に特別クーポン', 'color' => '#7c3aed'],
+            ]],
+            ['type' => 'data', 'source' => 'member_card'],
+        ];
+        $layouts['coupons'] = [
+            ['type' => 'heading', 'text' => 'お得なクーポン', 'size' => 'large'],
+            ['type' => 'banner', 'icon' => 'fa-percentage', 'text' => '会員ランクに応じたクーポンを毎月配信', 'color' => '#7c3aed'],
+            ['type' => 'data', 'source' => 'coupons'],
+        ];
+
+        return $layouts;
+    }
+
+    private static function defaultLiffFitnessPatternLayouts(): array
+    {
+        $layouts = self::defaultLiffTabLayouts();
+        $layouts['home'] = [
+            ['type' => 'hero', 'title' => '今日もトレーニング日和', 'subtitle' => 'LINEからレッスン予約・会員情報をまとめて管理。', 'gradient_start' => '#0891b2', 'gradient_end' => '#06b6d4'],
+            ['type' => 'icon_text', 'rows' => [
+                ['icon' => 'fa-dumbbell', 'text' => 'レッスン予約は24時間OK', 'color' => '#0891b2'],
+                ['icon' => 'fa-chart-line', 'text' => '来館回数をトラッキング', 'color' => '#0891b2'],
+                ['icon' => 'fa-medal', 'text' => '来館ポイントで特典獲得', 'color' => '#0891b2'],
+            ]],
+            ['type' => 'button', 'text' => 'レッスンを予約する', 'action' => '#reservations', 'color' => '#0891b2'],
+            ['type' => 'button', 'text' => '会員証を表示', 'action' => '#member', 'color' => '#059669'],
+            ['type' => 'data', 'source' => 'announcements'],
+        ];
+        $layouts['reservations'] = [
+            ['type' => 'heading', 'text' => 'レッスン予約', 'size' => 'large'],
+            ['type' => 'text', 'text' => '空きのあるレッスンを選んで予約してください。'],
+            ['type' => 'banner', 'icon' => 'fa-clock', 'text' => 'キャンセルは開始2時間前まで可能です', 'color' => '#0891b2'],
+            ['type' => 'data', 'source' => 'reservations'],
+        ];
+        $layouts['member'] = [
+            ['type' => 'heading', 'text' => '会員情報', 'size' => 'large'],
+            ['type' => 'icon_text', 'rows' => [
+                ['icon' => 'fa-id-card', 'text' => '会員証をスマホで提示', 'color' => '#0891b2'],
+                ['icon' => 'fa-fire', 'text' => '今月の来館回数を確認', 'color' => '#0891b2'],
+            ]],
+            ['type' => 'data', 'source' => 'member_card'],
+        ];
+        $layouts['stamps'] = [
+            ['type' => 'heading', 'text' => '来館ポイント', 'size' => 'large'],
+            ['type' => 'icon_text', 'rows' => [
+                ['icon' => 'fa-check-circle', 'text' => '来館ごとにスタンプ獲得', 'color' => '#059669'],
+                ['icon' => 'fa-gift', 'text' => '満了でプロテインなどの特典', 'color' => '#059669'],
+            ]],
+            ['type' => 'data', 'source' => 'stamps'],
         ];
 
         return $layouts;

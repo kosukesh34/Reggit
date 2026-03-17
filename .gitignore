@@ -11,3 +11,10 @@
 /ios/build/
 **/xcuserdata/
 *.xcuserstate
+
+# EB デプロイ用 zip（ビルド成果物）
+deploy-docker.zip
+
+# Skip / Android ビルド成果物（大容量）
+mobile/mobile-order-skip/.build/
+mobile/mobile-order-skip/Android/.gradle/

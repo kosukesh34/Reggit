@@ -1,58 +1,132 @@
-    box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
-}
-
+/* ===== ボタンバリエーション ===== */
 .btn-primary {
     background: var(--primary);
-    color: var(--bg-primary);
+    color: #fff;
+    border-color: var(--primary);
 }
 
 .btn-primary:hover {
     background: var(--primary-hover);
+    border-color: var(--primary-hover);
+    box-shadow: 0 2px 8px rgba(13, 148, 136, 0.25);
 }
 
 .btn-primary,
 .btn-primary i {
-    color: var(--bg-primary) !important;
+    color: #fff !important;
+}
+
+.btn-success {
+    background: var(--success);
+    color: #fff;
+    border-color: var(--success);
+}
+
+.btn-success:hover {
+    background: var(--success-hover);
+    border-color: var(--success-hover);
+    box-shadow: 0 2px 8px rgba(5, 150, 105, 0.25);
 }
 
 .btn-success,
 .btn-success i {
-    color: var(--bg-primary) !important;
+    color: #fff !important;
 }
 
 .btn-danger {
-    background: var(--danger) !important;
-    color: var(--bg-primary) !important;
-    border: 1px solid var(--danger) !important;
+    background: var(--danger);
+    color: #fff;
+    border-color: var(--danger);
     font-weight: 600;
-    box-shadow: 0 1px 2px rgba(239, 68, 68, 0.2);
 }
 
 .btn-danger:hover {
-    background: var(--danger-hover) !important;
-    border-color: var(--danger-hover) !important;
-    box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
-    transform: translateY(-1px);
+    background: var(--danger-hover);
+    border-color: var(--danger-hover);
+    box-shadow: 0 2px 8px rgba(220, 38, 38, 0.25);
 }
 
+.btn-danger,
 .btn-danger i {
-    color: var(--bg-primary) !important;
+    color: #fff !important;
 }
 
-.btn-secondary,
+.btn-secondary {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    border-color: var(--border);
+}
+
+.btn-secondary:hover {
+    background: var(--border);
+    color: var(--text-primary);
+    border-color: var(--border);
+}
+
 .btn-secondary i {
-    color: var(--bg-primary) !important;
+    color: var(--text-secondary);
+}
+
+.btn-info {
+    background: var(--info);
+    color: #fff;
+    border-color: var(--info);
+}
+
+.btn-info:hover {
+    background: var(--info-hover);
+    border-color: var(--info-hover);
+    box-shadow: 0 2px 8px rgba(8, 145, 178, 0.25);
 }
 
 .btn-info,
 .btn-info i {
-    color: var(--bg-primary) !important;
+    color: #fff !important;
+}
+
+.btn-warning {
+    background: var(--warning);
+    color: #fff;
+    border-color: var(--warning);
+}
+
+.btn-warning:hover {
+    background: var(--warning-hover);
+    border-color: var(--warning-hover);
+}
+
+.btn-warning,
+.btn-warning i {
+    color: #fff !important;
+}
+
+.btn-outline-primary {
+    background: transparent;
+    color: var(--primary);
+    border: 1px solid var(--primary);
+}
+
+.btn-outline-primary:hover {
+    background: var(--primary-bg);
+}
+
+.btn-outline-secondary {
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+}
+
+.btn-outline-secondary:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border-color: var(--text-tertiary);
 }
 
 .btn-sm {
-    padding: 6px 12px;
-    font-size: 13px;
-    gap: 6px;
+    padding: 5px 12px;
+    font-size: 12px;
+    gap: 5px;
+    border-radius: 6px;
 }
 
 .btn-large {
@@ -63,11 +137,18 @@
 }
 
 .btn i {
-    font-size: 14px;
+    font-size: 13px;
 }
 
 .btn-sm i {
-    font-size: 13px;
+    font-size: 12px;
+}
+
+/* ===== テーブル ===== */
+.table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: var(--radius-md);
 }
 
 .table {
@@ -77,28 +158,31 @@
     background: var(--bg-primary);
     border-radius: var(--radius-md);
     overflow: hidden;
-    border: 1px solid var(--border-light);
+    border: 1px solid var(--border);
 }
 
 .table th,
 .table td {
-    padding: 14px 18px;
+    padding: 12px 16px;
     text-align: left;
     border-bottom: 1px solid var(--border-light);
-    font-size: 14px;
+    font-size: 13px;
+    vertical-align: middle;
 }
 
 .table th {
-    background: var(--bg-secondary);
+    background: var(--bg-tertiary);
     font-weight: 600;
     color: var(--text-secondary);
-    font-size: 12px;
+    font-size: 11px;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+    padding: 10px 16px;
 }
 
 .table tbody tr {
-    transition: background 0.15s ease;
+    transition: background var(--transition-fast);
 }
 
 .table tbody tr:hover {
@@ -129,6 +213,7 @@
     overflow-x: auto;
     white-space: pre-wrap;
     word-break: break-all;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 .table .empty-state {
@@ -149,9 +234,9 @@
     font-size: 14px;
 }
 
-/* 一覧の操作列：編集・削除ボタンを確実に表示 */
+/* ===== テーブルアクション列 ===== */
 .table-actions-cell {
-    min-width: 220px;
+    min-width: 180px;
     white-space: nowrap;
     vertical-align: middle;
 }
@@ -160,7 +245,7 @@
 .table td .action-buttons {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 6px;
     align-items: center;
 }
 
@@ -175,66 +260,84 @@
     display: inline-flex;
 }
 
-/* テーブル内アクションボタン（見やすく） */
+/* ===== テーブル内アクションボタン ===== */
 .btn-action {
-    padding: 8px 14px;
-    font-size: 13px;
+    padding: 6px 12px;
+    font-size: 12px;
     font-weight: 500;
-    display: inline-inline-flex;
+    display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: 5px;
     white-space: nowrap;
+    border-radius: 6px;
+    transition: all var(--transition-fast);
 }
 
 .btn-action.btn-edit {
     background: var(--primary);
-    color: var(--bg-primary);
+    color: #fff;
     border: 1px solid var(--primary);
 }
 
 .btn-action.btn-edit:hover {
     background: var(--primary-hover);
     border-color: var(--primary-hover);
-    color: var(--bg-primary);
+    box-shadow: 0 2px 6px rgba(13, 148, 136, 0.3);
 }
 
 .btn-action.btn-outline {
     background: var(--bg-primary);
-    color: var(--secondary);
+    color: var(--text-secondary);
     border: 1px solid var(--border);
 }
 
 .btn-action.btn-outline:hover {
-    background: var(--bg-secondary);
-    border-color: var(--secondary);
+    background: var(--bg-tertiary);
+    border-color: var(--text-tertiary);
 }
 
 .btn-action.btn-success {
     background: var(--success);
-    color: var(--bg-primary);
+    color: #fff;
     border: 1px solid var(--success);
 }
 
 .btn-action.btn-success:hover {
     background: var(--success-hover);
     border-color: var(--success-hover);
-    color: var(--bg-primary);
+    box-shadow: 0 2px 6px rgba(5, 150, 105, 0.3);
 }
 
 .btn-action.btn-info {
     background: var(--info);
-    color: var(--bg-primary);
+    color: #fff;
     border: 1px solid var(--info);
 }
 
 .btn-action.btn-info:hover {
     background: var(--info-hover);
     border-color: var(--info-hover);
-    color: var(--bg-primary);
 }
 
+.btn-action.btn-danger {
+    background: var(--danger);
+    color: #fff;
+    border: 1px solid var(--danger);
+}
+
+.btn-action.btn-danger:hover {
+    background: var(--danger-hover);
+    border-color: var(--danger-hover);
+    box-shadow: 0 2px 6px rgba(220, 38, 38, 0.3);
+}
+
+.btn-action.btn-danger i {
+    color: #fff !important;
+}
+
+/* ===== Info Box ===== */
 .info-box {
-    background: var(--bg-secondary);
+    background: var(--bg-tertiary);
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
     padding: 16px 20px;
@@ -267,10 +370,12 @@
     margin-right: 6px;
 }
 
+/* ===== ユーティリティ ===== */
 .mb-0 { margin-bottom: 0; }
 .me-1 { margin-inline-end: 0.25rem; }
 .mt-2 { margin-top: 0.5rem; }
 
+/* ===== フォームセクション ===== */
 .form-section {
     padding-bottom: 0;
 }
@@ -298,7 +403,7 @@
     font-weight: 700;
 }
 
-/* デザイン・配色ピッカー（SaaS風） */
+/* ===== デザインピッカー ===== */
 .sr-only {
     position: absolute;
     width: 1px;
@@ -326,7 +431,7 @@
     border-radius: var(--radius);
     background: var(--bg-primary);
     cursor: pointer;
-    transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
 }
 .design-picker-card:hover {
     border-color: var(--primary);
@@ -376,7 +481,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
 }
 .theme-swatch:hover {
     transform: scale(1.08);
@@ -410,6 +515,7 @@
     background: var(--bg-primary);
 }
 
+/* ===== フォームコントロール ===== */
 .form-group {
     margin-bottom: 18px;
 }
@@ -430,11 +536,11 @@
 
 .form-control {
     width: 100%;
-    padding: 8px 12px;
+    padding: 9px 12px;
     border: 1px solid var(--border);
     border-radius: var(--radius);
     font-size: 14px;
-    transition: all 0.15s ease;
+    transition: all var(--transition-fast);
     background: var(--bg-primary);
     color: var(--text-primary);
     font-family: inherit;
@@ -443,26 +549,30 @@
 .form-control:focus {
     outline: none;
     border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.12);
+}
+
+.form-control::placeholder {
+    color: var(--text-tertiary);
 }
 
 .form-select {
     width: 100%;
-    padding: 8px 12px;
+    padding: 9px 12px;
     border: 1px solid var(--border);
     border-radius: var(--radius);
     font-size: 14px;
     background: var(--bg-primary);
     color: var(--text-primary);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--transition-fast);
     font-family: inherit;
 }
 
 .form-select:focus {
     outline: none;
     border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.12);
 }
 
 .form-check {
@@ -475,6 +585,7 @@
     width: 16px;
     height: 16px;
     cursor: pointer;
+    accent-color: var(--primary);
 }
 
 .form-actions {
@@ -487,7 +598,7 @@
 
 .action-buttons {
     display: flex;
-    gap: 8px;
+    gap: 6px;
     align-items: center;
     flex-wrap: wrap;
 }
@@ -497,4 +608,23 @@
     min-height: 32px;
     justify-content: center;
     align-items: center;
+    position: relative;
+}
+
+/* ===== レスポンシブ: モバイル ===== */
+@media (max-width: 768px) {
+    .table th,
+    .table td {
+        padding: 10px 12px;
+        font-size: 12px;
+    }
+
+    .table-actions-cell {
+        min-width: 120px;
+    }
+
+    .btn-action {
+        padding: 5px 8px;
+        font-size: 11px;
+    }
 }
