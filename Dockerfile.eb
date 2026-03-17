@@ -28,6 +28,15 @@ RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cac
 # 本番用に依存関係のみインストール（.env は EB の環境変数で渡す）
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
+# PHP-FPM: 同時リクエスト対応（pm.max_children 枯渇で 4xx / ヘルスチェック失敗を防ぐ）
+# 50 children で約 1.5–2.5GB RAM 想定。t3.micro の場合はインスタンスのスケールアップを検討
+RUN set -eux; \
+    sed -i 's/^pm = .*/pm = dynamic/' /usr/local/etc/php-fpm.d/www.conf; \
+    sed -i 's/^pm\.max_children = .*/pm.max_children = 50/' /usr/local/etc/php-fpm.d/www.conf; \
+    sed -i 's/^pm\.start_servers = .*/pm.start_servers = 10/' /usr/local/etc/php-fpm.d/www.conf; \
+    sed -i 's/^pm\.min_spare_servers = .*/pm.min_spare_servers = 10/' /usr/local/etc/php-fpm.d/www.conf; \
+    sed -i 's/^pm\.max_spare_servers = .*/pm.max_spare_servers = 20/' /usr/local/etc/php-fpm.d/www.conf
+
 # Nginx 設定（EB では 8080 をリッスン）
 COPY docker/nginx/eb-default.conf /etc/nginx/sites-available/default
 RUN echo "daemon off;" >> /etc/nginx/nginx.conf

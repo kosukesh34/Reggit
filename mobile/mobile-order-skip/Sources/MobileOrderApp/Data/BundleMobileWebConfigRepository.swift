@@ -1,5 +1,11 @@
 import Foundation
 
+/// 開発/本番の接続先をコード1箇所で切り替えます。
+/// - `useDevelopmentServer == true` → 開発用（ngrok）に接続。ビルドし直さずに切り替え可能なのは Info.plist 由来のみのため、ここで上書きします。
+/// - `false` → Skip.env / Info.plist の LIFF_BASE_URL（本番: reggit.shop）を使用。
+private let useDevelopmentServer = false
+private let developmentBaseUrl = "https://unadministrable-idiocratically-annalee.ngrok-free.dev"
+
 struct BundleMobileWebConfigRepository: MobileWebConfigRepository {
     init() {}
 
@@ -12,6 +18,9 @@ struct BundleMobileWebConfigRepository: MobileWebConfigRepository {
     }
 
     private func resolveBaseUrl() -> String {
+        if useDevelopmentServer, !developmentBaseUrl.isEmpty {
+            return developmentBaseUrl.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        }
         let platformBaseUrl = readPlatformMetaString(
             iosKeys: ["LiffBaseUrlIos", "LIFF_BASE_URL_IOS"],
             androidKeys: ["LiffBaseUrlAndroid", "LIFF_BASE_URL_ANDROID"]

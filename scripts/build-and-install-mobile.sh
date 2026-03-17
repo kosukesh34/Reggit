@@ -7,7 +7,15 @@ set -e
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MOBILE_DIR="${REPO_ROOT}/mobile/mobile-order-skip"
 APK_PATH="${MOBILE_DIR}/.build/Android/app/outputs/apk/debug/app-debug.apk"
-BUNDLE_ID="jp.gamechanger.mobileorder"
+# iOS: Skip.env の PRODUCT_BUNDLE_IDENTIFIER を優先
+BUNDLE_ID="com.reggit.default"
+if [[ -f "${MOBILE_DIR}/Skip.env" ]]; then
+  _line=$(grep -E "^PRODUCT_BUNDLE_IDENTIFIER[ =]" "${MOBILE_DIR}/Skip.env" 2>/dev/null | head -1)
+  if [[ -n "$_line" ]]; then
+    _val=$(echo "$_line" | sed 's/^PRODUCT_BUNDLE_IDENTIFIER[= ]*//;s/^[ "]*//;s/[ "]*$//;s/\r//')
+    [[ -n "$_val" ]] && BUNDLE_ID="$_val"
+  fi
+fi
 # Android: Skip.env の ANDROID_APPLICATION_ID を読み、起動コマンドで使用
 _android_app_id="jp.gamechanger.mobileorder"
 if [[ -f "${MOBILE_DIR}/Skip.env" ]]; then
