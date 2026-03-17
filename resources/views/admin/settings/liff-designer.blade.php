@@ -96,6 +96,7 @@
             <button type="button" class="ld-btn ld-btn--ghost" id="undoBtn" title="元に戻す (Ctrl+Z)" disabled><i class="fas fa-undo"></i></button>
             <button type="button" class="ld-btn ld-btn--ghost" id="redoBtn" title="やり直す (Ctrl+Shift+Z)" disabled><i class="fas fa-redo"></i></button>
             <button type="button" class="ld-btn ld-btn--outline" id="previewBtn"><i class="fas fa-eye"></i> プレビュー</button>
+            <button type="button" class="ld-help-btn" id="helpBtn" title="使い方ガイド"><i class="fas fa-question"></i></button>
             <button type="submit" class="ld-btn ld-btn--primary" id="saveBtn"><i class="fas fa-save"></i> 保存</button>
         </div>
     </div>
@@ -220,6 +221,7 @@
 <script src="{{ asset('js/admin/liff-designer/modules/drag-drop.js') }}?v={{ time() }}"></script>
 <script src="{{ asset('js/admin/liff-designer/modules/ui-events.js') }}?v={{ time() }}"></script>
 <script src="{{ asset('js/admin/liff-designer/modules/io.js') }}?v={{ time() }}"></script>
+<script src="{{ asset('js/admin/liff-designer/modules/onboarding.js') }}?v={{ time() }}"></script>
 <script src="{{ asset('js/admin/liff-designer.js') }}?v={{ time() }}"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -229,6 +231,16 @@
             templates: @json($templates ?? []),
             customCss: @json($customCss ?? ''),
             featureFlags: @json($featureFlags ?? [])
+        });
+
+        // オンボーディング（初回表示 or 全タブ空の場合）
+        if (designer.shouldShowOnboarding()) {
+            setTimeout(function() { designer.showOnboarding(); }, 300);
+        }
+
+        // ヘルプボタン
+        document.getElementById('helpBtn').addEventListener('click', function() {
+            designer.showHelpOverlay();
         });
 
         // デバイスプレビュー切替

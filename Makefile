@@ -1,7 +1,7 @@
 # Mobile Order - Docker 経由で PHP 8.2 の artisan を実行するための Makefile
 # 使い方: make up → make migrate → make route-list など
 
-.PHONY: up down migrate route-list shell composer test test-db
+.PHONY: up down migrate route-list shell composer test test-db build-deploy
 
 # コンテナ起動（バックグラウンド）
 up:
@@ -47,3 +47,8 @@ audit:
 # セキュリティテストのみ実行
 test-security: test-db
 	docker-compose exec app php artisan test tests/Feature/SecurityTest.php
+
+# AWS Elastic Beanstalk 用デプロイ zip をビルド（Docker プラットフォーム用）
+# 出力: deploy-docker.zip → EB の「アップロードとデプロイ」でアップロード
+build-deploy:
+	./scripts/build-deploy-zip.sh

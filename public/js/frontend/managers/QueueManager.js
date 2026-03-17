@@ -314,6 +314,7 @@ class QueueManager {
     renderQueueCard(entry, isQrView = false, updatedAt = null) {
         const queueNumber = entry.queue_number != null ? entry.queue_number : (entry.queueNumber != null ? entry.queueNumber : (entry.id != null ? entry.id : '-'));
         const status = entry.status || '-';
+        const lineLinked = entry.line_linked === true || entry.lineLinked === true;
         const partySize = entry.party_size != null ? entry.party_size : (entry.partySize != null ? entry.partySize : '-');
         const waitingCount = entry.waiting_count != null ? entry.waiting_count : (entry.waitingCount != null ? entry.waitingCount : '-');
         const aheadCount = entry.ahead_count != null ? entry.ahead_count : (entry.aheadCount != null ? entry.aheadCount : '-');
@@ -349,6 +350,10 @@ class QueueManager {
                     <div class="queue-row">
                         <div class="queue-label">予想待ち時間</div>
                         <div class="queue-value">${DomHelper.escapeHtml(estimated)} 分</div>
+                    </div>
+                    <div class="queue-row">
+                        <div class="queue-label">LINE連携</div>
+                        <div class="queue-value">${lineLinked ? '連携済み' : '未連携'}</div>
                     </div>
                 </div>
                 <div class="queue-actions">

@@ -5,7 +5,6 @@
 
 @section('content')
 
-{{-- 未処理注文が多い場合のアラートバナー --}}
 @if($stats['pending_orders'] > 0)
 <div class="alert alert-warning dashboard-alert" role="alert">
     <i class="fas fa-exclamation-triangle"></i>
@@ -14,7 +13,6 @@
 </div>
 @endif
 
-{{-- 今日・今月のKPIセクション --}}
 <div class="dashboard-section-label">本日の状況</div>
 <div class="stats-grid stats-grid--today">
     <div class="stat-card stat-card-success">
@@ -68,7 +66,6 @@
     </div>
 </div>
 
-{{-- 今月のKPIセクション --}}
 <div class="dashboard-section-label">今月の累計</div>
 <div class="stats-grid stats-grid--month">
     <div class="stat-card stat-card-success">
@@ -101,7 +98,6 @@
     </div>
 </div>
 
-{{-- 累計統計 --}}
 <div class="dashboard-section-label">累計</div>
 <div class="stats-grid stats-grid--totals">
     <div class="stat-card stat-card-primary">
@@ -140,7 +136,7 @@
     <div class="quick-menu-grid">
         <a href="{{ admin_route('admin.orders') }}" class="quick-menu-item">
             <i class="fas fa-shopping-cart"></i>
-            <span>注文（モバイル・店内）</span>
+            <span>注文管理</span>
         </a>
         <a href="{{ admin_route('admin.products') }}" class="quick-menu-item">
             <i class="fas fa-utensils"></i>
@@ -174,9 +170,9 @@
             <i class="fas fa-sliders-h"></i>
             <span>基本設定</span>
         </a>
-        <a href="{{ admin_route('admin.settings.advanced') }}" class="quick-menu-item">
-            <i class="fas fa-palette"></i>
-            <span>詳細設定（配色）</span>
+        <a href="{{ admin_route('admin.analytics') }}" class="quick-menu-item">
+            <i class="fas fa-chart-line"></i>
+            <span>分析</span>
         </a>
     </div>
 </section>
@@ -185,46 +181,48 @@
     <div class="card-header">
         <h3 class="card-title"><i class="fas fa-list"></i> 最近の注文</h3>
         <div class="card-header-actions">
-            <a href="{{ admin_route('admin.reservations', ['date' => now()->format('Y-m-d')]) }}" class="btn btn-secondary btn-sm">
+            <a href="{{ admin_route('admin.reservations', ['date' => now()->format('Y-m-d')]) }}" class="btn btn-sm btn-secondary">
                 <i class="fas fa-calendar-day"></i> 本日の予約
             </a>
-            <a href="{{ admin_route('admin.orders') }}" class="btn btn-secondary">
+            <a href="{{ admin_route('admin.orders') }}" class="btn btn-sm btn-primary">
                 <i class="fas fa-arrow-right"></i> すべて見る
             </a>
         </div>
     </div>
-    <table class="table">
-        <thead>
-            <tr>
-                <th>注文番号</th>
-                <th>ユーザー</th>
-                <th>金額</th>
-                <th>ステータス</th>
-                <th>日時</th>
-            </tr>
-        </thead>
-        <tbody>
-            @forelse($recent_orders as $order)
-            <tr>
-                <td><a href="{{ admin_route('admin.orders.detail', ['id' => $order->id]) }}">{{ $order->order_number }}</a></td>
-                <td>{{ $order->user->name ?? 'N/A' }}</td>
-                <td>¥{{ number_format($order->total_amount) }}</td>
-                <td>
-                    <span class="badge badge-{{ $order->status === 'completed' ? 'success' : ($order->status === 'pending' ? 'warning' : 'info') }}">
-                        {{ $order->status }}
-                    </span>
-                </td>
-                <td>{{ $order->created_at->format('Y/m/d H:i') }}</td>
-            </tr>
-            @empty
-            <tr>
-                <td colspan="5" class="empty-state">
-                    <i class="fas fa-inbox"></i>
-                    <p>注文がありません</p>
-                </td>
-            </tr>
-            @endforelse
-        </tbody>
-    </table>
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>注文番号</th>
+                    <th>ユーザー</th>
+                    <th>金額</th>
+                    <th>ステータス</th>
+                    <th>日時</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($recent_orders as $order)
+                <tr>
+                    <td><a href="{{ admin_route('admin.orders.detail', ['id' => $order->id]) }}">{{ $order->order_number }}</a></td>
+                    <td>{{ $order->user->name ?? 'N/A' }}</td>
+                    <td><strong>¥{{ number_format($order->total_amount) }}</strong></td>
+                    <td>
+                        <span class="badge badge-{{ $order->status === 'completed' ? 'success' : ($order->status === 'pending' ? 'warning' : 'info') }}">
+                            {{ $order->status }}
+                        </span>
+                    </td>
+                    <td>{{ $order->created_at->format('Y/m/d H:i') }}</td>
+                </tr>
+                @empty
+                <tr>
+                    <td colspan="5" class="empty-state">
+                        <i class="fas fa-inbox"></i>
+                        <p>注文がありません</p>
+                    </td>
+                </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
 </div>
 @endsection
