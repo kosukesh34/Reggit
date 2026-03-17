@@ -19,6 +19,18 @@ LIFF/WebView のベースURLは **プロジェクトルートの `.env` の `APP
 - **Laravel（Web）**: `config('app.url')` で `APP_URL` を参照しています。
 - **モバイルアプリ**: ビルド時に `Skip.env` の `LIFF_BASE_URL` が使われます。`APP_URL` と揃えてください。
 
+### 開発/本番をコード1箇所で切り替える（推奨）
+
+**Skip.env を触らずに**開発（ngrok）と本番（reggit.shop）を切り替えたい場合は、次の1ファイルだけ編集します。
+
+- **ファイル**: `Sources/MobileOrderApp/Data/BundleMobileWebConfigRepository.swift`
+- **先頭付近の定数**:
+  - `useDevelopmentServer = true` → **開発用（ngrok）**に接続
+  - `useDevelopmentServer = false` → **本番（Skip.env / Info.plist の URL）**に接続
+  - ngrok の URL を変えたときは同じファイルの `developmentBaseUrl` を書き換える
+
+環境変数や xcconfig を変えるとビルドや同期に時間がかかるため、開発中はこの切り替えが便利です。
+
 ngrok のURLを変更したときは、次のいずれかを実行してください。
 
 1. **推奨**: プロジェクトルートで同期スクリプトを実行し、その後モバイルをビルドする。
