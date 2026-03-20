@@ -9,6 +9,7 @@ use App\UseCases\Reservation\ReservationStoreUseCase;
 use App\UseCases\Reservation\ReservationUpdateUseCase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 
 /**
  * 予約 API（レガシー互換）。責務は UseCase に委譲する。
@@ -87,7 +88,7 @@ class ReservationController extends BaseApiController
                 'number_of_people' => 'required|integer|min:1|max:10',
                 'notes' => 'nullable|string|max:500',
             ]);
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             return $this->error('バリデーションエラー', 422, $e->errors());
         }
 
@@ -120,7 +121,7 @@ class ReservationController extends BaseApiController
                 'number_of_people' => 'required|integer|min:1|max:10',
                 'notes' => 'nullable|string|max:500',
             ]);
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             return $this->error('バリデーションエラー', 422, $e->errors());
         }
 

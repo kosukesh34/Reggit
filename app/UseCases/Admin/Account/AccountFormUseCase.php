@@ -7,6 +7,7 @@ use App\Models\AdminUserPermission;
 use App\Models\Project;
 use App\UseCases\Admin\Account\Data\AccountFormView;
 use App\UseCases\Admin\Data\RouteContext;
+use Illuminate\Database\Eloquent\Collection;
 
 class AccountFormUseCase
 {
@@ -54,7 +55,7 @@ class AccountFormUseCase
         );
     }
 
-    private function getAccessibleProjects(AdminUser $me): \Illuminate\Database\Eloquent\Collection
+    private function getAccessibleProjects(AdminUser $me): Collection
     {
         if ($me->isSystemAdmin()) {
             return Project::where('is_active', true)->orderBy('name')->get();

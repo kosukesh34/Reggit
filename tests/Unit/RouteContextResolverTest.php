@@ -4,6 +4,7 @@ namespace Tests\Unit;
 
 use App\UseCases\Admin\RouteContextResolver;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Route;
 use Tests\TestCase;
 
 class RouteContextResolverTest extends TestCase
@@ -13,7 +14,7 @@ class RouteContextResolverTest extends TestCase
         $resolver = new RouteContextResolver;
         $request = Request::create('/system-admin/accounts');
         $request->setRouteResolver(function () {
-            $route = $this->createMock(\Illuminate\Routing\Route::class);
+            $route = $this->createMock(Route::class);
             $route->method('getName')->willReturn('system-admin.accounts.index');
             $route->method('parameter')->willReturn(null);
 
@@ -31,7 +32,7 @@ class RouteContextResolverTest extends TestCase
         $resolver = new RouteContextResolver;
         $request = Request::create('/admin/default/dashboard');
         $request->setRouteResolver(function () {
-            $route = $this->createMock(\Illuminate\Routing\Route::class);
+            $route = $this->createMock(Route::class);
             $route->method('getName')->willReturn('admin.dashboard');
             $route->method('parameter')->with('project_key')->willReturn('default');
 

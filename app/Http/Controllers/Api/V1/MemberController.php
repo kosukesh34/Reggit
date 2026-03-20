@@ -11,6 +11,7 @@ use App\UseCases\Member\MemberRegisterUseCase;
 use App\UseCases\Member\MemberUpdateUseCase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 
 /**
  * 会員 API（レガシー互換）。責務は UseCase に委譲する。
@@ -55,7 +56,7 @@ class MemberController extends BaseApiController
             $dto = $this->updateUseCase->handle($request, $validated);
 
             return $this->success(['member' => $dto->toArray()], '更新しました');
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             throw $e;
         } catch (\Exception $e) {
             Log::error('Member profile update error: '.$e->getMessage());
@@ -77,7 +78,7 @@ class MemberController extends BaseApiController
             $status = $output->alreadyRegistered ? 200 : 201;
 
             return $this->success(['member' => $output->member->toArray()], $message, $status);
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             throw $e;
         } catch (\Exception $e) {
             Log::error('Member registration error: '.$e->getMessage());
