@@ -3,12 +3,13 @@
 namespace App\UseCases\Admin\Account\Data;
 
 use App\Models\AdminUser;
+use App\Models\Project;
 use Illuminate\Database\Eloquent\Collection;
 
 /**
  * アカウント作成・編集フォーム画面用の表示データ。
  *
- * @param  Collection<int, \App\Models\Project>  $projects
+ * @param  Collection<int, Project>  $projects
  * @param  array<int, string>  $creatableRoles
  * @param  array<string, string>  $allPermissions
  * @param  array<string, array<int, string>>  $permissionGroups

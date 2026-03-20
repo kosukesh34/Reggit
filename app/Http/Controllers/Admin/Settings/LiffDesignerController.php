@@ -6,11 +6,13 @@ use App\Http\Controllers\Admin\AdminBaseController;
 use App\UseCases\Admin\Settings\Data\UpdateLiffDesignerInput;
 use App\UseCases\Admin\Settings\GetLiffDesignerUseCase;
 use App\UseCases\Admin\Settings\UpdateLiffDesignerUseCase;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
 
 class LiffDesignerController extends AdminBaseController
 {
-    public function index(GetLiffDesignerUseCase $useCase): \Illuminate\View\View
+    public function index(GetLiffDesignerUseCase $useCase): View
     {
         $dto = $useCase->handle($this->resolveAdminProjectId());
 
@@ -29,7 +31,7 @@ class LiffDesignerController extends AdminBaseController
     public function update(
         Request $request,
         UpdateLiffDesignerUseCase $useCase
-    ): \Illuminate\Http\RedirectResponse {
+    ): RedirectResponse {
         $input = UpdateLiffDesignerInput::fromRequest($request);
         $useCase->handle($this->resolveAdminProjectId(), $input);
 

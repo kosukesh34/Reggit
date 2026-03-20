@@ -49,6 +49,7 @@ class AdminAnalyticsControllerTest extends TestCase
 
             if ($response->getStatusCode() === 200) {
                 $response->assertStatus(200);
+
                 return;
             }
 
@@ -60,6 +61,7 @@ class AdminAnalyticsControllerTest extends TestCase
                     // ignore
                 }
                 usleep($sleepMicros);
+
                 continue;
             }
 

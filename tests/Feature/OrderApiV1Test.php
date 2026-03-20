@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\OrderType;
 use App\Enums\PaymentMethod;
+use App\Http\Middleware\AuthenticateApiToken;
 use App\Models\Member;
 use App\Models\Product;
 use App\Models\Project;
@@ -25,7 +26,7 @@ class OrderApiV1Test extends TestCase
 
     public function test_store_注文タイプがデフォルトで設定されること(): void
     {
-        $this->withoutMiddleware(\App\Http\Middleware\AuthenticateApiToken::class);
+        $this->withoutMiddleware(AuthenticateApiToken::class);
         $this->createProject();
         $user = User::factory()->create(['line_user_id' => 'line-order-v1', 'project_id' => 1]);
         Member::factory()->create(['user_id' => $user->id, 'project_id' => 1]);

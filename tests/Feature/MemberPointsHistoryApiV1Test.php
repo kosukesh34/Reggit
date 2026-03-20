@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Http\Middleware\AuthenticateApiToken;
 use App\Models\Member;
 use App\Models\PointTransaction;
+use App\Models\Project;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -17,7 +18,7 @@ class MemberPointsHistoryApiV1Test extends TestCase
 
     public function test_point_history_ポイント履歴が返ること(): void
     {
-        $project = \App\Models\Project::firstOrCreate(
+        $project = Project::firstOrCreate(
             ['project_key' => 'default'],
             ['name' => 'Default', 'description' => '', 'is_active' => true]
         );
@@ -41,7 +42,7 @@ class MemberPointsHistoryApiV1Test extends TestCase
 
     public function test_point_card_ポイントカード要約が返ること(): void
     {
-        $project = \App\Models\Project::firstOrCreate(
+        $project = Project::firstOrCreate(
             ['project_key' => 'default'],
             ['name' => 'Default', 'description' => '', 'is_active' => true]
         );

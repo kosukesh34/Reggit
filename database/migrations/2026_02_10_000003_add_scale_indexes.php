@@ -85,7 +85,7 @@ return new class extends Migration
                 foreach ($idxNames as $name) {
                     try {
                         $t->dropIndex($name);
-                    } catch (\Throwable $e) {
+                    } catch (Throwable $e) {
                         // インデックスが存在しない場合はスキップ
                     }
                 }
@@ -103,7 +103,7 @@ return new class extends Migration
             Schema::table($table, function (Blueprint $t) use ($columns, $indexName) {
                 $t->index($columns, $indexName);
             });
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             // インデックスが既に存在する場合はスキップ
         }
     }

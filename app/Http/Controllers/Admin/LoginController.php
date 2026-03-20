@@ -7,6 +7,7 @@ use App\Http\Requests\Admin\LoginRequest;
 use App\Models\AdminAuditLog;
 use App\Models\AdminUser;
 use App\Models\Project;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -15,7 +16,7 @@ use Illuminate\Validation\ValidationException;
 class LoginController extends Controller
 {
     /** 店舗管理ログイン後の最初の遷移先（先頭プロジェクトの dashboard） */
-    private function getAdminDashboardRedirect(): \Illuminate\Http\RedirectResponse
+    private function getAdminDashboardRedirect(): RedirectResponse
     {
         $admin = Auth::guard('admin')->user();
         $first = Project::whereIn('id', $admin->getAllowedProjectIds())

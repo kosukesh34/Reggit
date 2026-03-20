@@ -7,14 +7,16 @@ use App\UseCases\Admin\Gallery\GalleryItemDestroyUseCase;
 use App\UseCases\Admin\Gallery\GalleryItemIndexUseCase;
 use App\UseCases\Admin\Gallery\GalleryItemStoreUseCase;
 use App\UseCases\Admin\Gallery\GalleryItemUpdateUseCase;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
 
 class ItemController extends AdminBaseController
 {
     public function index(
         Request $request,
         GalleryItemIndexUseCase $useCase
-    ): \Illuminate\View\View {
+    ): View {
         $categoryId = $request->query('category_id')
             ? (int) $request->query('category_id')
             : null;
@@ -30,7 +32,7 @@ class ItemController extends AdminBaseController
     public function store(
         Request $request,
         GalleryItemStoreUseCase $useCase
-    ): \Illuminate\Http\RedirectResponse {
+    ): RedirectResponse {
         $validated = $request->validate([
             'category_id' => 'nullable|exists:gallery_categories,id',
             'title' => 'nullable|string|max:150',
@@ -53,7 +55,7 @@ class ItemController extends AdminBaseController
         Request $request,
         int $id,
         GalleryItemUpdateUseCase $useCase
-    ): \Illuminate\Http\RedirectResponse {
+    ): RedirectResponse {
         $validated = $request->validate([
             'category_id' => 'nullable|exists:gallery_categories,id',
             'title' => 'nullable|string|max:150',
@@ -75,7 +77,7 @@ class ItemController extends AdminBaseController
     public function delete(
         int $id,
         GalleryItemDestroyUseCase $useCase
-    ): \Illuminate\Http\RedirectResponse {
+    ): RedirectResponse {
         $useCase->handle($id);
 
         return redirect()
