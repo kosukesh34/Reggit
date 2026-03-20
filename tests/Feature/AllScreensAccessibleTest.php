@@ -17,10 +17,10 @@ use App\Models\StampCard;
 use App\Models\User;
 use App\Util\AdminContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use PHPUnit\Framework\Attributes\DataProvider;
 use Illuminate\Support\Facades\DB;
-use Throwable;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
+use Throwable;
 
 /**
  * 全ての画面が開けることを確認するテスト。

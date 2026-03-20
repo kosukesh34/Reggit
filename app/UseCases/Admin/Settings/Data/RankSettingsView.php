@@ -2,13 +2,14 @@
 
 namespace App\UseCases\Admin\Settings\Data;
 
+use App\Models\StampCard;
 use Illuminate\Support\Collection;
 
 /**
  * ランク設定画面用の表示データ。
  *
  * @param  array<int, array{key: string, label: string, min_points: int, order: int, is_active: bool, icon_url?: string|null, stamp_background_url?: string|null, card_color?: string|null}>  $rankSettings
- * @param  Collection<int, \App\Models\StampCard>  $stampCardsForSelect
+ * @param  Collection<int, StampCard>  $stampCardsForSelect
  */
 class RankSettingsView
 {

@@ -6,6 +6,7 @@ use App\Services\ReservationService;
 use App\Services\UserService;
 use App\UseCases\Reservation\Data\ReservationMemberOutput;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 
 class ReservationIndexUseCase
 {
@@ -22,7 +23,7 @@ class ReservationIndexUseCase
         }
 
         $reservations = $this->reservationService->getUserReservations($user);
-        if (! ($reservations instanceof \Illuminate\Support\Collection)) {
+        if (! ($reservations instanceof Collection)) {
             $reservations = collect($reservations);
         }
 

@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\Project;
+use App\Util\StrHelper;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -12,7 +13,7 @@ class SetAdminProjectFromQuery
     public function handle(Request $request, Closure $next): Response
     {
         $projectKey = $request->query('project_key');
-        if (\App\Util\StrHelper::isEmptyStringOrNull($projectKey)) {
+        if (StrHelper::isEmptyStringOrNull($projectKey)) {
             return $next($request);
         }
 

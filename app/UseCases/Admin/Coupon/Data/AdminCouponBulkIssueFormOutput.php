@@ -2,12 +2,13 @@
 
 namespace App\UseCases\Admin\Coupon\Data;
 
+use App\Models\Coupon;
 use Illuminate\Support\Collection;
 
 /**
  * 管理画面クーポン一括配布フォーム UseCase の出力。不変。
  *
- * @param  Collection<int, \App\Models\Coupon>  $coupons
+ * @param  Collection<int, Coupon>  $coupons
  */
 class AdminCouponBulkIssueFormOutput
 {

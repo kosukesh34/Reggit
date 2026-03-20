@@ -13,6 +13,7 @@ use App\Models\StampCard;
 use App\Services\MemberPointsExpiryCalculator;
 use App\Services\MemberRankCalculator;
 use App\Services\Smaregi\SmaregiApiService;
+use App\Util\StrHelper;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
@@ -70,7 +71,7 @@ class MemberAdminService
     /**
      * 会員の購買サマリー（LTV・注文数・平均単価・最終購買日・最終来店からの経過日数）
      *
-     * @return array{total_orders: int, total_revenue: float, avg_order_value: float, last_order_at: ?\Carbon\Carbon, days_since_last_order: int|null}
+     * @return array{total_orders: int, total_revenue: float, avg_order_value: float, last_order_at: ?Carbon, days_since_last_order: int|null}
      */
     public function getPurchaseSummary(Member $member): array
     {
@@ -264,7 +265,7 @@ class MemberAdminService
         $ranks = ShopSetting::getMemberRankSettings($projectId);
         $options = [];
         foreach ($ranks as $r) {
-            if (\App\Util\StrHelper::isEmptyStringOrNull($r['key'] ?? null)) {
+            if (StrHelper::isEmptyStringOrNull($r['key'] ?? null)) {
                 continue;
             }
             $options[(string) $r['key']] = (string) ($r['label'] ?? $r['key']);
