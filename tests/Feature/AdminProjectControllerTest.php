@@ -6,8 +6,8 @@ use App\Models\AdminUser;
 use App\Models\Project;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
-use Throwable;
 use Tests\TestCase;
+use Throwable;
 
 class AdminProjectControllerTest extends TestCase
 {

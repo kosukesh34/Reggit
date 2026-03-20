@@ -8,6 +8,7 @@ use App\Http\Requests\Admin\AccountUpdateRequest;
 use App\Models\AdminUser;
 use App\Models\AdminUserPermission;
 use App\Models\Project;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 
 class AccountController extends Controller
@@ -187,7 +188,7 @@ class AccountController extends Controller
     }
 
     /** アクセス可能なプロジェクト一覧を取得 */
-    private function getAccessibleProjects(AdminUser $me): \Illuminate\Database\Eloquent\Collection
+    private function getAccessibleProjects(AdminUser $me): Collection
     {
         if ($me->isSystemAdmin()) {
             return Project::where('is_active', true)->orderBy('name')->get();

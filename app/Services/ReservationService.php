@@ -6,6 +6,7 @@ use App\Enums\ReservationStatus;
 use App\Models\Reservation;
 use App\Models\User;
 use App\Util\LogHelper;
+use Carbon\Carbon;
 
 class ReservationService
 {
@@ -82,7 +83,7 @@ class ReservationService
                 $reservedAt = $reservation->reserved_at;
                 if ($reservedAt === null) {
                     $reservedAtStr = null;
-                } elseif ($reservedAt instanceof \Carbon\Carbon || $reservedAt instanceof \DateTime) {
+                } elseif ($reservedAt instanceof Carbon || $reservedAt instanceof \DateTime) {
                     $reservedAtStr = $reservedAt->format('c');
                 } else {
                     $reservedAtStr = is_string($reservedAt) ? $reservedAt : (string) $reservedAt;
