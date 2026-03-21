@@ -1,16 +1,16 @@
 # Docker で DB 接続エラー（Access denied）が出たとき
 
-`Access denied for user 'mobile_order_user'@'...'` が出る場合、MySQL コンテナ内でユーザーを作り直します。
+`Access denied for user 'reggit_user'@'...'` が出る場合、MySQL コンテナ内でユーザーを作り直します。
 
 ## 方法1: コンテナ内でユーザーを再作成
 
 ```bash
 # DB コンテナに入る
-docker exec -it mobile_order_db mysql -uroot -proot
+docker exec -it reggit_db mysql -uroot -proot
 
 # MySQL で実行（パスワードは .env の DB_PASSWORD に合わせる）
-CREATE USER IF NOT EXISTS 'mobile_order_user'@'%' IDENTIFIED BY 'password';
-GRANT ALL PRIVILEGES ON mobile_order.* TO 'mobile_order_user'@'%';
+CREATE USER IF NOT EXISTS 'reggit_user'@'%' IDENTIFIED BY 'password';
+GRANT ALL PRIVILEGES ON reggit.* TO 'reggit_user'@'%';
 FLUSH PRIVILEGES;
 EXIT;
 ```
@@ -35,3 +35,7 @@ docker compose down -v
 docker compose up -d
 # その後 php artisan migrate
 ```
+
+## コンテナ名を `mobile_order_*` から変えたあと
+
+既存の `db_data` ボリュームには古い DB 名・ユーザー名のままのデータが残ります。`reggit_db_data` で新規起動した場合は初回初期化で `reggit` / `reggit_user` が作られます。古いボリュームを引き続き使う場合は、上記の方法1でユーザーを揃えるか、データをダンプしてから `down -v` で移行してください。
