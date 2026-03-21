@@ -17,10 +17,8 @@ use App\Models\StampCard;
 use App\Models\User;
 use App\Util\AdminContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
-use Throwable;
 
 /**
  * 全ての画面が開けることを確認するテスト。
@@ -54,89 +52,43 @@ class AllScreensAccessibleTest extends TestCase
 
     protected function setUp(): void
     {
-        // MySQL がテスト中に落ちると `setUp()` 内の INSERT で `2006 server has gone away` が発生することがあります。
-        // このテストは `setUp()` が長いので、リトライ可能な例外だけ再試行します。
-        $retryableSubstrings = [
-            'MySQL server has gone away',
-            'server has gone away',
-            'Connection refused',
-            'getaddrinfo for db failed',
-            'SQLSTATE[HY000] [2002]',
-        ];
-
-        $maxRetries = 3;
-        $sleepMicros = 300_000; // 0.3s
-        $lastError = null;
-
-        for ($attempt = 0; $attempt < $maxRetries; $attempt++) {
-            try {
-                parent::setUp();
-                config(['app.url' => 'http://localhost']);
-                AdminContext::setCurrentProject(null);
-                $this->project = Project::firstOrCreate(
-                    ['project_key' => 'default'],
-                    ['name' => 'Default Project', 'description' => 'Test', 'is_active' => true]
-                );
-                $this->storeAdmin = AdminUser::factory()->create([
-                    'role' => AdminUser::ROLE_ADMIN,
-                    'project_id' => $this->project->id,
-                ]);
-                $this->storeAdmin->projects()->sync([$this->project->id]);
-                $user = User::factory()->create();
-                $order = Order::create([
-                    'project_id' => $this->project->id,
-                    'user_id' => $user->id,
-                    'order_number' => 'ORD-TEST-001',
-                    'order_type' => 'take_out',
-                    'total_amount' => 1000,
-                    'status' => 'pending',
-                    'payment_method' => 'cash',
-                ]);
-                $this->orderId = $order->id;
-                $this->productId = Product::factory()->create(['project_id' => $this->project->id])->id;
-                $this->memberId = Member::factory()->create(['project_id' => $this->project->id])->id;
-                $this->reservationId = Reservation::factory()->create(['project_id' => $this->project->id])->id;
-                $this->stampCardId = StampCard::factory()->create(['project_id' => $this->project->id])->id;
-                $this->couponId = Coupon::factory()->create(['project_id' => $this->project->id])->id;
-                $this->announcementId = Announcement::factory()->create(['project_id' => $this->project->id])->id;
-                $this->afterRegistrationDeliveryId = AfterRegistrationDelivery::create([
-                    'project_id' => $this->project->id,
-                    'delay_minutes' => 30,
-                    'title' => 'Test',
-                    'body' => null,
-                    'coupon_id' => null,
-                    'is_active' => true,
-                ])->id;
-
-                return;
-            } catch (Throwable $e) {
-                $lastError = $e;
-
-                $message = $e->getMessage();
-                $isRetryable = false;
-                foreach ($retryableSubstrings as $needle) {
-                    if (str_contains($message, $needle)) {
-                        $isRetryable = true;
-                        break;
-                    }
-                }
-
-                if (! $isRetryable) {
-                    throw $e;
-                }
-
-                // 次の試行に備え、古い PDO / 接続を破棄
-                try {
-                    DB::purge();
-                } catch (Throwable) {
-                    // ignore
-                }
-
-                usleep($sleepMicros);
-            }
-        }
-
-        throw $lastError ?? new RuntimeException('Failed to setup AllScreensAccessibleTest.');
+        parent::setUp();
+        config(['app.url' => 'http://localhost']);
+        AdminContext::setCurrentProject(null);
+        $this->project = Project::firstOrCreate(
+            ['project_key' => 'default'],
+            ['name' => 'Default Project', 'description' => 'Test', 'is_active' => true]
+        );
+        $this->storeAdmin = AdminUser::factory()->create([
+            'role' => AdminUser::ROLE_ADMIN,
+            'project_id' => $this->project->id,
+        ]);
+        $this->storeAdmin->projects()->sync([$this->project->id]);
+        $user = User::factory()->create();
+        $order = Order::create([
+            'project_id' => $this->project->id,
+            'user_id' => $user->id,
+            'order_number' => 'ORD-TEST-001',
+            'order_type' => 'take_out',
+            'total_amount' => 1000,
+            'status' => 'pending',
+            'payment_method' => 'cash',
+        ]);
+        $this->orderId = $order->id;
+        $this->productId = Product::factory()->create(['project_id' => $this->project->id])->id;
+        $this->memberId = Member::factory()->create(['project_id' => $this->project->id])->id;
+        $this->reservationId = Reservation::factory()->create(['project_id' => $this->project->id])->id;
+        $this->stampCardId = StampCard::factory()->create(['project_id' => $this->project->id])->id;
+        $this->couponId = Coupon::factory()->create(['project_id' => $this->project->id])->id;
+        $this->announcementId = Announcement::factory()->create(['project_id' => $this->project->id])->id;
+        $this->afterRegistrationDeliveryId = AfterRegistrationDelivery::create([
+            'project_id' => $this->project->id,
+            'delay_minutes' => 30,
+            'title' => 'Test',
+            'body' => null,
+            'coupon_id' => null,
+            'is_active' => true,
+        ])->id;
     }
 
     /**

@@ -5,9 +5,7 @@ namespace Tests\Feature;
 use App\Models\AdminUser;
 use App\Models\Project;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
-use Throwable;
 
 class AdminProjectControllerTest extends TestCase
 {
@@ -15,52 +13,10 @@ class AdminProjectControllerTest extends TestCase
 
     private function loginSystemAdmin(): AdminUser
     {
-        $retryableSubstrings = [
-            'MySQL server has gone away',
-            'server has gone away',
-            'Connection refused',
-            'getaddrinfo for db failed',
-            'SQLSTATE[HY000] [2002]',
-            'SQLSTATE[HY000] [2006]',
-        ];
+        $admin = AdminUser::factory()->create(['role' => AdminUser::ROLE_SYSTEM_ADMIN]);
+        $this->actingAs($admin, 'admin');
 
-        $maxRetries = 3;
-        $sleepMicros = 300_000; // 0.3s
-        $lastError = null;
-
-        for ($attempt = 0; $attempt < $maxRetries; $attempt++) {
-            try {
-                $admin = AdminUser::factory()->create(['role' => AdminUser::ROLE_SYSTEM_ADMIN]);
-                $this->actingAs($admin, 'admin');
-
-                return $admin;
-            } catch (Throwable $e) {
-                $lastError = $e;
-
-                $message = $e->getMessage();
-                $isRetryable = false;
-                foreach ($retryableSubstrings as $needle) {
-                    if (str_contains($message, $needle)) {
-                        $isRetryable = true;
-                        break;
-                    }
-                }
-
-                if (! $isRetryable) {
-                    throw $e;
-                }
-
-                try {
-                    DB::purge();
-                } catch (Throwable) {
-                    // ignore
-                }
-
-                usleep($sleepMicros);
-            }
-        }
-
-        throw $lastError ?? new RuntimeException('Failed to login system admin.');
+        return $admin;
     }
 
     /** プロジェクト作成・更新フォームの必須項目（バリデーション通過用） */
