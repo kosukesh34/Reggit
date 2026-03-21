@@ -6,7 +6,7 @@ echo "=========================================="
 echo ""
 
 # ngrokが起動しているか確認
-if ! docker-compose ps | grep -q "mobile_order_ngrok.*Up"; then
+if ! docker-compose ps | grep -q "reggit_ngrok.*Up"; then
     echo "ngrokが起動していません。"
     echo "まず、ngrokを起動してください："
     echo ""
