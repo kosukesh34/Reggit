@@ -80,7 +80,7 @@ zip には **Dockerfile**（中身は Nginx+PHP の単一コンテナ）と **Do
 | `APP_URL` | https://Reggit.ap-northeast-3.elasticbeanstalk.com（または本番ドメイン） |
 | `DB_HOST` | （RDS のエンドポイント） |
 | `DB_PORT` | 3306 |
-| `DB_DATABASE` | mobile_order |
+| `DB_DATABASE` | reggit |
 | `DB_USERNAME` | （RDS のマスターユーザー名） |
 | `DB_PASSWORD` | （RDS のパスワード） |
 | LINE / Stripe / スマレジ など | 必要に応じて |
@@ -148,7 +148,7 @@ EB CLI で環境に紐づいている場合は、プロジェクトルートで 
 4. **設定例**
    - DB 識別子: `mobile-order-db`
    - マスターユーザー名 / パスワード: 任意（安全なパスワードを設定）
-   - DB 名: `mobile_order`
+   - DB 名: `reggit`
 5. **接続**: パブリックアクセスを「接続する」にするか、VPC 内のみにするか選択（後述の EB と同一 VPC にすること）
 6. **セキュリティグループ**: 後から EB 用のセキュリティグループから 3306 を許可する
 7. 作成後、**エンドポイント**（ホスト名）を控える
@@ -224,7 +224,7 @@ eb deploy
 | `APP_URL` | https://your-domain.com | 本番の URL |
 | `DB_HOST` | xxx.rds.amazonaws.com | RDS のエンドポイント |
 | `DB_PORT` | 3306 | |
-| `DB_DATABASE` | mobile_order | |
+| `DB_DATABASE` | reggit | |
 | `DB_USERNAME` | マスターユーザー名 | |
 | `DB_PASSWORD` | マスターパスワード | |
 | `LINE_CHANNEL_ACCESS_TOKEN` | （本番の値） | |
