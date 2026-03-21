@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Project;
 use App\Models\User;
+use App\Services\GoogleWalletPassService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -47,7 +48,7 @@ class GoogleWalletUrlControllerTest extends TestCase
             'line_user_id' => self::LINE_USER_ID,
             'project_id' => $project->id,
         ]);
-        $this->mock(\App\Services\GoogleWalletPassService::class, function ($mock): void {
+        $this->mock(GoogleWalletPassService::class, function ($mock): void {
             $mock->shouldReceive('isAvailable')->andReturn(true);
         });
 

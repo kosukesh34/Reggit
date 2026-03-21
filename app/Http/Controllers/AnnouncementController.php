@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\UseCases\Announcement\AnnouncementIndexUseCase;
 use App\UseCases\Announcement\AnnouncementMarkReadUseCase;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class AnnouncementController extends Controller
 {
@@ -26,7 +27,7 @@ class AnnouncementController extends Controller
             $result = $this->markReadUseCase->handle($request, $id);
 
             return response()->json(['success' => true, 'data' => $result]);
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             return response()->json([
                 'success' => false,
                 'message' => '対象のお知らせが見つかりません',

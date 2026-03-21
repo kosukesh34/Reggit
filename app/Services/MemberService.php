@@ -10,6 +10,7 @@ use App\Models\PointTransaction;
 use App\Models\ShopSetting;
 use App\Models\User;
 use App\Services\Smaregi\SmaregiApiService;
+use App\Util\AdminContext;
 use App\Util\LogHelper;
 use Illuminate\Support\Str;
 
@@ -25,14 +26,14 @@ class MemberService
         $member = $user->member;
 
         if ($member === null) {
-            $projectId = $user->project_id ?? \App\Util\AdminContext::getCurrentProjectId() ?? 1;
-            $profileSettings = \App\Models\ShopSetting::getProfileFieldSettings($projectId);
+            $projectId = $user->project_id ?? AdminContext::getCurrentProjectId() ?? 1;
+            $profileSettings = ShopSetting::getProfileFieldSettings($projectId);
             $profileFormFields = $this->buildProfileFormFields($profileSettings);
 
             return [
                 'is_member' => false,
                 'message' => '会員登録がまだです',
-                'show_member_card_for_guest' => \App\Models\ShopSetting::getShowMemberCardForGuest($projectId),
+                'show_member_card_for_guest' => ShopSetting::getShowMemberCardForGuest($projectId),
                 'profile_field_settings' => $profileFormFields,
                 'profile' => [],
             ];
@@ -48,8 +49,8 @@ class MemberService
         $rankInfo = $this->getRankInfo($member);
         $expiryInfo = $this->getPointsExpiryInfo($member);
 
-        $projectId = $member->project_id ?? \App\Util\AdminContext::getCurrentProjectId() ?? 1;
-        $profileSettings = \App\Models\ShopSetting::getProfileFieldSettings($projectId);
+        $projectId = $member->project_id ?? AdminContext::getCurrentProjectId() ?? 1;
+        $profileSettings = ShopSetting::getProfileFieldSettings($projectId);
         $profileFormFields = $this->buildProfileFormFields($profileSettings);
         $profileValues = $this->getProfileValues($member->user, $member);
 
@@ -71,19 +72,19 @@ class MemberService
             'rank_basis' => $rankInfo['rank_basis'],
             'rank_metric' => $rankInfo['rank_metric'],
             'points_expiry' => $expiryInfo,
-            'show_points_display' => \App\Models\ShopSetting::getShowPointsDisplay($projectId),
-            'show_rank_progress' => \App\Models\ShopSetting::getShowRankProgress($projectId),
-            'member_card_design' => \App\Models\ShopSetting::getMemberCardDesign($projectId),
-            'member_card_logo_url' => \App\Models\ShopSetting::getFrontendLogoUrl($projectId),
-            'member_card_display_type' => \App\Models\ShopSetting::getMemberCardDisplayType($projectId),
-            'member_card_code_type' => \App\Models\ShopSetting::getMemberCardCodeType($projectId),
+            'show_points_display' => ShopSetting::getShowPointsDisplay($projectId),
+            'show_rank_progress' => ShopSetting::getShowRankProgress($projectId),
+            'member_card_design' => ShopSetting::getMemberCardDesign($projectId),
+            'member_card_logo_url' => ShopSetting::getFrontendLogoUrl($projectId),
+            'member_card_display_type' => ShopSetting::getMemberCardDisplayType($projectId),
+            'member_card_code_type' => ShopSetting::getMemberCardCodeType($projectId),
         ];
     }
 
     /** プロフィール設定に基づくバリデーションルールを組み立て */
     public function getProfileValidationRules(int $projectId): array
     {
-        $settings = \App\Models\ShopSetting::getProfileFieldSettings($projectId);
+        $settings = ShopSetting::getProfileFieldSettings($projectId);
         $rules = [];
         $stringMax = ['name' => 255, 'kana' => 255, 'phone' => 50, 'email' => 255, 'postal_code' => 16, 'prefecture' => 64, 'city' => 128, 'street' => 256, 'address' => 500, 'sex' => 16];
         foreach ($settings['smaregi_fields'] ?? [] as $key => $field) {
@@ -175,7 +176,7 @@ class MemberService
             throw new \Exception('会員登録が必要です');
         }
 
-        $projectId = $member->project_id ?? \App\Util\AdminContext::getCurrentProjectId() ?? 1;
+        $projectId = $member->project_id ?? AdminContext::getCurrentProjectId() ?? 1;
         $settings = ShopSetting::getProfileFieldSettings($projectId);
 
         $smaregiCustomerId = $member->smaregi_customer_id ?? '';
@@ -272,7 +273,7 @@ class MemberService
     /** 登録データから任意項目のみ抽出 */
     private function extractCustomProfileExtra(int $projectId, array $data): array
     {
-        $settings = \App\Models\ShopSetting::getProfileFieldSettings($projectId);
+        $settings = ShopSetting::getProfileFieldSettings($projectId);
         $customKeys = array_column($settings['custom_fields'] ?? [], 'key');
         $out = [];
         foreach ($customKeys as $key) {
@@ -290,7 +291,7 @@ class MemberService
             throw new \Exception('既に会員登録済みです');
         }
 
-        $projectId = $user->project_id ?? \App\Util\AdminContext::getCurrentProjectId() ?? 1;
+        $projectId = $user->project_id ?? AdminContext::getCurrentProjectId() ?? 1;
         $memberNumber = $this->generateMemberNumber($projectId);
         $smaregiCustomerId = null;
 
@@ -403,9 +404,9 @@ class MemberService
 
     private function getRankInfo(Member $member): array
     {
-        $projectId = $member->project_id ?? \App\Util\AdminContext::getCurrentProjectId() ?? 1;
-        $ranks = \App\Models\ShopSetting::getMemberRankSettings($projectId);
-        $basis = \App\Models\ShopSetting::getRankBasis($projectId);
+        $projectId = $member->project_id ?? AdminContext::getCurrentProjectId() ?? 1;
+        $ranks = ShopSetting::getMemberRankSettings($projectId);
+        $basis = ShopSetting::getRankBasis($projectId);
 
         $points = $member->points ?? 0;
         $stamps = $member->getTotalStamps();
@@ -489,10 +490,10 @@ class MemberService
 
     private function generateMemberNumber(int $projectId): string
     {
-        $type = \App\Models\ShopSetting::getMemberCodeType($projectId);
-        $format = \App\Models\ShopSetting::getMemberCodeFormat($projectId);
-        $length = max(1, min(20, \App\Models\ShopSetting::getMemberCodeLength($projectId)));
-        $prefix = \App\Models\ShopSetting::getMemberCodePrefix($projectId);
+        $type = ShopSetting::getMemberCodeType($projectId);
+        $format = ShopSetting::getMemberCodeFormat($projectId);
+        $length = max(1, min(20, ShopSetting::getMemberCodeLength($projectId)));
+        $prefix = ShopSetting::getMemberCodePrefix($projectId);
         $prefix = preg_replace('/[^A-Za-z0-9]/', '', $prefix);
         $prefixLen = strlen($prefix);
         $bodyLen = min($length, 20 - $prefixLen);
@@ -504,7 +505,7 @@ class MemberService
         $charsAlpha = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // 英大文字+数字（紛らわしいI,O,1,0を除く）
 
         if ($type === 'sequential') {
-            $next = \App\Models\ShopSetting::getMemberCodeNextNumber($projectId);
+            $next = ShopSetting::getMemberCodeNextNumber($projectId);
             $maxExisting = Member::where('project_id', $projectId)
                 ->whereNotNull('member_number')
                 ->where('member_number', '!=', '')
@@ -519,7 +520,7 @@ class MemberService
                 })
                 ->max();
             $next = max($next, ($maxExisting ?? 0) + 1);
-            \App\Models\ShopSetting::setMemberCodeNextNumber($next + 1, $projectId);
+            ShopSetting::setMemberCodeNextNumber($next + 1, $projectId);
             $body = sprintf('%0'.$bodyLen.'d', $next);
             if (strlen($body) > $bodyLen) {
                 $body = substr($body, -$bodyLen);

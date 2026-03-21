@@ -7,6 +7,7 @@ use App\UseCases\Announcement\AnnouncementMarkReadUseCase;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class AnnouncementController extends BaseApiController
 {
@@ -37,7 +38,7 @@ class AnnouncementController extends BaseApiController
             $result = $this->markReadUseCase->handle($request, $id);
 
             return $this->success($result, '既読にしました');
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             return $this->error('対象のお知らせが見つかりません', 404, [], $e->errors());
         } catch (\Exception $e) {
             LogHelper::error('[Announcement] markRead failed', [

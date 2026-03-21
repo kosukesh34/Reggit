@@ -3,10 +3,13 @@
 namespace App\Http\Controllers\Member;
 
 use App\Http\Controllers\Controller;
+use App\Services\MemberService;
+use App\Services\UserService;
 use App\UseCases\Member\MemberUpdateUseCase;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class MemberUpdateController extends Controller
 {
@@ -17,16 +20,16 @@ class MemberUpdateController extends Controller
     public function __invoke(Request $request)
     {
         try {
-            $user = app(\App\Services\UserService::class)->getOrCreateUser($request);
+            $user = app(UserService::class)->getOrCreateUser($request);
             $member = $user->member;
             $projectId = $member ? (int) $member->project_id : (int) ($user->project_id ?? 1);
-            $rules = app(\App\Services\MemberService::class)->getProfileValidationRules($projectId);
+            $rules = app(MemberService::class)->getProfileValidationRules($projectId);
             $validated = $request->validate($rules);
 
             $dto = $this->updateUseCase->handle($request, $validated);
 
             return response()->json($dto->toArray());
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             throw $e;
         } catch (\Exception $e) {
             LogHelper::error('[Member] update failed', [

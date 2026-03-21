@@ -7,6 +7,7 @@ use App\UseCases\Reservation\ReservationStoreUseCase;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class ReservationStoreController extends Controller
 {
@@ -22,7 +23,7 @@ class ReservationStoreController extends Controller
                 'number_of_people' => 'required|integer|min:1|max:10',
                 'notes' => 'nullable|string|max:500',
             ]);
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             return response()->json([
                 'error' => 'バリデーションエラー',
                 'errors' => $e->errors(),
