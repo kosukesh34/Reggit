@@ -2,6 +2,7 @@
 
 namespace App\UseCases\Admin\AfterRegistrationDelivery;
 
+use App\Models\AfterRegistrationDelivery;
 use App\Services\Admin\AfterRegistrationDeliveryAdminService;
 use Illuminate\Support\Collection;
 
@@ -11,7 +12,7 @@ class AdminAfterRegistrationDeliveryIndexUseCase
         private AfterRegistrationDeliveryAdminService $service
     ) {}
 
-    /** @return Collection<int, \App\Models\AfterRegistrationDelivery> */
+    /** @return Collection<int, AfterRegistrationDelivery> */
     public function handle(int $projectId): Collection
     {
         return $this->service->getListByProject($projectId);

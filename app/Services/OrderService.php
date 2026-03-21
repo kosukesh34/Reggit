@@ -10,8 +10,10 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\PointTransaction;
 use App\Models\Product;
+use App\Models\ShopSetting;
 use App\Models\User;
 use App\Services\Admin\MemberAdminService;
+use App\Util\AdminContext;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -119,7 +121,7 @@ class OrderService
     private function createOrderRecord(User $user, float $finalAmount, array $orderData, int $pointsUsed): Order
     {
         return Order::create([
-            'project_id' => $user->project_id ?? \App\Util\AdminContext::getCurrentProjectId() ?? 1,
+            'project_id' => $user->project_id ?? AdminContext::getCurrentProjectId() ?? 1,
             'user_id' => $user->id,
             'total_amount' => $finalAmount,
             'status' => OrderStatus::PENDING,
@@ -135,12 +137,12 @@ class OrderService
     {
         $orderType = (string) ($orderData['order_type'] ?? OrderType::MOBILE);
         $paymentMethod = (string) ($orderData['payment_method'] ?? '');
-        $configuredOrderMode = \App\Models\ShopSetting::getOrderMode($projectId);
+        $configuredOrderMode = ShopSetting::getOrderMode($projectId);
 
-        if ($configuredOrderMode === \App\Models\ShopSetting::ORDER_MODE_MOBILE_ONLY && $orderType !== OrderType::MOBILE) {
+        if ($configuredOrderMode === ShopSetting::ORDER_MODE_MOBILE_ONLY && $orderType !== OrderType::MOBILE) {
             throw new \Exception('現在はモバイル注文のみ利用できます。');
         }
-        if ($configuredOrderMode === \App\Models\ShopSetting::ORDER_MODE_IN_STORE_ONLY && $orderType !== OrderType::IN_STORE) {
+        if ($configuredOrderMode === ShopSetting::ORDER_MODE_IN_STORE_ONLY && $orderType !== OrderType::IN_STORE) {
             throw new \Exception('現在は店内注文のみ利用できます。');
         }
 
@@ -192,7 +194,7 @@ class OrderService
         }
 
         $projectId = $user->project_id ?? null;
-        $pointsPerOrder = (int) \App\Models\ShopSetting::getPointsPerOrder($projectId);
+        $pointsPerOrder = (int) ShopSetting::getPointsPerOrder($projectId);
         $rate = $this->getPointsEarnRate($projectId);
         $pointsFromAmount = $rate > 0 && $finalAmount > 0 ? (int) floor($finalAmount / $rate) : 0;
         $pointsEarned = $pointsPerOrder + $pointsFromAmount;
@@ -211,8 +213,8 @@ class OrderService
         }
 
         $projectId = $user->project_id ?? null;
-        $stampCardId = \App\Models\ShopSetting::getOrderStampCardId($projectId);
-        $stampEarnPerAmount = (int) \App\Models\ShopSetting::getStampEarnPerAmount($projectId);
+        $stampCardId = ShopSetting::getOrderStampCardId($projectId);
+        $stampEarnPerAmount = (int) ShopSetting::getStampEarnPerAmount($projectId);
 
         if ($stampCardId === null || $stampEarnPerAmount <= 0) {
             return;
@@ -226,7 +228,7 @@ class OrderService
 
     private function getPointsEarnRate(?int $projectId): int
     {
-        $rate = \App\Models\ShopSetting::getPointEarnRate($projectId);
+        $rate = ShopSetting::getPointEarnRate($projectId);
 
         return $rate > 0 ? $rate : self::DEFAULT_POINTS_EARN_RATE;
     }

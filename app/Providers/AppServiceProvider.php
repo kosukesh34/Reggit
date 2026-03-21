@@ -10,6 +10,7 @@ use App\Observers\ProjectObserver;
 use App\UseCases\Payment\PaymentGateway;
 use App\UseCases\Payment\StripePaymentGateway;
 use App\Util\AdminContext;
+use GuzzleHttp\Client;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
@@ -25,8 +26,8 @@ class AppServiceProvider extends ServiceProvider
             return new StripePaymentGateway($secret);
         });
 
-        $this->app->singleton(\GuzzleHttp\Client::class, function () {
-            return new \GuzzleHttp\Client(['timeout' => 15]);
+        $this->app->singleton(Client::class, function () {
+            return new Client(['timeout' => 15]);
         });
     }
 
@@ -146,7 +147,7 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('googleWalletEnabled', false);
                 $view->with('frontendLogoUrl', '');
                 $view->with('frontendHeaderText', 'モバイルオーダー');
-                $view->with('orderMode', \App\Models\ShopSetting::ORDER_MODE_BOTH);
+                $view->with('orderMode', ShopSetting::ORDER_MODE_BOTH);
                 $view->with('liffBuilderBlocks', ShopSetting::defaultLiffBuilderTemplates()[0]['blocks']);
                 $view->with('liffTabLayouts', ShopSetting::defaultLiffTabLayouts());
                 $view->with('liffCustomCss', '');

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Concerns\BelongsToProject;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class MemberTag extends Model
 {
@@ -15,7 +16,7 @@ class MemberTag extends Model
         'color',
     ];
 
-    /** @return \Illuminate\Database\Eloquent\Relations\BelongsToMany<Member> */
+    /** @return BelongsToMany<Member> */
     public function members()
     {
         return $this->belongsToMany(Member::class, 'member_tag_members');

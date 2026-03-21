@@ -2,6 +2,7 @@
 
 namespace App\UseCases\Admin\MemberTag;
 
+use App\Models\MemberTag;
 use App\Services\Admin\MemberTagAdminService;
 use Illuminate\Support\Collection;
 
@@ -14,7 +15,7 @@ class AdminMemberTagIndexUseCase
         $this->service = $service;
     }
 
-    /** @return Collection<int, \App\Models\MemberTag> */
+    /** @return Collection<int, MemberTag> */
     public function handle(int $projectId): Collection
     {
         return $this->service->getListByProject($projectId);

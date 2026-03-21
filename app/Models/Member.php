@@ -6,6 +6,7 @@ use App\Models\Concerns\BelongsToProject;
 use Database\Factories\MemberFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Member extends Model
@@ -68,7 +69,7 @@ class Member extends Model
         return $this->hasMany(MemberCoupon::class);
     }
 
-    /** @return \Illuminate\Database\Eloquent\Relations\BelongsToMany<MemberTag> */
+    /** @return BelongsToMany<MemberTag> */
     public function tags()
     {
         return $this->belongsToMany(MemberTag::class, 'member_tag_members');

@@ -149,7 +149,7 @@ class WalletPassService
 
             return null;
         }
-        $user = \App\Models\User::where('id', $userId)->where('project_id', $projectId)->first();
+        $user = User::where('id', $userId)->where('project_id', $projectId)->first();
         if ($user === null) {
             $this->setLastError('ユーザーが見つかりません。');
 
