@@ -10,6 +10,8 @@ use App\Models\Coupon;
 use App\Models\Member;
 use App\Models\Project;
 use App\Models\User;
+use App\Services\Admin\MemberAdminService;
+use App\Services\PushNotificationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -97,8 +99,8 @@ class AfterRegistrationDeliveryTest extends TestCase
 
         $job = new SendAfterRegistrationJob($member->id, $delivery->id);
         $job->handle(
-            app(\App\Services\PushNotificationService::class),
-            app(\App\Services\Admin\MemberAdminService::class)
+            app(PushNotificationService::class),
+            app(MemberAdminService::class)
         );
 
         $this->assertDatabaseHas('announcements', [

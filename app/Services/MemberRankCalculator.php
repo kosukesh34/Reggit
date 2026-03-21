@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Member;
 use App\Models\ShopSetting;
+use App\Util\AdminContext;
 
 class MemberRankCalculator
 {
@@ -12,7 +13,7 @@ class MemberRankCalculator
      */
     public function getRankInfo(Member $member): array
     {
-        $projectId = $member->project_id ?? (\App\Util\AdminContext::getCurrentProjectId() ?? 1);
+        $projectId = $member->project_id ?? (AdminContext::getCurrentProjectId() ?? 1);
         $ranks = ShopSetting::getMemberRankSettings($projectId);
         $basis = ShopSetting::getRankBasis($projectId);
 

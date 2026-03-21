@@ -17,6 +17,7 @@ use App\Models\StampCard;
 use App\Models\User;
 use App\Util\AdminContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
@@ -148,7 +149,7 @@ class AllScreensAccessibleTest extends TestCase
         ];
     }
 
-    /** @dataProvider storeAdminScreenProvider */
+    #[DataProvider('storeAdminScreenProvider')]
     public function test_store_admin_screen_opens(string $routeName, array $params): void
     {
         if (in_array($routeName, self::STORE_ADMIN_SKIP_ROUTES, true)) {
@@ -236,7 +237,7 @@ class AllScreensAccessibleTest extends TestCase
         ];
     }
 
-    /** @dataProvider systemAdminScreenProvider */
+    #[DataProvider('systemAdminScreenProvider')]
     public function test_system_admin_screen_opens(string $routeName, array $params): void
     {
         $systemAdmin = AdminUser::factory()->create(['role' => AdminUser::ROLE_SYSTEM_ADMIN]);

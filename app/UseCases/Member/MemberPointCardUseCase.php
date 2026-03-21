@@ -2,6 +2,7 @@
 
 namespace App\UseCases\Member;
 
+use App\Models\ShopSetting;
 use App\Services\MemberPointsExpiryCalculator;
 use App\Services\MemberRankCalculator;
 use App\Services\UserService;
@@ -28,12 +29,12 @@ class MemberPointCardUseCase
         $rankInfo = $this->rankCalculator->getRankInfo($member);
         $expiryInfo = $this->expiryCalculator->getExpiryInfo($member);
         $projectId = $member->project_id ?? 1;
-        $showPoints = \App\Models\ShopSetting::getShowPointsDisplay($projectId);
-        $showRankProgress = \App\Models\ShopSetting::getShowRankProgress($projectId);
-        $memberCardDesign = \App\Models\ShopSetting::getMemberCardDesign($projectId);
-        $memberCardLogoUrl = \App\Models\ShopSetting::getFrontendLogoUrl($projectId);
-        $memberCardDisplayType = \App\Models\ShopSetting::getMemberCardDisplayType($projectId);
-        $memberCardCodeType = \App\Models\ShopSetting::getMemberCardCodeType($projectId);
+        $showPoints = ShopSetting::getShowPointsDisplay($projectId);
+        $showRankProgress = ShopSetting::getShowRankProgress($projectId);
+        $memberCardDesign = ShopSetting::getMemberCardDesign($projectId);
+        $memberCardLogoUrl = ShopSetting::getFrontendLogoUrl($projectId);
+        $memberCardDisplayType = ShopSetting::getMemberCardDisplayType($projectId);
+        $memberCardCodeType = ShopSetting::getMemberCardCodeType($projectId);
 
         return new MemberPointCardView(false, [
             'member_number' => $member->member_number,

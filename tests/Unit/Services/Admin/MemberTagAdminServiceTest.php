@@ -7,6 +7,7 @@ use App\Models\MemberTag;
 use App\Models\Project;
 use App\Models\User;
 use App\Services\Admin\MemberTagAdminService;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -59,7 +60,7 @@ class MemberTagAdminServiceTest extends TestCase
 
     public function test_attach_tag_他プロジェクトのタグは付与できない(): void
     {
-        $this->expectException(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
+        $this->expectException(ModelNotFoundException::class);
 
         $otherProject = Project::firstOrCreate(
             ['project_key' => 'other'],

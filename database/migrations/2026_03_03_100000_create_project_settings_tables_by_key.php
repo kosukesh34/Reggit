@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -192,7 +193,7 @@ return new class extends Migration
         $this->ensureAllProjectsHaveRows();
     }
 
-    private function gatherFromShopSettings(): \Illuminate\Support\Collection
+    private function gatherFromShopSettings(): Collection
     {
         if (! Schema::hasTable('shop_settings')) {
             return collect();
