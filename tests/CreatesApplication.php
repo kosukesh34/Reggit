@@ -11,10 +11,12 @@ trait CreatesApplication
     {
         $app = require __DIR__.'/../bootstrap/app.php';
 
-        // テスト時に view コンパイル先ディレクトリが無いと InvalidArgumentException になるため作成する
-        $viewPath = $app->storagePath('framework/views');
-        if (! is_dir($viewPath)) {
-            mkdir($viewPath, 0755, true);
+        // テスト時に storage 配下が無いと view コンパイルや file セッションで例外になるため作成する
+        foreach (['framework/views', 'framework/sessions', 'framework/cache', 'framework/cache/data'] as $relative) {
+            $path = $app->storagePath($relative);
+            if (! is_dir($path)) {
+                mkdir($path, 0755, true);
+            }
         }
 
         $app->make(Kernel::class)->bootstrap();

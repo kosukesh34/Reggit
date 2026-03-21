@@ -1,4 +1,4 @@
-# Mobile Order - Docker 経由で PHP 8.2 の artisan を実行するための Makefile
+# Reggit - Docker 経由で artisan を実行するための Makefile
 # 使い方: make up → make migrate → make route-list など
 
 .PHONY: up down migrate route-list shell composer test test-db build-deploy
@@ -34,7 +34,7 @@ cache-clear:
 
 # テスト用DB作成（Docker 内でテストする前に1回実行）
 test-db:
-	docker-compose exec db mysql -uroot -proot -e "CREATE DATABASE IF NOT EXISTS mobile_order_test;"
+	docker-compose exec db mysql -uroot -proot -e "CREATE DATABASE IF NOT EXISTS reggit_test;"
 
 # テスト実行（要: make up & make test-db）
 test: test-db

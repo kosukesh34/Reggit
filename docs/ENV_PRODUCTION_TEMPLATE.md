@@ -54,7 +54,7 @@
 | APP_URL | 本番URL | https://reggit.shop（独自ドメイン）または http://Reggit...（EB のまま） |
 | DB_HOST | RDS エンドポイント | xxx.rds.amazonaws.com |
 | DB_PORT | 3306 |
-| DB_DATABASE | mobile_order |
+| DB_DATABASE | reggit |
 | DB_USERNAME | RDS ユーザー | （メモ用） |
 | DB_PASSWORD | RDS パスワード | （メモ用・EB にだけ入力） |
 
@@ -122,7 +122,7 @@
 | DB_CONNECTION | そのまま可 | `mysql` |
 | DB_HOST | **要変更** | RDS のエンドポイント（例: xxx.rds.amazonaws.com） |
 | DB_PORT | そのまま可 | `3306` |
-| DB_DATABASE | そのまま可 | `mobile_order`（RDS で作成した DB 名） |
+| DB_DATABASE | そのまま可 | `reggit`（RDS で作成した DB 名） |
 | DB_USERNAME | **要変更** | RDS のマスターユーザー名 |
 | DB_PASSWORD | **要変更** | RDS のパスワード |
 | ADMIN_EMAIL | そのまま可 | 未設定なら login_id に使われる |
@@ -188,7 +188,7 @@
 | DB_CONNECTION | mysql | そのまま |
 | DB_HOST | database-1.cpi8emy64hbe.ap-northeast-3.rds.amazonaws.com | あなたの RDS エンドポイント |
 | DB_PORT | 3306 | |
-| DB_DATABASE | mobile_order | RDS で作成した DB 名 |
+| DB_DATABASE | reggit | RDS で作成した DB 名 |
 | DB_USERNAME | admin | RDS のマスターユーザー名 |
 | DB_PASSWORD | （RDS のパスワード） | 手入力。画面ではマスクされる |
 
