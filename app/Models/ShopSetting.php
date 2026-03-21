@@ -11,7 +11,9 @@ use App\Models\Settings\ProjectMemberPointsSetting;
 use App\Models\Settings\ProjectMemberRankSetting;
 use App\Models\Settings\ProjectProfileSmaregiSetting;
 use App\Models\Settings\ProjectWalletSetting;
+use App\Support\ShopSettingLiffDefaults;
 use App\Util\AdminContext;
+use App\Util\StrHelper;
 
 /**
  * 店舗設定のファサード。キーごとのテーブル（project_business_settings 等）を参照する。
@@ -221,7 +223,7 @@ class ShopSetting
         $merged = [];
         foreach ($items as $item) {
             $tab = $item['tab'] ?? null;
-            if (\App\Util\StrHelper::isEmptyStringOrNull($tab) || $defaults->has($tab) === false) {
+            if (StrHelper::isEmptyStringOrNull($tab) || $defaults->has($tab) === false) {
                 continue;
             }
             $row = array_merge($defaults->get($tab), $item);
@@ -288,7 +290,7 @@ class ShopSetting
     {
         $blocks = self::getValue('liff_builder_blocks', null, $projectId);
         if (! is_array($blocks) || $blocks === []) {
-            return \App\Support\ShopSettingLiffDefaults::defaultLiffBuilderTemplates()[0]['blocks'];
+            return ShopSettingLiffDefaults::defaultLiffBuilderTemplates()[0]['blocks'];
         }
 
         return $blocks;
@@ -319,12 +321,12 @@ class ShopSetting
 
     public static function defaultLiffBuilderTemplates(): array
     {
-        return \App\Support\ShopSettingLiffDefaults::defaultLiffBuilderTemplates();
+        return ShopSettingLiffDefaults::defaultLiffBuilderTemplates();
     }
 
     public static function defaultLiffDesignerTemplates(): array
     {
-        return \App\Support\ShopSettingLiffDefaults::defaultLiffDesignerTemplates();
+        return ShopSettingLiffDefaults::defaultLiffDesignerTemplates();
     }
 
     // ── LIFF タブレイアウト ──
@@ -333,10 +335,10 @@ class ShopSetting
     {
         $layouts = self::getValue('liff_tab_layouts', null, $projectId);
         if (! is_array($layouts) || $layouts === []) {
-            return \App\Support\ShopSettingLiffDefaults::defaultLiffTabLayouts();
+            return ShopSettingLiffDefaults::defaultLiffTabLayouts();
         }
 
-        return \App\Support\ShopSettingLiffDefaults::ensureLiffTabLayouts($layouts);
+        return ShopSettingLiffDefaults::ensureLiffTabLayouts($layouts);
     }
 
     public static function getLiffCustomCss(?int $projectId = null): string
@@ -353,7 +355,7 @@ class ShopSetting
     {
         $settings = self::getValue('liff_tab_settings', null, $projectId);
 
-        return is_array($settings) && $settings !== [] ? $settings : \App\Support\ShopSettingLiffDefaults::defaultLiffTabSettings();
+        return is_array($settings) && $settings !== [] ? $settings : ShopSettingLiffDefaults::defaultLiffTabSettings();
     }
 
     public static function setLiffTabSettings(array $settings, ?int $projectId = null): void
@@ -363,7 +365,7 @@ class ShopSetting
 
     public static function setLiffTabLayouts(array $layouts, ?int $projectId = null): void
     {
-        self::setValue('liff_tab_layouts', \App\Support\ShopSettingLiffDefaults::ensureLiffTabLayouts($layouts), 'json', $projectId);
+        self::setValue('liff_tab_layouts', ShopSettingLiffDefaults::ensureLiffTabLayouts($layouts), 'json', $projectId);
     }
 
     /** LIFF 保存画面の最大件数 */
@@ -424,7 +426,7 @@ class ShopSetting
 
     public static function defaultLiffTabLayouts(): array
     {
-        return \App\Support\ShopSettingLiffDefaults::defaultLiffTabLayouts();
+        return ShopSettingLiffDefaults::defaultLiffTabLayouts();
     }
 
     /**
@@ -439,12 +441,12 @@ class ShopSetting
      */
     public static function ensureLiffTabLayouts(array $layouts): array
     {
-        return \App\Support\ShopSettingLiffDefaults::ensureLiffTabLayouts($layouts);
+        return ShopSettingLiffDefaults::ensureLiffTabLayouts($layouts);
     }
 
     public static function defaultLiffTabSettings(): array
     {
-        return \App\Support\ShopSettingLiffDefaults::defaultLiffTabSettings();
+        return ShopSettingLiffDefaults::defaultLiffTabSettings();
     }
 
     /** 全機能フラグを取得 */
@@ -719,7 +721,7 @@ class ShopSetting
                 continue;
             }
             $key = $row['key'] ?? null;
-            if (\App\Util\StrHelper::isEmptyStringOrNull($key)) {
+            if (StrHelper::isEmptyStringOrNull($key)) {
                 continue;
             }
             $normalized[] = [

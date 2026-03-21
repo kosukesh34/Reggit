@@ -7,6 +7,7 @@ use App\Models\Member;
 use App\Models\Order;
 use App\Services\CouponIssueService;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -68,7 +69,7 @@ class WinbackService
     /**
      * 指定日数以上注文のないアクティブ会員を返す。
      *
-     * @return \Illuminate\Database\Eloquent\Collection<int, Member>
+     * @return Collection<int, Member>
      */
     private function resolveDormantMembers(int $projectId, int $inactiveDays)
     {

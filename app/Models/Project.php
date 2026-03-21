@@ -2,9 +2,19 @@
 
 namespace App\Models;
 
+use App\Models\Settings\ProjectAdminUiSetting;
+use App\Models\Settings\ProjectAnnouncementSetting;
+use App\Models\Settings\ProjectBusinessSetting;
+use App\Models\Settings\ProjectFeatureFlags;
+use App\Models\Settings\ProjectLineLiffSetting;
+use App\Models\Settings\ProjectMemberPointsSetting;
+use App\Models\Settings\ProjectMemberRankSetting;
+use App\Models\Settings\ProjectProfileSmaregiSetting;
+use App\Models\Settings\ProjectWalletSetting;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Project extends Model
@@ -85,49 +95,49 @@ class Project extends Model
         return $this->hasMany(UserDevice::class);
     }
 
-    public function businessSetting(): \Illuminate\Database\Eloquent\Relations\HasOne
+    public function businessSetting(): HasOne
     {
-        return $this->hasOne(\App\Models\Settings\ProjectBusinessSetting::class);
+        return $this->hasOne(ProjectBusinessSetting::class);
     }
 
-    public function lineLiffSetting(): \Illuminate\Database\Eloquent\Relations\HasOne
+    public function lineLiffSetting(): HasOne
     {
-        return $this->hasOne(\App\Models\Settings\ProjectLineLiffSetting::class);
+        return $this->hasOne(ProjectLineLiffSetting::class);
     }
 
-    public function featureFlags(): \Illuminate\Database\Eloquent\Relations\HasOne
+    public function featureFlags(): HasOne
     {
-        return $this->hasOne(\App\Models\Settings\ProjectFeatureFlags::class);
+        return $this->hasOne(ProjectFeatureFlags::class);
     }
 
-    public function adminUiSetting(): \Illuminate\Database\Eloquent\Relations\HasOne
+    public function adminUiSetting(): HasOne
     {
-        return $this->hasOne(\App\Models\Settings\ProjectAdminUiSetting::class);
+        return $this->hasOne(ProjectAdminUiSetting::class);
     }
 
-    public function profileSmaregiSetting(): \Illuminate\Database\Eloquent\Relations\HasOne
+    public function profileSmaregiSetting(): HasOne
     {
-        return $this->hasOne(\App\Models\Settings\ProjectProfileSmaregiSetting::class);
+        return $this->hasOne(ProjectProfileSmaregiSetting::class);
     }
 
-    public function memberPointsSetting(): \Illuminate\Database\Eloquent\Relations\HasOne
+    public function memberPointsSetting(): HasOne
     {
-        return $this->hasOne(\App\Models\Settings\ProjectMemberPointsSetting::class);
+        return $this->hasOne(ProjectMemberPointsSetting::class);
     }
 
-    public function memberRankSetting(): \Illuminate\Database\Eloquent\Relations\HasOne
+    public function memberRankSetting(): HasOne
     {
-        return $this->hasOne(\App\Models\Settings\ProjectMemberRankSetting::class);
+        return $this->hasOne(ProjectMemberRankSetting::class);
     }
 
-    public function walletSetting(): \Illuminate\Database\Eloquent\Relations\HasOne
+    public function walletSetting(): HasOne
     {
-        return $this->hasOne(\App\Models\Settings\ProjectWalletSetting::class);
+        return $this->hasOne(ProjectWalletSetting::class);
     }
 
-    public function announcementSetting(): \Illuminate\Database\Eloquent\Relations\HasOne
+    public function announcementSetting(): HasOne
     {
-        return $this->hasOne(\App\Models\Settings\ProjectAnnouncementSetting::class);
+        return $this->hasOne(ProjectAnnouncementSetting::class);
     }
 
     public function isSmaregiLinked(): bool

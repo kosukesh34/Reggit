@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\Api\V1\AnnouncementController as ApiV1AnnouncementController;
+use App\Http\Controllers\Api\V1\AppConfigController;
 use App\Http\Controllers\Api\V1\CouponController as ApiV1CouponController;
 use App\Http\Controllers\Api\V1\Member\MemberMeController as ApiV1MemberMeController;
 use App\Http\Controllers\Api\V1\Member\MemberPointCardController as ApiV1MemberPointCardController;
@@ -39,6 +40,7 @@ use App\Http\Controllers\PostalCodeController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\Queue\QueueCallNextController;
 use App\Http\Controllers\Queue\QueueCancelController;
+use App\Http\Controllers\Queue\QueueListController;
 use App\Http\Controllers\Queue\QueueMeController;
 use App\Http\Controllers\Queue\QueueQrStatusController;
 use App\Http\Controllers\Queue\QueueStatusController;
@@ -48,6 +50,8 @@ use App\Http\Controllers\Reservation\ReservationCancelController;
 use App\Http\Controllers\Reservation\ReservationIndexController;
 use App\Http\Controllers\Reservation\ReservationStoreController;
 use App\Http\Controllers\Reservation\ReservationUpdateController;
+use App\Http\Controllers\Smaregi\SmaregiIdpController;
+use App\Http\Controllers\Smaregi\SmaregiWebhookController;
 use App\Http\Controllers\StampController;
 use App\Http\Middleware\AuthenticateApiToken;
 use App\Http\Middleware\CheckApiProject;
@@ -56,8 +60,8 @@ use Illuminate\Support\Facades\Route;
 Route::match(['get', 'post'], '/line/webhook', [LineWebhookController::class, 'handle']);
 
 // スマレジ・プラットフォームAPI 連携（利用者契約通知・Webhook）
-Route::post('/smaregi/idp', [\App\Http\Controllers\Smaregi\SmaregiIdpController::class, '__invoke'])->name('smaregi.idp');
-Route::post('/smaregi/webhook', [\App\Http\Controllers\Smaregi\SmaregiWebhookController::class, '__invoke'])->name('smaregi.webhook');
+Route::post('/smaregi/idp', [SmaregiIdpController::class, '__invoke'])->name('smaregi.idp');
+Route::post('/smaregi/webhook', [SmaregiWebhookController::class, '__invoke'])->name('smaregi.webhook');
 
 // API v1（Bearer トークン認証・モバイルアプリ用）※従来: トークンの project でコンテキスト設定
 Route::prefix('v1')->middleware([AuthenticateApiToken::class])->group(function () {
@@ -104,7 +108,7 @@ Route::prefix('v1')->middleware([CheckApiProject::class, AuthenticateApiToken::c
 });
 
 // ネイティブアプリ設定（認証不要・project_key クエリで取得）
-Route::get('/v1/app-config', \App\Http\Controllers\Api\V1\AppConfigController::class);
+Route::get('/v1/app-config', AppConfigController::class);
 
 Route::middleware(['web', 'bind.project'])->group(function () {
     Route::get('/products', [ProductController::class, 'index']);
@@ -148,7 +152,7 @@ Route::middleware(['web', 'bind.project'])->group(function () {
 
     Route::post('/queue', [QueueStoreController::class, '__invoke']);
     Route::get('/queue/me', [QueueMeController::class, '__invoke']);
-    Route::get('/queue/list', [\App\Http\Controllers\Queue\QueueListController::class, '__invoke']);
+    Route::get('/queue/list', [QueueListController::class, '__invoke']);
     Route::get('/queue/{id}', [QueueStatusController::class, '__invoke']);
     Route::post('/queue/{id}/cancel', [QueueCancelController::class, '__invoke']);
     Route::post('/queue/call-next', [QueueCallNextController::class, '__invoke']);

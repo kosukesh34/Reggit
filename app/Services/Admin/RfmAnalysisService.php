@@ -5,6 +5,7 @@ namespace App\Services\Admin;
 use App\Enums\OrderStatus;
 use App\Models\Member;
 use App\Models\Order;
+use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -81,7 +82,7 @@ class RfmAnalysisService
 
     /**
      * @param  int[]  $userIds
-     * @return array<int, array{last_order_at: \Carbon\Carbon, order_count: int, total_amount: float}>
+     * @return array<int, array{last_order_at: Carbon, order_count: int, total_amount: float}>
      */
     private function fetchOrderStats(int $projectId, array $userIds): array
     {
@@ -100,7 +101,7 @@ class RfmAnalysisService
         $result = [];
         foreach ($rows as $row) {
             $result[(int) $row->user_id] = [
-                'last_order_at' => \Carbon\Carbon::parse($row->last_order_at),
+                'last_order_at' => Carbon::parse($row->last_order_at),
                 'order_count' => (int) $row->order_count,
                 'total_amount' => (float) $row->total_amount,
             ];

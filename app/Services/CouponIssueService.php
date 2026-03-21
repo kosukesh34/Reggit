@@ -6,6 +6,7 @@ use App\Models\Coupon;
 use App\Models\Member;
 use App\Models\MemberCoupon;
 use Carbon\Carbon;
+use Illuminate\Support\Collection;
 
 class CouponIssueService
 {
@@ -80,7 +81,7 @@ class CouponIssueService
         $this->issueCouponsToMember($member, $coupons);
     }
 
-    /** @param \Illuminate\Support\Collection<int, Coupon> $coupons */
+    /** @param Collection<int, Coupon> $coupons */
     private function issueCouponsToMember(Member $member, $coupons): void
     {
         $now = now();

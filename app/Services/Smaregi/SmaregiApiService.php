@@ -2,6 +2,7 @@
 
 namespace App\Services\Smaregi;
 
+use App\Enums\SmaregiContractStatus;
 use App\Models\ShopSetting;
 use App\Models\SmaregiContract;
 use Illuminate\Http\Client\ConnectionException;
@@ -473,7 +474,7 @@ class SmaregiApiService
             return trim($contractId);
         }
         $contract = SmaregiContract::where('project_id', $projectId)
-            ->where('status', \App\Enums\SmaregiContractStatus::ACTIVE)
+            ->where('status', SmaregiContractStatus::ACTIVE)
             ->first();
 
         if ($contract !== null && $contract->contract_id !== '') {
