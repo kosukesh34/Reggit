@@ -46,6 +46,11 @@ class AdminUserSeeder extends Seeder
             ]
         );
 
+        // DEMO_SEED=false でも非本番ではドキュメント通り demo_sys でログインできるようにする
+        if ($useDemo === false && app()->environment('production') === false) {
+            self::upsertDocumentedDemoSystemAdmin();
+        }
+
         // 初回のみデフォルトプロジェクトを作成（DemoAdminUsersSeeder で使う）
         if (! Project::where('is_active', true)->exists()) {
             Project::create([
@@ -55,5 +60,21 @@ class AdminUserSeeder extends Seeder
                 'is_active' => true,
             ]);
         }
+    }
+
+    /** ドキュメント記載のデモ用システム管理者（既定: demo_sys）を DB に反映する */
+    public static function upsertDocumentedDemoSystemAdmin(): void
+    {
+        $loginId = env('DEMO_SYSTEM_LOGIN_ID', 'demo_sys');
+        AdminUser::updateOrCreate(
+            ['login_id' => $loginId],
+            [
+                'email' => env('DEMO_SYSTEM_EMAIL', $loginId.'@example.com'),
+                'password' => self::demoSystemPassword(),
+                'name' => env('DEMO_SYSTEM_NAME', 'デモシステム管理者'),
+                'role' => AdminUser::ROLE_SYSTEM_ADMIN,
+                'project_id' => null,
+            ]
+        );
     }
 }
