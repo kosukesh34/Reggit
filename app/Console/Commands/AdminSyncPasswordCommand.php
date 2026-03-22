@@ -22,7 +22,14 @@ class AdminSyncPasswordCommand extends Command
 
         $user = AdminUser::where('login_id', $loginId)->first();
         if ($user === null) {
-            $this->error("login_id [{$loginId}] のユーザーが存在しません。先に db:seed --class=AdminUserSeeder を実行してください。");
+            $demoLoginId = env('DEMO_SYSTEM_LOGIN_ID', 'demo_sys');
+            if ($loginId === $demoLoginId && app()->environment('production') === false) {
+                AdminUserSeeder::upsertDocumentedDemoSystemAdmin();
+                $user = AdminUser::where('login_id', $loginId)->first();
+            }
+        }
+        if ($user === null) {
+            $this->error("login_id [{$loginId}] のユーザーが存在しません。先に php artisan db:seed --class=AdminUserSeeder を実行してください。");
 
             return self::FAILURE;
         }
