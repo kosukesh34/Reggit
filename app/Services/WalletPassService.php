@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Models\Member;
+use App\Models\Project;
+use App\Models\ShopSetting;
 use App\Models\User;
 use App\Util\AdminContext;
 use App\Util\StrHelper;
@@ -20,7 +22,8 @@ class WalletPassService
 
     public function __construct(
         private UserService $userService,
-        private MemberService $memberService
+        private MemberService $memberService,
+        private WalletPassSyncService $walletPassSyncService
     ) {}
 
     public static function getLastError(): ?string
@@ -95,7 +98,9 @@ class WalletPassService
             'points' => $data['points'] ?? $member->getTotalPointsFromTransactions(),
             'rank_label' => $data['current_rank_label'] ?? $member->rank ?? '',
             'rank_key' => $data['current_rank'] ?? $member->rank ?? 'bronze',
+            'rank_color' => $this->resolveRankColorHex($data, $project?->id),
         ];
+        $this->appendPassWebServiceFields($extraFields, $member, $serialNumber, $project);
 
         $projectId = $project !== null ? $project->id : null;
 
@@ -131,7 +136,9 @@ class WalletPassService
             'points' => $data['points'] ?? $member->getTotalPointsFromTransactions(),
             'rank_label' => $data['current_rank_label'] ?? $member->rank ?? '',
             'rank_key' => $data['current_rank'] ?? $member->rank ?? 'bronze',
+            'rank_color' => $this->resolveRankColorHex($data, $project?->id),
         ];
+        $this->appendPassWebServiceFields($extraFields, $member, $serialNumber, $project);
 
         $projectId = $project !== null ? $project->id : null;
 
@@ -175,9 +182,34 @@ class WalletPassService
             'points' => $data['points'] ?? $member->getTotalPointsFromTransactions(),
             'rank_label' => $data['current_rank_label'] ?? $member->rank ?? '',
             'rank_key' => $data['current_rank'] ?? $member->rank ?? 'bronze',
+            'rank_color' => $this->resolveRankColorHex($data, $project?->id),
         ];
+        $this->appendPassWebServiceFields($extraFields, $member, $serialNumber, $project);
 
         return $this->buildMembershipPass($barcodeMessage, $organizationName, $serialNumber, $extraFields, (int) $projectId);
+    }
+
+    /**
+     * @param  array<string, string|int|float|bool|null>  $extraFields
+     */
+    private function appendPassWebServiceFields(array &$extraFields, Member $member, string $serialNumber, ?Project $project): void
+    {
+        $passType = (string) config('wallet_pass.type_id', '');
+        if ($passType === '') {
+            return;
+        }
+
+        $pass = $this->walletPassSyncService->ensurePassForMember($member, $serialNumber, $passType);
+        $resolvedProject = $project;
+        if ($resolvedProject === null) {
+            $resolvedProject = Project::find((int) $member->project_id);
+        }
+        if ($resolvedProject === null) {
+            return;
+        }
+
+        $extraFields['authentication_token'] = (string) $pass->authentication_token;
+        $extraFields['web_service_url'] = $this->walletPassSyncService->resolveWebServiceUrlForProject($resolvedProject);
     }
 
     /** ランク別カード色（ウェブ会員証のグラデーション末尾色に合わせた背景・文字・ラベル） @return array{bg: string, fg: string, label: string} */
@@ -244,6 +276,12 @@ class WalletPassService
         $rankLabel = isset($extraFields['rank_label']) ? (string) $extraFields['rank_label'] : '';
         $rankKey = isset($extraFields['rank_key']) ? (string) $extraFields['rank_key'] : 'bronze';
         $colors = self::getRankColors($rankKey);
+        $rankColorHex = isset($extraFields['rank_color']) ? $this->normalizeHexColor((string) $extraFields['rank_color']) : null;
+        if ($rankColorHex !== null) {
+            $colors = $this->buildPassColorsFromHex($rankColorHex);
+        }
+        $authenticationToken = isset($extraFields['authentication_token']) ? trim((string) $extraFields['authentication_token']) : '';
+        $webServiceUrl = isset($extraFields['web_service_url']) ? rtrim(trim((string) $extraFields['web_service_url']), '/') : '';
 
         $pass = [
             'formatVersion' => 1,
@@ -273,6 +311,10 @@ class WalletPassService
                 'altText' => $barcodeMessage,
             ],
         ];
+        if ($authenticationToken !== '' && $webServiceUrl !== '') {
+            $pass['authenticationToken'] = $authenticationToken;
+            $pass['webServiceURL'] = $webServiceUrl;
+        }
 
         File::put($dir.'/pass.json', json_encode($pass, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
     }
@@ -308,6 +350,7 @@ class WalletPassService
     {
         $assetsPath = $this->resolveProjectAssetsPath($projectId);
         $rankKey = isset($extraFields['rank_key']) ? (string) $extraFields['rank_key'] : 'bronze';
+        $rankColorHex = isset($extraFields['rank_color']) ? $this->normalizeHexColor((string) $extraFields['rank_color']) : null;
 
         $required = [
             'icon.png' => [29, 29],
@@ -337,7 +380,7 @@ class WalletPassService
             } elseif (File::isFile($srcRank)) {
                 File::copy($srcRank, $dst);
             } else {
-                $this->createStripPlaceholder($dst, $size[0], $size[1], $rankKey);
+                $this->createStripPlaceholder($dst, $size[0], $size[1], $rankKey, $rankColorHex);
             }
         }
     }
@@ -358,12 +401,14 @@ class WalletPassService
     }
 
     /** ランク色のストリップ画像を生成（ウェブ会員証と同じ 4 段階グラデーション＋上部光沢で高級感） */
-    private function createStripPlaceholder(string $path, int $width, int $height, string $rankKey): void
+    private function createStripPlaceholder(string $path, int $width, int $height, string $rankKey, ?string $rankColorHex = null): void
     {
         if (! extension_loaded('gd')) {
             throw new \RuntimeException('Wallet Pass の画像生成に GD 拡張が必要です。');
         }
-        $stops = self::getRankStripGradientStops($rankKey);
+        $stops = $rankColorHex !== null
+            ? $this->buildGradientStopsFromHex($rankColorHex)
+            : self::getRankStripGradientStops($rankKey);
         $im = imagecreatetruecolor($width, $height);
         if ($im === false) {
             throw new \RuntimeException('画像の作成に失敗しました。');
@@ -403,6 +448,114 @@ class WalletPassService
         }
         imagepng($im, $path);
         imagedestroy($im);
+    }
+
+    /**
+     * @param  array<string, mixed>  $memberData
+     */
+    private function resolveRankColorHex(array $memberData, ?int $projectId): ?string
+    {
+        $candidate = isset($memberData['current_rank_color']) ? (string) $memberData['current_rank_color'] : '';
+        $normalized = $this->normalizeHexColor($candidate);
+        if ($normalized !== null) {
+            return $normalized;
+        }
+        if ($projectId === null) {
+            return null;
+        }
+
+        $rankKey = isset($memberData['current_rank']) ? (string) $memberData['current_rank'] : '';
+        if ($rankKey === '') {
+            return null;
+        }
+
+        $rankSettings = ShopSetting::getMemberRankSettings($projectId);
+        foreach ($rankSettings as $rank) {
+            if (($rank['key'] ?? null) !== $rankKey) {
+                continue;
+            }
+            $color = isset($rank['card_color']) ? (string) $rank['card_color'] : '';
+
+            return $this->normalizeHexColor($color);
+        }
+
+        return null;
+    }
+
+    private function normalizeHexColor(string $hex): ?string
+    {
+        $hex = trim($hex);
+        if (! preg_match('/^#[0-9A-Fa-f]{3}([0-9A-Fa-f]{3})?$/', $hex)) {
+            return null;
+        }
+        if (strlen($hex) === 4) {
+            $hex = '#'.$hex[1].$hex[1].$hex[2].$hex[2].$hex[3].$hex[3];
+        }
+
+        return strtoupper($hex);
+    }
+
+    /** @return array{0: int, 1: int, 2: int} */
+    private function hexToRgb(string $hex): array
+    {
+        return [
+            hexdec(substr($hex, 1, 2)),
+            hexdec(substr($hex, 3, 2)),
+            hexdec(substr($hex, 5, 2)),
+        ];
+    }
+
+    private function rgbString(array $rgb): string
+    {
+        return 'rgb('.$rgb[0].', '.$rgb[1].', '.$rgb[2].')';
+    }
+
+    /** @return array{bg: string, fg: string, label: string} */
+    private function buildPassColorsFromHex(string $hex): array
+    {
+        $rgb = $this->hexToRgb($hex);
+        $luminance = (($rgb[0] * 299) + ($rgb[1] * 587) + ($rgb[2] * 114)) / 1000;
+        $isLight = $luminance >= 160;
+        $fg = $isLight ? [33, 33, 33] : [255, 255, 255];
+        $label = $isLight ? [80, 80, 80] : [235, 235, 235];
+
+        return [
+            'bg' => $this->rgbString($rgb),
+            'fg' => $this->rgbString($fg),
+            'label' => $this->rgbString($label),
+        ];
+    }
+
+    /** @return array<int, array{0: float, 1: int, 2: int, 3: int}> */
+    private function buildGradientStopsFromHex(string $hex): array
+    {
+        $base = $this->hexToRgb($hex);
+        $light = $this->mixRgb($base, [255, 255, 255], 0.25);
+        $mid = $base;
+        $dark = $this->mixRgb($base, [0, 0, 0], 0.10);
+        $deep = $this->mixRgb($base, [0, 0, 0], 0.35);
+
+        return [
+            [0.00, $light[0], $light[1], $light[2]],
+            [0.35, $mid[0], $mid[1], $mid[2]],
+            [0.65, $dark[0], $dark[1], $dark[2]],
+            [1.00, $deep[0], $deep[1], $deep[2]],
+        ];
+    }
+
+    /** @param  array{0: int, 1: int, 2: int}  $from
+     *  @param  array{0: int, 1: int, 2: int}  $to
+     *  @return array{0: int, 1: int, 2: int}
+     */
+    private function mixRgb(array $from, array $to, float $ratio): array
+    {
+        $clamped = max(0.0, min(1.0, $ratio));
+
+        return [
+            (int) round($from[0] + (($to[0] - $from[0]) * $clamped)),
+            (int) round($from[1] + (($to[1] - $from[1]) * $clamped)),
+            (int) round($from[2] + (($to[2] - $from[2]) * $clamped)),
+        ];
     }
 
     private function writeManifest(string $dir): void

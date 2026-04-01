@@ -3,9 +3,11 @@
 namespace App\Providers;
 
 use App\Models\MemberStamp;
+use App\Models\PointTransaction;
 use App\Models\Project;
 use App\Models\ShopSetting;
 use App\Observers\MemberStampObserver;
+use App\Observers\PointTransactionObserver;
 use App\Observers\ProjectObserver;
 use App\UseCases\Payment\PaymentGateway;
 use App\UseCases\Payment\StripePaymentGateway;
@@ -35,6 +37,7 @@ class AppServiceProvider extends ServiceProvider
     {
         Project::observe(ProjectObserver::class);
         MemberStamp::observe(MemberStampObserver::class);
+        PointTransaction::observe(PointTransactionObserver::class);
 
         if ($this->app->runningInConsole() === false) {
             if (request()->isSecure() ||

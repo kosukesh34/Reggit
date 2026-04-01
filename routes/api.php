@@ -53,6 +53,7 @@ use App\Http\Controllers\Reservation\ReservationUpdateController;
 use App\Http\Controllers\Smaregi\SmaregiIdpController;
 use App\Http\Controllers\Smaregi\SmaregiWebhookController;
 use App\Http\Controllers\StampController;
+use App\Http\Controllers\WalletPassWebServiceController;
 use App\Http\Middleware\AuthenticateApiToken;
 use App\Http\Middleware\CheckApiProject;
 use Illuminate\Support\Facades\Route;
@@ -109,6 +110,15 @@ Route::prefix('v1')->middleware([CheckApiProject::class, AuthenticateApiToken::c
 
 // ネイティブアプリ設定（認証不要・project_key クエリで取得）
 Route::get('/v1/app-config', AppConfigController::class);
+
+// Apple PassKit Web Service（iOS Wallet 自動更新）
+Route::prefix('wallet/v1/{project_key}')->middleware(['bind.project'])->group(function () {
+    Route::post('/devices/{deviceLibraryIdentifier}/registrations/{passTypeIdentifier}/{serialNumber}', [WalletPassWebServiceController::class, 'registerDevice']);
+    Route::delete('/devices/{deviceLibraryIdentifier}/registrations/{passTypeIdentifier}/{serialNumber}', [WalletPassWebServiceController::class, 'unregisterDevice']);
+    Route::get('/devices/{deviceLibraryIdentifier}/registrations/{passTypeIdentifier}', [WalletPassWebServiceController::class, 'listSerials']);
+    Route::get('/passes/{passTypeIdentifier}/{serialNumber}', [WalletPassWebServiceController::class, 'getLatestPass']);
+    Route::post('/log', [WalletPassWebServiceController::class, 'log']);
+});
 
 Route::middleware(['web', 'bind.project'])->group(function () {
     Route::get('/products', [ProductController::class, 'index']);

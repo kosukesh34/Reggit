@@ -66,10 +66,11 @@ class GoogleWalletPassService
         $objectSuffix = 'member-'.(string) $member->id.'-b';
         $points = $data['points'] ?? $member->getTotalPointsFromTransactions();
         $rankLabel = $data['current_rank_label'] ?? $member->rank ?? '';
+        $rankColor = $this->normalizeHexColor((string) ($data['current_rank_color'] ?? ''));
         $accountName = $user->name ?? '';
         $projectId = $project !== null ? $project->id : (isset($user->project_id) ? (int) $user->project_id : null);
 
-        return $this->createSaveUrl($organizationName, $barcodeValue, $objectSuffix, $points, $rankLabel, $accountName, $projectId);
+        return $this->createSaveUrl($organizationName, $barcodeValue, $objectSuffix, $points, $rankLabel, $accountName, $projectId, $rankColor);
     }
 
     /**
@@ -103,6 +104,7 @@ class GoogleWalletPassService
      *
      * @param  string  $accountName  会員名（表示用）
      * @param  int|null  $projectId  プロジェクトID（指定時は管理画面で設定した画像URLを優先）
+     * @param  string|null  $rankColorHex  会員ランク色（#RRGGBB）
      */
     public function createSaveUrl(
         string $organizationName,
@@ -111,7 +113,8 @@ class GoogleWalletPassService
         int $points = 0,
         string $rankLabel = '',
         string $accountName = '',
-        ?int $projectId = null
+        ?int $projectId = null,
+        ?string $rankColorHex = null
     ): ?string {
         if (! $this->isAvailable()) {
             return null;
@@ -148,8 +151,10 @@ class GoogleWalletPassService
             'barcodeValue' => $barcodeValue,
             'points' => $points,
             'rankLabel' => $rankLabel,
+            'objectHexBackgroundColor' => $this->normalizeHexColor($rankColorHex ?? ''),
         ];
         $built = $this->payloadBuilder->build($payloadParams);
+        $this->ensureLoyaltyObjectSynced($objectId, $built['loyaltyObject']);
 
         $credentials = $this->loadCredentials();
         if ($credentials === null) {
@@ -173,6 +178,72 @@ class GoogleWalletPassService
         ];
 
         return $this->encodeJwtAndBuildSaveUrl($claims, $credentials['private_key'], $projectId);
+    }
+
+    /**
+     * LoyaltyObject が存在すればポイント等の表示フィールドを PATCH、存在しなければ INSERT。
+     * 失敗しても URL 発行は継続（JWT payload での追加にフォールバック）。
+     *
+     * @param  array<string, mixed>  $loyaltyObject
+     */
+    private function ensureLoyaltyObjectSynced(string $objectId, array $loyaltyObject): void
+    {
+        $token = $this->getWalletApiAccessToken();
+        if ($token === null) {
+            return;
+        }
+
+        $get = Http::withToken($token)
+            ->get(self::WALLET_OBJECTS_BASE.'/loyaltyObject/'.$objectId);
+
+        if ($get->successful()) {
+            $patchBody = [
+                'accountName' => $loyaltyObject['accountName'] ?? '',
+                'accountId' => $loyaltyObject['accountId'] ?? '',
+                'barcode' => $loyaltyObject['barcode'] ?? null,
+                'loyaltyPoints' => $loyaltyObject['loyaltyPoints'] ?? null,
+                'textModulesData' => $loyaltyObject['textModulesData'] ?? [],
+                'heroImage' => $loyaltyObject['heroImage'] ?? null,
+            ];
+            if (isset($loyaltyObject['hexBackgroundColor'])) {
+                $patchBody['hexBackgroundColor'] = $loyaltyObject['hexBackgroundColor'];
+            }
+            $patch = Http::withToken($token)
+                ->withHeaders(['Content-Type' => 'application/json'])
+                ->patch(self::WALLET_OBJECTS_BASE.'/loyaltyObject/'.$objectId, $patchBody);
+
+            if (! $patch->successful()) {
+                Log::warning('google-wallet loyaltyObject patch failed', [
+                    'objectId' => $objectId,
+                    'status' => $patch->status(),
+                    'body' => $patch->body(),
+                ]);
+            }
+
+            return;
+        }
+
+        if ($get->status() !== 404) {
+            Log::warning('google-wallet loyaltyObject get failed', [
+                'objectId' => $objectId,
+                'status' => $get->status(),
+                'body' => $get->body(),
+            ]);
+
+            return;
+        }
+
+        $insert = Http::withToken($token)
+            ->withHeaders(['Content-Type' => 'application/json'])
+            ->post(self::WALLET_OBJECTS_BASE.'/loyaltyObject', $loyaltyObject);
+
+        if (! $insert->successful()) {
+            Log::warning('google-wallet loyaltyObject insert failed', [
+                'objectId' => $objectId,
+                'status' => $insert->status(),
+                'body' => $insert->body(),
+            ]);
+        }
     }
 
     /**
@@ -336,6 +407,19 @@ class GoogleWalletPassService
         }
 
         return 'http://localhost';
+    }
+
+    private function normalizeHexColor(string $hex): ?string
+    {
+        $hex = trim($hex);
+        if (! preg_match('/^#[0-9A-Fa-f]{3}([0-9A-Fa-f]{3})?$/', $hex)) {
+            return null;
+        }
+        if (strlen($hex) === 4) {
+            $hex = '#'.$hex[1].$hex[1].$hex[2].$hex[2].$hex[3].$hex[3];
+        }
+
+        return strtoupper($hex);
     }
 
     /**

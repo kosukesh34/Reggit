@@ -13,7 +13,7 @@ class GoogleWalletLoyaltyPayloadBuilder
     /**
      * LoyaltyClass と LoyaltyObject の配列を返す。
      *
-     * @param  array{classId: string, objectId: string, programName: string, programLogoUri: string, heroImageUri: string, accountNameDisplay: string, accountIdDisplay: string, barcodeValue: string, points: int, rankLabel: string}  $params
+     * @param  array{classId: string, objectId: string, programName: string, programLogoUri: string, heroImageUri: string, accountNameDisplay: string, accountIdDisplay: string, barcodeValue: string, points: int, rankLabel: string, objectHexBackgroundColor?: string|null}  $params
      * @return array{loyaltyClass: array<string, mixed>, loyaltyObject: array<string, mixed>}
      */
     public function build(array $params): array
@@ -37,7 +37,7 @@ class GoogleWalletLoyaltyPayloadBuilder
     }
 
     /**
-     * @param  array{classId: string, programName: string, programLogoUri: string, accountNameDisplay: string, accountIdDisplay: string, barcodeValue: string, points: int, rankLabel: string}  $params
+     * @param  array{classId: string, programName: string, programLogoUri: string, accountNameDisplay: string, accountIdDisplay: string, barcodeValue: string, points: int, rankLabel: string, objectHexBackgroundColor?: string|null}  $params
      * @return array<string, mixed>
      */
     private function buildLoyaltyClass(array $params): array
@@ -105,7 +105,7 @@ class GoogleWalletLoyaltyPayloadBuilder
     }
 
     /**
-     * @param  array{objectId: string, classId: string, programName: string, heroImageUri: string, accountNameDisplay: string, accountIdDisplay: string, barcodeValue: string, points: int, rankLabel: string}  $params
+     * @param  array{objectId: string, classId: string, programName: string, heroImageUri: string, accountNameDisplay: string, accountIdDisplay: string, barcodeValue: string, points: int, rankLabel: string, objectHexBackgroundColor?: string|null}  $params
      * @return array<string, mixed>
      */
     private function buildLoyaltyObject(array $params): array
@@ -113,7 +113,7 @@ class GoogleWalletLoyaltyPayloadBuilder
         $lang = GoogleWalletApi::DEFAULT_LANGUAGE;
         $textModules = $this->buildTextModules($params['rankLabel'], (string) $params['points'], $params['barcodeValue']);
 
-        return [
+        $object = [
             'id' => $params['objectId'],
             'classId' => $params['classId'],
             'state' => GoogleWalletApi::OBJECT_STATE_ACTIVE,
@@ -136,6 +136,12 @@ class GoogleWalletLoyaltyPayloadBuilder
                 ],
             ],
         ];
+        $objectHexBackgroundColor = $params['objectHexBackgroundColor'] ?? null;
+        if (is_string($objectHexBackgroundColor) && preg_match('/^#[0-9A-Fa-f]{3}([0-9A-Fa-f]{3})?$/', $objectHexBackgroundColor)) {
+            $object['hexBackgroundColor'] = $objectHexBackgroundColor;
+        }
+
+        return $object;
     }
 
     /**

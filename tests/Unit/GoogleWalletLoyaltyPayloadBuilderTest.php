@@ -45,6 +45,26 @@ class GoogleWalletLoyaltyPayloadBuilderTest extends TestCase
         $this->assertSame(100, $object['loyaltyPoints']['balance']['int']);
     }
 
+    public function test_build_ランク色が指定された場合は_object_hex_background_color_を含むこと(): void
+    {
+        $builder = new GoogleWalletLoyaltyPayloadBuilder;
+        $result = $builder->build([
+            'classId' => 'issuer.class1',
+            'objectId' => 'issuer.obj1',
+            'programName' => 'Test Program',
+            'programLogoUri' => 'https://example.com/logo.png',
+            'heroImageUri' => 'https://example.com/hero.png',
+            'accountNameDisplay' => '会員名',
+            'accountIdDisplay' => '12345',
+            'barcodeValue' => '12345',
+            'points' => 100,
+            'rankLabel' => 'ゴールド',
+            'objectHexBackgroundColor' => '#D97706',
+        ]);
+
+        $this->assertSame('#D97706', $result['loyaltyObject']['hexBackgroundColor']);
+    }
+
     public function test_truncate_for_wallet_指定長で切り詰めること(): void
     {
         $builder = new GoogleWalletLoyaltyPayloadBuilder;
