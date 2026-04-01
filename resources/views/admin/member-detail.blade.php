@@ -176,7 +176,7 @@
 </div>
 
 {{-- 直近注文履歴 --}}
-@if(!empty($purchaseSummary['recent_orders']) && $purchaseSummary['recent_orders']->isNotEmpty())
+@if(isset($purchaseSummary['recent_orders']) && $purchaseSummary['recent_orders'] !== null && $purchaseSummary['recent_orders']->isNotEmpty())
 <div class="card">
     <div class="card-header">
         <h3 class="card-title"><i class="fas fa-shopping-bag"></i> 直近の注文</h3>

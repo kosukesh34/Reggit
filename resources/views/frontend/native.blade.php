@@ -57,18 +57,18 @@
     <script>
     (function() {
         window.__MOBILE_APP_MODE__ = true;
-        var logMax = 50;
-        var logLines = [];
+        let logMax = 50;
+        let logLines = [];
         window.__mobileOrderLog = function(msg, data) {
-            var line = (typeof msg === 'string' ? msg : JSON.stringify(msg)) + (data !== undefined ? ' ' + (typeof data === 'object' ? JSON.stringify(data) : String(data)) : '');
-            var ts = new Date().toISOString().substr(11, 12);
+            let line = (typeof msg === 'string' ? msg : JSON.stringify(msg)) + (data !== undefined ? ' ' + (typeof data === 'object' ? JSON.stringify(data) : String(data)) : '');
+            let ts = new Date().toISOString().substr(11, 12);
             console.log('[MobileOrder]', ts, msg, data !== undefined ? data : '');
             logLines.push(ts + ' ' + line);
             if (logLines.length > logMax) logLines.shift();
         };
         document.documentElement.classList.add('native-app-embed');
         (function() {
-            var s = document.createElement('style');
+            let s = document.createElement('style');
             s.id = 'native-app-hide-loading';
             s.textContent = 'html.native-app-embed #liff-loading { display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; }' +
                 'html.native-app-embed .app-container { display: flex !important; visibility: visible !important; min-height: max(100vh, 800px) !important; background: #fff !important; }' +
@@ -79,7 +79,7 @@
         })();
         document.addEventListener('DOMContentLoaded', function() {
             document.body.classList.add('native-app-embed');
-            var loadingEl = document.getElementById('liff-loading');
+            let loadingEl = document.getElementById('liff-loading');
             if (loadingEl) {
                 loadingEl.classList.add('liff-loading--hidden');
                 loadingEl.style.display = 'none';

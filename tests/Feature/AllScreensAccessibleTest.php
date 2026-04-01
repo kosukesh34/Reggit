@@ -92,7 +92,7 @@ class AllScreensAccessibleTest extends TestCase
     }
 
     /**
-     * @return array<string, array{string, array<string, mixed>}>
+     * @return array<string, array{string, array<string, bool|int|float|string|array|null>}>
      */
     public static function storeAdminScreenProvider(): array
     {
@@ -167,7 +167,7 @@ class AllScreensAccessibleTest extends TestCase
     }
 
     /**
-     * @return array<string, mixed>
+     * @return array<string, bool|int|float|string|array|null>
      */
     private function resolveStoreAdminParams(array $params, ?string $routeName = null): array
     {
@@ -216,7 +216,7 @@ class AllScreensAccessibleTest extends TestCase
     }
 
     /**
-     * @return array<string, array{string, array<string, mixed>}>
+     * @return array<string, array{string, array<string, bool|int|float|string|array|null>}>
      */
     public static function systemAdminScreenProvider(): array
     {
@@ -251,7 +251,7 @@ class AllScreensAccessibleTest extends TestCase
     }
 
     /**
-     * @return array<string, mixed>
+     * @return array<string, bool|int|float|string|array|null>
      */
     private function resolveSystemAdminParams(array $params, string $routeName, AdminUser $systemAdmin): array
     {

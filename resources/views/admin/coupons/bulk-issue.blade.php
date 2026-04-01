@@ -81,8 +81,8 @@
 <script>
 (function() {
     function toggleBlock() {
-        var target = document.querySelector('input[name="target"]:checked');
-        var block = document.getElementById('selectedMembersBlock');
+        let target = document.querySelector('input[name="target"]:checked');
+        let block = document.getElementById('selectedMembersBlock');
         block.style.display = (target && target.value === 'selected') ? 'block' : 'none';
     }
     document.querySelectorAll('input[name="target"]').forEach(function(r) { r.addEventListener('change', toggleBlock); });

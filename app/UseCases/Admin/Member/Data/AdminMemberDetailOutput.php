@@ -12,7 +12,7 @@ use Illuminate\Support\Collection;
  *
  * @param  Collection<int, Coupon>  $activeCoupons
  * @param  Collection<int, StampCard>  $activeStampCards
- * @param  array<string, mixed>  $purchaseSummary
+ * @param  array<string, bool|int|float|string|array|object|null>  $purchaseSummary
  */
 class AdminMemberDetailOutput
 {

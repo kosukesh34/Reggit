@@ -225,7 +225,7 @@
 <script src="{{ asset('js/admin/liff-designer.js') }}?v={{ time() }}"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        var designer = new LiffDesigner({
+        let designer = new LiffDesigner({
             layouts: @json($layouts ?? []),
             tabSettings: @json($tabSettings ?? []),
             templates: @json($templates ?? []),
@@ -245,11 +245,11 @@
 
         // デバイスプレビュー切替
         document.getElementById('deviceSwitcher').addEventListener('click', function(e) {
-            var btn = e.target.closest('.ld-device-btn');
+            let btn = e.target.closest('.ld-device-btn');
             if (!btn) return;
             document.querySelectorAll('.ld-device-btn').forEach(function(b) { b.classList.remove('is-active'); });
             btn.classList.add('is-active');
-            var device = btn.dataset.device;
+            let device = btn.dataset.device;
             designer.ui.previewDevice = device;
             designer.applyPreviewDevice();
         });
@@ -261,7 +261,7 @@
         });
 
         // 保存フィードバック
-        var form = document.getElementById('liffDesignerForm');
+        let form = document.getElementById('liffDesignerForm');
         form.addEventListener('submit', function() {
             setTimeout(function() {
                 showToast('デザインを保存しました');
@@ -270,7 +270,7 @@
     });
 
     function showToast(msg, isError) {
-        var el = document.getElementById('ldToast');
+        let el = document.getElementById('ldToast');
         el.innerHTML = '<i class="fas ' + (isError ? 'fa-exclamation-circle' : 'fa-check-circle') + '"></i> ' + msg;
         el.className = 'ld-toast' + (isError ? ' ld-toast--error' : '');
         requestAnimationFrame(function() { el.classList.add('ld-toast--visible'); });

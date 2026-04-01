@@ -178,7 +178,7 @@ class GoogleWalletPassService
     /**
      * JWT を署名し、Add to Google Wallet の URL を返す。失敗時は null。
      *
-     * @param  array<string, mixed>  $claims
+     * @param  array<string, bool|int|float|string|array|object|null>  $claims
      */
     private function encodeJwtAndBuildSaveUrl(array $claims, string $privateKey, ?int $projectId): ?string
     {

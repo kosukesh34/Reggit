@@ -17,12 +17,13 @@ class DefaultDataSeeder extends Seeder
     {
         $this->seedCouponsOnly($project, $forceCoupons);
 
-        $hasProducts = Product::withoutGlobalScopes()->where('project_id', $project->id)->count() > 0;
-        if ($hasProducts && ! $forceProducts) {
+        $hasProducts = Product::withoutGlobalScopes()->where('project_id', $project->id)->exists();
+        $shouldRefreshLegacyProducts = $this->shouldRefreshLegacyProducts($project->id);
+        if ($hasProducts && $forceProducts === false && $shouldRefreshLegacyProducts === false) {
             return;
         }
 
-        if ($forceProducts) {
+        if ($forceProducts || $shouldRefreshLegacyProducts) {
             Product::withoutGlobalScopes()->where('project_id', $project->id)->delete();
         }
 
@@ -54,120 +55,157 @@ class DefaultDataSeeder extends Seeder
         }
     }
 
-    /** @return list<array<string, mixed>> */
+    /**
+     * @return list<array{
+     *     name: string,
+     *     description: string,
+     *     price: int,
+     *     image_url: string,
+     *     category: string,
+     *     is_available: bool,
+     *     stock: int
+     * }>
+     */
     private function getDefaultProducts(): array
     {
         return [
             [
-                'name' => 'フリーライト ハンバーガー',
-                'description' => 'シンプルで食べやすい定番ハンバーガー',
-                'price' => 680,
-                'image_url' => 'https://commons.wikimedia.org/wiki/Special:FilePath/Hamburger%20-%201.jpg',
+                'name' => 'ローストチキンサラダボウル',
+                'description' => 'ハーブチキンと彩り野菜の定番ボウル',
+                'price' => 980,
+                'image_url' => 'https://commons.wikimedia.org/wiki/Special:FilePath/Salad_platter.jpg',
                 'category' => 'food',
                 'is_available' => true,
                 'stock' => 100,
             ],
             [
-                'name' => 'フリーライト チーズバーガー',
-                'description' => 'チーズのコクを楽しめる王道バーガー',
-                'price' => 720,
-                'image_url' => 'https://commons.wikimedia.org/wiki/Special:FilePath/Cheeseburger.jpg',
+                'name' => 'サーモンとアボカドのデリプレート',
+                'description' => 'サーモンとアボカドを合わせた人気プレート',
+                'price' => 1180,
+                'image_url' => 'https://commons.wikimedia.org/wiki/Special:FilePath/Salmon_salad.jpg',
                 'category' => 'food',
                 'is_available' => true,
                 'stock' => 100,
             ],
             [
-                'name' => 'フリーライト エッグサンド',
-                'description' => 'たまごの風味をしっかり味わえるサンド',
-                'price' => 590,
-                'image_url' => 'https://commons.wikimedia.org/wiki/Special:FilePath/Egg-Sandwich.jpg',
-                'category' => 'food',
-                'is_available' => true,
-                'stock' => 100,
-            ],
-            [
-                'name' => 'フリーライト フライドチキン',
-                'description' => '香ばしい衣で仕上げたジューシーなフライドチキン',
+                'name' => '季節野菜のキッシュ',
+                'description' => 'サラダ付きの軽食キッシュ',
                 'price' => 760,
-                'image_url' => 'https://commons.wikimedia.org/wiki/Special:FilePath/Fried%20Chicken.jpg',
+                'image_url' => 'https://commons.wikimedia.org/wiki/Special:FilePath/Quiche.jpg',
                 'category' => 'food',
                 'is_available' => true,
                 'stock' => 100,
             ],
             [
-                'name' => 'フリーライト チキンナゲット 8P',
-                'description' => '外はカリッと中はジューシーなチキンナゲット',
-                'price' => 480,
-                'image_url' => 'https://commons.wikimedia.org/wiki/Special:FilePath/Chicken%20Nuggets.jpg',
+                'name' => '海老とトマトのクリームパスタ',
+                'description' => '海老の旨みを活かした濃厚クリームパスタ',
+                'price' => 1280,
+                'image_url' => 'https://commons.wikimedia.org/wiki/Special:FilePath/Shrimp_pasta.jpg',
                 'category' => 'food',
                 'is_available' => true,
                 'stock' => 100,
             ],
             [
-                'name' => 'フリーライト フレンチフライ',
-                'description' => 'サクッと揚げた定番ポテト',
-                'price' => 360,
-                'image_url' => 'https://commons.wikimedia.org/wiki/Special:FilePath/French%20Fries%20%288556689169%29.jpg',
+                'name' => '彩り野菜のトマトリゾット',
+                'description' => '野菜をたっぷり使ったやさしい味わいのリゾット',
+                'price' => 1120,
+                'image_url' => 'https://commons.wikimedia.org/wiki/Special:FilePath/Risotto.jpg',
+                'category' => 'food',
+                'is_available' => true,
+                'stock' => 100,
+            ],
+            [
+                'name' => '国産ポテトフライ',
+                'description' => 'ハーブソルトで仕上げたサイドメニュー',
+                'price' => 420,
+                'image_url' => 'https://commons.wikimedia.org/wiki/Special:FilePath/French_fries.jpg',
                 'category' => 'side',
                 'is_available' => true,
                 'stock' => 100,
             ],
             [
-                'name' => 'フリーライト レモネード',
-                'description' => 'すっきりした甘さの自家製レモネード',
-                'price' => 320,
+                'name' => 'グリーンサラダ',
+                'description' => '季節野菜を使ったシンプルサラダ',
+                'price' => 560,
+                'image_url' => 'https://commons.wikimedia.org/wiki/Special:FilePath/Green_salad.jpg',
+                'category' => 'side',
+                'is_available' => true,
+                'stock' => 100,
+            ],
+            [
+                'name' => '本日のスープ',
+                'description' => '日替わりで楽しめるスープ',
+                'price' => 480,
+                'image_url' => 'https://commons.wikimedia.org/wiki/Special:FilePath/Tomato_soup.jpg',
+                'category' => 'side',
+                'is_available' => true,
+                'stock' => 100,
+            ],
+            [
+                'name' => '自家製レモネード',
+                'description' => 'すっきりした甘さのオリジナルレモネード',
+                'price' => 420,
                 'image_url' => 'https://commons.wikimedia.org/wiki/Special:FilePath/Lemonade.jpg',
                 'category' => 'drink',
                 'is_available' => true,
                 'stock' => 100,
             ],
             [
-                'name' => 'フリーライト アイスティー',
-                'description' => 'レモンスライスを添えたアイスティー',
-                'price' => 320,
+                'name' => 'アイスティー',
+                'description' => '香り豊かな定番アイスティー',
+                'price' => 390,
                 'image_url' => 'https://commons.wikimedia.org/wiki/Special:FilePath/Iced%20tea.jpg',
                 'category' => 'drink',
                 'is_available' => true,
                 'stock' => 100,
             ],
             [
-                'name' => 'フリーライト マルゲリータピザ',
-                'description' => 'トマトとモッツァレラのシンプルな王道ピザ',
-                'price' => 980,
-                'image_url' => 'https://commons.wikimedia.org/wiki/Special:FilePath/Margherita%20pizza.jpg',
-                'category' => 'food',
+                'name' => 'カフェラテ',
+                'description' => 'ミルクでまろやかに仕上げたラテ',
+                'price' => 460,
+                'image_url' => 'https://commons.wikimedia.org/wiki/Special:FilePath/Cafe_latte.jpg',
+                'category' => 'drink',
                 'is_available' => true,
                 'stock' => 100,
             ],
             [
-                'name' => 'フリーライト カルボナーラ',
-                'description' => '卵とチーズのコクが楽しめる濃厚パスタ',
-                'price' => 920,
-                'image_url' => 'https://commons.wikimedia.org/wiki/Special:FilePath/Spaghetti%20carbonara.jpg',
-                'category' => 'food',
+                'name' => '季節のフルーツソーダ',
+                'description' => '季節の果実を使った炭酸ドリンク',
+                'price' => 520,
+                'image_url' => 'https://commons.wikimedia.org/wiki/Special:FilePath/Fruit_soda.jpg',
+                'category' => 'drink',
                 'is_available' => true,
                 'stock' => 100,
             ],
             [
-                'name' => 'フリーライト シーザーサラダ',
-                'description' => 'クルトンとチーズを合わせた定番サラダ',
-                'price' => 640,
-                'image_url' => 'https://commons.wikimedia.org/wiki/Special:FilePath/A%20Caesar%20salad.jpg',
-                'category' => 'side',
+                'name' => 'ティラミス',
+                'description' => 'エスプレッソ香る定番デザート',
+                'price' => 620,
+                'image_url' => 'https://commons.wikimedia.org/wiki/Special:FilePath/Tiramisu.jpg',
+                'category' => 'dessert',
                 'is_available' => true,
                 'stock' => 100,
             ],
             [
-                'name' => 'フリーライト パンケーキ',
-                'description' => 'やさしい甘さのふんわりパンケーキ',
-                'price' => 580,
+                'name' => 'パンナコッタ',
+                'description' => '口どけなめらかなミルクデザート',
+                'price' => 540,
+                'image_url' => 'https://commons.wikimedia.org/wiki/Special:FilePath/Panna_cotta.jpg',
+                'category' => 'dessert',
+                'is_available' => true,
+                'stock' => 100,
+            ],
+            [
+                'name' => 'ベリーパンケーキ',
+                'description' => 'ベリーソースを添えたふんわりパンケーキ',
+                'price' => 780,
                 'image_url' => 'https://commons.wikimedia.org/wiki/Special:FilePath/Pancakes.jpg',
                 'category' => 'dessert',
                 'is_available' => true,
                 'stock' => 100,
             ],
             [
-                'name' => 'フリーライト チョコレートケーキ',
+                'name' => 'チョコレートケーキ',
                 'description' => 'しっとり食感の濃厚チョコレートケーキ',
                 'price' => 620,
                 'image_url' => 'https://commons.wikimedia.org/wiki/Special:FilePath/ChocolateCake.jpg',
@@ -176,7 +214,7 @@ class DefaultDataSeeder extends Seeder
                 'stock' => 100,
             ],
             [
-                'name' => 'フリーライト バニラアイス',
+                'name' => 'バニラアイス',
                 'description' => 'ミルク感たっぷりのバニラアイスクリーム',
                 'price' => 420,
                 'image_url' => 'https://commons.wikimedia.org/wiki/Special:FilePath/Vanilla%20ice%20cream.jpg',
@@ -185,7 +223,7 @@ class DefaultDataSeeder extends Seeder
                 'stock' => 100,
             ],
             [
-                'name' => 'フリーライト オレンジジュース',
+                'name' => 'オレンジジュース',
                 'description' => '果汁感のあるすっきりオレンジジュース',
                 'price' => 350,
                 'image_url' => 'https://commons.wikimedia.org/wiki/Special:FilePath/Fresh%20Orange%20Juice.jpg',
@@ -193,16 +231,18 @@ class DefaultDataSeeder extends Seeder
                 'is_available' => true,
                 'stock' => 100,
             ],
-            [
-                'name' => 'フリーライト カフェラテ',
-                'description' => 'ミルクでまろやかに仕上げたカフェラテ',
-                'price' => 420,
-                'image_url' => 'https://commons.wikimedia.org/wiki/Special:FilePath/Cafe%20Latte.jpg',
-                'category' => 'drink',
-                'is_available' => true,
-                'stock' => 100,
-            ],
         ];
+    }
+
+    private function shouldRefreshLegacyProducts(int $projectId): bool
+    {
+        return Product::withoutGlobalScopes()
+            ->where('project_id', $projectId)
+            ->where(function ($query) {
+                $query->where('name', 'like', 'フリーライト%')
+                    ->orWhere('name', 'like', '%バーガー%');
+            })
+            ->exists();
     }
 
     private function createSampleCoupons(Project $project): void

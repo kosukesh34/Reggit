@@ -98,12 +98,12 @@
 
 <script>
 (function() {
-    var container = document.getElementById('customFieldsContainer');
-    var addBtn = document.getElementById('addCustomField');
-    var index = (container && container.querySelectorAll('.custom-field-row').length) || 0;
+    let container = document.getElementById('customFieldsContainer');
+    let addBtn = document.getElementById('addCustomField');
+    let index = (container && container.querySelectorAll('.custom-field-row').length) || 0;
 
     function addRow() {
-        var row = document.createElement('div');
+        let row = document.createElement('div');
         row.className = 'custom-field-row form-row align-items-center mb-2';
         row.innerHTML =
             '<div class="col-md-3"><input type="text" name="custom_fields[' + index + '][key]" class="form-control form-control-sm" placeholder="key_name" pattern="[a-z0-9_]+"></div>' +

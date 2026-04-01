@@ -48,9 +48,7 @@ use App\Models\Project;
 use Illuminate\Support\Facades\Route;
 
 // ========== 公開 ==========
-Route::get('/', function () {
-    return view('index');
-});
+Route::get('/', [LiffController::class, 'index'])->middleware('bind.project');
 
 Route::get('/api', function () {
     return response()->json(['message' => 'reggit API']);

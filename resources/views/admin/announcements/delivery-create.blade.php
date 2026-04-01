@@ -72,9 +72,9 @@
                     <div class="col-md-4">
                         <label for="segment_period_days" class="form-label">対象期間</label>
                         <select name="segment_period_days" id="segment_period_days" class="form-control">
-                            <option value="7" {{ old('segment_period_days', 30) == 7 ? 'selected' : '' }}>直近7日間</option>
-                            <option value="30" {{ old('segment_period_days', 30) == 30 ? 'selected' : '' }}>直近30日間</option>
-                            <option value="90" {{ old('segment_period_days') == 90 ? 'selected' : '' }}>直近90日間</option>
+                            <option value="7" {{ (string) old('segment_period_days', 30) === '7' ? 'selected' : '' }}>直近7日間</option>
+                            <option value="30" {{ (string) old('segment_period_days', 30) === '30' ? 'selected' : '' }}>直近30日間</option>
+                            <option value="90" {{ (string) old('segment_period_days') === '90' ? 'selected' : '' }}>直近90日間</option>
                         </select>
                     </div>
                 </div>
@@ -116,7 +116,7 @@
                 <select name="delivery_coupon_id" id="delivery_coupon_id" class="form-control">
                     <option value="">配布しない</option>
                     @foreach($coupons ?? [] as $coupon)
-                        <option value="{{ $coupon->id }}" {{ old('delivery_coupon_id') == $coupon->id ? 'selected' : '' }}>{{ $coupon->name }}</option>
+                        <option value="{{ $coupon->id }}" {{ (string) old('delivery_coupon_id') === (string) $coupon->id ? 'selected' : '' }}>{{ $coupon->name }}</option>
                     @endforeach
                 </select>
                 <p class="form-text text-muted mb-0">お知らせの配信対象と同じ会員に、選択したクーポンを1枚付与します</p>
@@ -175,17 +175,17 @@
     });
     toggleBlocks();
 
-    var segmentPreviewTimeout;
+    let segmentPreviewTimeout;
     function updateSegmentPreview() {
         if (document.querySelector('input[name="delivery_type"]:checked')?.value !== 'segment') return;
         clearTimeout(segmentPreviewTimeout);
         segmentPreviewTimeout = setTimeout(function() {
-            var periodDays = document.getElementById('segment_period_days').value;
-            var condition = document.querySelector('input[name="segment_condition"]:checked')?.value || 'min_amount';
-            var minAmount = document.getElementById('segment_min_amount').value || '0';
-            var url = '{{ admin_route("admin.announcements.segment.preview") }}?period_days=' + encodeURIComponent(periodDays) + '&condition=' + encodeURIComponent(condition) + '&min_amount=' + encodeURIComponent(minAmount);
+            let periodDays = document.getElementById('segment_period_days').value;
+            let condition = document.querySelector('input[name="segment_condition"]:checked')?.value || 'min_amount';
+            let minAmount = document.getElementById('segment_min_amount').value || '0';
+            let url = '{{ admin_route("admin.announcements.segment.preview") }}?period_days=' + encodeURIComponent(periodDays) + '&condition=' + encodeURIComponent(condition) + '&min_amount=' + encodeURIComponent(minAmount);
             fetch(url).then(function(r) { return r.json(); }).then(function(data) {
-                var el = document.getElementById('segmentPreview');
+                let el = document.getElementById('segmentPreview');
                 el.textContent = '対象会員: ' + (data.count || 0) + '人';
             }).catch(function() {
                 document.getElementById('segmentPreview').textContent = '';
@@ -251,7 +251,7 @@
         const hiddenContainer = document.getElementById('targetMemberIdsHidden');
         hiddenContainer.innerHTML = '';
         selectedMembers.forEach(function(id) {
-            var h = document.createElement('input');
+            let h = document.createElement('input');
             h.type = 'hidden';
             h.name = 'target_member_ids[]';
             h.value = id;

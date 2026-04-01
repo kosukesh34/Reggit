@@ -105,8 +105,8 @@ class GetSmaregiPosDataUseCase
     /**
      * スマレジAPIは一覧取得で「配列をそのまま返す」場合と「{ key: [] } の形で返す」場合があるため両方に対応する。
      *
-     * @param  array<int|string, mixed>  $result
-     * @return array<int, mixed>
+     * @param  array<int|string, bool|int|float|string|array|object|null>  $result
+     * @return array<int, bool|int|float|string|array|object|null>
      */
     private function extractListFromResponse(array $result, string $listKey): array
     {

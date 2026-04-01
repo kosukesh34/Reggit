@@ -33,7 +33,7 @@ class ClientDebugLogUseCase
         ]);
     }
 
-    /** @return array<string, mixed> */
+    /** @return array<string, bool|int|float|string|array|object|null> */
     private function parseBody(Request $request): array
     {
         if (! $request->isMethod('post')) {

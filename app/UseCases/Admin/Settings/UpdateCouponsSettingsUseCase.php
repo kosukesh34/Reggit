@@ -6,7 +6,7 @@ use App\Models\ShopSetting;
 
 class UpdateCouponsSettingsUseCase
 {
-    /** @param array<string, mixed> $validated */
+    /** @param array<string, bool|int|float|string|array|object|null> $validated */
     public function handle(int $projectId, array $validated): void
     {
         ShopSetting::setValue('coupon_default_image_url', $validated['coupon_default_image_url'] ?? '', 'string', $projectId);

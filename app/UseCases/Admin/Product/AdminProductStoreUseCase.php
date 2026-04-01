@@ -13,7 +13,7 @@ class AdminProductStoreUseCase
         $this->productAdminService = $productAdminService;
     }
 
-    /** @param array<string, mixed> $validated */
+    /** @param array<string, bool|int|float|string|array|object|null> $validated */
     public function handle(int $projectId, array $validated): void
     {
         $this->productAdminService->create($projectId, $validated);

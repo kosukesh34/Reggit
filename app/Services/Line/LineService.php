@@ -86,7 +86,7 @@ class LineService
         }
     }
 
-    /** @return array<string, mixed>|null */
+    /** @return array<string, bool|int|float|string|array|object|null>|null */
     public function getProfile(string $userId): ?array
     {
         try {
@@ -102,7 +102,7 @@ class LineService
         }
     }
 
-    /** @param array<string, mixed> $contents */
+    /** @param array<string, bool|int|float|string|array|object|null> $contents */
     public function createFlexMessage(string $altText, array $contents): array
     {
         return [
@@ -120,7 +120,7 @@ class LineService
         ];
     }
 
-    /** @param array<int, array<string, mixed>> $items */
+    /** @param array<int, array<string, bool|int|float|string|array|object|null>> $items */
     public function createQuickReplyMessage(string $text, array $items): array
     {
         return [

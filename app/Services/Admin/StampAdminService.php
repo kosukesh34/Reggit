@@ -39,8 +39,8 @@ class StampAdminService
         StampCard::whereKey($id)->delete();
     }
 
-    /** @param array<string, mixed> $data
-     * @return array<string, mixed>
+    /** @param array<string, bool|int|float|string|array|object|null> $data
+     * @return array<string, bool|int|float|string|array|object|null>
      */
     private function normalizePayload(array $data): array
     {
@@ -51,7 +51,7 @@ class StampAdminService
         return $data;
     }
 
-    /** @param array<string, mixed> $data */
+    /** @param array<string, bool|int|float|string|array|object|null> $data */
     private function normalizeMilestones(array $data): array
     {
         $milestones = $data['reward_milestones'] ?? null;
@@ -86,7 +86,7 @@ class StampAdminService
         return $data;
     }
 
-    /** @param array<string, mixed> $data */
+    /** @param array<string, bool|int|float|string|array|object|null> $data */
     private function normalizeCardImage(array $data): array
     {
         $imageData = $data['image_data'] ?? null;
@@ -106,7 +106,7 @@ class StampAdminService
         return $data;
     }
 
-    /** @param array<string, mixed> $data */
+    /** @param array<string, bool|int|float|string|array|object|null> $data */
     private function normalizeStampImages(array $data): array
     {
         $raw = $data['stamp_images_data'] ?? null;

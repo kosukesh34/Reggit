@@ -97,17 +97,17 @@
     align-items: center;
     gap: 6px;
     padding: 16px 12px;
-    background: var(--bg-primary);
-    border: 2px solid var(--border-light);
-    border-radius: var(--radius-md);
+    background: let(--bg-primary);
+    border: 2px solid let(--border-light);
+    border-radius: let(--radius-md);
     text-decoration: none;
-    color: var(--text-primary);
+    color: let(--text-primary);
     font-size: 13px;
     transition: all .15s ease;
     cursor: pointer;
 }
-.rfm-segment-card:hover { border-color: var(--primary); box-shadow: var(--shadow); }
-.rfm-segment-card.is-active { border-color: var(--primary); background: var(--primary-bg); }
+.rfm-segment-card:hover { border-color: let(--primary); box-shadow: let(--shadow); }
+.rfm-segment-card.is-active { border-color: let(--primary); background: let(--primary-bg); }
 .rfm-segment-dot { width: 12px; height: 12px; border-radius: 50%; }
 .rfm-segment-label { font-weight: 600; }
 .rfm-segment-count { font-size: 18px; font-weight: 700; }

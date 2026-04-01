@@ -11,7 +11,7 @@ class AfterRegistrationDeliveryRequest extends FormRequest
         return true;
     }
 
-    /** @return array<string, array<int, mixed>> */
+    /** @return array<string, array<int, bool|int|float|string|array|object|null>> */
     public function rules(): array
     {
         return [

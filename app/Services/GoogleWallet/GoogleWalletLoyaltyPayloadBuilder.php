@@ -14,7 +14,7 @@ class GoogleWalletLoyaltyPayloadBuilder
      * LoyaltyClass と LoyaltyObject の配列を返す。
      *
      * @param  array{classId: string, objectId: string, programName: string, programLogoUri: string, heroImageUri: string, accountNameDisplay: string, accountIdDisplay: string, barcodeValue: string, points: int, rankLabel: string}  $params
-     * @return array{loyaltyClass: array<string, mixed>, loyaltyObject: array<string, mixed>}
+     * @return array{loyaltyClass: array<string, bool|int|float|string|array|object|null>, loyaltyObject: array<string, bool|int|float|string|array|object|null>}
      */
     public function build(array $params): array
     {
@@ -38,7 +38,7 @@ class GoogleWalletLoyaltyPayloadBuilder
 
     /**
      * @param  array{classId: string, programName: string, programLogoUri: string, accountNameDisplay: string, accountIdDisplay: string, barcodeValue: string, points: int, rankLabel: string}  $params
-     * @return array<string, mixed>
+     * @return array<string, bool|int|float|string|array|object|null>
      */
     private function buildLoyaltyClass(array $params): array
     {
@@ -70,7 +70,7 @@ class GoogleWalletLoyaltyPayloadBuilder
     }
 
     /**
-     * @return array<string, mixed>
+     * @return array<string, bool|int|float|string|array|object|null>
      */
     private function getClassTemplateInfo(): array
     {
@@ -106,7 +106,7 @@ class GoogleWalletLoyaltyPayloadBuilder
 
     /**
      * @param  array{objectId: string, classId: string, programName: string, heroImageUri: string, accountNameDisplay: string, accountIdDisplay: string, barcodeValue: string, points: int, rankLabel: string}  $params
-     * @return array<string, mixed>
+     * @return array<string, bool|int|float|string|array|object|null>
      */
     private function buildLoyaltyObject(array $params): array
     {

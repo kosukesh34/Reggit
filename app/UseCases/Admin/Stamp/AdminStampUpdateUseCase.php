@@ -13,7 +13,7 @@ class AdminStampUpdateUseCase
         $this->stampAdminService = $stampAdminService;
     }
 
-    /** @param array<string, mixed> $validated */
+    /** @param array<string, bool|int|float|string|array|object|null> $validated */
     public function handle(int $id, array $validated): void
     {
         $this->stampAdminService->update($id, $validated);

@@ -44,7 +44,7 @@ class ProjectMemberRankSetting extends Model
         return $this->belongsTo(Project::class);
     }
 
-    /** @return array<string, mixed> */
+    /** @return array<string, bool|int|float|string|array|object|null> */
     public static function getDefaultAttributes(): array
     {
         return [

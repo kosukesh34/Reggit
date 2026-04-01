@@ -104,24 +104,24 @@
 (function() {
     document.querySelectorAll('.announcement-template-btn').forEach(function(btn) {
         btn.addEventListener('click', function() {
-            var t = document.getElementById('title');
-            var b = document.getElementById('body');
+            let t = document.getElementById('title');
+            let b = document.getElementById('body');
             if (t) t.value = btn.getAttribute('data-title') || '';
             if (b) b.value = btn.getAttribute('data-body') || '';
         });
     });
-    var fileInput = document.getElementById('ann_image');
-    var dropzone = document.getElementById('ann_image_dropzone');
-    var preview = document.getElementById('ann_image_preview');
-    var previewImg = document.getElementById('ann_image_preview_img');
-    var clearBtn = document.getElementById('ann_image_clear');
+    let fileInput = document.getElementById('ann_image');
+    let dropzone = document.getElementById('ann_image_dropzone');
+    let preview = document.getElementById('ann_image_preview');
+    let previewImg = document.getElementById('ann_image_preview_img');
+    let clearBtn = document.getElementById('ann_image_clear');
     if (!fileInput || !dropzone) return;
     function showPreview(src) {
         if (preview && previewImg) { previewImg.src = src || ''; preview.style.display = src ? 'block' : 'none'; }
     }
     function readFile(file) {
         if (!file || !file.type.match(/^image\//)) return;
-        var r = new FileReader();
+        let r = new FileReader();
         r.onload = function() { showPreview(r.result); };
         r.readAsDataURL(file);
     }
@@ -130,10 +130,10 @@
     dropzone.addEventListener('dragleave', function() { dropzone.classList.remove('is-dragover'); });
     dropzone.addEventListener('drop', function(e) {
         e.preventDefault(); dropzone.classList.remove('is-dragover');
-        var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+        let f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
         if (f) { fileInput.files = e.dataTransfer.files; readFile(f); }
     });
-    fileInput.addEventListener('change', function() { var f = this.files && this.files[0]; if (f) readFile(f); else showPreview(null); });
+    fileInput.addEventListener('change', function() { let f = this.files && this.files[0]; if (f) readFile(f); else showPreview(null); });
     if (clearBtn) clearBtn.addEventListener('click', function() { fileInput.value = ''; showPreview(null); });
 })();
 </script>
@@ -142,13 +142,13 @@
 .announcement-templates { display: flex; flex-wrap: wrap; gap: 8px; }
 .coupon-image-dropzone {
     display: flex; flex-direction: column; align-items: center; justify-content: center;
-    padding: 20px; border: 2px dashed var(--border, #dee2e6); border-radius: 12px;
-    background: var(--bg-secondary, #f8f9fa); cursor: pointer; transition: border-color .2s, background .2s;
+    padding: 20px; border: 2px dashed let(--border, #dee2e6); border-radius: 12px;
+    background: let(--bg-secondary, #f8f9fa); cursor: pointer; transition: border-color .2s, background .2s;
 }
-.coupon-image-dropzone:hover, .coupon-image-dropzone.is-dragover { border-color: var(--primary, #0d9488); background: rgba(13, 148, 136, 0.05); }
-.coupon-image-dropzone-icon { font-size: 1.8rem; color: var(--text-secondary); margin-bottom: 6px; }
-.coupon-image-dropzone-text { font-size: 13px; color: var(--text-primary); }
-.coupon-image-dropzone-hint { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+.coupon-image-dropzone:hover, .coupon-image-dropzone.is-dragover { border-color: let(--primary, #0d9488); background: rgba(13, 148, 136, 0.05); }
+.coupon-image-dropzone-icon { font-size: 1.8rem; color: let(--text-secondary); margin-bottom: 6px; }
+.coupon-image-dropzone-text { font-size: 13px; color: let(--text-primary); }
+.coupon-image-dropzone-hint { font-size: 11px; color: let(--text-muted); margin-top: 3px; }
 </style>
 @endpush
 @endsection

@@ -154,22 +154,22 @@
 </div>
 <script>
 document.getElementById('issue_trigger').addEventListener('change', function() {
-    var g = document.getElementById('stamp_card_group');
+    let g = document.getElementById('stamp_card_group');
     g.style.display = this.value === 'stamp_completed' ? 'block' : 'none';
     document.getElementById('stamp_card_id').required = this.value === 'stamp_completed';
 });
 (function() {
-    var themeColor = document.getElementById('theme_color');
-    var themeDisplay = document.getElementById('theme_color_display');
-    var themeCustom = document.getElementById('theme_color_custom');
-    var swatches = document.querySelectorAll('.theme-swatch');
+    let themeColor = document.getElementById('theme_color');
+    let themeDisplay = document.getElementById('theme_color_display');
+    let themeCustom = document.getElementById('theme_color_custom');
+    let swatches = document.querySelectorAll('.theme-swatch');
     function setColor(hex) {
         if (!themeColor) return;
         themeColor.value = hex || '';
         if (themeDisplay) themeDisplay.value = hex || '';
         if (themeCustom && hex && /^#[0-9A-Fa-f]{6}$/.test(hex)) themeCustom.value = hex;
         swatches.forEach(function(btn) {
-            var selected = (btn.getAttribute('data-hex') || '') === (hex || '');
+            let selected = (btn.getAttribute('data-hex') || '') === (hex || '');
             btn.classList.toggle('is-selected', selected);
             btn.setAttribute('aria-pressed', selected ? 'true' : 'false');
         });
@@ -184,7 +184,7 @@ document.getElementById('issue_trigger').addEventListener('change', function() {
         setColor(themeCustom.value);
     });
     if (themeDisplay) themeDisplay.addEventListener('input', function() {
-        var v = themeDisplay.value.trim();
+        let v = themeDisplay.value.trim();
         if (/^#[0-9A-Fa-f]{6}$/.test(v)) setColor(v);
         else if (v === '') setColor('');
     });
@@ -199,11 +199,11 @@ document.getElementById('issue_trigger').addEventListener('change', function() {
 })();
 // 画像ドラッグ＆ドロップ・プレビュー
 (function() {
-    var fileInput = document.getElementById('coupon_image');
-    var dropzone = document.getElementById('coupon_image_dropzone');
-    var preview = document.getElementById('coupon_image_preview');
-    var previewImg = document.getElementById('coupon_image_preview_img');
-    var clearBtn = document.getElementById('coupon_image_clear');
+    let fileInput = document.getElementById('coupon_image');
+    let dropzone = document.getElementById('coupon_image_dropzone');
+    let preview = document.getElementById('coupon_image_preview');
+    let previewImg = document.getElementById('coupon_image_preview_img');
+    let clearBtn = document.getElementById('coupon_image_clear');
     if (!fileInput || !dropzone) return;
     function showPreview(src) {
         if (preview && previewImg) {
@@ -213,7 +213,7 @@ document.getElementById('issue_trigger').addEventListener('change', function() {
     }
     function readFile(file) {
         if (!file || !file.type.match(/^image\//)) return;
-        var r = new FileReader();
+        let r = new FileReader();
         r.onload = function() { showPreview(r.result); };
         r.readAsDataURL(file);
     }
@@ -223,11 +223,11 @@ document.getElementById('issue_trigger').addEventListener('change', function() {
     dropzone.addEventListener('drop', function(e) {
         e.preventDefault();
         dropzone.classList.remove('is-dragover');
-        var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+        let f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
         if (f) { fileInput.files = e.dataTransfer.files; readFile(f); if (typeof updateCouponPreview === 'function') updateCouponPreview(); }
     });
     fileInput.addEventListener('change', function() {
-        var f = this.files && this.files[0];
+        let f = this.files && this.files[0];
         if (f) readFile(f);
         else showPreview(null);
         if (typeof updateCouponPreview === 'function') updateCouponPreview();

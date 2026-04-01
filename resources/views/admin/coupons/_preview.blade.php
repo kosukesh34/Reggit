@@ -44,30 +44,30 @@
 .coupon-preview-single .cp-discount {
     font-size: 13px;
     font-weight: 700;
-    color: var(--cp-accent, var(--success));
+    color: let(--cp-accent, let(--success));
     margin: 6px 0 0;
 }
 .coupon-preview-single .cp-card.cp-vintage .cp-discount { color: #5c4a32; }
-.coupon-preview-single .cp-card.cp-neon .cp-discount { color: var(--cp-accent, #0f0); }
+.coupon-preview-single .cp-card.cp-neon .cp-discount { color: let(--cp-accent, #0f0); }
 .coupon-preview-item .cp-card,
 .coupon-preview-single .cp-card {
     background: #fff;
-    border: 2px solid var(--border);
+    border: 2px solid let(--border);
     border-radius: 12px;
     padding: 12px;
-    box-shadow: var(--shadow);
+    box-shadow: let(--shadow);
 }
 .coupon-preview-item .cp-card.cp-available,
-.coupon-preview-single .cp-card.cp-available { border-color: var(--success); }
+.coupon-preview-single .cp-card.cp-available { border-color: let(--success); }
 .coupon-preview-item .cp-card[data-accent],
-.coupon-preview-single .cp-card[data-accent] { --cp-accent: var(--success); }
+.coupon-preview-single .cp-card[data-accent] { --cp-accent: let(--success); }
 .coupon-preview-item .cp-image,
 .coupon-preview-single .cp-image {
     width: 100%;
     border-radius: 8px;
     overflow: hidden;
     margin-bottom: 8px;
-    background: var(--bg-secondary);
+    background: let(--bg-secondary);
 }
 .coupon-preview-item .cp-image img,
 .coupon-preview-single .cp-image img {
@@ -85,11 +85,11 @@
     font-size: 1.75rem;
 }
 .coupon-preview-item .cp-card[data-accent] .cp-image.cp-icon,
-.coupon-preview-single .cp-card[data-accent] .cp-image.cp-icon { color: var(--cp-accent); }
+.coupon-preview-single .cp-card[data-accent] .cp-image.cp-icon { color: let(--cp-accent); }
 .coupon-preview-item .cp-name i,
 .coupon-preview-single .cp-name i { margin-right: 4px; font-size: 0.85em; }
 .coupon-preview-item .cp-card[data-accent] .cp-name i,
-.coupon-preview-single .cp-card[data-accent] .cp-name i { color: var(--cp-accent); }
+.coupon-preview-single .cp-card[data-accent] .cp-name i { color: let(--cp-accent); }
 .coupon-preview-item .cp-header,
 .coupon-preview-single .cp-header {
     display: flex;
@@ -102,7 +102,7 @@
 .coupon-preview-single .cp-name {
     font-weight: 700;
     font-size: 13px;
-    color: var(--text-primary);
+    color: let(--text-primary);
     flex: 1;
     min-width: 0;
 }
@@ -118,7 +118,7 @@
 .coupon-preview-item .cp-valid,
 .coupon-preview-single .cp-valid {
     font-size: 11px;
-    color: var(--text-tertiary);
+    color: let(--text-tertiary);
     margin: 0;
 }
 /* デザイン別 */
@@ -148,24 +148,24 @@
 }
 .coupon-preview-item .cp-card.cp-gradient.cp-available[data-accent],
 .coupon-preview-single .cp-card.cp-gradient.cp-available[data-accent] {
-    background: linear-gradient(135deg, color-mix(in srgb, var(--cp-accent) 12%, #fff) 0%, color-mix(in srgb, var(--cp-accent) 6%, #fff) 100%);
+    background: linear-gradient(135deg, color-mix(in srgb, let(--cp-accent) 12%, #fff) 0%, color-mix(in srgb, let(--cp-accent) 6%, #fff) 100%);
 }
 .coupon-preview-item .cp-card.cp-cardstyle,
 .coupon-preview-single .cp-card.cp-cardstyle {
-    border: 1px solid var(--border);
+    border: 1px solid let(--border);
     background: #fafafa;
 }
 .coupon-preview-item .cp-card.cp-cardstyle .cp-header,
 .coupon-preview-single .cp-card.cp-cardstyle .cp-header {
     padding: 6px 0;
-    border-bottom: 1px dashed var(--border);
+    border-bottom: 1px dashed let(--border);
 }
 .coupon-preview-item .cp-card.cp-cardstyle.cp-available[data-accent],
-.coupon-preview-single .cp-card.cp-cardstyle.cp-available[data-accent] { border-color: var(--cp-accent); background: #fff; }
+.coupon-preview-single .cp-card.cp-cardstyle.cp-available[data-accent] { border-color: let(--cp-accent); background: #fff; }
 /* バーコード風 */
 .coupon-preview-item .cp-card.cp-barcode,
 .coupon-preview-single .cp-card.cp-barcode {
-    border-left: 4px solid var(--cp-accent, var(--primary));
+    border-left: 4px solid let(--cp-accent, let(--primary));
     background: #fafafa;
 }
 .coupon-preview-item .cp-card.cp-barcode .cp-barcode-line,
@@ -180,7 +180,7 @@
     font-family: monospace;
     font-size: 10px;
     letter-spacing: 1px;
-    color: var(--text-secondary);
+    color: let(--text-secondary);
     margin-top: 4px;
 }
 /* QR風 */
@@ -217,8 +217,8 @@
         -45deg,
         #fff,
         #fff 8px,
-        var(--cp-accent, var(--primary)) 8px,
-        color-mix(in srgb, var(--cp-accent, var(--primary)) 0.12, #fff) 16px
+        let(--cp-accent, let(--primary)) 8px,
+        color-mix(in srgb, let(--cp-accent, let(--primary)) 0.12, #fff) 16px
     );
 }
 .coupon-preview-item .cp-card.cp-stripe .cp-header,
@@ -231,13 +231,13 @@
 /* チケット風 */
 .coupon-preview-item .cp-card.cp-ticket,
 .coupon-preview-single .cp-card.cp-ticket {
-    border: 2px dashed var(--cp-accent, var(--primary));
+    border: 2px dashed let(--cp-accent, let(--primary));
     border-radius: 4px;
     background: linear-gradient(#fff 0%, #f8f9fa 100%);
 }
 .coupon-preview-item .cp-card.cp-ticket .cp-header,
 .coupon-preview-single .cp-card.cp-ticket .cp-header {
-    border-bottom: 1px dashed var(--border);
+    border-bottom: 1px dashed let(--border);
     padding-bottom: 6px;
 }
 /* ヴィンテージ */
@@ -253,26 +253,26 @@
 .coupon-preview-item .cp-card.cp-vintage .cp-status,
 .coupon-preview-single .cp-card.cp-vintage .cp-status { background: #e8dfc8; color: #5c4a32; }
 .coupon-preview-item .cp-card.cp-vintage.cp-available[data-accent],
-.coupon-preview-single .cp-card.cp-vintage.cp-available[data-accent] { border-color: var(--cp-accent); }
+.coupon-preview-single .cp-card.cp-vintage.cp-available[data-accent] { border-color: let(--cp-accent); }
 /* ネオン */
 .coupon-preview-item .cp-card.cp-neon,
 .coupon-preview-single .cp-card.cp-neon {
     background: #1a1a2e;
-    border: 2px solid var(--cp-accent, #0f0);
+    border: 2px solid let(--cp-accent, #0f0);
     border-radius: 12px;
     color: #eee;
-    box-shadow: 0 0 12px color-mix(in srgb, var(--cp-accent, #0f0) 0.5);
+    box-shadow: 0 0 12px color-mix(in srgb, let(--cp-accent, #0f0) 0.5);
 }
 .coupon-preview-item .cp-card.cp-neon .cp-name,
 .coupon-preview-single .cp-card.cp-neon .cp-name { color: #fff; }
 .coupon-preview-item .cp-card.cp-neon .cp-name i,
-.coupon-preview-single .cp-card.cp-neon .cp-name i { color: var(--cp-accent, #0f0); }
+.coupon-preview-single .cp-card.cp-neon .cp-name i { color: let(--cp-accent, #0f0); }
 .coupon-preview-item .cp-card.cp-neon .cp-image.cp-icon,
-.coupon-preview-single .cp-card.cp-neon .cp-image.cp-icon { color: var(--cp-accent, #0f0); }
+.coupon-preview-single .cp-card.cp-neon .cp-image.cp-icon { color: let(--cp-accent, #0f0); }
 .coupon-preview-item .cp-card.cp-neon .cp-status,
 .coupon-preview-single .cp-card.cp-neon .cp-status {
-    background: color-mix(in srgb, var(--cp-accent, #0f0) 0.3);
-    color: var(--cp-accent, #0f0);
+    background: color-mix(in srgb, let(--cp-accent, #0f0) 0.3);
+    color: let(--cp-accent, #0f0);
 }
 .coupon-preview-item .cp-card.cp-neon .cp-valid,
 .coupon-preview-single .cp-card.cp-neon .cp-valid { color: #aaa; }
@@ -283,39 +283,39 @@
 (function() {
     function esc(s) {
         if (s === null || s === undefined) return '';
-        var d = document.createElement('div');
+        let d = document.createElement('div');
         d.textContent = String(s);
         return d.innerHTML;
     }
     function getThemeColor() {
-        var el = document.getElementById('theme_color');
+        let el = document.getElementById('theme_color');
         if (!el || !el.value) return '';
-        var v = el.value.trim();
+        let v = el.value.trim();
         return /^#[0-9A-Fa-f]{6}$/.test(v) ? v : '';
     }
     function getSelectedDesign() {
-        var radio = document.querySelector('input[name="design_template"]:checked');
+        let radio = document.querySelector('input[name="design_template"]:checked');
         return (radio && radio.value) ? radio.value : 'classic';
     }
     function getDiscountText() {
-        var typeEl = document.getElementById('type');
-        var valueEl = document.getElementById('value');
+        let typeEl = document.getElementById('type');
+        let valueEl = document.getElementById('value');
         if (!typeEl || !valueEl) return '';
-        var type = typeEl.value;
-        var val = parseFloat(valueEl.value);
+        let type = typeEl.value;
+        let val = parseFloat(valueEl.value);
         if (isNaN(val) || val <= 0) return '';
         if (type === 'percent') return val + '%オフ';
         if (type === 'fixed') return val + '円オフ';
         return '';
     }
     function card(name, imageUrl, validUntil, design, accent, discountText) {
-        var accentAttr = accent ? ' data-accent="1" style="--cp-accent: ' + esc(accent) + '"' : '';
-        var img = imageUrl
+        let accentAttr = accent ? ' data-accent="1" style="--cp-accent: ' + esc(accent) + '"' : '';
+        let img = imageUrl
             ? '<div class="cp-image"><img src="' + esc(imageUrl) + '" alt=""></div>'
             : '<div class="cp-image cp-icon"><i class="fas fa-ticket-alt"></i></div>';
-        var cls = 'cp-card cp-available cp-' + (design === 'card' ? 'cardstyle' : design);
-        var valid = validUntil ? '<p class="cp-valid">有効期限: ' + esc(validUntil) + '</p>' : '';
-        var discount = discountText ? '<p class="cp-discount">' + esc(discountText) + '</p>' : '';
+        let cls = 'cp-card cp-available cp-' + (design === 'card' ? 'cardstyle' : design);
+        let valid = validUntil ? '<p class="cp-valid">有効期限: ' + esc(validUntil) + '</p>' : '';
+        let discount = discountText ? '<p class="cp-discount">' + esc(discountText) + '</p>' : '';
 
         if (design === 'barcode') {
             img = '<div class="cp-barcode-line"></div><div class="cp-barcode-line"></div><div class="cp-code-text">' + esc(name) + '</div>';
@@ -323,8 +323,8 @@
                 '<div class="cp-header"><span class="cp-name"><i class="fas fa-barcode"></i>' + esc(name) + '</span><span class="cp-status">利用可能</span></div>' + discount + valid + '</div>';
         }
         if (design === 'qr') {
-            var qrDots = [];
-            for (var i = 0; i < 25; i++) qrDots.push('<span class="cp-qr-dot"></span>');
+            let qrDots = [];
+            for (let i = 0; i < 25; i++) qrDots.push('<span class="cp-qr-dot"></span>');
             img = '<div class="cp-qr-block">' + qrDots.join('') + '</div>';
             return '<div class="' + cls + '"' + accentAttr + '>' + img +
                 '<div class="cp-header"><span class="cp-name"><i class="fas fa-qrcode"></i>' + esc(name) + '</span><span class="cp-status">利用可能</span></div>' + discount + valid + '</div>';
@@ -333,31 +333,31 @@
             '<div class="cp-header"><span class="cp-name"><i class="fas fa-ticket-alt"></i>' + esc(name) + '</span><span class="cp-status">利用可能</span></div>' + discount + valid + '</div>';
     }
     function update() {
-        var nameEl = document.getElementById('name');
-        var name = (nameEl && nameEl.value ? nameEl.value : '').trim() || 'クーポン名';
-        var imgEl = document.getElementById('image_url');
-        var imageUrl = (imgEl && imgEl.value ? imgEl.value : '').trim();
-        var endAtEl = document.getElementById('end_at');
-        var endAt = endAtEl ? endAtEl.value : '';
-        var validUntil = '';
+        let nameEl = document.getElementById('name');
+        let name = (nameEl && nameEl.value ? nameEl.value : '').trim() || 'クーポン名';
+        let imgEl = document.getElementById('image_url');
+        let imageUrl = (imgEl && imgEl.value ? imgEl.value : '').trim();
+        let endAtEl = document.getElementById('end_at');
+        let endAt = endAtEl ? endAtEl.value : '';
+        let validUntil = '';
         if (endAt) {
             try { validUntil = new Date(endAt).toLocaleDateString('ja-JP', { year: 'numeric', month: 'short', day: 'numeric' }); } catch (e) {}
         }
-        var accent = getThemeColor();
-        var design = getSelectedDesign();
-        var discountText = getDiscountText();
-        var el = document.getElementById('coupon-preview-inner');
+        let accent = getThemeColor();
+        let design = getSelectedDesign();
+        let discountText = getDiscountText();
+        let el = document.getElementById('coupon-preview-inner');
         if (!el) return;
-        var html = card(name, imageUrl, validUntil, design, accent, discountText);
+        let html = card(name, imageUrl, validUntil, design, accent, discountText);
         el.innerHTML = html;
-        var lineEl = document.getElementById('line-coupon-preview-inner');
+        let lineEl = document.getElementById('line-coupon-preview-inner');
         if (lineEl) lineEl.innerHTML = html;
     }
     window.updateCouponPreview = update;
     function on() {
-        var ids = ['name', 'description', 'image_url', 'end_at', 'theme_color', 'theme_color_display', 'type', 'value'];
+        let ids = ['name', 'description', 'image_url', 'end_at', 'theme_color', 'theme_color_display', 'type', 'value'];
         ids.forEach(function(id) {
-            var e = document.getElementById(id);
+            let e = document.getElementById(id);
             if (e) { e.addEventListener('input', update); e.addEventListener('change', update); }
         });
         document.querySelectorAll('input[name="design_template"]').forEach(function(radio) {

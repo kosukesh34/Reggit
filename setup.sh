@@ -21,19 +21,11 @@ docker-compose exec -T app composer install
 echo "アプリケーションキーを生成しています..."
 docker-compose exec -T app php artisan key:generate
 
-# データベースマイグレーション
-echo "データベースマイグレーションを実行しています..."
+# データベースマイグレーション（seed込み）
+echo "データベースマイグレーション + シーダー投入を実行しています..."
 sleep 5  # データベースの起動を待つ
-docker-compose exec -T app php artisan migrate
-
-# シーダーの実行
-read -p "サンプル商品データを投入しますか？ (y/n): " -n 1 -r
-echo
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-    docker-compose exec -T app php artisan db:seed
-fi
+docker-compose exec -T app php artisan migrate --seed
 
 echo "セットアップが完了しました！"
 echo "アプリケーションは http://localhost:8080 でアクセスできます。"
-
 

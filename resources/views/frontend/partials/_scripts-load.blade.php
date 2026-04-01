@@ -71,7 +71,7 @@
         }
 
         function appendStylesheet(href) {
-            var link = document.createElement('link');
+            let link = document.createElement('link');
             link.rel = 'stylesheet';
             link.href = href;
             document.head.appendChild(link);
@@ -79,9 +79,9 @@
 
         function ensureStylesLoaded() {
             if (window.__INLINE_LOCAL_ASSETS__ === true) return;
-            var loadingEl = document.getElementById('liff-loading');
+            let loadingEl = document.getElementById('liff-loading');
             if (!loadingEl || typeof window.getComputedStyle !== 'function') return;
-            var style = window.getComputedStyle(loadingEl);
+            let style = window.getComputedStyle(loadingEl);
             if (style && style.position === 'fixed') {
                 if (window.__clientDebugLog) window.__clientDebugLog('css_ok', { position: style.position });
                 return;
@@ -104,14 +104,14 @@
                 done(false);
                 return;
             }
-            var candidateSrc = candidates[index];
-            var canonical = candidateSrc.split('?')[0];
-            var existing = document.querySelector('script[src*="' + canonical + '"]');
+            let candidateSrc = candidates[index];
+            let canonical = candidateSrc.split('?')[0];
+            let existing = document.querySelector('script[src*="' + canonical + '"]');
             if (existing) {
                 done(true);
                 return;
             }
-            var script = document.createElement('script');
+            let script = document.createElement('script');
             script.src = candidateSrc;
             script.defer = true;
             script.onload = function () {
@@ -143,7 +143,7 @@
             }
             window.__SCRIPT_FALLBACK_STARTED__ = true;
             if (window.__clientDebugLog) window.__clientDebugLog('script_fallback_start', {});
-            var paths = [
+            let paths = [
                 '/js/shared/constants.js{{ $v }}',
                 '/js/shared/utils/apiClient.js{{ $v }}',
                 '/js/shared/utils/domHelper.js{{ $v }}',

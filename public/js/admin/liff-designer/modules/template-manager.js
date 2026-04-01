@@ -280,32 +280,32 @@ window.LiffDesignerModules.templateManager = {
     },
 
     renderTemplateVisualPreview(tpl, scope) {
-        var blocks = [];
+        let blocks = [];
         if (scope === 'super' && tpl.layouts && typeof tpl.layouts === 'object') {
             blocks = Array.isArray(tpl.layouts.home) ? tpl.layouts.home : [];
         } else if (Array.isArray(tpl.blocks)) {
             blocks = tpl.blocks;
         }
-        var previewBlocks = blocks.slice(0, 4);
+        let previewBlocks = blocks.slice(0, 4);
         if (previewBlocks.length === 0) {
             return '<div class="ld-template-card__preview"><span class="ld-template-card__line wide"></span><span class="ld-template-card__line mid"></span></div>';
         }
-        var blockColorMap = {
+        let blockColorMap = {
             hero: { bg: 'linear-gradient(135deg, #667eea, #764ba2)', color: '#fff', cls: '--hero' },
             button: { bg: '#06C755', color: '#fff', cls: '--button' },
             banner: { bg: '#3b82f6', color: '#fff', cls: '--banner' },
             data: { bg: '#fff', color: '#6b7280', cls: '--data' },
         };
-        var html = '<div class="ld-template-card__visual">';
+        let html = '<div class="ld-template-card__visual">';
         html += '<div class="ld-template-card__visual-header" style="background:linear-gradient(135deg,#667eea,#764ba2)">ホーム</div>';
         html += '<div class="ld-template-card__visual-blocks">';
-        for (var j = 0; j < previewBlocks.length; j++) {
-            var b = previewBlocks[j];
-            var bt = this.BLOCK_TYPES.find(function(x) { return x.type === (b.type || 'text'); });
-            var label = bt ? bt.label : (b.type || 'text');
-            var icon = bt ? bt.icon : 'fa-cube';
-            var cm = blockColorMap[b.type || ''];
-            var cls = cm ? ' ld-template-card__visual-block' + cm.cls : '';
+        for (let j = 0; j < previewBlocks.length; j++) {
+            let b = previewBlocks[j];
+            let bt = this.BLOCK_TYPES.find(function(x) { return x.type === (b.type || 'text'); });
+            let label = bt ? bt.label : (b.type || 'text');
+            let icon = bt ? bt.icon : 'fa-cube';
+            let cm = blockColorMap[b.type || ''];
+            let cls = cm ? ' ld-template-card__visual-block' + cm.cls : '';
             html += '<div class="ld-template-card__visual-block' + cls + '"><i class="fas ' + icon + '"></i> ' + this.esc(label) + '</div>';
         }
         if (blocks.length > 4) {

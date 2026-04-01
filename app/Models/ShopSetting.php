@@ -436,8 +436,8 @@ class ShopSetting
      * - タブが空ならデフォルトレイアウトを採用
      * - 既存ブロックは順序を変えずに維持する
      *
-     * @param  array<string, mixed>  $layouts
-     * @return array<string, array<int, array<string, mixed>>>
+     * @param  array<string, bool|int|float|string|array|object|null>  $layouts
+     * @return array<string, array<int, array<string, bool|int|float|string|array|object|null>>>
      */
     public static function ensureLiffTabLayouts(array $layouts): array
     {

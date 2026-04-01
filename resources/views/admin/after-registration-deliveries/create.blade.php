@@ -47,7 +47,7 @@
                 <select name="coupon_id" id="coupon_id" class="form-control">
                     <option value="">配布しない</option>
                     @foreach($coupons as $coupon)
-                        <option value="{{ $coupon->id }}" {{ old('coupon_id') == $coupon->id ? 'selected' : '' }}>{{ $coupon->name }}</option>
+                        <option value="{{ $coupon->id }}" {{ (string) old('coupon_id') === (string) $coupon->id ? 'selected' : '' }}>{{ $coupon->name }}</option>
                     @endforeach
                 </select>
             </div>

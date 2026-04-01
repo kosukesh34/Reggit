@@ -61,8 +61,9 @@ class AppConfigController extends Controller
                 'logo_url' => ShopSetting::getFrontendLogoUrl($projectId),
                 'text' => ShopSetting::getFrontendHeaderText($projectId),
             ],
-            'liff_tab_layouts' => ShopSetting::getLiffTabLayouts($projectId),
-            'liff_tab_settings' => ShopSetting::getLiffTabSettings($projectId),
+            // ユーザー画面は常に標準デザインを使用する（管理画面でのカスタム保存値は反映しない）
+            'liff_tab_layouts' => ShopSetting::defaultLiffTabLayouts(),
+            'liff_tab_settings' => ShopSetting::defaultLiffTabSettings(),
         ]);
     }
 

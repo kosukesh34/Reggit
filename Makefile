@@ -13,7 +13,7 @@ down:
 
 # マイグレーション実行
 migrate:
-	docker-compose exec app php artisan migrate
+	docker-compose exec app php artisan migrate --seed
 
 # ルート一覧（admin のみ）
 route-list:

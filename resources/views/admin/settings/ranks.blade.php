@@ -337,65 +337,65 @@
 
 <script>
 (function() {
-    var tabButtons = document.querySelectorAll('.ranks-settings-tab');
-    var panels = document.querySelectorAll('.ranks-settings-panel');
+    let tabButtons = document.querySelectorAll('.ranks-settings-tab');
+    let panels = document.querySelectorAll('.ranks-settings-panel');
     function switchTab(activeId) {
         tabButtons.forEach(function(btn) {
-            var isActive = btn.id === 'tab-' + activeId;
+            let isActive = btn.id === 'tab-' + activeId;
             btn.classList.toggle('ranks-settings-tab--active', isActive);
             btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
         });
         panels.forEach(function(panel) {
-            var match = panel.id === 'panel-' + activeId;
+            let match = panel.id === 'panel-' + activeId;
             panel.classList.toggle('ranks-settings-panel--active', match);
             panel.hidden = !match;
         });
     }
     tabButtons.forEach(function(btn) {
         btn.addEventListener('click', function() {
-            var id = this.id.replace('tab-', '');
+            let id = this.id.replace('tab-', '');
             switchTab(id);
         });
     });
 })();
 
 document.getElementById('addRankRow')?.addEventListener('click', function() {
-    var tableBody = document.querySelector('#rankSettingsTable tbody');
-    var template = document.getElementById('rankRowTemplate');
+    let tableBody = document.querySelector('#rankSettingsTable tbody');
+    let template = document.getElementById('rankRowTemplate');
     if (!tableBody || !template) return;
-    var index = tableBody.children.length;
-    var html = template.innerHTML.replaceAll('__NAME__', 'ranks[' + index + ']');
-    var temp = document.createElement('tbody');
+    let index = tableBody.children.length;
+    let html = template.innerHTML.replaceAll('__NAME__', 'ranks[' + index + ']');
+    let temp = document.createElement('tbody');
     temp.innerHTML = html.trim();
     tableBody.appendChild(temp.firstElementChild);
 });
 
 (function() {
-    var table = document.getElementById('rankSettingsTable');
-    var grid = document.getElementById('rankCardPreviewGrid');
+    let table = document.getElementById('rankSettingsTable');
+    let grid = document.getElementById('rankCardPreviewGrid');
     if (!table || !grid) return;
 
     function updatePreview(index) {
-        var item = grid.querySelector('.rank-card-preview-item[data-rank-index="' + index + '"]');
+        let item = grid.querySelector('.rank-card-preview-item[data-rank-index="' + index + '"]');
         if (!item) return;
-        var tbody = table.querySelector('tbody');
-        var row = tbody && tbody.rows[index];
+        let tbody = table.querySelector('tbody');
+        let row = tbody && tbody.rows[index];
         if (!row) return;
-        var keyInput = row.querySelector('input[name$="[key]"]');
-        var labelInput = row.querySelector('input[name$="[label]"]');
-        var colorInput = row.querySelector('input[name$="[card_color]"]');
-        var iconInput = row.querySelector('input[name$="[icon_url]"]');
-        var key = (keyInput && keyInput.value) ? keyInput.value.trim() : '';
-        var label = (labelInput && labelInput.value) ? labelInput.value.trim() : key;
-        var color = (colorInput && colorInput.value) ? colorInput.value.trim() : '';
-        var iconUrl = (iconInput && iconInput.value) ? iconInput.value.trim() : '';
+        let keyInput = row.querySelector('input[name$="[key]"]');
+        let labelInput = row.querySelector('input[name$="[label]"]');
+        let colorInput = row.querySelector('input[name$="[card_color]"]');
+        let iconInput = row.querySelector('input[name$="[icon_url]"]');
+        let key = (keyInput && keyInput.value) ? keyInput.value.trim() : '';
+        let label = (labelInput && labelInput.value) ? labelInput.value.trim() : key;
+        let color = (colorInput && colorInput.value) ? colorInput.value.trim() : '';
+        let iconUrl = (iconInput && iconInput.value) ? iconInput.value.trim() : '';
 
-        var wrapper = item.querySelector('.idnect-card-wrapper');
-        var card = item.querySelector('.idnect-card');
-        var badge = item.querySelector('.idnect-card-rank-badge');
-        var labelSpan = item.querySelector('.rank-card-preview-label');
-        var keySpan = item.querySelector('.rank-card-preview-key');
-        var iconImg = item.querySelector('.idnect-card-rank-icon');
+        let wrapper = item.querySelector('.idnect-card-wrapper');
+        let card = item.querySelector('.idnect-card');
+        let badge = item.querySelector('.idnect-card-rank-badge');
+        let labelSpan = item.querySelector('.rank-card-preview-label');
+        let keySpan = item.querySelector('.rank-card-preview-key');
+        let iconImg = item.querySelector('.idnect-card-rank-icon');
 
         if (card) card.setAttribute('data-rank', key || 'bronze');
         if (badge) {
@@ -414,10 +414,10 @@ document.getElementById('addRankRow')?.addEventListener('click', function() {
             }
         }
 
-        var rankWrap = item.querySelector('.idnect-card-rank-wrap');
+        let rankWrap = item.querySelector('.idnect-card-rank-wrap');
         if (rankWrap) {
             if (iconUrl) {
-                var img = iconImg;
+                let img = iconImg;
                 if (!img) {
                     img = document.createElement('img');
                     img.className = 'idnect-card-rank-icon';
@@ -434,30 +434,30 @@ document.getElementById('addRankRow')?.addEventListener('click', function() {
     }
 
     table.addEventListener('input', function(e) {
-        var name = e.target && e.target.getAttribute('name');
+        let name = e.target && e.target.getAttribute('name');
         if (!name || name.indexOf('ranks[') !== 0) return;
-        var m = name.match(/^ranks\[(\d+)\]/);
+        let m = name.match(/^ranks\[(\d+)\]/);
         if (m) updatePreview(parseInt(m[1], 10));
     });
     table.addEventListener('change', function(e) {
-        var name = e.target && e.target.getAttribute('name');
+        let name = e.target && e.target.getAttribute('name');
         if (!name || name.indexOf('ranks[') !== 0) return;
-        var m = name.match(/^ranks\[(\d+)\]/);
+        let m = name.match(/^ranks\[(\d+)\]/);
         if (m) updatePreview(parseInt(m[1], 10));
     });
 
     grid.querySelectorAll('.rank-card-preview-item[data-rank-index]').forEach(function(item) {
-        var idx = parseInt(item.getAttribute('data-rank-index') || '', 10);
+        let idx = parseInt(item.getAttribute('data-rank-index') || '', 10);
         if (!isNaN(idx)) updatePreview(idx);
     });
 })();
 
 function updatePreviewDesign(design) {
     design = design || 'default';
-    var designSelect = document.getElementById('member_card_design');
-    var rankWrap = document.querySelector('.rank-card-preview-wrap[data-preview-design]');
-    var rankWrappers = document.querySelectorAll('#rankCardPreviewGrid .idnect-card-wrapper');
-    var designClasses = ['default', 'logo_top', 'logo_center', 'logo_header', 'compact', 'split_banner', 'minimal_line', 'emblem'];
+    let designSelect = document.getElementById('member_card_design');
+    let rankWrap = document.querySelector('.rank-card-preview-wrap[data-preview-design]');
+    let rankWrappers = document.querySelectorAll('#rankCardPreviewGrid .idnect-card-wrapper');
+    let designClasses = ['default', 'logo_top', 'logo_center', 'logo_header', 'compact', 'split_banner', 'minimal_line', 'emblem'];
     if (designSelect) designSelect.value = design;
     if (rankWrap) rankWrap.setAttribute('data-preview-design', design);
     if (rankWrappers.length) {
@@ -469,18 +469,18 @@ function updatePreviewDesign(design) {
 }
 
 (function() {
-    var designSelect = document.getElementById('member_card_design');
-    var rankWrap = document.querySelector('.rank-card-preview-wrap[data-preview-design]');
-    var rankWrappers = document.querySelectorAll('#rankCardPreviewGrid .idnect-card-wrapper');
+    let designSelect = document.getElementById('member_card_design');
+    let rankWrap = document.querySelector('.rank-card-preview-wrap[data-preview-design]');
+    let rankWrappers = document.querySelectorAll('#rankCardPreviewGrid .idnect-card-wrapper');
     if (!designSelect || !rankWrap || !rankWrappers.length) return;
     designSelect.addEventListener('change', function() { updatePreviewDesign(this.value); });
 })();
 
 (function() {
-    var codeSelect = document.getElementById('member_card_code_type');
+    let codeSelect = document.getElementById('member_card_code_type');
     if (!codeSelect) return;
     codeSelect.addEventListener('change', function() {
-        var val = this.value;
+        let val = this.value;
         document.querySelectorAll('.rank-card-preview-wrap .idnect-card-barcode-wrap').forEach(function(wrap) {
             wrap.classList.remove('idnect-card-code-wrap--barcode', 'idnect-card-code-wrap--qrcode');
             wrap.classList.add('idnect-card-code-wrap--' + val);

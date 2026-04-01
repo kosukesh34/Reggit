@@ -71,7 +71,7 @@ class StampIndexUseCase
     /**
      * @return array<int, array{stamp_count: int, description: string}>
      */
-    private function normalizeRewardMilestones(mixed $milestones): array
+    private function normalizeRewardMilestones($milestones): array
     {
         if (! is_array($milestones)) {
             return [];

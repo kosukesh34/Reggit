@@ -21,7 +21,7 @@ class MemberCoupon
         public ?string $code = null
     ) {}
 
-    /** @return array<string, mixed> */
+    /** @return array<string, bool|int|float|string|array|object|null> */
     public function toArray(): array
     {
         return [

@@ -184,7 +184,7 @@ class QueueMeUseCase
         return self::SESSION_QUEUE_ENTRY_KEY_PREFIX.'_'.$projectId;
     }
 
-    private function normalizeString(mixed $value): string
+    private function normalizeString($value): string
     {
         if (! is_string($value)) {
             return '';
@@ -196,7 +196,7 @@ class QueueMeUseCase
     /**
      * @return array{0: string|null, 1: int|null}
      */
-    private function extractQueueIdentifierFromRaw(mixed $raw): array
+    private function extractQueueIdentifierFromRaw($raw): array
     {
         if (! is_string($raw)) {
             return [null, null];

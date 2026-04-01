@@ -5,7 +5,7 @@
 
 @push('styles')
 <style>
-.home-settings-drag-handle { cursor: grab; color: var(--text-tertiary, #78716c); padding: 4px 8px; user-select: none; }
+.home-settings-drag-handle { cursor: grab; color: let(--text-tertiary, #78716c); padding: 4px 8px; user-select: none; }
 .home-settings-drag-handle:active { cursor: grabbing; }
 .home-settings-tbody tr.home-settings-row--hidden { background: #f4f4f5 !important; opacity: 0.85; }
 .home-settings-tbody tr.home-settings-row--hidden td { color: #9ca3af; }
@@ -95,13 +95,13 @@
 
 <script>
 (function() {
-    var tbody = document.querySelector('.home-settings-tbody');
+    let tbody = document.querySelector('.home-settings-tbody');
     if (!tbody) return;
 
     function syncOrderInputs() {
-        var rows = tbody.querySelectorAll('tr.home-settings-row');
+        let rows = tbody.querySelectorAll('tr.home-settings-row');
         rows.forEach(function(row, i) {
-            var input = row.querySelector('.home-settings-order-input');
+            let input = row.querySelector('.home-settings-order-input');
             if (input) input.value = i;
         });
     }
@@ -113,14 +113,14 @@
 
     tbody.addEventListener('change', function(e) {
         if (e.target.classList.contains('home-settings-enabled-cb')) {
-            var tr = e.target.closest('tr');
+            let tr = e.target.closest('tr');
             if (tr) toggleRowHidden(tr, e.target.checked);
         }
     });
 
-    var dragged = null;
+    let dragged = null;
     tbody.addEventListener('dragstart', function(e) {
-        var row = e.target.closest('tr');
+        let row = e.target.closest('tr');
         if (!row || !row.classList.contains('home-settings-row')) return;
         dragged = row;
         row.classList.add('home-settings-row--dragging');
@@ -138,11 +138,11 @@
     tbody.addEventListener('dragover', function(e) {
         e.preventDefault();
         e.dataTransfer.dropEffect = 'move';
-        var row = e.target.closest('tr');
+        let row = e.target.closest('tr');
         if (!row || row === dragged || !row.classList.contains('home-settings-row')) return;
-        var rect = row.getBoundingClientRect();
-        var mid = rect.top + rect.height / 2;
-        var next = e.clientY > mid ? row.nextElementSibling : row;
+        let rect = row.getBoundingClientRect();
+        let mid = rect.top + rect.height / 2;
+        let next = e.clientY > mid ? row.nextElementSibling : row;
         if (next && next.classList.contains('home-settings-row') && next !== dragged) {
             tbody.insertBefore(dragged, next);
         } else if (!next) {

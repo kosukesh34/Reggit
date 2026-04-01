@@ -14,7 +14,7 @@ class AdminCouponUpdateUseCase
         $this->couponAdminService = $couponAdminService;
     }
 
-    /** @param array<string, mixed> $validated */
+    /** @param array<string, bool|int|float|string|array|object|null> $validated */
     public function handle(int $couponId, array $validated, int $projectId): Coupon
     {
         return $this->couponAdminService->update($couponId, $validated, $projectId);

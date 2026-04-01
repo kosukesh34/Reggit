@@ -61,7 +61,7 @@
     </div>
 </form>
 <script>
-function addSlot(){ var c=document.getElementById('timeSlotsContainer'); var d=document.createElement('div'); d.className='time-slot-item'; d.innerHTML='<input type="time" name="reservation_time_slots[]" class="form-control"> <button type="button" class="btn btn-sm btn-danger" onclick="this.closest(\'.time-slot-item\').remove()"><i class="fas fa-times"></i></button>'; c.appendChild(d); }
-function addClosedDate(){ var c=document.getElementById('closedDatesContainer'); var d=document.createElement('div'); d.className='closed-date-item mb-1'; d.innerHTML='<input type="date" name="closed_dates[]" class="form-control d-inline-block w-auto"> <button type="button" class="btn btn-sm btn-danger" onclick="this.closest(\'.closed-date-item\').remove()"><i class="fas fa-times"></i></button>'; c.appendChild(d); }
+function addSlot(){ let c=document.getElementById('timeSlotsContainer'); let d=document.createElement('div'); d.className='time-slot-item'; d.innerHTML='<input type="time" name="reservation_time_slots[]" class="form-control"> <button type="button" class="btn btn-sm btn-danger" onclick="this.closest(\'.time-slot-item\').remove()"><i class="fas fa-times"></i></button>'; c.appendChild(d); }
+function addClosedDate(){ let c=document.getElementById('closedDatesContainer'); let d=document.createElement('div'); d.className='closed-date-item mb-1'; d.innerHTML='<input type="date" name="closed_dates[]" class="form-control d-inline-block w-auto"> <button type="button" class="btn btn-sm btn-danger" onclick="this.closest(\'.closed-date-item\').remove()"><i class="fas fa-times"></i></button>'; c.appendChild(d); }
 </script>
 @endsection

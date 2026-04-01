@@ -2,7 +2,7 @@
 <script>
     window.__PROJECT_KEY__ = "{{ $projectKey ?? 'default' }}";
     (function () {
-        var apiBaseMeta = document.querySelector('meta[name="api-base"]');
+        let apiBaseMeta = document.querySelector('meta[name="api-base"]');
         window.__API_BASE__ = (apiBaseMeta ? apiBaseMeta.getAttribute('content') : null) || '/api';
     })();
     window.__WALLET_PASS_ENABLED__ = {{ ($walletPassEnabled ?? false) ? 'true' : 'false' }};
@@ -19,11 +19,11 @@
     window.__INLINE_LOCAL_ASSETS__ = {{ $useInlineLocalAssets ? 'true' : 'false' }};
     window.__clientDebugLog = function (eventName, payloadObj) {
         try {
-            var payload = '';
+            let payload = '';
             if (payloadObj && typeof payloadObj === 'object' && payloadObj !== null) {
                 payload = JSON.stringify(payloadObj);
             }
-            var body = {
+            let body = {
                 event: String(eventName || 'unknown'),
                 project_key: String(window.__PROJECT_KEY__ || ''),
                 path: String(window.location.pathname || ''),
@@ -31,9 +31,9 @@
                 ua: (navigator && navigator.userAgent) ? String(navigator.userAgent) : '',
                 payload: payload
             };
-            var url = '/api/client-debug';
+            let url = '/api/client-debug';
             if (navigator && typeof navigator.sendBeacon === 'function') {
-                var blob = new Blob([JSON.stringify(body)], { type: 'application/json' });
+                let blob = new Blob([JSON.stringify(body)], { type: 'application/json' });
                 navigator.sendBeacon(url, blob);
             } else if (typeof fetch === 'function') {
                 fetch(url, {
@@ -43,7 +43,7 @@
                     keepalive: true,
                     credentials: 'same-origin'
                 }).catch(function () {
-                    var i = new Image();
+                    let i = new Image();
                     i.src = url
                         + '?event=' + encodeURIComponent(body.event)
                         + '&project_key=' + encodeURIComponent(body.project_key)
@@ -53,7 +53,7 @@
                         + '&payload=' + encodeURIComponent(body.payload);
                 });
             } else {
-                var i = new Image();
+                let i = new Image();
                 i.src = url
                     + '?event=' + encodeURIComponent(body.event)
                     + '&project_key=' + encodeURIComponent(body.project_key)
@@ -78,7 +78,7 @@
     });
     window.addEventListener('unhandledrejection', function (ev) {
         try {
-            var reason = '';
+            let reason = '';
             if (ev && typeof ev.reason === 'string') {
                 reason = ev.reason;
             } else if (ev && ev.reason && ev.reason.message) {

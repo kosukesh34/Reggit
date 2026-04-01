@@ -11,25 +11,25 @@ window.LiffDesignerModules.onboarding = {
     ],
 
     shouldShowOnboarding() {
-        var layouts = this.state.layouts;
-        var tabs = Object.keys(this.TAB_LABELS);
-        for (var i = 0; i < tabs.length; i++) {
+        let layouts = this.state.layouts;
+        let tabs = Object.keys(this.TAB_LABELS);
+        for (let i = 0; i < tabs.length; i++) {
             if (Array.isArray(layouts[tabs[i]]) && layouts[tabs[i]].length > 0) return false;
         }
         return true;
     },
 
     showOnboarding() {
-        var self = this;
-        var overlay = document.createElement('div');
+        let self = this;
+        let overlay = document.createElement('div');
         overlay.className = 'ld-onboarding';
         overlay.id = 'ldOnboarding';
 
-        var step = 1;
-        var selectedIndustry = null;
+        let step = 1;
+        let selectedIndustry = null;
 
         function renderStep1() {
-            var cards = self.INDUSTRY_PRESETS.map(function(p) {
+            let cards = self.INDUSTRY_PRESETS.map(function(p) {
                 return '<div class="ld-ob-card" data-industry="' + self.esc(p.id) + '">' +
                     '<div class="ld-ob-card__icon" style="background:' + p.gradient + '"><i class="fas ' + p.icon + '"></i></div>' +
                     '<div class="ld-ob-card__body">' +
@@ -66,22 +66,22 @@ window.LiffDesignerModules.onboarding = {
         }
 
         function renderStep2() {
-            var preset = self.INDUSTRY_PRESETS.find(function(p) { return p.id === selectedIndustry; });
+            let preset = self.INDUSTRY_PRESETS.find(function(p) { return p.id === selectedIndustry; });
             if (!preset) return renderStep1();
 
-            var pattern = (self.templates || []).find(function(t) { return t.id === preset.patternId; });
-            var homeBlocks = pattern && pattern.layouts && pattern.layouts.home ? pattern.layouts.home : [];
-            var totalBlocks = 0;
+            let pattern = (self.templates || []).find(function(t) { return t.id === preset.patternId; });
+            let homeBlocks = pattern && pattern.layouts && pattern.layouts.home ? pattern.layouts.home : [];
+            let totalBlocks = 0;
             if (pattern && pattern.layouts) {
                 Object.keys(pattern.layouts).forEach(function(tab) {
                     if (Array.isArray(pattern.layouts[tab])) totalBlocks += pattern.layouts[tab].length;
                 });
             }
 
-            var blockPreview = homeBlocks.slice(0, 5).map(function(block) {
-                var bt = self.BLOCK_TYPES.find(function(b) { return b.type === (block.type || 'text'); });
-                var label = bt ? bt.label : block.type;
-                var icon = bt ? bt.icon : 'fa-cube';
+            let blockPreview = homeBlocks.slice(0, 5).map(function(block) {
+                let bt = self.BLOCK_TYPES.find(function(b) { return b.type === (block.type || 'text'); });
+                let label = bt ? bt.label : block.type;
+                let icon = bt ? bt.icon : 'fa-cube';
                 return '<div class="ld-ob-preview-block"><i class="fas ' + icon + '"></i> ' + self.esc(label) + '</div>';
             }).join('');
 
@@ -158,7 +158,7 @@ window.LiffDesignerModules.onboarding = {
         }
 
         overlay.addEventListener('click', function(e) {
-            var industryCard = e.target.closest('[data-industry]');
+            let industryCard = e.target.closest('[data-industry]');
             if (industryCard) {
                 selectedIndustry = industryCard.dataset.industry;
                 step = 2;
@@ -177,9 +177,9 @@ window.LiffDesignerModules.onboarding = {
                 return;
             }
             if (e.target.closest('[data-ob-apply]')) {
-                var preset = self.INDUSTRY_PRESETS.find(function(p) { return p.id === selectedIndustry; });
+                let preset = self.INDUSTRY_PRESETS.find(function(p) { return p.id === selectedIndustry; });
                 if (!preset) return;
-                var pattern = (self.templates || []).find(function(t) { return t.id === preset.patternId; });
+                let pattern = (self.templates || []).find(function(t) { return t.id === preset.patternId; });
                 if (pattern) {
                     self.applySuperPattern(pattern, true);
                 }
@@ -200,11 +200,11 @@ window.LiffDesignerModules.onboarding = {
     },
 
     showHelpOverlay() {
-        var self = this;
-        var existing = document.getElementById('ldHelpOverlay');
+        let self = this;
+        let existing = document.getElementById('ldHelpOverlay');
         if (existing) { existing.remove(); return; }
 
-        var overlay = document.createElement('div');
+        let overlay = document.createElement('div');
         overlay.className = 'ld-help-overlay';
         overlay.id = 'ldHelpOverlay';
         overlay.innerHTML =

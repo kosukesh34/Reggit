@@ -14,7 +14,7 @@ class AdminAnnouncementStoreUseCase
         $this->announcementAdminService = $announcementAdminService;
     }
 
-    /** @param array<string, mixed> $validated */
+    /** @param array<string, bool|int|float|string|array|object|null> $validated */
     public function handle(int $projectId, array $validated): Announcement
     {
         return $this->announcementAdminService->create($projectId, $validated);

@@ -2,11 +2,14 @@
 
 namespace App\Providers;
 
+use App\Models\Coupon;
 use App\Models\MemberStamp;
+use App\Models\Product;
 use App\Models\Project;
 use App\Models\ShopSetting;
 use App\Observers\MemberStampObserver;
 use App\Observers\ProjectObserver;
+use Database\Seeders\DefaultDataSeeder;
 use App\UseCases\Payment\PaymentGateway;
 use App\UseCases\Payment\StripePaymentGateway;
 use App\Util\AdminContext;
@@ -104,6 +107,21 @@ class AppServiceProvider extends ServiceProvider
                     $project = AdminContext::getCurrentProject();
                 }
                 $projectId = $project ? ((int) $project->id) : 1;
+
+                // ローカル開発時: 初期データが空なら最低限のサンプルデータを自動投入する。
+                // setup時に seed を省略しても localhost でデフォルト画面を確認できるようにする。
+                if (app()->environment(['local', 'development']) && $project !== null) {
+                    $hasProducts = Product::withoutGlobalScopes()->where('project_id', $projectId)->exists();
+                    $hasCoupons = Coupon::where('project_id', $projectId)->exists();
+                    if (! $hasProducts || ! $hasCoupons) {
+                        try {
+                            app(DefaultDataSeeder::class)->runForProject($project, false, false);
+                        } catch (\Throwable $e) {
+                            // 自動seed失敗時は画面表示を優先
+                        }
+                    }
+                }
+
                 $view->with('lineTheme', ShopSetting::getLineThemeColors($projectId));
                 $view->with('frontendMenu', ShopSetting::getFrontendMenuItems($projectId));
                 $view->with('projectKey', $project ? ((string) $project->project_key) : 'default');
@@ -115,9 +133,10 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('frontendHeaderText', ShopSetting::getFrontendHeaderText($projectId));
                 $view->with('orderMode', ShopSetting::getOrderMode($projectId));
                 $view->with('liffBuilderBlocks', ShopSetting::getLiffBuilderBlocks($projectId));
-                $view->with('liffTabLayouts', ShopSetting::getLiffTabLayouts($projectId));
-                $view->with('liffCustomCss', ShopSetting::getLiffCustomCss($projectId));
-                $view->with('liffTabSettings', ShopSetting::getLiffTabSettings($projectId));
+                // ユーザー画面は常に標準デザインを使用する（管理画面でのカスタム保存値は反映しない）
+                $view->with('liffTabLayouts', ShopSetting::defaultLiffTabLayouts());
+                $view->with('liffCustomCss', '');
+                $view->with('liffTabSettings', ShopSetting::defaultLiffTabSettings());
                 $view->with('liffId', ShopSetting::getLineLiffId($projectId));
                 $view->with('liffUrl', ShopSetting::getLineLiffUrl($projectId));
                 $view->with('lineFriendAddUrl', ShopSetting::getLineFriendAddUrl($projectId));
@@ -151,7 +170,7 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('liffBuilderBlocks', ShopSetting::defaultLiffBuilderTemplates()[0]['blocks']);
                 $view->with('liffTabLayouts', ShopSetting::defaultLiffTabLayouts());
                 $view->with('liffCustomCss', '');
-                $view->with('liffTabSettings', []);
+                $view->with('liffTabSettings', ShopSetting::defaultLiffTabSettings());
                 $view->with('liffId', trim((string) config('line.liff_id', '')));
                 $view->with('liffUrl', trim((string) config('line.liff_url', '')));
                 $view->with('lineFriendAddUrl', '');

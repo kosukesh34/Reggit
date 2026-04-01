@@ -291,9 +291,9 @@
 
     <script>
     document.addEventListener('DOMContentLoaded', function() {
-        var toggle = document.getElementById('sidebarToggle');
-        var sidebar = document.getElementById('sidebar');
-        var overlay = document.getElementById('sidebarOverlay');
+        let toggle = document.getElementById('sidebarToggle');
+        let sidebar = document.getElementById('sidebar');
+        let overlay = document.getElementById('sidebarOverlay');
 
         function openSidebar() {
             sidebar.classList.add('is-open');
@@ -321,7 +321,7 @@
             overlay.addEventListener('click', closeSidebar);
         }
 
-        var sidebarLinks = sidebar.querySelectorAll('.nav-item');
+        let sidebarLinks = sidebar.querySelectorAll('.nav-item');
         sidebarLinks.forEach(function(link) {
             link.addEventListener('click', function() {
                 if (window.innerWidth <= 768) {

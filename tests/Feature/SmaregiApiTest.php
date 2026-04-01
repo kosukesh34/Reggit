@@ -160,7 +160,7 @@ class SmaregiApiTest extends TestCase
     /**
      * トークン取得 + 指定したPOS API のレスポンスをフェイクする。
      *
-     * @param  array<string, array<int|string, mixed>>  $responses  キーは get_pos_stores, get_pos_customers, post_pos_customers, post_pos_customers_point_add など
+     * @param  array<string, array<int|string, bool|int|float|string|array|null>>  $responses  キーは get_pos_stores, get_pos_customers, post_pos_customers, post_pos_customers_point_add など
      */
     private function fakeSmaregiHttp(array $responses): void
     {

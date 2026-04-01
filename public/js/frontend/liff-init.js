@@ -168,7 +168,7 @@
 
     /** liff.login() 呼び出し後、リダイレクトされなかった場合にフォールバックを表示するタイマーを開始 */
     function scheduleLoginFallback() {
-        var fallbackTimer = setTimeout(function () {
+        let fallbackTimer = setTimeout(function () {
             if (typeof window.__LINE_USER_ID__ !== 'undefined' && window.__LINE_USER_ID__) return;
             showLoginRequiredFallback();
         }, 8000);

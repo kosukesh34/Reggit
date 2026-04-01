@@ -100,8 +100,8 @@
 </div>
 <script>
 document.getElementById('role').addEventListener('change', function() {
-    var projectGroup = document.getElementById('project_ids_group');
-    var permGroup = document.getElementById('permissions_group');
+    let projectGroup = document.getElementById('project_ids_group');
+    let permGroup = document.getElementById('permissions_group');
     projectGroup.style.display = (this.value !== 'system_admin') ? 'block' : 'none';
     permGroup.style.display = (this.value === 'staff') ? 'block' : 'none';
 });

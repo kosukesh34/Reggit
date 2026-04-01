@@ -21,7 +21,7 @@ class ShopSettingLiffDefaults
                 'name' => 'キャンペーン',
                 'blocks' => [
                     ['type' => 'hero', 'title' => '期間限定キャンペーン', 'body' => '今週だけの特別メニュー。', 'image_url' => 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=1200'],
-                    ['type' => 'list', 'title' => 'おすすめ', 'list_items' => ['季節限定バーガー', 'スペシャルドリンク', '数量限定クーポン']],
+                    ['type' => 'list', 'title' => 'おすすめ', 'list_items' => ['季節限定プレート', 'スペシャルドリンク', '数量限定クーポン']],
                     ['type' => 'button', 'button_label' => 'クーポンを確認', 'button_url' => '#coupons'],
                 ],
             ],
@@ -448,70 +448,79 @@ class ShopSettingLiffDefaults
     {
         return [
             'home' => [
-                ['type' => 'hero', 'title' => 'モバイルオーダーへようこそ', 'subtitle' => '注文・予約・会員特典をこの画面でまとめて利用できます。', 'gradient_start' => '#0ea5e9', 'gradient_end' => '#22c55e'],
-                ['type' => 'banner', 'icon' => 'fa-bell', 'text' => '本日限定: LINE会員はポイント2倍', 'color' => '#0f766e'],
-                ['type' => 'heading', 'text' => 'おすすめメニュー', 'size' => 'large'],
-                ['type' => 'collection', 'layout' => 'scroll', 'item_width' => 150, 'item_image_height' => 110, 'items' => [
-                    ['title' => 'シグネチャープレート', 'description' => '人気No.1', 'image_url' => 'https://images.unsplash.com/photo-1550547660-d9450f859349?w=800'],
-                    ['title' => '季節のサラダ', 'description' => '旬の素材', 'image_url' => 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800'],
-                    ['title' => '本日のパスタ', 'description' => '限定メニュー', 'image_url' => 'https://images.unsplash.com/photo-1621996346565-e3dbc353d2e5?w=800'],
+                ['type' => 'hero', 'title' => 'いつもの注文を、もっと早く。', 'subtitle' => '注文・予約・会員特典をLINEでまとめて使えます。', 'gradient_start' => '#065f46', 'gradient_end' => '#10b981'],
+                ['type' => 'banner', 'icon' => 'fa-bolt', 'text' => '事前注文なら店頭での待ち時間を短縮できます', 'color' => '#047857'],
+                ['type' => 'heading', 'text' => '人気メニュー', 'size' => 'large'],
+                ['type' => 'collection', 'layout' => 'scroll', 'item_width' => 158, 'item_image_height' => 112, 'show_description' => true, 'items' => [
+                    ['title' => 'グリルチキンプレート', 'description' => '人気 No.1', 'image_url' => 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800'],
+                    ['title' => '海老トマトパスタ', 'description' => '期間限定', 'image_url' => 'https://images.unsplash.com/photo-1621996346565-e3dbc353d2e5?w=800'],
+                    ['title' => 'クラフトレモネード', 'description' => 'セット割対象', 'image_url' => 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=800'],
                 ]],
-                ['type' => 'button', 'text' => '今すぐ注文する', 'action' => '#products', 'color' => '#06C755'],
-                ['type' => 'button', 'text' => '席を予約する', 'action' => '#reservations', 'color' => '#1d4ed8'],
+                ['type' => 'icon_text', 'rows' => [
+                    ['icon' => 'fa-receipt', 'text' => '注文状況は「注文」タブですぐ確認', 'color' => '#047857'],
+                    ['icon' => 'fa-gift', 'text' => '会員登録で限定クーポンを受け取り', 'color' => '#047857'],
+                ]],
+                ['type' => 'button', 'text' => '商品を見る', 'action' => '#products', 'color' => '#06C755'],
+                ['type' => 'button', 'text' => 'テーブル予約へ', 'action' => '#reservations', 'color' => '#0f766e'],
+                ['type' => 'friend_add', 'text' => '友だち追加で最新情報を受け取る', 'color' => '#06C755'],
                 ['type' => 'data', 'source' => 'announcements'],
             ],
             'products' => [
-                ['type' => 'heading', 'text' => '商品一覧', 'size' => 'large'],
-                ['type' => 'text', 'text' => 'カテゴリから商品を選択し、カートに追加してください。'],
+                ['type' => 'heading', 'text' => 'メニュー', 'size' => 'large'],
+                ['type' => 'text', 'text' => 'カテゴリから商品を選び、受取方法を選択してご注文ください。'],
+                ['type' => 'banner', 'icon' => 'fa-clock', 'text' => '受取時間は注文時に指定できます', 'color' => '#065f46'],
                 ['type' => 'data', 'source' => 'products'],
             ],
             'orders' => [
                 ['type' => 'heading', 'text' => '注文状況', 'size' => 'large'],
-                ['type' => 'text', 'text' => '注文履歴と現在のステータスを確認できます。'],
-                ['type' => 'banner', 'icon' => 'fa-clock', 'text' => '受け取り準備が完了すると通知します', 'color' => '#2563eb'],
+                ['type' => 'text', 'text' => '準備中・受取可能など、最新ステータスをリアルタイムで確認できます。'],
+                ['type' => 'icon_text', 'rows' => [
+                    ['icon' => 'fa-hourglass-half', 'text' => '混雑時は準備に時間がかかる場合があります', 'color' => '#0f766e'],
+                    ['icon' => 'fa-bell', 'text' => '受取可能になったら通知します', 'color' => '#0f766e'],
+                ]],
                 ['type' => 'data', 'source' => 'orders'],
             ],
             'stamps' => [
                 ['type' => 'heading', 'text' => 'スタンプカード', 'size' => 'large'],
                 ['type' => 'icon_text', 'rows' => [
-                    ['icon' => 'fa-stamp', 'text' => '来店ごとにスタンプ獲得', 'color' => '#06C755'],
-                    ['icon' => 'fa-gift', 'text' => '満了で特典を獲得', 'color' => '#f59e0b'],
+                    ['icon' => 'fa-stamp', 'text' => '来店ごとにスタンプを付与', 'color' => '#16a34a'],
+                    ['icon' => 'fa-gift', 'text' => '満了で特典クーポンをプレゼント', 'color' => '#d97706'],
                 ]],
                 ['type' => 'data', 'source' => 'stamps'],
             ],
             'coupons' => [
                 ['type' => 'heading', 'text' => 'クーポン', 'size' => 'large'],
-                ['type' => 'banner', 'icon' => 'fa-ticket-alt', 'text' => '会員限定クーポンを配信中', 'color' => '#7c3aed'],
-                ['type' => 'text', 'text' => 'ご注文前に利用可能なクーポンをご確認ください。'],
+                ['type' => 'banner', 'icon' => 'fa-ticket-alt', 'text' => '会員限定クーポン配信中', 'color' => '#0f766e'],
+                ['type' => 'text', 'text' => 'ご注文前に利用可能なクーポンを選択すると、会計がスムーズです。'],
                 ['type' => 'data', 'source' => 'coupons'],
             ],
             'queue' => [
                 ['type' => 'heading', 'text' => '順番待ち', 'size' => 'large'],
-                ['type' => 'text', 'text' => '混雑時は順番待ち受付をご利用ください。'],
+                ['type' => 'text', 'text' => '混雑時はLINEで順番待ち受付を行えます。呼び出し時刻の目安も確認できます。'],
                 ['type' => 'icon_text', 'rows' => [
                     ['icon' => 'fa-user-check', 'text' => '人数を入力して受付', 'color' => '#0f766e'],
-                    ['icon' => 'fa-mobile-alt', 'text' => '呼び出し通知でお知らせ', 'color' => '#0f766e'],
+                    ['icon' => 'fa-mobile-alt', 'text' => '呼び出し通知をLINEで受信', 'color' => '#0f766e'],
                 ]],
                 ['type' => 'data', 'source' => 'queue'],
             ],
             'reservations' => [
                 ['type' => 'heading', 'text' => '来店予約', 'size' => 'large'],
-                ['type' => 'list', 'items' => ['日時を選択', '人数を指定', '内容を確認して確定']],
-                ['type' => 'banner', 'icon' => 'fa-calendar-check', 'text' => '予約変更・キャンセルは注文履歴から可能です', 'color' => '#1d4ed8'],
+                ['type' => 'list', 'style' => 'number', 'items' => ['日時を選択', '人数を指定', '内容を確認して確定']],
+                ['type' => 'banner', 'icon' => 'fa-calendar-check', 'text' => '予約変更・キャンセルはこのタブから操作できます', 'color' => '#0f766e'],
                 ['type' => 'data', 'source' => 'reservations'],
             ],
             'member' => [
                 ['type' => 'heading', 'text' => '会員ページ', 'size' => 'large'],
-                ['type' => 'text', 'text' => '会員証・ポイント・ランクを確認できます。'],
+                ['type' => 'text', 'text' => '会員証・ポイント・ランク状況を確認できます。'],
                 ['type' => 'icon_text', 'rows' => [
-                    ['icon' => 'fa-coins', 'text' => '購入でポイントが貯まります', 'color' => '#d97706'],
-                    ['icon' => 'fa-crown', 'text' => 'ランクアップで特典が増えます', 'color' => '#d97706'],
+                    ['icon' => 'fa-coins', 'text' => '購入でポイントが貯まります', 'color' => '#b45309'],
+                    ['icon' => 'fa-crown', 'text' => 'ランクアップで特典が増えます', 'color' => '#b45309'],
                 ]],
                 ['type' => 'data', 'source' => 'member_card'],
             ],
             'gallery' => [
                 ['type' => 'heading', 'text' => 'ギャラリー', 'size' => 'large'],
-                ['type' => 'text', 'text' => '店内・メニュー写真を随時更新しています。'],
+                ['type' => 'text', 'text' => '店内・メニュー写真を随時更新しています。気になる商品は「商品」タブから注文できます。'],
                 ['type' => 'data', 'source' => 'gallery'],
             ],
             'announcements' => [
@@ -529,8 +538,8 @@ class ShopSettingLiffDefaults
      * - タブが空ならデフォルトレイアウトを採用
      * - 既存ブロックは順序を変えずに維持する
      *
-     * @param  array<string, mixed>  $layouts
-     * @return array<string, array<int, array<string, mixed>>>
+     * @param  array<string, array<int, array<string, bool|int|float|string|array|null>>>  $layouts
+     * @return array<string, array<int, array<string, bool|int|float|string|array|null>>>
      */
     public static function ensureLiffTabLayouts(array $layouts): array
     {
@@ -556,16 +565,16 @@ class ShopSettingLiffDefaults
     public static function defaultLiffTabSettings(): array
     {
         return [
-            'home' => ['background_color' => '#f2f9f6'],
-            'products' => ['background_color' => '#f7faf9'],
-            'orders' => ['background_color' => '#f5f7fa'],
-            'stamps' => ['background_color' => '#f8faf5'],
-            'coupons' => ['background_color' => '#faf6ff'],
-            'queue' => ['background_color' => '#f7f7f7'],
-            'reservations' => ['background_color' => '#f4f8ff'],
-            'member' => ['background_color' => '#f7f8f9'],
-            'gallery' => ['background_color' => '#fafaf8'],
-            'announcements' => ['background_color' => '#f6f9ff'],
+            'home' => ['background_color' => '#eefaf4'],
+            'products' => ['background_color' => '#f4fbf8'],
+            'orders' => ['background_color' => '#f2faf7'],
+            'stamps' => ['background_color' => '#f5fbf3'],
+            'coupons' => ['background_color' => '#f3faf6'],
+            'queue' => ['background_color' => '#f5faf7'],
+            'reservations' => ['background_color' => '#f0faf5'],
+            'member' => ['background_color' => '#f3f9f6'],
+            'gallery' => ['background_color' => '#f6fbf8'],
+            'announcements' => ['background_color' => '#f2faf6'],
         ];
     }
 

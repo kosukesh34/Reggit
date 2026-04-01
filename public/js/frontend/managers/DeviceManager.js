@@ -102,7 +102,7 @@ class DeviceManager {
         if (typeof window === 'undefined') return;
 
         window.__nativeSetPushToken = (token) => {
-            const normalizedToken = token == null ? '' : String(token).trim();
+            const normalizedToken = token === null || typeof token === 'undefined' ? '' : String(token).trim();
             window.__MOBILE_PENDING_PUSH_TOKEN__ = normalizedToken || null;
             if (!window.__MOBILE_DEVICE_INFO__ || typeof window.__MOBILE_DEVICE_INFO__ !== 'object') {
                 window.__MOBILE_DEVICE_INFO__ = {};
@@ -164,4 +164,3 @@ class DeviceManager {
         });
     }
 }
-
