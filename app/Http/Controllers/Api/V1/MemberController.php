@@ -108,6 +108,10 @@ class MemberController extends BaseApiController
 
     public function addPoints(Request $request)
     {
+        if (! app()->environment(['local', 'testing'])) {
+            abort(404);
+        }
+
         $validated = $request->validate([
             'points' => 'required|integer|min:1',
             'description' => 'nullable|string',

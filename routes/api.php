@@ -160,4 +160,5 @@ Route::middleware(['web', 'bind.project'])->group(function () {
 });
 
 Route::post('/payment/webhook', [PaymentWebhookController::class, '__invoke']);
-Route::match(['get', 'post'], '/client-debug', ClientDebugController::class);
+Route::match(['get', 'post'], '/client-debug', ClientDebugController::class)
+    ->middleware('throttle:30,1');

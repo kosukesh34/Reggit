@@ -56,4 +56,32 @@ class SecurityTest extends TestCase
 
         $response->assertRedirect();
     }
+
+    public function test_本番環境では会員ポイント加算エンドポイントを無効化する(): void
+    {
+        config(['app.env' => 'production']);
+        Project::firstOrCreate(
+            ['project_key' => 'default'],
+            ['name' => 'Default', 'description' => '', 'is_active' => true]
+        );
+
+        $response = $this->postJson('/api/members/points/add', [
+            'points' => 100,
+            'description' => 'debug',
+        ]);
+
+        $response->assertStatus(404);
+    }
+
+    public function test_本番環境ではclient_debugはトークンなしで無効化される(): void
+    {
+        config(['app.env' => 'production']);
+        config(['app.debug' => false]);
+
+        $response = $this->postJson('/api/client-debug', [
+            'event' => 'test',
+        ]);
+
+        $response->assertStatus(404);
+    }
 }

@@ -17,6 +17,14 @@ class ClientDebugController extends Controller
 
     public function __invoke(Request $request)
     {
+        if (! app()->environment(['local', 'testing'])) {
+            $expectedToken = trim((string) env('CLIENT_DEBUG_TOKEN', ''));
+            $providedToken = trim((string) $request->header('X-Client-Debug-Token', ''));
+            if ($expectedToken === '' || $providedToken === '' || ! hash_equals($expectedToken, $providedToken)) {
+                abort(404);
+            }
+        }
+
         $this->clientDebugLogUseCase->handle($request);
 
         return response()->json(['ok' => true]);

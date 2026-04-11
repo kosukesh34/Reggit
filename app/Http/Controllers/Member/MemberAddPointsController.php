@@ -16,6 +16,10 @@ class MemberAddPointsController extends Controller
 
     public function __invoke(Request $request)
     {
+        if (! app()->environment(['local', 'testing'])) {
+            abort(404);
+        }
+
         $validated = $request->validate([
             'points' => 'required|integer|min:1',
             'description' => 'nullable|string',
