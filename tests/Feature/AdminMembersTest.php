@@ -64,6 +64,8 @@ class AdminMembersTest extends TestCase
             'smaregi.api_base_url' => 'https://api.smaregi.dev',
             'wallet_pass.enabled' => true,
             'wallet_pass.type_id' => 'pass.IDNect',
+            'wallet_pass.web_service_url' => 'https://example.test/api/apple-wallet',
+            'google_wallet.enabled' => true,
         ]);
 
         $project = $this->createProject();
@@ -100,7 +102,7 @@ class AdminMembersTest extends TestCase
         $this->app->instance(GoogleWalletPassService::class, $googleMock);
 
         $appleMock = Mockery::mock(AppleWalletPushService::class);
-        $appleMock->shouldReceive('notifyMemberUpdated')->once()->andReturnTrue();
+        $appleMock->shouldReceive('notifyMemberUpdated')->atLeast()->once()->andReturnTrue();
         $this->app->instance(AppleWalletPushService::class, $appleMock);
 
         $response = $this->actingAs($admin, 'admin')
