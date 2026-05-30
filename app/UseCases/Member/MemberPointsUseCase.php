@@ -26,6 +26,6 @@ class MemberPointsUseCase
             ->take(20)
             ->get();
 
-        return new MemberPointsOutput(true, (int) $member->points, $transactions);
+        return new MemberPointsOutput(true, $member->getDisplayPoints(), $transactions);
     }
 }

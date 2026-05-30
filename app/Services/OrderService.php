@@ -109,7 +109,9 @@ class OrderService
             throw new \Exception('会員登録が必要です');
         }
 
-        if ($member->points < $pointsUsed) {
+        $member->syncPointsLedger();
+        $member->refresh();
+        if ($member->getTotalPointsFromTransactions() < $pointsUsed) {
             throw new \Exception('ポイントが不足しています');
         }
 

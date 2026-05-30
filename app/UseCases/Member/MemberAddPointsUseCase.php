@@ -27,6 +27,9 @@ class MemberAddPointsUseCase
         $smaregiCustomerId = $member->smaregi_customer_id ?? '';
         $smaregiCustomerId = is_string($smaregiCustomerId) ? trim($smaregiCustomerId) : '';
 
+        $member->syncPointsLedger();
+        $member->addPoints($points, $description);
+
         if ($smaregiCustomerId !== '' && $points > 0) {
             $result = $this->smaregiApi->syncCustomerPointsForProject($projectId, $smaregiCustomerId, $points);
             if ($result === null) {
@@ -34,8 +37,6 @@ class MemberAddPointsUseCase
             }
         }
 
-        $member->addPoints($points, $description);
-
-        return new MemberPointsOutput(true, (int) $member->fresh()->points, collect());
+        return new MemberPointsOutput(true, (int) $member->fresh()->getDisplayPoints(), collect());
     }
 }
