@@ -1,4 +1,7 @@
 class MemberManager {
+    /** WalletPassUrlIssueUseCase::TOKEN_TTL_MINUTES(3) より短めに余裕を持たせる */
+    static WALLET_PASS_PREFETCH_TTL_MS = 150000;
+
     constructor(apiClient, orderManager) {
         this.apiClient = apiClient;
         this.orderManager = orderManager;
@@ -981,6 +984,7 @@ class MemberManager {
         if (preparing) {
             btn.disabled = true;
             btn.removeAttribute('data-wallet-open-url');
+            btn.removeAttribute('data-wallet-open-url-at');
             if (label) {
                 label.innerHTML = '<i class="fas fa-spinner fa-spin" aria-hidden="true"></i> 準備中...';
             }
@@ -990,6 +994,15 @@ class MemberManager {
         if (label) {
             label.innerHTML = '<i class="fab fa-apple" aria-hidden="true"></i> Apple Walletに追加';
         }
+    }
+
+    _isAppleWalletOpenUrlFresh(btn) {
+        if (!btn) return false;
+        const openUrl = btn.getAttribute('data-wallet-open-url');
+        const prefetchedAt = btn.getAttribute('data-wallet-open-url-at');
+        if (!openUrl || !prefetchedAt) return false;
+        const age = Date.now() - parseInt(prefetchedAt, 10);
+        return Number.isFinite(age) && age >= 0 && age < MemberManager.WALLET_PASS_PREFETCH_TTL_MS;
     }
 
     /**
@@ -1003,6 +1016,7 @@ class MemberManager {
                 const btn = document.querySelector('.member-card-add-to-wallet-btn[data-wallet-pass-url]');
                 if (btn && openUrl) {
                     btn.setAttribute('data-wallet-open-url', openUrl);
+                    btn.setAttribute('data-wallet-open-url-at', String(Date.now()));
                     this._setAppleWalletButtonPreparing(btn, false);
                 } else if (btn) {
                     this._setAppleWalletButtonPreparing(btn, false);
@@ -1180,11 +1194,15 @@ class MemberManager {
 
         if (typeof window !== 'undefined' && window.__IS_LIFF__ && typeof liff !== 'undefined' && liff.openWindow) {
             const openUrl = btn.getAttribute('data-wallet-open-url');
-            if (!openUrl) {
+            if (!openUrl || !this._isAppleWalletOpenUrlFresh(btn)) {
+                btn.removeAttribute('data-wallet-open-url');
+                btn.removeAttribute('data-wallet-open-url-at');
                 if (typeof ToastManager !== 'undefined') {
-                    ToastManager.info('準備中です。しばらくお待ちください。');
+                    ToastManager.info(openUrl
+                        ? 'リンクの有効期限が切れました。更新中です…'
+                        : '準備中です。しばらくお待ちください。');
                 }
-                const self = this;
+                this._setAppleWalletButtonPreparing(btn, true);
                 this._prefetchAppleWalletOpenUrl(projectKey).then(function (url) {
                     if (url && typeof ToastManager !== 'undefined') {
                         ToastManager.info('準備ができました。もう一度タップしてください。');

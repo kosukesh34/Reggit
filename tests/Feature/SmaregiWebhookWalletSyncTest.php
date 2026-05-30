@@ -7,7 +7,6 @@ use App\Models\Member;
 use App\Models\Project;
 use App\Models\ShopSetting;
 use App\Models\User;
-use App\Models\WalletPassRegistration;
 use App\Models\WalletPassUpdate;
 use App\Services\AppleWalletPushService;
 use App\Services\GoogleWalletPassService;

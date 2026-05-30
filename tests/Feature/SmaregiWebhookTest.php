@@ -35,7 +35,7 @@ class SmaregiWebhookTest extends TestCase
         ]);
     }
 
-    public function test_idp_ヘッダーがなくてもボディのeventとcontractIdで契約が保存されること(): void
+    public function test_idp_ヘッダーがなくてもボディのeventとcontract_idで契約が保存されること(): void
     {
         $response = $this->postJson('/api/smaregi/idp', [
             'event' => SmaregiEvent::APP_SUBSCRIPTION,
@@ -105,12 +105,12 @@ class SmaregiWebhookTest extends TestCase
         $response->assertStatus(400);
     }
 
-    public function test_webhook_GETは200で空ボディを返すこと(): void
+    public function test_webhook_ge_tは200で空ボディを返すこと(): void
     {
         $this->get('/api/smaregi/webhook')->assertStatus(200);
     }
 
-    public function test_webhook_apiプレフィックスなしのパスでもPOSTで受信できること(): void
+    public function test_webhook_apiプレフィックスなしのパスでも_pos_tで受信できること(): void
     {
         $this->postJson('/smaregi/webhook', [
             'contractId' => 'test_contract_no_api',
@@ -123,7 +123,7 @@ class SmaregiWebhookTest extends TestCase
         ])->assertStatus(200);
     }
 
-    public function test_webhook_Content_Typeがjson以外でも生JSONなら解析できること(): void
+    public function test_webhook_content_typeがjson以外でも生_jso_nなら解析できること(): void
     {
         $payload = json_encode([
             'contractId' => 'test_contract_plain_ct',
