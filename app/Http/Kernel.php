@@ -9,6 +9,7 @@ use App\Http\Middleware\BindProjectFromRequest;
 use App\Http\Middleware\CheckAdminPermission;
 use App\Http\Middleware\EnsureStoreAdmin;
 use App\Http\Middleware\EnsureSystemAdmin;
+use App\Http\Middleware\LogSmaregiWebhookIngress;
 use App\Http\Middleware\RedirectIfAuthenticated;
 use App\Http\Middleware\SetAdminProjectFromQuery;
 use App\Http\Middleware\ValidateCsrfToken;
@@ -84,5 +85,6 @@ class Kernel extends HttpKernel
         'system.admin' => EnsureSystemAdmin::class,
         'admin.permission' => CheckAdminPermission::class,
         'api.token' => AuthenticateApiToken::class,
+        'log.smaregi.webhook' => LogSmaregiWebhookIngress::class,
     ];
 }

@@ -16,6 +16,18 @@ use Illuminate\Support\Facades\Log;
  */
 class SmaregiApiService
 {
+    private ?string $lastErrorDetail = null;
+
+    public function getLastErrorDetail(): ?string
+    {
+        return $this->lastErrorDetail;
+    }
+
+    public function clearLastErrorDetail(): void
+    {
+        $this->lastErrorDetail = null;
+    }
+
     private const CACHE_KEY_PREFIX = 'smaregi_access_token:';
 
     private const CACHE_BUFFER_SECONDS = 60;
@@ -121,6 +133,7 @@ class SmaregiApiService
 
         if (! $response->successful()) {
             $responseBody = $response->body();
+            $this->lastErrorDetail = $this->parseErrorDetail($responseBody);
             $context = [
                 'smaregi_contract_id' => $contractId,
                 'method' => $method,
@@ -138,8 +151,26 @@ class SmaregiApiService
             return null;
         }
 
+        $this->lastErrorDetail = null;
+
         // 204 No Content 等で body が空の場合は [] を返し、呼び出し側で null=失敗 と区別できるようにする
         return $response->json() ?? [];
+    }
+
+    private function parseErrorDetail(string $responseBody): ?string
+    {
+        if ($responseBody === '') {
+            return null;
+        }
+
+        $decoded = json_decode($responseBody, true);
+        if (! is_array($decoded)) {
+            return null;
+        }
+
+        $detail = $decoded['detail'] ?? $decoded['message'] ?? $decoded['title'] ?? null;
+
+        return is_string($detail) && trim($detail) !== '' ? trim($detail) : null;
     }
 
     /** 店舗一覧を取得（pos.stores:read スコープ必要） */
@@ -186,6 +217,33 @@ class SmaregiApiService
     }
 
     /**
+     * 会員コードから会員1件を取得（pos.customers:read）
+     *
+     * @return array<string, string|int|float|bool|array|null>|null
+     */
+    public function getCustomerByCode(string $contractId, string $customerCode): ?array
+    {
+        $customerCode = trim($customerCode);
+        if ($customerCode === '') {
+            return null;
+        }
+
+        $result = $this->getCustomers($contractId, ['customer_code' => $customerCode, 'limit' => 1]);
+        if ($result === null) {
+            return null;
+        }
+
+        $list = $this->extractList($result, ['customers']);
+        foreach ($list as $customer) {
+            if (is_array($customer) && (string) ($customer['customerCode'] ?? '') === $customerCode) {
+                return $customer;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * 会員ポイントを加算・減算してスマレジに送信（pos.customers:write スコープ必要）
      * 負の値を指定すると減算。
      *
@@ -221,6 +279,67 @@ class SmaregiApiService
         return $this->request($contractId, 'GET', 'pos/customers/'.$customerId);
     }
 
+    /**
+     * 会員ポイント一覧を取得（pos.customers:read）
+     *
+     * @param  array<string, int|string>  $query  クエリ（customer_id, limit, page など）
+     */
+    public function getCustomerPoints(string $contractId, array $query = []): ?array
+    {
+        return $this->request($contractId, 'GET', 'pos/customers/point', $query);
+    }
+
+    /**
+     * 会員1件のポイント情報を取得（pos.customers:read）
+     *
+     * @return array<string, string|int|float|bool|array|null>|null
+     */
+    public function getCustomerPoint(string $contractId, string $customerId): ?array
+    {
+        $customerId = trim($customerId);
+        if ($customerId === '') {
+            return null;
+        }
+
+        // 公式: GET pos/customers/{customer_id}/points
+        $direct = $this->request($contractId, 'GET', 'pos/customers/'.$customerId.'/points');
+        if ($direct !== null) {
+            $normalized = $this->normalizeCustomerPointRecord($direct);
+            if ($normalized !== null) {
+                return $normalized;
+            }
+        }
+
+        // 旧実装互換: GET pos/customers/point?customer_id=
+        $legacy = $this->getCustomerPoints($contractId, [
+            'customer_id' => $customerId,
+            'limit' => 1,
+        ]);
+        if ($legacy === null) {
+            return null;
+        }
+
+        return $this->normalizeCustomerPointRecord($legacy);
+    }
+
+    /**
+     * @param  array<int|string, string|int|float|bool|array|null>  $result
+     * @return array<string, string|int|float|bool|array|null>|null
+     */
+    private function normalizeCustomerPointRecord(array $result): ?array
+    {
+        foreach (['point', 'points', 'Point', 'Points'] as $key) {
+            if (array_key_exists($key, $result)) {
+                return $result;
+            }
+        }
+
+        $list = $this->extractList($result, ['customer_points', 'customerPoints', 'points']);
+        $first = $list[0] ?? null;
+
+        return is_array($first) ? $first : null;
+    }
+
     /** 会員登録（pos.customers:write） */
     public function createCustomer(string $contractId, array $body): ?array
     {
@@ -249,6 +368,44 @@ class SmaregiApiService
     public function getTransaction(string $contractId, string $transactionId): ?array
     {
         return $this->request($contractId, 'GET', 'pos/transactions/'.$transactionId);
+    }
+
+    /**
+     * Webhook の transactionHeadIds から会員IDを解決（pos:customer-points / pos:transactions 用）。
+     *
+     * @param  list<string|int>  $transactionHeadIds
+     * @return list<string>
+     */
+    public function resolveCustomerIdsFromTransactionHeads(string $contractId, array $transactionHeadIds): array
+    {
+        $customerIds = [];
+        foreach ($transactionHeadIds as $rawHeadId) {
+            $headId = trim((string) $rawHeadId);
+            if ($headId === '') {
+                continue;
+            }
+            $transaction = $this->getTransaction($contractId, $headId);
+            if ($transaction === null) {
+                Log::warning('[Smaregi] resolveCustomerIdsFromTransactionHeads: getTransaction failed', [
+                    'smaregi_contract_id' => $contractId,
+                    'transaction_head_id' => $headId,
+                ]);
+
+                continue;
+            }
+            $customerId = $transaction['customerId'] ?? $transaction['customer_id'] ?? null;
+            if ($customerId === null || trim((string) $customerId) === '') {
+                Log::info('[Smaregi] resolveCustomerIdsFromTransactionHeads: transaction has no customerId', [
+                    'smaregi_contract_id' => $contractId,
+                    'transaction_head_id' => $headId,
+                ]);
+
+                continue;
+            }
+            $customerIds[] = (string) $customerId;
+        }
+
+        return array_values(array_unique($customerIds));
     }
 
     /** 取引登録（pos.transactions:write） */
@@ -436,6 +593,27 @@ class SmaregiApiService
      * 例: $service->request($contractId, 'POST', 'pos/transactions/1/cancel', []);
      * 全パス一覧は docs/SMAREGI_POS_API_REFERENCE.md を参照。
      */
+
+    /**
+     * @param  array<int|string, string|int|float|bool|array|null>  $result
+     * @param  list<string>  $possibleKeys
+     * @return array<int, string|int|float|bool|array|null>
+     */
+    private function extractList(array $result, array $possibleKeys): array
+    {
+        if ($result === [] || array_keys($result) === range(0, count($result) - 1)) {
+            return $result;
+        }
+
+        foreach ($possibleKeys as $key) {
+            $list = $result[$key] ?? null;
+            if (is_array($list)) {
+                return $list;
+            }
+        }
+
+        return [];
+    }
 
     /**
      * 指定プロジェクトに紐づく契約の会員ポイントを加算・減算する（プロジェクトIDから契約解決を行う）。
