@@ -14,17 +14,26 @@ class WalletPassGenerationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_apple_wallet用pkpassを生成できること(): void
+    /** @return array<string, bool|string> */
+    private function walletPassTestConfig(): array
     {
-        config([
+        $fixtureDir = base_path('tests/fixtures/wallet_pass');
+
+        return [
             'wallet_pass.enabled' => true,
             'wallet_pass.team_id' => 'T29T2L39T5',
             'wallet_pass.type_id' => 'pass.IDNect',
-            'wallet_pass.cert_path' => storage_path('app/wallet_pass/certificates/pass.cer'),
-            'wallet_pass.key_path' => storage_path('app/wallet_pass/certificates/iOS-Passkey-Key.key'),
-            'wallet_pass.wwdr_path' => storage_path('app/wallet_pass/certificates/AppleWWDRCAG4.cer'),
+            'wallet_pass.cert_path' => $fixtureDir.'/pass.cer',
+            'wallet_pass.key_path' => $fixtureDir.'/test.key',
+            // テスト用自己署名証明書では WWDR も同一証明書を指定
+            'wallet_pass.wwdr_path' => $fixtureDir.'/pass.cer',
             'wallet_pass.assets_path' => storage_path('app/wallet_pass/assets'),
-        ]);
+        ];
+    }
+
+    public function test_apple_wallet用pkpassを生成できること(): void
+    {
+        config($this->walletPassTestConfig());
 
         $project = Project::factory()->create(['name' => 'Wallet Test']);
         $user = User::factory()->create(['project_id' => $project->id]);
@@ -122,7 +131,7 @@ class WalletPassGenerationTest extends TestCase
 
     public function test_wallet_pass_tokenはttl内で複数回ダウンロードできること(): void
     {
-        config(['wallet_pass.enabled' => true]);
+        config($this->walletPassTestConfig());
 
         $project = Project::firstOrCreate(
             ['project_key' => 'default'],
