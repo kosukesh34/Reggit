@@ -6,7 +6,7 @@ on:
   push:
     branches: [ main, develop ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main, develop, 'feature/**', 'fix/**' ]
 
 jobs:
   test:
@@ -109,3 +109,10 @@ jobs:
           echo "Laravel Pint not installed, skipping..."
         fi
 
+  # ブランチ保護ルールが要求する required status check 名（context: main）
+  main:
+    runs-on: ubuntu-latest
+    needs: [ test, lint ]
+
+    steps:
+      - run: echo "All CI checks passed"
