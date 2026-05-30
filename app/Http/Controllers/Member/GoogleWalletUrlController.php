@@ -34,9 +34,9 @@ class GoogleWalletUrlController extends Controller
     private function buildInput(Request $request): GetGoogleWalletUrlInput
     {
         $token = $request->query('token');
-        $projectKey = $request->query('project_key');
         $projectId = AdminContext::getCurrentProjectId();
         $project = AdminContext::getCurrentProject();
+        $projectKey = $project !== null ? $project->project_key : config('app.default_project_key', 'default');
         $projectName = $project !== null ? $project->name : null;
 
         $user = null;

@@ -10,8 +10,11 @@ use App\Models\PointTransaction;
 use App\Models\ShopSetting;
 use App\Models\User;
 use App\Services\Smaregi\SmaregiApiService;
+use App\Services\Smaregi\SmaregiCustomerPointsInboundSyncService;
+use App\Services\Smaregi\SmaregiCustomerUpdatePayloadBuilder;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 class MemberService
@@ -19,6 +22,8 @@ class MemberService
     public function __construct(
         private CouponIssueService $couponIssueService,
         private SmaregiApiService $smaregiApi,
+        private SmaregiCustomerUpdatePayloadBuilder $smaregiCustomerUpdatePayloadBuilder,
+        private SmaregiCustomerPointsInboundSyncService $smaregiCustomerPointsInboundSyncService,
     ) {}
 
     public function getMemberData(User $user): array
@@ -39,10 +44,9 @@ class MemberService
             ];
         }
 
-        $totalPoints = $member->getTotalPointsFromTransactions();
-        if ($member->points !== $totalPoints) {
-            $member->update(['points' => $totalPoints]);
-        }
+        $this->maybeSyncMemberPointsFromSmaregi($member);
+        $member->refresh();
+        $member->syncPointsLedger();
         $this->syncMemberRank($member);
         $member->refresh();
 
@@ -79,6 +83,32 @@ class MemberService
             'member_card_display_type' => ShopSetting::getMemberCardDisplayType($projectId),
             'member_card_code_type' => ShopSetting::getMemberCardCodeType($projectId),
         ];
+    }
+
+    private function maybeSyncMemberPointsFromSmaregi(Member $member): void
+    {
+        if (config('smaregi.inbound_sync_on_member_fetch', true) !== true) {
+            return;
+        }
+
+        $ttl = (int) config('smaregi.inbound_sync_on_member_fetch_ttl_seconds', 30);
+        $cacheKey = 'smaregi_member_fetch_sync:'.(int) $member->id;
+        if ($ttl > 0 && Cache::has($cacheKey)) {
+            return;
+        }
+
+        try {
+            $this->smaregiCustomerPointsInboundSyncService->syncMemberFromSmaregi($member);
+            if ($ttl > 0) {
+                Cache::put($cacheKey, 1, $ttl);
+            }
+        } catch (\Throwable $e) {
+            LogHelper::warning('[Member] smaregi inbound sync on fetch failed', [
+                'member_id' => (int) $member->id,
+                'project_id' => (int) $member->project_id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /** プロフィール設定に基づくバリデーションルールを組み立て */
@@ -179,21 +209,6 @@ class MemberService
         $projectId = $member->project_id ?? AdminContext::getCurrentProjectId() ?? 1;
         $settings = ShopSetting::getProfileFieldSettings($projectId);
 
-        $smaregiCustomerId = $member->smaregi_customer_id ?? '';
-        if ($smaregiCustomerId !== '') {
-            $contractId = $this->smaregiApi->getContractIdForProject($projectId);
-            $contractId = is_string($contractId) ? trim($contractId) : '';
-            if ($contractId !== '') {
-                $body = $this->buildSmaregiCustomerUpdateBody($data);
-                if ($body !== []) {
-                    $result = $this->smaregiApi->updateCustomer($contractId, $smaregiCustomerId, $body);
-                    if ($result === null) {
-                        throw new \Exception('スマレジの会員情報更新に失敗しました。storage/logs/laravel.log の [Smaregi] を参照してください。');
-                    }
-                }
-            }
-        }
-
         $userUpdates = [];
         $memberUpdates = [];
         $extraUpdates = [];
@@ -241,33 +256,29 @@ class MemberService
             $member->update(['profile_extra' => array_merge($current, $extraUpdates)]);
         }
 
-        return $this->getMemberData($user);
-    }
-
-    /** スマレジ会員更新用のリクエストボディ（変更された項目のみ） */
-    private function buildSmaregiCustomerUpdateBody(array $data): array
-    {
-        $body = [];
-        $name = trim((string) ($data['name'] ?? ''));
-        if ($name !== '') {
-            $parts = preg_split('/\s+/u', $name, 2);
-            $body['lastName'] = $parts[0] ?? $name;
-            $body['firstName'] = $parts[1] ?? '';
-        }
-        $kana = trim((string) ($data['kana'] ?? ''));
-        if ($kana !== '') {
-            $kanaParts = preg_split('/\s+/u', $kana, 2);
-            $body['lastKana'] = $kanaParts[0] ?? $kana;
-            $body['firstKana'] = $kanaParts[1] ?? '';
-        }
-        if (array_key_exists('email', $data)) {
-            $body['mailAddress'] = trim((string) $data['email']);
-        }
-        if (array_key_exists('phone', $data)) {
-            $body['phoneNumber'] = trim((string) $data['phone']);
+        $smaregiCustomerId = $member->smaregi_customer_id ?? '';
+        if ($smaregiCustomerId !== '') {
+            $contractId = $this->smaregiApi->getContractIdForProject($projectId);
+            $contractId = is_string($contractId) ? trim($contractId) : '';
+            if ($contractId !== '') {
+                $body = $this->smaregiCustomerUpdatePayloadBuilder->buildFromProfileData($data);
+                if ($body !== []) {
+                    $this->smaregiApi->clearLastErrorDetail();
+                    $result = $this->smaregiApi->updateCustomer($contractId, $smaregiCustomerId, $body);
+                    if ($result === null) {
+                        $detail = $this->smaregiApi->getLastErrorDetail();
+                        LogHelper::warning('[Member] smaregi profile sync failed after local update', [
+                            'member_id' => (int) $member->id,
+                            'project_id' => $projectId,
+                            'smaregi_customer_id' => $smaregiCustomerId,
+                            'detail' => $detail,
+                        ]);
+                    }
+                }
+            }
         }
 
-        return $body;
+        return $this->getMemberData($user->fresh(['member']));
     }
 
     /** 登録データから任意項目のみ抽出 */
@@ -408,7 +419,7 @@ class MemberService
         $ranks = ShopSetting::getMemberRankSettings($projectId);
         $basis = ShopSetting::getRankBasis($projectId);
 
-        $points = $member->points ?? 0;
+        $points = $member->getDisplayPoints();
         $stamps = $member->getTotalStamps();
         $metric = $basis === 'stamps' ? $stamps : ($basis === 'max' ? max($points, $stamps) : $points);
 

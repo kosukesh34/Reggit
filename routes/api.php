@@ -53,6 +53,7 @@ use App\Http\Controllers\Reservation\ReservationUpdateController;
 use App\Http\Controllers\Smaregi\SmaregiIdpController;
 use App\Http\Controllers\Smaregi\SmaregiWebhookController;
 use App\Http\Controllers\StampController;
+use App\Http\Controllers\Wallet\AppleWalletPasskitController;
 use App\Http\Middleware\AuthenticateApiToken;
 use App\Http\Middleware\CheckApiProject;
 use Illuminate\Support\Facades\Route;
@@ -60,8 +61,11 @@ use Illuminate\Support\Facades\Route;
 Route::match(['get', 'post'], '/line/webhook', [LineWebhookController::class, 'handle']);
 
 // スマレジ・プラットフォームAPI 連携（利用者契約通知・Webhook）
-Route::post('/smaregi/idp', [SmaregiIdpController::class, '__invoke'])->name('smaregi.idp');
-Route::post('/smaregi/webhook', [SmaregiWebhookController::class, '__invoke'])->name('smaregi.webhook');
+// 公式: HTTPS POST / JSON。接続確認で GET/HEAD が来る場合があるため許可。
+Route::match(['get', 'head', 'post'], '/smaregi/idp', [SmaregiIdpController::class, '__invoke'])->name('smaregi.idp');
+Route::match(['get', 'head', 'post'], '/smaregi/webhook', [SmaregiWebhookController::class, '__invoke'])
+    ->middleware('log.smaregi.webhook')
+    ->name('smaregi.webhook');
 
 // API v1（Bearer トークン認証・モバイルアプリ用）※従来: トークンの project でコンテキスト設定
 Route::prefix('v1')->middleware([AuthenticateApiToken::class])->group(function () {
@@ -161,3 +165,9 @@ Route::middleware(['web', 'bind.project'])->group(function () {
 
 Route::post('/payment/webhook', [PaymentWebhookController::class, '__invoke']);
 Route::match(['get', 'post'], '/client-debug', ClientDebugController::class);
+
+// Apple Wallet PassKit Web Service
+Route::post('/apple-wallet/v1/devices/{deviceLibraryIdentifier}/registrations/{passTypeIdentifier}/{serialNumber}', [AppleWalletPasskitController::class, 'registerDevice']);
+Route::delete('/apple-wallet/v1/devices/{deviceLibraryIdentifier}/registrations/{passTypeIdentifier}/{serialNumber}', [AppleWalletPasskitController::class, 'unregisterDevice']);
+Route::get('/apple-wallet/v1/devices/{deviceLibraryIdentifier}/registrations/{passTypeIdentifier}', [AppleWalletPasskitController::class, 'listUpdatedSerials']);
+Route::get('/apple-wallet/v1/passes/{passTypeIdentifier}/{serialNumber}', [AppleWalletPasskitController::class, 'getLatestPass']);

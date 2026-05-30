@@ -39,13 +39,18 @@ class WalletPassDownloadUseCase
         $key = self::TOKEN_CACHE_PREFIX.$token;
         $data = Cache::get($key);
         if ($data === null || ! isset($data['user_id'], $data['project_id'])) {
-            return $this->toOutput(null);
+            return new WalletPassDownloadOutput(null, [
+                'ダウンロードリンクの有効期限が切れています。LINE アプリの会員証画面から「Apple Walletに追加」をもう一度タップしてください。',
+            ]);
         }
         $projectId = AdminContext::getCurrentProjectId();
         if ($projectId === null || (int) $data['project_id'] !== (int) $projectId) {
-            return $this->toOutput(null);
+            return new WalletPassDownloadOutput(null, [
+                'プロジェクトの設定が一致しません。会員証画面から再度お試しください。',
+            ]);
         }
-        Cache::forget($key);
+
+        // Safari が wallet-add から二重にリクエストすることがあるため、TTL 内は再利用可能にする
         $content = $this->walletPassService->generateForUser((int) $data['user_id']);
 
         return $this->toOutput($content);
@@ -56,7 +61,15 @@ class WalletPassDownloadUseCase
         if ($content !== null) {
             return new WalletPassDownloadOutput($content, []);
         }
+
         $reasons = $this->walletPassService->getUnavailabilityReasons();
+        $lastError = $this->walletPassService->getLastError();
+        if ($lastError !== null && $lastError !== '') {
+            $reasons[] = $lastError;
+        }
+        if ($reasons === []) {
+            $reasons[] = '会員証の生成に失敗しました。しばらくしてから再度お試しください。';
+        }
 
         return new WalletPassDownloadOutput(null, $reasons);
     }
