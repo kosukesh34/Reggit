@@ -38,7 +38,7 @@ class MemberPointCardUseCase
 
         return new MemberPointCardView(false, [
             'member_number' => $member->member_number,
-            'points' => (int) $member->points,
+            'points' => $member->getDisplayPoints(),
             'rank' => $rankInfo['current_rank'] ?? null,
             'rank_label' => $rankInfo['current_rank_label'] ?? null,
             'rank_icon' => $rankInfo['current_rank_icon'] ?? null,

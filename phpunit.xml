@@ -15,11 +15,15 @@
         </include>
     </source>
     <php>
+        <!--
+            APP_ENV=testing を設定すると Laravel は .env.testing を読み込む。
+            これにより、ローカル開発 DB (reggit) を tests の RefreshDatabase で破壊することを防ぐ。
+            DB 接続情報は .env.testing 側で行う（無ければ cp env.testing.example .env.testing）。
+        -->
         <env name="APP_ENV" value="testing"/>
         <env name="APP_URL" value="http://localhost"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="CACHE_DRIVER" value="array"/>
-        <!-- DB_* は .env / CI の環境変数に任せ、phpunit では上書きしない（CI では DB_HOST=127.0.0.1 が必要） -->
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>

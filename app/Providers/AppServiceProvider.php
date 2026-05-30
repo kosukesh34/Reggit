@@ -3,10 +3,13 @@
 namespace App\Providers;
 
 use App\Models\MemberStamp;
+use App\Models\PointTransaction;
 use App\Models\Project;
 use App\Models\ShopSetting;
 use App\Observers\MemberStampObserver;
+use App\Observers\PointTransactionObserver;
 use App\Observers\ProjectObserver;
+use App\Services\GoogleWalletPassService;
 use App\UseCases\Payment\PaymentGateway;
 use App\UseCases\Payment\StripePaymentGateway;
 use App\Util\AdminContext;
@@ -35,6 +38,7 @@ class AppServiceProvider extends ServiceProvider
     {
         Project::observe(ProjectObserver::class);
         MemberStamp::observe(MemberStampObserver::class);
+        PointTransaction::observe(PointTransactionObserver::class);
 
         if ($this->app->runningInConsole() === false) {
             if (request()->isSecure() ||
@@ -109,8 +113,9 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('projectKey', $project ? ((string) $project->project_key) : 'default');
                 $view->with('projectName', $project ? ((string) $project->name) : 'モバイルオーダー');
                 $view->with('featureFlags', ShopSetting::getFeatureFlags($projectId));
+                $googleWalletPassService = app(GoogleWalletPassService::class);
                 $view->with('walletPassEnabled', config('wallet_pass.enabled', false));
-                $view->with('googleWalletEnabled', config('google_wallet.enabled', false));
+                $view->with('googleWalletEnabled', $googleWalletPassService->isAvailable());
                 $view->with('frontendLogoUrl', ShopSetting::getFrontendLogoUrl($projectId));
                 $view->with('frontendHeaderText', ShopSetting::getFrontendHeaderText($projectId));
                 $view->with('orderMode', ShopSetting::getOrderMode($projectId));

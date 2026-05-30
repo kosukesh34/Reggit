@@ -4,6 +4,7 @@ namespace App\Http\Requests\Admin;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class MemberUpdateRequest extends FormRequest
 {
@@ -41,6 +42,7 @@ class MemberUpdateRequest extends FormRequest
             'sex' => ['nullable', 'string', 'max:16'],
 
             // ポイント操作（任意）
+            'point_set' => ['nullable', 'integer', 'min:0', 'max:10000000'],
             'point_add' => ['nullable', 'integer', 'min:0'],
             'point_subtract' => ['nullable', 'integer', 'min:0'],
             'point_description' => ['nullable', 'string', 'max:255'],
@@ -59,11 +61,34 @@ class MemberUpdateRequest extends FormRequest
         ];
     }
 
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            if ($this->filled('point_set')) {
+                return;
+            }
+            $add = (int) $this->input('point_add', 0);
+            $sub = (int) $this->input('point_subtract', 0);
+            if ($add > 0 && $sub > 0) {
+                $validator->errors()->add('point_add', 'ポイント加算と減算は同時に指定できません');
+                $validator->errors()->add('point_subtract', 'ポイント加算と減算は同時に指定できません');
+            }
+        });
+    }
+
     /**
-     * ポイント加算・減算をまとめて取得。加算優先で1件のみ適用。
+     * ポイント操作を取得。直接指定 > 加算 > 減算 の優先順。
      */
     public function getPointAdjustment(): ?array
     {
+        if ($this->filled('point_set')) {
+            return [
+                'type' => 'set',
+                'points' => max(0, (int) $this->input('point_set')),
+                'description' => $this->input('point_description'),
+            ];
+        }
+
         $add = (int) $this->input('point_add', 0);
         $sub = (int) $this->input('point_subtract', 0);
         if ($add > 0) {

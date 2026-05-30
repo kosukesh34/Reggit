@@ -78,9 +78,21 @@ else
     echo "LIFFアプリのエンドポイントURL:"
     echo "  ${NGROK_URL}/liff"
     echo ""
-    echo "Webhook URL:"
+    echo "スマレジ Webhook URL（デベロッパーズに登録）:"
+    echo "  ${NGROK_URL}/api/smaregi/webhook"
+    echo ""
+    echo "スマレジ 利用者契約通知先 URL:"
+    echo "  ${NGROK_URL}/api/smaregi/idp"
+    echo ""
+    echo "LINE Webhook URL:"
     echo "  ${NGROK_URL}/api/line/webhook"
     echo ""
+
+    if [ -f "docker-compose.yml" ] && command -v docker-compose >/dev/null 2>&1; then
+        echo "APP_URL を .env に同期しています..."
+        docker-compose exec -T app php artisan smaregi:sync-ngrok-url --url="${NGROK_URL}" || true
+        docker-compose exec -T app php artisan config:clear || true
+    fi
 fi
 
 echo "=========================================="

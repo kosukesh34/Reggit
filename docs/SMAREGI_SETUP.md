@@ -33,8 +33,8 @@ APP_URL=https://あなたのngrokサブドメイン.ngrok-free.dev
 | 項目 | 設定するURL |
 |------|-------------|
 | **アプリURL（必須）** | ユーザーがアプリを利用するURL（例: 上記 ngrok のURL や `https://あなたのドメイン`） |
-| **利用者契約通知先URL（必須）** | `{APP_URL}/api/smaregi/idp` |
-| **Webhook送信先エンドポイント** | `{APP_URL}/api/smaregi/webhook`（任意） |
+| **利用者契約通知先URL（必須）** | `{APP_URL}/api/smaregi/idp` または `{APP_URL}/smaregi/idp`（後者は `/api` 省略用） |
+| **Webhook送信先エンドポイント** | `{APP_URL}/api/smaregi/webhook`（推奨）または `{APP_URL}/smaregi/webhook`（`/api` 省略用。任意） |
 
 例（ngrok で `https://あなたのサブドメイン.ngrok-free.dev` → `http://localhost:8080` で公開している場合）:
 
