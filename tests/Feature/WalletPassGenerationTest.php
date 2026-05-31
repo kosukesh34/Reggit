@@ -54,7 +54,7 @@ class WalletPassGenerationTest extends TestCase
 
     public function test_wallet_pass_urlは現在のリクエストホストで発行されること(): void
     {
-        config(['wallet_pass.enabled' => true]);
+        config($this->walletPassTestConfig());
 
         $project = Project::firstOrCreate(
             ['project_key' => 'default'],
@@ -85,7 +85,7 @@ class WalletPassGenerationTest extends TestCase
 
     public function test_wallet_add_pass_tokenからpkpassダウンロードurlを解決できること(): void
     {
-        config(['wallet_pass.enabled' => true]);
+        config($this->walletPassTestConfig());
 
         $project = Project::firstOrCreate(
             ['project_key' => 'default'],
