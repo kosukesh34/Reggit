@@ -13,6 +13,7 @@
 | マージ先 | 原則 `main` |
 | CI | `.github/workflows/ci.yml`（PR 向けにテスト・Lint） |
 | CLI | `gh`（GitHub CLI）を推奨。未導入の場合は Web UI でも可 |
+| マージ後 | マージ済み PR のブランチは自動削除（`delete_branch_on_merge` 有効） |
 | テンプレート | `.github/PULL_REQUEST_TEMPLATE.md` および `docs/pull_request_templates/` |
 
 ---
@@ -146,7 +147,13 @@ gh pr create --draft --base main --title "WIP: ..." --body "..."
 1. CI が緑であること
 2. [MR_AND_CODE_REVIEW_PROCEDURE.md](./MR_AND_CODE_REVIEW_PROCEDURE.md) の必須項目を満たすこと
 3. 指摘対応後、Approve を得てマージ
-4. マージ後、不要なブランチは削除してよい（`gh pr merge` 時に `--delete-branch` 可）
+4. マージ後、PR ブランチは GitHub 側で自動削除される（リポジトリ設定 `delete_branch_on_merge`）
+
+初回セットアップや設定確認:
+
+```bash
+./scripts/setup-github-repo-settings.sh
+```
 
 ---
 
