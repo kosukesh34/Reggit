@@ -27,7 +27,7 @@ class GetSmaregiPosDataUseCase
         'pos/sales' => ['セール', 'sales'],
         'pos/customers' => ['会員', 'customers'],
         'pos/customer_ranks' => ['会員ランク', 'customer_ranks'],
-        'pos/stocks' => ['在庫', 'stocks'],
+        'pos/stock' => ['在庫', 'stock'],
         'pos/transactions' => ['取引', 'transactions'],
         'pos/layaways' => ['取置き', 'layaways'],
         'pos/pending_transactions' => ['仮販売', 'pending_transactions'],

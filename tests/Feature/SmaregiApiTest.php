@@ -169,6 +169,34 @@ class SmaregiApiTest extends TestCase
         $this->assertSame('99', $sent['customerId']);
     }
 
+    /** 在庫更新 API が pos/stock パスを使うこと */
+    public function test_update_stock_pos_stockパスで更新できること(): void
+    {
+        $this->createProjectWithContract();
+        $this->fakeSmaregiHttp([
+            'patch_pos_stock' => [
+                'productId' => '8000177',
+                'storeId' => '1',
+                'stockAmount' => '100',
+            ],
+        ]);
+
+        $service = app(SmaregiApiService::class);
+        $result = $service->updateStock(self::CONTRACT_ID, '8000177', [
+            'storeId' => '1',
+            'stockAmount' => '100',
+        ]);
+
+        $this->assertNotNull($result);
+        $this->assertSame('8000177', $result['productId']);
+
+        Http::assertSent(function ($request) {
+            return strtoupper($request->method()) === 'PATCH'
+                && str_contains($request->url(), '/pos/stock/8000177')
+                && ! str_contains($request->url(), '/pos/stocks/');
+        });
+    }
+
     private function createProjectWithContract(): Project
     {
         $project = Project::factory()->create();
@@ -226,6 +254,9 @@ class SmaregiApiTest extends TestCase
             }
             if ($method === 'POST' && str_contains($url, '/point/add')) {
                 return Http::response($responses['post_pos_customers_point_add'] ?? ['customerId' => '1', 'point' => '0'], 200);
+            }
+            if ($method === 'PATCH' && preg_match('#/pos/stock/\d+#', $url)) {
+                return Http::response($responses['patch_pos_stock'] ?? ['productId' => '1', 'storeId' => '1', 'stockAmount' => '0'], 200);
             }
 
             return Http::response([], 404);

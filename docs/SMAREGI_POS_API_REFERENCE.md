@@ -374,10 +374,10 @@ API は **JSON** でやり取りします。仕様で「string format: int」な
 
 | 操作 | Method | path |
 |------|--------|------|
-| 一覧取得 | GET | `pos/stocks` |
-| 更新 | PATCH | `pos/stocks/{product_id}` |
-| 相対値更新 | POST | `pos/stocks/{product_id}/add` |
-| 一括相対値更新 | POST | `pos/stocks/add` |
+| 一覧取得 | GET | `pos/stock` |
+| 更新 | PATCH | `pos/stock/{product_id}` |
+| 相対値更新 | POST | `pos/stock/{product_id}/add` |
+| 一括相対値更新 | POST | `pos/stock/add` |
 
 ### 会員ランク（customer_ranks）
 
@@ -478,7 +478,7 @@ $couponId = $result['couponId'] ?? $result['coupon_id'] ?? null;
 - **更新**: `ProductAdminService::update()` が先に `updateOnSmaregi()` を呼ぶ（既存商品に `smaregi_product_id` がない場合は `registerToSmaregi()` で新規登録）。**API が成功した場合のみ** DB を更新する。
 - **削除**: `ProductAdminService::delete()` が、スマレジ連携済み商品の場合は先に `deleteOnSmaregi()` を呼ぶ。**API が成功した場合のみ** DB から削除する。
 - **スコープ**: 商品の登録・更新・削除には `.env` の `SMAREGI_SCOPE` に `pos.products:write` および部門取得のため `pos.products:read` が必要。
-- **在庫**: 商品の作成・更新時に `stock` が含まれる場合、`SmaregiProductRegisterService::syncStockToSmaregi()` で先頭店舗の在庫を `pos/stocks/{product_id}` に反映する。`pos.stock:write` スコープが必要。店舗が0件の場合は在庫同期はスキップされる。
+- **在庫**: 商品の作成・更新時に `stock` が含まれる場合、`SmaregiProductRegisterService::syncStockToSmaregi()` で先頭店舗の在庫を `pos/stock/{product_id}` に反映する。`pos.stock:write` スコープが必要。店舗が0件の場合は在庫同期はスキップされる。
 
 ### 会員ランク設定の実装箇所
 
