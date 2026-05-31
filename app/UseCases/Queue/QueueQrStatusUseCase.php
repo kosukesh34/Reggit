@@ -4,10 +4,10 @@ namespace App\UseCases\Queue;
 
 use App\Models\Project;
 use App\Models\QueueEntry as QueueEntryModel;
-use App\Models\ShopSetting;
 use App\Models\User;
 use App\Services\Line\LineService;
 use App\Services\UserService;
+use App\Support\QueueLiffUrlBuilder;
 use App\UseCases\Queue\Data\QueueEntry;
 use App\UseCases\Queue\Data\QueueEntryFactory;
 use App\Util\AdminContext;
@@ -130,15 +130,17 @@ class QueueQrStatusUseCase
             if ($projectKey === '') {
                 $projectKey = 'default';
             }
-            $liffUrl = ShopSetting::getLineLiffUrl((int) $entry->project_id);
-            if (StrHelper::isEmptyStringOrNull($liffUrl)) {
-                $liffUrl = url('/liff/'.$projectKey);
-            }
-            $uri = $this->buildQueueLiffUri(
-                $liffUrl,
+            $uri = QueueLiffUrlBuilder::build(
+                (int) $entry->project_id,
                 $projectKey,
-                (string) ($entry->qr_token ?? $entry->id)
+                (string) ($entry->qr_token ?? ''),
+                (int) $entry->id
             );
+            LogHelper::info('[Queue] linked completion liff url built', [
+                'queue_id' => $entry->id,
+                'project_key' => $projectKey,
+                'is_liff_host' => str_contains($uri, 'liff.line.me'),
+            ]);
 
             $flex = [
                 'type' => 'flex',
@@ -259,62 +261,5 @@ class QueueQrStatusUseCase
     private function isValidLineUserId(string $lineUserId): bool
     {
         return preg_match('/^U[0-9a-f]{32}$/i', $lineUserId) === 1;
-    }
-
-    private function buildQueueLiffUri(string $liffUrl, string $projectKey, string $queueToken): string
-    {
-        $parsedForHost = parse_url($liffUrl);
-        $host = is_array($parsedForHost) && isset($parsedForHost['host'])
-            ? strtolower((string) $parsedForHost['host'])
-            : '';
-        if ($host === 'miniapp.line.me' || $host === 'liff.line.me') {
-            $liffUrl = url('/liff/'.$projectKey);
-        }
-
-        $parts = parse_url($liffUrl);
-        if ($parts === false) {
-            return $liffUrl.(str_contains($liffUrl, '?') ? '&' : '?')
-                .'project_key='.urlencode($projectKey)
-                .'&queue_token='.urlencode($queueToken);
-        }
-
-        $queryParams = [];
-        if (isset($parts['query'])) {
-            parse_str($parts['query'], $queryParams);
-        }
-
-        unset($queryParams['project_key'], $queryParams['queue_token'], $queryParams['queue_id']);
-        $orderedParams = array_merge(
-            ['project_key' => $projectKey, 'queue_token' => $queueToken],
-            $queryParams
-        );
-        $query = http_build_query($orderedParams);
-
-        $uri = '';
-        if (isset($parts['scheme'])) {
-            $uri .= $parts['scheme'].'://';
-        }
-        if (isset($parts['user'])) {
-            $uri .= $parts['user'];
-            if (isset($parts['pass'])) {
-                $uri .= ':'.$parts['pass'];
-            }
-            $uri .= '@';
-        }
-        if (isset($parts['host'])) {
-            $uri .= $parts['host'];
-        }
-        if (isset($parts['port'])) {
-            $uri .= ':'.$parts['port'];
-        }
-        $uri .= $parts['path'] ?? '';
-        if ($query !== '') {
-            $uri .= '?'.$query;
-        }
-        if (isset($parts['fragment'])) {
-            $uri .= '#'.$parts['fragment'];
-        }
-
-        return $uri;
     }
 }
