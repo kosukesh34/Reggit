@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\QueueLiffUrlBuilder;
 use App\UseCases\Member\WalletPass\WalletPassUrlIssueUseCase;
+use App\Util\AdminContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
@@ -45,7 +47,11 @@ class WalletAddPageController extends Controller
         if (! $walletUrlFromPassToken) {
             $walletUrl = $this->sanitizeWalletUrl(is_string($walletUrl) ? $walletUrl : null);
         }
-        $returnUrl = $this->sanitizeReturnUrl($returnUrl);
+        $returnUrl = $this->resolveReturnUrl(
+            $this->sanitizeReturnUrl($returnUrl),
+            $returnTarget,
+            is_string($projectKey) && trim($projectKey) !== '' ? trim($projectKey) : 'default'
+        );
 
         return view('wallet-add', [
             'walletUrl' => $walletUrl,
@@ -83,7 +89,7 @@ class WalletAddPageController extends Controller
 
     private function isAllowedWalletHost(string $host): bool
     {
-        if (str_ends_with($host, '.ngrok-free.app') || str_ends_with($host, '.ngrok.io')) {
+        if (str_ends_with($host, '.ngrok-free.app') || str_ends_with($host, '.ngrok.io') || str_ends_with($host, '.ngrok-free.dev')) {
             return true;
         }
 
@@ -141,10 +147,35 @@ class WalletAddPageController extends Controller
                     return $url;
                 }
             }
+            if (str_ends_with(strtolower($host), '.ngrok-free.dev')
+                || str_ends_with(strtolower($host), '.ngrok-free.app')
+                || str_ends_with(strtolower($host), '.ngrok.io')) {
+                return $url;
+            }
         } catch (\Throwable $e) {
             return null;
         }
 
         return null;
+    }
+
+    private function resolveReturnUrl(?string $returnUrl, string $returnTarget, string $projectKey): ?string
+    {
+        if ($returnTarget !== 'line') {
+            return $returnUrl;
+        }
+
+        if (is_string($returnUrl) && str_contains(strtolower($returnUrl), 'liff.line.me')) {
+            return $returnUrl;
+        }
+
+        $projectId = AdminContext::getCurrentProjectId();
+        if ($projectId === null || $projectId === false) {
+            $projectId = 1;
+        }
+
+        return $this->sanitizeReturnUrl(
+            QueueLiffUrlBuilder::buildEntryUrl((int) $projectId, $projectKey)
+        );
     }
 }

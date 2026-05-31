@@ -1,6 +1,7 @@
 class MemberManager {
     /** WalletPassUrlIssueUseCase::TOKEN_TTL_MINUTES(3) より短めに余裕を持たせる */
     static WALLET_PASS_PREFETCH_TTL_MS = 150000;
+    static GOOGLE_WALLET_PREFETCH_TTL_MS = 150000;
 
     constructor(apiClient, orderManager) {
         this.apiClient = apiClient;
@@ -17,6 +18,8 @@ class MemberManager {
         this._liffIdentityRetryRegistered = false;
         this._autoRegisterAttempted = false;
         this._lastMemberFetchWasNonMember = false;
+        this._googleWalletOpenUrl = null;
+        this._googleWalletOpenUrlAt = 0;
         this._bindScreenPopState();
     }
 
@@ -74,19 +77,42 @@ class MemberManager {
 
     /**
      * Wallet 追加用中間ページの return_url と return_target を返す。
-     * LINE の場合は LINE に、ネイティブアプリの場合はアプリに戻る URL を返す。
+     * LINE の場合は liff.line.me 形式、ネイティブアプリの場合はアプリスキームを返す。
      * @returns {{ returnUrl: string, returnTarget: 'line'|'app'|'web' }}
      */
     static getWalletReturnParams() {
-        const currentHref = typeof window !== 'undefined' && window.location && window.location.href ? window.location.href : '';
         if (typeof window !== 'undefined' && window.__IS_LIFF__ === true) {
+            const projectKey = (typeof window !== 'undefined' && window.__PROJECT_KEY__)
+                ? String(window.__PROJECT_KEY__)
+                : 'default';
+            const liffUrl = MemberManager.buildLiffEntryUrl(projectKey);
+            if (liffUrl) {
+                return { returnUrl: liffUrl, returnTarget: 'line' };
+            }
+            const currentHref = window.location && window.location.href ? window.location.href : '';
             return { returnUrl: currentHref, returnTarget: 'line' };
         }
         if (MemberManager.isMobileAppMode()) {
             const scheme = (typeof AppConstants !== 'undefined' && AppConstants.WALLET_RETURN_APP_SCHEME) ? AppConstants.WALLET_RETURN_APP_SCHEME : 'mobileorderapp://';
             return { returnUrl: scheme, returnTarget: 'app' };
         }
+        const currentHref = typeof window !== 'undefined' && window.location && window.location.href ? window.location.href : '';
         return { returnUrl: currentHref, returnTarget: 'web' };
+    }
+
+    static getLineLiffIdFromMeta() {
+        if (typeof document === 'undefined') return '';
+        const meta = document.querySelector('meta[name="line-liff-id"]');
+        return meta && meta.content ? String(meta.content).trim() : '';
+    }
+
+    /** Wallet 追加後に LINE アプリへ戻るための LIFF エントリ URL */
+    static buildLiffEntryUrl(projectKey) {
+        const liffId = MemberManager.getLineLiffIdFromMeta();
+        const pk = (projectKey && String(projectKey).trim()) || 'default';
+        if (!liffId) return null;
+        const liffState = new URLSearchParams({ project_key: pk }).toString();
+        return 'https://liff.line.me/' + liffId + '?' + new URLSearchParams({ 'liff.state': liffState }).toString();
     }
 
     /** LIFF / WebView でも使えるアプリのオリジン（https://example.com） */
@@ -145,6 +171,28 @@ class MemberManager {
         }
     }
 
+    /**
+     * Google Save URL を外部ブラウザで開く URL に正規化する。
+     * サーバー短縮 URL（/google-wallet/save/…）と pay.google.com 直リンクの両方に対応。
+     */
+    static resolveGoogleWalletOpenUrl(issueUrl) {
+        const normalized = MemberManager.normalizeExternalUrl(issueUrl);
+        if (!normalized) {
+            return null;
+        }
+        try {
+            const parsed = new URL(normalized);
+            if (parsed.hostname === 'pay.google.com' && parsed.pathname.indexOf('/gp/v/save/') === 0) {
+                return parsed.href;
+            }
+            if (parsed.pathname.indexOf('/google-wallet/save/') === 0) {
+                return parsed.href;
+            }
+        } catch (e) { /* ignore */ }
+
+        return normalized;
+    }
+
     static formatWalletErrorMessage(err, fallback) {
         const raw = err && err.message ? String(err.message) : '';
         if (/pattern/i.test(raw)) {
@@ -193,10 +241,34 @@ class MemberManager {
     }
 
     _getLineUserIdForMemberApi() {
+        if (this.apiClient && typeof this.apiClient.getLiffTokenLineUserId === 'function') {
+            const tokenId = this.apiClient.getLiffTokenLineUserId();
+            if (tokenId) {
+                if (typeof window !== 'undefined' && window.__LINE_USER_ID__ && window.__LINE_USER_ID__ !== tokenId) {
+                    this._debugLog('member_line_id_token_override', {
+                        window_tail: String(window.__LINE_USER_ID__).slice(-4),
+                        token_tail: tokenId.slice(-4),
+                    });
+                }
+                if (typeof window !== 'undefined') {
+                    window.__LINE_USER_ID__ = tokenId;
+                }
+                return tokenId;
+            }
+        }
         if (typeof window !== 'undefined' && window.__LINE_USER_ID__) {
             return String(window.__LINE_USER_ID__).trim();
         }
+        if (typeof window !== 'undefined' && window.__IS_LIFF__) {
+            return null;
+        }
         return this._getPersistedLineUserId();
+    }
+
+    _debugLog(eventName, payload) {
+        if (this.apiClient && typeof this.apiClient.debugLog === 'function') {
+            this.apiClient.debugLog(eventName, payload || {});
+        }
     }
 
     _invalidateMemberContextIfLineUserChanged() {
@@ -232,18 +304,30 @@ class MemberManager {
         if (typeof window === 'undefined' || !data || typeof data !== 'object') return;
         const user = data.user || (data.member && data.member.user) || null;
         const lineUserId = (user && user.line_user_id) ? String(user.line_user_id).trim() : null;
-        if (lineUserId) {
-            window.__LINE_USER_ID__ = lineUserId;
-            if (this.apiClient && typeof this.apiClient.persistLineUserId === 'function') {
-                this.apiClient.persistLineUserId(lineUserId);
-            }
+        if (!lineUserId || !/^U[0-9a-f]{32}$/i.test(lineUserId)) {
             return;
         }
-        if (!window.__LINE_USER_ID__) {
-            const cached = this._getPersistedLineUserId();
-            if (cached) {
-                window.__LINE_USER_ID__ = cached;
+
+        const tokenId = (this.apiClient && typeof this.apiClient.getLiffTokenLineUserId === 'function')
+            ? this.apiClient.getLiffTokenLineUserId()
+            : null;
+        if (tokenId && tokenId !== lineUserId) {
+            this._debugLog('member_line_id_server_mismatch', {
+                server_tail: lineUserId.slice(-4),
+                token_tail: tokenId.slice(-4),
+                user_id: user && user.id ? user.id : null,
+            });
+            window.__LINE_USER_ID__ = tokenId;
+            if (this.apiClient && typeof this.apiClient.persistLineUserId === 'function') {
+                this.apiClient.persistLineUserId(tokenId);
             }
+            this._invalidateMemberContextIfLineUserChanged();
+            return;
+        }
+
+        window.__LINE_USER_ID__ = lineUserId;
+        if (this.apiClient && typeof this.apiClient.persistLineUserId === 'function') {
+            this.apiClient.persistLineUserId(lineUserId);
         }
     }
 
@@ -383,7 +467,8 @@ class MemberManager {
         if (typeof window === 'undefined') return false;
         if (window.__LINE_USER_ID__) return true;
         if (MemberManager.isMobileAppMode()) return true;
-        if (window.__IS_LIFF__ && this._getPersistedLineUserId()) return true;
+        if (window.__IS_LIFF__) return false;
+        if (this._getPersistedLineUserId()) return true;
         return false;
     }
 
@@ -1031,7 +1116,108 @@ class MemberManager {
             }
         }
         const googleBtn = document.querySelector('.member-card-add-to-wallet-btn[data-google-wallet]');
-        if (googleBtn) googleBtn.addEventListener('click', (e) => this._onAddToGoogleWallet(e, googleBtn, projectKey));
+        if (googleBtn) {
+            googleBtn.addEventListener('click', (e) => this._onAddToGoogleWallet(e, googleBtn, projectKey));
+            if (this._shouldPrefetchGoogleWalletUrl()) {
+                this._setGoogleWalletButtonPreparing(googleBtn, true);
+                this._prefetchGoogleWalletOpenUrl(projectKey).catch((err) => {
+                    this._debugLog('google_wallet_prefetch_failed', {
+                        message: err && err.message ? String(err.message) : 'unknown',
+                        phase: 'initial',
+                    });
+                });
+            }
+        }
+    }
+
+    _shouldPrefetchGoogleWalletUrl() {
+        if (typeof window === 'undefined') return false;
+        if (!MemberManager.isGoogleWalletEnabled()) return false;
+        if (window.__IS_LIFF__ === true) return true;
+        return MemberManager.isMobileAppMode() && typeof window.__nativeOpenExternalUrl__ === 'function';
+    }
+
+    _setGoogleWalletButtonPreparing(btn, preparing) {
+        if (!btn) return;
+        const label = btn.querySelector('.member-card-add-to-wallet-text');
+        if (preparing) {
+            btn.disabled = true;
+            this._googleWalletOpenUrl = null;
+            this._googleWalletOpenUrlAt = 0;
+            if (label) {
+                label.innerHTML = '<i class="fas fa-spinner fa-spin" aria-hidden="true"></i> 準備中...';
+            }
+            return;
+        }
+        btn.disabled = false;
+        if (label) {
+            label.innerHTML = '<i class="fab fa-google" aria-hidden="true"></i> Google Walletに追加';
+        }
+    }
+
+    _storeGoogleWalletOpenUrl(openUrl) {
+        if (!openUrl) {
+            this._googleWalletOpenUrl = null;
+            this._googleWalletOpenUrlAt = 0;
+            return null;
+        }
+        this._googleWalletOpenUrl = openUrl;
+        this._googleWalletOpenUrlAt = Date.now();
+        return openUrl;
+    }
+
+    _getFreshGoogleWalletOpenUrl() {
+        if (!this._googleWalletOpenUrl || !this._googleWalletOpenUrlAt) return null;
+        const age = Date.now() - this._googleWalletOpenUrlAt;
+        if (!Number.isFinite(age) || age < 0 || age >= MemberManager.GOOGLE_WALLET_PREFETCH_TTL_MS) {
+            this._googleWalletOpenUrl = null;
+            this._googleWalletOpenUrlAt = 0;
+            return null;
+        }
+        return this._googleWalletOpenUrl;
+    }
+
+    _prefetchGoogleWalletOpenUrl(projectKey) {
+        return this._fetchGoogleWalletIssueUrl(projectKey)
+            .then((issueUrl) => {
+                const openUrl = MemberManager.resolveGoogleWalletOpenUrl(issueUrl);
+                const btn = document.querySelector('.member-card-add-to-wallet-btn[data-google-wallet]');
+                this._storeGoogleWalletOpenUrl(openUrl);
+                if (btn) {
+                    this._setGoogleWalletButtonPreparing(btn, false);
+                }
+                this._debugLog('google_wallet_prefetch_ok', {
+                    has_url: !!openUrl,
+                    url_length: openUrl ? openUrl.length : 0,
+                });
+                return openUrl;
+            })
+            .catch((err) => {
+                this._debugLog('google_wallet_prefetch_failed', {
+                    message: err && err.message ? String(err.message) : 'unknown',
+                });
+                const btn = document.querySelector('.member-card-add-to-wallet-btn[data-google-wallet]');
+                if (btn) this._setGoogleWalletButtonPreparing(btn, false);
+                throw err;
+            });
+    }
+
+    async _fetchGoogleWalletIssueUrl(projectKey) {
+        await this.ensureIdentityReady(2500);
+        const endpoint = AppConstants.API_ENDPOINTS.MEMBERS_GOOGLE_WALLET_URL
+            + '?project_key=' + encodeURIComponent(projectKey);
+        const result = await this.apiClient.get(endpoint);
+        if (!result.success || !result.data || !result.data.url) {
+            const apiError = result.error
+                || (result.data && result.data.error)
+                || (result.data && Array.isArray(result.data.reasons) && result.data.reasons.length
+                    ? result.data.reasons.join(' / ')
+                    : null)
+                || 'unknown';
+            this._debugLog('google_wallet_url_failed', { error: apiError });
+            throw new Error(apiError || 'URLの取得に失敗しました');
+        }
+        return result.data.url;
     }
 
     _shouldPrefetchAppleWalletUrl() {
@@ -1104,23 +1290,46 @@ class MemberManager {
     /**
      * LIFF: ユーザータップ直後に同期的に呼ぶ（await 後は iOS で無視される）。
      */
-    _openLiffExternalBrowserSync(url) {
+    _openLiffExternalBrowserSync(url, debugContext) {
         const normalized = MemberManager.normalizeExternalUrl(url);
-        if (!normalized) return false;
+        if (!normalized) {
+            this._debugLog('liff_open_window_failed', Object.assign({}, debugContext || {}, {
+                reason: 'invalid_url',
+            }));
+            return false;
+        }
         if (typeof window === 'undefined') return false;
         if (!window.__IS_LIFF__ || typeof liff === 'undefined' || typeof liff.openWindow !== 'function') {
+            this._debugLog('liff_open_window_failed', Object.assign({}, debugContext || {}, {
+                reason: 'liff_unavailable',
+            }));
             return false;
         }
         try {
             const result = liff.openWindow({ url: normalized, external: true });
             if (result && typeof result.then === 'function') {
-                result.catch(function (err) {
-                    console.warn('liff.openWindow rejected', err);
+                const self = this;
+                result.then(function () {
+                    self._debugLog('liff_open_window_ok', Object.assign({}, debugContext || {}, {
+                        url_length: normalized.length,
+                    }));
+                }).catch(function (err) {
+                    self._debugLog('liff_open_window_failed', Object.assign({}, debugContext || {}, {
+                        reason: 'promise_rejected',
+                        message: err && err.message ? String(err.message) : 'unknown',
+                    }));
                 });
+            } else {
+                this._debugLog('liff_open_window_ok', Object.assign({}, debugContext || {}, {
+                    url_length: normalized.length,
+                }));
             }
             return true;
         } catch (e) {
-            console.warn('liff.openWindow external sync failed', e);
+            this._debugLog('liff_open_window_failed', Object.assign({}, debugContext || {}, {
+                reason: 'sync_throw',
+                message: e && e.message ? String(e.message) : 'unknown',
+            }));
             return false;
         }
     }
@@ -1136,12 +1345,17 @@ class MemberManager {
     }
 
     async _fetchWalletPassIssueUrl(projectKey) {
+        await this.ensureIdentityReady(2500);
         const endpoint = AppConstants.API_ENDPOINTS.MEMBERS_WALLET_PASS_URL
             + '?project_key=' + encodeURIComponent(projectKey);
         const result = await this.apiClient.get(endpoint);
         if (!result.success || !result.data || !result.data.url) {
+            this._debugLog('apple_wallet_url_failed', {
+                error: result.error || (result.data && result.data.error) || 'unknown',
+            });
             throw new Error(result.error || (result.data && result.data.error) || 'URLの取得に失敗しました');
         }
+        this._debugLog('apple_wallet_url_fetched', { has_url: true });
         return result.data.url;
     }
 
@@ -1150,6 +1364,10 @@ class MemberManager {
      * サーバー側 APP_URL と LIFF の表示オリジンが異なる場合でも開けるようにする。
      */
     _resolveWalletAddOpenUrl(issueUrl, type) {
+        if ((type || 'apple') === 'google') {
+            return MemberManager.resolveGoogleWalletOpenUrl(issueUrl);
+        }
+
         const normalized = MemberManager.normalizeExternalUrl(issueUrl);
         if (!normalized) return null;
 
@@ -1253,6 +1471,7 @@ class MemberManager {
 
     _onAddToAppleWallet(e, btn, projectKey) {
         e.preventDefault();
+        this._debugLog('wallet_add_click', { type: 'apple', is_liff: !!(typeof window !== 'undefined' && window.__IS_LIFF__) });
 
         if (typeof window !== 'undefined' && window.__IS_LIFF__ && typeof liff !== 'undefined' && liff.openWindow) {
             const openUrl = btn.getAttribute('data-wallet-open-url');
@@ -1361,46 +1580,66 @@ class MemberManager {
 
     async _onAddToGoogleWallet(e, btn, projectKey) {
         e.preventDefault();
-        const originalHtml = btn.innerHTML;
-        btn.disabled = true;
-        btn.innerHTML = '<span class="member-card-add-to-wallet-loading"><i class="fas fa-spinner fa-spin"></i> 取得中...</span>';
+        this._debugLog('wallet_add_click', { type: 'google', is_liff: !!(typeof window !== 'undefined' && window.__IS_LIFF__) });
 
-        try {
-            const endpoint = AppConstants.API_ENDPOINTS.MEMBERS_GOOGLE_WALLET_URL
-                + '?project_key=' + encodeURIComponent(projectKey);
-            const result = await this.apiClient.get(endpoint);
-            if (!result.success || !result.data || !result.data.url) {
-                throw new Error(result.error || (result.data && result.data.error) || 'URLの取得に失敗しました');
+        const useExternalBrowser = (typeof window !== 'undefined' && window.__IS_LIFF__ && typeof liff !== 'undefined' && liff.openWindow)
+            || (MemberManager.isMobileAppMode() && typeof window.__nativeOpenExternalUrl__ === 'function');
+
+        if (useExternalBrowser) {
+            const openUrl = this._getFreshGoogleWalletOpenUrl();
+            if (!openUrl) {
+                if (typeof ToastManager !== 'undefined') {
+                    ToastManager.info('準備中です。しばらくお待ちください。');
+                }
+                this._setGoogleWalletButtonPreparing(btn, true);
+                this._prefetchGoogleWalletOpenUrl(projectKey).then((url) => {
+                    if (url && typeof ToastManager !== 'undefined') {
+                        ToastManager.info('準備ができました。もう一度タップしてください。');
+                    }
+                }).catch((err) => {
+                    if (typeof ToastManager !== 'undefined') {
+                        const msg = err && err.message ? String(err.message) : 'Google Wallet の準備に失敗しました。';
+                        ToastManager.error(msg);
+                    }
+                });
+                return;
             }
-
-            const issueUrl = result.data.url;
-            const openExternal = (typeof window !== 'undefined' && window.__IS_LIFF__ && typeof liff !== 'undefined' && liff.openWindow)
-                || (MemberManager.isMobileAppMode() && typeof window.__nativeOpenExternalUrl__ === 'function');
-
-            if (openExternal) {
-                const openUrl = this._resolveWalletAddOpenUrl(issueUrl, 'google')
-                    || MemberManager.normalizeExternalUrl(issueUrl);
-                if (!openUrl) {
-                    throw new Error('Google Wallet の URL が不正です');
+            if (typeof window !== 'undefined' && window.__IS_LIFF__ && typeof liff !== 'undefined' && liff.openWindow) {
+                if (this._openLiffExternalBrowserSync(openUrl, { type: 'google', phase: 'cached_open' })) {
+                    if (typeof ToastManager !== 'undefined') {
+                        ToastManager.success('Google Wallet を開きます。追加を完了してください。');
+                    }
+                    return;
                 }
-
-                let opened = false;
-                if (typeof window !== 'undefined' && window.__IS_LIFF__ && typeof liff !== 'undefined' && liff.openWindow) {
-                    opened = await this._openExternalUrl(openUrl);
-                } else if (typeof window.__nativeOpenExternalUrl__ === 'function') {
-                    opened = window.__nativeOpenExternalUrl__(openUrl);
-                }
-                if (!opened) {
-                    throw new Error('外部ブラウザを開けませんでした');
-                }
+            } else if (typeof window.__nativeOpenExternalUrl__ === 'function' && window.__nativeOpenExternalUrl__(openUrl)) {
+                this._debugLog('google_wallet_native_open_ok', { url_length: openUrl.length });
                 if (typeof ToastManager !== 'undefined') {
                     ToastManager.success('Google Wallet を開きます。追加を完了してください。');
                 }
                 return;
             }
+            if (typeof ToastManager !== 'undefined') {
+                ToastManager.error('外部ブラウザを開けませんでした。');
+            }
+            return;
+        }
 
-            window.location.href = issueUrl;
+        const originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="member-card-add-to-wallet-loading"><i class="fas fa-spinner fa-spin"></i> 取得中...</span>';
+
+        try {
+            const issueUrl = await this._fetchGoogleWalletIssueUrl(projectKey);
+            const openUrl = MemberManager.resolveGoogleWalletOpenUrl(issueUrl);
+            this._debugLog('google_wallet_url_fetched', { has_url: !!openUrl });
+            if (!openUrl) {
+                throw new Error('Google Wallet の URL が不正です');
+            }
+            window.location.href = openUrl;
         } catch (err) {
+            this._debugLog('google_wallet_url_failed', {
+                message: err && err.message ? String(err.message) : 'unknown',
+            });
             if (typeof ToastManager !== 'undefined') {
                 ToastManager.error(err.message || 'Google Wallet の取得に失敗しました');
             }
@@ -1833,18 +2072,35 @@ class MemberManager {
                 const inputLast = '<input type="text" id="' + idLast + '" name="name_last" value="' + DomHelper.escapeHtml(nameLast) + '" maxlength="128" placeholder="例: 山田" autocomplete="family-name"' + required + '>';
                 const inputFirst = '<input type="text" id="' + idFirst + '" name="name_first" value="' + DomHelper.escapeHtml(nameFirst) + '" maxlength="128" placeholder="例: 太郎" autocomplete="given-name"' + required + '>';
                 return [
-                    '<div class="member-form-group"><label for="' + idLast + '">姓' + (f.required ? ' <span class="required">*</span>' : '') + '</label>' + inputLast + '</div>',
-                    '<div class="member-form-group"><label for="' + idFirst + '">名' + (f.required ? ' <span class="required">*</span>' : '') + '</label>' + inputFirst + '</div>',
+                    '<div class="member-form-name-row">' +
+                    '<div class="member-form-group"><label for="' + idLast + '">姓' + (f.required ? ' <span class="required">*</span>' : '') + '</label>' + inputLast + '</div>' +
+                    '<div class="member-form-group"><label for="' + idFirst + '">名' + (f.required ? ' <span class="required">*</span>' : '') + '</label>' + inputFirst + '</div>' +
+                    '</div>',
                 ];
             }
             const id = 'profileEdit_' + key.replace(/[^a-z0-9_]/gi, '_');
             let input = '';
             if (key === 'sex') {
-                input = '<select id="' + id + '" name="' + DomHelper.escapeHtml(key) + '"' + required + '>' +
-                    '<option value="">選択してください</option>' +
-                    '<option value="1"' + (val === '1' ? ' selected' : '') + '>男性</option>' +
-                    '<option value="2"' + (val === '2' ? ' selected' : '') + '>女性</option></select>';
-            } else if (key === 'birthday') {
+                const checked0 = (!val || val === '0') ? ' checked' : '';
+                const checked1 = val === '1' ? ' checked' : '';
+                const checked2 = val === '2' ? ' checked' : '';
+                return [
+                    '<fieldset class="member-form-group member-form-group--choice">' +
+                    '<legend class="member-form-group-label">' + DomHelper.escapeHtml(label) + (f.required ? ' <span class="required">*</span>' : '') + '</legend>' +
+                    '<div class="member-form-segment member-form-segment--cols-3" role="radiogroup" aria-label="' + DomHelper.escapeHtml(label) + '">' +
+                    '<label class="member-form-segment-btn">' +
+                    '<input type="radio" id="' + id + '_1" name="sex" value="1"' + checked1 + required + '>' +
+                    '<span class="member-form-segment-btn-text">男性</span></label>' +
+                    '<label class="member-form-segment-btn">' +
+                    '<input type="radio" id="' + id + '_2" name="sex" value="2"' + checked2 + required + '>' +
+                    '<span class="member-form-segment-btn-text">女性</span></label>' +
+                    '<label class="member-form-segment-btn">' +
+                    '<input type="radio" id="' + id + '_0" name="sex" value=""' + checked0 + '>' +
+                    '<span class="member-form-segment-btn-text">未選択</span></label>' +
+                    '</div></fieldset>',
+                ];
+            }
+            if (key === 'birthday') {
                 input = '<input type="date" id="' + id + '" name="' + DomHelper.escapeHtml(key) + '" value="' + DomHelper.escapeHtml(val || birthdayVal) + '"' + required + '>';
             } else if (key === 'email') {
                 input = '<input type="email" id="' + id + '" name="' + DomHelper.escapeHtml(key) + '" value="' + DomHelper.escapeHtml(val) + '" maxlength="255"' + required + '>';
@@ -1852,8 +2108,7 @@ class MemberManager {
                 input = '<div class="member-form-postal-row">' +
                     '<input type="text" id="' + id + '" name="' + DomHelper.escapeHtml(key) + '" value="' + DomHelper.escapeHtml(val) + '" placeholder="例: 100-0001" maxlength="8" inputmode="numeric" autocomplete="postal-code"' + required + '>' +
                     '<button type="button" class="member-btn member-btn--secondary postal-code-lookup-btn" data-action="postal-code-lookup"><i class="fas fa-search-location"></i> 住所を自動入力</button>' +
-                    '</div>' +
-                    '<p class="member-form-hint">郵便番号を入力して「住所を自動入力」を押すと住所が入力されます</p>';
+                    '</div>';
             } else if (key === 'phone') {
                 input = '<input type="tel" id="' + id + '" name="' + DomHelper.escapeHtml(key) + '" value="' + DomHelper.escapeHtml(val) + '" maxlength="50"' + required + '>';
             } else {
@@ -1862,6 +2117,36 @@ class MemberManager {
             }
             return ['<div class="member-form-group"><label for="' + id + '">' + DomHelper.escapeHtml(label) + (f.required ? ' <span class="required">*</span>' : '') + '</label>' + input + '</div>'];
         });
+        const addressKeys = ['postal_code', 'prefecture', 'city', 'street', 'address'];
+        const groupedRows = [];
+        let addressChunk = [];
+        const flushAddressChunk = function () {
+            if (addressChunk.length === 0) return;
+            const hasPostal = fields.some(function (field) { return field.key === 'postal_code'; });
+            const sectionHint = hasPostal
+                ? '<p class="member-form-section-hint">郵便番号を入力して「住所を自動入力」を押すと住所が入力されます</p>'
+                : '';
+            groupedRows.push(
+                '<section class="member-form-section member-form-section--address">' +
+                '<h4 class="member-form-section-title">住所</h4>' +
+                sectionHint +
+                addressChunk.join('') +
+                '</section>'
+            );
+            addressChunk = [];
+        };
+        rows.forEach(function (rowHtml) {
+            const isAddressRow = addressKeys.some(function (addressKey) {
+                return rowHtml.indexOf('profileEdit_' + addressKey) !== -1;
+            });
+            if (isAddressRow) {
+                addressChunk.push(rowHtml);
+                return;
+            }
+            flushAddressChunk();
+            groupedRows.push(rowHtml);
+        });
+        flushAddressChunk();
         const title = isRegister ? '会員登録' : 'プロフィール編集';
         const formId = isRegister ? 'registerForm' : 'profileEditForm';
         const submitLabel = isRegister ? '登録する' : '保存';
@@ -1869,15 +2154,17 @@ class MemberManager {
         const isFullScreen = options.fullScreen === true;
         const cancelLabel = 'キャンセル';
         const cancelOnclick = isFullScreen ? 'window.app.memberManager.closeMemberScreen()' : 'window.app.memberManager.closeProfileEdit()';
+        const actionsHtml = `
+                    <div class="member-form-actions">
+                        <button type="button" class="member-btn member-btn--secondary" onclick="${cancelOnclick}">${DomHelper.escapeHtml(cancelLabel)}</button>
+                        <button type="submit" class="member-btn member-btn--primary"${isFullScreen ? ' form="' + formId + '"' : ''}><i class="fas fa-check"></i> ${DomHelper.escapeHtml(submitLabel)}</button>
+                    </div>`;
         const formInner = `
             <div class="member-modal-inner">
                 <h3 class="member-modal-title"><i class="fas ${titleIcon}"></i> ${DomHelper.escapeHtml(title)}</h3>
                 <form id="${formId}" class="member-form">
-                    ${rows.join('')}
-                    <div class="member-form-actions">
-                        <button type="button" class="member-btn member-btn--secondary" onclick="${cancelOnclick}">${DomHelper.escapeHtml(cancelLabel)}</button>
-                        <button type="submit" class="member-btn member-btn--primary"><i class="fas fa-check"></i> ${DomHelper.escapeHtml(submitLabel)}</button>
-                    </div>
+                    ${groupedRows.join('')}
+                    ${isFullScreen ? '' : actionsHtml}
                 </form>
             </div>
         `;
@@ -1888,6 +2175,7 @@ class MemberManager {
                         <h2 class="member-register-fullscreen-title">${DomHelper.escapeHtml(title)}</h2>
                     </div>
                     <div class="member-register-fullscreen-body">${formInner}</div>
+                    <div class="member-register-fullscreen-footer">${actionsHtml}</div>
                 </div>
             `;
         }
@@ -1950,17 +2238,22 @@ class MemberManager {
                 payload.name = (lastVal + ' ' + firstVal).trim() || null;
                 return;
             }
-            const el = form.querySelector('[name="' + key.replace(/"/g, '\\"') + '"]');
+            const el = key === 'sex'
+                ? form.querySelector('[name="sex"]:checked')
+                : form.querySelector('[name="' + key.replace(/"/g, '\\"') + '"]');
             if (el) {
                 let v = (el.value || '').trim();
                 if (key === 'birthday' && !v) v = null;
                 payload[key] = v || null;
+            } else if (key === 'sex') {
+                payload[key] = null;
             }
         });
         if (Object.keys(payload).length === 0 && form.elements.length) {
             for (let i = 0; i < form.elements.length; i++) {
                 const el = form.elements[i];
                 if (el.name && el.name !== '_token') {
+                    if (el.type === 'radio' && !el.checked) continue;
                     let v = (el.value || '').trim();
                     if (el.name === 'birthday' && !v) v = null;
                     payload[el.name] = v || null;
@@ -2031,17 +2324,22 @@ class MemberManager {
                 payload.name = (lastVal + ' ' + firstVal).trim() || null;
                 return;
             }
-            const el = form.querySelector('[name="' + key.replace(/"/g, '\\"') + '"]');
+            const el = key === 'sex'
+                ? form.querySelector('[name="sex"]:checked')
+                : form.querySelector('[name="' + key.replace(/"/g, '\\"') + '"]');
             if (el) {
                 let v = (el.value || '').trim();
                 if (key === 'birthday' && !v) v = null;
                 payload[key] = v || null;
+            } else if (key === 'sex') {
+                payload[key] = null;
             }
         });
         if (Object.keys(payload).length === 0 && form.elements.length) {
             for (let i = 0; i < form.elements.length; i++) {
                 const el = form.elements[i];
                 if (el.name && el.name !== '_token') {
+                    if (el.type === 'radio' && !el.checked) continue;
                     let v = (el.value || '').trim();
                     if (el.name === 'birthday' && !v) v = null;
                     payload[el.name] = v || null;

@@ -7,6 +7,34 @@ class ApiClient {
         return 'mobile_order_line_user_id';
     }
 
+    static getLineUserIdStorageKey(projectKey) {
+        const pk = projectKey
+            || (typeof window !== 'undefined' && window.__PROJECT_KEY__)
+            || (typeof document !== 'undefined'
+                ? ((document.querySelector('meta[name="project-key"]') || {}).content || '')
+                : '')
+            || 'default';
+        return `${ApiClient.LINE_USER_ID_STORAGE_KEY}_${pk}`;
+    }
+
+    getLiffTokenLineUserId() {
+        if (typeof window === 'undefined' || typeof window.liff === 'undefined') {
+            return null;
+        }
+        try {
+            if (typeof liff.isLoggedIn === 'function' && !liff.isLoggedIn()) {
+                return null;
+            }
+            const decoded = typeof liff.getDecodedIDToken === 'function'
+                ? liff.getDecodedIDToken()
+                : null;
+            const sub = decoded && decoded.sub ? String(decoded.sub).trim() : '';
+            return /^U[0-9a-f]{32}$/i.test(sub) ? sub : null;
+        } catch (e) {
+            return null;
+        }
+    }
+
     debugLog(eventName, payload) {
         if (typeof window !== 'undefined' && typeof window.__clientDebugLog === 'function') {
             try {
@@ -19,33 +47,36 @@ class ApiClient {
 
     resolveLineUserId() {
         if (typeof window === 'undefined') return null;
+
+        const liffTokenId = this.getLiffTokenLineUserId();
+        if (liffTokenId) {
+            if (window.__LINE_USER_ID__ && window.__LINE_USER_ID__ !== liffTokenId) {
+                this.debugLog('line_user_id_mismatch_cleared', {
+                    previous_tail: String(window.__LINE_USER_ID__).slice(-4),
+                    token_tail: liffTokenId.slice(-4),
+                });
+            }
+            window.__LINE_USER_ID__ = liffTokenId;
+            this.persistLineUserId(liffTokenId);
+            return liffTokenId;
+        }
+
         if (window.__LINE_USER_ID__) {
-            this.persistLineUserId(window.__LINE_USER_ID__);
-            return window.__LINE_USER_ID__;
+            const current = String(window.__LINE_USER_ID__).trim();
+            if (/^U[0-9a-f]{32}$/i.test(current)) {
+                this.persistLineUserId(current);
+                return current;
+            }
+        }
+
+        if (typeof window !== 'undefined' && window.__IS_LIFF__) {
+            return null;
         }
 
         const cached = this.getPersistedLineUserId();
         if (cached) {
             window.__LINE_USER_ID__ = cached;
             return cached;
-        }
-
-        if (typeof window.liff !== 'undefined') {
-            try {
-                if (typeof liff.isLoggedIn === 'function' && liff.isLoggedIn()) {
-                    const decoded = typeof liff.getDecodedIDToken === 'function'
-                        ? liff.getDecodedIDToken()
-                        : null;
-                    const sub = decoded && decoded.sub ? String(decoded.sub) : null;
-                    if (sub) {
-                        window.__LINE_USER_ID__ = sub;
-                        this.persistLineUserId(sub);
-                        return sub;
-                    }
-                }
-            } catch (e) {
-                // LIFF未初期化中などの例外は無視
-            }
         }
 
         return null;
@@ -56,7 +87,18 @@ class ApiClient {
         const normalized = String(lineUserId || '').trim();
         if (!/^U[0-9a-f]{32}$/i.test(normalized)) return;
         try {
-            window.localStorage.setItem(ApiClient.LINE_USER_ID_STORAGE_KEY, normalized);
+            window.localStorage.setItem(ApiClient.getLineUserIdStorageKey(), normalized);
+            window.localStorage.removeItem(ApiClient.LINE_USER_ID_STORAGE_KEY);
+        } catch (e) {
+            // ignore
+        }
+    }
+
+    clearPersistedLineUserId() {
+        if (typeof window === 'undefined' || !window.localStorage) return;
+        try {
+            window.localStorage.removeItem(ApiClient.getLineUserIdStorageKey());
+            window.localStorage.removeItem(ApiClient.LINE_USER_ID_STORAGE_KEY);
         } catch (e) {
             // ignore
         }
@@ -65,8 +107,12 @@ class ApiClient {
     getPersistedLineUserId() {
         if (typeof window === 'undefined' || !window.localStorage) return null;
         try {
-            const value = String(window.localStorage.getItem(ApiClient.LINE_USER_ID_STORAGE_KEY) || '').trim();
-            return /^U[0-9a-f]{32}$/i.test(value) ? value : null;
+            const scoped = String(window.localStorage.getItem(ApiClient.getLineUserIdStorageKey()) || '').trim();
+            if (/^U[0-9a-f]{32}$/i.test(scoped)) {
+                return scoped;
+            }
+            const legacy = String(window.localStorage.getItem(ApiClient.LINE_USER_ID_STORAGE_KEY) || '').trim();
+            return /^U[0-9a-f]{32}$/i.test(legacy) ? legacy : null;
         } catch (e) {
             return null;
         }
@@ -101,6 +147,15 @@ class ApiClient {
         if (lineUserId) {
             requestHeaders['X-Line-User-Id'] = lineUserId;
         }
+        this.debugLog('api_identity', {
+            endpoint: endpoint,
+            method: method,
+            has_line_user_id: !!lineUserId,
+            line_user_tail: lineUserId ? String(lineUserId).slice(-4) : '',
+            has_device_id: !!(typeof window !== 'undefined'
+                && window.__MOBILE_DEVICE_INFO__
+                && window.__MOBILE_DEVICE_INFO__.device_identifier),
+        });
         if (typeof window !== 'undefined' && window.__MOBILE_DEVICE_INFO__) {
             const deviceIdentifier = String(window.__MOBILE_DEVICE_INFO__.device_identifier || '').trim();
             if (deviceIdentifier) {

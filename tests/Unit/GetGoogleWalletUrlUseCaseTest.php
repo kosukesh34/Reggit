@@ -10,6 +10,7 @@ use App\Services\MemberService;
 use App\UseCases\Member\GoogleWallet\Data\GetGoogleWalletUrlInput;
 use App\UseCases\Member\GoogleWallet\Data\GetGoogleWalletUrlOutput;
 use App\UseCases\Member\GoogleWallet\GetGoogleWalletUrlUseCase;
+use App\UseCases\Member\GoogleWallet\GoogleWalletSaveUrlIssuer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
@@ -38,7 +39,8 @@ class GetGoogleWalletUrlUseCaseTest extends TestCase
         $walletService->shouldReceive('getUnavailabilityReasons')->once()->andReturn(['disabled']);
 
         $memberService = $this->app->make(MemberService::class);
-        $useCase = new GetGoogleWalletUrlUseCase($walletService, $memberService);
+        $saveUrlIssuer = Mockery::mock(GoogleWalletSaveUrlIssuer::class);
+        $useCase = new GetGoogleWalletUrlUseCase($walletService, $memberService, $saveUrlIssuer);
         $input = new GetGoogleWalletUrlInput(null, null, 1, 'default', null);
 
         $output = $useCase->handle($input);
@@ -66,7 +68,7 @@ class GetGoogleWalletUrlUseCaseTest extends TestCase
             ->with(Mockery::on(fn ($u) => $u->id === $user->id))
             ->andReturn(['is_member' => false]);
 
-        $useCase = new GetGoogleWalletUrlUseCase($walletService, $memberService);
+        $useCase = new GetGoogleWalletUrlUseCase($walletService, $memberService, Mockery::mock(GoogleWalletSaveUrlIssuer::class));
         $input = new GetGoogleWalletUrlInput(null, $user, $project->id, 'default', 'Test');
 
         $output = $useCase->handle($input);
@@ -79,9 +81,11 @@ class GetGoogleWalletUrlUseCaseTest extends TestCase
     {
         $walletService = Mockery::mock(GoogleWalletPassService::class);
         $walletService->shouldReceive('isAvailable')->once()->andReturn(true);
+        $walletService->shouldReceive('getLastError')->andReturn(null);
 
         $memberService = $this->app->make(MemberService::class);
-        $useCase = new GetGoogleWalletUrlUseCase($walletService, $memberService);
+        $saveUrlIssuer = Mockery::mock(GoogleWalletSaveUrlIssuer::class);
+        $useCase = new GetGoogleWalletUrlUseCase($walletService, $memberService, $saveUrlIssuer);
         $input = new GetGoogleWalletUrlInput('invalid-token', null, 1, 'default', null);
 
         Cache::shouldReceive('get')->with('wallet_pass_token:invalid-token')->andReturn(null);
@@ -102,6 +106,7 @@ class GetGoogleWalletUrlUseCaseTest extends TestCase
         Member::factory()->create(['user_id' => $user->id, 'project_id' => $project->id]);
 
         $expectedUrl = 'https://pay.google.com/gp/v/save/dummy-jwt';
+        $wrappedUrl = 'https://example.test/google-wallet/save/abc?project_key=default';
         $walletService = Mockery::mock(GoogleWalletPassService::class);
         $walletService->shouldReceive('isAvailable')->once()->andReturn(true);
         $walletService->shouldReceive('createSaveUrlForUser')
@@ -109,13 +114,19 @@ class GetGoogleWalletUrlUseCaseTest extends TestCase
             ->with(Mockery::on(fn ($u) => $u->id === $user->id))
             ->andReturn($expectedUrl);
 
+        $saveUrlIssuer = Mockery::mock(GoogleWalletSaveUrlIssuer::class);
+        $saveUrlIssuer->shouldReceive('wrapForClient')
+            ->once()
+            ->with($expectedUrl, 'default')
+            ->andReturn($wrappedUrl);
+
         $memberService = $this->app->make(MemberService::class);
-        $useCase = new GetGoogleWalletUrlUseCase($walletService, $memberService);
+        $useCase = new GetGoogleWalletUrlUseCase($walletService, $memberService, $saveUrlIssuer);
         $input = new GetGoogleWalletUrlInput(null, $user, $project->id, 'default', null);
 
         $output = $useCase->handle($input);
 
         $this->assertTrue($output->success);
-        $this->assertSame($expectedUrl, $output->url);
+        $this->assertSame($wrappedUrl, $output->url);
     }
 }

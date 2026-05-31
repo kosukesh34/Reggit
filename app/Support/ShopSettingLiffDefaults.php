@@ -556,6 +556,12 @@ class ShopSettingLiffDefaults
     public static function defaultLiffTabSettings(): array
     {
         return [
+            '_global' => [
+                'content_padding' => 18,
+                'section_gap' => 16,
+                'radius_scale' => 'soft',
+                'tab_style' => 'default',
+            ],
             'home' => ['background_color' => '#f2f9f6'],
             'products' => ['background_color' => '#f7faf9'],
             'orders' => ['background_color' => '#f5f7fa'],

@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Member;
 use App\Models\Project;
+use App\Models\ShopSetting;
 use App\Models\User;
 use App\Services\WalletPassService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -179,6 +180,11 @@ class WalletPassGenerationTest extends TestCase
     public function test_wallet_add_中間ページでwallet_urlが有効なリンクになること(): void
     {
         config(['app.url' => 'https://wallet-test.example.test']);
+        $project = Project::firstOrCreate(
+            ['project_key' => 'default'],
+            ['name' => 'Default', 'description' => '', 'is_active' => true]
+        );
+        ShopSetting::setLineLiffId('2008962885-AbCdEfGh', (int) $project->id);
         $walletUrl = 'https://wallet-test.example.test/api/members/me/wallet-pass?project_key=default&token=test';
 
         $response = $this->withServerVariables(['HTTP_HOST' => 'wallet-test.example.test'])
@@ -187,11 +193,15 @@ class WalletPassGenerationTest extends TestCase
                 'return_url' => 'https://wallet-test.example.test/liff/default',
                 'return_target' => 'line',
                 'type' => 'apple',
+                'project_key' => 'default',
             ]));
 
         $response->assertStatus(200);
         $response->assertSee('wallet-pass', false);
         $response->assertSee('token=test', false);
         $response->assertSee('id="walletAddButton"', false);
+        $response->assertSee('https://liff.line.me/2008962885-AbCdEfGh', false);
+        $response->assertSee('liff.state', false);
+        $response->assertSee('LINEに戻る', false);
     }
 }
