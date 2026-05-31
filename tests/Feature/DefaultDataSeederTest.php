@@ -4,12 +4,14 @@ namespace Tests\Feature;
 
 use App\Models\Product;
 use App\Models\Project;
+use App\Models\ShopSetting;
 use App\Services\Admin\ProductDeduplicationService;
 use App\Services\Smaregi\SmaregiProductSyncService;
 use Database\Seeders\DefaultDataSeeder;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 class DefaultDataSeederTest extends TestCase
@@ -99,7 +101,7 @@ class DefaultDataSeederTest extends TestCase
         ]);
 
         $project = Project::factory()->create();
-        \App\Models\ShopSetting::setValue('smaregi_contract_id', 'test_contract_sb', 'string', (int) $project->id);
+        ShopSetting::setValue('smaregi_contract_id', 'test_contract_sb', 'string', (int) $project->id);
         Product::withoutGlobalScopes()->create([
             'project_id' => $project->id,
             'name' => 'フリーライト ハンバーガー',
@@ -110,15 +112,15 @@ class DefaultDataSeederTest extends TestCase
             'smaregi_product_id' => '8000001',
         ]);
 
-        \Illuminate\Support\Facades\Http::fake(function ($request) {
+        Http::fake(function ($request) {
             $url = $request->url();
             $method = strtoupper($request->method());
 
             if (str_contains($url, '/token')) {
-                return \Illuminate\Support\Facades\Http::response(['access_token' => 'token', 'expires_in' => 3600], 200);
+                return Http::response(['access_token' => 'token', 'expires_in' => 3600], 200);
             }
             if ($method === 'GET' && str_contains($url, 'pos/products')) {
-                return \Illuminate\Support\Facades\Http::response([
+                return Http::response([
                     'products' => [
                         ['productId' => '8000001', 'productName' => 'フリーライト ハンバーガー', 'price' => '680', 'displayFlag' => '1'],
                         ['productId' => '8000002', 'productName' => 'フリーライト ハンバーガー', 'price' => '680', 'displayFlag' => '1'],
@@ -126,10 +128,10 @@ class DefaultDataSeederTest extends TestCase
                 ], 200);
             }
             if ($method === 'DELETE' && str_contains($url, 'pos/products/8000002')) {
-                return \Illuminate\Support\Facades\Http::response([], 204);
+                return Http::response([], 204);
             }
 
-            return \Illuminate\Support\Facades\Http::response([], 404);
+            return Http::response([], 404);
         });
 
         $result = app(SmaregiProductSyncService::class)->deduplicateSmaregiProducts((int) $project->id, 'test_contract_sb');
