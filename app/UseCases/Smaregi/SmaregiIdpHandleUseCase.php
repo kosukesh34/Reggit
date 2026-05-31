@@ -10,6 +10,10 @@ use Illuminate\Support\Facades\Log;
 
 class SmaregiIdpHandleUseCase
 {
+    public function __construct(
+        private SmaregiWebhookHandleUseCase $webhookHandleUseCase
+    ) {}
+
     /**
      * 利用者契約通知を処理し、契約を保存する。
      * 3秒以内に応答するため重い処理は行わない。
@@ -18,17 +22,43 @@ class SmaregiIdpHandleUseCase
      */
     public function handle(Request $request): array
     {
-        $event = $request->header('smaregi-event');
+        $this->webhookHandleUseCase->prepareRequestBody($request);
+
+        if ($request->isMethod('GET') || $request->isMethod('HEAD')) {
+            Log::info('[Smaregi] IDP GET/HEAD 受信（接続確認など）');
+
+            return ['status' => 200, 'body' => ''];
+        }
+
+        $eventFromHeader = $request->header('smaregi-event');
+        $eventFromBody = $request->input('event');
+        $eventRaw = is_string($eventFromHeader) && trim($eventFromHeader) !== ''
+            ? trim($eventFromHeader)
+            : (is_string($eventFromBody) ? trim($eventFromBody) : '');
         $contractIdFromHeader = $request->header('smaregi-contract-id');
-        $eventNormalized = $event !== null ? strtolower($event) : '';
+        $eventNormalized = $eventRaw !== '' ? strtolower($eventRaw) : '';
+
+        if ($eventRaw === '') {
+            Log::warning('[Smaregi] IDP missing event');
+
+            return ['status' => 400, 'body' => ''];
+        }
 
         if ($eventNormalized !== strtolower(SmaregiEvent::APP_SUBSCRIPTION)) {
-            Log::warning('[Smaregi] IDP invalid event', [
-                'event' => $event,
+            if (str_starts_with($eventNormalized, 'pos:')) {
+                Log::info('[Smaregi] 利用者契約通知先URLで POS 系イベントを受信。Webhook と同じ処理に振り替えます', [
+                    'event' => $eventRaw,
+                ]);
+
+                return $this->webhookHandleUseCase->handleNotification($request, false);
+            }
+
+            Log::info('[Smaregi] IDP ignored non-subscription event (use Webhook URL for pos: etc.)', [
+                'event' => $eventRaw,
                 'has_contract_id_header' => $contractIdFromHeader !== null && $contractIdFromHeader !== '',
             ]);
 
-            return ['status' => 400, 'body' => ''];
+            return ['status' => 200, 'body' => ''];
         }
 
         $contractId = $contractIdFromHeader ?? $request->input('contractId');

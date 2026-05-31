@@ -37,9 +37,12 @@ class GoogleWalletPassService
     /** 設定未指定時に使うデフォルト画像 URL（config の default と一致させる） */
     private const DEFAULT_LOGO_URI = 'https://storage.googleapis.com/wallet-lab-tools-codelab-artifacts-public/pass_google_logo.jpg';
 
-    public function __construct(
-        private readonly GoogleWalletLoyaltyPayloadBuilder $payloadBuilder
-    ) {}
+    private GoogleWalletLoyaltyPayloadBuilder $payloadBuilder;
+
+    public function __construct(GoogleWalletLoyaltyPayloadBuilder $payloadBuilder)
+    {
+        $this->payloadBuilder = $payloadBuilder;
+    }
 
     /**
      * 会員用の Add to Google Wallet URL を生成する。
@@ -68,8 +71,130 @@ class GoogleWalletPassService
         $rankLabel = $data['current_rank_label'] ?? $member->rank ?? '';
         $accountName = $user->name ?? '';
         $projectId = $project !== null ? $project->id : (isset($user->project_id) ? (int) $user->project_id : null);
+        $appearance = app(MemberCardAppearanceService::class)->resolveForMember($member);
 
-        return $this->createSaveUrl($organizationName, $barcodeValue, $objectSuffix, $points, $rankLabel, $accountName, $projectId);
+        return $this->createSaveUrl(
+            $organizationName,
+            $barcodeValue,
+            $objectSuffix,
+            $points,
+            $rankLabel,
+            $accountName,
+            $projectId,
+            (string) ($appearance['hex_background'] ?? '')
+        );
+    }
+
+    /**
+     * 会員情報の変更を Google Wallet 側へ同期する。
+     * 既存オブジェクトがあれば更新し、存在しなければ新規作成する。
+     */
+    public function syncLoyaltyObjectForMember(Member $member): bool
+    {
+        if (! $this->canSyncExistingObjects()) {
+            Log::info('google-wallet loyaltyObject sync skipped: service unavailable', [
+                'member_id' => (int) $member->id,
+            ]);
+
+            return false;
+        }
+
+        $user = $member->user;
+        if (! $user instanceof User) {
+            return false;
+        }
+
+        $appearance = app(MemberCardAppearanceService::class)->resolveForMember($member);
+        $project = $member->project;
+        $projectId = (int) ($member->project_id ?? 0);
+        $organizationName = $project !== null ? $project->name : config('app.name', '会員証');
+        $barcodeValue = $member->member_number ?? (string) $member->id;
+        $objectSuffix = 'member-'.(string) $member->id.'-b';
+        $points = (int) $member->getTotalPointsFromTransactions();
+        $rankLabel = (string) ($appearance['rank_label'] ?? $member->rank ?? '');
+        $accountName = (string) ($user->name ?? '');
+
+        $issuerId = config('google_wallet.issuer_id');
+        $classSuffix = config('google_wallet.class_suffix', 'membership');
+        $classId = $issuerId.'.'.$classSuffix;
+        $objectId = $issuerId.'.'.$objectSuffix;
+
+        $programLogoUri = $this->resolveProgramLogoUri($projectId > 0 ? $projectId : null);
+        $heroImageUri = $this->resolveHeroImageUri($projectId > 0 ? $projectId : null);
+
+        if (! $this->ensureLoyaltyClassExists($classId, $organizationName, $programLogoUri)) {
+            return false;
+        }
+
+        $maxLen = GoogleWalletApi::MAX_DISPLAY_LENGTH;
+        $payloadParams = [
+            'classId' => $classId,
+            'objectId' => $objectId,
+            'programName' => $this->payloadBuilder->truncateForWallet($organizationName, $maxLen),
+            'programLogoUri' => $programLogoUri,
+            'heroImageUri' => $heroImageUri,
+            'accountNameDisplay' => $accountName !== ''
+                ? $this->payloadBuilder->truncateForWallet($accountName, $maxLen)
+                : (GoogleWalletApi::ACCOUNT_NAME_FALLBACK_PREFIX.$barcodeValue),
+            'accountIdDisplay' => $this->payloadBuilder->truncateForWallet($barcodeValue, $maxLen),
+            'barcodeValue' => $barcodeValue,
+            'points' => $points,
+            'rankLabel' => $rankLabel,
+            'hexBackgroundColor' => (string) ($appearance['hex_background'] ?? ''),
+        ];
+        $walletObject = $this->payloadBuilder->build($payloadParams)['loyaltyObject'];
+
+        $token = $this->getWalletApiAccessToken();
+        if ($token === null) {
+            return false;
+        }
+
+        $endpoint = self::WALLET_OBJECTS_BASE.'/loyaltyObject/'.$objectId;
+        $update = Http::withToken($token)
+            ->withHeaders(['Content-Type' => 'application/json'])
+            ->put($endpoint, $walletObject);
+
+        if ($update->successful()) {
+            Log::info('google-wallet loyaltyObject updated', [
+                'objectId' => $objectId,
+                'member_id' => (int) $member->id,
+                'points' => $points,
+            ]);
+
+            return true;
+        }
+
+        if ($update->status() !== 404) {
+            Log::warning('google-wallet loyaltyObject update failed', [
+                'objectId' => $objectId,
+                'status' => $update->status(),
+                'body' => $update->body(),
+            ]);
+
+            return false;
+        }
+
+        $insert = Http::withToken($token)
+            ->withHeaders(['Content-Type' => 'application/json'])
+            ->post(self::WALLET_OBJECTS_BASE.'/loyaltyObject', $walletObject);
+
+        if (! $insert->successful()) {
+            Log::warning('google-wallet loyaltyObject insert failed', [
+                'objectId' => $objectId,
+                'status' => $insert->status(),
+                'body' => $insert->body(),
+            ]);
+
+            return false;
+        }
+
+        Log::info('google-wallet loyaltyObject created', [
+            'objectId' => $objectId,
+            'member_id' => (int) $member->id,
+            'points' => $points,
+        ]);
+
+        return true;
     }
 
     /**
@@ -111,7 +236,8 @@ class GoogleWalletPassService
         int $points = 0,
         string $rankLabel = '',
         string $accountName = '',
-        ?int $projectId = null
+        ?int $projectId = null,
+        string $hexBackgroundColor = ''
     ): ?string {
         if (! $this->isAvailable()) {
             return null;
@@ -148,6 +274,7 @@ class GoogleWalletPassService
             'barcodeValue' => $barcodeValue,
             'points' => $points,
             'rankLabel' => $rankLabel,
+            'hexBackgroundColor' => $hexBackgroundColor,
         ];
         $built = $this->payloadBuilder->build($payloadParams);
 
@@ -178,7 +305,14 @@ class GoogleWalletPassService
     /**
      * JWT を署名し、Add to Google Wallet の URL を返す。失敗時は null。
      *
-     * @param  array<string, mixed>  $claims
+     * @param  array{
+     *     iss: string,
+     *     aud: string,
+     *     typ: string,
+     *     iat: int,
+     *     origins: array<int, string>,
+     *     payload: array<string, array<int, array<string, string|int|array<string, string|int|array|null>|null>>>
+     * }  $claims
      */
     private function encodeJwtAndBuildSaveUrl(array $claims, string $privateKey, ?int $projectId): ?string
     {
@@ -217,6 +351,13 @@ class GoogleWalletPassService
         if (config('google_wallet.enabled', false) !== true) {
             return false;
         }
+
+        return $this->canSyncExistingObjects();
+    }
+
+    /** 既存 LoyaltyObject の更新（ポイント同期）が可能か。UI 向け enabled フラグは見ない。 */
+    public function canSyncExistingObjects(): bool
+    {
         if (config('google_wallet.issuer_id', '') === '') {
             return false;
         }

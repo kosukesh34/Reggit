@@ -202,16 +202,19 @@ class AllSampleDataSeeder extends Seeder
                 ]
             );
 
-            Member::firstOrCreate(
+            $member = Member::firstOrCreate(
                 ['project_id' => $pid, 'user_id' => $user->id],
                 [
                     'member_number' => 'M'.str_pad((string) ($i + 1), 6, '0', STR_PAD_LEFT),
-                    'points' => $i % 3 === 0 ? rand(50, 500) : 0,
+                    'points' => 0,
                     'status' => 'active',
                     'birthday' => $i < 4 ? Carbon::now()->subYears(30)->subMonths($i)->format('Y-m-d') : null,
                     'memo' => $i === 0 ? '常連。要フォローなし。' : ($i === 1 ? 'アレルギー確認済み' : null),
                 ]
             );
+            if ($i % 3 === 0 && $member->getTotalPointsFromTransactions() === 0) {
+                $member->addPoints(rand(50, 500), 'サンプル初期ポイント');
+            }
         }
         $this->command->info('会員・ユーザー '.self::MEMBER_COUNT.' 件を投入しました');
     }

@@ -193,16 +193,22 @@
 }
 
 .member-card-add-to-wallet-btn {
-    display: inline-block;
-    line-height: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    line-height: 1.2;
     text-decoration: none;
     border-radius: 8px;
     transition: none;
-    background: none;
-    border: none;
-    padding: 0;
+    background: #111;
+    border: 1px solid #111;
+    color: #fff;
+    min-height: 44px;
+    padding: 10px 16px;
     cursor: pointer;
-    font-size: inherit;
+    font-size: 14px;
+    font-weight: 700;
 }
 
 .member-card-add-to-wallet-btn:hover,
@@ -214,6 +220,12 @@
     display: block;
     height: 40px;
     width: auto;
+}
+
+.member-card-add-to-wallet-text {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
 }
 
 /* 会員証バーコード/QR拡大モーダル */
