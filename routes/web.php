@@ -43,8 +43,11 @@ use App\Http\Controllers\Admin\Settings\WalletController;
 use App\Http\Controllers\Admin\StampController as AdminStampController;
 use App\Http\Controllers\Admin\SystemAdminDashboardController;
 use App\Http\Controllers\LiffController;
+use App\Http\Controllers\Smaregi\SmaregiIdpController;
+use App\Http\Controllers\Smaregi\SmaregiWebhookController;
 use App\Http\Controllers\WalletAddPageController;
 use App\Models\Project;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 
 // ========== 公開 ==========
@@ -61,10 +64,36 @@ Route::get('/health', function () {
     return response('ok', 200, ['Content-Type' => 'text/plain']);
 });
 
+// スマレジ: デベロッパーズに「/api」無しで登録した場合の受け口（POST は CSRF 除外済み）
+Route::match(['get', 'head', 'post'], '/smaregi/webhook', [SmaregiWebhookController::class, '__invoke'])
+    ->middleware('log.smaregi.webhook')
+    ->name('smaregi.webhook_no_api_prefix');
+Route::match(['get', 'head', 'post'], '/smaregi/idp', [SmaregiIdpController::class, '__invoke'])->name('smaregi.idp_no_api_prefix');
+
 // ========== LIFF ==========
 Route::prefix('liff')->middleware('bind.project')->group(function () {
     Route::get('/', [LiffController::class, 'index'])->name('liff.index');
     Route::get('/{project_key}', [LiffController::class, 'index'])->name('liff.project');
+    // 旧リンク（/liff/{project_key}/project_key=...&queue_token=...）互換。
+    Route::get('/{project_key}/{legacy_state}', function (string $project_key, string $legacy_state) {
+        parse_str($legacy_state, $params);
+        $queueToken = is_array($params) ? ($params['queue_token'] ?? null) : null;
+        $queueId = is_array($params) ? ($params['queue_id'] ?? null) : null;
+
+        Log::info('[LIFF] legacy queue url redirected', [
+            'project_key' => $project_key,
+            'legacy_state' => $legacy_state,
+            'queue_token' => $queueToken,
+            'queue_id' => $queueId,
+        ]);
+
+        $query = array_filter([
+            'queue_token' => is_string($queueToken) ? $queueToken : null,
+            'queue_id' => is_string($queueId) ? $queueId : null,
+        ], fn ($v) => $v !== null && $v !== '');
+
+        return redirect()->to('/liff/'.$project_key.($query === [] ? '' : '?'.http_build_query($query)));
+    })->where('legacy_state', 'project_key=.*')->name('liff.project.legacy');
 });
 
 // Wallet 追加用の中間ページ（追加後にアプリへ戻るリンクを表示）

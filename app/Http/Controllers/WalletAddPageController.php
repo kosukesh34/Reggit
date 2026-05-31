@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\UseCases\Member\WalletPass\WalletPassUrlIssueUseCase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
@@ -12,9 +13,23 @@ use Illuminate\View\View;
  */
 class WalletAddPageController extends Controller
 {
+    public function __construct(
+        private WalletPassUrlIssueUseCase $walletPassUrlIssueUseCase
+    ) {}
+
     public function __invoke(Request $request): View
     {
         $walletUrl = $request->query('wallet_url');
+        $passToken = $request->query('pass_token');
+        $projectKey = $request->query('project_key', 'default');
+        $walletUrlFromPassToken = false;
+        if ((! is_string($walletUrl) || trim($walletUrl) === '') && is_string($passToken) && trim($passToken) !== '') {
+            $walletUrl = $this->walletPassUrlIssueUseCase->buildPassDownloadUrl(
+                trim($passToken),
+                is_string($projectKey) && trim($projectKey) !== '' ? trim($projectKey) : 'default'
+            );
+            $walletUrlFromPassToken = is_string($walletUrl) && trim($walletUrl) !== '';
+        }
         $returnUrl = $request->query('return_url');
         $returnTarget = $request->query('return_target', 'web');
         $type = $request->query('type', 'apple');
@@ -27,7 +42,9 @@ class WalletAddPageController extends Controller
             ? strtolower((string) $returnTarget) : 'web';
         $returnBackLabel = $returnTarget === 'line' ? 'LINEに戻る' : ($returnTarget === 'app' ? 'アプリに戻る' : 'アプリに戻る');
 
-        $walletUrl = $this->sanitizeWalletUrl($walletUrl);
+        if (! $walletUrlFromPassToken) {
+            $walletUrl = $this->sanitizeWalletUrl(is_string($walletUrl) ? $walletUrl : null);
+        }
         $returnUrl = $this->sanitizeReturnUrl($returnUrl);
 
         return view('wallet-add', [
@@ -50,18 +67,11 @@ class WalletAddPageController extends Controller
         }
         try {
             $parsed = parse_url($url);
-            $host = $parsed['host'] ?? '';
-            $allowedHosts = [
-                'pay.google.com',
-                parse_url(config('app.url', ''), PHP_URL_HOST) ?: request()->getHost(),
-            ];
-            $allowedHosts = array_filter($allowedHosts);
-            foreach ($allowedHosts as $allowed) {
-                if ($allowed !== '' && (strtolower($host) === strtolower($allowed) || Str::endsWith(strtolower($host), '.'.strtolower($allowed)))) {
-                    return $url;
-                }
+            $host = strtolower((string) ($parsed['host'] ?? ''));
+            if ($host === '') {
+                return null;
             }
-            if (request()->getHost() && (strtolower($host) === strtolower(request()->getHost()) || Str::endsWith(strtolower($host), '.'.strtolower(request()->getHost())))) {
+            if ($this->isAllowedWalletHost($host)) {
                 return $url;
             }
         } catch (\Throwable $e) {
@@ -69,6 +79,42 @@ class WalletAddPageController extends Controller
         }
 
         return null;
+    }
+
+    private function isAllowedWalletHost(string $host): bool
+    {
+        if (str_ends_with($host, '.ngrok-free.app') || str_ends_with($host, '.ngrok.io')) {
+            return true;
+        }
+
+        $allowedHosts = array_filter([
+            'pay.google.com',
+            parse_url((string) config('app.url', ''), PHP_URL_HOST) ?: null,
+            request()->getHost(),
+            $this->forwardedHost(),
+        ]);
+
+        foreach ($allowedHosts as $allowed) {
+            $allowed = strtolower((string) $allowed);
+            if ($allowed === '') {
+                continue;
+            }
+            if ($host === $allowed || str_ends_with($host, '.'.$allowed)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function forwardedHost(): ?string
+    {
+        $forwarded = request()->header('X-Forwarded-Host') ?? request()->server('HTTP_X_FORWARDED_HOST');
+        if (! is_string($forwarded) || trim($forwarded) === '') {
+            return null;
+        }
+
+        return trim(explode(',', $forwarded)[0]);
     }
 
     private function sanitizeReturnUrl(?string $url): ?string

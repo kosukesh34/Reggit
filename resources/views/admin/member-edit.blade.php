@@ -127,8 +127,13 @@
 
             <section class="form-section mb-4">
                 <h4 class="form-section-title"><span class="form-section-num">3</span> ポイント操作（任意）</h4>
-                <p class="text-muted small mb-3">加算または減算のいずれかを入力すると、保存時に反映されポイント履歴に残ります。両方入力した場合は加算のみ適用されます。</p>
+                <p class="text-muted small mb-3">「ポイントを直接指定」に数値を入れると、その値に合わせて調整されます（例: 500）。加算・減算と併用した場合は直接指定が優先されます。保存時にポイント履歴へ記録され、Apple Wallet / Google Wallet も更新されます。</p>
                 <div class="row">
+                    <div class="col-md-3 form-group">
+                        <label for="point_set" class="form-label">ポイントを直接指定</label>
+                        <input type="number" name="point_set" id="point_set" class="form-control" value="{{ old('point_set') }}" min="0" step="1" placeholder="例: 500">
+                        @error('point_set')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
+                    </div>
                     <div class="col-md-3 form-group">
                         <label for="point_add" class="form-label">ポイント加算</label>
                         <input type="number" name="point_add" id="point_add" class="form-control" value="{{ old('point_add', 0) }}" min="0" step="1" placeholder="0">
@@ -139,7 +144,7 @@
                         <input type="number" name="point_subtract" id="point_subtract" class="form-control" value="{{ old('point_subtract', 0) }}" min="0" step="1" placeholder="0">
                         @error('point_subtract')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
                     </div>
-                    <div class="col-md-6 form-group">
+                    <div class="col-md-3 form-group">
                         <label for="point_description" class="form-label">理由（管理用メモ）</label>
                         <input type="text" name="point_description" id="point_description" class="form-control" value="{{ old('point_description') }}" maxlength="255" placeholder="例: 管理画面での調整">
                     </div>

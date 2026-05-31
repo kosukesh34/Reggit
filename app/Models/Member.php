@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToProject;
+use App\Models\Scopes\ProjectScope;
 use Database\Factories\MemberFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -92,7 +93,60 @@ class Member extends Model
 
     public function getTotalPointsFromTransactions(): int
     {
-        return (int) $this->pointTransactions()->sum('points');
+        return (int) $this->pointTransactions()
+            ->withoutGlobalScope(ProjectScope::class)
+            ->sum('points');
+    }
+
+    /** members.points カラムのみ残っている古いデータを point_transactions に寄せる */
+    public const POINTS_LEDGER_BACKFILL_DESCRIPTION = 'ポイント残高の整合';
+
+    /**
+     * 表示用カラムと取引合計を一致させる。カラムのみ残っている場合は取引を補完する。
+     */
+    public function syncPointsLedger(): void
+    {
+        $columnPoints = max(0, (int) $this->points);
+        $ledgerPoints = $this->getTotalPointsFromTransactions();
+
+        if ($ledgerPoints === $columnPoints) {
+            return;
+        }
+
+        if ($ledgerPoints === 0 && $columnPoints > 0) {
+            $this->addPoints($columnPoints, self::POINTS_LEDGER_BACKFILL_DESCRIPTION);
+
+            return;
+        }
+
+        if ($columnPoints > $ledgerPoints) {
+            // 台帳が正でカラムだけ古い場合は加算せずキャッシュを合わせる
+            if ($ledgerPoints > 0) {
+                $this->recalcPointsFromTransactions();
+
+                return;
+            }
+
+            $this->addPoints($columnPoints - $ledgerPoints, self::POINTS_LEDGER_BACKFILL_DESCRIPTION);
+
+            return;
+        }
+
+        $this->recalcPointsFromTransactions();
+    }
+
+    /** 表示・判定用。台帳とカラムがずれていれば整合してから返す */
+    public function getDisplayPoints(): int
+    {
+        $ledgerPoints = $this->getTotalPointsFromTransactions();
+        if ((int) $this->points !== $ledgerPoints) {
+            $this->syncPointsLedger();
+            $this->refresh();
+
+            return $this->getTotalPointsFromTransactions();
+        }
+
+        return $ledgerPoints;
     }
 
     public function addPoints(int $points, ?string $description = null, ?int $orderId = null): void
@@ -118,6 +172,11 @@ class Member extends Model
         if ($points <= 0) {
             return;
         }
+        $available = $this->getTotalPointsFromTransactions();
+        if ($available <= 0) {
+            return;
+        }
+        $points = min($points, $available);
         PointTransaction::create([
             'project_id' => $this->project_id,
             'member_id' => $this->id,

@@ -113,7 +113,7 @@ class GoogleWalletLoyaltyPayloadBuilder
         $lang = GoogleWalletApi::DEFAULT_LANGUAGE;
         $textModules = $this->buildTextModules($params['rankLabel'], (string) $params['points'], $params['barcodeValue']);
 
-        return [
+        $object = [
             'id' => $params['objectId'],
             'classId' => $params['classId'],
             'state' => GoogleWalletApi::OBJECT_STATE_ACTIVE,
@@ -136,6 +136,13 @@ class GoogleWalletLoyaltyPayloadBuilder
                 ],
             ],
         ];
+
+        $hexBg = $params['hexBackgroundColor'] ?? '';
+        if (is_string($hexBg) && $hexBg !== '' && preg_match('/^#[0-9A-Fa-f]{3}([0-9A-Fa-f]{3})?$/', $hexBg)) {
+            $object['hexBackgroundColor'] = $hexBg;
+        }
+
+        return $object;
     }
 
     /**
