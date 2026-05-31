@@ -38,7 +38,7 @@ git fetch origin
 git merge-base HEAD origin/main
 ```
 
-## 4. PR 前の軽い確認
+## 4. PR 前の確認（アーキテクチャ優先）
 
 変更ファイル一覧:
 
@@ -46,9 +46,15 @@ git merge-base HEAD origin/main
 git diff <merge-base> HEAD --name-only
 ```
 
-- PHP 変更: 関連テストを `docker compose exec app php artisan test <path>` で実行できるなら実行
-- フロント変更: LIFF / 管理画面の確認手順を PR 本文に書く
-- CRITICAL 相当（`project_id` 漏れ、秘密鍵コミット）があれば修正を促す
+[docs/MR_AND_CODE_REVIEW_PROCEDURE.md](../../docs/MR_AND_CODE_REVIEW_PROCEDURE.md) の順序で確認し、問題があれば **修正を促す**（PR 作成前に直す）。
+
+1. **アーキテクチャ**: Controller→UseCase→Service、UseCase 連鎖なし、ビジネス依存の `new` なし、system-admin 等と同パターンか
+2. **デグレ**: ソート/順序/既存処理の削除が意図的か（意図的なら PR 本文に記載を促す）
+3. **テスト・セキュリティ**: 関連テスト実行、`project_id` 漏れ・秘密鍵コミットなし
+4. PHP: `docker compose exec app php artisan test <path>` を実行できるなら実行
+5. フロント: LIFF / 管理画面の確認手順を PR 本文に書く
+
+PR 分割時は **各 PR ごと** に上記 1–3 を繰り返す（§1.6 MR 手順書）。
 
 ## 5. ブランチ・コミット・push
 
