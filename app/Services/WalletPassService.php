@@ -16,21 +16,23 @@ use Illuminate\Support\Facades\File;
  */
 class WalletPassService
 {
-    private static ?string $lastError = null;
+    private ?string $lastError = null;
 
     public function __construct(
         private UserService $userService,
-        private MemberService $memberService
+        private MemberService $memberService,
+        private WalletPassAuthTokenService $walletPassAuthTokenService,
+        private MemberCardAppearanceService $memberCardAppearanceService,
     ) {}
 
-    public static function getLastError(): ?string
+    public function getLastError(): ?string
     {
-        return self::$lastError;
+        return $this->lastError;
     }
 
     private function setLastError(string $message): void
     {
-        self::$lastError = $message;
+        $this->lastError = $message;
     }
 
     /**
@@ -45,12 +47,13 @@ class WalletPassService
         string $organizationName,
         string $serialNumber,
         array $extraFields = [],
-        ?int $projectId = null
+        ?int $projectId = null,
+        ?Member $member = null
     ): ?string {
-        self::$lastError = null;
+        $this->lastError = null;
         $workDir = $this->createWorkDir();
         try {
-            $this->writePassJsonFromParams($workDir, $barcodeMessage, $organizationName, $serialNumber, $extraFields);
+            $this->writePassJsonFromParams($workDir, $barcodeMessage, $organizationName, $serialNumber, $extraFields, $member);
             $this->ensureAssets($workDir, $extraFields, $projectId);
             $this->writeManifest($workDir);
             $this->signManifest($workDir);
@@ -95,11 +98,12 @@ class WalletPassService
             'points' => $data['points'] ?? $member->getTotalPointsFromTransactions(),
             'rank_label' => $data['current_rank_label'] ?? $member->rank ?? '',
             'rank_key' => $data['current_rank'] ?? $member->rank ?? 'bronze',
+            'appearance' => $this->memberCardAppearanceService->resolveForMember($member),
         ];
 
         $projectId = $project !== null ? $project->id : null;
 
-        return $this->buildMembershipPass($barcodeMessage, $organizationName, $serialNumber, $extraFields, $projectId);
+        return $this->buildMembershipPass($barcodeMessage, $organizationName, $serialNumber, $extraFields, $projectId, $member);
     }
 
     /**
@@ -131,11 +135,12 @@ class WalletPassService
             'points' => $data['points'] ?? $member->getTotalPointsFromTransactions(),
             'rank_label' => $data['current_rank_label'] ?? $member->rank ?? '',
             'rank_key' => $data['current_rank'] ?? $member->rank ?? 'bronze',
+            'appearance' => $this->memberCardAppearanceService->resolveForMember($member),
         ];
 
         $projectId = $project !== null ? $project->id : null;
 
-        return $this->buildMembershipPass($barcodeMessage, $organizationName, $serialNumber, $extraFields, $projectId);
+        return $this->buildMembershipPass($barcodeMessage, $organizationName, $serialNumber, $extraFields, $projectId, $member);
     }
 
     /**
@@ -175,13 +180,44 @@ class WalletPassService
             'points' => $data['points'] ?? $member->getTotalPointsFromTransactions(),
             'rank_label' => $data['current_rank_label'] ?? $member->rank ?? '',
             'rank_key' => $data['current_rank'] ?? $member->rank ?? 'bronze',
+            'appearance' => $this->memberCardAppearanceService->resolveForMember($member),
         ];
 
-        return $this->buildMembershipPass($barcodeMessage, $organizationName, $serialNumber, $extraFields, (int) $projectId);
+        return $this->buildMembershipPass($barcodeMessage, $organizationName, $serialNumber, $extraFields, (int) $projectId, $member);
+    }
+
+    public function generateForMember(Member $member): ?string
+    {
+        $member = $member->fresh(['user', 'project']);
+        if ($member === null) {
+            $this->setLastError('会員が見つかりません。');
+
+            return null;
+        }
+
+        $appearance = $this->memberCardAppearanceService->resolveForMember($member);
+        $organizationName = $member->project?->name ?? config('app.name', '会員証');
+        $barcodeMessage = $member->member_number ?? (string) $member->id;
+        $serialNumber = 'member-'.(string) $member->id;
+        $extraFields = [
+            'points' => $member->getTotalPointsFromTransactions(),
+            'rank_label' => $appearance['rank_label'],
+            'rank_key' => $appearance['rank_key'],
+            'appearance' => $appearance,
+        ];
+
+        return $this->buildMembershipPass(
+            $barcodeMessage,
+            $organizationName,
+            $serialNumber,
+            $extraFields,
+            (int) $member->project_id,
+            $member
+        );
     }
 
     /** ランク別カード色（ウェブ会員証のグラデーション末尾色に合わせた背景・文字・ラベル） @return array{bg: string, fg: string, label: string} */
-    private static function getRankColors(string $rankKey): array
+    private function getRankColors(string $rankKey): array
     {
         $map = [
             'bronze' => ['bg' => 'rgb(92, 46, 10)', 'fg' => 'rgb(255, 255, 255)', 'label' => 'rgb(255, 235, 210)'],
@@ -195,7 +231,7 @@ class WalletPassService
     }
 
     /** ウェブ会員証と同じ 4 段階グラデーション（0%, 35%, 65%, 100%）@return array<int, array{0: float, 1: int, 2: int, 3: int}> */
-    private static function getRankStripGradientStops(string $rankKey): array
+    private function getRankStripGradientStops(string $rankKey): array
     {
         $map = [
             'bronze' => [
@@ -238,12 +274,14 @@ class WalletPassService
         string $barcodeMessage,
         string $organizationName,
         string $serialNumber,
-        array $extraFields
+        array $extraFields,
+        ?Member $member = null
     ): void {
         $points = isset($extraFields['points']) ? (string) $extraFields['points'] : '0';
         $rankLabel = isset($extraFields['rank_label']) ? (string) $extraFields['rank_label'] : '';
         $rankKey = isset($extraFields['rank_key']) ? (string) $extraFields['rank_key'] : 'bronze';
-        $colors = self::getRankColors($rankKey);
+        $appearance = is_array($extraFields['appearance'] ?? null) ? $extraFields['appearance'] : null;
+        $colors = $appearance['colors'] ?? $this->getRankColors($rankKey);
 
         $pass = [
             'formatVersion' => 1,
@@ -273,6 +311,16 @@ class WalletPassService
                 'altText' => $barcodeMessage,
             ],
         ];
+
+        $webServiceUrl = trim((string) config('wallet_pass.web_service_url', ''));
+        if ($webServiceUrl !== '' && $member instanceof Member) {
+            $normalizedWebServiceUrl = rtrim($webServiceUrl, '/').'/';
+            if (filter_var($normalizedWebServiceUrl, FILTER_VALIDATE_URL)
+                && str_starts_with(strtolower($normalizedWebServiceUrl), 'https://')) {
+                $pass['webServiceURL'] = $normalizedWebServiceUrl;
+                $pass['authenticationToken'] = $this->walletPassAuthTokenService->createForMember($member);
+            }
+        }
 
         File::put($dir.'/pass.json', json_encode($pass, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
     }
@@ -308,6 +356,8 @@ class WalletPassService
     {
         $assetsPath = $this->resolveProjectAssetsPath($projectId);
         $rankKey = isset($extraFields['rank_key']) ? (string) $extraFields['rank_key'] : 'bronze';
+        $appearance = is_array($extraFields['appearance'] ?? null) ? $extraFields['appearance'] : null;
+        $gradientStops = $appearance['gradient_stops'] ?? null;
 
         $required = [
             'icon.png' => [29, 29],
@@ -337,7 +387,7 @@ class WalletPassService
             } elseif (File::isFile($srcRank)) {
                 File::copy($srcRank, $dst);
             } else {
-                $this->createStripPlaceholder($dst, $size[0], $size[1], $rankKey);
+                $this->createStripPlaceholder($dst, $size[0], $size[1], $rankKey, $gradientStops);
             }
         }
     }
@@ -358,12 +408,12 @@ class WalletPassService
     }
 
     /** ランク色のストリップ画像を生成（ウェブ会員証と同じ 4 段階グラデーション＋上部光沢で高級感） */
-    private function createStripPlaceholder(string $path, int $width, int $height, string $rankKey): void
+    private function createStripPlaceholder(string $path, int $width, int $height, string $rankKey, ?array $gradientStops = null): void
     {
         if (! extension_loaded('gd')) {
             throw new \RuntimeException('Wallet Pass の画像生成に GD 拡張が必要です。');
         }
-        $stops = self::getRankStripGradientStops($rankKey);
+        $stops = $gradientStops ?? $this->getRankStripGradientStops($rankKey);
         $im = imagecreatetruecolor($width, $height);
         if ($im === false) {
             throw new \RuntimeException('画像の作成に失敗しました。');
@@ -426,7 +476,7 @@ class WalletPassService
     {
         $certPath = $this->resolvePath(config('wallet_pass.cert_path'));
         $keyPath = $this->resolvePath(config('wallet_pass.key_path'));
-        $wwdrPath = $this->resolvePath(config('wallet_pass.wwdr_path'));
+        $wwdrPath = $this->resolveWwdrPathForCertificate($certPath, $this->resolvePath(config('wallet_pass.wwdr_path')));
 
         if (! File::isFile($certPath) || ! File::isReadable($certPath)) {
             throw new \RuntimeException('Wallet Pass 証明書が見つかりません: '.$certPath);
@@ -621,11 +671,14 @@ class WalletPassService
             $reasons[] = 'iOS-Passkey-Key.key not found or not readable: '.$keyPath;
         }
         if ($wwdrPath !== '' && ! is_readable($wwdrPath)) {
-            $reasons[] = 'AppleWWDRCAG3.cer not found or not readable: '.$wwdrPath;
+            $reasons[] = 'WWDR 証明書 (AppleWWDRCAG3.cer / AppleWWDRCAG4.cer) が見つかりません: '.$wwdrPath;
         }
-        if ($reasons === []) {
-            $lastError = self::getLastError();
-            $reasons[] = $lastError !== null && $lastError !== '' ? $lastError : 'Build failed. Check storage/logs/laravel.log';
+        if ($certPath !== '' && is_readable($certPath)) {
+            $resolvedWwdr = $this->resolveWwdrPathForCertificate($certPath, $wwdrPath);
+            if (! is_readable($resolvedWwdr) || ! $this->certificateIssuerMatches($certPath, $resolvedWwdr)) {
+                $reasons[] = 'WWDR 証明書が Pass 証明書と一致しません。'
+                    .$this->formatWwdrMismatchHint($certPath, $wwdrPath);
+            }
         }
 
         return $reasons;
@@ -641,5 +694,113 @@ class WalletPassService
         }
 
         return base_path($path);
+    }
+
+    private function resolveWwdrPathForCertificate(string $certPath, string $configuredWwdrPath): string
+    {
+        foreach ($this->collectWwdrCandidates($configuredWwdrPath) as $candidate) {
+            if ($this->certificateIssuerMatches($certPath, $candidate)) {
+                return $candidate;
+            }
+        }
+
+        return $configuredWwdrPath;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function collectWwdrCandidates(string $configuredWwdrPath): array
+    {
+        $dir = $configuredWwdrPath !== ''
+            ? dirname($this->resolvePath($configuredWwdrPath))
+            : storage_path('app/wallet_pass/certificates');
+        $seen = [];
+        $ordered = [];
+
+        $add = function (string $path) use (&$seen, &$ordered): void {
+            $path = $this->resolvePath($path);
+            if ($path === '' || isset($seen[$path]) || ! is_readable($path)) {
+                return;
+            }
+            $seen[$path] = true;
+            $ordered[] = $path;
+        };
+
+        if ($configuredWwdrPath !== '') {
+            $add($configuredWwdrPath);
+        }
+
+        foreach (['AppleWWDRCAG4.cer', 'AppleWWDRCAG3.cer', 'AppleWWDRCAG2.cer'] as $name) {
+            $add($dir.'/'.$name);
+        }
+
+        foreach (glob($dir.'/AppleWWDRCA*.cer') ?: [] as $path) {
+            $add($path);
+        }
+
+        return $ordered;
+    }
+
+    private function formatWwdrMismatchHint(string $certPath, string $configuredWwdrPath): string
+    {
+        $issuer = $this->getCertificateIssuerCommonName($certPath);
+        $dir = $configuredWwdrPath !== '' ? dirname($configuredWwdrPath) : storage_path('app/wallet_pass/certificates');
+        $hint = ' Pass 証明書の発行者: '.($issuer ?: '不明').'。';
+        $hint .= ' Apple Developer から WWDR 証明書 (G4: https://www.apple.com/certificateauthority/AppleWWDRCAG4.cer ) をダウンロードし、';
+        $hint .= ' '.$dir.' に AppleWWDRCAG4.cer として配置し、.env の WALLET_PASS_WWDR_PATH を更新してください。';
+
+        return $hint;
+    }
+
+    private function getCertificateIssuerCommonName(string $certPath): ?string
+    {
+        if (! is_readable($certPath)) {
+            return null;
+        }
+
+        try {
+            $certPem = $this->ensurePemCertificate($certPath);
+            $certInfo = openssl_x509_parse(File::get($certPem));
+
+            return is_array($certInfo) ? ($certInfo['issuer']['CN'] ?? null) : null;
+        } catch (\Throwable) {
+            return null;
+        } finally {
+            if (isset($certPem) && $certPem !== $certPath) {
+                @unlink($certPem);
+            }
+        }
+    }
+
+    private function certificateIssuerMatches(string $certPath, string $wwdrPath): bool
+    {
+        if (! is_readable($certPath) || ! is_readable($wwdrPath)) {
+            return false;
+        }
+
+        try {
+            $certPem = $this->ensurePemCertificate($certPath);
+            $wwdrPem = $this->ensurePemCertificate($wwdrPath);
+            $certInfo = openssl_x509_parse(File::get($certPem));
+            $wwdrInfo = openssl_x509_parse(File::get($wwdrPem));
+        } catch (\Throwable) {
+            return false;
+        } finally {
+            if (isset($certPem) && $certPem !== $certPath) {
+                @unlink($certPem);
+            }
+            if (isset($wwdrPem) && $wwdrPem !== $wwdrPath) {
+                @unlink($wwdrPem);
+            }
+        }
+
+        if (! is_array($certInfo) || ! is_array($wwdrInfo)) {
+            return false;
+        }
+
+        return ($certInfo['issuer']['CN'] ?? null) === ($wwdrInfo['subject']['CN'] ?? null)
+            && ($certInfo['issuer']['OU'] ?? null) === ($wwdrInfo['subject']['OU'] ?? null)
+            && ($certInfo['issuer']['O'] ?? null) === ($wwdrInfo['subject']['O'] ?? null);
     }
 }

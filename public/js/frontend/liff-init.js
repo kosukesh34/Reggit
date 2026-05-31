@@ -107,6 +107,14 @@
 
     function setLineUserId(userId) {
         window.__LINE_USER_ID__ = userId || null;
+        const normalized = userId ? String(userId).trim() : '';
+        if (normalized && /^U[0-9a-f]{32}$/i.test(normalized)) {
+            try {
+                if (typeof window !== 'undefined' && window.localStorage) {
+                    window.localStorage.setItem('mobile_order_line_user_id', normalized);
+                }
+            } catch (e) { /* ignore */ }
+        }
     }
 
     function setLineProfile(profile) {
@@ -385,6 +393,22 @@
 
     window.__IS_LIFF__ = isInLineApp();
     applyEmbedModeClass(window.__IS_LIFF__);
+
+    function restorePersistedLineUserIdEarly() {
+        if (typeof window === 'undefined' || !window.localStorage) return;
+        try {
+            const cached = String(window.localStorage.getItem('mobile_order_line_user_id') || '').trim();
+            if (/^U[0-9a-f]{32}$/i.test(cached)) {
+                setLineUserId(cached);
+                debug('liff_restore_persisted_line_user_id', { hasUserId: true });
+            }
+        } catch (e) { /* ignore */ }
+    }
+
+    if (window.__IS_LIFF__) {
+        restorePersistedLineUserIdEarly();
+    }
+
     const liffId = getLiffId();
     debug('liff_boot_start', { isLiff: !!window.__IS_LIFF__, hasLiffId: !!liffId });
 
@@ -426,7 +450,23 @@
                         dispatchProfileReady();
                     })
                     .catch(function (err) {
-                        debug('liff_profile_failed', { message: err && err.message ? err.message : 'unknown' });
+                        const errorMessage = err && err.message ? err.message : 'unknown';
+                        debug('liff_profile_failed', { message: errorMessage });
+                        if (errorMessage === 'The access token expired') {
+                            debug('liff_profile_token_expired_relogin', {});
+                            try {
+                                if (typeof liff.logout === 'function') {
+                                    liff.logout();
+                                }
+                                liff.login();
+                                scheduleLoginFallback();
+                                return;
+                            } catch (loginErr) {
+                                debug('liff_profile_token_expired_relogin_failed', {
+                                    message: loginErr && loginErr.message ? loginErr.message : 'unknown'
+                                });
+                            }
+                        }
                         if (err && err.message === 'PERMISSION_DENIED') {
                             showPermissionDeniedScreen();
                             showPermissionPrompt('プロフィール連携の許可が必要です。');

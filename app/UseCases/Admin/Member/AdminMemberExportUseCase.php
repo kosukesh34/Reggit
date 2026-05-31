@@ -40,7 +40,7 @@ class AdminMemberExportUseCase
                     'ユーザー名' => (string) ($user !== null ? $user->name : ''),
                     'メール' => (string) ($user !== null ? $user->email : ''),
                     '電話番号' => (string) ($user !== null ? $user->phone : ''),
-                    'ポイント' => (string) $m->points,
+                    'ポイント' => (string) $m->getDisplayPoints(),
                     'ランク' => (string) ($m->rank ?? ''),
                     'ステータス' => $m->status === 'active' ? '有効' : '無効',
                     '登録日' => $m->created_at->format('Y/m/d H:i'),

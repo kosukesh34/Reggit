@@ -219,7 +219,7 @@ class LineWebhookHandleUseCase
             $message = $this->lineService->createTextMessage(
                 "会員証情報\n\n".
                 "会員番号: {$member->member_number}\n".
-                "ポイント: {$member->points}pt\n".
+                "ポイント: {$member->getDisplayPoints()}pt\n".
                 'ステータス: '.($member->status === MemberStatus::ACTIVE ? '有効' : '無効')
             );
         }

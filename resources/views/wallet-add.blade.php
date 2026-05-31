@@ -21,11 +21,42 @@
         <h1>Walletに追加</h1>
         <p>下のボタンで会員証を{{ $typeLabel }}に追加してください。追加が完了したら「{{ $returnBackLabel }}」をタップしてください。</p>
         @if($walletUrl)
-        <a href="{{ $walletUrl }}" class="btn btn-primary" target="_blank" rel="noopener noreferrer">{{ $addButtonLabel }}</a>
+        <button type="button" class="btn btn-primary" id="walletAddButton">{{ $addButtonLabel }}</button>
         @endif
         @if($returnUrl)
         <a href="{{ $returnUrl }}" class="btn btn-secondary">{{ $returnBackLabel }}</a>
         @endif
     </div>
+    @if($walletUrl)
+    <script>
+        (function () {
+            var target = @json($walletUrl);
+            if (!target) return;
+
+            var opened = false;
+            function openWalletOnce() {
+                if (opened) return;
+                opened = true;
+                try {
+                    var parsed = new URL(target);
+                    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+                        opened = false;
+                        return;
+                    }
+                    window.location.assign(parsed.href);
+                } catch (e) {
+                    opened = false;
+                    console.warn('wallet-add redirect skipped: invalid url', e);
+                }
+            }
+
+            var btn = document.getElementById('walletAddButton');
+            if (btn) {
+                btn.addEventListener('click', openWalletOnce);
+            }
+            setTimeout(openWalletOnce, 400);
+        })();
+    </script>
+    @endif
 </body>
 </html>

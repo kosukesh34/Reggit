@@ -20,6 +20,10 @@ class RouteServiceProvider extends ServiceProvider
                 return Limit::perMinute(600)->by($request->ip());
             }
 
+            if (str_starts_with($path, 'api/smaregi/')) {
+                return Limit::none()->by('smaregi:'.$request->ip());
+            }
+
             $deviceIdentifier = trim((string) $request->header('X-Device-Identifier', ''));
             $lineUserId = trim((string) $request->header('X-Line-User-Id', ''));
             $projectKey = trim((string) $request->header('X-Project-Key', ''));
