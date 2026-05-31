@@ -58,6 +58,9 @@ class MemberWithdrawUseCase
             $user->tokens()->delete();
         }
 
+        // 退会後の同一 LINE 再ログインでは users を復元せず新規ユーザーを作れるよう LINE ID を切り離す
+        $this->userService->releaseLineUserIdForWithdraw($user);
+
         // User をソフトデリート
         $user->delete();
 
