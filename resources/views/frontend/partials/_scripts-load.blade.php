@@ -143,7 +143,7 @@
             }
             window.__SCRIPT_FALLBACK_STARTED__ = true;
             if (window.__clientDebugLog) window.__clientDebugLog('script_fallback_start', {});
-            var paths = [
+            const paths = [
                 '/js/shared/constants.js{{ $v }}',
                 '/js/shared/utils/apiClient.js{{ $v }}',
                 '/js/shared/utils/domHelper.js{{ $v }}',
@@ -171,6 +171,9 @@
         }
 
         setTimeout(function () {
+            if (window.__LIFF_APP_BOOTSTRAP__ || hasCoreScriptBindings()) {
+                return;
+            }
             if (window.__clientDebugLog) window.__clientDebugLog('fallback_timer_fired', {});
             ensureStylesLoaded();
             ensureScriptsLoaded();

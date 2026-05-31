@@ -14,7 +14,7 @@ class WalletPassUrlIssueUseCase
 {
     private const TOKEN_CACHE_PREFIX = 'wallet_pass_token:';
 
-    private const TOKEN_TTL_MINUTES = 3;
+    private const TOKEN_TTL_MINUTES = 10;
 
     public function handle(int $userId, int $projectId, string $projectKey): WalletPassUrlIssueOutput
     {

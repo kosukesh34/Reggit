@@ -39,6 +39,23 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     @include('frontend.partials._head-assets')
     @include('frontend.partials._head-theme')
+    <script>
+    (function () {
+        const ua = (typeof navigator !== 'undefined' && navigator.userAgent) ? navigator.userAgent : '';
+        const embedClass = (/Line/i.test(ua) || /LIFF/i.test(ua)) ? 'line-liff-embed' : 'line-web-embed';
+        const root = document.documentElement;
+        root.classList.add(embedClass);
+        function applyBody() {
+            if (document.body) {
+                document.body.classList.add(embedClass);
+            }
+        }
+        applyBody();
+        if (!document.body) {
+            document.addEventListener('DOMContentLoaded', applyBody, { once: true });
+        }
+    })();
+    </script>
 </head>
 <body @class([
     'designer-live-preview-embed' => $isDesignerEmbedPreview,

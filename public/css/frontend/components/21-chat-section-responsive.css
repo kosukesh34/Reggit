@@ -154,9 +154,10 @@
     color: var(--primary-color);
 }
 
-/* レスポンシブ - パソコンでもスマホでも同じ表示 */
+/* レスポンシブ - 外部ブラウザのみスマホ枠（428px）。LINEアプリ内は全画面（22-line-native-layout.css） */
 @media (min-width: 429px) {
-    .app-container {
+    html.line-web-embed .app-container,
+    body.line-web-embed .app-container {
         max-width: 428px;
         margin: 0 auto;
     }

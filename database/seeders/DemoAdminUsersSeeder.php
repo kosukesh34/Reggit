@@ -4,13 +4,16 @@ namespace Database\Seeders;
 
 use App\Models\AdminUser;
 use App\Models\Project;
+use Database\Seeders\Concerns\UpsertsAdminUsers;
 use Illuminate\Database\Seeder;
 
 class DemoAdminUsersSeeder extends Seeder
 {
+    use UpsertsAdminUsers;
+
     public function run(): void
     {
-        if (! env('DEMO_SEED', false)) {
+        if (! self::isDemoSeedEnabled()) {
             return;
         }
 
@@ -38,7 +41,7 @@ class DemoAdminUsersSeeder extends Seeder
         $projectAdmin = $this->upsertDemoUser(
             env('DEMO_PROJECT_LOGIN_ID', 'demo_proj'),
             env('DEMO_PROJECT_EMAIL', 'demo_proj@example.com'),
-            env('DEMO_PROJECT_PASSWORD', 'DemoProj#2026'),
+            self::resolveDemoPassword('DEMO_PROJECT_PASSWORD', 'DemoProj#2026', ['DemoProj']),
             env('DEMO_PROJECT_NAME', 'デモプロジェクト管理者'),
             AdminUser::ROLE_PROJECT_ADMIN,
             $project->id
@@ -50,7 +53,7 @@ class DemoAdminUsersSeeder extends Seeder
         $storeAdmin = $this->upsertDemoUser(
             env('DEMO_STORE_LOGIN_ID', 'demo_store'),
             env('DEMO_STORE_EMAIL', 'demo_store@example.com'),
-            env('DEMO_STORE_PASSWORD', 'DemoStore#2026'),
+            self::resolveDemoPassword('DEMO_STORE_PASSWORD', 'DemoStore#2026', ['DemoStore']),
             env('DEMO_STORE_NAME', 'デモ店舗管理者'),
             AdminUser::ROLE_ADMIN,
             $project->id
@@ -63,7 +66,7 @@ class DemoAdminUsersSeeder extends Seeder
         $staff = $this->upsertDemoUser(
             env('DEMO_STAFF_LOGIN_ID', 'demo_staff'),
             env('DEMO_STAFF_EMAIL', 'demo_staff@example.com'),
-            env('DEMO_STAFF_PASSWORD', 'DemoStaff#2026'),
+            self::resolveDemoPassword('DEMO_STAFF_PASSWORD', 'DemoStaff#2026', ['DemoStaff']),
             env('DEMO_STAFF_NAME', 'デモスタッフ'),
             AdminUser::ROLE_STAFF,
             $project->id
@@ -95,17 +98,13 @@ class DemoAdminUsersSeeder extends Seeder
         string $role,
         ?int $projectId
     ): AdminUser {
-        $user = AdminUser::updateOrCreate(
-            ['login_id' => $loginId],
-            [
-                'email' => $email,
-                'password' => $password, // 'hashed' cast でハッシュ化される
-                'name' => $name,
-                'role' => $role,
-                'project_id' => $projectId,
-            ]
+        return self::upsertAdminWithoutResettingPassword(
+            $loginId,
+            $email,
+            $password,
+            $name,
+            $role,
+            $projectId,
         );
-
-        return $user;
     }
 }

@@ -149,8 +149,12 @@ class Member extends Model
         return $ledgerPoints;
     }
 
-    public function addPoints(int $points, ?string $description = null, ?int $orderId = null): void
-    {
+    public function addPoints(
+        int $points,
+        ?string $description = null,
+        ?int $orderId = null,
+        ?string $smaregiTransactionHeadId = null
+    ): void {
         if ($points <= 0) {
             return;
         }
@@ -162,13 +166,18 @@ class Member extends Model
             'points' => $points,
             'description' => $description,
             'order_id' => $orderId,
+            'smaregi_transaction_head_id' => $this->normalizeSmaregiTransactionHeadId($smaregiTransactionHeadId),
             'expires_at' => $expiresAt,
         ]);
         $this->recalcPointsFromTransactions();
     }
 
-    public function usePoints(int $points, ?string $description = null, ?int $orderId = null): void
-    {
+    public function usePoints(
+        int $points,
+        ?string $description = null,
+        ?int $orderId = null,
+        ?string $smaregiTransactionHeadId = null
+    ): void {
         if ($points <= 0) {
             return;
         }
@@ -184,8 +193,19 @@ class Member extends Model
             'points' => -abs($points),
             'description' => $description,
             'order_id' => $orderId,
+            'smaregi_transaction_head_id' => $this->normalizeSmaregiTransactionHeadId($smaregiTransactionHeadId),
         ]);
         $this->recalcPointsFromTransactions();
+    }
+
+    private function normalizeSmaregiTransactionHeadId(?string $smaregiTransactionHeadId): ?string
+    {
+        if ($smaregiTransactionHeadId === null) {
+            return null;
+        }
+        $normalized = trim($smaregiTransactionHeadId);
+
+        return $normalized !== '' ? $normalized : null;
     }
 
     public function recalcPointsFromTransactions(): void

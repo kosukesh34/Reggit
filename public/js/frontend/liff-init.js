@@ -176,7 +176,7 @@
 
     /** liff.login() 呼び出し後、リダイレクトされなかった場合にフォールバックを表示するタイマーを開始 */
     function scheduleLoginFallback() {
-        var fallbackTimer = setTimeout(function () {
+        const fallbackTimer = setTimeout(function () {
             if (typeof window.__LINE_USER_ID__ !== 'undefined' && window.__LINE_USER_ID__) return;
             showLoginRequiredFallback();
         }, 8000);
@@ -190,16 +190,21 @@
     function applyEmbedModeClass(isLiff) {
         if (typeof document === 'undefined') return;
         const root = document.documentElement;
-        const body = document.body;
         const add = isLiff ? 'line-liff-embed' : 'line-web-embed';
         const remove = isLiff ? 'line-web-embed' : 'line-liff-embed';
         if (root) {
             root.classList.remove(remove);
             root.classList.add(add);
         }
-        if (body) {
+        const applyBodyClass = function () {
+            const body = document.body;
+            if (!body) return;
             body.classList.remove(remove);
             body.classList.add(add);
+        };
+        applyBodyClass();
+        if (!document.body) {
+            document.addEventListener('DOMContentLoaded', applyBodyClass, { once: true });
         }
     }
 

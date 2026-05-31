@@ -23,7 +23,6 @@ use App\Services\Smaregi\SmaregiProductRegisterService;
 use App\Services\Smaregi\SmaregiProductSyncService;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -42,8 +41,6 @@ class AllSampleDataSeeder extends Seeder
 
     public function run(): void
     {
-        Artisan::call('sample-users:delete');
-
         $this->project = Project::where('is_active', true)->orderBy('id')->first();
         if ($this->project === null) {
             $this->project = Project::create([
@@ -76,10 +73,17 @@ class AllSampleDataSeeder extends Seeder
     private function applySmaregiContractFromEnv(): void
     {
         $contractId = config('smaregi.contract_id');
-        if (is_string($contractId) && trim($contractId) !== '') {
-            ShopSetting::setValue('smaregi_contract_id', trim($contractId), 'string', $this->project->id);
-            $this->command->info('スマレジ契約IDを .env の値で設定しました: '.trim($contractId));
+        if (! is_string($contractId) || trim($contractId) === '') {
+            return;
         }
+
+        $existing = ShopSetting::getValue('smaregi_contract_id', null, $this->project->id);
+        if (is_string($existing) && trim($existing) !== '') {
+            return;
+        }
+
+        ShopSetting::setValue('smaregi_contract_id', trim($contractId), 'string', $this->project->id);
+        $this->command->info('スマレジ契約IDを .env の値で設定しました: '.trim($contractId));
     }
 
     private function syncProductsToSmaregi(): void
@@ -88,6 +92,17 @@ class AllSampleDataSeeder extends Seeder
         if ($registerService->hasSmaregiContract($this->project->id) === false) {
             return;
         }
+
+        $alreadyLinked = Product::withoutGlobalScopes()
+            ->where('project_id', $this->project->id)
+            ->whereNotNull('smaregi_product_id')
+            ->exists();
+        if ($alreadyLinked) {
+            $this->command->info('スマレジ連携済みの商品があるため同期をスキップしました');
+
+            return;
+        }
+
         $syncService = app(SmaregiProductSyncService::class);
         try {
             $result = $syncService->fullSync($this->project->id);
@@ -222,6 +237,12 @@ class AllSampleDataSeeder extends Seeder
     private function seedOrders(): void
     {
         $pid = $this->project->id;
+        if (Order::where('project_id', $pid)->exists()) {
+            $this->command->info('注文は既に存在するためスキップしました');
+
+            return;
+        }
+
         $products = Product::withoutGlobalScopes()->where('project_id', $pid)->get();
         if ($products->isEmpty()) {
             return;

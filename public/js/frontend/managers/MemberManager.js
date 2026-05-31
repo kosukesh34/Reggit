@@ -1,20 +1,15 @@
 class MemberManager {
-    /** WalletPassUrlIssueUseCase::TOKEN_TTL_MINUTES(3) より短めに余裕を持たせる */
-    static WALLET_PASS_PREFETCH_TTL_MS = 150000;
-
     constructor(apiClient, orderManager) {
         this.apiClient = apiClient;
         this.orderManager = orderManager;
         this.memberData = null;
         this._memberContextFetchedAt = 0;
         this._memberContextFetchPromise = null;
-        this._memberContextFetchGeneration = 0;
-        this._memberContextLineUserId = null;
-        this._trackedLineUserIdForMemberContext = null;
         this._registerFullScreen = false;
         this._profileEditFullScreen = false;
         this._historyHandlerBound = false;
-        this._liffIdentityRetryRegistered = false;
+        this._autoRegisterAttempted = false;
+        this._lastMemberFetchWasNonMember = false;
         this._bindScreenPopState();
     }
 
@@ -42,13 +37,17 @@ class MemberManager {
 
     static isIOS() {
         if (typeof navigator === 'undefined') return false;
-        return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-            (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        const ua = navigator.userAgent || '';
+        if (/iPad|iPhone|iPod/i.test(ua)) return true;
+        if (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) return true;
+        if (/Android/i.test(ua)) return false;
+        if (/OS (?:\d+[_.])+\d+ like Mac OS X/i.test(ua)) return true;
+        return false;
     }
 
     static isAndroid() {
         if (typeof navigator === 'undefined') return false;
-        return /Android/.test(navigator.userAgent);
+        return /Android/i.test(navigator.userAgent || '');
     }
 
     static isWalletPassEnabled() {
@@ -87,80 +86,15 @@ class MemberManager {
         return { returnUrl: currentHref, returnTarget: 'web' };
     }
 
-    /** LIFF / WebView でも使えるアプリのオリジン（https://example.com） */
-    static resolveAppOrigin() {
-        if (typeof window === 'undefined' || !window.location) {
-            return '';
-        }
-        try {
-            if (window.location.origin && window.location.origin !== 'null') {
-                return window.location.origin;
-            }
-        } catch (e) { /* ignore */ }
-        const apiBase = (typeof window !== 'undefined' && window.__API_BASE__) ? window.__API_BASE__ : '/api';
-        if (typeof apiBase === 'string' && (apiBase.startsWith('http://') || apiBase.startsWith('https://'))) {
-            try {
-                return new URL(apiBase).origin;
-            } catch (e) { /* ignore */ }
-        }
-        return '';
-    }
-
-    /** API パス（/api/...）を絶対 URL にする */
-    static resolveApiUrl(path) {
-        const normalizedPath = (path && path.startsWith('/')) ? path : ('/' + (path || ''));
-        if (normalizedPath.startsWith('http://') || normalizedPath.startsWith('https://')) {
-            return normalizedPath;
-        }
-        const origin = MemberManager.resolveAppOrigin();
-        return origin ? (origin + normalizedPath) : normalizedPath;
-    }
-
-    static isValidHttpUrl(url) {
-        if (!url || typeof url !== 'string') return false;
-        try {
-            const parsed = new URL(url);
-            return parsed.protocol === 'http:' || parsed.protocol === 'https:';
-        } catch (e) {
-            return false;
-        }
-    }
-
-    /** LIFF / Safari 向けに https を優先（ngrok 等で http が混ざるのを防ぐ） */
-    static normalizeExternalUrl(url) {
-        if (!MemberManager.isValidHttpUrl(url)) {
-            return null;
-        }
-        try {
-            const parsed = new URL(url, typeof window !== 'undefined' ? window.location.href : undefined);
-            const host = parsed.hostname;
-            if (host !== 'localhost' && host !== '127.0.0.1' && parsed.protocol === 'http:') {
-                parsed.protocol = 'https:';
-            }
-            return parsed.href;
-        } catch (e) {
-            return null;
-        }
-    }
-
-    static formatWalletErrorMessage(err, fallback) {
-        const raw = err && err.message ? String(err.message) : '';
-        if (/pattern/i.test(raw)) {
-            return 'Safari で Wallet を開けませんでした。LINE の設定で外部ブラウザを許可するか、しばらくしてから再度お試しください。';
-        }
-        if (/外部ブラウザ|Wallet Pass の URL/i.test(raw)) {
-            return raw;
-        }
-        return raw || fallback || '処理に失敗しました';
-    }
-
     /** Apple Wallet ボタンを表示すべきか（iOS またはネイティブ iOS アプリかつ有効時） */
     static shouldShowAppleWallet() {
         if (!MemberManager.isWalletPassEnabled()) return false;
         const nativePlatform = MemberManager.getNativePlatform();
         if (nativePlatform === 'ios') return true;
         if (nativePlatform === 'android') return false;
-        return MemberManager.isIOS();
+        if (MemberManager.isIOS()) return true;
+        if (typeof window !== 'undefined' && window.__IS_LIFF__ === true && !MemberManager.isAndroid()) return true;
+        return false;
     }
 
     /** Google Wallet ボタンを表示すべきか（Android またはネイティブ Android アプリかつ有効時） */
@@ -169,7 +103,9 @@ class MemberManager {
         const nativePlatform = MemberManager.getNativePlatform();
         if (nativePlatform === 'android') return true;
         if (nativePlatform === 'ios') return false;
-        return MemberManager.isAndroid();
+        if (MemberManager.isAndroid()) return true;
+        if (typeof window !== 'undefined' && window.__IS_LIFF__ === true && MemberManager.isAndroid()) return true;
+        return false;
     }
 
     getMemberData() {
@@ -179,42 +115,7 @@ class MemberManager {
     hasAuthenticatedIdentity() {
         if (typeof window === 'undefined') return false;
         if (window.__LINE_USER_ID__) return true;
-        if (this._getPersistedLineUserId()) return true;
         return !!(this.memberData && this.memberData.is_member === true);
-    }
-
-    _getPersistedLineUserId() {
-        if (this.apiClient && typeof this.apiClient.getPersistedLineUserId === 'function') {
-            return this.apiClient.getPersistedLineUserId();
-        }
-        return null;
-    }
-
-    _getLineUserIdForMemberApi() {
-        if (typeof window !== 'undefined' && window.__LINE_USER_ID__) {
-            return String(window.__LINE_USER_ID__).trim();
-        }
-        return this._getPersistedLineUserId();
-    }
-
-    _invalidateMemberContextIfLineUserChanged() {
-        const active = this._getLineUserIdForMemberApi() || null;
-        if (active === this._trackedLineUserIdForMemberContext) {
-            return;
-        }
-        this._trackedLineUserIdForMemberContext = active;
-        this._memberContextFetchGeneration += 1;
-        this.memberData = null;
-        this._memberContextFetchedAt = 0;
-        this._memberContextLineUserId = null;
-        this._memberContextFetchPromise = null;
-    }
-
-    _shouldDeferMemberApiUntilLineIdentity() {
-        if (typeof window === 'undefined' || !window.__IS_LIFF__) {
-            return false;
-        }
-        return !this._getLineUserIdForMemberApi();
     }
 
     setMemberData(data) {
@@ -223,83 +124,45 @@ class MemberManager {
     }
 
     /**
-     * 会員API取得後に __LINE_USER_ID__ を同期し、他タブ（クーポン・予約・注文履歴）でログイン扱いにする。
+     * ネイティブアプリで会員API取得後に __LINE_USER_ID__ を同期し、他タブ（クーポン・予約・注文履歴）でログイン扱いにする。
      * @param {object} data - members/me の result.data または正規化済み payload
      */
     _syncLineUserIdFromMemberData(data) {
-        if (typeof window === 'undefined' || !data || typeof data !== 'object') return;
-        const user = data.user || (data.member && data.member.user) || null;
-        const lineUserId = (user && user.line_user_id) ? String(user.line_user_id).trim() : null;
+        if (typeof window === 'undefined' || !window.__MOBILE_APP_MODE__ || !data || typeof data !== 'object') return;
+        const lineUserId = (data.user && data.user.line_user_id) ? String(data.user.line_user_id).trim() : null;
         if (lineUserId) {
             window.__LINE_USER_ID__ = lineUserId;
             if (this.apiClient && typeof this.apiClient.persistLineUserId === 'function') {
                 this.apiClient.persistLineUserId(lineUserId);
             }
-            return;
-        }
-        if (!window.__LINE_USER_ID__) {
-            const cached = this._getPersistedLineUserId();
+        } else if (!window.__LINE_USER_ID__ && this.apiClient && typeof this.apiClient.getPersistedLineUserId === 'function') {
+            const cached = this.apiClient.getPersistedLineUserId();
             if (cached) {
                 window.__LINE_USER_ID__ = cached;
             }
         }
     }
 
-    _setMemberContextCache(payload, lineUserId) {
+    _setMemberContextCache(payload) {
         if (payload && typeof payload === 'object') {
             this.memberData = payload;
             this._memberContextFetchedAt = Date.now();
-            this._memberContextLineUserId = lineUserId || this._getLineUserIdForMemberApi() || null;
-        }
-    }
-
-    async _fetchMemberContextWithIdentityRetry(options) {
-        const opts = options || {};
-        try {
-            return await this.fetchMemberContext(opts);
-        } catch (error) {
-            const message = error && error.message ? String(error.message) : '';
-            if (message === 'LINE identity not ready' || message === 'MEMBER_CONTEXT_STALE') {
-                await this.resolveLineUserIdForClient();
-                return await this.fetchMemberContext({ ...opts, force: true });
-            }
-            throw error;
         }
     }
 
     async fetchMemberContext(options) {
         const opts = options || {};
         const force = !!opts.force;
-        this._invalidateMemberContextIfLineUserChanged();
-
-        if (this._shouldDeferMemberApiUntilLineIdentity()) {
-            throw new Error('LINE identity not ready');
-        }
-
-        const fetchLineUserId = this._getLineUserIdForMemberApi() || '';
         const now = Date.now();
-        if (
-            !force
-            && this.memberData
-            && this._memberContextLineUserId === fetchLineUserId
-            && (now - this._memberContextFetchedAt) < 5000
-        ) {
+        if (!force && this.memberData && (now - this._memberContextFetchedAt) < 30000) {
             return this.memberData;
         }
         if (!force && this._memberContextFetchPromise) {
             return this._memberContextFetchPromise;
         }
 
-        const generationAtStart = this._memberContextFetchGeneration;
         this._memberContextFetchPromise = (async () => {
             const result = await this.apiClient.get(AppConstants.API_ENDPOINTS.MEMBERS_ME);
-            if (generationAtStart !== this._memberContextFetchGeneration) {
-                throw new Error('MEMBER_CONTEXT_STALE');
-            }
-            const currentLineUserId = this._getLineUserIdForMemberApi() || '';
-            if (currentLineUserId !== fetchLineUserId) {
-                throw new Error('MEMBER_CONTEXT_STALE');
-            }
             if (!result.success || !result.data) {
                 throw new Error(result.error || (result.data && result.data.message) || '会員情報の取得に失敗しました');
             }
@@ -307,7 +170,8 @@ class MemberManager {
             if (!payload) {
                 throw new Error('会員情報の形式が正しくありません');
             }
-            this._setMemberContextCache(payload, fetchLineUserId);
+            this._lastMemberFetchWasNonMember = payload.is_member !== true;
+            this._setMemberContextCache(payload);
             this._syncLineUserIdFromMemberData(result.data);
             return payload;
         })();
@@ -320,57 +184,30 @@ class MemberManager {
     }
 
     /**
-     * LINE / ネイティブアプリで __LINE_USER_ID__ が未設定のとき、キャッシュ・LIFF・API から復元する。
+     * ネイティブアプリで __LINE_USER_ID__ が未設定のとき、members/me を呼んで取得・設定する。
      * @returns {Promise<boolean>} 呼び出し後に __LINE_USER_ID__ が設定されていれば true
      */
-    async resolveLineUserIdForClient() {
-        if (typeof window === 'undefined') return false;
-        if (window.__LINE_USER_ID__) return true;
-
-        if (this.apiClient && typeof this.apiClient.resolveLineUserId === 'function') {
-            const resolved = this.apiClient.resolveLineUserId();
-            if (resolved) return true;
-        }
-
-        if (MemberManager.isMobileAppMode()) {
-            try {
-                await this.fetchMemberContext({ force: true });
-            } catch (e) {
-                // 未ログインなどは無視
-            }
+    async resolveLineUserIdForNativeApp() {
+        if (typeof window === 'undefined' || !window.__MOBILE_APP_MODE__ || window.__LINE_USER_ID__) {
             return !!window.__LINE_USER_ID__;
         }
-
-        return !!window.__LINE_USER_ID__;
-    }
-
-    /** @deprecated resolveLineUserIdForClient を使用 */
-    async resolveLineUserIdForNativeApp() {
-        return this.resolveLineUserIdForClient();
-    }
-
-    _registerLiffIdentityRetry() {
-        if (this._liffIdentityRetryRegistered || typeof document === 'undefined') return;
-        this._liffIdentityRetryRegistered = true;
-
-        const retry = async () => {
-            this._liffIdentityRetryRegistered = false;
-            const resolved = await this.resolveLineUserIdForClient();
-            if (!resolved) return;
-            if (typeof window !== 'undefined' && window.app && typeof window.app.refreshCurrentTab === 'function') {
-                window.app.refreshCurrentTab();
-            } else {
-                await this.load();
+        if (this.apiClient && typeof this.apiClient.getPersistedLineUserId === 'function') {
+            const cached = this.apiClient.getPersistedLineUserId();
+            if (cached) {
+                window.__LINE_USER_ID__ = cached;
+                return true;
             }
-        };
-
-        document.addEventListener('liff-ready', retry, { once: true });
-        document.addEventListener('liff-profile-ready', retry, { once: true });
+        }
+        try {
+            await this.fetchMemberContext({ force: true });
+        } catch (e) {
+            // 未ログインなどは無視
+        }
+        return !!window.__LINE_USER_ID__;
     }
 
     preload() {
         if (!this.canUseMemberFeature()) return;
-        if (!window.__LINE_USER_ID__ && !MemberManager.isMobileAppMode()) return;
         this.fetchMemberContext().catch(function () {
             // ignore preload errors
         });
@@ -378,15 +215,53 @@ class MemberManager {
 
     canUseMemberFeature() {
         if (typeof window === 'undefined') return false;
-        if (window.__LINE_USER_ID__) return true;
-        if (MemberManager.isMobileAppMode()) return true;
-        if (window.__IS_LIFF__ && this._getPersistedLineUserId()) return true;
-        return false;
+        return !!window.__LINE_USER_ID__ || MemberManager.isMobileAppMode();
     }
 
     canAutoRegister() {
         if (typeof window === 'undefined') return false;
+        if (this.memberData && this.memberData.is_member === true) return false;
+        if (!this._lastMemberFetchWasNonMember) return false;
         return !!(window.__LINE_PROFILE__ && window.__LINE_PROFILE__.displayName);
+    }
+
+    /** LIFF 起動直後など、LINE ユーザー ID の解決を短時間待つ */
+    async ensureIdentityReady(maxWaitMs) {
+        if (typeof window === 'undefined') return;
+        const limit = typeof maxWaitMs === 'number' ? maxWaitMs : 1500;
+        const start = Date.now();
+        while (!window.__LINE_USER_ID__ && Date.now() - start < limit) {
+            if (this.apiClient && typeof this.apiClient.resolveLineUserId === 'function') {
+                this.apiClient.resolveLineUserId();
+            }
+            if (window.__LINE_USER_ID__) break;
+            await new Promise(function (resolve) { setTimeout(resolve, 50); });
+        }
+    }
+
+    async _handleGuestContext(payload) {
+        const container = this.getContainer();
+        if (!container) return;
+
+        if (payload && payload.is_member === true) {
+            this.render(payload);
+            return;
+        }
+        if (this.memberData && this.memberData.is_member === true) {
+            this.render(this.memberData);
+            return;
+        }
+        if (payload && payload.show_member_card_for_guest === false) {
+            container.innerHTML = this.getGuestNoCardTemplate();
+            this._attachRegisterTrigger(container);
+            return;
+        }
+        if (this.canAutoRegister() && !this._autoRegisterAttempted) {
+            await this.autoRegister();
+            return;
+        }
+        container.innerHTML = this.getGuestRegisterTemplate();
+        this._attachRegisterTrigger(container);
     }
 
     /**
@@ -412,15 +287,6 @@ class MemberManager {
 
     async ensureGuestMemberContext() {
         if (this.memberData && typeof this.memberData.is_member !== 'undefined') {
-            return this.memberData;
-        }
-
-        if (this._shouldDeferMemberApiUntilLineIdentity()) {
-            this.memberData = this.memberData || {
-                is_member: false,
-                profile_field_settings: [],
-                profile: {},
-            };
             return this.memberData;
         }
 
@@ -551,16 +417,11 @@ class MemberManager {
         const container = this.getContainer();
         if (!container) return;
 
-        if (!window.__LINE_USER_ID__) {
-            await this.resolveLineUserIdForClient();
+        if (typeof window !== 'undefined' && window.__IS_LIFF__) {
+            await this.ensureIdentityReady();
         }
 
         if (!this.canUseMemberFeature()) {
-            if (typeof window !== 'undefined' && window.__IS_LIFF__) {
-                this._registerLiffIdentityRetry();
-                container.innerHTML = this.getSkeletonHtml();
-                return;
-            }
             container.innerHTML = this.getLoginOptionalTemplate('会員証', 'ログインすると会員証をご利用いただけます。');
             this.memberData = null;
             return;
@@ -568,66 +429,90 @@ class MemberManager {
 
         if (this.memberData && this.memberData.is_member) {
             this.render(this.memberData);
-            this.preload();
+            this.fetchMemberContext().catch(function () { /* background refresh */ });
             return;
         }
 
         container.innerHTML = this.getSkeletonHtml();
 
         try {
-            const payload = await this._fetchMemberContextWithIdentityRetry({ force: true });
-            if (!payload.is_member) {
-                if (payload.show_member_card_for_guest === false) {
-                    container.innerHTML = this.getGuestNoCardTemplate();
-                    this._attachRegisterTrigger(container);
-                    return;
-                }
-                if (this.canAutoRegister()) {
-                    await this.autoRegister();
-                } else {
-                    container.innerHTML = this.getGuestRegisterTemplate();
-                    this._attachRegisterTrigger(container);
-                }
+            const payload = await this.fetchMemberContext({ force: true });
+            if (payload.is_member) {
+                this.render(payload);
                 return;
             }
-            this.render(payload);
+            await this._handleGuestContext(payload);
         } catch (error) {
             console.error('Failed to load member card:', error);
+            if (this.memberData && this.memberData.is_member) {
+                this.render(this.memberData);
+                return;
+            }
             container.innerHTML = this.getErrorTemplate(error);
         }
     }
 
     async autoRegister() {
+        if (this._autoRegisterAttempted) {
+            return;
+        }
+        this._autoRegisterAttempted = true;
+
         const payload = {};
         if (typeof window !== 'undefined' && window.__LINE_PROFILE__ && window.__LINE_PROFILE__.displayName) {
             payload.name = window.__LINE_PROFILE__.displayName;
         }
         try {
             const result = await this.apiClient.post(AppConstants.API_ENDPOINTS.MEMBERS_REGISTER, payload);
-            const payload = result.success && result.data ? (this._normalizeMemberPayload(result.data) || result.data) : null;
-            if (payload && payload.is_member) {
-                this.memberData = payload;
-                this.render(payload);
+            const raw = result.success && result.data ? result.data : null;
+            const memberPayload = raw ? (this._normalizeMemberPayload(raw) || raw) : null;
+            if (memberPayload && memberPayload.is_member) {
+                this.memberData = memberPayload;
+                this.render(memberPayload);
                 ToastManager.success('会員証を作成しました');
                 if (typeof window !== 'undefined' && window.app && typeof window.app.refreshCurrentTab === 'function') {
                     window.app.refreshCurrentTab();
                 }
-            } else if (result.success) {
-                await this.load();
-            } else {
-                throw new Error(result.error);
+                return;
             }
+            if (result.success) {
+                await this.load();
+                return;
+            }
+            const message = (result && (result.error || result.message)) ? String(result.error || result.message) : '';
+            if (message.includes('既に会員登録済み')) {
+                this._autoRegisterAttempted = false;
+                await this.load();
+                return;
+            }
+            if (message.includes('phone field is required') || message.includes('The phone field is required')) {
+                this._autoRegisterAttempted = true;
+                const container = this.getContainer();
+                if (container) {
+                    container.innerHTML = this.getGuestRegisterTemplate();
+                    this._attachRegisterTrigger(container);
+                }
+                return;
+            }
+            throw new Error(result.error || message || '登録に失敗しました');
         } catch (error) {
             console.error('Auto register error:', error);
-            try {
-                const existing = await this.fetchMemberContext({ force: true });
-                if (existing && existing.is_member) {
-                    this.render(existing);
-                    return;
-                }
-            } catch (e) {
-                // ignore
+            const message = error && error.message ? String(error.message) : '';
+            if (message.includes('既に会員登録済み')) {
+                this._autoRegisterAttempted = false;
+                await this.load();
+                return;
             }
+            if (message.includes('phone field is required') || message.includes('The phone field is required')) {
+                this._autoRegisterAttempted = true;
+                const container = this.getContainer();
+                if (container) {
+                    container.innerHTML = this.getGuestRegisterTemplate();
+                    this._attachRegisterTrigger(container);
+                }
+                return;
+            }
+            this._autoRegisterAttempted = false;
             const container = this.getContainer();
             if (container) {
                 container.innerHTML = this.getGuestRegisterTemplate();
@@ -636,6 +521,7 @@ class MemberManager {
             if (typeof ToastManager !== 'undefined') {
                 ToastManager.info('会員情報を入力して登録してください');
             }
+            this.openRegisterFullScreen();
         }
     }
 
@@ -693,16 +579,15 @@ class MemberManager {
     render(data) {
         const container = this.getContainer();
         if (!container) return;
-        if (!data || typeof data !== 'object') return;
 
-        const member = data.member && typeof data.member === 'object' ? data.member : null;
-        const user = data.user || (member && member.user) || null;
+        const member = data.member;
+        const user = data.user || (member && member.user);
         const displayName =
             (user && user.name) ||
             (typeof window !== 'undefined' && window.__LINE_PROFILE__ && window.__LINE_PROFILE__.displayName) ||
             '';
-        const points = data.points != null ? data.points : (member && member.points != null ? member.points : 0);
-        const memberNumber = (member && member.member_number) ? member.member_number : '';
+        const points = data.points || member.points || 0;
+        const memberNumber = member.member_number || '';
         const currentRankLabel = data.current_rank_label || 'ブロンズ';
         const currentRankIcon = data.current_rank_icon || null;
         const currentRankColor = data.current_rank_color || null;
@@ -803,20 +688,22 @@ class MemberManager {
                 : '';
         const showAddToAppleWallet = MemberManager.shouldShowAppleWallet();
         const showAddToGoogleWallet = MemberManager.shouldShowGoogleWallet();
+        const walletPassImageUrl = (typeof window !== 'undefined' && window.__WALLET_PASS_ADD_BUTTON_IMAGE__) || '/images/add-to-apple-wallet-logo.png';
+        const googleWalletImageUrl = (typeof window !== 'undefined' && window.__GOOGLE_WALLET_ADD_BUTTON_IMAGE__) || '/images/add-to-google-wallet-logo.png';
         const projectKey = (typeof window !== 'undefined' && window.__PROJECT_KEY__) ? window.__PROJECT_KEY__ : 'default';
         const walletPassUrl = AppConstants.API_ENDPOINTS.MEMBERS_WALLET_PASS + '?project_key=' + encodeURIComponent(projectKey);
         let addToWalletBlock = '';
         if (showAddToAppleWallet) {
             addToWalletBlock += `<div class="member-card-add-to-wallet-wrap">
                 <button type="button" class="member-card-add-to-wallet-btn member-card-add-to-wallet-btn--apple" data-wallet-pass-url="${DomHelper.escapeHtml(walletPassUrl)}" aria-label="Apple Walletに追加">
-                    <span class="member-card-add-to-wallet-text"><i class="fab fa-apple" aria-hidden="true"></i> Apple Walletに追加</span>
+                    <img src="${DomHelper.escapeHtml(walletPassImageUrl)}" alt="Apple Walletに追加" class="member-card-add-to-wallet-img">
                 </button>
             </div>`;
         }
         if (showAddToGoogleWallet) {
             addToWalletBlock += `<div class="member-card-add-to-wallet-wrap">
                 <button type="button" class="member-card-add-to-wallet-btn member-card-add-to-wallet-btn--google" data-google-wallet aria-label="Google Walletに追加">
-                    <span class="member-card-add-to-wallet-text"><i class="fab fa-google" aria-hidden="true"></i> Google Walletに追加</span>
+                    <img src="${DomHelper.escapeHtml(googleWalletImageUrl)}" alt="Google Walletに追加" class="member-card-add-to-wallet-img" onerror="this.src='https://pay.google.com/static/images/badges/ja/add_to_google_wallet.svg';this.onerror=function(){this.parentElement.innerHTML='Google Walletに追加';}">
                 </button>
             </div>`;
         }
@@ -940,9 +827,6 @@ class MemberManager {
             if (result && result.success) {
                 this.memberData = null;
                 this._memberContextFetchedAt = 0;
-                this._memberContextLineUserId = null;
-                this._trackedLineUserIdForMemberContext = null;
-                this._memberContextFetchGeneration += 1;
                 if (typeof ToastManager !== 'undefined') ToastManager.success(result.message || '退会が完了しました');
                 this.load();
             } else {
@@ -963,389 +847,221 @@ class MemberManager {
         const appleBtn = document.querySelector('.member-card-add-to-wallet-btn[data-wallet-pass-url]');
         if (appleBtn) {
             appleBtn.addEventListener('click', (e) => this._onAddToAppleWallet(e, appleBtn, projectKey));
-            if (this._shouldPrefetchAppleWalletUrl()) {
-                this._setAppleWalletButtonPreparing(appleBtn, true);
-                this._prefetchAppleWalletOpenUrl(projectKey);
+            if (typeof window !== 'undefined' && window.__IS_LIFF__) {
+                this._prefetchAppleWalletAddUrl(appleBtn, projectKey);
             }
         }
         const googleBtn = document.querySelector('.member-card-add-to-wallet-btn[data-google-wallet]');
         if (googleBtn) googleBtn.addEventListener('click', (e) => this._onAddToGoogleWallet(e, googleBtn, projectKey));
     }
 
-    _shouldPrefetchAppleWalletUrl() {
-        if (typeof window === 'undefined') return false;
-        if (window.__IS_LIFF__ === true) return true;
-        return MemberManager.isMobileAppMode() && typeof window.__nativeOpenExternalUrl__ === 'function';
+    _getWalletPassUrlApi(projectKey) {
+        const endpoint = AppConstants.API_ENDPOINTS.MEMBERS_WALLET_PASS_URL;
+        return (window.location.origin + (endpoint.startsWith('/') ? '' : '/') + endpoint) + '?project_key=' + encodeURIComponent(projectKey);
     }
 
-    _setAppleWalletButtonPreparing(btn, preparing) {
-        if (!btn) return;
-        const label = btn.querySelector('.member-card-add-to-wallet-text');
-        if (preparing) {
-            btn.disabled = true;
-            btn.removeAttribute('data-wallet-open-url');
-            btn.removeAttribute('data-wallet-open-url-at');
-            if (label) {
-                label.innerHTML = '<i class="fas fa-spinner fa-spin" aria-hidden="true"></i> 準備中...';
-            }
-            return;
-        }
-        btn.disabled = false;
-        if (label) {
-            label.innerHTML = '<i class="fab fa-apple" aria-hidden="true"></i> Apple Walletに追加';
-        }
+    _buildAppleWalletAddPageUrl(oneTimePassUrl) {
+        const ret = MemberManager.getWalletReturnParams();
+        return window.location.origin + '/wallet-add?wallet_url=' + encodeURIComponent(oneTimePassUrl) + '&return_url=' + encodeURIComponent(ret.returnUrl) + '&return_target=' + encodeURIComponent(ret.returnTarget) + '&type=apple';
     }
 
-    _isAppleWalletOpenUrlFresh(btn) {
-        if (!btn) return false;
-        const openUrl = btn.getAttribute('data-wallet-open-url');
-        const prefetchedAt = btn.getAttribute('data-wallet-open-url-at');
-        if (!openUrl || !prefetchedAt) return false;
-        const age = Date.now() - parseInt(prefetchedAt, 10);
-        return Number.isFinite(age) && age >= 0 && age < MemberManager.WALLET_PASS_PREFETCH_TTL_MS;
-    }
-
-    /**
-     * LIFF では openWindow がユーザータップと同一スタックで呼ばれる必要があるため、
-     * 会員証表示時に Safari 用 URL を先に取得してボタンに保持する。
-     */
-    _prefetchAppleWalletOpenUrl(projectKey) {
-        return this._fetchWalletPassIssueUrl(projectKey)
-            .then((issueUrl) => {
-                const openUrl = this._resolveAppleWalletSafariUrl(issueUrl);
-                const btn = document.querySelector('.member-card-add-to-wallet-btn[data-wallet-pass-url]');
-                if (btn && openUrl) {
-                    btn.setAttribute('data-wallet-open-url', openUrl);
-                    btn.setAttribute('data-wallet-open-url-at', String(Date.now()));
-                    this._setAppleWalletButtonPreparing(btn, false);
-                } else if (btn) {
-                    this._setAppleWalletButtonPreparing(btn, false);
+    _fetchOneTimeWalletPassUrl(projectKey) {
+        const passUrlApi = this._getWalletPassUrlApi(projectKey);
+        return fetch(passUrlApi, { credentials: 'include', method: 'GET', headers: this._buildWalletPassFetchHeaders() })
+            .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+            .then(function (result) {
+                if (!result.ok || !result.data || !result.data.url) {
+                    throw new Error(result.data && result.data.error ? result.data.error : 'URLの取得に失敗しました');
                 }
-                return openUrl;
-            })
-            .catch((err) => {
-                console.warn('Apple Wallet URL prefetch failed:', err);
-                const btn = document.querySelector('.member-card-add-to-wallet-btn[data-wallet-pass-url]');
-                if (btn) this._setAppleWalletButtonPreparing(btn, false);
-                return null;
+                return result.data.url;
             });
     }
 
-    /**
-     * LINE 内ブラウザ → Safari で開く URL（wallet-add 中間ページ経由）。
-     * .pkpass 直リンクは LIFF の openWindow で拒否されることがあるため中間ページを使う。
-     */
-    _resolveAppleWalletSafariUrl(issueUrl) {
-        return this._resolveWalletAddOpenUrl(issueUrl, 'apple');
+    _prefetchAppleWalletAddUrl(btn, projectKey) {
+        const self = this;
+        return this._fetchOneTimeWalletPassUrl(projectKey)
+            .then(function (passUrl) {
+                const walletAddUrl = self._buildAppleWalletAddPageUrl(passUrl);
+                if (btn) btn.setAttribute('data-wallet-add-url', walletAddUrl);
+                return walletAddUrl;
+            })
+            .catch(function () { return null; });
     }
 
-    /**
-     * LIFF: ユーザータップ直後に同期的に呼ぶ（await 後は iOS で無視される）。
-     */
-    _openLiffExternalBrowserSync(url) {
-        const normalized = MemberManager.normalizeExternalUrl(url);
-        if (!normalized) return false;
-        if (typeof window === 'undefined') return false;
-        if (!window.__IS_LIFF__ || typeof liff === 'undefined' || typeof liff.openWindow !== 'function') {
-            return false;
+    _openAppleWalletInExternalBrowser(btn, projectKey, originalHtml) {
+        const cachedAddUrl = btn.getAttribute('data-wallet-add-url');
+        if (cachedAddUrl) {
+            liff.openWindow({ url: cachedAddUrl, external: true });
+            if (typeof ToastManager !== 'undefined') ToastManager.success('ブラウザで開きます。追加後は「LINEに戻る」をタップしてください。');
+            this._prefetchAppleWalletAddUrl(btn, projectKey);
+            return;
         }
-        try {
-            const result = liff.openWindow({ url: normalized, external: true });
-            if (result && typeof result.then === 'function') {
-                result.catch(function (err) {
-                    console.warn('liff.openWindow rejected', err);
-                });
-            }
-            return true;
-        } catch (e) {
-            console.warn('liff.openWindow external sync failed', e);
-            return false;
-        }
+
+        btn.disabled = true;
+        btn.innerHTML = '<span class="member-card-add-to-wallet-loading"><i class="fas fa-spinner fa-spin"></i> 取得中...</span>';
+        const self = this;
+        this._fetchOneTimeWalletPassUrl(projectKey)
+            .then(function (passUrl) {
+                const walletAddUrl = self._buildAppleWalletAddPageUrl(passUrl);
+                btn.setAttribute('data-wallet-add-url', walletAddUrl);
+                liff.openWindow({ url: walletAddUrl, external: true });
+                if (typeof ToastManager !== 'undefined') ToastManager.success('ブラウザで開きます。追加後は「LINEに戻る」をタップしてください。');
+                self._prefetchAppleWalletAddUrl(btn, projectKey);
+            })
+            .catch(function (err) {
+                if (typeof ToastManager !== 'undefined') ToastManager.error(err.message || 'Wallet Pass の取得に失敗しました');
+            })
+            .finally(function () {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            });
     }
 
-    static isWalletAddUrl(url) {
-        if (!url || typeof url !== 'string') return false;
-        try {
-            const parsed = new URL(url, typeof window !== 'undefined' && window.location ? window.location.href : undefined);
-            return parsed.pathname === '/wallet-add';
-        } catch (e) {
-            return false;
+    _buildWalletPassFetchHeaders() {
+        const headers = { 'ngrok-skip-browser-warning': 'true' };
+        if (typeof window !== 'undefined' && window.__PROJECT_KEY__) {
+            headers['X-Project-Key'] = window.__PROJECT_KEY__;
         }
-    }
-
-    async _fetchWalletPassIssueUrl(projectKey) {
-        const endpoint = AppConstants.API_ENDPOINTS.MEMBERS_WALLET_PASS_URL
-            + '?project_key=' + encodeURIComponent(projectKey);
-        const result = await this.apiClient.get(endpoint);
-        if (!result.success || !result.data || !result.data.url) {
-            throw new Error(result.error || (result.data && result.data.error) || 'URLの取得に失敗しました');
-        }
-        return result.data.url;
-    }
-
-    /**
-     * API 発行 URL を現在のオリジン・return_url 付きの wallet-add URL に正規化する。
-     * サーバー側 APP_URL と LIFF の表示オリジンが異なる場合でも開けるようにする。
-     */
-    _resolveWalletAddOpenUrl(issueUrl, type) {
-        const normalized = MemberManager.normalizeExternalUrl(issueUrl);
-        if (!normalized) return null;
-
-        const origin = MemberManager.resolveAppOrigin();
-        if (!origin) return normalized;
-
-        try {
-            const parsed = new URL(normalized, typeof window !== 'undefined' ? window.location.href : undefined);
-            const params = new URLSearchParams(parsed.search);
-            const passToken = params.get('pass_token');
-            const projectKey = params.get('project_key')
-                || (typeof window !== 'undefined' && window.__PROJECT_KEY__ ? window.__PROJECT_KEY__ : 'default');
-            const walletType = type || params.get('type') || 'apple';
-            const ret = MemberManager.getWalletReturnParams();
-
-            if (passToken) {
-                const clientParams = new URLSearchParams();
-                clientParams.set('pass_token', passToken);
-                clientParams.set('project_key', projectKey);
-                clientParams.set('type', walletType);
-                if (ret.returnUrl) {
-                    clientParams.set('return_url', ret.returnUrl);
-                }
-                clientParams.set('return_target', ret.returnTarget || 'web');
-                return origin + '/wallet-add?' + clientParams.toString();
-            }
-
-            if (MemberManager.isWalletAddUrl(normalized)) {
-                const clientParams = new URLSearchParams(parsed.search);
-                if (ret.returnUrl && !clientParams.get('return_url')) {
-                    clientParams.set('return_url', ret.returnUrl);
-                }
-                if (!clientParams.get('return_target')) {
-                    clientParams.set('return_target', ret.returnTarget || 'web');
-                }
-                if (!clientParams.get('type')) {
-                    clientParams.set('type', walletType);
-                }
-                return origin + '/wallet-add?' + clientParams.toString();
-            }
-
-            return this._buildWalletAddUrl(normalized, walletType) || normalized;
-        } catch (e) {
-            return normalized;
-        }
-    }
-
-    async _openExternalUrl(url) {
-        const normalized = MemberManager.normalizeExternalUrl(url);
-        if (!normalized) {
-            console.warn('invalid external url', url);
-            return false;
-        }
-        if (typeof window === 'undefined') return false;
-
-        if (window.__IS_LIFF__ && typeof liff !== 'undefined' && typeof liff.openWindow === 'function') {
-            if (this._openLiffExternalBrowserSync(normalized)) {
-                return true;
-            }
-            try {
-                await liff.openWindow({ url: normalized, external: true });
-                return true;
-            } catch (e) {
-                console.warn('liff.openWindow external async failed', e);
+        if (this.apiClient && typeof this.apiClient.resolveLineUserId === 'function') {
+            const lineUserId = this.apiClient.resolveLineUserId();
+            if (lineUserId) {
+                headers['X-Line-User-Id'] = lineUserId;
             }
         }
-
-        try {
-            const w = window.open(normalized, '_blank');
-            if (!w || w.closed) {
-                window.location.href = normalized;
-            }
-            return true;
-        } catch (e) {
-            try {
-                window.location.href = normalized;
-                return true;
-            } catch (err) {
-                console.warn('external url open failed', err);
-            }
+        if (typeof window !== 'undefined' && window.__API_TOKEN__) {
+            headers['Authorization'] = 'Bearer ' + window.__API_TOKEN__;
         }
-
-        return false;
-    }
-
-    _buildWalletAddUrl(walletUrl, type) {
-        const ret = MemberManager.getWalletReturnParams();
-        const origin = MemberManager.resolveAppOrigin();
-        if (!origin) {
-            return null;
-        }
-        const params = new URLSearchParams();
-        params.set('wallet_url', walletUrl);
-        if (ret.returnUrl) {
-            params.set('return_url', ret.returnUrl);
-        }
-        params.set('return_target', ret.returnTarget || 'web');
-        params.set('type', type || 'apple');
-        return origin + '/wallet-add?' + params.toString();
+        return headers;
     }
 
     _onAddToAppleWallet(e, btn, projectKey) {
         e.preventDefault();
+        const originalHtml = btn.innerHTML;
 
         if (typeof window !== 'undefined' && window.__IS_LIFF__ && typeof liff !== 'undefined' && liff.openWindow) {
-            const openUrl = btn.getAttribute('data-wallet-open-url');
-            if (!openUrl || !this._isAppleWalletOpenUrlFresh(btn)) {
-                btn.removeAttribute('data-wallet-open-url');
-                btn.removeAttribute('data-wallet-open-url-at');
-                if (typeof ToastManager !== 'undefined') {
-                    ToastManager.info(openUrl
-                        ? 'リンクの有効期限が切れました。更新中です…'
-                        : '準備中です。しばらくお待ちください。');
-                }
-                this._setAppleWalletButtonPreparing(btn, true);
-                this._prefetchAppleWalletOpenUrl(projectKey).then(function (url) {
-                    if (url && typeof ToastManager !== 'undefined') {
-                        ToastManager.info('準備ができました。もう一度タップしてください。');
-                    }
-                });
-                return;
-            }
-            if (this._openLiffExternalBrowserSync(openUrl)) {
-                if (typeof ToastManager !== 'undefined') {
-                    ToastManager.success('Safari で Apple Wallet を開きます。「追加」をタップしてください。');
-                }
-                return;
-            }
-            if (typeof ToastManager !== 'undefined') {
-                ToastManager.error('Safari を開けませんでした。LINEの設定で外部ブラウザを許可するか、しばらくしてから再度お試しください。');
-            }
+            this._openAppleWalletInExternalBrowser(btn, projectKey, originalHtml);
             return;
         }
 
-        this._runAppleWalletDownloadFlow(btn, projectKey);
-    }
+        // ネイティブアプリ内 WebView では .pkpass を直接開いても Wallet に追加されないため、ワンタイム URL を取得して Safari で開く（LINE と同じ方式）
+        if (MemberManager.isMobileAppMode() && typeof window.__nativeOpenExternalUrl__ === 'function') {
+            btn.disabled = true;
+            btn.innerHTML = '<span class="member-card-add-to-wallet-loading"><i class="fas fa-spinner fa-spin"></i> 取得中...</span>';
+            this._fetchOneTimeWalletPassUrl(projectKey)
+                .then(function (passUrl) {
+                    const ret = MemberManager.getWalletReturnParams();
+                    const walletAddUrl = window.location.origin + '/wallet-add?wallet_url=' + encodeURIComponent(passUrl) + '&return_url=' + encodeURIComponent(ret.returnUrl) + '&return_target=' + encodeURIComponent(ret.returnTarget) + '&type=apple';
+                    if (window.__nativeOpenExternalUrl__(walletAddUrl)) {
+                        if (typeof ToastManager !== 'undefined') ToastManager.success('Safariで開きます。追加後は「アプリに戻る」をタップしてください。');
+                    } else {
+                        throw new Error('外部ブラウザを開けませんでした');
+                    }
+                })
+                .catch(function (err) {
+                    if (typeof ToastManager !== 'undefined') ToastManager.error(err.message || 'Wallet Pass の取得に失敗しました');
+                })
+                .finally(function () {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+                });
+            return;
+        }
 
-    async _runAppleWalletDownloadFlow(btn, projectKey) {
-        const originalHtml = btn.innerHTML;
         btn.disabled = true;
         btn.innerHTML = '<span class="member-card-add-to-wallet-loading"><i class="fas fa-spinner fa-spin"></i> 取得中...</span>';
-
-        try {
-            const useExternalBrowser = MemberManager.isMobileAppMode() && typeof window.__nativeOpenExternalUrl__ === 'function';
-
-            if (useExternalBrowser) {
-                const issueUrl = await this._fetchWalletPassIssueUrl(projectKey);
-                const openUrl = this._resolveWalletAddOpenUrl(issueUrl, 'apple');
-                if (!openUrl) {
-                    throw new Error('Wallet Pass の URL が不正です');
-                }
-                if (!window.__nativeOpenExternalUrl__(openUrl)) {
-                    throw new Error('外部ブラウザを開けませんでした');
-                }
-                if (typeof ToastManager !== 'undefined') {
-                    ToastManager.success('Safariで開きます。表示されたら「追加」をタップしてください。');
-                }
-                return;
-            }
-
-            const url = btn.getAttribute('data-wallet-pass-url');
-            if (!url) return;
-
-            const fullUrl = url.startsWith('http') ? url : MemberManager.resolveApiUrl(url);
-            if (MemberManager.isMobileAppMode() || MemberManager.isIOS()) {
-                window.location.href = fullUrl;
-                return;
-            }
-
-            const res = await fetch(fullUrl, { credentials: 'include', method: 'GET' });
-            if (!res.ok) {
-                const text = await res.text();
-                const msg = text && text.length < 200 ? text.trim() : (res.status === 503 ? 'Wallet Pass を利用できません' : '取得に失敗しました');
-                throw new Error(msg);
-            }
-            const ct = res.headers.get('Content-Type') || '';
-            if (ct.indexOf('application/vnd.apple.pkpass') === -1 && ct.indexOf('application/zip') === -1) {
-                const text = await res.text();
-                throw new Error(text && text.length < 200 ? text.trim() : '不正なレスポンスです');
-            }
-            const blob = await res.blob();
-            const blobUrl = URL.createObjectURL(blob);
-            if (MemberManager.isIOS()) {
-                const w = window.open(blobUrl, '_blank');
-                if (!w || w.closed) window.location.href = blobUrl;
-                setTimeout(function () { URL.revokeObjectURL(blobUrl); }, 2000);
-            } else {
-                const a = document.createElement('a');
-                a.href = blobUrl;
-                a.download = 'membership.pkpass';
-                a.style.display = 'none';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                setTimeout(function () { URL.revokeObjectURL(blobUrl); }, 500);
-            }
-            if (typeof ToastManager !== 'undefined') {
-                ToastManager.success('パスを開きました。表示されたら「追加」をタップしてください。');
-            }
-        } catch (err) {
-            if (typeof ToastManager !== 'undefined') {
-                ToastManager.error(MemberManager.formatWalletErrorMessage(err, 'Wallet Pass の取得に失敗しました'));
-            }
-        } finally {
+        const url = btn.getAttribute('data-wallet-pass-url');
+        if (!url) {
             btn.disabled = false;
             btn.innerHTML = originalHtml;
+            return;
         }
+        const fullUrl = url.startsWith('http') ? url : (window.location.origin + (url.startsWith('/') ? '' : '/') + url);
+        if (MemberManager.isMobileAppMode()) {
+            // __nativeOpenExternalUrl__ が無いフォールバック（従来どおり同一 WebView で開く試み）
+            window.location.href = fullUrl;
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+            return;
+        }
+        fetch(fullUrl, { credentials: 'include', method: 'GET', headers: this._buildWalletPassFetchHeaders() })
+            .then(function (res) {
+                if (!res.ok) {
+                    return res.text().then(function (text) {
+                        const msg = text && text.length < 200 ? text.trim() : (res.status === 503 ? 'Wallet Pass を利用できません' : '取得に失敗しました');
+                        throw new Error(msg);
+                    });
+                }
+                const ct = res.headers.get('Content-Type') || '';
+                if (ct.indexOf('application/vnd.apple.pkpass') === -1 && ct.indexOf('application/zip') === -1) {
+                    return res.text().then(function (text) { throw new Error(text && text.length < 200 ? text.trim() : '不正なレスポンスです'); });
+                }
+                return res.blob();
+            })
+            .then(function (blob) {
+                const blobUrl = URL.createObjectURL(blob);
+                if (MemberManager.isIOS()) {
+                    const w = window.open(blobUrl, '_blank');
+                    if (!w || w.closed) window.location.href = blobUrl;
+                    setTimeout(function () { URL.revokeObjectURL(blobUrl); }, 2000);
+                } else {
+                    const a = document.createElement('a');
+                    a.href = blobUrl;
+                    a.download = 'membership.pkpass';
+                    a.style.display = 'none';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    setTimeout(function () { URL.revokeObjectURL(blobUrl); }, 500);
+                }
+                if (typeof ToastManager !== 'undefined') ToastManager.success('パスを開きました。表示されたら「追加」をタップしてください。');
+            })
+            .catch(function (err) {
+                if (typeof ToastManager !== 'undefined') ToastManager.error(err.message || 'Wallet Pass の取得に失敗しました');
+            })
+            .finally(function () {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            });
     }
 
-    async _onAddToGoogleWallet(e, btn, projectKey) {
+    _onAddToGoogleWallet(e, btn, projectKey) {
         e.preventDefault();
         const originalHtml = btn.innerHTML;
         btn.disabled = true;
         btn.innerHTML = '<span class="member-card-add-to-wallet-loading"><i class="fas fa-spinner fa-spin"></i> 取得中...</span>';
-
-        try {
-            const endpoint = AppConstants.API_ENDPOINTS.MEMBERS_GOOGLE_WALLET_URL
-                + '?project_key=' + encodeURIComponent(projectKey);
-            const result = await this.apiClient.get(endpoint);
-            if (!result.success || !result.data || !result.data.url) {
-                throw new Error(result.error || (result.data && result.data.error) || 'URLの取得に失敗しました');
-            }
-
-            const issueUrl = result.data.url;
-            const openExternal = (typeof window !== 'undefined' && window.__IS_LIFF__ && typeof liff !== 'undefined' && liff.openWindow)
-                || (MemberManager.isMobileAppMode() && typeof window.__nativeOpenExternalUrl__ === 'function');
-
-            if (openExternal) {
-                const openUrl = this._resolveWalletAddOpenUrl(issueUrl, 'google')
-                    || MemberManager.normalizeExternalUrl(issueUrl);
-                if (!openUrl) {
-                    throw new Error('Google Wallet の URL が不正です');
+        const googleWalletUrlApi = (window.location.origin + (AppConstants.API_ENDPOINTS.MEMBERS_GOOGLE_WALLET_URL.startsWith('/') ? '' : '') + AppConstants.API_ENDPOINTS.MEMBERS_GOOGLE_WALLET_URL) + '?project_key=' + encodeURIComponent(projectKey);
+        fetch(googleWalletUrlApi, { credentials: 'include', method: 'GET' })
+            .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+            .then(function (result) {
+                if (!result.ok || !result.data || !result.data.url) {
+                    throw new Error(result.data && result.data.error ? result.data.error : 'URLの取得に失敗しました');
                 }
-
-                let opened = false;
-                if (typeof window !== 'undefined' && window.__IS_LIFF__ && typeof liff !== 'undefined' && liff.openWindow) {
-                    opened = await this._openExternalUrl(openUrl);
-                } else if (typeof window.__nativeOpenExternalUrl__ === 'function') {
-                    opened = window.__nativeOpenExternalUrl__(openUrl);
+                const openExternal = (typeof window !== 'undefined' && window.__IS_LIFF__ && typeof liff !== 'undefined' && liff.openWindow) ||
+                    (MemberManager.isMobileAppMode() && typeof window.__nativeOpenExternalUrl__ === 'function');
+                if (openExternal) {
+                    const ret = MemberManager.getWalletReturnParams();
+                    const walletAddUrl = window.location.origin + '/wallet-add?wallet_url=' + encodeURIComponent(result.data.url) + '&return_url=' + encodeURIComponent(ret.returnUrl) + '&return_target=' + encodeURIComponent(ret.returnTarget) + '&type=google';
+                    if (typeof window !== 'undefined' && window.__IS_LIFF__ && typeof liff !== 'undefined' && liff.openWindow) {
+                        liff.openWindow({ url: walletAddUrl, external: true });
+                        if (typeof ToastManager !== 'undefined') ToastManager.success('Google Wallet を開きます。追加後は「LINEに戻る」をタップしてください。');
+                    } else if (MemberManager.isMobileAppMode() && typeof window.__nativeOpenExternalUrl__ === 'function') {
+                        if (window.__nativeOpenExternalUrl__(walletAddUrl)) {
+                            if (typeof ToastManager !== 'undefined') ToastManager.success('ブラウザで開きます。追加後は「アプリに戻る」をタップしてください。');
+                        } else {
+                            throw new Error('外部ブラウザを開けませんでした');
+                        }
+                    }
+                } else {
+                    window.location.href = result.data.url;
                 }
-                if (!opened) {
-                    throw new Error('外部ブラウザを開けませんでした');
-                }
-                if (typeof ToastManager !== 'undefined') {
-                    ToastManager.success('Google Wallet を開きます。追加を完了してください。');
-                }
-                return;
-            }
-
-            window.location.href = issueUrl;
-        } catch (err) {
-            if (typeof ToastManager !== 'undefined') {
-                ToastManager.error(err.message || 'Google Wallet の取得に失敗しました');
-            }
-        } finally {
-            btn.disabled = false;
-            btn.innerHTML = originalHtml;
-        }
+            })
+            .catch(function (err) {
+                if (typeof ToastManager !== 'undefined') ToastManager.error(err.message || 'Google Wallet の取得に失敗しました');
+            })
+            .finally(function () {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            });
     }
 
     _generateBarcode(barcodeId, memberNumber) {
@@ -2000,12 +1716,9 @@ class MemberManager {
                 headers: { 'Content-Type': 'application/json' },
             });
             if (result.success) {
-                const full = result.data && typeof result.data === 'object' ? result.data : null;
-                if (!full) {
-                    throw new Error('会員情報の形式が正しくありません');
-                }
-                this.setMemberData(full);
-                this.render(full);
+                const next = (result.data && result.data.member) ? result.data.member : result.data;
+                this.memberData = next;
+                this.render(next);
                 this.closeProfileEdit();
                 ToastManager.success('プロフィールを更新しました');
                 if (typeof window !== 'undefined' && window.app && typeof window.app.refreshCurrentTab === 'function') {

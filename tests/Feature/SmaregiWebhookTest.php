@@ -177,4 +177,20 @@ class SmaregiWebhookTest extends TestCase
 
         $response->assertStatus(400);
     }
+
+    public function test_webhook_会員ポイントイベントを受け付けて200を返すこと(): void
+    {
+        $response = $this->postJson('/api/smaregi/webhook', [
+            'contractId' => 'test_contract_005',
+            'event' => SmaregiEvent::CUSTOMER_POINTS,
+            'action' => 'edited',
+            'transactionHeadIds' => ['1'],
+        ], [
+            'smaregi-event' => SmaregiEvent::CUSTOMER_POINTS,
+            'smaregi-contract-id' => 'test_contract_005',
+            'Content-Type' => 'application/json',
+        ]);
+
+        $response->assertStatus(200);
+    }
 }

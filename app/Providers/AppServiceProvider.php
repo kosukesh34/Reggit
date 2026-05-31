@@ -13,6 +13,7 @@ use App\Services\GoogleWalletPassService;
 use App\UseCases\Payment\PaymentGateway;
 use App\UseCases\Payment\StripePaymentGateway;
 use App\Util\AdminContext;
+use Database\Seeders\AdminUserSeeder;
 use GuzzleHttp\Client;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\URL;
@@ -58,6 +59,9 @@ class AppServiceProvider extends ServiceProvider
                         'description' => '複数店舗対応前の既存データ用',
                         'is_active' => true,
                     ]);
+                }
+                if (Schema::hasTable('admin_users') && app()->environment('production') === false) {
+                    app(AdminUserSeeder::class)->ensureDevelopmentAdminsExist();
                 }
             } catch (\Throwable $e) {
                 // マイグレーション前や DB 未起動時は無視

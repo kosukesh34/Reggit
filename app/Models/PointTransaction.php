@@ -17,6 +17,7 @@ class PointTransaction extends Model
         'points',
         'description',
         'order_id',
+        'smaregi_transaction_head_id',
         'expires_at',
     ];
 

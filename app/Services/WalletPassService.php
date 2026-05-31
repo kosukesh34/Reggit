@@ -8,6 +8,7 @@ use App\Util\AdminContext;
 use App\Util\StrHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Apple Wallet 用 .pkpass を組み立てるサービス。
@@ -61,6 +62,10 @@ class WalletPassService
             return $this->createZip($workDir);
         } catch (\Throwable $e) {
             $this->setLastError($e->getMessage());
+            Log::warning('[WalletPass] build failed', [
+                'serial_number' => $serialNumber,
+                'message' => $e->getMessage(),
+            ]);
 
             return null;
         } finally {

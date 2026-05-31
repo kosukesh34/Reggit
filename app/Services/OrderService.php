@@ -115,7 +115,13 @@ class OrderService
             throw new \Exception('ポイントが不足しています');
         }
 
-        $member->usePoints($pointsUsed, '注文で使用', null);
+        $smaregiResult = $this->memberAdminService->syncPointDeltaToSmaregi($member, -$pointsUsed);
+        $member->usePoints(
+            $pointsUsed,
+            '注文で使用',
+            null,
+            $this->memberAdminService->extractFirstTransactionHeadId($smaregiResult)
+        );
 
         return max(0, $totalAmount - $pointsUsed);
     }
@@ -202,7 +208,13 @@ class OrderService
         $pointsEarned = $pointsPerOrder + $pointsFromAmount;
 
         if ($pointsEarned > 0) {
-            $member->addPoints($pointsEarned, '購入で獲得', $order->id);
+            $smaregiResult = $this->memberAdminService->syncPointDeltaToSmaregi($member, $pointsEarned);
+            $member->addPoints(
+                $pointsEarned,
+                '購入で獲得',
+                $order->id,
+                $this->memberAdminService->extractFirstTransactionHeadId($smaregiResult)
+            );
             $order->update(['points_earned' => $pointsEarned]);
         }
     }
@@ -275,6 +287,7 @@ class OrderService
             return;
         }
 
+        $smaregiResult = $this->memberAdminService->syncPointDeltaToSmaregi($member, $order->points_used);
         PointTransaction::create([
             'project_id' => $member->project_id,
             'member_id' => $member->id,
@@ -282,6 +295,7 @@ class OrderService
             'points' => $order->points_used,
             'description' => self::DESC_REFUND_CANCEL,
             'order_id' => $order->id,
+            'smaregi_transaction_head_id' => $this->memberAdminService->extractFirstTransactionHeadId($smaregiResult),
         ]);
     }
 
@@ -297,6 +311,7 @@ class OrderService
             return;
         }
 
+        $smaregiResult = $this->memberAdminService->syncPointDeltaToSmaregi($member, -$order->points_earned);
         PointTransaction::create([
             'project_id' => $member->project_id,
             'member_id' => $member->id,
@@ -304,6 +319,7 @@ class OrderService
             'points' => -$order->points_earned,
             'description' => self::DESC_REVERSED_CANCEL,
             'order_id' => $order->id,
+            'smaregi_transaction_head_id' => $this->memberAdminService->extractFirstTransactionHeadId($smaregiResult),
         ]);
     }
 

@@ -319,6 +319,30 @@ class MemberAdminService
         }
     }
 
+    /** @return array{customerId?: string, point?: string, mile?: string, transactionHeadIds?: array<int, string|int>}|null */
+    public function syncPointDeltaToSmaregi(Member $member, int $pointDelta): ?array
+    {
+        return $this->smaregiApi->syncPointDeltaOrFail(
+            (int) $member->project_id,
+            $member->smaregi_customer_id,
+            $pointDelta
+        );
+    }
+
+    public function extractFirstTransactionHeadId(?array $smaregiResult): ?string
+    {
+        if ($smaregiResult === null) {
+            return null;
+        }
+        $ids = $smaregiResult['transactionHeadIds'] ?? null;
+        if (! is_array($ids) || $ids === []) {
+            return null;
+        }
+        $first = trim((string) ($ids[0] ?? ''));
+
+        return $first !== '' ? $first : null;
+    }
+
     public function getRankOptionsForSelect(int $projectId): array
     {
         $ranks = ShopSetting::getMemberRankSettings($projectId);

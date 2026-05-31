@@ -142,10 +142,12 @@ Google Wallet を有効にするには、[Google Pay & Wallet Console](https://p
 - .env を直したら、DB に反映するため次を実行してください。
 
 ```bash
-docker compose exec app php artisan admin:sync-password
+docker compose exec app php artisan db:seed
+# またはパスワードだけ .env に合わせる場合:
+docker compose exec app php artisan admin:sync-password --all
 ```
 
-（省略時は `DEMO_SYSTEM_LOGIN_ID` のユーザーを `DEMO_SYSTEM_PASSWORD` で更新します。別の login_id を指定する場合は `admin:sync-password <login_id>`）
+（`admin:sync-password` 省略時は `demo_sys` のみ。全デモ管理者を同期する場合は `--all`。別 login_id は `admin:sync-password <login_id>`）
 
 ## ドキュメント
 

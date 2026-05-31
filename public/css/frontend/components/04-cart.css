@@ -16,7 +16,8 @@
 }
 
 @media (min-width: 429px) {
-    .cart-sidebar {
+    html.line-web-embed .cart-sidebar,
+    body.line-web-embed .cart-sidebar {
         max-width: 428px;
     }
 }

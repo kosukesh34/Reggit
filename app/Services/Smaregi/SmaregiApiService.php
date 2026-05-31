@@ -642,6 +642,25 @@ class SmaregiApiService
     }
 
     /**
+     * @throws \Exception 同期失敗時
+     * @return array{customerId?: string, point?: string, mile?: string, transactionHeadIds?: array<int, string|int>}|null スキップ時は null
+     */
+    public function syncPointDeltaOrFail(int $projectId, ?string $smaregiCustomerId, int $pointDelta): ?array
+    {
+        $smaregiCustomerId = is_string($smaregiCustomerId) ? trim($smaregiCustomerId) : '';
+        if ($smaregiCustomerId === '' || $pointDelta === 0) {
+            return null;
+        }
+
+        $result = $this->syncCustomerPointsForProject($projectId, $smaregiCustomerId, $pointDelta);
+        if ($result === null) {
+            throw new \Exception('スマレジへのポイント反映に失敗しました。storage/logs/laravel.log の [Smaregi] を参照してください。');
+        }
+
+        return $result;
+    }
+
+    /**
      * プロジェクトに紐づく契約IDを取得。
      * 優先順: (1) ShopSetting (2) SmaregiContract (3) config のデフォルト契約ID（sb_skx928r2）
      */

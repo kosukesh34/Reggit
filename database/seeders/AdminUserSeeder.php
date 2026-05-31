@@ -4,25 +4,21 @@ namespace Database\Seeders;
 
 use App\Models\AdminUser;
 use App\Models\Project;
+use Database\Seeders\Concerns\UpsertsAdminUsers;
 use Illuminate\Database\Seeder;
 
 class AdminUserSeeder extends Seeder
 {
+    use UpsertsAdminUsers;
     /** .env で # がコメント扱いされて切れた場合でもドキュメント通りのパスワードで作成する */
     public static function demoSystemPassword(): string
     {
-        $p = env('DEMO_SYSTEM_PASSWORD');
-        if ($p === null || $p === '' || $p === 'DemoSys') {
-            return 'DemoSys#2026';
-        }
-
-        return $p;
+        return self::resolveDemoPassword('DEMO_SYSTEM_PASSWORD', 'DemoSys#2026', ['DemoSys']);
     }
 
     public function run(): void
     {
-        // .env の認証情報でシステム管理者を1件必ず作成/更新（DEMO_SEED 時は DEMO_SYSTEM_*、それ以外は ADMIN_*）
-        $useDemo = filter_var(env('DEMO_SEED', false), FILTER_VALIDATE_BOOLEAN);
+        $useDemo = self::isDemoSeedEnabled();
         if ($useDemo) {
             $loginId = env('DEMO_SYSTEM_LOGIN_ID', 'demo_sys');
             $password = self::demoSystemPassword();
@@ -35,15 +31,12 @@ class AdminUserSeeder extends Seeder
             $email = $loginId.'@system.local';
         }
 
-        AdminUser::updateOrCreate(
-            ['login_id' => $loginId],
-            [
-                'email' => $email,
-                'password' => $password,
-                'name' => $name,
-                'role' => AdminUser::ROLE_SYSTEM_ADMIN,
-                'project_id' => null,
-            ]
+        self::upsertAdminWithoutResettingPassword(
+            $loginId,
+            $email,
+            $password,
+            $name,
+            AdminUser::ROLE_SYSTEM_ADMIN,
         );
 
         // DEMO_SEED=false でも非本番ではドキュメント通り demo_sys でログインできるようにする
@@ -51,30 +44,51 @@ class AdminUserSeeder extends Seeder
             self::upsertDocumentedDemoSystemAdmin();
         }
 
-        // 初回のみデフォルトプロジェクトを作成（DemoAdminUsersSeeder で使う）
-        if (! Project::where('is_active', true)->exists()) {
-            Project::create([
-                'project_key' => 'default',
-                'name' => 'デフォルト店舗',
-                'description' => 'デモ用プロジェクト',
-                'is_active' => true,
-            ]);
+        $this->ensureDefaultProject();
+    }
+
+    public function ensureDevelopmentAdminsExist(): void
+    {
+        if (app()->environment('production')) {
+            return;
         }
+
+        $this->ensureDefaultProject();
+        self::upsertDocumentedDemoSystemAdmin();
+        if (self::isDemoSeedEnabled()) {
+            app(DemoAdminUsersSeeder::class)->run();
+        }
+    }
+
+    private function ensureDefaultProject(): Project
+    {
+        $project = Project::where('project_key', 'default')->first();
+        if ($project !== null) {
+            if ($project->is_active === false) {
+                $project->update(['is_active' => true]);
+            }
+
+            return $project;
+        }
+
+        return Project::create([
+            'project_key' => 'default',
+            'name' => 'デフォルト店舗',
+            'description' => 'デモ用プロジェクト',
+            'is_active' => true,
+        ]);
     }
 
     /** ドキュメント記載のデモ用システム管理者（既定: demo_sys）を DB に反映する */
     public static function upsertDocumentedDemoSystemAdmin(): void
     {
         $loginId = env('DEMO_SYSTEM_LOGIN_ID', 'demo_sys');
-        AdminUser::updateOrCreate(
-            ['login_id' => $loginId],
-            [
-                'email' => env('DEMO_SYSTEM_EMAIL', $loginId.'@example.com'),
-                'password' => self::demoSystemPassword(),
-                'name' => env('DEMO_SYSTEM_NAME', 'デモシステム管理者'),
-                'role' => AdminUser::ROLE_SYSTEM_ADMIN,
-                'project_id' => null,
-            ]
+        self::upsertAdminWithoutResettingPassword(
+            $loginId,
+            env('DEMO_SYSTEM_EMAIL', $loginId.'@example.com'),
+            self::demoSystemPassword(),
+            env('DEMO_SYSTEM_NAME', 'デモシステム管理者'),
+            AdminUser::ROLE_SYSTEM_ADMIN,
         );
     }
 }
