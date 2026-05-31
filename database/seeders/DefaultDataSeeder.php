@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Coupon;
 use App\Models\Product;
 use App\Models\Project;
+use App\Services\Admin\ProductDeduplicationService;
 use Illuminate\Database\Seeder;
 
 /**
@@ -16,14 +17,17 @@ class DefaultDataSeeder extends Seeder
     public function runForProject(Project $project, bool $forceProducts = false, bool $forceCoupons = false): void
     {
         $this->seedCouponsOnly($project, $forceCoupons);
-
-        $hasProducts = Product::withoutGlobalScopes()->where('project_id', $project->id)->count() > 0;
-        if ($hasProducts && ! $forceProducts) {
-            return;
-        }
+        app(ProductDeduplicationService::class)->deduplicateForProject((int) $project->id);
 
         if ($forceProducts) {
             Product::withoutGlobalScopes()->where('project_id', $project->id)->delete();
+            $this->seedProductsOnly($project);
+
+            return;
+        }
+
+        if ($this->hasAllDefaultProducts($project)) {
+            return;
         }
 
         $this->seedProductsOnly($project);
@@ -43,15 +47,30 @@ class DefaultDataSeeder extends Seeder
         $this->createSampleCoupons($project);
     }
 
-    /** デフォルト商品のみ投入（既存は触らない。事前に削除する場合は呼び出し側で実施） */
+    /** デフォルト商品のみ投入（同名は updateOrCreate で上書きし、重複を作らない） */
     public function seedProductsOnly(Project $project): void
     {
-        $products = $this->getDefaultProducts();
-        foreach ($products as $product) {
-            Product::withoutGlobalScopes()->create(array_merge($product, [
-                'project_id' => $project->id,
-            ]));
+        foreach ($this->getDefaultProducts() as $product) {
+            Product::withoutGlobalScopes()->updateOrCreate(
+                [
+                    'project_id' => $project->id,
+                    'name' => $product['name'],
+                ],
+                $product
+            );
         }
+
+        app(ProductDeduplicationService::class)->deduplicateForProject((int) $project->id);
+    }
+
+    private function hasAllDefaultProducts(Project $project): bool
+    {
+        $names = array_column($this->getDefaultProducts(), 'name');
+
+        return Product::withoutGlobalScopes()
+            ->where('project_id', $project->id)
+            ->whereIn('name', $names)
+            ->count() === count($names);
     }
 
     /** @return list<array<string, mixed>> */

@@ -3,6 +3,7 @@
 namespace App\Services\Smaregi;
 
 use App\Models\Product;
+use App\Services\Admin\ProductDeduplicationService;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -17,6 +18,7 @@ class SmaregiProductSyncService
     public function __construct(
         private SmaregiApiService $smaregiApi,
         private SmaregiProductRegisterService $smaregiProductRegister,
+        private ProductDeduplicationService $productDeduplication,
     ) {}
 
     /**
@@ -59,13 +61,7 @@ class SmaregiProductSyncService
                 }
                 try {
                     $attrs = $this->mapSmaregiProductToAttributes($row);
-                    $product = Product::withoutGlobalScopes()->updateOrCreate(
-                        [
-                            'project_id' => $projectId,
-                            'smaregi_product_id' => (string) $productId,
-                        ],
-                        $attrs
-                    );
+                    $product = $this->upsertProductFromSmaregi($projectId, (string) $productId, $attrs);
                     if ($product->wasRecentlyCreated) {
                         $created++;
                     } else {
@@ -85,6 +81,8 @@ class SmaregiProductSyncService
             $page++;
         } while (count($list) === self::LIMIT);
 
+        $this->productDeduplication->deduplicateForProject($projectId);
+
         return [
             'created' => $created,
             'updated' => $updated,
@@ -99,7 +97,7 @@ class SmaregiProductSyncService
      * - DB にあるがスマレジにない（または smaregi_product_id 未設定）→ スマレジに登録し DB の smaregi_product_id を更新
      * データ漏れがないように両者を揃える。
      *
-     * @return array{created: int, updated: int, pushed_to_smaregi: int, failed: int, errors: list<string>}
+     * @return array{created: int, updated: int, pushed_to_smaregi: int, deleted_from_smaregi: int, stock_synced: int, failed: int, errors: list<string>}
      */
     public function fullSync(int $projectId): array
     {
@@ -119,6 +117,7 @@ class SmaregiProductSyncService
         $failed = 0;
         $errors = [];
         $smaregiProductIds = [];
+        $smaregiProductNames = [];
 
         // 1. スマレジ → DB: スマレジの全商品を取得して DB に反映し、スマレジ側の productId 一覧を保持
         $page = 1;
@@ -141,15 +140,13 @@ class SmaregiProductSyncService
                     continue;
                 }
                 $smaregiProductIds[(string) $productId] = true;
+                $productName = trim((string) ($row['productName'] ?? ''));
+                if ($productName !== '' && ! isset($smaregiProductNames[$productName])) {
+                    $smaregiProductNames[$productName] = (string) $productId;
+                }
                 try {
                     $attrs = $this->mapSmaregiProductToAttributes($row);
-                    $product = Product::withoutGlobalScopes()->updateOrCreate(
-                        [
-                            'project_id' => $projectId,
-                            'smaregi_product_id' => (string) $productId,
-                        ],
-                        $attrs
-                    );
+                    $product = $this->upsertProductFromSmaregi($projectId, (string) $productId, $attrs);
                     if ($product->wasRecentlyCreated) {
                         $created++;
                     } else {
@@ -178,6 +175,8 @@ class SmaregiProductSyncService
                 'created' => $created,
                 'updated' => $updated,
                 'pushed_to_smaregi' => 0,
+                'deleted_from_smaregi' => 0,
+                'stock_synced' => 0,
                 'failed' => $failed,
                 'errors' => $errors,
             ];
@@ -193,6 +192,16 @@ class SmaregiProductSyncService
             if (! $needPush) {
                 continue;
             }
+
+            $productName = trim((string) $product->name);
+            if ($productName !== '' && isset($smaregiProductNames[$productName])) {
+                $linkedSmaregiId = $smaregiProductNames[$productName];
+                $product->update(['smaregi_product_id' => $linkedSmaregiId]);
+                $smaregiProductIds[$linkedSmaregiId] = true;
+
+                continue;
+            }
+
             try {
                 $data = [
                     'name' => $product->name,
@@ -235,13 +244,199 @@ class SmaregiProductSyncService
             }
         }
 
+        $smaregiDedupe = $this->deduplicateSmaregiProducts($projectId, $contractId);
+        $failed += $smaregiDedupe['failed'];
+        $errors = array_merge($errors, $smaregiDedupe['errors']);
+
+        $stockSync = $this->syncAllStockToSmaregi($projectId);
+        $failed += $stockSync['failed'];
+        $errors = array_merge($errors, $stockSync['errors']);
+
+        $this->productDeduplication->deduplicateForProject($projectId);
+
         return [
             'created' => $created,
             'updated' => $updated,
             'pushed_to_smaregi' => $pushedToSmaregi,
+            'deleted_from_smaregi' => $smaregiDedupe['deleted'],
+            'stock_synced' => $stockSync['synced'],
             'failed' => $failed,
             'errors' => $errors,
         ];
+    }
+
+    /**
+     * スマレジ上の同名商品を整理する。DB に紐づく productId を残し、それ以外の重複を削除する。
+     *
+     * @return array{deleted: int, failed: int, errors: list<string>}
+     */
+    public function deduplicateSmaregiProducts(int $projectId, ?string $contractId = null): array
+    {
+        $contractId = $contractId ?? $this->smaregiApi->getContractIdForProject($projectId);
+        $contractId = is_string($contractId) ? trim($contractId) : '';
+        if ($contractId === '' || ! $this->smaregiProductRegister->hasSmaregiContract($projectId)) {
+            return ['deleted' => 0, 'failed' => 0, 'errors' => []];
+        }
+
+        $keepIdsByName = Product::withoutGlobalScopes()
+            ->where('project_id', $projectId)
+            ->whereNotNull('smaregi_product_id')
+            ->where('smaregi_product_id', '!=', '')
+            ->get(['name', 'smaregi_product_id'])
+            ->mapWithKeys(fn (Product $product) => [trim($product->name) => trim((string) $product->smaregi_product_id)])
+            ->all();
+
+        $byName = [];
+        $page = 1;
+        do {
+            $result = $this->smaregiApi->request($contractId, 'GET', 'pos/products', [
+                'limit' => self::LIMIT,
+                'page' => $page,
+            ]);
+            if ($result === null) {
+                return [
+                    'deleted' => 0,
+                    'failed' => 1,
+                    'errors' => ['スマレジAPI（商品一覧）の取得に失敗しました。'],
+                ];
+            }
+
+            $list = $this->extractListFromResponse($result, 'products');
+            foreach ($list as $row) {
+                if (! is_array($row)) {
+                    continue;
+                }
+                $productId = trim((string) ($row['productId'] ?? ''));
+                $productName = trim((string) ($row['productName'] ?? ''));
+                if ($productId === '' || $productName === '') {
+                    continue;
+                }
+                $byName[$productName][] = $productId;
+            }
+            $page++;
+        } while (count($list) === self::LIMIT);
+
+        $deleted = 0;
+        $failed = 0;
+        $errors = [];
+
+        foreach ($byName as $name => $ids) {
+            if (count($ids) <= 1) {
+                continue;
+            }
+
+            $keepId = $keepIdsByName[$name] ?? $ids[0];
+            if (! in_array($keepId, $ids, true)) {
+                $keepId = $ids[0];
+            }
+
+            $dbProduct = Product::withoutGlobalScopes()
+                ->where('project_id', $projectId)
+                ->where('name', $name)
+                ->first();
+            if ($dbProduct !== null && trim((string) ($dbProduct->smaregi_product_id ?? '')) !== $keepId) {
+                $dbProduct->update(['smaregi_product_id' => $keepId]);
+            }
+
+            foreach ($ids as $id) {
+                if ($id === $keepId) {
+                    continue;
+                }
+                $ok = $this->smaregiProductRegister->deleteOnSmaregi($projectId, $id);
+                if ($ok) {
+                    $deleted++;
+                } else {
+                    $failed++;
+                    $errors[] = sprintf('スマレジ商品削除失敗 productId=%s name=%s', $id, $name);
+                }
+            }
+        }
+
+        return [
+            'deleted' => $deleted,
+            'failed' => $failed,
+            'errors' => $errors,
+        ];
+    }
+
+    /**
+     * DB 上の在庫数をスマレジへ反映する。
+     *
+     * @return array{synced: int, failed: int, errors: list<string>}
+     */
+    public function syncAllStockToSmaregi(int $projectId): array
+    {
+        if (! $this->smaregiProductRegister->hasSmaregiContract($projectId)) {
+            return ['synced' => 0, 'failed' => 0, 'errors' => []];
+        }
+
+        $synced = 0;
+        $failed = 0;
+        $errors = [];
+
+        $products = Product::withoutGlobalScopes()
+            ->where('project_id', $projectId)
+            ->whereNotNull('smaregi_product_id')
+            ->where('smaregi_product_id', '!=', '')
+            ->whereNotNull('stock')
+            ->get(['id', 'project_id', 'name', 'stock', 'smaregi_product_id']);
+
+        foreach ($products as $product) {
+            $smaregiId = trim((string) $product->smaregi_product_id);
+            $ok = $this->smaregiProductRegister->syncStockToSmaregi($projectId, $smaregiId, (int) $product->stock);
+            if ($ok) {
+                $synced++;
+            } else {
+                $failed++;
+                $errors[] = sprintf('在庫同期失敗 product_id=%d smaregi=%s name=%s', $product->id, $smaregiId, $product->name);
+            }
+        }
+
+        return [
+            'synced' => $synced,
+            'failed' => $failed,
+            'errors' => $errors,
+        ];
+    }
+
+    /**
+     * スマレジ商品を DB に取り込む。smaregi_product_id または商品名で既存行に紐付け、同名の重複行を作らない。
+     *
+     * @param  array<string, string|int|float|bool|null>  $attrs
+     */
+    private function upsertProductFromSmaregi(int $projectId, string $smaregiProductId, array $attrs): Product
+    {
+        $bySmaregi = Product::withoutGlobalScopes()
+            ->where('project_id', $projectId)
+            ->where('smaregi_product_id', $smaregiProductId)
+            ->first();
+
+        if ($bySmaregi !== null) {
+            $bySmaregi->update($attrs);
+
+            return $bySmaregi;
+        }
+
+        $name = trim((string) ($attrs['name'] ?? ''));
+        if ($name !== '') {
+            $byName = Product::withoutGlobalScopes()
+                ->where('project_id', $projectId)
+                ->where('name', $name)
+                ->orderByRaw("CASE WHEN smaregi_product_id IS NULL OR smaregi_product_id = '' THEN 1 ELSE 0 END")
+                ->orderBy('id')
+                ->first();
+
+            if ($byName !== null) {
+                $byName->update(array_merge($attrs, ['smaregi_product_id' => $smaregiProductId]));
+
+                return $byName;
+            }
+        }
+
+        return Product::withoutGlobalScopes()->create(array_merge($attrs, [
+            'project_id' => $projectId,
+            'smaregi_product_id' => $smaregiProductId,
+        ]));
     }
 
     /**
@@ -281,8 +476,7 @@ class SmaregiProductSyncService
             'price' => $price,
             'category' => $category,
             'is_available' => $isAvailable,
-            'stock' => 0,
-            // image_url はスマレジ商品APIでは返らないため更新しない（既存値維持は updateOrCreate で自動）
+            // stock / image_url はスマレジ商品APIでは正しく返らないため更新しない（既存値を維持）
         ];
     }
 
