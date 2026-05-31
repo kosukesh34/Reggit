@@ -16,9 +16,9 @@ class GoogleWalletLoyaltyPayloadBuilder
      * @param  array{classId: string, objectId: string, programName: string, programLogoUri: string, heroImageUri: string, accountNameDisplay: string, accountIdDisplay: string, barcodeValue: string, points: int, rankLabel: string}  $params
      * @return array{loyaltyClass: array<string, mixed>, loyaltyObject: array<string, mixed>}
      */
-    public function build(array $params): array
+    public function build(array $params, bool $forSaveJwt = false): array
     {
-        $loyaltyClass = $this->buildLoyaltyClass($params);
+        $loyaltyClass = $this->buildLoyaltyClass($params, $forSaveJwt);
         $loyaltyObject = $this->buildLoyaltyObject($params);
 
         return ['loyaltyClass' => $loyaltyClass, 'loyaltyObject' => $loyaltyObject];
@@ -40,7 +40,7 @@ class GoogleWalletLoyaltyPayloadBuilder
      * @param  array{classId: string, programName: string, programLogoUri: string, accountNameDisplay: string, accountIdDisplay: string, barcodeValue: string, points: int, rankLabel: string}  $params
      * @return array<string, mixed>
      */
-    private function buildLoyaltyClass(array $params): array
+    private function buildLoyaltyClass(array $params, bool $forSaveJwt = false): array
     {
         $lang = GoogleWalletApi::DEFAULT_LANGUAGE;
         $logoImage = [
@@ -53,13 +53,15 @@ class GoogleWalletLoyaltyPayloadBuilder
             'id' => $params['classId'],
             'programName' => $params['programName'],
             'issuerName' => $params['programName'],
-            'reviewStatus' => GoogleWalletApi::REVIEW_STATUS_UNDER_REVIEW,
             'programLogo' => $logoImage,
             'wideProgramLogo' => $logoImage,
             'accountNameLabel' => GoogleWalletApi::LABEL_ACCOUNT_NAME,
             'accountIdLabel' => GoogleWalletApi::LABEL_ACCOUNT_ID,
             'rewardsTierLabel' => GoogleWalletApi::LABEL_RANK,
         ];
+        if (! $forSaveJwt) {
+            $class['reviewStatus'] = GoogleWalletApi::REVIEW_STATUS_UNDER_REVIEW;
+        }
         $hexBg = config('google_wallet.hex_background_color', '');
         if ($hexBg !== '' && preg_match('/^#[0-9A-Fa-f]{3}([0-9A-Fa-f]{3})?$/', $hexBg)) {
             $class['hexBackgroundColor'] = $hexBg;

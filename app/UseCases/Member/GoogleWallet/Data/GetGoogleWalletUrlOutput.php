@@ -47,12 +47,13 @@ final class GetGoogleWalletUrlOutput
         );
     }
 
-    public static function urlFailed(): self
+    public static function urlFailed(?string $message = null, array $reasons = []): self
     {
         return new self(
             success: false,
             errorType: self::ERROR_URL_FAILED,
-            errorMessage: 'URL を発行できませんでした'
+            errorMessage: $message ?? 'URL を発行できませんでした',
+            reasons: $reasons,
         );
     }
 }
