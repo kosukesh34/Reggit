@@ -40,7 +40,7 @@ class GoogleWalletEnsureClassCommand extends Command
         $issuerId = config('google_wallet.issuer_id');
         $classSuffix = config('google_wallet.class_suffix', 'membership');
         $classId = $issuerId.'.'.$classSuffix;
-        $programLogoUri = config('google_wallet.program_logo_uri', 'https://storage.googleapis.com/wallet-lab-tools-codelab-artifacts-public/pass_google_logo.jpg');
+        $programLogoUri = config('google_wallet.program_logo_uri', 'https://www.gstatic.com/images/branding/product/2x/wallet_96dp.png');
 
         $this->info("Class ID: {$classId}");
         $this->info("Program name: {$programName}");
@@ -53,6 +53,16 @@ class GoogleWalletEnsureClassCommand extends Command
         }
 
         $this->error('LoyaltyClass の作成に失敗しました。');
+        $serviceAccount = $wallet->getServiceAccountEmail();
+        if (is_string($serviceAccount) && $serviceAccount !== '') {
+            $this->line('サービスアカウント: '.$serviceAccount);
+            $this->line('→ Pay & Wallet Console → Users に上記メールを Developer として追加してください。');
+        }
+        $lastError = $wallet->getLastError();
+        if (is_string($lastError) && $lastError !== '') {
+            $this->line('');
+            $this->line($lastError);
+        }
         $this->line('');
         $this->line('403 エラーの場合: Google Cloud Console で「Google Wallet API」が有効か確認してください。');
         $this->line('  → https://console.cloud.google.com/apis/library で「Google Wallet API」を検索して「有効にする」');

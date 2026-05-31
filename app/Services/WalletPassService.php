@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Member;
 use App\Models\User;
 use App\Util\AdminContext;
+use App\Util\LogHelper;
 use App\Util\StrHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
@@ -28,6 +29,39 @@ class WalletPassService
     public function getLastError(): ?string
     {
         return $this->lastError;
+    }
+
+    public function isAvailable(): bool
+    {
+        if (config('wallet_pass.enabled', false) !== true) {
+            return false;
+        }
+
+        return $this->getUnavailabilityReasons() === [];
+    }
+
+    /**
+     * エンドユーザー向けの短いメッセージ（サーバーパス等は含めない）。
+     *
+     * @return array<int, string>
+     */
+    public function getPublicUnavailabilityMessages(): array
+    {
+        $reasons = $this->getUnavailabilityReasons();
+        if ($reasons === []) {
+            $lastError = $this->getLastError();
+            if ($lastError !== null && $lastError !== '') {
+                LogHelper::warning('[WalletPass] generation failed', ['error' => $lastError]);
+
+                return ['会員証の生成に失敗しました。しばらくしてから再度お試しください。'];
+            }
+
+            return ['会員証の生成に失敗しました。しばらくしてから再度お試しください。'];
+        }
+
+        LogHelper::warning('[WalletPass] unavailable', ['reasons' => $reasons]);
+
+        return ['Apple Wallet を現在ご利用いただけません。しばらくしてから再度お試しください。'];
     }
 
     private function setLastError(string $message): void
@@ -474,8 +508,8 @@ class WalletPassService
 
     private function signManifest(string $dir): void
     {
-        $certPath = $this->resolvePath(config('wallet_pass.cert_path'));
-        $keyPath = $this->resolvePath(config('wallet_pass.key_path'));
+        $certPath = $this->resolveEffectiveCertPath();
+        $keyPath = $this->resolveEffectiveKeyPath();
         $wwdrPath = $this->resolveWwdrPathForCertificate($certPath, $this->resolvePath(config('wallet_pass.wwdr_path')));
 
         if (! File::isFile($certPath) || ! File::isReadable($certPath)) {
@@ -661,14 +695,16 @@ class WalletPassService
         if (StrHelper::isEmptyStringOrNull(config('wallet_pass.type_id', null))) {
             $reasons[] = 'WALLET_PASS_TYPE_ID is not set in .env';
         }
-        $certPath = $this->resolvePath(config('wallet_pass.cert_path', ''));
-        $keyPath = $this->resolvePath(config('wallet_pass.key_path', ''));
+        $certPath = $this->resolveEffectiveCertPath();
+        $keyPath = $this->resolveEffectiveKeyPath();
         $wwdrPath = $this->resolvePath(config('wallet_pass.wwdr_path', ''));
-        if ($certPath !== '' && ! is_readable($certPath)) {
-            $reasons[] = 'pass.cer not found or not readable: '.$certPath;
+        if ($certPath === '' || ! is_readable($certPath)) {
+            $configured = $this->resolvePath(config('wallet_pass.cert_path', ''));
+            $reasons[] = 'pass.cer not found or not readable: '.($configured !== '' ? $configured : storage_path('app/wallet_pass/certificates/pass.cer'));
         }
-        if ($keyPath !== '' && ! is_readable($keyPath)) {
-            $reasons[] = 'iOS-Passkey-Key.key not found or not readable: '.$keyPath;
+        if ($keyPath === '' || ! is_readable($keyPath)) {
+            $configured = $this->resolvePath(config('wallet_pass.key_path', ''));
+            $reasons[] = 'iOS-Passkey-Key.key not found or not readable: '.($configured !== '' ? $configured : storage_path('app/wallet_pass/certificates/iOS-Passkey-Key.key'));
         }
         if ($wwdrPath !== '' && ! is_readable($wwdrPath)) {
             $reasons[] = 'WWDR 証明書 (AppleWWDRCAG3.cer / AppleWWDRCAG4.cer) が見つかりません: '.$wwdrPath;
@@ -694,6 +730,56 @@ class WalletPassService
         }
 
         return base_path($path);
+    }
+
+    private function resolveEffectiveCertPath(): string
+    {
+        $configured = $this->resolvePath((string) config('wallet_pass.cert_path', ''));
+        if ($configured !== '' && is_readable($configured)) {
+            return $configured;
+        }
+
+        return $this->discoverCertificatePath('cer') ?? $configured;
+    }
+
+    private function resolveEffectiveKeyPath(): string
+    {
+        $configured = $this->resolvePath((string) config('wallet_pass.key_path', ''));
+        if ($configured !== '' && is_readable($configured)) {
+            return $configured;
+        }
+
+        return $this->discoverCertificatePath('key') ?? $configured;
+    }
+
+    private function discoverCertificatePath(string $kind): ?string
+    {
+        $dir = storage_path('app/wallet_pass/certificates');
+        if (! is_dir($dir)) {
+            return null;
+        }
+
+        if ($kind === 'cer') {
+            foreach (glob($dir.'/*.cer') ?: [] as $path) {
+                $basename = basename($path);
+                if (str_starts_with($basename, 'AppleWWDRCA')) {
+                    continue;
+                }
+                if (is_readable($path)) {
+                    return $path;
+                }
+            }
+
+            return null;
+        }
+
+        foreach (glob($dir.'/*.key') ?: [] as $path) {
+            if (is_readable($path)) {
+                return $path;
+            }
+        }
+
+        return null;
     }
 
     private function resolveWwdrPathForCertificate(string $certPath, string $configuredWwdrPath): string

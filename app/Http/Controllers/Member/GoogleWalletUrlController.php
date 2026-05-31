@@ -8,6 +8,7 @@ use App\UseCases\Member\GoogleWallet\Data\GetGoogleWalletUrlInput;
 use App\UseCases\Member\GoogleWallet\Data\GetGoogleWalletUrlOutput;
 use App\UseCases\Member\GoogleWallet\GetGoogleWalletUrlUseCase;
 use App\Util\AdminContext;
+use App\Util\LogHelper;
 use App\Util\StrHelper;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -27,6 +28,26 @@ class GoogleWalletUrlController extends Controller
     {
         $input = $this->buildInput($request);
         $output = $this->getGoogleWalletUrlUseCase->handle($input);
+
+        if ($output->success) {
+            LogHelper::info('[GoogleWallet] url issued', [
+                'user_id' => $input->user?->id,
+                'line_user_tail' => ($input->user !== null && is_string($input->user->line_user_id))
+                    ? substr($input->user->line_user_id, -4)
+                    : null,
+                'project_key' => $input->projectKey,
+                'via_token' => ! StrHelper::isEmptyStringOrNull($request->query('token')),
+                'url_length' => strlen((string) $output->url),
+            ]);
+        } else {
+            LogHelper::warning('[GoogleWallet] url issue failed', [
+                'user_id' => $input->user?->id,
+                'error_type' => $output->errorType,
+                'error_message' => $output->errorMessage,
+                'reasons' => $output->reasons,
+                'project_key' => $input->projectKey,
+            ]);
+        }
 
         return $this->outputToResponse($output);
     }
@@ -70,6 +91,9 @@ class GoogleWalletUrlController extends Controller
             return response()->json(['error' => $output->errorMessage], Response::HTTP_FORBIDDEN);
         }
 
-        return response()->json(['error' => $output->errorMessage], Response::HTTP_BAD_REQUEST);
+        return response()->json([
+            'error' => $output->errorMessage,
+            'reasons' => $output->reasons,
+        ], Response::HTTP_BAD_REQUEST);
     }
 }
