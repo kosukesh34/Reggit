@@ -105,13 +105,41 @@
         return meta ? (meta.getAttribute('content') || '').trim() : '';
     }
 
-    function setLineUserId(userId) {
-        window.__LINE_USER_ID__ = userId || null;
+    function setLineUserId(userId, source) {
         const normalized = userId ? String(userId).trim() : '';
-        if (normalized && /^U[0-9a-f]{32}$/i.test(normalized)) {
+        const valid = normalized && /^U[0-9a-f]{32}$/i.test(normalized);
+        const previous = window.__LINE_USER_ID__ ? String(window.__LINE_USER_ID__).trim() : '';
+
+        if (valid && previous && previous !== normalized) {
+            debug('liff_line_user_id_changed', {
+                source: source || 'unknown',
+                previous_tail: previous.slice(-4),
+                next_tail: normalized.slice(-4),
+            });
+        }
+
+        window.__LINE_USER_ID__ = valid ? normalized : null;
+
+        if (valid) {
             try {
                 if (typeof window !== 'undefined' && window.localStorage) {
-                    window.localStorage.setItem('mobile_order_line_user_id', normalized);
+                    const projectKey = (typeof window.__PROJECT_KEY__ !== 'undefined' && window.__PROJECT_KEY__)
+                        ? window.__PROJECT_KEY__
+                        : 'default';
+                    window.localStorage.setItem('mobile_order_line_user_id_' + projectKey, normalized);
+                    window.localStorage.removeItem('mobile_order_line_user_id');
+                }
+            } catch (e) { /* ignore */ }
+            debug('liff_user_set', { source: source || 'unknown', tail: normalized.slice(-4) });
+        } else if (previous) {
+            debug('liff_user_cleared', { source: source || 'unknown', previous_tail: previous.slice(-4) });
+            try {
+                if (typeof window !== 'undefined' && window.localStorage) {
+                    const projectKey = (typeof window.__PROJECT_KEY__ !== 'undefined' && window.__PROJECT_KEY__)
+                        ? window.__PROJECT_KEY__
+                        : 'default';
+                    window.localStorage.removeItem('mobile_order_line_user_id_' + projectKey);
+                    window.localStorage.removeItem('mobile_order_line_user_id');
                 }
             } catch (e) { /* ignore */ }
         }
@@ -388,26 +416,41 @@
     }
 
     // ─── メイン初期化ロジック ───
+    function applyLiffDesignTokens() {
+        if (typeof document === 'undefined' || typeof window === 'undefined') return;
+        const settings = window.__LIFF_TAB_SETTINGS__ || {};
+        const global = settings._global || {};
+        const root = document.documentElement;
+        const radiusMap = {
+            compact: { xs: '6px', sm: '10px', md: '12px', lg: '14px', xl: '18px' },
+            default: { xs: '8px', sm: '12px', md: '16px', lg: '20px', xl: '24px' },
+            soft: { xs: '10px', sm: '14px', md: '18px', lg: '22px', xl: '28px' },
+            round: { xs: '12px', sm: '18px', md: '24px', lg: '28px', xl: '32px' },
+        };
+        if (global.content_padding) root.style.setProperty('--content-padding', global.content_padding + 'px');
+        if (global.section_gap) root.style.setProperty('--section-gap', global.section_gap + 'px');
+        const scale = radiusMap[global.radius_scale] || radiusMap.soft;
+        root.style.setProperty('--radius-xs', scale.xs);
+        root.style.setProperty('--radius-sm', scale.sm);
+        root.style.setProperty('--radius', scale.md);
+        root.style.setProperty('--radius-lg', scale.lg);
+        root.style.setProperty('--radius-xl', scale.xl);
+        const applyBodyClass = function () {
+            if (!document.body || !global.tab_style || global.tab_style === 'default') return;
+            document.body.classList.add('tab-style-' + global.tab_style);
+        };
+        applyBodyClass();
+        if (!document.body) {
+            document.addEventListener('DOMContentLoaded', applyBodyClass, { once: true });
+        }
+    }
+
     applyNativeEmbedClass();
+    applyLiffDesignTokens();
     persistQueueTokenIfPresent();
 
     window.__IS_LIFF__ = isInLineApp();
     applyEmbedModeClass(window.__IS_LIFF__);
-
-    function restorePersistedLineUserIdEarly() {
-        if (typeof window === 'undefined' || !window.localStorage) return;
-        try {
-            const cached = String(window.localStorage.getItem('mobile_order_line_user_id') || '').trim();
-            if (/^U[0-9a-f]{32}$/i.test(cached)) {
-                setLineUserId(cached);
-                debug('liff_restore_persisted_line_user_id', { hasUserId: true });
-            }
-        } catch (e) { /* ignore */ }
-    }
-
-    if (window.__IS_LIFF__) {
-        restorePersistedLineUserIdEarly();
-    }
 
     const liffId = getLiffId();
     debug('liff_boot_start', { isLiff: !!window.__IS_LIFF__, hasLiffId: !!liffId });
@@ -415,7 +458,7 @@
     // (A) LIFF ID 未設定
     if (!liffId) {
         window.__LIFF_ID_MISSING__ = true;
-        setLineUserId(null);
+        setLineUserId(null, 'liff_id_missing');
         setLineProfile(null);
         setTimeout(dispatchReady, 50);
         return;
@@ -423,7 +466,7 @@
 
     // (B) 外部ブラウザ or ネイティブアプリ → LIFF 初期化せず、認証なしでアプリ表示
     if (!window.__IS_LIFF__) {
-        setLineUserId(null);
+        setLineUserId(null, 'external_browser');
         setLineProfile(null);
         setTimeout(dispatchReady, 50);
         return;
@@ -439,8 +482,8 @@
         }).then(function () {
             debug('liff_init_success', {});
             const userId = liff.isLoggedIn() ? getLineUserIdFromToken() : null;
-            setLineUserId(userId);
-            debug('liff_user_resolved', { hasUserId: !!userId });
+            setLineUserId(userId, 'liff_token');
+            debug('liff_user_resolved', { hasUserId: !!userId, tail: userId ? String(userId).slice(-4) : '' });
             if (userId) {
                 dispatchReady();
                 getProfileWithPermissionHandling()
@@ -488,7 +531,7 @@
                 } catch (e) { /* ignore */ }
                 return;
             }
-            setLineUserId(null);
+            setLineUserId(null, 'liff_id_missing');
             dispatchReady();
         });
     }
@@ -503,7 +546,7 @@
             }
             if (Date.now() - start >= maxWaitMs) {
                 console.warn('LIFF SDK load timeout');
-                setLineUserId(null);
+                setLineUserId(null, 'liff_id_missing');
                 if (window.__IS_LIFF__) {
                     setLoadingText('認証が必要です。');
                     showLoginRequiredFallback();

@@ -44,13 +44,13 @@ return [
     | LoyaltyClass で必須のプログラムロゴ画像の URL。
     | HTTPS で公開アクセス可能な画像（推奨: PNG、660x660 以上）。本番では自社ロゴの URL を .env で指定すること。
     */
-    'program_logo_uri' => env('GOOGLE_WALLET_PROGRAM_LOGO_URI', 'https://placehold.co/660x660.png'),
+    'program_logo_uri' => env('GOOGLE_WALLET_PROGRAM_LOGO_URI', 'https://www.gstatic.com/images/branding/product/2x/wallet_96dp.png'),
 
     /*
     | LoyaltyObject のヒーロー画像 URL（カード上部のメイン画像）。
     | 未設定時は program_logo_uri と同じ画像を使用。
     */
-    'hero_image_uri' => env('GOOGLE_WALLET_HERO_IMAGE_URI', 'https://placehold.co/660x660.png'),
+    'hero_image_uri' => env('GOOGLE_WALLET_HERO_IMAGE_URI', 'https://www.gstatic.com/images/branding/product/2x/wallet_96dp.png'),
 
     /*
     | 検証用: 会員未登録でも Google Wallet 追加用 URL を発行する。

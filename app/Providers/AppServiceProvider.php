@@ -10,6 +10,7 @@ use App\Observers\MemberStampObserver;
 use App\Observers\PointTransactionObserver;
 use App\Observers\ProjectObserver;
 use App\Services\GoogleWalletPassService;
+use App\Services\WalletPassService;
 use App\UseCases\Payment\PaymentGateway;
 use App\UseCases\Payment\StripePaymentGateway;
 use App\Util\AdminContext;
@@ -114,7 +115,8 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('projectName', $project ? ((string) $project->name) : 'モバイルオーダー');
                 $view->with('featureFlags', ShopSetting::getFeatureFlags($projectId));
                 $googleWalletPassService = app(GoogleWalletPassService::class);
-                $view->with('walletPassEnabled', config('wallet_pass.enabled', false));
+                $walletPassService = app(WalletPassService::class);
+                $view->with('walletPassEnabled', $walletPassService->isAvailable());
                 $view->with('googleWalletEnabled', $googleWalletPassService->isAvailable());
                 $view->with('frontendLogoUrl', ShopSetting::getFrontendLogoUrl($projectId));
                 $view->with('frontendHeaderText', ShopSetting::getFrontendHeaderText($projectId));

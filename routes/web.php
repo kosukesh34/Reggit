@@ -42,6 +42,7 @@ use App\Http\Controllers\Admin\Settings\SmaregiController;
 use App\Http\Controllers\Admin\Settings\WalletController;
 use App\Http\Controllers\Admin\StampController as AdminStampController;
 use App\Http\Controllers\Admin\SystemAdminDashboardController;
+use App\Http\Controllers\GoogleWalletSaveRedirectController;
 use App\Http\Controllers\LiffController;
 use App\Http\Controllers\Smaregi\SmaregiIdpController;
 use App\Http\Controllers\Smaregi\SmaregiWebhookController;
@@ -97,7 +98,12 @@ Route::prefix('liff')->middleware('bind.project')->group(function () {
 });
 
 // Wallet 追加用の中間ページ（追加後にアプリへ戻るリンクを表示）
-Route::get('/wallet-add', WalletAddPageController::class)->name('wallet-add');
+Route::get('/wallet-add', WalletAddPageController::class)
+    ->middleware('bind.project')
+    ->name('wallet-add');
+Route::get('/google-wallet/save/{token}', GoogleWalletSaveRedirectController::class)
+    ->middleware('bind.project')
+    ->name('google-wallet.save');
 
 // ========== 管理画面ログイン（認証不要・スロットリング適用） ==========
 Route::get('/admin/login', [AdminLoginController::class, 'show'])->name('admin.login');
