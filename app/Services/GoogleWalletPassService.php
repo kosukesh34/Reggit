@@ -34,14 +34,35 @@ class GoogleWalletPassService
 
     private const JWT_ALGORITHM = 'RS256';
 
-    /** 設定未指定時に使うデフォルト画像 URL（config の default と一致させる） */
-    private const DEFAULT_LOGO_URI = 'https://storage.googleapis.com/wallet-lab-tools-codelab-artifacts-public/pass_google_logo.jpg';
+    private const API_HEALTH_CACHE_KEY = 'google_wallet_api_health_ok';
+
+    /** Google Wallet API が取得できる公開 HTTPS 画像（旧 codelab URL は 2025 以降無効） */
+    private const DEFAULT_LOGO_URI = 'https://www.gstatic.com/images/branding/product/2x/wallet_96dp.png';
 
     private GoogleWalletLoyaltyPayloadBuilder $payloadBuilder;
+
+    private ?string $lastError = null;
 
     public function __construct(GoogleWalletLoyaltyPayloadBuilder $payloadBuilder)
     {
         $this->payloadBuilder = $payloadBuilder;
+    }
+
+    public function getLastError(): ?string
+    {
+        return $this->lastError;
+    }
+
+    public function getServiceAccountEmail(): ?string
+    {
+        $credentials = $this->loadCredentials();
+
+        return is_array($credentials) ? ($credentials['client_email'] ?? null) : null;
+    }
+
+    private function setLastError(string $message): void
+    {
+        $this->lastError = $message;
     }
 
     /**
@@ -57,6 +78,7 @@ class GoogleWalletPassService
                 'user_id' => $user->id,
                 'project_id' => $projectId,
             ]);
+            $this->setLastError('会員情報が見つかりません。');
 
             return null;
         }
@@ -239,7 +261,18 @@ class GoogleWalletPassService
         ?int $projectId = null,
         string $hexBackgroundColor = ''
     ): ?string {
+        $this->lastError = null;
         if (! $this->isAvailable()) {
+            $this->setLastError('Google Wallet API is unavailable.');
+
+            return null;
+        }
+
+        if (! $this->verifyWalletApiAccess()) {
+            if ($this->lastError === null || $this->lastError === '') {
+                $this->setLastError('Google Wallet API に接続できません。しばらくしてから再度お試しください。');
+            }
+
             return null;
         }
 
@@ -276,7 +309,8 @@ class GoogleWalletPassService
             'rankLabel' => $rankLabel,
             'hexBackgroundColor' => $hexBackgroundColor,
         ];
-        $built = $this->payloadBuilder->build($payloadParams);
+        $classExistsOnServer = $this->loyaltyClassExistsOnServer($classId);
+        $built = $this->payloadBuilder->build($payloadParams, forSaveJwt: true);
 
         $credentials = $this->loadCredentials();
         if ($credentials === null) {
@@ -286,9 +320,19 @@ class GoogleWalletPassService
         $origins = $this->buildOrigins();
 
         $payload = [
-            'loyaltyClasses' => [$built['loyaltyClass']],
             'loyaltyObjects' => [$built['loyaltyObject']],
         ];
+        if (! $classExistsOnServer) {
+            $payload['loyaltyClasses'] = [$built['loyaltyClass']];
+        }
+
+        Log::info('google-wallet JWT payload mode', [
+            'class_id' => $classId,
+            'object_id' => $objectId,
+            'includes_class' => ! $classExistsOnServer,
+            'origins' => $origins,
+            'project_id' => $projectId,
+        ]);
 
         $claims = [
             'iss' => $credentials['client_email'],
@@ -346,6 +390,10 @@ class GoogleWalletPassService
             && $data['member'] instanceof Member;
     }
 
+    /**
+     * Save URL（JWT）発行・UI 表示可否。Wallet Objects API の有効化は必須にしない。
+     * JWT に class/object を同梱するため、API 403 でも追加リンク自体は発行できる。
+     */
     public function isAvailable(): bool
     {
         if (config('google_wallet.enabled', false) !== true) {
@@ -353,6 +401,16 @@ class GoogleWalletPassService
         }
 
         return $this->canSyncExistingObjects();
+    }
+
+    /** 既存 LoyaltyObject の REST 更新が可能か（API 有効化が必要）。 */
+    public function isWalletApiAccessible(): bool
+    {
+        if (! $this->canSyncExistingObjects()) {
+            return false;
+        }
+
+        return $this->verifyWalletApiAccess();
     }
 
     /** 既存 LoyaltyObject の更新（ポイント同期）が可能か。UI 向け enabled フラグは見ない。 */
@@ -389,8 +447,98 @@ class GoogleWalletPassService
         if ($path === '' || ! File::isFile($path) || ! File::isReadable($path)) {
             $reasons[] = 'Service account credentials file not found or not readable: '.$path;
         }
+        if ($reasons === [] && ! $this->isWalletApiAccessible()) {
+            if ($this->lastError !== null && $this->lastError !== '') {
+                $reasons[] = $this->lastError;
+            } else {
+                $reasons[] = 'Google Wallet API is inaccessible. Check credentials and Pay & Wallet Console setup.';
+            }
+        }
 
         return $reasons;
+    }
+
+    private function loyaltyClassExistsOnServer(string $classId): bool
+    {
+        $token = $this->getWalletApiAccessToken();
+        if ($token === null) {
+            return false;
+        }
+
+        $response = Http::withToken($token)
+            ->get(self::WALLET_OBJECTS_BASE.'/loyaltyClass/'.$classId);
+
+        return $response->successful();
+    }
+
+    private function verifyWalletApiAccess(): bool
+    {
+        if (Cache::get(self::API_HEALTH_CACHE_KEY) === true) {
+            return true;
+        }
+
+        $token = $this->getWalletApiAccessToken();
+        if ($token === null) {
+            $this->setLastError('OAuth token request failed. credentials.json を確認してください。');
+
+            return false;
+        }
+
+        $issuerId = (string) config('google_wallet.issuer_id', '');
+        $classSuffix = (string) config('google_wallet.class_suffix', 'membership');
+        $classId = $issuerId.'.'.$classSuffix;
+        $response = Http::withToken($token)
+            ->get(self::WALLET_OBJECTS_BASE.'/loyaltyClass/'.$classId);
+
+        if ($response->status() === 404 || $response->successful()) {
+            Cache::put(self::API_HEALTH_CACHE_KEY, true, now()->addMinutes(10));
+
+            return true;
+        }
+
+        if ($response->status() === 403) {
+            $message = $this->parseWallet403Message($response->body());
+            $this->setLastError($message);
+            Log::warning('[GoogleWallet] API access check failed', [
+                'class_id' => $classId,
+                'status' => $response->status(),
+                'service_account' => $this->getServiceAccountEmail(),
+                'message' => $message,
+            ]);
+
+            return false;
+        }
+
+        $this->setLastError('Google Wallet API check failed (HTTP '.$response->status().').');
+
+        return false;
+    }
+
+    private function parseWallet403Message(string $body): string
+    {
+        $decoded = json_decode($body, true);
+        $reason = is_array($decoded)
+            ? (string) ($decoded['error']['errors'][0]['reason'] ?? '')
+            : '';
+        $activationUrl = is_array($decoded)
+            ? ($decoded['error']['details'][0]['metadata']['activationUrl'] ?? null)
+            : null;
+        $serviceAccount = $this->getServiceAccountEmail() ?? 'credentials.json の client_email';
+
+        if ($reason === 'permissionDenied') {
+            return 'Google Wallet のサービスアカウントが Issuer に未登録です。'
+                .'Pay & Wallet Console → Users に '.$serviceAccount
+                .' を Developer として追加してください。'
+                .' あわせて GCP プロジェクトで Google Wallet API を有効化してください。';
+        }
+
+        if (is_string($activationUrl) && $activationUrl !== '') {
+            return 'Google Wallet API が無効です。有効化: '.$activationUrl;
+        }
+
+        return 'Google Wallet API へのアクセスが拒否されました (HTTP 403)。'
+            .' サービスアカウント '.$serviceAccount.' が Issuer ID '
+            .config('google_wallet.issuer_id').' に紐付いているか確認してください。';
     }
 
     /**
@@ -457,6 +605,12 @@ class GoogleWalletPassService
         }
         if ($origins === []) {
             $origins = [$this->getFallbackOrigin()];
+        }
+
+        foreach (['https://liff.line.me', 'https://miniapp.line.me'] as $liffOrigin) {
+            if (! in_array($liffOrigin, $origins, true)) {
+                $origins[] = $liffOrigin;
+            }
         }
 
         return $origins;
@@ -562,12 +716,14 @@ class GoogleWalletPassService
                 'status' => $get->status(),
                 'body' => $body,
             ]);
-            if ($get->status() === 403 && is_string($body) && str_contains($body, 'walletobjects.googleapis.com')) {
-                $decoded = json_decode($body, true);
-                $url = $decoded['error']['details'][0]['metadata']['activationUrl'] ?? null;
-                if (is_string($url)) {
-                    Log::warning('google-wallet API が無効です。以下の URL で「Google Wallet API」を有効にしてください: '.$url);
-                }
+            if ($get->status() === 403 && is_string($body)) {
+                $message = $this->parseWallet403Message($body);
+                $this->setLastError($message);
+                Log::warning('[GoogleWallet] loyaltyClass access denied', [
+                    'class_id' => $classId,
+                    'service_account' => $this->getServiceAccountEmail(),
+                    'message' => $message,
+                ]);
             }
 
             return false;

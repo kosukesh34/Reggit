@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\User;
 use App\Models\UserDevice;
 use App\Util\AdminContext;
+use App\Util\LogHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 
@@ -21,6 +22,8 @@ class UserService
         if ($lineUserId !== null) {
             $user = $this->findActiveUserByLineId($lineUserId, $projectId);
             if ($user !== null) {
+                $this->logResolution('line', $user, $lineUserId, $deviceIdentifier);
+
                 return $user;
             }
         }
@@ -34,10 +37,14 @@ class UserService
                 $deviceUser = User::where('id', $device->user_id)->where('project_id', $projectId)->first();
                 if ($deviceUser !== null) {
                     if ($lineUserId !== null) {
-                        return $this->resolveStoredUserForLineId($deviceUser, $lineUserId, $projectId);
+                        $resolved = $this->resolveStoredUserForLineId($deviceUser, $lineUserId, $projectId);
+                        $this->logResolution($resolved ? 'device_line_resolved' : 'device_line_unresolved', $resolved, $lineUserId, $deviceIdentifier);
+
+                        return $resolved;
                     }
                     Session::put($this->getSessionKey($projectId), $deviceUser->id);
                     $device->forceFill(['last_used_at' => now()])->save();
+                    $this->logResolution('device', $deviceUser, $lineUserId, $deviceIdentifier);
 
                     return $deviceUser;
                 }
@@ -47,20 +54,27 @@ class UserService
         $user = $request->user();
         if ($user !== null && (int) $user->project_id === $projectId) {
             Session::put($this->getSessionKey($projectId), $user->id);
+            $this->logResolution('auth_user', $user, $lineUserId, $deviceIdentifier);
 
             return $user;
         }
 
         $sessionUser = $this->findSessionUser($projectId);
         if ($sessionUser === null) {
+            $this->logResolution('none', null, $lineUserId, $deviceIdentifier);
+
             return null;
         }
 
         if ($lineUserId !== null) {
-            return $this->resolveStoredUserForLineId($sessionUser, $lineUserId, $projectId);
+            $resolved = $this->resolveStoredUserForLineId($sessionUser, $lineUserId, $projectId);
+            $this->logResolution($resolved ? 'session_line_resolved' : 'session_line_unresolved', $resolved, $lineUserId, $deviceIdentifier);
+
+            return $resolved;
         }
 
         Session::put($this->getSessionKey($projectId), $sessionUser->id);
+        $this->logResolution('session', $sessionUser, $lineUserId, $deviceIdentifier);
 
         return $sessionUser;
     }
@@ -69,10 +83,13 @@ class UserService
     {
         $projectId = AdminContext::getCurrentProjectId() ?? 1;
         $lineUserId = $this->normalizeLineUserId($request->header('X-Line-User-Id'));
+        $deviceIdentifier = $this->normalizeDeviceIdentifier($request->header('X-Device-Identifier'));
 
         if ($lineUserId !== null) {
             $byLine = $this->findActiveUserByLineId($lineUserId, $projectId);
             if ($byLine !== null) {
+                $this->logResolution('get_or_create_line', $byLine, $lineUserId, $deviceIdentifier);
+
                 return $byLine;
             }
         }
@@ -83,6 +100,7 @@ class UserService
                 $this->releaseLineUserIdHeldByWithdrawnUsers($lineUserId, $projectId);
                 $this->linkLineUserIdIfPossible($existing, $lineUserId, $projectId);
             }
+            $this->logResolution('get_or_create_existing', $existing, $lineUserId, $deviceIdentifier);
 
             return $existing;
         }
@@ -91,19 +109,36 @@ class UserService
             $this->releaseLineUserIdHeldByWithdrawnUsers($lineUserId, $projectId);
             $user = $this->createGuestUser($lineUserId, $projectId);
             Session::put($this->getSessionKey($projectId), $user->id);
+            $this->logResolution('get_or_create_new_line', $user, $lineUserId, $deviceIdentifier);
 
             return $user;
         }
 
         $sessionUser = $this->findSessionUser($projectId);
         if ($sessionUser !== null) {
+            $this->logResolution('get_or_create_session', $sessionUser, $lineUserId, $deviceIdentifier);
+
             return $sessionUser;
         }
 
         $user = $this->createGuestUser('guest-'.uniqid(), $projectId);
         Session::put($this->getSessionKey($projectId), $user->id);
+        $this->logResolution('get_or_create_guest', $user, $lineUserId, $deviceIdentifier);
 
         return $user;
+    }
+
+    private function logResolution(string $route, ?User $user, ?string $lineUserId, ?string $deviceIdentifier): void
+    {
+        LogHelper::info('[UserService] user resolved', [
+            'route' => $route,
+            'user_id' => $user?->id,
+            'line_user_tail' => $lineUserId !== null ? substr($lineUserId, -4) : null,
+            'device_prefix' => $deviceIdentifier !== null ? substr($deviceIdentifier, 0, 8) : null,
+            'resolved_line_tail' => ($user !== null && is_string($user->line_user_id))
+                ? substr($user->line_user_id, -4)
+                : null,
+        ]);
     }
 
     private function findSessionUser(int $projectId): ?User

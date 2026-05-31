@@ -52,6 +52,15 @@ class LiffDesignerSanitizer
         }
 
         $safe = [];
+
+        $global = $tabSettings['_global'] ?? null;
+        if (is_array($global)) {
+            $globalSafe = self::sanitizeGlobalSettings($global);
+            if ($globalSafe !== []) {
+                $safe['_global'] = $globalSafe;
+            }
+        }
+
         foreach (self::ALLOWED_TABS as $tab) {
             $row = $tabSettings[$tab] ?? null;
             if (! is_array($row)) {
@@ -66,12 +75,52 @@ class LiffDesignerSanitizer
             if ($bgImage !== '') {
                 $item['background_image'] = $bgImage;
             }
+            if (isset($row['content_padding']) && is_numeric($row['content_padding'])) {
+                $item['content_padding'] = self::num($row['content_padding'], 8, 40, 18);
+            }
+            $bgSize = (string) ($row['background_size'] ?? '');
+            if (in_array($bgSize, ['cover', 'contain', 'auto'], true)) {
+                $item['background_size'] = $bgSize;
+            }
+            $bgPosition = self::text($row['background_position'] ?? '', 32);
+            if (in_array($bgPosition, ['center', 'top', 'bottom', 'left', 'right'], true)) {
+                $item['background_position'] = $bgPosition;
+            }
+            $bgRepeat = (string) ($row['background_repeat'] ?? '');
+            if (in_array($bgRepeat, ['no-repeat', 'repeat', 'repeat-x', 'repeat-y'], true)) {
+                $item['background_repeat'] = $bgRepeat;
+            }
             if ($item !== []) {
                 $safe[$tab] = $item;
             }
         }
 
         return $safe;
+    }
+
+    /**
+     * @param  array<string, mixed>  $row
+     * @return array<string, int|string>
+     */
+    private static function sanitizeGlobalSettings(array $row): array
+    {
+        $item = [];
+        if (isset($row['content_padding']) && is_numeric($row['content_padding'])) {
+            $item['content_padding'] = self::num($row['content_padding'], 8, 40, 18);
+        }
+        if (isset($row['section_gap']) && is_numeric($row['section_gap'])) {
+            $item['section_gap'] = self::num($row['section_gap'], 4, 32, 16);
+        }
+        $radiusScale = (string) ($row['radius_scale'] ?? 'default');
+        if (in_array($radiusScale, ['compact', 'default', 'soft', 'round'], true)) {
+            $item['radius_scale'] = $radiusScale;
+        }
+        $tabStyle = (string) ($row['tab_style'] ?? 'default');
+        if (in_array($tabStyle, ['default', 'pill', 'floating'], true)) {
+            $item['tab_style'] = $tabStyle;
+        }
+
+        return $item;
     }
 
     public static function sanitizeCustomCss(string $css): string
@@ -131,6 +180,10 @@ class LiffDesignerSanitizer
         $bg = self::color($row['background_color'] ?? null);
         if ($bg !== null) {
             $b['background_color'] = $bg;
+        }
+        $textColor = self::color($row['text_color'] ?? null);
+        if ($textColor !== null) {
+            $b['text_color'] = $textColor;
         }
 
         switch ($type) {

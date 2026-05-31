@@ -6,6 +6,7 @@ use App\Services\GoogleWalletPassService;
 use App\Services\MemberService;
 use App\UseCases\Member\GoogleWallet\Data\GetGoogleWalletUrlInput;
 use App\UseCases\Member\GoogleWallet\Data\GetGoogleWalletUrlOutput;
+use App\UseCases\Member\GoogleWallet\GoogleWalletSaveUrlIssuer;
 use App\Util\StrHelper;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -20,7 +21,8 @@ class GetGoogleWalletUrlUseCase
 
     public function __construct(
         private readonly GoogleWalletPassService $googleWalletPassService,
-        private readonly MemberService $memberService
+        private readonly MemberService $memberService,
+        private readonly GoogleWalletSaveUrlIssuer $saveUrlIssuer
     ) {}
 
     public function handle(GetGoogleWalletUrlInput $input): GetGoogleWalletUrlOutput
@@ -43,7 +45,9 @@ class GetGoogleWalletUrlUseCase
                 ]);
                 $this->logUrlFailed($input);
 
-                return GetGoogleWalletUrlOutput::urlFailed();
+                return GetGoogleWalletUrlOutput::urlFailed(
+                    $this->googleWalletPassService->getLastError() ?? 'URL を発行できませんでした'
+                );
             }
 
             Log::info('google-wallet-url success', [
@@ -51,7 +55,7 @@ class GetGoogleWalletUrlUseCase
                 'project_id' => $input->projectId,
             ]);
 
-            return GetGoogleWalletUrlOutput::success($url);
+            return GetGoogleWalletUrlOutput::success($this->wrapClientUrl($url, $input->projectKey));
         }
 
         $sessionResult = $this->resolveUrlBySession($input);
@@ -64,12 +68,17 @@ class GetGoogleWalletUrlUseCase
                 'project_id' => $input->projectId,
             ]);
 
-            return GetGoogleWalletUrlOutput::success($sessionResult);
+            return GetGoogleWalletUrlOutput::success($this->wrapClientUrl($sessionResult, $input->projectKey));
         }
 
         $this->logUrlFailed($input);
 
-        return GetGoogleWalletUrlOutput::urlFailed();
+        $lastError = $this->googleWalletPassService->getLastError();
+
+        return GetGoogleWalletUrlOutput::urlFailed(
+            $lastError ?? 'URL を発行できませんでした',
+            $lastError !== null && $lastError !== '' ? [$lastError] : []
+        );
     }
 
     private function logRequest(GetGoogleWalletUrlInput $input): void
@@ -86,6 +95,7 @@ class GetGoogleWalletUrlUseCase
         Log::warning('google-wallet-url url is null', [
             'project_key' => $input->projectKey,
             'project_id' => $input->projectId,
+            'last_error' => $this->googleWalletPassService->getLastError(),
         ]);
     }
 
@@ -157,5 +167,10 @@ class GetGoogleWalletUrlUseCase
         Log::info('google-wallet-url demo user url issued', ['user_id' => $userId]);
 
         return $url;
+    }
+
+    private function wrapClientUrl(string $saveUrl, string $projectKey): string
+    {
+        return $this->saveUrlIssuer->wrapForClient($saveUrl, $projectKey);
     }
 }
