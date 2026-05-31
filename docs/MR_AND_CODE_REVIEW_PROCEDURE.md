@@ -1,5 +1,8 @@
 # MR（Merge Request）・PR（Pull Request）作成手順とコードレビュー手順
 
+> **GitHub 向けの実務手順（ブランチ命名・`gh` コマンド・PR 前チェック）** は [GITHUB_PULL_REQUEST_WORKFLOW.md](./GITHUB_PULL_REQUEST_WORKFLOW.md) を参照。  
+> 本文書はレビュー観点とコーディング規則の確認に重点を置く。
+
 ## 1. MR/PR 作成手順
 
 ### 1.1 ブランチで作業する
