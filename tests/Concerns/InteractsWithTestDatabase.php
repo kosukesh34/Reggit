@@ -2,6 +2,8 @@
 
 namespace Tests\Concerns;
 
+use PHPUnit\Framework\Assert;
+
 /**
  * テスト実行時に開発 DB (reggit) を RefreshDatabase で消さないためのガード。
  *
@@ -29,7 +31,7 @@ trait InteractsWithTestDatabase
         $database = (string) config('database.connections.'.config('database.default').'.database');
 
         if ($database !== $expected) {
-            \PHPUnit\Framework\Assert::fail(
+            Assert::fail(
                 "テストは開発 DB (reggit) ではなく {$expected} に接続する必要があります。"
                 ." 現在: {$database}。"
                 .' make test-env && make test-db && make test を実行してください。'
