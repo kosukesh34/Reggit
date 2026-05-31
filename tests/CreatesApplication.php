@@ -4,11 +4,16 @@ namespace Tests;
 
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Foundation\Application;
+use Tests\Concerns\InteractsWithTestDatabase;
 
 trait CreatesApplication
 {
+    use InteractsWithTestDatabase;
+
     public function createApplication(): Application
     {
+        $this->forceTestDatabaseEnvironment();
+
         $app = require __DIR__.'/../bootstrap/app.php';
 
         // テスト時に storage 配下が無いと view コンパイルや file セッションで例外になるため作成する
