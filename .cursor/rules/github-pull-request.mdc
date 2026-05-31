@@ -1,0 +1,31 @@
+---
+description: GitHub Pull Request 作成・レビュー時の手順と本文の書き方（Reggit）
+alwaysApply: false
+---
+
+# Pull Request（Reggit）
+
+## 作成前
+
+- ベースは原則 `main`。`git fetch origin` 後にコンフリクトを解消する
+- コミットに `.phpunit.result.cache` / `.env` / 秘密鍵を含めない
+- PHP 変更は Docker でテスト: `docker compose exec app php artisan test <ファイル>`
+- マルチテナント: `project_id` スコープ漏れがないか確認
+
+## PR 本文
+
+- テンプレート: `.github/PULL_REQUEST_TEMPLATE.md`
+- 種別別のたたき台: `docs/pull_request_templates/`（bugfix / feature / improvement）
+- 手順書: `docs/GITHUB_PULL_REQUEST_WORKFLOW.md`
+- レビュー観点: `docs/MR_AND_CODE_REVIEW_PROCEDURE.md`
+
+## CLI
+
+- PR 作成は `gh pr create --base main`（下書きは `--draft`）
+- ユーザーがコミットを明示しない限り、勝手に commit しない（ユーザールールに従う）
+
+## タイトル例
+
+- `fix: LIFF で既存会員が未登録扱いになる`
+- `feat: スマレジ Webhook でポイント同期`
+- `chore: PR ワークフロードキュメント追加`
