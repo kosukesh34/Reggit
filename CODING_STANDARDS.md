@@ -2,6 +2,17 @@
 
 このドキュメントは、Mobile Order プロジェクトのコーディング規約を定義します。
 
+**アーキテクチャ（層の分離・依存の向き）を最優先**に確認し、詳細は [docs/CLEAN_ARCHITECTURE.md](docs/CLEAN_ARCHITECTURE.md) と [docs/CODE_RULES_COMPLIANCE.md](docs/CODE_RULES_COMPLIANCE.md) を参照してください。PR・レビュー手順は [docs/MR_AND_CODE_REVIEW_PROCEDURE.md](docs/MR_AND_CODE_REVIEW_PROCEDURE.md) です。
+
+## 0. 基本方針
+
+1. **変更は最小限**にする。保守性・可読性を優先し、冗長なコードは避ける。
+2. **既存コードにあえてテストを追加する必要はない**。新規・修正したコードには原則テストを追加する。既存テストで足りる場合は PR に理由を書く。
+3. **既存の書き方に合わせる**。同じ機能は同じ関数・同じ取得方法を使う。参照実装は **system-admin / Admin 配下** を優先する。
+4. **新規のコメントアウトは不要**。レビューは変更した部分を中心に行う。
+5. **null について**: DB 上 null になり得ても、**実際の動作・表示に関係しない**場合は、過剰な null チェックは書かない。必要ならマイグレーション・スキーマで NOT NULL を確認してから判断する。
+6. **デグレを最優先で防ぐ**。ソート順の消失・一覧の並び替え・意図しないコード削除は、意図的な変更か PR 本文で明示する。
+
 ## 1. ログ出力
 
 ### 基本方針
@@ -142,7 +153,7 @@ public function hasMember(): bool
 
 ### 方針・落とし所
 - 既存のコードにあえてテストコードを追加する必要はない
-- が「新しく触る・新規作成」するコードには基本的にテストコードを作成する
+- **新しく触る・新規作成**するコードには基本的にテストコードを作成する
 - 例外ケースは、スケジュールが厳しい時など
 
 ### Unitテスト
@@ -229,32 +240,97 @@ public static function error(string $message, array $context = []): void { ... }
 $canEditLinePlan = !StrHelper::isEmptyStringOrNull($project->smaregi_contract_id);
 ```
 
-## 18. Controller と UseCase（クリーンアーキテクチャ）
+## 18. アーキテクチャ（最優先）
 
-- Controller に直接処理を書かず、UseCase に実装する。一つのファイルが長くならないようにする。
-- **層の依存**: Controller → UseCase → Service / Model。UseCase は `Request` に依存せず、**Input** クラスまたはプリミティブで受け取る。
-- 新規 UseCase では `handle(○○Input $input): ○○Result` または `○○View` の形を推奨。入出力用クラスは UseCases 配下の **Data** フォルダに置き、名前は **Input**（入力）・**Result**（結果）・**View**（画面用）など役割で付ける（「DTO」という名前は使わない）。既存の `handle(Request $request, ...)` はリファクタ時に Input 化する。
-- 詳細は **docs/CLEAN_ARCHITECTURE.md** を参照。
+レビュー・実装では **まず層と依存の向き** を確認する。文法上動くコードでも、責務の分散やテスト容易性が崩れていれば修正対象とする。
 
-## 19. 依存関係の注入
+### 18.1 層の依存（一方向のみ）
 
-- コントローラーやサービスクラスでは、コンストラクタインジェクションを使用
-- 依存関係はprivateプロパティで保持
+```
+Controller → UseCase → Service / Repository → Model
+```
+
+| 層 | 責務 | 禁止 |
+|----|------|------|
+| **Controller** | validate → Input 組み立て → UseCase 呼び出し → レスポンス | ビジネスロジック、`new` による依存生成 |
+| **UseCase** | 1 ユースケースのオーケストレーション | 他 UseCase の呼び出し、`Request` への依存 |
+| **Service** | 再利用可能なドメイン外・技術処理 | UseCase / Controller への依存 |
+| **Input / View / Result** | 入出力の型と最小限の検証 | UseCase のロジックの肥大化 |
+
+### 18.2 `new` について（文法ではなく設計）
+
+- Controller や UseCase 内で `new MemberRank()` のように **その場で依存を生成する** のは避ける。
+- 問題になるのは主に次の点である。
+  1. 依存関係が隠れる（何に依存しているか見えにくい）
+  2. テストでモック差し替えがしづらい
+  3. ロジックが Controller / Model に戻りやすい
+  4. system-admin 等の既存実装とスタイルがずれる
+- **許容**: `new UpdateProjectInput(...)` など **入出力用 DTO / Input の生成**（データの詰め替えのみ）。
+- **禁止**: ビジネスロジックを持つ Model / Service / UseCase を `new` して利用する。
+
+### 18.3 依存の注入（Laravel コンテナ）
+
+- **Controller / UseCase / Service** の依存は Laravel コンテナ経由で渡す（`__construct` または **メソッド注入**）。`new` や、避けたい `app()` の乱用はしない。
+- 1 アクションだけ使う UseCase は、コンストラクタに 8 個並べず **メソッド引数で注入** してもよい（system-admin の `SystemAdminDashboardController` 等）。
 
 ```php
-// 良い例
-class OrderController extends Controller
-{
-    private OrderService $orderService;
-    private UserService $userService;
+// 良い例: コンストラクタ注入
+public function __construct(
+    private AdminCouponIndexUseCase $indexUseCase,
+) {}
 
-    public function __construct(OrderService $orderService, UserService $userService)
-    {
-        $this->orderService = $orderService;
-        $this->userService = $userService;
-    }
+// 良い例: メソッド注入（アクションごとに UseCase が異なる場合）
+public function dashboard(SystemAdminDashboardUseCase $useCase): View
+{
+    $dto = $useCase->handle();
+    // ...
 }
 ```
+
+```php
+// 悪い例: Controller でビジネス依存を new
+$deadline = (new MemberRank())->getRankUpDeadlineDate(...);
+
+// 悪い例: UseCase から別 UseCase を呼ぶ
+$this->otherUseCase->handle($input); // → Service に共通化する
+```
+
+### 18.4 UseCase のルール
+
+- **UseCase から UseCase を呼ばない**。複数ユースケースにまたがる処理は **Service** に寄せる。
+- **UseCase 内で `Validator::make` を使わない**。検証は Input（または FormRequest）に集約する。
+- 新規は `handle(○○Input $input): ○○Result|○○View` を推奨。入出力は UseCases 配下の **Data** に **Input / Result / View** として置く（「DTO」という名前は使わない）。
+- 詳細は [docs/CLEAN_ARCHITECTURE.md](docs/CLEAN_ARCHITECTURE.md)。
+
+### 18.5 static の使用
+
+- **原則使わない**。ViewItem / UseCase / Service のメソッドを、理由なく `static` にしない。
+- `$this` を使わないからといって `static` にしない。インスタンスメソッドでよいことが多い。
+- 例外: EnumBase、純粋なユーティリティで **状態に依存しない** ことが明確な場合のみ。
+
+### 18.6 SOLID（レビュー時の観点）
+
+| 原則 | 本プロジェクトでの確認 |
+|------|------------------------|
+| **S** 単一責務 | Controller は入出力のみ。UseCase は 1 ユースケース。 |
+| **O** 開放閉鎖 | Enum・Interface で拡張。既存分岐のコピペ増殖を避ける。 |
+| **L** リスコフ | 継承は EnumBase・Model 等、置換可能な範囲に限定。 |
+| **I** インターフェース分離 | 巨大 Interface に依存しない。 |
+| **D** 依存性逆転 | 具象を `new` せず、コンテナ注入。UseCase → Service の一方向。 |
+
+### 18.7 バリデーションの役割分担（二重化を避ける）
+
+- **FormRequest / Input**: 入力の型・ルール（UseCase に渡る前に完了していること）。
+- **UseCase**: 「検証済み Input が来る」前提。追加条件は Validator ではなく **条件分岐**。
+- Request と Input と UseCase で **同じルールを 3 回書かない**。既存の同種 Input（例: コンストラクタ第 2 引数でモード切替）を参考にする。
+
+### 18.8 テストの層
+
+| 種別 | 担保すること |
+|------|----------------|
+| **Feature（≒ Controller）** | 処理落ちしない、HTTP ステータス・認可・**モード別のスキップ**（例: OwlSolution でバリデーション省略） |
+| **Unit（Input / UseCase / Service）** | バリデーションロジック・ドメイン計算。Controller 経路の挙動は Feature に任せる |
+| **共通** | 他店舗（`project_id`）への干渉は必須。効果の薄いテストは書かない |
 
 ## 20. 例外処理
 
@@ -293,7 +369,25 @@ $validated = $request->validate([
 - **複数テーブルをまたぐ更新**で整合性を保ちたい場合にのみトランザクションを使う。単一テーブルだけの更新で、複数テーブル対応の名残のトランザクションは削除してよい。
 - `DB::beginTransaction()`, `DB::commit()`, `DB::rollBack()` を使用する。
 
-## 23. フロントエンド（JavaScript）
+## 23. 日付の扱い
+
+- **Carbon への変換**: 導入済みの場合は `DateUtil::nullableCarbon($value)` を使う。未導入の箇所は `Carbon::parse` の乱立を避け、共通化を検討する。
+- **表示**: 画面用の整形は View / ViewItem 側のヘルパ（例: `formatDateTime`）に任せ、**表示のためだけに Carbon 化しない**。
+- **比較**: 日付の大小比較は `$a > $b` ではなく、Carbon インスタンスなら **`$a->gt($b)`** 等のメソッドを使う。比較のためだけ Carbon 化する。
+- **null**: カラムが NOT NULL とスキーマで確認できたら、不要な null ガードは書かない（§0 参照）。
+
+## 24. UI（HTML）
+
+- 意図がない限り、**ページ遷移に `button` を使わない**。遷移は `<a>` を使う。
+- **`readonly`** は意図がないなら使わない。詳細表示と編集の兼用を検討する。
+
+## 25. コードの簡潔さ
+
+- **近道**: 無駄な中間変数・遠回りの分岐を避ける。使い捨ての値はそのまま渡してよい。
+- **共通化**: 同じロジックの関数・同じ見た目の CSS はまとめる（重複コピペを増やさない）。
+- **bool の返却**: API・JSON では `0` / `1` ではなく **`true` / `false`** を返す。
+
+## 26. フロントエンド（JavaScript）
 
 ### クラス構造
 - Managerクラス: 特定の機能を管理（CartManager, ProductManager, ReservationManager）
@@ -307,7 +401,7 @@ $validated = $request->validate([
 - `AppConstants` オブジェクトで定数を管理
 - APIエンドポイント、DOM要素ID、HTTPメソッドなどを定義
 
-## 24. その他
+## 27. その他
 
 - 可能な限りコードを増やさない
 - Laravelのみで実装できそうな機能はそれを追加する必要は全くない
@@ -338,10 +432,18 @@ $validated = $request->validate([
 - `\Exception` でまとめて扱ってよい。**例外の型ごとに後処理やメッセージを変える**場合だけ、個別 catch を検討する。
 - 細かい例外型を並べて同じような処理を重複させない。
 
-### 4. ViewItem / DTO の static は意味があるときだけ
+### 4. static は原則使わない
 
-- ViewItem の private メソッドを `static` にする必然性が無いなら `static` にしない。
-- `$this` を使わないからといって安易に `static` にしない。インスタンスメソッドでよい場合が多い。static にするなら「状態に依存しないユーティリティ」である理由を説明できるようにする。
+- ViewItem / UseCase / Service のメソッドを、理由なく `static` にしない（§18.5）。
+- 例外は「状態に依存しないユーティリティ」で、チームで説明できる場合のみ。
+
+### 4b. Controller / UseCase で `new` しない・UseCase 連鎖しない
+
+- ビジネス依存はコンテナ注入（§18.2–18.3）。UseCase 同士の呼び出しは Service に寄せる（§18.4）。
+
+### 4c. バリデーションの二重化をしない
+
+- Input と UseCase と Request で同じルールを繰り返さない（§18.7）。
 
 ### 5. View には「表示用の文字列」を渡す
 
@@ -363,3 +465,13 @@ $validated = $request->validate([
 
 - 単一テーブル更新でも `DB::beginTransaction()` を貼っていた場合は、「複数テーブルを更新するならトランザクション」という観点で見直す。
 - **複数テーブルをまたぐ更新**で整合性を保ちたい場合にトランザクションを使う。単一テーブルだけの更新で、過去の「複数テーブル対応」の名残のトランザクションは削除してよい。
+
+### 9. デグレ（機能・順序の消失）
+
+- ソート条件の削除・一覧順の入れ替え・既存分岐の削除は、**意図的な仕様変更か**を確認する。
+- 意図的なら PR 本文に理由を書く。意図でなければ修正する。
+
+### 10. PHPDoc と bool 返却
+
+- `@param mixed` は避け、配列は `@param array{key: type, ...}` のように形状を書く（§11）。
+- bool は `0`/`1` ではなく `true`/`false`（§25）。
