@@ -17,10 +17,11 @@
     <php>
         <!--
             APP_ENV=testing を設定すると Laravel は .env.testing を読み込む。
-            これにより、ローカル開発 DB (reggit) を tests の RefreshDatabase で破壊することを防ぐ。
-            DB 接続情報は .env.testing 側で行う（無ければ cp env.testing.example .env.testing）。
+            DB_DATABASE は Docker env_file (.env) より優先させ、RefreshDatabase が reggit を消さないようにする。
+            初回: cp env.testing.example .env.testing && make test-db
         -->
         <env name="APP_ENV" value="testing"/>
+        <env name="DB_DATABASE" value="reggit_test"/>
         <env name="APP_URL" value="http://localhost"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="CACHE_DRIVER" value="array"/>
