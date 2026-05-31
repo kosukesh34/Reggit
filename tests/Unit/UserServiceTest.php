@@ -84,6 +84,58 @@ class UserServiceTest extends TestCase
         $this->assertSame(self::LINE_USER_ID, $resolved->line_user_id);
     }
 
+    public function test_get_or_create_user_退会済みユーザーは復元せずゲストにline_idを紐づけること(): void
+    {
+        $project = $this->createProject();
+        AdminContext::setCurrentProject($project);
+
+        $withdrawn = User::factory()->create([
+            'project_id' => $project->id,
+            'line_user_id' => self::LINE_USER_ID,
+        ]);
+        $userService = app(UserService::class);
+        $userService->releaseLineUserIdForWithdraw($withdrawn);
+        $withdrawn->delete();
+
+        $guest = User::factory()->create([
+            'project_id' => $project->id,
+            'line_user_id' => 'guest-'.uniqid(),
+        ]);
+        Session::put('mobile_order_user_id_'.$project->id, $guest->id);
+
+        $request = Request::create('/', 'GET');
+        $request->headers->set('X-Line-User-Id', self::LINE_USER_ID);
+
+        $resolved = $userService->getOrCreateUser($request);
+
+        $this->assertNotSame($withdrawn->id, $resolved->id);
+        $this->assertTrue($withdrawn->fresh()->trashed());
+        $this->assertSame('withdrawn-'.$withdrawn->id, $withdrawn->fresh()->line_user_id);
+        $this->assertSame($guest->id, $resolved->id);
+        $this->assertSame(self::LINE_USER_ID, $resolved->line_user_id);
+    }
+
+    public function test_get_or_create_user_退会済みがline_idを保持していても復元しないこと(): void
+    {
+        $project = $this->createProject();
+        AdminContext::setCurrentProject($project);
+
+        $withdrawn = User::factory()->create([
+            'project_id' => $project->id,
+            'line_user_id' => self::LINE_USER_ID,
+        ]);
+        $withdrawn->delete();
+
+        $request = Request::create('/', 'GET');
+        $request->headers->set('X-Line-User-Id', self::LINE_USER_ID);
+
+        $resolved = app(UserService::class)->getOrCreateUser($request);
+
+        $this->assertNotSame($withdrawn->id, $resolved->id);
+        $this->assertTrue($withdrawn->fresh()->trashed());
+        $this->assertSame(self::LINE_USER_ID, $resolved->line_user_id);
+    }
+
     public function test_get_or_create_user_line_idが異なるセッションユーザーを使わないこと(): void
     {
         $project = $this->createProject();
