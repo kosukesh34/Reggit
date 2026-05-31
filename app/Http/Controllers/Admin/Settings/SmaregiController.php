@@ -85,10 +85,12 @@ class SmaregiController extends AdminBaseController
         try {
             $result = $this->smaregiProductSyncService->fullSync($projectId);
             $msg = sprintf(
-                '完全同期しました（スマレジ→DB: 新規 %d・更新 %d、DB→スマレジ: %d 件登録、失敗: %d）',
+                '完全同期しました（スマレジ→DB: 新規 %d・更新 %d、DB→スマレジ: %d 件登録、スマレジ重複削除: %d、在庫反映: %d、失敗: %d）',
                 $result['created'],
                 $result['updated'],
                 $result['pushed_to_smaregi'],
+                $result['deleted_from_smaregi'],
+                $result['stock_synced'],
                 $result['failed']
             );
             if ($result['failed'] > 0 && isset($result['errors']) && $result['errors'] !== []) {
