@@ -19,10 +19,8 @@ class UserService
         $deviceIdentifier = $this->normalizeDeviceIdentifier($request->header('X-Device-Identifier'));
 
         if ($lineUserId !== null) {
-            $user = User::where('line_user_id', $lineUserId)->where('project_id', $projectId)->first();
+            $user = $this->findUserByLineId($lineUserId, $projectId);
             if ($user !== null) {
-                Session::put($this->getSessionKey($projectId), $user->id);
-
                 return $user;
             }
         }
@@ -35,6 +33,9 @@ class UserService
             if ($device !== null) {
                 $deviceUser = User::where('id', $device->user_id)->where('project_id', $projectId)->first();
                 if ($deviceUser !== null) {
+                    if ($lineUserId !== null) {
+                        return $this->resolveStoredUserForLineId($deviceUser, $lineUserId, $projectId);
+                    }
                     Session::put($this->getSessionKey($projectId), $deviceUser->id);
                     $device->forceFill(['last_used_at' => now()])->save();
 
@@ -50,30 +51,32 @@ class UserService
             return $user;
         }
 
-        $sessionUserId = Session::get($this->getSessionKey($projectId));
-        if ($sessionUserId !== null) {
-            $sessionUser = User::where('id', $sessionUserId)->where('project_id', $projectId)->first();
-            if ($sessionUser !== null) {
-                $rawLineId = $this->normalizeLineUserId($request->header('X-Line-User-Id'));
-                $requestLineId = is_string($request->header('X-Line-User-Id')) ? trim($request->header('X-Line-User-Id')) : '';
-                if ($requestLineId !== '' && $sessionUser->line_user_id !== $requestLineId && $rawLineId !== $sessionUser->line_user_id) {
-                    return null;
-                }
-                if ($rawLineId !== null) {
-                    $this->linkLineUserIdIfPossible($sessionUser, $rawLineId, $projectId);
-                }
-
-                return $sessionUser;
-            }
+        $sessionUser = $this->findSessionUser($projectId);
+        if ($sessionUser === null) {
+            return null;
         }
 
-        return null;
+        if ($lineUserId !== null) {
+            return $this->resolveStoredUserForLineId($sessionUser, $lineUserId, $projectId);
+        }
+
+        Session::put($this->getSessionKey($projectId), $sessionUser->id);
+
+        return $sessionUser;
     }
 
     public function getOrCreateUser(Request $request): User
     {
         $projectId = AdminContext::getCurrentProjectId() ?? 1;
         $lineUserId = $this->normalizeLineUserId($request->header('X-Line-User-Id'));
+
+        if ($lineUserId !== null) {
+            $byLine = $this->findUserByLineId($lineUserId, $projectId);
+            if ($byLine !== null) {
+                return $byLine;
+            }
+        }
+
         $existing = $this->findUser($request);
         if ($existing !== null) {
             if ($lineUserId !== null) {
@@ -104,10 +107,34 @@ class UserService
             return $user;
         }
 
+        $sessionUser = $this->findSessionUser($projectId);
+        if ($sessionUser !== null) {
+            return $sessionUser;
+        }
+
         $user = $this->createGuestUser('guest-'.uniqid(), $projectId);
         Session::put($this->getSessionKey($projectId), $user->id);
 
         return $user;
+    }
+
+    private function findSessionUser(int $projectId): ?User
+    {
+        $sessionUserId = Session::get($this->getSessionKey($projectId));
+        if ($sessionUserId === null) {
+            return null;
+        }
+
+        return User::where('id', $sessionUserId)->where('project_id', $projectId)->first();
+    }
+
+    private function isPlaceholderLineUserId(?string $lineUserId): bool
+    {
+        if ($lineUserId === null || $lineUserId === '') {
+            return true;
+        }
+
+        return str_starts_with($lineUserId, 'guest-') || ! $this->isValidLineUserId($lineUserId);
     }
 
     private function createGuestUser(string $lineUserId, int $projectId): User
@@ -175,5 +202,48 @@ class UserService
 
         $user->line_user_id = $lineUserId;
         $user->save();
+    }
+
+    private function findUserByLineId(string $lineUserId, int $projectId): ?User
+    {
+        $user = User::where('line_user_id', $lineUserId)->where('project_id', $projectId)->first();
+        if ($user === null) {
+            return null;
+        }
+
+        Session::put($this->getSessionKey($projectId), $user->id);
+
+        return $user;
+    }
+
+    private function resolveStoredUserForLineId(User $user, string $lineUserId, int $projectId): ?User
+    {
+        if ($this->isPlaceholderLineUserId($user->line_user_id)) {
+            $this->linkLineUserIdIfPossible($user, $lineUserId, $projectId);
+            $user->refresh();
+
+            if ($user->line_user_id === $lineUserId) {
+                Session::put($this->getSessionKey($projectId), $user->id);
+
+                return $user;
+            }
+
+            $lineOwner = $this->findUserByLineId($lineUserId, $projectId);
+            if ($lineOwner !== null) {
+                return $lineOwner;
+            }
+
+            Session::put($this->getSessionKey($projectId), $user->id);
+
+            return $user;
+        }
+
+        if ($user->line_user_id !== $lineUserId) {
+            return $this->findUserByLineId($lineUserId, $projectId);
+        }
+
+        Session::put($this->getSessionKey($projectId), $user->id);
+
+        return $user;
     }
 }

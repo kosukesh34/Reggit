@@ -15,6 +15,8 @@ class MemberManager {
         this._profileEditFullScreen = false;
         this._historyHandlerBound = false;
         this._liffIdentityRetryRegistered = false;
+        this._autoRegisterAttempted = false;
+        this._lastMemberFetchWasNonMember = false;
         this._bindScreenPopState();
     }
 
@@ -307,6 +309,7 @@ class MemberManager {
             if (!payload) {
                 throw new Error('会員情報の形式が正しくありません');
             }
+            this._lastMemberFetchWasNonMember = payload.is_member !== true;
             this._setMemberContextCache(payload, fetchLineUserId);
             this._syncLineUserIdFromMemberData(result.data);
             return payload;
@@ -386,7 +389,49 @@ class MemberManager {
 
     canAutoRegister() {
         if (typeof window === 'undefined') return false;
+        if (this.memberData && this.memberData.is_member === true) return false;
+        if (!this._lastMemberFetchWasNonMember) return false;
+        if (!this._getLineUserIdForMemberApi()) return false;
         return !!(window.__LINE_PROFILE__ && window.__LINE_PROFILE__.displayName);
+    }
+
+    /** LIFF 起動直後など、LINE ユーザー ID の解決を短時間待つ */
+    async ensureIdentityReady(maxWaitMs) {
+        if (typeof window === 'undefined') return;
+        const limit = typeof maxWaitMs === 'number' ? maxWaitMs : 1500;
+        const start = Date.now();
+        while (!this._getLineUserIdForMemberApi() && Date.now() - start < limit) {
+            if (typeof this.resolveLineUserIdForClient === 'function') {
+                await this.resolveLineUserIdForClient();
+            }
+            if (this._getLineUserIdForMemberApi()) break;
+            await new Promise(function (resolve) { setTimeout(resolve, 50); });
+        }
+    }
+
+    async _handleGuestContext(payload) {
+        const container = this.getContainer();
+        if (!container) return;
+
+        if (payload && payload.is_member === true) {
+            this.render(payload);
+            return;
+        }
+        if (this.memberData && this.memberData.is_member === true) {
+            this.render(this.memberData);
+            return;
+        }
+        if (payload && payload.show_member_card_for_guest === false) {
+            container.innerHTML = this.getGuestNoCardTemplate();
+            this._attachRegisterTrigger(container);
+            return;
+        }
+        if (this.canAutoRegister() && !this._autoRegisterAttempted) {
+            await this.autoRegister();
+            return;
+        }
+        container.innerHTML = this.getGuestRegisterTemplate();
+        this._attachRegisterTrigger(container);
     }
 
     /**
@@ -551,7 +596,9 @@ class MemberManager {
         const container = this.getContainer();
         if (!container) return;
 
-        if (!window.__LINE_USER_ID__) {
+        if (typeof window !== 'undefined' && window.__IS_LIFF__) {
+            await this.ensureIdentityReady();
+        } else if (!window.__LINE_USER_ID__) {
             await this.resolveLineUserIdForClient();
         }
 
@@ -576,51 +623,65 @@ class MemberManager {
 
         try {
             const payload = await this._fetchMemberContextWithIdentityRetry({ force: true });
-            if (!payload.is_member) {
-                if (payload.show_member_card_for_guest === false) {
-                    container.innerHTML = this.getGuestNoCardTemplate();
-                    this._attachRegisterTrigger(container);
-                    return;
-                }
-                if (this.canAutoRegister()) {
-                    await this.autoRegister();
-                } else {
-                    container.innerHTML = this.getGuestRegisterTemplate();
-                    this._attachRegisterTrigger(container);
-                }
+            if (payload.is_member) {
+                this.render(payload);
                 return;
             }
-            this.render(payload);
+            await this._handleGuestContext(payload);
         } catch (error) {
             console.error('Failed to load member card:', error);
+            if (this.memberData && this.memberData.is_member) {
+                this.render(this.memberData);
+                return;
+            }
             container.innerHTML = this.getErrorTemplate(error);
         }
     }
 
     async autoRegister() {
+        if (this._autoRegisterAttempted) {
+            return;
+        }
+        this._autoRegisterAttempted = true;
+
         const payload = {};
         if (typeof window !== 'undefined' && window.__LINE_PROFILE__ && window.__LINE_PROFILE__.displayName) {
             payload.name = window.__LINE_PROFILE__.displayName;
         }
         try {
             const result = await this.apiClient.post(AppConstants.API_ENDPOINTS.MEMBERS_REGISTER, payload);
-            const payload = result.success && result.data ? (this._normalizeMemberPayload(result.data) || result.data) : null;
-            if (payload && payload.is_member) {
-                this.memberData = payload;
-                this.render(payload);
+            const raw = result.success && result.data ? result.data : null;
+            const memberPayload = raw ? (this._normalizeMemberPayload(raw) || raw) : null;
+            if (memberPayload && memberPayload.is_member) {
+                this.memberData = memberPayload;
+                this.render(memberPayload);
                 ToastManager.success('会員証を作成しました');
                 if (typeof window !== 'undefined' && window.app && typeof window.app.refreshCurrentTab === 'function') {
                     window.app.refreshCurrentTab();
                 }
-            } else if (result.success) {
-                await this.load();
-            } else {
-                throw new Error(result.error);
+                return;
             }
+            if (result.success) {
+                await this.load();
+                return;
+            }
+            const message = (result && (result.error || result.message)) ? String(result.error || result.message) : '';
+            if (message.includes('既に会員登録済み')) {
+                this._autoRegisterAttempted = false;
+                await this.load();
+                return;
+            }
+            throw new Error(result.error || message || '登録に失敗しました');
         } catch (error) {
             console.error('Auto register error:', error);
+            const message = error && error.message ? String(error.message) : '';
+            if (message.includes('既に会員登録済み')) {
+                this._autoRegisterAttempted = false;
+                await this.load();
+                return;
+            }
             try {
-                const existing = await this.fetchMemberContext({ force: true });
+                const existing = await this._fetchMemberContextWithIdentityRetry({ force: true });
                 if (existing && existing.is_member) {
                     this.render(existing);
                     return;
@@ -628,6 +689,7 @@ class MemberManager {
             } catch (e) {
                 // ignore
             }
+            this._autoRegisterAttempted = false;
             const container = this.getContainer();
             if (container) {
                 container.innerHTML = this.getGuestRegisterTemplate();

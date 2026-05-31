@@ -243,11 +243,17 @@ class MobileOrderApp {
     async onLiffReady() {
         // ネイティブアプリ内では注入タイミングが遅いことがあるため、ready 時にも init してデバイス登録を確実にする
         this.deviceManager.init();
-        await this.memberManager.resolveLineUserIdForClient();
+        await this.memberManager.ensureIdentityReady();
+        if (window.__LINE_USER_ID__ && this.apiClient) {
+            this.apiClient.persistLineUserId(window.__LINE_USER_ID__);
+        }
         try {
-            const payload = await this.memberManager.fetchMemberContext({ force: true });
+            const payload = await this.memberManager._fetchMemberContextWithIdentityRetry({ force: false });
             if (payload && payload.is_member) {
                 this.memberManager.setMemberData(payload);
+                if (this.currentTab === AppConstants.TABS.MEMBER) {
+                    this.memberManager.render(payload);
+                }
             }
         } catch (e) {
             // 未ログインなどは無視
@@ -828,7 +834,9 @@ class MobileOrderApp {
     }
 
     async loadMemberTab(useSample) {
-        if (typeof window !== 'undefined' && window.__IS_LIFF__ && !window.__LINE_USER_ID__) {
+        if (typeof window !== 'undefined' && window.__IS_LIFF__) {
+            await this.memberManager.ensureIdentityReady();
+        } else if (typeof window !== 'undefined' && !window.__LINE_USER_ID__) {
             await this.memberManager.resolveLineUserIdForClient();
         }
         const isDesignerPreviewMember = !!this.designerPreviewSource && (this.designerPreviewSource === 'member' || this.designerPreviewSource === 'member_card');
@@ -842,13 +850,28 @@ class MobileOrderApp {
             this.memberManager.render(this.getDesignerSampleMemberData());
             return;
         }
-        // 会員タブを開くたびに最新の会員情報を取得し、ポイント・ランクなどを反映する
+        const cached = this.memberManager.getMemberData();
+        if (cached && cached.is_member) {
+            this.memberManager.render(cached);
+        } else {
+            const container = this.memberManager.getContainer();
+            if (container && (!cached || !cached.is_member)) {
+                container.innerHTML = this.memberManager.getSkeletonHtml();
+            }
+        }
+
         try {
-            const payload = await this.memberManager._fetchMemberContextWithIdentityRetry({ force: true });
+            const payload = await this.memberManager._fetchMemberContextWithIdentityRetry({
+                force: !(cached && cached.is_member),
+            });
             if (payload && payload.is_member) {
                 this.memberManager.setMemberData(payload);
                 this.memberManager.render(payload);
                 this.memberManager.preload();
+                return;
+            }
+            if (payload) {
+                await this.memberManager._handleGuestContext(payload);
                 return;
             }
         } catch (e) {
@@ -858,7 +881,7 @@ class MobileOrderApp {
         if (data && data.is_member) {
             this.memberManager.render(data);
             this.memberManager.preload();
-        } else {
+        } else if (!cached || !cached.is_member) {
             this.memberManager.load();
         }
     }
