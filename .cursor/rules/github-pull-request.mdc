@@ -8,6 +8,8 @@ alwaysApply: false
 ## 作成前
 
 - ベースは原則 `main`。`git fetch origin` 後にコンフリクトを解消する
+- **アーキテクチャ**: UseCase 連鎖なし、Controller でビジネス `new` なし、system-admin 等と同パターン
+- **デグレ**: ソート・順序・既存処理の削除は意図的か（PR 本文に記載）
 - コミットに `.phpunit.result.cache` / `.env` / 秘密鍵を含めない
 - PHP 変更は Docker でテスト: `docker compose exec app php artisan test <ファイル>`
 - マルチテナント: `project_id` スコープ漏れがないか確認
@@ -17,7 +19,8 @@ alwaysApply: false
 - テンプレート: `.github/PULL_REQUEST_TEMPLATE.md`
 - 種別別のたたき台: `docs/pull_request_templates/`（bugfix / feature / improvement）
 - 手順書: `docs/GITHUB_PULL_REQUEST_WORKFLOW.md`
-- レビュー観点: `docs/MR_AND_CODE_REVIEW_PROCEDURE.md`
+- レビュー観点（アーキテクチャ最優先）: `docs/MR_AND_CODE_REVIEW_PROCEDURE.md` §2.1
+- 規約・アーキテクチャ: `CODING_STANDARDS.md` §18, `docs/CLEAN_ARCHITECTURE.md`
 
 ## CLI
 
