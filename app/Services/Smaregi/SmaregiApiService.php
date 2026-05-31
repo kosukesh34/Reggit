@@ -483,13 +483,13 @@ class SmaregiApiService
     /** 在庫一覧取得（pos.stock:read） */
     public function getStocks(string $contractId, array $query = []): ?array
     {
-        return $this->request($contractId, 'GET', 'pos/stocks', $query);
+        return $this->request($contractId, 'GET', 'pos/stock', $query);
     }
 
     /** 在庫更新（pos.stock:write） */
     public function updateStock(string $contractId, string $productId, array $body): ?array
     {
-        return $this->request($contractId, 'PATCH', 'pos/stocks/'.$productId, $body);
+        return $this->request($contractId, 'PATCH', 'pos/stock/'.$productId, $body);
     }
 
     /** 会員ランク一覧取得（pos.customers:read） */

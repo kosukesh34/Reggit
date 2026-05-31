@@ -3,10 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Project;
-use App\Services\Smaregi\SmaregiProductRegisterService;
-use App\Services\Smaregi\SmaregiProductSyncService;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Log;
 
 class DatabaseSeeder extends Seeder
 {
@@ -33,27 +30,5 @@ class DatabaseSeeder extends Seeder
         $seeder->runForProject($project, false, false);
 
         $this->call(AllSampleDataSeeder::class);
-
-        // スマレジ契約が紐づいている場合は、投入した商品をスマレジにも登録する
-        $registerService = app(SmaregiProductRegisterService::class);
-        $syncService = app(SmaregiProductSyncService::class);
-        if ($registerService->hasSmaregiContract($project->id)) {
-            try {
-                $result = $syncService->fullSync($project->id);
-                Log::info('[Seeder] スマレジへデフォルト商品を同期しました', [
-                    'project_id' => $project->id,
-                    'created' => $result['created'],
-                    'updated' => $result['updated'],
-                    'pushed_to_smaregi' => $result['pushed_to_smaregi'],
-                    'failed' => $result['failed'],
-                    'errors' => $result['errors'],
-                ]);
-            } catch (\Throwable $e) {
-                Log::warning('[Seeder] スマレジ同期に失敗しました（デフォルトデータはDBには投入済み）', [
-                    'project_id' => $project->id,
-                    'message' => $e->getMessage(),
-                ]);
-            }
-        }
     }
 }
