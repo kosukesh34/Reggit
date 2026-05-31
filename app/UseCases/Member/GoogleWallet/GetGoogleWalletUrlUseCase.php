@@ -6,7 +6,6 @@ use App\Services\GoogleWalletPassService;
 use App\Services\MemberService;
 use App\UseCases\Member\GoogleWallet\Data\GetGoogleWalletUrlInput;
 use App\UseCases\Member\GoogleWallet\Data\GetGoogleWalletUrlOutput;
-use App\UseCases\Member\GoogleWallet\GoogleWalletSaveUrlIssuer;
 use App\Util\StrHelper;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
