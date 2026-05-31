@@ -23,9 +23,18 @@ seed:
 reconcile-points:
 	docker-compose exec app php artisan members:reconcile-points
 
-# テスト用 .env.testing（無ければ example から作成）
+# テスト用 .env.testing（無ければ example から作成し APP_KEY を .env から同期）
 test-env:
-	@test -f .env.testing || cp env.testing.example .env.testing
+	@if [ ! -f .env.testing ]; then \
+		cp env.testing.example .env.testing; \
+		echo ".env.testing を作成しました"; \
+	fi
+	@if [ -f .env ] && grep -q '^APP_KEY=base64:' .env; then \
+		KEY=$$(grep '^APP_KEY=' .env | head -1); \
+		if ! grep -q '^APP_KEY=base64:' .env.testing 2>/dev/null; then \
+			sed -i.bak "s|^APP_KEY=.*|$$KEY|" .env.testing && rm -f .env.testing.bak; \
+		fi; \
+	fi
 
 # 初回セットアップ（migrate + seed + ポイント整合）
 setup-dev: up migrate test-env test-db seed reconcile-points
@@ -52,17 +61,17 @@ cache-clear:
 test-db:
 	docker-compose exec db mysql -uroot -proot -e "CREATE DATABASE IF NOT EXISTS reggit_test; GRANT ALL PRIVILEGES ON \`reggit_test\`.* TO 'reggit_user'@'%'; FLUSH PRIVILEGES;"
 
-# テスト実行（要: make up & make test-env & make test-db）
+# テスト実行（reggit_test のみ使用。開発 DB reggit は触らない）
 test: test-env test-db
-	docker-compose exec app php artisan test
+	docker-compose exec -e DB_DATABASE=reggit_test app php artisan test
 
 # 依存関係の脆弱性チェック（セキュリティ）
 audit:
 	docker-compose exec app composer audit
 
 # セキュリティテストのみ実行
-test-security: test-db
-	docker-compose exec app php artisan test tests/Feature/SecurityTest.php
+test-security: test-env test-db
+	docker-compose exec -e DB_DATABASE=reggit_test app php artisan test tests/Feature/SecurityTest.php
 
 # AWS Elastic Beanstalk 用デプロイ zip をビルド（Docker プラットフォーム用）
 # 出力: deploy-docker.zip → EB の「アップロードとデプロイ」でアップロード
