@@ -19,4 +19,6 @@
 
 - **テスト**: CI でテストが通っていること。クリティカルな処理（他店舗データの参照・更新など）にテストがあること
 - **セキュリティ**: 認可（project_id スコープ）、入力バリデーション、機密情報の扱い
-- 詳細な手順・チェック項目: [docs/MR_AND_CODE_REVIEW_PROCEDURE.md](../blob/main/docs/MR_AND_CODE_REVIEW_PROCEDURE.md)
+- PR 作成手順: [docs/GITHUB_PULL_REQUEST_WORKFLOW.md](../blob/main/docs/GITHUB_PULL_REQUEST_WORKFLOW.md)
+- レビュー・規約: [docs/MR_AND_CODE_REVIEW_PROCEDURE.md](../blob/main/docs/MR_AND_CODE_REVIEW_PROCEDURE.md)
+- 本文のたたき台: [docs/pull_request_templates/](../tree/main/docs/pull_request_templates)

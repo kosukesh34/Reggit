@@ -19,10 +19,8 @@ class UserService
         $deviceIdentifier = $this->normalizeDeviceIdentifier($request->header('X-Device-Identifier'));
 
         if ($lineUserId !== null) {
-            $user = User::where('line_user_id', $lineUserId)->where('project_id', $projectId)->first();
+            $user = $this->findActiveUserByLineId($lineUserId, $projectId);
             if ($user !== null) {
-                Session::put($this->getSessionKey($projectId), $user->id);
-
                 return $user;
             }
         }
@@ -35,6 +33,9 @@ class UserService
             if ($device !== null) {
                 $deviceUser = User::where('id', $device->user_id)->where('project_id', $projectId)->first();
                 if ($deviceUser !== null) {
+                    if ($lineUserId !== null) {
+                        return $this->resolveStoredUserForLineId($deviceUser, $lineUserId, $projectId);
+                    }
                     Session::put($this->getSessionKey($projectId), $deviceUser->id);
                     $device->forceFill(['last_used_at' => now()])->save();
 
@@ -50,64 +51,78 @@ class UserService
             return $user;
         }
 
-        $sessionUserId = Session::get($this->getSessionKey($projectId));
-        if ($sessionUserId !== null) {
-            $sessionUser = User::where('id', $sessionUserId)->where('project_id', $projectId)->first();
-            if ($sessionUser !== null) {
-                $rawLineId = $this->normalizeLineUserId($request->header('X-Line-User-Id'));
-                $requestLineId = is_string($request->header('X-Line-User-Id')) ? trim($request->header('X-Line-User-Id')) : '';
-                if ($requestLineId !== '' && $sessionUser->line_user_id !== $requestLineId && $rawLineId !== $sessionUser->line_user_id) {
-                    return null;
-                }
-                if ($rawLineId !== null) {
-                    $this->linkLineUserIdIfPossible($sessionUser, $rawLineId, $projectId);
-                }
-
-                return $sessionUser;
-            }
+        $sessionUser = $this->findSessionUser($projectId);
+        if ($sessionUser === null) {
+            return null;
         }
 
-        return null;
+        if ($lineUserId !== null) {
+            return $this->resolveStoredUserForLineId($sessionUser, $lineUserId, $projectId);
+        }
+
+        Session::put($this->getSessionKey($projectId), $sessionUser->id);
+
+        return $sessionUser;
     }
 
     public function getOrCreateUser(Request $request): User
     {
         $projectId = AdminContext::getCurrentProjectId() ?? 1;
         $lineUserId = $this->normalizeLineUserId($request->header('X-Line-User-Id'));
+
+        if ($lineUserId !== null) {
+            $byLine = $this->findActiveUserByLineId($lineUserId, $projectId);
+            if ($byLine !== null) {
+                return $byLine;
+            }
+        }
+
         $existing = $this->findUser($request);
         if ($existing !== null) {
             if ($lineUserId !== null) {
+                $this->releaseLineUserIdHeldByWithdrawnUsers($lineUserId, $projectId);
                 $this->linkLineUserIdIfPossible($existing, $lineUserId, $projectId);
             }
 
             return $existing;
         }
 
-        // 退会済み（ソフトデリート）の同一 LINE ユーザーがいれば復元する。前回の会員（Member）は復元せず、再登録時に新規 Member になる。
         if ($lineUserId !== null) {
-            $trashed = User::withTrashed()
-                ->where('project_id', $projectId)
-                ->where('line_user_id', $lineUserId)
-                ->first();
-            if ($trashed !== null && $trashed->trashed()) {
-                $trashed->restore();
-                Session::put($this->getSessionKey($projectId), $trashed->id);
-
-                return $trashed;
-            }
-        }
-
-        if ($lineUserId !== null) {
+            $this->releaseLineUserIdHeldByWithdrawnUsers($lineUserId, $projectId);
             $user = $this->createGuestUser($lineUserId, $projectId);
             Session::put($this->getSessionKey($projectId), $user->id);
 
             return $user;
         }
 
+        $sessionUser = $this->findSessionUser($projectId);
+        if ($sessionUser !== null) {
+            return $sessionUser;
+        }
+
         $user = $this->createGuestUser('guest-'.uniqid(), $projectId);
         Session::put($this->getSessionKey($projectId), $user->id);
 
         return $user;
+    }
+
+    private function findSessionUser(int $projectId): ?User
+    {
+        $sessionUserId = Session::get($this->getSessionKey($projectId));
+        if ($sessionUserId === null) {
+            return null;
+        }
+
+        return User::where('id', $sessionUserId)->where('project_id', $projectId)->first();
+    }
+
+    private function isPlaceholderLineUserId(?string $lineUserId): bool
+    {
+        if ($lineUserId === null || $lineUserId === '') {
+            return true;
+        }
+
+        return str_starts_with($lineUserId, 'guest-') || ! $this->isValidLineUserId($lineUserId);
     }
 
     private function createGuestUser(string $lineUserId, int $projectId): User
@@ -122,6 +137,21 @@ class UserService
     private function getSessionKey(int $projectId): string
     {
         return self::SESSION_USER_ID_KEY_PREFIX.'_'.$projectId;
+    }
+
+    /**
+     * 退会時に LINE ID を退会済みユーザーから切り離す（復元はしない）。
+     * 同一 LINE で再ログインしたときに新規 users 行を作れるようにする。
+     */
+    public function releaseLineUserIdForWithdraw(User $user): void
+    {
+        $lineUserId = is_string($user->line_user_id) ? trim($user->line_user_id) : '';
+        if ($lineUserId === '' || str_starts_with($lineUserId, 'guest-') || str_starts_with($lineUserId, 'withdrawn-')) {
+            return;
+        }
+
+        $user->line_user_id = 'withdrawn-'.$user->id;
+        $user->save();
     }
 
     /** 現在プロジェクトのユーザーセッションを削除（退会時など） */
@@ -165,15 +195,77 @@ class UserService
             return;
         }
 
-        $exists = User::where('project_id', $projectId)
+        $conflict = User::withTrashed()
+            ->where('project_id', $projectId)
             ->where('line_user_id', $lineUserId)
             ->where('id', '!=', $user->id)
             ->exists();
-        if ($exists) {
+        if ($conflict) {
             return;
         }
 
         $user->line_user_id = $lineUserId;
         $user->save();
+    }
+
+    /** 退会済み行が保持している LINE ID を解放する（users.restore は行わない）。 */
+    private function releaseLineUserIdHeldByWithdrawnUsers(string $lineUserId, int $projectId): void
+    {
+        User::onlyTrashed()
+            ->where('project_id', $projectId)
+            ->where('line_user_id', $lineUserId)
+            ->each(function (User $withdrawn) {
+                $this->releaseLineUserIdForWithdraw($withdrawn);
+            });
+    }
+
+    private function findActiveUserByLineId(string $lineUserId, int $projectId): ?User
+    {
+        $user = User::where('line_user_id', $lineUserId)->where('project_id', $projectId)->first();
+        if ($user === null) {
+            return null;
+        }
+
+        Session::put($this->getSessionKey($projectId), $user->id);
+
+        return $user;
+    }
+
+    private function resolveStoredUserForLineId(User $user, string $lineUserId, int $projectId): ?User
+    {
+        $this->releaseLineUserIdHeldByWithdrawnUsers($lineUserId, $projectId);
+
+        $lineOwner = $this->findActiveUserByLineId($lineUserId, $projectId);
+        if ($lineOwner !== null && $lineOwner->id !== $user->id) {
+            return $lineOwner;
+        }
+
+        if ($this->isPlaceholderLineUserId($user->line_user_id)) {
+            $this->linkLineUserIdIfPossible($user, $lineUserId, $projectId);
+            $user->refresh();
+
+            if ($user->line_user_id === $lineUserId) {
+                Session::put($this->getSessionKey($projectId), $user->id);
+
+                return $user;
+            }
+
+            $lineOwner = $this->findActiveUserByLineId($lineUserId, $projectId);
+            if ($lineOwner !== null) {
+                return $lineOwner;
+            }
+
+            Session::put($this->getSessionKey($projectId), $user->id);
+
+            return $user;
+        }
+
+        if ($user->line_user_id !== $lineUserId) {
+            return $this->findActiveUserByLineId($lineUserId, $projectId);
+        }
+
+        Session::put($this->getSessionKey($projectId), $user->id);
+
+        return $user;
     }
 }
