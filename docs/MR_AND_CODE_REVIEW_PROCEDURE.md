@@ -1,7 +1,8 @@
 # MR（Merge Request）・PR（Pull Request）作成手順とコードレビュー手順
 
 > **GitHub 向けの実務手順（ブランチ命名・`gh` コマンド・PR 前チェック）** は [GITHUB_PULL_REQUEST_WORKFLOW.md](./GITHUB_PULL_REQUEST_WORKFLOW.md) を参照。  
-> 本文書はレビュー観点とコーディング規則の確認に重点を置く。
+> **コーディング規約の詳細** はリポジトリルートの [CODING_STANDARDS.md](../CODING_STANDARDS.md) と [CLEAN_ARCHITECTURE.md](./CLEAN_ARCHITECTURE.md) を参照。  
+> 本文書は **アーキテクチャ・デグレ・レビュー観点** に重点を置く。
 
 ## 1. MR/PR 作成手順
 
@@ -46,13 +47,44 @@ git push -u origin <ブランチ名>
 - CI（テスト・Lint）が成功していること
 - コードレビューで指摘があれば対応し、承認を得ること
 
+### 1.6 PR を分割する場合（必読）
+
+1 PR = 1 目的（機能追加と無関係なリファクタを混ぜない）。分割後は **各 PR ごと** に下記を確認する。
+
+| 確認 | 内容 |
+|------|------|
+| アーキテクチャ | 層の依存が崩れていないか（§2.2） |
+| デグレ | ソート・順序・既存処理の消失がないか（§2.4） |
+| テスト | その PR の変更範囲に必要なテストがあるか。既存で足りるなら PR 本文に理由 |
+| スコープ | diff が説明と一致しているか（関係ないファイルが混ざっていないか） |
+| 参照実装 | system-admin / 同種の Admin Controller と同じパターンか |
+
 ---
 
 ## 2. コードレビュー手順（レビュアー向け）
 
-コードレビューでは **変更した部分を中心** に確認し、影響範囲を小さくする。
+コードレビューでは **変更した部分を中心** に確認する。ただし **確認の順序はアーキテクチャ → デグレ → セキュリティ → スタイル** とする。
 
-### 2.1 必須確認項目
+### 2.1 アーキテクチャ（最優先）
+
+#### 層と依存の向き
+
+- [ ] **Controller** にビジネスロジックが入っていない（validate → Input → UseCase → レスポンス）
+- [ ] **UseCase から UseCase を呼んでいない**（共通化は Service へ）
+- [ ] **Controller / UseCase で `new` していない**（ビジネス依存はコンテナ注入。Input/DTO の `new` は可）
+- [ ] **UseCase が `Request` に依存していない**（Input またはプリミティブ）
+- [ ] **UseCase 内で `Validator::make` を使っていない**（Input で検証済みを前提）
+- [ ] **static を安易に使っていない**（§18.5 CODING_STANDARDS）
+- [ ] **参照実装と一致**（system-admin / 同機能の既存 Admin Controller）
+
+#### SOLID（要点）
+
+- [ ] 単一責務: Controller・UseCase が 1 役割に収まっている
+- [ ] 依存性逆転: 具象を `new` せず注入。UseCase → Service の一方向
+
+詳細: [CLEAN_ARCHITECTURE.md](./CLEAN_ARCHITECTURE.md)、[CODE_RULES_COMPLIANCE.md](./CODE_RULES_COMPLIANCE.md)
+
+### 2.2 必須確認項目（テスト・セキュリティ）
 
 #### テストが正しく実行されること
 
@@ -61,8 +93,10 @@ git push -u origin <ブランチ名>
   - ローカルで確認する場合: `php artisan test`（PHP 8.2 環境が必要）
 - [ ] **新規・修正したコードにテストがあるか**
   - 方針: 既存コードへの追加テストは必須ではない。**新規作成・修正したコード**には原則テストを追加する
-  - Feature テスト: 処理落ち（例外）が発生しないことの担保
+  - **Feature**: 処理落ちしないこと、認可、**モード別挙動**（例: 特定プロバイダでバリデーションスキップ）
+  - **Unit（Input 等）**: バリデーションロジックの検証に留める。Controller 経路は Feature で担保
   - 他店舗データへの干渉・参照など **クリティカルな部分** はテストがあること
+  - 既存テストで足りる場合は PR 本文にその旨を書く
 
 #### セキュリティに問題がないこと
 
@@ -71,59 +105,74 @@ git push -u origin <ブランチ名>
   - 他プロジェクトのデータを参照・更新していないか（`project_id` の漏れがないか）
 - [ ] **入力値**
   - ユーザー入力は Request / Input クラスでバリデーションされているか
+  - Request・Input・UseCase で **同じバリデーションを二重にしていないか**
   - 出力時のエスケープ（XSS）は View で適切か
 - [ ] **機密情報**
   - 秘密鍵・パスワード・トークンがコードやログに含まれていないか
   - `.env` や環境変数で管理すべきものはハードコードされていないか
 
-### 2.2 コーディング規則（変更箇所の確認）
+### 2.3 デグレ（機能・順序の消失）
 
-以下は **変更した部分** について、プロジェクトのコーディング規則に沿っているかを確認する。
+- [ ] **ソート・一覧の順序**が意図せず変わっていないか
+- [ ] **既存の分岐・処理**が削除されていないか（削除は意図的なら PR 本文に理由）
+- [ ] **表示・API のフィールド**が欠けていないか（意図的な仕様変更か確認）
+
+### 2.4 コーディング規則（変更箇所）
+
+以下は **変更した部分** について、[CODING_STANDARDS.md](../CODING_STANDARDS.md) に沿っているかを確認する。
 
 | 項目 | 確認内容 |
 |------|----------|
-| 定数・Enum | マジックナンバー・文字列は定数または Enum（EnumBase 継承）で管理されているか。定数化の過剰はしない |
-| 比較・判定 | `empty()` を極力使わず `isset()` / `===` を使用。`==` は使わず `===`。null は StrHelper 等の既存関数を利用 |
-| 命名 | メソッド・変数は lowerCamel。bool は `isXxx` / `canXxx` / `hasXxx` 等。`xxxFlg` / `xxxBool` は使わない |
-| View・DTO | View に渡すプロパティが 4 つ以上なら DTO 化。View には表示用の文字列を渡す（配列+キーでラベルを組み立てない） |
-| Controller | 処理は UseCase に委譲。Controller 内で `new` で依存を生成しない（DI で注入） |
-| UseCase | Validator を直接使わない（Input で検証）。UseCase から UseCase を呼ばない。static は意味があるときだけ |
-| Input | Input クラスの生成を `try` で囲まない。バリデーションは Input のコンストラクタで行い ValidationException を投げる |
-| 例外 | 例外の catch は必要以上に細かくしない。型ごとに後処理を変える場合のみ個別 catch |
-| トランザクション | 複数テーブル更新で整合性が必要な場合のみ使用。単一テーブルのみなら不要 |
-| ルート必須パラメータ | ルートで必須のパラメータに対して Controller 内で冗長な null/空チェックをしていないか |
-| その他 | 関数は 15 行程度・クラスは 100 行程度を目安。既存の書き方・他コード（system-admin 等）に合わせているか |
+| 基本方針 | 変更最小限。DB 上 null でも実動作に無関係なら過剰な null チェックはしない |
+| 定数・Enum | マジックナンバー・文字列は Enum（EnumBase 継承）。定数化の過剰はしない |
+| 比較・判定 | `empty()` 極力禁止、`===`、`StrHelper` で null/空 |
+| 命名 | lowerCamel。bool は `isXxx` / `canXxx` / `hasXxx` 等。`xxxFlg` / `xxxBool` 禁止 |
+| View・DTO | 4 props 以上は DTO 化。View には表示用文字列（配列+キーでラベル組み立てない） |
+| 日付 | 比較は Carbon の `gt()` 等。表示用にだけ Carbon 化しない。`DateUtil::nullableCarbon` は導入済みなら使用 |
+| 例外 | Input を try で囲まない。catch は必要以上に細かくしない |
+| トランザクション | 複数テーブル更新時のみ |
+| ルート必須パラメータ | Controller 内の冗長な null/空チェックなし |
+| コード量 | 関数≈15行・クラス≈100行を目安（テスト・DTO は例外） |
+| UI | 遷移は `a`。`readonly` は意図があるときのみ |
+| 簡潔さ | 使い捨て中間変数の乱立なし。重複 CSS/関数は共通化 |
+| bool 返却 | `0`/`1` ではなく `true`/`false` |
+| PHPDoc | `mixed` 避け、`array{...}` で形状を明示 |
 
-### 2.3 コードレビュー指摘事項のまとめ（繰り返さないため）
+### 2.5 コードレビュー指摘事項のまとめ（繰り返さないため）
 
-- ルート必須パラメータの冗長な null/空チェックは不要
-- Input クラスを try で囲まない
-- 例外の catch は必要以上に細かくしない
-- ViewItem / DTO の static は意味があるときだけ
-- View には表示用の文字列を渡す
+[CODING_STANDARDS.md](../CODING_STANDARDS.md) の「コードレビュー指摘事項」および以下を参照。
+
+- UseCase から UseCase を呼ばない / Controller で `new` しない
+- static は原則使わない
+- バリデーション二重化をしない
+- デグレ（ソート・順序・コード消失）に注意
+- ルート必須パラメータの冗長チェック不要
+- Input を try で囲まない
+- View には表示用文字列
 - UseCase で Validator を使わない
 - 定数化は過剰にしない
-- トランザクションは複数テーブル更新のときだけ
-- Controller で `new` で依存を生成しない（DI で注入）
-- Carbon 変換は `DateUtil::nullableCarbon` を使う（プロジェクトに DateUtil がある場合）
-- PHPDoc では `mixed` を避け、array の形状など型を明示する
-- bool の返却は `0`/`1` ではなく `true`/`false` で返す
+- トランザクションは複数テーブル更新時のみ
 
 ---
 
 ## 3. レビュー実施の流れ
 
 1. PR/MR が作成されたら、**CI の結果**を確認する（テスト・Lint が緑であること）
-2. **変更ファイル一覧**を確認し、変更箇所を読む
-3. **必須確認項目**（テスト・セキュリティ）をチェックする
-4. **変更した部分**について、上記コーディング規則に沿っているか確認する
-5. 指摘は PR/MR のコメントで行い、修正後は再レビューする
-6. 問題がなければ承認し、マージする
+2. **変更ファイル一覧**を確認し、スコープが PR 説明と一致するか見る
+3. **§2.1 アーキテクチャ**を最優先で確認する
+4. **§2.3 デグレ**を確認する
+5. **§2.2 テスト・セキュリティ**を確認する
+6. **§2.4 コーディング規則**（変更箇所のみ）を確認する
+7. 指摘は PR/MR のコメントで行い、修正後は再レビューする
+8. 問題がなければ承認し、マージする
 
 ---
 
 ## 4. 参考
 
-- コーディング規則の詳細: プロジェクトルートのコーディング規則ドキュメント・`docs/CODE_RULES_COMPLIANCE.md`
+- コーディング規則: [CODING_STANDARDS.md](../CODING_STANDARDS.md)
+- アーキテクチャ: [CLEAN_ARCHITECTURE.md](./CLEAN_ARCHITECTURE.md)
+- 準拠状況・SOLID: [CODE_RULES_COMPLIANCE.md](./CODE_RULES_COMPLIANCE.md)
+- PR 作成ワークフロー: [GITHUB_PULL_REQUEST_WORKFLOW.md](./GITHUB_PULL_REQUEST_WORKFLOW.md)
 - CI 定義: `.github/workflows/ci.yml`（テスト・Laravel Pint）
 - テスト実行: `php artisan test`（PHP 8.2 必要）

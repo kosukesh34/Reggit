@@ -52,12 +52,16 @@ public function handle(Request $request, array $validated): OrderOutput
 
 - UseCase は **Service / Repository / Model** に依存してよい。**Controller / Request** に依存しない。
 - Service は UseCase に依存しない。UseCase → Service の一方向。
+- **UseCase から UseCase を呼ばない**。複数ユースケースにまたがる処理は Service に寄せる（例: ポイント同期は `SmaregiApiService` 等）。
+- Controller / UseCase でビジネス依存を **`new` しない**。Laravel コンテナのコンストラクタ注入またはメソッド注入を使う（Input/DTO の `new` は可）。詳細は [CODING_STANDARDS.md](../CODING_STANDARDS.md) §18。
 
 ## 3. Controller のルール
 
 - 処理の流れ: **validate → Input 組み立て → UseCase::handle(Input) → レスポンス整形**。
 - 例外処理は Controller で行い、UseCase はビジネス上の例外（例: 権限なし）を投げるだけにする。
 - 既存コードで Controller にロジックが残っている場合は、段階的に UseCase に移す。
+- 1 アクションだけの UseCase は **メソッド注入** でもよい。コンストラクタに UseCase を大量に並べて肥大化させない。
+- 参照実装は **system-admin / Admin 配下** の Controller を優先する。
 
 ## 4. ディレクトリ構成（目安）
 

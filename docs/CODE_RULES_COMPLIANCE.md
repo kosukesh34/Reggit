@@ -1,5 +1,7 @@
 # コーディング規則 準拠状況レポート
 
+レビュー時は **アーキテクチャ（層・依存・UseCase 連鎖・`new`）を最優先** とする。手順は [MR_AND_CODE_REVIEW_PROCEDURE.md](./MR_AND_CODE_REVIEW_PROCEDURE.md) §2.1、規約は [CODING_STANDARDS.md](../CODING_STANDARDS.md) §18 を参照。
+
 ## 調査日
 2025年3月実施（2026年3月 再確認・一部リファクタ実施）
 
