@@ -25,4 +25,18 @@ return [
     'webhook_secret' => env('SMAREGI_WEBHOOK_SECRET', ''),
     'webhook_secret_header' => env('SMAREGI_WEBHOOK_SECRET_HEADER', 'X-Smaregi-Webhook-Secret'),
 
+    /**
+     * true のとき Webhook 受信直後にポイント同期ジョブを同期的に実行する（local 向け）。
+     * false のとき afterResponse で非同期実行（本番向け）。
+     */
+    'webhook_run_sync_inline' => env('SMAREGI_WEBHOOK_RUN_SYNC_INLINE', env('APP_ENV', 'production') === 'local'),
+
+    /**
+     * members/me 取得時にスマレジからポイントを取り込む（Webhook 未到達時のフォールバック）。
+     */
+    'inbound_sync_on_member_fetch' => env('SMAREGI_INBOUND_SYNC_ON_MEMBER_FETCH', true),
+
+    /** 会員ごとの取り込み間隔（秒）。0 で毎回 API を呼ぶ。 */
+    'inbound_sync_on_member_fetch_ttl_seconds' => (int) env('SMAREGI_INBOUND_SYNC_ON_MEMBER_FETCH_TTL', 30),
+
 ];

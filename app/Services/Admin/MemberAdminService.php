@@ -13,15 +13,21 @@ use App\Models\StampCard;
 use App\Services\MemberPointsExpiryCalculator;
 use App\Services\MemberRankCalculator;
 use App\Services\Smaregi\SmaregiApiService;
+use App\Services\Smaregi\SmaregiCustomerPointsInboundSyncService;
+use App\Services\Smaregi\SmaregiCustomerUpdatePayloadBuilder;
+use App\Util\LogHelper;
 use App\Util\StrHelper;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 
 class MemberAdminService
 {
     public function __construct(
         private SmaregiApiService $smaregiApi,
+        private SmaregiCustomerUpdatePayloadBuilder $smaregiCustomerUpdatePayloadBuilder,
+        private SmaregiCustomerPointsInboundSyncService $smaregiCustomerPointsInboundSyncService,
         private MemberRankCalculator $rankCalculator,
         private MemberPointsExpiryCalculator $expiryCalculator
     ) {}
@@ -60,6 +66,33 @@ class MemberAdminService
             $query->where('project_id', $projectId);
         }
         $member = $query->findOrFail($id);
+
+        return $this->prepareMemberForDisplay($member);
+    }
+
+    /**
+     * 更新・付与などの書き込み処理用。スマレジへのインバウンド同期は行わない（ローカル変更の上書きを防ぐ）。
+     */
+    public function findForWrite(int $id, ?int $projectId = null): Member
+    {
+        $query = Member::with(['user', 'pointTransactions.order', 'memberStamps.stampCard', 'memberCoupons.coupon']);
+        if ($projectId !== null) {
+            $query->where('project_id', $projectId);
+        }
+
+        $member = $query->findOrFail($id);
+        $member->syncPointsLedger();
+        $member->refresh();
+
+        return $member;
+    }
+
+    private function prepareMemberForDisplay(Member $member): Member
+    {
+        $member->syncPointsLedger();
+        $member->refresh();
+        $this->maybeSyncInboundPointsFromSmaregi($member);
+        $member->refresh();
 
         $rankInfo = $this->rankCalculator->getRankInfo($member);
         $member->setAttribute('rank_label', $rankInfo['current_rank_label'] ?? $member->rank);
@@ -260,6 +293,32 @@ class MemberAdminService
     }
 
     /** 会員編集フォーム用：ランク選択肢（key => label） */
+    private function maybeSyncInboundPointsFromSmaregi(Member $member): void
+    {
+        if (config('smaregi.inbound_sync_on_member_fetch', true) !== true) {
+            return;
+        }
+
+        $ttl = (int) config('smaregi.inbound_sync_on_member_fetch_ttl_seconds', 30);
+        $cacheKey = 'smaregi_member_fetch_sync:'.(int) $member->id;
+        if ($ttl > 0 && Cache::has($cacheKey)) {
+            return;
+        }
+
+        try {
+            $this->smaregiCustomerPointsInboundSyncService->syncMemberFromSmaregi($member);
+            if ($ttl > 0) {
+                Cache::put($cacheKey, 1, $ttl);
+            }
+        } catch (\Throwable $e) {
+            LogHelper::warning('[AdminMember] smaregi inbound sync on detail failed', [
+                'member_id' => (int) $member->id,
+                'project_id' => (int) $member->project_id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
     public function getRankOptionsForSelect(int $projectId): array
     {
         $ranks = ShopSetting::getMemberRankSettings($projectId);
@@ -276,43 +335,25 @@ class MemberAdminService
 
     /**
      * 会員のユーザー情報・会員情報を一括更新する。
-     * ポイントの加算・減算は Controller から別途 addPoints/usePoints で行う想定。
-     * スマレジ連携時はAPI更新を成功確認してからローカルを更新する。
+     * ローカルを先に保存し、スマレジ連携はベストエフォート（失敗してもローカル更新は維持）。
      */
     public function updateMemberProfile(Member $member, array $userData, array $memberData): void
     {
         $user = $member->user;
         $allowedUser = ['name', 'kana', 'email', 'phone'];
         $updateUser = array_intersect_key($userData, array_flip($allowedUser));
-
-        $smaregiCustomerId = $member->smaregi_customer_id ?? '';
-        $contractId = $this->smaregiApi->getContractIdForProject($member->project_id);
-        $contractId = is_string($contractId) ? trim($contractId) : '';
-        if ($contractId !== '' && $smaregiCustomerId !== '' && $updateUser !== [] && $user !== null) {
-            $clientId = config('smaregi.client_id');
-            $clientSecret = config('smaregi.client_secret');
-            if (! is_string($clientId) || $clientId === '' || ! is_string($clientSecret) || $clientSecret === '') {
-                throw new \Exception(
-                    'スマレジの認証情報がアプリに読み込まれていません。'
-                    .' .env の SMAREGI_CLIENT_ID と SMAREGI_CLIENT_SECRET を確認してください。'
-                    .' Docker 利用時はコンテナに環境変数が渡るように（env_file や environment）設定してください。'
-                );
+        foreach (['name', 'kana', 'phone'] as $key) {
+            if (array_key_exists($key, $updateUser) && $updateUser[$key] === '') {
+                $updateUser[$key] = null;
             }
-            $merged = array_merge($user->only(['name', 'kana', 'email', 'phone']), $updateUser);
-            $body = $this->buildSmaregiUpdateBody($merged);
-            if ($body !== []) {
-                $result = $this->smaregiApi->updateCustomer($contractId, $smaregiCustomerId, $body);
-                if ($result === null) {
-                    throw new \Exception(
-                        'スマレジの会員情報更新に失敗しました。'
-                        .' 詳細は storage/logs/laravel.log の [Smaregi] を参照してください。'
-                    );
-                }
-            }
+        }
+        if (array_key_exists('email', $updateUser) && $updateUser['email'] === '') {
+            $updateUser['email'] = null;
         }
 
         if ($user !== null && $updateUser !== []) {
             $user->update($updateUser);
+            $user->refresh();
         }
 
         $allowedMember = [
@@ -320,39 +361,53 @@ class MemberAdminService
             'postal_code', 'prefecture', 'city', 'street', 'sex', 'profile_extra',
         ];
         $updateMember = array_intersect_key($memberData, array_flip($allowedMember));
+        $updateMember = array_filter(
+            $updateMember,
+            static fn ($value, string $key): bool => $key === 'profile_extra' || $value !== null,
+            ARRAY_FILTER_USE_BOTH
+        );
         if ($updateMember !== []) {
-            // rank_label / points_expiry は findOrFail で付与した仮想属性のため、DBに存在しない。update 前に外す。
             $member->offsetUnset('rank_label');
             $member->offsetUnset('points_expiry');
             $member->update($updateMember);
-        }
-    }
-
-    /** スマレジ会員更新用ボディ（name → lastName/firstName 等） */
-    private function buildSmaregiUpdateBody(array $userFields): array
-    {
-        $body = [];
-        $name = trim((string) ($userFields['name'] ?? ''));
-        if ($name !== '') {
-            $parts = preg_split('/\s+/u', $name, 2);
-            $body['lastName'] = $parts[0] ?? $name;
-            $body['firstName'] = $parts[1] ?? '';
-        }
-        $kana = trim((string) ($userFields['kana'] ?? ''));
-        if ($kana !== '') {
-            $kanaParts = preg_split('/\s+/u', $kana, 2);
-            $body['lastKana'] = $kanaParts[0] ?? $kana;
-            $body['firstKana'] = $kanaParts[1] ?? '';
-        }
-        $email = trim((string) ($userFields['email'] ?? ''));
-        if ($email !== '' && $email !== 'null' && filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $body['mailAddress'] = $email;
-        }
-        $phone = trim((string) ($userFields['phone'] ?? ''));
-        if ($phone !== '' && $phone !== 'null') {
-            $body['phoneNumber'] = $phone;
+            $member->refresh();
         }
 
-        return $body;
+        $smaregiCustomerId = trim((string) ($member->smaregi_customer_id ?? ''));
+        $contractId = $this->smaregiApi->getContractIdForProject($member->project_id);
+        $contractId = is_string($contractId) ? trim($contractId) : '';
+        if ($contractId === '' || $smaregiCustomerId === '' || $user === null) {
+            return;
+        }
+
+        $clientId = config('smaregi.client_id');
+        $clientSecret = config('smaregi.client_secret');
+        if (! is_string($clientId) || $clientId === '' || ! is_string($clientSecret) || $clientSecret === '') {
+            LogHelper::warning('[AdminMember] smaregi profile sync skipped: credentials missing', [
+                'member_id' => (int) $member->id,
+                'project_id' => (int) $member->project_id,
+            ]);
+
+            return;
+        }
+
+        $mergedUser = array_merge($user->only(['name', 'kana', 'email', 'phone']), $updateUser);
+        $body = $this->smaregiCustomerUpdatePayloadBuilder->buildFromAdminMemberData($mergedUser, $member->only([
+            'member_number', 'birthday', 'address', 'postal_code', 'sex',
+        ]));
+        if ($body === []) {
+            return;
+        }
+
+        $this->smaregiApi->clearLastErrorDetail();
+        $result = $this->smaregiApi->updateCustomer($contractId, $smaregiCustomerId, $body);
+        if ($result === null) {
+            LogHelper::warning('[AdminMember] smaregi profile sync failed after local update', [
+                'member_id' => (int) $member->id,
+                'project_id' => (int) $member->project_id,
+                'smaregi_customer_id' => $smaregiCustomerId,
+                'detail' => $this->smaregiApi->getLastErrorDetail(),
+            ]);
+        }
     }
 }

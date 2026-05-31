@@ -17,7 +17,7 @@ class MemberRankCalculator
         $ranks = ShopSetting::getMemberRankSettings($projectId);
         $basis = ShopSetting::getRankBasis($projectId);
 
-        $points = $member->points ?? 0;
+        $points = $member->getDisplayPoints();
         $stamps = $member->getTotalStamps();
         $metric = $basis === 'stamps' ? $stamps : ($basis === 'max' ? max($points, $stamps) : $points);
 

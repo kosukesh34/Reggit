@@ -121,6 +121,26 @@ class SmaregiApiTest extends TestCase
         $this->assertSame('10', $result['point']);
     }
 
+    /** 会員ポイントの受信（GET）を検証 */
+    public function test_get_customer_point_スマレジから会員ポイントを取得できること(): void
+    {
+        $this->createProjectWithContract();
+        $this->fakeSmaregiHttp([
+            'get_pos_customers_point' => [
+                'customerId' => '1',
+                'point' => '25',
+                'mile' => '0',
+            ],
+        ]);
+
+        $service = app(SmaregiApiService::class);
+        $result = $service->getCustomerPoint(self::CONTRACT_ID, '1');
+
+        $this->assertNotNull($result);
+        $this->assertSame('1', $result['customerId']);
+        $this->assertSame('25', $result['point']);
+    }
+
     /** プロジェクトに紐づく契約IDを取得し、その契約でAPI送受信できることを検証 */
     public function test_get_contract_id_for_project_契約_i_dを取得して会員の受信と登録ができること(): void
     {
@@ -186,6 +206,17 @@ class SmaregiApiTest extends TestCase
 
             if ($method === 'GET' && str_contains($url, 'pos/stores')) {
                 return Http::response($responses['get_pos_stores'] ?? ['stores' => []], 200);
+            }
+            if ($method === 'GET' && preg_match('#/pos/customers/[^/]+/points($|\?)#', $url)) {
+                $payload = $responses['get_pos_customers_point'] ?? ['point' => '0'];
+                if (is_array($payload) && isset($payload[0]) && is_array($payload[0])) {
+                    return Http::response($payload[0], 200);
+                }
+
+                return Http::response($payload, 200);
+            }
+            if ($method === 'GET' && str_contains($url, 'pos/customers/point')) {
+                return Http::response($responses['get_pos_customers_point'] ?? [], 200);
             }
             if ($method === 'GET' && str_contains($url, 'pos/customers') && ! preg_match('#/pos/customers/\d+($|\?)#', $url)) {
                 return Http::response($responses['get_pos_customers'] ?? ['customers' => [], 'total' => 0], 200);

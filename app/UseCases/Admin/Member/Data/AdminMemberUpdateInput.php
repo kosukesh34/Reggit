@@ -7,7 +7,7 @@ namespace App\UseCases\Admin\Member\Data;
  *
  * @param  array<string, string|null>  $userData  name, kana, email, phone
  * @param  array<string, mixed>  $memberData  member_number, status, rank, birthday, address, ...
- * @param  array{type: 'add'|'subtract', points: int, description: string|null}|null  $pointAdjustment
+ * @param  array{type: 'add'|'subtract'|'set', points: int, description: string|null}|null  $pointAdjustment
  */
 class AdminMemberUpdateInput
 {

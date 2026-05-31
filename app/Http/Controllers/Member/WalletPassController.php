@@ -35,8 +35,11 @@ class WalletPassController extends Controller
         $result = $this->downloadUseCase->handle($input);
 
         if ($result->isAvailable() === false) {
+            $message = "Wallet に追加できませんでした。\n\n"
+                .implode("\n", $result->unavailableReasons);
+
             return response(
-                "Wallet pass is not available.\n\n".implode("\n", $result->unavailableReasons),
+                $message,
                 Response::HTTP_SERVICE_UNAVAILABLE,
                 ['Content-Type' => 'text/plain; charset=UTF-8']
             );
