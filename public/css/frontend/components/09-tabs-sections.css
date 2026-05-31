@@ -1,38 +1,53 @@
 /* メインタブ */
 .main-tabs {
     display: flex;
-    background: white;
-    border-top: 1px solid var(--border-color);
+    gap: 4px;
+    background: var(--surface-glass);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-top: 1px solid var(--hairline);
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
     z-index: 100;
-    box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
+    box-shadow: 0 -8px 32px rgba(28, 25, 23, 0.08);
     min-height: var(--main-tabs-height);
-    padding-bottom: var(--safe-area-bottom-capped);
+    padding: 8px 10px var(--safe-area-bottom-capped);
+}
+
+/* フローティングタブ（デザイナー global.tab_style = floating） */
+body.tab-style-floating .main-tabs {
+    left: 12px;
+    right: 12px;
+    bottom: max(10px, var(--safe-area-bottom-capped));
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--hairline);
+    padding: 8px 8px 10px;
+    min-height: auto;
 }
 
 .main-tab-btn {
     flex: 1;
     min-width: 0;
-    padding: 10px 4px 8px;
-    background: white;
+    padding: 8px 4px 6px;
+    background: transparent;
     border: none;
-    border-top: 3px solid transparent;
-    color: var(--text-secondary);
-    font-size: 12px;
-    font-weight: 600;
+    border-radius: var(--radius);
+    color: var(--text-tertiary);
+    font-size: 10px;
+    font-weight: 700;
     cursor: pointer;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
-    transition: none;
+    gap: 5px;
+    transition: color var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
 }
 
 .main-tab-btn i {
-    font-size: 19px;
+    font-size: 20px;
+    transition: transform var(--dur) var(--ease-out), color var(--dur-fast) var(--ease);
 }
 
 .main-tab-btn span {
@@ -48,19 +63,30 @@
 
 .main-tab-btn.active {
     color: var(--primary-color);
-    border-top: 3px solid var(--primary-color);
-    border-bottom: none;
-    background: var(--bg-light);
+    background: rgba(var(--primary-rgb), 0.1);
+    font-weight: 800;
+}
+.main-tab-btn.active i {
+    transform: translateY(-2px) scale(1.08);
 }
 
 .main-tab-btn:hover:not(.active) {
-    background: var(--bg-light);
     color: var(--text-primary);
+    background: var(--surface-muted);
 }
+.main-tab-btn:active { transform: scale(0.94); }
 
 .main-tab-btn[disabled] {
     opacity: 1;
     cursor: default;
+}
+
+/* ピル型タブ */
+body.tab-style-pill .main-tab-btn.active {
+    background: var(--primary-color);
+    color: #fff;
+    border-radius: var(--radius-pill);
+    box-shadow: 0 6px 16px rgba(var(--primary-rgb), 0.28);
 }
 
 /* タブコンテンツ */
@@ -77,15 +103,13 @@
     overflow-x: hidden;
 }
 
-/* タブセクション（会員・予約など）の最小高さ */
 .tab-content.active .tab-section {
     min-height: 360px;
     position: relative;
 }
 
-/* 会員証セクション */
 .member-section {
-    padding: 24px 20px;
+    padding: 24px var(--content-padding);
     min-height: 400px;
     max-width: 100%;
     overflow-x: hidden;
@@ -94,7 +118,7 @@
 }
 
 .reservations-section {
-    padding: 20px;
+    padding: var(--content-padding);
     min-height: 400px;
     max-width: 100%;
     overflow-x: hidden;
@@ -107,35 +131,44 @@
     align-items: center;
     margin-bottom: 24px;
     padding-bottom: 16px;
-    border-bottom: 2px solid var(--border-color);
+    border-bottom: 1px solid var(--hairline);
     flex-wrap: wrap;
     gap: 12px;
     max-width: 100%;
 }
 
 .section-title {
-    font-size: 24px;
-    font-weight: 700;
+    font-size: 22px;
+    font-weight: var(--font-weight-heading);
     color: var(--text-primary);
     display: flex;
     align-items: center;
     gap: 10px;
     margin: 0;
+    letter-spacing: 0.02em;
 }
 
 .section-title i {
     color: var(--primary-color);
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-sm);
+    background: rgba(var(--primary-rgb), 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
 }
 
 .btn-create-reservation {
-    padding: 10px 20px;
+    padding: 12px 20px;
     font-size: 14px;
-    font-weight: 600;
+    font-weight: 700;
     border-radius: var(--radius);
     display: flex;
     align-items: center;
     gap: 8px;
-    transition: none;
+    transition: transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
 }
 
 .btn-create-reservation:hover {
@@ -146,22 +179,22 @@
 .reservations-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
-    gap: 20px;
+    gap: var(--section-gap);
     margin-top: 20px;
     max-width: 100%;
 }
 
-/* お知らせ */
 .announcements-section {
-    margin-bottom: 16px;
+    margin-bottom: var(--section-gap);
     display: none;
 }
 
 .announcements-inner {
-    background: linear-gradient(135deg, rgba(0,0,0,0.03) 0%, rgba(0,0,0,0.06) 100%);
-    border: 1px solid var(--border-color);
+    background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.04) 0%, rgba(var(--primary-rgb), 0.08) 100%);
+    border: 1px solid var(--hairline);
     border-radius: var(--radius-lg);
-    padding: 14px 16px;
+    padding: 18px 20px;
+    box-shadow: var(--shadow-xs);
 }
 
 .announcements-title {
@@ -188,7 +221,7 @@
     font-size: 13px;
     color: var(--text-primary);
     padding: 8px 0;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--hairline);
 }
 
 .announcement-item:last-child {
@@ -215,5 +248,5 @@
     margin: 0;
     font-size: 12px;
     color: var(--text-secondary);
-    line-height: 1.5;
+    line-height: 1.55;
 }
