@@ -8,39 +8,13 @@
 <style>
 .ld-toast {
     position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
-    background: #065f46; color: #fff; padding: 12px 24px; border-radius: 12px;
-    font-size: 14px; font-weight: 600; z-index: 99999; box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+    background: #0f766e; color: #fff; padding: 12px 24px; border-radius: 14px;
+    font-size: 14px; font-weight: 700; z-index: 99999; box-shadow: 0 10px 32px rgba(13,148,136,0.35);
     opacity: 0; transition: all 0.3s ease; pointer-events: none;
     display: flex; align-items: center; gap: 8px;
 }
 .ld-toast--visible { opacity: 1; transform: translateX(-50%) translateY(0); }
 .ld-toast--error { background: #991b1b; }
-
-.ld-device-switcher {
-    display: flex; align-items: center; gap: 4px; background: #f3f4f6; border-radius: 8px; padding: 3px;
-}
-.ld-device-btn {
-    padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: 600;
-    border: none; cursor: pointer; background: transparent; color: #6b7280;
-    display: flex; align-items: center; gap: 4px; transition: all 0.15s;
-}
-.ld-device-btn:hover { color: #374151; }
-.ld-device-btn.is-active { background: #fff; color: #6366f1; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-
-.ld-platform-badges {
-    display: flex; align-items: center; gap: 4px; margin-left: 6px;
-}
-.ld-platform-badge {
-    font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 4px;
-}
-.ld-platform-badge--line { background: #06C755; color: #fff; }
-.ld-platform-badge--native { background: #3b82f6; color: #fff; }
-
-.ld-settings-panel {
-    display: none; position: absolute; top: 0; right: 0; bottom: 0; width: 320px;
-    background: #fff; border-left: 1px solid #e5e7eb; z-index: 20; box-shadow: -4px 0 20px rgba(0,0,0,0.05);
-}
-.ld-settings-panel--open { display: flex; flex-direction: column; }
 
 .ld-liff-settings-toggle {
     cursor: pointer; user-select: none; transition: background 0.15s; border-radius: 8px; padding: 8px;
@@ -65,7 +39,7 @@
     display: flex; flex-direction: column; align-items: center; padding: 40px 24px; text-align: center;
     gap: 16px; min-height: 300px; justify-content: center;
 }
-.ld-quickstart__icon { font-size: 48px; color: #c7d2fe; }
+.ld-quickstart__icon { font-size: 48px; color: rgba(13,148,136,0.35); }
 .ld-quickstart__title { font-size: 16px; font-weight: 700; color: #374151; }
 .ld-quickstart__desc { font-size: 13px; color: #6b7280; line-height: 1.6; max-width: 280px; }
 .ld-quickstart__actions { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 240px; }
@@ -84,10 +58,6 @@
         <a href="{{ admin_route('admin.settings.basic') }}" class="ld-btn ld-btn--ghost" title="設定に戻る"><i class="fas fa-arrow-left"></i></a>
         <h1 class="ld-topbar__title">
             <i class="fas fa-palette"></i> ノーコードUIデザイナー
-            <span class="ld-platform-badges">
-                <span class="ld-platform-badge ld-platform-badge--line">LINE</span>
-                <span class="ld-platform-badge ld-platform-badge--native">ネイティブ</span>
-            </span>
         </h1>
         <div class="ld-topbar__actions">
             <button type="button" class="ld-btn ld-btn--outline" id="templateBtn"><i class="fas fa-layer-group"></i> テンプレート</button>
@@ -136,13 +106,8 @@
         <div class="ld-editor">
             <div class="ld-editor__toolbar">
                 <div class="ld-editor__meta">
-                    <span class="ld-editor__meta-label">現在のタブ</span>
+                    <span class="ld-editor__meta-label">プレビュー</span>
                     <strong id="activeTabLabel">ホーム</strong>
-                </div>
-                <div class="ld-device-switcher" id="deviceSwitcher">
-                    <button type="button" class="ld-device-btn is-active" data-device="line"><i class="fab fa-line"></i> LINE</button>
-                    <button type="button" class="ld-device-btn" data-device="ios"><i class="fab fa-apple"></i> iOS</button>
-                    <button type="button" class="ld-device-btn" data-device="android"><i class="fab fa-android"></i> Android</button>
                 </div>
                 <div class="ld-editor__zoom">
                     <button type="button" class="ld-btn ld-btn--ghost ld-btn--xs" id="zoomOutBtn"><i class="fas fa-search-minus"></i></button>
@@ -152,7 +117,7 @@
                 </div>
             </div>
             <div class="ld-phone">
-                <div class="ld-phone__frame">
+                <div class="ld-phone__frame is-line">
                     <div class="ld-phone__notch"></div>
                     <div class="ld-phone__header" id="phoneHeader">
                         <span class="ld-phone__header-title" id="phoneHeaderTitle">ホーム</span>
@@ -192,13 +157,72 @@
                 <div class="ld-form-group">
                     <label class="ld-form-label">背景色</label>
                     <div class="ld-color-row">
-                        <input type="color" id="screenBgColor" class="ld-color-picker" value="#f5f5f5">
-                        <input type="text" id="screenBgColorHex" class="ld-form-input ld-form-input--sm" value="#f5f5f5" maxlength="7">
+                        <input type="color" id="screenBgColor" class="ld-color-picker" value="#fafaf9">
+                        <input type="text" id="screenBgColorHex" class="ld-form-input ld-form-input--sm" value="#fafaf9" maxlength="7">
                     </div>
                 </div>
                 <div class="ld-form-group">
-                    <label class="ld-form-label">背景画像</label>
+                    <label class="ld-form-label">背景画像 URL</label>
                     <input type="text" id="screenBgImage" class="ld-form-input" placeholder="https://example.com/bg.jpg">
+                </div>
+                <div class="ld-form-group">
+                    <label class="ld-form-label">背景画像の表示</label>
+                    <select id="screenBgSize" class="ld-form-select">
+                        <option value="cover">カバー（全体を覆う）</option>
+                        <option value="contain">全体表示</option>
+                        <option value="auto">オリジナルサイズ</option>
+                    </select>
+                </div>
+                <div class="ld-form-group">
+                    <label class="ld-form-label">コンテンツ余白 (px)</label>
+                    <input type="range" id="screenContentPadding" class="ld-form-range" min="8" max="40" value="18">
+                    <span id="screenContentPaddingVal" class="ld-range-val">18</span>
+                </div>
+            </div>
+
+            {{-- グローバルデザイントークン --}}
+            <div class="ld-sidebar__section">
+                <div class="ld-sidebar__title"><i class="fas fa-swatchbook"></i> デザイントークン</div>
+                <div class="ld-design-panel">
+                    <div class="ld-form-group">
+                        <label class="ld-form-label">プリセット</label>
+                        <div class="ld-design-presets" id="designPresets">
+                            <button type="button" class="ld-design-preset" data-preset="minimal">
+                                <div class="ld-design-preset__swatch" style="background:linear-gradient(135deg,#fafaf9,#e7e5e4)"></div>
+                                ミニマル
+                            </button>
+                            <button type="button" class="ld-design-preset" data-preset="natural">
+                                <div class="ld-design-preset__swatch" style="background:linear-gradient(135deg,#ecfdf5,#d1fae5)"></div>
+                                ナチュラル
+                            </button>
+                            <button type="button" class="ld-design-preset" data-preset="bold">
+                                <div class="ld-design-preset__swatch" style="background:linear-gradient(135deg,#0f766e,#134e4a)"></div>
+                                ボールド
+                            </button>
+                        </div>
+                    </div>
+                    <div class="ld-form-group">
+                        <label class="ld-form-label">セクション間隔 (px)</label>
+                        <input type="range" id="globalSectionGap" class="ld-form-range" min="4" max="32" value="16">
+                        <span id="globalSectionGapVal" class="ld-range-val">16</span>
+                    </div>
+                    <div class="ld-form-group">
+                        <label class="ld-form-label">角丸スタイル</label>
+                        <select id="globalRadiusScale" class="ld-form-select">
+                            <option value="compact">コンパクト</option>
+                            <option value="default">標準</option>
+                            <option value="soft" selected>ソフト</option>
+                            <option value="round">ラウンド</option>
+                        </select>
+                    </div>
+                    <div class="ld-form-group">
+                        <label class="ld-form-label">タブバースタイル</label>
+                        <select id="globalTabStyle" class="ld-form-select">
+                            <option value="default">標準</option>
+                            <option value="pill">ピル型</option>
+                            <option value="floating">フローティング</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
@@ -241,17 +265,6 @@
         // ヘルプボタン
         document.getElementById('helpBtn').addEventListener('click', function() {
             designer.showHelpOverlay();
-        });
-
-        // デバイスプレビュー切替
-        document.getElementById('deviceSwitcher').addEventListener('click', function(e) {
-            var btn = e.target.closest('.ld-device-btn');
-            if (!btn) return;
-            document.querySelectorAll('.ld-device-btn').forEach(function(b) { b.classList.remove('is-active'); });
-            btn.classList.add('is-active');
-            var device = btn.dataset.device;
-            designer.ui.previewDevice = device;
-            designer.applyPreviewDevice();
         });
 
         // LIFF設定折りたたみ

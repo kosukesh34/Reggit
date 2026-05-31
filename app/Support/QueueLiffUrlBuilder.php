@@ -25,6 +25,36 @@ class QueueLiffUrlBuilder
         return self::appendQueueParams($baseUrl, $projectKey, 'queue_id', (string) ($id ?? ''));
     }
 
+    /**
+     * Wallet 追加後など、アプリの LIFF エントリ URL（project_key のみ）を返す。
+     */
+    public static function buildEntryUrl(int $projectId, string $projectKey): string
+    {
+        $projectKey = trim($projectKey) !== '' ? trim($projectKey) : 'default';
+        $liffId = trim(ShopSetting::getLineLiffId($projectId));
+        if ($liffId !== '') {
+            return 'https://liff.line.me/'.$liffId.'?'.http_build_query([
+                'liff.state' => http_build_query(['project_key' => $projectKey]),
+            ]);
+        }
+
+        $baseUrl = self::resolveBaseUrl($projectId, $projectKey);
+        $parts = parse_url($baseUrl);
+        if ($parts !== false) {
+            $host = isset($parts['host']) ? strtolower((string) $parts['host']) : '';
+            if ($host === 'liff.line.me' || $host === 'miniapp.line.me') {
+                $resolvedLiffId = self::extractLiffId($parts);
+                if ($resolvedLiffId !== '') {
+                    return 'https://liff.line.me/'.$resolvedLiffId.'?'.http_build_query([
+                        'liff.state' => http_build_query(['project_key' => $projectKey]),
+                    ]);
+                }
+            }
+        }
+
+        return url('/liff/'.$projectKey);
+    }
+
     public static function resolveBaseUrl(int $projectId, string $projectKey): string
     {
         $liffUrl = trim(ShopSetting::getLineLiffUrl($projectId));

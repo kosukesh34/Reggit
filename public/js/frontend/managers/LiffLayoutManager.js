@@ -146,7 +146,8 @@ class LiffLayoutManager {
         const shadow = block.shadow ? 'box-shadow:0 4px 12px rgba(0,0,0,0.1);' : '';
         const pad = block.padding !== undefined && block.padding !== null ? `padding:${block.padding}px;` : '';
         const bgColor = block.background_color ? `background-color:${block.background_color};` : '';
-        const baseStyle = `border-radius:${br}px;${mb}${opacity}${shadow}${pad}${bgColor}`;
+        const textColor = block.text_color ? `color:${block.text_color};` : '';
+        const baseStyle = `border-radius:${br}px;${mb}${opacity}${shadow}${pad}${bgColor}${textColor}`;
 
         if (type === 'data') {
             return `<section class="builder-block builder-data-block" style="${baseStyle}" data-source="${esc(block.source || '')}"></section>`;
@@ -297,6 +298,7 @@ class LiffLayoutManager {
 
     _applyTabSettings(section, tab) {
         const settings = (this.tabSettings && this.tabSettings[tab]) ? this.tabSettings[tab] : {};
+        const global = (this.tabSettings && this.tabSettings._global) ? this.tabSettings._global : {};
         if (settings.background_color) section.style.background = settings.background_color;
         if (settings.background_image) {
             section.style.backgroundImage = `url('${settings.background_image}')`;
@@ -304,6 +306,10 @@ class LiffLayoutManager {
             section.style.backgroundPosition = settings.background_position || 'center';
             section.style.backgroundRepeat = settings.background_repeat || 'no-repeat';
         }
+        const contentPadding = settings.content_padding || global.content_padding;
+        const sectionGap = global.section_gap;
+        if (contentPadding) section.style.setProperty('--content-padding', contentPadding + 'px');
+        if (sectionGap) section.style.setProperty('--section-gap', sectionGap + 'px');
     }
 
     /** スライダーの自動再生とドットナビゲーションを初期化 */

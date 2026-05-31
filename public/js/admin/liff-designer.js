@@ -73,7 +73,7 @@ class LiffDesigner {
         this.templates = Array.isArray(config.templates) ? config.templates : [];
         this.previewNonce = Date.now();
         this.idCounter = 1;
-        this.state = { layouts: {}, tabSettings: {}, activeTab: 'home', selectedId: null };
+        this.state = { layouts: {}, tabSettings: {}, globalSettings: {}, activeTab: 'home', selectedId: null };
         this.ui = {
             paletteSearch: '',
             paletteCategory: 'all',
@@ -98,13 +98,88 @@ class LiffDesigner {
     initState(config) {
         const rawLayouts = config.layouts || {};
         const rawTabSettings = config.tabSettings || {};
+        this.state.globalSettings = rawTabSettings._global || this.defaultGlobalSettings();
         Object.keys(this.TAB_LABELS).forEach(key => {
-            this.state.tabSettings[key] = rawTabSettings[key] || { background_color: '#f5f5f5' };
+            this.state.tabSettings[key] = rawTabSettings[key] || { background_color: '#fafaf9' };
             this.state.layouts[key] = [];
         });
         Object.keys(rawLayouts).forEach(tab => {
             if (!Array.isArray(rawLayouts[tab])) return;
             this.state.layouts[tab] = rawLayouts[tab].map(item => this.normalizeBlock(item));
+        });
+    }
+
+    defaultGlobalSettings() {
+        return { content_padding: 18, section_gap: 16, radius_scale: 'soft', tab_style: 'default' };
+    }
+
+    getGlobalSettings() {
+        return this.state.globalSettings || this.defaultGlobalSettings();
+    }
+
+    serializeTabSettings() {
+        return Object.assign({}, this.state.tabSettings, { _global: this.getGlobalSettings() });
+    }
+
+    RADIUS_SCALES = {
+        compact: { xs: '6px', sm: '10px', md: '12px', lg: '14px', xl: '18px' },
+        default: { xs: '8px', sm: '12px', md: '16px', lg: '20px', xl: '24px' },
+        soft: { xs: '10px', sm: '14px', md: '18px', lg: '22px', xl: '28px' },
+        round: { xs: '12px', sm: '18px', md: '24px', lg: '28px', xl: '32px' },
+    };
+
+    DESIGN_PRESETS = {
+        minimal: { content_padding: 16, section_gap: 12, radius_scale: 'compact', tab_style: 'default' },
+        natural: { content_padding: 18, section_gap: 16, radius_scale: 'soft', tab_style: 'default' },
+        bold: { content_padding: 20, section_gap: 20, radius_scale: 'round', tab_style: 'floating' },
+    };
+
+    applyGlobalDesignPreview() {
+        const g = this.getGlobalSettings();
+        const scale = this.RADIUS_SCALES[g.radius_scale] || this.RADIUS_SCALES.soft;
+        let style = document.getElementById('ldGlobalDesignPreview');
+        if (!style) {
+            style = document.createElement('style');
+            style.id = 'ldGlobalDesignPreview';
+            document.head.appendChild(style);
+        }
+        style.textContent = [
+            '.ld-phone__content { --content-padding: ' + (g.content_padding || 18) + 'px; --section-gap: ' + (g.section_gap || 16) + 'px; padding: ' + (g.content_padding || 18) + 'px !important; gap: ' + (g.section_gap || 16) + 'px !important; }',
+            '.ld-phone__content .ld-block { border-radius: ' + scale.md + '; }',
+            '.ld-phone__nav { ' + (g.tab_style === 'floating' ? 'margin: 0 10px 10px; border-radius: 18px; border: 1px solid rgba(28,25,23,0.08);' : '') + ' }',
+        ].join('\n');
+        const nav = this.els.phoneNav;
+        if (nav) {
+            nav.classList.remove('is-pill', 'is-floating');
+            if (g.tab_style === 'pill') nav.classList.add('is-pill');
+            if (g.tab_style === 'floating') nav.classList.add('is-floating');
+        }
+    }
+
+    applyDesignPreset(presetId) {
+        const preset = this.DESIGN_PRESETS[presetId];
+        if (!preset) return;
+        this.state.globalSettings = Object.assign({}, this.getGlobalSettings(), preset);
+        this.syncGlobalDesignControls();
+        this.applyGlobalDesignPreview();
+        this.renderPhoneContent();
+    }
+
+    syncGlobalDesignControls() {
+        const g = this.getGlobalSettings();
+        if (this.els.globalSectionGap) {
+            this.els.globalSectionGap.value = String(g.section_gap || 16);
+            if (this.els.globalSectionGapVal) this.els.globalSectionGapVal.textContent = String(g.section_gap || 16);
+        }
+        if (this.els.globalRadiusScale) this.els.globalRadiusScale.value = g.radius_scale || 'soft';
+        if (this.els.globalTabStyle) this.els.globalTabStyle.value = g.tab_style || 'default';
+        if (this.els.screenContentPadding) {
+            const pad = g.content_padding || 18;
+            this.els.screenContentPadding.value = String(pad);
+            if (this.els.screenContentPaddingVal) this.els.screenContentPaddingVal.textContent = String(pad);
+        }
+        document.querySelectorAll('.ld-design-preset').forEach(btn => {
+            btn.classList.toggle('is-active', btn.dataset.preset === this.ui.activePreset);
         });
     }
 
@@ -114,7 +189,7 @@ class LiffDesigner {
         if (type === 'label') type = 'heading';
         if (type === 'gallery') type = 'data';
         if (type === 'form') type = 'text';
-        const block = { id, type, border_radius: item.border_radius ?? 10, padding: item.padding ?? null, margin_bottom: item.margin_bottom ?? 0, text_align: item.text_align || 'left', background_color: item.background_color || '', opacity: item.opacity ?? 100, shadow: item.shadow ?? false };
+        const block = { id, type, border_radius: item.border_radius ?? 10, padding: item.padding ?? null, margin_bottom: item.margin_bottom ?? 0, text_align: item.text_align || 'left', background_color: item.background_color || '', text_color: item.text_color || '', opacity: item.opacity ?? 100, shadow: item.shadow ?? false };
 
         switch (type) {
             case 'hero':
@@ -254,6 +329,14 @@ class LiffDesigner {
             zoomValue: document.getElementById('zoomValue'),
             phoneFrame: document.querySelector('.ld-phone__frame'),
             tabTemplateList: document.getElementById('tabTemplateList'),
+            screenBgSize: document.getElementById('screenBgSize'),
+            screenContentPadding: document.getElementById('screenContentPadding'),
+            screenContentPaddingVal: document.getElementById('screenContentPaddingVal'),
+            globalSectionGap: document.getElementById('globalSectionGap'),
+            globalSectionGapVal: document.getElementById('globalSectionGapVal'),
+            globalRadiusScale: document.getElementById('globalRadiusScale'),
+            globalTabStyle: document.getElementById('globalTabStyle'),
+            designPresets: document.getElementById('designPresets'),
         };
     }
 
@@ -346,9 +429,18 @@ class LiffDesigner {
         const blocks = this.getBlocks();
         c.innerHTML = '';
         const s = this.getSettings();
-        c.style.background = s.background_color || '#f5f5f5';
+        c.style.background = s.background_color || '#fafaf9';
         c.style.backgroundImage = s.background_image ? "url('" + s.background_image + "')" : '';
-        if (s.background_image) { c.style.backgroundSize = 'cover'; c.style.backgroundPosition = 'center'; }
+        if (s.background_image) {
+            c.style.backgroundSize = s.background_size || 'cover';
+            c.style.backgroundPosition = s.background_position || 'center';
+            c.style.backgroundRepeat = s.background_repeat || 'no-repeat';
+        }
+        const g = this.getGlobalSettings();
+        const pad = s.content_padding || g.content_padding || 18;
+        c.style.padding = pad + 'px';
+        c.style.gap = (g.section_gap || 16) + 'px';
+        this.applyGlobalDesignPreview();
 
         if (blocks.length === 0) {
             var tab = this.state.activeTab;
@@ -414,6 +506,7 @@ class LiffDesigner {
         if (block.opacity !== undefined && block.opacity < 100) el.style.opacity = block.opacity / 100;
         if (block.shadow) el.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
         if (block.text_align) el.style.textAlign = block.text_align;
+        if (block.text_color) el.style.color = block.text_color;
     }
 
     /* --- Block builders --- */
@@ -661,11 +754,12 @@ class LiffDesigner {
         panel.appendChild(hr);
         panel.appendChild(lbl);
 
-        this.addRange(panel, '角丸 (px)', block.border_radius, 0, 24, v => { block.border_radius = v; });
-        this.addRange(panel, '余白 (px)', block.padding, 0, 32, v => { block.padding = v; });
-        this.addRange(panel, '下マージン (px)', block.margin_bottom, 0, 32, v => { block.margin_bottom = v; });
+        this.addRange(panel, '角丸 (px)', block.border_radius, 0, 32, v => { block.border_radius = v; });
+        this.addRange(panel, '余白 (px)', block.padding, 0, 40, v => { block.padding = v; });
+        this.addRange(panel, '下マージン (px)', block.margin_bottom, 0, 40, v => { block.margin_bottom = v; });
         this.addRange(panel, '透明度 (%)', block.opacity, 0, 100, v => { block.opacity = v; });
         this.addColorField(panel, '背景色', block.background_color, v => { block.background_color = v; });
+        this.addColorField(panel, '文字色', block.text_color, v => { block.text_color = v; });
         this.addCheckbox(panel, '影をつける', block.shadow, v => { block.shadow = v; });
         this.addSel(panel, 'テキスト揃え', block.text_align, this.ALIGN_OPTIONS, v => { block.text_align = v; });
     }
@@ -891,9 +985,17 @@ class LiffDesigner {
 
     applyScreenSettings() {
         const s = this.getSettings();
-        this.els.screenBgColor.value = s.background_color || '#f5f5f5';
-        this.els.screenBgColorHex.value = s.background_color || '#f5f5f5';
+        this.els.screenBgColor.value = s.background_color || '#fafaf9';
+        this.els.screenBgColorHex.value = s.background_color || '#fafaf9';
         this.els.screenBgImage.value = s.background_image || '';
+        if (this.els.screenBgSize) this.els.screenBgSize.value = s.background_size || 'cover';
+        const g = this.getGlobalSettings();
+        const pad = s.content_padding || g.content_padding || 18;
+        if (this.els.screenContentPadding) {
+            this.els.screenContentPadding.value = String(pad);
+            if (this.els.screenContentPaddingVal) this.els.screenContentPaddingVal.textContent = String(pad);
+        }
+        this.syncGlobalDesignControls();
     }
 
     /* ========== Block operations ========== */

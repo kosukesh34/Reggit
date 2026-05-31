@@ -6,9 +6,52 @@ window.LiffDesignerModules.uiEvents = {
         this.els.screenBgColor.addEventListener('input', () => this.onScreenChange());
         this.els.screenBgColorHex.addEventListener('input', () => { if (/^#[0-9a-fA-F]{6}$/.test(this.els.screenBgColorHex.value)) { this.els.screenBgColor.value = this.els.screenBgColorHex.value; this.onScreenChange(); } });
         this.els.screenBgImage.addEventListener('input', () => this.onScreenChange());
-        this.els.form.addEventListener('submit', () => { this.els.layoutsJson.value = JSON.stringify(this.state.layouts); this.els.tabSettingsJson.value = JSON.stringify(this.state.tabSettings); if (this.els.customCssInput && this.els.customCssEditor) this.els.customCssInput.value = this.els.customCssEditor.value; });
+        this.els.form.addEventListener('submit', () => {
+            this.els.layoutsJson.value = JSON.stringify(this.state.layouts);
+            this.els.tabSettingsJson.value = JSON.stringify(this.serializeTabSettings());
+            if (this.els.customCssInput && this.els.customCssEditor) this.els.customCssInput.value = this.els.customCssEditor.value;
+        });
         this.els.toggleCssBtn.addEventListener('click', () => { this.els.cssSection.hidden = !this.els.cssSection.hidden; });
         if (this.els.customCssEditor) this.els.customCssEditor.addEventListener('input', () => this.applyCustomCssPreview());
+        if (this.els.screenBgSize) this.els.screenBgSize.addEventListener('change', () => this.onScreenChange());
+        if (this.els.screenContentPadding) {
+            this.els.screenContentPadding.addEventListener('input', () => {
+                const val = parseInt(this.els.screenContentPadding.value, 10);
+                if (this.els.screenContentPaddingVal) this.els.screenContentPaddingVal.textContent = String(val);
+                this.state.globalSettings.content_padding = val;
+                this.onScreenChange();
+            });
+        }
+        if (this.els.globalSectionGap) {
+            this.els.globalSectionGap.addEventListener('input', () => {
+                const val = parseInt(this.els.globalSectionGap.value, 10);
+                this.state.globalSettings.section_gap = val;
+                if (this.els.globalSectionGapVal) this.els.globalSectionGapVal.textContent = String(val);
+                this.applyGlobalDesignPreview();
+                this.renderPhoneContent();
+            });
+        }
+        if (this.els.globalRadiusScale) {
+            this.els.globalRadiusScale.addEventListener('change', () => {
+                this.state.globalSettings.radius_scale = this.els.globalRadiusScale.value;
+                this.applyGlobalDesignPreview();
+                this.renderPhoneContent();
+            });
+        }
+        if (this.els.globalTabStyle) {
+            this.els.globalTabStyle.addEventListener('change', () => {
+                this.state.globalSettings.tab_style = this.els.globalTabStyle.value;
+                this.applyGlobalDesignPreview();
+            });
+        }
+        if (this.els.designPresets) {
+            this.els.designPresets.addEventListener('click', (e) => {
+                const btn = e.target.closest('[data-preset]');
+                if (!btn) return;
+                this.ui.activePreset = btn.dataset.preset;
+                this.applyDesignPreset(btn.dataset.preset);
+            });
+        }
         this.els.undoBtn.addEventListener('click', () => this.undo());
         this.els.redoBtn.addEventListener('click', () => this.redo());
         this.els.previewBtn.addEventListener('click', () => this.openPreview());
@@ -74,8 +117,18 @@ window.LiffDesignerModules.uiEvents = {
     },
 
     onScreenChange() {
-        const s = this.getSettings(); s.background_color = this.els.screenBgColor.value; s.background_image = this.els.screenBgImage.value;
-        this.els.screenBgColorHex.value = this.els.screenBgColor.value; this.state.tabSettings[this.state.activeTab] = s; this.renderPhoneContent();
+        const s = this.getSettings();
+        s.background_color = this.els.screenBgColor.value;
+        s.background_image = this.els.screenBgImage.value;
+        if (this.els.screenBgSize) s.background_size = this.els.screenBgSize.value;
+        if (this.els.screenContentPadding) {
+            const pad = parseInt(this.els.screenContentPadding.value, 10);
+            s.content_padding = pad;
+            this.state.globalSettings.content_padding = pad;
+        }
+        this.els.screenBgColorHex.value = this.els.screenBgColor.value;
+        this.state.tabSettings[this.state.activeTab] = s;
+        this.renderPhoneContent();
     },
 
     applyZoom() {
@@ -88,18 +141,11 @@ window.LiffDesignerModules.uiEvents = {
 
     applyPreviewDevice() {
         if (!this.els.phoneFrame) return;
-        var device = this.ui.previewDevice || 'line';
-        this.els.phoneFrame.classList.remove('is-line', 'is-ios', 'is-android');
-        this.els.phoneFrame.classList.add('is-' + device);
+        this.els.phoneFrame.classList.remove('is-ios', 'is-android');
+        this.els.phoneFrame.classList.add('is-line');
         var header = this.els.phoneFrame.querySelector('.ld-phone__header');
         if (header) {
-            if (device === 'line') {
-                header.style.background = '#06C755';
-            } else if (device === 'ios') {
-                header.style.background = '#000';
-            } else if (device === 'android') {
-                header.style.background = '#1f2937';
-            }
+            header.style.background = 'linear-gradient(135deg, #06C755, #04a847)';
         }
     },
 

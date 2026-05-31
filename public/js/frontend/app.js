@@ -963,10 +963,14 @@ if (typeof window !== 'undefined' && !window.__LIFF_APP_BOOTSTRAP__) {
     }
 
     function restorePersistedLineUserIdBeforeApp() {
-        if (typeof window === 'undefined' || window.__LINE_USER_ID__ || !window.__IS_LIFF__) return;
+        // LIFF では liff-ready 後に LIFF トークンで ID を確定するため、ここでは復元しない
+        if (typeof window === 'undefined' || window.__LINE_USER_ID__ || window.__IS_LIFF__) return;
         try {
-            const cached = String(window.localStorage.getItem('mobile_order_line_user_id') || '').trim();
-            if (/^U[0-9a-f]{32}$/i.test(cached)) {
+            const projectKey = window.__PROJECT_KEY__ || 'default';
+            const scoped = String(window.localStorage.getItem('mobile_order_line_user_id_' + projectKey) || '').trim();
+            const legacy = String(window.localStorage.getItem('mobile_order_line_user_id') || '').trim();
+            const cached = /^U[0-9a-f]{32}$/i.test(scoped) ? scoped : (/^U[0-9a-f]{32}$/i.test(legacy) ? legacy : '');
+            if (cached) {
                 window.__LINE_USER_ID__ = cached;
             }
         } catch (e) { /* ignore */ }
@@ -974,7 +978,9 @@ if (typeof window !== 'undefined' && !window.__LIFF_APP_BOOTSTRAP__) {
 
     function createApp() {
         if (window.app) return;
-        restorePersistedLineUserIdBeforeApp();
+        if (!window.__IS_LIFF__) {
+            restorePersistedLineUserIdBeforeApp();
+        }
         window.app = new MobileOrderApp();
         if (typeof window.__clientDebugLog === 'function') {
             window.__clientDebugLog('app_created', {});
@@ -1001,7 +1007,6 @@ if (typeof window !== 'undefined' && !window.__LIFF_APP_BOOTSTRAP__) {
 
     function canBootstrapWithoutLiffReady() {
         if (!window.__IS_LIFF__) return true;
-        if (window.__LINE_USER_ID__) return true;
         if (window.__LIFF_ID_MISSING__) return true;
         return false;
     }
