@@ -43,13 +43,13 @@
     {{-- ネイティブアプリ（iOS/Android）: Android WebView では初回 100vh が 0 になりやすいため、px フォールバックを指定 --}}
     <style id="native-app-inline">
         #liff-loading { display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; }
-        html.native-app-embed, body.native-app-embed { height: 100%; min-height: 100vh; min-height: max(100vh, 800px); margin: 0; padding: 0; box-sizing: border-box; }
-        .app-container { display: flex !important; flex-direction: column !important; min-height: 100vh !important; min-height: max(100vh, 800px) !important; height: 100% !important; background: #fff !important; visibility: visible !important; box-sizing: border-box !important; }
+        html.native-app-embed, body.native-app-embed { height: 100%; min-height: 100vh; margin: 0; padding: 0; box-sizing: border-box; overflow: hidden !important; touch-action: none !important; }
+        .app-container { display: flex !important; flex-direction: column !important; min-height: 100vh !important; height: 100% !important; background: #fff !important; visibility: visible !important; box-sizing: border-box !important; overflow: hidden !important; }
         .header { display: block !important; visibility: visible !important; background: #000 !important; color: #fff !important; flex-shrink: 0 !important; }
-        .main-content { visibility: visible !important; flex: 1 1 auto !important; min-height: 0 !important; min-height: max(500px, 50vh) !important; overflow: auto !important; -webkit-overflow-scrolling: touch !important; }
+        .main-content { visibility: visible !important; flex: 1 1 auto !important; min-height: 0 !important; overflow: hidden !important; }
         .main-tabs { display: none !important; visibility: hidden !important; height: 0 !important; overflow: hidden !important; pointer-events: none !important; }
-        .tab-content.active { display: block !important; flex: 1 1 auto !important; min-height: 0 !important; min-height: max(500px, 50vh) !important; overflow: auto !important; }
-        .tab-content.active .tab-section { min-height: 120px !important; min-height: max(400px, 45vh) !important; background: #fff !important; }
+        .tab-content.active { display: block !important; flex: 1 1 auto !important; min-height: 0 !important; overflow: hidden !important; }
+        .tab-content.active .tab-section { min-height: 0 !important; height: 100% !important; max-height: 100% !important; overflow: hidden !important; background: #fff !important; }
         .main-content { padding-bottom: 0 !important; }
     </style>
 </head>
@@ -71,8 +71,8 @@
             var s = document.createElement('style');
             s.id = 'native-app-hide-loading';
             s.textContent = 'html.native-app-embed #liff-loading { display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; }' +
-                'html.native-app-embed .app-container { display: flex !important; visibility: visible !important; min-height: max(100vh, 800px) !important; background: #fff !important; }' +
-                'html.native-app-embed .main-content { min-height: max(500px, 50vh) !important; padding-bottom: 0 !important; }' +
+                'html.native-app-embed .app-container { display: flex !important; visibility: visible !important; min-height: 100vh !important; background: #fff !important; overflow: hidden !important; }' +
+                'html.native-app-embed .main-content { min-height: 0 !important; overflow: hidden !important; padding-bottom: 0 !important; }' +
                 'html.native-app-embed .header { display: block !important; visibility: visible !important; }' +
                 'html.native-app-embed .main-tabs { display: none !important; visibility: hidden !important; height: 0 !important; pointer-events: none !important; }';
             (document.head || document.documentElement).appendChild(s);
