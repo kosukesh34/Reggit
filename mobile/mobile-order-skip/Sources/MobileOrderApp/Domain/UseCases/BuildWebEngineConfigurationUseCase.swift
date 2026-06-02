@@ -6,6 +6,7 @@ struct BuildWebEngineConfigurationUseCase {
         var config = WebEngineConfiguration()
         config.javaScriptEnabled = true
         config.allowsPullToRefresh = false
+        config.isScrollEnabled = false
         let appToken = "MobileOrderApp/1.0 (\(platform.rawValue))"
         switch platform {
         case .ios:

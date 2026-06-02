@@ -2,6 +2,8 @@ import Foundation
 
 extension Notification.Name {
     static let oneSignalPushTokenDidUpdate = Notification.Name("OneSignalPushTokenDidUpdate")
+    static let oneSignalNotificationOpened = Notification.Name("OneSignalNotificationOpened")
+    static let oneSignalNotificationForeground = Notification.Name("OneSignalNotificationForeground")
 }
 
 enum NativePlatform: String {

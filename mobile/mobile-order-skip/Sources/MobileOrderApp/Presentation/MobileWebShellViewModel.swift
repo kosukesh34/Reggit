@@ -13,6 +13,10 @@ final class MobileWebShellViewModel {
     var showWhiteScreenFallback: Bool = false
     var fallbackMessage: String = ""
     var webViewReloadKey: Int = 0
+    var activeTab: String
+    /// WebView で指定 URL のコンテンツが読み込めたときのみ true（タブバー表示・タブ切替の前提）
+    var showNativeTabBar: Bool = false
+    var isWebContentReady: Bool = false
 
     private let buildScriptUseCase: BuildNativeInjectionScriptUseCase
     private let deviceProvider: NativeDeviceContextProvider
@@ -27,6 +31,7 @@ final class MobileWebShellViewModel {
         buildScriptUseCase: BuildNativeInjectionScriptUseCase
     ) {
         self.config = config
+        self.activeTab = config.fixedTab
         self.webConfiguration = webConfiguration
         self.deviceProvider = deviceProvider
         self.buildScriptUseCase = buildScriptUseCase
@@ -57,16 +62,70 @@ final class MobileWebShellViewModel {
     }
 
     private var pushTokenObserver: (any NSObjectProtocol)?
+    private var notificationOpenObserver: (any NSObjectProtocol)?
+    private var notificationForegroundObserver: (any NSObjectProtocol)?
 
     func onAppear() {
         isLoading = true
         showWhiteScreenFallback = false
+        showNativeTabBar = false
+        isWebContentReady = false
         fallbackMessage = ""
         didAutoReload = false
         didForceBootstrap = false
-        startMonitoringWhiteScreen()
-        onNavigationFinished()
+        Task { @MainActor in
+            let reachable = await Self.checkShellURLReachable(self.config.liffURLString)
+            if !reachable {
+                self.markShellUnreachable(
+                    message: """
+                    指定のURLに接続できませんでした。
+                    ネットワークとサーバー（ngrok 等）の起動を確認してください。
+
+                    URL: \(self.config.liffURLString)
+                    """
+                )
+                return
+            }
+            self.startMonitoringWhiteScreen()
+            self.onNavigationFinished(applyInitialTab: false)
+        }
         observePushTokenUpdate()
+        observeNotificationOpen()
+        observeNotificationForeground()
+    }
+
+    private func markShellUnreachable(message: String) {
+        stopMonitoringWhiteScreen()
+        isLoading = false
+        showWhiteScreenFallback = true
+        showNativeTabBar = false
+        isWebContentReady = false
+        fallbackMessage = message
+        logger.error("Web shell unreachable: \(message)")
+    }
+
+    private func markWebContentReadyIfNeeded() {
+        guard !isWebContentReady else { return }
+        isWebContentReady = true
+        showNativeTabBar = true
+        onNavigationFinished(applyInitialTab: true)
+        switchToTab(activeTab)
+    }
+
+    private static func checkShellURLReachable(_ urlString: String) async -> Bool {
+        guard let url = URL(string: urlString) else { return false }
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.timeoutInterval = 10
+        request.setValue("true", forHTTPHeaderField: "ngrok-skip-browser-warning")
+        do {
+            let (_, response) = try await URLSession.shared.data(for: request)
+            guard let http = response as? HTTPURLResponse else { return false }
+            return (200 ... 399).contains(http.statusCode)
+        } catch {
+            logger.warning("Shell URL reachability check failed: \(error.localizedDescription)")
+            return false
+        }
     }
 
     func onDisappear() {
@@ -75,6 +134,90 @@ final class MobileWebShellViewModel {
             NotificationCenter.default.removeObserver(observer)
             pushTokenObserver = nil
         }
+        if let observer = notificationOpenObserver {
+            NotificationCenter.default.removeObserver(observer)
+            notificationOpenObserver = nil
+        }
+        if let observer = notificationForegroundObserver {
+            NotificationCenter.default.removeObserver(observer)
+            notificationForegroundObserver = nil
+        }
+    }
+
+    private func observeNotificationOpen() {
+        notificationOpenObserver = NotificationCenter.default.addObserver(
+            forName: .oneSignalNotificationOpened,
+            object: nil,
+            queue: .main
+        ) { notification in
+            let tab = (notification.userInfo?["tab"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard let tab, !tab.isEmpty else { return }
+            let notificationType = (notification.userInfo?["type"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+            Self.scheduleNotificationDeepLink(tab: tab, notificationType: notificationType)
+        }
+    }
+
+    private func observeNotificationForeground() {
+        notificationForegroundObserver = NotificationCenter.default.addObserver(
+            forName: .oneSignalNotificationForeground,
+            object: nil,
+            queue: .main
+        ) { notification in
+            let notificationType = (notification.userInfo?["type"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+            Self.scheduleForegroundNotification(notificationType: notificationType)
+        }
+    }
+
+    nonisolated private static func scheduleNotificationDeepLink(tab: String, notificationType: String?) {
+        Task { @MainActor in
+            MobileWebShellViewModel.default.handleNotificationDeepLink(tab: tab, notificationType: notificationType)
+        }
+    }
+
+    nonisolated private static func scheduleForegroundNotification(notificationType: String?) {
+        Task { @MainActor in
+            MobileWebShellViewModel.default.handleForegroundNotification(notificationType: notificationType)
+        }
+    }
+
+    nonisolated private static func schedulePushTokenInjection(token: String) {
+        Task { @MainActor in
+            let script = "typeof window.__nativeSetPushToken === 'function' && window.__nativeSetPushToken(\(token.jsStringLiteral));"
+            _ = try? await MobileWebShellViewModel.default.navigator.evaluateJavaScript(script)
+        }
+    }
+
+    func handleForegroundNotification(notificationType: String?) {
+        guard notificationType == "coupon_issued" else { return }
+        let script = """
+        (() => {
+            try {
+                window.dispatchEvent(new CustomEvent('mobile-coupon-received', { detail: { tab: 'coupons', foreground: true } }));
+            } catch (e) {}
+            return 'dispatched';
+        })();
+        """
+        Task { @MainActor in
+            _ = try? await self.navigator.evaluateJavaScript(script)
+        }
+    }
+
+    func handleNotificationDeepLink(tab: String, notificationType: String? = nil) {
+        activeTab = tab
+        guard showNativeTabBar, isWebContentReady else { return }
+        let isCoupon = notificationType == "coupon_issued" || tab == "coupons"
+        let script = """
+        (() => {
+            if (typeof window.__nativeOpenTab__ === 'function') {
+                return window.__nativeOpenTab__(\(tab.jsStringLiteral), { couponReceived: \(isCoupon ? "true" : "false") }) ? 'opened' : 'pending';
+            }
+            window.__NATIVE_PENDING_TAB__ = \(tab.jsStringLiteral);
+            return 'queued';
+        })();
+        """
+        Task { @MainActor in
+            _ = try? await self.navigator.evaluateJavaScript(script)
+        }
     }
 
     private func observePushTokenUpdate() {
@@ -82,27 +225,43 @@ final class MobileWebShellViewModel {
             forName: .oneSignalPushTokenDidUpdate,
             object: nil,
             queue: .main
-        ) { [weak self] notification in
-            guard let self else { return }
+        ) { notification in
             let token = (notification.userInfo?["token"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
             guard let token, !token.isEmpty else { return }
-            let script = "typeof window.__nativeSetPushToken === 'function' && window.__nativeSetPushToken(\(token.jsStringLiteral));"
-            Task { @MainActor in
-                _ = try? await self.navigator.evaluateJavaScript(script)
-            }
+            Self.schedulePushTokenInjection(token: token)
         }
     }
 
-    func onNavigationFinished() {
-        let script = buildScriptUseCase.execute(config: config, device: deviceProvider)
+    func onNavigationFinished(applyInitialTab: Bool? = nil) {
+        let shouldApplyTab = applyInitialTab ?? isWebContentReady
+        let script = buildScriptUseCase.execute(
+            config: config,
+            device: deviceProvider,
+            activeTab: activeTab,
+            applyInitialTab: shouldApplyTab
+        )
         Task { @MainActor in
             _ = try? await self.navigator.evaluateJavaScript(script)
         }
     }
 
+    func fetchAppConfigViaWeb() async -> AppConfig? {
+        let script = AppConfigClient.syncFetchScript(baseUrl: config.baseUrl, projectKey: config.projectKey)
+        guard let raw = try? await navigator.evaluateJavaScript(script) else { return nil }
+        let jsonString = normalizeEvaluateResult(raw)
+        guard !jsonString.isEmpty else { return nil }
+        return AppConfigClient.parseJSONString(jsonString)
+    }
+
     func switchToTab(_ tabKey: String) {
+        guard showNativeTabBar, isWebContentReady else {
+            activeTab = tabKey
+            return
+        }
+        activeTab = tabKey
         let script = """
         (() => {
+            window.__NATIVE_TARGET_TAB__ = \(tabKey.jsStringLiteral);
             if (window.app && typeof window.app.switchTab === 'function') {
                 window.app.switchTab(\(tabKey.jsStringLiteral));
                 return 'switched';
@@ -126,11 +285,27 @@ final class MobileWebShellViewModel {
 
     func retryLoad() {
         showWhiteScreenFallback = false
+        showNativeTabBar = false
+        isWebContentReady = false
         isLoading = true
         didAutoReload = false
         didForceBootstrap = false
         webViewReloadKey += 1
-        startMonitoringWhiteScreen()
+        Task { @MainActor in
+            let reachable = await Self.checkShellURLReachable(self.config.liffURLString)
+            if !reachable {
+                self.markShellUnreachable(
+                    message: """
+                    指定のURLに接続できませんでした。
+                    ネットワークとサーバー（ngrok 等）の起動を確認してください。
+
+                    URL: \(self.config.liffURLString)
+                    """
+                )
+                return
+            }
+            self.startMonitoringWhiteScreen()
+        }
     }
 
     private func stopMonitoringWhiteScreen() {
@@ -152,6 +327,7 @@ final class MobileWebShellViewModel {
                     self.isLoading = false
                     self.showWhiteScreenFallback = false
                     self.fallbackMessage = ""
+                    self.markWebContentReadyIfNeeded()
                     return
                 }
 
@@ -170,6 +346,8 @@ final class MobileWebShellViewModel {
                 if elapsed >= 16 {
                     self.isLoading = false
                     self.showWhiteScreenFallback = true
+                    self.showNativeTabBar = false
+                    self.isWebContentReady = false
                     self.fallbackMessage = """
                     画面の読み込みが完了しませんでした。
                     URL: \(self.config.liffURLString)
@@ -196,6 +374,7 @@ final class MobileWebShellViewModel {
     }
 
     private func forceBootstrapIfNeeded() async {
+        guard isWebContentReady else { return }
         let result: String
         if let value = try? await navigator.evaluateJavaScript(forceBootstrapScript()) {
             result = normalizeEvaluateResult(value)
@@ -236,11 +415,6 @@ final class MobileWebShellViewModel {
         """
         (() => {
             try {
-                const targetTab = \(config.fixedTab.jsStringLiteral);
-                if (window.app && typeof window.app.switchTab === 'function') {
-                    window.app.switchTab(targetTab);
-                    return 'app_exists';
-                }
                 if (typeof document !== 'undefined' && typeof document.dispatchEvent === 'function') {
                     document.dispatchEvent(new CustomEvent('liff-ready'));
                 }

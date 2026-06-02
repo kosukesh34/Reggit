@@ -2,10 +2,12 @@
 
 namespace App\Providers;
 
+use App\Models\MemberCoupon;
 use App\Models\MemberStamp;
 use App\Models\PointTransaction;
 use App\Models\Project;
 use App\Models\ShopSetting;
+use App\Observers\MemberCouponObserver;
 use App\Observers\MemberStampObserver;
 use App\Observers\PointTransactionObserver;
 use App\Observers\ProjectObserver;
@@ -39,6 +41,7 @@ class AppServiceProvider extends ServiceProvider
     {
         Project::observe(ProjectObserver::class);
         MemberStamp::observe(MemberStampObserver::class);
+        MemberCoupon::observe(MemberCouponObserver::class);
         PointTransaction::observe(PointTransactionObserver::class);
 
         if ($this->app->runningInConsole() === false) {
