@@ -2,8 +2,6 @@
 
 namespace App\Support;
 
-use App\Models\ShopSetting;
-
 /**
  * クーポン通知・LINE Flex 用の LIFF / Web リンク（クーポンタブを開く）。
  */
