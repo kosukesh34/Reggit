@@ -57,7 +57,7 @@ class CouponNotificationTest extends TestCase
         });
     }
 
-    public function test_notify_issued_ネイティブプッシュとLINE通知を送ること(): void
+    public function test_notify_issued_ネイティブプッシュと_lin_e通知を送ること(): void
     {
         $project = $this->createProject();
         $lineUserId = 'U'.str_repeat('a', 32);
