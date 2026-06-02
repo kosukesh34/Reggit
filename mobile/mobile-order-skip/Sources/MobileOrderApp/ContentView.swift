@@ -3,9 +3,9 @@ import SkipWeb
 
 struct ContentView: View {
     @State var viewModel = MobileWebShellViewModel.default
-    @State var tabs: [AppTabItem] = AppTabItem.fallbackTabs
-    @State var selectedTab: String = ""
+    @State var tabs: [AppTabItem] = []
     @State var configLoaded: Bool = false
+    @State var pendingAppConfig: AppConfig?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -17,7 +17,14 @@ struct ContentView: View {
                             navigator: viewModel.navigator,
                             url: liffURL,
                             onNavigationFinished: {
-                                viewModel.onNavigationFinished()
+                                viewModel.onNavigationFinished(applyInitialTab: viewModel.isWebContentReady)
+                                loadAppConfigFromWebIfNeeded()
+                            },
+                            onDownloadRequested: { request in
+                                NativeWebNavigationBridge.handleDownloadRequest(request)
+                            },
+                            shouldOverrideUrlLoading: { url in
+                                NativeWebNavigationBridge.handle(url: url)
                             }
                         )
                         .id(viewModel.webViewReloadKey)
@@ -36,7 +43,7 @@ struct ContentView: View {
 
                 if viewModel.showWhiteScreenFallback {
                     VStack(spacing: 10) {
-                        Text("画面を再読み込みしてください")
+                        Text("接続できません")
                             .font(.headline)
                         Text(viewModel.fallbackMessage)
                             .font(.caption)
@@ -54,43 +61,81 @@ struct ContentView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            NativeTabBar(
-                tabs: tabs,
-                selectedTab: $selectedTab,
-                onTabSelected: { tabKey in
-                    viewModel.switchToTab(tabKey)
-                }
-            )
+            if viewModel.showNativeTabBar {
+                NativeTabBar(
+                    tabs: tabs,
+                    selectedTab: Binding(
+                        get: { viewModel.activeTab },
+                        set: { tabKey in
+                            viewModel.activeTab = tabKey
+                            viewModel.switchToTab(tabKey)
+                        }
+                    ),
+                    onTabSelected: { tabKey in
+                        viewModel.activeTab = tabKey
+                        viewModel.switchToTab(tabKey)
+                    }
+                )
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onAppear {
             viewModel.onAppear()
-            if selectedTab.isEmpty {
-                selectedTab = viewModel.config.fixedTab
-            }
-            loadAppConfig()
         }
         .onDisappear {
             viewModel.onDisappear()
         }
+        .onChange(of: viewModel.showNativeTabBar) { _, show in
+            guard show else { return }
+            if let pending = pendingAppConfig {
+                applyAppConfig(pending)
+                pendingAppConfig = nil
+            } else if !configLoaded {
+                loadAppConfigEarlyIfAvailable()
+            }
+        }
     }
 
-    func loadAppConfig() {
-        guard !configLoaded else { return }
+    /// iOS: WebView 起動前に URLSession でタブ取得（Android は WebView 読み込み後に取得）
+    func loadAppConfigEarlyIfAvailable() {
+        guard viewModel.showNativeTabBar, !configLoaded else { return }
+        #if !os(Android)
         let client = AppConfigClient(
             baseUrl: viewModel.config.baseUrl,
             projectKey: viewModel.config.projectKey
         )
         Task {
             if let config = await client.fetchConfig() {
-                await MainActor.run {
-                    tabs = config.tabs
-                    configLoaded = true
-                    if !config.tabs.contains(where: { $0.key == selectedTab }) {
-                        selectedTab = config.tabs.first?.key ?? viewModel.config.fixedTab
-                    }
-                }
+                await applyAppConfig(config)
             }
+        }
+        #endif
+    }
+
+    /// WebView 読み込み後: iOS/Android 共通で app-config を取得
+    func loadAppConfigFromWebIfNeeded() {
+        guard viewModel.showNativeTabBar, !configLoaded else { return }
+        Task {
+            if let config = await viewModel.fetchAppConfigViaWeb() {
+                await applyAppConfig(config)
+            }
+        }
+    }
+
+    @MainActor
+    func applyAppConfig(_ config: AppConfig) {
+        guard viewModel.showNativeTabBar else {
+            pendingAppConfig = config
+            return
+        }
+        let isFirstLoad = !configLoaded
+        tabs = config.tabs
+        configLoaded = true
+        if !config.tabs.contains(where: { $0.key == viewModel.activeTab }) {
+            viewModel.activeTab = config.tabs.first?.key ?? viewModel.config.fixedTab
+        }
+        if isFirstLoad {
+            viewModel.switchToTab(viewModel.activeTab)
         }
     }
 }

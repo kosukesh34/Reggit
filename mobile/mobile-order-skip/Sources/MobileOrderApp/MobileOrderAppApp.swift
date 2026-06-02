@@ -61,4 +61,29 @@ let logger: Logger = Logger(subsystem: "jp.gamechanger.mobileorder", category: "
             userInfo: ["token": trimmed]
         )
     }
+
+    /* SKIP @bridge */public func onNotificationForeground(_ notificationType: String) {
+        let type = notificationType.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !type.isEmpty else { return }
+        NotificationCenter.default.post(
+            name: .oneSignalNotificationForeground,
+            object: nil,
+            userInfo: ["type": type]
+        )
+    }
+
+    /* SKIP @bridge */public func onNotificationOpened(_ tab: String, notificationType: String) {
+        let trimmed = tab.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        var userInfo: [String: Any] = ["tab": trimmed]
+        let type = notificationType.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !type.isEmpty {
+            userInfo["type"] = type
+        }
+        NotificationCenter.default.post(
+            name: .oneSignalNotificationOpened,
+            object: nil,
+            userInfo: userInfo
+        )
+    }
 }
