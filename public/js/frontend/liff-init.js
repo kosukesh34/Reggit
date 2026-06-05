@@ -18,7 +18,18 @@
     };
 
     function isNativeMobileAppWebView() {
-        return /MobileOrderApp\/\d+/i.test(uaString);
+        const token = (typeof AppConstants !== 'undefined' && AppConstants.NATIVE_APP_USER_AGENT_TOKEN)
+            ? AppConstants.NATIVE_APP_USER_AGENT_TOKEN
+            : readNativeAppMeta('native-app-user-agent-token', 'Reggit');
+        const escaped = token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        return new RegExp(`(?:${escaped}|MobileOrderApp)\\/\\d+`, 'i').test(uaString);
+    }
+
+    function readNativeAppMeta(name, fallback) {
+        if (typeof document === 'undefined') return fallback;
+        const el = document.querySelector(`meta[name="${name}"]`);
+        const value = el && el.getAttribute('content') ? el.getAttribute('content').trim() : '';
+        return value || fallback;
     }
 
     function applyNativeEmbedClass() {

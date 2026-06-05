@@ -144,7 +144,7 @@ class SendOneSignalTestCommand extends Command
                     $this->line('  2. OneSignal Dashboard → Settings → Platforms → Apple iOS (APNs) に p8 キーまたは証明書を設定したか');
                     $this->line('  3. その APNs の Bundle ID がアプリの Bundle ID（Skip.env の PRODUCT_BUNDLE_IDENTIFIER）と完全一致しているか');
                     $this->line('  4. 端末で通知を「許可」し、アプリを開いたまま 15〜20 秒待ったか');
-                    $this->line('  詳細: mobile/mobile-order-skip/README.md の「Apple iOS (APNs) が 0 人」を参照');
+                    $this->line('  詳細: mobile/reggit-skip/README.md の「Apple iOS (APNs) が 0 人」を参照');
                 }
             } catch (\Throwable $e) {
                 $this->error('セグメント送信エラー: '.$e->getMessage());

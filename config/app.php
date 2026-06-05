@@ -28,7 +28,7 @@ use Illuminate\View\ViewServiceProvider;
 
 return [
 
-    'name' => env('APP_NAME', 'reggit'),
+    'name' => env('APP_NAME', 'Reggit'),
     'env' => env('APP_ENV', 'production'),
     'debug' => (bool) env('APP_DEBUG', false),
     'url' => env('APP_URL', 'http://reggit.test'),

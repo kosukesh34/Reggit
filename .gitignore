@@ -22,5 +22,5 @@ storage/app/wallet_pass/certificates/pass.cer
 deploy-docker.zip
 
 # Skip / Android ビルド成果物（大容量）
-mobile/mobile-order-skip/.build/
-mobile/mobile-order-skip/Android/.gradle/
+mobile/reggit-skip/.build/
+mobile/reggit-skip/Android/.gradle/

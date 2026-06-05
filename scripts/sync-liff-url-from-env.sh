@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# .env の APP_URL を mobile/mobile-order-skip/Skip.env の LIFF_BASE_URL に同期する。
+# .env の APP_URL を mobile/reggit-skip/Skip.env の LIFF_BASE_URL に同期する。
 # プロジェクトルートで実行: ./scripts/sync-liff-url-from-env.sh
 
 set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 ENV_FILE="$ROOT_DIR/.env"
-SKIP_ENV="$ROOT_DIR/mobile/mobile-order-skip/Skip.env"
+SKIP_ENV="$ROOT_DIR/mobile/reggit-skip/Skip.env"
 
 if [ ! -f "$ENV_FILE" ]; then
   echo "Error: .env not found at $ENV_FILE"

@@ -11,7 +11,7 @@ class GetFeatureSettingsUseCase
     {
         return new FeatureSettingsView(
             ShopSetting::getFeatureFlags($projectId),
-            ShopSetting::FEATURE_FLAG_LABELS,
+            ShopSetting::featureFlagLabels(),
             ShopSetting::getAdminSidebarColor($projectId),
             ShopSetting::getAdminHeaderColor($projectId),
             ShopSetting::getAdminPrimaryColor($projectId),

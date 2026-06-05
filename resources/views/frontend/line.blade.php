@@ -31,7 +31,8 @@
     <meta name="line-liff-id" content="{{ $liffId ?? config('line.liff_id', '') }}">
     <meta name="project-key" content="{{ $projectKey ?? 'default' }}">
     <meta name="api-base" content="{{ config('app.api_base', '/api') }}">
-    <title>{{ $projectName ?? 'モバイルオーダー' }}</title>
+    @include('frontend.partials._native-app-config')
+    <title>{{ $projectName ?? config('app.name') }}</title>
     <link rel="preconnect" href="https://static.line-scdn.net" crossorigin>
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
@@ -58,7 +59,7 @@
                 @if(isset($frontendLogoUrl) && $frontendLogoUrl !== null && $frontendLogoUrl !== '')
                     <img src="{{ $frontendLogoUrl }}" alt="{{ $frontendHeaderText ?? $projectName ?? 'ロゴ' }}" class="header-logo">
                 @endif
-                <h1 class="logo">{{ $frontendHeaderText ?? $projectName ?? 'モバイルオーダー' }}</h1>
+                <h1 class="logo">{{ $frontendHeaderText ?? $projectName ?? config('app.name') }}</h1>
                 @if(isset($lineFriendAddUrl) && $lineFriendAddUrl !== null && trim($lineFriendAddUrl) !== '')
                 <a href="{{ $lineFriendAddUrl }}" target="_blank" rel="noopener noreferrer" class="header-friend-add" id="headerFriendAdd" title="友だち追加でメッセージやクーポンを受け取れます"><i class="fab fa-line"></i> 友だち追加</a>
                 @endif
