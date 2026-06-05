@@ -120,7 +120,8 @@ struct BundleMobileWebConfigRepository: MobileWebConfigRepository {
 struct DefaultNativeDeviceContextProvider: NativeDeviceContextProvider {
     private let defaults: UserDefaults
     private static let deviceIdentifierKey = "mobile_order_device_identifier"
-    private static let pushTokenKey = "mobile_order_push_token"
+    private static let pushTokenKey = "reggit_push_token"
+    private static let legacyPushTokenKey = "mobile_order_push_token"
 
     init(defaults: UserDefaults) {
         self.defaults = defaults
@@ -131,8 +132,11 @@ struct DefaultNativeDeviceContextProvider: NativeDeviceContextProvider {
     }
 
     var pushToken: String? {
-        guard let value = defaults.string(forKey: Self.pushTokenKey), !value.isEmpty else { return nil }
-        return value
+        for key in [Self.pushTokenKey, Self.legacyPushTokenKey] {
+            guard let value = defaults.string(forKey: key), !value.isEmpty else { continue }
+            return value
+        }
+        return nil
     }
 
     var platform: NativePlatform {
