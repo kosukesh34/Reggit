@@ -12,19 +12,7 @@ final class NativeApp
 
     public static function userAgentPattern(): string
     {
-        $token = preg_quote(self::userAgentToken(), '/');
-
-        // 旧ビルド（MobileOrderApp）との互換。全端末更新後に削除可。
-        return '/(?:'.$token.'|MobileOrderApp)\/\d+/i';
-    }
-
-    /** @return list<string> */
-    public static function allowedUrlSchemePrefixes(): array
-    {
-        return array_values(array_unique([
-            self::urlSchemePrefix(),
-            'mobileorderapp://',
-        ]));
+        return '/'.preg_quote(self::userAgentToken(), '/').'\/\d+/i';
     }
 
     public static function urlScheme(): string

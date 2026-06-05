@@ -22,7 +22,7 @@
             ? AppConstants.NATIVE_APP_USER_AGENT_TOKEN
             : readNativeAppMeta('native-app-user-agent-token', 'Reggit');
         const escaped = token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        return new RegExp(`(?:${escaped}|MobileOrderApp)\\/\\d+`, 'i').test(uaString);
+        return new RegExp(`${escaped}\\/\\d+`, 'i').test(uaString);
     }
 
     function readNativeAppMeta(name, fallback) {
