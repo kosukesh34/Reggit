@@ -14,7 +14,7 @@
 
 <div class="page-header">
     <h1 class="page-header-title"><i class="fas fa-gift"></i> プレゼント配信（一括配布）</h1>
-    <p class="page-header-desc">選択したクーポンを会員に一括で配布します</p>
+    <p class="page-header-desc">選択したクーポンを会員に一括で配布します。配布完了後、LINE（LIFF）とネイティブアプリにプッシュ通知が送信されます。</p>
 </div>
 
 @if($errors->any())
@@ -61,6 +61,10 @@
                 <label class="form-label">対象会員のID</label>
                 <p class="form-text text-muted">会員管理で対象を確認し、会員IDをカンマ区切りで入力（例: 1,2,3）</p>
                 <input type="text" name="member_ids_input" id="member_ids_input" class="form-control" value="{{ is_array(old('member_ids')) ? implode(', ', old('member_ids')) : old('member_ids_input') }}" placeholder="1, 2, 3">
+            </div>
+            <div class="alert alert-info" role="status">
+                <i class="fas fa-bell"></i>
+                配布が完了すると、対象会員の LINE アカウントおよびネイティブアプリ（OneSignal 登録済み端末）へ「クーポンが届きました」通知が送信されます。通知をタップするとクーポンタブが開きます。
             </div>
         </div>
     </div>

@@ -24,7 +24,9 @@ struct NativeTabBar: View {
                     .padding(.bottom, 4)
                 }
                 .buttonStyle(.plain)
+                #if !os(Android)
                 .accessibilityLabel(tab.label)
+                #endif
             }
         }
         .background(

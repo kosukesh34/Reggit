@@ -38,11 +38,18 @@ class MobileOrderApp {
 
     getTabFromUrl() {
         if (typeof window === 'undefined') return null;
+        const allowedTabs = new Set(['home', 'products', 'orders', 'stamps', 'coupons', 'queue', 'member', 'reservations', 'gallery']);
         const params = new URLSearchParams(window.location.search || '');
         const tab = params.get('tab');
-        if (!tab) return null;
-        const btn = document.querySelector('.main-tab-btn[data-tab="' + tab + '"]');
-        return btn ? tab : null;
+        if (tab && allowedTabs.has(tab)) return tab;
+        const liffState = params.get('liff.state');
+        if (liffState) {
+            const normalized = liffState.startsWith('?') ? liffState.slice(1) : liffState;
+            const stateParams = new URLSearchParams(normalized);
+            const stateTab = stateParams.get('tab');
+            if (stateTab && allowedTabs.has(stateTab)) return stateTab;
+        }
+        return null;
     }
 
     getOrderMode() {
@@ -133,6 +140,36 @@ class MobileOrderApp {
         if (this.shouldOpenMemberRegisterOnLoad()) {
             this.switchTab(AppConstants.TABS.MEMBER);
             this.memberManager.openRegisterFullScreen();
+        }
+        this.setupNativePushDeepLink();
+    }
+
+    /** ネイティブアプリ: プッシュ通知タップ等で指定タブを開く */
+    setupNativePushDeepLink() {
+        if (typeof window === 'undefined' || !window.__MOBILE_APP_MODE__) return;
+        const allowedTabs = new Set(['home', 'products', 'orders', 'stamps', 'coupons', 'queue', 'member', 'reservations', 'gallery']);
+        window.__nativeOpenTab__ = (tabKey, options) => {
+            options = options || {};
+            if (!tabKey || !allowedTabs.has(tabKey)) return false;
+            this.switchTab(tabKey);
+            if (tabKey === AppConstants.TABS.COUPONS && this.couponsManager) {
+                if (options.couponReceived) {
+                    this.couponsManager.onCouponReceived(options);
+                } else {
+                    this.couponsManager.load();
+                }
+            }
+            return true;
+        };
+        window.addEventListener('mobile-coupon-received', () => {
+            if (this.couponsManager) {
+                this.couponsManager.onCouponReceived({ silent: false });
+            }
+        });
+        if (typeof window.__NATIVE_PENDING_TAB__ !== 'undefined' && window.__NATIVE_PENDING_TAB__) {
+            const pending = window.__NATIVE_PENDING_TAB__;
+            window.__NATIVE_PENDING_TAB__ = null;
+            window.__nativeOpenTab__(pending, { couponReceived: pending === AppConstants.TABS.COUPONS });
         }
     }
 
@@ -344,18 +381,28 @@ class MobileOrderApp {
         });
     }
 
-    /** ネイティブアプリでデバイス情報が注入されたあと、固定タブへ切り替え・会員タブのウォレット表示を更新する */
+    /** ネイティブアプリでデバイス情報が注入されたあと、初期タブへ切り替え・会員タブのウォレット表示を更新する */
     setupNativeAppEventListeners() {
         const app = this;
         const allowedTabs = new Set(['home', 'products', 'orders', 'stamps', 'coupons', 'queue', 'member', 'reservations', 'gallery']);
         document.addEventListener('mobile-device-info-injected', () => {
             if (typeof window.__MOBILE_APP_MODE__ === 'undefined' || !window.__MOBILE_APP_MODE__) return;
+            if (!window.__NATIVE_WEB_READY__) return;
+            if (window.__NATIVE_DEVICE_INFO_TAB_SYNCED__) return;
+            window.__NATIVE_DEVICE_INFO_TAB_SYNCED__ = true;
+            const params = new URLSearchParams(window.location.search || '');
+            const inMemberFlow = params.get('member_register') === '1'
+                || params.get('member_screen') === 'register'
+                || params.get('member_screen') === 'edit';
             const targetTab = typeof window.__NATIVE_TARGET_TAB__ !== 'undefined' ? window.__NATIVE_TARGET_TAB__ : app.currentTab;
-            if (targetTab && allowedTabs.has(targetTab) && targetTab !== app.currentTab) {
+            if (!inMemberFlow && targetTab && allowedTabs.has(targetTab) && targetTab !== app.currentTab) {
                 app.switchTab(targetTab);
             }
-            if (targetTab === AppConstants.TABS.MEMBER) {
+            if (app.currentTab === AppConstants.TABS.MEMBER || targetTab === AppConstants.TABS.MEMBER) {
                 app.memberManager.load();
+            }
+            if (app.currentTab === AppConstants.TABS.COUPONS) {
+                app.couponsManager.load();
             }
         });
     }

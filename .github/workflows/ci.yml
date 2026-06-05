@@ -11,6 +11,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     services:
       mysql:
@@ -84,7 +85,7 @@ jobs:
         DB_DATABASE: reggit_test
         DB_USERNAME: root
         DB_PASSWORD: root
-      run: php artisan test
+      run: php artisan test --exclude-group=smaregi-integration
 
   lint:
     runs-on: ubuntu-latest

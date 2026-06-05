@@ -60,6 +60,48 @@ class PushNotificationService
     }
 
     /** @return array{target_tokens:int,sent:int,failed:int,skipped:int} */
+    public function sendToUser(int $projectId, int $userId, string $title, string $body, array $data = []): array
+    {
+        $tokens = UserDevice::query()
+            ->where('project_id', $projectId)
+            ->where('user_id', $userId)
+            ->whereNotNull('push_token')
+            ->where('push_token', '!=', '')
+            ->pluck('push_token')
+            ->map(fn ($token) => trim((string) $token))
+            ->filter(fn ($token) => $token !== '')
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($tokens === []) {
+            return ['target_tokens' => 0, 'sent' => 0, 'failed' => 0, 'skipped' => 0];
+        }
+
+        if ($this->isOneSignalEnabled()) {
+            return $this->sendOneSignalPush($tokens, $title, $body, $data);
+        }
+
+        if (! $this->isFcmEnabled()) {
+            return [
+                'target_tokens' => count($tokens),
+                'sent' => 0,
+                'failed' => 0,
+                'skipped' => count($tokens),
+            ];
+        }
+
+        $result = ['target_tokens' => count($tokens), 'sent' => 0, 'failed' => 0, 'skipped' => 0];
+        foreach (array_chunk($tokens, 500) as $chunk) {
+            $chunkResult = $this->sendFcmChunkToUser($projectId, $chunk, $title, $body, $data);
+            $result['sent'] += $chunkResult['sent'];
+            $result['failed'] += $chunkResult['failed'];
+        }
+
+        return $result;
+    }
+
+    /** @return array{target_tokens:int,sent:int,failed:int,skipped:int} */
     public function sendQueueCalledToUser(int $projectId, int $userId, string $queueNumber): array
     {
         $tokens = UserDevice::query()
@@ -300,6 +342,65 @@ class PushNotificationService
                 'sent' => $sent,
                 'failed' => $failed,
             ]);
+        }
+
+        return ['sent' => $sent, 'failed' => $failed];
+    }
+
+    /** @param list<string> $tokens */
+    /** @param array<string,string> $data */
+    private function sendFcmChunkToUser(int $projectId, array $tokens, string $title, string $body, array $data): array
+    {
+        try {
+            $response = $this->http->post((string) config('push.fcm.endpoint'), [
+                'headers' => [
+                    'Authorization' => 'key='.(string) config('push.fcm.server_key'),
+                    'Content-Type' => 'application/json',
+                ],
+                'json' => [
+                    'registration_ids' => $tokens,
+                    'priority' => 'high',
+                    'notification' => [
+                        'title' => $title,
+                        'body' => $body,
+                    ],
+                    'data' => $data,
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            LogHelper::error('[Push] FCM user push failed', [
+                'project_id' => $projectId,
+                'error' => $e->getMessage(),
+                'target_tokens' => count($tokens),
+            ]);
+
+            return ['sent' => 0, 'failed' => count($tokens)];
+        }
+
+        $payload = json_decode((string) $response->getBody(), true);
+        $results = is_array($payload['results'] ?? null) ? $payload['results'] : [];
+
+        $sent = 0;
+        $failed = 0;
+        $invalidTokens = [];
+        foreach ($tokens as $index => $token) {
+            $item = $results[$index] ?? null;
+            $error = is_array($item) ? ($item['error'] ?? null) : null;
+            if ($error === null) {
+                $sent++;
+
+                continue;
+            }
+            $failed++;
+            if (in_array((string) $error, self::INVALID_TOKEN_ERRORS, true)) {
+                $invalidTokens[] = $token;
+            }
+        }
+
+        if ($invalidTokens !== []) {
+            UserDevice::where('project_id', $projectId)
+                ->whereIn('push_token', $invalidTokens)
+                ->update(['push_token' => null]);
         }
 
         return ['sent' => $sent, 'failed' => $failed];
