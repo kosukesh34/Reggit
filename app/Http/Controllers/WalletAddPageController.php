@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\NativeApp;
 use App\Support\QueueLiffUrlBuilder;
 use App\UseCases\Member\WalletPass\WalletPassUrlIssueUseCase;
 use App\Util\AdminContext;
@@ -129,13 +130,13 @@ class WalletAddPageController extends Controller
             return null;
         }
         $url = trim($url);
-        if (! Str::startsWith($url, ['https://', 'http://', 'mobileorderapp://'])) {
+        if (! Str::startsWith($url, ['https://', 'http://', NativeApp::urlSchemePrefix()])) {
             return null;
         }
         try {
             $parsed = parse_url($url);
-            $scheme = $parsed['scheme'] ?? '';
-            if (strtolower($scheme) === 'mobileorderapp') {
+            $scheme = strtolower($parsed['scheme'] ?? '');
+            if ($scheme === strtolower(NativeApp::urlScheme())) {
                 return $url;
             }
             $host = $parsed['host'] ?? '';

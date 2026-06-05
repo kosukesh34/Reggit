@@ -1,8 +1,8 @@
 {
-    "name": "mobile-order/app",
+    "name": "reggit/app",
     "type": "project",
-    "description": "LINE Mobile Order and Membership Card Application",
-    "keywords": ["laravel", "line", "mobile-order"],
+    "description": "Reggit - LINE mobile order and membership card application",
+    "keywords": ["laravel", "line", "reggit"],
     "license": "MIT",
     "require": {
         "php": "^8.4",
