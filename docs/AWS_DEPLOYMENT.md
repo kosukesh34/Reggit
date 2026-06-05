@@ -1,6 +1,6 @@
 # AWS へのデプロイ手順
 
-このドキュメントでは、Mobile Order アプリを AWS にデプロイする手順を説明します。アカウント作成は完了している前提です。
+このドキュメントでは、Reggit を AWS にデプロイする手順を説明します。アカウント作成は完了している前提です。
 
 ## デプロイ方式の選択肢
 
@@ -36,7 +36,7 @@
 プロジェクトルートで、**Dockerfile.eb を Dockerfile として含めた zip** を作成します。
 
 ```bash
-cd /Users/kosuke/mobile-order-app
+cd /Users/kosuke/Reggit
 
 # EB 用の Dockerfile を Dockerfile としてコピー（既存の Dockerfile は上書きされるので注意）
 cp Dockerfile.eb Dockerfile
@@ -157,7 +157,7 @@ EB CLI で環境に紐づいている場合は、プロジェクトルートで 
 
 1. **Elastic Beanstalk** → **環境の作成**
 2. **環境 tier**: Web サーバー環境
-3. **アプリケーション名**: `mobile-order-app` など
+3. **アプリケーション名**: `Reggit` など
 4. **プラットフォーム**: **PHP**（プラットフォームブランチ: PHP 8.2 を選択）
 5. **アプリケーションコード**: 「サンプルアプリケーションをデプロイ」でまず動作確認してもよい（後で差し替え）
 6. **プリセット**: シングルインスタンス（検証用）または「高可用性」を選択
@@ -178,7 +178,7 @@ EB CLI で環境に紐づいている場合は、プロジェクトルートで 
 
 ```bash
 # プロジェクトルートで
-cd /Users/kosuke/mobile-order-app
+cd /Users/kosuke/Reggit
 
 # .env は含めない（EB の「環境のプロパティ」で設定する）
 zip -r deploy.zip . \
@@ -202,7 +202,7 @@ zip -r deploy.zip . \
 pip install awsebcli
 
 # 初期化（初回のみ）
-eb init -p php-8.2 mobile-order-app --region ap-northeast-1
+eb init -p php-8.2 Reggit --region ap-northeast-1
 
 # 環境作成とデプロイ
 eb create production
@@ -294,11 +294,11 @@ aws ecr get-login-password --region ap-northeast-1 | \
   docker login --username AWS --password-stdin <AWS_ACCOUNT_ID>.dkr.ecr.ap-northeast-1.amazonaws.com
 
 # ビルド＆タグ
-docker build -t mobile-order-app .
-docker tag mobile-order-app:latest <AWS_ACCOUNT_ID>.dkr.ecr.ap-northeast-1.amazonaws.com/mobile-order-app:latest
+docker build -t reggit .
+docker tag reggit:latest <AWS_ACCOUNT_ID>.dkr.ecr.ap-northeast-1.amazonaws.com/reggit:latest
 
 # プッシュ
-docker push <AWS_ACCOUNT_ID>.dkr.ecr.ap-northeast-1.amazonaws.com/mobile-order-app:latest
+docker push <AWS_ACCOUNT_ID>.dkr.ecr.ap-northeast-1.amazonaws.com/reggit:latest
 ```
 
 ※ ECS で nginx と app を分ける場合は、nginx 用のイメージも別途ビルドし、同一タスク定義で複数コンテナとして定義します。その場合、ALB は nginx のポート 80 に向けます。

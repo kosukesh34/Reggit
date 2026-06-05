@@ -66,7 +66,7 @@
             return (
                 typeof ApiClient !== 'undefined' &&
                 typeof DeviceManager !== 'undefined' &&
-                typeof MobileOrderApp !== 'undefined'
+                typeof ReggitApp !== 'undefined'
             );
         }
 

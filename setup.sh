@@ -3,7 +3,7 @@ set -euo pipefail
 
 SEED="${SEED:-1}"
 
-echo "Mobile Order アプリのセットアップを開始します..."
+echo "Reggit のセットアップを開始します..."
 
 # .envファイルの作成
 if [ ! -f .env ]; then

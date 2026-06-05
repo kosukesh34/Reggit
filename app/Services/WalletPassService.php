@@ -124,7 +124,7 @@ class WalletPassService
         }
 
         $project = AdminContext::getCurrentProject();
-        $organizationName = $project !== null ? $project->name : config('app.name', '会員証');
+        $organizationName = $project !== null ? $project->name : config('app.name', 'Reggit');
         $barcodeMessage = $member->member_number ?? (string) $member->id;
         $serialNumber = 'member-'.(string) $member->id;
 
@@ -161,7 +161,7 @@ class WalletPassService
         }
 
         $project = AdminContext::getCurrentProject();
-        $organizationName = $project !== null ? $project->name : config('app.name', '会員証');
+        $organizationName = $project !== null ? $project->name : config('app.name', 'Reggit');
         $barcodeMessage = $member->member_number ?? (string) $member->id;
         $serialNumber = 'member-'.(string) $member->id;
 
@@ -207,7 +207,7 @@ class WalletPassService
             return null;
         }
         $project = AdminContext::getCurrentProject();
-        $organizationName = $project !== null ? $project->name : config('app.name', '会員証');
+        $organizationName = $project !== null ? $project->name : config('app.name', 'Reggit');
         $barcodeMessage = $member->member_number ?? (string) $member->id;
         $serialNumber = 'member-'.(string) $member->id;
         $extraFields = [
@@ -230,7 +230,7 @@ class WalletPassService
         }
 
         $appearance = $this->memberCardAppearanceService->resolveForMember($member);
-        $organizationName = $member->project?->name ?? config('app.name', '会員証');
+        $organizationName = $member->project?->name ?? config('app.name', 'Reggit');
         $barcodeMessage = $member->member_number ?? (string) $member->id;
         $serialNumber = 'member-'.(string) $member->id;
         $extraFields = [

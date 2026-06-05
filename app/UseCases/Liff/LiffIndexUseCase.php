@@ -2,6 +2,7 @@
 
 namespace App\UseCases\Liff;
 
+use App\Support\NativeApp;
 use Illuminate\Http\Response;
 
 /** LIFF トップ画面のレスポンスを組み立てる。 */
@@ -22,7 +23,7 @@ class LiffIndexUseCase
     public static function resolveViewName(): string
     {
         $userAgent = request()->header('User-Agent', '');
-        $isNativeApp = $userAgent && preg_match('/MobileOrderApp\/\d+/i', $userAgent);
+        $isNativeApp = $userAgent && preg_match(NativeApp::userAgentPattern(), $userAgent);
 
         return $isNativeApp ? 'frontend.native' : 'frontend.line';
     }

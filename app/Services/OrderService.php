@@ -158,7 +158,7 @@ class OrderService
 
         if ($orderType === OrderType::MOBILE) {
             if (! in_array($paymentMethod, [PaymentMethod::STRIPE, PaymentMethod::CASH], true)) {
-                throw new \Exception('モバイルオーダーの決済方法が不正です。');
+                throw new \Exception(config('native_app.order_type_mobile_label', 'Reggit').'の決済方法が不正です。');
             }
         }
     }

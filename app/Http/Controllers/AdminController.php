@@ -341,7 +341,7 @@ class AdminController extends Controller
     {
         $projectId = $this->resolveAdminProjectId();
         $featureFlags = ShopSetting::getFeatureFlags($projectId);
-        $featureFlagLabels = ShopSetting::FEATURE_FLAG_LABELS;
+        $featureFlagLabels = ShopSetting::featureFlagLabels();
         $adminSidebarColor = ShopSetting::getAdminSidebarColor($projectId);
         $adminHeaderColor = ShopSetting::getAdminHeaderColor($projectId);
         $adminPrimaryColor = ShopSetting::getAdminPrimaryColor($projectId);

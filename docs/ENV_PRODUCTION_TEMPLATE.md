@@ -28,7 +28,7 @@
 
 | 用途 | URL（本番） |
 |------|-------------|
-| **トップ・モバイルオーダー** | https://reggit.shop |
+| **トップ** | https://reggit.shop |
 | **LIFF（プロジェクト指定）** | https://reggit.shop/liff/default |
 | **管理画面ログイン** | https://reggit.shop/admin/login |
 | **システム管理ログイン** | https://reggit.shop/system-admin/login |
@@ -109,7 +109,7 @@
 
 | .env の名前 | 本番の値 | 備考 |
 |-------------|----------|------|
-| APP_NAME | そのまま可 | 例: reggit または Mobile Order |
+| APP_NAME | そのまま可 | 例: Reggit |
 | APP_ENV | **要変更** | `production` にする |
 | APP_KEY | そのまま可 | 同じ鍵を本番でも使う場合 |
 | APP_DEBUG | **要変更** | 必ず `false` |
@@ -180,7 +180,9 @@
 
 | 名前 | 値（例） | 備考 |
 |------|----------|------|
-| APP_NAME | Mobile Order | そのままで可 |
+| NATIVE_APP_USER_AGENT_TOKEN | Reggit | Skip.env と一致（ネイティブ UA 識別子） |
+| NATIVE_APP_URL_SCHEME | reggit | Skip.env と一致（`reggit://` 深いリンク） |
+| NATIVE_APP_ORDER_TYPE_MOBILE_LABEL | Reggit | 注文種別・機能フラグの表示名 |
 | APP_ENV | production | 本番用 |
 | APP_DEBUG | false | 本番では必ず false |
 | APP_KEY | base64:xxxxxxxx... | ローカルで `php artisan key:generate --show` で表示した値。既に使っている鍵があればそのまま |
@@ -258,7 +260,7 @@
 | MAIL_PASSWORD | （SMTP パスワード） | 同上 |
 | MAIL_ENCRYPTION | tls | |
 | MAIL_FROM_ADDRESS | （送信元アドレス。SES で検証済みのアドレス） | |
-| MAIL_FROM_NAME | Mobile Order | 任意 |
+| MAIL_FROM_NAME | Reggit | 任意 |
 
 **プッシュ通知** — 使う場合のみ。
 

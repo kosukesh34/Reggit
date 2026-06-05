@@ -88,7 +88,7 @@ class LineWebhookHandleUseCase
         }
 
         $message = $this->lineService->createTextMessage(
-            "ようこそ！モバイルオーダーアプリへ\n\n".
+            "ようこそ！".config('app.name')."へ\n\n".
             "以下のメニューからお選びください：\n".
             "・メニューを見る\n".
             "・会員証を見る\n".
@@ -168,7 +168,7 @@ class LineWebhookHandleUseCase
                     'contents' => [
                         [
                             'type' => 'text',
-                            'text' => 'モバイルオーダー',
+                            'text' => config('app.name'),
                             'weight' => 'bold',
                             'size' => 'xl',
                         ],
