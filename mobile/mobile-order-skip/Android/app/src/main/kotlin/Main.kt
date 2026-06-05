@@ -12,6 +12,10 @@ import android.content.pm.PackageManager
 import android.graphics.Color as AndroidColor
 import android.os.Build
 import com.onesignal.OneSignal
+import com.onesignal.notifications.INotificationClickEvent
+import com.onesignal.notifications.INotificationClickListener
+import com.onesignal.notifications.INotificationLifecycleListener
+import com.onesignal.notifications.INotificationWillDisplayEvent
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.SystemBarStyle
@@ -67,10 +71,34 @@ open class AndroidAppMain: Application {
         }
         if (appId.isNullOrEmpty()) return
         OneSignal.initWithContext(this, appId)
+        bindOneSignalNotificationClickListener()
+        bindOneSignalForegroundListener()
         // 通知権限は SDK が初回表示。subscription id は遅延で保存
         // トークン取得後に保存（2秒・5秒後にポーリング）
         android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ saveOneSignalSubscriptionIdIfNeeded() }, 2000)
         android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ saveOneSignalSubscriptionIdIfNeeded() }, 5000)
+    }
+
+    private fun bindOneSignalNotificationClickListener() {
+        OneSignal.Notifications.addClickListener(object : INotificationClickListener {
+            override fun onClick(event: INotificationClickEvent) {
+                val additionalData = event.notification.additionalData
+                val tab = additionalData?.optString("tab")?.trim()?.takeIf { it.isNotEmpty() } ?: return
+                val type = additionalData?.optString("type")?.trim().orEmpty()
+                AppDelegate.shared.onNotificationOpened(tab, notificationType = type)
+            }
+        })
+    }
+
+    private fun bindOneSignalForegroundListener() {
+        OneSignal.Notifications.addForegroundLifecycleListener(object : INotificationLifecycleListener {
+            override fun onWillDisplay(event: INotificationWillDisplayEvent) {
+                val type = event.notification.additionalData?.optString("type")?.trim().orEmpty()
+                if (type == "coupon_issued") {
+                    AppDelegate.shared.onNotificationForeground(notificationType = type)
+                }
+            }
+        })
     }
 
     private fun saveOneSignalSubscriptionIdIfNeeded() {
