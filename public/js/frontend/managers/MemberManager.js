@@ -830,7 +830,7 @@ class MemberManager {
 
     navigateToRegisterPage() {
         if (typeof window === 'undefined') return;
-        if (window.app && typeof window.app.switchTab === 'function') {
+        if (window.app && window.app.currentTab !== AppConstants.TABS.MEMBER && typeof window.app.switchTab === 'function') {
             window.app.switchTab(AppConstants.TABS.MEMBER);
         }
         this._updateMemberScreenUrl('register', false);
@@ -1223,7 +1223,8 @@ class MemberManager {
     _shouldPrefetchAppleWalletUrl() {
         if (typeof window === 'undefined') return false;
         if (window.__IS_LIFF__ === true) return true;
-        return MemberManager.isMobileAppMode() && typeof window.__nativeOpenExternalUrl__ === 'function';
+        return MemberManager.isMobileAppMode()
+            && (MemberManager.canUseNativeExternalWallet() || MemberManager.canUseNativeAppleWalletPass());
     }
 
     _setAppleWalletButtonPreparing(btn, preparing) {
@@ -1244,6 +1245,59 @@ class MemberManager {
         }
     }
 
+    /** ネイティブ iOS で PassKit 追加が使えるか */
+    static canUseNativeAppleWalletPass() {
+        return MemberManager.isMobileAppMode()
+            && MemberManager.getNativePlatform() === 'ios'
+            && typeof window.__nativeAddAppleWalletPass__ === 'function';
+    }
+
+    /** ネイティブアプリで Safari / Chrome 経由の Wallet 追加が使えるか */
+    static canUseNativeExternalWallet() {
+        return MemberManager.isMobileAppMode()
+            && typeof window.__nativeOpenExternalUrl__ === 'function';
+    }
+
+    /** API 発行 URL から .pkpass 直ダウンロード URL（ワンタイム token）を組み立てる */
+    _buildAppleWalletPassDownloadUrl(projectKey, issueUrl) {
+        const normalized = MemberManager.normalizeExternalUrl(issueUrl);
+        if (!normalized) return null;
+        try {
+            const parsed = new URL(normalized, typeof window !== 'undefined' ? window.location.href : undefined);
+            const params = new URLSearchParams(parsed.search);
+            const passToken = params.get('pass_token');
+            if (!passToken) return null;
+            const pk = params.get('project_key') || projectKey || 'default';
+            const origin = MemberManager.resolveAppOrigin();
+            if (!origin) return null;
+            const downloadParams = new URLSearchParams();
+            downloadParams.set('token', passToken);
+            downloadParams.set('project_key', pk);
+            const relative = MemberManager.resolveApiUrl(AppConstants.API_ENDPOINTS.MEMBERS_WALLET_PASS)
+                + '?' + downloadParams.toString();
+            return MemberManager.normalizeExternalUrl(relative) || relative;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    _getFreshAppleWalletPassDownloadUrl(btn) {
+        if (!btn) return null;
+        const downloadUrl = btn.getAttribute('data-wallet-pass-download-url');
+        const prefetchedAt = btn.getAttribute('data-wallet-open-url-at');
+        if (!downloadUrl || !prefetchedAt) return null;
+        const age = Date.now() - parseInt(prefetchedAt, 10);
+        if (!Number.isFinite(age) || age < 0 || age >= MemberManager.WALLET_PASS_PREFETCH_TTL_MS) {
+            return null;
+        }
+        return downloadUrl;
+    }
+
+    _getFreshAppleWalletOpenUrl(btn) {
+        if (!btn || !this._isAppleWalletOpenUrlFresh(btn)) return null;
+        return btn.getAttribute('data-wallet-open-url');
+    }
+
     _isAppleWalletOpenUrlFresh(btn) {
         if (!btn) return false;
         const openUrl = btn.getAttribute('data-wallet-open-url');
@@ -1251,6 +1305,67 @@ class MemberManager {
         if (!openUrl || !prefetchedAt) return false;
         const age = Date.now() - parseInt(prefetchedAt, 10);
         return Number.isFinite(age) && age >= 0 && age < MemberManager.WALLET_PASS_PREFETCH_TTL_MS;
+    }
+
+    async _handleNativeAppleWalletClick(btn, projectKey) {
+        let passDownloadUrl = this._getFreshAppleWalletPassDownloadUrl(btn);
+
+        if (MemberManager.canUseNativeAppleWalletPass() && !passDownloadUrl) {
+            this._setAppleWalletButtonPreparing(btn, true);
+            try {
+                const issueUrl = await this._fetchWalletPassIssueUrl(projectKey);
+                passDownloadUrl = this._buildAppleWalletPassDownloadUrl(projectKey, issueUrl);
+                if (passDownloadUrl && btn) {
+                    btn.setAttribute('data-wallet-pass-download-url', passDownloadUrl);
+                    btn.setAttribute('data-wallet-open-url-at', String(Date.now()));
+                }
+            } catch (err) {
+                this._setAppleWalletButtonPreparing(btn, false);
+                if (typeof ToastManager !== 'undefined') {
+                    ToastManager.error(MemberManager.formatWalletErrorMessage(err, 'Wallet Pass の URL 取得に失敗しました'));
+                }
+                return true;
+            }
+            this._setAppleWalletButtonPreparing(btn, false);
+        }
+
+        if (MemberManager.canUseNativeAppleWalletPass() && passDownloadUrl) {
+            if (window.__nativeAddAppleWalletPass__(passDownloadUrl)) {
+                this._debugLog('apple_wallet_native_passkit_ok', { url_length: passDownloadUrl.length });
+                if (typeof ToastManager !== 'undefined') {
+                    ToastManager.success('Apple Wallet に追加します');
+                }
+                return true;
+            }
+        }
+
+        const openUrl = this._getFreshAppleWalletOpenUrl(btn);
+        if (MemberManager.canUseNativeExternalWallet() && openUrl) {
+            if (window.__nativeOpenExternalUrl__(openUrl)) {
+                this._debugLog('apple_wallet_native_safari_ok', { url_length: openUrl.length });
+                if (typeof ToastManager !== 'undefined') {
+                    ToastManager.success('Safari で Apple Wallet を開きます。「追加」をタップしてください。');
+                }
+                return true;
+            }
+            if (typeof ToastManager !== 'undefined') {
+                ToastManager.error('外部ブラウザを開けませんでした。');
+            }
+            return true;
+        }
+
+        if (typeof ToastManager !== 'undefined') {
+            ToastManager.info(openUrl || passDownloadUrl
+                ? 'リンクの有効期限が切れました。更新中です…'
+                : '準備中です。しばらくお待ちください。');
+        }
+        this._setAppleWalletButtonPreparing(btn, true);
+        this._prefetchAppleWalletOpenUrl(projectKey).then((url) => {
+            if (url && typeof ToastManager !== 'undefined') {
+                ToastManager.info('準備ができました。もう一度タップしてください。');
+            }
+        });
+        return true;
     }
 
     /**
@@ -1261,12 +1376,25 @@ class MemberManager {
         return this._fetchWalletPassIssueUrl(projectKey)
             .then((issueUrl) => {
                 const openUrl = this._resolveAppleWalletSafariUrl(issueUrl);
+                const passDownloadUrl = this._buildAppleWalletPassDownloadUrl(projectKey, issueUrl);
                 const btn = document.querySelector('.member-card-add-to-wallet-btn[data-wallet-pass-url]');
-                if (btn && openUrl) {
-                    btn.setAttribute('data-wallet-open-url', openUrl);
-                    btn.setAttribute('data-wallet-open-url-at', String(Date.now()));
-                    this._setAppleWalletButtonPreparing(btn, false);
-                } else if (btn) {
+                if (btn) {
+                    const prefetchedAt = String(Date.now());
+                    if (openUrl) {
+                        btn.setAttribute('data-wallet-open-url', openUrl);
+                    } else {
+                        btn.removeAttribute('data-wallet-open-url');
+                    }
+                    if (passDownloadUrl) {
+                        btn.setAttribute('data-wallet-pass-download-url', passDownloadUrl);
+                    } else {
+                        btn.removeAttribute('data-wallet-pass-download-url');
+                    }
+                    if (openUrl || passDownloadUrl) {
+                        btn.setAttribute('data-wallet-open-url-at', prefetchedAt);
+                    } else {
+                        btn.removeAttribute('data-wallet-open-url-at');
+                    }
                     this._setAppleWalletButtonPreparing(btn, false);
                 }
                 return openUrl;
@@ -1473,6 +1601,11 @@ class MemberManager {
         e.preventDefault();
         this._debugLog('wallet_add_click', { type: 'apple', is_liff: !!(typeof window !== 'undefined' && window.__IS_LIFF__) });
 
+        if (MemberManager.isMobileAppMode()) {
+            void this._handleNativeAppleWalletClick(btn, projectKey);
+            return;
+        }
+
         if (typeof window !== 'undefined' && window.__IS_LIFF__ && typeof liff !== 'undefined' && liff.openWindow) {
             const openUrl = btn.getAttribute('data-wallet-open-url');
             if (!openUrl || !this._isAppleWalletOpenUrlFresh(btn)) {
@@ -1512,7 +1645,8 @@ class MemberManager {
         btn.innerHTML = '<span class="member-card-add-to-wallet-loading"><i class="fas fa-spinner fa-spin"></i> 取得中...</span>';
 
         try {
-            const useExternalBrowser = MemberManager.isMobileAppMode() && typeof window.__nativeOpenExternalUrl__ === 'function';
+            const useExternalBrowser = MemberManager.canUseNativeExternalWallet()
+                && !MemberManager.canUseNativeAppleWalletPass();
 
             if (useExternalBrowser) {
                 const issueUrl = await this._fetchWalletPassIssueUrl(projectKey);

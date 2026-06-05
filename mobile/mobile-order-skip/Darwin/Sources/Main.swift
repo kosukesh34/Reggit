@@ -136,10 +136,13 @@ final class AppMainDelegate: NSObject, AppMainDelegateBase {
     let application = AppType.shared
     #if canImport(OneSignalFramework)
     private var oneSignalPushObserver: OneSignalPushObserver?
+    private var oneSignalForegroundObserver: OneSignalForegroundObserver?
+    private var oneSignalClickObserver: OneSignalNotificationClickObserver?
     #endif
 
     #if canImport(UIKit)
     func application(_ application: UIApplication, willFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
+        NativeAppURLHandler.install()
         AppDelegate.shared.onInit()
         return true
     }
@@ -163,6 +166,8 @@ final class AppMainDelegate: NSObject, AppMainDelegateBase {
         resetStoredPushTokenIfAppIdChanged(currentAppId: appId)
         print("[OneSignal] Initializing with App ID: \(appId.prefix(8))...\(appId.suffix(4)) (Bundle ID: \(Bundle.main.bundleIdentifier ?? "?"))")
         OneSignal.initialize(appId, withLaunchOptions: launchOptions)
+        bindOneSignalNotificationClickListenerIfNeeded()
+        bindOneSignalForegroundListenerIfNeeded()
         bindOneSignalPushObserverIfNeeded()
         OneSignal.User.pushSubscription.optIn()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
@@ -176,6 +181,20 @@ final class AppMainDelegate: NSObject, AppMainDelegateBase {
                 self?.saveOneSignalSubscriptionIdIfNeeded(loggingDelay: delay)
             }
         }
+    }
+
+    private func bindOneSignalNotificationClickListenerIfNeeded() {
+        guard oneSignalClickObserver == nil else { return }
+        let observer = OneSignalNotificationClickObserver()
+        oneSignalClickObserver = observer
+        OneSignal.Notifications.addClickListener(observer)
+    }
+
+    private func bindOneSignalForegroundListenerIfNeeded() {
+        guard oneSignalForegroundObserver == nil else { return }
+        let observer = OneSignalForegroundObserver()
+        oneSignalForegroundObserver = observer
+        OneSignal.Notifications.addForegroundLifecycleListener(observer)
     }
 
     private func bindOneSignalPushObserverIfNeeded() {
@@ -246,15 +265,7 @@ final class AppMainDelegate: NSObject, AppMainDelegateBase {
     }
 
     func application(_ application: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
-        guard url.scheme == "mobileorderapp" else { return false }
-        if url.host == "openExternal" {
-            guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
-                  let externalString = components.queryItems?.first(where: { $0.name == "url" })?.value,
-                  let externalURL = URL(string: externalString) else { return false }
-            application.open(externalURL)
-            return true
-        }
-        return true
+        NativeAppURLHandler.handle(url)
     }
 
     #elseif canImport(AppKit)
@@ -283,6 +294,26 @@ private final class OneSignalPushObserver: NSObject, OSPushSubscriptionObserver 
 
     func onPushSubscriptionDidChange(state: OSPushSubscriptionChangedState) {
         onChange(state)
+    }
+}
+
+private final class OneSignalForegroundObserver: NSObject, OSNotificationLifecycleListener {
+    func onWillDisplay(event: OSNotificationWillDisplayEvent) {
+        let additionalData = event.notification.additionalData ?? [:]
+        let type = (additionalData["type"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if type == "coupon_issued" {
+            AppDelegate.shared.onNotificationForeground(type)
+        }
+    }
+}
+
+private final class OneSignalNotificationClickObserver: NSObject, OSNotificationClickListener {
+    func onClick(event: OSNotificationClickEvent) {
+        let additionalData = event.notification.additionalData ?? [:]
+        let tab = additionalData["tab"] as? String
+        let type = additionalData["type"] as? String ?? ""
+        guard let tab, !tab.isEmpty else { return }
+        AppDelegate.shared.onNotificationOpened(tab, notificationType: type)
     }
 }
 #endif
