@@ -29,7 +29,7 @@ class GoogleWalletEnsureClassCommand extends Command
         }
 
         $projectKey = $this->option('project_key');
-        $programName = config('app.name', 'Membership');
+        $programName = config('app.name', 'Reggit');
         if ($projectKey !== null && $projectKey !== '') {
             $project = Project::where('project_key', $projectKey)->where('is_active', true)->first();
             if ($project !== null) {

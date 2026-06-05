@@ -45,7 +45,7 @@ class AppConfigController extends Controller
 
         return response()->json([
             'project_key' => $projectKey,
-            'project_name' => $project ? (string) $project->name : 'モバイルオーダー',
+            'project_name' => $project ? (string) $project->name : config('app.name'),
             'tabs' => array_map(fn ($item) => [
                 'key' => $item['tab'],
                 'label' => $item['label'],
