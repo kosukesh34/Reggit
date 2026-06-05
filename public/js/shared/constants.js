@@ -1,7 +1,21 @@
 const API_BASE = (typeof window !== 'undefined' && window.__API_BASE__) ? window.__API_BASE__ : '/api';
 
+function readNativeAppMeta(name, fallback) {
+    if (typeof document === 'undefined') return fallback;
+    const el = document.querySelector(`meta[name="${name}"]`);
+    const value = el && el.getAttribute('content') ? el.getAttribute('content').trim() : '';
+    return value || fallback;
+}
+
+const NATIVE_APP_USER_AGENT_TOKEN = readNativeAppMeta('native-app-user-agent-token', 'Reggit');
+const NATIVE_APP_URL_SCHEME = readNativeAppMeta('native-app-url-scheme', 'reggit');
+const NATIVE_APP_ORDER_TYPE_MOBILE_LABEL = readNativeAppMeta('native-app-order-type-mobile-label', 'Reggit');
+
 const AppConstants = {
     API_BASE,
+    NATIVE_APP_USER_AGENT_TOKEN,
+    NATIVE_APP_URL_SCHEME,
+    NATIVE_APP_ORDER_TYPE_MOBILE_LABEL,
     API_ENDPOINTS: {
         PRODUCTS: `${API_BASE}/products`,
         ORDERS: `${API_BASE}/orders`,
@@ -28,7 +42,7 @@ const AppConstants = {
     },
 
     /** Wallet 追加後「アプリに戻る」でネイティブアプリを開くための URL スキーム */
-    WALLET_RETURN_APP_SCHEME: 'mobileorderapp://',
+    WALLET_RETURN_APP_SCHEME: `${NATIVE_APP_URL_SCHEME}://`,
 
     HTTP_METHODS: {
         GET: 'GET',
@@ -93,7 +107,7 @@ const AppConstants = {
         IN_STORE: 'in_store',
     },
     ORDER_TYPE_LABELS: {
-        mobile: 'モバイルオーダー',
+        mobile: NATIVE_APP_ORDER_TYPE_MOBILE_LABEL,
         in_store: '店内注文',
     },
     

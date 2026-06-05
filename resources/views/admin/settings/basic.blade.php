@@ -84,7 +84,7 @@
         <form action="{{ admin_route('admin.settings.feature-flags.update') }}" method="POST">
             @csrf
             <div class="feature-flags-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px 16px;">
-                @foreach(\App\Models\ShopSetting::FEATURE_FLAG_LABELS as $key => $label)
+                @foreach(\App\Models\ShopSetting::featureFlagLabels() as $key => $label)
                 <label class="checkbox-label">
                     <input type="checkbox" name="feature_flags[{{ $key }}]" value="1" {{ ($featureFlags[$key] ?? false) ? 'checked' : '' }}>
                     <span>{{ $label }}</span>

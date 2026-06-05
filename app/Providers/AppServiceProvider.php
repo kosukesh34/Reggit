@@ -115,7 +115,7 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('lineTheme', ShopSetting::getLineThemeColors($projectId));
                 $view->with('frontendMenu', ShopSetting::getFrontendMenuItems($projectId));
                 $view->with('projectKey', $project ? ((string) $project->project_key) : 'default');
-                $view->with('projectName', $project ? ((string) $project->name) : 'モバイルオーダー');
+                $view->with('projectName', $project ? ((string) $project->name) : config('app.name'));
                 $view->with('featureFlags', ShopSetting::getFeatureFlags($projectId));
                 $googleWalletPassService = app(GoogleWalletPassService::class);
                 $walletPassService = app(WalletPassService::class);
@@ -151,12 +151,12 @@ class AppServiceProvider extends ServiceProvider
                 ]);
                 $view->with('frontendMenu', ShopSetting::defaultFrontendMenuItems());
                 $view->with('projectKey', 'default');
-                $view->with('projectName', 'モバイルオーダー');
+                $view->with('projectName', config('app.name'));
                 $view->with('featureFlags', []);
                 $view->with('walletPassEnabled', false);
                 $view->with('googleWalletEnabled', false);
                 $view->with('frontendLogoUrl', '');
-                $view->with('frontendHeaderText', 'モバイルオーダー');
+                $view->with('frontendHeaderText', config('app.name'));
                 $view->with('orderMode', ShopSetting::ORDER_MODE_BOTH);
                 $view->with('liffBuilderBlocks', ShopSetting::defaultLiffBuilderTemplates()[0]['blocks']);
                 $view->with('liffTabLayouts', ShopSetting::defaultLiffTabLayouts());

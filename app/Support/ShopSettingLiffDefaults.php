@@ -448,7 +448,7 @@ class ShopSettingLiffDefaults
     {
         return [
             'home' => [
-                ['type' => 'hero', 'title' => 'モバイルオーダーへようこそ', 'subtitle' => '注文・予約・会員特典をこの画面でまとめて利用できます。', 'gradient_start' => '#0ea5e9', 'gradient_end' => '#22c55e'],
+                ['type' => 'hero', 'title' => config('app.name').'へようこそ', 'subtitle' => '注文・予約・会員特典をこの画面でまとめて利用できます。', 'gradient_start' => '#0ea5e9', 'gradient_end' => '#22c55e'],
                 ['type' => 'banner', 'icon' => 'fa-bell', 'text' => '本日限定: LINE会員はポイント2倍', 'color' => '#0f766e'],
                 ['type' => 'heading', 'text' => 'おすすめメニュー', 'size' => 'large'],
                 ['type' => 'collection', 'layout' => 'scroll', 'item_width' => 150, 'item_image_height' => 110, 'items' => [

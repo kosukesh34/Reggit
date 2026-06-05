@@ -1,4 +1,4 @@
-class MobileOrderApp {
+class ReggitApp {
     constructor() {
         this.apiClient = new ApiClient();
         this.deviceManager = new DeviceManager(this.apiClient);
@@ -1028,7 +1028,7 @@ if (typeof window !== 'undefined' && !window.__LIFF_APP_BOOTSTRAP__) {
         if (!window.__IS_LIFF__) {
             restorePersistedLineUserIdBeforeApp();
         }
-        window.app = new MobileOrderApp();
+        window.app = new ReggitApp();
         if (typeof window.__clientDebugLog === 'function') {
             window.__clientDebugLog('app_created', {});
         }
@@ -1060,7 +1060,7 @@ if (typeof window !== 'undefined' && !window.__LIFF_APP_BOOTSTRAP__) {
 
     // フォールバック: 5秒以内にliff-readyが来なければ起動（LIFFでは LINE ID 確定後のみ members/me を叩く）
     setTimeout(() => {
-        if (!window.app && typeof MobileOrderApp !== 'undefined' && canBootstrapWithoutLiffReady()) {
+        if (!window.app && typeof ReggitApp !== 'undefined' && canBootstrapWithoutLiffReady()) {
             createApp();
         }
         const loadingEl = document.getElementById('liff-loading');
@@ -1071,7 +1071,7 @@ if (typeof window !== 'undefined' && !window.__LIFF_APP_BOOTSTRAP__) {
 
     // LIFF 初期化が極端に遅い場合の最終フォールバック
     setTimeout(() => {
-        if (!window.app && typeof MobileOrderApp !== 'undefined') {
+        if (!window.app && typeof ReggitApp !== 'undefined') {
             createApp();
         }
     }, 15000);

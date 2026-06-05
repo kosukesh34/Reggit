@@ -57,7 +57,7 @@ Route::get('/', function () {
 });
 
 Route::get('/api', function () {
-    return response()->json(['message' => 'reggit API']);
+    return response()->json(['message' => 'Reggit API']);
 });
 
 // ELB / ロードバランサー用ヘルスチェック（EB の「パス」を /health に設定すること）
