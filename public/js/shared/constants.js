@@ -11,16 +11,19 @@ const NATIVE_APP_USER_AGENT_TOKEN = readNativeAppMeta('native-app-user-agent-tok
 const NATIVE_APP_URL_SCHEME = readNativeAppMeta('native-app-url-scheme', 'reggit');
 const NATIVE_APP_ORDER_TYPE_MOBILE_LABEL = readNativeAppMeta('native-app-order-type-mobile-label', 'Reggit');
 const LEGACY_NATIVE_APP_USER_AGENT_PATTERN = /MobileOrderApp\/\d+/i;
+const LEGACY_WALLET_RETURN_APP_SCHEME = 'mobileorderapp://';
 
+/** Wallet「アプリに戻る」用スキーム。UA を都度評価し、旧ネイティブビルドは mobileorderapp:// を返す。 */
 function resolveWalletReturnAppScheme() {
-    const scheme = `${NATIVE_APP_URL_SCHEME}://`;
-    if (typeof navigator === 'undefined' || !navigator.userAgent) {
-        return scheme;
+    const ua = (typeof navigator !== 'undefined' && navigator.userAgent) ? navigator.userAgent : '';
+    if (ua && LEGACY_NATIVE_APP_USER_AGENT_PATTERN.test(ua)) {
+        return LEGACY_WALLET_RETURN_APP_SCHEME;
     }
-    if (LEGACY_NATIVE_APP_USER_AGENT_PATTERN.test(navigator.userAgent)) {
-        return 'mobileorderapp://';
+    const token = NATIVE_APP_USER_AGENT_TOKEN.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    if (ua && new RegExp(`${token}\\/\\d+`, 'i').test(ua)) {
+        return `${NATIVE_APP_URL_SCHEME}://`;
     }
-    return scheme;
+    return `${NATIVE_APP_URL_SCHEME}://`;
 }
 
 const AppConstants = {
@@ -52,9 +55,6 @@ const AppConstants = {
         QUEUE_ME: `${API_BASE}/queue/me`,
         QUEUE_QR: `${API_BASE}/queue/qr`,
     },
-
-    /** Wallet 追加後「アプリに戻る」でネイティブアプリを開くための URL スキーム（旧ビルドは mobileorderapp://） */
-    WALLET_RETURN_APP_SCHEME: resolveWalletReturnAppScheme(),
 
     HTTP_METHODS: {
         GET: 'GET',
@@ -278,3 +278,12 @@ const AppConstants = {
         USER_ID: 'test-user',
     },
 };
+
+AppConstants.LEGACY_WALLET_RETURN_APP_SCHEME = LEGACY_WALLET_RETURN_APP_SCHEME;
+AppConstants.resolveWalletReturnAppScheme = resolveWalletReturnAppScheme;
+Object.defineProperty(AppConstants, 'WALLET_RETURN_APP_SCHEME', {
+    get() {
+        return resolveWalletReturnAppScheme();
+    },
+    enumerable: true,
+});
