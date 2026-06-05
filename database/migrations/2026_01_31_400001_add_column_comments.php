@@ -104,7 +104,7 @@ return new class extends Migration
                 'project_id' => 'FK → projects.id',
                 'user_id' => 'FK → users.id',
                 'order_number' => '注文番号。(project_id, order_number) で UNIQUE',
-                'order_type' => '注文種別。mobile: モバイルオーダー, in_store: 店内注文',
+                'order_type' => '注文種別。mobile: Reggit（アプリ注文）, in_store: 店内注文',
                 'total_amount' => '合計金額',
                 'status' => 'ステータス。pending, confirmed, preparing, ready, completed, cancelled',
                 'payment_method' => '支払方法。cash, points, stripe',

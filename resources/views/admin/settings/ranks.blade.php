@@ -79,7 +79,7 @@
 
                     <div class="ranks-settings-subsection">
                         <h4 class="ranks-settings-subtitle"><i class="fas fa-coins"></i> ポイント</h4>
-                        <p class="form-text text-muted">モバイルオーダーで注文完了時に付与するポイントを設定します。</p>
+                        <p class="form-text text-muted">{{ config('native_app.order_type_mobile_label', 'Reggit') }}で注文完了時に付与するポイントを設定します。</p>
                         <div class="ranks-settings-fields">
                             <div class="form-group">
                                 <label for="points_per_order" class="form-label">注文ごとの固定ポイント（pt）</label>
@@ -100,7 +100,7 @@
 
                     <div class="ranks-settings-subsection">
                         <h4 class="ranks-settings-subtitle"><i class="fas fa-stamp"></i> スタンプ（注文時付与）</h4>
-                        <p class="form-text text-muted">モバイルオーダーで注文完了時にスタンプを付与する場合は設定します。未設定の場合は付与しません。</p>
+                        <p class="form-text text-muted">{{ config('native_app.order_type_mobile_label', 'Reggit') }}で注文完了時にスタンプを付与する場合は設定します。未設定の場合は付与しません。</p>
                         <div class="ranks-settings-fields">
                             <div class="form-group">
                                 <label for="stamp_earn_per_amount" class="form-label">付与レート（円/1スタンプ）</label>

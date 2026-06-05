@@ -5,7 +5,7 @@
 set -e
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-MOBILE_DIR="${REPO_ROOT}/mobile/mobile-order-skip"
+MOBILE_DIR="${REPO_ROOT}/mobile/reggit-skip"
 APK_PATH="${MOBILE_DIR}/.build/Android/app/outputs/apk/debug/app-debug.apk"
 # iOS: Skip.env の PRODUCT_BUNDLE_IDENTIFIER を優先
 BUNDLE_ID="com.reggit.default"
@@ -26,12 +26,12 @@ if [[ -f "${MOBILE_DIR}/Skip.env" ]]; then
   fi
 fi
 ANDROID_APP_ID="$_android_app_id"
-ANDROID_ACTIVITY="${ANDROID_APP_ID}/mobile.order.app.MainActivity"
+ANDROID_ACTIVITY="${ANDROID_APP_ID}/reggit.app.MainActivity"
 
 # iOS のビルド先（変更する場合は環境変数 DESTINATION を指定。例: 'platform=iOS Simulator,name=iPhone 16 Pro,OS=26.0'）
 IOS_DESTINATION="${DESTINATION:-platform=iOS Simulator,name=iPhone 16 Pro}"
 
-echo "== MobileOrderApp: ビルド＆インストール =="
+echo "== Reggit: ビルド＆インストール =="
 cd "$MOBILE_DIR"
 
 echo ""
@@ -56,14 +56,14 @@ swift package resolve
 
 echo ""
 echo "--- 2. iOS ビルド ---"
-xcodebuild -workspace Project.xcworkspace -scheme "MobileOrderApp App" \
+xcodebuild -workspace Project.xcworkspace -scheme "Reggit App" \
   -destination "$IOS_DESTINATION" \
   -configuration Debug -skipPackagePluginValidation build
 
-APP_PATH=$(find ~/Library/Developer/Xcode/DerivedData -name "MobileOrderApp.app" -path "*Debug-iphonesimulator*" -type d 2>/dev/null | head -1)
+APP_PATH=$(find ~/Library/Developer/Xcode/DerivedData -name "Reggit.app" -path "*Debug-iphonesimulator*" -type d 2>/dev/null | head -1)
 BUILT_PRODUCTS_DIR=$(dirname "$APP_PATH")
 if [[ -z "$APP_PATH" || ! -d "$APP_PATH" ]]; then
-  echo "Error: MobileOrderApp.app が見つかりません"
+  echo "Error: Reggit.app が見つかりません"
   exit 1
 fi
 echo "iOS ビルド成果物: $APP_PATH"

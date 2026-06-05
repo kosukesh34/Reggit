@@ -150,7 +150,7 @@ class GetGoogleWalletUrlUseCase
             return GetGoogleWalletUrlOutput::notMember();
         }
 
-        $organizationName = $input->projectName ?? config('app.name', '会員証');
+        $organizationName = $input->projectName ?? config('app.name', 'Reggit');
         $userId = $input->user->id ?? 0;
         $objectSuffix = 'demo-'.$userId.'-b';
         $projectIdInt = $input->projectId !== null && $input->projectId !== false ? (int) $input->projectId : null;

@@ -82,13 +82,13 @@ Google の画面で「鍵」を発行してもらい、ダウンロードした�
 
 **ステップ 4: そのファイルをプロジェクトの「決まった場所」に置く**
 
-1. **プロジェクトのフォルダ**（`mobile-order-app` がある場所）を開く
+1. **プロジェクトのフォルダ**（Reggit リポジトリのルート）を開く
 2. その中に **`storage`** → **`app`** があるので、さらに **`google_wallet`** というフォルダを作る（まだなければ）
-   - 結果、`mobile-order-app/storage/app/google_wallet/` というパスになる
+   - 結果、`storage/app/google_wallet/` というパスになる
 3. ステップ 3 でダウンロードした JSON ファイルを、**名前を `credentials.json` に変えて**、この `google_wallet` フォルダの中に置く
 
 **置いたあとのパス（例）:**  
-`mobile-order-app/storage/app/google_wallet/credentials.json`
+`storage/app/google_wallet/credentials.json`
 
 - **確認:**  
   その `credentials.json` をメモ帳などで開くと、`"client_email"` と `"private_key"` という文字列が中に出てくれば OK です。
