@@ -85,7 +85,7 @@ class GoogleWalletPassService
 
         $member = $data['member'];
         $project = AdminContext::getCurrentProject();
-        $organizationName = $project !== null ? $project->name : config('app.name', '会員証');
+        $organizationName = $project !== null ? $project->name : config('app.name', 'Reggit');
         $barcodeValue = $member->member_number ?? (string) $member->id;
         // オブジェクトIDに -b を付与し、既存のQRオブジェクトと区別してバーコードの新オブジェクトとして発行する
         $objectSuffix = 'member-'.(string) $member->id.'-b';
@@ -129,7 +129,7 @@ class GoogleWalletPassService
         $appearance = app(MemberCardAppearanceService::class)->resolveForMember($member);
         $project = $member->project;
         $projectId = (int) ($member->project_id ?? 0);
-        $organizationName = $project !== null ? $project->name : config('app.name', '会員証');
+        $organizationName = $project !== null ? $project->name : config('app.name', 'Reggit');
         $barcodeValue = $member->member_number ?? (string) $member->id;
         $objectSuffix = 'member-'.(string) $member->id.'-b';
         $points = (int) $member->getTotalPointsFromTransactions();
