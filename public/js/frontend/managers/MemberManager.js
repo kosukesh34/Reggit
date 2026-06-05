@@ -93,7 +93,9 @@ class MemberManager {
             return { returnUrl: currentHref, returnTarget: 'line' };
         }
         if (MemberManager.isMobileAppMode()) {
-            const scheme = (typeof AppConstants !== 'undefined' && AppConstants.WALLET_RETURN_APP_SCHEME) ? AppConstants.WALLET_RETURN_APP_SCHEME : 'reggit://';
+            const scheme = (typeof AppConstants !== 'undefined' && AppConstants.WALLET_RETURN_APP_SCHEME)
+                ? AppConstants.WALLET_RETURN_APP_SCHEME
+                : ((typeof navigator !== 'undefined' && /MobileOrderApp\/\d+/i.test(navigator.userAgent)) ? 'mobileorderapp://' : 'reggit://');
             return { returnUrl: scheme, returnTarget: 'app' };
         }
         const currentHref = typeof window !== 'undefined' && window.location && window.location.href ? window.location.href : '';
