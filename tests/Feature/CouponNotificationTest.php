@@ -57,7 +57,7 @@ class CouponNotificationTest extends TestCase
         });
     }
 
-    public function test_notify_issued_ネイティブプッシュと_lin_e通知を送ること(): void
+    public function test_notify_issued_sends_native_push_and_line_message(): void
     {
         $project = $this->createProject();
         $lineUserId = 'U'.str_repeat('a', 32);
@@ -103,12 +103,12 @@ class CouponNotificationTest extends TestCase
             ->with($lineUserId, Mockery::on(fn ($message) => is_array($message) && ($message['type'] ?? '') === 'flex'))
             ->andReturnNull();
 
-        putenv('LINE_CHANNEL_ACCESS_TOKEN=test-token');
+        $this->setLineChannelAccessTokenForTest('test-token');
 
         $service = new CouponNotificationService($pushMock, $lineMock);
         $service->notifyIssued($memberCoupon);
 
-        putenv('LINE_CHANNEL_ACCESS_TOKEN');
+        $this->clearLineChannelAccessTokenForTest();
         $this->addToAssertionCount(2);
     }
 
@@ -146,12 +146,25 @@ class CouponNotificationTest extends TestCase
         $lineMock = Mockery::mock(LineService::class);
         $lineMock->shouldNotReceive('pushMessage');
 
-        putenv('LINE_CHANNEL_ACCESS_TOKEN=test-token');
+        $this->setLineChannelAccessTokenForTest('test-token');
 
         $service = new CouponNotificationService($pushMock, $lineMock);
         $service->notifyIssued($memberCoupon);
 
-        putenv('LINE_CHANNEL_ACCESS_TOKEN');
+        $this->clearLineChannelAccessTokenForTest();
         $this->addToAssertionCount(2);
+    }
+
+    private function setLineChannelAccessTokenForTest(string $token): void
+    {
+        putenv('LINE_CHANNEL_ACCESS_TOKEN='.$token);
+        $_ENV['LINE_CHANNEL_ACCESS_TOKEN'] = $token;
+        $_SERVER['LINE_CHANNEL_ACCESS_TOKEN'] = $token;
+    }
+
+    private function clearLineChannelAccessTokenForTest(): void
+    {
+        putenv('LINE_CHANNEL_ACCESS_TOKEN');
+        unset($_ENV['LINE_CHANNEL_ACCESS_TOKEN'], $_SERVER['LINE_CHANNEL_ACCESS_TOKEN']);
     }
 }
