@@ -130,17 +130,13 @@ class WalletAddPageController extends Controller
             return null;
         }
         $url = trim($url);
-        if (! Str::startsWith($url, array_merge(['https://', 'http://'], NativeApp::allowedUrlSchemePrefixes()))) {
+        if (! Str::startsWith($url, ['https://', 'http://', NativeApp::urlSchemePrefix()])) {
             return null;
         }
         try {
             $parsed = parse_url($url);
             $scheme = strtolower($parsed['scheme'] ?? '');
-            $allowedSchemes = array_map(
-                static fn (string $prefix) => rtrim(strtolower(parse_url($prefix, PHP_URL_SCHEME) ?: ''), ':'),
-                NativeApp::allowedUrlSchemePrefixes()
-            );
-            if (in_array($scheme, $allowedSchemes, true)) {
+            if ($scheme === strtolower(NativeApp::urlScheme())) {
                 return $url;
             }
             $host = $parsed['host'] ?? '';
