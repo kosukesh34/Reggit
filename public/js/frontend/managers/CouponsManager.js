@@ -1,6 +1,7 @@
 class CouponsManager {
     constructor(apiClient) {
         this.apiClient = apiClient;
+        this._receivedToastTimer = null;
     }
 
     getSection() {
@@ -8,6 +9,14 @@ class CouponsManager {
     }
 
     getLoginTemplate() {
+        const nativeHint = (typeof MemberManager !== 'undefined' && MemberManager.isMobileAppMode())
+            ? '会員登録するとクーポンをご利用いただけます。'
+            : 'ログインするとクーポンをご利用いただけます。';
+        const actionBlock = (typeof MemberManager !== 'undefined' && MemberManager.isMobileAppMode())
+            ? `<button type="button" class="btn btn-primary mt-2" onclick="app.switchTab('${AppConstants.TABS.MEMBER}')">
+                    <i class="fas fa-user-plus"></i> 会員登録へ
+                </button>`
+            : '';
         return `
             <div class="member-card-container">
                 <div class="member-card member-card--line-only">
@@ -15,9 +24,24 @@ class CouponsManager {
                         <h2 class="member-card-title"><i class="fas fa-ticket-alt"></i> マイクーポン</h2>
                     </div>
                     <div class="member-card-line-only-body">
-                        <p class="member-card-line-only-message">ログインするとクーポンをご利用いただけます。</p>
+                        <p class="member-card-line-only-message">${DomHelper.escapeHtml(nativeHint)}</p>
+                        ${actionBlock}
                     </div>
                 </div>
+            </div>
+        `;
+    }
+
+    getMemberRequiredTemplate(message) {
+        const text = message && String(message).trim() ? String(message).trim() : '会員登録が必要です';
+        return `
+            <div class="coupons-empty">
+                <i class="fas fa-id-card"></i>
+                <p>${DomHelper.escapeHtml(text)}</p>
+                <p class="coupons-empty-sub">会員登録後にクーポンをご利用いただけます</p>
+                <button type="button" class="btn btn-primary mt-2" onclick="app.switchTab('${AppConstants.TABS.MEMBER}')">
+                    <i class="fas fa-user-plus"></i> 会員登録する
+                </button>
             </div>
         `;
     }
@@ -35,31 +59,112 @@ class CouponsManager {
         `;
     }
 
+    async _waitForNativeDeviceInfo(maxWaitMs) {
+        if (typeof window === 'undefined' || typeof MemberManager === 'undefined' || !MemberManager.isMobileAppMode()) {
+            return;
+        }
+        const limit = typeof maxWaitMs === 'number' ? maxWaitMs : 2500;
+        const start = Date.now();
+        while (Date.now() - start < limit) {
+            const deviceId = window.__MOBILE_DEVICE_INFO__
+                && String(window.__MOBILE_DEVICE_INFO__.device_identifier || '').trim();
+            if (deviceId) return;
+            await new Promise((resolve) => setTimeout(resolve, 50));
+        }
+    }
+
     async load() {
         const section = this.getSection();
         if (!section) return;
-        if (typeof window !== 'undefined' && !window.__LINE_USER_ID__ && window.app && window.app.memberManager) {
-            await window.app.memberManager.resolveLineUserIdForClient();
-        }
-        if (typeof window === 'undefined' || !window.__LINE_USER_ID__) {
-            if (typeof window !== 'undefined' && window.__IS_LIFF__) {
-                section.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i><p>読み込み中...</p></div>';
-                return;
+
+        const memberManager = (typeof window !== 'undefined' && window.app && window.app.memberManager)
+            ? window.app.memberManager
+            : null;
+
+        if (memberManager) {
+            if (typeof MemberManager !== 'undefined' && MemberManager.isMobileAppMode()) {
+                await this._waitForNativeDeviceInfo(2500);
+                await memberManager.ensureIdentityReady(2500);
+            } else if (typeof window !== 'undefined' && window.__IS_LIFF__) {
+                if (!window.__LINE_USER_ID__) {
+                    await memberManager.resolveLineUserIdForClient();
+                }
+                if (!window.__LINE_USER_ID__) {
+                    section.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i><p>読み込み中...</p></div>';
+                    return;
+                }
+            } else {
+                if (!window.__LINE_USER_ID__) {
+                    await memberManager.resolveLineUserIdForClient();
+                }
+                const hasIdentity = typeof memberManager.hasAuthenticatedIdentity === 'function'
+                    ? memberManager.hasAuthenticatedIdentity()
+                    : !!(typeof window !== 'undefined' && window.__LINE_USER_ID__);
+                if (!hasIdentity) {
+                    section.innerHTML = this.getLoginTemplate();
+                    return;
+                }
             }
-            section.innerHTML = this.getLoginTemplate();
-            return;
         }
+
         section.innerHTML =
             '<div class="loading"><i class="fas fa-spinner fa-spin"></i><p>読み込み中...</p></div>';
         try {
             const result = await this.apiClient.get(AppConstants.API_ENDPOINTS.MY_COUPONS);
+            if (!result.success) {
+                section.innerHTML = this.getErrorTemplate({ message: result.error });
+                return;
+            }
             const coupons = (result.data && result.data.coupons) ? result.data.coupons : [];
             const defaultImage = result.data && result.data.default_image_url ? result.data.default_image_url : null;
+            const message = result.data && result.data.message ? result.data.message : null;
+            if ((!coupons || coupons.length === 0) && message) {
+                section.innerHTML = this.getMemberRequiredTemplate(message);
+                return;
+            }
             this.render(coupons, defaultImage);
         } catch (error) {
             console.error('Failed to load coupons:', error);
             section.innerHTML = this.getErrorTemplate(error);
         }
+    }
+
+    /** クーポン通知受信時: 一覧を更新し、必要ならトースト表示 */
+    async onCouponReceived(options) {
+        options = options || {};
+        const wasOnCouponsTab = typeof window !== 'undefined'
+            && window.app
+            && window.app.currentTab === AppConstants.TABS.COUPONS;
+        await this.load();
+        if (options.silent) return;
+        if (wasOnCouponsTab || options.showToast === false) return;
+        this.showReceivedToast(options.message || '新しいクーポンが届きました');
+    }
+
+    showReceivedToast(message) {
+        if (typeof document === 'undefined') return;
+        let toast = document.getElementById('coupon-received-toast');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.id = 'coupon-received-toast';
+            toast.className = 'coupon-received-toast';
+            toast.setAttribute('role', 'status');
+            document.body.appendChild(toast);
+        }
+        toast.innerHTML = '<i class="fas fa-ticket-alt"></i><span>' + DomHelper.escapeHtml(message) + '</span>';
+        toast.classList.add('is-visible');
+        if (this._receivedToastTimer) clearTimeout(this._receivedToastTimer);
+        this._receivedToastTimer = setTimeout(() => {
+            toast.classList.remove('is-visible');
+        }, 4000);
+    }
+
+    isRecentlyIssued(issuedAt) {
+        if (!issuedAt) return false;
+        const issued = new Date(issuedAt);
+        if (Number.isNaN(issued.getTime())) return false;
+        const diffMs = Date.now() - issued.getTime();
+        return diffMs >= 0 && diffMs <= 72 * 60 * 60 * 1000;
     }
 
     render(coupons, defaultImage) {
@@ -115,11 +220,13 @@ class CouponsManager {
             const useBtnBlock = showUseButton
                 ? '<div class="coupon-item-actions"><button type="button" class="btn btn-primary coupon-use-btn" data-member-coupon-id="' + DomHelper.escapeHtml(String(cp.id)) + '" data-use-display="' + DomHelper.escapeHtml(useDisplay) + '" data-code="' + DomHelper.escapeHtml(code) + '" data-coupon-name="' + DomHelper.escapeHtml(cp.coupon_name || 'クーポン') + '"><i class="fas fa-hand-holding-usd me-1"></i>使用する</button></div>'
                 : '';
+            const showNewBadge = status === 'available' && this.isRecentlyIssued(cp.issued_at);
+            const newBadge = showNewBadge ? '<span class="coupon-item-badge coupon-item-badge--new">NEW</span>' : '';
             return `
                 <div class="coupon-item coupon-item--${status} coupon-item--design-${design}"${accentStyle}>
                     ${imageBlock}
                     <div class="coupon-item-header">
-                        <span class="coupon-item-name"><i class="fas ${iconClass} coupon-item-name-icon" aria-hidden="true"></i>${DomHelper.escapeHtml(cp.coupon_name || 'クーポン')}</span>
+                        <span class="coupon-item-name"><i class="fas ${iconClass} coupon-item-name-icon" aria-hidden="true"></i>${DomHelper.escapeHtml(cp.coupon_name || 'クーポン')}${newBadge}</span>
                         <span class="coupon-item-status">${DomHelper.escapeHtml(label)}</span>
                     </div>
                     ${validUntil ? '<p class="coupon-item-valid">有効期限: ' + DomHelper.escapeHtml(validUntil) + '</p>' : ''}
