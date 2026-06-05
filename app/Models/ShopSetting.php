@@ -264,10 +264,10 @@ class ShopSetting
         'feature_gallery_enabled' => true,
     ];
 
-    /** 機能フラグの表示名 */
+    /** 機能フラグの表示名（静的デフォルト。動的ラベルは featureFlagLabels() を使う） */
     public const FEATURE_FLAG_LABELS = [
         'feature_home_enabled' => 'ホーム',
-        'feature_orders_enabled' => 'モバイルオーダー',
+        'feature_orders_enabled' => 'Reggit',
         'feature_reservations_enabled' => '予約',
         'feature_queue_enabled' => '順番待ち',
         'feature_stamps_enabled' => 'スタンプカード',
@@ -277,6 +277,14 @@ class ShopSetting
         'feature_payments_enabled' => '決済（Stripe等）',
         'feature_gallery_enabled' => 'ギャラリー',
     ];
+
+    /** config/native_app.php を反映した機能フラグ表示名 */
+    public static function featureFlagLabels(): array
+    {
+        return array_merge(self::FEATURE_FLAG_LABELS, [
+            'feature_orders_enabled' => config('native_app.order_type_mobile_label', 'Reggit'),
+        ]);
+    }
 
     public const ORDER_MODE_BOTH = 'both';
 

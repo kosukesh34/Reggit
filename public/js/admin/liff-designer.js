@@ -194,7 +194,7 @@ class LiffDesigner {
         switch (type) {
             case 'hero':
                 block.title = item.title || 'ようこそ！';
-                block.subtitle = item.subtitle || item.text || 'モバイルオーダーへ';
+                block.subtitle = item.subtitle || item.text || 'Reggitへ';
                 block.image_url = item.image_url || '';
                 block.gradient_start = item.gradient_start || '#667eea';
                 block.gradient_end = item.gradient_end || '#764ba2';
