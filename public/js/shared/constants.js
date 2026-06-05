@@ -10,6 +10,18 @@ function readNativeAppMeta(name, fallback) {
 const NATIVE_APP_USER_AGENT_TOKEN = readNativeAppMeta('native-app-user-agent-token', 'Reggit');
 const NATIVE_APP_URL_SCHEME = readNativeAppMeta('native-app-url-scheme', 'reggit');
 const NATIVE_APP_ORDER_TYPE_MOBILE_LABEL = readNativeAppMeta('native-app-order-type-mobile-label', 'Reggit');
+const LEGACY_NATIVE_APP_USER_AGENT_PATTERN = /MobileOrderApp\/\d+/i;
+
+function resolveWalletReturnAppScheme() {
+    const scheme = `${NATIVE_APP_URL_SCHEME}://`;
+    if (typeof navigator === 'undefined' || !navigator.userAgent) {
+        return scheme;
+    }
+    if (LEGACY_NATIVE_APP_USER_AGENT_PATTERN.test(navigator.userAgent)) {
+        return 'mobileorderapp://';
+    }
+    return scheme;
+}
 
 const AppConstants = {
     API_BASE,
@@ -41,8 +53,8 @@ const AppConstants = {
         QUEUE_QR: `${API_BASE}/queue/qr`,
     },
 
-    /** Wallet 追加後「アプリに戻る」でネイティブアプリを開くための URL スキーム */
-    WALLET_RETURN_APP_SCHEME: `${NATIVE_APP_URL_SCHEME}://`,
+    /** Wallet 追加後「アプリに戻る」でネイティブアプリを開くための URL スキーム（旧ビルドは mobileorderapp://） */
+    WALLET_RETURN_APP_SCHEME: resolveWalletReturnAppScheme(),
 
     HTTP_METHODS: {
         GET: 'GET',

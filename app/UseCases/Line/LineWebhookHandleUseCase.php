@@ -88,7 +88,7 @@ class LineWebhookHandleUseCase
         }
 
         $message = $this->lineService->createTextMessage(
-            "ようこそ！".config('app.name')."へ\n\n".
+            'ようこそ！'.config('app.name')."へ\n\n".
             "以下のメニューからお選びください：\n".
             "・メニューを見る\n".
             "・会員証を見る\n".
