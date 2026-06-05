@@ -93,9 +93,16 @@ class MemberManager {
             return { returnUrl: currentHref, returnTarget: 'line' };
         }
         if (MemberManager.isMobileAppMode()) {
-            const scheme = (typeof AppConstants !== 'undefined' && AppConstants.WALLET_RETURN_APP_SCHEME)
-                ? AppConstants.WALLET_RETURN_APP_SCHEME
-                : ((typeof navigator !== 'undefined' && /MobileOrderApp\/\d+/i.test(navigator.userAgent)) ? 'mobileorderapp://' : 'reggit://');
+            let scheme = 'reggit://';
+            if (typeof AppConstants !== 'undefined') {
+                if (typeof AppConstants.resolveWalletReturnAppScheme === 'function') {
+                    scheme = AppConstants.resolveWalletReturnAppScheme();
+                } else if (AppConstants.WALLET_RETURN_APP_SCHEME) {
+                    scheme = AppConstants.WALLET_RETURN_APP_SCHEME;
+                }
+            } else if (typeof navigator !== 'undefined' && /MobileOrderApp\/\d+/i.test(navigator.userAgent)) {
+                scheme = 'mobileorderapp://';
+            }
             return { returnUrl: scheme, returnTarget: 'app' };
         }
         const currentHref = typeof window !== 'undefined' && window.location && window.location.href ? window.location.href : '';
