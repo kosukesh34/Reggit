@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\MemberCoupon;
 use App\Services\CouponNotificationService;
+use App\Util\LogHelper;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -20,8 +21,12 @@ class SendCouponIssuedNotificationJob implements ShouldQueue
 
     public function handle(CouponNotificationService $couponNotificationService): void
     {
-        $memberCoupon = MemberCoupon::query()->find($this->memberCouponId);
+        $memberCoupon = MemberCoupon::withoutGlobalScopes()->find($this->memberCouponId);
         if ($memberCoupon === null) {
+            LogHelper::warning('[Coupon] issued notification job: member_coupon not found', [
+                'member_coupon_id' => $this->memberCouponId,
+            ]);
+
             return;
         }
 

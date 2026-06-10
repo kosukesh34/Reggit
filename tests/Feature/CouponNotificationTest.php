@@ -13,7 +13,9 @@ use App\Models\UserDevice;
 use App\Services\CouponNotificationService;
 use App\Services\Line\LineService;
 use App\Services\PushNotificationService;
+use App\Util\AdminContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
 use Mockery;
 use Tests\TestCase;
@@ -110,6 +112,80 @@ class CouponNotificationTest extends TestCase
 
         $this->clearLineChannelAccessTokenForTest();
         $this->addToAssertionCount(2);
+    }
+
+    public function test_send_coupon_issued_notification_job_レコードありでnotify_issuedが呼ばれる(): void
+    {
+        $project = $this->createProject();
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $member = Member::factory()->create(['project_id' => $project->id, 'user_id' => $user->id]);
+        $coupon = Coupon::factory()->create(['project_id' => $project->id, 'name' => 'ジョブテスト']);
+        $memberCoupon = MemberCoupon::withoutEvents(function () use ($project, $member, $coupon) {
+            return MemberCoupon::factory()->create([
+                'project_id' => $project->id,
+                'member_id' => $member->id,
+                'coupon_id' => $coupon->id,
+                'coupon_name_snapshot' => 'ジョブテスト',
+            ]);
+        });
+
+        $serviceMock = Mockery::mock(CouponNotificationService::class);
+        $serviceMock->shouldReceive('notifyIssued')
+            ->once()
+            ->with(Mockery::on(fn (MemberCoupon $mc) => $mc->id === $memberCoupon->id));
+
+        $job = new SendCouponIssuedNotificationJob($memberCoupon->id);
+        $job->handle($serviceMock);
+
+        $this->addToAssertionCount(1);
+    }
+
+    public function test_send_coupon_issued_notification_job_レコードなしでログのみ(): void
+    {
+        Log::spy();
+
+        $serviceMock = Mockery::mock(CouponNotificationService::class);
+        $serviceMock->shouldNotReceive('notifyIssued');
+
+        $job = new SendCouponIssuedNotificationJob(99999);
+        $job->handle($serviceMock);
+
+        Log::shouldHaveReceived('warning')->withArgs(function (string $message, array $context): bool {
+            return $message === '[Coupon] issued notification job: member_coupon not found'
+                && ($context['member_coupon_id'] ?? null) === 99999;
+        })->once();
+
+        $this->addToAssertionCount(2);
+    }
+
+    public function test_send_coupon_issued_notification_job_without_global_scopesで取得できる(): void
+    {
+        $project = $this->createProject();
+        $otherProject = Project::factory()->create(['project_key' => 'other-project']);
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $member = Member::factory()->create(['project_id' => $project->id, 'user_id' => $user->id]);
+        $coupon = Coupon::factory()->create(['project_id' => $project->id, 'name' => 'スコープテスト']);
+        $memberCoupon = MemberCoupon::withoutEvents(function () use ($project, $member, $coupon) {
+            return MemberCoupon::factory()->create([
+                'project_id' => $project->id,
+                'member_id' => $member->id,
+                'coupon_id' => $coupon->id,
+                'coupon_name_snapshot' => 'スコープテスト',
+            ]);
+        });
+
+        AdminContext::setCurrentProject($otherProject);
+
+        $serviceMock = Mockery::mock(CouponNotificationService::class);
+        $serviceMock->shouldReceive('notifyIssued')
+            ->once()
+            ->with(Mockery::on(fn (MemberCoupon $mc) => $mc->id === $memberCoupon->id));
+
+        $job = new SendCouponIssuedNotificationJob($memberCoupon->id);
+        $job->handle($serviceMock);
+
+        AdminContext::setCurrentProject(null);
+        $this->addToAssertionCount(1);
     }
 
     public function test_notify_issued_クーポン機能無効時は通知を送らないこと(): void

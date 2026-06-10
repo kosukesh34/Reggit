@@ -155,11 +155,9 @@ class CouponController extends AdminBaseController
     {
         $projectId = $this->resolveAdminProjectId();
         $validated = $request->validated();
-        $memberIds = [];
-        if (($validated['target'] ?? '') === 'selected') {
-            $input = $request->input('member_ids_input', '');
-            $memberIds = array_values(array_filter(array_map('intval', preg_split('/[\s,]+/', $input))));
-        }
+        $memberIds = ($validated['target'] ?? '') === 'selected'
+            ? $request->parsedMemberIds()
+            : [];
         $issued = $this->bulkIssueUseCase->handle($projectId, (int) $validated['coupon_id'], $memberIds);
 
         return redirect()->route('admin.coupons', $this->buildAdminRouteParams())
