@@ -1,0 +1,29 @@
+{
+  "task": "Implement using only the files in `.takt/runs/20260610-071041-implement-using-only-the-files-y0ge20/context/task`.\nPrimary spec: `.takt/runs/20260610-071041-implement-using-only-the-files-y0ge20/context/task/order.md`.\nUse report files in Report Directory as primary execution history.\nDo not rely on previous response or conversation summary.",
+  "workflow": "reggit-github",
+  "runSlug": "20260610-071041-implement-using-only-the-files-y0ge20",
+  "runRoot": ".takt/runs/20260610-071041-implement-using-only-the-files-y0ge20",
+  "reportDirectory": ".takt/runs/20260610-071041-implement-using-only-the-files-y0ge20/reports",
+  "contextDirectory": ".takt/runs/20260610-071041-implement-using-only-the-files-y0ge20/context",
+  "logsDirectory": ".takt/runs/20260610-071041-implement-using-only-the-files-y0ge20/logs",
+  "status": "aborted",
+  "startTime": "2026-06-10T07:10:41.980Z",
+  "updatedAt": "2026-06-10T07:12:58.217Z",
+  "currentStep": "plan",
+  "currentIteration": 1,
+  "phase": 2,
+  "endTime": "2026-06-10T07:12:58.217Z",
+  "iterations": 1,
+  "resume_point": {
+    "version": 1,
+    "stack": [
+      {
+        "workflow": "reggit-github",
+        "step": "plan",
+        "kind": "agent"
+      }
+    ],
+    "iteration": 1,
+    "elapsed_ms": 6
+  }
+}

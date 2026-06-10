@@ -13,6 +13,7 @@ use App\Models\UserDevice;
 use App\Services\CouponNotificationService;
 use App\Services\Line\LineService;
 use App\Services\PushNotificationService;
+use App\Support\PushCollapseIdBuilder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Mockery;
@@ -93,7 +94,8 @@ class CouponNotificationTest extends TestCase
                 Mockery::type('string'),
                 Mockery::on(fn (array $data) => ($data['type'] ?? '') === 'coupon_issued'
                     && ($data['tab'] ?? '') === 'coupons'
-                    && (string) ($data['member_coupon_id'] ?? '') === (string) $memberCoupon->id)
+                    && (string) ($data['member_coupon_id'] ?? '') === (string) $memberCoupon->id),
+                PushCollapseIdBuilder::forCouponIssued($project->id, (int) $memberCoupon->id)
             )
             ->andReturn(['target_tokens' => 1, 'sent' => 1, 'failed' => 0, 'skipped' => 0]);
 

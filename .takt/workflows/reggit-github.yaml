@@ -1,0 +1,71 @@
+name: reggit-github
+description: Reggit向け — 計画 → 実装 → PR作成（コードレビューは GitHub で実施）
+workflow_config:
+  provider_options:
+    codex:
+      network_access: true
+max_steps: 15
+initial_step: plan
+steps:
+  - name: plan
+    edit: false
+    persona: planner
+    knowledge:
+      - backend
+      - architecture
+    provider_options:
+      claude:
+        allowed_tools:
+          - Read
+          - Glob
+          - Grep
+          - Bash
+    rules:
+      - condition: 要件が明確で実装可能
+        next: implement
+      - condition: ユーザーが質問をしている（実装タスクではない）
+        next: COMPLETE
+      - condition: 要件が不明確、情報不足
+        next: ABORT
+    instruction: plan
+    output_contracts:
+      report:
+        - name: plan.md
+          format: plan
+
+  - name: implement
+    edit: true
+    persona: coder
+    policy:
+      - coding
+      - testing
+    knowledge:
+      - backend
+      - security
+      - architecture
+    provider_options:
+      claude:
+        allowed_tools:
+          - Read
+          - Glob
+          - Grep
+          - Edit
+          - Write
+          - Bash
+    required_permission_mode: edit
+    instruction: implement
+    rules:
+      - condition: 実装が完了した
+        next: COMPLETE
+      - condition: 実装を進行できない
+        next: ABORT
+      - condition: ユーザーへの確認事項があるためユーザー入力が必要
+        next: implement
+        requires_user_input: true
+        interactive_only: true
+    output_contracts:
+      report:
+        - name: coder-scope.md
+          format: coder-scope
+        - name: coder-decisions.md
+          format: coder-decisions

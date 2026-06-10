@@ -1,9 +1,19 @@
 {
   "permissions": {
+    "allow": [
+      "Read(**)",
+      "Write(**)",
+      "Shell(git *)",
+      "Shell(docker compose *)",
+      "Shell(php *)",
+      "Shell(composer *)",
+      "Shell(npm *)",
+      "Shell(takt *)",
+      "Shell(gh *)"
+    ],
     "deny": [
       "Shell(git push)",
-      "Shell(gh pr create)",
-      "Write(**)"
+      "Shell(gh pr create)"
     ]
   }
 }

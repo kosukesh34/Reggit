@@ -1,0 +1,17 @@
+# Reggit プロジェクト向け Takt 設定
+# 詳細: docs/TAKT_ORCHESTRA.md
+
+language: ja
+
+# 完了後に PR を自動作成 → レビューは GitHub で実施
+auto_pr: true
+draft_pr: true
+
+# 実装・計画を Cursor Agent に割り当て（Claude/Codex API キー不要）
+persona_providers:
+  coder:
+    provider: cursor
+    model: composer-2.5-fast
+  planner:
+    provider: cursor
+    model: composer-2.5-fast

@@ -8,6 +8,7 @@ use App\Models\Project;
 use App\Models\ShopSetting;
 use App\Services\Line\LineService;
 use App\Support\CouponLiffUrlBuilder;
+use App\Support\PushCollapseIdBuilder;
 use App\Util\LogHelper;
 
 class CouponNotificationService
@@ -68,7 +69,8 @@ class CouponNotificationService
                 'member_coupon_id' => (string) $memberCoupon->id,
                 'coupon_id' => (string) $memberCoupon->coupon_id,
                 'project_id' => (string) $projectId,
-            ]
+            ],
+            PushCollapseIdBuilder::forCouponIssued($projectId, (int) $memberCoupon->id)
         );
 
         if (($result['sent'] ?? 0) === 0 && ($result['target_tokens'] ?? 0) === 0) {
