@@ -1,0 +1,40 @@
+{
+  "mcpServers": {
+    "orchestra-backend-database": {
+      "command": "echo",
+      "args": [
+        "Slot 'orchestra-backend-database' was registered by ai-orchestra. Replace this entry with your real MCP server. See score/adapters/cursor/mcp.md."
+      ],
+      "metadata": {
+        "orchestra": true,
+        "orchestra_role": "backend-engineer",
+        "orchestra_purpose": "app-database-read",
+        "orchestra_status": "placeholder"
+      }
+    },
+    "orchestra-devops-secrets": {
+      "command": "echo",
+      "args": [
+        "Slot 'orchestra-devops-secrets' was registered by ai-orchestra. Replace this entry with your real MCP server. See score/adapters/cursor/mcp.md."
+      ],
+      "metadata": {
+        "orchestra": true,
+        "orchestra_role": "devops-sre",
+        "orchestra_purpose": "secrets-rotation-visibility",
+        "orchestra_status": "placeholder"
+      }
+    },
+    "orchestra-security-vuln-feed": {
+      "command": "echo",
+      "args": [
+        "Slot 'orchestra-security-vuln-feed' was registered by ai-orchestra. Replace this entry with your real MCP server. See score/adapters/cursor/mcp.md."
+      ],
+      "metadata": {
+        "orchestra": true,
+        "orchestra_role": "security-engineer",
+        "orchestra_purpose": "vulnerability-feed",
+        "orchestra_status": "placeholder"
+      }
+    }
+  }
+}

@@ -1,0 +1,39 @@
+# Reggit プロジェクト向け Takt 設定
+# 詳細: docs/TAKT_ORCHESTRA.md
+
+language: ja
+
+# ブランチは常に main から。ブランチ名は英語 kebab-case（romaji 不可）
+base_branch: main
+branch_name_strategy: ai
+
+# 完了後に PR を自動作成 → レビューは GitHub で実施
+auto_pr: true
+draft_pr: true
+
+# 全ペルソナを Cursor に統一
+provider: cursor
+model: auto
+
+persona_providers:
+  coder:
+    provider: cursor
+    model: auto
+  planner:
+    provider: cursor
+    model: auto
+  supervisor:
+    provider: cursor
+    model: auto
+
+# PR 本文 — UI スクリーンショット欄を含める
+pipeline:
+  pr_body_template: |
+    {issue_body}
+
+    ## 実装レポート
+    {report}
+
+    ## UI スクリーンショット
+    UI 変更がある場合、`.takt/evidence/screenshots/` 配下の画像を参照してください。
+    実装レポートの「UI スクリーンショット」セクションに Markdown 画像リンクがあること。

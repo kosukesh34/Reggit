@@ -1,0 +1,58 @@
+---
+description: Always-on orchestra-managed context. Roles, stacks, and non-negotiables. Update via 'audit AI infra'.
+alwaysApply: true
+---
+
+# Reggit — Orchestra context (auto-generated)
+
+> This rule is managed by ai-orchestra. Edits are overwritten on the next orchestra run. To extend the project context, edit `AGENTS.md` outside the marker pair.
+
+## Identity
+
+- **Project:** Reggit
+- **Detected stacks:** php (confidence 0.90), laravel (confidence 0.95)
+- **Detected frameworks:** laravel, php, blade, docker
+- **Orchestra version:** 3.2.2
+- **Cursor adapter version:** 1.0.0-alpha
+
+## Roles installed
+
+- **CEO / Product Manager** — Owns prioritisation, scope, and what gets built next (`PM_PRIORITIES.md`). Delegates implementation to Takt.
+- **Backend Engineer** — Owns the server side — APIs, business logic, persistence, integrations, and background work.
+- **DevOps / SRE** — Owns delivery pipelines, runtime reliability, and the operational safety of changes.
+- **QA Engineer** — Owns the project's confidence in its own behaviour.
+- **Security Engineer** — Owns the project's security posture — auth, secrets, data protection, and supply-chain hygiene.
+
+## Skills installed
+
+### audit
+- ai-infra-audit, cleanup, pre-release
+
+### code
+- api-design-review, code-review, db-migration-review, dependency-audit
+
+### docs
+- write-test-plan, write-prd, decision-log, pm-strategy-review
+
+### quality
+- auth-flow-review, secrets-scan, security-baseline
+
+## Critical non-negotiables
+
+- Cares about contracts (what the API promises), correctness under concurrent load, schema evolution that does not break clients, and dependency hygiene.
+- Cares about the right shape of tests at the right level, reproducibility of failures, and whether the test suite exercises what users will.
+- Cares about auth flows, secrets handling, CVE awareness, and least-privilege defaults.
+- Cares about deployment order, migration coordination, and observability hooks.
+
+## Pointers
+
+- Director rule: `.cursor/rules/ai-director.mdc`
+- Project context: `AGENTS.md` (managed section + your hand-written content)
+- Skills: `.cursor/skills/<skill-id>/SKILL.md`
+- Learnings: `_documentation/AI_LEARNINGS.md`
+- Install marker: `.ai-orchestra/install.json`
+- Architecture: `docs/CLEAN_ARCHITECTURE.md`
+
+## How to update this rule
+
+The orchestra regenerates this file on every run of "run the orchestra" and on every audit that detects drift. To force a re-render, run "audit AI infra" and accept the proposed diff.

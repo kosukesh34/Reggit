@@ -24,3 +24,9 @@ deploy-docker.zip
 # Skip / Android ビルド成果物（大容量）
 mobile/reggit-skip/.build/
 mobile/reggit-skip/Android/.gradle/
+
+# Takt 実行成果物（設定はコミット対象）
+.takt/runs/
+.takt/tasks/
+.takt/tasks.yaml
+.takt/daemon/

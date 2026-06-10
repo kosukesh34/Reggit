@@ -1,0 +1,13 @@
+{
+  "installedFromPackage": "@neverreven/ai-orchestra",
+  "installedFromVersion": "3.2.2",
+  "installedAt": "2026-06-10T06:43:03.738Z",
+  "tier": 1,
+  "ensemble": {
+    "installed": false,
+    "path": null,
+    "version": null,
+    "telegramEnabled": false
+  },
+  "note": "This is the npm-package install marker. The full per-project install marker (install.json) is created by the IDE agent during the orchestra install flow."
+}

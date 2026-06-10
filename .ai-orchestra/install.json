@@ -1,0 +1,171 @@
+{
+  "schemaVersion": 1,
+  "orchestra": {
+    "version": "3.2.2",
+    "installedAt": "2026-06-10T00:00:00.000Z",
+    "lastAuditedAt": null
+  },
+  "ide": {
+    "id": "cursor",
+    "adapter": "adapters/cursor",
+    "adapterVersion": "1.0.0-alpha"
+  },
+  "project": {
+    "name": "Reggit",
+    "root": "/Users/kosuke/Reggit"
+  },
+  "stacks": [
+    {
+      "id": "php",
+      "confidence": 0.9,
+      "frameworks": ["laravel"],
+      "stackPack": null,
+      "stackPackVersion": null,
+      "installedPackRules": [],
+      "skippedPackRules": []
+    }
+  ],
+  "roles": [
+    "product-manager",
+    "backend-engineer",
+    "devops-sre",
+    "qa-engineer",
+    "security-engineer"
+  ],
+  "skills": [
+    { "id": "ai-infra-audit", "category": "audit", "source": "core/skills/audit/ai-infra-audit" },
+    { "id": "cleanup", "category": "audit", "source": "core/skills/audit/cleanup" },
+    { "id": "pre-release", "category": "audit", "source": "core/skills/audit/pre-release" },
+    { "id": "code-review", "category": "code", "source": "core/skills/code/code-review" },
+    { "id": "api-design-review", "category": "code", "source": "core/skills/code/api-design-review" },
+    { "id": "db-migration-review", "category": "code", "source": "core/skills/code/db-migration-review" },
+    { "id": "dependency-audit", "category": "code", "source": "core/skills/code/dependency-audit" },
+    { "id": "auth-flow-review", "category": "quality", "source": "core/skills/quality/auth-flow-review" },
+    { "id": "secrets-scan", "category": "quality", "source": "core/skills/quality/secrets-scan" },
+    { "id": "security-baseline", "category": "quality", "source": "core/skills/quality/security-baseline" },
+    { "id": "write-test-plan", "category": "docs", "source": "core/skills/docs/write-test-plan" },
+    { "id": "write-prd", "category": "docs", "source": "core/skills/docs/write-prd" },
+    { "id": "decision-log", "category": "docs", "source": "core/skills/docs/decision-log" },
+    { "id": "pm-strategy-review", "category": "docs", "source": "project/.cursor/skills/pm-strategy-review" }
+  ],
+  "installScope": {
+    "mode": "primary-plus-collaborators",
+    "primaryRole": "backend-engineer",
+    "selectedRoles": [
+      "backend-engineer",
+      "devops-sre",
+      "qa-engineer",
+      "security-engineer"
+    ],
+    "optedOutUniversals": [],
+    "decidedAt": "2026-06-10T00:00:00.000Z",
+    "decidedBy": "user-accepted-recommendation",
+    "recommendation": {
+      "mode": "primary-plus-collaborators",
+      "rationale": "Laravel backend project with existing Clean Architecture docs and Docker-based testing."
+    },
+    "stopHookOverlapResolution": {
+      "value": null,
+      "detectedAt": "2026-06-10T00:00:00.000Z",
+      "decidedAt": "2026-06-10T00:00:00.000Z",
+      "decidedBy": "default-no-overlap"
+    }
+  },
+  "skillPlacementStrategy": {
+    "type": "ide-specific",
+    "sharedPath": null,
+    "decidedAt": "2026-06-10T00:00:00.000Z",
+    "decidedBy": "default"
+  },
+  "rules": [
+    {
+      "id": "orchestra-context",
+      "path": ".cursor/rules/orchestra-context.mdc",
+      "source": "adapter-generated",
+      "alwaysOn": true
+    },
+    {
+      "id": "director",
+      "path": ".cursor/rules/ai-director.mdc",
+      "source": "core/director/RULE.md",
+      "alwaysOn": true
+    },
+    {
+      "id": "ceo-pm-director",
+      "path": ".cursor/rules/ceo-pm-director.mdc",
+      "source": "project",
+      "alwaysOn": true
+    }
+  ],
+  "hooks": {
+    "stop": {
+      "registered": true,
+      "path": ".cursor/hooks.json",
+      "contractVersion": "1.0"
+    }
+  },
+  "mcpSlots": [
+  {
+    "id": "orchestra-backend-database",
+    "role": "backend-engineer",
+    "configPath": ".cursor/mcp.json",
+    "userMustAttach": true
+  },
+  {
+    "id": "orchestra-devops-secrets",
+    "role": "devops-sre",
+    "configPath": ".cursor/mcp.json",
+    "userMustAttach": true
+  },
+  {
+    "id": "orchestra-security-vuln-feed",
+    "role": "security-engineer",
+    "configPath": ".cursor/mcp.json",
+    "userMustAttach": true
+  }
+  ],
+  "learnings": {
+    "path": "_documentation/AI_LEARNINGS.md",
+    "seeded": true
+  },
+  "agentsDoc": {
+    "path": "AGENTS.md",
+    "managedSection": "ai-orchestra"
+  },
+  "scheduler": {
+    "contractVersion": 1,
+    "jobs": [
+      {
+        "id": "pm-strategy-review",
+        "description": "CEO/PM backlog review — updates PM_PRIORITIES.md",
+        "schedule": {
+          "kind": "interval",
+          "every_seconds": 21600,
+          "jitter_seconds": 300
+        },
+        "runs": {
+          "kind": "script",
+          "path": "scripts/orchestra-pm-review.sh",
+          "allowScript": true
+        },
+        "concurrency": "single-run",
+        "missed_run_policy": "catchup-once",
+        "enabled": true,
+        "lastRun": null,
+        "status": "idle"
+      }
+    ]
+  },
+  "notifications": {
+    "contractVersion": 1,
+    "channels": []
+  },
+  "installedFolder": "score",
+  "history": [
+    {
+      "action": "install",
+      "at": "2026-06-10T00:00:00.000Z",
+      "summary": "Initial Cursor adapter install: director rule, orchestra-context, 11 skills, stop-hook, 3 MCP slots, learnings doc seeded."
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+---
+description: AI Orchestra チーム編成 — 役割分担と委譲先
+alwaysApply: true
+---
+
+# Reggit — Orchestra チーム
+
+## 編成
+
+| 役割 | 担当領域 | 主なスキル | 実行 |
+|---|---|---|---|
+| **CEO / PM** | 優先度・スコープ・Issue 化 | pm-strategy-review, write-prd, decision-log | 6h デーモン + チャット |
+| **Tech Lead / Supervisor** | 次タスク 1 件の選定 | architecture, takt | Takt auto-improvement-loop |
+| **Backend Engineer** | API・UseCase・DB | code-review, db-migration-review | Takt reggit-github |
+| **Frontend Engineer** | Blade・LIFF・CSS・UX | ui-screenshot-pr, accessibility-audit | Takt reggit-github |
+| **QA Engineer** | テスト・受け入れ条件 | write-test-plan, pre-release | PR レビュー支援 |
+| **Security Engineer** | 認証・秘密情報 | secrets-scan, auth-flow-review | 監査・PR |
+| **DevOps / SRE** | Docker・CI・デーモン | ai-infra-audit | launchd / compose |
+| **Tech Writer** | PR 本文・ドキュメント | write-prd, decision-log | MR 説明文 |
+
+## 自動パイプライン
+
+1. **Orchestrator** — open Issue/PR をスキャン → 実装タスクをキュー → **GitHub Issue 自動作成**
+2. **Takt watch** — pending タスクを順次実装 → **ドラフト MR 自動作成**
+3. **人間** — GitHub で MR レビュー・マージ
+
+## UI 変更のルール
+
+フロント変更（Blade / CSS / LIFF）は **MR 本文にスクリーンショット必須**。画像は `.takt/evidence/screenshots/` にコミットする。
+
+## 参照
+
+- `_documentation/PM_PRIORITIES.md`
+- `.cursor/rules/ceo-pm-director.mdc`
+- `docs/TAKT_ORCHESTRA.md`
