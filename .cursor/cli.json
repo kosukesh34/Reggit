@@ -1,9 +1,16 @@
 {
   "permissions": {
+    "allow": [
+      "Read(**)",
+      "Write(**)",
+      "Shell(*)",
+      "WebFetch(*)",
+      "Mcp(*:*)"
+    ],
     "deny": [
-      "Shell(git push)",
-      "Shell(gh pr create)",
-      "Write(**)"
+      "Read(/etc/**)",
+      "Read(~/.ssh/**)",
+      "Write(~/.ssh/**)"
     ]
   }
 }
