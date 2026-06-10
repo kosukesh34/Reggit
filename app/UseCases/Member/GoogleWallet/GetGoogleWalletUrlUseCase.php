@@ -137,7 +137,6 @@ class GetGoogleWalletUrlUseCase
         return $this->googleWalletPassService->createSaveUrlForUserId((int) $data['user_id']);
     }
 
-    /** @return string|GetGoogleWalletUrlOutput|null */
     private function resolveUrlBySession(GetGoogleWalletUrlInput $input): string|GetGoogleWalletUrlOutput|null
     {
         if ($input->user === null) {

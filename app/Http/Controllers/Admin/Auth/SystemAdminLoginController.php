@@ -5,8 +5,8 @@ namespace App\Http\Controllers\Admin\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\LoginRequest;
 use App\Models\AdminUser;
-use App\UseCases\Admin\Auth\GetAdminDashboardRedirectUseCase;
 use App\UseCases\Admin\Auth\Data\AdminLoginInput;
+use App\UseCases\Admin\Auth\GetAdminDashboardRedirectUseCase;
 use App\UseCases\Admin\Auth\SystemAdminLoginUseCase;
 use Illuminate\Support\Facades\Auth;
 

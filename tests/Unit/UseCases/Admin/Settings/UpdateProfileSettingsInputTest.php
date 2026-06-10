@@ -7,7 +7,7 @@ use PHPUnit\Framework\TestCase;
 
 class UpdateProfileSettingsInputTest extends TestCase
 {
-    public function test_fromValidated_でカスタム項目キーを正規化する(): void
+    public function test_from_validated_でカスタム項目キーを正規化する(): void
     {
         $input = UpdateProfileSettingsInput::fromValidated([
             'smaregi_fields' => [

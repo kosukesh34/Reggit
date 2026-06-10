@@ -10,7 +10,7 @@ use Tests\TestCase;
 class DateUtilTest extends TestCase
 {
     #[DataProvider('nullableValuesProvider')]
-    public function test_nullableCarbonはnullと空文字でnullを返すこと(mixed $value): void
+    public function test_nullable_carbonはnullと空文字でnullを返すこと(mixed $value): void
     {
         $this->assertNull(DateUtil::nullableCarbon($value));
     }
@@ -24,7 +24,7 @@ class DateUtilTest extends TestCase
         ];
     }
 
-    public function test_nullableCarbonは文字列をCarbonに変換すること(): void
+    public function test_nullable_carbonは文字列を_carbonに変換すること(): void
     {
         $result = DateUtil::nullableCarbon('2026-06-09 12:00:00');
 
@@ -32,7 +32,7 @@ class DateUtilTest extends TestCase
         $this->assertSame('2026-06-09 12:00:00', $result?->format('Y-m-d H:i:s'));
     }
 
-    public function test_nullableCarbonはCarbonインスタンスをそのまま返すこと(): void
+    public function test_nullable_carbonは_carbonインスタンスをそのまま返すこと(): void
     {
         $carbon = Carbon::parse('2026-06-09 10:00:00');
 

@@ -108,7 +108,7 @@ class AdminSettingsTest extends TestCase
         $this->assertSame('ニックネーム', $saved['custom_fields'][0]['label'] ?? null);
     }
 
-    public function test_settings_Wallet設定を更新できること(): void
+    public function test_settings_wallet設定を更新できること(): void
     {
         $project = $this->createProject();
         $admin = $this->createAdmin($project);

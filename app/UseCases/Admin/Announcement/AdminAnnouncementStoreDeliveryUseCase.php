@@ -11,7 +11,6 @@ use App\Services\Admin\SalesSegmentService;
 use App\Services\PushNotificationService;
 use App\UseCases\Admin\Announcement\Data\StoreDeliveryOutput;
 use App\Util\DateUtil;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
 class AdminAnnouncementStoreDeliveryUseCase
