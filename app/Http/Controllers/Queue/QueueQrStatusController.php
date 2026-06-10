@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Queue;
 
 use App\Http\Controllers\Controller;
+use App\Services\UserService;
+use App\UseCases\Queue\Data\QueueQrStatusInput;
 use App\UseCases\Queue\QueueQrStatusUseCase;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
@@ -11,13 +13,15 @@ use Illuminate\Http\Request;
 class QueueQrStatusController extends Controller
 {
     public function __construct(
-        private QueueQrStatusUseCase $qrStatusUseCase
+        private QueueQrStatusUseCase $qrStatusUseCase,
+        private UserService $userService,
     ) {}
 
     public function __invoke(Request $request, string $token)
     {
         try {
-            $dto = $this->qrStatusUseCase->handle($request, $token);
+            $user = $this->userService->findUser($request);
+            $dto = $this->qrStatusUseCase->handle(QueueQrStatusInput::fromRequest($request, $token, $user));
             if ($dto === null) {
                 return response()->json(['error' => '対象が見つかりません。'], 404);
             }

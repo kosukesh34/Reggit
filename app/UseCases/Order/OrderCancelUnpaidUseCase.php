@@ -7,25 +7,17 @@ use App\Enums\OrderType;
 use App\Enums\PaymentMethod;
 use App\Models\Order;
 use App\Services\OrderService;
-use App\Services\UserService;
-use Illuminate\Http\Request;
+use App\UseCases\Order\Data\OrderCancelUnpaidInput;
 
 class OrderCancelUnpaidUseCase
 {
-    private UserService $userService;
+    public function __construct(
+        private OrderService $orderService,
+    ) {}
 
-    private OrderService $orderService;
-
-    public function __construct(UserService $userService, OrderService $orderService)
+    public function handle(OrderCancelUnpaidInput $input): Order
     {
-        $this->userService = $userService;
-        $this->orderService = $orderService;
-    }
-
-    public function handle(Request $request, int $orderId): Order
-    {
-        $user = $this->userService->getOrCreateUser($request);
-        $order = Order::where('user_id', $user->id)->findOrFail($orderId);
+        $order = Order::where('user_id', $input->user->id)->findOrFail($input->orderId);
 
         if ($order->order_type !== OrderType::MOBILE || $order->payment_method !== PaymentMethod::STRIPE) {
             throw new \Exception('この注文は未決済キャンセル対象ではありません');

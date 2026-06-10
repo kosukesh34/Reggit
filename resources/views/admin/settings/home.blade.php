@@ -46,11 +46,11 @@
                 <table class="table table-striped">
                     <thead>
                         <tr>
-                            <th style="width:44px" aria-label="並び替え"></th>
-                            <th style="width:80px">表示</th>
-                            <th style="width:100px">タブ（キー）</th>
+                            <th class="home-settings-table__sort-col" aria-label="並び替え"></th>
+                            <th class="home-settings-table__visible-col">表示</th>
+                            <th class="home-settings-table__key-col">タブ（キー）</th>
                             <th>ラベル</th>
-                            <th style="width:180px">アイコン</th>
+                            <th class="home-settings-table__icon-col">アイコン</th>
                         </tr>
                     </thead>
                     <tbody class="home-settings-tbody">

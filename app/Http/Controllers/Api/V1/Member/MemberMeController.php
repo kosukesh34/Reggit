@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api\V1\Member;
 
 use App\Http\Controllers\Api\V1\BaseApiController;
+use App\Services\UserService;
+use App\UseCases\Member\Data\MemberUserInput;
 use App\UseCases\Member\MemberMeUseCase;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
@@ -11,13 +13,15 @@ use Illuminate\Http\Request;
 class MemberMeController extends BaseApiController
 {
     public function __construct(
-        private MemberMeUseCase $meUseCase
+        private MemberMeUseCase $meUseCase,
+        private UserService $userService,
     ) {}
 
     public function __invoke(Request $request)
     {
         try {
-            $dto = $this->meUseCase->handle($request);
+            $user = $this->userService->getOrCreateUser($request);
+            $dto = $this->meUseCase->handle(new MemberUserInput($user));
 
             return $this->success(['member' => $dto->toArray()]);
         } catch (\Exception $e) {

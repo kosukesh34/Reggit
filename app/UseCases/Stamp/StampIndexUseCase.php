@@ -4,18 +4,15 @@ namespace App\UseCases\Stamp;
 
 use App\Models\ShopSetting;
 use App\Models\StampCard;
-use App\Services\UserService;
+use App\UseCases\Member\Data\MemberUserInput;
 use App\UseCases\Stamp\Data\StampCardView;
 use App\UseCases\Stamp\Data\StampListView;
-use Illuminate\Http\Request;
 
 class StampIndexUseCase
 {
-    public function __construct(private UserService $userService) {}
-
-    public function handle(Request $request): StampListView
+    public function handle(MemberUserInput $input): StampListView
     {
-        $user = $this->userService->getOrCreateUser($request);
+        $user = $input->user;
         $member = $user->member;
 
         if ($member === null) {
@@ -71,7 +68,7 @@ class StampIndexUseCase
     /**
      * @return array<int, array{stamp_count: int, description: string}>
      */
-    private function normalizeRewardMilestones(mixed $milestones): array
+    private function normalizeRewardMilestones(?array $milestones): array
     {
         if (! is_array($milestones)) {
             return [];
@@ -93,7 +90,7 @@ class StampIndexUseCase
         }
         usort(
             $normalized,
-            static fn (array $a, array $b): int => (int) $a['stamp_count'] <=> (int) $b['stamp_count']
+            fn (array $a, array $b): int => $a['stamp_count'] <=> $b['stamp_count']
         );
 
         return $normalized;

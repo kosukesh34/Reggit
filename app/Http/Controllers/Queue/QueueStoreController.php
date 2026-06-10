@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Queue;
 
 use App\Http\Controllers\Controller;
+use App\Services\UserService;
+use App\UseCases\Queue\Data\QueueStoreInput;
 use App\UseCases\Queue\QueueStoreUseCase;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
@@ -11,7 +13,8 @@ use Illuminate\Http\Request;
 class QueueStoreController extends Controller
 {
     public function __construct(
-        private QueueStoreUseCase $storeUseCase
+        private QueueStoreUseCase $storeUseCase,
+        private UserService $userService,
     ) {}
 
     public function __invoke(Request $request)
@@ -23,12 +26,15 @@ class QueueStoreController extends Controller
         ]);
 
         try {
-            $dto = $this->storeUseCase->handle(
-                $request,
-                $validated['party_size'],
-                $validated['guest_name'] ?? null,
-                $validated['guest_phone'] ?? null
-            );
+            $user = $this->userService->getOrCreateUser($request);
+            $lineUserId = $request->header('X-Line-User-Id');
+            $dto = $this->storeUseCase->handle(new QueueStoreInput(
+                $user,
+                (int) $validated['party_size'],
+                isset($validated['guest_name']) ? (string) $validated['guest_name'] : null,
+                isset($validated['guest_phone']) ? (string) $validated['guest_phone'] : null,
+                is_string($lineUserId) ? $lineUserId : null,
+            ));
 
             return response()->json([
                 'message' => '順番待ちに登録しました',

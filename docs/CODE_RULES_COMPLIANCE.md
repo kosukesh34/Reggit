@@ -16,13 +16,14 @@
 | 定数・Enum | ✅ | EnumBase 継承の Enum クラスを利用（App\Enums\*） |
 | View・DTO | 要確認 | 4つ以上渡す場合は DTO 化を推奨 |
 | 関数15行・クラス100行目安 | ⚠️ | 一部ファイルが超過（下記「500行超ファイル」参照） |
-| **UseCase から UseCase を呼ばない** | ✅ | 対応済み：MemberAddPointsUseCase は SmaregiApiService を利用するよう変更 |
+| **UseCase から UseCase を呼ばない** | ✅ | MemberAddPointsUseCase / AdminMemberUpdateUseCase は SmaregiApiService を利用。SmaregiIdp は SmaregiWebhookNotificationService を利用 |
 | **Input を try で囲まない** | ✅ | 対応済み：UpdateLiffDesignerInput::fromRequest で ValidationException に統一 |
 | **Controller の DI** | ✅ | UseCase/Service は __construct 注入。Input の new は DTO として許容 |
 | **トランザクション** | ✅ | OrderService は複数テーブル更新のため DB::transaction 使用で妥当 |
 | **Validator を UseCase で使わない** | ✅ | UseCase 内に Validator::make なし |
 | **@param mixed 禁止** | ✅ | 1箇所修正済み（GoogleWalletPassService::isValidMemberData）。PHPDoc で array 形状を明示し引数型を array に変更 |
-| **Carbon 変換** | ⚠️ | 本プロジェクトに DateUtil クラスなし。Carbon::parse を直接使用している箇所あり（必要なら DateUtil 導入を検討） |
+| **Carbon 変換** | ✅ | `App\Util\DateUtil::nullableCarbon` を導入。app/・resources/ 内の `Carbon::parse` は DateUtil のみ |
+| **UseCase の Request 依存** | ✅ | フロント API・Member・Settings・Auth・Webhook 系 UseCase は Input 化済み（`fromRequest` / `fromValidated` は Data 層） |
 
 ## 2. 500行超のファイル一覧と対応
 
@@ -36,7 +37,7 @@
 | `resources/views/admin/stamps/create.blade.php` | 1015 | パーシャル化を推奨（要対応） |
 | `public/js/frontend/app.js` | 941 | 初期化・タブ別に分割を推奨（要対応） |
 | `public/js/frontend/managers/ReservationManager.js` | 906 | 責務ごとに分割を推奨（要対応） |
-| `app/Http/Controllers/AdminController.php` | 817 | UseCase/Service 委譲済み。サブコントローラ分割を推奨（要対応） |
+| ~~`app/Http/Controllers/AdminController.php`~~ | — | 削除済み（ルート未参照のレガシー） |
 | `app/Services/WalletPassService.php` | 645 | 要対応 |
 | `app/Services/MemberService.php` | 542 | 要対応 |
 | `app/Services/GoogleWalletPassService.php` | 515 | 要対応 |
@@ -63,8 +64,8 @@
 ## 5. 実施したリファクタ（2026年3月）
 
 1. **UseCase から UseCase を呼ばない**
-   - `MemberAddPointsUseCase` が `SmaregiSyncCustomerPointsUseCase` を呼んでいたのを解消。
-   - `SmaregiApiService::syncCustomerPointsForProject()` を追加し、`MemberAddPointsUseCase` は `SmaregiApiService` のみを依存に変更。
+   - `MemberAddPointsUseCase` / `AdminMemberUpdateUseCase` が `SmaregiSyncCustomerPointsUseCase` を呼んでいたのを解消（UseCase 削除、`SmaregiApiService::syncCustomerPointsForProject` に統一）。
+   - `SmaregiIdpHandleUseCase` が `SmaregiWebhookHandleUseCase` を呼んでいたのを解消（`SmaregiWebhookNotificationService` に共通化）。
 
 2. **Input を try で囲まない**
    - `LiffDesignerController::update` で `UpdateLiffDesignerInput` の生成を try-catch で囲んでいたのを廃止。
@@ -117,7 +118,7 @@
 | レイヤー | 依存先 | 状態 |
 |----------|--------|------|
 | **API/フロント系 Controller** | UseCase, Request, Util | ✅ 一方向。UseCase に処理を委譲。 |
-| **AdminController** | Service のみ（UseCase なし） | ✅ 一方向。従来型の Controller → Service。 |
+| **Admin 系 Controller** | UseCase / Service に委譲 | ✅ 一方向。レガシー `AdminController` は削除済み。 |
 | **QueueStatusController** | QueueStatusUseCase | ✅ 対応済み。UseCase 経由に変更。 |
 | **DeviceRegisterController** | UserService, DeviceService | ✅ 一方向。シンプルな登録のため Service 直叩き。 |
 | **UseCase** | Service, Model, DTO, Util | ✅ 一方向。UseCase 同士の呼び出しはなし（対応済み）。 |

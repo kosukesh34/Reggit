@@ -7,22 +7,24 @@ use App\Models\Project;
 use App\Models\User;
 use App\Services\GoogleWallet\GoogleWalletLoyaltyPayloadBuilder;
 use App\Services\GoogleWalletPassService;
+use App\Services\MemberCardAppearanceService;
+use App\Services\MemberService;
 use App\Util\AdminContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Tests\TestCase;
 
-/**
- * GoogleWalletPassService の Unit テスト。
- * 設定・利用可否・他店舗データの干渉がないことを検証する。本番 API は呼ばない。
- */
 class GoogleWalletPassServiceTest extends TestCase
 {
     use RefreshDatabase;
 
     private function createService(): GoogleWalletPassService
     {
-        return new GoogleWalletPassService(new GoogleWalletLoyaltyPayloadBuilder);
+        return new GoogleWalletPassService(
+            new GoogleWalletLoyaltyPayloadBuilder,
+            app(MemberService::class),
+            app(MemberCardAppearanceService::class),
+        );
     }
 
     public function test_is_available_無効設定でfalseを返すこと(): void

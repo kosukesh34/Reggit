@@ -3,21 +3,19 @@
 namespace App\UseCases\Reservation;
 
 use App\Services\ReservationService;
-use App\Services\UserService;
+use App\UseCases\Member\Data\MemberUserInput;
 use App\UseCases\Reservation\Data\ReservationMemberOutput;
-use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 
 class ReservationIndexUseCase
 {
     public function __construct(
         private ReservationService $reservationService,
-        private UserService $userService
     ) {}
 
-    public function handle(Request $request): ReservationMemberOutput
+    public function handle(MemberUserInput $input): ReservationMemberOutput
     {
-        $user = $this->userService->getOrCreateUser($request);
+        $user = $input->user;
         if ($user->member === null) {
             return new ReservationMemberOutput(true, collect());
         }

@@ -5,7 +5,7 @@ namespace App\Services\Admin;
 use App\Enums\ReservationStatus;
 use App\Models\Reservation;
 use App\Models\ShopSetting;
-use Carbon\Carbon;
+use App\Util\DateUtil;
 
 class ReservationAdminService
 {
@@ -28,12 +28,12 @@ class ReservationAdminService
         $reservationCapacity = ShopSetting::getReservationCapacityPerSlot($projectId);
 
         if ($selectedDate !== null && $selectedDate !== '') {
-            $date = Carbon::parse($selectedDate);
+            $date = DateUtil::nullableCarbon($selectedDate);
             $selectedDateLabel = $date->format('Y年m月d日');
             $dateStatusCounts = $this->getStatusCounts($selectedDate);
             $timeSlots = ShopSetting::getReservationTimeSlots($projectId);
             foreach ($timeSlots as $slot) {
-                $slotStart = Carbon::parse($date->format('Y-m-d').' '.$slot);
+                $slotStart = DateUtil::nullableCarbon($date->format('Y-m-d').' '.$slot);
                 $slotEnd = $slotStart->copy()->addHour();
                 $count = Reservation::whereBetween('reserved_at', [$slotStart, $slotEnd])->count();
                 $timeSlotSummary[] = [
@@ -89,7 +89,7 @@ class ReservationAdminService
 
     public function store(array $data, int $projectId): Reservation
     {
-        $reservedAt = Carbon::parse($data['reserved_at_date'].' '.$data['reserved_at_time']);
+        $reservedAt = DateUtil::nullableCarbon($data['reserved_at_date'].' '.$data['reserved_at_time']);
 
         return Reservation::create([
             'project_id' => $projectId,
@@ -104,7 +104,7 @@ class ReservationAdminService
     {
         $reservation = Reservation::findOrFail($id);
 
-        $reservedAt = Carbon::parse($data['reserved_at_date'].' '.$data['reserved_at_time']);
+        $reservedAt = DateUtil::nullableCarbon($data['reserved_at_date'].' '.$data['reserved_at_time']);
 
         $reservation->update([
             'reserved_at' => $reservedAt,

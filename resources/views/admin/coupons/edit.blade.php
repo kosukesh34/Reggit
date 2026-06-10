@@ -68,8 +68,8 @@
                             <span class="coupon-image-dropzone-text">クリックまたはドラッグ＆ドロップで画像を選択</span>
                             <span class="coupon-image-dropzone-hint">PNG / JPG 2MBまで</span>
                         </label>
-                        <div class="coupon-image-preview mt-2" id="coupon_image_preview" style="display:none;">
-                            <img id="coupon_image_preview_img" src="" alt="" style="max-width:200px;max-height:120px;object-fit:contain;">
+                        <div class="coupon-image-preview mt-2" id="coupon_image_preview">
+                            <img id="coupon_image_preview_img" class="coupon-image-preview__img" src="" alt="">
                             <button type="button" class="btn btn-sm btn-outline-secondary mt-1" id="coupon_image_clear">画像を解除</button>
                         </div>
                     </div>
@@ -126,7 +126,7 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="form-group" id="stamp_card_group" style="{{ old('issue_trigger', $coupon->issue_trigger ?? '') === 'stamp_completed' ? '' : 'display:none;' }}">
+                <div class="form-group {{ old('issue_trigger', $coupon->issue_trigger ?? '') === 'stamp_completed' ? '' : 'u-hidden' }}" id="stamp_card_group">
                     <label for="stamp_card_id" class="form-label">対象スタンプカード</label>
                     <select name="stamp_card_id" id="stamp_card_id" class="form-control">
                         <option value="">選択してください</option>

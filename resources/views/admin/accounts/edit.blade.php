@@ -73,15 +73,15 @@
                 </div>
                 @error('project_ids')<span class="invalid-feedback">{{ $message }}</span>@enderror
             </div>
-            <div class="form-group" id="permissions_group" style="display:none;">
+            <div class="form-group permissions-group" id="permissions_group">
                 <label class="form-label">スタッフ権限</label>
                 <p class="form-text text-muted">スタッフがアクセスできる機能を選択してください。</p>
                 @foreach($permissionGroups as $groupName => $groupPerms)
-                    <div class="permission-group" style="margin-bottom:12px;">
+                    <div class="permission-group">
                         <strong>{{ $groupName }}</strong>
-                        <div style="padding-left:16px; margin-top:4px;">
+                        <div class="permission-group__children">
                             @foreach($groupPerms as $perm)
-                                <label class="checkbox-label" style="display:block; margin-bottom:4px;">
+                                <label class="checkbox-label checkbox-label--block">
                                     <input type="checkbox" name="permissions[]" value="{{ $perm }}" {{ in_array($perm, old('permissions', $currentPermissions ?? []), true) ? 'checked' : '' }}>
                                     <span>{{ $allPermissions[$perm] ?? $perm }}</span>
                                 </label>

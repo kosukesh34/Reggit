@@ -4,38 +4,32 @@ namespace App\UseCases\Smaregi;
 
 use App\Enums\SmaregiEvent;
 use App\Models\SmaregiContract;
+use App\Services\Smaregi\SmaregiWebhookNotificationService;
+use App\UseCases\Smaregi\Data\SmaregiWebhookInput;
 use App\Util\StrHelper;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 class SmaregiIdpHandleUseCase
 {
     public function __construct(
-        private SmaregiWebhookHandleUseCase $webhookHandleUseCase
+        private SmaregiWebhookNotificationService $notificationService,
     ) {}
 
-    /**
-     * 利用者契約通知を処理し、契約を保存する。
-     * 3秒以内に応答するため重い処理は行わない。
-     *
-     * @return array{status: int, body: string}
-     */
-    public function handle(Request $request): array
+    /** @return array{status: int, body: string} */
+    public function handle(SmaregiWebhookInput $input): array
     {
-        $this->webhookHandleUseCase->prepareRequestBody($request);
-
-        if ($request->isMethod('GET') || $request->isMethod('HEAD')) {
+        if ($input->isGetOrHead()) {
             Log::info('[Smaregi] IDP GET/HEAD 受信（接続確認など）');
 
             return ['status' => 200, 'body' => ''];
         }
 
-        $eventFromHeader = $request->header('smaregi-event');
-        $eventFromBody = $request->input('event');
+        $eventFromHeader = $input->eventHeader;
+        $eventFromBody = $input->input('event');
         $eventRaw = is_string($eventFromHeader) && trim($eventFromHeader) !== ''
             ? trim($eventFromHeader)
             : (is_string($eventFromBody) ? trim($eventFromBody) : '');
-        $contractIdFromHeader = $request->header('smaregi-contract-id');
+        $contractIdFromHeader = $input->contractIdHeader;
         $eventNormalized = $eventRaw !== '' ? strtolower($eventRaw) : '';
 
         if ($eventRaw === '') {
@@ -50,7 +44,7 @@ class SmaregiIdpHandleUseCase
                     'event' => $eventRaw,
                 ]);
 
-                return $this->webhookHandleUseCase->handleNotification($request, false);
+                return $this->notificationService->handleNotification($input, false);
             }
 
             Log::info('[Smaregi] IDP ignored non-subscription event (use Webhook URL for pos: etc.)', [
@@ -61,23 +55,23 @@ class SmaregiIdpHandleUseCase
             return ['status' => 200, 'body' => ''];
         }
 
-        $contractId = $contractIdFromHeader ?? $request->input('contractId');
+        $contractId = $contractIdFromHeader ?? $input->input('contractId');
         if (! is_string($contractId) || StrHelper::isEmptyStringOrNull($contractId)) {
             Log::warning('[Smaregi] IDP missing contract_id');
 
             return ['status' => 400, 'body' => ''];
         }
 
-        $action = $request->input('action');
+        $action = $input->input('action');
         $status = SmaregiContract::deriveStatusFromAction(is_string($action) ? $action : '');
 
         try {
             SmaregiContract::updateOrCreate(
                 ['contract_id' => $contractId],
                 [
-                    'client_id' => $request->input('clientId'),
-                    'plan' => $request->input('plan'),
-                    'options' => $request->input('options'),
+                    'client_id' => $input->input('clientId'),
+                    'plan' => $input->input('plan'),
+                    'options' => $input->input('options'),
                     'last_action' => is_string($action) ? $action : null,
                     'status' => $status,
                     'last_notified_at' => now(),

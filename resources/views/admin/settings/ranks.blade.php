@@ -67,7 +67,7 @@
 
                     <div class="ranks-settings-subsection">
                         <h4 class="ranks-settings-subtitle"><i class="fas fa-layer-group"></i> ランク判定基準</h4>
-                        <div class="form-group" style="max-width: 320px;">
+                        <div class="form-group ranks-field-narrow">
                             <select name="rank_basis" id="rank_basis" class="form-control" required>
                                 <option value="points" {{ ($view->rankBasis ?? 'points') === 'points' ? 'selected' : '' }}>ポイント</option>
                                 <option value="stamps" {{ ($view->rankBasis ?? '') === 'stamps' ? 'selected' : '' }}>スタンプ</option>

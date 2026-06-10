@@ -3,19 +3,14 @@
 namespace App\UseCases\Order;
 
 use App\Models\Order;
-use App\Services\UserService;
-use Illuminate\Http\Request;
+use App\UseCases\Order\Data\OrderShowInput;
 
 class OrderShowUseCase
 {
-    public function __construct(private UserService $userService) {}
-
-    public function handle(Request $request, int $id): Order
+    public function handle(OrderShowInput $input): Order
     {
-        $user = $this->userService->getOrCreateUser($request);
-
-        return Order::where('user_id', $user->id)
+        return Order::where('user_id', $input->user->id)
             ->with('items.product')
-            ->findOrFail($id);
+            ->findOrFail($input->orderId);
     }
 }

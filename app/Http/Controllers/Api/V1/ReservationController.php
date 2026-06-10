@@ -2,6 +2,11 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Services\UserService;
+use App\UseCases\Member\Data\MemberUserInput;
+use App\UseCases\Reservation\Data\ReservationCancelInput;
+use App\UseCases\Reservation\Data\ReservationStoreInput;
+use App\UseCases\Reservation\Data\ReservationUpdateInput;
 use App\UseCases\Reservation\ReservationAvailableDatesUseCase;
 use App\UseCases\Reservation\ReservationCancelUseCase;
 use App\UseCases\Reservation\ReservationIndexUseCase;
@@ -26,24 +31,29 @@ class ReservationController extends BaseApiController
 
     private ReservationCancelUseCase $cancelUseCase;
 
+    private UserService $userService;
+
     public function __construct(
         ReservationIndexUseCase $indexUseCase,
         ReservationAvailableDatesUseCase $availableDatesUseCase,
         ReservationStoreUseCase $storeUseCase,
         ReservationUpdateUseCase $updateUseCase,
-        ReservationCancelUseCase $cancelUseCase
+        ReservationCancelUseCase $cancelUseCase,
+        UserService $userService,
     ) {
         $this->indexUseCase = $indexUseCase;
         $this->availableDatesUseCase = $availableDatesUseCase;
         $this->storeUseCase = $storeUseCase;
         $this->updateUseCase = $updateUseCase;
         $this->cancelUseCase = $cancelUseCase;
+        $this->userService = $userService;
     }
 
     public function index(Request $request)
     {
         try {
-            $result = $this->indexUseCase->handle($request);
+            $user = $this->userService->getOrCreateUser($request);
+            $result = $this->indexUseCase->handle(new MemberUserInput($user));
             if ($result->requiresMembership) {
                 return $this->error('会員登録が必要です', 403, ['requires_membership' => true]);
             }
@@ -93,7 +103,8 @@ class ReservationController extends BaseApiController
         }
 
         try {
-            $output = $this->storeUseCase->handle($request, $validated);
+            $user = $this->userService->getOrCreateUser($request);
+            $output = $this->storeUseCase->handle(new ReservationStoreInput($user, $validated));
             if ($output->requiresMembership) {
                 return $this->error('会員登録が必要です', 403, ['requires_membership' => true]);
             }
@@ -126,7 +137,8 @@ class ReservationController extends BaseApiController
         }
 
         try {
-            $output = $this->updateUseCase->handle($request, $id, $validated);
+            $user = $this->userService->getOrCreateUser($request);
+            $output = $this->updateUseCase->handle(new ReservationUpdateInput($user, $id, $validated));
             if ($output->requiresMembership) {
                 return $this->error('会員登録が必要です', 403, ['requires_membership' => true]);
             }
@@ -148,7 +160,8 @@ class ReservationController extends BaseApiController
     public function cancel(Request $request, int $id)
     {
         try {
-            $output = $this->cancelUseCase->handle($request, $id);
+            $user = $this->userService->getOrCreateUser($request);
+            $output = $this->cancelUseCase->handle(new ReservationCancelInput($user, $id));
             if ($output->requiresMembership) {
                 return $this->error('会員登録が必要です', 403, ['requires_membership' => true]);
             }

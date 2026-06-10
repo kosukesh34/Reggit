@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api\V1\Queue;
 
 use App\Http\Controllers\Api\V1\BaseApiController;
+use App\Services\UserService;
+use App\UseCases\Queue\Data\QueueMeInput;
 use App\UseCases\Queue\QueueMeUseCase;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
@@ -11,13 +13,15 @@ use Illuminate\Http\Request;
 class QueueMeController extends BaseApiController
 {
     public function __construct(
-        private QueueMeUseCase $meUseCase
+        private QueueMeUseCase $meUseCase,
+        private UserService $userService,
     ) {}
 
     public function __invoke(Request $request)
     {
         try {
-            $result = $this->meUseCase->handle($request);
+            $user = $this->userService->getOrCreateUser($request);
+            $result = $this->meUseCase->handle(QueueMeInput::fromRequest($request, $user));
             if ($result->queueEntry === null) {
                 return $this->success([
                     'queue_entry' => null,

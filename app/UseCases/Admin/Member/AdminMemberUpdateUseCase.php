@@ -4,8 +4,8 @@ namespace App\UseCases\Admin\Member;
 
 use App\Models\Member;
 use App\Services\Admin\MemberAdminService;
+use App\Services\Smaregi\SmaregiApiService;
 use App\UseCases\Admin\Member\Data\AdminMemberUpdateInput;
-use App\UseCases\Smaregi\SmaregiSyncCustomerPointsUseCase;
 use App\Util\LogHelper;
 
 class AdminMemberUpdateUseCase
@@ -14,7 +14,7 @@ class AdminMemberUpdateUseCase
 
     public function __construct(
         private MemberAdminService $memberAdminService,
-        private SmaregiSyncCustomerPointsUseCase $smaregiSyncCustomerPointsUseCase,
+        private SmaregiApiService $smaregiApiService,
     ) {}
 
     public function handle(AdminMemberUpdateInput $input): void
@@ -51,9 +51,7 @@ class AdminMemberUpdateUseCase
         }
     }
 
-    /**
-     * @param  array{type: 'add'|'subtract'|'set', points: int, description?: string|null}  $adjustment
-     */
+    /** @param array{type: 'add'|'subtract'|'set', points: int, description?: string|null} $adjustment */
     private function applyPointAdjustment(Member $member, array $adjustment, string $description): int
     {
         $member->syncPointsLedger();
@@ -96,7 +94,7 @@ class AdminMemberUpdateUseCase
             return;
         }
 
-        $result = $this->smaregiSyncCustomerPointsUseCase->execute(
+        $result = $this->smaregiApiService->syncCustomerPointsForProject(
             (int) $member->project_id,
             $smaregiCustomerId,
             $delta

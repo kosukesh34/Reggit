@@ -5,6 +5,7 @@ namespace App\Services\Admin;
 use App\Enums\OrderStatus;
 use App\Models\Member;
 use App\Models\Order;
+use App\Util\DateUtil;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -101,7 +102,7 @@ class RfmAnalysisService
         $result = [];
         foreach ($rows as $row) {
             $result[(int) $row->user_id] = [
-                'last_order_at' => Carbon::parse($row->last_order_at),
+                'last_order_at' => DateUtil::nullableCarbon($row->last_order_at),
                 'order_count' => (int) $row->order_count,
                 'total_amount' => (float) $row->total_amount,
             ];

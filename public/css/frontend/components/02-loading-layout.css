@@ -203,19 +203,15 @@ body.native-app-embed .tab-content.active .tab-section {
 }
 
 body.native-app-embed .main-tabs {
-    position: fixed !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    display: flex !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    flex-shrink: 0;
-    padding-bottom: max(env(safe-area-inset-bottom, 0px), 8px);
-    min-height: var(--main-tabs-height);
-    z-index: 100;
-    -webkit-transform: translateZ(0);
-    transform: translateZ(0);
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    pointer-events: none !important;
+}
+
+html.native-app-embed #liff-loading {
+    display: none !important;
+    visibility: hidden !important;
 }
 
 .mobile-order-log-panel {

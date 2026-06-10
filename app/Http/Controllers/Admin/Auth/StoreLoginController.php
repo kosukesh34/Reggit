@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\LoginRequest;
 use App\UseCases\Admin\Auth\AdminLoginUseCase;
+use App\UseCases\Admin\Auth\Data\AdminLoginInput;
 use App\UseCases\Admin\Auth\GetAdminDashboardRedirectUseCase;
 use Illuminate\Support\Facades\Auth;
 
@@ -33,6 +34,6 @@ class StoreLoginController extends Controller
 
     public function login(LoginRequest $request)
     {
-        return $this->adminLoginUseCase->handle($request);
+        return $this->adminLoginUseCase->handle(AdminLoginInput::fromRequest($request));
     }
 }

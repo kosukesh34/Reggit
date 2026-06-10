@@ -4,39 +4,22 @@ namespace App\UseCases\Member;
 
 use App\Services\Smaregi\SmaregiApiService;
 use App\Services\UserService;
+use App\UseCases\Member\Data\MemberWithdrawInput;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
-use Illuminate\Http\Request;
 
 class MemberWithdrawUseCase
 {
-    private UserService $userService;
+    public function __construct(
+        private SmaregiApiService $smaregiApi,
+        private UserService $userService,
+    ) {}
 
-    private SmaregiApiService $smaregiApi;
-
-    public function __construct(UserService $userService, SmaregiApiService $smaregiApi)
+    public function handle(MemberWithdrawInput $input): void
     {
-        $this->userService = $userService;
-        $this->smaregiApi = $smaregiApi;
-    }
-
-    /**
-     * 現在のユーザーを退会（ソフトデリート）する。
-     * 会員（Member）があれば、スマレジ連携済みの場合は先にスマレジ会員を削除してからソフトデリートし、続けて User をソフトデリートする。
-     * セッションをクリアし、Sanctum トークンがあれば削除する。
-     *
-     * @return bool 退会できた場合 true、ユーザーが特定できない場合 false
-     */
-    public function handle(Request $request): bool
-    {
-        $user = $this->userService->findUser($request);
-        if ($user === null) {
-            return false;
-        }
-
+        $user = $input->user;
         $projectId = AdminContext::getCurrentProjectId() ?? (int) $user->project_id;
 
-        // 会員があれば先にスマレジ会員削除（必要な場合）、続けてソフトデリート（User に hasOne Member）
         $member = $user->member;
         if ($member !== null) {
             $smaregiCustomerId = $member->smaregi_customer_id ?? '';
@@ -53,25 +36,17 @@ class MemberWithdrawUseCase
             $member->delete();
         }
 
-        // Sanctum トークンがあれば削除
         if (method_exists($user, 'tokens')) {
             $user->tokens()->delete();
         }
 
-        // 退会後の同一 LINE 再ログインでは users を復元せず新規ユーザーを作れるよう LINE ID を切り離す
         $this->userService->releaseLineUserIdForWithdraw($user);
 
-        // User をソフトデリート
         $user->delete();
 
         LogHelper::info('[Member] user withdrew', [
             'project_id' => $projectId,
             'user_id' => $user->id,
         ]);
-
-        // セッションからユーザーIDを削除
-        $this->userService->clearUserSession($request);
-
-        return true;
     }
 }

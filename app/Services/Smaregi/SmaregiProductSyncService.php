@@ -119,7 +119,6 @@ class SmaregiProductSyncService
         $smaregiProductIds = [];
         $smaregiProductNames = [];
 
-        // 1. スマレジ → DB: スマレジの全商品を取得して DB に反映し、スマレジ側の productId 一覧を保持
         $page = 1;
         do {
             $result = $this->smaregiApi->request($contractId, 'GET', 'pos/products', [
@@ -165,8 +164,6 @@ class SmaregiProductSyncService
             $page++;
         } while (count($list) === self::LIMIT);
 
-        // 2. DB → スマレジ: DB にありスマレジにない商品をスマレジに登録
-        // 部門が取得できない場合は登録を試みずスキップする（失敗0で完了させる）
         $defaultCategoryId = $this->smaregiProductRegister->resolveDefaultCategoryId($projectId);
         if ($defaultCategoryId === null) {
             Log::info('[Smaregi] fullSync: DB→スマレジの登録をスキップしました（部門の取得または自動作成に失敗）。', ['project_id' => $projectId]);
@@ -476,7 +473,6 @@ class SmaregiProductSyncService
             'price' => $price,
             'category' => $category,
             'is_available' => $isAvailable,
-            // stock / image_url はスマレジ商品APIでは正しく返らないため更新しない（既存値を維持）
         ];
     }
 
@@ -487,7 +483,6 @@ class SmaregiProductSyncService
     {
         $allowed = ['food', 'drink', 'dessert', 'side', 'other'];
 
-        // 必要に応じて config や DB で部門ID→カテゴリのマッピングを追加可能
         return in_array((string) $categoryId, $allowed, true) ? (string) $categoryId : 'other';
     }
 }

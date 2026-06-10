@@ -49,7 +49,7 @@
                 </select>
                 <small class="form-text">LIFFのカート内ボタン表示と注文可否に反映されます。</small>
             </div>
-            <div class="quick-menu-section" style="margin-top:12px;">
+            <div class="quick-menu-section quick-menu-section--spaced">
                 <h3 class="quick-menu-title"><i class="fas fa-compass"></i> 機能別の設定へ</h3>
                 <p class="quick-menu-desc">重複を避けるため、各機能の詳細設定は専用画面に分けています。</p>
                 <div class="quick-menu-grid">
@@ -75,15 +75,15 @@
     </div>
 </form>
 
-<div class="card" style="margin-top:24px;">
+<div class="card settings-card--spaced">
     <div class="card-header">
         <h2 class="card-title"><i class="fas fa-toggle-on"></i> 利用機能</h2>
     </div>
     <div class="card-body">
-        <p class="form-text" style="margin-bottom:12px;">LINE アプリで利用できる機能の ON / OFF を切り替えます。</p>
+        <p class="form-text form-text--spaced">LINE アプリで利用できる機能の ON / OFF を切り替えます。</p>
         <form action="{{ admin_route('admin.settings.feature-flags.update') }}" method="POST">
             @csrf
-            <div class="feature-flags-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px 16px;">
+            <div class="feature-flags-grid">
                 @foreach(\App\Models\ShopSetting::featureFlagLabels() as $key => $label)
                 <label class="checkbox-label">
                     <input type="checkbox" name="feature_flags[{{ $key }}]" value="1" {{ ($featureFlags[$key] ?? false) ? 'checked' : '' }}>
@@ -91,7 +91,7 @@
                 </label>
                 @endforeach
             </div>
-            <div class="form-actions" style="margin-top:16px;">
+            <div class="form-actions form-actions--mt-16">
                 <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> 利用機能を保存</button>
             </div>
         </form>

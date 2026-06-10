@@ -7,7 +7,7 @@
 ## 結論
 
 **大部分の Controller でクリーンアーキテクチャ（Controller → UseCase → Service）が採用されています。**  
-API・管理画面（Admin）・Web・認証の各所で UseCase に委譲済み。未使用の可能性がある **AdminController**・**Admin/LoginController**・**Admin/AccountController** はルート未参照のレガシーとして残っています。
+API・管理画面（Admin）・Web・認証の各所で UseCase に委譲済み。ルート未参照だった **AdminController** / **LoginController** / **AccountController** は削除済み。
 
 ---
 
@@ -79,7 +79,7 @@ API・管理画面（Admin）・Web・認証の各所で UseCase に委譲済み
 
 ### 管理画面（Admin）
 
-- `Admin/AccountController.php` … ルート未参照のレガシー（Admin/Account/*Controller が使用されている）
+- ~~`Admin/AccountController.php`~~ … 削除済み（Admin/Account/*Controller が使用されている）
 - `Admin/AnnouncementController.php` … UseCase 委譲済み（AdminAnnouncement*UseCase 群）
 - `Admin/Auth/AdminLoginController.php` … UseCase 委譲済み（GetAdminDashboardRedirectUseCase, AdminLoginUseCase）
 - `Admin/Auth/LogoutController.php` … UseCase 委譲済み（AdminLogoutUseCase）
@@ -87,7 +87,7 @@ API・管理画面（Admin）・Web・認証の各所で UseCase に委譲済み
 - `Admin/Auth/SystemAdminLoginController.php` … UseCase 委譲済み（GetAdminDashboardRedirectUseCase, SystemAdminLoginUseCase）
 - `Admin/CouponController.php` … UseCase 委譲済み（AdminCoupon*UseCase 群）
 - `Admin/DashboardController.php` … UseCase 委譲済み（AdminDashboardIndexUseCase）
-- `Admin/LoginController.php` … ルート未参照のレガシー（Admin/Auth/AdminLoginController 等が使用されている）
+- ~~`Admin/LoginController.php`~~ … 削除済み（Admin/Auth/AdminLoginController 等が使用されている）
 - `Admin/MemberController.php` … UseCase 委譲済み（AdminMember*UseCase 群）
 - `Admin/OrderController.php` … UseCase 委譲済み（AdminOrder*UseCase 群）
 - `Admin/ProductController.php` … UseCase 委譲済み（AdminProduct*UseCase 群）
@@ -105,7 +105,7 @@ API・管理画面（Admin）・Web・認証の各所で UseCase に委譲済み
 - `Admin/Settings/ReservationsController.php` … UseCase 委譲済み（GetReservationOnlySettingsUseCase, UpdateReservationOnlySettingsUseCase）
 - `Admin/Settings/WalletController.php` … UseCase 委譲済み（Get/UpdateWalletSettingsUseCase, WalletAssetService）
 - `Admin/StampController.php` … UseCase 委譲済み（AdminStamp*UseCase 群）
-- `AdminController.php` … ルート未参照のレガシー（DashboardController 等の専用 Controller が使用されている）
+- ~~`AdminController.php`~~ … 削除済み（DashboardController 等の専用 Controller が使用されている）
 
 ### API（レガシー・UseCase 委譲済み）
 

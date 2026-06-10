@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Smaregi;
 
 use App\Http\Controllers\Controller;
+use App\UseCases\Smaregi\Data\SmaregiWebhookInput;
 use App\UseCases\Smaregi\SmaregiIdpHandleUseCase;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -15,7 +16,7 @@ class SmaregiIdpController extends Controller
 
     public function __invoke(Request $request): Response
     {
-        $result = $this->idpHandleUseCase->handle($request);
+        $result = $this->idpHandleUseCase->handle(SmaregiWebhookInput::fromRequest($request));
 
         return response('', $result['status']);
     }

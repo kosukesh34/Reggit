@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Reservation;
 
 use App\Http\Controllers\Controller;
+use App\Services\UserService;
+use App\UseCases\Reservation\Data\ReservationUpdateInput;
 use App\UseCases\Reservation\ReservationUpdateUseCase;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
@@ -12,7 +14,8 @@ use Illuminate\Validation\ValidationException;
 class ReservationUpdateController extends Controller
 {
     public function __construct(
-        private ReservationUpdateUseCase $updateUseCase
+        private ReservationUpdateUseCase $updateUseCase,
+        private UserService $userService,
     ) {}
 
     public function __invoke(Request $request, int $id)
@@ -31,7 +34,8 @@ class ReservationUpdateController extends Controller
         }
 
         try {
-            $result = $this->updateUseCase->handle($request, $id, $validated);
+            $user = $this->userService->getOrCreateUser($request);
+            $result = $this->updateUseCase->handle(new ReservationUpdateInput($user, $id, $validated));
             if ($result->requiresMembership) {
                 return response()->json([
                     'error' => '会員登録が必要です',

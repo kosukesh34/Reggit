@@ -3,35 +3,33 @@
 namespace App\UseCases\Reservation;
 
 use App\Services\ReservationService;
-use App\Services\UserService;
 use App\UseCases\Reservation\Data\ReservationActionOutput;
-use Carbon\Carbon;
-use Illuminate\Http\Request;
+use App\UseCases\Reservation\Data\ReservationUpdateInput;
+use App\Util\DateUtil;
 
 class ReservationUpdateUseCase
 {
     public function __construct(
         private ReservationService $reservationService,
         private ReservationAvailabilityService $availabilityService,
-        private UserService $userService
     ) {}
 
-    /** @param array<string, string|int|float|bool|array|null> $validated 検証済み予約更新データ */
-    public function handle(Request $request, int $reservationId, array $validated): ReservationActionOutput
+    public function handle(ReservationUpdateInput $input): ReservationActionOutput
     {
-        $user = $this->userService->getOrCreateUser($request);
+        $user = $input->user;
         if ($user->member === null) {
             return new ReservationActionOutput(true, null, null);
         }
 
-        $reservedAt = Carbon::parse($validated['reserved_at']);
-        $availabilityError = $this->availabilityService->getAvailabilityError($reservedAt, $reservationId);
+        $validated = $input->validated;
+        $reservedAt = DateUtil::nullableCarbon($validated['reserved_at']);
+        $availabilityError = $this->availabilityService->getAvailabilityError($reservedAt, $input->reservationId);
         if ($availabilityError !== null) {
             return new ReservationActionOutput(false, null, $availabilityError);
         }
 
         $validated['reserved_at'] = $reservedAt->format('Y-m-d H:i:s');
-        $reservation = $this->reservationService->updateReservation($reservationId, $user, $validated);
+        $reservation = $this->reservationService->updateReservation($input->reservationId, $user, $validated);
 
         return new ReservationActionOutput(false, $reservation, null);
     }

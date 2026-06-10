@@ -71,8 +71,8 @@
                         <span class="coupon-image-dropzone-text">クリックまたはドラッグ＆ドロップ</span>
                         <span class="coupon-image-dropzone-hint">PNG / JPG 2MBまで</span>
                     </label>
-                    <div class="coupon-image-preview mt-2" id="ann_image_preview" style="display:none;">
-                        <img id="ann_image_preview_img" src="" alt="" style="max-width:300px;max-height:150px;object-fit:contain;">
+                    <div class="coupon-image-preview ann-image-preview mt-2" id="ann_image_preview">
+                        <img id="ann_image_preview_img" class="ann-image-preview__img" src="" alt="">
                         <button type="button" class="btn btn-sm btn-outline-secondary mt-1" id="ann_image_clear">画像を解除</button>
                     </div>
                 </div>

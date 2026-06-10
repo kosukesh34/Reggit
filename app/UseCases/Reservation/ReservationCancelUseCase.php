@@ -3,25 +3,23 @@
 namespace App\UseCases\Reservation;
 
 use App\Services\ReservationService;
-use App\Services\UserService;
 use App\UseCases\Reservation\Data\ReservationActionOutput;
-use Illuminate\Http\Request;
+use App\UseCases\Reservation\Data\ReservationCancelInput;
 
 class ReservationCancelUseCase
 {
     public function __construct(
         private ReservationService $reservationService,
-        private UserService $userService
     ) {}
 
-    public function handle(Request $request, int $reservationId): ReservationActionOutput
+    public function handle(ReservationCancelInput $input): ReservationActionOutput
     {
-        $user = $this->userService->getOrCreateUser($request);
+        $user = $input->user;
         if ($user->member === null) {
             return new ReservationActionOutput(true, null, null);
         }
 
-        $reservation = $this->reservationService->cancelReservation($reservationId, $user);
+        $reservation = $this->reservationService->cancelReservation($input->reservationId, $user);
 
         return new ReservationActionOutput(false, $reservation, null);
     }

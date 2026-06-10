@@ -57,7 +57,7 @@
                     </label>
                 </div>
             </div>
-            <div id="selectedMembersBlock" class="form-group" style="display: none;">
+            <div id="selectedMembersBlock" class="form-group u-hidden">
                 <label class="form-label">対象会員のID</label>
                 <p class="form-text text-muted">会員管理で対象を確認し、会員IDをカンマ区切りで入力（例: 1,2,3）</p>
                 <input type="text" name="member_ids_input" id="member_ids_input" class="form-control" value="{{ is_array(old('member_ids')) ? implode(', ', old('member_ids')) : old('member_ids_input') }}" placeholder="1, 2, 3">

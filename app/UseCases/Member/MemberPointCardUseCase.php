@@ -5,22 +5,19 @@ namespace App\UseCases\Member;
 use App\Models\ShopSetting;
 use App\Services\MemberPointsExpiryCalculator;
 use App\Services\MemberRankCalculator;
-use App\Services\UserService;
 use App\UseCases\Member\Data\MemberPointCardView;
-use Illuminate\Http\Request;
+use App\UseCases\Member\Data\MemberUserInput;
 
 class MemberPointCardUseCase
 {
     public function __construct(
-        private UserService $userService,
         private MemberRankCalculator $rankCalculator,
         private MemberPointsExpiryCalculator $expiryCalculator
     ) {}
 
-    public function handle(Request $request): MemberPointCardView
+    public function handle(MemberUserInput $input): MemberPointCardView
     {
-        $user = $this->userService->getOrCreateUser($request);
-        $member = $user->member;
+        $member = $input->user->member;
 
         if ($member === null) {
             return new MemberPointCardView(true, []);

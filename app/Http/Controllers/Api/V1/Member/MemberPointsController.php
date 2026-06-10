@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api\V1\Member;
 
 use App\Http\Controllers\Api\V1\BaseApiController;
+use App\Services\UserService;
+use App\UseCases\Member\Data\MemberUserInput;
 use App\UseCases\Member\MemberPointsUseCase;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
@@ -11,13 +13,15 @@ use Illuminate\Http\Request;
 class MemberPointsController extends BaseApiController
 {
     public function __construct(
-        private MemberPointsUseCase $pointsUseCase
+        private MemberPointsUseCase $pointsUseCase,
+        private UserService $userService,
     ) {}
 
     public function __invoke(Request $request)
     {
         try {
-            $result = $this->pointsUseCase->handle($request);
+            $user = $this->userService->getOrCreateUser($request);
+            $result = $this->pointsUseCase->handle(new MemberUserInput($user));
             if ($result->hasMember === false) {
                 return $this->error('会員登録が必要です', 404);
             }

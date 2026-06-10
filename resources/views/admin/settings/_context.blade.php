@@ -134,7 +134,7 @@
                     <li>{{ $item }}</li>
                     @endforeach
                 </ul>
-                @if(!empty($guide['links']))
+                @if(isset($guide['links']) && $guide['links'] !== [])
                 <div class="settings-context-links">
                     @foreach($guide['links'] as $link)
                     @php

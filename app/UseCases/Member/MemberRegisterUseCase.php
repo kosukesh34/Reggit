@@ -3,10 +3,9 @@
 namespace App\UseCases\Member;
 
 use App\Services\MemberService;
-use App\Services\UserService;
 use App\UseCases\Member\Data\MemberData;
+use App\UseCases\Member\Data\MemberRegisterInput;
 use App\UseCases\Member\Data\MemberRegisterOutput;
-use Illuminate\Http\Request;
 
 class MemberRegisterUseCase
 {
@@ -14,16 +13,14 @@ class MemberRegisterUseCase
 
     public function __construct(
         private MemberService $memberService,
-        private UserService $userService
     ) {}
 
-    /** @param array<string, string|int|float|bool|array|null> $validated 検証済み会員登録データ（name, phone, email 等） */
-    public function handle(Request $request, array $validated): MemberRegisterOutput
+    public function handle(MemberRegisterInput $input): MemberRegisterOutput
     {
-        $user = $this->userService->getOrCreateUser($request);
+        $user = $input->user;
 
         try {
-            $this->memberService->registerMember($user, $validated);
+            $this->memberService->registerMember($user, $input->validated);
         } catch (\Exception $e) {
             if ($e->getMessage() !== self::ALREADY_REGISTERED_MESSAGE) {
                 throw $e;

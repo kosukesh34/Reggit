@@ -4,7 +4,7 @@ namespace App\Services\Smaregi;
 
 use App\Models\Coupon;
 use App\Util\StrHelper;
-use Carbon\Carbon;
+use App\Util\DateUtil;
 use Illuminate\Support\Facades\Log;
 
 class SmaregiCouponSyncService
@@ -179,11 +179,11 @@ class SmaregiCouponSyncService
         }
         $startAt = $data['start_at'] ?? null;
         if ($startAt !== null && $startAt !== '') {
-            $body['startDate'] = $startAt instanceof \DateTimeInterface ? $startAt->format('Y-m-d') : (Carbon::parse($startAt)->format('Y-m-d'));
+            $body['startDate'] = $startAt instanceof \DateTimeInterface ? $startAt->format('Y-m-d') : (DateUtil::nullableCarbon($startAt)?->format('Y-m-d') ?? '');
         }
         $endAt = $data['end_at'] ?? null;
         if ($endAt !== null && $endAt !== '') {
-            $body['endDate'] = $endAt instanceof \DateTimeInterface ? $endAt->format('Y-m-d') : (Carbon::parse($endAt)->format('Y-m-d'));
+            $body['endDate'] = $endAt instanceof \DateTimeInterface ? $endAt->format('Y-m-d') : (DateUtil::nullableCarbon($endAt)?->format('Y-m-d') ?? '');
         }
 
         return $body;

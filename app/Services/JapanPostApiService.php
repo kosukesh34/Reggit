@@ -91,7 +91,6 @@ class JapanPostApiService
             $data = (array) $data;
         }
 
-        // スタブ等で 200 でも error_code / message で「該当なし」が返る場合
         if (isset($data['error_code']) || isset($data['message'])) {
             $msg = (string) ($data['message'] ?? '該当する郵便番号がありませんでした');
 
@@ -102,7 +101,6 @@ class JapanPostApiService
         if (! is_array($addresses)) {
             $addresses = $addresses ? (array) $addresses : [];
         }
-        // API によっては addresses が配列の配列で返る場合があるためフラット化
         $flat = [];
         foreach ($addresses as $item) {
             if (is_array($item) && (isset($item['pref_name']) || isset($item['prefName']))) {
@@ -196,7 +194,6 @@ class JapanPostApiService
                 return $ip;
             }
         } catch (\Throwable $e) {
-            // request() が利用できないコンテキスト
         }
 
         return '127.0.0.1';

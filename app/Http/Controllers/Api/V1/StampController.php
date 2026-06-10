@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Services\UserService;
+use App\UseCases\Member\Data\MemberUserInput;
 use App\UseCases\Stamp\StampIndexUseCase;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
@@ -9,12 +11,16 @@ use Illuminate\Http\Request;
 
 class StampController extends BaseApiController
 {
-    public function __construct(private StampIndexUseCase $indexUseCase) {}
+    public function __construct(
+        private StampIndexUseCase $indexUseCase,
+        private UserService $userService,
+    ) {}
 
     public function index(Request $request)
     {
         try {
-            $result = $this->indexUseCase->handle($request);
+            $user = $this->userService->getOrCreateUser($request);
+            $result = $this->indexUseCase->handle(new MemberUserInput($user));
             if ($result->requiresMembership) {
                 return $this->success([
                     'stamp_cards' => [],

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\Member;
 use App\Http\Controllers\Api\V1\BaseApiController;
 use App\Services\MemberService;
 use App\Services\UserService;
+use App\UseCases\Member\Data\MemberRegisterInput;
 use App\UseCases\Member\MemberRegisterUseCase;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
@@ -15,10 +16,8 @@ class MemberRegisterController extends BaseApiController
     public function __construct(
         private MemberRegisterUseCase $registerUseCase,
         private UserService $userService,
-        private MemberService $memberService
-    ) {
-        // Constructor dependencies injected by container
-    }
+        private MemberService $memberService,
+    ) {}
 
     public function __invoke(Request $request)
     {
@@ -28,7 +27,7 @@ class MemberRegisterController extends BaseApiController
         $validated = $request->validate($rules);
 
         try {
-            $result = $this->registerUseCase->handle($request, $validated);
+            $result = $this->registerUseCase->handle(new MemberRegisterInput($user, $validated));
             if ($result->alreadyRegistered) {
                 return $this->success(['member' => $result->member->toArray()], '既に会員登録済みです');
             }

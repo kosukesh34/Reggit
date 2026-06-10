@@ -314,7 +314,6 @@ class MemberService
             if ($result !== null && isset($result['customerId']) && (string) $result['customerId'] !== '') {
                 $smaregiCustomerId = (string) $result['customerId'];
             } else {
-                // スマレジ連携失敗時でも会員登録自体は継続し、後続運用で再同期できるようにする。
                 LogHelper::warning('[Member] smaregi create customer failed. fallback to local registration', [
                     'project_id' => $projectId,
                     'user_id' => (int) $user->id,
@@ -377,7 +376,6 @@ class MemberService
         if ($lastName === '' && $name !== '') {
             $lastName = $name;
         }
-        // スマレジの lastKana/firstKana はカタカナのみ受け付けるため、空や漢字のときはカタカナの 'ー' を送る
         $kanaParts = $kana !== '' ? preg_split('/\s+/u', $kana, 2) : ['', ''];
         $lastKana = trim((string) ($kanaParts[0] ?? ''));
         $firstKana = trim((string) ($kanaParts[1] ?? ''));

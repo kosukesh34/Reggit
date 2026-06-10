@@ -41,7 +41,7 @@ public function handle(Request $request, array $validated): OrderOutput
 
 - 新規 UseCase では、必要なパラメータを **Input** クラスにまとめる。
 - バリデーションは **Controller / FormRequest** で行い、Input のコンストラクタでは型・最小限の不変条件のみ。Laravel の `ValidationException` は Controller 側で投げる。
-- 既存で `Request` を引数にしている UseCase は、リファクタ時に Input 化を検討する。
+- 既存 UseCase の `Request` 依存は Input 化済み。`fromRequest` / `fromValidated` は Data 層に置く。
 
 ### 2.3 Output / View（出力）
 
@@ -130,26 +130,14 @@ app/
 
 | UseCase | 現在の handle 引数 | 推奨 |
 |---------|---------------------|------|
-| `OrderStoreUseCase` | `Request $request, array $validated` | `OrderStoreInput` を新設し Controller で組み立て |
-| `OrderShowUseCase` | `Request $request, int $id` | `int $id` のみでよい（Request は不要） |
-| `OrderIndexUseCase` | `Request $request, int $perPage` | `OrderIndexInput` または `int $perPage` + projectId など |
-| `ReservationIndexUseCase` | `Request $request` | `ReservationIndexInput`（perPage, フィルタなど） |
-| `ReservationStoreUseCase` | `Request $request, array $validated` | `ReservationStoreInput` |
-| `ReservationUpdateUseCase` | `Request $request, int $id, array $validated` | `ReservationUpdateInput` |
-| `ReservationCancelUseCase` | `Request $request, int $reservationId` | `int $reservationId` + 必要なら User など |
-| `QueueStoreUseCase` | `Request $request, int $partySize, ?string $guestName, ?string $guestPhone` | `QueueStoreInput` |
-| `QueueQrStatusUseCase` | `Request $request, string $token` | `string $token` + 必要なら lineUserId など |
-| `QueueMeUseCase` | `Request $request` | `QueueMeInput`（user や project 情報を Controller で解決して渡す） |
-| `MemberMeUseCase` | `Request $request` | 同上 |
-| `MemberRegisterUseCase` | `Request $request, array $validated` | `MemberRegisterInput` |
-| `MemberUpdateUseCase` | `Request $request, array $validated` | `MemberUpdateInput` |
-| `MemberPointsUseCase` | `Request $request` | Input またはプリミティブ |
-| `MemberPointHistoryUseCase` | `Request $request, int $perPage` | 同上 |
-| `MemberPointCardUseCase` | `Request $request` | 同上 |
-| `MemberAddPointsUseCase` | `Request $request, int $points, ?string $description` | 同上 |
-| `StampIndexUseCase` | `Request $request` | Input またはプリミティブ |
-| `CouponMyCouponsUseCase` | `Request $request` | 同上 |
-| `LineWebhookHandleUseCase` | `Request $request` | `LineWebhookInput`（body, signature など） |
+| ~~`MemberMeUseCase` 等 Member 系~~ | — | ✅ `MemberUserInput` / `MemberRegisterInput` 等に移行済み |
+| ~~`Order*UseCase` / `Reservation*UseCase` / `Queue*UseCase`~~ | — | ✅ 各 `*Input` に移行済み |
+| ~~`StampIndexUseCase` / `CouponMyCouponsUseCase`~~ | — | ✅ `MemberUserInput` |
+| ~~`Announcement*UseCase`~~ | — | ✅ `AnnouncementIndexInput` / `AnnouncementMarkReadInput` |
+| ~~`LineWebhookHandleUseCase`~~ | — | ✅ `LineWebhookInput` |
+| ~~`AdminLoginUseCase` 等 Auth~~ | — | ✅ `AdminLoginInput` / `AdminLogoutInput` |
+| ~~`SmaregiWebhookHandleUseCase` / `SmaregiIdpHandleUseCase`~~ | — | ✅ `SmaregiWebhookInput` |
+| ~~`ClientDebugLogUseCase`~~ | — | ✅ `ClientDebugLogInput` |
 
 #### Output（戻り値）
 
@@ -159,5 +147,5 @@ app/
 ### 6.3 今後の進め方
 
 - **新規 UseCase**: 必ず **Input**（または明確なプリミティブ）で受け取り、**Request を渡さない**。
-- **既存の `handle(Request $request, ...)`**: リファクタや機能変更のタイミングで、上表を参考に **Input 化**を検討する。
+- **既存 UseCase**: 上記のとおり Input 化は完了。新規 UseCase は必ず Input（または明確なプリミティブ）で受け取る。
 - **UpdateLiffDesignerUseCase**: `UpdateLiffDesignerInput` を UseCase の引数で受け取り、Controller で Input を組み立てて渡す形に変更済み。

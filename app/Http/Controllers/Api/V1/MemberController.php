@@ -4,6 +4,10 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Services\MemberService;
 use App\Services\UserService;
+use App\UseCases\Member\Data\MemberAddPointsInput;
+use App\UseCases\Member\Data\MemberRegisterInput;
+use App\UseCases\Member\Data\MemberUpdateInput;
+use App\UseCases\Member\Data\MemberUserInput;
 use App\UseCases\Member\MemberAddPointsUseCase;
 use App\UseCases\Member\MemberMeUseCase;
 use App\UseCases\Member\MemberPointsUseCase;
@@ -31,7 +35,8 @@ class MemberController extends BaseApiController
     public function me(Request $request)
     {
         try {
-            $dto = $this->meUseCase->handle($request);
+            $user = $this->userService->getOrCreateUser($request);
+            $dto = $this->meUseCase->handle(new MemberUserInput($user));
 
             return $this->success(['member' => $dto->toArray()]);
         } catch (\Exception $e) {
@@ -53,7 +58,7 @@ class MemberController extends BaseApiController
             $rules = $this->memberService->getProfileValidationRules((int) $member->project_id);
             $validated = $request->validate($rules);
 
-            $dto = $this->updateUseCase->handle($request, $validated);
+            $dto = $this->updateUseCase->handle(new MemberUpdateInput($user, $validated));
 
             return $this->success(['member' => $dto->toArray()], '更新しました');
         } catch (ValidationException $e) {
@@ -73,7 +78,7 @@ class MemberController extends BaseApiController
             $rules = $this->memberService->getProfileValidationRules($projectId);
             $validated = $request->validate($rules);
 
-            $output = $this->registerUseCase->handle($request, $validated);
+            $output = $this->registerUseCase->handle(new MemberRegisterInput($user, $validated));
             $message = $output->alreadyRegistered ? '既に会員登録済みです' : '会員登録が完了しました';
             $status = $output->alreadyRegistered ? 200 : 201;
 
@@ -90,7 +95,8 @@ class MemberController extends BaseApiController
     public function getPoints(Request $request)
     {
         try {
-            $output = $this->pointsUseCase->handle($request);
+            $user = $this->userService->getOrCreateUser($request);
+            $output = $this->pointsUseCase->handle(new MemberUserInput($user));
             if (! $output->hasMember) {
                 return $this->error('会員登録が必要です', 404);
             }
@@ -114,11 +120,12 @@ class MemberController extends BaseApiController
         ]);
 
         try {
-            $output = $this->addPointsUseCase->handle(
-                $request,
+            $user = $this->userService->getOrCreateUser($request);
+            $output = $this->addPointsUseCase->handle(new MemberAddPointsInput(
+                $user,
                 (int) $validated['points'],
-                isset($validated['description']) ? (string) $validated['description'] : null
-            );
+                isset($validated['description']) ? (string) $validated['description'] : null,
+            ));
             if (! $output->hasMember) {
                 return $this->error('会員登録が必要です', 404);
             }

@@ -196,7 +196,6 @@ class SmaregiCustomerPointsInboundSyncService
             return $ids;
         }
 
-        // ShopSetting / SmaregiContract 未登録でも config フォールバックで契約を使うプロジェクトを含める
         $fromEffectiveContract = [];
         foreach (Project::query()->pluck('id') as $projectId) {
             $effective = $this->smaregiApi->getContractIdForProject((int) $projectId);

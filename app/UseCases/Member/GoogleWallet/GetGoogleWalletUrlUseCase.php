@@ -10,10 +10,6 @@ use App\Util\StrHelper;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
-/**
- * Google Wallet に追加するための URL（JWT 付き）を発行する UseCase。
- * トークン認証またはセッション（会員）認証に対応する。
- */
 class GetGoogleWalletUrlUseCase
 {
     private const TOKEN_CACHE_PREFIX = 'wallet_pass_token:';
@@ -32,7 +28,12 @@ class GetGoogleWalletUrlUseCase
             $reasons = $this->googleWalletPassService->getUnavailabilityReasons();
             Log::warning('google-wallet-url unavailable', ['reasons' => $reasons]);
 
-            return GetGoogleWalletUrlOutput::unavailable($reasons);
+            return new GetGoogleWalletUrlOutput(
+                success: false,
+                errorType: GetGoogleWalletUrlOutput::ERROR_UNAVAILABLE,
+                errorMessage: 'Google Wallet は利用できません。',
+                reasons: $reasons
+            );
         }
 
         if (! StrHelper::isEmptyStringOrNull($input->token)) {
@@ -44,8 +45,10 @@ class GetGoogleWalletUrlUseCase
                 ]);
                 $this->logUrlFailed($input);
 
-                return GetGoogleWalletUrlOutput::urlFailed(
-                    $this->googleWalletPassService->getLastError() ?? 'URL を発行できませんでした'
+                return new GetGoogleWalletUrlOutput(
+                    success: false,
+                    errorType: GetGoogleWalletUrlOutput::ERROR_URL_FAILED,
+                    errorMessage: $this->googleWalletPassService->getLastError() ?? 'URL を発行できませんでした'
                 );
             }
 
@@ -54,7 +57,10 @@ class GetGoogleWalletUrlUseCase
                 'project_id' => $input->projectId,
             ]);
 
-            return GetGoogleWalletUrlOutput::success($this->wrapClientUrl($url, $input->projectKey));
+            return new GetGoogleWalletUrlOutput(
+                success: true,
+                url: $this->wrapClientUrl($url, $input->projectKey)
+            );
         }
 
         $sessionResult = $this->resolveUrlBySession($input);
@@ -67,16 +73,21 @@ class GetGoogleWalletUrlUseCase
                 'project_id' => $input->projectId,
             ]);
 
-            return GetGoogleWalletUrlOutput::success($this->wrapClientUrl($sessionResult, $input->projectKey));
+            return new GetGoogleWalletUrlOutput(
+                success: true,
+                url: $this->wrapClientUrl($sessionResult, $input->projectKey)
+            );
         }
 
         $this->logUrlFailed($input);
 
         $lastError = $this->googleWalletPassService->getLastError();
 
-        return GetGoogleWalletUrlOutput::urlFailed(
-            $lastError ?? 'URL を発行できませんでした',
-            $lastError !== null && $lastError !== '' ? [$lastError] : []
+        return new GetGoogleWalletUrlOutput(
+            success: false,
+            errorType: GetGoogleWalletUrlOutput::ERROR_URL_FAILED,
+            errorMessage: $lastError ?? 'URL を発行できませんでした',
+            reasons: $lastError !== null && $lastError !== '' ? [$lastError] : []
         );
     }
 
@@ -126,11 +137,7 @@ class GetGoogleWalletUrlUseCase
         return $this->googleWalletPassService->createSaveUrlForUserId((int) $data['user_id']);
     }
 
-    /**
-     * セッションで URL を解決する。会員でない且つデモ不可の場合は notMember の Output を返す。
-     *
-     * @return string|GetGoogleWalletUrlOutput|null 成功時は URL、会員登録必要時は Output、その他失敗時は null
-     */
+    /** @return string|GetGoogleWalletUrlOutput|null */
     private function resolveUrlBySession(GetGoogleWalletUrlInput $input): string|GetGoogleWalletUrlOutput|null
     {
         if ($input->user === null) {
@@ -147,7 +154,11 @@ class GetGoogleWalletUrlUseCase
         if (! $isDemoAllowed) {
             Log::info('google-wallet-url not a member', ['user_id' => $input->user->id ?? null]);
 
-            return GetGoogleWalletUrlOutput::notMember();
+            return new GetGoogleWalletUrlOutput(
+                success: false,
+                errorType: GetGoogleWalletUrlOutput::ERROR_NOT_MEMBER,
+                errorMessage: '会員登録が必要です'
+            );
         }
 
         $organizationName = $input->projectName ?? config('app.name', 'Reggit');

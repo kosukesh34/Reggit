@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Services\UserService;
+use App\UseCases\Queue\Data\QueueMeInput;
+use App\UseCases\Queue\Data\QueueStoreInput;
 use App\UseCases\Queue\QueueMeUseCase;
 use App\UseCases\Queue\QueueStoreUseCase;
 use Illuminate\Http\Request;
@@ -12,17 +15,11 @@ use Illuminate\Support\Facades\Log;
  */
 class QueueController extends BaseApiController
 {
-    private QueueStoreUseCase $storeUseCase;
-
-    private QueueMeUseCase $meUseCase;
-
     public function __construct(
-        QueueStoreUseCase $storeUseCase,
-        QueueMeUseCase $meUseCase
-    ) {
-        $this->storeUseCase = $storeUseCase;
-        $this->meUseCase = $meUseCase;
-    }
+        private QueueStoreUseCase $storeUseCase,
+        private QueueMeUseCase $meUseCase,
+        private UserService $userService,
+    ) {}
 
     public function store(Request $request)
     {
@@ -33,12 +30,15 @@ class QueueController extends BaseApiController
         ]);
 
         try {
-            $dto = $this->storeUseCase->handle(
-                $request,
+            $user = $this->userService->getOrCreateUser($request);
+            $lineUserId = $request->header('X-Line-User-Id');
+            $dto = $this->storeUseCase->handle(new QueueStoreInput(
+                $user,
                 (int) $validated['party_size'],
                 isset($validated['guest_name']) ? (string) $validated['guest_name'] : null,
-                isset($validated['guest_phone']) ? (string) $validated['guest_phone'] : null
-            );
+                isset($validated['guest_phone']) ? (string) $validated['guest_phone'] : null,
+                is_string($lineUserId) ? $lineUserId : null,
+            ));
 
             return $this->success([
                 'queue_entry' => $dto->toArray(),
@@ -54,7 +54,8 @@ class QueueController extends BaseApiController
     public function me(Request $request)
     {
         try {
-            $output = $this->meUseCase->handle($request);
+            $user = $this->userService->getOrCreateUser($request);
+            $output = $this->meUseCase->handle(QueueMeInput::fromRequest($request, $user));
 
             if ($output->queueEntry === null) {
                 return $this->success([

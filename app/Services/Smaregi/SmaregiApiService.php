@@ -153,7 +153,6 @@ class SmaregiApiService
 
         $this->lastErrorDetail = null;
 
-        // 204 No Content 等で body が空の場合は [] を返し、呼び出し側で null=失敗 と区別できるようにする
         return $response->json() ?? [];
     }
 
@@ -301,7 +300,6 @@ class SmaregiApiService
             return null;
         }
 
-        // 公式: GET pos/customers/{customer_id}/points
         $direct = $this->request($contractId, 'GET', 'pos/customers/'.$customerId.'/points');
         if ($direct !== null) {
             $normalized = $this->normalizeCustomerPointRecord($direct);
@@ -310,7 +308,6 @@ class SmaregiApiService
             }
         }
 
-        // 旧実装互換: GET pos/customers/point?customer_id=
         $legacy = $this->getCustomerPoints($contractId, [
             'customer_id' => $customerId,
             'limit' => 1,

@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\UserService;
 use App\UseCases\Announcement\AnnouncementIndexUseCase;
 use App\UseCases\Announcement\AnnouncementMarkReadUseCase;
+use App\UseCases\Announcement\Data\AnnouncementIndexInput;
+use App\UseCases\Announcement\Data\AnnouncementMarkReadInput;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
@@ -11,12 +14,14 @@ class AnnouncementController extends Controller
 {
     public function __construct(
         private AnnouncementIndexUseCase $indexUseCase,
-        private AnnouncementMarkReadUseCase $markReadUseCase
+        private AnnouncementMarkReadUseCase $markReadUseCase,
+        private UserService $userService,
     ) {}
 
     public function index(Request $request)
     {
-        $result = $this->indexUseCase->handle($request);
+        $user = $this->userService->findUser($request);
+        $result = $this->indexUseCase->handle(new AnnouncementIndexInput($user));
 
         return response()->json(['announcements' => $result->announcements]);
     }
@@ -24,7 +29,8 @@ class AnnouncementController extends Controller
     public function markRead(Request $request, int $id)
     {
         try {
-            $result = $this->markReadUseCase->handle($request, $id);
+            $user = $this->userService->getOrCreateUser($request);
+            $result = $this->markReadUseCase->handle(new AnnouncementMarkReadInput($user, $id));
 
             return response()->json(['success' => true, 'data' => $result]);
         } catch (ValidationException $e) {

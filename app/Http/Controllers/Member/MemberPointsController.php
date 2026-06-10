@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Member;
 
 use App\Http\Controllers\Controller;
+use App\Services\UserService;
+use App\UseCases\Member\Data\MemberUserInput;
 use App\UseCases\Member\MemberPointsUseCase;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
@@ -11,13 +13,15 @@ use Illuminate\Http\Request;
 class MemberPointsController extends Controller
 {
     public function __construct(
-        private MemberPointsUseCase $pointsUseCase
+        private MemberPointsUseCase $pointsUseCase,
+        private UserService $userService,
     ) {}
 
     public function __invoke(Request $request)
     {
         try {
-            $result = $this->pointsUseCase->handle($request);
+            $user = $this->userService->getOrCreateUser($request);
+            $result = $this->pointsUseCase->handle(new MemberUserInput($user));
             if ($result->hasMember === false) {
                 return response()->json([
                     'error' => '会員登録が必要です',

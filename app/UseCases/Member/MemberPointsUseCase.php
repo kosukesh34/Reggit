@@ -3,18 +3,14 @@
 namespace App\UseCases\Member;
 
 use App\Models\PointTransaction;
-use App\Services\UserService;
 use App\UseCases\Member\Data\MemberPointsOutput;
-use Illuminate\Http\Request;
+use App\UseCases\Member\Data\MemberUserInput;
 
 class MemberPointsUseCase
 {
-    public function __construct(private UserService $userService) {}
-
-    public function handle(Request $request): MemberPointsOutput
+    public function handle(MemberUserInput $input): MemberPointsOutput
     {
-        $user = $this->userService->getOrCreateUser($request);
-        $member = $user->member;
+        $member = $input->user->member;
 
         if ($member === null) {
             return new MemberPointsOutput(false, 0, collect());

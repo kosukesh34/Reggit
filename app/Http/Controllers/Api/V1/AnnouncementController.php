@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Services\UserService;
 use App\UseCases\Announcement\AnnouncementIndexUseCase;
 use App\UseCases\Announcement\AnnouncementMarkReadUseCase;
+use App\UseCases\Announcement\Data\AnnouncementIndexInput;
+use App\UseCases\Announcement\Data\AnnouncementMarkReadInput;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
 use Illuminate\Http\Request;
@@ -13,13 +16,15 @@ class AnnouncementController extends BaseApiController
 {
     public function __construct(
         private AnnouncementIndexUseCase $indexUseCase,
-        private AnnouncementMarkReadUseCase $markReadUseCase
+        private AnnouncementMarkReadUseCase $markReadUseCase,
+        private UserService $userService,
     ) {}
 
     public function index(Request $request)
     {
         try {
-            $result = $this->indexUseCase->handle($request);
+            $user = $this->userService->findUser($request);
+            $result = $this->indexUseCase->handle(new AnnouncementIndexInput($user));
 
             return $this->success(['announcements' => $result->announcements]);
         } catch (\Exception $e) {
@@ -35,7 +40,8 @@ class AnnouncementController extends BaseApiController
     public function markRead(Request $request, int $id)
     {
         try {
-            $result = $this->markReadUseCase->handle($request, $id);
+            $user = $this->userService->getOrCreateUser($request);
+            $result = $this->markReadUseCase->handle(new AnnouncementMarkReadInput($user, $id));
 
             return $this->success($result, '既読にしました');
         } catch (ValidationException $e) {

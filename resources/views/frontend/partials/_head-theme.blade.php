@@ -14,10 +14,10 @@
 @php $g = $liffTabSettings['_global']; @endphp
 <style id="liff-design-tokens">
 :root {
-@if(!empty($g['content_padding']))
+@if(isset($g['content_padding']) && $g['content_padding'] !== '' && $g['content_padding'] !== null)
     --content-padding: {{ (int) $g['content_padding'] }}px;
 @endif
-@if(!empty($g['section_gap']))
+@if(isset($g['section_gap']) && $g['section_gap'] !== '' && $g['section_gap'] !== null)
     --section-gap: {{ (int) $g['section_gap'] }}px;
 @endif
 @php
@@ -36,7 +36,7 @@
     --radius-xl: {{ $scale['xl'] }};
 }
 </style>
-@if(!empty($g['tab_style']) && $g['tab_style'] !== 'default')
+@if(isset($g['tab_style']) && $g['tab_style'] !== '' && $g['tab_style'] !== 'default')
 <script>document.addEventListener('DOMContentLoaded',function(){document.body.classList.add('tab-style-{{ $g['tab_style'] }}');},{once:true});</script>
 @endif
 @endisset

@@ -4,6 +4,11 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Enums\OrderType;
 use App\Enums\PaymentMethod;
+use App\Services\UserService;
+use App\UseCases\Order\Data\OrderCancelUnpaidInput;
+use App\UseCases\Order\Data\OrderIndexInput;
+use App\UseCases\Order\Data\OrderShowInput;
+use App\UseCases\Order\Data\OrderStoreInput;
 use App\UseCases\Order\OrderCancelUnpaidUseCase;
 use App\UseCases\Order\OrderIndexUseCase;
 use App\UseCases\Order\OrderShowUseCase;
@@ -19,13 +24,15 @@ class OrderController extends BaseApiController
         private OrderIndexUseCase $indexUseCase,
         private OrderShowUseCase $showUseCase,
         private OrderStoreUseCase $storeUseCase,
-        private OrderCancelUnpaidUseCase $cancelUnpaidUseCase
+        private OrderCancelUnpaidUseCase $cancelUnpaidUseCase,
+        private UserService $userService,
     ) {}
 
     public function index(Request $request)
     {
         try {
-            $orders = $this->indexUseCase->handle($request, 20);
+            $user = $this->userService->getOrCreateUser($request);
+            $orders = $this->indexUseCase->handle(new OrderIndexInput($user));
 
             return $this->success(
                 ['orders' => $orders->items()],
@@ -51,7 +58,8 @@ class OrderController extends BaseApiController
     public function show(Request $request, int $id)
     {
         try {
-            $order = $this->showUseCase->handle($request, $id);
+            $user = $this->userService->getOrCreateUser($request);
+            $order = $this->showUseCase->handle(new OrderShowInput($user, $id));
 
             return $this->success(['order' => $order]);
         } catch (\Exception $e) {
@@ -82,7 +90,8 @@ class OrderController extends BaseApiController
         ]);
 
         try {
-            $order = $this->storeUseCase->handle($request, $validated);
+            $user = $this->userService->getOrCreateUser($request);
+            $order = $this->storeUseCase->handle(new OrderStoreInput($user, $validated));
 
             return $this->success(
                 ['order' => $order->toArray()],
@@ -102,7 +111,8 @@ class OrderController extends BaseApiController
     public function cancelUnpaid(Request $request, int $id)
     {
         try {
-            $order = $this->cancelUnpaidUseCase->handle($request, $id);
+            $user = $this->userService->getOrCreateUser($request);
+            $order = $this->cancelUnpaidUseCase->handle(new OrderCancelUnpaidInput($user, $id));
 
             return $this->success(
                 ['order' => $order],

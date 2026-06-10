@@ -1,0 +1,121 @@
+/* Blade から移した静的ユーティリティ（動的な色・CSS変数はインラインのまま） */
+.u-hidden {
+    display: none !important;
+}
+
+.permissions-group {
+    display: none;
+}
+
+.permission-group {
+    margin-bottom: 12px;
+}
+
+.permission-group__children {
+    padding-left: 16px;
+    margin-top: 4px;
+}
+
+.checkbox-label--block {
+    display: block;
+    margin-bottom: 4px;
+}
+
+.coupon-image-preview {
+    display: none;
+}
+
+.coupon-image-preview__img {
+    max-width: 200px;
+    max-height: 120px;
+    object-fit: contain;
+}
+
+.ann-image-preview {
+    display: none;
+}
+
+.ann-image-preview__img {
+    max-width: 300px;
+    max-height: 150px;
+    object-fit: contain;
+}
+
+.form-actions--mt-8 {
+    margin-top: 8px;
+}
+
+.form-actions--mt-16 {
+    margin-top: 16px;
+}
+
+.input-narrow {
+    width: 5em;
+}
+
+.quick-menu-section--spaced {
+    margin-top: 12px;
+}
+
+.settings-card--spaced {
+    margin-top: 24px;
+}
+
+.form-text--spaced {
+    margin-bottom: 12px;
+}
+
+.feature-flags-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 10px 16px;
+}
+
+.home-settings-table__sort-col {
+    width: 44px;
+}
+
+.home-settings-table__visible-col {
+    width: 80px;
+}
+
+.home-settings-table__key-col {
+    width: 100px;
+}
+
+.home-settings-table__icon-col {
+    width: 180px;
+}
+
+.analytics-footnote {
+    margin-top: 8px;
+}
+
+.queue-entry-date {
+    font-size: 11px;
+}
+
+.ranks-field-narrow {
+    max-width: 320px;
+}
+
+.theme-color-input {
+    width: 90px;
+}
+
+.ld-design-preset__swatch--stone {
+    background: linear-gradient(135deg, #fafaf9, #e7e5e4);
+}
+
+.ld-design-preset__swatch--mint {
+    background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+}
+
+.ld-design-preset__swatch--teal {
+    background: linear-gradient(135deg, #0f766e, #134e4a);
+}
+
+.member-search-results {
+    max-height: 200px;
+    overflow-y: auto;
+}

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Member;
 use App\Http\Controllers\Controller;
 use App\Services\MemberService;
 use App\Services\UserService;
+use App\UseCases\Member\Data\MemberRegisterInput;
 use App\UseCases\Member\MemberRegisterUseCase;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
@@ -15,10 +16,8 @@ class MemberRegisterController extends Controller
     public function __construct(
         private MemberRegisterUseCase $registerUseCase,
         private UserService $userService,
-        private MemberService $memberService
-    ) {
-        // Constructor dependencies injected by container
-    }
+        private MemberService $memberService,
+    ) {}
 
     public function __invoke(Request $request)
     {
@@ -28,7 +27,7 @@ class MemberRegisterController extends Controller
         $validated = $request->validate($rules);
 
         try {
-            $result = $this->registerUseCase->handle($request, $validated);
+            $result = $this->registerUseCase->handle(new MemberRegisterInput($user, $validated));
             $status = $result->alreadyRegistered ? 200 : 201;
 
             return response()->json($result->member->toArray(), $status);

@@ -95,17 +95,17 @@
         });
     })();
     </script>
-    <div id="liff-loading" class="liff-loading" aria-live="polite" style="display: none !important; visibility: hidden !important;">
+    <div id="liff-loading" class="liff-loading" aria-live="polite">
         <div class="liff-loading-inner">
             <div class="liff-loading-spinner"></div>
             <p class="liff-loading-text">読み込み中...</p>
         </div>
     </div>
 
-    <div class="app-container" id="app-container" style="display: flex; flex-direction: column; min-height: max(100vh, 800px); height: 100%; background: #fff; visibility: visible; box-sizing: border-box;">
+    <div class="app-container" id="app-container">
         
         @unless($isDesignerEmbedPreview)
-        <header class="header" style="display: block; visibility: visible;">
+        <header class="header">
             <div class="header-content">
                 @if(isset($frontendLogoUrl) && $frontendLogoUrl !== null && $frontendLogoUrl !== '')
                     <img src="{{ $frontendLogoUrl }}" alt="{{ $frontendHeaderText ?? $projectName ?? 'ロゴ' }}" class="header-logo">
@@ -141,7 +141,7 @@
             );
         @endphp
 
-        <main class="main-content" style="flex: 1 1 auto; min-height: max(500px, 50vh); overflow: auto; background: #fff; visibility: visible; -webkit-overflow-scrolling: touch; box-sizing: border-box;">
+        <main class="main-content">
             <div id="announcementsSection" class="announcements-section" aria-label="お知らせ"></div>
 
             @php $firstTab = ($filteredMenu[0]['tab'] ?? ($frontendMenu ?? \App\Models\ShopSetting::defaultFrontendMenuItems())[0]['tab'] ?? 'products'); @endphp
@@ -207,7 +207,7 @@
         <div class="overlay" id="overlay"></div>
         
         {{-- ネイティブアプリではタブバーはSwiftUI/Android側で描画するためHTMLタブは非表示 --}}
-        <footer class="main-tabs" style="display: none !important; visibility: hidden !important; height: 0 !important;" aria-hidden="true">
+        <footer class="main-tabs" aria-hidden="true">
             @foreach($filteredMenu as $i => $item)
             <button type="button" class="main-tab-btn {{ $i === 0 ? 'active' : '' }}" data-tab="{{ $item['tab'] }}">
                 <i class="fas {{ $item['icon'] ?? 'fa-circle' }}"></i>

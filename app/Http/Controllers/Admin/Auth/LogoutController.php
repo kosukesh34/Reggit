@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin\Auth;
 
 use App\Http\Controllers\Controller;
 use App\UseCases\Admin\Auth\AdminLogoutUseCase;
+use App\UseCases\Admin\Auth\Data\AdminLogoutInput;
 use Illuminate\Http\Request;
 
 class LogoutController extends Controller
@@ -17,6 +18,6 @@ class LogoutController extends Controller
 
     public function __invoke(Request $request)
     {
-        return $this->adminLogoutUseCase->handle($request);
+        return $this->adminLogoutUseCase->handle(AdminLogoutInput::fromRequest($request));
     }
 }

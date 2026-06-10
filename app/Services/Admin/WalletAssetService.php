@@ -2,7 +2,6 @@
 
 namespace App\Services\Admin;
 
-use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
@@ -24,7 +23,7 @@ class WalletAssetService
             || Storage::disk('public')->exists($base.'/logo.png');
     }
 
-    public function saveAppleAssets(int $projectId, Request $request): bool
+    public function saveAppleAssets(int $projectId, ?UploadedFile $icon, ?UploadedFile $logo): bool
     {
         if (! extension_loaded('gd')) {
             return false;
@@ -32,13 +31,17 @@ class WalletAssetService
         $base = self::APPLE_ASSETS_DIR.'/'.(string) $projectId;
         Storage::disk('public')->makeDirectory($base);
 
-        if ($request->hasFile('wallet_apple_icon')) {
-            $path = $request->file('wallet_apple_icon')->getRealPath();
-            $this->resizeAndSaveIcon($path, $base);
+        if ($icon !== null) {
+            $path = $icon->getRealPath();
+            if (is_string($path) && $path !== '') {
+                $this->resizeAndSaveIcon($path, $base);
+            }
         }
-        if ($request->hasFile('wallet_apple_logo')) {
-            $path = $request->file('wallet_apple_logo')->getRealPath();
-            $this->resizeAndSaveLogo($path, $base);
+        if ($logo !== null) {
+            $path = $logo->getRealPath();
+            if (is_string($path) && $path !== '') {
+                $this->resizeAndSaveLogo($path, $base);
+            }
         }
 
         return true;

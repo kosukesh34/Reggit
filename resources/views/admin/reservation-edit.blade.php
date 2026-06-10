@@ -44,18 +44,13 @@
         <form action="{{ admin_route('admin.reservations.update', ['id' => $reservation->id]) }}" method="POST">
             @csrf
             @method('PUT')
-            @php
-                $reservedAt = $reservation->reserved_at instanceof \Carbon\Carbon
-                    ? $reservation->reserved_at
-                    : \Carbon\Carbon::parse($reservation->reserved_at);
-            @endphp
             <div class="reservation-form-grid">
                 <div class="form-group">
                     <label class="form-label" for="reserved_at_date">
                         <i class="fas fa-calendar-day"></i> 予約日 <span class="form-required">*</span>
                     </label>
                     <input type="date" name="reserved_at_date" id="reserved_at_date" class="form-control"
-                           value="{{ old('reserved_at_date', $reservedAt->format('Y-m-d')) }}" required>
+                           value="{{ old('reserved_at_date', $reservation->reserved_at->format('Y-m-d')) }}" required>
                     @error('reserved_at_date')
                         <span class="invalid-feedback">{{ $message }}</span>
                     @enderror
@@ -66,7 +61,7 @@
                         <i class="fas fa-clock"></i> 予約時間 <span class="form-required">*</span>
                     </label>
                     <input type="time" name="reserved_at_time" id="reserved_at_time" class="form-control"
-                           value="{{ old('reserved_at_time', $reservedAt->format('H:i')) }}" required>
+                           value="{{ old('reserved_at_time', $reservation->reserved_at->format('H:i')) }}" required>
                     @error('reserved_at_time')
                         <span class="invalid-feedback">{{ $message }}</span>
                     @enderror

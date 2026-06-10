@@ -65,7 +65,7 @@
                     </label>
                 </div>
             </div>
-            <div id="segmentBlock" class="form-group" style="display: none;">
+            <div id="segmentBlock" class="form-group u-hidden">
                 <label class="form-label">売上条件 <span class="text-danger">*</span></label>
                 <p class="form-text text-muted mb-2">対象期間と条件を指定すると、該当する会員にのみ配信されます</p>
                 <div class="row mb-2">
@@ -91,7 +91,7 @@
                         </label>
                     </div>
                 </div>
-                <div id="segmentMinAmountBlock" class="row" style="display: none;">
+                <div id="segmentMinAmountBlock" class="row u-hidden">
                     <div class="col-md-4">
                         <label for="segment_min_amount" class="form-label">最低購入額（円）</label>
                         <input type="number" name="segment_min_amount" id="segment_min_amount" class="form-control" value="{{ old('segment_min_amount', 5000) }}" min="0" step="1" placeholder="例: 5000">
@@ -99,15 +99,15 @@
                 </div>
                 <p id="segmentPreview" class="form-text text-muted mt-2"></p>
             </div>
-            <div id="personalTargetBlock" class="form-group" style="display: none;">
+            <div id="personalTargetBlock" class="form-group u-hidden">
                 <label class="form-label">配信対象の会員</label>
                 <p class="form-text text-muted mb-2">会員番号または名前で検索し、対象を選択してください</p>
                 <input type="text" id="memberSearch" class="form-control mb-2" placeholder="検索..." autocomplete="off">
-                <div id="memberSearchResults" class="border rounded p-2 mb-2" style="max-height: 200px; overflow-y: auto; display: none;"></div>
+                <div id="memberSearchResults" class="border rounded p-2 mb-2 u-hidden member-search-results"></div>
                 <div id="selectedMembers" class="selected-members"></div>
                 <div id="targetMemberIdsHidden"></div>
             </div>
-            <div id="scheduledBlock" class="form-group" style="display: none;">
+            <div id="scheduledBlock" class="form-group u-hidden">
                 <label for="scheduled_at" class="form-label">配信日時</label>
                 <input type="datetime-local" name="scheduled_at" id="scheduled_at" class="form-control" value="{{ old('scheduled_at') }}" min="{{ now()->addMinute()->format('Y-m-d\TH:i') }}">
             </div>

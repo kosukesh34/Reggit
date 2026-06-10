@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\UserService;
 use App\UseCases\Coupon\CouponMyCouponsUseCase;
+use App\UseCases\Member\Data\MemberUserInput;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -11,12 +13,16 @@ use Illuminate\Support\Facades\Log;
  */
 class CouponController extends Controller
 {
-    public function __construct(private CouponMyCouponsUseCase $myCouponsUseCase) {}
+    public function __construct(
+        private CouponMyCouponsUseCase $myCouponsUseCase,
+        private UserService $userService,
+    ) {}
 
     public function myCoupons(Request $request)
     {
         try {
-            $result = $this->myCouponsUseCase->handle($request);
+            $user = $this->userService->getOrCreateUser($request);
+            $result = $this->myCouponsUseCase->handle(new MemberUserInput($user));
 
             if ($result->requiresMembership) {
                 return response()->json([

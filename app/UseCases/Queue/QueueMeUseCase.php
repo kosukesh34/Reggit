@@ -4,39 +4,37 @@ namespace App\UseCases\Queue;
 
 use App\Enums\QueueStatus;
 use App\Models\QueueEntry as QueueEntryModel;
-use App\Services\UserService;
+use App\Models\User;
 use App\UseCases\Queue\Data\QueueEntryFactory;
+use App\UseCases\Queue\Data\QueueMeInput;
 use App\UseCases\Queue\Data\QueueMeOutput;
+use App\Services\Queue\QueueEntrySessionStore;
 use App\Util\AdminContext;
 use App\Util\StrHelper;
-use Illuminate\Http\Request;
 
 class QueueMeUseCase
 {
-    private const SESSION_QUEUE_ENTRY_KEY_PREFIX = 'mobile_order_queue_entry';
-
     public function __construct(
-        private UserService $userService,
         private QueueStatsService $statsService,
-        private QueueEntryFactory $entryFactory
+        private QueueEntryFactory $entryFactory,
+        private QueueEntrySessionStore $sessionStore,
     ) {}
 
-    public function handle(Request $request): QueueMeOutput
+    public function handle(QueueMeInput $input): QueueMeOutput
     {
         $currentProjectId = AdminContext::getCurrentProjectId() ?? 1;
-        $lineUserId = (string) $request->header('X-Line-User-Id', '');
+        $lineUserId = $input->lineUserId;
 
-        // URL の queue_token / queue_id がある場合は最優先で対象を特定する
-        $entry = $this->findActiveEntryFromRequestToken($request, $currentProjectId);
+        $entry = $this->findActiveEntryFromInput($input, $currentProjectId);
         if ($entry === null) {
-            $entry = $this->findActiveEntryFromSession($request, $currentProjectId);
+            $entry = $this->findActiveEntryFromSession($currentProjectId);
         }
         if ($entry !== null && $this->isValidLineUserId($lineUserId)) {
-            $this->linkEntryToLineUserIfNeeded($request, $entry, $lineUserId);
+            $this->linkEntryToLineUserIfNeeded($input->user, $entry);
             $entry->refresh();
         }
 
-        $user = $this->userService->getOrCreateUser($request);
+        $user = $input->user;
         $member = $user->member;
         $projectId = $member ? $member->project_id : $currentProjectId;
 
@@ -50,9 +48,9 @@ class QueueMeUseCase
         }
 
         if ($entry !== null) {
-            $this->rememberEntryInSession($request, $entry);
+            $this->sessionStore->putEntryId((int) $entry->project_id, (int) $entry->id);
         } else {
-            $this->forgetEntryInSession($request, $projectId);
+            $this->sessionStore->forgetEntryId($projectId);
         }
 
         $stats = $this->statsService->getStats($projectId, $entry?->queue_number);
@@ -87,32 +85,23 @@ class QueueMeUseCase
             ->first();
     }
 
-    private function findActiveEntryFromRequestToken(Request $request, int $projectId): ?QueueEntryModel
+    private function findActiveEntryFromInput(QueueMeInput $input, int $projectId): ?QueueEntryModel
     {
-        $token = $this->normalizeString($request->query('queue_token'));
-        if ($token !== '') {
+        if ($input->queueToken !== null) {
             return QueueEntryModel::where('project_id', $projectId)
-                ->where('qr_token', $token)
+                ->where('qr_token', $input->queueToken)
                 ->whereIn('status', [QueueStatus::WAITING, QueueStatus::CALLED])
                 ->first();
         }
 
-        $id = $this->normalizeString($request->query('queue_id'));
-        if ($id !== '' && ctype_digit($id)) {
+        if ($input->queueId !== null && ctype_digit($input->queueId)) {
             return QueueEntryModel::where('project_id', $projectId)
-                ->whereKey((int) $id)
+                ->whereKey((int) $input->queueId)
                 ->whereIn('status', [QueueStatus::WAITING, QueueStatus::CALLED])
                 ->first();
         }
 
-        $rawParams = [
-            $request->query('liff.state'),
-            $request->query('state'),
-            $request->query('liffRedirectUri'),
-            $request->headers->get('referer'),
-        ];
-
-        foreach ($rawParams as $raw) {
+        foreach ($input->embeddedRawParams as $raw) {
             [$embeddedToken, $embeddedId] = $this->extractQueueIdentifierFromRaw($raw);
 
             if ($embeddedToken !== null) {
@@ -139,15 +128,14 @@ class QueueMeUseCase
         return null;
     }
 
-    private function findActiveEntryFromSession(Request $request, int $projectId): ?QueueEntryModel
+    private function findActiveEntryFromSession(int $projectId): ?QueueEntryModel
     {
-        if (! $request->hasSession()) {
+        if (! $this->sessionStore->hasSession()) {
             return null;
         }
 
-        $sessionValue = $request->session()->get($this->getSessionEntryKey($projectId));
-        $entryId = (int) $sessionValue;
-        if ($entryId <= 0) {
+        $entryId = $this->sessionStore->getEntryId($projectId);
+        if ($entryId === null) {
             return null;
         }
 
@@ -157,46 +145,16 @@ class QueueMeUseCase
             ->first();
 
         if ($entry === null) {
-            $this->forgetEntryInSession($request, $projectId);
+            $this->sessionStore->forgetEntryId($projectId);
         }
 
         return $entry;
     }
 
-    private function rememberEntryInSession(Request $request, QueueEntryModel $entry): void
-    {
-        if (! $request->hasSession()) {
-            return;
-        }
-        $request->session()->put($this->getSessionEntryKey((int) $entry->project_id), (int) $entry->id);
-    }
-
-    private function forgetEntryInSession(Request $request, int $projectId): void
-    {
-        if (! $request->hasSession()) {
-            return;
-        }
-        $request->session()->forget($this->getSessionEntryKey($projectId));
-    }
-
-    private function getSessionEntryKey(int $projectId): string
-    {
-        return self::SESSION_QUEUE_ENTRY_KEY_PREFIX.'_'.$projectId;
-    }
-
-    private function normalizeString(mixed $value): string
-    {
-        if (! is_string($value)) {
-            return '';
-        }
-
-        return trim($value);
-    }
-
     /**
      * @return array{0: string|null, 1: int|null}
      */
-    private function extractQueueIdentifierFromRaw(mixed $raw): array
+    private function extractQueueIdentifierFromRaw(string|array|null $raw): array
     {
         if (! is_string($raw)) {
             return [null, null];
@@ -266,13 +224,12 @@ class QueueMeUseCase
         return [$token, $queueId];
     }
 
-    private function linkEntryToLineUserIfNeeded(Request $request, QueueEntryModel $entry, string $lineUserId): void
+    private function linkEntryToLineUserIfNeeded(User $user, QueueEntryModel $entry): void
     {
         if ($entry->user_id !== null) {
             return;
         }
 
-        $user = $this->userService->getOrCreateUser($request);
         $entry->user_id = $user->id;
         if ($user->member !== null) {
             $entry->member_id = $user->member->id;

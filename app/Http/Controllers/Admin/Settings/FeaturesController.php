@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Admin\Settings;
 
 use App\Http\Controllers\Admin\AdminBaseController;
+use App\Http\Requests\Admin\SettingsFeaturesRequest;
 use App\UseCases\Admin\Settings\GetFeatureSettingsUseCase;
 use App\UseCases\Admin\Settings\UpdateFeatureSettingsUseCase;
-use Illuminate\Http\Request;
 
 class FeaturesController extends AdminBaseController
 {
@@ -22,10 +22,10 @@ class FeaturesController extends AdminBaseController
         return view('admin.settings.features', ['view' => $view]);
     }
 
-    public function update(Request $request)
+    public function update(SettingsFeaturesRequest $request)
     {
         $projectId = $this->resolveAdminProjectId();
-        $this->updateFeatureSettingsUseCase->handle($projectId, $request->all());
+        $this->updateFeatureSettingsUseCase->handle($projectId, $request->validated());
 
         return redirect()->route('admin.settings.features', $this->buildAdminRouteParams())
             ->with('success', '機能・カスタマイズ設定を更新しました');

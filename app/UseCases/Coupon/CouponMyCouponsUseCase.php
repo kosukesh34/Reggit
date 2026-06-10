@@ -3,18 +3,15 @@
 namespace App\UseCases\Coupon;
 
 use App\Models\ShopSetting;
-use App\Services\UserService;
 use App\UseCases\Coupon\Data\CouponListView;
 use App\UseCases\Coupon\Data\MemberCoupon;
-use Illuminate\Http\Request;
+use App\UseCases\Member\Data\MemberUserInput;
 
 class CouponMyCouponsUseCase
 {
-    public function __construct(private UserService $userService) {}
-
-    public function handle(Request $request): CouponListView
+    public function handle(MemberUserInput $input): CouponListView
     {
-        $user = $this->userService->getOrCreateUser($request);
+        $user = $input->user;
         $member = $user->member;
 
         if ($member === null) {

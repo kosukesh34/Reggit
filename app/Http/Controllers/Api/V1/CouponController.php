@@ -2,19 +2,25 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Services\UserService;
 use App\UseCases\Coupon\CouponMyCouponsUseCase;
+use App\UseCases\Member\Data\MemberUserInput;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
 use Illuminate\Http\Request;
 
 class CouponController extends BaseApiController
 {
-    public function __construct(private CouponMyCouponsUseCase $myCouponsUseCase) {}
+    public function __construct(
+        private CouponMyCouponsUseCase $myCouponsUseCase,
+        private UserService $userService,
+    ) {}
 
     public function myCoupons(Request $request)
     {
         try {
-            $result = $this->myCouponsUseCase->handle($request);
+            $user = $this->userService->getOrCreateUser($request);
+            $result = $this->myCouponsUseCase->handle(new MemberUserInput($user));
             if ($result->requiresMembership) {
                 return $this->success([
                     'coupons' => [],

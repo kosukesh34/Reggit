@@ -188,15 +188,15 @@
                         <label class="ld-form-label">プリセット</label>
                         <div class="ld-design-presets" id="designPresets">
                             <button type="button" class="ld-design-preset" data-preset="minimal">
-                                <div class="ld-design-preset__swatch" style="background:linear-gradient(135deg,#fafaf9,#e7e5e4)"></div>
+                                <div class="ld-design-preset__swatch ld-design-preset__swatch--stone"></div>
                                 ミニマル
                             </button>
                             <button type="button" class="ld-design-preset" data-preset="natural">
-                                <div class="ld-design-preset__swatch" style="background:linear-gradient(135deg,#ecfdf5,#d1fae5)"></div>
+                                <div class="ld-design-preset__swatch ld-design-preset__swatch--mint"></div>
                                 ナチュラル
                             </button>
                             <button type="button" class="ld-design-preset" data-preset="bold">
-                                <div class="ld-design-preset__swatch" style="background:linear-gradient(135deg,#0f766e,#134e4a)"></div>
+                                <div class="ld-design-preset__swatch ld-design-preset__swatch--teal"></div>
                                 ボールド
                             </button>
                         </div>

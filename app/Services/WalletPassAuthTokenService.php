@@ -10,7 +10,6 @@ class WalletPassAuthTokenService
     {
         $secret = (string) config('wallet_pass.auth_token_secret', '');
         if ($secret === '') {
-            // secret 未設定でも pass 自体は発行できるよう固定fallbackで生成
             $secret = (string) config('app.key', 'wallet-pass-default-secret');
         }
 

@@ -164,7 +164,7 @@
             <form action="{{ admin_route('admin.members.memo', ['id' => $member->id]) }}" method="POST">
                 @csrf @method('PUT')
                 <textarea name="memo" class="form-control" rows="3" maxlength="2000" placeholder="スタッフ向けのメモを入力（会員には表示されません）">{{ old('memo', $member->memo) }}</textarea>
-                <div class="form-actions" style="margin-top:8px;">
+                <div class="form-actions form-actions--mt-8">
                     <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-save"></i> メモを保存</button>
                 </div>
             </form>
@@ -176,7 +176,7 @@
 </div>
 
 {{-- 直近注文履歴 --}}
-@if(!empty($purchaseSummary['recent_orders']) && $purchaseSummary['recent_orders']->isNotEmpty())
+@if(isset($purchaseSummary['recent_orders']) && $purchaseSummary['recent_orders']->isNotEmpty())
 <div class="card">
     <div class="card-header">
         <h3 class="card-title"><i class="fas fa-shopping-bag"></i> 直近の注文</h3>
@@ -300,7 +300,7 @@
                 </div>
                 <div class="form-group me-2">
                     <label for="stamp_count" class="form-label me-1">付与数</label>
-                    <input type="number" name="count" id="stamp_count" class="form-control" value="1" min="1" max="100" style="width:5em">
+                    <input type="number" name="count" id="stamp_count" class="form-control input-narrow" value="1" min="1" max="100">
                 </div>
                 <button type="submit" class="btn btn-primary"><i class="fas fa-plus-circle"></i> 付与する</button>
             </form>

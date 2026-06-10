@@ -15,11 +15,6 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
-/**
- * Google Wallet 用の「Add to Google Wallet」リンク（JWT 付き URL）を生成するサービス。
- * Loyalty Pass（ロイヤルティカード）形式で会員証（会員番号・ポイント・ランク）を発行する。
- * JWT の形式は Google Wallet API の loyaltyObjects / loyaltyClasses に準拠。
- */
 class GoogleWalletPassService
 {
     private const SAVE_URL_PREFIX = 'https://pay.google.com/gp/v/save/';
@@ -43,8 +38,11 @@ class GoogleWalletPassService
 
     private ?string $lastError = null;
 
-    public function __construct(GoogleWalletLoyaltyPayloadBuilder $payloadBuilder)
-    {
+    public function __construct(
+        GoogleWalletLoyaltyPayloadBuilder $payloadBuilder,
+        private MemberService $memberService,
+        private MemberCardAppearanceService $memberCardAppearanceService,
+    ) {
         $this->payloadBuilder = $payloadBuilder;
     }
 
@@ -71,7 +69,7 @@ class GoogleWalletPassService
      */
     public function createSaveUrlForUser(User $user): ?string
     {
-        $data = $this->getMemberService()->getMemberData($user);
+        $data = $this->memberService->getMemberData($user);
         if (! $this->isValidMemberData($data)) {
             $projectId = AdminContext::getCurrentProjectId();
             Log::info('google-wallet createSaveUrlForUser: not a member or no member data', [
@@ -87,13 +85,12 @@ class GoogleWalletPassService
         $project = AdminContext::getCurrentProject();
         $organizationName = $project !== null ? $project->name : config('app.name', 'Reggit');
         $barcodeValue = $member->member_number ?? (string) $member->id;
-        // オブジェクトIDに -b を付与し、既存のQRオブジェクトと区別してバーコードの新オブジェクトとして発行する
         $objectSuffix = 'member-'.(string) $member->id.'-b';
         $points = $data['points'] ?? $member->getTotalPointsFromTransactions();
         $rankLabel = $data['current_rank_label'] ?? $member->rank ?? '';
         $accountName = $user->name ?? '';
         $projectId = $project !== null ? $project->id : (isset($user->project_id) ? (int) $user->project_id : null);
-        $appearance = app(MemberCardAppearanceService::class)->resolveForMember($member);
+        $appearance = $this->memberCardAppearanceService->resolveForMember($member);
 
         return $this->createSaveUrl(
             $organizationName,
@@ -126,7 +123,7 @@ class GoogleWalletPassService
             return false;
         }
 
-        $appearance = app(MemberCardAppearanceService::class)->resolveForMember($member);
+        $appearance = $this->memberCardAppearanceService->resolveForMember($member);
         $project = $member->project;
         $projectId = (int) ($member->project_id ?? 0);
         $organizationName = $project !== null ? $project->name : config('app.name', 'Reggit');
@@ -561,11 +558,6 @@ class GoogleWalletPassService
         }
 
         return $data;
-    }
-
-    private function getMemberService(): MemberService
-    {
-        return app(MemberService::class);
     }
 
     private function resolveProgramLogoUri(?int $projectId): string

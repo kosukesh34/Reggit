@@ -176,13 +176,8 @@
                 <td><a href="{{ admin_route('admin.reservations.detail', ['id' => $reservation->id]) }}">{{ $reservation->reservation_number }}</a></td>
                 <td>{{ $reservation->user->name ?? 'N/A' }}</td>
                 <td>
-                    @php
-                        $reservedAt = $reservation->reserved_at instanceof \Carbon\Carbon 
-                            ? $reservation->reserved_at 
-                            : \Carbon\Carbon::parse($reservation->reserved_at);
-                    @endphp
-                    <div>{{ $reservedAt->format('Y年m月d日') }}</div>
-                    <div class="text-muted">{{ $reservedAt->format('H:i') }}</div>
+                    <div>{{ $reservation->reserved_at->format('Y年m月d日') }}</div>
+                    <div class="text-muted">{{ $reservation->reserved_at->format('H:i') }}</div>
                 </td>
                 <td>{{ $reservation->number_of_people }}名</td>
                 <td>

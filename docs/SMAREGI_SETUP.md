@@ -114,22 +114,19 @@ if ($contractId !== null) {
 }
 ```
 
-プロジェクトIDだけ分かっていて、契約IDの解決を任せたい場合は UseCase を使います。
+プロジェクトIDだけ分かっていて、契約IDの解決を任せたい場合は `SmaregiApiService::syncCustomerPointsForProject` を使います。
 
 ```php
-use App\UseCases\Smaregi\SmaregiSyncCustomerPointsUseCase;
+use App\Services\Smaregi\SmaregiApiService;
 
-$useCase = app(SmaregiSyncCustomerPointsUseCase::class);
-$result = $useCase->execute(
+$api = app(SmaregiApiService::class);
+$result = $api->syncCustomerPointsForProject(
     $projectId,
-    '1',    // スマレジ会員ID
-    10,     // 加算ポイント（負で減算）
-    null,   // マイル（任意）
-    null    // ポイント失効予定日（任意）
+    '1',
+    10,
+    null,
+    null
 );
-if ($result !== null) {
-    // 送信成功。$result['transactionHeadIds'] に取引IDが入る
-}
 ```
 
 会員IDの取得は、`$service->getCustomers($contractId)` で会員一覧を取得し、会員コードや電話番号などで突き合わせてください。

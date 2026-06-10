@@ -165,7 +165,6 @@ class SmaregiProductRegisterService
             }
         }
 
-        // 部門が0件の場合はデフォルト部門を自動作成
         return $this->createDefaultDepartment($contractId);
     }
 
@@ -238,9 +237,7 @@ class SmaregiProductRegisterService
             'displayFlag' => $isAvailable ? '1' : '0',
         ];
 
-        if ($smaregiProductId !== null && $smaregiProductId !== '') {
-            // 更新時は productCode を送らなくてよい（PATCH は変更項目のみ）
-        } else {
+        if ($smaregiProductId === null || $smaregiProductId === '') {
             $body['productCode'] = substr(uniqid('A'), 0, 20);
         }
 

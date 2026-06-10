@@ -5,18 +5,18 @@ namespace App\UseCases\Line;
 use App\Enums\MemberStatus;
 use App\Models\User;
 use App\Services\Line\LineService;
+use App\UseCases\Line\Data\LineWebhookInput;
 use App\Util\LogHelper;
-use Illuminate\Http\Request;
 
 class LineWebhookHandleUseCase
 {
     public function __construct(
-        private LineService $lineService
+        private LineService $lineService,
     ) {}
 
-    public function handle(Request $request): array
+    public function handle(LineWebhookInput $input): array
     {
-        if ($request->isMethod('GET')) {
+        if ($input->isGet()) {
             return [
                 'status' => 200,
                 'payload' => [
@@ -26,10 +26,7 @@ class LineWebhookHandleUseCase
             ];
         }
 
-        $signature = $request->header('X-Line-Signature');
-        $body = $request->getContent();
-
-        if ($this->lineService->verifySignature($body, $signature) === false) {
+        if ($this->lineService->verifySignature($input->rawBody, $input->signature) === false) {
             LogHelper::warning('[LINE] invalid signature');
 
             return [
@@ -38,7 +35,7 @@ class LineWebhookHandleUseCase
             ];
         }
 
-        $events = json_decode($body, true)['events'] ?? [];
+        $events = json_decode($input->rawBody, true)['events'] ?? [];
         foreach ($events as $event) {
             $this->handleEvent($event);
         }

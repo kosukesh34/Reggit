@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\LoginRequest;
 use App\Models\Project;
 use App\UseCases\Admin\Auth\AdminLoginUseCase;
+use App\UseCases\Admin\Auth\Data\AdminLoginInput;
 use App\UseCases\Admin\Auth\GetAdminDashboardRedirectUseCase;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -72,6 +73,6 @@ class AdminLoginController extends Controller
             'resolved_project_key' => $projectKey,
         ]);
 
-        return $this->adminLoginUseCase->handle($request, $projectKey);
+        return $this->adminLoginUseCase->handle(AdminLoginInput::fromRequest($request, $projectKey));
     }
 }

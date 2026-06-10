@@ -316,7 +316,7 @@
                 </tbody>
             </table>
         </div>
-        <p class="text-muted" style="margin-top: 8px;">
+        <p class="text-muted analytics-footnote">
             対象ユーザー数: {{ number_format($view->breakdowns['announcement_reads']['total_users']) }}人
         </p>
     </div>

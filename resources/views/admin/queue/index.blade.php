@@ -113,7 +113,7 @@
                     </td>
                     <td>
                         <div>{{ $e->created_at->format('H:i') }}</div>
-                        <div class="text-muted" style="font-size:11px;">{{ $e->created_at->format('m/d') }}</div>
+                        <div class="text-muted queue-entry-date">{{ $e->created_at->format('m/d') }}</div>
                     </td>
                     <td class="table-actions-cell">
                         <div class="table-actions">

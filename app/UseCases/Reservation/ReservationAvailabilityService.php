@@ -6,6 +6,7 @@ use App\Enums\ReservationStatus;
 use App\Models\Reservation;
 use App\Models\ShopSetting;
 use App\UseCases\Reservation\Data\ReservationAvailability;
+use App\Util\DateUtil;
 use Carbon\Carbon;
 
 class ReservationAvailabilityService
@@ -128,7 +129,7 @@ class ReservationAvailabilityService
             }
             $reservedAt = $reservation->reserved_at instanceof Carbon
                 ? $reservation->reserved_at
-                : Carbon::parse($reservation->reserved_at);
+                : DateUtil::nullableCarbon($reservation->reserved_at);
             $dateKey = $reservedAt->format(self::DATE_FORMAT);
             $timeKey = $reservedAt->format(self::TIME_FORMAT);
             if (! isset($slotCounts[$dateKey])) {

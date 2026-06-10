@@ -53,7 +53,7 @@
             <label class="d-inline-flex align-items-center gap-2">
                 <span class="text-muted small">カスタム色</span>
                 <input type="color" id="theme_color_custom" value="{{ $selectedColor && preg_match('/^#[0-9A-Fa-f]{6}$/', $selectedColor) ? $selectedColor : '#059669' }}" title="カスタム色" class="theme-color-input" aria-label="カスタム色を選択">
-                <input type="text" id="theme_color_display" class="form-control form-control-sm" placeholder="#059669" maxlength="7" style="width: 90px;" value="{{ $selectedColor }}" aria-label="色コード">
+                <input type="text" id="theme_color_display" class="form-control form-control-sm theme-color-input" placeholder="#059669" maxlength="7" value="{{ $selectedColor }}" aria-label="色コード">
             </label>
         </div>
     </div>
