@@ -70,8 +70,7 @@ class PushNotificationService
         string $body,
         array $data = [],
         ?string $collapseId = null
-    ): array
-    {
+    ): array {
         $tokens = UserDevice::query()
             ->where('project_id', $projectId)
             ->where('user_id', $userId)
