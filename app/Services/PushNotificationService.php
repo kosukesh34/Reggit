@@ -15,6 +15,9 @@ class PushNotificationService
     /** OneSignal API: max subscription_ids per request */
     private const ONESIGNAL_CHUNK_SIZE = 2000;
 
+    /** OneSignal collapse_id の最大文字数 */
+    private const ONESIGNAL_COLLAPSE_ID_MAX_LENGTH = 64;
+
     private Client $http;
 
     public function __construct(Client $http)
@@ -60,7 +63,14 @@ class PushNotificationService
     }
 
     /** @return array{target_tokens:int,sent:int,failed:int,skipped:int} */
-    public function sendToUser(int $projectId, int $userId, string $title, string $body, array $data = []): array
+    public function sendToUser(
+        int $projectId,
+        int $userId,
+        string $title,
+        string $body,
+        array $data = [],
+        ?string $collapseId = null
+    ): array
     {
         $tokens = UserDevice::query()
             ->where('project_id', $projectId)
@@ -79,7 +89,13 @@ class PushNotificationService
         }
 
         if ($this->isOneSignalEnabled()) {
-            return $this->sendOneSignalPush($tokens, $title, $body, $data);
+            return $this->sendOneSignalPush(
+                $tokens,
+                $title,
+                $body,
+                $data,
+                $collapseId ?? $this->resolveCollapseIdFromData($projectId, $userId, $data)
+            );
         }
 
         if (! $this->isFcmEnabled()) {
@@ -129,7 +145,13 @@ class PushNotificationService
         ];
 
         if ($this->isOneSignalEnabled()) {
-            return $this->sendOneSignalPush($tokens, $title, $body, $data);
+            return $this->sendOneSignalPush(
+                $tokens,
+                $title,
+                $body,
+                $data,
+                $this->buildQueueCollapseId($projectId, $userId)
+            );
         }
 
         LogHelper::warning('[Push] Queue call push skipped (OneSignal not enabled)', [
@@ -162,7 +184,8 @@ class PushNotificationService
                 'announcement_id' => (string) $announcement->id,
                 'project_id' => (string) $announcement->project_id,
                 'delivery_type' => (string) $announcement->delivery_type,
-            ]
+            ],
+            $this->buildAnnouncementCollapseId((int) $announcement->id)
         );
     }
 
@@ -171,7 +194,13 @@ class PushNotificationService
      * @param  array<string,string>  $data
      * @return array{target_tokens:int,sent:int,failed:int,skipped:int}
      */
-    private function sendOneSignalPush(array $subscriptionIds, string $title, string $body, array $data): array
+    private function sendOneSignalPush(
+        array $subscriptionIds,
+        string $title,
+        string $body,
+        array $data,
+        ?string $collapseId = null
+    ): array
     {
         $appId = trim((string) config('push.onesignal.app_id'));
         $apiKey = trim((string) config('push.onesignal.api_key'));
@@ -189,21 +218,28 @@ class PushNotificationService
         $totalSent = 0;
         $totalFailed = 0;
 
+        $normalizedCollapseId = $this->normalizeCollapseId($collapseId);
+
         foreach (array_chunk($subscriptionIds, self::ONESIGNAL_CHUNK_SIZE) as $chunk) {
             try {
+                $payload = [
+                    'app_id' => $appId,
+                    'include_subscription_ids' => $chunk,
+                    'target_channel' => 'push',
+                    'headings' => ['en' => $title],
+                    'contents' => ['en' => $body],
+                    'data' => $data,
+                ];
+                if ($normalizedCollapseId !== null) {
+                    $payload['collapse_id'] = $normalizedCollapseId;
+                }
+
                 $response = $this->http->post($apiUrl, [
                     'headers' => [
                         'Authorization' => 'Key '.$apiKey,
                         'Content-Type' => 'application/json',
                     ],
-                    'json' => [
-                        'app_id' => $appId,
-                        'include_subscription_ids' => $chunk,
-                        'target_channel' => 'push',
-                        'headings' => ['en' => $title],
-                        'contents' => ['en' => $body],
-                        'data' => $data,
-                    ],
+                    'json' => $payload,
                 ]);
             } catch (\Throwable $e) {
                 LogHelper::error('[Push] OneSignal request failed', [
@@ -264,6 +300,45 @@ class PushNotificationService
             ->unique()
             ->values()
             ->all();
+    }
+
+    /** @param  array<string,string>  $data */
+    private function resolveCollapseIdFromData(int $projectId, int $userId, array $data): ?string
+    {
+        return match ((string) ($data['type'] ?? '')) {
+            'coupon_issued' => $this->buildCouponCollapseId($projectId, $userId),
+            'queue_called' => $this->buildQueueCollapseId($projectId, $userId),
+            default => null,
+        };
+    }
+
+    private function buildQueueCollapseId(int $projectId, int $userId): string
+    {
+        return $this->normalizeCollapseId(sprintf('reggit:queue:%d:%d', $projectId, $userId)) ?? '';
+    }
+
+    private function buildCouponCollapseId(int $projectId, int $userId): string
+    {
+        return $this->normalizeCollapseId(sprintf('reggit:coupon:%d:%d', $projectId, $userId)) ?? '';
+    }
+
+    private function buildAnnouncementCollapseId(int $announcementId): string
+    {
+        return $this->normalizeCollapseId(sprintf('reggit:announcement:%d', $announcementId)) ?? '';
+    }
+
+    private function normalizeCollapseId(?string $collapseId): ?string
+    {
+        $normalized = trim((string) $collapseId);
+        if ($normalized === '') {
+            return null;
+        }
+
+        if (strlen($normalized) > self::ONESIGNAL_COLLAPSE_ID_MAX_LENGTH) {
+            return substr($normalized, 0, self::ONESIGNAL_COLLAPSE_ID_MAX_LENGTH);
+        }
+
+        return $normalized;
     }
 
     private function isOneSignalEnabled(): bool
