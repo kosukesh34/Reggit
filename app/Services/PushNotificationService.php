@@ -70,8 +70,7 @@ class PushNotificationService
         string $body,
         array $data = [],
         ?string $collapseId = null
-    ): array
-    {
+    ): array {
         $tokens = UserDevice::query()
             ->where('project_id', $projectId)
             ->where('user_id', $userId)
@@ -200,8 +199,7 @@ class PushNotificationService
         string $body,
         array $data,
         ?string $collapseId = null
-    ): array
-    {
+    ): array {
         $appId = trim((string) config('push.onesignal.app_id'));
         $apiKey = trim((string) config('push.onesignal.api_key'));
         $apiUrl = rtrim((string) config('push.onesignal.api_url'), '/');
