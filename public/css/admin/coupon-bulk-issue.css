@@ -8,7 +8,7 @@
 .bulk-sidebar-card {
     background: #fff;
     border: 1px solid var(--border-color, #dee2e6);
-    border-radius: 12px;
+    border-radius: 8px;
     padding: 16px;
     margin-bottom: 12px;
 }
@@ -105,7 +105,7 @@
     gap: 4px;
     padding: 16px;
     border: 2px solid var(--border-color, #dee2e6);
-    border-radius: 12px;
+    border-radius: 8px;
     background: #fafafa;
     cursor: pointer;
     text-align: left;
@@ -122,6 +122,13 @@
     box-shadow: 0 0 0 1px rgba(13, 110, 253, 0.15);
 }
 
+.coupon-source-tab:focus-visible,
+.coupon-picker-card:focus-within,
+.delivery-type-card:focus-within .delivery-type-card-body {
+    outline: 3px solid rgba(13, 110, 253, 0.25);
+    outline-offset: 2px;
+}
+
 .coupon-source-panel.is-hidden { display: none; }
 
 .coupon-picker-grid {
@@ -131,12 +138,13 @@
 }
 
 .coupon-picker-card {
+    position: relative;
     display: block;
     padding: 14px 16px;
     border: 2px solid var(--border-color, #dee2e6);
-    border-radius: 12px;
+    border-radius: 8px;
     cursor: pointer;
-    transition: border-color 0.15s, background 0.15s;
+    transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
     margin: 0;
 }
 
@@ -146,6 +154,26 @@
 .coupon-picker-card:has(.coupon-picker-input:checked) {
     border-color: var(--primary-color, #0d6efd);
     background: rgba(13, 110, 253, 0.06);
+    box-shadow: 0 6px 18px rgba(13, 110, 253, 0.12);
+}
+
+.coupon-picker-card.is-selected::after,
+.coupon-picker-card:has(.coupon-picker-input:checked)::after {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--primary-color, #0d6efd);
+    color: #fff;
+    font-family: "Font Awesome 5 Free";
+    font-size: 11px;
+    font-weight: 900;
+    content: "\f00c";
 }
 
 .coupon-picker-input { position: absolute; opacity: 0; pointer-events: none; }
@@ -178,13 +206,23 @@
     padding: 14px 16px;
     margin-bottom: 20px;
     border: 1px dashed var(--border-color, #dee2e6);
-    border-radius: 12px;
+    border-radius: 8px;
     background: #f8f9fa;
 }
 
 .bulk-selected-coupon.is-empty { opacity: 0.7; }
+.bulk-selected-coupon:not(.is-empty) {
+    border-style: solid;
+    border-color: rgba(13, 110, 253, 0.35);
+    background: rgba(13, 110, 253, 0.06);
+}
 .bulk-selected-coupon i { font-size: 24px; color: var(--primary-color, #0d6efd); }
 .bulk-selected-label { display: block; font-size: 11px; color: var(--text-secondary, #6c757d); text-transform: uppercase; letter-spacing: 0.04em; }
+#selectedCouponLabel {
+    display: block;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+}
 
 .delivery-type-group { margin-bottom: 20px; }
 
@@ -212,7 +250,7 @@
     display: block;
     padding: 12px 14px;
     border: 1px solid var(--border-color, #dee2e6);
-    border-radius: 10px;
+    border-radius: 8px;
     background: #fff;
     font-size: 13px;
     font-weight: 600;
@@ -231,7 +269,7 @@
     padding: 16px;
     margin-bottom: 16px;
     border: 1px solid var(--border-color, #dee2e6);
-    border-radius: 10px;
+    border-radius: 8px;
     background: #fafafa;
 }
 
@@ -243,11 +281,19 @@
     gap: 10px;
     padding: 12px 16px;
     margin-bottom: 16px;
-    border-radius: 10px;
+    border-radius: 8px;
     background: rgba(13, 110, 253, 0.08);
     color: var(--primary-color, #0d6efd);
     font-weight: 600;
     font-size: 14px;
+}
+
+.bulk-target-preview.is-loading i {
+    animation: couponBulkSpin 0.8s linear infinite;
+}
+
+@keyframes couponBulkSpin {
+    to { transform: rotate(360deg); }
 }
 
 .member-search-results {
@@ -299,4 +345,27 @@
 @media (max-width: 992px) {
     .bulk-layout { grid-template-columns: 1fr; }
     .coupon-source-tabs { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 576px) {
+    .bulk-sidebar-card,
+    .coupon-source-tab,
+    .coupon-picker-card,
+    .delivery-option-block {
+        padding: 12px;
+    }
+
+    .delivery-type-grid,
+    .coupon-picker-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .form-actions {
+        display: grid;
+        gap: 8px;
+    }
+
+    .form-actions .btn {
+        width: 100%;
+    }
 }

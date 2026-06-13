@@ -112,10 +112,35 @@
     color: var(--text-tertiary);
 }
 
+.stamp-slot-number {
+    font-size: 1em;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--text-secondary);
+}
+
+.stamp-slot--empty {
+    background: #fff;
+}
+
 .stamp-slot--filled {
     background: var(--primary-color);
     border-color: var(--primary-color);
     color: #fff;
+}
+
+.stamp-slot--filled .fa-stamp {
+    font-size: 0.95em;
+}
+
+.stamp-slot--next {
+    border-color: var(--primary-color);
+    background: #fff;
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary-color) 25%, transparent);
+}
+
+.stamp-slot--next .stamp-slot-number {
+    color: var(--primary-color);
 }
 
 /* グリッド（2列） */
