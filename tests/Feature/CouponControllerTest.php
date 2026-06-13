@@ -93,4 +93,26 @@ class CouponControllerTest extends TestCase
         $response->assertStatus(422)
             ->assertJsonPath('success', false);
     }
+
+    public function test_use_coupon_利用開始前は拒否すること(): void
+    {
+        $this->createProject();
+        $user = User::factory()->create(['line_user_id' => self::LINE_USER_ID, 'project_id' => 1]);
+        $member = Member::factory()->create(['user_id' => $user->id, 'project_id' => 1]);
+        $coupon = Coupon::factory()->create(['project_id' => 1, 'code' => 'FUTURE100']);
+        $memberCoupon = MemberCoupon::factory()->create([
+            'member_id' => $member->id,
+            'project_id' => 1,
+            'coupon_id' => $coupon->id,
+            'status' => MemberCoupon::STATUS_UNUSED,
+            'valid_from' => now()->addDay(),
+        ]);
+
+        $response = $this->withHeaders(['X-Line-User-Id' => self::LINE_USER_ID])
+            ->post('/api/members/me/coupons/'.$memberCoupon->id.'/use?project_key=default');
+
+        $response->assertStatus(422)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('message', 'このクーポンはまだ利用開始前です');
+    }
 }
