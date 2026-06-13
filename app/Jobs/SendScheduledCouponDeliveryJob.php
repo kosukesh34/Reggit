@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Enums\CouponDeliveryStatus;
+use App\Enums\CouponDeliveryType;
 use App\Models\CouponDelivery;
 use App\Services\Admin\CouponDeliveryTargetService;
 use App\Services\Admin\MemberAdminService;
@@ -25,19 +26,34 @@ class SendScheduledCouponDeliveryJob implements ShouldQueue
         CouponDeliveryTargetService $targetService,
     ): void {
         $delivery = CouponDelivery::withoutGlobalScopes()->find($this->couponDeliveryId);
-        if (! $delivery || $delivery->status !== CouponDeliveryStatus::SCHEDULED) {
+        if ($delivery === null || $delivery->status !== CouponDeliveryStatus::SCHEDULED) {
             return;
         }
 
         try {
+            $deliveryType = (string) $delivery->delivery_type;
             $memberIds = is_array($delivery->target_member_ids) ? $delivery->target_member_ids : [];
             if ($memberIds === [] && $delivery->segment_criteria !== null) {
                 $resolved = $targetService->resolve(
                     (int) $delivery->project_id,
-                    (string) $delivery->delivery_type,
-                    $this->paramsFromCriteria($delivery)
+                    $deliveryType,
+                    $targetService->buildResolveParamsFromDelivery($delivery)
                 );
+                if ($resolved['error'] !== null) {
+                    throw new \RuntimeException($resolved['error']);
+                }
                 $memberIds = $resolved['member_ids'];
+            }
+
+            if ($memberIds === [] && ! CouponDeliveryType::isAllMembersDelivery($deliveryType)) {
+                $delivery->update([
+                    'status' => CouponDeliveryStatus::SENT,
+                    'sent_at' => now(),
+                    'issued_count' => 0,
+                    'target_member_ids' => null,
+                ]);
+
+                return;
             }
 
             $issued = $memberAdminService->issueCouponToMembers(
@@ -58,15 +74,5 @@ class SendScheduledCouponDeliveryJob implements ShouldQueue
                 'error_message' => $e->getMessage(),
             ]);
         }
-    }
-
-    /** @return array<string, mixed> */
-    private function paramsFromCriteria(CouponDelivery $delivery): array
-    {
-        $criteria = is_array($delivery->segment_criteria) ? $delivery->segment_criteria : [];
-
-        return array_merge($criteria, [
-            'target_member_ids' => $delivery->target_member_ids ?? [],
-        ]);
     }
 }
