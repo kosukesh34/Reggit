@@ -3,9 +3,15 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Requests\Admin\CouponBulkIssueRequest;
+use App\Http\Requests\Admin\CouponQuickCreateRequest;
 use App\Http\Requests\Admin\CouponStoreRequest;
 use App\Http\Requests\Admin\CouponUpdateRequest;
+use App\Enums\CouponDeliveryType;
+use App\Models\Coupon;
 use App\Services\Admin\CouponAdminService;
+use App\Services\Admin\CouponDeliveryTargetService;
+use App\Services\Admin\MemberAdminService;
+use App\Services\Smaregi\SmaregiCouponImportSyncService;
 use App\UseCases\Admin\Coupon\AdminCouponBulkIssueFormUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponBulkIssueUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponCreateFormUseCase;
@@ -35,6 +41,12 @@ class CouponController extends AdminBaseController
 
     private AdminCouponBulkIssueUseCase $bulkIssueUseCase;
 
+    private SmaregiCouponImportSyncService $smaregiCouponImportSync;
+
+    private CouponDeliveryTargetService $couponDeliveryTargetService;
+
+    private MemberAdminService $memberAdminService;
+
     public function __construct(
         AdminCouponIndexUseCase $indexUseCase,
         AdminCouponCreateFormUseCase $createFormUseCase,
@@ -44,7 +56,10 @@ class CouponController extends AdminBaseController
         AdminCouponDeleteUseCase $deleteUseCase,
         AdminCouponBulkIssueFormUseCase $bulkIssueFormUseCase,
         AdminCouponBulkIssueUseCase $bulkIssueUseCase,
-        CouponAdminService $couponAdminService
+        CouponAdminService $couponAdminService,
+        SmaregiCouponImportSyncService $smaregiCouponImportSync,
+        CouponDeliveryTargetService $couponDeliveryTargetService,
+        MemberAdminService $memberAdminService,
     ) {
         $this->indexUseCase = $indexUseCase;
         $this->createFormUseCase = $createFormUseCase;
@@ -55,6 +70,9 @@ class CouponController extends AdminBaseController
         $this->bulkIssueFormUseCase = $bulkIssueFormUseCase;
         $this->bulkIssueUseCase = $bulkIssueUseCase;
         $this->couponAdminService = $couponAdminService;
+        $this->smaregiCouponImportSync = $smaregiCouponImportSync;
+        $this->couponDeliveryTargetService = $couponDeliveryTargetService;
+        $this->memberAdminService = $memberAdminService;
     }
 
     public function coupons()
@@ -147,7 +165,112 @@ class CouponController extends AdminBaseController
         return view('admin.coupons.bulk-issue', [
             'coupons' => $output->coupons,
             'memberCount' => $output->memberCount,
+            'hasSmaregiContract' => $output->hasSmaregiContract,
+            'smaregiLinkedCount' => $output->smaregiLinkedCount,
+            'smaregiUnlinkedCount' => $output->smaregiUnlinkedCount,
+            'scheduledDeliveries' => $output->scheduledDeliveries,
+            'deliveryTypeOptions' => $output->deliveryTypeOptions,
+            'deliveryGroups' => $output->deliveryGroups,
+            'deliveryTypeJsConfig' => $output->deliveryTypeJsConfig,
+            'defaultDeliveryType' => CouponDeliveryType::IMMEDIATE_ALL,
         ]);
+    }
+
+    /** 一括配布画面からのクイック作成（スマレジ契約ありの場合は POS にも登録） */
+    public function quickCreateCoupon(CouponQuickCreateRequest $request)
+    {
+        $projectId = $this->resolveAdminProjectId();
+        $validated = $request->validated();
+        $validated = array_merge($validated, [
+            'is_active' => true,
+            'issue_trigger' => Coupon::ISSUE_TRIGGER_MANUAL,
+            'use_display' => $validated['use_display'] ?? Coupon::USE_DISPLAY_BARCODE,
+            'design_template' => Coupon::DESIGN_CLASSIC,
+        ]);
+
+        try {
+            $coupon = $this->storeUseCase->handle($projectId, $validated);
+        } catch (\RuntimeException $e) {
+            return redirect()->route('admin.coupons.bulk-issue', $this->buildAdminRouteParams())
+                ->withInput()
+                ->with('error', $e->getMessage());
+        }
+
+        return redirect()->route('admin.coupons.bulk-issue', array_merge($this->buildAdminRouteParams(), ['coupon_source' => 'existing']))
+            ->with('success', 'クーポンを作成しました'.($coupon->smaregi_coupon_id ? '（スマレジにも反映済み）' : '').'。配布設定に進んでください。')
+            ->withInput(['coupon_id' => $coupon->id, 'coupon_source' => 'existing']);
+    }
+
+    /** スマレジ → DB: POS のクーポンを取り込む */
+    public function syncCouponsFromSmaregi()
+    {
+        $projectId = $this->resolveAdminProjectId();
+        try {
+            $result = $this->smaregiCouponImportSync->syncFromSmaregi($projectId);
+            $msg = sprintf(
+                'スマレジからクーポンを取り込みました（新規: %d、更新: %d、失敗: %d）',
+                $result['created'],
+                $result['updated'],
+                $result['failed']
+            );
+            if ($result['failed'] > 0 && $result['errors'] !== []) {
+                $msg .= '。'.implode('; ', array_slice($result['errors'], 0, 3));
+            }
+
+            return redirect()->route('admin.coupons.bulk-issue', $this->buildAdminRouteParams())
+                ->with('success', $msg);
+        } catch (\Throwable $e) {
+            return redirect()->route('admin.coupons.bulk-issue', $this->buildAdminRouteParams())
+                ->with('error', $e->getMessage());
+        }
+    }
+
+    /** DB → スマレジ: 未連携クーポンを POS に登録 */
+    public function pushCouponsToSmaregi()
+    {
+        $projectId = $this->resolveAdminProjectId();
+        try {
+            $result = $this->smaregiCouponImportSync->pushUnlinkedToSmaregi($projectId);
+            $msg = sprintf(
+                '管理画面のクーポンをスマレジに反映しました（登録: %d、失敗: %d）',
+                $result['pushed'],
+                $result['failed']
+            );
+            if ($result['failed'] > 0 && $result['errors'] !== []) {
+                $msg .= '。'.implode('; ', array_slice($result['errors'], 0, 3));
+            }
+
+            return redirect()->route('admin.coupons.bulk-issue', $this->buildAdminRouteParams())
+                ->with('success', $msg);
+        } catch (\Throwable $e) {
+            return redirect()->route('admin.coupons.bulk-issue', $this->buildAdminRouteParams())
+                ->with('error', $e->getMessage());
+        }
+    }
+
+    /** クーポン双方向同期（スマレジ取り込み + 未連携の POS 登録） */
+    public function fullSyncCouponsWithSmaregi()
+    {
+        $projectId = $this->resolveAdminProjectId();
+        try {
+            $result = $this->smaregiCouponImportSync->fullSync($projectId);
+            $msg = sprintf(
+                'クーポンを完全同期しました（スマレジ→DB: 新規 %d・更新 %d、DB→スマレジ: %d 件、失敗: %d）',
+                $result['created'],
+                $result['updated'],
+                $result['pushed'],
+                $result['failed']
+            );
+            if ($result['failed'] > 0 && $result['errors'] !== []) {
+                $msg .= '。'.implode('; ', array_slice($result['errors'], 0, 3));
+            }
+
+            return redirect()->route('admin.coupons.bulk-issue', $this->buildAdminRouteParams())
+                ->with('success', $msg);
+        } catch (\Throwable $e) {
+            return redirect()->route('admin.coupons.bulk-issue', $this->buildAdminRouteParams())
+                ->with('error', $e->getMessage());
+        }
     }
 
     /** プレゼント配信（クーポン一括配布）実行 */
@@ -155,14 +278,49 @@ class CouponController extends AdminBaseController
     {
         $projectId = $this->resolveAdminProjectId();
         $validated = $request->validated();
-        $memberIds = [];
-        if (($validated['target'] ?? '') === 'selected') {
-            $input = $request->input('member_ids_input', '');
-            $memberIds = array_values(array_filter(array_map('intval', preg_split('/[\s,]+/', $input))));
-        }
-        $issued = $this->bulkIssueUseCase->handle($projectId, (int) $validated['coupon_id'], $memberIds);
 
-        return redirect()->route('admin.coupons', $this->buildAdminRouteParams())
-            ->with('success', "{$issued}件の会員にクーポンを配布しました");
+        try {
+            $result = $this->bulkIssueUseCase->handle($projectId, (int) $validated['coupon_id'], $validated);
+        } catch (\InvalidArgumentException $e) {
+            return redirect()->route('admin.coupons.bulk-issue', $this->buildAdminRouteParams())
+                ->withInput()
+                ->with('error', $e->getMessage());
+        }
+
+        return redirect()->route('admin.coupons.bulk-issue', $this->buildAdminRouteParams())
+            ->with('success', $result['message']);
+    }
+
+    public function searchMembers()
+    {
+        $projectId = $this->resolveAdminProjectId();
+        $keyword = (string) request()->query('q', '');
+        $results = $this->memberAdminService->searchByKeyword($projectId, $keyword, 20);
+
+        return response()->json($results);
+    }
+
+    public function deliveryPreview()
+    {
+        $projectId = $this->resolveAdminProjectId();
+        $deliveryType = (string) request()->query('delivery_type', CouponDeliveryType::IMMEDIATE_ALL);
+        $params = request()->only([
+            'target_member_ids',
+            'member_ids_input',
+            'segment_period_days',
+            'segment_condition',
+            'segment_min_amount',
+            'birthday_month',
+            'new_member_days',
+            'inactive_days',
+        ]);
+
+        if (request()->has('target_member_ids') && is_string($params['target_member_ids'] ?? null)) {
+            $params['target_member_ids'] = array_filter(array_map('intval', explode(',', $params['target_member_ids'])));
+        }
+
+        $count = $this->couponDeliveryTargetService->countTargets($projectId, $deliveryType, $params);
+
+        return response()->json(['count' => $count]);
     }
 }
