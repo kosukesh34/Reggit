@@ -21,7 +21,7 @@ class SmaregiCouponImportSyncServiceTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_syncFromSmaregi_スマレジのクーポンをDBに取り込むこと(): void
+    public function test_sync_from_smaregi_スマレジのクーポンを_d_bに取り込むこと(): void
     {
         $project = Project::firstOrCreate(
             ['project_key' => 'default'],
@@ -55,7 +55,7 @@ class SmaregiCouponImportSyncServiceTest extends TestCase
         ]);
     }
 
-    public function test_pushUnlinkedToSmaregi_未連携クーポンをPOSへ登録すること(): void
+    public function test_push_unlinked_to_smaregi_未連携クーポンを_po_sへ登録すること(): void
     {
         $project = Project::firstOrCreate(
             ['project_key' => 'default'],
