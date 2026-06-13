@@ -3,13 +3,18 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\UseCases\Coupon\CouponMyCouponsUseCase;
+use App\UseCases\Coupon\CouponUseMemberCouponUseCase;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class CouponController extends BaseApiController
 {
-    public function __construct(private CouponMyCouponsUseCase $myCouponsUseCase) {}
+    public function __construct(
+        private CouponMyCouponsUseCase $myCouponsUseCase,
+        private CouponUseMemberCouponUseCase $useMemberCouponUseCase
+    ) {}
 
     public function myCoupons(Request $request)
     {
@@ -33,6 +38,27 @@ class CouponController extends BaseApiController
             ]);
 
             return $this->error('クーポンの取得に失敗しました', 500);
+        }
+    }
+
+    public function use(Request $request, int $id)
+    {
+        try {
+            $result = $this->useMemberCouponUseCase->handle($request, $id);
+
+            return $this->success($result->toArray(), 'クーポンを使用しました');
+        } catch (ValidationException $e) {
+            $message = collect($e->errors())->flatten()->first() ?? 'クーポンを使用できません';
+
+            return $this->error($message, 422, [], $e->errors());
+        } catch (\Exception $e) {
+            LogHelper::error('[Coupon] use failed', [
+                'project_id' => AdminContext::getCurrentProjectId() ?? 1,
+                'member_coupon_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return $this->error('クーポンの使用に失敗しました', 500);
         }
     }
 }

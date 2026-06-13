@@ -47,6 +47,7 @@
         <input type="hidden" name="from" value="pos-data">
         <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-exchange-alt"></i> 完全同期（双方向）</button>
     </form>
+    <a href="{{ admin_route('admin.coupons.bulk-issue') }}" class="btn btn-outline-primary btn-sm"><i class="fas fa-ticket-alt"></i> クーポン同期・作成</a>
 </div>
 
 <div class="card mb-4">

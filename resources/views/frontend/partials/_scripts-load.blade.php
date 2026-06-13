@@ -1,9 +1,11 @@
 @php $v = '?v=' . urlencode($assetVersion); @endphp
 <script defer charset="utf-8" src="https://static.line-scdn.net/liff/edge/versions/2.22.3/sdk.js"></script>
 <script defer src="https://js.stripe.com/v3/"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 @php
+    $vendorScriptPaths = [
+        'js/vendor/JsBarcode.all.min.js',
+        'js/vendor/qrcode.min.js',
+    ];
     $localScriptPaths = [
         'js/shared/constants.js',
         'js/shared/utils/apiClient.js',
@@ -28,9 +30,14 @@
         'js/frontend/liff-init.js',
         'js/frontend/app.js',
     ];
+    $inlineScriptPaths = array_merge($vendorScriptPaths, $localScriptPaths);
 @endphp
+@if(!$useInlineLocalAssets)
+<script src="/js/vendor/JsBarcode.all.min.js{{ $v }}"></script>
+<script src="/js/vendor/qrcode.min.js{{ $v }}"></script>
+@endif
 @if($useInlineLocalAssets)
-    @foreach($localScriptPaths as $scriptPath)
+    @foreach($inlineScriptPaths as $scriptPath)
         @php $inlineJs = @file_get_contents(public_path($scriptPath)) ?: ''; @endphp
         @if($inlineJs !== '')
             <script data-inline-path="{{ $scriptPath }}">{!! $inlineJs !!}</script>

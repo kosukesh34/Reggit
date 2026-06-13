@@ -41,16 +41,19 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     @include('frontend.partials._head-assets')
     @include('frontend.partials._head-theme')
+    @php $assetQuery = '?v=' . urlencode($assetVersion); @endphp
+    <script src="/js/vendor/JsBarcode.all.min.js{{ $assetQuery }}"></script>
+    <script src="/js/vendor/qrcode.min.js{{ $assetQuery }}"></script>
     {{-- ネイティブアプリ（iOS/Android）: Android WebView では初回 100vh が 0 になりやすいため、px フォールバックを指定 --}}
     <style id="native-app-inline">
         #liff-loading { display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; }
-        html.native-app-embed, body.native-app-embed { height: 100%; min-height: 100vh; margin: 0; padding: 0; box-sizing: border-box; overflow: hidden !important; touch-action: none !important; }
+        html.native-app-embed, body.native-app-embed { height: 100%; min-height: 100vh; margin: 0; padding: 0; box-sizing: border-box; overflow: hidden !important; touch-action: manipulation !important; }
         .app-container { display: flex !important; flex-direction: column !important; min-height: 100vh !important; height: 100% !important; background: #fff !important; visibility: visible !important; box-sizing: border-box !important; overflow: hidden !important; }
         .header { display: block !important; visibility: visible !important; background: #000 !important; color: #fff !important; flex-shrink: 0 !important; }
-        .main-content { visibility: visible !important; flex: 1 1 auto !important; min-height: 0 !important; overflow: hidden !important; }
+        .main-content { visibility: visible !important; flex: 1 1 auto !important; min-height: 0 !important; overflow: hidden !important; display: flex !important; flex-direction: column !important; }
         .main-tabs { display: none !important; visibility: hidden !important; height: 0 !important; overflow: hidden !important; pointer-events: none !important; }
-        .tab-content.active { display: block !important; flex: 1 1 auto !important; min-height: 0 !important; overflow: hidden !important; }
-        .tab-content.active .tab-section { min-height: 0 !important; height: 100% !important; max-height: 100% !important; overflow: hidden !important; background: #fff !important; }
+        .tab-content.active { display: flex !important; flex-direction: column !important; flex: 1 1 auto !important; min-height: 0 !important; overflow-y: auto !important; overflow-x: hidden !important; -webkit-overflow-scrolling: touch !important; touch-action: pan-y !important; }
+        .tab-content.active .tab-section { flex: 1 1 auto !important; min-height: 0 !important; height: auto !important; max-height: none !important; overflow-y: auto !important; overflow-x: hidden !important; -webkit-overflow-scrolling: touch !important; touch-action: pan-y !important; background: #fff !important; padding-bottom: 16px !important; box-sizing: border-box !important; }
         .main-content { padding-bottom: 0 !important; }
     </style>
 </head>

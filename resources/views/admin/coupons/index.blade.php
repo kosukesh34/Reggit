@@ -38,7 +38,7 @@
         <div class="empty-state">
             <i class="fas fa-ticket-alt"></i>
             <p>クーポンがありません</p>
-            <p class="empty-state-hint">今後、ここからクーポンを作成できます</p>
+            <p class="empty-state-hint">「一括配布」から作成するか、右上の「作成」ボタンでクーポンを追加できます</p>
         </div>
         @else
         <table class="table">
@@ -50,6 +50,7 @@
                     <th>値</th>
                     <th>発行条件</th>
                     <th>利用回数</th>
+                    <th>スマレジ</th>
                     <th>状態</th>
                     <th class="table-actions-cell">操作</th>
                 </tr>
@@ -79,6 +80,13 @@
                         @endif
                     </td>
                     <td>{{ $coupon->used_count }}{{ $coupon->usage_limit ? ' / ' . $coupon->usage_limit : '' }}</td>
+                    <td>
+                        @if($coupon->smaregi_coupon_id)
+                            <span class="badge badge-success" title="ID: {{ $coupon->smaregi_coupon_id }}">連携済</span>
+                        @else
+                            <span class="badge badge-secondary">未連携</span>
+                        @endif
+                    </td>
                     <td><span class="badge badge-{{ $coupon->is_active ? 'success' : 'danger' }}">{{ $coupon->is_active ? '有効' : '無効' }}</span></td>
                     <td class="table-actions-cell">
                         <div class="table-actions">

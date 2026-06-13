@@ -37,8 +37,11 @@ class CouponMyCouponsUseCase
 
                 $designTemplate = (string) ($memberCoupon->coupon?->design_template ?? 'classic');
                 $themeColor = $memberCoupon->coupon?->theme_color;
-                $useDisplay = (string) ($memberCoupon->coupon?->use_display ?? 'none');
                 $code = $memberCoupon->coupon?->code;
+                $useDisplay = (string) ($memberCoupon->coupon?->use_display ?? \App\Models\Coupon::USE_DISPLAY_BARCODE);
+                if ($useDisplay === \App\Models\Coupon::USE_DISPLAY_NONE && $code !== null && $code !== '') {
+                    $useDisplay = \App\Models\Coupon::USE_DISPLAY_BARCODE;
+                }
 
                 return new MemberCoupon(
                     (int) $memberCoupon->id,
