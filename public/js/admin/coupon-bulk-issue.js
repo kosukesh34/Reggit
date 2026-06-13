@@ -41,16 +41,22 @@
             var submitBtn = $('#submitDeliveryBtn');
             var onNewTab = getCurrentSource() === 'new';
 
+            $all('.coupon-picker-card').forEach(function (card) {
+                card.classList.toggle('is-selected', checked ? card.contains(checked) : false);
+            });
+
             if (!checked) {
                 if (couponIdEl && couponIdEl.value) {
                     if (preview) preview.classList.remove('is-empty');
                     if (submitBtn) submitBtn.disabled = onNewTab;
+                    if (submitBtn) submitBtn.title = onNewTab ? '先にクーポンを作成してください' : '';
                     updateTargetPreview();
                     return;
                 }
                 if (preview) preview.classList.add('is-empty');
                 if (label) label.textContent = '未選択 — 上でクーポンを選ぶか作成してください';
                 if (submitBtn) submitBtn.disabled = true;
+                if (submitBtn) submitBtn.title = '配布するクーポンを選択してください';
                 if (couponIdEl) couponIdEl.value = '';
                 updateTargetPreview();
                 return;
@@ -59,13 +65,11 @@
             if (couponIdEl) couponIdEl.value = checked.value;
             if (preview) preview.classList.remove('is-empty');
             if (label) {
-                label.textContent = (checked.getAttribute('data-name') || '') + '（' + (checked.getAttribute('data-code') || '') + '）';
+                var discount = checked.getAttribute('data-discount') || '';
+                label.textContent = (checked.getAttribute('data-name') || '') + '（' + (checked.getAttribute('data-code') || '') + '）' + (discount ? ' / ' + discount : '');
             }
             if (submitBtn) submitBtn.disabled = onNewTab;
-
-            $all('.coupon-picker-card').forEach(function (card) {
-                card.classList.toggle('is-selected', card.contains(checked));
-            });
+            if (submitBtn) submitBtn.title = onNewTab ? '先にクーポンを作成してください' : '';
             updateTargetPreview();
         }
 
@@ -78,7 +82,9 @@
 
         function setCouponSource(source) {
             $all('.coupon-source-tab').forEach(function (tab) {
-                tab.classList.toggle('is-active', tab.getAttribute('data-source') === source);
+                var active = tab.getAttribute('data-source') === source;
+                tab.classList.toggle('is-active', active);
+                tab.setAttribute('aria-selected', active ? 'true' : 'false');
             });
             var panelExisting = $('#panelExisting');
             var panelNew = $('#panelNew');
@@ -172,12 +178,20 @@
                 var couponId = couponIdEl ? couponIdEl.value : '';
                 if (!couponId || getCurrentSource() === 'new') {
                     previewText.textContent = 'クーポンを選択すると対象人数が表示されます';
+                    var preview = $('#targetPreview');
+                    if (preview) preview.classList.remove('is-loading');
                     return;
                 }
                 if (!cfg.previewUrl) {
                     previewText.textContent = '対象会員: —';
+                    var previewUnavailable = $('#targetPreview');
+                    if (previewUnavailable) previewUnavailable.classList.remove('is-loading');
                     return;
                 }
+
+                var previewBox = $('#targetPreview');
+                if (previewBox) previewBox.classList.add('is-loading');
+                previewText.textContent = '対象会員: 計算中...';
 
                 var params = new URLSearchParams();
                 params.set('delivery_type', type);
@@ -192,9 +206,11 @@
                     .then(function (r) { return r.json(); })
                     .then(function (data) {
                         previewText.textContent = '対象会員: 約 ' + (data.count || 0) + ' 人';
+                        if (previewBox) previewBox.classList.remove('is-loading');
                     })
                     .catch(function () {
                         previewText.textContent = '対象会員: —';
+                        if (previewBox) previewBox.classList.remove('is-loading');
                     });
             }, 350);
         }
@@ -239,6 +255,8 @@
                     return;
                 }
                 searchTimer = setTimeout(function () {
+                    resultsDiv.innerHTML = '<div class="p-2 text-muted small">検索中...</div>';
+                    resultsDiv.classList.remove('is-hidden');
                     fetch(cfg.membersUrl + '?q=' + encodeURIComponent(q))
                         .then(function (r) { return r.json(); })
                         .then(function (list) {
