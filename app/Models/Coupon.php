@@ -51,6 +51,8 @@ class Coupon extends Model
 
     public const USE_DISPLAY_QR = 'qr';
 
+    public const USE_DISPLAY_BOTH = 'both';
+
     /** @return array<string, string> */
     public static function getUseDisplayOptions(): array
     {
@@ -58,6 +60,7 @@ class Coupon extends Model
             self::USE_DISPLAY_NONE => '表示しない',
             self::USE_DISPLAY_BARCODE => 'バーコードを表示',
             self::USE_DISPLAY_QR => 'QRコードを表示',
+            self::USE_DISPLAY_BOTH => 'バーコード / QRコード（利用時に選択）',
         ];
     }
 
@@ -106,6 +109,11 @@ class Coupon extends Model
             '#0891b2' => 'シアン',
         ];
     }
+
+    /** @var array<string, mixed> */
+    protected $attributes = [
+        'use_display' => self::USE_DISPLAY_BARCODE,
+    ];
 
     protected $fillable = [
         'project_id', 'code', 'name', 'description', 'image_url', 'design_template', 'theme_color', 'use_display',
