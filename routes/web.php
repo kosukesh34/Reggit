@@ -187,6 +187,12 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'bind.admin.project', '
         Route::post('/coupons', [AdminCouponController::class, 'storeCoupon'])->name('admin.coupons.store')->middleware('admin.permission:coupons.manage');
         Route::get('/coupons/bulk-issue', [AdminCouponController::class, 'bulkIssueForm'])->name('admin.coupons.bulk-issue')->middleware('admin.permission:coupons.manage');
         Route::post('/coupons/bulk-issue', [AdminCouponController::class, 'bulkIssue'])->name('admin.coupons.bulk-issue.store')->middleware('admin.permission:coupons.manage');
+        Route::post('/coupons/quick-create', [AdminCouponController::class, 'quickCreateCoupon'])->name('admin.coupons.quick-create')->middleware('admin.permission:coupons.manage');
+        Route::post('/coupons/sync-smaregi', [AdminCouponController::class, 'syncCouponsFromSmaregi'])->name('admin.coupons.sync-smaregi')->middleware('admin.permission:coupons.manage');
+        Route::post('/coupons/push-smaregi', [AdminCouponController::class, 'pushCouponsToSmaregi'])->name('admin.coupons.push-smaregi')->middleware('admin.permission:coupons.manage');
+        Route::post('/coupons/full-sync-smaregi', [AdminCouponController::class, 'fullSyncCouponsWithSmaregi'])->name('admin.coupons.full-sync-smaregi')->middleware('admin.permission:coupons.manage');
+        Route::get('/coupons/ajax/members', [AdminCouponController::class, 'searchMembers'])->name('admin.coupons.ajax.members')->middleware('admin.permission:coupons.manage');
+        Route::get('/coupons/delivery-preview', [AdminCouponController::class, 'deliveryPreview'])->name('admin.coupons.delivery.preview')->middleware('admin.permission:coupons.manage');
         Route::get('/coupons/{id}/edit', [AdminCouponController::class, 'editCoupon'])->name('admin.coupons.edit')->middleware('admin.permission:coupons.manage');
         Route::put('/coupons/{id}', [AdminCouponController::class, 'updateCoupon'])->name('admin.coupons.update')->middleware('admin.permission:coupons.manage');
         Route::delete('/coupons/{id}', [AdminCouponController::class, 'deleteCoupon'])->name('admin.coupons.delete')->middleware('admin.permission:coupons.manage');

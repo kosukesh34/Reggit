@@ -100,83 +100,218 @@
     font-weight: 600;
 }
 
-/* クーポン使用モーダル */
-.coupon-use-modal {
+/* クーポン一覧タブ */
+.coupons-list-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    padding: 4px;
+    background: var(--bg-light, #f3f4f6);
+    border-radius: 12px;
+}
+
+.coupons-list-tab {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 44px;
+    padding: 8px 10px;
+    border: none;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+}
+
+.coupons-list-tab.is-active {
+    background: #fff;
+    color: var(--primary-color);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.coupons-list-tab-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 6px;
+    border-radius: 11px;
+    background: rgba(0, 0, 0, 0.06);
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.coupons-list-tab.is-active .coupons-list-tab-count {
+    background: rgba(var(--primary-rgb, 6, 199, 85), 0.12);
+    color: var(--primary-color);
+}
+
+.coupons-tab-panel {
+    display: none;
+}
+
+.coupons-tab-panel.is-active {
+    display: block;
+}
+
+.coupons-tab-empty {
+    padding: 32px 16px;
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+.coupons-tab-empty i {
+    display: block;
+    margin-bottom: 10px;
+    font-size: 2rem;
+    color: var(--text-tertiary);
+}
+
+.coupons-tab-empty p {
+    margin: 0;
+    font-size: 14px;
+}
+
+.coupons-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* クーポン使用確認ダイアログ（フロント用） */
+.confirm-dialog {
     position: fixed;
     inset: 0;
-    z-index: 1000;
+    z-index: 10055;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 20px;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.2s, visibility 0.2s;
+    background: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(2px);
 }
 
-.coupon-use-modal.is-open {
-    opacity: 1;
-    visibility: visible;
-}
-
-.coupon-use-modal-backdrop {
-    position: absolute;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.5);
-}
-
-.coupon-use-modal-content {
-    position: relative;
+.confirm-dialog-content {
+    width: 100%;
+    max-width: 400px;
+    padding: 24px;
     background: #fff;
     border-radius: 16px;
-    max-width: 340px;
-    width: 100%;
-    max-height: 90vh;
-    overflow: auto;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18);
 }
 
-.coupon-use-modal-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px 20px;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.coupon-use-modal-title {
-    margin: 0;
-    font-size: 18px;
+.confirm-dialog-title {
+    margin-bottom: 12px;
+    font-size: 17px;
     font-weight: 700;
-}
-
-.coupon-use-modal-close {
-    width: 36px;
-    height: 36px;
-    border: none;
-    background: transparent;
-    font-size: 24px;
-    line-height: 1;
-    color: var(--text-secondary);
-    cursor: pointer;
-    padding: 0;
-    border-radius: 8px;
-}
-
-.coupon-use-modal-close:hover {
-    background: var(--bg-light);
     color: var(--text-primary);
 }
 
-.coupon-use-modal-body {
-    padding: 20px;
+.confirm-dialog-message {
+    margin-bottom: 20px;
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--text-secondary);
+}
+
+.confirm-dialog-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.confirm-dialog-actions .btn {
+    min-width: 96px;
+}
+
+/* クーポン使用モーダル（会員証拡大と同じ見た目） */
+.coupon-use-enlarge-overlay {
+    z-index: 10060;
+}
+
+.coupon-use-enlarge-overlay .member-code-enlarge-content {
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.coupon-use-enlarge-overlay .member-code-enlarge-body {
+    flex-direction: column;
     text-align: center;
 }
 
-.coupon-use-modal-name {
+.coupon-use-modal-hint {
     margin: 0 0 16px;
-    font-weight: 700;
-    font-size: 16px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.coupon-use-modal-hint i {
+    margin-right: 6px;
+    color: var(--primary-color);
+}
+
+.coupon-use-code-area {
+    width: 100%;
+}
+
+.coupon-use-display-tabs {
+    display: flex;
+    gap: 8px;
+    margin: 0 0 16px;
+    padding: 4px;
+    background: var(--bg-light, #f3f4f6);
+    border-radius: 10px;
+}
+
+.coupon-use-display-tab {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 40px;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+}
+
+.coupon-use-display-tab.is-active {
+    background: #fff;
+    color: var(--primary-color);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.coupon-use-barcode-wrap {
+    display: inline-block;
+    max-width: 100%;
+    padding: 12px;
+    background: #fff;
+    border-radius: 8px;
+}
+
+.coupon-use-barcode-svg {
+    display: block;
+    max-width: 100%;
+    height: auto;
+}
+
+.coupon-use-barcode-canvas {
+    display: block;
+    max-width: 100%;
+    height: auto;
 }
 
 .coupon-use-code-label {
@@ -441,4 +576,19 @@
 .coupon-received-toast i {
     font-size: 16px;
     flex-shrink: 0;
+}
+
+/* ネイティブアプリ: クーポン一覧の縦スクロール */
+html.native-app-embed #couponsTab.tab-content.active,
+html.native-app-embed #couponsTab.tab-content.active #couponsSection.tab-section {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-y !important;
+    overscroll-behavior-y: contain;
+}
+
+html.native-app-embed #couponsSection .coupons-list,
+html.native-app-embed #couponsSection .coupon-group {
+    touch-action: pan-y;
 }

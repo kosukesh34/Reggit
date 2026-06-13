@@ -81,6 +81,7 @@ Route::prefix('v1')->middleware([AuthenticateApiToken::class])->group(function (
     Route::get('/members/points/history', [ApiV1MemberPointHistoryController::class, '__invoke']);
     Route::post('/members/withdraw', [ApiV1MemberWithdrawController::class, '__invoke']);
     Route::get('/members/me/coupons', [ApiV1CouponController::class, 'myCoupons']);
+    Route::post('/members/me/coupons/{id}/use', [ApiV1CouponController::class, 'use']);
     Route::get('/stamps', [ApiV1StampController::class, 'index']);
     Route::get('/announcements', [ApiV1AnnouncementController::class, 'index']);
     Route::post('/announcements/{id}/read', [ApiV1AnnouncementController::class, 'markRead']);
@@ -103,6 +104,7 @@ Route::prefix('v1')->middleware([CheckApiProject::class, AuthenticateApiToken::c
     Route::get('/{project_key}/members/points/history', [ApiV1MemberPointHistoryController::class, '__invoke']);
     Route::post('/{project_key}/members/withdraw', [ApiV1MemberWithdrawController::class, '__invoke']);
     Route::get('/{project_key}/members/me/coupons', [ApiV1CouponController::class, 'myCoupons']);
+    Route::post('/{project_key}/members/me/coupons/{id}/use', [ApiV1CouponController::class, 'use']);
     Route::get('/{project_key}/stamps', [ApiV1StampController::class, 'index']);
     Route::get('/{project_key}/announcements', [ApiV1AnnouncementController::class, 'index']);
     Route::post('/{project_key}/announcements/{id}/read', [ApiV1AnnouncementController::class, 'markRead']);
@@ -138,6 +140,7 @@ Route::middleware(['web', 'bind.project'])->group(function () {
     Route::get('/members/points/card', [MemberPointCardController::class, '__invoke']);
     Route::post('/members/points/add', [MemberAddPointsController::class, '__invoke']);
     Route::get('/members/me/coupons', [CouponController::class, 'myCoupons']);
+    Route::post('/members/me/coupons/{id}/use', [CouponController::class, 'use']);
 
     Route::post('/payment/create-intent', [PaymentCreateIntentController::class, '__invoke']);
     Route::post('/payment/confirm', [PaymentConfirmController::class, '__invoke']);

@@ -35,6 +35,7 @@ const AppConstants = {
         ANNOUNCEMENT_READ: (id) => `${API_BASE}/announcements/${id}/read`,
         STAMPS: `${API_BASE}/stamps`,
         MY_COUPONS: `${API_BASE}/members/me/coupons`,
+        MY_COUPON_USE: (id) => `${API_BASE}/members/me/coupons/${id}/use`,
         GALLERY: `${API_BASE}/gallery`,
         QUEUE: `${API_BASE}/queue`,
         QUEUE_ME: `${API_BASE}/queue/me`,
