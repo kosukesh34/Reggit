@@ -2,6 +2,7 @@
 
 namespace App\UseCases\Coupon;
 
+use App\Models\Coupon;
 use App\Models\ShopSetting;
 use App\Services\UserService;
 use App\UseCases\Coupon\Data\CouponListView;
@@ -37,8 +38,11 @@ class CouponMyCouponsUseCase
 
                 $designTemplate = (string) ($memberCoupon->coupon?->design_template ?? 'classic');
                 $themeColor = $memberCoupon->coupon?->theme_color;
-                $useDisplay = (string) ($memberCoupon->coupon?->use_display ?? 'none');
                 $code = $memberCoupon->coupon?->code;
+                $useDisplay = (string) ($memberCoupon->coupon?->use_display ?? Coupon::USE_DISPLAY_BARCODE);
+                if ($useDisplay === Coupon::USE_DISPLAY_NONE && $code !== null && $code !== '') {
+                    $useDisplay = Coupon::USE_DISPLAY_BARCODE;
+                }
 
                 return new MemberCoupon(
                     (int) $memberCoupon->id,

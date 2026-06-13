@@ -17,7 +17,7 @@ class MemberCoupon
         public string $designTemplate = 'classic',
         public ?string $themeColor = null,
         public ?string $description = null,
-        public string $useDisplay = 'none',
+        public string $useDisplay = 'barcode',
         public ?string $code = null
     ) {}
 
