@@ -79,14 +79,33 @@ class StampsManager {
         }
     }
 
-    renderSlot(i, filled) {
-        return `<div class="stamp-slot ${filled ? 'stamp-slot--filled' : ''}" aria-hidden="true">${filled ? '<i class="fas fa-stamp"></i>' : ''}</div>`;
+    renderSlot(index, filled, isNext) {
+        const number = index + 1;
+        const classes = ['stamp-slot'];
+        if (filled) {
+            classes.push('stamp-slot--filled');
+        } else {
+            classes.push('stamp-slot--empty');
+        }
+        if (isNext) {
+            classes.push('stamp-slot--next');
+        }
+        const label = filled
+            ? `${number}番目（押印済み）`
+            : (isNext ? `${number}番目（次はここ）` : `${number}番目`);
+        const content = filled
+            ? '<i class="fas fa-stamp" aria-hidden="true"></i>'
+            : `<span class="stamp-slot-number">${number}</span>`;
+
+        return `<div class="${classes.join(' ')}" aria-label="${DomHelper.escapeHtml(label)}">${content}</div>`;
     }
 
     renderSlots(current, required, layoutStyle) {
         const slots = [];
         for (let i = 0; i < required; i++) {
-            slots.push(this.renderSlot(i, i < current));
+            const filled = i < current;
+            const isNext = !filled && i === current && current < required;
+            slots.push(this.renderSlot(i, filled, isNext));
         }
         return `<div class="stamp-slots stamp-slots--${layoutStyle || 'grid'}" role="img" aria-label="${current}/${required} スタンプ">${slots.join('')}</div>`;
     }
