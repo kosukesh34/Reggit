@@ -139,7 +139,7 @@ struct BuildNativeInjectionScriptUseCase {
                             padding: 0 !important;
                             box-sizing: border-box !important;
                             overflow: hidden !important;
-                            touch-action: none !important;
+                            touch-action: manipulation !important;
                         }
                         .native-app-embed .app-container {
                             display: flex !important;
@@ -169,16 +169,29 @@ struct BuildNativeInjectionScriptUseCase {
                             padding-bottom: 0 !important;
                         }
                         .native-app-embed .tab-content.active {
-                            display: block !important;
-                            height: 100% !important;
-                            max-height: 100% !important;
-                            overflow: hidden !important;
+                            display: flex !important;
+                            flex-direction: column !important;
+                            flex: 1 1 auto !important;
+                            min-height: 0 !important;
+                            height: auto !important;
+                            max-height: none !important;
+                            overflow-y: auto !important;
+                            overflow-x: hidden !important;
+                            -webkit-overflow-scrolling: touch !important;
+                            touch-action: pan-y !important;
                         }
                         .native-app-embed .tab-content.active .tab-section {
                             display: block !important;
-                            height: 100% !important;
-                            max-height: 100% !important;
-                            overflow: hidden !important;
+                            flex: 1 1 auto !important;
+                            min-height: 0 !important;
+                            height: auto !important;
+                            max-height: none !important;
+                            overflow-y: auto !important;
+                            overflow-x: hidden !important;
+                            -webkit-overflow-scrolling: touch !important;
+                            touch-action: pan-y !important;
+                            padding-bottom: 16px !important;
+                            box-sizing: border-box !important;
                         }
                         .native-app-embed .main-tabs {
                             display: none !important;
