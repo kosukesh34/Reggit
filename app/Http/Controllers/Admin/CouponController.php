@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\CouponDeliveryType;
 use App\Http\Requests\Admin\CouponBulkIssueRequest;
 use App\Http\Requests\Admin\CouponQuickCreateRequest;
 use App\Http\Requests\Admin\CouponStoreRequest;
 use App\Http\Requests\Admin\CouponUpdateRequest;
-use App\Enums\CouponDeliveryType;
 use App\Models\Coupon;
 use App\Services\Admin\CouponAdminService;
 use App\Services\Admin\CouponDeliveryTargetService;
