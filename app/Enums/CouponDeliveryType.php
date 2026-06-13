@@ -93,6 +93,12 @@ class CouponDeliveryType extends EnumBase
         return in_array($value, self::scheduledValues(), true);
     }
 
+    /** 空の member_ids が「全員配布」を意味する配信種別 */
+    public static function isAllMembersDelivery(string $value): bool
+    {
+        return in_array($value, [self::IMMEDIATE_ALL, self::SCHEDULED_ALL], true);
+    }
+
     /**
      * @return array<string, array{label: string, icon: string, types: list<string>}>
      */

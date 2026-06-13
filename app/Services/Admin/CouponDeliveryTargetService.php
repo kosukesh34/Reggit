@@ -4,6 +4,7 @@ namespace App\Services\Admin;
 
 use App\Enums\CouponDeliveryType;
 use App\Enums\OrderStatus;
+use App\Models\CouponDelivery;
 use App\Models\Member;
 use App\Models\Order;
 use Carbon\Carbon;
@@ -218,5 +219,42 @@ class CouponDeliveryTargetService
         }
 
         return count($resolved['member_ids']);
+    }
+
+    /**
+     * 予約配信ジョブ等: 保存済み segment_criteria を resolve 用パラメータに変換する。
+     *
+     * @return array<string, mixed>
+     */
+    public function buildResolveParamsFromDelivery(CouponDelivery $delivery): array
+    {
+        $criteria = is_array($delivery->segment_criteria) ? $delivery->segment_criteria : [];
+        $deliveryType = (string) $delivery->delivery_type;
+        $params = [];
+
+        if (in_array($deliveryType, CouponDeliveryType::segmentValues(), true)) {
+            $condition = (string) ($criteria['condition'] ?? 'min_amount');
+            $params['segment_period_days'] = (int) ($criteria['period_days'] ?? 30);
+            $params['segment_condition'] = $condition;
+            if ($condition === 'min_amount') {
+                $params['segment_min_amount'] = (float) ($criteria['min_total_amount'] ?? 0);
+            }
+        }
+
+        if (in_array($deliveryType, CouponDeliveryType::birthdayValues(), true)) {
+            $params['birthday_month'] = (int) ($criteria['birthday_month'] ?? now()->month);
+        }
+
+        if (in_array($deliveryType, CouponDeliveryType::newMemberValues(), true)) {
+            $params['new_member_days'] = (int) ($criteria['new_member_days'] ?? 30);
+        }
+
+        if (in_array($deliveryType, CouponDeliveryType::inactiveValues(), true)) {
+            $params['inactive_days'] = (int) ($criteria['inactive_days'] ?? 90);
+        }
+
+        $params['target_member_ids'] = is_array($delivery->target_member_ids) ? $delivery->target_member_ids : [];
+
+        return $params;
     }
 }
