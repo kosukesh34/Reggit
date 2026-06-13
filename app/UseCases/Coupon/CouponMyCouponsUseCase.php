@@ -67,11 +67,18 @@ class CouponMyCouponsUseCase
         return new CouponListView($coupons, $defaultImageUrl, false);
     }
 
-    /** 表示用: available / used / expired */
+    /** 表示用: available / upcoming / used / expired */
     private function resolveDisplayStatus(\App\Models\MemberCoupon $memberCoupon): string
     {
         if ($memberCoupon->status === \App\Models\MemberCoupon::STATUS_USED) {
             return 'used';
+        }
+        $validFrom = $memberCoupon->valid_from;
+        if ($validFrom !== null) {
+            $start = $validFrom instanceof \DateTimeInterface ? $validFrom : new \DateTimeImmutable($validFrom);
+            if ($start->getTimestamp() > time()) {
+                return 'upcoming';
+            }
         }
         $validUntil = $memberCoupon->valid_until;
         if ($validUntil !== null) {
