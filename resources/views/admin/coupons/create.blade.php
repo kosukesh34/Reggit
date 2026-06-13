@@ -84,10 +84,10 @@
                     <label for="use_display" class="form-label">使用時の表示</label>
                     <select name="use_display" id="use_display" class="form-control" aria-describedby="use_display-help">
                         @foreach(\App\Models\Coupon::getUseDisplayOptions() as $value => $label)
-                            <option value="{{ $value }}" {{ old('use_display', 'none') === $value ? 'selected' : '' }}>{{ $label }}</option>
+                            <option value="{{ $value }}" {{ old('use_display', \App\Models\Coupon::USE_DISPLAY_BARCODE) === $value ? 'selected' : '' }}>{{ $label }}</option>
                         @endforeach
                     </select>
-                    <p id="use_display-help" class="form-text text-muted">会員が「使用する」を押したときに、バーコード・QRコード・またはコード番号を表示できます。レジで読み取る場合に便利です。</p>
+                    <p id="use_display-help" class="form-text text-muted">会員が「使用する」を押したときに、バーコード・QRコード・またはコード番号を表示できます。「バーコード / QRコード（利用時に選択）」では、会員が表示形式を切り替えられます。レジで読み取る場合に便利です。</p>
                     @error('use_display')<span class="invalid-feedback">{{ $message }}</span>@enderror
                 </div>
                 <div class="form-group">

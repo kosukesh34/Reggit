@@ -3,15 +3,20 @@
 namespace App\Http\Controllers;
 
 use App\UseCases\Coupon\CouponMyCouponsUseCase;
+use App\UseCases\Coupon\CouponUseMemberCouponUseCase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 
 /**
  * 会員クーポン一覧。責務は UseCase に委譲する。
  */
 class CouponController extends Controller
 {
-    public function __construct(private CouponMyCouponsUseCase $myCouponsUseCase) {}
+    public function __construct(
+        private CouponMyCouponsUseCase $myCouponsUseCase,
+        private CouponUseMemberCouponUseCase $useMemberCouponUseCase
+    ) {}
 
     public function myCoupons(Request $request)
     {
@@ -34,6 +39,33 @@ class CouponController extends Controller
             Log::error('My coupons error: '.$e->getMessage());
 
             return response()->json(['error' => 'クーポンの取得に失敗しました'], 500);
+        }
+    }
+
+    public function use(Request $request, int $id)
+    {
+        try {
+            $result = $this->useMemberCouponUseCase->handle($request, $id);
+
+            return response()->json([
+                'success' => true,
+                'data' => $result->toArray(),
+            ]);
+        } catch (ValidationException $e) {
+            $message = collect($e->errors())->flatten()->first() ?? 'クーポンを使用できません';
+
+            return response()->json([
+                'success' => false,
+                'message' => $message,
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Use coupon error: '.$e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'クーポンの使用に失敗しました',
+            ], 500);
         }
     }
 }
