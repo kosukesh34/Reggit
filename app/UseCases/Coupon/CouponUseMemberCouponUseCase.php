@@ -49,6 +49,18 @@ class CouponUseMemberCouponUseCase
                 ]);
             }
 
+            $validFrom = $memberCoupon->valid_from;
+            if ($validFrom !== null) {
+                $start = $validFrom instanceof \DateTimeInterface
+                    ? $validFrom
+                    : new \DateTimeImmutable((string) $validFrom);
+                if ($start->getTimestamp() > time()) {
+                    throw ValidationException::withMessages([
+                        'member_coupon_id' => ['このクーポンはまだ利用開始前です'],
+                    ]);
+                }
+            }
+
             $validUntil = $memberCoupon->valid_until;
             if ($validUntil !== null) {
                 $end = $validUntil instanceof \DateTimeInterface
