@@ -57,6 +57,10 @@ class AdminCouponBulkIssueUseCase
             ];
         }
 
+        if ($memberIds === [] && ! CouponDeliveryType::isAllMembersDelivery($deliveryType)) {
+            throw new \InvalidArgumentException('配布対象の会員がいません');
+        }
+
         $issued = $this->memberAdminService->issueCouponToMembers($projectId, $couponId, $memberIds);
 
         CouponDelivery::create([
