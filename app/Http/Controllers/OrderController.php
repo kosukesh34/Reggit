@@ -65,6 +65,12 @@ class OrderController extends Controller
                 Rule::exists('products', 'id')->where('project_id', $projectId),
             ],
             'items.*.quantity' => 'required|integer|min:1',
+            'items.*.notes' => 'nullable|string|max:500',
+            'items.*.option_ids' => 'nullable|array',
+            'items.*.option_ids.*' => [
+                'integer',
+                Rule::exists('product_options', 'id')->where('project_id', $projectId),
+            ],
             'payment_method' => 'required|in:'.implode(',', array_keys(PaymentMethod::getValues())),
             'points_used' => 'integer|min:0',
             'notes' => 'nullable|string',

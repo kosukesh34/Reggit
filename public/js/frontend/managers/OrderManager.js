@@ -28,12 +28,13 @@ class OrderManager {
                     `<span class="order-item-line">${DomHelper.escapeHtml((i.product && i.product.name) || '商品')} × ${i.quantity || 0}</span>`
             )
             .join('');
+        const refNumber = DomHelper.formatReferenceNumber(order.order_number, order.id);
         return `
             <div class="order-card">
                 <div class="order-card-header">
-                    <span class="order-card-number">#${order.order_number || order.id}</span>
                     <span class="order-card-date">${DomHelper.escapeHtml(dateStr)}</span>
                     <span class="order-card-status order-card-status--${order.status}">${DomHelper.escapeHtml(statusLabel)}</span>
+                    ${refNumber ? `<span class="ref-number" aria-label="注文番号">${DomHelper.escapeHtml(refNumber)}</span>` : ''}
                 </div>
                 <div class="order-card-items">${items}</div>
                 <div class="order-card-total">合計: ${DomHelper.formatPrice(order.total_amount || 0)}</div>
