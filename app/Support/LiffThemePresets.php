@@ -320,7 +320,7 @@ class LiffThemePresets
     {
         $hex = ltrim($hex, '#');
         if (strlen($hex) !== 6) {
-            return '#' . $hex;
+            return '#'.$hex;
         }
         $amount = max(0.0, min(1.0, $amount));
         $channels = [];
@@ -330,6 +330,6 @@ class LiffThemePresets
             $channels[] = str_pad(dechex(max(0, min(255, $value))), 2, '0', STR_PAD_LEFT);
         }
 
-        return '#' . implode('', $channels);
+        return '#'.implode('', $channels);
     }
 }
