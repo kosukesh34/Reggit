@@ -673,9 +673,15 @@ class ReggitApp {
         const hasOptions = Array.isArray(product.option_groups) && product.option_groups.length > 0;
         const btnLabel = hasOptions
             ? '<i class="fas fa-sliders-h"></i> 選んで追加'
-            : '<i class="fas fa-cart-plus"></i> カートに追加';
+            : (isInCart ? '<i class="fas fa-check"></i> 追加済み' : '<i class="fas fa-cart-plus"></i> カートに追加');
+        const cardAction = hasOptions
+            ? `app.openProductDetail(${product.id})`
+            : `app.addToCart(${product.id})`;
+        const btnAction = hasOptions
+            ? `app.openProductDetail(${product.id})`
+            : `app.addToCart(${product.id})`;
         return `
-            <div class="product-card ${isInCart ? AppConstants.CSS_CLASSES.IN_CART : ''}" data-product-id="${product.id}" onclick="app.openProductDetail(${product.id})">
+            <div class="product-card ${isInCart ? AppConstants.CSS_CLASSES.IN_CART : ''}" data-product-id="${product.id}" onclick="${cardAction}">
                 <div class="product-image-wrapper">
                     ${isInCart ? `<div class="cart-badge"><i class="fas fa-check"></i> ${cartQuantity}</div>` : ''}
                     <img src="${imageUrl}" alt="${DomHelper.escapeHtml(product.name)}" class="product-image" loading="lazy"
@@ -685,7 +691,7 @@ class ReggitApp {
                 <div class="product-info">
                     <div class="product-name">${DomHelper.escapeHtml(product.name)}</div>
                     <div class="product-price">${DomHelper.formatPrice(product.price)}${hasOptions ? '<span class="product-price-from">〜</span>' : ''}</div>
-                    <button class="product-add-btn ${isInCart ? AppConstants.CSS_CLASSES.ADDED : ''}" onclick="event.stopPropagation(); app.openProductDetail(${product.id})">
+                    <button class="product-add-btn ${isInCart ? AppConstants.CSS_CLASSES.ADDED : ''}" onclick="event.stopPropagation(); ${btnAction}">
                         ${btnLabel}
                     </button>
                 </div>
@@ -836,7 +842,7 @@ class ReggitApp {
                 : '1つ選択';
             const options = (group.options || []).map((opt, i) => {
                 const defChecked = (!multiple && (opt.is_default || i === 0)) ? 'checked' : (multiple && opt.is_default ? 'checked' : '');
-                const delta = parseInt(opt.price_delta, 10) || 0;
+                const delta = Number(opt.price_delta) || 0;
                 const deltaLabel = delta > 0 ? `+${DomHelper.formatPrice(delta)}` : (delta < 0 ? DomHelper.formatPrice(delta) : '');
                 return `
                     <label class="pd-option">
@@ -874,7 +880,7 @@ class ReggitApp {
                         ${groupsHtml}
                         <div class="pd-group">
                             <div class="pd-group-head"><span class="pd-group-name">ご要望（任意）</span></div>
-                            <input type="text" id="pdNotes" class="pd-notes" maxlength="200" placeholder="例: ソース少なめ など">
+                            <input type="text" id="pdNotes" class="pd-notes" maxlength="500" placeholder="例: ソース少なめ など">
                         </div>
                     </div>
                 </div>
@@ -908,7 +914,7 @@ class ReggitApp {
             const max = group.max_select || 0;
             if (group.selection_type === 'multiple' && max > 0 && checked.length > max) valid = false;
             checked.forEach(input => {
-                const price = parseInt(input.getAttribute('data-price'), 10) || 0;
+                const price = Number(input.getAttribute('data-price')) || 0;
                 delta += price;
                 options.push({
                     group_name: group.name,
@@ -940,7 +946,7 @@ class ReggitApp {
         });
 
         const sel = this._collectDetailSelection();
-        const base = parseInt(product.price, 10) || 0;
+        const base = Number(product.price) || 0;
         const qty = this._detailQty || 1;
         const total = (base + sel.delta) * qty;
         const totalEl = document.getElementById('pdAddTotal');
