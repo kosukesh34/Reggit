@@ -29,7 +29,8 @@ class DomHelper {
     }
 
     static formatPrice(price) {
-        return `¥${parseInt(price).toLocaleString()}`;
+        const amount = Math.round(Number(price) || 0);
+        return `¥${amount.toLocaleString()}`;
     }
 
     /** 予約番号・注文番号などを、お客様向けに数字だけの控えめな表示用に整形する。 */
