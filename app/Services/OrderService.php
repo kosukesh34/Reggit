@@ -10,6 +10,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\PointTransaction;
 use App\Models\Product;
+use App\Models\ProductOption;
 use App\Models\ProductOptionGroup;
 use App\Models\ShopSetting;
 use App\Models\User;
@@ -98,7 +99,7 @@ class OrderService
     {
         $optionIds = array_values(array_unique(array_map('intval', $optionIds)));
 
-        /** @var array<int, list<\App\Models\ProductOption>> $selectedByGroupId */
+        /** @var array<int, list<ProductOption>> $selectedByGroupId */
         $selectedByGroupId = [];
 
         foreach ($optionIds as $optionId) {
