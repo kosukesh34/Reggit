@@ -51,10 +51,10 @@ return new class extends Migration
     {
         Schema::create('project_line_liff_settings', function (Blueprint $table) {
             $table->foreignId('project_id')->primary()->constrained('projects')->onDelete('cascade');
-            $table->string('line_primary_color', 20)->default('#000000');
-            $table->string('line_primary_dark', 20)->default('#333333');
-            $table->string('line_success_color', 20)->default('#000000');
-            $table->string('line_danger_color', 20)->default('#dc3545');
+            $table->string('line_primary_color', 20)->default('#4f46e5');
+            $table->string('line_primary_dark', 20)->default('#4338ca');
+            $table->string('line_success_color', 20)->default('#059669');
+            $table->string('line_danger_color', 20)->default('#dc2626');
             $table->string('line_liff_id')->nullable();
             $table->string('line_liff_url')->nullable();
             $table->json('liff_builder_blocks')->nullable();
@@ -230,10 +230,10 @@ return new class extends Migration
             'advance_booking_days' => 30,
             'reservation_capacity_per_slot' => 20,
             'queue_avg_serve_minutes' => 10,
-            'line_primary_color' => '#000000',
-            'line_primary_dark' => '#333333',
-            'line_success_color' => '#000000',
-            'line_danger_color' => '#dc3545',
+            'line_primary_color' => '#4f46e5',
+            'line_primary_dark' => '#4338ca',
+            'line_success_color' => '#059669',
+            'line_danger_color' => '#dc2626',
             'order_mode' => 'both',
             'feature_home_enabled' => true,
             'feature_orders_enabled' => true,

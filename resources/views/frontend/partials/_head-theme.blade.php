@@ -11,9 +11,15 @@
 </style>
 @endisset
 @isset($liffTabSettings['_global'])
-@php $g = $liffTabSettings['_global']; @endphp
+@php
+    $g = $liffTabSettings['_global'];
+    $themeVars = \App\Support\LiffThemePresets::cssVariablesFor($g);
+@endphp
 <style id="liff-design-tokens">
 :root {
+@foreach($themeVars as $name => $value)
+    {{ $name }}: {{ $value }};
+@endforeach
 @if(!empty($g['content_padding']))
     --content-padding: {{ (int) $g['content_padding'] }}px;
 @endif

@@ -1,0 +1,246 @@
+/* ============================================================
+   LIFF Designer — 実アプリ準拠プレビュー & データモック（4枚目）
+
+   方針:
+   - プレビューのクロームを実アプリ同様の「黒基調ヘッダー＋アクセント」に統一。
+   - データブロックは「自動表示」ではなく、本来表示される UI をモックで描画。
+   - アクセント色はプレビューの --primary-color（テーマ設定）に追従。
+   ============================================================ */
+
+:root {
+    --ld-mock-accent: #4f46e5;
+    --ld-mock-accent-rgb: 79, 70, 229;
+}
+
+/* ── プレビューのクローム（黒基調ヘッダー）を実アプリに合わせる ── */
+.ld-phone__header,
+.ld-phone__frame.is-line .ld-phone__header {
+    background: linear-gradient(135deg, #1c1917 0%, #0c0a09 100%) !important;
+    color: #fff;
+}
+.ld-phone__nav-item.is-active,
+.ld-phone__frame.is-line .ld-phone__nav-item.is-active {
+    color: var(--primary-color, var(--ld-mock-accent)) !important;
+}
+.ld-phone__nav.is-pill .ld-phone__nav-item.is-active {
+    background: rgba(var(--primary-rgb, var(--ld-mock-accent-rgb)), 0.12);
+}
+
+/* 設定パネルの補足テキスト */
+.ld-settings__hint {
+    margin-top: 6px;
+    font-size: 11px;
+    line-height: 1.6;
+    color: #78716c;
+    background: #f5f5f4;
+    border-radius: 8px;
+    padding: 8px 10px;
+}
+
+/* ============================================================
+   データブロックのヘッダー（「自動表示」表記を廃止）
+   ============================================================ */
+.ld-block--data-body { display: flex; flex-direction: column; gap: 8px; }
+.ld-data-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+.ld-data-head__label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 800;
+    color: #44403c;
+}
+.ld-data-head__label i { color: var(--primary-color, var(--ld-mock-accent)); }
+.ld-data-head__badge {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: var(--primary-color, var(--ld-mock-accent));
+    background: rgba(var(--primary-rgb, var(--ld-mock-accent-rgb)), 0.12);
+    border-radius: 999px;
+    padding: 2px 8px;
+}
+
+.ld-mock { display: flex; flex-direction: column; gap: 8px; }
+
+/* ── 会員証（member_card）── */
+.ld-mock-card {
+    border-radius: 16px;
+    padding: 16px;
+    color: #fff;
+    background:
+        radial-gradient(120% 140% at 100% 0%, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 45%),
+        linear-gradient(135deg, var(--primary-color, var(--ld-mock-accent)) 0%, var(--primary-dark, #4338ca) 100%);
+    box-shadow: 0 10px 24px rgba(var(--primary-rgb, var(--ld-mock-accent-rgb)), 0.28);
+}
+.ld-mock-card__head { display: flex; align-items: flex-start; justify-content: space-between; }
+.ld-mock-card__shop { font-size: 10px; opacity: 0.85; }
+.ld-mock-card__name { font-size: 15px; font-weight: 800; margin-top: 2px; }
+.ld-mock-card__rank {
+    font-size: 10px; font-weight: 700;
+    background: rgba(255,255,255,0.2);
+    border-radius: 999px; padding: 3px 9px;
+}
+.ld-mock-card__points { font-size: 22px; font-weight: 800; margin-top: 10px; }
+.ld-mock-card__points span { font-size: 28px; }
+.ld-mock-card__barcode {
+    display: flex; align-items: flex-end; gap: 2px;
+    height: 34px; margin-top: 12px;
+    background: #fff; border-radius: 6px; padding: 5px 8px;
+    overflow: hidden;
+}
+.ld-mock-card__barcode i { display: block; height: 100%; background: #1c1917; }
+.ld-mock-card__no { font-size: 10px; opacity: 0.85; margin-top: 8px; letter-spacing: 0.04em; }
+
+/* ── クーポン ── */
+.ld-mock-coupon {
+    display: flex; align-items: center; gap: 10px;
+    background: #fff; border: 1px solid #e7e5e4; border-radius: 12px; padding: 10px;
+}
+.ld-mock-coupon.is-on { box-shadow: 0 0 0 1px rgba(var(--primary-rgb, var(--ld-mock-accent-rgb)), 0.18); }
+.ld-mock-coupon__icon {
+    flex: 0 0 auto; width: 38px; height: 38px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--primary-color, var(--ld-mock-accent));
+    background: rgba(var(--primary-rgb, var(--ld-mock-accent-rgb)), 0.12);
+    font-size: 15px;
+}
+.ld-mock-coupon__body { flex: 1; min-width: 0; }
+.ld-mock-coupon__title { font-size: 12px; font-weight: 700; color: #1c1917; }
+.ld-mock-coupon__meta { font-size: 10px; color: #a8a29e; margin-top: 2px; }
+.ld-mock-coupon__status {
+    flex: 0 0 auto; font-size: 10px; font-weight: 700;
+    color: #a8a29e; background: #f5f5f4; border-radius: 999px; padding: 3px 8px;
+}
+.ld-mock-coupon.is-on .ld-mock-coupon__status {
+    color: var(--primary-dark, #4338ca);
+    background: rgba(var(--primary-rgb, var(--ld-mock-accent-rgb)), 0.12);
+}
+
+/* ── スタンプカード ── */
+.ld-mock-stampcard { background: #fff; border: 1px solid #e7e5e4; border-radius: 14px; padding: 12px; }
+.ld-mock-stampcard__head { display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: #57534e; }
+.ld-mock-stampcard__head strong { color: var(--primary-color, var(--ld-mock-accent)); font-size: 14px; }
+.ld-mock-stampcard__grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin: 10px 0; }
+.ld-mock-stamp {
+    aspect-ratio: 1; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; color: #d6d3d1;
+    border: 1.5px dashed #d6d3d1; background: #fafaf9;
+}
+.ld-mock-stamp.is-on {
+    color: #fff; border: none;
+    background: linear-gradient(135deg, var(--primary-color, var(--ld-mock-accent)), var(--primary-dark, #4338ca));
+}
+.ld-mock-stampcard__foot { font-size: 11px; color: #78716c; display: flex; align-items: center; gap: 6px; }
+.ld-mock-stampcard__foot i { color: var(--primary-color, var(--ld-mock-accent)); }
+
+/* ── 商品グリッド ── */
+.ld-mock-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.ld-mock-prod { background: #fff; border: 1px solid #e7e5e4; border-radius: 12px; overflow: hidden; }
+.ld-mock-prod__img { height: 72px; background-size: cover; background-position: center; }
+.ld-mock-prod__name { font-size: 11px; font-weight: 700; color: #1c1917; padding: 8px 8px 0; }
+.ld-mock-prod__row { display: flex; align-items: center; justify-content: space-between; padding: 4px 8px 8px; }
+.ld-mock-prod__price { font-size: 13px; font-weight: 800; color: #1c1917; }
+.ld-mock-prod__add {
+    width: 26px; height: 26px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 11px;
+    background: var(--primary-color, var(--ld-mock-accent));
+}
+
+/* ── 注文履歴 ── */
+.ld-mock-order { background: #fff; border: 1px solid #e7e5e4; border-radius: 12px; padding: 10px; }
+.ld-mock-order__top { display: flex; align-items: center; justify-content: space-between; }
+.ld-mock-order__no { font-size: 12px; font-weight: 800; color: #1c1917; }
+.ld-mock-order__status { font-size: 10px; font-weight: 700; border-radius: 999px; padding: 3px 9px; }
+.ld-mock-order__status.is-progress { color: #b45309; background: #fef3c7; }
+.ld-mock-order__status.is-done { color: #047857; background: #d1fae5; }
+.ld-mock-order__items { font-size: 11px; color: #78716c; margin: 6px 0; }
+.ld-mock-order__total { font-size: 11px; color: #57534e; text-align: right; }
+.ld-mock-order__total strong { color: #1c1917; font-size: 13px; }
+
+/* ── 順番待ち ── */
+.ld-mock-queue {
+    text-align: center; background: #fff; border: 1px solid #e7e5e4; border-radius: 14px; padding: 16px;
+}
+.ld-mock-queue__label { font-size: 11px; color: #78716c; }
+.ld-mock-queue__num {
+    font-size: 34px; font-weight: 800; letter-spacing: 0.02em; margin: 4px 0 8px;
+    color: var(--primary-color, var(--ld-mock-accent));
+}
+.ld-mock-queue__wait { font-size: 11px; color: #57534e; display: inline-flex; align-items: center; gap: 6px; }
+
+/* ── 予約 ── */
+.ld-mock-resv { display: flex; gap: 10px; background: #fff; border: 1px solid #e7e5e4; border-radius: 12px; padding: 10px; }
+.ld-mock-resv__date {
+    flex: 0 0 auto; width: 52px; text-align: center;
+    border-radius: 10px; padding: 6px 0; color: #fff;
+    background: linear-gradient(135deg, var(--primary-color, var(--ld-mock-accent)), var(--primary-dark, #4338ca));
+}
+.ld-mock-resv__d { display: block; font-size: 13px; font-weight: 800; }
+.ld-mock-resv__t { display: block; font-size: 10px; opacity: 0.9; }
+.ld-mock-resv__body { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 4px; font-size: 12px; color: #44403c; }
+.ld-mock-resv__status { align-self: flex-start; font-size: 10px; font-weight: 700; border-radius: 999px; padding: 2px 8px; }
+.ld-mock-resv__status.is-ok { color: #047857; background: #d1fae5; }
+.ld-mock-resv__status.is-wait { color: #b45309; background: #fef3c7; }
+
+/* ── ギャラリー ── */
+.ld-mock-gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.ld-mock-gallery__img { aspect-ratio: 1; border-radius: 10px; background-size: cover; background-position: center; }
+
+/* ── お知らせ ── */
+.ld-mock-ann { display: flex; align-items: center; gap: 10px; background: #fff; border: 1px solid #e7e5e4; border-radius: 10px; padding: 10px; }
+.ld-mock-ann__date {
+    flex: 0 0 auto; font-size: 10px; font-weight: 700; color: var(--primary-color, var(--ld-mock-accent));
+    background: rgba(var(--primary-rgb, var(--ld-mock-accent-rgb)), 0.1); border-radius: 6px; padding: 3px 7px;
+}
+.ld-mock-ann__title { font-size: 12px; color: #44403c; }
+
+/* ============================================================
+   会員サマリー & クイックアクション（新ブロックのデザイナー描画）
+   ============================================================ */
+.ld-mock-summary {
+    border-radius: 16px; padding: 16px; color: #fff;
+    background:
+        radial-gradient(120% 140% at 100% 0%, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0) 45%),
+        linear-gradient(135deg, var(--primary-color, var(--ld-mock-accent)) 0%, var(--primary-dark, #4338ca) 100%);
+    box-shadow: 0 10px 24px rgba(var(--primary-rgb, var(--ld-mock-accent-rgb)), 0.28);
+}
+.ld-mock-summary__top { display: flex; align-items: flex-start; justify-content: space-between; }
+.ld-mock-summary__hello { font-size: 13px; font-weight: 700; }
+.ld-mock-summary__rank {
+    display: inline-flex; align-items: center; gap: 5px; margin-top: 7px;
+    font-size: 10px; font-weight: 700; background: rgba(255,255,255,0.18);
+    border-radius: 999px; padding: 3px 9px;
+}
+.ld-mock-summary__qr {
+    width: 34px; height: 34px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(255,255,255,0.16); border: 1px solid rgba(255,255,255,0.22); font-size: 14px;
+}
+.ld-mock-summary__points { display: flex; align-items: baseline; gap: 4px; margin-top: 14px; }
+.ld-mock-summary__pt { font-size: 28px; font-weight: 800; line-height: 1; }
+.ld-mock-summary__unit { font-size: 12px; font-weight: 700; opacity: 0.85; }
+.ld-mock-summary__track { height: 6px; border-radius: 999px; background: rgba(255,255,255,0.22); margin-top: 12px; overflow: hidden; }
+.ld-mock-summary__track span { display: block; height: 100%; background: #fff; border-radius: 999px; }
+.ld-mock-summary__next { font-size: 11px; opacity: 0.94; margin-top: 7px; }
+
+.ld-mock-qa { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.ld-mock-qa__tile {
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    background: #fff; border: 1px solid #e7e5e4; border-radius: 12px; padding: 10px 4px;
+    box-shadow: 0 2px 6px rgba(28,25,23,0.05);
+}
+.ld-mock-qa__icon {
+    width: 38px; height: 38px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--primary-color, var(--ld-mock-accent));
+    background: rgba(var(--primary-rgb, var(--ld-mock-accent-rgb)), 0.1); font-size: 15px;
+}
+.ld-mock-qa__label { font-size: 10px; font-weight: 700; color: #44403c; }

@@ -30,5 +30,6 @@ class DatabaseSeeder extends Seeder
         $seeder->runForProject($project, false, false);
 
         $this->call(AllSampleDataSeeder::class);
+        $this->call(DemoPreviewSeeder::class);
     }
 }
