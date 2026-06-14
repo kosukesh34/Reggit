@@ -158,7 +158,7 @@ class OrderApiV1Test extends TestCase
         $this->assertStringContainsString('1つだけ', $response->json('message'));
     }
 
-    public function test_store_他商品のオプションIDは拒否されること(): void
+    public function test_store_他商品のオプション_i_dは拒否されること(): void
     {
         $this->withoutMiddleware(AuthenticateApiToken::class);
         $this->createProject();
