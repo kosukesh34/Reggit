@@ -38,4 +38,9 @@ class Product extends Model
     {
         return $this->hasMany(OrderItem::class);
     }
+
+    public function optionGroups()
+    {
+        return $this->hasMany(ProductOptionGroup::class)->orderBy('sort_order')->with('options');
+    }
 }
