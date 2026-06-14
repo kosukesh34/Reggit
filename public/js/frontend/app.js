@@ -667,29 +667,33 @@ class ReggitApp {
     }
 
     renderProductCard(product) {
-        const cartItem = this.cartManager.getItem(product.id);
-        const isInCart = cartItem !== undefined;
-        const cartQuantity = isInCart ? cartItem.quantity : 0;
+        const cartQuantity = this.cartManager.getQuantityForProduct(product.id);
+        const isInCart = cartQuantity > 0;
         const imageUrl = product.image_url || '';
+        const hasOptions = Array.isArray(product.option_groups) && product.option_groups.length > 0;
+        const btnLabel = hasOptions
+            ? '<i class="fas fa-sliders-h"></i> 選んで追加'
+            : '<i class="fas fa-cart-plus"></i> カートに追加';
         return `
-            <div class="product-card ${isInCart ? AppConstants.CSS_CLASSES.IN_CART : ''}" data-product-id="${product.id}">
+            <div class="product-card ${isInCart ? AppConstants.CSS_CLASSES.IN_CART : ''}" data-product-id="${product.id}" onclick="app.openProductDetail(${product.id})">
                 <div class="product-image-wrapper">
                     ${isInCart ? `<div class="cart-badge"><i class="fas fa-check"></i> ${cartQuantity}</div>` : ''}
                     <img src="${imageUrl}" alt="${DomHelper.escapeHtml(product.name)}" class="product-image" loading="lazy"
                          onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22150%22%3E%3Crect fill=%22%23f0f0f0%22 width=%22200%22 height=%22150%22/%3E%3Ctext fill=%22%23999%22 font-family=%22sans-serif%22 font-size=%2214%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22%3E画像なし%3C/text%3E%3C/svg%3E'">
+                    ${hasOptions ? '<span class="product-option-tag"><i class="fas fa-sliders-h"></i> カスタム可</span>' : ''}
                 </div>
                 <div class="product-info">
                     <div class="product-name">${DomHelper.escapeHtml(product.name)}</div>
-                    <div class="product-price">${DomHelper.formatPrice(product.price)}</div>
-                    ${isInCart ? `<div class="cart-quantity-info"><span class="cart-quantity-badge">${cartQuantity}個追加済み</span></div>` : ''}
-                    <button class="product-add-btn ${isInCart ? AppConstants.CSS_CLASSES.ADDED : ''}" onclick="app.addToCart(${product.id})">
-                        ${isInCart ? '<i class="fas fa-check"></i> 追加済み' : '<i class="fas fa-cart-plus"></i> カートに追加'}
+                    <div class="product-price">${DomHelper.formatPrice(product.price)}${hasOptions ? '<span class="product-price-from">〜</span>' : ''}</div>
+                    <button class="product-add-btn ${isInCart ? AppConstants.CSS_CLASSES.ADDED : ''}" onclick="event.stopPropagation(); app.openProductDetail(${product.id})">
+                        ${btnLabel}
                     </button>
                 </div>
             </div>
         `;
     }
 
+    /** 商品をワンタップで追加（オプションなし商品向けのフォールバック）。 */
     addToCart(productId) {
         const product = this.productManager.getProductById(productId);
         if (!product) {
@@ -703,16 +707,16 @@ class ReggitApp {
         ToastManager.success(`${product.name}をカートに追加しました`);
     }
 
-    removeFromCart(productId) {
-        const item = this.cartManager.getItem(productId);
-        this.cartManager.removeItem(productId);
+    removeFromCart(lineKey) {
+        const item = this.cartManager.getItem(lineKey);
+        this.cartManager.removeItem(lineKey);
         this.updateCartUI();
         this.renderProducts();
         if (item) ToastManager.info(`${item.name}をカートから削除しました`);
     }
 
-    updateQuantity(productId, change) {
-        this.cartManager.updateQuantity(productId, change);
+    updateQuantity(lineKey, change) {
+        this.cartManager.updateQuantity(lineKey, change);
         this.updateCartUI();
         this.renderProducts();
     }
@@ -748,22 +752,219 @@ class ReggitApp {
 
     renderCartItem(item) {
         const imageUrl = item.image_url || '';
+        const key = item.lineKey;
+        const optionsText = (item.options && item.options.length > 0)
+            ? item.options.map(o => DomHelper.escapeHtml(o.name)).join('・')
+            : '';
+        const notesText = item.notes ? DomHelper.escapeHtml(item.notes) : '';
         return `
             <div class="cart-item">
                 <img src="${imageUrl}" alt="${DomHelper.escapeHtml(item.name)}" class="cart-item-image"
                      onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2280%22 height=%2280%22%3E%3Crect fill=%22%23f0f0f0%22 width=%2280%22 height=%2280%22/%3E%3C/svg%3E'">
                 <div class="cart-item-info">
                     <div class="cart-item-name">${DomHelper.escapeHtml(item.name)}</div>
+                    ${optionsText ? `<div class="cart-item-options">${optionsText}</div>` : ''}
+                    ${notesText ? `<div class="cart-item-note"><i class="fas fa-comment-dots"></i> ${notesText}</div>` : ''}
                     <div class="cart-item-price">${DomHelper.formatPrice(item.price)}</div>
                     <div class="cart-item-controls">
-                        <button class="quantity-btn" onclick="app.updateQuantity(${item.id}, -1)"><i class="fas fa-minus"></i></button>
+                        <button class="quantity-btn" onclick="app.updateQuantity('${key}', -1)"><i class="fas fa-minus"></i></button>
                         <span class="quantity">${item.quantity}</span>
-                        <button class="quantity-btn" onclick="app.updateQuantity(${item.id}, 1)"><i class="fas fa-plus"></i></button>
-                        <button class="remove-btn" onclick="app.removeFromCart(${item.id})"><i class="fas fa-trash"></i></button>
+                        <button class="quantity-btn" onclick="app.updateQuantity('${key}', 1)"><i class="fas fa-plus"></i></button>
+                        <button class="remove-btn" onclick="app.removeFromCart('${key}')"><i class="fas fa-trash"></i></button>
                     </div>
                 </div>
             </div>
         `;
+    }
+
+    /* ===== 商品詳細モーダル（タップで詳細・オプション選択・数量） ===== */
+
+    openProductDetail(productId) {
+        const product = this.productManager.getProductById(productId);
+        if (!product) {
+            ToastManager.error('商品が見つかりませんでした');
+            return;
+        }
+        this._detailProduct = product;
+        this._detailQty = 1;
+
+        let host = document.getElementById('productDetailModal');
+        if (!host) {
+            host = document.createElement('div');
+            host.id = 'productDetailModal';
+            document.body.appendChild(host);
+        }
+        host.innerHTML = this._renderProductDetail(product);
+        host.classList.add('is-open');
+        document.body.style.overflow = 'hidden';
+
+        host.querySelectorAll('input[data-opt]').forEach(input => {
+            input.addEventListener('change', () => this._recalcProductDetail());
+        });
+        this._recalcProductDetail();
+    }
+
+    closeProductDetail() {
+        const host = document.getElementById('productDetailModal');
+        if (host) {
+            host.classList.remove('is-open');
+            host.innerHTML = '';
+        }
+        document.body.style.overflow = '';
+    }
+
+    detailQty(change) {
+        this._detailQty = Math.max(1, (this._detailQty || 1) + change);
+        const el = document.getElementById('detailQtyValue');
+        if (el) el.textContent = this._detailQty;
+        this._recalcProductDetail();
+    }
+
+    _renderProductDetail(product) {
+        const imageUrl = product.image_url || '';
+        const groups = Array.isArray(product.option_groups) ? product.option_groups : [];
+        const esc = (s) => DomHelper.escapeHtml(s);
+        const desc = product.description ? `<p class="pd-desc">${esc(product.description)}</p>` : '';
+
+        const groupsHtml = groups.map(group => {
+            const multiple = group.selection_type === 'multiple';
+            const type = multiple ? 'checkbox' : 'radio';
+            const required = group.is_required;
+            const max = group.max_select || 0;
+            const meta = multiple
+                ? (max > 0 ? `最大${max}個` : '複数選択可')
+                : '1つ選択';
+            const options = (group.options || []).map((opt, i) => {
+                const defChecked = (!multiple && (opt.is_default || i === 0)) ? 'checked' : (multiple && opt.is_default ? 'checked' : '');
+                const delta = parseInt(opt.price_delta, 10) || 0;
+                const deltaLabel = delta > 0 ? `+${DomHelper.formatPrice(delta)}` : (delta < 0 ? DomHelper.formatPrice(delta) : '');
+                return `
+                    <label class="pd-option">
+                        <input type="${type}" name="grp_${group.id}" value="${opt.id}"
+                               data-opt data-group="${group.id}" data-group-type="${group.selection_type}"
+                               data-max="${max}" data-price="${delta}" data-name="${esc(opt.name)}" ${defChecked}>
+                        <span class="pd-option-check"></span>
+                        <span class="pd-option-name">${esc(opt.name)}</span>
+                        ${deltaLabel ? `<span class="pd-option-price">${deltaLabel}</span>` : ''}
+                    </label>`;
+            }).join('');
+            return `
+                <div class="pd-group" data-group-wrap="${group.id}">
+                    <div class="pd-group-head">
+                        <span class="pd-group-name">${esc(group.name)}</span>
+                        <span class="pd-group-meta">${required ? '<span class="pd-required">必須</span>' : ''}${esc(meta)}</span>
+                    </div>
+                    <div class="pd-group-options">${options}</div>
+                </div>`;
+        }).join('');
+
+        return `
+            <div class="pd-overlay" onclick="app.closeProductDetail()"></div>
+            <div class="pd-sheet" role="dialog" aria-modal="true">
+                <button class="pd-close" onclick="app.closeProductDetail()" aria-label="閉じる"><i class="fas fa-times"></i></button>
+                <div class="pd-scroll">
+                    <div class="pd-hero">
+                        <img src="${imageUrl}" alt="${esc(product.name)}" class="pd-image"
+                             onerror="this.style.display='none'">
+                    </div>
+                    <div class="pd-body">
+                        <h2 class="pd-name">${esc(product.name)}</h2>
+                        <div class="pd-base-price">${DomHelper.formatPrice(product.price)}</div>
+                        ${desc}
+                        ${groupsHtml}
+                        <div class="pd-group">
+                            <div class="pd-group-head"><span class="pd-group-name">ご要望（任意）</span></div>
+                            <input type="text" id="pdNotes" class="pd-notes" maxlength="200" placeholder="例: ソース少なめ など">
+                        </div>
+                    </div>
+                </div>
+                <div class="pd-footer">
+                    <div class="pd-qty">
+                        <button class="pd-qty-btn" onclick="app.detailQty(-1)" aria-label="減らす"><i class="fas fa-minus"></i></button>
+                        <span id="detailQtyValue" class="pd-qty-value">1</span>
+                        <button class="pd-qty-btn" onclick="app.detailQty(1)" aria-label="増やす"><i class="fas fa-plus"></i></button>
+                    </div>
+                    <button class="pd-add-btn" id="pdAddBtn" onclick="app.addToCartFromDetail()">
+                        <span>カートに追加</span>
+                        <span class="pd-add-total" id="pdAddTotal"></span>
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    _collectDetailSelection() {
+        const host = document.getElementById('productDetailModal');
+        if (!host) return { options: [], delta: 0, valid: true };
+        const product = this._detailProduct || {};
+        const groups = Array.isArray(product.option_groups) ? product.option_groups : [];
+        const options = [];
+        let delta = 0;
+        let valid = true;
+
+        groups.forEach(group => {
+            const checked = host.querySelectorAll(`input[data-group="${group.id}"]:checked`);
+            if (group.is_required && checked.length === 0) valid = false;
+            const max = group.max_select || 0;
+            if (group.selection_type === 'multiple' && max > 0 && checked.length > max) valid = false;
+            checked.forEach(input => {
+                const price = parseInt(input.getAttribute('data-price'), 10) || 0;
+                delta += price;
+                options.push({
+                    group_name: group.name,
+                    option_id: parseInt(input.value, 10),
+                    name: input.getAttribute('data-name') || '',
+                    price_delta: price,
+                });
+            });
+        });
+        return { options, delta, valid };
+    }
+
+    _recalcProductDetail() {
+        const host = document.getElementById('productDetailModal');
+        if (!host) return;
+        const product = this._detailProduct || {};
+
+        // 複数選択の上限を超えたら最後の選択を外す
+        const groups = Array.isArray(product.option_groups) ? product.option_groups : [];
+        groups.forEach(group => {
+            const max = group.max_select || 0;
+            if (group.selection_type === 'multiple' && max > 0) {
+                const checked = host.querySelectorAll(`input[data-group="${group.id}"]:checked`);
+                if (checked.length > max) {
+                    checked[checked.length - 1].checked = false;
+                    ToastManager.info(`${group.name}は最大${max}個までです`);
+                }
+            }
+        });
+
+        const sel = this._collectDetailSelection();
+        const base = parseInt(product.price, 10) || 0;
+        const qty = this._detailQty || 1;
+        const total = (base + sel.delta) * qty;
+        const totalEl = document.getElementById('pdAddTotal');
+        if (totalEl) totalEl.textContent = DomHelper.formatPrice(total);
+        const addBtn = document.getElementById('pdAddBtn');
+        if (addBtn) addBtn.classList.toggle('is-disabled', !sel.valid);
+    }
+
+    addToCartFromDetail() {
+        const product = this._detailProduct;
+        if (!product) return;
+        const sel = this._collectDetailSelection();
+        if (!sel.valid) {
+            ToastManager.error('必須の選択を確認してください');
+            return;
+        }
+        const notesEl = document.getElementById('pdNotes');
+        const notes = notesEl ? notesEl.value : '';
+        this.cartManager.addItem(product, { options: sel.options, quantity: this._detailQty || 1, notes });
+        this.closeProductDetail();
+        this.updateCartUI();
+        this.showCartNotification();
+        this.renderProducts();
+        ToastManager.success(`${product.name}をカートに追加しました`);
     }
 
     openCart() {

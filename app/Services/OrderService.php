@@ -61,20 +61,56 @@ class OrderService
         $orderItems = [];
 
         foreach ($items as $item) {
-            $product = Product::findOrFail($item['product_id']);
+            $product = Product::with('optionGroups.options')->findOrFail($item['product_id']);
 
             $this->validateProductAvailability($product, $item['quantity']);
+
+            [$optionsDelta, $optionsSummary] = $this->resolveSelectedOptions($product, $item['option_ids'] ?? []);
+
+            $unitPrice = (float) $product->price + $optionsDelta;
+
+            $note = $item['notes'] ?? null;
+            if ($optionsSummary !== '') {
+                $note = $note ? $optionsSummary.' / '.$note : $optionsSummary;
+            }
 
             $orderItems[] = [
                 'product' => $product,
                 'product_id' => $product->id,
                 'quantity' => $item['quantity'],
-                'price' => $product->price,
-                'notes' => $item['notes'] ?? null,
+                'price' => $unitPrice,
+                'notes' => $note,
             ];
         }
 
         return $orderItems;
+    }
+
+    /**
+     * 選択されたオプションの追加料金合計と、人が読める要約文を返す。
+     *
+     * @param  array<int>  $optionIds
+     * @return array{0: float, 1: string}
+     */
+    private function resolveSelectedOptions(Product $product, array $optionIds): array
+    {
+        $optionIds = array_values(array_unique(array_map('intval', $optionIds)));
+        if ($optionIds === []) {
+            return [0.0, ''];
+        }
+
+        $validOptions = $product->optionGroups
+            ->flatMap(fn ($group) => $group->options)
+            ->whereIn('id', $optionIds);
+
+        $delta = 0.0;
+        $names = [];
+        foreach ($validOptions as $option) {
+            $delta += (float) $option->price_delta;
+            $names[] = $option->name;
+        }
+
+        return [$delta, $names === [] ? '' : implode(', ', $names)];
     }
 
     private function validateProductAvailability(Product $product, int $quantity): void
@@ -92,7 +128,7 @@ class OrderService
     {
         $total = 0;
         foreach ($orderItems as $item) {
-            $total += $item['product']->price * $item['quantity'];
+            $total += $item['price'] * $item['quantity'];
         }
 
         return $total;

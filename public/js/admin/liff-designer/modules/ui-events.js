@@ -52,6 +52,35 @@ window.LiffDesignerModules.uiEvents = {
                 this.applyDesignPreset(btn.dataset.preset);
             });
         }
+        if (this.els.globalFontFamily) {
+            this.els.globalFontFamily.addEventListener('change', () => {
+                this.state.globalSettings.font_family = this.els.globalFontFamily.value;
+                this.state.globalSettings.theme_preset = 'custom';
+                this.syncGlobalDesignControls();
+                this.applyGlobalDesignPreview();
+            });
+        }
+        if (this.els.globalSurfaceTone) {
+            this.els.globalSurfaceTone.addEventListener('change', () => {
+                this.state.globalSettings.surface_tone = this.els.globalSurfaceTone.value;
+                this.state.globalSettings.theme_preset = 'custom';
+                this.syncGlobalDesignControls();
+                this.applyGlobalDesignPreview();
+            });
+        }
+        const onAccentChange = (val) => {
+            if (!/^#[0-9a-fA-F]{6}$/.test(val)) return;
+            this.state.globalSettings.accent_color = val.toLowerCase();
+            this.state.globalSettings.theme_preset = 'custom';
+            this.syncGlobalDesignControls();
+            this.applyGlobalDesignPreview();
+        };
+        if (this.els.globalAccentColor) {
+            this.els.globalAccentColor.addEventListener('input', () => onAccentChange(this.els.globalAccentColor.value));
+        }
+        if (this.els.globalAccentColorHex) {
+            this.els.globalAccentColorHex.addEventListener('input', () => onAccentChange(this.els.globalAccentColorHex.value));
+        }
         this.els.undoBtn.addEventListener('click', () => this.undo());
         this.els.redoBtn.addEventListener('click', () => this.redo());
         this.els.previewBtn.addEventListener('click', () => this.openPreview());

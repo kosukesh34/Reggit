@@ -14,6 +14,7 @@ class LiffDesignerSanitizer
     private const ALLOWED_BLOCK_TYPES = [
         'hero', 'heading', 'text', 'image', 'button', 'card', 'collection',
         'slider', 'icon_text', 'list', 'banner', 'spacer', 'divider', 'data',
+        'member_summary', 'quick_actions',
     ];
 
     private const ALLOWED_DATA_SOURCES = [
@@ -118,6 +119,28 @@ class LiffDesignerSanitizer
         $tabStyle = (string) ($row['tab_style'] ?? 'default');
         if (in_array($tabStyle, ['default', 'pill', 'floating'], true)) {
             $item['tab_style'] = $tabStyle;
+        }
+
+        // ===== SaaS テーマプリセット =====
+        $themePreset = (string) ($row['theme_preset'] ?? '');
+        $validPresetIds = array_map(static fn ($p) => (string) ($p['id'] ?? ''), \App\Support\LiffThemePresets::all());
+        if ($themePreset === 'custom' || in_array($themePreset, $validPresetIds, true)) {
+            $item['theme_preset'] = $themePreset;
+        }
+
+        $accent = self::color($row['accent_color'] ?? null);
+        if ($accent !== null) {
+            $item['accent_color'] = $accent;
+        }
+
+        $fontFamily = (string) ($row['font_family'] ?? '');
+        if (array_key_exists($fontFamily, \App\Support\LiffThemePresets::fontStacks())) {
+            $item['font_family'] = $fontFamily;
+        }
+
+        $surfaceTone = (string) ($row['surface_tone'] ?? '');
+        if (array_key_exists($surfaceTone, \App\Support\LiffThemePresets::surfaceTones())) {
+            $item['surface_tone'] = $surfaceTone;
         }
 
         return $item;
@@ -311,6 +334,31 @@ class LiffDesignerSanitizer
                     $src = 'member_card';
                 }
                 $b['source'] = in_array($src, self::ALLOWED_DATA_SOURCES, true) ? $src : 'products';
+                break;
+            case 'member_summary':
+                $b['greeting'] = self::text($row['greeting'] ?? '', 60);
+                break;
+            case 'quick_actions':
+                $actions = is_array($row['actions'] ?? null) ? array_slice($row['actions'], 0, 8) : [];
+                $b['actions'] = array_values(array_filter(array_map(function ($it) {
+                    if (! is_array($it)) {
+                        return null;
+                    }
+                    $icon = (string) ($it['icon'] ?? 'fa-circle');
+                    if (preg_match('/^fa-[a-z0-9-]{1,40}$/i', $icon) !== 1) {
+                        $icon = 'fa-circle';
+                    }
+                    $label = self::text($it['label'] ?? '', 24);
+                    if ($label === '') {
+                        return null;
+                    }
+
+                    return [
+                        'icon' => $icon,
+                        'label' => $label,
+                        'action' => self::safeUrl($it['action'] ?? '', true),
+                    ];
+                }, $actions)));
                 break;
         }
 
