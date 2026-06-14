@@ -10,6 +10,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\PointTransaction;
 use App\Models\Product;
+use App\Models\ProductOptionGroup;
 use App\Models\ShopSetting;
 use App\Models\User;
 use App\Services\Admin\MemberAdminService;
@@ -88,6 +89,7 @@ class OrderService
 
     /**
      * 選択されたオプションの追加料金合計と、人が読める要約文を返す。
+     * グループごとに必須・単一/複数選択・min/max も検証する。
      *
      * @param  array<int>  $optionIds
      * @return array{0: float, 1: string}
@@ -95,23 +97,65 @@ class OrderService
     private function resolveSelectedOptions(Product $product, array $optionIds): array
     {
         $optionIds = array_values(array_unique(array_map('intval', $optionIds)));
-        if ($optionIds === []) {
-            return [0.0, ''];
+
+        /** @var array<int, list<\App\Models\ProductOption>> $selectedByGroupId */
+        $selectedByGroupId = [];
+
+        foreach ($optionIds as $optionId) {
+            $matched = null;
+            foreach ($product->optionGroups as $group) {
+                $option = $group->options->firstWhere('id', $optionId);
+                if ($option !== null) {
+                    $matched = ['group' => $group, 'option' => $option];
+                    break;
+                }
+            }
+
+            if ($matched === null) {
+                throw new \Exception("商品 {$product->name} のオプションが不正です");
+            }
+
+            $groupId = (int) $matched['group']->id;
+            $selectedByGroupId[$groupId][] = $matched['option'];
         }
 
-        $validOptions = $product->optionGroups
-            ->flatMap(fn ($group) => $group->options)
-            ->whereIn('id', $optionIds);
+        foreach ($product->optionGroups as $group) {
+            $selected = $selectedByGroupId[$group->id] ?? [];
+            $count = count($selected);
+            $minSelect = max((int) $group->min_select, $group->is_required ? 1 : 0);
 
-        if ($validOptions->count() !== count($optionIds)) {
-            throw new \Exception("商品 {$product->name} のオプションが不正です");
+            if ($group->is_required && $count === 0) {
+                throw new \Exception("商品 {$product->name} の「{$group->name}」は必須です");
+            }
+
+            if ($count > 0 && $count < $minSelect) {
+                throw new \Exception("商品 {$product->name} の「{$group->name}」は{$minSelect}個以上選択してください");
+            }
+
+            if ($group->selection_type === ProductOptionGroup::TYPE_SINGLE && $count > 1) {
+                throw new \Exception("商品 {$product->name} の「{$group->name}」は1つだけ選択できます");
+            }
+
+            $maxSelect = $group->max_select;
+            if ($group->selection_type === ProductOptionGroup::TYPE_MULTIPLE
+                && $maxSelect !== null
+                && (int) $maxSelect > 0
+                && $count > (int) $maxSelect) {
+                throw new \Exception("商品 {$product->name} の「{$group->name}」は最大{$maxSelect}個までです");
+            }
         }
 
         $delta = 0.0;
         $names = [];
-        foreach ($validOptions as $option) {
-            $delta += (float) $option->price_delta;
-            $names[] = $option->name;
+        foreach ($optionIds as $optionId) {
+            foreach ($product->optionGroups as $group) {
+                $option = $group->options->firstWhere('id', $optionId);
+                if ($option !== null) {
+                    $delta += (float) $option->price_delta;
+                    $names[] = $option->name;
+                    break;
+                }
+            }
         }
 
         return [$delta, $names === [] ? '' : implode(', ', $names)];
