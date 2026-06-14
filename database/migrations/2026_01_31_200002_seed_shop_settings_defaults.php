@@ -27,10 +27,10 @@ return new class extends Migration
     {
         $this->ensureKey('closed_dates', json_encode([]), 'json');
         $this->ensureKey('reservation_capacity_per_slot', '20', 'integer');
-        $this->ensureKey('line_primary_color', '#4f46e5', 'string');
-        $this->ensureKey('line_primary_dark', '#4338ca', 'string');
-        $this->ensureKey('line_success_color', '#059669', 'string');
-        $this->ensureKey('line_danger_color', '#dc2626', 'string');
+        $this->ensureKey('line_primary_color', '#000000', 'string');
+        $this->ensureKey('line_primary_dark', '#333333', 'string');
+        $this->ensureKey('line_success_color', '#000000', 'string');
+        $this->ensureKey('line_danger_color', '#dc3545', 'string');
     }
 
     public function down(): void

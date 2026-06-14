@@ -18,8 +18,8 @@ class CartManager {
         const notes = (opts.notes || '').trim();
 
         const optionIds = options.map(o => Number(o.option_id)).filter(n => !Number.isNaN(n)).sort((a, b) => a - b);
-        const basePrice = parseInt(product.price, 10) || 0;
-        const optionsDelta = options.reduce((sum, o) => sum + (parseInt(o.price_delta, 10) || 0), 0);
+        const basePrice = Number(product.price) || 0;
+        const optionsDelta = options.reduce((sum, o) => sum + (Number(o.price_delta) || 0), 0);
         const unitPrice = basePrice + optionsDelta;
         const lineKey = 'p' + product.id + (optionIds.length ? ':' + optionIds.join('-') : '') + (notes ? ':n' + this._hash(notes) : '');
 
@@ -77,7 +77,7 @@ class CartManager {
     }
 
     getTotalAmount() {
-        return this.items.reduce((sum, item) => sum + (parseInt(item.price, 10) * item.quantity), 0);
+        return this.items.reduce((sum, item) => sum + ((Number(item.price) || 0) * item.quantity), 0);
     }
 
     clear() {

@@ -16,7 +16,7 @@ return new class extends Migration
     {
         Schema::create('product_option_groups', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('project_id')->index();
+            $table->foreignId('project_id')->constrained('projects')->cascadeOnDelete();
             $table->unsignedBigInteger('product_id')->index();
             $table->string('name');
             // single = ラジオ（1つ選択）/ multiple = チェックボックス（複数選択）
@@ -32,7 +32,7 @@ return new class extends Migration
 
         Schema::create('product_options', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('project_id')->index();
+            $table->foreignId('project_id')->constrained('projects')->cascadeOnDelete();
             $table->unsignedBigInteger('group_id')->index();
             $table->string('name');
             $table->decimal('price_delta', 10, 2)->default(0);
