@@ -123,7 +123,7 @@ class LiffDesignerSanitizer
 
         // ===== SaaS テーマプリセット =====
         $themePreset = (string) ($row['theme_preset'] ?? '');
-        $validPresetIds = array_map(static fn ($p) => (string) ($p['id'] ?? ''), \App\Support\LiffThemePresets::all());
+        $validPresetIds = array_map(static fn ($p) => (string) ($p['id'] ?? ''), LiffThemePresets::all());
         if ($themePreset === 'custom' || in_array($themePreset, $validPresetIds, true)) {
             $item['theme_preset'] = $themePreset;
         }
@@ -134,12 +134,12 @@ class LiffDesignerSanitizer
         }
 
         $fontFamily = (string) ($row['font_family'] ?? '');
-        if (array_key_exists($fontFamily, \App\Support\LiffThemePresets::fontStacks())) {
+        if (array_key_exists($fontFamily, LiffThemePresets::fontStacks())) {
             $item['font_family'] = $fontFamily;
         }
 
         $surfaceTone = (string) ($row['surface_tone'] ?? '');
-        if (array_key_exists($surfaceTone, \App\Support\LiffThemePresets::surfaceTones())) {
+        if (array_key_exists($surfaceTone, LiffThemePresets::surfaceTones())) {
             $item['surface_tone'] = $surfaceTone;
         }
 

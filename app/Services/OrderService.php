@@ -103,6 +103,10 @@ class OrderService
             ->flatMap(fn ($group) => $group->options)
             ->whereIn('id', $optionIds);
 
+        if ($validOptions->count() !== count($optionIds)) {
+            throw new \Exception("商品 {$product->name} のオプションが不正です");
+        }
+
         $delta = 0.0;
         $names = [];
         foreach ($validOptions as $option) {
