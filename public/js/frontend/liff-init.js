@@ -247,45 +247,6 @@
         return /Line/i.test(uaString) || /LIFF/i.test(uaString);
     }
 
-    /**
-     * ローカル限定のデモプレビュー判定。
-     * - ?demo=1 で有効化（localStorage に記憶し、以降の遷移でも維持）
-     * - ?demo=0 で解除
-     * 有効かつデモ用 LINE ID メタが存在する場合、その ID を返す（U+32hex のみ）。
-     * @returns {string|null}
-     */
-    function applyDemoPreviewIfRequested() {
-        if (typeof document === 'undefined' || typeof window === 'undefined') return null;
-        var STORAGE_KEY = 'reggit_demo_preview';
-        var enabled = false;
-        try {
-            var params = new URLSearchParams(window.location.search || '');
-            if (params.has('demo')) {
-                var v = String(params.get('demo') || '').trim();
-                enabled = v === '' || v === '1' || v === 'true';
-                if (window.localStorage) {
-                    if (enabled) {
-                        window.localStorage.setItem(STORAGE_KEY, '1');
-                    } else {
-                        window.localStorage.removeItem(STORAGE_KEY);
-                    }
-                }
-            } else if (window.localStorage && window.localStorage.getItem(STORAGE_KEY) === '1') {
-                enabled = true;
-            }
-        } catch (e) { /* ignore */ }
-
-        if (!enabled) return null;
-
-        var meta = document.querySelector('meta[name="reggit-demo-line-id"]');
-        var id = meta && meta.getAttribute('content') ? meta.getAttribute('content').trim() : '';
-        if (id && /^U[0-9a-f]{32}$/i.test(id)) {
-            window.__DEMO_PREVIEW__ = true;
-            return id;
-        }
-        return null;
-    }
-
     function getLineUserIdFromToken() {
         if (typeof liff === 'undefined' || !liff.isLoggedIn()) return null;
         try {
@@ -516,14 +477,7 @@
 
     // (B) 外部ブラウザ or ネイティブアプリ → LIFF 初期化せず、認証なしでアプリ表示
     if (!window.__IS_LIFF__) {
-        // ローカル限定のデモプレビュー: ?demo=1 でデモ会員としてログイン状態を再現し、
-        // 会員証・ポイント・クーポン・スタンプ等の実UIをブラウザで確認できる。
-        var demoLineId = applyDemoPreviewIfRequested();
-        if (demoLineId) {
-            setLineUserId(demoLineId, 'demo_preview');
-        } else {
-            setLineUserId(null, 'external_browser');
-        }
+        setLineUserId(null, 'external_browser');
         setLineProfile(null);
         setTimeout(dispatchReady, 50);
         return;
@@ -538,6 +492,13 @@
             withLoginOnExternalBrowser: false   // 外部ブラウザでは認証させない（(B)でスキップ済み）
         }).then(function () {
             debug('liff_init_success', {});
+            if (typeof liff.getOS === 'function') {
+                const liffOs = liff.getOS();
+                if (liffOs === 'ios' || liffOs === 'android') {
+                    window.__LIFF_OS__ = liffOs;
+                    debug('liff_os_detected', { os: liffOs });
+                }
+            }
             const userId = liff.isLoggedIn() ? getLineUserIdFromToken() : null;
             setLineUserId(userId, 'liff_token');
             debug('liff_user_resolved', { hasUserId: !!userId, tail: userId ? String(userId).slice(-4) : '' });
