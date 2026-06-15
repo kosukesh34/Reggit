@@ -42,7 +42,7 @@ enum NativeAppURLHandler {
             return true
         }
         #endif
-        return true
+        return false
     }
 }
 #endif
