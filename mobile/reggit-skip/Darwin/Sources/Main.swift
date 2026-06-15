@@ -20,9 +20,8 @@ private typealias AppMainDelegateBase = NSApplicationDelegate
 private typealias AppType = NSApplication
 #endif
 
-private let kPushTokenUserDefaultsKey = "reggit_push_token"
-private let kOneSignalAppIdUserDefaultsKey = "reggit_onesignal_app_id"
-private let kShowNotificationDeniedAlertName = Notification.Name("ShowNotificationDeniedAlert")
+private let kPushTokenUserDefaultsKey = NativeAppStorage.pushTokenKey
+private let kOneSignalAppIdUserDefaultsKey = NativeAppStorage.oneSignalAppIdKey
 
 @main
 struct AppMain: App {
@@ -36,7 +35,7 @@ struct AppMain: App {
         WindowGroup {
             AppRootView()
             #if canImport(UIKit)
-            .onReceive(NotificationCenter.default.publisher(for: kShowNotificationDeniedAlertName)) { _ in
+            .onReceive(NotificationCenter.default.publisher(for: .showNotificationDeniedAlert)) { _ in
                 showNotificationDeniedAlert = true
             }
             .alert("通知がオフです", isPresented: $showNotificationDeniedAlert) {
@@ -86,7 +85,7 @@ private func showNotificationDeniedAlertIfStillDenied() {
         UNUserNotificationCenter.current().getNotificationSettings { settings in
             guard settings.authorizationStatus == .denied else { return }
             DispatchQueue.main.async {
-                NotificationCenter.default.post(name: kShowNotificationDeniedAlertName, object: nil)
+                NotificationCenter.default.post(name: .showNotificationDeniedAlert, object: nil)
             }
         }
     }
@@ -231,7 +230,7 @@ final class AppMainDelegate: NSObject, AppMainDelegateBase {
         let preview = id.count > 12 ? "\(id.prefix(8))...\(id.suffix(4))" : id
         print("[OneSignal] Saved subscription ID (\(id.count) chars): \(preview) → will be sent to backend as push_token")
         NotificationCenter.default.post(
-            name: Notification.Name("OneSignalPushTokenDidUpdate"),
+            name: .oneSignalPushTokenDidUpdate,
             object: nil,
             userInfo: ["token": id]
         )
