@@ -1,5 +1,6 @@
 #if canImport(PassKit) && canImport(UIKit)
 import PassKit
+import Reggit
 import UIKit
 
 @MainActor
@@ -27,7 +28,7 @@ final class AppleWalletPassAddHelper {
     private func downloadPassData(from url: URL) async throws -> Data {
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
-        request.setValue("true", forHTTPHeaderField: "ngrok-skip-browser-warning")
+        request.setValue(WebShellHTTP.ngrokSkipBrowserWarning, forHTTPHeaderField: "ngrok-skip-browser-warning")
         request.setValue("application/vnd.apple.pkpass", forHTTPHeaderField: "Accept")
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let http = response as? HTTPURLResponse else {
