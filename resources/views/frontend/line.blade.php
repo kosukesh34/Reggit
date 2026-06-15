@@ -31,10 +31,6 @@
     <meta name="line-liff-id" content="{{ $liffId ?? config('line.liff_id', '') }}">
     <meta name="project-key" content="{{ $projectKey ?? 'default' }}">
     <meta name="api-base" content="{{ config('app.api_base', '/api') }}">
-    @if(app()->environment('local'))
-    {{-- ローカル限定: ?demo=1 でデモ会員としてログイン状態を再現し、実UIを確認できる --}}
-    <meta name="reggit-demo-line-id" content="{{ 'U'.md5('reggit-demo') }}">
-    @endif
     @include('frontend.partials._native-app-config')
     <title>{{ $projectName ?? config('app.name') }}</title>
     <link rel="preconnect" href="https://static.line-scdn.net" crossorigin>
@@ -169,39 +165,6 @@
         </footer>
         @endunless
     </div>
-
-    @if(app()->environment('local') && !($isDesignerEmbedPreview ?? false))
-    {{-- ローカル限定: ワンタップでデモ会員のログイン状態を ON/OFF し、実画面を簡単に確認できる --}}
-    <button type="button" id="reggitDemoToggle" aria-label="デモ表示を切り替え"
-        style="position:fixed;right:14px;bottom:88px;z-index:9999;display:inline-flex;align-items:center;gap:7px;padding:10px 15px;border:none;border-radius:999px;font-size:12px;font-weight:700;color:#fff;background:#1c1917;box-shadow:0 8px 20px rgba(12,10,9,.3);cursor:pointer;">
-        <i class="fas fa-flask"></i><span id="reggitDemoToggleLabel">デモ</span>
-    </button>
-    <script>
-    (function () {
-        var KEY = 'reggit_demo_preview';
-        var btn = document.getElementById('reggitDemoToggle');
-        var lbl = document.getElementById('reggitDemoToggleLabel');
-        if (!btn) return;
-        var on = false;
-        try {
-            var p = new URLSearchParams(location.search || '');
-            if (p.has('demo')) {
-                var v = String(p.get('demo') || '').trim();
-                on = (v === '' || v === '1' || v === 'true');
-            } else if (localStorage.getItem(KEY) === '1') {
-                on = true;
-            }
-        } catch (e) {}
-        lbl.textContent = on ? 'デモ: ON' : 'デモ: OFF';
-        btn.style.background = on ? '#4f46e5' : '#1c1917';
-        btn.addEventListener('click', function () {
-            var url = new URL(location.href);
-            url.searchParams.set('demo', on ? '0' : '1');
-            location.href = url.toString();
-        });
-    })();
-    </script>
-    @endif
 
     @include('frontend.partials._scripts-config')
     @include('frontend.partials._scripts-load')

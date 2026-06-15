@@ -30,9 +30,5 @@ class DatabaseSeeder extends Seeder
         $seeder->runForProject($project, false, false);
 
         $this->call(AllSampleDataSeeder::class);
-
-        if (app()->environment('local')) {
-            $this->call(DemoPreviewSeeder::class);
-        }
     }
 }
