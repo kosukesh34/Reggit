@@ -49,10 +49,10 @@ class ProjectLineLiffSetting extends Model
     public static function getDefaultAttributes(): array
     {
         return [
-            'line_primary_color' => '#000000',
-            'line_primary_dark' => '#333333',
-            'line_success_color' => '#000000',
-            'line_danger_color' => '#dc3545',
+            'line_primary_color' => '#4f46e5',
+            'line_primary_dark' => '#4338ca',
+            'line_success_color' => '#059669',
+            'line_danger_color' => '#dc2626',
             'order_mode' => 'both',
         ];
     }

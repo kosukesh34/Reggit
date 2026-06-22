@@ -143,11 +143,11 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('designerPreviewMemberPayload', $designerPreviewMemberPayload);
             } catch (\Throwable $e) {
                 $view->with('lineTheme', [
-                    'primary' => '#000000',
-                    'primary_rgb' => '0, 0, 0',
-                    'primary_dark' => '#333333',
-                    'success' => '#000000',
-                    'danger' => '#dc3545',
+                    'primary' => '#4f46e5',
+                    'primary_rgb' => '79, 70, 229',
+                    'primary_dark' => '#4338ca',
+                    'success' => '#059669',
+                    'danger' => '#dc2626',
                 ]);
                 $view->with('frontendMenu', ShopSetting::defaultFrontendMenuItems());
                 $view->with('projectKey', 'default');

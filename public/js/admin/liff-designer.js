@@ -35,6 +35,8 @@ class LiffDesigner {
             { type: 'banner', label: 'バナー', icon: 'fa-bullhorn', desc: 'お知らせバナー', category: 'layout' },
             { type: 'spacer', label: '余白', icon: 'fa-arrows-alt-v', desc: 'スペースを追加', category: 'basic' },
             { type: 'divider', label: '区切り線', icon: 'fa-minus', desc: '区切り線を追加', category: 'basic' },
+            { type: 'member_summary', label: '会員サマリー', icon: 'fa-id-badge', desc: 'ポイント・ランク表示', category: 'data' },
+            { type: 'quick_actions', label: 'クイックアクション', icon: 'fa-grip', desc: 'タブへのショートカット', category: 'data' },
             { type: 'data', label: 'データ', icon: 'fa-database', desc: '動的データ表示', category: 'data' },
         ];
 
@@ -71,6 +73,9 @@ class LiffDesigner {
 
         this.featureFlags = config.featureFlags || {};
         this.templates = Array.isArray(config.templates) ? config.templates : [];
+        this.themePresets = Array.isArray(config.themePresets) ? config.themePresets : [];
+        this.fontStacks = config.fontStacks || {};
+        this.surfaceTones = config.surfaceTones || {};
         this.previewNonce = Date.now();
         this.idCounter = 1;
         this.state = { layouts: {}, tabSettings: {}, globalSettings: {}, activeTab: 'home', selectedId: null };
@@ -128,11 +133,51 @@ class LiffDesigner {
         round: { xs: '12px', sm: '18px', md: '24px', lg: '28px', xl: '32px' },
     };
 
-    DESIGN_PRESETS = {
-        minimal: { content_padding: 16, section_gap: 12, radius_scale: 'compact', tab_style: 'default' },
-        natural: { content_padding: 18, section_gap: 16, radius_scale: 'soft', tab_style: 'default' },
-        bold: { content_padding: 20, section_gap: 20, radius_scale: 'round', tab_style: 'floating' },
-    };
+    findThemePreset(presetId) {
+        return (this.themePresets || []).find(p => p && p.id === presetId) || null;
+    }
+
+    hexToRgbString(hex) {
+        if (typeof hex !== 'string') return '0, 0, 0';
+        const m = hex.replace('#', '');
+        if (!/^[0-9a-fA-F]{6}$/.test(m)) return '0, 0, 0';
+        return [parseInt(m.slice(0, 2), 16), parseInt(m.slice(2, 4), 16), parseInt(m.slice(4, 6), 16)].join(', ');
+    }
+
+    darkenHex(hex, amount) {
+        const m = (hex || '').replace('#', '');
+        if (!/^[0-9a-fA-F]{6}$/.test(m)) return hex;
+        const ch = [0, 2, 4].map(i => {
+            const v = Math.round(parseInt(m.slice(i, i + 2), 16) * (1 - amount));
+            return Math.max(0, Math.min(255, v)).toString(16).padStart(2, '0');
+        });
+        return '#' + ch.join('');
+    }
+
+    /** _global からプレビューに当てるテーマ用 CSS 変数を解決 */
+    resolveThemeVars(g) {
+        const vars = {};
+        const preset = this.findThemePreset(g.theme_preset);
+        const accent = (g.accent_color && /^#[0-9a-fA-F]{6}$/.test(g.accent_color))
+            ? g.accent_color
+            : (preset ? preset.accent_color : null);
+        if (accent) {
+            vars['--primary-color'] = accent;
+            vars['--primary-rgb'] = this.hexToRgbString(accent);
+            vars['--primary-dark'] = this.darkenHex(accent, 0.16);
+        }
+        const fontKey = g.font_family || (preset ? preset.font_family : '');
+        if (fontKey && this.fontStacks[fontKey]) {
+            vars['--font-base'] = this.fontStacks[fontKey].base;
+            vars['--font-display'] = this.fontStacks[fontKey].display;
+        }
+        const toneKey = g.surface_tone || (preset ? preset.surface_tone : '');
+        if (toneKey && this.surfaceTones[toneKey]) {
+            const tokens = this.surfaceTones[toneKey].tokens || {};
+            Object.keys(tokens).forEach(k => { vars[k] = tokens[k]; });
+        }
+        return vars;
+    }
 
     applyGlobalDesignPreview() {
         const g = this.getGlobalSettings();
@@ -143,8 +188,11 @@ class LiffDesigner {
             style.id = 'ldGlobalDesignPreview';
             document.head.appendChild(style);
         }
+        const themeVars = this.resolveThemeVars(g);
+        const themeDecl = Object.keys(themeVars).map(k => k + ': ' + themeVars[k] + ';').join(' ');
         style.textContent = [
-            '.ld-phone__content { --content-padding: ' + (g.content_padding || 18) + 'px; --section-gap: ' + (g.section_gap || 16) + 'px; padding: ' + (g.content_padding || 18) + 'px !important; gap: ' + (g.section_gap || 16) + 'px !important; }',
+            '.ld-phone__frame.is-line { ' + themeDecl + ' }',
+            '.ld-phone__content { --content-padding: ' + (g.content_padding || 18) + 'px; --section-gap: ' + (g.section_gap || 16) + 'px; padding: ' + (g.content_padding || 18) + 'px !important; gap: ' + (g.section_gap || 16) + 'px !important; font-family: var(--font-base, inherit); }',
             '.ld-phone__content .ld-block { border-radius: ' + scale.md + '; }',
             '.ld-phone__nav { ' + (g.tab_style === 'floating' ? 'margin: 0 10px 10px; border-radius: 18px; border: 1px solid rgba(28,25,23,0.08);' : '') + ' }',
         ].join('\n');
@@ -157,9 +205,18 @@ class LiffDesigner {
     }
 
     applyDesignPreset(presetId) {
-        const preset = this.DESIGN_PRESETS[presetId];
+        const preset = this.findThemePreset(presetId);
         if (!preset) return;
-        this.state.globalSettings = Object.assign({}, this.getGlobalSettings(), preset);
+        this.state.globalSettings = Object.assign({}, this.getGlobalSettings(), {
+            theme_preset: preset.id,
+            accent_color: preset.accent_color,
+            font_family: preset.font_family || '',
+            surface_tone: preset.surface_tone || '',
+            radius_scale: preset.radius_scale || 'soft',
+            tab_style: preset.tab_style || 'default',
+            section_gap: preset.section_gap || 16,
+        });
+        this.ui.activePreset = preset.id;
         this.syncGlobalDesignControls();
         this.applyGlobalDesignPreview();
         this.renderPhoneContent();
@@ -173,13 +230,19 @@ class LiffDesigner {
         }
         if (this.els.globalRadiusScale) this.els.globalRadiusScale.value = g.radius_scale || 'soft';
         if (this.els.globalTabStyle) this.els.globalTabStyle.value = g.tab_style || 'default';
+        if (this.els.globalFontFamily) this.els.globalFontFamily.value = g.font_family || '';
+        if (this.els.globalSurfaceTone) this.els.globalSurfaceTone.value = g.surface_tone || '';
+        const accent = g.accent_color || (this.findThemePreset(g.theme_preset) || {}).accent_color || '#1c1917';
+        if (this.els.globalAccentColor && /^#[0-9a-fA-F]{6}$/.test(accent)) this.els.globalAccentColor.value = accent;
+        if (this.els.globalAccentColorHex) this.els.globalAccentColorHex.value = accent;
         if (this.els.screenContentPadding) {
             const pad = g.content_padding || 18;
             this.els.screenContentPadding.value = String(pad);
             if (this.els.screenContentPaddingVal) this.els.screenContentPaddingVal.textContent = String(pad);
         }
-        document.querySelectorAll('.ld-design-preset').forEach(btn => {
-            btn.classList.toggle('is-active', btn.dataset.preset === this.ui.activePreset);
+        const activeId = g.theme_preset || this.ui.activePreset;
+        document.querySelectorAll('.ld-theme-card').forEach(btn => {
+            btn.classList.toggle('is-active', btn.dataset.preset === activeId);
         });
     }
 
@@ -283,6 +346,17 @@ class LiffDesigner {
             case 'data':
                 block.source = item.source === 'member' ? 'member_card' : (item.source || 'products');
                 break;
+            case 'member_summary':
+                block.greeting = item.greeting || '';
+                break;
+            case 'quick_actions':
+                block.actions = Array.isArray(item.actions) && item.actions.length > 0 ? item.actions : [
+                    { icon: 'fa-utensils', label: '注文', action: '#products' },
+                    { icon: 'fa-ticket-alt', label: 'クーポン', action: '#coupons' },
+                    { icon: 'fa-stamp', label: 'スタンプ', action: '#stamps' },
+                    { icon: 'fa-calendar-check', label: '予約', action: '#reservations' },
+                ];
+                break;
             default:
                 block.text = item.text || item.body || '';
         }
@@ -336,6 +410,10 @@ class LiffDesigner {
             globalSectionGapVal: document.getElementById('globalSectionGapVal'),
             globalRadiusScale: document.getElementById('globalRadiusScale'),
             globalTabStyle: document.getElementById('globalTabStyle'),
+            globalFontFamily: document.getElementById('globalFontFamily'),
+            globalSurfaceTone: document.getElementById('globalSurfaceTone'),
+            globalAccentColor: document.getElementById('globalAccentColor'),
+            globalAccentColorHex: document.getElementById('globalAccentColorHex'),
             designPresets: document.getElementById('designPresets'),
         };
     }
@@ -486,6 +564,8 @@ class LiffDesigner {
             case 'banner': this.buildBanner(el, block); break;
             case 'spacer': el.style.height = (block.height || 16) + 'px'; break;
             case 'divider': this.buildDivider(el, block); break;
+            case 'member_summary': this.buildMemberSummary(el, block); break;
+            case 'quick_actions': this.buildQuickActions(el, block); break;
             case 'data': this.buildData(el, block); break;
         }
 
@@ -621,6 +701,32 @@ class LiffDesigner {
         el.innerHTML += '<div class="ld-block__body"><hr style="border-top:1px ' + (b.divider_style || 'solid') + ' ' + (b.divider_color || '#e5e7eb') + ';border-bottom:none;margin:0"></div>';
     }
 
+    buildMemberSummary(el, b) {
+        const hello = b.greeting ? this.esc(b.greeting) : 'こんにちは、デモ 太郎 さん';
+        el.innerHTML +=
+            '<div class="ld-block__body"><div class="ld-mock-summary">' +
+                '<div class="ld-mock-summary__top">' +
+                    '<div>' +
+                        '<div class="ld-mock-summary__hello">' + hello + '</div>' +
+                        '<span class="ld-mock-summary__rank"><i class="fas fa-crown"></i> シルバー</span>' +
+                    '</div>' +
+                    '<span class="ld-mock-summary__qr"><i class="fas fa-qrcode"></i></span>' +
+                '</div>' +
+                '<div class="ld-mock-summary__points"><span class="ld-mock-summary__pt">1,280</span><span class="ld-mock-summary__unit">pt</span></div>' +
+                '<div class="ld-mock-summary__track"><span style="width:26%"></span></div>' +
+                '<div class="ld-mock-summary__next">次の<strong>ゴールド</strong>まであと <strong>3,720</strong> pt</div>' +
+            '</div></div>';
+    }
+
+    buildQuickActions(el, b) {
+        const actions = Array.isArray(b.actions) ? b.actions : [];
+        let tiles = '';
+        actions.forEach(a => {
+            tiles += '<div class="ld-mock-qa__tile"><span class="ld-mock-qa__icon"><i class="fas ' + this.esc(a.icon || 'fa-circle') + '"></i></span><span class="ld-mock-qa__label">' + this.esc(a.label || '') + '</span></div>';
+        });
+        el.innerHTML += '<div class="ld-block__body"><div class="ld-mock-qa">' + tiles + '</div></div>';
+    }
+
     buildData(el, b) {
         return window.LiffDesignerModules.dataPreview.buildData.call(this, el, b);
     }
@@ -730,6 +836,8 @@ class LiffDesigner {
             case 'banner': this.sBanner(panel, block); break;
             case 'spacer': this.sSpacer(panel, block); break;
             case 'divider': this.sDivider(panel, block); break;
+            case 'member_summary': this.sMemberSummary(panel, block); break;
+            case 'quick_actions': this.sQuickActions(panel, block); break;
             case 'data': this.sData(panel, block); break;
         }
 
@@ -858,6 +966,22 @@ class LiffDesigner {
     }
 
     sData(p, b) { this.addSel(p, 'データソース', b.source, this.DATA_SOURCES, v => { b.source = v; }); }
+
+    sMemberSummary(p, b) {
+        this.addField(p, 'あいさつ文（空欄で会員名を自動表示）', b.greeting, v => { b.greeting = v; });
+        const note = document.createElement('div');
+        note.className = 'ld-settings__hint';
+        note.innerHTML = 'ポイント・ランク・進捗は会員データから自動取得されます。';
+        p.appendChild(note);
+    }
+
+    sQuickActions(p, b) {
+        if (!Array.isArray(b.actions)) b.actions = [];
+        this.addArrayItems(p, 'アクション', b.actions,
+            () => ({ icon: 'fa-bolt', label: '新規', action: '#products' }),
+            ['icon', 'label', 'action'],
+            ['アイコン(fa-*)', 'ラベル', 'リンク(#tab)']);
+    }
 
     /* ========== Field helpers ========== */
 

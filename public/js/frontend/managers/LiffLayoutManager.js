@@ -121,6 +121,15 @@ class LiffLayoutManager {
         };
     }
 
+    static get DEFAULT_QUICK_ACTIONS() {
+        return [
+            { icon: 'fa-utensils', label: '注文', action: '#products' },
+            { icon: 'fa-ticket-alt', label: 'クーポン', action: '#coupons' },
+            { icon: 'fa-stamp', label: 'スタンプ', action: '#stamps' },
+            { icon: 'fa-id-card', label: '会員証', action: '#member' },
+        ];
+    }
+
     /* ─── 内部メソッド ─── */
 
     _hasDataBlock(blocks, source) {
@@ -152,10 +161,37 @@ class LiffLayoutManager {
         if (type === 'data') {
             return `<section class="builder-block builder-data-block" style="${baseStyle}" data-source="${esc(block.source || '')}"></section>`;
         }
+        if (type === 'member_summary') {
+            const greeting = block.greeting ? esc(block.greeting) : '';
+            return `<section class="builder-block builder-member-summary" data-source="member_summary"${greeting ? ` data-greeting="${greeting}"` : ''} style="${mb}">
+                <div class="member-summary-card member-summary-card--loading">
+                    <div class="ms-skeleton ms-skeleton--label"></div>
+                    <div class="ms-skeleton ms-skeleton--value"></div>
+                    <div class="ms-skeleton ms-skeleton--bar"></div>
+                </div>
+            </section>`;
+        }
+        if (type === 'quick_actions') {
+            const actions = (Array.isArray(block.actions) && block.actions.length > 0)
+                ? block.actions
+                : LiffLayoutManager.DEFAULT_QUICK_ACTIONS;
+            const tiles = actions.map((a) => {
+                const action = a.action || '#';
+                const isExternal = action !== '#' && (action.startsWith('http://') || action.startsWith('https://'));
+                const dataExternal = isExternal ? ' data-builder-external="1"' : '';
+                return `<a href="${esc(action)}" class="quick-action-tile builder-nav"${dataExternal}>
+                    <span class="qa-icon"><i class="fas ${esc(a.icon || 'fa-circle')}" aria-hidden="true"></i></span>
+                    <span class="qa-label">${esc(a.label || '')}</span>
+                </a>`;
+            }).join('');
+            return `<section class="builder-block builder-quick-actions" style="${mb}">
+                <div class="quick-actions-grid">${tiles}</div>
+            </section>`;
+        }
         if (type === 'hero') {
             const bg = block.image_url
                 ? `background-image:url('${esc(block.image_url)}');background-size:cover;background-position:center;`
-                : `background:linear-gradient(135deg,${block.gradient_start || '#667eea'} 0%,${block.gradient_end || '#764ba2'} 100%);`;
+                : `background:linear-gradient(135deg,${block.gradient_start || '#4f46e5'} 0%,${block.gradient_end || '#4338ca'} 100%);`;
             return `<section class="builder-block builder-hero" style="${bg}color:#fff;padding:32px 20px;text-align:center;${baseStyle}">
                 <h2 style="font-size:18px;font-weight:700;margin:0 0 4px;">${esc(block.title)}</h2>
                 <p style="font-size:12px;opacity:0.85;margin:0;">${esc(block.subtitle || block.text)}</p>
@@ -181,7 +217,7 @@ class LiffLayoutManager {
             const isExternal = action !== '#' && (action.startsWith('http://') || action.startsWith('https://'));
             const dataExternal = isExternal ? ' data-builder-external="1"' : '';
             return `<section class="builder-block" style="text-align:center;padding:8px;${baseStyle}">
-                <a href="${esc(action)}" class="builder-btn"${dataExternal} style="${w}padding:12px 24px;border-radius:8px;background:${block.color || '#06C755'};color:${block.text_color || '#fff'};font-size:14px;font-weight:700;text-decoration:none;text-align:center;">${esc(block.text)}</a>
+                <a href="${esc(action)}" class="builder-btn"${dataExternal} style="${w}padding:12px 24px;border-radius:8px;background:${block.color || '#4f46e5'};color:${block.text_color || '#fff'};font-size:14px;font-weight:700;text-decoration:none;text-align:center;">${esc(block.text)}</a>
             </section>`;
         }
         if (type === 'friend_add') {
@@ -214,7 +250,7 @@ class LiffLayoutManager {
             const rows = Array.isArray(block.rows) ? block.rows : [];
             const html = rows.map(r =>
                 `<div style="display:flex;align-items:center;gap:10px;font-size:13px;color:#374151;">` +
-                `<i class="fas ${r.icon || 'fa-check'}" style="color:${r.color || '#06C755'};font-size:16px;flex-shrink:0;"></i>` +
+                `<i class="fas ${r.icon || 'fa-check'}" style="color:${r.color || '#4f46e5'};font-size:16px;flex-shrink:0;"></i>` +
                 `<span>${esc(r.text)}</span></div>`
             ).join('');
             return `<section class="builder-block" style="background:#fff;padding:12px 14px;display:flex;flex-direction:column;gap:8px;${baseStyle}">${html}</section>`;
@@ -247,24 +283,24 @@ class LiffLayoutManager {
         const items = Array.isArray(block.items) ? block.items : [];
         const isGrid = block.layout === 'grid';
         const cols = block.columns || 2;
-        const gap = block.gap != null ? block.gap : 8;
+        const gap = block.gap != null ? block.gap : 12;
         const maxRows = block.max_rows || 0;
         const visibleCount = (isGrid && maxRows > 0) ? maxRows * cols : items.length;
         const visible = items.slice(0, visibleCount);
         const containerStyle = isGrid
             ? `display:grid;grid-template-columns:repeat(${cols},1fr);gap:${gap}px;`
-            : `display:flex;gap:${gap}px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch;`;
+            : `display:flex;gap:${gap}px;overflow-x:auto;padding:2px 2px 10px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;`;
         const itemStyle = isGrid
-            ? 'background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06);'
-            : `flex-shrink:0;width:${block.item_width || 140}px;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06);`;
-        const imgH = block.item_image_height || 100;
+            ? 'background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 14px rgba(12,10,9,0.08);'
+            : `flex-shrink:0;width:${block.item_width || 200}px;scroll-snap-align:start;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 6px 18px rgba(12,10,9,0.1);`;
+        const imgH = block.item_image_height || (isGrid ? 120 : 130);
         const itemsHtml = visible.map(item => {
             const img = item.image_url
                 ? `<img src="${esc(item.image_url)}" alt="" style="width:100%;height:${imgH}px;object-fit:cover;display:block;">`
-                : `<div style="width:100%;height:${imgH}px;background:#f3f4f6;display:flex;align-items:center;justify-content:center;color:#9ca3af;"><i class="fas fa-image"></i></div>`;
+                : `<div style="width:100%;height:${imgH}px;background:linear-gradient(135deg,#f5f5f4,#e7e5e4);display:flex;align-items:center;justify-content:center;color:#a8a29e;"><i class="fas fa-image" style="font-size:22px;"></i></div>`;
             const desc = (block.show_description && item.description)
-                ? `<div style="padding:0 8px 6px;font-size:10px;color:#6b7280;">${esc(item.description)}</div>` : '';
-            return `<div style="${itemStyle}">${img}<div style="padding:6px 8px;font-size:12px;font-weight:600;color:#1f2937;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(item.title)}</div>${desc}</div>`;
+                ? `<div style="padding:0 12px 10px;font-size:11px;line-height:1.5;color:#78716c;">${esc(item.description)}</div>` : '';
+            return `<div style="${itemStyle}">${img}<div style="padding:10px 12px ${desc ? '4px' : '12px'};font-size:13px;font-weight:700;color:#1c1917;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(item.title)}</div>${desc}</div>`;
         }).join('');
         return `<section class="builder-block" style="${baseStyle}"><div style="${containerStyle}">${itemsHtml}</div></section>`;
     }
@@ -390,11 +426,89 @@ class LiffLayoutManager {
                 this.app.announcementManager.load();
                 return;
             }
+            if (source === 'member_summary') {
+                this._mountMemberSummary(el);
+                return;
+            }
         });
     }
 
+    /** 会員サマリーカード（ホーム上部のパーソナライズ表示）を会員APIから描画 */
+    async _mountMemberSummary(el) {
+        const greeting = el.getAttribute('data-greeting') || '';
+        const fill = (html) => {
+            el.innerHTML = html;
+            this._bindInlineHandlers(el);
+        };
+        let data = null;
+        try {
+            if (this.app && this.app.apiClient && typeof AppConstants !== 'undefined') {
+                const result = await this.app.apiClient.get(AppConstants.API_ENDPOINTS.MEMBERS_ME);
+                if (result && result.success && result.data) {
+                    data = result.data;
+                }
+            }
+        } catch (e) {
+            data = null;
+        }
+        fill(this._buildMemberSummaryHtml(data, greeting));
+    }
+
+    _buildMemberSummaryHtml(data, greeting) {
+        const esc = (s) => this._esc(s);
+        const isMember = !!(data && data.is_member === true);
+
+        if (!isMember) {
+            return `<div class="member-summary-card member-summary-card--guest">
+                <div class="ms-guest-copy">
+                    <p class="ms-guest-title">${esc(greeting || 'ようこそ')}</p>
+                    <p class="ms-guest-sub">会員登録でポイント・クーポンをご利用いただけます</p>
+                </div>
+                <a href="#member" class="builder-nav ms-guest-cta"><i class="fas fa-user-plus" aria-hidden="true"></i> 会員登録する</a>
+            </div>`;
+        }
+
+        const name = (data.user && data.user.name) ? String(data.user.name) : '';
+        const points = Number(data.points != null ? data.points : (data.member && data.member.points) || 0);
+        const pointsLabel = points.toLocaleString('ja-JP');
+        const rankLabel = data.current_rank_label || '';
+        const showPoints = data.show_points_display !== false;
+        const showRank = data.show_rank_progress !== false;
+        const nextRankLabel = data.next_rank_label || '';
+        const toNext = Number(data.points_to_next_rank != null ? data.points_to_next_rank : 0);
+
+        const hello = greeting
+            ? esc(greeting)
+            : (name ? `こんにちは、${esc(name)} さん` : 'おかえりなさい');
+
+        let progressHtml = '';
+        if (showRank && nextRankLabel && toNext > 0) {
+            const span = points + toNext;
+            const pct = span > 0 ? Math.max(4, Math.min(100, Math.round((points / span) * 100))) : 0;
+            progressHtml = `<div class="ms-progress">
+                <div class="ms-progress-track"><span class="ms-progress-fill" style="width:${pct}%;"></span></div>
+                <p class="ms-progress-text">次の<strong>${esc(nextRankLabel)}</strong>まであと <strong>${toNext.toLocaleString('ja-JP')}</strong> pt</p>
+            </div>`;
+        }
+
+        return `<div class="member-summary-card">
+            <div class="ms-top">
+                <div class="ms-greeting">
+                    <p class="ms-hello">${hello}</p>
+                    ${rankLabel ? `<span class="ms-rank"><i class="fas fa-crown" aria-hidden="true"></i> ${esc(rankLabel)}</span>` : ''}
+                </div>
+                <a href="#member" class="builder-nav ms-card-link" aria-label="会員証を表示"><i class="fas fa-qrcode" aria-hidden="true"></i></a>
+            </div>
+            ${showPoints ? `<div class="ms-points">
+                <span class="ms-points-value">${pointsLabel}</span>
+                <span class="ms-points-unit">pt</span>
+            </div>` : ''}
+            ${progressHtml}
+        </div>`;
+    }
+
     _bindInlineHandlers(section) {
-        section.querySelectorAll('.builder-btn').forEach(btn => {
+        section.querySelectorAll('.builder-btn, .builder-nav').forEach(btn => {
             btn.addEventListener('click', e => {
                 const href = btn.getAttribute('href');
                 if (!href) return;
