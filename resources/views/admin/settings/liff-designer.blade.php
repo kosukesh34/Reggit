@@ -43,6 +43,23 @@
 .ld-quickstart__title { font-size: 16px; font-weight: 700; color: #374151; }
 .ld-quickstart__desc { font-size: 13px; color: #6b7280; line-height: 1.6; max-width: 280px; }
 .ld-quickstart__actions { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 240px; }
+
+.ld-form-hint { font-size: 11px; color: #9ca3af; margin: 0 0 8px; line-height: 1.5; }
+.ld-theme-gallery {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;
+}
+.ld-theme-card {
+    display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+    border: 1.5px solid #e5e7eb; border-radius: 12px; background: #fff;
+    cursor: pointer; transition: all 0.15s ease; text-align: left; min-width: 0;
+}
+.ld-theme-card:hover { border-color: #0f766e; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(13,148,136,0.12); }
+.ld-theme-card.is-active { border-color: #0f766e; background: rgba(13,148,136,0.06); box-shadow: 0 0 0 1px #0f766e inset; }
+.ld-theme-card__swatch {
+    flex: 0 0 auto; width: 22px; height: 22px; border-radius: 7px;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.08);
+}
+.ld-theme-card__name { font-size: 12px; font-weight: 700; color: #374151; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 </style>
 @endpush
 
@@ -180,26 +197,46 @@
                 </div>
             </div>
 
-            {{-- グローバルデザイントークン --}}
+            {{-- テーマ（SaaS テーマプリセット + 一括カスタマイズ） --}}
             <div class="ld-sidebar__section">
-                <div class="ld-sidebar__title"><i class="fas fa-swatchbook"></i> デザイントークン</div>
+                <div class="ld-sidebar__title"><i class="fas fa-swatchbook"></i> テーマ</div>
                 <div class="ld-design-panel">
                     <div class="ld-form-group">
-                        <label class="ld-form-label">プリセット</label>
-                        <div class="ld-design-presets" id="designPresets">
-                            <button type="button" class="ld-design-preset" data-preset="minimal">
-                                <div class="ld-design-preset__swatch" style="background:linear-gradient(135deg,#fafaf9,#e7e5e4)"></div>
-                                ミニマル
+                        <label class="ld-form-label">テーマプリセット</label>
+                        <p class="ld-form-hint">ワンタップでブランドの雰囲気を一括変更できます。</p>
+                        <div class="ld-theme-gallery" id="designPresets">
+                            @foreach(\App\Support\LiffThemePresets::all() as $preset)
+                            <button type="button" class="ld-theme-card" data-preset="{{ $preset['id'] }}" title="{{ $preset['description'] }}">
+                                <span class="ld-theme-card__swatch" style="background:{{ $preset['accent_color'] }}"></span>
+                                <span class="ld-theme-card__name">{{ $preset['name'] }}</span>
                             </button>
-                            <button type="button" class="ld-design-preset" data-preset="natural">
-                                <div class="ld-design-preset__swatch" style="background:linear-gradient(135deg,#ecfdf5,#d1fae5)"></div>
-                                ナチュラル
-                            </button>
-                            <button type="button" class="ld-design-preset" data-preset="bold">
-                                <div class="ld-design-preset__swatch" style="background:linear-gradient(135deg,#0f766e,#134e4a)"></div>
-                                ボールド
-                            </button>
+                            @endforeach
                         </div>
+                    </div>
+                    <div class="ld-form-group">
+                        <label class="ld-form-label">アクセントカラー</label>
+                        <div class="ld-color-row">
+                            <input type="color" id="globalAccentColor" class="ld-color-picker" value="#1c1917">
+                            <input type="text" id="globalAccentColorHex" class="ld-form-input ld-form-input--sm" value="#1c1917" maxlength="7">
+                        </div>
+                    </div>
+                    <div class="ld-form-group">
+                        <label class="ld-form-label">フォント</label>
+                        <select id="globalFontFamily" class="ld-form-select">
+                            <option value="">（プリセット標準）</option>
+                            @foreach(\App\Support\LiffThemePresets::fontStacks() as $key => $font)
+                            <option value="{{ $key }}">{{ $font['label'] }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="ld-form-group">
+                        <label class="ld-form-label">背景トーン</label>
+                        <select id="globalSurfaceTone" class="ld-form-select">
+                            <option value="">（プリセット標準）</option>
+                            @foreach(\App\Support\LiffThemePresets::surfaceTones() as $key => $tone)
+                            <option value="{{ $key }}">{{ $tone['label'] }}</option>
+                            @endforeach
+                        </select>
                     </div>
                     <div class="ld-form-group">
                         <label class="ld-form-label">セクション間隔 (px)</label>
@@ -254,7 +291,10 @@
             tabSettings: @json($tabSettings ?? []),
             templates: @json($templates ?? []),
             customCss: @json($customCss ?? ''),
-            featureFlags: @json($featureFlags ?? [])
+            featureFlags: @json($featureFlags ?? []),
+            themePresets: @json(\App\Support\LiffThemePresets::all()),
+            fontStacks: @json(\App\Support\LiffThemePresets::fontStacks()),
+            surfaceTones: @json(\App\Support\LiffThemePresets::surfaceTones())
         });
 
         // オンボーディング（初回表示 or 全タブ空の場合）

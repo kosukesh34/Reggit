@@ -45,13 +45,31 @@ class MemberManager {
         });
     }
 
+    static resolveLiffOs() {
+        if (typeof window !== 'undefined' && window.__LIFF_OS__) {
+            return window.__LIFF_OS__;
+        }
+        if (typeof window !== 'undefined' && window.__IS_LIFF__ && typeof liff !== 'undefined' && typeof liff.getOS === 'function') {
+            try {
+                const os = liff.getOS();
+                if (os === 'ios' || os === 'android') {
+                    window.__LIFF_OS__ = os;
+                    return os;
+                }
+            } catch (e) { /* ignore */ }
+        }
+        return null;
+    }
+
     static isIOS() {
+        if (MemberManager.resolveLiffOs() === 'ios') return true;
         if (typeof navigator === 'undefined') return false;
         return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
             (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     }
 
     static isAndroid() {
+        if (MemberManager.resolveLiffOs() === 'android') return true;
         if (typeof navigator === 'undefined') return false;
         return /Android/.test(navigator.userAgent);
     }
@@ -455,6 +473,20 @@ class MemberManager {
 
         document.addEventListener('liff-ready', retry, { once: true });
         document.addEventListener('liff-profile-ready', retry, { once: true });
+    }
+
+    _registerWalletVisibilityRefresh() {
+        if (this._walletVisibilityRefreshRegistered || typeof document === 'undefined') return;
+        this._walletVisibilityRefreshRegistered = true;
+
+        document.addEventListener('liff-ready', () => {
+            MemberManager.resolveLiffOs();
+            if (!this.memberData || this.memberData.is_member !== true) return;
+            const shouldShow = MemberManager.shouldShowAppleWallet() || MemberManager.shouldShowGoogleWallet();
+            if (shouldShow && !document.querySelector('.member-card-add-to-wallet-btn')) {
+                this.render(this.memberData);
+            }
+        }, { once: true });
     }
 
     preload() {
@@ -1014,6 +1046,7 @@ class MemberManager {
         if (!isSheet) this._setupFlip();
         this._setupCodeEnlargeButton();
         this._setupAddToWallet();
+        this._registerWalletVisibilityRefresh();
         this._setupPurchaseHistoryToggle();
         this._setupPointHistoryToggle();
         this._setupRankHistoryToggle();

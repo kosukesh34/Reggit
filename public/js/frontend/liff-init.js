@@ -492,6 +492,13 @@
             withLoginOnExternalBrowser: false   // 外部ブラウザでは認証させない（(B)でスキップ済み）
         }).then(function () {
             debug('liff_init_success', {});
+            if (typeof liff.getOS === 'function') {
+                const liffOs = liff.getOS();
+                if (liffOs === 'ios' || liffOs === 'android') {
+                    window.__LIFF_OS__ = liffOs;
+                    debug('liff_os_detected', { os: liffOs });
+                }
+            }
             const userId = liff.isLoggedIn() ? getLineUserIdFromToken() : null;
             setLineUserId(userId, 'liff_token');
             debug('liff_user_resolved', { hasUserId: !!userId, tail: userId ? String(userId).slice(-4) : '' });

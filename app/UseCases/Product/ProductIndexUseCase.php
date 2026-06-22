@@ -19,7 +19,7 @@ class ProductIndexUseCase
 
     public function handle(?string $category, ?bool $availableOnly, bool $includeCategories): ProductIndexOutput
     {
-        $query = Product::query();
+        $query = Product::query()->with('optionGroups.options');
         if ($availableOnly === true) {
             $query->where('is_available', true);
         }
