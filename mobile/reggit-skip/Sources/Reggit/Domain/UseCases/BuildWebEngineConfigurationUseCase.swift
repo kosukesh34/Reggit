@@ -1,8 +1,7 @@
 import SkipWeb
 
 struct BuildWebEngineConfigurationUseCase {
-    func execute(liffURLString: String, platform: NativePlatform) -> WebEngineConfiguration {
-        _ = liffURLString
+    func execute(platform: NativePlatform) -> WebEngineConfiguration {
         var config = WebEngineConfiguration()
         config.javaScriptEnabled = true
         config.allowsPullToRefresh = false
