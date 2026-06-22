@@ -1,24 +1,8 @@
 import Foundation
 import SkipFuse
-import SwiftUI
-
-let logger: Logger = Logger(subsystem: "com.reggit.default", category: "Reggit")
-
-/* SKIP @bridge */public struct ReggitRootView : View {
-    /* SKIP @bridge */public init() {
-    }
-
-    public var body: some View {
-        ContentView()
-            .task {
-                logger.info("Skip app logs are viewable in the Xcode console for iOS; Android logs can be viewed in Studio or using adb logcat")
-            }
-    }
-}
 
 /* SKIP @bridge */public final class ReggitAppDelegate : Sendable {
     /* SKIP @bridge */public static let shared = ReggitAppDelegate()
-    private static let pushTokenKey = "reggit_push_token"
 
     private init() {
     }
@@ -52,9 +36,8 @@ let logger: Logger = Logger(subsystem: "com.reggit.default", category: "Reggit")
     }
 
     /* SKIP @bridge */public func onPushTokenReceived(_ token: String) {
-        let trimmed = token.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
-        UserDefaults.standard.set(trimmed, forKey: Self.pushTokenKey)
+        guard let trimmed = token.trimmedNonEmpty else { return }
+        UserDefaults.standard.set(trimmed, forKey: NativeAppStorage.pushTokenKey)
         NotificationCenter.default.post(
             name: .oneSignalPushTokenDidUpdate,
             object: nil,
@@ -63,8 +46,7 @@ let logger: Logger = Logger(subsystem: "com.reggit.default", category: "Reggit")
     }
 
     /* SKIP @bridge */public func onNotificationForeground(_ notificationType: String) {
-        let type = notificationType.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !type.isEmpty else { return }
+        guard let type = notificationType.trimmedNonEmpty else { return }
         NotificationCenter.default.post(
             name: .oneSignalNotificationForeground,
             object: nil,
@@ -73,11 +55,9 @@ let logger: Logger = Logger(subsystem: "com.reggit.default", category: "Reggit")
     }
 
     /* SKIP @bridge */public func onNotificationOpened(_ tab: String, notificationType: String) {
-        let trimmed = tab.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
-        var userInfo: [String: Any] = ["tab": trimmed]
-        let type = notificationType.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !type.isEmpty {
+        guard let trimmedTab = tab.trimmedNonEmpty else { return }
+        var userInfo: [String: Any] = ["tab": trimmedTab]
+        if let type = notificationType.trimmedNonEmpty {
             userInfo["type"] = type
         }
         NotificationCenter.default.post(
