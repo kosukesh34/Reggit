@@ -448,16 +448,21 @@ class ShopSettingLiffDefaults
     {
         return [
             'home' => [
-                ['type' => 'hero', 'title' => config('app.name').'へようこそ', 'subtitle' => '注文・予約・会員特典をこの画面でまとめて利用できます。', 'gradient_start' => '#0ea5e9', 'gradient_end' => '#22c55e'],
-                ['type' => 'banner', 'icon' => 'fa-bell', 'text' => '本日限定: LINE会員はポイント2倍', 'color' => '#0f766e'],
+                ['type' => 'member_summary'],
+                ['type' => 'quick_actions', 'actions' => [
+                    ['icon' => 'fa-utensils', 'label' => 'メニュー', 'action' => '#products'],
+                    ['icon' => 'fa-ticket-alt', 'label' => 'クーポン', 'action' => '#coupons'],
+                    ['icon' => 'fa-stamp', 'label' => 'スタンプ', 'action' => '#stamps'],
+                    ['icon' => 'fa-id-card', 'label' => '会員証', 'action' => '#member'],
+                ]],
+                ['type' => 'banner', 'icon' => 'fa-bell', 'text' => '本日限定: LINE会員はポイント2倍', 'color' => '#eef2ff', 'text_color' => '#3730a3'],
                 ['type' => 'heading', 'text' => 'おすすめメニュー', 'size' => 'large'],
                 ['type' => 'collection', 'layout' => 'scroll', 'item_width' => 150, 'item_image_height' => 110, 'items' => [
                     ['title' => 'シグネチャープレート', 'description' => '人気No.1', 'image_url' => 'https://images.unsplash.com/photo-1550547660-d9450f859349?w=800'],
                     ['title' => '季節のサラダ', 'description' => '旬の素材', 'image_url' => 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800'],
-                    ['title' => '本日のパスタ', 'description' => '限定メニュー', 'image_url' => 'https://images.unsplash.com/photo-1621996346565-e3dbc353d2e5?w=800'],
+                    ['title' => '本日のパスタ', 'description' => '限定メニュー', 'image_url' => 'https://images.unsplash.com/photo-1473093295043-cdd812d0e601?w=800'],
                 ]],
-                ['type' => 'button', 'text' => '今すぐ注文する', 'action' => '#products', 'color' => '#06C755'],
-                ['type' => 'button', 'text' => '席を予約する', 'action' => '#reservations', 'color' => '#1d4ed8'],
+                ['type' => 'button', 'text' => '今すぐ注文する', 'action' => '#products', 'color' => '#4f46e5'],
                 ['type' => 'data', 'source' => 'announcements'],
             ],
             'products' => [
@@ -468,20 +473,20 @@ class ShopSettingLiffDefaults
             'orders' => [
                 ['type' => 'heading', 'text' => '注文状況', 'size' => 'large'],
                 ['type' => 'text', 'text' => '注文履歴と現在のステータスを確認できます。'],
-                ['type' => 'banner', 'icon' => 'fa-clock', 'text' => '受け取り準備が完了すると通知します', 'color' => '#2563eb'],
+                ['type' => 'banner', 'icon' => 'fa-clock', 'text' => '受け取り準備が完了すると通知します', 'color' => '#eef2ff', 'text_color' => '#3730a3'],
                 ['type' => 'data', 'source' => 'orders'],
             ],
             'stamps' => [
                 ['type' => 'heading', 'text' => 'スタンプカード', 'size' => 'large'],
                 ['type' => 'icon_text', 'rows' => [
-                    ['icon' => 'fa-stamp', 'text' => '来店ごとにスタンプ獲得', 'color' => '#06C755'],
-                    ['icon' => 'fa-gift', 'text' => '満了で特典を獲得', 'color' => '#f59e0b'],
+                    ['icon' => 'fa-stamp', 'text' => '来店ごとにスタンプ獲得', 'color' => '#4f46e5'],
+                    ['icon' => 'fa-gift', 'text' => '満了で特典を獲得', 'color' => '#4f46e5'],
                 ]],
                 ['type' => 'data', 'source' => 'stamps'],
             ],
             'coupons' => [
                 ['type' => 'heading', 'text' => 'クーポン', 'size' => 'large'],
-                ['type' => 'banner', 'icon' => 'fa-ticket-alt', 'text' => '会員限定クーポンを配信中', 'color' => '#7c3aed'],
+                ['type' => 'banner', 'icon' => 'fa-ticket-alt', 'text' => '会員限定クーポンを配信中', 'color' => '#eef2ff', 'text_color' => '#3730a3'],
                 ['type' => 'text', 'text' => 'ご注文前に利用可能なクーポンをご確認ください。'],
                 ['type' => 'data', 'source' => 'coupons'],
             ],
@@ -489,23 +494,23 @@ class ShopSettingLiffDefaults
                 ['type' => 'heading', 'text' => '順番待ち', 'size' => 'large'],
                 ['type' => 'text', 'text' => '混雑時は順番待ち受付をご利用ください。'],
                 ['type' => 'icon_text', 'rows' => [
-                    ['icon' => 'fa-user-check', 'text' => '人数を入力して受付', 'color' => '#0f766e'],
-                    ['icon' => 'fa-mobile-alt', 'text' => '呼び出し通知でお知らせ', 'color' => '#0f766e'],
+                    ['icon' => 'fa-user-check', 'text' => '人数を入力して受付', 'color' => '#4f46e5'],
+                    ['icon' => 'fa-mobile-alt', 'text' => '呼び出し通知でお知らせ', 'color' => '#4f46e5'],
                 ]],
                 ['type' => 'data', 'source' => 'queue'],
             ],
             'reservations' => [
                 ['type' => 'heading', 'text' => '来店予約', 'size' => 'large'],
                 ['type' => 'list', 'items' => ['日時を選択', '人数を指定', '内容を確認して確定']],
-                ['type' => 'banner', 'icon' => 'fa-calendar-check', 'text' => '予約変更・キャンセルは注文履歴から可能です', 'color' => '#1d4ed8'],
+                ['type' => 'banner', 'icon' => 'fa-calendar-check', 'text' => '予約変更・キャンセルは注文履歴から可能です', 'color' => '#eef2ff', 'text_color' => '#3730a3'],
                 ['type' => 'data', 'source' => 'reservations'],
             ],
             'member' => [
                 ['type' => 'heading', 'text' => '会員ページ', 'size' => 'large'],
                 ['type' => 'text', 'text' => '会員証・ポイント・ランクを確認できます。'],
                 ['type' => 'icon_text', 'rows' => [
-                    ['icon' => 'fa-coins', 'text' => '購入でポイントが貯まります', 'color' => '#d97706'],
-                    ['icon' => 'fa-crown', 'text' => 'ランクアップで特典が増えます', 'color' => '#d97706'],
+                    ['icon' => 'fa-coins', 'text' => '購入でポイントが貯まります', 'color' => '#4f46e5'],
+                    ['icon' => 'fa-crown', 'text' => 'ランクアップで特典が増えます', 'color' => '#4f46e5'],
                 ]],
                 ['type' => 'data', 'source' => 'member_card'],
             ],
@@ -516,7 +521,7 @@ class ShopSettingLiffDefaults
             ],
             'announcements' => [
                 ['type' => 'heading', 'text' => 'お知らせ', 'size' => 'large'],
-                ['type' => 'banner', 'icon' => 'fa-bullhorn', 'text' => '営業時間や限定情報を配信しています', 'color' => '#0f766e'],
+                ['type' => 'banner', 'icon' => 'fa-bullhorn', 'text' => '営業時間や限定情報を配信しています', 'color' => '#eef2ff', 'text_color' => '#3730a3'],
                 ['type' => 'data', 'source' => 'announcements'],
             ],
         ];

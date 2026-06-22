@@ -8,6 +8,6 @@ class ProductShowUseCase
 {
     public function handle(int $id): Product
     {
-        return Product::findOrFail($id);
+        return Product::with('optionGroups.options')->findOrFail($id);
     }
 }
