@@ -101,7 +101,7 @@ class CheckoutManager {
                     <div class="payment-summary">
                         <div class="payment-summary-item">
                             <span>注文番号</span>
-                            <span class="order-number">#${DomHelper.escapeHtml(String(order.order_number || order.id || ''))}</span>
+                            <span class="order-number ref-number">${DomHelper.escapeHtml(DomHelper.formatReferenceNumber(order.order_number, order.id))}</span>
                         </div>
                         <div class="payment-summary-item">
                             <span>お支払い金額</span>

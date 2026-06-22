@@ -104,18 +104,16 @@ class ReservationManager {
             && reservation.status !== AppConstants.RESERVATION_STATUS.COMPLETED;
         const canCancel = canEdit;
         const dayOfWeek = ['日', '月', '火', '水', '木', '金', '土'][reservedAt.getDay()];
+        const refNumber = DomHelper.formatReferenceNumber(reservation.reservation_number, reservation.id);
 
         return `
             <div class="reservation-card">
                 <div class="reservation-card-header">
-                    <div class="reservation-number">
-                        <i class="fas fa-hashtag"></i>
-                        ${DomHelper.escapeHtml(reservation.reservation_number)}
-                    </div>
                     <span class="reservation-status-badge ${statusClass}">
                         <i class="fas ${this.getStatusIcon(reservation.status)}"></i>
                         ${statusLabel}
                     </span>
+                    ${refNumber ? `<span class="ref-number" aria-label="予約番号">${DomHelper.escapeHtml(refNumber)}</span>` : ''}
                 </div>
                 <div class="reservation-card-body">
                     <div class="reservation-info-item">
@@ -144,7 +142,6 @@ class ReservationManager {
                             <div class="reservation-info-label">${AppConstants.RESERVATION_LABELS.NUMBER_OF_PEOPLE}</div>
                             <div class="reservation-info-value">
                                 <span class="reservation-people-count">${reservation.number_of_people}</span>
-                                <span class="reservation-people-unit">名様</span>
                             </div>
                         </div>
                     </div>
@@ -280,6 +277,41 @@ class ReservationManager {
         return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
     }
 
+    /** 人数を「数字（ステッパー）」だけで指定する簡易UIを返す。 */
+    getPeopleStepperHtml(value) {
+        const min = AppConstants.RESERVATION_VALIDATION.MIN_PEOPLE;
+        const max = AppConstants.RESERVATION_VALIDATION.MAX_PEOPLE;
+        const v = Math.min(Math.max(Number(value) || min, min), max);
+        return `
+            <div class="people-stepper" data-people-stepper data-min="${min}" data-max="${max}">
+                <button type="button" class="people-stepper-btn" data-people="-1" aria-label="減らす"><i class="fas fa-minus"></i></button>
+                <div class="people-stepper-display">
+                    <span class="people-stepper-value" data-people-value>${v}</span>
+                    <span class="people-stepper-unit">名</span>
+                </div>
+                <button type="button" class="people-stepper-btn" data-people="1" aria-label="増やす"><i class="fas fa-plus"></i></button>
+                <input type="hidden" name="number_of_people" value="${v}">
+            </div>
+        `;
+    }
+
+    adjustPeople(modal, delta) {
+        const stepper = modal ? modal.querySelector('[data-people-stepper]') : null;
+        if (!stepper) return;
+        const min = parseInt(stepper.dataset.min, 10) || 1;
+        const max = parseInt(stepper.dataset.max, 10) || 99;
+        const input = stepper.querySelector('input[name="number_of_people"]');
+        const valueEl = stepper.querySelector('[data-people-value]');
+        const current = parseInt(input.value, 10) || min;
+        const next = Math.min(Math.max(current + delta, min), max);
+        input.value = next;
+        if (valueEl) valueEl.textContent = next;
+        stepper.querySelectorAll('.people-stepper-btn').forEach(btn => {
+            const d = parseInt(btn.dataset.people, 10);
+            btn.disabled = (d < 0 && next <= min) || (d > 0 && next >= max);
+        });
+    }
+
     getEditFormHtml(reservation) {
         const numPeople = Math.min(Math.max(Number(reservation.number_of_people) || 1, AppConstants.RESERVATION_VALIDATION.MIN_PEOPLE), AppConstants.RESERVATION_VALIDATION.MAX_PEOPLE);
         const notes = (reservation.notes !== null && reservation.notes !== undefined && reservation.notes !== '') ? DomHelper.escapeHtml(reservation.notes) : '';
@@ -321,10 +353,7 @@ class ReservationManager {
                             <label class="form-label">
                                 <i class="fas fa-users"></i> ${AppConstants.RESERVATION_LABELS.NUMBER_OF_PEOPLE}
                             </label>
-                            <input type="number" name="number_of_people" class="form-control" required 
-                                min="${AppConstants.RESERVATION_VALIDATION.MIN_PEOPLE}" 
-                                max="${AppConstants.RESERVATION_VALIDATION.MAX_PEOPLE}" 
-                                value="${numPeople}">
+                            ${this.getPeopleStepperHtml(numPeople)}
                         </div>
                         <div class="form-group">
                             <label class="form-label">
@@ -422,10 +451,7 @@ class ReservationManager {
                             <label class="form-label">
                                 <i class="fas fa-users"></i> ${AppConstants.RESERVATION_LABELS.NUMBER_OF_PEOPLE}
                             </label>
-                            <input type="number" name="number_of_people" class="form-control" required 
-                                min="${AppConstants.RESERVATION_VALIDATION.MIN_PEOPLE}" 
-                                max="${AppConstants.RESERVATION_VALIDATION.MAX_PEOPLE}" 
-                                value="${AppConstants.RESERVATION_VALIDATION.MIN_PEOPLE}">
+                            ${this.getPeopleStepperHtml(AppConstants.RESERVATION_VALIDATION.MIN_PEOPLE)}
                         </div>
                         <div class="form-group">
                             <label class="form-label">
@@ -738,8 +764,20 @@ class ReservationManager {
             const timeButton = event.target.closest('.time-option');
             if (timeButton && !timeButton.disabled && timeButton.dataset.time) {
                 this.selectTime(timeButton.dataset.time);
+                return;
+            }
+
+            const peopleButton = event.target.closest('[data-people]');
+            if (peopleButton && !peopleButton.disabled) {
+                const delta = parseInt(peopleButton.dataset.people, 10);
+                if (!Number.isNaN(delta)) {
+                    this.adjustPeople(modal, delta);
+                }
             }
         });
+
+        // ステッパーの初期ボタン状態（下限で − を無効化）
+        this.adjustPeople(modal, 0);
     }
 
     closeModal(modal) {
