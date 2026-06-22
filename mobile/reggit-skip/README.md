@@ -24,9 +24,9 @@ LIFF/WebView のベースURLは **プロジェクトルートの `.env` の `APP
 **Skip.env を触らずに**開発（ngrok）と本番（reggit.shop）を切り替えたい場合は、次の1ファイルだけ編集します。
 
 - **ファイル**: `Sources/Reggit/Data/BundleMobileWebConfigRepository.swift`
-- **先頭付近の定数**:
-  - `useDevelopmentServer = true` → **開発用（ngrok）**に接続
-  - `useDevelopmentServer = false` → **本番（Skip.env / Info.plist の URL）**に接続
+- **切り替え方法**:
+  - **Debug ビルド** → 自動的に開発用（ngrok）に接続（`#if DEBUG`）
+  - **Release ビルド** → Skip.env / Info.plist の URL（本番）に接続
   - ngrok の URL を変えたときは同じファイルの `developmentBaseUrl` を書き換える
 
 環境変数や xcconfig を変えるとビルドや同期に時間がかかるため、開発中はこの切り替えが便利です。

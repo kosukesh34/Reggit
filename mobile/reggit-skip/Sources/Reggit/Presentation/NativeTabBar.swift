@@ -3,14 +3,12 @@ import SwiftUI
 struct NativeTabBar: View {
     let tabs: [AppTabItem]
     @Binding var selectedTab: String
-    let onTabSelected: (String) -> Void
 
     var body: some View {
         HStack(spacing: 0) {
             ForEach(tabs) { tab in
                 Button {
                     selectedTab = tab.key
-                    onTabSelected(tab.key)
                 } label: {
                     VStack(spacing: 3) {
                         Image(systemName: tab.sfSymbol)

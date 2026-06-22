@@ -19,5 +19,6 @@ let package = Package(
             .product(name: "SkipFuseUI", package: "skip-fuse-ui"),
             .product(name: "SkipWeb", package: "skip-web")
         ], resources: [.process("Resources")], plugins: [.plugin(name: "skipstone", package: "skip")]),
+        .testTarget(name: "ReggitTests", dependencies: ["Reggit"]),
     ]
 )
