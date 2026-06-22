@@ -45,7 +45,7 @@ internal val logger: SkipLogger = SkipLogger(subsystem = "reggit.app", category 
 private typealias AppRootView = ReggitRootView
 private typealias AppDelegate = ReggitAppDelegate
 
-/// Key for OneSignal subscription ID. Must match Skip module's key (reggit_push_token).
+/// Key for OneSignal subscription ID. Must match `NativeAppStorage.pushTokenKey` in the Skip module.
 private const val PUSH_TOKEN_PREFS_KEY = "reggit_push_token"
 /// SharedPreferences name used so Skip's device provider can read the token (Skip UserDefaults on Android).
 private const val PUSH_TOKEN_PREFS_NAME = "UserDefaults"

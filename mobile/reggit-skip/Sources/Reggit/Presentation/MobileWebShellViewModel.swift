@@ -1,56 +1,55 @@
 import Foundation
 import Observation
-import SkipFuse
 import SkipWeb
 
 @MainActor
 @Observable
-final class MobileWebShellViewModel {
+final class MobileWebShellViewModel: PushNotificationHandling {
     let config: MobileWebShellConfig
     let webConfiguration: WebEngineConfiguration
-    let navigator = WebViewNavigator()
-    var isLoading: Bool = true
-    var showWhiteScreenFallback: Bool = false
-    var fallbackMessage: String = ""
-    var webViewReloadKey: Int = 0
-    var activeTab: String
-    /// WebView で指定 URL のコンテンツが読み込めたときのみ true（タブバー表示・タブ切替の前提）
-    var showNativeTabBar: Bool = false
-    var isWebContentReady: Bool = false
+    let navigator: WebViewNavigator
 
-    private let buildScriptUseCase: BuildNativeInjectionScriptUseCase
-    private let deviceProvider: NativeDeviceContextProvider
-    private var monitorTask: Task<Void, Never>?
-    private var didAutoReload: Bool = false
-    private var didForceBootstrap: Bool = false
+    var isLoading = true
+    var showWhiteScreenFallback = false
+    var fallbackMessage = ""
+    var webViewReloadKey = 0
+    var activeTab: String
+    var tabs: [AppTabItem] = []
+    var showNativeTabBar = false
+    var isWebContentReady = false
+
+    private let deviceProvider: any NativeDeviceContextProvider
+    private let buildScriptUseCase: any NativeInjectionScriptBuilding
+    private let scriptExecutor: any WebViewScriptExecuting
+    private let appConfigLoader: any AppConfigLoading
+    private let whiteScreenMonitor: any WhiteScreenMonitoring
+    private let pushNotificationObserver: any PushNotificationObserving
+    private let reachabilityChecker: any ShellURLReachabilityChecking
+    private var pendingNotificationDeepLink: PendingNotificationDeepLink?
 
     init(
         config: MobileWebShellConfig,
         webConfiguration: WebEngineConfiguration,
-        deviceProvider: NativeDeviceContextProvider,
-        buildScriptUseCase: BuildNativeInjectionScriptUseCase
+        navigator: WebViewNavigator,
+        deviceProvider: any NativeDeviceContextProvider,
+        buildScriptUseCase: any NativeInjectionScriptBuilding,
+        scriptExecutor: any WebViewScriptExecuting,
+        appConfigLoader: any AppConfigLoading,
+        whiteScreenMonitor: any WhiteScreenMonitoring,
+        pushNotificationObserver: any PushNotificationObserving,
+        reachabilityChecker: any ShellURLReachabilityChecking
     ) {
         self.config = config
         self.activeTab = config.fixedTab
         self.webConfiguration = webConfiguration
+        self.navigator = navigator
         self.deviceProvider = deviceProvider
         self.buildScriptUseCase = buildScriptUseCase
-    }
-
-    static var `default`: MobileWebShellViewModel {
-        let repository = BundleMobileWebConfigRepository()
-        let config = repository.resolveConfig()
-        let device = DefaultNativeDeviceContextProvider()
-        let configuration = BuildWebEngineConfigurationUseCase().execute(
-            liffURLString: config.liffURLString,
-            platform: device.platform
-        )
-        return MobileWebShellViewModel(
-            config: config,
-            webConfiguration: configuration,
-            deviceProvider: device,
-            buildScriptUseCase: BuildNativeInjectionScriptUseCase()
-        )
+        self.scriptExecutor = scriptExecutor
+        self.appConfigLoader = appConfigLoader
+        self.whiteScreenMonitor = whiteScreenMonitor
+        self.pushNotificationObserver = pushNotificationObserver
+        self.reachabilityChecker = reachabilityChecker
     }
 
     var liffURL: URL? {
@@ -61,174 +60,60 @@ final class MobileWebShellViewModel {
         config.liffURLString
     }
 
-    private var pushTokenObserver: (any NSObjectProtocol)?
-    private var notificationOpenObserver: (any NSObjectProtocol)?
-    private var notificationForegroundObserver: (any NSObjectProtocol)?
-
     func onAppear() {
-        isLoading = true
-        showWhiteScreenFallback = false
-        showNativeTabBar = false
-        isWebContentReady = false
-        fallbackMessage = ""
-        didAutoReload = false
-        didForceBootstrap = false
+        resetShellState()
         Task { @MainActor in
-            let reachable = await Self.checkShellURLReachable(self.config.liffURLString)
-            if !reachable {
-                self.markShellUnreachable(
-                    message: """
-                    指定のURLに接続できませんでした。
-                    ネットワークとサーバー（ngrok 等）の起動を確認してください。
-
-                    URL: \(self.config.liffURLString)
-                    """
-                )
+            guard await reachabilityChecker.isReachable(config.liffURLString) else {
+                markShellUnreachable()
                 return
             }
-            self.startMonitoringWhiteScreen()
-            self.onNavigationFinished(applyInitialTab: false)
+            beginWhiteScreenMonitoring()
+            onNavigationFinished(applyInitialTab: false)
         }
-        observePushTokenUpdate()
-        observeNotificationOpen()
-        observeNotificationForeground()
-    }
-
-    private func markShellUnreachable(message: String) {
-        stopMonitoringWhiteScreen()
-        isLoading = false
-        showWhiteScreenFallback = true
-        showNativeTabBar = false
-        isWebContentReady = false
-        fallbackMessage = message
-        logger.error("Web shell unreachable: \(message)")
-    }
-
-    private func markWebContentReadyIfNeeded() {
-        guard !isWebContentReady else { return }
-        isWebContentReady = true
-        showNativeTabBar = true
-        onNavigationFinished(applyInitialTab: true)
-        switchToTab(activeTab)
-    }
-
-    private static func checkShellURLReachable(_ urlString: String) async -> Bool {
-        guard let url = URL(string: urlString) else { return false }
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        request.timeoutInterval = 10
-        request.setValue("true", forHTTPHeaderField: "ngrok-skip-browser-warning")
-        do {
-            let (_, response) = try await URLSession.shared.data(for: request)
-            guard let http = response as? HTTPURLResponse else { return false }
-            return (200 ... 399).contains(http.statusCode)
-        } catch {
-            logger.warning("Shell URL reachability check failed: \(error.localizedDescription)")
-            return false
-        }
+        pushNotificationObserver.startObserving(handler: self)
     }
 
     func onDisappear() {
-        stopMonitoringWhiteScreen()
-        if let observer = pushTokenObserver {
-            NotificationCenter.default.removeObserver(observer)
-            pushTokenObserver = nil
-        }
-        if let observer = notificationOpenObserver {
-            NotificationCenter.default.removeObserver(observer)
-            notificationOpenObserver = nil
-        }
-        if let observer = notificationForegroundObserver {
-            NotificationCenter.default.removeObserver(observer)
-            notificationForegroundObserver = nil
+        whiteScreenMonitor.stop()
+        pushNotificationObserver.stopObserving()
+    }
+
+    func onNativeTabBarVisibilityChanged(_ show: Bool) {
+        guard show else { return }
+        if let pending = appConfigLoader.takePendingConfig() {
+            applyAppConfig(pending)
+        } else if !appConfigLoader.isLoaded {
+            loadAppConfigEarlyIfAvailable()
         }
     }
 
-    private func observeNotificationOpen() {
-        notificationOpenObserver = NotificationCenter.default.addObserver(
-            forName: .oneSignalNotificationOpened,
-            object: nil,
-            queue: .main
-        ) { notification in
-            let tab = (notification.userInfo?["tab"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard let tab, !tab.isEmpty else { return }
-            let notificationType = (notification.userInfo?["type"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
-            Self.scheduleNotificationDeepLink(tab: tab, notificationType: notificationType)
-        }
-    }
-
-    private func observeNotificationForeground() {
-        notificationForegroundObserver = NotificationCenter.default.addObserver(
-            forName: .oneSignalNotificationForeground,
-            object: nil,
-            queue: .main
-        ) { notification in
-            let notificationType = (notification.userInfo?["type"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
-            Self.scheduleForegroundNotification(notificationType: notificationType)
-        }
-    }
-
-    nonisolated private static func scheduleNotificationDeepLink(tab: String, notificationType: String?) {
+    func loadAppConfigEarlyIfAvailable() {
+        guard showNativeTabBar, !appConfigLoader.isLoaded else { return }
         Task { @MainActor in
-            MobileWebShellViewModel.default.handleNotificationDeepLink(tab: tab, notificationType: notificationType)
+            guard let config = await appConfigLoader.fetchEarlyNative() else { return }
+            applyAppConfig(config)
         }
     }
 
-    nonisolated private static func scheduleForegroundNotification(notificationType: String?) {
+    func loadAppConfigFromWebIfNeeded() {
+        guard showNativeTabBar, !appConfigLoader.isLoaded else { return }
         Task { @MainActor in
-            MobileWebShellViewModel.default.handleForegroundNotification(notificationType: notificationType)
+            guard let config = await appConfigLoader.fetchViaWeb() else { return }
+            applyAppConfig(config)
         }
     }
 
-    nonisolated private static func schedulePushTokenInjection(token: String) {
-        Task { @MainActor in
-            let script = "typeof window.__nativeSetPushToken === 'function' && window.__nativeSetPushToken(\(token.jsStringLiteral));"
-            _ = try? await MobileWebShellViewModel.default.navigator.evaluateJavaScript(script)
-        }
-    }
-
-    func handleForegroundNotification(notificationType: String?) {
-        guard notificationType == "coupon_issued" else { return }
-        let script = """
-        (() => {
-            try {
-                window.dispatchEvent(new CustomEvent('mobile-coupon-received', { detail: { tab: 'coupons', foreground: true } }));
-            } catch (e) {}
-            return 'dispatched';
-        })();
-        """
-        Task { @MainActor in
-            _ = try? await self.navigator.evaluateJavaScript(script)
-        }
-    }
-
-    func handleNotificationDeepLink(tab: String, notificationType: String? = nil) {
-        activeTab = tab
-        guard showNativeTabBar, isWebContentReady else { return }
-        let isCoupon = notificationType == "coupon_issued" || tab == "coupons"
-        let script = """
-        (() => {
-            if (typeof window.__nativeOpenTab__ === 'function') {
-                return window.__nativeOpenTab__(\(tab.jsStringLiteral), { couponReceived: \(isCoupon ? "true" : "false") }) ? 'opened' : 'pending';
-            }
-            window.__NATIVE_PENDING_TAB__ = \(tab.jsStringLiteral);
-            return 'queued';
-        })();
-        """
-        Task { @MainActor in
-            _ = try? await self.navigator.evaluateJavaScript(script)
-        }
-    }
-
-    private func observePushTokenUpdate() {
-        pushTokenObserver = NotificationCenter.default.addObserver(
-            forName: .oneSignalPushTokenDidUpdate,
-            object: nil,
-            queue: .main
-        ) { notification in
-            let token = (notification.userInfo?["token"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard let token, !token.isEmpty else { return }
-            Self.schedulePushTokenInjection(token: token)
+    func applyAppConfig(_ config: AppConfig) {
+        guard let outcome = appConfigLoader.apply(
+            config,
+            tabBarVisible: showNativeTabBar,
+            activeTab: activeTab,
+            fixedTab: self.config.fixedTab
+        ) else { return }
+        tabs = outcome.tabs
+        activeTab = outcome.activeTab
+        if outcome.shouldSwitchTab {
+            switchToTab(outcome.activeTab)
         }
     }
 
@@ -240,209 +125,131 @@ final class MobileWebShellViewModel {
             activeTab: activeTab,
             applyInitialTab: shouldApplyTab
         )
-        Task { @MainActor in
-            _ = try? await self.navigator.evaluateJavaScript(script)
-        }
-    }
-
-    func fetchAppConfigViaWeb() async -> AppConfig? {
-        let script = AppConfigClient.syncFetchScript(baseUrl: config.baseUrl, projectKey: config.projectKey)
-        guard let raw = try? await navigator.evaluateJavaScript(script) else { return nil }
-        let jsonString = normalizeEvaluateResult(raw)
-        guard !jsonString.isEmpty else { return nil }
-        return AppConfigClient.parseJSONString(jsonString)
+        scriptExecutor.run(script)
     }
 
     func switchToTab(_ tabKey: String) {
-        guard showNativeTabBar, isWebContentReady else {
-            activeTab = tabKey
-            return
-        }
         activeTab = tabKey
-        let script = """
-        (() => {
-            window.__NATIVE_TARGET_TAB__ = \(tabKey.jsStringLiteral);
-            if (window.app && typeof window.app.switchTab === 'function') {
-                window.app.switchTab(\(tabKey.jsStringLiteral));
-                return 'switched';
-            }
-            const tabId = \(tabKey.jsStringLiteral) + 'Tab';
-            document.querySelectorAll('.tab-content').forEach(el => {
-                el.classList.remove('active');
-                if (el.id === tabId) el.classList.add('active');
-            });
-            document.querySelectorAll('.main-tab-btn').forEach(btn => {
-                btn.classList.remove('active');
-                if (btn.getAttribute('data-tab') === \(tabKey.jsStringLiteral)) btn.classList.add('active');
-            });
-            return 'dom_switched';
-        })();
-        """
-        Task { @MainActor in
-            _ = try? await self.navigator.evaluateJavaScript(script)
-        }
+        guard showNativeTabBar, isWebContentReady else { return }
+        scriptExecutor.run(MobileWebShellScripts.switchTab(tabKey))
+    }
+
+    func selectTab(_ tabKey: String) {
+        switchToTab(tabKey)
     }
 
     func retryLoad() {
+        resetShellState()
+        webViewReloadKey += 1
+        Task { @MainActor in
+            guard await reachabilityChecker.isReachable(config.liffURLString) else {
+                markShellUnreachable()
+                return
+            }
+            beginWhiteScreenMonitoring()
+        }
+    }
+
+    // MARK: - PushNotificationHandling
+
+    func handleForegroundNotification(notificationType: String?) {
+        guard notificationType == "coupon_issued" else { return }
+        scriptExecutor.run(MobileWebShellScripts.foregroundCouponNotification())
+    }
+
+    func handleNotificationDeepLink(tab: String, notificationType: String?) {
+        activeTab = tab
+        guard showNativeTabBar, isWebContentReady else {
+            pendingNotificationDeepLink = PendingNotificationDeepLink(tab: tab, notificationType: notificationType)
+            return
+        }
+        runNotificationDeepLink(tab: tab, notificationType: notificationType)
+    }
+
+    func injectPushToken(_ token: String) async {
+        scriptExecutor.run(MobileWebShellScripts.pushTokenInjection(token: token))
+    }
+
+    // MARK: - Private
+
+    private func resetShellState() {
+        isLoading = true
         showWhiteScreenFallback = false
         showNativeTabBar = false
         isWebContentReady = false
-        isLoading = true
-        didAutoReload = false
-        didForceBootstrap = false
-        webViewReloadKey += 1
-        Task { @MainActor in
-            let reachable = await Self.checkShellURLReachable(self.config.liffURLString)
-            if !reachable {
-                self.markShellUnreachable(
-                    message: """
-                    指定のURLに接続できませんでした。
-                    ネットワークとサーバー（ngrok 等）の起動を確認してください。
+        fallbackMessage = ""
+        pendingNotificationDeepLink = nil
+        whiteScreenMonitor.resetTracking()
+    }
 
-                    URL: \(self.config.liffURLString)
-                    """
-                )
-                return
+    private func markShellUnreachable() {
+        whiteScreenMonitor.stop()
+        isLoading = false
+        showWhiteScreenFallback = true
+        showNativeTabBar = false
+        isWebContentReady = false
+        pendingNotificationDeepLink = nil
+        fallbackMessage = reachabilityChecker.unreachableMessage(for: config.liffURLString)
+        logger.error("Web shell unreachable: \(fallbackMessage)")
+    }
+
+    private func markWebContentReadyIfNeeded() {
+        guard !isWebContentReady else { return }
+        isWebContentReady = true
+        showNativeTabBar = true
+        onNavigationFinished(applyInitialTab: true)
+        switchToTab(activeTab)
+        flushPendingNotificationDeepLinkIfNeeded()
+    }
+
+    private func flushPendingNotificationDeepLinkIfNeeded() {
+        guard let pending = pendingNotificationDeepLink else { return }
+        pendingNotificationDeepLink = nil
+        runNotificationDeepLink(tab: pending.tab, notificationType: pending.notificationType)
+    }
+
+    private func runNotificationDeepLink(tab: String, notificationType: String?) {
+        let isCoupon = notificationType == "coupon_issued" || tab == "coupons"
+        scriptExecutor.run(MobileWebShellScripts.notificationDeepLink(tab: tab, isCoupon: isCoupon))
+    }
+
+    private func beginWhiteScreenMonitoring() {
+        whiteScreenMonitor.start(
+            liffURLString: config.liffURLString,
+            isContentReady: { [weak self] in self?.isWebContentReady ?? false },
+            inspectPage: { [scriptExecutor] in await scriptExecutor.inspectPageVisibility() },
+            forceBootstrap: { [scriptExecutor] in
+                let result = await scriptExecutor.forceBootstrap()
+                logger.warning("Forced bootstrap result: \(result)")
+            },
+            onEvent: { [weak self] event in
+                self?.handleWhiteScreenEvent(event)
             }
-            self.startMonitoringWhiteScreen()
+        )
+    }
+
+    private func handleWhiteScreenEvent(_ event: WhiteScreenMonitorEvent) {
+        switch event {
+        case .contentVisible:
+            isLoading = false
+            showWhiteScreenFallback = false
+            fallbackMessage = ""
+            markWebContentReadyIfNeeded()
+        case .autoReload:
+            webViewReloadKey += 1
+            beginWhiteScreenMonitoring()
+        case .fallback(let message):
+            isLoading = false
+            showWhiteScreenFallback = true
+            showNativeTabBar = false
+            isWebContentReady = false
+            pendingNotificationDeepLink = nil
+            fallbackMessage = message
         }
-    }
-
-    private func stopMonitoringWhiteScreen() {
-        monitorTask?.cancel()
-        monitorTask = nil
-    }
-
-    private func startMonitoringWhiteScreen() {
-        stopMonitoringWhiteScreen()
-        monitorTask = Task { @MainActor [weak self] in
-            guard let self else { return }
-            let startedAt = Date()
-
-            while !Task.isCancelled {
-                let elapsed = Date().timeIntervalSince(startedAt)
-                let inspection = await self.inspectPage()
-
-                if inspection.visible {
-                    self.isLoading = false
-                    self.showWhiteScreenFallback = false
-                    self.fallbackMessage = ""
-                    self.markWebContentReadyIfNeeded()
-                    return
-                }
-
-                if elapsed >= 4, !self.didForceBootstrap {
-                    self.didForceBootstrap = true
-                    await self.forceBootstrapIfNeeded()
-                }
-
-                if elapsed >= 9, !self.didAutoReload {
-                    self.didAutoReload = true
-                    logger.warning("WebView content still not visible after 9s, auto reloading: \(inspection.summary)")
-                    self.webViewReloadKey += 1
-                    self.startMonitoringWhiteScreen()
-                }
-
-                if elapsed >= 16 {
-                    self.isLoading = false
-                    self.showWhiteScreenFallback = true
-                    self.showNativeTabBar = false
-                    self.isWebContentReady = false
-                    self.fallbackMessage = """
-                    画面の読み込みが完了しませんでした。
-                    URL: \(self.config.liffURLString)
-                    状態: \(inspection.summary)
-                    """
-                    logger.error("White screen fallback shown: \(inspection.summary)")
-                    return
-                }
-
-                try? await Task.sleep(nanoseconds: 1_000_000_000)
-            }
-        }
-    }
-
-    private func inspectPage() async -> PageInspection {
-        guard let raw = try? await navigator.evaluateJavaScript(pageVisibilityInspectionScript()) else {
-            return PageInspection(visible: false, summary: "js_eval_failed")
-        }
-
-        let summary = normalizeEvaluateResult(raw)
-        let fields = summary.split(separator: "|", omittingEmptySubsequences: false).map(String.init)
-        let visible = fields.last == "1"
-        return PageInspection(visible: visible, summary: summary)
-    }
-
-    private func forceBootstrapIfNeeded() async {
-        guard isWebContentReady else { return }
-        let result: String
-        if let value = try? await navigator.evaluateJavaScript(forceBootstrapScript()) {
-            result = normalizeEvaluateResult(value)
-        } else {
-            result = "js_eval_failed"
-        }
-        logger.warning("Forced Android bootstrap result: \(result)")
-    }
-
-    private func pageVisibilityInspectionScript() -> String {
-        """
-        (() => {
-            const appContainer = document.querySelector('.app-container');
-            const activeTab = document.querySelector('.tab-content.active');
-            const activeTabSection = document.querySelector('.tab-content.active .tab-section');
-            const footer = document.querySelector('.main-tabs');
-            const loading = document.getElementById('liff-loading');
-            const body = document.body;
-            const appReady = !!(window.app && typeof window.app.switchTab === 'function');
-            const sectionChildren = activeTabSection ? activeTabSection.children.length : 0;
-            const sectionTextLength = activeTabSection && activeTabSection.textContent ? activeTabSection.textContent.trim().length : 0;
-            const layoutVisible =
-                (appContainer && appContainer.offsetHeight > 120) ||
-                (activeTab && activeTab.offsetHeight > 80) ||
-                (footer && footer.offsetHeight > 30);
-            const visible = appReady || !!layoutVisible;
-            const loadingDisplay = loading ? getComputedStyle(loading).display : 'none';
-            const bodyChildren = body ? body.children.length : 0;
-            const href = window.location ? String(window.location.href || '') : '';
-            const ready = document.readyState || 'unknown';
-            const summary = [ready, href, bodyChildren, appContainer ? appContainer.offsetHeight : 0, activeTab ? activeTab.offsetHeight : 0, activeTabSection ? activeTabSection.offsetHeight : 0, footer ? footer.offsetHeight : 0, loadingDisplay, appReady ? '1' : '0', sectionChildren, sectionTextLength, visible ? '1' : '0'].join('|');
-            return summary;
-        })();
-        """
-    }
-
-    private func forceBootstrapScript() -> String {
-        """
-        (() => {
-            try {
-                if (typeof document !== 'undefined' && typeof document.dispatchEvent === 'function') {
-                    document.dispatchEvent(new CustomEvent('liff-ready'));
-                }
-                return 'liff_ready_dispatched';
-            } catch (e) {
-                return 'bootstrap_error:' + String(e && e.message ? e.message : e);
-            }
-        })();
-        """
-    }
-
-    private func normalizeEvaluateResult(_ value: Any) -> String {
-        if let stringValue = value as? String {
-            return trimOuterQuotes(stringValue)
-        }
-        return trimOuterQuotes(String(describing: value))
-    }
-
-    private func trimOuterQuotes(_ s: String) -> String {
-        guard s.count >= 2 else { return s }
-        if s.hasPrefix("\""), s.hasSuffix("\"") {
-            return String(s.dropFirst().dropLast())
-        }
-        return s
     }
 }
 
-private struct PageInspection {
-    let visible: Bool
-    let summary: String
+private struct PendingNotificationDeepLink {
+    let tab: String
+    let notificationType: String?
 }
