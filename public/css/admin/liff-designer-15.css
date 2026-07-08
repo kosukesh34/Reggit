@@ -1,0 +1,229 @@
+/* LIFF Designer visual polish: app-store gallery and realistic phone preview */
+
+.ld-modal__dialog--templates {
+    background:
+        radial-gradient(circle at 12% -8%, rgba(15, 118, 110, 0.16), transparent 30%),
+        radial-gradient(circle at 92% 0%, rgba(180, 83, 9, 0.11), transparent 28%),
+        linear-gradient(180deg, #fffdf8 0%, #f7f3ea 100%);
+}
+
+.ld-modal__dialog--templates .ld-modal__body {
+    background:
+        linear-gradient(90deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.34)),
+        radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.82), transparent 44%);
+}
+
+.ld-template-featured {
+    position: relative;
+    overflow: hidden;
+    padding: 20px;
+}
+
+.ld-template-featured::after {
+    content: "";
+    position: absolute;
+    inset: auto -8% -52% 44%;
+    height: 180px;
+    background: radial-gradient(circle, rgba(15, 118, 110, 0.2), transparent 64%);
+    pointer-events: none;
+}
+
+.ld-template-featured__title {
+    font-size: 14px;
+    letter-spacing: -0.03em;
+}
+
+.ld-template-featured-card,
+.ld-template-card,
+.ld-tab-template-card {
+    isolation: isolate;
+}
+
+.ld-template-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0)),
+        radial-gradient(circle at 80% 0%, rgba(15, 118, 110, 0.16), transparent 34%);
+    opacity: 0;
+    transition: opacity 0.18s ease;
+}
+
+.ld-template-card:hover::before {
+    opacity: 1;
+}
+
+.ld-template-card__phone-mount {
+    position: relative;
+    height: 318px;
+    border: 1px solid rgba(28, 25, 23, 0.12);
+    background:
+        linear-gradient(180deg, rgba(17, 17, 17, 0.96) 0 30px, transparent 30px),
+        radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.8), transparent 30%),
+        linear-gradient(180deg, #ece8dd, #fffaf0);
+}
+
+.ld-template-card__phone-mount::before {
+    content: "";
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    width: 52px;
+    height: 5px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.28);
+    transform: translateX(-50%);
+    z-index: 2;
+}
+
+.ld-template-card__preview-hint {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    width: calc(100% - 20px);
+    margin: -38px 10px 0;
+    padding: 9px 12px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.86);
+    color: #134e4a;
+    font-weight: 900;
+    backdrop-filter: blur(14px);
+    box-shadow: 0 12px 30px rgba(28, 25, 23, 0.14);
+}
+
+.ld-tpl-live-phone--compact {
+    transform: scale(0.72);
+    margin-bottom: -48px;
+}
+
+.ld-tpl-live-phone--compact .ld-phone__frame {
+    border-radius: 34px;
+    box-shadow: 0 18px 42px rgba(28, 25, 23, 0.22);
+}
+
+.ld-tpl-live-phone--compact .ld-phone__body {
+    max-height: 420px;
+}
+
+.ld-template-card__block-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.ld-template-card__block-chips .ld-chip,
+.ld-template-card__block-chips span {
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.76);
+    border: 1px solid rgba(28, 25, 23, 0.08);
+    color: #57534e;
+    font-size: 10px;
+    font-weight: 800;
+}
+
+.ld-template-preview-modal {
+    width: min(1120px, calc(100vw - 22px));
+    background:
+        radial-gradient(circle at 0% 0%, rgba(15, 118, 110, 0.12), transparent 34%),
+        linear-gradient(180deg, #fffdf9, #f8f4ec);
+}
+
+.ld-template-preview-modal__body {
+    grid-template-columns: minmax(360px, 1fr) 330px;
+    padding: 22px;
+}
+
+.ld-template-preview-phone {
+    padding: 22px;
+    border-radius: 28px;
+    background:
+        linear-gradient(145deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.52)),
+        radial-gradient(circle at 50% 0%, rgba(15, 118, 110, 0.14), transparent 48%);
+    border: 1px solid rgba(255, 255, 255, 0.72);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72), 0 24px 60px rgba(28, 25, 23, 0.1);
+}
+
+.ld-tpl-live-phone--interactive {
+    max-width: 420px;
+}
+
+.ld-tpl-live-phone--interactive .ld-phone__frame {
+    border: 9px solid #11100f;
+    background: #11100f;
+    box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.08),
+        0 34px 80px rgba(28, 25, 23, 0.28),
+        0 8px 22px rgba(28, 25, 23, 0.18);
+}
+
+.ld-tpl-live-phone--interactive .ld-phone__header {
+    min-height: 48px;
+    font-size: 13px;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+}
+
+.ld-tpl-live-phone--interactive .ld-phone__body::-webkit-scrollbar {
+    width: 0;
+}
+
+.ld-template-preview-modal__sidebar,
+.ld-template-preview-modal__theme,
+.ld-template-preview-modal__block-list {
+    border-radius: 20px;
+}
+
+.ld-template-preview-modal__sidebar {
+    position: sticky;
+    top: 0;
+    padding: 14px;
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(28, 25, 23, 0.08);
+    backdrop-filter: blur(16px);
+}
+
+.ld-template-preview-modal__block-item {
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.68);
+    box-shadow: 0 8px 18px rgba(28, 25, 23, 0.04);
+}
+
+.ld-template-preview-modal__actions .ld-btn {
+    min-height: 44px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 900;
+}
+
+.ld-phone__frame.system-ui-luxe .ld-block,
+.ld-phone__frame.system-card-elevated .ld-block {
+    box-shadow: 0 14px 34px rgba(28, 25, 23, 0.12) !important;
+}
+
+.ld-phone__frame.system-card-outline .ld-block {
+    border: 1.5px solid rgba(28, 25, 23, 0.14) !important;
+    box-shadow: none !important;
+}
+
+.ld-phone__frame.system-media-arch img,
+.ld-phone__frame.system-media-arch .ld-collection__img,
+.ld-phone__frame.system-media-arch .ld-slider {
+    border-radius: 999px 999px 22px 22px !important;
+}
+
+@media (max-width: 860px) {
+    .ld-template-preview-modal__body {
+        grid-template-columns: 1fr;
+        padding: 14px;
+    }
+    .ld-template-preview-modal__sidebar {
+        position: static;
+    }
+    .ld-template-card__phone-mount {
+        height: 286px;
+    }
+}

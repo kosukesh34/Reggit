@@ -1,0 +1,124 @@
+/* LIFF Designer — テンプレートプレビュー強化（デザインバリエーション対応） */
+
+.ld-template-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+    gap: 12px;
+}
+
+.ld-template-card {
+    border-radius: 16px;
+    overflow: hidden;
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.ld-template-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 28px rgba(28, 25, 23, 0.12);
+}
+
+.ld-template-card__demo-body {
+    min-height: 96px;
+    gap: 4px;
+}
+
+/* デモブロック — デザイン別 */
+.ld-demo-block--ms-wallet {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 10px !important;
+}
+.ld-demo-block--ms-wallet .ld-demo-block__chip { width: 28px; height: 28px; border-radius: 8px; }
+.ld-demo-block--ms-compact { padding: 6px 8px !important; min-height: 28px !important; }
+.ld-demo-block--ms-emblem { text-align: center; padding: 10px 8px !important; }
+.ld-demo-block--ms-minimal {
+    background: #fff !important;
+    border: 1px solid #e7e5e4;
+    box-shadow: none !important;
+}
+.ld-demo-block--ms-glass {
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(255,255,255,0.25);
+}
+
+.ld-demo-block--hero-minimal {
+    min-height: 48px !important;
+    background: #f5f5f4 !important;
+}
+.ld-demo-block--hero-minimal .ld-demo-block__hero-title,
+.ld-demo-block--hero-minimal .ld-demo-block__hero-sub {
+    background: #d6d3d1 !important;
+}
+.ld-demo-block--hero-split .ld-demo-block__hero-title { width: 55% !important; }
+.ld-demo-block--hero-centered { text-align: center; }
+.ld-demo-block--hero-centered .ld-demo-block__hero-title { margin: 0 auto; }
+
+.ld-demo-block--qa-pill {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 4px !important;
+    overflow: hidden;
+}
+.ld-demo-block--qa-pill span {
+    flex: 0 0 36px !important;
+    height: 18px !important;
+    border-radius: 999px !important;
+}
+.ld-demo-block--qa-compact {
+    flex-direction: column !important;
+    gap: 3px !important;
+}
+.ld-demo-block--qa-compact span {
+    width: 100% !important;
+    height: 14px !important;
+    border-radius: 6px !important;
+}
+
+.ld-demo-block--banner-pill { border-radius: 999px !important; height: 16px !important; }
+.ld-demo-block--banner-outline {
+    background: transparent !important;
+    border: 2px solid var(--demo-accent, #4f46e5) !important;
+}
+.ld-demo-block--banner-soft { opacity: 0.65; }
+
+.ld-demo-block--btn-outline {
+    background: transparent !important;
+    border: 2px solid var(--demo-accent, #4f46e5) !important;
+}
+.ld-demo-block--btn-soft { opacity: 0.55; }
+
+.ld-demo-block--card-horizontal {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 6px;
+}
+.ld-demo-block--card-horizontal .ld-demo-block__card-img {
+    width: 38% !important;
+    flex-shrink: 0;
+}
+.ld-demo-block--card-overlay .ld-demo-block__card-img {
+    width: 100% !important;
+    height: 36px !important;
+}
+
+.ld-template-categories {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 12px;
+    max-height: 88px;
+    overflow-y: auto;
+}
+.ld-template-categories .ld-chip {
+    font-size: 11px;
+    padding: 5px 10px;
+}
+
+.ld-template-card__tag--native {
+    background: #eef2ff;
+    color: #4338ca;
+}
+.ld-template-card__tag--luxury {
+    background: #fef9c3;
+    color: #a16207;
+}

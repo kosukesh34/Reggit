@@ -22,7 +22,8 @@ class UpdateLiffDesignerInput
         public readonly ?array $tabSettings,
         public readonly string $liffId = '',
         public readonly string $liffUrl = '',
-        public readonly string $lineFriendAddUrl = ''
+        public readonly string $lineFriendAddUrl = '',
+        public readonly ?array $menuItems = null
     ) {}
 
     /**
@@ -48,6 +49,15 @@ class UpdateLiffDesignerInput
             }
         }
 
+        $menuItems = null;
+        $menuItemsJson = $request->input('menu_items_json');
+        if ($menuItemsJson !== null && $menuItemsJson !== '') {
+            $parsed = json_decode($menuItemsJson, true);
+            if (is_array($parsed)) {
+                $menuItems = LiffDesignerSanitizer::sanitizeMenuItems($parsed);
+            }
+        }
+
         try {
             return new self(
                 LiffDesignerSanitizer::sanitizeLayouts($decoded),
@@ -55,7 +65,8 @@ class UpdateLiffDesignerInput
                 LiffDesignerSanitizer::sanitizeTabSettings($tabSettings),
                 trim((string) $request->input('line_liff_id', '')),
                 trim((string) $request->input('line_liff_url', '')),
-                trim((string) $request->input('line_friend_add_url', ''))
+                trim((string) $request->input('line_friend_add_url', '')),
+                $menuItems
             );
         } catch (InvalidArgumentException $e) {
             throw ValidationException::withMessages(['liff_designer' => $e->getMessage()]);
