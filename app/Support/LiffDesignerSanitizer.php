@@ -44,7 +44,9 @@ class LiffDesignerSanitizer
 
     private const HERO_DESIGNS = ['editorial', 'minimal', 'split', 'centered'];
     private const HEADING_DESIGNS = ['plain', 'section', 'eyebrow', 'underline'];
+
     private const TEXT_DESIGNS = ['body', 'lead', 'note', 'quote'];
+
     private const IMAGE_DESIGNS = ['rounded', 'full_bleed', 'polaroid', 'arch'];
 
     private const BANNER_DESIGNS = ['promo', 'outline', 'soft', 'pill'];
@@ -55,10 +57,15 @@ class LiffDesignerSanitizer
 
     private const QUICK_ACTIONS_DESIGNS = ['grid', 'pill', 'compact'];
     private const COLLECTION_DESIGNS = ['product_shelf', 'editorial', 'compact', 'magazine'];
+
     private const SLIDER_DESIGNS = ['hero', 'cards', 'minimal'];
+
     private const STORE_CARD_DESIGNS = ['table', 'card', 'timeline'];
+
     private const ACCESS_DESIGNS = ['card', 'map', 'minimal'];
+
     private const FAQ_DESIGNS = ['accordion', 'cards', 'minimal'];
+
     private const DATA_DESIGNS = ['cards', 'timeline', 'compact', 'premium'];
 
     public static function sanitizeLayouts(array $layouts): array
@@ -67,12 +74,12 @@ class LiffDesignerSanitizer
         foreach (self::ALLOWED_TABS as $tab) {
             $rows = $layouts[$tab] ?? [];
             $safe[$tab] = [];
-            if (!is_array($rows)) {
+            if (! is_array($rows)) {
                 continue;
             }
             $rows = array_slice($rows, 0, 100);
             foreach ($rows as $row) {
-                if (!is_array($row)) {
+                if (! is_array($row)) {
                     continue;
                 }
                 $block = self::sanitizeBlock($row);
@@ -103,7 +110,7 @@ class LiffDesignerSanitizer
 
         foreach (self::ALLOWED_TABS as $tab) {
             $row = $tabSettings[$tab] ?? null;
-            if (!is_array($row)) {
+            if (! is_array($row)) {
                 continue;
             }
             $item = [];
@@ -292,11 +299,11 @@ class LiffDesignerSanitizer
         $seen = [];
         $order = 0;
         foreach ($items as $row) {
-            if (!is_array($row)) {
+            if (! is_array($row)) {
                 continue;
             }
             $tab = (string) ($row['tab'] ?? '');
-            if (!in_array($tab, self::MENU_TABS, true) || isset($seen[$tab])) {
+            if (! in_array($tab, self::MENU_TABS, true) || isset($seen[$tab])) {
                 continue;
             }
             $seen[$tab] = true;
@@ -312,7 +319,7 @@ class LiffDesignerSanitizer
                 'label' => $label,
                 'icon' => $icon,
                 'order' => $order++,
-                'enabled' => !isset($row['enabled']) || $row['enabled'] !== false,
+                'enabled' => ! isset($row['enabled']) || $row['enabled'] !== false,
             ];
         }
 
@@ -357,7 +364,7 @@ class LiffDesignerSanitizer
             $row['text'] = $row['body'] ?? ($row['text'] ?? '');
         }
 
-        if (!in_array($type, self::ALLOWED_BLOCK_TYPES, true)) {
+        if (! in_array($type, self::ALLOWED_BLOCK_TYPES, true)) {
             return null;
         }
 
@@ -416,7 +423,7 @@ class LiffDesignerSanitizer
                 $b['color'] = self::color($row['color'] ?? '#06C755') ?? '#06C755';
                 $b['text_color'] = self::color($row['text_color'] ?? '#ffffff') ?? '#ffffff';
                 $b['action'] = self::safeUrl($row['action'] ?? ($row['button_url'] ?? ''), true);
-                $b['full_width'] = !isset($row['full_width']) || (bool) $row['full_width'];
+                $b['full_width'] = ! isset($row['full_width']) || (bool) $row['full_width'];
                 $b['design'] = self::pickDesign((string) ($row['design'] ?? ''), self::BUTTON_DESIGNS, 'cta');
                 break;
             case 'card':
@@ -441,11 +448,11 @@ class LiffDesignerSanitizer
                 $b['item_width'] = self::num($row['item_width'] ?? 140, 80, 280, 140);
                 $b['item_image_height'] = self::num($row['item_image_height'] ?? 100, 40, 240, 100);
                 $b['gap'] = self::num($row['gap'] ?? 8, 0, 32, 8);
-                $b['show_description'] = !isset($row['show_description']) || (bool) $row['show_description'];
+                $b['show_description'] = ! isset($row['show_description']) || (bool) $row['show_description'];
                 $b['design'] = self::pickDesign((string) ($row['design'] ?? ''), self::COLLECTION_DESIGNS, 'product_shelf');
                 $items = is_array($row['items'] ?? null) ? array_slice($row['items'], 0, 24) : [];
                 $b['items'] = array_values(array_filter(array_map(function ($it) {
-                    if (!is_array($it)) {
+                    if (! is_array($it)) {
                         return null;
                     }
                     $item = [
@@ -465,12 +472,12 @@ class LiffDesignerSanitizer
             case 'slider':
                 $b['section_label'] = self::text($row['section_label'] ?? ($row['title'] ?? ''), 40);
                 $b['slide_height'] = self::num($row['slide_height'] ?? 160, 80, 360, 160);
-                $b['auto_play'] = !isset($row['auto_play']) || (bool) $row['auto_play'];
-                $b['show_dots'] = !isset($row['show_dots']) || (bool) $row['show_dots'];
+                $b['auto_play'] = ! isset($row['auto_play']) || (bool) $row['auto_play'];
+                $b['show_dots'] = ! isset($row['show_dots']) || (bool) $row['show_dots'];
                 $b['design'] = self::pickDesign((string) ($row['design'] ?? ''), self::SLIDER_DESIGNS, 'hero');
                 $slides = is_array($row['slides'] ?? null) ? array_slice($row['slides'], 0, 12) : [];
                 $b['slides'] = array_values(array_filter(array_map(function ($it) {
-                    if (!is_array($it)) {
+                    if (! is_array($it)) {
                         return null;
                     }
 
@@ -483,7 +490,7 @@ class LiffDesignerSanitizer
             case 'icon_text':
                 $rows = is_array($row['rows'] ?? null) ? array_slice($row['rows'], 0, 12) : [];
                 $b['rows'] = array_values(array_filter(array_map(function ($it) {
-                    if (!is_array($it)) {
+                    if (! is_array($it)) {
                         return null;
                     }
                     $icon = (string) ($it['icon'] ?? 'fa-check-circle');
@@ -552,7 +559,7 @@ class LiffDesignerSanitizer
                 $b['design'] = self::pickDesign((string) ($row['design'] ?? ''), self::QUICK_ACTIONS_DESIGNS, 'grid');
                 $actions = is_array($row['actions'] ?? null) ? array_slice($row['actions'], 0, 8) : [];
                 $b['actions'] = array_values(array_filter(array_map(function ($it) {
-                    if (!is_array($it)) {
+                    if (! is_array($it)) {
                         return null;
                     }
                     $icon = (string) ($it['icon'] ?? 'fa-circle');
@@ -577,7 +584,7 @@ class LiffDesignerSanitizer
                 $b['design'] = self::pickDesign((string) ($row['design'] ?? ''), self::STORE_CARD_DESIGNS, 'table');
                 $rows = is_array($row['rows'] ?? null) ? array_slice($row['rows'], 0, 10) : [];
                 $b['rows'] = array_values(array_filter(array_map(function ($it) {
-                    if (!is_array($it)) {
+                    if (! is_array($it)) {
                         return null;
                     }
                     $day = self::text($it['day'] ?? '', 20);
@@ -600,11 +607,11 @@ class LiffDesignerSanitizer
             case 'social_links':
                 $links = is_array($row['links'] ?? null) ? array_slice($row['links'], 0, 7) : [];
                 $b['links'] = array_values(array_filter(array_map(function ($it) {
-                    if (!is_array($it)) {
+                    if (! is_array($it)) {
                         return null;
                     }
                     $kind = (string) ($it['type'] ?? '');
-                    if (!in_array($kind, self::SOCIAL_LINK_TYPES, true)) {
+                    if (! in_array($kind, self::SOCIAL_LINK_TYPES, true)) {
                         return null;
                     }
                     $url = self::safeUrl($it['url'] ?? '', false);
@@ -620,7 +627,7 @@ class LiffDesignerSanitizer
                 $b['design'] = self::pickDesign((string) ($row['design'] ?? ''), self::FAQ_DESIGNS, 'accordion');
                 $items = is_array($row['items'] ?? null) ? array_slice($row['items'], 0, 12) : [];
                 $b['items'] = array_values(array_filter(array_map(function ($it) {
-                    if (!is_array($it)) {
+                    if (! is_array($it)) {
                         return null;
                     }
                     $q = self::text($it['q'] ?? '', 120);
@@ -639,7 +646,7 @@ class LiffDesignerSanitizer
             case 'button_group':
                 $buttons = is_array($row['buttons'] ?? null) ? array_slice($row['buttons'], 0, 3) : [];
                 $b['buttons'] = array_values(array_filter(array_map(function ($it) {
-                    if (!is_array($it)) {
+                    if (! is_array($it)) {
                         return null;
                     }
                     $text = self::text($it['text'] ?? '', 24);
