@@ -40,6 +40,10 @@ window.LiffDesignerModules.dataPreview = {
                         Array.from({ length: 34 }).map((_, i) => '<i style="width:' + ((i % 4) + 1) + 'px"></i>').join('') +
                     '</div>' +
                     '<div class="ld-mock-card__no">No. M999001</div>' +
+                    '<div class="ld-mock-card__wallet-btns">' +
+                        '<span class="ld-mock-wallet-btn ld-mock-wallet-btn--apple"><i class="fab fa-apple"></i> Apple Walletに追加</span>' +
+                        '<span class="ld-mock-wallet-btn ld-mock-wallet-btn--google"><i class="fab fa-google"></i> Google Walletに追加</span>' +
+                    '</div>' +
                 '</div>';
         },
         coupons() {

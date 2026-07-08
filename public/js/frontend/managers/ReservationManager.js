@@ -17,11 +17,16 @@ class ReservationManager {
         this.reservationsSection = null;
     }
 
+    getGlobalSetting(key, fallback) {
+        return DomHelper.getLiffGlobalSetting(key, fallback);
+    }
+
     _getSection() {
-        if (!this.reservationsSection) {
-            this.reservationsSection = document.getElementById(AppConstants.ELEMENT_IDS.RESERVATIONS_SECTION) || null;
-        }
-        return this.reservationsSection;
+        return DomHelper.getTabMount(
+            AppConstants.TAB_MOUNTS.RESERVATIONS,
+            AppConstants.ELEMENT_IDS.RESERVATIONS_SECTION,
+            { silent: true }
+        );
     }
 
     getReservationById(id) {
@@ -30,9 +35,8 @@ class ReservationManager {
 
     async loadReservations() {
         this.reservationsSection = this._getSection();
-        if (this.reservationsSection) {
-            this.reservationsSection.innerHTML = this.getReservationSkeleton();
-        }
+        if (!this.reservationsSection) return;
+        this.reservationsSection.innerHTML = this.getReservationSkeleton();
 
         try {
             const response = await this.apiClient.get(
@@ -107,7 +111,7 @@ class ReservationManager {
         const refNumber = DomHelper.formatReferenceNumber(reservation.reservation_number, reservation.id);
 
         return `
-            <div class="reservation-card">
+            <div class="reservation-card reservation-card--screen-${DomHelper.escapeHtml(this.getGlobalSetting('reservation_screen_design', 'cards'))}">
                 <div class="reservation-card-header">
                     <span class="reservation-status-badge ${statusClass}">
                         <i class="fas ${this.getStatusIcon(reservation.status)}"></i>

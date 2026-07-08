@@ -5,7 +5,11 @@ class QueueManager {
     }
 
     getSection() {
-        return DomHelper.getElementById(AppConstants.ELEMENT_IDS.QUEUE_SECTION);
+        return DomHelper.getTabMount(
+            AppConstants.TAB_MOUNTS.QUEUE,
+            AppConstants.ELEMENT_IDS.QUEUE_SECTION,
+            { silent: true }
+        );
     }
 
     getGuestTemplate() {
