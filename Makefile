@@ -1,7 +1,7 @@
 # Reggit - Docker 経由で artisan を実行するための Makefile
 # 使い方: make up → make migrate → make route-list など
 
-.PHONY: up down migrate seed reconcile-points test-env setup-dev route-list shell composer test test-db build-deploy ngrok-sync smaregi-webhook-doctor smaregi-webhook-probe
+.PHONY: up down migrate seed reconcile-points test-env setup-dev route-list shell composer test test-db npm-build build-deploy ngrok-sync smaregi-webhook-doctor smaregi-webhook-probe
 
 # コンテナ起動（バックグラウンド）
 up:
@@ -55,6 +55,11 @@ composer-install:
 cache-clear:
 	docker-compose exec app php artisan cache:clear
 	docker-compose exec app php artisan config:clear
+
+# フロント資産ビルド（Vite + React）
+npm-build:
+	npm ci
+	npm run build
 
 # テスト用DB作成（Docker 内でテストする前に1回実行）
 # reggit_user に reggit_test への権限を付与し、開発DB (reggit) を破壊しないようにする
