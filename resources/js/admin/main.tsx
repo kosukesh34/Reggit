@@ -1,9 +1,12 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import '../../css/app.css';
 import { createRoot } from 'react-dom/client';
 import { AdminSidebar } from './components/AdminSidebar';
-import { loadLegacyAdminScripts } from './legacy/loadLegacyAdminScripts';
-import { useEffect } from 'react';
+import { exposeAdminLegacyGlobals } from '../shared/utils/exposeAdminLegacyGlobals';
+import { registerMigratedLiffDesignerModules } from './liff-designer/registerMigratedModules';
+import './admin';
+import './couponBulkIssue';
+import './liffBuilderPage';
 
 type LdDesignerApi = {
     bindPanelDrawers?: () => void;
@@ -100,18 +103,16 @@ function initializeLiffDesigner(): void {
 
 function AdminBootstrap(): null {
     useEffect(() => {
-        const bootstrap = async (): Promise<void> => {
-            try {
-                await loadLegacyAdminScripts();
-                if (document.body.dataset.pageKind === 'liff-designer') {
-                    initializeLiffDesigner();
-                }
-            } catch (error) {
-                // eslint-disable-next-line no-console
-                console.error('[admin-bootstrap] failed:', error);
+        try {
+            exposeAdminLegacyGlobals();
+            if (document.body.dataset.pageKind === 'liff-designer') {
+                registerMigratedLiffDesignerModules();
+                initializeLiffDesigner();
             }
-        };
-        void bootstrap();
+        } catch (error) {
+            // eslint-disable-next-line no-console
+            console.error('[admin-bootstrap] failed:', error);
+        }
     }, []);
 
     return null;
