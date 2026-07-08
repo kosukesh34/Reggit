@@ -80,10 +80,10 @@
     --dur-fast: 0.14s;
     --dur: 0.24s;
 
-    /* ===== Typography（テーマプリセットで --font-base / --font-display を上書き）===== */
-    --font-sans: -apple-system, BlinkMacSystemFont, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Noto Sans JP', Meiryo, system-ui, sans-serif;
-    --font-serif: 'Hiragino Mincho ProN', 'Yu Mincho', 'YuMincho', 'Shippori Mincho', serif;
-    --font-rounded: 'Hiragino Maru Gothic ProN', 'Quicksand', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', system-ui, sans-serif;
+    /* ===== Typography（OS標準日本語。テーマプリセットで --font-base / --font-display を上書き）===== */
+    --font-sans: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Yu Gothic Medium", "Yu Gothic", Meiryo, sans-serif;
+    --font-serif: "Hiragino Mincho ProN", "Yu Mincho", YuMincho, "MS PMincho", serif;
+    --font-rounded: "Hiragino Maru Gothic ProN", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Yu Gothic", Meiryo, sans-serif;
     --font-base: var(--font-sans);
     --font-display: var(--font-base);
     --font-weight-heading: 700;
