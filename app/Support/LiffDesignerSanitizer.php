@@ -43,6 +43,7 @@ class LiffDesignerSanitizer
     ];
 
     private const HERO_DESIGNS = ['editorial', 'minimal', 'split', 'centered'];
+
     private const HEADING_DESIGNS = ['plain', 'section', 'eyebrow', 'underline'];
 
     private const TEXT_DESIGNS = ['body', 'lead', 'note', 'quote'];
@@ -56,6 +57,7 @@ class LiffDesignerSanitizer
     private const BUTTON_DESIGNS = ['cta', 'outline', 'soft'];
 
     private const QUICK_ACTIONS_DESIGNS = ['grid', 'pill', 'compact'];
+
     private const COLLECTION_DESIGNS = ['product_shelf', 'editorial', 'compact', 'magazine'];
 
     private const SLIDER_DESIGNS = ['hero', 'cards', 'minimal'];
