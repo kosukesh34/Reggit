@@ -229,11 +229,9 @@ body.ld-is-dragging { user-select: none; }
 
 @media (max-width: 1200px) {
     .ld-topbar { height: auto; min-height: 56px; padding-top: 8px; padding-bottom: 8px; }
-    .ld-body { grid-template-columns: 200px 1fr 340px; }
     .ld-template-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 980px) {
-    .ld-body { grid-template-columns: 1fr; }
     .ld-screens, .ld-sidebar { display: none; }
     .ld-editor__toolbar { width: 100%; }
     .ld-template-grid { grid-template-columns: 1fr; }

@@ -6,7 +6,8 @@ window.LiffDesignerModules.io = {
             exported_at: new Date().toISOString(),
             active_tab: this.state.activeTab,
             layouts: this.state.layouts,
-            tab_settings: this.state.tabSettings,
+            tab_settings: this.serializeTabSettings(),
+            menu_items: this.state.menuItems || [],
             custom_css: this.els.customCssEditor ? this.els.customCssEditor.value : '',
         };
         const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
@@ -42,6 +43,14 @@ window.LiffDesignerModules.io = {
                         const src = data.tab_settings[key];
                         if (src && typeof src === 'object') this.state.tabSettings[key] = { ...this.state.tabSettings[key], ...src };
                     });
+                    if (data.tab_settings._global && typeof data.tab_settings._global === 'object') {
+                        this.state.globalSettings = { ...this.state.globalSettings, ...data.tab_settings._global };
+                        this.syncGlobalDesignControls();
+                        this.applyGlobalDesignPreview();
+                    }
+                }
+                if (Array.isArray(data.menu_items) && data.menu_items.length > 0) {
+                    this.state.menuItems = this.normalizeMenuItems(data.menu_items);
                 }
                 if (typeof data.custom_css === 'string' && this.els.customCssEditor) {
                     this.els.customCssEditor.value = data.custom_css;

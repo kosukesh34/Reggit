@@ -509,10 +509,12 @@ class ReggitApp {
 
         if (source === 'products') {
             section.innerHTML = `
-                <div class="category-tabs" id="categoryTabs">
-                    <button class="tab-btn active" data-category="all"><i class="fas fa-th-large"></i><span>すべて</span></button>
+                <div class="products-data-mount">
+                    <div class="category-tabs products-category-tabs" id="categoryTabs">
+                        <button class="tab-btn active" data-category="all"><i class="fas fa-th-large"></i><span>すべて</span></button>
+                    </div>
+                    <div class="products-section"><div class="products-grid products-data-grid" id="productsGrid"></div></div>
                 </div>
-                <div class="products-section"><div class="products-grid" id="productsGrid"></div></div>
             `;
             return;
         }
@@ -531,11 +533,16 @@ class ReggitApp {
     }
 
     _attachCategoryListeners() {
-        document.querySelectorAll('.tab-btn[data-category]').forEach((btn) => {
+        const container = DomHelper.getCategoryTabsContainer();
+        if (!container) return;
+        container.querySelectorAll('.tab-btn[data-category]').forEach((btn) => {
             btn.addEventListener('click', (e) => {
-                document.querySelectorAll('.tab-btn[data-category]').forEach((b) =>
-                    DomHelper.removeClass(b, AppConstants.CSS_CLASSES.ACTIVE)
-                );
+                const tabs = DomHelper.getCategoryTabsContainer();
+                if (tabs) {
+                    tabs.querySelectorAll('.tab-btn[data-category]').forEach((b) =>
+                        DomHelper.removeClass(b, AppConstants.CSS_CLASSES.ACTIVE)
+                    );
+                }
                 DomHelper.addClass(e.currentTarget, AppConstants.CSS_CLASSES.ACTIVE);
                 this.productManager.setCurrentCategory(e.currentTarget.dataset.category);
                 this.renderProducts();
@@ -572,7 +579,7 @@ class ReggitApp {
     }
 
     async loadProducts() {
-        const grid = document.getElementById(AppConstants.ELEMENT_IDS.PRODUCTS_GRID);
+        const grid = DomHelper.getProductsGrid();
         if (!grid) {
             if (typeof window.__mobileOrderLog === 'function') window.__mobileOrderLog('loadProducts: productsGrid not found', { currentTab: this.currentTab });
             return;
@@ -589,7 +596,7 @@ class ReggitApp {
 
     /** APIから取得したカテゴリでタブを動的に構築 */
     renderCategoryTabs() {
-        const container = document.querySelector('.category-tabs');
+        const container = DomHelper.getCategoryTabsContainer();
         if (!container) return;
         const categories = this.productManager.getCategories();
         if (!categories || categories.length === 0) return;
@@ -608,7 +615,7 @@ class ReggitApp {
 
     handleProductLoadError(error) {
         console.error('Failed to load products:', error);
-        const grid = DomHelper.getElementById(AppConstants.ELEMENT_IDS.PRODUCTS_GRID);
+        const grid = DomHelper.getProductsGrid();
         if (grid) {
             grid.innerHTML = this.getErrorTemplate(
                 '商品の読み込みに失敗しました',
@@ -631,7 +638,7 @@ class ReggitApp {
     }
 
     renderProducts() {
-        const grid = DomHelper.getElementById(AppConstants.ELEMENT_IDS.PRODUCTS_GRID);
+        const grid = DomHelper.getProductsGrid();
         if (!grid) return;
         const currentCat = this.productManager.getCurrentCategory();
         const products = this.productManager.getProductsByCategory(currentCat);
@@ -1013,6 +1020,28 @@ class ReggitApp {
         this.handleOrderSuccess();
     }
 
+    _refreshActiveTabDataMounts() {
+        const tabContentEl = document.querySelector('.tab-content.active');
+        if (!tabContentEl) return;
+        const M = AppConstants.TAB_MOUNTS;
+        if (tabContentEl.querySelector('.' + M.MEMBER)) {
+            const memberData = this.memberManager.getMemberData();
+            if (memberData && memberData.is_member === true) {
+                this.memberManager.render(memberData);
+            } else {
+                this.loadMemberTab();
+            }
+        }
+        if (tabContentEl.querySelector('.' + M.PRODUCTS)) this.loadProducts();
+        if (tabContentEl.querySelector('.' + M.ORDERS)) this.loadOrdersTab();
+        if (tabContentEl.querySelector('.' + M.STAMPS)) this.stampsManager.load();
+        if (tabContentEl.querySelector('.' + M.COUPONS)) this.couponsManager.load();
+        if (tabContentEl.querySelector('.' + M.QUEUE)) this.queueManager.load();
+        if (tabContentEl.querySelector('.' + M.RESERVATIONS)) this.checkMembershipAndLoadReservations();
+        if (tabContentEl.querySelector('.' + M.GALLERY)) this.galleryManager.load();
+        if (tabContentEl.querySelector('.' + M.ANNOUNCEMENTS)) this.announcementManager.load();
+    }
+
     switchTab(tab) {
         if (typeof window.__mobileOrderLog === 'function') window.__mobileOrderLog('switchTab', { tab });
         this.currentTab = tab;
@@ -1039,8 +1068,14 @@ class ReggitApp {
         const tabEl = DomHelper.getElementById(tabIdMap[tab]);
         if (tabEl) DomHelper.addClass(tabEl, AppConstants.CSS_CLASSES.ACTIVE);
 
+        const sectionContainer = document.getElementById(tab + 'Section');
+        const layoutWasRendered = !!(sectionContainer && sectionContainer.dataset.layoutRendered === '1');
+
         if (!(this.designerPreviewSource && this.designerPreviewEmbed)) {
             this.layoutManager.render(tab);
+        }
+        if (layoutWasRendered) {
+            this._refreshActiveTabDataMounts();
         }
         if (this.designerPreviewSource) {
             this.applyDesignerPreviewMode(true);
@@ -1048,7 +1083,11 @@ class ReggitApp {
     }
 
     async loadOrdersTab() {
-        const section = DomHelper.getElementById(AppConstants.ELEMENT_IDS.ORDERS_SECTION);
+        const section = DomHelper.getTabMount(
+            AppConstants.TAB_MOUNTS.ORDERS,
+            AppConstants.ELEMENT_IDS.ORDERS_SECTION,
+            { silent: true }
+        );
         if (!section) return;
         if (typeof window !== 'undefined' && !window.__LINE_USER_ID__ && this.memberManager) {
             await this.memberManager.resolveLineUserIdForClient();
@@ -1175,7 +1214,11 @@ class ReggitApp {
     }
 
     async checkMembershipAndLoadReservations() {
-        const section = DomHelper.getElementById(AppConstants.ELEMENT_IDS.RESERVATIONS_SECTION);
+        const section = DomHelper.getTabMount(
+            AppConstants.TAB_MOUNTS.RESERVATIONS,
+            AppConstants.ELEMENT_IDS.RESERVATIONS_SECTION,
+            { silent: true }
+        );
         if (!section) return;
         if (typeof window !== 'undefined' && !window.__LINE_USER_ID__ && this.memberManager) {
             await this.memberManager.resolveLineUserIdForClient();

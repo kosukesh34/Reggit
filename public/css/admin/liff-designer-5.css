@@ -1,0 +1,268 @@
+/* LIFF Designer — タブ管理・新ブロック（店舗情報系）・小型モーダル */
+
+/* ===== タブ管理（左サイドバー） ===== */
+.ld-screen-item__controls {
+    display: none;
+    align-items: center;
+    gap: 2px;
+    margin-left: auto;
+}
+
+.ld-screen-item:hover .ld-screen-item__controls,
+.ld-screen-item.is-active .ld-screen-item__controls {
+    display: inline-flex;
+}
+
+.ld-screen-item:hover .ld-screen-item__count,
+.ld-screen-item.is-active .ld-screen-item__count {
+    display: none;
+}
+
+.ld-screen-item__ctrl {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: #94a3b8;
+    font-size: 10px;
+    cursor: pointer;
+    transition: background 0.12s ease, color 0.12s ease;
+}
+
+.ld-screen-item__ctrl:hover {
+    background: #eef2ff;
+    color: #4f46e5;
+}
+
+.ld-screen-item__ctrl:disabled {
+    opacity: 0.3;
+    cursor: default;
+    pointer-events: none;
+}
+
+.ld-screen-item__ctrl.is-off {
+    color: #cbd5e1;
+}
+
+.ld-screen-item.is-hidden-tab .ld-screen-item__icon,
+.ld-screen-item.is-hidden-tab .ld-screen-item__label {
+    opacity: 0.42;
+}
+
+.ld-screen-item.is-hidden-tab .ld-screen-item__label {
+    text-decoration: line-through;
+    text-decoration-color: rgba(100, 116, 139, 0.5);
+}
+
+/* ===== タブ名・アイコン編集モーダル ===== */
+.ld-modal__dialog--sm {
+    max-width: 380px;
+}
+
+.ld-icon-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 6px;
+}
+
+.ld-icon-grid__item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 1;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 10px;
+    background: #fff;
+    color: #475569;
+    font-size: 15px;
+    cursor: pointer;
+    transition: all 0.12s ease;
+}
+
+.ld-icon-grid__item:hover {
+    border-color: #4f46e5;
+    color: #4f46e5;
+}
+
+.ld-icon-grid__item.is-active {
+    border-color: #4f46e5;
+    background: #eef2ff;
+    color: #4f46e5;
+    box-shadow: 0 0 0 1px #4f46e5 inset;
+}
+
+/* ===== プレビュー: 店舗情報系ブロック ===== */
+.ld-store-card {
+    display: flex;
+    flex-direction: column;
+    padding: 14px;
+    background: #fff;
+    border-radius: inherit;
+}
+
+.ld-store-card__title {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 13px;
+    font-weight: 800;
+    color: #1f2937;
+    margin-bottom: 8px;
+}
+
+.ld-store-card__title i {
+    color: var(--primary-color, #4f46e5);
+    font-size: 12px;
+}
+
+.ld-store-card__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 6px 0;
+    font-size: 11.5px;
+    border-bottom: 1px solid rgba(28, 25, 23, 0.06);
+}
+
+.ld-store-card__row:last-child {
+    border-bottom: none;
+}
+
+.ld-store-card__key {
+    color: #6b7280;
+    font-weight: 600;
+}
+
+.ld-store-card__val {
+    color: #1f2937;
+    font-weight: 700;
+}
+
+.ld-store-card__line {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 4px 0;
+    font-size: 11.5px;
+    color: #4b5563;
+    line-height: 1.5;
+}
+
+.ld-store-card__line i {
+    color: var(--primary-color, #4f46e5);
+    width: 14px;
+    text-align: center;
+    margin-top: 2px;
+    font-size: 11px;
+}
+
+.ld-store-card__link {
+    color: var(--primary-color, #4f46e5);
+    font-weight: 700;
+    text-decoration: underline;
+}
+
+.ld-store-card__btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 10px;
+    padding: 9px;
+    border-radius: 10px;
+    background: var(--primary-color, #4f46e5);
+    color: #fff;
+    font-size: 11.5px;
+    font-weight: 700;
+}
+
+.ld-store-card__note {
+    font-size: 10.5px;
+    color: #9ca3af;
+    margin-top: 6px;
+    line-height: 1.5;
+}
+
+/* ===== プレビュー: SNSリンク ===== */
+.ld-social-preview {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 14px;
+    background: #fff;
+    border-radius: inherit;
+}
+
+.ld-social-preview__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #f5f5f4;
+    border: 1px solid rgba(28, 25, 23, 0.06);
+    font-size: 16px;
+}
+
+/* ===== プレビュー: 動画 ===== */
+.ld-video-preview {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    border-radius: inherit;
+    background: #000;
+}
+
+.ld-video-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.85;
+}
+
+.ld-video-preview__play {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.92);
+    color: #dc2626;
+    font-size: 16px;
+    padding-left: 3px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+/* ===== プレビュー: ボタングループ ===== */
+.ld-btn-group-preview {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    gap: 8px;
+    padding: 4px;
+}
+
+.ld-btn-group-preview__btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 11px 8px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

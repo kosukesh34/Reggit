@@ -1,0 +1,91 @@
+/* LIFF Designer — フロント実機に近いプレビュー（小売アプリ風） */
+
+.ld-phone__content .ld-block--hero {
+    position: relative;
+    overflow: hidden;
+    min-height: 168px;
+    padding: 0 !important;
+    text-align: left;
+    border-radius: 18px;
+    box-shadow: 0 14px 32px rgba(28, 25, 23, 0.18);
+}
+.ld-phone__content .ld-block--hero .ld-block__body {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    min-height: 168px;
+    padding: 24px 18px 20px;
+}
+.ld-phone__content .ld-block--hero::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(12, 10, 9, 0.05) 0%, rgba(12, 10, 9, 0.55) 100%);
+    pointer-events: none;
+}
+.ld-phone__content .ld-block--hero-title {
+    font-size: 22px;
+    margin-bottom: 6px;
+    letter-spacing: -0.02em;
+}
+.ld-phone__content .ld-block--hero-sub {
+    font-size: 12px;
+    opacity: 0.92;
+    max-width: 22em;
+}
+
+.ld-phone__content .ld-block--button-inner {
+    border-radius: 14px !important;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+}
+
+.ld-phone__content .ld-block--card {
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.ld-phone__content .ld-block--banner,
+.ld-phone__content .ld-block--member_summary,
+.ld-phone__content .ld-block--quick_actions {
+    border-radius: 14px;
+}
+
+/* テンプレ4画面デモ */
+.ld-template-card__demo-phone {
+    box-shadow: 0 8px 22px rgba(28, 25, 23, 0.12);
+}
+.ld-template-card__demo-header {
+    height: 28px;
+    background: linear-gradient(135deg, #1c1917, #292524);
+    border-radius: 10px 10px 0 0;
+}
+.ld-template-card__demo-body {
+    min-height: 88px;
+    padding: 8px;
+    border-radius: 0 0 10px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+.ld-template-card__demo-label {
+    font-size: 8px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #78716c;
+}
+.ld-template-card__demo-block--hero {
+    height: 28px;
+    border-radius: 6px;
+    background: linear-gradient(135deg, var(--demo-accent, #4f46e5), var(--demo-accent-light, #6366f1));
+    box-shadow: 0 4px 10px rgba(79, 70, 229, 0.25);
+}
+.ld-template-card__demo-block--card {
+    height: 18px;
+    border-radius: 5px;
+    background: #fff;
+    border: 1px solid rgba(28, 25, 23, 0.08);
+}

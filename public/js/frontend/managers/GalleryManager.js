@@ -5,7 +5,11 @@ class GalleryManager {
     }
 
     getSection() {
-        return DomHelper.getElementById(AppConstants.ELEMENT_IDS.GALLERY_SECTION);
+        return DomHelper.getTabMount(
+            AppConstants.TAB_MOUNTS.GALLERY,
+            AppConstants.ELEMENT_IDS.GALLERY_SECTION,
+            { silent: true }
+        );
     }
 
     async load(categoryId) {

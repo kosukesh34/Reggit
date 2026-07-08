@@ -38,6 +38,20 @@ class LiffDesigner {
             { type: 'member_summary', label: '会員サマリー', icon: 'fa-id-badge', desc: 'ポイント・ランク表示', category: 'data' },
             { type: 'quick_actions', label: 'クイックアクション', icon: 'fa-grip', desc: 'タブへのショートカット', category: 'data' },
             { type: 'data', label: 'データ', icon: 'fa-database', desc: '動的データ表示', category: 'data' },
+            { type: 'button_group', label: 'ボタン並び', icon: 'fa-ellipsis-h', desc: 'ボタンを2〜3個横並び', category: 'basic' },
+            { type: 'video', label: '動画', icon: 'fa-play-circle', desc: 'YouTube動画を埋め込み', category: 'layout' },
+            { type: 'hours', label: '営業時間', icon: 'fa-clock', desc: '営業時間の一覧表', category: 'store' },
+            { type: 'access', label: '店舗アクセス', icon: 'fa-map-marker-alt', desc: '住所・電話・地図リンク', category: 'store' },
+            { type: 'social_links', label: 'SNSリンク', icon: 'fa-share-alt', desc: 'Instagram等のリンク', category: 'store' },
+            { type: 'faq', label: 'よくある質問', icon: 'fa-question-circle', desc: '開閉式のQ&A', category: 'store' },
+        ];
+
+        this.ACTION_TYPES = [
+            { value: '', label: 'なし' },
+            { value: 'tab', label: 'タブへ移動' },
+            { value: 'url', label: '外部リンクを開く' },
+            { value: 'tel', label: '電話をかける' },
+            { value: 'mailto', label: 'メールを送る' },
         ];
 
         this.DATA_SOURCES = [
@@ -90,17 +104,65 @@ class LiffDesigner {
         this.maxHistory = 50;
         this.drag = { active: false, source: null, blockType: null, blockId: null, ghost: null, dropIndex: -1, startX: 0, startY: 0, scrollTimer: null, pendingStart: false, sourceElement: null };
 
-        this.initState(config);
-        this.cacheElements();
-        this.render();
-        this.bindEvents();
-        this.bindDragSystem();
-        this.pushHistory();
+        try {
+            this.initState(config);
+        } catch (err) {
+            console.error('LIFF Designer: initState failed', err);
+        }
+        try {
+            this.cacheElements();
+        } catch (err) {
+            console.warn('LIFF Designer: cacheElements failed', err);
+            this.els = this.els || {};
+        }
+        const self = this;
+        const boot = () => {
+            try { self.bootDesigner(); } catch (err) {
+                console.error('LIFF Designer: boot failed', err);
+            }
+        };
+        if (typeof requestAnimationFrame === 'function') {
+            requestAnimationFrame(() => setTimeout(boot, 0));
+        } else {
+            setTimeout(boot, 0);
+        }
+    }
+
+    bootDesigner() {
+        try {
+            this.initThemeGallery();
+        } catch (err) {
+            console.warn('LIFF Designer: theme gallery init failed', err);
+        }
+        try {
+            this.render();
+        } catch (err) {
+            console.error('LIFF Designer: render failed', err);
+        }
+        try {
+            this.bindEvents();
+        } catch (err) {
+            console.warn('LIFF Designer: bindEvents failed', err);
+        }
+        try {
+            this.bindDragSystem();
+        } catch (err) {
+            console.warn('LIFF Designer: bindDragSystem failed', err);
+        }
+        try {
+            this.pushHistory();
+            this.applyGlobalDesignPreview();
+        } catch (err) {
+            console.warn('LIFF Designer: post-init failed', err);
+        }
+        this._booted = true;
     }
 
     /* ========== Init ========== */
 
     initState(config) {
+        try {
+        config = config || {};
         const rawLayouts = config.layouts || {};
         const rawTabSettings = config.tabSettings || {};
         this.state.globalSettings = rawTabSettings._global || this.defaultGlobalSettings();
@@ -110,12 +172,100 @@ class LiffDesigner {
         });
         Object.keys(rawLayouts).forEach(tab => {
             if (!Array.isArray(rawLayouts[tab])) return;
-            this.state.layouts[tab] = rawLayouts[tab].map(item => this.normalizeBlock(item));
+            this.state.layouts[tab] = rawLayouts[tab].map(item => {
+                try {
+                    return this.normalizeBlock(item);
+                } catch (err) {
+                    console.warn('LIFF Designer: skip invalid block on', tab, err);
+                    return null;
+                }
+            }).filter(Boolean);
         });
+        this.state.menuItems = this.normalizeMenuItems(config.menuItems);
+        if (Array.isArray(config.templates)) this.templates = config.templates;
+        } catch (err) {
+            console.error('LIFF Designer: initState failed', err);
+        }
+    }
+
+    /** タブメニュー（表示/非表示・並び替え・名前/アイコン）を正規化。announcements はメニュー対象外 */
+    normalizeMenuItems(raw) {
+        const menuTabs = Object.keys(this.TAB_LABELS).filter(k => k !== 'announcements');
+        const byTab = {};
+        (Array.isArray(raw) ? raw : []).forEach(item => {
+            if (item && item.tab) byTab[item.tab] = item;
+        });
+        const items = menuTabs.map((tab, i) => {
+            const saved = byTab[tab] || {};
+            return {
+                tab,
+                label: saved.label || this.TAB_LABELS[tab],
+                icon: saved.icon || this.TAB_ICONS[tab],
+                order: typeof saved.order === 'number' ? saved.order : i,
+                enabled: saved.enabled !== false,
+            };
+        });
+        items.sort((a, b) => a.order - b.order);
+        items.forEach((item, i) => { item.order = i; });
+        return items;
+    }
+
+    getMenuItem(tab) {
+        return (this.state.menuItems || []).find(m => m.tab === tab) || null;
+    }
+
+    /** タブの表示名（メニュー設定を優先） */
+    tabLabel(tab) {
+        const item = this.getMenuItem(tab);
+        return (item && item.label) || this.TAB_LABELS[tab] || tab;
+    }
+
+    /** タブのアイコン（メニュー設定を優先） */
+    tabIcon(tab) {
+        const item = this.getMenuItem(tab);
+        return (item && item.icon) || this.TAB_ICONS[tab] || 'fa-circle';
+    }
+
+    moveMenuItem(tab, delta) {
+        const items = this.state.menuItems;
+        const i = items.findIndex(m => m.tab === tab);
+        const j = i + delta;
+        if (i < 0 || j < 0 || j >= items.length) return;
+        const [m] = items.splice(i, 1);
+        items.splice(j, 0, m);
+        items.forEach((item, k) => { item.order = k; });
+        this.renderScreenList();
+        this.renderPhoneNav();
+    }
+
+    toggleMenuItem(tab) {
+        const item = this.getMenuItem(tab);
+        if (!item) return;
+        item.enabled = !item.enabled;
+        this.renderScreenList();
+        this.renderPhoneNav();
     }
 
     defaultGlobalSettings() {
-        return { content_padding: 18, section_gap: 16, radius_scale: 'soft', tab_style: 'default' };
+        return {
+            content_padding: 18,
+            section_gap: 16,
+            radius_scale: 'soft',
+            tab_style: 'default',
+            background_style: 'solid',
+            bg_color: '#f9fafb',
+            content_width: 'comfy',
+            bg_overlay_opacity: 60,
+            system_ui_style: 'refined',
+            system_card_style: 'soft',
+            system_media_shape: 'rounded',
+            system_header_style: 'minimal',
+            member_card_design: '',
+            member_screen_design: 'wallet',
+            coupon_screen_design: 'ticket',
+            reservation_screen_design: 'cards',
+            activity_screen_design: 'cards',
+        };
     }
 
     getGlobalSettings() {
@@ -131,6 +281,12 @@ class LiffDesigner {
         default: { xs: '8px', sm: '12px', md: '16px', lg: '20px', xl: '24px' },
         soft: { xs: '10px', sm: '14px', md: '18px', lg: '22px', xl: '28px' },
         round: { xs: '12px', sm: '18px', md: '24px', lg: '28px', xl: '32px' },
+    };
+
+    CONTENT_WIDTHS = {
+        edge: '100%',
+        comfy: 'min(100%, 440px)',
+        narrow: 'min(100%, 380px)',
     };
 
     findThemePreset(presetId) {
@@ -156,70 +312,31 @@ class LiffDesigner {
 
     /** _global からプレビューに当てるテーマ用 CSS 変数を解決 */
     resolveThemeVars(g) {
-        const vars = {};
-        const preset = this.findThemePreset(g.theme_preset);
-        const accent = (g.accent_color && /^#[0-9a-fA-F]{6}$/.test(g.accent_color))
-            ? g.accent_color
-            : (preset ? preset.accent_color : null);
-        if (accent) {
-            vars['--primary-color'] = accent;
-            vars['--primary-rgb'] = this.hexToRgbString(accent);
-            vars['--primary-dark'] = this.darkenHex(accent, 0.16);
-        }
-        const fontKey = g.font_family || (preset ? preset.font_family : '');
-        if (fontKey && this.fontStacks[fontKey]) {
-            vars['--font-base'] = this.fontStacks[fontKey].base;
-            vars['--font-display'] = this.fontStacks[fontKey].display;
-        }
-        const toneKey = g.surface_tone || (preset ? preset.surface_tone : '');
-        if (toneKey && this.surfaceTones[toneKey]) {
-            const tokens = this.surfaceTones[toneKey].tokens || {};
-            Object.keys(tokens).forEach(k => { vars[k] = tokens[k]; });
-        }
-        return vars;
+        return window.LiffDesignerModules.themePanel.resolveThemeVars.call(this, g);
     }
 
     applyGlobalDesignPreview() {
-        const g = this.getGlobalSettings();
-        const scale = this.RADIUS_SCALES[g.radius_scale] || this.RADIUS_SCALES.soft;
-        let style = document.getElementById('ldGlobalDesignPreview');
-        if (!style) {
-            style = document.createElement('style');
-            style.id = 'ldGlobalDesignPreview';
-            document.head.appendChild(style);
-        }
-        const themeVars = this.resolveThemeVars(g);
-        const themeDecl = Object.keys(themeVars).map(k => k + ': ' + themeVars[k] + ';').join(' ');
-        style.textContent = [
-            '.ld-phone__frame.is-line { ' + themeDecl + ' }',
-            '.ld-phone__content { --content-padding: ' + (g.content_padding || 18) + 'px; --section-gap: ' + (g.section_gap || 16) + 'px; padding: ' + (g.content_padding || 18) + 'px !important; gap: ' + (g.section_gap || 16) + 'px !important; font-family: var(--font-base, inherit); }',
-            '.ld-phone__content .ld-block { border-radius: ' + scale.md + '; }',
-            '.ld-phone__nav { ' + (g.tab_style === 'floating' ? 'margin: 0 10px 10px; border-radius: 18px; border: 1px solid rgba(28,25,23,0.08);' : '') + ' }',
-        ].join('\n');
-        const nav = this.els.phoneNav;
-        if (nav) {
-            nav.classList.remove('is-pill', 'is-floating');
-            if (g.tab_style === 'pill') nav.classList.add('is-pill');
-            if (g.tab_style === 'floating') nav.classList.add('is-floating');
-        }
+        return window.LiffDesignerModules.themePanel.applyGlobalDesignPreview.call(this);
     }
 
     applyDesignPreset(presetId) {
-        const preset = this.findThemePreset(presetId);
-        if (!preset) return;
-        this.state.globalSettings = Object.assign({}, this.getGlobalSettings(), {
-            theme_preset: preset.id,
-            accent_color: preset.accent_color,
-            font_family: preset.font_family || '',
-            surface_tone: preset.surface_tone || '',
-            radius_scale: preset.radius_scale || 'soft',
-            tab_style: preset.tab_style || 'default',
-            section_gap: preset.section_gap || 16,
-        });
-        this.ui.activePreset = preset.id;
-        this.syncGlobalDesignControls();
-        this.applyGlobalDesignPreview();
-        this.renderPhoneContent();
+        return window.LiffDesignerModules.themePanel.applyDesignPreset.call(this, presetId);
+    }
+
+    syncBgStylePanels() {
+        return window.LiffDesignerModules.themePanel.syncBgStylePanels.call(this);
+    }
+
+    initThemeGallery() {
+        return window.LiffDesignerModules.themePanel.initThemeGallery.call(this);
+    }
+
+    renderThemeGalleryActive() {
+        return window.LiffDesignerModules.themePanel.renderThemeGalleryActive.call(this);
+    }
+
+    buildThemeCardMiniPreview(preset) {
+        return window.LiffDesignerModules.themePanel.buildThemeCardMiniPreview.call(this, preset);
     }
 
     syncGlobalDesignControls() {
@@ -232,6 +349,30 @@ class LiffDesigner {
         if (this.els.globalTabStyle) this.els.globalTabStyle.value = g.tab_style || 'default';
         if (this.els.globalFontFamily) this.els.globalFontFamily.value = g.font_family || '';
         if (this.els.globalSurfaceTone) this.els.globalSurfaceTone.value = g.surface_tone || '';
+        if (this.els.globalCardStyle) this.els.globalCardStyle.value = g.card_style || '';
+        if (this.els.globalButtonShape) this.els.globalButtonShape.value = g.button_shape || '';
+        if (this.els.globalDensity) this.els.globalDensity.value = g.density || 'default';
+        if (this.els.globalSystemUiStyle) this.els.globalSystemUiStyle.value = g.system_ui_style || 'refined';
+        if (this.els.globalSystemCardStyle) this.els.globalSystemCardStyle.value = g.system_card_style || 'soft';
+        if (this.els.globalSystemMediaShape) this.els.globalSystemMediaShape.value = g.system_media_shape || 'rounded';
+        if (this.els.globalSystemHeaderStyle) this.els.globalSystemHeaderStyle.value = g.system_header_style || 'minimal';
+        if (this.els.globalMemberCardDesign) this.els.globalMemberCardDesign.value = g.member_card_design || '';
+        if (this.els.globalMemberScreenDesign) this.els.globalMemberScreenDesign.value = g.member_screen_design || 'wallet';
+        if (this.els.globalCouponScreenDesign) this.els.globalCouponScreenDesign.value = g.coupon_screen_design || 'ticket';
+        if (this.els.globalReservationScreenDesign) this.els.globalReservationScreenDesign.value = g.reservation_screen_design || 'cards';
+        if (this.els.globalActivityScreenDesign) this.els.globalActivityScreenDesign.value = g.activity_screen_design || 'cards';
+        if (this.els.globalContentWidth) this.els.globalContentWidth.value = g.content_width || 'comfy';
+        if (this.els.globalBgColor) this.els.globalBgColor.value = g.bg_color || '#f9fafb';
+        if (this.els.globalBgColorHex) this.els.globalBgColorHex.value = g.bg_color || '#f9fafb';
+        if (this.els.globalBgGradientStart) this.els.globalBgGradientStart.value = g.bg_gradient_start || '#eef2ff';
+        if (this.els.globalBgGradientStartHex) this.els.globalBgGradientStartHex.value = g.bg_gradient_start || '#eef2ff';
+        if (this.els.globalBgGradientEnd) this.els.globalBgGradientEnd.value = g.bg_gradient_end || '#ffffff';
+        if (this.els.globalBgGradientEndHex) this.els.globalBgGradientEndHex.value = g.bg_gradient_end || '#ffffff';
+        if (this.els.globalBgImageUrl) this.els.globalBgImageUrl.value = g.bg_image_url || '';
+        if (this.els.globalBgOverlayOpacity) {
+            this.els.globalBgOverlayOpacity.value = String(g.bg_overlay_opacity != null ? g.bg_overlay_opacity : 60);
+            if (this.els.globalBgOverlayOpacityVal) this.els.globalBgOverlayOpacityVal.textContent = String(g.bg_overlay_opacity != null ? g.bg_overlay_opacity : 60);
+        }
         const accent = g.accent_color || (this.findThemePreset(g.theme_preset) || {}).accent_color || '#1c1917';
         if (this.els.globalAccentColor && /^#[0-9a-fA-F]{6}$/.test(accent)) this.els.globalAccentColor.value = accent;
         if (this.els.globalAccentColorHex) this.els.globalAccentColorHex.value = accent;
@@ -244,6 +385,7 @@ class LiffDesigner {
         document.querySelectorAll('.ld-theme-card').forEach(btn => {
             btn.classList.toggle('is-active', btn.dataset.preset === activeId);
         });
+        this.syncBgStylePanels();
     }
 
     normalizeBlock(item) {
@@ -262,21 +404,25 @@ class LiffDesigner {
                 block.gradient_start = item.gradient_start || '#667eea';
                 block.gradient_end = item.gradient_end || '#764ba2';
                 block.text_align = item.text_align || 'center';
+                block.design = this._normalizeBlockDesign('hero', item.design);
                 break;
             case 'heading':
                 block.text = item.text || item.title || '見出し';
                 block.size = item.size || 'medium';
                 block.text_color = item.text_color || '#1f2937';
+                block.design = this._normalizeBlockDesign('heading', item.design);
                 break;
             case 'text':
                 block.text = item.text || item.body || 'テキスト';
                 block.text_color = item.text_color || '#4b5563';
                 block.font_size = item.font_size || 13;
+                block.design = this._normalizeBlockDesign('text', item.design);
                 break;
             case 'image':
                 block.image_url = item.image_url || 'https://picsum.photos/seed/img1/750/400';
                 block.alt = item.alt || 'サンプル画像';
                 block.fit = item.fit || 'cover';
+                block.design = this._normalizeBlockDesign('image', item.design);
                 break;
             case 'button':
                 block.text = item.text || item.button_label || 'ボタン';
@@ -285,12 +431,14 @@ class LiffDesigner {
                 block.action = item.action || '';
                 block.full_width = item.full_width !== false;
                 block.text_align = 'center';
+                block.design = this._normalizeBlockDesign('button', item.design);
                 break;
             case 'card':
                 block.title = item.title || '本日のおすすめ';
                 block.description = item.description || 'シェフが厳選した季節の素材を使った一品です。';
                 block.image_url = item.image_url || 'https://picsum.photos/seed/card1/600/300';
                 block.image_height = item.image_height || 140;
+                block.design = this._normalizeBlockDesign('card', item.design);
                 break;
             case 'collection':
                 block.items = item.items || [
@@ -306,6 +454,7 @@ class LiffDesigner {
                 block.item_image_height = item.item_image_height || 100;
                 block.gap = item.gap ?? 8;
                 block.show_description = item.show_description !== false;
+                block.design = this._normalizeBlockDesign('collection', item.design);
                 break;
             case 'slider':
                 block.slides = item.slides || [
@@ -316,6 +465,7 @@ class LiffDesigner {
                 block.slide_height = item.slide_height || 160;
                 block.auto_play = item.auto_play !== false;
                 block.show_dots = item.show_dots !== false;
+                block.design = this._normalizeBlockDesign('slider', item.design);
                 break;
             case 'icon_text':
                 block.rows = item.rows || [
@@ -335,6 +485,7 @@ class LiffDesigner {
                 block.text_color = item.text_color || '#ffffff';
                 block.icon = item.icon || 'fa-info-circle';
                 block.text_align = item.text_align || 'center';
+                block.design = this._normalizeBlockDesign('banner', item.design);
                 break;
             case 'spacer':
                 block.height = item.height || 16;
@@ -345,16 +496,63 @@ class LiffDesigner {
                 break;
             case 'data':
                 block.source = item.source === 'member' ? 'member_card' : (item.source || 'products');
+                block.card_design = this._normalizeCardDesign(item.card_design);
+                block.design = this._normalizeBlockDesign('data', item.design);
                 break;
             case 'member_summary':
                 block.greeting = item.greeting || '';
+                block.design = this._normalizeBlockDesign('member_summary', item.design);
                 break;
             case 'quick_actions':
+                block.design = this._normalizeBlockDesign('quick_actions', item.design);
                 block.actions = Array.isArray(item.actions) && item.actions.length > 0 ? item.actions : [
                     { icon: 'fa-utensils', label: '注文', action: '#products' },
                     { icon: 'fa-ticket-alt', label: 'クーポン', action: '#coupons' },
                     { icon: 'fa-stamp', label: 'スタンプ', action: '#stamps' },
                     { icon: 'fa-calendar-check', label: '予約', action: '#reservations' },
+                ];
+                break;
+            case 'hours':
+                block.title = item.title || '営業時間';
+                block.note = item.note || '';
+                block.rows = Array.isArray(item.rows) && item.rows.length > 0 ? item.rows : [
+                    { day: '月〜金', time: '11:00 - 21:00' },
+                    { day: '土・日・祝', time: '10:00 - 22:00' },
+                    { day: '定休日', time: '水曜日' },
+                ];
+                block.design = this._normalizeBlockDesign('hours', item.design);
+                break;
+            case 'access':
+                block.title = item.title || '店舗情報';
+                block.address = item.address || '東京都渋谷区○○ 1-2-3';
+                block.phone = item.phone || '03-1234-5678';
+                block.map_url = item.map_url || '';
+                block.note = item.note || '';
+                block.design = this._normalizeBlockDesign('access', item.design);
+                break;
+            case 'social_links':
+                block.links = Array.isArray(item.links) && item.links.length > 0 ? item.links : [
+                    { type: 'instagram', url: 'https://instagram.com/' },
+                    { type: 'x', url: 'https://x.com/' },
+                    { type: 'line', url: 'https://line.me/' },
+                ];
+                break;
+            case 'faq':
+                block.title = item.title || 'よくある質問';
+                block.items = Array.isArray(item.items) && item.items.length > 0 ? item.items : [
+                    { q: '予約は必要ですか？', a: '当日のご来店も歓迎ですが、ご予約いただくとスムーズです。' },
+                    { q: '支払い方法は？', a: '現金・クレジットカード・QR決済がご利用いただけます。' },
+                ];
+                block.design = this._normalizeBlockDesign('faq', item.design);
+                break;
+            case 'video':
+                block.youtube_id = item.youtube_id || '';
+                block.caption = item.caption || '';
+                break;
+            case 'button_group':
+                block.buttons = Array.isArray(item.buttons) && item.buttons.length > 0 ? item.buttons : [
+                    { text: '予約する', action: '#reservations', variant: 'solid', color: '' },
+                    { text: 'メニュー', action: '#products', variant: 'outline', color: '' },
                 ];
                 break;
             default:
@@ -383,6 +581,7 @@ class LiffDesigner {
             screenBgImage: document.getElementById('screenBgImage'),
             layoutsJson: document.getElementById('layoutsJson'),
             tabSettingsJson: document.getElementById('tabSettingsJson'),
+            menuItemsJson: document.getElementById('menuItemsJson'),
             customCssInput: document.getElementById('customCssInput'),
             customCssEditor: document.getElementById('customCssEditor'),
             cssSection: document.getElementById('cssSection'),
@@ -414,6 +613,28 @@ class LiffDesigner {
             globalSurfaceTone: document.getElementById('globalSurfaceTone'),
             globalAccentColor: document.getElementById('globalAccentColor'),
             globalAccentColorHex: document.getElementById('globalAccentColorHex'),
+            globalCardStyle: document.getElementById('globalCardStyle'),
+            globalButtonShape: document.getElementById('globalButtonShape'),
+            globalDensity: document.getElementById('globalDensity'),
+            globalSystemUiStyle: document.getElementById('globalSystemUiStyle'),
+            globalSystemCardStyle: document.getElementById('globalSystemCardStyle'),
+            globalSystemMediaShape: document.getElementById('globalSystemMediaShape'),
+            globalSystemHeaderStyle: document.getElementById('globalSystemHeaderStyle'),
+            globalMemberCardDesign: document.getElementById('globalMemberCardDesign'),
+            globalMemberScreenDesign: document.getElementById('globalMemberScreenDesign'),
+            globalCouponScreenDesign: document.getElementById('globalCouponScreenDesign'),
+            globalReservationScreenDesign: document.getElementById('globalReservationScreenDesign'),
+            globalActivityScreenDesign: document.getElementById('globalActivityScreenDesign'),
+            globalContentWidth: document.getElementById('globalContentWidth'),
+            globalBgColor: document.getElementById('globalBgColor'),
+            globalBgColorHex: document.getElementById('globalBgColorHex'),
+            globalBgGradientStart: document.getElementById('globalBgGradientStart'),
+            globalBgGradientStartHex: document.getElementById('globalBgGradientStartHex'),
+            globalBgGradientEnd: document.getElementById('globalBgGradientEnd'),
+            globalBgGradientEndHex: document.getElementById('globalBgGradientEndHex'),
+            globalBgImageUrl: document.getElementById('globalBgImageUrl'),
+            globalBgOverlayOpacity: document.getElementById('globalBgOverlayOpacity'),
+            globalBgOverlayOpacityVal: document.getElementById('globalBgOverlayOpacityVal'),
             designPresets: document.getElementById('designPresets'),
         };
     }
@@ -438,37 +659,152 @@ class LiffDesigner {
 
     undo() { if (this.historyIndex <= 0) return; this.historyIndex--; this.state.layouts = JSON.parse(this.history[this.historyIndex]); this.state.selectedId = null; this.render(); this.updateUndoRedo(); }
     redo() { if (this.historyIndex >= this.history.length - 1) return; this.historyIndex++; this.state.layouts = JSON.parse(this.history[this.historyIndex]); this.state.selectedId = null; this.render(); this.updateUndoRedo(); }
-    updateUndoRedo() { this.els.undoBtn.disabled = this.historyIndex <= 0; this.els.redoBtn.disabled = this.historyIndex >= this.history.length - 1; }
+    updateUndoRedo() {
+        if (this.els.undoBtn) this.els.undoBtn.disabled = this.historyIndex <= 0;
+        if (this.els.redoBtn) this.els.redoBtn.disabled = this.historyIndex >= this.history.length - 1;
+    }
 
     /* ========== Rendering ========== */
 
     render() {
-        this.renderScreenList();
-        this.renderTabTemplateList();
-        this.renderPhoneNav();
-        this.renderPhoneContent();
-        this.renderPaletteCategories();
-        this.renderBlockPalette();
-        this.renderBlockSettings();
-        this.applyScreenSettings();
-        this.applyPreviewDevice();
-        this.applyZoom();
-        this.applyCustomCssPreview();
+        try { this.renderScreenList(); } catch (err) { console.warn('renderScreenList failed', err); }
+        this.scheduleTabTemplateList();
+        try { this.renderPhoneNav(); } catch (err) { console.warn('renderPhoneNav failed', err); }
+        try { this.renderPhoneContent(); } catch (err) { console.warn('renderPhoneContent failed', err); }
+        try { this.renderPaletteCategories(); } catch (err) { console.warn('renderPaletteCategories failed', err); }
+        try { this.renderBlockPalette(); } catch (err) { console.warn('renderBlockPalette failed', err); }
+        try { this.renderBlockSettings(); } catch (err) { console.warn('renderBlockSettings failed', err); }
+        try { this.applyScreenSettings(); } catch (err) { console.warn('applyScreenSettings failed', err); }
+        try { this.applyPreviewDevice(); } catch (err) { console.warn('applyPreviewDevice failed', err); }
+        try { this.applyZoom(); } catch (err) { console.warn('applyZoom failed', err); }
+        try { this.applyCustomCssPreview(); } catch (err) { console.warn('applyCustomCssPreview failed', err); }
+    }
+
+    scheduleTabTemplateList() {
+        if (!this.els || !this.els.tabTemplateList) return;
+        if (this._tabTplTimer) clearTimeout(this._tabTplTimer);
+        this.els.tabTemplateList.innerHTML = '<div class="ld-tab-template-loading"><i class="fas fa-circle-notch fa-spin"></i> 読み込み中…</div>';
+        const self = this;
+        this._tabTplTimer = setTimeout(function() {
+            try {
+                self.renderTabTemplateList();
+            } catch (err) {
+                console.warn('renderTabTemplateList failed', err);
+                if (self.els.tabTemplateList) {
+                    self.els.tabTemplateList.innerHTML = '<div class="ld-tab-template-empty">テンプレート一覧の表示に失敗しました。</div>';
+                }
+            }
+        }, 48);
     }
 
     renderScreenList() {
-        const c = this.els.screenList; c.innerHTML = '';
-        Object.keys(this.TAB_LABELS).forEach(key => {
+        const c = this.els.screenList;
+        if (!c) return;
+        c.innerHTML = '';
+        const items = (this.state.menuItems || []).map(m => m.tab).concat(['announcements']);
+        items.forEach((key, idx) => {
+            const menuItem = this.getMenuItem(key);
+            const isMenuTab = menuItem !== null;
             const active = this.state.activeTab === key;
-            const isEnabled = this.isTabEnabled(key);
+            const featureEnabled = this.isTabEnabled(key);
+            const menuEnabled = !isMenuTab || menuItem.enabled;
             const count = (this.state.layouts[key] || []).length;
             const el = document.createElement('div');
-            el.className = 'ld-screen-item' + (active ? ' is-active' : '') + (isEnabled ? '' : ' is-disabled');
-            const badge = isEnabled ? '' : '<span class="ld-screen-item__badge">OFF</span>';
-            el.innerHTML = '<div class="ld-screen-item__icon"><i class="fas ' + (this.TAB_ICONS[key] || 'fa-circle') + '"></i></div><span class="ld-screen-item__label">' + this.esc(this.TAB_LABELS[key]) + '</span>' + badge + '<span class="ld-screen-item__count">' + count + '</span>';
-            el.addEventListener('click', () => { this.state.activeTab = key; this.state.selectedId = null; this.render(); });
+            el.className = 'ld-screen-item' + (active ? ' is-active' : '') + (featureEnabled ? '' : ' is-disabled') + (menuEnabled ? '' : ' is-hidden-tab');
+            const badge = featureEnabled ? '' : '<span class="ld-screen-item__badge">OFF</span>';
+
+            let controls = '';
+            if (isMenuTab && featureEnabled) {
+                controls =
+                    '<span class="ld-screen-item__controls">' +
+                        '<button type="button" class="ld-screen-item__ctrl" data-menu-move="-1" title="上へ"' + (idx === 0 ? ' disabled' : '') + '><i class="fas fa-chevron-up"></i></button>' +
+                        '<button type="button" class="ld-screen-item__ctrl" data-menu-move="1" title="下へ"' + (idx >= this.state.menuItems.length - 1 ? ' disabled' : '') + '><i class="fas fa-chevron-down"></i></button>' +
+                        '<button type="button" class="ld-screen-item__ctrl" data-menu-edit title="名前・アイコンを変更"><i class="fas fa-pen"></i></button>' +
+                        '<button type="button" class="ld-screen-item__ctrl' + (menuEnabled ? '' : ' is-off') + '" data-menu-toggle title="' + (menuEnabled ? 'タブを非表示にする' : 'タブを表示する') + '"><i class="fas ' + (menuEnabled ? 'fa-eye' : 'fa-eye-slash') + '"></i></button>' +
+                    '</span>';
+            }
+
+            el.innerHTML = '<div class="ld-screen-item__icon"><i class="fas ' + this.esc(this.tabIcon(key)) + '"></i></div><span class="ld-screen-item__label">' + this.esc(this.tabLabel(key)) + '</span>' + badge + controls + '<span class="ld-screen-item__count">' + count + '</span>';
+
+            el.addEventListener('click', (e) => {
+                const ctrl = e.target.closest('[data-menu-move],[data-menu-toggle],[data-menu-edit]');
+                if (ctrl) {
+                    e.stopPropagation();
+                    if (ctrl.hasAttribute('data-menu-move')) this.moveMenuItem(key, parseInt(ctrl.dataset.menuMove, 10));
+                    if (ctrl.hasAttribute('data-menu-toggle')) this.toggleMenuItem(key);
+                    if (ctrl.hasAttribute('data-menu-edit')) this.openMenuItemEditor(key);
+                    return;
+                }
+                this.state.activeTab = key; this.state.selectedId = null; this.render();
+            });
             c.appendChild(el);
         });
+    }
+
+    /** タブの名前・アイコンを変更する小型モーダル */
+    openMenuItemEditor(tab) {
+        const item = this.getMenuItem(tab);
+        if (!item) return;
+        const iconChoices = [
+            'fa-house', 'fa-utensils', 'fa-mug-hot', 'fa-receipt', 'fa-stamp', 'fa-ticket-alt',
+            'fa-list-ol', 'fa-calendar-check', 'fa-id-card', 'fa-images', 'fa-gift', 'fa-star',
+            'fa-heart', 'fa-shopping-bag', 'fa-cut', 'fa-spa', 'fa-dumbbell', 'fa-bread-slice',
+        ];
+        const modal = document.createElement('div');
+        modal.className = 'ld-modal';
+        modal.innerHTML =
+            '<div class="ld-modal__dialog ld-modal__dialog--sm">' +
+                '<div class="ld-modal__head">' +
+                    '<h3 class="ld-modal__title"><i class="fas fa-pen"></i> タブの名前・アイコン</h3>' +
+                    '<button type="button" class="ld-btn ld-btn--ghost" data-close-modal><i class="fas fa-times"></i></button>' +
+                '</div>' +
+                '<div class="ld-modal__body">' +
+                    '<div class="ld-form-group">' +
+                        '<label class="ld-form-label">タブの名前（最大6文字推奨）</label>' +
+                        '<input type="text" class="ld-form-input" data-menu-label maxlength="12" value="' + this.esc(item.label) + '">' +
+                    '</div>' +
+                    '<div class="ld-form-group">' +
+                        '<label class="ld-form-label">アイコン</label>' +
+                        '<div class="ld-icon-grid" data-menu-icons>' +
+                            iconChoices.map(ic => '<button type="button" class="ld-icon-grid__item' + (ic === item.icon ? ' is-active' : '') + '" data-icon="' + ic + '"><i class="fas ' + ic + '"></i></button>').join('') +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="ld-form-group" style="text-align:right;">' +
+                        '<button type="button" class="ld-btn ld-btn--outline" data-menu-reset>初期値に戻す</button> ' +
+                        '<button type="button" class="ld-btn ld-btn--primary" data-menu-save>反映する</button>' +
+                    '</div>' +
+                '</div>' +
+            '</div>';
+
+        let selectedIcon = item.icon;
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal || e.target.closest('[data-close-modal]')) { modal.remove(); return; }
+            const iconBtn = e.target.closest('[data-icon]');
+            if (iconBtn) {
+                selectedIcon = iconBtn.dataset.icon;
+                modal.querySelectorAll('[data-icon]').forEach(b => b.classList.toggle('is-active', b === iconBtn));
+                return;
+            }
+            if (e.target.closest('[data-menu-reset]')) {
+                item.label = this.TAB_LABELS[tab];
+                item.icon = this.TAB_ICONS[tab];
+                this.renderScreenList();
+                this.renderPhoneNav();
+                modal.remove();
+                return;
+            }
+            if (e.target.closest('[data-menu-save]')) {
+                const input = modal.querySelector('[data-menu-label]');
+                const label = (input.value || '').trim();
+                if (label) item.label = label;
+                item.icon = selectedIcon;
+                this.renderScreenList();
+                this.renderPhoneNav();
+                modal.remove();
+            }
+        });
+        document.body.appendChild(modal);
+        modal.querySelector('[data-menu-label]').focus();
     }
 
     isTabEnabled(key) {
@@ -483,12 +819,16 @@ class LiffDesigner {
     }
 
     renderPhoneNav() {
-        const c = this.els.phoneNav; c.innerHTML = '';
-        const enabledTabs = this.getEnabledTabs();
-        enabledTabs.forEach(key => {
+        const c = this.els.phoneNav;
+        if (!c) return;
+        c.innerHTML = '';
+        const navTabs = (this.state.menuItems || [])
+            .filter(m => m.enabled && this.isTabEnabled(m.tab))
+            .map(m => m.tab);
+        navTabs.forEach(key => {
             const el = document.createElement('div');
             el.className = 'ld-phone__nav-item' + (this.state.activeTab === key ? ' is-active' : '');
-            el.innerHTML = '<i class="fas ' + (this.TAB_ICONS[key] || 'fa-circle') + '"></i><span>' + this.esc(this.TAB_LABELS[key]) + '</span>';
+            el.innerHTML = '<i class="fas ' + this.esc(this.tabIcon(key)) + '"></i><span>' + this.esc(this.tabLabel(key)) + '</span>';
             el.addEventListener('click', () => {
                 this.state.activeTab = key;
                 this.state.selectedId = null;
@@ -496,14 +836,15 @@ class LiffDesigner {
             });
             c.appendChild(el);
         });
-        this.els.phoneHeaderTitle.textContent = this.TAB_LABELS[this.state.activeTab] || '';
+        if (this.els.phoneHeaderTitle) this.els.phoneHeaderTitle.textContent = this.tabLabel(this.state.activeTab);
         if (this.els.activeTabLabel) {
-            this.els.activeTabLabel.textContent = this.TAB_LABELS[this.state.activeTab] || '';
+            this.els.activeTabLabel.textContent = this.tabLabel(this.state.activeTab);
         }
     }
 
     renderPhoneContent() {
         const c = this.els.phoneContent;
+        if (!c) return;
         const blocks = this.getBlocks();
         c.innerHTML = '';
         const s = this.getSettings();
@@ -567,6 +908,12 @@ class LiffDesigner {
             case 'member_summary': this.buildMemberSummary(el, block); break;
             case 'quick_actions': this.buildQuickActions(el, block); break;
             case 'data': this.buildData(el, block); break;
+            case 'hours': this.buildHours(el, block); break;
+            case 'access': this.buildAccess(el, block); break;
+            case 'social_links': this.buildSocialLinks(el, block); break;
+            case 'faq': this.buildFaq(el, block); break;
+            case 'video': this.buildVideo(el, block); break;
+            case 'button_group': this.buildButtonGroup(el, block); break;
         }
 
         el.addEventListener('click', (e) => {
@@ -576,6 +923,25 @@ class LiffDesigner {
             this.renderBlockSettings();
         });
         return el;
+    }
+
+    _blockDesigns() {
+        return (window.LiffDesignerModules && window.LiffDesignerModules.blockDesigns) || null;
+    }
+
+    _normalizeBlockDesign(blockType, value) {
+        const bd = this._blockDesigns();
+        return bd ? bd.normalize(blockType, value) : (value || '');
+    }
+
+    _normalizeCardDesign(value) {
+        const bd = this._blockDesigns();
+        return bd ? bd.normalizeCardDesign(value) : (value || '');
+    }
+
+    _addBlockDesignPicker(panel, block, blockType) {
+        const bd = this._blockDesigns();
+        if (bd) bd.addDesignPicker(this, panel, block, blockType);
     }
 
     applyCommonStyles(el, block) {
@@ -592,12 +958,15 @@ class LiffDesigner {
     /* --- Block builders --- */
 
     buildHero(el, b) {
+        const design = b.design || 'editorial';
+        el.classList.add('ld-block--hero-design-' + design);
         if (b.image_url) { el.style.backgroundImage = "url('" + b.image_url + "')"; el.style.backgroundSize = 'cover'; el.style.backgroundPosition = 'center'; }
         else { el.style.background = 'linear-gradient(135deg,' + (b.gradient_start || '#667eea') + ' 0%,' + (b.gradient_end || '#764ba2') + ' 100%)'; }
         el.innerHTML += '<div class="ld-block__body"><div class="ld-block--hero-title">' + this.esc(b.title) + '</div><div class="ld-block--hero-sub">' + this.esc(b.subtitle) + '</div></div>';
     }
 
     buildHeading(el, b) {
+        el.classList.add('ld-block--heading-design-' + (b.design || 'plain'));
         const sizes = { small: 14, medium: 16, large: 20 };
         el.style.fontSize = (sizes[b.size] || 16) + 'px';
         if (b.text_color) el.style.color = b.text_color;
@@ -605,29 +974,46 @@ class LiffDesigner {
     }
 
     buildText(el, b) {
+        el.classList.add('ld-block--text-design-' + (b.design || 'body'));
         if (b.font_size) el.style.fontSize = b.font_size + 'px';
         if (b.text_color) el.style.color = b.text_color;
         el.innerHTML += '<div class="ld-block__body">' + this.esc(b.text).replace(/\n/g, '<br>') + '</div>';
     }
 
     buildImage(el, b) {
+        el.classList.add('ld-block--image-design-' + (b.design || 'rounded'));
         if (b.image_url) { el.innerHTML += '<div class="ld-block__body"><img src="' + this.esc(b.image_url) + '" alt="' + this.esc(b.alt) + '" style="object-fit:' + (b.fit || 'cover') + '"></div>'; }
         else { el.innerHTML += '<div class="ld-block__body ld-block--image-placeholder"><i class="fas fa-image"></i><span>画像URLを設定</span></div>'; }
     }
 
     buildButton(el, b) {
+        const design = b.design || 'cta';
         const w = b.full_width ? 'width:100%;' : 'display:inline-block;';
-        el.innerHTML += '<div class="ld-block__body"><div class="ld-block--button-inner" style="background:' + (b.color || '#06C755') + ';color:' + (b.text_color || '#fff') + ';' + w + '">' + this.esc(b.text) + '</div></div>';
+        const outline = design === 'outline' ? 'background:transparent;border:2px solid ' + (b.color || '#06C755') + ';color:' + (b.color || '#06C755') + ';' : '';
+        const soft = design === 'soft' ? 'background:' + (b.color || '#06C755') + '22;color:' + (b.color || '#06C755') + ';' : '';
+        const fill = design === 'cta' ? 'background:' + (b.color || '#06C755') + ';color:' + (b.text_color || '#fff') + ';' : '';
+        el.innerHTML += '<div class="ld-block__body"><div class="ld-block--button-inner ld-block--button-' + design + '" style="' + (outline || soft || fill) + w + '">' + this.esc(b.text) + '</div></div>';
     }
 
     buildCard(el, b) {
+        const design = b.design || 'editorial';
         let img = '<div class="ld-block--card-image" style="height:' + (b.image_height || 140) + 'px">';
         img += b.image_url ? '<img src="' + this.esc(b.image_url) + '" alt="">' : '<i class="fas fa-image"></i>';
         img += '</div>';
-        el.innerHTML += '<div class="ld-block__body">' + img + '<div class="ld-block--card-body"><div class="ld-block--card-title">' + this.esc(b.title) + '</div><div class="ld-block--card-desc">' + this.esc(b.description) + '</div></div></div>';
+        const body = '<div class="ld-block--card-body"><div class="ld-block--card-title">' + this.esc(b.title) + '</div><div class="ld-block--card-desc">' + this.esc(b.description) + '</div></div>';
+        if (design === 'horizontal') {
+            el.innerHTML += '<div class="ld-block__body ld-block--card-horizontal">' + img + body + '</div>';
+            return;
+        }
+        if (design === 'overlay') {
+            el.innerHTML += '<div class="ld-block__body ld-block--card-overlay">' + img + '<div class="ld-block--card-overlay-text">' + this.esc(b.title) + '</div></div>';
+            return;
+        }
+        el.innerHTML += '<div class="ld-block__body">' + img + body + '</div>';
     }
 
     buildCollection(el, b) {
+        el.classList.add('ld-block--collection-design-' + (b.design || 'product_shelf'));
         const items = b.items || [];
         const isGrid = b.layout === 'grid';
         const cols = b.columns || 2;
@@ -654,6 +1040,7 @@ class LiffDesigner {
     }
 
     buildSlider(el, b) {
+        el.classList.add('ld-block--slider-design-' + (b.design || 'hero'));
         const slides = b.slides || [];
         let html = '<div class="ld-block__body ld-slider" style="height:' + (b.slide_height || 160) + 'px">';
         if (slides.length > 0) {
@@ -692,9 +1079,21 @@ class LiffDesigner {
     }
 
     buildBanner(el, b) {
-        el.style.background = b.color || '#3b82f6';
-        el.style.color = b.text_color || '#fff';
-        el.innerHTML += '<div class="ld-block__body ld-banner"><i class="fas ' + (b.icon || 'fa-info-circle') + '"></i><span>' + this.esc(b.text) + '</span></div>';
+        const design = b.design || 'promo';
+        el.classList.add('ld-block--banner-' + design);
+        if (design === 'outline') {
+            el.style.background = 'transparent';
+            el.style.color = b.color || '#3b82f6';
+            el.style.border = '2px solid ' + (b.color || '#3b82f6');
+        } else if (design === 'soft') {
+            el.style.background = (b.color || '#3b82f6') + '18';
+            el.style.color = b.color || '#3b82f6';
+        } else {
+            el.style.background = b.color || '#3b82f6';
+            el.style.color = b.text_color || '#fff';
+        }
+        const pill = design === 'pill' ? ' ld-banner--pill' : '';
+        el.innerHTML += '<div class="ld-block__body ld-banner' + pill + '"><i class="fas ' + (b.icon || 'fa-info-circle') + '"></i><span>' + this.esc(b.text) + '</span></div>';
     }
 
     buildDivider(el, b) {
@@ -702,32 +1101,138 @@ class LiffDesigner {
     }
 
     buildMemberSummary(el, b) {
+        const design = b.design || 'rewards';
         const hello = b.greeting ? this.esc(b.greeting) : 'こんにちは、デモ 太郎 さん';
-        el.innerHTML +=
-            '<div class="ld-block__body"><div class="ld-mock-summary">' +
-                '<div class="ld-mock-summary__top">' +
-                    '<div>' +
-                        '<div class="ld-mock-summary__hello">' + hello + '</div>' +
-                        '<span class="ld-mock-summary__rank"><i class="fas fa-crown"></i> シルバー</span>' +
-                    '</div>' +
-                    '<span class="ld-mock-summary__qr"><i class="fas fa-qrcode"></i></span>' +
-                '</div>' +
+        const cls = 'ld-mock-summary ld-mock-summary--' + design;
+        let inner = '';
+        if (design === 'wallet') {
+            inner = '<div class="ld-mock-summary__wallet-row">' +
+                '<div><div class="ld-mock-summary__hello">' + hello + '</div><span class="ld-mock-summary__rank"><i class="fas fa-crown"></i> シルバー</span></div>' +
+                '<div class="ld-mock-summary__wallet-pt"><span class="ld-mock-summary__pt">1,280</span><span class="ld-mock-summary__unit">pt</span></div>' +
+                '<span class="ld-mock-summary__qr"><i class="fas fa-qrcode"></i></span></div>';
+        } else if (design === 'compact') {
+            inner = '<div class="ld-mock-summary__compact-row">' +
+                '<span class="ld-mock-summary__rank"><i class="fas fa-crown"></i> シルバー</span>' +
+                '<span class="ld-mock-summary__hello">' + hello + '</span>' +
+                '<span class="ld-mock-summary__pt">1,280 pt</span></div>';
+        } else if (design === 'emblem') {
+            inner = '<div class="ld-mock-summary__emblem"><i class="fas fa-crown ld-mock-summary__emblem-icon"></i>' +
+                '<div class="ld-mock-summary__hello">' + hello + '</div>' +
+                '<span class="ld-mock-summary__rank">シルバー</span>' +
+                '<div class="ld-mock-summary__pt">1,280 pt</div></div>';
+        } else if (design === 'minimal') {
+            inner = '<div class="ld-mock-summary__minimal"><div class="ld-mock-summary__hello">' + hello + '</div>' +
+                '<div class="ld-mock-summary__minimal-pt">1,280 <span>pt</span></div></div>';
+        } else if (design === 'split') {
+            inner = '<div class="ld-mock-summary__split">' +
+                '<div class="ld-mock-summary__split-left"><div class="ld-mock-summary__hello">' + hello + '</div><span class="ld-mock-summary__rank"><i class="fas fa-crown"></i> シルバー</span></div>' +
+                '<div class="ld-mock-summary__split-right"><span class="ld-mock-summary__pt">1,280</span><span class="ld-mock-summary__unit">pt</span></div></div>';
+        } else if (design === 'glass') {
+            inner = '<div class="ld-mock-summary__glass">' +
+                '<div class="ld-mock-summary__top"><div class="ld-mock-summary__hello">' + hello + '</div><span class="ld-mock-summary__rank"><i class="fas fa-crown"></i> シルバー</span></div>' +
+                '<div class="ld-mock-summary__points"><span class="ld-mock-summary__pt">1,280</span><span class="ld-mock-summary__unit">pt</span></div></div>';
+        } else {
+            inner = '<div class="ld-mock-summary__top">' +
+                '<div><div class="ld-mock-summary__hello">' + hello + '</div><span class="ld-mock-summary__rank"><i class="fas fa-crown"></i> シルバー</span></div>' +
+                '<span class="ld-mock-summary__qr"><i class="fas fa-qrcode"></i></span></div>' +
                 '<div class="ld-mock-summary__points"><span class="ld-mock-summary__pt">1,280</span><span class="ld-mock-summary__unit">pt</span></div>' +
                 '<div class="ld-mock-summary__track"><span style="width:26%"></span></div>' +
-                '<div class="ld-mock-summary__next">次の<strong>ゴールド</strong>まであと <strong>3,720</strong> pt</div>' +
-            '</div></div>';
+                '<div class="ld-mock-summary__next">次の<strong>ゴールド</strong>まであと <strong>3,720</strong> pt</div>';
+        }
+        el.innerHTML += '<div class="ld-block__body"><div class="' + cls + '">' + inner + '</div></div>';
     }
 
     buildQuickActions(el, b) {
+        const design = b.design || 'grid';
         const actions = Array.isArray(b.actions) ? b.actions : [];
         let tiles = '';
         actions.forEach(a => {
             tiles += '<div class="ld-mock-qa__tile"><span class="ld-mock-qa__icon"><i class="fas ' + this.esc(a.icon || 'fa-circle') + '"></i></span><span class="ld-mock-qa__label">' + this.esc(a.label || '') + '</span></div>';
         });
-        el.innerHTML += '<div class="ld-block__body"><div class="ld-mock-qa">' + tiles + '</div></div>';
+        el.innerHTML += '<div class="ld-block__body"><div class="ld-mock-qa ld-mock-qa--' + design + '">' + tiles + '</div></div>';
+    }
+
+    buildHours(el, b) {
+        el.classList.add('ld-block--hours-design-' + (b.design || 'table'));
+        const rows = Array.isArray(b.rows) ? b.rows : [];
+        let html = '<div class="ld-block__body ld-store-card">';
+        if (b.title) html += '<div class="ld-store-card__title"><i class="far fa-clock"></i> ' + this.esc(b.title) + '</div>';
+        rows.forEach(r => {
+            html += '<div class="ld-store-card__row"><span class="ld-store-card__key">' + this.esc(r.day || '') + '</span><span class="ld-store-card__val">' + this.esc(r.time || '') + '</span></div>';
+        });
+        if (b.note) html += '<div class="ld-store-card__note">' + this.esc(b.note) + '</div>';
+        html += '</div>';
+        el.innerHTML += html;
+    }
+
+    buildAccess(el, b) {
+        el.classList.add('ld-block--access-design-' + (b.design || 'card'));
+        let html = '<div class="ld-block__body ld-store-card">';
+        if (b.title) html += '<div class="ld-store-card__title"><i class="fas fa-store"></i> ' + this.esc(b.title) + '</div>';
+        if (b.address) html += '<div class="ld-store-card__line"><i class="fas fa-map-marker-alt"></i><span>' + this.esc(b.address) + '</span></div>';
+        if (b.phone) html += '<div class="ld-store-card__line"><i class="fas fa-phone"></i><span class="ld-store-card__link">' + this.esc(b.phone) + '</span></div>';
+        if (b.note) html += '<div class="ld-store-card__line"><i class="fas fa-info-circle"></i><span>' + this.esc(b.note) + '</span></div>';
+        if (b.map_url) html += '<div class="ld-store-card__btn"><i class="fas fa-map"></i> 地図を開く</div>';
+        html += '</div>';
+        el.innerHTML += html;
+    }
+
+    buildSocialLinks(el, b) {
+        const iconMap = {
+            instagram: 'fab fa-instagram', x: 'fab fa-x-twitter', facebook: 'fab fa-facebook-f',
+            youtube: 'fab fa-youtube', tiktok: 'fab fa-tiktok', line: 'fab fa-line', website: 'fas fa-globe',
+        };
+        const colorMap = { instagram: '#e1306c', facebook: '#1877f2', youtube: '#ff0000', line: '#06c755' };
+        const links = Array.isArray(b.links) ? b.links : [];
+        let html = '<div class="ld-block__body ld-social-preview">';
+        links.forEach(l => {
+            const color = colorMap[l.type] || '#374151';
+            html += '<span class="ld-social-preview__icon" style="color:' + color + '"><i class="' + (iconMap[l.type] || 'fas fa-link') + '"></i></span>';
+        });
+        if (links.length === 0) html += '<span class="ld-store-card__note">SNSリンクを追加してください</span>';
+        html += '</div>';
+        el.innerHTML += html;
+    }
+
+    buildFaq(el, b) {
+        el.classList.add('ld-block--faq-design-' + (b.design || 'accordion'));
+        const items = Array.isArray(b.items) ? b.items : [];
+        let html = '<div class="ld-block__body ld-store-card">';
+        if (b.title) html += '<div class="ld-store-card__title"><i class="far fa-question-circle"></i> ' + this.esc(b.title) + '</div>';
+        items.slice(0, 3).forEach(it => {
+            html += '<div class="ld-store-card__row"><span class="ld-store-card__key" style="flex:1;">' + this.esc(it.q || '') + '</span><i class="fas fa-chevron-down" style="color:#9ca3af;font-size:10px;"></i></div>';
+        });
+        if (items.length > 3) html += '<div class="ld-store-card__note">ほか ' + (items.length - 3) + ' 件</div>';
+        html += '</div>';
+        el.innerHTML += html;
+    }
+
+    buildVideo(el, b) {
+        const id = String(b.youtube_id || '');
+        if (/^[a-zA-Z0-9_-]{11}$/.test(id)) {
+            el.innerHTML += '<div class="ld-block__body ld-video-preview"><img src="https://i.ytimg.com/vi/' + id + '/hqdefault.jpg" alt=""><span class="ld-video-preview__play"><i class="fas fa-play"></i></span></div>' + (b.caption ? '<div class="ld-store-card__note" style="padding:8px 12px;">' + this.esc(b.caption) + '</div>' : '');
+        } else {
+            el.innerHTML += '<div class="ld-block__body ld-block--image-placeholder"><i class="fas fa-play-circle"></i><span>YouTube動画URLを設定</span></div>';
+        }
+    }
+
+    buildButtonGroup(el, b) {
+        const buttons = Array.isArray(b.buttons) ? b.buttons : [];
+        let html = '<div class="ld-block__body ld-btn-group-preview">';
+        buttons.forEach(btn => {
+            const isOutline = btn.variant === 'outline';
+            const color = btn.color || 'var(--primary-color, #06C755)';
+            const style = isOutline
+                ? 'background:transparent;border:1.5px solid ' + color + ';color:' + color + ';'
+                : 'background:' + color + ';color:#fff;';
+            html += '<span class="ld-btn-group-preview__btn" style="' + style + '">' + this.esc(btn.text || '') + '</span>';
+        });
+        html += '</div>';
+        el.innerHTML += html;
     }
 
     buildData(el, b) {
+        el.classList.add('ld-block--data-design-' + (b.design || 'cards'));
         return window.LiffDesignerModules.dataPreview.buildData.call(this, el, b);
     }
 
@@ -786,6 +1291,7 @@ class LiffDesigner {
             { id: 'all', label: 'すべて' },
             { id: 'basic', label: '基本' },
             { id: 'layout', label: 'レイアウト' },
+            { id: 'store', label: '店舗情報' },
             { id: 'data', label: '連携' },
         ];
         c.innerHTML = '';
@@ -839,6 +1345,12 @@ class LiffDesigner {
             case 'member_summary': this.sMemberSummary(panel, block); break;
             case 'quick_actions': this.sQuickActions(panel, block); break;
             case 'data': this.sData(panel, block); break;
+            case 'hours': this.sHours(panel, block); break;
+            case 'access': this.sAccess(panel, block); break;
+            case 'social_links': this.sSocialLinks(panel, block); break;
+            case 'faq': this.sFaq(panel, block); break;
+            case 'video': this.sVideo(panel, block); break;
+            case 'button_group': this.sButtonGroup(panel, block); break;
         }
 
         this.addCommonSettings(panel, block);
@@ -875,6 +1387,7 @@ class LiffDesigner {
     /* --- Per-type settings --- */
 
     sHero(p, b) {
+        this._addBlockDesignPicker(p, b, 'hero');
         this.addField(p, 'タイトル', b.title, v => { b.title = v; });
         this.addField(p, 'サブタイトル', b.subtitle, v => { b.subtitle = v; });
         this.addField(p, '背景画像URL', b.image_url, v => { b.image_url = v; });
@@ -883,32 +1396,37 @@ class LiffDesigner {
     }
 
     sHeading(p, b) {
+        this._addBlockDesignPicker(p, b, 'heading');
         this.addField(p, 'テキスト', b.text, v => { b.text = v; });
         this.addSel(p, 'サイズ', b.size, [{ value: 'small', label: '小' }, { value: 'medium', label: '中' }, { value: 'large', label: '大' }], v => { b.size = v; });
         this.addColorField(p, '文字色', b.text_color, v => { b.text_color = v; });
     }
 
     sText(p, b) {
+        this._addBlockDesignPicker(p, b, 'text');
         this.addTextarea(p, 'テキスト', b.text, v => { b.text = v; });
         this.addRange(p, 'フォントサイズ', b.font_size, 10, 24, v => { b.font_size = v; });
         this.addColorField(p, '文字色', b.text_color, v => { b.text_color = v; });
     }
 
     sImage(p, b) {
+        this._addBlockDesignPicker(p, b, 'image');
         this.addField(p, '画像URL', b.image_url, v => { b.image_url = v; });
         this.addField(p, '代替テキスト', b.alt, v => { b.alt = v; });
         this.addSel(p, 'フィット', b.fit, [{ value: 'cover', label: 'カバー' }, { value: 'contain', label: '全体表示' }, { value: 'fill', label: '引き伸ばし' }], v => { b.fit = v; });
     }
 
     sButton(p, b) {
+        this._addBlockDesignPicker(p, b, 'button');
         this.addField(p, 'テキスト', b.text, v => { b.text = v; });
         this.addColorField(p, 'ボタン色', b.color, v => { b.color = v; });
         this.addColorField(p, '文字色', b.text_color, v => { b.text_color = v; });
-        this.addField(p, 'リンクURL', b.action, v => { b.action = v; });
+        this.addActionField(p, 'タップしたときの動作', b.action, v => { b.action = v; });
         this.addCheckbox(p, '幅いっぱい', b.full_width, v => { b.full_width = v; });
     }
 
     sCard(p, b) {
+        this._addBlockDesignPicker(p, b, 'card');
         this.addField(p, 'タイトル', b.title, v => { b.title = v; });
         this.addField(p, '説明', b.description, v => { b.description = v; });
         this.addField(p, '画像URL', b.image_url, v => { b.image_url = v; });
@@ -916,6 +1434,7 @@ class LiffDesigner {
     }
 
     sCollection(p, b) {
+        this._addBlockDesignPicker(p, b, 'collection');
         this.addSel(p, 'レイアウト', b.layout, [
             { value: 'scroll', label: '横スクロール' },
             { value: 'grid', label: 'グリッド（折り返し）' },
@@ -935,6 +1454,7 @@ class LiffDesigner {
     }
 
     sSlider(p, b) {
+        this._addBlockDesignPicker(p, b, 'slider');
         this.addRange(p, 'スライドの高さ', b.slide_height, 80, 300, v => { b.slide_height = v; });
         this.addCheckbox(p, '自動再生', b.auto_play, v => { b.auto_play = v; });
         this.addCheckbox(p, 'ドット表示', b.show_dots, v => { b.show_dots = v; });
@@ -952,6 +1472,7 @@ class LiffDesigner {
     }
 
     sBanner(p, b) {
+        this._addBlockDesignPicker(p, b, 'banner');
         this.addField(p, 'テキスト', b.text, v => { b.text = v; });
         this.addField(p, 'アイコン (fa-*)', b.icon, v => { b.icon = v; });
         this.addColorField(p, '背景色', b.color, v => { b.color = v; });
@@ -965,9 +1486,20 @@ class LiffDesigner {
         this.addSel(p, '線のスタイル', b.divider_style, [{ value: 'solid', label: '直線' }, { value: 'dashed', label: '破線' }, { value: 'dotted', label: '点線' }], v => { b.divider_style = v; });
     }
 
-    sData(p, b) { this.addSel(p, 'データソース', b.source, this.DATA_SOURCES, v => { b.source = v; }); }
+    sData(p, b) {
+        this._addBlockDesignPicker(p, b, 'data');
+        this.addSel(p, 'データソース', b.source, this.DATA_SOURCES, v => {
+            b.source = v;
+            this.renderBlockSettings();
+        });
+        if (b.source === 'member_card' || b.source === 'member') {
+            const bd = this._blockDesigns();
+            if (bd) bd.addCardDesignPicker(this, p, b);
+        }
+    }
 
     sMemberSummary(p, b) {
+        this._addBlockDesignPicker(p, b, 'member_summary');
         this.addField(p, 'あいさつ文（空欄で会員名を自動表示）', b.greeting, v => { b.greeting = v; });
         const note = document.createElement('div');
         note.className = 'ld-settings__hint';
@@ -976,11 +1508,149 @@ class LiffDesigner {
     }
 
     sQuickActions(p, b) {
+        this._addBlockDesignPicker(p, b, 'quick_actions');
         if (!Array.isArray(b.actions)) b.actions = [];
         this.addArrayItems(p, 'アクション', b.actions,
             () => ({ icon: 'fa-bolt', label: '新規', action: '#products' }),
             ['icon', 'label', 'action'],
             ['アイコン(fa-*)', 'ラベル', 'リンク(#tab)']);
+    }
+
+    sHours(p, b) {
+        this._addBlockDesignPicker(p, b, 'hours');
+        this.addField(p, 'タイトル', b.title, v => { b.title = v; });
+        if (!Array.isArray(b.rows)) b.rows = [];
+        this.addArrayItems(p, '営業時間の行', b.rows,
+            () => ({ day: '曜日', time: '10:00 - 20:00' }),
+            ['day', 'time'],
+            ['曜日・区分', '時間']);
+        this.addField(p, '補足（任意）', b.note, v => { b.note = v; });
+    }
+
+    sAccess(p, b) {
+        this._addBlockDesignPicker(p, b, 'access');
+        this.addField(p, 'タイトル', b.title, v => { b.title = v; });
+        this.addField(p, '住所', b.address, v => { b.address = v; });
+        this.addField(p, '電話番号', b.phone, v => { b.phone = v; });
+        this.addField(p, 'GoogleマップURL', b.map_url, v => { b.map_url = v; });
+        this.addField(p, '補足（任意）', b.note, v => { b.note = v; });
+        const note = document.createElement('div');
+        note.className = 'ld-settings__hint';
+        note.textContent = '電話番号はタップで発信、地図URLはタップで地図アプリが開きます。';
+        p.appendChild(note);
+    }
+
+    sSocialLinks(p, b) {
+        if (!Array.isArray(b.links)) b.links = [];
+        const socialTypes = [
+            { value: 'instagram', label: 'Instagram' }, { value: 'x', label: 'X (Twitter)' },
+            { value: 'facebook', label: 'Facebook' }, { value: 'youtube', label: 'YouTube' },
+            { value: 'tiktok', label: 'TikTok' }, { value: 'line', label: 'LINE' },
+            { value: 'website', label: '公式サイト' },
+        ];
+        const g = this.fg('SNSリンク');
+        const list = document.createElement('div'); list.className = 'ld-array-list';
+        const rebuild = () => {
+            list.innerHTML = '';
+            b.links.forEach((link, i) => {
+                const row = document.createElement('div'); row.className = 'ld-array-item';
+                const hdr = document.createElement('div'); hdr.className = 'ld-array-item__header';
+                hdr.innerHTML = '<span class="ld-array-item__num">#' + (i + 1) + '</span>';
+                const del = document.createElement('button'); del.type = 'button'; del.className = 'ld-btn ld-btn--ghost ld-btn--xs';
+                del.innerHTML = '<i class="fas fa-times"></i>';
+                del.addEventListener('click', () => { b.links.splice(i, 1); rebuild(); this.onBlockChange(); });
+                hdr.appendChild(del);
+                row.appendChild(hdr);
+
+                const typeGroup = document.createElement('div'); typeGroup.className = 'ld-form-group';
+                const typeLabel = document.createElement('label'); typeLabel.className = 'ld-form-label'; typeLabel.textContent = '種類';
+                const sel = document.createElement('select'); sel.className = 'ld-form-select';
+                socialTypes.forEach(o => { const op = document.createElement('option'); op.value = o.value; op.textContent = o.label; if (o.value === link.type) op.selected = true; sel.appendChild(op); });
+                sel.addEventListener('change', () => { link.type = sel.value; this.onBlockChange(); });
+                typeGroup.appendChild(typeLabel); typeGroup.appendChild(sel); row.appendChild(typeGroup);
+
+                const urlGroup = document.createElement('div'); urlGroup.className = 'ld-form-group';
+                const urlLabel = document.createElement('label'); urlLabel.className = 'ld-form-label'; urlLabel.textContent = 'URL';
+                const inp = document.createElement('input'); inp.type = 'text'; inp.className = 'ld-form-input'; inp.value = link.url || '';
+                inp.addEventListener('input', () => { link.url = inp.value; this.onBlockChange(); });
+                urlGroup.appendChild(urlLabel); urlGroup.appendChild(inp); row.appendChild(urlGroup);
+
+                list.appendChild(row);
+            });
+        };
+        rebuild();
+        g.appendChild(list);
+        const addBtn = document.createElement('button'); addBtn.type = 'button';
+        addBtn.className = 'ld-btn ld-btn--outline ld-btn--block';
+        addBtn.innerHTML = '<i class="fas fa-plus"></i> 追加';
+        addBtn.addEventListener('click', () => { b.links.push({ type: 'instagram', url: '' }); rebuild(); this.onBlockChange(); });
+        g.appendChild(addBtn);
+        p.appendChild(g);
+    }
+
+    sFaq(p, b) {
+        this._addBlockDesignPicker(p, b, 'faq');
+        this.addField(p, 'タイトル', b.title, v => { b.title = v; });
+        if (!Array.isArray(b.items)) b.items = [];
+        this.addArrayItems(p, '質問と回答', b.items,
+            () => ({ q: '新しい質問', a: '回答を入力してください。' }),
+            ['q', 'a'],
+            ['質問', '回答']);
+    }
+
+    sVideo(p, b) {
+        this.addField(p, 'YouTube動画のURL または ID', b.youtube_id, v => { b.youtube_id = this.extractYoutubeId(v); });
+        this.addField(p, 'キャプション（任意）', b.caption, v => { b.caption = v; });
+        const note = document.createElement('div');
+        note.className = 'ld-settings__hint';
+        note.textContent = '例: https://www.youtube.com/watch?v=XXXXXXXXXXX を貼り付けるだけでOKです。';
+        p.appendChild(note);
+    }
+
+    extractYoutubeId(value) {
+        const s = String(value || '').trim();
+        if (/^[a-zA-Z0-9_-]{11}$/.test(s)) return s;
+        const m = s.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+        return m ? m[1] : s;
+    }
+
+    sButtonGroup(p, b) {
+        if (!Array.isArray(b.buttons)) b.buttons = [];
+        const g = this.fg('ボタン（最大3個）');
+        const list = document.createElement('div'); list.className = 'ld-array-list';
+        const rebuild = () => {
+            list.innerHTML = '';
+            b.buttons.forEach((btn, i) => {
+                const row = document.createElement('div'); row.className = 'ld-array-item';
+                const hdr = document.createElement('div'); hdr.className = 'ld-array-item__header';
+                hdr.innerHTML = '<span class="ld-array-item__num">#' + (i + 1) + '</span>';
+                const del = document.createElement('button'); del.type = 'button'; del.className = 'ld-btn ld-btn--ghost ld-btn--xs';
+                del.innerHTML = '<i class="fas fa-times"></i>';
+                del.addEventListener('click', () => { b.buttons.splice(i, 1); rebuild(); this.onBlockChange(); });
+                hdr.appendChild(del);
+                row.appendChild(hdr);
+
+                this.addField(row, 'テキスト', btn.text, v => { btn.text = v; });
+                this.addActionField(row, '動作', btn.action, v => { btn.action = v; });
+                this.addSel(row, 'スタイル', btn.variant || 'solid', [
+                    { value: 'solid', label: '塗りつぶし' }, { value: 'outline', label: '枠線のみ' },
+                ], v => { btn.variant = v; });
+
+                list.appendChild(row);
+            });
+        };
+        rebuild();
+        g.appendChild(list);
+        const addBtn = document.createElement('button'); addBtn.type = 'button';
+        addBtn.className = 'ld-btn ld-btn--outline ld-btn--block';
+        addBtn.innerHTML = '<i class="fas fa-plus"></i> 追加';
+        addBtn.addEventListener('click', () => {
+            if (b.buttons.length >= 3) return;
+            b.buttons.push({ text: 'ボタン', action: '', variant: 'solid', color: '' });
+            rebuild(); this.onBlockChange();
+        });
+        g.appendChild(addBtn);
+        p.appendChild(g);
     }
 
     /* ========== Field helpers ========== */
@@ -997,6 +1667,77 @@ class LiffDesigner {
         const t = document.createElement('textarea'); t.className = 'ld-form-textarea'; t.rows = 3; t.value = val || '';
         t.addEventListener('input', () => { fn(t.value); this.onBlockChange(); });
         g.appendChild(t); p.appendChild(g);
+    }
+
+    /** アクション（'' / '#tab' / URL / tel: / mailto:）を種類選択+入力欄で編集するフィールド */
+    addActionField(p, label, val, fn) {
+        const g = this.fg(label);
+        const parse = (action) => {
+            const s = String(action || '');
+            if (s === '') return { kind: '', param: '' };
+            if (s.startsWith('#')) return { kind: 'tab', param: s.slice(1) };
+            if (/^tel:/i.test(s)) return { kind: 'tel', param: s.replace(/^tel:/i, '') };
+            if (/^mailto:/i.test(s)) return { kind: 'mailto', param: s.replace(/^mailto:/i, '') };
+            return { kind: 'url', param: s };
+        };
+        const current = parse(val);
+
+        const kindSel = document.createElement('select');
+        kindSel.className = 'ld-form-select';
+        this.ACTION_TYPES.forEach(o => {
+            const op = document.createElement('option');
+            op.value = o.value; op.textContent = o.label;
+            if (o.value === current.kind) op.selected = true;
+            kindSel.appendChild(op);
+        });
+        g.appendChild(kindSel);
+
+        const paramWrap = document.createElement('div');
+        paramWrap.style.marginTop = '6px';
+        g.appendChild(paramWrap);
+
+        const emit = (kind, param) => {
+            if (kind === '') { fn(''); }
+            else if (kind === 'tab') { fn(param ? '#' + param : ''); }
+            else if (kind === 'tel') { fn(param ? 'tel:' + param : ''); }
+            else if (kind === 'mailto') { fn(param ? 'mailto:' + param : ''); }
+            else { fn(param || ''); }
+            this.onBlockChange();
+        };
+
+        const buildParam = (kind, param) => {
+            paramWrap.innerHTML = '';
+            if (kind === '') return;
+            if (kind === 'tab') {
+                const sel = document.createElement('select');
+                sel.className = 'ld-form-select';
+                Object.keys(this.TAB_LABELS).filter(k => k !== 'announcements').forEach(k => {
+                    const op = document.createElement('option');
+                    op.value = k; op.textContent = this.TAB_LABELS[k];
+                    if (k === param) op.selected = true;
+                    sel.appendChild(op);
+                });
+                if (!param) emit('tab', sel.value);
+                sel.addEventListener('change', () => emit('tab', sel.value));
+                paramWrap.appendChild(sel);
+                return;
+            }
+            const inp = document.createElement('input');
+            inp.type = 'text';
+            inp.className = 'ld-form-input';
+            inp.value = param || '';
+            inp.placeholder = kind === 'tel' ? '例: 0312345678' : (kind === 'mailto' ? '例: info@example.com' : '例: https://example.com');
+            inp.addEventListener('input', () => emit(kind, inp.value.trim()));
+            paramWrap.appendChild(inp);
+        };
+
+        buildParam(current.kind, current.param);
+        kindSel.addEventListener('change', () => {
+            buildParam(kindSel.value, '');
+            if (kindSel.value === '') emit('', '');
+        });
+
+        p.appendChild(g);
     }
 
     addColorField(p, label, val, fn) {
@@ -1109,9 +1850,9 @@ class LiffDesigner {
 
     applyScreenSettings() {
         const s = this.getSettings();
-        this.els.screenBgColor.value = s.background_color || '#fafaf9';
-        this.els.screenBgColorHex.value = s.background_color || '#fafaf9';
-        this.els.screenBgImage.value = s.background_image || '';
+        if (this.els.screenBgColor) this.els.screenBgColor.value = s.background_color || '#fafaf9';
+        if (this.els.screenBgColorHex) this.els.screenBgColorHex.value = s.background_color || '#fafaf9';
+        if (this.els.screenBgImage) this.els.screenBgImage.value = s.background_image || '';
         if (this.els.screenBgSize) this.els.screenBgSize.value = s.background_size || 'cover';
         const g = this.getGlobalSettings();
         const pad = s.content_padding || g.content_padding || 18;
@@ -1162,6 +1903,14 @@ class LiffDesigner {
 
     bindDragSystem() {
         return window.LiffDesignerModules.dragDrop.bindDragSystem.call(this);
+    }
+
+    bindPanelDrawers() {
+        return window.LiffDesignerModules.panelDrawers.bindPanelDrawers.call(this);
+    }
+
+    bindPanelResizer() {
+        return window.LiffDesignerModules.panelResizer.bindPanelResizer.call(this);
     }
 
     handlePointerDown(e) {
@@ -1232,12 +1981,88 @@ class LiffDesigner {
         return window.LiffDesignerModules.templateManager.getTemplatesForTab.call(this, tabKey);
     }
 
-    applyTabTemplate(tpl) {
-        return window.LiffDesignerModules.templateManager.applyTabTemplate.call(this, tpl);
+    applyTabTemplate(tpl, options) {
+        return window.LiffDesignerModules.templateManager.applyTabTemplate.call(this, tpl, options);
     }
 
     openTabTemplatePreview(tpl) {
         return window.LiffDesignerModules.templateManager.openTabTemplatePreview.call(this, tpl);
+    }
+
+    openTemplatePreview(tpl, options) {
+        return window.LiffDesignerModules.templateManager.openTemplatePreview.call(this, tpl, options);
+    }
+
+    getTemplateThemeAccent(tpl) {
+        return window.LiffDesignerModules.templateManager.getTemplateThemeAccent.call(this, tpl);
+    }
+
+    getTemplateBlocksForTab(tpl, scope, tabKey) {
+        return window.LiffDesignerModules.templateManager.getTemplateBlocksForTab.call(this, tpl, scope, tabKey);
+    }
+
+    getBlockTypeMeta(type) {
+        return window.LiffDesignerModules.templateManager.getBlockTypeMeta.call(this, type);
+    }
+
+    renderTemplateBlockChips(blocks) {
+        return window.LiffDesignerModules.templateManager.renderTemplateBlockChips.call(this, blocks);
+    }
+
+    renderTemplateRichDemoBlock(block, accent) {
+        return window.LiffDesignerModules.templateManager.renderTemplateRichDemoBlock.call(this, block, accent);
+    }
+
+    renderPreviewBlockListHtml(blocks) {
+        return window.LiffDesignerModules.templateManager.renderPreviewBlockListHtml.call(this, blocks);
+    }
+
+    fillPreviewPhoneContent(contentEl, blocks, ctx) {
+        return window.LiffDesignerModules.templateManager.fillPreviewPhoneContent.call(this, contentEl, blocks, ctx);
+    }
+
+    showApplySuccessFeedback(tpl, meta) {
+        return window.LiffDesignerModules.templateManager.showApplySuccessFeedback.call(this, tpl, meta);
+    }
+
+    mountTemplatePreviews(container, templates, scope) {
+        return window.LiffDesignerModules.templateManager.mountTemplatePreviews.call(this, container, templates, scope);
+    }
+
+    scheduleTemplatePreviews(container, templates, scope) {
+        return window.LiffDesignerModules.templateManager.scheduleTemplatePreviews.call(this, container, templates, scope);
+    }
+
+    teardownTemplatePreviews() {
+        return window.LiffDesignerModules.templateManager.teardownTemplatePreviews.call(this);
+    }
+
+    renderStaticTemplateMiniPreview(tpl) {
+        return window.LiffDesignerModules.templateManager.renderStaticTemplateMiniPreview.call(this, tpl);
+    }
+
+    renderStaticPhonePreviewHtml(tpl, scope, tabKey, options) {
+        return window.LiffDesignerModules.templateManager.renderStaticPhonePreviewHtml.call(this, tpl, scope, tabKey, options);
+    }
+
+    safeCreateLivePhonePreview(tpl, scope, tabKey, options) {
+        return window.LiffDesignerModules.templateManager.safeCreateLivePhonePreview.call(this, tpl, scope, tabKey, options);
+    }
+
+    createLivePhonePreview(tpl, scope, tabKey, options) {
+        return window.LiffDesignerModules.templateManager.createLivePhonePreview.call(this, tpl, scope, tabKey, options);
+    }
+
+    renderVisualPreviewMount(tpl, scope) {
+        return window.LiffDesignerModules.templateManager.renderVisualPreviewMount.call(this, tpl, scope);
+    }
+
+    renderTemplateThemeMeta(tpl) {
+        return window.LiffDesignerModules.templateManager.renderTemplateThemeMeta.call(this, tpl);
+    }
+
+    getTemplatePreviewTabs(tpl, scope) {
+        return window.LiffDesignerModules.templateManager.getTemplatePreviewTabs.call(this, tpl, scope);
     }
 
     getTemplateCategoryLabel(key) {
@@ -1280,6 +2105,14 @@ class LiffDesigner {
 
     renderTemplateVisualPreview(tpl, scope) {
         return window.LiffDesignerModules.templateManager.renderTemplateVisualPreview.call(this, tpl, scope);
+    }
+
+    renderTemplateDemoBlock(block, accent) {
+        return window.LiffDesignerModules.templateManager.renderTemplateDemoBlock.call(this, block, accent);
+    }
+
+    renderTemplateDemoFallback(accent) {
+        return window.LiffDesignerModules.templateManager.renderTemplateDemoFallback.call(this, accent);
     }
 
     get INDUSTRY_PRESETS() {

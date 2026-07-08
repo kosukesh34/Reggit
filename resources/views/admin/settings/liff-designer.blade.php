@@ -5,62 +5,6 @@
 
 @push('styles')
 <link rel="stylesheet" href="{{ asset('css/admin/liff-designer.css') }}?v={{ time() }}">
-<style>
-.ld-toast {
-    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
-    background: #0f766e; color: #fff; padding: 12px 24px; border-radius: 14px;
-    font-size: 14px; font-weight: 700; z-index: 99999; box-shadow: 0 10px 32px rgba(13,148,136,0.35);
-    opacity: 0; transition: all 0.3s ease; pointer-events: none;
-    display: flex; align-items: center; gap: 8px;
-}
-.ld-toast--visible { opacity: 1; transform: translateX(-50%) translateY(0); }
-.ld-toast--error { background: #991b1b; }
-
-.ld-liff-settings-toggle {
-    cursor: pointer; user-select: none; transition: background 0.15s; border-radius: 8px; padding: 8px;
-}
-.ld-liff-settings-toggle:hover { background: #f9fafb; }
-.ld-liff-settings-toggle__header {
-    display: flex; align-items: center; justify-content: space-between;
-}
-.ld-liff-settings-toggle__title {
-    font-size: 11px; font-weight: 700; color: #374151; display: flex; align-items: center; gap: 6px;
-}
-.ld-liff-settings-toggle__content {
-    display: none; padding-top: 10px;
-}
-.ld-liff-settings-toggle.is-open .ld-liff-settings-toggle__content { display: block; }
-.ld-liff-settings-toggle__chevron {
-    transition: transform 0.2s; font-size: 11px; color: #9ca3af;
-}
-.ld-liff-settings-toggle.is-open .ld-liff-settings-toggle__chevron { transform: rotate(180deg); }
-
-.ld-quickstart {
-    display: flex; flex-direction: column; align-items: center; padding: 40px 24px; text-align: center;
-    gap: 16px; min-height: 300px; justify-content: center;
-}
-.ld-quickstart__icon { font-size: 48px; color: rgba(13,148,136,0.35); }
-.ld-quickstart__title { font-size: 16px; font-weight: 700; color: #374151; }
-.ld-quickstart__desc { font-size: 13px; color: #6b7280; line-height: 1.6; max-width: 280px; }
-.ld-quickstart__actions { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 240px; }
-
-.ld-form-hint { font-size: 11px; color: #9ca3af; margin: 0 0 8px; line-height: 1.5; }
-.ld-theme-gallery {
-    display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;
-}
-.ld-theme-card {
-    display: flex; align-items: center; gap: 8px; padding: 8px 10px;
-    border: 1.5px solid #e5e7eb; border-radius: 12px; background: #fff;
-    cursor: pointer; transition: all 0.15s ease; text-align: left; min-width: 0;
-}
-.ld-theme-card:hover { border-color: #0f766e; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(13,148,136,0.12); }
-.ld-theme-card.is-active { border-color: #0f766e; background: rgba(13,148,136,0.06); box-shadow: 0 0 0 1px #0f766e inset; }
-.ld-theme-card__swatch {
-    flex: 0 0 auto; width: 22px; height: 22px; border-radius: 7px;
-    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.08);
-}
-.ld-theme-card__name { font-size: 12px; font-weight: 700; color: #374151; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-</style>
 @endpush
 
 @section('content')
@@ -69,6 +13,7 @@
     <input type="hidden" name="layouts_json" id="layoutsJson">
     <input type="hidden" name="custom_css" id="customCssInput" value="{{ $customCss ?? '' }}">
     <input type="hidden" name="tab_settings_json" id="tabSettingsJson">
+    <input type="hidden" name="menu_items_json" id="menuItemsJson">
     <input type="file" id="importJsonFile" accept="application/json" hidden>
 
     <div class="ld-topbar">
@@ -76,7 +21,17 @@
         <h1 class="ld-topbar__title">
             <i class="fas fa-palette"></i> ノーコードUIデザイナー
         </h1>
+        <div class="ld-topbar__layout" title="パネル幅プリセット（ドラッグでも調整できます）">
+            <span class="ld-topbar__layout-label">レイアウト</span>
+            <button type="button" class="ld-panel-preset" data-panel-preset="compact" title="コンパクト">狭</button>
+            <button type="button" class="ld-panel-preset is-active" data-panel-preset="standard" title="標準">標準</button>
+            <button type="button" class="ld-panel-preset" data-panel-preset="wide" title="ワイド">広</button>
+            <button type="button" class="ld-panel-preset" data-panel-preset="focus" title="プレビュー重視">集中</button>
+            <button type="button" class="ld-btn ld-btn--ghost ld-btn--xs" id="resetPanelWidths" title="パネル幅をリセット"><i class="fas fa-arrows-alt-h"></i></button>
+        </div>
         <div class="ld-topbar__actions">
+            <button type="button" class="ld-btn ld-btn--outline ld-mobile-panel-btn" id="openScreensDrawer" title="画面・テンプレート"><i class="fas fa-th-list"></i></button>
+            <button type="button" class="ld-btn ld-btn--outline ld-mobile-panel-btn" id="openBlocksDrawer" title="ブロック追加"><i class="fas fa-plus-circle"></i></button>
             <button type="button" class="ld-btn ld-btn--outline" id="templateBtn"><i class="fas fa-layer-group"></i> テンプレート</button>
             <button type="button" class="ld-btn ld-btn--ghost" id="importBtn" title="JSONを読み込み"><i class="fas fa-file-import"></i></button>
             <button type="button" class="ld-btn ld-btn--ghost" id="exportBtn" title="JSONを書き出し"><i class="fas fa-file-export"></i></button>
@@ -92,6 +47,7 @@
         {{-- 左: 画面タブ --}}
         <aside class="ld-screens">
             <div class="ld-screens__title">画面（タブ）</div>
+            <p class="ld-screens__hint">ドラッグで並び替え・表示切替・名前変更。アプリとLINEに反映されます。</p>
             <div class="ld-screens__list" id="screenList"></div>
             <div class="ld-screens__title ld-screens__title--templates">テンプレート</div>
             <div class="ld-tab-templates" id="tabTemplateList"></div>
@@ -119,6 +75,8 @@
             </div>
         </aside>
 
+        <div class="ld-resizer ld-resizer--left" data-resizer="left" role="separator" aria-orientation="vertical" aria-label="左パネル幅を調整" title="ドラッグで左パネル幅を調整（ダブルクリックでリセット）"></div>
+
         {{-- 中央: スマホプレビュー --}}
         <div class="ld-editor">
             <div class="ld-editor__toolbar">
@@ -127,6 +85,7 @@
                     <strong id="activeTabLabel">ホーム</strong>
                 </div>
                 <div class="ld-editor__zoom">
+                    <button type="button" class="ld-btn ld-btn--primary ld-btn--xs" id="quickTemplateBtn" title="テンプレートを選んで適用"><i class="fas fa-layer-group"></i> テンプレート</button>
                     <button type="button" class="ld-btn ld-btn--ghost ld-btn--xs" id="zoomOutBtn"><i class="fas fa-search-minus"></i></button>
                     <input type="range" id="zoomRange" class="ld-form-range ld-form-range--zoom" min="60" max="120" value="100">
                     <button type="button" class="ld-btn ld-btn--ghost ld-btn--xs" id="zoomInBtn"><i class="fas fa-search-plus"></i></button>
@@ -146,6 +105,8 @@
                 </div>
             </div>
         </div>
+
+        <div class="ld-resizer ld-resizer--right" data-resizer="right" role="separator" aria-orientation="vertical" aria-label="右パネル幅を調整" title="ドラッグで右パネル幅を調整（ダブルクリックでリセット）"></div>
 
         {{-- 右: ブロック追加（常時表示）+ 設定 --}}
         <aside class="ld-sidebar">
@@ -203,14 +164,50 @@
                 <div class="ld-design-panel">
                     <div class="ld-form-group">
                         <label class="ld-form-label">テーマプリセット</label>
-                        <p class="ld-form-hint">ワンタップでブランドの雰囲気を一括変更できます。</p>
-                        <div class="ld-theme-gallery" id="designPresets">
-                            @foreach(\App\Support\LiffThemePresets::all() as $preset)
-                            <button type="button" class="ld-theme-card" data-preset="{{ $preset['id'] }}" title="{{ $preset['description'] }}">
-                                <span class="ld-theme-card__swatch" style="background:{{ $preset['accent_color'] }}"></span>
-                                <span class="ld-theme-card__name">{{ $preset['name'] }}</span>
-                            </button>
+                        <p class="ld-form-hint">業態別の完成デザイン。配色・背景・幅を一括適用できます。</p>
+                        <div class="ld-theme-gallery" id="designPresets"></div>
+                    </div>
+                    <div class="ld-form-group">
+                        <label class="ld-form-label">コンテンツ幅</label>
+                        <select id="globalContentWidth" class="ld-form-select">
+                            @foreach(\App\Support\LiffThemePresets::contentWidths() as $key => $width)
+                            <option value="{{ $key }}">{{ $width['label'] }}</option>
                             @endforeach
+                        </select>
+                    </div>
+                    <div class="ld-form-group">
+                        <label class="ld-form-label">ページ背景</label>
+                        <div class="ld-bg-style-tabs">
+                            @foreach(\App\Support\LiffThemePresets::backgroundStyles() as $key => $label)
+                            <button type="button" class="ld-bg-style-tab" data-bg-style="{{ $key }}">{{ $label }}</button>
+                            @endforeach
+                        </div>
+                        <div id="bgPanelSolid" class="ld-bg-panel">
+                            <label class="ld-form-label">背景色</label>
+                            <div class="ld-color-row">
+                                <input type="color" id="globalBgColor" class="ld-color-picker" value="#f9fafb">
+                                <input type="text" id="globalBgColorHex" class="ld-form-input ld-form-input--sm" value="#f9fafb" maxlength="7">
+                            </div>
+                        </div>
+                        <div id="bgPanelGradient" class="ld-bg-panel" hidden>
+                            <label class="ld-form-label">グラデーション開始</label>
+                            <div class="ld-color-row">
+                                <input type="color" id="globalBgGradientStart" class="ld-color-picker" value="#eef2ff">
+                                <input type="text" id="globalBgGradientStartHex" class="ld-form-input ld-form-input--sm" value="#eef2ff" maxlength="7">
+                            </div>
+                            <label class="ld-form-label">グラデーション終了</label>
+                            <div class="ld-color-row">
+                                <input type="color" id="globalBgGradientEnd" class="ld-color-picker" value="#ffffff">
+                                <input type="text" id="globalBgGradientEndHex" class="ld-form-input ld-form-input--sm" value="#ffffff" maxlength="7">
+                            </div>
+                        </div>
+                        <div id="bgPanelImage" class="ld-bg-panel" hidden>
+                            <label class="ld-form-label">背景画像 URL（https）</label>
+                            <input type="url" id="globalBgImageUrl" class="ld-form-input" placeholder="https://images.unsplash.com/...">
+                            <p class="ld-form-hint">推奨: 1600px幅・1MB以下。読込失敗時は背景色にフォールバックします。</p>
+                            <label class="ld-form-label">オーバーレイ不透明度</label>
+                            <input type="range" id="globalBgOverlayOpacity" class="ld-form-range" min="0" max="80" value="60">
+                            <span id="globalBgOverlayOpacityVal" class="ld-range-val">60</span>
                         </div>
                     </div>
                     <div class="ld-form-group">
@@ -260,6 +257,117 @@
                             <option value="floating">フローティング</option>
                         </select>
                     </div>
+                    <div class="ld-form-group">
+                        <label class="ld-form-label">カードの質感</label>
+                        <select id="globalCardStyle" class="ld-form-select">
+                            <option value="">（プリセット標準）</option>
+                            <option value="flat">フラット（影なし）</option>
+                            <option value="elevated">エレベート（影つき）</option>
+                            <option value="outline">アウトライン（枠線）</option>
+                        </select>
+                    </div>
+                    <div class="ld-form-group">
+                        <label class="ld-form-label">ボタン形状</label>
+                        <select id="globalButtonShape" class="ld-form-select">
+                            <option value="">（プリセット標準）</option>
+                            <option value="rounded">角丸</option>
+                            <option value="pill">ピル型</option>
+                            <option value="square">スクエア</option>
+                        </select>
+                    </div>
+                    <div class="ld-form-group">
+                        <label class="ld-form-label">余白の密度</label>
+                        <select id="globalDensity" class="ld-form-select">
+                            <option value="compact">コンパクト</option>
+                            <option value="default" selected>標準</option>
+                            <option value="relaxed">ゆったり</option>
+                        </select>
+                    </div>
+                    <div class="ld-form-group">
+                        <label class="ld-form-label">自動表示UIの雰囲気</label>
+                        <p class="ld-form-hint">商品・注文・予約・クーポンなど、システムが自動で出す画面にも反映します。</p>
+                        <select id="globalSystemUiStyle" class="ld-form-select">
+                            <option value="refined">上質ミニマル</option>
+                            <option value="editorial">写真映えリッチ</option>
+                            <option value="compact">情報密度高め</option>
+                            <option value="luxe">ラグジュアリー</option>
+                        </select>
+                    </div>
+                    <div class="ld-form-group">
+                        <label class="ld-form-label">自動表示カード</label>
+                        <select id="globalSystemCardStyle" class="ld-form-select">
+                            <option value="soft">ソフトカード</option>
+                            <option value="elevated">浮かせる</option>
+                            <option value="outline">細線アウトライン</option>
+                            <option value="flat">フラット</option>
+                        </select>
+                    </div>
+                    <div class="ld-form-group">
+                        <label class="ld-form-label">自動表示画像</label>
+                        <select id="globalSystemMediaShape" class="ld-form-select">
+                            <option value="rounded">角丸</option>
+                            <option value="square">スクエア</option>
+                            <option value="arch">アーチ</option>
+                        </select>
+                    </div>
+                    <div class="ld-form-group">
+                        <label class="ld-form-label">自動表示見出し</label>
+                        <select id="globalSystemHeaderStyle" class="ld-form-select">
+                            <option value="minimal">ミニマル</option>
+                            <option value="editorial">エディトリアル</option>
+                            <option value="hero">ヒーロー風</option>
+                        </select>
+                    </div>
+                    <div class="ld-form-group">
+                        <label class="ld-form-label">会員証レイアウト</label>
+                        <select id="globalMemberCardDesign" class="ld-form-select">
+                            <option value="">既存の会員設定を使う</option>
+                            <option value="default">標準カード</option>
+                            <option value="logo_top">ロゴ上部</option>
+                            <option value="logo_center">ロゴ中央</option>
+                            <option value="logo_header">ロゴヘッダー</option>
+                            <option value="compact">コンパクト</option>
+                            <option value="split_banner">スプリットバナー</option>
+                            <option value="minimal_line">ミニマルライン</option>
+                            <option value="emblem">エンブレム</option>
+                        </select>
+                    </div>
+                    <div class="ld-form-group">
+                        <label class="ld-form-label">会員画面UI</label>
+                        <select id="globalMemberScreenDesign" class="ld-form-select">
+                            <option value="wallet">ウォレット</option>
+                            <option value="premium">プレミアム</option>
+                            <option value="minimal">ミニマル</option>
+                            <option value="compact">コンパクト</option>
+                        </select>
+                    </div>
+                    <div class="ld-form-group">
+                        <label class="ld-form-label">クーポン画面UI</label>
+                        <select id="globalCouponScreenDesign" class="ld-form-select">
+                            <option value="ticket">チケット</option>
+                            <option value="gallery">ギャラリー</option>
+                            <option value="compact">コンパクト</option>
+                            <option value="luxury">ラグジュアリー</option>
+                        </select>
+                    </div>
+                    <div class="ld-form-group">
+                        <label class="ld-form-label">予約画面UI</label>
+                        <select id="globalReservationScreenDesign" class="ld-form-select">
+                            <option value="cards">カード</option>
+                            <option value="timeline">タイムライン</option>
+                            <option value="compact">コンパクト</option>
+                            <option value="concierge">コンシェルジュ</option>
+                        </select>
+                    </div>
+                    <div class="ld-form-group">
+                        <label class="ld-form-label">注文・順番待ちUI</label>
+                        <select id="globalActivityScreenDesign" class="ld-form-select">
+                            <option value="cards">カード</option>
+                            <option value="timeline">タイムライン</option>
+                            <option value="compact">コンパクト</option>
+                            <option value="dashboard">ダッシュボード</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
@@ -277,57 +385,120 @@
 
 <div class="ld-toast" id="ldToast"></div>
 
+<script src="{{ asset('js/admin/liff-designer/modules/block-designs.js') }}?v={{ time() }}"></script>
 <script src="{{ asset('js/admin/liff-designer/modules/data-preview.js') }}?v={{ time() }}"></script>
+<script src="{{ asset('js/admin/liff-designer/modules/theme-panel.js') }}?v={{ time() }}"></script>
+<script src="{{ asset('js/admin/liff-designer/modules/template-preview.js') }}?v={{ time() }}"></script>
 <script src="{{ asset('js/admin/liff-designer/modules/template-manager.js') }}?v={{ time() }}"></script>
 <script src="{{ asset('js/admin/liff-designer/modules/drag-drop.js') }}?v={{ time() }}"></script>
 <script src="{{ asset('js/admin/liff-designer/modules/ui-events.js') }}?v={{ time() }}"></script>
 <script src="{{ asset('js/admin/liff-designer/modules/io.js') }}?v={{ time() }}"></script>
 <script src="{{ asset('js/admin/liff-designer/modules/onboarding.js') }}?v={{ time() }}"></script>
+<script src="{{ asset('js/admin/liff-designer/modules/panel-resizer.js') }}?v={{ time() }}"></script>
+<script src="{{ asset('js/admin/liff-designer/modules/panel-drawers.js') }}?v={{ time() }}"></script>
 <script src="{{ asset('js/admin/liff-designer.js') }}?v={{ time() }}"></script>
+@php
+    $ldDesignerConfig = [
+        'layouts' => $layouts ?? [],
+        'tabSettings' => $tabSettings ?? [],
+        'templates' => $templates ?? [],
+        'customCss' => $customCss ?? '',
+        'featureFlags' => $featureFlags ?? [],
+        'menuItems' => $menuItems ?? [],
+        'themePresets' => \App\Support\LiffThemePresets::all(),
+        'fontStacks' => \App\Support\LiffThemePresets::fontStacks(),
+        'surfaceTones' => \App\Support\LiffThemePresets::surfaceTones(),
+    ];
+@endphp
+<script type="application/json" id="ldDesignerConfig">@json($ldDesignerConfig)</script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        var designer = new LiffDesigner({
-            layouts: @json($layouts ?? []),
-            tabSettings: @json($tabSettings ?? []),
-            templates: @json($templates ?? []),
-            customCss: @json($customCss ?? ''),
-            featureFlags: @json($featureFlags ?? []),
-            themePresets: @json(\App\Support\LiffThemePresets::all()),
-            fontStacks: @json(\App\Support\LiffThemePresets::fontStacks()),
-            surfaceTones: @json(\App\Support\LiffThemePresets::surfaceTones())
-        });
+        if (typeof LiffDesigner === 'undefined') {
+            console.error('LiffDesigner script not loaded');
+            if (typeof showToast === 'function') {
+                showToast('デザイナーの読み込みに失敗しました。ページを再読み込みしてください。', true);
+            }
+            return;
+        }
+
+        var config = {};
+        var configEl = document.getElementById('ldDesignerConfig');
+        if (configEl && configEl.textContent) {
+            try {
+                config = JSON.parse(configEl.textContent);
+            } catch (parseErr) {
+                console.error('LIFF Designer config parse failed:', parseErr);
+                showToast('デザイナー設定の読み込みに失敗しました。ページを再読み込みしてください。', true);
+                return;
+            }
+        }
+
+        var designer;
+        try {
+            designer = new LiffDesigner(config);
+            window.__ldDesigner = designer;
+        } catch (err) {
+            console.error('LIFF Designer init failed:', err);
+            showToast('デザイナーの読み込みに失敗しました。ページを再読み込みしてください。', true);
+            return;
+        }
+
+        try {
+            if (designer.bindPanelDrawers) designer.bindPanelDrawers();
+        } catch (err) {
+            console.warn('panel drawers init failed', err);
+        }
+        try {
+            if (designer.bindPanelResizer) designer.bindPanelResizer();
+        } catch (err) {
+            console.warn('panel resizer init failed', err);
+        }
 
         // オンボーディング（初回表示 or 全タブ空の場合）
-        if (designer.shouldShowOnboarding()) {
-            setTimeout(function() { designer.showOnboarding(); }, 300);
+        if (designer.shouldShowOnboarding && designer.shouldShowOnboarding()) {
+            setTimeout(function() {
+                try { designer.showOnboarding(); } catch (e) { console.warn('onboarding skipped', e); }
+            }, 300);
         }
 
         // ヘルプボタン
-        document.getElementById('helpBtn').addEventListener('click', function() {
-            designer.showHelpOverlay();
-        });
+        var helpBtn = document.getElementById('helpBtn');
+        if (helpBtn) {
+            helpBtn.addEventListener('click', function() {
+                if (designer.showHelpOverlay) designer.showHelpOverlay();
+            });
+        }
 
         // LIFF設定折りたたみ
-        document.getElementById('liffSettingsToggle').addEventListener('click', function(e) {
-            if (e.target.closest('input') || e.target.closest('textarea') || e.target.closest('select')) return;
-            this.classList.toggle('is-open');
-        });
+        var liffSettingsToggle = document.getElementById('liffSettingsToggle');
+        if (liffSettingsToggle) {
+            liffSettingsToggle.addEventListener('click', function(e) {
+                if (e.target.closest('input') || e.target.closest('textarea') || e.target.closest('select')) return;
+                this.classList.toggle('is-open');
+            });
+        }
 
         // 保存フィードバック
         var form = document.getElementById('liffDesignerForm');
-        form.addEventListener('submit', function() {
-            setTimeout(function() {
-                showToast('デザインを保存しました');
-            }, 100);
-        });
+        if (form) {
+            form.addEventListener('submit', function() {
+                setTimeout(function() {
+                    showToast('デザインを保存しました');
+                }, 100);
+            });
+        }
     });
 
-    function showToast(msg, isError) {
+    function showToast(msg, isError, durationMs) {
         var el = document.getElementById('ldToast');
+        if (!el) return;
+        var dur = (typeof durationMs === 'number' && durationMs > 0) ? durationMs : 3000;
         el.innerHTML = '<i class="fas ' + (isError ? 'fa-exclamation-circle' : 'fa-check-circle') + '"></i> ' + msg;
-        el.className = 'ld-toast' + (isError ? ' ld-toast--error' : '');
+        el.className = 'ld-toast' + (isError ? ' ld-toast--error' : ' ld-toast--success');
         requestAnimationFrame(function() { el.classList.add('ld-toast--visible'); });
-        setTimeout(function() { el.classList.remove('ld-toast--visible'); }, 3000);
+        clearTimeout(window.__ldToastTimer);
+        window.__ldToastTimer = setTimeout(function() { el.classList.remove('ld-toast--visible'); }, dur);
     }
+    window.__ldShowToast = showToast;
 </script>
 @endsection

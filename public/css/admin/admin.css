@@ -1,5 +1,7 @@
 /* 管理画面スタイル：コンポーネントを @import で読み込み（各ファイル500行以内） */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap');
 @import url('components/01-base-sidebar-nav.css');
+@import url('components/01b-alerts-cards-buttons.css');
 @import url('components/02-main-tables.css');
 @import url('components/03-tables-forms-dashboard.css');
 @import url('components/04-forms-pages.css');
