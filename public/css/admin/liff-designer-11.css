@@ -1,0 +1,299 @@
+/* LIFF Designer — ライブテンプレプレビュー（ネイティブアプリ風） */
+
+/* ステータスバー */
+.ld-phone__status {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px 4px;
+    background: #1c1917;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+.ld-phone__status-icons {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.ld-phone__status-icons span {
+    display: block;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.5);
+}
+.ld-phone__frame--preview .ld-phone__notch {
+    margin-top: 0;
+    height: 26px;
+}
+.ld-phone__frame--preview.ld-phone__frame.is-line .ld-phone__header {
+    background: linear-gradient(135deg, var(--primary-color, #06C755), color-mix(in srgb, var(--primary-color, #06C755) 82%, #000));
+}
+
+/* 読み取り専用プレビュー */
+.ld-phone__frame--preview .ld-block--readonly {
+    pointer-events: none;
+    cursor: default;
+}
+.ld-phone__frame--preview .ld-block--readonly:hover {
+    outline: none;
+    box-shadow: none;
+}
+.ld-phone__frame--preview .ld-block__toolbar,
+.ld-phone__frame--preview .ld-block__handle {
+    display: none !important;
+}
+
+@keyframes ld-block-preview-flash {
+    0% { box-shadow: 0 0 0 0 rgba(13, 148, 136, 0.55); }
+    40% { box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.35); }
+    100% { box-shadow: none; }
+}
+.ld-block--preview-flash {
+    animation: ld-block-preview-flash 0.85s ease;
+}
+
+/* ライブプレビュー: カード用 */
+.ld-template-card__phone-mount {
+    height: 228px;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    background: linear-gradient(180deg, #f5f5f4 0%, #fafaf9 100%);
+    border-radius: 14px;
+    border: 2px solid #e7e5e4;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.ld-template-card__preview-btn:hover .ld-template-card__phone-mount {
+    border-color: #a7f3d0;
+    box-shadow: inset 0 0 0 1px rgba(13, 148, 136, 0.15);
+}
+.ld-tpl-live-phone--compact {
+    width: 300px;
+    transform: scale(0.52);
+    transform-origin: top center;
+    margin-bottom: -108px;
+    pointer-events: none;
+}
+.ld-tpl-live-phone--compact .ld-phone__frame {
+    width: 100%;
+    box-shadow: 0 8px 24px rgba(28, 25, 23, 0.12);
+}
+.ld-tpl-live-phone--compact .ld-phone__body {
+    max-height: 340px;
+    min-height: 280px;
+}
+.ld-template-card__block-chips-wrap {
+    margin-top: 8px;
+}
+
+/* サイドバー ミニプレビュー */
+.ld-tab-template-card__preview-mount {
+    height: 172px;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    background: #f5f5f4;
+    border-radius: 12px;
+    border: 1px solid #e7e5e4;
+    margin-bottom: 8px;
+}
+.ld-tpl-live-phone--mini {
+    width: 280px;
+    transform: scale(0.44);
+    transform-origin: top center;
+    margin-bottom: -100px;
+    pointer-events: none;
+}
+.ld-tpl-live-phone--mini .ld-phone__body {
+    max-height: 300px;
+    min-height: 240px;
+}
+.ld-tab-template-card__preview:empty {
+    display: none;
+}
+
+/* フルプレビューモーダル */
+.ld-template-preview-modal {
+    width: min(980px, calc(100vw - 20px));
+}
+.ld-template-preview-modal__body {
+    grid-template-columns: minmax(0, 1fr) 300px;
+    gap: 20px;
+    align-items: start;
+}
+.ld-template-preview-phone {
+    display: flex;
+    justify-content: center;
+    padding: 8px 0 16px;
+    position: sticky;
+    top: 0;
+}
+.ld-template-preview-phone [data-template-preview-phone] {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+.ld-tpl-live-phone--interactive {
+    width: 100%;
+    max-width: 390px;
+}
+.ld-tpl-live-phone--interactive .ld-phone__frame {
+    width: 100%;
+    box-shadow: 0 0 0 7px #1c1917, 0 24px 60px rgba(28, 25, 23, 0.22);
+    border-radius: 36px;
+    overflow: hidden;
+}
+.ld-tpl-live-phone--interactive .ld-phone__body {
+    max-height: min(58vh, 520px);
+    min-height: 420px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+}
+.ld-tpl-live-phone--interactive .ld-phone__nav-item[data-preview-tab] {
+    border: none;
+    background: transparent;
+    font: inherit;
+    cursor: pointer;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 8px 4px 10px;
+    color: #a8a29e;
+    transition: color 0.15s ease;
+}
+.ld-tpl-live-phone--interactive .ld-phone__nav-item[data-preview-tab].is-active {
+    color: var(--primary-color, #0d9488);
+}
+
+.ld-template-preview-modal__theme {
+    padding: 12px;
+    border-radius: 12px;
+    background: #fff;
+    border: 1px solid #e7e5e4;
+}
+.ld-template-preview-modal__theme-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.ld-template-preview-modal__theme-swatch {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    flex-shrink: 0;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+.ld-template-preview-modal__theme-name {
+    font-size: 12px;
+    font-weight: 800;
+    color: #1c1917;
+}
+.ld-template-preview-modal__theme-sub {
+    font-size: 10px;
+    color: #78716c;
+    margin-top: 2px;
+}
+
+.ld-template-preview-modal__block-item {
+    cursor: pointer;
+    transition: border-color 0.12s ease, background 0.12s ease;
+}
+.ld-template-preview-modal__block-item:hover {
+    border-color: #99f6e4;
+    background: #f0fdfa;
+}
+.ld-template-preview-modal__block-item.is-highlight {
+    border-color: #0d9488;
+    background: rgba(13, 148, 136, 0.08);
+}
+
+.ld-template-preview-modal__head {
+    padding: 16px 18px;
+    border-bottom: 1px solid rgba(28, 25, 23, 0.08);
+}
+.ld-template-preview-modal__title {
+    font-size: 17px;
+    font-weight: 800;
+    color: #1c1917;
+}
+.ld-template-preview-modal__meta {
+    font-size: 12px;
+    color: #78716c;
+    margin-top: 4px;
+    line-height: 1.5;
+}
+.ld-template-preview-modal__tab-bar {
+    margin-bottom: 4px;
+}
+.ld-template-preview-modal__actions {
+    padding: 14px 16px 16px;
+    background: #fafaf9;
+    border-radius: 0 0 16px 16px;
+}
+
+/* テンプレモーダル: カードグリッド */
+.ld-template-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 14px;
+}
+.ld-template-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px;
+    border-radius: 16px;
+    border: 1px solid #e7e5e4;
+    background: #fff;
+    transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.ld-template-card:hover {
+    border-color: #d6d3d1;
+    box-shadow: 0 10px 28px rgba(28, 25, 23, 0.08);
+}
+
+.ld-tab-template-card__preview-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 80px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #a8a29e;
+    background: #f5f5f4;
+    border-radius: 10px;
+}
+
+.ld-template-card__phone-preview--static {
+    width: 100%;
+}
+
+.ld-template-card__phone-mount.is-live-mounted .ld-template-card__phone-preview--static {
+    display: none;
+}
+
+.ld-template-preview-fallback {
+    width: 100%;
+    max-width: 390px;
+    margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+    .ld-template-preview-modal__body {
+        grid-template-columns: 1fr;
+    }
+    .ld-template-preview-phone {
+        position: static;
+    }
+    .ld-tpl-live-phone--interactive .ld-phone__body {
+        min-height: 360px;
+        max-height: 50vh;
+    }
+}
