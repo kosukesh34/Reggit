@@ -1,0 +1,96 @@
+import React from 'react';
+
+type FrontendHeaderConfig = {
+    title: string;
+    logoUrl: string | null;
+    friendAddUrl: string | null;
+};
+
+function getHeaderConfig(): FrontendHeaderConfig {
+    const fallbackTitle = document.title || 'Reggit';
+    const header = window.__FRONTEND_HEADER__;
+    if (!header || typeof header !== 'object') {
+        return {
+            title: fallbackTitle,
+            logoUrl: null,
+            friendAddUrl: null,
+        };
+    }
+
+    return {
+        title: typeof header.title === 'string' && header.title.trim() !== '' ? header.title : fallbackTitle,
+        logoUrl: typeof header.logoUrl === 'string' && header.logoUrl.trim() !== '' ? header.logoUrl : null,
+        friendAddUrl: typeof header.friendAddUrl === 'string' && header.friendAddUrl.trim() !== '' ? header.friendAddUrl : null,
+    };
+}
+
+export function FrontendChrome(): JSX.Element | null {
+    const isDesignerEmbedPreview = window.__IS_DESIGNER_EMBED_PREVIEW__ === true;
+    if (isDesignerEmbedPreview) {
+        return null;
+    }
+
+    const header = getHeaderConfig();
+
+    return (
+        <>
+            <header className="header">
+                <div className="header-content">
+                    {header.logoUrl ? <img src={header.logoUrl} alt={header.title} className="header-logo" /> : null}
+                    <h1 className="logo">{header.title}</h1>
+                    {header.friendAddUrl ? (
+                        <a
+                            href={header.friendAddUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="header-friend-add"
+                            id="headerFriendAdd"
+                            title="友だち追加でメッセージやクーポンを受け取れます"
+                        >
+                            <i className="fab fa-line" /> 友だち追加
+                        </a>
+                    ) : null}
+                    <button className="cart-btn" id="cartBtn">
+                        <i className="fas fa-shopping-cart" />
+                        <span className="cart-count" id="cartCount">
+                            0
+                        </span>
+                    </button>
+                </div>
+            </header>
+
+            <div className="cart-sidebar" id="cartSidebar">
+                <div className="cart-header">
+                    <h2>
+                        <i className="fas fa-shopping-bag" /> 注文内容
+                    </h2>
+                    <button className="close-btn" id="closeCartBtn">
+                        <i className="fas fa-times" />
+                    </button>
+                </div>
+                <div className="cart-items" id="cartItems">
+                    <div className="empty-cart">カートは空です</div>
+                </div>
+                <div className="cart-footer">
+                    <div className="cart-total">
+                        <span>合計: </span>
+                        <span className="total-price" id="totalPrice">
+                            ¥0
+                        </span>
+                    </div>
+                    <div className="order-actions">
+                        <button className="order-btn order-btn--mobile" id="orderBtn" disabled>
+                            <i className="fas fa-credit-card" /> モバイル注文（今すぐ決済）
+                        </button>
+                        <button className="order-btn order-btn--in-store" id="inStoreOrderBtn" disabled>
+                            <i className="fas fa-store" /> 店内注文（後で決済）
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div className="overlay" id="overlay" />
+        </>
+    );
+}
+

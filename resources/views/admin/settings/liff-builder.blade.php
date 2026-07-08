@@ -2,6 +2,7 @@
 
 @section('title', 'LIFFデザイン')
 @section('page-title', 'LIFFデザイン')
+@section('page-kind', 'liff-builder')
 
 @section('content')
 <nav class="breadcrumb" aria-label="パンくず">
@@ -138,162 +139,18 @@
     </div>
 </template>
 
+<script id="liffBuilderPageConfig" type="application/json">
+{!! json_encode(['templates' => $templates ?? [], 'blocks' => $blocks ?? []], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) !!}
+</script>
 <script>
-const constantsScript = document.createElement('script');
-constantsScript.src = "{{ asset('js/shared/constants.js') }}";
-document.head.appendChild(constantsScript);
-const domScript = document.createElement('script');
-domScript.src = "{{ asset('js/shared/utils/domHelper.js') }}";
-document.head.appendChild(domScript);
-const toastScript = document.createElement('script');
-toastScript.src = "{{ asset('js/shared/utils/toast.js') }}";
-document.head.appendChild(toastScript);
-const apiScript = document.createElement('script');
-apiScript.src = "{{ asset('js/shared/utils/apiClient.js') }}";
-document.head.appendChild(apiScript);
-const galleryScript = document.createElement('script');
-galleryScript.src = "{{ asset('js/frontend/managers/GalleryManager.js') }}";
-document.head.appendChild(galleryScript);
-const builderScript = document.createElement('script');
-builderScript.src = "{{ asset('js/frontend/managers/LiffBuilderManager.js') }}";
-builderScript.onload = () => renderPreview();
-document.head.appendChild(builderScript);
-
-const templates = @json($templates);
-const initialBlocks = @json($blocks);
-const blocksContainer = document.getElementById('builderBlocks');
-const preview = document.getElementById('builderPreview');
-
-function buildBlockEditor(block = {}) {
-    const tpl = document.getElementById('blockTemplate');
-    const node = tpl.content.firstElementChild.cloneNode(true);
-    node.querySelector('.block-type').value = block.type || 'text';
-    node.querySelector('.block-title').value = block.title || '';
-    node.querySelector('.block-body').value = block.body || '';
-    node.querySelector('.block-image').value = block.image_url || '';
-    node.querySelector('.block-button-label').value = block.button_label || '';
-    node.querySelector('.block-button-url').value = block.button_url || '';
-    node.querySelector('.block-list').value = Array.isArray(block.list_items) ? block.list_items.join(', ') : (block.list_items || '');
-    node.querySelector('.block-align').value = block.align || 'left';
-    node.querySelector('.block-bg').value = block.background_color || '';
-    node.querySelector('.block-text-color').value = block.text_color || '';
-    node.querySelector('.block-form-action').value = block.form_action || '';
-    node.querySelector('.block-form-button').value = block.form_button_label || '';
-    node.querySelector('.block-spacer-height').value = block.height || 24;
-
-    const fieldsList = node.querySelector('.form-fields-list');
-    (block.form_fields || []).forEach((field) => addFormField(fieldsList, field));
-
-    node.querySelector('.btn-remove-block').addEventListener('click', () => {
-        node.remove();
-        renderPreview();
-    });
-
-    node.querySelectorAll('input, textarea, select').forEach((el) => {
-        el.addEventListener('change', renderPreview);
-    });
-
-    node.querySelector('.add-form-field').addEventListener('click', () => {
-        addFormField(fieldsList, {});
-        renderPreview();
-    });
-
-    return node;
-}
-
-function addFormField(container, field = {}) {
-    const tpl = document.getElementById('formFieldTemplate');
-    const row = tpl.content.firstElementChild.cloneNode(true);
-    row.querySelector('.field-label').value = field.label || '';
-    row.querySelector('.field-type').value = field.type || 'text';
-    row.querySelector('.field-placeholder').value = field.placeholder || '';
-    row.querySelector('.field-required').checked = !!field.required;
-    row.querySelector('.remove-form-field').addEventListener('click', () => {
-        row.remove();
-        renderPreview();
-    });
-    row.querySelectorAll('input, select').forEach((el) => {
-        el.addEventListener('change', renderPreview);
-    });
-    container.appendChild(row);
-}
-
-function gatherBlocks() {
-    const blocks = [];
-    blocksContainer.querySelectorAll('.builder-block-editor').forEach((node) => {
-        const block = {
-            type: node.querySelector('.block-type').value,
-            title: node.querySelector('.block-title').value,
-            body: node.querySelector('.block-body').value,
-            image_url: node.querySelector('.block-image').value,
-            button_label: node.querySelector('.block-button-label').value,
-            button_url: node.querySelector('.block-button-url').value,
-            list_items: node.querySelector('.block-list').value,
-            align: node.querySelector('.block-align').value,
-            background_color: node.querySelector('.block-bg').value,
-            text_color: node.querySelector('.block-text-color').value,
-            form_action: node.querySelector('.block-form-action').value,
-            form_button_label: node.querySelector('.block-form-button').value,
-        };
-        if (block.type === 'spacer') {
-            block.height = parseInt(node.querySelector('.block-spacer-height').value || '24', 10);
+    (function () {
+        var el = document.getElementById('liffBuilderPageConfig');
+        try {
+            window.LiffBuilderPageConfig = el ? JSON.parse(el.textContent || '{}') : {};
+        } catch (e) {
+            window.LiffBuilderPageConfig = {};
         }
-        if (block.type === 'form') {
-            block.form_fields = [];
-            node.querySelectorAll('.form-field-row').forEach((row) => {
-                block.form_fields.push({
-                    label: row.querySelector('.field-label').value,
-                    type: row.querySelector('.field-type').value,
-                    placeholder: row.querySelector('.field-placeholder').value,
-                    required: row.querySelector('.field-required').checked,
-                });
-            });
-        }
-        blocks.push(block);
-    });
-    return blocks;
-}
-
-function renderPreview() {
-    const blocks = gatherBlocks();
-    preview.innerHTML = '';
-    if (typeof LiffBuilderManager !== 'undefined') {
-        const manager = new LiffBuilderManager();
-        manager.render(preview, blocks);
-    }
-}
-
-function rebuildBlocks(blocks) {
-    blocksContainer.innerHTML = '';
-    blocks.forEach((block) => blocksContainer.appendChild(buildBlockEditor(block)));
-    renderPreview();
-}
-
-document.getElementById('addBlockBtn')?.addEventListener('click', () => {
-    blocksContainer.appendChild(buildBlockEditor({}));
-    renderPreview();
-});
-
-document.querySelectorAll('[data-template-id]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-        const id = btn.getAttribute('data-template-id');
-        const template = templates.find((t) => t.id === id);
-        if (template) {
-            rebuildBlocks(template.blocks);
-        }
-    });
-});
-
-rebuildBlocks(initialBlocks || []);
-
-document.getElementById('liffBuilderForm')?.addEventListener('submit', function () {
-    const blocks = gatherBlocks();
-    const hidden = document.createElement('input');
-    hidden.type = 'hidden';
-    hidden.name = 'blocks_json';
-    hidden.value = JSON.stringify(blocks);
-    this.appendChild(hidden);
-});
+    })();
 </script>
 <style>
     .builder-preview .builder-container { padding: 0; }
