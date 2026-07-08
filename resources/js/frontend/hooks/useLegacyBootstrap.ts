@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { loadLegacyFrontendScripts } from '../legacy/loadLegacyFrontendScripts';
+import { exposeFrontendLegacyGlobals } from '../../shared/utils/exposeFrontendLegacyGlobals';
 
 export type BootstrapStatus = 'idle' | 'loading' | 'ready' | 'error';
 
@@ -11,25 +11,21 @@ export function useLegacyBootstrap(): { status: BootstrapStatus; errorMessage: s
         let isMounted = true;
         setStatus('loading');
 
-        const bootstrap = async (): Promise<void> => {
-            try {
-                await loadLegacyFrontendScripts();
-                if (isMounted) {
-                    setStatus('ready');
-                }
-            } catch (error) {
-                if (!isMounted) {
-                    return;
-                }
-                const message = error instanceof Error ? error.message : 'Unknown frontend bootstrap error';
-                setErrorMessage(message);
-                setStatus('error');
-                // eslint-disable-next-line no-console
-                console.error('[frontend-bootstrap] failed:', error);
+        try {
+            exposeFrontendLegacyGlobals();
+            if (isMounted) {
+                setStatus('ready');
             }
-        };
-
-        void bootstrap();
+        } catch (error) {
+            if (!isMounted) {
+                return;
+            }
+            const message = error instanceof Error ? error.message : 'Unknown frontend bootstrap error';
+            setErrorMessage(message);
+            setStatus('error');
+            // eslint-disable-next-line no-console
+            console.error('[frontend-bootstrap] failed:', error);
+        }
 
         return () => {
             isMounted = false;
