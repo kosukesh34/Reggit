@@ -223,7 +223,7 @@
 
 .admin-project-login-key {
     font-size: 11px;
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-family: var(--font-mono);
     color: var(--text-tertiary);
     background: var(--bg-tertiary);
     border: 1px solid var(--border);
