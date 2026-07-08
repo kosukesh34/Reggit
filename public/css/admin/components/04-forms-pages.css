@@ -91,7 +91,7 @@
 
 .pagination-item:hover {
     background: var(--primary-bg);
-    border-color: var(--primary);
+    border-color: #c7d2fe;
     color: var(--primary);
 }
 
@@ -100,7 +100,6 @@
     color: #fff;
     border-color: var(--primary);
     font-weight: 600;
-    box-shadow: 0 2px 6px rgba(13, 148, 136, 0.25);
 }
 
 .pagination-item.is-disabled {
@@ -326,7 +325,7 @@ textarea.form-control {
 .confirm-dialog-content {
     background: var(--bg-primary);
     padding: 28px;
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-md);
     max-width: 400px;
     width: 90%;
     box-shadow: var(--shadow-lg);

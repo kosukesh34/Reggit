@@ -10,11 +10,51 @@ namespace App\Support;
  *   - accent_color : アクセント（ブランド）カラー hex（プリセットを上書き）
  *   - font_family  : フォント（sans / rounded / serif / serif-display）
  *   - surface_tone : 背景トーン（paper / warm / cool / mist / charcoal）
+ *   - card_style   : カードの質感（flat / elevated / outline）
+ *   - button_shape : ボタン形状（rounded / pill / square）
+ *   - density           : 余白の密度（compact / default / relaxed）
+ *   - background_style  : ページ背景（solid / gradient / image）
+ *   - bg_color          : 背景色 hex
+ *   - bg_gradient_start : グラデーション開始色
+ *   - bg_gradient_end   : グラデーション終了色
+ *   - bg_image_url      : 背景画像 URL（https）
+ *   - bg_overlay_opacity: 画像オーバーレイ不透明度 0〜80
+ *   - content_width     : コンテンツ幅（edge / comfy / narrow）
  *
- * cssVariablesFor() でこれらを解決し、CSS カスタムプロパティのマップを返す。
+ * cssVariablesFor() で CSS カスタムプロパティのマップを、
+ * bodyClassesFor() で body に付与するテーマクラスの配列を返す。
  */
 class LiffThemePresets
 {
+    /** コンテンツ幅（key => [label, css vars, body class]） */
+    public static function contentWidths(): array
+    {
+        return [
+            'edge' => [
+                'label' => 'フル幅（端まで）',
+                'tokens' => ['--content-max-width' => '100%'],
+            ],
+            'comfy' => [
+                'label' => 'ゆったり（推奨）',
+                'tokens' => ['--content-max-width' => 'min(100%, 440px)'],
+            ],
+            'narrow' => [
+                'label' => 'ナロー（読みやすさ重視）',
+                'tokens' => ['--content-max-width' => 'min(100%, 380px)'],
+            ],
+        ];
+    }
+
+    /** 背景スタイル選択肢 */
+    public static function backgroundStyles(): array
+    {
+        return [
+            'solid' => '単色',
+            'gradient' => 'グラデーション',
+            'image' => '背景画像',
+        ];
+    }
+
     /** フォント選択肢（key => [label, base, display]） */
     public static function fontStacks(): array
     {
@@ -145,90 +185,272 @@ class LiffThemePresets
             [
                 'id' => 'noir',
                 'name' => 'ノワール',
-                'description' => 'モノトーンで洗練された、上質ミニマル。',
+                'description' => 'モノトーンの上質ミニマル。アパレル・雑貨に。',
                 'accent_color' => '#1c1917',
                 'font_family' => 'sans',
                 'surface_tone' => 'paper',
                 'radius_scale' => 'soft',
                 'tab_style' => 'default',
                 'section_gap' => 16,
+                'card_style' => 'outline',
+                'button_shape' => 'square',
+                'density' => 'default',
+                'background_style' => 'solid',
+                'bg_color' => '#f7f6f2',
+                'content_width' => 'comfy',
             ],
             [
                 'id' => 'royal',
                 'name' => 'ロイヤル',
-                'description' => '深い藍と明朝見出しで知的な高級感。',
+                'description' => '深い藍と明朝見出しで知的な高級感。ホテル・料亭に。',
                 'accent_color' => '#3730a3',
                 'font_family' => 'serif-display',
                 'surface_tone' => 'cool',
                 'radius_scale' => 'default',
                 'tab_style' => 'pill',
                 'section_gap' => 16,
+                'card_style' => 'elevated',
+                'button_shape' => 'rounded',
+                'density' => 'relaxed',
+                'background_style' => 'gradient',
+                'bg_gradient_start' => '#eef2ff',
+                'bg_gradient_end' => '#f8fafc',
+                'content_width' => 'comfy',
             ],
             [
                 'id' => 'emerald',
                 'name' => 'エメラルド',
-                'description' => '落ち着いた深緑で信頼感のある印象。',
+                'description' => '落ち着いた深緑で信頼感。クリニック・整体に。',
                 'accent_color' => '#0f766e',
                 'font_family' => 'sans',
                 'surface_tone' => 'paper',
                 'radius_scale' => 'soft',
                 'tab_style' => 'floating',
                 'section_gap' => 18,
+                'card_style' => 'flat',
+                'button_shape' => 'rounded',
+                'density' => 'default',
+                'background_style' => 'solid',
+                'bg_color' => '#f0fdfa',
+                'content_width' => 'comfy',
             ],
             [
                 'id' => 'bordeaux',
                 'name' => 'ボルドー',
-                'description' => 'ワインレッド×明朝で重厚なプレミアム。',
+                'description' => 'ワインレッド×明朝の重厚プレミアム。レストラン・バーに。',
                 'accent_color' => '#9f1239',
                 'font_family' => 'serif',
                 'surface_tone' => 'warm',
                 'radius_scale' => 'default',
                 'tab_style' => 'default',
                 'section_gap' => 16,
+                'card_style' => 'elevated',
+                'button_shape' => 'rounded',
+                'density' => 'relaxed',
+                'background_style' => 'image',
+                'bg_image_url' => 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1600&q=80',
+                'bg_overlay_opacity' => 72,
+                'bg_color' => '#1c1917',
+                'content_width' => 'comfy',
             ],
             [
                 'id' => 'sand',
                 'name' => 'サンド',
-                'description' => 'キャメル×丸みでやさしいナチュラル。',
+                'description' => 'キャメル×丸みのやさしいナチュラル。カフェに。',
                 'accent_color' => '#a8763e',
                 'font_family' => 'rounded',
                 'surface_tone' => 'warm',
                 'radius_scale' => 'round',
                 'tab_style' => 'pill',
                 'section_gap' => 18,
+                'card_style' => 'flat',
+                'button_shape' => 'pill',
+                'density' => 'default',
+                'background_style' => 'image',
+                'bg_image_url' => 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=1600&q=80',
+                'bg_overlay_opacity' => 68,
+                'bg_color' => '#faf5ee',
+                'content_width' => 'comfy',
             ],
             [
                 'id' => 'ocean',
                 'name' => 'オーシャン',
-                'description' => '澄んだ青で爽快感のあるモダン。',
+                'description' => '澄んだ青の爽快モダン。ジム・スポーツに。',
                 'accent_color' => '#0369a1',
                 'font_family' => 'sans',
                 'surface_tone' => 'cool',
                 'radius_scale' => 'soft',
                 'tab_style' => 'floating',
                 'section_gap' => 16,
+                'card_style' => 'elevated',
+                'button_shape' => 'pill',
+                'density' => 'compact',
+                'background_style' => 'gradient',
+                'bg_gradient_start' => '#e0f2fe',
+                'bg_gradient_end' => '#f0f9ff',
+                'content_width' => 'edge',
             ],
             [
                 'id' => 'sakura',
                 'name' => 'サクラ',
-                'description' => 'やわらかなローズで親しみやすく華やか。',
+                'description' => 'やわらかなローズで華やか。ネイル・スイーツに。',
                 'accent_color' => '#be185d',
                 'font_family' => 'rounded',
                 'surface_tone' => 'warm',
                 'radius_scale' => 'round',
                 'tab_style' => 'pill',
                 'section_gap' => 18,
+                'card_style' => 'flat',
+                'button_shape' => 'pill',
+                'density' => 'relaxed',
+                'background_style' => 'gradient',
+                'bg_gradient_start' => '#fdf2f8',
+                'bg_gradient_end' => '#fff1f2',
+                'content_width' => 'comfy',
             ],
             [
                 'id' => 'mono-night',
                 'name' => 'ミッドナイト',
-                'description' => 'ダーク基調で先進的・プレミアムな夜の表情。',
+                'description' => 'ダーク×ゴールドの夜の表情。バー・ラウンジに。',
                 'accent_color' => '#d4af37',
                 'font_family' => 'sans',
                 'surface_tone' => 'charcoal',
                 'radius_scale' => 'soft',
                 'tab_style' => 'floating',
                 'section_gap' => 16,
+                'card_style' => 'outline',
+                'button_shape' => 'rounded',
+                'density' => 'relaxed',
+                'background_style' => 'solid',
+                'bg_color' => '#141312',
+                'content_width' => 'comfy',
+            ],
+            [
+                'id' => 'matcha',
+                'name' => 'マッチャ',
+                'description' => '抹茶グリーン×明朝の和モダン。和食・居酒屋・日本茶に。',
+                'accent_color' => '#4d7c0f',
+                'font_family' => 'serif-display',
+                'surface_tone' => 'paper',
+                'radius_scale' => 'compact',
+                'tab_style' => 'default',
+                'section_gap' => 16,
+                'card_style' => 'outline',
+                'button_shape' => 'square',
+                'density' => 'default',
+                'background_style' => 'image',
+                'bg_image_url' => 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=1600&q=80',
+                'bg_overlay_opacity' => 70,
+                'bg_color' => '#1c1917',
+                'content_width' => 'narrow',
+            ],
+            [
+                'id' => 'terracotta',
+                'name' => 'テラコッタ',
+                'description' => '焼きたての温もり。ベーカリー・イタリアンに。',
+                'accent_color' => '#c2410c',
+                'font_family' => 'rounded',
+                'surface_tone' => 'warm',
+                'radius_scale' => 'soft',
+                'tab_style' => 'pill',
+                'section_gap' => 18,
+                'card_style' => 'flat',
+                'button_shape' => 'rounded',
+                'density' => 'default',
+                'background_style' => 'image',
+                'bg_image_url' => 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=1600&q=80',
+                'bg_overlay_opacity' => 65,
+                'bg_color' => '#faf5ee',
+                'content_width' => 'comfy',
+            ],
+            [
+                'id' => 'lavender',
+                'name' => 'ラベンダー',
+                'description' => '上品なパープルで癒やしの空気感。美容室・エステに。',
+                'accent_color' => '#7e22ce',
+                'font_family' => 'sans',
+                'surface_tone' => 'mist',
+                'radius_scale' => 'round',
+                'tab_style' => 'floating',
+                'section_gap' => 18,
+                'card_style' => 'elevated',
+                'button_shape' => 'pill',
+                'density' => 'relaxed',
+                'background_style' => 'gradient',
+                'bg_gradient_start' => '#f5f3ff',
+                'bg_gradient_end' => '#faf5ff',
+                'content_width' => 'comfy',
+            ],
+            [
+                'id' => 'citrus',
+                'name' => 'シトラス',
+                'description' => '元気なオレンジで注文をあと押し。テイクアウト・ファストに。',
+                'accent_color' => '#ea580c',
+                'font_family' => 'sans',
+                'surface_tone' => 'mist',
+                'radius_scale' => 'default',
+                'tab_style' => 'default',
+                'section_gap' => 14,
+                'card_style' => 'flat',
+                'button_shape' => 'rounded',
+                'density' => 'compact',
+                'background_style' => 'gradient',
+                'bg_gradient_start' => '#fff7ed',
+                'bg_gradient_end' => '#ffedd5',
+                'content_width' => 'edge',
+            ],
+            [
+                'id' => 'gold',
+                'name' => 'ゴールド',
+                'description' => 'シャンパンゴールドのラグジュアリー。高級店・ホテルに。',
+                'accent_color' => '#b8860b',
+                'font_family' => 'serif-display',
+                'surface_tone' => 'warm',
+                'radius_scale' => 'soft',
+                'tab_style' => 'pill',
+                'section_gap' => 18,
+                'card_style' => 'elevated',
+                'button_shape' => 'pill',
+                'density' => 'relaxed',
+                'background_style' => 'gradient',
+                'bg_gradient_start' => '#faf8f3',
+                'bg_gradient_end' => '#f5f0e6',
+                'content_width' => 'narrow',
+            ],
+            [
+                'id' => 'slate',
+                'name' => 'スレート',
+                'description' => 'クールグレーのプロフェッショナル。B2B・クリニックに。',
+                'accent_color' => '#334155',
+                'font_family' => 'sans',
+                'surface_tone' => 'cool',
+                'radius_scale' => 'default',
+                'tab_style' => 'floating',
+                'section_gap' => 16,
+                'card_style' => 'outline',
+                'button_shape' => 'rounded',
+                'density' => 'default',
+                'background_style' => 'solid',
+                'bg_color' => '#f8fafc',
+                'content_width' => 'comfy',
+            ],
+            [
+                'id' => 'rose',
+                'name' => 'ロゼ',
+                'description' => 'ローズピンクのエレガンス。美容・ウェルネスに。',
+                'accent_color' => '#be185d',
+                'font_family' => 'rounded',
+                'surface_tone' => 'warm',
+                'radius_scale' => 'round',
+                'tab_style' => 'pill',
+                'section_gap' => 18,
+                'card_style' => 'elevated',
+                'button_shape' => 'pill',
+                'density' => 'relaxed',
+                'background_style' => 'gradient',
+                'bg_gradient_start' => '#fff1f2',
+                'bg_gradient_end' => '#fdf2f8',
+                'content_width' => 'comfy',
             ],
         ];
     }
@@ -287,7 +509,172 @@ class LiffThemePresets
             }
         }
 
+        // コンテンツ幅
+        $widthKey = (string) ($global['content_width'] ?? ($preset['content_width'] ?? ''));
+        $widths = self::contentWidths();
+        if (isset($widths[$widthKey])) {
+            foreach ($widths[$widthKey]['tokens'] as $name => $value) {
+                $vars[$name] = $value;
+            }
+        }
+
+        // 背景レイヤー用 CSS 変数
+        $bgVars = self::backgroundCssVariables($global, $preset);
+        foreach ($bgVars as $name => $value) {
+            $vars[$name] = $value;
+        }
+
         return $vars;
+    }
+
+    /**
+     * ページ背景用の CSS カスタムプロパティを返す。
+     *
+     * @param  array<string, mixed>  $global
+     * @param  array<string, mixed>|null  $preset
+     * @return array<string, string>
+     */
+    public static function backgroundCssVariables(array $global, ?array $preset): array
+    {
+        $vars = [];
+        $style = (string) ($global['background_style'] ?? ($preset['background_style'] ?? 'solid'));
+        if (! array_key_exists($style, self::backgroundStyles())) {
+            $style = 'solid';
+        }
+
+        $bgColor = self::normalizeHex($global['bg_color'] ?? null)
+            ?? self::normalizeHex($preset['bg_color'] ?? null)
+            ?? '#f7f6f2';
+        $vars['--app-bg-color'] = $bgColor;
+
+        $overlay = isset($global['bg_overlay_opacity']) && is_numeric($global['bg_overlay_opacity'])
+            ? max(0, min(80, (int) $global['bg_overlay_opacity']))
+            : (isset($preset['bg_overlay_opacity']) ? max(0, min(80, (int) $preset['bg_overlay_opacity'])) : 60);
+        $vars['--app-bg-overlay'] = number_format($overlay / 100, 2, '.', '');
+
+        if ($style === 'gradient') {
+            $start = self::normalizeHex($global['bg_gradient_start'] ?? null)
+                ?? self::normalizeHex($preset['bg_gradient_start'] ?? null)
+                ?? $bgColor;
+            $end = self::normalizeHex($global['bg_gradient_end'] ?? null)
+                ?? self::normalizeHex($preset['bg_gradient_end'] ?? null)
+                ?? '#ffffff';
+            $vars['--app-bg-gradient'] = "linear-gradient(165deg, {$start} 0%, {$end} 55%, {$bgColor} 100%)";
+        }
+
+        if ($style === 'image') {
+            $imageUrl = self::normalizeBgImageUrl($global['bg_image_url'] ?? null)
+                ?? self::normalizeBgImageUrl($preset['bg_image_url'] ?? null);
+            if ($imageUrl !== null) {
+                $vars['--app-bg-image'] = "url('{$imageUrl}')";
+            }
+        }
+
+        return $vars;
+    }
+
+    /**
+     * @param  array<string, mixed>  $global
+     * @return array<int, string>
+     */
+    public static function bodyClassesFor(?array $global): array
+    {
+        $global = is_array($global) ? $global : [];
+        $preset = self::find($global['theme_preset'] ?? null);
+        $classes = [];
+
+        $resolve = static function (string $key, array $allowed, string $default) use ($global, $preset): ?string {
+            $value = (string) ($global[$key] ?? ($preset[$key] ?? ''));
+            if ($value === '' || $value === $default || ! in_array($value, $allowed, true)) {
+                return null;
+            }
+
+            return $value;
+        };
+
+        $tabStyle = $resolve('tab_style', ['pill', 'floating'], 'default');
+        if ($tabStyle !== null) {
+            $classes[] = 'tab-style-'.$tabStyle;
+        }
+        $cardStyle = $resolve('card_style', ['flat', 'elevated', 'outline'], '');
+        if ($cardStyle !== null) {
+            $classes[] = 'card-style-'.$cardStyle;
+        }
+        $buttonShape = $resolve('button_shape', ['rounded', 'pill', 'square'], '');
+        if ($buttonShape !== null) {
+            $classes[] = 'button-shape-'.$buttonShape;
+        }
+        $density = $resolve('density', ['compact', 'relaxed'], 'default');
+        if ($density !== null) {
+            $classes[] = 'density-'.$density;
+        }
+
+        $systemUiStyle = $resolve('system_ui_style', ['editorial', 'compact', 'luxe'], 'refined');
+        if ($systemUiStyle !== null) {
+            $classes[] = 'system-ui-'.$systemUiStyle;
+        } else {
+            $classes[] = 'system-ui-refined';
+        }
+        $systemCardStyle = $resolve('system_card_style', ['elevated', 'outline', 'flat'], 'soft');
+        if ($systemCardStyle !== null) {
+            $classes[] = 'system-card-'.$systemCardStyle;
+        } else {
+            $classes[] = 'system-card-soft';
+        }
+        $systemMediaShape = $resolve('system_media_shape', ['square', 'arch'], 'rounded');
+        if ($systemMediaShape !== null) {
+            $classes[] = 'system-media-'.$systemMediaShape;
+        } else {
+            $classes[] = 'system-media-rounded';
+        }
+        $systemHeaderStyle = $resolve('system_header_style', ['editorial', 'hero'], 'minimal');
+        if ($systemHeaderStyle !== null) {
+            $classes[] = 'system-header-'.$systemHeaderStyle;
+        } else {
+            $classes[] = 'system-header-minimal';
+        }
+
+        $memberScreen = (string) ($global['member_screen_design'] ?? ($preset['member_screen_design'] ?? 'wallet'));
+        $classes[] = 'member-screen-'.(in_array($memberScreen, ['wallet', 'premium', 'minimal', 'compact'], true) ? $memberScreen : 'wallet');
+
+        $couponScreen = (string) ($global['coupon_screen_design'] ?? ($preset['coupon_screen_design'] ?? 'ticket'));
+        $classes[] = 'coupon-screen-'.(in_array($couponScreen, ['ticket', 'gallery', 'compact', 'luxury'], true) ? $couponScreen : 'ticket');
+
+        $reservationScreen = (string) ($global['reservation_screen_design'] ?? ($preset['reservation_screen_design'] ?? 'cards'));
+        $classes[] = 'reservation-screen-'.(in_array($reservationScreen, ['cards', 'timeline', 'compact', 'concierge'], true) ? $reservationScreen : 'cards');
+
+        $activityScreen = (string) ($global['activity_screen_design'] ?? ($preset['activity_screen_design'] ?? 'cards'));
+        $classes[] = 'activity-screen-'.(in_array($activityScreen, ['cards', 'timeline', 'compact', 'dashboard'], true) ? $activityScreen : 'cards');
+
+        $bgStyle = (string) ($global['background_style'] ?? ($preset['background_style'] ?? 'solid'));
+        if (array_key_exists($bgStyle, self::backgroundStyles()) && $bgStyle !== 'solid') {
+            $classes[] = 'app-bg-'.$bgStyle;
+        } elseif ($bgStyle === 'solid' && (
+            self::normalizeHex($global['bg_color'] ?? null) !== null
+            || self::normalizeHex($preset['bg_color'] ?? null) !== null
+        )) {
+            $classes[] = 'app-bg-solid';
+        }
+
+        $widthKey = (string) ($global['content_width'] ?? ($preset['content_width'] ?? ''));
+        if ($widthKey !== '' && array_key_exists($widthKey, self::contentWidths())) {
+            $classes[] = 'content-width-'.$widthKey;
+        }
+
+        return $classes;
+    }
+
+    private static function normalizeBgImageUrl(mixed $value): ?string
+    {
+        if (! is_string($value)) {
+            return null;
+        }
+        $value = trim($value);
+        if ($value === '' || ! preg_match('#^https://[a-zA-Z0-9\-._~:/?#\[\]@!$&\'()*+,;=%]+$#', $value)) {
+            return null;
+        }
+
+        return $value;
     }
 
     private static function normalizeHex(mixed $value): ?string

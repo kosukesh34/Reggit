@@ -8,7 +8,7 @@
 .btn-primary:hover {
     background: var(--primary-hover);
     border-color: var(--primary-hover);
-    box-shadow: 0 2px 8px rgba(13, 148, 136, 0.25);
+    box-shadow: var(--shadow-xs);
 }
 
 .btn-primary,
@@ -25,7 +25,7 @@
 .btn-success:hover {
     background: var(--success-hover);
     border-color: var(--success-hover);
-    box-shadow: 0 2px 8px rgba(5, 150, 105, 0.25);
+    box-shadow: var(--shadow-xs);
 }
 
 .btn-success,
@@ -43,7 +43,7 @@
 .btn-danger:hover {
     background: var(--danger-hover);
     border-color: var(--danger-hover);
-    box-shadow: 0 2px 8px rgba(220, 38, 38, 0.25);
+    box-shadow: var(--shadow-xs);
 }
 
 .btn-danger,
@@ -52,15 +52,15 @@
 }
 
 .btn-secondary {
-    background: var(--bg-tertiary);
+    background: var(--bg-primary);
     color: var(--text-secondary);
     border-color: var(--border);
 }
 
 .btn-secondary:hover {
-    background: var(--border);
+    background: var(--bg-secondary);
     color: var(--text-primary);
-    border-color: var(--border);
+    border-color: #cbd5e1;
 }
 
 .btn-secondary i {
@@ -76,7 +76,7 @@
 .btn-info:hover {
     background: var(--info-hover);
     border-color: var(--info-hover);
-    box-shadow: 0 2px 8px rgba(8, 145, 178, 0.25);
+    box-shadow: var(--shadow-xs);
 }
 
 .btn-info,
@@ -103,11 +103,12 @@
 .btn-outline-primary {
     background: transparent;
     color: var(--primary);
-    border: 1px solid var(--primary);
+    border: 1px solid #c7d2fe;
 }
 
 .btn-outline-primary:hover {
     background: var(--primary-bg);
+    border-color: var(--primary);
 }
 
 .btn-outline-secondary {
@@ -119,7 +120,7 @@
 .btn-outline-secondary:hover {
     background: var(--bg-tertiary);
     color: var(--text-primary);
-    border-color: var(--text-tertiary);
+    border-color: #cbd5e1;
 }
 
 .btn-sm {
@@ -171,7 +172,7 @@
 }
 
 .table th {
-    background: var(--bg-tertiary);
+    background: var(--bg-secondary);
     font-weight: 600;
     color: var(--text-secondary);
     font-size: 11px;
@@ -179,6 +180,7 @@
     letter-spacing: 0.06em;
     white-space: nowrap;
     padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
 }
 
 .table tbody tr {
@@ -186,7 +188,7 @@
 }
 
 .table tbody tr:hover {
-    background: var(--primary-bg);
+    background: var(--bg-secondary);
 }
 
 .table tbody tr:last-child td {
@@ -264,7 +266,7 @@
 .btn-action {
     padding: 6px 12px;
     font-size: 12px;
-    font-weight: 500;
+    font-weight: 600;
     display: inline-flex;
     align-items: center;
     gap: 5px;
@@ -282,7 +284,7 @@
 .btn-action.btn-edit:hover {
     background: var(--primary-hover);
     border-color: var(--primary-hover);
-    box-shadow: 0 2px 6px rgba(13, 148, 136, 0.3);
+    box-shadow: var(--shadow-xs);
 }
 
 .btn-action.btn-outline {
@@ -293,7 +295,7 @@
 
 .btn-action.btn-outline:hover {
     background: var(--bg-tertiary);
-    border-color: var(--text-tertiary);
+    border-color: #cbd5e1;
 }
 
 .btn-action.btn-success {
@@ -305,7 +307,7 @@
 .btn-action.btn-success:hover {
     background: var(--success-hover);
     border-color: var(--success-hover);
-    box-shadow: 0 2px 6px rgba(5, 150, 105, 0.3);
+    box-shadow: var(--shadow-xs);
 }
 
 .btn-action.btn-info {
@@ -328,7 +330,7 @@
 .btn-action.btn-danger:hover {
     background: var(--danger-hover);
     border-color: var(--danger-hover);
-    box-shadow: 0 2px 6px rgba(220, 38, 38, 0.3);
+    box-shadow: var(--shadow-xs);
 }
 
 .btn-action.btn-danger i {
@@ -337,7 +339,7 @@
 
 /* ===== Info Box ===== */
 .info-box {
-    background: var(--bg-tertiary);
+    background: var(--bg-secondary);
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
     padding: 16px 20px;
@@ -347,9 +349,9 @@
 }
 
 .info-box--system {
-    background: #eff6ff;
-    border-color: #93c5fd;
-    color: #1e40af;
+    background: var(--primary-bg);
+    border-color: #c7d2fe;
+    color: #3730a3;
 }
 
 .info-box--system code {
@@ -440,7 +442,7 @@
 .design-picker-card.is-selected {
     border-color: var(--primary);
     background: var(--primary-bg);
-    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.2);
+    box-shadow: var(--primary-ring);
 }
 .design-picker-card .design-picker-radio:focus + .design-picker-icon,
 .design-picker-card:focus-within {
@@ -493,7 +495,7 @@
     background: var(--swatch-color, var(--border));
 }
 .theme-swatch-default .theme-swatch-inner {
-    background: linear-gradient(135deg, var(--border) 0%, var(--bg-tertiary) 100%);
+    background: var(--bg-tertiary);
     font-size: 12px;
     font-weight: 700;
     color: var(--text-tertiary);
@@ -549,7 +551,7 @@
 .form-control:focus {
     outline: none;
     border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.12);
+    box-shadow: var(--primary-ring);
 }
 
 .form-control::placeholder {
@@ -572,7 +574,7 @@
 .form-select:focus {
     outline: none;
     border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.12);
+    box-shadow: var(--primary-ring);
 }
 
 .form-check {

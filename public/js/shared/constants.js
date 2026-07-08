@@ -201,6 +201,18 @@ const AppConstants = {
         },
     },
     
+  TAB_MOUNTS: {
+        PRODUCTS: 'products-data-mount',
+        ORDERS: 'orders-data-mount',
+        STAMPS: 'stamps-data-mount',
+        COUPONS: 'coupons-data-mount',
+        QUEUE: 'queue-data-mount',
+        RESERVATIONS: 'reservations-data-mount',
+        GALLERY: 'gallery-data-mount',
+        ANNOUNCEMENTS: 'announcements-data-mount',
+        MEMBER: 'member-card-mount',
+    },
+
     ELEMENT_IDS: {
         ANNOUNCEMENTS_SECTION: 'announcementsSection',
         HOME_SECTION: 'homeSection',

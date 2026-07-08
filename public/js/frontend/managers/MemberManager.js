@@ -82,6 +82,10 @@ class MemberManager {
         return typeof window !== 'undefined' && window.__GOOGLE_WALLET_ENABLED__ === true;
     }
 
+    static getLiffGlobalSetting(key, fallback) {
+        return DomHelper.getLiffGlobalSetting(key, fallback);
+    }
+
     static isMobileAppMode() {
         return typeof window !== 'undefined' && window.__MOBILE_APP_MODE__ === true;
     }
@@ -224,9 +228,18 @@ class MemberManager {
         return raw || fallback || '処理に失敗しました';
     }
 
+    static isDesignerMemberPreview() {
+        if (typeof window === 'undefined') return false;
+        const params = new URLSearchParams(window.location.search || '');
+        if (params.get('designer_live_preview') !== '1') return false;
+        const source = params.get('designer_source');
+        return source === 'member' || source === 'member_card';
+    }
+
     /** Apple Wallet ボタンを表示すべきか（iOS またはネイティブ iOS アプリかつ有効時） */
     static shouldShowAppleWallet() {
         if (!MemberManager.isWalletPassEnabled()) return false;
+        if (MemberManager.isDesignerMemberPreview()) return true;
         const nativePlatform = MemberManager.getNativePlatform();
         if (nativePlatform === 'ios') return true;
         if (nativePlatform === 'android') return false;
@@ -236,6 +249,7 @@ class MemberManager {
     /** Google Wallet ボタンを表示すべきか（Android またはネイティブ Android アプリかつ有効時） */
     static shouldShowGoogleWallet() {
         if (!MemberManager.isGoogleWalletEnabled()) return false;
+        if (MemberManager.isDesignerMemberPreview()) return true;
         const nativePlatform = MemberManager.getNativePlatform();
         if (nativePlatform === 'android') return true;
         if (nativePlatform === 'ios') return false;
@@ -610,7 +624,11 @@ class MemberManager {
     }
 
     getContainer() {
-        return DomHelper.getElementById(AppConstants.ELEMENT_IDS.MEMBER_SECTION);
+        return DomHelper.getTabMount(
+            AppConstants.TAB_MOUNTS.MEMBER,
+            AppConstants.ELEMENT_IDS.MEMBER_SECTION,
+            { silent: true }
+        );
     }
 
     getLoginOptionalTemplate(title, message) {
@@ -896,7 +914,15 @@ class MemberManager {
         const currentRankKey = data.current_rank || 'bronze';
         const showPointsDisplay = data.show_points_display !== false;
         const showRankProgress = data.show_rank_progress !== false;
-        const memberCardDesign = data.member_card_design || 'default';
+        const availableDesigns = ['default', 'logo_top', 'logo_center', 'logo_header', 'compact', 'split_banner', 'minimal_line', 'emblem'];
+        const blockOverride = container.closest('[data-card-design]')
+            ? container.closest('[data-card-design]').getAttribute('data-card-design')
+            : '';
+        const designerMemberCardDesign = MemberManager.getLiffGlobalSetting('member_card_design', '');
+        let memberCardDesign = designerMemberCardDesign || data.member_card_design || 'default';
+        if (blockOverride && availableDesigns.indexOf(blockOverride) >= 0) {
+            memberCardDesign = blockOverride;
+        }
         const memberCardLogoUrl = data.member_card_logo_url || null;
         const memberCardDisplayType = data.member_card_display_type || 'card';
         const memberCardCodeType = data.member_card_code_type || 'barcode';
@@ -915,7 +941,6 @@ class MemberManager {
             ? `<div class="idnect-card-barcode-wrap idnect-card-code-wrap--qrcode"><div id="${codeId}" class="idnect-card-qrcode-wrap" aria-label="会員番号QRコード"></div></div>`
             : `<div class="idnect-card-barcode-wrap idnect-card-code-wrap--barcode"><svg id="${codeId}" class="idnect-card-barcode-svg"></svg></div>`;
         const cardStyle = currentRankColor ? ` data-rank-color="true" style="--idnect-card-rank-color: ${DomHelper.escapeHtml(currentRankColor)}"` : '';
-        const availableDesigns = ['default', 'logo_top', 'logo_center', 'logo_header', 'compact', 'split_banner', 'minimal_line', 'emblem'];
         const cardDesignClass = 'idnect-card-wrapper--design-' + (availableDesigns.indexOf(memberCardDesign) >= 0 ? memberCardDesign : 'default');
         const showLogoOnCard = (memberCardDesign === 'logo_top' || memberCardDesign === 'logo_center' || memberCardDesign === 'logo_header' || memberCardDesign === 'split_banner' || memberCardDesign === 'emblem') && memberCardLogoUrl;
         const logoBlock = showLogoOnCard
