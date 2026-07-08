@@ -2,6 +2,7 @@
 
 @section('title', 'クーポン配布')
 @section('page-title', 'クーポン配布')
+@section('page-kind', 'coupon-bulk-issue')
 
 @section('content')
 @php
@@ -342,6 +343,5 @@ window.CouponBulkIssueConfig = {
     initialSelectedMembers: @json(old('target_member_ids', [])),
 };
 </script>
-<script src="{{ asset('js/admin/coupon-bulk-issue.js') }}?v={{ config('app.asset_version') }}"></script>
 @endpush
 @endsection
