@@ -215,7 +215,7 @@
     overflow-x: auto;
     white-space: pre-wrap;
     word-break: break-all;
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-family: var(--font-mono);
 }
 
 .table .empty-state {
