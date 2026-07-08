@@ -1,4 +1,80 @@
 class DomHelper {
+    static getLiffGlobalSetting(key, fallback) {
+        const settings = (typeof window !== 'undefined' && window.__LIFF_TAB_SETTINGS__ && window.__LIFF_TAB_SETTINGS__._global)
+            ? window.__LIFF_TAB_SETTINGS__._global
+            : {};
+        const value = settings && Object.prototype.hasOwnProperty.call(settings, key) ? settings[key] : null;
+        return value !== null && value !== undefined && String(value) !== '' ? String(value) : fallback;
+    }
+
+    /**
+     * カスタムレイアウト内マウントを優先して要素を取得する。
+     * 同一 id が複数タブに存在する場合の誤参照を防ぐ。
+     */
+    static getTabMount(mountClass, fallbackId, options) {
+        options = options || {};
+        const silent = options.silent === true;
+        const activeTab = document.querySelector('.tab-content.active');
+        if (activeTab) {
+            const inActiveMount = activeTab.querySelector('.' + mountClass);
+            if (inActiveMount) {
+                return inActiveMount;
+            }
+            if (fallbackId) {
+                const inActiveById = activeTab.querySelector('#' + fallbackId);
+                if (inActiveById) {
+                    return inActiveById;
+                }
+            }
+        }
+        if (fallbackId) {
+            const fallbackElement = document.getElementById(fallbackId);
+            if (fallbackElement) {
+                return fallbackElement;
+            }
+            if (!silent) {
+                console.error('Mount not found: .' + mountClass + ' / #' + fallbackId);
+            }
+            return null;
+        }
+        const anyMount = document.querySelector('.' + mountClass);
+        if (anyMount) {
+            return anyMount;
+        }
+        if (!silent) {
+            console.error('Mount not found: .' + mountClass);
+        }
+        return null;
+    }
+
+    static getProductsGrid() {
+        const activeTab = document.querySelector('.tab-content.active');
+        if (activeTab) {
+            const grid = activeTab.querySelector('.products-data-grid')
+                || activeTab.querySelector('#' + AppConstants.ELEMENT_IDS.PRODUCTS_GRID);
+            if (grid) {
+                return grid;
+            }
+        }
+        return document.querySelector('.products-data-grid')
+            || document.getElementById(AppConstants.ELEMENT_IDS.PRODUCTS_GRID);
+    }
+
+    static getCategoryTabsContainer() {
+        const activeTab = document.querySelector('.tab-content.active');
+        if (activeTab) {
+            const tabs = activeTab.querySelector('.products-category-tabs')
+                || activeTab.querySelector('#categoryTabs')
+                || activeTab.querySelector('.category-tabs');
+            if (tabs) {
+                return tabs;
+            }
+        }
+        return document.querySelector('.products-category-tabs')
+            || document.getElementById('categoryTabs')
+            || document.querySelector('.category-tabs');
+    }
+
     static getElementById(id) {
         const element = document.getElementById(id);
         if (!element) {

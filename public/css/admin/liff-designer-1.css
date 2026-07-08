@@ -84,7 +84,7 @@
 
 /* --- Body --- */
 .ld-body {
-    display: grid; grid-template-columns: 220px 1fr 360px;
+    display: grid;
     flex: 1; min-height: 0; overflow: hidden;
 }
 
@@ -292,7 +292,7 @@
 }
 .ld-block__toolbar-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
 .ld-block__toolbar-btn--danger:hover { background: #dc2626; color: #fff; }
-.ld-block__body { pointer-events: none; }
+.ld-block__body { pointer-events: auto; user-select: none; cursor: pointer; }
 
 /* --- Block types --- */
 .ld-block--hero {

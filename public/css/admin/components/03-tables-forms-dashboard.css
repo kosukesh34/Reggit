@@ -13,9 +13,9 @@
 }
 
 .action-buttons .btn-danger:hover {
-    background: #fef2f2;
+    background: var(--danger-bg);
     border-color: var(--danger);
-    box-shadow: 0 2px 6px rgba(220, 38, 38, 0.15);
+    box-shadow: var(--shadow-xs);
 }
 
 .action-buttons .btn-danger i {
@@ -42,8 +42,8 @@
 .stat-card {
     background: var(--bg-primary);
     padding: 20px;
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-sm);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-xs);
     display: flex;
     align-items: center;
     gap: 16px;
@@ -52,7 +52,7 @@
 }
 
 .stat-card:hover {
-    box-shadow: var(--shadow);
+    box-shadow: var(--shadow-sm);
     transform: translateY(-1px);
 }
 
@@ -64,26 +64,24 @@
     align-items: center;
     justify-content: center;
     font-size: 20px;
-    color: #fff;
     flex-shrink: 0;
 }
 
-.stat-card-primary .stat-icon { background: linear-gradient(135deg, var(--primary), var(--primary-hover)); }
-.stat-card-info .stat-icon { background: linear-gradient(135deg, var(--info), var(--info-hover)); }
-.stat-card-success .stat-icon { background: linear-gradient(135deg, var(--success), var(--success-hover)); }
-.stat-card-warning .stat-icon { background: linear-gradient(135deg, var(--warning), var(--warning-hover)); }
-.stat-card-danger .stat-icon { background: linear-gradient(135deg, var(--danger), var(--danger-hover)); }
-.stat-card-secondary .stat-icon { background: linear-gradient(135deg, var(--secondary), #475569); }
+.stat-card-primary .stat-icon { background: var(--primary-bg); color: var(--primary); }
+.stat-card-info .stat-icon { background: var(--info-bg); color: var(--info); }
+.stat-card-success .stat-icon { background: var(--success-bg); color: var(--success); }
+.stat-card-warning .stat-icon { background: var(--warning-bg); color: var(--warning); }
+.stat-card-danger .stat-icon { background: var(--danger-bg); color: var(--danger); }
+.stat-card-secondary .stat-icon { background: var(--bg-tertiary); color: var(--text-secondary); }
 
 /* ===== システム管理者ダッシュボード ===== */
 .system-admin-welcome {
     margin-bottom: 20px;
     padding: 16px 20px;
     background: var(--bg-primary);
-    border-radius: var(--radius-lg);
-    border-left: 4px solid var(--primary);
+    border-radius: var(--radius-md);
     border: 1px solid var(--border);
-    border-left: 4px solid var(--primary);
+    border-left: 3px solid var(--primary);
 }
 
 .system-admin-welcome-text {
@@ -105,8 +103,8 @@
 }
 
 .stat-card--link:hover {
-    border-color: var(--primary);
-    box-shadow: var(--shadow-md);
+    border-color: #c7d2fe;
+    box-shadow: var(--shadow-sm);
 }
 
 .stat-card--link .stat-content {
@@ -215,10 +213,10 @@
 }
 
 .quick-menu-item:hover {
-    border-color: var(--primary);
+    border-color: #c7d2fe;
     background: var(--primary-bg);
     color: var(--primary);
-    box-shadow: var(--shadow);
+    box-shadow: var(--shadow-xs);
     transform: translateY(-2px);
 }
 
@@ -234,7 +232,7 @@
 /* ===== 設定コンテキストカード ===== */
 .settings-context-card {
     margin-bottom: 16px;
-    border-left: 4px solid var(--primary);
+    border-left: 3px solid var(--primary);
 }
 
 .settings-context-title {
@@ -278,7 +276,7 @@
     gap: 8px;
 }
 
-/* ===== バッジ ===== */
+/* ===== バッジ（subtle背景＋濃い文字） ===== */
 .badge {
     display: inline-flex;
     align-items: center;
@@ -290,28 +288,28 @@
 }
 
 .badge-success {
-    background: #dcfce7;
-    color: #166534;
+    background: var(--success-bg);
+    color: #047857;
 }
 
 .badge-warning {
-    background: #fef3c7;
-    color: #92400e;
+    background: var(--warning-bg);
+    color: #b45309;
 }
 
 .badge-danger {
-    background: #fee2e2;
-    color: #991b1b;
+    background: var(--danger-bg);
+    color: #b91c1c;
 }
 
 .badge-info {
-    background: #ccfbf1;
-    color: #0f766e;
+    background: var(--primary-bg);
+    color: var(--primary-hover);
 }
 
 .badge-secondary {
-    background: #f1f5f9;
-    color: #475569;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
 }
 
 /* ===== ステータスフィルター ===== */
@@ -341,7 +339,7 @@
 
 .status-filter:hover {
     background: var(--primary-bg);
-    border-color: var(--primary);
+    border-color: #c7d2fe;
     color: var(--primary);
 }
 
@@ -349,7 +347,6 @@
     background: var(--primary);
     border-color: var(--primary);
     color: #fff;
-    box-shadow: 0 2px 8px rgba(13, 148, 136, 0.25);
 }
 
 .status-filter i {
@@ -434,12 +431,12 @@
 }
 
 .time-slot-card.is-open {
-    background: #f0fdf4;
-    border-color: #bbf7d0;
+    background: var(--success-bg);
+    border-color: #a7f3d0;
 }
 
 .time-slot-card.is-full {
-    background: #fef2f2;
+    background: var(--danger-bg);
     border-color: #fecaca;
 }
 

@@ -4,7 +4,11 @@ class AnnouncementManager {
     }
 
     getSection() {
-        return DomHelper.getElementById(AppConstants.ELEMENT_IDS.ANNOUNCEMENTS_SECTION);
+        return DomHelper.getTabMount(
+            AppConstants.TAB_MOUNTS.ANNOUNCEMENTS,
+            AppConstants.ELEMENT_IDS.ANNOUNCEMENTS_SECTION,
+            { silent: true }
+        );
     }
 
     async load() {

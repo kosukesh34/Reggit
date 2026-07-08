@@ -4,7 +4,11 @@ class StampsManager {
     }
 
     getSection() {
-        return DomHelper.getElementById(AppConstants.ELEMENT_IDS.STAMPS_SECTION);
+        return DomHelper.getTabMount(
+            AppConstants.TAB_MOUNTS.STAMPS,
+            AppConstants.ELEMENT_IDS.STAMPS_SECTION,
+            { silent: true }
+        );
     }
 
     getGuestTemplate() {

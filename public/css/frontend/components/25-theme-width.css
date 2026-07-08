@@ -1,0 +1,35 @@
+/* テーマ: コンテンツ幅 */
+
+body.content-width-edge .app-container {
+    max-width: 100%;
+}
+
+body.content-width-comfy .app-container {
+    max-width: var(--content-max-width, min(100%, 440px));
+}
+
+body.content-width-narrow .app-container {
+    max-width: var(--content-max-width, min(100%, 380px));
+}
+
+@media (min-width: 768px) {
+    body.content-width-edge:not(.native-app-embed):not(.designer-live-preview-embed) .app-container {
+        max-width: 100%;
+        border-left: none;
+        border-right: none;
+        box-shadow: none;
+    }
+
+    body.content-width-comfy:not(.native-app-embed):not(.designer-live-preview-embed) .app-container,
+    body.content-width-narrow:not(.native-app-embed):not(.designer-live-preview-embed) .app-container {
+        border-left: 1px solid var(--hairline);
+        border-right: 1px solid var(--hairline);
+        box-shadow: var(--shadow-xl);
+    }
+
+    body.content-width-comfy:not(.native-app-embed):not(.designer-live-preview-embed) .main-tabs,
+    body.content-width-narrow:not(.native-app-embed):not(.designer-live-preview-embed) .main-tabs {
+        max-width: var(--content-max-width, 440px);
+        width: calc(100% - 16px);
+    }
+}
