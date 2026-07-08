@@ -1,0 +1,205 @@
+/* Native app polish for auto-generated LIFF screens */
+
+.tab-content,
+.section-content,
+.home-content,
+.products-section,
+.orders-section,
+.reservations-section,
+.member-section,
+.gallery-section {
+    scroll-padding-bottom: 92px;
+}
+
+.section-title {
+    letter-spacing: -0.03em;
+}
+
+.section-title + .section-subtitle,
+.orders-subtitle,
+.reservation-header-subtitle,
+.coupons-subtitle {
+    margin-top: -4px;
+    color: var(--text-muted, #78716c);
+    font-size: 12px;
+    line-height: 1.55;
+}
+
+.category-tabs,
+.coupons-list-tabs,
+.reservation-filter-tabs {
+    padding: 4px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.68);
+    border: 1px solid rgba(17, 24, 39, 0.07);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(14px);
+}
+
+.category-tabs .tab-btn,
+.coupons-list-tab,
+.reservation-filter-tab {
+    min-height: 36px;
+    border: 0 !important;
+    box-shadow: none !important;
+}
+
+.category-tabs .tab-btn.active,
+.coupons-list-tab.is-active,
+.reservation-filter-tab.is-active {
+    box-shadow: 0 8px 18px rgba(var(--primary-rgb, 0, 0, 0), 0.18) !important;
+}
+
+.product-card,
+.coupon-item,
+.reservation-card,
+.order-card,
+.gallery-item,
+.announcement-item,
+.queue-card {
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+}
+
+.product-card::after,
+.coupon-item::after,
+.reservation-card::after,
+.order-card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border-radius: inherit;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.42), transparent 42%);
+    opacity: 0.74;
+}
+
+.product-card:active,
+.coupon-item:active,
+.reservation-card:active,
+.order-card:active,
+.gallery-item:active,
+.announcement-item:active {
+    transform: scale(0.985);
+}
+
+.product-name,
+.coupon-item-name,
+.reservation-date-main,
+.order-card-date {
+    font-weight: 850;
+    letter-spacing: -0.025em;
+}
+
+.product-price,
+.coupon-item-discount,
+.reservation-status,
+.order-status {
+    font-weight: 900;
+}
+
+.product-actions,
+.coupon-item-actions,
+.reservation-card-actions,
+.order-card-actions {
+    gap: 8px;
+}
+
+.product-actions .btn,
+.coupon-use-btn,
+.btn-create-reservation,
+.btn-edit-reservation,
+.order-card-actions .btn {
+    min-height: 42px;
+    font-weight: 900;
+    letter-spacing: -0.01em;
+}
+
+.coupon-use-btn,
+.btn-create-reservation {
+    background:
+        linear-gradient(135deg, var(--primary-color), color-mix(in srgb, var(--primary-color) 82%, #000)) !important;
+}
+
+.member-card,
+.member-profile-card,
+.member-summary-card {
+    position: relative;
+    overflow: hidden;
+}
+
+.member-card::before,
+.member-summary-card::before {
+    content: "";
+    position: absolute;
+    inset: -40% -20% auto 42%;
+    height: 160px;
+    background: radial-gradient(circle, rgba(var(--primary-rgb, 0, 0, 0), 0.18), transparent 62%);
+    pointer-events: none;
+}
+
+body.system-ui-luxe .member-card::after,
+body.system-ui-luxe .coupon-item::before,
+body.system-ui-luxe .reservation-card::after {
+    content: "";
+    position: absolute;
+    inset: 1px;
+    border-radius: inherit;
+    pointer-events: none;
+    border: 1px solid rgba(255, 255, 255, 0.64);
+}
+
+body.system-ui-editorial .product-card:nth-child(3n + 1),
+body.system-ui-editorial .gallery-item:nth-child(3n + 1) {
+    grid-row: span 2;
+}
+
+body.system-ui-editorial .product-card:nth-child(3n + 1) .product-image-wrapper,
+body.system-ui-editorial .gallery-item:nth-child(3n + 1) img {
+    min-height: 210px;
+}
+
+body.coupon-screen-ticket .coupon-item {
+    border-style: dashed !important;
+}
+
+body.coupon-screen-ticket .coupon-item-actions {
+    padding-top: 10px;
+    border-top: 1px dashed rgba(17, 24, 39, 0.14);
+}
+
+body.coupon-screen-gallery .coupon-item {
+    display: flex;
+    flex-direction: column;
+}
+
+body.coupon-screen-gallery .coupon-item-actions {
+    margin-top: auto;
+}
+
+body.reservation-screen-concierge .btn-create-reservation {
+    width: 100%;
+    min-height: 48px;
+    box-shadow: 0 16px 30px rgba(var(--primary-rgb, 0, 0, 0), 0.2) !important;
+}
+
+body.activity-screen-dashboard .order-card,
+body.activity-screen-dashboard .queue-card {
+    background:
+        linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.74)),
+        radial-gradient(circle at 100% 0%, rgba(var(--primary-rgb, 0, 0, 0), 0.14), transparent 32%) !important;
+}
+
+@media (max-width: 390px) {
+    .category-tabs,
+    .coupons-list-tabs,
+    .reservation-filter-tabs {
+        border-radius: 18px;
+        overflow-x: auto;
+    }
+    body.system-ui-editorial .product-card:nth-child(3n + 1),
+    body.system-ui-editorial .gallery-item:nth-child(3n + 1) {
+        grid-row: auto;
+    }
+}

@@ -24,10 +24,16 @@ class LiffLayoutManager {
             blocks = [...blocks, { type: 'data', source: defaultSource }];
         }
 
-        container.innerHTML = this._renderBlocks(blocks);
-        this._bindInlineHandlers(container);
-        this._initSliders(container);
-        this._mountDataSources(container);
+        try {
+            container.innerHTML = this._renderBlocks(blocks);
+            this._bindInlineHandlers(container);
+            this._initSliders(container);
+            this._mountDataSources(container);
+        } catch (err) {
+            console.error('LiffLayoutManager.renderCustomLayout failed:', err);
+            delete container.dataset.layoutRendered;
+            this._loadDefaultTabContent(tab);
+        }
     }
 
     /**
@@ -62,12 +68,14 @@ class LiffLayoutManager {
         const sectionId = tab + 'Section';
         const container = document.getElementById(sectionId);
         // デフォルトレイアウト時も products タブには productsGrid が必要（Blade では空のためここで挿入）
-        if (tab === 'products' && container && !container.querySelector('#productsGrid')) {
+        if (tab === 'products' && container && !container.querySelector('.products-data-grid') && !container.querySelector('#productsGrid')) {
             container.innerHTML = `
-                <div class="category-tabs" id="categoryTabs">
-                    <button class="tab-btn active" data-category="all"><i class="fas fa-th-large"></i><span>すべて</span></button>
+                <div class="products-data-mount">
+                    <div class="category-tabs products-category-tabs" id="categoryTabs">
+                        <button class="tab-btn active" data-category="all"><i class="fas fa-th-large"></i><span>すべて</span></button>
+                    </div>
+                    <div class="products-section"><div class="products-grid products-data-grid" id="productsGrid"></div></div>
                 </div>
-                <div class="products-section"><div class="products-grid" id="productsGrid"></div></div>
             `;
         }
         // ホームタブ: Blade の homeSection は空のため、プレースホルダを表示しつつお知らせを読み込む
@@ -133,7 +141,13 @@ class LiffLayoutManager {
     /* ─── 内部メソッド ─── */
 
     _hasDataBlock(blocks, source) {
-        return blocks.some(b => b && b.type === 'data' && b.source === source);
+        return blocks.some((b) => {
+            if (!b || b.type !== 'data') return false;
+            if (b.source === source) return true;
+            if (source === 'member' && b.source === 'member_card') return true;
+            if (source === 'member_card' && b.source === 'member') return true;
+            return false;
+        });
     }
 
     _renderBlocks(blocks) {
@@ -143,6 +157,12 @@ class LiffLayoutManager {
 
     _esc(s) {
         return DomHelper.escapeHtml(s || '');
+    }
+
+    _premium() {
+        return (typeof window !== 'undefined' && window.LiffLayoutBlocks && window.LiffLayoutBlocks.premium)
+            ? window.LiffLayoutBlocks.premium
+            : null;
     }
 
     _renderBlock(block) {
@@ -159,12 +179,15 @@ class LiffLayoutManager {
         const baseStyle = `border-radius:${br}px;${mb}${opacity}${shadow}${pad}${bgColor}${textColor}`;
 
         if (type === 'data') {
-            return `<section class="builder-block builder-data-block" style="${baseStyle}" data-source="${esc(block.source || '')}"></section>`;
+            const cardDesign = block.card_design ? ` data-card-design="${esc(block.card_design)}"` : '';
+            const design = esc(block.design || 'cards');
+            return `<section class="builder-block builder-data-block builder-data-block--design-${design}" style="${baseStyle}" data-source="${esc(block.source || '')}" data-design="${design}"${cardDesign}></section>`;
         }
         if (type === 'member_summary') {
             const greeting = block.greeting ? esc(block.greeting) : '';
-            return `<section class="builder-block builder-member-summary" data-source="member_summary"${greeting ? ` data-greeting="${greeting}"` : ''} style="${mb}">
-                <div class="member-summary-card member-summary-card--loading">
+            const design = esc(block.design || 'rewards');
+            return `<section class="builder-block builder-member-summary" data-source="member_summary" data-design="${design}"${greeting ? ` data-greeting="${greeting}"` : ''} style="${mb}">
+                <div class="member-summary-card member-summary-card--loading member-summary-card--design-${design}">
                     <div class="ms-skeleton ms-skeleton--label"></div>
                     <div class="ms-skeleton ms-skeleton--value"></div>
                     <div class="ms-skeleton ms-skeleton--bar"></div>
@@ -175,6 +198,7 @@ class LiffLayoutManager {
             const actions = (Array.isArray(block.actions) && block.actions.length > 0)
                 ? block.actions
                 : LiffLayoutManager.DEFAULT_QUICK_ACTIONS;
+            const design = esc(block.design || 'grid');
             const tiles = actions.map((a) => {
                 const action = a.action || '#';
                 const isExternal = action !== '#' && (action.startsWith('http://') || action.startsWith('https://'));
@@ -184,11 +208,14 @@ class LiffLayoutManager {
                     <span class="qa-label">${esc(a.label || '')}</span>
                 </a>`;
             }).join('');
-            return `<section class="builder-block builder-quick-actions" style="${mb}">
-                <div class="quick-actions-grid">${tiles}</div>
+            return `<section class="builder-block builder-quick-actions builder-quick-actions--${design}" style="${mb}">
+                <div class="builder-section-head"><span class="builder-section-head__label">ショートカット</span></div>
+                <div class="quick-actions-grid quick-actions--${design}">${tiles}</div>
             </section>`;
         }
         if (type === 'hero') {
+            const premium = this._premium();
+            if (premium) return premium.hero(block, esc, baseStyle);
             const bg = block.image_url
                 ? `background-image:url('${esc(block.image_url)}');background-size:cover;background-position:center;`
                 : `background:linear-gradient(135deg,${block.gradient_start || '#4f46e5'} 0%,${block.gradient_end || '#4338ca'} 100%);`;
@@ -198,20 +225,20 @@ class LiffLayoutManager {
             </section>`;
         }
         if (type === 'heading') {
+            const premium = this._premium();
+            if (premium) return premium.heading(block, esc, baseStyle);
             const sizes = { small: 14, medium: 16, large: 20 };
             const fs = sizes[block.size] || 16;
             return `<section class="builder-block" style="background:#fff;padding:12px 14px;font-size:${fs}px;font-weight:700;color:${block.text_color || '#1f2937'};text-align:${block.text_align || 'left'};${baseStyle}">${esc(block.text)}</section>`;
         }
         if (type === 'text') {
+            const premium = this._premium();
+            if (premium) return premium.text(block, esc, baseStyle);
             return `<section class="builder-block" style="background:#fff;padding:12px 14px;font-size:${block.font_size || 13}px;color:${block.text_color || '#4b5563'};line-height:1.6;text-align:${block.text_align || 'left'};${baseStyle}">${esc(block.text || block.body)}</section>`;
         }
-        if (type === 'image') {
-            const img = block.image_url
-                ? `<img src="${esc(block.image_url)}" alt="${esc(block.alt)}" style="width:100%;height:auto;display:block;object-fit:${block.fit || 'cover'};">`
-                : '';
-            return `<section class="builder-block" style="overflow:hidden;${baseStyle}">${img}</section>`;
-        }
         if (type === 'button') {
+            const premium = this._premium();
+            if (premium) return premium.button(block, esc, baseStyle);
             const w = block.full_width !== false ? 'display:block;width:100%;box-sizing:border-box;' : 'display:inline-block;';
             const action = block.action || '#';
             const isExternal = action !== '#' && (action.startsWith('http://') || action.startsWith('https://'));
@@ -219,6 +246,13 @@ class LiffLayoutManager {
             return `<section class="builder-block" style="text-align:center;padding:8px;${baseStyle}">
                 <a href="${esc(action)}" class="builder-btn"${dataExternal} style="${w}padding:12px 24px;border-radius:8px;background:${block.color || '#4f46e5'};color:${block.text_color || '#fff'};font-size:14px;font-weight:700;text-decoration:none;text-align:center;">${esc(block.text)}</a>
             </section>`;
+        }
+        if (type === 'image') {
+            const design = esc(block.design || 'rounded');
+            const img = block.image_url
+                ? `<img class="builder-image-block__img" src="${esc(block.image_url)}" alt="${esc(block.alt)}" loading="lazy">`
+                : '';
+            return `<section class="builder-block builder-image-block builder-image-block--design-${design}" style="${baseStyle}">${img}</section>`;
         }
         if (type === 'friend_add') {
             const friendAddUrl = (typeof window !== 'undefined' && window.__LINE_FRIEND_ADD_URL__) ? String(window.__LINE_FRIEND_ADD_URL__) : '';
@@ -229,6 +263,8 @@ class LiffLayoutManager {
             </section>`;
         }
         if (type === 'card') {
+            const premium = this._premium();
+            if (premium) return premium.card(block, esc, baseStyle);
             const img = block.image_url
                 ? `<img src="${esc(block.image_url)}" alt="" style="width:100%;height:${block.image_height || 140}px;object-fit:cover;display:block;">`
                 : `<div style="width:100%;height:${block.image_height || 140}px;background:#f3f4f6;"></div>`;
@@ -241,9 +277,13 @@ class LiffLayoutManager {
             </section>`;
         }
         if (type === 'collection') {
+            const premium = this._premium();
+            if (premium) return premium.collection(block, esc, baseStyle);
             return this._renderCollection(block, baseStyle);
         }
         if (type === 'slider') {
+            const premium = this._premium();
+            if (premium) return premium.slider(block, esc, baseStyle);
             return this._renderSlider(block, baseStyle);
         }
         if (type === 'icon_text') {
@@ -264,10 +304,19 @@ class LiffLayoutManager {
             return `<section class="builder-block" style="background:#fff;padding:12px 14px;${baseStyle}">${listHtml}</section>`;
         }
         if (type === 'banner') {
-            return `<section class="builder-block" style="display:flex;align-items:center;gap:8px;padding:12px 14px;font-size:13px;font-weight:600;background:${block.color || '#eef2ff'};color:${block.text_color || '#374151'};${baseStyle}">
-                ${block.icon ? `<i class="fas ${block.icon}" style="font-size:16px;flex-shrink:0;"></i>` : ''}
-                <span>${esc(block.text)}</span>
-            </section>`;
+            const premium = this._premium();
+            if (premium) return premium.banner(block, esc, baseStyle);
+            const action = block.action || block.link || '';
+            const inner = `${block.icon ? `<i class="fas ${block.icon}" style="font-size:16px;flex-shrink:0;"></i>` : ''}<span>${esc(block.text)}</span>`;
+            const wrapStyle = `display:flex;align-items:center;gap:8px;padding:12px 14px;font-size:13px;font-weight:600;background:${block.color || '#eef2ff'};color:${block.text_color || '#374151'};${baseStyle}`;
+            if (action) {
+                const isExternal = action !== '#' && (action.startsWith('http://') || action.startsWith('https://'));
+                const dataExternal = isExternal ? ' data-builder-external="1"' : '';
+                return `<section class="builder-block" style="${wrapStyle}">
+                    <a href="${esc(action)}" class="builder-nav"${dataExternal} style="display:flex;align-items:center;gap:8px;color:inherit;text-decoration:none;width:100%;">${inner}</a>
+                </section>`;
+            }
+            return `<section class="builder-block" style="${wrapStyle}">${inner}</section>`;
         }
         if (type === 'spacer') {
             return `<div style="height:${block.height || 16}px;${mb}"></div>`;
@@ -275,12 +324,31 @@ class LiffLayoutManager {
         if (type === 'divider') {
             return `<div style="padding:8px 0;${mb}"><hr style="border:none;border-top:1px ${block.divider_style || 'solid'} ${block.divider_color || '#e5e7eb'};margin:0;"></div>`;
         }
+        if (type === 'hours') {
+            return this._renderHours(block, baseStyle);
+        }
+        if (type === 'access') {
+            return this._renderAccess(block, baseStyle);
+        }
+        if (type === 'social_links') {
+            return this._renderSocialLinks(block, baseStyle);
+        }
+        if (type === 'faq') {
+            return this._renderFaq(block, baseStyle);
+        }
+        if (type === 'video') {
+            return this._renderVideo(block, baseStyle);
+        }
+        if (type === 'button_group') {
+            return this._renderButtonGroup(block, baseStyle);
+        }
         return `<section class="builder-block" style="background:#fff;padding:12px 14px;${baseStyle}">${esc(block.text || block.body || '')}</section>`;
     }
 
     _renderCollection(block, baseStyle) {
         const esc = (s) => this._esc(s);
         const items = Array.isArray(block.items) ? block.items : [];
+        const design = esc(block.design || 'product_shelf');
         const isGrid = block.layout === 'grid';
         const cols = block.columns || 2;
         const gap = block.gap != null ? block.gap : 12;
@@ -302,15 +370,16 @@ class LiffLayoutManager {
                 ? `<div style="padding:0 12px 10px;font-size:11px;line-height:1.5;color:#78716c;">${esc(item.description)}</div>` : '';
             return `<div style="${itemStyle}">${img}<div style="padding:10px 12px ${desc ? '4px' : '12px'};font-size:13px;font-weight:700;color:#1c1917;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(item.title)}</div>${desc}</div>`;
         }).join('');
-        return `<section class="builder-block" style="${baseStyle}"><div style="${containerStyle}">${itemsHtml}</div></section>`;
+        return `<section class="builder-block builder-collection-wrap builder-collection-wrap--design-${design}" style="${baseStyle}"><div class="builder-collection builder-collection--fallback builder-collection--design-${design}" style="${containerStyle}">${itemsHtml}</div></section>`;
     }
 
     _renderSlider(block, baseStyle) {
         const esc = (s) => this._esc(s);
         const slides = Array.isArray(block.slides) ? block.slides : [];
         const h = block.slide_height || 160;
+        const design = esc(block.design || 'hero');
         if (slides.length === 0) {
-            return `<section class="builder-block" style="height:${h}px;background:#f3f4f6;display:flex;align-items:center;justify-content:center;color:#9ca3af;${baseStyle}"><i class="fas fa-images" style="font-size:28px;"></i></section>`;
+            return `<section class="builder-block builder-slider-block builder-slider-block--design-${design}" style="height:${h}px;background:#f3f4f6;display:flex;align-items:center;justify-content:center;color:#9ca3af;${baseStyle}"><i class="fas fa-images" style="font-size:28px;"></i></section>`;
         }
         const slideHtml = slides.map((s, i) => {
             const display = i === 0 ? '' : 'display:none;';
@@ -321,7 +390,106 @@ class LiffLayoutManager {
         const dots = (block.show_dots !== false && slides.length > 1)
             ? `<div style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);display:flex;gap:5px;">${slides.map((_, i) => `<span class="builder-slider-dot" data-slide-index="${i}" style="width:6px;height:6px;border-radius:50%;background:${i === 0 ? '#fff' : 'rgba(255,255,255,0.4)'};cursor:pointer;transition:background 0.2s;"></span>`).join('')}</div>`
             : '';
-        return `<section class="builder-block builder-slider-block" style="position:relative;overflow:hidden;height:${h}px;${baseStyle}" data-auto-play="${block.auto_play !== false ? '1' : '0'}" data-slide-count="${slides.length}">${slideHtml}${dots}</section>`;
+        return `<section class="builder-block builder-slider-block builder-slider-block--design-${design}" style="position:relative;overflow:hidden;height:${h}px;${baseStyle}" data-auto-play="${block.auto_play !== false ? '1' : '0'}" data-slide-count="${slides.length}">${slideHtml}${dots}</section>`;
+    }
+
+    _renderHours(block, baseStyle) {
+        const esc = (s) => this._esc(s);
+        const rows = Array.isArray(block.rows) ? block.rows : [];
+        const design = esc(block.design || 'table');
+        const rowsHtml = rows.map(r =>
+            `<div class="builder-hours__row"><span class="builder-hours__day">${esc(r.day)}</span><span class="builder-hours__time">${esc(r.time)}</span></div>`
+        ).join('');
+        const note = block.note ? `<p class="builder-hours__note">${esc(block.note)}</p>` : '';
+        return `<section class="builder-block builder-hours builder-hours--design-${design}" style="${baseStyle}">
+            ${block.title ? `<div class="builder-block__title"><i class="far fa-clock" aria-hidden="true"></i> ${esc(block.title)}</div>` : ''}
+            <div class="builder-hours__table">${rowsHtml}</div>
+            ${note}
+        </section>`;
+    }
+
+    _renderAccess(block, baseStyle) {
+        const esc = (s) => this._esc(s);
+        const design = esc(block.design || 'card');
+        const rows = [];
+        if (block.address) {
+            rows.push(`<div class="builder-access__row"><i class="fas fa-map-marker-alt" aria-hidden="true"></i><span>${esc(block.address)}</span></div>`);
+        }
+        if (block.phone) {
+            rows.push(`<a class="builder-access__row builder-access__row--link" href="tel:${esc(String(block.phone).replace(/[^0-9+]/g, ''))}"><i class="fas fa-phone" aria-hidden="true"></i><span>${esc(block.phone)}</span></a>`);
+        }
+        if (block.note) {
+            rows.push(`<div class="builder-access__row"><i class="fas fa-info-circle" aria-hidden="true"></i><span>${esc(block.note)}</span></div>`);
+        }
+        const mapBtn = block.map_url
+            ? `<a href="${esc(block.map_url)}" class="builder-btn builder-access__map-btn" data-builder-external="1"><i class="fas fa-map" aria-hidden="true"></i> 地図を開く</a>`
+            : '';
+        return `<section class="builder-block builder-access builder-access--design-${design}" style="${baseStyle}">
+            ${block.title ? `<div class="builder-block__title"><i class="fas fa-store" aria-hidden="true"></i> ${esc(block.title)}</div>` : ''}
+            <div class="builder-access__rows">${rows.join('')}</div>
+            ${mapBtn}
+        </section>`;
+    }
+
+    _renderSocialLinks(block, baseStyle) {
+        const esc = (s) => this._esc(s);
+        const iconMap = {
+            instagram: 'fab fa-instagram', x: 'fab fa-x-twitter', facebook: 'fab fa-facebook-f',
+            youtube: 'fab fa-youtube', tiktok: 'fab fa-tiktok', line: 'fab fa-line', website: 'fas fa-globe',
+        };
+        const links = (Array.isArray(block.links) ? block.links : []).filter(l => l && l.url);
+        if (links.length === 0) return '';
+        const html = links.map(l =>
+            `<a href="${esc(l.url)}" class="builder-social__link builder-social__link--${esc(l.type)}" data-builder-external="1" aria-label="${esc(l.type)}"><i class="${iconMap[l.type] || 'fas fa-link'}" aria-hidden="true"></i></a>`
+        ).join('');
+        return `<section class="builder-block builder-social" style="${baseStyle}"><div class="builder-social__links">${html}</div></section>`;
+    }
+
+    _renderFaq(block, baseStyle) {
+        const esc = (s) => this._esc(s);
+        const items = Array.isArray(block.items) ? block.items : [];
+        const design = esc(block.design || 'accordion');
+        const html = items.map(it =>
+            `<details class="builder-faq__item">
+                <summary class="builder-faq__q"><span>${esc(it.q)}</span><i class="fas fa-chevron-down" aria-hidden="true"></i></summary>
+                <div class="builder-faq__a">${esc(it.a)}</div>
+            </details>`
+        ).join('');
+        return `<section class="builder-block builder-faq builder-faq--design-${design}" style="${baseStyle}">
+            ${block.title ? `<div class="builder-block__title"><i class="far fa-question-circle" aria-hidden="true"></i> ${esc(block.title)}</div>` : ''}
+            <div class="builder-faq__list">${html}</div>
+        </section>`;
+    }
+
+    _renderVideo(block, baseStyle) {
+        const esc = (s) => this._esc(s);
+        const id = String(block.youtube_id || '');
+        if (!/^[a-zA-Z0-9_-]{11}$/.test(id)) return '';
+        const caption = block.caption ? `<p class="builder-video__caption">${esc(block.caption)}</p>` : '';
+        return `<section class="builder-block builder-video" style="${baseStyle}">
+            <div class="builder-video__frame">
+                <iframe src="https://www.youtube-nocookie.com/embed/${id}" title="YouTube video" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            </div>
+            ${caption}
+        </section>`;
+    }
+
+    _renderButtonGroup(block, baseStyle) {
+        const esc = (s) => this._esc(s);
+        const buttons = (Array.isArray(block.buttons) ? block.buttons : []).filter(b => b && b.text);
+        if (buttons.length === 0) return '';
+        const html = buttons.map(b => {
+            const action = b.action || '#';
+            const isExternal = action !== '#' && (action.startsWith('http://') || action.startsWith('https://'));
+            const dataExternal = isExternal ? ' data-builder-external="1"' : '';
+            const isOutline = b.variant === 'outline';
+            const color = b.color || '';
+            const style = color
+                ? (isOutline ? `color:${color};border-color:${color};` : `background:${color};`)
+                : '';
+            return `<a href="${esc(action)}" class="builder-btn builder-btn-group__btn${isOutline ? ' builder-btn-group__btn--outline' : ''}"${dataExternal} style="${style}">${esc(b.text)}</a>`;
+        }).join('');
+        return `<section class="builder-block builder-btn-group" style="${baseStyle}"><div class="builder-btn-group__row" data-count="${buttons.length}">${html}</div></section>`;
     }
 
     _buildStyle(block) {
@@ -350,24 +518,44 @@ class LiffLayoutManager {
 
     /** スライダーの自動再生とドットナビゲーションを初期化 */
     _initSliders(container) {
-        container.querySelectorAll('.builder-slider-block').forEach(slider => {
+        container.querySelectorAll('.builder-slider-block, .builder-carousel').forEach(slider => {
             const count = parseInt(slider.dataset.slideCount, 10) || 0;
             if (count <= 1) return;
             let current = 0;
+            const isCarousel = slider.classList.contains('builder-carousel');
+            const slideSel = isCarousel ? '.builder-carousel__slide' : '.builder-slide';
+            const dotSel = isCarousel ? '.builder-carousel__dot' : '.builder-slider-dot';
             const showSlide = (idx) => {
-                slider.querySelectorAll('.builder-slide').forEach(s => { s.style.display = 'none'; });
-                slider.querySelectorAll('.builder-slider-dot').forEach(d => { d.style.background = 'rgba(255,255,255,0.4)'; });
-                const slide = slider.querySelector(`.builder-slide[data-slide-index="${idx}"]`);
-                const dot = slider.querySelector(`.builder-slider-dot[data-slide-index="${idx}"]`);
-                if (slide) slide.style.display = '';
-                if (dot) dot.style.background = '#fff';
+                slider.querySelectorAll(slideSel).forEach((s) => {
+                    if (isCarousel) {
+                        s.classList.toggle('is-active', parseInt(s.dataset.slideIndex, 10) === idx);
+                    } else {
+                        s.style.display = 'none';
+                    }
+                });
+                slider.querySelectorAll(dotSel).forEach((d) => {
+                    if (isCarousel) {
+                        d.classList.toggle('is-active', parseInt(d.dataset.slideIndex, 10) === idx);
+                    } else {
+                        d.style.background = 'rgba(255,255,255,0.4)';
+                    }
+                });
+                if (!isCarousel) {
+                    const slide = slider.querySelector(`${slideSel}[data-slide-index="${idx}"]`);
+                    const dot = slider.querySelector(`${dotSel}[data-slide-index="${idx}"]`);
+                    if (slide) slide.style.display = '';
+                    if (dot) dot.style.background = '#fff';
+                }
                 current = idx;
             };
-            slider.querySelectorAll('.builder-slider-dot').forEach(dot => {
+            slider.querySelectorAll(dotSel).forEach((dot) => {
                 dot.addEventListener('click', () => showSlide(parseInt(dot.dataset.slideIndex, 10)));
             });
             if (slider.dataset.autoPlay === '1') {
-                setInterval(() => { showSlide((current + 1) % count); }, 4000);
+                if (slider._autoPlayTimer) {
+                    clearInterval(slider._autoPlayTimer);
+                }
+                slider._autoPlayTimer = setInterval(() => { showSlide((current + 1) % count); }, 4500);
             }
         });
     }
@@ -378,51 +566,53 @@ class LiffLayoutManager {
             if (!source) return;
             if (source === 'products') {
                 el.innerHTML += `
-                    <div class="category-tabs" id="categoryTabs">
-                        <button class="tab-btn active" data-category="all"><i class="fas fa-th-large"></i><span>すべて</span></button>
+                    <div class="products-data-mount">
+                        <div class="category-tabs products-category-tabs">
+                            <button class="tab-btn active" data-category="all"><i class="fas fa-th-large"></i><span>すべて</span></button>
+                        </div>
+                        <div class="products-section"><div class="products-grid products-data-grid"></div></div>
                     </div>
-                    <div class="products-section"><div class="products-grid" id="productsGrid"></div></div>
                 `;
                 this.app.loadProducts();
                 return;
             }
             if (source === 'orders') {
-                el.innerHTML += '<div id="ordersSection"></div>';
+                el.innerHTML += '<div class="orders-data-mount"></div>';
                 this.app.loadOrdersTab();
                 return;
             }
             if (source === 'stamps') {
-                el.innerHTML += '<div id="stampsSection"></div>';
+                el.innerHTML += '<div class="stamps-data-mount"></div>';
                 this.app.stampsManager.load();
                 return;
             }
             if (source === 'coupons') {
-                el.innerHTML += '<div id="couponsSection"></div>';
+                el.innerHTML += '<div class="coupons-data-mount"></div>';
                 this.app.couponsManager.load();
                 return;
             }
             if (source === 'queue') {
-                el.innerHTML += '<div id="queueSection"></div>';
+                el.innerHTML += '<div class="queue-data-mount"></div>';
                 this.app.queueManager.load();
                 return;
             }
             if (source === 'reservations') {
-                el.innerHTML += '<div class="reservations-section" id="reservationsSection"></div>';
+                el.innerHTML += '<div class="reservations-data-mount reservations-section"></div>';
                 this.app.checkMembershipAndLoadReservations();
                 return;
             }
             if (source === 'member' || source === 'member_card') {
-                el.innerHTML += '<div class="member-section" id="memberSection"></div>';
+                el.innerHTML += '<div class="member-section member-card-mount"></div>';
                 this.app.loadMemberTab();
                 return;
             }
             if (source === 'gallery') {
-                el.innerHTML += '<div id="gallerySection"></div>';
+                el.innerHTML += '<div class="gallery-data-mount"></div>';
                 this.app.galleryManager.load();
                 return;
             }
             if (source === 'announcements') {
-                el.innerHTML += '<div class="announcements-section" id="announcementsSection"></div>';
+                el.innerHTML += '<div class="announcements-data-mount announcements-section"></div>';
                 this.app.announcementManager.load();
                 return;
             }
@@ -436,6 +626,7 @@ class LiffLayoutManager {
     /** 会員サマリーカード（ホーム上部のパーソナライズ表示）を会員APIから描画 */
     async _mountMemberSummary(el) {
         const greeting = el.getAttribute('data-greeting') || '';
+        const design = el.getAttribute('data-design') || 'rewards';
         const fill = (html) => {
             el.innerHTML = html;
             this._bindInlineHandlers(el);
@@ -451,79 +642,51 @@ class LiffLayoutManager {
         } catch (e) {
             data = null;
         }
-        fill(this._buildMemberSummaryHtml(data, greeting));
+        fill((() => {
+            const premium = this._premium();
+            if (premium) {
+                return premium.memberSummaryHtml(data, greeting, (s) => this._esc(s), design);
+            }
+            return '<div class="member-summary-card member-summary-card--guest"><p class="ms-guest-title">' + this._esc(greeting || 'ようこそ') + '</p></div>';
+        })());
     }
 
-    _buildMemberSummaryHtml(data, greeting) {
-        const esc = (s) => this._esc(s);
-        const isMember = !!(data && data.is_member === true);
-
-        if (!isMember) {
-            return `<div class="member-summary-card member-summary-card--guest">
-                <div class="ms-guest-copy">
-                    <p class="ms-guest-title">${esc(greeting || 'ようこそ')}</p>
-                    <p class="ms-guest-sub">会員登録でポイント・クーポンをご利用いただけます</p>
-                </div>
-                <a href="#member" class="builder-nav ms-guest-cta"><i class="fas fa-user-plus" aria-hidden="true"></i> 会員登録する</a>
-            </div>`;
+    _buildMemberSummaryHtml(data, greeting, design) {
+        const premium = this._premium();
+        if (premium) {
+            return premium.memberSummaryHtml(data, greeting, (s) => this._esc(s), design || 'rewards');
         }
+        return '';
+    }
 
-        const name = (data.user && data.user.name) ? String(data.user.name) : '';
-        const points = Number(data.points != null ? data.points : (data.member && data.member.points) || 0);
-        const pointsLabel = points.toLocaleString('ja-JP');
-        const rankLabel = data.current_rank_label || '';
-        const showPoints = data.show_points_display !== false;
-        const showRank = data.show_rank_progress !== false;
-        const nextRankLabel = data.next_rank_label || '';
-        const toNext = Number(data.points_to_next_rank != null ? data.points_to_next_rank : 0);
-
-        const hello = greeting
-            ? esc(greeting)
-            : (name ? `こんにちは、${esc(name)} さん` : 'おかえりなさい');
-
-        let progressHtml = '';
-        if (showRank && nextRankLabel && toNext > 0) {
-            const span = points + toNext;
-            const pct = span > 0 ? Math.max(4, Math.min(100, Math.round((points / span) * 100))) : 0;
-            progressHtml = `<div class="ms-progress">
-                <div class="ms-progress-track"><span class="ms-progress-fill" style="width:${pct}%;"></span></div>
-                <p class="ms-progress-text">次の<strong>${esc(nextRankLabel)}</strong>まであと <strong>${toNext.toLocaleString('ja-JP')}</strong> pt</p>
-            </div>`;
+    _navigateBuilderHref(href, externalEl) {
+        if (!href) return;
+        if (href.startsWith('#')) {
+            const tab = href.replace('#', '');
+            if (this.app && tab) this.app.switchTab(tab);
+            return;
         }
-
-        return `<div class="member-summary-card">
-            <div class="ms-top">
-                <div class="ms-greeting">
-                    <p class="ms-hello">${hello}</p>
-                    ${rankLabel ? `<span class="ms-rank"><i class="fas fa-crown" aria-hidden="true"></i> ${esc(rankLabel)}</span>` : ''}
-                </div>
-                <a href="#member" class="builder-nav ms-card-link" aria-label="会員証を表示"><i class="fas fa-qrcode" aria-hidden="true"></i></a>
-            </div>
-            ${showPoints ? `<div class="ms-points">
-                <span class="ms-points-value">${pointsLabel}</span>
-                <span class="ms-points-unit">pt</span>
-            </div>` : ''}
-            ${progressHtml}
-        </div>`;
+        if (externalEl && externalEl.getAttribute('data-builder-external') === '1'
+            && typeof window !== 'undefined' && window.__IS_LIFF__
+            && typeof liff !== 'undefined' && typeof liff.openWindow === 'function') {
+            liff.openWindow({ url: href, external: false });
+            return;
+        }
+        if (typeof window !== 'undefined') {
+            window.location.href = href;
+        }
     }
 
     _bindInlineHandlers(section) {
-        section.querySelectorAll('.builder-btn, .builder-nav').forEach(btn => {
-            btn.addEventListener('click', e => {
-                const href = btn.getAttribute('href');
-                if (!href) return;
-                if (href.startsWith('#')) {
-                    e.preventDefault();
-                    const tab = href.replace('#', '');
-                    if (this.app && tab) this.app.switchTab(tab);
-                    return;
-                }
-                // 外部URL（友だち追加など）: LINE内なら liff.openWindow でLINE内ブラウザに開く
-                if (btn.getAttribute('data-builder-external') === '1' && typeof window !== 'undefined' && window.__IS_LIFF__ && typeof liff !== 'undefined' && typeof liff.openWindow === 'function') {
-                    e.preventDefault();
-                    liff.openWindow({ url: href, external: false });
-                }
-            });
+        if (!section || section.dataset.builderNavBound === '1') return;
+        section.dataset.builderNavBound = '1';
+        section.addEventListener('click', (e) => {
+            const btn = e.target.closest('.builder-btn, .builder-nav, .builder-promo-banner--link, .builder-collection__item, .builder-editorial-card--link');
+            if (!btn) return;
+            const href = btn.getAttribute('href');
+            if (!href) return;
+            e.preventDefault();
+            this._navigateBuilderHref(href, btn);
         });
     }
 }

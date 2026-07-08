@@ -66,38 +66,50 @@
     align-items: center;
     gap: 20px;
     padding: 24px 28px;
-    background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
-    border-radius: var(--radius-lg);
+    background: var(--primary);
+    border-radius: var(--radius-md);
     color: #fff;
-    box-shadow: 0 8px 24px rgba(13, 148, 136, 0.2);
+    border: 1px solid var(--primary);
+    box-shadow: var(--shadow-sm);
     transition: transform var(--transition-normal), box-shadow var(--transition-normal);
 }
 
 .queue-stat-hero:hover {
     transform: translateY(-2px);
-    box-shadow: 0 12px 32px rgba(13, 148, 136, 0.25);
+    box-shadow: var(--shadow);
 }
 
 .queue-stat-hero--secondary {
-    background: linear-gradient(135deg, #1e40af 0%, #1d4ed8 100%);
-    box-shadow: 0 8px 24px rgba(30, 64, 175, 0.2);
+    background: var(--bg-primary);
+    border-color: var(--border);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-xs);
 }
 
 .queue-stat-hero--secondary:hover {
-    box-shadow: 0 12px 32px rgba(30, 64, 175, 0.25);
+    box-shadow: var(--shadow-sm);
 }
 
 .queue-stat-hero-icon {
     width: 56px;
     height: 56px;
-    border-radius: 14px;
-    background: rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.18);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 24px;
     flex-shrink: 0;
-    backdrop-filter: blur(8px);
+}
+
+.queue-stat-hero--secondary .queue-stat-hero-icon {
+    background: var(--primary-bg);
+    color: var(--primary);
+}
+
+.queue-stat-hero--secondary .queue-stat-hero-label {
+    color: var(--text-secondary);
+    opacity: 1;
 }
 
 .queue-stat-hero-content {
@@ -150,11 +162,11 @@
     min-width: 48px;
     padding: 6px 12px;
     font-size: 16px;
-    font-weight: 800;
+    font-weight: 700;
     color: var(--primary);
     background: var(--primary-bg);
-    border: 2px solid var(--primary);
-    border-radius: 10px;
+    border: 1px solid #c7d2fe;
+    border-radius: var(--radius);
     letter-spacing: -0.02em;
 }
 
@@ -198,7 +210,7 @@
 }
 
 .status-filter.active {
-    box-shadow: 0 2px 8px rgba(13, 148, 136, 0.25);
+    box-shadow: var(--shadow-xs);
 }
 
 /* ===== empty-state 改善 ===== */
@@ -254,42 +266,42 @@
 
 .reservation-stat-pill--total {
     background: var(--primary-bg);
-    border-color: var(--primary);
+    border-color: #c7d2fe;
 }
 .reservation-stat-pill--total .reservation-stat-pill-value {
     color: var(--primary);
 }
 
 .reservation-stat-pill--pending {
-    background: #fef9c3;
-    border-color: #fde047;
+    background: var(--warning-bg);
+    border-color: #fde68a;
 }
 .reservation-stat-pill--pending .reservation-stat-pill-value {
-    color: #854d0e;
+    color: #b45309;
 }
 
 .reservation-stat-pill--confirmed {
-    background: #ccfbf1;
-    border-color: #5eead4;
+    background: var(--info-bg);
+    border-color: #bae6fd;
 }
 .reservation-stat-pill--confirmed .reservation-stat-pill-value {
-    color: #0f766e;
+    color: var(--info-hover);
 }
 
 .reservation-stat-pill--completed {
-    background: #dcfce7;
-    border-color: #86efac;
+    background: var(--success-bg);
+    border-color: #a7f3d0;
 }
 .reservation-stat-pill--completed .reservation-stat-pill-value {
-    color: #166534;
+    color: #047857;
 }
 
 .reservation-stat-pill--cancelled {
-    background: #fee2e2;
-    border-color: #fca5a5;
+    background: var(--danger-bg);
+    border-color: #fecaca;
 }
 .reservation-stat-pill--cancelled .reservation-stat-pill-value {
-    color: #991b1b;
+    color: #b91c1c;
 }
 
 /* ===== レスポンシブ ===== */
