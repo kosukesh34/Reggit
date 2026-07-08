@@ -4,8 +4,24 @@ class CouponsManager {
         this._receivedToastTimer = null;
     }
 
+    getGlobalSetting(key, fallback) {
+        return DomHelper.getLiffGlobalSetting(key, fallback);
+    }
+
+    getDefaultCouponDesign() {
+        const screenDesign = this.getGlobalSetting('coupon_screen_design', 'ticket');
+        if (screenDesign === 'gallery') return 'card';
+        if (screenDesign === 'compact') return 'minimal';
+        if (screenDesign === 'luxury') return 'vintage';
+        return 'ticket';
+    }
+
     getSection() {
-        return DomHelper.getElementById(AppConstants.ELEMENT_IDS.COUPONS_SECTION);
+        return DomHelper.getTabMount(
+            AppConstants.TAB_MOUNTS.COUPONS,
+            AppConstants.ELEMENT_IDS.COUPONS_SECTION,
+            { silent: true }
+        );
     }
 
     getLoginTemplate() {
@@ -224,7 +240,7 @@ class CouponsManager {
 
         const renderCoupon = (cp) => {
             const status = this.normalizeStatus(cp.status);
-            const design = cp.design_template || 'classic';
+            const design = cp.design_template || this.getDefaultCouponDesign();
             const themeColor = cp.theme_color && /^#[0-9A-Fa-f]{6}$/.test(cp.theme_color) ? cp.theme_color : '';
             const label = statusLabels[status] || status;
             const validFrom = this.formatDate(cp.valid_from);
@@ -485,7 +501,8 @@ class CouponsManager {
             'html.native-app-embed .tab-content.active,' +
             'html.native-app-embed .tab-content.active .tab-section,' +
             'html.native-app-embed #couponsTab.tab-content.active,' +
-            'html.native-app-embed #couponsSection.tab-section {' +
+            'html.native-app-embed #couponsSection.tab-section,' +
+            'html.native-app-embed .coupons-data-mount {' +
             'overflow-y: auto !important;' +
             'overflow-x: hidden !important;' +
             '-webkit-overflow-scrolling: touch !important;' +

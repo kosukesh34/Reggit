@@ -23,6 +23,7 @@
         'js/frontend/managers/QueueManager.js',
         'js/frontend/managers/AnnouncementManager.js',
         'js/frontend/managers/GalleryManager.js',
+        'js/frontend/managers/liff-blocks/render-premium-blocks.js',
         'js/frontend/managers/LiffLayoutManager.js',
         'js/frontend/managers/CheckoutManager.js',
         'js/frontend/managers/ReservationManager.js',
@@ -60,6 +61,7 @@
     <script defer src="/js/frontend/managers/QueueManager.js{{ $v }}"></script>
     <script defer src="/js/frontend/managers/AnnouncementManager.js{{ $v }}"></script>
     <script defer src="/js/frontend/managers/GalleryManager.js{{ $v }}"></script>
+    <script defer src="/js/frontend/managers/liff-blocks/render-premium-blocks.js{{ $v }}"></script>
     <script defer src="/js/frontend/managers/LiffLayoutManager.js{{ $v }}"></script>
     <script defer src="/js/frontend/managers/CheckoutManager.js{{ $v }}"></script>
     <script defer src="/js/frontend/managers/ReservationManager.js{{ $v }}"></script>
@@ -167,6 +169,7 @@
                 '/js/frontend/managers/QueueManager.js{{ $v }}',
                 '/js/frontend/managers/AnnouncementManager.js{{ $v }}',
                 '/js/frontend/managers/GalleryManager.js{{ $v }}',
+                '/js/frontend/managers/liff-blocks/render-premium-blocks.js{{ $v }}',
                 '/js/frontend/managers/LiffLayoutManager.js{{ $v }}',
                 '/js/frontend/managers/CheckoutManager.js{{ $v }}',
                 '/js/frontend/managers/ReservationManager.js{{ $v }}',

@@ -6,43 +6,43 @@
 
 :root {
     /* ===== Brand（テーマで上書きされる）===== */
-    --primary-color: #0f766e;
-    --primary-rgb: 15, 118, 110;
-    --primary-dark: #0d5c56;
+    --primary-color: #1c1917;
+    --primary-rgb: 28, 25, 23;
+    --primary-dark: #0c0a09;
     --secondary-color: #78716c;
 
-    /* ===== Chrome（アプリ上部バー等の黒基調。アクセントとは独立）===== */
-    --chrome: #1c1917;
-    --chrome-dark: #0c0a09;
-    --chrome-rgb: 28, 25, 23;
+    /* ===== Chrome（アプリ上部バー。アクセントとは独立）===== */
+    --chrome: #111827;
+    --chrome-dark: #030712;
+    --chrome-rgb: 17, 24, 39;
 
-    /* ===== Ink / Text ===== */
-    --text-primary: #1c1917;
-    --text-secondary: #57534e;
-    --text-tertiary: #a8a29e;
+    /* ===== Ink / Text（Apple/Airbnb系ニュートラル）===== */
+    --text-primary: #111827;
+    --text-secondary: #4b5563;
+    --text-tertiary: #9ca3af;
 
     /* ===== Surfaces / Background ===== */
     --bg-light: #ffffff;
-    --bg-canvas: #f5f4f0;
-    --bg-subtle: #fafaf9;
+    --bg-canvas: #f9fafb;
+    --bg-subtle: #f3f4f6;
     --surface: #ffffff;
-    --surface-2: #fafaf9;
-    --surface-muted: #f5f5f4;
-    --surface-glass: rgba(255, 255, 255, 0.82);
+    --surface-2: #f9fafb;
+    --surface-muted: #f3f4f6;
+    --surface-glass: rgba(255, 255, 255, 0.86);
 
     /* ===== Borders ===== */
-    --border-color: #e7e5e4;
-    --border-strong: #d6d3d1;
-    --hairline: rgba(28, 25, 23, 0.06);
+    --border-color: #e5e7eb;
+    --border-strong: #d1d5db;
+    --hairline: rgba(17, 24, 39, 0.06);
 
-    /* ===== Shadows（プレミアム: 柔らかく多層）===== */
-    --shadow-xs: 0 1px 2px rgba(28, 25, 23, 0.035);
-    --shadow-sm: 0 1px 2px rgba(28, 25, 23, 0.03), 0 4px 12px rgba(28, 25, 23, 0.04);
-    --shadow: 0 2px 6px rgba(28, 25, 23, 0.035), 0 12px 28px rgba(28, 25, 23, 0.06);
-    --shadow-lg: 0 4px 12px rgba(28, 25, 23, 0.05), 0 22px 48px rgba(28, 25, 23, 0.09);
-    --shadow-xl: 0 8px 22px rgba(28, 25, 23, 0.06), 0 36px 72px rgba(28, 25, 23, 0.13);
-    --shadow-primary: 0 8px 24px rgba(var(--primary-rgb), 0.28);
-    --ring-focus: 0 0 0 3px rgba(var(--primary-rgb), 0.18);
+    /* ===== Shadows（柔らかく上品）===== */
+    --shadow-xs: 0 1px 2px rgba(17, 24, 39, 0.04);
+    --shadow-sm: 0 1px 3px rgba(17, 24, 39, 0.05), 0 4px 14px rgba(17, 24, 39, 0.04);
+    --shadow: 0 2px 8px rgba(17, 24, 39, 0.04), 0 16px 32px rgba(17, 24, 39, 0.06);
+    --shadow-lg: 0 4px 16px rgba(17, 24, 39, 0.06), 0 28px 56px rgba(17, 24, 39, 0.08);
+    --shadow-xl: 0 8px 24px rgba(17, 24, 39, 0.07), 0 40px 80px rgba(17, 24, 39, 0.1);
+    --shadow-primary: 0 10px 28px rgba(var(--primary-rgb), 0.22);
+    --ring-focus: 0 0 0 3px rgba(var(--primary-rgb), 0.16);
 
     /* ===== Semantic ===== */
     --success-color: #059669;
@@ -51,18 +51,18 @@
     --warning: #d97706;
     --info: #0284c7;
 
-    /* ===== Radius（デザイナーで上書き可）===== */
-    --radius-xs: 10px;
-    --radius-sm: 14px;
-    --radius: 18px;
-    --radius-lg: 22px;
-    --radius-xl: 28px;
+    /* ===== Radius ===== */
+    --radius-xs: 8px;
+    --radius-sm: 12px;
+    --radius: 16px;
+    --radius-lg: 20px;
+    --radius-xl: 24px;
     --radius-pill: 999px;
 
-    /* ===== Layout tokens（LIFFデザイナーで上書き可）===== */
-    --content-padding: 18px;
-    --section-gap: 16px;
-    --content-max-width: 100%;
+    /* ===== Layout tokens ===== */
+    --content-padding: 20px;
+    --section-gap: 20px;
+    --content-max-width: min(100%, 440px);
 
     /* ===== Spacing scale ===== */
     --space-1: 4px;
@@ -86,10 +86,10 @@
     --font-rounded: 'Hiragino Maru Gothic ProN', 'Quicksand', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', system-ui, sans-serif;
     --font-base: var(--font-sans);
     --font-display: var(--font-base);
-    --font-weight-heading: 800;
-    --font-weight-body: 500;
-    --tracking-tight: -0.01em;
-    --tracking-normal: 0.012em;
+    --font-weight-heading: 700;
+    --font-weight-body: 400;
+    --tracking-tight: -0.022em;
+    --tracking-normal: -0.011em;
     --tracking-wide: 0.04em;
 
     /* ===== Safe area ===== */
@@ -113,11 +113,8 @@ html {
 body {
     font-family: var(--font-base);
     background-color: var(--bg-canvas);
-    background-image:
-        radial-gradient(1200px 600px at 50% -10%, rgba(var(--primary-rgb), 0.06), transparent 55%),
-        radial-gradient(800px 400px at 100% 100%, rgba(28, 25, 23, 0.03), transparent 50%);
     color: var(--text-primary);
-    line-height: 1.65;
+    line-height: 1.55;
     letter-spacing: var(--tracking-normal);
     font-weight: var(--font-weight-body);
     -webkit-font-smoothing: antialiased;

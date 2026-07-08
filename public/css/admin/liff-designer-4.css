@@ -96,6 +96,21 @@
 }
 .ld-mock-card__barcode i { display: block; height: 100%; background: #1c1917; }
 .ld-mock-card__no { font-size: 10px; opacity: 0.85; margin-top: 8px; letter-spacing: 0.04em; }
+.ld-mock-card__wallet-btns { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.ld-mock-wallet-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 36px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+    background: #111;
+}
+.ld-mock-wallet-btn--google { background: #1a73e8; }
 
 /* ── クーポン ── */
 .ld-mock-coupon {
@@ -244,3 +259,30 @@
     background: rgba(var(--primary-rgb, var(--ld-mock-accent-rgb)), 0.1); font-size: 15px;
 }
 .ld-mock-qa__label { font-size: 10px; font-weight: 700; color: #44403c; }
+
+.ld-mock-summary--wallet .ld-mock-summary__wallet-row { display: flex; align-items: center; gap: 10px; }
+.ld-mock-summary--wallet .ld-mock-summary__wallet-pt { flex: 1; text-align: right; }
+.ld-mock-summary--compact .ld-mock-summary__compact-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ld-mock-summary--compact .ld-mock-summary__hello { margin: 0; }
+.ld-mock-summary--emblem { text-align: center; }
+.ld-mock-summary--emblem .ld-mock-summary__emblem-icon { font-size: 22px; margin-bottom: 6px; display: block; }
+.ld-mock-summary--minimal { background: #fff; color: #1c1917; border: 1px solid #e7e5e4; box-shadow: 0 2px 8px rgba(28,25,23,0.06); }
+.ld-mock-summary--minimal .ld-mock-summary__minimal-pt { font-size: 20px; font-weight: 800; color: var(--primary-color, var(--ld-mock-accent)); margin-top: 6px; }
+.ld-mock-summary--split .ld-mock-summary__split { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.ld-mock-summary--split .ld-mock-summary__split-right { text-align: right; }
+.ld-mock-summary--glass { backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.2); }
+
+.ld-mock-qa--pill { display: flex; flex-wrap: nowrap; overflow-x: auto; }
+.ld-mock-qa--pill .ld-mock-qa__tile { flex: 0 0 auto; flex-direction: row; width: auto; padding: 8px 12px; border-radius: 999px; }
+.ld-mock-qa--compact { display: flex; flex-direction: column; }
+.ld-mock-qa--compact .ld-mock-qa__tile { flex-direction: row; width: 100%; justify-content: flex-start; padding: 8px 12px; }
+
+.ld-block--card-horizontal { display: flex; gap: 10px; }
+.ld-block--card-horizontal .ld-block--card-image { width: 38%; flex-shrink: 0; }
+.ld-block--card-overlay { position: relative; }
+.ld-block--card-overlay .ld-block--card-overlay-text {
+    position: absolute; left: 0; right: 0; bottom: 0; padding: 10px;
+    background: linear-gradient(180deg, transparent, rgba(0,0,0,0.65));
+    color: #fff; font-weight: 700; font-size: 13px;
+}
+.ld-banner--pill { border-radius: 999px !important; }
