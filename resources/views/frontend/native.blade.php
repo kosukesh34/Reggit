@@ -41,9 +41,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     @include('frontend.partials._head-assets')
     @include('frontend.partials._head-theme')
-    @php $assetQuery = '?v=' . urlencode($assetVersion); @endphp
-    <script src="/js/vendor/JsBarcode.all.min.js{{ $assetQuery }}"></script>
-    <script src="/js/vendor/qrcode.min.js{{ $assetQuery }}"></script>
     {{-- ネイティブアプリ（iOS/Android）: Android WebView では初回 100vh が 0 になりやすいため、px フォールバックを指定 --}}
     <style id="native-app-inline">
         #liff-loading { display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; }
@@ -220,8 +217,10 @@
         </footer>
         @endunless
     </div>
+    <div id="react-frontend-root" aria-hidden="true"></div>
 
     @include('frontend.partials._scripts-config')
+    @vite(['resources/js/frontend/main.tsx'])
     @include('frontend.partials._scripts-load')
 </body>
 </html>

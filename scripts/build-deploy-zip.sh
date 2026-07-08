@@ -13,6 +13,19 @@ OUTPUT_ZIP="${1:-deploy-docker.zip}"
 
 echo "==> デプロイ用 zip をビルドします（出力: $OUTPUT_ZIP）"
 
+# フロントアセットをビルド
+if [ -f package.json ]; then
+  if [ -f package-lock.json ]; then
+    echo "==> npm ci"
+    npm ci
+  else
+    echo "==> npm install"
+    npm install
+  fi
+  echo "==> npm run build"
+  npm run build
+fi
+
 # 既存の Dockerfile を退避
 if [ -f Dockerfile ]; then
   cp Dockerfile Dockerfile.bak
