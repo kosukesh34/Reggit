@@ -1,0 +1,31 @@
+{
+  "_client-!~{003}~.js": {
+    "file": "assets/client-BHsiUN-k.css",
+    "src": "_client-!~{003}~.js"
+  },
+  "_client-EUSa7c4X.js": {
+    "file": "assets/client-EUSa7c4X.js",
+    "name": "client",
+    "css": [
+      "assets/client-BHsiUN-k.css"
+    ]
+  },
+  "resources/js/admin/main.tsx": {
+    "file": "assets/main-Bk8xiGuW.js",
+    "name": "main",
+    "src": "resources/js/admin/main.tsx",
+    "isEntry": true,
+    "imports": [
+      "_client-EUSa7c4X.js"
+    ]
+  },
+  "resources/js/frontend/main.tsx": {
+    "file": "assets/main-zuzX0cbs.js",
+    "name": "main",
+    "src": "resources/js/frontend/main.tsx",
+    "isEntry": true,
+    "imports": [
+      "_client-EUSa7c4X.js"
+    ]
+  }
+}
