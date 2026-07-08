@@ -6,11 +6,10 @@
     <title>管理画面 - @yield('title', 'Reggit')</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="{{ asset('css/admin/admin.css') }}">
-    <script src="{{ asset('js/shared/utils/confirmDialog.js') }}"></script>
-    <script src="{{ asset('js/admin/admin.js') }}"></script>
+    @vite(['resources/js/admin/main.tsx'])
     @stack('styles')
 </head>
-<body>
+<body data-page-kind="@yield('page-kind', 'default')">
     <div class="admin-container">
 
         <div class="sidebar-overlay" id="sidebarOverlay"></div>
@@ -288,49 +287,8 @@
             </div>
         </main>
     </div>
+    <div id="react-admin-root" aria-hidden="true"></div>
 
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        var toggle = document.getElementById('sidebarToggle');
-        var sidebar = document.getElementById('sidebar');
-        var overlay = document.getElementById('sidebarOverlay');
-
-        function openSidebar() {
-            sidebar.classList.add('is-open');
-            overlay.classList.add('is-visible');
-            document.body.style.overflow = 'hidden';
-        }
-
-        function closeSidebar() {
-            sidebar.classList.remove('is-open');
-            overlay.classList.remove('is-visible');
-            document.body.style.overflow = '';
-        }
-
-        if (toggle) {
-            toggle.addEventListener('click', function() {
-                if (sidebar.classList.contains('is-open')) {
-                    closeSidebar();
-                } else {
-                    openSidebar();
-                }
-            });
-        }
-
-        if (overlay) {
-            overlay.addEventListener('click', closeSidebar);
-        }
-
-        var sidebarLinks = sidebar.querySelectorAll('.nav-item');
-        sidebarLinks.forEach(function(link) {
-            link.addEventListener('click', function() {
-                if (window.innerWidth <= 768) {
-                    closeSidebar();
-                }
-            });
-        });
-    });
-    </script>
     @stack('scripts')
 </body>
 </html>
