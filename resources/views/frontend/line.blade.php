@@ -165,8 +165,10 @@
         </footer>
         @endunless
     </div>
+    <div id="react-frontend-root" aria-hidden="true"></div>
 
     @include('frontend.partials._scripts-config')
+    @vite(['resources/js/frontend/main.tsx'])
     @include('frontend.partials._scripts-load')
 </body>
 </html>

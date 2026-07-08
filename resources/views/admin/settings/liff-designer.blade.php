@@ -2,6 +2,7 @@
 
 @section('title', 'LIFFデザイン')
 @section('page-title', 'LIFFデザイン')
+@section('page-kind', 'liff-designer')
 
 @push('styles')
 <link rel="stylesheet" href="{{ asset('css/admin/liff-designer.css') }}?v={{ time() }}">
@@ -385,18 +386,6 @@
 
 <div class="ld-toast" id="ldToast"></div>
 
-<script src="{{ asset('js/admin/liff-designer/modules/block-designs.js') }}?v={{ time() }}"></script>
-<script src="{{ asset('js/admin/liff-designer/modules/data-preview.js') }}?v={{ time() }}"></script>
-<script src="{{ asset('js/admin/liff-designer/modules/theme-panel.js') }}?v={{ time() }}"></script>
-<script src="{{ asset('js/admin/liff-designer/modules/template-preview.js') }}?v={{ time() }}"></script>
-<script src="{{ asset('js/admin/liff-designer/modules/template-manager.js') }}?v={{ time() }}"></script>
-<script src="{{ asset('js/admin/liff-designer/modules/drag-drop.js') }}?v={{ time() }}"></script>
-<script src="{{ asset('js/admin/liff-designer/modules/ui-events.js') }}?v={{ time() }}"></script>
-<script src="{{ asset('js/admin/liff-designer/modules/io.js') }}?v={{ time() }}"></script>
-<script src="{{ asset('js/admin/liff-designer/modules/onboarding.js') }}?v={{ time() }}"></script>
-<script src="{{ asset('js/admin/liff-designer/modules/panel-resizer.js') }}?v={{ time() }}"></script>
-<script src="{{ asset('js/admin/liff-designer/modules/panel-drawers.js') }}?v={{ time() }}"></script>
-<script src="{{ asset('js/admin/liff-designer.js') }}?v={{ time() }}"></script>
 @php
     $ldDesignerConfig = [
         'layouts' => $layouts ?? [],
@@ -411,94 +400,4 @@
     ];
 @endphp
 <script type="application/json" id="ldDesignerConfig">@json($ldDesignerConfig)</script>
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        if (typeof LiffDesigner === 'undefined') {
-            console.error('LiffDesigner script not loaded');
-            if (typeof showToast === 'function') {
-                showToast('デザイナーの読み込みに失敗しました。ページを再読み込みしてください。', true);
-            }
-            return;
-        }
-
-        var config = {};
-        var configEl = document.getElementById('ldDesignerConfig');
-        if (configEl && configEl.textContent) {
-            try {
-                config = JSON.parse(configEl.textContent);
-            } catch (parseErr) {
-                console.error('LIFF Designer config parse failed:', parseErr);
-                showToast('デザイナー設定の読み込みに失敗しました。ページを再読み込みしてください。', true);
-                return;
-            }
-        }
-
-        var designer;
-        try {
-            designer = new LiffDesigner(config);
-            window.__ldDesigner = designer;
-        } catch (err) {
-            console.error('LIFF Designer init failed:', err);
-            showToast('デザイナーの読み込みに失敗しました。ページを再読み込みしてください。', true);
-            return;
-        }
-
-        try {
-            if (designer.bindPanelDrawers) designer.bindPanelDrawers();
-        } catch (err) {
-            console.warn('panel drawers init failed', err);
-        }
-        try {
-            if (designer.bindPanelResizer) designer.bindPanelResizer();
-        } catch (err) {
-            console.warn('panel resizer init failed', err);
-        }
-
-        // オンボーディング（初回表示 or 全タブ空の場合）
-        if (designer.shouldShowOnboarding && designer.shouldShowOnboarding()) {
-            setTimeout(function() {
-                try { designer.showOnboarding(); } catch (e) { console.warn('onboarding skipped', e); }
-            }, 300);
-        }
-
-        // ヘルプボタン
-        var helpBtn = document.getElementById('helpBtn');
-        if (helpBtn) {
-            helpBtn.addEventListener('click', function() {
-                if (designer.showHelpOverlay) designer.showHelpOverlay();
-            });
-        }
-
-        // LIFF設定折りたたみ
-        var liffSettingsToggle = document.getElementById('liffSettingsToggle');
-        if (liffSettingsToggle) {
-            liffSettingsToggle.addEventListener('click', function(e) {
-                if (e.target.closest('input') || e.target.closest('textarea') || e.target.closest('select')) return;
-                this.classList.toggle('is-open');
-            });
-        }
-
-        // 保存フィードバック
-        var form = document.getElementById('liffDesignerForm');
-        if (form) {
-            form.addEventListener('submit', function() {
-                setTimeout(function() {
-                    showToast('デザインを保存しました');
-                }, 100);
-            });
-        }
-    });
-
-    function showToast(msg, isError, durationMs) {
-        var el = document.getElementById('ldToast');
-        if (!el) return;
-        var dur = (typeof durationMs === 'number' && durationMs > 0) ? durationMs : 3000;
-        el.innerHTML = '<i class="fas ' + (isError ? 'fa-exclamation-circle' : 'fa-check-circle') + '"></i> ' + msg;
-        el.className = 'ld-toast' + (isError ? ' ld-toast--error' : ' ld-toast--success');
-        requestAnimationFrame(function() { el.classList.add('ld-toast--visible'); });
-        clearTimeout(window.__ldToastTimer);
-        window.__ldToastTimer = setTimeout(function() { el.classList.remove('ld-toast--visible'); }, dur);
-    }
-    window.__ldShowToast = showToast;
-</script>
 @endsection
