@@ -87,11 +87,11 @@ final class MemberCoupon
             throw new \Exception('このクーポンは使用済みです');
         }
 
-        if ($this->validFrom !== null && $this->validFrom->getTimestamp() > $now->getTimestamp()) {
+        if ($this->validFrom !== null && $this->validFrom > $now) {
             throw new \Exception('このクーポンはまだ利用開始前です');
         }
 
-        if ($this->validUntil !== null && $this->validUntil->getTimestamp() < $now->getTimestamp()) {
+        if ($this->validUntil !== null && $this->validUntil < $now) {
             throw new \Exception('このクーポンは期限切れです');
         }
 

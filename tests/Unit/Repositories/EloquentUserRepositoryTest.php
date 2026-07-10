@@ -12,7 +12,7 @@ class EloquentUserRepositoryTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_findByIdAndProject_同一プロジェクトのユーザーを返すこと(): void
+    public function test_find_by_id_and_project_同一プロジェクトのユーザーを返すこと(): void
     {
         $project = Project::factory()->create();
         $otherProject = Project::factory()->create();
@@ -26,7 +26,7 @@ class EloquentUserRepositoryTest extends TestCase
         $this->assertSame((int) $user->id, (int) $found->id);
     }
 
-    public function test_findByLineUserIdAndProject_line_user_idで検索できること(): void
+    public function test_find_by_line_user_id_and_project_line_user_idで検索できること(): void
     {
         $project = Project::factory()->create();
         $user = User::factory()->create([

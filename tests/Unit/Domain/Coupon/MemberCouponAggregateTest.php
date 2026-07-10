@@ -29,7 +29,7 @@ class MemberCouponAggregateTest extends TestCase
         );
     }
 
-    public function test_markAsUsed_未使用クーポンを使用済みにできること(): void
+    public function test_mark_as_used_未使用クーポンを使用済みにできること(): void
     {
         $coupon = $this->createUnused();
         $now = Carbon::parse('2026-07-10 12:00:00');
@@ -41,7 +41,7 @@ class MemberCouponAggregateTest extends TestCase
         $this->assertSame($now->getTimestamp(), $coupon->usedAt()?->getTimestamp());
     }
 
-    public function test_markAsUsed_使用済みは拒否されること(): void
+    public function test_mark_as_used_使用済みは拒否されること(): void
     {
         $coupon = $this->createUnused();
         $coupon->markAsUsed(Carbon::now());
@@ -52,7 +52,7 @@ class MemberCouponAggregateTest extends TestCase
         $coupon->markAsUsed(Carbon::now());
     }
 
-    public function test_markAsUsed_利用開始前は拒否されること(): void
+    public function test_mark_as_used_利用開始前は拒否されること(): void
     {
         $coupon = $this->createUnused(Carbon::parse('2026-08-01'));
 
@@ -62,7 +62,7 @@ class MemberCouponAggregateTest extends TestCase
         $coupon->markAsUsed(Carbon::parse('2026-07-10'));
     }
 
-    public function test_markAsUsed_期限切れは拒否されること(): void
+    public function test_mark_as_used_期限切れは拒否されること(): void
     {
         $coupon = $this->createUnused(null, Carbon::parse('2026-07-01'));
 

@@ -19,7 +19,7 @@ class OrderServiceCancellationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_handleOrderCancellation_利用ポイント返却と獲得ポイント取り消しを行うこと(): void
+    public function test_handle_order_cancellation_利用ポイント返却と獲得ポイント取り消しを行うこと(): void
     {
         $project = Project::factory()->create();
         $user = User::factory()->create(['project_id' => $project->id]);
@@ -65,7 +65,7 @@ class OrderServiceCancellationTest extends TestCase
         ]);
     }
 
-    public function test_handleOrderCancellation_二重実行しても台帳が重複しないこと(): void
+    public function test_handle_order_cancellation_二重実行しても台帳が重複しないこと(): void
     {
         $project = Project::factory()->create();
         $user = User::factory()->create(['project_id' => $project->id]);
@@ -106,7 +106,7 @@ class OrderServiceCancellationTest extends TestCase
             ->count());
     }
 
-    public function test_hasPointTransactionForOrder_説明付きで判定できること(): void
+    public function test_has_point_transaction_for_order_説明付きで判定できること(): void
     {
         $project = Project::factory()->create();
         $user = User::factory()->create(['project_id' => $project->id]);

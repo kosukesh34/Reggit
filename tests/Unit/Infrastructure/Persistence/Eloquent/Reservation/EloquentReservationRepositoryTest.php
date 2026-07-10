@@ -15,7 +15,7 @@ class EloquentReservationRepositoryTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_countActiveInSlot_自プロジェクトのみ数えること(): void
+    public function test_count_active_in_slot_自プロジェクトのみ数えること(): void
     {
         $project = Project::factory()->create();
         $other = Project::factory()->create();
@@ -49,7 +49,7 @@ class EloquentReservationRepositoryTest extends TestCase
         $this->assertSame(1, $count);
     }
 
-    public function test_findById_他プロジェクトは取得できないこと(): void
+    public function test_find_by_id_他プロジェクトは取得できないこと(): void
     {
         $project = Project::factory()->create();
         $other = Project::factory()->create();

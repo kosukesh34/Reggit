@@ -22,7 +22,6 @@ use App\UseCases\Admin\Coupon\AdminCouponStoreUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponSyncFromSmaregiUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponUpdateUseCase;
 use App\UseCases\Admin\Member\AdminMemberSearchByKeywordUseCase;
-use Illuminate\Http\Request;
 
 class CouponController extends AdminBaseController
 {

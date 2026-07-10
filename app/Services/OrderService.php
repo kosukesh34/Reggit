@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Domain\Member\Aggregates\Member as MemberAggregate;
+use App\Domain\Member\Events\PointsEarned;
 use App\Domain\Member\Repositories\MemberRepository;
 use App\Domain\Order\Policies\OrderPlacementPolicy;
 use App\Domain\Order\Policies\ProductAvailabilityPolicy;
@@ -13,11 +14,10 @@ use App\Domain\Order\Repositories\ProductCatalogRepository;
 use App\Domain\Order\Repositories\ProductStockRepository;
 use App\Domain\Order\ValueObjects\OrderLineItem;
 use App\Domain\Order\ValueObjects\PendingOrder;
-use App\Domain\Member\Events\PointsEarned;
 use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
-use App\Enums\PointTransactionType;
 use App\Enums\OrderType;
+use App\Enums\PointTransactionType;
 use App\Models\Order;
 use App\Models\User;
 use App\Services\Admin\MemberAdminService;

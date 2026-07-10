@@ -6,6 +6,7 @@ use App\Domain\Order\Events\OrderConfirmed;
 use App\Domain\Order\Repositories\OrderRepository;
 use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
 use App\Util\LogHelper;
+use Illuminate\Support\Facades\DB;
 
 class PaymentWebhookUseCase
 {
@@ -29,29 +30,31 @@ class PaymentWebhookUseCase
             return true;
         }
 
-        $aggregate = $this->orderRepository->findByPrimaryKey((int) $orderId);
-        if ($aggregate === null) {
-            return true;
-        }
-
-        try {
-            $didConfirm = $aggregate->confirmStripePayment();
-            $this->orderRepository->save($aggregate);
-            if ($didConfirm) {
-                $this->domainEvents->dispatch(new OrderConfirmed(
-                    $aggregate->id()->value(),
-                    $aggregate->projectId(),
-                    $aggregate->userId(),
-                ));
+        return DB::transaction(function () use ($orderId) {
+            $aggregate = $this->orderRepository->findByPrimaryKeyForUpdate((int) $orderId);
+            if ($aggregate === null) {
+                return true;
             }
-        } catch (\Exception $e) {
-            LogHelper::warning('[Payment] webhook confirm skipped', [
-                'order_id' => (int) $orderId,
-                'project_id' => $aggregate->projectId(),
-                'error' => $e->getMessage(),
-            ]);
-        }
 
-        return true;
+            try {
+                $didConfirm = $aggregate->confirmStripePayment();
+                $this->orderRepository->save($aggregate);
+                if ($didConfirm) {
+                    $this->domainEvents->dispatch(new OrderConfirmed(
+                        $aggregate->id()->value(),
+                        $aggregate->projectId(),
+                        $aggregate->userId(),
+                    ));
+                }
+            } catch (\Exception $e) {
+                LogHelper::warning('[Payment] webhook confirm skipped', [
+                    'order_id' => (int) $orderId,
+                    'project_id' => $aggregate->projectId(),
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
+            return true;
+        });
     }
 }

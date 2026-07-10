@@ -88,7 +88,7 @@ class ProductOptionSelectionPolicyTest extends TestCase
         (new ProductOptionSelectionPolicy)->resolve('バーガー', $this->sampleGroups(), [10, 20, 21, 22]);
     }
 
-    public function test_assertAvailable_在庫不足は拒否されること(): void
+    public function test_assert_available_在庫不足は拒否されること(): void
     {
         $this->expectException(\Exception::class);
         $this->expectExceptionMessage('在庫が不足しています');
@@ -96,7 +96,7 @@ class ProductOptionSelectionPolicyTest extends TestCase
         (new ProductAvailabilityPolicy)->assertAvailable('バーガー', true, 1, 2);
     }
 
-    public function test_assertAvailable_利用不可は拒否されること(): void
+    public function test_assert_available_利用不可は拒否されること(): void
     {
         $this->expectException(\Exception::class);
         $this->expectExceptionMessage('現在利用できません');

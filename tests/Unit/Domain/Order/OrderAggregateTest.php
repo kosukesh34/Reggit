@@ -28,7 +28,7 @@ class OrderAggregateTest extends TestCase
         );
     }
 
-    public function test_confirmStripePayment_モバイル注文を確定できること(): void
+    public function test_confirm_stripe_payment_モバイル注文を確定できること(): void
     {
         $order = $this->createOrder();
 
@@ -39,7 +39,7 @@ class OrderAggregateTest extends TestCase
         $this->assertSame(PaymentMethod::STRIPE, $order->paymentMethod());
     }
 
-    public function test_confirmStripePayment_確定済みは冪等であること(): void
+    public function test_confirm_stripe_payment_確定済みは冪等であること(): void
     {
         $order = $this->createOrder(OrderStatus::CONFIRMED);
 
@@ -49,7 +49,7 @@ class OrderAggregateTest extends TestCase
         $this->assertSame(OrderStatus::CONFIRMED, $order->status());
     }
 
-    public function test_confirmStripePayment_店内注文は拒否されること(): void
+    public function test_confirm_stripe_payment_店内注文は拒否されること(): void
     {
         $order = $this->createOrder(
             OrderStatus::PENDING,
@@ -63,7 +63,7 @@ class OrderAggregateTest extends TestCase
         $order->confirmStripePayment();
     }
 
-    public function test_confirmStripePayment_キャンセル済みは拒否されること(): void
+    public function test_confirm_stripe_payment_キャンセル済みは拒否されること(): void
     {
         $order = $this->createOrder(OrderStatus::CANCELLED);
 
@@ -73,7 +73,7 @@ class OrderAggregateTest extends TestCase
         $order->confirmStripePayment();
     }
 
-    public function test_cancelUnpaidStripeMobile_未決済注文をキャンセルできること(): void
+    public function test_cancel_unpaid_stripe_mobile_未決済注文をキャンセルできること(): void
     {
         $order = $this->createOrder();
 
@@ -82,7 +82,7 @@ class OrderAggregateTest extends TestCase
         $this->assertSame(OrderStatus::CANCELLED, $order->status());
     }
 
-    public function test_cancelUnpaidStripeMobile_キャンセル済みは冪等であること(): void
+    public function test_cancel_unpaid_stripe_mobile_キャンセル済みは冪等であること(): void
     {
         $order = $this->createOrder(OrderStatus::CANCELLED);
 
@@ -91,7 +91,7 @@ class OrderAggregateTest extends TestCase
         $this->assertSame(OrderStatus::CANCELLED, $order->status());
     }
 
-    public function test_cancelUnpaidStripeMobile_決済済みは拒否されること(): void
+    public function test_cancel_unpaid_stripe_mobile_決済済みは拒否されること(): void
     {
         $order = $this->createOrder(OrderStatus::CONFIRMED);
 
@@ -101,7 +101,7 @@ class OrderAggregateTest extends TestCase
         $order->cancelUnpaidStripeMobile();
     }
 
-    public function test_cancelUnpaidStripeMobile_店内注文は拒否されること(): void
+    public function test_cancel_unpaid_stripe_mobile_店内注文は拒否されること(): void
     {
         $order = $this->createOrder(
             OrderStatus::PENDING,
