@@ -143,4 +143,16 @@ class SettingsService
 
         ShopSetting::setFrontendMenuItems($items, $projectId);
     }
+
+    /** @return array{smaregi_fields: array<string, mixed>, custom_fields: list<array<string, mixed>>} */
+    public function getProfileSettings(?int $projectId = null): array
+    {
+        return ShopSetting::getProfileFieldSettings($projectId ?? 1);
+    }
+
+    /** @param array<string, bool> $featureFlags */
+    public function updateFeatureFlags(array $featureFlags, ?int $projectId = null): void
+    {
+        ShopSetting::setFeatureFlags($featureFlags, $projectId ?? 1);
+    }
 }

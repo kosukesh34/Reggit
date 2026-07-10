@@ -8,6 +8,9 @@ class QueueMeOutput
     public function __construct(
         public ?QueueEntry $queueEntry,
         public int $waitingCount,
-        public int $estimatedWaitMinutes
+        public int $estimatedWaitMinutes,
+        public ?int $sessionEntryIdToRemember = null,
+        public bool $shouldForgetSession = false,
+        public ?int $sessionProjectId = null,
     ) {}
 }

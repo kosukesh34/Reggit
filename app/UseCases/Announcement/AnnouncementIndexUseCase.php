@@ -4,19 +4,15 @@ namespace App\UseCases\Announcement;
 
 use App\Models\Announcement;
 use App\Models\AnnouncementRead;
-use App\Services\UserService;
+use App\Models\User;
 use App\UseCases\Announcement\Data\AnnouncementIndexView;
 use App\Util\AdminContext;
-use Illuminate\Http\Request;
 
 class AnnouncementIndexUseCase
 {
-    public function __construct(private UserService $userService) {}
-
-    public function handle(Request $request): AnnouncementIndexView
+    public function handle(?User $user): AnnouncementIndexView
     {
         $projectId = AdminContext::getCurrentProjectId() ?? 1;
-        $user = $this->userService->findUser($request);
 
         $announcements = Announcement::where('project_id', $projectId)
             ->whereNotNull('published_at')

@@ -2,30 +2,25 @@
 
 namespace App\UseCases\Queue;
 
-use App\Enums\QueueStatus;
+use App\Domain\Queue\Repositories\QueueEntryRepository;
 use App\Models\QueueEntry;
-use App\Util\AdminContext;
 
 class QueueCancelUseCase
 {
-    public function handle(int $id): ?QueueEntry
+    public function __construct(
+        private QueueEntryRepository $queueEntryRepository,
+    ) {}
+
+    public function handle(int $id, int $projectId): ?QueueEntry
     {
-        $projectId = AdminContext::getCurrentProjectId() ?? 1;
-        $entry = QueueEntry::where('project_id', $projectId)->whereKey($id)->first();
-        if ($entry === null) {
+        $aggregate = $this->queueEntryRepository->findById($id, $projectId);
+        if ($aggregate === null) {
             return null;
         }
-        if ($this->canCancel($entry->status) === false) {
-            return $entry;
-        }
-        $entry->status = QueueStatus::CANCELLED;
-        $entry->save();
 
-        return $entry;
-    }
+        $aggregate->cancel();
+        $this->queueEntryRepository->save($aggregate);
 
-    private function canCancel(string $status): bool
-    {
-        return in_array($status, [QueueStatus::WAITING, QueueStatus::CALLED], true);
+        return QueueEntry::query()->whereKey($aggregate->id()->value())->first();
     }
 }

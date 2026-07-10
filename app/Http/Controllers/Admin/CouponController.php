@@ -8,72 +8,40 @@ use App\Http\Requests\Admin\CouponQuickCreateRequest;
 use App\Http\Requests\Admin\CouponStoreRequest;
 use App\Http\Requests\Admin\CouponUpdateRequest;
 use App\Models\Coupon;
-use App\Services\Admin\CouponAdminService;
-use App\Services\Admin\CouponDeliveryTargetService;
-use App\Services\Admin\MemberAdminService;
-use App\Services\Smaregi\SmaregiCouponImportSyncService;
 use App\UseCases\Admin\Coupon\AdminCouponBulkIssueFormUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponBulkIssueUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponCreateFormUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponDeleteUseCase;
+use App\UseCases\Admin\Coupon\AdminCouponDeliveryPreviewUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponEditFormUseCase;
+use App\UseCases\Admin\Coupon\AdminCouponFullSyncWithSmaregiUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponIndexUseCase;
+use App\UseCases\Admin\Coupon\AdminCouponPushToSmaregiUseCase;
+use App\UseCases\Admin\Coupon\AdminCouponSaveImageUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponStoreUseCase;
+use App\UseCases\Admin\Coupon\AdminCouponSyncFromSmaregiUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponUpdateUseCase;
+use App\UseCases\Admin\Member\AdminMemberSearchByKeywordUseCase;
+use Illuminate\Http\Request;
 
 class CouponController extends AdminBaseController
 {
-    private AdminCouponIndexUseCase $indexUseCase;
-
-    private AdminCouponCreateFormUseCase $createFormUseCase;
-
-    private AdminCouponStoreUseCase $storeUseCase;
-
-    private CouponAdminService $couponAdminService;
-
-    private AdminCouponEditFormUseCase $editFormUseCase;
-
-    private AdminCouponUpdateUseCase $updateUseCase;
-
-    private AdminCouponDeleteUseCase $deleteUseCase;
-
-    private AdminCouponBulkIssueFormUseCase $bulkIssueFormUseCase;
-
-    private AdminCouponBulkIssueUseCase $bulkIssueUseCase;
-
-    private SmaregiCouponImportSyncService $smaregiCouponImportSync;
-
-    private CouponDeliveryTargetService $couponDeliveryTargetService;
-
-    private MemberAdminService $memberAdminService;
-
     public function __construct(
-        AdminCouponIndexUseCase $indexUseCase,
-        AdminCouponCreateFormUseCase $createFormUseCase,
-        AdminCouponStoreUseCase $storeUseCase,
-        AdminCouponEditFormUseCase $editFormUseCase,
-        AdminCouponUpdateUseCase $updateUseCase,
-        AdminCouponDeleteUseCase $deleteUseCase,
-        AdminCouponBulkIssueFormUseCase $bulkIssueFormUseCase,
-        AdminCouponBulkIssueUseCase $bulkIssueUseCase,
-        CouponAdminService $couponAdminService,
-        SmaregiCouponImportSyncService $smaregiCouponImportSync,
-        CouponDeliveryTargetService $couponDeliveryTargetService,
-        MemberAdminService $memberAdminService,
-    ) {
-        $this->indexUseCase = $indexUseCase;
-        $this->createFormUseCase = $createFormUseCase;
-        $this->storeUseCase = $storeUseCase;
-        $this->editFormUseCase = $editFormUseCase;
-        $this->updateUseCase = $updateUseCase;
-        $this->deleteUseCase = $deleteUseCase;
-        $this->bulkIssueFormUseCase = $bulkIssueFormUseCase;
-        $this->bulkIssueUseCase = $bulkIssueUseCase;
-        $this->couponAdminService = $couponAdminService;
-        $this->smaregiCouponImportSync = $smaregiCouponImportSync;
-        $this->couponDeliveryTargetService = $couponDeliveryTargetService;
-        $this->memberAdminService = $memberAdminService;
-    }
+        private AdminCouponIndexUseCase $indexUseCase,
+        private AdminCouponCreateFormUseCase $createFormUseCase,
+        private AdminCouponStoreUseCase $storeUseCase,
+        private AdminCouponEditFormUseCase $editFormUseCase,
+        private AdminCouponUpdateUseCase $updateUseCase,
+        private AdminCouponDeleteUseCase $deleteUseCase,
+        private AdminCouponBulkIssueFormUseCase $bulkIssueFormUseCase,
+        private AdminCouponBulkIssueUseCase $bulkIssueUseCase,
+        private AdminCouponSaveImageUseCase $saveImageUseCase,
+        private AdminCouponSyncFromSmaregiUseCase $syncFromSmaregiUseCase,
+        private AdminCouponPushToSmaregiUseCase $pushToSmaregiUseCase,
+        private AdminCouponFullSyncWithSmaregiUseCase $fullSyncWithSmaregiUseCase,
+        private AdminCouponDeliveryPreviewUseCase $deliveryPreviewUseCase,
+        private AdminMemberSearchByKeywordUseCase $searchMembersUseCase,
+    ) {}
 
     public function coupons()
     {
@@ -96,7 +64,7 @@ class CouponController extends AdminBaseController
         $projectId = $this->resolveAdminProjectId();
         $validated = $request->validated();
         if ($request->hasFile('image')) {
-            $validated['image_url'] = $this->couponAdminService->saveCouponImage($request->file('image'), $projectId);
+            $validated['image_url'] = $this->saveImageUseCase->handle($request->file('image'), $projectId);
         }
         unset($validated['image']);
         try {
@@ -127,7 +95,7 @@ class CouponController extends AdminBaseController
         $projectId = $this->resolveAdminProjectId();
         $validated = $request->validated();
         if ($request->hasFile('image')) {
-            $validated['image_url'] = $this->couponAdminService->saveCouponImage($request->file('image'), $projectId);
+            $validated['image_url'] = $this->saveImageUseCase->handle($request->file('image'), $projectId);
         }
         unset($validated['image']);
         try {
@@ -206,7 +174,7 @@ class CouponController extends AdminBaseController
     {
         $projectId = $this->resolveAdminProjectId();
         try {
-            $result = $this->smaregiCouponImportSync->syncFromSmaregi($projectId);
+            $result = $this->syncFromSmaregiUseCase->handle($projectId);
             $msg = sprintf(
                 'スマレジからクーポンを取り込みました（新規: %d、更新: %d、失敗: %d）',
                 $result['created'],
@@ -230,7 +198,7 @@ class CouponController extends AdminBaseController
     {
         $projectId = $this->resolveAdminProjectId();
         try {
-            $result = $this->smaregiCouponImportSync->pushUnlinkedToSmaregi($projectId);
+            $result = $this->pushToSmaregiUseCase->handle($projectId);
             $msg = sprintf(
                 '管理画面のクーポンをスマレジに反映しました（登録: %d、失敗: %d）',
                 $result['pushed'],
@@ -253,7 +221,7 @@ class CouponController extends AdminBaseController
     {
         $projectId = $this->resolveAdminProjectId();
         try {
-            $result = $this->smaregiCouponImportSync->fullSync($projectId);
+            $result = $this->fullSyncWithSmaregiUseCase->handle($projectId);
             $msg = sprintf(
                 'クーポンを完全同期しました（スマレジ→DB: 新規 %d・更新 %d、DB→スマレジ: %d 件、失敗: %d）',
                 $result['created'],
@@ -295,7 +263,7 @@ class CouponController extends AdminBaseController
     {
         $projectId = $this->resolveAdminProjectId();
         $keyword = (string) request()->query('q', '');
-        $results = $this->memberAdminService->searchByKeyword($projectId, $keyword, 20);
+        $results = $this->searchMembersUseCase->handle($projectId, $keyword);
 
         return response()->json($results);
     }
@@ -319,7 +287,7 @@ class CouponController extends AdminBaseController
             $params['target_member_ids'] = array_filter(array_map('intval', explode(',', $params['target_member_ids'])));
         }
 
-        $count = $this->couponDeliveryTargetService->countTargets($projectId, $deliveryType, $params);
+        $count = $this->deliveryPreviewUseCase->handle($projectId, $deliveryType, $params);
 
         return response()->json(['count' => $count]);
     }

@@ -2,6 +2,9 @@
 
 namespace App\UseCases\Member\WalletPass;
 
+use App\Services\MemberService;
+use App\Services\WalletPassService;
+use App\UseCases\Member\WalletPass\Data\WalletPassUrlIssueInput;
 use App\UseCases\Member\WalletPass\Data\WalletPassUrlIssueOutput;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
@@ -16,19 +19,34 @@ class WalletPassUrlIssueUseCase
 
     private const TOKEN_TTL_MINUTES = 3;
 
-    public function handle(int $userId, int $projectId, string $projectKey): WalletPassUrlIssueOutput
+    public function __construct(
+        private WalletPassService $walletPassService,
+        private MemberService $memberService,
+    ) {}
+
+    public function handle(WalletPassUrlIssueInput $input): WalletPassUrlIssueOutput
     {
+        if ($this->walletPassService->isAvailable() !== true) {
+            return WalletPassUrlIssueOutput::unavailable(
+                $this->walletPassService->getUnavailabilityReasons(),
+            );
+        }
+
+        $memberData = $this->memberService->getMemberData($input->user);
+        if (! isset($memberData['is_member']) || $memberData['is_member'] === false) {
+            return WalletPassUrlIssueOutput::notMember();
+        }
+
         $token = Str::random(64);
         $key = self::TOKEN_CACHE_PREFIX.$token;
         Cache::put($key, [
-            'user_id' => $userId,
-            'project_id' => $projectId,
+            'user_id' => $input->user->id,
+            'project_id' => $input->projectId,
         ], now()->addMinutes(self::TOKEN_TTL_MINUTES));
 
-        // LIFF の openWindow は API 直リンクを拒否しやすいため、短い中間ページ URL を返す
-        $url = $this->buildWalletAddUrl($token, $projectKey);
-
-        return new WalletPassUrlIssueOutput($url);
+        return WalletPassUrlIssueOutput::success(
+            $this->buildWalletAddUrl($token, $input->projectKey),
+        );
     }
 
     public function buildWalletAddUrl(string $token, string $projectKey): string

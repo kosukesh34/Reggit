@@ -62,14 +62,6 @@ php artisan migrate
 3. スマレジ側でアプリを利用開始（またはお試し利用）すると、契約通知が送られ、**受信した契約一覧** に契約IDが表示されます。
 4. **このプロジェクトに紐づける契約** で対象の契約を選び **保存**。
 
-### 仮想POSデータ確認（開発用）
-
-サーバーがスマレジAPIから取得した店舗・会員・商品を、保存せずにその場で表示する画面です。**データはDB/Cacheに保存されず、表示のたびにAPI通信のみで取得**しています。
-
-- **URL**: `{APP_URL}/admin/{project_key}/settings/smaregi/pos-data`
-  - 例: `https://あなたのドメイン/admin/default/settings/smaregi/pos-data`
-- 管理画面「設定 → スマレジ連携」の「仮想POSデータ確認」ボタンからも遷移できます。
-
 ## 5. API の利用例（スマレジから取得）
 
 プロジェクトに契約を紐づけたあと、コードからは次のように利用できます。
@@ -114,13 +106,13 @@ if ($contractId !== null) {
 }
 ```
 
-プロジェクトIDだけ分かっていて、契約IDの解決を任せたい場合は UseCase を使います。
+プロジェクトIDだけ分かっていて、契約IDの解決を任せたい場合は `SmaregiApiService::syncCustomerPointsForProject` を使います。アプリ本体ではポイント増減時に `PointsEarned` ドメインイベントが飛び、`SyncPointsEarnedToSmaregiListener` が同メソッドへ委譲します。
 
 ```php
-use App\UseCases\Smaregi\SmaregiSyncCustomerPointsUseCase;
+use App\Services\Smaregi\SmaregiApiService;
 
-$useCase = app(SmaregiSyncCustomerPointsUseCase::class);
-$result = $useCase->execute(
+$service = app(SmaregiApiService::class);
+$result = $service->syncCustomerPointsForProject(
     $projectId,
     '1',    // スマレジ会員ID
     10,     // 加算ポイント（負で減算）
