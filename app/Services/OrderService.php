@@ -89,23 +89,22 @@ class OrderService
             $this->awardStamps($user, $order, $finalAmount);
 
             DB::commit();
-
-            // Stripe 未決済はローカル台帳のみ。スマレジ同期は決済確定後。
-            // Cash 等は used/earned をネット1回で同期する。
-            if ($paymentMethod !== PaymentMethod::STRIPE) {
-                $this->domainEvents->dispatch(new OrderPointsSyncRequested(
-                    (int) $order->id,
-                    $projectId,
-                    (int) $user->id,
-                ));
-            }
-
-            return $order->load('items.product');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Order creation error: '.$e->getMessage());
             throw $e;
         }
+
+        // commit 後に同期する（失敗しても注文は残す。try/catch 外で rollBack しない）
+        if ($paymentMethod !== PaymentMethod::STRIPE) {
+            $this->domainEvents->dispatch(new OrderPointsSyncRequested(
+                (int) $order->id,
+                $projectId,
+                (int) $user->id,
+            ));
+        }
+
+        return $order->load('items.product');
     }
 
     /**

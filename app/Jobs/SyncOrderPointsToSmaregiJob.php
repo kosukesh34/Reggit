@@ -11,10 +11,10 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use RuntimeException;
 
 /**
  * 注文ポイントのスマレジ同期リトライ（Cash 等、Confirm/Webhook 再送が無い経路向け）。
+ * sync ドライバでは再帰ディスパッチしない（注文作成リクエストを壊さない）。
  */
 class SyncOrderPointsToSmaregiJob implements ShouldBeUnique, ShouldQueue
 {
@@ -31,6 +31,7 @@ class SyncOrderPointsToSmaregiJob implements ShouldBeUnique, ShouldQueue
         public int $orderId,
         public int $projectId,
         public int $userId,
+        public int $attempt = 1,
     ) {}
 
     public function uniqueId(): string
@@ -52,13 +53,24 @@ class SyncOrderPointsToSmaregiJob implements ShouldBeUnique, ShouldQueue
             return;
         }
 
-        LogHelper::warning('[Smaregi] order points sync job incomplete, will retry', [
+        LogHelper::warning('[Smaregi] order points sync job incomplete', [
             'order_id' => $this->orderId,
             'project_id' => $this->projectId,
             'user_id' => $this->userId,
-            'attempt' => $this->attempts(),
+            'attempt' => $this->attempt,
         ]);
 
-        throw new RuntimeException('Smaregi order points sync not completed');
+        // sync では例外・再ディスパッチしない（注文作成の HTTP を壊さない）
+        if (config('queue.default') === 'sync') {
+            return;
+        }
+
+        if ($this->attempt >= $this->tries) {
+            return;
+        }
+
+        $delaySeconds = $this->backoff[$this->attempt - 1] ?? 900;
+        self::dispatch($this->orderId, $this->projectId, $this->userId, $this->attempt + 1)
+            ->delay(now()->addSeconds($delaySeconds));
     }
 }
