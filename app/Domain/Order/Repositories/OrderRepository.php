@@ -19,6 +19,8 @@ interface OrderRepository
 
     public function findByIdAndUserId(int $orderId, int $userId, int $projectId): ?Order;
 
+    public function findByIdAndUserIdForUpdate(int $orderId, int $userId, int $projectId): ?Order;
+
     public function save(Order $order): void;
 
     /**
