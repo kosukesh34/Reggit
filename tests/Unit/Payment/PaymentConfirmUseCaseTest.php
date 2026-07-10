@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Payment;
 
+use App\Domain\Order\Events\OrderConfirmed;
 use App\Domain\Order\Events\OrderPointsSyncRequested;
 use App\Domain\Order\Repositories\OrderRepository;
 use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
@@ -41,10 +42,23 @@ class PaymentConfirmUseCaseTest extends TestCase
         $gateway = new FakePaymentGateway;
         $gateway->intent = ['status' => 'succeeded', 'metadata' => ['order_id' => $order->id]];
 
+        $dispatcher = \Mockery::mock(DomainEventDispatcher::class);
+        $dispatcher->shouldReceive('dispatch')
+            ->once()
+            ->with(\Mockery::type(OrderConfirmed::class));
+        $dispatcher->shouldReceive('dispatch')
+            ->once()
+            ->with(\Mockery::on(function ($event) use ($order, $user): bool {
+                return $event instanceof OrderPointsSyncRequested
+                    && $event->orderId === (int) $order->id
+                    && $event->projectId === 1
+                    && $event->userId === (int) $user->id;
+            }));
+
         $useCase = new PaymentConfirmUseCase(
             $gateway,
             app(OrderRepository::class),
-            app(DomainEventDispatcher::class),
+            $dispatcher,
         );
         $result = $useCase->handle('pi_test_123', $order->id, 1);
 
