@@ -4,11 +4,16 @@ namespace App\Services;
 
 use App\Models\User;
 use App\Models\UserDevice;
+use App\Repositories\Contracts\UserDeviceRepository;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
 
 class DeviceService
 {
+    public function __construct(
+        private UserDeviceRepository $userDeviceRepository,
+    ) {}
+
     public function register(User $user, array $payload): UserDevice
     {
         $projectId = (int) ($user->project_id ?? AdminContext::getCurrentProjectId() ?? 1);
@@ -17,10 +22,7 @@ class DeviceService
             ? trim($payload['push_token'])
             : '';
 
-        $device = UserDevice::firstOrNew([
-            'project_id' => $projectId,
-            'device_identifier' => $deviceIdentifier,
-        ]);
+        $device = $this->userDeviceRepository->findOrNewByProjectAndIdentifier($projectId, $deviceIdentifier);
 
         $effectivePushToken = $incomingPushToken !== ''
             ? $incomingPushToken

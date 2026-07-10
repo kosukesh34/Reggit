@@ -2,7 +2,7 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\Project;
+use App\Repositories\Contracts\ProjectRepository;
 use App\Util\AdminContext;
 use App\Util\StrHelper;
 use Closure;
@@ -12,6 +12,10 @@ use Symfony\Component\HttpFoundation\Response;
 
 class BindAdminProject
 {
+    public function __construct(
+        private ProjectRepository $projectRepository,
+    ) {}
+
     public function handle(Request $request, Closure $next): Response
     {
         $projectKey = $request->route('project_key');
@@ -20,14 +24,11 @@ class BindAdminProject
         }
 
         $admin = $request->user('admin');
-        $project = Project::where('project_key', $projectKey)->where('is_active', true)->first();
+        $project = $this->projectRepository->findActiveByProjectKey($projectKey);
 
         // project_key が "default" で該当が無い場合、管理者がアクセス可能な先頭プロジェクトを使用する
         if ($project === null && $projectKey === 'default' && $admin !== null) {
-            $project = Project::whereIn('id', $admin->getAllowedProjectIds())
-                ->where('is_active', true)
-                ->orderBy('name')
-                ->first();
+            $project = $this->projectRepository->findFirstActiveByIds($admin->getAllowedProjectIds());
         }
 
         if ($project === null) {

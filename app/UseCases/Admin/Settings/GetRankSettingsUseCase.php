@@ -2,12 +2,16 @@
 
 namespace App\UseCases\Admin\Settings;
 
-use App\Models\ShopSetting;
+use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Models\StampCard;
 use App\UseCases\Admin\Settings\Data\RankSettingsView;
 
 class GetRankSettingsUseCase
 {
+    public function __construct(
+        private ShopSettingRepository $shopSettingRepository,
+    ) {}
+
     public function handle(int $projectId): RankSettingsView
     {
         $this->ensureDefaultStampCardExists($projectId);
@@ -17,24 +21,24 @@ class GetRankSettingsUseCase
             ->get();
 
         return new RankSettingsView(
-            ShopSetting::getMemberRankSettings($projectId),
-            ShopSetting::getRankBasis($projectId),
-            ShopSetting::getPointEarnRate($projectId),
-            ShopSetting::getPointsValidDays($projectId),
-            ShopSetting::getMemberCodeType($projectId),
-            ShopSetting::getMemberCodeFormat($projectId),
-            ShopSetting::getMemberCodeLength($projectId),
-            ShopSetting::getMemberCodePrefix($projectId),
-            ShopSetting::getShowPointsDisplay($projectId),
-            ShopSetting::getShowRankProgress($projectId),
-            ShopSetting::getShowMemberCardForGuest($projectId),
-            ShopSetting::getMemberCardDesign($projectId),
-            ShopSetting::getFrontendLogoUrl($projectId),
-            ShopSetting::getMemberCardDisplayType($projectId),
-            ShopSetting::getMemberCardCodeType($projectId),
-            ShopSetting::getPointsPerOrder($projectId),
-            ShopSetting::getStampEarnPerAmount($projectId),
-            ShopSetting::getOrderStampCardId($projectId),
+            $this->shopSettingRepository->getMemberRankSettings($projectId),
+            $this->shopSettingRepository->getRankBasis($projectId),
+            $this->shopSettingRepository->getPointEarnRate($projectId),
+            $this->shopSettingRepository->getPointsValidDays($projectId),
+            $this->shopSettingRepository->getMemberCodeType($projectId),
+            $this->shopSettingRepository->getMemberCodeFormat($projectId),
+            $this->shopSettingRepository->getMemberCodeLength($projectId),
+            $this->shopSettingRepository->getMemberCodePrefix($projectId),
+            $this->shopSettingRepository->getShowPointsDisplay($projectId),
+            $this->shopSettingRepository->getShowRankProgress($projectId),
+            $this->shopSettingRepository->getShowMemberCardForGuest($projectId),
+            $this->shopSettingRepository->getMemberCardDesign($projectId),
+            $this->shopSettingRepository->getFrontendLogoUrl($projectId),
+            $this->shopSettingRepository->getMemberCardDisplayType($projectId),
+            $this->shopSettingRepository->getMemberCardCodeType($projectId),
+            $this->shopSettingRepository->getPointsPerOrder($projectId),
+            $this->shopSettingRepository->getStampEarnPerAmount($projectId),
+            $this->shopSettingRepository->getOrderStampCardId($projectId),
             $stampCardsForSelect
         );
     }

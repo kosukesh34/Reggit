@@ -3,20 +3,17 @@
 namespace App\UseCases\Admin\Auth;
 
 use App\Services\Admin\AdminAuthService;
-use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
+use App\UseCases\Admin\Auth\Data\AdminRedirectResult;
+use App\UseCases\Admin\Auth\Data\SystemAdminLoginInput;
 
 class SystemAdminLoginUseCase
 {
-    private AdminAuthService $authService;
+    public function __construct(
+        private AdminAuthService $authService,
+    ) {}
 
-    public function __construct(AdminAuthService $authService)
+    public function handle(SystemAdminLoginInput $input): AdminRedirectResult
     {
-        $this->authService = $authService;
-    }
-
-    public function handle(Request $request): RedirectResponse
-    {
-        return $this->authService->loginSystemAdmin($request);
+        return $this->authService->loginSystemAdmin($input);
     }
 }

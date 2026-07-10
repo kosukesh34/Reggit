@@ -117,12 +117,12 @@ class GetGoogleWalletUrlUseCaseTest extends TestCase
         $saveUrlIssuer = Mockery::mock(GoogleWalletSaveUrlIssuer::class);
         $saveUrlIssuer->shouldReceive('wrapForClient')
             ->once()
-            ->with($expectedUrl, 'default')
+            ->with($expectedUrl, 'default', Mockery::type('string'))
             ->andReturn($wrappedUrl);
 
         $memberService = $this->app->make(MemberService::class);
         $useCase = new GetGoogleWalletUrlUseCase($walletService, $memberService, $saveUrlIssuer);
-        $input = new GetGoogleWalletUrlInput(null, $user, $project->id, 'default', null);
+        $input = new GetGoogleWalletUrlInput(null, $user, $project->id, 'default', null, 'https://example.test');
 
         $output = $useCase->handle($input);
 

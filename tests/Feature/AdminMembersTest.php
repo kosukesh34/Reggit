@@ -14,10 +14,12 @@ use App\Util\AdminContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Mockery;
+use Tests\Support\GrantsMemberPoints;
 use Tests\TestCase;
 
 class AdminMembersTest extends TestCase
 {
+    use GrantsMemberPoints;
     use RefreshDatabase;
 
     protected function tearDown(): void
@@ -79,7 +81,7 @@ class AdminMembersTest extends TestCase
             'member_number' => 'M-ADMIN-1',
             'points' => 0,
         ]);
-        $member->addPoints(10, '初期');
+        $this->grantMemberPoints($member, 10, '初期');
 
         Http::fake(function ($request) {
             $url = $request->url();

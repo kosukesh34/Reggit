@@ -1,0 +1,82 @@
+<?php
+
+namespace App\Domain\Member\Services;
+
+final class MemberRankResolver
+{
+    /**
+     * @param  list<array{is_active?: bool|int|string, min_points?: int, order?: int, key?: string, label?: string, icon_url?: string|null, stamp_background_url?: string|null, card_color?: string|null}>  $ranks
+     * @return array{current_rank: string, current_rank_label: string, current_rank_icon: string|null, current_rank_background: string|null, current_rank_color: string|null, next_rank: string|null, next_rank_label: string|null, points_to_next_rank: int|null, rank_basis: string, rank_metric: int}
+     */
+    public function resolve(
+        array $ranks,
+        string $basis,
+        int $points,
+        int $stamps,
+        ?string $fallbackRank,
+    ): array {
+        $metric = $basis === 'stamps' ? $stamps : ($basis === 'max' ? max($points, $stamps) : $points);
+
+        $active = array_values(array_filter($ranks, fn ($rank) => $this->isRankActive($rank)));
+        if (count($active) === 0) {
+            $fallback = $fallbackRank ?? 'bronze';
+
+            return [
+                'current_rank' => $fallback,
+                'current_rank_label' => $fallback,
+                'current_rank_icon' => null,
+                'current_rank_background' => null,
+                'current_rank_color' => null,
+                'next_rank' => null,
+                'next_rank_label' => null,
+                'points_to_next_rank' => null,
+                'rank_basis' => $basis,
+                'rank_metric' => $metric,
+            ];
+        }
+
+        usort($active, fn ($a, $b) => ($a['min_points'] <=> $b['min_points']) ?: (($a['order'] ?? 0) <=> ($b['order'] ?? 0)));
+        $resolved = $active[0];
+        foreach ($active as $rank) {
+            if ($metric >= ($rank['min_points'] ?? 0)) {
+                $resolved = $rank;
+            }
+        }
+
+        $next = null;
+        foreach ($active as $rank) {
+            if (($rank['min_points'] ?? 0) > ($resolved['min_points'] ?? 0)) {
+                $next = $rank;
+                break;
+            }
+        }
+
+        $pointsToNext = null;
+        if ($next !== null) {
+            $pointsToNext = max(0, ($next['min_points'] ?? 0) - $metric);
+        }
+
+        return [
+            'current_rank' => $resolved['key'] ?? 'bronze',
+            'current_rank_label' => $resolved['label'] ?? ($resolved['key'] ?? 'bronze'),
+            'current_rank_icon' => $resolved['icon_url'] ?? null,
+            'current_rank_background' => $resolved['stamp_background_url'] ?? null,
+            'current_rank_color' => $resolved['card_color'] ?? null,
+            'next_rank' => $next !== null ? ($next['key'] ?? null) : null,
+            'next_rank_label' => $next !== null ? ($next['label'] ?? ($next['key'] ?? null)) : null,
+            'points_to_next_rank' => $pointsToNext,
+            'rank_basis' => $basis,
+            'rank_metric' => $metric,
+        ];
+    }
+
+    /** @param array{is_active?: bool|int|string} $rank */
+    private function isRankActive(array $rank): bool
+    {
+        if (! array_key_exists('is_active', $rank)) {
+            return false;
+        }
+
+        return $rank['is_active'] === true || $rank['is_active'] === 1 || $rank['is_active'] === '1';
+    }
+}

@@ -2,6 +2,8 @@
 
 namespace App\Services\Admin;
 
+use App\Domain\Queue\Repositories\QueueEntryRepository;
+use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Enums\QueueStatus;
 use App\Models\Project;
 use App\Models\QueueCallLog;
@@ -19,10 +21,20 @@ class QueueAdminService
 
     private PushNotificationService $pushNotificationService;
 
-    public function __construct(LineService $lineService, PushNotificationService $pushNotificationService)
-    {
+    private QueueEntryRepository $queueEntryRepository;
+
+    private ShopSettingRepository $shopSettingRepository;
+
+    public function __construct(
+        LineService $lineService,
+        PushNotificationService $pushNotificationService,
+        QueueEntryRepository $queueEntryRepository,
+        ShopSettingRepository $shopSettingRepository,
+    ) {
         $this->lineService = $lineService;
         $this->pushNotificationService = $pushNotificationService;
+        $this->queueEntryRepository = $queueEntryRepository;
+        $this->shopSettingRepository = $shopSettingRepository;
     }
 
     public function getPaginatedList(int $projectId, int $perPage = 50): LengthAwarePaginator
@@ -43,8 +55,9 @@ class QueueAdminService
     public function getEstimatedWaitMinutes(int $projectId): int
     {
         $waiting = $this->getWaitingCount($projectId);
+        $avgMinutes = $this->shopSettingRepository->getQueueAvgServeMinutes($projectId);
 
-        return $waiting * 10;
+        return $waiting * $avgMinutes;
     }
 
     public function getWaitingQueueNumbers(int $projectId): Collection
@@ -63,132 +76,141 @@ class QueueAdminService
             return;
         }
 
-        $payload = ['status' => $status];
-        if ($status === QueueStatus::CALLED) {
-            $payload['called_at'] = $entry->called_at ?? now();
+        $aggregate = $this->queueEntryRepository->findById((int) $entry->id, (int) $entry->project_id);
+        if ($aggregate === null) {
+            return;
         }
-        if ($status === QueueStatus::ENTERED) {
-            $payload['entered_at'] = $entry->entered_at ?? now();
-        }
-        $entry->update($payload);
+
+        $aggregate->applyAdminStatus($status, now());
+        $this->queueEntryRepository->save($aggregate);
 
         if ($status === QueueStatus::CALLED) {
-            $lineUserId = $entry->user?->line_user_id ?? $entry->member?->user?->line_user_id;
-            $notifyUserId = (int) ($entry->user_id ?? ($entry->member?->user_id ?? 0));
-            $callLog = QueueCallLog::firstOrCreate(
-                ['queue_entry_id' => $entry->id],
-                [
-                    'project_id' => (int) $entry->project_id,
-                    'queue_number' => $entry->queue_number,
-                    'line_user_id' => $lineUserId,
-                    'called_at' => now(),
-                    'push_status' => 'pending',
-                ]
+            $this->notifyCalled((int) $entry->id);
+        }
+    }
+
+    public function notifyCalled(int $id): void
+    {
+        $entry = QueueEntry::with('member.user', 'user')->whereKey($id)->first();
+        if ($entry === null) {
+            return;
+        }
+
+        $lineUserId = $entry->user?->line_user_id ?? $entry->member?->user?->line_user_id;
+        $notifyUserId = (int) ($entry->user_id ?? ($entry->member?->user_id ?? 0));
+        $callLog = QueueCallLog::firstOrCreate(
+            ['queue_entry_id' => $entry->id],
+            [
+                'project_id' => (int) $entry->project_id,
+                'queue_number' => $entry->queue_number,
+                'line_user_id' => $lineUserId,
+                'called_at' => now(),
+                'push_status' => 'pending',
+            ]
+        );
+        if ($callLog->wasRecentlyCreated === false) {
+            return;
+        }
+        if ($notifyUserId > 0) {
+            $queueNumber = (string) ($entry->queue_number ?? $entry->id);
+            $pushResult = $this->pushNotificationService->sendQueueCalledToUser((int) $entry->project_id, $notifyUserId, $queueNumber);
+            LogHelper::info('[Queue] native push result', [
+                'queue_id' => $entry->id,
+                'project_id' => (int) $entry->project_id,
+                'user_id' => $notifyUserId,
+                'target_tokens' => $pushResult['target_tokens'],
+                'sent' => $pushResult['sent'],
+                'failed' => $pushResult['failed'],
+                'skipped' => $pushResult['skipped'],
+            ]);
+        }
+
+        if ($lineUserId === null || $lineUserId === '' || ! $this->isValidLineUserId($lineUserId)) {
+            $callLog->update([
+                'push_status' => 'skipped',
+                'error_message' => 'invalid line user id',
+            ]);
+            LogHelper::warning('[Queue] line push skipped: invalid line user id', [
+                'queue_id' => $entry->id,
+                'line_user_id' => $lineUserId,
+            ]);
+
+            return;
+        }
+        if (app()->environment('testing')) {
+            $callLog->update([
+                'push_status' => 'skipped',
+                'error_message' => 'testing environment',
+            ]);
+
+            return;
+        }
+        $message = sprintf('順番が近づきました。受付番号: %s', $entry->queue_number ?? $entry->id);
+        try {
+            $project = Project::find((int) $entry->project_id);
+            $projectKey = trim((string) ($project?->project_key ?? 'default'));
+            if ($projectKey === '') {
+                $projectKey = 'default';
+            }
+            $liffUri = QueueLiffUrlBuilder::build(
+                (int) $entry->project_id,
+                $projectKey,
+                (string) ($entry->qr_token ?? ''),
+                (int) $entry->id
             );
-            if ($callLog->wasRecentlyCreated === false) {
-                return;
-            }
-            if ($notifyUserId > 0) {
-                $queueNumber = (string) ($entry->queue_number ?? $entry->id);
-                $pushResult = $this->pushNotificationService->sendQueueCalledToUser((int) $entry->project_id, $notifyUserId, $queueNumber);
-                LogHelper::info('[Queue] native push result', [
-                    'queue_id' => $entry->id,
-                    'project_id' => (int) $entry->project_id,
-                    'user_id' => $notifyUserId,
-                    'target_tokens' => $pushResult['target_tokens'],
-                    'sent' => $pushResult['sent'],
-                    'failed' => $pushResult['failed'],
-                    'skipped' => $pushResult['skipped'],
-                ]);
-            }
-
-            if ($lineUserId === null || $lineUserId === '' || ! $this->isValidLineUserId($lineUserId)) {
-                $callLog->update([
-                    'push_status' => 'skipped',
-                    'error_message' => 'invalid line user id',
-                ]);
-                LogHelper::warning('[Queue] line push skipped: invalid line user id', [
-                    'queue_id' => $entry->id,
-                    'line_user_id' => $lineUserId,
-                ]);
-
-                return;
-            }
-            if (app()->environment('testing')) {
-                $callLog->update([
-                    'push_status' => 'skipped',
-                    'error_message' => 'testing environment',
-                ]);
-
-                return;
-            }
-            $message = sprintf('順番が近づきました。受付番号: %s', $entry->queue_number ?? $entry->id);
-            try {
-                $project = Project::find((int) $entry->project_id);
-                $projectKey = trim((string) ($project?->project_key ?? 'default'));
-                if ($projectKey === '') {
-                    $projectKey = 'default';
-                }
-                $liffUri = QueueLiffUrlBuilder::build(
-                    (int) $entry->project_id,
-                    $projectKey,
-                    (string) ($entry->qr_token ?? ''),
-                    (int) $entry->id
-                );
-                $flex = [
-                    'type' => 'flex',
-                    'altText' => $message,
-                    'contents' => [
-                        'type' => 'bubble',
-                        'body' => [
-                            'type' => 'box',
-                            'layout' => 'vertical',
-                            'spacing' => 'md',
-                            'contents' => [
-                                ['type' => 'text', 'text' => '順番のお知らせ', 'weight' => 'bold', 'size' => 'lg', 'color' => '#06C755'],
-                                ['type' => 'text', 'text' => $message, 'wrap' => true, 'size' => 'sm'],
-                            ],
-                        ],
-                        'footer' => [
-                            'type' => 'box',
-                            'layout' => 'vertical',
-                            'contents' => [[
-                                'type' => 'button',
-                                'style' => 'primary',
-                                'height' => 'sm',
-                                'action' => [
-                                    'type' => 'uri',
-                                    'label' => '待ち状況を確認',
-                                    'uri' => $liffUri,
-                                ],
-                                'color' => '#06C755',
-                            ]],
+            $flex = [
+                'type' => 'flex',
+                'altText' => $message,
+                'contents' => [
+                    'type' => 'bubble',
+                    'body' => [
+                        'type' => 'box',
+                        'layout' => 'vertical',
+                        'spacing' => 'md',
+                        'contents' => [
+                            ['type' => 'text', 'text' => '順番のお知らせ', 'weight' => 'bold', 'size' => 'lg', 'color' => '#06C755'],
+                            ['type' => 'text', 'text' => $message, 'wrap' => true, 'size' => 'sm'],
                         ],
                     ],
-                ];
-                LogHelper::info('[Queue] call notification liff url built', [
-                    'queue_id' => $entry->id,
-                    'project_key' => $projectKey,
-                    'is_liff_host' => str_contains($liffUri, 'liff.line.me'),
-                ]);
-                $this->lineService->pushMessage($lineUserId, $flex);
-                $callLog->update([
-                    'push_status' => 'sent',
-                    'error_message' => null,
-                    'line_user_id' => $lineUserId,
-                ]);
-            } catch (\Exception $e) {
-                $callLog->update([
-                    'push_status' => 'failed',
-                    'error_message' => mb_substr($e->getMessage(), 0, 255),
-                    'line_user_id' => $lineUserId,
-                ]);
-                LogHelper::error('[Queue] line push failed', [
-                    'queue_id' => $entry->id,
-                    'line_user_id' => $lineUserId,
-                    'error' => $e->getMessage(),
-                ]);
-            }
+                    'footer' => [
+                        'type' => 'box',
+                        'layout' => 'vertical',
+                        'contents' => [[
+                            'type' => 'button',
+                            'style' => 'primary',
+                            'height' => 'sm',
+                            'action' => [
+                                'type' => 'uri',
+                                'label' => '待ち状況を確認',
+                                'uri' => $liffUri,
+                            ],
+                            'color' => '#06C755',
+                        ]],
+                    ],
+                ],
+            ];
+            LogHelper::info('[Queue] call notification liff url built', [
+                'queue_id' => $entry->id,
+                'project_key' => $projectKey,
+                'is_liff_host' => str_contains($liffUri, 'liff.line.me'),
+            ]);
+            $this->lineService->pushMessage($lineUserId, $flex);
+            $callLog->update([
+                'push_status' => 'sent',
+                'error_message' => null,
+                'line_user_id' => $lineUserId,
+            ]);
+        } catch (\Exception $e) {
+            $callLog->update([
+                'push_status' => 'failed',
+                'error_message' => mb_substr($e->getMessage(), 0, 255),
+                'line_user_id' => $lineUserId,
+            ]);
+            LogHelper::error('[Queue] line push failed', [
+                'queue_id' => $entry->id,
+                'line_user_id' => $lineUserId,
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 

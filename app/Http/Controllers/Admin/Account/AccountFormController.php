@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Admin\Account;
 
 use App\Http\Controllers\Controller;
+use App\Http\Support\RouteContextResolver;
 use App\Models\AdminUser;
 use App\UseCases\Admin\Account\AccountFormUseCase;
-use App\UseCases\Admin\RouteContextResolver;
 use Illuminate\Http\Request;
 
 class AccountFormController extends Controller
@@ -20,7 +20,7 @@ class AccountFormController extends Controller
         /** @var AdminUser $me */
         $me = $request->user('admin');
 
-        $routeContext = $this->routeContextResolver->resolve($request);
+        $routeContext = $this->routeContextResolver->resolveFromRequest($request);
         $view = $this->formUseCase->getCreateView($me, $routeContext);
 
         return view('admin.accounts.create', [
@@ -36,7 +36,7 @@ class AccountFormController extends Controller
     {
         /** @var AdminUser $me */
         $me = $request->user('admin');
-        $routeContext = $this->routeContextResolver->resolve($request);
+        $routeContext = $this->routeContextResolver->resolveFromRequest($request);
         $view = $this->formUseCase->getEditView($me, $id, $routeContext);
 
         return view('admin.accounts.edit', [

@@ -132,7 +132,6 @@ class AllScreensAccessibleTest extends TestCase
             'settings.features' => ['admin.settings.features', ['project_key' => $key]],
             'settings.ranks' => ['admin.settings.ranks', ['project_key' => $key]],
             'settings.smaregi' => ['admin.settings.smaregi', ['project_key' => $key]],
-            'settings.smaregi.pos-data' => ['admin.settings.smaregi.pos-data', ['project_key' => $key]],
             'settings.liff-designer' => ['admin.settings.liff-designer', ['project_key' => $key]],
             'settings.reservations' => ['admin.settings.reservations', ['project_key' => $key]],
             'settings.queue' => ['admin.settings.queue', ['project_key' => $key]],
