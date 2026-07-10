@@ -19,7 +19,7 @@ class StampIndexUseCase
         $member = $user->member;
 
         if ($member === null) {
-            $projectId = $user->project_id ?? 0;
+            $projectId = $user->project_id ?? 1;
             $defaultImageUrl = $this->shopSettingRepository->getStampDefaultImageUrl($projectId);
 
             return new StampListView([], $defaultImageUrl, true);

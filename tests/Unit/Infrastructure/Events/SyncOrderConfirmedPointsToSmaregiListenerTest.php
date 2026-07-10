@@ -32,7 +32,7 @@ class SyncOrderConfirmedPointsToSmaregiListenerTest extends TestCase
         );
     }
 
-    public function test_決済確定時に利用と獲得の差分をスマレジへ同期すること(): void
+    public function test_決済確定時に利用と獲得のネット差分をスマレジへ1回同期すること(): void
     {
         $project = Project::factory()->create();
         $user = User::factory()->create(['project_id' => $project->id]);
@@ -55,11 +55,7 @@ class SyncOrderConfirmedPointsToSmaregiListenerTest extends TestCase
         $smaregiApi = Mockery::mock(SmaregiApiService::class);
         $smaregiApi->shouldReceive('syncCustomerPointsForProject')
             ->once()
-            ->with((int) $project->id, 'cust-1', -20)
-            ->andReturn(['customerId' => 'cust-1']);
-        $smaregiApi->shouldReceive('syncCustomerPointsForProject')
-            ->once()
-            ->with((int) $project->id, 'cust-1', 5)
+            ->with((int) $project->id, 'cust-1', -15)
             ->andReturn(['customerId' => 'cust-1']);
 
         $this->makeListener($smaregiApi)->handle(new OrderConfirmed(
@@ -124,11 +120,49 @@ class SyncOrderConfirmedPointsToSmaregiListenerTest extends TestCase
         $smaregiApi = Mockery::mock(SmaregiApiService::class);
         $smaregiApi->shouldReceive('syncCustomerPointsForProject')
             ->once()
-            ->with((int) $project->id, 'cust-1', -10)
+            ->with((int) $project->id, 'cust-1', -7)
             ->andReturn(['customerId' => 'cust-1']);
+
+        $listener = $this->makeListener($smaregiApi);
+        $event = new OrderConfirmed(
+            (int) $order->id,
+            (int) $project->id,
+            (int) $user->id,
+        );
+        $listener->handle($event);
+        $listener->handle($event);
+    }
+
+    public function test_同期失敗時は完了フラグを残さず再実行できること(): void
+    {
+        Cache::flush();
+
+        $project = Project::factory()->create();
+        $user = User::factory()->create(['project_id' => $project->id]);
+        Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+            'smaregi_customer_id' => 'cust-1',
+        ]);
+        $order = Order::create([
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+            'total_amount' => 1000,
+            'status' => OrderStatus::CONFIRMED,
+            'payment_method' => PaymentMethod::STRIPE,
+            'points_used' => 20,
+            'points_earned' => 5,
+            'order_type' => 'mobile',
+        ]);
+
+        $smaregiApi = Mockery::mock(SmaregiApiService::class);
         $smaregiApi->shouldReceive('syncCustomerPointsForProject')
             ->once()
-            ->with((int) $project->id, 'cust-1', 3)
+            ->with((int) $project->id, 'cust-1', -15)
+            ->andReturn(null);
+        $smaregiApi->shouldReceive('syncCustomerPointsForProject')
+            ->once()
+            ->with((int) $project->id, 'cust-1', -15)
             ->andReturn(['customerId' => 'cust-1']);
 
         $listener = $this->makeListener($smaregiApi);
