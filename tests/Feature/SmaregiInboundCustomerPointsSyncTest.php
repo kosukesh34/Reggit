@@ -404,9 +404,39 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
         $this->assertSame(0, $member->getTotalPointsFromTransactions());
     }
 
-    /**
-     * @param  array<string, string|int|float|bool|array|null>  $customerPayload
-     */
+    public function test_inboundは_syncPointsLedger後に差分計算すること(): void
+    {
+        $project = Project::factory()->create();
+        ShopSetting::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $member = Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+            'member_number' => 'M-LEDGER',
+            'smaregi_customer_id' => '42',
+            'points' => 100,
+        ]);
+        $this->assertSame(0, $member->getTotalPointsFromTransactions());
+
+        $this->fakeSmaregiHttpSingleCustomer([
+            'customerId' => '42',
+            'customerCode' => 'M-LEDGER',
+            'point' => '100',
+        ]);
+
+        app(SmaregiCustomerPointsInboundSyncService::class)
+            ->syncByCustomerIds(self::CONTRACT_ID, ['42'], 'edited');
+
+        $member->refresh();
+        $this->assertSame(100, $member->points);
+        $this->assertSame(100, $member->getTotalPointsFromTransactions());
+        $this->assertSame(
+            1,
+            $member->pointTransactions()->where('description', Member::POINTS_LEDGER_BACKFILL_DESCRIPTION)->count()
+        );
+    }
+
     /**
      * @param  array<string, string|int|float|bool|array|null>  $customerPayload
      */

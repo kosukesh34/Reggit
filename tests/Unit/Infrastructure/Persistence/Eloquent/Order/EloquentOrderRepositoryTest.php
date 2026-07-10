@@ -138,4 +138,133 @@ class EloquentOrderRepositoryTest extends TestCase
         $this->assertCount(1, $order->items);
         $this->assertSame(2, (int) $order->items->first()->quantity);
     }
+
+    public function test_try_claim_は同時に1件だけ取得できること(): void
+    {
+        $project = Project::factory()->create();
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $order = Order::create([
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+            'total_amount' => 1000,
+            'status' => OrderStatus::CONFIRMED,
+            'payment_method' => PaymentMethod::CASH,
+            'points_used' => 10,
+            'points_earned' => 0,
+            'order_type' => 'mobile',
+        ]);
+
+        $repository = new EloquentOrderRepository;
+        $first = $repository->tryClaimSmaregiPointsSync((int) $order->id, (int) $project->id, 5);
+        $second = $repository->tryClaimSmaregiPointsSync((int) $order->id, (int) $project->id, 5);
+
+        $this->assertNotNull($first);
+        $this->assertNull($second);
+    }
+
+    public function test_release_は自分の_claim_以外を消さないこと(): void
+    {
+        $project = Project::factory()->create();
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $order = Order::create([
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+            'total_amount' => 1000,
+            'status' => OrderStatus::CONFIRMED,
+            'payment_method' => PaymentMethod::CASH,
+            'points_used' => 10,
+            'points_earned' => 0,
+            'order_type' => 'mobile',
+            'smaregi_points_sync_started_at' => '2026-07-11 12:00:00',
+        ]);
+
+        $repository = new EloquentOrderRepository;
+        $repository->releaseSmaregiPointsSyncClaim(
+            (int) $order->id,
+            (int) $project->id,
+            '2026-07-11 11:00:00',
+        );
+
+        $order->refresh();
+        $this->assertSame('2026-07-11 12:00:00', $order->smaregi_points_sync_started_at?->format('Y-m-d H:i:s'));
+
+        $repository->releaseSmaregiPointsSyncClaim(
+            (int) $order->id,
+            (int) $project->id,
+            '2026-07-11 12:00:00',
+        );
+        $order->refresh();
+        $this->assertNull($order->smaregi_points_sync_started_at);
+    }
+
+    public function test_mark_後は_release_が_no_op_で_synced_at_を維持すること(): void
+    {
+        $project = Project::factory()->create();
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $order = Order::create([
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+            'total_amount' => 1000,
+            'status' => OrderStatus::CONFIRMED,
+            'payment_method' => PaymentMethod::CASH,
+            'points_used' => 10,
+            'points_earned' => 0,
+            'order_type' => 'mobile',
+        ]);
+
+        $repository = new EloquentOrderRepository;
+        $claimedAt = $repository->tryClaimSmaregiPointsSync((int) $order->id, (int) $project->id, 5);
+        $this->assertNotNull($claimedAt);
+
+        $repository->markSmaregiPointsSynced((int) $order->id, (int) $project->id);
+        $repository->releaseSmaregiPointsSyncClaim((int) $order->id, (int) $project->id, $claimedAt);
+
+        $order->refresh();
+        $this->assertNotNull($order->smaregi_points_synced_at);
+        $this->assertNull($order->smaregi_points_sync_started_at);
+        $this->assertTrue($repository->isSmaregiPointsSynced((int) $order->id, (int) $project->id));
+    }
+
+    public function test_find_unsynced_はポイント変動ありの未同期注文だけ返すこと(): void
+    {
+        $project = Project::factory()->create();
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $unsynced = Order::create([
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+            'total_amount' => 1000,
+            'status' => OrderStatus::CONFIRMED,
+            'payment_method' => PaymentMethod::CASH,
+            'points_used' => 10,
+            'points_earned' => 0,
+            'order_type' => 'mobile',
+        ]);
+        Order::create([
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+            'total_amount' => 500,
+            'status' => OrderStatus::CONFIRMED,
+            'payment_method' => PaymentMethod::CASH,
+            'points_used' => 0,
+            'points_earned' => 0,
+            'order_type' => 'mobile',
+        ]);
+        Order::create([
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+            'total_amount' => 800,
+            'status' => OrderStatus::CONFIRMED,
+            'payment_method' => PaymentMethod::CASH,
+            'points_used' => 5,
+            'points_earned' => 0,
+            'order_type' => 'mobile',
+            'smaregi_points_synced_at' => now(),
+        ]);
+
+        $repository = new EloquentOrderRepository;
+        $found = $repository->findUnsyncedSmaregiPointsOrdersForUser((int) $user->id, (int) $project->id);
+
+        $this->assertCount(1, $found);
+        $this->assertSame((int) $unsynced->id, $found[0]['orderId']);
+    }
 }

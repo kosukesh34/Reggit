@@ -10,8 +10,9 @@ use App\Services\Smaregi\SmaregiPointsSyncService;
  * 注文ポイントのスマレジ同期を行う。
  * OrderPointsSyncRequested のみを処理する（OrderConfirmed では同期しない。二重発火防止）。
  * used/earned はネット1回。完了は orders.smaregi_points_synced_at（成功後のみ）。
+ * 失敗時はキューでリトライする（Cash 等の再送経路補完）。
  */
-class SyncOrderConfirmedPointsToSmaregiListener implements DomainEventListener
+class SyncOrderPointsToSmaregiListener implements DomainEventListener
 {
     public function __construct(
         private SmaregiPointsSyncService $pointsSync,
@@ -23,7 +24,7 @@ class SyncOrderConfirmedPointsToSmaregiListener implements DomainEventListener
             return;
         }
 
-        $this->pointsSync->syncOrderNetPoints(
+        $this->pointsSync->syncOrderNetPointsWithRetry(
             $event->orderId,
             $event->projectId,
             $event->userId,
