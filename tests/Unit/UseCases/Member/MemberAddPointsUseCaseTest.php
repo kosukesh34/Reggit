@@ -57,7 +57,7 @@ class MemberAddPointsUseCaseTest extends TestCase
         $memberRepository = Mockery::mock(MemberRepository::class);
         $memberRepository->shouldReceive('findByUserId')->once()->with(1, 1)->andReturn($member);
         $memberRepository->shouldReceive('syncPointsLedger')->once()->with(5, 1);
-        $memberRepository->shouldReceive('findById')->once()->with(5, 1)->andReturn($member);
+        $memberRepository->shouldReceive('findByIdForUpdate')->once()->with(5, 1)->andReturn($member);
         $memberRepository->shouldReceive('save')->once()->with(Mockery::on(function (MemberAggregate $saved) {
             return $saved->displayPoints() === 110;
         }));
