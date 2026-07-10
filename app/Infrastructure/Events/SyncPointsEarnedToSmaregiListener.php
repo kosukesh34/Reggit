@@ -10,7 +10,7 @@ use App\Services\Smaregi\SmaregiPointsSyncService;
  * ポイント増減時にスマレジへ残高差分を同期する（注文以外）。
  * - ベストエフォート指定（管理画面調整）: 失敗時は warning
  * - 手動付与: 同期失敗時は例外
- * 注文由来は OrderPointsSyncRequested / OrderConfirmed 経由のネット同期を使う。
+ * 注文由来は OrderPointsSyncRequested 経由のネット同期を使う。
  */
 class SyncPointsEarnedToSmaregiListener implements DomainEventListener
 {

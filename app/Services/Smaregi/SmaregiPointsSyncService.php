@@ -26,6 +26,10 @@ class SmaregiPointsSyncService
 
     private const ORDER_CLAIM_TTL_MINUTES = 5;
 
+    private const ORDER_CLAIM_MAX_ATTEMPTS = 3;
+
+    private const ORDER_CLAIM_RETRY_USEC = 100000;
+
     private const OUTBOUND_PENDING_TTL_DAYS = 1;
 
     public function __construct(
@@ -47,49 +51,78 @@ class SmaregiPointsSyncService
         }
 
         $claimKey = self::ORDER_CLAIM_KEY_PREFIX.$orderId;
-        if (Cache::add($claimKey, 1, now()->addMinutes(self::ORDER_CLAIM_TTL_MINUTES)) === false) {
-            return false;
+        if ($this->tryClaimOrderSync($claimKey, $doneKey, $orderId, $projectId) === false) {
+            return Cache::has($doneKey);
         }
 
         try {
-            if (Cache::has($doneKey)) {
-                return true;
-            }
-
-            $order = $this->orderRepository->findById($orderId, $projectId);
-            if ($order === null) {
-                return true;
-            }
-
-            $member = $this->memberRepository->findByUserId($userId, $projectId);
-            if ($member === null) {
-                Cache::put($doneKey, 1, now()->addDays(self::ORDER_DONE_TTL_DAYS));
-
-                return true;
-            }
-
-            $netDelta = $order->pointsEarned() - $order->pointsUsed();
-            if ($netDelta === 0) {
-                Cache::put($doneKey, 1, now()->addDays(self::ORDER_DONE_TTL_DAYS));
-
-                return true;
-            }
-
-            $succeeded = $this->syncPointDelta(
-                $member->id()->value(),
-                $member->projectId(),
-                $netDelta,
-                $orderId,
-            );
-
-            if ($succeeded) {
-                Cache::put($doneKey, 1, now()->addDays(self::ORDER_DONE_TTL_DAYS));
-            }
-
-            return $succeeded;
+            return $this->runOrderNetPointsSync($orderId, $projectId, $userId, $doneKey);
         } finally {
             Cache::forget($claimKey);
         }
+    }
+
+    private function tryClaimOrderSync(string $claimKey, string $doneKey, int $orderId, int $projectId): bool
+    {
+        for ($attempt = 1; $attempt <= self::ORDER_CLAIM_MAX_ATTEMPTS; $attempt++) {
+            if (Cache::has($doneKey)) {
+                return false;
+            }
+
+            if (Cache::add($claimKey, 1, now()->addMinutes(self::ORDER_CLAIM_TTL_MINUTES))) {
+                return true;
+            }
+
+            if ($attempt < self::ORDER_CLAIM_MAX_ATTEMPTS) {
+                usleep(self::ORDER_CLAIM_RETRY_USEC);
+            }
+        }
+
+        LogHelper::warning('[DomainEvent] smaregi order points sync claim busy', [
+            'order_id' => $orderId,
+            'project_id' => $projectId,
+        ]);
+
+        return false;
+    }
+
+    private function runOrderNetPointsSync(int $orderId, int $projectId, int $userId, string $doneKey): bool
+    {
+        if (Cache::has($doneKey)) {
+            return true;
+        }
+
+        $order = $this->orderRepository->findById($orderId, $projectId);
+        if ($order === null) {
+            return true;
+        }
+
+        $member = $this->memberRepository->findByUserId($userId, $projectId);
+        if ($member === null) {
+            Cache::put($doneKey, 1, now()->addDays(self::ORDER_DONE_TTL_DAYS));
+
+            return true;
+        }
+
+        $netDelta = $order->pointsEarned() - $order->pointsUsed();
+        if ($netDelta === 0) {
+            Cache::put($doneKey, 1, now()->addDays(self::ORDER_DONE_TTL_DAYS));
+
+            return true;
+        }
+
+        $succeeded = $this->syncPointDelta(
+            $member->id()->value(),
+            $member->projectId(),
+            $netDelta,
+            $orderId,
+        );
+
+        if ($succeeded) {
+            Cache::put($doneKey, 1, now()->addDays(self::ORDER_DONE_TTL_DAYS));
+        }
+
+        return $succeeded;
     }
 
     /**
