@@ -9,6 +9,7 @@ use App\Models\ShopSetting;
 use App\Models\User;
 use App\Services\MemberService;
 use App\Services\Smaregi\SmaregiCustomerPointsInboundSyncService;
+use App\Services\Smaregi\SmaregiPointsSyncService;
 use App\Util\AdminContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
@@ -84,6 +85,38 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
         $member->refresh();
         $this->assertSame(55, $member->points);
         $this->assertSame(55, $member->getTotalPointsFromTransactions());
+    }
+
+    public function test_outbound_pending中は_webhook取込でポイントを巻き戻さないこと(): void
+    {
+        $project = Project::factory()->create();
+        ShopSetting::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $member = Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+            'member_number' => 'M-PENDING',
+            'smaregi_customer_id' => '42',
+            'points' => 0,
+        ]);
+        $this->grantMemberPoints($member, 100, 'ローカル先行');
+
+        app(SmaregiPointsSyncService::class)
+            ->markOutboundPending((int) $member->id);
+
+        $this->fakeSmaregiHttpSingleCustomer([
+            'customerId' => '42',
+            'customerCode' => 'M-PENDING',
+            'point' => '40',
+        ]);
+
+        app(SmaregiCustomerPointsInboundSyncService::class)
+            ->syncByCustomerIds(self::CONTRACT_ID, ['42'], 'edited');
+
+        $member->refresh();
+        $this->assertSame(100, $member->points);
+        $this->assertSame(100, $member->getTotalPointsFromTransactions());
     }
 
     public function test_pos_customersの同期でスマレジの会員情報がローカルに反映されること(): void

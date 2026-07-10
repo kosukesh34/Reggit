@@ -7,12 +7,10 @@ use App\Domain\Shared\DomainEventDispatcher\DomainEventListener;
 use App\Services\Smaregi\SmaregiPointsSyncService;
 
 /**
- * ポイント増減時にスマレジへ残高差分を同期する。
- * - 注文由来（orderId あり・現金等の即時決済、または決済確定後）: 同期する。失敗時は warning
- * - ベストエフォート指定（管理画面調整）: 同期する。失敗時は warning
- * - それ以外の手動付与: 同期失敗時は例外
- * Stripe 未決済の注文作成時はイベントを発行しない（確定後に SyncOrderConfirmedPointsToSmaregiListener）。
- * points は加算が正、取り消し・減算が負。
+ * ポイント増減時にスマレジへ残高差分を同期する（注文以外）。
+ * - ベストエフォート指定（管理画面調整）: 失敗時は warning
+ * - 手動付与: 同期失敗時は例外
+ * 注文由来は OrderPointsSyncRequested / OrderConfirmed 経由のネット同期を使う。
  */
 class SyncPointsEarnedToSmaregiListener implements DomainEventListener
 {
@@ -26,11 +24,15 @@ class SyncPointsEarnedToSmaregiListener implements DomainEventListener
             return;
         }
 
+        if ($event->orderId !== null) {
+            return;
+        }
+
         $this->pointsSync->syncPointDelta(
             $event->memberId,
             $event->projectId,
             $event->points,
-            $event->orderId,
+            null,
             $event->isBestEffortSync,
         );
     }
