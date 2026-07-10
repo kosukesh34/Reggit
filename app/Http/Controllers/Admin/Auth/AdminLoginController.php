@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\LoginRequest;
+use App\Http\Support\AdminAuthInputFactory;
 use App\Models\Project;
 use App\UseCases\Admin\Auth\AdminLoginUseCase;
 use App\UseCases\Admin\Auth\GetAdminDashboardRedirectUseCase;
@@ -12,17 +13,11 @@ use Illuminate\Support\Facades\Log;
 
 class AdminLoginController extends Controller
 {
-    private GetAdminDashboardRedirectUseCase $getDashboardRedirectUseCase;
-
-    private AdminLoginUseCase $adminLoginUseCase;
-
     public function __construct(
-        GetAdminDashboardRedirectUseCase $getDashboardRedirectUseCase,
-        AdminLoginUseCase $adminLoginUseCase
-    ) {
-        $this->getDashboardRedirectUseCase = $getDashboardRedirectUseCase;
-        $this->adminLoginUseCase = $adminLoginUseCase;
-    }
+        private GetAdminDashboardRedirectUseCase $getDashboardRedirectUseCase,
+        private AdminLoginUseCase $adminLoginUseCase,
+        private AdminAuthInputFactory $inputFactory,
+    ) {}
 
     /** プロジェクト選択画面（/admin/login） */
     public function show()
@@ -72,6 +67,8 @@ class AdminLoginController extends Controller
             'resolved_project_key' => $projectKey,
         ]);
 
-        return $this->adminLoginUseCase->handle($request, $projectKey);
+        return $this->adminLoginUseCase->handle(
+            $this->inputFactory->adminLogin($request, $projectKey),
+        );
     }
 }

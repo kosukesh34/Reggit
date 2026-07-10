@@ -3,21 +3,20 @@
 namespace App\Http\Controllers\Diagnostics;
 
 use App\Http\Controllers\Controller;
+use App\Http\Support\ClientDebugLogInputFactory;
 use App\UseCases\Diagnostics\ClientDebugLogUseCase;
 use Illuminate\Http\Request;
 
 class ClientDebugController extends Controller
 {
-    private ClientDebugLogUseCase $clientDebugLogUseCase;
-
-    public function __construct(ClientDebugLogUseCase $clientDebugLogUseCase)
-    {
-        $this->clientDebugLogUseCase = $clientDebugLogUseCase;
-    }
+    public function __construct(
+        private ClientDebugLogUseCase $clientDebugLogUseCase,
+        private ClientDebugLogInputFactory $inputFactory,
+    ) {}
 
     public function __invoke(Request $request)
     {
-        $this->clientDebugLogUseCase->handle($request);
+        $this->clientDebugLogUseCase->handle($this->inputFactory->fromRequest($request));
 
         return response()->json(['ok' => true]);
     }

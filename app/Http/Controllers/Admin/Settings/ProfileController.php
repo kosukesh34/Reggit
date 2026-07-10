@@ -3,23 +3,18 @@
 namespace App\Http\Controllers\Admin\Settings;
 
 use App\Http\Controllers\Admin\AdminBaseController;
+use App\Http\Support\AdminSettingsInputFactory;
 use App\UseCases\Admin\Settings\GetProfileSettingsUseCase;
 use App\UseCases\Admin\Settings\UpdateProfileSettingsUseCase;
 use Illuminate\Http\Request;
 
 class ProfileController extends AdminBaseController
 {
-    private GetProfileSettingsUseCase $getProfileSettingsUseCase;
-
-    private UpdateProfileSettingsUseCase $updateProfileSettingsUseCase;
-
     public function __construct(
-        GetProfileSettingsUseCase $getProfileSettingsUseCase,
-        UpdateProfileSettingsUseCase $updateProfileSettingsUseCase
-    ) {
-        $this->getProfileSettingsUseCase = $getProfileSettingsUseCase;
-        $this->updateProfileSettingsUseCase = $updateProfileSettingsUseCase;
-    }
+        private GetProfileSettingsUseCase $getProfileSettingsUseCase,
+        private UpdateProfileSettingsUseCase $updateProfileSettingsUseCase,
+        private AdminSettingsInputFactory $inputFactory,
+    ) {}
 
     public function index()
     {
@@ -41,7 +36,9 @@ class ProfileController extends AdminBaseController
             'custom_fields.*.label' => 'required|string|max:100',
             'custom_fields.*.required' => 'nullable|boolean',
         ]);
-        $this->updateProfileSettingsUseCase->handle($projectId, $request);
+        $this->updateProfileSettingsUseCase->handle(
+            $this->inputFactory->profileSettings($projectId, $request),
+        );
 
         return redirect()->route('admin.settings.profile', $this->buildAdminRouteParams())
             ->with('success', 'プロフィール設定を更新しました');

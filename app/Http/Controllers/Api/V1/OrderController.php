@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Enums\OrderType;
 use App\Enums\PaymentMethod;
+use App\Services\UserService;
+use App\UseCases\Order\Data\OrderStoreInput;
 use App\UseCases\Order\OrderCancelUnpaidUseCase;
 use App\UseCases\Order\OrderIndexUseCase;
 use App\UseCases\Order\OrderShowUseCase;
@@ -19,13 +21,14 @@ class OrderController extends BaseApiController
         private OrderIndexUseCase $indexUseCase,
         private OrderShowUseCase $showUseCase,
         private OrderStoreUseCase $storeUseCase,
-        private OrderCancelUnpaidUseCase $cancelUnpaidUseCase
+        private OrderCancelUnpaidUseCase $cancelUnpaidUseCase,
+        private UserService $userService,
     ) {}
 
     public function index(Request $request)
     {
         try {
-            $orders = $this->indexUseCase->handle($request, 20);
+            $orders = $this->indexUseCase->handle($this->userService->getOrCreateUser($request), 20);
 
             return $this->success(
                 ['orders' => $orders->items()],
@@ -51,7 +54,7 @@ class OrderController extends BaseApiController
     public function show(Request $request, int $id)
     {
         try {
-            $order = $this->showUseCase->handle($request, $id);
+            $order = $this->showUseCase->handle($this->userService->getOrCreateUser($request), $id);
 
             return $this->success(['order' => $order]);
         } catch (\Exception $e) {
@@ -88,7 +91,10 @@ class OrderController extends BaseApiController
         ]);
 
         try {
-            $order = $this->storeUseCase->handle($request, $validated);
+            $order = $this->storeUseCase->handle(new OrderStoreInput(
+                $this->userService->getOrCreateUser($request),
+                $validated
+            ));
 
             return $this->success(
                 ['order' => $order->toArray()],
@@ -108,7 +114,7 @@ class OrderController extends BaseApiController
     public function cancelUnpaid(Request $request, int $id)
     {
         try {
-            $order = $this->cancelUnpaidUseCase->handle($request, $id);
+            $order = $this->cancelUnpaidUseCase->handle($this->userService->getOrCreateUser($request), $id);
 
             return $this->success(
                 ['order' => $order],

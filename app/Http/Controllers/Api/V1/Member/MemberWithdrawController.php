@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Member;
 
 use App\Http\Controllers\Api\V1\BaseApiController;
+use App\Services\UserService;
 use App\UseCases\Member\MemberWithdrawUseCase;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
@@ -11,13 +12,10 @@ use Illuminate\Http\Request;
 
 class MemberWithdrawController extends BaseApiController
 {
-    /** @var MemberWithdrawUseCase */
-    private $withdrawUseCase;
-
-    public function __construct(MemberWithdrawUseCase $withdrawUseCase)
-    {
-        $this->withdrawUseCase = $withdrawUseCase;
-    }
+    public function __construct(
+        private MemberWithdrawUseCase $withdrawUseCase,
+        private UserService $userService,
+    ) {}
 
     /**
      * 退会処理。User と Member をソフトデリートし、セッションをクリアする。
@@ -25,10 +23,13 @@ class MemberWithdrawController extends BaseApiController
     public function __invoke(Request $request): JsonResponse
     {
         try {
-            $ok = $this->withdrawUseCase->handle($request);
-            if (! $ok) {
+            $user = $this->userService->findUser($request);
+            if ($user === null) {
                 return $this->error('ユーザーを特定できません。ログインし直してください。', 401);
             }
+
+            $this->withdrawUseCase->handle($user);
+            $this->userService->clearUserSession($request);
 
             return $this->success([], '退会が完了しました。');
         } catch (\RuntimeException $e) {

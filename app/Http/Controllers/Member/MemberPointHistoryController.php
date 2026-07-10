@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Member;
 
 use App\Http\Controllers\Controller;
+use App\Services\UserService;
 use App\UseCases\Member\MemberPointHistoryUseCase;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
@@ -11,13 +12,14 @@ use Illuminate\Http\Request;
 class MemberPointHistoryController extends Controller
 {
     public function __construct(
-        private MemberPointHistoryUseCase $pointHistoryUseCase
+        private MemberPointHistoryUseCase $pointHistoryUseCase,
+        private UserService $userService,
     ) {}
 
     public function __invoke(Request $request)
     {
         try {
-            $result = $this->pointHistoryUseCase->handle($request, 20);
+            $result = $this->pointHistoryUseCase->handle($this->userService->getOrCreateUser($request), 20);
             if ($result->requiresMembership || $result->transactions === null) {
                 return response()->json([
                     'error' => '会員登録が必要です',

@@ -2,12 +2,16 @@
 
 namespace App\UseCases\Queue;
 
+use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Enums\QueueStatus;
 use App\Models\QueueEntry;
-use App\Models\ShopSetting;
 
 class QueueStatsService
 {
+    public function __construct(
+        private ShopSettingRepository $shopSettingRepository,
+    ) {}
+
     public function getStats(int $projectId, ?int $beforeQueueNumber): array
     {
         $base = QueueEntry::where('project_id', $projectId)
@@ -16,7 +20,7 @@ class QueueStatsService
 
         $waitingCount = (clone $base)->count();
         $aheadCount = $this->getAheadCount($beforeQueueNumber, $base);
-        $avgMinutes = ShopSetting::getQueueAvgServeMinutes($projectId);
+        $avgMinutes = $this->shopSettingRepository->getQueueAvgServeMinutes($projectId);
         $estimatedMinutes = $this->estimateMinutes($waitingCount, $aheadCount, $beforeQueueNumber, $avgMinutes);
 
         return [

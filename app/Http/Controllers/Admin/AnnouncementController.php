@@ -5,12 +5,13 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Requests\Admin\AnnouncementDeliveryStoreRequest;
 use App\Http\Requests\Admin\AnnouncementStoreRequest;
 use App\Http\Requests\Admin\AnnouncementUpdateRequest;
-use App\Services\Admin\AnnouncementAdminService;
-use App\Services\Admin\MemberAdminService;
-use App\Services\Admin\SalesSegmentService;
 use App\UseCases\Admin\Announcement\AdminAnnouncementDeleteUseCase;
+use App\UseCases\Admin\Announcement\AdminAnnouncementDeliveryFormUseCase;
 use App\UseCases\Admin\Announcement\AdminAnnouncementEditUseCase;
 use App\UseCases\Admin\Announcement\AdminAnnouncementIndexUseCase;
+use App\UseCases\Admin\Announcement\AdminAnnouncementSaveImageUseCase;
+use App\UseCases\Admin\Member\AdminMemberSearchByKeywordUseCase;
+use App\UseCases\Admin\Announcement\AdminAnnouncementSegmentPreviewUseCase;
 use App\UseCases\Admin\Announcement\AdminAnnouncementStoreDeliveryUseCase;
 use App\UseCases\Admin\Announcement\AdminAnnouncementStoreUseCase;
 use App\UseCases\Admin\Announcement\AdminAnnouncementUpdateUseCase;
@@ -25,9 +26,10 @@ class AnnouncementController extends AdminBaseController
         private AdminAnnouncementUpdateUseCase $updateUseCase,
         private AdminAnnouncementDeleteUseCase $deleteUseCase,
         private AdminAnnouncementStoreDeliveryUseCase $storeDeliveryUseCase,
-        private SalesSegmentService $salesSegmentService,
-        private MemberAdminService $memberAdminService,
-        private AnnouncementAdminService $announcementAdminService
+        private AdminAnnouncementDeliveryFormUseCase $deliveryFormUseCase,
+        private AdminAnnouncementSegmentPreviewUseCase $segmentPreviewUseCase,
+        private AdminMemberSearchByKeywordUseCase $searchMembersUseCase,
+        private AdminAnnouncementSaveImageUseCase $saveImageUseCase,
     ) {}
 
     public function announcements()
@@ -48,7 +50,7 @@ class AnnouncementController extends AdminBaseController
         $validated = $request->validated();
 
         if ($request->hasFile('image_file')) {
-            $validated['image_url'] = $this->announcementAdminService->saveAnnouncementImage($request->file('image_file'), $projectId);
+            $validated['image_url'] = $this->saveImageUseCase->handle($request->file('image_file'), $projectId);
         }
         unset($validated['image_file']);
 
@@ -83,36 +85,32 @@ class AnnouncementController extends AdminBaseController
 
     public function createDelivery()
     {
-        $projectId = $this->resolveAdminProjectId();
-        $memberCount = $this->memberAdminService->getCountByProject($projectId);
-        $coupons = $this->memberAdminService->getActiveCouponsForSelect($projectId);
+        $form = $this->deliveryFormUseCase->handle($this->resolveAdminProjectId());
 
-        return view('admin.announcements.delivery-create', compact('memberCount', 'coupons'));
+        return view('admin.announcements.delivery-create', [
+            'memberCount' => $form->memberCount,
+            'coupons' => $form->coupons,
+        ]);
     }
 
     public function segmentPreview(Request $request)
     {
-        $projectId = $this->resolveAdminProjectId();
-        $periodDays = max(1, min(365, (int) $request->query('period_days', 30)));
-        $condition = (string) $request->query('condition', 'min_amount');
-        $minAmount = $request->query('min_amount') !== null ? (float) $request->query('min_amount') : 0.0;
-        $noOrdersOnly = $condition === 'no_orders';
-
-        $memberIds = $this->salesSegmentService->getMemberIdsBySalesCriteria(
-            $projectId,
-            $periodDays,
-            $noOrdersOnly ? null : $minAmount,
-            $noOrdersOnly
+        $count = $this->segmentPreviewUseCase->handle(
+            $this->resolveAdminProjectId(),
+            (int) $request->query('period_days', 30),
+            (string) $request->query('condition', 'min_amount'),
+            $request->query('min_amount') !== null ? (float) $request->query('min_amount') : 0.0,
         );
 
-        return response()->json(['count' => $memberIds->count()]);
+        return response()->json(['count' => $count]);
     }
 
     public function searchMembers(Request $request)
     {
-        $projectId = $this->resolveAdminProjectId();
-        $keyword = trim((string) $request->query('q', ''));
-        $members = $this->memberAdminService->searchByKeyword($projectId, $keyword);
+        $members = $this->searchMembersUseCase->handle(
+            $this->resolveAdminProjectId(),
+            (string) $request->query('q', ''),
+        );
 
         return response()->json(['data' => $members]);
     }

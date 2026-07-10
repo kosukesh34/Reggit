@@ -4,30 +4,27 @@ namespace App\UseCases\Queue;
 
 use App\Enums\QueueStatus;
 use App\Models\QueueEntry as QueueEntryModel;
-use App\Services\UserService;
 use App\UseCases\Queue\Data\QueueEntry;
 use App\UseCases\Queue\Data\QueueEntryFactory;
+use App\UseCases\Queue\Data\QueueStoreInput;
 use App\Util\AdminContext;
 use App\Util\StrHelper;
-use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 class QueueStoreUseCase
 {
     public function __construct(
-        private UserService $userService,
         private QueueStatsService $statsService,
-        private QueueEntryFactory $entryFactory
+        private QueueEntryFactory $entryFactory,
     ) {}
 
-    public function handle(Request $request, int $partySize, ?string $guestName, ?string $guestPhone): QueueEntry
+    public function handle(QueueStoreInput $input): QueueEntry
     {
-        $user = $this->userService->getOrCreateUser($request);
+        $user = $input->user;
         $member = $user->member;
 
-        $projectId = $member ? $member->project_id : (AdminContext::getCurrentProjectId() ?? 1);
-        $lineUserId = $request->header('X-Line-User-Id');
-        $effectiveLineUserId = $this->resolveLineUserId($lineUserId, $user->line_user_id);
+        $projectId = $member !== null ? $member->project_id : (AdminContext::getCurrentProjectId() ?? 1);
+        $effectiveLineUserId = $this->resolveLineUserId($input->lineUserId, $user->line_user_id);
 
         $nextNumber = $this->getNextQueueNumber($projectId);
 
@@ -35,9 +32,9 @@ class QueueStoreUseCase
             'project_id' => $projectId,
             'member_id' => $member?->id,
             'user_id' => StrHelper::isEmptyStringOrNull($effectiveLineUserId) ? null : $user->id,
-            'guest_name' => $guestName ?? $user->name,
-            'guest_phone' => $guestPhone ?? $user->phone,
-            'party_size' => $partySize,
+            'guest_name' => $input->guestName ?? $user->name,
+            'guest_phone' => $input->guestPhone ?? $user->phone,
+            'party_size' => $input->partySize,
             'status' => QueueStatus::WAITING,
             'queue_number' => $nextNumber,
             'qr_token' => $this->generateQrToken(),

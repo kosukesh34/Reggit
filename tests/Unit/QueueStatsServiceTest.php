@@ -35,7 +35,7 @@ class QueueStatsServiceTest extends TestCase
             'status' => QueueStatus::WAITING,
         ]);
 
-        $service = new QueueStatsService;
+        $service = app(QueueStatsService::class);
         $stats = $service->getStats($project->id, null);
 
         $this->assertSame(2, $stats['waiting_count']);
@@ -59,7 +59,7 @@ class QueueStatsServiceTest extends TestCase
             'queue_number' => 2,
         ]);
 
-        $service = new QueueStatsService;
+        $service = app(QueueStatsService::class);
         $stats = $service->getStats($project->id, 2);
 
         $this->assertSame(1, $stats['ahead_count']);

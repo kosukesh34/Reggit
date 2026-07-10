@@ -27,7 +27,7 @@ class PaymentConfirmController extends Controller
         ]);
 
         try {
-            $result = $this->confirmUseCase->handle($request->payment_intent_id, (int) $request->order_id);
+            $result = $this->confirmUseCase->handle($request->payment_intent_id, (int) $request->order_id, $projectId);
             if ($result->isSuccess === false) {
                 return response()->json([
                     'success' => false,

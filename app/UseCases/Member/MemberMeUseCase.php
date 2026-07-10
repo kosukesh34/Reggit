@@ -2,23 +2,18 @@
 
 namespace App\UseCases\Member;
 
+use App\Models\User;
 use App\Services\MemberService;
-use App\Services\UserService;
 use App\UseCases\Member\Data\MemberData;
-use Illuminate\Http\Request;
 
 class MemberMeUseCase
 {
     public function __construct(
         private MemberService $memberService,
-        private UserService $userService
     ) {}
 
-    public function handle(Request $request): MemberData
+    public function handle(User $user): MemberData
     {
-        $user = $this->userService->getOrCreateUser($request);
-        $data = $this->memberService->getMemberData($user);
-
-        return new MemberData($data);
+        return new MemberData($this->memberService->getMemberData($user));
     }
 }

@@ -3,6 +3,9 @@
 namespace App\Http\Controllers\Queue;
 
 use App\Http\Controllers\Controller;
+use App\Http\Support\QueueMeInputFactory;
+use App\Services\UserService;
+use App\Support\QueueSessionStore;
 use App\UseCases\Queue\QueueMeUseCase;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
@@ -11,13 +14,20 @@ use Illuminate\Http\Request;
 class QueueMeController extends Controller
 {
     public function __construct(
-        private QueueMeUseCase $meUseCase
+        private QueueMeUseCase $meUseCase,
+        private UserService $userService,
+        private QueueMeInputFactory $meInputFactory,
+        private QueueSessionStore $sessionStore,
     ) {}
 
     public function __invoke(Request $request)
     {
         try {
-            $result = $this->meUseCase->handle($request);
+            $result = $this->meUseCase->handle(
+                $this->meInputFactory->fromRequest($request, $this->userService->getOrCreateUser($request))
+            );
+            $this->sessionStore->applyMeOutput($request, $result);
+
             if ($result->queueEntry === null) {
                 return response()->json([
                     'queue_entry' => null,

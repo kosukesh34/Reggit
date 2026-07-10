@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Admin\Settings;
 
 use App\Http\Controllers\Admin\AdminBaseController;
-use App\Services\Smaregi\SmaregiProductSyncService;
-use App\UseCases\Admin\Settings\GetSmaregiPosDataUseCase;
+use App\UseCases\Admin\Settings\AdminFullSyncProductsWithSmaregiUseCase;
+use App\UseCases\Admin\Settings\AdminSyncProductsFromSmaregiUseCase;
 use App\UseCases\Admin\Settings\GetSmaregiSettingsUseCase;
 use App\UseCases\Admin\Settings\UpdateSmaregiLinkUseCase;
 use Illuminate\Http\Request;
@@ -13,19 +13,10 @@ class SmaregiController extends AdminBaseController
 {
     public function __construct(
         private GetSmaregiSettingsUseCase $getSmaregiSettingsUseCase,
-        private GetSmaregiPosDataUseCase $getSmaregiPosDataUseCase,
         private UpdateSmaregiLinkUseCase $updateSmaregiLinkUseCase,
-        private SmaregiProductSyncService $smaregiProductSyncService,
+        private AdminSyncProductsFromSmaregiUseCase $syncProductsFromSmaregiUseCase,
+        private AdminFullSyncProductsWithSmaregiUseCase $fullSyncProductsWithSmaregiUseCase,
     ) {}
-
-    /** 仮想POSデータ確認（開発用・後で削除可） */
-    public function posData()
-    {
-        $projectId = $this->resolveAdminProjectId();
-        $view = $this->getSmaregiPosDataUseCase->handle($projectId);
-
-        return view('admin.settings.smaregi-pos-data', ['view' => $view]);
-    }
 
     public function index()
     {
@@ -53,7 +44,7 @@ class SmaregiController extends AdminBaseController
     {
         $projectId = $this->resolveAdminProjectId();
         try {
-            $result = $this->smaregiProductSyncService->sync($projectId);
+            $result = $this->syncProductsFromSmaregiUseCase->handle($projectId);
             $msg = sprintf(
                 '商品を同期しました（新規: %d、更新: %d、失敗: %d）',
                 $result['created'],
@@ -79,11 +70,8 @@ class SmaregiController extends AdminBaseController
     public function fullSyncProducts(Request $request)
     {
         $projectId = $this->resolveAdminProjectId();
-        $redirectTo = $request->get('from') === 'pos-data'
-            ? 'admin.settings.smaregi.pos-data'
-            : 'admin.settings.smaregi';
         try {
-            $result = $this->smaregiProductSyncService->fullSync($projectId);
+            $result = $this->fullSyncProductsWithSmaregiUseCase->handle($projectId);
             $msg = sprintf(
                 '完全同期しました（スマレジ→DB: 新規 %d・更新 %d、DB→スマレジ: %d 件登録、スマレジ重複削除: %d、在庫反映: %d、失敗: %d）',
                 $result['created'],
@@ -100,10 +88,10 @@ class SmaregiController extends AdminBaseController
                 }
             }
 
-            return redirect()->route($redirectTo, $this->buildAdminRouteParams())
+            return redirect()->route('admin.settings.smaregi', $this->buildAdminRouteParams())
                 ->with('success', $msg);
         } catch (\Throwable $e) {
-            return redirect()->route($redirectTo, $this->buildAdminRouteParams())
+            return redirect()->route('admin.settings.smaregi', $this->buildAdminRouteParams())
                 ->with('error', $e->getMessage());
         }
     }

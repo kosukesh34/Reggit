@@ -13,10 +13,12 @@ use App\Util\AdminContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Http;
+use Tests\Support\GrantsMemberPoints;
 use Tests\TestCase;
 
 class SmaregiInboundCustomerPointsSyncTest extends TestCase
 {
+    use GrantsMemberPoints;
     use RefreshDatabase;
 
     private const CONTRACT_ID = 'test_contract_inbound';
@@ -68,7 +70,7 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
             'smaregi_customer_id' => '42',
             'points' => 0,
         ]);
-        $member->addPoints(40, '初期付与');
+        $this->grantMemberPoints($member, 40, '初期付与');
 
         $this->fakeSmaregiHttpSingleCustomer([
             'customerId' => '42',
@@ -153,7 +155,7 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
             'smaregi_customer_id' => '88',
             'points' => 0,
         ]);
-        $member->addPoints(10, '初期');
+        $this->grantMemberPoints($member, 10, '初期');
 
         $this->fakeSmaregiHttpSingleCustomer([
             'customerId' => '88',
@@ -230,7 +232,7 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
             'smaregi_customer_id' => '93',
             'points' => 0,
         ]);
-        $member->addPoints(0, '初期');
+        $this->grantMemberPoints($member, 0, '初期');
 
         $this->fakeSmaregiHttpSingleCustomer([
             'customerId' => '93',
@@ -291,7 +293,7 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
             'smaregi_customer_id' => '99',
             'points' => 0,
         ]);
-        $member->addPoints(10, '初期');
+        $this->grantMemberPoints($member, 10, '初期');
 
         $this->fakeSmaregiHttpSingleCustomer(['customerId' => '99', 'point' => '999']);
 
@@ -314,7 +316,7 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
             'smaregi_customer_id' => '100',
             'points' => 0,
         ]);
-        $member->addPoints(50, '初期');
+        $this->grantMemberPoints($member, 50, '初期');
         $member->refresh();
         $this->assertSame(50, $member->points);
 

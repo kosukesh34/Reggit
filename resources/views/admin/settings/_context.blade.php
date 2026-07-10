@@ -106,9 +106,7 @@
             'title' => 'スマレジ連携設定の役割',
             'changes' => ['契約IDの紐づけ', '商品同期の実行'],
             'notes' => ['Client ID/Secret は .env で管理し、管理画面からは変更しません。'],
-            'links' => [
-                ['label' => '仮想POSデータ確認', 'url' => admin_route('admin.settings.smaregi.pos-data'), 'permission' => 'settings.view'],
-            ],
+            'links' => [],
         ],
     ];
     $guide = $guides[$pageKey] ?? null;

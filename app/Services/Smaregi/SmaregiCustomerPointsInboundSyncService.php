@@ -2,6 +2,8 @@
 
 namespace App\Services\Smaregi;
 
+use App\Domain\Member\Repositories\MemberRepository;
+use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Models\Member;
 use App\Models\Project;
 use App\Models\Settings\ProjectProfileSmaregiSetting;
@@ -17,7 +19,9 @@ class SmaregiCustomerPointsInboundSyncService
     private const SYNC_DESCRIPTION = 'スマレジPOSからの同期';
 
     public function __construct(
-        private SmaregiApiService $smaregiApi
+        private SmaregiApiService $smaregiApi,
+        private MemberRepository $memberRepository,
+        private ShopSettingRepository $shopSettingRepository,
     ) {}
 
     /**
@@ -225,20 +229,20 @@ class SmaregiCustomerPointsInboundSyncService
     private function applyRemotePointsForMember(Member $member, int $remotePoints): void
     {
         DB::transaction(function () use ($member, $remotePoints): void {
-            $locked = Member::query()->with('user')->whereKey($member->id)->lockForUpdate()->first();
-            if ($locked === null) {
+            $aggregate = $this->memberRepository->findByIdForUpdate(
+                (int) $member->id,
+                (int) $member->project_id,
+            );
+            if ($aggregate === null) {
                 return;
             }
 
-            $locked->syncPointsLedger();
-            $locked->refresh();
-
-            $localSum = (int) $locked->pointTransactions()->sum('points');
+            $localSum = $aggregate->displayPoints();
             $delta = $remotePoints - $localSum;
             if ($delta === 0) {
                 Log::info('[Smaregi] Inbound customer sync: ポイントはスマレジとローカル一致のため更新なし', [
-                    'member_id' => $locked->id,
-                    'project_id' => $locked->project_id,
+                    'member_id' => $aggregate->id()->value(),
+                    'project_id' => $aggregate->projectId(),
                     'points' => $remotePoints,
                 ]);
 
@@ -246,13 +250,22 @@ class SmaregiCustomerPointsInboundSyncService
             }
 
             if ($delta > 0) {
-                $locked->addPoints($delta, self::SYNC_DESCRIPTION);
+                $validDays = $this->shopSettingRepository->getPointsValidDays($aggregate->projectId());
+                $aggregate->earnPoints(
+                    $delta,
+                    self::SYNC_DESCRIPTION,
+                    null,
+                    now()->addDays($validDays),
+                );
             } else {
-                $locked->usePoints(abs($delta), self::SYNC_DESCRIPTION);
+                $aggregate->usePoints(abs($delta), self::SYNC_DESCRIPTION, null);
             }
+
+            $this->memberRepository->save($aggregate);
+
             Log::info('[Smaregi] Inbound point sync applied', [
-                'member_id' => $locked->id,
-                'project_id' => $locked->project_id,
+                'member_id' => $aggregate->id()->value(),
+                'project_id' => $aggregate->projectId(),
                 'local_sum_before' => $localSum,
                 'remote_points' => $remotePoints,
                 'delta' => $delta,

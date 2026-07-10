@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Reservation;
 
 use App\Http\Controllers\Controller;
+use App\Services\UserService;
 use App\UseCases\Reservation\ReservationIndexUseCase;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
@@ -11,13 +12,14 @@ use Illuminate\Http\Request;
 class ReservationIndexController extends Controller
 {
     public function __construct(
-        private ReservationIndexUseCase $indexUseCase
+        private ReservationIndexUseCase $indexUseCase,
+        private UserService $userService,
     ) {}
 
     public function __invoke(Request $request)
     {
         try {
-            $result = $this->indexUseCase->handle($request);
+            $result = $this->indexUseCase->handle($this->userService->getOrCreateUser($request));
             if ($result->requiresMembership) {
                 return response()->json([
                     'error' => '会員登録が必要です',
