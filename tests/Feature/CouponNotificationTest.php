@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Jobs\SendCouponIssuedNotificationJob;
 use App\Models\Coupon;
 use App\Models\Member;
@@ -105,7 +106,7 @@ class CouponNotificationTest extends TestCase
 
         $this->setLineChannelAccessTokenForTest('test-token');
 
-        $service = new CouponNotificationService($pushMock, $lineMock);
+        $service = new CouponNotificationService($pushMock, $lineMock, app(ShopSettingRepository::class));
         $service->notifyIssued($memberCoupon);
 
         $this->clearLineChannelAccessTokenForTest();
@@ -148,7 +149,7 @@ class CouponNotificationTest extends TestCase
 
         $this->setLineChannelAccessTokenForTest('test-token');
 
-        $service = new CouponNotificationService($pushMock, $lineMock);
+        $service = new CouponNotificationService($pushMock, $lineMock, app(ShopSettingRepository::class));
         $service->notifyIssued($memberCoupon);
 
         $this->clearLineChannelAccessTokenForTest();

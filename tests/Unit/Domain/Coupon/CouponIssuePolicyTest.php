@@ -8,7 +8,7 @@ use Tests\TestCase;
 
 class CouponIssuePolicyTest extends TestCase
 {
-    public function test_canIssueOnce_未発行かつ期間内なら許可すること(): void
+    public function test_can_issue_once_未発行かつ期間内なら許可すること(): void
     {
         $this->assertTrue((new CouponIssuePolicy)->canIssueOnce(
             false,
@@ -18,7 +18,7 @@ class CouponIssuePolicyTest extends TestCase
         ));
     }
 
-    public function test_canIssueOnce_既発行は拒否すること(): void
+    public function test_can_issue_once_既発行は拒否すること(): void
     {
         $this->assertFalse((new CouponIssuePolicy)->canIssueOnce(
             true,
@@ -28,7 +28,7 @@ class CouponIssuePolicyTest extends TestCase
         ));
     }
 
-    public function test_canIssueBirthdayThisYear_当年発行済みは拒否すること(): void
+    public function test_can_issue_birthday_this_year_当年発行済みは拒否すること(): void
     {
         $this->assertFalse((new CouponIssuePolicy)->canIssueBirthdayThisYear(
             true,
@@ -38,7 +38,7 @@ class CouponIssuePolicyTest extends TestCase
         ));
     }
 
-    public function test_resolveValidityWindow_開始未設定なら発行日時を使うこと(): void
+    public function test_resolve_validity_window_開始未設定なら発行日時を使うこと(): void
     {
         $now = Carbon::parse('2026-07-10 12:00:00');
         [$from, $until] = (new CouponIssuePolicy)->resolveValidityWindow(null, Carbon::parse('2026-12-31'), $now);

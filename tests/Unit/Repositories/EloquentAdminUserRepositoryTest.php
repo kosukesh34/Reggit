@@ -11,7 +11,7 @@ class EloquentAdminUserRepositoryTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_findByLoginIdOrEmail_login_idで検索できること(): void
+    public function test_find_by_login_id_or_email_login_idで検索できること(): void
     {
         $user = AdminUser::factory()->create([
             'login_id' => 'admin_user',
@@ -25,7 +25,7 @@ class EloquentAdminUserRepositoryTest extends TestCase
         $this->assertSame((int) $user->id, (int) $found->id);
     }
 
-    public function test_findByLoginIdOrEmail_emailで検索できること(): void
+    public function test_find_by_login_id_or_email_emailで検索できること(): void
     {
         $user = AdminUser::factory()->create([
             'login_id' => 'admin_user',

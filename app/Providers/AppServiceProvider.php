@@ -2,15 +2,6 @@
 
 namespace App\Providers;
 
-use App\Models\MemberCoupon;
-use App\Models\MemberStamp;
-use App\Models\PointTransaction;
-use App\Models\Project;
-use App\Models\ShopSetting;
-use App\Observers\MemberCouponObserver;
-use App\Observers\MemberStampObserver;
-use App\Observers\PointTransactionObserver;
-use App\Observers\ProjectObserver;
 use App\Domain\Coupon\Repositories\CouponDeliveryTargetRepository;
 use App\Domain\Coupon\Repositories\MemberCouponRepository;
 use App\Domain\Member\Repositories\MemberRepository;
@@ -33,6 +24,15 @@ use App\Infrastructure\Persistence\Eloquent\Order\EloquentProductStockRepository
 use App\Infrastructure\Persistence\Eloquent\Queue\EloquentQueueEntryRepository;
 use App\Infrastructure\Persistence\Eloquent\Reservation\EloquentReservationRepository;
 use App\Infrastructure\Persistence\Eloquent\Settings\EloquentShopSettingRepository;
+use App\Models\MemberCoupon;
+use App\Models\MemberStamp;
+use App\Models\PointTransaction;
+use App\Models\Project;
+use App\Models\ShopSetting;
+use App\Observers\MemberCouponObserver;
+use App\Observers\MemberStampObserver;
+use App\Observers\PointTransactionObserver;
+use App\Observers\ProjectObserver;
 use App\Repositories\Contracts\AdminUserRepository;
 use App\Repositories\Contracts\ProjectRepository;
 use App\Repositories\Contracts\UserDeviceRepository;

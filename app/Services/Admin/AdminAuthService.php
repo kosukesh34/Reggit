@@ -3,7 +3,6 @@
 namespace App\Services\Admin;
 
 use App\Models\AdminAuditLog;
-use App\Models\AdminUser;
 use App\Models\Project;
 use App\Repositories\Contracts\AdminUserRepository;
 use App\Repositories\Contracts\ProjectRepository;

@@ -9,6 +9,7 @@ use App\Enums\PaymentIntentStatus;
 use App\Models\Order;
 use App\UseCases\Payment\Data\PaymentConfirmOutput;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\DB;
 
 class PaymentConfirmUseCase
 {
@@ -33,32 +34,34 @@ class PaymentConfirmUseCase
             return new PaymentConfirmOutput(false, '決済情報と注文が一致しません', (string) $status, null);
         }
 
-        $aggregate = $this->orderRepository->findById($orderId, $projectId);
-        if ($aggregate === null) {
-            throw (new ModelNotFoundException)->setModel(Order::class, [$orderId]);
-        }
+        return DB::transaction(function () use ($orderId, $projectId, $status) {
+            $aggregate = $this->orderRepository->findByIdForUpdate($orderId, $projectId);
+            if ($aggregate === null) {
+                throw (new ModelNotFoundException)->setModel(Order::class, [$orderId]);
+            }
 
-        try {
-            $didConfirm = $aggregate->confirmStripePayment();
-        } catch (\Exception $e) {
-            return new PaymentConfirmOutput(false, $e->getMessage(), (string) $status, null);
-        }
+            try {
+                $didConfirm = $aggregate->confirmStripePayment();
+            } catch (\Exception $e) {
+                return new PaymentConfirmOutput(false, $e->getMessage(), (string) $status, null);
+            }
 
-        $this->orderRepository->save($aggregate);
+            $this->orderRepository->save($aggregate);
 
-        if ($didConfirm) {
-            $this->domainEvents->dispatch(new OrderConfirmed(
-                $aggregate->id()->value(),
-                $aggregate->projectId(),
-                $aggregate->userId(),
-            ));
-        }
+            if ($didConfirm) {
+                $this->domainEvents->dispatch(new OrderConfirmed(
+                    $aggregate->id()->value(),
+                    $aggregate->projectId(),
+                    $aggregate->userId(),
+                ));
+            }
 
-        return new PaymentConfirmOutput(
-            true,
-            '決済が完了しました',
-            $status,
-            Order::findOrFail($orderId),
-        );
+            return new PaymentConfirmOutput(
+                true,
+                '決済が完了しました',
+                $status,
+                Order::findOrFail($orderId),
+            );
+        });
     }
 }

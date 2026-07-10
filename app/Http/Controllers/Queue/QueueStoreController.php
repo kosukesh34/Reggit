@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Queue;
 use App\Http\Controllers\Controller;
 use App\Services\UserService;
 use App\Support\QueueRequestContext;
-use App\Support\QueueSessionStore;
 use App\UseCases\Queue\Data\QueueStoreInput;
 use App\UseCases\Queue\QueueStoreUseCase;
 use App\Util\AdminContext;

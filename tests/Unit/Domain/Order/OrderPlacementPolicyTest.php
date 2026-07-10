@@ -10,7 +10,7 @@ use Tests\TestCase;
 
 class OrderPlacementPolicyTest extends TestCase
 {
-    public function test_assertValid_モバイル注文とStripeは許可されること(): void
+    public function test_assert_valid_モバイル注文と_stripeは許可されること(): void
     {
         (new OrderPlacementPolicy)->assertValid(
             OrderType::MOBILE,
@@ -22,7 +22,7 @@ class OrderPlacementPolicyTest extends TestCase
         $this->assertTrue(true);
     }
 
-    public function test_assertValid_店内注文は現金のみ許可されること(): void
+    public function test_assert_valid_店内注文は現金のみ許可されること(): void
     {
         (new OrderPlacementPolicy)->assertValid(
             OrderType::IN_STORE,
@@ -34,7 +34,7 @@ class OrderPlacementPolicyTest extends TestCase
         $this->assertTrue(true);
     }
 
-    public function test_assertValid_モバイル限定設定で店内注文は拒否されること(): void
+    public function test_assert_valid_モバイル限定設定で店内注文は拒否されること(): void
     {
         $this->expectException(\Exception::class);
         $this->expectExceptionMessage('現在はモバイル注文のみ利用できます。');
@@ -47,7 +47,7 @@ class OrderPlacementPolicyTest extends TestCase
         );
     }
 
-    public function test_orderLineItem_sumTotal_明細合計を計算できること(): void
+    public function test_order_line_item_sum_total_明細合計を計算できること(): void
     {
         $items = [
             new OrderLineItem(1, 2, 500.0, null),

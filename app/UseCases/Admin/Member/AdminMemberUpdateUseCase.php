@@ -26,6 +26,8 @@ class AdminMemberUpdateUseCase
 
         $this->memberAdminService->updateMemberProfile($member, $input->userData, $input->memberData);
 
+        $this->memberRepository->syncPointsLedger($input->memberId, $input->projectId);
+
         $adjustment = $input->pointAdjustment;
         if ($adjustment === null) {
             return;

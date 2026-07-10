@@ -7,7 +7,7 @@ use Tests\TestCase;
 
 class StampEarnPolicyTest extends TestCase
 {
-    public function test_calculateCount_金額と単価から枚数を計算すること(): void
+    public function test_calculate_count_金額と単価から枚数を計算すること(): void
     {
         $policy = new StampEarnPolicy;
 

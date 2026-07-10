@@ -39,7 +39,7 @@ class QueueEntryAggregateTest extends TestCase
         $this->assertSame(QueueStatus::ENTERED, $entry->status());
     }
 
-    public function test_markAsCalled_待ちから呼び出しに遷移すること(): void
+    public function test_mark_as_called_待ちから呼び出しに遷移すること(): void
     {
         $entry = $this->createEntry();
         $now = Carbon::parse('2026-07-10 12:00:00');
@@ -50,7 +50,7 @@ class QueueEntryAggregateTest extends TestCase
         $this->assertSame($now->getTimestamp(), $entry->calledAt()?->getTimestamp());
     }
 
-    public function test_applyAdminStatus_waitingも設定できること(): void
+    public function test_apply_admin_status_waitingも設定できること(): void
     {
         $entry = $this->createEntry(QueueStatus::CALLED);
 
