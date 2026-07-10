@@ -21,7 +21,7 @@ class MemberAddPointsUseCase
 
     public function handle(MemberAddPointsInput $input): MemberPointsOutput
     {
-        $projectId = (int) ($input->user->project_id ?? 1);
+        $projectId = (int) ($input->user->project_id ?? 0);
 
         $member = DB::transaction(function () use ($input, $projectId) {
             return $this->earnPointsInTransaction($input, $projectId);
