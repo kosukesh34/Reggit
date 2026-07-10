@@ -22,6 +22,7 @@ class SmaregiCustomerPointsInboundSyncService
         private SmaregiApiService $smaregiApi,
         private MemberRepository $memberRepository,
         private ShopSettingRepository $shopSettingRepository,
+        private SmaregiPointsSyncService $pointsSync,
     ) {}
 
     /**
@@ -174,6 +175,16 @@ class SmaregiCustomerPointsInboundSyncService
                 $this->applyRemoteProfileForMember($member, $remoteCustomer);
             }
             if ($remotePoints !== null) {
+                if ($this->pointsSync->hasOutboundPending((int) $member->id)) {
+                    Log::info('[Smaregi] Inbound point sync skipped: outbound pending（ローカル先行の巻き戻し防止）', [
+                        'member_id' => (int) $member->id,
+                        'project_id' => (int) $member->project_id,
+                        'smaregi_customer_id' => $smaregiCustomerId,
+                        'remote_points' => $remotePoints,
+                    ]);
+
+                    continue;
+                }
                 $this->applyRemotePointsForMember($member, $remotePoints);
             }
         }
