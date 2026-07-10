@@ -1,31 +1,34 @@
 {
   "_GalleryManager-!~{003}~.js": {
-    "file": "assets/GalleryManager-DiekyHhG.css",
+    "file": "assets/GalleryManager-Bdhsl10q.css",
     "src": "_GalleryManager-!~{003}~.js"
   },
-  "_GalleryManager-DYx7VR_g.js": {
-    "file": "assets/GalleryManager-DYx7VR_g.js",
+  "_GalleryManager-BTqLyt7F.js": {
+    "file": "assets/GalleryManager-BTqLyt7F.js",
     "name": "GalleryManager",
     "css": [
-      "assets/GalleryManager-DiekyHhG.css"
+      "assets/GalleryManager-Bdhsl10q.css"
     ]
   },
   "resources/js/admin/main.tsx": {
-    "file": "assets/main-CFK4VWYg.js",
+    "file": "assets/main-BXJ3KyRq.js",
     "name": "main",
     "src": "resources/js/admin/main.tsx",
     "isEntry": true,
     "imports": [
-      "_GalleryManager-DYx7VR_g.js"
+      "_GalleryManager-BTqLyt7F.js"
+    ],
+    "css": [
+      "assets/main-CjkcMlW9.css"
     ]
   },
   "resources/js/frontend/main.tsx": {
-    "file": "assets/main-8NOGFqrw.js",
+    "file": "assets/main-ZDSQUvEQ.js",
     "name": "main",
     "src": "resources/js/frontend/main.tsx",
     "isEntry": true,
     "imports": [
-      "_GalleryManager-DYx7VR_g.js"
+      "_GalleryManager-BTqLyt7F.js"
     ]
   }
 }

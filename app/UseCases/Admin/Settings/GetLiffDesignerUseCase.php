@@ -15,8 +15,6 @@ class GetLiffDesignerUseCase
             ShopSetting::getLiffCustomCss($projectId),
             ShopSetting::getLiffTabSettings($projectId),
             ShopSetting::getFeatureFlags($projectId),
-            ShopSetting::getLineLiffId($projectId),
-            ShopSetting::getLineLiffUrl($projectId),
             ShopSetting::getLineFriendAddUrl($projectId),
             $this->menuItems($projectId)
         );

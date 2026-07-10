@@ -15,3 +15,5 @@
 @import url('liff-designer-14.css?v=20260703a');
 @import url('liff-designer-15.css?v=20260703a');
 @import url('liff-designer-polish.css?v=20260708');
+
+/* React UX 追加スタイルは Vite (resources/css/admin/liff-designer/react.css) から読み込み */
