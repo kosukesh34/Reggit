@@ -162,4 +162,123 @@ class EloquentShopSettingRepository implements ShopSettingRepository
     {
         return ShopSetting::isFeatureEnabled($featureKey, $projectId);
     }
+
+    public function getValue(string $key, mixed $default, int $projectId): mixed
+    {
+        return ShopSetting::getValue($key, $default, $projectId);
+    }
+
+    public function getFeatureFlags(int $projectId): array
+    {
+        return ShopSetting::getFeatureFlags($projectId);
+    }
+
+    public function getFeatureFlagLabels(): array
+    {
+        return ShopSetting::featureFlagLabels();
+    }
+
+    public function getAdminSidebarColor(int $projectId): string
+    {
+        return (string) (ShopSetting::getAdminSidebarColor($projectId) ?? '');
+    }
+
+    public function getAdminHeaderColor(int $projectId): string
+    {
+        return (string) (ShopSetting::getAdminHeaderColor($projectId) ?? '');
+    }
+
+    public function getAdminPrimaryColor(int $projectId): string
+    {
+        return (string) (ShopSetting::getAdminPrimaryColor($projectId) ?? '');
+    }
+
+    public function getFrontendHeaderText(int $projectId): string
+    {
+        return (string) (ShopSetting::getFrontendHeaderText($projectId) ?? '');
+    }
+
+    public function getWalletGoogleProgramLogoUrl(int $projectId): ?string
+    {
+        $url = ShopSetting::getWalletGoogleProgramLogoUrl($projectId);
+
+        return $url !== null && $url !== '' ? (string) $url : null;
+    }
+
+    public function getWalletGoogleHeroImageUrl(int $projectId): ?string
+    {
+        $url = ShopSetting::getWalletGoogleHeroImageUrl($projectId);
+
+        return $url !== null && $url !== '' ? (string) $url : null;
+    }
+
+    public function defaultFrontendMenuItems(): array
+    {
+        return ShopSetting::defaultFrontendMenuItems();
+    }
+
+    public function setValue(string $key, mixed $value, string $type, int $projectId): void
+    {
+        ShopSetting::setValue($key, $value, $type, $projectId);
+    }
+
+    public function setFeatureFlags(array $flags, int $projectId): void
+    {
+        ShopSetting::setFeatureFlags($flags, $projectId);
+    }
+
+    public function setFrontendMenuItems(array $items, int $projectId): void
+    {
+        ShopSetting::setFrontendMenuItems($items, $projectId);
+    }
+
+    public function setMemberRankSettings(array $settings, int $projectId): void
+    {
+        ShopSetting::setMemberRankSettings($settings, $projectId);
+    }
+
+    public function setProfileFieldSettings(array $settings, int $projectId): void
+    {
+        ShopSetting::setProfileFieldSettings($settings, $projectId);
+    }
+
+    public function setShowMemberCardForGuest(bool $value, int $projectId): void
+    {
+        ShopSetting::setShowMemberCardForGuest($value, $projectId);
+    }
+
+    public function setMemberCardDesign(string $value, int $projectId): void
+    {
+        ShopSetting::setMemberCardDesign($value, $projectId);
+    }
+
+    public function setMemberCardDisplayType(string $value, int $projectId): void
+    {
+        ShopSetting::setMemberCardDisplayType($value, $projectId);
+    }
+
+    public function setMemberCardCodeType(string $value, int $projectId): void
+    {
+        ShopSetting::setMemberCardCodeType($value, $projectId);
+    }
+
+    public function setWalletGoogleProgramLogoUrl(?string $url, int $projectId): void
+    {
+        ShopSetting::setWalletGoogleProgramLogoUrl($url, $projectId);
+    }
+
+    public function setWalletGoogleHeroImageUrl(?string $url, int $projectId): void
+    {
+        ShopSetting::setWalletGoogleHeroImageUrl($url, $projectId);
+    }
+
+    public function setLineLiffId(?string $liffId, int $projectId): void
+    {
+        ShopSetting::setLineLiffId($liffId, $projectId);
+    }
+
+    public function setLineLiffUrl(?string $liffUrl, int $projectId): void
+    {
+        ShopSetting::setLineLiffUrl($liffUrl, $projectId);
+    }
 }

@@ -45,20 +45,20 @@ class WalletPassUrlIssueUseCase
         ], now()->addMinutes(self::TOKEN_TTL_MINUTES));
 
         return WalletPassUrlIssueOutput::success(
-            $this->buildWalletAddUrl($token, $input->projectKey),
+            $this->buildWalletAddUrl($token, $input->projectKey, $input->requestOrigin),
         );
     }
 
-    public function buildWalletAddUrl(string $token, string $projectKey): string
+    public function buildWalletAddUrl(string $token, string $projectKey, string $requestOrigin): string
     {
-        return $this->currentOrigin().'/wallet-add?'.http_build_query([
+        return rtrim($requestOrigin, '/').'/wallet-add?'.http_build_query([
             'pass_token' => $token,
             'project_key' => $projectKey,
             'type' => 'apple',
         ]);
     }
 
-    public function buildPassDownloadUrl(string $token, string $projectKey): ?string
+    public function buildPassDownloadUrl(string $token, string $projectKey, string $requestOrigin): ?string
     {
         $cacheKey = self::TOKEN_CACHE_PREFIX.$token;
         $cached = Cache::get($cacheKey);
@@ -66,44 +66,9 @@ class WalletPassUrlIssueUseCase
             return null;
         }
 
-        return $this->currentOrigin().'/api/members/me/wallet-pass?'.http_build_query([
+        return rtrim($requestOrigin, '/').'/api/members/me/wallet-pass?'.http_build_query([
             'project_key' => $projectKey,
             'token' => $token,
         ]);
-    }
-
-    private function currentOrigin(): string
-    {
-        $origin = '';
-        if (request() !== null) {
-            $forwardedHost = request()->header('X-Forwarded-Host') ?? request()->server('HTTP_X_FORWARDED_HOST');
-            if (is_string($forwardedHost) && trim($forwardedHost) !== '') {
-                $proto = request()->header('X-Forwarded-Proto') ?? request()->server('HTTP_X_FORWARDED_PROTO');
-                $scheme = is_string($proto) && trim($proto) !== '' ? trim($proto) : request()->getScheme();
-                $origin = $scheme.'://'.trim(explode(',', $forwardedHost)[0]);
-            } else {
-                $origin = request()->getSchemeAndHttpHost();
-            }
-        } else {
-            $origin = (string) config('app.url', url('/'));
-        }
-
-        return $this->ensureHttpsOrigin(rtrim($origin, '/'));
-    }
-
-    private function ensureHttpsOrigin(string $origin): string
-    {
-        $host = parse_url($origin, PHP_URL_HOST);
-        if (! is_string($host) || $host === '') {
-            return $origin;
-        }
-        if (in_array($host, ['localhost', '127.0.0.1'], true)) {
-            return $origin;
-        }
-        if (str_starts_with($origin, 'http://')) {
-            return 'https://'.substr($origin, 7);
-        }
-
-        return $origin;
     }
 }

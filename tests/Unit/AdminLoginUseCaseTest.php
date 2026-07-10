@@ -6,7 +6,7 @@ use App\Services\Admin\AdminAuthService;
 use App\UseCases\Admin\Auth\AdminLoginUseCase;
 use App\UseCases\Admin\Auth\Data\AdminAuthAuditContext;
 use App\UseCases\Admin\Auth\Data\AdminLoginInput;
-use Illuminate\Http\RedirectResponse;
+use App\UseCases\Admin\Auth\Data\AdminRedirectResult;
 use Mockery;
 use Tests\TestCase;
 
@@ -35,7 +35,7 @@ class AdminLoginUseCaseTest extends TestCase
             ),
         );
 
-        $redirect = Mockery::mock(RedirectResponse::class);
+        $redirect = new AdminRedirectResult('admin.dashboard', ['project_key' => 'default']);
         $authService = Mockery::mock(AdminAuthService::class);
         $authService->shouldReceive('loginAdmin')->once()->with($input)->andReturn($redirect);
 
