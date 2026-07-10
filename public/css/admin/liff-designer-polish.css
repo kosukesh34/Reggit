@@ -1,0 +1,98 @@
+/* ============================================================
+   LIFF Designer polish（既存 --ld-* トークンを使った微調整）
+   ============================================================ */
+
+.ld {
+    --ld-shadow-sm: 0 1px 2px rgba(28, 25, 23, 0.05), 0 4px 14px rgba(28, 25, 23, 0.04);
+    --ld-shadow: 0 8px 24px rgba(28, 25, 23, 0.08);
+    --ld-shadow-lg: 0 20px 48px rgba(28, 25, 23, 0.12);
+    font-feature-settings: "kern" 1;
+}
+
+.ld-topbar,
+.ld-btn,
+.ld-screens,
+.ld-sidebar,
+.ld-canvas,
+.ld-panel {
+    font-family: inherit;
+}
+
+.ld-topbar__title,
+.ld-panel__title {
+    letter-spacing: 0.02em;
+    font-weight: 700;
+    font-family: inherit;
+}
+
+.ld-topbar {
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset, var(--ld-shadow-sm);
+}
+
+.ld-btn {
+    transition:
+        transform 0.14s ease,
+        box-shadow 0.14s ease,
+        background 0.14s ease,
+        border-color 0.14s ease,
+        filter 0.14s ease;
+}
+
+.ld-btn:hover {
+    filter: brightness(1.02);
+}
+
+.ld-btn:active {
+    transform: translateY(1px);
+}
+
+.ld-btn--primary {
+    box-shadow: 0 6px 16px rgba(13, 148, 136, 0.28);
+}
+
+.ld-screens,
+.ld-sidebar,
+.ld-canvas {
+    transition: width 0.18s ease, box-shadow 0.18s ease;
+}
+
+.ld-block {
+    transition:
+        transform 0.14s ease,
+        box-shadow 0.14s ease,
+        border-color 0.14s ease;
+}
+
+.ld-block.is-selected,
+.ld-block:hover {
+    box-shadow: var(--ld-shadow-sm);
+}
+
+.ld-palette-item {
+    transition:
+        transform 0.14s ease,
+        background 0.14s ease,
+        border-color 0.14s ease;
+}
+
+.ld-palette-item:hover {
+    transform: translateY(-1px);
+}
+
+.ld-theme-card,
+.ld-template-card {
+    transition:
+        transform 0.16s ease,
+        box-shadow 0.16s ease,
+        border-color 0.16s ease;
+}
+
+.ld-theme-card:hover,
+.ld-template-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--ld-shadow);
+}
+
+.ld-phone__frame {
+    box-shadow: var(--ld-shadow-lg);
+}
