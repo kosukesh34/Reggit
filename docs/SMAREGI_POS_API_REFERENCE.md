@@ -526,7 +526,7 @@ $couponId = $result['couponId'] ?? $result['coupon_id'] ?? null;
 
 ### 一覧取得で 404 や空になる
 
-- path の表記が公式と異なる場合がある（例: `pos/payment-methods` と `pos/payment_methods`）。本アプリで使っている path は `SmaregiApiService` および `GetSmaregiPosDataUseCase` の定数を参照する。
+- path の表記が公式と異なる場合がある（例: `pos/payment-methods` と `pos/payment_methods`）。本アプリで使っている path は `SmaregiApiService` を参照する。
 - 取引一覧は日付範囲のクエリが必須。`sum_date-from` と `sum_date-to` などを指定しているか確認する。
 
 ---

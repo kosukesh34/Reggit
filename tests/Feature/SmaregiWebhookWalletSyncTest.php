@@ -15,6 +15,7 @@ use App\Util\AdminContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Mockery;
+use Tests\Support\GrantsMemberPoints;
 use Tests\TestCase;
 
 /**
@@ -22,6 +23,7 @@ use Tests\TestCase;
  */
 class SmaregiWebhookWalletSyncTest extends TestCase
 {
+    use GrantsMemberPoints;
     use RefreshDatabase;
 
     private const CONTRACT_ID = 'test_contract_wallet_sync';
@@ -171,7 +173,7 @@ class SmaregiWebhookWalletSyncTest extends TestCase
             'smaregi_customer_id' => $smaregiCustomerId,
             'points' => 0,
         ]);
-        $member->addPoints($initialPoints, '初期付与');
+        $this->grantMemberPoints($member, $initialPoints, '初期付与');
 
         return $member->fresh();
     }

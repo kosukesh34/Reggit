@@ -223,10 +223,6 @@
                         <i class="fas fa-plug"></i>
                         <span>スマレジ連携</span>
                     </a>
-                    <a href="{{ admin_route('admin.settings.smaregi.pos-data') }}" class="nav-item nav-item--sub {{ request()->routeIs('admin.settings.smaregi.pos-data') ? 'active' : '' }}">
-                        <i class="fas fa-database"></i>
-                        <span>仮想POSデータ確認</span>
-                    </a>
                     @endif
                 </div>
                 @endif

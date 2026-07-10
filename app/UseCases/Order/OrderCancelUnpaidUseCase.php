@@ -2,47 +2,48 @@
 
 namespace App\UseCases\Order;
 
-use App\Enums\OrderStatus;
-use App\Enums\OrderType;
-use App\Enums\PaymentMethod;
+use App\Domain\Order\Repositories\OrderRepository;
 use App\Models\Order;
+use App\Models\User;
 use App\Services\OrderService;
-use App\Services\UserService;
-use Illuminate\Http\Request;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\DB;
 
 class OrderCancelUnpaidUseCase
 {
-    private UserService $userService;
+    public function __construct(
+        private OrderRepository $orderRepository,
+        private OrderService $orderService,
+    ) {}
 
-    private OrderService $orderService;
-
-    public function __construct(UserService $userService, OrderService $orderService)
+    public function handle(User $user, int $orderId): Order
     {
-        $this->userService = $userService;
-        $this->orderService = $orderService;
-    }
+        /** @var array{0: Order, 1: bool} $result */
+        $result = DB::transaction(function () use ($user, $orderId) {
+            $aggregate = $this->orderRepository->findByIdAndUserIdForUpdate(
+                $orderId,
+                (int) $user->id,
+                (int) ($user->project_id ?? 1),
+            );
+            if ($aggregate === null) {
+                throw (new ModelNotFoundException)->setModel(Order::class, [$orderId]);
+            }
 
-    public function handle(Request $request, int $orderId): Order
-    {
-        $user = $this->userService->getOrCreateUser($request);
-        $order = Order::where('user_id', $user->id)->findOrFail($orderId);
+            if ($aggregate->isCancelled()) {
+                return [Order::with('items.product')->findOrFail($orderId), false];
+            }
 
-        if ($order->order_type !== OrderType::MOBILE || $order->payment_method !== PaymentMethod::STRIPE) {
-            throw new \Exception('この注文は未決済キャンセル対象ではありません');
+            $aggregate->cancelUnpaidStripeMobile();
+            $this->orderRepository->save($aggregate);
+
+            return [Order::with('items.product')->findOrFail($orderId), true];
+        });
+
+        [$order, $shouldHandleCancellation] = $result;
+        if ($shouldHandleCancellation) {
+            $this->orderService->handleOrderCancellation($order);
         }
 
-        if (in_array((string) $order->status, [OrderStatus::CONFIRMED, OrderStatus::PREPARING, OrderStatus::READY, OrderStatus::COMPLETED], true)) {
-            throw new \Exception('決済済みまたは進行中の注文はキャンセルできません');
-        }
-
-        if ($order->status === OrderStatus::CANCELLED) {
-            return $order->load('items.product');
-        }
-
-        $order->status = OrderStatus::CANCELLED;
-        $order->save();
-        $this->orderService->handleOrderCancellation($order);
-
-        return $order->load('items.product');
+        return $order;
     }
 }

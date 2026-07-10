@@ -4,9 +4,9 @@ namespace App\Http\Controllers\Admin\Account;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\AccountUpdateRequest;
+use App\Http\Support\RouteContextResolver;
 use App\UseCases\Admin\Account\AccountUpdateUseCase;
 use App\UseCases\Admin\Account\Data\AccountUpdateInput;
-use App\UseCases\Admin\RouteContextResolver;
 
 class AccountUpdateController extends Controller
 {
@@ -26,7 +26,7 @@ class AccountUpdateController extends Controller
         );
         $this->updateUseCase->handle($id, $input);
 
-        $routeContext = $this->routeContextResolver->resolve($request);
+        $routeContext = $this->routeContextResolver->resolveFromRequest($request);
 
         return redirect()->route("{$routeContext->routePrefix}.accounts.index", $routeContext->params)
             ->with('success', 'アカウントを更新しました');

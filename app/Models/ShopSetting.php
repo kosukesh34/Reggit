@@ -807,17 +807,17 @@ class ShopSetting
         return self::getValue('frontend_header_text', null, $projectId);
     }
 
-    public static function isDateAvailable(string $date): bool
+    public static function isDateAvailable(string $date, ?int $projectId = 1): bool
     {
         $dayOfWeek = (int) date('w', strtotime($date));
-        $closedDays = self::getClosedDays();
+        $closedDays = self::getClosedDays($projectId);
 
         if (in_array($dayOfWeek, $closedDays, true)) {
             return false;
         }
 
         $dateStr = date('Y-m-d', strtotime($date));
-        $closedDates = self::getClosedDates();
+        $closedDates = self::getClosedDates($projectId);
 
         if (in_array($dateStr, $closedDates, true)) {
             return false;

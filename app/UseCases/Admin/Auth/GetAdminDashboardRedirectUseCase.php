@@ -3,18 +3,15 @@
 namespace App\UseCases\Admin\Auth;
 
 use App\Services\Admin\AdminAuthService;
-use Illuminate\Http\RedirectResponse;
+use App\UseCases\Admin\Auth\Data\AdminRedirectResult;
 
 class GetAdminDashboardRedirectUseCase
 {
-    private AdminAuthService $authService;
+    public function __construct(
+        private AdminAuthService $authService,
+    ) {}
 
-    public function __construct(AdminAuthService $authService)
-    {
-        $this->authService = $authService;
-    }
-
-    public function handle(): RedirectResponse
+    public function handle(): AdminRedirectResult
     {
         return $this->authService->getAdminDashboardRedirect();
     }

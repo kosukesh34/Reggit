@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Member;
 
 use App\Http\Controllers\Controller;
 use App\Services\UserService;
-use App\Services\WalletPassService;
 use App\UseCases\Member\WalletPass\Data\WalletPassDownloadInput;
 use App\UseCases\Member\WalletPass\WalletPassDownloadUseCase;
 use Illuminate\Http\Request;
@@ -19,7 +18,6 @@ class WalletPassController extends Controller
     public function __construct(
         private WalletPassDownloadUseCase $downloadUseCase,
         private UserService $userService,
-        private WalletPassService $walletPassService
     ) {}
 
     public function __invoke(Request $request): Response
@@ -30,15 +28,13 @@ class WalletPassController extends Controller
             $user = $this->userService->getOrCreateUser($request);
         }
 
-        $input = new WalletPassDownloadInput(
+        $result = $this->downloadUseCase->handle(new WalletPassDownloadInput(
             token: $token !== null && $token !== '' ? $token : null,
             user: $user,
-        );
-        $result = $this->downloadUseCase->handle($input);
+        ));
 
         if ($result->isAvailable() === false) {
-            $messages = $this->walletPassService->getPublicUnavailabilityMessages();
-            $message = "Wallet に追加できませんでした。\n\n".implode("\n", $messages);
+            $message = "Wallet に追加できませんでした。\n\n".implode("\n", $result->unavailableReasons);
 
             return response(
                 $message,
@@ -47,12 +43,10 @@ class WalletPassController extends Controller
             );
         }
 
-        $filename = 'membership.pkpass';
-
         return response($result->content, 200, [
             'Content-Type' => 'application/vnd.apple.pkpass',
-            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
-            'Content-Length' => (string) strlen($result->content),
+            'Content-Disposition' => 'attachment; filename="membership.pkpass"',
+            'Content-Length' => (string) strlen((string) $result->content),
             'Cache-Control' => 'no-cache, no-store, must-revalidate',
             'Pragma' => 'no-cache',
         ]);

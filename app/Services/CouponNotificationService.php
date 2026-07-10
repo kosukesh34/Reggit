@@ -2,10 +2,10 @@
 
 namespace App\Services;
 
+use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Models\Member;
 use App\Models\MemberCoupon;
 use App\Models\Project;
-use App\Models\ShopSetting;
 use App\Services\Line\LineService;
 use App\Support\CouponLiffUrlBuilder;
 use App\Util\LogHelper;
@@ -14,7 +14,8 @@ class CouponNotificationService
 {
     public function __construct(
         private PushNotificationService $pushNotificationService,
-        private LineService $lineService
+        private LineService $lineService,
+        private ShopSettingRepository $shopSettingRepository,
     ) {}
 
     public function notifyIssued(MemberCoupon $memberCoupon): void
@@ -35,7 +36,7 @@ class CouponNotificationService
         $body = $couponName.'を受け取りました。クーポンタブからご確認ください。';
 
         $projectId = (int) $memberCoupon->project_id;
-        if (! ShopSetting::isFeatureEnabled('feature_coupons_enabled', $projectId)) {
+        if ($this->shopSettingRepository->isFeatureEnabled('feature_coupons_enabled', $projectId) === false) {
             LogHelper::info('[Coupon] notification skipped (coupons feature disabled)', [
                 'member_coupon_id' => $memberCoupon->id,
                 'project_id' => $projectId,

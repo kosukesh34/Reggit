@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Reservation;
 
 use App\Http\Controllers\Controller;
+use App\Services\UserService;
 use App\UseCases\Reservation\ReservationCancelUseCase;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
@@ -11,13 +12,14 @@ use Illuminate\Http\Request;
 class ReservationCancelController extends Controller
 {
     public function __construct(
-        private ReservationCancelUseCase $cancelUseCase
+        private ReservationCancelUseCase $cancelUseCase,
+        private UserService $userService,
     ) {}
 
     public function __invoke(Request $request, int $id)
     {
         try {
-            $result = $this->cancelUseCase->handle($request, $id);
+            $result = $this->cancelUseCase->handle($this->userService->getOrCreateUser($request), $id);
             if ($result->requiresMembership) {
                 return response()->json([
                     'error' => '会員登録が必要です',

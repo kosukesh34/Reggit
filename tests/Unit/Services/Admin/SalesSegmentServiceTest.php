@@ -26,7 +26,7 @@ class SalesSegmentServiceTest extends TestCase
             ['project_key' => 'default'],
             ['name' => 'Test', 'description' => 'Test', 'is_active' => true]
         );
-        $this->service = new SalesSegmentService;
+        $this->service = app(SalesSegmentService::class);
     }
 
     public function test_get_member_ids_by_sales_criteria_購入額以上で該当会員を返す(): void

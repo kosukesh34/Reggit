@@ -2,6 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Support\QueueMeInputFactory;
+use App\Services\UserService;
+use App\Support\QueueRequestContext;
+use App\Support\QueueSessionStore;
+use App\UseCases\Queue\Data\QueueStoreInput;
 use App\UseCases\Queue\QueueMeUseCase;
 use App\UseCases\Queue\QueueStoreUseCase;
 use Illuminate\Http\Request;
@@ -12,17 +17,13 @@ use Illuminate\Support\Facades\Log;
  */
 class QueueController extends Controller
 {
-    private QueueStoreUseCase $storeUseCase;
-
-    private QueueMeUseCase $meUseCase;
-
     public function __construct(
-        QueueStoreUseCase $storeUseCase,
-        QueueMeUseCase $meUseCase
-    ) {
-        $this->storeUseCase = $storeUseCase;
-        $this->meUseCase = $meUseCase;
-    }
+        private QueueStoreUseCase $storeUseCase,
+        private QueueMeUseCase $meUseCase,
+        private UserService $userService,
+        private QueueMeInputFactory $meInputFactory,
+        private QueueSessionStore $sessionStore,
+    ) {}
 
     public function store(Request $request)
     {
@@ -33,12 +34,14 @@ class QueueController extends Controller
         ]);
 
         try {
-            $dto = $this->storeUseCase->handle(
-                $request,
+            $user = $this->userService->getOrCreateUser($request);
+            $dto = $this->storeUseCase->handle(new QueueStoreInput(
+                $user,
                 (int) $validated['party_size'],
                 isset($validated['guest_name']) ? (string) $validated['guest_name'] : null,
-                isset($validated['guest_phone']) ? (string) $validated['guest_phone'] : null
-            );
+                isset($validated['guest_phone']) ? (string) $validated['guest_phone'] : null,
+                QueueRequestContext::lineUserId($request) ?: null,
+            ));
 
             return response()->json([
                 'message' => '順番待ちに登録しました',
@@ -55,7 +58,10 @@ class QueueController extends Controller
     public function me(Request $request)
     {
         try {
-            $output = $this->meUseCase->handle($request);
+            $output = $this->meUseCase->handle(
+                $this->meInputFactory->fromRequest($request, $this->userService->getOrCreateUser($request))
+            );
+            $this->sessionStore->applyMeOutput($request, $output);
 
             if ($output->queueEntry === null) {
                 return response()->json([

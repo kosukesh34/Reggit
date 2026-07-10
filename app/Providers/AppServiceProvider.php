@@ -2,6 +2,29 @@
 
 namespace App\Providers;
 
+use App\Domain\Coupon\Repositories\CouponDeliveryTargetRepository;
+use App\Domain\Coupon\Repositories\MemberCouponRepository;
+use App\Domain\Member\Repositories\MemberRepository;
+use App\Domain\Order\Repositories\OrderRepository;
+use App\Domain\Order\Repositories\ProductCatalogRepository;
+use App\Domain\Order\Repositories\ProductStockRepository;
+use App\Domain\Queue\Repositories\QueueEntryRepository;
+use App\Domain\Reservation\Repositories\ReservationRepository;
+use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
+use App\Infrastructure\Events\LoggingDomainEventListener;
+use App\Infrastructure\Events\MulticastDomainEventDispatcher;
+use App\Infrastructure\Events\SyncOrderPointsToSmaregiListener;
+use App\Infrastructure\Events\SyncPointsEarnedToSmaregiListener;
+use App\Infrastructure\Persistence\Eloquent\Coupon\EloquentCouponDeliveryTargetRepository;
+use App\Infrastructure\Persistence\Eloquent\Coupon\EloquentMemberCouponRepository;
+use App\Infrastructure\Persistence\Eloquent\Member\EloquentMemberRepository;
+use App\Infrastructure\Persistence\Eloquent\Order\EloquentOrderRepository;
+use App\Infrastructure\Persistence\Eloquent\Order\EloquentProductCatalogRepository;
+use App\Infrastructure\Persistence\Eloquent\Order\EloquentProductStockRepository;
+use App\Infrastructure\Persistence\Eloquent\Queue\EloquentQueueEntryRepository;
+use App\Infrastructure\Persistence\Eloquent\Reservation\EloquentReservationRepository;
+use App\Infrastructure\Persistence\Eloquent\Settings\EloquentShopSettingRepository;
 use App\Models\MemberCoupon;
 use App\Models\MemberStamp;
 use App\Models\PointTransaction;
@@ -11,6 +34,14 @@ use App\Observers\MemberCouponObserver;
 use App\Observers\MemberStampObserver;
 use App\Observers\PointTransactionObserver;
 use App\Observers\ProjectObserver;
+use App\Repositories\Contracts\AdminUserRepository;
+use App\Repositories\Contracts\ProjectRepository;
+use App\Repositories\Contracts\UserDeviceRepository;
+use App\Repositories\Contracts\UserRepository;
+use App\Repositories\Eloquent\EloquentAdminUserRepository;
+use App\Repositories\Eloquent\EloquentProjectRepository;
+use App\Repositories\Eloquent\EloquentUserDeviceRepository;
+use App\Repositories\Eloquent\EloquentUserRepository;
 use App\Services\GoogleWalletPassService;
 use App\Services\WalletPassService;
 use App\UseCases\Payment\PaymentGateway;
@@ -26,6 +57,27 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        $this->app->bind(ProjectRepository::class, EloquentProjectRepository::class);
+        $this->app->bind(AdminUserRepository::class, EloquentAdminUserRepository::class);
+        $this->app->bind(UserDeviceRepository::class, EloquentUserDeviceRepository::class);
+        $this->app->bind(UserRepository::class, EloquentUserRepository::class);
+        $this->app->bind(MemberRepository::class, EloquentMemberRepository::class);
+        $this->app->bind(OrderRepository::class, EloquentOrderRepository::class);
+        $this->app->bind(ProductStockRepository::class, EloquentProductStockRepository::class);
+        $this->app->bind(ProductCatalogRepository::class, EloquentProductCatalogRepository::class);
+        $this->app->bind(MemberCouponRepository::class, EloquentMemberCouponRepository::class);
+        $this->app->bind(CouponDeliveryTargetRepository::class, EloquentCouponDeliveryTargetRepository::class);
+        $this->app->bind(ReservationRepository::class, EloquentReservationRepository::class);
+        $this->app->bind(QueueEntryRepository::class, EloquentQueueEntryRepository::class);
+        $this->app->bind(ShopSettingRepository::class, EloquentShopSettingRepository::class);
+        $this->app->singleton(DomainEventDispatcher::class, function ($app) {
+            return new MulticastDomainEventDispatcher([
+                $app->make(LoggingDomainEventListener::class),
+                $app->make(SyncPointsEarnedToSmaregiListener::class),
+                $app->make(SyncOrderPointsToSmaregiListener::class),
+            ]);
+        });
+
         $this->app->singleton(PaymentGateway::class, function () {
             $secret = (string) config('services.stripe.secret', env('STRIPE_SECRET', ''));
 
