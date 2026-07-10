@@ -19,7 +19,7 @@ class MemberProfileRequest extends FormRequest
         $member = $user->member;
         $projectId = $member !== null
             ? (int) $member->project_id
-            : (int) ($user->project_id ?? 1);
+            : (int) ($user->project_id ?? 0);
 
         return resolve(MemberService::class)->getProfileValidationRules($projectId);
     }

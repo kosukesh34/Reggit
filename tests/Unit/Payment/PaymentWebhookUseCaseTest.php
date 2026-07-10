@@ -122,4 +122,39 @@ class PaymentWebhookUseCaseTest extends TestCase
         $this->assertTrue($result);
         $this->assertSame(OrderStatus::CONFIRMED, $order->fresh()->status);
     }
+
+    public function test_handle_進行中注文はステータスを上書きしないこと(): void
+    {
+        Project::firstOrCreate(
+            ['project_key' => 'default'],
+            ['name' => 'Default Project', 'description' => 'Test', 'is_active' => true]
+        );
+        $user = User::factory()->create(['project_id' => 1]);
+        $order = Order::create([
+            'project_id' => 1,
+            'user_id' => $user->id,
+            'total_amount' => 1000,
+            'status' => OrderStatus::PREPARING,
+            'payment_method' => PaymentMethod::STRIPE,
+            'points_used' => 0,
+            'points_earned' => 0,
+            'order_type' => 'mobile',
+        ]);
+
+        $gateway = new FakePaymentGateway;
+        $gateway->event = [
+            'type' => 'payment_intent.succeeded',
+            'metadata' => ['order_id' => $order->id],
+        ];
+
+        $useCase = new PaymentWebhookUseCase(
+            $gateway,
+            app(OrderRepository::class),
+            app(DomainEventDispatcher::class),
+        );
+        $result = $useCase->handle('{}', 'sig', 'secret');
+
+        $this->assertTrue($result);
+        $this->assertSame(OrderStatus::PREPARING, $order->fresh()->status);
+    }
 }
