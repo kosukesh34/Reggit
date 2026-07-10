@@ -3,8 +3,10 @@
 namespace App\UseCases\Payment;
 
 use App\Domain\Order\Events\OrderConfirmed;
+use App\Domain\Order\Events\OrderPointsSyncRequested;
 use App\Domain\Order\Repositories\OrderRepository;
 use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
+use App\Enums\OrderStatus;
 use App\Util\LogHelper;
 use Illuminate\Support\Facades\DB;
 
@@ -31,7 +33,8 @@ class PaymentWebhookUseCase
         }
 
         $confirmedEvent = null;
-        DB::transaction(function () use ($orderId, &$confirmedEvent) {
+        $pointsSyncEvent = null;
+        DB::transaction(function () use ($orderId, &$confirmedEvent, &$pointsSyncEvent) {
             $aggregate = $this->orderRepository->findByPrimaryKeyForUpdate((int) $orderId);
             if ($aggregate === null) {
                 return;
@@ -42,6 +45,14 @@ class PaymentWebhookUseCase
                 $this->orderRepository->save($aggregate);
                 if ($didConfirm) {
                     $confirmedEvent = new OrderConfirmed(
+                        $aggregate->id()->value(),
+                        $aggregate->projectId(),
+                        $aggregate->userId(),
+                    );
+                }
+
+                if ($this->shouldRequestPointsSync($aggregate->status(), $aggregate->isCancelled())) {
+                    $pointsSyncEvent = new OrderPointsSyncRequested(
                         $aggregate->id()->value(),
                         $aggregate->projectId(),
                         $aggregate->userId(),
@@ -59,7 +70,19 @@ class PaymentWebhookUseCase
         if ($confirmedEvent !== null) {
             $this->domainEvents->dispatch($confirmedEvent);
         }
+        if ($pointsSyncEvent !== null) {
+            $this->domainEvents->dispatch($pointsSyncEvent);
+        }
 
         return true;
+    }
+
+    private function shouldRequestPointsSync(string $status, bool $isCancelled): bool
+    {
+        if ($isCancelled) {
+            return false;
+        }
+
+        return $status !== OrderStatus::PENDING;
     }
 }

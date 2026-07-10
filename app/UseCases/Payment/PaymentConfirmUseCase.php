@@ -3,8 +3,10 @@
 namespace App\UseCases\Payment;
 
 use App\Domain\Order\Events\OrderConfirmed;
+use App\Domain\Order\Events\OrderPointsSyncRequested;
 use App\Domain\Order\Repositories\OrderRepository;
 use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
+use App\Enums\OrderStatus;
 use App\Enums\PaymentIntentStatus;
 use App\Models\Order;
 use App\UseCases\Payment\Data\PaymentConfirmOutput;
@@ -35,7 +37,8 @@ class PaymentConfirmUseCase
         }
 
         $confirmedEvent = null;
-        $output = DB::transaction(function () use ($orderId, $projectId, $status, &$confirmedEvent) {
+        $pointsSyncEvent = null;
+        $output = DB::transaction(function () use ($orderId, $projectId, $status, &$confirmedEvent, &$pointsSyncEvent) {
             $aggregate = $this->orderRepository->findByIdForUpdate($orderId, $projectId);
             if ($aggregate === null) {
                 throw (new ModelNotFoundException)->setModel(Order::class, [$orderId]);
@@ -57,6 +60,15 @@ class PaymentConfirmUseCase
                 );
             }
 
+            // 既確定の再送でも同期を要求する（失敗時リトライ。冪等は SyncService 側）。
+            if ($this->shouldRequestPointsSync($aggregate->status(), $aggregate->isCancelled())) {
+                $pointsSyncEvent = new OrderPointsSyncRequested(
+                    $aggregate->id()->value(),
+                    $aggregate->projectId(),
+                    $aggregate->userId(),
+                );
+            }
+
             return new PaymentConfirmOutput(
                 true,
                 '決済が完了しました',
@@ -68,7 +80,19 @@ class PaymentConfirmUseCase
         if ($confirmedEvent !== null) {
             $this->domainEvents->dispatch($confirmedEvent);
         }
+        if ($pointsSyncEvent !== null) {
+            $this->domainEvents->dispatch($pointsSyncEvent);
+        }
 
         return $output;
+    }
+
+    private function shouldRequestPointsSync(string $status, bool $isCancelled): bool
+    {
+        if ($isCancelled) {
+            return false;
+        }
+
+        return $status !== OrderStatus::PENDING;
     }
 }
