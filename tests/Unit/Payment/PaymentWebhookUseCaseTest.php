@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Payment;
 
+use App\Domain\Order\Events\OrderPointsSyncRequested;
 use App\Domain\Order\Repositories\OrderRepository;
 use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
 use App\Enums\OrderStatus;
@@ -112,10 +113,15 @@ class PaymentWebhookUseCaseTest extends TestCase
             'metadata' => ['order_id' => $order->id],
         ];
 
+        $dispatcher = \Mockery::mock(DomainEventDispatcher::class);
+        $dispatcher->shouldReceive('dispatch')
+            ->once()
+            ->with(\Mockery::type(OrderPointsSyncRequested::class));
+
         $useCase = new PaymentWebhookUseCase(
             $gateway,
             app(OrderRepository::class),
-            app(DomainEventDispatcher::class),
+            $dispatcher,
         );
         $result = $useCase->handle('{}', 'sig', 'secret');
 

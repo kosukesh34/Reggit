@@ -4,6 +4,7 @@ namespace Tests\Unit\Infrastructure\Events;
 
 use App\Domain\Member\Events\PointsEarned;
 use App\Domain\Member\Repositories\MemberRepository;
+use App\Domain\Order\Repositories\OrderRepository;
 use App\Infrastructure\Events\SyncPointsEarnedToSmaregiListener;
 use App\Models\Member;
 use App\Models\Project;
@@ -21,7 +22,11 @@ class SyncPointsEarnedToSmaregiListenerTest extends TestCase
     private function makeListener(SmaregiApiService $smaregiApi): SyncPointsEarnedToSmaregiListener
     {
         return new SyncPointsEarnedToSmaregiListener(
-            new SmaregiPointsSyncService(app(MemberRepository::class), $smaregiApi),
+            new SmaregiPointsSyncService(
+                app(MemberRepository::class),
+                app(OrderRepository::class),
+                $smaregiApi,
+            ),
         );
     }
 
@@ -36,6 +41,8 @@ class SyncPointsEarnedToSmaregiListenerTest extends TestCase
         ]);
 
         $smaregiApi = Mockery::mock(SmaregiApiService::class);
+        $smaregiApi->shouldReceive('getContractIdForProject')
+            ->andReturn('contract-1');
         $smaregiApi->shouldReceive('syncCustomerPointsForProject')
             ->once()
             ->with((int) $project->id, 'cust-1', -50)
@@ -45,8 +52,16 @@ class SyncPointsEarnedToSmaregiListenerTest extends TestCase
             (int) $member->id,
             (int) $project->id,
             -50,
-            99,
+            null,
         ));
+    }
+
+    public function test_注文由来の_points_earnedは無視すること(): void
+    {
+        $smaregiApi = Mockery::mock(SmaregiApiService::class);
+        $smaregiApi->shouldNotReceive('syncCustomerPointsForProject');
+
+        $this->makeListener($smaregiApi)->handle(new PointsEarned(1, 1, -50, 99));
     }
 
     public function test_ゼロポイントは同期しないこと(): void
@@ -54,7 +69,7 @@ class SyncPointsEarnedToSmaregiListenerTest extends TestCase
         $smaregiApi = Mockery::mock(SmaregiApiService::class);
         $smaregiApi->shouldNotReceive('syncCustomerPointsForProject');
 
-        $this->makeListener($smaregiApi)->handle(new PointsEarned(1, 1, 0, 99));
+        $this->makeListener($smaregiApi)->handle(new PointsEarned(1, 1, 0, null));
     }
 
     public function test_ベストエフォート指定時は同期失敗でも例外にしないこと(): void
@@ -68,6 +83,8 @@ class SyncPointsEarnedToSmaregiListenerTest extends TestCase
         ]);
 
         $smaregiApi = Mockery::mock(SmaregiApiService::class);
+        $smaregiApi->shouldReceive('getContractIdForProject')
+            ->andReturn('contract-1');
         $smaregiApi->shouldReceive('syncCustomerPointsForProject')
             ->once()
             ->andReturn(null);
@@ -94,12 +111,38 @@ class SyncPointsEarnedToSmaregiListenerTest extends TestCase
         ]);
 
         $smaregiApi = Mockery::mock(SmaregiApiService::class);
+        $smaregiApi->shouldReceive('getContractIdForProject')
+            ->andReturn('contract-1');
         $smaregiApi->shouldReceive('syncCustomerPointsForProject')
             ->once()
             ->andReturn(null);
 
         $this->expectException(\Exception::class);
         $this->expectExceptionMessage('スマレジへのポイント反映に失敗しました');
+
+        $this->makeListener($smaregiApi)->handle(new PointsEarned(
+            (int) $member->id,
+            (int) $project->id,
+            10,
+            null,
+        ));
+    }
+
+    public function test_契約未設定なら同期をスキップすること(): void
+    {
+        $project = Project::factory()->create();
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $member = Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+            'smaregi_customer_id' => 'cust-1',
+        ]);
+
+        $smaregiApi = Mockery::mock(SmaregiApiService::class);
+        $smaregiApi->shouldReceive('getContractIdForProject')
+            ->once()
+            ->andReturn(null);
+        $smaregiApi->shouldNotReceive('syncCustomerPointsForProject');
 
         $this->makeListener($smaregiApi)->handle(new PointsEarned(
             (int) $member->id,

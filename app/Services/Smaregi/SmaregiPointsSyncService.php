@@ -3,21 +3,97 @@
 namespace App\Services\Smaregi;
 
 use App\Domain\Member\Repositories\MemberRepository;
+use App\Domain\Order\Repositories\OrderRepository;
 use App\Util\LogHelper;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * 会員ポイント差分をスマレジへ同期する。
  * points は加算が正、取り消し・減算が負。
+ *
+ * 注文単位のネット同期は Cache で冪等化し、失敗時は outbound pending を立てる。
+ * pending 中は inbound（Webhook / 会員取得時の取込）がローカルを巻き戻さない。
  */
 class SmaregiPointsSyncService
 {
+    private const ORDER_DONE_KEY_PREFIX = 'smaregi_order_points_sync:';
+
+    private const ORDER_CLAIM_KEY_PREFIX = 'smaregi_order_points_sync_claim:';
+
+    private const OUTBOUND_PENDING_KEY_PREFIX = 'smaregi_points_outbound_pending:';
+
+    private const ORDER_DONE_TTL_DAYS = 1;
+
+    private const ORDER_CLAIM_TTL_MINUTES = 5;
+
+    private const OUTBOUND_PENDING_TTL_DAYS = 1;
+
     public function __construct(
         private MemberRepository $memberRepository,
+        private OrderRepository $orderRepository,
         private SmaregiApiService $smaregiApi,
     ) {}
 
     /**
-     * @return bool 同期成功またはスキップ（顧客未連携等）なら true。API 失敗なら false
+     * 注文の used/earned ネット差分を1回だけスマレジへ送る。
+     *
+     * @return bool 完了（成功・スキップ・既同期）なら true。失敗または他プロセス処理中なら false
+     */
+    public function syncOrderNetPoints(int $orderId, int $projectId, int $userId): bool
+    {
+        $doneKey = self::ORDER_DONE_KEY_PREFIX.$orderId;
+        if (Cache::has($doneKey)) {
+            return true;
+        }
+
+        $claimKey = self::ORDER_CLAIM_KEY_PREFIX.$orderId;
+        if (Cache::add($claimKey, 1, now()->addMinutes(self::ORDER_CLAIM_TTL_MINUTES)) === false) {
+            return false;
+        }
+
+        try {
+            if (Cache::has($doneKey)) {
+                return true;
+            }
+
+            $order = $this->orderRepository->findById($orderId, $projectId);
+            if ($order === null) {
+                return true;
+            }
+
+            $member = $this->memberRepository->findByUserId($userId, $projectId);
+            if ($member === null) {
+                Cache::put($doneKey, 1, now()->addDays(self::ORDER_DONE_TTL_DAYS));
+
+                return true;
+            }
+
+            $netDelta = $order->pointsEarned() - $order->pointsUsed();
+            if ($netDelta === 0) {
+                Cache::put($doneKey, 1, now()->addDays(self::ORDER_DONE_TTL_DAYS));
+
+                return true;
+            }
+
+            $succeeded = $this->syncPointDelta(
+                $member->id()->value(),
+                $member->projectId(),
+                $netDelta,
+                $orderId,
+            );
+
+            if ($succeeded) {
+                Cache::put($doneKey, 1, now()->addDays(self::ORDER_DONE_TTL_DAYS));
+            }
+
+            return $succeeded;
+        } finally {
+            Cache::forget($claimKey);
+        }
+    }
+
+    /**
+     * @return bool 同期成功またはスキップ（顧客未連携・契約未設定等）なら true。API 失敗なら false
      */
     public function syncPointDelta(
         int $memberId,
@@ -40,6 +116,11 @@ class SmaregiPointsSyncService
             return true;
         }
 
+        $contractId = $this->smaregiApi->getContractIdForProject($member->projectId());
+        if ($contractId === null || trim($contractId) === '') {
+            return true;
+        }
+
         $result = $this->smaregiApi->syncCustomerPointsForProject(
             $member->projectId(),
             $smaregiCustomerId,
@@ -47,8 +128,12 @@ class SmaregiPointsSyncService
         );
 
         if ($result !== null) {
+            $this->clearOutboundPending($memberId);
+
             return true;
         }
+
+        $this->markOutboundPending($memberId);
 
         if ($orderId !== null || $isBestEffortSync) {
             LogHelper::warning('[DomainEvent] smaregi points sync failed on point delta', [
@@ -63,5 +148,24 @@ class SmaregiPointsSyncService
         }
 
         throw new \Exception('スマレジへのポイント反映に失敗しました。storage/logs/laravel.log の [Smaregi] を参照してください。');
+    }
+
+    public function hasOutboundPending(int $memberId): bool
+    {
+        return Cache::has(self::OUTBOUND_PENDING_KEY_PREFIX.$memberId);
+    }
+
+    public function markOutboundPending(int $memberId): void
+    {
+        Cache::put(
+            self::OUTBOUND_PENDING_KEY_PREFIX.$memberId,
+            1,
+            now()->addDays(self::OUTBOUND_PENDING_TTL_DAYS),
+        );
+    }
+
+    public function clearOutboundPending(int $memberId): void
+    {
+        Cache::forget(self::OUTBOUND_PENDING_KEY_PREFIX.$memberId);
     }
 }

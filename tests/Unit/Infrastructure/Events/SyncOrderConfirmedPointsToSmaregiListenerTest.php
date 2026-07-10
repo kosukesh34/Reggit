@@ -4,6 +4,7 @@ namespace Tests\Unit\Infrastructure\Events;
 
 use App\Domain\Member\Repositories\MemberRepository;
 use App\Domain\Order\Events\OrderConfirmed;
+use App\Domain\Order\Events\OrderPointsSyncRequested;
 use App\Domain\Order\Repositories\OrderRepository;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
@@ -26,9 +27,11 @@ class SyncOrderConfirmedPointsToSmaregiListenerTest extends TestCase
     private function makeListener(SmaregiApiService $smaregiApi): SyncOrderConfirmedPointsToSmaregiListener
     {
         return new SyncOrderConfirmedPointsToSmaregiListener(
-            app(OrderRepository::class),
-            app(MemberRepository::class),
-            new SmaregiPointsSyncService(app(MemberRepository::class), $smaregiApi),
+            new SmaregiPointsSyncService(
+                app(MemberRepository::class),
+                app(OrderRepository::class),
+                $smaregiApi,
+            ),
         );
     }
 
@@ -53,12 +56,51 @@ class SyncOrderConfirmedPointsToSmaregiListenerTest extends TestCase
         ]);
 
         $smaregiApi = Mockery::mock(SmaregiApiService::class);
+        $smaregiApi->shouldReceive('getContractIdForProject')
+            ->andReturn('contract-1');
         $smaregiApi->shouldReceive('syncCustomerPointsForProject')
             ->once()
             ->with((int) $project->id, 'cust-1', -15)
             ->andReturn(['customerId' => 'cust-1']);
 
         $this->makeListener($smaregiApi)->handle(new OrderConfirmed(
+            (int) $order->id,
+            (int) $project->id,
+            (int) $user->id,
+        ));
+    }
+
+    public function test_order_points_sync_requestedでもネット差分を1回同期すること(): void
+    {
+        Cache::flush();
+
+        $project = Project::factory()->create();
+        $user = User::factory()->create(['project_id' => $project->id]);
+        Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+            'smaregi_customer_id' => 'cust-1',
+        ]);
+        $order = Order::create([
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+            'total_amount' => 1000,
+            'status' => OrderStatus::PENDING,
+            'payment_method' => PaymentMethod::CASH,
+            'points_used' => 20,
+            'points_earned' => 5,
+            'order_type' => 'mobile',
+        ]);
+
+        $smaregiApi = Mockery::mock(SmaregiApiService::class);
+        $smaregiApi->shouldReceive('getContractIdForProject')
+            ->andReturn('contract-1');
+        $smaregiApi->shouldReceive('syncCustomerPointsForProject')
+            ->once()
+            ->with((int) $project->id, 'cust-1', -15)
+            ->andReturn(['customerId' => 'cust-1']);
+
+        $this->makeListener($smaregiApi)->handle(new OrderPointsSyncRequested(
             (int) $order->id,
             (int) $project->id,
             (int) $user->id,
@@ -118,13 +160,15 @@ class SyncOrderConfirmedPointsToSmaregiListenerTest extends TestCase
         ]);
 
         $smaregiApi = Mockery::mock(SmaregiApiService::class);
+        $smaregiApi->shouldReceive('getContractIdForProject')
+            ->andReturn('contract-1');
         $smaregiApi->shouldReceive('syncCustomerPointsForProject')
             ->once()
             ->with((int) $project->id, 'cust-1', -7)
             ->andReturn(['customerId' => 'cust-1']);
 
         $listener = $this->makeListener($smaregiApi);
-        $event = new OrderConfirmed(
+        $event = new OrderPointsSyncRequested(
             (int) $order->id,
             (int) $project->id,
             (int) $user->id,
@@ -139,7 +183,7 @@ class SyncOrderConfirmedPointsToSmaregiListenerTest extends TestCase
 
         $project = Project::factory()->create();
         $user = User::factory()->create(['project_id' => $project->id]);
-        Member::factory()->create([
+        $member = Member::factory()->create([
             'project_id' => $project->id,
             'user_id' => $user->id,
             'smaregi_customer_id' => 'cust-1',
@@ -156,6 +200,8 @@ class SyncOrderConfirmedPointsToSmaregiListenerTest extends TestCase
         ]);
 
         $smaregiApi = Mockery::mock(SmaregiApiService::class);
+        $smaregiApi->shouldReceive('getContractIdForProject')
+            ->andReturn('contract-1');
         $smaregiApi->shouldReceive('syncCustomerPointsForProject')
             ->once()
             ->with((int) $project->id, 'cust-1', -15)
@@ -166,12 +212,54 @@ class SyncOrderConfirmedPointsToSmaregiListenerTest extends TestCase
             ->andReturn(['customerId' => 'cust-1']);
 
         $listener = $this->makeListener($smaregiApi);
-        $event = new OrderConfirmed(
+        $pointsSync = new SmaregiPointsSyncService(
+            app(MemberRepository::class),
+            app(OrderRepository::class),
+            $smaregiApi,
+        );
+        $event = new OrderPointsSyncRequested(
             (int) $order->id,
             (int) $project->id,
             (int) $user->id,
         );
         $listener->handle($event);
+        $this->assertTrue($pointsSync->hasOutboundPending((int) $member->id));
+
         $listener->handle($event);
+        $this->assertFalse($pointsSync->hasOutboundPending((int) $member->id));
+    }
+
+    public function test_契約未設定なら同期をスキップすること(): void
+    {
+        Cache::flush();
+
+        $project = Project::factory()->create();
+        $user = User::factory()->create(['project_id' => $project->id]);
+        Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+            'smaregi_customer_id' => 'cust-1',
+        ]);
+        $order = Order::create([
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+            'total_amount' => 1000,
+            'status' => OrderStatus::CONFIRMED,
+            'payment_method' => PaymentMethod::STRIPE,
+            'points_used' => 10,
+            'points_earned' => 0,
+            'order_type' => 'mobile',
+        ]);
+
+        $smaregiApi = Mockery::mock(SmaregiApiService::class);
+        $smaregiApi->shouldReceive('getContractIdForProject')
+            ->andReturn(null);
+        $smaregiApi->shouldNotReceive('syncCustomerPointsForProject');
+
+        $this->makeListener($smaregiApi)->handle(new OrderPointsSyncRequested(
+            (int) $order->id,
+            (int) $project->id,
+            (int) $user->id,
+        ));
     }
 }
