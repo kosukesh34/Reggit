@@ -26,7 +26,7 @@ class MemberPointCardUseCase
 
         $rankInfo = $this->rankCalculator->getRankInfo($member);
         $expiryInfo = $this->expiryCalculator->getExpiryInfo($member);
-        $projectId = $member->project_id ?? 0;
+        $projectId = $member->project_id ?? 1;
         $showPoints = $this->shopSettingRepository->getShowPointsDisplay($projectId);
         $showRankProgress = $this->shopSettingRepository->getShowRankProgress($projectId);
         $memberCardDesign = $this->shopSettingRepository->getMemberCardDesign($projectId);

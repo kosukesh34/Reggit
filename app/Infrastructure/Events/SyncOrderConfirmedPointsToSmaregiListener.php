@@ -12,13 +12,18 @@ use Illuminate\Support\Facades\Cache;
 /**
  * Stripe 決済確定後に、注文で変動したポイント差分をスマレジへ同期する。
  * 未決済作成時点では同期せず、確定時にまとめて送る。
- * 同一 order への再配信は Cache で抑止する（confirm + webhook の二重発火対策）。
+ * used/earned はネット1回で送り、完了 Cache は成功後のみ立てる（部分成功の二重適用を防ぐ）。
+ * 同時実行は短い claim で抑止する（confirm + webhook の防御）。
  */
 class SyncOrderConfirmedPointsToSmaregiListener implements DomainEventListener
 {
     private const CACHE_KEY_PREFIX = 'smaregi_order_points_sync:';
 
+    private const CLAIM_KEY_PREFIX = 'smaregi_order_points_sync_claim:';
+
     private const CACHE_TTL_DAYS = 1;
+
+    private const CLAIM_TTL_MINUTES = 5;
 
     public function __construct(
         private OrderRepository $orderRepository,
@@ -32,50 +37,50 @@ class SyncOrderConfirmedPointsToSmaregiListener implements DomainEventListener
             return;
         }
 
-        $cacheKey = self::CACHE_KEY_PREFIX.$event->orderId;
-        if (Cache::add($cacheKey, 1, now()->addDays(self::CACHE_TTL_DAYS)) === false) {
+        $doneKey = self::CACHE_KEY_PREFIX.$event->orderId;
+        if (Cache::has($doneKey)) {
             return;
         }
 
-        $order = $this->orderRepository->findById($event->orderId, $event->projectId);
-        if ($order === null) {
-            Cache::forget($cacheKey);
-
+        $claimKey = self::CLAIM_KEY_PREFIX.$event->orderId;
+        if (Cache::add($claimKey, 1, now()->addMinutes(self::CLAIM_TTL_MINUTES)) === false) {
             return;
         }
 
-        $member = $this->memberRepository->findByUserId($event->userId, $event->projectId);
-        if ($member === null) {
-            Cache::forget($cacheKey);
+        try {
+            if (Cache::has($doneKey)) {
+                return;
+            }
 
-            return;
-        }
+            $order = $this->orderRepository->findById($event->orderId, $event->projectId);
+            if ($order === null) {
+                return;
+            }
 
-        $memberId = $member->id()->value();
-        $projectId = $member->projectId();
-        $orderId = $event->orderId;
-        $allSucceeded = true;
+            $member = $this->memberRepository->findByUserId($event->userId, $event->projectId);
+            if ($member === null) {
+                return;
+            }
 
-        if ($order->pointsUsed() > 0) {
-            $allSucceeded = $this->pointsSync->syncPointDelta(
-                $memberId,
-                $projectId,
-                -$order->pointsUsed(),
-                $orderId,
-            ) && $allSucceeded;
-        }
+            $netDelta = $order->pointsEarned() - $order->pointsUsed();
+            if ($netDelta === 0) {
+                Cache::put($doneKey, 1, now()->addDays(self::CACHE_TTL_DAYS));
 
-        if ($order->pointsEarned() > 0) {
-            $allSucceeded = $this->pointsSync->syncPointDelta(
-                $memberId,
-                $projectId,
-                $order->pointsEarned(),
-                $orderId,
-            ) && $allSucceeded;
-        }
+                return;
+            }
 
-        if ($allSucceeded === false) {
-            Cache::forget($cacheKey);
+            $succeeded = $this->pointsSync->syncPointDelta(
+                $member->id()->value(),
+                $member->projectId(),
+                $netDelta,
+                $event->orderId,
+            );
+
+            if ($succeeded) {
+                Cache::put($doneKey, 1, now()->addDays(self::CACHE_TTL_DAYS));
+            }
+        } finally {
+            Cache::forget($claimKey);
         }
     }
 }

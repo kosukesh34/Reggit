@@ -2,7 +2,6 @@
 
 namespace App\UseCases\Member\GoogleWallet;
 
-use App\Http\Support\RequestOrigin;
 use App\Util\AdminContext;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
