@@ -23,7 +23,7 @@ class EloquentMemberCouponRepositoryTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_hasIssued_他プロジェクトの発行を誤検知しないこと(): void
+    public function test_has_issued_他プロジェクトの発行を誤検知しないこと(): void
     {
         $projectA = Project::factory()->create();
         $projectB = Project::factory()->create();

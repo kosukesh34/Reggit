@@ -15,7 +15,7 @@ class EloquentProductCatalogRepositoryTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_findForOrder_商品とオプションをドメインVOで返すこと(): void
+    public function test_find_for_order_商品とオプションをドメイン_v_oで返すこと(): void
     {
         $project = Project::factory()->create();
         $product = Product::factory()->create([
@@ -55,7 +55,7 @@ class EloquentProductCatalogRepositoryTest extends TestCase
         $this->assertSame(100.0, $found->optionGroups[0]->options[0]->priceDelta);
     }
 
-    public function test_findForOrder_他プロジェクトの商品は返さないこと(): void
+    public function test_find_for_order_他プロジェクトの商品は返さないこと(): void
     {
         $project = Project::factory()->create();
         $other = Project::factory()->create();
@@ -71,7 +71,7 @@ class EloquentProductCatalogRepositoryTest extends TestCase
         $this->assertNull($found);
     }
 
-    public function test_findForOrderOrFail_存在しない商品は例外になること(): void
+    public function test_find_for_order_or_fail_存在しない商品は例外になること(): void
     {
         $project = Project::factory()->create();
         $repository = new EloquentProductCatalogRepository;

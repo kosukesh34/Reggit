@@ -2,6 +2,7 @@
 
 namespace Tests\Unit;
 
+use App\Models\Project;
 use App\Models\ShopSetting;
 use App\UseCases\Admin\Settings\Data\UpdateProfileSettingsInput;
 use App\UseCases\Admin\Settings\UpdateProfileSettingsUseCase;
@@ -14,7 +15,7 @@ class UpdateProfileSettingsUseCaseTest extends TestCase
 
     public function test_handle_プロフィール項目設定を保存できること(): void
     {
-        $project = \App\Models\Project::factory()->create();
+        $project = Project::factory()->create();
 
         $useCase = new UpdateProfileSettingsUseCase;
         $useCase->handle(new UpdateProfileSettingsInput(

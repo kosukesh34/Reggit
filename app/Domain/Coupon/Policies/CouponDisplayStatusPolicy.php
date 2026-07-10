@@ -22,11 +22,11 @@ final class CouponDisplayStatusPolicy
             return self::USED;
         }
 
-        if ($validFrom !== null && $validFrom->getTimestamp() > $now->getTimestamp()) {
+        if ($validFrom !== null && $validFrom > $now) {
             return self::UPCOMING;
         }
 
-        if ($validUntil !== null && $validUntil->getTimestamp() < $now->getTimestamp()) {
+        if ($validUntil !== null && $validUntil < $now) {
             return self::EXPIRED;
         }
 

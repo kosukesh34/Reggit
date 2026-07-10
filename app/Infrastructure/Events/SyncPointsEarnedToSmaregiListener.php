@@ -10,7 +10,9 @@ use App\Util\LogHelper;
 
 /**
  * ポイント増減時にスマレジへ残高差分を同期する。
- * 注文由来（orderId あり）・ベストエフォート指定は失敗時 warning、それ以外の手動付与は例外。
+ * - 注文由来（orderId あり）: 同期する。失敗時は warning（ローカル台帳は維持）
+ * - ベストエフォート指定（管理画面調整）: 同期する。失敗時は warning
+ * - それ以外の手動付与: 同期失敗時は例外
  * points は加算が正、取り消し・減算が負。
  */
 class SyncPointsEarnedToSmaregiListener implements DomainEventListener

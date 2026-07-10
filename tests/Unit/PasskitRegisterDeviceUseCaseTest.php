@@ -2,6 +2,7 @@
 
 namespace Tests\Unit;
 
+use App\Models\Member;
 use App\Services\AppleWalletPasskitService;
 use App\UseCases\Member\WalletPass\Data\PasskitRegisterDeviceInput;
 use App\UseCases\Member\WalletPass\PasskitRegisterDeviceUseCase;
@@ -33,9 +34,9 @@ class PasskitRegisterDeviceUseCaseTest extends TestCase
         $this->assertSame(401, $output->status);
     }
 
-    public function test_handle_pushToken空で400を返すこと(): void
+    public function test_handle_push_token空で400を返すこと(): void
     {
-        $member = Mockery::mock(\App\Models\Member::class);
+        $member = Mockery::mock(Member::class);
 
         $passkitService = Mockery::mock(AppleWalletPasskitService::class);
         $passkitService->shouldReceive('parseAuthToken')->once()->andReturn('valid-token');

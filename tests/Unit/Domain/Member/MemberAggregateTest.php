@@ -9,7 +9,7 @@ use Tests\TestCase;
 
 class MemberAggregateTest extends TestCase
 {
-    public function test_refundUsedPointsForOrder_利用ポイントを返却すること(): void
+    public function test_refund_used_points_for_order_利用ポイントを返却すること(): void
     {
         $member = new Member(
             new MemberId(1),
@@ -27,7 +27,7 @@ class MemberAggregateTest extends TestCase
         $this->assertSame(10, $entries[0]->orderId);
     }
 
-    public function test_reverseEarnedPointsForOrder_獲得ポイントを取り消すこと(): void
+    public function test_reverse_earned_points_for_order_獲得ポイントを取り消すこと(): void
     {
         $member = new Member(
             new MemberId(1),
@@ -44,7 +44,7 @@ class MemberAggregateTest extends TestCase
         $this->assertSame(-10, $entries[0]->signedPoints);
     }
 
-    public function test_usePoints_残高から減算されること(): void
+    public function test_use_points_残高から減算されること(): void
     {
         $member = new Member(
             new MemberId(1),
@@ -62,7 +62,7 @@ class MemberAggregateTest extends TestCase
         $this->assertSame(5, $entries[0]->orderId);
     }
 
-    public function test_usePoints_残高を超える場合は利用可能分のみ減算すること(): void
+    public function test_use_points_残高を超える場合は利用可能分のみ減算すること(): void
     {
         $member = new Member(
             new MemberId(1),
@@ -78,7 +78,7 @@ class MemberAggregateTest extends TestCase
         $this->assertSame(-20, $entries[0]->signedPoints);
     }
 
-    public function test_earnPoints_正のポイントで残高が増えること(): void
+    public function test_earn_points_正のポイントで残高が増えること(): void
     {
         $member = new Member(
             new MemberId(1),
@@ -95,7 +95,7 @@ class MemberAggregateTest extends TestCase
         $this->assertSame(50, $entries[0]->signedPoints);
     }
 
-    public function test_earnPoints_0以下は無視されること(): void
+    public function test_earn_points_0以下は無視されること(): void
     {
         $member = new Member(
             new MemberId(1),
@@ -111,7 +111,7 @@ class MemberAggregateTest extends TestCase
         $this->assertSame([], $member->pullPendingEntries());
     }
 
-    public function test_pullPendingEntries_取得後は空になること(): void
+    public function test_pull_pending_entries_取得後は空になること(): void
     {
         $member = new Member(
             new MemberId(1),

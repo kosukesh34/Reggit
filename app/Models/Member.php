@@ -106,9 +106,50 @@ class Member extends Model
      */
     public function syncPointsLedger(): void
     {
-        app(\App\Domain\Member\Repositories\MemberRepository::class)
-            ->syncPointsLedger((int) $this->id, (int) $this->project_id);
-        $this->refresh();
+        $columnPoints = max(0, (int) $this->points);
+        $ledgerPoints = $this->getTotalPointsFromTransactions();
+
+        if ($ledgerPoints === $columnPoints) {
+            return;
+        }
+
+        if ($ledgerPoints === 0 && $columnPoints > 0) {
+            $this->backfillEarnedPoints($columnPoints);
+
+            return;
+        }
+
+        if ($columnPoints > $ledgerPoints) {
+            if ($ledgerPoints > 0) {
+                $this->recalcPointsFromTransactions();
+
+                return;
+            }
+
+            $this->backfillEarnedPoints($columnPoints - $ledgerPoints);
+
+            return;
+        }
+
+        $this->recalcPointsFromTransactions();
+    }
+
+    private function backfillEarnedPoints(int $points): void
+    {
+        if ($points <= 0) {
+            return;
+        }
+
+        PointTransaction::create([
+            'project_id' => $this->project_id,
+            'member_id' => $this->id,
+            'type' => 'earned',
+            'points' => $points,
+            'description' => self::POINTS_LEDGER_BACKFILL_DESCRIPTION,
+            'order_id' => null,
+            'expires_at' => now()->addDays(ShopSetting::getPointsValidDays((int) $this->project_id)),
+        ]);
+        $this->recalcPointsFromTransactions();
     }
 
     /** 表示・判定用。台帳とカラムがずれていれば整合してから返す */
@@ -117,6 +158,7 @@ class Member extends Model
         $ledgerPoints = $this->getTotalPointsFromTransactions();
         if ((int) $this->points !== $ledgerPoints) {
             $this->syncPointsLedger();
+            $this->refresh();
 
             return $this->getTotalPointsFromTransactions();
         }

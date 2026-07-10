@@ -2,9 +2,9 @@
 
 namespace Tests\Unit\Repositories;
 
+use App\Models\Project;
 use App\Models\User;
 use App\Models\UserDevice;
-use App\Models\Project;
 use App\Repositories\Eloquent\EloquentUserDeviceRepository;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -13,7 +13,7 @@ class EloquentUserDeviceRepositoryTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_findLatestByProjectAndIdentifier_最終利用が新しい端末を返すこと(): void
+    public function test_find_latest_by_project_and_identifier_最終利用が新しい端末を返すこと(): void
     {
         $project = Project::factory()->create();
         $user = User::factory()->create(['project_id' => $project->id]);

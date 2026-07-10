@@ -2,12 +2,15 @@
 
 namespace Tests\Unit\Payment;
 
+use App\Domain\Order\Repositories\OrderRepository;
+use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
 use App\Models\Order;
 use App\Models\Project;
 use App\Models\User;
 use App\UseCases\Payment\PaymentConfirmUseCase;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Support\FakePaymentGateway;
 use Tests\TestCase;
@@ -39,8 +42,8 @@ class PaymentConfirmUseCaseTest extends TestCase
 
         $useCase = new PaymentConfirmUseCase(
             $gateway,
-            app(\App\Domain\Order\Repositories\OrderRepository::class),
-            app(\App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher::class),
+            app(OrderRepository::class),
+            app(DomainEventDispatcher::class),
         );
         $result = $useCase->handle('pi_test_123', $order->id, 1);
 
@@ -72,8 +75,8 @@ class PaymentConfirmUseCaseTest extends TestCase
 
         $useCase = new PaymentConfirmUseCase(
             $gateway,
-            app(\App\Domain\Order\Repositories\OrderRepository::class),
-            app(\App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher::class),
+            app(OrderRepository::class),
+            app(DomainEventDispatcher::class),
         );
         $result = $useCase->handle('pi_test_123', $order->id, 1);
 
@@ -82,7 +85,7 @@ class PaymentConfirmUseCaseTest extends TestCase
         $this->assertSame(OrderStatus::PENDING, $order->fresh()->status);
     }
 
-    public function test_confirm_他プロジェクトの注文はModelNotFoundExceptionになること(): void
+    public function test_confirm_他プロジェクトの注文は_model_not_found_exceptionになること(): void
     {
         $project = Project::factory()->create();
         $other = Project::factory()->create();
@@ -103,26 +106,26 @@ class PaymentConfirmUseCaseTest extends TestCase
 
         $useCase = new PaymentConfirmUseCase(
             $gateway,
-            app(\App\Domain\Order\Repositories\OrderRepository::class),
-            app(\App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher::class),
+            app(OrderRepository::class),
+            app(DomainEventDispatcher::class),
         );
 
-        $this->expectException(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
+        $this->expectException(ModelNotFoundException::class);
         $useCase->handle('pi_test_123', $order->id, (int) $other->id);
     }
 
-    public function test_confirm_注文が無い場合はModelNotFoundExceptionになること(): void
+    public function test_confirm_注文が無い場合は_model_not_found_exceptionになること(): void
     {
         $gateway = new FakePaymentGateway;
         $gateway->intent = ['status' => 'succeeded', 'metadata' => ['order_id' => 999999]];
 
         $useCase = new PaymentConfirmUseCase(
             $gateway,
-            app(\App\Domain\Order\Repositories\OrderRepository::class),
-            app(\App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher::class),
+            app(OrderRepository::class),
+            app(DomainEventDispatcher::class),
         );
 
-        $this->expectException(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
+        $this->expectException(ModelNotFoundException::class);
         $useCase->handle('pi_test_123', 999999, 1);
     }
 }
