@@ -2,9 +2,7 @@
 
 namespace Tests\Unit;
 
-use App\UseCases\Admin\RouteContextResolver;
-use Illuminate\Http\Request;
-use Illuminate\Routing\Route;
+use App\Http\Support\RouteContextResolver;
 use Tests\TestCase;
 
 class RouteContextResolverTest extends TestCase
@@ -12,16 +10,7 @@ class RouteContextResolverTest extends TestCase
     public function test_resolve_システム管理者プレフィックスが解決されること(): void
     {
         $resolver = new RouteContextResolver;
-        $request = Request::create('/system-admin/accounts');
-        $request->setRouteResolver(function () {
-            $route = $this->createMock(Route::class);
-            $route->method('getName')->willReturn('system-admin.accounts.index');
-            $route->method('parameter')->willReturn(null);
-
-            return $route;
-        });
-
-        $context = $resolver->resolve($request);
+        $context = $resolver->resolve('system-admin.accounts.index', null);
 
         $this->assertSame('system-admin', $context->routePrefix);
         $this->assertSame([], $context->params);
@@ -30,16 +19,7 @@ class RouteContextResolverTest extends TestCase
     public function test_resolve_プロジェクトキー付き管理画面プレフィックスが解決されること(): void
     {
         $resolver = new RouteContextResolver;
-        $request = Request::create('/admin/default/dashboard');
-        $request->setRouteResolver(function () {
-            $route = $this->createMock(Route::class);
-            $route->method('getName')->willReturn('admin.dashboard');
-            $route->method('parameter')->with('project_key')->willReturn('default');
-
-            return $route;
-        });
-
-        $context = $resolver->resolve($request);
+        $context = $resolver->resolve('admin.dashboard', 'default');
 
         $this->assertSame('admin', $context->routePrefix);
         $this->assertSame(['project_key' => 'default'], $context->params);

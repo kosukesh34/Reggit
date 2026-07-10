@@ -2,6 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Domain\Member\Repositories\MemberRepository;
+
 use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\QueueStatus;
@@ -72,8 +74,13 @@ class DemoPreviewSeeder extends Seeder
         );
 
         if ($member->getTotalPointsFromTransactions() === 0) {
-            $member->addPoints(820, 'デモ：ご来店ポイント');
-            $member->addPoints(460, 'デモ：モバイル注文');
+            $repo = app(MemberRepository::class);
+            $aggregate = $repo->findById((int) $member->id, (int) $member->project_id);
+            if ($aggregate !== null) {
+                $aggregate->earnPoints(820, 'デモ：ご来店ポイント', null, now()->addYear());
+                $aggregate->earnPoints(460, 'デモ：モバイル注文', null, now()->addYear());
+                $repo->save($aggregate);
+            }
         }
 
         $this->seedProductOptions($pid);

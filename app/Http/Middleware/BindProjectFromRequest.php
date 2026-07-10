@@ -2,7 +2,7 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\Project;
+use App\Repositories\Contracts\ProjectRepository;
 use App\Util\AdminContext;
 use App\Util\StrHelper;
 use Closure;
@@ -13,6 +13,10 @@ use Symfony\Component\HttpFoundation\Response;
 
 class BindProjectFromRequest
 {
+    public function __construct(
+        private ProjectRepository $projectRepository,
+    ) {}
+
     public function handle(Request $request, Closure $next): Response
     {
         $projectKey = $request->route('project_key')
@@ -37,12 +41,10 @@ class BindProjectFromRequest
             $projectKey = config('app.default_project_key', 'default');
         }
 
-        $project = Project::where('project_key', $projectKey)
-            ->where('is_active', true)
-            ->first();
+        $project = $this->projectRepository->findActiveByProjectKey($projectKey);
 
         if ($project === null && $isExplicitProjectKey === false) {
-            $project = Project::where('is_active', true)->orderBy('id')->first();
+            $project = $this->projectRepository->findFirstActive();
         }
 
         if ($project === null) {

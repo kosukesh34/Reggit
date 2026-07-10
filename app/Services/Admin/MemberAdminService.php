@@ -2,13 +2,15 @@
 
 namespace App\Services\Admin;
 
+use App\Domain\Coupon\Repositories\MemberCouponRepository;
+use App\Domain\Coupon\ValueObjects\PendingIssuedCoupon;
+use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Enums\OrderStatus;
 use App\Models\Coupon;
 use App\Models\Member;
 use App\Models\MemberCoupon;
 use App\Models\MemberStamp;
 use App\Models\Order;
-use App\Models\ShopSetting;
 use App\Models\StampCard;
 use App\Services\MemberPointsExpiryCalculator;
 use App\Services\MemberRankCalculator;
@@ -29,7 +31,9 @@ class MemberAdminService
         private SmaregiCustomerUpdatePayloadBuilder $smaregiCustomerUpdatePayloadBuilder,
         private SmaregiCustomerPointsInboundSyncService $smaregiCustomerPointsInboundSyncService,
         private MemberRankCalculator $rankCalculator,
-        private MemberPointsExpiryCalculator $expiryCalculator
+        private MemberPointsExpiryCalculator $expiryCalculator,
+        private MemberCouponRepository $memberCouponRepository,
+        private ShopSettingRepository $shopSettingRepository,
     ) {}
 
     public function getPaginatedList(int $projectId, int $perPage = 20, array $filters = []): LengthAwarePaginator
@@ -173,19 +177,25 @@ class MemberAdminService
     public function issueCouponToMember(Member $member, int $couponId, ?\DateTimeInterface $validFrom = null, ?\DateTimeInterface $validUntil = null): MemberCoupon
     {
         $coupon = Coupon::where('project_id', $member->project_id)->findOrFail($couponId);
-        $validFrom = $validFrom ?? now();
+        $now = now();
+        $validFrom = $validFrom ?? $now;
         $validUntil = $validUntil ?? $coupon->end_at ?? Carbon::now()->addDays(30);
 
-        return MemberCoupon::create([
-            'project_id' => $member->project_id,
-            'member_id' => $member->id,
-            'coupon_id' => $coupon->id,
-            'coupon_name_snapshot' => $coupon->name,
-            'status' => MemberCoupon::STATUS_UNUSED,
-            'issued_at' => now(),
-            'valid_from' => $validFrom,
-            'valid_until' => $validUntil instanceof \DateTimeInterface ? $validUntil : null,
-        ]);
+        $this->memberCouponRepository->issue(new PendingIssuedCoupon(
+            (int) $member->project_id,
+            (int) $member->id,
+            (int) $coupon->id,
+            (string) $coupon->name,
+            $now,
+            $validFrom,
+            $validUntil instanceof \DateTimeInterface ? $validUntil : null,
+        ));
+
+        return MemberCoupon::query()
+            ->where('member_id', $member->id)
+            ->where('coupon_id', $coupon->id)
+            ->orderByDesc('id')
+            ->firstOrFail();
     }
 
     /** 複数会員にクーポンを一括発行（プレゼント配信）。$memberIds が空の場合は全員に配布。 */
@@ -198,15 +208,15 @@ class MemberAdminService
         }
         $members = $query->get();
         $validUntil = $coupon->end_at ?? Carbon::now()->addDays(30);
+        $now = now();
         $issued = 0;
         foreach ($members as $member) {
-            $already = MemberCoupon::where('member_id', $member->id)
-                ->where('coupon_id', $couponId)
-                ->where('status', MemberCoupon::STATUS_UNUSED)
-                ->where(function ($q) {
-                    $q->whereNull('valid_until')->orWhere('valid_until', '>=', now());
-                })->exists();
-            if ($already) {
+            if ($this->memberCouponRepository->hasUnusedValid(
+                (int) $member->id,
+                $couponId,
+                $now,
+                $projectId,
+            )) {
                 continue;
             }
             $this->issueCouponToMember($member, $couponId, null, $validUntil);
@@ -321,7 +331,7 @@ class MemberAdminService
 
     public function getRankOptionsForSelect(int $projectId): array
     {
-        $ranks = ShopSetting::getMemberRankSettings($projectId);
+        $ranks = $this->shopSettingRepository->getMemberRankSettings($projectId);
         $options = [];
         foreach ($ranks as $r) {
             if (StrHelper::isEmptyStringOrNull($r['key'] ?? null)) {

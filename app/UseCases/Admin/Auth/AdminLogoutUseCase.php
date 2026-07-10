@@ -3,20 +3,17 @@
 namespace App\UseCases\Admin\Auth;
 
 use App\Services\Admin\AdminAuthService;
+use App\UseCases\Admin\Auth\Data\AdminLogoutInput;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 
 class AdminLogoutUseCase
 {
-    private AdminAuthService $authService;
+    public function __construct(
+        private AdminAuthService $authService,
+    ) {}
 
-    public function __construct(AdminAuthService $authService)
+    public function handle(AdminLogoutInput $input): RedirectResponse
     {
-        $this->authService = $authService;
-    }
-
-    public function handle(Request $request): RedirectResponse
-    {
-        return $this->authService->logout($request);
+        return $this->authService->logout($input);
     }
 }

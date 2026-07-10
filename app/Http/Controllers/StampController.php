@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\UserService;
 use App\UseCases\Stamp\StampIndexUseCase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -11,17 +12,15 @@ use Illuminate\Support\Facades\Log;
  */
 class StampController extends Controller
 {
-    private StampIndexUseCase $stampIndexUseCase;
-
-    public function __construct(StampIndexUseCase $stampIndexUseCase)
-    {
-        $this->stampIndexUseCase = $stampIndexUseCase;
-    }
+    public function __construct(
+        private StampIndexUseCase $stampIndexUseCase,
+        private UserService $userService,
+    ) {}
 
     public function index(Request $request)
     {
         try {
-            $output = $this->stampIndexUseCase->handle($request);
+            $output = $this->stampIndexUseCase->handle($this->userService->getOrCreateUser($request));
 
             if ($output->requiresMembership) {
                 return response()->json([

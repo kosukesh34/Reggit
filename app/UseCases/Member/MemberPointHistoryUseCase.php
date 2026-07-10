@@ -3,17 +3,13 @@
 namespace App\UseCases\Member;
 
 use App\Models\PointTransaction;
-use App\Services\UserService;
+use App\Models\User;
 use App\UseCases\Member\Data\MemberPointHistoryOutput;
-use Illuminate\Http\Request;
 
 class MemberPointHistoryUseCase
 {
-    public function __construct(private UserService $userService) {}
-
-    public function handle(Request $request, int $perPage = 20): MemberPointHistoryOutput
+    public function handle(User $user, int $perPage = 20): MemberPointHistoryOutput
     {
-        $user = $this->userService->getOrCreateUser($request);
         $member = $user->member;
 
         if ($member === null) {

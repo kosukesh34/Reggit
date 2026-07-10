@@ -4,23 +4,18 @@ namespace App\Http\Controllers\Admin\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\LoginRequest;
+use App\Http\Support\AdminAuthInputFactory;
 use App\UseCases\Admin\Auth\AdminLoginUseCase;
 use App\UseCases\Admin\Auth\GetAdminDashboardRedirectUseCase;
 use Illuminate\Support\Facades\Auth;
 
 class StoreLoginController extends Controller
 {
-    private GetAdminDashboardRedirectUseCase $getDashboardRedirectUseCase;
-
-    private AdminLoginUseCase $adminLoginUseCase;
-
     public function __construct(
-        GetAdminDashboardRedirectUseCase $getDashboardRedirectUseCase,
-        AdminLoginUseCase $adminLoginUseCase
-    ) {
-        $this->getDashboardRedirectUseCase = $getDashboardRedirectUseCase;
-        $this->adminLoginUseCase = $adminLoginUseCase;
-    }
+        private GetAdminDashboardRedirectUseCase $getDashboardRedirectUseCase,
+        private AdminLoginUseCase $adminLoginUseCase,
+        private AdminAuthInputFactory $inputFactory,
+    ) {}
 
     public function show()
     {
@@ -33,6 +28,8 @@ class StoreLoginController extends Controller
 
     public function login(LoginRequest $request)
     {
-        return $this->adminLoginUseCase->handle($request);
+        return $this->adminLoginUseCase->handle(
+            $this->inputFactory->adminLogin($request, null),
+        );
     }
 }

@@ -2,39 +2,47 @@
 
 namespace App\UseCases\Coupon;
 
+use App\Domain\Coupon\Policies\CouponDisplayStatusPolicy;
+use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Models\Coupon;
-use App\Models\ShopSetting;
-use App\Services\UserService;
+use App\Models\User;
 use App\UseCases\Coupon\Data\CouponListView;
 use App\UseCases\Coupon\Data\MemberCoupon;
-use Illuminate\Http\Request;
 
 class CouponMyCouponsUseCase
 {
-    public function __construct(private UserService $userService) {}
+    public function __construct(
+        private ShopSettingRepository $shopSettingRepository,
+        private CouponDisplayStatusPolicy $couponDisplayStatusPolicy,
+    ) {}
 
-    public function handle(Request $request): CouponListView
+    public function handle(User $user): CouponListView
     {
-        $user = $this->userService->getOrCreateUser($request);
         $member = $user->member;
 
         if ($member === null) {
             $projectId = $user->project_id ?? 1;
-            $defaultImageUrl = ShopSetting::getCouponDefaultImageUrl($projectId);
+            $defaultImageUrl = $this->shopSettingRepository->getCouponDefaultImageUrl($projectId);
 
             return new CouponListView([], $defaultImageUrl, true);
         }
 
+        $now = now();
         $coupons = $member->memberCoupons()
             ->with('coupon')
             ->orderBy('issued_at', 'desc')
             ->get()
-            ->map(function ($memberCoupon) {
+            ->map(function ($memberCoupon) use ($now) {
                 $couponName = $memberCoupon->coupon_name_snapshot;
                 if ($couponName === null || $couponName === '') {
                     $couponName = $memberCoupon->coupon?->name ?? '';
                 }
-                $displayStatus = $this->resolveDisplayStatus($memberCoupon);
+                $displayStatus = $this->couponDisplayStatusPolicy->resolve(
+                    (string) $memberCoupon->status,
+                    $memberCoupon->valid_from,
+                    $memberCoupon->valid_until,
+                    $now,
+                );
 
                 $designTemplate = (string) ($memberCoupon->coupon?->design_template ?? 'classic');
                 $themeColor = $memberCoupon->coupon?->theme_color;
@@ -62,33 +70,9 @@ class CouponMyCouponsUseCase
             })
             ->all();
 
-        $defaultImageUrl = ShopSetting::getCouponDefaultImageUrl($member->project_id);
+        $defaultImageUrl = $this->shopSettingRepository->getCouponDefaultImageUrl($member->project_id);
 
         return new CouponListView($coupons, $defaultImageUrl, false);
-    }
-
-    /** 表示用: available / upcoming / used / expired */
-    private function resolveDisplayStatus(\App\Models\MemberCoupon $memberCoupon): string
-    {
-        if ($memberCoupon->status === \App\Models\MemberCoupon::STATUS_USED) {
-            return 'used';
-        }
-        $validFrom = $memberCoupon->valid_from;
-        if ($validFrom !== null) {
-            $start = $validFrom instanceof \DateTimeInterface ? $validFrom : new \DateTimeImmutable($validFrom);
-            if ($start->getTimestamp() > time()) {
-                return 'upcoming';
-            }
-        }
-        $validUntil = $memberCoupon->valid_until;
-        if ($validUntil !== null) {
-            $end = $validUntil instanceof \DateTimeInterface ? $validUntil : new \DateTimeImmutable($validUntil);
-            if ($end->getTimestamp() < time()) {
-                return 'expired';
-            }
-        }
-
-        return 'available';
     }
 
     private function toIsoString($value): ?string

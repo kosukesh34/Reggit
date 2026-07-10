@@ -2,25 +2,25 @@
 
 namespace App\UseCases\Stamp;
 
-use App\Models\ShopSetting;
+use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Models\StampCard;
-use App\Services\UserService;
+use App\Models\User;
 use App\UseCases\Stamp\Data\StampCardView;
 use App\UseCases\Stamp\Data\StampListView;
-use Illuminate\Http\Request;
 
 class StampIndexUseCase
 {
-    public function __construct(private UserService $userService) {}
+    public function __construct(
+        private ShopSettingRepository $shopSettingRepository,
+    ) {}
 
-    public function handle(Request $request): StampListView
+    public function handle(User $user): StampListView
     {
-        $user = $this->userService->getOrCreateUser($request);
         $member = $user->member;
 
         if ($member === null) {
             $projectId = $user->project_id ?? 1;
-            $defaultImageUrl = ShopSetting::getStampDefaultImageUrl($projectId);
+            $defaultImageUrl = $this->shopSettingRepository->getStampDefaultImageUrl($projectId);
 
             return new StampListView([], $defaultImageUrl, true);
         }
@@ -35,7 +35,7 @@ class StampIndexUseCase
             ->get();
 
         $memberStamps = $member->memberStamps()->with('stampCard')->get()->keyBy('stamp_card_id');
-        $defaultImageUrl = ShopSetting::getStampDefaultImageUrl($member->project_id);
+        $defaultImageUrl = $this->shopSettingRepository->getStampDefaultImageUrl($member->project_id);
 
         $stampCards = $cards->map(function ($card) use ($memberStamps) {
             $memberStamp = $memberStamps->get($card->id);

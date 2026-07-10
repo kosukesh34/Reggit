@@ -2,41 +2,54 @@
 
 namespace App\UseCases\Member;
 
-use App\Services\Smaregi\SmaregiApiService;
-use App\Services\UserService;
+use App\Domain\Member\Events\PointsEarned;
+use App\Domain\Member\Repositories\MemberRepository;
+use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
+use App\UseCases\Member\Data\MemberAddPointsInput;
 use App\UseCases\Member\Data\MemberPointsOutput;
-use Illuminate\Http\Request;
 
 class MemberAddPointsUseCase
 {
     public function __construct(
-        private UserService $userService,
-        private SmaregiApiService $smaregiApi,
+        private MemberRepository $memberRepository,
+        private ShopSettingRepository $shopSettingRepository,
+        private DomainEventDispatcher $domainEvents,
     ) {}
 
-    public function handle(Request $request, int $points, ?string $description): MemberPointsOutput
+    public function handle(MemberAddPointsInput $input): MemberPointsOutput
     {
-        $user = $this->userService->getOrCreateUser($request);
-        $member = $user->member;
+        $projectId = (int) ($input->user->project_id ?? 1);
+        $member = $this->memberRepository->findByUserId((int) $input->user->id, $projectId);
 
         if ($member === null) {
             return new MemberPointsOutput(false, 0, collect());
         }
 
-        $projectId = $member->project_id ?? 1;
-        $smaregiCustomerId = $member->smaregi_customer_id ?? '';
-        $smaregiCustomerId = is_string($smaregiCustomerId) ? trim($smaregiCustomerId) : '';
-
-        $member->syncPointsLedger();
-        $member->addPoints($points, $description);
-
-        if ($smaregiCustomerId !== '' && $points > 0) {
-            $result = $this->smaregiApi->syncCustomerPointsForProject($projectId, $smaregiCustomerId, $points);
-            if ($result === null) {
-                throw new \Exception('スマレジへのポイント反映に失敗しました。storage/logs/laravel.log の [Smaregi] を参照してください。');
-            }
+        $this->memberRepository->syncPointsLedger($member->id()->value(), $projectId);
+        $member = $this->memberRepository->findById($member->id()->value(), $projectId);
+        if ($member === null) {
+            return new MemberPointsOutput(false, 0, collect());
         }
 
-        return new MemberPointsOutput(true, (int) $member->fresh()->getDisplayPoints(), collect());
+        $validDays = $this->shopSettingRepository->getPointsValidDays($member->projectId());
+        $member->earnPoints(
+            $input->points,
+            $input->description,
+            null,
+            now()->addDays($validDays),
+        );
+        $this->memberRepository->save($member);
+
+        if ($input->points > 0) {
+            $this->domainEvents->dispatch(new PointsEarned(
+                $member->id()->value(),
+                $member->projectId(),
+                $input->points,
+                null,
+            ));
+        }
+
+        return new MemberPointsOutput(true, $member->displayPoints(), collect());
     }
 }

@@ -1,141 +1,97 @@
 # クリーンアーキテクチャ採用状況
 
-プロジェクト全体で「Controller → UseCase → Service/Repository」の責務分離がどこまで行われているかをまとめたドキュメントです。
+プロジェクト全体で「Controller → UseCase → Service」の責務分離がどこまで行われているかをまとめたドキュメントです。
 
 ---
 
 ## 結論
 
-**大部分の Controller でクリーンアーキテクチャ（Controller → UseCase → Service）が採用されています。**  
-API・管理画面（Admin）・Web・認証の各所で UseCase に委譲済み。未使用の可能性がある **AdminController**・**Admin/LoginController**・**Admin/AccountController** はルート未参照のレガシーとして残っています。
+**ほぼすべての Controller でクリーンアーキテクチャ（Controller → UseCase → Service）が採用されています。**
+
+- API・管理画面（Admin）・Web・Webhook・Device/AppConfig は UseCase 委譲済み
+- レガシー Controller（`AdminController`, `Admin/LoginController`, `Admin/AccountController`, `Api/V1/MemberController` 等）は削除済み
+- UseCase 間の呼び出しはなし
+- `Request` 依存が残る UseCase は解消済み（Auth 含む）
 
 ---
 
-## 1. クリーンアーキテクチャを採用している Controller（UseCase 使用）
+## 1. レイヤー構成（目標パターン）
 
-以下の Controller は UseCase に処理を委譲しており、責務分離ができています。
+```
+Controller → FormRequest / InputFactory → Input or User
+UseCase    → Service / Model（Request 非依存）
+Service    → 永続化・外部連携
+```
 
-### API（bind.project / Web）
+Factory の例:
 
-| Controller | UseCase |
-|------------|---------|
-| MemberMeController | MemberMeUseCase |
-| MemberUpdateController | MemberUpdateUseCase |
-| MemberRegisterController | MemberRegisterUseCase |
-| MemberPointsController | MemberPointsUseCase |
-| MemberPointHistoryController | MemberPointHistoryUseCase |
-| MemberPointCardController | MemberPointCardUseCase |
-| MemberAddPointsController | MemberAddPointsUseCase |
-| GoogleWalletUrlController | GetGoogleWalletUrlUseCase |
-| WalletPassController | WalletPassDownloadUseCase |
-| WalletPassUrlController | WalletPassUrlIssueUseCase |
-| ProductController | ProductIndexUseCase, ProductShowUseCase |
-| OrderController | OrderIndexUseCase, OrderShowUseCase, OrderStoreUseCase |
-| ReservationIndexController | ReservationIndexUseCase |
-| ReservationStoreController | ReservationStoreUseCase |
-| ReservationUpdateController | ReservationUpdateUseCase |
-| ReservationCancelController | ReservationCancelUseCase |
-| ReservationAvailableDatesController | ReservationAvailableDatesUseCase |
-| AnnouncementController | AnnouncementIndexUseCase, AnnouncementMarkReadUseCase |
-| CouponController (Api/V1) | CouponMyCouponsUseCase |
-| StampController | StampIndexUseCase |
-| QueueStoreController | QueueStoreUseCase |
-| QueueMeController | QueueMeUseCase |
-| QueueCancelController | QueueCancelUseCase |
-| QueueCallNextController | QueueCallNextUseCase |
-| PaymentCreateIntentController | (PaymentCreateIntentUseCase) |
-| PaymentConfirmController | PaymentConfirmUseCase |
-| PaymentWebhookController | PaymentWebhookUseCase |
-| ContactController | ContactStoreUseCase |
-| GalleryController | GalleryIndexUseCase |
+- `app/Http/Support/QueueMeInputFactory.php`
+- `app/Http/Support/ClientDebugLogInputFactory.php`
+- `app/Http/Support/SmaregiNotificationInputFactory.php`
+- `app/Http/Support/LineWebhookInputFactory.php`
+- `app/Http/Support/AppleWalletPasskitInputFactory.php`
+- `app/Http/Support/AdminAuthInputFactory.php`
+- `app/Http/Support/AdminSettingsInputFactory.php`
 
-### API v1（Bearer トークン / project_key 付き）
-
-上記と同様に、Api/V1 配下の各 Controller（MemberMe, MemberPoints, Order, Product, Reservation, Stamp, Announcement, Coupon, Payment, Queue 等）は対応する UseCase を利用しています。
-
-### 管理画面（Admin）のうち UseCase 使用
-
-| Controller | UseCase |
-|------------|---------|
-| ApiTokenController | ApiToken* UseCase 群 |
-| SmaregiController | GetSmaregiSettingsUseCase, GetSmaregiPosDataUseCase, UpdateSmaregiLinkUseCase |
-| FeaturesController | GetFeatureSettingsUseCase, UpdateFeatureSettingsUseCase |
-| LiffDesignerController | GetLiffDesignerUseCase, UpdateLiffDesignerUseCase |
-| Gallery CategoryController / ItemController | GalleryCategory* / GalleryItem* UseCase 群 |
-| AccountUpdateController, AccountStoreController, AccountIndexController, AccountFormController, AccountDestroyController | Account* UseCase / RouteContextResolver |
-| AuditLogController | AuditLogIndexUseCase, AuditLogShowUseCase |
-| RanksController | GetRankSettingsUseCase, UpdateRankSettingsUseCase 等 |
-| AnalyticsController | AdminAnalyticsUseCase |
-| SystemAdminDashboardController | SystemAdminDashboardUseCase |
-| ProjectController | Project* UseCase 群 |
-| QueueStatusController, QueueQrStatusController | (Queue 関連 UseCase) |
-| AdminLoginController, StoreLoginController, SystemAdminLoginController, LogoutController | GetAdminDashboardRedirectUseCase, AdminLoginUseCase, SystemAdminLoginUseCase, AdminLogoutUseCase |
+信頼できる参照実装: `Admin/Account/AccountStoreController`, `LiffDesignerController`, system-admin / `Admin/Account` 配下
 
 ---
 
-## 2. UseCase を参照していない Controller（未採用）
+## 2. 主要ドメインの UseCase 化状況
 
-以下の **37 ファイル** は UseCase を参照しておらず、ロジックが Controller 内や Service 直叩きに残っている可能性があります。
-
-### 管理画面（Admin）
-
-- `Admin/AccountController.php` … ルート未参照のレガシー（Admin/Account/*Controller が使用されている）
-- `Admin/AnnouncementController.php` … UseCase 委譲済み（AdminAnnouncement*UseCase 群）
-- `Admin/Auth/AdminLoginController.php` … UseCase 委譲済み（GetAdminDashboardRedirectUseCase, AdminLoginUseCase）
-- `Admin/Auth/LogoutController.php` … UseCase 委譲済み（AdminLogoutUseCase）
-- `Admin/Auth/StoreLoginController.php` … UseCase 委譲済み（GetAdminDashboardRedirectUseCase, AdminLoginUseCase）
-- `Admin/Auth/SystemAdminLoginController.php` … UseCase 委譲済み（GetAdminDashboardRedirectUseCase, SystemAdminLoginUseCase）
-- `Admin/CouponController.php` … UseCase 委譲済み（AdminCoupon*UseCase 群）
-- `Admin/DashboardController.php` … UseCase 委譲済み（AdminDashboardIndexUseCase）
-- `Admin/LoginController.php` … ルート未参照のレガシー（Admin/Auth/AdminLoginController 等が使用されている）
-- `Admin/MemberController.php` … UseCase 委譲済み（AdminMember*UseCase 群）
-- `Admin/OrderController.php` … UseCase 委譲済み（AdminOrder*UseCase 群）
-- `Admin/ProductController.php` … UseCase 委譲済み（AdminProduct*UseCase 群）
-- `Admin/QueueController.php` … UseCase 委譲済み（AdminQueue*UseCase 群）
-- `Admin/ReservationController.php` … UseCase 委譲済み（AdminReservation*UseCase 群）
-- `Admin/Settings/AdvancedController.php` … UseCase 委譲済み（GetAdvancedSettingsUseCase, UpdateAdvancedSettingsUseCase）
-- `Admin/Settings/AnnouncementsController.php` … UseCase 委譲済み（Get/UpdateAnnouncementsSettingsUseCase）
-- `Admin/Settings/BasicController.php` … UseCase 委譲済み（GetBasicSettingsUseCase, UpdateBasicSettingsUseCase, UpdateBasicFeatureFlagsUseCase）
-- `Admin/Settings/CouponsController.php` … UseCase 委譲済み（Get/UpdateCouponsSettingsUseCase）
-- `Admin/Settings/GalleryController.php` … UseCase 委譲済み（Get/UpdateGallerySettingsUseCase）
-- `Admin/Settings/HomeController.php` … UseCase 委譲済み（GetHomeSettingsUseCase, UpdateHomeSettingsUseCase）
-- `Admin/Settings/MenuController.php` … UseCase 委譲済み（Get/UpdateMenuSettingsUseCase）
-- `Admin/Settings/ProfileController.php` … UseCase 委譲済み（Get/UpdateProfileSettingsUseCase）
-- `Admin/Settings/QueueController.php` … UseCase 委譲済み（Get/UpdateQueueSettingsUseCase）
-- `Admin/Settings/ReservationsController.php` … UseCase 委譲済み（GetReservationOnlySettingsUseCase, UpdateReservationOnlySettingsUseCase）
-- `Admin/Settings/WalletController.php` … UseCase 委譲済み（Get/UpdateWalletSettingsUseCase, WalletAssetService）
-- `Admin/StampController.php` … UseCase 委譲済み（AdminStamp*UseCase 群）
-- `AdminController.php` … ルート未参照のレガシー（DashboardController 等の専用 Controller が使用されている）
-
-### API（レガシー・UseCase 委譲済み）
-
-- `Api/V1/MemberController.php` … UseCase 委譲済み（MemberMeUseCase 等）
-- `Api/V1/ReservationController.php` … UseCase 委譲済み（ReservationIndexUseCase 等）
-- `Api/V1/QueueController.php` … UseCase 委譲済み（QueueStoreUseCase, QueueMeUseCase）
-
-### Web / その他
-
-- `CouponController.php`（Web 版 myCoupons） … UseCase 委譲済み（CouponMyCouponsUseCase）
-- `Diagnostics/ClientDebugController.php` … UseCase 委譲済み（ClientDebugLogUseCase）
-- `LiffController.php` … UseCase 委譲済み（LiffIndexUseCase）
-- `PostalCodeController.php` … UseCase 委譲済み（PostalCodeSearchUseCase）
-- `QueueController.php`（Web 版） … UseCase 委譲済み（QueueStoreUseCase, QueueMeUseCase）
-- `StampController.php`（Web 版） … UseCase 委譲済み（StampIndexUseCase）
+| 領域 | 状態 |
+|------|------|
+| Member（登録・更新・ポイント・退会） | ✅ `MemberProfileRequest` + UseCase |
+| Order / Reservation / Queue | ✅ `User` 受け取り |
+| Coupon / Stamp / Announcement | ✅ |
+| Admin（会員・注文・予約・クーポン・お知らせ等） | ✅ |
+| Smaregi 設定・Webhook / IdP | ✅ Input 化済み |
+| Line Webhook | ✅ `LineWebhookInput` |
+| Device / AppConfig | ✅ |
+| Wallet Pass（ダウンロード・URL発行） | ✅ |
+| Apple Wallet PassKit Web Service | ✅ `Passkit*UseCase` + `AppleWalletPasskitService` |
+| Payment | ✅ |
+| Auth（ログイン・ログアウト） | ✅ `AdminAuthInputFactory` + Input 化済み |
+| Admin 薄ラッパー UseCase | ✅ 方針統一済み（`CLEAN_ARCHITECTURE.md` §7） |
+| Repository 層 | 🔄 段階導入中（`Project` / `AdminUser` / `UserDevice` / `User`） |
+| DDD（Domain 層） | ✅ 約 **98%**（コア完了。Admin UI 設定の静的 API・読みモデル Eloquent は意図的残置。`docs/DDD.md`） |
 
 ---
 
-## 3. 今後の対応案
+## 3. Controller で Service を直接使う箇所
 
-1. **ルートで使われているか確認**  
-   `Api/V1/MemberController.php` や `Api/V1/ReservationController.php` 等がルートで参照されていなければ、削除または「UseCase 版に寄せる」方針を検討する。
-
-2. **管理画面の重要画面から UseCase 化**  
-   利用頻度の高い Admin（会員編集・予約・注文・ダッシュボード等）から、Input/Output を定義し UseCase に処理を移す。
-
-3. **既存パターンに合わせる**  
-   既に UseCase 化されている Controller（例: `GoogleWalletUrlController` → `GetGoogleWalletUrlUseCase`）と同じ形で、  
-   「Controller：入力組み立て・UseCase 呼び出し・レスポンス変換のみ」にそろえる。
+| 箇所 | 理由 |
+|------|------|
+| 各所の `UserService` | ユーザー解決用（許容） |
+| （なし） | PassKit は `AppleWalletPasskitService` 経由で UseCase 化済み |
 
 ---
 
-*最終確認日: 本ドキュメント作成時点のコードベースに基づく*
+## 4. Request 依存
+
+UseCase 層から `Illuminate\Http\Request` への直接依存は解消済み。
+
+`RouteContextResolver` は `app/Http/Support/` に移動（Controller 支援用）。
+
+---
+
+## 5. 削除済みレガシー
+
+- `app/Http/Controllers/AdminController.php`
+- `app/Http/Controllers/Admin/LoginController.php`
+- `app/Http/Controllers/Admin/AccountController.php`
+- `app/Http/Controllers/Api/V1/MemberController.php`
+- `app/Http/Controllers/Api/V1/ReservationController.php`
+- `app/Http/Controllers/Api/V1/QueueController.php`
+- 仮想 POS 機能（`/admin/{project_key}/settings/smaregi/pos-data` 関連一式）
+
+---
+
+## 6. 今後の対応案（優先度順）
+
+1. **Repository 層の拡張** — `ShopSetting` / 各 `*AdminService` の重複クエリから順次切り出し
+2. **レガシー JS** `public/js/admin/liff-designer/` — React 移行未完了のため慎重に
+
+---
+
+*最終更新: 2026-07-10*
