@@ -8,7 +8,8 @@ use App\Domain\Order\Events\OrderPointsSyncRequested;
 use App\Domain\Order\Repositories\OrderRepository;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
-use App\Infrastructure\Events\SyncOrderConfirmedPointsToSmaregiListener;
+use App\Infrastructure\Events\SyncOrderPointsToSmaregiListener;
+use App\Jobs\SyncOrderPointsToSmaregiJob;
 use App\Models\Member;
 use App\Models\Order;
 use App\Models\Project;
@@ -17,16 +18,17 @@ use App\Services\Smaregi\SmaregiApiService;
 use App\Services\Smaregi\SmaregiPointsSyncService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Queue;
 use Mockery;
 use Tests\TestCase;
 
-class SyncOrderConfirmedPointsToSmaregiListenerTest extends TestCase
+class SyncOrderPointsToSmaregiListenerTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function makeListener(SmaregiApiService $smaregiApi): SyncOrderConfirmedPointsToSmaregiListener
+    private function makeListener(SmaregiApiService $smaregiApi): SyncOrderPointsToSmaregiListener
     {
-        return new SyncOrderConfirmedPointsToSmaregiListener(
+        return new SyncOrderPointsToSmaregiListener(
             new SmaregiPointsSyncService(
                 app(MemberRepository::class),
                 app(OrderRepository::class),
@@ -37,6 +39,8 @@ class SyncOrderConfirmedPointsToSmaregiListenerTest extends TestCase
 
     public function test_order_confirmedではスマレジ同期しないこと(): void
     {
+        Queue::fake();
+
         $project = Project::factory()->create();
         $user = User::factory()->create(['project_id' => $project->id]);
         Member::factory()->create([
@@ -67,6 +71,8 @@ class SyncOrderConfirmedPointsToSmaregiListenerTest extends TestCase
 
     public function test_order_points_sync_requestedで利用と獲得のネット差分をスマレジへ1回同期すること(): void
     {
+        Queue::fake();
+
         $project = Project::factory()->create();
         $user = User::factory()->create(['project_id' => $project->id]);
         Member::factory()->create([
@@ -105,6 +111,8 @@ class SyncOrderConfirmedPointsToSmaregiListenerTest extends TestCase
 
     public function test_ポイント変動がなければ同期しないこと(): void
     {
+        Queue::fake();
+
         $project = Project::factory()->create();
         $user = User::factory()->create(['project_id' => $project->id]);
         Member::factory()->create([
@@ -138,6 +146,8 @@ class SyncOrderConfirmedPointsToSmaregiListenerTest extends TestCase
 
     public function test_同一注文の再配信ではスマレジへ二重同期しないこと(): void
     {
+        Queue::fake();
+
         $project = Project::factory()->create();
         $user = User::factory()->create(['project_id' => $project->id]);
         Member::factory()->create([
@@ -179,6 +189,8 @@ class SyncOrderConfirmedPointsToSmaregiListenerTest extends TestCase
 
     public function test_同期失敗時は完了フラグを残さず再実行できること(): void
     {
+        Queue::fake();
+
         $project = Project::factory()->create();
         $user = User::factory()->create(['project_id' => $project->id]);
         $member = Member::factory()->create([
@@ -224,6 +236,7 @@ class SyncOrderConfirmedPointsToSmaregiListenerTest extends TestCase
         $this->assertTrue($pointsSync->hasOutboundPending((int) $member->id));
         $order->refresh();
         $this->assertNull($order->smaregi_points_synced_at);
+        Queue::assertPushed(SyncOrderPointsToSmaregiJob::class);
 
         $listener->handle($event);
         $this->assertFalse($pointsSync->hasOutboundPending((int) $member->id));
