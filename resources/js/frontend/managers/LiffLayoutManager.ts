@@ -263,7 +263,8 @@ export class LiffLayoutManager {
             return `<section class="builder-block builder-image-block builder-image-block--design-${design}" style="${baseStyle}">${img}</section>`;
         }
         if (type === 'friend_add') {
-            const friendAddUrl = (typeof window !== 'undefined' && window.__LINE_FRIEND_ADD_URL__) ? String(window.__LINE_FRIEND_ADD_URL__) : '';
+            const globalUrl = (typeof window !== 'undefined' && window.__LINE_FRIEND_ADD_URL__) ? String(window.__LINE_FRIEND_ADD_URL__) : '';
+            const friendAddUrl = String(block.url || globalUrl || '');
             if (!friendAddUrl) return '';
             const text = block.text || '友だち追加';
             return `<section class="builder-block builder-friend-add" style="text-align:center;padding:8px;${baseStyle}" data-friend-add-url="${esc(friendAddUrl)}">
