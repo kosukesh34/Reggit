@@ -14,6 +14,7 @@ use App\Models\Product;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class EloquentOrderRepositoryTest extends TestCase
@@ -64,7 +65,7 @@ class EloquentOrderRepositoryTest extends TestCase
 
         $repository = new EloquentOrderRepository;
         $aggregate = null;
-        \Illuminate\Support\Facades\DB::transaction(function () use ($repository, $order, $user, $project, &$aggregate) {
+        DB::transaction(function () use ($repository, $order, $user, $project, &$aggregate) {
             $aggregate = $repository->findByIdAndUserIdForUpdate(
                 (int) $order->id,
                 (int) $user->id,

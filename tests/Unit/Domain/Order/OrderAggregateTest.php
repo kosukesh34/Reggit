@@ -49,6 +49,16 @@ class OrderAggregateTest extends TestCase
         $this->assertSame(OrderStatus::CONFIRMED, $order->status());
     }
 
+    public function test_confirm_stripe_payment_進行中は冪等で上書きしないこと(): void
+    {
+        $order = $this->createOrder(OrderStatus::PREPARING);
+
+        $didConfirm = $order->confirmStripePayment();
+
+        $this->assertFalse($didConfirm);
+        $this->assertSame(OrderStatus::PREPARING, $order->status());
+    }
+
     public function test_confirm_stripe_payment_店内注文は拒否されること(): void
     {
         $order = $this->createOrder(

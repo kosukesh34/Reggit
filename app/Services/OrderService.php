@@ -17,6 +17,7 @@ use App\Domain\Order\ValueObjects\PendingOrder;
 use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
 use App\Enums\OrderType;
+use App\Enums\PaymentMethod;
 use App\Enums\PointTransactionType;
 use App\Models\Order;
 use App\Models\User;
@@ -89,8 +90,11 @@ class OrderService
 
             DB::commit();
 
-            foreach ($pointEvents as $pointEvent) {
-                $this->domainEvents->dispatch($pointEvent);
+            // Stripe 未決済はローカル台帳のみ。スマレジ同期は OrderConfirmed 後。
+            if ($paymentMethod !== PaymentMethod::STRIPE) {
+                foreach ($pointEvents as $pointEvent) {
+                    $this->domainEvents->dispatch($pointEvent);
+                }
             }
 
             return $order->load('items.product');
@@ -217,7 +221,7 @@ class OrderService
 
     private function awardPoints(User $user, Order $order, float $finalAmount): ?PointsEarned
     {
-        $projectId = (int) ($user->project_id ?? 1);
+        $projectId = (int) ($user->project_id ?? 0);
         $member = $this->memberRepository->findByUserId((int) $user->id, $projectId);
         if ($member === null) {
             return null;
@@ -253,7 +257,7 @@ class OrderService
 
     private function loadMemberForPointUpdate(User $user): MemberAggregate
     {
-        $projectId = (int) ($user->project_id ?? 1);
+        $projectId = (int) ($user->project_id ?? 0);
         $member = $this->memberRepository->findByUserId((int) $user->id, $projectId);
         if ($member === null) {
             throw new \Exception('会員登録が必要です');
@@ -275,7 +279,7 @@ class OrderService
             return;
         }
 
-        $projectId = (int) ($user->project_id ?? 1);
+        $projectId = (int) ($user->project_id ?? 0);
         $stampCardId = $this->shopSettingRepository->getOrderStampCardId($projectId);
         $stampEarnPerAmount = $this->shopSettingRepository->getStampEarnPerAmount($projectId);
 
@@ -298,14 +302,13 @@ class OrderService
 
     public function handleOrderCancellation(Order $order): void
     {
-        $projectId = (int) ($order->project_id ?? 1);
+        $projectId = (int) ($order->project_id ?? 0);
         $aggregate = $this->orderRepository->findById((int) $order->id, $projectId);
         if ($aggregate === null || $aggregate->isCancelled() === false) {
             return;
         }
 
         $order->load('user', 'items.product');
-        $pointEvents = [];
 
         DB::beginTransaction();
         try {
@@ -315,26 +318,9 @@ class OrderService
                     $member = $this->memberRepository->findByIdForUpdate($member->id()->value(), $projectId);
                 }
                 if ($member !== null) {
-                    $refundedPoints = $this->refundPointsUsed($order, $member);
-                    $reversedPoints = $this->reversePointsEarned($order, $member);
+                    $this->refundPointsUsed($order, $member);
+                    $this->reversePointsEarned($order, $member);
                     $this->memberRepository->save($member);
-                    $orderId = (int) $order->id;
-                    if ($refundedPoints > 0) {
-                        $pointEvents[] = new PointsEarned(
-                            $member->id()->value(),
-                            $member->projectId(),
-                            $refundedPoints,
-                            $orderId,
-                        );
-                    }
-                    if ($reversedPoints > 0) {
-                        $pointEvents[] = new PointsEarned(
-                            $member->id()->value(),
-                            $member->projectId(),
-                            -$reversedPoints,
-                            $orderId,
-                        );
-                    }
                 }
             }
 
@@ -346,10 +332,7 @@ class OrderService
             Log::error('Order cancellation handling failed: '.$e->getMessage(), ['order_id' => $order->id]);
             throw $e;
         }
-
-        foreach ($pointEvents as $pointEvent) {
-            $this->domainEvents->dispatch($pointEvent);
-        }
+        // 未決済キャンセル専用。作成時にスマレジ未同期のため差分同期しない。
     }
 
     private function refundPointsUsed(Order $order, MemberAggregate $member): int
