@@ -11,26 +11,18 @@ use Illuminate\Support\Facades\Cache;
  * 会員ポイント差分をスマレジへ同期する。
  * points は加算が正、取り消し・減算が負。
  *
- * 注文単位のネット同期は Cache で冪等化し、失敗時は outbound pending を立てる。
- * pending 中は inbound（Webhook / 会員取得時の取込）がローカルを巻き戻さない。
+ * 注文単位のネット同期は orders 上の完了・claim で冪等化する（Cache TTL に依存しない）。
+ * 失敗時は outbound pending を立て、pending 中は inbound がローカルを巻き戻さない。
  */
 class SmaregiPointsSyncService
 {
-    private const ORDER_DONE_KEY_PREFIX = 'smaregi_order_points_sync:';
-
-    private const ORDER_CLAIM_KEY_PREFIX = 'smaregi_order_points_sync_claim:';
-
-    private const OUTBOUND_PENDING_KEY_PREFIX = 'smaregi_points_outbound_pending:';
-
-    private const ORDER_DONE_TTL_DAYS = 1;
-
     private const ORDER_CLAIM_TTL_MINUTES = 5;
 
     private const ORDER_CLAIM_MAX_ATTEMPTS = 3;
 
     private const ORDER_CLAIM_RETRY_USEC = 100000;
 
-    private const OUTBOUND_PENDING_TTL_DAYS = 1;
+    private const OUTBOUND_PENDING_KEY_PREFIX = 'smaregi_points_outbound_pending:';
 
     public function __construct(
         private MemberRepository $memberRepository,
@@ -41,35 +33,37 @@ class SmaregiPointsSyncService
     /**
      * 注文の used/earned ネット差分を1回だけスマレジへ送る。
      *
-     * @return bool 完了（成功・スキップ・既同期）なら true。失敗または他プロセス処理中なら false
+     * @return bool 完了（成功・スキップ・既同期）なら true。失敗・未連携・他プロセス処理中なら false
      */
     public function syncOrderNetPoints(int $orderId, int $projectId, int $userId): bool
     {
-        $doneKey = self::ORDER_DONE_KEY_PREFIX.$orderId;
-        if (Cache::has($doneKey)) {
+        if ($this->orderRepository->isSmaregiPointsSynced($orderId, $projectId)) {
             return true;
         }
 
-        $claimKey = self::ORDER_CLAIM_KEY_PREFIX.$orderId;
-        if ($this->tryClaimOrderSync($claimKey, $doneKey, $orderId, $projectId) === false) {
-            return Cache::has($doneKey);
+        if ($this->tryClaimOrderSync($orderId, $projectId) === false) {
+            return $this->orderRepository->isSmaregiPointsSynced($orderId, $projectId);
         }
 
         try {
-            return $this->runOrderNetPointsSync($orderId, $projectId, $userId, $doneKey);
+            return $this->runOrderNetPointsSync($orderId, $projectId, $userId);
         } finally {
-            Cache::forget($claimKey);
+            $this->orderRepository->releaseSmaregiPointsSyncClaim($orderId, $projectId);
         }
     }
 
-    private function tryClaimOrderSync(string $claimKey, string $doneKey, int $orderId, int $projectId): bool
+    private function tryClaimOrderSync(int $orderId, int $projectId): bool
     {
         for ($attempt = 1; $attempt <= self::ORDER_CLAIM_MAX_ATTEMPTS; $attempt++) {
-            if (Cache::has($doneKey)) {
+            if ($this->orderRepository->isSmaregiPointsSynced($orderId, $projectId)) {
                 return false;
             }
 
-            if (Cache::add($claimKey, 1, now()->addMinutes(self::ORDER_CLAIM_TTL_MINUTES))) {
+            if ($this->orderRepository->tryClaimSmaregiPointsSync(
+                $orderId,
+                $projectId,
+                self::ORDER_CLAIM_TTL_MINUTES,
+            )) {
                 return true;
             }
 
@@ -86,9 +80,9 @@ class SmaregiPointsSyncService
         return false;
     }
 
-    private function runOrderNetPointsSync(int $orderId, int $projectId, int $userId, string $doneKey): bool
+    private function runOrderNetPointsSync(int $orderId, int $projectId, int $userId): bool
     {
-        if (Cache::has($doneKey)) {
+        if ($this->orderRepository->isSmaregiPointsSynced($orderId, $projectId)) {
             return true;
         }
 
@@ -99,16 +93,26 @@ class SmaregiPointsSyncService
 
         $member = $this->memberRepository->findByUserId($userId, $projectId);
         if ($member === null) {
-            Cache::put($doneKey, 1, now()->addDays(self::ORDER_DONE_TTL_DAYS));
+            $this->orderRepository->markSmaregiPointsSynced($orderId, $projectId);
 
             return true;
         }
 
         $netDelta = $order->pointsEarned() - $order->pointsUsed();
         if ($netDelta === 0) {
-            Cache::put($doneKey, 1, now()->addDays(self::ORDER_DONE_TTL_DAYS));
+            $this->orderRepository->markSmaregiPointsSynced($orderId, $projectId);
 
             return true;
+        }
+
+        // 未連携・契約未設定は完了にしない（後から連携したときに再送できる）
+        if ($member->smaregiCustomerId() === '') {
+            return false;
+        }
+
+        $contractId = $this->smaregiApi->getContractIdForProject($member->projectId());
+        if ($contractId === null || trim($contractId) === '') {
+            return false;
         }
 
         $succeeded = $this->syncPointDelta(
@@ -119,7 +123,7 @@ class SmaregiPointsSyncService
         );
 
         if ($succeeded) {
-            Cache::put($doneKey, 1, now()->addDays(self::ORDER_DONE_TTL_DAYS));
+            $this->orderRepository->markSmaregiPointsSynced($orderId, $projectId);
         }
 
         return $succeeded;
@@ -190,11 +194,8 @@ class SmaregiPointsSyncService
 
     public function markOutboundPending(int $memberId): void
     {
-        Cache::put(
-            self::OUTBOUND_PENDING_KEY_PREFIX.$memberId,
-            1,
-            now()->addDays(self::OUTBOUND_PENDING_TTL_DAYS),
-        );
+        // 成功するまで残す（TTL 切れで inbound がローカル先行を巻き戻さない）
+        Cache::forever(self::OUTBOUND_PENDING_KEY_PREFIX.$memberId, 1);
     }
 
     public function clearOutboundPending(int $memberId): void

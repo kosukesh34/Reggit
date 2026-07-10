@@ -27,4 +27,13 @@ interface OrderRepository
      * @param  list<OrderLineItem>  $lineItems
      */
     public function persistPending(PendingOrder $pendingOrder, array $lineItems): int;
+
+    public function isSmaregiPointsSynced(int $orderId, int $projectId): bool;
+
+    /** @return bool claim 取得できたとき true */
+    public function tryClaimSmaregiPointsSync(int $orderId, int $projectId, int $claimTtlMinutes): bool;
+
+    public function markSmaregiPointsSynced(int $orderId, int $projectId): void;
+
+    public function releaseSmaregiPointsSyncClaim(int $orderId, int $projectId): void;
 }

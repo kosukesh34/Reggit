@@ -9,7 +9,7 @@ use App\Services\Smaregi\SmaregiPointsSyncService;
 /**
  * 注文ポイントのスマレジ同期を行う。
  * OrderPointsSyncRequested のみを処理する（OrderConfirmed では同期しない。二重発火防止）。
- * used/earned はネット1回。完了 Cache は成功後のみ（部分成功・二重適用を防ぐ）。
+ * used/earned はネット1回。完了は orders.smaregi_points_synced_at（成功後のみ）。
  */
 class SyncOrderConfirmedPointsToSmaregiListener implements DomainEventListener
 {

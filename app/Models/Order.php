@@ -21,6 +21,8 @@ class Order extends Model
         'notes',
         'points_used',
         'points_earned',
+        'smaregi_points_synced_at',
+        'smaregi_points_sync_started_at',
     ];
 
     /** @var array<string, string> */
@@ -28,6 +30,8 @@ class Order extends Model
         'total_amount' => 'decimal:2',
         'points_used' => 'integer',
         'points_earned' => 'integer',
+        'smaregi_points_synced_at' => 'datetime',
+        'smaregi_points_sync_started_at' => 'datetime',
     ];
 
     public function project()
