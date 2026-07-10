@@ -404,7 +404,7 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
         $this->assertSame(0, $member->getTotalPointsFromTransactions());
     }
 
-    public function test_inboundは_syncPointsLedger後に差分計算すること(): void
+    public function test_inboundは_sync_points_ledger後に差分計算すること(): void
     {
         $project = Project::factory()->create();
         ShopSetting::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);

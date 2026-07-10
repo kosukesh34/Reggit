@@ -9,12 +9,14 @@ use App\Domain\Order\ValueObjects\PendingOrder;
 use App\Enums\OrderStatus;
 use App\Models\Order as OrderModel;
 use App\Models\OrderItem;
+use App\Models\Scopes\ProjectScope;
+use Illuminate\Database\Eloquent\Builder;
 
 class EloquentOrderRepository implements OrderRepository
 {
     public function findById(int $orderId, int $projectId): ?OrderAggregate
     {
-        $model = OrderModel::query()
+        $model = $this->newQuery()
             ->whereKey($orderId)
             ->where('project_id', $projectId)
             ->first();
@@ -27,7 +29,7 @@ class EloquentOrderRepository implements OrderRepository
 
     public function findByIdForUpdate(int $orderId, int $projectId): ?OrderAggregate
     {
-        $model = OrderModel::query()
+        $model = $this->newQuery()
             ->whereKey($orderId)
             ->where('project_id', $projectId)
             ->lockForUpdate()
@@ -41,7 +43,7 @@ class EloquentOrderRepository implements OrderRepository
 
     public function findByPrimaryKey(int $orderId): ?OrderAggregate
     {
-        $model = OrderModel::query()->whereKey($orderId)->first();
+        $model = $this->newQuery()->whereKey($orderId)->first();
         if ($model === null) {
             return null;
         }
@@ -51,7 +53,7 @@ class EloquentOrderRepository implements OrderRepository
 
     public function findByPrimaryKeyForUpdate(int $orderId): ?OrderAggregate
     {
-        $model = OrderModel::query()->whereKey($orderId)->lockForUpdate()->first();
+        $model = $this->newQuery()->whereKey($orderId)->lockForUpdate()->first();
         if ($model === null) {
             return null;
         }
@@ -61,7 +63,7 @@ class EloquentOrderRepository implements OrderRepository
 
     public function findByIdAndUserId(int $orderId, int $userId, int $projectId): ?OrderAggregate
     {
-        $model = OrderModel::query()
+        $model = $this->newQuery()
             ->where('id', $orderId)
             ->where('user_id', $userId)
             ->where('project_id', $projectId)
@@ -76,7 +78,7 @@ class EloquentOrderRepository implements OrderRepository
 
     public function findByIdAndUserIdForUpdate(int $orderId, int $userId, int $projectId): ?OrderAggregate
     {
-        $model = OrderModel::query()
+        $model = $this->newQuery()
             ->where('id', $orderId)
             ->where('user_id', $userId)
             ->where('project_id', $projectId)
@@ -92,7 +94,7 @@ class EloquentOrderRepository implements OrderRepository
 
     public function save(OrderAggregate $order): void
     {
-        $model = OrderModel::query()
+        $model = $this->newQuery()
             ->whereKey($order->id()->value())
             ->where('project_id', $order->projectId())
             ->first();
@@ -108,7 +110,7 @@ class EloquentOrderRepository implements OrderRepository
 
     public function persistPending(PendingOrder $pendingOrder, array $lineItems): int
     {
-        $model = OrderModel::create([
+        $model = OrderModel::withoutGlobalScope(ProjectScope::class)->create([
             'project_id' => $pendingOrder->projectId,
             'user_id' => $pendingOrder->userId,
             'total_amount' => $pendingOrder->totalAmount,
@@ -139,7 +141,7 @@ class EloquentOrderRepository implements OrderRepository
 
     public function isSmaregiPointsSynced(int $orderId, int $projectId): bool
     {
-        return OrderModel::query()
+        return $this->newQuery()
             ->whereKey($orderId)
             ->where('project_id', $projectId)
             ->whereNotNull('smaregi_points_synced_at')
@@ -151,7 +153,7 @@ class EloquentOrderRepository implements OrderRepository
         $claimExpiredBefore = now()->subMinutes($claimTtlMinutes);
         $claimedAt = now()->format('Y-m-d H:i:s');
 
-        $affected = OrderModel::query()
+        $affected = $this->newQuery()
             ->whereKey($orderId)
             ->where('project_id', $projectId)
             ->whereNull('smaregi_points_synced_at')
@@ -166,7 +168,7 @@ class EloquentOrderRepository implements OrderRepository
 
     public function markSmaregiPointsSynced(int $orderId, int $projectId): void
     {
-        OrderModel::query()
+        $this->newQuery()
             ->whereKey($orderId)
             ->where('project_id', $projectId)
             ->update([
@@ -177,7 +179,7 @@ class EloquentOrderRepository implements OrderRepository
 
     public function releaseSmaregiPointsSyncClaim(int $orderId, int $projectId, string $claimedAt): void
     {
-        OrderModel::query()
+        $this->newQuery()
             ->whereKey($orderId)
             ->where('project_id', $projectId)
             ->whereNull('smaregi_points_synced_at')
@@ -187,7 +189,7 @@ class EloquentOrderRepository implements OrderRepository
 
     public function findUnsyncedSmaregiPointsOrdersForUser(int $userId, int $projectId): array
     {
-        return OrderModel::query()
+        return $this->newQuery()
             ->where('user_id', $userId)
             ->where('project_id', $projectId)
             ->whereNull('smaregi_points_synced_at')
@@ -202,5 +204,10 @@ class EloquentOrderRepository implements OrderRepository
                 'userId' => (int) $order->user_id,
             ])
             ->all();
+    }
+
+    private function newQuery(): Builder
+    {
+        return OrderModel::query()->withoutGlobalScope(ProjectScope::class);
     }
 }
