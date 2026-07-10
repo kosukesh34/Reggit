@@ -34,7 +34,8 @@ class PaymentConfirmUseCase
             return new PaymentConfirmOutput(false, '決済情報と注文が一致しません', (string) $status, null);
         }
 
-        return DB::transaction(function () use ($orderId, $projectId, $status) {
+        $confirmedEvent = null;
+        $output = DB::transaction(function () use ($orderId, $projectId, $status, &$confirmedEvent) {
             $aggregate = $this->orderRepository->findByIdForUpdate($orderId, $projectId);
             if ($aggregate === null) {
                 throw (new ModelNotFoundException)->setModel(Order::class, [$orderId]);
@@ -49,11 +50,11 @@ class PaymentConfirmUseCase
             $this->orderRepository->save($aggregate);
 
             if ($didConfirm) {
-                $this->domainEvents->dispatch(new OrderConfirmed(
+                $confirmedEvent = new OrderConfirmed(
                     $aggregate->id()->value(),
                     $aggregate->projectId(),
                     $aggregate->userId(),
-                ));
+                );
             }
 
             return new PaymentConfirmOutput(
@@ -63,5 +64,11 @@ class PaymentConfirmUseCase
                 Order::findOrFail($orderId),
             );
         });
+
+        if ($confirmedEvent !== null) {
+            $this->domainEvents->dispatch($confirmedEvent);
+        }
+
+        return $output;
     }
 }

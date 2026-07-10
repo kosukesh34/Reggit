@@ -30,21 +30,22 @@ class PaymentWebhookUseCase
             return true;
         }
 
-        return DB::transaction(function () use ($orderId) {
+        $confirmedEvent = null;
+        DB::transaction(function () use ($orderId, &$confirmedEvent) {
             $aggregate = $this->orderRepository->findByPrimaryKeyForUpdate((int) $orderId);
             if ($aggregate === null) {
-                return true;
+                return;
             }
 
             try {
                 $didConfirm = $aggregate->confirmStripePayment();
                 $this->orderRepository->save($aggregate);
                 if ($didConfirm) {
-                    $this->domainEvents->dispatch(new OrderConfirmed(
+                    $confirmedEvent = new OrderConfirmed(
                         $aggregate->id()->value(),
                         $aggregate->projectId(),
                         $aggregate->userId(),
-                    ));
+                    );
                 }
             } catch (\Exception $e) {
                 LogHelper::warning('[Payment] webhook confirm skipped', [
@@ -53,8 +54,12 @@ class PaymentWebhookUseCase
                     'error' => $e->getMessage(),
                 ]);
             }
-
-            return true;
         });
+
+        if ($confirmedEvent !== null) {
+            $this->domainEvents->dispatch($confirmedEvent);
+        }
+
+        return true;
     }
 }

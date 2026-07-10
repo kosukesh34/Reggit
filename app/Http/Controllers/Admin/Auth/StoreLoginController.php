@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\LoginRequest;
 use App\Http\Support\AdminAuthInputFactory;
+use App\Http\Support\AdminRedirect;
 use App\UseCases\Admin\Auth\AdminLoginUseCase;
 use App\UseCases\Admin\Auth\GetAdminDashboardRedirectUseCase;
 use Illuminate\Support\Facades\Auth;
@@ -20,7 +21,7 @@ class StoreLoginController extends Controller
     public function show()
     {
         if (Auth::guard('admin')->check()) {
-            return $this->getDashboardRedirectUseCase->handle();
+            return AdminRedirect::toResponse($this->getDashboardRedirectUseCase->handle());
         }
 
         return redirect()->route('admin.login');
@@ -28,8 +29,8 @@ class StoreLoginController extends Controller
 
     public function login(LoginRequest $request)
     {
-        return $this->adminLoginUseCase->handle(
+        return AdminRedirect::toResponse($this->adminLoginUseCase->handle(
             $this->inputFactory->adminLogin($request, null),
-        );
+        ));
     }
 }

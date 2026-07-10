@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Support\RequestOrigin;
 use App\Support\NativeApp;
 use App\Support\QueueLiffUrlBuilder;
 use App\UseCases\Member\WalletPass\WalletPassUrlIssueUseCase;
@@ -29,7 +30,8 @@ class WalletAddPageController extends Controller
         if ((! is_string($walletUrl) || trim($walletUrl) === '') && is_string($passToken) && trim($passToken) !== '') {
             $walletUrl = $this->walletPassUrlIssueUseCase->buildPassDownloadUrl(
                 trim($passToken),
-                is_string($projectKey) && trim($projectKey) !== '' ? trim($projectKey) : 'default'
+                is_string($projectKey) && trim($projectKey) !== '' ? trim($projectKey) : 'default',
+                RequestOrigin::fromRequest($request),
             );
             $walletUrlFromPassToken = is_string($walletUrl) && trim($walletUrl) !== '';
         }

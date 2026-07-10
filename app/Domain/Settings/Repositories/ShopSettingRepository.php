@@ -3,7 +3,7 @@
 namespace App\Domain\Settings\Repositories;
 
 /**
- * 店舗設定の読み取り抽象。ShopSetting 静的 API からの段階移行用。
+ * 店舗設定の読み書き抽象。ShopSetting 静的 API からの段階移行用。
  */
 interface ShopSettingRepository
 {
@@ -85,4 +85,57 @@ interface ShopSettingRepository
     public function setMemberCodeNextNumber(int $nextNumber, int $projectId): void;
 
     public function isFeatureEnabled(string $featureKey, int $projectId): bool;
+
+    public function getValue(string $key, mixed $default, int $projectId): mixed;
+
+    /** @return array<string, bool> */
+    public function getFeatureFlags(int $projectId): array;
+
+    /** @return array<string, string> */
+    public function getFeatureFlagLabels(): array;
+
+    public function getAdminSidebarColor(int $projectId): string;
+
+    public function getAdminHeaderColor(int $projectId): string;
+
+    public function getAdminPrimaryColor(int $projectId): string;
+
+    public function getFrontendHeaderText(int $projectId): string;
+
+    public function getWalletGoogleProgramLogoUrl(int $projectId): ?string;
+
+    public function getWalletGoogleHeroImageUrl(int $projectId): ?string;
+
+    /** @return list<array<string, mixed>> */
+    public function defaultFrontendMenuItems(): array;
+
+    public function setValue(string $key, mixed $value, string $type, int $projectId): void;
+
+    /** @param array<string, bool> $flags */
+    public function setFeatureFlags(array $flags, int $projectId): void;
+
+    /** @param list<array<string, mixed>> $items */
+    public function setFrontendMenuItems(array $items, int $projectId): void;
+
+    /** @param list<array<string, mixed>> $settings */
+    public function setMemberRankSettings(array $settings, int $projectId): void;
+
+    /** @param array{smaregi_fields: array<string, array{enabled?: bool, required?: bool}>, custom_fields?: list<array<string, mixed>>} $settings */
+    public function setProfileFieldSettings(array $settings, int $projectId): void;
+
+    public function setShowMemberCardForGuest(bool $value, int $projectId): void;
+
+    public function setMemberCardDesign(string $value, int $projectId): void;
+
+    public function setMemberCardDisplayType(string $value, int $projectId): void;
+
+    public function setMemberCardCodeType(string $value, int $projectId): void;
+
+    public function setWalletGoogleProgramLogoUrl(?string $url, int $projectId): void;
+
+    public function setWalletGoogleHeroImageUrl(?string $url, int $projectId): void;
+
+    public function setLineLiffId(?string $liffId, int $projectId): void;
+
+    public function setLineLiffUrl(?string $liffUrl, int $projectId): void;
 }

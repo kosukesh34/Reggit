@@ -9,6 +9,7 @@ use App\Models\Member;
 use App\Models\Project;
 use App\Models\User;
 use App\Services\Smaregi\SmaregiApiService;
+use App\Services\Smaregi\SmaregiPointsSyncService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use Tests\TestCase;
@@ -16,6 +17,13 @@ use Tests\TestCase;
 class SyncPointsEarnedToSmaregiListenerTest extends TestCase
 {
     use RefreshDatabase;
+
+    private function makeListener(SmaregiApiService $smaregiApi): SyncPointsEarnedToSmaregiListener
+    {
+        return new SyncPointsEarnedToSmaregiListener(
+            new SmaregiPointsSyncService(app(MemberRepository::class), $smaregiApi),
+        );
+    }
 
     public function test_負のポイント差分もスマレジへ同期すること(): void
     {
@@ -33,12 +41,7 @@ class SyncPointsEarnedToSmaregiListenerTest extends TestCase
             ->with((int) $project->id, 'cust-1', -50)
             ->andReturn(['customerId' => 'cust-1']);
 
-        $listener = new SyncPointsEarnedToSmaregiListener(
-            app(MemberRepository::class),
-            $smaregiApi,
-        );
-
-        $listener->handle(new PointsEarned(
+        $this->makeListener($smaregiApi)->handle(new PointsEarned(
             (int) $member->id,
             (int) $project->id,
             -50,
@@ -51,12 +54,7 @@ class SyncPointsEarnedToSmaregiListenerTest extends TestCase
         $smaregiApi = Mockery::mock(SmaregiApiService::class);
         $smaregiApi->shouldNotReceive('syncCustomerPointsForProject');
 
-        $listener = new SyncPointsEarnedToSmaregiListener(
-            app(MemberRepository::class),
-            $smaregiApi,
-        );
-
-        $listener->handle(new PointsEarned(1, 1, 0, 99));
+        $this->makeListener($smaregiApi)->handle(new PointsEarned(1, 1, 0, 99));
     }
 
     public function test_ベストエフォート指定時は同期失敗でも例外にしないこと(): void
@@ -74,12 +72,7 @@ class SyncPointsEarnedToSmaregiListenerTest extends TestCase
             ->once()
             ->andReturn(null);
 
-        $listener = new SyncPointsEarnedToSmaregiListener(
-            app(MemberRepository::class),
-            $smaregiApi,
-        );
-
-        $listener->handle(new PointsEarned(
+        $this->makeListener($smaregiApi)->handle(new PointsEarned(
             (int) $member->id,
             (int) $project->id,
             10,
@@ -105,15 +98,10 @@ class SyncPointsEarnedToSmaregiListenerTest extends TestCase
             ->once()
             ->andReturn(null);
 
-        $listener = new SyncPointsEarnedToSmaregiListener(
-            app(MemberRepository::class),
-            $smaregiApi,
-        );
-
         $this->expectException(\Exception::class);
         $this->expectExceptionMessage('スマレジへのポイント反映に失敗しました');
 
-        $listener->handle(new PointsEarned(
+        $this->makeListener($smaregiApi)->handle(new PointsEarned(
             (int) $member->id,
             (int) $project->id,
             10,

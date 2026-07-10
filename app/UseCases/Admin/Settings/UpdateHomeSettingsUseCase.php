@@ -2,15 +2,19 @@
 
 namespace App\UseCases\Admin\Settings;
 
-use App\Models\ShopSetting;
+use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Util\StrHelper;
 
 class UpdateHomeSettingsUseCase
 {
+    public function __construct(
+        private ShopSettingRepository $shopSettingRepository,
+    ) {}
+
     /** @param array<int, array{tab?: string, label?: string, icon?: string, order?: int, enabled?: bool}> $rawTabs */
     public function handle(int $projectId, array $rawTabs): void
     {
-        $defaults = collect(ShopSetting::defaultFrontendMenuItems())->keyBy('tab');
+        $defaults = collect($this->shopSettingRepository->defaultFrontendMenuItems())->keyBy('tab');
         $items = [];
         foreach ($rawTabs as $index => $row) {
             $tab = $row['tab'] ?? null;
@@ -27,6 +31,6 @@ class UpdateHomeSettingsUseCase
             ]);
         }
         usort($items, fn ($a, $b) => $a['order'] <=> $b['order']);
-        ShopSetting::setFrontendMenuItems($items, $projectId);
+        $this->shopSettingRepository->setFrontendMenuItems($items, $projectId);
     }
 }

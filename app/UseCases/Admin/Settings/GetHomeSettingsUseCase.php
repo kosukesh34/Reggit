@@ -2,14 +2,18 @@
 
 namespace App\UseCases\Admin\Settings;
 
-use App\Models\ShopSetting;
+use App\Domain\Settings\Repositories\ShopSettingRepository;
 
 class GetHomeSettingsUseCase
 {
+    public function __construct(
+        private ShopSettingRepository $shopSettingRepository,
+    ) {}
+
     public function handle(int $projectId): array
     {
-        $defaults = ShopSetting::defaultFrontendMenuItems();
-        $raw = ShopSetting::getValue('frontend_menu_items', null, $projectId);
+        $defaults = $this->shopSettingRepository->defaultFrontendMenuItems();
+        $raw = $this->shopSettingRepository->getValue('frontend_menu_items', null, $projectId);
         $byTab = collect(is_array($raw) ? $raw : [])->keyBy('tab');
 
         $tabs = collect($defaults)->map(function ($item) use ($byTab) {

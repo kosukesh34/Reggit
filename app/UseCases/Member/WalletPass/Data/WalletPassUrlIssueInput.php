@@ -10,5 +10,6 @@ class WalletPassUrlIssueInput
         public readonly User $user,
         public readonly int $projectId,
         public readonly string $projectKey,
+        public readonly string $requestOrigin,
     ) {}
 }
