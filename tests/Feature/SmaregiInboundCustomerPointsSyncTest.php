@@ -173,6 +173,42 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
         $this->assertSame(20, $member->points);
     }
 
+    public function test_他プロジェクトの同一会員番号があってもcustomerCodeを反映できること(): void
+    {
+        $project = Project::factory()->create();
+        $otherProject = Project::factory()->create();
+        ShopSetting::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+
+        $otherUser = User::factory()->create(['project_id' => $otherProject->id]);
+        Member::factory()->create([
+            'project_id' => $otherProject->id,
+            'user_id' => $otherUser->id,
+            'member_number' => 'NEW001',
+            'smaregi_customer_id' => 'other-cust',
+            'points' => 0,
+        ]);
+
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $member = Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+            'member_number' => 'OLD001',
+            'smaregi_customer_id' => '43',
+            'points' => 0,
+        ]);
+
+        $this->fakeSmaregiHttpSingleCustomer([
+            'customerId' => '43',
+            'customerCode' => 'NEW001',
+            'point' => '0',
+        ]);
+
+        app(SmaregiCustomerPointsInboundSyncService::class)
+            ->syncByCustomerIds(self::CONTRACT_ID, ['43'], 'edited');
+
+        $this->assertSame('NEW001', $member->fresh()->member_number);
+    }
+
     public function test_members_me取得時にスマレジのポイントが取り込まれること(): void
     {
         config(['smaregi.inbound_sync_on_member_fetch' => true, 'smaregi.inbound_sync_on_member_fetch_ttl_seconds' => 0]);

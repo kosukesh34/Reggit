@@ -436,6 +436,7 @@ class SmaregiCustomerPointsInboundSyncService
     private function memberNumberExists(Member $member, string $memberNumber): bool
     {
         return Member::query()
+            ->where('project_id', $member->project_id)
             ->where('member_number', $memberNumber)
             ->where('id', '!=', $member->id)
             ->exists();
