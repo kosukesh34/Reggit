@@ -20,9 +20,6 @@ class UpdateLiffDesignerInput
         public readonly array $layouts,
         public readonly string $customCss,
         public readonly ?array $tabSettings,
-        public readonly string $liffId = '',
-        public readonly string $liffUrl = '',
-        public readonly string $lineFriendAddUrl = '',
         public readonly ?array $menuItems = null
     ) {}
 
@@ -63,9 +60,6 @@ class UpdateLiffDesignerInput
                 LiffDesignerSanitizer::sanitizeLayouts($decoded),
                 LiffDesignerSanitizer::sanitizeCustomCss((string) $request->input('custom_css', '')),
                 LiffDesignerSanitizer::sanitizeTabSettings($tabSettings),
-                trim((string) $request->input('line_liff_id', '')),
-                trim((string) $request->input('line_liff_url', '')),
-                trim((string) $request->input('line_friend_add_url', '')),
                 $menuItems
             );
         } catch (InvalidArgumentException $e) {
