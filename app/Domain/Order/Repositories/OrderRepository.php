@@ -30,10 +30,20 @@ interface OrderRepository
 
     public function isSmaregiPointsSynced(int $orderId, int $projectId): bool;
 
-    /** @return bool claim 取得できたとき true */
-    public function tryClaimSmaregiPointsSync(int $orderId, int $projectId, int $claimTtlMinutes): bool;
+    /**
+     * @return string|null claim 時刻（Y-m-d H:i:s）。取得失敗時は null
+     */
+    public function tryClaimSmaregiPointsSync(int $orderId, int $projectId, int $claimTtlMinutes): ?string;
 
     public function markSmaregiPointsSynced(int $orderId, int $projectId): void;
 
-    public function releaseSmaregiPointsSyncClaim(int $orderId, int $projectId): void;
+    /** 自分の claim 時刻と一致するときだけ解放する（他プロセスの claim を消さない） */
+    public function releaseSmaregiPointsSyncClaim(int $orderId, int $projectId, string $claimedAt): void;
+
+    /**
+     * スマレジポイント未同期の注文を返す（Cash 失敗・未連携後の再送用）。
+     *
+     * @return list<array{orderId: int, projectId: int, userId: int}>
+     */
+    public function findUnsyncedSmaregiPointsOrdersForUser(int $userId, int $projectId): array;
 }

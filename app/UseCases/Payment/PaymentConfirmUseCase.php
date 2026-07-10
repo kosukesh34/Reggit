@@ -73,7 +73,10 @@ class PaymentConfirmUseCase
                 true,
                 '決済が完了しました',
                 $status,
-                Order::findOrFail($orderId),
+                Order::query()
+                    ->whereKey($orderId)
+                    ->where('project_id', $projectId)
+                    ->firstOrFail(),
             );
         });
 

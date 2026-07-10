@@ -4,6 +4,7 @@ namespace App\Services\Smaregi;
 
 use App\Domain\Member\Repositories\MemberRepository;
 use App\Domain\Order\Repositories\OrderRepository;
+use App\Jobs\SyncOrderPointsToSmaregiJob;
 use App\Util\LogHelper;
 use Illuminate\Support\Facades\Cache;
 
@@ -13,6 +14,7 @@ use Illuminate\Support\Facades\Cache;
  *
  * 注文単位のネット同期は orders 上の完了・claim で冪等化する（Cache TTL に依存しない）。
  * 失敗時は outbound pending を立て、pending 中は inbound がローカルを巻き戻さない。
+ * Cash 等の再送経路がない注文は、失敗時にキューでリトライする。
  */
 class SmaregiPointsSyncService
 {
@@ -41,30 +43,52 @@ class SmaregiPointsSyncService
             return true;
         }
 
-        if ($this->tryClaimOrderSync($orderId, $projectId) === false) {
+        $claimedAt = $this->tryClaimOrderSync($orderId, $projectId);
+        if ($claimedAt === null) {
             return $this->orderRepository->isSmaregiPointsSynced($orderId, $projectId);
         }
 
         try {
             return $this->runOrderNetPointsSync($orderId, $projectId, $userId);
         } finally {
-            $this->orderRepository->releaseSmaregiPointsSyncClaim($orderId, $projectId);
+            $this->orderRepository->releaseSmaregiPointsSyncClaim($orderId, $projectId, $claimedAt);
         }
     }
 
-    private function tryClaimOrderSync(int $orderId, int $projectId): bool
+    /**
+     * 同期を試み、未完了ならキューでリトライする（Cash 等の再送経路補完）。
+     */
+    public function syncOrderNetPointsWithRetry(int $orderId, int $projectId, int $userId): bool
+    {
+        $succeeded = $this->syncOrderNetPoints($orderId, $projectId, $userId);
+        if ($succeeded) {
+            return true;
+        }
+
+        if ($this->orderRepository->isSmaregiPointsSynced($orderId, $projectId)) {
+            return true;
+        }
+
+        SyncOrderPointsToSmaregiJob::dispatch($orderId, $projectId, $userId)
+            ->delay(now()->addSeconds(30));
+
+        return false;
+    }
+
+    private function tryClaimOrderSync(int $orderId, int $projectId): ?string
     {
         for ($attempt = 1; $attempt <= self::ORDER_CLAIM_MAX_ATTEMPTS; $attempt++) {
             if ($this->orderRepository->isSmaregiPointsSynced($orderId, $projectId)) {
-                return false;
+                return null;
             }
 
-            if ($this->orderRepository->tryClaimSmaregiPointsSync(
+            $claimedAt = $this->orderRepository->tryClaimSmaregiPointsSync(
                 $orderId,
                 $projectId,
                 self::ORDER_CLAIM_TTL_MINUTES,
-            )) {
-                return true;
+            );
+            if ($claimedAt !== null) {
+                return $claimedAt;
             }
 
             if ($attempt < self::ORDER_CLAIM_MAX_ATTEMPTS) {
@@ -77,7 +101,7 @@ class SmaregiPointsSyncService
             'project_id' => $projectId,
         ]);
 
-        return false;
+        return null;
     }
 
     private function runOrderNetPointsSync(int $orderId, int $projectId, int $userId): bool
