@@ -312,6 +312,9 @@ class OrderService
             if ($order->user !== null) {
                 $member = $this->memberRepository->findByUserId((int) $order->user_id, $projectId);
                 if ($member !== null) {
+                    $member = $this->memberRepository->findByIdForUpdate($member->id()->value(), $projectId);
+                }
+                if ($member !== null) {
                     $refundedPoints = $this->refundPointsUsed($order, $member);
                     $reversedPoints = $this->reversePointsEarned($order, $member);
                     $this->memberRepository->save($member);

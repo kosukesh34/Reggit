@@ -8,6 +8,7 @@ use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
 use App\Services\Admin\MemberAdminService;
 use App\UseCases\Admin\Member\Data\AdminMemberUpdateInput;
+use Illuminate\Support\Facades\DB;
 
 class AdminMemberUpdateUseCase
 {
@@ -37,7 +38,9 @@ class AdminMemberUpdateUseCase
             ? (string) $adjustment['description']
             : self::DEFAULT_POINT_DESCRIPTION;
 
-        $delta = $this->applyPointAdjustment($input->memberId, $input->projectId, $adjustment, $desc);
+        $delta = DB::transaction(function () use ($input, $adjustment, $desc) {
+            return $this->applyPointAdjustment($input->memberId, $input->projectId, $adjustment, $desc);
+        });
 
         if ($delta !== 0) {
             $this->domainEvents->dispatch(new PointsEarned(
@@ -56,7 +59,7 @@ class AdminMemberUpdateUseCase
     private function applyPointAdjustment(int $memberId, int $projectId, array $adjustment, string $description): int
     {
         $this->memberRepository->syncPointsLedger($memberId, $projectId);
-        $member = $this->memberRepository->findById($memberId, $projectId);
+        $member = $this->memberRepository->findByIdForUpdate($memberId, $projectId);
         if ($member === null) {
             return 0;
         }

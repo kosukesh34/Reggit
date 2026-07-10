@@ -74,6 +74,22 @@ class EloquentOrderRepository implements OrderRepository
         return OrderMapper::toDomain($model);
     }
 
+    public function findByIdAndUserIdForUpdate(int $orderId, int $userId, int $projectId): ?OrderAggregate
+    {
+        $model = OrderModel::query()
+            ->where('id', $orderId)
+            ->where('user_id', $userId)
+            ->where('project_id', $projectId)
+            ->lockForUpdate()
+            ->first();
+
+        if ($model === null) {
+            return null;
+        }
+
+        return OrderMapper::toDomain($model);
+    }
+
     public function save(OrderAggregate $order): void
     {
         $model = OrderModel::query()
