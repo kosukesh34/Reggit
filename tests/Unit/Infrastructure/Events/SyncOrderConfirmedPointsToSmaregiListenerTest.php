@@ -67,8 +67,6 @@ class SyncOrderConfirmedPointsToSmaregiListenerTest extends TestCase
 
     public function test_order_points_sync_requestedで利用と獲得のネット差分をスマレジへ1回同期すること(): void
     {
-        Cache::flush();
-
         $project = Project::factory()->create();
         $user = User::factory()->create(['project_id' => $project->id]);
         Member::factory()->create([
@@ -100,12 +98,13 @@ class SyncOrderConfirmedPointsToSmaregiListenerTest extends TestCase
             (int) $project->id,
             (int) $user->id,
         ));
+
+        $order->refresh();
+        $this->assertNotNull($order->smaregi_points_synced_at);
     }
 
     public function test_ポイント変動がなければ同期しないこと(): void
     {
-        Cache::flush();
-
         $project = Project::factory()->create();
         $user = User::factory()->create(['project_id' => $project->id]);
         Member::factory()->create([
@@ -132,12 +131,13 @@ class SyncOrderConfirmedPointsToSmaregiListenerTest extends TestCase
             (int) $project->id,
             (int) $user->id,
         ));
+
+        $order->refresh();
+        $this->assertNotNull($order->smaregi_points_synced_at);
     }
 
     public function test_同一注文の再配信ではスマレジへ二重同期しないこと(): void
     {
-        Cache::flush();
-
         $project = Project::factory()->create();
         $user = User::factory()->create(['project_id' => $project->id]);
         Member::factory()->create([
@@ -172,12 +172,13 @@ class SyncOrderConfirmedPointsToSmaregiListenerTest extends TestCase
         );
         $listener->handle($event);
         $listener->handle($event);
+
+        $order->refresh();
+        $this->assertNotNull($order->smaregi_points_synced_at);
     }
 
     public function test_同期失敗時は完了フラグを残さず再実行できること(): void
     {
-        Cache::flush();
-
         $project = Project::factory()->create();
         $user = User::factory()->create(['project_id' => $project->id]);
         $member = Member::factory()->create([
@@ -221,15 +222,17 @@ class SyncOrderConfirmedPointsToSmaregiListenerTest extends TestCase
         );
         $listener->handle($event);
         $this->assertTrue($pointsSync->hasOutboundPending((int) $member->id));
+        $order->refresh();
+        $this->assertNull($order->smaregi_points_synced_at);
 
         $listener->handle($event);
         $this->assertFalse($pointsSync->hasOutboundPending((int) $member->id));
+        $order->refresh();
+        $this->assertNotNull($order->smaregi_points_synced_at);
     }
 
-    public function test_契約未設定なら同期をスキップすること(): void
+    public function test_契約未設定なら同期をスキップし完了にしないこと(): void
     {
-        Cache::flush();
-
         $project = Project::factory()->create();
         $user = User::factory()->create(['project_id' => $project->id]);
         Member::factory()->create([
@@ -253,19 +256,31 @@ class SyncOrderConfirmedPointsToSmaregiListenerTest extends TestCase
             ->andReturn(null);
         $smaregiApi->shouldNotReceive('syncCustomerPointsForProject');
 
-        $this->makeListener($smaregiApi)->handle(new OrderPointsSyncRequested(
+        $pointsSync = new SmaregiPointsSyncService(
+            app(MemberRepository::class),
+            app(OrderRepository::class),
+            $smaregiApi,
+        );
+
+        $this->assertFalse($pointsSync->syncOrderNetPoints(
             (int) $order->id,
             (int) $project->id,
             (int) $user->id,
         ));
+
+        $order->refresh();
+        $this->assertNull($order->smaregi_points_synced_at);
     }
 
-    public function test_claim競合中に完了したら成功扱いになること(): void
+    public function test_顧客未連携なら完了にせず後から連携したときに同期すること(): void
     {
-        Cache::flush();
-
         $project = Project::factory()->create();
         $user = User::factory()->create(['project_id' => $project->id]);
+        $member = Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+            'smaregi_customer_id' => '',
+        ]);
         $order = Order::create([
             'project_id' => $project->id,
             'user_id' => $user->id,
@@ -277,8 +292,56 @@ class SyncOrderConfirmedPointsToSmaregiListenerTest extends TestCase
             'order_type' => 'mobile',
         ]);
 
-        Cache::put('smaregi_order_points_sync_claim:'.$order->id, 1, now()->addMinutes(5));
-        Cache::put('smaregi_order_points_sync:'.$order->id, 1, now()->addDay());
+        $smaregiApi = Mockery::mock(SmaregiApiService::class);
+        $smaregiApi->shouldReceive('getContractIdForProject')
+            ->andReturn('contract-1');
+        $smaregiApi->shouldReceive('syncCustomerPointsForProject')
+            ->once()
+            ->with((int) $project->id, 'cust-later', -10)
+            ->andReturn(['customerId' => 'cust-later']);
+
+        $pointsSync = new SmaregiPointsSyncService(
+            app(MemberRepository::class),
+            app(OrderRepository::class),
+            $smaregiApi,
+        );
+
+        $this->assertFalse($pointsSync->syncOrderNetPoints(
+            (int) $order->id,
+            (int) $project->id,
+            (int) $user->id,
+        ));
+        $order->refresh();
+        $this->assertNull($order->smaregi_points_synced_at);
+
+        $member->smaregi_customer_id = 'cust-later';
+        $member->save();
+
+        $this->assertTrue($pointsSync->syncOrderNetPoints(
+            (int) $order->id,
+            (int) $project->id,
+            (int) $user->id,
+        ));
+        $order->refresh();
+        $this->assertNotNull($order->smaregi_points_synced_at);
+    }
+
+    public function test_claim競合中に完了したら成功扱いになること(): void
+    {
+        $project = Project::factory()->create();
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $order = Order::create([
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+            'total_amount' => 1000,
+            'status' => OrderStatus::CONFIRMED,
+            'payment_method' => PaymentMethod::STRIPE,
+            'points_used' => 10,
+            'points_earned' => 0,
+            'order_type' => 'mobile',
+            'smaregi_points_sync_started_at' => now(),
+            'smaregi_points_synced_at' => now(),
+        ]);
 
         $smaregiApi = Mockery::mock(SmaregiApiService::class);
         $smaregiApi->shouldNotReceive('syncCustomerPointsForProject');
@@ -294,5 +357,25 @@ class SyncOrderConfirmedPointsToSmaregiListenerTest extends TestCase
             (int) $project->id,
             (int) $user->id,
         ));
+    }
+
+    public function test_outbound_pendingは成功するまで残ること(): void
+    {
+        Cache::flush();
+
+        $pointsSync = new SmaregiPointsSyncService(
+            app(MemberRepository::class),
+            app(OrderRepository::class),
+            Mockery::mock(SmaregiApiService::class),
+        );
+
+        $pointsSync->markOutboundPending(99);
+        $this->assertTrue($pointsSync->hasOutboundPending(99));
+
+        $this->travel(2)->days();
+        $this->assertTrue($pointsSync->hasOutboundPending(99));
+
+        $pointsSync->clearOutboundPending(99);
+        $this->assertFalse($pointsSync->hasOutboundPending(99));
     }
 }

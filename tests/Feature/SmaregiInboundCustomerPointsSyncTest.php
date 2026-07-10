@@ -173,7 +173,7 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
         $this->assertSame(20, $member->points);
     }
 
-    public function test_他プロジェクトの同一会員番号があってもcustomerCodeを反映できること(): void
+    public function test_他プロジェクトの同一会員番号があってもcustomer_codeを反映できること(): void
     {
         $project = Project::factory()->create();
         $otherProject = Project::factory()->create();
