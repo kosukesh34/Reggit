@@ -14,6 +14,7 @@ use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
 use App\Infrastructure\Events\LoggingDomainEventListener;
 use App\Infrastructure\Events\MulticastDomainEventDispatcher;
+use App\Infrastructure\Events\SyncOrderConfirmedPointsToSmaregiListener;
 use App\Infrastructure\Events\SyncPointsEarnedToSmaregiListener;
 use App\Infrastructure\Persistence\Eloquent\Coupon\EloquentCouponDeliveryTargetRepository;
 use App\Infrastructure\Persistence\Eloquent\Coupon\EloquentMemberCouponRepository;
@@ -73,6 +74,7 @@ class AppServiceProvider extends ServiceProvider
             return new MulticastDomainEventDispatcher([
                 $app->make(LoggingDomainEventListener::class),
                 $app->make(SyncPointsEarnedToSmaregiListener::class),
+                $app->make(SyncOrderConfirmedPointsToSmaregiListener::class),
             ]);
         });
 

@@ -11,7 +11,7 @@
 - API・管理画面（Admin）・Web・Webhook・Device/AppConfig は UseCase 委譲済み
 - レガシー Controller（`AdminController`, `Admin/LoginController`, `Admin/AccountController`, `Api/V1/MemberController` 等）は削除済み
 - UseCase 間の呼び出しはなし
-- `Request` 依存が残る UseCase は解消済み（Auth 含む）
+- Auth 等の主要 UseCase から `Illuminate\Http\Request` 型依存は解消済み（下記 §4 の例外あり）
 
 ---
 
@@ -69,7 +69,12 @@ Factory の例:
 
 ## 4. Request 依存
 
-UseCase 層から `Illuminate\Http\Request` への直接依存は解消済み。
+型としての `Illuminate\Http\Request` 注入は解消済み。一方で URL 組み立て用に `request()` ヘルパが残る箇所がある。
+
+| 箇所 | 内容 |
+|------|------|
+| `LiffIndexUseCase` | User-Agent 判定 |
+| `WalletPassUrlIssueUseCase` / `GoogleWalletSaveUrlIssuer` | Forwarded Host から origin 組み立て |
 
 `RouteContextResolver` は `app/Http/Support/` に移動（Controller 支援用）。
 

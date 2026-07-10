@@ -85,7 +85,7 @@ final class Order
     }
 
     /**
-     * @return bool 状態が変わったとき true（既に CONFIRMED なら false）
+     * @return bool 状態が変わったとき true（既に決済済み・進行中なら false）
      */
     public function confirmStripePayment(): bool
     {
@@ -93,12 +93,12 @@ final class Order
             throw new \Exception('店内注文は決済確認の対象外です');
         }
 
-        if ($this->status === OrderStatus::CONFIRMED) {
-            return false;
-        }
-
         if ($this->isCancelled()) {
             throw new \Exception('キャンセル済みの注文は決済確認できません');
+        }
+
+        if ($this->status !== OrderStatus::PENDING) {
+            return false;
         }
 
         $this->status = OrderStatus::CONFIRMED;
