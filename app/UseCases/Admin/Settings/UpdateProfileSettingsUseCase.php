@@ -2,11 +2,16 @@
 
 namespace App\UseCases\Admin\Settings;
 
+use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Models\ShopSetting;
 use App\UseCases\Admin\Settings\Data\UpdateProfileSettingsInput;
 
 class UpdateProfileSettingsUseCase
 {
+    public function __construct(
+        private ShopSettingRepository $shopSettingRepository,
+    ) {}
+
     public function handle(UpdateProfileSettingsInput $input): void
     {
         $smaregi = [];
@@ -32,7 +37,7 @@ class UpdateProfileSettingsUseCase
             }
         }
 
-        ShopSetting::setProfileFieldSettings([
+        $this->shopSettingRepository->setProfileFieldSettings([
             'smaregi_fields' => $smaregi,
             'custom_fields' => $custom,
         ], $input->projectId);

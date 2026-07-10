@@ -3,8 +3,8 @@
 namespace App\UseCases\Admin\Auth;
 
 use App\Services\Admin\AdminAuthService;
+use App\UseCases\Admin\Auth\Data\AdminRedirectResult;
 use App\UseCases\Admin\Auth\Data\SystemAdminLoginInput;
-use Illuminate\Http\RedirectResponse;
 
 class SystemAdminLoginUseCase
 {
@@ -12,7 +12,7 @@ class SystemAdminLoginUseCase
         private AdminAuthService $authService,
     ) {}
 
-    public function handle(SystemAdminLoginInput $input): RedirectResponse
+    public function handle(SystemAdminLoginInput $input): AdminRedirectResult
     {
         return $this->authService->loginSystemAdmin($input);
     }
