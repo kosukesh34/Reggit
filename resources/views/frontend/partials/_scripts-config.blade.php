@@ -1,3 +1,10 @@
+@php
+    $frontendHeaderConfig = [
+        'title' => $frontendHeaderText ?? $projectName ?? config('app.name'),
+        'logoUrl' => $frontendLogoUrl ?? null,
+        'friendAddUrl' => $lineFriendAddUrl ?? null,
+    ];
+@endphp
 <meta name="stripe-key" content="{{ env('STRIPE_KEY', '') }}">
 <script>
     window.__PROJECT_KEY__ = "{{ $projectKey ?? 'default' }}";
@@ -15,6 +22,9 @@
     window.__LIFF_TAB_LAYOUTS__ = @json($liffTabLayouts ?? []);
     window.__LIFF_TAB_SETTINGS__ = @json($liffTabSettings ?? []);
     window.__FEATURE_FLAGS__ = @json($featureFlags ?? []);
+    window.__FRONTEND_MENU__ = @json(array_values($filteredMenu ?? []));
+    window.__FRONTEND_HEADER__ = @json($frontendHeaderConfig);
+    window.__IS_DESIGNER_EMBED_PREVIEW__ = {{ ($isDesignerEmbedPreview ?? false) ? 'true' : 'false' }};
     window.__DESIGNER_PREVIEW_MEMBER_PAYLOAD__ = @json($designerPreviewMemberPayload ?? null);
     window.__INLINE_LOCAL_ASSETS__ = {{ $useInlineLocalAssets ? 'true' : 'false' }};
     window.__clientDebugLog = function (eventName, payloadObj) {
