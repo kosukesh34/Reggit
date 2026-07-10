@@ -2,7 +2,7 @@
 
 namespace App\UseCases\Admin\Settings;
 
-use App\Models\ShopSetting;
+use App\Services\Admin\LiffSettingsService;
 use App\UseCases\Admin\Settings\Data\SaveLiffScreenInput;
 use App\UseCases\Admin\Settings\Data\SaveLiffScreenOutput;
 use App\Util\StrHelper;
@@ -10,13 +10,17 @@ use Illuminate\Support\Str;
 
 class SaveLiffScreenUseCase
 {
+    public function __construct(
+        private LiffSettingsService $liffSettingsService,
+    ) {}
+
     /**
      * 現在の画面を保存（上限10件・超えたら古いものを削除）。実行結果を Output で返す。
      */
     public function handle(int $projectId, SaveLiffScreenInput $input): SaveLiffScreenOutput
     {
         $trimmedName = trim($input->name);
-        $screens = ShopSetting::getLiffSavedScreens($projectId);
+        $screens = $this->liffSettingsService->getSavedScreens($projectId);
 
         if (StrHelper::isEmptyStringOrNull($trimmedName)) {
             return new SaveLiffScreenOutput(false, count($screens));
@@ -34,8 +38,8 @@ class SaveLiffScreenUseCase
             'created_at' => now()->toIso8601String(),
         ];
         array_unshift($screens, $newItem);
-        $screens = array_slice($screens, 0, ShopSetting::LIFF_SAVED_SCREENS_MAX);
-        ShopSetting::setLiffSavedScreens($screens, $projectId);
+        $screens = array_slice($screens, 0, $this->liffSettingsService->getSavedScreensMax());
+        $this->liffSettingsService->setSavedScreens($screens, $projectId);
 
         return new SaveLiffScreenOutput(true, count($screens));
     }

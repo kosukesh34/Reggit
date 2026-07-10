@@ -3,6 +3,9 @@
 namespace App\Http\Controllers\Api\V1\Queue;
 
 use App\Http\Controllers\Api\V1\BaseApiController;
+use App\Services\UserService;
+use App\Support\QueueRequestContext;
+use App\UseCases\Queue\Data\QueueStoreInput;
 use App\UseCases\Queue\QueueStoreUseCase;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
@@ -11,7 +14,8 @@ use Illuminate\Http\Request;
 class QueueStoreController extends BaseApiController
 {
     public function __construct(
-        private QueueStoreUseCase $storeUseCase
+        private QueueStoreUseCase $storeUseCase,
+        private UserService $userService,
     ) {}
 
     public function __invoke(Request $request)
@@ -23,12 +27,14 @@ class QueueStoreController extends BaseApiController
         ]);
 
         try {
-            $dto = $this->storeUseCase->handle(
-                $request,
+            $user = $this->userService->getOrCreateUser($request);
+            $dto = $this->storeUseCase->handle(new QueueStoreInput(
+                $user,
                 $validated['party_size'],
                 $validated['guest_name'] ?? null,
-                $validated['guest_phone'] ?? null
-            );
+                $validated['guest_phone'] ?? null,
+                QueueRequestContext::lineUserId($request) ?: null,
+            ));
 
             return $this->success([
                 'queue_entry' => $dto->toArray(),

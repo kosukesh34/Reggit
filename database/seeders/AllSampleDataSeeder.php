@@ -2,6 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Domain\Member\Repositories\MemberRepository;
+
 use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\ReservationStatus;
@@ -213,7 +215,13 @@ class AllSampleDataSeeder extends Seeder
                 ]
             );
             if ($i % 3 === 0 && $member->getTotalPointsFromTransactions() === 0) {
-                $member->addPoints(rand(50, 500), 'サンプル初期ポイント');
+                $points = rand(50, 500);
+                $repo = app(MemberRepository::class);
+                $aggregate = $repo->findById((int) $member->id, (int) $member->project_id);
+                if ($aggregate !== null) {
+                    $aggregate->earnPoints($points, 'サンプル初期ポイント', null, now()->addYear());
+                    $repo->save($aggregate);
+                }
             }
         }
         $this->command->info('会員・ユーザー '.self::MEMBER_COUNT.' 件を投入しました');

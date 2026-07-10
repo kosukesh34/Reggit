@@ -1,0 +1,117 @@
+<?php
+
+namespace Tests\Unit\Domain\Order;
+
+use App\Domain\Order\Aggregates\Order;
+use App\Domain\Order\ValueObjects\OrderId;
+use App\Enums\OrderStatus;
+use App\Enums\OrderType;
+use App\Enums\PaymentMethod;
+use Tests\TestCase;
+
+class OrderAggregateTest extends TestCase
+{
+    private function createOrder(
+        string $status = OrderStatus::PENDING,
+        string $orderType = OrderType::MOBILE,
+        string $paymentMethod = PaymentMethod::STRIPE,
+    ): Order {
+        return new Order(
+            new OrderId(1),
+            1,
+            10,
+            $orderType,
+            $paymentMethod,
+            $status,
+            0,
+            0,
+        );
+    }
+
+    public function test_confirmStripePayment_モバイル注文を確定できること(): void
+    {
+        $order = $this->createOrder();
+
+        $didConfirm = $order->confirmStripePayment();
+
+        $this->assertTrue($didConfirm);
+        $this->assertSame(OrderStatus::CONFIRMED, $order->status());
+        $this->assertSame(PaymentMethod::STRIPE, $order->paymentMethod());
+    }
+
+    public function test_confirmStripePayment_確定済みは冪等であること(): void
+    {
+        $order = $this->createOrder(OrderStatus::CONFIRMED);
+
+        $didConfirm = $order->confirmStripePayment();
+
+        $this->assertFalse($didConfirm);
+        $this->assertSame(OrderStatus::CONFIRMED, $order->status());
+    }
+
+    public function test_confirmStripePayment_店内注文は拒否されること(): void
+    {
+        $order = $this->createOrder(
+            OrderStatus::PENDING,
+            OrderType::IN_STORE,
+            PaymentMethod::CASH,
+        );
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('店内注文は決済確認の対象外です');
+
+        $order->confirmStripePayment();
+    }
+
+    public function test_confirmStripePayment_キャンセル済みは拒否されること(): void
+    {
+        $order = $this->createOrder(OrderStatus::CANCELLED);
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('キャンセル済みの注文は決済確認できません');
+
+        $order->confirmStripePayment();
+    }
+
+    public function test_cancelUnpaidStripeMobile_未決済注文をキャンセルできること(): void
+    {
+        $order = $this->createOrder();
+
+        $order->cancelUnpaidStripeMobile();
+
+        $this->assertSame(OrderStatus::CANCELLED, $order->status());
+    }
+
+    public function test_cancelUnpaidStripeMobile_キャンセル済みは冪等であること(): void
+    {
+        $order = $this->createOrder(OrderStatus::CANCELLED);
+
+        $order->cancelUnpaidStripeMobile();
+
+        $this->assertSame(OrderStatus::CANCELLED, $order->status());
+    }
+
+    public function test_cancelUnpaidStripeMobile_決済済みは拒否されること(): void
+    {
+        $order = $this->createOrder(OrderStatus::CONFIRMED);
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('決済済みまたは進行中の注文はキャンセルできません');
+
+        $order->cancelUnpaidStripeMobile();
+    }
+
+    public function test_cancelUnpaidStripeMobile_店内注文は拒否されること(): void
+    {
+        $order = $this->createOrder(
+            OrderStatus::PENDING,
+            OrderType::IN_STORE,
+            PaymentMethod::CASH,
+        );
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('この注文は未決済キャンセル対象ではありません');
+
+        $order->cancelUnpaidStripeMobile();
+    }
+}

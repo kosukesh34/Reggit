@@ -232,7 +232,6 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'bind.admin.project', '
         Route::get('/settings/ranks', [SettingsRanksController::class, 'index'])->name('admin.settings.ranks')->middleware('admin.permission:settings.view');
         Route::post('/settings/ranks', [SettingsRanksController::class, 'update'])->name('admin.settings.ranks.update')->middleware('admin.permission:settings.manage');
         Route::get('/settings/smaregi', [SmaregiController::class, 'index'])->name('admin.settings.smaregi')->middleware('admin.permission:settings.view');
-        Route::get('/settings/smaregi/pos-data', [SmaregiController::class, 'posData'])->name('admin.settings.smaregi.pos-data')->middleware('admin.permission:settings.view');
         Route::post('/settings/smaregi', [SmaregiController::class, 'update'])->name('admin.settings.smaregi.update')->middleware('admin.permission:settings.manage');
         Route::post('/settings/smaregi/sync-products', [SmaregiController::class, 'syncProducts'])->name('admin.settings.smaregi.sync-products')->middleware('admin.permission:settings.manage');
         Route::post('/settings/smaregi/full-sync-products', [SmaregiController::class, 'fullSyncProducts'])->name('admin.settings.smaregi.full-sync-products')->middleware('admin.permission:settings.manage');

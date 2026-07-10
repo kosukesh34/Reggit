@@ -106,33 +106,9 @@ class Member extends Model
      */
     public function syncPointsLedger(): void
     {
-        $columnPoints = max(0, (int) $this->points);
-        $ledgerPoints = $this->getTotalPointsFromTransactions();
-
-        if ($ledgerPoints === $columnPoints) {
-            return;
-        }
-
-        if ($ledgerPoints === 0 && $columnPoints > 0) {
-            $this->addPoints($columnPoints, self::POINTS_LEDGER_BACKFILL_DESCRIPTION);
-
-            return;
-        }
-
-        if ($columnPoints > $ledgerPoints) {
-            // 台帳が正でカラムだけ古い場合は加算せずキャッシュを合わせる
-            if ($ledgerPoints > 0) {
-                $this->recalcPointsFromTransactions();
-
-                return;
-            }
-
-            $this->addPoints($columnPoints - $ledgerPoints, self::POINTS_LEDGER_BACKFILL_DESCRIPTION);
-
-            return;
-        }
-
-        $this->recalcPointsFromTransactions();
+        app(\App\Domain\Member\Repositories\MemberRepository::class)
+            ->syncPointsLedger((int) $this->id, (int) $this->project_id);
+        $this->refresh();
     }
 
     /** 表示・判定用。台帳とカラムがずれていれば整合してから返す */
@@ -141,51 +117,11 @@ class Member extends Model
         $ledgerPoints = $this->getTotalPointsFromTransactions();
         if ((int) $this->points !== $ledgerPoints) {
             $this->syncPointsLedger();
-            $this->refresh();
 
             return $this->getTotalPointsFromTransactions();
         }
 
         return $ledgerPoints;
-    }
-
-    public function addPoints(int $points, ?string $description = null, ?int $orderId = null): void
-    {
-        if ($points <= 0) {
-            return;
-        }
-        $expiresAt = now()->addDays(ShopSetting::getPointsValidDays($this->project_id));
-        PointTransaction::create([
-            'project_id' => $this->project_id,
-            'member_id' => $this->id,
-            'type' => 'earned',
-            'points' => $points,
-            'description' => $description,
-            'order_id' => $orderId,
-            'expires_at' => $expiresAt,
-        ]);
-        $this->recalcPointsFromTransactions();
-    }
-
-    public function usePoints(int $points, ?string $description = null, ?int $orderId = null): void
-    {
-        if ($points <= 0) {
-            return;
-        }
-        $available = $this->getTotalPointsFromTransactions();
-        if ($available <= 0) {
-            return;
-        }
-        $points = min($points, $available);
-        PointTransaction::create([
-            'project_id' => $this->project_id,
-            'member_id' => $this->id,
-            'type' => 'used',
-            'points' => -abs($points),
-            'description' => $description,
-            'order_id' => $orderId,
-        ]);
-        $this->recalcPointsFromTransactions();
     }
 
     public function recalcPointsFromTransactions(): void

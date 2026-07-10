@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\LoginRequest;
+use App\Http\Support\AdminAuthInputFactory;
 use App\Models\AdminUser;
 use App\UseCases\Admin\Auth\GetAdminDashboardRedirectUseCase;
 use App\UseCases\Admin\Auth\SystemAdminLoginUseCase;
@@ -11,17 +12,11 @@ use Illuminate\Support\Facades\Auth;
 
 class SystemAdminLoginController extends Controller
 {
-    private GetAdminDashboardRedirectUseCase $getDashboardRedirectUseCase;
-
-    private SystemAdminLoginUseCase $systemAdminLoginUseCase;
-
     public function __construct(
-        GetAdminDashboardRedirectUseCase $getDashboardRedirectUseCase,
-        SystemAdminLoginUseCase $systemAdminLoginUseCase
-    ) {
-        $this->getDashboardRedirectUseCase = $getDashboardRedirectUseCase;
-        $this->systemAdminLoginUseCase = $systemAdminLoginUseCase;
-    }
+        private GetAdminDashboardRedirectUseCase $getDashboardRedirectUseCase,
+        private SystemAdminLoginUseCase $systemAdminLoginUseCase,
+        private AdminAuthInputFactory $inputFactory,
+    ) {}
 
     public function show()
     {
@@ -42,6 +37,8 @@ class SystemAdminLoginController extends Controller
 
     public function login(LoginRequest $request)
     {
-        return $this->systemAdminLoginUseCase->handle($request);
+        return $this->systemAdminLoginUseCase->handle(
+            $this->inputFactory->systemAdminLogin($request),
+        );
     }
 }

@@ -2,13 +2,20 @@
 
 namespace App\Services\Admin;
 
+use App\Domain\Reservation\Repositories\ReservationRepository;
+use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Enums\ReservationStatus;
 use App\Models\Reservation;
-use App\Models\ShopSetting;
+use App\Util\AdminContext;
 use Carbon\Carbon;
 
 class ReservationAdminService
 {
+    public function __construct(
+        private ReservationRepository $reservationRepository,
+        private ShopSettingRepository $shopSettingRepository,
+    ) {}
+
     public function getReservationIndexPayload(?string $status, ?string $selectedDate, int $projectId, int $perPage = 20): array
     {
         $query = Reservation::with('user')->orderByDesc('reserved_at');
@@ -25,13 +32,13 @@ class ReservationAdminService
         $dateStatusCounts = null;
         $timeSlotSummary = [];
         $selectedDateLabel = null;
-        $reservationCapacity = ShopSetting::getReservationCapacityPerSlot($projectId);
+        $reservationCapacity = $this->shopSettingRepository->getReservationCapacityPerSlot($projectId);
 
         if ($selectedDate !== null && $selectedDate !== '') {
             $date = Carbon::parse($selectedDate);
             $selectedDateLabel = $date->format('Y年m月d日');
             $dateStatusCounts = $this->getStatusCounts($selectedDate);
-            $timeSlots = ShopSetting::getReservationTimeSlots($projectId);
+            $timeSlots = $this->shopSettingRepository->getReservationTimeSlots($projectId);
             foreach ($timeSlots as $slot) {
                 $slotStart = Carbon::parse($date->format('Y-m-d').' '.$slot);
                 $slotEnd = $slotStart->copy()->addHour();
@@ -79,12 +86,26 @@ class ReservationAdminService
 
     public function updateStatus(int $id, string $status): void
     {
-        Reservation::whereKey($id)->update(['status' => $status]);
+        $projectId = (int) (AdminContext::getCurrentProjectId() ?? 1);
+        $aggregate = $this->reservationRepository->findById($id, $projectId);
+        if ($aggregate === null) {
+            return;
+        }
+
+        $aggregate->applyAdminStatus($status);
+        $this->reservationRepository->save($aggregate);
     }
 
     public function complete(int $id): void
     {
-        Reservation::whereKey($id)->update(['status' => ReservationStatus::COMPLETED]);
+        $projectId = (int) (AdminContext::getCurrentProjectId() ?? 1);
+        $aggregate = $this->reservationRepository->findById($id, $projectId);
+        if ($aggregate === null) {
+            return;
+        }
+
+        $aggregate->complete();
+        $this->reservationRepository->save($aggregate);
     }
 
     public function store(array $data, int $projectId): Reservation

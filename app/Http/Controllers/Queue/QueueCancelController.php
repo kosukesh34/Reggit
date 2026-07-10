@@ -18,7 +18,10 @@ class QueueCancelController extends Controller
     public function __invoke(Request $request, int $id)
     {
         try {
-            $entry = $this->cancelUseCase->handle($id);
+            $entry = $this->cancelUseCase->handle(
+                $id,
+                (int) (AdminContext::getCurrentProjectId() ?? 1),
+            );
             if ($entry === null) {
                 return response()->json(['error' => '対象が見つかりません。'], 404);
             }

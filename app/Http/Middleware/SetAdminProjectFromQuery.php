@@ -2,7 +2,7 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\Project;
+use App\Repositories\Contracts\ProjectRepository;
 use App\Util\StrHelper;
 use Closure;
 use Illuminate\Http\Request;
@@ -10,6 +10,10 @@ use Symfony\Component\HttpFoundation\Response;
 
 class SetAdminProjectFromQuery
 {
+    public function __construct(
+        private ProjectRepository $projectRepository,
+    ) {}
+
     public function handle(Request $request, Closure $next): Response
     {
         $projectKey = $request->query('project_key');
@@ -17,7 +21,7 @@ class SetAdminProjectFromQuery
             return $next($request);
         }
 
-        $project = Project::where('project_key', $projectKey)->where('is_active', true)->first();
+        $project = $this->projectRepository->findActiveByProjectKey($projectKey);
         if ($project !== null) {
             session(['admin_project_id' => $project->id]);
         }

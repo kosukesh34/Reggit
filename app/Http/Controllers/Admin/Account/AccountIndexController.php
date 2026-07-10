@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Admin\Account;
 use App\Http\Controllers\Controller;
 use App\Models\AdminUser;
 use App\UseCases\Admin\Account\AccountIndexUseCase;
-use App\UseCases\Admin\RouteContextResolver;
+use App\Http\Support\RouteContextResolver;
 use Illuminate\Http\Request;
 
 class AccountIndexController extends Controller
@@ -21,7 +21,7 @@ class AccountIndexController extends Controller
         $me = $request->user('admin');
 
         $result = $this->indexUseCase->handle($me);
-        $routeContext = $this->routeContextResolver->resolve($request);
+        $routeContext = $this->routeContextResolver->resolveFromRequest($request);
 
         return view('admin.accounts.index', [
             'adminUsers' => $result['adminUsers'],
