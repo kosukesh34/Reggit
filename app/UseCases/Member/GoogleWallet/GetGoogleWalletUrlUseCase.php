@@ -2,6 +2,7 @@
 
 namespace App\UseCases\Member\GoogleWallet;
 
+use App\Http\Support\RequestOrigin;
 use App\Services\GoogleWalletPassService;
 use App\Services\MemberService;
 use App\UseCases\Member\GoogleWallet\Data\GetGoogleWalletUrlInput;
@@ -54,7 +55,7 @@ class GetGoogleWalletUrlUseCase
                 'project_id' => $input->projectId,
             ]);
 
-            return GetGoogleWalletUrlOutput::success($this->wrapClientUrl($url, $input->projectKey));
+            return GetGoogleWalletUrlOutput::success($this->wrapClientUrl($url, $input->projectKey, $input->requestOrigin));
         }
 
         $sessionResult = $this->resolveUrlBySession($input);
@@ -67,7 +68,7 @@ class GetGoogleWalletUrlUseCase
                 'project_id' => $input->projectId,
             ]);
 
-            return GetGoogleWalletUrlOutput::success($this->wrapClientUrl($sessionResult, $input->projectKey));
+            return GetGoogleWalletUrlOutput::success($this->wrapClientUrl($sessionResult, $input->projectKey, $input->requestOrigin));
         }
 
         $this->logUrlFailed($input);
@@ -168,8 +169,10 @@ class GetGoogleWalletUrlUseCase
         return $url;
     }
 
-    private function wrapClientUrl(string $saveUrl, string $projectKey): string
+    private function wrapClientUrl(string $saveUrl, string $projectKey, string $requestOrigin): string
     {
-        return $this->saveUrlIssuer->wrapForClient($saveUrl, $projectKey);
+        $origin = $requestOrigin !== '' ? $requestOrigin : RequestOrigin::fromConfig();
+
+        return $this->saveUrlIssuer->wrapForClient($saveUrl, $projectKey, $origin);
     }
 }

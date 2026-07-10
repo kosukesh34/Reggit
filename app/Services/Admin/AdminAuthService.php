@@ -3,111 +3,113 @@
 namespace App\Services\Admin;
 
 use App\Models\AdminAuditLog;
-use App\Models\AdminUser;
 use App\Models\Project;
-use Illuminate\Http\Request;
+use App\Repositories\Contracts\AdminUserRepository;
+use App\Repositories\Contracts\ProjectRepository;
+use App\UseCases\Admin\Auth\Data\AdminAuthAuditContext;
+use App\UseCases\Admin\Auth\Data\AdminLoginInput;
+use App\UseCases\Admin\Auth\Data\AdminLogoutInput;
+use App\UseCases\Admin\Auth\Data\AdminRedirectResult;
+use App\UseCases\Admin\Auth\Data\SystemAdminLoginInput;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Session;
 use Illuminate\Validation\ValidationException;
 
 class AdminAuthService
 {
-    public function getSystemAdminDashboardRedirect()
+    public function __construct(
+        private ProjectRepository $projectRepository,
+        private AdminUserRepository $adminUserRepository,
+    ) {}
+
+    public function getSystemAdminDashboardRedirect(): AdminRedirectResult
     {
-        return redirect()->route('system-admin.projects.index');
+        return new AdminRedirectResult('system-admin.projects.index');
     }
 
-    public function getAdminDashboardRedirect()
+    public function getAdminDashboardRedirect(): AdminRedirectResult
     {
         $admin = Auth::guard('admin')->user();
         if ($admin->isSystemAdmin()) {
             return $this->getSystemAdminDashboardRedirect();
         }
-        $first = Project::whereIn('id', $admin->getAllowedProjectIds())
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->first();
+        $first = $this->projectRepository->findFirstActiveByIds($admin->getAllowedProjectIds());
         if ($first !== null) {
-            return redirect()->route('admin.dashboard', ['project_key' => $first->project_key]);
+            return new AdminRedirectResult('admin.dashboard', ['project_key' => $first->project_key]);
         }
 
-        return redirect()->route('admin.login');
+        return new AdminRedirectResult('admin.login');
     }
 
     /**
      * 店舗管理ログイン。
      *
-     * @param  string|null  $projectKey  プロジェクト指定ログイン（/admin/{project_key}/login）の場合は指定。システム管理者はこの場合のみここからログイン可能。
+     * プロジェクト指定ログイン（/admin/{project_key}/login）の場合は projectKey を指定。
+     * システム管理者はプロジェクト指定時のみここからログイン可能。
      */
-    public function loginAdmin(Request $request, ?string $projectKey = null)
+    public function loginAdmin(AdminLoginInput $input): AdminRedirectResult
     {
-        $projectKey = $projectKey !== null ? trim($projectKey) : null;
-        $projectKey = $projectKey === '' ? null : $projectKey;
-
         Log::info('[AdminLogin] attempt', [
-            'path' => $request->path(),
-            'project_key' => $projectKey,
-            'login_id' => $request->input('login_id'),
+            'path' => $input->requestPath,
+            'project_key' => $input->projectKey,
+            'login_id' => $input->loginId,
         ]);
 
-        $user = AdminUser::where('login_id', $request->login_id)->first()
-            ?? AdminUser::where('email', $request->login_id)->first();
+        $user = $this->adminUserRepository->findByLoginIdOrEmail($input->loginId);
         if ($user === null) {
-            Log::warning('[AdminLogin] user not found', ['login_id' => $request->input('login_id')]);
+            Log::warning('[AdminLogin] user not found', ['login_id' => $input->loginId]);
             throw ValidationException::withMessages([
                 'login_id' => ['IDまたはパスワードが正しくありません。'],
             ]);
         }
-        if (Hash::check($request->password, $user->password) === false) {
-            Log::warning('[AdminLogin] password mismatch', ['login_id' => $request->input('login_id')]);
+        if (Hash::check($input->password, $user->password) === false) {
+            Log::warning('[AdminLogin] password mismatch', ['login_id' => $input->loginId]);
             throw ValidationException::withMessages([
                 'login_id' => ['IDまたはパスワードが正しくありません。'],
             ]);
         }
-        // プロジェクト指定時: 存在・有効確認（システム管理者は全プロジェクトにログイン可）
-        if ($projectKey !== null) {
-            $project = Project::where('project_key', $projectKey)->where('is_active', true)->first();
-            if ($project === null && $projectKey === 'default') {
+
+        if ($input->projectKey !== null) {
+            $project = $this->projectRepository->findActiveByProjectKey($input->projectKey);
+            if ($project === null && $input->projectKey === 'default') {
                 $project = Project::firstOrCreate(
                     ['project_key' => 'default'],
                     ['name' => 'デフォルト店舗', 'description' => 'デモ用プロジェクト', 'is_active' => true]
                 );
             }
             if ($project === null) {
-                Log::warning('[AdminLogin] project not found', ['project_key' => $projectKey]);
+                Log::warning('[AdminLogin] project not found', ['project_key' => $input->projectKey]);
                 throw ValidationException::withMessages([
                     'login_id' => ['指定されたプロジェクトが見つかりません。'],
                 ]);
             }
         }
 
-        Log::info('[AdminLogin] success', ['login_id' => $user->login_id, 'project_key' => $projectKey]);
+        Log::info('[AdminLogin] success', ['login_id' => $user->login_id, 'project_key' => $input->projectKey]);
 
-        $remember = $request->boolean('remember');
-        Auth::guard('admin')->login($user, $remember);
-        $request->session()->regenerate();
-        $request->session()->put('admin_login_via', 'admin');
+        Auth::guard('admin')->login($user, $input->remember);
+        Session::regenerate();
+        Session::put('admin_login_via', 'admin');
 
-        $this->writeLoginAuditLog($request, $user->id, 'login_success', [
-            'login_id' => $request->login_id,
-            'remember' => $remember,
-            'project_key' => $projectKey,
+        $this->writeLoginAuditLog($input->auditContext, $user->id, 'login_success', [
+            'login_id' => $input->loginId,
+            'remember' => $input->remember,
+            'project_key' => $input->projectKey,
         ]);
 
-        // プロジェクト指定でログインした場合はそのプロジェクトのダッシュボードへ
-        if ($projectKey !== null && $projectKey !== '') {
-            return redirect()->route('admin.dashboard', ['project_key' => $projectKey]);
+        if ($input->projectKey !== null && $input->projectKey !== '') {
+            return new AdminRedirectResult('admin.dashboard', ['project_key' => $input->projectKey]);
         }
 
         return $this->getAdminDashboardRedirect();
     }
 
-    public function loginSystemAdmin(Request $request)
+    public function loginSystemAdmin(SystemAdminLoginInput $input): AdminRedirectResult
     {
-        $user = AdminUser::where('login_id', $request->login_id)->first()
-            ?? AdminUser::where('email', $request->login_id)->first();
-        if ($user === null || Hash::check($request->password, $user->password) === false) {
+        $user = $this->adminUserRepository->findByLoginIdOrEmail($input->loginId);
+        if ($user === null || Hash::check($input->password, $user->password) === false) {
             throw ValidationException::withMessages([
                 'login_id' => ['IDまたはパスワードが正しくありません。'],
             ]);
@@ -118,49 +120,48 @@ class AdminAuthService
             ]);
         }
 
-        $remember = $request->boolean('remember');
-        Auth::guard('admin')->login($user, $remember);
-        $request->session()->regenerate();
-        $request->session()->put('admin_login_via', 'system-admin');
+        Auth::guard('admin')->login($user, $input->remember);
+        Session::regenerate();
+        Session::put('admin_login_via', 'system-admin');
 
-        $this->writeLoginAuditLog($request, $user->id, 'login_success', [
-            'login_id' => $request->login_id,
-            'remember' => $remember,
+        $this->writeLoginAuditLog($input->auditContext, $user->id, 'login_success', [
+            'login_id' => $input->loginId,
+            'remember' => $input->remember,
         ]);
 
         return $this->getSystemAdminDashboardRedirect();
     }
 
-    public function logout(Request $request)
+    public function logout(AdminLogoutInput $input): AdminRedirectResult
     {
-        $admin = $request->user('admin');
-        if ($admin !== null) {
-            $this->writeLoginAuditLog($request, $admin->id, 'logout', []);
+        if ($input->adminUserId !== null) {
+            $this->writeLoginAuditLog($input->auditContext, $input->adminUserId, 'logout', []);
         }
 
-        $isSystemAdminLogout = $request->routeIs('system-admin.logout');
         Auth::guard('admin')->logout();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+        Session::invalidate();
+        Session::regenerateToken();
 
-        return $isSystemAdminLogout
-            ? redirect()->route('system-admin.login')
-            : redirect()->route('admin.login');
+        return $input->isSystemAdminLogout
+            ? new AdminRedirectResult('system-admin.login')
+            : new AdminRedirectResult('admin.login');
     }
 
-    private function writeLoginAuditLog(Request $request, int $adminUserId, string $event, array $payload): void
+    /**
+     * @param  array<string, string|bool|null>  $payload
+     */
+    private function writeLoginAuditLog(AdminAuthAuditContext $context, int $adminUserId, string $event, array $payload): void
     {
-        $route = $request->route();
         $payload['event'] = $event;
 
         AdminAuditLog::create([
             'admin_user_id' => $adminUserId,
             'project_id' => null,
-            'route_name' => $route ? $route->getName() : null,
-            'method' => $request->getMethod(),
-            'url' => strlen($request->fullUrl()) > 500 ? substr($request->fullUrl(), 0, 497).'...' : $request->fullUrl(),
-            'ip' => $request->ip(),
-            'user_agent' => substr((string) $request->userAgent(), 0, 500),
+            'route_name' => $context->routeName,
+            'method' => $context->method,
+            'url' => $context->url,
+            'ip' => $context->ip,
+            'user_agent' => $context->userAgent,
             'payload' => $payload,
         ]);
     }

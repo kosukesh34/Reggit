@@ -2,12 +2,16 @@
 
 namespace App\UseCases\Admin\Settings;
 
-use App\Models\ShopSetting;
+use App\Services\SettingsService;
 
 class GetProfileSettingsUseCase
 {
+    public function __construct(
+        private SettingsService $settingsService,
+    ) {}
+
     public function handle(int $projectId): array
     {
-        return ShopSetting::getProfileFieldSettings($projectId);
+        return $this->settingsService->getProfileSettings($projectId);
     }
 }

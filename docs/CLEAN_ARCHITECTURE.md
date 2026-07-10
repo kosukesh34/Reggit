@@ -159,5 +159,126 @@ app/
 ### 6.3 今後の進め方
 
 - **新規 UseCase**: 必ず **Input**（または明確なプリミティブ）で受け取り、**Request を渡さない**。
-- **既存の `handle(Request $request, ...)`**: リファクタや機能変更のタイミングで、上表を参考に **Input 化**を検討する。
+- **既存の `handle(Request $request, ...)`**: リファクタや機能変更のタイミングで Input 化を検討する（Admin Auth / Settings は Input 化済み）。
 - **UpdateLiffDesignerUseCase**: `UpdateLiffDesignerInput` を UseCase の引数で受け取り、Controller で Input を組み立てて渡す形に変更済み。
+
+## 7. Admin 薄ラッパー UseCase の方針
+
+Admin 配下には `handle()` が Service や Model に 1 行委譲するだけの UseCase が多い。これは **意図的な設計** であり、削除して Controller から Service を直叩きしない。
+
+### 7.1 三つのパターン
+
+| パターン | 例 | ロジックの置き場 | いつ使うか |
+|---------|-----|----------------|-----------|
+| **A. UseCase にアプリケーションロジック** | `AccountStoreUseCase`, `AccountIndexUseCase` | UseCase 内（Model 操作・権限・sync） | 横断的な管理画面操作で Service 化していない領域 |
+| **B. UseCase → *AdminService** | `AdminProductStoreUseCase`, `AdminOrderCompleteUseCase` | `ProductAdminService` 等 | 管理画面 CRUD・状態変更を Service に集約済みのドメイン |
+| **C. UseCase → SettingsService 等** | `GetMenuSettingsUseCase`, `UpdateMenuSettingsUseCase` | `SettingsService` | 店舗設定の getter/updater |
+
+**参照実装**
+
+- パターン A: `app/UseCases/Admin/Account/`
+- パターン B: `app/UseCases/Admin/Product/`, `Order/`, `Coupon/`
+- パターン C: `app/UseCases/Admin/Settings/`（`SettingsService` 委譲分）
+
+### 7.2 薄ラッパーを維持する理由
+
+1. **レイヤー規約の一貫性** — `Controller → UseCase → Service` を崩さない
+2. **テスト境界** — Feature テストは Controller 経由、Unit テストは UseCase / Service を差し替え可能
+3. **可読性** — 1 エンドポイント = 1 UseCase で意図が名前から分かる
+
+### 7.3 やらないこと
+
+- 薄ラッパーを削除して **Controller → Service 直呼び** にする
+- 複数エンドポイントを無理に **1 つのファサード UseCase** にまとめる（Settings getter 群の統合など）
+- **UseCase から UseCase を呼ぶ**（複数操作は Service に寄せる）
+
+### 7.4 Settings 系の追加ルール
+
+- `ShopSetting` への読み書きは **`SettingsService` 経由** に揃える（薄い getter/updater は Service に委譲）
+- **View 組み立て**や **複数データソースの結合**は UseCase に残す（例: `GetBasicSettingsUseCase` が `SettingsService` + `ShopSetting::getFeatureFlags` を結合）
+- **入力の正規化・バリデーション後の変換**は UseCase に残す（例: `UpdateProfileSettingsUseCase`）
+
+### 7.5 新規 Admin 機能を追加するとき
+
+1. 既存ドメインに `*AdminService` があれば **パターン B**
+2. 店舗設定の変更なら **パターン C**（`SettingsService` にメソッド追加 → 薄い UseCase）
+3. 上記に当てはまらず横断的な管理操作なら **パターン A**（Account 系を参考に UseCase 内で完結）
+
+## 8. Repository 層の方針
+
+永続化クエリを Eloquent から切り出すため、段階的に Repository を導入する。
+
+### 8.1 ディレクトリ構成
+
+```
+app/Repositories/
+  Contracts/          # インターフェース（例: ProjectRepository）
+  Eloquent/           # Eloquent 実装（例: EloquentProjectRepository）
+```
+
+`AppServiceProvider::register()` で Contract → Eloquent 実装を `bind` する。
+
+### 8.2 いつ Repository を挟むか
+
+| 導入する | 導入しない（当面） |
+|---------|-------------------|
+| 複数 Service / UseCase / Middleware から同じクエリが重複する | 1 箇所だけの単発クエリ |
+| テストで永続化を差し替えたい | Account 系のように UseCase 内 Model 操作が明確な領域 |
+| プロジェクト解決・ユーザー解決など横断的な読み取り | View Composer / Seeder / Artisan Command（インフラ寄り） |
+
+### 8.3 依存の向き
+
+```
+UseCase → Service → Repository → Eloquent Model
+UseCase → Repository → Eloquent Model   （Service が不要な読み取りのみの場合も可）
+```
+
+- Repository は **UseCase / Service** から利用する。Controller から直接呼ばない。
+- Repository は UseCase に依存しない。
+- 戻り値は原則 **Eloquent Model**（本プロジェクトはフル DDD の Entity 分離は未導入）。
+
+### 8.4 導入済み
+
+| Repository | 主な利用元 |
+|------------|-----------|
+| `ProjectRepository` | `AppConfigService`, `AdminAuthService`, `BindProjectFromRequest`, `BindAdminProject`, `SetAdminProjectFromQuery` |
+| `AdminUserRepository` | `AdminAuthService` |
+| `UserDeviceRepository` | `DeviceService`, `GetDeviceSessionUseCase`, `UserService` |
+| `UserRepository` | `UserService`, `GetDeviceSessionUseCase` |
+
+### 8.5 今後の候補
+
+- `ShopSetting` の静的 API が散在しているため、設定読み書き用 Repository（または SettingsService への集約継続）を検討
+- `*AdminService` 内の重複クエリから順次切り出し
+
+## 9. DDD 移行（段階導入）
+
+クリーンアーキテクチャ完了後、**Bounded Context 単位で Domain 層を導入**する。詳細は [DDD.md](./DDD.md) を参照。
+
+### 9.1 層の追加
+
+```
+app/Domain/              # 集約・値オブジェクト・Repository インターフェース
+app/Infrastructure/      # Eloquent 永続化・外部連携の実装
+```
+
+既存 `app/Repositories/` は横断的な読み取り用として当面併存する。
+
+### 9.2 現状
+
+主要 Bounded Context（Member / Order / Coupon / Reservation / Queue / Settings 読み取り）は Domain 導入済み。詳細・残置方針は [DDD.md](./DDD.md)。
+
+Eloquent `Member::addPoints()` / `usePoints()` は削除済み。ポイント操作は Domain 集約、台帳バックフィルは `MemberRepository::syncPointsLedger`。
+
+`DomainEventDispatcher` は `MulticastDomainEventDispatcher`（ログ + スマレジポイント同期リスナー）。
+
+### 9.3 ルール（DDD 追加）
+
+- Domain は Eloquent・`ShopSetting`・`Request` に依存しない
+- 設定値は UseCase が取得し、集約メソッドの引数として渡す
+- レガシー整合（`syncPointsLedger` 等）は Infrastructure の読み込み時に実行
+- Repository の戻り値は **Domain 集約**（新規領域）。既存 Repository は引き続き Eloquent Model 可
+
+### 9.4 Order パイロット
+
+`OrderCancelUnpaidUseCase` は `Domain\Order\Aggregates\Order` でキャンセル可否を判定し、ステータス遷移を行う。`PaymentConfirmUseCase` / `PaymentWebhookUseCase` は同集約の `confirmStripePayment()` で決済確定する。ポイント返却・在庫戻しは `OrderService` が Member 集約と連携して実行する。

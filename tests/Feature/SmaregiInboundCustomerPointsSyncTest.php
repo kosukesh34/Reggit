@@ -9,14 +9,17 @@ use App\Models\ShopSetting;
 use App\Models\User;
 use App\Services\MemberService;
 use App\Services\Smaregi\SmaregiCustomerPointsInboundSyncService;
+use App\Services\Smaregi\SmaregiPointsSyncService;
 use App\Util\AdminContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Http;
+use Tests\Support\GrantsMemberPoints;
 use Tests\TestCase;
 
 class SmaregiInboundCustomerPointsSyncTest extends TestCase
 {
+    use GrantsMemberPoints;
     use RefreshDatabase;
 
     private const CONTRACT_ID = 'test_contract_inbound';
@@ -68,7 +71,7 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
             'smaregi_customer_id' => '42',
             'points' => 0,
         ]);
-        $member->addPoints(40, '初期付与');
+        $this->grantMemberPoints($member, 40, '初期付与');
 
         $this->fakeSmaregiHttpSingleCustomer([
             'customerId' => '42',
@@ -82,6 +85,38 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
         $member->refresh();
         $this->assertSame(55, $member->points);
         $this->assertSame(55, $member->getTotalPointsFromTransactions());
+    }
+
+    public function test_outbound_pending中は_webhook取込でポイントを巻き戻さないこと(): void
+    {
+        $project = Project::factory()->create();
+        ShopSetting::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $member = Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+            'member_number' => 'M-PENDING',
+            'smaregi_customer_id' => '42',
+            'points' => 0,
+        ]);
+        $this->grantMemberPoints($member, 100, 'ローカル先行');
+
+        app(SmaregiPointsSyncService::class)
+            ->markOutboundPending((int) $member->id);
+
+        $this->fakeSmaregiHttpSingleCustomer([
+            'customerId' => '42',
+            'customerCode' => 'M-PENDING',
+            'point' => '40',
+        ]);
+
+        app(SmaregiCustomerPointsInboundSyncService::class)
+            ->syncByCustomerIds(self::CONTRACT_ID, ['42'], 'edited');
+
+        $member->refresh();
+        $this->assertSame(100, $member->points);
+        $this->assertSame(100, $member->getTotalPointsFromTransactions());
     }
 
     public function test_pos_customersの同期でスマレジの会員情報がローカルに反映されること(): void
@@ -138,6 +173,42 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
         $this->assertSame(20, $member->points);
     }
 
+    public function test_他プロジェクトの同一会員番号があってもcustomer_codeを反映できること(): void
+    {
+        $project = Project::factory()->create();
+        $otherProject = Project::factory()->create();
+        ShopSetting::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+
+        $otherUser = User::factory()->create(['project_id' => $otherProject->id]);
+        Member::factory()->create([
+            'project_id' => $otherProject->id,
+            'user_id' => $otherUser->id,
+            'member_number' => 'NEW001',
+            'smaregi_customer_id' => 'other-cust',
+            'points' => 0,
+        ]);
+
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $member = Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+            'member_number' => 'OLD001',
+            'smaregi_customer_id' => '43',
+            'points' => 0,
+        ]);
+
+        $this->fakeSmaregiHttpSingleCustomer([
+            'customerId' => '43',
+            'customerCode' => 'NEW001',
+            'point' => '0',
+        ]);
+
+        app(SmaregiCustomerPointsInboundSyncService::class)
+            ->syncByCustomerIds(self::CONTRACT_ID, ['43'], 'edited');
+
+        $this->assertSame('NEW001', $member->fresh()->member_number);
+    }
+
     public function test_members_me取得時にスマレジのポイントが取り込まれること(): void
     {
         config(['smaregi.inbound_sync_on_member_fetch' => true, 'smaregi.inbound_sync_on_member_fetch_ttl_seconds' => 0]);
@@ -153,7 +224,7 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
             'smaregi_customer_id' => '88',
             'points' => 0,
         ]);
-        $member->addPoints(10, '初期');
+        $this->grantMemberPoints($member, 10, '初期');
 
         $this->fakeSmaregiHttpSingleCustomer([
             'customerId' => '88',
@@ -230,7 +301,7 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
             'smaregi_customer_id' => '93',
             'points' => 0,
         ]);
-        $member->addPoints(0, '初期');
+        $this->grantMemberPoints($member, 0, '初期');
 
         $this->fakeSmaregiHttpSingleCustomer([
             'customerId' => '93',
@@ -291,7 +362,7 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
             'smaregi_customer_id' => '99',
             'points' => 0,
         ]);
-        $member->addPoints(10, '初期');
+        $this->grantMemberPoints($member, 10, '初期');
 
         $this->fakeSmaregiHttpSingleCustomer(['customerId' => '99', 'point' => '999']);
 
@@ -314,7 +385,7 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
             'smaregi_customer_id' => '100',
             'points' => 0,
         ]);
-        $member->addPoints(50, '初期');
+        $this->grantMemberPoints($member, 50, '初期');
         $member->refresh();
         $this->assertSame(50, $member->points);
 
@@ -333,9 +404,39 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
         $this->assertSame(0, $member->getTotalPointsFromTransactions());
     }
 
-    /**
-     * @param  array<string, string|int|float|bool|array|null>  $customerPayload
-     */
+    public function test_inboundは_sync_points_ledger後に差分計算すること(): void
+    {
+        $project = Project::factory()->create();
+        ShopSetting::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $member = Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+            'member_number' => 'M-LEDGER',
+            'smaregi_customer_id' => '42',
+            'points' => 100,
+        ]);
+        $this->assertSame(0, $member->getTotalPointsFromTransactions());
+
+        $this->fakeSmaregiHttpSingleCustomer([
+            'customerId' => '42',
+            'customerCode' => 'M-LEDGER',
+            'point' => '100',
+        ]);
+
+        app(SmaregiCustomerPointsInboundSyncService::class)
+            ->syncByCustomerIds(self::CONTRACT_ID, ['42'], 'edited');
+
+        $member->refresh();
+        $this->assertSame(100, $member->points);
+        $this->assertSame(100, $member->getTotalPointsFromTransactions());
+        $this->assertSame(
+            1,
+            $member->pointTransactions()->where('description', Member::POINTS_LEDGER_BACKFILL_DESCRIPTION)->count()
+        );
+    }
+
     /**
      * @param  array<string, string|int|float|bool|array|null>  $customerPayload
      */

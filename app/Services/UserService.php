@@ -3,7 +3,8 @@
 namespace App\Services;
 
 use App\Models\User;
-use App\Models\UserDevice;
+use App\Repositories\Contracts\UserDeviceRepository;
+use App\Repositories\Contracts\UserRepository;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
 use Illuminate\Http\Request;
@@ -12,6 +13,11 @@ use Illuminate\Support\Facades\Session;
 class UserService
 {
     private const SESSION_USER_ID_KEY_PREFIX = 'mobile_order_user_id';
+
+    public function __construct(
+        private UserDeviceRepository $userDeviceRepository,
+        private UserRepository $userRepository,
+    ) {}
 
     public function findUser(Request $request): ?User
     {
@@ -29,12 +35,9 @@ class UserService
         }
 
         if ($deviceIdentifier !== null) {
-            $device = UserDevice::where('project_id', $projectId)
-                ->where('device_identifier', $deviceIdentifier)
-                ->orderByDesc('last_used_at')
-                ->first();
+            $device = $this->userDeviceRepository->findLatestByProjectAndIdentifier($projectId, $deviceIdentifier);
             if ($device !== null) {
-                $deviceUser = User::where('id', $device->user_id)->where('project_id', $projectId)->first();
+                $deviceUser = $this->userRepository->findByIdAndProject((int) $device->user_id, $projectId);
                 if ($deviceUser !== null) {
                     if ($lineUserId !== null) {
                         $resolved = $this->resolveStoredUserForLineId($deviceUser, $lineUserId, $projectId);
@@ -43,7 +46,7 @@ class UserService
                         return $resolved;
                     }
                     Session::put($this->getSessionKey($projectId), $deviceUser->id);
-                    $device->forceFill(['last_used_at' => now()])->save();
+                    $this->userDeviceRepository->touchLastUsedAt($device);
                     $this->logResolution('device', $deviceUser, $lineUserId, $deviceIdentifier);
 
                     return $deviceUser;
@@ -148,7 +151,7 @@ class UserService
             return null;
         }
 
-        return User::where('id', $sessionUserId)->where('project_id', $projectId)->first();
+        return $this->userRepository->findByIdAndProject((int) $sessionUserId, $projectId);
     }
 
     private function isPlaceholderLineUserId(?string $lineUserId): bool
@@ -256,7 +259,7 @@ class UserService
 
     private function findActiveUserByLineId(string $lineUserId, int $projectId): ?User
     {
-        $user = User::where('line_user_id', $lineUserId)->where('project_id', $projectId)->first();
+        $user = $this->userRepository->findByLineUserIdAndProject($lineUserId, $projectId);
         if ($user === null) {
             return null;
         }

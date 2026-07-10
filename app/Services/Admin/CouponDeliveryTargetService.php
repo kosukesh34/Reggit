@@ -2,11 +2,10 @@
 
 namespace App\Services\Admin;
 
+use App\Domain\Coupon\Policies\CouponDeliverySegmentPolicy;
+use App\Domain\Coupon\Repositories\CouponDeliveryTargetRepository;
 use App\Enums\CouponDeliveryType;
-use App\Enums\OrderStatus;
 use App\Models\CouponDelivery;
-use App\Models\Member;
-use App\Models\Order;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
@@ -16,8 +15,8 @@ use Illuminate\Support\Collection;
 class CouponDeliveryTargetService
 {
     public function __construct(
-        private MemberAdminService $memberAdminService,
-        private SalesSegmentService $salesSegmentService,
+        private CouponDeliveryTargetRepository $targetRepository,
+        private CouponDeliverySegmentPolicy $segmentPolicy,
     ) {}
 
     /**
@@ -26,6 +25,10 @@ class CouponDeliveryTargetService
      */
     public function resolve(int $projectId, string $deliveryType, array $params): array
     {
+        if ($this->segmentPolicy->isKnownDeliveryType($deliveryType) === false) {
+            return ['member_ids' => [], 'segment_criteria' => null, 'error' => '配信種別が不正です'];
+        }
+
         $memberIds = match ($deliveryType) {
             CouponDeliveryType::IMMEDIATE_ALL,
             CouponDeliveryType::SCHEDULED_ALL => [],
@@ -44,20 +47,17 @@ class CouponDeliveryTargetService
 
             CouponDeliveryType::IMMEDIATE_INACTIVE,
             CouponDeliveryType::SCHEDULED_INACTIVE => $this->getInactiveMemberIds($projectId, $params)->all(),
-
-            default => null,
         };
 
-        if ($memberIds === null) {
-            return ['member_ids' => [], 'segment_criteria' => null, 'error' => '配信種別が不正です'];
-        }
-
-        if (in_array($deliveryType, CouponDeliveryType::personalValues(), true)
-            && $memberIds === []) {
+        if ($this->segmentPolicy->requiresPersonalMembers($deliveryType) && $memberIds === []) {
             return ['member_ids' => [], 'segment_criteria' => null, 'error' => '配信対象の会員を1人以上選択してください'];
         }
 
-        $segmentCriteria = $this->buildSegmentCriteria($deliveryType, $params);
+        $segmentCriteria = $this->segmentPolicy->buildSegmentCriteria(
+            $deliveryType,
+            $params,
+            (int) now()->month,
+        );
 
         return ['member_ids' => $memberIds, 'segment_criteria' => $segmentCriteria, 'error' => null];
     }
@@ -82,7 +82,7 @@ class CouponDeliveryTargetService
             }
         }
 
-        return $this->memberAdminService->filterValidMemberIds($projectId, $rawIds)->all();
+        return $this->targetRepository->filterValidIds($projectId, $rawIds);
     }
 
     /**
@@ -93,15 +93,19 @@ class CouponDeliveryTargetService
     {
         $periodDays = (int) ($params['segment_period_days'] ?? 30);
         $condition = (string) ($params['segment_condition'] ?? 'min_amount');
-        $isNoOrders = $condition === 'no_orders';
-        $minAmount = isset($params['segment_min_amount']) ? (float) $params['segment_min_amount'] : null;
+        $end = Carbon::today()->endOfDay();
+        $start = Carbon::today()->subDays($periodDays)->startOfDay();
 
-        return $this->salesSegmentService->getMemberIdsBySalesCriteria(
-            $projectId,
-            $periodDays,
-            $isNoOrders ? null : $minAmount,
-            $isNoOrders
-        )->all();
+        if ($this->segmentPolicy->isNoOrdersSalesCondition($condition)) {
+            return $this->targetRepository->findIdsWithNoOrdersInPeriod($projectId, $start, $end);
+        }
+
+        $minAmount = isset($params['segment_min_amount']) ? (float) $params['segment_min_amount'] : null;
+        if ($minAmount === null || $minAmount <= 0) {
+            return [];
+        }
+
+        return $this->targetRepository->findIdsByMinSales($projectId, $start, $end, $minAmount);
     }
 
     /**
@@ -110,18 +114,12 @@ class CouponDeliveryTargetService
      */
     public function getBirthdayMonthMemberIds(int $projectId, array $params): Collection
     {
-        $month = (int) ($params['birthday_month'] ?? now()->month);
-        if ($month < 1 || $month > 12) {
-            $month = now()->month;
-        }
+        $month = $this->segmentPolicy->normalizeBirthdayMonth(
+            (int) ($params['birthday_month'] ?? now()->month),
+            (int) now()->month,
+        );
 
-        return Member::query()
-            ->where('project_id', $projectId)
-            ->whereNotNull('birthday')
-            ->whereMonth('birthday', $month)
-            ->pluck('id')
-            ->map(fn ($id) => (int) $id)
-            ->values();
+        return collect($this->targetRepository->findIdsByBirthdayMonth($projectId, $month));
     }
 
     /**
@@ -130,15 +128,10 @@ class CouponDeliveryTargetService
      */
     public function getNewMemberIds(int $projectId, array $params): Collection
     {
-        $days = max(1, (int) ($params['new_member_days'] ?? 30));
+        $days = $this->segmentPolicy->normalizePositiveDays((int) ($params['new_member_days'] ?? 30), 30);
         $since = Carbon::now()->subDays($days)->startOfDay();
 
-        return Member::query()
-            ->where('project_id', $projectId)
-            ->where('created_at', '>=', $since)
-            ->pluck('id')
-            ->map(fn ($id) => (int) $id)
-            ->values();
+        return collect($this->targetRepository->findIdsCreatedSince($projectId, $since));
     }
 
     /**
@@ -147,59 +140,10 @@ class CouponDeliveryTargetService
      */
     public function getInactiveMemberIds(int $projectId, array $params): Collection
     {
-        $days = max(1, (int) ($params['inactive_days'] ?? 90));
+        $days = $this->segmentPolicy->normalizePositiveDays((int) ($params['inactive_days'] ?? 90), 90);
         $since = Carbon::now()->subDays($days)->startOfDay();
 
-        $userIdsWithRecentOrders = Order::query()
-            ->where('project_id', $projectId)
-            ->where('created_at', '>=', $since)
-            ->where('status', '!=', OrderStatus::CANCELLED)
-            ->distinct()
-            ->pluck('user_id');
-
-        $query = Member::query()->where('project_id', $projectId);
-
-        if ($userIdsWithRecentOrders->isNotEmpty()) {
-            $query->whereNotIn('user_id', $userIdsWithRecentOrders->all());
-        }
-
-        $query->where(function ($q) use ($since) {
-            $q->whereNull('last_visited_at')
-                ->orWhere('last_visited_at', '<', $since->toDateString());
-        });
-
-        return $query->pluck('id')->map(fn ($id) => (int) $id)->values();
-    }
-
-    /**
-     * @param  array<string, mixed>  $params
-     * @return array<string, mixed>|null
-     */
-    private function buildSegmentCriteria(string $deliveryType, array $params): ?array
-    {
-        if (in_array($deliveryType, CouponDeliveryType::segmentValues(), true)) {
-            $condition = (string) ($params['segment_condition'] ?? 'min_amount');
-
-            return [
-                'period_days' => (int) ($params['segment_period_days'] ?? 30),
-                'condition' => $condition,
-                'min_total_amount' => $condition === 'min_amount' ? (float) ($params['segment_min_amount'] ?? 0) : null,
-            ];
-        }
-
-        if (in_array($deliveryType, CouponDeliveryType::birthdayValues(), true)) {
-            return ['birthday_month' => (int) ($params['birthday_month'] ?? now()->month)];
-        }
-
-        if (in_array($deliveryType, CouponDeliveryType::newMemberValues(), true)) {
-            return ['new_member_days' => (int) ($params['new_member_days'] ?? 30)];
-        }
-
-        if (in_array($deliveryType, CouponDeliveryType::inactiveValues(), true)) {
-            return ['inactive_days' => (int) ($params['inactive_days'] ?? 90)];
-        }
-
-        return null;
+        return collect($this->targetRepository->findInactiveIds($projectId, $since));
     }
 
     /**
@@ -214,8 +158,8 @@ class CouponDeliveryTargetService
             return 0;
         }
 
-        if (in_array($deliveryType, [CouponDeliveryType::IMMEDIATE_ALL, CouponDeliveryType::SCHEDULED_ALL], true)) {
-            return Member::where('project_id', $projectId)->count();
+        if ($this->segmentPolicy->isAllMembersDelivery($deliveryType)) {
+            return $this->targetRepository->countAll($projectId);
         }
 
         return count($resolved['member_ids']);

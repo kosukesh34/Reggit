@@ -2,19 +2,17 @@
 
 namespace App\UseCases\Admin\Settings;
 
-use App\Models\ShopSetting;
+use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Models\StampCard;
 use App\Services\Smaregi\SmaregiCustomerRankSyncService;
 use App\Util\StrHelper;
 
 class UpdateRankSettingsUseCase
 {
-    private SmaregiCustomerRankSyncService $smaregiRankSync;
-
-    public function __construct(SmaregiCustomerRankSyncService $smaregiRankSync)
-    {
-        $this->smaregiRankSync = $smaregiRankSync;
-    }
+    public function __construct(
+        private SmaregiCustomerRankSyncService $smaregiRankSync,
+        private ShopSettingRepository $shopSettingRepository,
+    ) {}
 
     /** @param array{rank_basis: string, point_earn_rate: int, points_valid_days: int, ranks: array<int, array{key?: string, label?: string, min_points?: int, order?: int, is_active?: bool, icon_url?: string|null, stamp_background_url?: string|null}>} $payload 検証済みランク設定 */
     public function handle(int $projectId, array $payload): void
@@ -48,12 +46,12 @@ class UpdateRankSettingsUseCase
             $this->smaregiRankSync->sync($projectId, $rows);
         }
 
-        ShopSetting::setMemberRankSettings($rows, $projectId);
-        ShopSetting::setValue('member_rank_basis', (string) $payload['rank_basis'], 'string', $projectId);
-        ShopSetting::setValue('point_earn_rate', (int) $payload['point_earn_rate'], 'integer', $projectId);
-        ShopSetting::setValue('points_valid_days', (int) $payload['points_valid_days'], 'integer', $projectId);
-        ShopSetting::setValue('points_per_order', (int) ($payload['points_per_order'] ?? 0), 'integer', $projectId);
-        ShopSetting::setValue('stamp_earn_per_amount', (int) ($payload['stamp_earn_per_amount'] ?? 0), 'integer', $projectId);
+        $this->shopSettingRepository->setMemberRankSettings($rows, $projectId);
+        $this->shopSettingRepository->setValue('member_rank_basis', (string) $payload['rank_basis'], 'string', $projectId);
+        $this->shopSettingRepository->setValue('point_earn_rate', (int) $payload['point_earn_rate'], 'integer', $projectId);
+        $this->shopSettingRepository->setValue('points_valid_days', (int) $payload['points_valid_days'], 'integer', $projectId);
+        $this->shopSettingRepository->setValue('points_per_order', (int) ($payload['points_per_order'] ?? 0), 'integer', $projectId);
+        $this->shopSettingRepository->setValue('stamp_earn_per_amount', (int) ($payload['stamp_earn_per_amount'] ?? 0), 'integer', $projectId);
         $orderStampCardId = isset($payload['order_stamp_card_id']) && $payload['order_stamp_card_id'] !== '' && $payload['order_stamp_card_id'] !== null
             ? (int) $payload['order_stamp_card_id']
             : null;
@@ -61,40 +59,40 @@ class UpdateRankSettingsUseCase
             $orderStampCardId = null;
         }
         if ($orderStampCardId !== null) {
-            ShopSetting::setValue('order_stamp_card_id', $orderStampCardId, 'integer', $projectId);
+            $this->shopSettingRepository->setValue('order_stamp_card_id', $orderStampCardId, 'integer', $projectId);
         } else {
-            ShopSetting::setValue('order_stamp_card_id', '', 'string', $projectId);
+            $this->shopSettingRepository->setValue('order_stamp_card_id', '', 'string', $projectId);
         }
 
         if (isset($payload['member_code_type'])) {
-            ShopSetting::setValue('member_code_type', (string) $payload['member_code_type'], 'string', $projectId);
+            $this->shopSettingRepository->setValue('member_code_type', (string) $payload['member_code_type'], 'string', $projectId);
         }
         if (isset($payload['member_code_format'])) {
-            ShopSetting::setValue('member_code_format', (string) $payload['member_code_format'], 'string', $projectId);
+            $this->shopSettingRepository->setValue('member_code_format', (string) $payload['member_code_format'], 'string', $projectId);
         }
         if (isset($payload['member_code_length'])) {
-            ShopSetting::setValue('member_code_length', (int) $payload['member_code_length'], 'integer', $projectId);
+            $this->shopSettingRepository->setValue('member_code_length', (int) $payload['member_code_length'], 'integer', $projectId);
         }
         if (array_key_exists('member_code_prefix', $payload)) {
-            ShopSetting::setValue('member_code_prefix', (string) ($payload['member_code_prefix'] ?? ''), 'string', $projectId);
+            $this->shopSettingRepository->setValue('member_code_prefix', (string) ($payload['member_code_prefix'] ?? ''), 'string', $projectId);
         }
         if (array_key_exists('show_points_display', $payload)) {
-            ShopSetting::setValue('show_points_display', (bool) $payload['show_points_display'], 'boolean', $projectId);
+            $this->shopSettingRepository->setValue('show_points_display', (bool) $payload['show_points_display'], 'boolean', $projectId);
         }
         if (array_key_exists('show_rank_progress', $payload)) {
-            ShopSetting::setValue('show_rank_progress', (bool) $payload['show_rank_progress'], 'boolean', $projectId);
+            $this->shopSettingRepository->setValue('show_rank_progress', (bool) $payload['show_rank_progress'], 'boolean', $projectId);
         }
         if (array_key_exists('show_member_card_for_guest', $payload)) {
-            ShopSetting::setShowMemberCardForGuest((bool) $payload['show_member_card_for_guest'], $projectId);
+            $this->shopSettingRepository->setShowMemberCardForGuest((bool) $payload['show_member_card_for_guest'], $projectId);
         }
         if (array_key_exists('member_card_design', $payload) && in_array($payload['member_card_design'] ?? '', ['default', 'logo_top', 'logo_center', 'logo_header', 'compact', 'split_banner', 'minimal_line', 'emblem'], true)) {
-            ShopSetting::setMemberCardDesign((string) $payload['member_card_design'], $projectId);
+            $this->shopSettingRepository->setMemberCardDesign((string) $payload['member_card_design'], $projectId);
         }
         if (array_key_exists('member_card_display_type', $payload) && in_array($payload['member_card_display_type'] ?? '', ['card', 'sheet'], true)) {
-            ShopSetting::setMemberCardDisplayType((string) $payload['member_card_display_type'], $projectId);
+            $this->shopSettingRepository->setMemberCardDisplayType((string) $payload['member_card_display_type'], $projectId);
         }
         if (array_key_exists('member_card_code_type', $payload) && in_array($payload['member_card_code_type'] ?? '', ['barcode', 'qrcode'], true)) {
-            ShopSetting::setMemberCardCodeType((string) $payload['member_card_code_type'], $projectId);
+            $this->shopSettingRepository->setMemberCardCodeType((string) $payload['member_card_code_type'], $projectId);
         }
     }
 }

@@ -23,28 +23,13 @@
     <div class="alert alert-danger"><i class="fas fa-exclamation-triangle"></i> {{ session('error') }}</div>
 @endif
 
-{{-- 開発用: 接続・POS状態の確認（本番デプロイ時はこのブロックを削除可） --}}
-@if(isset($view->posStatusMessage) && $view->posStatusMessage !== null)
-<div class="card mb-4 border-info">
-    <div class="card-header bg-light"><i class="fas fa-info-circle text-info"></i> 接続・POS状態（開発用）</div>
-    <div class="card-body">
-        <p class="mb-2">{{ $view->posStatusMessage }}</p>
-        @if(isset($view->posStatusEnvCheck) && $view->posStatusEnvCheck !== null)
-        <p class="mb-1 small"><strong>.env の読み込み状況:</strong> {{ $view->posStatusEnvCheck }}</p>
-        <p class="mb-0 small text-muted">SMAREGI_CLIENT_ID / SMAREGI_CLIENT_SECRET は <strong>.env にのみ</strong>設定します（管理画面・DBでは設定できません）。プロジェクト直下の <code>.env</code> に記載し、変更後は <code>php artisan config:clear</code> を実行してから再読み込みしてください。</p>
-        @endif
-    </div>
-</div>
-@endif
 <div class="mb-4 d-flex flex-wrap gap-2 align-items-center">
-    <a href="{{ admin_route('admin.settings.smaregi.pos-data') }}" class="btn btn-outline-secondary btn-sm"><i class="fas fa-database"></i> 仮想POSデータ確認（サーバー取得データの疎通確認）</a>
     <form action="{{ admin_route('admin.settings.smaregi.sync-products') }}" method="POST" class="d-inline" onsubmit="return confirm('スマレジに登録されている商品をこのプロジェクトの商品一覧に同期します。既存の同名商品は更新されます。よろしいですか？');">
         @csrf
         <button type="submit" class="btn btn-outline-primary btn-sm"><i class="fas fa-sync-alt"></i> スマレジから商品を同期</button>
     </form>
     <form action="{{ admin_route('admin.settings.smaregi.full-sync-products') }}" method="POST" class="d-inline" onsubmit="return confirm('DBとスマレジの商品を完全同期します。\n・スマレジにあってDBにない商品 → DBに登録\n・DBにあってスマレジにない商品 → スマレジに登録\nデータ漏れがないように両方を揃えます。よろしいですか？');">
         @csrf
-        <input type="hidden" name="from" value="pos-data">
         <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-exchange-alt"></i> 完全同期（双方向）</button>
     </form>
     <a href="{{ admin_route('admin.coupons.bulk-issue') }}" class="btn btn-outline-primary btn-sm"><i class="fas fa-ticket-alt"></i> クーポン同期・作成</a>

@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Admin\Account;
 
 use App\Http\Controllers\Controller;
+use App\Http\Support\RouteContextResolver;
 use App\Models\AdminUser;
 use App\UseCases\Admin\Account\AccountDestroyUseCase;
-use App\UseCases\Admin\RouteContextResolver;
 use Illuminate\Http\Request;
 
 class AccountDestroyController extends Controller
@@ -20,7 +20,7 @@ class AccountDestroyController extends Controller
         /** @var AdminUser $me */
         $me = $request->user('admin');
         $result = $this->destroyUseCase->handle($me, $id);
-        $routeContext = $this->routeContextResolver->resolve($request);
+        $routeContext = $this->routeContextResolver->resolveFromRequest($request);
         $flashKey = $result->success ? 'success' : 'error';
 
         return redirect()->route("{$routeContext->routePrefix}.accounts.index", $routeContext->params)

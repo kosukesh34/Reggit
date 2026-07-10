@@ -2,13 +2,17 @@
 
 namespace App\UseCases\Admin\Settings;
 
-use App\Models\ShopSetting;
+use App\Domain\Settings\Repositories\ShopSettingRepository;
 
 class GetQueueSettingsUseCase
 {
+    public function __construct(
+        private ShopSettingRepository $shopSettingRepository,
+    ) {}
+
     public function handle(int $projectId): array
     {
-        $avgServeMinutes = ShopSetting::getQueueAvgServeMinutes($projectId);
+        $avgServeMinutes = $this->shopSettingRepository->getQueueAvgServeMinutes($projectId);
 
         return ['avgServeMinutes' => $avgServeMinutes];
     }

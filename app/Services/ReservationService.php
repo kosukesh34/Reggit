@@ -2,74 +2,92 @@
 
 namespace App\Services;
 
+use App\Domain\Reservation\Repositories\ReservationRepository;
+use App\Domain\Reservation\ValueObjects\PendingReservation;
 use App\Enums\ReservationStatus;
 use App\Models\Reservation;
 use App\Models\User;
+use App\Util\AdminContext;
 use App\Util\LogHelper;
 use Carbon\Carbon;
 
 class ReservationService
 {
+    public function __construct(
+        private ReservationRepository $reservationRepository,
+    ) {}
+
     public function createReservation(User $user, array $data): Reservation
     {
-        $reservation = Reservation::create([
-            'user_id' => $user->id,
-            'reserved_at' => $data['reserved_at'],
-            'number_of_people' => $data['number_of_people'] ?? 1,
-            'status' => ReservationStatus::PENDING,
-            'notes' => $data['notes'] ?? null,
-        ]);
+        $projectId = (int) ($user->project_id ?? AdminContext::getCurrentProjectId() ?? 1);
+        $reservedAt = $data['reserved_at'];
+        if ($reservedAt instanceof \DateTimeInterface === false) {
+            $reservedAt = Carbon::parse((string) $reservedAt);
+        }
+
+        $reservationId = $this->reservationRepository->persistPending(new PendingReservation(
+            $projectId,
+            (int) $user->id,
+            $reservedAt,
+            (int) ($data['number_of_people'] ?? 1),
+            $data['notes'] ?? null,
+        ));
 
         LogHelper::info('[Reservation] created', [
-            'reservation_id' => $reservation->id,
+            'reservation_id' => $reservationId,
             'user_id' => $user->id,
         ]);
 
-        return $reservation;
+        return Reservation::findOrFail($reservationId);
     }
 
     public function cancelReservation(int $reservationId, User $user): Reservation
     {
-        $reservation = Reservation::where('id', $reservationId)
-            ->where('user_id', $user->id)
-            ->firstOrFail();
-
-        if ($reservation->canCancel() === false) {
-            throw new \Exception('この予約はキャンセルできません');
-        }
-
-        $reservation->update(['status' => ReservationStatus::CANCELLED]);
+        $projectId = (int) ($user->project_id ?? AdminContext::getCurrentProjectId() ?? 1);
+        $aggregate = $this->reservationRepository->findByIdAndUserIdOrFail(
+            $reservationId,
+            (int) $user->id,
+            $projectId,
+        );
+        $aggregate->cancel();
+        $this->reservationRepository->save($aggregate);
 
         LogHelper::info('[Reservation] cancelled', [
-            'reservation_id' => $reservation->id,
+            'reservation_id' => $aggregate->id()->value(),
             'user_id' => $user->id,
+            'project_id' => $projectId,
         ]);
 
-        return $reservation;
+        return Reservation::findOrFail($aggregate->id()->value());
     }
 
     public function updateReservation(int $reservationId, User $user, array $data): Reservation
     {
-        $reservation = Reservation::where('id', $reservationId)
-            ->where('user_id', $user->id)
-            ->firstOrFail();
+        $projectId = (int) ($user->project_id ?? AdminContext::getCurrentProjectId() ?? 1);
+        $aggregate = $this->reservationRepository->findByIdAndUserIdOrFail(
+            $reservationId,
+            (int) $user->id,
+            $projectId,
+        );
 
-        if ($reservation->canEdit() === false) {
-            throw new \Exception('この予約は編集できません');
+        $reservedAt = $data['reserved_at'];
+        if ($reservedAt instanceof \DateTimeInterface === false) {
+            $reservedAt = Carbon::parse((string) $reservedAt);
         }
 
-        $reservation->update([
-            'reserved_at' => $data['reserved_at'],
-            'number_of_people' => $data['number_of_people'] ?? $reservation->number_of_people,
-            'notes' => $data['notes'] ?? null,
-        ]);
+        $aggregate->updateDetails(
+            $reservedAt,
+            (int) ($data['number_of_people'] ?? $aggregate->numberOfPeople()),
+            array_key_exists('notes', $data) ? $data['notes'] : $aggregate->notes(),
+        );
+        $this->reservationRepository->save($aggregate);
 
         LogHelper::info('[Reservation] updated', [
-            'reservation_id' => $reservation->id,
+            'reservation_id' => $aggregate->id()->value(),
             'user_id' => $user->id,
         ]);
 
-        return $reservation;
+        return Reservation::findOrFail($aggregate->id()->value());
     }
 
     public function getUserReservations(User $user): array

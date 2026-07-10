@@ -16,5 +16,6 @@ final class GetGoogleWalletUrlInput
         public int|false|null $projectId = null,
         public ?string $projectKey = null,
         public ?string $projectName = null,
+        public string $requestOrigin = '',
     ) {}
 }

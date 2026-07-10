@@ -3,30 +3,28 @@
 namespace App\Http\Controllers\Member;
 
 use App\Http\Controllers\Controller;
-use App\Services\MemberService;
+use App\Http\Requests\MemberProfileRequest;
 use App\Services\UserService;
+use App\UseCases\Member\Data\MemberUpdateInput;
 use App\UseCases\Member\MemberUpdateUseCase;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
-use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
 class MemberUpdateController extends Controller
 {
     public function __construct(
-        private MemberUpdateUseCase $updateUseCase
+        private MemberUpdateUseCase $updateUseCase,
+        private UserService $userService,
     ) {}
 
-    public function __invoke(Request $request)
+    public function __invoke(MemberProfileRequest $request)
     {
         try {
-            $user = app(UserService::class)->getOrCreateUser($request);
-            $member = $user->member;
-            $projectId = $member ? (int) $member->project_id : (int) ($user->project_id ?? 1);
-            $rules = app(MemberService::class)->getProfileValidationRules($projectId);
-            $validated = $request->validate($rules);
-
-            $dto = $this->updateUseCase->handle($request, $validated);
+            $dto = $this->updateUseCase->handle(new MemberUpdateInput(
+                $this->userService->getOrCreateUser($request),
+                $request->validated()
+            ));
 
             return response()->json($dto->toArray());
         } catch (ValidationException $e) {

@@ -2,24 +2,22 @@
 
 namespace App\UseCases\Member;
 
-use App\Models\ShopSetting;
+use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Models\User;
 use App\Services\MemberPointsExpiryCalculator;
 use App\Services\MemberRankCalculator;
-use App\Services\UserService;
 use App\UseCases\Member\Data\MemberPointCardView;
-use Illuminate\Http\Request;
 
 class MemberPointCardUseCase
 {
     public function __construct(
-        private UserService $userService,
         private MemberRankCalculator $rankCalculator,
-        private MemberPointsExpiryCalculator $expiryCalculator
+        private MemberPointsExpiryCalculator $expiryCalculator,
+        private ShopSettingRepository $shopSettingRepository,
     ) {}
 
-    public function handle(Request $request): MemberPointCardView
+    public function handle(User $user): MemberPointCardView
     {
-        $user = $this->userService->getOrCreateUser($request);
         $member = $user->member;
 
         if ($member === null) {
@@ -29,12 +27,12 @@ class MemberPointCardUseCase
         $rankInfo = $this->rankCalculator->getRankInfo($member);
         $expiryInfo = $this->expiryCalculator->getExpiryInfo($member);
         $projectId = $member->project_id ?? 1;
-        $showPoints = ShopSetting::getShowPointsDisplay($projectId);
-        $showRankProgress = ShopSetting::getShowRankProgress($projectId);
-        $memberCardDesign = ShopSetting::getMemberCardDesign($projectId);
-        $memberCardLogoUrl = ShopSetting::getFrontendLogoUrl($projectId);
-        $memberCardDisplayType = ShopSetting::getMemberCardDisplayType($projectId);
-        $memberCardCodeType = ShopSetting::getMemberCardCodeType($projectId);
+        $showPoints = $this->shopSettingRepository->getShowPointsDisplay($projectId);
+        $showRankProgress = $this->shopSettingRepository->getShowRankProgress($projectId);
+        $memberCardDesign = $this->shopSettingRepository->getMemberCardDesign($projectId);
+        $memberCardLogoUrl = $this->shopSettingRepository->getFrontendLogoUrl($projectId);
+        $memberCardDisplayType = $this->shopSettingRepository->getMemberCardDisplayType($projectId);
+        $memberCardCodeType = $this->shopSettingRepository->getMemberCardCodeType($projectId);
 
         return new MemberPointCardView(false, [
             'member_number' => $member->member_number,

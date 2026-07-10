@@ -2,12 +2,12 @@
 
 namespace App\Services;
 
+use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Enums\MemberStatus;
 use App\Jobs\SendAfterRegistrationJob;
 use App\Models\AfterRegistrationDelivery;
 use App\Models\Member;
 use App\Models\PointTransaction;
-use App\Models\ShopSetting;
 use App\Models\User;
 use App\Services\Smaregi\SmaregiApiService;
 use App\Services\Smaregi\SmaregiCustomerPointsInboundSyncService;
@@ -24,6 +24,8 @@ class MemberService
         private SmaregiApiService $smaregiApi,
         private SmaregiCustomerUpdatePayloadBuilder $smaregiCustomerUpdatePayloadBuilder,
         private SmaregiCustomerPointsInboundSyncService $smaregiCustomerPointsInboundSyncService,
+        private MemberRankCalculator $rankCalculator,
+        private ShopSettingRepository $shopSettingRepository,
     ) {}
 
     public function getMemberData(User $user): array
@@ -32,13 +34,13 @@ class MemberService
 
         if ($member === null) {
             $projectId = $user->project_id ?? AdminContext::getCurrentProjectId() ?? 1;
-            $profileSettings = ShopSetting::getProfileFieldSettings($projectId);
+            $profileSettings = $this->shopSettingRepository->getProfileFieldSettings($projectId);
             $profileFormFields = $this->buildProfileFormFields($profileSettings);
 
             return [
                 'is_member' => false,
                 'message' => '会員登録がまだです',
-                'show_member_card_for_guest' => ShopSetting::getShowMemberCardForGuest($projectId),
+                'show_member_card_for_guest' => $this->shopSettingRepository->getShowMemberCardForGuest($projectId),
                 'profile_field_settings' => $profileFormFields,
                 'profile' => [],
             ];
@@ -54,7 +56,7 @@ class MemberService
         $expiryInfo = $this->getPointsExpiryInfo($member);
 
         $projectId = $member->project_id ?? AdminContext::getCurrentProjectId() ?? 1;
-        $profileSettings = ShopSetting::getProfileFieldSettings($projectId);
+        $profileSettings = $this->shopSettingRepository->getProfileFieldSettings($projectId);
         $profileFormFields = $this->buildProfileFormFields($profileSettings);
         $profileValues = $this->getProfileValues($member->user, $member);
 
@@ -76,12 +78,12 @@ class MemberService
             'rank_basis' => $rankInfo['rank_basis'],
             'rank_metric' => $rankInfo['rank_metric'],
             'points_expiry' => $expiryInfo,
-            'show_points_display' => ShopSetting::getShowPointsDisplay($projectId),
-            'show_rank_progress' => ShopSetting::getShowRankProgress($projectId),
-            'member_card_design' => ShopSetting::getMemberCardDesign($projectId),
-            'member_card_logo_url' => ShopSetting::getFrontendLogoUrl($projectId),
-            'member_card_display_type' => ShopSetting::getMemberCardDisplayType($projectId),
-            'member_card_code_type' => ShopSetting::getMemberCardCodeType($projectId),
+            'show_points_display' => $this->shopSettingRepository->getShowPointsDisplay($projectId),
+            'show_rank_progress' => $this->shopSettingRepository->getShowRankProgress($projectId),
+            'member_card_design' => $this->shopSettingRepository->getMemberCardDesign($projectId),
+            'member_card_logo_url' => $this->shopSettingRepository->getFrontendLogoUrl($projectId),
+            'member_card_display_type' => $this->shopSettingRepository->getMemberCardDisplayType($projectId),
+            'member_card_code_type' => $this->shopSettingRepository->getMemberCardCodeType($projectId),
         ];
     }
 
@@ -114,7 +116,7 @@ class MemberService
     /** プロフィール設定に基づくバリデーションルールを組み立て */
     public function getProfileValidationRules(int $projectId): array
     {
-        $settings = ShopSetting::getProfileFieldSettings($projectId);
+        $settings = $this->shopSettingRepository->getProfileFieldSettings($projectId);
         $rules = [];
         $stringMax = ['name' => 255, 'kana' => 255, 'phone' => 50, 'email' => 255, 'postal_code' => 16, 'prefecture' => 64, 'city' => 128, 'street' => 256, 'address' => 500, 'sex' => 16];
         foreach ($settings['smaregi_fields'] ?? [] as $key => $field) {
@@ -207,7 +209,7 @@ class MemberService
         }
 
         $projectId = $member->project_id ?? AdminContext::getCurrentProjectId() ?? 1;
-        $settings = ShopSetting::getProfileFieldSettings($projectId);
+        $settings = $this->shopSettingRepository->getProfileFieldSettings($projectId);
 
         $userUpdates = [];
         $memberUpdates = [];
@@ -284,7 +286,7 @@ class MemberService
     /** 登録データから任意項目のみ抽出 */
     private function extractCustomProfileExtra(int $projectId, array $data): array
     {
-        $settings = ShopSetting::getProfileFieldSettings($projectId);
+        $settings = $this->shopSettingRepository->getProfileFieldSettings($projectId);
         $customKeys = array_column($settings['custom_fields'] ?? [], 'key');
         $out = [];
         foreach ($customKeys as $key) {
@@ -323,7 +325,7 @@ class MemberService
             }
         }
 
-        $rankSettings = ShopSetting::getMemberRankSettings($projectId);
+        $rankSettings = $this->shopSettingRepository->getMemberRankSettings($projectId);
         $defaultRankKey = collect($rankSettings)->first(fn ($r) => ($r['is_active'] ?? false) === true)['key'] ?? 'bronze';
         $member = Member::create([
             'project_id' => $projectId,
@@ -415,63 +417,7 @@ class MemberService
 
     private function getRankInfo(Member $member): array
     {
-        $projectId = $member->project_id ?? AdminContext::getCurrentProjectId() ?? 1;
-        $ranks = ShopSetting::getMemberRankSettings($projectId);
-        $basis = ShopSetting::getRankBasis($projectId);
-
-        $points = $member->getDisplayPoints();
-        $stamps = $member->getTotalStamps();
-        $metric = $basis === 'stamps' ? $stamps : ($basis === 'max' ? max($points, $stamps) : $points);
-
-        $active = array_values(array_filter($ranks, fn ($r) => ($r['is_active'] ?? false) === true));
-        if ($active === []) {
-            return [
-                'current_rank' => $member->rank ?? 'bronze',
-                'current_rank_label' => $member->rank ?? 'bronze',
-                'current_rank_icon' => null,
-                'current_rank_background' => null,
-                'current_rank_color' => null,
-                'next_rank' => null,
-                'next_rank_label' => null,
-                'points_to_next_rank' => null,
-                'rank_basis' => $basis,
-                'rank_metric' => $metric,
-            ];
-        }
-
-        usort($active, fn ($a, $b) => ($a['min_points'] <=> $b['min_points']) ?: ($a['order'] <=> $b['order']));
-        $resolved = $active[0];
-        foreach ($active as $rank) {
-            if ($metric >= ($rank['min_points'] ?? 0)) {
-                $resolved = $rank;
-            }
-        }
-
-        $next = null;
-        foreach ($active as $rank) {
-            if (($rank['min_points'] ?? 0) > ($resolved['min_points'] ?? 0)) {
-                $next = $rank;
-                break;
-            }
-        }
-
-        $pointsToNext = null;
-        if ($next !== null) {
-            $pointsToNext = max(0, ($next['min_points'] ?? 0) - $metric);
-        }
-
-        return [
-            'current_rank' => $resolved['key'] ?? 'bronze',
-            'current_rank_label' => $resolved['label'] ?? ($resolved['key'] ?? 'bronze'),
-            'current_rank_icon' => $resolved['icon_url'] ?? null,
-            'current_rank_background' => $resolved['stamp_background_url'] ?? null,
-            'current_rank_color' => $resolved['card_color'] ?? null,
-            'next_rank' => $next !== null ? ($next['key'] ?? null) : null,
-            'next_rank_label' => $next !== null ? ($next['label'] ?? ($next['key'] ?? null)) : null,
-            'points_to_next_rank' => $pointsToNext,
-            'rank_basis' => $basis,
-            'rank_metric' => $metric,
-        ];
+        return $this->rankCalculator->getRankInfo($member);
     }
 
     private function getPointsExpiryInfo(Member $member): ?array
@@ -501,10 +447,10 @@ class MemberService
 
     private function generateMemberNumber(int $projectId): string
     {
-        $type = ShopSetting::getMemberCodeType($projectId);
-        $format = ShopSetting::getMemberCodeFormat($projectId);
-        $length = max(1, min(20, ShopSetting::getMemberCodeLength($projectId)));
-        $prefix = ShopSetting::getMemberCodePrefix($projectId);
+        $type = $this->shopSettingRepository->getMemberCodeType($projectId);
+        $format = $this->shopSettingRepository->getMemberCodeFormat($projectId);
+        $length = max(1, min(20, $this->shopSettingRepository->getMemberCodeLength($projectId)));
+        $prefix = $this->shopSettingRepository->getMemberCodePrefix($projectId);
         $prefix = preg_replace('/[^A-Za-z0-9]/', '', $prefix);
         $prefixLen = strlen($prefix);
         $bodyLen = min($length, 20 - $prefixLen);
@@ -516,7 +462,7 @@ class MemberService
         $charsAlpha = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // 英大文字+数字（紛らわしいI,O,1,0を除く）
 
         if ($type === 'sequential') {
-            $next = ShopSetting::getMemberCodeNextNumber($projectId);
+            $next = $this->shopSettingRepository->getMemberCodeNextNumber($projectId);
             $maxExisting = Member::where('project_id', $projectId)
                 ->whereNotNull('member_number')
                 ->where('member_number', '!=', '')
@@ -531,7 +477,7 @@ class MemberService
                 })
                 ->max();
             $next = max($next, ($maxExisting ?? 0) + 1);
-            ShopSetting::setMemberCodeNextNumber($next + 1, $projectId);
+            $this->shopSettingRepository->setMemberCodeNextNumber($next + 1, $projectId);
             $body = sprintf('%0'.$bodyLen.'d', $next);
             if (strlen($body) > $bodyLen) {
                 $body = substr($body, -$bodyLen);

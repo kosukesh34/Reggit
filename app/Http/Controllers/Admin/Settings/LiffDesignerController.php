@@ -3,12 +3,11 @@
 namespace App\Http\Controllers\Admin\Settings;
 
 use App\Http\Controllers\Admin\AdminBaseController;
-use App\UseCases\Admin\Settings\Data\UpdateLiffDesignerInput;
+use App\Http\Requests\Admin\UpdateLiffDesignerRequest;
 use App\UseCases\Admin\Settings\GetLiffDesignerUseCase;
 use App\UseCases\Admin\Settings\UpdateLiffDesignerUseCase;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class LiffDesignerController extends AdminBaseController
@@ -29,11 +28,10 @@ class LiffDesignerController extends AdminBaseController
     }
 
     public function update(
-        Request $request,
+        UpdateLiffDesignerRequest $request,
         UpdateLiffDesignerUseCase $useCase
     ): RedirectResponse|JsonResponse {
-        $input = UpdateLiffDesignerInput::fromRequest($request);
-        $useCase->handle($this->resolveAdminProjectId(), $input);
+        $useCase->handle($this->resolveAdminProjectId(), $request->toInput());
 
         if ($request->expectsJson()) {
             return response()->json(['message' => 'LIFFデザインを更新しました']);
