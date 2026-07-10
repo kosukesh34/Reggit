@@ -282,4 +282,90 @@ class LiffDesignerTest extends TestCase
         $this->assertArrayNotHasKey('action', $stored['home'][1]['items'][0]);
         $this->assertSame('#products', $stored['home'][1]['items'][1]['action']);
     }
+
+    public function test_liff_designer_friend_addとcardのアクションを保存できること(): void
+    {
+        $project = Project::firstOrCreate(
+            ['project_key' => 'default'],
+            ['name' => 'Default Project', 'description' => 'Test', 'is_active' => true]
+        );
+
+        $admin = AdminUser::create([
+            'login_id' => 'admin6',
+            'email' => 'admin6@example.com',
+            'password' => 'password',
+            'name' => 'Admin6',
+            'role' => AdminUser::ROLE_ADMIN,
+            'project_id' => $project->id,
+        ]);
+
+        $layouts = [
+            'home' => [
+                [
+                    'type' => 'friend_add',
+                    'text' => '友だちになる',
+                    'color' => '#06C755',
+                    'url' => 'https://line.me/R/ti/p/@example',
+                    'design' => 'soft',
+                ],
+                [
+                    'type' => 'card',
+                    'title' => 'おすすめ',
+                    'action' => '#products',
+                    'design' => 'horizontal',
+                ],
+                [
+                    'type' => 'banner',
+                    'text' => 'お知らせ',
+                    'action' => '#coupons',
+                    'design' => 'promo',
+                ],
+            ],
+        ];
+
+        $response = $this->actingAs($admin, 'admin')
+            ->post(route('admin.settings.liff-designer.update', ['project_key' => $project->project_key]), [
+                'layouts_json' => json_encode($layouts),
+            ]);
+
+        $response->assertRedirect(route('admin.settings.liff-designer', ['project_key' => $project->project_key]));
+
+        $stored = ShopSetting::getLiffTabLayouts($project->id);
+        $this->assertSame('friend_add', $stored['home'][0]['type']);
+        $this->assertSame('友だちになる', $stored['home'][0]['text']);
+        $this->assertSame('https://line.me/R/ti/p/@example', $stored['home'][0]['url']);
+        $this->assertSame('soft', $stored['home'][0]['design']);
+        $this->assertSame('#products', $stored['home'][1]['action']);
+        $this->assertSame('#coupons', $stored['home'][2]['action']);
+    }
+
+    public function test_liff_designer_保存時に接続設定を上書きしないこと(): void
+    {
+        $project = Project::firstOrCreate(
+            ['project_key' => 'default'],
+            ['name' => 'Default Project', 'description' => 'Test', 'is_active' => true]
+        );
+
+        ShopSetting::setLineLiffId('existing-liff-id', $project->id);
+        ShopSetting::setLineLiffUrl('https://example.com/liff', $project->id);
+
+        $admin = AdminUser::create([
+            'login_id' => 'admin7',
+            'email' => 'admin7@example.com',
+            'password' => 'password',
+            'name' => 'Admin7',
+            'role' => AdminUser::ROLE_ADMIN,
+            'project_id' => $project->id,
+        ]);
+
+        $response = $this->actingAs($admin, 'admin')
+            ->postJson(route('admin.settings.liff-designer.update', ['project_key' => $project->project_key]), [
+                'layouts_json' => json_encode(['home' => [['type' => 'text', 'text' => 'ok']]]),
+            ]);
+
+        $response->assertOk();
+        $response->assertJson(['message' => 'LIFFデザインを更新しました']);
+        $this->assertSame('existing-liff-id', ShopSetting::getLineLiffId($project->id));
+        $this->assertSame('https://example.com/liff', ShopSetting::getLineLiffUrl($project->id));
+    }
 }

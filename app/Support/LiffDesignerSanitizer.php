@@ -14,9 +14,11 @@ class LiffDesignerSanitizer
     private const ALLOWED_BLOCK_TYPES = [
         'hero', 'heading', 'text', 'image', 'button', 'card', 'collection',
         'slider', 'icon_text', 'list', 'banner', 'spacer', 'divider', 'data',
-        'member_summary', 'quick_actions',
+        'member_summary', 'quick_actions', 'friend_add',
         'hours', 'access', 'social_links', 'faq', 'video', 'button_group',
     ];
+
+    private const FRIEND_ADD_DESIGNS = ['solid', 'outline', 'soft'];
 
     /** タブメニュー（表示/非表示・並び替え・名前/アイコン変更）の対象タブ */
     private const MENU_TABS = [
@@ -433,6 +435,13 @@ class LiffDesignerSanitizer
                 $b['description'] = self::text($row['description'] ?? '', 240);
                 $b['image_url'] = self::safeUrl($row['image_url'] ?? null, false);
                 $b['image_height'] = self::num($row['image_height'] ?? 140, 60, 360, 140);
+                $cardAction = (string) ($row['action'] ?? ($row['link'] ?? ''));
+                if ($cardAction !== '') {
+                    $safeCardAction = self::safeUrl($cardAction, true);
+                    if ($safeCardAction !== '') {
+                        $b['action'] = $safeCardAction;
+                    }
+                }
                 $b['design'] = self::pickDesign((string) ($row['design'] ?? ''), self::CARD_DESIGNS, 'editorial');
                 break;
             case 'collection':
@@ -663,6 +672,16 @@ class LiffDesignerSanitizer
                         'variant' => in_array((string) ($it['variant'] ?? 'solid'), ['solid', 'outline'], true) ? (string) ($it['variant'] ?? 'solid') : 'solid',
                     ];
                 }, $buttons)));
+                break;
+            case 'friend_add':
+                $b['text'] = self::text($row['text'] ?? '友だち追加', 40);
+                $b['color'] = self::color($row['color'] ?? '#06C755') ?? '#06C755';
+                $b['text_color'] = self::color($row['text_color'] ?? '#ffffff') ?? '#ffffff';
+                $friendUrl = self::safeUrl($row['url'] ?? '', false);
+                if ($friendUrl !== '') {
+                    $b['url'] = $friendUrl;
+                }
+                $b['design'] = self::pickDesign((string) ($row['design'] ?? ''), self::FRIEND_ADD_DESIGNS, 'solid');
                 break;
         }
 
