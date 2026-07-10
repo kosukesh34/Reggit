@@ -23,7 +23,7 @@ class OrderCancelUnpaidUseCase
             $aggregate = $this->orderRepository->findByIdAndUserIdForUpdate(
                 $orderId,
                 (int) $user->id,
-                (int) ($user->project_id ?? 0),
+                (int) ($user->project_id ?? 1),
             );
             if ($aggregate === null) {
                 throw (new ModelNotFoundException)->setModel(Order::class, [$orderId]);
