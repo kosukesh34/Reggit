@@ -45,7 +45,8 @@ Domain → Eloquent / ShopSetting に依存しない
 | イベント | リスナー |
 |---------|----------|
 | `PointsEarned` | `LoggingDomainEventListener` / `SyncPointsEarnedToSmaregiListener`（`points` は加算が正・取り消しが負） |
-| `OrderConfirmed` | `LoggingDomainEventListener` / `SyncOrderConfirmedPointsToSmaregiListener`（Stripe 確定後に注文ポイント差分をスマレジ同期。同一 order は Cache で冪等） |
+| `OrderConfirmed` | `LoggingDomainEventListener`（ログ） |
+| `OrderPointsSyncRequested` | `SyncOrderConfirmedPointsToSmaregiListener`（注文ポイント差分をスマレジ同期。`orders.smaregi_points_synced_at` で冪等） |
 
 `DomainEventDispatcher` → `MulticastDomainEventDispatcher`。
 

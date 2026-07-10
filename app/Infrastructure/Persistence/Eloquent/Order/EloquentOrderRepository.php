@@ -136,4 +136,50 @@ class EloquentOrderRepository implements OrderRepository
 
         return (int) $model->id;
     }
+
+    public function isSmaregiPointsSynced(int $orderId, int $projectId): bool
+    {
+        return OrderModel::query()
+            ->whereKey($orderId)
+            ->where('project_id', $projectId)
+            ->whereNotNull('smaregi_points_synced_at')
+            ->exists();
+    }
+
+    public function tryClaimSmaregiPointsSync(int $orderId, int $projectId, int $claimTtlMinutes): bool
+    {
+        $claimExpiredBefore = now()->subMinutes($claimTtlMinutes);
+
+        $affected = OrderModel::query()
+            ->whereKey($orderId)
+            ->where('project_id', $projectId)
+            ->whereNull('smaregi_points_synced_at')
+            ->where(function ($query) use ($claimExpiredBefore): void {
+                $query->whereNull('smaregi_points_sync_started_at')
+                    ->orWhere('smaregi_points_sync_started_at', '<', $claimExpiredBefore);
+            })
+            ->update(['smaregi_points_sync_started_at' => now()]);
+
+        return $affected === 1;
+    }
+
+    public function markSmaregiPointsSynced(int $orderId, int $projectId): void
+    {
+        OrderModel::query()
+            ->whereKey($orderId)
+            ->where('project_id', $projectId)
+            ->update([
+                'smaregi_points_synced_at' => now(),
+                'smaregi_points_sync_started_at' => null,
+            ]);
+    }
+
+    public function releaseSmaregiPointsSyncClaim(int $orderId, int $projectId): void
+    {
+        OrderModel::query()
+            ->whereKey($orderId)
+            ->where('project_id', $projectId)
+            ->whereNull('smaregi_points_synced_at')
+            ->update(['smaregi_points_sync_started_at' => null]);
+    }
 }
