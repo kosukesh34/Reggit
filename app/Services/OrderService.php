@@ -2,17 +2,24 @@
 
 namespace App\Services;
 
-use App\Enums\OrderStatus;
+use App\Domain\Member\Aggregates\Member as MemberAggregate;
+use App\Domain\Member\Repositories\MemberRepository;
+use App\Domain\Order\Events\OrderPointsSyncRequested;
+use App\Domain\Order\Policies\OrderPlacementPolicy;
+use App\Domain\Order\Policies\ProductAvailabilityPolicy;
+use App\Domain\Order\Policies\ProductOptionSelectionPolicy;
+use App\Domain\Order\Policies\StampEarnPolicy;
+use App\Domain\Order\Repositories\OrderRepository;
+use App\Domain\Order\Repositories\ProductCatalogRepository;
+use App\Domain\Order\Repositories\ProductStockRepository;
+use App\Domain\Order\ValueObjects\OrderLineItem;
+use App\Domain\Order\ValueObjects\PendingOrder;
+use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
 use App\Enums\OrderType;
 use App\Enums\PaymentMethod;
-use App\Models\Member;
+use App\Enums\PointTransactionType;
 use App\Models\Order;
-use App\Models\OrderItem;
-use App\Models\PointTransaction;
-use App\Models\Product;
-use App\Models\ProductOption;
-use App\Models\ProductOptionGroup;
-use App\Models\ShopSetting;
 use App\Models\User;
 use App\Services\Admin\MemberAdminService;
 use App\Util\AdminContext;
@@ -24,7 +31,17 @@ class OrderService
     private const DEFAULT_POINTS_EARN_RATE = 100;
 
     public function __construct(
-        private MemberAdminService $memberAdminService
+        private MemberAdminService $memberAdminService,
+        private MemberRepository $memberRepository,
+        private OrderRepository $orderRepository,
+        private ProductStockRepository $productStockRepository,
+        private ProductCatalogRepository $productCatalogRepository,
+        private ShopSettingRepository $shopSettingRepository,
+        private DomainEventDispatcher $domainEvents,
+        private OrderPlacementPolicy $orderPlacementPolicy,
+        private ProductAvailabilityPolicy $productAvailabilityPolicy,
+        private ProductOptionSelectionPolicy $productOptionSelectionPolicy,
+        private StampEarnPolicy $stampEarnPolicy,
     ) {}
 
     private const DESC_REFUND_CANCEL = '注文キャンセルによる返却';
@@ -35,51 +52,110 @@ class OrderService
     {
         DB::beginTransaction();
         try {
-            $this->validateOrderTypeAndPaymentMethod($orderData, $user->project_id ?? null);
-            $orderItems = $this->validateAndPrepareOrderItems($orderData['items']);
-            $totalAmount = $this->calculateTotalAmount($orderItems);
+            $projectId = (int) ($user->project_id ?? AdminContext::getCurrentProjectId() ?? 1);
+            $orderType = (string) ($orderData['order_type'] ?? OrderType::MOBILE);
+            $paymentMethod = (string) ($orderData['payment_method'] ?? '');
 
-            $pointsUsed = $orderData['points_used'] ?? 0;
-            $finalAmount = $this->processPoints($user, $pointsUsed, $totalAmount);
+            $this->orderPlacementPolicy->assertValid(
+                $orderType,
+                $paymentMethod,
+                $this->shopSettingRepository->getOrderMode($projectId),
+                (string) config('native_app.order_type_mobile_label', 'Reggit'),
+            );
 
-            $order = $this->createOrderRecord($user, $finalAmount, $orderData, $pointsUsed);
-            $this->createOrderItems($order, $orderItems);
-            $this->updateProductStock($orderItems);
-            $this->awardPoints($user, $order, $finalAmount);
+            $orderItems = $this->validateAndPrepareOrderItems($orderData['items'], $projectId);
+            $lineItems = $this->toOrderLineItems($orderItems);
+            $totalAmount = OrderLineItem::sumTotal($lineItems);
+
+            $pointsUsed = (int) ($orderData['points_used'] ?? 0);
+            $finalAmount = max(0, $totalAmount - $pointsUsed);
+
+            $orderId = $this->orderRepository->persistPending(
+                new PendingOrder(
+                    $projectId,
+                    (int) $user->id,
+                    $orderType,
+                    $paymentMethod,
+                    $finalAmount,
+                    $pointsUsed,
+                    $orderData['notes'] ?? null,
+                ),
+                $lineItems,
+            );
+
+            $order = Order::findOrFail($orderId);
+            $this->updateProductStock($orderItems, $projectId);
+            $this->applyOrderPointChanges($user, $order, $pointsUsed, $finalAmount);
             $this->awardStamps($user, $order, $finalAmount);
 
             DB::commit();
-
-            return $order->load('items.product');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Order creation error: '.$e->getMessage());
             throw $e;
         }
+
+        // commit 後に同期する（失敗しても注文は残す。try/catch 外で rollBack しない）
+        if ($paymentMethod !== PaymentMethod::STRIPE) {
+            $this->domainEvents->dispatch(new OrderPointsSyncRequested(
+                (int) $order->id,
+                $projectId,
+                (int) $user->id,
+            ));
+        }
+
+        return $order->load('items.product');
     }
 
-    private function validateAndPrepareOrderItems(array $items): array
+    /**
+     * @param  array<int, array{product_id: int, quantity: int, price: float, notes?: string|null}>  $orderItems
+     * @return list<OrderLineItem>
+     */
+    private function toOrderLineItems(array $orderItems): array
+    {
+        $lineItems = [];
+        foreach ($orderItems as $item) {
+            $lineItems[] = new OrderLineItem(
+                (int) $item['product_id'],
+                (int) $item['quantity'],
+                (float) $item['price'],
+                $item['notes'] ?? null,
+            );
+        }
+
+        return $lineItems;
+    }
+
+    private function validateAndPrepareOrderItems(array $items, int $projectId): array
     {
         $orderItems = [];
 
         foreach ($items as $item) {
-            $product = Product::with('optionGroups.options')->findOrFail($item['product_id']);
+            $product = $this->productCatalogRepository->findForOrderOrFail((int) $item['product_id'], $projectId);
+            $quantity = (int) $item['quantity'];
 
-            $this->validateProductAvailability($product, $item['quantity']);
+            $this->productAvailabilityPolicy->assertAvailable(
+                $product->name,
+                $product->isAvailable,
+                $product->stock,
+                $quantity,
+            );
 
-            [$optionsDelta, $optionsSummary] = $this->resolveSelectedOptions($product, $item['option_ids'] ?? []);
+            [$optionsDelta, $optionsSummary] = $this->productOptionSelectionPolicy->resolve(
+                $product->name,
+                $product->optionGroups,
+                $item['option_ids'] ?? [],
+            );
 
-            $unitPrice = (float) $product->price + $optionsDelta;
-
+            $unitPrice = $product->price + $optionsDelta;
             $note = $item['notes'] ?? null;
             if ($optionsSummary !== '') {
                 $note = $note ? $optionsSummary.' / '.$note : $optionsSummary;
             }
 
             $orderItems[] = [
-                'product' => $product,
                 'product_id' => $product->id,
-                'quantity' => $item['quantity'],
+                'quantity' => $quantity,
                 'price' => $unitPrice,
                 'notes' => $note,
             ];
@@ -88,208 +164,86 @@ class OrderService
         return $orderItems;
     }
 
-    /**
-     * 選択されたオプションの追加料金合計と、人が読める要約文を返す。
-     * グループごとに必須・単一/複数選択・min/max も検証する。
-     *
-     * @param  array<int>  $optionIds
-     * @return array{0: float, 1: string}
-     */
-    private function resolveSelectedOptions(Product $product, array $optionIds): array
-    {
-        $optionIds = array_values(array_unique(array_map('intval', $optionIds)));
-
-        /** @var array<int, list<ProductOption>> $selectedByGroupId */
-        $selectedByGroupId = [];
-
-        foreach ($optionIds as $optionId) {
-            $matched = null;
-            foreach ($product->optionGroups as $group) {
-                $option = $group->options->firstWhere('id', $optionId);
-                if ($option !== null) {
-                    $matched = ['group' => $group, 'option' => $option];
-                    break;
-                }
-            }
-
-            if ($matched === null) {
-                throw new \Exception("商品 {$product->name} のオプションが不正です");
-            }
-
-            $groupId = (int) $matched['group']->id;
-            $selectedByGroupId[$groupId][] = $matched['option'];
-        }
-
-        foreach ($product->optionGroups as $group) {
-            $selected = $selectedByGroupId[$group->id] ?? [];
-            $count = count($selected);
-            $minSelect = max((int) $group->min_select, $group->is_required ? 1 : 0);
-
-            if ($group->is_required && $count === 0) {
-                throw new \Exception("商品 {$product->name} の「{$group->name}」は必須です");
-            }
-
-            if ($count > 0 && $count < $minSelect) {
-                throw new \Exception("商品 {$product->name} の「{$group->name}」は{$minSelect}個以上選択してください");
-            }
-
-            if ($group->selection_type === ProductOptionGroup::TYPE_SINGLE && $count > 1) {
-                throw new \Exception("商品 {$product->name} の「{$group->name}」は1つだけ選択できます");
-            }
-
-            $maxSelect = $group->max_select;
-            if ($group->selection_type === ProductOptionGroup::TYPE_MULTIPLE
-                && $maxSelect !== null
-                && (int) $maxSelect > 0
-                && $count > (int) $maxSelect) {
-                throw new \Exception("商品 {$product->name} の「{$group->name}」は最大{$maxSelect}個までです");
-            }
-        }
-
-        $delta = 0.0;
-        $names = [];
-        foreach ($optionIds as $optionId) {
-            foreach ($product->optionGroups as $group) {
-                $option = $group->options->firstWhere('id', $optionId);
-                if ($option !== null) {
-                    $delta += (float) $option->price_delta;
-                    $names[] = $option->name;
-                    break;
-                }
-            }
-        }
-
-        return [$delta, $names === [] ? '' : implode(', ', $names)];
+    private function applyOrderPointChanges(
+        User $user,
+        Order $order,
+        int $pointsUsed,
+        float $finalAmount,
+    ): void {
+        $this->consumePointsForOrder($user, $order, $pointsUsed);
+        $this->awardPoints($user, $order, $finalAmount);
     }
 
-    private function validateProductAvailability(Product $product, int $quantity): void
-    {
-        if ($product->is_available === false) {
-            throw new \Exception("商品 {$product->name} は現在利用できません");
-        }
-
-        if ($product->stock !== null && $product->stock < $quantity) {
-            throw new \Exception("商品 {$product->name} の在庫が不足しています");
-        }
-    }
-
-    private function calculateTotalAmount(array $orderItems): float
-    {
-        $total = 0;
-        foreach ($orderItems as $item) {
-            $total += $item['price'] * $item['quantity'];
-        }
-
-        return $total;
-    }
-
-    private function processPoints(User $user, int $pointsUsed, float $totalAmount): float
+    private function consumePointsForOrder(User $user, Order $order, int $pointsUsed): void
     {
         if ($pointsUsed <= 0) {
-            return $totalAmount;
-        }
-
-        $member = $user->member;
-        if ($member === null) {
-            throw new \Exception('会員登録が必要です');
-        }
-
-        $member->syncPointsLedger();
-        $member->refresh();
-        if ($member->getTotalPointsFromTransactions() < $pointsUsed) {
-            throw new \Exception('ポイントが不足しています');
-        }
-
-        $member->usePoints($pointsUsed, '注文で使用', null);
-
-        return max(0, $totalAmount - $pointsUsed);
-    }
-
-    private function createOrderRecord(User $user, float $finalAmount, array $orderData, int $pointsUsed): Order
-    {
-        return Order::create([
-            'project_id' => $user->project_id ?? AdminContext::getCurrentProjectId() ?? 1,
-            'user_id' => $user->id,
-            'total_amount' => $finalAmount,
-            'status' => OrderStatus::PENDING,
-            'payment_method' => $orderData['payment_method'],
-            'points_used' => $pointsUsed,
-            'points_earned' => 0,
-            'notes' => $orderData['notes'] ?? null,
-            'order_type' => $orderData['order_type'] ?? 'mobile',
-        ]);
-    }
-
-    private function validateOrderTypeAndPaymentMethod(array $orderData, ?int $projectId): void
-    {
-        $orderType = (string) ($orderData['order_type'] ?? OrderType::MOBILE);
-        $paymentMethod = (string) ($orderData['payment_method'] ?? '');
-        $configuredOrderMode = ShopSetting::getOrderMode($projectId);
-
-        if ($configuredOrderMode === ShopSetting::ORDER_MODE_MOBILE_ONLY && $orderType !== OrderType::MOBILE) {
-            throw new \Exception('現在はモバイル注文のみ利用できます。');
-        }
-        if ($configuredOrderMode === ShopSetting::ORDER_MODE_IN_STORE_ONLY && $orderType !== OrderType::IN_STORE) {
-            throw new \Exception('現在は店内注文のみ利用できます。');
-        }
-
-        if ($orderType === OrderType::IN_STORE) {
-            if ($paymentMethod !== PaymentMethod::CASH) {
-                throw new \Exception('店内注文は後払い（現金）で作成してください。');
-            }
-
             return;
         }
 
-        if ($orderType === OrderType::MOBILE) {
-            if (! in_array($paymentMethod, [PaymentMethod::STRIPE, PaymentMethod::CASH], true)) {
-                throw new \Exception(config('native_app.order_type_mobile_label', 'Reggit').'の決済方法が不正です。');
-            }
+        $member = $this->loadMemberForPointUpdate($user);
+        if ($member->displayPoints() < $pointsUsed) {
+            throw new \Exception('ポイントが不足しています');
         }
+
+        $member->usePoints($pointsUsed, '注文で使用', (int) $order->id);
+        $this->memberRepository->save($member);
     }
 
-    private function createOrderItems(Order $order, array $orderItems): void
+    private function updateProductStock(array $orderItems, int $projectId): void
     {
         foreach ($orderItems as $item) {
-            OrderItem::create([
-                'order_id' => $order->id,
-                'product_id' => $item['product_id'],
-                'quantity' => $item['quantity'],
-                'price' => $item['price'],
-                'notes' => $item['notes'],
-            ]);
-        }
-    }
-
-    private function updateProductStock(array $orderItems): void
-    {
-        foreach ($orderItems as $item) {
-            $product = $item['product'];
-            if ($product->stock === null) {
-                continue;
-            }
-            $product->stock -= $item['quantity'];
-            $product->save();
+            $this->productStockRepository->decrease(
+                (int) $item['product_id'],
+                $projectId,
+                (int) $item['quantity'],
+            );
         }
     }
 
     private function awardPoints(User $user, Order $order, float $finalAmount): void
     {
-        $member = $user->member;
+        $projectId = (int) ($user->project_id ?? 0);
+        $member = $this->memberRepository->findByUserId((int) $user->id, $projectId);
         if ($member === null) {
             return;
         }
 
-        $projectId = $user->project_id ?? null;
-        $pointsPerOrder = (int) ShopSetting::getPointsPerOrder($projectId);
+        $pointsPerOrder = $this->shopSettingRepository->getPointsPerOrder($projectId);
         $rate = $this->getPointsEarnRate($projectId);
         $pointsFromAmount = $rate > 0 && $finalAmount > 0 ? (int) floor($finalAmount / $rate) : 0;
         $pointsEarned = $pointsPerOrder + $pointsFromAmount;
 
-        if ($pointsEarned > 0) {
-            $member->addPoints($pointsEarned, '購入で獲得', $order->id);
-            $order->update(['points_earned' => $pointsEarned]);
+        if ($pointsEarned <= 0) {
+            return;
         }
+
+        $member = $this->loadMemberForPointUpdate($user);
+        $validDays = $this->shopSettingRepository->getPointsValidDays($projectId);
+        $member->earnPoints(
+            $pointsEarned,
+            '購入で獲得',
+            (int) $order->id,
+            now()->addDays($validDays),
+        );
+        $this->memberRepository->save($member);
+        $order->update(['points_earned' => $pointsEarned]);
+    }
+
+    private function loadMemberForPointUpdate(User $user): MemberAggregate
+    {
+        $projectId = (int) ($user->project_id ?? 0);
+        $member = $this->memberRepository->findByUserId((int) $user->id, $projectId);
+        if ($member === null) {
+            throw new \Exception('会員登録が必要です');
+        }
+
+        $this->memberRepository->syncPointsLedger($member->id()->value(), $projectId);
+        $locked = $this->memberRepository->findByIdForUpdate($member->id()->value(), $projectId);
+        if ($locked === null) {
+            throw new \Exception('会員登録が必要です');
+        }
+
+        return $locked;
     }
 
     private function awardStamps(User $user, Order $order, float $finalAmount): void
@@ -299,45 +253,52 @@ class OrderService
             return;
         }
 
-        $projectId = $user->project_id ?? null;
-        $stampCardId = ShopSetting::getOrderStampCardId($projectId);
-        $stampEarnPerAmount = (int) ShopSetting::getStampEarnPerAmount($projectId);
+        $projectId = (int) ($user->project_id ?? 0);
+        $stampCardId = $this->shopSettingRepository->getOrderStampCardId($projectId);
+        $stampEarnPerAmount = $this->shopSettingRepository->getStampEarnPerAmount($projectId);
 
         if ($stampCardId === null || $stampEarnPerAmount <= 0) {
             return;
         }
 
-        $stampCount = (int) floor($finalAmount / $stampEarnPerAmount);
+        $stampCount = $this->stampEarnPolicy->calculateCount($finalAmount, $stampEarnPerAmount);
         if ($stampCount > 0) {
             $this->memberAdminService->addStampsToMember($member, $stampCardId, $stampCount);
         }
     }
 
-    private function getPointsEarnRate(?int $projectId): int
+    private function getPointsEarnRate(int $projectId): int
     {
-        $rate = ShopSetting::getPointEarnRate($projectId);
+        $rate = $this->shopSettingRepository->getPointEarnRate($projectId);
 
         return $rate > 0 ? $rate : self::DEFAULT_POINTS_EARN_RATE;
     }
 
     public function handleOrderCancellation(Order $order): void
     {
-        if ($order->status !== OrderStatus::CANCELLED) {
+        $projectId = (int) ($order->project_id ?? 0);
+        $aggregate = $this->orderRepository->findById((int) $order->id, $projectId);
+        if ($aggregate === null || $aggregate->isCancelled() === false) {
             return;
         }
 
-        $order->load('user.member', 'items.product');
-        $member = $order->user ? $order->user->member : null;
+        $order->load('user', 'items.product');
 
         DB::beginTransaction();
         try {
-            if ($member !== null) {
-                $this->refundPointsUsed($order, $member);
-                $this->reversePointsEarned($order, $member);
-                $member->recalcPointsFromTransactions();
+            if ($order->user !== null) {
+                $member = $this->memberRepository->findByUserId((int) $order->user_id, $projectId);
+                if ($member !== null) {
+                    $member = $this->memberRepository->findByIdForUpdate($member->id()->value(), $projectId);
+                }
+                if ($member !== null) {
+                    $this->refundPointsUsed($order, $member);
+                    $this->reversePointsEarned($order, $member);
+                    $this->memberRepository->save($member);
+                }
             }
 
-            $this->restoreProductStock($order);
+            $this->restoreProductStock($order, $projectId);
 
             DB::commit();
         } catch (\Exception $e) {
@@ -345,60 +306,64 @@ class OrderService
             Log::error('Order cancellation handling failed: '.$e->getMessage(), ['order_id' => $order->id]);
             throw $e;
         }
+        // 未決済キャンセル専用。作成時にスマレジ未同期のため差分同期しない。
     }
 
-    private function refundPointsUsed(Order $order, Member $member): void
+    private function refundPointsUsed(Order $order, MemberAggregate $member): int
     {
         if ($order->points_used <= 0) {
-            return;
-        }
-        $already = PointTransaction::where('order_id', $order->id)
-            ->where('type', 'refunded')
-            ->where('description', self::DESC_REFUND_CANCEL)
-            ->exists();
-        if ($already) {
-            return;
+            return 0;
         }
 
-        PointTransaction::create([
-            'project_id' => $member->project_id,
-            'member_id' => $member->id,
-            'type' => 'refunded',
-            'points' => $order->points_used,
-            'description' => self::DESC_REFUND_CANCEL,
-            'order_id' => $order->id,
-        ]);
+        if ($this->memberRepository->hasPointTransactionForOrder(
+            (int) $order->id,
+            PointTransactionType::REFUNDED,
+            self::DESC_REFUND_CANCEL,
+        )) {
+            return 0;
+        }
+
+        $points = (int) $order->points_used;
+        $member->refundUsedPointsForOrder(
+            (int) $order->id,
+            $points,
+            self::DESC_REFUND_CANCEL,
+        );
+
+        return $points;
     }
 
-    private function reversePointsEarned(Order $order, Member $member): void
+    private function reversePointsEarned(Order $order, MemberAggregate $member): int
     {
         if ($order->points_earned <= 0) {
-            return;
-        }
-        $already = PointTransaction::where('order_id', $order->id)
-            ->where('type', 'reversed')
-            ->exists();
-        if ($already) {
-            return;
+            return 0;
         }
 
-        PointTransaction::create([
-            'project_id' => $member->project_id,
-            'member_id' => $member->id,
-            'type' => 'reversed',
-            'points' => -$order->points_earned,
-            'description' => self::DESC_REVERSED_CANCEL,
-            'order_id' => $order->id,
-        ]);
+        if ($this->memberRepository->hasPointTransactionForOrder(
+            (int) $order->id,
+            PointTransactionType::REVERSED,
+        )) {
+            return 0;
+        }
+
+        $points = (int) $order->points_earned;
+        $member->reverseEarnedPointsForOrder(
+            (int) $order->id,
+            $points,
+            self::DESC_REVERSED_CANCEL,
+        );
+
+        return $points;
     }
 
-    private function restoreProductStock(Order $order): void
+    private function restoreProductStock(Order $order, int $projectId): void
     {
         foreach ($order->items as $item) {
-            $product = $item->product;
-            if ($product !== null && $product->stock !== null) {
-                $product->increment('stock', $item->quantity);
-            }
+            $this->productStockRepository->restore(
+                (int) $item->product_id,
+                $projectId,
+                (int) $item->quantity,
+            );
         }
     }
 }

@@ -6,39 +6,32 @@ use App\Models\Project;
 use App\Models\QueueEntry as QueueEntryModel;
 use App\Models\User;
 use App\Services\Line\LineService;
-use App\Services\UserService;
 use App\Support\QueueLiffUrlBuilder;
-use App\UseCases\Queue\Data\QueueEntry;
 use App\UseCases\Queue\Data\QueueEntryFactory;
-use App\Util\AdminContext;
+use App\UseCases\Queue\Data\QueueQrStatusInput;
+use App\UseCases\Queue\Data\QueueQrStatusOutput;
 use App\Util\LogHelper;
 use App\Util\StrHelper;
-use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 class QueueQrStatusUseCase
 {
-    private const SESSION_QUEUE_ENTRY_KEY_PREFIX = 'mobile_order_queue_entry';
-
     public function __construct(
-        private UserService $userService,
         private QueueStatsService $statsService,
         private QueueEntryFactory $entryFactory,
-        private LineService $lineService
+        private LineService $lineService,
     ) {}
 
-    public function handle(Request $request, string $token): ?QueueEntry
+    public function handle(QueueQrStatusInput $input): ?QueueQrStatusOutput
     {
-        $currentProjectId = AdminContext::getCurrentProjectId() ?? 1;
-
         $entry = QueueEntryModel::with('user')
-            ->where('project_id', $currentProjectId)
-            ->where('qr_token', $token)
+            ->where('project_id', $input->projectId)
+            ->where('qr_token', $input->token)
             ->first();
-        if ($entry === null && ctype_digit($token)) {
+        if ($entry === null && ctype_digit($input->token)) {
             $entry = QueueEntryModel::with('user')
-                ->where('project_id', $currentProjectId)
-                ->whereKey((int) $token)
+                ->where('project_id', $input->projectId)
+                ->whereKey((int) $input->token)
                 ->first();
             if ($entry !== null && StrHelper::isEmptyStringOrNull($entry->qr_token)) {
                 $entry->qr_token = $this->generateQrToken();
@@ -50,38 +43,34 @@ class QueueQrStatusUseCase
             return null;
         }
 
-        $lineUserId = $this->resolveLineUserId($request);
-        if (! $this->isValidLineUserId($lineUserId)) {
+        if (! $this->isValidLineUserId($input->lineUserId)) {
             LogHelper::warning('[Queue] qr link rejected: missing line user id', [
                 'queue_id' => $entry->id,
-                'project_id' => $currentProjectId,
-                'has_header' => ! StrHelper::isEmptyStringOrNull((string) $request->header('X-Line-User-Id')),
-                'has_query_line_user_id' => ! StrHelper::isEmptyStringOrNull((string) $request->query('line_user_id')),
-                'user_agent' => (string) $request->userAgent(),
+                'project_id' => $input->projectId,
             ]);
             throw new \RuntimeException('LINEログインが必要です');
         }
 
-        $user = $this->resolveUserForLine($request, $lineUserId, $currentProjectId);
+        $user = $this->resolveUserForLine($input);
         $projectId = $entry->project_id;
         $linkedNow = false;
 
-        // 既に同一ユーザーで紐づいている場合は何もせず通知も送らない
         if ($entry->user_id !== null && (int) $entry->user_id === (int) $user->id) {
             $stats = $this->statsService->getStats($projectId, $entry->queue_number);
-            $this->rememberEntryInSession($request, $projectId, (int) $entry->id);
 
-            return $this->entryFactory->create($entry->refresh(), $stats);
+            return new QueueQrStatusOutput(
+                $this->entryFactory->create($entry->refresh(), $stats),
+                (int) $entry->id,
+                (int) $entry->project_id,
+            );
         }
 
         if ($entry->user_id !== null && $entry->user_id !== $user->id) {
             $entryLineUserId = (string) ($entry->user?->line_user_id ?? '');
-            if ($entryLineUserId !== '' && hash_equals($entryLineUserId, (string) $lineUserId)) {
-                // 既存顧客で user レコードが重複しているケースは同一 LINE とみなして再紐付け（通知は送らない）
+            if ($entryLineUserId !== '' && hash_equals($entryLineUserId, $input->lineUserId)) {
                 $entry->user_id = $user->id;
                 $entry->save();
                 $entry->refresh();
-                // 既に紐づき済みのため linkedNow は false のまま（重複通知を防ぐ）
             } else {
                 throw new \RuntimeException('別のLINEアカウントで登録済みです');
             }
@@ -98,13 +87,16 @@ class QueueQrStatusUseCase
         }
 
         if ($linkedNow) {
-            $this->sendLinkedCompleteMessage($entry, (string) $lineUserId);
+            $this->sendLinkedCompleteMessage($entry, $input->lineUserId);
         }
 
         $stats = $this->statsService->getStats($projectId, $entry->queue_number);
-        $this->rememberEntryInSession($request, $projectId, (int) $entry->id);
 
-        return $this->entryFactory->create($entry, $stats);
+        return new QueueQrStatusOutput(
+            $this->entryFactory->create($entry, $stats),
+            (int) $entry->id,
+            (int) $entry->project_id,
+        );
     }
 
     private function generateQrToken(): string
@@ -200,60 +192,27 @@ class QueueQrStatusUseCase
         }
     }
 
-    private function rememberEntryInSession(Request $request, int $projectId, int $entryId): void
+    private function resolveUserForLine(QueueQrStatusInput $input): User
     {
-        if (! $request->hasSession()) {
-            return;
-        }
-        $request->session()->put($this->getSessionEntryKey($projectId), $entryId);
-    }
-
-    private function getSessionEntryKey(int $projectId): string
-    {
-        return self::SESSION_QUEUE_ENTRY_KEY_PREFIX.'_'.$projectId;
-    }
-
-    private function resolveLineUserId(Request $request): string
-    {
-        $header = trim((string) ($request->header('X-Line-User-Id') ?? ''));
-        if ($header !== '') {
-            return $header;
-        }
-
-        $query = trim((string) ($request->query('line_user_id') ?? ''));
-        if ($query !== '') {
-            return $query;
-        }
-
-        $user = $this->userService->findUser($request);
-        if ($user !== null && ! StrHelper::isEmptyStringOrNull($user->line_user_id)) {
-            return (string) $user->line_user_id;
-        }
-
-        return '';
-    }
-
-    private function resolveUserForLine(Request $request, string $lineUserId, int $projectId): User
-    {
-        $user = $this->userService->findUser($request);
+        $contextUser = $input->contextUser;
         if (
-            $user !== null
-            && (int) $user->project_id === $projectId
-            && hash_equals((string) $user->line_user_id, $lineUserId)
+            $contextUser !== null
+            && (int) $contextUser->project_id === $input->projectId
+            && hash_equals((string) $contextUser->line_user_id, $input->lineUserId)
         ) {
-            return $user;
+            return $contextUser;
         }
 
-        $user = User::where('project_id', $projectId)
-            ->where('line_user_id', $lineUserId)
+        $user = User::where('project_id', $input->projectId)
+            ->where('line_user_id', $input->lineUserId)
             ->first();
         if ($user !== null) {
             return $user;
         }
 
         return User::create([
-            'project_id' => $projectId,
-            'line_user_id' => $lineUserId,
+            'project_id' => $input->projectId,
+            'line_user_id' => $input->lineUserId,
             'name' => 'LINE User',
         ]);
     }

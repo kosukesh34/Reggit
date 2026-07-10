@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin\Settings;
 
 use App\Http\Controllers\Admin\AdminBaseController;
+use App\Http\Support\AdminSettingsInputFactory;
 use App\UseCases\Admin\Settings\GetWalletSettingsUseCase;
 use App\UseCases\Admin\Settings\UpdateWalletSettingsUseCase;
 use Illuminate\Http\Request;
@@ -12,17 +13,11 @@ use Illuminate\Http\Request;
  */
 class WalletController extends AdminBaseController
 {
-    private GetWalletSettingsUseCase $getWalletSettingsUseCase;
-
-    private UpdateWalletSettingsUseCase $updateWalletSettingsUseCase;
-
     public function __construct(
-        GetWalletSettingsUseCase $getWalletSettingsUseCase,
-        UpdateWalletSettingsUseCase $updateWalletSettingsUseCase
-    ) {
-        $this->getWalletSettingsUseCase = $getWalletSettingsUseCase;
-        $this->updateWalletSettingsUseCase = $updateWalletSettingsUseCase;
-    }
+        private GetWalletSettingsUseCase $getWalletSettingsUseCase,
+        private UpdateWalletSettingsUseCase $updateWalletSettingsUseCase,
+        private AdminSettingsInputFactory $inputFactory,
+    ) {}
 
     public function index()
     {
@@ -47,7 +42,9 @@ class WalletController extends AdminBaseController
             'wallet_google_program_logo_file' => 'nullable|image|mimes:png,jpg,jpeg|max:2048',
             'wallet_google_hero_file' => 'nullable|image|mimes:png,jpg,jpeg|max:2048',
         ]);
-        $messages = $this->updateWalletSettingsUseCase->handle($projectId, $request, $validated);
+        $messages = $this->updateWalletSettingsUseCase->handle(
+            $this->inputFactory->walletSettings($projectId, $request, $validated),
+        );
         $msg = $messages !== [] ? implode(' ', $messages) : 'Wallet 画像設定を保存しました。';
 
         return redirect()->route('admin.settings.wallet', $this->buildAdminRouteParams())

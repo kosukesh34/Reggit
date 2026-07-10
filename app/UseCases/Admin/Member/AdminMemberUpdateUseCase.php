@@ -2,11 +2,13 @@
 
 namespace App\UseCases\Admin\Member;
 
-use App\Models\Member;
+use App\Domain\Member\Events\PointsEarned;
+use App\Domain\Member\Repositories\MemberRepository;
+use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
 use App\Services\Admin\MemberAdminService;
 use App\UseCases\Admin\Member\Data\AdminMemberUpdateInput;
-use App\UseCases\Smaregi\SmaregiSyncCustomerPointsUseCase;
-use App\Util\LogHelper;
+use Illuminate\Support\Facades\DB;
 
 class AdminMemberUpdateUseCase
 {
@@ -14,7 +16,9 @@ class AdminMemberUpdateUseCase
 
     public function __construct(
         private MemberAdminService $memberAdminService,
-        private SmaregiSyncCustomerPointsUseCase $smaregiSyncCustomerPointsUseCase,
+        private MemberRepository $memberRepository,
+        private ShopSettingRepository $shopSettingRepository,
+        private DomainEventDispatcher $domainEvents,
     ) {}
 
     public function handle(AdminMemberUpdateInput $input): void
@@ -23,13 +27,7 @@ class AdminMemberUpdateUseCase
 
         $this->memberAdminService->updateMemberProfile($member, $input->userData, $input->memberData);
 
-        $member = $member->fresh();
-        if ($member === null) {
-            return;
-        }
-
-        $member->syncPointsLedger();
-        $member->refresh();
+        $this->memberRepository->syncPointsLedger($input->memberId, $input->projectId);
 
         $adjustment = $input->pointAdjustment;
         if ($adjustment === null) {
@@ -40,38 +38,48 @@ class AdminMemberUpdateUseCase
             ? (string) $adjustment['description']
             : self::DEFAULT_POINT_DESCRIPTION;
 
-        $delta = $this->applyPointAdjustment($member, $adjustment, $desc);
-        $member = $member->fresh();
-        if ($member === null) {
-            return;
-        }
+        $delta = DB::transaction(function () use ($input, $adjustment, $desc) {
+            return $this->applyPointAdjustment($input->memberId, $input->projectId, $adjustment, $desc);
+        });
 
         if ($delta !== 0) {
-            $this->syncPointDeltaToSmaregi($member, $delta);
+            $this->domainEvents->dispatch(new PointsEarned(
+                $input->memberId,
+                $input->projectId,
+                $delta,
+                null,
+                isBestEffortSync: true,
+            ));
         }
     }
 
     /**
      * @param  array{type: 'add'|'subtract'|'set', points: int, description?: string|null}  $adjustment
      */
-    private function applyPointAdjustment(Member $member, array $adjustment, string $description): int
+    private function applyPointAdjustment(int $memberId, int $projectId, array $adjustment, string $description): int
     {
-        $member->syncPointsLedger();
-        $member->refresh();
-        $before = $member->getDisplayPoints();
+        $this->memberRepository->syncPointsLedger($memberId, $projectId);
+        $member = $this->memberRepository->findByIdForUpdate($memberId, $projectId);
+        if ($member === null) {
+            return 0;
+        }
+
+        $before = $member->displayPoints();
+        $validDays = $this->shopSettingRepository->getPointsValidDays($projectId);
+        $expiresAt = now()->addDays($validDays);
 
         if ($adjustment['type'] === 'set') {
             $target = max(0, (int) $adjustment['points']);
             $delta = $target - $before;
             if ($delta > 0) {
-                $member->addPoints($delta, $description, null);
+                $member->earnPoints($delta, $description, null, $expiresAt);
             } elseif ($delta < 0) {
                 $member->usePoints(abs($delta), $description, null);
             }
         } elseif ($adjustment['type'] === 'add') {
             $points = (int) $adjustment['points'];
             if ($points > 0) {
-                $member->addPoints($points, $description, null);
+                $member->earnPoints($points, $description, null, $expiresAt);
             }
         } elseif ($adjustment['type'] === 'subtract') {
             $points = min((int) $adjustment['points'], $before);
@@ -80,35 +88,8 @@ class AdminMemberUpdateUseCase
             }
         }
 
-        $member->refresh();
+        $this->memberRepository->save($member);
 
-        return $member->getTotalPointsFromTransactions() - $before;
-    }
-
-    private function syncPointDeltaToSmaregi(Member $member, int $delta): void
-    {
-        if ($delta === 0) {
-            return;
-        }
-
-        $smaregiCustomerId = trim((string) ($member->smaregi_customer_id ?? ''));
-        if ($smaregiCustomerId === '') {
-            return;
-        }
-
-        $result = $this->smaregiSyncCustomerPointsUseCase->execute(
-            (int) $member->project_id,
-            $smaregiCustomerId,
-            $delta
-        );
-
-        if ($result === null) {
-            LogHelper::warning('[AdminMember] smaregi point sync failed after local adjustment', [
-                'member_id' => (int) $member->id,
-                'project_id' => (int) $member->project_id,
-                'smaregi_customer_id' => $smaregiCustomerId,
-                'point_delta' => $delta,
-            ]);
-        }
+        return $member->displayPoints() - $before;
     }
 }

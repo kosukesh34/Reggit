@@ -4,21 +4,18 @@ namespace App\UseCases\Announcement;
 
 use App\Models\Announcement;
 use App\Models\AnnouncementRead;
-use App\Services\UserService;
+use App\UseCases\Announcement\Data\AnnouncementMarkReadInput;
 use App\Util\AdminContext;
-use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
 class AnnouncementMarkReadUseCase
 {
-    public function __construct(private UserService $userService) {}
-
     /** @return array{announcement_id: int, read_at: string} */
-    public function handle(Request $request, int $announcementId): array
+    public function handle(AnnouncementMarkReadInput $input): array
     {
         $projectId = AdminContext::getCurrentProjectId() ?? 1;
         $announcement = Announcement::where('project_id', $projectId)
-            ->where('id', $announcementId)
+            ->where('id', $input->announcementId)
             ->whereNotNull('published_at')
             ->where('published_at', '<=', now())
             ->where(function ($query) {
@@ -32,12 +29,11 @@ class AnnouncementMarkReadUseCase
             ]);
         }
 
-        $user = $this->userService->getOrCreateUser($request);
         $read = AnnouncementRead::updateOrCreate(
             [
                 'project_id' => $projectId,
                 'announcement_id' => $announcement->id,
-                'user_id' => $user->id,
+                'user_id' => $input->user->id,
             ],
             ['read_at' => now()]
         );

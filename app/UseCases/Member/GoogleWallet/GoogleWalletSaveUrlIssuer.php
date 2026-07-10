@@ -15,7 +15,7 @@ class GoogleWalletSaveUrlIssuer
 
     private const TTL_MINUTES = 3;
 
-    public function wrapForClient(string $saveUrl, string $projectKey): string
+    public function wrapForClient(string $saveUrl, string $projectKey, string $requestOrigin): string
     {
         $token = Str::random(48);
         Cache::put(self::CACHE_PREFIX.$token, [
@@ -23,7 +23,7 @@ class GoogleWalletSaveUrlIssuer
             'project_id' => AdminContext::getCurrentProjectId(),
         ], now()->addMinutes(self::TTL_MINUTES));
 
-        return $this->currentOrigin().'/google-wallet/save/'.$token.'?'.http_build_query([
+        return rtrim($requestOrigin, '/').'/google-wallet/save/'.$token.'?'.http_build_query([
             'project_key' => $projectKey !== '' ? $projectKey : 'default',
         ]);
     }
@@ -42,40 +42,5 @@ class GoogleWalletSaveUrlIssuer
             'url' => trim($data['url']),
             'project_id' => isset($data['project_id']) ? (int) $data['project_id'] : null,
         ];
-    }
-
-    private function currentOrigin(): string
-    {
-        $origin = '';
-        if (request() !== null) {
-            $forwardedHost = request()->header('X-Forwarded-Host') ?? request()->server('HTTP_X_FORWARDED_HOST');
-            if (is_string($forwardedHost) && trim($forwardedHost) !== '') {
-                $proto = request()->header('X-Forwarded-Proto') ?? request()->server('HTTP_X_FORWARDED_PROTO');
-                $scheme = is_string($proto) && trim($proto) !== '' ? trim($proto) : request()->getScheme();
-                $origin = $scheme.'://'.trim(explode(',', $forwardedHost)[0]);
-            } else {
-                $origin = request()->getSchemeAndHttpHost();
-            }
-        } else {
-            $origin = (string) config('app.url', url('/'));
-        }
-
-        return $this->ensureHttpsOrigin(rtrim($origin, '/'));
-    }
-
-    private function ensureHttpsOrigin(string $origin): string
-    {
-        $host = parse_url($origin, PHP_URL_HOST);
-        if (! is_string($host) || $host === '') {
-            return $origin;
-        }
-        if (in_array($host, ['localhost', '127.0.0.1'], true)) {
-            return $origin;
-        }
-        if (str_starts_with($origin, 'http://')) {
-            return 'https://'.substr($origin, 7);
-        }
-
-        return $origin;
     }
 }

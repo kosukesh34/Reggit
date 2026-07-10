@@ -8,10 +8,12 @@ use App\Models\ShopSetting;
 use App\Models\User;
 use App\Services\MemberCardAppearanceService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Support\GrantsMemberPoints;
 use Tests\TestCase;
 
 class MemberCardAppearanceServiceTest extends TestCase
 {
+    use GrantsMemberPoints;
     use RefreshDatabase;
 
     public function test_ブロンズランクのデフォルト配色がアプリ会員証と一致すること(): void
@@ -50,12 +52,12 @@ class MemberCardAppearanceServiceTest extends TestCase
                 ['key' => 'bronze', 'label' => 'ブロンズ', 'min_points' => 0, 'is_active' => true, 'order' => 1, 'card_color' => '#cd7f32'],
                 ['key' => 'gold', 'label' => 'ゴールド', 'min_points' => 1000, 'is_active' => true, 'order' => 2, 'card_color' => '#d97706'],
             ], (int) $project->id);
-            $member->addPoints(1200, 'test');
+            $this->grantMemberPoints($member, 1200, 'test');
         } else {
             ShopSetting::setMemberRankSettings([
                 ['key' => 'bronze', 'label' => 'ブロンズ', 'min_points' => 0, 'is_active' => true, 'order' => 1],
             ], (int) $project->id);
-            $member->addPoints(100, 'test');
+            $this->grantMemberPoints($member, 100, 'test');
         }
 
         return $member->fresh();

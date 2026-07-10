@@ -2,6 +2,9 @@
 
 namespace App\UseCases\Member\WalletPass;
 
+use App\Services\MemberService;
+use App\Services\WalletPassService;
+use App\UseCases\Member\WalletPass\Data\WalletPassUrlIssueInput;
 use App\UseCases\Member\WalletPass\Data\WalletPassUrlIssueOutput;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
@@ -16,31 +19,46 @@ class WalletPassUrlIssueUseCase
 
     private const TOKEN_TTL_MINUTES = 3;
 
-    public function handle(int $userId, int $projectId, string $projectKey): WalletPassUrlIssueOutput
+    public function __construct(
+        private WalletPassService $walletPassService,
+        private MemberService $memberService,
+    ) {}
+
+    public function handle(WalletPassUrlIssueInput $input): WalletPassUrlIssueOutput
     {
+        if ($this->walletPassService->isAvailable() !== true) {
+            return WalletPassUrlIssueOutput::unavailable(
+                $this->walletPassService->getUnavailabilityReasons(),
+            );
+        }
+
+        $memberData = $this->memberService->getMemberData($input->user);
+        if (! isset($memberData['is_member']) || $memberData['is_member'] === false) {
+            return WalletPassUrlIssueOutput::notMember();
+        }
+
         $token = Str::random(64);
         $key = self::TOKEN_CACHE_PREFIX.$token;
         Cache::put($key, [
-            'user_id' => $userId,
-            'project_id' => $projectId,
+            'user_id' => $input->user->id,
+            'project_id' => $input->projectId,
         ], now()->addMinutes(self::TOKEN_TTL_MINUTES));
 
-        // LIFF の openWindow は API 直リンクを拒否しやすいため、短い中間ページ URL を返す
-        $url = $this->buildWalletAddUrl($token, $projectKey);
-
-        return new WalletPassUrlIssueOutput($url);
+        return WalletPassUrlIssueOutput::success(
+            $this->buildWalletAddUrl($token, $input->projectKey, $input->requestOrigin),
+        );
     }
 
-    public function buildWalletAddUrl(string $token, string $projectKey): string
+    public function buildWalletAddUrl(string $token, string $projectKey, string $requestOrigin): string
     {
-        return $this->currentOrigin().'/wallet-add?'.http_build_query([
+        return rtrim($requestOrigin, '/').'/wallet-add?'.http_build_query([
             'pass_token' => $token,
             'project_key' => $projectKey,
             'type' => 'apple',
         ]);
     }
 
-    public function buildPassDownloadUrl(string $token, string $projectKey): ?string
+    public function buildPassDownloadUrl(string $token, string $projectKey, string $requestOrigin): ?string
     {
         $cacheKey = self::TOKEN_CACHE_PREFIX.$token;
         $cached = Cache::get($cacheKey);
@@ -48,44 +66,9 @@ class WalletPassUrlIssueUseCase
             return null;
         }
 
-        return $this->currentOrigin().'/api/members/me/wallet-pass?'.http_build_query([
+        return rtrim($requestOrigin, '/').'/api/members/me/wallet-pass?'.http_build_query([
             'project_key' => $projectKey,
             'token' => $token,
         ]);
-    }
-
-    private function currentOrigin(): string
-    {
-        $origin = '';
-        if (request() !== null) {
-            $forwardedHost = request()->header('X-Forwarded-Host') ?? request()->server('HTTP_X_FORWARDED_HOST');
-            if (is_string($forwardedHost) && trim($forwardedHost) !== '') {
-                $proto = request()->header('X-Forwarded-Proto') ?? request()->server('HTTP_X_FORWARDED_PROTO');
-                $scheme = is_string($proto) && trim($proto) !== '' ? trim($proto) : request()->getScheme();
-                $origin = $scheme.'://'.trim(explode(',', $forwardedHost)[0]);
-            } else {
-                $origin = request()->getSchemeAndHttpHost();
-            }
-        } else {
-            $origin = (string) config('app.url', url('/'));
-        }
-
-        return $this->ensureHttpsOrigin(rtrim($origin, '/'));
-    }
-
-    private function ensureHttpsOrigin(string $origin): string
-    {
-        $host = parse_url($origin, PHP_URL_HOST);
-        if (! is_string($host) || $host === '') {
-            return $origin;
-        }
-        if (in_array($host, ['localhost', '127.0.0.1'], true)) {
-            return $origin;
-        }
-        if (str_starts_with($origin, 'http://')) {
-            return 'https://'.substr($origin, 7);
-        }
-
-        return $origin;
     }
 }
