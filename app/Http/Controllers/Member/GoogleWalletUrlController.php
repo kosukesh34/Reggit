@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Member;
 
 use App\Http\Controllers\Controller;
+use App\Http\Support\RequestOrigin;
 use App\Services\UserService;
 use App\UseCases\Member\GoogleWallet\Data\GetGoogleWalletUrlInput;
 use App\UseCases\Member\GoogleWallet\Data\GetGoogleWalletUrlOutput;
@@ -70,7 +71,8 @@ class GoogleWalletUrlController extends Controller
             user: $user,
             projectId: $projectId,
             projectKey: $projectKey,
-            projectName: $projectName
+            projectName: $projectName,
+            requestOrigin: RequestOrigin::fromRequest($request),
         );
     }
 

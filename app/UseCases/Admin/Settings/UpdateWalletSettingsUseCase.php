@@ -2,7 +2,7 @@
 
 namespace App\UseCases\Admin\Settings;
 
-use App\Models\ShopSetting;
+use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Services\Admin\WalletAssetService;
 use App\UseCases\Admin\Settings\Data\UpdateWalletSettingsInput;
 
@@ -14,6 +14,7 @@ class UpdateWalletSettingsUseCase
 {
     public function __construct(
         private WalletAssetService $walletAssetService,
+        private ShopSettingRepository $shopSettingRepository,
     ) {}
 
     /**
@@ -41,7 +42,7 @@ class UpdateWalletSettingsUseCase
                 'program_logo',
             );
             if ($url !== null) {
-                ShopSetting::setWalletGoogleProgramLogoUrl($url, $input->projectId);
+                $this->shopSettingRepository->setWalletGoogleProgramLogoUrl($url, $input->projectId);
                 $messages[] = 'Google Wallet プログラムロゴを更新しました。';
             }
         }
@@ -52,19 +53,19 @@ class UpdateWalletSettingsUseCase
                 'hero',
             );
             if ($url !== null) {
-                ShopSetting::setWalletGoogleHeroImageUrl($url, $input->projectId);
+                $this->shopSettingRepository->setWalletGoogleHeroImageUrl($url, $input->projectId);
                 $messages[] = 'Google Wallet ヒーロー画像を更新しました。';
             }
         }
 
         if ($input->walletGoogleProgramLogoFile === null && $input->hasWalletGoogleProgramLogoUrlField) {
-            ShopSetting::setWalletGoogleProgramLogoUrl(
+            $this->shopSettingRepository->setWalletGoogleProgramLogoUrl(
                 $input->walletGoogleProgramLogoUrl !== '' ? $input->walletGoogleProgramLogoUrl : null,
                 $input->projectId,
             );
         }
         if ($input->walletGoogleHeroFile === null && $input->hasWalletGoogleHeroImageUrlField) {
-            ShopSetting::setWalletGoogleHeroImageUrl(
+            $this->shopSettingRepository->setWalletGoogleHeroImageUrl(
                 $input->walletGoogleHeroImageUrl !== '' ? $input->walletGoogleHeroImageUrl : null,
                 $input->projectId,
             );

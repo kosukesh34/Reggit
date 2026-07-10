@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\LoginRequest;
 use App\Http\Support\AdminAuthInputFactory;
+use App\Http\Support\AdminRedirect;
 use App\Models\Project;
 use App\UseCases\Admin\Auth\AdminLoginUseCase;
 use App\UseCases\Admin\Auth\GetAdminDashboardRedirectUseCase;
@@ -23,7 +24,7 @@ class AdminLoginController extends Controller
     public function show()
     {
         if (Auth::guard('admin')->check()) {
-            return $this->getDashboardRedirectUseCase->handle();
+            return AdminRedirect::toResponse($this->getDashboardRedirectUseCase->handle());
         }
         $projects = Project::where('is_active', true)->orderBy('name')->get();
 
@@ -34,7 +35,7 @@ class AdminLoginController extends Controller
     public function showLoginForm()
     {
         if (Auth::guard('admin')->check()) {
-            return $this->getDashboardRedirectUseCase->handle();
+            return AdminRedirect::toResponse($this->getDashboardRedirectUseCase->handle());
         }
 
         return view('admin.login', [
@@ -46,7 +47,7 @@ class AdminLoginController extends Controller
     public function showProject(string $project_key)
     {
         if (Auth::guard('admin')->check()) {
-            return $this->getDashboardRedirectUseCase->handle();
+            return AdminRedirect::toResponse($this->getDashboardRedirectUseCase->handle());
         }
 
         return view('admin.login', [
@@ -67,8 +68,8 @@ class AdminLoginController extends Controller
             'resolved_project_key' => $projectKey,
         ]);
 
-        return $this->adminLoginUseCase->handle(
+        return AdminRedirect::toResponse($this->adminLoginUseCase->handle(
             $this->inputFactory->adminLogin($request, $projectKey),
-        );
+        ));
     }
 }

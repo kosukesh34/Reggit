@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Member;
 
 use App\Http\Controllers\Controller;
+use App\Http\Support\RequestOrigin;
 use App\Models\User;
 use App\Services\UserService;
 use App\UseCases\Member\WalletPass\Data\WalletPassUrlIssueInput;
@@ -35,6 +36,7 @@ class WalletPassUrlController extends Controller
             $user,
             $project->id,
             $project->project_key,
+            RequestOrigin::fromRequest($request),
         ));
 
         return $this->outputToResponse($user, $project->project_key, $output);

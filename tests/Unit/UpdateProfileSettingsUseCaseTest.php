@@ -2,6 +2,7 @@
 
 namespace Tests\Unit;
 
+use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Models\Project;
 use App\Models\ShopSetting;
 use App\UseCases\Admin\Settings\Data\UpdateProfileSettingsInput;
@@ -17,7 +18,7 @@ class UpdateProfileSettingsUseCaseTest extends TestCase
     {
         $project = Project::factory()->create();
 
-        $useCase = new UpdateProfileSettingsUseCase;
+        $useCase = new UpdateProfileSettingsUseCase(app(ShopSettingRepository::class));
         $useCase->handle(new UpdateProfileSettingsInput(
             projectId: (int) $project->id,
             rawSmaregiFields: [

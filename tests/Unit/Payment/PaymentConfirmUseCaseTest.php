@@ -52,6 +52,41 @@ class PaymentConfirmUseCaseTest extends TestCase
         $this->assertSame(PaymentMethod::STRIPE, $order->fresh()->payment_method);
     }
 
+    public function test_confirm_再実行時は注文を上書きせず成功すること(): void
+    {
+        Project::firstOrCreate(
+            ['project_key' => 'default'],
+            ['name' => 'Default Project', 'description' => 'Test', 'is_active' => true]
+        );
+        $user = User::factory()->create(['project_id' => 1]);
+        $order = Order::create([
+            'project_id' => 1,
+            'user_id' => $user->id,
+            'total_amount' => 1000,
+            'status' => OrderStatus::CONFIRMED,
+            'payment_method' => PaymentMethod::STRIPE,
+            'points_used' => 0,
+            'points_earned' => 0,
+            'order_type' => 'mobile',
+        ]);
+
+        $gateway = new FakePaymentGateway;
+        $gateway->intent = ['status' => 'succeeded', 'metadata' => ['order_id' => $order->id]];
+
+        $dispatcher = \Mockery::mock(DomainEventDispatcher::class);
+        $dispatcher->shouldNotReceive('dispatch');
+
+        $useCase = new PaymentConfirmUseCase(
+            $gateway,
+            app(OrderRepository::class),
+            $dispatcher,
+        );
+        $result = $useCase->handle('pi_test_123', $order->id, 1);
+
+        $this->assertTrue($result->isSuccess);
+        $this->assertSame(OrderStatus::CONFIRMED, $order->fresh()->status);
+    }
+
     public function test_confirm_metadataのorder_id不一致は失敗すること(): void
     {
         Project::firstOrCreate(

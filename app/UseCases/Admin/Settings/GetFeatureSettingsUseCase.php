@@ -2,23 +2,27 @@
 
 namespace App\UseCases\Admin\Settings;
 
-use App\Models\ShopSetting;
+use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\UseCases\Admin\Settings\Data\FeatureSettingsView;
 
 class GetFeatureSettingsUseCase
 {
+    public function __construct(
+        private ShopSettingRepository $shopSettingRepository,
+    ) {}
+
     public function handle(int $projectId): FeatureSettingsView
     {
         return new FeatureSettingsView(
-            ShopSetting::getFeatureFlags($projectId),
-            ShopSetting::featureFlagLabels(),
-            ShopSetting::getAdminSidebarColor($projectId),
-            ShopSetting::getAdminHeaderColor($projectId),
-            ShopSetting::getAdminPrimaryColor($projectId),
-            ShopSetting::getStampDefaultImageUrl($projectId),
-            ShopSetting::getCouponDefaultImageUrl($projectId),
-            ShopSetting::getFrontendLogoUrl($projectId),
-            ShopSetting::getFrontendHeaderText($projectId)
+            $this->shopSettingRepository->getFeatureFlags($projectId),
+            $this->shopSettingRepository->getFeatureFlagLabels(),
+            $this->shopSettingRepository->getAdminSidebarColor($projectId),
+            $this->shopSettingRepository->getAdminHeaderColor($projectId),
+            $this->shopSettingRepository->getAdminPrimaryColor($projectId),
+            $this->shopSettingRepository->getStampDefaultImageUrl($projectId),
+            $this->shopSettingRepository->getCouponDefaultImageUrl($projectId),
+            $this->shopSettingRepository->getFrontendLogoUrl($projectId),
+            $this->shopSettingRepository->getFrontendHeaderText($projectId)
         );
     }
 }

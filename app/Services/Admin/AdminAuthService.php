@@ -9,8 +9,8 @@ use App\Repositories\Contracts\ProjectRepository;
 use App\UseCases\Admin\Auth\Data\AdminAuthAuditContext;
 use App\UseCases\Admin\Auth\Data\AdminLoginInput;
 use App\UseCases\Admin\Auth\Data\AdminLogoutInput;
+use App\UseCases\Admin\Auth\Data\AdminRedirectResult;
 use App\UseCases\Admin\Auth\Data\SystemAdminLoginInput;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -24,12 +24,12 @@ class AdminAuthService
         private AdminUserRepository $adminUserRepository,
     ) {}
 
-    public function getSystemAdminDashboardRedirect(): RedirectResponse
+    public function getSystemAdminDashboardRedirect(): AdminRedirectResult
     {
-        return redirect()->route('system-admin.projects.index');
+        return new AdminRedirectResult('system-admin.projects.index');
     }
 
-    public function getAdminDashboardRedirect(): RedirectResponse
+    public function getAdminDashboardRedirect(): AdminRedirectResult
     {
         $admin = Auth::guard('admin')->user();
         if ($admin->isSystemAdmin()) {
@@ -37,10 +37,10 @@ class AdminAuthService
         }
         $first = $this->projectRepository->findFirstActiveByIds($admin->getAllowedProjectIds());
         if ($first !== null) {
-            return redirect()->route('admin.dashboard', ['project_key' => $first->project_key]);
+            return new AdminRedirectResult('admin.dashboard', ['project_key' => $first->project_key]);
         }
 
-        return redirect()->route('admin.login');
+        return new AdminRedirectResult('admin.login');
     }
 
     /**
@@ -49,7 +49,7 @@ class AdminAuthService
      * プロジェクト指定ログイン（/admin/{project_key}/login）の場合は projectKey を指定。
      * システム管理者はプロジェクト指定時のみここからログイン可能。
      */
-    public function loginAdmin(AdminLoginInput $input): RedirectResponse
+    public function loginAdmin(AdminLoginInput $input): AdminRedirectResult
     {
         Log::info('[AdminLogin] attempt', [
             'path' => $input->requestPath,
@@ -100,13 +100,13 @@ class AdminAuthService
         ]);
 
         if ($input->projectKey !== null && $input->projectKey !== '') {
-            return redirect()->route('admin.dashboard', ['project_key' => $input->projectKey]);
+            return new AdminRedirectResult('admin.dashboard', ['project_key' => $input->projectKey]);
         }
 
         return $this->getAdminDashboardRedirect();
     }
 
-    public function loginSystemAdmin(SystemAdminLoginInput $input): RedirectResponse
+    public function loginSystemAdmin(SystemAdminLoginInput $input): AdminRedirectResult
     {
         $user = $this->adminUserRepository->findByLoginIdOrEmail($input->loginId);
         if ($user === null || Hash::check($input->password, $user->password) === false) {
@@ -132,7 +132,7 @@ class AdminAuthService
         return $this->getSystemAdminDashboardRedirect();
     }
 
-    public function logout(AdminLogoutInput $input): RedirectResponse
+    public function logout(AdminLogoutInput $input): AdminRedirectResult
     {
         if ($input->adminUserId !== null) {
             $this->writeLoginAuditLog($input->auditContext, $input->adminUserId, 'logout', []);
@@ -143,12 +143,12 @@ class AdminAuthService
         Session::regenerateToken();
 
         return $input->isSystemAdminLogout
-            ? redirect()->route('system-admin.login')
-            : redirect()->route('admin.login');
+            ? new AdminRedirectResult('system-admin.login')
+            : new AdminRedirectResult('admin.login');
     }
 
     /**
-     * @param  array<string, mixed>  $payload
+     * @param  array<string, string|bool|null>  $payload
      */
     private function writeLoginAuditLog(AdminAuthAuditContext $context, int $adminUserId, string $event, array $payload): void
     {
