@@ -42,7 +42,7 @@ class ReservationAggregateTest extends TestCase
         $reservation->cancel();
     }
 
-    public function test_updateDetails_編集できること(): void
+    public function test_update_details_編集できること(): void
     {
         $reservation = $this->createReservation();
         $newAt = Carbon::parse('2026-08-02 18:00:00');
@@ -54,7 +54,7 @@ class ReservationAggregateTest extends TestCase
         $this->assertSame($newAt->getTimestamp(), $reservation->reservedAt()->getTimestamp());
     }
 
-    public function test_updateDetails_キャンセル済みは拒否されること(): void
+    public function test_update_details_キャンセル済みは拒否されること(): void
     {
         $reservation = $this->createReservation(ReservationStatus::CANCELLED);
 

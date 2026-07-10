@@ -4,9 +4,9 @@ namespace App\Http\Controllers\Admin\Account;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\AccountStoreRequest;
+use App\Http\Support\RouteContextResolver;
 use App\UseCases\Admin\Account\AccountStoreUseCase;
 use App\UseCases\Admin\Account\Data\AccountStoreInput;
-use App\Http\Support\RouteContextResolver;
 
 class AccountStoreController extends Controller
 {

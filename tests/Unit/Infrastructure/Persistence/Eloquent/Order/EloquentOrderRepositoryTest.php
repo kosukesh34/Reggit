@@ -20,7 +20,7 @@ class EloquentOrderRepositoryTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_findByIdAndUserId_注文をドメイン集約として返すこと(): void
+    public function test_find_by_id_and_user_id_注文をドメイン集約として返すこと(): void
     {
         $project = Project::factory()->create();
         $user = User::factory()->create(['project_id' => $project->id]);
@@ -79,7 +79,7 @@ class EloquentOrderRepositoryTest extends TestCase
         $this->assertSame(OrderStatus::CANCELLED, $order->fresh()->status);
     }
 
-    public function test_persistPending_注文と明細を永続化すること(): void
+    public function test_persist_pending_注文と明細を永続化すること(): void
     {
         $project = Project::factory()->create();
         $user = User::factory()->create(['project_id' => $project->id]);

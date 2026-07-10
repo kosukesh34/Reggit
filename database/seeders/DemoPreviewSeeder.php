@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Domain\Member\Repositories\MemberRepository;
-
 use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\QueueStatus;

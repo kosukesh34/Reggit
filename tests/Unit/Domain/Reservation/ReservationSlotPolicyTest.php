@@ -8,7 +8,7 @@ use Tests\TestCase;
 
 class ReservationSlotPolicyTest extends TestCase
 {
-    public function test_availabilityError_期間外は拒否されること(): void
+    public function test_availability_error_期間外は拒否されること(): void
     {
         $error = (new ReservationSlotPolicy)->availabilityError(
             Carbon::parse('2026-07-10 12:00:00'),
@@ -23,7 +23,7 @@ class ReservationSlotPolicyTest extends TestCase
         $this->assertSame('予約可能な期間外です', $error);
     }
 
-    public function test_availabilityError_満席は拒否されること(): void
+    public function test_availability_error_満席は拒否されること(): void
     {
         $error = (new ReservationSlotPolicy)->availabilityError(
             Carbon::parse('2026-07-11 12:00:00'),
@@ -38,7 +38,7 @@ class ReservationSlotPolicyTest extends TestCase
         $this->assertSame('選択した時間帯は満席です', $error);
     }
 
-    public function test_buildAvailableDates_空き枠のみ返すこと(): void
+    public function test_build_available_dates_空き枠のみ返すこと(): void
     {
         $dates = (new ReservationSlotPolicy)->buildAvailableDates(
             Carbon::parse('2026-07-10'),

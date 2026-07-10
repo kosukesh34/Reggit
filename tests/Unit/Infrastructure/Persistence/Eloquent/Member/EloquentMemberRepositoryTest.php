@@ -17,7 +17,7 @@ class EloquentMemberRepositoryTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_findById_読取だけでは台帳バックフィルしないこと(): void
+    public function test_find_by_id_読取だけでは台帳バックフィルしないこと(): void
     {
         $project = Project::factory()->create();
         $user = User::factory()->create(['project_id' => $project->id]);
@@ -35,7 +35,7 @@ class EloquentMemberRepositoryTest extends TestCase
         $this->assertSame(0, PointTransaction::query()->where('member_id', $member->id)->count());
     }
 
-    public function test_syncPointsLedger_明示呼び出しでバックフィルすること(): void
+    public function test_sync_points_ledger_明示呼び出しでバックフィルすること(): void
     {
         $project = Project::factory()->create();
         $user = User::factory()->create(['project_id' => $project->id]);
@@ -58,7 +58,7 @@ class EloquentMemberRepositoryTest extends TestCase
         ]);
     }
 
-    public function test_findById_会員をドメイン集約として返すこと(): void
+    public function test_find_by_id_会員をドメイン集約として返すこと(): void
     {
         $project = Project::factory()->create();
         $user = User::factory()->create(['project_id' => $project->id]);
@@ -83,7 +83,7 @@ class EloquentMemberRepositoryTest extends TestCase
         $this->assertSame(40, $aggregate->displayPoints());
     }
 
-    public function test_findByUserId_会員をドメイン集約として返すこと(): void
+    public function test_find_by_user_id_会員をドメイン集約として返すこと(): void
     {
         $project = Project::factory()->create();
         $user = User::factory()->create(['project_id' => $project->id]);

@@ -10,8 +10,12 @@ interface OrderRepository
 {
     public function findById(int $orderId, int $projectId): ?Order;
 
+    public function findByIdForUpdate(int $orderId, int $projectId): ?Order;
+
     /** Webhook 等、テナント不明のシステム経路用。PK はグローバル一意。 */
     public function findByPrimaryKey(int $orderId): ?Order;
+
+    public function findByPrimaryKeyForUpdate(int $orderId): ?Order;
 
     public function findByIdAndUserId(int $orderId, int $userId, int $projectId): ?Order;
 

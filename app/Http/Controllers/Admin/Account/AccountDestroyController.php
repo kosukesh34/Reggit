@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Admin\Account;
 
 use App\Http\Controllers\Controller;
+use App\Http\Support\RouteContextResolver;
 use App\Models\AdminUser;
 use App\UseCases\Admin\Account\AccountDestroyUseCase;
-use App\Http\Support\RouteContextResolver;
 use Illuminate\Http\Request;
 
 class AccountDestroyController extends Controller
