@@ -146,9 +146,10 @@ class EloquentOrderRepository implements OrderRepository
             ->exists();
     }
 
-    public function tryClaimSmaregiPointsSync(int $orderId, int $projectId, int $claimTtlMinutes): bool
+    public function tryClaimSmaregiPointsSync(int $orderId, int $projectId, int $claimTtlMinutes): ?string
     {
         $claimExpiredBefore = now()->subMinutes($claimTtlMinutes);
+        $claimedAt = now()->format('Y-m-d H:i:s');
 
         $affected = OrderModel::query()
             ->whereKey($orderId)
@@ -158,9 +159,9 @@ class EloquentOrderRepository implements OrderRepository
                 $query->whereNull('smaregi_points_sync_started_at')
                     ->orWhere('smaregi_points_sync_started_at', '<', $claimExpiredBefore);
             })
-            ->update(['smaregi_points_sync_started_at' => now()]);
+            ->update(['smaregi_points_sync_started_at' => $claimedAt]);
 
-        return $affected === 1;
+        return $affected === 1 ? $claimedAt : null;
     }
 
     public function markSmaregiPointsSynced(int $orderId, int $projectId): void
@@ -174,12 +175,32 @@ class EloquentOrderRepository implements OrderRepository
             ]);
     }
 
-    public function releaseSmaregiPointsSyncClaim(int $orderId, int $projectId): void
+    public function releaseSmaregiPointsSyncClaim(int $orderId, int $projectId, string $claimedAt): void
     {
         OrderModel::query()
             ->whereKey($orderId)
             ->where('project_id', $projectId)
             ->whereNull('smaregi_points_synced_at')
+            ->where('smaregi_points_sync_started_at', $claimedAt)
             ->update(['smaregi_points_sync_started_at' => null]);
+    }
+
+    public function findUnsyncedSmaregiPointsOrdersForUser(int $userId, int $projectId): array
+    {
+        return OrderModel::query()
+            ->where('user_id', $userId)
+            ->where('project_id', $projectId)
+            ->whereNull('smaregi_points_synced_at')
+            ->where(function ($query): void {
+                $query->where('points_used', '>', 0)
+                    ->orWhere('points_earned', '>', 0);
+            })
+            ->get(['id', 'project_id', 'user_id'])
+            ->map(static fn (OrderModel $order): array => [
+                'orderId' => (int) $order->id,
+                'projectId' => (int) $order->project_id,
+                'userId' => (int) $order->user_id,
+            ])
+            ->all();
     }
 }

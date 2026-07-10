@@ -3,7 +3,10 @@
 namespace App\Services\Smaregi;
 
 use App\Domain\Member\Repositories\MemberRepository;
+use App\Domain\Order\Events\OrderPointsSyncRequested;
+use App\Domain\Order\Repositories\OrderRepository;
 use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
 use App\Models\Member;
 use App\Models\Project;
 use App\Models\Settings\ProjectProfileSmaregiSetting;
@@ -23,6 +26,8 @@ class SmaregiCustomerPointsInboundSyncService
         private MemberRepository $memberRepository,
         private ShopSettingRepository $shopSettingRepository,
         private SmaregiPointsSyncService $pointsSync,
+        private OrderRepository $orderRepository,
+        private DomainEventDispatcher $domainEvents,
     ) {}
 
     /**
@@ -54,6 +59,7 @@ class SmaregiCustomerPointsInboundSyncService
                 return false;
             }
             $member->forceFill(['smaregi_customer_id' => $smaregiCustomerId])->save();
+            $this->requestUnsyncedOrderPointsSync($member);
         }
 
         $this->syncOneCustomer($contractId, $smaregiCustomerId);
@@ -182,11 +188,29 @@ class SmaregiCustomerPointsInboundSyncService
                         'smaregi_customer_id' => $smaregiCustomerId,
                         'remote_points' => $remotePoints,
                     ]);
-
-                    continue;
+                } else {
+                    $this->applyRemotePointsForMember($member, $remotePoints);
                 }
-                $this->applyRemotePointsForMember($member, $remotePoints);
             }
+            $this->requestUnsyncedOrderPointsSync($member);
+        }
+    }
+
+    private function requestUnsyncedOrderPointsSync(Member $member): void
+    {
+        $userId = (int) ($member->user_id ?? 0);
+        $projectId = (int) $member->project_id;
+        $smaregiCustomerId = trim((string) ($member->smaregi_customer_id ?? ''));
+        if ($userId <= 0 || $smaregiCustomerId === '') {
+            return;
+        }
+
+        foreach ($this->orderRepository->findUnsyncedSmaregiPointsOrdersForUser($userId, $projectId) as $order) {
+            $this->domainEvents->dispatch(new OrderPointsSyncRequested(
+                $order['orderId'],
+                $order['projectId'],
+                $order['userId'],
+            ));
         }
     }
 
@@ -240,10 +264,12 @@ class SmaregiCustomerPointsInboundSyncService
     private function applyRemotePointsForMember(Member $member, int $remotePoints): void
     {
         DB::transaction(function () use ($member, $remotePoints): void {
-            $aggregate = $this->memberRepository->findByIdForUpdate(
-                (int) $member->id,
-                (int) $member->project_id,
-            );
+            $memberId = (int) $member->id;
+            $projectId = (int) $member->project_id;
+
+            $this->memberRepository->syncPointsLedger($memberId, $projectId);
+
+            $aggregate = $this->memberRepository->findByIdForUpdate($memberId, $projectId);
             if ($aggregate === null) {
                 return;
             }
