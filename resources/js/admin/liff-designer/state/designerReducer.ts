@@ -90,7 +90,7 @@ export function hydrateDesignerState(config: DesignerConfig): DesignerState {
         selectedId: null,
         quickEditBlockId: null,
         rightMode: 'add',
-        zoom: 100,
+        zoom: 70,
         paletteSearch: '',
         paletteCategory: 'all',
         dirty: false,
@@ -100,7 +100,7 @@ export function hydrateDesignerState(config: DesignerConfig): DesignerState {
         legacyNotes: collectLegacyNotes(rawLayouts as Record<string, unknown[]>),
         toast: null,
         sidebarOpen: false,
-        screensOpen: false,
+        screensOpen: true,
         moreOpen: false,
         templateOpen: false,
         themeOpen: false,
@@ -137,6 +137,7 @@ export type DesignerAction =
           layouts: Record<string, LiffBlock[]>;
           tabSettings?: Record<string, Record<string, unknown>>;
           globalSettings?: Record<string, unknown>;
+          menuItems?: DesignerState['menuItems'];
           customCss?: string;
           activeTab?: string;
       }
@@ -163,7 +164,6 @@ export function designerReducer(state: DesignerState, action: DesignerAction): D
                 quickEditBlockId: null,
                 rightMode: 'add',
                 sidebarOpen: false,
-                screensOpen: false,
             };
         case 'SET_ACTIVE_TAB':
             return {
@@ -178,6 +178,7 @@ export function designerReducer(state: DesignerState, action: DesignerAction): D
                 ...state,
                 quickEditBlockId: action.id,
                 selectedId: action.id,
+                sidebarOpen: true,
             };
         case 'CLOSE_QUICK_EDIT':
             return {
@@ -190,7 +191,12 @@ export function designerReducer(state: DesignerState, action: DesignerAction): D
                 if (action.id === null) {
                     return { ...state, selectedId: null, quickEditBlockId: null };
                 }
-                return { ...state, selectedId: action.id, quickEditBlockId: action.id };
+                return {
+                    ...state,
+                    selectedId: action.id,
+                    quickEditBlockId: action.id,
+                    sidebarOpen: true,
+                };
             }
             const openEdit = action.openEdit !== false && action.id !== null;
             return {
@@ -204,7 +210,7 @@ export function designerReducer(state: DesignerState, action: DesignerAction): D
             return {
                 ...state,
                 rightMode: action.mode,
-                sidebarOpen: typeof window !== 'undefined' && window.innerWidth <= 980 ? true : state.sidebarOpen,
+                sidebarOpen: true,
             };
         case 'SET_ZOOM':
             return { ...state, zoom: Math.min(120, Math.max(60, action.zoom)) };
@@ -315,6 +321,7 @@ export function designerReducer(state: DesignerState, action: DesignerAction): D
                 layouts: action.layouts,
                 tabSettings: action.tabSettings || state.tabSettings,
                 globalSettings: action.globalSettings || state.globalSettings,
+                menuItems: action.menuItems !== undefined ? action.menuItems : state.menuItems,
                 customCss: action.customCss !== undefined ? action.customCss : state.customCss,
                 activeTab: action.activeTab !== undefined ? action.activeTab : state.activeTab,
                 selectedId: null,

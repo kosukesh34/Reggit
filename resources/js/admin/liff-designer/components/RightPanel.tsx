@@ -1,6 +1,7 @@
 import React from 'react';
 import { BLOCK_CATEGORIES, BLOCK_TYPES, findBlockMeta, normalizeBlock } from '../catalog/blockCatalog';
 import { BlockSettingsEditor } from '../blocks/BlockSettingsEditor';
+import { BlockQuickEditPanel } from './BlockQuickEditSheet';
 import { SimpleTabPanel } from './SimpleTabPanel';
 import { useDesigner } from '../state/DesignerContext';
 import { ColorField, ImageUrlField, RangeField, SelectField } from './fields/FormFields';
@@ -22,13 +23,13 @@ function AdvancedPanel() {
         <div className="ld-sidebar__body">
             {state.rightMode === 'add' ? (
                 <div className="ld-sidebar__section ld-sidebar__section--palette">
-                    <div className="ld-sidebar__title">Blocks</div>
-                    <p className="ld-sidebar__lead">クリックで追加、ドラッグで配置</p>
+                    <div className="ld-sidebar__title">ブロック</div>
+                    <p className="ld-sidebar__lead">クリックで追加、ドラッグでキャンバスに配置</p>
                     <div className="ld-palette-controls">
                         <input
                             type="text"
                             className="ld-form-input"
-                            placeholder="名前で検索..."
+                            placeholder="ヒーロー / 会員 / クーポン..."
                             value={state.paletteSearch}
                             onChange={(e) => dispatch({ type: 'SET_PALETTE_SEARCH', value: e.target.value })}
                         />
@@ -174,39 +175,65 @@ function AdvancedChrome() {
 }
 
 export function RightPanel() {
-    const { state, dispatch } = useDesigner();
+    const { state, dispatch, config } = useDesigner();
+    const isSimple = state.editorMode === 'simple';
+    const quickEditBlock = isSimple && state.quickEditBlockId !== null
+        ? (state.layouts[state.activeTab] || []).find((b) => b.id === state.quickEditBlockId) || null
+        : null;
+    const friendAddUrl = config.lineFriendAddUrl || '';
 
     return (
         <aside className={`ld-sidebar ld-sidebar--light${state.sidebarOpen ? ' is-open' : ''}`}>
             <div className="ld-sidebar__chrome">
                 <div>
-                    <div className="ld-sidebar__chrome-title">Inspector</div>
+                    <div className="ld-sidebar__chrome-title">設定パネル</div>
                     <p className="ld-sidebar__chrome-sub">
-                        {state.editorMode === 'simple' ? '画面の見た目を調整' : 'ブロックと画面設定'}
+                        {quickEditBlock !== null
+                            ? '選択中のブロックを編集'
+                            : isSimple
+                                ? '画面の見た目を調整'
+                                : 'ブロックと画面設定'}
                     </p>
                 </div>
-                <button
-                    type="button"
-                    className="ld-icon-btn ld-icon-btn--sm"
-                    onClick={() => dispatch({ type: 'SET_UI', patch: { themeOpen: true } })}
-                    title="テーマ"
-                >
-                    <i className="fas fa-swatchbook" />
-                </button>
+                <div className="ld-panel-head-actions">
+                    <button
+                        type="button"
+                        className="ld-icon-btn ld-icon-btn--sm"
+                        onClick={() => dispatch({ type: 'SET_UI', patch: { themeOpen: true } })}
+                        title="テーマ"
+                    >
+                        <i className="fas fa-swatchbook" />
+                    </button>
+                    <button
+                        type="button"
+                        className="ld-icon-btn ld-icon-btn--sm ld-panel-close"
+                        onClick={() => dispatch({ type: 'SET_UI', patch: { sidebarOpen: false } })}
+                        title="閉じる"
+                        aria-label="設定パネルを閉じる"
+                    >
+                        <i className="fas fa-times" />
+                    </button>
+                </div>
             </div>
-            {state.editorMode === 'advanced' ? <AdvancedChrome /> : null}
+            {!isSimple ? <AdvancedChrome /> : null}
             <div className="ld-sidebar__scroll">
-                {state.editorMode === 'simple' ? (
+                {isSimple ? (
                     <div className="ld-sidebar__body">
-                        <SimpleTabPanel />
+                        {quickEditBlock !== null ? (
+                            <BlockQuickEditPanel
+                                block={quickEditBlock}
+                                friendAddUrl={friendAddUrl}
+                                onChange={(patch) => dispatch({ type: 'UPDATE_BLOCK', id: quickEditBlock.id, patch })}
+                                onClose={() => dispatch({ type: 'CLOSE_QUICK_EDIT' })}
+                            />
+                        ) : (
+                            <SimpleTabPanel />
+                        )}
                     </div>
                 ) : (
                     <AdvancedPanel />
                 )}
             </div>
-            <button type="button" className="ld-drawer-close ld-mobile-panel-btn" onClick={() => dispatch({ type: 'SET_UI', patch: { sidebarOpen: false } })}>
-                閉じる
-            </button>
         </aside>
     );
 }

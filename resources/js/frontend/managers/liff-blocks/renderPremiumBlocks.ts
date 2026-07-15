@@ -36,12 +36,18 @@ const premium: PremiumRenderer = {
         const design = block.design || 'editorial';
         const bg = block.image_url ? `background-image:url('${esc(block.image_url)}');` : '';
         const grad = block.image_url ? '' : `--hero-grad-start:${block.gradient_start || 'var(--primary-color)'};--hero-grad-end:${block.gradient_end || 'var(--primary-dark)'};`;
+        const eyebrow = block.eyebrow || 'Welcome';
+        const cta = block.button_label || block.cta_label || '';
+        const ctaHtml = cta
+            ? `<span class="builder-hero__cta">${esc(cta)}</span>`
+            : '';
         return `<section class="builder-block builder-hero builder-hero--${esc(design)}" style="${bg}${grad}${baseStyle}">
             <div class="builder-hero__scrim"></div>
             <div class="builder-hero__content">
-                ${design !== 'minimal' ? '<span class="builder-hero__eyebrow">Welcome</span>' : ''}
+                ${design !== 'minimal' ? `<span class="builder-hero__eyebrow">${esc(eyebrow)}</span>` : ''}
                 <h2 class="builder-hero__title">${esc(block.title)}</h2>
                 <p class="builder-hero__subtitle">${esc(block.subtitle || block.text || '')}</p>
+                ${ctaHtml}
             </div>
         </section>`;
     },
@@ -162,7 +168,10 @@ const premium: PremiumRenderer = {
             </a>`;
         }).join('');
         const label = block.section_label || block.title || '';
-        const head = label ? `<div class="builder-section-head"><span class="builder-section-head__label">${esc(label)}</span></div>` : '';
+        const moreHref = esc(block.more_action || block.item_action || '#products');
+        const head = label
+            ? `<div class="builder-section-head"><span class="builder-section-head__label">${esc(label)}</span><a href="${moreHref}" class="builder-section-head__link builder-nav">すべて</a></div>`
+            : '';
         return `<section class="builder-block builder-collection-wrap builder-collection-wrap--design-${esc(design)}" style="${baseStyle}">
             ${head}
             <div class="builder-collection ${layoutClass} builder-collection--design-${esc(design)}" style="--collection-gap:${gap}px">${itemsHtml}</div>

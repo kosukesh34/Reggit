@@ -1,12 +1,29 @@
 import React from 'react';
 import { DATA_SOURCES } from '../catalog/blockCatalog';
 
-function CouponItem({ icon, title, meta, available }: { icon: string; title: string; meta: string; available: boolean }) {
+function CouponItem({
+    icon,
+    title,
+    meta,
+    available,
+    value,
+}: {
+    icon: string;
+    title: string;
+    meta: string;
+    available: boolean;
+    value: string;
+}) {
     return (
         <div className={`ld-crm-coupon${available ? ' is-on' : ''}`}>
-            <div className="ld-crm-coupon__icon"><i className={`fas ${icon}`} /></div>
+            <div className="ld-crm-coupon__value">
+                <strong>{value}</strong>
+            </div>
             <div className="ld-crm-coupon__body">
-                <strong>{title}</strong>
+                <div className="ld-crm-coupon__title">
+                    <i className={`fas ${icon}`} />
+                    <strong>{title}</strong>
+                </div>
                 <span>{meta}</span>
             </div>
             <em>{available ? '利用可' : '使用済'}</em>
@@ -23,7 +40,9 @@ function ProductCard({ img, name, price, tag }: { img: string; name: string; pri
             <strong>{name}</strong>
             <div className="ld-crm-prod__row">
                 <span>¥{price}</span>
-                <button type="button" tabIndex={-1}><i className="fas fa-plus" /></button>
+                <button type="button" tabIndex={-1} aria-label="追加">
+                    <i className="fas fa-plus" />
+                </button>
             </div>
         </div>
     );
@@ -40,9 +59,18 @@ const MOCKS: Record<string, () => React.ReactNode> = {
                 <em className="ld-crm-wallet__rank">Gold</em>
             </div>
             <div className="ld-crm-wallet__stats">
-                <div><span>Points</span><strong>1,280</strong></div>
-                <div><span>Visits</span><strong>24</strong></div>
-                <div><span>Rank</span><strong>68%</strong></div>
+                <div>
+                    <span>Points</span>
+                    <strong>1,280</strong>
+                </div>
+                <div>
+                    <span>Visits</span>
+                    <strong>24</strong>
+                </div>
+                <div>
+                    <span>Rank</span>
+                    <strong>68%</strong>
+                </div>
             </div>
             <div className="ld-crm-wallet__barcode">
                 {Array.from({ length: 28 }).map((_, i) => (
@@ -51,16 +79,20 @@ const MOCKS: Record<string, () => React.ReactNode> = {
             </div>
             <div className="ld-crm-wallet__no">No. M999001</div>
             <div className="ld-crm-wallet__btns">
-                <span><i className="fab fa-apple" /> Apple Wallet</span>
-                <span><i className="fab fa-google" /> Google Wallet</span>
+                <span>
+                    <i className="fab fa-apple" /> Apple Wallet
+                </span>
+                <span>
+                    <i className="fab fa-google" /> Google Wallet
+                </span>
             </div>
         </div>
     ),
     coupons: () => (
         <>
-            <CouponItem icon="fa-mug-hot" title="ドリンク1杯無料" meta="〜2027/6/30 · 会員限定" available />
-            <CouponItem icon="fa-percent" title="会計から10%OFF" meta="平日限定 · 〜今月末" available />
-            <CouponItem icon="fa-gift" title="デザートプレゼント" meta="使用済み" available={false} />
+            <CouponItem icon="fa-mug-hot" title="ドリンク1杯無料" meta="〜2027/6/30 · 会員限定" available value="FREE" />
+            <CouponItem icon="fa-percent" title="会計から10%OFF" meta="平日限定 · 〜今月末" available value="10%" />
+            <CouponItem icon="fa-gift" title="デザートプレゼント" meta="使用済み" available={false} value="GIFT" />
         </>
     ),
     stamps: () => {
@@ -82,7 +114,13 @@ const MOCKS: Record<string, () => React.ReactNode> = {
                     <em>あと3で特典</em>
                 </div>
                 <div className="ld-crm-stampcard__grid">{dots}</div>
-                <div className="ld-crm-stampcard__bar"><i style={{ width: '70%' }} /></div>
+                <div className="ld-crm-stampcard__bar">
+                    <i style={{ width: '70%' }} />
+                </div>
+                <div className="ld-crm-stampcard__reward">
+                    <i className="fas fa-gift" />
+                    満了でドリンク無料クーポン
+                </div>
             </div>
         );
     },
@@ -107,7 +145,9 @@ const MOCKS: Record<string, () => React.ReactNode> = {
                     <span>受取</span>
                 </div>
                 <div className="ld-crm-order__items">シグネチャーバーガー × 1 ほか</div>
-                <div className="ld-crm-order__total">合計 <strong>¥1,660</strong></div>
+                <div className="ld-crm-order__total">
+                    合計 <strong>¥1,660</strong>
+                </div>
             </div>
             <div className="ld-crm-order">
                 <div className="ld-crm-order__top">
@@ -115,7 +155,9 @@ const MOCKS: Record<string, () => React.ReactNode> = {
                     <em className="is-done">受取完了</em>
                 </div>
                 <div className="ld-crm-order__items">季節のサラダ × 2</div>
-                <div className="ld-crm-order__total">合計 <strong>¥1,360</strong></div>
+                <div className="ld-crm-order__total">
+                    合計 <strong>¥1,360</strong>
+                </div>
             </div>
         </>
     ),
@@ -124,8 +166,12 @@ const MOCKS: Record<string, () => React.ReactNode> = {
             <div className="ld-crm-queue__label">あなたの番号</div>
             <div className="ld-crm-queue__num">A-12</div>
             <div className="ld-crm-queue__meta">
-                <span><i className="fas fa-users" /> 前に 3 組</span>
-                <span><i className="fas fa-clock" /> 約 15 分</span>
+                <span>
+                    <i className="fas fa-users" /> 前に 3 組
+                </span>
+                <span>
+                    <i className="fas fa-clock" /> 約 15 分
+                </span>
             </div>
             <div className="ld-crm-queue__pulse">呼び出し待機中</div>
         </div>
@@ -134,19 +180,19 @@ const MOCKS: Record<string, () => React.ReactNode> = {
         <>
             <div className="ld-crm-resv">
                 <div className="ld-crm-resv__date">
-                    <strong>6</strong>
-                    <span>月20日</span>
+                    <strong>20</strong>
+                    <span>6月 · 土</span>
                 </div>
                 <div className="ld-crm-resv__body">
                     <strong>18:30 · 2名</strong>
-                    <span>店内テーブル</span>
+                    <span>店内テーブル · 窓際</span>
                 </div>
                 <em className="is-ok">確定</em>
             </div>
             <div className="ld-crm-resv">
                 <div className="ld-crm-resv__date">
-                    <strong>6</strong>
-                    <span>月27日</span>
+                    <strong>27</strong>
+                    <span>6月 · 土</span>
                 </div>
                 <div className="ld-crm-resv__body">
                     <strong>12:00 · 4名</strong>
@@ -154,6 +200,9 @@ const MOCKS: Record<string, () => React.ReactNode> = {
                 </div>
                 <em className="is-wait">確認中</em>
             </div>
+            <button type="button" className="ld-crm-resv__cta" tabIndex={-1}>
+                <i className="fas fa-plus" /> 新しい予約
+            </button>
         </>
     ),
     gallery: () => (
@@ -170,17 +219,25 @@ const MOCKS: Record<string, () => React.ReactNode> = {
     ),
     announcements: () => (
         <>
-            <div className="ld-crm-ann">
-                <span>6/13</span>
-                <div>
+            <article className="ld-crm-news is-featured">
+                <div
+                    className="ld-crm-news__media"
+                    style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=600)' }}
+                />
+                <div className="ld-crm-news__body">
+                    <div className="ld-crm-news__meta">
+                        <span>6/13</span>
+                        <em>NEW</em>
+                    </div>
                     <strong>夏季限定メニューが登場</strong>
-                    <em>NEW</em>
+                    <p>冷製パスタとクラフトソーダをラインナップに追加しました。</p>
                 </div>
-            </div>
+            </article>
             <div className="ld-crm-ann">
                 <span>6/01</span>
                 <div>
                     <strong>営業時間変更のお知らせ</strong>
+                    <p>平日のラストオーダーを21:30に変更します。</p>
                 </div>
             </div>
             <div className="ld-crm-ann">
@@ -210,7 +267,17 @@ export function SampleDataShell({
     );
 }
 
-export function DataMockPreview({ source, design, cardDesign }: { source: string; design?: string; cardDesign?: string }) {
+export function DataMockPreview({
+    source,
+    design,
+    cardDesign,
+    shopName,
+}: {
+    source: string;
+    design?: string;
+    cardDesign?: string;
+    shopName?: string;
+}) {
     const label = DATA_SOURCES.find((d) => d.value === source)?.label || source;
     const variant = design || '';
     const render = MOCKS[source] || (() => <div className="ld-crm-empty">このデータは実際の利用者画面に表示されます</div>);
@@ -220,15 +287,24 @@ export function DataMockPreview({ source, design, cardDesign }: { source: string
                 <div className={`ld-crm-wallet ld-crm-wallet--${cardDesign || 'default'}`}>
                     <div className="ld-crm-wallet__top">
                         <div>
-                            <span className="ld-crm-wallet__shop">reggit Members</span>
+                            <span className="ld-crm-wallet__shop">{shopName && shopName.trim() !== '' ? shopName : 'Members'}</span>
                             <strong>デモ 太郎</strong>
                         </div>
                         <em className="ld-crm-wallet__rank">Gold</em>
                     </div>
                     <div className="ld-crm-wallet__stats">
-                        <div><span>Points</span><strong>1,280</strong></div>
-                        <div><span>Visits</span><strong>24</strong></div>
-                        <div><span>Rank</span><strong>68%</strong></div>
+                        <div>
+                            <span>Points</span>
+                            <strong>1,280</strong>
+                        </div>
+                        <div>
+                            <span>Visits</span>
+                            <strong>24</strong>
+                        </div>
+                        <div>
+                            <span>Rank</span>
+                            <strong>68%</strong>
+                        </div>
                     </div>
                     <div className="ld-crm-wallet__barcode">
                         {Array.from({ length: 28 }).map((_, i) => (
@@ -237,23 +313,63 @@ export function DataMockPreview({ source, design, cardDesign }: { source: string
                     </div>
                     <div className="ld-crm-wallet__no">No. M999001</div>
                     <div className="ld-crm-wallet__btns">
-                        <span><i className="fab fa-apple" /> Apple Wallet</span>
-                        <span><i className="fab fa-google" /> Google Wallet</span>
+                        <span>
+                            <i className="fab fa-apple" /> Apple Wallet
+                        </span>
+                        <span>
+                            <i className="fab fa-google" /> Google Wallet
+                        </span>
                     </div>
                 </div>
             </SampleDataShell>
         );
     }
-    return (
-        <SampleDataShell label={label} design={variant}>
-            {render()}
-        </SampleDataShell>
-    );
+    return <SampleDataShell label={label} design={variant}>{render()}</SampleDataShell>;
 }
 
 export function MemberSummaryMock({ greeting, design }: { greeting?: string; design?: string }) {
     const hello = greeting || 'こんにちは、デモ 太郎さん';
     const variant = design || 'rewards';
+
+    if (variant === 'wallet') {
+        return (
+            <div className="ld-crm-member ld-crm-member--wallet">
+                <div className="ld-crm-member__wallet-row">
+                    <div className="ld-crm-member__avatar">太</div>
+                    <div className="ld-crm-member__wallet-copy">
+                        <span className="ld-crm-member__hello">{hello}</span>
+                        <em className="ld-crm-member__rank">Gold Member</em>
+                    </div>
+                    <div className="ld-crm-member__wallet-pt">
+                        <strong>1,280</strong>
+                        <span>pt</span>
+                    </div>
+                </div>
+                <div className="ld-crm-member__track">
+                    <i style={{ width: '68%' }} />
+                </div>
+                <div className="ld-crm-member__meta">
+                    <span>次のランクまで 220 pt</span>
+                    <span>今月 +180</span>
+                </div>
+            </div>
+        );
+    }
+
+    if (variant === 'emblem') {
+        return (
+            <div className="ld-crm-member ld-crm-member--emblem">
+                <i className="fas fa-crown ld-crm-member__crown" />
+                <span className="ld-crm-member__hello">{hello}</span>
+                <em className="ld-crm-member__rank">Gold Member</em>
+                <div className="ld-crm-member__points">
+                    <strong>1,280</strong>
+                    <span>pt</span>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className={`ld-crm-member ld-crm-member--${variant}`}>
             <div className="ld-crm-member__top">
@@ -265,8 +381,14 @@ export function MemberSummaryMock({ greeting, design }: { greeting?: string; des
             </div>
             {variant === 'split' ? (
                 <div className="ld-crm-member__split">
-                    <div><strong>1,280</strong><span>ポイント</span></div>
-                    <div><strong>24</strong><span>来店</span></div>
+                    <div>
+                        <strong>1,280</strong>
+                        <span>ポイント</span>
+                    </div>
+                    <div>
+                        <strong>24</strong>
+                        <span>来店</span>
+                    </div>
                 </div>
             ) : (
                 <>
@@ -274,7 +396,11 @@ export function MemberSummaryMock({ greeting, design }: { greeting?: string; des
                         <strong>1,280</strong>
                         <span>pt</span>
                     </div>
-                    {variant !== 'minimal' ? <div className="ld-crm-member__track"><i style={{ width: '68%' }} /></div> : null}
+                    {variant !== 'minimal' ? (
+                        <div className="ld-crm-member__track">
+                            <i style={{ width: '68%' }} />
+                        </div>
+                    ) : null}
                     {variant !== 'minimal' && variant !== 'compact' ? (
                         <div className="ld-crm-member__meta">
                             <span>次のランクまで 220 pt</span>

@@ -203,6 +203,19 @@ export const MEMBER_CARD_DESIGNS = [
     { value: 'emblem', label: 'エンブレム' },
 ];
 
+/** テンプレ適用時など、必ず選ばせる用（空なし） */
+export const MEMBER_CARD_DESIGN_CHOICES = MEMBER_CARD_DESIGNS.filter((d) => d.value !== '');
+
+export const MEMBER_CARD_DISPLAY_TYPES = [
+    { value: 'card', label: 'カード型（裏表）' },
+    { value: 'sheet', label: 'シート型（1面）' },
+];
+
+export const MEMBER_CARD_CODE_TYPES = [
+    { value: 'barcode', label: 'バーコード' },
+    { value: 'qrcode', label: 'QRコード' },
+];
+
 export const SOCIAL_LINK_TYPES = [
     { value: 'instagram', label: 'Instagram' },
     { value: 'x', label: 'X' },
@@ -227,7 +240,10 @@ export function defaultGlobalSettings(): GlobalSettings {
         system_card_style: 'soft',
         system_media_shape: 'rounded',
         system_header_style: 'minimal',
-        member_card_design: '',
+        member_card_design: 'default',
+        member_card_display_type: 'card',
+        member_card_code_type: 'barcode',
+        app_display_name: '',
         member_screen_design: 'wallet',
         coupon_screen_design: 'ticket',
         reservation_screen_design: 'cards',
@@ -283,6 +299,9 @@ export function normalizeBlock(item: Record<string, unknown>, idCounter: { n: nu
         case 'hero':
             block.title = item.title || 'ようこそ！';
             block.subtitle = item.subtitle || item.text || 'Reggitへ';
+            block.eyebrow = item.eyebrow || '';
+            block.button_label = item.button_label || item.cta_label || '';
+            block.action = item.action || '';
             block.image_url = item.image_url || '';
             block.gradient_start = item.gradient_start || '#667eea';
             block.gradient_end = item.gradient_end || '#764ba2';
@@ -305,6 +324,7 @@ export function normalizeBlock(item: Record<string, unknown>, idCounter: { n: nu
             block.image_url = item.image_url || 'https://picsum.photos/seed/img1/750/400';
             block.alt = item.alt || 'サンプル画像';
             block.fit = item.fit || 'cover';
+            block.image_height = item.image_height || 180;
             block.design = pickDesign('image', item.design);
             break;
         case 'button':

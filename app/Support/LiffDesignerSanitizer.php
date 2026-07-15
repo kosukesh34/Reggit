@@ -233,6 +233,21 @@ class LiffDesignerSanitizer
             $item['member_card_design'] = $memberCardDesign;
         }
 
+        $memberCardDisplayType = (string) ($row['member_card_display_type'] ?? '');
+        if (in_array($memberCardDisplayType, ['card', 'sheet'], true)) {
+            $item['member_card_display_type'] = $memberCardDisplayType;
+        }
+
+        $memberCardCodeType = (string) ($row['member_card_code_type'] ?? '');
+        if (in_array($memberCardCodeType, ['barcode', 'qrcode'], true)) {
+            $item['member_card_code_type'] = $memberCardCodeType;
+        }
+
+        $appDisplayName = trim((string) ($row['app_display_name'] ?? ''));
+        if ($appDisplayName !== '') {
+            $item['app_display_name'] = mb_substr($appDisplayName, 0, 80);
+        }
+
         $memberScreenDesign = (string) ($row['member_screen_design'] ?? '');
         if (in_array($memberScreenDesign, ['wallet', 'premium', 'minimal', 'compact'], true)) {
             $item['member_screen_design'] = $memberScreenDesign;
