@@ -6,7 +6,7 @@
 @section('content')
 <div class="page-header">
     <h1 class="page-header-title"><i class="fas fa-shopping-cart"></i> 注文管理</h1>
-    <p class="page-header-desc">注文の確認とステータス管理を行います</p>
+    <p class="page-header-desc">モバイル注文・店内注文の確認とステータス管理を行います</p>
 </div>
 
 <div class="card">
@@ -62,6 +62,7 @@
             <thead>
                 <tr>
                     <th>注文番号</th>
+                    <th>種別</th>
                     <th>ユーザー</th>
                     <th>金額</th>
                     <th>支払い方法</th>
@@ -74,6 +75,15 @@
                 @forelse($orders as $order)
                 <tr>
                     <td><a href="{{ admin_route('admin.orders.detail', ['id' => $order->id]) }}">{{ $order->order_number }}</a></td>
+                    <td>
+                        @php
+                            $orderType = $order->order_type ?? '';
+                            $orderTypeLabel = \App\Enums\OrderType::getLabel($orderType) ?? $orderType;
+                        @endphp
+                        <span class="badge badge-{{ $orderType === \App\Enums\OrderType::MOBILE ? 'info' : 'secondary' }}">
+                            {{ $orderTypeLabel !== '' ? $orderTypeLabel : '—' }}
+                        </span>
+                    </td>
                     <td>{{ $order->user->name ?? 'N/A' }}</td>
                     <td><strong>¥{{ number_format($order->total_amount) }}</strong></td>
                     <td>{{ $order->payment_method ?? 'N/A' }}</td>

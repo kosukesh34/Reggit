@@ -139,7 +139,7 @@ export class LiffLayoutManager {
 
     static get DEFAULT_QUICK_ACTIONS(): Array<{ icon: string; label: string; action: string }> {
         return [
-            { icon: 'fa-utensils', label: '注文', action: '#products' },
+            { icon: 'fa-utensils', label: 'メニュー', action: '#products' },
             { icon: 'fa-ticket-alt', label: 'クーポン', action: '#coupons' },
             { icon: 'fa-stamp', label: 'スタンプ', action: '#stamps' },
             { icon: 'fa-id-card', label: '会員証', action: '#member' },
