@@ -15,6 +15,8 @@ import {
     templateDisplayName,
     type TemplateItem,
 } from './templateGalleryMeta';
+import { screenTabStyleClass } from '../utils/globalDesign';
+import type { GlobalSettings } from '../catalog/types';
 
 type FontStackMeta = { label: string; base?: string; display?: string };
 
@@ -160,6 +162,7 @@ export function TemplatePhoneMock({
     const buttonShape = String(template.theme?.button_shape || '');
     const cardStyle = String(template.theme?.card_style || '');
     const contentWidth = String(template.theme?.content_width || 'comfy');
+    const tabStyleClass = screenTabStyleClass((template.theme || {}) as GlobalSettings);
     const showCart = tabs.some((t) => t.tab === 'products' || t.tab === 'orders');
     const fitMaxHeight = useFitPhoneMaxHeight(size === 'large');
 
@@ -249,6 +252,7 @@ export function TemplatePhoneMock({
                 size={size === 'large' ? 'large' : 'card'}
                 maxHeight={fitMaxHeight}
                 screenStyle={screenVars}
+                screenClassName={tabStyleClass}
             >
                 <PhoneAppHeader
                     title={title}

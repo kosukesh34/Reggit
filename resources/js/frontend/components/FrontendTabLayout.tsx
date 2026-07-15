@@ -8,7 +8,7 @@ type FrontendMenuItem = {
 
 /** タブバー外遷移用も含め、既知タブのセクションは常にマウントする */
 const ALL_TAB_SECTIONS: FrontendMenuItem[] = [
-    { tab: 'home', label: 'ホーム', icon: 'fa-home' },
+    { tab: 'home', label: 'ホーム', icon: 'fa-house' },
     { tab: 'products', label: '商品', icon: 'fa-utensils' },
     { tab: 'orders', label: '注文', icon: 'fa-receipt' },
     { tab: 'stamps', label: 'スタンプ', icon: 'fa-stamp' },

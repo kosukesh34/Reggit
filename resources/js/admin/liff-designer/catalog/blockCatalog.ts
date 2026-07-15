@@ -8,25 +8,37 @@ export const TAB_LABELS: Record<string, string> = {
     coupons: 'クーポン',
     queue: '順番待ち',
     reservations: '予約',
-    member: '会員',
+    member: '会員証',
     gallery: 'ギャラリー',
     announcements: 'お知らせ',
 };
 
 export const TAB_ICONS: Record<string, string> = {
-    home: 'fa-home',
+    home: 'fa-house',
     products: 'fa-utensils',
     orders: 'fa-receipt',
     stamps: 'fa-stamp',
     coupons: 'fa-ticket-alt',
-    queue: 'fa-users',
-    reservations: 'fa-calendar-alt',
-    member: 'fa-user',
+    queue: 'fa-list-ol',
+    reservations: 'fa-calendar-check',
+    member: 'fa-id-card',
     gallery: 'fa-images',
     announcements: 'fa-bullhorn',
 };
 
 export const MENU_TABS = Object.keys(TAB_LABELS).filter((k) => k !== 'announcements');
+
+const ICON_ALIASES: Record<string, string> = {
+    'fa-home': 'fa-house',
+    'fa-calendar-alt': 'fa-calendar-check',
+};
+
+function normalizeMenuIcon(tab: string, icon: string): string {
+    if (icon === '') return TAB_ICONS[tab] || 'fa-circle';
+    if (tab === 'member' && (icon === 'fa-user' || icon === 'fa-users')) return 'fa-id-card';
+    if (tab === 'queue' && icon === 'fa-users') return 'fa-list-ol';
+    return ICON_ALIASES[icon] || icon;
+}
 
 export type BlockTypeMeta = {
     type: string;
@@ -493,7 +505,10 @@ export function normalizeMenuItems(raw: unknown): MenuItem[] {
         return {
             tab,
             label: typeof saved.label === 'string' && saved.label !== '' ? saved.label : TAB_LABELS[tab],
-            icon: typeof saved.icon === 'string' && saved.icon !== '' ? saved.icon : TAB_ICONS[tab],
+            icon: normalizeMenuIcon(
+                tab,
+                typeof saved.icon === 'string' && saved.icon !== '' ? saved.icon : TAB_ICONS[tab],
+            ),
             order: typeof saved.order === 'number' ? saved.order : i,
             enabled: saved.enabled !== false,
         };
