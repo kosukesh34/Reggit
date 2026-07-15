@@ -152,35 +152,22 @@
                     </div>
 
                     <div class="ranks-settings-subsection">
-                        <h4 class="ranks-settings-subtitle">デザイン・表示形式</h4>
+                        <h4 class="ranks-settings-subtitle">会員証デザイン</h4>
                         <div class="ranks-settings-fields ranks-settings-fields--wide">
-                            <div class="form-group">
-                                <label for="member_card_design" class="form-label">会員証レイアウト</label>
-                                <select name="member_card_design" id="member_card_design" class="form-control">
-                                    <option value="default" {{ old('member_card_design', $view->memberCardDesign ?? 'default') === 'default' ? 'selected' : '' }}>標準（名前・ランク・バーコード）</option>
-                                    <option value="logo_top" {{ old('member_card_design', $view->memberCardDesign ?? '') === 'logo_top' ? 'selected' : '' }}>ロゴ上部</option>
-                                    <option value="logo_center" {{ old('member_card_design', $view->memberCardDesign ?? '') === 'logo_center' ? 'selected' : '' }}>ロゴ中央</option>
-                                    <option value="logo_header" {{ old('member_card_design', $view->memberCardDesign ?? '') === 'logo_header' ? 'selected' : '' }}>ロゴヘッダー</option>
-                                    <option value="compact" {{ old('member_card_design', $view->memberCardDesign ?? '') === 'compact' ? 'selected' : '' }}>コンパクト</option>
-                                    <option value="split_banner" {{ old('member_card_design', $view->memberCardDesign ?? '') === 'split_banner' ? 'selected' : '' }}>スプリットバナー</option>
-                                    <option value="minimal_line" {{ old('member_card_design', $view->memberCardDesign ?? '') === 'minimal_line' ? 'selected' : '' }}>ミニマルライン</option>
-                                    <option value="emblem" {{ old('member_card_design', $view->memberCardDesign ?? '') === 'emblem' ? 'selected' : '' }}>エンブレム</option>
-                                </select>
-                                <p class="form-text text-muted">ロゴ画像は <a href="{{ admin_route('admin.settings.features') }}">機能設定 > ヘッダー画像（ロゴ）</a> で設定します。</p>
-                            </div>
-                            <div class="form-group">
-                                <label for="member_card_display_type" class="form-label">表示形式</label>
-                                <select name="member_card_display_type" id="member_card_display_type" class="form-control">
-                                    <option value="card" {{ old('member_card_display_type', $view->memberCardDisplayType ?? 'card') === 'card' ? 'selected' : '' }}>カード型（裏表・タップで裏返し）</option>
-                                    <option value="sheet" {{ old('member_card_display_type', $view->memberCardDisplayType ?? '') === 'sheet' ? 'selected' : '' }}>シート型（1面）</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="member_card_code_type" class="form-label">会員番号の表示</label>
-                                <select name="member_card_code_type" id="member_card_code_type" class="form-control">
-                                    <option value="barcode" {{ old('member_card_code_type', $view->memberCardCodeType ?? 'barcode') === 'barcode' ? 'selected' : '' }}>バーコード</option>
-                                    <option value="qrcode" {{ old('member_card_code_type', $view->memberCardCodeType ?? '') === 'qrcode' ? 'selected' : '' }}>QRコード</option>
-                                </select>
+                            <div class="form-group" style="grid-column: 1 / -1;">
+                                <p class="form-text" style="margin: 0 0 8px;">
+                                    会員証のレイアウト・表示形式・バーコード/QR は
+                                    <a href="{{ admin_route('admin.settings.liff-designer') }}">LIFFデザイン</a>
+                                    （テーマ設定 / テンプレート適用）で設定します。
+                                </p>
+                                <p class="form-text text-muted" style="margin: 0;">
+                                    現在: レイアウト「{{ $view->memberCardDesign ?? 'default' }}」 /
+                                    表示「{{ ($view->memberCardDisplayType ?? 'card') === 'sheet' ? 'シート型' : 'カード型' }}」 /
+                                    番号「{{ ($view->memberCardCodeType ?? 'barcode') === 'qrcode' ? 'QRコード' : 'バーコード' }}」
+                                </p>
+                                <input type="hidden" name="member_card_design" value="{{ old('member_card_design', $view->memberCardDesign ?? 'default') }}">
+                                <input type="hidden" name="member_card_display_type" value="{{ old('member_card_display_type', $view->memberCardDisplayType ?? 'card') }}">
+                                <input type="hidden" name="member_card_code_type" value="{{ old('member_card_code_type', $view->memberCardCodeType ?? 'barcode') }}">
                             </div>
                         </div>
                     </div>

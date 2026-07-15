@@ -215,6 +215,7 @@ export const AppConstants = {
         HOME_SECTION: 'homeSection',
         PRODUCTS_GRID: 'productsGrid',
         CART_BTN: 'cartBtn',
+        ACCOUNT_BTN: 'accountBtn',
         CART_COUNT: 'cartCount',
         CART_ITEMS: 'cartItems',
         CART_SIDEBAR: 'cartSidebar',

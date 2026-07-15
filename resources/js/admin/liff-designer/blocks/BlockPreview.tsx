@@ -14,7 +14,37 @@ function baseStyle(block: LiffBlock): React.CSSProperties {
     };
 }
 
-export function BlockPreview({ block, friendAddUrl }: { block: LiffBlock; friendAddUrl?: string }) {
+const SOCIAL_META: Record<string, { icon: string; label: string; color: string }> = {
+    line: { icon: 'fab fa-line', label: 'LINE', color: '#06C755' },
+    instagram: { icon: 'fab fa-instagram', label: 'Instagram', color: '#E1306C' },
+    twitter: { icon: 'fab fa-x-twitter', label: 'X', color: '#0f172a' },
+    x: { icon: 'fab fa-x-twitter', label: 'X', color: '#0f172a' },
+    facebook: { icon: 'fab fa-facebook-f', label: 'Facebook', color: '#1877F2' },
+    youtube: { icon: 'fab fa-youtube', label: 'YouTube', color: '#FF0000' },
+    tiktok: { icon: 'fab fa-tiktok', label: 'TikTok', color: '#111827' },
+    website: { icon: 'fas fa-globe', label: 'Web', color: '#2563eb' },
+};
+
+function previewNavProps(action: unknown): { 'data-preview-nav'?: string } {
+    if (typeof action !== 'string' || !action.startsWith('#') || action.length < 2) {
+        return {};
+    }
+    const tab = action.slice(1).split(/[?/]/)[0];
+    if (tab === '') {
+        return {};
+    }
+    return { 'data-preview-nav': tab };
+}
+
+export function BlockPreview({
+    block,
+    friendAddUrl,
+    shopName,
+}: {
+    block: LiffBlock;
+    friendAddUrl?: string;
+    shopName?: string;
+}) {
     const style = baseStyle(block);
     switch (block.type) {
         case 'hero': {
@@ -23,6 +53,8 @@ export function BlockPreview({ block, friendAddUrl }: { block: LiffBlock; friend
             const bg = image
                 ? undefined
                 : `linear-gradient(135deg, ${String(block.gradient_start || '#0f172a')}, ${String(block.gradient_end || '#334155')})`;
+            const cta = String(block.button_label || block.cta_label || '');
+            const heroAction = block.action || (cta !== '' ? '#products' : '');
             return (
                 <div
                     className={`ld-app-hero ld-app-hero--${design}`}
@@ -34,10 +66,17 @@ export function BlockPreview({ block, friendAddUrl }: { block: LiffBlock; friend
                 >
                     <div className="ld-app-hero__scrim" />
                     <div className="ld-app-hero__content">
-                        {design !== 'minimal' ? <span className="ld-app-hero__eyebrow">Welcome</span> : null}
+                        {design !== 'minimal' ? (
+                            <span className="ld-app-hero__eyebrow">{String(block.eyebrow || 'Featured')}</span>
+                        ) : null}
                         <strong className="ld-app-hero__title">{String(block.title || '')}</strong>
                         {block.subtitle || block.text ? (
                             <span className="ld-app-hero__sub">{String(block.subtitle || block.text || '')}</span>
+                        ) : null}
+                        {cta !== '' ? (
+                            <span className="ld-app-hero__cta" {...previewNavProps(heroAction)}>
+                                {cta}
+                            </span>
                         ) : null}
                     </div>
                 </div>
@@ -66,9 +105,23 @@ export function BlockPreview({ block, friendAddUrl }: { block: LiffBlock; friend
             );
         case 'image':
             return (
-                <div className={`ld-app-image ld-app-image--${String(block.design || 'rounded')}`} style={{ ...style }}>
+                <div
+                    className={`ld-app-image ld-app-image--${String(block.design || 'rounded')}`}
+                    style={{
+                        ...style,
+                        height: block.image_height !== undefined ? Number(block.image_height) : undefined,
+                    }}
+                >
                     {block.image_url ? (
-                        <img src={String(block.image_url)} alt={String(block.alt || '')} />
+                        <img
+                            src={String(block.image_url)}
+                            alt={String(block.alt || '')}
+                            style={
+                                block.image_height !== undefined
+                                    ? { height: '100%', width: '100%', objectFit: (String(block.fit || 'cover') as React.CSSProperties['objectFit']) }
+                                    : undefined
+                            }
+                        />
                     ) : (
                         <div className="ld-app-image__ph" />
                     )}
@@ -84,6 +137,7 @@ export function BlockPreview({ block, friendAddUrl }: { block: LiffBlock; friend
                             ['--btn-bg' as string]: String(block.color || '#0f172a'),
                             ['--btn-fg' as string]: String(block.text_color || '#fff'),
                         }}
+                        {...previewNavProps(block.action)}
                     >
                         {String(block.text || 'ボタン')}
                     </span>
@@ -94,7 +148,7 @@ export function BlockPreview({ block, friendAddUrl }: { block: LiffBlock; friend
             const design = String(block.design || 'editorial');
             const image = typeof block.image_url === 'string' ? block.image_url : '';
             return (
-                <div className={`ld-app-card ld-app-card--${design}`} style={style}>
+                <div className={`ld-app-card ld-app-card--${design}`} style={style} {...previewNavProps(block.action)}>
                     <div
                         className="ld-app-card__media"
                         style={{
@@ -105,6 +159,11 @@ export function BlockPreview({ block, friendAddUrl }: { block: LiffBlock; friend
                     <div className="ld-app-card__body">
                         <strong>{String(block.title || '')}</strong>
                         {block.description ? <span>{String(block.description)}</span> : null}
+                        {block.action ? (
+                            <em className="ld-app-card__link">
+                                詳しく見る <i className="fas fa-arrow-right" />
+                            </em>
+                        ) : null}
                     </div>
                 </div>
             );
@@ -115,10 +174,24 @@ export function BlockPreview({ block, friendAddUrl }: { block: LiffBlock; friend
             const isGrid = block.layout === 'grid';
             return (
                 <div className={`ld-app-collection ld-app-collection--${design}`} style={style}>
-                    {block.section_label ? <div className="ld-app-collection__label">{String(block.section_label)}</div> : null}
+                    {block.section_label ? (
+                        <div className="ld-app-collection__head">
+                            <div className="ld-app-collection__label">{String(block.section_label)}</div>
+                            <span
+                                className="ld-app-collection__more"
+                                {...previewNavProps(block.item_action || block.more_action || '#gallery')}
+                            >
+                                すべて
+                            </span>
+                        </div>
+                    ) : null}
                     <div className={`ld-app-collection__row${isGrid ? ' is-grid' : ''}`}>
                         {items.slice(0, 6).map((it, i) => (
-                            <div key={i} className="ld-app-collection__item">
+                            <div
+                                key={i}
+                                className="ld-app-collection__item"
+                                {...previewNavProps(it.action || block.item_action)}
+                            >
                                 <div
                                     className="ld-app-collection__img"
                                     style={{
@@ -144,7 +217,7 @@ export function BlockPreview({ block, friendAddUrl }: { block: LiffBlock; friend
                     className="ld-app-slider"
                     style={{
                         ...style,
-                        height: Number(block.slide_height || 160),
+                        height: Number(block.slide_height || 168),
                         backgroundImage: first.image_url ? `url(${String(first.image_url)})` : undefined,
                     }}
                 >
@@ -153,7 +226,7 @@ export function BlockPreview({ block, friendAddUrl }: { block: LiffBlock; friend
                         <strong>{String(first.caption || 'Campaign')}</strong>
                     </div>
                     <div className="ld-app-slider__dots">
-                        {slides.slice(0, 3).map((_, i) => (
+                        {(slides.length > 0 ? slides : [0, 1, 2]).slice(0, 4).map((_, i) => (
                             <i key={i} className={i === 0 ? 'is-on' : ''} />
                         ))}
                     </div>
@@ -181,8 +254,8 @@ export function BlockPreview({ block, friendAddUrl }: { block: LiffBlock; friend
                 <div className={`ld-app-list${block.style === 'number' ? ' is-number' : ''}`} style={style}>
                     {items.map((t, i) => (
                         <div key={i} className="ld-app-list__item">
-                            <span>{block.style === 'number' ? i + 1 : '•'}</span>
-                            {t}
+                            <span className="ld-app-list__mark">{block.style === 'number' ? i + 1 : <i className="fas fa-check" />}</span>
+                            <em>{t}</em>
                         </div>
                     ))}
                 </div>
@@ -198,6 +271,7 @@ export function BlockPreview({ block, friendAddUrl }: { block: LiffBlock; friend
                         ['--banner-bg' as string]: String(block.color || '#0f172a'),
                         ['--banner-fg' as string]: String(block.text_color || '#fff'),
                     }}
+                    {...previewNavProps(block.action)}
                 >
                     <i className={`fas ${String(block.icon || 'fa-bolt')}`} />
                     <span>{String(block.text || '')}</span>
@@ -208,7 +282,16 @@ export function BlockPreview({ block, friendAddUrl }: { block: LiffBlock; friend
         case 'spacer':
             return <div style={{ height: Number(block.height || 16) }} />;
         case 'divider':
-            return <hr className="ld-app-divider" style={{ ...style, borderTopStyle: String(block.divider_style || 'solid') as React.CSSProperties['borderTopStyle'], borderTopColor: String(block.divider_color || '#e2e8f0') }} />;
+            return (
+                <hr
+                    className="ld-app-divider"
+                    style={{
+                        ...style,
+                        borderTopStyle: String(block.divider_style || 'solid') as React.CSSProperties['borderTopStyle'],
+                        borderTopColor: String(block.divider_color || '#e2e8f0'),
+                    }}
+                />
+            );
         case 'data':
             return (
                 <div style={style}>
@@ -216,6 +299,7 @@ export function BlockPreview({ block, friendAddUrl }: { block: LiffBlock; friend
                         source={String(block.source || 'products')}
                         design={String(block.design || '')}
                         cardDesign={String(block.card_design || '')}
+                        shopName={shopName}
                     />
                 </div>
             );
@@ -231,8 +315,8 @@ export function BlockPreview({ block, friendAddUrl }: { block: LiffBlock; friend
             return (
                 <div className={`ld-app-qa ld-app-qa--${design}`} style={style}>
                     {actions.slice(0, 8).map((a, i) => (
-                        <div key={i} className="ld-app-qa__tile">
-                            <span className="ld-app-qa__icon">
+                        <div key={i} className="ld-app-qa__tile" {...previewNavProps(a.action)}>
+                            <span className="ld-app-qa__icon" style={{ ['--qa-accent' as string]: String(a.color || '') || undefined }}>
                                 <i className={`fas ${String(a.icon || 'fa-circle')}`} />
                             </span>
                             <em>{String(a.label || '')}</em>
@@ -255,51 +339,95 @@ export function BlockPreview({ block, friendAddUrl }: { block: LiffBlock; friend
         case 'hours': {
             const rows = Array.isArray(block.rows) ? (block.rows as Array<Record<string, unknown>>) : [];
             return (
-                <div className="ld-app-panel" style={style}>
-                    <div className="ld-app-panel__title">{String(block.title || '営業時間')}</div>
-                    {rows.map((r, i) => (
-                        <div key={i} className="ld-app-panel__row">
-                            <span>{String(r.day || '')}</span>
-                            <strong>{String(r.time || '')}</strong>
-                        </div>
-                    ))}
+                <div className="ld-app-storecard" style={style}>
+                    <div className="ld-app-storecard__head">
+                        <i className="fas fa-clock" />
+                        <strong>{String(block.title || '営業時間')}</strong>
+                        <em className="is-open">本日営業中</em>
+                    </div>
+                    <div className="ld-app-storecard__rows">
+                        {rows.map((r, i) => (
+                            <div key={i} className="ld-app-storecard__row">
+                                <span>{String(r.day || '')}</span>
+                                <strong>{String(r.time || '')}</strong>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             );
         }
         case 'access':
             return (
-                <div className="ld-app-panel" style={style}>
-                    <div className="ld-app-panel__title">{String(block.title || '店舗情報')}</div>
-                    <div className="ld-app-panel__line"><i className="fas fa-map-marker-alt" /> {String(block.address || '')}</div>
-                    <div className="ld-app-panel__line"><i className="fas fa-phone" /> {String(block.phone || '')}</div>
+                <div className="ld-app-storecard" style={style}>
+                    <div className="ld-app-storecard__head">
+                        <i className="fas fa-map-marker-alt" />
+                        <strong>{String(block.title || '店舗情報')}</strong>
+                    </div>
+                    <div className="ld-app-storecard__map" aria-hidden />
+                    <div className="ld-app-storecard__lines">
+                        <div className="ld-app-storecard__line">
+                            <i className="fas fa-location-dot" />
+                            <span>{String(block.address || '')}</span>
+                        </div>
+                        <div className="ld-app-storecard__line">
+                            <i className="fas fa-phone" />
+                            <span>{String(block.phone || '')}</span>
+                        </div>
+                    </div>
+                    <div className="ld-app-storecard__actions">
+                        <span><i className="fas fa-route" /> ルート</span>
+                        <span><i className="fas fa-phone" /> 電話</span>
+                    </div>
                 </div>
             );
         case 'social_links': {
             const links = Array.isArray(block.links) ? (block.links as Array<Record<string, unknown>>) : [];
             return (
                 <div className="ld-app-social" style={style}>
-                    {links.map((l, i) => (
-                        <span key={i}>{String(l.type || '').slice(0, 2)}</span>
-                    ))}
+                    {links.map((l, i) => {
+                        const key = String(l.type || '').toLowerCase();
+                        const meta = SOCIAL_META[key] || { icon: 'fas fa-link', label: key || 'Link', color: '#64748b' };
+                        return (
+                            <span key={i} className="ld-app-social__chip" style={{ ['--social' as string]: meta.color }}>
+                                <i className={meta.icon} />
+                                {meta.label}
+                            </span>
+                        );
+                    })}
                 </div>
             );
         }
         case 'faq': {
             const items = Array.isArray(block.items) ? (block.items as Array<Record<string, unknown>>) : [];
             return (
-                <div className="ld-app-panel" style={style}>
-                    <div className="ld-app-panel__title">{String(block.title || 'FAQ')}</div>
-                    {items.slice(0, 3).map((it, i) => (
-                        <div key={i} className="ld-app-panel__faq"><strong>Q.</strong> {String(it.q || '')}</div>
+                <div className="ld-app-faq" style={style}>
+                    <div className="ld-app-faq__title">{String(block.title || 'よくある質問')}</div>
+                    {items.slice(0, 4).map((it, i) => (
+                        <details key={i} className="ld-app-faq__item" open={i === 0}>
+                            <summary>
+                                <strong>Q</strong>
+                                <span>{String(it.q || '')}</span>
+                                <i className="fas fa-chevron-down" />
+                            </summary>
+                            <p>{String(it.a || '詳しくはお店までお問い合わせください。')}</p>
+                        </details>
                     ))}
                 </div>
             );
         }
         case 'video':
             return (
-                <div className="ld-app-video" style={style}>
-                    <i className="fas fa-play-circle" />
-                    <span>{String(block.caption || '動画')}</span>
+                <div
+                    className="ld-app-video"
+                    style={{
+                        ...style,
+                        backgroundImage: block.poster_url ? `url(${String(block.poster_url)})` : undefined,
+                    }}
+                >
+                    <div className="ld-app-video__play">
+                        <i className="fas fa-play" />
+                    </div>
+                    <span>{String(block.caption || 'Store movie')}</span>
                 </div>
             );
         case 'button_group': {

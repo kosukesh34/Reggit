@@ -956,8 +956,14 @@ export class MemberManager {
             memberCardDesign = blockOverride;
         }
         const memberCardLogoUrl = data.member_card_logo_url || null;
-        const memberCardDisplayType = data.member_card_display_type || 'card';
-        const memberCardCodeType = data.member_card_code_type || 'barcode';
+        const memberCardDisplayType =
+            MemberManager.getLiffGlobalSetting('member_card_display_type', '') ||
+            data.member_card_display_type ||
+            'card';
+        const memberCardCodeType =
+            MemberManager.getLiffGlobalSetting('member_card_code_type', '') ||
+            data.member_card_code_type ||
+            'barcode';
 
         let expiryText = '';
         if (pointsExpiry && pointsExpiry.expires_at_label) {

@@ -56,11 +56,27 @@ export function PreviewOverlay() {
                     <PhoneDeviceFrame
                         className={systemClass}
                         size="large"
+                        maxHeight={Math.max(380, Math.min(560, window.innerHeight - 180))}
                         screenStyle={bodyStyle}
                         screenClassName={tabStyleClass}
                     >
-                        <PhoneAppHeader title={shopTitle} friendAddUrl={friendAddUrl} />
-                        <PhoneAppMain padding={padding} gap={gap}>
+                        <PhoneAppHeader
+                            title={shopTitle}
+                            friendAddUrl={friendAddUrl}
+                            showCart={enabledNav.some((m) => m.tab === 'products' || m.tab === 'orders')}
+                            onAccountClick={() => setPreviewTab('member')}
+                            onCartClick={() => setPreviewTab('products')}
+                        />
+                        <PhoneAppMain
+                            padding={padding}
+                            gap={gap}
+                            onClick={(e) => {
+                                const navEl = (e.target as HTMLElement).closest('[data-preview-nav]');
+                                if (navEl === null) return;
+                                const tab = navEl.getAttribute('data-preview-nav');
+                                if (tab !== null && tab !== '') setPreviewTab(tab);
+                            }}
+                        >
                             {blocks.length === 0 ? (
                                 <p className="ld-preview-empty">この画面にはブロックがありません</p>
                             ) : (
