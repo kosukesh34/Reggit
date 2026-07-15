@@ -12,14 +12,16 @@ export type DeviceFrameSize = 'canvas' | 'card' | 'large';
 
 const SIZE_SHELL_WIDTH: Record<DeviceFrameSize, number> = {
     canvas: DEVICE_SHELL_WIDTH,
-    card: 228,
-    large: 320,
+    card: 210,
+    large: 260,
 };
 
 type DeviceFrameProps = {
     className?: string;
     size?: DeviceFrameSize;
     zoom?: number;
+    /** 表示シェルの高さ上限（px）。幅指定より小さい場合は縮小して収める */
+    maxHeight?: number;
     screenStyle?: CSSProperties;
     screenClassName?: string;
     children: ReactNode;
@@ -29,14 +31,19 @@ export function PhoneDeviceFrame({
     className = '',
     size = 'canvas',
     zoom = 100,
+    maxHeight,
     screenStyle,
     screenClassName = '',
     children,
 }: DeviceFrameProps) {
-    const baseWidth = SIZE_SHELL_WIDTH[size];
     const zoomFactor = size === 'canvas' ? zoom / 100 : 1;
-    const displayWidth = baseWidth * zoomFactor;
-    const scale = displayWidth / DEVICE_SHELL_WIDTH;
+    const widthScale = (SIZE_SHELL_WIDTH[size] * zoomFactor) / DEVICE_SHELL_WIDTH;
+    const heightScale =
+        maxHeight !== undefined && maxHeight > 0
+            ? maxHeight / DEVICE_SHELL_HEIGHT
+            : widthScale;
+    const scale = Math.min(widthScale, heightScale);
+    const displayWidth = DEVICE_SHELL_WIDTH * scale;
     const displayHeight = DEVICE_SHELL_HEIGHT * scale;
     const screenLeft = DEVICE_SCREEN_INSET * scale;
     const screenTop = DEVICE_SCREEN_INSET * scale;
@@ -52,6 +59,7 @@ export function PhoneDeviceFrame({
                     height: displayHeight,
                     ['--ld-device-scale' as string]: String(scale),
                     ['--ld-device-width' as string]: `${displayWidth}px`,
+                    ['--ld-device-height' as string]: `${displayHeight}px`,
                 } as CSSProperties
             }
         >
@@ -102,9 +110,18 @@ export function PhoneDeviceFrame({
 type HeaderProps = {
     title: string;
     friendAddUrl?: string;
+    showCart?: boolean;
+    onAccountClick?: () => void;
+    onCartClick?: () => void;
 };
 
-export function PhoneAppHeader({ title, friendAddUrl }: HeaderProps) {
+export function PhoneAppHeader({
+    title,
+    friendAddUrl,
+    showCart = false,
+    onAccountClick,
+    onCartClick,
+}: HeaderProps) {
     return (
         <header className="header ld-phone-app-header">
             <div className="header-content">
@@ -114,10 +131,32 @@ export function PhoneAppHeader({ title, friendAddUrl }: HeaderProps) {
                         <i className="fab fa-line" /> 友だち追加
                     </span>
                 ) : null}
-                <button type="button" className="cart-btn" tabIndex={-1}>
-                    <i className="fas fa-shopping-cart" />
-                    <span className="cart-count">0</span>
-                </button>
+                <div className="header-actions">
+                    <button
+                        type="button"
+                        className="account-btn"
+                        title="会員・設定"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onAccountClick?.();
+                        }}
+                    >
+                        <i className="fas fa-user" />
+                    </button>
+                    {showCart ? (
+                        <button
+                            type="button"
+                            className="cart-btn"
+                            title="注文内容"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onCartClick?.();
+                            }}
+                        >
+                            <i className="fas fa-shopping-bag" />
+                        </button>
+                    ) : null}
+                </div>
             </div>
         </header>
     );

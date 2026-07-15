@@ -59,6 +59,7 @@ export function OnboardingOverlay() {
             layouts: result.layouts,
             globalSettings: result.globalSettings,
             tabSettings: result.tabSettings,
+            menuItems: result.menuItems,
             customCss: result.customCss,
             activeTab: result.activeTab,
         });

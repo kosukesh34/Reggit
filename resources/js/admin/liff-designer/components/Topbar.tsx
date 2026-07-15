@@ -146,11 +146,23 @@ export function Topbar() {
             </div>
 
             <div className="ld-topbar__actions">
-                <div className="ld-topbar__group ld-topbar__group--mobile">
-                    <button type="button" className="ld-icon-btn ld-mobile-panel-btn" onClick={() => dispatch({ type: 'SET_UI', patch: { screensOpen: true } })} title="画面一覧">
+                <div className="ld-topbar__group ld-topbar__group--panels">
+                    <button
+                        type="button"
+                        className={`ld-icon-btn ld-icon-btn--screens-mobile${state.screensOpen ? ' is-active' : ''}`}
+                        onClick={() => dispatch({ type: 'SET_UI', patch: { screensOpen: !state.screensOpen } })}
+                        title={state.screensOpen ? '画面一覧を閉じる' : '画面一覧を開く'}
+                        aria-pressed={state.screensOpen}
+                    >
                         <i className="fas fa-th-list" />
                     </button>
-                    <button type="button" className="ld-icon-btn ld-mobile-panel-btn" onClick={() => dispatch({ type: 'SET_UI', patch: { sidebarOpen: true } })} title="設定パネル">
+                    <button
+                        type="button"
+                        className={`ld-icon-btn${state.sidebarOpen ? ' is-active' : ''}`}
+                        onClick={() => dispatch({ type: 'SET_UI', patch: { sidebarOpen: !state.sidebarOpen } })}
+                        title={state.sidebarOpen ? '設定パネルを閉じる' : '設定パネルを開く'}
+                        aria-pressed={state.sidebarOpen}
+                    >
                         <i className="fas fa-sliders-h" />
                     </button>
                 </div>
@@ -163,7 +175,7 @@ export function Topbar() {
                                 type="button"
                                 className={`ld-chip-btn${panelPreset === id ? ' is-active' : ''}`}
                                 onClick={() => onPanelPreset(id)}
-                                title={PANEL_PRESETS[id].label}
+                                title={`パネル幅: ${PANEL_PRESETS[id].label}`}
                             >
                                 {PANEL_PRESETS[id].label}
                             </button>
