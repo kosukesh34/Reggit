@@ -238,7 +238,7 @@ export function defaultGlobalSettings(): GlobalSettings {
 }
 
 export function defaultTabSettings(): Record<string, unknown> {
-    return { background_color: '#fafaf9', background_image: '', background_size: 'cover', content_padding: 18 };
+    return { background_color: '#fafaf9', background_image: '', background_size: 'cover' };
 }
 
 export function createBlockId(counter: { n: number }): string {

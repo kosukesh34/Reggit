@@ -24,6 +24,11 @@ function getHeaderConfig(): FrontendHeaderConfig {
     };
 }
 
+/** ネイティブアプリではモバイル注文を主CTA、LIFF/Web では店内注文を主CTAにする */
+function prefersMobileOrderPrimary(): boolean {
+    return window.__MOBILE_APP_MODE__ === true;
+}
+
 export function FrontendChrome(): JSX.Element | null {
     const isDesignerEmbedPreview = window.__IS_DESIGNER_EMBED_PREVIEW__ === true;
     if (isDesignerEmbedPreview) {
@@ -31,6 +36,26 @@ export function FrontendChrome(): JSX.Element | null {
     }
 
     const header = getHeaderConfig();
+    const preferMobilePrimary = prefersMobileOrderPrimary();
+
+    const mobileOrderButton = (
+        <button
+            className={`order-btn ${preferMobilePrimary ? 'order-btn--primary' : 'order-btn--secondary'}`}
+            id="orderBtn"
+            disabled
+        >
+            <i className="fas fa-credit-card" /> モバイル注文（今すぐ決済）
+        </button>
+    );
+    const inStoreOrderButton = (
+        <button
+            className={`order-btn ${preferMobilePrimary ? 'order-btn--secondary' : 'order-btn--primary'}`}
+            id="inStoreOrderBtn"
+            disabled
+        >
+            <i className="fas fa-store" /> 店内注文（後で決済）
+        </button>
+    );
 
     return (
         <>
@@ -79,12 +104,17 @@ export function FrontendChrome(): JSX.Element | null {
                         </span>
                     </div>
                     <div className="order-actions">
-                        <button className="order-btn order-btn--mobile" id="orderBtn" disabled>
-                            <i className="fas fa-credit-card" /> モバイル注文（今すぐ決済）
-                        </button>
-                        <button className="order-btn order-btn--in-store" id="inStoreOrderBtn" disabled>
-                            <i className="fas fa-store" /> 店内注文（後で決済）
-                        </button>
+                        {preferMobilePrimary ? (
+                            <>
+                                {mobileOrderButton}
+                                {inStoreOrderButton}
+                            </>
+                        ) : (
+                            <>
+                                {inStoreOrderButton}
+                                {mobileOrderButton}
+                            </>
+                        )}
                     </div>
                 </div>
             </div>
@@ -93,4 +123,3 @@ export function FrontendChrome(): JSX.Element | null {
         </>
     );
 }
-

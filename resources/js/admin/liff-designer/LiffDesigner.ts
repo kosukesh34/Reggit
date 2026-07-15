@@ -510,7 +510,7 @@ export class LiffDesigner {
             case 'quick_actions':
                 block.design = this._normalizeBlockDesign('quick_actions', item.design);
                 block.actions = Array.isArray(item.actions) && item.actions.length > 0 ? item.actions : [
-                    { icon: 'fa-utensils', label: '注文', action: '#products' },
+                    { icon: 'fa-utensils', label: 'メニュー', action: '#products' },
                     { icon: 'fa-ticket-alt', label: 'クーポン', action: '#coupons' },
                     { icon: 'fa-stamp', label: 'スタンプ', action: '#stamps' },
                     { icon: 'fa-calendar-check', label: '予約', action: '#reservations' },

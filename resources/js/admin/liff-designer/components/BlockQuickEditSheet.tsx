@@ -1,7 +1,7 @@
 import React from 'react';
-import { DATA_SOURCES, findBlockMeta } from '../catalog/blockCatalog';
+import { BLOCK_DESIGNS, DATA_SOURCES, findBlockMeta, MEMBER_CARD_DESIGNS } from '../catalog/blockCatalog';
 import type { LiffBlock } from '../catalog/types';
-import { ActionField, ColorField, ImageUrlField, RangeField, SelectField, TextArea, TextInput } from './fields/FormFields';
+import { ActionField, ColorField, DesignPicker, ImageUrlField, RangeField, SelectField, TextArea, TextInput } from './fields/FormFields';
 
 type SheetProps = {
     block: LiffBlock;
@@ -315,12 +315,21 @@ function QuickFields({ block, friendAddUrl, onChange }: Omit<SheetProps, 'onClos
             return <ButtonGroupQuickEdit block={block} onChange={onChange} />;
         case 'data':
             return (
-                <SelectField
-                    label="表示データ"
-                    value={String(block.source || 'products')}
-                    options={DATA_SOURCES}
-                    onChange={(v) => onChange({ source: v })}
-                />
+                <>
+                    <SelectField
+                        label="表示データ"
+                        value={String(block.source || 'products')}
+                        options={DATA_SOURCES}
+                        onChange={(v) => onChange({ source: v })}
+                    />
+                    {block.source === 'member_card' || block.source === 'member' ? (
+                        <DesignPicker
+                            value={String(block.card_design || '')}
+                            options={MEMBER_CARD_DESIGNS}
+                            onChange={(v) => onChange({ card_design: v })}
+                        />
+                    ) : null}
+                </>
             );
         case 'spacer':
             return (
@@ -356,6 +365,7 @@ const SKIP_BACKGROUND_TYPES = new Set(['spacer', 'divider', 'data']);
 
 export function BlockQuickEditSheet({ block, friendAddUrl, onChange, onClose }: SheetProps) {
     const meta = findBlockMeta(block.type);
+    const designOptions = BLOCK_DESIGNS[block.type] || [];
 
     return (
         <div className="ld-sheet-backdrop" onClick={onClose}>
@@ -371,6 +381,13 @@ export function BlockQuickEditSheet({ block, friendAddUrl, onChange, onClose }: 
                     </button>
                 </div>
                 <div className="ld-sheet__body">
+                    {designOptions.length > 0 ? (
+                        <DesignPicker
+                            value={String(block.design || '')}
+                            options={designOptions}
+                            onChange={(v) => onChange({ design: v })}
+                        />
+                    ) : null}
                     <QuickFields block={block} friendAddUrl={friendAddUrl} onChange={onChange} />
                     {SKIP_BACKGROUND_TYPES.has(block.type) ? null : (
                         <ColorField

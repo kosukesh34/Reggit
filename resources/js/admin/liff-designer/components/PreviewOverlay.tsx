@@ -1,6 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { BlockPreview } from '../blocks/BlockPreview';
+import { PhoneAppHeader, PhoneAppMain, PhoneAppTabs, PhoneDeviceFrame } from './PhoneAppShell';
 import { useDesigner } from '../state/DesignerContext';
+import {
+    contentPadding,
+    frameSystemClasses,
+    resolvePhoneBodyStyle,
+    sectionGap,
+    screenTabStyleClass,
+} from '../utils/globalDesign';
 
 export function PreviewOverlay() {
     const { state, dispatch, config } = useDesigner();
@@ -17,56 +25,57 @@ export function PreviewOverlay() {
     const blocks = state.layouts[previewTab] || [];
     const menuItem = state.menuItems.find((m) => m.tab === previewTab);
     const tabSettings = state.tabSettings[previewTab] || {};
-    const enabledNav = state.menuItems.filter((m) => m.enabled).slice(0, 5);
+    const enabledNav = state.menuItems.filter((m) => m.enabled);
+    const bodyStyle = resolvePhoneBodyStyle(tabSettings, state.globalSettings);
+    const padding = contentPadding(tabSettings, state.globalSettings);
+    const gap = sectionGap(state.globalSettings);
+    const tabStyleClass = screenTabStyleClass(state.globalSettings);
+    const systemClass = frameSystemClasses(state.globalSettings);
+    const friendAddUrl = config.lineFriendAddUrl || '';
+    const shopTitle = document.title.replace(/\s*[|\-].*$/, '').trim() || '店舗アプリ';
 
     return (
         <div className="ld-preview-overlay" onClick={() => dispatch({ type: 'SET_UI', patch: { previewOpen: false } })}>
-            <button
-                type="button"
-                className="ld-preview-overlay__close"
-                onClick={() => dispatch({ type: 'SET_UI', patch: { previewOpen: false } })}
-            >
-                <i className="fas fa-times" />
-            </button>
-            <p className="ld-preview-overlay__hint">下部のタブをタップして画面を切り替えられます</p>
-            <div className="ld-phone" onClick={(e) => e.stopPropagation()}>
-                <div className="ld-phone__frame is-line">
-                    <div className="ld-phone__notch" />
-                    <div className="ld-phone__header">
-                        <span className="ld-phone__header-title">{menuItem?.label || 'ホーム'}</span>
+            <div className="ld-preview-overlay__chrome" onClick={(e) => e.stopPropagation()}>
+                <div className="ld-preview-overlay__top">
+                    <div>
+                        <p className="ld-preview-overlay__eyebrow">Live Preview</p>
+                        <h2 className="ld-preview-overlay__title">{menuItem?.label || 'プレビュー'}</h2>
                     </div>
-                    <div
-                        className="ld-phone__body"
-                        style={{
-                            backgroundColor: String(tabSettings.background_color || '#fafaf9'),
-                            backgroundImage: tabSettings.background_image ? `url(${String(tabSettings.background_image)})` : undefined,
-                        }}
+                    <button
+                        type="button"
+                        className="ld-preview-overlay__close"
+                        onClick={() => dispatch({ type: 'SET_UI', patch: { previewOpen: false } })}
+                        aria-label="閉じる"
                     >
-                        <div className="ld-phone__content" style={{ padding: Number(tabSettings.content_padding ?? 18) }}>
+                        <i className="fas fa-times" />
+                    </button>
+                </div>
+                <p className="ld-preview-overlay__hint">下部タブで画面を切り替えられます。見た目は保存後の利用者画面に近い表示です。</p>
+                <div className="ld-preview-overlay__phone">
+                    <PhoneDeviceFrame
+                        className={systemClass}
+                        size="large"
+                        screenStyle={bodyStyle}
+                        screenClassName={tabStyleClass}
+                    >
+                        <PhoneAppHeader title={shopTitle} friendAddUrl={friendAddUrl} />
+                        <PhoneAppMain padding={padding} gap={gap}>
                             {blocks.length === 0 ? (
                                 <p className="ld-preview-empty">この画面にはブロックがありません</p>
                             ) : (
                                 blocks.map((block) => (
-                                    <div key={block.id} className="ld-block">
-                                        <BlockPreview block={block} friendAddUrl={config.lineFriendAddUrl || ''} />
+                                    <div
+                                        key={block.id}
+                                        className={`ld-block ld-block--${block.type}${block.design ? ` ld-block--${block.type}-design-${String(block.design)}` : ''}`}
+                                    >
+                                        <BlockPreview block={block} friendAddUrl={friendAddUrl} />
                                     </div>
                                 ))
                             )}
-                        </div>
-                    </div>
-                    <div className="ld-phone__nav">
-                        {enabledNav.map((item) => (
-                            <button
-                                key={item.tab}
-                                type="button"
-                                className={`ld-phone__nav-item${previewTab === item.tab ? ' is-active' : ''}`}
-                                onClick={() => setPreviewTab(item.tab)}
-                            >
-                                <i className={`fas ${item.icon}`} />
-                                <span>{item.label}</span>
-                            </button>
-                        ))}
-                    </div>
+                        </PhoneAppMain>
+                        <PhoneAppTabs items={enabledNav} activeTab={previewTab} onSelect={setPreviewTab} />
+                    </PhoneDeviceFrame>
                 </div>
             </div>
         </div>

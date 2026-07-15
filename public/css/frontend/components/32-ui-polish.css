@@ -83,6 +83,7 @@ body {
 }
 
 .product-add-btn,
+.order-btn--primary,
 .order-btn--mobile,
 .btn-primary,
 .builder-btn {
@@ -94,6 +95,7 @@ body {
 }
 
 .product-add-btn:hover,
+.order-btn--primary:hover:not(:disabled),
 .order-btn--mobile:hover:not(:disabled),
 .btn-primary:hover,
 .builder-btn:hover {
@@ -101,6 +103,7 @@ body {
 }
 
 .product-add-btn:active,
+.order-btn--primary:active:not(:disabled),
 .order-btn--mobile:active:not(:disabled),
 .btn-primary:active,
 .builder-btn:active {
