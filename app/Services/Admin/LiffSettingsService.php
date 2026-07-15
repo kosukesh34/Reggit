@@ -64,11 +64,12 @@ class LiffSettingsService
 
         return collect($defaults)->map(function (array $item) use ($byTab) {
             $saved = $byTab->get($item['tab']);
+            $icon = (string) ($saved['icon'] ?? $item['icon']);
 
             return [
                 'tab' => $item['tab'],
                 'label' => $saved['label'] ?? $item['label'],
-                'icon' => $saved['icon'] ?? $item['icon'],
+                'icon' => ShopSetting::normalizeFrontendMenuIcon($item['tab'], $icon),
                 'order' => $saved['order'] ?? $item['order'],
                 'enabled' => ! isset($saved['enabled']) || $saved['enabled'] !== false,
             ];

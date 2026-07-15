@@ -510,34 +510,36 @@ body {
 
 .ld-phone-app-tabs.main-tabs {
     display: flex;
-    gap: 2px;
+    gap: 4px;
     background: rgba(255, 255, 255, 0.96);
-    border-top: 1px solid var(--border-color);
-    box-shadow: 0 -6px 24px rgba(12, 10, 9, 0.06);
-    padding: 6px 6px 12px;
+    border-top: 1px solid var(--hairline, rgba(17, 24, 39, 0.06));
+    box-shadow: 0 -8px 24px rgba(12, 10, 9, 0.06);
+    padding: 8px 8px 10px;
     position: relative;
     z-index: 3;
     flex-shrink: 0;
-    min-height: 58px;
+    min-height: 62px;
 }
 .ld-phone-app-tabs .main-tab-btn {
     flex: 1;
     min-width: 0;
-    padding: 6px 2px 4px;
+    position: relative;
+    padding: 8px 2px 6px;
     background: transparent;
     border: none;
-    border-radius: 10px;
-    color: var(--text-tertiary);
-    font-size: 9px;
+    border-radius: 12px;
+    color: var(--text-tertiary, #9ca3af);
+    font-size: 10px;
     font-weight: 700;
     cursor: pointer;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 3px;
+    gap: 4px;
 }
 .ld-phone-app-tabs .main-tab-btn i {
-    font-size: 16px;
+    font-size: 18px;
+    line-height: 1;
 }
 .ld-phone-app-tabs .main-tab-btn span {
     display: -webkit-box;
@@ -546,22 +548,30 @@ body {
     -webkit-line-clamp: 1;
     line-height: 1.15;
     text-align: center;
+    max-width: 100%;
 }
 .ld-phone-app-tabs .main-tab-btn.active {
     color: var(--primary-color);
     background: rgba(var(--primary-rgb), 0.1);
     font-weight: 800;
 }
-.ld-phone__screen.tab-style-pill .ld-phone-app-tabs .main-tab-btn.active {
+.ld-phone-app-tabs .main-tab-btn.active i {
+    transform: translateY(-1px);
+}
+.ld-phone__screen.tab-style-pill .ld-phone-app-tabs .main-tab-btn.active,
+.ld-phone-device__screen.tab-style-pill .ld-phone-app-tabs .main-tab-btn.active {
     background: var(--primary-color);
     color: #fff;
     border-radius: 999px;
+    box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.28);
 }
-.ld-phone__screen.tab-style-floating .ld-phone-app-tabs.main-tabs {
+.ld-phone__screen.tab-style-floating .ld-phone-app-tabs.main-tabs,
+.ld-phone-device__screen.tab-style-floating .ld-phone-app-tabs.main-tabs {
     margin: 0 8px 8px;
     border-radius: 18px;
-    border: 1px solid var(--hairline);
+    border: 1px solid var(--hairline, rgba(17, 24, 39, 0.06));
     min-height: auto;
+    box-shadow: 0 8px 24px rgba(12, 10, 9, 0.1);
 }
 
 .ld-phone__body {

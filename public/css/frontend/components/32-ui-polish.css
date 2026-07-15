@@ -125,7 +125,7 @@ body {
     background: var(--surface-muted);
 }
 
-/* タブ：アクティブ指標を明確に */
+/* タブ：アクティブは塗りと色で表現（上バーは付けない） */
 .main-tabs {
     backdrop-filter: saturate(180%) blur(22px);
     -webkit-backdrop-filter: saturate(180%) blur(22px);
@@ -136,20 +136,6 @@ body {
 }
 
 .main-tab-btn.active::after {
-    content: '';
-    position: absolute;
-    top: 4px;
-    left: 50%;
-    width: 18px;
-    height: 3px;
-    border-radius: 999px;
-    transform: translateX(-50%);
-    background: var(--primary-color);
-    opacity: 0.9;
-}
-
-body.tab-style-pill .main-tab-btn.active::after,
-body.tab-style-floating .main-tab-btn.active::after {
     display: none;
 }
 
