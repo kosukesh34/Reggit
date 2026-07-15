@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useDesigner } from '../state/DesignerContext';
+import { expandThemeIntoGlobal } from '../utils/globalDesign';
 import { ColorField, FieldGroup, ImageUrlField, RangeField, SelectField, TextInput } from './fields/FormFields';
 
 function Accordion({ title, open, onToggle, children }: { title: string; open: boolean; onToggle: () => void; children: React.ReactNode }) {
@@ -44,14 +45,8 @@ export function ThemePanel() {
     const applyPreset = (presetId: string) => {
         const preset = (config.themePresets || []).find((p) => p.id === presetId);
         if (preset === undefined) return;
-        const patch: Record<string, unknown> = {
-            theme_preset: presetId,
-            accent_color: preset.accent_color || preset.accent || g.accent_color,
-        };
-        ['font_family', 'surface_tone', 'card_style', 'button_shape', 'density', 'background_style', 'bg_color', 'bg_gradient_start', 'bg_gradient_end', 'content_width', 'radius_scale', 'tab_style'].forEach((key) => {
-            if (preset[key] !== undefined) patch[key] = preset[key];
-        });
-        dispatch({ type: 'UPDATE_GLOBAL', patch });
+        const next = expandThemeIntoGlobal(g, { theme_preset: presetId }, config.themePresets);
+        dispatch({ type: 'UPDATE_GLOBAL', patch: next });
         dispatch({ type: 'SHOW_TOAST', message: `テーマ「${preset.label || preset.name || presetId}」を適用` });
     };
 

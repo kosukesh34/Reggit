@@ -617,6 +617,38 @@ class ReggitApp {
         const mode = this.orderMode || 'both';
         if (orderBtn) orderBtn.style.display = (mode === 'in_store_only') ? 'none' : '';
         if (inStoreOrderBtn) inStoreOrderBtn.style.display = (mode === 'mobile_only') ? 'none' : '';
+        this.applyOrderButtonEmphasis(orderBtn, inStoreOrderBtn, mode);
+    }
+
+    /**
+     * LIFF/Web は店内注文を主CTA、ネイティブアプリはモバイル注文を主CTAにする。
+     * 片方のみ表示のときは表示中のボタンを主CTAにする。
+     */
+    applyOrderButtonEmphasis(
+        orderBtn: HTMLElement | null,
+        inStoreOrderBtn: HTMLElement | null,
+        mode: string,
+    ) {
+        const preferMobilePrimary =
+            mode === 'mobile_only'
+            || (mode !== 'in_store_only' && typeof window !== 'undefined' && window.__MOBILE_APP_MODE__ === true);
+        const setEmphasis = (el: HTMLElement | null, isPrimary: boolean) => {
+            if (!el) return;
+            el.classList.toggle('order-btn--primary', isPrimary);
+            el.classList.toggle('order-btn--secondary', !isPrimary);
+            el.classList.remove('order-btn--mobile', 'order-btn--in-store');
+        };
+        setEmphasis(orderBtn, preferMobilePrimary);
+        setEmphasis(inStoreOrderBtn, !preferMobilePrimary);
+
+        const actions = orderBtn?.parentElement ?? inStoreOrderBtn?.parentElement;
+        if (actions !== null && actions !== undefined && orderBtn !== null && inStoreOrderBtn !== null) {
+            if (preferMobilePrimary) {
+                actions.insertBefore(orderBtn, inStoreOrderBtn);
+            } else {
+                actions.insertBefore(inStoreOrderBtn, orderBtn);
+            }
+        }
     }
 
     loadProductsWhenReady() {

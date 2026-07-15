@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { normalizeBlock } from '../catalog/blockCatalog';
 import { useDesigner } from '../state/DesignerContext';
 import type { LiffBlock } from '../catalog/types';
+import { buildTemplateApplyResult } from './applyTemplate';
+import type { TemplateItem } from './templateGalleryMeta';
 
 const INDUSTRY_PRESETS = [
     { id: 'restaurant', icon: 'fa-utensils', label: 'レストラン・居酒屋', desc: '予約・注文・会員を網羅した飲食店向け', gradient: 'linear-gradient(135deg, #ef4444, #f97316)', patternId: 'super-pattern-classic' },
@@ -11,16 +12,6 @@ const INDUSTRY_PRESETS = [
     { id: 'retail', icon: 'fa-store', label: '小売・物販ショップ', desc: '商品訴求と会員ロイヤリティの物販向け', gradient: 'linear-gradient(135deg, #7c3aed, #a855f7)', patternId: 'super-pattern-retail' },
     { id: 'fitness', icon: 'fa-dumbbell', label: 'フィットネス・ジム', desc: 'レッスン予約と来館管理のジム向け', gradient: 'linear-gradient(135deg, #0891b2, #06b6d4)', patternId: 'super-pattern-fitness' },
 ] as const;
-
-type TemplateItem = {
-    id?: string;
-    name?: string;
-    label?: string;
-    description?: string;
-    layouts?: Record<string, unknown[]>;
-    theme?: Record<string, unknown>;
-    tab_settings?: Record<string, unknown>;
-};
 
 function isLayoutEmpty(layouts: Record<string, LiffBlock[]>): boolean {
     return Object.values(layouts).every((rows) => rows.length === 0);
@@ -58,21 +49,20 @@ export function OnboardingOverlay() {
         const templates = (Array.isArray(config.templates) ? config.templates : []) as TemplateItem[];
         const pattern = templates.find((t) => t.id === patternId);
         if (pattern === undefined || pattern.layouts === undefined) return;
-        const idCounter = { n: Date.now() % 100000 };
-        const layouts: Record<string, LiffBlock[]> = { ...state.layouts };
-        Object.keys(pattern.layouts).forEach((tab) => {
-            const rows = Array.isArray(pattern.layouts?.[tab]) ? pattern.layouts![tab] : [];
-            layouts[tab] = rows.map((item) => normalizeBlock((item || {}) as Record<string, unknown>, idCounter));
-        });
+        const result = buildTemplateApplyResult(pattern, state, config.themePresets);
+        if (!result.applied) {
+            dispatch({ type: 'SHOW_TOAST', message: result.message, isError: true });
+            return;
+        }
         dispatch({
             type: 'APPLY_LAYOUTS',
-            layouts,
-            globalSettings: pattern.theme ? { ...state.globalSettings, ...pattern.theme } : undefined,
-            tabSettings: pattern.tab_settings
-                ? { ...state.tabSettings, ...(pattern.tab_settings as Record<string, Record<string, unknown>>) }
-                : undefined,
+            layouts: result.layouts,
+            globalSettings: result.globalSettings,
+            tabSettings: result.tabSettings,
+            customCss: result.customCss,
+            activeTab: result.activeTab,
         });
-        dispatch({ type: 'SHOW_TOAST', message: `テンプレート「${pattern.label || pattern.name || '選択'}」を適用しました` });
+        dispatch({ type: 'SHOW_TOAST', message: result.message });
         setStep(3);
     };
 

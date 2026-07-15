@@ -132,7 +132,14 @@ export type DesignerAction =
     | { type: 'MOVE_MENU_ITEM'; tab: string; delta: number }
     | { type: 'SET_CUSTOM_CSS'; value: string }
     | { type: 'IMPORT_SNAPSHOT'; snapshot: DesignerSnapshot }
-    | { type: 'APPLY_LAYOUTS'; layouts: Record<string, LiffBlock[]>; tabSettings?: Record<string, Record<string, unknown>>; globalSettings?: Record<string, unknown> }
+    | {
+          type: 'APPLY_LAYOUTS';
+          layouts: Record<string, LiffBlock[]>;
+          tabSettings?: Record<string, Record<string, unknown>>;
+          globalSettings?: Record<string, unknown>;
+          customCss?: string;
+          activeTab?: string;
+      }
     | { type: 'UNDO' }
     | { type: 'REDO' }
     | { type: 'MARK_SAVED' }
@@ -308,6 +315,8 @@ export function designerReducer(state: DesignerState, action: DesignerAction): D
                 layouts: action.layouts,
                 tabSettings: action.tabSettings || state.tabSettings,
                 globalSettings: action.globalSettings || state.globalSettings,
+                customCss: action.customCss !== undefined ? action.customCss : state.customCss,
+                activeTab: action.activeTab !== undefined ? action.activeTab : state.activeTab,
                 selectedId: null,
                 quickEditBlockId: null,
             });

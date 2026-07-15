@@ -49,6 +49,7 @@
 
 /* ── プライマリCTA（アクセント・しっかり押せる存在感）── */
 .product-add-btn,
+.order-btn--primary,
 .order-btn--mobile,
 .btn-primary {
     background: var(--primary-color);
@@ -57,6 +58,7 @@
 }
 
 .product-add-btn:hover,
+.order-btn--primary:hover:not(:disabled),
 .order-btn--mobile:hover:not(:disabled),
 .btn-primary:hover:not(:disabled) {
     background: var(--primary-dark);

@@ -7,6 +7,7 @@ export function ScreenList() {
     const { state, dispatch, config } = useDesigner();
     const featureMap = useTabFeatureMap();
     const menuByTab = Object.fromEntries(state.menuItems.map((m) => [m.tab, m]));
+    const enabledCount = state.menuItems.filter((m) => m.enabled).length;
 
     const renderTab = (tab: string, item: { label: string; icon: string; enabled: boolean }, editable: boolean) => {
         const featureKey = featureMap[tab];
@@ -39,11 +40,13 @@ export function ScreenList() {
                             <span className="ld-tab-card__name ld-tab-card__name--static">{item.label}</span>
                         )}
                         <span className="ld-tab-card__meta">
-                            {count} ブロック
-                            {!editable ? ' · タブ非表示' : null}
-                            {featureOff ? ' · 機能OFF' : null}
+                            {count} blocks
+                            {!editable ? ' · 固定' : null}
+                            {featureOff ? ' · OFF' : null}
+                            {!item.enabled && editable ? ' · 非表示' : null}
                         </span>
                     </span>
+                    {isActive ? <span className="ld-tab-card__active-dot" aria-hidden /> : null}
                 </button>
                 {editable ? (
                     <div className="ld-tab-card__actions">
@@ -70,8 +73,13 @@ export function ScreenList() {
     return (
         <aside className={`ld-screens ld-screens--light${state.screensOpen ? ' is-open' : ''}`}>
             <div className="ld-screens__head">
-                <div className="ld-screens__title">画面一覧</div>
-                <p className="ld-screens__hint">タップで編集画面を切り替え。目のアイコンで表示/非表示、矢印で順番を変更できます。</p>
+                <div className="ld-screens__head-row">
+                    <div>
+                        <div className="ld-screens__title">Screens</div>
+                        <p className="ld-screens__hint">表示する画面と順番を管理</p>
+                    </div>
+                    <span className="ld-screens__count">{enabledCount} 表示中</span>
+                </div>
             </div>
             <div className="ld-screens__list">
                 {state.menuItems.map((item) => renderTab(item.tab, item, true))}
@@ -80,6 +88,12 @@ export function ScreenList() {
                     icon: TAB_ICONS.announcements,
                     enabled: true,
                 }, false) : null}
+            </div>
+            <div className="ld-screens__footer">
+                <button type="button" className="ld-btn ld-btn--soft ld-btn--block" onClick={() => dispatch({ type: 'SET_UI', patch: { templateOpen: true } })}>
+                    <i className="fas fa-th-large" />
+                    テンプレートギャラリー
+                </button>
             </div>
             <button type="button" className="ld-drawer-close ld-mobile-panel-btn" onClick={() => dispatch({ type: 'SET_UI', patch: { screensOpen: false } })}>
                 閉じる

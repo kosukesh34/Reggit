@@ -2,8 +2,16 @@ import React, { useState } from 'react';
 import { findBlockMeta, normalizeBlock } from '../catalog/blockCatalog';
 import { BlockPreview } from '../blocks/BlockPreview';
 import { BlockQuickEditSheet } from './BlockQuickEditSheet';
+import { PhoneAppHeader, PhoneAppMain, PhoneAppTabs, PhoneDeviceFrame } from './PhoneAppShell';
 import { useDesigner } from '../state/DesignerContext';
 import type { LiffBlock } from '../catalog/types';
+import {
+    contentPadding,
+    frameSystemClasses,
+    resolvePhoneBodyStyle,
+    sectionGap,
+    screenTabStyleClass,
+} from '../utils/globalDesign';
 
 function resolveDropIndex(clientY: number, element: HTMLElement, index: number, blockCount: number): number {
     const rect = element.getBoundingClientRect();
@@ -26,9 +34,13 @@ export function PhoneCanvas() {
         : null;
     const friendAddUrl = config.lineFriendAddUrl || '';
 
-    const bgColor = String(tabSettings.background_color || state.globalSettings.bg_color || '#fafaf9');
-    const bgImage = String(tabSettings.background_image || '');
-    const padding = Number(tabSettings.content_padding ?? state.globalSettings.content_padding ?? 18);
+    const bodyStyle = resolvePhoneBodyStyle(tabSettings, state.globalSettings);
+    const padding = contentPadding(tabSettings, state.globalSettings);
+    const gap = sectionGap(state.globalSettings);
+    const tabStyleClass = screenTabStyleClass(state.globalSettings);
+    const systemClass = frameSystemClasses(state.globalSettings);
+    const enabledNav = state.menuItems.filter((m) => m.enabled);
+    const shopTitle = document.title.replace(/\s*[|\-].*$/, '').trim() || '店舗アプリ';
 
     const finishDrag = () => {
         setDragIndex(null);
@@ -61,61 +73,59 @@ export function PhoneCanvas() {
         dispatch({ type: 'OPEN_QUICK_EDIT', id: blockId });
     };
 
-    const enabledNav = state.menuItems.filter((m) => m.enabled);
-
     return (
         <div className="ld-editor">
             <div className="ld-editor__toolbar">
                 <div className="ld-editor__meta">
-                    <span className="ld-editor__meta-label">編集中</span>
-                    <strong>{menuItem?.label || state.activeTab}</strong>
-                    <span className="ld-editor__meta-sub">{blocks.length} ブロック</span>
+                    <span className="ld-editor__meta-label">Canvas</span>
+                    <div className="ld-editor__meta-row">
+                        <strong>{menuItem?.label || state.activeTab}</strong>
+                        <span className="ld-editor__meta-pill">{blocks.length} blocks</span>
+                    </div>
+                    {!isAdvanced ? <p className="ld-editor__hint">ブロックをタップして内容を編集</p> : null}
                 </div>
-                {isAdvanced ? (
-                    <div className="ld-editor__toolbar-actions">
+                <div className="ld-editor__toolbar-right">
+                    {isAdvanced ? (
                         <button
                             type="button"
-                            className="ld-btn ld-btn--outline ld-btn--xs"
+                            className="ld-btn ld-btn--soft ld-btn--xs"
                             onClick={() => dispatch({ type: 'SET_RIGHT_MODE', mode: 'add' })}
                         >
                             <i className="fas fa-plus" /> ブロック追加
                         </button>
+                    ) : null}
+                    <div className="ld-editor__zoom">
+                        <button type="button" className="ld-icon-btn ld-icon-btn--sm" onClick={() => dispatch({ type: 'SET_ZOOM', zoom: state.zoom - 10 })} aria-label="縮小">
+                            <i className="fas fa-minus" />
+                        </button>
+                        <input
+                            type="range"
+                            className="ld-form-range ld-form-range--zoom"
+                            min={60}
+                            max={120}
+                            value={state.zoom}
+                            onChange={(e) => dispatch({ type: 'SET_ZOOM', zoom: Number(e.target.value) })}
+                        />
+                        <button type="button" className="ld-icon-btn ld-icon-btn--sm" onClick={() => dispatch({ type: 'SET_ZOOM', zoom: state.zoom + 10 })} aria-label="拡大">
+                            <i className="fas fa-plus" />
+                        </button>
+                        <span className="ld-editor__zoom-value">{state.zoom}%</span>
                     </div>
-                ) : (
-                    <p className="ld-editor__hint">ブロックをタップして内容を編集</p>
-                )}
-                <div className="ld-editor__zoom">
-                    <button type="button" className="ld-btn ld-btn--ghost ld-btn--xs" onClick={() => dispatch({ type: 'SET_ZOOM', zoom: state.zoom - 10 })} aria-label="縮小">
-                        <i className="fas fa-search-minus" />
-                    </button>
-                    <input
-                        type="range"
-                        className="ld-form-range ld-form-range--zoom"
-                        min={60}
-                        max={120}
-                        value={state.zoom}
-                        onChange={(e) => dispatch({ type: 'SET_ZOOM', zoom: Number(e.target.value) })}
-                    />
-                    <button type="button" className="ld-btn ld-btn--ghost ld-btn--xs" onClick={() => dispatch({ type: 'SET_ZOOM', zoom: state.zoom + 10 })} aria-label="拡大">
-                        <i className="fas fa-search-plus" />
-                    </button>
-                    <span className="ld-editor__zoom-value">{state.zoom}%</span>
                 </div>
             </div>
 
-            <div className="ld-phone">
-                <div className="ld-phone__frame is-line" style={{ transform: `scale(${state.zoom / 100})`, transformOrigin: 'top center' }}>
-                    <div className="ld-phone__notch" />
-                    <div className="ld-phone__header">
-                        <span className="ld-phone__header-title">{menuItem?.label || 'ホーム'}</span>
-                    </div>
-                    <div
-                        className="ld-phone__body"
-                        style={{
-                            backgroundColor: bgColor,
-                            backgroundImage: bgImage ? `url(${bgImage})` : undefined,
-                            backgroundSize: String(tabSettings.background_size || 'cover'),
-                        }}
+            <div className="ld-editor__stage">
+                <PhoneDeviceFrame
+                    className={systemClass}
+                    size="canvas"
+                    zoom={state.zoom}
+                    screenStyle={bodyStyle}
+                    screenClassName={tabStyleClass}
+                >
+                    <PhoneAppHeader title={shopTitle} friendAddUrl={friendAddUrl} />
+                    <PhoneAppMain
+                        padding={padding}
+                        gap={gap}
                         onClick={() => dispatch({ type: 'SELECT_BLOCK', id: null, openEdit: false })}
                         onDragOver={isAdvanced ? (e) => {
                             if (e.dataTransfer.types.includes('application/ld-block-type')) {
@@ -136,121 +146,108 @@ export function PhoneCanvas() {
                             finishDrag();
                         } : undefined}
                     >
-                        <div className="ld-phone__content" style={{ padding, gap: Number(state.globalSettings.section_gap || 16) }}>
-                            {blocks.length === 0 ? (
-                                <div className="ld-empty-canvas">
-                                    <i className="fas fa-layer-group ld-empty-canvas__icon" />
-                                    <p>この画面にはまだブロックがありません</p>
-                                    <p className="ld-empty-canvas__hint">
-                                        {isAdvanced ? '右のパネルからブロックを追加するか、テンプレートを選んでください' : 'トップバーのテンプレートから画面を作成してください'}
-                                    </p>
-                                    <div className="ld-empty-canvas__actions">
-                                        <button type="button" className="ld-btn ld-btn--primary ld-btn--xs" onClick={() => dispatch({ type: 'SET_UI', patch: { templateOpen: true } })}>
-                                            テンプレートを選ぶ
+                        {blocks.length === 0 ? (
+                            <div className="ld-empty-canvas">
+                                <i className="fas fa-layer-group ld-empty-canvas__icon" />
+                                <p>この画面にはまだブロックがありません</p>
+                                <p className="ld-empty-canvas__hint">
+                                    {isAdvanced ? '右のパネルからブロックを追加するか、テンプレートを選んでください' : 'トップバーのテンプレートから画面を作成してください'}
+                                </p>
+                                <div className="ld-empty-canvas__actions">
+                                    <button type="button" className="ld-btn ld-btn--primary ld-btn--xs" onClick={() => dispatch({ type: 'SET_UI', patch: { templateOpen: true } })}>
+                                        テンプレートを選ぶ
+                                    </button>
+                                    {isAdvanced ? (
+                                        <button type="button" className="ld-btn ld-btn--outline ld-btn--xs" onClick={() => dispatch({ type: 'SET_RIGHT_MODE', mode: 'add' })}>
+                                            ブロックを追加
                                         </button>
-                                        {isAdvanced ? (
-                                            <button type="button" className="ld-btn ld-btn--outline ld-btn--xs" onClick={() => dispatch({ type: 'SET_RIGHT_MODE', mode: 'add' })}>
-                                                ブロックを追加
-                                            </button>
-                                        ) : null}
-                                    </div>
+                                    ) : null}
                                 </div>
-                            ) : (
-                                <>
-                                    {blocks.map((block: LiffBlock, index) => {
-                                        const meta = findBlockMeta(block.type);
-                                        const isSelected = isAdvanced && state.selectedId === block.id;
-                                        const showDropLine = isAdvanced && dropAt === index && (dragIndex !== null || isPaletteDrag);
-                                        return (
-                                            <React.Fragment key={block.id}>
-                                                {showDropLine ? <div className="ld-drop-line" aria-hidden="true" /> : null}
-                                                <div
-                                                    className={`ld-block ld-block--${block.type}${isSelected ? ' is-selected' : ''}${isAdvanced && dragIndex === index ? ' is-dragging' : ''}${!isAdvanced ? ' is-tappable' : ''}`}
-                                                    draggable={isAdvanced}
-                                                    onDragStart={isAdvanced ? () => setDragIndex(index) : undefined}
-                                                    onDragOver={isAdvanced ? (e) => {
-                                                        e.preventDefault();
-                                                        setDropAt(resolveDropIndex(e.clientY, e.currentTarget, index, blocks.length));
-                                                    } : undefined}
-                                                    onDrop={isAdvanced ? (e) => onDropAt(resolveDropIndex(e.clientY, e.currentTarget, index, blocks.length), e) : undefined}
-                                                    onDragEnd={isAdvanced ? finishDrag : undefined}
-                                                    onClick={(e) => onBlockClick(e, block.id)}
-                                                >
-                                                    {isAdvanced ? (
-                                                        <div className="ld-block__handle" title="ドラッグして並べ替え">
-                                                            <i className="fas fa-grip-vertical" />
-                                                        </div>
-                                                    ) : null}
-                                                    {isSelected ? (
-                                                        <div className="ld-block__chrome">
-                                                            <span className="ld-block__type">
-                                                                <i className={`fas ${meta?.icon || 'fa-cube'}`} />
-                                                                {meta?.label || block.type}
-                                                            </span>
-                                                            <div className="ld-block__toolbar">
-                                                                <button type="button" className="ld-block__toolbar-btn" title="複製" onClick={(e) => { e.stopPropagation(); dispatch({ type: 'DUPLICATE_BLOCK', id: block.id }); }}>
-                                                                    <i className="fas fa-copy" />
-                                                                </button>
-                                                                <button type="button" className="ld-block__toolbar-btn" title="上へ" onClick={(e) => { e.stopPropagation(); if (index > 0) dispatch({ type: 'MOVE_BLOCK', from: index, to: index - 1 }); }}>
-                                                                    <i className="fas fa-arrow-up" />
-                                                                </button>
-                                                                <button type="button" className="ld-block__toolbar-btn" title="下へ" onClick={(e) => { e.stopPropagation(); if (index < blocks.length - 1) dispatch({ type: 'MOVE_BLOCK', from: index, to: index + 1 }); }}>
-                                                                    <i className="fas fa-arrow-down" />
-                                                                </button>
-                                                                <button type="button" className="ld-block__toolbar-btn ld-block__toolbar-btn--danger" title="削除" onClick={(e) => { e.stopPropagation(); dispatch({ type: 'DELETE_BLOCK', id: block.id }); }}>
-                                                                    <i className="fas fa-trash" />
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                    ) : !isAdvanced ? (
-                                                        <div className="ld-block__tap-hint">
-                                                            <i className="fas fa-pen" /> タップして編集
-                                                        </div>
-                                                    ) : (
-                                                        <div className="ld-block__hover-label">
+                            </div>
+                        ) : (
+                            <>
+                                {blocks.map((block: LiffBlock, index) => {
+                                    const meta = findBlockMeta(block.type);
+                                    const isSelected = isAdvanced && state.selectedId === block.id;
+                                    const showDropLine = isAdvanced && dropAt === index && (dragIndex !== null || isPaletteDrag);
+                                    return (
+                                        <React.Fragment key={block.id}>
+                                            {showDropLine ? <div className="ld-drop-line" aria-hidden="true" /> : null}
+                                            <div
+                                                className={`ld-block ld-block--${block.type}${block.design ? ` ld-block--${block.type}-design-${String(block.design)}` : ''}${isSelected ? ' is-selected' : ''}${isAdvanced && dragIndex === index ? ' is-dragging' : ''}${!isAdvanced ? ' is-tappable' : ''}`}
+                                                draggable={isAdvanced}
+                                                onDragStart={isAdvanced ? () => setDragIndex(index) : undefined}
+                                                onDragOver={isAdvanced ? (e) => {
+                                                    e.preventDefault();
+                                                    setDropAt(resolveDropIndex(e.clientY, e.currentTarget, index, blocks.length));
+                                                } : undefined}
+                                                onDrop={isAdvanced ? (e) => onDropAt(resolveDropIndex(e.clientY, e.currentTarget, index, blocks.length), e) : undefined}
+                                                onDragEnd={isAdvanced ? finishDrag : undefined}
+                                                onClick={(e) => onBlockClick(e, block.id)}
+                                            >
+                                                {isAdvanced ? (
+                                                    <div className="ld-block__handle" title="ドラッグして並べ替え">
+                                                        <i className="fas fa-grip-vertical" />
+                                                    </div>
+                                                ) : null}
+                                                {isSelected ? (
+                                                    <div className="ld-block__chrome">
+                                                        <span className="ld-block__type">
                                                             <i className={`fas ${meta?.icon || 'fa-cube'}`} />
                                                             {meta?.label || block.type}
+                                                        </span>
+                                                        <div className="ld-block__toolbar">
+                                                            <button type="button" className="ld-block__toolbar-btn" title="複製" onClick={(e) => { e.stopPropagation(); dispatch({ type: 'DUPLICATE_BLOCK', id: block.id }); }}>
+                                                                <i className="fas fa-copy" />
+                                                            </button>
+                                                            <button type="button" className="ld-block__toolbar-btn" title="上へ" onClick={(e) => { e.stopPropagation(); if (index > 0) dispatch({ type: 'MOVE_BLOCK', from: index, to: index - 1 }); }}>
+                                                                <i className="fas fa-arrow-up" />
+                                                            </button>
+                                                            <button type="button" className="ld-block__toolbar-btn" title="下へ" onClick={(e) => { e.stopPropagation(); if (index < blocks.length - 1) dispatch({ type: 'MOVE_BLOCK', from: index, to: index + 1 }); }}>
+                                                                <i className="fas fa-arrow-down" />
+                                                            </button>
+                                                            <button type="button" className="ld-block__toolbar-btn ld-block__toolbar-btn--danger" title="削除" onClick={(e) => { e.stopPropagation(); dispatch({ type: 'DELETE_BLOCK', id: block.id }); }}>
+                                                                <i className="fas fa-trash" />
+                                                            </button>
                                                         </div>
-                                                    )}
-                                                    <BlockPreview block={block} friendAddUrl={friendAddUrl} />
-                                                </div>
-                                            </React.Fragment>
-                                        );
-                                    })}
-                                    {isAdvanced && dropAt === blocks.length && (dragIndex !== null || isPaletteDrag) ? (
-                                        <div className="ld-drop-line" aria-hidden="true" />
-                                    ) : null}
-                                    {isAdvanced ? (
-                                        <div
-                                            className="ld-drop-zone-end"
-                                            onDragOver={(e) => {
-                                                e.preventDefault();
-                                                setDropAt(blocks.length);
-                                            }}
-                                            onDrop={(e) => onDropAt(blocks.length, e)}
-                                        />
-                                    ) : null}
-                                </>
-                            )}
-                        </div>
-                    </div>
-                    <div className="ld-phone__nav">
-                        {enabledNav.slice(0, 5).map((item) => (
-                            <button
-                                key={item.tab}
-                                type="button"
-                                className={`ld-phone__nav-item${state.activeTab === item.tab ? ' is-active' : ''}`}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    dispatch({ type: 'SET_ACTIVE_TAB', tab: item.tab });
-                                }}
-                            >
-                                <i className={`fas ${item.icon}`} />
-                                <span>{item.label}</span>
-                            </button>
-                        ))}
-                    </div>
-                </div>
+                                                    </div>
+                                                ) : !isAdvanced ? (
+                                                    <div className="ld-block__tap-hint">
+                                                        <i className="fas fa-pen" /> タップして編集
+                                                    </div>
+                                                ) : (
+                                                    <div className="ld-block__hover-label">
+                                                        <i className={`fas ${meta?.icon || 'fa-cube'}`} />
+                                                        {meta?.label || block.type}
+                                                    </div>
+                                                )}
+                                                <BlockPreview block={block} friendAddUrl={friendAddUrl} />
+                                            </div>
+                                        </React.Fragment>
+                                    );
+                                })}
+                                {isAdvanced && dropAt === blocks.length && (dragIndex !== null || isPaletteDrag) ? (
+                                    <div className="ld-drop-line" aria-hidden="true" />
+                                ) : null}
+                                {isAdvanced ? (
+                                    <div
+                                        className="ld-drop-zone-end"
+                                        onDragOver={(e) => {
+                                            e.preventDefault();
+                                            setDropAt(blocks.length);
+                                        }}
+                                        onDrop={(e) => onDropAt(blocks.length, e)}
+                                    />
+                                ) : null}
+                            </>
+                        )}
+                    </PhoneAppMain>
+                    <PhoneAppTabs
+                        items={enabledNav}
+                        activeTab={state.activeTab}
+                        onSelect={(tab) => dispatch({ type: 'SET_ACTIVE_TAB', tab })}
+                    />
+                </PhoneDeviceFrame>
             </div>
 
             {quickEditBlock !== null ? (

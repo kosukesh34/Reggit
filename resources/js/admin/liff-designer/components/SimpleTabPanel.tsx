@@ -14,7 +14,7 @@ export function SimpleTabPanel() {
                 編集中: <strong>{menuItem?.label || state.activeTab}</strong>
             </p>
             <p className="ld-sidebar__lead ld-sidebar__lead--muted">
-                下部タブの表示・非表示・順番・名前は<strong>左の画面一覧</strong>で変更します。ここでは選択中の画面の見た目だけを設定します。
+                左の Screens で表示・順番・名前を変更。ここでは見た目だけを設定します。
             </p>
             <p className="ld-sidebar__subsection">この画面の背景</p>
             <ColorField
@@ -39,7 +39,7 @@ export function SimpleTabPanel() {
             />
             <RangeField
                 label="コンテンツ余白"
-                value={Number(tabSettings.content_padding ?? 18)}
+                value={Number(tabSettings.content_padding ?? state.globalSettings.content_padding ?? 18)}
                 min={8}
                 max={40}
                 onChange={(v) => dispatch({ type: 'UPDATE_TAB_SETTINGS', patch: { content_padding: v } })}
