@@ -1,19 +1,20 @@
-/* LIFF Designer — コンポーネント読み込み（各500行以内） */
-@import url('liff-designer-1.css?v=20260715d');
-@import url('liff-designer-2.css?v=20260703');
-@import url('liff-designer-3.css?v=20260703');
-@import url('liff-designer-4.css?v=20260715');
-@import url('liff-designer-5.css?v=20260703');
-@import url('liff-designer-6.css?v=20260703');
-@import url('liff-designer-7.css?v=20260703b');
-@import url('liff-designer-8.css?v=20260703c');
-@import url('liff-designer-9.css?v=20260703d');
-@import url('liff-designer-10.css?v=20260703e');
-@import url('liff-designer-11.css?v=20260703f');
-@import url('liff-designer-12.css?v=20260703g');
-@import url('liff-designer-13.css?v=20260703a');
-@import url('liff-designer-14.css?v=20260703a');
-@import url('liff-designer-15.css?v=20260703a');
-@import url('liff-designer-polish.css?v=20260708');
+/* LIFF Designer — コンポーネント読み込み（各500行以内）
+   スマホ内プレビュー用のレガシーCSS。シェルUIは Vite の react.css が後勝ち。 */
+@import url('liff-designer-1.css?v=20260715e');
+@import url('liff-designer-2.css?v=20260715e');
+@import url('liff-designer-3.css?v=20260715e');
+@import url('liff-designer-4.css?v=20260715e');
+@import url('liff-designer-5.css?v=20260715e');
+@import url('liff-designer-6.css?v=20260715e');
+@import url('liff-designer-7.css?v=20260715e');
+@import url('liff-designer-8.css?v=20260715e');
+@import url('liff-designer-9.css?v=20260715e');
+@import url('liff-designer-10.css?v=20260715e');
+@import url('liff-designer-11.css?v=20260715e');
+@import url('liff-designer-12.css?v=20260715e');
+@import url('liff-designer-13.css?v=20260715e');
+@import url('liff-designer-14.css?v=20260715e');
+@import url('liff-designer-15.css?v=20260715e');
+@import url('liff-designer-polish.css?v=20260715e');
 
 /* React UX 追加スタイルは Vite (resources/css/admin/liff-designer/react.css) から読み込み */
