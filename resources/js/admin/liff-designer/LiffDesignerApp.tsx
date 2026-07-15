@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import type { DesignerConfig } from './catalog/types';
 import { DesignerProvider, useDesigner } from './state/DesignerContext';
 import { Topbar } from './components/Topbar';
-import { ScreenList } from './components/ScreenList';
+import { LeftStudioPanel } from './components/LeftStudioPanel';
 import { PhoneCanvas } from './components/PhoneCanvas';
 import { RightPanel } from './components/RightPanel';
 import { TemplateModal } from './components/TemplateModal';
@@ -166,7 +166,7 @@ function DesignerShell() {
         <div className={shellClass}>
             <Topbar />
             <div className="ld-body">
-                <ScreenList />
+                <LeftStudioPanel />
                 <div className="ld-resizer ld-resizer--left" data-resizer="left" aria-hidden="true" />
                 <PhoneCanvas />
                 <div className="ld-resizer ld-resizer--right" data-resizer="right" aria-hidden="true" />

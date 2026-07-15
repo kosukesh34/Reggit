@@ -36,6 +36,7 @@ class AppConfigService
             'reservations' => 'feature_reservations_enabled',
             'member' => 'feature_members_enabled',
             'gallery' => 'feature_gallery_enabled',
+            'announcements' => 'feature_announcements_enabled',
         ];
 
         $enabledTabs = array_values(array_filter($menuItems, function ($item) use ($featureFlags, $tabFeatureMap) {
@@ -96,6 +97,7 @@ class AppConfigService
             ],
             'liff_tab_layouts' => ShopSetting::getLiffTabLayouts($projectId),
             'liff_tab_settings' => ShopSetting::getLiffTabSettings($projectId),
+            'liff_detail_layouts' => ShopSetting::getLiffDetailLayouts($projectId),
         ];
     }
 
@@ -111,6 +113,7 @@ class AppConfigService
             'member' => 'person.crop.circle.fill',
             'reservations' => 'calendar',
             'gallery' => 'photo.on.rectangle.angled',
+            'announcements' => 'megaphone.fill',
             default => 'circle.fill',
         };
     }

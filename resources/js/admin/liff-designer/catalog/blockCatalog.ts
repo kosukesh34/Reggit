@@ -13,6 +13,20 @@ export const TAB_LABELS: Record<string, string> = {
     announcements: 'お知らせ',
 };
 
+export const DETAIL_PAGE_LABELS: Record<string, string> = {
+    announcement_detail: 'お知らせ詳細',
+    product_detail: '商品詳細',
+    coupon_detail: 'クーポン詳細',
+    gallery_detail: 'ギャラリー詳細',
+    stamp_detail: 'スタンプ詳細',
+    order_cart: '注文：カート',
+    order_confirm: '注文：確認',
+    order_complete: '注文：完了',
+    reservation_new: '予約：作成',
+    reservation_confirm: '予約：確認',
+    reservation_complete: '予約：完了',
+};
+
 export const TAB_ICONS: Record<string, string> = {
     home: 'fa-house',
     products: 'fa-utensils',
@@ -26,7 +40,25 @@ export const TAB_ICONS: Record<string, string> = {
     announcements: 'fa-bullhorn',
 };
 
-export const MENU_TABS = Object.keys(TAB_LABELS).filter((k) => k !== 'announcements');
+export const DETAIL_PAGE_ICONS: Record<string, string> = {
+    announcement_detail: 'fa-newspaper',
+    product_detail: 'fa-utensils',
+    coupon_detail: 'fa-ticket-alt',
+    gallery_detail: 'fa-images',
+    stamp_detail: 'fa-stamp',
+    order_cart: 'fa-shopping-bag',
+    order_confirm: 'fa-clipboard-check',
+    order_complete: 'fa-check-circle',
+    reservation_new: 'fa-calendar-plus',
+    reservation_confirm: 'fa-calendar-check',
+    reservation_complete: 'fa-check-circle',
+};
+
+export const MENU_TABS = Object.keys(TAB_LABELS);
+
+export const DETAIL_PAGES = Object.keys(DETAIL_PAGE_LABELS);
+
+export const ALL_SCREEN_KEYS = [...MENU_TABS, ...DETAIL_PAGES];
 
 const ICON_ALIASES: Record<string, string> = {
     'fa-home': 'fa-house',
@@ -96,6 +128,11 @@ export const DATA_SOURCES = [
     { value: 'coupons', label: 'クーポン一覧' },
     { value: 'stamps', label: 'スタンプカード' },
     { value: 'announcements', label: 'お知らせ' },
+    { value: 'announcement_detail', label: 'お知らせ詳細（本文）' },
+    { value: 'product_detail', label: '商品詳細（本文）' },
+    { value: 'coupon_detail', label: 'クーポン詳細（本文）' },
+    { value: 'gallery_detail', label: 'ギャラリー詳細（本文）' },
+    { value: 'stamp_detail', label: 'スタンプ詳細（本文）' },
     { value: 'queue', label: '順番待ち' },
     { value: 'reservations', label: '予約一覧' },
     { value: 'gallery', label: 'ギャラリー' },
@@ -262,11 +299,12 @@ export function defaultGlobalSettings(): GlobalSettings {
         activity_screen_design: 'cards',
         accent_color: '#1c1917',
         theme_preset: '',
+        require_membership: true,
     };
 }
 
 export function defaultTabSettings(): Record<string, unknown> {
-    return { background_color: '#fafaf9', background_image: '', background_size: 'cover' };
+    return { background_color: '', background_image: '', background_size: 'cover' };
 }
 
 export function createBlockId(counter: { n: number }): string {
@@ -543,7 +581,7 @@ export function collectLegacyNotes(rawLayouts: Record<string, unknown[]>): strin
 
 export function createEmptyLayouts(): Record<string, LiffBlock[]> {
     const layouts: Record<string, LiffBlock[]> = {};
-    Object.keys(TAB_LABELS).forEach((key) => {
+    ALL_SCREEN_KEYS.forEach((key) => {
         layouts[key] = [];
     });
     return layouts;

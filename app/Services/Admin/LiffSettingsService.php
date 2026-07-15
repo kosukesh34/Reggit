@@ -18,6 +18,14 @@ class LiffSettingsService
     }
 
     /**
+     * @return array<string, array<int, array<string, mixed>>>
+     */
+    public function getDetailLayouts(int $projectId): array
+    {
+        return ShopSetting::getLiffDetailLayouts($projectId);
+    }
+
+    /**
      * @return array<string, string|int|float|bool|array|null>
      */
     public function getDefaultDesignerTemplates(): array
@@ -82,6 +90,14 @@ class LiffSettingsService
     public function setTabLayouts(array $layouts, int $projectId): void
     {
         ShopSetting::setLiffTabLayouts($layouts, $projectId);
+    }
+
+    /**
+     * @param  array<string, mixed>  $layouts
+     */
+    public function setDetailLayouts(array $layouts, int $projectId): void
+    {
+        ShopSetting::setLiffDetailLayouts($layouts, $projectId);
     }
 
     public function setCustomCss(string $css, int $projectId): void

@@ -67,6 +67,7 @@
                 'reservations' => 'feature_reservations_enabled',
                 'member' => 'feature_members_enabled',
                 'gallery' => 'feature_gallery_enabled',
+                'announcements' => 'feature_announcements_enabled',
             ];
             $filteredMenu = array_filter(
                 $frontendMenu ?? \App\Models\ShopSetting::defaultFrontendMenuItems(),

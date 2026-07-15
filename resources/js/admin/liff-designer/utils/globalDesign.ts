@@ -74,16 +74,16 @@ export function resolvePhoneBodyStyle(
     const bgStyle = String(globalSettings.background_style || 'solid');
     const globalBg = String(globalSettings.bg_color || '#fafaf9');
 
+    // タブ固有の背景があるときだけ上書き（空ならアプリ全体の背景を使う）
     if (tabImage !== '') {
         return {
-            backgroundColor: tabBg || globalBg,
+            backgroundColor: tabBg !== '' ? tabBg : globalBg,
             backgroundImage: `url(${tabImage})`,
             backgroundSize: String(tabSettings.background_size || 'cover'),
             backgroundPosition: 'center',
         };
     }
 
-    // タブ固有の背景色がある場合はテーマ画像より優先（ギャラリー／本番の見え方に合わせる）
     if (tabBg !== '') {
         return { backgroundColor: tabBg };
     }

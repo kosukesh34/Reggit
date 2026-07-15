@@ -38,6 +38,7 @@ final class MobileWebShellViewModelTests: XCTestCase {
         XCTAssertTrue(viewModel.showWhiteScreenFallback)
         XCTAssertFalse(viewModel.showNativeTabBar)
         XCTAssertTrue(viewModel.fallbackMessage.contains("fake unreachable"))
+        XCTAssertEqual(viewModel.fallbackTitle, ShellUserFacingMessages.connectionTitle)
     }
 
     func testSelectTabRunsSwitchScriptWhenReady() {

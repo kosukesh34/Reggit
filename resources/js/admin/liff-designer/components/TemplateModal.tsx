@@ -137,7 +137,9 @@ export function TemplateModal() {
                 templateDisplayName(tpl),
                 tpl.description || '',
                 cat,
+                categoryLabel(cat),
                 paletteLabelFor(tpl),
+                ...templateTags(tpl),
                 ...(Array.isArray(tpl.target_tabs) ? tpl.target_tabs : []),
             ]
                 .join(' ')
@@ -172,6 +174,15 @@ export function TemplateModal() {
 
     useEffect(() => {
         if (!state.templateOpen) return;
+        if (state.pendingTemplateId !== null && state.pendingTemplateId !== '') {
+            const pending = templates.find((tpl) => String(tpl.id || '') === state.pendingTemplateId);
+            if (pending !== undefined) {
+                selectTemplate(pending);
+                setViewMode('apply');
+                dispatch({ type: 'SET_UI', patch: { pendingTemplateId: null } });
+                return;
+            }
+        }
         if (filtered.length === 0) {
             setActiveTemplate(null);
             return;
@@ -188,7 +199,7 @@ export function TemplateModal() {
             selectTemplate(filtered[0]);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [state.templateOpen, filtered]);
+    }, [state.templateOpen, state.pendingTemplateId, filtered]);
 
     if (!state.templateOpen) return null;
 

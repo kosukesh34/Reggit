@@ -3,7 +3,7 @@ import { canRedo, canUndo } from '../state/designerReducer';
 import { useDesigner } from '../state/DesignerContext';
 import { saveDesigner } from '../persistence/saveDesigner';
 import { exportDesignerJson } from '../persistence/serialize';
-import { normalizeBlock, normalizeMenuItems, TAB_LABELS, defaultGlobalSettings, defaultTabSettings, createEmptyLayouts } from '../catalog/blockCatalog';
+import { normalizeBlock, normalizeMenuItems, TAB_LABELS, DETAIL_PAGE_LABELS, defaultGlobalSettings, defaultTabSettings, createEmptyLayouts } from '../catalog/blockCatalog';
 import type { DesignerSnapshot } from '../catalog/types';
 import { PANEL_PRESETS, applyPanelPreset, detectActivePreset, type PanelPresetId } from '../utils/panelLayout';
 
@@ -13,7 +13,10 @@ export function Topbar() {
     const moreRef = useRef<HTMLDivElement>(null);
     const [panelPreset, setPanelPreset] = useState<PanelPresetId>('standard');
     const isAdvanced = state.editorMode === 'advanced';
-    const activeLabel = state.menuItems.find((m) => m.tab === state.activeTab)?.label || state.activeTab;
+    const activeLabel = state.menuItems.find((m) => m.tab === state.activeTab)?.label
+        || DETAIL_PAGE_LABELS[state.activeTab]
+        || TAB_LABELS[state.activeTab]
+        || state.activeTab;
 
     useEffect(() => {
         const root = document.querySelector('.ld.ld-react') as HTMLElement | null;
