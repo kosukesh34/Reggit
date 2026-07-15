@@ -1,6 +1,8 @@
 import type { ApiClient } from '../../shared/utils/apiClient';
 import { AppConstants } from '../../shared/constants';
 import { DomHelper } from '../../shared/utils/domHelper';
+import { isMembershipRequired } from '../utils/membershipPolicy';
+import { mountDetailLayoutChrome } from '../utils/detailLayoutMount';
 
 type StampRewardMilestone = {
     stamp_count?: number | string;
@@ -8,6 +10,7 @@ type StampRewardMilestone = {
 };
 
 type StampCard = {
+    id?: number | string;
     current_stamps?: number;
     required_stamps?: number;
     completed_at?: string | null;
@@ -28,6 +31,8 @@ type StampsResponse = {
 
 export class StampsManager {
     apiClient: ApiClient;
+    private cache: StampCard[] = [];
+    private lastDefaultImage: string | null = null;
 
     constructor(apiClient: ApiClient) {
         this.apiClient = apiClient;
@@ -108,16 +113,73 @@ export class StampsManager {
             const defaultImage = data && data.default_image_url ? data.default_image_url : null;
             const message = data && data.message ? data.message : null;
             if ((!cards || cards.length === 0) && message) {
-                section.innerHTML = this.getMemberRequiredTemplate(message);
+                section.innerHTML = isMembershipRequired()
+                    ? this.getMemberRequiredTemplate(message)
+                    : this.getGuestTemplate();
                 return;
             }
 
-            this.render(cards, defaultImage);
+            this.cache = cards.map((card, index) => ({
+                ...card,
+                id: card.id ?? index,
+            }));
+            this.lastDefaultImage = defaultImage;
+            this.render(this.cache, defaultImage);
         } catch (error) {
             // eslint-disable-next-line no-console
             console.error('Failed to load stamps:', error);
             section.innerHTML = this.getErrorTemplate(error as Error);
         }
+    }
+
+    async openDetail(id: number | string, returnHash?: string): Promise<void> {
+        if (this.cache.length === 0) {
+            await this.load();
+        }
+        const card = this.cache.find((c) => String(c.id) === String(id));
+        if (!card) {
+            return;
+        }
+        const router = typeof window !== 'undefined' && window.app && window.app.pageRouter
+            ? window.app.pageRouter
+            : null;
+        if (router === null) {
+            return;
+        }
+        const section = router.openPage({
+            key: 'stamp_detail',
+            hash: 'stamp/' + String(id),
+            returnHash: router.resolveReturnHash('stamps', returnHash),
+            title: card.name || 'スタンプ',
+            bodyClass: 'liff-page-stamp-detail',
+        });
+        if (section === null) {
+            return;
+        }
+        const current = card.current_stamps || 0;
+        const required = card.required_stamps || 10;
+        const layoutStyle = card.layout_style || 'grid';
+        const imageUrl = card.image_url || this.lastDefaultImage;
+        const validUntilDate = this.formatValidUntil(
+            card.member_stamp_valid_until || card.valid_until,
+        );
+        const bodyHtml = `
+            <div class="liff-entity-detail stamp-detail-page">
+                ${imageUrl ? `<div class="liff-entity-detail__image"><img src="${DomHelper.escapeHtml(imageUrl)}" alt=""></div>` : ''}
+                <h1 class="liff-entity-detail__title">${DomHelper.escapeHtml(card.name || 'スタンプカード')}</h1>
+                <p class="liff-entity-detail__meta">${current} / ${required} スタンプ${validUntilDate ? ` · 有効期限: ${DomHelper.escapeHtml(validUntilDate)}` : ''}</p>
+                ${this.renderSlots(current, required, layoutStyle)}
+                ${this.renderRewardMilestones(Array.isArray(card.reward_milestones) ? card.reward_milestones : [], current)}
+                ${card.reward_description ? `<div class="liff-entity-detail__body">${DomHelper.escapeHtml(card.reward_description)}</div>` : ''}
+            </div>
+        `;
+        mountDetailLayoutChrome({
+            section,
+            layoutKey: 'stamp_detail',
+            dataSource: 'stamp_detail',
+            bodyHtml,
+            slotClassName: 'liff-detail-slot stamp-detail-slot',
+        });
     }
 
     renderSlot(index: number, filled: boolean, isNext: boolean): string {
@@ -227,7 +289,7 @@ export class StampsManager {
                     ? card.reward_milestones
                     : [];
                 return `
-                    <div class="stamp-card-item stamp-card-item--layout-${layoutStyle} ${completed ? 'stamp-card-item--completed' : ''}">
+                    <button type="button" class="stamp-card-item stamp-card-item--layout-${layoutStyle} ${completed ? 'stamp-card-item--completed' : ''}" data-stamp-id="${DomHelper.escapeHtml(String(card.id ?? ''))}">
                         ${imageUrl ? `<div class="stamp-card-image"><img src="${DomHelper.escapeHtml(imageUrl)}" alt="スタンプカード" loading="lazy" onerror="this.closest('.stamp-card-image').style.display='none'"></div>` : '<div class="stamp-card-image stamp-card-image--icon"><i class="fas fa-stamp" aria-hidden="true"></i></div>'}
                         <div class="stamp-card-header">
                             <h3 class="stamp-card-name"><i class="fas fa-stamp stamp-card-name-icon" aria-hidden="true"></i>${DomHelper.escapeHtml(card.name || 'スタンプカード')}</h3>
@@ -241,7 +303,7 @@ export class StampsManager {
                         ${layoutStyle !== 'minimal' ? `<div class="stamp-card-progress"><div class="stamp-card-progress-bar" style="width: ${progress}%"></div></div>` : ''}
                         ${this.renderRewardMilestones(rewardMilestones, current)}
                         ${card.reward_description ? `<p class="stamp-card-reward">${DomHelper.escapeHtml(card.reward_description)}</p>` : ''}
-                    </div>
+                    </button>
                 `;
             })
             .join('');
@@ -251,5 +313,14 @@ export class StampsManager {
             </div>
             <div class="stamps-list">${html}</div>
         `;
+        section.querySelectorAll('[data-stamp-id]').forEach((el) => {
+            el.addEventListener('click', () => {
+                const id = (el as HTMLElement).dataset.stampId;
+                if (id === undefined || id === '') {
+                    return;
+                }
+                void this.openDetail(id);
+            });
+        });
     }
 }

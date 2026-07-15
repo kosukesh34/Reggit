@@ -96,14 +96,13 @@ export class LiffLayoutManager {
         }
         const tabLoaders: Record<string, () => void> = {
             home: () => {
-                this.app.announcementManager.load();
                 setTimeout(() => {
                     const c = document.getElementById('homeSection');
                     const loading = c && c.querySelector('.home-loading');
                     if (!loading) return;
-                    const section = document.getElementById('announcementsSection');
-                    if (section && section.innerHTML.trim() !== '') {
-                        (loading as HTMLElement).outerHTML = '<p class="section-title" style="margin:0;padding:8px 0;"><i class="fas fa-bullhorn"></i> お知らせは上に表示されています</p>';
+                    const mount = c.querySelector('.announcements-data-mount');
+                    if (mount && mount.innerHTML.trim() !== '') {
+                        (loading as HTMLElement).outerHTML = '';
                     } else {
                         (loading as HTMLElement).innerHTML = '<p class="section-title" style="margin:0;"><i class="fas fa-bullhorn"></i> お知らせはありません</p>';
                     }
@@ -117,6 +116,7 @@ export class LiffLayoutManager {
             queue: () => this.app.queueManager.load(),
             reservations: () => this.app.checkMembershipAndLoadReservations(),
             gallery: () => this.app.galleryManager.load(),
+            announcements: () => this.app.announcementManager.load(),
         };
         const loader = tabLoaders[tab];
         if (loader) {
@@ -134,6 +134,7 @@ export class LiffLayoutManager {
             home: 'announcements', products: 'products', orders: 'orders',
             stamps: 'stamps', coupons: 'coupons', queue: 'queue',
             member: 'member', reservations: 'reservations', gallery: 'gallery',
+            announcements: 'announcements',
         };
     }
 
@@ -563,7 +564,11 @@ export class LiffLayoutManager {
             if (source === 'reservations') { (el as HTMLElement).innerHTML += '<div class="reservations-data-mount reservations-section"></div>'; this.app.checkMembershipAndLoadReservations(); return; }
             if (source === 'member' || source === 'member_card') { (el as HTMLElement).innerHTML += '<div class="member-section member-card-mount"></div>'; this.app.loadMemberTab(); return; }
             if (source === 'gallery') { (el as HTMLElement).innerHTML += '<div class="gallery-data-mount"></div>'; this.app.galleryManager.load(); return; }
-            if (source === 'announcements') { (el as HTMLElement).innerHTML += '<div class="announcements-data-mount announcements-section"></div>'; this.app.announcementManager.load(); return; }
+            if (source === 'announcements') { (el as HTMLElement).innerHTML += '<div class="announcements-data-mount"></div>'; this.app.announcementManager.load(); return; }
+            if (source === 'announcement_detail') { return; }
+            if (source === 'product_detail' || source === 'coupon_detail' || source === 'gallery_detail' || source === 'stamp_detail') { return; }
+            if (source === 'order_cart' || source === 'order_confirm' || source === 'order_complete') { return; }
+            if (source === 'reservation_new' || source === 'reservation_confirm' || source === 'reservation_complete') { return; }
             if (source === 'member_summary') { this._mountMemberSummary(el as HTMLElement); }
         });
     }
@@ -601,7 +606,12 @@ export class LiffLayoutManager {
     _navigateBuilderHref(href: string, externalEl: Element | null): void {
         if (!href) return;
         if (href.startsWith('#')) {
-            const tab = href.replace('#', '');
+            const route = href.replace(/^#/, '');
+            if (typeof window !== 'undefined') {
+                window.location.hash = '#' + route;
+                return;
+            }
+            const tab = route;
             if (this.app && tab) this.app.switchTab(tab);
             return;
         }

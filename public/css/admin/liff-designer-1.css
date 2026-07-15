@@ -567,11 +567,12 @@ body {
 }
 .ld-phone__screen.tab-style-floating .ld-phone-app-tabs.main-tabs,
 .ld-phone-device__screen.tab-style-floating .ld-phone-app-tabs.main-tabs {
-    margin: 0 8px 8px;
-    border-radius: 18px;
-    border: 1px solid var(--hairline, rgba(17, 24, 39, 0.06));
-    min-height: auto;
-    box-shadow: 0 8px 24px rgba(12, 10, 9, 0.1);
+    margin: 0;
+    border-radius: 0;
+    border: none;
+    border-top: 1px solid var(--hairline, rgba(17, 24, 39, 0.06));
+    min-height: 62px;
+    box-shadow: 0 -8px 24px rgba(12, 10, 9, 0.06);
 }
 
 .ld-phone__body {
@@ -608,10 +609,11 @@ body {
     color: #1d4ed8;
 }
 .ld-phone__nav.is-floating {
-    margin: 0 10px 10px;
-    border-radius: 18px;
-    border: 1px solid rgba(28,25,23,0.08);
-    box-shadow: 0 6px 20px rgba(28,25,23,0.08);
+    margin: 0;
+    border-radius: 0;
+    border: none;
+    border-top: 1px solid rgba(28,25,23,0.08);
+    box-shadow: 0 -8px 24px rgba(28,25,23,0.06);
 }
 
 /* ====== Blocks ====== */

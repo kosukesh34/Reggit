@@ -26,6 +26,9 @@ class UpdateLiffDesignerUseCase
     public function handle(int $projectId, UpdateLiffDesignerInput $input): void
     {
         $this->liffSettingsService->setTabLayouts($input->layouts, $projectId);
+        if ($input->detailLayouts !== null) {
+            $this->liffSettingsService->setDetailLayouts($input->detailLayouts, $projectId);
+        }
         $this->liffSettingsService->setCustomCss($input->customCss, $projectId);
 
         if ($input->tabSettings !== null) {

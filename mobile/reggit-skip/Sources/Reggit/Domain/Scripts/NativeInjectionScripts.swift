@@ -89,14 +89,15 @@ enum NativeInjectionScripts {
             }
             if (viewport) viewport.setAttribute('content', viewportContent);
 
+            // NativeTabBar は WebView 外なので、viewport 高さからタブバー分を引かない。
+            // （二重に引くとスクロール領域が短くなり、端での誤リロードが起きやすい）
             var viewportHeight = (typeof window.innerHeight === 'number' && window.innerHeight > 0)
                 ? window.innerHeight
                 : (typeof window.visualViewport !== 'undefined' && window.visualViewport && window.visualViewport.height > 0)
                     ? window.visualViewport.height
                     : 800;
             var viewportPx = viewportHeight + 'px';
-            var tabBarHeight = 'calc(64px + max(env(safe-area-inset-bottom, 0px), 8px))';
-            var contentHeight = 'calc(' + viewportPx + ' - var(--native-header-height, 56px) - ' + tabBarHeight + ')';
+            var contentHeight = 'calc(' + viewportPx + ' - var(--native-header-height, 56px))';
 
             if (document.documentElement) {
                 document.documentElement.style.setProperty('--native-viewport-height', viewportPx);
@@ -104,7 +105,7 @@ enum NativeInjectionScripts {
                 document.documentElement.style.overflow = 'hidden';
                 document.documentElement.style.overflowX = 'hidden';
                 document.documentElement.style.overflowY = 'hidden';
-                document.documentElement.style.touchAction = 'none';
+                document.documentElement.style.touchAction = 'pan-y';
                 document.documentElement.style.maxWidth = '100vw';
                 document.documentElement.style.height = viewportPx;
                 document.documentElement.style.maxHeight = viewportPx;
@@ -115,7 +116,7 @@ enum NativeInjectionScripts {
                 document.body.style.overflow = 'hidden';
                 document.body.style.overflowX = 'hidden';
                 document.body.style.overflowY = 'hidden';
-                document.body.style.touchAction = 'none';
+                document.body.style.touchAction = 'pan-y';
                 document.body.style.maxWidth = '100vw';
                 document.body.style.height = viewportPx;
                 document.body.style.maxHeight = viewportPx;
@@ -125,8 +126,6 @@ enum NativeInjectionScripts {
                 const style = document.createElement('style');
                 style.textContent = `
                     html.native-app-embed, body.native-app-embed {
-                        --native-safe-bottom: max(env(safe-area-inset-bottom, 0px), 8px);
-                        --native-tab-height: calc(64px + var(--native-safe-bottom));
                         --native-header-height: 56px;
                         min-height: var(--native-viewport-height, 100vh) !important;
                         max-height: var(--native-viewport-height, 100vh) !important;
@@ -137,7 +136,8 @@ enum NativeInjectionScripts {
                         padding: 0 !important;
                         box-sizing: border-box !important;
                         overflow: hidden !important;
-                        touch-action: manipulation !important;
+                        overscroll-behavior: none !important;
+                        touch-action: pan-y !important;
                     }
                     .native-app-embed .app-container {
                         display: flex !important;
@@ -149,6 +149,7 @@ enum NativeInjectionScripts {
                         max-width: 100vw !important;
                         box-sizing: border-box !important;
                         overflow: hidden !important;
+                        overscroll-behavior: none !important;
                     }
                     .native-app-embed .header {
                         display: block !important;
@@ -171,24 +172,23 @@ enum NativeInjectionScripts {
                         flex-direction: column !important;
                         flex: 1 1 auto !important;
                         min-height: 0 !important;
-                        height: auto !important;
-                        max-height: none !important;
+                        height: 100% !important;
+                        max-height: 100% !important;
                         overflow-y: auto !important;
                         overflow-x: hidden !important;
+                        overscroll-behavior-y: contain !important;
                         -webkit-overflow-scrolling: touch !important;
                         touch-action: pan-y !important;
                     }
                     .native-app-embed .tab-content.active .tab-section {
                         display: block !important;
-                        flex: 1 1 auto !important;
-                        min-height: 0 !important;
+                        flex: 0 0 auto !important;
+                        min-height: min-content !important;
                         height: auto !important;
                         max-height: none !important;
-                        overflow-y: auto !important;
-                        overflow-x: hidden !important;
-                        -webkit-overflow-scrolling: touch !important;
+                        overflow: visible !important;
                         touch-action: pan-y !important;
-                        padding-bottom: 16px !important;
+                        padding-bottom: 24px !important;
                         box-sizing: border-box !important;
                     }
                     .native-app-embed .main-tabs {
@@ -214,7 +214,7 @@ enum NativeInjectionScripts {
                 var vh = window.visualViewport.height;
                 if (!(vh > 0)) return;
                 var px = vh + 'px';
-                var contentHeight = 'calc(' + px + ' - var(--native-header-height, 56px) - calc(64px + max(env(safe-area-inset-bottom, 0px), 8px)))';
+                var contentHeight = 'calc(' + px + ' - var(--native-header-height, 56px))';
                 if (document.documentElement) {
                     document.documentElement.style.setProperty('--native-viewport-height', px);
                     document.documentElement.style.setProperty('--native-content-height', contentHeight);

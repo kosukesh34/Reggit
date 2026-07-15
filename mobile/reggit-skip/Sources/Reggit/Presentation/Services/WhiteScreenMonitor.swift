@@ -52,13 +52,8 @@ final class WhiteScreenMonitor: WhiteScreenMonitoring {
                 }
 
                 if elapsed >= WebShellTiming.fallbackDelay {
-                    let message = """
-                    画面の読み込みが完了しませんでした。
-                    URL: \(liffURLString)
-                    状態: \(inspection.summary)
-                    """
-                    logger.error("White screen fallback shown: \(inspection.summary)")
-                    onEvent(.fallback(summary: message))
+                    logger.error("White screen fallback shown url=\(liffURLString) summary=\(inspection.summary)")
+                    onEvent(.fallback(summary: ShellUserFacingMessages.whiteScreenMessage))
                     return
                 }
 

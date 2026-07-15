@@ -26,13 +26,18 @@ export type GalleryAccent = {
 export const CATEGORY_LABELS: Record<string, string> = {
     all: 'すべて',
     home: 'ホーム',
-    order: '注文',
+    order: '注文・飲食',
     member: '会員',
     reservation: '予約',
     campaign: '販促',
     story: 'ブランド',
     support: 'サポート',
     industry: '業種別CRM',
+    industry_food: '飲食',
+    industry_beauty: '美容・健康',
+    industry_retail: '小売',
+    industry_hotel: 'ホテル',
+    industry_medical: '医療',
     native: 'ネイティブ',
     luxury: 'ラグジュアリー',
     super: '全画面',
@@ -60,6 +65,11 @@ export const CATEGORY_ACCENTS: Record<string, GalleryAccent> = {
     story: { color: '#c2410c', soft: '#ffedd5', icon: 'fa-book-open' },
     support: { color: '#0f766e', soft: '#ccfbf1', icon: 'fa-headset' },
     industry: { color: '#4f46e5', soft: '#e0e7ff', icon: 'fa-store' },
+    industry_food: { color: '#c2410c', soft: '#ffedd5', icon: 'fa-utensils' },
+    industry_beauty: { color: '#db2777', soft: '#fce7f3', icon: 'fa-spa' },
+    industry_retail: { color: '#2563eb', soft: '#dbeafe', icon: 'fa-shopping-bag' },
+    industry_hotel: { color: '#0f766e', soft: '#ccfbf1', icon: 'fa-hotel' },
+    industry_medical: { color: '#0284c7', soft: '#e0f2fe', icon: 'fa-stethoscope' },
     native: { color: '#0f172a', soft: '#e2e8f0', icon: 'fa-mobile-alt' },
     luxury: { color: '#92400e', soft: '#fef3c7', icon: 'fa-gem' },
     super: { color: '#1c1917', soft: '#f5f5f4', icon: 'fa-layer-group' },
@@ -108,7 +118,17 @@ export function templateDisplayName(tpl: TemplateItem, fallbackIndex = 0): strin
 
 export function templateCategoryKey(tpl: TemplateItem): string {
     if (isAllScreensTemplate(tpl)) return 'super';
-    return tpl.category || 'other';
+    const raw = tpl.category || 'other';
+    const id = String(tpl.id || '').toLowerCase();
+    const name = `${tpl.name || ''} ${tpl.label || ''} ${tpl.description || ''}`.toLowerCase();
+    if (raw === 'industry' || raw === 'home') {
+        if (/cafe|ramen|sushi|bakery|izakaya|food|restaurant|delivery|drink/.test(id + name)) return 'industry_food';
+        if (/beauty|salon|spa|nail|clinic|fitness|gym|pet/.test(id + name)) return 'industry_beauty';
+        if (/retail|fashion|shop|grocery|flash/.test(id + name)) return 'industry_retail';
+        if (/hotel|concierge|stay/.test(id + name)) return 'industry_hotel';
+        if (/clinic|medical|hospital|trust/.test(id + name)) return 'industry_medical';
+    }
+    return raw;
 }
 
 export function categoryLabel(key: string): string {

@@ -17,6 +17,7 @@ const ALL_TAB_SECTIONS: FrontendMenuItem[] = [
     { tab: 'member', label: '会員証', icon: 'fa-id-card' },
     { tab: 'reservations', label: '予約', icon: 'fa-calendar-check' },
     { tab: 'gallery', label: 'ギャラリー', icon: 'fa-images' },
+    { tab: 'announcements', label: 'お知らせ', icon: 'fa-bullhorn' },
 ];
 
 function getFrontendMenu(): FrontendMenuItem[] {
@@ -44,7 +45,7 @@ export function FrontendTabLayout(): JSX.Element {
 
     return (
         <>
-            <div id="announcementsSection" className="announcements-section" aria-label="お知らせ" />
+            <div id="announcementsTopBar" className="announcements-section announcements-top-bar" aria-label="お知らせバー" hidden />
             {mountedTabs.map((item) => (
                 <div
                     key={item.tab}
@@ -54,6 +55,21 @@ export function FrontendTabLayout(): JSX.Element {
                     <div className="tab-section" id={`${item.tab}Section`} data-tab={item.tab} />
                 </div>
             ))}
+            <div
+                id="liffDetailPage"
+                className="page-content page-content--detail page-content--announcement-detail"
+                hidden
+                aria-label="詳細"
+            >
+                <div className="page-content__bar">
+                    <a href="#home" className="page-content__back" data-liff-page-back="1" data-announcement-back="1">
+                        <i className="fas fa-chevron-left" aria-hidden="true" />
+                        戻る
+                    </a>
+                    <span className="page-content__title" id="liffDetailPageTitle" />
+                </div>
+                <div className="page-content__body tab-section" id="liffDetailSection" data-page="" />
+            </div>
         </>
     );
 }

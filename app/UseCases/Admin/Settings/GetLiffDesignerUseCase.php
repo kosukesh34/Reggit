@@ -21,6 +21,7 @@ class GetLiffDesignerUseCase
             $this->liffSettingsService->getFeatureFlags($projectId),
             $this->liffSettingsService->getLineFriendAddUrl($projectId),
             $this->liffSettingsService->getMenuItemsForDesigner($projectId),
+            $this->liffSettingsService->getDetailLayouts($projectId),
         );
     }
 }

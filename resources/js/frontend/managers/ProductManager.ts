@@ -112,7 +112,7 @@ export class ProductManager {
     }
 
     getProductById(productId: number | string): Product | undefined {
-        return this.products.find((product) => product.id === productId);
+        return this.products.find((product) => String(product.id) === String(productId));
     }
 
     setCurrentCategory(category: string): void {

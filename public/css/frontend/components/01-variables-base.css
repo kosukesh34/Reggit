@@ -106,7 +106,8 @@ html {
     touch-action: pan-x pan-y;
     -ms-touch-action: pan-x pan-y;
     width: 100%;
-    overflow-x: hidden;
+    height: 100%;
+    overflow: hidden;
     -webkit-text-size-adjust: 100%;
 }
 
@@ -128,7 +129,8 @@ body {
     -webkit-tap-highlight-color: transparent;
     -ms-touch-action: pan-x pan-y;
     width: 100%;
-    overflow-x: hidden;
+    height: 100%;
+    overflow: hidden;
     overscroll-behavior-x: none;
 }
 

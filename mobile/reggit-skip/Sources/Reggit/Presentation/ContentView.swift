@@ -57,7 +57,10 @@ struct ContentView: View {
             }
 
             if viewModel.showWhiteScreenFallback {
-                ConnectionFallbackView(message: viewModel.fallbackMessage) {
+                ConnectionFallbackView(
+                    title: viewModel.fallbackTitle,
+                    message: viewModel.fallbackMessage
+                ) {
                     viewModel.retryLoad()
                 }
             } else if viewModel.isLoading {

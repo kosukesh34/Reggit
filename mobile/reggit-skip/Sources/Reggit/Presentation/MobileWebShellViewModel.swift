@@ -11,6 +11,7 @@ final class MobileWebShellViewModel: PushNotificationHandling {
 
     var isLoading = true
     var showWhiteScreenFallback = false
+    var fallbackTitle = ShellUserFacingMessages.connectionTitle
     var fallbackMessage = ""
     var webViewReloadKey = 0
     var activeTab: String
@@ -177,6 +178,7 @@ final class MobileWebShellViewModel: PushNotificationHandling {
         showWhiteScreenFallback = false
         showNativeTabBar = false
         isWebContentReady = false
+        fallbackTitle = ShellUserFacingMessages.connectionTitle
         fallbackMessage = ""
         pendingNotificationDeepLink = nil
         whiteScreenMonitor.resetTracking()
@@ -189,8 +191,9 @@ final class MobileWebShellViewModel: PushNotificationHandling {
         showNativeTabBar = false
         isWebContentReady = false
         pendingNotificationDeepLink = nil
+        fallbackTitle = ShellUserFacingMessages.connectionTitle
         fallbackMessage = reachabilityChecker.unreachableMessage(for: config.liffURLString)
-        logger.error("Web shell unreachable: \(fallbackMessage)")
+        logger.error("Web shell unreachable url=\(config.liffURLString)")
     }
 
     private func markWebContentReadyIfNeeded() {
@@ -233,6 +236,7 @@ final class MobileWebShellViewModel: PushNotificationHandling {
         case .contentVisible:
             isLoading = false
             showWhiteScreenFallback = false
+            fallbackTitle = ShellUserFacingMessages.connectionTitle
             fallbackMessage = ""
             markWebContentReadyIfNeeded()
         case .autoReload:
@@ -244,6 +248,7 @@ final class MobileWebShellViewModel: PushNotificationHandling {
             showNativeTabBar = false
             isWebContentReady = false
             pendingNotificationDeepLink = nil
+            fallbackTitle = ShellUserFacingMessages.loadFailedTitle
             fallbackMessage = message
         }
     }

@@ -23,7 +23,22 @@ class LiffDesignerSanitizer
     /** タブメニュー（表示/非表示・並び替え・名前/アイコン変更）の対象タブ */
     private const MENU_TABS = [
         'home', 'products', 'orders', 'stamps', 'coupons',
-        'queue', 'reservations', 'member', 'gallery',
+        'queue', 'reservations', 'member', 'gallery', 'announcements',
+    ];
+
+    /** 詳細ページレイアウト（タブと並列） */
+    private const ALLOWED_DETAIL_KEYS = [
+        'announcement_detail',
+        'product_detail',
+        'coupon_detail',
+        'gallery_detail',
+        'stamp_detail',
+        'order_cart',
+        'order_confirm',
+        'order_complete',
+        'reservation_new',
+        'reservation_confirm',
+        'reservation_complete',
     ];
 
     private const SOCIAL_LINK_TYPES = [
@@ -31,7 +46,8 @@ class LiffDesignerSanitizer
     ];
 
     private const ALLOWED_DATA_SOURCES = [
-        'products', 'orders', 'coupons', 'stamps', 'announcements',
+        'products', 'orders', 'coupons', 'stamps', 'announcements', 'announcement_detail',
+        'product_detail', 'coupon_detail', 'gallery_detail', 'stamp_detail',
         'queue', 'reservations', 'gallery', 'member_card', 'member',
     ];
 
@@ -96,6 +112,34 @@ class LiffDesignerSanitizer
         return $safe;
     }
 
+    /**
+     * @param  array<string, mixed>  $layouts
+     * @return array<string, array<int, array<string, mixed>>>
+     */
+    public static function sanitizeDetailLayouts(array $layouts): array
+    {
+        $safe = [];
+        foreach (self::ALLOWED_DETAIL_KEYS as $key) {
+            $rows = $layouts[$key] ?? [];
+            $safe[$key] = [];
+            if (! is_array($rows)) {
+                continue;
+            }
+            $rows = array_slice($rows, 0, 100);
+            foreach ($rows as $row) {
+                if (! is_array($row)) {
+                    continue;
+                }
+                $block = self::sanitizeBlock($row);
+                if ($block !== null) {
+                    $safe[$key][] = $block;
+                }
+            }
+        }
+
+        return $safe;
+    }
+
     public static function sanitizeTabSettings(?array $tabSettings): ?array
     {
         if ($tabSettings === null) {
@@ -112,7 +156,8 @@ class LiffDesignerSanitizer
             }
         }
 
-        foreach (self::ALLOWED_TABS as $tab) {
+        $screenKeys = array_merge(self::ALLOWED_TABS, self::ALLOWED_DETAIL_KEYS);
+        foreach ($screenKeys as $tab) {
             $row = $tabSettings[$tab] ?? null;
             if (! is_array($row)) {
                 continue;
@@ -151,7 +196,7 @@ class LiffDesignerSanitizer
 
     /**
      * @param  array<string, mixed>  $row
-     * @return array<string, int|string>
+     * @return array<string, bool|int|string>
      */
     private static function sanitizeGlobalSettings(array $row): array
     {
@@ -226,6 +271,10 @@ class LiffDesignerSanitizer
         $systemHeaderStyle = (string) ($row['system_header_style'] ?? '');
         if (in_array($systemHeaderStyle, ['minimal', 'editorial', 'hero'], true)) {
             $item['system_header_style'] = $systemHeaderStyle;
+        }
+
+        if (isset($row['require_membership'])) {
+            $item['require_membership'] = filter_var($row['require_membership'], FILTER_VALIDATE_BOOLEAN);
         }
 
         $memberCardDesign = (string) ($row['member_card_design'] ?? '');
