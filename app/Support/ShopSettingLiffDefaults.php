@@ -1734,6 +1734,87 @@ class ShopSettingLiffDefaults
     }
 
     /**
+     * 詳細ページ用レイアウト（タブと並列）。product_detail 等は今後同じ枠に追加する。
+     *
+     * @return array<string, array<int, array<string, mixed>>>
+     */
+    public static function defaultLiffDetailLayouts(): array
+    {
+        return [
+            'announcement_detail' => [
+                ['type' => 'heading', 'design' => 'eyebrow', 'text' => 'News', 'size' => 'medium'],
+                ['type' => 'data', 'source' => 'announcement_detail'],
+            ],
+            'product_detail' => [
+                ['type' => 'heading', 'design' => 'eyebrow', 'text' => 'Menu', 'size' => 'medium'],
+                ['type' => 'data', 'source' => 'product_detail'],
+            ],
+            'coupon_detail' => [
+                ['type' => 'heading', 'design' => 'eyebrow', 'text' => 'Coupon', 'size' => 'medium'],
+                ['type' => 'data', 'source' => 'coupon_detail'],
+            ],
+            'gallery_detail' => [
+                ['type' => 'heading', 'design' => 'eyebrow', 'text' => 'Gallery', 'size' => 'medium'],
+                ['type' => 'data', 'source' => 'gallery_detail'],
+            ],
+            'stamp_detail' => [
+                ['type' => 'heading', 'design' => 'eyebrow', 'text' => 'Stamp', 'size' => 'medium'],
+                ['type' => 'data', 'source' => 'stamp_detail'],
+            ],
+            'order_cart' => [
+                ['type' => 'heading', 'design' => 'eyebrow', 'text' => 'Cart', 'size' => 'medium'],
+                ['type' => 'text', 'design' => 'body', 'text' => 'カート内容はアプリ内で表示されます'],
+            ],
+            'order_confirm' => [
+                ['type' => 'heading', 'design' => 'eyebrow', 'text' => 'Confirm', 'size' => 'medium'],
+                ['type' => 'text', 'design' => 'body', 'text' => '注文確認はアプリ内で表示されます'],
+            ],
+            'order_complete' => [
+                ['type' => 'heading', 'design' => 'eyebrow', 'text' => 'Complete', 'size' => 'medium'],
+                ['type' => 'text', 'design' => 'body', 'text' => '注文完了画面です'],
+            ],
+            'reservation_new' => [
+                ['type' => 'heading', 'design' => 'eyebrow', 'text' => 'Reserve', 'size' => 'medium'],
+                ['type' => 'text', 'design' => 'body', 'text' => '予約フォームはアプリ内で表示されます'],
+            ],
+            'reservation_confirm' => [
+                ['type' => 'heading', 'design' => 'eyebrow', 'text' => 'Confirm', 'size' => 'medium'],
+                ['type' => 'text', 'design' => 'body', 'text' => '予約確認はアプリ内で表示されます'],
+            ],
+            'reservation_complete' => [
+                ['type' => 'heading', 'design' => 'eyebrow', 'text' => 'Complete', 'size' => 'medium'],
+                ['type' => 'text', 'design' => 'body', 'text' => '予約完了画面です'],
+            ],
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $layouts
+     * @return array<string, array<int, array<string, mixed>>>
+     */
+    public static function ensureLiffDetailLayouts(array $layouts): array
+    {
+        $defaults = self::defaultLiffDetailLayouts();
+        $normalized = [];
+        foreach ($defaults as $key => $defaultBlocks) {
+            $rows = $layouts[$key] ?? null;
+            $blocks = is_array($rows) ? array_values(array_filter($rows, fn ($v) => is_array($v))) : [];
+            $normalized[$key] = $blocks === [] ? $defaultBlocks : $blocks;
+        }
+        foreach ($layouts as $key => $rows) {
+            if (isset($normalized[$key]) || ! is_string($key)) {
+                continue;
+            }
+            $blocks = is_array($rows) ? array_values(array_filter($rows, fn ($v) => is_array($v))) : [];
+            if ($blocks !== []) {
+                $normalized[$key] = $blocks;
+            }
+        }
+
+        return $normalized;
+    }
+
+    /**
      * 保存済みレイアウトをタブ単位で正規化する。
      *
      * ルール:
@@ -1772,13 +1853,14 @@ class ShopSettingLiffDefaults
                 'content_padding' => 16,
                 'section_gap' => 14,
                 'radius_scale' => 'soft',
-                'tab_style' => 'floating',
+                'tab_style' => 'default',
                 'card_style' => 'elevated',
                 'button_shape' => 'pill',
                 'density' => 'default',
                 'content_width' => 'comfy',
                 'background_style' => 'solid',
                 'bg_color' => '#f4f6f8',
+                'require_membership' => true,
             ],
             'home' => ['background_color' => '#f4f6f8'],
             'products' => ['background_color' => '#f7f8fa'],
@@ -1790,6 +1872,17 @@ class ShopSettingLiffDefaults
             'member' => ['background_color' => '#f6f7f9'],
             'gallery' => ['background_color' => '#f8f7f4'],
             'announcements' => ['background_color' => '#f5f7fb'],
+            'announcement_detail' => ['background_color' => '#f5f7fb'],
+            'product_detail' => ['background_color' => '#f7f8fa'],
+            'coupon_detail' => ['background_color' => '#f7f4ff'],
+            'gallery_detail' => ['background_color' => '#f8f7f4'],
+            'stamp_detail' => ['background_color' => '#f3faf5'],
+            'order_cart' => ['background_color' => '#f7f8fa'],
+            'order_confirm' => ['background_color' => '#f7f8fa'],
+            'order_complete' => ['background_color' => '#f7f8fa'],
+            'reservation_new' => ['background_color' => '#f0f7ff'],
+            'reservation_confirm' => ['background_color' => '#f0f7ff'],
+            'reservation_complete' => ['background_color' => '#f0f7ff'],
         ];
     }
 

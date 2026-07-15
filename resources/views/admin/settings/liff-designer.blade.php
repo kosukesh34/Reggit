@@ -12,6 +12,7 @@
 <form action="{{ admin_route('admin.settings.liff-designer.update') }}" method="POST" id="liffDesignerForm" hidden>
     @csrf
     <input type="hidden" name="layouts_json" id="layoutsJson">
+    <input type="hidden" name="detail_layouts_json" id="detailLayoutsJson">
     <input type="hidden" name="custom_css" id="customCssInput" value="{{ $customCss ?? '' }}">
     <input type="hidden" name="tab_settings_json" id="tabSettingsJson">
     <input type="hidden" name="menu_items_json" id="menuItemsJson">
@@ -22,6 +23,7 @@
 @php
     $ldDesignerConfig = [
         'layouts' => $layouts ?? [],
+        'detailLayouts' => $detailLayouts ?? [],
         'tabSettings' => $tabSettings ?? [],
         'templates' => $templates ?? [],
         'customCss' => $customCss ?? '',

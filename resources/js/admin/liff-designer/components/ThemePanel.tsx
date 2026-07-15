@@ -23,7 +23,8 @@ function Accordion({ title, open, onToggle, children }: { title: string; open: b
 export function ThemePanel() {
     const { state, dispatch, config } = useDesigner();
     const g = state.globalSettings;
-    const [open, setOpen] = useState({ preset: true, basic: true, look: false, system: false, css: false });
+    const [open, setOpen] = useState({ policy: true, preset: true, basic: true, look: false, system: false, css: false });
+    const requireMembership = g.require_membership !== false;
 
     const contentWidths = Object.entries(config.contentWidths || {
         edge: { label: 'フル幅' },
@@ -58,6 +59,32 @@ export function ThemePanel() {
     return (
         <div className="ld-sidebar__section">
             <div className="ld-sidebar__title"><i className="fas fa-swatchbook" /> テーマ設定</div>
+
+            <Accordion title="アプリの動作" open={open.policy} onToggle={() => setOpen((s) => ({ ...s, policy: !s.policy }))}>
+                <FieldGroup label="会員登録">
+                    <div className="ld-bg-style-tabs" role="group" aria-label="会員登録ポリシー">
+                        <button
+                            type="button"
+                            className={`ld-bg-style-tab${requireMembership ? ' is-active' : ''}`}
+                            onClick={() => dispatch({ type: 'UPDATE_GLOBAL', patch: { require_membership: true } })}
+                        >
+                            必須
+                        </button>
+                        <button
+                            type="button"
+                            className={`ld-bg-style-tab${!requireMembership ? ' is-active' : ''}`}
+                            onClick={() => dispatch({ type: 'UPDATE_GLOBAL', patch: { require_membership: false } })}
+                        >
+                            不要
+                        </button>
+                    </div>
+                </FieldGroup>
+                <p className="ld-form-hint">
+                    {requireMembership
+                        ? 'クーポン・スタンプ・予約・会員証は登録後のみ利用できます。'
+                        : 'ゲストでも閲覧できます。会員登録は任意です。'}
+                </p>
+            </Accordion>
 
             <Accordion title="プリセット" open={open.preset} onToggle={() => setOpen((s) => ({ ...s, preset: !s.preset }))}>
                 <div className="ld-theme-gallery">
@@ -116,6 +143,17 @@ export function ThemePanel() {
                 ) : (
                     <ColorField label="背景色" value={String(g.bg_color || '#f9fafb')} onChange={(v) => dispatch({ type: 'UPDATE_GLOBAL', patch: { bg_color: v } })} />
                 )}
+                <button
+                    type="button"
+                    className="ld-btn ld-btn--primary ld-btn--block"
+                    onClick={() => {
+                        dispatch({ type: 'APPLY_GLOBAL_BACKGROUND' });
+                        dispatch({ type: 'SHOW_TOAST', message: '背景をアプリ全体に適用しました（各画面の個別背景をクリア）' });
+                    }}
+                >
+                    <i className="fas fa-fill-drip" /> 背景をアプリ全体に適用
+                </button>
+                <p className="ld-form-hint">各タブに設定した個別背景を外し、このページ背景を全体で使います。</p>
                 <ColorField label="アクセントカラー" value={String(g.accent_color || '#1c1917')} onChange={(v) => dispatch({ type: 'UPDATE_GLOBAL', patch: { accent_color: v, theme_preset: 'custom' } })} />
                 <SelectField label="フォント" value={String(g.font_family || '')} options={fontOptions} onChange={(v) => dispatch({ type: 'UPDATE_GLOBAL', patch: { font_family: v } })} />
                 <SelectField label="背景トーン" value={String(g.surface_tone || '')} options={toneOptions} onChange={(v) => dispatch({ type: 'UPDATE_GLOBAL', patch: { surface_tone: v } })} />

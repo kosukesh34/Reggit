@@ -495,7 +495,6 @@ export function ActionField({
 }) {
     const current = parseAction(value);
     const tabOptions = Object.keys(TAB_LABELS)
-        .filter((k) => k !== 'announcements')
         .map((k) => ({ value: k, label: TAB_LABELS[k] }));
 
     return (

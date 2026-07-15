@@ -1,4 +1,4 @@
-/* ヘッダー */
+/* ヘッダー（スクロールは .main-content 側。ここは flex で固定） */
 .header {
     background:
         linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 55%),
@@ -8,8 +8,8 @@
     padding-top: max(16px, var(--safe-area-top-capped));
     padding-left: max(var(--content-padding), var(--safe-area-left));
     padding-right: max(var(--content-padding), var(--safe-area-right));
-    position: sticky;
-    top: 0;
+    flex-shrink: 0;
+    position: relative;
     z-index: 100;
     box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset, 0 8px 28px rgba(var(--primary-rgb), 0.22);
 }
@@ -148,12 +148,14 @@ body.native-app-embed .header {
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
 }
 
-/* メインコンテンツ */
+/* メインコンテンツ（ヘッダー外でスクロール） */
 .main-content {
     flex: 1 1 auto;
     min-height: 0;
     padding-bottom: max(84px, var(--main-tabs-height));
     overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     max-width: 100%;
 }
 

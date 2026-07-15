@@ -85,9 +85,9 @@
     box-shadow: var(--shadow-xs);
 }
 
-/* フローティングタブバー連携 */
+/* フローティング指定でもタブは下部密着のため追加余白は不要 */
 body.tab-style-floating .builder-container {
-    padding-bottom: 8px;
+    padding-bottom: 0;
 }
 
 /* スケルトン — より自然なシマー */

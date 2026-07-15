@@ -1,15 +1,14 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { TAB_LABELS, TAB_ICONS } from '../catalog/blockCatalog';
+import { DETAIL_PAGE_LABELS, DETAIL_PAGE_ICONS, DETAIL_PAGES } from '../catalog/blockCatalog';
 import { useTabFeatureMap } from './tabHelpers';
 import { useDesigner } from '../state/DesignerContext';
 
 type MenuPos = { top: number; right: number };
 
-export function ScreenList() {
+export function ScreenList({ embedded = false }: { embedded?: boolean }) {
     const { state, dispatch, config } = useDesigner();
     const featureMap = useTabFeatureMap();
-    const menuByTab = Object.fromEntries(state.menuItems.map((m) => [m.tab, m]));
     const enabledCount = state.menuItems.filter((m) => m.enabled).length;
     const [menuOpenTab, setMenuOpenTab] = useState<string | null>(null);
     const [menuPos, setMenuPos] = useState<MenuPos | null>(null);
@@ -127,7 +126,7 @@ export function ScreenList() {
                         )}
                         <span className="ld-tab-card__meta">
                             {count} ブロック
-                            {!editable ? ' · 固定' : null}
+                            {!editable ? ' · 詳細' : null}
                             {featureOff ? ' · OFF' : null}
                             {!item.enabled && editable ? ' · 非表示' : null}
                         </span>
@@ -160,7 +159,8 @@ export function ScreenList() {
     };
 
     return (
-        <aside className={`ld-screens ld-screens--light${state.screensOpen ? ' is-open' : ''}`}>
+        <div className={embedded ? 'ld-screens-embed' : `ld-screens ld-screens--light${state.screensOpen ? ' is-open' : ''}`}>
+            {embedded ? null : (
             <div className="ld-screens__head">
                 <div className="ld-screens__head-row">
                     <div>
@@ -181,20 +181,34 @@ export function ScreenList() {
                     </div>
                 </div>
             </div>
+            )}
+            {embedded ? (
+                <div className="ld-screens__head ld-screens__head--embed">
+                    <div className="ld-screens__title">画面一覧</div>
+                    <span className="ld-screens__count">{enabledCount} 表示中</span>
+                </div>
+            ) : null}
             <div className="ld-screens__list">
+                <div className="ld-screens__group-label">タブ</div>
                 {state.menuItems.map((item) => renderTab(item.tab, item, true))}
-                {menuByTab.announcements === undefined ? renderTab('announcements', {
-                    label: TAB_LABELS.announcements,
-                    icon: TAB_ICONS.announcements,
+                <div className="ld-screens__group-label">詳細ページ</div>
+                {DETAIL_PAGES.map((key) => renderTab(key, {
+                    label: DETAIL_PAGE_LABELS[key] || key,
+                    icon: DETAIL_PAGE_ICONS[key] || 'fa-file',
                     enabled: true,
-                }, false) : null}
+                }, false))}
+                <p className="ld-screens__hint ld-screens__hint--inline">
+                    詳細・フロー画面（お知らせ/商品/クーポン/注文/予約など）は「詳細ページ」で編集。保存後に本番へ反映されます。
+                </p>
             </div>
+            {embedded ? null : (
             <div className="ld-screens__footer">
                 <button type="button" className="ld-btn ld-btn--soft ld-btn--block" onClick={() => dispatch({ type: 'SET_UI', patch: { templateOpen: true } })}>
                     <i className="fas fa-th-large" />
                     テンプレートギャラリー
                 </button>
             </div>
+            )}
             {menuOpenTab !== null && openItem !== null && menuPos !== null
                 ? createPortal(
                     <div
@@ -256,6 +270,6 @@ export function ScreenList() {
                     document.body,
                 )
                 : null}
-        </aside>
+        </div>
     );
 }

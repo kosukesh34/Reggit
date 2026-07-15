@@ -119,7 +119,6 @@ export const themePanel = {
             '.ld-phone__content .ld-block { border-radius: ' + scale.md + '; ' + cardDecl + ' }',
             btnRadius ? '.ld-phone__content .ld-block--button-inner, .ld-phone__content .ld-btn-group-preview__btn, .ld-phone__content .ld-store-card__btn { border-radius: ' + btnRadius + ' !important; }' : '',
             blockPad ? '.ld-phone__content .ld-block { padding: ' + blockPad + '; }' : '',
-            '.ld-phone__nav { ' + (g.tab_style === 'floating' ? 'margin: 0 10px 10px; border-radius: 18px; border: 1px solid rgba(15,23,42,0.08);' : '') + ' }',
         ].filter(Boolean).join('\n');
 
         const nav = this.els.phoneNav;
