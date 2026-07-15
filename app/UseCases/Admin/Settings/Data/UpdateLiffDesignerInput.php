@@ -7,6 +7,7 @@ namespace App\UseCases\Admin\Settings\Data;
  * 検証済み・JSON デコード済み。不変。
  *
  * @param  array<string, string|int|float|bool|array|null>  $layouts  レイアウト設定（JSON由来）
+ * @param  array<string, array<int, array<string, mixed>>>|null  $detailLayouts  詳細ページレイアウト（未送信時は null = 保存スキップ）
  * @param  array<string, string|int|float|bool|array|null>|null  $tabSettings  タブ設定（JSON由来）
  * @param  array<int, array{tab: string, label: string, icon: string, order: int, enabled: bool}>|null  $menuItems
  */
@@ -16,6 +17,7 @@ class UpdateLiffDesignerInput
         public readonly array $layouts,
         public readonly string $customCss,
         public readonly ?array $tabSettings,
-        public readonly ?array $menuItems = null
+        public readonly ?array $menuItems = null,
+        public readonly ?array $detailLayouts = null
     ) {}
 }

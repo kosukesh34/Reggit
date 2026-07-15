@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { findBlockMeta, normalizeBlock } from '../catalog/blockCatalog';
+import { DETAIL_PAGE_LABELS, DETAIL_PAGES, TAB_LABELS, findBlockMeta, normalizeBlock } from '../catalog/blockCatalog';
 import { BlockPreview } from '../blocks/BlockPreview';
 import {
     DEVICE_SHELL_HEIGHT,
@@ -31,6 +31,8 @@ function resolveDropIndex(clientY: number, element: HTMLElement, index: number, 
     return Math.max(0, Math.min(at, blockCount));
 }
 
+const ZOOM_PRESETS = [75, 100, 125] as const;
+
 export function PhoneCanvas() {
     const { state, dispatch, config } = useDesigner();
     const isAdvanced = state.editorMode === 'advanced';
@@ -49,6 +51,7 @@ export function PhoneCanvas() {
     const tabStyleClass = screenTabStyleClass(state.globalSettings);
     const systemClass = frameSystemClasses(state.globalSettings);
     const enabledNav = state.menuItems.filter((m) => m.enabled);
+    const isDetailPage = DETAIL_PAGES.includes(state.activeTab);
     const shopTitle =
         String(state.globalSettings.app_display_name || '').trim()
         || document.title.replace(/\s*[|\-].*$/, '').trim()
@@ -57,6 +60,11 @@ export function PhoneCanvas() {
         (Array.isArray(config.templates) ? config.templates : []) as TemplateItem[],
         4,
     );
+    const activeLabel = state.menuItems.find((m) => m.tab === state.activeTab)?.label
+        || DETAIL_PAGE_LABELS[state.activeTab]
+        || TAB_LABELS[state.activeTab]
+        || state.activeTab;
+    const requireMembership = state.globalSettings.require_membership !== false;
 
     useEffect(() => {
         const stage = stageRef.current;
@@ -64,7 +72,7 @@ export function PhoneCanvas() {
 
         const fitOnce = () => {
             if (didAutoFitZoom.current) return;
-            const available = stage.clientHeight - 24;
+            const available = stage.clientHeight - 64;
             if (available <= 0) return;
             const nextZoom = Math.floor((available / DEVICE_SHELL_HEIGHT) * 100);
             const clamped = Math.min(90, Math.max(55, nextZoom));
@@ -74,7 +82,6 @@ export function PhoneCanvas() {
 
         const raf = window.requestAnimationFrame(() => {
             fitOnce();
-            // レイアウト確定後にもう一度（初回のみ）
             window.requestAnimationFrame(fitOnce);
         });
         const observer = new ResizeObserver(() => {
@@ -128,9 +135,57 @@ export function PhoneCanvas() {
 
     return (
         <div className="ld-editor">
+            <div className="ld-editor__context">
+                <div className="ld-editor__context-main">
+                    <strong>{activeLabel}</strong>
+                    <span>{blocks.length} ブロック</span>
+                    {state.dirty ? <span className="ld-editor__dirty-dot" title="未保存" /> : null}
+                    <span className="ld-editor__policy-chip">
+                        会員{requireMembership ? '必須' : '不要'}
+                    </span>
+                </div>
+                <div className="ld-editor__context-actions">
+                    <div className="ld-bg-style-tabs ld-editor__preview-mode" role="group" aria-label="プレビューモード">
+                        <button
+                            type="button"
+                            className={`ld-bg-style-tab${!state.previewAsGuest ? ' is-active' : ''}`}
+                            onClick={() => dispatch({ type: 'SET_PREVIEW_AS_GUEST', value: false })}
+                        >
+                            会員
+                        </button>
+                        <button
+                            type="button"
+                            className={`ld-bg-style-tab${state.previewAsGuest ? ' is-active' : ''}`}
+                            onClick={() => dispatch({ type: 'SET_PREVIEW_AS_GUEST', value: true })}
+                        >
+                            ゲスト
+                        </button>
+                    </div>
+                    <div className="ld-editor__zoom">
+                        {ZOOM_PRESETS.map((z) => (
+                            <button
+                                key={z}
+                                type="button"
+                                className={`ld-editor__zoom-btn${state.zoom === z ? ' is-active' : ''}`}
+                                onClick={() => dispatch({ type: 'SET_ZOOM', zoom: z })}
+                            >
+                                {z}%
+                            </button>
+                        ))}
+                        <input
+                            type="range"
+                            min={60}
+                            max={125}
+                            value={state.zoom}
+                            onChange={(e) => dispatch({ type: 'SET_ZOOM', zoom: Number(e.target.value) })}
+                            aria-label="ズーム"
+                        />
+                    </div>
+                </div>
+            </div>
             <div className="ld-editor__stage" ref={stageRef}>
                 <PhoneDeviceFrame
-                    className={systemClass}
+                    className={`${systemClass}${state.previewAsGuest ? ' ld-phone--guest-preview' : ''}`}
                     size="canvas"
                     zoom={state.zoom}
                     screenStyle={bodyStyle}
@@ -172,16 +227,22 @@ export function PhoneCanvas() {
                                 <i className="fas fa-mobile-alt ld-empty-canvas__icon" />
                                 <p>顧客アプリの画面を組み立てましょう</p>
                                 <p className="ld-empty-canvas__hint">
-                                    {isAdvanced
-                                        ? '業種別テンプレートから始めるか、右パネルでブロックを追加できます'
-                                        : 'おすすめテンプレートを選ぶと、本物の店舗アプリに近い構成がすぐ使えます'}
+                                    テンプレートから始めるか、ブロックを追加してください
                                 </p>
                                 <div className="ld-empty-canvas__actions">
-                                    <button type="button" className="ld-btn ld-btn--primary ld-btn--xs" onClick={() => dispatch({ type: 'SET_UI', patch: { templateOpen: true } })}>
-                                        テンプレートギャラリー
+                                    <button
+                                        type="button"
+                                        className="ld-btn ld-btn--primary ld-btn--xs"
+                                        onClick={() => dispatch({ type: 'SET_LEFT_STUDIO_TAB', tab: 'templates' })}
+                                    >
+                                        テンプレから始める
                                     </button>
                                     {isAdvanced ? (
-                                        <button type="button" className="ld-btn ld-btn--outline ld-btn--xs" onClick={() => dispatch({ type: 'SET_RIGHT_MODE', mode: 'add' })}>
+                                        <button
+                                            type="button"
+                                            className="ld-btn ld-btn--outline ld-btn--xs"
+                                            onClick={() => dispatch({ type: 'SET_LEFT_STUDIO_TAB', tab: 'blocks' })}
+                                        >
                                             ブロックを追加
                                         </button>
                                     ) : null}
@@ -198,7 +259,14 @@ export function PhoneCanvas() {
                                                         type="button"
                                                         className="ld-empty-canvas__chip"
                                                         style={{ borderColor: `${accent.color}33`, background: accent.soft, color: accent.color }}
-                                                        onClick={() => dispatch({ type: 'SET_UI', patch: { templateOpen: true } })}
+                                                        onClick={() => dispatch({
+                                                            type: 'SET_UI',
+                                                            patch: {
+                                                                templateOpen: true,
+                                                                pendingTemplateId: tpl.id !== undefined ? String(tpl.id) : null,
+                                                                leftStudioTab: 'templates',
+                                                            },
+                                                        })}
                                                     >
                                                         <i className={`fas ${accent.icon}`} />
                                                         {templateDisplayName(tpl, i)}
@@ -211,6 +279,12 @@ export function PhoneCanvas() {
                             </div>
                         ) : (
                             <>
+                                {state.previewAsGuest ? (
+                                    <div className="ld-guest-preview-banner">
+                                        ゲスト表示プレビュー
+                                        {!requireMembership ? '（会員登録は任意）' : '（会員機能は登録後）'}
+                                    </div>
+                                ) : null}
                                 {blocks.map((block: LiffBlock, index) => {
                                     const meta = findBlockMeta(block.type);
                                     const isSelected = isAdvanced && state.selectedId === block.id;
@@ -291,11 +365,13 @@ export function PhoneCanvas() {
                             </>
                         )}
                     </PhoneAppMain>
-                    <PhoneAppTabs
-                        items={enabledNav}
-                        activeTab={state.activeTab}
-                        onSelect={(tab) => dispatch({ type: 'SET_ACTIVE_TAB', tab })}
-                    />
+                    {isDetailPage ? null : (
+                        <PhoneAppTabs
+                            items={enabledNav}
+                            activeTab={state.activeTab}
+                            onSelect={(tab) => dispatch({ type: 'SET_ACTIVE_TAB', tab })}
+                        />
+                    )}
                 </PhoneDeviceFrame>
             </div>
         </div>

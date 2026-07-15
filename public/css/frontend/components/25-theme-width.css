@@ -30,6 +30,13 @@ body.content-width-narrow .app-container {
     body.content-width-comfy:not(.native-app-embed):not(.designer-live-preview-embed) .main-tabs,
     body.content-width-narrow:not(.native-app-embed):not(.designer-live-preview-embed) .main-tabs {
         max-width: var(--content-max-width, 440px);
-        width: calc(100% - 16px);
+        width: 100%;
+    }
+
+    /* floating 以外だけ下部密着。floating は 09-tabs-sections.css の余白・角丸を維持する */
+    body.content-width-comfy:not(.native-app-embed):not(.designer-live-preview-embed):not(.tab-style-floating) .main-tabs,
+    body.content-width-narrow:not(.native-app-embed):not(.designer-live-preview-embed):not(.tab-style-floating) .main-tabs {
+        margin: 0;
+        bottom: 0;
     }
 }

@@ -249,6 +249,57 @@ const MOCKS: Record<string, () => React.ReactNode> = {
             </div>
         </>
     ),
+    announcement_detail: () => (
+        <article className="ld-crm-news is-featured">
+            <div
+                className="ld-crm-news__media"
+                style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=600)' }}
+            />
+            <div className="ld-crm-news__body">
+                <div className="ld-crm-news__meta">
+                    <span>2026/06/13 10:00</span>
+                </div>
+                <strong>夏季限定メニューが登場</strong>
+                <p>冷製パスタとクラフトソーダをラインナップに追加しました。店頭・アプリの両方からご注文いただけます。</p>
+            </div>
+        </article>
+    ),
+    product_detail: () => (
+        <article className="ld-crm-news is-featured">
+            <div className="ld-crm-news__body">
+                <strong>カプチーノ</strong>
+                <p>¥480 · オプション選択とカート追加はこの画面で行います。</p>
+            </div>
+        </article>
+    ),
+    coupon_detail: () => (
+        <article className="ld-crm-news is-featured">
+            <div className="ld-crm-news__body">
+                <strong>ドリンク1杯無料</strong>
+                <p>有効期限・利用コード・使用ボタンがここに表示されます。</p>
+            </div>
+        </article>
+    ),
+    gallery_detail: () => (
+        <article className="ld-crm-news is-featured">
+            <div
+                className="ld-crm-news__media"
+                style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=600)' }}
+            />
+            <div className="ld-crm-news__body">
+                <strong>店内フォト</strong>
+                <p>選択したギャラリー画像の拡大表示です。</p>
+            </div>
+        </article>
+    ),
+    stamp_detail: () => (
+        <article className="ld-crm-news is-featured">
+            <div className="ld-crm-news__body">
+                <strong>スタンプラリー</strong>
+                <p>3 / 10 スタンプ · 進捗と特典説明を表示します。</p>
+            </div>
+        </article>
+    ),
 };
 
 export function SampleDataShell({

@@ -3,17 +3,20 @@ import {
     createEmptyLayouts,
     defaultGlobalSettings,
     defaultTabSettings,
+    DETAIL_PAGES,
+    MENU_TABS,
     normalizeBlock,
     normalizeMenuItems,
-    TAB_LABELS,
 } from '../catalog/blockCatalog';
 import type {
     DesignerConfig,
     DesignerSnapshot,
     DesignerState,
     EditorMode,
+    LeftStudioTab,
     LiffBlock,
     RightMode,
+    RightStudioTab,
 } from '../catalog/types';
 
 const MAX_HISTORY = 50;
@@ -60,13 +63,20 @@ function withHistory(state: DesignerState, next: DesignerState): DesignerState {
 export function hydrateDesignerState(config: DesignerConfig): DesignerState {
     const idCounter = { n: 0 };
     const rawLayouts = config.layouts || {};
+    const rawDetailLayouts = config.detailLayouts || {};
     const rawTabSettings = config.tabSettings || {};
     const layouts = createEmptyLayouts();
     const tabSettings: Record<string, Record<string, unknown>> = {};
 
-    Object.keys(TAB_LABELS).forEach((key) => {
+    MENU_TABS.forEach((key) => {
         tabSettings[key] = { ...defaultTabSettings(), ...(rawTabSettings[key] || {}) };
         const rows = Array.isArray(rawLayouts[key]) ? rawLayouts[key] : [];
+        layouts[key] = rows.map((item) => normalizeBlock((item || {}) as Record<string, unknown>, idCounter));
+    });
+
+    DETAIL_PAGES.forEach((key) => {
+        tabSettings[key] = { ...defaultTabSettings(), ...(rawTabSettings[key] || {}) };
+        const rows = Array.isArray(rawDetailLayouts[key]) ? rawDetailLayouts[key] : [];
         layouts[key] = rows.map((item) => normalizeBlock((item || {}) as Record<string, unknown>, idCounter));
     });
 
@@ -90,6 +100,9 @@ export function hydrateDesignerState(config: DesignerConfig): DesignerState {
         selectedId: null,
         quickEditBlockId: null,
         rightMode: 'add',
+        leftStudioTab: 'screens',
+        rightStudioTab: 'edit',
+        previewAsGuest: false,
         zoom: 70,
         paletteSearch: '',
         paletteCategory: 'all',
@@ -106,6 +119,7 @@ export function hydrateDesignerState(config: DesignerConfig): DesignerState {
         themeOpen: false,
         previewOpen: false,
         helpOpen: false,
+        pendingTemplateId: null,
     };
 }
 
@@ -116,6 +130,9 @@ export type DesignerAction =
     | { type: 'OPEN_QUICK_EDIT'; id: string }
     | { type: 'CLOSE_QUICK_EDIT' }
     | { type: 'SET_RIGHT_MODE'; mode: RightMode }
+    | { type: 'SET_LEFT_STUDIO_TAB'; tab: LeftStudioTab }
+    | { type: 'SET_RIGHT_STUDIO_TAB'; tab: RightStudioTab }
+    | { type: 'SET_PREVIEW_AS_GUEST'; value: boolean }
     | { type: 'SET_ZOOM'; zoom: number }
     | { type: 'SET_PALETTE_SEARCH'; value: string }
     | { type: 'SET_PALETTE_CATEGORY'; value: string }
@@ -128,6 +145,7 @@ export type DesignerAction =
     | { type: 'REORDER_BLOCKS'; blocks: LiffBlock[] }
     | { type: 'UPDATE_TAB_SETTINGS'; patch: Record<string, unknown> }
     | { type: 'UPDATE_GLOBAL'; patch: Record<string, unknown> }
+    | { type: 'APPLY_GLOBAL_BACKGROUND' }
     | { type: 'UPDATE_MENU_ITEM'; tab: string; patch: Partial<{ label: string; icon: string; enabled: boolean }> }
     | { type: 'MOVE_MENU_ITEM'; tab: string; delta: number }
     | { type: 'SET_CUSTOM_CSS'; value: string }
@@ -148,7 +166,7 @@ export type DesignerAction =
     | { type: 'SHOW_TOAST'; message: string; isError?: boolean }
     | { type: 'CLEAR_TOAST' }
     | { type: 'CLEAR_LEGACY_NOTES' }
-    | { type: 'SET_UI'; patch: Partial<Pick<DesignerState, 'sidebarOpen' | 'screensOpen' | 'moreOpen' | 'templateOpen' | 'themeOpen' | 'previewOpen' | 'helpOpen'>> };
+    | { type: 'SET_UI'; patch: Partial<Pick<DesignerState, 'sidebarOpen' | 'screensOpen' | 'moreOpen' | 'templateOpen' | 'themeOpen' | 'previewOpen' | 'helpOpen' | 'pendingTemplateId' | 'leftStudioTab' | 'rightStudioTab'>> };
 
 function activeBlocks(state: DesignerState): LiffBlock[] {
     return state.layouts[state.activeTab] || [];
@@ -163,8 +181,15 @@ export function designerReducer(state: DesignerState, action: DesignerAction): D
                 selectedId: null,
                 quickEditBlockId: null,
                 rightMode: 'add',
+                rightStudioTab: 'edit',
                 sidebarOpen: false,
             };
+        case 'SET_LEFT_STUDIO_TAB':
+            return { ...state, leftStudioTab: action.tab, screensOpen: true };
+        case 'SET_RIGHT_STUDIO_TAB':
+            return { ...state, rightStudioTab: action.tab, sidebarOpen: true };
+        case 'SET_PREVIEW_AS_GUEST':
+            return { ...state, previewAsGuest: action.value };
         case 'SET_ACTIVE_TAB':
             return {
                 ...state,
@@ -178,6 +203,7 @@ export function designerReducer(state: DesignerState, action: DesignerAction): D
                 ...state,
                 quickEditBlockId: action.id,
                 selectedId: action.id,
+                rightStudioTab: 'edit',
                 sidebarOpen: true,
             };
         case 'CLOSE_QUICK_EDIT':
@@ -203,6 +229,7 @@ export function designerReducer(state: DesignerState, action: DesignerAction): D
                 ...state,
                 selectedId: action.id,
                 rightMode: openEdit ? 'edit' : state.rightMode,
+                rightStudioTab: openEdit ? 'edit' : state.rightStudioTab,
                 sidebarOpen: openEdit ? true : state.sidebarOpen,
             };
         }
@@ -210,10 +237,13 @@ export function designerReducer(state: DesignerState, action: DesignerAction): D
             return {
                 ...state,
                 rightMode: action.mode,
+                rightStudioTab: action.mode === 'edit' ? 'edit' : state.rightStudioTab,
+                leftStudioTab: action.mode === 'add' ? 'blocks' : state.leftStudioTab,
+                screensOpen: action.mode === 'add' ? true : state.screensOpen,
                 sidebarOpen: true,
             };
         case 'SET_ZOOM':
-            return { ...state, zoom: Math.min(120, Math.max(60, action.zoom)) };
+            return { ...state, zoom: Math.min(125, Math.max(60, action.zoom)) };
         case 'SET_PALETTE_SEARCH':
             return { ...state, paletteSearch: action.value };
         case 'SET_PALETTE_CATEGORY':
@@ -241,6 +271,7 @@ export function designerReducer(state: DesignerState, action: DesignerAction): D
                 layouts: { ...state.layouts, [state.activeTab]: blocks },
                 selectedId: action.block.id,
                 rightMode: 'edit',
+                rightStudioTab: 'edit',
                 sidebarOpen: true,
             });
         }
@@ -265,6 +296,7 @@ export function designerReducer(state: DesignerState, action: DesignerAction): D
                 layouts: { ...state.layouts, [state.activeTab]: blocks },
                 selectedId: copy.id,
                 rightMode: 'edit',
+                rightStudioTab: 'edit',
             });
         }
         case 'MOVE_BLOCK': {
@@ -295,6 +327,32 @@ export function designerReducer(state: DesignerState, action: DesignerAction): D
                 ...state,
                 globalSettings: { ...state.globalSettings, ...action.patch },
             });
+        case 'APPLY_GLOBAL_BACKGROUND': {
+            const nextTabSettings: Record<string, Record<string, unknown>> = {};
+            Object.keys(state.tabSettings).forEach((key) => {
+                if (key === '_global') {
+                    nextTabSettings[key] = state.tabSettings[key];
+                    return;
+                }
+                nextTabSettings[key] = {
+                    ...state.tabSettings[key],
+                    background_color: '',
+                    background_image: '',
+                };
+            });
+            Object.keys(state.layouts).forEach((key) => {
+                if (nextTabSettings[key] !== undefined) return;
+                nextTabSettings[key] = {
+                    ...defaultTabSettings(),
+                    background_color: '',
+                    background_image: '',
+                };
+            });
+            return withHistory(state, {
+                ...state,
+                tabSettings: nextTabSettings,
+            });
+        }
         case 'UPDATE_MENU_ITEM': {
             const menuItems = state.menuItems.map((m) => (m.tab === action.tab ? { ...m, ...action.patch } : m));
             return withHistory(state, { ...state, menuItems });

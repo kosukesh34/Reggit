@@ -24,6 +24,7 @@ class ProjectLineLiffSetting extends Model
         'line_liff_url',
         'liff_builder_blocks',
         'liff_tab_layouts',
+        'liff_detail_layouts',
         'liff_tab_settings',
         'liff_saved_screens',
         'liff_custom_css',
@@ -35,6 +36,7 @@ class ProjectLineLiffSetting extends Model
     protected $casts = [
         'liff_builder_blocks' => 'array',
         'liff_tab_layouts' => 'array',
+        'liff_detail_layouts' => 'array',
         'liff_tab_settings' => 'array',
         'liff_saved_screens' => 'array',
         'frontend_menu_items' => 'array',

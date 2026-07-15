@@ -75,6 +75,7 @@ export const AppConstants = {
         MEMBER: 'member',
         RESERVATIONS: 'reservations',
         GALLERY: 'gallery',
+        ANNOUNCEMENTS: 'announcements',
     },
 
     CATEGORIES: {
@@ -212,6 +213,7 @@ export const AppConstants = {
 
     ELEMENT_IDS: {
         ANNOUNCEMENTS_SECTION: 'announcementsSection',
+        ANNOUNCEMENTS_TOP_BAR: 'announcementsTopBar',
         HOME_SECTION: 'homeSection',
         PRODUCTS_GRID: 'productsGrid',
         CART_BTN: 'cartBtn',
@@ -240,6 +242,7 @@ export const AppConstants = {
         HOME_TAB: 'homeTab',
         GALLERY_TAB: 'galleryTab',
         GALLERY_SECTION: 'gallerySection',
+        ANNOUNCEMENTS_TAB: 'announcementsTab',
     },
 
     CSS_CLASSES: {

@@ -6,6 +6,7 @@ export async function saveDesigner(state: DesignerState, formAction: string, csr
     const body = new FormData();
     body.append('_token', csrfToken);
     body.append('layouts_json', payload.layouts_json);
+    body.append('detail_layouts_json', payload.detail_layouts_json);
     body.append('tab_settings_json', payload.tab_settings_json);
     body.append('menu_items_json', payload.menu_items_json);
     body.append('custom_css', payload.custom_css);
