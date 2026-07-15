@@ -5,7 +5,7 @@
 @section('page-kind', 'liff-designer')
 
 @push('styles-before-vite')
-<link rel="stylesheet" href="{{ asset('css/admin/liff-designer.css') }}?v=20260715e">
+<link rel="stylesheet" href="{{ asset('css/admin/liff-designer.css') }}?v=20260715f">
 @endpush
 
 @section('content')

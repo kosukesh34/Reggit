@@ -86,7 +86,7 @@
 }
 
 /* フローティングタブバー連携 */
-body.ld-tab-style-floating .builder-container {
+body.tab-style-floating .builder-container {
     padding-bottom: 8px;
 }
 
