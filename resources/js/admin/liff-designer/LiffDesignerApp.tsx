@@ -13,7 +13,14 @@ import { OnboardingOverlay } from './components/OnboardingOverlay';
 import { saveDesigner } from './persistence/saveDesigner';
 import { applyPanelWidths, loadSavedPanelWidths } from './utils/panelLayout';
 import { ensureLiffDesignerModules } from './ensureModules';
+import { useGlobalDesignCss } from './utils/globalDesignCss';
 import './modules/panelResizer';
+
+function GlobalDesignStyles() {
+    const { state, config } = useDesigner();
+    const css = useGlobalDesignCss(state.globalSettings, config.themePresets);
+    return <style>{css}</style>;
+}
 
 function Toast() {
     const { state, dispatch } = useDesigner();
@@ -157,6 +164,7 @@ function DesignerShell() {
             <DirtyGuard />
             <PanelBootstrap />
             <KeyboardShortcuts />
+            <GlobalDesignStyles />
             {state.customCss ? <style>{state.customCss}</style> : null}
         </div>
     );

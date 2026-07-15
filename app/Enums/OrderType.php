@@ -7,8 +7,8 @@ use App\Util\EnumBase;
 class OrderType extends EnumBase
 {
     protected static array $values = [
-        'mobile' => 'モバイル',
-        'in_store' => '店内',
+        'mobile' => 'モバイル注文',
+        'in_store' => '店内注文',
     ];
 
     public const MOBILE = 'mobile';
