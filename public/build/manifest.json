@@ -11,7 +11,7 @@
     ]
   },
   "resources/js/admin/main.tsx": {
-    "file": "assets/main-DFHP-0Kh.js",
+    "file": "assets/main-sfIPFiuZ.js",
     "name": "main",
     "src": "resources/js/admin/main.tsx",
     "isEntry": true,
@@ -19,11 +19,11 @@
       "_GalleryManager-CSTgsqoO.js"
     ],
     "css": [
-      "assets/main-CHX_AnjA.css"
+      "assets/main-BU84JH1a.css"
     ]
   },
   "resources/js/frontend/main.tsx": {
-    "file": "assets/main-D43MYyP1.js",
+    "file": "assets/main-Vd0nMGXP.js",
     "name": "main",
     "src": "resources/js/frontend/main.tsx",
     "isEntry": true,

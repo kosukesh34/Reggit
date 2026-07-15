@@ -231,6 +231,8 @@ class ShopSetting
             if (isset($row['enabled']) && $row['enabled'] === false) {
                 continue;
             }
+            $row['icon'] = self::normalizeFrontendMenuIcon((string) $tab, (string) ($row['icon'] ?? ''));
+            $row['label'] = (string) ($row['label'] ?? $defaults->get($tab)['label']);
             $merged[] = $row;
         }
         if ($merged === []) {
@@ -239,6 +241,30 @@ class ShopSetting
         usort($merged, fn ($a, $b) => ($a['order'] ?? 999) <=> ($b['order'] ?? 999));
 
         return $merged;
+    }
+
+    /** 旧アイコン名を現行デフォルトへ寄せ、デザイナー／本番の見た目差を防ぐ */
+    public static function normalizeFrontendMenuIcon(string $tab, string $icon): string
+    {
+        $defaults = collect(self::defaultFrontendMenuItems())->keyBy('tab');
+        $fallback = (string) ($defaults->get($tab)['icon'] ?? 'fa-circle');
+        if ($icon === '') {
+            return $fallback;
+        }
+
+        $aliases = [
+            'fa-home' => 'fa-house',
+            'fa-calendar-alt' => 'fa-calendar-check',
+            'fa-users' => 'fa-list-ol',
+        ];
+        if ($tab === 'member' && ($icon === 'fa-user' || $icon === 'fa-users')) {
+            return 'fa-id-card';
+        }
+        if ($tab === 'queue' && $icon === 'fa-users') {
+            return 'fa-list-ol';
+        }
+
+        return $aliases[$icon] ?? $icon;
     }
 
     /** フロントメニュー項目を保存 */
