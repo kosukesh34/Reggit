@@ -6,6 +6,8 @@
     <title>管理画面 - @yield('title', 'Reggit')</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="{{ asset('css/admin/admin.css') }}">
+    {{-- レガシーページCSSは先に読み込み、Vite の React スタイルを優先する --}}
+    @stack('styles-before-vite')
     @vite(['resources/js/admin/main.tsx'])
     @stack('styles')
 </head>
