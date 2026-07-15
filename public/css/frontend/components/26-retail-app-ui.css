@@ -82,6 +82,18 @@
     opacity: 0.92;
     max-width: 28em;
 }
+.builder-hero__cta {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    margin-top: 14px;
+    padding: 9px 14px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.94);
+    color: #0c0a09;
+    font-size: 12px;
+    font-weight: 800;
+}
 
 /* ── 見出し・本文ブロック ── */
 .builder-heading {

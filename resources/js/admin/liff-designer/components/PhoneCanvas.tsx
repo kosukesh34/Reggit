@@ -1,8 +1,13 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { findBlockMeta, normalizeBlock } from '../catalog/blockCatalog';
 import { BlockPreview } from '../blocks/BlockPreview';
-import { BlockQuickEditSheet } from './BlockQuickEditSheet';
-import { PhoneAppHeader, PhoneAppMain, PhoneAppTabs, PhoneDeviceFrame } from './PhoneAppShell';
+import {
+    DEVICE_SHELL_HEIGHT,
+    PhoneAppHeader,
+    PhoneAppMain,
+    PhoneAppTabs,
+    PhoneDeviceFrame,
+} from './PhoneAppShell';
 import { useDesigner } from '../state/DesignerContext';
 import type { LiffBlock } from '../catalog/types';
 import {
@@ -12,6 +17,12 @@ import {
     sectionGap,
     screenTabStyleClass,
 } from '../utils/globalDesign';
+import {
+    featuredTemplates,
+    galleryAccentFor,
+    templateDisplayName,
+    type TemplateItem,
+} from './templateGalleryMeta';
 
 function resolveDropIndex(clientY: number, element: HTMLElement, index: number, blockCount: number): number {
     const rect = element.getBoundingClientRect();
@@ -24,14 +35,12 @@ export function PhoneCanvas() {
     const { state, dispatch, config } = useDesigner();
     const isAdvanced = state.editorMode === 'advanced';
     const blocks = state.layouts[state.activeTab] || [];
-    const menuItem = state.menuItems.find((m) => m.tab === state.activeTab);
     const tabSettings = state.tabSettings[state.activeTab] || {};
     const [dragIndex, setDragIndex] = useState<number | null>(null);
     const [dropAt, setDropAt] = useState<number | null>(null);
     const [isPaletteDrag, setIsPaletteDrag] = useState(false);
-    const quickEditBlock = state.quickEditBlockId !== null
-        ? blocks.find((b) => b.id === state.quickEditBlockId) || null
-        : null;
+    const stageRef = useRef<HTMLDivElement>(null);
+    const didAutoFitZoom = useRef(false);
     const friendAddUrl = config.lineFriendAddUrl || '';
 
     const bodyStyle = resolvePhoneBodyStyle(tabSettings, state.globalSettings);
@@ -40,7 +49,43 @@ export function PhoneCanvas() {
     const tabStyleClass = screenTabStyleClass(state.globalSettings);
     const systemClass = frameSystemClasses(state.globalSettings);
     const enabledNav = state.menuItems.filter((m) => m.enabled);
-    const shopTitle = document.title.replace(/\s*[|\-].*$/, '').trim() || '店舗アプリ';
+    const shopTitle =
+        String(state.globalSettings.app_display_name || '').trim()
+        || document.title.replace(/\s*[|\-].*$/, '').trim()
+        || '店舗アプリ';
+    const suggestedTemplates = featuredTemplates(
+        (Array.isArray(config.templates) ? config.templates : []) as TemplateItem[],
+        4,
+    );
+
+    useEffect(() => {
+        const stage = stageRef.current;
+        if (stage === null) return;
+
+        const fitOnce = () => {
+            if (didAutoFitZoom.current) return;
+            const available = stage.clientHeight - 24;
+            if (available <= 0) return;
+            const nextZoom = Math.floor((available / DEVICE_SHELL_HEIGHT) * 100);
+            const clamped = Math.min(90, Math.max(55, nextZoom));
+            didAutoFitZoom.current = true;
+            dispatch({ type: 'SET_ZOOM', zoom: clamped });
+        };
+
+        const raf = window.requestAnimationFrame(() => {
+            fitOnce();
+            // レイアウト確定後にもう一度（初回のみ）
+            window.requestAnimationFrame(fitOnce);
+        });
+        const observer = new ResizeObserver(() => {
+            if (!didAutoFitZoom.current) fitOnce();
+        });
+        observer.observe(stage);
+        return () => {
+            window.cancelAnimationFrame(raf);
+            observer.disconnect();
+        };
+    }, [dispatch]);
 
     const finishDrag = () => {
         setDragIndex(null);
@@ -66,6 +111,14 @@ export function PhoneCanvas() {
 
     const onBlockClick = (e: React.MouseEvent, blockId: string) => {
         e.stopPropagation();
+        const navEl = (e.target as HTMLElement).closest('[data-preview-nav]');
+        if (navEl !== null) {
+            const tab = navEl.getAttribute('data-preview-nav');
+            if (tab !== null && tab !== '') {
+                dispatch({ type: 'SET_ACTIVE_TAB', tab });
+                return;
+            }
+        }
         if (isAdvanced) {
             dispatch({ type: 'SELECT_BLOCK', id: blockId });
             return;
@@ -75,46 +128,7 @@ export function PhoneCanvas() {
 
     return (
         <div className="ld-editor">
-            <div className="ld-editor__toolbar">
-                <div className="ld-editor__meta">
-                    <span className="ld-editor__meta-label">Canvas</span>
-                    <div className="ld-editor__meta-row">
-                        <strong>{menuItem?.label || state.activeTab}</strong>
-                        <span className="ld-editor__meta-pill">{blocks.length} blocks</span>
-                    </div>
-                    {!isAdvanced ? <p className="ld-editor__hint">ブロックをタップして内容を編集</p> : null}
-                </div>
-                <div className="ld-editor__toolbar-right">
-                    {isAdvanced ? (
-                        <button
-                            type="button"
-                            className="ld-btn ld-btn--soft ld-btn--xs"
-                            onClick={() => dispatch({ type: 'SET_RIGHT_MODE', mode: 'add' })}
-                        >
-                            <i className="fas fa-plus" /> ブロック追加
-                        </button>
-                    ) : null}
-                    <div className="ld-editor__zoom">
-                        <button type="button" className="ld-icon-btn ld-icon-btn--sm" onClick={() => dispatch({ type: 'SET_ZOOM', zoom: state.zoom - 10 })} aria-label="縮小">
-                            <i className="fas fa-minus" />
-                        </button>
-                        <input
-                            type="range"
-                            className="ld-form-range ld-form-range--zoom"
-                            min={60}
-                            max={120}
-                            value={state.zoom}
-                            onChange={(e) => dispatch({ type: 'SET_ZOOM', zoom: Number(e.target.value) })}
-                        />
-                        <button type="button" className="ld-icon-btn ld-icon-btn--sm" onClick={() => dispatch({ type: 'SET_ZOOM', zoom: state.zoom + 10 })} aria-label="拡大">
-                            <i className="fas fa-plus" />
-                        </button>
-                        <span className="ld-editor__zoom-value">{state.zoom}%</span>
-                    </div>
-                </div>
-            </div>
-
-            <div className="ld-editor__stage">
+            <div className="ld-editor__stage" ref={stageRef}>
                 <PhoneDeviceFrame
                     className={systemClass}
                     size="canvas"
@@ -122,7 +136,13 @@ export function PhoneCanvas() {
                     screenStyle={bodyStyle}
                     screenClassName={tabStyleClass}
                 >
-                    <PhoneAppHeader title={shopTitle} friendAddUrl={friendAddUrl} />
+                    <PhoneAppHeader
+                        title={shopTitle}
+                        friendAddUrl={friendAddUrl}
+                        showCart={enabledNav.some((m) => m.tab === 'products' || m.tab === 'orders')}
+                        onAccountClick={() => dispatch({ type: 'SET_ACTIVE_TAB', tab: 'member' })}
+                        onCartClick={() => dispatch({ type: 'SET_ACTIVE_TAB', tab: 'products' })}
+                    />
                     <PhoneAppMain
                         padding={padding}
                         gap={gap}
@@ -148,14 +168,17 @@ export function PhoneCanvas() {
                     >
                         {blocks.length === 0 ? (
                             <div className="ld-empty-canvas">
-                                <i className="fas fa-layer-group ld-empty-canvas__icon" />
-                                <p>この画面にはまだブロックがありません</p>
+                                <div className="ld-empty-canvas__badge">スタート</div>
+                                <i className="fas fa-mobile-alt ld-empty-canvas__icon" />
+                                <p>顧客アプリの画面を組み立てましょう</p>
                                 <p className="ld-empty-canvas__hint">
-                                    {isAdvanced ? '右のパネルからブロックを追加するか、テンプレートを選んでください' : 'トップバーのテンプレートから画面を作成してください'}
+                                    {isAdvanced
+                                        ? '業種別テンプレートから始めるか、右パネルでブロックを追加できます'
+                                        : 'おすすめテンプレートを選ぶと、本物の店舗アプリに近い構成がすぐ使えます'}
                                 </p>
                                 <div className="ld-empty-canvas__actions">
                                     <button type="button" className="ld-btn ld-btn--primary ld-btn--xs" onClick={() => dispatch({ type: 'SET_UI', patch: { templateOpen: true } })}>
-                                        テンプレートを選ぶ
+                                        テンプレートギャラリー
                                     </button>
                                     {isAdvanced ? (
                                         <button type="button" className="ld-btn ld-btn--outline ld-btn--xs" onClick={() => dispatch({ type: 'SET_RIGHT_MODE', mode: 'add' })}>
@@ -163,6 +186,28 @@ export function PhoneCanvas() {
                                         </button>
                                     ) : null}
                                 </div>
+                                {suggestedTemplates.length > 0 ? (
+                                    <div className="ld-empty-canvas__suggest">
+                                        <span className="ld-empty-canvas__suggest-label">おすすめ</span>
+                                        <div className="ld-empty-canvas__chips">
+                                            {suggestedTemplates.map((tpl, i) => {
+                                                const accent = galleryAccentFor(tpl);
+                                                return (
+                                                    <button
+                                                        key={String(tpl.id || i)}
+                                                        type="button"
+                                                        className="ld-empty-canvas__chip"
+                                                        style={{ borderColor: `${accent.color}33`, background: accent.soft, color: accent.color }}
+                                                        onClick={() => dispatch({ type: 'SET_UI', patch: { templateOpen: true } })}
+                                                    >
+                                                        <i className={`fas ${accent.icon}`} />
+                                                        {templateDisplayName(tpl, i)}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                ) : null}
                             </div>
                         ) : (
                             <>
@@ -221,7 +266,11 @@ export function PhoneCanvas() {
                                                         {meta?.label || block.type}
                                                     </div>
                                                 )}
-                                                <BlockPreview block={block} friendAddUrl={friendAddUrl} />
+                                                <BlockPreview
+                                                    block={block}
+                                                    friendAddUrl={friendAddUrl}
+                                                    shopName={String(state.globalSettings.app_display_name || '').trim() || undefined}
+                                                />
                                             </div>
                                         </React.Fragment>
                                     );
@@ -249,15 +298,6 @@ export function PhoneCanvas() {
                     />
                 </PhoneDeviceFrame>
             </div>
-
-            {quickEditBlock !== null ? (
-                <BlockQuickEditSheet
-                    block={quickEditBlock}
-                    friendAddUrl={friendAddUrl}
-                    onChange={(patch) => dispatch({ type: 'UPDATE_BLOCK', id: quickEditBlock.id, patch })}
-                    onClose={() => dispatch({ type: 'CLOSE_QUICK_EDIT' })}
-                />
-            ) : null}
         </div>
     );
 }

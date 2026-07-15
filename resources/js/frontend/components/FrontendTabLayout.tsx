@@ -6,7 +6,8 @@ type FrontendMenuItem = {
     icon?: string;
 };
 
-const DEFAULT_TABS: FrontendMenuItem[] = [
+/** タブバー外遷移用も含め、既知タブのセクションは常にマウントする */
+const ALL_TAB_SECTIONS: FrontendMenuItem[] = [
     { tab: 'home', label: 'ホーム', icon: 'fa-home' },
     { tab: 'products', label: '商品', icon: 'fa-utensils' },
     { tab: 'orders', label: '注文', icon: 'fa-receipt' },
@@ -21,7 +22,7 @@ const DEFAULT_TABS: FrontendMenuItem[] = [
 function getFrontendMenu(): FrontendMenuItem[] {
     const menu = window.__FRONTEND_MENU__;
     if (!Array.isArray(menu) || menu.length === 0) {
-        return DEFAULT_TABS;
+        return ALL_TAB_SECTIONS;
     }
 
     return menu
@@ -35,12 +36,16 @@ function getFrontendMenu(): FrontendMenuItem[] {
 
 export function FrontendTabLayout(): JSX.Element {
     const menu = getFrontendMenu();
-    const firstTab = menu[0]?.tab ?? 'products';
+    const firstTab = menu[0]?.tab ?? 'home';
+    const mountedTabs = ALL_TAB_SECTIONS.map((item) => {
+        const fromMenu = menu.find((m) => m.tab === item.tab);
+        return fromMenu ?? item;
+    });
 
     return (
         <>
             <div id="announcementsSection" className="announcements-section" aria-label="お知らせ" />
-            {menu.map((item) => (
+            {mountedTabs.map((item) => (
                 <div
                     key={item.tab}
                     className={`tab-content ${firstTab === item.tab ? 'active' : ''}`}

@@ -2,6 +2,11 @@ import React, { useState } from 'react';
 import { useDesigner } from '../state/DesignerContext';
 import { expandThemeIntoGlobal } from '../utils/globalDesign';
 import { ColorField, FieldGroup, ImageUrlField, RangeField, SelectField, TextInput } from './fields/FormFields';
+import {
+    MEMBER_CARD_CODE_TYPES,
+    MEMBER_CARD_DESIGN_CHOICES,
+    MEMBER_CARD_DISPLAY_TYPES,
+} from '../catalog/blockCatalog';
 
 function Accordion({ title, open, onToggle, children }: { title: string; open: boolean; onToggle: () => void; children: React.ReactNode }) {
     return (
@@ -76,6 +81,12 @@ export function ThemePanel() {
             </Accordion>
 
             <Accordion title="基本（色・幅・フォント）" open={open.basic} onToggle={() => setOpen((s) => ({ ...s, basic: !s.basic }))}>
+                <TextInput
+                    label="店舗名・アプリ名"
+                    value={String(g.app_display_name || '')}
+                    placeholder="例: ブルーバードカフェ"
+                    onChange={(v) => dispatch({ type: 'UPDATE_GLOBAL', patch: { app_display_name: v } })}
+                />
                 <SelectField label="コンテンツ幅" value={String(g.content_width || 'comfy')} options={contentWidths} onChange={(v) => dispatch({ type: 'UPDATE_GLOBAL', patch: { content_width: v } })} />
                 <FieldGroup label="ページ背景">
                     <div className="ld-bg-style-tabs">
@@ -192,17 +203,43 @@ export function ThemePanel() {
                 />
                 <SelectField
                     label="会員証レイアウト"
-                    value={String(g.member_card_design || '')}
-                    options={[
-                        { value: '', label: '既存の会員設定を使う' },
-                        { value: 'default', label: '標準カード' },
-                        { value: 'logo_top', label: 'ロゴ上部' },
-                        { value: 'logo_center', label: 'ロゴ中央' },
-                        { value: 'compact', label: 'コンパクト' },
-                        { value: 'emblem', label: 'エンブレム' },
-                    ]}
+                    value={String(g.member_card_design || 'default')}
+                    options={MEMBER_CARD_DESIGN_CHOICES}
                     onChange={(v) => dispatch({ type: 'UPDATE_GLOBAL', patch: { member_card_design: v } })}
                 />
+                <SelectField
+                    label="会員証の表示形式"
+                    value={String(g.member_card_display_type || 'card')}
+                    options={MEMBER_CARD_DISPLAY_TYPES}
+                    onChange={(v) => dispatch({ type: 'UPDATE_GLOBAL', patch: { member_card_display_type: v } })}
+                />
+                <SelectField
+                    label="会員番号の表示"
+                    value={String(g.member_card_code_type || 'barcode')}
+                    options={MEMBER_CARD_CODE_TYPES}
+                    onChange={(v) => dispatch({ type: 'UPDATE_GLOBAL', patch: { member_card_code_type: v } })}
+                />
+                <div className="ld-member-card-preview">
+                    <div className={`ld-crm-wallet ld-crm-wallet--${String(g.member_card_design || 'default')}`}>
+                        <div className="ld-crm-wallet__top">
+                            <div>
+                                <span className="ld-crm-wallet__shop">{String(g.app_display_name || 'Members')}</span>
+                                <strong>デモ 太郎</strong>
+                            </div>
+                            <em className="ld-crm-wallet__rank">Gold</em>
+                        </div>
+                        <div className="ld-crm-wallet__barcode">
+                            {Array.from({ length: 22 }).map((_, i) => (
+                                <i key={i} style={{ width: `${(i % 4) + 1}px` }} />
+                            ))}
+                        </div>
+                        <div className="ld-crm-wallet__no">
+                            {String(g.member_card_code_type || 'barcode') === 'qrcode' ? 'QRコード表示' : 'バーコード表示'}
+                            {' · '}
+                            {String(g.member_card_display_type || 'card') === 'sheet' ? 'シート型' : 'カード型'}
+                        </div>
+                    </div>
+                </div>
                 <SelectField
                     label="会員画面UI"
                     value={String(g.member_screen_design || 'wallet')}

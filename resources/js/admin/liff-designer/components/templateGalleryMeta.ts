@@ -8,6 +8,7 @@ export type TemplateItem = {
     scope?: 'tab' | 'all' | 'all_tabs' | string;
     tab?: string;
     target_tabs?: string[];
+    menu?: Array<{ tab: string; label?: string; icon?: string; enabled?: boolean }>;
     blocks?: unknown[];
     layouts?: Record<string, unknown[]>;
     theme?: Record<string, unknown>;
@@ -31,12 +32,24 @@ export const CATEGORY_LABELS: Record<string, string> = {
     campaign: '販促',
     story: 'ブランド',
     support: 'サポート',
-    industry: '業種別',
+    industry: '業種別CRM',
     native: 'ネイティブ',
     luxury: 'ラグジュアリー',
     super: '全画面',
     other: 'その他',
 };
+
+/** 空キャンバスやギャラリー推奨枠で優先表示するテンプレ ID */
+export const FEATURED_TEMPLATE_IDS = [
+    'crm-cafe-loyalty',
+    'crm-beauty-booking',
+    'crm-retail-flash',
+    'crm-native-wallet-home',
+    'flagship-dashboard',
+    'super-pattern-cafe',
+    'super-pattern-hotel',
+    'super-pattern-clinic',
+] as const;
 
 export const CATEGORY_ACCENTS: Record<string, GalleryAccent> = {
     home: { color: '#2563eb', soft: '#dbeafe', icon: 'fa-home' },
@@ -103,9 +116,13 @@ export function categoryLabel(key: string): string {
 }
 
 export function galleryAccentFor(tpl: TemplateItem): GalleryAccent {
+    const themeAccent = String(tpl.theme?.accent_color || tpl.theme?.accent || '').trim();
     const preset = String(tpl.theme?.theme_preset || '');
     const presetMeta = PRESET_PALETTES[preset];
     const base = CATEGORY_ACCENTS[templateCategoryKey(tpl)] || CATEGORY_ACCENTS.other;
+    if (themeAccent !== '') {
+        return { ...base, color: themeAccent };
+    }
     if (presetMeta !== undefined) {
         return { ...base, color: presetMeta.accent };
     }
@@ -124,13 +141,20 @@ export function paletteLabelFor(tpl: TemplateItem): string {
     return categoryLabel(templateCategoryKey(tpl));
 }
 
-export function previewBlocksFor(tpl: TemplateItem): Record<string, unknown>[] {
+export function previewBlocksFor(tpl: TemplateItem, tab?: string): Record<string, unknown>[] {
     if (isAllScreensTemplate(tpl) && tpl.layouts !== undefined) {
-        const home = Array.isArray(tpl.layouts.home) ? tpl.layouts.home : null;
-        if (home !== null) return home as Record<string, unknown>[];
-        const firstKey = Object.keys(tpl.layouts)[0];
-        const rows = firstKey !== undefined && Array.isArray(tpl.layouts[firstKey]) ? tpl.layouts[firstKey] : [];
+        const preferred =
+            tab !== undefined && tab !== '' && Array.isArray(tpl.layouts[tab])
+                ? tab
+                : Array.isArray(tpl.layouts.home)
+                  ? 'home'
+                  : Object.keys(tpl.layouts)[0];
+        if (preferred === undefined) return [];
+        const rows = Array.isArray(tpl.layouts[preferred]) ? tpl.layouts[preferred] : [];
         return rows as Record<string, unknown>[];
+    }
+    if (tab !== undefined && tab !== '' && tpl.layouts !== undefined && Array.isArray(tpl.layouts[tab])) {
+        return tpl.layouts[tab] as Record<string, unknown>[];
     }
     return Array.isArray(tpl.blocks) ? (tpl.blocks as Record<string, unknown>[]) : [];
 }
@@ -171,6 +195,23 @@ export function collectCategoryKeys(templates: TemplateItem[]): string[] {
     const order = Object.keys(CATEGORY_LABELS).filter((k) => k !== 'all' && keys.has(k));
     const extras = [...keys].filter((k) => !CATEGORY_LABELS[k]).sort();
     return [...order, ...extras];
+}
+
+export function featuredTemplates(templates: TemplateItem[], limit = 6): TemplateItem[] {
+    const byId = new Map(templates.filter((t) => t.id).map((t) => [String(t.id), t]));
+    const featuredSet = new Set<string>(FEATURED_TEMPLATE_IDS);
+    const picked: TemplateItem[] = [];
+    FEATURED_TEMPLATE_IDS.forEach((id) => {
+        const row = byId.get(id);
+        if (row !== undefined) picked.push(row);
+    });
+    if (picked.length >= limit) return picked.slice(0, limit);
+    templates.forEach((tpl) => {
+        if (picked.length >= limit) return;
+        if (tpl.id !== undefined && featuredSet.has(String(tpl.id))) return;
+        picked.push(tpl);
+    });
+    return picked.slice(0, limit);
 }
 
 export function screenBgFor(tpl: TemplateItem): string {

@@ -459,11 +459,17 @@ class ReggitApp {
 
     setupCartEventListeners() {
         const cartBtn = DomHelper.getElementById(AppConstants.ELEMENT_IDS.CART_BTN);
+        const accountBtn = DomHelper.getElementById(AppConstants.ELEMENT_IDS.ACCOUNT_BTN);
         const closeCartBtn = DomHelper.getElementById(AppConstants.ELEMENT_IDS.CLOSE_CART_BTN);
         const overlay = DomHelper.getElementById(AppConstants.ELEMENT_IDS.OVERLAY);
         if (cartBtn) {
             cartBtn.removeAttribute('data-tooltip');
             cartBtn.addEventListener('click', () => this.openCart());
+        }
+        if (accountBtn) {
+            accountBtn.addEventListener('click', () => {
+                this.switchTab(AppConstants.TABS.MEMBER);
+            });
         }
         if (closeCartBtn) closeCartBtn.addEventListener('click', () => this.closeCart());
         if (overlay) overlay.addEventListener('click', () => this.closeCart());
@@ -1165,6 +1171,12 @@ class ReggitApp {
         };
         const tabEl = DomHelper.getElementById(tabIdMap[tab]);
         if (tabEl) DomHelper.addClass(tabEl, AppConstants.CSS_CLASSES.ACTIVE);
+
+        const mainContent = document.querySelector('.main-content') as HTMLElement | null;
+        if (mainContent) {
+            mainContent.scrollTop = 0;
+        }
+        window.scrollTo(0, 0);
 
         const sectionContainer = document.getElementById(tab + 'Section');
         const layoutWasRendered = !!(sectionContainer && sectionContainer.dataset.layoutRendered === '1');

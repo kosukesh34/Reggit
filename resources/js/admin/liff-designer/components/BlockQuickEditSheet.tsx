@@ -3,13 +3,6 @@ import { BLOCK_DESIGNS, DATA_SOURCES, findBlockMeta, MEMBER_CARD_DESIGNS } from 
 import type { LiffBlock } from '../catalog/types';
 import { ActionField, ColorField, DesignPicker, ImageUrlField, RangeField, SelectField, TextArea, TextInput } from './fields/FormFields';
 
-type SheetProps = {
-    block: LiffBlock;
-    friendAddUrl?: string;
-    onChange: (patch: Partial<LiffBlock>) => void;
-    onClose: () => void;
-};
-
 type RecordItem = Record<string, unknown>;
 
 function SheetGroup({ label, children }: { label: string; children: React.ReactNode }) {
@@ -34,6 +27,13 @@ function CollectionQuickEdit({ block, onChange }: { block: LiffBlock; onChange: 
                 value={String(block.section_label || '')}
                 onChange={(v) => onChange({ section_label: v })}
             />
+            <RangeField
+                label="画像の高さ"
+                value={Number(block.item_image_height || 100)}
+                min={40}
+                max={200}
+                onChange={(v) => onChange({ item_image_height: v })}
+            />
             {items.slice(0, 6).map((item, i) => (
                 <SheetGroup key={i} label={`項目 ${i + 1}`}>
                     <TextInput
@@ -52,6 +52,11 @@ function CollectionQuickEdit({ block, onChange }: { block: LiffBlock; onChange: 
                         value={String(item.description || '')}
                         onChange={(v) => onChange({ items: updateArrayItem(items, i, { description: v }) })}
                     />
+                    <ActionField
+                        label="タップしたとき"
+                        value={String(item.action || '')}
+                        onChange={(v) => onChange({ items: updateArrayItem(items, i, { action: v }) })}
+                    />
                 </SheetGroup>
             ))}
             {items.length > 6 ? (
@@ -69,6 +74,13 @@ function SliderQuickEdit({ block, onChange }: { block: LiffBlock; onChange: (pat
                 label="セクション見出し"
                 value={String(block.section_label || '')}
                 onChange={(v) => onChange({ section_label: v })}
+            />
+            <RangeField
+                label="スライドの高さ"
+                value={Number(block.slide_height || 160)}
+                min={80}
+                max={300}
+                onChange={(v) => onChange({ slide_height: v })}
             />
             {slides.map((slide, i) => (
                 <SheetGroup key={i} label={`スライド ${i + 1}`}>
@@ -229,6 +241,13 @@ function QuickFields({ block, friendAddUrl, onChange }: Omit<SheetProps, 'onClos
                 <>
                     <ImageUrlField label="画像" value={String(block.image_url || '')} onChange={(v) => onChange({ image_url: v })} />
                     <TextInput label="代替テキスト" value={String(block.alt || '')} onChange={(v) => onChange({ alt: v })} />
+                    <RangeField
+                        label="画像の高さ"
+                        value={Number(block.image_height || 180)}
+                        min={80}
+                        max={400}
+                        onChange={(v) => onChange({ image_height: v })}
+                    />
                 </>
             );
         case 'button':
@@ -246,6 +265,13 @@ function QuickFields({ block, friendAddUrl, onChange }: Omit<SheetProps, 'onClos
                     <TextInput label="タイトル" value={String(block.title || '')} onChange={(v) => onChange({ title: v })} />
                     <TextArea label="説明" value={String(block.description || '')} onChange={(v) => onChange({ description: v })} />
                     <ImageUrlField label="カード画像" value={String(block.image_url || '')} onChange={(v) => onChange({ image_url: v })} />
+                    <RangeField
+                        label="画像の高さ"
+                        value={Number(block.image_height || 140)}
+                        min={60}
+                        max={300}
+                        onChange={(v) => onChange({ image_height: v })}
+                    />
                     <ActionField label="タップしたとき" value={String(block.action || '')} onChange={(v) => onChange({ action: v })} />
                 </>
             );
@@ -363,46 +389,47 @@ function QuickFields({ block, friendAddUrl, onChange }: Omit<SheetProps, 'onClos
 
 const SKIP_BACKGROUND_TYPES = new Set(['spacer', 'divider', 'data']);
 
-export function BlockQuickEditSheet({ block, friendAddUrl, onChange, onClose }: SheetProps) {
+type PanelProps = {
+    block: LiffBlock;
+    friendAddUrl?: string;
+    onChange: (patch: Partial<LiffBlock>) => void;
+    onClose: () => void;
+};
+
+export function BlockQuickEditPanel({ block, friendAddUrl, onChange, onClose }: PanelProps) {
     const meta = findBlockMeta(block.type);
     const designOptions = BLOCK_DESIGNS[block.type] || [];
 
     return (
-        <div className="ld-sheet-backdrop" onClick={onClose}>
-            <div className="ld-sheet" onClick={(e) => e.stopPropagation()}>
-                <div className="ld-sheet__handle" aria-hidden="true" />
-                <div className="ld-sheet__head">
-                    <div className="ld-sheet__title">
-                        <i className={`fas ${meta?.icon || 'fa-cube'}`} />
-                        {meta?.label || block.type}
-                    </div>
-                    <button type="button" className="ld-btn ld-btn--ghost ld-btn--xs" onClick={onClose}>
-                        <i className="fas fa-times" />
-                    </button>
+        <div className="ld-sidebar__section ld-sidebar__section--quick-edit">
+            <div className="ld-quick-edit__head">
+                <div className="ld-sidebar__title">
+                    <i className={`fas ${meta?.icon || 'fa-cube'}`} />
+                    {meta?.label || block.type}
                 </div>
-                <div className="ld-sheet__body">
-                    {designOptions.length > 0 ? (
-                        <DesignPicker
-                            value={String(block.design || '')}
-                            options={designOptions}
-                            onChange={(v) => onChange({ design: v })}
-                        />
-                    ) : null}
-                    <QuickFields block={block} friendAddUrl={friendAddUrl} onChange={onChange} />
-                    {SKIP_BACKGROUND_TYPES.has(block.type) ? null : (
-                        <ColorField
-                            label="ブロック背景色"
-                            value={String(block.background_color || '#ffffff')}
-                            onChange={(v) => onChange({ background_color: v })}
-                        />
-                    )}
-                </div>
-                <div className="ld-sheet__foot">
-                    <button type="button" className="ld-btn ld-btn--primary ld-btn--block" onClick={onClose}>
-                        完了
-                    </button>
-                </div>
+                <button type="button" className="ld-icon-btn ld-icon-btn--sm" onClick={onClose} aria-label="編集を閉じる">
+                    <i className="fas fa-times" />
+                </button>
             </div>
+            <p className="ld-sidebar__lead">選択中のブロックを編集しています</p>
+            {designOptions.length > 0 ? (
+                <DesignPicker
+                    value={String(block.design || '')}
+                    options={designOptions}
+                    onChange={(v) => onChange({ design: v })}
+                />
+            ) : null}
+            <QuickFields block={block} friendAddUrl={friendAddUrl} onChange={onChange} />
+            {SKIP_BACKGROUND_TYPES.has(block.type) ? null : (
+                <ColorField
+                    label="ブロック背景色"
+                    value={String(block.background_color || '#ffffff')}
+                    onChange={(v) => onChange({ background_color: v })}
+                />
+            )}
+            <button type="button" className="ld-btn ld-btn--primary ld-btn--block ld-quick-edit__done" onClick={onClose}>
+                完了
+            </button>
         </div>
     );
 }
