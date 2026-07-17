@@ -39,6 +39,7 @@ export const CATEGORY_LABELS: Record<string, string> = {
     industry_hotel: 'ホテル',
     industry_medical: '医療',
     native: 'ネイティブ',
+    apple: 'Apple',
     luxury: 'ラグジュアリー',
     super: '全画面',
     other: 'その他',
@@ -46,14 +47,16 @@ export const CATEGORY_LABELS: Record<string, string> = {
 
 /** 空キャンバスやギャラリー推奨枠で優先表示するテンプレ ID */
 export const FEATURED_TEMPLATE_IDS = [
+    'apple-home-dashboard',
+    'apple-super-app',
+    'apple-cafe-loyalty',
+    'apple-beauty-salon',
+    'apple-retail-flash',
+    'apple-member-club',
     'crm-cafe-loyalty',
     'crm-beauty-booking',
-    'crm-retail-flash',
-    'crm-native-wallet-home',
     'flagship-dashboard',
-    'super-pattern-cafe',
     'super-pattern-hotel',
-    'super-pattern-clinic',
 ] as const;
 
 export const CATEGORY_ACCENTS: Record<string, GalleryAccent> = {
@@ -71,12 +74,14 @@ export const CATEGORY_ACCENTS: Record<string, GalleryAccent> = {
     industry_hotel: { color: '#0f766e', soft: '#ccfbf1', icon: 'fa-hotel' },
     industry_medical: { color: '#0284c7', soft: '#e0f2fe', icon: 'fa-stethoscope' },
     native: { color: '#0f172a', soft: '#e2e8f0', icon: 'fa-mobile-alt' },
+    apple: { color: '#007aff', soft: '#e8f1ff', icon: 'fa-apple' },
     luxury: { color: '#92400e', soft: '#fef3c7', icon: 'fa-gem' },
     super: { color: '#1c1917', soft: '#f5f5f4', icon: 'fa-layer-group' },
     other: { color: '#57534e', soft: '#f5f5f4', icon: 'fa-th-large' },
 };
 
 const PRESET_PALETTES: Record<string, { label: string; accent: string }> = {
+    apple_system: { label: 'Apple System', accent: '#007aff' },
     noir: { label: 'Noir / Stone', accent: '#1c1917' },
     ocean: { label: 'Blue / Cyan', accent: '#0284c7' },
     bordeaux: { label: 'Rose / Wine', accent: '#9f1239' },

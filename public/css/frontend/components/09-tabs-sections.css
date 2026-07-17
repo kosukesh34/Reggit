@@ -1,31 +1,31 @@
-/* メインタブ */
+/* メインタブ（Liquid Glass） */
 .main-tabs {
     display: flex;
     gap: 4px;
-    background: rgba(255, 255, 255, 0.96);
-    backdrop-filter: saturate(180%) blur(20px);
-    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    background: var(--surface-glass);
+    backdrop-filter: saturate(180%) blur(24px);
+    -webkit-backdrop-filter: saturate(180%) blur(24px);
     border-top: 1px solid var(--hairline);
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
     z-index: 100;
-    box-shadow: 0 -8px 32px rgba(28, 25, 23, 0.08);
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.06);
     min-height: var(--main-tabs-height);
     padding: 8px 10px var(--safe-area-bottom-capped);
 }
 
 /* フローティングタブ（デザイナー global.tab_style = floating） */
 body.tab-style-floating .main-tabs {
-    left: 12px;
-    right: 12px;
-    bottom: max(10px, var(--safe-area-bottom-capped));
-    border-radius: var(--radius-xl);
-    border: 1px solid var(--hairline);
-    padding: 8px 8px 10px;
+    left: 14px;
+    right: 14px;
+    bottom: max(12px, var(--safe-area-bottom-capped));
+    border-radius: 28px;
+    border: 1px solid rgba(255, 255, 255, 0.55);
+    padding: 6px 6px 8px;
     min-height: auto;
-    box-shadow: 0 8px 28px rgba(12, 10, 9, 0.12);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08), 0 1px 0 rgba(255, 255, 255, 0.6) inset;
 }
 
 .main-tab-btn {
@@ -140,14 +140,15 @@ body.tab-style-pill .main-tab-btn.active {
 
 .section-title {
     font-family: var(--font-display);
-    font-size: 22px;
-    font-weight: var(--font-weight-heading);
+    font-size: 28px;
+    font-weight: 800;
     color: var(--text-primary);
     display: flex;
     align-items: center;
     gap: 10px;
     margin: 0;
-    letter-spacing: var(--tracking-tight);
+    letter-spacing: -0.04em;
+    line-height: 1.15;
 }
 
 .section-title i {

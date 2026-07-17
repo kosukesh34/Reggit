@@ -171,6 +171,24 @@ export function BlockPreview({
         case 'collection': {
             const items = Array.isArray(block.items) ? (block.items as Array<Record<string, unknown>>) : [];
             const design = String(block.design || 'product_shelf');
+            if (design === 'chip_scroll') {
+                return (
+                    <div className="ld-app-collection ld-app-collection--chip_scroll" style={style}>
+                        {block.section_label ? (
+                            <div className="ld-app-collection__head">
+                                <div className="ld-app-collection__label">{String(block.section_label)}</div>
+                            </div>
+                        ) : null}
+                        <div className="ld-app-chip-scroll">
+                            {items.slice(0, 8).map((it, i) => (
+                                <span key={i} className="ld-app-chip" {...previewNavProps(it.action || block.item_action)}>
+                                    {String(it.title || '')}
+                                </span>
+                            ))}
+                        </div>
+                    </div>
+                );
+            }
             const isGrid = block.layout === 'grid';
             return (
                 <div className={`ld-app-collection ld-app-collection--${design}`} style={style}>
@@ -309,6 +327,27 @@ export function BlockPreview({
                     <MemberSummaryMock greeting={String(block.greeting || '')} design={String(block.design || 'rewards')} />
                 </div>
             );
+        case 'stats_row': {
+            const items = Array.isArray(block.items) ? (block.items as Array<Record<string, unknown>>) : [];
+            return (
+                <div className="ld-app-stats" style={style}>
+                    {block.section_label ? (
+                        <div className="ld-app-stats__label">{String(block.section_label)}</div>
+                    ) : null}
+                    <div className="ld-app-stats__grid">
+                        {items.slice(0, 6).map((it, i) => (
+                            <div key={i} className="ld-app-stats__cell">
+                                <strong>{String(it.value || '')}</strong>
+                                <span>
+                                    {String(it.label || '')}
+                                    {it.hint ? ` ${String(it.hint)}` : ''}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
         case 'quick_actions': {
             const actions = Array.isArray(block.actions) ? (block.actions as Array<Record<string, unknown>>) : [];
             const design = String(block.design || 'grid');

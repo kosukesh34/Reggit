@@ -283,6 +283,8 @@ export function ThemePanel() {
                     value={String(g.member_screen_design || 'wallet')}
                     options={[
                         { value: 'wallet', label: 'ウォレット' },
+                        { value: 'apple', label: 'Apple' },
+                        { value: 'glass', label: 'グラス' },
                         { value: 'premium', label: 'プレミアム' },
                         { value: 'minimal', label: 'ミニマル' },
                         { value: 'compact', label: 'コンパクト' },
@@ -294,6 +296,8 @@ export function ThemePanel() {
                     value={String(g.coupon_screen_design || 'ticket')}
                     options={[
                         { value: 'ticket', label: 'チケット' },
+                        { value: 'apple', label: 'Apple' },
+                        { value: 'glass', label: 'グラス' },
                         { value: 'gallery', label: 'ギャラリー' },
                         { value: 'compact', label: 'コンパクト' },
                         { value: 'luxury', label: 'ラグジュアリー' },
@@ -305,9 +309,9 @@ export function ThemePanel() {
                     value={String(g.reservation_screen_design || 'cards')}
                     options={[
                         { value: 'cards', label: 'カード' },
+                        { value: 'apple', label: 'Apple' },
                         { value: 'timeline', label: 'タイムライン' },
-                        { value: 'compact', label: 'コンパクト' },
-                        { value: 'concierge', label: 'コンシェルジュ' },
+                        { value: 'compact', label: 'コンパクト' },                        { value: 'concierge', label: 'コンシェルジュ' },
                     ]}
                     onChange={(v) => dispatch({ type: 'UPDATE_GLOBAL', patch: { reservation_screen_design: v } })}
                 />

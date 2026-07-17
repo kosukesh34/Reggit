@@ -3391,16 +3391,25 @@
 
 .ld-tpm .ld-phone-app-header.header {
     padding-top: 44px;
+    background: rgba(255, 255, 255, 0.78);
+    backdrop-filter: saturate(180%) blur(16px);
+    -webkit-backdrop-filter: saturate(180%) blur(16px);
+    color: #1c1c1e;
+    border-bottom: 1px solid rgba(60, 60, 67, 0.12);
+    box-shadow: none;
 }
 
 .ld-tpm .ld-phone-app-header .logo {
     font-size: 14px;
+    color: #1c1c1e;
 }
 
 .ld-tpm .ld-phone-app-header .cart-btn,
 .ld-tpm .ld-phone-app-header .account-btn {
     padding: 6px 10px;
     font-size: 12px;
+    background: rgba(0, 0, 0, 0.05);
+    color: #1c1c1e;
 }
 
 .ld-phone-app-header .header-actions {
@@ -3415,7 +3424,7 @@
     height: 34px;
     border-radius: 999px;
     border: none;
-    background: rgba(255, 255, 255, 0.18);
+    background: rgba(0, 0, 0, 0.05);
     color: inherit;
     display: inline-flex;
     align-items: center;
@@ -6781,4 +6790,90 @@
     color: #fff;
     font-size: 11px;
     font-weight: 700;
+}
+
+/* Apple Liquid Glass 風キャンバス整合 */
+.ld.ld-react .ld-phone-device__screen.tab-style-floating .ld-phone-app-tabs.main-tabs,
+.ld.ld-react .ld-phone__screen.tab-style-floating .ld-phone-app-tabs.main-tabs {
+    margin: 0 10px 10px;
+    border-radius: 28px;
+    border: 1px solid rgba(255, 255, 255, 0.55);
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.08);
+}
+
+.ld-app-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.ld-app-stats__label {
+    font-size: 12px;
+    font-weight: 700;
+    color: #8e8e93;
+}
+.ld-app-stats__grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+}
+.ld-app-stats__cell {
+    background: #fff;
+    border-radius: 14px;
+    padding: 12px 8px;
+    text-align: center;
+    border: 1px solid rgba(60, 60, 67, 0.12);
+}
+.ld-app-stats__cell strong {
+    display: block;
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    color: #1c1c1e;
+}
+.ld-app-stats__cell span {
+    display: block;
+    margin-top: 2px;
+    font-size: 10px;
+    font-weight: 600;
+    color: #8e8e93;
+}
+.ld-app-chip-scroll {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+}
+.ld-app-chip {
+    flex-shrink: 0;
+    padding: 7px 12px;
+    border-radius: 999px;
+    background: rgba(118, 118, 128, 0.12);
+    font-size: 12px;
+    font-weight: 600;
+    color: #1c1c1e;
+}
+.ld-crm-member--tier {
+    padding: 16px;
+    border-radius: 18px;
+    background: linear-gradient(145deg, #1c1c1e, #3a3a3c);
+    color: #fff;
+}
+.ld-crm-member--tier .ld-crm-member__hello,
+.ld-crm-member--tier .ld-crm-member__points strong,
+.ld-crm-member--tier .ld-crm-member__rank {
+    color: #fff;
+}
+.ld-crm-member--tier .ld-crm-member__rank {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.14);
+    font-style: normal;
+    font-size: 11px;
+    margin-bottom: 8px;
 }
