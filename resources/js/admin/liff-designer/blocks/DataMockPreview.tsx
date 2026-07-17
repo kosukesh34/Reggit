@@ -421,6 +421,22 @@ export function MemberSummaryMock({ greeting, design }: { greeting?: string; des
         );
     }
 
+    if (variant === 'tier') {
+        return (
+            <div className="ld-crm-member ld-crm-member--tier">
+                <em className="ld-crm-member__rank"><i className="fas fa-gem" /> Gold</em>
+                <span className="ld-crm-member__hello">{hello}</span>
+                <div className="ld-crm-member__points">
+                    <strong>1,280</strong>
+                    <span>pt</span>
+                </div>
+                <div className="ld-crm-member__track">
+                    <i style={{ width: '68%' }} />
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className={`ld-crm-member ld-crm-member--${variant}`}>
             <div className="ld-crm-member__top">
