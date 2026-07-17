@@ -18,6 +18,14 @@ class LiffSettingsService
     }
 
     /**
+     * @return array<string, array<int, array<string, mixed>>>
+     */
+    public function getDetailLayouts(int $projectId): array
+    {
+        return ShopSetting::getLiffDetailLayouts($projectId);
+    }
+
+    /**
      * @return array<string, string|int|float|bool|array|null>
      */
     public function getDefaultDesignerTemplates(): array
@@ -64,11 +72,12 @@ class LiffSettingsService
 
         return collect($defaults)->map(function (array $item) use ($byTab) {
             $saved = $byTab->get($item['tab']);
+            $icon = (string) ($saved['icon'] ?? $item['icon']);
 
             return [
                 'tab' => $item['tab'],
                 'label' => $saved['label'] ?? $item['label'],
-                'icon' => $saved['icon'] ?? $item['icon'],
+                'icon' => ShopSetting::normalizeFrontendMenuIcon($item['tab'], $icon),
                 'order' => $saved['order'] ?? $item['order'],
                 'enabled' => ! isset($saved['enabled']) || $saved['enabled'] !== false,
             ];
@@ -81,6 +90,14 @@ class LiffSettingsService
     public function setTabLayouts(array $layouts, int $projectId): void
     {
         ShopSetting::setLiffTabLayouts($layouts, $projectId);
+    }
+
+    /**
+     * @param  array<string, mixed>  $layouts
+     */
+    public function setDetailLayouts(array $layouts, int $projectId): void
+    {
+        ShopSetting::setLiffDetailLayouts($layouts, $projectId);
     }
 
     public function setCustomCss(string $css, int $projectId): void

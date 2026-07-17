@@ -13,9 +13,13 @@ import { StampsManager } from './managers/StampsManager';
 import { CheckoutManager } from './managers/CheckoutManager';
 import { QueueManager } from './managers/QueueManager';
 import { CouponsManager } from './managers/CouponsManager';
+import { isMembershipRequired } from './utils/membershipPolicy';
+import { mountDetailLayoutChrome } from './utils/detailLayoutMount';
 import { LiffLayoutManager } from './managers/LiffLayoutManager';
 import { ReservationManager } from './managers/ReservationManager';
 import { MemberManager } from './managers/MemberManager';
+import { LiffPageRouter, parseLiffHash, isDeepLiffHash } from './navigation/LiffPageRouter';
+import type { LiffPageKey } from './navigation/LiffPageRouter';
 import './managers/liff-blocks/renderPremiumBlocks';
 import '../shared/utils/liffInit';
 
@@ -36,12 +40,14 @@ class ReggitApp {
     reservationManager: ReservationManager;
     announcementManager: AnnouncementManager;
     checkoutManager: CheckoutManager;
+    pageRouter: LiffPageRouter;
     orderMode: string;
     designerPreviewSource: string | null;
     designerPreviewEmbed: boolean;
     designerPreviewSample: boolean;
     designerPreviewBootstrappedSource: string | null;
     currentTab: string;
+    lastOrderCompleteMessage: string | null = null;
     _detailProduct: (CartProduct & {
         description?: string;
         option_groups?: any[];
@@ -64,6 +70,7 @@ class ReggitApp {
         this.reservationManager = new ReservationManager(this);
         this.announcementManager = new AnnouncementManager(this.apiClient);
         this.checkoutManager = new CheckoutManager(this.apiClient, this.cartManager);
+        this.pageRouter = new LiffPageRouter();
         this.orderMode = this.getOrderMode();
         this.designerPreviewSource = this.getDesignerPreviewSource();
         this.designerPreviewEmbed = this.isDesignerPreviewEmbed();
@@ -75,12 +82,14 @@ class ReggitApp {
     }
 
     getInitialTab() {
-        const allowedTabs = new Set(['home', 'products', 'orders', 'stamps', 'coupons', 'queue', 'member', 'reservations', 'gallery']);
+        const allowedTabs = new Set(['home', 'products', 'orders', 'stamps', 'coupons', 'queue', 'member', 'reservations', 'gallery', 'announcements']);
         if (typeof window.__NATIVE_TARGET_TAB__ !== 'undefined' && window.__NATIVE_TARGET_TAB__ && allowedTabs.has(window.__NATIVE_TARGET_TAB__)) {
             return window.__NATIVE_TARGET_TAB__;
         }
         const fromUrl = this.getTabFromUrl();
         if (fromUrl) return fromUrl;
+        const fromHash = this.getTabFromHash();
+        if (fromHash) return fromHash;
         const firstBtn = (document.querySelector('.main-tab-btn.active') || document.querySelector('.main-tab-btn')) as HTMLElement | null;
         if (firstBtn && firstBtn.dataset.tab) return firstBtn.dataset.tab;
         return AppConstants.TABS.PRODUCTS;
@@ -88,7 +97,7 @@ class ReggitApp {
 
     getTabFromUrl() {
         if (typeof window === 'undefined') return null;
-        const allowedTabs = new Set(['home', 'products', 'orders', 'stamps', 'coupons', 'queue', 'member', 'reservations', 'gallery']);
+        const allowedTabs = new Set(['home', 'products', 'orders', 'stamps', 'coupons', 'queue', 'member', 'reservations', 'gallery', 'announcements']);
         const params = new URLSearchParams(window.location.search || '');
         const tab = params.get('tab');
         if (tab && allowedTabs.has(tab)) return tab;
@@ -98,6 +107,33 @@ class ReggitApp {
             const stateParams = new URLSearchParams(normalized);
             const stateTab = stateParams.get('tab');
             if (stateTab && allowedTabs.has(stateTab)) return stateTab;
+        }
+        return null;
+    }
+
+    getTabFromHash() {
+        if (typeof window === 'undefined') return null;
+        const parsed = parseLiffHash(window.location.hash || '');
+        if (parsed.kind === 'announcement') {
+            return AppConstants.TABS.ANNOUNCEMENTS;
+        }
+        if (parsed.kind === 'product' || parsed.kind === 'order') {
+            return AppConstants.TABS.PRODUCTS;
+        }
+        if (parsed.kind === 'coupon') {
+            return AppConstants.TABS.COUPONS;
+        }
+        if (parsed.kind === 'gallery') {
+            return AppConstants.TABS.GALLERY;
+        }
+        if (parsed.kind === 'stamp') {
+            return AppConstants.TABS.STAMPS;
+        }
+        if (parsed.kind === 'reservation') {
+            return AppConstants.TABS.RESERVATIONS;
+        }
+        if (parsed.kind === 'tab') {
+            return parsed.tab;
         }
         return null;
     }
@@ -142,7 +178,7 @@ class ReggitApp {
             member: 'member',
             member_card: 'member',
             gallery: 'gallery',
-            announcements: 'home',
+            announcements: 'announcements',
         };
         return map[source] || 'home';
     }
@@ -183,6 +219,7 @@ class ReggitApp {
             this.applyDesignerPreviewMode(false);
         }
         this.loadProductsWhenReady();
+        this.setupHashRouting();
         this.announcementManager.load();
         if (!(typeof window !== 'undefined' && window.__IS_LIFF__ && !window.__LINE_USER_ID__)) {
             this.memberManager.preload(null);
@@ -194,10 +231,80 @@ class ReggitApp {
         this.setupNativePushDeepLink();
     }
 
+    setupHashRouting() {
+        if (typeof window === 'undefined') return;
+        const applyHash = () => {
+            if (this.pageRouter.shouldIgnoreHashChange()) {
+                return;
+            }
+            const raw = window.location.hash || '';
+            const parsed = parseLiffHash(raw);
+            if (parsed.kind === 'announcement') {
+                void this.announcementManager.openDetail(parsed.id);
+                return;
+            }
+            if (parsed.kind === 'product') {
+                void this.openProductDetailFromHash(parsed.id);
+                return;
+            }
+            if (parsed.kind === 'coupon') {
+                void this.couponsManager.openDetail(parsed.id);
+                return;
+            }
+            if (parsed.kind === 'gallery') {
+                void this.galleryManager.openDetail(parsed.id);
+                return;
+            }
+            if (parsed.kind === 'stamp') {
+                void this.stampsManager.openDetail(parsed.id);
+                return;
+            }
+            if (parsed.kind === 'order') {
+                this.openOrderFlow(parsed.step, { fromHash: true });
+                return;
+            }
+            if (parsed.kind === 'reservation') {
+                void this.reservationManager.openFlowStep(parsed.step, { fromHash: true });
+                return;
+            }
+            const wasPage = this.pageRouter.isOpen();
+            if (wasPage) {
+                this.closeActivePage(false);
+            }
+            if (parsed.kind === 'tab' && (parsed.tab !== this.currentTab || wasPage)) {
+                this.switchTab(parsed.tab);
+            }
+        };
+        window.addEventListener('hashchange', applyHash);
+        document.addEventListener('click', (e) => {
+            const target = e.target as Element | null;
+            const back = target !== null
+                ? target.closest('[data-liff-page-back], [data-announcement-back]') as HTMLElement | null
+                : null;
+            if (back === null) return;
+            e.preventDefault();
+            this.closeActivePage(true);
+        });
+        applyHash();
+    }
+
+    closeActivePage(updateHash = true): void {
+        const key = this.pageRouter.getCurrentKey();
+        if (key === 'announcement_detail') {
+            this.announcementManager.closeDetail(updateHash);
+            return;
+        }
+        if (updateHash) {
+            this.pageRouter.closePage(true);
+        } else {
+            this.pageRouter.closePageQuiet();
+        }
+    }
+
     /** ネイティブアプリ: プッシュ通知タップ等で指定タブを開く */
     setupNativePushDeepLink() {
         if (typeof window === 'undefined' || !window.__MOBILE_APP_MODE__) return;
-        const allowedTabs = new Set(['home', 'products', 'orders', 'stamps', 'coupons', 'queue', 'member', 'reservations', 'gallery']);
+        const allowedTabs = new Set(['home', 'products', 'orders', 'stamps', 'coupons', 'queue', 'member', 'reservations', 'gallery', 'announcements']);
         window.__nativeOpenTab__ = (tabKey, options) => {
             options = options || {};
             if (!tabKey || !allowedTabs.has(tabKey)) return false;
@@ -226,11 +333,12 @@ class ReggitApp {
     /** スワイプ（プル）で画面を更新する */
     setupPullToRefresh() {
         if (typeof window === 'undefined' || !window.__MOBILE_APP_MODE__) return;
-        const app = this;
         let startY = 0;
         let pullDistance = 0;
         let refreshEl = null;
-        const MIN_PULL = 120;
+        const MIN_PULL = 180;
+        const ACTIVATE_PULL = 36;
+        let isPullTracking = false;
 
         const createRefreshIndicator = () => {
             if (refreshEl) return refreshEl;
@@ -243,37 +351,40 @@ class ReggitApp {
             return refreshEl;
         };
 
-        const getScrollContainer = () => document.querySelector('.tab-content.active .tab-section') || document.querySelector('.main-content');
+        const getScrollContainer = () => document.querySelector('.tab-content.active')
+            || document.querySelector('.tab-content.active .tab-section')
+            || document.querySelector('.main-content');
         const scrollContainer = document.querySelector('.main-content') || document.body;
         scrollContainer.addEventListener('touchstart', (e: TouchEvent) => {
             if (e.touches.length !== 1) return;
             const el = getScrollContainer();
             if (!el) return;
             const scrollTop = el.scrollTop || 0;
-            if (scrollTop <= 2) {
-                startY = e.touches[0].clientY;
-                pullDistance = 0;
-            }
+            isPullTracking = scrollTop <= 0;
+            startY = isPullTracking ? e.touches[0].clientY : 0;
+            pullDistance = 0;
         }, { passive: true });
 
         scrollContainer.addEventListener('touchmove', (e: TouchEvent) => {
-            if (e.touches.length !== 1) return;
+            if (!isPullTracking || e.touches.length !== 1) return;
             const el = getScrollContainer();
-            if (!el || (el.scrollTop || 0) > 2) return;
+            if (!el || (el.scrollTop || 0) > 0) {
+                isPullTracking = false;
+                pullDistance = 0;
+                return;
+            }
             const y = e.touches[0].clientY;
             pullDistance = y - startY;
-            if (pullDistance > 20) e.preventDefault();
+            if (pullDistance > ACTIVATE_PULL) e.preventDefault();
         }, { passive: false });
 
         scrollContainer.addEventListener('touchend', () => {
             const el = getScrollContainer();
-            if (!el || (el.scrollTop || 0) > 5) {
-                pullDistance = 0;
-                return;
-            }
-            const didPull = pullDistance >= MIN_PULL;
+            const distance = pullDistance;
+            const canRefresh = isPullTracking && el !== null && (el.scrollTop || 0) <= 0 && distance >= MIN_PULL;
+            isPullTracking = false;
             pullDistance = 0;
-            if (!didPull) return;
+            if (!canRefresh) return;
             const indicator = createRefreshIndicator();
             indicator.style.transform = 'translateY(0)';
             indicator.querySelector('i').classList.add('fa-spin');
@@ -459,11 +570,17 @@ class ReggitApp {
 
     setupCartEventListeners() {
         const cartBtn = DomHelper.getElementById(AppConstants.ELEMENT_IDS.CART_BTN);
+        const accountBtn = DomHelper.getElementById(AppConstants.ELEMENT_IDS.ACCOUNT_BTN);
         const closeCartBtn = DomHelper.getElementById(AppConstants.ELEMENT_IDS.CLOSE_CART_BTN);
         const overlay = DomHelper.getElementById(AppConstants.ELEMENT_IDS.OVERLAY);
         if (cartBtn) {
             cartBtn.removeAttribute('data-tooltip');
             cartBtn.addEventListener('click', () => this.openCart());
+        }
+        if (accountBtn) {
+            accountBtn.addEventListener('click', () => {
+                this.switchTab(AppConstants.TABS.MEMBER);
+            });
         }
         if (closeCartBtn) closeCartBtn.addEventListener('click', () => this.closeCart());
         if (overlay) overlay.addEventListener('click', () => this.closeCart());
@@ -500,10 +617,10 @@ class ReggitApp {
         if (overlay) overlay.style.display = 'none';
         if (footer) footer.style.display = 'none';
 
-        // 上部のお知らせバーは announcements 以外では非表示にする
-        const topAnnouncements = document.querySelector('main.main-content > #announcementsSection') as HTMLElement | null;
+        // 上部お知らせバー（タブ本体の #announcementsSection とは別）
+        const topAnnouncements = document.getElementById('announcementsTopBar') as HTMLElement | null;
         if (topAnnouncements) {
-            topAnnouncements.style.display = source === 'announcements' ? '' : 'none';
+            topAnnouncements.style.display = 'none';
         }
 
         if (this.currentTab !== targetTab) {
@@ -552,6 +669,7 @@ class ReggitApp {
             member: 'memberSection',
             reservations: 'reservationsSection',
             gallery: 'gallerySection',
+            announcements: 'announcementsSection',
         };
         const sectionId = sectionIdMap[targetTab];
         if (!sectionId) return;
@@ -570,8 +688,6 @@ class ReggitApp {
             return;
         }
         if (source === 'announcements') {
-            const topAnnouncements = document.getElementById('announcementsSection');
-            if (topAnnouncements) topAnnouncements.innerHTML = '';
             section.innerHTML = '';
             return;
         }
@@ -617,6 +733,38 @@ class ReggitApp {
         const mode = this.orderMode || 'both';
         if (orderBtn) orderBtn.style.display = (mode === 'in_store_only') ? 'none' : '';
         if (inStoreOrderBtn) inStoreOrderBtn.style.display = (mode === 'mobile_only') ? 'none' : '';
+        this.applyOrderButtonEmphasis(orderBtn, inStoreOrderBtn, mode);
+    }
+
+    /**
+     * LIFF/Web は店内注文を主CTA、ネイティブアプリはモバイル注文を主CTAにする。
+     * 片方のみ表示のときは表示中のボタンを主CTAにする。
+     */
+    applyOrderButtonEmphasis(
+        orderBtn: HTMLElement | null,
+        inStoreOrderBtn: HTMLElement | null,
+        mode: string,
+    ) {
+        const preferMobilePrimary =
+            mode === 'mobile_only'
+            || (mode !== 'in_store_only' && typeof window !== 'undefined' && window.__MOBILE_APP_MODE__ === true);
+        const setEmphasis = (el: HTMLElement | null, isPrimary: boolean) => {
+            if (!el) return;
+            el.classList.toggle('order-btn--primary', isPrimary);
+            el.classList.toggle('order-btn--secondary', !isPrimary);
+            el.classList.remove('order-btn--mobile', 'order-btn--in-store');
+        };
+        setEmphasis(orderBtn, preferMobilePrimary);
+        setEmphasis(inStoreOrderBtn, !preferMobilePrimary);
+
+        const actions = orderBtn?.parentElement ?? inStoreOrderBtn?.parentElement;
+        if (actions !== null && actions !== undefined && orderBtn !== null && inStoreOrderBtn !== null) {
+            if (preferMobilePrimary) {
+                actions.insertBefore(orderBtn, inStoreOrderBtn);
+            } else {
+                actions.insertBefore(inStoreOrderBtn, orderBtn);
+            }
+        }
     }
 
     loadProductsWhenReady() {
@@ -819,6 +967,11 @@ class ReggitApp {
         if (this.orderMode === 'mobile_only' && inStoreOrderBtn) (inStoreOrderBtn as HTMLButtonElement).disabled = true;
         if (this.orderMode === 'in_store_only' && orderBtn) (orderBtn as HTMLButtonElement).disabled = true;
         if (totalPrice) totalPrice.textContent = DomHelper.formatPrice(total);
+
+        const key = this.pageRouter.getCurrentKey();
+        if (key === 'order_cart' || key === 'order_confirm') {
+            this.renderOrderFlowPage(key === 'order_confirm' ? 'confirm' : 'cart');
+        }
     }
 
     renderCartItem(item) {
@@ -848,9 +1001,21 @@ class ReggitApp {
         `;
     }
 
-    /* ===== 商品詳細モーダル（タップで詳細・オプション選択・数量） ===== */
+    /* ===== 商品詳細ページ（#product/{id}） ===== */
 
-    openProductDetail(productId) {
+    async openProductDetailFromHash(productId: number | string): Promise<void> {
+        try {
+            if (this.productManager.products.length === 0) {
+                await this.productManager.loadProducts();
+            }
+        } catch {
+            ToastManager.error('商品の読み込みに失敗しました');
+            return;
+        }
+        this.openProductDetail(productId, { fromHash: true });
+    }
+
+    openProductDetail(productId, options: { fromHash?: boolean } = {}) {
         const product = this.productManager.getProductById(productId);
         if (!product) {
             ToastManager.error('商品が見つかりませんでした');
@@ -865,23 +1030,34 @@ class ReggitApp {
         };
         this._detailQty = 1;
 
-        let host = document.getElementById('productDetailModal');
-        if (!host) {
-            host = document.createElement('div');
-            host.id = 'productDetailModal';
-            document.body.appendChild(host);
+        const section = this.pageRouter.openPage({
+            key: 'product_detail',
+            hash: 'product/' + String(productId),
+            returnHash: this.pageRouter.resolveReturnHash('products'),
+            title: product.name || '商品詳細',
+            bodyClass: 'liff-page-product-detail',
+        });
+        if (section === null) {
+            return;
         }
-        host.innerHTML = this._renderProductDetail(product);
-        host.classList.add('is-open');
-        document.body.style.overflow = 'hidden';
-
-        host.querySelectorAll('input[data-opt]').forEach(input => {
+        const bodyHtml = `<div class="liff-entity-detail product-detail-page">${this._renderProductDetailPage(product)}</div>`;
+        mountDetailLayoutChrome({
+            section,
+            layoutKey: 'product_detail',
+            dataSource: 'product_detail',
+            bodyHtml,
+            slotClassName: 'liff-detail-slot product-detail-slot',
+        });
+        section.querySelectorAll('input[data-opt]').forEach(input => {
             input.addEventListener('change', () => this._recalcProductDetail());
         });
         this._recalcProductDetail();
     }
 
     closeProductDetail() {
+        if (this.pageRouter.getCurrentKey() === 'product_detail') {
+            this.pageRouter.closePage(true);
+        }
         const host = document.getElementById('productDetailModal');
         if (host) {
             host.classList.remove('is-open');
@@ -897,7 +1073,7 @@ class ReggitApp {
         this._recalcProductDetail();
     }
 
-    _renderProductDetail(product) {
+    _renderProductDetailPage(product) {
         const imageUrl = product.image_url || '';
         const groups = Array.isArray(product.option_groups) ? product.option_groups : [];
         const esc = (s) => DomHelper.escapeHtml(s);
@@ -936,26 +1112,22 @@ class ReggitApp {
         }).join('');
 
         return `
-            <div class="pd-overlay" onclick="app.closeProductDetail()"></div>
-            <div class="pd-sheet" role="dialog" aria-modal="true">
-                <button class="pd-close" onclick="app.closeProductDetail()" aria-label="閉じる"><i class="fas fa-times"></i></button>
-                <div class="pd-scroll">
-                    <div class="pd-hero">
-                        <img src="${imageUrl}" alt="${esc(product.name)}" class="pd-image"
-                             onerror="this.style.display='none'">
-                    </div>
-                    <div class="pd-body">
-                        <h2 class="pd-name">${esc(product.name)}</h2>
-                        <div class="pd-base-price">${DomHelper.formatPrice(product.price)}</div>
-                        ${desc}
-                        ${groupsHtml}
-                        <div class="pd-group">
-                            <div class="pd-group-head"><span class="pd-group-name">ご要望（任意）</span></div>
-                            <input type="text" id="pdNotes" class="pd-notes" maxlength="500" placeholder="例: ソース少なめ など">
-                        </div>
+            <div class="pd-page" id="productDetailHost">
+                <div class="pd-hero">
+                    <img src="${imageUrl}" alt="${esc(product.name)}" class="pd-image"
+                         onerror="this.style.display='none'">
+                </div>
+                <div class="pd-body">
+                    <h2 class="pd-name">${esc(product.name)}</h2>
+                    <div class="pd-base-price">${DomHelper.formatPrice(product.price)}</div>
+                    ${desc}
+                    ${groupsHtml}
+                    <div class="pd-group">
+                        <div class="pd-group-head"><span class="pd-group-name">ご要望（任意）</span></div>
+                        <input type="text" id="pdNotes" class="pd-notes" maxlength="500" placeholder="例: ソース少なめ など">
                     </div>
                 </div>
-                <div class="pd-footer">
+                <div class="pd-footer pd-footer--page">
                     <div class="pd-qty">
                         <button class="pd-qty-btn" onclick="app.detailQty(-1)" aria-label="減らす"><i class="fas fa-minus"></i></button>
                         <span id="detailQtyValue" class="pd-qty-value">1</span>
@@ -970,8 +1142,14 @@ class ReggitApp {
         `;
     }
 
+    _renderProductDetail(product) {
+        return this._renderProductDetailPage(product);
+    }
+
     _collectDetailSelection() {
-        const host = document.getElementById('productDetailModal');
+        const host = document.getElementById('productDetailHost')
+            || this.pageRouter.getSection()
+            || document.getElementById('productDetailModal');
         if (!host) return { options: [], delta: 0, valid: true };
         const product = this._detailProduct;
         if (!product) return { options: [], delta: 0, valid: true };
@@ -1000,7 +1178,9 @@ class ReggitApp {
     }
 
     _recalcProductDetail() {
-        const host = document.getElementById('productDetailModal');
+        const host = document.getElementById('productDetailHost')
+            || this.pageRouter.getSection()
+            || document.getElementById('productDetailModal');
         if (!host) return;
         const product = this._detailProduct;
         if (!product) return;
@@ -1044,22 +1224,107 @@ class ReggitApp {
         this.showCartNotification();
         this.renderProducts();
         ToastManager.success(`${product.name}をカートに追加しました`);
+        this.openOrderFlow('cart');
     }
 
     openCart() {
-        const sidebar = DomHelper.getElementById(AppConstants.ELEMENT_IDS.CART_SIDEBAR);
-        const overlay = DomHelper.getElementById(AppConstants.ELEMENT_IDS.OVERLAY);
-        if (sidebar) DomHelper.addClass(sidebar, AppConstants.CSS_CLASSES.OPEN);
-        if (overlay) DomHelper.addClass(overlay, AppConstants.CSS_CLASSES.ACTIVE);
-        document.body.style.overflow = 'hidden';
+        this.openOrderFlow('cart');
     }
 
     closeCart() {
+        const key = this.pageRouter.getCurrentKey();
+        if (key === 'order_cart' || key === 'order_confirm' || key === 'order_complete') {
+            this.pageRouter.closePage(true);
+        }
         const sidebar = DomHelper.getElementById(AppConstants.ELEMENT_IDS.CART_SIDEBAR);
         const overlay = DomHelper.getElementById(AppConstants.ELEMENT_IDS.OVERLAY);
         if (sidebar) DomHelper.removeClass(sidebar, AppConstants.CSS_CLASSES.OPEN);
         if (overlay) DomHelper.removeClass(overlay, AppConstants.CSS_CLASSES.ACTIVE);
         document.body.style.overflow = '';
+    }
+
+    openOrderFlow(step: 'cart' | 'confirm' | 'complete', options: { fromHash?: boolean } = {}) {
+        const keyMap: Record<typeof step, LiffPageKey> = {
+            cart: 'order_cart',
+            confirm: 'order_confirm',
+            complete: 'order_complete',
+        };
+        const key = keyMap[step];
+        if (step === 'confirm' && this.cartManager.isEmpty()) {
+            this.openOrderFlow('cart');
+            return;
+        }
+        if (step === 'complete' && this.lastOrderCompleteMessage === null && !options.fromHash) {
+            this.lastOrderCompleteMessage = 'ご注文ありがとうございました';
+        }
+        const section = this.pageRouter.openPage({
+            key,
+            hash: 'order/' + step,
+            returnHash: this.pageRouter.resolveReturnHash('products'),
+            title: step === 'cart' ? 'カート' : (step === 'confirm' ? '注文確認' : '注文完了'),
+            bodyClass: 'liff-page-order-flow',
+        });
+        if (section === null) {
+            return;
+        }
+        this.renderOrderFlowPage(step);
+    }
+
+    renderOrderFlowPage(step: 'cart' | 'confirm' | 'complete') {
+        const section = this.pageRouter.getSection();
+        if (section === null) {
+            return;
+        }
+        if (step === 'complete') {
+            const message = this.lastOrderCompleteMessage || 'ご注文ありがとうございました';
+            section.innerHTML = `
+                <div class="liff-flow-page order-flow-complete">
+                    <div class="order-flow-complete__icon"><i class="fas fa-check-circle"></i></div>
+                    <h2>注文が完了しました</h2>
+                    <p>${DomHelper.escapeHtml(message)}</p>
+                    <div class="liff-flow-actions">
+                        <button type="button" class="btn btn-primary" onclick="app.switchTab('orders')">注文履歴を見る</button>
+                        <button type="button" class="btn btn-secondary" onclick="app.switchTab('home')">ホームへ</button>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
+        const itemsHtml = this.cartManager.isEmpty()
+            ? '<div class="empty-cart">カートは空です</div>'
+            : this.cartManager.items.map((item) => this.renderCartItem(item)).join('');
+        const total = DomHelper.formatPrice(this.cartManager.getTotalAmount());
+        const canOrder = !this.cartManager.isEmpty();
+        const mobileEnabled = this.checkoutManager.isMobileOrderEnabled();
+        const inStoreEnabled = this.checkoutManager.isInStoreOrderEnabled();
+
+        if (step === 'cart') {
+            section.innerHTML = `
+                <div class="liff-flow-page order-flow-cart">
+                    <div class="cart-items">${itemsHtml}</div>
+                    <div class="cart-total"><span>合計</span><strong>${total}</strong></div>
+                    <div class="liff-flow-actions">
+                        <button type="button" class="btn btn-primary" ${canOrder ? '' : 'disabled'}
+                            onclick="app.openOrderFlow('confirm')">注文内容を確認</button>
+                        <button type="button" class="btn btn-secondary" onclick="app.switchTab('products')">商品一覧へ</button>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
+        section.innerHTML = `
+            <div class="liff-flow-page order-flow-confirm">
+                <div class="cart-items">${itemsHtml}</div>
+                <div class="cart-total"><span>合計</span><strong>${total}</strong></div>
+                <div class="liff-flow-actions">
+                    ${mobileEnabled ? `<button type="button" class="btn btn-primary" ${canOrder ? '' : 'disabled'} onclick="app.checkoutManager.placeMobileOrder()"><i class="fas fa-mobile-alt"></i> モバイル注文する</button>` : ''}
+                    ${inStoreEnabled ? `<button type="button" class="btn btn-secondary" ${canOrder ? '' : 'disabled'} onclick="app.checkoutManager.placeInStoreOrder()"><i class="fas fa-store"></i> 店内注文する</button>` : ''}
+                    <button type="button" class="btn btn-secondary" onclick="app.openOrderFlow('cart')">カートへ戻る</button>
+                </div>
+            </div>
+        `;
     }
 
     showCartNotification() {
@@ -1072,10 +1337,11 @@ class ReggitApp {
 
     handleOrderSuccess() {
         ToastManager.success(AppConstants.MESSAGES.ORDER_SUCCESS);
+        this.lastOrderCompleteMessage = AppConstants.MESSAGES.ORDER_SUCCESS;
         this.cartManager.clear();
         this.updateCartUI();
         this.renderProducts();
-        this.closeCart();
+        this.openOrderFlow('complete');
     }
 
     handlePaymentSuccess() {
@@ -1112,12 +1378,17 @@ class ReggitApp {
         if (typeof window.__mobileOrderLog === 'function') window.__mobileOrderLog('switchTab', { tab });
         this.currentTab = tab;
 
+        if (this.pageRouter.isOpen()) {
+            this.closeActivePage(false);
+        }
+
         DomHelper.querySelectorAll('.main-tab-btn').forEach((btn) => {
             DomHelper.removeClass(btn, AppConstants.CSS_CLASSES.ACTIVE);
             if ((btn as HTMLElement).dataset.tab === tab) DomHelper.addClass(btn, AppConstants.CSS_CLASSES.ACTIVE);
         });
         DomHelper.querySelectorAll('.tab-content').forEach((content) => {
             DomHelper.removeClass(content, AppConstants.CSS_CLASSES.ACTIVE);
+            (content as HTMLElement).style.display = '';
         });
 
         const tabIdMap = {
@@ -1130,9 +1401,16 @@ class ReggitApp {
             [AppConstants.TABS.MEMBER]: AppConstants.ELEMENT_IDS.MEMBER_TAB,
             [AppConstants.TABS.RESERVATIONS]: AppConstants.ELEMENT_IDS.RESERVATIONS_TAB,
             [AppConstants.TABS.GALLERY]: AppConstants.ELEMENT_IDS.GALLERY_TAB,
+            [AppConstants.TABS.ANNOUNCEMENTS]: AppConstants.ELEMENT_IDS.ANNOUNCEMENTS_TAB,
         };
         const tabEl = DomHelper.getElementById(tabIdMap[tab]);
         if (tabEl) DomHelper.addClass(tabEl, AppConstants.CSS_CLASSES.ACTIVE);
+
+        const mainContent = document.querySelector('.main-content') as HTMLElement | null;
+        if (mainContent) {
+            mainContent.scrollTop = 0;
+        }
+        window.scrollTo(0, 0);
 
         const sectionContainer = document.getElementById(tab + 'Section');
         const layoutWasRendered = !!(sectionContainer && sectionContainer.dataset.layoutRendered === '1');
@@ -1145,6 +1423,17 @@ class ReggitApp {
         }
         if (this.designerPreviewSource) {
             this.applyDesignerPreviewMode(true);
+        }
+
+        if (
+            typeof window !== 'undefined'
+            && !(this.designerPreviewSource && this.designerPreviewEmbed)
+            && !isDeepLiffHash(window.location.hash || '')
+        ) {
+            const nextHash = '#' + tab;
+            if (window.location.hash !== nextHash) {
+                window.history.replaceState(null, '', nextHash);
+            }
         }
     }
 
@@ -1306,15 +1595,23 @@ class ReggitApp {
                 if (memberPayload?.is_member) {
                     this.memberManager.setMemberData(memberPayload);
                     this.reservationManager.loadReservations();
+                } else if (!isMembershipRequired()) {
+                    this.reservationManager.loadReservations();
                 } else {
                     section.innerHTML = this.reservationManager.getMembershipRequiredTemplate();
                 }
+            } else if (!isMembershipRequired()) {
+                this.reservationManager.loadReservations();
             } else {
                 section.innerHTML = this.reservationManager.getMembershipRequiredTemplate();
             }
         } catch (error) {
             console.error('Failed to check membership:', error);
-            section.innerHTML = this.reservationManager.getMembershipRequiredTemplate();
+            if (!isMembershipRequired()) {
+                this.reservationManager.loadReservations();
+            } else {
+                section.innerHTML = this.reservationManager.getMembershipRequiredTemplate();
+            }
         }
     }
 }
@@ -1351,7 +1648,10 @@ if (typeof window !== 'undefined' && !window.__LIFF_APP_BOOTSTRAP__) {
         }
         window.app = new ReggitApp();
         if (typeof window.__clientDebugLog === 'function') {
-            window.__clientDebugLog('app_created', {});
+            window.__clientDebugLog('app_created', {
+                require_membership: isMembershipRequired(),
+                project_key: window.__PROJECT_KEY__ || null,
+            });
         }
         hideLiffLoading();
     }

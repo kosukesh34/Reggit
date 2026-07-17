@@ -24,6 +24,7 @@ class LiffDesignerController extends AdminBaseController
             'featureFlags' => $dto->featureFlags,
             'lineFriendAddUrl' => $dto->lineFriendAddUrl,
             'menuItems' => $dto->menuItems,
+            'detailLayouts' => $dto->detailLayouts,
         ]);
     }
 

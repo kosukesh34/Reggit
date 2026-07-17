@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 403 840" fill="none" aria-hidden="true">
+  <defs>
+    <linearGradient id="body" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4a4a4c"/>
+      <stop offset="18%" stop-color="#2c2c2e"/>
+      <stop offset="55%" stop-color="#1c1c1e"/>
+      <stop offset="100%" stop-color="#0a0a0b"/>
+    </linearGradient>
+    <linearGradient id="edge" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.22"/>
+      <stop offset="12%" stop-color="#ffffff" stop-opacity="0.04"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.35"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-10%" width="140%" height="120%">
+      <feDropShadow dx="0" dy="28" stdDeviation="24" flood-color="#000000" flood-opacity="0.42"/>
+    </filter>
+  </defs>
+  <g filter="url(#shadow)">
+    <path fill="url(#body)" fill-rule="evenodd" d="
+      M54 6h295a48 48 0 0 1 48 48v732a48 48 0 0 1-48 48H54a48 48 0 0 1-48-48V54a48 48 0 0 1 48-48z
+      M56 14h291a42 42 0 0 1 42 42v728a42 42 0 0 1-42 42H56a42 42 0 0 1-42-42V56a42 42 0 0 1 42-42z
+    "/>
+    <path fill="url(#edge)" fill-rule="evenodd" d="
+      M54 6h295a48 48 0 0 1 48 48v732a48 48 0 0 1-48 48H54a48 48 0 0 1-48-48V54a48 48 0 0 1 48-48z
+      M56 14h291a42 42 0 0 1 42 42v728a42 42 0 0 1-42 42H56a42 42 0 0 1-42-42V56a42 42 0 0 1 42-42z
+    "/>
+  </g>
+  <rect x="3" y="180" width="3" height="56" rx="1.5" fill="#3a3a3c"/>
+  <rect x="3" y="248" width="3" height="40" rx="1.5" fill="#3a3a3c"/>
+  <rect x="3" y="296" width="3" height="40" rx="1.5" fill="#3a3a3c"/>
+  <rect x="397" y="220" width="3" height="72" rx="1.5" fill="#3a3a3c"/>
+</svg>

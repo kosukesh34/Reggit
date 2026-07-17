@@ -701,6 +701,10 @@ export class MemberManager {
     }
 
     getGuestRegisterTemplate() {
+        const optional = typeof window !== 'undefined'
+            && window.__LIFF_TAB_SETTINGS__
+            && window.__LIFF_TAB_SETTINGS__._global
+            && window.__LIFF_TAB_SETTINGS__._global.require_membership === false;
         return `
             <div class="member-card-container">
                 <div class="member-card member-card--line-only">
@@ -708,10 +712,10 @@ export class MemberManager {
                         <h2 class="member-card-title"><i class="fas fa-id-card"></i> 会員証</h2>
                     </div>
                     <div class="member-card-line-only-body">
-                        <p class="member-card-line-only-message">会員登録されていません。</p>
-                        <p class="member-card-line-only-sub">会員登録すると会員証が表示されます。</p>
-                        <button type="button" class="btn btn-primary mt-2 member-register-trigger" data-action="member-open-register" onclick="typeof window.app !== 'undefined' && window.app.memberManager && window.app.memberManager.navigateToRegisterPage()">
-                            <i class="fas fa-user-plus"></i> 会員登録する
+                        <p class="member-card-line-only-message">${optional ? '会員登録は任意です。' : '会員登録されていません。'}</p>
+                        <p class="member-card-line-only-sub">${optional ? '登録するとポイント・クーポン・予約履歴を利用できます。' : '会員登録すると会員証が表示されます。'}</p>
+                        <button type="button" class="btn ${optional ? 'btn-secondary' : 'btn-primary'} mt-2 member-register-trigger" data-action="member-open-register" onclick="typeof window.app !== 'undefined' && window.app.memberManager && window.app.memberManager.navigateToRegisterPage()">
+                            <i class="fas fa-user-plus"></i> ${optional ? '任意で会員登録' : '会員登録する'}
                         </button>
                     </div>
                 </div>
@@ -956,8 +960,14 @@ export class MemberManager {
             memberCardDesign = blockOverride;
         }
         const memberCardLogoUrl = data.member_card_logo_url || null;
-        const memberCardDisplayType = data.member_card_display_type || 'card';
-        const memberCardCodeType = data.member_card_code_type || 'barcode';
+        const memberCardDisplayType =
+            MemberManager.getLiffGlobalSetting('member_card_display_type', '') ||
+            data.member_card_display_type ||
+            'card';
+        const memberCardCodeType =
+            MemberManager.getLiffGlobalSetting('member_card_code_type', '') ||
+            data.member_card_code_type ||
+            'barcode';
 
         let expiryText = '';
         if (pointsExpiry && pointsExpiry.expires_at_label) {

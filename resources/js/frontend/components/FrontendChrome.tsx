@@ -24,6 +24,19 @@ function getHeaderConfig(): FrontendHeaderConfig {
     };
 }
 
+function hasOrderMenus(): boolean {
+    const menu = window.__FRONTEND_MENU__;
+    if (!Array.isArray(menu)) {
+        return true;
+    }
+    return menu.some((item) => item?.tab === 'products' || item?.tab === 'orders');
+}
+
+/** ネイティブアプリではモバイル注文を主CTA、LIFF/Web では店内注文を主CTAにする */
+function prefersMobileOrderPrimary(): boolean {
+    return window.__MOBILE_APP_MODE__ === true;
+}
+
 export function FrontendChrome(): JSX.Element | null {
     const isDesignerEmbedPreview = window.__IS_DESIGNER_EMBED_PREVIEW__ === true;
     if (isDesignerEmbedPreview) {
@@ -31,6 +44,27 @@ export function FrontendChrome(): JSX.Element | null {
     }
 
     const header = getHeaderConfig();
+    const preferMobilePrimary = prefersMobileOrderPrimary();
+    const showCart = hasOrderMenus();
+
+    const mobileOrderButton = (
+        <button
+            className={`order-btn ${preferMobilePrimary ? 'order-btn--primary' : 'order-btn--secondary'}`}
+            id="orderBtn"
+            disabled
+        >
+            <i className="fas fa-credit-card" /> モバイル注文（今すぐ決済）
+        </button>
+    );
+    const inStoreOrderButton = (
+        <button
+            className={`order-btn ${preferMobilePrimary ? 'order-btn--secondary' : 'order-btn--primary'}`}
+            id="inStoreOrderBtn"
+            disabled
+        >
+            <i className="fas fa-store" /> 店内注文（後で決済）
+        </button>
+    );
 
     return (
         <>
@@ -50,12 +84,32 @@ export function FrontendChrome(): JSX.Element | null {
                             <i className="fab fa-line" /> 友だち追加
                         </a>
                     ) : null}
-                    <button className="cart-btn" id="cartBtn">
-                        <i className="fas fa-shopping-cart" />
-                        <span className="cart-count" id="cartCount">
-                            0
-                        </span>
-                    </button>
+                    <div className="header-actions">
+                        <button
+                            type="button"
+                            className="account-btn"
+                            id="accountBtn"
+                            title="会員・設定"
+                            aria-label="会員・設定"
+                        >
+                            <i className="fas fa-user" />
+                        </button>
+                        {showCart ? (
+                            <button type="button" className="cart-btn" id="cartBtn" title="注文内容" aria-label="注文内容">
+                                <i className="fas fa-shopping-bag" />
+                                <span className="cart-count" id="cartCount">
+                                    0
+                                </span>
+                            </button>
+                        ) : (
+                            <button type="button" className="cart-btn is-hidden" id="cartBtn" hidden aria-hidden="true">
+                                <i className="fas fa-shopping-bag" />
+                                <span className="cart-count" id="cartCount">
+                                    0
+                                </span>
+                            </button>
+                        )}
+                    </div>
                 </div>
             </header>
 
@@ -79,12 +133,17 @@ export function FrontendChrome(): JSX.Element | null {
                         </span>
                     </div>
                     <div className="order-actions">
-                        <button className="order-btn order-btn--mobile" id="orderBtn" disabled>
-                            <i className="fas fa-credit-card" /> モバイル注文（今すぐ決済）
-                        </button>
-                        <button className="order-btn order-btn--in-store" id="inStoreOrderBtn" disabled>
-                            <i className="fas fa-store" /> 店内注文（後で決済）
-                        </button>
+                        {preferMobilePrimary ? (
+                            <>
+                                {mobileOrderButton}
+                                {inStoreOrderButton}
+                            </>
+                        ) : (
+                            <>
+                                {inStoreOrderButton}
+                                {mobileOrderButton}
+                            </>
+                        )}
                     </div>
                 </div>
             </div>
@@ -93,4 +152,3 @@ export function FrontendChrome(): JSX.Element | null {
         </>
     );
 }
-

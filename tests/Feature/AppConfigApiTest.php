@@ -32,6 +32,58 @@ class AppConfigApiTest extends TestCase
             'header',
             'liff_tab_layouts',
             'liff_tab_settings',
+            'liff_detail_layouts',
         ]);
+    }
+
+    public function test_app_config_の_globalに_require_membershipが含まれること(): void
+    {
+        $project = Project::firstOrCreate(
+            ['project_key' => 'default'],
+            ['name' => 'テスト店舗', 'description' => 'Test', 'is_active' => true]
+        );
+        $project->update(['name' => 'テスト店舗', 'is_active' => true]);
+
+        $response = $this->getJson('/api/v1/app-config?project_key=default');
+
+        $response->assertOk();
+        $settings = $response->json('liff_tab_settings');
+        $this->assertIsArray($settings);
+        $this->assertArrayHasKey('_global', $settings);
+        $global = $settings['_global'];
+        $this->assertIsArray($global);
+        $this->assertArrayHasKey('require_membership', $global);
+        $this->assertTrue((bool) $global['require_membership']);
+    }
+
+    public function test_app_config_のdetail_layoutsに深い遷移キーが含まれること(): void
+    {
+        $project = Project::firstOrCreate(
+            ['project_key' => 'default'],
+            ['name' => 'テスト店舗', 'description' => 'Test', 'is_active' => true]
+        );
+        $project->update(['name' => 'テスト店舗', 'is_active' => true]);
+
+        $response = $this->getJson('/api/v1/app-config?project_key=default');
+
+        $response->assertOk();
+        $layouts = $response->json('liff_detail_layouts');
+        $this->assertIsArray($layouts);
+        foreach ([
+            'announcement_detail',
+            'product_detail',
+            'coupon_detail',
+            'gallery_detail',
+            'stamp_detail',
+            'order_cart',
+            'order_confirm',
+            'order_complete',
+            'reservation_new',
+            'reservation_confirm',
+            'reservation_complete',
+        ] as $key) {
+            $this->assertArrayHasKey($key, $layouts);
+            $this->assertIsArray($layouts[$key]);
+        }
     }
 }

@@ -44,10 +44,11 @@ type StripePaymentCtor = new () => {
 };
 
 type AppLike = {
-    stampsManager?: { load: () => void | Promise<void> };
     updateCartUI?: () => void;
     renderProducts?: () => void;
     closeCart?: () => void;
+    openOrderFlow?: (step: 'cart' | 'confirm' | 'complete') => void;
+    lastOrderCompleteMessage?: string | null;
     loadOrdersTab?: () => void;
     refreshAfterMemberUpdate?: () => Promise<void>;
     switchTab?: (tab: string) => void;
@@ -55,6 +56,13 @@ type AppLike = {
     currentTab?: string;
     refreshCurrentTab?: () => void;
     memberManager?: InstanceType<typeof MemberManager>;
+    pageRouter?: import('../frontend/navigation/LiffPageRouter').LiffPageRouter;
+    announcementManager?: InstanceType<typeof AnnouncementManager>;
+    couponsManager?: InstanceType<typeof CouponsManager>;
+    galleryManager?: InstanceType<typeof GalleryManager>;
+    stampsManager?: InstanceType<typeof StampsManager>;
+    layoutManager?: InstanceType<typeof LiffLayoutManager>;
+    reservationManager?: InstanceType<typeof ReservationManager>;
 };
 
 declare global {
@@ -70,8 +78,9 @@ declare global {
         __FRONTEND_MENU__?: Array<{ tab: string; label?: string; icon?: string }>;
         __FRONTEND_HEADER__?: { title?: string; logoUrl?: string; friendAddUrl?: string };
         __IS_DESIGNER_EMBED_PREVIEW__?: boolean;
-        __LIFF_TAB_SETTINGS__?: { _global?: Record<string, unknown> };
+        __LIFF_TAB_SETTINGS__?: { _global?: Record<string, unknown> } & Record<string, Record<string, unknown>>;
         __LIFF_TAB_LAYOUTS__?: Record<string, unknown[]>;
+        __LIFF_DETAIL_LAYOUTS__?: Record<string, unknown[]>;
         __LIFF_BUILDER__?: unknown[];
         __LINE_FRIEND_ADD_URL__?: string;
         LiffBuilderManager?: new (...args: any[]) => any;
