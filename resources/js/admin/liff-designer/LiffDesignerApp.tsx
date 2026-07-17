@@ -1,8 +1,8 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import type { DesignerConfig } from './catalog/types';
 import { DesignerProvider, useDesigner } from './state/DesignerContext';
 import { Topbar } from './components/Topbar';
-import { ScreenList } from './components/ScreenList';
+import { LeftStudioPanel } from './components/LeftStudioPanel';
 import { PhoneCanvas } from './components/PhoneCanvas';
 import { RightPanel } from './components/RightPanel';
 import { TemplateModal } from './components/TemplateModal';
@@ -13,7 +13,14 @@ import { OnboardingOverlay } from './components/OnboardingOverlay';
 import { saveDesigner } from './persistence/saveDesigner';
 import { applyPanelWidths, loadSavedPanelWidths } from './utils/panelLayout';
 import { ensureLiffDesignerModules } from './ensureModules';
+import { useGlobalDesignCss } from './utils/globalDesignCss';
 import './modules/panelResizer';
+
+function GlobalDesignStyles() {
+    const { state, config } = useDesigner();
+    const css = useGlobalDesignCss(state.globalSettings, config.themePresets);
+    return <style>{css}</style>;
+}
 
 function Toast() {
     const { state, dispatch } = useDesigner();
@@ -105,10 +112,12 @@ function KeyboardShortcuts() {
                         themeOpen: false,
                         previewOpen: false,
                         helpOpen: false,
-                        screensOpen: false,
                         sidebarOpen: false,
                     },
                 });
+                if (window.innerWidth <= 980) {
+                    dispatch({ type: 'SET_UI', patch: { screensOpen: false } });
+                }
                 dispatch({ type: 'CLOSE_QUICK_EDIT' });
                 if (state.editorMode === 'advanced' && state.selectedId !== null) {
                     dispatch({ type: 'SELECT_BLOCK', id: null, openEdit: false });
@@ -129,13 +138,35 @@ function KeyboardShortcuts() {
 
 function DesignerShell() {
     const { state, dispatch } = useDesigner();
-    const backdropOpen = state.screensOpen || state.sidebarOpen;
+    const [isNarrow, setIsNarrow] = useState(() => typeof window !== 'undefined' && window.innerWidth <= 980);
+
+    useEffect(() => {
+        const onResize = () => setIsNarrow(window.innerWidth <= 980);
+        window.addEventListener('resize', onResize);
+        return () => window.removeEventListener('resize', onResize);
+    }, []);
+
+    useEffect(() => {
+        if (!isNarrow && !state.screensOpen) {
+            dispatch({ type: 'SET_UI', patch: { screensOpen: true } });
+        }
+    }, [isNarrow, state.screensOpen, dispatch]);
+
+    const screensVisible = !isNarrow || state.screensOpen;
+    const backdropOpen = isNarrow && (state.screensOpen || state.sidebarOpen);
+    const shellClass = [
+        'ld',
+        'ld-react',
+        state.editorMode === 'simple' ? 'ld--simple' : 'ld--advanced',
+        screensVisible ? 'ld-screens-open' : '',
+        state.sidebarOpen ? 'ld-sidebar-open' : '',
+    ].filter((c) => c !== '').join(' ');
 
     return (
-        <div className={`ld ld-react${state.editorMode === 'simple' ? ' ld--simple' : ' ld--advanced'}`}>
+        <div className={shellClass}>
             <Topbar />
             <div className="ld-body">
-                <ScreenList />
+                <LeftStudioPanel />
                 <div className="ld-resizer ld-resizer--left" data-resizer="left" aria-hidden="true" />
                 <PhoneCanvas />
                 <div className="ld-resizer ld-resizer--right" data-resizer="right" aria-hidden="true" />
@@ -157,6 +188,7 @@ function DesignerShell() {
             <DirtyGuard />
             <PanelBootstrap />
             <KeyboardShortcuts />
+            <GlobalDesignStyles />
             {state.customCss ? <style>{state.customCss}</style> : null}
         </div>
     );

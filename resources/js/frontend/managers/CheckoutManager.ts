@@ -304,14 +304,22 @@ export class CheckoutManager {
     afterOrderCompleted(): void {
         this.cartManager.clear();
         if (typeof window !== 'undefined' && window.app) {
-            const app = window.app as AppLike;
+            const app = window.app as AppLike & {
+                openOrderFlow?: (step: 'cart' | 'confirm' | 'complete') => void;
+                lastOrderCompleteMessage?: string | null;
+            };
+            if (typeof app.lastOrderCompleteMessage !== 'undefined') {
+                app.lastOrderCompleteMessage = 'ご注文ありがとうございました';
+            }
             if (typeof app.updateCartUI === 'function') {
                 app.updateCartUI();
             }
             if (typeof app.renderProducts === 'function') {
                 app.renderProducts();
             }
-            if (typeof app.closeCart === 'function') {
+            if (typeof app.openOrderFlow === 'function') {
+                app.openOrderFlow('complete');
+            } else if (typeof app.closeCart === 'function') {
                 app.closeCart();
             }
             if (typeof app.loadOrdersTab === 'function') {

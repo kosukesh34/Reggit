@@ -20,6 +20,7 @@
     window.__LINE_FRIEND_ADD_URL__ = @json($lineFriendAddUrl ?? '');
     window.__LIFF_BUILDER__ = @json($liffBuilderBlocks ?? []);
     window.__LIFF_TAB_LAYOUTS__ = @json($liffTabLayouts ?? []);
+    window.__LIFF_DETAIL_LAYOUTS__ = @json($liffDetailLayouts ?? []);
     window.__LIFF_TAB_SETTINGS__ = @json($liffTabSettings ?? []);
     window.__FEATURE_FLAGS__ = @json($featureFlags ?? []);
     window.__FRONTEND_MENU__ = @json(array_values($filteredMenu ?? []));

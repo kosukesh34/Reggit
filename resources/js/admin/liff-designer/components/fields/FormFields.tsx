@@ -1,5 +1,66 @@
-import React from 'react';
+import React, { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { ACTION_TYPES, ALIGN_OPTIONS, TAB_LABELS } from '../../catalog/blockCatalog';
+
+const COLOR_PRESETS: string[] = [
+    '#ffffff', '#fafaf9', '#f5f5f4', '#e7e5e4', '#d6d3d1', '#a8a29e', '#78716c', '#57534e', '#292524', '#1c1917', '#000000',
+    '#fef2f2', '#fee2e2', '#fecaca', '#f87171', '#ef4444', '#dc2626', '#991b1b',
+    '#fff7ed', '#ffedd5', '#fed7aa', '#fb923c', '#f97316', '#ea580c', '#9a3412',
+    '#fefce8', '#fef9c3', '#fde047', '#eab308', '#ca8a04', '#854d0e',
+    '#f0fdf4', '#dcfce7', '#86efac', '#22c55e', '#16a34a', '#166534',
+    '#ecfdf5', '#d1fae5', '#6ee7b7', '#10b981', '#059669', '#065f46',
+    '#f0fdfa', '#ccfbf1', '#5eead4', '#14b8a6', '#0d9488', '#115e59',
+    '#ecfeff', '#cffafe', '#67e8f9', '#06b6d4', '#0891b2', '#155e75',
+    '#eff6ff', '#dbeafe', '#93c5fd', '#3b82f6', '#2563eb', '#1e40af',
+    '#eef2ff', '#e0e7ff', '#a5b4fc', '#6366f1', '#4f46e5', '#3730a3',
+    '#f5f3ff', '#ede9fe', '#c4b5fd', '#8b5cf6', '#7c3aed', '#5b21b6',
+    '#fdf2f8', '#fce7f3', '#f9a8d4', '#ec4899', '#db2777', '#9d174d',
+    '#06C755', '#0284c7', '#0ea5e9', '#7c3aed', '#c2410c', '#be123c',
+];
+
+const RECENT_COLORS_KEY = 'ld-recent-colors';
+const RECENT_COLORS_MAX = 10;
+
+function normalizeHex(value: string): string {
+    const raw = value.trim();
+    if (/^#[0-9a-fA-F]{6}$/.test(raw)) return raw.toLowerCase();
+    if (/^#[0-9a-fA-F]{3}$/.test(raw)) {
+        const r = raw[1];
+        const g = raw[2];
+        const b = raw[3];
+        return `#${r}${r}${g}${g}${b}${b}`.toLowerCase();
+    }
+    if (/^[0-9a-fA-F]{6}$/.test(raw)) return `#${raw.toLowerCase()}`;
+    return '';
+}
+
+function readRecentColors(): string[] {
+    try {
+        const raw = window.localStorage.getItem(RECENT_COLORS_KEY);
+        if (raw === null || raw === '') return [];
+        const parsed = JSON.parse(raw) as unknown;
+        if (!Array.isArray(parsed)) return [];
+        return parsed
+            .filter((v): v is string => typeof v === 'string')
+            .map(normalizeHex)
+            .filter((v) => v !== '')
+            .slice(0, RECENT_COLORS_MAX);
+    } catch {
+        return [];
+    }
+}
+
+function pushRecentColor(hex: string): string[] {
+    const next = [hex, ...readRecentColors().filter((c) => c !== hex)].slice(0, RECENT_COLORS_MAX);
+    try {
+        window.localStorage.setItem(RECENT_COLORS_KEY, JSON.stringify(next));
+    } catch {
+        // ignore quota / private mode
+    }
+    return next;
+}
+
+type PalettePos = { top: number; left: number; width: number };
 
 export function FieldGroup({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) {
     return (
@@ -179,19 +240,229 @@ export function ColorField({
     value: string;
     onChange: (v: string) => void;
 }) {
-    const hex = value || '#000000';
+    const pickerId = useId();
+    const triggerRef = useRef<HTMLButtonElement>(null);
+    const panelRef = useRef<HTMLDivElement>(null);
+    const [open, setOpen] = useState(false);
+    const [pos, setPos] = useState<PalettePos | null>(null);
+    const [draftHex, setDraftHex] = useState(value || '');
+    const [recent, setRecent] = useState<string[]>([]);
+    const normalized = normalizeHex(value) || '#000000';
+
+    useEffect(() => {
+        setDraftHex(value || '');
+    }, [value]);
+
+    useLayoutEffect(() => {
+        if (!open) return;
+        setRecent(readRecentColors());
+        const btn = triggerRef.current;
+        if (btn === null) return;
+        const rect = btn.getBoundingClientRect();
+        const width = Math.min(320, Math.max(260, window.innerWidth - 24));
+        const left = Math.min(Math.max(12, rect.left), window.innerWidth - width - 12);
+        const below = rect.bottom + 8;
+        const estimatedHeight = 420;
+        const top = below + estimatedHeight > window.innerHeight - 12
+            ? Math.max(12, rect.top - estimatedHeight - 8)
+            : below;
+        setPos({ top, left, width });
+    }, [open]);
+
+    useEffect(() => {
+        if (!open) return;
+        const onPointerDown = (e: PointerEvent) => {
+            const target = e.target as Node | null;
+            if (target === null) return;
+            if (triggerRef.current !== null && triggerRef.current.contains(target)) return;
+            if (panelRef.current !== null && panelRef.current.contains(target)) return;
+            setOpen(false);
+        };
+        const onKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') setOpen(false);
+        };
+        const onScroll = () => setOpen(false);
+        document.addEventListener('pointerdown', onPointerDown);
+        document.addEventListener('keydown', onKeyDown);
+        window.addEventListener('scroll', onScroll, true);
+        window.addEventListener('resize', onScroll);
+        return () => {
+            document.removeEventListener('pointerdown', onPointerDown);
+            document.removeEventListener('keydown', onKeyDown);
+            window.removeEventListener('scroll', onScroll, true);
+            window.removeEventListener('resize', onScroll);
+        };
+    }, [open]);
+
+    const commitColor = (next: string, close = false) => {
+        const hex = normalizeHex(next);
+        if (hex === '') return;
+        onChange(hex);
+        setDraftHex(hex);
+        setRecent(pushRecentColor(hex));
+        if (close) setOpen(false);
+    };
+
+    const onEyeDropper = async () => {
+        const EyeDropperCtor = (window as Window & { EyeDropper?: new () => { open: () => Promise<{ sRGBHex: string }> } }).EyeDropper;
+        if (EyeDropperCtor === undefined) return;
+        try {
+            const result = await new EyeDropperCtor().open();
+            commitColor(result.sRGBHex);
+        } catch {
+            // user cancelled
+        }
+    };
+
+    const hasEyeDropper = typeof window !== 'undefined'
+        && (window as Window & { EyeDropper?: unknown }).EyeDropper !== undefined;
+
     return (
         <FieldGroup label={label}>
             <div className="ld-color-row">
-                <input type="color" className="ld-color-picker" value={hex} onChange={(e) => onChange(e.target.value)} />
+                <button
+                    type="button"
+                    ref={triggerRef}
+                    className={`ld-color-swatch${open ? ' is-open' : ''}`}
+                    style={{ background: normalized }}
+                    aria-label={`${label}を選択`}
+                    aria-haspopup="dialog"
+                    aria-expanded={open}
+                    onClick={() => setOpen((prev) => !prev)}
+                />
                 <input
                     type="text"
-                    className="ld-form-input ld-form-input--sm"
-                    value={hex}
+                    className="ld-form-input ld-form-input--sm ld-color-hex"
+                    value={draftHex}
                     maxLength={7}
-                    onChange={(e) => onChange(e.target.value)}
+                    spellCheck={false}
+                    placeholder="#000000"
+                    onChange={(e) => {
+                        const next = e.target.value;
+                        setDraftHex(next);
+                        const hex = normalizeHex(next);
+                        if (hex !== '') {
+                            onChange(hex);
+                            setRecent(pushRecentColor(hex));
+                        }
+                    }}
+                    onBlur={() => {
+                        const hex = normalizeHex(draftHex);
+                        if (hex !== '') {
+                            setDraftHex(hex);
+                            onChange(hex);
+                        } else {
+                            setDraftHex(normalized);
+                        }
+                    }}
                 />
+                <button
+                    type="button"
+                    className="ld-btn ld-btn--ghost ld-btn--xs ld-color-open"
+                    onClick={() => setOpen(true)}
+                >
+                    パレット
+                </button>
             </div>
+            {open && pos !== null
+                ? createPortal(
+                    <div
+                        ref={panelRef}
+                        className="ld-color-palette"
+                        role="dialog"
+                        aria-label={`${label}カラーパレット`}
+                        style={{ top: pos.top, left: pos.left, width: pos.width }}
+                    >
+                        <div className="ld-color-palette__preview">
+                            <span className="ld-color-palette__chip" style={{ background: normalized }} />
+                            <div className="ld-color-palette__meta">
+                                <strong>{normalized.toUpperCase()}</strong>
+                                <span>クリックで適用・自由に変更可</span>
+                            </div>
+                        </div>
+
+                        {recent.length > 0 ? (
+                            <div className="ld-color-palette__section">
+                                <p className="ld-color-palette__label">最近使った色</p>
+                                <div className="ld-color-palette__grid">
+                                    {recent.map((c) => (
+                                        <button
+                                            key={`recent-${c}`}
+                                            type="button"
+                                            className={`ld-color-palette__swatch${c === normalized ? ' is-active' : ''}`}
+                                            style={{ background: c }}
+                                            title={c}
+                                            aria-label={c}
+                                            onClick={() => commitColor(c)}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                        ) : null}
+
+                        <div className="ld-color-palette__section">
+                            <p className="ld-color-palette__label">カラーパレット</p>
+                            <div className="ld-color-palette__grid">
+                                {COLOR_PRESETS.map((c) => (
+                                    <button
+                                        key={c}
+                                        type="button"
+                                        className={`ld-color-palette__swatch${c === normalized ? ' is-active' : ''}`}
+                                        style={{ background: c }}
+                                        title={c}
+                                        aria-label={c}
+                                        onClick={() => commitColor(c)}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="ld-color-palette__section">
+                            <p className="ld-color-palette__label">自由にカスタマイズ</p>
+                            <div className="ld-color-palette__free">
+                                <label className="ld-color-palette__free-swatch" htmlFor={pickerId} title="カラーピッカーを開く">
+                                    <span style={{ background: normalized }} />
+                                    <i className="fas fa-eye-dropper" />
+                                    <input
+                                        id={pickerId}
+                                        type="color"
+                                        className="ld-color-palette__native"
+                                        value={normalized}
+                                        onChange={(e) => commitColor(e.target.value)}
+                                    />
+                                </label>
+                                <input
+                                    type="text"
+                                    className="ld-form-input ld-form-input--sm"
+                                    value={draftHex}
+                                    maxLength={7}
+                                    spellCheck={false}
+                                    placeholder="#RRGGBB"
+                                    onChange={(e) => {
+                                        const next = e.target.value;
+                                        setDraftHex(next);
+                                        const hex = normalizeHex(next);
+                                        if (hex !== '') commitColor(hex);
+                                    }}
+                                />
+                                {hasEyeDropper ? (
+                                    <button type="button" className="ld-btn ld-btn--soft ld-btn--xs" onClick={() => { void onEyeDropper(); }}>
+                                        スポイト
+                                    </button>
+                                ) : null}
+                            </div>
+                            <p className="ld-color-palette__hint">左の色をクリックすると、フルカラーピッカーで任意の色を選べます</p>
+                        </div>
+
+                        <div className="ld-color-palette__foot">
+                            <button type="button" className="ld-btn ld-btn--primary ld-btn--xs" onClick={() => setOpen(false)}>
+                                完了
+                            </button>
+                        </div>
+                    </div>,
+                    document.body,
+                )
+                : null}
         </FieldGroup>
     );
 }
@@ -224,7 +495,6 @@ export function ActionField({
 }) {
     const current = parseAction(value);
     const tabOptions = Object.keys(TAB_LABELS)
-        .filter((k) => k !== 'announcements')
         .map((k) => ({ value: k, label: TAB_LABELS[k] }));
 
     return (

@@ -11,6 +11,7 @@ type Order = {
     id?: number | string;
     order_number?: string;
     status?: string;
+    order_type?: string;
     created_at?: string;
     total_amount?: number | string;
     items?: OrderItem[];
@@ -41,6 +42,12 @@ export class OrderManager {
     buildOrderCardHtml(order: Order): string {
         const labels = AppConstants.ORDER_STATUS_LABELS || {};
         const statusLabel = labels[order.status as keyof typeof labels] || order.status;
+        const typeLabels = AppConstants.ORDER_TYPE_LABELS || {};
+        const typeKey = order.order_type || '';
+        const typeLabel =
+            typeKey && typeLabels[typeKey as keyof typeof typeLabels]
+                ? typeLabels[typeKey as keyof typeof typeLabels]
+                : '';
         const dateStr = order.created_at
             ? new Date(order.created_at).toLocaleDateString('ja-JP', {
                 year: 'numeric',
@@ -57,10 +64,14 @@ export class OrderManager {
             )
             .join('');
         const refNumber = DomHelper.formatReferenceNumber(order.order_number, order.id);
+        const typeBadge = typeLabel
+            ? `<span class="order-card-type order-card-type--${DomHelper.escapeHtml(typeKey)}">${DomHelper.escapeHtml(typeLabel)}</span>`
+            : '';
         return `
             <div class="order-card">
                 <div class="order-card-header">
                     <span class="order-card-date">${DomHelper.escapeHtml(dateStr)}</span>
+                    ${typeBadge}
                     <span class="order-card-status order-card-status--${order.status}">${DomHelper.escapeHtml(statusLabel)}</span>
                     ${refNumber ? `<span class="ref-number" aria-label="注文番号">${DomHelper.escapeHtml(refNumber)}</span>` : ''}
                 </div>

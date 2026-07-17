@@ -18,11 +18,7 @@ struct NetworkShellURLReachabilityChecker: ShellURLReachabilityChecking {
     }
 
     func unreachableMessage(for urlString: String) -> String {
-        """
-        指定のURLに接続できませんでした。
-        ネットワークとサーバー（ngrok 等）の起動を確認してください。
-
-        URL: \(urlString)
-        """
+        logger.error("Shell URL unreachable for user-facing fallback: \(urlString)")
+        return ShellUserFacingMessages.unreachableMessage
     }
 }

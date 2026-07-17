@@ -64,6 +64,11 @@ export class LiffDesigner {
             { value: 'coupons', label: 'クーポン一覧' },
             { value: 'stamps', label: 'スタンプカード' },
             { value: 'announcements', label: 'お知らせ' },
+            { value: 'announcement_detail', label: 'お知らせ詳細（本文）' },
+            { value: 'product_detail', label: '商品詳細（本文）' },
+            { value: 'coupon_detail', label: 'クーポン詳細（本文）' },
+            { value: 'gallery_detail', label: 'ギャラリー詳細（本文）' },
+            { value: 'stamp_detail', label: 'スタンプ詳細（本文）' },
             { value: 'queue', label: '順番待ち' },
             { value: 'reservations', label: '予約一覧' },
             { value: 'gallery', label: 'ギャラリー' },
@@ -192,9 +197,9 @@ export class LiffDesigner {
         }
     }
 
-    /** タブメニュー（表示/非表示・並び替え・名前/アイコン）を正規化。announcements はメニュー対象外 */
+    /** タブメニュー（表示/非表示・並び替え・名前/アイコン）を正規化 */
     normalizeMenuItems(raw) {
-        const menuTabs = Object.keys(this.TAB_LABELS).filter(k => k !== 'announcements');
+        const menuTabs = Object.keys(this.TAB_LABELS);
         const byTab = {};
         (Array.isArray(raw) ? raw : []).forEach(item => {
             if (item && item.tab) byTab[item.tab] = item;
@@ -510,7 +515,7 @@ export class LiffDesigner {
             case 'quick_actions':
                 block.design = this._normalizeBlockDesign('quick_actions', item.design);
                 block.actions = Array.isArray(item.actions) && item.actions.length > 0 ? item.actions : [
-                    { icon: 'fa-utensils', label: '注文', action: '#products' },
+                    { icon: 'fa-utensils', label: 'メニュー', action: '#products' },
                     { icon: 'fa-ticket-alt', label: 'クーポン', action: '#coupons' },
                     { icon: 'fa-stamp', label: 'スタンプ', action: '#stamps' },
                     { icon: 'fa-calendar-check', label: '予約', action: '#reservations' },
@@ -1718,7 +1723,7 @@ export class LiffDesigner {
             if (kind === 'tab') {
                 const sel = document.createElement('select');
                 sel.className = 'ld-form-select';
-                Object.keys(this.TAB_LABELS).filter(k => k !== 'announcements').forEach(k => {
+                Object.keys(this.TAB_LABELS).forEach(k => {
                     const op = document.createElement('option');
                     op.value = k; op.textContent = this.TAB_LABELS[k];
                     if (k === param) op.selected = true;
@@ -2143,7 +2148,7 @@ export class LiffDesigner {
             member: 'member',
             member_card: 'member',
             gallery: 'gallery',
-            announcements: 'home',
+            announcements: 'announcements',
         };
         const tab = map[source] || 'home';
         const key = this.getAdminProjectKey();

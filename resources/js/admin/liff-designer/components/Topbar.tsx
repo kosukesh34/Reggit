@@ -3,7 +3,7 @@ import { canRedo, canUndo } from '../state/designerReducer';
 import { useDesigner } from '../state/DesignerContext';
 import { saveDesigner } from '../persistence/saveDesigner';
 import { exportDesignerJson } from '../persistence/serialize';
-import { normalizeBlock, normalizeMenuItems, TAB_LABELS, defaultGlobalSettings, defaultTabSettings, createEmptyLayouts } from '../catalog/blockCatalog';
+import { normalizeBlock, normalizeMenuItems, TAB_LABELS, DETAIL_PAGE_LABELS, defaultGlobalSettings, defaultTabSettings, createEmptyLayouts } from '../catalog/blockCatalog';
 import type { DesignerSnapshot } from '../catalog/types';
 import { PANEL_PRESETS, applyPanelPreset, detectActivePreset, type PanelPresetId } from '../utils/panelLayout';
 
@@ -13,6 +13,10 @@ export function Topbar() {
     const moreRef = useRef<HTMLDivElement>(null);
     const [panelPreset, setPanelPreset] = useState<PanelPresetId>('standard');
     const isAdvanced = state.editorMode === 'advanced';
+    const activeLabel = state.menuItems.find((m) => m.tab === state.activeTab)?.label
+        || DETAIL_PAGE_LABELS[state.activeTab]
+        || TAB_LABELS[state.activeTab]
+        || state.activeTab;
 
     useEffect(() => {
         const root = document.querySelector('.ld.ld-react') as HTMLElement | null;
@@ -104,92 +108,132 @@ export function Topbar() {
     };
 
     return (
-        <div className="ld-topbar">
-            <a href={config.backUrl || '#'} className="ld-btn ld-btn--ghost" title="設定に戻る">
-                <i className="fas fa-arrow-left" />
-            </a>
-            <h1 className="ld-topbar__title">
-                <i className="fas fa-palette" /> LIFFデザイナー
-                {state.dirty ? <span className="ld-dirty-badge">未保存</span> : null}
-                {state.editorMode === 'simple' ? <span className="ld-mode-badge">かんたん編集</span> : null}
-            </h1>
+        <header className="ld-topbar">
+            <div className="ld-topbar__left">
+                <a href={config.backUrl || '#'} className="ld-topbar__back" title="設定に戻る">
+                    <i className="fas fa-arrow-left" />
+                </a>
+                <div className="ld-topbar__brand">
+                    <span className="ld-topbar__mark" aria-hidden>
+                        <i className="fas fa-layer-group" />
+                    </span>
+                    <div className="ld-topbar__brand-text">
+                        <strong>LIFF Studio</strong>
+                        <span>顧客アプリデザイナー</span>
+                    </div>
+                </div>
+                <div className="ld-topbar__context">
+                    <span className="ld-topbar__context-label">編集中</span>
+                    <strong>{activeLabel}</strong>
+                    {state.dirty ? <span className="ld-dirty-badge">未保存</span> : <span className="ld-saved-badge">保存済み</span>}
+                </div>
+            </div>
+
+            <div className="ld-topbar__center">
+                <div className="ld-topbar__mode">
+                    <button
+                        type="button"
+                        className={!isAdvanced ? 'is-active' : ''}
+                        onClick={() => dispatch({ type: 'SET_EDITOR_MODE', mode: 'simple' })}
+                    >
+                        かんたん
+                    </button>
+                    <button
+                        type="button"
+                        className={isAdvanced ? 'is-active' : ''}
+                        onClick={() => dispatch({ type: 'SET_EDITOR_MODE', mode: 'advanced' })}
+                    >
+                        詳細編集
+                    </button>
+                </div>
+            </div>
+
             <div className="ld-topbar__actions">
+                <div className="ld-topbar__group ld-topbar__group--panels">
+                    <button
+                        type="button"
+                        className={`ld-icon-btn ld-icon-btn--screens-mobile${state.screensOpen ? ' is-active' : ''}`}
+                        onClick={() => dispatch({ type: 'SET_UI', patch: { screensOpen: !state.screensOpen } })}
+                        title={state.screensOpen ? '画面一覧を閉じる' : '画面一覧を開く'}
+                        aria-pressed={state.screensOpen}
+                    >
+                        <i className="fas fa-th-list" />
+                    </button>
+                    <button
+                        type="button"
+                        className={`ld-icon-btn${state.sidebarOpen ? ' is-active' : ''}`}
+                        onClick={() => dispatch({ type: 'SET_UI', patch: { sidebarOpen: !state.sidebarOpen } })}
+                        title={state.sidebarOpen ? '設定パネルを閉じる' : '設定パネルを開く'}
+                        aria-pressed={state.sidebarOpen}
+                    >
+                        <i className="fas fa-sliders-h" />
+                    </button>
+                </div>
+
                 {isAdvanced ? (
                     <div className="ld-topbar__group ld-topbar__layout ld-topbar__layout--desktop">
-                        <span className="ld-topbar__layout-label">レイアウト</span>
                         {(Object.keys(PANEL_PRESETS) as PanelPresetId[]).map((id) => (
                             <button
                                 key={id}
                                 type="button"
-                                className={`ld-panel-preset${panelPreset === id ? ' is-active' : ''}`}
+                                className={`ld-chip-btn${panelPreset === id ? ' is-active' : ''}`}
                                 onClick={() => onPanelPreset(id)}
-                                title={PANEL_PRESETS[id].label}
+                                title={`パネル幅: ${PANEL_PRESETS[id].label}`}
                             >
                                 {PANEL_PRESETS[id].label}
                             </button>
                         ))}
                     </div>
                 ) : null}
-                <div className="ld-topbar__group ld-topbar__group--mobile">
-                    <button type="button" className="ld-btn ld-btn--outline ld-mobile-panel-btn" onClick={() => dispatch({ type: 'SET_UI', patch: { screensOpen: true } })} title="画面一覧">
-                        <i className="fas fa-th-list" />
-                    </button>
-                    <button type="button" className="ld-btn ld-btn--outline ld-mobile-panel-btn" onClick={() => dispatch({ type: 'SET_UI', patch: { sidebarOpen: true } })} title="設定パネル">
-                        <i className="fas fa-sliders-h" />
-                    </button>
-                </div>
-                <div className="ld-topbar__group">
-                    <button type="button" className="ld-btn ld-btn--outline" onClick={() => dispatch({ type: 'SET_UI', patch: { templateOpen: true } })}>
-                        <i className="fas fa-layer-group" /> テンプレート
-                    </button>
-                    <button type="button" className="ld-btn ld-btn--outline" onClick={() => dispatch({ type: 'SET_UI', patch: { previewOpen: true } })}>
-                        <i className="fas fa-eye" /> プレビュー
-                    </button>
-                </div>
+
+                <button type="button" className="ld-btn ld-btn--soft" onClick={() => dispatch({ type: 'SET_UI', patch: { templateOpen: true } })}>
+                    <i className="fas fa-th-large" />
+                    テンプレート
+                </button>
+                <button type="button" className="ld-btn ld-btn--soft" onClick={() => dispatch({ type: 'SET_UI', patch: { previewOpen: true } })}>
+                    <i className="fas fa-eye" />
+                    プレビュー
+                </button>
+
                 {isAdvanced ? (
                     <div className="ld-topbar__group">
-                        <button type="button" className="ld-btn ld-btn--ghost" disabled={!canUndo(state)} onClick={() => dispatch({ type: 'UNDO' })} title="元に戻す (Ctrl+Z)">
+                        <button type="button" className="ld-icon-btn" disabled={!canUndo(state)} onClick={() => dispatch({ type: 'UNDO' })} title="元に戻す (Ctrl+Z)">
                             <i className="fas fa-undo" />
                         </button>
-                        <button type="button" className="ld-btn ld-btn--ghost" disabled={!canRedo(state)} onClick={() => dispatch({ type: 'REDO' })} title="やり直す (Ctrl+Shift+Z)">
+                        <button type="button" className="ld-icon-btn" disabled={!canRedo(state)} onClick={() => dispatch({ type: 'REDO' })} title="やり直す (Ctrl+Shift+Z)">
                             <i className="fas fa-redo" />
                         </button>
                         <div className="ld-more" ref={moreRef}>
-                            <button type="button" className="ld-btn ld-btn--ghost" onClick={() => dispatch({ type: 'SET_UI', patch: { moreOpen: !state.moreOpen } })} title="その他">
+                            <button type="button" className="ld-icon-btn" onClick={() => dispatch({ type: 'SET_UI', patch: { moreOpen: !state.moreOpen } })} title="その他">
                                 <i className="fas fa-ellipsis-h" />
                             </button>
                             {state.moreOpen ? (
                                 <div className="ld-more__menu">
-                                    <button type="button" onClick={() => { exportDesignerJson(state); dispatch({ type: 'SET_UI', patch: { moreOpen: false } }); }}>JSON書き出し</button>
-                                    <button type="button" onClick={() => { importRef.current?.click(); dispatch({ type: 'SET_UI', patch: { moreOpen: false } }); }}>JSON読み込み</button>
-                                    <button type="button" onClick={() => { dispatch({ type: 'SET_UI', patch: { themeOpen: true, moreOpen: false } }); }}>テーマを変更</button>
+                                    <button type="button" onClick={() => { exportDesignerJson(state); dispatch({ type: 'SET_UI', patch: { moreOpen: false } }); }}>
+                                        <i className="fas fa-download" /> JSON書き出し
+                                    </button>
+                                    <button type="button" onClick={() => { importRef.current?.click(); dispatch({ type: 'SET_UI', patch: { moreOpen: false } }); }}>
+                                        <i className="fas fa-upload" /> JSON読み込み
+                                    </button>
+                                    <button type="button" onClick={() => { dispatch({ type: 'SET_UI', patch: { themeOpen: true, moreOpen: false } }); }}>
+                                        <i className="fas fa-swatchbook" /> テーマを変更
+                                    </button>
                                 </div>
                             ) : null}
                         </div>
                     </div>
                 ) : null}
-                <div className="ld-topbar__group">
-                    <button type="button" className="ld-btn ld-btn--ghost" onClick={() => dispatch({ type: 'SET_UI', patch: { helpOpen: true } })} title="使い方">
-                        <i className="fas fa-question-circle" />
-                    </button>
-                    {isAdvanced ? (
-                        <button type="button" className="ld-btn ld-btn--outline" onClick={() => dispatch({ type: 'SET_EDITOR_MODE', mode: 'simple' })}>
-                            シンプル表示
-                        </button>
-                    ) : (
-                        <button type="button" className="ld-btn ld-btn--outline" onClick={() => dispatch({ type: 'SET_EDITOR_MODE', mode: 'advanced' })}>
-                            詳細編集
-                        </button>
-                    )}
-                </div>
-                <div className="ld-topbar__group ld-topbar__group--save">
-                    <button type="button" className="ld-btn ld-btn--primary" disabled={state.saving} onClick={() => { void save(); }} title="保存 (Ctrl+S)">
-                        <i className={`fas ${state.saving ? 'fa-spinner fa-spin' : 'fa-save'}`} />
-                        {state.saving ? '保存中…' : '保存'}
-                    </button>
-                </div>
+
+                <button type="button" className="ld-icon-btn" onClick={() => dispatch({ type: 'SET_UI', patch: { helpOpen: true } })} title="使い方">
+                    <i className="fas fa-question" />
+                </button>
+
+                <button type="button" className="ld-btn ld-btn--primary ld-topbar__save" disabled={state.saving} onClick={() => { void save(); }} title="保存 (Ctrl+S)">
+                    <i className={`fas ${state.saving ? 'fa-spinner fa-spin' : 'fa-check'}`} />
+                    {state.saving ? '保存中…' : '保存'}
+                </button>
             </div>
             <input ref={importRef} type="file" accept="application/json" hidden onChange={(e) => onImport(e.target.files?.[0] || null)} />
-        </div>
+        </header>
     );
 }
