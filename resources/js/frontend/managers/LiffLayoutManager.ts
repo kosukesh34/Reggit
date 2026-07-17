@@ -203,6 +203,17 @@ export class LiffLayoutManager {
                 </div>
             </section>`;
         }
+        if (type === 'stats_row') {
+            const items = Array.isArray(block.items) ? block.items : [];
+            const label = block.section_label ? `<div class="builder-section-head"><span class="builder-section-head__label">${esc(block.section_label)}</span></div>` : '';
+            const cells = items.map((it: any) =>
+                `<div class="builder-stats-row__cell">
+                    <span class="builder-stats-row__value">${esc(it.value || '')}</span>
+                    <span class="builder-stats-row__label">${esc(it.label || '')}${it.hint ? ` <em>${esc(it.hint)}</em>` : ''}</span>
+                </div>`
+            ).join('');
+            return `<section class="builder-block builder-stats-row" style="${mb}">${label}<div class="builder-stats-row__grid">${cells}</div></section>`;
+        }
         if (type === 'quick_actions') {
             const actions = (Array.isArray(block.actions) && block.actions.length > 0)
                 ? block.actions

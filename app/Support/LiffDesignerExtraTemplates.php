@@ -621,6 +621,342 @@ class LiffDesignerExtraTemplates
         ];
     }
 
+    /**
+     * Apple / Liquid Glass 風テンプレート（ギャラリー先頭用）
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public static function appleTemplates(): array
+    {
+        $appleTheme = [
+            'theme_preset' => 'apple_system',
+            'background_style' => 'solid',
+            'bg_color' => '#f2f2f7',
+            'content_width' => 'comfy',
+            'card_style' => 'elevated',
+            'button_shape' => 'pill',
+            'tab_style' => 'floating',
+            'density' => 'default',
+            'system_header_style' => 'minimal',
+            'member_screen_design' => 'apple',
+            'coupon_screen_design' => 'apple',
+            'reservation_screen_design' => 'apple',
+        ];
+
+        return [
+            [
+                'id' => 'apple-home-dashboard',
+                'name' => 'Apple: ホームダッシュボード',
+                'category' => 'apple',
+                'description' => 'iOS 風ホーム。統計・チップカテゴリ・フラッシュセール・おすすめをネイティブ品質で。',
+                'target_tabs' => ['home'],
+                'device_support' => ['line', 'ios', 'android'],
+                'theme' => $appleTheme,
+                'blocks' => [
+                    ['type' => 'member_summary', 'design' => 'wallet', 'greeting' => 'おかえりなさい'],
+                    ['type' => 'stats_row', 'section_label' => 'Overview', 'items' => [
+                        ['label' => 'ポイント', 'value' => '1,240', 'hint' => 'pt'],
+                        ['label' => 'クーポン', 'value' => '3', 'hint' => '枚'],
+                        ['label' => 'スタンプ', 'value' => '7', 'hint' => '/10'],
+                    ]],
+                    ['type' => 'collection', 'design' => 'chip_scroll', 'section_label' => 'カテゴリ', 'items' => [
+                        ['title' => 'すべて', 'action' => '#products'],
+                        ['title' => '人気', 'action' => '#products'],
+                        ['title' => '新着', 'action' => '#products'],
+                        ['title' => 'セット', 'action' => '#products'],
+                    ]],
+                    ['type' => 'banner', 'design' => 'countdown', 'icon' => 'fa-bolt', 'text' => '本日限定フラッシュセール開催中', 'color' => '#007aff', 'text_color' => '#ffffff', 'action' => '#coupons'],
+                    ['type' => 'collection', 'design' => 'picks', 'section_label' => 'Staff Picks', 'layout' => 'scroll', 'item_image_height' => 120, 'items' => [
+                        ['title' => '季節のプレート', 'description' => '¥1,280', 'badge' => 'PICK', 'image_url' => 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800'],
+                        ['title' => 'スペシャルドリンク', 'description' => '¥680', 'badge' => 'HOT', 'image_url' => 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=800'],
+                    ]],
+                    ['type' => 'quick_actions', 'design' => 'pill', 'actions' => [
+                        ['icon' => 'fa-utensils', 'label' => '注文', 'action' => '#products'],
+                        ['icon' => 'fa-ticket-alt', 'label' => 'クーポン', 'action' => '#coupons'],
+                        ['icon' => 'fa-id-card', 'label' => '会員証', 'action' => '#member'],
+                        ['icon' => 'fa-calendar', 'label' => '予約', 'action' => '#reservations'],
+                    ]],
+                ],
+            ],
+            [
+                'id' => 'apple-cafe-loyalty',
+                'name' => 'Apple: カフェロイヤリティ',
+                'category' => 'apple',
+                'description' => 'カフェ向け。ウォレット会員・チップメニュー・フィーチャー商品の洗練ホーム。',
+                'target_tabs' => ['home', 'products', 'coupons', 'member'],
+                'device_support' => ['line', 'ios', 'android'],
+                'theme' => array_merge($appleTheme, ['accent_color' => '#7B4F2E']),
+                'blocks' => [
+                    ['type' => 'hero', 'design' => 'apple', 'title' => 'Good Morning', 'subtitle' => '今日の一杯を、すぐオーダー', 'image_url' => 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=1400&q=80'],
+                    ['type' => 'member_summary', 'design' => 'tier'],
+                    ['type' => 'collection', 'design' => 'chip_scroll', 'items' => [
+                        ['title' => 'コーヒー', 'action' => '#products'],
+                        ['title' => 'スイーツ', 'action' => '#products'],
+                        ['title' => 'フード', 'action' => '#products'],
+                    ]],
+                    ['type' => 'card', 'design' => 'featured', 'title' => '今日のシグネチャー', 'description' => '季節のラテ ¥620', 'image_url' => 'https://images.unsplash.com/photo-1511920170033-f8396924c348?w=800', 'action' => '#products'],
+                    ['type' => 'banner', 'design' => 'soft', 'icon' => 'fa-mug-hot', 'text' => 'スタンプあと3個でドリンク無料', 'color' => '#7B4F2E', 'action' => '#stamps'],
+                ],
+            ],
+            [
+                'id' => 'apple-beauty-salon',
+                'name' => 'Apple: 美容サロン',
+                'category' => 'apple',
+                'description' => '美容・ネイル向け。予約導線とギャラリーを前面にしたアプリホーム。',
+                'target_tabs' => ['home', 'reservations', 'gallery', 'member'],
+                'device_support' => ['line', 'ios', 'android'],
+                'theme' => array_merge($appleTheme, ['accent_color' => '#db2777']),
+                'blocks' => [
+                    ['type' => 'hero', 'design' => 'apple', 'title' => 'Beauty Studio', 'subtitle' => '次回のご予約をかんたんに', 'image_url' => 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=1400&q=80'],
+                    ['type' => 'stats_row', 'items' => [
+                        ['label' => '次回予約', 'value' => '3/28', 'hint' => ''],
+                        ['label' => 'ポイント', 'value' => '820', 'hint' => 'pt'],
+                        ['label' => '特典', 'value' => '2', 'hint' => '枚'],
+                    ]],
+                    ['type' => 'quick_actions', 'design' => 'grid', 'actions' => [
+                        ['icon' => 'fa-calendar-plus', 'label' => '予約する', 'action' => '#reservations'],
+                        ['icon' => 'fa-images', 'label' => 'スタイル', 'action' => '#gallery'],
+                        ['icon' => 'fa-ticket-alt', 'label' => 'クーポン', 'action' => '#coupons'],
+                        ['icon' => 'fa-id-card', 'label' => '会員証', 'action' => '#member'],
+                    ]],
+                    ['type' => 'collection', 'design' => 'picks', 'section_label' => 'おすすめメニュー', 'layout' => 'scroll', 'items' => [
+                        ['title' => 'カット＋カラー', 'description' => '¥12,000〜', 'image_url' => 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=800'],
+                        ['title' => 'ヘッドスパ', 'description' => '¥4,500', 'image_url' => 'https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?w=800'],
+                    ]],
+                    ['type' => 'button', 'design' => 'cta', 'text' => '空き枠を確認', 'action' => '#reservations', 'color' => '#db2777'],
+                ],
+            ],
+            [
+                'id' => 'apple-clinic-trust',
+                'name' => 'Apple: クリニック',
+                'category' => 'apple',
+                'description' => '医療・クリニック向け。信頼感のある情報設計と予約導線。',
+                'target_tabs' => ['home', 'reservations', 'announcements', 'member'],
+                'device_support' => ['line', 'ios', 'android'],
+                'theme' => array_merge($appleTheme, ['accent_color' => '#0284c7']),
+                'blocks' => [
+                    ['type' => 'heading', 'design' => 'section', 'text' => 'クリニック案内', 'size' => 'large'],
+                    ['type' => 'text', 'design' => 'lead', 'text' => '当日の受付状況とご予約をアプリから確認できます。'],
+                    ['type' => 'stats_row', 'items' => [
+                        ['label' => '本日の待ち', 'value' => '12', 'hint' => '分'],
+                        ['label' => '次回予約', 'value' => '4/2', 'hint' => ''],
+                        ['label' => 'お知らせ', 'value' => '2', 'hint' => '件'],
+                    ]],
+                    ['type' => 'quick_actions', 'design' => 'compact', 'actions' => [
+                        ['icon' => 'fa-calendar-check', 'label' => '予約', 'action' => '#reservations'],
+                        ['icon' => 'fa-bullhorn', 'label' => 'お知らせ', 'action' => '#announcements'],
+                        ['icon' => 'fa-id-card', 'label' => '診察券', 'action' => '#member'],
+                    ]],
+                    ['type' => 'faq', 'design' => 'accordion', 'title' => 'よくある質問', 'items' => [
+                        ['q' => '初診の流れは？', 'a' => 'アプリで予約後、受付で会員証をご提示ください。'],
+                        ['q' => 'キャンセルは？', 'a' => '予約詳細から変更・キャンセルが可能です。'],
+                    ]],
+                    ['type' => 'access', 'design' => 'card', 'title' => 'アクセス', 'address' => '東京都港区○○ 1-2-3', 'phone' => '03-0000-0000'],
+                ],
+            ],
+            [
+                'id' => 'apple-retail-flash',
+                'name' => 'Apple: 小売フラッシュセール',
+                'category' => 'apple',
+                'description' => '小売・アパレル向け。セール訴求と商品棚をネイティブ風に。',
+                'target_tabs' => ['home', 'products', 'coupons', 'orders'],
+                'device_support' => ['line', 'ios', 'android'],
+                'theme' => array_merge($appleTheme, ['accent_color' => '#111111']),
+                'blocks' => [
+                    ['type' => 'banner', 'design' => 'countdown', 'icon' => 'fa-fire', 'text' => '週末限定 最大40% OFF', 'color' => '#111111', 'text_color' => '#ffffff', 'action' => '#products'],
+                    ['type' => 'collection', 'design' => 'chip_scroll', 'section_label' => 'Shop', 'items' => [
+                        ['title' => 'New', 'action' => '#products'],
+                        ['title' => 'Sale', 'action' => '#coupons'],
+                        ['title' => 'Best', 'action' => '#products'],
+                    ]],
+                    ['type' => 'collection', 'design' => 'product_shelf', 'section_label' => 'Trending', 'layout' => 'scroll', 'item_image_height' => 140, 'items' => [
+                        ['title' => 'ライトコート', 'description' => '¥18,900', 'badge' => 'NEW', 'image_url' => 'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=800'],
+                        ['title' => 'レザーバッグ', 'description' => '¥24,800', 'badge' => 'HOT', 'image_url' => 'https://images.unsplash.com/photo-1548036328-387074abb645?w=800'],
+                    ]],
+                    ['type' => 'card', 'design' => 'featured', 'title' => 'エディターズピック', 'description' => '今季のマストバイを厳選', 'image_url' => 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800', 'action' => '#products'],
+                    ['type' => 'button', 'design' => 'cta', 'text' => '商品一覧へ', 'action' => '#products', 'color' => '#111111'],
+                ],
+            ],
+            [
+                'id' => 'apple-fitness-studio',
+                'name' => 'Apple: フィットネス',
+                'category' => 'apple',
+                'description' => 'ジム・スタジオ向け。予約・会員階層・実績サマリーのホーム。',
+                'target_tabs' => ['home', 'reservations', 'member', 'stamps'],
+                'device_support' => ['line', 'ios', 'android'],
+                'theme' => array_merge($appleTheme, ['accent_color' => '#16a34a']),
+                'blocks' => [
+                    ['type' => 'member_summary', 'design' => 'tier', 'greeting' => 'Today\'s Training'],
+                    ['type' => 'stats_row', 'section_label' => 'This Week', 'items' => [
+                        ['label' => 'ワークアウト', 'value' => '4', 'hint' => '回'],
+                        ['label' => '連続', 'value' => '12', 'hint' => '日'],
+                        ['label' => 'ポイント', 'value' => '560', 'hint' => 'pt'],
+                    ]],
+                    ['type' => 'quick_actions', 'design' => 'pill', 'actions' => [
+                        ['icon' => 'fa-dumbbell', 'label' => '予約', 'action' => '#reservations'],
+                        ['icon' => 'fa-stamp', 'label' => 'チェックイン', 'action' => '#stamps'],
+                        ['icon' => 'fa-id-card', 'label' => '会員証', 'action' => '#member'],
+                    ]],
+                    ['type' => 'collection', 'design' => 'picks', 'section_label' => 'Popular Classes', 'layout' => 'scroll', 'items' => [
+                        ['title' => 'HIIT 30', 'description' => '空きあり', 'image_url' => 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800'],
+                        ['title' => 'Yoga Flow', 'description' => '残席2', 'image_url' => 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800'],
+                    ]],
+                    ['type' => 'button', 'design' => 'cta', 'text' => 'クラスを予約', 'action' => '#reservations', 'color' => '#16a34a'],
+                ],
+            ],
+            [
+                'id' => 'apple-hotel-concierge',
+                'name' => 'Apple: ホテルコンシェルジュ',
+                'category' => 'apple',
+                'description' => 'ホテル向け。チェックイン・予約・お知らせを上品にまとめたホーム。',
+                'target_tabs' => ['home', 'reservations', 'announcements', 'member'],
+                'device_support' => ['line', 'ios', 'android'],
+                'theme' => array_merge($appleTheme, ['accent_color' => '#b8860b', 'font_family' => 'serif-display']),
+                'blocks' => [
+                    ['type' => 'hero', 'design' => 'apple', 'title' => 'Welcome', 'subtitle' => '滞在をより快適に', 'image_url' => 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1400&q=80'],
+                    ['type' => 'quick_actions', 'design' => 'grid', 'actions' => [
+                        ['icon' => 'fa-bed', 'label' => '予約', 'action' => '#reservations'],
+                        ['icon' => 'fa-concierge-bell', 'label' => 'サービス', 'action' => '#announcements'],
+                        ['icon' => 'fa-id-card', 'label' => 'メンバー', 'action' => '#member'],
+                        ['icon' => 'fa-images', 'label' => '施設', 'action' => '#gallery'],
+                    ]],
+                    ['type' => 'card', 'design' => 'featured', 'title' => 'スパご予約', 'description' => '空室状況を確認', 'image_url' => 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=800', 'action' => '#reservations'],
+                    ['type' => 'data', 'source' => 'announcements', 'design' => 'compact'],
+                ],
+            ],
+            [
+                'id' => 'apple-food-delivery',
+                'name' => 'Apple: フードデリバリー',
+                'category' => 'apple',
+                'description' => 'テイクアウト・デリバリー向け。注文・進捗・クーポンを前面に。',
+                'target_tabs' => ['home', 'products', 'orders', 'coupons'],
+                'device_support' => ['line', 'ios', 'android'],
+                'theme' => array_merge($appleTheme, ['accent_color' => '#ea580c']),
+                'blocks' => [
+                    ['type' => 'member_summary', 'design' => 'compact'],
+                    ['type' => 'banner', 'design' => 'countdown', 'icon' => 'fa-motorcycle', 'text' => '今なら配達料無料キャンペーン', 'color' => '#ea580c', 'text_color' => '#ffffff', 'action' => '#products'],
+                    ['type' => 'collection', 'design' => 'chip_scroll', 'section_label' => 'カテゴリ', 'items' => [
+                        ['title' => 'バーガー', 'action' => '#products'],
+                        ['title' => '麺類', 'action' => '#products'],
+                        ['title' => 'デザート', 'action' => '#products'],
+                    ]],
+                    ['type' => 'collection', 'design' => 'compact', 'section_label' => '人気メニュー', 'layout' => 'grid', 'columns' => 2, 'items' => [
+                        ['title' => 'クラシックバーガー', 'image_url' => 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600'],
+                        ['title' => 'マルゲリータ', 'image_url' => 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600'],
+                    ]],
+                    ['type' => 'button', 'design' => 'cta', 'text' => '今すぐ注文', 'action' => '#products', 'color' => '#ea580c'],
+                ],
+            ],
+            [
+                'id' => 'apple-member-club',
+                'name' => 'Apple: 会員クラブ',
+                'category' => 'apple',
+                'description' => '会員証・階層・クーポンを主役にしたクラブ体験ホーム。',
+                'target_tabs' => ['home', 'member', 'coupons', 'stamps'],
+                'device_support' => ['line', 'ios', 'android'],
+                'theme' => $appleTheme,
+                'blocks' => [
+                    ['type' => 'member_summary', 'design' => 'tier', 'greeting' => 'Club Member'],
+                    ['type' => 'stats_row', 'items' => [
+                        ['label' => 'ランク', 'value' => 'Gold', 'hint' => ''],
+                        ['label' => 'ポイント', 'value' => '3,420', 'hint' => 'pt'],
+                        ['label' => '特典', 'value' => '5', 'hint' => '枚'],
+                    ]],
+                    ['type' => 'banner', 'design' => 'pill', 'icon' => 'fa-gift', 'text' => '誕生日月の特別クーポンを受け取る', 'color' => '#007aff', 'action' => '#coupons'],
+                    ['type' => 'quick_actions', 'design' => 'pill', 'actions' => [
+                        ['icon' => 'fa-qrcode', 'label' => '会員証', 'action' => '#member'],
+                        ['icon' => 'fa-ticket-alt', 'label' => 'クーポン', 'action' => '#coupons'],
+                        ['icon' => 'fa-stamp', 'label' => 'スタンプ', 'action' => '#stamps'],
+                        ['icon' => 'fa-receipt', 'label' => '履歴', 'action' => '#orders'],
+                    ]],
+                    ['type' => 'data', 'source' => 'coupons', 'design' => 'cards'],
+                ],
+            ],
+            [
+                'id' => 'apple-super-app',
+                'name' => 'Apple: フルアプリ構成',
+                'scope' => 'all_tabs',
+                'category' => 'apple',
+                'description' => 'ホーム・商品・会員・クーポンを横断した iOS 風フルアプリテンプレート。',
+                'target_tabs' => ['home', 'products', 'orders', 'stamps', 'coupons', 'queue', 'reservations', 'member', 'gallery', 'announcements'],
+                'device_support' => ['line', 'ios', 'android'],
+                'theme' => $appleTheme,
+                'layouts' => [
+                    'home' => [
+                        ['type' => 'member_summary', 'design' => 'wallet'],
+                        ['type' => 'stats_row', 'items' => [
+                            ['label' => 'ポイント', 'value' => '1,240', 'hint' => 'pt'],
+                            ['label' => 'クーポン', 'value' => '3', 'hint' => '枚'],
+                            ['label' => '注文', 'value' => '2', 'hint' => '件'],
+                        ]],
+                        ['type' => 'collection', 'design' => 'chip_scroll', 'items' => [
+                            ['title' => '注文', 'action' => '#products'],
+                            ['title' => '予約', 'action' => '#reservations'],
+                            ['title' => 'クーポン', 'action' => '#coupons'],
+                        ]],
+                        ['type' => 'banner', 'design' => 'countdown', 'icon' => 'fa-bolt', 'text' => '今週のおすすめキャンペーン', 'color' => '#007aff', 'text_color' => '#ffffff', 'action' => '#announcements'],
+                        ['type' => 'collection', 'design' => 'picks', 'section_label' => 'For You', 'layout' => 'scroll', 'items' => [
+                            ['title' => 'おすすめ', 'description' => '人気No.1', 'image_url' => 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800'],
+                            ['title' => '季節限定', 'description' => 'NEW', 'image_url' => 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800'],
+                        ]],
+                    ],
+                    'products' => [
+                        ['type' => 'heading', 'design' => 'section', 'text' => 'メニュー', 'size' => 'large'],
+                        ['type' => 'collection', 'design' => 'chip_scroll', 'items' => [
+                            ['title' => 'すべて'], ['title' => '人気'], ['title' => '新着'],
+                        ]],
+                        ['type' => 'data', 'source' => 'products', 'design' => 'cards'],
+                    ],
+                    'coupons' => [
+                        ['type' => 'heading', 'design' => 'section', 'text' => 'クーポン', 'size' => 'large'],
+                        ['type' => 'banner', 'design' => 'soft', 'icon' => 'fa-ticket-alt', 'text' => '使えるクーポンをチェック', 'color' => '#007aff'],
+                        ['type' => 'data', 'source' => 'coupons', 'design' => 'cards'],
+                    ],
+                    'member' => [
+                        ['type' => 'member_summary', 'design' => 'tier'],
+                        ['type' => 'data', 'source' => 'member', 'design' => 'premium'],
+                        ['type' => 'quick_actions', 'design' => 'pill', 'actions' => [
+                            ['icon' => 'fa-ticket-alt', 'label' => 'クーポン', 'action' => '#coupons'],
+                            ['icon' => 'fa-stamp', 'label' => 'スタンプ', 'action' => '#stamps'],
+                        ]],
+                    ],
+                    'reservations' => [
+                        ['type' => 'heading', 'design' => 'section', 'text' => '予約', 'size' => 'large'],
+                        ['type' => 'button', 'design' => 'cta', 'text' => '新しく予約する', 'action' => '#reservations'],
+                        ['type' => 'data', 'source' => 'reservations', 'design' => 'timeline'],
+                    ],
+                    'orders' => [
+                        ['type' => 'heading', 'design' => 'section', 'text' => '注文履歴', 'size' => 'large'],
+                        ['type' => 'data', 'source' => 'orders', 'design' => 'timeline'],
+                    ],
+                    'announcements' => [
+                        ['type' => 'heading', 'design' => 'section', 'text' => 'お知らせ', 'size' => 'large'],
+                        ['type' => 'data', 'source' => 'announcements', 'design' => 'cards'],
+                    ],
+                    'stamps' => [
+                        ['type' => 'heading', 'design' => 'section', 'text' => 'スタンプ', 'size' => 'large'],
+                        ['type' => 'data', 'source' => 'stamps', 'design' => 'cards'],
+                    ],
+                    'gallery' => [
+                        ['type' => 'heading', 'design' => 'section', 'text' => 'ギャラリー', 'size' => 'large'],
+                        ['type' => 'data', 'source' => 'gallery', 'design' => 'cards'],
+                    ],
+                    'queue' => [
+                        ['type' => 'heading', 'design' => 'section', 'text' => '順番待ち', 'size' => 'large'],
+                        ['type' => 'data', 'source' => 'queue', 'design' => 'compact'],
+                    ],
+                ],
+                'tab_settings' => [
+                    'home' => ['background_color' => '#f2f2f7'],
+                    'products' => ['background_color' => '#f2f2f7'],
+                    'member' => ['background_color' => '#f2f2f7'],
+                    'coupons' => ['background_color' => '#f2f2f7'],
+                ],
+                'custom_css' => '',
+            ],
+        ];
+    }
+
     /** @return array<int, array<string, mixed>> */
     public static function superPatterns(): array
     {

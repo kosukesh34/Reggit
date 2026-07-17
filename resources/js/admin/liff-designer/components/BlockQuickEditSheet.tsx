@@ -300,6 +300,8 @@ function QuickFields({ block, friendAddUrl, onChange }: Omit<SheetProps, 'onClos
             );
         case 'member_summary':
             return <TextInput label="挨拶文" value={String(block.greeting || '')} onChange={(v) => onChange({ greeting: v })} />;
+        case 'stats_row':
+            return <TextInput label="セクション見出し" value={String(block.section_label || '')} onChange={(v) => onChange({ section_label: v })} />;
         case 'hours':
             return <TextInput label="タイトル" value={String(block.title || '')} onChange={(v) => onChange({ title: v })} />;
         case 'access':

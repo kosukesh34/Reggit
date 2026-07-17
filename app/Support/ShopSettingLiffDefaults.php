@@ -60,6 +60,7 @@ class ShopSettingLiffDefaults
     public static function defaultLiffDesignerTemplates(): array
     {
         return [
+            ...LiffDesignerExtraTemplates::appleTemplates(),
             [
                 'id' => 'flagship-dashboard',
                 'name' => 'Aurora Home',

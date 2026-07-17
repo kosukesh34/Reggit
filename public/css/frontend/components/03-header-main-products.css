@@ -1,17 +1,18 @@
 /* ヘッダー（スクロールは .main-content 側。ここは flex で固定） */
 .header {
-    background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 55%),
-        linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
-    color: #fff;
-    padding: 16px var(--content-padding);
-    padding-top: max(16px, var(--safe-area-top-capped));
+    background: var(--surface-glass);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    color: var(--text-primary);
+    padding: 14px var(--content-padding);
+    padding-top: max(14px, var(--safe-area-top-capped));
     padding-left: max(var(--content-padding), var(--safe-area-left));
     padding-right: max(var(--content-padding), var(--safe-area-right));
     flex-shrink: 0;
     position: relative;
     z-index: 100;
-    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset, 0 8px 28px rgba(var(--primary-rgb), 0.22);
+    box-shadow: none;
+    border-bottom: 1px solid var(--hairline);
 }
 
 body.native-app-embed .header {
@@ -52,21 +53,19 @@ body.native-app-embed .header {
     gap: 6px;
     padding: 8px 14px;
     border-radius: var(--radius-pill);
-    background: rgba(255, 255, 255, 0.16);
-    border: 1px solid rgba(255, 255, 255, 0.22);
-    color: #fff;
+    background: rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--hairline);
+    color: var(--text-primary);
     font-size: 12px;
     font-weight: 700;
     text-decoration: none;
     white-space: nowrap;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
     transition: background var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
 }
 
 .header-friend-add:hover {
-    background: rgba(255, 255, 255, 0.28);
-    color: #fff;
+    background: rgba(0, 0, 0, 0.08);
+    color: var(--text-primary);
 }
 .header-friend-add:active { transform: scale(0.96); }
 
@@ -80,48 +79,44 @@ body.native-app-embed .header {
 
 .account-btn {
     position: relative;
-    background: rgba(255, 255, 255, 0.16);
-    border: 1px solid rgba(255, 255, 255, 0.22);
+    background: rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--hairline);
     border-radius: var(--radius-pill);
     width: 40px;
     height: 40px;
     padding: 0;
-    color: #fff;
+    color: var(--text-primary);
     cursor: pointer;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     font-size: 15px;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
     transition: background var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
 }
 
 .account-btn:hover {
-    background: rgba(255, 255, 255, 0.28);
+    background: rgba(0, 0, 0, 0.08);
 }
 .account-btn:active { transform: scale(0.96); }
 
 .cart-btn {
     position: relative;
-    background: rgba(255, 255, 255, 0.16);
-    border: 1px solid rgba(255, 255, 255, 0.22);
+    background: rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--hairline);
     border-radius: var(--radius-pill);
     padding: 9px 16px;
-    color: #fff;
+    color: var(--text-primary);
     cursor: pointer;
     display: flex;
     align-items: center;
     gap: 8px;
     font-size: 14px;
     font-weight: 600;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
     transition: background var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
 }
 
 .cart-btn:hover {
-    background: rgba(255, 255, 255, 0.28);
+    background: rgba(0, 0, 0, 0.08);
 }
 .cart-btn:active { transform: scale(0.96); }
 
@@ -136,8 +131,8 @@ body.native-app-embed .header {
 }
 
 .cart-count {
-    background: #fff;
-    color: var(--primary-color);
+    background: var(--primary-color);
+    color: #fff;
     border-radius: var(--radius-pill);
     padding: 2px 8px;
     font-size: 11px;
@@ -145,7 +140,7 @@ body.native-app-embed .header {
     min-width: 20px;
     text-align: center;
     line-height: 1.4;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+    box-shadow: 0 2px 6px rgba(var(--primary-rgb), 0.28);
 }
 
 /* メインコンテンツ（ヘッダー外でスクロール） */
