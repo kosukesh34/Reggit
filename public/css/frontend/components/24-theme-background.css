@@ -52,5 +52,5 @@ body.app-bg-gradient .app-container {
 }
 
 body.app-bg-solid .app-container {
-    background: var(--bg-light);
+    background: transparent;
 }

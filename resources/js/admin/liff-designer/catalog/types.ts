@@ -2,6 +2,10 @@ export type EditorMode = 'simple' | 'advanced';
 
 export type RightMode = 'add' | 'edit';
 
+export type LeftStudioTab = 'screens' | 'templates' | 'blocks';
+
+export type RightStudioTab = 'edit' | 'theme' | 'layers';
+
 export type MenuItem = {
     tab: string;
     label: string;
@@ -31,13 +35,14 @@ export type ThemePreset = {
 
 export type DesignerConfig = {
     layouts?: Record<string, unknown[]>;
+    detailLayouts?: Record<string, unknown[]>;
     tabSettings?: Record<string, TabSettings>;
     templates?: unknown[];
     customCss?: string;
     featureFlags?: Record<string, boolean>;
     menuItems?: unknown[];
     themePresets?: ThemePreset[];
-    fontStacks?: Record<string, { label: string }>;
+    fontStacks?: Record<string, { label: string; base?: string; display?: string }>;
     surfaceTones?: Record<string, { label: string }>;
     formAction?: string;
     csrfToken?: string;
@@ -61,6 +66,9 @@ export type DesignerState = DesignerSnapshot & {
     selectedId: string | null;
     quickEditBlockId: string | null;
     rightMode: RightMode;
+    leftStudioTab: LeftStudioTab;
+    rightStudioTab: RightStudioTab;
+    previewAsGuest: boolean;
     zoom: number;
     paletteSearch: string;
     paletteCategory: string;
@@ -77,4 +85,5 @@ export type DesignerState = DesignerSnapshot & {
     themeOpen: boolean;
     previewOpen: boolean;
     helpOpen: boolean;
+    pendingTemplateId: string | null;
 };

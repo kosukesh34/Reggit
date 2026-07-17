@@ -22,6 +22,7 @@ class UpdateLiffDesignerRequest extends FormRequest
             'custom_css' => 'nullable|string',
             'tab_settings_json' => 'nullable|string',
             'menu_items_json' => 'nullable|string',
+            'detail_layouts_json' => 'nullable|string',
         ];
     }
 
@@ -54,12 +55,25 @@ class UpdateLiffDesignerRequest extends FormRequest
             }
         }
 
+        $detailLayouts = null;
+        $detailLayoutsJson = $this->input('detail_layouts_json');
+        if ($detailLayoutsJson !== null && $detailLayoutsJson !== '') {
+            $parsed = json_decode($detailLayoutsJson, true);
+            if (! is_array($parsed)) {
+                throw ValidationException::withMessages(['detail_layouts' => '詳細レイアウトが不正です']);
+            }
+            $detailLayouts = $parsed;
+        }
+
         try {
             return new UpdateLiffDesignerInput(
                 LiffDesignerSanitizer::sanitizeLayouts($decoded),
                 LiffDesignerSanitizer::sanitizeCustomCss((string) $this->input('custom_css', '')),
                 LiffDesignerSanitizer::sanitizeTabSettings($tabSettings),
-                $menuItems
+                $menuItems,
+                $detailLayouts !== null
+                    ? LiffDesignerSanitizer::sanitizeDetailLayouts($detailLayouts)
+                    : null
             );
         } catch (InvalidArgumentException $e) {
             throw ValidationException::withMessages(['liff_designer' => $e->getMessage()]);

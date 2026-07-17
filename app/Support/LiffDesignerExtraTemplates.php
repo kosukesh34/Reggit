@@ -31,7 +31,7 @@ class LiffDesignerExtraTemplates
                 'blocks' => [
                     ['type' => 'member_summary', 'design' => 'wallet'],
                     ['type' => 'quick_actions', 'design' => 'pill', 'actions' => [
-                        ['icon' => 'fa-utensils', 'label' => '注文', 'action' => '#products'],
+                        ['icon' => 'fa-utensils', 'label' => 'メニュー', 'action' => '#products'],
                         ['icon' => 'fa-ticket-alt', 'label' => 'クーポン', 'action' => '#coupons'],
                         ['icon' => 'fa-stamp', 'label' => 'スタンプ', 'action' => '#stamps'],
                         ['icon' => 'fa-id-card', 'label' => '会員証', 'action' => '#member'],

@@ -75,6 +75,7 @@ export const AppConstants = {
         MEMBER: 'member',
         RESERVATIONS: 'reservations',
         GALLERY: 'gallery',
+        ANNOUNCEMENTS: 'announcements',
     },
 
     CATEGORIES: {
@@ -110,7 +111,7 @@ export const AppConstants = {
         IN_STORE: 'in_store',
     },
     ORDER_TYPE_LABELS: {
-        mobile: NATIVE_APP_ORDER_TYPE_MOBILE_LABEL,
+        mobile: 'モバイル注文',
         in_store: '店内注文',
     },
 
@@ -212,9 +213,11 @@ export const AppConstants = {
 
     ELEMENT_IDS: {
         ANNOUNCEMENTS_SECTION: 'announcementsSection',
+        ANNOUNCEMENTS_TOP_BAR: 'announcementsTopBar',
         HOME_SECTION: 'homeSection',
         PRODUCTS_GRID: 'productsGrid',
         CART_BTN: 'cartBtn',
+        ACCOUNT_BTN: 'accountBtn',
         CART_COUNT: 'cartCount',
         CART_ITEMS: 'cartItems',
         CART_SIDEBAR: 'cartSidebar',
@@ -239,6 +242,7 @@ export const AppConstants = {
         HOME_TAB: 'homeTab',
         GALLERY_TAB: 'galleryTab',
         GALLERY_SECTION: 'gallerySection',
+        ANNOUNCEMENTS_TAB: 'announcementsTab',
     },
 
     CSS_CLASSES: {

@@ -1,6 +1,12 @@
 import React, { useState } from 'react';
 import { useDesigner } from '../state/DesignerContext';
+import { expandThemeIntoGlobal } from '../utils/globalDesign';
 import { ColorField, FieldGroup, ImageUrlField, RangeField, SelectField, TextInput } from './fields/FormFields';
+import {
+    MEMBER_CARD_CODE_TYPES,
+    MEMBER_CARD_DESIGN_CHOICES,
+    MEMBER_CARD_DISPLAY_TYPES,
+} from '../catalog/blockCatalog';
 
 function Accordion({ title, open, onToggle, children }: { title: string; open: boolean; onToggle: () => void; children: React.ReactNode }) {
     return (
@@ -17,7 +23,8 @@ function Accordion({ title, open, onToggle, children }: { title: string; open: b
 export function ThemePanel() {
     const { state, dispatch, config } = useDesigner();
     const g = state.globalSettings;
-    const [open, setOpen] = useState({ preset: true, basic: true, look: false, system: false, css: false });
+    const [open, setOpen] = useState({ policy: true, preset: true, basic: true, look: false, system: false, css: false });
+    const requireMembership = g.require_membership !== false;
 
     const contentWidths = Object.entries(config.contentWidths || {
         edge: { label: 'フル幅' },
@@ -44,20 +51,40 @@ export function ThemePanel() {
     const applyPreset = (presetId: string) => {
         const preset = (config.themePresets || []).find((p) => p.id === presetId);
         if (preset === undefined) return;
-        const patch: Record<string, unknown> = {
-            theme_preset: presetId,
-            accent_color: preset.accent_color || preset.accent || g.accent_color,
-        };
-        ['font_family', 'surface_tone', 'card_style', 'button_shape', 'density', 'background_style', 'bg_color', 'bg_gradient_start', 'bg_gradient_end', 'content_width', 'radius_scale', 'tab_style'].forEach((key) => {
-            if (preset[key] !== undefined) patch[key] = preset[key];
-        });
-        dispatch({ type: 'UPDATE_GLOBAL', patch });
+        const next = expandThemeIntoGlobal(g, { theme_preset: presetId }, config.themePresets);
+        dispatch({ type: 'UPDATE_GLOBAL', patch: next });
         dispatch({ type: 'SHOW_TOAST', message: `テーマ「${preset.label || preset.name || presetId}」を適用` });
     };
 
     return (
         <div className="ld-sidebar__section">
             <div className="ld-sidebar__title"><i className="fas fa-swatchbook" /> テーマ設定</div>
+
+            <Accordion title="アプリの動作" open={open.policy} onToggle={() => setOpen((s) => ({ ...s, policy: !s.policy }))}>
+                <FieldGroup label="会員登録">
+                    <div className="ld-bg-style-tabs" role="group" aria-label="会員登録ポリシー">
+                        <button
+                            type="button"
+                            className={`ld-bg-style-tab${requireMembership ? ' is-active' : ''}`}
+                            onClick={() => dispatch({ type: 'UPDATE_GLOBAL', patch: { require_membership: true } })}
+                        >
+                            必須
+                        </button>
+                        <button
+                            type="button"
+                            className={`ld-bg-style-tab${!requireMembership ? ' is-active' : ''}`}
+                            onClick={() => dispatch({ type: 'UPDATE_GLOBAL', patch: { require_membership: false } })}
+                        >
+                            不要
+                        </button>
+                    </div>
+                </FieldGroup>
+                <p className="ld-form-hint">
+                    {requireMembership
+                        ? 'クーポン・スタンプ・予約・会員証は登録後のみ利用できます。'
+                        : 'ゲストでも閲覧できます。会員登録は任意です。'}
+                </p>
+            </Accordion>
 
             <Accordion title="プリセット" open={open.preset} onToggle={() => setOpen((s) => ({ ...s, preset: !s.preset }))}>
                 <div className="ld-theme-gallery">
@@ -81,6 +108,12 @@ export function ThemePanel() {
             </Accordion>
 
             <Accordion title="基本（色・幅・フォント）" open={open.basic} onToggle={() => setOpen((s) => ({ ...s, basic: !s.basic }))}>
+                <TextInput
+                    label="店舗名・アプリ名"
+                    value={String(g.app_display_name || '')}
+                    placeholder="例: ブルーバードカフェ"
+                    onChange={(v) => dispatch({ type: 'UPDATE_GLOBAL', patch: { app_display_name: v } })}
+                />
                 <SelectField label="コンテンツ幅" value={String(g.content_width || 'comfy')} options={contentWidths} onChange={(v) => dispatch({ type: 'UPDATE_GLOBAL', patch: { content_width: v } })} />
                 <FieldGroup label="ページ背景">
                     <div className="ld-bg-style-tabs">
@@ -110,6 +143,17 @@ export function ThemePanel() {
                 ) : (
                     <ColorField label="背景色" value={String(g.bg_color || '#f9fafb')} onChange={(v) => dispatch({ type: 'UPDATE_GLOBAL', patch: { bg_color: v } })} />
                 )}
+                <button
+                    type="button"
+                    className="ld-btn ld-btn--primary ld-btn--block"
+                    onClick={() => {
+                        dispatch({ type: 'APPLY_GLOBAL_BACKGROUND' });
+                        dispatch({ type: 'SHOW_TOAST', message: '背景をアプリ全体に適用しました（各画面の個別背景をクリア）' });
+                    }}
+                >
+                    <i className="fas fa-fill-drip" /> 背景をアプリ全体に適用
+                </button>
+                <p className="ld-form-hint">各タブに設定した個別背景を外し、このページ背景を全体で使います。</p>
                 <ColorField label="アクセントカラー" value={String(g.accent_color || '#1c1917')} onChange={(v) => dispatch({ type: 'UPDATE_GLOBAL', patch: { accent_color: v, theme_preset: 'custom' } })} />
                 <SelectField label="フォント" value={String(g.font_family || '')} options={fontOptions} onChange={(v) => dispatch({ type: 'UPDATE_GLOBAL', patch: { font_family: v } })} />
                 <SelectField label="背景トーン" value={String(g.surface_tone || '')} options={toneOptions} onChange={(v) => dispatch({ type: 'UPDATE_GLOBAL', patch: { surface_tone: v } })} />
@@ -197,17 +241,43 @@ export function ThemePanel() {
                 />
                 <SelectField
                     label="会員証レイアウト"
-                    value={String(g.member_card_design || '')}
-                    options={[
-                        { value: '', label: '既存の会員設定を使う' },
-                        { value: 'default', label: '標準カード' },
-                        { value: 'logo_top', label: 'ロゴ上部' },
-                        { value: 'logo_center', label: 'ロゴ中央' },
-                        { value: 'compact', label: 'コンパクト' },
-                        { value: 'emblem', label: 'エンブレム' },
-                    ]}
+                    value={String(g.member_card_design || 'default')}
+                    options={MEMBER_CARD_DESIGN_CHOICES}
                     onChange={(v) => dispatch({ type: 'UPDATE_GLOBAL', patch: { member_card_design: v } })}
                 />
+                <SelectField
+                    label="会員証の表示形式"
+                    value={String(g.member_card_display_type || 'card')}
+                    options={MEMBER_CARD_DISPLAY_TYPES}
+                    onChange={(v) => dispatch({ type: 'UPDATE_GLOBAL', patch: { member_card_display_type: v } })}
+                />
+                <SelectField
+                    label="会員番号の表示"
+                    value={String(g.member_card_code_type || 'barcode')}
+                    options={MEMBER_CARD_CODE_TYPES}
+                    onChange={(v) => dispatch({ type: 'UPDATE_GLOBAL', patch: { member_card_code_type: v } })}
+                />
+                <div className="ld-member-card-preview">
+                    <div className={`ld-crm-wallet ld-crm-wallet--${String(g.member_card_design || 'default')}`}>
+                        <div className="ld-crm-wallet__top">
+                            <div>
+                                <span className="ld-crm-wallet__shop">{String(g.app_display_name || 'Members')}</span>
+                                <strong>デモ 太郎</strong>
+                            </div>
+                            <em className="ld-crm-wallet__rank">Gold</em>
+                        </div>
+                        <div className="ld-crm-wallet__barcode">
+                            {Array.from({ length: 22 }).map((_, i) => (
+                                <i key={i} style={{ width: `${(i % 4) + 1}px` }} />
+                            ))}
+                        </div>
+                        <div className="ld-crm-wallet__no">
+                            {String(g.member_card_code_type || 'barcode') === 'qrcode' ? 'QRコード表示' : 'バーコード表示'}
+                            {' · '}
+                            {String(g.member_card_display_type || 'card') === 'sheet' ? 'シート型' : 'カード型'}
+                        </div>
+                    </div>
+                </div>
                 <SelectField
                     label="会員画面UI"
                     value={String(g.member_screen_design || 'wallet')}

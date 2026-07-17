@@ -12,14 +12,14 @@
     --ld-mock-accent-rgb: 79, 70, 229;
 }
 
-/* ── プレビューのクローム（黒基調ヘッダー）を実アプリに合わせる ── */
+/* ── プレビューの緑/黒ヘッダーは使わず、実機風フレームに統一 ── */
 .ld-phone__header,
 .ld-phone__frame.is-line .ld-phone__header {
-    background: linear-gradient(135deg, #1c1917 0%, #0c0a09 100%) !important;
-    color: #fff;
+    display: none !important;
 }
 .ld-phone__nav-item.is-active,
-.ld-phone__frame.is-line .ld-phone__nav-item.is-active {
+.ld-phone__frame.is-line .ld-phone__nav-item.is-active,
+.ld-phone__frame.is-device .ld-phone__nav-item.is-active {
     color: var(--primary-color, var(--ld-mock-accent)) !important;
 }
 .ld-phone__nav.is-pill .ld-phone__nav-item.is-active {

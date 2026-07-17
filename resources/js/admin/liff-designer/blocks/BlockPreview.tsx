@@ -5,69 +5,139 @@ import { DataMockPreview, MemberSummaryMock } from './DataMockPreview';
 
 function baseStyle(block: LiffBlock): React.CSSProperties {
     return {
-        borderRadius: Number(block.border_radius ?? 10),
+        borderRadius: Number(block.border_radius ?? 14),
         marginBottom: Number(block.margin_bottom ?? 0),
         opacity: Number(block.opacity ?? 100) / 100,
         textAlign: (block.text_align as React.CSSProperties['textAlign']) || 'left',
         background: String(block.background_color || '') || undefined,
-        boxShadow: block.shadow === true ? '0 2px 8px rgba(0,0,0,0.08)' : undefined,
+        boxShadow: block.shadow === true ? '0 8px 24px rgba(15,23,42,0.08)' : undefined,
     };
 }
 
-export function BlockPreview({ block, friendAddUrl }: { block: LiffBlock; friendAddUrl?: string }) {
+const SOCIAL_META: Record<string, { icon: string; label: string; color: string }> = {
+    line: { icon: 'fab fa-line', label: 'LINE', color: '#06C755' },
+    instagram: { icon: 'fab fa-instagram', label: 'Instagram', color: '#E1306C' },
+    twitter: { icon: 'fab fa-x-twitter', label: 'X', color: '#0f172a' },
+    x: { icon: 'fab fa-x-twitter', label: 'X', color: '#0f172a' },
+    facebook: { icon: 'fab fa-facebook-f', label: 'Facebook', color: '#1877F2' },
+    youtube: { icon: 'fab fa-youtube', label: 'YouTube', color: '#FF0000' },
+    tiktok: { icon: 'fab fa-tiktok', label: 'TikTok', color: '#111827' },
+    website: { icon: 'fas fa-globe', label: 'Web', color: '#2563eb' },
+};
+
+function previewNavProps(action: unknown): { 'data-preview-nav'?: string } {
+    if (typeof action !== 'string' || !action.startsWith('#') || action.length < 2) {
+        return {};
+    }
+    const tab = action.slice(1).split(/[?/]/)[0];
+    if (tab === '') {
+        return {};
+    }
+    return { 'data-preview-nav': tab };
+}
+
+export function BlockPreview({
+    block,
+    friendAddUrl,
+    shopName,
+}: {
+    block: LiffBlock;
+    friendAddUrl?: string;
+    shopName?: string;
+}) {
     const style = baseStyle(block);
     switch (block.type) {
-        case 'hero':
+        case 'hero': {
+            const design = String(block.design || 'editorial');
+            const image = typeof block.image_url === 'string' ? block.image_url : '';
+            const bg = image
+                ? undefined
+                : `linear-gradient(135deg, ${String(block.gradient_start || '#0f172a')}, ${String(block.gradient_end || '#334155')})`;
+            const cta = String(block.button_label || block.cta_label || '');
+            const heroAction = block.action || (cta !== '' ? '#products' : '');
             return (
                 <div
-                    className={`ld-preview-hero ld-preview-hero--${String(block.design || 'editorial')}`}
+                    className={`ld-app-hero ld-app-hero--${design}`}
                     style={{
                         ...style,
-                        background: block.image_url
-                            ? `linear-gradient(rgba(0,0,0,.35),rgba(0,0,0,.45)), url(${String(block.image_url)}) center/cover`
-                            : `linear-gradient(135deg, ${String(block.gradient_start || '#667eea')}, ${String(block.gradient_end || '#764ba2')})`,
-                        color: '#fff',
-                        padding: '28px 16px',
+                        background: bg,
+                        backgroundImage: image ? `url(${image})` : undefined,
                     }}
                 >
-                    <div style={{ fontWeight: 800, fontSize: 18 }}>{String(block.title || '')}</div>
-                    <div style={{ fontSize: 12, opacity: 0.9, marginTop: 4 }}>{String(block.subtitle || '')}</div>
+                    <div className="ld-app-hero__scrim" />
+                    <div className="ld-app-hero__content">
+                        {design !== 'minimal' ? (
+                            <span className="ld-app-hero__eyebrow">{String(block.eyebrow || 'Featured')}</span>
+                        ) : null}
+                        <strong className="ld-app-hero__title">{String(block.title || '')}</strong>
+                        {block.subtitle || block.text ? (
+                            <span className="ld-app-hero__sub">{String(block.subtitle || block.text || '')}</span>
+                        ) : null}
+                        {cta !== '' ? (
+                            <span className="ld-app-hero__cta" {...previewNavProps(heroAction)}>
+                                {cta}
+                            </span>
+                        ) : null}
+                    </div>
                 </div>
             );
+        }
         case 'heading': {
-            const size = block.size === 'large' ? 20 : block.size === 'small' ? 14 : 16;
-            return <div style={{ ...style, fontWeight: 700, fontSize: size, color: String(block.text_color || '#1f2937'), padding: '4px 0' }}>{String(block.text || '')}</div>;
+            const size = block.size === 'large' ? 'lg' : block.size === 'small' ? 'sm' : 'md';
+            const design = String(block.design || 'plain');
+            return (
+                <div
+                    className={`ld-app-heading ld-app-heading--${size} ld-app-heading--${design}`}
+                    style={{ ...style, color: String(block.text_color || '') || undefined }}
+                >
+                    {String(block.text || '')}
+                </div>
+            );
         }
         case 'text':
-            return <div style={{ ...style, fontSize: Number(block.font_size || 13), color: String(block.text_color || '#4b5563'), lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>{String(block.text || '')}</div>;
+            return (
+                <div
+                    className={`ld-app-text ld-app-text--${String(block.design || 'body')}`}
+                    style={{ ...style, fontSize: Number(block.font_size || 13), color: String(block.text_color || '') || undefined }}
+                >
+                    {String(block.text || block.body || '')}
+                </div>
+            );
         case 'image':
             return (
-                <div style={{ ...style, overflow: 'hidden' }}>
+                <div
+                    className={`ld-app-image ld-app-image--${String(block.design || 'rounded')}`}
+                    style={{
+                        ...style,
+                        height: block.image_height !== undefined ? Number(block.image_height) : undefined,
+                    }}
+                >
                     {block.image_url ? (
-                        <img src={String(block.image_url)} alt={String(block.alt || '')} style={{ width: '100%', display: 'block', objectFit: (block.fit as React.CSSProperties['objectFit']) || 'cover', maxHeight: 180 }} />
+                        <img
+                            src={String(block.image_url)}
+                            alt={String(block.alt || '')}
+                            style={
+                                block.image_height !== undefined
+                                    ? { height: '100%', width: '100%', objectFit: (String(block.fit || 'cover') as React.CSSProperties['objectFit']) }
+                                    : undefined
+                            }
+                        />
                     ) : (
-                        <div style={{ height: 100, background: '#f3f4f6' }} />
+                        <div className="ld-app-image__ph" />
                     )}
                 </div>
             );
         case 'button': {
             const design = String(block.design || 'cta');
-            const isOutline = design === 'outline';
-            const isSoft = design === 'soft';
             return (
-                <div style={{ ...style, textAlign: 'center', padding: '4px 0' }}>
+                <div className="ld-app-btn-wrap" style={style}>
                     <span
-                        className={`ld-preview-button ld-preview-button--${design}`}
+                        className={`ld-app-btn ld-app-btn--${design}${block.full_width !== false ? ' is-full' : ''}`}
                         style={{
-                            display: block.full_width !== false ? 'block' : 'inline-block',
-                            background: isOutline ? 'transparent' : isSoft ? `${String(block.color || '#06C755')}22` : String(block.color || '#06C755'),
-                            color: isOutline ? String(block.color || '#06C755') : String(block.text_color || '#fff'),
-                            border: isOutline ? `2px solid ${String(block.color || '#06C755')}` : undefined,
-                            padding: '10px 18px',
-                            borderRadius: design === 'soft' ? 14 : 8,
-                            fontWeight: 700,
-                            fontSize: 13,
+                            ['--btn-bg' as string]: String(block.color || '#0f172a'),
+                            ['--btn-fg' as string]: String(block.text_color || '#fff'),
                         }}
+                        {...previewNavProps(block.action)}
                     >
                         {String(block.text || 'ボタン')}
                     </span>
@@ -76,54 +146,63 @@ export function BlockPreview({ block, friendAddUrl }: { block: LiffBlock; friend
         }
         case 'card': {
             const design = String(block.design || 'editorial');
-            const isHorizontal = design === 'horizontal';
-            const isOverlay = design === 'overlay';
-            if (isHorizontal) {
-                return (
-                    <div style={{ ...style, background: '#fff', display: 'flex', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,.06)' }}>
-                        <div style={{ width: '40%', minHeight: Number(block.image_height || 100), background: block.image_url ? `url(${String(block.image_url)}) center/cover` : '#f3f4f6' }} />
-                        <div style={{ padding: 12, flex: 1 }}>
-                            <div style={{ fontWeight: 700, fontSize: 14 }}>{String(block.title || '')}</div>
-                            {block.description ? <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>{String(block.description)}</div> : null}
-                        </div>
-                    </div>
-                );
-            }
-            if (isOverlay) {
-                return (
-                    <div style={{ ...style, position: 'relative', overflow: 'hidden', borderRadius: 12, minHeight: Number(block.image_height || 140) }}>
-                        <div style={{ position: 'absolute', inset: 0, background: block.image_url ? `url(${String(block.image_url)}) center/cover` : '#44403c' }} />
-                        <div style={{ position: 'relative', padding: 12, marginTop: 80, background: 'linear-gradient(transparent, rgba(0,0,0,.7))', color: '#fff' }}>
-                            <div style={{ fontWeight: 700 }}>{String(block.title || '')}</div>
-                            {block.description ? <div style={{ fontSize: 12, opacity: 0.9 }}>{String(block.description)}</div> : null}
-                        </div>
-                    </div>
-                );
-            }
+            const image = typeof block.image_url === 'string' ? block.image_url : '';
             return (
-                <div style={{ ...style, background: '#fff', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,.06)' }}>
-                    {block.image_url ? (
-                        <img src={String(block.image_url)} alt="" style={{ width: '100%', height: Number(block.image_height || 140), objectFit: 'cover', display: 'block' }} />
-                    ) : (
-                        <div style={{ height: Number(block.image_height || 140), background: '#f3f4f6' }} />
-                    )}
-                    <div style={{ padding: 12 }}>
-                        <div style={{ fontWeight: 700, fontSize: 14 }}>{String(block.title || '')}</div>
-                        {block.description ? <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>{String(block.description)}</div> : null}
+                <div className={`ld-app-card ld-app-card--${design}`} style={style} {...previewNavProps(block.action)}>
+                    <div
+                        className="ld-app-card__media"
+                        style={{
+                            backgroundImage: image ? `url(${image})` : undefined,
+                            minHeight: Number(block.image_height || (design === 'horizontal' ? 88 : 140)),
+                        }}
+                    />
+                    <div className="ld-app-card__body">
+                        <strong>{String(block.title || '')}</strong>
+                        {block.description ? <span>{String(block.description)}</span> : null}
+                        {block.action ? (
+                            <em className="ld-app-card__link">
+                                詳しく見る <i className="fas fa-arrow-right" />
+                            </em>
+                        ) : null}
                     </div>
                 </div>
             );
         }
         case 'collection': {
-            const items = Array.isArray(block.items) ? block.items as Array<Record<string, unknown>> : [];
+            const items = Array.isArray(block.items) ? (block.items as Array<Record<string, unknown>>) : [];
+            const design = String(block.design || 'product_shelf');
+            const isGrid = block.layout === 'grid';
             return (
-                <div style={{ ...style }}>
-                    {block.section_label ? <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 8 }}>{String(block.section_label)}</div> : null}
-                    <div style={{ display: 'flex', gap: Number(block.gap ?? 8), overflowX: 'auto' }}>
+                <div className={`ld-app-collection ld-app-collection--${design}`} style={style}>
+                    {block.section_label ? (
+                        <div className="ld-app-collection__head">
+                            <div className="ld-app-collection__label">{String(block.section_label)}</div>
+                            <span
+                                className="ld-app-collection__more"
+                                {...previewNavProps(block.item_action || block.more_action || '#gallery')}
+                            >
+                                すべて
+                            </span>
+                        </div>
+                    ) : null}
+                    <div className={`ld-app-collection__row${isGrid ? ' is-grid' : ''}`}>
                         {items.slice(0, 6).map((it, i) => (
-                            <div key={i} style={{ minWidth: Number(block.item_width || 120), background: '#fff', borderRadius: 10, overflow: 'hidden', boxShadow: '0 1px 2px rgba(0,0,0,.05)' }}>
-                                <div style={{ height: Number(block.item_image_height || 80), background: it.image_url ? `url(${String(it.image_url)}) center/cover` : '#eee' }} />
-                                <div style={{ padding: 8, fontSize: 11, fontWeight: 600 }}>{String(it.title || '')}</div>
+                            <div
+                                key={i}
+                                className="ld-app-collection__item"
+                                {...previewNavProps(it.action || block.item_action)}
+                            >
+                                <div
+                                    className="ld-app-collection__img"
+                                    style={{
+                                        height: Number(block.item_image_height || 96),
+                                        backgroundImage: it.image_url ? `url(${String(it.image_url)})` : undefined,
+                                    }}
+                                >
+                                    {it.badge ? <em>{String(it.badge)}</em> : null}
+                                </div>
+                                <strong>{String(it.title || '')}</strong>
+                                {it.description ? <span>{String(it.description)}</span> : null}
                             </div>
                         ))}
                     </div>
@@ -131,23 +210,38 @@ export function BlockPreview({ block, friendAddUrl }: { block: LiffBlock; friend
             );
         }
         case 'slider': {
-            const slides = Array.isArray(block.slides) ? block.slides as Array<Record<string, unknown>> : [];
-            const first = slides[0];
+            const slides = Array.isArray(block.slides) ? (block.slides as Array<Record<string, unknown>>) : [];
+            const first = slides[0] || {};
             return (
-                <div style={{ ...style, height: Number(block.slide_height || 140), borderRadius: 12, overflow: 'hidden', background: first?.image_url ? `url(${String(first.image_url)}) center/cover` : '#e5e7eb', position: 'relative' }}>
-                    {first?.caption ? (
-                        <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: 8, background: 'rgba(0,0,0,.4)', color: '#fff', fontSize: 12 }}>{String(first.caption)}</div>
-                    ) : null}
+                <div
+                    className="ld-app-slider"
+                    style={{
+                        ...style,
+                        height: Number(block.slide_height || 168),
+                        backgroundImage: first.image_url ? `url(${String(first.image_url)})` : undefined,
+                    }}
+                >
+                    <div className="ld-app-slider__cap">
+                        {block.section_label ? <em>{String(block.section_label)}</em> : null}
+                        <strong>{String(first.caption || 'Campaign')}</strong>
+                    </div>
+                    <div className="ld-app-slider__dots">
+                        {(slides.length > 0 ? slides : [0, 1, 2]).slice(0, 4).map((_, i) => (
+                            <i key={i} className={i === 0 ? 'is-on' : ''} />
+                        ))}
+                    </div>
                 </div>
             );
         }
         case 'icon_text': {
-            const rows = Array.isArray(block.rows) ? block.rows as Array<Record<string, unknown>> : [];
+            const rows = Array.isArray(block.rows) ? (block.rows as Array<Record<string, unknown>>) : [];
             return (
-                <div style={{ ...style, background: '#fff', padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div className="ld-app-icon-text" style={style}>
                     {rows.map((r, i) => (
-                        <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 13 }}>
-                            <i className={`fas ${String(r.icon || 'fa-check')}`} style={{ color: String(r.color || '#4f46e5') }} />
+                        <div key={i} className="ld-app-icon-text__row">
+                            <span className="ld-app-icon-text__icon" style={{ color: String(r.color || '#2563eb') }}>
+                                <i className={`fas ${String(r.icon || 'fa-check')}`} />
+                            </span>
                             <span>{String(r.text || '')}</span>
                         </div>
                     ))}
@@ -156,50 +250,57 @@ export function BlockPreview({ block, friendAddUrl }: { block: LiffBlock; friend
         }
         case 'list': {
             const items = Array.isArray(block.items) ? block.items.map(String) : [];
-            const Tag = block.style === 'number' ? 'ol' : 'ul';
             return (
-                <Tag style={{ ...style, margin: 0, paddingLeft: 20, color: String(block.text_color || '#374151'), fontSize: 13 }}>
-                    {items.map((t, i) => <li key={i}>{t}</li>)}
-                </Tag>
+                <div className={`ld-app-list${block.style === 'number' ? ' is-number' : ''}`} style={style}>
+                    {items.map((t, i) => (
+                        <div key={i} className="ld-app-list__item">
+                            <span className="ld-app-list__mark">{block.style === 'number' ? i + 1 : <i className="fas fa-check" />}</span>
+                            <em>{t}</em>
+                        </div>
+                    ))}
+                </div>
             );
         }
         case 'banner': {
             const design = String(block.design || 'promo');
-            const isOutline = design === 'outline';
-            const isPill = design === 'pill';
-            const isSoft = design === 'soft';
             return (
                 <div
-                    className={`ld-preview-banner ld-preview-banner--${design}`}
+                    className={`ld-app-banner ld-app-banner--${design}`}
                     style={{
                         ...style,
-                        background: isOutline || isSoft ? 'transparent' : String(block.color || '#3b82f6'),
-                        color: isOutline ? String(block.color || '#3b82f6') : String(block.text_color || '#fff'),
-                        border: isOutline ? `2px solid ${String(block.color || '#3b82f6')}` : undefined,
-                        backgroundColor: isSoft ? `${String(block.color || '#3b82f6')}22` : undefined,
-                        padding: '10px 12px',
-                        display: 'flex',
-                        gap: 8,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: 13,
-                        fontWeight: 600,
-                        borderRadius: isPill ? 999 : style.borderRadius,
+                        ['--banner-bg' as string]: String(block.color || '#0f172a'),
+                        ['--banner-fg' as string]: String(block.text_color || '#fff'),
                     }}
+                    {...previewNavProps(block.action)}
                 >
-                    <i className={`fas ${String(block.icon || 'fa-info-circle')}`} />
+                    <i className={`fas ${String(block.icon || 'fa-bolt')}`} />
                     <span>{String(block.text || '')}</span>
+                    <i className="fas fa-chevron-right ld-app-banner__chev" />
                 </div>
             );
         }
         case 'spacer':
             return <div style={{ height: Number(block.height || 16) }} />;
         case 'divider':
-            return <hr style={{ ...style, border: 'none', borderTop: `1px ${String(block.divider_style || 'solid')} ${String(block.divider_color || '#e5e7eb')}`, margin: '8px 0' }} />;
+            return (
+                <hr
+                    className="ld-app-divider"
+                    style={{
+                        ...style,
+                        borderTopStyle: String(block.divider_style || 'solid') as React.CSSProperties['borderTopStyle'],
+                        borderTopColor: String(block.divider_color || '#e2e8f0'),
+                    }}
+                />
+            );
         case 'data':
             return (
                 <div style={style}>
-                    <DataMockPreview source={String(block.source || 'products')} />
+                    <DataMockPreview
+                        source={String(block.source || 'products')}
+                        design={String(block.design || '')}
+                        cardDesign={String(block.card_design || '')}
+                        shopName={shopName}
+                    />
                 </div>
             );
         case 'member_summary':
@@ -209,117 +310,135 @@ export function BlockPreview({ block, friendAddUrl }: { block: LiffBlock; friend
                 </div>
             );
         case 'quick_actions': {
-            const actions = Array.isArray(block.actions) ? block.actions as Array<Record<string, unknown>> : [];
+            const actions = Array.isArray(block.actions) ? (block.actions as Array<Record<string, unknown>>) : [];
             const design = String(block.design || 'grid');
-            const isPill = design === 'pill';
-            const isCompact = design === 'compact';
             return (
-                <div style={style}>
-                    <div className={`ld-mock-qa ld-mock-qa--${design}`} style={{ display: 'grid', gridTemplateColumns: isCompact ? 'repeat(4, 1fr)' : 'repeat(4, 1fr)', gap: isCompact ? 4 : 8 }}>
-                        {actions.slice(0, 8).map((a, i) => (
-                            <div
-                                key={i}
-                                className="ld-mock-qa__tile"
-                                style={{
-                                    background: '#fff',
-                                    borderRadius: isPill ? 999 : 12,
-                                    padding: isCompact ? 6 : 10,
-                                    textAlign: 'center',
-                                    fontSize: isCompact ? 9 : 10,
-                                    boxShadow: '0 1px 2px rgba(0,0,0,.05)',
-                                }}
-                            >
-                                <i className={`fas ${String(a.icon || 'fa-circle')} ld-mock-qa__icon`} style={{ display: 'block', marginBottom: 4, fontSize: isCompact ? 12 : 14 }} />
-                                {String(a.label || '')}
-                            </div>
-                        ))}
-                    </div>
+                <div className={`ld-app-qa ld-app-qa--${design}`} style={style}>
+                    {actions.slice(0, 8).map((a, i) => (
+                        <div key={i} className="ld-app-qa__tile" {...previewNavProps(a.action)}>
+                            <span className="ld-app-qa__icon" style={{ ['--qa-accent' as string]: String(a.color || '') || undefined }}>
+                                <i className={`fas ${String(a.icon || 'fa-circle')}`} />
+                            </span>
+                            <em>{String(a.label || '')}</em>
+                        </div>
+                    ))}
                 </div>
             );
         }
         case 'friend_add': {
             const url = String(block.url || friendAddUrl || '');
             return (
-                <div style={{ ...style, textAlign: 'center', padding: 8 }}>
-                    <span style={{ display: 'inline-flex', gap: 8, alignItems: 'center', background: String(block.color || '#06C755'), color: String(block.text_color || '#fff'), padding: '10px 18px', borderRadius: 8, fontWeight: 700, fontSize: 13 }}>
+                <div className="ld-app-btn-wrap" style={style}>
+                    <span className="ld-app-btn ld-app-btn--cta is-full" style={{ ['--btn-bg' as string]: String(block.color || '#06C755') }}>
                         <i className="fab fa-line" /> {String(block.text || '友だち追加')}
                     </span>
-                    {url === '' ? <div style={{ fontSize: 10, color: '#ef4444', marginTop: 6 }}>URL未設定</div> : null}
+                    {url === '' ? <div className="ld-app-warn">URL未設定</div> : null}
                 </div>
             );
         }
         case 'hours': {
-            const rows = Array.isArray(block.rows) ? block.rows as Array<Record<string, unknown>> : [];
+            const rows = Array.isArray(block.rows) ? (block.rows as Array<Record<string, unknown>>) : [];
             return (
-                <div style={{ ...style, background: '#fff', padding: 12, borderRadius: 12 }}>
-                    <div style={{ fontWeight: 700, marginBottom: 8 }}>{String(block.title || '営業時間')}</div>
-                    {rows.map((r, i) => (
-                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, padding: '4px 0', borderTop: i ? '1px solid #f3f4f6' : undefined }}>
-                            <span>{String(r.day || '')}</span>
-                            <span style={{ color: '#6b7280' }}>{String(r.time || '')}</span>
-                        </div>
-                    ))}
+                <div className="ld-app-storecard" style={style}>
+                    <div className="ld-app-storecard__head">
+                        <i className="fas fa-clock" />
+                        <strong>{String(block.title || '営業時間')}</strong>
+                        <em className="is-open">本日営業中</em>
+                    </div>
+                    <div className="ld-app-storecard__rows">
+                        {rows.map((r, i) => (
+                            <div key={i} className="ld-app-storecard__row">
+                                <span>{String(r.day || '')}</span>
+                                <strong>{String(r.time || '')}</strong>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             );
         }
         case 'access':
             return (
-                <div style={{ ...style, background: '#fff', padding: 12, borderRadius: 12, fontSize: 12 }}>
-                    <div style={{ fontWeight: 700, marginBottom: 6 }}>{String(block.title || '店舗情報')}</div>
-                    <div><i className="fas fa-map-marker-alt" /> {String(block.address || '')}</div>
-                    <div style={{ marginTop: 4 }}><i className="fas fa-phone" /> {String(block.phone || '')}</div>
+                <div className="ld-app-storecard" style={style}>
+                    <div className="ld-app-storecard__head">
+                        <i className="fas fa-map-marker-alt" />
+                        <strong>{String(block.title || '店舗情報')}</strong>
+                    </div>
+                    <div className="ld-app-storecard__map" aria-hidden />
+                    <div className="ld-app-storecard__lines">
+                        <div className="ld-app-storecard__line">
+                            <i className="fas fa-location-dot" />
+                            <span>{String(block.address || '')}</span>
+                        </div>
+                        <div className="ld-app-storecard__line">
+                            <i className="fas fa-phone" />
+                            <span>{String(block.phone || '')}</span>
+                        </div>
+                    </div>
+                    <div className="ld-app-storecard__actions">
+                        <span><i className="fas fa-route" /> ルート</span>
+                        <span><i className="fas fa-phone" /> 電話</span>
+                    </div>
                 </div>
             );
         case 'social_links': {
-            const links = Array.isArray(block.links) ? block.links as Array<Record<string, unknown>> : [];
+            const links = Array.isArray(block.links) ? (block.links as Array<Record<string, unknown>>) : [];
             return (
-                <div style={{ ...style, display: 'flex', gap: 8, justifyContent: 'center', padding: 8 }}>
-                    {links.map((l, i) => (
-                        <span key={i} style={{ width: 32, height: 32, borderRadius: 999, background: '#f3f4f6', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 12 }}>
-                            {String(l.type || '').slice(0, 2)}
-                        </span>
-                    ))}
+                <div className="ld-app-social" style={style}>
+                    {links.map((l, i) => {
+                        const key = String(l.type || '').toLowerCase();
+                        const meta = SOCIAL_META[key] || { icon: 'fas fa-link', label: key || 'Link', color: '#64748b' };
+                        return (
+                            <span key={i} className="ld-app-social__chip" style={{ ['--social' as string]: meta.color }}>
+                                <i className={meta.icon} />
+                                {meta.label}
+                            </span>
+                        );
+                    })}
                 </div>
             );
         }
         case 'faq': {
-            const items = Array.isArray(block.items) ? block.items as Array<Record<string, unknown>> : [];
+            const items = Array.isArray(block.items) ? (block.items as Array<Record<string, unknown>>) : [];
             return (
-                <div style={{ ...style, background: '#fff', padding: 12, borderRadius: 12 }}>
-                    <div style={{ fontWeight: 700, marginBottom: 8 }}>{String(block.title || 'FAQ')}</div>
-                    {items.slice(0, 3).map((it, i) => (
-                        <div key={i} style={{ fontSize: 12, padding: '6px 0', borderTop: i ? '1px solid #f3f4f6' : undefined }}>
-                            <strong>Q.</strong> {String(it.q || '')}
-                        </div>
+                <div className="ld-app-faq" style={style}>
+                    <div className="ld-app-faq__title">{String(block.title || 'よくある質問')}</div>
+                    {items.slice(0, 4).map((it, i) => (
+                        <details key={i} className="ld-app-faq__item" open={i === 0}>
+                            <summary>
+                                <strong>Q</strong>
+                                <span>{String(it.q || '')}</span>
+                                <i className="fas fa-chevron-down" />
+                            </summary>
+                            <p>{String(it.a || '詳しくはお店までお問い合わせください。')}</p>
+                        </details>
                     ))}
                 </div>
             );
         }
         case 'video':
             return (
-                <div style={{ ...style, background: '#111', color: '#fff', borderRadius: 12, height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 6 }}>
-                    <i className="fas fa-play-circle" style={{ fontSize: 28 }} />
-                    <span style={{ fontSize: 11 }}>{String(block.caption || '動画')}</span>
+                <div
+                    className="ld-app-video"
+                    style={{
+                        ...style,
+                        backgroundImage: block.poster_url ? `url(${String(block.poster_url)})` : undefined,
+                    }}
+                >
+                    <div className="ld-app-video__play">
+                        <i className="fas fa-play" />
+                    </div>
+                    <span>{String(block.caption || 'Store movie')}</span>
                 </div>
             );
         case 'button_group': {
-            const buttons = Array.isArray(block.buttons) ? block.buttons as Array<Record<string, unknown>> : [];
+            const buttons = Array.isArray(block.buttons) ? (block.buttons as Array<Record<string, unknown>>) : [];
             return (
-                <div style={{ ...style, display: 'flex', gap: 8 }}>
+                <div className="ld-app-btn-group" style={style}>
                     {buttons.map((b, i) => (
                         <span
                             key={i}
-                            style={{
-                                flex: 1,
-                                textAlign: 'center',
-                                padding: '8px 6px',
-                                borderRadius: 8,
-                                fontSize: 12,
-                                fontWeight: 700,
-                                background: b.variant === 'outline' ? 'transparent' : String(b.color || '#1c1917'),
-                                color: b.variant === 'outline' ? String(b.color || '#1c1917') : '#fff',
-                                border: b.variant === 'outline' ? `1px solid ${String(b.color || '#1c1917')}` : undefined,
-                            }}
+                            className={`ld-app-btn ld-app-btn--${String(b.variant || 'cta')}`}
+                            style={{ ['--btn-bg' as string]: String(b.color || '#0f172a') }}
                         >
                             {String(b.text || '')}
                         </span>
@@ -330,7 +449,7 @@ export function BlockPreview({ block, friendAddUrl }: { block: LiffBlock; friend
         default: {
             const meta = findBlockMeta(block.type);
             return (
-                <div style={{ ...style, padding: 12, border: '1px dashed #f59e0b', background: '#fffbeb', fontSize: 12, color: '#92400e' }}>
+                <div className="ld-app-fallback" style={style}>
                     未対応: {meta?.label || block.type}
                 </div>
             );

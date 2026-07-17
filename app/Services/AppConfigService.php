@@ -36,6 +36,7 @@ class AppConfigService
             'reservations' => 'feature_reservations_enabled',
             'member' => 'feature_members_enabled',
             'gallery' => 'feature_gallery_enabled',
+            'announcements' => 'feature_announcements_enabled',
         ];
 
         $enabledTabs = array_values(array_filter($menuItems, function ($item) use ($featureFlags, $tabFeatureMap) {
@@ -82,6 +83,9 @@ class AppConfigService
                 'system_media_shape' => (string) ($global['system_media_shape'] ?? 'rounded'),
                 'system_header_style' => (string) ($global['system_header_style'] ?? 'minimal'),
                 'member_card_design' => (string) ($global['member_card_design'] ?? ''),
+                'member_card_display_type' => (string) ($global['member_card_display_type'] ?? ''),
+                'member_card_code_type' => (string) ($global['member_card_code_type'] ?? ''),
+                'app_display_name' => (string) ($global['app_display_name'] ?? ''),
                 'member_screen_design' => (string) ($global['member_screen_design'] ?? 'wallet'),
                 'coupon_screen_design' => (string) ($global['coupon_screen_design'] ?? 'ticket'),
                 'reservation_screen_design' => (string) ($global['reservation_screen_design'] ?? 'cards'),
@@ -93,6 +97,7 @@ class AppConfigService
             ],
             'liff_tab_layouts' => ShopSetting::getLiffTabLayouts($projectId),
             'liff_tab_settings' => ShopSetting::getLiffTabSettings($projectId),
+            'liff_detail_layouts' => ShopSetting::getLiffDetailLayouts($projectId),
         ];
     }
 
@@ -108,6 +113,7 @@ class AppConfigService
             'member' => 'person.crop.circle.fill',
             'reservations' => 'calendar',
             'gallery' => 'photo.on.rectangle.angled',
+            'announcements' => 'megaphone.fill',
             default => 'circle.fill',
         };
     }

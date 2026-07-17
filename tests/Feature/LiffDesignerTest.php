@@ -368,4 +368,109 @@ class LiffDesignerTest extends TestCase
         $this->assertSame('existing-liff-id', ShopSetting::getLineLiffId($project->id));
         $this->assertSame('https://example.com/liff', ShopSetting::getLineLiffUrl($project->id));
     }
+
+    public function test_liff_designer_詳細レイアウトを保存できること(): void
+    {
+        $project = Project::firstOrCreate(
+            ['project_key' => 'default'],
+            ['name' => 'Default Project', 'description' => 'Test', 'is_active' => true]
+        );
+
+        $admin = AdminUser::create([
+            'login_id' => 'admin_detail_layouts',
+            'email' => 'admin_detail_layouts@example.com',
+            'password' => 'password',
+            'name' => 'Admin Detail',
+            'role' => AdminUser::ROLE_ADMIN,
+            'project_id' => $project->id,
+        ]);
+
+        $detailLayouts = [
+            'product_detail' => [
+                ['type' => 'heading', 'design' => 'eyebrow', 'text' => 'Menu'],
+                ['type' => 'data', 'source' => 'product_detail'],
+            ],
+            'coupon_detail' => [
+                ['type' => 'data', 'source' => 'coupon_detail'],
+            ],
+        ];
+
+        $response = $this->actingAs($admin, 'admin')
+            ->post(route('admin.settings.liff-designer.update', ['project_key' => $project->project_key]), [
+                'layouts_json' => json_encode(['home' => [['type' => 'text', 'text' => 'ok']]]),
+                'detail_layouts_json' => json_encode($detailLayouts),
+            ]);
+
+        $response->assertRedirect(route('admin.settings.liff-designer', ['project_key' => $project->project_key]));
+
+        $stored = ShopSetting::getLiffDetailLayouts($project->id);
+        $this->assertArrayHasKey('product_detail', $stored);
+        $this->assertArrayHasKey('coupon_detail', $stored);
+        $this->assertArrayHasKey('announcement_detail', $stored);
+        $this->assertSame('product_detail', $stored['product_detail'][1]['source'] ?? null);
+        $this->assertSame('coupon_detail', $stored['coupon_detail'][0]['source'] ?? null);
+    }
+
+    public function test_liff_designer_詳細レイアウト未送信時は既存を上書きしないこと(): void
+    {
+        $project = Project::firstOrCreate(
+            ['project_key' => 'default'],
+            ['name' => 'Default Project', 'description' => 'Test', 'is_active' => true]
+        );
+
+        $admin = AdminUser::create([
+            'login_id' => 'admin_detail_preserve',
+            'email' => 'admin_detail_preserve@example.com',
+            'password' => 'password',
+            'name' => 'Admin Detail Preserve',
+            'role' => AdminUser::ROLE_ADMIN,
+            'project_id' => $project->id,
+        ]);
+
+        ShopSetting::setLiffDetailLayouts([
+            'product_detail' => [
+                ['type' => 'heading', 'text' => 'Keep Me'],
+                ['type' => 'data', 'source' => 'product_detail'],
+            ],
+        ], $project->id);
+
+        $before = ShopSetting::getLiffDetailLayouts($project->id);
+
+        $response = $this->actingAs($admin, 'admin')
+            ->post(route('admin.settings.liff-designer.update', ['project_key' => $project->project_key]), [
+                'layouts_json' => json_encode(['home' => [['type' => 'text', 'text' => 'tabs only']]]),
+            ]);
+
+        $response->assertRedirect(route('admin.settings.liff-designer', ['project_key' => $project->project_key]));
+
+        $after = ShopSetting::getLiffDetailLayouts($project->id);
+        $this->assertSame('Keep Me', $after['product_detail'][0]['text'] ?? null);
+        $this->assertSame($before['product_detail'][0]['text'] ?? null, $after['product_detail'][0]['text'] ?? null);
+    }
+
+    public function test_liff_designer_不正な詳細レイアウトは422になること(): void
+    {
+        $project = Project::firstOrCreate(
+            ['project_key' => 'default'],
+            ['name' => 'Default Project', 'description' => 'Test', 'is_active' => true]
+        );
+
+        $admin = AdminUser::create([
+            'login_id' => 'admin_detail_invalid',
+            'email' => 'admin_detail_invalid@example.com',
+            'password' => 'password',
+            'name' => 'Admin Detail Invalid',
+            'role' => AdminUser::ROLE_ADMIN,
+            'project_id' => $project->id,
+        ]);
+
+        $response = $this->actingAs($admin, 'admin')
+            ->from(route('admin.settings.liff-designer', ['project_key' => $project->project_key]))
+            ->post(route('admin.settings.liff-designer.update', ['project_key' => $project->project_key]), [
+                'layouts_json' => json_encode(['home' => [['type' => 'text', 'text' => 'ok']]]),
+                'detail_layouts_json' => '{not-json',
+            ]);
+
+        $response->assertSessionHasErrors('detail_layouts');
+    }
 }
