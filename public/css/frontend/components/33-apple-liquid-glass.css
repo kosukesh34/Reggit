@@ -1,0 +1,258 @@
+/* ============================================================
+   Apple / Liquid Glass 風クローム（ナビ層のみ）
+   - ガラス効果はタブ・ヘッダー・フローティングフィルタに限定
+   - 本文コンテンツにはガラスを適用しない
+   ============================================================ */
+
+:root {
+    --glass-bg: rgba(255, 255, 255, 0.72);
+    --glass-bg-strong: rgba(255, 255, 255, 0.92);
+    --glass-border: rgba(255, 255, 255, 0.55);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.08), 0 1px 0 rgba(255, 255, 255, 0.6) inset;
+    --glass-blur: saturate(180%) blur(24px);
+    --ios-grouped: #f2f2f7;
+    --ios-separator: rgba(60, 60, 67, 0.12);
+    --ios-label: #1c1c1e;
+    --ios-secondary-label: rgba(60, 60, 67, 0.6);
+    --ios-blue: #007aff;
+}
+
+/* ライトガラスヘッダー（アクセント塗りつぶしをやめる） */
+body.theme-apple_system .header,
+body.chrome-glass .header,
+body.system-header-minimal.theme-apple_system .header {
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    color: var(--ios-label);
+    border-bottom: 1px solid var(--ios-separator);
+    box-shadow: none;
+}
+
+body.theme-apple_system .header .logo,
+body.chrome-glass .header .logo {
+    color: var(--ios-label);
+}
+
+body.theme-apple_system .header-friend-add,
+body.chrome-glass .header-friend-add {
+    background: rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--ios-separator);
+    color: var(--text-primary);
+}
+
+body.theme-apple_system .cart-btn,
+body.chrome-glass .cart-btn,
+body.theme-apple_system .header-action-btn,
+body.chrome-glass .header-action-btn {
+    color: var(--text-primary);
+    background: rgba(0, 0, 0, 0.04);
+}
+
+body.theme-apple_system .cart-header,
+body.chrome-glass .cart-header {
+    background: var(--glass-bg-strong);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    color: var(--ios-label);
+    border-bottom: 1px solid var(--ios-separator);
+}
+
+/* デフォルトもフローティング寄り Liquid Glass タブ */
+.main-tabs {
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border-top: 1px solid var(--glass-border);
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.06);
+}
+
+body.tab-style-floating .main-tabs,
+body.theme-apple_system .main-tabs,
+body.chrome-glass .main-tabs {
+    left: 14px;
+    right: 14px;
+    bottom: max(12px, var(--safe-area-bottom-capped));
+    border-radius: 28px;
+    border: 1px solid var(--glass-border);
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    box-shadow: var(--glass-shadow);
+    padding: 6px 6px 8px;
+    min-height: auto;
+}
+
+body.theme-apple_system .main-tab-btn,
+body.chrome-glass .main-tab-btn {
+    border-radius: 22px;
+    font-weight: 600;
+    font-size: 10px;
+    letter-spacing: -0.01em;
+}
+
+body.theme-apple_system .main-tab-btn.active,
+body.chrome-glass .main-tab-btn.active {
+    color: var(--primary-color);
+    background: rgba(var(--primary-rgb), 0.12);
+    font-weight: 700;
+}
+
+/* セグメント / フィルタ：iOS segmented control */
+.category-tabs,
+.coupons-list-tabs,
+.reservation-filter-tabs {
+    padding: 3px;
+    border-radius: 10px;
+    background: rgba(118, 118, 128, 0.12);
+    border: none;
+    box-shadow: none;
+    backdrop-filter: none;
+}
+
+.category-tabs .tab-btn,
+.coupons-list-tab,
+.reservation-filter-tab {
+    border-radius: 8px !important;
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--ios-label);
+}
+
+.category-tabs .tab-btn.active,
+.coupons-list-tab.is-active,
+.reservation-filter-tab.is-active {
+    background: #fff !important;
+    color: var(--ios-label) !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 1px rgba(0, 0, 0, 0.04) !important;
+}
+
+/* 大タイトル階層 */
+.section-title,
+.orders-title,
+.reservation-header-title,
+.coupons-title,
+.member-section .section-title {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 1.15;
+}
+
+.section-title + .section-subtitle,
+.orders-subtitle,
+.reservation-header-subtitle,
+.coupons-subtitle {
+    margin-top: 4px;
+    color: var(--ios-secondary-label);
+    font-size: 13px;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+}
+
+/* 空状態 */
+.member-empty,
+.coupons-empty,
+.stamps-empty,
+.empty-state {
+    padding: 48px 24px;
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    border: 1px solid var(--ios-separator);
+    box-shadow: none;
+}
+
+.member-empty i,
+.coupons-empty i,
+.stamps-empty i,
+.empty-state i {
+    font-size: 36px;
+    color: var(--text-tertiary);
+    margin-bottom: 12px;
+}
+
+/* 詳細戻る導線 */
+.detail-back-btn,
+.liff-back-btn,
+.page-back-btn,
+.builder-detail-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 4px;
+    color: var(--primary-color);
+    font-size: 17px;
+    font-weight: 400;
+    text-decoration: none;
+    background: transparent;
+    border: none;
+    letter-spacing: -0.02em;
+}
+
+.detail-back-btn i,
+.liff-back-btn i,
+.page-back-btn i {
+    font-size: 15px;
+}
+
+/* システム画面カード */
+body.theme-apple_system .product-card,
+body.theme-apple_system .coupon-item,
+body.theme-apple_system .order-card,
+body.theme-apple_system .reservation-card,
+body.theme-apple_system .gallery-item,
+body.theme-apple_system .announcement-item {
+    border-radius: 14px;
+    border: none;
+    box-shadow: 0 1px 0 var(--ios-separator);
+    background: var(--surface);
+}
+
+/* 会員証 apple / glass */
+body.member-screen-apple .member-card-wrap,
+body.member-screen-glass .member-card-wrap {
+    border-radius: 20px;
+    overflow: hidden;
+}
+
+body.member-screen-glass .member-card,
+body.coupon-screen-glass .coupon-item {
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+}
+
+body.member-screen-apple .member-card {
+    border-radius: 18px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
+    border: none;
+}
+
+body.coupon-screen-apple .coupon-item {
+    border-radius: 16px;
+    border: none;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+
+body.reservation-screen-apple .reservation-card {
+    border-radius: 16px;
+    border: none;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+
+/* prefers-reduced-transparency */
+@media (prefers-reduced-transparency: reduce) {
+    .main-tabs,
+    body.tab-style-floating .main-tabs,
+    body.theme-apple_system .main-tabs,
+    body.chrome-glass .main-tabs,
+    body.theme-apple_system .header,
+    body.chrome-glass .header,
+    body.member-screen-glass .member-card,
+    body.coupon-screen-glass .coupon-item {
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        background: var(--glass-bg-strong) !important;
+    }
+}

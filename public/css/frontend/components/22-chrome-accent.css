@@ -1,45 +1,49 @@
 /* ============================================================
-   クローム & アクセント統合レイヤー（最後に読み込み）
+   クローム & アクセント統合レイヤー
 
-   方針: 銀行・店舗アプリのように「黒基調のクローム ＋ 単一アクセント」。
-   - アプリ上部バー / カートヘッダーは黒系（--chrome）で固定し、
-     ブランドの主張を抑えた信頼感のあるベースにする。
-   - ボタン・アクティブ状態・バッジ等のインタラクティブ要素は
-     テーマのアクセント色（--primary-color）で統一する。
+   方針: iOS 風「ライト／ガラスのクローム ＋ 単一アクセント」。
+   - 上部バー / カートヘッダーはニュートラルなライトクローム。
+   - ボタン・アクティブ状態・バッジは --primary-color。
    ============================================================ */
 
-/* ── 上部バー（黒基調・フラットで端正に）── */
+/* ── 上部バー（ライト／ガラス）── */
 .header {
-    background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0) 60%),
-        linear-gradient(135deg, var(--chrome) 0%, var(--chrome-dark) 100%);
-    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 6px 22px rgba(12, 10, 9, 0.18);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    background: var(--surface-glass);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    color: var(--text-primary);
+    box-shadow: none;
+    border-bottom: 1px solid var(--hairline);
 }
 
 .cart-header {
-    background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0) 60%),
-        linear-gradient(135deg, var(--chrome) 0%, var(--chrome-dark) 100%);
+    background: var(--surface-glass);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--hairline);
 }
 
-/* カート個数バッジはアクセント色のドット風に（白地に黒ヘッダー上で映える） */
+.header .logo {
+    color: var(--text-primary);
+}
+
 .cart-count {
     background: var(--primary-color);
     color: #fff;
-    box-shadow: 0 2px 8px rgba(var(--primary-rgb), 0.45);
+    box-shadow: 0 2px 8px rgba(var(--primary-rgb), 0.35);
 }
 
-/* ── ボトムナビ（白基調＋アクセントのアクティブ表示）── */
+/* ── ボトムナビ（Liquid Glass）── */
 .main-tabs {
-    background: rgba(255, 255, 255, 0.96);
-    border-top: 1px solid var(--border-color);
-    box-shadow: 0 -6px 24px rgba(12, 10, 9, 0.06);
+    background: var(--surface-glass);
+    border-top: 1px solid var(--hairline);
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.06);
 }
 
 .main-tab-btn {
     gap: 4px;
-    letter-spacing: 0.01em;
+    letter-spacing: -0.01em;
 }
 
 .main-tab-btn.active {

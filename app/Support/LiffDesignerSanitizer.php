@@ -16,6 +16,7 @@ class LiffDesignerSanitizer
         'slider', 'icon_text', 'list', 'banner', 'spacer', 'divider', 'data',
         'member_summary', 'quick_actions', 'friend_add',
         'hours', 'access', 'social_links', 'faq', 'video', 'button_group',
+        'stats_row',
     ];
 
     private const FRIEND_ADD_DESIGNS = ['solid', 'outline', 'soft'];
@@ -52,7 +53,7 @@ class LiffDesignerSanitizer
     ];
 
     private const MEMBER_SUMMARY_DESIGNS = [
-        'rewards', 'wallet', 'compact', 'emblem', 'minimal', 'split', 'glass',
+        'rewards', 'wallet', 'compact', 'emblem', 'minimal', 'split', 'glass', 'tier',
     ];
 
     private const MEMBER_CARD_DESIGNS = [
@@ -60,7 +61,7 @@ class LiffDesignerSanitizer
         'compact', 'split_banner', 'minimal_line', 'emblem',
     ];
 
-    private const HERO_DESIGNS = ['editorial', 'minimal', 'split', 'centered'];
+    private const HERO_DESIGNS = ['editorial', 'minimal', 'split', 'centered', 'apple'];
 
     private const HEADING_DESIGNS = ['plain', 'section', 'eyebrow', 'underline'];
 
@@ -68,15 +69,15 @@ class LiffDesignerSanitizer
 
     private const IMAGE_DESIGNS = ['rounded', 'full_bleed', 'polaroid', 'arch'];
 
-    private const BANNER_DESIGNS = ['promo', 'outline', 'soft', 'pill'];
+    private const BANNER_DESIGNS = ['promo', 'outline', 'soft', 'pill', 'countdown'];
 
-    private const CARD_DESIGNS = ['editorial', 'horizontal', 'overlay'];
+    private const CARD_DESIGNS = ['editorial', 'horizontal', 'overlay', 'featured'];
 
     private const BUTTON_DESIGNS = ['cta', 'outline', 'soft'];
 
     private const QUICK_ACTIONS_DESIGNS = ['grid', 'pill', 'compact'];
 
-    private const COLLECTION_DESIGNS = ['product_shelf', 'editorial', 'compact', 'magazine'];
+    private const COLLECTION_DESIGNS = ['product_shelf', 'editorial', 'compact', 'magazine', 'chip_scroll', 'picks'];
 
     private const SLIDER_DESIGNS = ['hero', 'cards', 'minimal'];
 
@@ -629,6 +630,21 @@ class LiffDesignerSanitizer
             case 'member_summary':
                 $b['greeting'] = self::text($row['greeting'] ?? '', 60);
                 $b['design'] = self::pickDesign((string) ($row['design'] ?? ''), self::MEMBER_SUMMARY_DESIGNS, 'rewards');
+                break;
+            case 'stats_row':
+                $b['section_label'] = self::text($row['section_label'] ?? ($row['title'] ?? ''), 40);
+                $items = is_array($row['items'] ?? null) ? array_slice($row['items'], 0, 6) : [];
+                $b['items'] = array_values(array_filter(array_map(function ($it) {
+                    if (! is_array($it)) {
+                        return null;
+                    }
+
+                    return [
+                        'label' => self::text($it['label'] ?? '', 40),
+                        'value' => self::text($it['value'] ?? '', 40),
+                        'hint' => self::text($it['hint'] ?? '', 40),
+                    ];
+                }, $items)));
                 break;
             case 'quick_actions':
                 $b['design'] = self::pickDesign((string) ($row['design'] ?? ''), self::QUICK_ACTIONS_DESIGNS, 'grid');

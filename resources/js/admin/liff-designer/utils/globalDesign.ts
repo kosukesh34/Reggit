@@ -147,7 +147,8 @@ export function frameSystemClasses(globalSettings: GlobalSettings): string {
         `coupon-screen-${String(globalSettings.coupon_screen_design || 'ticket')}`,
         `reservation-screen-${String(globalSettings.reservation_screen_design || 'cards')}`,
         `activity-screen-${String(globalSettings.activity_screen_design || 'cards')}`,
-    ].join(' ');
+        String(globalSettings.theme_preset || '') === 'apple_system' ? 'theme-apple_system chrome-glass' : '',
+    ].filter(Boolean).join(' ');
 }
 
 export function contentMaxWidth(globalSettings: GlobalSettings): string {

@@ -473,4 +473,76 @@ class LiffDesignerTest extends TestCase
 
         $response->assertSessionHasErrors('detail_layouts');
     }
+
+    public function test_liff_designer_appleブロックとテーマを保存できること(): void
+    {
+        $project = Project::firstOrCreate(
+            ['project_key' => 'default'],
+            ['name' => 'Default Project', 'description' => 'Test', 'is_active' => true]
+        );
+
+        $admin = AdminUser::create([
+            'login_id' => 'admin_apple',
+            'email' => 'admin_apple@example.com',
+            'password' => 'password',
+            'name' => 'Admin Apple',
+            'role' => AdminUser::ROLE_ADMIN,
+            'project_id' => $project->id,
+        ]);
+
+        $layouts = [
+            'home' => [
+                ['type' => 'stats_row', 'section_label' => 'Overview', 'items' => [
+                    ['label' => 'ポイント', 'value' => '1,240', 'hint' => 'pt'],
+                    ['label' => 'クーポン', 'value' => '3', 'hint' => '枚'],
+                ]],
+                ['type' => 'member_summary', 'design' => 'tier', 'greeting' => 'Club Member'],
+                ['type' => 'banner', 'design' => 'countdown', 'text' => 'フラッシュセール', 'color' => '#007aff'],
+                ['type' => 'collection', 'design' => 'chip_scroll', 'items' => [
+                    ['title' => 'すべて', 'action' => '#products'],
+                    ['title' => '人気', 'action' => '#products'],
+                ]],
+                ['type' => 'card', 'design' => 'featured', 'title' => 'Featured', 'description' => 'おすすめ'],
+            ],
+        ];
+
+        $tabSettings = [
+            '_global' => [
+                'theme_preset' => 'apple_system',
+                'tab_style' => 'floating',
+                'bg_color' => '#f2f2f7',
+                'member_screen_design' => 'apple',
+                'coupon_screen_design' => 'glass',
+                'reservation_screen_design' => 'apple',
+            ],
+        ];
+
+        $response = $this->actingAs($admin, 'admin')
+            ->post(route('admin.settings.liff-designer.update', ['project_key' => $project->project_key]), [
+                'layouts_json' => json_encode($layouts),
+                'tab_settings_json' => json_encode($tabSettings),
+            ]);
+
+        $response->assertRedirect(route('admin.settings.liff-designer', ['project_key' => $project->project_key]));
+
+        $stored = ShopSetting::getLiffTabLayouts($project->id);
+        $types = array_column($stored['home'], 'type');
+        $this->assertSame(['stats_row', 'member_summary', 'banner', 'collection', 'card'], $types);
+        $this->assertSame('tier', $stored['home'][1]['design']);
+        $this->assertSame('countdown', $stored['home'][2]['design']);
+        $this->assertSame('chip_scroll', $stored['home'][3]['design']);
+        $this->assertSame('featured', $stored['home'][4]['design']);
+        $this->assertCount(2, $stored['home'][0]['items']);
+
+        $settings = ShopSetting::getLiffTabSettings($project->id);
+        $this->assertSame('apple_system', $settings['_global']['theme_preset']);
+        $this->assertSame('apple', $settings['_global']['member_screen_design']);
+        $this->assertSame('glass', $settings['_global']['coupon_screen_design']);
+
+        $templates = \App\Support\ShopSettingLiffDefaults::defaultLiffDesignerTemplates();
+        $ids = array_column($templates, 'id');
+        $this->assertContains('apple-home-dashboard', $ids);
+        $this->assertContains('apple-super-app', $ids);
+        $this->assertSame('apple-home-dashboard', $ids[0] ?? null);
+    }
 }
