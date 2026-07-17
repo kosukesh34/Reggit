@@ -23,6 +23,16 @@
                 <div class="info-value">¥{{ number_format($order->total_amount) }}</div>
             </div>
             <div class="info-item">
+                <div class="info-label">注文種別</div>
+                <div class="info-value">
+                    @php
+                        $orderType = $order->order_type ?? '';
+                        $orderTypeLabel = \App\Enums\OrderType::getLabel($orderType) ?? $orderType;
+                    @endphp
+                    {{ $orderTypeLabel !== '' ? $orderTypeLabel : '—' }}
+                </div>
+            </div>
+            <div class="info-item">
                 <div class="info-label">支払い方法</div>
                 <div class="info-value">{{ $order->payment_method ?? 'N/A' }}</div>
             </div>

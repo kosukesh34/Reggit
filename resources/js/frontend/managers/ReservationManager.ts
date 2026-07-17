@@ -3,6 +3,7 @@ import { ApiClient } from '../../shared/utils/apiClient';
 import { DomHelper } from '../../shared/utils/domHelper';
 import { ConfirmDialog } from '../../shared/utils/confirmDialog';
 import { ToastManager } from '../../shared/utils/toast';
+import { isMembershipRequired } from '../utils/membershipPolicy';
 
 const DEFAULT_ADVANCE_DAYS = 30;
 
@@ -35,6 +36,10 @@ export class ReservationManager {
     editingReservationId: number | null;
     apiClient: ApiClient;
     reservationsSection: Element | null;
+    private pageMode = false;
+    private pendingPeople = 1;
+    private pendingNotes: string | null = null;
+    private lastCompletedLabel: string | null = null;
 
     constructor(appInstance: any) {
         this.app = appInstance;
@@ -82,7 +87,9 @@ export class ReservationManager {
             } else {
                 const data = (response as { data?: { requires_membership?: boolean } }).data;
                 if (data && data.requires_membership === true) {
-                    this.reservationsSection.innerHTML = this.getMembershipRequiredTemplate();
+                    this.reservationsSection.innerHTML = isMembershipRequired()
+                        ? this.getMembershipRequiredTemplate()
+                        : this.getOptionalMembershipTemplate();
                     return;
                 }
                 throw new Error(response.error);
@@ -93,7 +100,9 @@ export class ReservationManager {
             if (this.reservationsSection) {
                 const message = error instanceof Error ? error.message : '';
                 if (message && message.includes('会員登録が必要')) {
-                    this.reservationsSection.innerHTML = this.getMembershipRequiredTemplate();
+                    this.reservationsSection.innerHTML = isMembershipRequired()
+                        ? this.getMembershipRequiredTemplate()
+                        : this.getOptionalMembershipTemplate();
                 } else {
                     this.reservationsSection.innerHTML = this.getErrorTemplate(error);
                 }
@@ -258,19 +267,122 @@ export class ReservationManager {
     }
 
     async showCreateForm(): Promise<void> {
-        this.selectedDate = null;
-        this.selectedTime = null;
-        await this.loadAvailableDates();
-        const modal = document.createElement('div');
-        modal.className = 'modal-overlay';
-        modal.innerHTML = this.getCreateFormHtml();
-        document.body.appendChild(modal);
-        this.currentModal = modal;
-        this.attachFormListeners(modal);
-        this.renderCalendar(modal);
-        this.renderTimeSelector([], '日付を選択してください');
-        this.updateSelectedDateLabel();
-        this.setTimeSectionDisabled(true);
+        await this.openFlowStep('new', { resetSelection: true });
+    }
+
+    async openFlowStep(
+        step: 'new' | 'confirm' | 'complete',
+        options: { fromHash?: boolean; resetSelection?: boolean } = {},
+    ): Promise<void> {
+        const router = this.app && this.app.pageRouter ? this.app.pageRouter : null;
+        if (router === null) {
+            return;
+        }
+        const keyMap = {
+            new: 'reservation_new',
+            confirm: 'reservation_confirm',
+            complete: 'reservation_complete',
+        } as const;
+        if (step === 'confirm' && (this.selectedDate === null || this.selectedTime === null)) {
+            await this.openFlowStep('new', { resetSelection: true });
+            return;
+        }
+        this.pageMode = true;
+        const section = router.openPage({
+            key: keyMap[step],
+            hash: 'reservation/' + step,
+            returnHash: router.resolveReturnHash('reservations'),
+            title: step === 'new' ? '予約' : (step === 'confirm' ? '予約確認' : '予約完了'),
+            bodyClass: 'liff-page-reservation-flow',
+        });
+        if (section === null) {
+            return;
+        }
+        if (step === 'new') {
+            if (options.resetSelection === true || options.fromHash === true) {
+                this.selectedDate = null;
+                this.selectedTime = null;
+                this.pendingPeople = AppConstants.RESERVATION_VALIDATION.MIN_PEOPLE;
+                this.pendingNotes = null;
+            }
+            await this.loadAvailableDates();
+            section.innerHTML = `<div class="liff-flow-page reservation-flow-new">${this.getCreateFormHtml()}</div>`;
+            this.currentModal = section;
+            this.attachFormListeners(section);
+            this.renderCalendar(section);
+            this.restoreNewFormSelection();
+            return;
+        }
+        if (step === 'confirm') {
+            const dateLabel = this.selectedDate || '';
+            const timeLabel = this.selectedTime || '';
+            section.innerHTML = `
+                <div class="liff-flow-page reservation-flow-confirm">
+                    <h2>予約内容の確認</h2>
+                    <p class="liff-entity-detail__meta">日時: ${DomHelper.escapeHtml(dateLabel)} ${DomHelper.escapeHtml(timeLabel)}</p>
+                    <p class="liff-entity-detail__meta">人数: ${this.pendingPeople}名</p>
+                    ${this.pendingNotes ? `<p class="liff-entity-detail__body">${DomHelper.escapeHtml(this.pendingNotes)}</p>` : ''}
+                    <div class="liff-flow-actions">
+                        <button type="button" class="btn btn-primary" id="reservationConfirmSubmit">
+                            <i class="fas fa-check"></i> この内容で予約する
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="app.reservationManager.openFlowStep('new')">内容を修正</button>
+                    </div>
+                </div>
+            `;
+            const submitBtn = section.querySelector('#reservationConfirmSubmit');
+            if (submitBtn !== null) {
+                submitBtn.addEventListener('click', () => {
+                    void this.submitReservationFromDraft();
+                });
+            }
+            return;
+        }
+        section.innerHTML = `
+            <div class="liff-flow-page reservation-flow-complete">
+                <div class="reservation-flow-complete__icon"><i class="fas fa-check-circle"></i></div>
+                <h2>予約が完了しました</h2>
+                <p>${DomHelper.escapeHtml(this.lastCompletedLabel || 'ご予約ありがとうございます')}</p>
+                <div class="liff-flow-actions">
+                    <button type="button" class="btn btn-primary" onclick="app.switchTab('reservations')">予約一覧へ</button>
+                    <button type="button" class="btn btn-secondary" onclick="app.switchTab('home')">ホームへ</button>
+                </div>
+            </div>
+        `;
+    }
+
+    async submitReservationFromDraft(): Promise<void> {
+        if (!this.selectedDate || !this.selectedTime) {
+            ToastManager.error('日付と時間を選択してください');
+            return;
+        }
+        const data = {
+            reserved_at: `${this.selectedDate} ${this.selectedTime}:00`,
+            number_of_people: this.pendingPeople,
+            notes: this.pendingNotes,
+        };
+        try {
+            const response = await this.apiClient.post(AppConstants.API_ENDPOINTS.RESERVATIONS, data);
+            if (response.success === true) {
+                ToastManager.success(AppConstants.RESERVATION_MESSAGES.CREATE_SUCCESS);
+                this.lastCompletedLabel = `${this.selectedDate} ${this.selectedTime}（${this.pendingPeople}名）`;
+                this.selectedDate = null;
+                this.selectedTime = null;
+                this.pendingNotes = null;
+                await this.loadReservations();
+                await this.openFlowStep('complete');
+            } else {
+                throw new Error(response.error);
+            }
+        } catch (error) {
+            const message = error instanceof Error ? error.message : '';
+            if (message && message.includes('会員登録が必要')) {
+                ToastManager.error('会員登録が必要です');
+                if (this.app && this.app.switchTab) this.app.switchTab(AppConstants.TABS.MEMBER);
+            } else {
+                ToastManager.error(message || AppConstants.RESERVATION_MESSAGES.CREATE_ERROR);
+            }
+        }
     }
 
     async showEditForm(reservation: Reservation | null): Promise<void> {
@@ -451,6 +563,7 @@ export class ReservationManager {
     }
 
     getCreateFormHtml(): string {
+        const notes = this.pendingNotes !== null ? DomHelper.escapeHtml(this.pendingNotes) : '';
         return `
             <div class="modal-content reservation-modal-content">
                 <div class="modal-header">
@@ -489,7 +602,7 @@ export class ReservationManager {
                             <label class="form-label">
                                 <i class="fas fa-users"></i> ${AppConstants.RESERVATION_LABELS.NUMBER_OF_PEOPLE}
                             </label>
-                            ${this.getPeopleStepperHtml(AppConstants.RESERVATION_VALIDATION.MIN_PEOPLE)}
+                            ${this.getPeopleStepperHtml(this.pendingPeople)}
                         </div>
                         <div class="form-group">
                             <label class="form-label">
@@ -497,12 +610,12 @@ export class ReservationManager {
                             </label>
                             <textarea name="notes" class="form-control" 
                                 rows="${AppConstants.RESERVATION_VALIDATION.TEXTAREA_ROWS}" 
-                                maxlength="${AppConstants.RESERVATION_VALIDATION.MAX_NOTES_LENGTH}"></textarea>
+                                maxlength="${AppConstants.RESERVATION_VALIDATION.MAX_NOTES_LENGTH}">${notes}</textarea>
                         </div>
                     </div>
                     <div class="form-actions">
                         <button type="submit" class="btn btn-primary" id="submitReservationBtn" disabled>
-                            <i class="fas fa-check"></i> ${AppConstants.RESERVATION_LABELS.SUBMIT_BUTTON}
+                            <i class="fas fa-arrow-right"></i> 内容を確認
                         </button>
                         <button type="button" class="btn btn-secondary" data-action="close-modal">
                             <i class="fas fa-times"></i> ${AppConstants.RESERVATION_LABELS.CANCEL_BUTTON}
@@ -511,6 +624,25 @@ export class ReservationManager {
                 </form>
             </div>
         `;
+    }
+
+    private restoreNewFormSelection(): void {
+        this.updateSelectedDateLabel();
+        if (this.selectedDate === null) {
+            this.renderTimeSelector([], '日付を選択してください');
+            this.setTimeSectionDisabled(true);
+            this.updateSubmitButton();
+            return;
+        }
+        const dateInfo = this.availableDateMap.get(this.selectedDate);
+        if (dateInfo !== undefined && Array.isArray(dateInfo.time_slots) && dateInfo.time_slots.length > 0) {
+            this.renderTimeSelector(dateInfo.time_slots, '空きがありません');
+            this.setTimeSectionDisabled(false);
+        } else {
+            this.renderTimeSelector([], '空きがありません');
+            this.setTimeSectionDisabled(true);
+        }
+        this.updateSubmitButton();
     }
 
     renderCalendar(modal: HTMLElement): void {
@@ -664,15 +796,38 @@ export class ReservationManager {
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             const editId = (form.dataset && form.dataset.editId) || (modal.dataset && modal.dataset.editId);
-            if (editId) await this.submitUpdate(parseInt(editId, 10), form, modal);
-            else await this.submitReservation(form, modal);
+            if (editId) {
+                await this.submitUpdate(parseInt(editId, 10), form, modal);
+                return;
+            }
+            if (this.pageMode) {
+                const formData = new FormData(form);
+                this.pendingPeople = parseInt(String(formData.get('number_of_people') || '1'), 10) || 1;
+                const notes = formData.get('notes');
+                this.pendingNotes = notes !== null && String(notes) !== '' ? String(notes) : null;
+                if (!this.selectedDate || !this.selectedTime) {
+                    ToastManager.error('日付と時間を選択してください');
+                    return;
+                }
+                await this.openFlowStep('confirm');
+                return;
+            }
+            await this.submitReservation(form, modal);
         });
 
         modal.addEventListener('click', (event: Event) => {
             const target = event.target as HTMLElement;
-            if (target === modal) { this.closeModal(modal); return; }
+            if (target === modal && modal.classList.contains('modal-overlay')) { this.closeModal(modal); return; }
             const closeButton = target.closest('[data-action="close-modal"]');
-            if (closeButton) { this.closeModal(modal); return; }
+            if (closeButton) {
+                if (this.pageMode && this.app && this.app.pageRouter) {
+                    this.app.pageRouter.closePage(true);
+                    this.pageMode = false;
+                    return;
+                }
+                this.closeModal(modal);
+                return;
+            }
             const navButton = target.closest('[data-calendar-nav]') as HTMLElement | null;
             if (navButton) {
                 const offset = parseInt(navButton.dataset.calendarNav || '', 10);
@@ -693,6 +848,15 @@ export class ReservationManager {
     }
 
     closeModal(modal: HTMLElement): void {
+        if (this.pageMode) {
+            if (this.app && this.app.pageRouter) {
+                this.app.pageRouter.closePage(true);
+            }
+            this.pageMode = false;
+            this.currentModal = null;
+            this.editingReservationId = null;
+            return;
+        }
         modal.remove();
         if (this.currentModal === modal) this.currentModal = null;
         this.editingReservationId = null;
@@ -818,6 +982,21 @@ export class ReservationManager {
                 <p class="empty-state-message">予約機能をご利用いただくには、会員登録が必要です。会員登録をすると、予約機能とポイント機能をご利用いただけます。</p>
                 <button class="btn btn-primary btn-empty-action" onclick="app.switchTab('${AppConstants.TABS.MEMBER}')">
                     <i class="fas fa-user-plus"></i> 会員登録へ
+                </button>
+            </div>
+        `;
+    }
+
+    getOptionalMembershipTemplate(): string {
+        return `
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="fas fa-calendar-alt"></i>
+                </div>
+                <h3 class="empty-state-title">予約をはじめる</h3>
+                <p class="empty-state-message">ゲストでも予約内容を確認できます。会員登録すると履歴を引き継げます。</p>
+                <button class="btn btn-secondary btn-empty-action" onclick="app.switchTab('${AppConstants.TABS.MEMBER}')">
+                    <i class="fas fa-user-plus"></i> 任意で会員登録
                 </button>
             </div>
         `;

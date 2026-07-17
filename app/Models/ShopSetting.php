@@ -41,6 +41,7 @@ class ShopSetting
         'line_liff_url' => ProjectLineLiffSetting::class,
         'liff_builder_blocks' => ProjectLineLiffSetting::class,
         'liff_tab_layouts' => ProjectLineLiffSetting::class,
+        'liff_detail_layouts' => ProjectLineLiffSetting::class,
         'liff_tab_settings' => ProjectLineLiffSetting::class,
         'liff_saved_screens' => ProjectLineLiffSetting::class,
         'liff_custom_css' => ProjectLineLiffSetting::class,
@@ -208,6 +209,7 @@ class ShopSetting
             ['tab' => 'reservations', 'label' => '予約', 'icon' => 'fa-calendar-check', 'order' => 6],
             ['tab' => 'member', 'label' => '会員証', 'icon' => 'fa-id-card', 'order' => 7],
             ['tab' => 'gallery', 'label' => 'ギャラリー', 'icon' => 'fa-images', 'order' => 8],
+            ['tab' => 'announcements', 'label' => 'お知らせ', 'icon' => 'fa-bullhorn', 'order' => 9],
         ];
     }
 
@@ -227,10 +229,11 @@ class ShopSetting
                 continue;
             }
             $row = array_merge($defaults->get($tab), $item);
-            // ホーム設定で「表示する」がオフのタブはユーザー画面に出さない
             if (isset($row['enabled']) && $row['enabled'] === false) {
                 continue;
             }
+            $row['icon'] = self::normalizeFrontendMenuIcon((string) $tab, (string) ($row['icon'] ?? ''));
+            $row['label'] = (string) ($row['label'] ?? $defaults->get($tab)['label']);
             $merged[] = $row;
         }
         if ($merged === []) {
@@ -239,6 +242,30 @@ class ShopSetting
         usort($merged, fn ($a, $b) => ($a['order'] ?? 999) <=> ($b['order'] ?? 999));
 
         return $merged;
+    }
+
+    /** 旧アイコン名を現行デフォルトへ寄せ、デザイナー／本番の見た目差を防ぐ */
+    public static function normalizeFrontendMenuIcon(string $tab, string $icon): string
+    {
+        $defaults = collect(self::defaultFrontendMenuItems())->keyBy('tab');
+        $fallback = (string) ($defaults->get($tab)['icon'] ?? 'fa-circle');
+        if ($icon === '') {
+            return $fallback;
+        }
+
+        $aliases = [
+            'fa-home' => 'fa-house',
+            'fa-calendar-alt' => 'fa-calendar-check',
+            'fa-users' => 'fa-list-ol',
+        ];
+        if ($tab === 'member' && ($icon === 'fa-user' || $icon === 'fa-users')) {
+            return 'fa-id-card';
+        }
+        if ($tab === 'queue' && $icon === 'fa-users') {
+            return 'fa-list-ol';
+        }
+
+        return $aliases[$icon] ?? $icon;
     }
 
     /** フロントメニュー項目を保存 */
@@ -267,7 +294,7 @@ class ShopSetting
     /** 機能フラグの表示名（静的デフォルト。動的ラベルは featureFlagLabels() を使う） */
     public const FEATURE_FLAG_LABELS = [
         'feature_home_enabled' => 'ホーム',
-        'feature_orders_enabled' => 'Reggit',
+        'feature_orders_enabled' => '注文（商品・履歴）',
         'feature_reservations_enabled' => '予約',
         'feature_queue_enabled' => '順番待ち',
         'feature_stamps_enabled' => 'スタンプカード',
@@ -281,9 +308,7 @@ class ShopSetting
     /** config/native_app.php を反映した機能フラグ表示名 */
     public static function featureFlagLabels(): array
     {
-        return array_merge(self::FEATURE_FLAG_LABELS, [
-            'feature_orders_enabled' => config('native_app.order_type_mobile_label', 'Reggit'),
-        ]);
+        return self::FEATURE_FLAG_LABELS;
     }
 
     public const ORDER_MODE_BOTH = 'both';
@@ -376,6 +401,27 @@ class ShopSetting
         self::setValue('liff_tab_layouts', ShopSettingLiffDefaults::ensureLiffTabLayouts($layouts), 'json', $projectId);
     }
 
+    /**
+     * @return array<string, array<int, array<string, mixed>>>
+     */
+    public static function getLiffDetailLayouts(?int $projectId = null): array
+    {
+        $layouts = self::getValue('liff_detail_layouts', null, $projectId);
+        if (! is_array($layouts) || $layouts === []) {
+            return ShopSettingLiffDefaults::defaultLiffDetailLayouts();
+        }
+
+        return ShopSettingLiffDefaults::ensureLiffDetailLayouts($layouts);
+    }
+
+    /**
+     * @param  array<string, mixed>  $layouts
+     */
+    public static function setLiffDetailLayouts(array $layouts, ?int $projectId = null): void
+    {
+        self::setValue('liff_detail_layouts', ShopSettingLiffDefaults::ensureLiffDetailLayouts($layouts), 'json', $projectId);
+    }
+
     /** LIFF 保存画面の最大件数 */
     public const LIFF_SAVED_SCREENS_MAX = 10;
 
@@ -435,6 +481,14 @@ class ShopSetting
     public static function defaultLiffTabLayouts(): array
     {
         return ShopSettingLiffDefaults::defaultLiffTabLayouts();
+    }
+
+    /**
+     * @return array<string, array<int, array<string, mixed>>>
+     */
+    public static function defaultLiffDetailLayouts(): array
+    {
+        return ShopSettingLiffDefaults::defaultLiffDetailLayouts();
     }
 
     /**

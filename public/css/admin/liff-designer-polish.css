@@ -93,6 +93,6 @@
     box-shadow: var(--ld-shadow);
 }
 
-.ld-phone__frame {
+.ld-phone__frame:not(.ld-phone-device):not(.ld-phone-device__stage) {
     box-shadow: var(--ld-shadow-lg);
 }
