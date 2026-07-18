@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\QueueStatus;
 use App\Models\Concerns\BelongsToProject;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -53,8 +54,8 @@ class QueueEntry extends Model
     /**
      * 管理画面・受付一覧向け: 直近1日以内、かつ入店済みは入店から30分以内のみ。
      *
-     * @param  \Illuminate\Database\Eloquent\Builder  $query
-     * @return \Illuminate\Database\Eloquent\Builder
+     * @param  Builder  $query
+     * @return Builder
      */
     public function scopeVisibleOnQueueBoard($query)
     {
