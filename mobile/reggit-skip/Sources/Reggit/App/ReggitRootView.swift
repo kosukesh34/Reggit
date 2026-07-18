@@ -5,7 +5,7 @@ import SwiftUI
     }
 
     public var body: some View {
-        ContentView(viewModel: MobileWebShellFactory.makeViewModel())
+        ContentView(viewModel: MobileWebShellSession.viewModel())
             .task {
                 logger.info("Skip app logs are viewable in the Xcode console for iOS; Android logs can be viewed in Studio or using adb logcat")
             }

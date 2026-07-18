@@ -12,4 +12,20 @@ final class BuildNativeInjectionScriptUseCaseTests: XCTestCase {
         XCTAssertTrue(script.contains(".native-app-embed #react-frontend-tabs-root"))
         XCTAssertTrue(script.contains(".native-app-embed .tab-content.active"))
     }
+
+    func testRedirectGuardDoesNotTreatNgrokHostItselfAsInterception() {
+        let script = BuildNativeInjectionScriptUseCase().execute(
+            config: MobileWebShellConfig(
+                baseUrl: "https://unadministrable-idiocratically-annalee.ngrok-free.dev",
+                projectKey: "default",
+                fixedTab: "products"
+            ),
+            device: FakeNativeDeviceContextProvider(),
+            activeTab: "products"
+        )
+
+        XCTAssertTrue(script.contains("isNgrokInterstitialPage"))
+        XCTAssertFalse(script.contains("isNgrokInterception"))
+        XCTAssertFalse(script.contains("currentHost.includes('ngrok-free.dev')"))
+    }
 }
