@@ -1,11 +1,19 @@
 import SkipWeb
 
 struct BuildWebEngineConfigurationUseCase {
+    @MainActor
     func execute(platform: NativePlatform) -> WebEngineConfiguration {
         var config = WebEngineConfiguration()
         config.javaScriptEnabled = true
         config.allowsPullToRefresh = false
         config.isScrollEnabled = false
+        config.userScripts = [
+            WebViewUserScript(
+                source: MobileWebShellScripts.ngrokInterstitialBypass(),
+                injectionTime: .atDocumentEnd,
+                forMainFrameOnly: true
+            )
+        ]
         let appToken = "\(NativeAppIdentity.userAgentAppToken) (\(platform.rawValue))"
         switch platform {
         case .ios:

@@ -2,7 +2,7 @@ import SwiftUI
 import SkipWeb
 
 struct ContentView: View {
-    @State private var viewModel: MobileWebShellViewModel
+    @State var viewModel: MobileWebShellViewModel
 
     init(viewModel: MobileWebShellViewModel) {
         _viewModel = State(initialValue: viewModel)
