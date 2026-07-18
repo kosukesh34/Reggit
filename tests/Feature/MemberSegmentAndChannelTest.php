@@ -2,10 +2,15 @@
 
 namespace Tests\Feature;
 
+use App\Enums\MemberVisitSource;
 use App\Infrastructure\Persistence\Eloquent\Coupon\EloquentCouponDeliveryTargetRepository;
 use App\Models\Member;
+use App\Models\MemberVisit;
+use App\Models\MemberVisitItem;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\PointTransaction;
+use App\Models\Product;
 use App\Models\Project;
 use App\Models\User;
 use App\Models\UserDevice;
@@ -311,7 +316,7 @@ class MemberSegmentAndChannelTest extends TestCase
     public function test_購入商品でアプリ注文とpos来店の会員を絞り込めること(): void
     {
         $project = $this->createProject();
-        $product = \App\Models\Product::factory()->create([
+        $product = Product::factory()->create([
             'project_id' => $project->id,
             'smaregi_product_id' => 'P-100',
             'name' => '対象商品',
@@ -330,7 +335,7 @@ class MemberSegmentAndChannelTest extends TestCase
             'total_amount' => 500,
             'status' => 'completed',
         ]);
-        \App\Models\OrderItem::create([
+        OrderItem::create([
             'project_id' => $project->id,
             'order_id' => $order->id,
             'product_id' => $product->id,
@@ -343,15 +348,15 @@ class MemberSegmentAndChannelTest extends TestCase
             'project_id' => $project->id,
             'user_id' => $posUser->id,
         ]);
-        $visit = \App\Models\MemberVisit::create([
+        $visit = MemberVisit::create([
             'project_id' => $project->id,
             'member_id' => $posMember->id,
             'visited_at' => now(),
-            'source' => \App\Enums\MemberVisitSource::SMAREGI,
+            'source' => MemberVisitSource::SMAREGI,
             'amount' => 1000,
             'smaregi_transaction_head_id' => 'TX-1',
         ]);
-        \App\Models\MemberVisitItem::create([
+        MemberVisitItem::create([
             'project_id' => $project->id,
             'member_visit_id' => $visit->id,
             'product_id' => $product->id,

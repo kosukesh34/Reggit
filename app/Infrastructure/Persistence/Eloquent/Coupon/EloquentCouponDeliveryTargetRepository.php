@@ -6,6 +6,7 @@ use App\Domain\Coupon\Repositories\CouponDeliveryTargetRepository;
 use App\Enums\OrderStatus;
 use App\Models\Member;
 use App\Models\Order;
+use App\Models\Product;
 use App\Support\MemberChannel;
 use Carbon\Carbon;
 
@@ -232,7 +233,7 @@ class EloquentCouponDeliveryTargetRepository implements CouponDeliveryTargetRepo
             ->map(fn ($id) => (int) $id)
             ->all();
 
-        $product = \App\Models\Product::query()
+        $product = Product::query()
             ->where('project_id', $projectId)
             ->whereKey($productId)
             ->first();
