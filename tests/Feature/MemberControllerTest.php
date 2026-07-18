@@ -40,6 +40,31 @@ class MemberControllerTest extends TestCase
             ->assertJsonPath('is_member', true);
     }
 
+    public function test_register_二重送信でも会員は1件のみ作成されること(): void
+    {
+        $this->createProject();
+        config(['smaregi.contract_id' => '']);
+
+        $headers = ['X-Line-User-Id' => self::LINE_USER_ID];
+        $payload = [
+            'name' => 'Test User',
+            'phone' => '090-1234-5678',
+        ];
+
+        $first = $this->withHeaders($headers)
+            ->post('/api/members/register?project_key=default', $payload);
+        $second = $this->withHeaders($headers)
+            ->post('/api/members/register?project_key=default', $payload);
+
+        $first->assertStatus(201)->assertJsonPath('is_member', true);
+        $second->assertStatus(200)->assertJsonPath('is_member', true);
+
+        $user = User::query()->where('line_user_id', self::LINE_USER_ID)->first();
+        $this->assertNotNull($user);
+        $this->assertSame(1, Member::query()->where('user_id', $user->id)->count());
+        $this->assertSame(1, User::query()->where('line_user_id', self::LINE_USER_ID)->count());
+    }
+
     public function test_me_会員データを返すこと(): void
     {
         $project = $this->createProject();
