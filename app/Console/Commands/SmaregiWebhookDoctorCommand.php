@@ -18,7 +18,7 @@ class SmaregiWebhookDoctorCommand extends Command
         $webhookUrl = $appUrl.'/api/smaregi/webhook';
         $contractId = (string) config('smaregi.contract_id', '');
         $secret = (string) config('smaregi.webhook_secret', '');
-        $secretHeader = (string) config('smaregi.webhook_secret_header', 'X-Smaregi-Webhook-Secret');
+        $secretHeader = (string) config('smaregi.webhook_secret_header', 'x-sdsch-idnect');
         $inline = (bool) config('smaregi.webhook_run_sync_inline', false);
 
         $this->info('=== スマレジ Webhook 診断 ===');
@@ -77,7 +77,7 @@ class SmaregiWebhookDoctorCommand extends Command
             return self::FAILURE;
         }
 
-        $this->info('接続テスト完了。storage/logs の [Smaregi] Webhook ingress を確認してください。');
+        $this->info('接続テスト完了。storage/logs の [Smaregi] Webhook を確認してください。');
 
         return self::SUCCESS;
     }
