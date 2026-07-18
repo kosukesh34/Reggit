@@ -14,6 +14,10 @@ final class MemberChannel
 
     public const BOTH = 'both';
 
+    public const PLATFORM_IOS = 'ios';
+
+    public const PLATFORM_ANDROID = 'android';
+
     public static function isValidLineUserId(?string $lineUserId): bool
     {
         if ($lineUserId === null || $lineUserId === '') {
@@ -48,6 +52,37 @@ final class MemberChannel
     /**
      * @return list<string>
      */
+    public static function platforms(?User $user): array
+    {
+        if ($user === null) {
+            return [];
+        }
+
+        if ($user->relationLoaded('devices')) {
+            $values = $user->devices->pluck('platform')->all();
+        } else {
+            $values = UserDevice::query()
+                ->where('user_id', $user->id)
+                ->pluck('platform')
+                ->all();
+        }
+
+        $platforms = [];
+        foreach ($values as $platform) {
+            if ($platform !== self::PLATFORM_IOS && $platform !== self::PLATFORM_ANDROID) {
+                continue;
+            }
+            if (! in_array($platform, $platforms, true)) {
+                $platforms[] = $platform;
+            }
+        }
+
+        return $platforms;
+    }
+
+    /**
+     * @return list<string>
+     */
     public static function channels(?User $user): array
     {
         $channels = [];
@@ -63,17 +98,24 @@ final class MemberChannel
 
     public static function label(?User $user): string
     {
-        $channels = self::channels($user);
-        if ($channels === []) {
-            return '—';
-        }
-
         $labels = [];
-        if (in_array(self::LINE, $channels, true)) {
+        if (self::hasLine($user)) {
             $labels[] = 'LINE';
         }
-        if (in_array(self::APP, $channels, true)) {
+
+        $platforms = self::platforms($user);
+        if (in_array(self::PLATFORM_IOS, $platforms, true)) {
+            $labels[] = 'iOS';
+        }
+        if (in_array(self::PLATFORM_ANDROID, $platforms, true)) {
+            $labels[] = 'Android';
+        }
+        if (self::hasApp($user) && $platforms === []) {
             $labels[] = 'アプリ';
+        }
+
+        if ($labels === []) {
+            return '—';
         }
 
         return implode('・', $labels);
