@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\Smaregi\SmaregiApiService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
+use Tests\Support\CleansUpSmaregiCreatedResources;
 use Tests\TestCase;
 
 /**
@@ -17,6 +18,7 @@ use Tests\TestCase;
  * 現状の .env（SMAREGI_CLIENT_ID / SMAREGI_CLIENT_SECRET）と、
  * 契約ID（.env の SMAREGI_CONTRACT_ID または SMAREGI_TEST_CONTRACT_ID、未設定時はプロジェクト1の紐付け）を使って実接続します。
  * 資格情報・契約が無い環境ではスキップされます。
+ * 作成した会員・クーポンは tearDown で削除します。
  *
  * 実行例: php artisan test tests/Feature/SmaregiApiIntegrationTest.php
  * または: php artisan test --group=smaregi-integration
@@ -25,6 +27,7 @@ use Tests\TestCase;
  */
 class SmaregiApiIntegrationTest extends TestCase
 {
+    use CleansUpSmaregiCreatedResources;
     use RefreshDatabase;
 
     private ?string $contractId = null;
@@ -134,6 +137,7 @@ class SmaregiApiIntegrationTest extends TestCase
         $this->assertArrayHasKey('customerId', $result);
         $this->assertArrayHasKey('customerCode', $result);
         $this->assertSame($code, $result['customerCode']);
+        $this->trackSmaregiCustomer($this->contractId, (string) $result['customerId']);
     }
 
     /** DBの会員とスマレジに登録した会員の会員コードが一致することを実APIで検証 */
@@ -162,6 +166,7 @@ class SmaregiApiIntegrationTest extends TestCase
         if ($created === null) {
             $this->markTestSkipped('スマレジ会員登録に失敗したため、DB・スマレジ一致テストをスキップしました。');
         }
+        $this->trackSmaregiCustomer($this->contractId, (string) ($created['customerId'] ?? ''));
 
         $fetched = $service->getCustomers($this->contractId, ['customer_code' => $code]);
         $this->assertNotNull($fetched, '会員一覧の取得に失敗しました。');

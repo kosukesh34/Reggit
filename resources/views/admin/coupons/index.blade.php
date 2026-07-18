@@ -85,6 +85,7 @@
                             <span class="badge badge-success" title="ID: {{ $coupon->smaregi_coupon_id }}">連携済</span>
                         @else
                             <span class="badge badge-secondary">未連携</span>
+                            <a href="{{ admin_route('admin.coupons.bulk-issue') }}#smaregi-sync" class="d-block small mt-1">スマレジへ反映</a>
                         @endif
                     </td>
                     <td><span class="badge badge-{{ $coupon->is_active ? 'success' : 'danger' }}">{{ $coupon->is_active ? '有効' : '無効' }}</span></td>

@@ -7,7 +7,7 @@ use App\Models\Announcement;
 use App\Services\Admin\AnnouncementAdminService;
 use App\Services\Admin\CouponAdminService;
 use App\Services\Admin\MemberAdminService;
-use App\Services\Admin\SalesSegmentService;
+use App\Services\Admin\MemberSegmentService;
 use App\Services\PushNotificationService;
 use App\UseCases\Admin\Announcement\Data\StoreDeliveryOutput;
 use Illuminate\Support\Carbon;
@@ -17,7 +17,7 @@ class AdminAnnouncementStoreDeliveryUseCase
 {
     public function __construct(
         private PushNotificationService $pushNotificationService,
-        private SalesSegmentService $salesSegmentService,
+        private MemberSegmentService $memberSegmentService,
         private MemberAdminService $memberAdminService,
         private AnnouncementAdminService $announcementAdminService,
         private CouponAdminService $couponAdminService
@@ -63,7 +63,12 @@ class AdminAnnouncementStoreDeliveryUseCase
         }
 
         if ($deliveryType === Announcement::DELIVERY_TYPE_SEGMENT) {
-            return $this->resolveSegmentTargets($projectId, $validated);
+            $criteria = $this->memberSegmentService->buildCriteriaFromInput($validated);
+            if ($criteria === null) {
+                return collect();
+            }
+
+            return $this->memberSegmentService->getMemberIds($projectId, $criteria);
         }
 
         return collect();
@@ -85,25 +90,6 @@ class AdminAnnouncementStoreDeliveryUseCase
         $validIds = $this->memberAdminService->filterValidMemberIds($projectId, $rawIds);
 
         return $validIds->count() === count($rawIds) ? $validIds : null;
-    }
-
-    /**
-     * @param  array<string, string|string[]>  $validated
-     * @return Collection<int, int>
-     */
-    private function resolveSegmentTargets(int $projectId, array $validated): Collection
-    {
-        $periodDays = (int) ($validated['segment_period_days'] ?? 0);
-        $condition = (string) ($validated['segment_condition'] ?? '');
-        $minAmount = isset($validated['segment_min_amount']) ? (float) $validated['segment_min_amount'] : null;
-        $isNoOrders = $condition === 'no_orders';
-
-        return $this->salesSegmentService->getMemberIdsBySalesCriteria(
-            $projectId,
-            $periodDays,
-            $isNoOrders ? null : $minAmount,
-            $isNoOrders
-        );
     }
 
     /**
@@ -133,7 +119,9 @@ class AdminAnnouncementStoreDeliveryUseCase
             'published_at' => $isScheduled ? null : $now,
             'sent_at' => $isScheduled ? null : $now,
             'target_member_ids' => $targetMemberIds->isEmpty() ? null : $targetMemberIds->all(),
-            'segment_criteria' => $this->buildSegmentCriteria($deliveryType, $validated),
+            'segment_criteria' => $deliveryType === Announcement::DELIVERY_TYPE_SEGMENT
+                ? $this->memberSegmentService->buildCriteriaFromInput($validated)
+                : null,
             'delivery_coupon_id' => $this->resolveDeliveryCouponId($projectId, $validated),
         ]);
     }
@@ -163,30 +151,6 @@ class AdminAnnouncementStoreDeliveryUseCase
             false,
             "お知らせを配信しました（送信: {$sent}件 / 失敗: {$failed}件 / スキップ: {$skipped}件）"
         );
-    }
-
-    /**
-     * @param  array<string, string|string[]>  $validated
-     * @return array{period_days: int, no_orders: bool, min_total_amount?: float}|null
-     */
-    private function buildSegmentCriteria(string $deliveryType, array $validated): ?array
-    {
-        if ($deliveryType !== Announcement::DELIVERY_TYPE_SEGMENT) {
-            return null;
-        }
-
-        $condition = (string) ($validated['segment_condition'] ?? '');
-        $isNoOrders = $condition === 'no_orders';
-        $criteria = [
-            'period_days' => (int) ($validated['segment_period_days'] ?? 0),
-            'no_orders' => $isNoOrders,
-        ];
-
-        if (! $isNoOrders && isset($validated['segment_min_amount'])) {
-            $criteria['min_total_amount'] = (float) $validated['segment_min_amount'];
-        }
-
-        return $criteria;
     }
 
     /** @param array<string, string|string[]> $validated */

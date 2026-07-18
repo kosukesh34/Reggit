@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Requests\Admin\MemberUpdateRequest;
 use App\UseCases\Admin\Member\AdminMemberAddStampsUseCase;
 use App\UseCases\Admin\Member\AdminMemberAttachTagUseCase;
+use App\UseCases\Admin\Member\AdminMemberDeleteUseCase;
 use App\UseCases\Admin\Member\AdminMemberDetachTagUseCase;
 use App\UseCases\Admin\Member\AdminMemberDetailUseCase;
 use App\UseCases\Admin\Member\AdminMemberEditUseCase;
@@ -26,6 +27,7 @@ class MemberController extends AdminBaseController
         private AdminMemberDetailUseCase $detailUseCase,
         private AdminMemberEditUseCase $editUseCase,
         private AdminMemberUpdateUseCase $updateUseCase,
+        private AdminMemberDeleteUseCase $deleteUseCase,
         private AdminMemberIssueCouponUseCase $issueCouponUseCase,
         private AdminMemberAddStampsUseCase $addStampsUseCase,
         private AdminMemberAttachTagUseCase $attachTagUseCase,
@@ -38,7 +40,7 @@ class MemberController extends AdminBaseController
     public function members(Request $request)
     {
         $projectId = $this->resolveAdminProjectId();
-        $filters = $request->only(['keyword', 'status', 'rank']);
+        $filters = $request->only(['keyword', 'status', 'rank', 'channel']);
         $output = $this->listUseCase->handle($projectId, $filters);
 
         return view('admin.members', [
@@ -108,6 +110,20 @@ class MemberController extends AdminBaseController
 
         return redirect()->route('admin.members.detail', array_merge(['id' => $id], $this->buildAdminRouteParams()))
             ->with('success', '会員情報を更新しました');
+    }
+
+    public function deleteMember(string $project_key, int $id)
+    {
+        $projectId = $this->resolveAdminProjectId();
+        try {
+            $this->deleteUseCase->handle($projectId, $id);
+        } catch (\RuntimeException $e) {
+            return redirect()->route('admin.members', $this->buildAdminRouteParams())
+                ->with('error', $e->getMessage());
+        }
+
+        return redirect()->route('admin.members', $this->buildAdminRouteParams())
+            ->with('success', '会員を削除しました');
     }
 
     /** 会員にクーポンを配布 */
@@ -180,7 +196,7 @@ class MemberController extends AdminBaseController
     public function export(Request $request)
     {
         $projectId = $this->resolveAdminProjectId();
-        $filters = $request->only(['keyword', 'status']);
+        $filters = $request->only(['keyword', 'status', 'channel']);
         $rows = $this->exportUseCase->handle($projectId, $filters);
 
         $csvHeader = array_keys($rows->first() ?? []);
