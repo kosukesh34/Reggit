@@ -9,6 +9,11 @@
     <i class="fas fa-check-circle"></i> {{ session('success') }}
 </div>
 @endif
+@if(session('error'))
+<div class="alert alert-error" role="alert">
+    <i class="fas fa-exclamation-circle"></i> {{ session('error') }}
+</div>
+@endif
 
 {{-- 購買サマリーKPI --}}
 <div class="member-kpi-grid">
@@ -129,10 +134,13 @@
             <div class="info-item">
                 <div class="info-label">最終来店日</div>
                 <div class="info-value">
-                    {{ $member->last_visited_at ? \Illuminate\Support\Carbon::parse($member->last_visited_at)->format('Y/m/d') : '—' }}
+                    {{ $member->last_visited_at ? $member->last_visited_at->format('Y/m/d') : '—' }}
                 </div>
             </div>
         </div>
+        @if($adminUser === null || $adminUser->hasPermission('members.manage'))
+        <p class="text-muted small mb-0 mt-3">ポイント・スタンプ・クーポン・来店の操作は<a href="{{ admin_route('admin.members.edit', ['id' => $member->id]) }}">編集画面</a>から行えます。</p>
+        @endif
     </div>
 </div>
 
@@ -219,7 +227,7 @@
         <tbody>
             @foreach($purchaseSummary['recent_orders'] as $order)
             <tr>
-                <td><a href="{{ admin_route('admin.orders.detail', ['id' => $order->id]) }}">{{ $order->order_number }}</a></td>
+                <td><a href="{{ admin_route('admin.orders.detail', ['id' => $order->id]) }}">{{ $order->formattedOrderNumber() }}</a></td>
                 <td>¥{{ number_format($order->total_amount) }}</td>
                 <td>
                     <span class="badge badge-{{ $order->status === 'completed' ? 'success' : ($order->status === 'pending' ? 'warning' : ($order->status === 'cancelled' ? 'danger' : 'info')) }}">
@@ -236,6 +244,45 @@
     </table>
 </div>
 @endif
+
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-store"></i> 来店履歴</h3>
+    </div>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>来店日時</th>
+                <th>経路</th>
+                <th>注文番号</th>
+                <th>メモ</th>
+            </tr>
+        </thead>
+        <tbody>
+            @forelse($member->visits as $visit)
+            <tr>
+                <td>{{ $visit->visited_at->format('Y/m/d H:i') }}</td>
+                <td>{{ \App\Enums\MemberVisitSource::getLabel($visit->source) }}</td>
+                <td>
+                    @if($visit->order !== null)
+                        <a href="{{ admin_route('admin.orders.detail', ['id' => $visit->order->id]) }}">{{ $visit->order->formattedOrderNumber() }}</a>
+                    @else
+                        —
+                    @endif
+                </td>
+                <td>{{ $visit->note ?? '—' }}</td>
+            </tr>
+            @empty
+            <tr>
+                <td colspan="4" class="empty-state">
+                    <i class="fas fa-store"></i>
+                    <p>来店履歴がありません</p>
+                </td>
+            </tr>
+            @endforelse
+        </tbody>
+    </table>
+</div>
 
 <div class="card">
     <div class="card-header">
@@ -256,13 +303,17 @@
             <tr>
                 <td>{{ $transaction->created_at->format('Y/m/d H:i') }}</td>
                 <td>
-                    <span class="badge badge-{{ $transaction->type === 'earned' ? 'success' : 'danger' }}">
-                        {{ $transaction->type === 'earned' ? '獲得' : '使用' }}
-                    </span>
+                    @php
+                        $typeLabel = \App\Enums\PointTransactionType::getLabel($transaction->type);
+                        $typeBadge = $transaction->type === \App\Enums\PointTransactionType::EARNED || $transaction->type === \App\Enums\PointTransactionType::REFUNDED
+                            ? 'success'
+                            : 'danger';
+                    @endphp
+                    <span class="badge badge-{{ $typeBadge }}">{{ $typeLabel }}</span>
                 </td>
                 <td>{{ $transaction->points > 0 ? '+' : '' }}{{ number_format($transaction->points) }}pt</td>
                 <td>{{ $transaction->description ?? 'N/A' }}</td>
-                <td>{{ $transaction->order->order_number ?? 'N/A' }}</td>
+                <td>{{ $transaction->order !== null ? $transaction->order->formattedOrderNumber() : 'N/A' }}</td>
             </tr>
             @empty
             <tr>
@@ -278,83 +329,84 @@
 
 <div class="card">
     <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-ticket-alt"></i> クーポン配布</h3>
+        <h3 class="card-title"><i class="fas fa-ticket-alt"></i> クーポン発行履歴</h3>
     </div>
-    <div class="card-body">
-        @if($activeCoupons->isEmpty())
-            <p class="text-muted">配布可能なクーポンがありません。<a href="{{ admin_route('admin.coupons.create') }}">クーポンを作成</a>してください。</p>
-        @else
-            <form action="{{ admin_route('admin.members.issue-coupon', ['id' => $member->id]) }}" method="POST" class="form-inline mb-0">
-                @csrf
-                <div class="form-group me-2">
-                    <label for="coupon_id" class="form-label me-1">クーポン</label>
-                    <select name="coupon_id" id="coupon_id" class="form-control" required>
-                        <option value="">選択してください</option>
-                        @foreach($activeCoupons as $c)
-                            <option value="{{ $c->id }}">{{ $c->name }}（{{ $c->code }}）</option>
-                        @endforeach
-                    </select>
-                </div>
-                <button type="submit" class="btn btn-primary"><i class="fas fa-gift"></i> 配布する</button>
-            </form>
-        @endif
-    </div>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>クーポン名</th>
+                <th>状態</th>
+                <th>発行日</th>
+                <th>有効期限</th>
+            </tr>
+        </thead>
+        <tbody>
+            @forelse($member->memberCoupons as $mc)
+            <tr>
+                <td>{{ $mc->coupon_name_snapshot ?? $mc->coupon->name ?? '—' }}</td>
+                <td>
+                    <span class="badge badge-{{ $mc->status === 'unused' ? 'success' : 'secondary' }}">
+                        {{ $mc->status === 'unused' ? '未使用' : '使用済み' }}
+                    </span>
+                </td>
+                <td>{{ $mc->issued_at ? $mc->issued_at->format('Y/m/d H:i') : '—' }}</td>
+                <td>{{ $mc->valid_until ? $mc->valid_until->format('Y/m/d H:i') : '—' }}</td>
+            </tr>
+            @empty
+            <tr>
+                <td colspan="4" class="empty-state">
+                    <i class="fas fa-ticket-alt"></i>
+                    <p>クーポン発行履歴がありません</p>
+                </td>
+            </tr>
+            @endforelse
+        </tbody>
+    </table>
 </div>
 
 <div class="card">
     <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-stamp"></i> スタンプ付与</h3>
+        <h3 class="card-title"><i class="fas fa-stamp"></i> スタンプ付与履歴</h3>
     </div>
-    <div class="card-body">
-        @if($activeStampCards->isEmpty())
-            <p class="text-muted">スタンプカードがありません。<a href="{{ admin_route('admin.stamps.create') }}">スタンプカードを作成</a>してください。</p>
-        @else
-            <form action="{{ admin_route('admin.members.add-stamps', ['id' => $member->id]) }}" method="POST" class="form-inline mb-0">
-                @csrf
-                <div class="form-group me-2">
-                    <label for="stamp_card_id" class="form-label me-1">スタンプカード</label>
-                    <select name="stamp_card_id" id="stamp_card_id" class="form-control" required>
-                        <option value="">選択してください</option>
-                        @foreach($activeStampCards as $sc)
-                            <option value="{{ $sc->id }}">{{ $sc->name }}（{{ $sc->required_stamps }}個で達成）</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="form-group me-2">
-                    <label for="stamp_count" class="form-label me-1">付与数</label>
-                    <input type="number" name="count" id="stamp_count" class="form-control" value="1" min="1" max="100" style="width:5em">
-                </div>
-                <button type="submit" class="btn btn-primary"><i class="fas fa-plus-circle"></i> 付与する</button>
-            </form>
-        @endif
+    @if($member->memberStamps->isNotEmpty())
+    <div class="card-body pb-0">
+        <p class="text-muted small mb-2">現在の状況:
+            @foreach($member->memberStamps as $ms)
+                {{ $ms->stampCard->name ?? '—' }} {{ $ms->current_stamps }} / {{ $ms->stampCard->required_stamps ?? 0 }}{{ $ms->completed_at ? '（達成済み）' : '' }}@if(!$loop->last)、@endif
+            @endforeach
+        </p>
     </div>
+    @endif
+    <table class="table">
+        <thead>
+            <tr>
+                <th>日時</th>
+                <th>スタンプカード</th>
+                <th>増減</th>
+                <th>付与後残高</th>
+                <th>説明</th>
+            </tr>
+        </thead>
+        <tbody>
+            @forelse($member->stampTransactions as $tx)
+            <tr>
+                <td>{{ $tx->created_at->format('Y/m/d H:i') }}</td>
+                <td>{{ $tx->stampCard->name ?? '—' }}</td>
+                <td>{{ $tx->delta > 0 ? '+' : '' }}{{ $tx->delta }}</td>
+                <td>{{ $tx->balance_after }}</td>
+                <td>{{ $tx->description ?? '—' }}</td>
+            </tr>
+            @empty
+            <tr>
+                <td colspan="5" class="empty-state">
+                    <i class="fas fa-stamp"></i>
+                    <p>スタンプ付与履歴がありません</p>
+                </td>
+            </tr>
+            @endforelse
+        </tbody>
+    </table>
 </div>
-
-@if($member->memberStamps->isNotEmpty() || $member->memberCoupons->isNotEmpty())
-<div class="card">
-    <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-history"></i> スタンプ・クーポン状況</h3>
-    </div>
-    <div class="card-body">
-        @if($member->memberStamps->isNotEmpty())
-            <h4 class="h6 mt-0"><i class="fas fa-stamp"></i> スタンプ</h4>
-            <ul class="list-unstyled mb-3">
-                @foreach($member->memberStamps as $ms)
-                    <li>{{ $ms->stampCard->name ?? '—' }}: {{ $ms->current_stamps }} / {{ $ms->stampCard->required_stamps ?? 0 }} {{ $ms->completed_at ? '（達成済み）' : '' }}</li>
-                @endforeach
-            </ul>
-        @endif
-        @if($member->memberCoupons->isNotEmpty())
-            <h4 class="h6"><i class="fas fa-ticket-alt"></i> 保有クーポン</h4>
-            <ul class="list-unstyled mb-0">
-                @foreach($member->memberCoupons as $mc)
-                    <li>{{ $mc->coupon_name_snapshot ?? $mc->coupon->name ?? '—' }} — {{ $mc->status === 'unused' ? '未使用' : '使用済み' }}（発行: {{ $mc->issued_at->format('Y/m/d') }}）</li>
-                @endforeach
-            </ul>
-        @endif
-    </div>
-</div>
-@endif
 
 <div class="form-actions">
     <a href="{{ admin_route('admin.members') }}" class="btn btn-secondary">

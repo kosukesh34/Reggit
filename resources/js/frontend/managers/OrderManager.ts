@@ -63,7 +63,7 @@ export class OrderManager {
                     `<span class="order-item-line">${DomHelper.escapeHtml((i.product && i.product.name) || '商品')} × ${i.quantity || 0}</span>`,
             )
             .join('');
-        const refNumber = DomHelper.formatReferenceNumber(order.order_number, order.id);
+        const refNumber = DomHelper.formatReferenceNumber(order.order_number);
         const typeBadge = typeLabel
             ? `<span class="order-card-type order-card-type--${DomHelper.escapeHtml(typeKey)}">${DomHelper.escapeHtml(typeLabel)}</span>`
             : '';

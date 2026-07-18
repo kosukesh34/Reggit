@@ -12,6 +12,7 @@ class QueueEntryFactory
         return new QueueEntry(
             $entry->id,
             $entry->queue_number ?? 0,
+            $entry->formattedQueueNumber(),
             $entry->status,
             $entry->party_size,
             $this->isLineLinked($entry),

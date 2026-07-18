@@ -7,6 +7,7 @@ class OrderOutput
 {
     public function __construct(
         public int $id,
+        public ?string $orderNumber,
         public float $totalAmount,
         public string $status,
         public string $paymentMethod,
@@ -19,11 +20,12 @@ class OrderOutput
         public array $items
     ) {}
 
-    /** @return array{id: int, total_amount: float, status: string, payment_method: string, points_used: int, points_earned: int, notes: string|null, order_type: string, created_at: string, updated_at: string, items: array<int, array{product_id: int, product_name: string, quantity: int, price: float, notes: string|null}>} */
+    /** @return array{id: int, order_number: string|null, total_amount: float, status: string, payment_method: string, points_used: int, points_earned: int, notes: string|null, order_type: string, created_at: string, updated_at: string, items: array<int, array{product_id: int, product_name: string, quantity: int, price: float, notes: string|null}>} */
     public function toArray(): array
     {
         return [
             'id' => $this->id,
+            'order_number' => $this->orderNumber,
             'total_amount' => $this->totalAmount,
             'status' => $this->status,
             'payment_method' => $this->paymentMethod,
