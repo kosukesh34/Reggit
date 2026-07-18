@@ -222,6 +222,7 @@ class LiffAppStudioTemplates
         foreach (self::MAIN_TABS as $tab) {
             $settings[$tab] = ['background_color' => '', 'background_image' => ''];
         }
+
         return $settings;
     }
 
@@ -414,7 +415,7 @@ class LiffAppStudioTemplates
      */
     private static function suiteEntry(string $id, string $name, string $industry, string $description, array $themeOver, array $menu, string $customCss = ''): array
     {
-        $layoutMethod = $industry . 'Layouts';
+        $layoutMethod = $industry.'Layouts';
         $categoryMap = [
             'loyalty' => 'loyalty',
             'order' => 'order',
@@ -494,6 +495,7 @@ class LiffAppStudioTemplates
     private static function loyaltyLayouts(): array
     {
         $a = '#5856d6';
+
         return [
             'home' => [
                 ['type' => 'member_summary', 'design' => 'wallet', 'greeting' => 'おかえりなさい'],
@@ -586,6 +588,7 @@ class LiffAppStudioTemplates
     private static function orderLayouts(): array
     {
         $a = '#ff9500';
+
         return [
             'home' => [
                 ['type' => 'banner', 'design' => 'countdown', 'icon' => 'fa-fire', 'text' => '今すぐ受取予約 — ランチ20%OFF 残り2時間', 'color' => $a, 'text_color' => '#ffffff', 'action' => '#products'],
@@ -682,6 +685,7 @@ class LiffAppStudioTemplates
     private static function bookingLayouts(): array
     {
         $a = '#af52de';
+
         return [
             'home' => [
                 ['type' => 'card', 'design' => 'featured', 'title' => '次回のご予約', 'description' => '7月25日（金）14:00〜 カット＋カラー / 担当 田中', 'image_url' => 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=800', 'action' => '#reservations'],
@@ -769,6 +773,7 @@ class LiffAppStudioTemplates
     private static function cafeLayouts(): array
     {
         $a = '#8B5E3C';
+
         return [
             'home' => [
                 ['type' => 'hero', 'design' => 'apple', 'eyebrow' => 'おはようございます', 'title' => '今日の一杯を選ぶ', 'subtitle' => '〇〇カフェへようこそ', 'image_url' => 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=1400&q=80'],
@@ -858,6 +863,7 @@ class LiffAppStudioTemplates
     private static function salonLayouts(): array
     {
         $a = '#ff2d55';
+
         return [
             'home' => [
                 ['type' => 'slider', 'design' => 'hero', 'section_label' => 'スタイルギャラリー', 'slide_height' => 300, 'slides' => [
@@ -943,6 +949,7 @@ class LiffAppStudioTemplates
     private static function retailLayouts(): array
     {
         $a = '#111111';
+
         return [
             'home' => [
                 ['type' => 'banner', 'design' => 'countdown', 'icon' => 'fa-fire', 'text' => '週末セール — 最大50%OFF 残り2日', 'color' => $a, 'text_color' => '#ffffff', 'action' => '#products'],
@@ -1037,6 +1044,7 @@ class LiffAppStudioTemplates
     private static function clinicLayouts(): array
     {
         $a = '#0284c7';
+
         return [
             'home' => [
                 ['type' => 'text', 'design' => 'lead', 'text' => '地域のかかりつけ医として、待ち時間やご予約をアプリから確認いただけます。'],
@@ -1129,6 +1137,7 @@ class LiffAppStudioTemplates
     private static function deliveryLayouts(): array
     {
         $a = '#ff3b30';
+
         return [
             'home' => [
                 ['type' => 'banner', 'design' => 'pill', 'icon' => 'fa-motorcycle', 'text' => '配達中 — あと約12分でお届け', 'color' => $a, 'text_color' => '#ffffff', 'action' => '#orders'],

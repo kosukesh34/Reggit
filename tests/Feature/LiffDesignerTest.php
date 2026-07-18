@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\AdminUser;
 use App\Models\Project;
 use App\Models\ShopSetting;
+use App\Support\ShopSettingLiffDefaults;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -539,7 +540,7 @@ class LiffDesignerTest extends TestCase
         $this->assertSame('apple', $settings['_global']['member_screen_design']);
         $this->assertSame('glass', $settings['_global']['coupon_screen_design']);
 
-        $templates = \App\Support\ShopSettingLiffDefaults::defaultLiffDesignerTemplates();
+        $templates = ShopSettingLiffDefaults::defaultLiffDesignerTemplates();
         $ids = array_column($templates, 'id');
         $this->assertContains('rg-suite-loyalty', $ids);
         $this->assertContains('rg-screen-rewards', $ids);
