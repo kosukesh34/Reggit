@@ -12,12 +12,10 @@ class SmaregiWebhookHandleUseCase
     ) {}
 
     /**
-     * POST /api/smaregi/webhook 用。Webhook 用カスタムヘッダー（シークレット）を検証する。
-     *
      * @return array{status: int, body: string}
      */
     public function handle(SmaregiNotificationInput $input): array
     {
-        return $this->webhookNotificationService->handleNotification($input, true);
+        return $this->webhookNotificationService->handleNotification($input);
     }
 }

@@ -65,7 +65,7 @@ Route::match(['get', 'post'], '/line/webhook', [LineWebhookController::class, 'h
 // 公式: HTTPS POST / JSON。接続確認で GET/HEAD が来る場合があるため許可。
 Route::match(['get', 'head', 'post'], '/smaregi/idp', [SmaregiIdpController::class, '__invoke'])->name('smaregi.idp');
 Route::match(['get', 'head', 'post'], '/smaregi/webhook', [SmaregiWebhookController::class, '__invoke'])
-    ->middleware('log.smaregi.webhook')
+    ->middleware('verify.smaregi.webhook')
     ->name('smaregi.webhook');
 
 // API v1（Bearer トークン認証・モバイルアプリ用）※従来: トークンの project でコンテキスト設定
