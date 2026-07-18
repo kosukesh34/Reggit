@@ -4,12 +4,14 @@ import SkipWeb
 struct ContentView: View {
     @State var viewModel: MobileWebShellViewModel
     /// Skip Android では `@Observable` の変更が View に伝わらないことがあるため、
-    /// 表示に必要な状態だけ `@State` へ同期する。
+    /// 表示用の値は `@State` に載せ、ポーリングで必ず再描画する。
     @State var mirroredIsLoading = true
     @State var mirroredShowFallback = false
-    @State var mirroredShowTabBar = false
     @State var mirroredActiveTab = ""
+    @State var mirroredShowTabBar = false
     @State var mirroredTabBarID = ""
+    /// Bool / String の代入だけでは Compose が再レイアウトしないことがあるため、毎ポールで進める。
+    @State var renderTick = 0
 
     init(viewModel: MobileWebShellViewModel) {
         _viewModel = State(initialValue: viewModel)
@@ -17,15 +19,18 @@ struct ContentView: View {
     }
 
     var body: some View {
+        // renderTick を読むことで、ポールごとの再描画を Skip Android に強制する。
+        let _ = renderTick
+        let live = MobileWebShellSession.viewModel()
+        let showTabBar = live.showNativeTabBar && !live.tabs.isEmpty
+
         VStack(spacing: 0) {
             webContent
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            if mirroredShowTabBar {
-                // 配列の @State ミラーは Skip Android で空のままになることがあるため、
-                // 再描画トリガだけ @State にし、中身は Session から都度読む。
+            if showTabBar {
                 NativeTabBar(
-                    tabs: MobileWebShellSession.viewModel().tabs,
+                    tabs: live.tabs,
                     selectedTab: Binding(
                         get: { mirroredActiveTab },
                         set: { key in
@@ -52,6 +57,7 @@ struct ContentView: View {
         .task {
             while !Task.isCancelled {
                 syncMirroredShellState()
+                renderTick &+= 1
                 try? await Task.sleep(nanoseconds: 200_000_000)
             }
         }
@@ -108,10 +114,10 @@ struct ContentView: View {
         let shouldShow = live.showNativeTabBar && !live.tabs.isEmpty
         if shouldShow != mirroredShowTabBar || tabBarID != mirroredTabBarID {
             logger.info(
-                "TabBar mirror show=\(live.showNativeTabBar) tabs=\(live.tabs.count) mirrored=\(shouldShow)"
+                "TabBar mirror show=\(live.showNativeTabBar) tabs=\(live.tabs.count) mirrored=\(shouldShow) tick=\(self.renderTick)"
             )
         }
-        mirroredTabBarID = tabBarID
+        mirroredTabBarID = shouldShow ? tabBarID : ""
         mirroredShowTabBar = shouldShow
     }
 }
