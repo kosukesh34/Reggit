@@ -23,7 +23,7 @@ class AnnouncementNotificationServiceTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_send_ネイティブとLINEの両方へ配信すること(): void
+    public function test_send_delivers_native_push_and_line_message(): void
     {
         $project = $this->createProject();
         $lineUserId = 'U'.str_repeat('a', 32);
@@ -76,7 +76,7 @@ class AnnouncementNotificationServiceTest extends TestCase
         $this->assertSame(0, $result['line_failed']);
     }
 
-    public function test_send_LINEユーザーIDが無い会員にはLINEを送らないこと(): void
+    public function test_send_skips_line_when_member_has_no_line_user_id(): void
     {
         $project = $this->createProject();
         $user = User::factory()->create([
