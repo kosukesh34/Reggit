@@ -177,4 +177,21 @@ class SmaregiWebhookTest extends TestCase
 
         $response->assertStatus(400);
     }
+
+    public function test_webhook_カスタムヘッダーが不一致なら401を返すこと(): void
+    {
+        config([
+            'smaregi.webhook_secret' => 'idnect',
+            'smaregi.webhook_secret_header' => 'x-sdsch-idnect',
+        ]);
+
+        $this->postJson('/api/smaregi/webhook', [
+            'contractId' => 'test_contract_secret_ng',
+            'event' => 'pos:products',
+            'action' => 'created',
+        ], [
+            'smaregi-event' => 'pos:products',
+            'x-sdsch-idnect' => 'wrong',
+        ])->assertStatus(401);
+    }
 }

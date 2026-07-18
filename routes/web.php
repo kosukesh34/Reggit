@@ -67,7 +67,7 @@ Route::get('/health', function () {
 
 // スマレジ: デベロッパーズに「/api」無しで登録した場合の受け口（POST は CSRF 除外済み）
 Route::match(['get', 'head', 'post'], '/smaregi/webhook', [SmaregiWebhookController::class, '__invoke'])
-    ->middleware('log.smaregi.webhook')
+    ->middleware('verify.smaregi.webhook')
     ->name('smaregi.webhook_no_api_prefix');
 Route::match(['get', 'head', 'post'], '/smaregi/idp', [SmaregiIdpController::class, '__invoke'])->name('smaregi.idp_no_api_prefix');
 
