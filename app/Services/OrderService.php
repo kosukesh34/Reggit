@@ -16,6 +16,7 @@ use App\Domain\Order\ValueObjects\OrderLineItem;
 use App\Domain\Order\ValueObjects\PendingOrder;
 use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
+use App\Enums\MemberVisitSource;
 use App\Enums\OrderType;
 use App\Enums\PaymentMethod;
 use App\Enums\PointTransactionType;
@@ -262,7 +263,7 @@ class OrderService
         $this->memberAdminService->recordVisit(
             $member,
             $order->created_at ?? now(),
-            \App\Enums\MemberVisitSource::ORDER,
+            MemberVisitSource::ORDER,
             (int) $order->id
         );
     }
