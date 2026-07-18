@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\PointTransactionType;
 use App\Models\Concerns\BelongsToProject;
 use App\Models\Scopes\ProjectScope;
 use Database\Factories\MemberFactory;
@@ -25,6 +26,7 @@ class Member extends Model
         'member_number',
         'smaregi_customer_id',
         'points',
+        'lifetime_granted_points',
         'status',
         'rank',
         'birthday',
@@ -41,6 +43,7 @@ class Member extends Model
     /** @var array<string, string> */
     protected $casts = [
         'points' => 'integer',
+        'lifetime_granted_points' => 'integer',
         'birthday' => 'date',
         'profile_extra' => 'array',
     ];
@@ -169,5 +172,32 @@ class Member extends Model
     public function recalcPointsFromTransactions(): void
     {
         $this->update(['points' => $this->getTotalPointsFromTransactions()]);
+    }
+
+    /**
+     * 累計付与ポイントの増減量（獲得・正の調整は加算、取消は減算）。
+     */
+    public static function lifetimeGrantedDelta(string $type, int $points): int
+    {
+        if ($type === PointTransactionType::EARNED || $type === PointTransactionType::ADJUSTED) {
+            return max(0, $points);
+        }
+
+        if ($type === PointTransactionType::REVERSED) {
+            return -abs($points);
+        }
+
+        return 0;
+    }
+
+    /** 台帳から累計付与ポイントを再計算して保存する */
+    public function recalcLifetimeGrantedPoints(): void
+    {
+        $total = (int) $this->pointTransactions()
+            ->withoutGlobalScope(ProjectScope::class)
+            ->get(['type', 'points'])
+            ->sum(fn (PointTransaction $tx) => self::lifetimeGrantedDelta((string) $tx->type, (int) $tx->points));
+
+        $this->update(['lifetime_granted_points' => max(0, $total)]);
     }
 }

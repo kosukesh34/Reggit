@@ -105,4 +105,66 @@ class AdminAnnouncementsTest extends TestCase
             'coupon_id' => $coupon->id,
         ]);
     }
+
+    public function test_store_delivery_属性セグメントで配信できること(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        $lineUser = User::factory()->create([
+            'project_id' => $project->id,
+            'line_user_id' => 'U'.str_repeat('b', 32),
+        ]);
+        $member = Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => $lineUser->id,
+            'birthday' => '1992-07-01',
+        ]);
+
+        $response = $this->actingAs($admin, 'admin')
+            ->post(route('admin.announcements.delivery.store', ['project_key' => $project->project_key]), [
+                'title' => '属性セグメント配信',
+                'body' => '本文',
+                'delivery_type' => Announcement::DELIVERY_TYPE_SEGMENT,
+                'segment_channel' => 'line',
+                'segment_birthday_month' => 7,
+                'is_pinned' => 0,
+            ]);
+
+        $response->assertRedirect(route('admin.announcements', ['project_key' => $project->project_key]));
+        $this->assertDatabaseHas('announcements', [
+            'project_id' => $project->id,
+            'title' => '属性セグメント配信',
+            'delivery_type' => Announcement::DELIVERY_TYPE_SEGMENT,
+        ]);
+
+        $announcement = Announcement::where('title', '属性セグメント配信')->first();
+        $this->assertNotNull($announcement);
+        $this->assertSame([$member->id], $announcement->target_member_ids);
+        $this->assertSame('line', $announcement->segment_criteria['channel'] ?? null);
+        $this->assertSame(7, $announcement->segment_criteria['birthday_month'] ?? null);
+    }
+
+    public function test_segment_preview_属性条件の件数を返すこと(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        User::factory()->create([
+            'project_id' => $project->id,
+            'line_user_id' => 'U'.str_repeat('c', 32),
+        ]);
+        $user = User::where('project_id', $project->id)->where('line_user_id', 'U'.str_repeat('c', 32))->first();
+        Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+        ]);
+
+        $response = $this->actingAs($admin, 'admin')
+            ->get(route('admin.announcements.segment.preview', [
+                'project_key' => $project->project_key,
+                'segment_channel' => 'line',
+            ]));
+
+        $response->assertOk();
+        $response->assertJson(['count' => 1]);
+    }
 }

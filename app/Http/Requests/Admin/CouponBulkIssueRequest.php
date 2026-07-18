@@ -55,6 +55,16 @@ class CouponBulkIssueRequest extends FormRequest
             'birthday_month' => ['nullable', 'integer', 'min:1', 'max:12'],
             'new_member_days' => ['nullable', 'integer', 'min:1', 'max:365'],
             'inactive_days' => ['nullable', 'integer', 'min:1', 'max:730'],
+            'segment_channel' => ['nullable', Rule::in(['line', 'app', 'both'])],
+            'segment_birthday_month' => ['nullable', 'integer', 'min:1', 'max:12'],
+            'segment_visit_count_min' => ['nullable', 'integer', 'min:0'],
+            'segment_visit_count_max' => ['nullable', 'integer', 'min:0'],
+            'segment_lifetime_points_min' => ['nullable', 'integer', 'min:0'],
+            'segment_lifetime_points_max' => ['nullable', 'integer', 'min:0'],
+            'segment_last_visit_mode' => ['nullable', Rule::in(['inactive_days', 'visited_within_days'])],
+            'segment_last_visit_days' => ['nullable', 'integer', 'min:1', 'max:365'],
+            'segment_sex' => ['nullable', Rule::in(['1', '2'])],
+            'segment_rank' => ['nullable', 'string', 'max:64'],
         ];
     }
 

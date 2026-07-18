@@ -17,6 +17,7 @@ class CouponDeliveryTargetService
     public function __construct(
         private CouponDeliveryTargetRepository $targetRepository,
         private CouponDeliverySegmentPolicy $segmentPolicy,
+        private MemberSegmentService $memberSegmentService,
     ) {}
 
     /**
@@ -39,6 +40,9 @@ class CouponDeliveryTargetService
             CouponDeliveryType::IMMEDIATE_SEGMENT_SALES,
             CouponDeliveryType::SCHEDULED_SEGMENT_SALES => $this->resolveSalesSegmentMemberIds($projectId, $params),
 
+            CouponDeliveryType::IMMEDIATE_SEGMENT_ATTRIBUTES,
+            CouponDeliveryType::SCHEDULED_SEGMENT_ATTRIBUTES => $this->resolveAttributeSegmentMemberIds($projectId, $params),
+
             CouponDeliveryType::IMMEDIATE_BIRTHDAY,
             CouponDeliveryType::SCHEDULED_BIRTHDAY => $this->getBirthdayMonthMemberIds($projectId, $params)->all(),
 
@@ -53,13 +57,45 @@ class CouponDeliveryTargetService
             return ['member_ids' => [], 'segment_criteria' => null, 'error' => '配信対象の会員を1人以上選択してください'];
         }
 
+        if (in_array($deliveryType, CouponDeliveryType::attributeSegmentValues(), true) && $memberIds === []) {
+            $attributeParams = $params;
+            unset($attributeParams['segment_condition'], $attributeParams['segment_period_days'], $attributeParams['segment_min_amount']);
+            $criteria = $this->memberSegmentService->buildCriteriaFromInput($attributeParams);
+            if ($criteria === null) {
+                return ['member_ids' => [], 'segment_criteria' => null, 'error' => '属性絞り込みでは1つ以上の条件を指定してください'];
+            }
+        }
+
         $segmentCriteria = $this->segmentPolicy->buildSegmentCriteria(
             $deliveryType,
             $params,
             (int) now()->month,
         );
 
+        if (in_array($deliveryType, CouponDeliveryType::attributeSegmentValues(), true)) {
+            $attributeParams = $params;
+            unset($attributeParams['segment_condition'], $attributeParams['segment_period_days'], $attributeParams['segment_min_amount']);
+            $segmentCriteria = $this->memberSegmentService->buildCriteriaFromInput($attributeParams);
+        }
+
         return ['member_ids' => $memberIds, 'segment_criteria' => $segmentCriteria, 'error' => null];
+    }
+
+    /**
+     * @param  array<string, mixed>  $params
+     * @return list<int>
+     */
+    private function resolveAttributeSegmentMemberIds(int $projectId, array $params): array
+    {
+        $attributeParams = $params;
+        unset($attributeParams['segment_condition'], $attributeParams['segment_period_days'], $attributeParams['segment_min_amount']);
+
+        $criteria = $this->memberSegmentService->buildCriteriaFromInput($attributeParams);
+        if ($criteria === null) {
+            return [];
+        }
+
+        return $this->memberSegmentService->getMemberIds($projectId, $criteria)->all();
     }
 
     /**
@@ -195,6 +231,32 @@ class CouponDeliveryTargetService
 
         if (in_array($deliveryType, CouponDeliveryType::inactiveValues(), true)) {
             $params['inactive_days'] = (int) ($criteria['inactive_days'] ?? 90);
+        }
+
+        if (in_array($deliveryType, CouponDeliveryType::attributeSegmentValues(), true)) {
+            foreach ([
+                'channel' => 'segment_channel',
+                'birthday_month' => 'segment_birthday_month',
+                'visit_count_min' => 'segment_visit_count_min',
+                'visit_count_max' => 'segment_visit_count_max',
+                'lifetime_points_min' => 'segment_lifetime_points_min',
+                'lifetime_points_max' => 'segment_lifetime_points_max',
+                'last_visit_mode' => 'segment_last_visit_mode',
+                'last_visit_days' => 'segment_last_visit_days',
+                'sex' => 'segment_sex',
+                'rank' => 'segment_rank',
+                'period_days' => 'segment_period_days',
+                'min_total_amount' => 'segment_min_amount',
+            ] as $from => $to) {
+                if (array_key_exists($from, $criteria)) {
+                    $params[$to] = $criteria[$from];
+                }
+            }
+            if (isset($criteria['no_orders']) && $criteria['no_orders'] === true) {
+                $params['segment_condition'] = 'no_orders';
+            } elseif (array_key_exists('min_total_amount', $criteria)) {
+                $params['segment_condition'] = 'min_amount';
+            }
         }
 
         $params['target_member_ids'] = is_array($delivery->target_member_ids) ? $delivery->target_member_ids : [];
