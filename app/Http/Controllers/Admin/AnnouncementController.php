@@ -54,6 +54,12 @@ class AnnouncementController extends AdminBaseController
         }
         unset($validated['image_file']);
 
+        $validated['is_pinned'] = (bool) ($validated['is_active'] ?? false);
+        unset($validated['is_active']);
+        if (! isset($validated['published_at']) || $validated['published_at'] === null || $validated['published_at'] === '') {
+            $validated['published_at'] = now();
+        }
+
         $this->storeUseCase->handle($projectId, $validated);
 
         return redirect()->route('admin.announcements', $this->buildAdminRouteParams())
@@ -69,7 +75,15 @@ class AnnouncementController extends AdminBaseController
 
     public function updateAnnouncement(AnnouncementUpdateRequest $request, string $projectKey, int $id)
     {
-        $this->updateUseCase->handle($id, $request->validated());
+        $projectId = $this->resolveAdminProjectId();
+        $validated = $request->validated();
+
+        if ($request->hasFile('image_file')) {
+            $validated['image_url'] = $this->saveImageUseCase->handle($request->file('image_file'), $projectId);
+        }
+        unset($validated['image_file']);
+
+        $this->updateUseCase->handle($id, $validated);
 
         return redirect()->route('admin.announcements', $this->buildAdminRouteParams())
             ->with('success', 'お知らせを更新しました');
@@ -116,7 +130,14 @@ class AnnouncementController extends AdminBaseController
     public function storeDelivery(AnnouncementDeliveryStoreRequest $request)
     {
         $projectId = $this->resolveAdminProjectId();
-        $output = $this->storeDeliveryUseCase->handle($projectId, $request->validated());
+        $validated = $request->validated();
+
+        if ($request->hasFile('image_file')) {
+            $validated['image_url'] = $this->saveImageUseCase->handle($request->file('image_file'), $projectId);
+        }
+        unset($validated['image_file']);
+
+        $output = $this->storeDeliveryUseCase->handle($projectId, $validated);
 
         if ($output->hasValidationError) {
             return back()
