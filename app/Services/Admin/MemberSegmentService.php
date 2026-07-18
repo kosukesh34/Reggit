@@ -79,6 +79,14 @@ class MemberSegmentService
             $criteria['rank'] = $rank;
         }
 
+        $productId = $input['segment_product_id'] ?? $input['product_id'] ?? null;
+        if ($productId !== null && $productId !== '') {
+            $parsedProductId = (int) $productId;
+            if ($parsedProductId > 0) {
+                $criteria['product_id'] = $parsedProductId;
+            }
+        }
+
         $salesCondition = trim((string) ($input['segment_condition'] ?? ''));
         $periodDays = $input['segment_period_days'] ?? null;
         if ($salesCondition === 'no_orders' || $salesCondition === 'min_amount') {
@@ -145,6 +153,10 @@ class MemberSegmentService
 
         if (isset($criteria['rank']) && is_string($criteria['rank'])) {
             $sets[] = $this->targetRepository->findIdsByRank($projectId, $criteria['rank']);
+        }
+
+        if (isset($criteria['product_id'])) {
+            $sets[] = $this->targetRepository->findIdsByPurchasedProduct($projectId, (int) $criteria['product_id']);
         }
 
         $periodDays = isset($criteria['period_days']) ? (int) $criteria['period_days'] : 0;

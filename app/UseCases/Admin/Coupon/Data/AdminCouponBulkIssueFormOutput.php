@@ -4,6 +4,7 @@ namespace App\UseCases\Admin\Coupon\Data;
 
 use App\Models\Coupon;
 use App\Models\CouponDelivery;
+use App\Models\Product;
 use Illuminate\Support\Collection;
 
 /**
@@ -19,6 +20,7 @@ use Illuminate\Support\Collection;
  *     newMemberTypes: list<string>,
  *     inactiveTypes: list<string>
  * }  $deliveryTypeJsConfig
+ * @param  Collection<int, Product>  $products
  */
 class AdminCouponBulkIssueFormOutput
 {
@@ -32,5 +34,6 @@ class AdminCouponBulkIssueFormOutput
         public array $deliveryTypeOptions = [],
         public array $deliveryGroups = [],
         public array $deliveryTypeJsConfig = [],
+        public Collection $products = new Collection,
     ) {}
 }

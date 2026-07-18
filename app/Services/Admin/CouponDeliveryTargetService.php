@@ -245,6 +245,7 @@ class CouponDeliveryTargetService
                 'last_visit_days' => 'segment_last_visit_days',
                 'sex' => 'segment_sex',
                 'rank' => 'segment_rank',
+                'product_id' => 'segment_product_id',
                 'period_days' => 'segment_period_days',
                 'min_total_amount' => 'segment_min_amount',
             ] as $from => $to) {
