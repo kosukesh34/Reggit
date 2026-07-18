@@ -8,6 +8,7 @@ use App\Models\Project;
 use App\Models\ShopSetting;
 use App\Models\User;
 use App\Services\MemberService;
+use App\Services\Smaregi\SmaregiApiService;
 use App\Services\Smaregi\SmaregiCustomerPointsInboundSyncService;
 use App\Services\Smaregi\SmaregiPointsSyncService;
 use App\Util\AdminContext;
@@ -394,7 +395,7 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
             return Http::response([], 404);
         });
 
-        $resolved = app(\App\Services\Smaregi\SmaregiApiService::class)
+        $resolved = app(SmaregiApiService::class)
             ->resolveCustomersFromTransactionHeads(self::CONTRACT_ID, ['34']);
 
         $this->assertGreaterThanOrEqual(2, $attempts);
