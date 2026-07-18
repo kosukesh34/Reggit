@@ -351,7 +351,7 @@ class AdminAnnouncementsTest extends TestCase
             'project_id' => $project->id,
             'name' => '佐藤花子',
         ]);
-        Member::factory()->create([
+        $member = Member::factory()->create([
             'project_id' => $project->id,
             'user_id' => $user->id,
             'member_number' => 'M-READ-1',
@@ -374,5 +374,9 @@ class AdminAnnouncementsTest extends TestCase
         $response->assertSee('既読詳細対象');
         $response->assertSee('佐藤花子');
         $response->assertSee('M-READ-1');
+        $response->assertSee(route('admin.members.detail', [
+            'project_key' => $project->project_key,
+            'id' => $member->id,
+        ]), false);
     }
 }
