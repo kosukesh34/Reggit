@@ -11,7 +11,7 @@ use App\Models\Member;
 use App\Models\Project;
 use App\Models\User;
 use App\Services\Admin\MemberAdminService;
-use App\Services\PushNotificationService;
+use App\Services\AnnouncementNotificationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -99,7 +99,7 @@ class AfterRegistrationDeliveryTest extends TestCase
 
         $job = new SendAfterRegistrationJob($member->id, $delivery->id);
         $job->handle(
-            app(PushNotificationService::class),
+            app(AnnouncementNotificationService::class),
             app(MemberAdminService::class)
         );
 

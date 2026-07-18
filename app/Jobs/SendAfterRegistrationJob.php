@@ -6,7 +6,7 @@ use App\Models\AfterRegistrationDelivery;
 use App\Models\Announcement;
 use App\Models\Member;
 use App\Services\Admin\MemberAdminService;
-use App\Services\PushNotificationService;
+use App\Services\AnnouncementNotificationService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -22,7 +22,7 @@ class SendAfterRegistrationJob implements ShouldQueue
         public int $afterRegistrationDeliveryId
     ) {}
 
-    public function handle(PushNotificationService $pushNotificationService, MemberAdminService $memberAdminService): void
+    public function handle(AnnouncementNotificationService $announcementNotificationService, MemberAdminService $memberAdminService): void
     {
         $member = Member::find($this->memberId);
         $config = AfterRegistrationDelivery::find($this->afterRegistrationDeliveryId);
@@ -47,7 +47,7 @@ class SendAfterRegistrationJob implements ShouldQueue
             'target_member_ids' => [$member->id],
         ]);
 
-        $pushNotificationService->sendAnnouncement($announcement);
+        $announcementNotificationService->send($announcement);
 
         if ($config->coupon_id) {
             $memberAdminService->issueCouponToMember($member, (int) $config->coupon_id);

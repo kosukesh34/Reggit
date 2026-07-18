@@ -4,8 +4,8 @@ namespace App\Services\Admin;
 
 use App\Models\Announcement;
 use App\Models\Member;
+use App\Services\AnnouncementNotificationService;
 use App\Services\MemberPointsExpiryCalculator;
-use App\Services\PushNotificationService;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -15,14 +15,14 @@ class PointExpiryReminderService
 {
     private MemberPointsExpiryCalculator $expiryCalculator;
 
-    private PushNotificationService $pushService;
+    private AnnouncementNotificationService $announcementNotificationService;
 
     public function __construct(
         MemberPointsExpiryCalculator $expiryCalculator,
-        PushNotificationService $pushService
+        AnnouncementNotificationService $announcementNotificationService
     ) {
         $this->expiryCalculator = $expiryCalculator;
-        $this->pushService = $pushService;
+        $this->announcementNotificationService = $announcementNotificationService;
     }
 
     /**
@@ -79,7 +79,7 @@ class PointExpiryReminderService
             'published_at' => now(),
             'sent_at' => now(),
         ]);
-        $this->pushService->sendAnnouncement($announcement);
+        $this->announcementNotificationService->send($announcement);
 
         return true;
     }
