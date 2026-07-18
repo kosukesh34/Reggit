@@ -15,6 +15,7 @@ use App\Services\Smaregi\SmaregiCustomerUpdatePayloadBuilder;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class MemberService
@@ -300,76 +301,80 @@ class MemberService
 
     public function registerMember(User $user, array $data): Member
     {
-        if ($user->member) {
-            throw new \Exception('既に会員登録済みです');
-        }
+        return DB::transaction(function () use ($user, $data): Member {
+            User::query()->whereKey($user->id)->lockForUpdate()->first();
 
-        $projectId = $user->project_id ?? AdminContext::getCurrentProjectId() ?? 1;
-        $memberNumber = $this->generateMemberNumber($projectId);
-        $smaregiCustomerId = null;
-
-        $contractId = $this->smaregiApi->getContractIdForProject($projectId);
-        $contractId = is_string($contractId) ? trim($contractId) : '';
-        if ($contractId !== '') {
-            $body = $this->buildSmaregiCustomerBody($memberNumber, $data);
-            $this->smaregiApi->clearLastErrorDetail();
-            $result = $this->smaregiApi->createCustomer($contractId, $body);
-            if ($result === null || ! isset($result['customerId']) || (string) $result['customerId'] === '') {
-                LogHelper::warning('[Member] smaregi create customer failed', [
-                    'project_id' => $projectId,
-                    'user_id' => (int) $user->id,
-                    'member_number' => $memberNumber,
-                    'detail' => $this->smaregiApi->getLastErrorDetail(),
-                ]);
-
-                throw new \RuntimeException(
-                    'スマレジへの会員登録に失敗しました。入力内容やスマレジ連携設定を確認してください。'
-                );
+            if (Member::query()->where('user_id', $user->id)->exists()) {
+                throw new \Exception('既に会員登録済みです');
             }
-            $smaregiCustomerId = (string) $result['customerId'];
-        }
 
-        $rankSettings = $this->shopSettingRepository->getMemberRankSettings($projectId);
-        $defaultRankKey = collect($rankSettings)->first(fn ($r) => ($r['is_active'] ?? false) === true)['key'] ?? 'bronze';
-        $member = Member::create([
-            'project_id' => $projectId,
-            'user_id' => $user->id,
-            'member_number' => $memberNumber,
-            'smaregi_customer_id' => $smaregiCustomerId,
-            'points' => 0,
-            'status' => MemberStatus::ACTIVE,
-            'rank' => $defaultRankKey,
-            'birthday' => $data['birthday'] ?? null,
-            'address' => $data['address'] ?? null,
-            'postal_code' => $data['postal_code'] ?? null,
-            'prefecture' => $data['prefecture'] ?? null,
-            'city' => $data['city'] ?? null,
-            'street' => $data['street'] ?? null,
-            'sex' => $data['sex'] ?? null,
-            'profile_extra' => $this->extractCustomProfileExtra($projectId, $data),
-        ]);
+            $projectId = $user->project_id ?? AdminContext::getCurrentProjectId() ?? 1;
+            $memberNumber = $this->generateMemberNumber($projectId);
+            $smaregiCustomerId = null;
 
-        $this->couponIssueService->issueForFirstRegistration($member);
+            $contractId = $this->smaregiApi->getContractIdForProject($projectId);
+            $contractId = is_string($contractId) ? trim($contractId) : '';
+            if ($contractId !== '') {
+                $body = $this->buildSmaregiCustomerBody($memberNumber, $data);
+                $this->smaregiApi->clearLastErrorDetail();
+                $result = $this->smaregiApi->createCustomer($contractId, $body);
+                if ($result === null || ! isset($result['customerId']) || (string) $result['customerId'] === '') {
+                    LogHelper::warning('[Member] smaregi create customer failed', [
+                        'project_id' => $projectId,
+                        'user_id' => (int) $user->id,
+                        'member_number' => $memberNumber,
+                        'detail' => $this->smaregiApi->getLastErrorDetail(),
+                    ]);
 
-        AfterRegistrationDelivery::where('project_id', $projectId)
-            ->where('is_active', true)
-            ->get()
-            ->each(function (AfterRegistrationDelivery $delivery) use ($member): void {
-                SendAfterRegistrationJob::dispatch($member->id, $delivery->id)
-                    ->delay(now()->addMinutes($delivery->delay_minutes));
-            });
+                    throw new \RuntimeException(
+                        'スマレジへの会員登録に失敗しました。入力内容やスマレジ連携設定を確認してください。'
+                    );
+                }
+                $smaregiCustomerId = (string) $result['customerId'];
+            }
 
-        $userUpdates = array_filter([
-            'name' => $data['name'] ?? null,
-            'kana' => $data['kana'] ?? null,
-            'email' => $data['email'] ?? null,
-            'phone' => $data['phone'] ?? null,
-        ], fn ($v) => $v !== null && $v !== '');
-        if ($userUpdates !== []) {
-            $user->update($userUpdates);
-        }
+            $rankSettings = $this->shopSettingRepository->getMemberRankSettings($projectId);
+            $defaultRankKey = collect($rankSettings)->first(fn ($r) => ($r['is_active'] ?? false) === true)['key'] ?? 'bronze';
+            $member = Member::create([
+                'project_id' => $projectId,
+                'user_id' => $user->id,
+                'member_number' => $memberNumber,
+                'smaregi_customer_id' => $smaregiCustomerId,
+                'points' => 0,
+                'status' => MemberStatus::ACTIVE,
+                'rank' => $defaultRankKey,
+                'birthday' => $data['birthday'] ?? null,
+                'address' => $data['address'] ?? null,
+                'postal_code' => $data['postal_code'] ?? null,
+                'prefecture' => $data['prefecture'] ?? null,
+                'city' => $data['city'] ?? null,
+                'street' => $data['street'] ?? null,
+                'sex' => $data['sex'] ?? null,
+                'profile_extra' => $this->extractCustomProfileExtra($projectId, $data),
+            ]);
 
-        return $member->load('user');
+            $this->couponIssueService->issueForFirstRegistration($member);
+
+            AfterRegistrationDelivery::where('project_id', $projectId)
+                ->where('is_active', true)
+                ->get()
+                ->each(function (AfterRegistrationDelivery $delivery) use ($member): void {
+                    SendAfterRegistrationJob::dispatch($member->id, $delivery->id)
+                        ->delay(now()->addMinutes($delivery->delay_minutes));
+                });
+
+            $userUpdates = array_filter([
+                'name' => $data['name'] ?? null,
+                'kana' => $data['kana'] ?? null,
+                'email' => $data['email'] ?? null,
+                'phone' => $data['phone'] ?? null,
+            ], fn ($v) => $v !== null && $v !== '');
+            if ($userUpdates !== []) {
+                $user->update($userUpdates);
+            }
+
+            return $member->load('user');
+        });
     }
 
     /** スマレジ会員登録用のリクエストボディを組み立て（会員コードは20文字以内） */
