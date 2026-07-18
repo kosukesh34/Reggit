@@ -167,4 +167,77 @@ class AdminAnnouncementsTest extends TestCase
         $response->assertOk();
         $response->assertJson(['count' => 1]);
     }
+
+    public function test_delete_お知らせを削除できること(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        $announcement = Announcement::factory()->create([
+            'project_id' => $project->id,
+            'title' => '削除対象',
+        ]);
+
+        $response = $this->actingAs($admin, 'admin')
+            ->delete(route('admin.announcements.delete', [
+                'project_key' => $project->project_key,
+                'id' => $announcement->id,
+            ]));
+
+        $response->assertRedirect(route('admin.announcements', ['project_key' => $project->project_key]));
+        $this->assertDatabaseMissing('announcements', ['id' => $announcement->id]);
+    }
+
+    public function test_update_画像URLを更新できること(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        $announcement = Announcement::factory()->create([
+            'project_id' => $project->id,
+            'title' => '更新前',
+            'body' => '本文',
+            'image_url' => null,
+        ]);
+
+        $response = $this->actingAs($admin, 'admin')
+            ->put(route('admin.announcements.update', [
+                'project_key' => $project->project_key,
+                'id' => $announcement->id,
+            ]), [
+                'title' => '更新後',
+                'body' => '本文更新',
+                'image_url' => 'https://example.com/announcement.png',
+                'is_pinned' => 1,
+            ]);
+
+        $response->assertRedirect(route('admin.announcements', ['project_key' => $project->project_key]));
+        $this->assertDatabaseHas('announcements', [
+            'id' => $announcement->id,
+            'title' => '更新後',
+            'body' => '本文更新',
+            'image_url' => 'https://example.com/announcement.png',
+            'is_pinned' => 1,
+        ]);
+    }
+
+    public function test_store_delivery_画像URL付きで配信できること(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+
+        $response = $this->actingAs($admin, 'admin')
+            ->post(route('admin.announcements.delivery.store', ['project_key' => $project->project_key]), [
+                'title' => '画像付き配信',
+                'body' => '本文',
+                'delivery_type' => Announcement::DELIVERY_TYPE_IMMEDIATE_BULK,
+                'image_url' => 'https://example.com/delivery.png',
+                'is_pinned' => 0,
+            ]);
+
+        $response->assertRedirect(route('admin.announcements', ['project_key' => $project->project_key]));
+        $this->assertDatabaseHas('announcements', [
+            'project_id' => $project->id,
+            'title' => '画像付き配信',
+            'image_url' => 'https://example.com/delivery.png',
+        ]);
+    }
 }
