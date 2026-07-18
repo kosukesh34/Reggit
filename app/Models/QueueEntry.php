@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\QueueStatus;
 use App\Models\Concerns\BelongsToProject;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -38,5 +39,30 @@ class QueueEntry extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function formattedQueueNumber(): string
+    {
+        if ($this->queue_number === null) {
+            return (string) $this->id;
+        }
+
+        return sprintf('%04d', $this->queue_number);
+    }
+
+    /**
+     * 管理画面・受付一覧向け: 直近1日以内、かつ入店済みは入店から30分以内のみ。
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeVisibleOnQueueBoard($query)
+    {
+        return $query
+            ->where('created_at', '>=', now()->subDay())
+            ->where(function ($q) {
+                $q->where('status', '!=', QueueStatus::ENTERED)
+                    ->orWhere('entered_at', '>=', now()->subMinutes(30));
+            });
     }
 }

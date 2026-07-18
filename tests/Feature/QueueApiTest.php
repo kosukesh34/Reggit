@@ -45,6 +45,29 @@ class QueueApiTest extends TestCase
         $this->assertNotNull($entry);
         $this->assertNotNull($entry->qr_token);
         $this->assertSame($user->id, $entry->user_id);
+        $expectedNumber = (int) now()->format('d') * 100 + 1;
+        $this->assertSame($expectedNumber, $entry->queue_number);
+        $this->assertSame(sprintf('%04d', $expectedNumber), $entry->formattedQueueNumber());
+    }
+
+    public function test_store_受付番号が日と通番で採番されること(): void
+    {
+        $this->createProject();
+        $lineUserId = 'U12121212121212121212121212121212';
+        $user = User::factory()->create(['line_user_id' => $lineUserId, 'project_id' => 1]);
+        Member::factory()->create(['user_id' => $user->id, 'project_id' => 1]);
+        $dayPrefix = (int) now()->format('d') * 100;
+        QueueEntry::factory()->create([
+            'project_id' => 1,
+            'queue_number' => $dayPrefix + 12,
+            'status' => QueueStatus::WAITING,
+        ]);
+
+        $response = $this->withHeaders(['X-Line-User-Id' => $lineUserId])
+            ->post('/api/queue?project_key=default', ['party_size' => 1]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('queue_entry.queue_number', $dayPrefix + 13);
     }
 
     public function test_store_同一_lin_eユーザーで複数件登録できること(): void

@@ -10,7 +10,7 @@ use App\Util\AdminContext;
  */
 class QueueListUseCase
 {
-    private const MAX_ENTRIES = 100;
+    private const MAX_ENTRIES = 30;
 
     public function handle(?int $projectId = null): array
     {
@@ -21,6 +21,7 @@ class QueueListUseCase
 
         $entries = QueueEntry::with('member.user', 'user')
             ->where('project_id', $projectId)
+            ->visibleOnQueueBoard()
             ->orderByRaw("CASE status WHEN 'waiting' THEN 0 WHEN 'called' THEN 1 WHEN 'entered' THEN 2 ELSE 3 END")
             ->orderBy('queue_number')
             ->orderByDesc('created_at')
