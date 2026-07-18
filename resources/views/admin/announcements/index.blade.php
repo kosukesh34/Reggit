@@ -51,10 +51,10 @@
                         <td class="table-actions-cell">
                             <div class="table-actions">
                                 <a href="{{ admin_route('admin.announcements.edit', ['id' => $a->id]) }}" class="btn btn-action btn-edit"><i class="fas fa-edit"></i> 編集</a>
-                                <form action="{{ admin_route('admin.announcements.delete', ['id' => $a->id]) }}" method="POST" class="d-inline" onsubmit="return confirm('削除しますか？');">
+                                <form action="{{ admin_route('admin.announcements.delete', ['id' => $a->id]) }}" method="POST" class="d-inline delete-form" onsubmit="return confirm('削除しますか？');">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="btn btn-action btn-danger"><i class="fas fa-trash"></i> 削除</button>
+                                    <button type="submit" class="btn btn-action btn-danger no-loading"><i class="fas fa-trash"></i> 削除</button>
                                 </form>
                             </div>
                         </td>

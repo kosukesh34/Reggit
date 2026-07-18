@@ -30,6 +30,7 @@ class AdminAnnouncementStoreDeliveryUseCase
      *     body?: string,
      *     is_pinned?: string,
      *     expires_at?: string,
+     *     image_url?: string,
      *     scheduled_at?: string,
      *     target_member_ids?: string[],
      *     segment_period_days?: string,
@@ -109,6 +110,7 @@ class AdminAnnouncementStoreDeliveryUseCase
         return $this->announcementAdminService->create($projectId, [
             'title' => (string) $validated['title'],
             'body' => $validated['body'] ?? null,
+            'image_url' => $validated['image_url'] ?? null,
             'is_pinned' => (bool) ($validated['is_pinned'] ?? false),
             'expires_at' => $validated['expires_at'] ?? null,
             'delivery_type' => $deliveryType,
