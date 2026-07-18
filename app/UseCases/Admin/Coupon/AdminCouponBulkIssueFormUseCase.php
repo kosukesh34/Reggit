@@ -6,6 +6,7 @@ use App\Enums\CouponDeliveryStatus;
 use App\Enums\CouponDeliveryType;
 use App\Models\CouponDelivery;
 use App\Models\Member;
+use App\Models\Product;
 use App\Services\Admin\MemberAdminService;
 use App\Services\Smaregi\SmaregiCouponSyncService;
 use App\UseCases\Admin\Coupon\Data\AdminCouponBulkIssueFormOutput;
@@ -33,6 +34,11 @@ class AdminCouponBulkIssueFormUseCase
             ->limit(10)
             ->get();
 
+        $products = Product::query()
+            ->where('project_id', $projectId)
+            ->orderBy('name')
+            ->get(['id', 'name', 'smaregi_product_id']);
+
         return new AdminCouponBulkIssueFormOutput(
             $coupons,
             $memberCount,
@@ -43,6 +49,7 @@ class AdminCouponBulkIssueFormUseCase
             CouponDeliveryType::getValues(),
             CouponDeliveryType::formGroups(),
             CouponDeliveryType::jsConfig(),
+            $products,
         );
     }
 }

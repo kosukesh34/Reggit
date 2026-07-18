@@ -315,6 +315,20 @@
                             </div>
                         </div>
                         <div class="row g-2 mb-2">
+                            <div class="col-md-8">
+                                <label for="segment_product_id" class="form-label">購入した商品</label>
+                                <select name="segment_product_id" id="segment_product_id" class="form-control attr-segment-filter">
+                                    <option value="">指定しない</option>
+                                    @foreach(($products ?? []) as $product)
+                                        <option value="{{ $product->id }}" {{ (string) old('segment_product_id') === (string) $product->id ? 'selected' : '' }}>
+                                            {{ $product->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <small class="text-muted">アプリ注文・スマレジPOSの購入を対象</small>
+                            </div>
+                        </div>
+                        <div class="row g-2 mb-2">
                             <div class="col-md-4">
                                 <label for="segment_lifetime_points_min" class="form-label">累計付与ポイント（以上）</label>
                                 <input type="number" name="segment_lifetime_points_min" id="segment_lifetime_points_min" class="form-control attr-segment-filter" value="{{ old('segment_lifetime_points_min') }}" min="0">

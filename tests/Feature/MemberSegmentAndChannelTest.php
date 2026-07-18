@@ -2,10 +2,15 @@
 
 namespace Tests\Feature;
 
+use App\Enums\MemberVisitSource;
 use App\Infrastructure\Persistence\Eloquent\Coupon\EloquentCouponDeliveryTargetRepository;
 use App\Models\Member;
+use App\Models\MemberVisit;
+use App\Models\MemberVisitItem;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\PointTransaction;
+use App\Models\Product;
 use App\Models\Project;
 use App\Models\User;
 use App\Models\UserDevice;
@@ -306,5 +311,72 @@ class MemberSegmentAndChannelTest extends TestCase
         } finally {
             $this->assertDatabaseMissing('coupons', ['code' => 'FAILCODE1']);
         }
+    }
+
+    public function test_購入商品でアプリ注文とpos来店の会員を絞り込めること(): void
+    {
+        $project = $this->createProject();
+        $product = Product::factory()->create([
+            'project_id' => $project->id,
+            'smaregi_product_id' => 'P-100',
+            'name' => '対象商品',
+        ]);
+
+        $buyerUser = User::factory()->create(['project_id' => $project->id]);
+        $buyer = Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => $buyerUser->id,
+        ]);
+        $order = Order::create([
+            'project_id' => $project->id,
+            'user_id' => $buyerUser->id,
+            'order_number' => 'ORD-PRODUCT-1',
+            'order_type' => 'takeout',
+            'total_amount' => 500,
+            'status' => 'completed',
+        ]);
+        OrderItem::create([
+            'project_id' => $project->id,
+            'order_id' => $order->id,
+            'product_id' => $product->id,
+            'quantity' => 1,
+            'price' => 500,
+        ]);
+
+        $posUser = User::factory()->create(['project_id' => $project->id]);
+        $posMember = Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => $posUser->id,
+        ]);
+        $visit = MemberVisit::create([
+            'project_id' => $project->id,
+            'member_id' => $posMember->id,
+            'visited_at' => now(),
+            'source' => MemberVisitSource::SMAREGI,
+            'amount' => 1000,
+            'smaregi_transaction_head_id' => 'TX-1',
+        ]);
+        MemberVisitItem::create([
+            'project_id' => $project->id,
+            'member_visit_id' => $visit->id,
+            'product_id' => $product->id,
+            'smaregi_product_id' => 'P-100',
+            'product_name' => '対象商品',
+            'quantity' => 1,
+            'unit_price' => 1000,
+            'amount' => 1000,
+            'sort_order' => 0,
+        ]);
+
+        Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => User::factory()->create(['project_id' => $project->id])->id,
+        ]);
+
+        $ids = app(MemberSegmentService::class)->getMemberIds($project->id, [
+            'product_id' => $product->id,
+        ]);
+
+        $this->assertEqualsCanonicalizing([$buyer->id, $posMember->id], $ids->all());
     }
 }

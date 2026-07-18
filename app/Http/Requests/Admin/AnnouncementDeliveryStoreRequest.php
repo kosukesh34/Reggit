@@ -65,6 +65,7 @@ class AnnouncementDeliveryStoreRequest extends FormRequest
             ],
             'segment_sex' => ['nullable', Rule::in(['1', '2'])],
             'segment_rank' => ['nullable', 'string', 'max:64'],
+            'segment_product_id' => ['nullable', 'integer', 'min:1'],
             'segment_period_days' => ['nullable', 'integer', 'min:1', 'max:365'],
             'segment_condition' => ['nullable', Rule::in(['min_amount', 'no_orders'])],
             'segment_min_amount' => [
