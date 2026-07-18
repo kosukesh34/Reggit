@@ -49,7 +49,7 @@ class SmaregiIdpHandleUseCase
                     'event' => $eventRaw,
                 ]);
 
-                return $this->webhookNotificationService->handleNotification($input, false);
+                return $this->webhookNotificationService->handleNotification($input);
             }
 
             Log::info('[Smaregi] IDP ignored non-subscription event (use Webhook URL for pos: etc.)', [
