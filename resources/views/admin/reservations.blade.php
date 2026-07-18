@@ -174,7 +174,13 @@
             @forelse($reservations as $reservation)
             <tr>
                 <td><a href="{{ admin_route('admin.reservations.detail', ['id' => $reservation->id]) }}">{{ $reservation->reservation_number }}</a></td>
-                <td>{{ $reservation->user->name ?? 'N/A' }}</td>
+                <td>
+                    @if($reservation->user?->member !== null)
+                        <a href="{{ admin_route('admin.members.detail', ['id' => $reservation->user->member->id]) }}">{{ $reservation->user->name ?? 'N/A' }}</a>
+                    @else
+                        {{ $reservation->user->name ?? 'N/A' }}
+                    @endif
+                </td>
                 <td>
                     @php
                         $reservedAt = $reservation->reserved_at instanceof \Carbon\Carbon 

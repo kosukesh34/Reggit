@@ -88,7 +88,9 @@
                 <tr>
                     <td><span class="id-badge">{{ $member->id }}</span></td>
                     <td><code class="member-number">{{ $member->member_number }}</code></td>
-                    <td><strong>{{ $member->user->name ?? 'N/A' }}</strong></td>
+                    <td>
+                        <a href="{{ admin_route('admin.members.detail', ['id' => $member->id]) }}"><strong>{{ $member->user->name ?? 'N/A' }}</strong></a>
+                    </td>
                     <td>
                         @php $channelLabel = \App\Support\MemberChannel::label($member->user); @endphp
                         @if($channelLabel === '—')

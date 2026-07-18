@@ -78,7 +78,7 @@ class DashboardService
 
     public function getRecentOrders(int $limit = 10): Collection
     {
-        return Order::with('items.product')
+        return Order::with(['items.product', 'user.member'])
             ->orderByDesc('created_at')
             ->limit($limit)
             ->get();
