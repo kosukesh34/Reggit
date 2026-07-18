@@ -187,7 +187,7 @@ class AdminAnnouncementsTest extends TestCase
         $this->assertDatabaseMissing('announcements', ['id' => $announcement->id]);
     }
 
-    public function test_update_画像URLを更新できること(): void
+    public function test_update_画像urlを更新できること(): void
     {
         $project = $this->createProject();
         $admin = $this->createAdmin($project);
@@ -219,7 +219,7 @@ class AdminAnnouncementsTest extends TestCase
         ]);
     }
 
-    public function test_store_delivery_画像URL付きで配信できること(): void
+    public function test_store_delivery_画像url付きで配信できること(): void
     {
         $project = $this->createProject();
         $admin = $this->createAdmin($project);
