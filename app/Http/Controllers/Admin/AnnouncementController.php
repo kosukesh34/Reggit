@@ -9,6 +9,7 @@ use App\UseCases\Admin\Announcement\AdminAnnouncementDeleteUseCase;
 use App\UseCases\Admin\Announcement\AdminAnnouncementDeliveryFormUseCase;
 use App\UseCases\Admin\Announcement\AdminAnnouncementEditUseCase;
 use App\UseCases\Admin\Announcement\AdminAnnouncementIndexUseCase;
+use App\UseCases\Admin\Announcement\AdminAnnouncementReadsUseCase;
 use App\UseCases\Admin\Announcement\AdminAnnouncementSaveImageUseCase;
 use App\UseCases\Admin\Announcement\AdminAnnouncementSegmentPreviewUseCase;
 use App\UseCases\Admin\Announcement\AdminAnnouncementStoreDeliveryUseCase;
@@ -30,13 +31,26 @@ class AnnouncementController extends AdminBaseController
         private AdminAnnouncementSegmentPreviewUseCase $segmentPreviewUseCase,
         private AdminMemberSearchByKeywordUseCase $searchMembersUseCase,
         private AdminAnnouncementSaveImageUseCase $saveImageUseCase,
+        private AdminAnnouncementReadsUseCase $readsUseCase,
     ) {}
 
-    public function announcements()
+    public function announcements(Request $request)
     {
-        $announcements = $this->indexUseCase->handle();
+        $output = $this->indexUseCase->handle([
+            'delivery_type' => $request->query('delivery_type'),
+            'keyword' => $request->query('keyword'),
+            'published_from' => $request->query('published_from'),
+            'published_to' => $request->query('published_to'),
+        ]);
+        $output->announcements->appends($request->query());
 
-        return view('admin.announcements.index', compact('announcements'));
+        return view('admin.announcements.index', [
+            'announcements' => $output->announcements,
+            'filters' => $output->filters,
+            'deliveryTypeCounts' => $output->deliveryTypeCounts,
+            'deliveryTypeLabels' => $output->deliveryTypeLabels,
+            'deliveryStatusLabels' => $output->deliveryStatusLabels,
+        ]);
     }
 
     public function createAnnouncement()
@@ -95,6 +109,17 @@ class AnnouncementController extends AdminBaseController
 
         return redirect()->route('admin.announcements', $this->buildAdminRouteParams())
             ->with('success', 'お知らせを削除しました');
+    }
+
+    public function announcementReads(string $projectKey, int $id)
+    {
+        $output = $this->readsUseCase->handle($id);
+
+        return view('admin.announcements.reads', [
+            'announcement' => $output->announcement,
+            'reads' => $output->reads,
+            'readCount' => $output->readCount,
+        ]);
     }
 
     public function createDelivery()

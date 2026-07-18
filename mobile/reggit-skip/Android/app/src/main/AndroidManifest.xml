@@ -34,6 +34,9 @@
         <meta-data android:name="LiffFixedTabAndroid" android:value="${LIFF_FIXED_TAB_ANDROID}" />
         <meta-data android:name="LIFF_FIXED_TAB_ANDROID" android:value="${LIFF_FIXED_TAB_ANDROID}" />
         <meta-data android:name="ONE_SIGNAL_APP_ID" android:value="${ONE_SIGNAL_APP_ID}" />
+        <meta-data
+            android:name="com.onesignal.NotificationServiceExtension"
+            android:value="reggit.module.AnnouncementCancelNotificationExtension" />
         <activity
             android:name=".MainActivity"
             android:exported="true"
