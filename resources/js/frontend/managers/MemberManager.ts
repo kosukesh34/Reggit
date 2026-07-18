@@ -25,6 +25,7 @@ export class MemberManager {
     _historyHandlerBound: boolean;
     _liffIdentityRetryRegistered: boolean;
     _autoRegisterAttempted: boolean;
+    _isRegisterSubmitting: boolean;
     _lastMemberFetchWasNonMember: boolean;
     _googleWalletOpenUrl: string | null;
     _googleWalletOpenUrlAt: number;
@@ -48,6 +49,7 @@ export class MemberManager {
         this._historyHandlerBound = false;
         this._liffIdentityRetryRegistered = false;
         this._autoRegisterAttempted = false;
+        this._isRegisterSubmitting = false;
         this._lastMemberFetchWasNonMember = false;
         this._googleWalletOpenUrl = null;
         this._googleWalletOpenUrlAt = 0;
@@ -2459,55 +2461,65 @@ export class MemberManager {
 
     async saveRegisterForm(e: any) {
         if (e) e.preventDefault();
+        if (this._isRegisterSubmitting) {
+            return;
+        }
         const form = document.getElementById('registerForm') as HTMLFormElement | null;
         if (!form) return;
-        const payload: any = {};
-        const asInput = (el: Element | null): HTMLInputElement | null => el as HTMLInputElement | null;
-        const root = this.memberData || {};
-        const fields = (root.profile_field_settings) ? root.profile_field_settings : [];
-        const keys = fields.map(function (f) { return f.key; });
-        keys.forEach(function (key) {
-            if (key === 'name') {
-                const elLast = asInput(form.querySelector('[name="name_last"]'));
-                const elFirst = asInput(form.querySelector('[name="name_first"]'));
-                const lastVal = elLast ? (elLast.value || '').trim() : '';
-                const firstVal = elFirst ? (elFirst.value || '').trim() : '';
-                payload.name = (lastVal + ' ' + firstVal).trim() || null;
-                return;
-            }
-            const el = asInput(key === 'sex'
-                ? form.querySelector('[name="sex"]:checked')
-                : form.querySelector('[name="' + key.replace(/"/g, '\\"') + '"]'));
-            if (el) {
-                let v: any = (el.value || '').trim();
-                if (key === 'birthday' && !v) v = null;
-                payload[key] = v || null;
-            } else if (key === 'sex') {
-                payload[key] = null;
-            }
-        });
-        if (Object.keys(payload).length === 0 && form.elements.length) {
-            for (let i = 0; i < form.elements.length; i++) {
-                const el = form.elements[i] as HTMLInputElement;
-                if (el.name && el.name !== '_token') {
-                    if (el.type === 'radio' && !el.checked) continue;
+
+        this._isRegisterSubmitting = true;
+        const submitButtons = Array.from(document.querySelectorAll(
+            '#registerForm button[type="submit"], button[type="submit"][form="registerForm"]'
+        )) as HTMLButtonElement[];
+        submitButtons.forEach((btn) => { btn.disabled = true; });
+
+        try {
+            const payload: any = {};
+            const asInput = (el: Element | null): HTMLInputElement | null => el as HTMLInputElement | null;
+            const root = this.memberData || {};
+            const fields = (root.profile_field_settings) ? root.profile_field_settings : [];
+            const keys = fields.map(function (f) { return f.key; });
+            keys.forEach(function (key) {
+                if (key === 'name') {
+                    const elLast = asInput(form.querySelector('[name="name_last"]'));
+                    const elFirst = asInput(form.querySelector('[name="name_first"]'));
+                    const lastVal = elLast ? (elLast.value || '').trim() : '';
+                    const firstVal = elFirst ? (elFirst.value || '').trim() : '';
+                    payload.name = (lastVal + ' ' + firstVal).trim() || null;
+                    return;
+                }
+                const el = asInput(key === 'sex'
+                    ? form.querySelector('[name="sex"]:checked')
+                    : form.querySelector('[name="' + key.replace(/"/g, '\\"') + '"]'));
+                if (el) {
                     let v: any = (el.value || '').trim();
-                    if (el.name === 'birthday' && !v) v = null;
-                    payload[el.name] = v || null;
+                    if (key === 'birthday' && !v) v = null;
+                    payload[key] = v || null;
+                } else if (key === 'sex') {
+                    payload[key] = null;
+                }
+            });
+            if (Object.keys(payload).length === 0 && form.elements.length) {
+                for (let i = 0; i < form.elements.length; i++) {
+                    const el = form.elements[i] as HTMLInputElement;
+                    if (el.name && el.name !== '_token') {
+                        if (el.type === 'radio' && !el.checked) continue;
+                        let v: any = (el.value || '').trim();
+                        if (el.name === 'birthday' && !v) v = null;
+                        payload[el.name] = v || null;
+                    }
                 }
             }
-        }
-        const nameLast = asInput(form.querySelector('[name="name_last"]'));
-        const nameFirst = asInput(form.querySelector('[name="name_first"]'));
-        if (nameLast || nameFirst) {
-            const lastVal = nameLast ? (nameLast.value || '').trim() : '';
-            const firstVal = nameFirst ? (nameFirst.value || '').trim() : '';
-            payload.name = (lastVal + ' ' + firstVal).trim() || null;
-        }
-        if (typeof window !== 'undefined' && window.__LINE_PROFILE__ && window.__LINE_PROFILE__.displayName && !payload.name) {
-            payload.name = window.__LINE_PROFILE__.displayName;
-        }
-        try {
+            const nameLast = asInput(form.querySelector('[name="name_last"]'));
+            const nameFirst = asInput(form.querySelector('[name="name_first"]'));
+            if (nameLast || nameFirst) {
+                const lastVal = nameLast ? (nameLast.value || '').trim() : '';
+                const firstVal = nameFirst ? (nameFirst.value || '').trim() : '';
+                payload.name = (lastVal + ' ' + firstVal).trim() || null;
+            }
+            if (typeof window !== 'undefined' && window.__LINE_PROFILE__ && window.__LINE_PROFILE__.displayName && !payload.name) {
+                payload.name = window.__LINE_PROFILE__.displayName;
+            }
             const result = await this.apiClient.post(AppConstants.API_ENDPOINTS.MEMBERS_REGISTER, payload);
             const raw = (result && result.data) != null ? result.data : result;
             const data = this._normalizeMemberPayload(raw) || raw;
@@ -2541,6 +2553,13 @@ export class MemberManager {
         } catch (error) {
             console.error('Register error:', error);
             ToastManager.error('登録に失敗しました: ' + (error.message || 'エラーが発生しました'));
+        } finally {
+            this._isRegisterSubmitting = false;
+            submitButtons.forEach((btn) => {
+                if (document.body.contains(btn)) {
+                    btn.disabled = false;
+                }
+            });
         }
     }
 
