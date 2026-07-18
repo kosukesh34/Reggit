@@ -1,4 +1,7 @@
 import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 
 struct NetworkShellURLReachabilityChecker: ShellURLReachabilityChecking {
     func isReachable(_ urlString: String) async -> Bool {
