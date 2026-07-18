@@ -41,6 +41,7 @@ class Announcement extends Model
         'segment_criteria',
         'delivery_coupon_id',
         'delivery_status',
+        'onesignal_notification_ids',
     ];
 
     public function project()
@@ -67,5 +68,6 @@ class Announcement extends Model
         'sent_at' => 'datetime',
         'target_member_ids' => 'array',
         'segment_criteria' => 'array',
+        'onesignal_notification_ids' => 'array',
     ];
 }

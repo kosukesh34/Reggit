@@ -7,6 +7,7 @@ use App\Models\Announcement;
 use App\Models\AnnouncementRead;
 use App\Models\Project;
 use App\Models\User;
+use App\Services\CancelledAnnouncementIdStore;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -74,5 +75,20 @@ class AnnouncementApiV1Test extends TestCase
             'project_id' => $project->id,
             'announcement_id' => $announcement->id,
         ]);
+    }
+
+    public function test_cancelled_ids_取消し済みお知らせidを返すこと(): void
+    {
+        $project = $this->createProject();
+        $store = app(CancelledAnnouncementIdStore::class);
+        $store->remember((int) $project->id, 101, '削除1');
+        $store->remember((int) $project->id, 202, '削除2');
+
+        $response = $this->get('/api/v1/announcements/cancelled-ids?project_key='.$project->project_key);
+
+        $response->assertStatus(200)
+            ->assertJsonPath('cancelled_ids', [101, 202])
+            ->assertJsonPath('items.0.id', 101)
+            ->assertJsonPath('items.0.title', '削除1');
     }
 }
