@@ -262,7 +262,7 @@
                     </span>
                     <form action="{{ request()->routeIs('system-admin.*') ? route('system-admin.logout') : route('admin.logout') }}" method="POST" class="content-header-logout-form" onsubmit="return confirm('ログアウトしますか？');">
                         @csrf
-                        <button type="submit" class="btn btn-sm btn-outline-secondary">
+                        <button type="submit" class="btn btn-sm btn-outline-secondary no-loading">
                             <i class="fas fa-sign-out-alt"></i> <span class="hide-mobile">ログアウト</span>
                         </button>
                     </form>

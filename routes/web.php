@@ -155,6 +155,7 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'bind.admin.project', '
         Route::get('/members/{id}/edit', [AdminMemberController::class, 'editMember'])->name('admin.members.edit')->middleware('admin.permission:members.manage');
         Route::get('/members/{id}', [AdminMemberController::class, 'memberDetail'])->name('admin.members.detail')->middleware('admin.permission:members.view');
         Route::put('/members/{id}', [AdminMemberController::class, 'updateMember'])->name('admin.members.update')->middleware('admin.permission:members.manage');
+        Route::delete('/members/{id}', [AdminMemberController::class, 'deleteMember'])->name('admin.members.delete')->middleware('admin.permission:members.manage');
         Route::post('/members/{id}/issue-coupon', [AdminMemberController::class, 'issueCoupon'])->name('admin.members.issue-coupon')->middleware('admin.permission:members.view');
         Route::post('/members/{id}/add-stamps', [AdminMemberController::class, 'addStamps'])->name('admin.members.add-stamps')->middleware('admin.permission:members.view');
         Route::post('/members/{id}/tags', [AdminMemberController::class, 'attachTag'])->name('admin.members.tags.attach')->middleware('admin.permission:members.manage');

@@ -93,12 +93,22 @@ function initFormValidation(): void {
     document.querySelectorAll('form').forEach((formEl) => {
         const form = formEl as HTMLFormElement;
         form.addEventListener('submit', (e) => {
-            const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement | null;
+            // 削除確認ダイアログ待ちのフォームはここでは触らない
+            if (form.classList.contains('delete-form')) {
+                return;
+            }
+            if (e.defaultPrevented) {
+                return;
+            }
+            const submitBtn = form.querySelector('button[type="submit"]:not(.no-loading), input[type="submit"]:not(.no-loading)') as HTMLButtonElement | null;
             if (submitBtn && !form.checkValidity()) {
                 e.preventDefault();
                 ToastManager.error('入力内容を確認してください');
                 form.reportValidity();
-            } else if (submitBtn) {
+                return;
+            }
+            // click 時ではなく submit 確定後に無効化（click で disabled にすると送信自体がキャンセルされる）
+            if (submitBtn && !submitBtn.disabled) {
                 submitBtn.disabled = true;
                 submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 処理中...';
             }
@@ -107,21 +117,8 @@ function initFormValidation(): void {
 }
 
 function initLoadingStates(): void {
-    document.querySelectorAll('form button[type="submit"], form input[type="submit"]').forEach((btnEl) => {
-        const btn = btnEl as HTMLButtonElement;
-        if (btn.classList.contains('no-loading')) return;
-        btn.addEventListener('click', function onClick(this: HTMLButtonElement) {
-            if (!this.disabled) {
-                const originalHTML = this.innerHTML;
-                this.disabled = true;
-                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 処理中...';
-                setTimeout(() => {
-                    this.disabled = false;
-                    this.innerHTML = originalHTML;
-                }, 3000);
-            }
-        });
-    });
+    // 送信ボタンの loading 表示は initFormValidation の submit 時に行う。
+    // click で disabled にするとブラウザがフォーム送信をキャンセルするため、ここには置かない。
 }
 
 function initSidebarCollapsibleGroups(): void {

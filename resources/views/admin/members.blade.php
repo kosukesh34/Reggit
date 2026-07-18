@@ -4,9 +4,20 @@
 @section('page-title', '会員管理')
 
 @section('content')
+@if(session('success'))
+<div class="alert alert-success" role="alert">
+    <i class="fas fa-check-circle"></i> {{ session('success') }}
+</div>
+@endif
+@if(session('error'))
+<div class="alert alert-error" role="alert">
+    <i class="fas fa-exclamation-circle"></i> {{ session('error') }}
+</div>
+@endif
+
 <div class="page-header">
     <h1 class="page-header-title"><i class="fas fa-users"></i> 会員管理</h1>
-    <p class="page-header-desc">会員情報の検索・管理を行います</p>
+    <p class="page-header-desc">会員情報の確認・編集・削除を行います</p>
 </div>
 
 <div class="card card-mb-16">
@@ -30,6 +41,15 @@
                     <option value="">すべて</option>
                     <option value="active" {{ ($filters['status'] ?? '') === 'active' ? 'selected' : '' }}>有効</option>
                     <option value="inactive" {{ ($filters['status'] ?? '') === 'inactive' ? 'selected' : '' }}>無効</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">登録チャネル</label>
+                <select name="channel" class="form-control">
+                    <option value="">すべて</option>
+                    @foreach(\App\Support\MemberChannel::filterOptions() as $value => $label)
+                        <option value="{{ $value }}" {{ ($filters['channel'] ?? '') === $value ? 'selected' : '' }}>{{ $label }}</option>
+                    @endforeach
                 </select>
             </div>
             <div class="form-group form-group--action">
@@ -56,6 +76,7 @@
                     <th>ID</th>
                     <th>会員番号</th>
                     <th>ユーザー名</th>
+                    <th>登録チャネル</th>
                     <th>ポイント</th>
                     <th>ステータス</th>
                     <th>登録日</th>
@@ -68,6 +89,14 @@
                     <td><span class="id-badge">{{ $member->id }}</span></td>
                     <td><code class="member-number">{{ $member->member_number }}</code></td>
                     <td><strong>{{ $member->user->name ?? 'N/A' }}</strong></td>
+                    <td>
+                        @php $channelLabel = \App\Support\MemberChannel::label($member->user); @endphp
+                        @if($channelLabel === '—')
+                            <span class="text-muted">—</span>
+                        @else
+                            <span class="badge badge-info">{{ $channelLabel }}</span>
+                        @endif
+                    </td>
                     <td>{{ number_format($member->points) }}pt</td>
                     <td>
                         <span class="badge badge-{{ $member->status === 'active' ? 'success' : 'danger' }}">
@@ -78,12 +107,21 @@
                     <td class="table-actions-cell">
                         <div class="table-actions">
                             <a href="{{ admin_route('admin.members.detail', ['id' => $member->id]) }}" class="btn btn-action btn-edit"><i class="fas fa-eye"></i> 詳細</a>
+                            @php $adminUser = auth('admin')->user(); @endphp
+                            @if($adminUser === null || $adminUser->hasPermission('members.manage'))
+                            <a href="{{ admin_route('admin.members.edit', ['id' => $member->id]) }}" class="btn btn-action btn-edit"><i class="fas fa-edit"></i> 編集</a>
+                            <form action="{{ admin_route('admin.members.delete', ['id' => $member->id]) }}" method="POST" class="d-inline delete-form" data-item-name="{{ $member->user->name ?? $member->member_number }}">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-action btn-danger no-loading"><i class="fas fa-trash"></i> 削除</button>
+                            </form>
+                            @endif
                         </div>
                     </td>
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="7" class="empty-state">
+                    <td colspan="8" class="empty-state">
                         <i class="fas fa-user-slash"></i>
                         <p>
                             @if(collect($filters)->filter()->isNotEmpty())
