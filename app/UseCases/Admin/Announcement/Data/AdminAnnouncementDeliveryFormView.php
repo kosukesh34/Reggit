@@ -6,14 +6,14 @@ use App\Models\Coupon;
 use Illuminate\Support\Collection;
 
 /**
- * お知らせ一斉配信フォーム画面用データ。
- *
  * @param  Collection<int, Coupon>  $coupons
+ * @param  Collection<int, \App\Models\Product>  $products
  */
 class AdminAnnouncementDeliveryFormView
 {
     public function __construct(
         public readonly int $memberCount,
         public readonly Collection $coupons,
+        public readonly Collection $products = new Collection,
     ) {}
 }

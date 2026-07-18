@@ -13,6 +13,7 @@ use App\Services\Smaregi\SmaregiPointsSyncService;
 use App\Util\AdminContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Tests\Support\GrantsMemberPoints;
 use Tests\TestCase;
@@ -28,11 +29,13 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
     {
         parent::setUp();
         AdminContext::setCurrentProject(null);
+        Cache::flush();
         config([
             'smaregi.client_id' => 'test_client_id',
             'smaregi.client_secret' => 'test_client_secret',
             'smaregi.id_base_url' => 'https://id.smaregi.dev',
             'smaregi.api_base_url' => 'https://api.smaregi.dev',
+            'smaregi.contract_id' => '',
         ]);
     }
 
@@ -320,18 +323,6 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
     {
         Bus::fake();
 
-        Http::fake(function ($request) {
-            $url = $request->url();
-            if (str_contains($url, 'id.smaregi.dev') && str_contains($url, '/token')) {
-                return Http::response(['access_token' => 'fake', 'expires_in' => 3600], 200);
-            }
-            if (str_contains($url, self::CONTRACT_ID.'/pos/transactions/555')) {
-                return Http::response(['transactionHeadId' => '555', 'customerId' => '93'], 200);
-            }
-
-            return Http::response([], 404);
-        });
-
         $this->postJson('/api/smaregi/webhook', [
             'contractId' => self::CONTRACT_ID,
             'event' => 'pos:customer-points',
@@ -345,9 +336,103 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
 
         Bus::assertDispatched(SmaregiSyncInboundCustomerPointsJob::class, function (SmaregiSyncInboundCustomerPointsJob $job): bool {
             return $job->contractId === self::CONTRACT_ID
-                && $job->customerIds === ['93']
+                && $job->customerIds === []
+                && $job->transactionHeadIds === ['555']
                 && $job->action === 'edited';
         });
+    }
+
+    public function test_webhook_pos_transactionsでtransaction_headのtotal_pointをヒントに同期ジョブがディスパッチされること(): void
+    {
+        Bus::fake();
+
+        $this->postJson('/api/smaregi/webhook', [
+            'contractId' => self::CONTRACT_ID,
+            'event' => 'pos:transactions',
+            'action' => 'created',
+            'transactionHeadIds' => ['777'],
+        ], [
+            'smaregi-event' => 'pos:transactions',
+            'smaregi-contract-id' => self::CONTRACT_ID,
+            'Content-Type' => 'application/json',
+        ])->assertStatus(200);
+
+        Bus::assertDispatched(SmaregiSyncInboundCustomerPointsJob::class, function (SmaregiSyncInboundCustomerPointsJob $job): bool {
+            return $job->contractId === self::CONTRACT_ID
+                && $job->customerIds === []
+                && $job->transactionHeadIds === ['777']
+                && $job->action === 'created';
+        });
+    }
+
+    public function test_transaction_customer_idが後から付く場合はリトライで解決できること(): void
+    {
+        $attempts = 0;
+
+        Http::fake(function ($request) use (&$attempts) {
+            $url = $request->url();
+            if (str_contains($url, 'id.smaregi.dev') && str_contains($url, '/token')) {
+                return Http::response(['access_token' => 'fake', 'expires_in' => 3600], 200);
+            }
+            if (str_contains($url, self::CONTRACT_ID.'/pos/transactions/34')) {
+                $attempts++;
+                if ($attempts < 2) {
+                    return Http::response([
+                        'transactionHeadId' => '34',
+                        'customerId' => null,
+                        'totalPoint' => '395',
+                    ], 200);
+                }
+
+                return Http::response([
+                    'transactionHeadId' => '34',
+                    'customerId' => '247',
+                    'totalPoint' => '395',
+                ], 200);
+            }
+
+            return Http::response([], 404);
+        });
+
+        $resolved = app(\App\Services\Smaregi\SmaregiApiService::class)
+            ->resolveCustomersFromTransactionHeads(self::CONTRACT_ID, ['34']);
+
+        $this->assertGreaterThanOrEqual(2, $attempts);
+        $this->assertSame(['247'], $resolved['customer_ids']);
+        $this->assertSame(395, $resolved['points_by_customer_id']['247'] ?? null);
+    }
+
+    public function test_取引total_pointヒントがあれば会員ポイント_a_p_i失敗でも同期できること(): void
+    {
+        $project = Project::factory()->create();
+        ShopSetting::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $member = Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+            'smaregi_customer_id' => '253',
+            'points' => 0,
+        ]);
+        $this->grantMemberPoints($member, 0, '初期');
+
+        Http::fake(function ($request) {
+            $url = $request->url();
+            if (str_contains($url, 'id.smaregi.dev') && str_contains($url, '/token')) {
+                return Http::response(['access_token' => 'fake', 'expires_in' => 3600], 200);
+            }
+            if (preg_match('#/pos/customers/253($|\?)#', $url)) {
+                return Http::response(['customerId' => '253', 'customerCode' => 'M253'], 200);
+            }
+
+            return Http::response([], 404);
+        });
+
+        $service = app(SmaregiCustomerPointsInboundSyncService::class);
+        $service->syncByCustomerIds(self::CONTRACT_ID, ['253'], 'edited', ['253' => 69]);
+
+        $member->refresh();
+        $this->assertSame(69, $member->points);
     }
 
     public function test_deletedアクションでは同期しないこと(): void

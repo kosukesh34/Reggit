@@ -3,6 +3,7 @@
 namespace App\Services\Smaregi;
 
 use App\Jobs\SmaregiSyncInboundCustomerPointsJob;
+use App\Jobs\SmaregiSyncInboundTransactionsJob;
 use App\UseCases\Smaregi\Data\SmaregiNotificationInput;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Log;
@@ -18,10 +19,6 @@ class SmaregiWebhookNotificationService
         'pos:customer-points',
         'pos:transactions',
     ];
-
-    public function __construct(
-        private SmaregiApiService $smaregiApi,
-    ) {}
 
     /**
      * @return array{status: int, body: string}
@@ -66,9 +63,23 @@ class SmaregiWebhookNotificationService
         ]);
 
         if ($contractId !== null && $contractId !== '') {
-            $customerIds = $this->collectCustomerIdsForInboundSync($input, strtolower($event), $contractId);
-            if ($customerIds !== []) {
-                $this->dispatchInboundCustomerSync($contractId, $customerIds, $action);
+            $eventLower = strtolower($event);
+            if ($eventLower === 'pos:transactions') {
+                $this->dispatchInboundTransactionSync(
+                    $contractId,
+                    $this->extractStringIds($input->input('transactionHeadIds')),
+                );
+            }
+
+            $targets = $this->collectInboundSyncTargets($input, $eventLower, $contractId);
+            if ($targets['customer_ids'] !== [] || $targets['transaction_head_ids'] !== []) {
+                $this->dispatchInboundCustomerSync(
+                    $contractId,
+                    $targets['customer_ids'],
+                    $action,
+                    $targets['points_by_customer_id'],
+                    $targets['transaction_head_ids'],
+                );
             }
         }
 
@@ -76,12 +87,24 @@ class SmaregiWebhookNotificationService
     }
 
     /**
-     * @return list<string>
+     * Webhook 応答前に API 呼び出し（リトライ待機含む）をしない。
+     * transactionHeadIds からの会員解決は Job 側で行う。
+     *
+     * @return array{
+     *     customer_ids: list<string>,
+     *     points_by_customer_id: array<string, int>,
+     *     transaction_head_ids: list<string>
+     * }
      */
-    private function collectCustomerIdsForInboundSync(SmaregiNotificationInput $input, string $event, string $contractId): array
+    private function collectInboundSyncTargets(SmaregiNotificationInput $input, string $event, string $contractId): array
     {
+        $empty = [
+            'customer_ids' => [],
+            'points_by_customer_id' => [],
+            'transaction_head_ids' => [],
+        ];
         if (! in_array($event, self::INBOUND_SYNC_EVENTS, true)) {
-            return [];
+            return $empty;
         }
 
         if ($event === 'pos:customers') {
@@ -93,12 +116,20 @@ class SmaregiWebhookNotificationService
                 ]);
             }
 
-            return $customerIds;
+            return [
+                'customer_ids' => $customerIds,
+                'points_by_customer_id' => [],
+                'transaction_head_ids' => [],
+            ];
         }
 
         $customerIds = $this->extractStringIds($input->input('customerIds'));
         if ($customerIds !== []) {
-            return $customerIds;
+            return [
+                'customer_ids' => $customerIds,
+                'points_by_customer_id' => [],
+                'transaction_head_ids' => [],
+            ];
         }
 
         $transactionHeadIds = $this->extractStringIds($input->input('transactionHeadIds'));
@@ -108,47 +139,88 @@ class SmaregiWebhookNotificationService
                 'action' => $input->input('action'),
             ]);
 
-            return [];
+            return $empty;
         }
 
-        $resolved = $this->smaregiApi->resolveCustomerIdsFromTransactionHeads($contractId, $transactionHeadIds);
-        if ($resolved === []) {
-            Log::warning('[Smaregi] Webhook '.$event.' transactionHeadIds から会員IDを解決できませんでした', [
+        return [
+            'customer_ids' => [],
+            'points_by_customer_id' => [],
+            'transaction_head_ids' => $transactionHeadIds,
+        ];
+    }
+
+    /**
+     * @param  list<string>  $transactionHeadIds
+     */
+    private function dispatchInboundTransactionSync(string $contractId, array $transactionHeadIds): void
+    {
+        if ($transactionHeadIds === []) {
+            Log::info('[Smaregi] Webhook pos:transactions だが transactionHeadIds が空のため取引履歴同期はスキップ', [
                 'smaregi_contract_id' => $contractId,
-                'transaction_head_ids' => $transactionHeadIds,
             ]);
+
+            return;
+        }
+
+        if (config('smaregi.webhook_run_sync_inline', false)) {
+            Log::info('[Smaregi] Webhook 取引履歴同期ジョブを即時実行（inline）', [
+                'smaregi_contract_id' => $contractId,
+                'transaction_head_id_count' => count($transactionHeadIds),
+                'transaction_head_ids_sample' => array_slice($transactionHeadIds, 0, 30),
+            ]);
+            Bus::dispatchSync(new SmaregiSyncInboundTransactionsJob($contractId, $transactionHeadIds));
         } else {
-            Log::info('[Smaregi] Webhook '.$event.' transactionHeadIds から会員IDを解決', [
+            Log::info('[Smaregi] Webhook 取引履歴同期ジョブをレスポンス送信後に実行予定', [
                 'smaregi_contract_id' => $contractId,
-                'transaction_head_ids' => $transactionHeadIds,
-                'customer_ids' => $resolved,
+                'transaction_head_id_count' => count($transactionHeadIds),
+                'transaction_head_ids_sample' => array_slice($transactionHeadIds, 0, 30),
             ]);
+            SmaregiSyncInboundTransactionsJob::dispatch($contractId, $transactionHeadIds)->afterResponse();
         }
-
-        return $resolved;
     }
 
     /**
      * @param  list<string>  $customerIds
+     * @param  array<string, int>  $pointsByCustomerId
+     * @param  list<string>  $transactionHeadIds
      */
-    private function dispatchInboundCustomerSync(string $contractId, array $customerIds, ?string $action): void
-    {
+    private function dispatchInboundCustomerSync(
+        string $contractId,
+        array $customerIds,
+        ?string $action,
+        array $pointsByCustomerId = [],
+        array $transactionHeadIds = [],
+    ): void {
         if (config('smaregi.webhook_run_sync_inline', false)) {
             Log::info('[Smaregi] Webhook 会員同期ジョブを即時実行（inline）', [
                 'smaregi_contract_id' => $contractId,
                 'action' => $action,
                 'customer_id_count' => count($customerIds),
                 'customer_ids_sample' => array_slice($customerIds, 0, 30),
+                'transaction_head_id_count' => count($transactionHeadIds),
             ]);
-            Bus::dispatchSync(new SmaregiSyncInboundCustomerPointsJob($contractId, $customerIds, $action));
+            Bus::dispatchSync(new SmaregiSyncInboundCustomerPointsJob(
+                $contractId,
+                $customerIds,
+                $action,
+                $pointsByCustomerId,
+                $transactionHeadIds,
+            ));
         } else {
             Log::info('[Smaregi] Webhook 会員同期ジョブをレスポンス送信後に実行予定', [
                 'smaregi_contract_id' => $contractId,
                 'action' => $action,
                 'customer_id_count' => count($customerIds),
                 'customer_ids_sample' => array_slice($customerIds, 0, 30),
+                'transaction_head_id_count' => count($transactionHeadIds),
             ]);
-            SmaregiSyncInboundCustomerPointsJob::dispatch($contractId, $customerIds, $action)->afterResponse();
+            SmaregiSyncInboundCustomerPointsJob::dispatch(
+                $contractId,
+                $customerIds,
+                $action,
+                $pointsByCustomerId,
+                $transactionHeadIds,
+            )->afterResponse();
         }
     }
 

@@ -65,6 +65,13 @@ interface CouponDeliveryTargetRepository
      */
     public function findIdsByLifetimeGrantedPoints(int $projectId, ?int $min, ?int $max): array;
 
+    /**
+     * 指定商品を購入した会員（アプリ注文またはスマレジPOS来店明細）。
+     *
+     * @return list<int>
+     */
+    public function findIdsByPurchasedProduct(int $projectId, int $productId): array;
+
     public function countAll(int $projectId): int;
 
     /**

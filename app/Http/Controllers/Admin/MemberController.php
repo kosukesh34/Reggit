@@ -16,6 +16,7 @@ use App\UseCases\Admin\Member\AdminMemberListUseCase;
 use App\UseCases\Admin\Member\AdminMemberRecordVisitUseCase;
 use App\UseCases\Admin\Member\AdminMemberUpdateMemoUseCase;
 use App\UseCases\Admin\Member\AdminMemberUpdateUseCase;
+use App\UseCases\Admin\Member\AdminMemberVisitDetailUseCase;
 use App\UseCases\Admin\Member\Data\AdminMemberUpdateInput;
 use App\UseCases\Admin\MemberTag\AdminMemberTagIndexUseCase;
 use Illuminate\Http\Request;
@@ -34,6 +35,7 @@ class MemberController extends AdminBaseController
         private AdminMemberAdjustStampsUseCase $adjustStampsUseCase,
         private AdminMemberDeleteCouponUseCase $deleteCouponUseCase,
         private AdminMemberRecordVisitUseCase $recordVisitUseCase,
+        private AdminMemberVisitDetailUseCase $visitDetailUseCase,
         private AdminMemberAttachTagUseCase $attachTagUseCase,
         private AdminMemberDetachTagUseCase $detachTagUseCase,
         private AdminMemberUpdateMemoUseCase $updateMemoUseCase,
@@ -63,6 +65,17 @@ class MemberController extends AdminBaseController
             'member' => $output->member,
             'purchaseSummary' => $output->purchaseSummary,
             'allTags' => $tags,
+        ]);
+    }
+
+    public function visitDetail(string $project_key, int $id, int $visitId)
+    {
+        $projectId = $this->resolveAdminProjectId();
+        $output = $this->visitDetailUseCase->handle($projectId, $id, $visitId);
+
+        return view('admin.member-visit-detail', [
+            'member' => $output->member,
+            'visit' => $output->visit,
         ]);
     }
 

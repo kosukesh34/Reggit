@@ -133,6 +133,21 @@
                 </div>
 
                 <div class="row mb-3">
+                    <div class="col-md-8">
+                        <label for="segment_product_id" class="form-label">購入した商品</label>
+                        <select name="segment_product_id" id="segment_product_id" class="form-control segment-filter">
+                            <option value="">指定しない</option>
+                            @foreach(($products ?? []) as $product)
+                                <option value="{{ $product->id }}" {{ (string) old('segment_product_id') === (string) $product->id ? 'selected' : '' }}>
+                                    {{ $product->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <p class="form-text text-muted mb-0">アプリ注文・スマレジPOSで購入した会員に絞り込み</p>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
                     <div class="col-md-4">
                         <label for="segment_lifetime_points_min" class="form-label">累計付与ポイント（以上）</label>
                         <input type="number" name="segment_lifetime_points_min" id="segment_lifetime_points_min" class="form-control segment-filter" value="{{ old('segment_lifetime_points_min') }}" min="0" placeholder="例: 1000">
@@ -330,6 +345,7 @@
             ['segment_channel', 'segment_birthday_month', 'segment_visit_count_min', 'segment_visit_count_max',
              'segment_lifetime_points_min', 'segment_lifetime_points_max',
              'segment_last_visit_mode', 'segment_last_visit_days', 'segment_sex', 'segment_rank',
+             'segment_product_id',
              'segment_period_days', 'segment_min_amount'].forEach(function(id) {
                 var el = document.getElementById(id);
                 if (el && el.value !== '') params.set(id, el.value);
@@ -432,8 +448,9 @@
             const hasLastVisit = document.getElementById('segment_last_visit_mode').value !== '';
             const hasSex = document.getElementById('segment_sex').value !== '';
             const hasRank = document.getElementById('segment_rank').value.trim() !== '';
+            const hasProduct = document.getElementById('segment_product_id').value !== '';
             const hasSales = cond === 'min_amount' || cond === 'no_orders';
-            if (!hasChannel && !hasBirthday && !hasVisit && !hasLifetimePoints && !hasLastVisit && !hasSex && !hasRank && !hasSales) {
+            if (!hasChannel && !hasBirthday && !hasVisit && !hasLifetimePoints && !hasLastVisit && !hasSex && !hasRank && !hasProduct && !hasSales) {
                 alert('セグメント配信では1つ以上の絞り込み条件を指定してください');
                 return false;
             }

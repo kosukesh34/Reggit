@@ -235,16 +235,16 @@ class SmaregiApiTest extends TestCase
             if ($method === 'GET' && str_contains($url, 'pos/stores')) {
                 return Http::response($responses['get_pos_stores'] ?? ['stores' => []], 200);
             }
-            if ($method === 'GET' && preg_match('#/pos/customers/[^/]+/points($|\?)#', $url)) {
+            if ($method === 'GET' && preg_match('#/pos/customers/point($|\?)#', $url)) {
                 $payload = $responses['get_pos_customers_point'] ?? ['point' => '0'];
                 if (is_array($payload) && isset($payload[0]) && is_array($payload[0])) {
-                    return Http::response($payload[0], 200);
+                    return Http::response($payload, 200);
                 }
 
-                return Http::response($payload, 200);
+                return Http::response([$payload], 200);
             }
-            if ($method === 'GET' && str_contains($url, 'pos/customers/point')) {
-                return Http::response($responses['get_pos_customers_point'] ?? [], 200);
+            if ($method === 'GET' && preg_match('#/pos/customers/[^/]+/points($|\?)#', $url)) {
+                return Http::response([], 404);
             }
             if ($method === 'GET' && str_contains($url, 'pos/customers') && ! preg_match('#/pos/customers/\d+($|\?)#', $url)) {
                 return Http::response($responses['get_pos_customers'] ?? ['customers' => [], 'total' => 0], 200);
