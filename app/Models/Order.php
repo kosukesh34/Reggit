@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToProject;
+use App\Support\DailySequenceNumber;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -54,14 +55,8 @@ class Order extends Model
         return $this->hasMany(PointTransaction::class);
     }
 
-    protected static function boot()
+    public function formattedOrderNumber(): string
     {
-        parent::boot();
-
-        static::creating(function ($order) {
-            if ($order->order_number === null || $order->order_number === '') {
-                $order->order_number = 'ORD-'.date('Ymd').'-'.strtoupper(uniqid());
-            }
-        });
+        return DailySequenceNumber::formatStoredForDisplay($this->order_number);
     }
 }

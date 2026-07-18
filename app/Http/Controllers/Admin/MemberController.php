@@ -3,8 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Requests\Admin\MemberUpdateRequest;
-use App\UseCases\Admin\Member\AdminMemberAddStampsUseCase;
+use App\UseCases\Admin\Member\AdminMemberAdjustStampsUseCase;
 use App\UseCases\Admin\Member\AdminMemberAttachTagUseCase;
+use App\UseCases\Admin\Member\AdminMemberDeleteCouponUseCase;
 use App\UseCases\Admin\Member\AdminMemberDeleteUseCase;
 use App\UseCases\Admin\Member\AdminMemberDetachTagUseCase;
 use App\UseCases\Admin\Member\AdminMemberDetailUseCase;
@@ -12,6 +13,7 @@ use App\UseCases\Admin\Member\AdminMemberEditUseCase;
 use App\UseCases\Admin\Member\AdminMemberExportUseCase;
 use App\UseCases\Admin\Member\AdminMemberIssueCouponUseCase;
 use App\UseCases\Admin\Member\AdminMemberListUseCase;
+use App\UseCases\Admin\Member\AdminMemberRecordVisitUseCase;
 use App\UseCases\Admin\Member\AdminMemberUpdateMemoUseCase;
 use App\UseCases\Admin\Member\AdminMemberUpdateUseCase;
 use App\UseCases\Admin\Member\Data\AdminMemberUpdateInput;
@@ -29,7 +31,9 @@ class MemberController extends AdminBaseController
         private AdminMemberUpdateUseCase $updateUseCase,
         private AdminMemberDeleteUseCase $deleteUseCase,
         private AdminMemberIssueCouponUseCase $issueCouponUseCase,
-        private AdminMemberAddStampsUseCase $addStampsUseCase,
+        private AdminMemberAdjustStampsUseCase $adjustStampsUseCase,
+        private AdminMemberDeleteCouponUseCase $deleteCouponUseCase,
+        private AdminMemberRecordVisitUseCase $recordVisitUseCase,
         private AdminMemberAttachTagUseCase $attachTagUseCase,
         private AdminMemberDetachTagUseCase $detachTagUseCase,
         private AdminMemberUpdateMemoUseCase $updateMemoUseCase,
@@ -57,8 +61,6 @@ class MemberController extends AdminBaseController
 
         return view('admin.member-detail', [
             'member' => $output->member,
-            'activeCoupons' => $output->activeCoupons,
-            'activeStampCards' => $output->activeStampCards,
             'purchaseSummary' => $output->purchaseSummary,
             'allTags' => $tags,
         ]);
@@ -72,6 +74,8 @@ class MemberController extends AdminBaseController
         return view('admin.member-edit', [
             'member' => $output->member,
             'rankOptions' => $output->rankOptions,
+            'activeCoupons' => $output->activeCoupons,
+            'activeStampCards' => $output->activeStampCards,
         ]);
     }
 
@@ -135,27 +139,73 @@ class MemberController extends AdminBaseController
         ]);
         $this->issueCouponUseCase->handle($projectId, $id, (int) $validated['coupon_id']);
 
-        return redirect()->route('admin.members.detail', array_merge(['id' => $id], $this->buildAdminRouteParams()))
+        return redirect()->route('admin.members.edit', array_merge(['id' => $id], $this->buildAdminRouteParams()))
             ->with('success', 'クーポンを配布しました');
     }
 
-    /** 会員にスタンプを付与 */
-    public function addStamps(Request $request, string $project_key, int $id)
+    /** 会員の発行済みクーポンを削除 */
+    public function deleteCoupon(string $project_key, int $id, int $memberCouponId)
+    {
+        $projectId = $this->resolveAdminProjectId();
+        try {
+            $this->deleteCouponUseCase->handle($projectId, $id, $memberCouponId);
+        } catch (\RuntimeException $e) {
+            return redirect()->route('admin.members.edit', array_merge(['id' => $id], $this->buildAdminRouteParams()))
+                ->with('error', $e->getMessage());
+        }
+
+        return redirect()->route('admin.members.edit', array_merge(['id' => $id], $this->buildAdminRouteParams()))
+            ->with('success', 'クーポンを削除しました');
+    }
+
+    /** 会員のスタンプを加減算 */
+    public function adjustStamps(Request $request, string $project_key, int $id)
     {
         $projectId = $this->resolveAdminProjectId();
         $validated = $request->validate([
             'stamp_card_id' => ['required', 'integer', Rule::exists('stamp_cards', 'id')->where('project_id', $projectId)],
-            'count' => ['required', 'integer', 'min:1', 'max:100'],
+            'stamp_add' => ['nullable', 'integer', 'min:0', 'max:100'],
+            'stamp_subtract' => ['nullable', 'integer', 'min:0', 'max:100'],
+            'stamp_description' => ['nullable', 'string', 'max:255'],
         ]);
-        $this->addStampsUseCase->handle(
+
+        $add = (int) ($validated['stamp_add'] ?? 0);
+        $subtract = (int) ($validated['stamp_subtract'] ?? 0);
+        $delta = $add - $subtract;
+        if ($delta === 0) {
+            return redirect()->route('admin.members.edit', array_merge(['id' => $id], $this->buildAdminRouteParams()))
+                ->with('error', 'スタンプの加算または減算を指定してください');
+        }
+
+        $this->adjustStampsUseCase->handle(
             $projectId,
             $id,
             (int) $validated['stamp_card_id'],
-            (int) $validated['count']
+            $delta,
+            $validated['stamp_description'] ?? null
         );
 
-        return redirect()->route('admin.members.detail', array_merge(['id' => $id], $this->buildAdminRouteParams()))
-            ->with('success', 'スタンプを付与しました');
+        return redirect()->route('admin.members.edit', array_merge(['id' => $id], $this->buildAdminRouteParams()))
+            ->with('success', 'スタンプを更新しました');
+    }
+
+    /** 来店を手動登録 */
+    public function recordVisit(Request $request, string $project_key, int $id)
+    {
+        $projectId = $this->resolveAdminProjectId();
+        $validated = $request->validate([
+            'visited_at' => ['required', 'date'],
+            'note' => ['nullable', 'string', 'max:500'],
+        ]);
+        $this->recordVisitUseCase->handle(
+            $projectId,
+            $id,
+            $validated['visited_at'],
+            $validated['note'] ?? null
+        );
+
+        return redirect()->route('admin.members.edit', array_merge(['id' => $id], $this->buildAdminRouteParams()))
+            ->with('success', '来店を登録しました');
     }
 
     /** 会員にタグを付与 */

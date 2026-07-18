@@ -11,6 +11,16 @@
     <span>編集</span>
 </nav>
 
+@if(session('success'))
+<div class="alert alert-success" role="alert">
+    <i class="fas fa-check-circle"></i> {{ session('success') }}
+</div>
+@endif
+@if(session('error'))
+<div class="alert alert-error" role="alert">
+    <i class="fas fa-exclamation-circle"></i> {{ session('error') }}
+</div>
+@endif
 @if($errors->any())
 <div class="alert alert-danger" role="alert">
     <i class="fas fa-exclamation-circle"></i> 入力内容に誤りがあります。ご確認ください。
@@ -165,6 +175,144 @@
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary"><i class="fas fa-check me-1"></i>変更を保存</button>
                 <a href="{{ admin_route('admin.members.detail', ['id' => $member->id]) }}" class="btn btn-secondary">キャンセル</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-stamp"></i> スタンプ操作</h3>
+    </div>
+    <div class="card-body">
+        @if($activeStampCards->isEmpty())
+            <p class="text-muted mb-0">スタンプカードがありません。<a href="{{ admin_route('admin.stamps.create') }}">スタンプカードを作成</a>してください。</p>
+        @else
+            @if($member->memberStamps->isNotEmpty())
+            <p class="text-muted small mb-3">現在:
+                @foreach($member->memberStamps as $ms)
+                    {{ $ms->stampCard->name ?? '—' }} {{ $ms->current_stamps }} / {{ $ms->stampCard->required_stamps ?? 0 }}@if(!$loop->last)、@endif
+                @endforeach
+            </p>
+            @endif
+            <form action="{{ admin_route('admin.members.adjust-stamps', ['id' => $member->id]) }}" method="POST">
+                @csrf
+                <div class="row">
+                    <div class="col-md-4 form-group">
+                        <label for="stamp_card_id" class="form-label">スタンプカード <span class="text-danger">*</span></label>
+                        <select name="stamp_card_id" id="stamp_card_id" class="form-control" required>
+                            <option value="">選択してください</option>
+                            @foreach($activeStampCards as $sc)
+                                <option value="{{ $sc->id }}">{{ $sc->name }}（{{ $sc->required_stamps }}個で達成）</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-2 form-group">
+                        <label for="stamp_add" class="form-label">加算</label>
+                        <input type="number" name="stamp_add" id="stamp_add" class="form-control" value="{{ old('stamp_add', 0) }}" min="0" max="100" step="1">
+                    </div>
+                    <div class="col-md-2 form-group">
+                        <label for="stamp_subtract" class="form-label">減算</label>
+                        <input type="number" name="stamp_subtract" id="stamp_subtract" class="form-control" value="{{ old('stamp_subtract', 0) }}" min="0" max="100" step="1">
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label for="stamp_description" class="form-label">理由（管理用メモ）</label>
+                        <input type="text" name="stamp_description" id="stamp_description" class="form-control" value="{{ old('stamp_description') }}" maxlength="255" placeholder="例: 管理画面での調整">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-stamp"></i> スタンプを更新</button>
+            </form>
+        @endif
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-ticket-alt"></i> クーポン操作</h3>
+    </div>
+    <div class="card-body">
+        @if($activeCoupons->isEmpty())
+            <p class="text-muted">配布可能なクーポンがありません。<a href="{{ admin_route('admin.coupons.create') }}">クーポンを作成</a>してください。</p>
+        @else
+            <form action="{{ admin_route('admin.members.issue-coupon', ['id' => $member->id]) }}" method="POST" class="form-inline mb-3">
+                @csrf
+                <div class="form-group me-2">
+                    <label for="coupon_id" class="form-label me-1">クーポン</label>
+                    <select name="coupon_id" id="coupon_id" class="form-control" required>
+                        <option value="">選択してください</option>
+                        @foreach($activeCoupons as $c)
+                            <option value="{{ $c->id }}">{{ $c->name }}（{{ $c->code }}）</option>
+                        @endforeach
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-gift"></i> 配布する</button>
+            </form>
+        @endif
+
+        <h4 class="h6">保有クーポン</h4>
+        <table class="table mb-0">
+            <thead>
+                <tr>
+                    <th>クーポン名</th>
+                    <th>状態</th>
+                    <th>発行日</th>
+                    <th class="table-actions-cell">操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($member->memberCoupons as $mc)
+                <tr>
+                    <td>{{ $mc->coupon_name_snapshot ?? $mc->coupon->name ?? '—' }}</td>
+                    <td>
+                        <span class="badge badge-{{ $mc->status === 'unused' ? 'success' : 'secondary' }}">
+                            {{ $mc->status === 'unused' ? '未使用' : '使用済み' }}
+                        </span>
+                    </td>
+                    <td>{{ $mc->issued_at ? $mc->issued_at->format('Y/m/d') : '—' }}</td>
+                    <td class="table-actions-cell">
+                        @if($mc->status === 'unused')
+                        <form action="{{ admin_route('admin.members.delete-coupon', ['id' => $member->id, 'memberCouponId' => $mc->id]) }}" method="POST" class="d-inline delete-form" data-item-name="{{ $mc->coupon_name_snapshot ?? 'クーポン' }}">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn btn-sm btn-danger no-loading"><i class="fas fa-trash"></i> 削除</button>
+                        </form>
+                        @else
+                        <span class="text-muted">—</span>
+                        @endif
+                    </td>
+                </tr>
+                @empty
+                <tr>
+                    <td colspan="4" class="empty-state">
+                        <i class="fas fa-ticket-alt"></i>
+                        <p>保有クーポンがありません</p>
+                    </td>
+                </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-store"></i> 来店登録</h3>
+    </div>
+    <div class="card-body">
+        <form action="{{ admin_route('admin.members.record-visit', ['id' => $member->id]) }}" method="POST">
+            @csrf
+            <div class="row">
+                <div class="col-md-4 form-group">
+                    <label for="visited_at" class="form-label">来店日時 <span class="text-danger">*</span></label>
+                    <input type="datetime-local" name="visited_at" id="visited_at" class="form-control" value="{{ old('visited_at', now()->format('Y-m-d\\TH:i')) }}" required>
+                </div>
+                <div class="col-md-6 form-group">
+                    <label for="visit_note" class="form-label">メモ</label>
+                    <input type="text" name="note" id="visit_note" class="form-control" value="{{ old('note') }}" maxlength="500" placeholder="任意">
+                </div>
+                <div class="col-md-2 form-group d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-plus"></i> 登録</button>
+                </div>
             </div>
         </form>
     </div>

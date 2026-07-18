@@ -11,6 +11,8 @@ use App\Enums\PaymentMethod;
 use App\Models\Order;
 use App\Models\Project;
 use App\Models\User;
+use App\Services\OrderNumberAssigner;
+use App\Support\DailySequenceNumber;
 use App\UseCases\Payment\PaymentConfirmUseCase;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -59,12 +61,20 @@ class PaymentConfirmUseCaseTest extends TestCase
             $gateway,
             app(OrderRepository::class),
             $dispatcher,
+            app(OrderNumberAssigner::class),
         );
         $result = $useCase->handle('pi_test_123', $order->id, 1);
 
         $this->assertTrue($result->isSuccess);
-        $this->assertSame(OrderStatus::CONFIRMED, $order->fresh()->status);
-        $this->assertSame(PaymentMethod::STRIPE, $order->fresh()->payment_method);
+        $fresh = $order->fresh();
+        $this->assertSame(OrderStatus::CONFIRMED, $fresh->status);
+        $this->assertSame(PaymentMethod::STRIPE, $fresh->payment_method);
+        $expectedNumber = DailySequenceNumber::build(1);
+        $this->assertSame($expectedNumber, $fresh->order_number);
+        $this->assertSame(
+            DailySequenceNumber::formatStoredForDisplay($expectedNumber),
+            $fresh->formattedOrderNumber()
+        );
     }
 
     public function test_confirm_再実行時は注文を上書きせず成功すること(): void
@@ -74,9 +84,11 @@ class PaymentConfirmUseCaseTest extends TestCase
             ['name' => 'Default Project', 'description' => 'Test', 'is_active' => true]
         );
         $user = User::factory()->create(['project_id' => 1]);
+        $existingNumber = DailySequenceNumber::build(1);
         $order = Order::create([
             'project_id' => 1,
             'user_id' => $user->id,
+            'order_number' => $existingNumber,
             'total_amount' => 1000,
             'status' => OrderStatus::CONFIRMED,
             'payment_method' => PaymentMethod::STRIPE,
@@ -102,11 +114,13 @@ class PaymentConfirmUseCaseTest extends TestCase
             $gateway,
             app(OrderRepository::class),
             $dispatcher,
+            app(OrderNumberAssigner::class),
         );
         $result = $useCase->handle('pi_test_123', $order->id, 1);
 
         $this->assertTrue($result->isSuccess);
         $this->assertSame(OrderStatus::CONFIRMED, $order->fresh()->status);
+        $this->assertSame($existingNumber, $order->fresh()->order_number);
     }
 
     public function test_confirm_metadataのorder_id不一致は失敗すること(): void
@@ -134,12 +148,14 @@ class PaymentConfirmUseCaseTest extends TestCase
             $gateway,
             app(OrderRepository::class),
             app(DomainEventDispatcher::class),
+            app(OrderNumberAssigner::class),
         );
         $result = $useCase->handle('pi_test_123', $order->id, 1);
 
         $this->assertFalse($result->isSuccess);
         $this->assertSame('決済情報と注文が一致しません', $result->message);
         $this->assertSame(OrderStatus::PENDING, $order->fresh()->status);
+        $this->assertNull($order->fresh()->order_number);
     }
 
     public function test_confirm_他プロジェクトの注文は_model_not_found_exceptionになること(): void
@@ -165,6 +181,7 @@ class PaymentConfirmUseCaseTest extends TestCase
             $gateway,
             app(OrderRepository::class),
             app(DomainEventDispatcher::class),
+            app(OrderNumberAssigner::class),
         );
 
         $this->expectException(ModelNotFoundException::class);
@@ -180,6 +197,7 @@ class PaymentConfirmUseCaseTest extends TestCase
             $gateway,
             app(OrderRepository::class),
             app(DomainEventDispatcher::class),
+            app(OrderNumberAssigner::class),
         );
 
         $this->expectException(ModelNotFoundException::class);

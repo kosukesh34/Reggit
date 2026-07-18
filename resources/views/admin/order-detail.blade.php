@@ -1,7 +1,7 @@
 @extends('admin.layout')
 
 @section('title', '注文詳細')
-@section('page-title', '注文詳細: ' . $order->order_number)
+@section('page-title', '注文詳細: ' . $order->formattedOrderNumber())
 
 @section('content')
 <div class="card">
@@ -12,7 +12,7 @@
         <div class="info-grid">
             <div class="info-item">
                 <div class="info-label">注文番号</div>
-                <div class="info-value">{{ $order->order_number }}</div>
+                <div class="info-value">{{ $order->formattedOrderNumber() }}</div>
             </div>
             <div class="info-item">
                 <div class="info-label">ユーザー</div>

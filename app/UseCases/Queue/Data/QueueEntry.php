@@ -8,6 +8,7 @@ class QueueEntry
     public function __construct(
         public int $id,
         public int $queueNumber,
+        public string $formattedQueueNumber,
         public string $status,
         public int $partySize,
         public bool $lineLinked,
@@ -20,12 +21,13 @@ class QueueEntry
         public int $estimatedWaitMinutes
     ) {}
 
-    /** @return array{id: int, queue_number: int, status: string, party_size: int, line_linked: bool, qr_token: string|null, created_at: string, updated_at: string, called_at: string|null, waiting_count: int, ahead_count: int|null, estimated_wait_minutes: int} */
+    /** @return array{id: int, queue_number: int, formatted_queue_number: string, status: string, party_size: int, line_linked: bool, qr_token: string|null, created_at: string, updated_at: string, called_at: string|null, waiting_count: int, ahead_count: int|null, estimated_wait_minutes: int} */
     public function toArray(): array
     {
         return [
             'id' => $this->id,
             'queue_number' => $this->queueNumber,
+            'formatted_queue_number' => $this->formattedQueueNumber,
             'status' => $this->status,
             'party_size' => $this->partySize,
             'line_linked' => $this->lineLinked,

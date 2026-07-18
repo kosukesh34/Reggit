@@ -4,6 +4,7 @@ namespace App\UseCases\Queue;
 
 use App\Enums\QueueStatus;
 use App\Models\QueueEntry as QueueEntryModel;
+use App\Support\DailySequenceNumber;
 use App\UseCases\Queue\Data\QueueEntry;
 use App\UseCases\Queue\Data\QueueEntryFactory;
 use App\UseCases\Queue\Data\QueueStoreInput;
@@ -48,17 +49,18 @@ class QueueStoreUseCase
 
     private function getNextQueueNumber(int $projectId): int
     {
-        // 例: 6月1日の13番目 → 0113（日2桁 + 通番2桁）
-        $dayPrefix = (int) today()->format('d') * 100;
-        $maxNumber = QueueEntryModel::where('project_id', $projectId)
+        // DB: YYYYMMDD+通番（例: 202604201）。表示は日+通番（例: 201）。
+        $prefix = DailySequenceNumber::datePrefix();
+        $maxStored = QueueEntryModel::where('project_id', $projectId)
             ->whereDate('created_at', today())
-            ->max('queue_number') ?? 0;
-
-        if ($maxNumber < $dayPrefix) {
-            return $dayPrefix + 1;
+            ->max('queue_number');
+        $maxSeq = 0;
+        if ($maxStored !== null) {
+            $parsed = DailySequenceNumber::parseSeq((string) $maxStored);
+            $maxSeq = $parsed ?? 0;
         }
 
-        return $maxNumber + 1;
+        return (int) DailySequenceNumber::build(DailySequenceNumber::nextSeq($maxSeq));
     }
 
     private function generateQrToken(): string

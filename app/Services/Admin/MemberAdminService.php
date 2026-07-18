@@ -10,6 +10,8 @@ use App\Models\Coupon;
 use App\Models\Member;
 use App\Models\MemberCoupon;
 use App\Models\MemberStamp;
+use App\Models\MemberStampTransaction;
+use App\Models\MemberVisit;
 use App\Models\Order;
 use App\Models\Scopes\ProjectScope;
 use App\Models\StampCard;
@@ -83,7 +85,20 @@ class MemberAdminService
 
     public function findOrFail(int $id, ?int $projectId = null): Member
     {
-        $query = Member::with(['user', 'user.devices', 'pointTransactions.order', 'memberStamps.stampCard', 'memberCoupons.coupon']);
+        $query = Member::with([
+            'user',
+            'user.devices',
+            'pointTransactions' => fn ($q) => $q->orderByDesc('created_at'),
+            'pointTransactions.order',
+            'memberStamps.stampCard',
+            'memberCoupons' => fn ($q) => $q->orderByDesc('issued_at'),
+            'memberCoupons.coupon',
+            'visits' => fn ($q) => $q->orderByDesc('visited_at'),
+            'visits.order',
+            'stampTransactions' => fn ($q) => $q->orderByDesc('created_at'),
+            'stampTransactions.stampCard',
+            'stampTransactions.order',
+        ]);
         if ($projectId !== null) {
             $query->where('project_id', $projectId);
         }
@@ -244,12 +259,41 @@ class MemberAdminService
         return $issued;
     }
 
-    /** 会員のスタンプカードにスタンプを追加（管理画面からの手動付与） */
-    public function addStampsToMember(Member $member, int $stampCardId, int $count = 1): MemberStamp
-    {
+    /** 会員のスタンプカードにスタンプを追加（注文・管理画面からの付与） */
+    public function addStampsToMember(
+        Member $member,
+        int $stampCardId,
+        int $count = 1,
+        ?string $description = null,
+        ?int $orderId = null
+    ): MemberStamp {
         if ($count < 1) {
             throw new \InvalidArgumentException('スタンプ数は1以上を指定してください');
         }
+
+        return $this->adjustStampsToMember(
+            $member,
+            $stampCardId,
+            $count,
+            $description ?? 'スタンプ付与',
+            $orderId
+        );
+    }
+
+    /**
+     * スタンプを加減算する。delta は 0 以外。残高は 0 未満にならない。
+     */
+    public function adjustStampsToMember(
+        Member $member,
+        int $stampCardId,
+        int $delta,
+        ?string $description = null,
+        ?int $orderId = null
+    ): MemberStamp {
+        if ($delta === 0) {
+            throw new \InvalidArgumentException('スタンプ数は0以外を指定してください');
+        }
+
         $stampCard = StampCard::where('project_id', $member->project_id)->findOrFail($stampCardId);
         $memberStamp = MemberStamp::firstOrCreate(
             [
@@ -262,14 +306,82 @@ class MemberAdminService
         if ($memberStamp->valid_until === null && $stampCard->valid_days !== null && (int) $stampCard->valid_days > 0) {
             $memberStamp->update(['valid_until' => Carbon::now()->addDays((int) $stampCard->valid_days)]);
         }
-        $memberStamp->increment('current_stamps', $count);
+
+        $newBalance = max(0, (int) $memberStamp->current_stamps + $delta);
+        $appliedDelta = $newBalance - (int) $memberStamp->current_stamps;
+        $memberStamp->update(['current_stamps' => $newBalance]);
         $memberStamp->refresh();
+
         $required = (int) $stampCard->required_stamps;
-        if ($memberStamp->current_stamps >= $required && $memberStamp->completed_at === null) {
+        if ($newBalance >= $required && $memberStamp->completed_at === null) {
             $memberStamp->update(['completed_at' => now()]);
+        } elseif ($newBalance < $required && $memberStamp->completed_at !== null) {
+            $memberStamp->update(['completed_at' => null]);
+        }
+
+        if ($appliedDelta !== 0) {
+            MemberStampTransaction::create([
+                'project_id' => $member->project_id,
+                'member_id' => $member->id,
+                'stamp_card_id' => $stampCard->id,
+                'delta' => $appliedDelta,
+                'balance_after' => $newBalance,
+                'description' => $description,
+                'order_id' => $orderId,
+            ]);
         }
 
         return $memberStamp->refresh();
+    }
+
+    /**
+     * 来店を記録し、最終来店日を更新する。
+     */
+    public function recordVisit(
+        Member $member,
+        \DateTimeInterface $visitedAt,
+        string $source,
+        ?int $orderId = null,
+        ?string $note = null
+    ): MemberVisit {
+        $visitedCarbon = Carbon::parse($visitedAt);
+        $visit = MemberVisit::create([
+            'project_id' => $member->project_id,
+            'member_id' => $member->id,
+            'visited_at' => $visitedCarbon,
+            'source' => $source,
+            'order_id' => $orderId,
+            'note' => $note,
+        ]);
+
+        $visitedDate = $visitedCarbon->toDateString();
+        $currentLast = $member->last_visited_at;
+        if ($currentLast === null || $visitedDate > $currentLast->format('Y-m-d')) {
+            $member->update(['last_visited_at' => $visitedDate]);
+            $member->refresh();
+        }
+
+        return $visit;
+    }
+
+    /**
+     * 会員に発行済みの未使用クーポンを削除する。
+     *
+     * @throws \RuntimeException 使用済み・他会員のクーポンの場合
+     */
+    public function deleteMemberCoupon(Member $member, int $memberCouponId): void
+    {
+        $memberCoupon = MemberCoupon::query()
+            ->where('project_id', $member->project_id)
+            ->where('member_id', $member->id)
+            ->whereKey($memberCouponId)
+            ->firstOrFail();
+
+        if ($memberCoupon->isUsed()) {
+            throw new \RuntimeException('使用済みクーポンは削除できません');
+        }
+
+        $memberCoupon->delete();
     }
 
     public function getCountByProject(int $projectId): int
