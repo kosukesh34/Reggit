@@ -2,10 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Enums\MemberVisitSource;
 use App\Models\AdminUser;
+use App\Models\Coupon;
 use App\Models\Member;
+use App\Models\MemberCoupon;
 use App\Models\Project;
 use App\Models\ShopSetting;
+use App\Models\StampCard;
 use App\Models\User;
 use App\Models\WalletPassRegistration;
 use App\Services\AppleWalletPushService;
@@ -253,7 +257,7 @@ class AdminMembersTest extends TestCase
         $admin = $this->createAdmin($project);
         $user = User::factory()->create(['project_id' => $project->id]);
         $member = Member::factory()->create(['user_id' => $user->id, 'project_id' => $project->id]);
-        $stampCard = \App\Models\StampCard::factory()->create([
+        $stampCard = StampCard::factory()->create([
             'project_id' => $project->id,
             'required_stamps' => 10,
             'is_active' => true,
@@ -305,18 +309,18 @@ class AdminMembersTest extends TestCase
         $admin = $this->createAdmin($project);
         $user = User::factory()->create(['project_id' => $project->id]);
         $member = Member::factory()->create(['user_id' => $user->id, 'project_id' => $project->id]);
-        $coupon = \App\Models\Coupon::factory()->create(['project_id' => $project->id, 'is_active' => true]);
-        $unused = \App\Models\MemberCoupon::factory()->create([
+        $coupon = Coupon::factory()->create(['project_id' => $project->id, 'is_active' => true]);
+        $unused = MemberCoupon::factory()->create([
             'project_id' => $project->id,
             'member_id' => $member->id,
             'coupon_id' => $coupon->id,
-            'status' => \App\Models\MemberCoupon::STATUS_UNUSED,
+            'status' => MemberCoupon::STATUS_UNUSED,
         ]);
-        $used = \App\Models\MemberCoupon::factory()->create([
+        $used = MemberCoupon::factory()->create([
             'project_id' => $project->id,
             'member_id' => $member->id,
             'coupon_id' => $coupon->id,
-            'status' => \App\Models\MemberCoupon::STATUS_USED,
+            'status' => MemberCoupon::STATUS_USED,
             'used_at' => now(),
         ]);
 
@@ -360,7 +364,7 @@ class AdminMembersTest extends TestCase
         $response->assertRedirect(route('admin.members.edit', ['project_key' => $project->project_key, 'id' => $member->id]));
         $this->assertDatabaseHas('member_visits', [
             'member_id' => $member->id,
-            'source' => \App\Enums\MemberVisitSource::ADMIN,
+            'source' => MemberVisitSource::ADMIN,
             'note' => '手動来店',
         ]);
         $member->refresh();
