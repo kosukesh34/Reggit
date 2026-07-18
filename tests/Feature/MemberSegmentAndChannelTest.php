@@ -47,6 +47,77 @@ class MemberSegmentAndChannelTest extends TestCase
         $this->assertSame('—', MemberChannel::label($guestUser));
     }
 
+    public function test_member_channel_labelがiosとandroidを分けて表示すること(): void
+    {
+        $project = $this->createProject();
+
+        $iosUser = User::factory()->create([
+            'project_id' => $project->id,
+            'line_user_id' => 'guest-ios',
+        ]);
+        UserDevice::create([
+            'project_id' => $project->id,
+            'user_id' => $iosUser->id,
+            'platform' => 'ios',
+            'device_identifier' => 'ios-1',
+        ]);
+        $this->assertSame('iOS', MemberChannel::label($iosUser->fresh('devices')));
+
+        $androidUser = User::factory()->create([
+            'project_id' => $project->id,
+            'line_user_id' => 'guest-android',
+        ]);
+        UserDevice::create([
+            'project_id' => $project->id,
+            'user_id' => $androidUser->id,
+            'platform' => 'android',
+            'device_identifier' => 'android-1',
+        ]);
+        $this->assertSame('Android', MemberChannel::label($androidUser->fresh('devices')));
+
+        $bothUser = User::factory()->create([
+            'project_id' => $project->id,
+            'line_user_id' => 'guest-both',
+        ]);
+        UserDevice::create([
+            'project_id' => $project->id,
+            'user_id' => $bothUser->id,
+            'platform' => 'ios',
+            'device_identifier' => 'both-ios',
+        ]);
+        UserDevice::create([
+            'project_id' => $project->id,
+            'user_id' => $bothUser->id,
+            'platform' => 'android',
+            'device_identifier' => 'both-android',
+        ]);
+        $this->assertSame('iOS・Android', MemberChannel::label($bothUser->fresh('devices')));
+
+        $lineIosUser = User::factory()->create([
+            'project_id' => $project->id,
+            'line_user_id' => $this->validLineUserId('line-ios'),
+        ]);
+        UserDevice::create([
+            'project_id' => $project->id,
+            'user_id' => $lineIosUser->id,
+            'platform' => 'ios',
+            'device_identifier' => 'line-ios-1',
+        ]);
+        $this->assertSame('LINE・iOS', MemberChannel::label($lineIosUser->fresh('devices')));
+
+        $webUser = User::factory()->create([
+            'project_id' => $project->id,
+            'line_user_id' => 'guest-web',
+        ]);
+        UserDevice::create([
+            'project_id' => $project->id,
+            'user_id' => $webUser->id,
+            'platform' => 'web',
+            'device_identifier' => 'web-1',
+        ]);
+        $this->assertSame('アプリ', MemberChannel::label($webUser->fresh('devices')));
+    }
+
     public function test_repository_チャネルと来店回数と最終来店で絞り込めること(): void
     {
         $project = $this->createProject();
