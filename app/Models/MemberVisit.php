@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Concerns\BelongsToProject;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class MemberVisit extends Model
 {
@@ -17,11 +18,14 @@ class MemberVisit extends Model
         'source',
         'order_id',
         'note',
+        'amount',
+        'smaregi_transaction_head_id',
     ];
 
     /** @var array<string, string> */
     protected $casts = [
         'visited_at' => 'datetime',
+        'amount' => 'float',
     ];
 
     public function project(): BelongsTo
@@ -37,5 +41,10 @@ class MemberVisit extends Model
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class);
+    }
+
+    public function items(): HasMany
+    {
+        return $this->hasMany(MemberVisitItem::class)->orderBy('sort_order');
     }
 }

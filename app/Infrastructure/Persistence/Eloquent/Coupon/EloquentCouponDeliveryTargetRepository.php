@@ -6,6 +6,7 @@ use App\Domain\Coupon\Repositories\CouponDeliveryTargetRepository;
 use App\Enums\OrderStatus;
 use App\Models\Member;
 use App\Models\Order;
+use App\Models\Product;
 use App\Support\MemberChannel;
 use Carbon\Carbon;
 
@@ -215,6 +216,44 @@ class EloquentCouponDeliveryTargetRepository implements CouponDeliveryTargetRepo
         }
 
         return $query->pluck('id')->map(fn ($id) => (int) $id)->values()->all();
+    }
+
+    public function findIdsByPurchasedProduct(int $projectId, int $productId): array
+    {
+        $fromOrders = Member::query()
+            ->where('project_id', $projectId)
+            ->whereHas('user.orders', function ($query) use ($projectId, $productId) {
+                $query->where('project_id', $projectId)
+                    ->where('status', '!=', OrderStatus::CANCELLED)
+                    ->whereHas('items', function ($itemQuery) use ($productId) {
+                        $itemQuery->where('product_id', $productId);
+                    });
+            })
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        $product = Product::query()
+            ->where('project_id', $projectId)
+            ->whereKey($productId)
+            ->first();
+        $smaregiProductId = is_string($product?->smaregi_product_id) ? trim($product->smaregi_product_id) : '';
+
+        $fromVisits = Member::query()
+            ->where('project_id', $projectId)
+            ->whereHas('visits.items', function ($query) use ($productId, $smaregiProductId) {
+                $query->where(function ($inner) use ($productId, $smaregiProductId) {
+                    $inner->where('product_id', $productId);
+                    if ($smaregiProductId !== '') {
+                        $inner->orWhere('smaregi_product_id', $smaregiProductId);
+                    }
+                });
+            })
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        return array_values(array_unique(array_merge($fromOrders, $fromVisits)));
     }
 
     public function countAll(int $projectId): int

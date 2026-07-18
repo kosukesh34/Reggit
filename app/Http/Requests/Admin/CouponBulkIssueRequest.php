@@ -65,6 +65,7 @@ class CouponBulkIssueRequest extends FormRequest
             'segment_last_visit_days' => ['nullable', 'integer', 'min:1', 'max:365'],
             'segment_sex' => ['nullable', Rule::in(['1', '2'])],
             'segment_rank' => ['nullable', 'string', 'max:64'],
+            'segment_product_id' => ['nullable', 'integer', 'min:1'],
         ];
     }
 

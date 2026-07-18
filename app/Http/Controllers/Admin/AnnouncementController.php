@@ -129,6 +129,7 @@ class AnnouncementController extends AdminBaseController
         return view('admin.announcements.delivery-create', [
             'memberCount' => $form->memberCount,
             'coupons' => $form->coupons,
+            'products' => $form->products,
         ]);
     }
 

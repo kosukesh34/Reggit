@@ -95,9 +95,14 @@ class SmaregiCustomerPointsInboundSyncService
 
     /**
      * @param  list<string>  $customerIds
+     * @param  array<string, int>  $pointsByCustomerId
      */
-    public function syncByCustomerIds(string $contractId, array $customerIds, ?string $action): void
-    {
+    public function syncByCustomerIds(
+        string $contractId,
+        array $customerIds,
+        ?string $action,
+        array $pointsByCustomerId = [],
+    ): void {
         $contractId = trim($contractId);
         if ($contractId === '' || $customerIds === []) {
             return;
@@ -118,11 +123,12 @@ class SmaregiCustomerPointsInboundSyncService
             if ($customerId === '') {
                 continue;
             }
-            $this->syncOneCustomer($contractId, $customerId);
+            $pointsHint = $pointsByCustomerId[$customerId] ?? null;
+            $this->syncOneCustomer($contractId, $customerId, is_int($pointsHint) ? $pointsHint : null);
         }
     }
 
-    private function syncOneCustomer(string $contractId, string $smaregiCustomerId): void
+    private function syncOneCustomer(string $contractId, string $smaregiCustomerId, ?int $pointsHint = null): void
     {
         $projectIds = $this->projectIdsForContract($contractId);
         if ($projectIds === []) {
@@ -157,17 +163,26 @@ class SmaregiCustomerPointsInboundSyncService
             ]);
         }
 
-        $remotePoint = $this->smaregiApi->getCustomerPoint($contractId, $smaregiCustomerId);
-        if ($remotePoint === null) {
-            Log::warning('[Smaregi] Inbound customer sync: getCustomerPoint failed', [
+        $remotePoints = $pointsHint;
+        if ($remotePoints === null) {
+            $remotePoint = $this->smaregiApi->getCustomerPoint($contractId, $smaregiCustomerId);
+            if ($remotePoint === null) {
+                Log::warning('[Smaregi] Inbound customer sync: getCustomerPoint failed', [
+                    'smaregi_contract_id' => $contractId,
+                    'smaregi_customer_id' => $smaregiCustomerId,
+                ]);
+            }
+
+            $remotePoints = $remotePoint !== null ? $this->parsePointBalance($remotePoint) : null;
+            if ($remotePoints === null && $remoteCustomer !== null) {
+                $remotePoints = $this->parsePointBalance($remoteCustomer);
+            }
+        } else {
+            Log::info('[Smaregi] Inbound customer sync: 取引 totalPoint をポイント同期に使用', [
                 'smaregi_contract_id' => $contractId,
                 'smaregi_customer_id' => $smaregiCustomerId,
+                'total_point' => $remotePoints,
             ]);
-        }
-
-        $remotePoints = $remotePoint !== null ? $this->parsePointBalance($remotePoint) : null;
-        if ($remotePoints === null && $remoteCustomer !== null) {
-            $remotePoints = $this->parsePointBalance($remoteCustomer);
         }
         if ($remotePoints === null) {
             Log::warning('[Smaregi] Inbound point sync: could not parse point from customer payload', [
