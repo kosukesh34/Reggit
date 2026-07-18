@@ -292,6 +292,9 @@ class SmaregiApiService
     /**
      * 会員1件のポイント情報を取得（pos.customers:read）
      *
+     * 公式は GET pos/customers/point?customer_id=（一覧の絞り込み）。
+     * サンドボックスでは GET pos/customers/{id}/points が 404 になるため使わない。
+     *
      * @return array<string, string|int|float|bool|array|null>|null
      */
     public function getCustomerPoint(string $contractId, string $customerId): ?array
@@ -301,25 +304,15 @@ class SmaregiApiService
             return null;
         }
 
-        // 公式: GET pos/customers/{customer_id}/points
-        $direct = $this->request($contractId, 'GET', 'pos/customers/'.$customerId.'/points');
-        if ($direct !== null) {
-            $normalized = $this->normalizeCustomerPointRecord($direct);
-            if ($normalized !== null) {
-                return $normalized;
-            }
-        }
-
-        // 旧実装互換: GET pos/customers/point?customer_id=
-        $legacy = $this->getCustomerPoints($contractId, [
+        $list = $this->getCustomerPoints($contractId, [
             'customer_id' => $customerId,
             'limit' => 1,
         ]);
-        if ($legacy === null) {
+        if ($list === null) {
             return null;
         }
 
-        return $this->normalizeCustomerPointRecord($legacy);
+        return $this->normalizeCustomerPointRecord($list);
     }
 
     /**
@@ -365,47 +358,151 @@ class SmaregiApiService
     }
 
     /** 取引1件取得（pos.transactions:read） */
-    public function getTransaction(string $contractId, string $transactionId): ?array
+    public function getTransaction(string $contractId, string $transactionId, bool $withDetails = false): ?array
     {
-        return $this->request($contractId, 'GET', 'pos/transactions/'.$transactionId);
+        $query = $withDetails ? ['with_details' => 'all'] : [];
+
+        return $this->request($contractId, 'GET', 'pos/transactions/'.$transactionId, $query);
+    }
+
+    private const TRANSACTION_CUSTOMER_RESOLVE_ATTEMPTS = 3;
+
+    private const TRANSACTION_CUSTOMER_RESOLVE_DELAY_MICROSECONDS = 400000;
+
+    private function transactionCustomerResolveDelayMicroseconds(): int
+    {
+        if (app()->environment('testing')) {
+            return 0;
+        }
+
+        return self::TRANSACTION_CUSTOMER_RESOLVE_DELAY_MICROSECONDS;
     }
 
     /**
-     * Webhook の transactionHeadIds から会員IDを解決（pos:customer-points / pos:transactions 用）。
+     * Webhook の transactionHeadIds から会員IDと取引後ポイントを解決（pos:customer-points / pos:transactions 用）。
+     *
+     * ポイント更新直後は customerId が未反映のことがあるため、短時間リトライする。
+     * totalPoint が取れた場合はポイント同期のヒントとして返す（会員ポイントAPI失敗時のフォールバック）。
      *
      * @param  list<string|int>  $transactionHeadIds
-     * @return list<string>
+     * @return array{customer_ids: list<string>, points_by_customer_id: array<string, int>}
      */
-    public function resolveCustomerIdsFromTransactionHeads(string $contractId, array $transactionHeadIds): array
+    public function resolveCustomersFromTransactionHeads(string $contractId, array $transactionHeadIds): array
     {
         $customerIds = [];
+        $pointsByCustomerId = [];
         foreach ($transactionHeadIds as $rawHeadId) {
             $headId = trim((string) $rawHeadId);
             if ($headId === '') {
                 continue;
             }
-            $transaction = $this->getTransaction($contractId, $headId);
-            if ($transaction === null) {
-                Log::warning('[Smaregi] resolveCustomerIdsFromTransactionHeads: getTransaction failed', [
-                    'smaregi_contract_id' => $contractId,
-                    'transaction_head_id' => $headId,
-                ]);
-
+            $resolved = $this->resolveOneTransactionCustomer($contractId, $headId);
+            if ($resolved === null) {
                 continue;
             }
-            $customerId = $transaction['customerId'] ?? $transaction['customer_id'] ?? null;
-            if ($customerId === null || trim((string) $customerId) === '') {
-                Log::info('[Smaregi] resolveCustomerIdsFromTransactionHeads: transaction has no customerId', [
-                    'smaregi_contract_id' => $contractId,
-                    'transaction_head_id' => $headId,
-                ]);
-
-                continue;
+            $customerIds[] = $resolved['customer_id'];
+            if ($resolved['total_point'] !== null) {
+                $pointsByCustomerId[$resolved['customer_id']] = $resolved['total_point'];
             }
-            $customerIds[] = (string) $customerId;
         }
 
-        return array_values(array_unique($customerIds));
+        return [
+            'customer_ids' => array_values(array_unique($customerIds)),
+            'points_by_customer_id' => $pointsByCustomerId,
+        ];
+    }
+
+    /**
+     * @return array{customer_id: string, total_point: int|null}|null
+     */
+    private function resolveOneTransactionCustomer(string $contractId, string $headId): ?array
+    {
+        $transaction = null;
+        $customerId = '';
+        for ($attempt = 1; $attempt <= self::TRANSACTION_CUSTOMER_RESOLVE_ATTEMPTS; $attempt++) {
+            $transaction = $this->getTransaction($contractId, $headId);
+            if ($transaction === null) {
+                Log::warning('[Smaregi] resolveCustomersFromTransactionHeads: getTransaction failed', [
+                    'smaregi_contract_id' => $contractId,
+                    'transaction_head_id' => $headId,
+                    'attempt' => $attempt,
+                ]);
+                if ($attempt < self::TRANSACTION_CUSTOMER_RESOLVE_ATTEMPTS) {
+                    usleep($this->transactionCustomerResolveDelayMicroseconds());
+                }
+
+                continue;
+            }
+
+            $customerId = $this->extractCustomerIdFromTransaction($transaction);
+            if ($customerId !== '') {
+                break;
+            }
+            if ($attempt < self::TRANSACTION_CUSTOMER_RESOLVE_ATTEMPTS) {
+                usleep($this->transactionCustomerResolveDelayMicroseconds());
+            }
+        }
+
+        if ($transaction === null) {
+            return null;
+        }
+        if ($customerId === '') {
+            Log::info('[Smaregi] resolveCustomersFromTransactionHeads: transaction has no customerId', [
+                'smaregi_contract_id' => $contractId,
+                'transaction_head_id' => $headId,
+                'transaction_head_division' => $transaction['transactionHeadDivision'] ?? null,
+                'total' => $transaction['total'] ?? null,
+                'new_point' => $transaction['newPoint'] ?? null,
+                'total_point' => $transaction['totalPoint'] ?? null,
+            ]);
+
+            return null;
+        }
+
+        return [
+            'customer_id' => $customerId,
+            'total_point' => $this->parseOptionalInt($transaction['totalPoint'] ?? null),
+        ];
+    }
+
+    /**
+     * @param  array<string, string|int|float|bool|array|null>  $transaction
+     */
+    private function extractCustomerIdFromTransaction(array $transaction): string
+    {
+        $customerId = $transaction['customerId'] ?? $transaction['customer_id'] ?? null;
+        if ($customerId === null || trim((string) $customerId) === '') {
+            $nested = $transaction['customer'] ?? null;
+            if (is_array($nested)) {
+                $customerId = $nested['customerId'] ?? $nested['customer_id'] ?? null;
+            }
+        }
+        if ($customerId === null) {
+            return '';
+        }
+
+        return trim((string) $customerId);
+    }
+
+    /**
+     * @param  string|int|float|bool|array|null  $value
+     */
+    private function parseOptionalInt($value): ?int
+    {
+        if ($value === null) {
+            return null;
+        }
+        if (is_int($value)) {
+            return $value;
+        }
+        if (is_float($value)) {
+            return (int) round($value);
+        }
+        if (is_string($value) && $value !== '' && is_numeric($value)) {
+            return (int) round((float) $value);
+        }
+
+        return null;
     }
 
     /** 取引登録（pos.transactions:write） */

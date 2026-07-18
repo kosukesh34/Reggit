@@ -19,6 +19,7 @@ use Illuminate\Support\Collection;
  *     newMemberTypes: list<string>,
  *     inactiveTypes: list<string>
  * }  $deliveryTypeJsConfig
+ * @param  Collection<int, \App\Models\Product>  $products
  */
 class AdminCouponBulkIssueFormOutput
 {
@@ -32,5 +33,6 @@ class AdminCouponBulkIssueFormOutput
         public array $deliveryTypeOptions = [],
         public array $deliveryGroups = [],
         public array $deliveryTypeJsConfig = [],
+        public Collection $products = new Collection,
     ) {}
 }
