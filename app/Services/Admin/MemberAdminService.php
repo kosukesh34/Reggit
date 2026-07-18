@@ -5,8 +5,8 @@ namespace App\Services\Admin;
 use App\Domain\Coupon\Repositories\MemberCouponRepository;
 use App\Domain\Coupon\ValueObjects\PendingIssuedCoupon;
 use App\Domain\Settings\Repositories\ShopSettingRepository;
-use App\Enums\OrderStatus;
 use App\Enums\MemberVisitSource;
+use App\Enums\OrderStatus;
 use App\Models\Coupon;
 use App\Models\Member;
 use App\Models\MemberCoupon;
@@ -150,7 +150,7 @@ class MemberAdminService
      *     avg_order_value: float,
      *     last_order_at: ?Carbon,
      *     days_since_last_order: int|null,
-     *     recent_orders: \Illuminate\Support\Collection
+     *     recent_orders: Collection
      * }
      */
     public function getPurchaseSummary(Member $member): array
