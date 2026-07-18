@@ -24,6 +24,9 @@ class OrderFactory
 
         return new OrderOutput(
             $order->id,
+            $order->order_number !== null && $order->order_number !== ''
+                ? $order->formattedOrderNumber()
+                : null,
             (float) $order->total_amount,
             $order->status,
             $order->payment_method,

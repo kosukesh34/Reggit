@@ -9,13 +9,13 @@
     <span class="breadcrumb-sep">/</span>
     <a href="{{ admin_route('admin.reservations') }}">予約管理</a>
     <span class="breadcrumb-sep">/</span>
-    <span>{{ $reservation->reservation_number }}</span>
+    <span>{{ $reservation->formattedReservationNumber() }}</span>
 </nav>
 
 <div class="page-header-row">
     <div class="page-header">
         <h1 class="page-header-title"><i class="fas fa-calendar-check"></i> 予約詳細</h1>
-        <p class="page-header-desc">予約番号: {{ $reservation->reservation_number }}</p>
+        <p class="page-header-desc">予約番号: {{ $reservation->formattedReservationNumber() }}</p>
     </div>
     <div class="page-header-actions">
         @if($reservation->canEdit())
@@ -37,7 +37,7 @@
         <div class="info-grid">
             <div class="info-item">
                 <div class="info-label">予約番号</div>
-                <div class="info-value">{{ $reservation->reservation_number }}</div>
+                <div class="info-value">{{ $reservation->formattedReservationNumber() }}</div>
             </div>
             <div class="info-item">
                 <div class="info-label">ユーザー</div>

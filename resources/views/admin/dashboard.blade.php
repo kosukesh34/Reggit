@@ -203,7 +203,7 @@
             <tbody>
                 @forelse($recent_orders as $order)
                 <tr>
-                    <td><a href="{{ admin_route('admin.orders.detail', ['id' => $order->id]) }}">{{ $order->order_number }}</a></td>
+                    <td><a href="{{ admin_route('admin.orders.detail', ['id' => $order->id]) }}">{{ $order->formattedOrderNumber() }}</a></td>
                     <td>
                         @if($order->user?->member !== null)
                             <a href="{{ admin_route('admin.members.detail', ['id' => $order->user->member->id]) }}">{{ $order->user->name ?? 'N/A' }}</a>

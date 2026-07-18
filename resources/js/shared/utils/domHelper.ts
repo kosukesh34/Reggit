@@ -133,7 +133,16 @@ export class DomHelper {
     ): string {
         if (raw != null && raw !== '') {
             const s = String(raw);
-            const trailing = s.match(/-(\d{1,6})$/);
+            // DB形式 YYYYMMDD+通番 → 表示は日+通番（202604201 → 201）
+            const stored = s.match(/^(\d{4})(\d{2})(\d{2})(\d+)$/);
+            if (stored && stored[3] && stored[4]) {
+                return String(Number(stored[3])) + stored[4];
+            }
+            // すでに表示形式（日+通番）または従来形式
+            if (/^\d+$/.test(s)) {
+                return s;
+            }
+            const trailing = s.match(/-(\d+)$/);
             if (trailing && trailing[1]) {
                 return trailing[1];
             }
