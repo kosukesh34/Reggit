@@ -50,15 +50,24 @@ final class AppConfigLoaderTests: XCTestCase {
 
     func testFetchViaWebUsesScriptExecutor() async {
         let executor = FakeWebViewScriptExecutor()
-        executor.normalizedResult = """
-        {"project_name":"Test","tabs":[],"theme":{"primary_color":"#111111"}}
-        """
+        executor.normalizedResult = "Test\u{001e}#111111\u{001e}home\tHome\tfa-home\thouse.fill\nproducts\tProducts\tfa-box\tshippingbox.fill"
         let loader = AppConfigLoader(shellConfig: shellConfig, scriptExecutor: executor)
 
         let config = await loader.fetchViaWeb()
 
         XCTAssertEqual(config?.projectName, "Test")
+        XCTAssertEqual(config?.tabs.map(\.key), ["home", "products"])
         XCTAssertFalse(executor.executedScripts.isEmpty)
+    }
+
+    func testParseDelimitedPayload() {
+        let payload = "店舗\u{001e}#007aff\u{001e}home\tホーム\tfa-house\thouse.fill\nproducts\t商品\tfa-utensils\tfork.knife"
+        let config = AppConfigClient.parseDelimitedPayload(payload)
+
+        XCTAssertEqual(config?.projectName, "店舗")
+        XCTAssertEqual(config?.primaryColor, "#007aff")
+        XCTAssertEqual(config?.tabs.map(\.key), ["home", "products"])
+        XCTAssertEqual(config?.tabs.map(\.label), ["ホーム", "商品"])
     }
 
     private func sampleConfig() -> AppConfig {
