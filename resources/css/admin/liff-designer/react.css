@@ -2246,6 +2246,29 @@
         #eef1f6;
 }
 
+.ld-studio__gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 16px;
+    align-content: start;
+}
+
+.ld-studio__gallery .ld-gallery-card.is-active {
+    border-color: rgba(37, 99, 235, 0.35);
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12), 0 12px 32px rgba(15, 23, 42, 0.1);
+}
+
+.ld-gallery-card__desc {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.45;
+    color: #64748b;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
 .ld-studio__empty {
     margin: auto;
     text-align: center;
@@ -3976,6 +3999,16 @@
     color: rgba(255, 255, 255, 0.72);
 }
 
+.ld-preview-overlay__controls {
+    width: 100%;
+    display: grid;
+    gap: 10px;
+}
+
+.ld-preview-overlay__controls .ld-bg-style-tabs {
+    width: fit-content;
+}
+
 .ld-preview-overlay__phone {
     width: 100%;
     display: flex;
@@ -3991,6 +4024,13 @@
     text-align: center;
     font-size: 12px;
     color: #a8a29e;
+    display: grid;
+    gap: 6px;
+}
+
+.ld-preview-empty span {
+    font-size: 11px;
+    color: #94a3b8;
 }
 
 .ld-help-text {
@@ -5135,6 +5175,12 @@
     border-radius: 18px;
     padding: 16px;
     box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18);
+    opacity: 1;
+}
+.ld-crm-member,
+.ld-crm-wallet {
+    /* 親ブロックの opacity / 透明背景で消えないようにする */
+    isolation: isolate;
 }
 .ld-crm-wallet__top { display: flex; justify-content: space-between; align-items: flex-start; }
 .ld-crm-wallet__shop { display: block; font-size: 10px; opacity: 0.7; letter-spacing: 0.06em; text-transform: uppercase; }
@@ -6520,6 +6566,88 @@
     min-height: 120px;
 }
 
+.ld-inline-gallery__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    overflow: auto;
+    flex: 1;
+    min-height: 120px;
+    align-content: start;
+}
+
+.ld-inline-gallery__tile {
+    position: relative;
+}
+
+.ld-inline-gallery__tile-main {
+    width: 100%;
+    min-height: 118px;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: 16px;
+    padding: 12px 12px 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    text-align: left;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ld-inline-gallery__tile-main:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+}
+
+.ld-inline-gallery__tile-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    font-size: 13px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+.ld-inline-gallery__tile-main strong {
+    font-size: 12px;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: -0.01em;
+    line-height: 1.3;
+}
+
+.ld-inline-gallery__tile-main em {
+    font-style: normal;
+    font-size: 10px;
+    font-weight: 600;
+    color: #64748b;
+}
+
+.ld-inline-gallery__tile-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: auto;
+}
+
+.ld-inline-gallery__tile-tags i {
+    font-style: normal;
+    font-size: 9px;
+    font-weight: 700;
+    color: #475569;
+    background: rgba(255, 255, 255, 0.85);
+    border-radius: 999px;
+    padding: 3px 6px;
+}
+
+.ld-inline-gallery__tile .ld-inline-gallery__fav {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+}
+
 .ld-inline-gallery__card {
     display: flex;
     align-items: stretch;
@@ -6689,6 +6817,20 @@
     border-radius: 999px;
     background: #f3f4f6;
     color: #374151;
+}
+
+.ld-editor__preview-mode-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ld-editor__preview-mode-label {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    color: #94a3b8;
+    text-transform: uppercase;
 }
 
 .ld-editor__context-actions {
@@ -6876,4 +7018,90 @@
     font-style: normal;
     font-size: 11px;
     margin-bottom: 8px;
+}
+
+/* App Studio — デザイナー内テンプレ見た目差 */
+.ld.ld-react .ld-phone-device.theme-citrus .ld-phone-device__screen,
+.ld.ld-react .theme-citrus.ld-phone-device__screen {
+    --ld-accent: #ea580c;
+}
+.ld.ld-react .theme-sand.ld-phone-device__screen,
+.ld.ld-react .ld-phone-device.theme-sand .ld-phone-device__screen {
+    --ld-accent: #a8763e;
+}
+.ld.ld-react .theme-sakura .ld-app-hero__title,
+.ld.ld-react .theme-sakura .ld-crm-member__hello {
+    font-family: "Hiragino Mincho ProN", "Yu Mincho", serif;
+}
+.ld.ld-react .theme-noir .ld-guest-preview-banner,
+.ld.ld-react .theme-noir .ld-app-banner,
+.ld.ld-react .theme-noir .ld-crm-shell {
+    border-radius: 8px;
+}
+.ld.ld-react .theme-slate .ld-block,
+.ld.ld-react .theme-slate .ld-crm-shell {
+    box-shadow: none;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+}
+.ld.ld-react .theme-lavender .ld-app-stats__cell {
+    background: linear-gradient(180deg, #fff, #f5f3ff);
+}
+/* 会員サマリーは白背景にしない（白文字が消えて透明に見える） */
+.ld.ld-react .theme-lavender .ld-crm-member {
+    background: linear-gradient(145deg, #6d28d9, #a78bfa 55%, #7c3aed);
+    color: #fff;
+}
+.ld.ld-react .theme-lavender .ld-crm-wallet {
+    background: linear-gradient(160deg, #5b21b6, #7c3aed 45%, #4c1d95);
+    color: #fff;
+}
+.ld.ld-react .ld-tpm-density--compact .ld-block { margin-bottom: 2px; }
+.ld.ld-react .ld-tpm-density--relaxed .ld-block { margin-bottom: 10px; }
+.ld.ld-react .ld-tpm-width--edge .ld-phone-app-main { --content-max: 100%; }
+.ld.ld-react .ld-tpm-width--narrow .ld-phone-app-main { max-width: 320px; margin-inline: auto; }
+
+/* タブ切替の画面インアニメ */
+@keyframes ld-tab-enter {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: none; }
+}
+.ld.ld-react .ld-phone-app-main--tab-enter {
+    animation: ld-tab-enter 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+    .ld.ld-react .ld-phone-app-main--tab-enter { animation: none; }
+}
+
+/* sticky CTA プレビュー */
+.ld.ld-react .ld-app-btn-wrap--sticky {
+    position: sticky;
+    bottom: 8px;
+    z-index: 5;
+    margin-top: 8px;
+}
+.ld.ld-react .ld-app-btn--sticky {
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.22);
+}
+
+/* 業種別骨格の追加差 */
+.ld.ld-react .theme-citrus .ld-app-banner {
+    font-weight: 800;
+}
+.ld.ld-react .theme-sakura .ld-app-slider,
+.ld.ld-react .theme-sakura .ld-block--slider {
+    border-radius: 18px;
+    overflow: hidden;
+}
+.ld.ld-react .theme-noir .ld-app-btn {
+    border-radius: 6px;
+}
+.ld.ld-react .theme-slate .ld-app-btn {
+    box-shadow: none;
+}
+.ld.ld-react .theme-lavender .ld-app-card {
+    box-shadow: 0 10px 28px rgba(124, 58, 237, 0.12);
+}
+.ld.ld-react .theme-sand .ld-block {
+    box-shadow: none;
+    border: 0;
 }

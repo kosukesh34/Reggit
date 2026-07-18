@@ -43,7 +43,7 @@ export type DesignerConfig = {
     menuItems?: unknown[];
     themePresets?: ThemePreset[];
     fontStacks?: Record<string, { label: string; base?: string; display?: string }>;
-    surfaceTones?: Record<string, { label: string }>;
+    surfaceTones?: Record<string, { label: string; tokens?: Record<string, string> }>;
     formAction?: string;
     csrfToken?: string;
     backUrl?: string;

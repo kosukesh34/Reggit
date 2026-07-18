@@ -199,6 +199,7 @@ export const BLOCK_DESIGNS: Record<string, Array<{ value: string; label: string 
         { value: 'cta', label: '塗りつぶし（標準）' },
         { value: 'outline', label: 'アウトライン' },
         { value: 'soft', label: 'ソフト' },
+        { value: 'sticky', label: '追従（画面下固定）' },
     ],
     quick_actions: [
         { value: 'grid', label: 'グリッド（標準）' },

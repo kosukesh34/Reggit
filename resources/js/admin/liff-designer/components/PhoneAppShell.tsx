@@ -195,16 +195,17 @@ export function PhoneAppTabs({ items, activeTab, onSelect }: TabsProps) {
 type MainProps = {
     padding: number;
     gap: number;
-    onClick?: () => void;
+    className?: string;
+    onClick?: (e?: React.MouseEvent) => void;
     onDragOver?: (e: React.DragEvent) => void;
     onDrop?: (e: React.DragEvent) => void;
     children: ReactNode;
 };
 
-export function PhoneAppMain({ padding, gap, onClick, onDragOver, onDrop, children }: MainProps) {
+export function PhoneAppMain({ padding, gap, className, onClick, onDragOver, onDrop, children }: MainProps) {
     return (
         <main
-            className="main-content ld-phone-app-main"
+            className={`main-content ld-phone-app-main${className ? ` ${className}` : ''}`}
             onClick={onClick}
             onDragOver={onDragOver}
             onDrop={onDrop}

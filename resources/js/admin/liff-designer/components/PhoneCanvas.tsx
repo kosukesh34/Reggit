@@ -140,26 +140,38 @@ export function PhoneCanvas() {
                     <strong>{activeLabel}</strong>
                     <span>{blocks.length} ブロック</span>
                     {state.dirty ? <span className="ld-editor__dirty-dot" title="未保存" /> : null}
-                    <span className="ld-editor__policy-chip">
-                        会員{requireMembership ? '必須' : '不要'}
+                    <span
+                        className="ld-editor__policy-chip"
+                        title={
+                            requireMembership
+                                ? '本番ではクーポン・スタンプ・会員証などは登録後のみ'
+                                : '本番ではゲストでも閲覧可。会員登録は任意'
+                        }
+                    >
+                        本番: 会員{requireMembership ? '必須' : '任意'}
                     </span>
                 </div>
                 <div className="ld-editor__context-actions">
-                    <div className="ld-bg-style-tabs ld-editor__preview-mode" role="group" aria-label="プレビューモード">
-                        <button
-                            type="button"
-                            className={`ld-bg-style-tab${!state.previewAsGuest ? ' is-active' : ''}`}
-                            onClick={() => dispatch({ type: 'SET_PREVIEW_AS_GUEST', value: false })}
-                        >
-                            会員
-                        </button>
-                        <button
-                            type="button"
-                            className={`ld-bg-style-tab${state.previewAsGuest ? ' is-active' : ''}`}
-                            onClick={() => dispatch({ type: 'SET_PREVIEW_AS_GUEST', value: true })}
-                        >
-                            ゲスト
-                        </button>
+                    <div className="ld-editor__preview-mode-wrap">
+                        <span className="ld-editor__preview-mode-label">プレビュー</span>
+                        <div className="ld-bg-style-tabs ld-editor__preview-mode" role="group" aria-label="プレビューの見え方">
+                            <button
+                                type="button"
+                                className={`ld-bg-style-tab${!state.previewAsGuest ? ' is-active' : ''}`}
+                                onClick={() => dispatch({ type: 'SET_PREVIEW_AS_GUEST', value: false })}
+                                title="会員としてログインした見え方"
+                            >
+                                会員表示
+                            </button>
+                            <button
+                                type="button"
+                                className={`ld-bg-style-tab${state.previewAsGuest ? ' is-active' : ''}`}
+                                onClick={() => dispatch({ type: 'SET_PREVIEW_AS_GUEST', value: true })}
+                                title="未登録ゲストの見え方（会員ブロックは登録導線に）"
+                            >
+                                ゲスト表示
+                            </button>
+                        </div>
                     </div>
                     <div className="ld-editor__zoom">
                         {ZOOM_PRESETS.map((z) => (
@@ -199,6 +211,8 @@ export function PhoneCanvas() {
                         onCartClick={() => dispatch({ type: 'SET_ACTIVE_TAB', tab: 'products' })}
                     />
                     <PhoneAppMain
+                        key={state.activeTab}
+                        className="ld-phone-app-main--tab-enter"
                         padding={padding}
                         gap={gap}
                         onClick={() => dispatch({ type: 'SELECT_BLOCK', id: null, openEdit: false })}
@@ -223,66 +237,99 @@ export function PhoneCanvas() {
                     >
                         {blocks.length === 0 ? (
                             <div className="ld-empty-canvas">
-                                <div className="ld-empty-canvas__badge">スタート</div>
-                                <i className="fas fa-mobile-alt ld-empty-canvas__icon" />
-                                <p>顧客アプリの画面を組み立てましょう</p>
-                                <p className="ld-empty-canvas__hint">
-                                    テンプレートから始めるか、ブロックを追加してください
-                                </p>
-                                <div className="ld-empty-canvas__actions">
-                                    <button
-                                        type="button"
-                                        className="ld-btn ld-btn--primary ld-btn--xs"
-                                        onClick={() => dispatch({ type: 'SET_LEFT_STUDIO_TAB', tab: 'templates' })}
-                                    >
-                                        テンプレから始める
-                                    </button>
-                                    {isAdvanced ? (
-                                        <button
-                                            type="button"
-                                            className="ld-btn ld-btn--outline ld-btn--xs"
-                                            onClick={() => dispatch({ type: 'SET_LEFT_STUDIO_TAB', tab: 'blocks' })}
-                                        >
-                                            ブロックを追加
-                                        </button>
-                                    ) : null}
-                                </div>
-                                {suggestedTemplates.length > 0 ? (
-                                    <div className="ld-empty-canvas__suggest">
-                                        <span className="ld-empty-canvas__suggest-label">おすすめ</span>
-                                        <div className="ld-empty-canvas__chips">
-                                            {suggestedTemplates.map((tpl, i) => {
-                                                const accent = galleryAccentFor(tpl);
-                                                return (
-                                                    <button
-                                                        key={String(tpl.id || i)}
-                                                        type="button"
-                                                        className="ld-empty-canvas__chip"
-                                                        style={{ borderColor: `${accent.color}33`, background: accent.soft, color: accent.color }}
-                                                        onClick={() => dispatch({
-                                                            type: 'SET_UI',
-                                                            patch: {
-                                                                templateOpen: true,
-                                                                pendingTemplateId: tpl.id !== undefined ? String(tpl.id) : null,
-                                                                leftStudioTab: 'templates',
-                                                            },
-                                                        })}
-                                                    >
-                                                        <i className={`fas ${accent.icon}`} />
-                                                        {templateDisplayName(tpl, i)}
-                                                    </button>
-                                                );
-                                            })}
+                                {Object.values(state.layouts).some((rows) => Array.isArray(rows) && rows.length > 0) ? (
+                                    <>
+                                        <div className="ld-empty-canvas__badge">空の画面</div>
+                                        <i className="fas fa-layer-group ld-empty-canvas__icon" />
+                                        <p>「{activeLabel}」にはまだブロックがありません</p>
+                                        <p className="ld-empty-canvas__hint">
+                                            この画面用のテンプレートを当てるか、ブロックを追加してください。他のタブの内容はここには表示されません。
+                                        </p>
+                                        <div className="ld-empty-canvas__actions">
+                                            <button
+                                                type="button"
+                                                className="ld-btn ld-btn--primary ld-btn--xs"
+                                                onClick={() => dispatch({ type: 'SET_LEFT_STUDIO_TAB', tab: 'templates' })}
+                                            >
+                                                テンプレを当てる
+                                            </button>
+                                            {isAdvanced ? (
+                                                <button
+                                                    type="button"
+                                                    className="ld-btn ld-btn--outline ld-btn--xs"
+                                                    onClick={() => dispatch({ type: 'SET_LEFT_STUDIO_TAB', tab: 'blocks' })}
+                                                >
+                                                    ブロックを追加
+                                                </button>
+                                            ) : null}
                                         </div>
-                                    </div>
-                                ) : null}
+                                    </>
+                                ) : (
+                                    <>
+                                        <div className="ld-empty-canvas__badge">スタート</div>
+                                        <i className="fas fa-mobile-alt ld-empty-canvas__icon" />
+                                        <p>顧客アプリの画面を組み立てましょう</p>
+                                        <p className="ld-empty-canvas__hint">
+                                            テンプレートから始めるか、ブロックを追加してください
+                                        </p>
+                                        <div className="ld-empty-canvas__actions">
+                                            <button
+                                                type="button"
+                                                className="ld-btn ld-btn--primary ld-btn--xs"
+                                                onClick={() => dispatch({ type: 'SET_LEFT_STUDIO_TAB', tab: 'templates' })}
+                                            >
+                                                テンプレから始める
+                                            </button>
+                                            {isAdvanced ? (
+                                                <button
+                                                    type="button"
+                                                    className="ld-btn ld-btn--outline ld-btn--xs"
+                                                    onClick={() => dispatch({ type: 'SET_LEFT_STUDIO_TAB', tab: 'blocks' })}
+                                                >
+                                                    ブロックを追加
+                                                </button>
+                                            ) : null}
+                                        </div>
+                                        {suggestedTemplates.length > 0 ? (
+                                            <div className="ld-empty-canvas__suggest">
+                                                <span className="ld-empty-canvas__suggest-label">おすすめ</span>
+                                                <div className="ld-empty-canvas__chips">
+                                                    {suggestedTemplates.map((tpl, i) => {
+                                                        const accent = galleryAccentFor(tpl);
+                                                        return (
+                                                            <button
+                                                                key={String(tpl.id || i)}
+                                                                type="button"
+                                                                className="ld-empty-canvas__chip"
+                                                                style={{ borderColor: `${accent.color}33`, background: accent.soft, color: accent.color }}
+                                                                onClick={() => dispatch({
+                                                                    type: 'SET_UI',
+                                                                    patch: {
+                                                                        templateOpen: true,
+                                                                        pendingTemplateId: tpl.id !== undefined ? String(tpl.id) : null,
+                                                                        leftStudioTab: 'templates',
+                                                                    },
+                                                                })}
+                                                            >
+                                                                <i className={`fas ${accent.icon}`} />
+                                                                {templateDisplayName(tpl, i)}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        ) : null}
+                                    </>
+                                )}
                             </div>
                         ) : (
                             <>
                                 {state.previewAsGuest ? (
                                     <div className="ld-guest-preview-banner">
                                         ゲスト表示プレビュー
-                                        {!requireMembership ? '（会員登録は任意）' : '（会員機能は登録後）'}
+                                        {requireMembership
+                                            ? ' · 会員向けブロックは登録導線に置き換わります'
+                                            : ' · 会員登録は任意の設定です'}
                                     </div>
                                 ) : null}
                                 {blocks.map((block: LiffBlock, index) => {
@@ -344,6 +391,8 @@ export function PhoneCanvas() {
                                                     block={block}
                                                     friendAddUrl={friendAddUrl}
                                                     shopName={String(state.globalSettings.app_display_name || '').trim() || undefined}
+                                                    asGuest={state.previewAsGuest}
+                                                    memberCardDesign={String(state.globalSettings.member_card_design || '')}
                                                 />
                                             </div>
                                         </React.Fragment>

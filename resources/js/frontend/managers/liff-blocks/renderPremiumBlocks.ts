@@ -72,9 +72,13 @@ const premium: PremiumRenderer = {
         const dataExternal = isExternal ? ' data-builder-external="1"' : '';
         const full = block.full_width !== false ? ' builder-btn--full' : '';
         const design = block.design || 'cta';
-        const variantClass = design === 'outline' ? ' builder-btn--outline' : design === 'soft' ? ' builder-btn--soft' : ' builder-btn--cta';
+        const variantClass = design === 'outline' ? ' builder-btn--outline'
+            : design === 'soft' ? ' builder-btn--soft'
+            : design === 'sticky' ? ' builder-btn--cta builder-btn--sticky'
+            : ' builder-btn--cta';
+        const wrapClass = design === 'sticky' ? ' builder-button-wrap--sticky' : '';
         const colorStyle = block.color ? ` style="--btn-bg:${esc(block.color)};${block.text_color ? `--btn-fg:${esc(block.text_color)};` : ''}${design === 'outline' || design === 'soft' ? `--btn-accent:${esc(block.color)};` : ''}"` : '';
-        return `<section class="builder-block builder-button-wrap" style="${baseStyle}">
+        return `<section class="builder-block builder-button-wrap${wrapClass}" style="${baseStyle}">
             <a href="${esc(action)}" class="builder-btn${variantClass}${full}"${dataExternal}${colorStyle}>${esc(block.text)}</a>
         </section>`;
     },

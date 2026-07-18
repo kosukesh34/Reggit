@@ -2,12 +2,12 @@ import { ensureLiffDesignerModules } from '../ensureModules';
 
 export const onboarding = {
     INDUSTRY_PRESETS: [
-        { id: 'restaurant', icon: 'fa-utensils', label: 'レストラン・居酒屋', desc: '予約・注文・会員を網羅した飲食店向け', color: '#ef4444', gradient: 'linear-gradient(135deg, #ef4444, #f97316)', patternId: 'super-pattern-classic' },
-        { id: 'cafe', icon: 'fa-coffee', label: 'カフェ・ベーカリー', desc: 'ナチュラルな雰囲気で魅せるカフェ向け', color: '#84cc16', gradient: 'linear-gradient(135deg, #84cc16, #14b8a6)', patternId: 'super-pattern-cafe' },
-        { id: 'fastfood', icon: 'fa-hamburger', label: 'ファストフード・テイクアウト', desc: 'スピード注文を最優先にした高速導線', color: '#f97316', gradient: 'linear-gradient(135deg, #2563eb, #ea580c)', patternId: 'super-pattern-fast' },
-        { id: 'salon', icon: 'fa-cut', label: '美容室・サロン', desc: '予約と会員管理を重視したサロン向け', color: '#ec4899', gradient: 'linear-gradient(135deg, #ec4899, #f472b6)', patternId: 'super-pattern-salon' },
-        { id: 'retail', icon: 'fa-store', label: '小売・物販ショップ', desc: '商品訴求と会員ロイヤリティの物販向け', color: '#8b5cf6', gradient: 'linear-gradient(135deg, #7c3aed, #a855f7)', patternId: 'super-pattern-retail' },
-        { id: 'fitness', icon: 'fa-dumbbell', label: 'フィットネス・ジム', desc: 'レッスン予約と来館管理のジム向け', color: '#06b6d4', gradient: 'linear-gradient(135deg, #0891b2, #06b6d4)', patternId: 'super-pattern-fitness' },
+        { id: 'restaurant', icon: 'fa-utensils', label: 'レストラン・居酒屋', desc: '会員ポイントと注文・予約をまとめた飲食店アプリ', color: '#007aff', gradient: 'linear-gradient(135deg, #007aff, #5856d6)', patternId: 'rg-suite-loyalty' },
+        { id: 'cafe', icon: 'fa-coffee', label: 'カフェ・ベーカリー', desc: 'スタンプ・モーニング・ドリンク注文のカフェアプリ', color: '#8B5E3C', gradient: 'linear-gradient(135deg, #8B5E3C, #D4A574)', patternId: 'rg-suite-cafe' },
+        { id: 'fastfood', icon: 'fa-hamburger', label: 'ファストフード・テイクアウト', desc: '最短注文と進捗確認の注文OS', color: '#ff9500', gradient: 'linear-gradient(135deg, #ff9500, #ff3b30)', patternId: 'rg-suite-order' },
+        { id: 'salon', icon: 'fa-cut', label: '美容室・サロン', desc: 'スタイル・予約・会員証のサロンアプリ', color: '#ff2d55', gradient: 'linear-gradient(135deg, #ff2d55, #af52de)', patternId: 'rg-suite-salon' },
+        { id: 'retail', icon: 'fa-store', label: '小売・物販ショップ', desc: 'セール・ルックブック・会員先行のショップアプリ', color: '#1c1c1e', gradient: 'linear-gradient(135deg, #1c1c1e, #636366)', patternId: 'rg-suite-retail' },
+        { id: 'fitness', icon: 'fa-dumbbell', label: 'フィットネス・ジム', desc: 'チェックインとリワードの会員アプリ', color: '#34c759', gradient: 'linear-gradient(135deg, #34c759, #30d158)', patternId: 'rg-suite-loyalty' },
     ],
 
     shouldShowOnboarding() {
