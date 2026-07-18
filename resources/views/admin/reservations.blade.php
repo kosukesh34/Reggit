@@ -173,7 +173,7 @@
         <tbody>
             @forelse($reservations as $reservation)
             <tr>
-                <td><a href="{{ admin_route('admin.reservations.detail', ['id' => $reservation->id]) }}">{{ $reservation->reservation_number }}</a></td>
+                <td><a href="{{ admin_route('admin.reservations.detail', ['id' => $reservation->id]) }}">{{ $reservation->formattedReservationNumber() }}</a></td>
                 <td>
                     @if($reservation->user?->member !== null)
                         <a href="{{ admin_route('admin.members.detail', ['id' => $reservation->user->member->id]) }}">{{ $reservation->user->name ?? 'N/A' }}</a>

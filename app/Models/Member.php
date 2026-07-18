@@ -29,6 +29,7 @@ class Member extends Model
         'lifetime_granted_points',
         'status',
         'rank',
+        'last_visited_at',
         'birthday',
         'address',
         'postal_code',
@@ -44,6 +45,7 @@ class Member extends Model
     protected $casts = [
         'points' => 'integer',
         'lifetime_granted_points' => 'integer',
+        'last_visited_at' => 'date',
         'birthday' => 'date',
         'profile_extra' => 'array',
     ];
@@ -66,6 +68,16 @@ class Member extends Model
     public function memberStamps()
     {
         return $this->hasMany(MemberStamp::class);
+    }
+
+    public function stampTransactions()
+    {
+        return $this->hasMany(MemberStampTransaction::class);
+    }
+
+    public function visits()
+    {
+        return $this->hasMany(MemberVisit::class);
     }
 
     public function memberCoupons()

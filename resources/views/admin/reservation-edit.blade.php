@@ -9,14 +9,14 @@
     <span class="breadcrumb-sep">/</span>
     <a href="{{ admin_route('admin.reservations') }}">予約</a>
     <span class="breadcrumb-sep">/</span>
-    <a href="{{ admin_route('admin.reservations.detail', ['id' => $reservation->id]) }}">{{ $reservation->reservation_number }}</a>
+    <a href="{{ admin_route('admin.reservations.detail', ['id' => $reservation->id]) }}">{{ $reservation->formattedReservationNumber() }}</a>
     <span class="breadcrumb-sep">/</span>
     <span>編集</span>
 </nav>
 
 <div class="page-header">
     <h1 class="page-header-title"><i class="fas fa-calendar-check"></i> 予約を編集</h1>
-    <p class="page-header-desc">予約番号: {{ $reservation->reservation_number }}</p>
+    <p class="page-header-desc">予約番号: {{ $reservation->formattedReservationNumber() }}</p>
 </div>
 
 <div class="card">

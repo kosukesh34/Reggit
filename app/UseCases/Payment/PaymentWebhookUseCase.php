@@ -7,6 +7,7 @@ use App\Domain\Order\Events\OrderPointsSyncRequested;
 use App\Domain\Order\Repositories\OrderRepository;
 use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
 use App\Enums\OrderStatus;
+use App\Services\OrderNumberAssigner;
 use App\Util\LogHelper;
 use Illuminate\Support\Facades\DB;
 
@@ -18,6 +19,7 @@ class PaymentWebhookUseCase
         private PaymentGateway $gateway,
         private OrderRepository $orderRepository,
         private DomainEventDispatcher $domainEvents,
+        private OrderNumberAssigner $orderNumberAssigner,
     ) {}
 
     public function handle(string $payload, string $sigHeader, string $secret): bool
@@ -50,6 +52,10 @@ class PaymentWebhookUseCase
                         $aggregate->userId(),
                     );
                 }
+                $this->orderNumberAssigner->assignIfMissing(
+                    $aggregate->id()->value(),
+                    $aggregate->projectId(),
+                );
 
                 if ($this->shouldRequestPointsSync($aggregate->status(), $aggregate->isCancelled())) {
                     $pointsSyncEvent = new OrderPointsSyncRequested(

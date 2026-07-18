@@ -42,6 +42,7 @@ class OrderService
         private ProductAvailabilityPolicy $productAvailabilityPolicy,
         private ProductOptionSelectionPolicy $productOptionSelectionPolicy,
         private StampEarnPolicy $stampEarnPolicy,
+        private OrderNumberAssigner $orderNumberAssigner,
     ) {}
 
     private const DESC_REFUND_CANCEL = '注文キャンセルによる返却';
@@ -84,8 +85,13 @@ class OrderService
             );
 
             $order = Order::findOrFail($orderId);
+            if ($paymentMethod !== PaymentMethod::STRIPE) {
+                $this->orderNumberAssigner->assignIfMissing((int) $order->id, $projectId);
+                $order->refresh();
+            }
             $this->updateProductStock($orderItems, $projectId);
             $this->applyOrderPointChanges($user, $order, $pointsUsed, $finalAmount);
+            $this->recordMemberVisit($user, $order);
             $this->awardStamps($user, $order, $finalAmount);
 
             DB::commit();
@@ -246,6 +252,21 @@ class OrderService
         return $locked;
     }
 
+    private function recordMemberVisit(User $user, Order $order): void
+    {
+        $member = $user->member;
+        if ($member === null) {
+            return;
+        }
+
+        $this->memberAdminService->recordVisit(
+            $member,
+            $order->created_at ?? now(),
+            \App\Enums\MemberVisitSource::ORDER,
+            (int) $order->id
+        );
+    }
+
     private function awardStamps(User $user, Order $order, float $finalAmount): void
     {
         $member = $user->member;
@@ -263,7 +284,13 @@ class OrderService
 
         $stampCount = $this->stampEarnPolicy->calculateCount($finalAmount, $stampEarnPerAmount);
         if ($stampCount > 0) {
-            $this->memberAdminService->addStampsToMember($member, $stampCardId, $stampCount);
+            $this->memberAdminService->addStampsToMember(
+                $member,
+                $stampCardId,
+                $stampCount,
+                '注文によるスタンプ付与',
+                (int) $order->id
+            );
         }
     }
 

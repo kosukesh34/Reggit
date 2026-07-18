@@ -97,7 +97,7 @@
         'ranks' => [
             'title' => 'ランク・ポイント設定の役割',
             'changes' => ['ランク判定基準', '会員証表示', 'ポイント付与関連設定'],
-            'notes' => ['会員への個別付与・調整は会員詳細画面で行います。'],
+            'notes' => ['会員への個別付与・調整は会員編集画面で行います。'],
             'links' => [
                 ['label' => '会員管理', 'url' => admin_route('admin.members'), 'permission' => 'members.view'],
             ],

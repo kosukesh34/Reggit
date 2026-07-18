@@ -45,9 +45,11 @@ class QueueApiTest extends TestCase
         $this->assertNotNull($entry);
         $this->assertNotNull($entry->qr_token);
         $this->assertSame($user->id, $entry->user_id);
-        $expectedNumber = (int) now()->format('d') * 100 + 1;
-        $this->assertSame($expectedNumber, $entry->queue_number);
-        $this->assertSame(sprintf('%04d', $expectedNumber), $entry->formattedQueueNumber());
+        $expectedStored = (int) (now()->format('Ymd').'1');
+        $expectedDisplay = ((int) now()->format('j')).'1';
+        $this->assertSame($expectedStored, $entry->queue_number);
+        $this->assertSame($expectedDisplay, $entry->formattedQueueNumber());
+        $response->assertJsonPath('queue_entry.formatted_queue_number', $expectedDisplay);
     }
 
     public function test_store_受付番号が日と通番で採番されること(): void
@@ -56,10 +58,10 @@ class QueueApiTest extends TestCase
         $lineUserId = 'U12121212121212121212121212121212';
         $user = User::factory()->create(['line_user_id' => $lineUserId, 'project_id' => 1]);
         Member::factory()->create(['user_id' => $user->id, 'project_id' => 1]);
-        $dayPrefix = (int) now()->format('d') * 100;
+        $prefix = now()->format('Ymd');
         QueueEntry::factory()->create([
             'project_id' => 1,
-            'queue_number' => $dayPrefix + 12,
+            'queue_number' => (int) ($prefix.'12'),
             'status' => QueueStatus::WAITING,
         ]);
 
@@ -67,7 +69,33 @@ class QueueApiTest extends TestCase
             ->post('/api/queue?project_key=default', ['party_size' => 1]);
 
         $response->assertStatus(201)
-            ->assertJsonPath('queue_entry.queue_number', $dayPrefix + 13);
+            ->assertJsonPath('queue_entry.queue_number', (int) ($prefix.'13'))
+            ->assertJsonPath('queue_entry.formatted_queue_number', ((int) now()->format('j')).'13');
+    }
+
+    public function test_store_受付番号が日跨ぎで衝突しないこと(): void
+    {
+        $this->createProject();
+        $lineUserId = 'U13131313131313131313131313131313';
+        $user = User::factory()->create(['line_user_id' => $lineUserId, 'project_id' => 1]);
+        Member::factory()->create(['user_id' => $user->id, 'project_id' => 1]);
+
+        $previousDay = now()->subDay();
+        QueueEntry::factory()->create([
+            'project_id' => 1,
+            'queue_number' => (int) ($previousDay->format('Ymd').'199'),
+            'status' => QueueStatus::WAITING,
+            'created_at' => $previousDay,
+            'updated_at' => $previousDay,
+        ]);
+
+        $response = $this->withHeaders(['X-Line-User-Id' => $lineUserId])
+            ->post('/api/queue?project_key=default', ['party_size' => 1]);
+
+        $expectedStored = (int) (now()->format('Ymd').'1');
+        $response->assertStatus(201)
+            ->assertJsonPath('queue_entry.queue_number', $expectedStored)
+            ->assertJsonPath('queue_entry.formatted_queue_number', ((int) now()->format('j')).'1');
     }
 
     public function test_store_同一_lin_eユーザーで複数件登録できること(): void
