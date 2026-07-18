@@ -11,8 +11,10 @@ enum NativeInjectionScripts {
             const currentHost = currentUrl ? currentUrl.host : '';
             const expectedHost = expectedUrl.host;
             const hostMismatch = currentHost && expectedHost && currentHost !== expectedHost;
-            const isNgrokInterception = currentHost.includes('ngrok-free.dev') || currentHost.includes('ngrok.app');
-            if ((hostMismatch || isNgrokInterception) && currentHref !== \(expectedLiffURL.jsStringLiteral)) {
+            // ngrok 無料プランの警告ページのみリダイレクト対象。
+            // ホストが ngrok であること自体を条件にすると、?tab= 差分で無限リロードになる。
+            const isNgrokInterstitialPage = !!(document.body && document.body.id === 'ngrok');
+            if (hostMismatch || isNgrokInterstitialPage) {
                 window.location.replace(\(expectedLiffURL.jsStringLiteral));
                 return 'redirecting';
             }
