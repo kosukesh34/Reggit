@@ -335,10 +335,39 @@ class ReggitApp {
         if (typeof window === 'undefined' || !window.__MOBILE_APP_MODE__) return;
         let startY = 0;
         let pullDistance = 0;
-        let refreshEl = null;
-        const MIN_PULL = 180;
-        const ACTIVATE_PULL = 36;
+        let refreshEl: HTMLDivElement | null = null;
+        // 誤発動を減らすため、リロードに必要な引き下げ距離を長めにする
+        const MIN_PULL = 300;
+        const ACTIVATE_PULL = 48;
+        const MAX_VISUAL_PULL = 140;
         let isPullTracking = false;
+
+        const getPullRoot = (): HTMLElement =>
+            (document.querySelector('.app-container') as HTMLElement | null)
+            || document.body;
+
+        const resetPullVisual = () => {
+            const root = getPullRoot();
+            root.style.transition = 'transform 0.2s ease-out';
+            root.style.transform = '';
+            window.setTimeout(() => {
+                if (root.style.transform === '' || root.style.transform === 'none') {
+                    root.style.transition = '';
+                }
+            }, 220);
+        };
+
+        const updatePullVisual = (distance: number) => {
+            const root = getPullRoot();
+            if (distance <= 0) {
+                root.style.transition = '';
+                root.style.transform = '';
+                return;
+            }
+            const visual = Math.min(distance * 0.4, MAX_VISUAL_PULL);
+            root.style.transition = 'none';
+            root.style.transform = `translateY(${visual}px)`;
+        };
 
         const createRefreshIndicator = () => {
             if (refreshEl) return refreshEl;
@@ -363,6 +392,9 @@ class ReggitApp {
             isPullTracking = scrollTop <= 0;
             startY = isPullTracking ? e.touches[0].clientY : 0;
             pullDistance = 0;
+            if (!isPullTracking) {
+                resetPullVisual();
+            }
         }, { passive: true });
 
         scrollContainer.addEventListener('touchmove', (e: TouchEvent) => {
@@ -371,11 +403,17 @@ class ReggitApp {
             if (!el || (el.scrollTop || 0) > 0) {
                 isPullTracking = false;
                 pullDistance = 0;
+                resetPullVisual();
                 return;
             }
             const y = e.touches[0].clientY;
-            pullDistance = y - startY;
-            if (pullDistance > ACTIVATE_PULL) e.preventDefault();
+            pullDistance = Math.max(0, y - startY);
+            if (pullDistance > ACTIVATE_PULL) {
+                e.preventDefault();
+                updatePullVisual(pullDistance);
+            } else {
+                updatePullVisual(0);
+            }
         }, { passive: false });
 
         scrollContainer.addEventListener('touchend', () => {
@@ -384,17 +422,24 @@ class ReggitApp {
             const canRefresh = isPullTracking && el !== null && (el.scrollTop || 0) <= 0 && distance >= MIN_PULL;
             isPullTracking = false;
             pullDistance = 0;
+            resetPullVisual();
             if (!canRefresh) return;
             const indicator = createRefreshIndicator();
             indicator.style.transform = 'translateY(0)';
-            indicator.querySelector('i').classList.add('fa-spin');
+            indicator.querySelector('i')?.classList.add('fa-spin');
             this.layoutManager.render(this.currentTab);
             const loader = this.getTabLoader(this.currentTab);
             if (loader) loader();
             setTimeout(() => {
                 indicator.style.transform = 'translateY(-100%)';
-                indicator.querySelector('i').classList.remove('fa-spin');
+                indicator.querySelector('i')?.classList.remove('fa-spin');
             }, 600);
+        }, { passive: true });
+
+        scrollContainer.addEventListener('touchcancel', () => {
+            isPullTracking = false;
+            pullDistance = 0;
+            resetPullVisual();
         }, { passive: true });
     }
 
