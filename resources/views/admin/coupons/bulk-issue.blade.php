@@ -66,7 +66,7 @@
         @endif
 
         @if($hasSmaregiContract ?? false)
-        <details class="bulk-sidebar-card bulk-smaregi-details">
+        <details class="bulk-sidebar-card bulk-smaregi-details" id="smaregi-sync">
             <summary><i class="fas fa-exchange-alt"></i> スマレジ POS 連携</summary>
             <div class="bulk-smaregi-actions">
                 <form action="{{ admin_route('admin.coupons.sync-smaregi') }}" method="POST" onsubmit="return confirm('スマレジから取り込みます。よろしいですか？');">
@@ -269,6 +269,81 @@
                         </div>
                     </div>
 
+                    <div id="attributeSegmentBlock" class="delivery-option-block is-hidden">
+                        <label class="form-label">属性条件（AND）</label>
+                        <p class="form-text text-muted mb-2">指定した条件をすべて満たす会員に配布します</p>
+                        <div class="row g-2 mb-2">
+                            <div class="col-md-4">
+                                <label for="segment_channel" class="form-label">登録チャネル</label>
+                                <select name="segment_channel" id="segment_channel" class="form-control attr-segment-filter">
+                                    <option value="">指定しない</option>
+                                    @foreach(\App\Support\MemberChannel::filterOptions() as $value => $label)
+                                        <option value="{{ $value }}" {{ old('segment_channel') === $value ? 'selected' : '' }}>{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="segment_birthday_month" class="form-label">誕生月</label>
+                                <select name="segment_birthday_month" id="segment_birthday_month" class="form-control attr-segment-filter">
+                                    <option value="">指定しない</option>
+                                    @for($m = 1; $m <= 12; $m++)
+                                        <option value="{{ $m }}" {{ (int) old('segment_birthday_month') === $m ? 'selected' : '' }}>{{ $m }}月</option>
+                                    @endfor
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="segment_sex" class="form-label">性別</label>
+                                <select name="segment_sex" id="segment_sex" class="form-control attr-segment-filter">
+                                    <option value="">指定しない</option>
+                                    <option value="1" {{ old('segment_sex') === '1' ? 'selected' : '' }}>男性</option>
+                                    <option value="2" {{ old('segment_sex') === '2' ? 'selected' : '' }}>女性</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row g-2 mb-2">
+                            <div class="col-md-4">
+                                <label for="segment_visit_count_min" class="form-label">来店回数（以上）</label>
+                                <input type="number" name="segment_visit_count_min" id="segment_visit_count_min" class="form-control attr-segment-filter" value="{{ old('segment_visit_count_min') }}" min="0">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="segment_visit_count_max" class="form-label">来店回数（以下）</label>
+                                <input type="number" name="segment_visit_count_max" id="segment_visit_count_max" class="form-control attr-segment-filter" value="{{ old('segment_visit_count_max') }}" min="0">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="segment_rank" class="form-label">会員ランク</label>
+                                <input type="text" name="segment_rank" id="segment_rank" class="form-control attr-segment-filter" value="{{ old('segment_rank') }}" maxlength="64">
+                            </div>
+                        </div>
+                        <div class="row g-2 mb-2">
+                            <div class="col-md-4">
+                                <label for="segment_lifetime_points_min" class="form-label">累計付与ポイント（以上）</label>
+                                <input type="number" name="segment_lifetime_points_min" id="segment_lifetime_points_min" class="form-control attr-segment-filter" value="{{ old('segment_lifetime_points_min') }}" min="0">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="segment_lifetime_points_max" class="form-label">累計付与ポイント（以下）</label>
+                                <input type="number" name="segment_lifetime_points_max" id="segment_lifetime_points_max" class="form-control attr-segment-filter" value="{{ old('segment_lifetime_points_max') }}" min="0">
+                            </div>
+                        </div>
+                        <div class="row g-2 mb-2">
+                            <div class="col-md-4">
+                                <label for="segment_last_visit_mode" class="form-label">最終来店</label>
+                                <select name="segment_last_visit_mode" id="segment_last_visit_mode" class="form-control attr-segment-filter">
+                                    <option value="">指定しない</option>
+                                    <option value="inactive_days" {{ old('segment_last_visit_mode') === 'inactive_days' ? 'selected' : '' }}>N日以上来店なし</option>
+                                    <option value="visited_within_days" {{ old('segment_last_visit_mode') === 'visited_within_days' ? 'selected' : '' }}>N日以内に来店あり</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="attr_segment_last_visit_days" class="form-label">最終来店の日数</label>
+                                <select name="segment_last_visit_days" id="attr_segment_last_visit_days" class="form-control attr-segment-filter">
+                                    <option value="7" {{ old('segment_last_visit_days', 30) == 7 ? 'selected' : '' }}>7日</option>
+                                    <option value="30" {{ old('segment_last_visit_days', 30) == 30 ? 'selected' : '' }}>30日</option>
+                                    <option value="90" {{ old('segment_last_visit_days') == 90 ? 'selected' : '' }}>90日</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
                     <div id="birthdayBlock" class="delivery-option-block is-hidden">
                         <label for="birthday_month" class="form-label">誕生月</label>
                         <select name="birthday_month" id="birthday_month" class="form-control" style="max-width:200px">
@@ -337,6 +412,7 @@ window.CouponBulkIssueConfig = {
     scheduledTypes: @json($deliveryTypeJsConfig['scheduledTypes']),
     personalTypes: @json($deliveryTypeJsConfig['personalTypes']),
     segmentTypes: @json($deliveryTypeJsConfig['segmentTypes']),
+    attributeSegmentTypes: @json($deliveryTypeJsConfig['attributeSegmentTypes']),
     birthdayTypes: @json($deliveryTypeJsConfig['birthdayTypes']),
     newMemberTypes: @json($deliveryTypeJsConfig['newMemberTypes']),
     inactiveTypes: @json($deliveryTypeJsConfig['inactiveTypes']),

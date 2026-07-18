@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\User;
 use App\Repositories\Contracts\UserDeviceRepository;
 use App\Repositories\Contracts\UserRepository;
+use App\Support\MemberChannel;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
 use Illuminate\Http\Request;
@@ -160,7 +161,7 @@ class UserService
             return true;
         }
 
-        return str_starts_with($lineUserId, 'guest-') || ! $this->isValidLineUserId($lineUserId);
+        return str_starts_with($lineUserId, 'guest-') || ! MemberChannel::isValidLineUserId($lineUserId);
     }
 
     private function createGuestUser(string $lineUserId, int $projectId): User
@@ -205,7 +206,7 @@ class UserService
             return null;
         }
         $lineUserId = trim($lineUserId);
-        if ($lineUserId === '' || ! $this->isValidLineUserId($lineUserId)) {
+        if ($lineUserId === '' || ! MemberChannel::isValidLineUserId($lineUserId)) {
             return null;
         }
 
@@ -220,11 +221,6 @@ class UserService
         $deviceIdentifier = trim($deviceIdentifier);
 
         return $deviceIdentifier === '' ? null : $deviceIdentifier;
-    }
-
-    private function isValidLineUserId(string $lineUserId): bool
-    {
-        return preg_match('/^U[0-9a-f]{32}$/i', $lineUserId) === 1;
     }
 
     private function linkLineUserIdIfPossible(User $user, string $lineUserId, int $projectId): void

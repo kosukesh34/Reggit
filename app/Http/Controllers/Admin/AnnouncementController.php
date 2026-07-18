@@ -97,9 +97,7 @@ class AnnouncementController extends AdminBaseController
     {
         $count = $this->segmentPreviewUseCase->handle(
             $this->resolveAdminProjectId(),
-            (int) $request->query('period_days', 30),
-            (string) $request->query('condition', 'min_amount'),
-            $request->query('min_amount') !== null ? (float) $request->query('min_amount') : 0.0,
+            $request,
         );
 
         return response()->json(['count' => $count]);

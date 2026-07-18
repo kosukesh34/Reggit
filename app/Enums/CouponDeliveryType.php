@@ -10,12 +10,14 @@ class CouponDeliveryType extends EnumBase
         self::IMMEDIATE_ALL => '全員に即時配布',
         self::IMMEDIATE_PERSONAL => '個人指定（即時）',
         self::IMMEDIATE_SEGMENT_SALES => '売上条件で絞り込み（即時）',
+        self::IMMEDIATE_SEGMENT_ATTRIBUTES => '属性で絞り込み（即時）',
         self::IMMEDIATE_BIRTHDAY => '今月が誕生月（即時）',
         self::IMMEDIATE_NEW_MEMBERS => '新規会員（即時）',
         self::IMMEDIATE_INACTIVE => '来店・購入なし（即時）',
         self::SCHEDULED_ALL => '全員に予約配布',
         self::SCHEDULED_PERSONAL => '個人指定（予約）',
         self::SCHEDULED_SEGMENT_SALES => '売上条件で絞り込み（予約）',
+        self::SCHEDULED_SEGMENT_ATTRIBUTES => '属性で絞り込み（予約）',
         self::SCHEDULED_BIRTHDAY => '今月が誕生月（予約）',
         self::SCHEDULED_NEW_MEMBERS => '新規会員（予約）',
         self::SCHEDULED_INACTIVE => '来店・購入なし（予約）',
@@ -26,6 +28,8 @@ class CouponDeliveryType extends EnumBase
     public const IMMEDIATE_PERSONAL = 'immediate_personal';
 
     public const IMMEDIATE_SEGMENT_SALES = 'immediate_segment_sales';
+
+    public const IMMEDIATE_SEGMENT_ATTRIBUTES = 'immediate_segment_attributes';
 
     public const IMMEDIATE_BIRTHDAY = 'immediate_birthday';
 
@@ -38,6 +42,8 @@ class CouponDeliveryType extends EnumBase
     public const SCHEDULED_PERSONAL = 'scheduled_personal';
 
     public const SCHEDULED_SEGMENT_SALES = 'scheduled_segment_sales';
+
+    public const SCHEDULED_SEGMENT_ATTRIBUTES = 'scheduled_segment_attributes';
 
     public const SCHEDULED_BIRTHDAY = 'scheduled_birthday';
 
@@ -52,6 +58,7 @@ class CouponDeliveryType extends EnumBase
             self::SCHEDULED_ALL,
             self::SCHEDULED_PERSONAL,
             self::SCHEDULED_SEGMENT_SALES,
+            self::SCHEDULED_SEGMENT_ATTRIBUTES,
             self::SCHEDULED_BIRTHDAY,
             self::SCHEDULED_NEW_MEMBERS,
             self::SCHEDULED_INACTIVE,
@@ -68,6 +75,12 @@ class CouponDeliveryType extends EnumBase
     public static function segmentValues(): array
     {
         return [self::IMMEDIATE_SEGMENT_SALES, self::SCHEDULED_SEGMENT_SALES];
+    }
+
+    /** @return list<string> */
+    public static function attributeSegmentValues(): array
+    {
+        return [self::IMMEDIATE_SEGMENT_ATTRIBUTES, self::SCHEDULED_SEGMENT_ATTRIBUTES];
     }
 
     /** @return list<string> */
@@ -115,6 +128,7 @@ class CouponDeliveryType extends EnumBase
                 'icon' => 'fa-filter',
                 'types' => [
                     self::IMMEDIATE_SEGMENT_SALES,
+                    self::IMMEDIATE_SEGMENT_ATTRIBUTES,
                     self::IMMEDIATE_BIRTHDAY,
                     self::IMMEDIATE_NEW_MEMBERS,
                     self::IMMEDIATE_INACTIVE,
@@ -127,6 +141,7 @@ class CouponDeliveryType extends EnumBase
                     self::SCHEDULED_ALL,
                     self::SCHEDULED_PERSONAL,
                     self::SCHEDULED_SEGMENT_SALES,
+                    self::SCHEDULED_SEGMENT_ATTRIBUTES,
                     self::SCHEDULED_BIRTHDAY,
                     self::SCHEDULED_NEW_MEMBERS,
                     self::SCHEDULED_INACTIVE,
@@ -140,6 +155,7 @@ class CouponDeliveryType extends EnumBase
      *     scheduledTypes: list<string>,
      *     personalTypes: list<string>,
      *     segmentTypes: list<string>,
+     *     attributeSegmentTypes: list<string>,
      *     birthdayTypes: list<string>,
      *     newMemberTypes: list<string>,
      *     inactiveTypes: list<string>
@@ -151,6 +167,7 @@ class CouponDeliveryType extends EnumBase
             'scheduledTypes' => self::scheduledValues(),
             'personalTypes' => self::personalValues(),
             'segmentTypes' => self::segmentValues(),
+            'attributeSegmentTypes' => self::attributeSegmentValues(),
             'birthdayTypes' => self::birthdayValues(),
             'newMemberTypes' => self::newMemberValues(),
             'inactiveTypes' => self::inactiveValues(),

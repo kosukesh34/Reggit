@@ -11,12 +11,16 @@ use App\Models\Member;
 use App\Models\MemberCoupon;
 use App\Models\MemberStamp;
 use App\Models\Order;
+use App\Models\Scopes\ProjectScope;
 use App\Models\StampCard;
+use App\Models\User;
 use App\Services\MemberPointsExpiryCalculator;
 use App\Services\MemberRankCalculator;
 use App\Services\Smaregi\SmaregiApiService;
 use App\Services\Smaregi\SmaregiCustomerPointsInboundSyncService;
 use App\Services\Smaregi\SmaregiCustomerUpdatePayloadBuilder;
+use App\Services\UserService;
+use App\Support\MemberChannel;
 use App\Util\LogHelper;
 use App\Util\StrHelper;
 use Carbon\Carbon;
@@ -34,11 +38,12 @@ class MemberAdminService
         private MemberPointsExpiryCalculator $expiryCalculator,
         private MemberCouponRepository $memberCouponRepository,
         private ShopSettingRepository $shopSettingRepository,
+        private UserService $userService,
     ) {}
 
     public function getPaginatedList(int $projectId, int $perPage = 20, array $filters = []): LengthAwarePaginator
     {
-        $query = Member::with('user')
+        $query = Member::with(['user.devices'])
             ->where('project_id', $projectId);
 
         $keyword = trim((string) ($filters['keyword'] ?? ''));
@@ -60,12 +65,25 @@ class MemberAdminService
             $query->where('rank', $rank);
         }
 
+        $channel = (string) ($filters['channel'] ?? '');
+        if ($channel === MemberChannel::LINE) {
+            $query->whereHas('user', function ($uq) {
+                $uq->whereRaw('line_user_id REGEXP ?', ['^U[0-9a-fA-F]{32}$']);
+            });
+        } elseif ($channel === MemberChannel::APP) {
+            $query->whereHas('user.devices');
+        } elseif ($channel === MemberChannel::BOTH) {
+            $query->whereHas('user', function ($uq) {
+                $uq->whereRaw('line_user_id REGEXP ?', ['^U[0-9a-fA-F]{32}$']);
+            })->whereHas('user.devices');
+        }
+
         return $query->orderByDesc('created_at')->paginate($perPage);
     }
 
     public function findOrFail(int $id, ?int $projectId = null): Member
     {
-        $query = Member::with(['user', 'pointTransactions.order', 'memberStamps.stampCard', 'memberCoupons.coupon']);
+        $query = Member::with(['user', 'user.devices', 'pointTransactions.order', 'memberStamps.stampCard', 'memberCoupons.coupon']);
         if ($projectId !== null) {
             $query->where('project_id', $projectId);
         }
@@ -419,5 +437,53 @@ class MemberAdminService
                 'detail' => $this->smaregiApi->getLastErrorDetail(),
             ]);
         }
+    }
+
+    /**
+     * 管理画面から会員を削除（ソフトデリート）。
+     * スマレジ連携済みなら先にPOS会員を削除し、失敗時はローカルも削除しない。
+     */
+    public function delete(int $memberId, int $projectId): void
+    {
+        $member = $this->findForWrite($memberId, $projectId);
+        $user = User::query()
+            ->withoutGlobalScope(ProjectScope::class)
+            ->whereKey((int) $member->user_id)
+            ->first();
+
+        $smaregiCustomerId = trim((string) ($member->smaregi_customer_id ?? ''));
+        $contractId = $this->smaregiApi->getContractIdForProject($projectId);
+        $contractId = is_string($contractId) ? trim($contractId) : '';
+        if ($contractId !== '' && $smaregiCustomerId !== '') {
+            $result = $this->smaregiApi->deleteCustomer($contractId, $smaregiCustomerId);
+            if ($result === null) {
+                throw new \RuntimeException(
+                    'スマレジの会員削除に失敗しました。ログ(storage/logs/laravel.log)の [Smaregi] を確認してください。'
+                );
+            }
+        }
+
+        $member->delete();
+
+        if ($user !== null) {
+            try {
+                if (method_exists($user, 'tokens')) {
+                    $user->tokens()->delete();
+                }
+            } catch (\Throwable $e) {
+                LogHelper::warning('[AdminMember] token cleanup skipped', [
+                    'user_id' => (int) $user->id,
+                    'message' => $e->getMessage(),
+                ]);
+            }
+            $this->userService->releaseLineUserIdForWithdraw($user);
+            $user->delete();
+        }
+
+        LogHelper::info('[AdminMember] member deleted', [
+            'project_id' => $projectId,
+            'member_id' => $memberId,
+            'user_id' => $user !== null ? (int) $user->id : null,
+        ]);
     }
 }
