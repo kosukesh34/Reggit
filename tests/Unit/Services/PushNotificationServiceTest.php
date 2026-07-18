@@ -6,6 +6,7 @@ use App\Models\Announcement;
 use App\Models\Project;
 use App\Models\User;
 use App\Models\UserDevice;
+use App\Services\CancelledAnnouncementIdStore;
 use App\Services\PushNotificationService;
 use App\Util\AdminContext;
 use GuzzleHttp\Client;
@@ -172,7 +173,7 @@ class PushNotificationServiceTest extends TestCase
         $this->assertSame(10, $cancelPayload['priority']);
         $this->assertSame(
             [(int) $announcement->id],
-            app(\App\Services\CancelledAnnouncementIdStore::class)->list((int) $project->id)
+            app(CancelledAnnouncementIdStore::class)->list((int) $project->id)
         );
     }
 
@@ -199,7 +200,7 @@ class PushNotificationServiceTest extends TestCase
 
         $this->assertSame(
             [(int) $announcement->id],
-            app(\App\Services\CancelledAnnouncementIdStore::class)->list((int) $project->id)
+            app(CancelledAnnouncementIdStore::class)->list((int) $project->id)
         );
     }
 

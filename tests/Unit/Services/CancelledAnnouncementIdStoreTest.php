@@ -12,7 +12,7 @@ class CancelledAnnouncementIdStoreTest extends TestCase
 
     public function test_remember_and_list_returns_unique_ids(): void
     {
-        $store = new CancelledAnnouncementIdStore();
+        $store = new CancelledAnnouncementIdStore;
         $store->remember(1, 10, 'A');
         $store->remember(1, 20, 'B');
         $store->remember(1, 10, 'A2');
