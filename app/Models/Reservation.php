@@ -4,6 +4,8 @@ namespace App\Models;
 
 use App\Enums\ReservationStatus;
 use App\Models\Concerns\BelongsToProject;
+use App\Services\ReservationNumberAssigner;
+use App\Support\DailySequenceNumber;
 use Database\Factories\ReservationFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -49,7 +51,9 @@ class Reservation extends Model
 
         static::creating(function ($reservation) {
             if ($reservation->reservation_number === null || $reservation->reservation_number === '') {
-                $reservation->reservation_number = 'RES-'.date('Ymd').'-'.strtoupper(uniqid());
+                $projectId = (int) ($reservation->project_id ?? 1);
+                $reservation->reservation_number = app(ReservationNumberAssigner::class)
+                    ->buildNext($projectId);
             }
             if ($reservation->status === null || $reservation->status === '') {
                 $reservation->status = ReservationStatus::PENDING;
@@ -82,5 +86,10 @@ class Reservation extends Model
     {
         return $this->status !== ReservationStatus::CANCELLED
             && $this->status !== ReservationStatus::COMPLETED;
+    }
+
+    public function formattedReservationNumber(): string
+    {
+        return DailySequenceNumber::formatStoredForDisplay($this->reservation_number);
     }
 }

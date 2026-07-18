@@ -15,7 +15,7 @@ class AdminMemberIssueCouponUseCase
 
     public function handle(int $projectId, int $memberId, int $couponId): void
     {
-        $member = $this->memberAdminService->findOrFail($memberId, $projectId);
+        $member = $this->memberAdminService->findForWrite($memberId, $projectId);
         $this->memberAdminService->issueCouponToMember($member, $couponId);
     }
 }

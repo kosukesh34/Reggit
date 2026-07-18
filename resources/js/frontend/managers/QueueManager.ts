@@ -16,6 +16,8 @@ type QueueEntry = {
     id?: number | string;
     queue_number?: number | string;
     queueNumber?: number | string;
+    formatted_queue_number?: string;
+    formattedQueueNumber?: string;
     status?: string;
     line_linked?: boolean;
     lineLinked?: boolean;
@@ -408,11 +410,15 @@ export class QueueManager {
 
     renderQueueCard(entry: QueueEntry, isQrView = false, updatedAt: string | null = null): string {
         const rawQueueNumber =
-            entry.queue_number != null
-                ? entry.queue_number
-                : (entry.queueNumber != null
-                    ? entry.queueNumber
-                    : (entry.id != null ? entry.id : '-'));
+            entry.formatted_queue_number != null && entry.formatted_queue_number !== ''
+                ? entry.formatted_queue_number
+                : (entry.formattedQueueNumber != null && entry.formattedQueueNumber !== ''
+                    ? entry.formattedQueueNumber
+                    : (entry.queue_number != null
+                        ? entry.queue_number
+                        : (entry.queueNumber != null
+                            ? entry.queueNumber
+                            : (entry.id != null ? entry.id : '-'))));
         const queueNumber = this.formatQueueNumber(rawQueueNumber);
         const status = entry.status || '-';
         const lineLinked = entry.line_linked === true || entry.lineLinked === true;
@@ -582,14 +588,7 @@ export class QueueManager {
     }
 
     formatQueueNumber(value: number | string): string {
-        if (typeof value === 'number' && Number.isFinite(value)) {
-            return String(Math.trunc(value)).padStart(4, '0');
-        }
-        if (typeof value === 'string' && /^\d+$/.test(value)) {
-            return value.padStart(4, '0');
-        }
-
-        return String(value);
+        return DomHelper.formatReferenceNumber(value) || String(value);
     }
 
     formatUpdatedAt(value: string): string {

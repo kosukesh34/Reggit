@@ -74,7 +74,7 @@
             <tbody>
                 @forelse($orders as $order)
                 <tr>
-                    <td><a href="{{ admin_route('admin.orders.detail', ['id' => $order->id]) }}">{{ $order->order_number }}</a></td>
+                    <td><a href="{{ admin_route('admin.orders.detail', ['id' => $order->id]) }}">{{ $order->formattedOrderNumber() }}</a></td>
                     <td>
                         @php
                             $orderType = $order->order_type ?? '';

@@ -64,7 +64,7 @@ class AdminQueueTest extends TestCase
             'member_id' => null,
             'user_id' => null,
             'guest_name' => 'Recent Guest',
-            'queue_number' => (int) now()->format('d') * 100 + 1,
+            'queue_number' => (int) (now()->format('Ymd').'1'),
             'created_at' => now()->subHours(2),
             'updated_at' => now()->subHours(2),
         ]);
@@ -101,7 +101,7 @@ class AdminQueueTest extends TestCase
             'user_id' => null,
             'guest_name' => 'Just Entered',
             'status' => QueueStatus::ENTERED,
-            'queue_number' => (int) now()->format('d') * 100 + 2,
+            'queue_number' => (int) (now()->format('Ymd').'2'),
             'entered_at' => now()->subMinutes(10),
             'created_at' => now()->subHours(1),
             'updated_at' => now()->subMinutes(10),
@@ -112,7 +112,7 @@ class AdminQueueTest extends TestCase
             'user_id' => null,
             'guest_name' => 'Old Entered',
             'status' => QueueStatus::ENTERED,
-            'queue_number' => (int) now()->format('d') * 100 + 3,
+            'queue_number' => (int) (now()->format('Ymd').'3'),
             'entered_at' => now()->subMinutes(31),
             'created_at' => now()->subHours(1),
             'updated_at' => now()->subMinutes(31),
@@ -138,7 +138,7 @@ class AdminQueueTest extends TestCase
         $entry = QueueEntry::factory()->create([
             'project_id' => $project->id,
             'status' => QueueStatus::CALLED,
-            'queue_number' => (int) now()->format('d') * 100 + 5,
+            'queue_number' => (int) (now()->format('Ymd').'5'),
             'called_at' => now()->subMinutes(10),
         ]);
         $callLog = QueueCallLog::create([
