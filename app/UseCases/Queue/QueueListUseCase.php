@@ -31,7 +31,7 @@ class QueueListUseCase
         return $entries->map(fn (QueueEntry $e) => $this->toListItem($e))->values()->all();
     }
 
-    /** @return array{id: int, queue_number: int, status: string, party_size: int, line_linked: bool, member_linked: bool, display_name: string, created_at: string} */
+    /** @return array{id: int, queue_number: int, formatted_queue_number: string, status: string, party_size: int, line_linked: bool, member_linked: bool, display_name: string, created_at: string} */
     private function toListItem(QueueEntry $e): array
     {
         $displayName = $e->member?->user?->name ?? $e->user?->name ?? $e->guest_name ?? '—';
@@ -41,6 +41,7 @@ class QueueListUseCase
         return [
             'id' => $e->id,
             'queue_number' => (int) ($e->queue_number ?? $e->id),
+            'formatted_queue_number' => $e->formattedQueueNumber(),
             'status' => $e->status,
             'party_size' => (int) $e->party_size,
             'line_linked' => $lineLinked,

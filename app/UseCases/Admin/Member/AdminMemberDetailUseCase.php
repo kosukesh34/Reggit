@@ -7,20 +7,15 @@ use App\UseCases\Admin\Member\Data\AdminMemberDetailOutput;
 
 class AdminMemberDetailUseCase
 {
-    private MemberAdminService $memberAdminService;
-
-    public function __construct(MemberAdminService $memberAdminService)
-    {
-        $this->memberAdminService = $memberAdminService;
-    }
+    public function __construct(
+        private MemberAdminService $memberAdminService
+    ) {}
 
     public function handle(int $projectId, int $memberId): AdminMemberDetailOutput
     {
         $member = $this->memberAdminService->findOrFail($memberId, $projectId);
-        $activeCoupons = $this->memberAdminService->getActiveCouponsForSelect($projectId);
-        $activeStampCards = $this->memberAdminService->getActiveStampCardsForSelect($projectId);
         $purchaseSummary = $this->memberAdminService->getPurchaseSummary($member);
 
-        return new AdminMemberDetailOutput($member, $activeCoupons, $activeStampCards, $purchaseSummary);
+        return new AdminMemberDetailOutput($member, $purchaseSummary);
     }
 }

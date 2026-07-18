@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\QueueStatus;
 use App\Models\Concerns\BelongsToProject;
+use App\Support\DailySequenceNumber;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -48,7 +49,7 @@ class QueueEntry extends Model
             return (string) $this->id;
         }
 
-        return sprintf('%04d', $this->queue_number);
+        return DailySequenceNumber::formatStoredForDisplay((string) $this->queue_number);
     }
 
     /**
