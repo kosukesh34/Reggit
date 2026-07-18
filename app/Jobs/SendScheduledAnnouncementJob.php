@@ -4,7 +4,7 @@ namespace App\Jobs;
 
 use App\Models\Announcement;
 use App\Services\Admin\MemberAdminService;
-use App\Services\PushNotificationService;
+use App\Services\AnnouncementNotificationService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -19,14 +19,14 @@ class SendScheduledAnnouncementJob implements ShouldQueue
         public int $announcementId
     ) {}
 
-    public function handle(PushNotificationService $pushNotificationService, MemberAdminService $memberAdminService): void
+    public function handle(AnnouncementNotificationService $announcementNotificationService, MemberAdminService $memberAdminService): void
     {
         $announcement = Announcement::withoutGlobalScopes()->find($this->announcementId);
         if (! $announcement || $announcement->delivery_status !== Announcement::DELIVERY_STATUS_SCHEDULED) {
             return;
         }
 
-        $pushNotificationService->sendAnnouncement($announcement);
+        $announcementNotificationService->send($announcement);
 
         if ($announcement->delivery_coupon_id) {
             $targetMemberIds = is_array($announcement->target_member_ids) && $announcement->target_member_ids !== []

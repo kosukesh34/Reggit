@@ -39,14 +39,28 @@
                         <th>会員名</th>
                         <th>会員番号</th>
                         <th>既読日時</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach($reads as $read)
                     <tr>
-                        <td>{{ $read['member_name'] }}</td>
+                        <td>
+                            @if($read['member_id'] !== null)
+                                <a href="{{ admin_route('admin.members.detail', ['id' => $read['member_id']]) }}">{{ $read['member_name'] }}</a>
+                            @else
+                                {{ $read['member_name'] }}
+                            @endif
+                        </td>
                         <td>{{ $read['member_number'] }}</td>
                         <td>{{ $read['read_at'] }}</td>
+                        <td class="table-actions-cell">
+                            @if($read['member_id'] !== null)
+                            <div class="table-actions">
+                                <a href="{{ admin_route('admin.members.detail', ['id' => $read['member_id']]) }}" class="btn btn-action btn-edit"><i class="fas fa-eye"></i> 詳細</a>
+                            </div>
+                            @endif
+                        </td>
                     </tr>
                     @endforeach
                 </tbody>

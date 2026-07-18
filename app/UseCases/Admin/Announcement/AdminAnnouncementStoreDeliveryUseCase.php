@@ -8,7 +8,7 @@ use App\Services\Admin\AnnouncementAdminService;
 use App\Services\Admin\CouponAdminService;
 use App\Services\Admin\MemberAdminService;
 use App\Services\Admin\MemberSegmentService;
-use App\Services\PushNotificationService;
+use App\Services\AnnouncementNotificationService;
 use App\UseCases\Admin\Announcement\Data\StoreDeliveryOutput;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -16,7 +16,7 @@ use Illuminate\Support\Collection;
 class AdminAnnouncementStoreDeliveryUseCase
 {
     public function __construct(
-        private PushNotificationService $pushNotificationService,
+        private AnnouncementNotificationService $announcementNotificationService,
         private MemberSegmentService $memberSegmentService,
         private MemberAdminService $memberAdminService,
         private AnnouncementAdminService $announcementAdminService,
@@ -141,17 +141,20 @@ class AdminAnnouncementStoreDeliveryUseCase
             return new StoreDeliveryOutput(true, false, "お知らせ配信を予約しました（{$formattedDate}）");
         }
 
-        $result = $this->pushNotificationService->sendAnnouncement($announcement);
+        $result = $this->announcementNotificationService->send($announcement);
         $this->issueCouponIfSet($announcement);
 
         $sent = $result['sent'];
         $failed = $result['failed'];
         $skipped = $result['skipped'];
+        $lineSent = $result['line_sent'];
+        $lineFailed = $result['line_failed'];
+        $lineSkipped = $result['line_skipped'];
 
         return new StoreDeliveryOutput(
             false,
             false,
-            "お知らせを配信しました（送信: {$sent}件 / 失敗: {$failed}件 / スキップ: {$skipped}件）"
+            "お知らせを配信しました（アプリ: 送信 {$sent}件 / 失敗 {$failed}件 / スキップ {$skipped}件、LINE: 送信 {$lineSent}件 / 失敗 {$lineFailed}件 / スキップ {$lineSkipped}件）"
         );
     }
 
