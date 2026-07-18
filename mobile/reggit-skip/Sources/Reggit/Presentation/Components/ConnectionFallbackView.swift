@@ -34,7 +34,9 @@ struct ConnectionFallbackView: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
+                    #if !os(Android)
                     .fixedSize(horizontal: false, vertical: true)
+                    #endif
 
                 Button("再読み込み", action: onRetry)
                     .buttonStyle(.borderedProminent)

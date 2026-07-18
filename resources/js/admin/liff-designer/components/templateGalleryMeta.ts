@@ -25,20 +25,25 @@ export type GalleryAccent = {
 
 export const CATEGORY_LABELS: Record<string, string> = {
     all: 'すべて',
+    suite: '全画面アプリ',
+    loyalty: '会員・リワード',
+    order: '注文',
+    booking: '予約',
+    cafe: 'カフェ',
+    salon: 'サロン',
+    retail: '小売',
+    clinic: 'クリニック',
+    delivery: 'デリバリー',
+    screen: '単画面',
     home: 'ホーム',
-    order: '注文・飲食',
     member: '会員',
     reservation: '予約',
     campaign: '販促',
     story: 'ブランド',
     support: 'サポート',
-    industry: '業種別CRM',
-    industry_food: '飲食',
-    industry_beauty: '美容・健康',
-    industry_retail: '小売',
-    industry_hotel: 'ホテル',
-    industry_medical: '医療',
-    native: 'ネイティブ',
+    industry: '業種別',
+    native: 'ネイティブ風',
+    apple: '定番',
     luxury: 'ラグジュアリー',
     super: '全画面',
     other: 'その他',
@@ -46,37 +51,45 @@ export const CATEGORY_LABELS: Record<string, string> = {
 
 /** 空キャンバスやギャラリー推奨枠で優先表示するテンプレ ID */
 export const FEATURED_TEMPLATE_IDS = [
-    'crm-cafe-loyalty',
-    'crm-beauty-booking',
-    'crm-retail-flash',
-    'crm-native-wallet-home',
-    'flagship-dashboard',
-    'super-pattern-cafe',
-    'super-pattern-hotel',
-    'super-pattern-clinic',
+    'rg-suite-loyalty',
+    'rg-suite-cafe',
+    'rg-suite-salon',
+    'rg-suite-order',
+    'rg-suite-retail',
+    'rg-screen-rewards',
+    'rg-screen-pass',
+    'rg-screen-flash',
+    'rg-screen-next-visit',
+    'rg-screen-vip',
 ] as const;
 
 export const CATEGORY_ACCENTS: Record<string, GalleryAccent> = {
+    suite: { color: '#007aff', soft: '#e8f1ff', icon: 'fa-mobile-alt' },
+    loyalty: { color: '#5856d6', soft: '#eeedfe', icon: 'fa-crown' },
+    order: { color: '#ff9500', soft: '#fff4e5', icon: 'fa-bag-shopping' },
+    booking: { color: '#af52de', soft: '#f6e9fc', icon: 'fa-calendar-check' },
+    cafe: { color: '#8B5E3C', soft: '#f5ebe3', icon: 'fa-coffee' },
+    salon: { color: '#ff2d55', soft: '#ffe5ec', icon: 'fa-spa' },
+    retail: { color: '#1c1c1e', soft: '#f2f2f7', icon: 'fa-shopping-bag' },
+    clinic: { color: '#32ade6', soft: '#e5f6fc', icon: 'fa-stethoscope' },
+    delivery: { color: '#ff3b30', soft: '#ffe8e6', icon: 'fa-motorcycle' },
+    screen: { color: '#34c759', soft: '#e8f9ee', icon: 'fa-layer-group' },
     home: { color: '#2563eb', soft: '#dbeafe', icon: 'fa-home' },
-    order: { color: '#ea580c', soft: '#ffedd5', icon: 'fa-utensils' },
     member: { color: '#7c3aed', soft: '#ede9fe', icon: 'fa-id-card' },
     reservation: { color: '#0891b2', soft: '#cffafe', icon: 'fa-calendar-alt' },
     campaign: { color: '#e11d48', soft: '#ffe4e6', icon: 'fa-bullhorn' },
     story: { color: '#c2410c', soft: '#ffedd5', icon: 'fa-book-open' },
     support: { color: '#0f766e', soft: '#ccfbf1', icon: 'fa-headset' },
     industry: { color: '#4f46e5', soft: '#e0e7ff', icon: 'fa-store' },
-    industry_food: { color: '#c2410c', soft: '#ffedd5', icon: 'fa-utensils' },
-    industry_beauty: { color: '#db2777', soft: '#fce7f3', icon: 'fa-spa' },
-    industry_retail: { color: '#2563eb', soft: '#dbeafe', icon: 'fa-shopping-bag' },
-    industry_hotel: { color: '#0f766e', soft: '#ccfbf1', icon: 'fa-hotel' },
-    industry_medical: { color: '#0284c7', soft: '#e0f2fe', icon: 'fa-stethoscope' },
     native: { color: '#0f172a', soft: '#e2e8f0', icon: 'fa-mobile-alt' },
+    apple: { color: '#007aff', soft: '#e8f1ff', icon: 'fa-apple' },
     luxury: { color: '#92400e', soft: '#fef3c7', icon: 'fa-gem' },
-    super: { color: '#1c1917', soft: '#f5f5f4', icon: 'fa-layer-group' },
+    super: { color: '#007aff', soft: '#e8f1ff', icon: 'fa-layer-group' },
     other: { color: '#57534e', soft: '#f5f5f4', icon: 'fa-th-large' },
 };
 
 const PRESET_PALETTES: Record<string, { label: string; accent: string }> = {
+    apple_system: { label: 'Apple System', accent: '#007aff' },
     noir: { label: 'Noir / Stone', accent: '#1c1917' },
     ocean: { label: 'Blue / Cyan', accent: '#0284c7' },
     bordeaux: { label: 'Rose / Wine', accent: '#9f1239' },
@@ -117,18 +130,14 @@ export function templateDisplayName(tpl: TemplateItem, fallbackIndex = 0): strin
 }
 
 export function templateCategoryKey(tpl: TemplateItem): string {
-    if (isAllScreensTemplate(tpl)) return 'super';
-    const raw = tpl.category || 'other';
-    const id = String(tpl.id || '').toLowerCase();
-    const name = `${tpl.name || ''} ${tpl.label || ''} ${tpl.description || ''}`.toLowerCase();
-    if (raw === 'industry' || raw === 'home') {
-        if (/cafe|ramen|sushi|bakery|izakaya|food|restaurant|delivery|drink/.test(id + name)) return 'industry_food';
-        if (/beauty|salon|spa|nail|clinic|fitness|gym|pet/.test(id + name)) return 'industry_beauty';
-        if (/retail|fashion|shop|grocery|flash/.test(id + name)) return 'industry_retail';
-        if (/hotel|concierge|stay/.test(id + name)) return 'industry_hotel';
-        if (/clinic|medical|hospital|trust/.test(id + name)) return 'industry_medical';
+    if (isAllScreensTemplate(tpl)) {
+        const rawSuite = String(tpl.category || 'suite');
+        if (rawSuite !== '' && rawSuite !== 'other') return rawSuite === 'super' ? 'suite' : rawSuite;
+        return 'suite';
     }
-    return raw;
+    const raw = tpl.category || 'other';
+    if (CATEGORY_LABELS[raw] !== undefined) return raw;
+    return raw || 'other';
 }
 
 export function categoryLabel(key: string): string {

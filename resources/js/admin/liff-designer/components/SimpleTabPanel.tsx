@@ -29,12 +29,27 @@ export function SimpleTabPanel() {
                 </p>
             )}
             <p className="ld-sidebar__subsection">この画面の背景</p>
-            <p className="ld-sidebar__lead ld-sidebar__lead--muted">空にするとアプリ全体の背景が使われます。</p>
-            <ColorField
-                label="背景色"
-                value={String(tabSettings.background_color || state.globalSettings.bg_color || '#f9fafb')}
-                onChange={(v) => dispatch({ type: 'UPDATE_TAB_SETTINGS', patch: { background_color: v } })}
-            />
+            <p className="ld-sidebar__lead ld-sidebar__lead--muted">
+                未設定のときはアプリ全体の背景が使われます。色を選ぶとこの画面だけ上書きされます。
+            </p>
+            {String(tabSettings.background_color || '') === '' ? (
+                <>
+                    <p className="ld-form-hint">
+                        現在: 全体背景（{String(state.globalSettings.bg_color || '#f9fafb')}）を使用中
+                    </p>
+                    <ColorField
+                        label="この画面だけ上書き"
+                        value={String(state.globalSettings.bg_color || '#f9fafb')}
+                        onChange={(v) => dispatch({ type: 'UPDATE_TAB_SETTINGS', patch: { background_color: v } })}
+                    />
+                </>
+            ) : (
+                <ColorField
+                    label="背景色（この画面）"
+                    value={String(tabSettings.background_color)}
+                    onChange={(v) => dispatch({ type: 'UPDATE_TAB_SETTINGS', patch: { background_color: v } })}
+                />
+            )}
             <ImageUrlField
                 label="背景画像"
                 value={String(tabSettings.background_image || '')}
@@ -76,7 +91,7 @@ export function SimpleTabPanel() {
                 max={40}
                 onChange={(v) => dispatch({ type: 'UPDATE_TAB_SETTINGS', patch: { content_padding: v } })}
             />
-            <p className="ld-sidebar__subsection">アプリの動作</p>
+            <p className="ld-sidebar__subsection">アプリの動作（本番）</p>
             <div className="ld-bg-style-tabs" role="group" aria-label="会員登録ポリシー">
                 <button
                     type="button"
@@ -90,13 +105,13 @@ export function SimpleTabPanel() {
                     className={`ld-bg-style-tab${state.globalSettings.require_membership === false ? ' is-active' : ''}`}
                     onClick={() => dispatch({ type: 'UPDATE_GLOBAL', patch: { require_membership: false } })}
                 >
-                    会員不要
+                    会員任意
                 </button>
             </div>
             <p className="ld-form-hint">
                 {state.globalSettings.require_membership !== false
-                    ? 'クーポン・スタンプ・予約は登録後のみ。'
-                    : 'ゲスト閲覧可。登録は任意。'}
+                    ? '本番は登録後のみ会員機能が使えます。見え方確認はキャンバスの「ゲスト表示」を使います。'
+                    : '本番はゲスト閲覧可。見え方確認はキャンバスの「会員表示 / ゲスト表示」です。'}
             </p>
             <p className="ld-sidebar__subsection">アプリ全体</p>
             <button

@@ -72,9 +72,13 @@ const premium: PremiumRenderer = {
         const dataExternal = isExternal ? ' data-builder-external="1"' : '';
         const full = block.full_width !== false ? ' builder-btn--full' : '';
         const design = block.design || 'cta';
-        const variantClass = design === 'outline' ? ' builder-btn--outline' : design === 'soft' ? ' builder-btn--soft' : ' builder-btn--cta';
+        const variantClass = design === 'outline' ? ' builder-btn--outline'
+            : design === 'soft' ? ' builder-btn--soft'
+            : design === 'sticky' ? ' builder-btn--cta builder-btn--sticky'
+            : ' builder-btn--cta';
+        const wrapClass = design === 'sticky' ? ' builder-button-wrap--sticky' : '';
         const colorStyle = block.color ? ` style="--btn-bg:${esc(block.color)};${block.text_color ? `--btn-fg:${esc(block.text_color)};` : ''}${design === 'outline' || design === 'soft' ? `--btn-accent:${esc(block.color)};` : ''}"` : '';
-        return `<section class="builder-block builder-button-wrap" style="${baseStyle}">
+        return `<section class="builder-block builder-button-wrap${wrapClass}" style="${baseStyle}">
             <a href="${esc(action)}" class="builder-btn${variantClass}${full}"${dataExternal}${colorStyle}>${esc(block.text)}</a>
         </section>`;
     },
@@ -109,6 +113,19 @@ const premium: PremiumRenderer = {
             }
             return `<article class="builder-block builder-editorial-card builder-editorial-card--overlay" style="${baseStyle}">${body}</article>`;
         }
+        if (design === 'featured') {
+            const body = `<div class="builder-editorial-card__media builder-editorial-card__media--featured" style="--card-img-h:${imgH}px">${img}
+                <span class="builder-editorial-card__featured-badge">Featured</span></div>
+                <div class="builder-editorial-card__body">
+                    <h4 class="builder-editorial-card__title">${esc(block.title)}</h4>
+                    ${block.description ? `<p class="builder-editorial-card__desc">${esc(block.description)}</p>` : ''}
+                </div>`;
+            if (action) {
+                const nav = liffBlockNavAttrs(action, esc);
+                return `<a href="${nav.href}" class="builder-block builder-editorial-card builder-editorial-card--featured builder-editorial-card--link builder-nav"${nav.dataExternal} style="${baseStyle}">${body}</a>`;
+            }
+            return `<article class="builder-block builder-editorial-card builder-editorial-card--featured" style="${baseStyle}">${body}</article>`;
+        }
         const body = `<div class="builder-editorial-card__media" style="--card-img-h:${imgH}px">${img}</div>
             <div class="builder-editorial-card__body">
                 <h4 class="builder-editorial-card__title">${esc(block.title)}</h4>
@@ -128,8 +145,12 @@ const premium: PremiumRenderer = {
         if (design === 'outline') style = `${bg ? `border-color:${esc(bg)};color:${esc(bg)};` : ''}`;
         else if (design === 'soft') style = `${bg ? `background:${esc(bg)}18;color:${esc(bg)};` : ''}`;
         else style = `${bg ? `background:${esc(bg)};` : ''}${fg ? `color:${esc(fg)};` : ''}`;
+        const countdown = design === 'countdown'
+            ? `<span class="builder-promo-banner__countdown" aria-hidden="true"><em>限定</em><strong>24h</strong></span>`
+            : '';
         const inner = `${block.icon ? `<span class="builder-promo-banner__icon"><i class="fas ${esc(block.icon)}" aria-hidden="true"></i></span>` : ''}
             <span class="builder-promo-banner__text">${esc(block.text)}</span>
+            ${countdown}
             <i class="fas fa-chevron-right builder-promo-banner__chev" aria-hidden="true"></i>`;
         const action = block.action || block.link || '';
         const designClass = ` builder-promo-banner--${esc(design)}`;
@@ -141,10 +162,20 @@ const premium: PremiumRenderer = {
     },
     collection(block, esc, baseStyle) {
         const items = Array.isArray(block.items) ? block.items : [];
+        const design = block.design || 'product_shelf';
+        if (design === 'chip_scroll') {
+            const chips = items.map((item: any) => {
+                const action = item.action || block.item_action || '#products';
+                const nav = liffBlockNavAttrs(action, esc);
+                return `<a href="${nav.href}" class="builder-chip builder-nav"${nav.dataExternal}>${esc(item.title)}</a>`;
+            }).join('');
+            const label = block.section_label || block.title || '';
+            const head = label ? `<div class="builder-section-head"><span class="builder-section-head__label">${esc(label)}</span></div>` : '';
+            return `<section class="builder-block builder-collection-wrap builder-collection-wrap--design-chip_scroll" style="${baseStyle}">${head}<div class="builder-chip-scroll">${chips}</div></section>`;
+        }
         const isGrid = block.layout === 'grid';
         const cols = block.columns || 2;
         const gap = block.gap != null ? block.gap : 12;
-        const design = block.design || 'product_shelf';
         const maxRows = block.max_rows || 0;
         const visibleCount = (isGrid && maxRows > 0) ? maxRows * cols : items.length;
         const visible = items.slice(0, visibleCount);
@@ -263,6 +294,17 @@ const premium: PremiumRenderer = {
         if (variant === 'minimal') return `<div class="member-summary-card member-summary-card--member ${designClass}"><div class="ms-minimal"><p class="ms-hello">${hello}</p>${showPoints ? `<p class="ms-minimal-pt">${pointsLabel} <span>pt</span></p>` : ''}${rankBadge}</div></div>`;
         if (variant === 'split') return `<div class="member-summary-card member-summary-card--member ${designClass}"><div class="ms-split"><div class="ms-split-left"><p class="ms-hello">${hello}</p>${rankBadge}</div><div class="ms-split-right">${showPoints ? pointsBlock : ''}${cardLink}</div></div>${progressHtml}</div>`;
         if (variant === 'glass') return `<div class="member-summary-card member-summary-card--member ${designClass}"><div class="ms-top"><div class="ms-greeting"><p class="ms-hello">${hello}</p>${rankBadge}</div></div><div class="ms-points-row">${pointsBlock}</div>${progressHtml}</div>`;
+        if (variant === 'tier') {
+            const tierLabel = rankLabel || 'Member';
+            return `<div class="member-summary-card member-summary-card--member ${designClass}">
+                <div class="ms-tier">
+                    <div class="ms-tier__badge"><i class="fas fa-gem" aria-hidden="true"></i><span>${esc(tierLabel)}</span></div>
+                    <p class="ms-hello">${hello}</p>
+                    ${showPoints ? `<div class="ms-points ms-points--center">${pointsBlock}</div>` : ''}
+                </div>
+                ${progressHtml}
+            </div>`;
+        }
         return `<div class="member-summary-card member-summary-card--member ${designClass}"><div class="ms-top"><div class="ms-greeting"><p class="ms-eyebrow">Rewards</p><p class="ms-hello">${hello}</p>${rankBadge}</div>${cardLink}</div><div class="ms-points-row">${pointsBlock}${ringHtml}</div>${progressHtml}</div>`;
     },
 };
