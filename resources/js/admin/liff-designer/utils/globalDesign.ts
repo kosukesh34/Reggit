@@ -28,6 +28,7 @@ const PRESET_KEYS = [
     'system_card_style',
     'system_media_shape',
     'system_header_style',
+    'member_card_design',
     'member_screen_design',
     'coupon_screen_design',
     'reservation_screen_design',
@@ -138,6 +139,7 @@ export function screenTabStyleClass(globalSettings: GlobalSettings): string {
 }
 
 export function frameSystemClasses(globalSettings: GlobalSettings): string {
+    const presetId = String(globalSettings.theme_preset || '');
     return [
         `system-ui-${String(globalSettings.system_ui_style || 'refined')}`,
         `system-card-${String(globalSettings.system_card_style || 'soft')}`,
@@ -147,7 +149,9 @@ export function frameSystemClasses(globalSettings: GlobalSettings): string {
         `coupon-screen-${String(globalSettings.coupon_screen_design || 'ticket')}`,
         `reservation-screen-${String(globalSettings.reservation_screen_design || 'cards')}`,
         `activity-screen-${String(globalSettings.activity_screen_design || 'cards')}`,
-    ].join(' ');
+        presetId !== '' && presetId !== 'custom' ? `theme-${presetId}` : '',
+        presetId === 'apple_system' ? 'chrome-glass' : '',
+    ].filter(Boolean).join(' ');
 }
 
 export function contentMaxWidth(globalSettings: GlobalSettings): string {

@@ -372,7 +372,7 @@ function StudioBrowser({
     themeLabel: string;
     setup: TemplateSetupOptions;
     impact: TemplateImpact | null;
-    fontStacks: Record<string, { label: string }>;
+    fontStacks: Record<string, { label: string; base?: string; display?: string }>;
     onCategory: (v: string) => void;
     onScope: (v: 'all' | 'tab' | 'super') => void;
     onKeyword: (v: string) => void;
@@ -486,7 +486,7 @@ function StudioBrowser({
                     ) : null}
                 </aside>
 
-                <section className="ld-studio__list" aria-label="テンプレート一覧">
+                <section className="ld-studio__list ld-studio__gallery" aria-label="テンプレート一覧">
                     {templates.length === 0 ? (
                         <div className="ld-studio__empty">
                             <i className="fas fa-search" />
@@ -496,62 +496,85 @@ function StudioBrowser({
                             </button>
                         </div>
                     ) : (
-                        templates.map((tpl, i) => {
-                            const id = String(tpl.id || i);
-                            const a = galleryAccentFor(tpl);
-                            const tags = templateTags(tpl);
-                            const rowKey = String(tpl.id || templateDisplayName(tpl, i));
-                            const isFav = favoriteIds.has(String(tpl.id || ''));
-                            const isActive = activeKey === rowKey;
-                            const isSuper = isAllScreensTemplate(tpl);
-                            const blockCount = previewBlocksFor(tpl).length;
-                            return (
-                                <article
-                                    key={id}
-                                    className={`ld-studio-row${isActive ? ' is-active' : ''}`}
-                                    style={{ ['--row-accent' as string]: a.color }}
-                                >
-                                    <button type="button" className="ld-studio-row__main" onClick={() => onSelect(tpl)}>
-                                        <span className="ld-studio-row__badge" style={{ background: a.soft, color: a.color }}>
-                                            <i className={`fas ${a.icon}`} />
-                                        </span>
-                                        <span className="ld-studio-row__copy">
-                                            <strong>{templateDisplayName(tpl, i)}</strong>
-                                            <em>
-                                                {paletteLabelFor(tpl)}
-                                                {' · '}
-                                                {isSuper ? '全画面Suite' : `${blockCount}ブロック`}
-                                                {' · '}
-                                                {categoryLabel(templateCategoryKey(tpl))}
-                                            </em>
-                                            {tpl.description ? <p>{tpl.description}</p> : null}
-                                            <span className="ld-studio-row__tags">
-                                                {tags.map((tag) => (
-                                                    <span key={tag}>{tag}</span>
-                                                ))}
+                        <div className="ld-studio__gallery-grid">
+                            {templates.map((tpl, i) => {
+                                const id = String(tpl.id || i);
+                                const a = galleryAccentFor(tpl);
+                                const tags = templateTags(tpl);
+                                const rowKey = String(tpl.id || templateDisplayName(tpl, i));
+                                const isFav = favoriteIds.has(String(tpl.id || ''));
+                                const isActive = activeKey === rowKey;
+                                const isSuper = isAllScreensTemplate(tpl);
+                                const blockCount = previewBlocksFor(tpl).length;
+                                return (
+                                    <article
+                                        key={id}
+                                        className={`ld-gallery-card${isActive ? ' is-active' : ''}`}
+                                        style={{ ['--row-accent' as string]: a.color }}
+                                    >
+                                        <div className="ld-gallery-card__head">
+                                            <span className="ld-gallery-card__icon" style={{ background: a.soft, color: a.color }}>
+                                                <i className={`fas ${a.icon}`} />
                                             </span>
-                                        </span>
-                                    </button>
-                                    <div className="ld-studio-row__side">
+                                            <div className="ld-gallery-card__titles">
+                                                <strong>{templateDisplayName(tpl, i)}</strong>
+                                                <span>
+                                                    {paletteLabelFor(tpl)}
+                                                    {' · '}
+                                                    {isSuper ? '全画面Suite' : `${blockCount}ブロック`}
+                                                    {' · '}
+                                                    {categoryLabel(templateCategoryKey(tpl))}
+                                                </span>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                className={`ld-gallery-card__heart${isFav ? ' is-active' : ''}`}
+                                                onClick={() => toggleFavoriteSafe(tpl.id, onToggleFavorite)}
+                                                aria-label="お気に入り"
+                                            >
+                                                <i className={`${isFav ? 'fas' : 'far'} fa-heart`} />
+                                            </button>
+                                        </div>
                                         <button
                                             type="button"
-                                            className={`ld-studio-row__fav${isFav ? ' is-active' : ''}`}
-                                            onClick={() => toggleFavoriteSafe(tpl.id, onToggleFavorite)}
-                                            aria-label="お気に入り"
+                                            className="ld-gallery-card__mock"
+                                            onClick={() => onSelect(tpl)}
+                                            aria-label={`${templateDisplayName(tpl, i)} を選択`}
                                         >
-                                            <i className={`${isFav ? 'fas' : 'far'} fa-heart`} />
+                                            <TemplatePhoneMock
+                                                template={tpl}
+                                                size="card"
+                                                fontStacks={fontStacks}
+                                            />
                                         </button>
-                                        <button
-                                            type="button"
-                                            className="ld-studio-row__cta"
-                                            onClick={() => onApply(tpl)}
-                                        >
-                                            使う
-                                        </button>
-                                    </div>
-                                </article>
-                            );
-                        })
+                                        {tpl.description ? (
+                                            <p className="ld-gallery-card__desc">{tpl.description}</p>
+                                        ) : null}
+                                        <div className="ld-gallery-card__tags">
+                                            {tags.map((tag) => (
+                                                <span key={tag}>{tag}</span>
+                                            ))}
+                                        </div>
+                                        <div className="ld-gallery-card__actions">
+                                            <button
+                                                type="button"
+                                                className="ld-gallery-card__preview"
+                                                onClick={() => onSelect(tpl)}
+                                            >
+                                                プレビュー
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="ld-gallery-card__choose"
+                                                onClick={() => onApply(tpl)}
+                                            >
+                                                使う
+                                            </button>
+                                        </div>
+                                    </article>
+                                );
+                            })}
+                        </div>
                     )}
                 </section>
 
@@ -559,7 +582,7 @@ function StudioBrowser({
                     {activeTemplate === null || previewTemplate === null ? (
                         <div className="ld-studio__dock-empty">
                             <i className="fas fa-mobile-alt" />
-                            <p>左の一覧からテンプレートを選ぶと、<br />ここに実機プレビューが出ます</p>
+                            <p>カードを選ぶと、<br />ここに実機プレビューが出ます</p>
                         </div>
                     ) : (
                         <>
@@ -760,7 +783,7 @@ function PreviewStyleControls({
     themePresets: ThemePreset[];
     themeSelectionId: string;
     setup: TemplateSetupOptions;
-    fontStacks: Record<string, { label: string }>;
+    fontStacks: Record<string, { label: string; base?: string; display?: string }>;
     onThemeSelect: (id: string) => void;
     onSetupChange: (next: TemplateSetupOptions) => void;
     compact?: boolean;
@@ -855,7 +878,7 @@ function ApplyView({
     themeSelectionId: string;
     themeLabel: string;
     setup: TemplateSetupOptions;
-    fontStacks: Record<string, { label: string }>;
+    fontStacks: Record<string, { label: string; base?: string; display?: string }>;
     onSetupChange: (next: TemplateSetupOptions) => void;
     onThemeSelect: (id: string) => void;
     onBack: () => void;

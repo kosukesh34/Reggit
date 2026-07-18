@@ -126,3 +126,12 @@ dependencies {
     // OneSignal push notifications (FCM is used under the hood; configure google-services.json)
     implementation("com.onesignal:OneSignal:[5.0.0, 5.99.99]")
 }
+
+// Skip plugin adds implementation("reggit.app:Reggit"), but skipstone publishes
+// group "reggit.module" (from Package.swift name "reggit-skip"). Substitute to the
+// included :Reggit project so assembleDebug resolves.
+configurations.configureEach {
+    resolutionStrategy.dependencySubstitution {
+        substitute(module("reggit.app:Reggit")).using(project(":Reggit"))
+    }
+}

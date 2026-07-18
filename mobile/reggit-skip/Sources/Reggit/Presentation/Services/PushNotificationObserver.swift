@@ -31,13 +31,17 @@ final class PushNotificationObserver: PushNotificationObserving {
         handler = nil
     }
 
-    private func observe(_ name: Notification.Name, handler: @escaping (Notification) -> Void) {
+    private func observe(_ name: Notification.Name, handler: @escaping @MainActor (Notification) -> Void) {
         let observer = NotificationCenter.default.addObserver(
             forName: name,
             object: nil,
-            queue: .main,
-            using: handler
-        )
+            queue: .main
+        ) { notification in
+            nonisolated(unsafe) let notification = notification
+            MainActor.assumeIsolated {
+                handler(notification)
+            }
+        }
         observers.append(observer)
     }
 }

@@ -1,0 +1,109 @@
+/* App Studio — タブ / 詳細の画面遷移（ネイティブアプリ感） */
+
+@keyframes liff-screen-in {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@keyframes liff-detail-in {
+    from {
+        opacity: 0;
+        transform: translateX(18px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@keyframes liff-fade-out {
+    to {
+        opacity: 0;
+    }
+}
+
+@keyframes liff-fade-in {
+    from {
+        opacity: 0;
+    }
+}
+
+@keyframes liff-slide-from-right {
+    from {
+        opacity: 0.6;
+        transform: translateX(28%);
+    }
+}
+
+@keyframes liff-slide-to-left {
+    to {
+        opacity: 0.4;
+        transform: translateX(-12%);
+    }
+}
+
+body.liff-nav-animating .tab-content.active .tab-section,
+body.liff-nav-animating .tab-content.active {
+    animation: liff-screen-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+body.liff-page-detail.liff-detail-animating #liffDetailPage,
+body.liff-page-detail.liff-detail-animating #announcementDetailPage {
+    animation: liff-detail-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@supports (view-transition-name: none) {
+    ::view-transition-old(root) {
+        animation: 0.16s ease both liff-fade-out;
+    }
+
+    ::view-transition-new(root) {
+        animation: 0.22s ease both liff-fade-in;
+    }
+
+    html.liff-vt-detail-open::view-transition-old(root) {
+        animation: 0.22s cubic-bezier(0.4, 0, 1, 1) both liff-slide-to-left;
+    }
+
+    html.liff-vt-detail-open::view-transition-new(root) {
+        animation: 0.28s cubic-bezier(0.22, 1, 0.36, 1) both liff-slide-from-right;
+    }
+
+    html.liff-vt-detail-close::view-transition-old(root) {
+        animation: 0.2s ease both liff-fade-out;
+    }
+
+    html.liff-vt-detail-close::view-transition-new(root) {
+        animation: 0.24s ease both liff-fade-in;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body.liff-nav-animating .tab-content.active,
+    body.liff-nav-animating .tab-content.active .tab-section,
+    body.liff-page-detail.liff-detail-animating #liffDetailPage,
+    body.liff-page-detail.liff-detail-animating #announcementDetailPage {
+        animation: none !important;
+    }
+
+    ::view-transition-old(root),
+    ::view-transition-new(root) {
+        animation: none !important;
+    }
+}
+
+/* sticky CTA がフローティングタブと重ならないように */
+.builder-button-wrap--sticky {
+    bottom: calc(var(--main-tabs-height, 64px) + 10px);
+    padding-bottom: max(4px, env(safe-area-inset-bottom, 0px));
+}
+
+body.tab-style-floating .builder-button-wrap--sticky {
+    bottom: calc(var(--main-tabs-height, 56px) + 28px);
+}

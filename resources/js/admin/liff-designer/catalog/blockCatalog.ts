@@ -95,6 +95,7 @@ export const BLOCK_TYPES: BlockTypeMeta[] = [
     { type: 'spacer', label: '余白', icon: 'fa-arrows-alt-v', desc: 'スペースを追加', category: 'basic' },
     { type: 'divider', label: '区切り線', icon: 'fa-minus', desc: '区切り線を追加', category: 'basic' },
     { type: 'member_summary', label: '会員サマリー', icon: 'fa-id-badge', desc: 'ポイント・ランク表示', category: 'data' },
+    { type: 'stats_row', label: '統計行', icon: 'fa-chart-bar', desc: 'ポイント・来店など数値を横並び', category: 'data' },
     { type: 'quick_actions', label: 'クイックアクション', icon: 'fa-grip', desc: 'タブへのショートカット', category: 'data' },
     { type: 'data', label: 'データ', icon: 'fa-database', desc: '動的データ表示', category: 'data' },
     { type: 'friend_add', label: '友だち追加', icon: 'fa-user-plus', desc: 'LINE友だち追加ボタン', category: 'data' },
@@ -154,12 +155,14 @@ export const BLOCK_DESIGNS: Record<string, Array<{ value: string; label: string 
         { value: 'minimal', label: 'ミニマル' },
         { value: 'split', label: 'スプリット' },
         { value: 'glass', label: 'グラス' },
+        { value: 'tier', label: 'メンバーシップ階層' },
     ],
     hero: [
         { value: 'editorial', label: 'エディトリアル（標準）' },
         { value: 'minimal', label: 'ミニマル' },
         { value: 'split', label: 'スプリット' },
         { value: 'centered', label: 'センター' },
+        { value: 'apple', label: 'Apple' },
     ],
     heading: [
         { value: 'plain', label: '標準' },
@@ -184,16 +187,19 @@ export const BLOCK_DESIGNS: Record<string, Array<{ value: string; label: string 
         { value: 'outline', label: 'アウトライン' },
         { value: 'soft', label: 'ソフト' },
         { value: 'pill', label: 'ピル' },
+        { value: 'countdown', label: 'フラッシュセール' },
     ],
     card: [
         { value: 'editorial', label: '縦型（標準）' },
         { value: 'horizontal', label: '横型' },
         { value: 'overlay', label: 'オーバーレイ' },
+        { value: 'featured', label: 'フィーチャー' },
     ],
     button: [
         { value: 'cta', label: '塗りつぶし（標準）' },
         { value: 'outline', label: 'アウトライン' },
         { value: 'soft', label: 'ソフト' },
+        { value: 'sticky', label: '追従（画面下固定）' },
     ],
     quick_actions: [
         { value: 'grid', label: 'グリッド（標準）' },
@@ -205,6 +211,8 @@ export const BLOCK_DESIGNS: Record<string, Array<{ value: string; label: string 
         { value: 'editorial', label: 'エディトリアル' },
         { value: 'compact', label: 'コンパクト' },
         { value: 'magazine', label: 'マガジン' },
+        { value: 'chip_scroll', label: 'カテゴリチップ' },
+        { value: 'picks', label: 'スタッフおすすめ' },
     ],
     slider: [
         { value: 'hero', label: 'ヒーロー' },
@@ -282,7 +290,7 @@ export function defaultGlobalSettings(): GlobalSettings {
         radius_scale: 'soft',
         tab_style: 'default',
         background_style: 'solid',
-        bg_color: '#f9fafb',
+        bg_color: '#f2f2f7',
         content_width: 'comfy',
         bg_overlay_opacity: 60,
         system_ui_style: 'refined',
@@ -460,6 +468,14 @@ export function normalizeBlock(item: Record<string, unknown>, idCounter: { n: nu
         case 'member_summary':
             block.greeting = item.greeting || '';
             block.design = pickDesign('member_summary', item.design);
+            break;
+        case 'stats_row':
+            block.section_label = item.section_label || item.title || '';
+            block.items = Array.isArray(item.items) && item.items.length > 0 ? item.items : [
+                { label: 'ポイント', value: '1,240', hint: 'pt' },
+                { label: 'クーポン', value: '3', hint: '枚' },
+                { label: 'スタンプ', value: '7', hint: '/10' },
+            ];
             break;
         case 'quick_actions':
             block.design = pickDesign('quick_actions', item.design);

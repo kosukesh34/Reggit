@@ -323,16 +323,31 @@ export function DataMockPreview({
     design,
     cardDesign,
     shopName,
+    asGuest = false,
 }: {
     source: string;
     design?: string;
     cardDesign?: string;
     shopName?: string;
+    asGuest?: boolean;
 }) {
     const label = DATA_SOURCES.find((d) => d.value === source)?.label || source;
     const variant = design || '';
     const render = MOCKS[source] || (() => <div className="ld-crm-empty">このデータは実際の利用者画面に表示されます</div>);
-    if (source === 'member_card') {
+    if (source === 'member_card' || source === 'member') {
+        if (asGuest) {
+            return (
+                <SampleDataShell label={label} design={variant || cardDesign || 'premium'}>
+                    <div className="ld-crm-guest-card">
+                        <p className="ld-crm-guest-card__title">会員証は登録後に表示</p>
+                        <p className="ld-crm-guest-card__sub">ポイント・バーコード・ランクは会員になると使えます</p>
+                        <span className="ld-crm-guest-card__cta" data-preview-nav="member">
+                            会員登録へ
+                        </span>
+                    </div>
+                </SampleDataShell>
+            );
+        }
         return (
             <SampleDataShell label={label} design={variant || cardDesign || 'premium'}>
                 <div className={`ld-crm-wallet ld-crm-wallet--${cardDesign || 'default'}`}>
@@ -375,10 +390,48 @@ export function DataMockPreview({
             </SampleDataShell>
         );
     }
+    if (asGuest && (source === 'coupons' || source === 'stamps' || source === 'reservations')) {
+        return (
+            <SampleDataShell label={label} design={variant}>
+                <div className="ld-crm-guest-card">
+                    <p className="ld-crm-guest-card__title">{label}は会員向け</p>
+                    <p className="ld-crm-guest-card__sub">ゲスト表示では登録後の機能は使えません。キャンバス上部で「会員表示」に切り替えると中身を確認できます</p>
+                    <span className="ld-crm-guest-card__cta" data-preview-nav="member">
+                        会員登録へ
+                    </span>
+                </div>
+            </SampleDataShell>
+        );
+    }
     return <SampleDataShell label={label} design={variant}>{render()}</SampleDataShell>;
 }
 
-export function MemberSummaryMock({ greeting, design }: { greeting?: string; design?: string }) {
+export function GuestMemberCard({ greeting }: { greeting?: string }) {
+    return (
+        <div className="ld-crm-member ld-crm-member--guest">
+            <p className="ld-crm-member__eyebrow">Members</p>
+            <strong className="ld-crm-member__hello">{greeting && greeting !== '' ? greeting : 'ようこそ'}</strong>
+            <p className="ld-crm-member__guest-sub">会員登録でポイント・クーポン・先行予約が使えます</p>
+            <span className="ld-crm-member__guest-cta" data-preview-nav="member">
+                <i className="fas fa-user-plus" /> 会員になる
+            </span>
+        </div>
+    );
+}
+
+export function MemberSummaryMock({
+    greeting,
+    design,
+    asGuest = false,
+}: {
+    greeting?: string;
+    design?: string;
+    asGuest?: boolean;
+}) {
+    if (asGuest) {
+        return <GuestMemberCard greeting={greeting} />;
+    }
+
     const hello = greeting || 'こんにちは、デモ 太郎さん';
     const variant = design || 'rewards';
 
@@ -416,6 +469,22 @@ export function MemberSummaryMock({ greeting, design }: { greeting?: string; des
                 <div className="ld-crm-member__points">
                     <strong>1,280</strong>
                     <span>pt</span>
+                </div>
+            </div>
+        );
+    }
+
+    if (variant === 'tier') {
+        return (
+            <div className="ld-crm-member ld-crm-member--tier">
+                <em className="ld-crm-member__rank"><i className="fas fa-gem" /> Gold</em>
+                <span className="ld-crm-member__hello">{hello}</span>
+                <div className="ld-crm-member__points">
+                    <strong>1,280</strong>
+                    <span>pt</span>
+                </div>
+                <div className="ld-crm-member__track">
+                    <i style={{ width: '68%' }} />
                 </div>
             </div>
         );
