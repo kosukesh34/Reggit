@@ -7,7 +7,7 @@ use App\UseCases\Admin\Queue\Data\AdminQueueIndexOutput;
 
 class AdminQueueIndexUseCase
 {
-    private const PER_PAGE = 50;
+    private const PER_PAGE = 30;
 
     private QueueAdminService $queueAdminService;
 

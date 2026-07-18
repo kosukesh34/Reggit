@@ -48,9 +48,15 @@ class QueueStoreUseCase
 
     private function getNextQueueNumber(int $projectId): int
     {
+        // 例: 6月1日の13番目 → 0113（日2桁 + 通番2桁）
+        $dayPrefix = (int) today()->format('d') * 100;
         $maxNumber = QueueEntryModel::where('project_id', $projectId)
             ->whereDate('created_at', today())
             ->max('queue_number') ?? 0;
+
+        if ($maxNumber < $dayPrefix) {
+            return $dayPrefix + 1;
+        }
 
         return $maxNumber + 1;
     }
