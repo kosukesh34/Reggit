@@ -6,6 +6,7 @@ use App\Domain\Coupon\Repositories\MemberCouponRepository;
 use App\Domain\Coupon\ValueObjects\PendingIssuedCoupon;
 use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Enums\OrderStatus;
+use App\Enums\MemberVisitSource;
 use App\Models\Coupon;
 use App\Models\Member;
 use App\Models\MemberCoupon;
@@ -95,6 +96,7 @@ class MemberAdminService
             'memberCoupons.coupon',
             'visits' => fn ($q) => $q->orderByDesc('visited_at'),
             'visits.order',
+            'visits.items',
             'stampTransactions' => fn ($q) => $q->orderByDesc('created_at'),
             'stampTransactions.stampCard',
             'stampTransactions.order',
@@ -140,49 +142,66 @@ class MemberAdminService
 
     /**
      * 会員の購買サマリー（LTV・注文数・平均単価・最終購買日・最終来店からの経過日数）
+     * アプリ注文に加え、スマレジPOS来店（購入額付き）も含める。
      *
-     * @return array{total_orders: int, total_revenue: float, avg_order_value: float, last_order_at: ?Carbon, days_since_last_order: int|null}
+     * @return array{
+     *     total_orders: int,
+     *     total_revenue: float,
+     *     avg_order_value: float,
+     *     last_order_at: ?Carbon,
+     *     days_since_last_order: int|null,
+     *     recent_orders: \Illuminate\Support\Collection
+     * }
      */
     public function getPurchaseSummary(Member $member): array
     {
         $userId = $member->user_id;
+        $orderRevenue = 0.0;
+        $orderCount = 0;
+        $lastOrderAt = null;
+        $recentOrders = collect();
 
-        if ($userId === null) {
-            return [
-                'total_orders' => 0,
-                'total_revenue' => 0,
-                'avg_order_value' => 0,
-                'last_order_at' => null,
-                'days_since_last_order' => null,
-                'recent_orders' => collect(),
-            ];
+        if ($userId !== null) {
+            $baseQuery = Order::where('user_id', $userId)
+                ->where('status', '!=', OrderStatus::CANCELLED);
+            $orderCount = $baseQuery->count();
+            $orderRevenue = (float) $baseQuery->sum('total_amount');
+            $lastOrder = Order::where('user_id', $userId)
+                ->where('status', '!=', OrderStatus::CANCELLED)
+                ->orderByDesc('created_at')
+                ->first();
+            $lastOrderAt = $lastOrder?->created_at;
+            $recentOrders = Order::with('items.product')
+                ->where('user_id', $userId)
+                ->orderByDesc('created_at')
+                ->limit(5)
+                ->get();
         }
 
-        $baseQuery = Order::where('user_id', $userId)
-            ->where('status', '!=', OrderStatus::CANCELLED);
+        $posVisits = MemberVisit::query()
+            ->where('member_id', $member->id)
+            ->where('source', MemberVisitSource::SMAREGI)
+            ->whereNotNull('amount')
+            ->get(['amount', 'visited_at']);
+        $posRevenue = (float) $posVisits->sum('amount');
+        $posPurchaseCount = $posVisits->filter(fn (MemberVisit $visit) => (float) $visit->amount > 0)->count();
+        $lastPosAt = $posVisits->max('visited_at');
 
-        $totalOrders = $baseQuery->count();
-        $totalRevenue = (float) $baseQuery->sum('total_amount');
+        $totalRevenue = $orderRevenue + $posRevenue;
+        $totalOrders = $orderCount + $posPurchaseCount;
         $avgOrderValue = $totalOrders > 0 ? round($totalRevenue / $totalOrders) : 0;
-        $lastOrder = Order::where('user_id', $userId)
-            ->where('status', '!=', OrderStatus::CANCELLED)
-            ->orderByDesc('created_at')
-            ->first();
 
-        $lastOrderAt = $lastOrder?->created_at;
-        $daysSinceLastOrder = $lastOrderAt ? (int) $lastOrderAt->diffInDays(now()) : null;
-
-        $recentOrders = Order::with('items.product')
-            ->where('user_id', $userId)
-            ->orderByDesc('created_at')
-            ->limit(5)
-            ->get();
+        $lastPurchaseAt = $lastOrderAt;
+        if ($lastPosAt !== null && ($lastPurchaseAt === null || $lastPosAt->gt($lastPurchaseAt))) {
+            $lastPurchaseAt = $lastPosAt;
+        }
+        $daysSinceLastOrder = $lastPurchaseAt !== null ? (int) $lastPurchaseAt->diffInDays(now()) : null;
 
         return [
             'total_orders' => $totalOrders,
             'total_revenue' => $totalRevenue,
             'avg_order_value' => $avgOrderValue,
-            'last_order_at' => $lastOrderAt,
+            'last_order_at' => $lastPurchaseAt,
             'days_since_last_order' => $daysSinceLastOrder,
             'recent_orders' => $recentOrders,
         ];
@@ -342,7 +361,9 @@ class MemberAdminService
         \DateTimeInterface $visitedAt,
         string $source,
         ?int $orderId = null,
-        ?string $note = null
+        ?string $note = null,
+        ?float $amount = null,
+        ?string $smaregiTransactionHeadId = null,
     ): MemberVisit {
         $visitedCarbon = Carbon::parse($visitedAt);
         $visit = MemberVisit::create([
@@ -352,6 +373,8 @@ class MemberAdminService
             'source' => $source,
             'order_id' => $orderId,
             'note' => $note,
+            'amount' => $amount,
+            'smaregi_transaction_head_id' => $smaregiTransactionHeadId,
         ]);
 
         $visitedDate = $visitedCarbon->toDateString();
