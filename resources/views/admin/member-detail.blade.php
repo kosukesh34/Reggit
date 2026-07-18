@@ -58,6 +58,11 @@
             <a href="{{ admin_route('admin.members.edit', ['id' => $member->id]) }}" class="btn btn-primary btn-sm me-1">
                 <i class="fas fa-edit"></i> 編集
             </a>
+            <form action="{{ admin_route('admin.members.delete', ['id' => $member->id]) }}" method="POST" class="d-inline me-1 delete-form" data-item-name="{{ $member->user->name ?? $member->member_number }}">
+                @csrf
+                @method('DELETE')
+                <button type="submit" class="btn btn-danger btn-sm no-loading"><i class="fas fa-trash"></i> 削除</button>
+            </form>
             @endif
             <a href="{{ admin_route('admin.members') }}" class="btn btn-secondary btn-sm">
                 <i class="fas fa-arrow-left"></i> 一覧に戻る
@@ -109,6 +114,23 @@
             <div class="info-item">
                 <div class="info-label">登録日</div>
                 <div class="info-value">{{ $member->created_at->format('Y/m/d H:i:s') }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">登録チャネル</div>
+                <div class="info-value">
+                    @php $channelLabel = \App\Support\MemberChannel::label($member->user); @endphp
+                    @if($channelLabel === '—')
+                        <span class="text-muted">—</span>
+                    @else
+                        <span class="badge badge-info">{{ $channelLabel }}</span>
+                    @endif
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">最終来店日</div>
+                <div class="info-value">
+                    {{ $member->last_visited_at ? \Illuminate\Support\Carbon::parse($member->last_visited_at)->format('Y/m/d') : '—' }}
+                </div>
             </div>
         </div>
     </div>
