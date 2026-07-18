@@ -5,7 +5,14 @@
 /* ── 会員サマリー ── */
 .member-summary-card--design-wallet {
     padding: 16px 18px;
-    background: linear-gradient(120deg, var(--primary-dark) 0%, var(--primary-color) 55%, #1a1a2e 100%);
+    color: #fff;
+    background: linear-gradient(
+        120deg,
+        var(--primary-dark, #312e81) 0%,
+        var(--primary-color, #5856d6) 55%,
+        #1a1a2e 100%
+    );
+    opacity: 1;
 }
 .member-summary-card--design-wallet::after { display: none; }
 .ms-wallet-row {
@@ -84,11 +91,11 @@
 .ms-split-right .ms-points { text-align: right; }
 
 .member-summary-card--design-glass {
-    background: rgba(var(--primary-rgb), 0.72);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    color: #fff;
+    background:
+        linear-gradient(135deg, var(--primary-color, #5856d6) 0%, var(--primary-dark, #4338ca) 100%);
     border: 1px solid rgba(255, 255, 255, 0.22);
-    box-shadow: 0 12px 32px rgba(var(--primary-rgb), 0.25);
+    box-shadow: 0 12px 32px rgba(var(--primary-rgb, 88, 86, 214), 0.28);
 }
 .member-summary-card--design-glass::after { opacity: 0.5; }
 
@@ -128,6 +135,18 @@
     background: color-mix(in srgb, var(--btn-bg, var(--primary-color)) 14%, transparent) !important;
     color: var(--btn-accent, var(--btn-bg, var(--primary-color))) !important;
     box-shadow: none !important;
+}
+
+/* ── 追従CTA（画面下部に固定される主ボタン） ── */
+.builder-button-wrap--sticky {
+    position: sticky;
+    bottom: 12px;
+    z-index: 20;
+    margin-top: 10px;
+    padding: 4px 0;
+}
+.builder-btn--sticky {
+    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.2) !important;
 }
 
 /* ── カード ── */

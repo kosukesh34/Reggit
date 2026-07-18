@@ -1,4 +1,4 @@
-package reggit.app
+package reggit.module
 
 import skip.lib.*
 import skip.model.*

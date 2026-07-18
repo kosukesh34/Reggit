@@ -167,6 +167,18 @@ enum NativeInjectionScripts {
                         box-sizing: border-box !important;
                         padding-bottom: 0 !important;
                     }
+                    .native-app-embed #react-frontend-tabs-root {
+                        display: flex !important;
+                        flex-direction: column !important;
+                        flex: 1 1 auto !important;
+                        min-height: 0 !important;
+                        height: 100% !important;
+                        max-height: 100% !important;
+                        overflow: hidden !important;
+                        width: 100% !important;
+                        max-width: 100vw !important;
+                        box-sizing: border-box !important;
+                    }
                     .native-app-embed .tab-content.active {
                         display: flex !important;
                         flex-direction: column !important;

@@ -401,6 +401,23 @@ function TypeEditor({ block, onChange, friendAddUrl }: EditorProps) {
                     <TextInput label="挨拶文（空欄可）" value={String(block.greeting || '')} onChange={(v) => onChange({ greeting: v })} />
                 </>
             );
+        case 'stats_row':
+            return (
+                <>
+                    <TextInput label="セクション見出し" value={String(block.section_label || '')} onChange={(v) => onChange({ section_label: v })} />
+                    <ArrayEditor
+                        label="統計項目"
+                        items={(Array.isArray(block.items) ? block.items : []) as Array<Record<string, unknown>>}
+                        createItem={() => ({ label: '項目', value: '0', hint: '' })}
+                        fields={[
+                            { key: 'label', label: 'ラベル' },
+                            { key: 'value', label: '値' },
+                            { key: 'hint', label: '単位' },
+                        ]}
+                        onChange={(items) => onChange({ items })}
+                    />
+                </>
+            );
         case 'quick_actions':
             return (
                 <>
