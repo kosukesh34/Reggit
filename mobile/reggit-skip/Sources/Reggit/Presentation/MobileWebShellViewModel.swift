@@ -62,14 +62,22 @@ final class MobileWebShellViewModel: PushNotificationHandling {
     }
 
     func onAppear() {
+        // Android では View 再構築で onAppear が再発火し、表示直後に状態が消えることがある。
+        if isWebContentReady {
+            pushNotificationObserver.startObserving(handler: self)
+            return
+        }
         resetShellState()
         Task { @MainActor in
-            guard await reachabilityChecker.isReachable(config.liffURLString) else {
-                markShellUnreachable()
-                return
-            }
+            // 到達性チェックは Android Skip の URLSession でハングし得るため、
+            // WhiteScreen 監視は先に開始し、到達性はタイムアウト付きのベストエフォートにする。
             beginWhiteScreenMonitoring()
             onNavigationFinished(applyInitialTab: false)
+
+            let reachable = await checkReachabilityWithTimeout()
+            if reachable == false {
+                markShellUnreachable()
+            }
         }
         pushNotificationObserver.startObserving(handler: self)
     }
@@ -91,7 +99,12 @@ final class MobileWebShellViewModel: PushNotificationHandling {
     func loadAppConfigEarlyIfAvailable() {
         guard showNativeTabBar, !appConfigLoader.isLoaded else { return }
         Task { @MainActor in
-            guard let config = await appConfigLoader.fetchEarlyNative() else { return }
+            // Android では native URLSession 経路が使えないため、失敗時は WebView 経由へフォールバックする。
+            if let config = await appConfigLoader.fetchEarlyNative() {
+                applyAppConfig(config)
+                return
+            }
+            guard let config = await appConfigLoader.fetchViaWeb() else { return }
             applyAppConfig(config)
         }
     }
@@ -113,6 +126,7 @@ final class MobileWebShellViewModel: PushNotificationHandling {
         ) else { return }
         tabs = outcome.tabs
         activeTab = outcome.activeTab
+        logger.info("AppConfig applied tabs=\(outcome.tabs.count) active=\(outcome.activeTab)")
         if outcome.shouldSwitchTab {
             switchToTab(outcome.activeTab)
         }
@@ -143,11 +157,12 @@ final class MobileWebShellViewModel: PushNotificationHandling {
         resetShellState()
         webViewReloadKey += 1
         Task { @MainActor in
-            guard await reachabilityChecker.isReachable(config.liffURLString) else {
-                markShellUnreachable()
-                return
-            }
             beginWhiteScreenMonitoring()
+
+            let reachable = await checkReachabilityWithTimeout()
+            if reachable == false {
+                markShellUnreachable()
+            }
         }
     }
 
@@ -203,6 +218,9 @@ final class MobileWebShellViewModel: PushNotificationHandling {
         onNavigationFinished(applyInitialTab: true)
         switchToTab(activeTab)
         flushPendingNotificationDeepLinkIfNeeded()
+        // onNavigationFinished コールバックは contentVisible より先に発火し得るため、
+        // ここで明示的に app-config を取得する（Android では Observation/onChange も不安定）。
+        loadAppConfigFromWebIfNeeded()
     }
 
     private func flushPendingNotificationDeepLinkIfNeeded() {
@@ -229,6 +247,23 @@ final class MobileWebShellViewModel: PushNotificationHandling {
                 self?.handleWhiteScreenEvent(event)
             }
         )
+    }
+
+    /// `nil` = タイムアウト（到達不能とはみなさず監視継続）
+    private func checkReachabilityWithTimeout() async -> Bool? {
+        await withTaskGroup(of: Bool?.self) { group in
+            group.addTask { [reachabilityChecker, config] in
+                await reachabilityChecker.isReachable(config.liffURLString)
+            }
+            group.addTask {
+                let nanos = UInt64(WebShellTiming.reachabilityTimeout * 1_000_000_000)
+                try? await Task.sleep(nanoseconds: nanos)
+                return nil
+            }
+            let first = await group.next() ?? nil
+            group.cancelAll()
+            return first ?? nil
+        }
     }
 
     private func handleWhiteScreenEvent(_ event: WhiteScreenMonitorEvent) {
