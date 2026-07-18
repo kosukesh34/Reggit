@@ -18,7 +18,10 @@ import './modules/panelResizer';
 
 function GlobalDesignStyles() {
     const { state, config } = useDesigner();
-    const css = useGlobalDesignCss(state.globalSettings, config.themePresets);
+    const css = useGlobalDesignCss(state.globalSettings, config.themePresets, {
+        fontStacks: config.fontStacks,
+        surfaceTones: config.surfaceTones,
+    });
     return <style>{css}</style>;
 }
 

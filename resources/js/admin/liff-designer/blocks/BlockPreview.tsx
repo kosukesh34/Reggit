@@ -3,11 +3,17 @@ import { findBlockMeta } from '../catalog/blockCatalog';
 import type { LiffBlock } from '../catalog/types';
 import { DataMockPreview, MemberSummaryMock } from './DataMockPreview';
 
+function resolveBlockOpacity(value: unknown): number {
+    const raw = Number(value);
+    if (!Number.isFinite(raw)) return 1;
+    return Math.min(1, Math.max(0.2, raw / 100));
+}
+
 function baseStyle(block: LiffBlock): React.CSSProperties {
     return {
         borderRadius: Number(block.border_radius ?? 14),
         marginBottom: Number(block.margin_bottom ?? 0),
-        opacity: Number(block.opacity ?? 100) / 100,
+        opacity: resolveBlockOpacity(block.opacity ?? 100),
         textAlign: (block.text_align as React.CSSProperties['textAlign']) || 'left',
         background: String(block.background_color || '') || undefined,
         boxShadow: block.shadow === true ? '0 8px 24px rgba(15,23,42,0.08)' : undefined,
@@ -40,12 +46,20 @@ export function BlockPreview({
     block,
     friendAddUrl,
     shopName,
+    asGuest = false,
+    memberCardDesign,
 }: {
     block: LiffBlock;
     friendAddUrl?: string;
     shopName?: string;
+    asGuest?: boolean;
+    memberCardDesign?: string;
 }) {
     const style = baseStyle(block);
+    const resolvedCardDesign =
+        String(block.card_design || '') !== ''
+            ? String(block.card_design)
+            : String(memberCardDesign || '');
     switch (block.type) {
         case 'hero': {
             const design = String(block.design || 'editorial');
@@ -130,9 +144,9 @@ export function BlockPreview({
         case 'button': {
             const design = String(block.design || 'cta');
             return (
-                <div className="ld-app-btn-wrap" style={style}>
+                <div className={`ld-app-btn-wrap${design === 'sticky' ? ' ld-app-btn-wrap--sticky' : ''}`} style={style}>
                     <span
-                        className={`ld-app-btn ld-app-btn--${design}${block.full_width !== false ? ' is-full' : ''}`}
+                        className={`ld-app-btn ld-app-btn--${design === 'sticky' ? 'cta' : design}${design === 'sticky' ? ' ld-app-btn--sticky' : ''}${block.full_width !== false ? ' is-full' : ''}`}
                         style={{
                             ['--btn-bg' as string]: String(block.color || '#0f172a'),
                             ['--btn-fg' as string]: String(block.text_color || '#fff'),
@@ -171,6 +185,24 @@ export function BlockPreview({
         case 'collection': {
             const items = Array.isArray(block.items) ? (block.items as Array<Record<string, unknown>>) : [];
             const design = String(block.design || 'product_shelf');
+            if (design === 'chip_scroll') {
+                return (
+                    <div className="ld-app-collection ld-app-collection--chip_scroll" style={style}>
+                        {block.section_label ? (
+                            <div className="ld-app-collection__head">
+                                <div className="ld-app-collection__label">{String(block.section_label)}</div>
+                            </div>
+                        ) : null}
+                        <div className="ld-app-chip-scroll">
+                            {items.slice(0, 8).map((it, i) => (
+                                <span key={i} className="ld-app-chip" {...previewNavProps(it.action || block.item_action)}>
+                                    {String(it.title || '')}
+                                </span>
+                            ))}
+                        </div>
+                    </div>
+                );
+            }
             const isGrid = block.layout === 'grid';
             return (
                 <div className={`ld-app-collection ld-app-collection--${design}`} style={style}>
@@ -298,17 +330,43 @@ export function BlockPreview({
                     <DataMockPreview
                         source={String(block.source || 'products')}
                         design={String(block.design || '')}
-                        cardDesign={String(block.card_design || '')}
+                        cardDesign={resolvedCardDesign}
                         shopName={shopName}
+                        asGuest={asGuest}
                     />
                 </div>
             );
         case 'member_summary':
             return (
                 <div style={style}>
-                    <MemberSummaryMock greeting={String(block.greeting || '')} design={String(block.design || 'rewards')} />
+                    <MemberSummaryMock
+                        greeting={String(block.greeting || '')}
+                        design={String(block.design || 'rewards')}
+                        asGuest={asGuest}
+                    />
                 </div>
             );
+        case 'stats_row': {
+            const items = Array.isArray(block.items) ? (block.items as Array<Record<string, unknown>>) : [];
+            return (
+                <div className="ld-app-stats" style={style}>
+                    {block.section_label ? (
+                        <div className="ld-app-stats__label">{String(block.section_label)}</div>
+                    ) : null}
+                    <div className="ld-app-stats__grid">
+                        {items.slice(0, 6).map((it, i) => (
+                            <div key={i} className="ld-app-stats__cell">
+                                <strong>{String(it.value || '')}</strong>
+                                <span>
+                                    {String(it.label || '')}
+                                    {it.hint ? ` ${String(it.hint)}` : ''}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
         case 'quick_actions': {
             const actions = Array.isArray(block.actions) ? (block.actions as Array<Record<string, unknown>>) : [];
             const design = String(block.design || 'grid');

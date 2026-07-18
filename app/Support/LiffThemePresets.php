@@ -137,6 +137,26 @@ class LiffThemePresets
                     '--hairline' => 'rgba(15, 23, 42, 0.06)',
                 ],
             ],
+            'ios' => [
+                'label' => 'iOS（システム）',
+                'tokens' => [
+                    '--bg-canvas' => '#f2f2f7',
+                    '--bg-light' => '#ffffff',
+                    '--bg-subtle' => '#e5e5ea',
+                    '--surface' => '#ffffff',
+                    '--surface-2' => '#f9f9fb',
+                    '--surface-muted' => '#ebebf0',
+                    '--surface-glass' => 'rgba(255, 255, 255, 0.72)',
+                    '--text-primary' => '#1c1c1e',
+                    '--text-secondary' => 'rgba(60, 60, 67, 0.68)',
+                    '--text-tertiary' => 'rgba(60, 60, 67, 0.36)',
+                    '--border-color' => 'rgba(60, 60, 67, 0.18)',
+                    '--border-strong' => 'rgba(60, 60, 67, 0.29)',
+                    '--hairline' => 'rgba(60, 60, 67, 0.12)',
+                    '--chrome' => '#f2f2f7',
+                    '--chrome-dark' => '#e5e5ea',
+                ],
+            ],
             'mist' => [
                 'label' => 'ミスト（ニュートラル）',
                 'tokens' => [
@@ -182,6 +202,29 @@ class LiffThemePresets
     public static function all(): array
     {
         return [
+            [
+                'id' => 'apple_system',
+                'name' => 'Apple System',
+                'description' => 'iOS Liquid Glass 風。ライトクローム・フローティングタブの標準アプリ体験。',
+                'accent_color' => '#007aff',
+                'font_family' => 'sans',
+                'surface_tone' => 'ios',
+                'radius_scale' => 'soft',
+                'tab_style' => 'floating',
+                'section_gap' => 20,
+                'card_style' => 'elevated',
+                'button_shape' => 'pill',
+                'density' => 'default',
+                'background_style' => 'solid',
+                'bg_color' => '#f2f2f7',
+                'content_width' => 'comfy',
+                'system_ui_style' => 'refined',
+                'system_header_style' => 'minimal',
+                'member_screen_design' => 'apple',
+                'coupon_screen_design' => 'apple',
+                'reservation_screen_design' => 'apple',
+                'activity_screen_design' => 'cards',
+            ],
             [
                 'id' => 'noir',
                 'name' => 'ノワール',
@@ -634,14 +677,22 @@ class LiffThemePresets
             $classes[] = 'system-header-minimal';
         }
 
+        $presetId = (string) ($global['theme_preset'] ?? ($preset['id'] ?? ''));
+        if ($presetId !== '' && $presetId !== 'custom') {
+            $classes[] = 'theme-'.$presetId;
+        }
+        if ($presetId === 'apple_system') {
+            $classes[] = 'chrome-glass';
+        }
+
         $memberScreen = (string) ($global['member_screen_design'] ?? ($preset['member_screen_design'] ?? 'wallet'));
-        $classes[] = 'member-screen-'.(in_array($memberScreen, ['wallet', 'premium', 'minimal', 'compact'], true) ? $memberScreen : 'wallet');
+        $classes[] = 'member-screen-'.(in_array($memberScreen, ['wallet', 'premium', 'minimal', 'compact', 'apple', 'glass'], true) ? $memberScreen : 'wallet');
 
         $couponScreen = (string) ($global['coupon_screen_design'] ?? ($preset['coupon_screen_design'] ?? 'ticket'));
-        $classes[] = 'coupon-screen-'.(in_array($couponScreen, ['ticket', 'gallery', 'compact', 'luxury'], true) ? $couponScreen : 'ticket');
+        $classes[] = 'coupon-screen-'.(in_array($couponScreen, ['ticket', 'gallery', 'compact', 'luxury', 'apple', 'glass'], true) ? $couponScreen : 'ticket');
 
         $reservationScreen = (string) ($global['reservation_screen_design'] ?? ($preset['reservation_screen_design'] ?? 'cards'));
-        $classes[] = 'reservation-screen-'.(in_array($reservationScreen, ['cards', 'timeline', 'compact', 'concierge'], true) ? $reservationScreen : 'cards');
+        $classes[] = 'reservation-screen-'.(in_array($reservationScreen, ['cards', 'timeline', 'compact', 'concierge', 'apple'], true) ? $reservationScreen : 'cards');
 
         $activityScreen = (string) ($global['activity_screen_design'] ?? ($preset['activity_screen_design'] ?? 'cards'));
         $classes[] = 'activity-screen-'.(in_array($activityScreen, ['cards', 'timeline', 'compact', 'dashboard'], true) ? $activityScreen : 'cards');

@@ -24,12 +24,14 @@ import { ensureLiffDesignerModules } from '../ensureModules';
             { value: 'minimal', label: 'ミニマル' },
             { value: 'split', label: 'スプリット' },
             { value: 'glass', label: 'グラス' },
+            { value: 'tier', label: 'メンバーシップ階層' },
         ],
         hero: [
             { value: 'editorial', label: 'エディトリアル（標準）' },
             { value: 'minimal', label: 'ミニマル' },
             { value: 'split', label: 'スプリット' },
             { value: 'centered', label: 'センター' },
+            { value: 'apple', label: 'Apple' },
         ],
         heading: [
             { value: 'plain', label: '標準' },
@@ -54,11 +56,13 @@ import { ensureLiffDesignerModules } from '../ensureModules';
             { value: 'outline', label: 'アウトライン' },
             { value: 'soft', label: 'ソフト' },
             { value: 'pill', label: 'ピル' },
+            { value: 'countdown', label: 'フラッシュセール' },
         ],
         card: [
             { value: 'editorial', label: '縦型（標準）' },
             { value: 'horizontal', label: '横型' },
             { value: 'overlay', label: 'オーバーレイ' },
+            { value: 'featured', label: 'フィーチャー' },
         ],
         button: [
             { value: 'cta', label: '塗りつぶし（標準）' },
@@ -75,6 +79,8 @@ import { ensureLiffDesignerModules } from '../ensureModules';
             { value: 'editorial', label: 'エディトリアル' },
             { value: 'compact', label: 'コンパクト' },
             { value: 'magazine', label: 'マガジン' },
+            { value: 'chip_scroll', label: 'カテゴリチップ' },
+            { value: 'picks', label: 'スタッフおすすめ' },
         ],
         slider: [
             { value: 'hero', label: 'ヒーロー' },

@@ -159,40 +159,74 @@ export class LiffPageRouter {
     }
 
     private showPage(page: HTMLElement, bodyClass: string): void {
-        DomHelper.querySelectorAll('.tab-content').forEach((content) => {
-            DomHelper.removeClass(content, AppConstants.CSS_CLASSES.ACTIVE);
-            (content as HTMLElement).style.display = 'none';
-        });
-        page.hidden = false;
-        DomHelper.addClass(page, AppConstants.CSS_CLASSES.ACTIVE);
-        page.style.display = '';
-        document.body.classList.add('liff-page-detail');
-        if (this.activeBodyClass !== null) {
-            document.body.classList.remove(this.activeBodyClass);
-        }
-        this.activeBodyClass = bodyClass;
-        document.body.classList.add(bodyClass);
-        const main = document.querySelector('.main-content') as HTMLElement | null;
-        if (main !== null) {
-            main.scrollTop = 0;
-        }
-        window.scrollTo(0, 0);
+        const apply = () => {
+            DomHelper.querySelectorAll('.tab-content').forEach((content) => {
+                DomHelper.removeClass(content, AppConstants.CSS_CLASSES.ACTIVE);
+                (content as HTMLElement).style.display = 'none';
+            });
+            page.hidden = false;
+            DomHelper.addClass(page, AppConstants.CSS_CLASSES.ACTIVE);
+            page.style.display = '';
+            document.body.classList.add('liff-page-detail', 'liff-detail-animating');
+            if (this.activeBodyClass !== null) {
+                document.body.classList.remove(this.activeBodyClass);
+            }
+            this.activeBodyClass = bodyClass;
+            document.body.classList.add(bodyClass);
+            const main = document.querySelector('.main-content') as HTMLElement | null;
+            if (main !== null) {
+                main.scrollTop = 0;
+            }
+            window.scrollTo(0, 0);
+            window.setTimeout(() => document.body.classList.remove('liff-detail-animating'), 320);
+        };
+        this.runWithDetailTransition('open', apply);
     }
 
     private hidePage(page: HTMLElement | null): void {
-        if (page !== null) {
-            page.hidden = true;
-            DomHelper.removeClass(page, AppConstants.CSS_CLASSES.ACTIVE);
-            page.style.display = 'none';
+        const apply = () => {
+            if (page !== null) {
+                page.hidden = true;
+                DomHelper.removeClass(page, AppConstants.CSS_CLASSES.ACTIVE);
+                page.style.display = 'none';
+            }
+            document.body.classList.remove('liff-page-detail', 'liff-detail-animating');
+            if (this.activeBodyClass !== null) {
+                document.body.classList.remove(this.activeBodyClass);
+                this.activeBodyClass = null;
+            }
+            DomHelper.querySelectorAll('.tab-content').forEach((content) => {
+                (content as HTMLElement).style.display = '';
+            });
+        };
+        this.runWithDetailTransition('close', apply);
+    }
+
+    private runWithDetailTransition(kind: 'open' | 'close', apply: () => void): void {
+        const reduced =
+            typeof window !== 'undefined'
+            && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const startVt = (document as Document & {
+            startViewTransition?: (cb: () => void) => { finished?: Promise<unknown> };
+        }).startViewTransition;
+
+        if (!reduced && typeof startVt === 'function') {
+            const flag = kind === 'open' ? 'liff-vt-detail-open' : 'liff-vt-detail-close';
+            document.documentElement.classList.add(flag);
+            try {
+                const transition = startVt(apply);
+                const finished = transition && transition.finished;
+                if (finished !== undefined && finished !== null && typeof finished.finally === 'function') {
+                    finished.finally(() => document.documentElement.classList.remove(flag));
+                } else {
+                    window.setTimeout(() => document.documentElement.classList.remove(flag), 320);
+                }
+                return;
+            } catch (_err) {
+                document.documentElement.classList.remove(flag);
+            }
         }
-        document.body.classList.remove('liff-page-detail');
-        if (this.activeBodyClass !== null) {
-            document.body.classList.remove(this.activeBodyClass);
-            this.activeBodyClass = null;
-        }
-        DomHelper.querySelectorAll('.tab-content').forEach((content) => {
-            (content as HTMLElement).style.display = '';
-        });
+        apply();
     }
 }
 
