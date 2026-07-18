@@ -41,6 +41,21 @@ final class MobileWebShellViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.fallbackTitle, ShellUserFacingMessages.connectionTitle)
     }
 
+    func testOnAppearStartsWhiteScreenMonitorBeforeReachabilityResolves() async {
+        let whiteScreenMonitor = FakeWhiteScreenMonitor()
+        let reachability = FakeShellURLReachabilityChecker(isReachableResult: true)
+        let viewModel = makeViewModel(
+            whiteScreenMonitor: whiteScreenMonitor,
+            reachabilityChecker: reachability
+        )
+
+        viewModel.onAppear()
+        try? await Task.sleep(nanoseconds: 20_000_000)
+
+        XCTAssertTrue(whiteScreenMonitor.startCount >= 1)
+        XCTAssertTrue(viewModel.isLoading)
+    }
+
     func testSelectTabRunsSwitchScriptWhenReady() {
         let scriptExecutor = FakeWebViewScriptExecutor()
         let whiteScreenMonitor = FakeWhiteScreenMonitor()

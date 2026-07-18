@@ -55,7 +55,16 @@ final class AppConfigLoader: AppConfigLoading {
             baseUrl: shellConfig.baseUrl,
             projectKey: shellConfig.projectKey
         )
-        guard let jsonString = await scriptExecutor.runAndNormalize(script) else { return nil }
-        return AppConfigClient.parseJSONString(jsonString)
+        guard let jsonString = await scriptExecutor.runAndNormalize(script) else {
+            logger.warning("AppConfig fetchViaWeb returned empty")
+            return nil
+        }
+        guard let config = AppConfigClient.parseJSONString(jsonString) else {
+            let prefix = String(jsonString.prefix(80))
+            let suffix = String(jsonString.suffix(40))
+            logger.warning("AppConfig parse failed length=\(jsonString.count) prefix=\(prefix) suffix=\(suffix)")
+            return nil
+        }
+        return config
     }
 }
