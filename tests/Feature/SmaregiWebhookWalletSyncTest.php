@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Models\WalletPassUpdate;
 use App\Services\AppleWalletPushService;
 use App\Services\GoogleWalletPassService;
+use App\Services\Smaregi\SmaregiApiService;
 use App\Services\Smaregi\SmaregiCustomerPointsInboundSyncService;
 use App\Util\AdminContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -150,7 +151,10 @@ class SmaregiWebhookWalletSyncTest extends TestCase
         ])->assertStatus(200);
 
         $job = new SmaregiSyncInboundCustomerPointsJob(self::CONTRACT_ID, ['77'], 'edited');
-        $job->handle(app(SmaregiCustomerPointsInboundSyncService::class));
+        $job->handle(
+            app(SmaregiCustomerPointsInboundSyncService::class),
+            app(SmaregiApiService::class),
+        );
 
         $member->refresh();
         $this->assertSame(25, $member->points);

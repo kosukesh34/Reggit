@@ -13,7 +13,6 @@ use App\Models\SmaregiContract;
 use App\Services\Admin\MemberAdminService;
 use Carbon\Carbon;
 use Illuminate\Database\UniqueConstraintViolationException;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -221,49 +220,45 @@ class SmaregiTransactionInboundSyncService
         float $amount,
         array $transaction,
     ): void {
-        DB::transaction(function () use ($member, $headId, $visitedAt, $amount, $transaction): void {
-            $visit = MemberVisit::query()
-                ->where('project_id', $member->project_id)
-                ->where('smaregi_transaction_head_id', $headId)
-                ->lockForUpdate()
-                ->first();
+        $visit = MemberVisit::withoutGlobalScopes()
+            ->where('project_id', $member->project_id)
+            ->where('smaregi_transaction_head_id', $headId)
+            ->first();
 
-            if ($visit === null) {
-                try {
-                    $visit = $this->memberAdminService->recordVisit(
-                        $member,
-                        $visitedAt,
-                        MemberVisitSource::SMAREGI,
-                        null,
-                        'スマレジ取引 #'.$headId,
-                        $amount,
-                        $headId,
-                    );
-                    Log::info('[Smaregi] Inbound transaction sync recorded', [
-                        'member_id' => (int) $member->id,
-                        'project_id' => (int) $member->project_id,
-                        'transaction_head_id' => $headId,
-                        'amount' => $amount,
-                        'visited_at' => $visitedAt->toIso8601String(),
-                    ]);
-                } catch (UniqueConstraintViolationException $e) {
-                    $visit = MemberVisit::query()
-                        ->where('project_id', $member->project_id)
-                        ->where('smaregi_transaction_head_id', $headId)
-                        ->lockForUpdate()
-                        ->first();
-                    if ($visit === null) {
-                        throw $e;
-                    }
+        if ($visit === null) {
+            try {
+                $visit = $this->memberAdminService->recordVisit(
+                    $member,
+                    $visitedAt,
+                    MemberVisitSource::SMAREGI,
+                    null,
+                    'スマレジ取引 #'.$headId,
+                    $amount,
+                    $headId,
+                );
+                Log::info('[Smaregi] Inbound transaction sync recorded', [
+                    'member_id' => (int) $member->id,
+                    'project_id' => (int) $member->project_id,
+                    'transaction_head_id' => $headId,
+                    'amount' => $amount,
+                    'visited_at' => $visitedAt->toIso8601String(),
+                ]);
+            } catch (UniqueConstraintViolationException $e) {
+                $visit = MemberVisit::withoutGlobalScopes()
+                    ->where('project_id', $member->project_id)
+                    ->where('smaregi_transaction_head_id', $headId)
+                    ->first();
+                if ($visit === null) {
+                    throw $e;
                 }
             }
+        }
 
-            if ($visit->items()->exists()) {
-                return;
-            }
+        if ($visit->items()->exists()) {
+            return;
+        }
 
-            $this->saveVisitItems($visit, $transaction);
-        });
+        $this->saveVisitItems($visit, $transaction);
     }
 
     /**
