@@ -2,22 +2,46 @@
 
 namespace App\UseCases\Admin\Announcement;
 
+use App\Models\Announcement;
 use App\Services\Admin\AnnouncementAdminService;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use App\UseCases\Admin\Announcement\Data\AdminAnnouncementIndexOutput;
 
 class AdminAnnouncementIndexUseCase
 {
     private const PER_PAGE = 20;
 
-    private AnnouncementAdminService $announcementAdminService;
+    /** @var array<string, string> */
+    private const DELIVERY_TYPE_LABELS = [
+        'all' => 'すべて',
+        Announcement::DELIVERY_TYPE_IMMEDIATE_BULK => '一斉配信',
+        Announcement::DELIVERY_TYPE_PERSONAL => '個人宛配信',
+        Announcement::DELIVERY_TYPE_SCHEDULED => '予約配信',
+        Announcement::DELIVERY_TYPE_SEGMENT => 'セグメント配信',
+        Announcement::DELIVERY_TYPE_AFTER_REGISTRATION => '登録後配信',
+    ];
 
-    public function __construct(AnnouncementAdminService $announcementAdminService)
-    {
-        $this->announcementAdminService = $announcementAdminService;
-    }
+    /** @var array<string, string> */
+    private const DELIVERY_STATUS_LABELS = [
+        Announcement::DELIVERY_STATUS_SENT => '配信済み',
+        Announcement::DELIVERY_STATUS_SCHEDULED => '予約中',
+        Announcement::DELIVERY_STATUS_DRAFT => '下書き',
+    ];
 
-    public function handle(): LengthAwarePaginator
+    public function __construct(
+        private AnnouncementAdminService $announcementAdminService,
+    ) {}
+
+    /** @param  array<string, string|null>  $input */
+    public function handle(array $input): AdminAnnouncementIndexOutput
     {
-        return $this->announcementAdminService->getPaginatedList(self::PER_PAGE);
+        $filters = $this->announcementAdminService->normalizeIndexFilters($input);
+
+        return new AdminAnnouncementIndexOutput(
+            $this->announcementAdminService->getPaginatedList($filters, self::PER_PAGE),
+            $filters,
+            $this->announcementAdminService->getDeliveryTypeCounts($filters),
+            self::DELIVERY_TYPE_LABELS,
+            self::DELIVERY_STATUS_LABELS,
+        );
     }
 }

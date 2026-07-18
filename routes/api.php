@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AnnouncementController;
+use App\Http\Controllers\Api\V1\AnnouncementCancelledIdsController as ApiV1AnnouncementCancelledIdsController;
 use App\Http\Controllers\Api\V1\AnnouncementController as ApiV1AnnouncementController;
 use App\Http\Controllers\Api\V1\AppConfigController;
 use App\Http\Controllers\Api\V1\CouponController as ApiV1CouponController;
@@ -107,6 +108,7 @@ Route::prefix('v1')->middleware([CheckApiProject::class, AuthenticateApiToken::c
     Route::post('/{project_key}/members/me/coupons/{id}/use', [ApiV1CouponController::class, 'use']);
     Route::get('/{project_key}/stamps', [ApiV1StampController::class, 'index']);
     Route::get('/{project_key}/announcements', [ApiV1AnnouncementController::class, 'index']);
+    Route::get('/{project_key}/announcements/cancelled-ids', [ApiV1AnnouncementController::class, 'cancelledIds']);
     Route::post('/{project_key}/announcements/{id}/read', [ApiV1AnnouncementController::class, 'markRead']);
     Route::get('/{project_key}/reservations', [ApiV1ReservationIndexController::class, '__invoke']);
     Route::post('/{project_key}/payment/create-intent', [ApiV1PaymentController::class, 'createPaymentIntent']);
@@ -115,6 +117,8 @@ Route::prefix('v1')->middleware([CheckApiProject::class, AuthenticateApiToken::c
 
 // ネイティブアプリ設定（認証不要・project_key クエリで取得）
 Route::get('/v1/app-config', AppConfigController::class);
+// 削除済みお知らせ通知の取消しID（認証不要・起動時掃除用）
+Route::get('/v1/announcements/cancelled-ids', ApiV1AnnouncementCancelledIdsController::class);
 
 Route::middleware(['web', 'bind.project'])->group(function () {
     Route::get('/products', [ProductController::class, 'index']);

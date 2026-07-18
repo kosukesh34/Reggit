@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Services;
 
+use App\Models\Announcement;
 use App\Models\Project;
 use App\Models\User;
 use App\Models\UserDevice;
@@ -75,6 +76,131 @@ class PushNotificationServiceTest extends TestCase
         });
 
         $this->assertArrayNotHasKey('collapse_id', $payload);
+    }
+
+    public function test_send_announcement_persists_onesignal_notification_id(): void
+    {
+        [$project, $user] = $this->createProjectAndUser();
+        $this->createUserDevice($project, $user, 'subscription-id-announcement');
+        AdminContext::setCurrentProject($project);
+
+        $announcement = Announcement::factory()->create([
+            'project_id' => $project->id,
+            'title' => '配信テスト',
+            'body' => '本文',
+            'delivery_type' => Announcement::DELIVERY_TYPE_IMMEDIATE_BULK,
+            'delivery_status' => Announcement::DELIVERY_STATUS_SENT,
+        ]);
+
+        /** @var Client&MockObject $http */
+        $http = $this->createMock(Client::class);
+        $http->expects($this->once())
+            ->method('post')
+            ->willReturn(new Response(200, [], json_encode([
+                'id' => 'onesignal-notification-uuid-1',
+                'recipients' => 1,
+            ])));
+
+        $service = new PushNotificationService($http);
+        $result = $service->sendAnnouncement($announcement);
+
+        $this->assertSame(['onesignal-notification-uuid-1'], $result['notification_ids']);
+        $announcement->refresh();
+        $this->assertSame(['onesignal-notification-uuid-1'], $announcement->onesignal_notification_ids);
+    }
+
+    public function test_cancel_announcement_push_deletes_and_sends_collapse_cancel(): void
+    {
+        [$project, $user] = $this->createProjectAndUser();
+        $this->createUserDevice($project, $user, 'subscription-id-cancel');
+        AdminContext::setCurrentProject($project);
+
+        $announcement = Announcement::factory()->create([
+            'project_id' => $project->id,
+            'title' => '取消対象',
+            'body' => '本文',
+            'delivery_type' => Announcement::DELIVERY_TYPE_IMMEDIATE_BULK,
+            'delivery_status' => Announcement::DELIVERY_STATUS_SENT,
+            'onesignal_notification_ids' => ['stored-notification-id'],
+        ]);
+
+        $deleteCalled = false;
+        $cancelPayload = null;
+
+        /** @var Client&MockObject $http */
+        $http = $this->createMock(Client::class);
+        $http->expects($this->once())
+            ->method('delete')
+            ->with(
+                'https://api.onesignal.com/notifications/stored-notification-id?app_id=test-app-id',
+                $this->callback(function (array $options): bool {
+                    return ($options['headers']['Authorization'] ?? null) === 'Key test-api-key';
+                })
+            )
+            ->willReturnCallback(function () use (&$deleteCalled) {
+                $deleteCalled = true;
+
+                return new Response(200, [], json_encode(['success' => true]));
+            });
+        $http->expects($this->once())
+            ->method('post')
+            ->with(
+                'https://api.onesignal.com/notifications',
+                $this->callback(function (array $options) use (&$cancelPayload): bool {
+                    $cancelPayload = $options['json'] ?? null;
+
+                    return is_array($cancelPayload);
+                })
+            )
+            ->willReturn(new Response(200, [], json_encode(['id' => 'cancel-push-id', 'recipients' => 1])));
+
+        $service = new PushNotificationService($http);
+        $service->cancelAnnouncementPush($announcement);
+
+        $this->assertTrue($deleteCalled);
+        $this->assertIsArray($cancelPayload);
+        $this->assertSame('reggit:announcement:'.$announcement->id, $cancelPayload['collapse_id']);
+        $this->assertSame('reggit:announcement:'.$announcement->id, $cancelPayload['android_group']);
+        $this->assertSame('reggit:announcement:'.$announcement->id, $cancelPayload['thread_id']);
+        $this->assertSame(PushNotificationService::DATA_TYPE_ANNOUNCEMENT_CANCELLED, $cancelPayload['data']['type']);
+        $this->assertSame((string) $announcement->id, $cancelPayload['data']['announcement_id']);
+        $this->assertSame('取消対象', $cancelPayload['data']['original_title']);
+        $this->assertSame(['en' => '取消対象'], $cancelPayload['headings']);
+        $this->assertSame(['en' => 'このお知らせは取り消されました'], $cancelPayload['contents']);
+        $this->assertTrue($cancelPayload['mutable_content']);
+        $this->assertTrue($cancelPayload['content_available']);
+        $this->assertSame(10, $cancelPayload['priority']);
+        $this->assertSame(
+            [(int) $announcement->id],
+            app(\App\Services\CancelledAnnouncementIdStore::class)->list((int) $project->id)
+        );
+    }
+
+    public function test_cancel_announcement_push_stores_cancelled_id_even_when_onesignal_disabled(): void
+    {
+        config(['push.onesignal.enabled' => false]);
+        [$project] = $this->createProjectAndUser();
+        AdminContext::setCurrentProject($project);
+
+        $announcement = Announcement::factory()->create([
+            'project_id' => $project->id,
+            'title' => '取消対象',
+            'delivery_type' => Announcement::DELIVERY_TYPE_IMMEDIATE_BULK,
+            'delivery_status' => Announcement::DELIVERY_STATUS_SENT,
+        ]);
+
+        /** @var Client&MockObject $http */
+        $http = $this->createMock(Client::class);
+        $http->expects($this->never())->method('post');
+        $http->expects($this->never())->method('delete');
+
+        $service = new PushNotificationService($http);
+        $service->cancelAnnouncementPush($announcement);
+
+        $this->assertSame(
+            [(int) $announcement->id],
+            app(\App\Services\CancelledAnnouncementIdStore::class)->list((int) $project->id)
+        );
     }
 
     /**
