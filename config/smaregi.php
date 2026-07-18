@@ -23,7 +23,7 @@ return [
     'scope' => env('SMAREGI_SCOPE', 'pos.stores:read pos.stores:write pos.products:read pos.products:write pos.transactions:read pos.transactions:write pos.customers:read pos.customers:write pos.stock:read pos.stock:write pos.staffs:read pos.suppliers:read pos.terminals:notify'),
 
     'webhook_secret' => env('SMAREGI_WEBHOOK_SECRET', ''),
-    'webhook_secret_header' => env('SMAREGI_WEBHOOK_SECRET_HEADER', 'X-Smaregi-Webhook-Secret'),
+    'webhook_secret_header' => env('SMAREGI_WEBHOOK_SECRET_HEADER', 'x-sdsch-idnect'),
 
     /**
      * true のとき Webhook 受信直後にポイント同期ジョブを同期的に実行する（local 向け）。

@@ -95,6 +95,6 @@ smaregi-webhook-doctor:
 smaregi-api-doctor:
 	docker-compose exec app php artisan smaregi:api-doctor
 
-# ローカル・公開 URL へテスト POST（ログに [Smaregi] Webhook ingress が出る）
+# ローカル・公開 URL へテスト POST
 smaregi-webhook-probe:
 	docker-compose exec app php artisan smaregi:webhook-doctor --probe
