@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\MemberVisitSource;
 use App\Enums\OrderType;
 use App\Enums\PaymentMethod;
 use App\Models\Member;
@@ -62,7 +63,7 @@ class OrderApiTest extends TestCase
         $this->assertNotNull($member);
         $this->assertDatabaseHas('member_visits', [
             'member_id' => $member->id,
-            'source' => \App\Enums\MemberVisitSource::ORDER,
+            'source' => MemberVisitSource::ORDER,
         ]);
         $member->refresh();
         $this->assertNotNull($member->last_visited_at);
