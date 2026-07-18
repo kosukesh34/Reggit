@@ -23,7 +23,7 @@ class OrderAdminService
 
     public function getPaginatedList(?string $status, int $perPage = 20): LengthAwarePaginator
     {
-        $query = Order::with('user')
+        $query = Order::with('user.member')
             ->orderByDesc('created_at');
         if ($status && $status !== 'all') {
             $query->where('status', $status);
@@ -50,7 +50,7 @@ class OrderAdminService
 
     public function findOrFail(int $id): Order
     {
-        return Order::with(['items.product', 'user'])->findOrFail($id);
+        return Order::with(['items.product', 'user.member'])->findOrFail($id);
     }
 
     public function updateStatus(int $id, string $status): void

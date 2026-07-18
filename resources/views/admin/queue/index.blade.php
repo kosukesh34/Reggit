@@ -64,7 +64,7 @@
                     <th>番号</th>
                     <th>名前</th>
                     <th>人数</th>
-                    <th>LINE</th>
+                    <th>登録チャネル</th>
                     <th>待ち順</th>
                     <th>状態</th>
                     <th>受付時刻</th>
@@ -74,21 +74,31 @@
             <tbody>
                 @foreach($entries as $e)
                 @php
-                    $lineUserId = $e->user?->line_user_id ?? $e->member?->user?->line_user_id;
-                    $isLineLinked = is_string($lineUserId) && preg_match('/^U[0-9a-f]{32}$/i', $lineUserId) === 1;
+                    $channelUser = $e->user ?? $e->member?->user;
+                    $channelLabel = \App\Support\MemberChannel::label($channelUser);
                     $aheadCount = ($e->status === 'waiting' && $e->created_at->gte(now()->subDay()) && isset($waitingQueueNumbers))
                         ? $waitingQueueNumbers->filter(fn($n) => $n < ($e->queue_number ?? 0))->count()
                         : null;
                 @endphp
                 <tr>
                     <td><span class="queue-number-badge">{{ $e->formattedQueueNumber() }}</span></td>
-                    <td>{{ $e->member?->user?->name ?? $e->guest_name ?? '—' }}</td>
+                    <td>
+                        @php
+                            $member = $e->member ?? $e->user?->member;
+                            $displayName = $member?->user?->name ?? $e->user?->name ?? $e->guest_name ?? '—';
+                        @endphp
+                        @if($member !== null)
+                            <a href="{{ admin_route('admin.members.detail', ['id' => $member->id]) }}">{{ $displayName }}</a>
+                        @else
+                            {{ $displayName }}
+                        @endif
+                    </td>
                     <td><strong>{{ $e->party_size }}</strong>名</td>
                     <td>
-                        @if($isLineLinked)
-                            <span class="badge badge-success"><i class="fab fa-line"></i> 連携済</span>
+                        @if($channelLabel === '—')
+                            <span class="text-muted">—</span>
                         @else
-                            <span class="badge badge-secondary">未連携</span>
+                            <span class="badge badge-info">{{ $channelLabel }}</span>
                         @endif
                     </td>
                     <td>
