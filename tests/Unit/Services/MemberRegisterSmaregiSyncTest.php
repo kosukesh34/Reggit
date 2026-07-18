@@ -28,7 +28,7 @@ class MemberRegisterSmaregiSyncTest extends TestCase
         config(['smaregi.contract_id' => '']);
     }
 
-    public function test_register_member_スマレジ成功後にDBへ保存しcustomerIdを保持すること(): void
+    public function test_register_member_スマレジ成功後に_d_bへ保存しcustomer_idを保持すること(): void
     {
         $user = User::factory()->create(['project_id' => $this->project->id]);
 
@@ -58,7 +58,7 @@ class MemberRegisterSmaregiSyncTest extends TestCase
         ]);
     }
 
-    public function test_register_member_スマレジ失敗時はDBに会員を作らないこと(): void
+    public function test_register_member_スマレジ失敗時は_d_bに会員を作らないこと(): void
     {
         $user = User::factory()->create(['project_id' => $this->project->id]);
 
