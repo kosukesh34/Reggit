@@ -76,12 +76,12 @@
                 @php
                     $lineUserId = $e->user?->line_user_id ?? $e->member?->user?->line_user_id;
                     $isLineLinked = is_string($lineUserId) && preg_match('/^U[0-9a-f]{32}$/i', $lineUserId) === 1;
-                    $aheadCount = ($e->status === 'waiting' && $e->created_at->isToday() && isset($waitingQueueNumbers))
+                    $aheadCount = ($e->status === 'waiting' && $e->created_at->gte(now()->subDay()) && isset($waitingQueueNumbers))
                         ? $waitingQueueNumbers->filter(fn($n) => $n < ($e->queue_number ?? 0))->count()
                         : null;
                 @endphp
                 <tr>
-                    <td><span class="queue-number-badge">{{ $e->queue_number ?? $e->id }}</span></td>
+                    <td><span class="queue-number-badge">{{ $e->formattedQueueNumber() }}</span></td>
                     <td>{{ $e->member?->user?->name ?? $e->guest_name ?? '—' }}</td>
                     <td><strong>{{ $e->party_size }}</strong>名</td>
                     <td>
@@ -125,6 +125,11 @@
                             </form>
                             @endif
                             @if($e->status === 'called')
+                            <form action="{{ admin_route('admin.queue.status', ['id' => $e->id]) }}" method="POST" class="d-inline">
+                                @csrf
+                                <input type="hidden" name="status" value="called">
+                                <button type="submit" class="btn btn-action btn-info"><i class="fas fa-bullhorn"></i> 再呼び出し</button>
+                            </form>
                             <form action="{{ admin_route('admin.queue.status', ['id' => $e->id]) }}" method="POST" class="d-inline">
                                 @csrf
                                 <input type="hidden" name="status" value="entered">
