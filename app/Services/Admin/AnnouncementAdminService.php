@@ -158,7 +158,7 @@ class AnnouncementAdminService
     }
 
     /**
-     * @return list<array{member_name: string, member_number: string, read_at: string}>
+     * @return list<array{member_id: int|null, member_name: string, member_number: string, read_at: string}>
      */
     public function getReadsForAnnouncement(int $announcementId): array
     {
@@ -174,6 +174,7 @@ class AnnouncementAdminService
             $user = $read->user;
             $member = $user?->member;
             $rows[] = [
+                'member_id' => $member !== null ? (int) $member->id : null,
                 'member_name' => $user !== null && trim((string) $user->name) !== ''
                     ? (string) $user->name
                     : '—',
