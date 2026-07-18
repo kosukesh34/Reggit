@@ -156,8 +156,10 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'bind.admin.project', '
         Route::get('/members/{id}', [AdminMemberController::class, 'memberDetail'])->name('admin.members.detail')->middleware('admin.permission:members.view');
         Route::put('/members/{id}', [AdminMemberController::class, 'updateMember'])->name('admin.members.update')->middleware('admin.permission:members.manage');
         Route::delete('/members/{id}', [AdminMemberController::class, 'deleteMember'])->name('admin.members.delete')->middleware('admin.permission:members.manage');
-        Route::post('/members/{id}/issue-coupon', [AdminMemberController::class, 'issueCoupon'])->name('admin.members.issue-coupon')->middleware('admin.permission:members.view');
-        Route::post('/members/{id}/add-stamps', [AdminMemberController::class, 'addStamps'])->name('admin.members.add-stamps')->middleware('admin.permission:members.view');
+        Route::post('/members/{id}/issue-coupon', [AdminMemberController::class, 'issueCoupon'])->name('admin.members.issue-coupon')->middleware('admin.permission:members.manage');
+        Route::delete('/members/{id}/coupons/{memberCouponId}', [AdminMemberController::class, 'deleteCoupon'])->name('admin.members.delete-coupon')->middleware('admin.permission:members.manage');
+        Route::post('/members/{id}/adjust-stamps', [AdminMemberController::class, 'adjustStamps'])->name('admin.members.adjust-stamps')->middleware('admin.permission:members.manage');
+        Route::post('/members/{id}/visits', [AdminMemberController::class, 'recordVisit'])->name('admin.members.record-visit')->middleware('admin.permission:members.manage');
         Route::post('/members/{id}/tags', [AdminMemberController::class, 'attachTag'])->name('admin.members.tags.attach')->middleware('admin.permission:members.manage');
         Route::delete('/members/{id}/tags/{tagId}', [AdminMemberController::class, 'detachTag'])->name('admin.members.tags.detach')->middleware('admin.permission:members.manage');
         Route::put('/members/{id}/memo', [AdminMemberController::class, 'updateMemo'])->name('admin.members.memo')->middleware('admin.permission:members.manage');

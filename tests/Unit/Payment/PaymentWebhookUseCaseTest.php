@@ -10,6 +10,8 @@ use App\Enums\PaymentMethod;
 use App\Models\Order;
 use App\Models\Project;
 use App\Models\User;
+use App\Services\OrderNumberAssigner;
+use App\Support\DailySequenceNumber;
 use App\UseCases\Payment\PaymentWebhookUseCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Support\FakePaymentGateway;
@@ -47,11 +49,17 @@ class PaymentWebhookUseCaseTest extends TestCase
             $gateway,
             app(OrderRepository::class),
             app(DomainEventDispatcher::class),
+            app(OrderNumberAssigner::class),
         );
         $result = $useCase->handle('{}', 'sig', 'secret');
 
         $this->assertTrue($result);
-        $this->assertSame(OrderStatus::CONFIRMED, $order->fresh()->status);
+        $fresh = $order->fresh();
+        $this->assertSame(OrderStatus::CONFIRMED, $fresh->status);
+        $this->assertSame(
+            DailySequenceNumber::build(1),
+            $fresh->order_number
+        );
     }
 
     public function test_handle_対象外注文は成功扱いのままスキップすること(): void
@@ -82,6 +90,7 @@ class PaymentWebhookUseCaseTest extends TestCase
             $gateway,
             app(OrderRepository::class),
             app(DomainEventDispatcher::class),
+            app(OrderNumberAssigner::class),
         );
         $result = $useCase->handle('{}', 'sig', 'secret');
 
@@ -105,6 +114,7 @@ class PaymentWebhookUseCaseTest extends TestCase
             'points_used' => 0,
             'points_earned' => 0,
             'order_type' => 'mobile',
+            'order_number' => DailySequenceNumber::build(1),
         ]);
 
         $gateway = new FakePaymentGateway;
@@ -122,11 +132,13 @@ class PaymentWebhookUseCaseTest extends TestCase
             $gateway,
             app(OrderRepository::class),
             $dispatcher,
+            app(OrderNumberAssigner::class),
         );
         $result = $useCase->handle('{}', 'sig', 'secret');
 
         $this->assertTrue($result);
         $this->assertSame(OrderStatus::CONFIRMED, $order->fresh()->status);
+        $this->assertSame(DailySequenceNumber::build(1), $order->fresh()->order_number);
     }
 
     public function test_handle_進行中注文はステータスを上書きしないこと(): void
@@ -145,6 +157,7 @@ class PaymentWebhookUseCaseTest extends TestCase
             'points_used' => 0,
             'points_earned' => 0,
             'order_type' => 'mobile',
+            'order_number' => DailySequenceNumber::build(5),
         ]);
 
         $gateway = new FakePaymentGateway;
@@ -157,10 +170,12 @@ class PaymentWebhookUseCaseTest extends TestCase
             $gateway,
             app(OrderRepository::class),
             app(DomainEventDispatcher::class),
+            app(OrderNumberAssigner::class),
         );
         $result = $useCase->handle('{}', 'sig', 'secret');
 
         $this->assertTrue($result);
         $this->assertSame(OrderStatus::PREPARING, $order->fresh()->status);
+        $this->assertSame(DailySequenceNumber::build(5), $order->fresh()->order_number);
     }
 }
