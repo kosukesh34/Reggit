@@ -48,13 +48,51 @@ class AdminMembersTest extends TestCase
     {
         $project = $this->createProject();
         $admin = $this->createAdmin($project);
-        $user = User::factory()->create(['project_id' => $project->id]);
+        $user = User::factory()->create(['project_id' => $project->id, 'name' => '一覧テスト']);
         Member::factory()->create(['user_id' => $user->id, 'project_id' => $project->id]);
 
         $response = $this->actingAs($admin, 'admin')
             ->get(route('admin.members', ['project_key' => $project->project_key]));
 
         $response->assertStatus(200);
+        $response->assertSee('詳細');
+        $response->assertSee('編集');
+        $response->assertSee('削除');
+    }
+
+    public function test_members_detail_and_edit_詳細と編集にアクセスできること(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $member = Member::factory()->create(['user_id' => $user->id, 'project_id' => $project->id]);
+
+        $detail = $this->actingAs($admin, 'admin')
+            ->get(route('admin.members.detail', ['project_key' => $project->project_key, 'id' => $member->id]));
+        $detail->assertStatus(200);
+
+        $edit = $this->actingAs($admin, 'admin')
+            ->get(route('admin.members.edit', ['project_key' => $project->project_key, 'id' => $member->id]));
+        $edit->assertStatus(200);
+    }
+
+    public function test_members_delete_会員を削除できること(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $member = Member::factory()->create([
+            'user_id' => $user->id,
+            'project_id' => $project->id,
+            'smaregi_customer_id' => null,
+        ]);
+
+        $response = $this->actingAs($admin, 'admin')
+            ->delete(route('admin.members.delete', ['project_key' => $project->project_key, 'id' => $member->id]));
+
+        $response->assertRedirect(route('admin.members', ['project_key' => $project->project_key]));
+        $this->assertSoftDeleted('members', ['id' => $member->id]);
+        $this->assertSoftDeleted('users', ['id' => $user->id]);
     }
 
     public function test_管理画面でポイントを直接指定して更新できること(): void

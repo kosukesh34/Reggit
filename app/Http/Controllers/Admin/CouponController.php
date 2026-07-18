@@ -67,15 +67,17 @@ class CouponController extends AdminBaseController
         }
         unset($validated['image']);
         try {
-            $this->storeUseCase->handle($projectId, $validated);
+            $coupon = $this->storeUseCase->handle($projectId, $validated);
         } catch (\RuntimeException $e) {
             return redirect()->route('admin.coupons.create', $this->buildAdminRouteParams())
                 ->withInput()
                 ->with('error', $e->getMessage());
         }
 
+        $smaregiNote = $coupon->smaregi_coupon_id ? '（スマレジにも反映済み）' : '';
+
         return redirect()->route('admin.coupons', $this->buildAdminRouteParams())
-            ->with('success', 'クーポンを作成しました');
+            ->with('success', 'クーポンを作成しました'.$smaregiNote);
     }
 
     public function editCoupon(string $projectKey, $id)

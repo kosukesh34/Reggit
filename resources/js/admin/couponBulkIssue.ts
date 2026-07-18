@@ -3,6 +3,7 @@ type CouponBulkIssueConfig = {
     initialCouponSource?: string;
     personalTypes?: string[];
     segmentTypes?: string[];
+    attributeSegmentTypes?: string[];
     birthdayTypes?: string[];
     newMemberTypes?: string[];
     inactiveTypes?: string[];
@@ -141,6 +142,7 @@ function initCouponBulkIssue(): void {
         const type = currentDeliveryType();
         const personal = includesType(cfg.personalTypes, type);
         const segment = includesType(cfg.segmentTypes, type);
+        const attributeSegment = includesType(cfg.attributeSegmentTypes, type);
         const birthday = includesType(cfg.birthdayTypes, type);
         const newMember = includesType(cfg.newMemberTypes, type);
         const inactive = includesType(cfg.inactiveTypes, type);
@@ -148,6 +150,7 @@ function initCouponBulkIssue(): void {
 
         toggleBlock('personalBlock', !personal);
         toggleBlock('segmentBlock', !segment);
+        toggleBlock('attributeSegmentBlock', !attributeSegment);
         toggleBlock('birthdayBlock', !birthday);
         toggleBlock('newMemberBlock', !newMember);
         toggleBlock('inactiveBlock', !inactive);
@@ -178,7 +181,10 @@ function initCouponBulkIssue(): void {
         });
     });
 
-    ['segment_period_days', 'segment_min_amount', 'birthday_month', 'new_member_days', 'inactive_days', 'scheduled_at'].forEach((id) => {
+    ['segment_period_days', 'segment_min_amount', 'birthday_month', 'new_member_days', 'inactive_days', 'scheduled_at',
+        'segment_channel', 'segment_birthday_month', 'segment_visit_count_min', 'segment_visit_count_max',
+        'segment_lifetime_points_min', 'segment_lifetime_points_max',
+        'segment_last_visit_mode', 'attr_segment_last_visit_days', 'segment_sex', 'segment_rank'].forEach((id) => {
         const el = document.getElementById(id);
         if (el) el.addEventListener('change', updateTargetPreview);
         if (el) el.addEventListener('input', updateTargetPreview);
@@ -217,7 +223,10 @@ function initCouponBulkIssue(): void {
                 params.append('target_member_ids[]', String(id));
             });
 
-            ['segment_period_days', 'segment_condition', 'segment_min_amount', 'birthday_month', 'new_member_days', 'inactive_days'].forEach((key) => {
+            ['segment_period_days', 'segment_condition', 'segment_min_amount', 'birthday_month', 'new_member_days', 'inactive_days',
+                'segment_channel', 'segment_birthday_month', 'segment_visit_count_min', 'segment_visit_count_max',
+                'segment_lifetime_points_min', 'segment_lifetime_points_max',
+                'segment_last_visit_mode', 'segment_last_visit_days', 'segment_sex', 'segment_rank'].forEach((key) => {
                 const el = document.querySelector(`[name="${key}"]`) as HTMLInputElement | null;
                 if (el && el.value) params.set(key, el.value);
             });
