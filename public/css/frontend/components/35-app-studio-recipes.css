@@ -1,0 +1,145 @@
+/* App Studio — 業種テンプレごとの画面骨格差（本番LIFF） */
+
+body.theme-citrus,
+body.theme-citrus .app-container {
+    --radius: 18px;
+}
+
+body.theme-citrus .main-tabs {
+    box-shadow: 0 8px 28px rgba(234, 88, 12, 0.12);
+}
+
+body.theme-citrus .main-content,
+body.theme-citrus .tab-section {
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+body.theme-citrus .builder-promo-banner--countdown,
+body.theme-citrus .ld-app-banner--countdown {
+    padding: 16px 18px;
+    font-size: 15px;
+    font-weight: 800;
+    border-radius: 16px;
+}
+
+body.theme-citrus .builder-collection--design-product_shelf .builder-collection__item,
+body.theme-citrus .builder-product-shelf .builder-collection__item {
+    border-radius: 14px;
+}
+
+body.theme-sand {
+    --radius: 22px;
+}
+
+body.theme-sand .builder-block,
+body.theme-sand .ld-block {
+    border: 0;
+    box-shadow: none;
+}
+
+body.theme-sand .builder-hero,
+body.theme-sand .builder-hero-block {
+    border-radius: 24px;
+    overflow: hidden;
+}
+
+body.theme-sakura .builder-hero__title,
+body.theme-sakura .ld-app-hero__title,
+body.theme-sakura .builder-heading-block,
+body.theme-sakura .builder-block.builder-heading {
+    font-family: var(--font-display, "Hiragino Mincho ProN", "Yu Mincho", Georgia, serif);
+    letter-spacing: 0.02em;
+}
+
+body.theme-sakura .builder-slider,
+body.theme-sakura .builder-carousel,
+body.theme-sakura .ld-app-slider {
+    border-radius: 20px;
+    overflow: hidden;
+}
+
+body.theme-sakura .main-content,
+body.theme-sakura .tab-section {
+    padding-left: 14px;
+    padding-right: 14px;
+}
+
+body.theme-noir .builder-promo-banner,
+body.theme-noir .ld-app-banner {
+    border-radius: 8px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-size: 12px;
+}
+
+body.theme-noir .main-tab-btn {
+    border-radius: 0;
+}
+
+body.theme-noir .builder-btn,
+body.theme-noir .builder-button-wrap .builder-btn {
+    border-radius: 6px !important;
+}
+
+body.theme-noir .builder-collection--design-editorial .builder-collection__item {
+    border-radius: 4px;
+}
+
+body.theme-slate .builder-block,
+body.theme-slate .ld-block {
+    border: 1px solid var(--border-color, #e2e8f0);
+    box-shadow: none;
+    border-radius: 12px;
+}
+
+body.theme-slate .builder-collection-wrap,
+body.theme-slate .ld-crm-shell {
+    background: transparent;
+}
+
+body.theme-slate .builder-btn--cta {
+    box-shadow: none !important;
+}
+
+body.theme-slate .builder-faq,
+body.theme-slate .builder-hours,
+body.theme-slate .builder-access {
+    background: #fff;
+}
+
+body.theme-lavender .builder-stats-row__cell,
+body.theme-lavender .ld-app-stats__cell {
+    background: linear-gradient(180deg, #ffffff, #f5f3ff);
+    border: 0;
+}
+
+body.theme-lavender .builder-editorial-card--featured,
+body.theme-lavender .builder-editorial-card {
+    box-shadow: 0 12px 32px rgba(124, 58, 237, 0.1);
+}
+
+/* wallet は既に不透明グラデーションがあるので、背景を消す blur だけは付けない */
+
+body.theme-apple_system .builder-button-wrap--sticky .builder-btn {
+    border-radius: 999px;
+}
+
+/* 注文OS: 先頭プロモを太く、棚を密に */
+body.theme-citrus.density-compact .builder-block {
+    margin-bottom: 6px;
+}
+
+/* サロン: ギャラリー全幅感 */
+body.theme-sakura .builder-carousel--design-hero,
+body.theme-sakura .builder-slider-block--design-hero {
+    margin-left: -6px;
+    margin-right: -6px;
+    width: calc(100% + 12px);
+    max-width: none;
+}
+
+/* クリニック: 販促感を消す */
+body.theme-slate .builder-promo-banner--countdown {
+    display: none;
+}

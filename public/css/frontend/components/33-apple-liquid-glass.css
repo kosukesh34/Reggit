@@ -215,12 +215,20 @@ body.member-screen-glass .member-card-wrap {
     overflow: hidden;
 }
 
-body.member-screen-glass .member-card,
+/* 会員証本体（idnect）は不透明カードを維持。ラッパーだけガラス化する */
+body.member-screen-glass .member-card:not(:has(.idnect-card)),
+body.member-screen-glass .member-card--line-only,
+body.member-screen-glass .member-card--error,
 body.coupon-screen-glass .coupon-item {
-    background: var(--glass-bg);
+    background: var(--glass-bg-strong, rgba(255, 255, 255, 0.96));
     backdrop-filter: var(--glass-blur);
     -webkit-backdrop-filter: var(--glass-blur);
     border: 1px solid var(--glass-border);
+}
+
+body.member-screen-glass .idnect-card-face--front,
+body.member-screen-glass .idnect-card-face--back {
+    opacity: 1;
 }
 
 body.member-screen-apple .member-card {

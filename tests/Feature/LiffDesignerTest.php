@@ -541,8 +541,8 @@ class LiffDesignerTest extends TestCase
 
         $templates = \App\Support\ShopSettingLiffDefaults::defaultLiffDesignerTemplates();
         $ids = array_column($templates, 'id');
-        $this->assertContains('apple-home-dashboard', $ids);
-        $this->assertContains('apple-super-app', $ids);
-        $this->assertSame('apple-home-dashboard', $ids[0] ?? null);
+        $this->assertContains('rg-suite-loyalty', $ids);
+        $this->assertContains('rg-screen-rewards', $ids);
+        $this->assertSame('rg-suite-loyalty', $ids[0] ?? null);
     }
 }
