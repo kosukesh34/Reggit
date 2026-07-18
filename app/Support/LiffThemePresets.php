@@ -678,8 +678,10 @@ class LiffThemePresets
         }
 
         $presetId = (string) ($global['theme_preset'] ?? ($preset['id'] ?? ''));
+        if ($presetId !== '' && $presetId !== 'custom') {
+            $classes[] = 'theme-'.$presetId;
+        }
         if ($presetId === 'apple_system') {
-            $classes[] = 'theme-apple_system';
             $classes[] = 'chrome-glass';
         }
 
