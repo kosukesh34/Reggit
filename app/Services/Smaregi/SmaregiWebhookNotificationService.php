@@ -26,7 +26,7 @@ class SmaregiWebhookNotificationService
     /**
      * @return array{status: int, body: string}
      */
-    public function handleNotification(SmaregiNotificationInput $input, bool $verifyWebhookSecret): array
+    public function handleNotification(SmaregiNotificationInput $input): array
     {
         if ($input->isGetOrHead()) {
             Log::info('[Smaregi] Webhook GET/HEAD 受信（接続確認など）。200 空ボディ');
@@ -44,19 +44,6 @@ class SmaregiWebhookNotificationService
             Log::warning('[Smaregi] Webhook missing event (header smaregi-event or body event)');
 
             return ['status' => 400, 'body' => ''];
-        }
-
-        if ($verifyWebhookSecret) {
-            $secret = config('smaregi.webhook_secret');
-            $secretHeaderName = config('smaregi.webhook_secret_header');
-            if ($secret !== '' && $secret !== null && $secretHeaderName !== '') {
-                $received = $input->header($secretHeaderName);
-                if ($received === null || $received !== $secret) {
-                    Log::warning('[Smaregi] Webhook secret mismatch');
-
-                    return ['status' => 401, 'body' => ''];
-                }
-            }
         }
 
         $contractIdHeader = $input->header('smaregi-contract-id');
