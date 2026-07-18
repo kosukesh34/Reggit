@@ -77,6 +77,25 @@ enum MobileWebShellScripts {
         """
     }
 
+    /// ngrok 無料プランの警告ページ（ERR_NGROK_6024）が WebView に表示された場合、
+    /// 「Visit Site」ボタンと同じバイパス Cookie をセットしてリロードする。
+    /// WebView のリクエストにヘッダーを付与できない（SkipWeb 未対応）ための回避策。
+    static func ngrokInterstitialBypass() -> String {
+        """
+        (() => {
+            const body = document.body;
+            if (!body || body.id !== 'ngrok') return;
+            const root = document.getElementById('root');
+            if (!(root && root.dataset && root.dataset.payload)) return;
+            if (sessionStorage.getItem('__reggit_ngrok_bypass__') === '1') return;
+            sessionStorage.setItem('__reggit_ngrok_bypass__', '1');
+            const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toUTCString();
+            document.cookie = 'abuse_interstitial=' + window.location.host + ';expires=' + expires + ';path=/;SameSite=None;Secure';
+            window.location.reload();
+        })();
+        """
+    }
+
     static func forceBootstrap() -> String {
         """
         (() => {

@@ -193,7 +193,7 @@ final class MobileWebShellViewModel: PushNotificationHandling {
         pendingNotificationDeepLink = nil
         fallbackTitle = ShellUserFacingMessages.connectionTitle
         fallbackMessage = reachabilityChecker.unreachableMessage(for: config.liffURLString)
-        logger.error("Web shell unreachable url=\(config.liffURLString)")
+        logger.error("Web shell unreachable url=\(self.config.liffURLString)")
     }
 
     private func markWebContentReadyIfNeeded() {

@@ -1,6 +1,6 @@
 import Foundation
 
-final class FakeShellURLReachabilityChecker: ShellURLReachabilityChecking {
+final class FakeShellURLReachabilityChecker: ShellURLReachabilityChecking, @unchecked Sendable {
     var isReachableResult = true
     private(set) var checkedURLs: [String] = []
 
