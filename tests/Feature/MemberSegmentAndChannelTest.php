@@ -36,7 +36,7 @@ class MemberSegmentAndChannelTest extends TestCase
         return 'U'.str_pad(substr(md5($suffix), 0, 32), 32, '0');
     }
 
-    public function test_member_channel_正規LINEとゲストを判定できること(): void
+    public function test_member_channel_正規_lin_eとゲストを判定できること(): void
     {
         $lineUser = new User(['line_user_id' => $this->validLineUserId('line')]);
         $guestUser = new User(['line_user_id' => 'guest-abc']);
@@ -112,7 +112,7 @@ class MemberSegmentAndChannelTest extends TestCase
         $this->assertNotContains($appMember->id, $recentIds);
     }
 
-    public function test_member_segment_service_AND交差できること(): void
+    public function test_member_segment_service_an_d交差できること(): void
     {
         $project = $this->createProject();
         $service = app(MemberSegmentService::class);
@@ -191,7 +191,7 @@ class MemberSegmentAndChannelTest extends TestCase
     }
 
     /** スマレジAPIはモックし、実POSには作成しない（ノイズ防止） */
-    public function test_coupon_admin_create_スマレジ契約ありならPOS登録後に保存すること(): void
+    public function test_coupon_admin_create_スマレジ契約ありなら_po_s登録後に保存すること(): void
     {
         $project = $this->createProject();
         $sync = Mockery::mock(SmaregiCouponSyncService::class);
@@ -214,7 +214,7 @@ class MemberSegmentAndChannelTest extends TestCase
         ]);
     }
 
-    public function test_coupon_admin_create_スマレジ失敗時はDB保存しないこと(): void
+    public function test_coupon_admin_create_スマレジ失敗時は_d_b保存しないこと(): void
     {
         $project = $this->createProject();
         $sync = Mockery::mock(SmaregiCouponSyncService::class);
