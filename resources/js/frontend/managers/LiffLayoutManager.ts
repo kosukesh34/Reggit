@@ -180,7 +180,11 @@ export class LiffLayoutManager {
         const esc = (s: any): string => this._esc(s);
         const br = block.border_radius != null ? block.border_radius : 10;
         const mb = block.margin_bottom ? `margin-bottom:${block.margin_bottom}px;` : '';
-        const opacity = (block.opacity !== undefined && block.opacity < 100) ? `opacity:${block.opacity / 100};` : '';
+        const opacityRaw = Number(block.opacity);
+        const opacity =
+            Number.isFinite(opacityRaw) && opacityRaw < 100 && opacityRaw >= 0
+                ? `opacity:${Math.max(0.2, opacityRaw / 100)};`
+                : '';
         const shadow = block.shadow ? 'box-shadow:0 4px 12px rgba(0,0,0,0.1);' : '';
         const pad = block.padding !== undefined && block.padding !== null ? `padding:${block.padding}px;` : '';
         const bgColor = block.background_color ? `background-color:${block.background_color};` : '';
@@ -263,8 +267,11 @@ export class LiffLayoutManager {
             const action = block.action || '#';
             const isExternal = action !== '#' && (action.startsWith('http://') || action.startsWith('https://'));
             const dataExternal = isExternal ? ' data-builder-external="1"' : '';
-            return `<section class="builder-block" style="text-align:center;padding:8px;${baseStyle}">
-                <a href="${esc(action)}" class="builder-btn"${dataExternal} style="${w}padding:12px 24px;border-radius:8px;background:${block.color || '#4f46e5'};color:${block.text_color || '#fff'};font-size:14px;font-weight:700;text-decoration:none;text-align:center;">${esc(block.text)}</a>
+            const design = block.design || 'cta';
+            const stickyWrap = design === 'sticky' ? ' builder-button-wrap--sticky' : '';
+            const stickyBtn = design === 'sticky' ? ' builder-btn--sticky' : '';
+            return `<section class="builder-block builder-button-wrap${stickyWrap}" style="text-align:center;padding:8px;${baseStyle}">
+                <a href="${esc(action)}" class="builder-btn${stickyBtn}"${dataExternal} style="${w}padding:12px 24px;border-radius:8px;background:${block.color || '#4f46e5'};color:${block.text_color || '#fff'};font-size:14px;font-weight:700;text-decoration:none;text-align:center;">${esc(block.text)}</a>
             </section>`;
         }
         if (type === 'image') {

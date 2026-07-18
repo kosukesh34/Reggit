@@ -100,7 +100,6 @@ function previewTabsFor(template: TemplateItem) {
         if (typeof tab === 'string') push(tab);
     });
     if (keys.length === 0) push('home');
-    if (!keys.includes('member')) push('member');
 
     const mapped = keys.map((tab) => {
         const fallback = DEFAULT_PREVIEW_TABS.find((t) => t.tab === tab);
@@ -179,8 +178,7 @@ export function TemplatePhoneMock({
         const idCounter = { n: 1 };
         const limit = size === 'large' ? 14 : 7;
         const sourceRows = previewBlocksFor(template, activeTab);
-        const rows = sourceRows.length > 0 ? sourceRows : previewBlocksFor(template);
-        return rows.slice(0, limit).map((item) => {
+        return sourceRows.slice(0, limit).map((item) => {
             const block = normalizeBlock((item || {}) as Record<string, unknown>, idCounter);
             if (
                 cardDesign !== ''
@@ -230,6 +228,7 @@ export function TemplatePhoneMock({
         }
     };
 
+    const themePreset = String(template.theme?.theme_preset || '');
     const styleClass = [
         `ld-tpm ld-tpm--${size}`,
         isDark ? 'ld-tpm--dark' : '',
@@ -238,6 +237,8 @@ export function TemplatePhoneMock({
         buttonShape !== '' ? `ld-tpm-btn--${buttonShape}` : '',
         cardStyle !== '' ? `ld-tpm-card--${cardStyle}` : '',
         `ld-tpm-width--${contentWidth || 'comfy'}`,
+        themePreset !== '' ? `theme-${themePreset}` : '',
+        String(template.theme?.density || '') !== '' ? `ld-tpm-density--${String(template.theme?.density)}` : '',
     ].filter(Boolean).join(' ');
 
     return (
@@ -249,10 +250,11 @@ export function TemplatePhoneMock({
             }}
         >
             <PhoneDeviceFrame
+                className={themePreset !== '' ? `theme-${themePreset}` : undefined}
                 size={size === 'large' ? 'large' : 'card'}
                 maxHeight={fitMaxHeight}
                 screenStyle={screenVars}
-                screenClassName={tabStyleClass}
+                screenClassName={[tabStyleClass, themePreset !== '' ? `theme-${themePreset}` : ''].filter(Boolean).join(' ')}
             >
                 <PhoneAppHeader
                     title={title}
@@ -260,7 +262,13 @@ export function TemplatePhoneMock({
                     onAccountClick={interactive ? () => selectTab('member') : undefined}
                     onCartClick={interactive ? () => selectTab('products') : undefined}
                 />
-                <PhoneAppMain padding={pad} gap={gap} onClick={onMainClick}>
+                <PhoneAppMain
+                    key={activeTab}
+                    className={interactive ? 'ld-phone-app-main--tab-enter' : undefined}
+                    padding={pad}
+                    gap={gap}
+                    onClick={onMainClick}
+                >
                     {blocks.length === 0 ? (
                         <div className="ld-tpm__empty">
                             <p>この画面のレイアウトは空です</p>

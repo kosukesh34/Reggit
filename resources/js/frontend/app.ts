@@ -1376,65 +1376,89 @@ class ReggitApp {
 
     switchTab(tab) {
         if (typeof window.__mobileOrderLog === 'function') window.__mobileOrderLog('switchTab', { tab });
-        this.currentTab = tab;
 
-        if (this.pageRouter.isOpen()) {
-            this.closeActivePage(false);
-        }
+        const apply = () => {
+            this.currentTab = tab;
 
-        DomHelper.querySelectorAll('.main-tab-btn').forEach((btn) => {
-            DomHelper.removeClass(btn, AppConstants.CSS_CLASSES.ACTIVE);
-            if ((btn as HTMLElement).dataset.tab === tab) DomHelper.addClass(btn, AppConstants.CSS_CLASSES.ACTIVE);
-        });
-        DomHelper.querySelectorAll('.tab-content').forEach((content) => {
-            DomHelper.removeClass(content, AppConstants.CSS_CLASSES.ACTIVE);
-            (content as HTMLElement).style.display = '';
-        });
+            if (this.pageRouter.isOpen()) {
+                this.closeActivePage(false);
+            }
 
-        const tabIdMap = {
-            [AppConstants.TABS.HOME]: AppConstants.ELEMENT_IDS.HOME_TAB,
-            [AppConstants.TABS.PRODUCTS]: AppConstants.ELEMENT_IDS.PRODUCTS_TAB,
-            [AppConstants.TABS.ORDERS]: AppConstants.ELEMENT_IDS.ORDERS_TAB,
-            [AppConstants.TABS.STAMPS]: AppConstants.ELEMENT_IDS.STAMPS_TAB,
-            [AppConstants.TABS.COUPONS]: AppConstants.ELEMENT_IDS.COUPONS_TAB,
-            [AppConstants.TABS.QUEUE]: AppConstants.ELEMENT_IDS.QUEUE_TAB,
-            [AppConstants.TABS.MEMBER]: AppConstants.ELEMENT_IDS.MEMBER_TAB,
-            [AppConstants.TABS.RESERVATIONS]: AppConstants.ELEMENT_IDS.RESERVATIONS_TAB,
-            [AppConstants.TABS.GALLERY]: AppConstants.ELEMENT_IDS.GALLERY_TAB,
-            [AppConstants.TABS.ANNOUNCEMENTS]: AppConstants.ELEMENT_IDS.ANNOUNCEMENTS_TAB,
+            DomHelper.querySelectorAll('.main-tab-btn').forEach((btn) => {
+                DomHelper.removeClass(btn, AppConstants.CSS_CLASSES.ACTIVE);
+                if ((btn as HTMLElement).dataset.tab === tab) DomHelper.addClass(btn, AppConstants.CSS_CLASSES.ACTIVE);
+            });
+            DomHelper.querySelectorAll('.tab-content').forEach((content) => {
+                DomHelper.removeClass(content, AppConstants.CSS_CLASSES.ACTIVE);
+                (content as HTMLElement).style.display = '';
+            });
+
+            const tabIdMap = {
+                [AppConstants.TABS.HOME]: AppConstants.ELEMENT_IDS.HOME_TAB,
+                [AppConstants.TABS.PRODUCTS]: AppConstants.ELEMENT_IDS.PRODUCTS_TAB,
+                [AppConstants.TABS.ORDERS]: AppConstants.ELEMENT_IDS.ORDERS_TAB,
+                [AppConstants.TABS.STAMPS]: AppConstants.ELEMENT_IDS.STAMPS_TAB,
+                [AppConstants.TABS.COUPONS]: AppConstants.ELEMENT_IDS.COUPONS_TAB,
+                [AppConstants.TABS.QUEUE]: AppConstants.ELEMENT_IDS.QUEUE_TAB,
+                [AppConstants.TABS.MEMBER]: AppConstants.ELEMENT_IDS.MEMBER_TAB,
+                [AppConstants.TABS.RESERVATIONS]: AppConstants.ELEMENT_IDS.RESERVATIONS_TAB,
+                [AppConstants.TABS.GALLERY]: AppConstants.ELEMENT_IDS.GALLERY_TAB,
+                [AppConstants.TABS.ANNOUNCEMENTS]: AppConstants.ELEMENT_IDS.ANNOUNCEMENTS_TAB,
+            };
+            const tabEl = DomHelper.getElementById(tabIdMap[tab]);
+            if (tabEl) DomHelper.addClass(tabEl, AppConstants.CSS_CLASSES.ACTIVE);
+
+            const mainContent = document.querySelector('.main-content') as HTMLElement | null;
+            if (mainContent) {
+                mainContent.scrollTop = 0;
+            }
+            window.scrollTo(0, 0);
+
+            const sectionContainer = document.getElementById(tab + 'Section');
+            const layoutWasRendered = !!(sectionContainer && sectionContainer.dataset.layoutRendered === '1');
+
+            if (!(this.designerPreviewSource && this.designerPreviewEmbed)) {
+                this.layoutManager.render(tab);
+            }
+            if (layoutWasRendered) {
+                this._refreshActiveTabDataMounts();
+            }
+            if (this.designerPreviewSource) {
+                this.applyDesignerPreviewMode(true);
+            }
+
+            if (
+                typeof window !== 'undefined'
+                && !(this.designerPreviewSource && this.designerPreviewEmbed)
+                && !isDeepLiffHash(window.location.hash || '')
+            ) {
+                const nextHash = '#' + tab;
+                if (window.location.hash !== nextHash) {
+                    window.history.replaceState(null, '', nextHash);
+                }
+            }
         };
-        const tabEl = DomHelper.getElementById(tabIdMap[tab]);
-        if (tabEl) DomHelper.addClass(tabEl, AppConstants.CSS_CLASSES.ACTIVE);
 
-        const mainContent = document.querySelector('.main-content') as HTMLElement | null;
-        if (mainContent) {
-            mainContent.scrollTop = 0;
-        }
-        window.scrollTo(0, 0);
-
-        const sectionContainer = document.getElementById(tab + 'Section');
-        const layoutWasRendered = !!(sectionContainer && sectionContainer.dataset.layoutRendered === '1');
-
-        if (!(this.designerPreviewSource && this.designerPreviewEmbed)) {
-            this.layoutManager.render(tab);
-        }
-        if (layoutWasRendered) {
-            this._refreshActiveTabDataMounts();
-        }
-        if (this.designerPreviewSource) {
-            this.applyDesignerPreviewMode(true);
-        }
-
-        if (
-            typeof window !== 'undefined'
+        const canViewTransition =
+            typeof document !== 'undefined'
+            && typeof (document as Document & { startViewTransition?: (cb: () => void) => unknown }).startViewTransition === 'function'
             && !(this.designerPreviewSource && this.designerPreviewEmbed)
-            && !isDeepLiffHash(window.location.hash || '')
-        ) {
-            const nextHash = '#' + tab;
-            if (window.location.hash !== nextHash) {
-                window.history.replaceState(null, '', nextHash);
+            && !(typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+        if (canViewTransition) {
+            try {
+                (document as Document & { startViewTransition: (cb: () => void) => unknown }).startViewTransition(apply);
+                return;
+            } catch (_err) {
+                // fallback below
             }
         }
+
+        if (typeof document !== 'undefined') {
+            document.body.classList.add('liff-nav-animating');
+            window.setTimeout(() => document.body.classList.remove('liff-nav-animating'), 320);
+        }
+        apply();
     }
 
     async loadOrdersTab() {

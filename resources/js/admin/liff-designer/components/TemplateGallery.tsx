@@ -1,7 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useDesigner } from '../state/DesignerContext';
 import {
-    CATEGORY_ACCENTS,
     categoryLabel,
     collectCategoryKeys,
     featuredTemplates,
@@ -25,7 +24,7 @@ function countBlocks(tpl: TemplateItem): number {
 }
 
 export function TemplateGallery({ compact = false }: { compact?: boolean }) {
-    const { state, dispatch, config } = useDesigner();
+    const { dispatch, config } = useDesigner();
     const templates = (Array.isArray(config.templates) ? config.templates : []) as TemplateItem[];
     const [category, setCategory] = useState('all');
     const [scope, setScope] = useState<'all' | 'tab' | 'super'>('all');
@@ -147,7 +146,7 @@ export function TemplateGallery({ compact = false }: { compact?: boolean }) {
             ) : null}
 
             <p className="ld-inline-gallery__count">{filtered.length} / {templates.length}</p>
-            <div className="ld-inline-gallery__list">
+            <div className="ld-inline-gallery__grid">
                 {filtered.length === 0 ? (
                     <div className="ld-palette-empty">
                         <i className="fas fa-search" />
@@ -159,20 +158,29 @@ export function TemplateGallery({ compact = false }: { compact?: boolean }) {
                     const isSuper = isAllScreensTemplate(tpl);
                     const blocks = countBlocks(tpl);
                     const isFav = favoriteIds.has(String(tpl.id || ''));
+                    const bg = String(tpl.theme?.bg_color || accent.soft);
                     return (
-                        <article key={id} className="ld-inline-gallery__card">
-                            <button type="button" className="ld-inline-gallery__card-main" onClick={() => openApply(tpl)}>
-                                <span className="ld-inline-gallery__swatch" style={{ background: accent.color }} />
-                                <span className="ld-inline-gallery__card-body">
-                                    <strong>{templateDisplayName(tpl, i)}</strong>
-                                    <span className="ld-inline-gallery__meta">
-                                        {isSuper ? '全画面' : '単一画面'} · {blocks}ブロック · {paletteLabelFor(tpl)}
-                                    </span>
-                                    <span className="ld-inline-gallery__tags">
-                                        {templateTags(tpl).map((tag) => (
-                                            <em key={tag}>{tag}</em>
-                                        ))}
-                                    </span>
+                        <article key={id} className="ld-inline-gallery__tile">
+                            <button
+                                type="button"
+                                className="ld-inline-gallery__tile-main"
+                                onClick={() => openApply(tpl)}
+                                style={{
+                                    background: `linear-gradient(165deg, ${bg} 0%, ${accent.soft} 100%)`,
+                                    borderColor: `${accent.color}33`,
+                                }}
+                            >
+                                <span className="ld-inline-gallery__tile-icon" style={{ color: accent.color, background: '#fff' }}>
+                                    <i className={`fas ${accent.icon}`} />
+                                </span>
+                                <strong>{templateDisplayName(tpl, i)}</strong>
+                                <em>
+                                    {isSuper ? '全画面' : '単一画面'} · {blocks}ブロック
+                                </em>
+                                <span className="ld-inline-gallery__tile-tags">
+                                    {templateTags(tpl).slice(0, 3).map((tag) => (
+                                        <i key={tag}>{tag}</i>
+                                    ))}
                                 </span>
                             </button>
                             <button

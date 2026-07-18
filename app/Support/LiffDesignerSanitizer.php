@@ -73,7 +73,7 @@ class LiffDesignerSanitizer
 
     private const CARD_DESIGNS = ['editorial', 'horizontal', 'overlay', 'featured'];
 
-    private const BUTTON_DESIGNS = ['cta', 'outline', 'soft'];
+    private const BUTTON_DESIGNS = ['cta', 'outline', 'soft', 'sticky'];
 
     private const QUICK_ACTIONS_DESIGNS = ['grid', 'pill', 'compact'];
 
@@ -299,17 +299,17 @@ class LiffDesignerSanitizer
         }
 
         $memberScreenDesign = (string) ($row['member_screen_design'] ?? '');
-        if (in_array($memberScreenDesign, ['wallet', 'premium', 'minimal', 'compact'], true)) {
+        if (in_array($memberScreenDesign, ['wallet', 'premium', 'minimal', 'compact', 'apple', 'glass'], true)) {
             $item['member_screen_design'] = $memberScreenDesign;
         }
 
         $couponScreenDesign = (string) ($row['coupon_screen_design'] ?? '');
-        if (in_array($couponScreenDesign, ['ticket', 'gallery', 'compact', 'luxury'], true)) {
+        if (in_array($couponScreenDesign, ['ticket', 'gallery', 'compact', 'luxury', 'apple', 'glass'], true)) {
             $item['coupon_screen_design'] = $couponScreenDesign;
         }
 
         $reservationScreenDesign = (string) ($row['reservation_screen_design'] ?? '');
-        if (in_array($reservationScreenDesign, ['cards', 'timeline', 'compact', 'concierge'], true)) {
+        if (in_array($reservationScreenDesign, ['cards', 'timeline', 'compact', 'concierge', 'apple', 'glass'], true)) {
             $item['reservation_screen_design'] = $reservationScreenDesign;
         }
 
@@ -445,7 +445,7 @@ class LiffDesignerSanitizer
         $b['border_radius'] = self::num($row['border_radius'] ?? 10, 0, 24, 10);
         $b['padding'] = self::num($row['padding'] ?? 0, 0, 48, 0);
         $b['margin_bottom'] = self::num($row['margin_bottom'] ?? 0, 0, 48, 0);
-        $b['opacity'] = self::num($row['opacity'] ?? 100, 0, 100, 100);
+        $b['opacity'] = self::num($row['opacity'] ?? 100, 20, 100, 100);
         $b['shadow'] = (bool) ($row['shadow'] ?? false);
         $align = (string) ($row['text_align'] ?? 'left');
         $b['text_align'] = in_array($align, ['left', 'center', 'right'], true) ? $align : 'left';

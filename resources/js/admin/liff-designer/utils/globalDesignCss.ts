@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import type { GlobalSettings, ThemePreset } from '../catalog/types';
+import type { DesignerConfig, GlobalSettings, ThemePreset } from '../catalog/types';
 
 const RADIUS_SCALES: Record<string, { md: string }> = {
     compact: { md: '12px' },
@@ -12,6 +12,11 @@ const CONTENT_WIDTHS: Record<string, string> = {
     edge: '100%',
     comfy: 'min(100%, 440px)',
     narrow: 'min(100%, 380px)',
+};
+
+type DesignCssOptions = {
+    fontStacks?: DesignerConfig['fontStacks'];
+    surfaceTones?: DesignerConfig['surfaceTones'];
 };
 
 function findPreset(presets: ThemePreset[] | undefined, id: unknown): ThemePreset | undefined {
@@ -37,7 +42,30 @@ function hexToRgb(hex: string): string {
     return '28, 25, 23';
 }
 
-export function buildGlobalDesignCss(globalSettings: GlobalSettings, presets?: ThemePreset[]): string {
+function darkenHex(hex: string, amount = 0.16): string {
+    const rgb = hexToRgb(hex).split(',').map((part) => Number(part.trim()));
+    if (rgb.length !== 3 || rgb.some((n) => !Number.isFinite(n))) return hex;
+    const toHex = (n: number) => Math.max(0, Math.min(255, Math.round(n * (1 - amount)))).toString(16).padStart(2, '0');
+    return `#${toHex(rgb[0])}${toHex(rgb[1])}${toHex(rgb[2])}`;
+}
+
+function resolveFontKey(g: GlobalSettings, preset: ThemePreset | undefined): string {
+    const fromGlobal = String(g.font_family || '');
+    if (fromGlobal !== '') return fromGlobal;
+    return String(preset?.font_family || '');
+}
+
+function resolveToneKey(g: GlobalSettings, preset: ThemePreset | undefined): string {
+    const fromGlobal = String(g.surface_tone || '');
+    if (fromGlobal !== '') return fromGlobal;
+    return String(preset?.surface_tone || '');
+}
+
+export function buildGlobalDesignCss(
+    globalSettings: GlobalSettings,
+    presets?: ThemePreset[],
+    options?: DesignCssOptions,
+): string {
     const g = globalSettings;
     const preset = findPreset(presets, g.theme_preset);
     const radiusKey = String(g.radius_scale || (preset?.radius_scale as string) || 'soft');
@@ -51,6 +79,14 @@ export function buildGlobalDesignCss(globalSettings: GlobalSettings, presets?: T
     const pad = Number(g.content_padding ?? 18);
     const gap = Number(g.section_gap ?? 16);
 
+    const fontKey = resolveFontKey(g, preset);
+    const fontStack = fontKey !== '' ? options?.fontStacks?.[fontKey] : undefined;
+    const toneKey = resolveToneKey(g, preset);
+    const toneTokens =
+        toneKey !== '' && options?.surfaceTones?.[toneKey]?.tokens !== undefined
+            ? options.surfaceTones[toneKey].tokens || {}
+            : {};
+
     const cardDecl =
         cardStyle === 'flat'
             ? 'box-shadow: none;'
@@ -63,25 +99,56 @@ export function buildGlobalDesignCss(globalSettings: GlobalSettings, presets?: T
         buttonShape === 'rounded' ? '10px' : buttonShape === 'pill' ? '999px' : buttonShape === 'square' ? '5px' : '';
     const blockPad = density === 'compact' ? '12px' : density === 'relaxed' ? '20px' : '';
 
+    const primaryDark = darkenHex(accent, 0.18);
+    const extraVars: string[] = [
+        `--primary-color: ${accent};`,
+        `--primary-dark: ${primaryDark};`,
+        `--primary-rgb: ${accentRgb};`,
+        `--ld-accent: ${accent};`,
+        `--content-padding: ${pad}px;`,
+        `--section-gap: ${gap}px;`,
+        `--radius: ${scale.md};`,
+        `--radius-pill: 999px;`,
+        `--radius-xl: 22px;`,
+    ];
+
+    if (fontStack !== undefined && typeof fontStack.base === 'string' && fontStack.base !== '') {
+        extraVars.push(`--font-base: ${fontStack.base};`);
+        extraVars.push(
+            `--font-display: ${typeof fontStack.display === 'string' && fontStack.display !== '' ? fontStack.display : fontStack.base};`,
+        );
+    }
+
+    Object.entries(toneTokens).forEach(([name, value]) => {
+        if (typeof value === 'string' && value !== '') {
+            extraVars.push(`${name}: ${value};`);
+        }
+    });
+
+    if (toneTokens['--chrome'] === undefined) {
+        extraVars.push('--chrome: #111827;');
+    }
+    if (toneTokens['--chrome-dark'] === undefined) {
+        extraVars.push('--chrome-dark: #030712;');
+    }
+    if (toneTokens['--text-tertiary'] === undefined) {
+        extraVars.push('--text-tertiary: #9ca3af;');
+    }
+    if (toneTokens['--border-color'] === undefined) {
+        extraVars.push('--border-color: rgba(28,25,23,0.08);');
+    }
+    if (toneTokens['--hairline'] === undefined) {
+        extraVars.push('--hairline: rgba(28,25,23,0.08);');
+    }
+    if (toneTokens['--surface-glass'] === undefined) {
+        extraVars.push('--surface-glass: rgba(255,255,255,0.96);');
+    }
+
     return [
         `.ld.ld-react .ld-phone-device.is-device, .ld.ld-react .ld-phone-device__screen, .ld.ld-react .ld-phone__frame.is-line {`,
-        `  --primary-color: ${accent};`,
-        `  --primary-dark: ${accent};`,
-        `  --primary-rgb: ${accentRgb};`,
-        `  --ld-accent: ${accent};`,
-        `  --chrome: #111827;`,
-        `  --chrome-dark: #030712;`,
-        `  --content-padding: ${pad}px;`,
-        `  --section-gap: ${gap}px;`,
-        `  --text-tertiary: #9ca3af;`,
-        `  --border-color: rgba(28,25,23,0.08);`,
-        `  --hairline: rgba(28,25,23,0.08);`,
-        `  --surface-glass: rgba(255,255,255,0.96);`,
-        `  --radius: ${scale.md};`,
-        `  --radius-pill: 999px;`,
-        `  --radius-xl: 22px;`,
+        `  ${extraVars.join(' ')}`,
         `}`,
-        `.ld.ld-react .ld-phone__content { --content-padding: ${pad}px; --section-gap: ${gap}px; max-width: ${CONTENT_WIDTHS[widthKey] || CONTENT_WIDTHS.comfy}; }`,
+        `.ld.ld-react .ld-phone__content { --content-padding: ${pad}px; --section-gap: ${gap}px; max-width: ${CONTENT_WIDTHS[widthKey] || CONTENT_WIDTHS.comfy}; font-family: var(--font-base, inherit); }`,
         `.ld.ld-react .ld-phone__content .ld-block { border-radius: ${scale.md}; ${cardDecl} }`,
         btnRadius
             ? `.ld.ld-react .ld-phone__content .ld-app-btn, .ld.ld-react .ld-phone__content .ld-app-btn-group .ld-app-btn { border-radius: ${btnRadius} !important; }`
@@ -95,6 +162,15 @@ export function buildGlobalDesignCss(globalSettings: GlobalSettings, presets?: T
         .join('\n');
 }
 
-export function useGlobalDesignCss(globalSettings: GlobalSettings, presets?: ThemePreset[]): string {
-    return useMemo(() => buildGlobalDesignCss(globalSettings, presets), [globalSettings, presets]);
+export function useGlobalDesignCss(
+    globalSettings: GlobalSettings,
+    presets?: ThemePreset[],
+    options?: DesignCssOptions,
+): string {
+    const fontStacks = options?.fontStacks;
+    const surfaceTones = options?.surfaceTones;
+    return useMemo(
+        () => buildGlobalDesignCss(globalSettings, presets, { fontStacks, surfaceTones }),
+        [globalSettings, presets, fontStacks, surfaceTones],
+    );
 }

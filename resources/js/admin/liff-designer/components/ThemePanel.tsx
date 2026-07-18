@@ -53,7 +53,11 @@ export function ThemePanel() {
         if (preset === undefined) return;
         const next = expandThemeIntoGlobal(g, { theme_preset: presetId }, config.themePresets);
         dispatch({ type: 'UPDATE_GLOBAL', patch: next });
-        dispatch({ type: 'SHOW_TOAST', message: `テーマ「${preset.label || preset.name || presetId}」を適用` });
+        dispatch({ type: 'APPLY_GLOBAL_BACKGROUND' });
+        dispatch({
+            type: 'SHOW_TOAST',
+            message: `テーマ「${preset.label || preset.name || presetId}」を適用（各画面の背景上書きも解除）`,
+        });
     };
 
     return (
@@ -61,28 +65,28 @@ export function ThemePanel() {
             <div className="ld-sidebar__title"><i className="fas fa-swatchbook" /> テーマ設定</div>
 
             <Accordion title="アプリの動作" open={open.policy} onToggle={() => setOpen((s) => ({ ...s, policy: !s.policy }))}>
-                <FieldGroup label="会員登録">
+                <FieldGroup label="会員登録ポリシー（本番の動き）">
                     <div className="ld-bg-style-tabs" role="group" aria-label="会員登録ポリシー">
                         <button
                             type="button"
                             className={`ld-bg-style-tab${requireMembership ? ' is-active' : ''}`}
                             onClick={() => dispatch({ type: 'UPDATE_GLOBAL', patch: { require_membership: true } })}
                         >
-                            必須
+                            会員必須
                         </button>
                         <button
                             type="button"
                             className={`ld-bg-style-tab${!requireMembership ? ' is-active' : ''}`}
                             onClick={() => dispatch({ type: 'UPDATE_GLOBAL', patch: { require_membership: false } })}
                         >
-                            不要
+                            会員任意
                         </button>
                     </div>
                 </FieldGroup>
                 <p className="ld-form-hint">
                     {requireMembership
-                        ? 'クーポン・スタンプ・予約・会員証は登録後のみ利用できます。'
-                        : 'ゲストでも閲覧できます。会員登録は任意です。'}
+                        ? '本番ではクーポン・スタンプ・予約・会員証は登録後のみ。キャンバス上部の「ゲスト表示」は未登録時の見え方確認用です。'
+                        : '本番ではゲストでも閲覧できます。キャンバス上部の「会員表示 / ゲスト表示」はプレビュー切替です。'}
                 </p>
             </Accordion>
 
@@ -131,8 +135,22 @@ export function ThemePanel() {
                 </FieldGroup>
                 {g.background_style === 'gradient' ? (
                     <>
-                        <ColorField label="グラデーション開始" value={String(g.bg_gradient_start || '#eef2ff')} onChange={(v) => dispatch({ type: 'UPDATE_GLOBAL', patch: { bg_gradient_start: v } })} />
-                        <ColorField label="グラデーション終了" value={String(g.bg_gradient_end || '#ffffff')} onChange={(v) => dispatch({ type: 'UPDATE_GLOBAL', patch: { bg_gradient_end: v } })} />
+                        <ColorField
+                            label="グラデーション開始"
+                            value={String(g.bg_gradient_start || '#eef2ff')}
+                            onChange={(v) => {
+                                dispatch({ type: 'UPDATE_GLOBAL', patch: { bg_gradient_start: v } });
+                                dispatch({ type: 'APPLY_GLOBAL_BACKGROUND' });
+                            }}
+                        />
+                        <ColorField
+                            label="グラデーション終了"
+                            value={String(g.bg_gradient_end || '#ffffff')}
+                            onChange={(v) => {
+                                dispatch({ type: 'UPDATE_GLOBAL', patch: { bg_gradient_end: v } });
+                                dispatch({ type: 'APPLY_GLOBAL_BACKGROUND' });
+                            }}
+                        />
                     </>
                 ) : null}
                 {g.background_style === 'image' ? (
@@ -141,19 +159,26 @@ export function ThemePanel() {
                         <RangeField label="オーバーレイ不透明度" value={Number(g.bg_overlay_opacity ?? 60)} min={0} max={80} onChange={(v) => dispatch({ type: 'UPDATE_GLOBAL', patch: { bg_overlay_opacity: v } })} />
                     </>
                 ) : (
-                    <ColorField label="背景色" value={String(g.bg_color || '#f9fafb')} onChange={(v) => dispatch({ type: 'UPDATE_GLOBAL', patch: { bg_color: v } })} />
+                    <ColorField
+                        label="背景色"
+                        value={String(g.bg_color || '#f9fafb')}
+                        onChange={(v) => {
+                            dispatch({ type: 'UPDATE_GLOBAL', patch: { bg_color: v } });
+                            dispatch({ type: 'APPLY_GLOBAL_BACKGROUND' });
+                        }}
+                    />
                 )}
                 <button
                     type="button"
-                    className="ld-btn ld-btn--primary ld-btn--block"
+                    className="ld-btn ld-btn--soft ld-btn--block"
                     onClick={() => {
                         dispatch({ type: 'APPLY_GLOBAL_BACKGROUND' });
                         dispatch({ type: 'SHOW_TOAST', message: '背景をアプリ全体に適用しました（各画面の個別背景をクリア）' });
                     }}
                 >
-                    <i className="fas fa-fill-drip" /> 背景をアプリ全体に適用
+                    <i className="fas fa-fill-drip" /> 各画面の個別背景をクリア
                 </button>
-                <p className="ld-form-hint">各タブに設定した個別背景を外し、このページ背景を全体で使います。</p>
+                <p className="ld-form-hint">背景色を変えると各画面の個別上書きも外し、全体に反映します。</p>
                 <ColorField label="アクセントカラー" value={String(g.accent_color || '#1c1917')} onChange={(v) => dispatch({ type: 'UPDATE_GLOBAL', patch: { accent_color: v, theme_preset: 'custom' } })} />
                 <SelectField label="フォント" value={String(g.font_family || '')} options={fontOptions} onChange={(v) => dispatch({ type: 'UPDATE_GLOBAL', patch: { font_family: v } })} />
                 <SelectField label="背景トーン" value={String(g.surface_tone || '')} options={toneOptions} onChange={(v) => dispatch({ type: 'UPDATE_GLOBAL', patch: { surface_tone: v } })} />
