@@ -6,6 +6,7 @@ use App\Enums\MemberVisitSource;
 use App\Jobs\SmaregiSyncInboundTransactionsJob;
 use App\Models\Member;
 use App\Models\MemberVisit;
+use App\Models\Product;
 use App\Models\Project;
 use App\Models\ShopSetting;
 use App\Models\User;
@@ -13,6 +14,7 @@ use App\Services\Admin\MemberAdminService;
 use App\Services\Smaregi\SmaregiTransactionInboundSyncService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
@@ -21,6 +23,19 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
     use RefreshDatabase;
 
     private const CONTRACT_ID = 'test_contract_tx_history';
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        Cache::flush();
+        config([
+            'smaregi.client_id' => 'test_client_id',
+            'smaregi.client_secret' => 'test_client_secret',
+            'smaregi.id_base_url' => 'https://id.smaregi.dev',
+            'smaregi.api_base_url' => 'https://api.smaregi.dev',
+            'smaregi.contract_id' => '',
+        ]);
+    }
 
     public function test_webhook_pos_transactionsで取引履歴同期ジョブがディスパッチされること(): void
     {
@@ -53,7 +68,7 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
             'user_id' => $user->id,
             'smaregi_customer_id' => '259',
         ]);
-        $product = \App\Models\Product::factory()->create([
+        $product = Product::factory()->create([
             'project_id' => $project->id,
             'smaregi_product_id' => '8000205',
             'name' => 'テストケーキ',
