@@ -2,10 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Enums\MemberVisitSource;
 use App\Models\AdminUser;
+use App\Models\Coupon;
 use App\Models\Member;
+use App\Models\MemberCoupon;
 use App\Models\Project;
 use App\Models\ShopSetting;
+use App\Models\StampCard;
 use App\Models\User;
 use App\Models\WalletPassRegistration;
 use App\Services\AppleWalletPushService;
@@ -226,6 +230,145 @@ class AdminMembersTest extends TestCase
 
         $this->assertSame(250, $member->points);
         $this->assertSame(250, $member->getTotalPointsFromTransactions());
+    }
+
+    public function test_members_detail_履歴セクションが表示されること(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $member = Member::factory()->create(['user_id' => $user->id, 'project_id' => $project->id]);
+
+        $response = $this->actingAs($admin, 'admin')
+            ->get(route('admin.members.detail', ['project_key' => $project->project_key, 'id' => $member->id]));
+
+        $response->assertStatus(200);
+        $response->assertSee('来店履歴');
+        $response->assertSee('ポイント履歴');
+        $response->assertSee('クーポン発行履歴');
+        $response->assertSee('スタンプ付与履歴');
+        $response->assertDontSee('>配布する<', false);
+        $response->assertDontSee('スタンプを更新');
+    }
+
+    public function test_編集からスタンプを加算減算でき履歴が残ること(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $member = Member::factory()->create(['user_id' => $user->id, 'project_id' => $project->id]);
+        $stampCard = StampCard::factory()->create([
+            'project_id' => $project->id,
+            'required_stamps' => 10,
+            'is_active' => true,
+        ]);
+
+        $add = $this->actingAs($admin, 'admin')
+            ->post(route('admin.members.adjust-stamps', ['project_key' => $project->project_key, 'id' => $member->id]), [
+                'stamp_card_id' => $stampCard->id,
+                'stamp_add' => 3,
+                'stamp_subtract' => 0,
+                'stamp_description' => 'テスト加算',
+            ]);
+        $add->assertRedirect(route('admin.members.edit', ['project_key' => $project->project_key, 'id' => $member->id]));
+        $this->assertDatabaseHas('member_stamps', [
+            'member_id' => $member->id,
+            'stamp_card_id' => $stampCard->id,
+            'current_stamps' => 3,
+        ]);
+        $this->assertDatabaseHas('member_stamp_transactions', [
+            'member_id' => $member->id,
+            'stamp_card_id' => $stampCard->id,
+            'delta' => 3,
+            'balance_after' => 3,
+        ]);
+
+        $subtract = $this->actingAs($admin, 'admin')
+            ->post(route('admin.members.adjust-stamps', ['project_key' => $project->project_key, 'id' => $member->id]), [
+                'stamp_card_id' => $stampCard->id,
+                'stamp_add' => 0,
+                'stamp_subtract' => 1,
+                'stamp_description' => 'テスト減算',
+            ]);
+        $subtract->assertRedirect();
+        $this->assertDatabaseHas('member_stamps', [
+            'member_id' => $member->id,
+            'stamp_card_id' => $stampCard->id,
+            'current_stamps' => 2,
+        ]);
+        $this->assertDatabaseHas('member_stamp_transactions', [
+            'member_id' => $member->id,
+            'delta' => -1,
+            'balance_after' => 2,
+        ]);
+    }
+
+    public function test_未使用クーポンは削除でき使用済みは削除できないこと(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $member = Member::factory()->create(['user_id' => $user->id, 'project_id' => $project->id]);
+        $coupon = Coupon::factory()->create(['project_id' => $project->id, 'is_active' => true]);
+        $unused = MemberCoupon::factory()->create([
+            'project_id' => $project->id,
+            'member_id' => $member->id,
+            'coupon_id' => $coupon->id,
+            'status' => MemberCoupon::STATUS_UNUSED,
+        ]);
+        $used = MemberCoupon::factory()->create([
+            'project_id' => $project->id,
+            'member_id' => $member->id,
+            'coupon_id' => $coupon->id,
+            'status' => MemberCoupon::STATUS_USED,
+            'used_at' => now(),
+        ]);
+
+        $deleteUnused = $this->actingAs($admin, 'admin')
+            ->delete(route('admin.members.delete-coupon', [
+                'project_key' => $project->project_key,
+                'id' => $member->id,
+                'memberCouponId' => $unused->id,
+            ]));
+        $deleteUnused->assertRedirect(route('admin.members.edit', ['project_key' => $project->project_key, 'id' => $member->id]));
+        $this->assertDatabaseMissing('member_coupons', ['id' => $unused->id]);
+
+        $deleteUsed = $this->actingAs($admin, 'admin')
+            ->delete(route('admin.members.delete-coupon', [
+                'project_key' => $project->project_key,
+                'id' => $member->id,
+                'memberCouponId' => $used->id,
+            ]));
+        $deleteUsed->assertRedirect();
+        $deleteUsed->assertSessionHas('error');
+        $this->assertDatabaseHas('member_coupons', ['id' => $used->id]);
+    }
+
+    public function test_来店を手動登録できること(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $member = Member::factory()->create([
+            'user_id' => $user->id,
+            'project_id' => $project->id,
+            'last_visited_at' => null,
+        ]);
+
+        $response = $this->actingAs($admin, 'admin')
+            ->post(route('admin.members.record-visit', ['project_key' => $project->project_key, 'id' => $member->id]), [
+                'visited_at' => '2026-07-18 15:30',
+                'note' => '手動来店',
+            ]);
+
+        $response->assertRedirect(route('admin.members.edit', ['project_key' => $project->project_key, 'id' => $member->id]));
+        $this->assertDatabaseHas('member_visits', [
+            'member_id' => $member->id,
+            'source' => MemberVisitSource::ADMIN,
+            'note' => '手動来店',
+        ]);
+        $member->refresh();
+        $this->assertSame('2026-07-18', $member->last_visited_at->format('Y-m-d'));
     }
 
     public function test_不正なメールでも会員プロフィール更新が失敗しないこと(): void
