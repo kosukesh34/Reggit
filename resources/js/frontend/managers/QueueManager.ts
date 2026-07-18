@@ -407,12 +407,13 @@ export class QueueManager {
     }
 
     renderQueueCard(entry: QueueEntry, isQrView = false, updatedAt: string | null = null): string {
-        const queueNumber =
+        const rawQueueNumber =
             entry.queue_number != null
                 ? entry.queue_number
                 : (entry.queueNumber != null
                     ? entry.queueNumber
                     : (entry.id != null ? entry.id : '-'));
+        const queueNumber = this.formatQueueNumber(rawQueueNumber);
         const status = entry.status || '-';
         const lineLinked = entry.line_linked === true || entry.lineLinked === true;
         const partySize =
@@ -578,6 +579,17 @@ export class QueueManager {
                 <p class="queue-help-note">同じLINEユーザーで複数の順番待ち登録が可能です。</p>
             </div>
         `;
+    }
+
+    formatQueueNumber(value: number | string): string {
+        if (typeof value === 'number' && Number.isFinite(value)) {
+            return String(Math.trunc(value)).padStart(4, '0');
+        }
+        if (typeof value === 'string' && /^\d+$/.test(value)) {
+            return value.padStart(4, '0');
+        }
+
+        return String(value);
     }
 
     formatUpdatedAt(value: string): string {

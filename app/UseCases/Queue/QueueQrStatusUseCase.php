@@ -117,7 +117,7 @@ class QueueQrStatusUseCase
         try {
             $project = Project::find($entry->project_id);
             $projectName = $project?->name ?? '店舗';
-            $queueNo = (string) ($entry->queue_number ?? $entry->id);
+            $queueNo = $entry->formattedQueueNumber();
             $projectKey = trim((string) ($project?->project_key ?? 'default'));
             if ($projectKey === '') {
                 $projectKey = 'default';
