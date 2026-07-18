@@ -31,6 +31,40 @@ interface CouponDeliveryTargetRepository
         \DateTimeInterface $end,
     ): array;
 
+    /**
+     * @param  string  $channel  line|app|both
+     * @return list<int>
+     */
+    public function findIdsByChannel(int $projectId, string $channel): array;
+
+    /**
+     * 来店回数（キャンセル以外の注文件数）で絞り込む。
+     *
+     * @return list<int>
+     */
+    public function findIdsByVisitCount(int $projectId, ?int $min, ?int $max): array;
+
+    /**
+     * 最終来店日で絞り込む。
+     *
+     * @param  string  $mode  inactive_days|visited_within_days
+     * @return list<int>
+     */
+    public function findIdsByLastVisited(int $projectId, string $mode, int $days): array;
+
+    /** @return list<int> */
+    public function findIdsBySex(int $projectId, string $sex): array;
+
+    /** @return list<int> */
+    public function findIdsByRank(int $projectId, string $rank): array;
+
+    /**
+     * 累計付与ポイントで絞り込む。
+     *
+     * @return list<int>
+     */
+    public function findIdsByLifetimeGrantedPoints(int $projectId, ?int $min, ?int $max): array;
+
     public function countAll(int $projectId): int;
 
     /**

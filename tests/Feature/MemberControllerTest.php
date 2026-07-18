@@ -27,6 +27,8 @@ class MemberControllerTest extends TestCase
     public function test_register_会員登録が作成されること(): void
     {
         $this->createProject();
+        // デフォルト契約IDがあると実スマレジへ飛ぶため、Featureでは契約なしにする
+        config(['smaregi.contract_id' => '']);
 
         $response = $this->withHeaders(['X-Line-User-Id' => self::LINE_USER_ID])
             ->post('/api/members/register?project_key=default', [
