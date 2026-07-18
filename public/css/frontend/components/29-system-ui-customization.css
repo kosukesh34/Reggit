@@ -82,9 +82,12 @@ body.system-media-arch { --system-media-radius: 999px 999px var(--radius-lg, 18p
 .reservation-card-body,
 .coupon-item,
 .queue-card,
-.announcement-item,
 .member-profile-card,
 .member-purchase-history-item {
+    padding: var(--system-section-pad);
+}
+
+.announcement-item__content {
     padding: var(--system-section-pad);
 }
 
@@ -104,7 +107,7 @@ body.system-ui-compact .order-card,
 body.system-ui-compact .reservation-card-body,
 body.system-ui-compact .coupon-item,
 body.system-ui-compact .queue-card,
-body.system-ui-compact .announcement-item {
+body.system-ui-compact .announcement-item__content {
     padding: 12px !important;
 }
 
