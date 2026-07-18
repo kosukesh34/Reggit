@@ -7,15 +7,21 @@ import skip.ui.*
 
 import android.Manifest
 import android.app.Application
+import android.app.NotificationManager
 import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Color as AndroidColor
 import android.os.Build
+import android.util.Log
+import androidx.annotation.Keep
 import com.onesignal.OneSignal
 import com.onesignal.notifications.INotificationClickEvent
 import com.onesignal.notifications.INotificationClickListener
 import com.onesignal.notifications.INotificationLifecycleListener
+import com.onesignal.notifications.INotificationReceivedEvent
+import com.onesignal.notifications.INotificationServiceExtension
 import com.onesignal.notifications.INotificationWillDisplayEvent
+import org.json.JSONObject
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.SystemBarStyle
@@ -93,7 +99,21 @@ open class AndroidAppMain: Application {
     private fun bindOneSignalForegroundListener() {
         OneSignal.Notifications.addForegroundLifecycleListener(object : INotificationLifecycleListener {
             override fun onWillDisplay(event: INotificationWillDisplayEvent) {
-                val type = event.notification.additionalData?.optString("type")?.trim().orEmpty()
+                val additionalData = event.notification.additionalData
+                val type = additionalData?.optString("type")?.trim().orEmpty()
+                val announcementId = additionalData?.optString("announcement_id")?.trim().orEmpty()
+                val title = event.notification.title?.trim().orEmpty()
+                    .replace("\u200B", "")
+                    .replace("\u00A0", "")
+                val body = event.notification.body?.trim().orEmpty()
+                    .replace("\u200B", "")
+                    .replace("\u00A0", "")
+                if (type == "announcement_cancelled" || (title.isEmpty() && body.isEmpty())) {
+                    event.preventDefault()
+                    val originalTitle = additionalData?.optString("original_title")?.trim().orEmpty()
+                    cancelDeliveredAnnouncementNotifications(applicationContext, announcementId, originalTitle)
+                    return
+                }
                 if (type == "coupon_issued") {
                     AppDelegate.shared.onNotificationForeground(notificationType = type)
                 }
@@ -116,6 +136,268 @@ open class AndroidAppMain: Application {
 
     companion object {
     }
+}
+
+/**
+ * お知らせ取消し通知を抑止し、同一お知らせの届済み通知を消す。
+ * 配信時は android_group を揃えておき、取消し時に removeGroupedNotifications で消す。
+ * AndroidManifest の com.onesignal.NotificationServiceExtension から参照される。
+ */
+@Keep
+class AnnouncementCancelNotificationExtension : INotificationServiceExtension {
+    override fun onNotificationReceived(event: INotificationReceivedEvent) {
+        val notification = event.notification
+        val additionalData = notification.additionalData
+        val announcementId = additionalData?.optString("announcement_id")?.trim().orEmpty()
+        val type = additionalData?.optString("type")?.trim().orEmpty()
+        val collapseId = announcementCollapseId(announcementId)
+        val title = notification.title?.trim().orEmpty()
+            .replace("\u200B", "")
+            .replace("\u00A0", "")
+        val body = notification.body?.trim().orEmpty()
+            .replace("\u200B", "")
+            .replace("\u00A0", "")
+
+        if (collapseId != null) {
+            notification.setExtender { builder ->
+                builder.setGroup(collapseId).setOnlyAlertOnce(true)
+            }
+        }
+
+        val isCancel = type == "announcement_cancelled"
+            || body == "このお知らせは取り消されました"
+            || (title.isEmpty() && body.isEmpty() && announcementId.isNotEmpty())
+
+        if (!isCancel) {
+            return
+        }
+
+        // 取消し通知自体は表示せず、同一お知らせの届済みを消す
+        event.preventDefault(true)
+        val context = event.context ?: return
+        val originalTitle = additionalData?.optString("original_title")?.trim().orEmpty()
+            .ifEmpty { title }
+        cancelDeliveredAnnouncementNotifications(context, announcementId, originalTitle)
+    }
+}
+
+internal fun announcementCollapseId(announcementId: String): String? {
+    if (announcementId.isEmpty()) {
+        return null
+    }
+    return "reggit:announcement:$announcementId"
+}
+
+internal fun cancelDeliveredAnnouncementNotifications(
+    context: Context,
+    announcementId: String,
+    originalTitle: String = ""
+) {
+    val collapseId = announcementCollapseId(announcementId)
+
+    if (collapseId != null) {
+        runCatching { OneSignal.Notifications.removeGroupedNotifications(collapseId) }
+            .onFailure { Log.w("ReggitPushCancel", "removeGroupedNotifications failed: ${it.message}") }
+        runCatching { OneSignal.Notifications.removeNotification(collapseId.hashCode()) }
+    }
+
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+        return
+    }
+    val notificationManager = context.getSystemService(NotificationManager::class.java) ?: return
+    if (collapseId != null) {
+        notificationManager.cancel(collapseId.hashCode())
+        notificationManager.cancel(collapseId, collapseId.hashCode())
+        notificationManager.cancel(null, collapseId.hashCode())
+    }
+
+    val matched = notificationManager.activeNotifications.filter { statusBarNotification ->
+        val group = statusBarNotification.notification.group
+        val groupKey = statusBarNotification.groupKey.orEmpty()
+        if (collapseId != null) {
+            if (statusBarNotification.tag == collapseId) {
+                return@filter true
+            }
+            if (statusBarNotification.id == collapseId.hashCode()) {
+                return@filter true
+            }
+            if (group == collapseId) {
+                return@filter true
+            }
+            if (groupKey.contains(collapseId)) {
+                return@filter true
+            }
+        }
+        if (announcementId.isNotEmpty() && (
+                groupKey.contains("announcement:$announcementId")
+                    || (group?.contains("announcement:$announcementId") == true)
+                )
+        ) {
+            return@filter true
+        }
+        val extras = statusBarNotification.notification.extras
+        notificationContainsAnnouncementId(extras, announcementId)
+            || notificationContainsAnnouncementCancelled(extras)
+            || (originalTitle.isNotEmpty() && extras?.getCharSequence(android.app.Notification.EXTRA_TITLE)?.toString() == originalTitle)
+            || extrasFlatContains(extras, announcementId)
+            || (collapseId != null && extrasFlatContains(extras, collapseId))
+    }
+    matched.forEach { statusBarNotification ->
+        runCatching { OneSignal.Notifications.removeNotification(statusBarNotification.id) }
+        notificationManager.cancel(statusBarNotification.tag, statusBarNotification.id)
+        notificationManager.cancel(statusBarNotification.id)
+    }
+}
+
+internal data class CancelledAnnouncementItem(val id: String, val title: String = "")
+
+internal fun fetchCancelledAnnouncementItems(context: Context): List<CancelledAnnouncementItem> {
+    return try {
+        val baseUrl = resolveCancelledIdsBaseUrl(context) ?: return emptyList()
+        val projectKey = resolveCancelledIdsProjectKey(context)
+        val encodedKey = java.net.URLEncoder.encode(projectKey, "UTF-8")
+        val url = java.net.URL("$baseUrl/api/v1/announcements/cancelled-ids?project_key=$encodedKey")
+        val connection = (url.openConnection() as java.net.HttpURLConnection).apply {
+            requestMethod = "GET"
+            setRequestProperty("Accept", "application/json")
+            setRequestProperty("ngrok-skip-browser-warning", "1")
+            connectTimeout = 8000
+            readTimeout = 8000
+        }
+        try {
+            if (connection.responseCode != 200) {
+                logger.warning("CancelledAnnouncementIds fetch status=${connection.responseCode}")
+                return emptyList()
+            }
+            val body = connection.inputStream.bufferedReader().use { it.readText() }
+            parseCancelledAnnouncementItems(body)
+        } finally {
+            connection.disconnect()
+        }
+    } catch (e: Exception) {
+        logger.warning("CancelledAnnouncementIds fetch failed: ${e.message}")
+        emptyList()
+    }
+}
+
+private fun resolveCancelledIdsBaseUrl(context: Context): String? {
+    // Debug は iOS と同様に開発サーバ（ngrok）へ向ける。Skip.env の本番 URL だと取消しIDが取れない。
+    if (BuildConfig.DEBUG) {
+        return "https://unadministrable-idiocratically-annalee.ngrok-free.dev"
+    }
+    val meta = context.packageManager
+        .getApplicationInfo(context.packageName, PackageManager.GET_META_DATA)
+        .metaData
+    return listOf("LiffBaseUrlAndroid", "LIFF_BASE_URL_ANDROID", "LiffBaseUrl", "LIFF_BASE_URL")
+        .mapNotNull { key -> meta?.getString(key)?.trim()?.takeIf { it.isNotEmpty() && it != "undefined" && it != "null" } }
+        .firstOrNull()
+        ?.trimEnd('/')
+}
+
+private fun resolveCancelledIdsProjectKey(context: Context): String {
+    val meta = context.packageManager
+        .getApplicationInfo(context.packageName, PackageManager.GET_META_DATA)
+        .metaData
+    return listOf("LiffProjectKeyAndroid", "LIFF_PROJECT_KEY_ANDROID", "LiffProjectKey", "LIFF_PROJECT_KEY")
+        .mapNotNull { key -> meta?.getString(key)?.trim()?.takeIf { it.isNotEmpty() && it != "undefined" && it != "null" } }
+        .firstOrNull()
+        ?: "default"
+}
+
+private fun parseCancelledAnnouncementItems(body: String): List<CancelledAnnouncementItem> {
+    val json = JSONObject(body)
+    val items = mutableListOf<CancelledAnnouncementItem>()
+    val array = json.optJSONArray("items")
+    if (array != null) {
+        for (index in 0 until array.length()) {
+            val obj = array.optJSONObject(index) ?: continue
+            val id = obj.opt("id")?.toString()?.trim().orEmpty()
+            if (id.isEmpty() || id == "0") continue
+            items.add(CancelledAnnouncementItem(id, obj.optString("title").trim()))
+        }
+    }
+    if (items.isNotEmpty()) {
+        return items
+    }
+    val ids = json.optJSONArray("cancelled_ids") ?: return emptyList()
+    return (0 until ids.length()).mapNotNull { index ->
+        ids.opt(index)?.toString()?.trim()?.takeIf { it.isNotEmpty() && it != "0" }?.let { CancelledAnnouncementItem(it) }
+    }
+}
+
+private fun notificationContainsAnnouncementCancelled(extras: android.os.Bundle?): Boolean {
+    if (extras == null) {
+        return false
+    }
+    return extrasString(extras, "type") == "announcement_cancelled"
+        || extrasAsJson(extras)?.optString("type") == "announcement_cancelled"
+}
+
+private fun notificationContainsAnnouncementId(extras: android.os.Bundle?, announcementId: String): Boolean {
+    if (extras == null || announcementId.isEmpty()) {
+        return false
+    }
+    if (extrasString(extras, "announcement_id") == announcementId) {
+        return true
+    }
+    val json = extrasAsJson(extras) ?: return false
+    return json.optString("announcement_id") == announcementId
+}
+
+private fun extrasString(extras: android.os.Bundle, key: String): String? {
+    extras.getString(key)?.trim()?.takeIf { it.isNotEmpty() }?.let { return it }
+    if (extras.containsKey(key)) {
+        val value = extras.get(key)
+        when (value) {
+            is Number -> return value.toString()
+            is CharSequence -> return value.toString().trim().takeIf { it.isNotEmpty() }
+        }
+    }
+    return null
+}
+
+private fun extrasFlatContains(extras: android.os.Bundle?, announcementId: String): Boolean {
+    if (extras == null || announcementId.isEmpty()) {
+        return false
+    }
+    return extras.toString().contains(announcementId)
+}
+
+private fun extrasAsJson(extras: android.os.Bundle): JSONObject? {
+    val candidates = listOf("onesignal_data", "custom", "data", "additionalData")
+    for (key in candidates) {
+        val raw = extras.getString(key) ?: continue
+        try {
+            val root = JSONObject(raw)
+            val nested = root.optJSONObject("a") ?: root.optJSONObject("additionalData")
+            if (nested != null) {
+                return nested
+            }
+            return root
+        } catch (_: Exception) {
+            continue
+        }
+    }
+    // Bundle 直下のネスト Bundle も見る
+    for (key in candidates) {
+        val nestedBundle = extras.getBundle(key) ?: continue
+        if (nestedBundle.containsKey("announcement_id") || nestedBundle.containsKey("a")) {
+            val json = JSONObject()
+            for (bundleKey in nestedBundle.keySet()) {
+                json.put(bundleKey, nestedBundle.get(bundleKey)?.toString())
+            }
+            val nested = nestedBundle.getBundle("a")
+            if (nested != null) {
+                val nestedJson = JSONObject()
+                for (bundleKey in nested.keySet()) {
+                    nestedJson.put(bundleKey, nested.get(bundleKey)?.toString())
+                }
+                return nestedJson
+            }
+            return json
+        }
+    }
+    return null
 }
 
 /// AndroidAppMain is initial `androidx.appcompat.app.AppCompatActivity`, and must match `activity android:name` in the AndroidMainfest.xml file.
@@ -163,6 +445,29 @@ open class MainActivity: AppCompatActivity {
         AppDelegate.shared.onResume()
         // 既にログインしている場合も含め、アプリ表示のたびに通知許可を未取得ならリクエスト
         requestNotificationPermissionIfNeeded()
+        // OneSignal の restored_OS_notifications 復元に負けないよう即時＋遅延で掃除
+        syncCancelledAnnouncementNotifications()
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+            syncCancelledAnnouncementNotifications()
+        }, 1500)
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+            syncCancelledAnnouncementNotifications()
+        }, 4000)
+    }
+
+    private fun syncCancelledAnnouncementNotifications() {
+        Thread {
+            val items = fetchCancelledAnnouncementItems(this)
+            logger.info("CancelledAnnouncementIds synced count=${items.size}")
+            if (items.isEmpty()) {
+                return@Thread
+            }
+            runOnUiThread {
+                for (item in items) {
+                    cancelDeliveredAnnouncementNotifications(this, item.id, item.title)
+                }
+            }
+        }.start()
     }
 
     override fun onPause() {
