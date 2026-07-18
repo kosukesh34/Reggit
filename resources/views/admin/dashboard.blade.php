@@ -204,7 +204,13 @@
                 @forelse($recent_orders as $order)
                 <tr>
                     <td><a href="{{ admin_route('admin.orders.detail', ['id' => $order->id]) }}">{{ $order->order_number }}</a></td>
-                    <td>{{ $order->user->name ?? 'N/A' }}</td>
+                    <td>
+                        @if($order->user?->member !== null)
+                            <a href="{{ admin_route('admin.members.detail', ['id' => $order->user->member->id]) }}">{{ $order->user->name ?? 'N/A' }}</a>
+                        @else
+                            {{ $order->user->name ?? 'N/A' }}
+                        @endif
+                    </td>
                     <td><strong>¥{{ number_format($order->total_amount) }}</strong></td>
                     <td>
                         <span class="badge badge-{{ $order->status === 'completed' ? 'success' : ($order->status === 'pending' ? 'warning' : 'info') }}">

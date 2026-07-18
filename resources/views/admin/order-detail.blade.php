@@ -16,7 +16,13 @@
             </div>
             <div class="info-item">
                 <div class="info-label">ユーザー</div>
-                <div class="info-value">{{ $order->user->name ?? 'N/A' }}</div>
+                <div class="info-value">
+                    @if($order->user?->member !== null)
+                        <a href="{{ admin_route('admin.members.detail', ['id' => $order->user->member->id]) }}">{{ $order->user->name ?? 'N/A' }}</a>
+                    @else
+                        {{ $order->user->name ?? 'N/A' }}
+                    @endif
+                </div>
             </div>
             <div class="info-item">
                 <div class="info-label">合計金額</div>
