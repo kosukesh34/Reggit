@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Services\UserService;
+use App\UseCases\Announcement\AnnouncementCancelledIdsUseCase;
 use App\UseCases\Announcement\AnnouncementIndexUseCase;
 use App\UseCases\Announcement\AnnouncementMarkReadUseCase;
 use App\UseCases\Announcement\Data\AnnouncementMarkReadInput;
@@ -16,6 +17,7 @@ class AnnouncementController extends BaseApiController
     public function __construct(
         private AnnouncementIndexUseCase $indexUseCase,
         private AnnouncementMarkReadUseCase $markReadUseCase,
+        private AnnouncementCancelledIdsUseCase $cancelledIdsUseCase,
         private UserService $userService,
     ) {}
 
@@ -55,5 +57,13 @@ class AnnouncementController extends BaseApiController
 
             return $this->error('既読更新に失敗しました', 500);
         }
+    }
+
+    public function cancelledIds()
+    {
+        $projectId = AdminContext::getCurrentProjectId() ?? 1;
+        $payload = $this->cancelledIdsUseCase->handleByProjectId((int) $projectId);
+
+        return $this->success($payload);
     }
 }

@@ -4,10 +4,12 @@ namespace Tests\Feature;
 
 use App\Models\AdminUser;
 use App\Models\Announcement;
+use App\Models\AnnouncementRead;
 use App\Models\Coupon;
 use App\Models\Member;
 use App\Models\Project;
 use App\Models\User;
+use App\Services\PushNotificationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -40,6 +42,71 @@ class AdminAnnouncementsTest extends TestCase
             ->get(route('admin.announcements', ['project_key' => $project->project_key]));
 
         $response->assertStatus(200);
+        $response->assertSee('一斉配信');
+        $response->assertSee('個人宛配信');
+        $response->assertSee('セグメント配信');
+    }
+
+    public function test_announcements_配信形態で絞り込みできること(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+
+        Announcement::factory()->create([
+            'project_id' => $project->id,
+            'title' => '一斉のみ',
+            'delivery_type' => Announcement::DELIVERY_TYPE_IMMEDIATE_BULK,
+            'delivery_status' => Announcement::DELIVERY_STATUS_SENT,
+        ]);
+        Announcement::factory()->create([
+            'project_id' => $project->id,
+            'title' => 'セグメントのみ',
+            'delivery_type' => Announcement::DELIVERY_TYPE_SEGMENT,
+            'delivery_status' => Announcement::DELIVERY_STATUS_SENT,
+        ]);
+
+        $response = $this->actingAs($admin, 'admin')
+            ->get(route('admin.announcements', [
+                'project_key' => $project->project_key,
+                'delivery_type' => Announcement::DELIVERY_TYPE_SEGMENT,
+            ]));
+
+        $response->assertStatus(200);
+        $response->assertSee('セグメントのみ');
+        $response->assertDontSee('一斉のみ');
+    }
+
+    public function test_announcements_期間とキーワードで検索できること(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+
+        Announcement::factory()->create([
+            'project_id' => $project->id,
+            'title' => '夏のキャンペーン',
+            'delivery_type' => Announcement::DELIVERY_TYPE_IMMEDIATE_BULK,
+            'delivery_status' => Announcement::DELIVERY_STATUS_SENT,
+            'published_at' => '2026-07-10 10:00:00',
+        ]);
+        Announcement::factory()->create([
+            'project_id' => $project->id,
+            'title' => '冬のキャンペーン',
+            'delivery_type' => Announcement::DELIVERY_TYPE_IMMEDIATE_BULK,
+            'delivery_status' => Announcement::DELIVERY_STATUS_SENT,
+            'published_at' => '2026-01-10 10:00:00',
+        ]);
+
+        $response = $this->actingAs($admin, 'admin')
+            ->get(route('admin.announcements', [
+                'project_key' => $project->project_key,
+                'keyword' => '夏',
+                'published_from' => '2026-07-01',
+                'published_to' => '2026-07-31',
+            ]));
+
+        $response->assertStatus(200);
+        $response->assertSee('夏のキャンペーン');
+        $response->assertDontSee('冬のキャンペーン');
     }
 
     public function test_delivery_form_配信画面にアクセスできること(): void
@@ -177,6 +244,10 @@ class AdminAnnouncementsTest extends TestCase
             'title' => '削除対象',
         ]);
 
+        $this->mock(PushNotificationService::class, function ($mock) {
+            $mock->shouldReceive('cancelAnnouncementPush')->once();
+        });
+
         $response = $this->actingAs($admin, 'admin')
             ->delete(route('admin.announcements.delete', [
                 'project_key' => $project->project_key,
@@ -239,5 +310,69 @@ class AdminAnnouncementsTest extends TestCase
             'title' => '画像付き配信',
             'image_url' => 'https://example.com/delivery.png',
         ]);
+    }
+
+    public function test_announcements_既読数が表示されること(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        $announcement = Announcement::factory()->create([
+            'project_id' => $project->id,
+            'title' => '既読確認用',
+        ]);
+        $user = User::factory()->create([
+            'project_id' => $project->id,
+            'name' => '山田太郎',
+        ]);
+        AnnouncementRead::create([
+            'project_id' => $project->id,
+            'announcement_id' => $announcement->id,
+            'user_id' => $user->id,
+            'read_at' => now(),
+        ]);
+
+        $response = $this->actingAs($admin, 'admin')
+            ->get(route('admin.announcements', ['project_key' => $project->project_key]));
+
+        $response->assertStatus(200);
+        $response->assertSee('既読数');
+        $response->assertSee('1人');
+    }
+
+    public function test_announcement_reads_既読者一覧を表示できること(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        $announcement = Announcement::factory()->create([
+            'project_id' => $project->id,
+            'title' => '既読詳細対象',
+        ]);
+        $user = User::factory()->create([
+            'project_id' => $project->id,
+            'name' => '佐藤花子',
+        ]);
+        Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+            'member_number' => 'M-READ-1',
+        ]);
+        AnnouncementRead::create([
+            'project_id' => $project->id,
+            'announcement_id' => $announcement->id,
+            'user_id' => $user->id,
+            'read_at' => now(),
+        ]);
+
+        $response = $this->actingAs($admin, 'admin')
+            ->get(route('admin.announcements.reads', [
+                'project_key' => $project->project_key,
+                'id' => $announcement->id,
+            ]));
+
+        $response->assertStatus(200);
+        $response->assertSee('既読一覧');
+        $response->assertSee('既読詳細対象');
+        $response->assertSee('佐藤花子');
+        $response->assertSee('M-READ-1');
     }
 }
