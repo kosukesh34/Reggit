@@ -37,10 +37,11 @@ class QueueAdminService
         $this->shopSettingRepository = $shopSettingRepository;
     }
 
-    public function getPaginatedList(int $projectId, int $perPage = 50): LengthAwarePaginator
+    public function getPaginatedList(int $projectId, int $perPage = 30): LengthAwarePaginator
     {
         return QueueEntry::with('member.user', 'user')
             ->where('project_id', $projectId)
+            ->visibleOnQueueBoard()
             ->orderByDesc('entered_at')
             ->paginate($perPage);
     }
@@ -48,6 +49,7 @@ class QueueAdminService
     public function getWaitingCount(int $projectId): int
     {
         return QueueEntry::where('project_id', $projectId)
+            ->where('created_at', '>=', now()->subDay())
             ->where('status', QueueStatus::WAITING)
             ->count();
     }
@@ -63,6 +65,7 @@ class QueueAdminService
     public function getWaitingQueueNumbers(int $projectId): Collection
     {
         return QueueEntry::where('project_id', $projectId)
+            ->where('created_at', '>=', now()->subDay())
             ->where('status', QueueStatus::WAITING)
             ->orderBy('queue_number')
             ->pluck('queue_number')
@@ -98,7 +101,7 @@ class QueueAdminService
 
         $lineUserId = $entry->user?->line_user_id ?? $entry->member?->user?->line_user_id;
         $notifyUserId = (int) ($entry->user_id ?? ($entry->member?->user_id ?? 0));
-        $callLog = QueueCallLog::firstOrCreate(
+        $callLog = QueueCallLog::updateOrCreate(
             ['queue_entry_id' => $entry->id],
             [
                 'project_id' => (int) $entry->project_id,
@@ -106,13 +109,11 @@ class QueueAdminService
                 'line_user_id' => $lineUserId,
                 'called_at' => now(),
                 'push_status' => 'pending',
+                'error_message' => null,
             ]
         );
-        if ($callLog->wasRecentlyCreated === false) {
-            return;
-        }
         if ($notifyUserId > 0) {
-            $queueNumber = (string) ($entry->queue_number ?? $entry->id);
+            $queueNumber = $entry->formattedQueueNumber();
             $pushResult = $this->pushNotificationService->sendQueueCalledToUser((int) $entry->project_id, $notifyUserId, $queueNumber);
             LogHelper::info('[Queue] native push result', [
                 'queue_id' => $entry->id,
@@ -145,7 +146,7 @@ class QueueAdminService
 
             return;
         }
-        $message = sprintf('順番が近づきました。受付番号: %s', $entry->queue_number ?? $entry->id);
+        $message = sprintf('順番が近づきました。受付番号: %s', $entry->formattedQueueNumber());
         try {
             $project = Project::find((int) $entry->project_id);
             $projectKey = trim((string) ($project?->project_key ?? 'default'));
