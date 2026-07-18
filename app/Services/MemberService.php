@@ -312,17 +312,21 @@ class MemberService
         $contractId = is_string($contractId) ? trim($contractId) : '';
         if ($contractId !== '') {
             $body = $this->buildSmaregiCustomerBody($memberNumber, $data);
+            $this->smaregiApi->clearLastErrorDetail();
             $result = $this->smaregiApi->createCustomer($contractId, $body);
-            if ($result !== null && isset($result['customerId']) && (string) $result['customerId'] !== '') {
-                $smaregiCustomerId = (string) $result['customerId'];
-            } else {
-                // スマレジ連携失敗時でも会員登録自体は継続し、後続運用で再同期できるようにする。
-                LogHelper::warning('[Member] smaregi create customer failed. fallback to local registration', [
+            if ($result === null || ! isset($result['customerId']) || (string) $result['customerId'] === '') {
+                LogHelper::warning('[Member] smaregi create customer failed', [
                     'project_id' => $projectId,
                     'user_id' => (int) $user->id,
                     'member_number' => $memberNumber,
+                    'detail' => $this->smaregiApi->getLastErrorDetail(),
                 ]);
+
+                throw new \RuntimeException(
+                    'スマレジへの会員登録に失敗しました。入力内容やスマレジ連携設定を確認してください。'
+                );
             }
+            $smaregiCustomerId = (string) $result['customerId'];
         }
 
         $rankSettings = $this->shopSettingRepository->getMemberRankSettings($projectId);
@@ -379,21 +383,20 @@ class MemberService
         if ($lastName === '' && $name !== '') {
             $lastName = $name;
         }
-        // スマレジの lastKana/firstKana はカタカナのみ受け付けるため、空や漢字のときはカタカナの 'ー' を送る
+        // スマレジの lastKana/firstKana はカタカナのみ受け付ける
         $kanaParts = $kana !== '' ? preg_split('/\s+/u', $kana, 2) : ['', ''];
         $lastKana = trim((string) ($kanaParts[0] ?? ''));
         $firstKana = trim((string) ($kanaParts[1] ?? ''));
         if ($lastKana === '' && $kana !== '') {
             $lastKana = trim($kana);
         }
-        $kanaPlaceholder = 'ー'; // カタカナ長音（入力内容に誤りがありますを防ぐ）
 
         $body = [
             'customerCode' => Str::limit($memberNumber, 20, ''),
             'lastName' => $lastName !== '' ? $lastName : '—',
             'firstName' => $firstName !== '' ? $firstName : '—',
-            'lastKana' => $lastKana !== '' ? $lastKana : $kanaPlaceholder,
-            'firstKana' => $firstKana !== '' ? $firstKana : $kanaPlaceholder,
+            'lastKana' => $this->normalizeSmaregiKana($lastKana),
+            'firstKana' => $this->normalizeSmaregiKana($firstKana),
         ];
         $email = trim((string) ($data['email'] ?? ''));
         if ($email !== '') {
@@ -405,6 +408,22 @@ class MemberService
         }
 
         return $body;
+    }
+
+    /** ひらがなはカタカナへ変換し、カタカナ以外はプレースホルダにする */
+    private function normalizeSmaregiKana(string $value): string
+    {
+        $value = trim($value);
+        if ($value === '') {
+            return 'ー';
+        }
+
+        $katakana = mb_convert_kana($value, 'CKV', 'UTF-8');
+        if (preg_match('/^[\x{30A1}-\x{30F6}\x{30FC}\x{30FB}ー]+$/u', $katakana) === 1) {
+            return $katakana;
+        }
+
+        return 'ー';
     }
 
     private function syncMemberRank(Member $member): void

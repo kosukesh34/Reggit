@@ -2,24 +2,22 @@
 
 namespace App\UseCases\Admin\Announcement;
 
-use App\Services\Admin\SalesSegmentService;
+use App\Services\Admin\MemberSegmentService;
+use Illuminate\Http\Request;
 
 class AdminAnnouncementSegmentPreviewUseCase
 {
     public function __construct(
-        private SalesSegmentService $salesSegmentService,
+        private MemberSegmentService $memberSegmentService,
     ) {}
 
-    public function handle(int $projectId, int $periodDays, string $condition, ?float $minAmount): int
+    public function handle(int $projectId, Request $request): int
     {
-        $periodDays = max(1, min(365, $periodDays));
-        $noOrdersOnly = $condition === 'no_orders';
+        $criteria = $this->memberSegmentService->buildCriteriaFromInput($request->query());
+        if ($criteria === null) {
+            return 0;
+        }
 
-        return $this->salesSegmentService->getMemberIdsBySalesCriteria(
-            $projectId,
-            $periodDays,
-            $noOrdersOnly ? null : ($minAmount ?? 0.0),
-            $noOrdersOnly
-        )->count();
+        return $this->memberSegmentService->countMembers($projectId, $criteria);
     }
 }
