@@ -39,7 +39,7 @@ class QueueAdminService
 
     public function getPaginatedList(int $projectId, int $perPage = 30): LengthAwarePaginator
     {
-        return QueueEntry::with('member.user', 'user')
+        return QueueEntry::with(['member.user.devices', 'user.devices', 'user.member'])
             ->where('project_id', $projectId)
             ->visibleOnQueueBoard()
             ->orderByDesc('entered_at')

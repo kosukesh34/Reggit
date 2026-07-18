@@ -84,7 +84,13 @@
                             {{ $orderTypeLabel !== '' ? $orderTypeLabel : '—' }}
                         </span>
                     </td>
-                    <td>{{ $order->user->name ?? 'N/A' }}</td>
+                    <td>
+                        @if($order->user?->member !== null)
+                            <a href="{{ admin_route('admin.members.detail', ['id' => $order->user->member->id]) }}">{{ $order->user->name ?? 'N/A' }}</a>
+                        @else
+                            {{ $order->user->name ?? 'N/A' }}
+                        @endif
+                    </td>
                     <td><strong>¥{{ number_format($order->total_amount) }}</strong></td>
                     <td>{{ $order->payment_method ?? 'N/A' }}</td>
                     <td>

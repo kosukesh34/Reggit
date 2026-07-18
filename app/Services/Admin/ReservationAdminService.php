@@ -18,7 +18,7 @@ class ReservationAdminService
 
     public function getReservationIndexPayload(?string $status, ?string $selectedDate, int $projectId, int $perPage = 20): array
     {
-        $query = Reservation::with('user')->orderByDesc('reserved_at');
+        $query = Reservation::with('user.member')->orderByDesc('reserved_at');
         if ($status !== null && $status !== '' && $status !== 'all') {
             $query->where('status', $status);
         }
@@ -81,7 +81,7 @@ class ReservationAdminService
 
     public function findOrFail(int $id): Reservation
     {
-        return Reservation::with('user')->findOrFail($id);
+        return Reservation::with('user.member')->findOrFail($id);
     }
 
     public function updateStatus(int $id, string $status): void
