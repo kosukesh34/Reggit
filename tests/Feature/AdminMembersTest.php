@@ -111,13 +111,17 @@ class AdminMembersTest extends TestCase
         ]);
 
         for ($i = 0; $i < 21; $i++) {
-            PointTransaction::create([
+            $tx = PointTransaction::create([
                 'project_id' => $project->id,
                 'member_id' => $member->id,
                 'type' => 'earned',
                 'points' => 1,
                 'description' => 'pt-'.$i,
             ]);
+            $tx->forceFill([
+                'created_at' => now()->subMinutes(21 - $i),
+                'updated_at' => now()->subMinutes(21 - $i),
+            ])->save();
         }
 
         $coupon = Coupon::factory()->create(['project_id' => $project->id, 'name' => '利用テストクーポン']);
