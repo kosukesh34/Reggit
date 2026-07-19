@@ -112,37 +112,51 @@ class QueueAdminService
                 'error_message' => null,
             ]
         );
+        $nativeSent = false;
+        $nativePushResult = null;
         if ($notifyUserId > 0) {
             $queueNumber = $entry->formattedQueueNumber();
-            $pushResult = $this->pushNotificationService->sendQueueCalledToUser((int) $entry->project_id, $notifyUserId, $queueNumber);
+            $nativePushResult = $this->pushNotificationService->sendQueueCalledToUser((int) $entry->project_id, $notifyUserId, $queueNumber);
+            $nativeSent = ($nativePushResult['sent'] ?? 0) > 0;
             LogHelper::info('[Queue] native push result', [
                 'queue_id' => $entry->id,
                 'project_id' => (int) $entry->project_id,
                 'user_id' => $notifyUserId,
-                'target_tokens' => $pushResult['target_tokens'],
-                'sent' => $pushResult['sent'],
-                'failed' => $pushResult['failed'],
-                'skipped' => $pushResult['skipped'],
+                'target_tokens' => $nativePushResult['target_tokens'],
+                'sent' => $nativePushResult['sent'],
+                'failed' => $nativePushResult['failed'],
+                'skipped' => $nativePushResult['skipped'],
             ]);
+            if ($nativeSent) {
+                $callLog->update([
+                    'push_status' => 'sent',
+                    'error_message' => null,
+                ]);
+            }
         }
 
         if ($lineUserId === null || $lineUserId === '' || ! $this->isValidLineUserId($lineUserId)) {
-            $callLog->update([
-                'push_status' => 'skipped',
-                'error_message' => 'invalid line user id',
-            ]);
+            if (! $nativeSent) {
+                $callLog->update([
+                    'push_status' => 'skipped',
+                    'error_message' => $this->resolveSkippedPushReason($notifyUserId, $nativePushResult),
+                ]);
+            }
             LogHelper::warning('[Queue] line push skipped: invalid line user id', [
                 'queue_id' => $entry->id,
                 'line_user_id' => $lineUserId,
+                'native_sent' => $nativeSent,
             ]);
 
             return;
         }
         if (app()->environment('testing')) {
-            $callLog->update([
-                'push_status' => 'skipped',
-                'error_message' => 'testing environment',
-            ]);
+            if (! $nativeSent) {
+                $callLog->update([
+                    'push_status' => 'skipped',
+                    'error_message' => 'testing environment',
+                ]);
+            }
 
             return;
         }
@@ -218,5 +232,21 @@ class QueueAdminService
     private function isValidLineUserId(string $lineUserId): bool
     {
         return preg_match('/^U[0-9a-f]{32}$/i', $lineUserId) === 1;
+    }
+
+    /** @param array{target_tokens?:int,sent?:int,failed?:int,skipped?:int}|null $nativePushResult */
+    private function resolveSkippedPushReason(int $notifyUserId, ?array $nativePushResult): string
+    {
+        if ($notifyUserId <= 0) {
+            return 'no notify user';
+        }
+        if ($nativePushResult === null) {
+            return 'native push not attempted';
+        }
+        if (($nativePushResult['target_tokens'] ?? 0) === 0) {
+            return 'no native push token';
+        }
+
+        return 'native push not sent';
     }
 }

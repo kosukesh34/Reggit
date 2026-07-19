@@ -49,6 +49,21 @@ class EloquentShopSettingRepository implements ShopSettingRepository
         return (int) ShopSetting::getQueueAvgServeMinutes($projectId);
     }
 
+    public function getQueueRequireMembership(int $projectId): bool
+    {
+        return ShopSetting::getQueueRequireMembership($projectId);
+    }
+
+    public function getQueueChannelLine(int $projectId): bool
+    {
+        return ShopSetting::getQueueChannelLine($projectId);
+    }
+
+    public function getQueueChannelNative(int $projectId): bool
+    {
+        return ShopSetting::getQueueChannelNative($projectId);
+    }
+
     public function getReservationTimeSlots(int $projectId): array
     {
         return ShopSetting::getReservationTimeSlots($projectId);

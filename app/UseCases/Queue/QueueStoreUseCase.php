@@ -2,30 +2,42 @@
 
 namespace App\UseCases\Queue;
 
+use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Enums\QueueStatus;
 use App\Models\QueueEntry as QueueEntryModel;
 use App\Support\DailySequenceNumber;
-use App\UseCases\Queue\Data\QueueEntry;
 use App\UseCases\Queue\Data\QueueEntryFactory;
 use App\UseCases\Queue\Data\QueueStoreInput;
+use App\UseCases\Queue\Data\QueueStoreOutput;
 use App\Util\AdminContext;
 use App\Util\StrHelper;
 use Illuminate\Support\Str;
 
 class QueueStoreUseCase
 {
+    public const WAITING_SYSTEM_CLIENT = 'waiting-system';
+
     public function __construct(
         private QueueStatsService $statsService,
         private QueueEntryFactory $entryFactory,
+        private ShopSettingRepository $shopSettingRepository,
     ) {}
 
-    public function handle(QueueStoreInput $input): QueueEntry
+    public function handle(QueueStoreInput $input): QueueStoreOutput
     {
         $user = $input->user;
         $member = $user->member;
 
         $projectId = $member !== null ? $member->project_id : (AdminContext::getCurrentProjectId() ?? 1);
         $effectiveLineUserId = $this->resolveLineUserId($input->lineUserId, $user->line_user_id);
+
+        if (
+            $this->shopSettingRepository->getQueueRequireMembership($projectId)
+            && $member === null
+            && ! $this->isWaitingSystemRequest()
+        ) {
+            return new QueueStoreOutput(true, null);
+        }
 
         $nextNumber = $this->getNextQueueNumber($projectId);
 
@@ -44,13 +56,20 @@ class QueueStoreUseCase
         $stats = $this->statsService->getStats($projectId, $entry->queue_number);
         $entry->refresh();
 
-        return $this->entryFactory->create($entry, $stats);
+        return new QueueStoreOutput(false, $this->entryFactory->create($entry, $stats));
+    }
+
+    /** iPad WaitingSystem からの店頭受付（会員必須の対象外） */
+    private function isWaitingSystemRequest(): bool
+    {
+        $client = trim((string) request()->header('X-Queue-Client', ''));
+
+        return hash_equals(self::WAITING_SYSTEM_CLIENT, $client);
     }
 
     private function getNextQueueNumber(int $projectId): int
     {
         // DB: YYYYMMDD+通番（例: 202604201）。表示は日+通番（例: 201）。
-        $prefix = DailySequenceNumber::datePrefix();
         $maxStored = QueueEntryModel::where('project_id', $projectId)
             ->whereDate('created_at', today())
             ->max('queue_number');

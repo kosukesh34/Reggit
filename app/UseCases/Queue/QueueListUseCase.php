@@ -53,8 +53,7 @@ class QueueListUseCase
 
     private function isLineLinked(QueueEntry $e): bool
     {
-        $lineUserId = $e->user?->line_user_id ?? $e->member?->user?->line_user_id ?? '';
-
-        return is_string($lineUserId) && preg_match('/^U[0-9a-f]{32}$/i', $lineUserId) === 1;
+        // 通知先ユーザーが紐づいていれば連携済み（LINE / ネイティブ共通）
+        return $e->user_id !== null;
     }
 }

@@ -46,6 +46,7 @@ use App\Http\Controllers\GoogleWalletSaveRedirectController;
 use App\Http\Controllers\LiffController;
 use App\Http\Controllers\Smaregi\SmaregiIdpController;
 use App\Http\Controllers\Smaregi\SmaregiWebhookController;
+use App\Http\Controllers\Queue\QueueOpenController;
 use App\Http\Controllers\WalletAddPageController;
 use App\Models\Project;
 use Illuminate\Support\Facades\Log;
@@ -104,6 +105,11 @@ Route::get('/wallet-add', WalletAddPageController::class)
 Route::get('/google-wallet/save/{token}', GoogleWalletSaveRedirectController::class)
     ->middleware('bind.project')
     ->name('google-wallet.save');
+
+// 順番待ち QR 起動（LINE / ネイティブ選択）
+Route::get('/queue/open/{project_key}/{token}', QueueOpenController::class)
+    ->middleware('bind.project')
+    ->name('queue.open');
 
 // ========== 管理画面ログイン（認証不要・スロットリング適用） ==========
 Route::get('/admin/login', [AdminLoginController::class, 'show'])->name('admin.login');

@@ -316,6 +316,9 @@ class ReggitApp {
                     this.couponsManager.load();
                 }
             }
+            if (tabKey === AppConstants.TABS.QUEUE && this.queueManager) {
+                this.queueManager.load();
+            }
             return true;
         };
         window.addEventListener('mobile-coupon-received', () => {
@@ -510,10 +513,8 @@ class ReggitApp {
 
         if (hasQueueToken) {
             await this.queueManager.linkPendingQueueOnStartup();
-        }
-
-        if (hasQueueToken) {
             this.switchTab(AppConstants.TABS.QUEUE);
+            await this.queueManager.load();
             return;
         }
         if (this.currentTab === AppConstants.TABS.QUEUE) {
