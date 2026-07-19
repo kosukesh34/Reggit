@@ -261,6 +261,8 @@ export const AppConstants = {
     ANIMATION_DURATION: {
         CART_NOTIFICATION: 200,
         BARCODE_DELAY: 100,
+        /** クーポン使用後のバーコード／QR表示の有効時間（5分） */
+        COUPON_CODE_DISPLAY_MS: 5 * 60 * 1000,
     },
 
     POINTS: {

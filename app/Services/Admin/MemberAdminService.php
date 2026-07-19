@@ -250,8 +250,13 @@ class MemberAdminService
             ->firstOrFail();
     }
 
-    /** 複数会員にクーポンを一括発行（プレゼント配信）。$memberIds が空の場合は全員に配布。 */
-    public function issueCouponToMembers(int $projectId, int $couponId, array $memberIds = []): int
+    /**
+     * 複数会員にクーポンを一括発行（プレゼント配信）。$memberIds が空の場合は全員に配布。
+     *
+     * @param  list<int>  $memberIds
+     * @return array{count: int, member_ids: list<int>}
+     */
+    public function issueCouponToMembers(int $projectId, int $couponId, array $memberIds = []): array
     {
         $coupon = Coupon::where('project_id', $projectId)->findOrFail($couponId);
         $query = Member::where('project_id', $projectId);
@@ -261,7 +266,7 @@ class MemberAdminService
         $members = $query->get();
         $validUntil = $coupon->end_at ?? Carbon::now()->addDays(30);
         $now = now();
-        $issued = 0;
+        $issuedMemberIds = [];
         foreach ($members as $member) {
             if ($this->memberCouponRepository->hasUnusedValid(
                 (int) $member->id,
@@ -272,10 +277,13 @@ class MemberAdminService
                 continue;
             }
             $this->issueCouponToMember($member, $couponId, null, $validUntil);
-            $issued++;
+            $issuedMemberIds[] = (int) $member->id;
         }
 
-        return $issued;
+        return [
+            'count' => count($issuedMemberIds),
+            'member_ids' => $issuedMemberIds,
+        ];
     }
 
     /** 会員のスタンプカードにスタンプを追加（注文・管理画面からの付与） */
