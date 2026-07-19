@@ -74,7 +74,7 @@ class CouponDeliverySegmentPolicyTest extends TestCase
         ], $criteria);
     }
 
-    public function test_build_segment_criteria_最終来店N日後を組み立てること(): void
+    public function test_build_segment_criteria_最終来店_n日後を組み立てること(): void
     {
         $criteria = (new CouponDeliverySegmentPolicy)->buildSegmentCriteria(
             CouponDeliveryType::IMMEDIATE_DAYS_AFTER_VISIT,

@@ -5,6 +5,7 @@ namespace App\UseCases\Admin\Coupon;
 use App\Enums\CouponDeliveryStatus;
 use App\Enums\CouponDeliveryType;
 use App\Jobs\SendScheduledCouponDeliveryJob;
+use App\Models\Coupon;
 use App\Models\CouponDelivery;
 use App\Services\Admin\CouponDeliveryTargetService;
 use App\Services\Admin\MemberAdminService;
@@ -23,6 +24,10 @@ class AdminCouponBulkIssueUseCase
      */
     public function handle(int $projectId, int $couponId, array $validated): array
     {
+        if (Coupon::query()->where('project_id', $projectId)->whereKey($couponId)->doesntExist()) {
+            throw new \InvalidArgumentException('クーポンが見つかりません');
+        }
+
         $deliveryType = (string) ($validated['delivery_type'] ?? CouponDeliveryType::IMMEDIATE_ALL);
         $resolved = $this->targetService->resolve($projectId, $deliveryType, $validated);
 
