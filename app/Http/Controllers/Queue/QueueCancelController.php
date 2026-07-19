@@ -35,6 +35,7 @@ class QueueCancelController extends Controller
                 'queue_entry' => [
                     'id' => $entry->id,
                     'queue_number' => $entry->queue_number,
+                    'formatted_queue_number' => $entry->formattedQueueNumber(),
                     'status' => $entry->status,
                     'party_size' => $entry->party_size,
                     'updated_at' => $entry->updated_at->toIso8601String(),

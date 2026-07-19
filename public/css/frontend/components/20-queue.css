@@ -88,6 +88,26 @@
     color: #495057;
 }
 
+.queue-link-status {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 4px 10px;
+}
+
+.queue-link-status.is-linked {
+    background: #d4edda;
+    color: #155724;
+}
+
+.queue-link-status.is-unlinked {
+    background: #fff3cd;
+    color: #856404;
+}
+
 .queue-form-desc {
     margin-bottom: 16px;
     font-size: 14px;

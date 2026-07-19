@@ -31,7 +31,7 @@ final class SettingsViewModel: ObservableObject {
         do {
             let ticket = try await apiClient.callNext()
             if let ticket {
-                callNextMessage = String(format: Strings.Settings.callResultFormat, ticket.queueNumber)
+                callNextMessage = String(format: Strings.Settings.callResultFormat, ticket.displayNumber)
             } else {
                 callNextMessage = Strings.Settings.noWaiting
             }
