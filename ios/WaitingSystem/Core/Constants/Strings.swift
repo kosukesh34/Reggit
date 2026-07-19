@@ -26,7 +26,7 @@ enum Strings {
 
     enum Home {
         static let title = "順番待ち受付"
-        static let subtitle = "受付後にQRを読み取るとLINE通知と待ち状況連携が有効になります"
+        static let subtitle = "受付後にQRを読み取ると通知と待ち状況連携が有効になります"
         static let acceptButton = "受付する"
         static let currentQueueTitle = "現在の待ち状況"
         static let waitingCountLabel = "待ち組数"
@@ -34,11 +34,11 @@ enum Strings {
         static let estimatedWaitLabel = "目安時間"
         static let estimatedWaitValueFormat = "約%d分"
         static let waitingGuideTitle = "運用フロー"
-        static let waitingGuideBody = "1. 受付する\n2. QRをお客様が読み取る\n3. 店舗で呼び出すとLINE通知"
+        static let waitingGuideBody = "1. 受付する\n2. QRをお客様が読み取る\n3. 店舗で呼び出すと通知"
         static let waitingListTitle = "待ち順一覧"
         static let waitingListEmpty = "待機中の方はいません"
         static let memberLinked = "会員"
-        static let lineLinkedShort = "LINE"
+        static let lineLinkedShort = "アプリ"
     }
 
     // MARK: - チケット
@@ -48,10 +48,11 @@ enum Strings {
         static let partySizeFormat = "人数: %d名"
         static let waitingCountFormat = "待ち人数: %d組"
         static let estimatedWaitFormat = "予想待ち時間: 約%d分"
-        static let qrLineMessage = "QRを読み取るとLINEが起動します"
+        static let qrLineMessage = "QRを読み取るとアプリが起動します"
+        static let qrScanMessage = "QRを読み取って待ち状況を受け取れます"
         static let qrNotifyMessage = "順番が近づくと通知します"
-        static let lineLinked = "LINE連携: 連携済み"
-        static let lineNotLinked = "LINE連携: 未連携（QR読み取り待ち）"
+        static let lineLinked = "アプリ連携: 連携済み"
+        static let lineNotLinked = "アプリ連携: 未連携（QR読み取り待ち）"
         static let autoReturnNotice = "この画面は30秒後に自動で戻ります"
         static let newAccept = "新規受付"
         static let cancelTicket = "キャンセル"
@@ -107,7 +108,7 @@ enum Strings {
         static let callSection = "呼び出し"
         static let callNextButton = "次を呼び出し"
         static let callingButton = "呼び出し中..."
-        static let callResultFormat = "呼び出し: No.%d"
+        static let callResultFormat = "呼び出し: %@"
         static let noWaiting = "待ちがありません"
     }
 
@@ -129,9 +130,9 @@ enum Strings {
         static let partyFormat = "人数: %d名"
         static let receivedAtFormat = "受付: %@"
         static let waitingFormat = "待ち人数: %d組"
-        static let qrLineMessage = "QRを読み込むとLINEで通知を受け取れます"
+        static let qrLineMessage = "QRを読み込むとアプリで通知を受け取れます"
         static let qrNotifyMessage = "呼び出しが近づくと通知します"
-        static let jobNameFormat = "Wait Ticket %d"
+        static let jobNameFormat = "Wait Ticket %@"
     }
 
     // MARK: - アクセシビリティ

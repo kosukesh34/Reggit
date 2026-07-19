@@ -42,7 +42,9 @@ struct TicketView: View {
             )
         }
         .onAppear {
-            viewModel.scheduleAutoReturn()
+            if viewModel.currentTicket.lineLinked {
+                viewModel.scheduleAutoReturn()
+            }
             viewModel.startAutoRefresh()
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { showCheckmark = true }
             withAnimation(.easeOut(duration: 0.5).delay(0.2)) { animateIn = true }
@@ -124,22 +126,42 @@ struct TicketView: View {
     @ViewBuilder
     private func qrSection(qrSize: CGFloat, compact: Bool) -> some View {
         let qrURL = viewModel.liffURLString()
+        let isLinked = viewModel.currentTicket.lineLinked
         VStack(spacing: Theme.Spacing.md) {
-            if let qr = QRCodeGenerator().generate(from: qrURL, size: qrSize) {
-                Image(uiImage: qr)
-                    .interpolation(.none)
-                    .resizable()
-                    .frame(width: qrSize, height: qrSize)
-                    .padding(Theme.Spacing.lg)
-                    .background(Color.white)
-                    .cornerRadius(Theme.Radius.lg)
-                    .applyShadow(Theme.Shadow.sm)
+            if isLinked {
+                Image(systemName: "checkmark.seal.fill")
+                    .font(.system(size: compact ? 44 : 56))
+                    .foregroundColor(Theme.Colors.success)
+                Text(Strings.Ticket.lineLinked)
+                    .font(.system(size: compact ? 16 : 18, weight: .semibold))
+                    .foregroundColor(Theme.Colors.success)
+                    .multilineTextAlignment(.center)
+                Text(Strings.Ticket.qrNotifyMessage)
+                    .font(.system(size: compact ? 13 : 15))
+                    .foregroundColor(Theme.Colors.textSecondary)
+                    .multilineTextAlignment(.center)
+            } else {
+                if let qr = QRCodeGenerator().generate(from: qrURL, size: qrSize) {
+                    Image(uiImage: qr)
+                        .interpolation(.none)
+                        .resizable()
+                        .frame(width: qrSize, height: qrSize)
+                        .padding(Theme.Spacing.lg)
+                        .background(Color.white)
+                        .cornerRadius(Theme.Radius.lg)
+                        .applyShadow(Theme.Shadow.sm)
+                }
+                Text(Strings.Ticket.lineNotLinked)
+                    .font(.system(size: compact ? 14 : 16, weight: .semibold))
+                    .foregroundColor(Theme.Colors.warning)
+                    .multilineTextAlignment(.center)
+                Text(Strings.Ticket.qrScanMessage)
+                    .font(.system(size: compact ? 13 : 15))
+                    .foregroundColor(Theme.Colors.textSecondary)
+                    .multilineTextAlignment(.center)
             }
-            Text("QRを読み取るとLINEで通知を受け取れます")
-                .font(.system(size: compact ? 13 : 15))
-                .foregroundColor(Theme.Colors.textSecondary)
-                .multilineTextAlignment(.center)
         }
+        .animation(.easeInOut(duration: 0.25), value: isLinked)
         .opacity(animateIn ? 1 : 0)
         .offset(y: animateIn ? 0 : 16)
     }

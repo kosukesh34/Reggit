@@ -14,5 +14,9 @@ class QueueQrStatusInput
         public readonly int $projectId,
         public readonly string $lineUserId,
         public readonly ?User $contextUser,
+        public readonly ?string $deviceIdentifier = null,
+        public readonly ?string $devicePlatform = null,
+        public readonly ?string $deviceOsVersion = null,
+        public readonly ?string $deviceAppVersion = null,
     ) {}
 }
