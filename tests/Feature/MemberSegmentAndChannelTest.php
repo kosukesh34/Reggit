@@ -186,6 +186,10 @@ class MemberSegmentAndChannelTest extends TestCase
         $recentIds = $repo->findIdsByLastVisited($project->id, MemberSegmentService::LAST_VISIT_WITHIN, 30);
         $this->assertContains($lineMember->id, $recentIds);
         $this->assertNotContains($appMember->id, $recentIds);
+
+        $daysAfterIds = $repo->findIdsByLastVisited($project->id, MemberSegmentService::LAST_VISIT_DAYS_AFTER, 5);
+        $this->assertContains($lineMember->id, $daysAfterIds);
+        $this->assertNotContains($appMember->id, $daysAfterIds);
     }
 
     public function test_member_segment_service_an_d交差できること(): void

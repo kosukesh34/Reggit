@@ -16,6 +16,8 @@ class MemberSegmentService
 
     public const LAST_VISIT_WITHIN = 'visited_within_days';
 
+    public const LAST_VISIT_DAYS_AFTER = 'days_after';
+
     public function __construct(
         private CouponDeliveryTargetRepository $targetRepository,
     ) {}
@@ -63,7 +65,7 @@ class MemberSegmentService
 
         $lastVisitMode = trim((string) ($input['segment_last_visit_mode'] ?? $input['last_visit_mode'] ?? ''));
         $lastVisitDays = $input['segment_last_visit_days'] ?? $input['last_visit_days'] ?? null;
-        if (in_array($lastVisitMode, [self::LAST_VISIT_INACTIVE, self::LAST_VISIT_WITHIN], true)
+        if (in_array($lastVisitMode, [self::LAST_VISIT_INACTIVE, self::LAST_VISIT_WITHIN, self::LAST_VISIT_DAYS_AFTER], true)
             && $lastVisitDays !== null && $lastVisitDays !== '') {
             $criteria['last_visit_mode'] = $lastVisitMode;
             $criteria['last_visit_days'] = max(1, (int) $lastVisitDays);
@@ -74,7 +76,7 @@ class MemberSegmentService
             $criteria['sex'] = $sex;
         }
 
-        $rank = trim((string) ($input['segment_rank'] ?? $input['rank'] ?? ''));
+        $rank = trim((string) ($input['segment_rank'] ?? $input['rank'] ?? $input['target_rank'] ?? ''));
         if ($rank !== '') {
             $criteria['rank'] = $rank;
         }
@@ -85,6 +87,23 @@ class MemberSegmentService
             if ($parsedProductId > 0) {
                 $criteria['product_id'] = $parsedProductId;
             }
+        }
+
+        $stampCardId = $input['segment_stamp_card_id'] ?? $input['stamp_card_id'] ?? null;
+        $stampCountMin = $input['segment_stamp_count_min'] ?? $input['stamp_count_min'] ?? null;
+        $stampCompleted = $input['segment_stamp_completed'] ?? $input['stamp_completed'] ?? null;
+        $isStampCompleted = $stampCompleted === true || $stampCompleted === 1 || $stampCompleted === '1' || $stampCompleted === 'on';
+        if ($stampCardId !== null && $stampCardId !== '') {
+            $parsedStampCardId = (int) $stampCardId;
+            if ($parsedStampCardId > 0) {
+                $criteria['stamp_card_id'] = $parsedStampCardId;
+            }
+        }
+        if ($stampCountMin !== null && $stampCountMin !== '') {
+            $criteria['stamp_count_min'] = max(0, (int) $stampCountMin);
+        }
+        if ($isStampCompleted) {
+            $criteria['stamp_completed'] = true;
         }
 
         $salesCondition = trim((string) ($input['segment_condition'] ?? ''));
@@ -157,6 +176,18 @@ class MemberSegmentService
 
         if (isset($criteria['product_id'])) {
             $sets[] = $this->targetRepository->findIdsByPurchasedProduct($projectId, (int) $criteria['product_id']);
+        }
+
+        $hasStampFilter = isset($criteria['stamp_card_id'])
+            || isset($criteria['stamp_count_min'])
+            || (($criteria['stamp_completed'] ?? false) === true);
+        if ($hasStampFilter) {
+            $sets[] = $this->targetRepository->findIdsByStampProgress(
+                $projectId,
+                isset($criteria['stamp_card_id']) ? (int) $criteria['stamp_card_id'] : null,
+                isset($criteria['stamp_count_min']) ? (int) $criteria['stamp_count_min'] : null,
+                ($criteria['stamp_completed'] ?? false) === true,
+            );
         }
 
         $periodDays = isset($criteria['period_days']) ? (int) $criteria['period_days'] : 0;

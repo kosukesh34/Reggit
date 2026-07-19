@@ -5,11 +5,25 @@ namespace App\UseCases\Admin\Coupon\Data;
 use App\Models\Coupon;
 use App\Models\CouponDelivery;
 use App\Models\Product;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
 /**
- * @param  Collection<int, Coupon>  $coupons
+ * @param  LengthAwarePaginator<int, Coupon>  $coupons
  * @param  Collection<int, CouponDelivery>  $scheduledDeliveries
+ * @param  list<array{
+ *     id: int,
+ *     coupon_name: string,
+ *     coupon_code: string,
+ *     delivery_type_label: string,
+ *     status: string,
+ *     status_label: string,
+ *     status_badge: string,
+ *     timing_label: string,
+ *     issued_count_label: string,
+ *     recipients_label: string,
+ *     recipients_title: string
+ * }>  $deliveryHistories
  * @param  array<string, string>  $deliveryTypeOptions
  * @param  array<string, array{label: string, icon: string, types: list<string>}>  $deliveryGroups
  * @param  array{
@@ -21,19 +35,28 @@ use Illuminate\Support\Collection;
  *     inactiveTypes: list<string>
  * }  $deliveryTypeJsConfig
  * @param  Collection<int, Product>  $products
+ * @param  array<int, int>  $deliveryCountByCouponId
+ * @param  Collection<int, \App\Models\StampCard>  $stampCards
+ * @param  list<array{key: string, label: string}>  $rankOptions
  */
 class AdminCouponBulkIssueFormOutput
 {
     public function __construct(
-        public Collection $coupons,
+        public LengthAwarePaginator $coupons,
         public int $memberCount,
         public bool $hasSmaregiContract = false,
         public int $smaregiLinkedCount = 0,
         public int $smaregiUnlinkedCount = 0,
         public Collection $scheduledDeliveries = new Collection,
+        public array $deliveryHistories = [],
         public array $deliveryTypeOptions = [],
         public array $deliveryGroups = [],
         public array $deliveryTypeJsConfig = [],
         public Collection $products = new Collection,
+        public array $deliveryCountByCouponId = [],
+        public Collection $stampCards = new Collection,
+        public array $rankOptions = [],
+        public string $couponSearch = '',
+        public ?Coupon $selectedCoupon = null,
     ) {}
 }

@@ -47,7 +47,7 @@ interface CouponDeliveryTargetRepository
     /**
      * 最終来店日で絞り込む。
      *
-     * @param  string  $mode  inactive_days|visited_within_days
+     * @param  string  $mode  inactive_days|visited_within_days|days_after
      * @return list<int>
      */
     public function findIdsByLastVisited(int $projectId, string $mode, int $days): array;
@@ -57,6 +57,18 @@ interface CouponDeliveryTargetRepository
 
     /** @return list<int> */
     public function findIdsByRank(int $projectId, string $rank): array;
+
+    /**
+     * スタンプ累計・達成で絞り込む。
+     *
+     * @return list<int>
+     */
+    public function findIdsByStampProgress(
+        int $projectId,
+        ?int $stampCardId,
+        ?int $minStamps,
+        bool $completedOnly,
+    ): array;
 
     /**
      * 累計付与ポイントで絞り込む。
@@ -73,6 +85,9 @@ interface CouponDeliveryTargetRepository
     public function findIdsByPurchasedProduct(int $projectId, int $productId): array;
 
     public function countAll(int $projectId): int;
+
+    /** @return list<int> */
+    public function findAllIds(int $projectId): array;
 
     /**
      * @param  list<int>  $memberIds

@@ -32,7 +32,7 @@ class CouponDeliveryTargetService
 
         $memberIds = match ($deliveryType) {
             CouponDeliveryType::IMMEDIATE_ALL,
-            CouponDeliveryType::SCHEDULED_ALL => [],
+            CouponDeliveryType::SCHEDULED_ALL => $this->targetRepository->findAllIds($projectId),
 
             CouponDeliveryType::IMMEDIATE_PERSONAL,
             CouponDeliveryType::SCHEDULED_PERSONAL => $this->resolvePersonalMemberIds($projectId, $params),
@@ -51,6 +51,17 @@ class CouponDeliveryTargetService
 
             CouponDeliveryType::IMMEDIATE_INACTIVE,
             CouponDeliveryType::SCHEDULED_INACTIVE => $this->getInactiveMemberIds($projectId, $params)->all(),
+
+            CouponDeliveryType::IMMEDIATE_RANK,
+            CouponDeliveryType::SCHEDULED_RANK => $this->getRankMemberIds($projectId, $params)->all(),
+
+            CouponDeliveryType::IMMEDIATE_STAMP,
+            CouponDeliveryType::SCHEDULED_STAMP => $this->getStampMemberIds($projectId, $params)->all(),
+
+            CouponDeliveryType::IMMEDIATE_DAYS_AFTER_VISIT,
+            CouponDeliveryType::SCHEDULED_DAYS_AFTER_VISIT => $this->getDaysAfterVisitMemberIds($projectId, $params)->all(),
+
+            CouponDeliveryType::EVENT_RANK_UP_ARRIVAL => [],
         };
 
         if ($this->segmentPolicy->requiresPersonalMembers($deliveryType) && $memberIds === []) {
@@ -76,6 +87,13 @@ class CouponDeliveryTargetService
             $attributeParams = $params;
             unset($attributeParams['segment_condition'], $attributeParams['segment_period_days'], $attributeParams['segment_min_amount']);
             $segmentCriteria = $this->memberSegmentService->buildCriteriaFromInput($attributeParams);
+        }
+
+        if (CouponDeliveryType::isEventRankUpArrival($deliveryType)) {
+            $rank = trim((string) ($segmentCriteria['rank'] ?? ''));
+            if ($rank === '') {
+                return ['member_ids' => [], 'segment_criteria' => null, 'error' => '到達ランクを選択してください'];
+            }
         }
 
         return ['member_ids' => $memberIds, 'segment_criteria' => $segmentCriteria, 'error' => null];
@@ -183,6 +201,69 @@ class CouponDeliveryTargetService
     }
 
     /**
+     * @param  array<string, mixed>  $params
+     * @return Collection<int, int>
+     */
+    public function getRankMemberIds(int $projectId, array $params): Collection
+    {
+        $rank = trim((string) ($params['target_rank'] ?? $params['segment_rank'] ?? ''));
+        if ($rank === '') {
+            return collect();
+        }
+
+        return collect($this->targetRepository->findIdsByRank($projectId, $rank));
+    }
+
+    /**
+     * @param  array<string, mixed>  $params
+     * @return Collection<int, int>
+     */
+    public function getStampMemberIds(int $projectId, array $params): Collection
+    {
+        $stampCardId = isset($params['stamp_card_id']) && $params['stamp_card_id'] !== ''
+            ? (int) $params['stamp_card_id']
+            : (isset($params['segment_stamp_card_id']) && $params['segment_stamp_card_id'] !== ''
+                ? (int) $params['segment_stamp_card_id']
+                : null);
+        $minStamps = isset($params['stamp_count_min']) && $params['stamp_count_min'] !== ''
+            ? (int) $params['stamp_count_min']
+            : (isset($params['segment_stamp_count_min']) && $params['segment_stamp_count_min'] !== ''
+                ? (int) $params['segment_stamp_count_min']
+                : null);
+        $completedRaw = $params['stamp_completed'] ?? $params['segment_stamp_completed'] ?? false;
+        $completedOnly = $completedRaw === true || $completedRaw === 1 || $completedRaw === '1' || $completedRaw === 'on';
+
+        if ($stampCardId === null && $minStamps === null && $completedOnly === false) {
+            return collect();
+        }
+
+        return collect($this->targetRepository->findIdsByStampProgress(
+            $projectId,
+            $stampCardId,
+            $minStamps,
+            $completedOnly,
+        ));
+    }
+
+    /**
+     * @param  array<string, mixed>  $params
+     * @return Collection<int, int>
+     */
+    public function getDaysAfterVisitMemberIds(int $projectId, array $params): Collection
+    {
+        $days = $this->segmentPolicy->normalizePositiveDays(
+            (int) ($params['days_after_last_visit'] ?? $params['segment_last_visit_days'] ?? 7),
+            7,
+        );
+
+        return collect($this->targetRepository->findIdsByLastVisited(
+            $projectId,
+            MemberSegmentService::LAST_VISIT_DAYS_AFTER,
+            $days,
+        ));
+    }
+
+    /**
      * プレビュー用: 対象会員数を返す。
      *
      * @param  array<string, mixed>  $params
@@ -196,6 +277,10 @@ class CouponDeliveryTargetService
 
         if ($this->segmentPolicy->isAllMembersDelivery($deliveryType)) {
             return $this->targetRepository->countAll($projectId);
+        }
+
+        if (CouponDeliveryType::isEventRankUpArrival($deliveryType)) {
+            return -1;
         }
 
         return count($resolved['member_ids']);
@@ -233,6 +318,27 @@ class CouponDeliveryTargetService
             $params['inactive_days'] = (int) ($criteria['inactive_days'] ?? 90);
         }
 
+        if (in_array($deliveryType, CouponDeliveryType::rankValues(), true)) {
+            $params['target_rank'] = (string) ($criteria['rank'] ?? '');
+            $params['segment_rank'] = $params['target_rank'];
+        }
+
+        if (in_array($deliveryType, CouponDeliveryType::stampValues(), true)) {
+            if (isset($criteria['stamp_card_id'])) {
+                $params['stamp_card_id'] = (int) $criteria['stamp_card_id'];
+            }
+            if (isset($criteria['stamp_count_min'])) {
+                $params['stamp_count_min'] = (int) $criteria['stamp_count_min'];
+            }
+            if (($criteria['stamp_completed'] ?? false) === true) {
+                $params['stamp_completed'] = '1';
+            }
+        }
+
+        if (in_array($deliveryType, CouponDeliveryType::daysAfterVisitValues(), true)) {
+            $params['days_after_last_visit'] = (int) ($criteria['days_after_last_visit'] ?? 7);
+        }
+
         if (in_array($deliveryType, CouponDeliveryType::attributeSegmentValues(), true)) {
             foreach ([
                 'channel' => 'segment_channel',
@@ -246,12 +352,17 @@ class CouponDeliveryTargetService
                 'sex' => 'segment_sex',
                 'rank' => 'segment_rank',
                 'product_id' => 'segment_product_id',
+                'stamp_card_id' => 'segment_stamp_card_id',
+                'stamp_count_min' => 'segment_stamp_count_min',
                 'period_days' => 'segment_period_days',
                 'min_total_amount' => 'segment_min_amount',
             ] as $from => $to) {
                 if (array_key_exists($from, $criteria)) {
                     $params[$to] = $criteria[$from];
                 }
+            }
+            if (($criteria['stamp_completed'] ?? false) === true) {
+                $params['segment_stamp_completed'] = '1';
             }
             if (isset($criteria['no_orders']) && $criteria['no_orders'] === true) {
                 $params['segment_condition'] = 'no_orders';

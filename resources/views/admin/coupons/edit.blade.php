@@ -1,11 +1,17 @@
 @extends('admin.layout')
 @section('title', 'クーポン編集')
 @section('page-title', 'クーポン編集')
+@section('page-kind', 'coupon-edit')
 @section('content')
+<div class="coupon-admin">
 <nav class="breadcrumb"><a href="{{ admin_route('admin.coupons') }}">クーポン</a><span class="breadcrumb-sep">/</span><span>編集</span></nav>
-<div class="card">
+<div class="page-header">
+    <h1 class="page-header-title"><i class="fas fa-ticket-alt"></i> クーポン編集</h1>
+    <p class="page-header-desc">表示デザインとクーポン情報を更新します。</p>
+</div>
+<div class="card cp-form-card">
     <div class="card-header card-header-with-action">
-        <h3 class="card-title"><i class="fas fa-ticket-alt"></i> クーポン編集</h3>
+        <h3 class="card-title">クーポン設定</h3>
         <a href="{{ admin_route('admin.coupons') }}" class="btn btn-secondary btn-sm"><i class="fas fa-arrow-left"></i> 一覧へ</a>
     </div>
     <div class="card-body">
@@ -239,18 +245,8 @@ document.getElementById('issue_trigger').addEventListener('change', function() {
     });
 })();
 </script>
+</div>
 @push('styles')
-<style>
-.coupon-image-dropzone { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; border: 2px dashed #dee2e6; border-radius: 12px; background: #f8f9fa; cursor: pointer; }
-.coupon-image-dropzone:hover, .coupon-image-dropzone.is-dragover { border-color: #0d6efd; background: rgba(13, 110, 253, 0.05); }
-.coupon-image-dropzone-icon { font-size: 2rem; color: #6c757d; margin-bottom: 8px; }
-.coupon-image-dropzone-text { font-size: 14px; }
-.coupon-image-dropzone-hint { font-size: 12px; color: #6c757d; margin-top: 4px; }
-.line-app-preview-wrap { display: flex; justify-content: center; padding: 12px 0; }
-.line-app-mock { width: 100%; max-width: 320px; border-radius: 24px; border: 12px solid #333; background: #fff; overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,0.15); }
-.line-app-mock-bar { padding: 12px 16px; background: #06c755; color: #fff; font-size: 14px; font-weight: 600; text-align: center; }
-.line-app-mock-body { padding: 16px; min-height: 120px; background: #f5f5f5; }
-.line-app-mock-body .cp-card { max-width: 100%; }
-</style>
+<link rel="stylesheet" href="{{ asset('css/admin/coupons.css') }}?v={{ config('app.asset_version') }}">
 @endpush
 @endsection

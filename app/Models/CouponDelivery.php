@@ -19,6 +19,7 @@ class CouponDelivery extends Model
         'scheduled_at',
         'sent_at',
         'target_member_ids',
+        'issued_member_ids',
         'segment_criteria',
         'issued_count',
         'error_message',
@@ -29,6 +30,7 @@ class CouponDelivery extends Model
         'scheduled_at' => 'datetime',
         'sent_at' => 'datetime',
         'target_member_ids' => 'array',
+        'issued_member_ids' => 'array',
         'segment_criteria' => 'array',
         'issued_count' => 'integer',
     ];

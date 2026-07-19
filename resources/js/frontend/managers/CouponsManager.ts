@@ -477,13 +477,19 @@ export class CouponsManager {
         if (typeof ConfirmDialog !== 'undefined') {
             const safeName = DomHelper.escapeHtml(name);
             return ConfirmDialog.show(
-                `「${safeName}」を使用しますか？<br><br>使用後は再度ご利用いただけません。<br>店舗スタッフにバーコードを提示してください。`,
+                `「${safeName}」を使用しますか？<br><br>使用後は再度ご利用いただけません。<br>店舗スタッフにバーコードを提示してください。<br>バーコード表示は<strong>5分後に消えます</strong>。`,
                 'クーポンの使用確認',
             );
         }
         return window.confirm(
-            `「${name}」を使用しますか？\n\n使用後は再度ご利用いただけません。\n店舗スタッフにバーコードを提示してください。`,
+            `「${name}」を使用しますか？\n\n使用後は再度ご利用いただけません。\n店舗スタッフにバーコードを提示してください。\nバーコード表示は5分後に消えます。`,
         );
+    }
+
+    _couponCodeDisplayMs(): number {
+        return (typeof AppConstants !== 'undefined' && AppConstants.ANIMATION_DURATION?.COUPON_CODE_DISPLAY_MS)
+            ? AppConstants.ANIMATION_DURATION.COUPON_CODE_DISPLAY_MS
+            : 5 * 60 * 1000;
     }
 
     _showCouponCodeModal(couponName: string, useDisplay: string, code: string): Promise<void> {
@@ -497,6 +503,7 @@ export class CouponsManager {
 
         const tabsWrapId = `coupon-use-tabs-${String(Date.now())}`;
         const codeAreaId = `coupon-use-code-${String(Date.now())}`;
+        const expireNoteId = `coupon-use-expire-${String(Date.now())}`;
         const title = (couponName && String(couponName).trim()) ? String(couponName).trim() : 'クーポン';
 
         overlay.innerHTML =
@@ -509,15 +516,49 @@ export class CouponsManager {
             + '<div class="member-code-enlarge-body">'
             + '<p class="coupon-use-modal-complete"><i class="fas fa-check-circle" aria-hidden="true"></i> 使用済みにしました</p>'
             + '<p class="coupon-use-modal-hint"><i class="fas fa-store" aria-hidden="true"></i> 店舗スタッフにこの画面を提示してください</p>'
+            + `<p id="${expireNoteId}" class="coupon-use-modal-expire"><i class="fas fa-clock" aria-hidden="true"></i> バーコード表示は<strong>5分後に消えます</strong></p>`
             + `<div id="${tabsWrapId}"></div>`
             + `<div id="${codeAreaId}" class="coupon-use-code-area"></div>`
             + '</div>'
             + '</div>';
 
         document.body.appendChild(overlay);
-        const tabsWrap = overlay.querySelector(`#${tabsWrapId}`);
+        const tabsWrap = overlay.querySelector(`#${tabsWrapId}`) as HTMLElement | null;
         const codeArea = overlay.querySelector(`#${codeAreaId}`) as HTMLElement;
-        const close = (): void => overlay.remove();
+        const expireNote = overlay.querySelector(`#${expireNoteId}`) as HTMLElement | null;
+        let isExpired = false;
+        let expireTimer: number | null = null;
+
+        const clearExpireTimer = (): void => {
+            if (expireTimer !== null) {
+                window.clearTimeout(expireTimer);
+                expireTimer = null;
+            }
+        };
+
+        const expireCodeDisplay = (): void => {
+            if (isExpired) return;
+            isExpired = true;
+            clearExpireTimer();
+            if (tabsWrap !== null) {
+                tabsWrap.innerHTML = '';
+            }
+            codeArea.innerHTML =
+                '<div class="coupon-use-code-expired">'
+                + '<i class="fas fa-eye-slash" aria-hidden="true"></i>'
+                + '<p>バーコードの表示時間（5分）が終了しました</p>'
+                + '<p class="coupon-use-code-expired-sub">画面を閉じてください</p>'
+                + '</div>';
+            if (expireNote !== null) {
+                expireNote.innerHTML = '<i class="fas fa-eye-slash" aria-hidden="true"></i> バーコード表示は終了しました';
+                expireNote.classList.add('is-expired');
+            }
+        };
+
+        const close = (): void => {
+            clearExpireTimer();
+            overlay.remove();
+        };
         overlay.querySelector('.member-code-enlarge-backdrop')?.addEventListener('click', close);
         overlay.querySelector('.member-code-enlarge-close')?.addEventListener('click', close);
         overlay.addEventListener('keydown', (e) => {
@@ -527,7 +568,10 @@ export class CouponsManager {
             }
         });
 
-        const renderCodeDisplay = (mode: string, value: string): Promise<void> => this._renderCouponCodeDisplay(codeArea, mode, value, isMobile, true);
+        const renderCodeDisplay = (mode: string, value: string): Promise<void> => {
+            if (isExpired) return Promise.resolve();
+            return this._renderCouponCodeDisplay(codeArea, mode, value, isMobile, true);
+        };
         const bindDisplayTabs = (value: string, initialMode: string): void => {
             if (!tabsWrap) return;
             tabsWrap.innerHTML =
@@ -539,6 +583,7 @@ export class CouponsManager {
                 + '</div>';
             tabsWrap.querySelectorAll('.coupon-use-display-tab').forEach((tab) => {
                 tab.addEventListener('click', () => {
+                    if (isExpired) return;
                     const mode = tab.getAttribute('data-mode') || 'barcode';
                     tabsWrap.querySelectorAll('.coupon-use-display-tab').forEach((btn) => {
                         const active = btn === tab;
@@ -565,6 +610,11 @@ export class CouponsManager {
             renderPromise = renderCodeDisplay('none', '');
         }
         renderPromise.catch(() => {});
+
+        if (code) {
+            expireTimer = window.setTimeout(expireCodeDisplay, this._couponCodeDisplayMs());
+        }
+
         return renderPromise;
     }
 
