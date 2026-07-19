@@ -28,6 +28,31 @@ enum MobileWebShellScripts {
         """
     }
 
+    static func queueDeepLink(queueToken: String) -> String {
+        """
+        (() => {
+            try {
+                const token = \(queueToken.jsStringLiteral);
+                try { sessionStorage.setItem('mobile_order_pending_queue_token', token); } catch (e) {}
+                const url = new URL(window.location.href);
+                url.searchParams.set('tab', 'queue');
+                url.searchParams.set('queue_token', token);
+                url.searchParams.delete('queue_id');
+                window.history.replaceState({}, '', url.toString());
+            } catch (e) {}
+            if (typeof window.__nativeOpenTab__ === 'function') {
+                return window.__nativeOpenTab__('queue', { queueToken: \(queueToken.jsStringLiteral) }) ? 'opened' : 'pending';
+            }
+            window.__NATIVE_PENDING_TAB__ = 'queue';
+            if (window.app && typeof window.app.switchTab === 'function') {
+                window.app.switchTab('queue');
+                return 'switched';
+            }
+            return 'queued';
+        })();
+        """
+    }
+
     static func switchTab(_ tabKey: String) -> String {
         """
         (() => {

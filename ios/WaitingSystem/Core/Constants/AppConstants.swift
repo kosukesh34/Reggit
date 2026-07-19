@@ -24,6 +24,8 @@ enum AppConstants {
         static let ticketAutoReturnSeconds: TimeInterval = 30
         /// チケット画面の最新情報ポーリング間隔（秒）
         static let ticketRefreshIntervalSeconds: TimeInterval = 30
+        /// 未連携時のチケット画面ポーリング間隔（秒）
+        static let ticketLinkPollIntervalSeconds: TimeInterval = 3
     }
 
     // MARK: - 受付

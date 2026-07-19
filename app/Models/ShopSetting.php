@@ -33,6 +33,9 @@ class ShopSetting
         'advance_booking_days' => ProjectBusinessSetting::class,
         'reservation_capacity_per_slot' => ProjectBusinessSetting::class,
         'queue_avg_serve_minutes' => ProjectBusinessSetting::class,
+        'queue_require_membership' => ProjectBusinessSetting::class,
+        'queue_channel_line' => ProjectBusinessSetting::class,
+        'queue_channel_native' => ProjectBusinessSetting::class,
         'line_primary_color' => ProjectLineLiffSetting::class,
         'line_primary_dark' => ProjectLineLiffSetting::class,
         'line_success_color' => ProjectLineLiffSetting::class,
@@ -168,6 +171,21 @@ class ShopSetting
     public static function getQueueAvgServeMinutes(?int $projectId = 1): int
     {
         return self::getValue('queue_avg_serve_minutes', 10, $projectId);
+    }
+
+    public static function getQueueRequireMembership(?int $projectId = 1): bool
+    {
+        return (bool) self::getValue('queue_require_membership', false, $projectId);
+    }
+
+    public static function getQueueChannelLine(?int $projectId = 1): bool
+    {
+        return (bool) self::getValue('queue_channel_line', true, $projectId);
+    }
+
+    public static function getQueueChannelNative(?int $projectId = 1): bool
+    {
+        return (bool) self::getValue('queue_channel_native', false, $projectId);
     }
 
     public static function getLineThemeColors(?int $projectId = 1): array

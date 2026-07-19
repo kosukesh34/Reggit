@@ -40,13 +40,19 @@ type QueueLinkResult = {
 
 export class QueueManager {
     static PENDING_QUEUE_TOKEN_KEY = 'mobile_order_pending_queue_token';
+    static LINK_POLL_INTERVAL_MS = 3000;
+    static LINK_POLL_MAX_ATTEMPTS = 20;
 
     apiClient: ApiClient;
     _waitingLiffRetryRegistered: boolean;
+    _linkPollTimer: ReturnType<typeof setTimeout> | null;
+    _linkPollAttempts: number;
 
     constructor(apiClient: ApiClient) {
         this.apiClient = apiClient;
         this._waitingLiffRetryRegistered = false;
+        this._linkPollTimer = null;
+        this._linkPollAttempts = 0;
     }
 
     getSection(): Element | null {
@@ -58,6 +64,9 @@ export class QueueManager {
     }
 
     getGuestTemplate(): string {
+        if (this.isQueueMembershipRequired() && !this.isCurrentUserMember()) {
+            return this.getMembershipRequiredTemplate();
+        }
         return `
             <div class="queue-card">
                 <h2 class="section-title"><i class="fas fa-users"></i> 順番待ち受付</h2>
@@ -68,7 +77,38 @@ export class QueueManager {
         `;
     }
 
+    isQueueMembershipRequired(): boolean {
+        return typeof window !== 'undefined' && window.__QUEUE_REQUIRE_MEMBERSHIP__ === true;
+    }
+
+    isCurrentUserMember(): boolean {
+        if (typeof window === 'undefined' || !window.app || !window.app.memberManager) {
+            return false;
+        }
+        const manager = window.app.memberManager as { isMember?: () => boolean };
+        return typeof manager.isMember === 'function' && manager.isMember() === true;
+    }
+
+    getMembershipRequiredTemplate(): string {
+        return `
+            <div class="queue-card">
+                <h2 class="section-title"><i class="fas fa-users"></i> 順番待ち受付</h2>
+                <div class="empty-state">
+                    <div class="empty-state-icon"><i class="fas fa-id-card"></i></div>
+                    <h3 class="empty-state-title">会員登録が必要です</h3>
+                    <p class="empty-state-message">順番待ちをご利用いただくには、会員登録が必要です。</p>
+                    <button class="btn btn-primary btn-empty-action" data-queue-action="go-member">
+                        <i class="fas fa-user-plus"></i> 会員登録へ
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
     getEmptyTemplate(updatedAt: string | null = null, stats: QueueStats | null = null): string {
+        if (this.isQueueMembershipRequired() && !this.isCurrentUserMember()) {
+            return this.getMembershipRequiredTemplate();
+        }
         const updated = updatedAt
             ? `<div class="queue-updated-at">最終更新: ${DomHelper.escapeHtml(this.formatUpdatedAt(updatedAt))}</div>`
             : '';
@@ -256,6 +296,7 @@ export class QueueManager {
     }
 
     async load(): Promise<void> {
+        this.stopLinkStatusPolling();
         const section = this.getSection();
         if (!section) {
             return;
@@ -287,6 +328,7 @@ export class QueueManager {
             }
             section.innerHTML = this.renderQueueCard(entry, false, data.updated_at || null);
             this.attachQueueHandlers(section, entry);
+            this.afterQueueCardRendered(entry);
         } catch (error) {
             // eslint-disable-next-line no-console
             console.error('Failed to load queue:', error);
@@ -309,6 +351,20 @@ export class QueueManager {
             `;
             this.attachQueueHandlers(section);
             this.registerLiffReadyRetry();
+            return;
+        }
+        if (this.isMobileAppWaitingForDevice()) {
+            section.innerHTML = `
+                <div class="queue-card">
+                    <h2 class="section-title"><i class="fas fa-users"></i> 順番待ち受付</h2>
+                    <p class="queue-subtitle">アプリ情報を確認中です。数秒後に自動で反映されます。</p>
+                    <div class="queue-actions">
+                        <button class="queue-button queue-button-secondary" data-queue-action="refresh">再読み込み</button>
+                    </div>
+                </div>
+            `;
+            this.attachQueueHandlers(section);
+            this.registerNativeDeviceReadyRetry();
             return;
         }
         section.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i><p>読み込み中...</p></div>';
@@ -337,11 +393,12 @@ export class QueueManager {
                 this.attachQueueHandlers(section);
                 return;
             }
-            if (entry.line_linked === true || entry.lineLinked === true) {
+            if (this.isQueueLinked(entry)) {
                 this.clearQueueTokenFromUrl();
             }
             section.innerHTML = this.renderQueueCard(entry, true, (data && data.updated_at) || null);
             this.attachQueueHandlers(section, entry);
+            this.afterQueueCardRendered(entry);
         } catch (error) {
             // eslint-disable-next-line no-console
             console.error('Failed to load queue by token:', error);
@@ -359,6 +416,10 @@ export class QueueManager {
         if (typeof window !== 'undefined' && window.__IS_LIFF__ && !window.__LINE_USER_ID__) {
             this.registerLiffReadyRetry();
             return { linked: false, reason: 'line_not_ready' };
+        }
+        if (this.isMobileAppWaitingForDevice()) {
+            this.registerNativeDeviceReadyRetry();
+            return { linked: false, reason: 'device_not_ready' };
         }
 
         try {
@@ -378,7 +439,7 @@ export class QueueManager {
             }
 
             const entry = (result.data as QueueStats).queue_entry as QueueEntry;
-            if (entry.line_linked === true || entry.lineLinked === true) {
+            if (this.isQueueLinked(entry)) {
                 this.clearQueueTokenFromUrl();
             }
             return { linked: true, entry };
@@ -389,6 +450,73 @@ export class QueueManager {
                 error: (error instanceof Error && error.message) || 'link failed',
             };
         }
+    }
+
+    isMobileAppWaitingForDevice(): boolean {
+        if (typeof window === 'undefined' || window.__MOBILE_APP_MODE__ !== true) {
+            return false;
+        }
+        const deviceId = window.__MOBILE_DEVICE_INFO__
+            && String(window.__MOBILE_DEVICE_INFO__.device_identifier || '').trim();
+        return !deviceId;
+    }
+
+    isQueueLinked(entry: QueueEntry): boolean {
+        return entry.line_linked === true || entry.lineLinked === true;
+    }
+
+    afterQueueCardRendered(entry: QueueEntry): void {
+        this.ensureDeviceRegistered();
+        if (this.isQueueLinked(entry)) {
+            this._linkPollAttempts = 0;
+            this.stopLinkStatusPolling();
+            return;
+        }
+        this.startLinkStatusPolling();
+    }
+
+    ensureDeviceRegistered(): void {
+        if (typeof window === 'undefined' || !window.app || !window.app.deviceManager) {
+            return;
+        }
+        const manager = window.app.deviceManager as { registerDevice?: () => void };
+        if (typeof manager.registerDevice === 'function') {
+            manager.registerDevice();
+        }
+    }
+
+    startLinkStatusPolling(): void {
+        this.stopLinkStatusPolling();
+        if (this._linkPollAttempts >= QueueManager.LINK_POLL_MAX_ATTEMPTS) {
+            return;
+        }
+        this._linkPollAttempts += 1;
+        this._linkPollTimer = setTimeout(() => {
+            this._linkPollTimer = null;
+            void this.load();
+        }, QueueManager.LINK_POLL_INTERVAL_MS);
+    }
+
+    stopLinkStatusPolling(): void {
+        if (this._linkPollTimer !== null) {
+            clearTimeout(this._linkPollTimer);
+            this._linkPollTimer = null;
+        }
+    }
+
+    registerNativeDeviceReadyRetry(): void {
+        if (this._waitingLiffRetryRegistered) {
+            return;
+        }
+        this._waitingLiffRetryRegistered = true;
+        const rerun = (): void => {
+            this._waitingLiffRetryRegistered = false;
+            void this.load();
+        };
+        if (typeof document !== 'undefined') {
+            document.addEventListener('mobile-device-info-injected', rerun, { once: true });
+        }
+        setTimeout(rerun, 2000);
     }
 
     registerLiffReadyRetry(): void {
@@ -419,6 +547,7 @@ export class QueueManager {
                         : (entry.queueNumber != null
                             ? entry.queueNumber
                             : (entry.id != null ? entry.id : '-'))));
+        // 常に日+通番へ正規化（APIが生の queue_number だけ返しても年を出さない）
         const queueNumber = this.formatQueueNumber(rawQueueNumber);
         const status = entry.status || '-';
         const lineLinked = entry.line_linked === true || entry.lineLinked === true;
@@ -473,8 +602,12 @@ export class QueueManager {
                         <div class="queue-value">${DomHelper.escapeHtml(estimated)} 分</div>
                     </div>
                     <div class="queue-row">
-                        <div class="queue-label">LINE連携</div>
-                        <div class="queue-value">${lineLinked ? '連携済み' : '未連携'}</div>
+                        <div class="queue-label">アプリ連携</div>
+                        <div class="queue-value">
+                            <span class="queue-link-status ${lineLinked ? 'is-linked' : 'is-unlinked'}">
+                                ${lineLinked ? '連携済み' : '未連携'}
+                            </span>
+                        </div>
                     </div>
                 </div>
                 <div class="queue-actions">
@@ -505,7 +638,11 @@ export class QueueManager {
                 createButton.disabled = false;
                 createButton.classList.remove('is-loading');
                 if (result.success !== true) {
-                    section.innerHTML = this.getErrorTemplate(result.error);
+                    if (String(result.error || '').includes('会員登録が必要')) {
+                        section.innerHTML = this.getMembershipRequiredTemplate();
+                    } else {
+                        section.innerHTML = this.getErrorTemplate(result.error);
+                    }
                     this.attachQueueHandlers(section);
                     return;
                 }
@@ -579,8 +716,8 @@ export class QueueManager {
                 <div class="queue-help-title">使い方</div>
                 <ol class="queue-help-list">
                     <li>人数を入力して「受付する」を押します。</li>
-                    <li>表示されたQRをLINEで読み取ると通知対象になります。</li>
-                    <li>店舗側で呼び出すとLINEに通知が届きます。</li>
+                    <li>表示されたQRを読み取ると通知対象になります。</li>
+                    <li>店舗側で呼び出すと通知が届きます。</li>
                 </ol>
                 <p class="queue-help-note">同じLINEユーザーで複数の順番待ち登録が可能です。</p>
             </div>

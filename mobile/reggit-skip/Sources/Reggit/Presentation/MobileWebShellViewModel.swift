@@ -27,6 +27,7 @@ final class MobileWebShellViewModel: PushNotificationHandling {
     private let pushNotificationObserver: any PushNotificationObserving
     private let reachabilityChecker: any ShellURLReachabilityChecking
     private var pendingNotificationDeepLink: PendingNotificationDeepLink?
+    private var pendingQueueToken: String?
 
     init(
         config: MobileWebShellConfig,
@@ -182,6 +183,17 @@ final class MobileWebShellViewModel: PushNotificationHandling {
         runNotificationDeepLink(tab: tab, notificationType: notificationType)
     }
 
+    func handleQueueDeepLink(queueToken: String) {
+        let token = queueToken.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !token.isEmpty else { return }
+        activeTab = "queue"
+        guard showNativeTabBar, isWebContentReady else {
+            pendingQueueToken = token
+            return
+        }
+        runQueueDeepLink(queueToken: token)
+    }
+
     func injectPushToken(_ token: String) async {
         scriptExecutor.run(MobileWebShellScripts.pushTokenInjection(token: token))
     }
@@ -196,6 +208,7 @@ final class MobileWebShellViewModel: PushNotificationHandling {
         fallbackTitle = ShellUserFacingMessages.connectionTitle
         fallbackMessage = ""
         pendingNotificationDeepLink = nil
+        pendingQueueToken = nil
         whiteScreenMonitor.resetTracking()
     }
 
@@ -206,6 +219,7 @@ final class MobileWebShellViewModel: PushNotificationHandling {
         showNativeTabBar = false
         isWebContentReady = false
         pendingNotificationDeepLink = nil
+        pendingQueueToken = nil
         fallbackTitle = ShellUserFacingMessages.connectionTitle
         fallbackMessage = reachabilityChecker.unreachableMessage(for: config.liffURLString)
         logger.error("Web shell unreachable url=\(self.config.liffURLString)")
@@ -218,6 +232,7 @@ final class MobileWebShellViewModel: PushNotificationHandling {
         onNavigationFinished(applyInitialTab: true)
         switchToTab(activeTab)
         flushPendingNotificationDeepLinkIfNeeded()
+        flushPendingQueueDeepLinkIfNeeded()
         // onNavigationFinished コールバックは contentVisible より先に発火し得るため、
         // ここで明示的に app-config を取得する（Android では Observation/onChange も不安定）。
         loadAppConfigFromWebIfNeeded()
@@ -229,9 +244,19 @@ final class MobileWebShellViewModel: PushNotificationHandling {
         runNotificationDeepLink(tab: pending.tab, notificationType: pending.notificationType)
     }
 
+    private func flushPendingQueueDeepLinkIfNeeded() {
+        guard let token = pendingQueueToken else { return }
+        pendingQueueToken = nil
+        runQueueDeepLink(queueToken: token)
+    }
+
     private func runNotificationDeepLink(tab: String, notificationType: String?) {
         let isCoupon = notificationType == "coupon_issued" || tab == "coupons"
         scriptExecutor.run(MobileWebShellScripts.notificationDeepLink(tab: tab, isCoupon: isCoupon))
+    }
+
+    private func runQueueDeepLink(queueToken: String) {
+        scriptExecutor.run(MobileWebShellScripts.queueDeepLink(queueToken: queueToken))
     }
 
     private func beginWhiteScreenMonitoring() {
@@ -283,6 +308,7 @@ final class MobileWebShellViewModel: PushNotificationHandling {
             showNativeTabBar = false
             isWebContentReady = false
             pendingNotificationDeepLink = nil
+            pendingQueueToken = nil
             fallbackTitle = ShellUserFacingMessages.loadFailedTitle
             fallbackMessage = message
         }

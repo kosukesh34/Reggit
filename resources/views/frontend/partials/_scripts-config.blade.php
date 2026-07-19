@@ -23,6 +23,7 @@
     window.__LIFF_DETAIL_LAYOUTS__ = @json($liffDetailLayouts ?? []);
     window.__LIFF_TAB_SETTINGS__ = @json($liffTabSettings ?? []);
     window.__FEATURE_FLAGS__ = @json($featureFlags ?? []);
+    window.__QUEUE_REQUIRE_MEMBERSHIP__ = {{ ($queueRequireMembership ?? false) ? 'true' : 'false' }};
     window.__FRONTEND_MENU__ = @json(array_values($filteredMenu ?? []));
     window.__FRONTEND_HEADER__ = @json($frontendHeaderConfig);
     window.__IS_DESIGNER_EMBED_PREVIEW__ = {{ ($isDesignerEmbedPreview ?? false) ? 'true' : 'false' }};
