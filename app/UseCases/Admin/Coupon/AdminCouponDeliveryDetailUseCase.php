@@ -19,7 +19,7 @@ class AdminCouponDeliveryDetailUseCase
             ->with('coupon')
             ->find($deliveryId);
         if ($delivery === null) {
-            throw (new ModelNotFoundException())->setModel(CouponDelivery::class, [$deliveryId]);
+            throw (new ModelNotFoundException)->setModel(CouponDelivery::class, [$deliveryId]);
         }
 
         $typeOptions = CouponDeliveryType::getValues();

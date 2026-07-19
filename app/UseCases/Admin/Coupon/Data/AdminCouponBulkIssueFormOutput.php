@@ -5,6 +5,7 @@ namespace App\UseCases\Admin\Coupon\Data;
 use App\Models\Coupon;
 use App\Models\CouponDelivery;
 use App\Models\Product;
+use App\Models\StampCard;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
@@ -36,7 +37,7 @@ use Illuminate\Support\Collection;
  * }  $deliveryTypeJsConfig
  * @param  Collection<int, Product>  $products
  * @param  array<int, int>  $deliveryCountByCouponId
- * @param  Collection<int, \App\Models\StampCard>  $stampCards
+ * @param  Collection<int, StampCard>  $stampCards
  * @param  list<array{key: string, label: string}>  $rankOptions
  */
 class AdminCouponBulkIssueFormOutput

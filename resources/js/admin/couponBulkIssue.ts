@@ -448,8 +448,12 @@ function initCouponBulkIssue(): void {
         fetch(`${cfg.previewMembersUrl}?${buildPreviewParams(deliveryType).toString()}`)
             .then((r) => r.json())
             .then((data: { members?: PreviewMember[]; total?: number; error?: string | null }) => {
+                body.replaceChildren();
                 if (data.error) {
-                    body.innerHTML = `<p class="text-danger">${data.error}</p>`;
+                    const err = document.createElement('p');
+                    err.className = 'text-danger';
+                    err.textContent = data.error;
+                    body.appendChild(err);
                     return;
                 }
                 const members = data.members || [];
@@ -460,16 +464,43 @@ function initCouponBulkIssue(): void {
                         : `対象 ${total}人`;
                 }
                 if (members.length === 0) {
-                    body.innerHTML = '<p class="text-muted">対象会員がいません</p>';
+                    const empty = document.createElement('p');
+                    empty.className = 'text-muted';
+                    empty.textContent = '対象会員がいません';
+                    body.appendChild(empty);
                     return;
                 }
-                const rows = members.map((m) => (
-                    `<tr><td>${m.member_name}</td><td>${m.member_number}</td></tr>`
-                )).join('');
-                body.innerHTML = `<table class="table"><thead><tr><th>会員名</th><th>会員番号</th></tr></thead><tbody>${rows}</tbody></table>`;
+                const table = document.createElement('table');
+                table.className = 'table';
+                const thead = document.createElement('thead');
+                const headRow = document.createElement('tr');
+                ['会員名', '会員番号'].forEach((label) => {
+                    const th = document.createElement('th');
+                    th.textContent = label;
+                    headRow.appendChild(th);
+                });
+                thead.appendChild(headRow);
+                const tbody = document.createElement('tbody');
+                members.forEach((m) => {
+                    const tr = document.createElement('tr');
+                    const nameTd = document.createElement('td');
+                    nameTd.textContent = m.member_name;
+                    const numberTd = document.createElement('td');
+                    numberTd.textContent = m.member_number;
+                    tr.appendChild(nameTd);
+                    tr.appendChild(numberTd);
+                    tbody.appendChild(tr);
+                });
+                table.appendChild(thead);
+                table.appendChild(tbody);
+                body.appendChild(table);
             })
             .catch(() => {
-                body.innerHTML = '<p class="text-danger">対象会員の取得に失敗しました</p>';
+                body.replaceChildren();
+                const err = document.createElement('p');
+                err.className = 'text-danger';
+                err.textContent = '対象会員の取得に失敗しました';
+                body.appendChild(err);
             });
     }
 
