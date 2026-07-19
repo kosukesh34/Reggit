@@ -28,7 +28,7 @@ class QueueStoreController extends BaseApiController
 
         try {
             $user = $this->userService->getOrCreateUser($request);
-            $dto = $this->storeUseCase->handle(new QueueStoreInput(
+            $result = $this->storeUseCase->handle(new QueueStoreInput(
                 $user,
                 $validated['party_size'],
                 $validated['guest_name'] ?? null,
@@ -36,8 +36,12 @@ class QueueStoreController extends BaseApiController
                 QueueRequestContext::lineUserId($request) ?: null,
             ));
 
+            if ($result->requiresMembership) {
+                return $this->error('会員登録が必要です', 403, ['requires_membership' => true]);
+            }
+
             return $this->success([
-                'queue_entry' => $dto->toArray(),
+                'queue_entry' => $result->entry?->toArray(),
                 'updated_at' => now()->toIso8601String(),
             ], '順番待ちに登録しました', 201);
         } catch (\Exception $e) {

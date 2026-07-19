@@ -28,7 +28,7 @@ class QueueStoreController extends Controller
 
         try {
             $user = $this->userService->getOrCreateUser($request);
-            $dto = $this->storeUseCase->handle(new QueueStoreInput(
+            $result = $this->storeUseCase->handle(new QueueStoreInput(
                 $user,
                 $validated['party_size'],
                 $validated['guest_name'] ?? null,
@@ -36,10 +36,17 @@ class QueueStoreController extends Controller
                 QueueRequestContext::lineUserId($request) ?: null,
             ));
 
+            if ($result->requiresMembership) {
+                return response()->json([
+                    'error' => '会員登録が必要です',
+                    'requires_membership' => true,
+                ], 403);
+            }
+
             return response()->json([
                 'message' => '順番待ちに登録しました',
                 'updated_at' => now()->toIso8601String(),
-                'queue_entry' => $dto->toArray(),
+                'queue_entry' => $result->entry?->toArray(),
             ], 201);
         } catch (\Exception $e) {
             LogHelper::error('[Queue] store failed', [

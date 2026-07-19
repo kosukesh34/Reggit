@@ -35,7 +35,7 @@ final class PrinterService: PrinterServiceProtocol {
         let printController = UIPrintInteractionController.shared
         let info = UIPrintInfo(dictionary: nil)
         info.outputType = .photo
-        info.jobName = String(format: Strings.Print.jobNameFormat, ticket.queueNumber)
+        info.jobName = String(format: Strings.Print.jobNameFormat, ticket.displayNumber)
         printController.printInfo = info
         printController.printingItem = image
 
@@ -70,7 +70,7 @@ final class TicketPrintRenderer {
             paragraph.alignment = .center
 
             draw(Strings.Print.ticketTitle, font: .boldSystemFont(ofSize: 36), at: CGPoint(x: size.width / 2, y: 40), paragraph: paragraph)
-            draw("No.\(ticket.queueNumber)", font: .boldSystemFont(ofSize: 64), at: CGPoint(x: size.width / 2, y: 110), paragraph: paragraph)
+            draw(ticket.displayNumber, font: .boldSystemFont(ofSize: 64), at: CGPoint(x: size.width / 2, y: 110), paragraph: paragraph)
             draw(String(format: Strings.Print.partyFormat, ticket.partySize), font: .systemFont(ofSize: 28), at: CGPoint(x: size.width / 2, y: 200), paragraph: paragraph)
 
             let time = DateFormatter.localizedString(from: ticket.createdAt, dateStyle: .medium, timeStyle: .short)

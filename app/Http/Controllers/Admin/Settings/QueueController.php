@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Admin\Settings;
 
 use App\Http\Controllers\Admin\AdminBaseController;
+use App\Http\Requests\Admin\SettingsQueueRequest;
 use App\UseCases\Admin\Settings\GetQueueSettingsUseCase;
 use App\UseCases\Admin\Settings\UpdateQueueSettingsUseCase;
-use Illuminate\Http\Request;
 
 class QueueController extends AdminBaseController
 {
@@ -26,16 +26,18 @@ class QueueController extends AdminBaseController
         $projectId = $this->resolveAdminProjectId();
         $data = $this->getQueueSettingsUseCase->handle($projectId);
 
-        return view('admin.settings.queue', ['avgServeMinutes' => $data['avgServeMinutes']]);
+        return view('admin.settings.queue', [
+            'avgServeMinutes' => $data['avgServeMinutes'],
+            'requireMembership' => $data['requireMembership'],
+            'channelLine' => $data['channelLine'],
+            'channelNative' => $data['channelNative'],
+        ]);
     }
 
-    public function update(Request $request)
+    public function update(SettingsQueueRequest $request)
     {
         $projectId = $this->resolveAdminProjectId();
-        $validated = $request->validate([
-            'queue_avg_serve_minutes' => 'required|integer|min:1|max:120',
-        ]);
-        $this->updateQueueSettingsUseCase->handle($projectId, $validated);
+        $this->updateQueueSettingsUseCase->handle($projectId, $request->validatedSettings());
 
         return redirect()->route('admin.settings.queue', $this->buildAdminRouteParams())
             ->with('success', '順番待ち設定を更新しました');

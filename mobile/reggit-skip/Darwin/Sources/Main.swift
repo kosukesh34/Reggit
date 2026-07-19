@@ -52,6 +52,14 @@ struct AppMain: App {
                 AnnouncementPushCancel.syncCancelledAnnouncementNotifications()
                 #endif
             }
+            .onOpenURL { url in
+                _ = QueueDeepLinkHandler.handle(url)
+                #if canImport(UIKit)
+                if url.scheme == NativeAppIdentity.urlScheme && url.host != "queue" {
+                    _ = NativeAppURLHandler.handle(url)
+                }
+                #endif
+            }
         }
         .onChange(of: scenePhase) { _, newPhase in
             switch newPhase {
@@ -532,7 +540,7 @@ private enum AnnouncementPushCancel {
         return false
     }
 
-    private static func isBlankText(_ text: String) -> Bool {
+    static func isBlankText(_ text: String) -> Bool {
         let trimmed = text
             .replacingOccurrences(of: "\u{200B}", with: "")
             .replacingOccurrences(of: "\u{00A0}", with: "")
