@@ -180,22 +180,6 @@ class PushNotificationService
     /** @return array{target_tokens:int,sent:int,failed:int,skipped:int} */
     public function sendQueueCalledToUser(int $projectId, int $userId, string $queueNumber): array
     {
-        $tokens = UserDevice::query()
-            ->where('project_id', $projectId)
-            ->where('user_id', $userId)
-            ->whereNotNull('push_token')
-            ->where('push_token', '!=', '')
-            ->pluck('push_token')
-            ->map(fn ($token) => trim((string) $token))
-            ->filter(fn ($token) => $token !== '')
-            ->unique()
-            ->values()
-            ->all();
-
-        if ($tokens === []) {
-            return ['target_tokens' => 0, 'sent' => 0, 'failed' => 0, 'skipped' => 0];
-        }
-
         $title = '順番待ちのお知らせ';
         $body = sprintf('順番が近づきました。受付番号: %s', $queueNumber);
         $data = [
@@ -204,35 +188,14 @@ class PushNotificationService
             'project_id' => (string) $projectId,
         ];
 
-        if ($this->isOneSignalEnabled()) {
-            $result = $this->sendOneSignalPush(
-                $tokens,
-                $title,
-                $body,
-                $data,
-                $this->buildQueueCollapseId($projectId, $userId)
-            );
-
-            return [
-                'target_tokens' => $result['target_tokens'],
-                'sent' => $result['sent'],
-                'failed' => $result['failed'],
-                'skipped' => $result['skipped'],
-            ];
-        }
-
-        LogHelper::warning('[Push] Queue call push skipped (OneSignal not enabled)', [
-            'project_id' => $projectId,
-            'user_id' => $userId,
-            'target_tokens' => count($tokens),
-        ]);
-
-        return [
-            'target_tokens' => count($tokens),
-            'sent' => 0,
-            'failed' => 0,
-            'skipped' => count($tokens),
-        ];
+        return $this->sendToUser(
+            $projectId,
+            $userId,
+            $title,
+            $body,
+            $data,
+            $this->buildQueueCollapseId($projectId, $userId)
+        );
     }
 
     /**

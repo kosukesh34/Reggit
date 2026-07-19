@@ -184,6 +184,7 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('liffId', ShopSetting::getLineLiffId($projectId));
                 $view->with('liffUrl', ShopSetting::getLineLiffUrl($projectId));
                 $view->with('lineFriendAddUrl', ShopSetting::getLineFriendAddUrl($projectId));
+                $view->with('queueRequireMembership', ShopSetting::getQueueRequireMembership($projectId));
 
                 // LIFFデザイナー埋め込みプレビュー（会員証）: ランク設定から実際の表示用ペイロードを組み立てる
                 $designerPreviewMemberPayload = null;
@@ -219,6 +220,7 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('liffId', trim((string) config('line.liff_id', '')));
                 $view->with('liffUrl', trim((string) config('line.liff_url', '')));
                 $view->with('lineFriendAddUrl', '');
+                $view->with('queueRequireMembership', false);
                 $view->with('designerPreviewMemberPayload', null);
             }
         });

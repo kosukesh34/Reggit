@@ -49,6 +49,7 @@ final class QueueAPIClient: QueueAPIClientProtocol {
         let url = try buildURL(path: "/api/queue/call-next")
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
+        applyWaitingSystemHeader(&request)
 
         let (data, response) = try await session.data(for: request)
         guard let http = response as? HTTPURLResponse else { throw QueueAPIError.invalidResponse }
@@ -63,6 +64,7 @@ final class QueueAPIClient: QueueAPIClientProtocol {
         let url = try buildURL(path: "/api/queue/\(id)")
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
+        applyWaitingSystemHeader(&request)
 
         let (data, response) = try await session.data(for: request)
         guard let http = response as? HTTPURLResponse else { throw QueueAPIError.invalidResponse }
@@ -120,10 +122,16 @@ final class QueueAPIClient: QueueAPIClientProtocol {
     }
 
     private func execute(_ request: URLRequest) async throws -> Data {
+        var request = request
+        applyWaitingSystemHeader(&request)
         let (data, response) = try await session.data(for: request)
         guard let http = response as? HTTPURLResponse else { throw QueueAPIError.invalidResponse }
         try validateStatus(http, data: data)
         return data
+    }
+
+    private func applyWaitingSystemHeader(_ request: inout URLRequest) {
+        request.setValue("waiting-system", forHTTPHeaderField: "X-Queue-Client")
     }
 
     private func validateStatus(_ http: HTTPURLResponse, data: Data) throws {
@@ -175,6 +183,7 @@ private extension QueueTicketResponse.QueueEntryPayload {
         QueueTicket(
             id: id,
             queueNumber: queueNumber,
+            formattedQueueNumber: formattedQueueNumber,
             partySize: partySize,
             status: status,
             lineLinked: lineLinked ?? false,

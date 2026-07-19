@@ -197,6 +197,74 @@ class QueueApiTest extends TestCase
             ->assertJsonPath('error', 'LINEログインが必要です');
     }
 
+    public function test_qr_status_ネイティブ端末ヘッダがあればLINEなしでも紐づくこと(): void
+    {
+        $this->createProject();
+        $user = User::factory()->create([
+            'line_user_id' => 'guest-native-queue-1',
+            'project_id' => 1,
+            'name' => 'Native User',
+        ]);
+        \App\Models\UserDevice::create([
+            'project_id' => 1,
+            'user_id' => $user->id,
+            'platform' => 'ios',
+            'device_identifier' => 'native-device-queue-1',
+            'push_token' => 'push-token-1',
+            'last_used_at' => now(),
+        ]);
+        $entry = QueueEntry::factory()->create([
+            'project_id' => 1,
+            'user_id' => null,
+            'member_id' => null,
+            'qr_token' => 'token-native-bind',
+        ]);
+
+        $response = $this->withHeaders([
+            'X-Device-Identifier' => 'native-device-queue-1',
+        ])->get("/api/queue/qr/{$entry->qr_token}?project_key=default");
+
+        $response->assertStatus(200)
+            ->assertJsonPath('queue_entry.id', $entry->id)
+            ->assertJsonPath('queue_entry.line_linked', true);
+
+        $entry->refresh();
+        $this->assertSame($user->id, $entry->user_id);
+        $this->assertDatabaseHas('user_devices', [
+            'project_id' => 1,
+            'user_id' => $user->id,
+            'device_identifier' => 'native-device-queue-1',
+            'push_token' => 'push-token-1',
+        ]);
+    }
+
+    public function test_qr_status_ネイティブ端末ヘッダのみでもユーザーを作成して紐づくこと(): void
+    {
+        $this->createProject();
+        $entry = QueueEntry::factory()->create([
+            'project_id' => 1,
+            'user_id' => null,
+            'member_id' => null,
+            'qr_token' => 'token-native-create',
+        ]);
+
+        $response = $this->withHeaders([
+            'X-Device-Identifier' => 'native-device-new-1',
+        ])->get("/api/queue/qr/{$entry->qr_token}?project_key=default");
+
+        $response->assertStatus(200)
+            ->assertJsonPath('queue_entry.id', $entry->id)
+            ->assertJsonPath('queue_entry.line_linked', true);
+
+        $entry->refresh();
+        $this->assertNotNull($entry->user_id);
+        $this->assertDatabaseHas('user_devices', [
+            'project_id' => 1,
+            'user_id' => $entry->user_id,
+            'device_identifier' => 'native-device-new-1',
+        ]);
+    }
+
     public function test_qr_status_q_rアクセスでユーザーが紐づくこと(): void
     {
         $this->createProject();
@@ -219,6 +287,30 @@ class QueueApiTest extends TestCase
 
         $entry->refresh();
         $this->assertSame($user->id, $entry->user_id);
+    }
+
+    public function test_list_ネイティブ連携済みはline_linkedがtrueになること(): void
+    {
+        $this->createProject();
+        $user = User::factory()->create([
+            'line_user_id' => 'guest-native-list-1',
+            'project_id' => 1,
+            'name' => 'Native List User',
+        ]);
+        $entry = QueueEntry::factory()->create([
+            'project_id' => 1,
+            'user_id' => $user->id,
+            'member_id' => null,
+            'status' => QueueStatus::WAITING,
+            'qr_token' => 'token-native-list',
+        ]);
+
+        $response = $this->get('/api/queue/list?project_key=default');
+
+        $response->assertStatus(200);
+        $matched = collect($response->json('entries') ?? [])->firstWhere('id', $entry->id);
+        $this->assertNotNull($matched);
+        $this->assertTrue($matched['line_linked']);
     }
 
     public function test_qr_status_同一ユーザーで複数件あっても紐づくこと(): void
