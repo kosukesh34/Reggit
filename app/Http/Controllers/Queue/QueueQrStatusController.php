@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Queue;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use App\Services\DeviceService;
 use App\Services\UserService;
 use App\Support\QueueRequestContext;
@@ -69,7 +70,7 @@ class QueueQrStatusController extends Controller
         }
     }
 
-    private function ensureDeviceLinked(Request $request, ?\App\Models\User $user): void
+    private function ensureDeviceLinked(Request $request, ?User $user): void
     {
         if ($user === null) {
             return;
@@ -87,7 +88,7 @@ class QueueQrStatusController extends Controller
         ]);
     }
 
-    private function resolveContextUser(Request $request): ?\App\Models\User
+    private function resolveContextUser(Request $request): ?User
     {
         $user = $this->userService->findUser($request);
         if ($user !== null) {

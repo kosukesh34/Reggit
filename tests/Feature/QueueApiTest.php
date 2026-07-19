@@ -7,6 +7,7 @@ use App\Models\Member;
 use App\Models\Project;
 use App\Models\QueueEntry;
 use App\Models\User;
+use App\Models\UserDevice;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -197,7 +198,7 @@ class QueueApiTest extends TestCase
             ->assertJsonPath('error', 'LINEログインが必要です');
     }
 
-    public function test_qr_status_ネイティブ端末ヘッダがあればLINEなしでも紐づくこと(): void
+    public function test_qr_status_ネイティブ端末ヘッダがあれば_lin_eなしでも紐づくこと(): void
     {
         $this->createProject();
         $user = User::factory()->create([
@@ -205,7 +206,7 @@ class QueueApiTest extends TestCase
             'project_id' => 1,
             'name' => 'Native User',
         ]);
-        \App\Models\UserDevice::create([
+        UserDevice::create([
             'project_id' => 1,
             'user_id' => $user->id,
             'platform' => 'ios',
