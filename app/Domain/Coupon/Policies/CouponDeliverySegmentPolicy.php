@@ -85,6 +85,41 @@ final class CouponDeliverySegmentPolicy
             ];
         }
 
+        if (in_array($deliveryType, CouponDeliveryType::rankValues(), true)
+            || CouponDeliveryType::isEventRankUpArrival($deliveryType)
+        ) {
+            return [
+                'rank' => trim((string) ($params['target_rank'] ?? $params['segment_rank'] ?? '')),
+            ];
+        }
+
+        if (in_array($deliveryType, CouponDeliveryType::stampValues(), true)) {
+            $criteria = [];
+            $stampCardId = $params['stamp_card_id'] ?? $params['segment_stamp_card_id'] ?? null;
+            if ($stampCardId !== null && $stampCardId !== '') {
+                $criteria['stamp_card_id'] = (int) $stampCardId;
+            }
+            $minStamps = $params['stamp_count_min'] ?? $params['segment_stamp_count_min'] ?? null;
+            if ($minStamps !== null && $minStamps !== '') {
+                $criteria['stamp_count_min'] = max(0, (int) $minStamps);
+            }
+            $completed = $params['stamp_completed'] ?? $params['segment_stamp_completed'] ?? false;
+            if ($completed === true || $completed === 1 || $completed === '1' || $completed === 'on') {
+                $criteria['stamp_completed'] = true;
+            }
+
+            return $criteria === [] ? null : $criteria;
+        }
+
+        if (in_array($deliveryType, CouponDeliveryType::daysAfterVisitValues(), true)) {
+            return [
+                'days_after_last_visit' => $this->normalizePositiveDays(
+                    (int) ($params['days_after_last_visit'] ?? $params['segment_last_visit_days'] ?? 7),
+                    7,
+                ),
+            ];
+        }
+
         return null;
     }
 
