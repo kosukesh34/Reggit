@@ -5,8 +5,12 @@ namespace Tests\Feature;
 use App\Enums\MemberVisitSource;
 use App\Models\AdminUser;
 use App\Models\Coupon;
+use App\Models\CouponRedemption;
 use App\Models\Member;
 use App\Models\MemberCoupon;
+use App\Models\MemberRankHistory;
+use App\Models\MemberVisit;
+use App\Models\PointTransaction;
 use App\Models\Project;
 use App\Models\ShopSetting;
 use App\Models\StampCard;
@@ -74,10 +78,135 @@ class AdminMembersTest extends TestCase
         $detail = $this->actingAs($admin, 'admin')
             ->get(route('admin.members.detail', ['project_key' => $project->project_key, 'id' => $member->id]));
         $detail->assertStatus(200);
+        $detail->assertSee('ランクアップ履歴');
+        $detail->assertSee('クーポン使用履歴');
+        $detail->assertSee('来店履歴');
+        $detail->assertSee('ポイント履歴');
 
         $edit = $this->actingAs($admin, 'admin')
             ->get(route('admin.members.edit', ['project_key' => $project->project_key, 'id' => $member->id]));
         $edit->assertStatus(200);
+    }
+
+    public function test_members_detail_履歴の検索とページネーションができること(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $member = Member::factory()->create(['user_id' => $user->id, 'project_id' => $project->id]);
+
+        MemberVisit::create([
+            'project_id' => $project->id,
+            'member_id' => $member->id,
+            'source' => MemberVisitSource::ADMIN,
+            'visited_at' => now()->subDay(),
+            'note' => '検索対象メモ',
+        ]);
+        MemberVisit::create([
+            'project_id' => $project->id,
+            'member_id' => $member->id,
+            'source' => MemberVisitSource::ADMIN,
+            'visited_at' => now()->subDays(2),
+            'note' => '別メモ',
+        ]);
+
+        for ($i = 0; $i < 21; $i++) {
+            $tx = PointTransaction::create([
+                'project_id' => $project->id,
+                'member_id' => $member->id,
+                'type' => 'earned',
+                'points' => 1,
+                'description' => 'pt-'.$i,
+            ]);
+            $tx->forceFill([
+                'created_at' => now()->subMinutes(21 - $i),
+                'updated_at' => now()->subMinutes(21 - $i),
+            ])->save();
+        }
+
+        $coupon = Coupon::factory()->create(['project_id' => $project->id, 'name' => '利用テストクーポン']);
+        CouponRedemption::create([
+            'project_id' => $project->id,
+            'coupon_id' => $coupon->id,
+            'member_id' => $member->id,
+            'used_at' => now(),
+        ]);
+        MemberRankHistory::create([
+            'project_id' => $project->id,
+            'member_id' => $member->id,
+            'from_rank' => 'bronze',
+            'to_rank' => 'gold',
+            'from_rank_label' => 'ブロンズ',
+            'to_rank_label' => 'ゴールド',
+            'achieved_at' => now(),
+        ]);
+
+        $detail = $this->actingAs($admin, 'admin')
+            ->get(route('admin.members.detail', [
+                'project_key' => $project->project_key,
+                'id' => $member->id,
+            ]));
+        $detail->assertStatus(200);
+        $detail->assertSee('member-history-panel');
+        $detail->assertSee('data-history-toggle', false);
+        $detail->assertSee('data-history-input', false);
+        $detail->assertSee('data-history-from', false);
+
+        $search = $this->actingAs($admin, 'admin')
+            ->getJson(route('admin.members.history', [
+                'project_key' => $project->project_key,
+                'id' => $member->id,
+                'section' => 'visits',
+                'q' => '検索対象',
+            ]));
+        $search->assertStatus(200);
+        $search->assertJsonPath('total', 1);
+        $this->assertStringContainsString('検索対象メモ', $search->json('html'));
+        $this->assertStringNotContainsString('別メモ', $search->json('html'));
+
+        $byDate = $this->actingAs($admin, 'admin')
+            ->getJson(route('admin.members.history', [
+                'project_key' => $project->project_key,
+                'id' => $member->id,
+                'section' => 'visits',
+                'from' => now()->subDay()->format('Y-m-d'),
+                'to' => now()->subDay()->format('Y-m-d'),
+            ]));
+        $byDate->assertStatus(200);
+        $byDate->assertJsonPath('total', 1);
+        $this->assertStringContainsString('検索対象メモ', $byDate->json('html'));
+        $this->assertStringNotContainsString('別メモ', $byDate->json('html'));
+
+        $page2 = $this->actingAs($admin, 'admin')
+            ->getJson(route('admin.members.history', [
+                'project_key' => $project->project_key,
+                'id' => $member->id,
+                'section' => 'points',
+                'page' => 2,
+            ]));
+        $page2->assertStatus(200);
+        $page2->assertJsonPath('total', 21);
+        $this->assertStringContainsString('pt-0', $page2->json('html'));
+
+        $redemptions = $this->actingAs($admin, 'admin')
+            ->getJson(route('admin.members.history', [
+                'project_key' => $project->project_key,
+                'id' => $member->id,
+                'section' => 'redemptions',
+            ]));
+        $redemptions->assertStatus(200);
+        $this->assertStringContainsString('利用テストクーポン', $redemptions->json('html'));
+
+        $rank = $this->actingAs($admin, 'admin')
+            ->getJson(route('admin.members.history', [
+                'project_key' => $project->project_key,
+                'id' => $member->id,
+                'section' => 'rank',
+                'q' => 'ゴールド',
+            ]));
+        $rank->assertStatus(200);
+        $rank->assertJsonPath('total', 1);
+        $this->assertStringContainsString('ゴールド', $rank->json('html'));
     }
 
     public function test_members_delete_会員を削除できること(): void
@@ -246,6 +375,8 @@ class AdminMembersTest extends TestCase
         $response->assertSee('来店履歴');
         $response->assertSee('ポイント履歴');
         $response->assertSee('クーポン発行履歴');
+        $response->assertSee('クーポン使用履歴');
+        $response->assertSee('ランクアップ履歴');
         $response->assertSee('スタンプ付与履歴');
         $response->assertDontSee('>配布する<', false);
         $response->assertDontSee('スタンプを更新');
