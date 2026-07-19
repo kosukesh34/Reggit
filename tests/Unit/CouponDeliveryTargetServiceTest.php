@@ -7,7 +7,9 @@ use App\Enums\CouponDeliveryType;
 use App\Models\Coupon;
 use App\Models\CouponDelivery;
 use App\Models\Member;
+use App\Models\MemberStamp;
 use App\Models\Project;
+use App\Models\StampCard;
 use App\Services\Admin\CouponDeliveryTargetService;
 use App\UseCases\Admin\Coupon\AdminCouponBulkIssueUseCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -63,7 +65,7 @@ class CouponDeliveryTargetServiceTest extends TestCase
         ]);
     }
 
-    public function test_handle_全員即時配布では対象会員IDを保存すること(): void
+    public function test_handle_全員即時配布では対象会員_i_dを保存すること(): void
     {
         $project = $this->createProject();
         $coupon = Coupon::factory()->create(['project_id' => $project->id]);
@@ -112,7 +114,7 @@ class CouponDeliveryTargetServiceTest extends TestCase
         $this->assertSame(['rank' => 'gold'], $delivery->segment_criteria);
     }
 
-    public function test_resolve_全員配信は全会員IDを返すこと(): void
+    public function test_resolve_全員配信は全会員_i_dを返すこと(): void
     {
         $project = $this->createProject();
         $memberA = Member::factory()->create(['project_id' => $project->id]);
@@ -148,16 +150,16 @@ class CouponDeliveryTargetServiceTest extends TestCase
     public function test_resolve_スタンプ累計条件の会員を返すこと(): void
     {
         $project = $this->createProject();
-        $card = \App\Models\StampCard::factory()->create(['project_id' => $project->id, 'required_stamps' => 10]);
+        $card = StampCard::factory()->create(['project_id' => $project->id, 'required_stamps' => 10]);
         $matched = Member::factory()->create(['project_id' => $project->id]);
         $other = Member::factory()->create(['project_id' => $project->id]);
-        \App\Models\MemberStamp::factory()->create([
+        MemberStamp::factory()->create([
             'project_id' => $project->id,
             'member_id' => $matched->id,
             'stamp_card_id' => $card->id,
             'current_stamps' => 5,
         ]);
-        \App\Models\MemberStamp::factory()->create([
+        MemberStamp::factory()->create([
             'project_id' => $project->id,
             'member_id' => $other->id,
             'stamp_card_id' => $card->id,
@@ -177,7 +179,7 @@ class CouponDeliveryTargetServiceTest extends TestCase
         $this->assertSame([$matched->id], $resolved['member_ids']);
     }
 
-    public function test_resolve_最終来店からちょうどN日後の会員を返すこと(): void
+    public function test_resolve_最終来店からちょうど_n日後の会員を返すこと(): void
     {
         $project = $this->createProject();
         $matched = Member::factory()->create([
