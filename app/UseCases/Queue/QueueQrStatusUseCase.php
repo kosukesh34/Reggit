@@ -5,7 +5,10 @@ namespace App\UseCases\Queue;
 use App\Models\Project;
 use App\Models\QueueEntry as QueueEntryModel;
 use App\Models\User;
+use App\Services\DeviceService;
 use App\Services\Line\LineService;
+use App\Services\PushNotificationService;
+use App\Support\MemberChannel;
 use App\Support\QueueLiffUrlBuilder;
 use App\UseCases\Queue\Data\QueueEntryFactory;
 use App\UseCases\Queue\Data\QueueQrStatusInput;
@@ -20,6 +23,8 @@ class QueueQrStatusUseCase
         private QueueStatsService $statsService,
         private QueueEntryFactory $entryFactory,
         private LineService $lineService,
+        private PushNotificationService $pushNotificationService,
+        private DeviceService $deviceService,
     ) {}
 
     public function handle(QueueQrStatusInput $input): ?QueueQrStatusOutput
@@ -43,15 +48,11 @@ class QueueQrStatusUseCase
             return null;
         }
 
-        if (! $this->isValidLineUserId($input->lineUserId)) {
-            LogHelper::warning('[Queue] qr link rejected: missing line user id', [
-                'queue_id' => $entry->id,
-                'project_id' => $input->projectId,
-            ]);
-            throw new \RuntimeException('LINEログインが必要です');
-        }
+        $hasLine = MemberChannel::isValidLineUserId($input->lineUserId);
+        $user = $hasLine
+            ? $this->resolveUserForLine($input)
+            : $this->resolveUserForNative($input);
 
-        $user = $this->resolveUserForLine($input);
         $projectId = $entry->project_id;
         $linkedNow = false;
 
@@ -65,14 +66,18 @@ class QueueQrStatusUseCase
             );
         }
 
-        if ($entry->user_id !== null && $entry->user_id !== $user->id) {
-            $entryLineUserId = (string) ($entry->user?->line_user_id ?? '');
-            if ($entryLineUserId !== '' && hash_equals($entryLineUserId, $input->lineUserId)) {
-                $entry->user_id = $user->id;
-                $entry->save();
-                $entry->refresh();
+        if ($entry->user_id !== null && (int) $entry->user_id !== (int) $user->id) {
+            if ($hasLine) {
+                $entryLineUserId = (string) ($entry->user?->line_user_id ?? '');
+                if ($entryLineUserId !== '' && hash_equals($entryLineUserId, $input->lineUserId)) {
+                    $entry->user_id = $user->id;
+                    $entry->save();
+                    $entry->refresh();
+                } else {
+                    throw new \RuntimeException('別のLINEアカウントで登録済みです');
+                }
             } else {
-                throw new \RuntimeException('別のLINEアカウントで登録済みです');
+                throw new \RuntimeException('別のアカウントで登録済みです');
             }
         }
 
@@ -86,8 +91,12 @@ class QueueQrStatusUseCase
             $linkedNow = true;
         }
 
-        if ($linkedNow) {
+        if ($linkedNow && $hasLine) {
             $this->sendLinkedCompleteMessage($entry, $input->lineUserId);
+        }
+        if ($linkedNow && ! $hasLine) {
+            $this->ensureNativeDeviceLinked($input, $user);
+            $this->sendLinkedCompleteNativePush($entry, (int) $user->id);
         }
 
         $stats = $this->statsService->getStats($projectId, $entry->queue_number);
@@ -136,7 +145,7 @@ class QueueQrStatusUseCase
 
             $flex = [
                 'type' => 'flex',
-                'altText' => '順番待ちのLINE連携が完了しました',
+                'altText' => '順番待ちのアプリ連携が完了しました',
                 'contents' => [
                     'type' => 'bubble',
                     'header' => [
@@ -152,7 +161,7 @@ class QueueQrStatusUseCase
                         'layout' => 'vertical',
                         'spacing' => 'md',
                         'contents' => [
-                            ['type' => 'text', 'text' => '順番待ちの通知連携が完了しました。', 'wrap' => true, 'size' => 'sm'],
+                            ['type' => 'text', 'text' => '順番待ちのアプリ連携が完了しました。', 'wrap' => true, 'size' => 'sm'],
                             [
                                 'type' => 'box',
                                 'layout' => 'baseline',
@@ -161,7 +170,7 @@ class QueueQrStatusUseCase
                                     ['type' => 'text', 'text' => 'No.'.$queueNo, 'size' => 'md', 'weight' => 'bold', 'flex' => 3],
                                 ],
                             ],
-                            ['type' => 'text', 'text' => '店舗が呼び出すと、このLINEに通知が届きます。', 'wrap' => true, 'size' => 'xs', 'color' => '#666666'],
+                            ['type' => 'text', 'text' => '店舗が呼び出すと、通知が届きます。', 'wrap' => true, 'size' => 'xs', 'color' => '#666666'],
                         ],
                     ],
                     'footer' => [
@@ -192,6 +201,56 @@ class QueueQrStatusUseCase
         }
     }
 
+    private function ensureNativeDeviceLinked(QueueQrStatusInput $input, User $user): void
+    {
+        $deviceIdentifier = trim((string) ($input->deviceIdentifier ?? ''));
+        if ($deviceIdentifier === '') {
+            return;
+        }
+
+        $this->deviceService->register($user, [
+            'device_identifier' => $deviceIdentifier,
+            'platform' => trim((string) ($input->devicePlatform ?? 'unknown')) ?: 'unknown',
+            'os_version' => $input->deviceOsVersion,
+            'app_version' => $input->deviceAppVersion,
+        ]);
+    }
+
+    private function sendLinkedCompleteNativePush(QueueEntryModel $entry, int $userId): void
+    {
+        try {
+            $queueNo = $entry->formattedQueueNumber();
+            $result = $this->pushNotificationService->sendToUser(
+                (int) $entry->project_id,
+                $userId,
+                '順番待ちのアプリ連携が完了しました',
+                sprintf('受付番号 %s の待ち状況を通知で受け取れます。', $queueNo),
+                [
+                    'type' => 'queue_linked',
+                    'queue_number' => $queueNo,
+                    'project_id' => (string) $entry->project_id,
+                    'queue_entry_id' => (string) $entry->id,
+                ],
+                'queue-linked-'.$entry->id
+            );
+            LogHelper::info('[Queue] linked completion native push result', [
+                'queue_id' => $entry->id,
+                'project_id' => (int) $entry->project_id,
+                'user_id' => $userId,
+                'target_tokens' => $result['target_tokens'],
+                'sent' => $result['sent'],
+                'failed' => $result['failed'],
+                'skipped' => $result['skipped'],
+            ]);
+        } catch (\Throwable $e) {
+            LogHelper::warning('[Queue] linked completion native push failed', [
+                'queue_id' => $entry->id,
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
     private function resolveUserForLine(QueueQrStatusInput $input): User
     {
         $contextUser = $input->contextUser;
@@ -217,8 +276,16 @@ class QueueQrStatusUseCase
         ]);
     }
 
-    private function isValidLineUserId(string $lineUserId): bool
+    private function resolveUserForNative(QueueQrStatusInput $input): User
     {
-        return preg_match('/^U[0-9a-f]{32}$/i', $lineUserId) === 1;
+        $contextUser = $input->contextUser;
+        if ($contextUser !== null && (int) $contextUser->project_id === $input->projectId) {
+            return $contextUser;
+        }
+
+        LogHelper::warning('[Queue] qr link rejected: missing native identity', [
+            'project_id' => $input->projectId,
+        ]);
+        throw new \RuntimeException('LINEログインが必要です');
     }
 }

@@ -43,12 +43,7 @@ class QueueEntryFactory
 
     private function isLineLinked(QueueEntryModel $entry): bool
     {
-        if ($entry->relationLoaded('user') && $entry->user !== null) {
-            $lineUserId = (string) ($entry->user->line_user_id ?? '');
-
-            return preg_match('/^U[0-9a-f]{32}$/i', $lineUserId) === 1;
-        }
-
+        // 通知先ユーザーが紐づいていれば連携済み（LINE / ネイティブ共通）
         return $entry->user_id !== null;
     }
 }
