@@ -117,7 +117,7 @@ class QueueSettingsAndLaunchTest extends TestCase
         $this->assertSame(0, QueueEntry::count());
     }
 
-    public function test_store_会員必須でもiPad受付は非会員で登録できること(): void
+    public function test_store_会員必須でもi_pad受付は非会員で登録できること(): void
     {
         $project = $this->createProject();
         ShopSetting::setValue('queue_require_membership', true, 'boolean', (int) $project->id);
@@ -129,7 +129,7 @@ class QueueSettingsAndLaunchTest extends TestCase
         $this->assertSame(1, QueueEntry::count());
     }
 
-    public function test_queue_open_LINEのみならリダイレクトすること(): void
+    public function test_queue_open_lin_eのみならリダイレクトすること(): void
     {
         $project = $this->createProject();
         ShopSetting::setValue('queue_channel_line', true, 'boolean', (int) $project->id);
