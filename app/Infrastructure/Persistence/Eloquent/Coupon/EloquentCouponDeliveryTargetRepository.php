@@ -171,6 +171,10 @@ class EloquentCouponDeliveryTargetRepository implements CouponDeliveryTargetRepo
         } elseif ($mode === 'visited_within_days') {
             $query->whereNotNull('last_visited_at')
                 ->where('last_visited_at', '>=', $boundary->format('Y-m-d'));
+        } elseif ($mode === 'days_after') {
+            $targetDate = Carbon::today()->subDays($days)->format('Y-m-d');
+            $query->whereNotNull('last_visited_at')
+                ->whereDate('last_visited_at', $targetDate);
         } else {
             return [];
         }
@@ -195,6 +199,36 @@ class EloquentCouponDeliveryTargetRepository implements CouponDeliveryTargetRepo
             ->where('project_id', $projectId)
             ->where('rank', $rank)
             ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->values()
+            ->all();
+    }
+
+    public function findIdsByStampProgress(
+        int $projectId,
+        ?int $stampCardId,
+        ?int $minStamps,
+        bool $completedOnly,
+    ): array {
+        if ($stampCardId === null && $minStamps === null && $completedOnly === false) {
+            return [];
+        }
+
+        $query = \App\Models\MemberStamp::query()
+            ->where('project_id', $projectId);
+
+        if ($stampCardId !== null && $stampCardId > 0) {
+            $query->where('stamp_card_id', $stampCardId);
+        }
+        if ($minStamps !== null) {
+            $query->where('current_stamps', '>=', max(0, $minStamps));
+        }
+        if ($completedOnly) {
+            $query->whereNotNull('completed_at');
+        }
+
+        return $query->distinct()
+            ->pluck('member_id')
             ->map(fn ($id) => (int) $id)
             ->values()
             ->all();
@@ -259,6 +293,17 @@ class EloquentCouponDeliveryTargetRepository implements CouponDeliveryTargetRepo
     public function countAll(int $projectId): int
     {
         return Member::query()->where('project_id', $projectId)->count();
+    }
+
+    public function findAllIds(int $projectId): array
+    {
+        return Member::query()
+            ->where('project_id', $projectId)
+            ->orderBy('id')
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->values()
+            ->all();
     }
 
     public function filterValidIds(int $projectId, array $memberIds): array

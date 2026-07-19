@@ -1,15 +1,11 @@
 type CouponBulkIssueConfig = {
     initialSelectedMembers?: Array<number | string>;
-    initialCouponSource?: string;
-    personalTypes?: string[];
-    segmentTypes?: string[];
-    attributeSegmentTypes?: string[];
-    birthdayTypes?: string[];
-    newMemberTypes?: string[];
-    inactiveTypes?: string[];
-    scheduledTypes?: string[];
+    initialDeliveryType?: string;
     previewUrl?: string;
+    previewMembersUrl?: string;
     membersUrl?: string;
+    bulkIssueUrl?: string;
+    memberCount?: number;
 };
 
 type MemberSearchResult = {
@@ -18,9 +14,20 @@ type MemberSearchResult = {
     name?: string;
 };
 
+type PreviewMember = {
+    member_id: number;
+    member_name: string;
+    member_number: string;
+};
+
+type DeliveryMode = 'all' | 'personal' | 'segment' | 'scheduled';
+type ScheduledAudience = 'all' | 'personal' | 'segment';
+type SegmentPreset = '' | 'birthday' | 'new_members' | 'inactive' | 'rank' | 'rank_up_arrival' | 'stamp' | 'days_after_visit';
+
 function initCouponBulkIssue(): void {
     const cfg = (window.CouponBulkIssueConfig || {}) as CouponBulkIssueConfig;
     let selectedMembers = (cfg.initialSelectedMembers || []).map((id) => parseInt(String(id), 10)).filter((id) => id > 0);
+    const memberCountTotal = typeof cfg.memberCount === 'number' ? cfg.memberCount : 0;
 
     function $(sel: string): HTMLElement | null {
         return document.querySelector(sel);
@@ -30,34 +37,148 @@ function initCouponBulkIssue(): void {
         return document.querySelectorAll(sel);
     }
 
-    function getCurrentSource(): string {
-        const field = $('#coupon_source_field') as HTMLInputElement | null;
-        return field ? field.value : (cfg.initialCouponSource || 'existing');
+    function toggleBlock(id: string, hidden: boolean): void {
+        const el = document.getElementById(id);
+        if (el) el.classList.toggle('is-hidden', hidden);
     }
 
-    function syncPickerFromHidden(): void {
-        const couponIdEl = $('#coupon_id') as HTMLInputElement | null;
-        if (!couponIdEl || !couponIdEl.value) {
-            return;
+    function getDeliveryMode(): DeliveryMode {
+        const el = document.querySelector('input[name="delivery_mode"]:checked') as HTMLInputElement | null;
+        return (el?.value as DeliveryMode) || 'all';
+    }
+
+    function getScheduledAudience(): ScheduledAudience {
+        const el = document.querySelector('input[name="scheduled_audience"]:checked') as HTMLInputElement | null;
+        return (el?.value as ScheduledAudience) || 'all';
+    }
+
+    function getSegmentPreset(): SegmentPreset {
+        const el = $('#segment_preset') as HTMLInputElement | null;
+        return ((el?.value || '') as SegmentPreset);
+    }
+
+    function setSegmentPreset(preset: SegmentPreset): void {
+        const el = $('#segment_preset') as HTMLInputElement | null;
+        if (el) el.value = preset;
+        $all('.segment-preset-chip').forEach((chip) => {
+            chip.classList.toggle('is-active', chip.getAttribute('data-preset') === preset);
+        });
+        togglePresetBlocks();
+        syncDeliveryType();
+        updateTargetPreview();
+    }
+
+    function hasAttributeFilters(): boolean {
+        const ids = [
+            'segment_channel', 'segment_birthday_month', 'segment_sex', 'segment_rank', 'segment_product_id',
+            'segment_visit_count_min', 'segment_visit_count_max',
+            'segment_lifetime_points_min', 'segment_lifetime_points_max', 'segment_last_visit_mode',
+            'segment_stamp_card_id', 'segment_stamp_count_min',
+        ];
+        const hasField = ids.some((id) => {
+            const el = document.getElementById(id) as HTMLInputElement | HTMLSelectElement | null;
+            return el !== null && String(el.value).trim() !== '';
+        });
+        const stampCompleted = $('#segment_stamp_completed') as HTMLInputElement | null;
+        return hasField || !!(stampCompleted && stampCompleted.checked);
+    }
+
+    function getSalesCondition(): string {
+        const el = document.querySelector('input[name="segment_condition"]:checked') as HTMLInputElement | null;
+        return el ? String(el.value) : '';
+    }
+
+    function resolveSegmentDeliveryType(isScheduled: boolean): string {
+        const preset = getSegmentPreset();
+        if (preset === 'rank_up_arrival') return 'event_rank_up_arrival';
+        if (preset === 'birthday') return isScheduled ? 'scheduled_birthday' : 'immediate_birthday';
+        if (preset === 'new_members') return isScheduled ? 'scheduled_new_members' : 'immediate_new_members';
+        if (preset === 'inactive') return isScheduled ? 'scheduled_inactive' : 'immediate_inactive';
+        if (preset === 'rank') return isScheduled ? 'scheduled_rank' : 'immediate_rank';
+        if (preset === 'stamp') return isScheduled ? 'scheduled_stamp' : 'immediate_stamp';
+        if (preset === 'days_after_visit') return isScheduled ? 'scheduled_days_after_visit' : 'immediate_days_after_visit';
+
+        if (hasAttributeFilters()) {
+            return isScheduled ? 'scheduled_segment_attributes' : 'immediate_segment_attributes';
         }
-        const radios = $all('.coupon-picker-input') as NodeListOf<HTMLInputElement>;
-        if (!radios.length) {
-            return;
+        if (getSalesCondition() !== '') {
+            return isScheduled ? 'scheduled_segment_sales' : 'immediate_segment_sales';
         }
-        radios.forEach((radio) => {
-            radio.checked = radio.value === couponIdEl.value;
+        return isScheduled ? 'scheduled_segment_attributes' : 'immediate_segment_attributes';
+    }
+
+    function syncDeliveryType(): string {
+        const mode = getDeliveryMode();
+        let deliveryType = 'immediate_all';
+
+        if (mode === 'all') {
+            deliveryType = 'immediate_all';
+        } else if (mode === 'personal') {
+            deliveryType = 'immediate_personal';
+        } else if (mode === 'segment') {
+            deliveryType = resolveSegmentDeliveryType(false);
+        } else if (mode === 'scheduled') {
+            const audience = getScheduledAudience();
+            if (audience === 'personal') {
+                deliveryType = 'scheduled_personal';
+            } else if (audience === 'segment') {
+                deliveryType = resolveSegmentDeliveryType(true);
+            } else {
+                deliveryType = 'scheduled_all';
+            }
+        }
+
+        const hidden = $('#delivery_type') as HTMLInputElement | null;
+        if (hidden) hidden.value = deliveryType;
+        return deliveryType;
+    }
+
+    function applyInitialDeliveryType(deliveryType: string): void {
+        let mode: DeliveryMode = 'all';
+        let audience: ScheduledAudience = 'all';
+        let preset: SegmentPreset = '';
+
+        if (deliveryType.indexOf('scheduled_') === 0) {
+            mode = 'scheduled';
+            if (deliveryType === 'scheduled_personal') audience = 'personal';
+            else if (deliveryType === 'scheduled_all') audience = 'all';
+            else audience = 'segment';
+        } else if (deliveryType === 'event_rank_up_arrival') {
+            mode = 'segment';
+            preset = 'rank_up_arrival';
+        } else if (deliveryType === 'immediate_personal') {
+            mode = 'personal';
+        } else if (deliveryType !== 'immediate_all') {
+            mode = 'segment';
+        }
+
+        if (deliveryType.indexOf('birthday') !== -1) preset = 'birthday';
+        else if (deliveryType.indexOf('new_members') !== -1) preset = 'new_members';
+        else if (deliveryType.indexOf('inactive') !== -1) preset = 'inactive';
+        else if (deliveryType === 'event_rank_up_arrival') preset = 'rank_up_arrival';
+        else if (deliveryType.indexOf('rank') !== -1) preset = 'rank';
+        else if (deliveryType.indexOf('stamp') !== -1) preset = 'stamp';
+        else if (deliveryType.indexOf('days_after_visit') !== -1) preset = 'days_after_visit';
+
+        const modeRadio = document.querySelector(`input[name="delivery_mode"][value="${mode}"]`) as HTMLInputElement | null;
+        if (modeRadio) modeRadio.checked = true;
+
+        const audienceRadio = document.querySelector(`input[name="scheduled_audience"][value="${audience}"]`) as HTMLInputElement | null;
+        if (audienceRadio) audienceRadio.checked = true;
+
+        const presetEl = $('#segment_preset') as HTMLInputElement | null;
+        if (presetEl) presetEl.value = preset;
+        $all('.segment-preset-chip').forEach((chip) => {
+            chip.classList.toggle('is-active', chip.getAttribute('data-preset') === preset);
         });
     }
 
     function updateSelectedCoupon(): void {
-        syncPickerFromHidden();
-
         const checked = document.querySelector('.coupon-picker-input:checked') as HTMLInputElement | null;
         const couponIdEl = $('#coupon_id') as HTMLInputElement | null;
         const preview = $('#selectedCouponPreview');
         const label = $('#selectedCouponLabel');
         const submitBtn = $('#submitDeliveryBtn') as HTMLButtonElement | null;
-        const onNewTab = getCurrentSource() === 'new';
 
         $all('.coupon-picker-card').forEach((card) => {
             card.classList.toggle('is-selected', checked ? card.contains(checked) : false);
@@ -66,16 +187,22 @@ function initCouponBulkIssue(): void {
         if (!checked) {
             if (couponIdEl && couponIdEl.value) {
                 if (preview) preview.classList.remove('is-empty');
-                if (submitBtn) submitBtn.disabled = onNewTab;
-                if (submitBtn) submitBtn.title = onNewTab ? '先にクーポンを作成してください' : '';
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.title = '';
+                }
+                updateStepIndicator();
                 updateTargetPreview();
                 return;
             }
             if (preview) preview.classList.add('is-empty');
-            if (label) label.textContent = '未選択 — 上でクーポンを選ぶか作成してください';
-            if (submitBtn) submitBtn.disabled = true;
-            if (submitBtn) submitBtn.title = '配布するクーポンを選択してください';
+            if (label) label.textContent = '未選択 — 上でクーポンを選んでください';
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.title = '配布するクーポンを選択してください';
+            }
             if (couponIdEl) couponIdEl.value = '';
+            updateStepIndicator();
             updateTargetPreview();
             return;
         }
@@ -86,162 +213,269 @@ function initCouponBulkIssue(): void {
             const discount = checked.getAttribute('data-discount') || '';
             label.textContent = `${checked.getAttribute('data-name') || ''}（${checked.getAttribute('data-code') || ''}）${discount ? ` / ${discount}` : ''}`;
         }
-        if (submitBtn) submitBtn.disabled = onNewTab;
-        if (submitBtn) submitBtn.title = onNewTab ? '先にクーポンを作成してください' : '';
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.title = '';
+        }
+        $all('.pagination-admin a.pagination-item').forEach((link) => {
+            try {
+                const url = new URL((link as HTMLAnchorElement).href, window.location.origin);
+                url.searchParams.set('coupon_id', checked.value);
+                (link as HTMLAnchorElement).href = url.toString();
+            } catch (_e) {
+                // ignore invalid href
+            }
+        });
+        updateStepIndicator();
         updateTargetPreview();
     }
 
-    function updateDeliverySectionState(): void {
+    function updateStepIndicator(): void {
+        const couponIdEl = $('#coupon_id') as HTMLInputElement | null;
+        const hasCoupon = !!(couponIdEl && couponIdEl.value);
+        const step1 = document.querySelector('.bulk-step[data-step="1"]');
+        const step2 = document.querySelector('.bulk-step[data-step="2"]');
+        const step3 = document.querySelector('.bulk-step[data-step="3"]');
+        if (step1) {
+            step1.classList.toggle('is-done', hasCoupon);
+            step1.classList.toggle('is-current', !hasCoupon);
+        }
+        if (step2) {
+            step2.classList.toggle('is-current', hasCoupon);
+            step2.classList.toggle('is-done', false);
+        }
+        if (step3) {
+            step3.classList.toggle('is-current', false);
+            step3.classList.toggle('is-done', false);
+        }
         const section = $('#deliverySection');
-        const onNewTab = getCurrentSource() === 'new';
-        if (section) section.classList.toggle('is-disabled', onNewTab);
-        updateSelectedCoupon();
+        if (section) section.classList.toggle('is-disabled', !hasCoupon);
     }
 
-    function setCouponSource(source: string | null): void {
-        const nextSource = source || 'existing';
-        $all('.coupon-source-tab').forEach((tab) => {
-            const active = tab.getAttribute('data-source') === nextSource;
-            tab.classList.toggle('is-active', active);
-            tab.setAttribute('aria-selected', active ? 'true' : 'false');
-        });
-        const panelExisting = $('#panelExisting');
-        const panelNew = $('#panelNew');
-        if (panelExisting) panelExisting.classList.toggle('is-hidden', nextSource !== 'existing');
-        if (panelNew) panelNew.classList.toggle('is-hidden', nextSource !== 'new');
-        const field = $('#coupon_source_field') as HTMLInputElement | null;
-        if (field) field.value = nextSource;
-        updateDeliverySectionState();
+    function togglePresetBlocks(): void {
+        const preset = getSegmentPreset();
+        const showRank = preset === 'rank' || preset === 'rank_up_arrival';
+        toggleBlock('rankBlock', !showRank);
+        toggleBlock('stampBlock', preset !== 'stamp');
+        toggleBlock('daysAfterVisitBlock', preset !== 'days_after_visit');
+        toggleBlock('birthdayBlock', preset !== 'birthday');
+        toggleBlock('newMemberBlock', preset !== 'new_members');
+        toggleBlock('inactiveBlock', preset !== 'inactive');
+        toggleBlock('customSegmentPanel', preset !== '');
+
+        const rankLabel = $('#targetRankLabel');
+        const rankHelp = $('#targetRankHelp');
+        if (rankLabel) {
+            rankLabel.innerHTML = preset === 'rank_up_arrival'
+                ? '到達ランク <span class="text-danger">*</span>'
+                : '対象ランク <span class="text-danger">*</span>';
+        }
+        if (rankHelp) {
+            rankHelp.textContent = preset === 'rank_up_arrival'
+                ? '指定ランクへ昇格したタイミングで自動発行します（日時指定は不要です）'
+                : 'いまそのランクの会員へ配布します';
+        }
     }
 
-    $all('.coupon-source-tab').forEach((tab) => {
-        tab.addEventListener('click', () => {
-            setCouponSource(tab.getAttribute('data-source'));
-        });
-    });
+    function toggleSegmentMinAmount(): void {
+        const cond = getSalesCondition();
+        const block = $('#segmentMinAmountBlock');
+        if (block) block.style.display = cond === 'min_amount' ? 'block' : 'none';
+    }
+
+    function toggleDeliveryBlocks(): void {
+        const mode = getDeliveryMode();
+        const audience = getScheduledAudience();
+        const preset = getSegmentPreset();
+        const isRankUpEvent = preset === 'rank_up_arrival' && (mode === 'segment' || (mode === 'scheduled' && audience === 'segment'));
+        const showScheduled = mode === 'scheduled' && !isRankUpEvent;
+        const showPersonal = mode === 'personal' || (showScheduled && audience === 'personal');
+        const showSegment = mode === 'segment' || (mode === 'scheduled' && audience === 'segment');
+
+        toggleBlock('scheduledBlock', !showScheduled);
+        toggleBlock('personalBlock', !showPersonal);
+        toggleBlock('segmentBlock', !showSegment);
+        togglePresetBlocks();
+        toggleSegmentMinAmount();
+
+        const submitLabel = $('#submitDeliveryLabel');
+        if (submitLabel) {
+            if (isRankUpEvent || syncDeliveryType() === 'event_rank_up_arrival') {
+                submitLabel.textContent = '配信を登録';
+            } else {
+                submitLabel.textContent = showScheduled ? '予約する' : '配布する';
+            }
+        }
+
+        syncDeliveryType();
+        updateTargetPreview();
+    }
 
     $all('.coupon-picker-input').forEach((input) => {
         input.addEventListener('change', updateSelectedCoupon);
     });
 
-    function currentDeliveryType(): string {
-        const el = document.querySelector('input[name="delivery_type"]:checked') as HTMLInputElement | null;
-        return el ? el.value : 'immediate_all';
-    }
-
-    function includesType(list: string[] | undefined, type: string): boolean {
-        return (list || []).indexOf(type) !== -1;
-    }
-
-    function toggleBlock(id: string, hidden: boolean): void {
-        const el = document.getElementById(id);
-        if (el) el.classList.toggle('is-hidden', hidden);
-    }
-
-    function toggleDeliveryBlocks(): void {
-        const type = currentDeliveryType();
-        const personal = includesType(cfg.personalTypes, type);
-        const segment = includesType(cfg.segmentTypes, type);
-        const attributeSegment = includesType(cfg.attributeSegmentTypes, type);
-        const birthday = includesType(cfg.birthdayTypes, type);
-        const newMember = includesType(cfg.newMemberTypes, type);
-        const inactive = includesType(cfg.inactiveTypes, type);
-        const scheduled = includesType(cfg.scheduledTypes, type);
-
-        toggleBlock('personalBlock', !personal);
-        toggleBlock('segmentBlock', !segment);
-        toggleBlock('attributeSegmentBlock', !attributeSegment);
-        toggleBlock('birthdayBlock', !birthday);
-        toggleBlock('newMemberBlock', !newMember);
-        toggleBlock('inactiveBlock', !inactive);
-        toggleBlock('scheduledBlock', !scheduled);
-
-        const submitLabel = $('#submitDeliveryLabel');
-        if (submitLabel) {
-            submitLabel.textContent = scheduled ? '予約する' : '配布する';
-        }
-
-        toggleSegmentMinAmount();
-        updateTargetPreview();
-    }
-
-    function toggleSegmentMinAmount(): void {
-        const cond = document.querySelector('input[name="segment_condition"]:checked') as HTMLInputElement | null;
-        const block = $('#segmentMinAmountBlock');
-        if (block) block.style.display = cond && cond.value === 'min_amount' ? 'block' : 'none';
-    }
-
-    $all('input[name="delivery_type"]').forEach((radio) => {
+    $all('input[name="delivery_mode"]').forEach((radio) => {
+        radio.addEventListener('change', toggleDeliveryBlocks);
+    });
+    $all('input[name="scheduled_audience"]').forEach((radio) => {
         radio.addEventListener('change', toggleDeliveryBlocks);
     });
     $all('input[name="segment_condition"]').forEach((radio) => {
         radio.addEventListener('change', () => {
             toggleSegmentMinAmount();
+            syncDeliveryType();
             updateTargetPreview();
         });
     });
 
-    ['segment_period_days', 'segment_min_amount', 'birthday_month', 'new_member_days', 'inactive_days', 'scheduled_at',
+    $all('.segment-preset-chip').forEach((chip) => {
+        chip.addEventListener('click', () => {
+            setSegmentPreset((chip.getAttribute('data-preset') || '') as SegmentPreset);
+        });
+    });
+
+    [
+        'segment_period_days', 'segment_min_amount', 'birthday_month', 'new_member_days', 'inactive_days', 'scheduled_at',
         'segment_channel', 'segment_birthday_month', 'segment_visit_count_min', 'segment_visit_count_max',
         'segment_lifetime_points_min', 'segment_lifetime_points_max',
-        'segment_last_visit_mode', 'attr_segment_last_visit_days', 'segment_sex', 'segment_rank'].forEach((id) => {
+        'segment_last_visit_mode', 'segment_last_visit_days', 'segment_sex', 'segment_rank', 'segment_product_id',
+        'target_rank', 'stamp_card_id', 'stamp_count_min', 'stamp_completed', 'days_after_last_visit',
+        'segment_stamp_card_id', 'segment_stamp_count_min', 'segment_stamp_completed',
+    ].forEach((id) => {
         const el = document.getElementById(id);
-        if (el) el.addEventListener('change', updateTargetPreview);
-        if (el) el.addEventListener('input', updateTargetPreview);
+        if (el) {
+            el.addEventListener('change', () => {
+                syncDeliveryType();
+                updateTargetPreview();
+            });
+            el.addEventListener('input', () => {
+                syncDeliveryType();
+                updateTargetPreview();
+            });
+        }
     });
 
     let previewTimer: number | undefined;
+    function buildPreviewParams(deliveryType: string): URLSearchParams {
+        const params = new URLSearchParams();
+        params.set('delivery_type', deliveryType);
+        selectedMembers.forEach((id) => {
+            params.append('target_member_ids[]', String(id));
+        });
+
+        [
+            'segment_period_days', 'segment_condition', 'segment_min_amount', 'birthday_month', 'new_member_days', 'inactive_days',
+            'segment_channel', 'segment_birthday_month', 'segment_visit_count_min', 'segment_visit_count_max',
+            'segment_lifetime_points_min', 'segment_lifetime_points_max',
+            'segment_last_visit_mode', 'segment_last_visit_days', 'segment_sex', 'segment_rank', 'segment_product_id',
+            'target_rank', 'stamp_card_id', 'stamp_count_min', 'days_after_last_visit',
+            'segment_stamp_card_id', 'segment_stamp_count_min',
+        ].forEach((key) => {
+            const el = document.querySelector(`[name="${key}"]`) as HTMLInputElement | null;
+            if (el && el.value) params.set(key, el.value);
+        });
+        const stampCompleted = $('#stamp_completed') as HTMLInputElement | null;
+        if (stampCompleted && stampCompleted.checked) params.set('stamp_completed', '1');
+        const segmentStampCompleted = $('#segment_stamp_completed') as HTMLInputElement | null;
+        if (segmentStampCompleted && segmentStampCompleted.checked) params.set('segment_stamp_completed', '1');
+        return params;
+    }
+
     function updateTargetPreview(): void {
         window.clearTimeout(previewTimer);
         previewTimer = window.setTimeout(() => {
             const previewText = $('#targetPreviewText');
+            const previewBtn = $('#previewMembersBtn') as HTMLButtonElement | null;
             if (!previewText) return;
 
-            const type = currentDeliveryType();
             const couponIdEl = $('#coupon_id') as HTMLInputElement | null;
             const couponId = couponIdEl ? couponIdEl.value : '';
-            if (!couponId || getCurrentSource() === 'new') {
-                previewText.textContent = 'クーポンを選択すると対象人数が表示されます';
+            if (!couponId) {
+                previewText.textContent = 'クーポンを選択すると発行予定人数が表示されます';
+                if (previewBtn) previewBtn.disabled = true;
                 const preview = $('#targetPreview');
                 if (preview) preview.classList.remove('is-loading');
                 return;
             }
             if (!cfg.previewUrl) {
-                previewText.textContent = '対象会員: —';
-                const previewUnavailable = $('#targetPreview');
-                if (previewUnavailable) previewUnavailable.classList.remove('is-loading');
+                previewText.textContent = '発行予定人数: —';
+                if (previewBtn) previewBtn.disabled = true;
                 return;
             }
 
+            const deliveryType = syncDeliveryType();
             const previewBox = $('#targetPreview');
             if (previewBox) previewBox.classList.add('is-loading');
-            previewText.textContent = '対象会員: 計算中...';
+            previewText.textContent = '発行予定人数: 計算中...';
+            if (previewBtn) previewBtn.disabled = true;
 
-            const params = new URLSearchParams();
-            params.set('delivery_type', type);
-            selectedMembers.forEach((id) => {
-                params.append('target_member_ids[]', String(id));
-            });
-
-            ['segment_period_days', 'segment_condition', 'segment_min_amount', 'birthday_month', 'new_member_days', 'inactive_days',
-                'segment_channel', 'segment_birthday_month', 'segment_visit_count_min', 'segment_visit_count_max',
-                'segment_lifetime_points_min', 'segment_lifetime_points_max',
-                'segment_last_visit_mode', 'segment_last_visit_days', 'segment_sex', 'segment_rank'].forEach((key) => {
-                const el = document.querySelector(`[name="${key}"]`) as HTMLInputElement | null;
-                if (el && el.value) params.set(key, el.value);
-            });
-
-            fetch(`${cfg.previewUrl}?${params.toString()}`)
+            fetch(`${cfg.previewUrl}?${buildPreviewParams(deliveryType).toString()}`)
                 .then((r) => r.json())
-                .then((data: { count?: number }) => {
-                    previewText.textContent = `対象会員: 約 ${data.count || 0} 人`;
+                .then((data: { count?: number; total?: number; is_event?: boolean }) => {
+                    const total = typeof data.total === 'number' ? data.total : memberCountTotal;
+                    if (data.is_event || deliveryType === 'event_rank_up_arrival') {
+                        previewText.textContent = `発行予定人数: 昇格時に自動 / ${total}`;
+                        if (previewBtn) previewBtn.disabled = true;
+                    } else {
+                        const count = typeof data.count === 'number' ? data.count : 0;
+                        previewText.textContent = `発行予定人数: ${count} / ${total}`;
+                        if (previewBtn) previewBtn.disabled = count < 1;
+                    }
                     if (previewBox) previewBox.classList.remove('is-loading');
                 })
                 .catch(() => {
-                    previewText.textContent = '対象会員: —';
+                    previewText.textContent = '発行予定人数: —';
+                    if (previewBtn) previewBtn.disabled = true;
                     if (previewBox) previewBox.classList.remove('is-loading');
                 });
         }, 350);
+    }
+
+    function openPreviewMembersModal(): void {
+        const modal = $('#previewMembersModal');
+        const body = $('#previewMembersModalBody');
+        const note = $('#previewMembersModalNote');
+        if (!modal || !body || !cfg.previewMembersUrl) return;
+
+        const deliveryType = syncDeliveryType();
+        if (deliveryType === 'event_rank_up_arrival') return;
+
+        body.innerHTML = '<p class="text-muted small">読み込み中...</p>';
+        if (note) note.textContent = '';
+        modal.classList.remove('is-hidden');
+
+        fetch(`${cfg.previewMembersUrl}?${buildPreviewParams(deliveryType).toString()}`)
+            .then((r) => r.json())
+            .then((data: { members?: PreviewMember[]; total?: number; error?: string | null }) => {
+                if (data.error) {
+                    body.innerHTML = `<p class="text-danger">${data.error}</p>`;
+                    return;
+                }
+                const members = data.members || [];
+                const total = typeof data.total === 'number' ? data.total : members.length;
+                if (note) {
+                    note.textContent = total > members.length
+                        ? `全${total}人中、先頭${members.length}人を表示しています`
+                        : `対象 ${total}人`;
+                }
+                if (members.length === 0) {
+                    body.innerHTML = '<p class="text-muted">対象会員がいません</p>';
+                    return;
+                }
+                const rows = members.map((m) => (
+                    `<tr><td>${m.member_name}</td><td>${m.member_number}</td></tr>`
+                )).join('');
+                body.innerHTML = `<table class="table"><thead><tr><th>会員名</th><th>会員番号</th></tr></thead><tbody>${rows}</tbody></table>`;
+            })
+            .catch(() => {
+                body.innerHTML = '<p class="text-danger">対象会員の取得に失敗しました</p>';
+            });
+    }
+
+    function closePreviewMembersModal(): void {
+        const modal = $('#previewMembersModal');
+        if (modal) modal.classList.add('is-hidden');
     }
 
     function renderSelectedMembers(): void {
@@ -321,30 +555,120 @@ function initCouponBulkIssue(): void {
         });
     }
 
+    const previewMembersBtn = $('#previewMembersBtn');
+    if (previewMembersBtn) {
+        previewMembersBtn.addEventListener('click', openPreviewMembersModal);
+    }
+    $all('[data-close-preview-modal]').forEach((el) => {
+        el.addEventListener('click', closePreviewMembersModal);
+    });
+
     const form = $('#bulkIssueForm');
     if (form) {
         form.addEventListener('submit', (e) => {
-            if (getCurrentSource() === 'new') {
-                e.preventDefault();
-                alert('先にクーポンを作成するか、「既存クーポンを使う」タブで選択してください');
-                return;
-            }
+            const deliveryType = syncDeliveryType();
             const couponIdEl = $('#coupon_id') as HTMLInputElement | null;
             if (!couponIdEl || !couponIdEl.value) {
                 e.preventDefault();
                 alert('配布するクーポンを選択してください');
                 return;
             }
-            if (includesType(cfg.personalTypes, currentDeliveryType()) && selectedMembers.length === 0) {
+            if (deliveryType === 'event_rank_up_arrival') {
+                const targetRank = $('#target_rank') as HTMLSelectElement | null;
+                if (!targetRank || String(targetRank.value).trim() === '') {
+                    e.preventDefault();
+                    alert('到達ランクを選択してください');
+                }
+                return;
+            }
+            if ((deliveryType === 'immediate_personal' || deliveryType === 'scheduled_personal') && selectedMembers.length === 0) {
                 e.preventDefault();
                 alert('個人指定では会員を1人以上選択してください');
+                return;
+            }
+            if (deliveryType.indexOf('segment_attributes') !== -1 && getSegmentPreset() === '' && !hasAttributeFilters() && getSalesCondition() === '') {
+                e.preventDefault();
+                alert('セグメント配信では1つ以上の絞り込み条件を指定してください');
+                return;
+            }
+            if (deliveryType.indexOf('segment_sales') !== -1 && getSalesCondition() === '') {
+                e.preventDefault();
+                alert('売上条件を選択してください');
+                return;
+            }
+            if (deliveryType.indexOf('_rank') !== -1) {
+                const targetRank = $('#target_rank') as HTMLSelectElement | null;
+                if (!targetRank || String(targetRank.value).trim() === '') {
+                    e.preventDefault();
+                    alert('対象ランクを選択してください');
+                    return;
+                }
+            }
+            if (deliveryType.indexOf('_stamp') !== -1) {
+                const stampCard = $('#stamp_card_id') as HTMLSelectElement | null;
+                const stampMin = $('#stamp_count_min') as HTMLInputElement | null;
+                const stampCompleted = $('#stamp_completed') as HTMLInputElement | null;
+                const hasCard = !!(stampCard && String(stampCard.value).trim() !== '');
+                const hasMin = !!(stampMin && String(stampMin.value).trim() !== '');
+                const hasCompleted = !!(stampCompleted && stampCompleted.checked);
+                if (!hasCard && !hasMin && !hasCompleted) {
+                    e.preventDefault();
+                    alert('スタンプカード・累計枚数・達成のいずれかを指定してください');
+                    return;
+                }
+            }
+            if (deliveryType.indexOf('days_after_visit') !== -1) {
+                const days = $('#days_after_last_visit') as HTMLInputElement | null;
+                if (!days || String(days.value).trim() === '' || parseInt(days.value, 10) < 1) {
+                    e.preventDefault();
+                    alert('最終来店から何日後かを入力してください');
+                    return;
+                }
+            }
+            if (deliveryType.indexOf('scheduled_') === 0) {
+                const scheduledAt = $('#scheduled_at') as HTMLInputElement | null;
+                if (!scheduledAt || !scheduledAt.value) {
+                    e.preventDefault();
+                    alert('予約配信では配布日時を指定してください');
+                }
             }
         });
     }
 
-    setCouponSource(cfg.initialCouponSource || 'existing');
+    const couponSearchBtn = $('#couponPickerSearchBtn') as HTMLButtonElement | null;
+    const couponSearchInput = $('#couponPickerSearch') as HTMLInputElement | null;
+
+    function navigateCouponPickerSearch(): void {
+        const baseUrl = cfg.bulkIssueUrl || window.location.pathname;
+        const params = new URLSearchParams();
+        const q = couponSearchInput ? couponSearchInput.value.trim() : '';
+        if (q !== '') {
+            params.set('q', q);
+        }
+        const couponIdEl = $('#coupon_id') as HTMLInputElement | null;
+        if (couponIdEl && couponIdEl.value) {
+            params.set('coupon_id', couponIdEl.value);
+        }
+        const query = params.toString();
+        window.location.href = query !== '' ? `${baseUrl}?${query}` : baseUrl;
+    }
+
+    if (couponSearchBtn) {
+        couponSearchBtn.addEventListener('click', navigateCouponPickerSearch);
+    }
+    if (couponSearchInput) {
+        couponSearchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                navigateCouponPickerSearch();
+            }
+        });
+    }
+
+    applyInitialDeliveryType(cfg.initialDeliveryType || 'immediate_all');
     renderSelectedMembers();
     toggleDeliveryBlocks();
+    updateSelectedCoupon();
 }
 
 export function bootstrapCouponBulkIssue(): void {

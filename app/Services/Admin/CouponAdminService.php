@@ -3,6 +3,7 @@
 namespace App\Services\Admin;
 
 use App\Models\Coupon;
+use App\Models\CouponRedemption;
 use App\Models\StampCard;
 use App\Services\Smaregi\SmaregiCouponSyncService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -81,6 +82,66 @@ class CouponAdminService
         }
 
         return $query->findOrFail($id);
+    }
+
+    /**
+     * @return LengthAwarePaginator<int, array{member_id: int|null, member_name: string, member_number: string, used_at: string}>
+     */
+    public function getRedemptionsForCoupon(int $couponId, int $projectId, int $perPage = 20): LengthAwarePaginator
+    {
+        $paginator = CouponRedemption::query()
+            ->where('project_id', $projectId)
+            ->where('coupon_id', $couponId)
+            ->with(['member.user'])
+            ->orderByDesc('used_at')
+            ->orderByDesc('id')
+            ->paginate($perPage);
+
+        $rows = $paginator->getCollection()->map(function (CouponRedemption $redemption): array {
+            $member = $redemption->member;
+            $user = $member?->user;
+
+            return [
+                'member_id' => $member !== null ? (int) $member->id : null,
+                'member_name' => $user !== null && trim((string) $user->name) !== ''
+                    ? (string) $user->name
+                    : '—',
+                'member_number' => $member !== null && trim((string) $member->member_number) !== ''
+                    ? (string) $member->member_number
+                    : '—',
+                'used_at' => $redemption->used_at !== null
+                    ? $redemption->used_at->format('Y/m/d H:i')
+                    : '—',
+            ];
+        });
+
+        $paginator->setCollection($rows);
+
+        return $paginator;
+    }
+
+    /**
+     * 配布画面用の有効クーポン（ページネーション）
+     *
+     * @return LengthAwarePaginator<int, Coupon>
+     */
+    public function getActiveCouponsForSelectPaginated(int $projectId, string $search = '', int $perPage = 10): LengthAwarePaginator
+    {
+        $query = Coupon::query()
+            ->where('project_id', $projectId)
+            ->where('is_active', true)
+            ->orderBy('name');
+
+        $keyword = trim($search);
+        if ($keyword !== '') {
+            $like = '%'.$keyword.'%';
+            $query->where(function ($builder) use ($like): void {
+                $builder->where('name', 'like', $like)
+                    ->orWhere('code', 'like', $like);
+            });
+        }
+
+        return $query->paginate($perPage);
     }
 
     /**
