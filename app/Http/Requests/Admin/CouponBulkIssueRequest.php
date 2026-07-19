@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Admin;
 
 use App\Enums\CouponDeliveryType;
+use App\Util\AdminContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -17,9 +18,16 @@ class CouponBulkIssueRequest extends FormRequest
     public function rules(): array
     {
         $deliveryType = (string) $this->input('delivery_type', CouponDeliveryType::IMMEDIATE_ALL);
+        $projectId = AdminContext::getCurrentProjectId()
+            ?? auth('admin')->user()?->project_id;
+
+        $couponExists = Rule::exists('coupons', 'id');
+        if ($projectId !== null) {
+            $couponExists = $couponExists->where('project_id', (int) $projectId);
+        }
 
         return [
-            'coupon_id' => ['required', 'integer', Rule::exists('coupons', 'id')],
+            'coupon_id' => ['required', 'integer', $couponExists],
             'delivery_type' => ['required', Rule::in(array_keys(CouponDeliveryType::getValues()))],
             'target_member_ids' => [
                 Rule::requiredIf(in_array($deliveryType, CouponDeliveryType::personalValues(), true)),

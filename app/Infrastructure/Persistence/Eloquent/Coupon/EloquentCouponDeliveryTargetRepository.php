@@ -5,6 +5,7 @@ namespace App\Infrastructure\Persistence\Eloquent\Coupon;
 use App\Domain\Coupon\Repositories\CouponDeliveryTargetRepository;
 use App\Enums\OrderStatus;
 use App\Models\Member;
+use App\Models\MemberStamp;
 use App\Models\Order;
 use App\Models\Product;
 use App\Support\MemberChannel;
@@ -214,7 +215,7 @@ class EloquentCouponDeliveryTargetRepository implements CouponDeliveryTargetRepo
             return [];
         }
 
-        $query = \App\Models\MemberStamp::query()
+        $query = MemberStamp::query()
             ->where('project_id', $projectId);
 
         if ($stampCardId !== null && $stampCardId > 0) {
