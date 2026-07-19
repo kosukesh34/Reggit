@@ -14,6 +14,9 @@ class CouponDeliveryType extends EnumBase
         self::IMMEDIATE_BIRTHDAY => '今月が誕生月（即時）',
         self::IMMEDIATE_NEW_MEMBERS => '新規会員（即時）',
         self::IMMEDIATE_INACTIVE => '来店・購入なし（即時）',
+        self::IMMEDIATE_RANK => '指定ランク（即時）',
+        self::IMMEDIATE_STAMP => 'スタンプ累計（即時）',
+        self::IMMEDIATE_DAYS_AFTER_VISIT => '最終来店からN日後（即時）',
         self::SCHEDULED_ALL => '全員に予約配布',
         self::SCHEDULED_PERSONAL => '個人指定（予約）',
         self::SCHEDULED_SEGMENT_SALES => '売上条件で絞り込み（予約）',
@@ -21,6 +24,10 @@ class CouponDeliveryType extends EnumBase
         self::SCHEDULED_BIRTHDAY => '今月が誕生月（予約）',
         self::SCHEDULED_NEW_MEMBERS => '新規会員（予約）',
         self::SCHEDULED_INACTIVE => '来店・購入なし（予約）',
+        self::SCHEDULED_RANK => '指定ランク（予約）',
+        self::SCHEDULED_STAMP => 'スタンプ累計（予約）',
+        self::SCHEDULED_DAYS_AFTER_VISIT => '最終来店からN日後（予約）',
+        self::EVENT_RANK_UP_ARRIVAL => 'ランクアップ達成配信',
     ];
 
     public const IMMEDIATE_ALL = 'immediate_all';
@@ -37,6 +44,12 @@ class CouponDeliveryType extends EnumBase
 
     public const IMMEDIATE_INACTIVE = 'immediate_inactive';
 
+    public const IMMEDIATE_RANK = 'immediate_rank';
+
+    public const IMMEDIATE_STAMP = 'immediate_stamp';
+
+    public const IMMEDIATE_DAYS_AFTER_VISIT = 'immediate_days_after_visit';
+
     public const SCHEDULED_ALL = 'scheduled_all';
 
     public const SCHEDULED_PERSONAL = 'scheduled_personal';
@@ -51,6 +64,14 @@ class CouponDeliveryType extends EnumBase
 
     public const SCHEDULED_INACTIVE = 'scheduled_inactive';
 
+    public const SCHEDULED_RANK = 'scheduled_rank';
+
+    public const SCHEDULED_STAMP = 'scheduled_stamp';
+
+    public const SCHEDULED_DAYS_AFTER_VISIT = 'scheduled_days_after_visit';
+
+    public const EVENT_RANK_UP_ARRIVAL = 'event_rank_up_arrival';
+
     /** @return list<string> */
     public static function scheduledValues(): array
     {
@@ -62,6 +83,9 @@ class CouponDeliveryType extends EnumBase
             self::SCHEDULED_BIRTHDAY,
             self::SCHEDULED_NEW_MEMBERS,
             self::SCHEDULED_INACTIVE,
+            self::SCHEDULED_RANK,
+            self::SCHEDULED_STAMP,
+            self::SCHEDULED_DAYS_AFTER_VISIT,
         ];
     }
 
@@ -101,9 +125,38 @@ class CouponDeliveryType extends EnumBase
         return [self::IMMEDIATE_INACTIVE, self::SCHEDULED_INACTIVE];
     }
 
+    /** @return list<string> */
+    public static function rankValues(): array
+    {
+        return [self::IMMEDIATE_RANK, self::SCHEDULED_RANK];
+    }
+
+    /** @return list<string> */
+    public static function stampValues(): array
+    {
+        return [self::IMMEDIATE_STAMP, self::SCHEDULED_STAMP];
+    }
+
+    /** @return list<string> */
+    public static function daysAfterVisitValues(): array
+    {
+        return [self::IMMEDIATE_DAYS_AFTER_VISIT, self::SCHEDULED_DAYS_AFTER_VISIT];
+    }
+
+    /** @return list<string> */
+    public static function eventRankUpValues(): array
+    {
+        return [self::EVENT_RANK_UP_ARRIVAL];
+    }
+
     public static function isScheduled(string $value): bool
     {
         return in_array($value, self::scheduledValues(), true);
+    }
+
+    public static function isEventRankUpArrival(string $value): bool
+    {
+        return $value === self::EVENT_RANK_UP_ARRIVAL;
     }
 
     /** 空の member_ids が「全員配布」を意味する配信種別 */
@@ -132,6 +185,10 @@ class CouponDeliveryType extends EnumBase
                     self::IMMEDIATE_BIRTHDAY,
                     self::IMMEDIATE_NEW_MEMBERS,
                     self::IMMEDIATE_INACTIVE,
+                    self::IMMEDIATE_RANK,
+                    self::IMMEDIATE_STAMP,
+                    self::IMMEDIATE_DAYS_AFTER_VISIT,
+                    self::EVENT_RANK_UP_ARRIVAL,
                 ],
             ],
             'scheduled' => [
@@ -145,6 +202,9 @@ class CouponDeliveryType extends EnumBase
                     self::SCHEDULED_BIRTHDAY,
                     self::SCHEDULED_NEW_MEMBERS,
                     self::SCHEDULED_INACTIVE,
+                    self::SCHEDULED_RANK,
+                    self::SCHEDULED_STAMP,
+                    self::SCHEDULED_DAYS_AFTER_VISIT,
                 ],
             ],
         ];
@@ -158,7 +218,11 @@ class CouponDeliveryType extends EnumBase
      *     attributeSegmentTypes: list<string>,
      *     birthdayTypes: list<string>,
      *     newMemberTypes: list<string>,
-     *     inactiveTypes: list<string>
+     *     inactiveTypes: list<string>,
+     *     rankTypes: list<string>,
+     *     stampTypes: list<string>,
+     *     daysAfterVisitTypes: list<string>,
+     *     eventRankUpTypes: list<string>
      * }
      */
     public static function jsConfig(): array
@@ -171,6 +235,10 @@ class CouponDeliveryType extends EnumBase
             'birthdayTypes' => self::birthdayValues(),
             'newMemberTypes' => self::newMemberValues(),
             'inactiveTypes' => self::inactiveValues(),
+            'rankTypes' => self::rankValues(),
+            'stampTypes' => self::stampValues(),
+            'daysAfterVisitTypes' => self::daysAfterVisitValues(),
+            'eventRankUpTypes' => self::eventRankUpValues(),
         ];
     }
 }

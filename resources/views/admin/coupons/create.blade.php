@@ -1,13 +1,28 @@
 @extends('admin.layout')
 @section('title', 'クーポン作成')
 @section('page-title', 'クーポン作成')
+@section('page-kind', 'coupon-create')
 @section('content')
-<nav class="breadcrumb"><a href="{{ admin_route('admin.coupons') }}">クーポン</a><span class="breadcrumb-sep">/</span><span>新規</span></nav>
-<div class="card">
+@php $returnTo = $returnTo ?? null; @endphp
+<div class="coupon-admin">
+<nav class="breadcrumb">
+    <a href="{{ admin_route('admin.coupons') }}">クーポン</a>
+    <span class="breadcrumb-sep">/</span>
+    @if($returnTo === 'bulk-issue')
+        <a href="{{ admin_route('admin.coupons.bulk-issue') }}">配布</a>
+        <span class="breadcrumb-sep">/</span>
+    @endif
+    <span>新規</span>
+</nav>
+<div class="page-header">
+    <h1 class="page-header-title"><i class="fas fa-ticket-alt"></i> 新規クーポン</h1>
+    <p class="page-header-desc">デザインを選び、プレビューを確認しながら割引内容と発行条件を入力します。</p>
+</div>
+<div class="card cp-form-card">
     <div class="card-header card-header--stack">
         <div>
-            <h3 class="card-title"><i class="fas fa-ticket-alt"></i> 新規クーポン</h3>
-            <p class="card-desc text-muted small mb-0 mt-1">会員に配布するクーポンを作成します。まず表示デザインを選び、プレビューで「配布されるクーポン」を確認しながら、割引内容と発行条件を入力してください。</p>
+            <h3 class="card-title">クーポン設定</h3>
+            <p class="card-desc text-muted small mb-0 mt-1">表示デザイン → クーポン情報の順で入力してください。</p>
         </div>
     </div>
     <div class="card-body">
@@ -18,6 +33,9 @@
         @endif
         <form action="{{ admin_route('admin.coupons.store') }}" method="POST" enctype="multipart/form-data">
             @csrf
+            @if(($returnTo ?? null) === 'bulk-issue')
+                <input type="hidden" name="return" value="bulk-issue">
+            @endif
             <section class="form-section mb-4" aria-labelledby="section-display-heading">
                 <h4 id="section-display-heading" class="form-section-title"><span class="form-section-num">1</span> 表示の選択</h4>
                 <p class="text-muted small mb-3">会員アプリに表示されるデザインとアクセント色を1つ選んでください。選択すると下の「配布されるクーポンの見た目」に即時反映されます。</p>
@@ -148,7 +166,7 @@
                 </div>
                 <div class="form-actions">
                     <button type="submit" class="btn btn-primary"><i class="fas fa-check me-1"></i>クーポンを作成</button>
-                    <a href="{{ admin_route('admin.coupons') }}" class="btn btn-secondary">キャンセル</a>
+                    <a href="{{ ($returnTo ?? null) === 'bulk-issue' ? admin_route('admin.coupons.bulk-issue') : admin_route('admin.coupons') }}" class="btn btn-secondary">キャンセル</a>
                 </div>
             </section>
         </form>
@@ -243,44 +261,8 @@ document.getElementById('issue_trigger').addEventListener('change', function() {
     if (urlInput) urlInput.addEventListener('input', function() { if (typeof updateCouponPreview === 'function') updateCouponPreview(); });
 })();
 </script>
+</div>
 @push('styles')
-<style>
-.coupon-image-dropzone {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
-    border: 2px dashed var(--border, #dee2e6);
-    border-radius: 12px;
-    background: var(--bg-secondary, #f8f9fa);
-    cursor: pointer;
-    transition: border-color .2s, background .2s;
-}
-.coupon-image-dropzone:hover, .coupon-image-dropzone.is-dragover { border-color: var(--primary, #0d6efd); background: rgba(13, 110, 253, 0.05); }
-.coupon-image-dropzone-icon { font-size: 2rem; color: var(--text-secondary); margin-bottom: 8px; }
-.coupon-image-dropzone-text { font-size: 14px; color: var(--text-primary); }
-.coupon-image-dropzone-hint { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
-.line-app-preview-wrap { display: flex; justify-content: center; padding: 12px 0; }
-.line-app-mock {
-    width: 100%;
-    max-width: 320px;
-    border-radius: 24px;
-    border: 12px solid #333;
-    background: #fff;
-    overflow: hidden;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-}
-.line-app-mock-bar {
-    padding: 12px 16px;
-    background: #06c755;
-    color: #fff;
-    font-size: 14px;
-    font-weight: 600;
-    text-align: center;
-}
-.line-app-mock-body { padding: 16px; min-height: 120px; background: #f5f5f5; }
-.line-app-mock-body .cp-card { max-width: 100%; }
-</style>
+<link rel="stylesheet" href="{{ asset('css/admin/coupons.css') }}?v={{ config('app.asset_version') }}">
 @endpush
 @endsection

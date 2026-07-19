@@ -12,11 +12,14 @@ use App\UseCases\Admin\Coupon\AdminCouponBulkIssueFormUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponBulkIssueUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponCreateFormUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponDeleteUseCase;
+use App\UseCases\Admin\Coupon\AdminCouponDeliveryDetailUseCase;
+use App\UseCases\Admin\Coupon\AdminCouponDeliveryPreviewMembersUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponDeliveryPreviewUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponEditFormUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponFullSyncWithSmaregiUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponIndexUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponPushToSmaregiUseCase;
+use App\UseCases\Admin\Coupon\AdminCouponRedemptionsUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponSaveImageUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponStoreUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponSyncFromSmaregiUseCase;
@@ -39,7 +42,10 @@ class CouponController extends AdminBaseController
         private AdminCouponPushToSmaregiUseCase $pushToSmaregiUseCase,
         private AdminCouponFullSyncWithSmaregiUseCase $fullSyncWithSmaregiUseCase,
         private AdminCouponDeliveryPreviewUseCase $deliveryPreviewUseCase,
+        private AdminCouponDeliveryPreviewMembersUseCase $deliveryPreviewMembersUseCase,
+        private AdminCouponDeliveryDetailUseCase $deliveryDetailUseCase,
         private AdminMemberSearchByKeywordUseCase $searchMembersUseCase,
+        private AdminCouponRedemptionsUseCase $redemptionsUseCase,
     ) {}
 
     public function coupons()
@@ -54,8 +60,12 @@ class CouponController extends AdminBaseController
     {
         $projectId = $this->resolveAdminProjectId();
         $output = $this->createFormUseCase->handle($projectId);
+        $returnTo = request('return') === 'bulk-issue' ? 'bulk-issue' : null;
 
-        return view('admin.coupons.create', ['stampCards' => $output->stampCards]);
+        return view('admin.coupons.create', [
+            'stampCards' => $output->stampCards,
+            'returnTo' => $returnTo,
+        ]);
     }
 
     public function storeCoupon(CouponStoreRequest $request)
@@ -66,15 +76,27 @@ class CouponController extends AdminBaseController
             $validated['image_url'] = $this->saveImageUseCase->handle($request->file('image'), $projectId);
         }
         unset($validated['image']);
+        $returnTo = $request->input('return') === 'bulk-issue' ? 'bulk-issue' : null;
         try {
             $coupon = $this->storeUseCase->handle($projectId, $validated);
         } catch (\RuntimeException $e) {
-            return redirect()->route('admin.coupons.create', $this->buildAdminRouteParams())
+            $createParams = $this->buildAdminRouteParams();
+            if ($returnTo === 'bulk-issue') {
+                $createParams['return'] = 'bulk-issue';
+            }
+
+            return redirect()->route('admin.coupons.create', $createParams)
                 ->withInput()
                 ->with('error', $e->getMessage());
         }
 
         $smaregiNote = $coupon->smaregi_coupon_id ? '（スマレジにも反映済み）' : '';
+
+        if ($returnTo === 'bulk-issue') {
+            return redirect()->route('admin.coupons.bulk-issue', array_merge($this->buildAdminRouteParams(), [
+                'coupon_id' => $coupon->id,
+            ]))->with('success', 'クーポンを作成しました'.$smaregiNote.'。続けて配布条件を設定してください。');
+        }
 
         return redirect()->route('admin.coupons', $this->buildAdminRouteParams())
             ->with('success', 'クーポンを作成しました'.$smaregiNote);
@@ -125,11 +147,25 @@ class CouponController extends AdminBaseController
             ->with('success', 'クーポンを削除しました');
     }
 
+    public function couponRedemptions(string $projectKey, $id)
+    {
+        $projectId = $this->resolveAdminProjectId();
+        $output = $this->redemptionsUseCase->handle($projectId, (int) $id);
+
+        return view('admin.coupons.redemptions', [
+            'coupon' => $output->coupon,
+            'redemptions' => $output->redemptions,
+            'redemptionCount' => $output->redemptionCount,
+        ]);
+    }
+
     /** プレゼント配信（クーポン一括配布）画面 */
     public function bulkIssueForm()
     {
         $projectId = $this->resolveAdminProjectId();
-        $output = $this->bulkIssueFormUseCase->handle($projectId);
+        $couponSearch = trim((string) request()->query('q', ''));
+        $selectedCouponId = request()->filled('coupon_id') ? (int) request()->query('coupon_id') : null;
+        $output = $this->bulkIssueFormUseCase->handle($projectId, $couponSearch, $selectedCouponId);
 
         return view('admin.coupons.bulk-issue', [
             'coupons' => $output->coupons,
@@ -138,10 +174,16 @@ class CouponController extends AdminBaseController
             'smaregiLinkedCount' => $output->smaregiLinkedCount,
             'smaregiUnlinkedCount' => $output->smaregiUnlinkedCount,
             'scheduledDeliveries' => $output->scheduledDeliveries,
+            'deliveryHistories' => $output->deliveryHistories,
+            'deliveryCountByCouponId' => $output->deliveryCountByCouponId,
             'deliveryTypeOptions' => $output->deliveryTypeOptions,
             'deliveryGroups' => $output->deliveryGroups,
             'deliveryTypeJsConfig' => $output->deliveryTypeJsConfig,
             'products' => $output->products,
+            'stampCards' => $output->stampCards,
+            'rankOptions' => $output->rankOptions,
+            'couponSearch' => $output->couponSearch,
+            'selectedCoupon' => $output->selectedCoupon,
             'defaultDeliveryType' => CouponDeliveryType::IMMEDIATE_ALL,
         ]);
     }
@@ -274,6 +316,50 @@ class CouponController extends AdminBaseController
     {
         $projectId = $this->resolveAdminProjectId();
         $deliveryType = (string) request()->query('delivery_type', CouponDeliveryType::IMMEDIATE_ALL);
+        $params = $this->deliveryPreviewParams();
+
+        $result = $this->deliveryPreviewUseCase->handle($projectId, $deliveryType, $params);
+
+        return response()->json($result);
+    }
+
+    public function deliveryPreviewMembers()
+    {
+        $projectId = $this->resolveAdminProjectId();
+        $deliveryType = (string) request()->query('delivery_type', CouponDeliveryType::IMMEDIATE_ALL);
+        $params = $this->deliveryPreviewParams();
+        $output = $this->deliveryPreviewMembersUseCase->handle($projectId, $deliveryType, $params);
+
+        return response()->json([
+            'members' => $output->members,
+            'total' => $output->totalCount,
+            'error' => $output->error,
+        ]);
+    }
+
+    public function deliveryShow(string $projectKey, $id)
+    {
+        $projectId = $this->resolveAdminProjectId();
+        $output = $this->deliveryDetailUseCase->handle($projectId, (int) $id);
+
+        return view('admin.coupons.delivery-detail', [
+            'couponName' => $output->couponName,
+            'couponCode' => $output->couponCode,
+            'deliveryTypeLabel' => $output->deliveryTypeLabel,
+            'statusLabel' => $output->statusLabel,
+            'statusBadge' => $output->statusBadge,
+            'timingLabel' => $output->timingLabel,
+            'issuedCountLabel' => $output->issuedCountLabel,
+            'targetSummary' => $output->targetSummary,
+            'targetMembers' => $output->targetMembers,
+            'issuedMembers' => $output->issuedMembers,
+            'isEventRankUp' => $output->isEventRankUp,
+        ]);
+    }
+
+    /** @return array<string, mixed> */
+    private function deliveryPreviewParams(): array
+    {
         $params = request()->only([
             'target_member_ids',
             'member_ids_input',
@@ -291,17 +377,23 @@ class CouponController extends AdminBaseController
             'segment_lifetime_points_max',
             'segment_last_visit_mode',
             'segment_last_visit_days',
+            'segment_stamp_card_id',
+            'segment_stamp_count_min',
+            'segment_stamp_completed',
             'birthday_month',
             'new_member_days',
             'inactive_days',
+            'target_rank',
+            'stamp_card_id',
+            'stamp_count_min',
+            'stamp_completed',
+            'days_after_last_visit',
         ]);
 
         if (request()->has('target_member_ids') && is_string($params['target_member_ids'] ?? null)) {
             $params['target_member_ids'] = array_filter(array_map('intval', explode(',', $params['target_member_ids'])));
         }
 
-        $count = $this->deliveryPreviewUseCase->handle($projectId, $deliveryType, $params);
-
-        return response()->json(['count' => $count]);
+        return $params;
     }
 }
