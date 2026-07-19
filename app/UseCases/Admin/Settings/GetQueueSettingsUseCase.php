@@ -10,10 +10,21 @@ class GetQueueSettingsUseCase
         private ShopSettingRepository $shopSettingRepository,
     ) {}
 
+    /**
+     * @return array{
+     *     avgServeMinutes: int,
+     *     requireMembership: bool,
+     *     channelLine: bool,
+     *     channelNative: bool
+     * }
+     */
     public function handle(int $projectId): array
     {
-        $avgServeMinutes = $this->shopSettingRepository->getQueueAvgServeMinutes($projectId);
-
-        return ['avgServeMinutes' => $avgServeMinutes];
+        return [
+            'avgServeMinutes' => $this->shopSettingRepository->getQueueAvgServeMinutes($projectId),
+            'requireMembership' => $this->shopSettingRepository->getQueueRequireMembership($projectId),
+            'channelLine' => $this->shopSettingRepository->getQueueChannelLine($projectId),
+            'channelNative' => $this->shopSettingRepository->getQueueChannelNative($projectId),
+        ];
     }
 }

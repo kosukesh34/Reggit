@@ -23,6 +23,12 @@ interface ShopSettingRepository
 
     public function getQueueAvgServeMinutes(int $projectId): int;
 
+    public function getQueueRequireMembership(int $projectId): bool;
+
+    public function getQueueChannelLine(int $projectId): bool;
+
+    public function getQueueChannelNative(int $projectId): bool;
+
     /** @return list<string> */
     public function getReservationTimeSlots(int $projectId): array;
 

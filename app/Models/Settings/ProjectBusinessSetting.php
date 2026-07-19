@@ -24,6 +24,9 @@ class ProjectBusinessSetting extends Model
         'advance_booking_days',
         'reservation_capacity_per_slot',
         'queue_avg_serve_minutes',
+        'queue_require_membership',
+        'queue_channel_line',
+        'queue_channel_native',
     ];
 
     /** @var array<string, string> */
@@ -31,6 +34,9 @@ class ProjectBusinessSetting extends Model
         'reservation_time_slots' => 'array',
         'closed_days' => 'array',
         'closed_dates' => 'array',
+        'queue_require_membership' => 'boolean',
+        'queue_channel_line' => 'boolean',
+        'queue_channel_native' => 'boolean',
     ];
 
     public function project(): BelongsTo
@@ -50,6 +56,9 @@ class ProjectBusinessSetting extends Model
             'advance_booking_days' => 30,
             'reservation_capacity_per_slot' => 20,
             'queue_avg_serve_minutes' => 10,
+            'queue_require_membership' => false,
+            'queue_channel_line' => true,
+            'queue_channel_native' => false,
         ];
     }
 }

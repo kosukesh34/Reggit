@@ -74,7 +74,10 @@ final class TicketViewModel: ObservableObject {
         refreshTask = Task { [weak self] in
             guard let self else { return }
             while !Task.isCancelled {
-                try? await Task.sleep(nanoseconds: UInt64(AppConstants.Timing.ticketRefreshIntervalSeconds * 1_000_000_000))
+                let interval = self.currentTicket.lineLinked
+                    ? AppConstants.Timing.ticketRefreshIntervalSeconds
+                    : AppConstants.Timing.ticketLinkPollIntervalSeconds
+                try? await Task.sleep(nanoseconds: UInt64(interval * 1_000_000_000))
                 if Task.isCancelled { break }
                 await self.refreshTicket()
             }
@@ -91,7 +94,11 @@ final class TicketViewModel: ObservableObject {
         guard isActive else { return }
         do {
             if let latest = try await apiClient.fetchTicketStatus(id: currentTicket.id) {
+                let wasLinked = currentTicket.lineLinked
                 currentTicket = latest
+                if latest.lineLinked && !wasLinked {
+                    scheduleAutoReturn()
+                }
                 if latest.status == "cancelled" || latest.status == "entered" {
                     appState.currentTicket = nil
                 }

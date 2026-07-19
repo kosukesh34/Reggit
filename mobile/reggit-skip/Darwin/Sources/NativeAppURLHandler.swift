@@ -27,6 +27,9 @@ enum NativeAppURLHandler {
     @discardableResult
     static func handle(_ url: URL) -> Bool {
         guard url.scheme == NativeAppIdentity.urlScheme else { return false }
+        if QueueDeepLinkHandler.handle(url) {
+            return true
+        }
         if url.host == "openExternal" {
             guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
                   let externalString = components.queryItems?.first(where: { $0.name == "url" })?.value,

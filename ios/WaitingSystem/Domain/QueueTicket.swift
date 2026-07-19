@@ -3,6 +3,7 @@ import Foundation
 struct QueueTicket: Identifiable, Codable, Equatable {
     let id: Int
     let queueNumber: Int
+    let formattedQueueNumber: String?
     let partySize: Int
     let status: String
     let lineLinked: Bool
@@ -13,7 +14,13 @@ struct QueueTicket: Identifiable, Codable, Equatable {
     let aheadCount: Int?
     let estimatedWaitMinutes: Int
 
-    var displayNumber: String { "No.\(queueNumber)" }
+    var displayNumber: String {
+        let source = (formattedQueueNumber ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        let number = source.isEmpty
+            ? DailySequenceNumberFormatter.formatStoredForDisplay(queueNumber)
+            : DailySequenceNumberFormatter.formatStoredForDisplay(source)
+        return "No.\(number)"
+    }
 }
 
 struct QueueTicketResponse: Codable {
@@ -24,6 +31,7 @@ struct QueueTicketResponse: Codable {
     struct QueueEntryPayload: Codable {
         let id: Int
         let queueNumber: Int
+        let formattedQueueNumber: String?
         let status: String
         let partySize: Int
         let lineLinked: Bool?
@@ -39,6 +47,7 @@ struct QueueTicketResponse: Codable {
 struct QueueListEntry: Identifiable, Codable, Equatable {
     let id: Int
     let queueNumber: Int
+    let formattedQueueNumber: String?
     let status: String
     let partySize: Int
     let lineLinked: Bool
@@ -46,7 +55,13 @@ struct QueueListEntry: Identifiable, Codable, Equatable {
     let displayName: String
     let createdAt: String
 
-    var displayNumber: String { "No.\(queueNumber)" }
+    var displayNumber: String {
+        let source = (formattedQueueNumber ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        let number = source.isEmpty
+            ? DailySequenceNumberFormatter.formatStoredForDisplay(queueNumber)
+            : DailySequenceNumberFormatter.formatStoredForDisplay(source)
+        return "No.\(number)"
+    }
 }
 
 struct QueueListResponse: Codable {
