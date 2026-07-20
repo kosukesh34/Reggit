@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Support\RequestOrigin;
 use App\Support\NativeApp;
+use App\Support\ProjectKey;
 use App\Support\QueueLiffUrlBuilder;
 use App\UseCases\Member\WalletPass\WalletPassUrlIssueUseCase;
 use App\Util\AdminContext;
@@ -25,9 +26,9 @@ class WalletAddPageController extends Controller
     {
         $walletUrl = $request->query('wallet_url');
         $passToken = $request->query('pass_token');
-        $projectKey = \App\Support\ProjectKey::normalize(
+        $projectKey = ProjectKey::normalize(
             is_string($request->query('project_key')) ? $request->query('project_key') : null
-        ) ?? \App\Support\ProjectKey::fromConfig();
+        ) ?? ProjectKey::fromConfig();
         $walletUrlFromPassToken = false;
         if ((! is_string($walletUrl) || trim($walletUrl) === '') && is_string($passToken) && trim($passToken) !== '') {
             if ($projectKey === null) {

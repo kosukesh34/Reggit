@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Member;
 use App\Http\Controllers\Controller;
 use App\Http\Support\RequestOrigin;
 use App\Services\UserService;
+use App\Support\ProjectKey;
 use App\UseCases\Member\GoogleWallet\Data\GetGoogleWalletUrlInput;
 use App\UseCases\Member\GoogleWallet\Data\GetGoogleWalletUrlOutput;
 use App\UseCases\Member\GoogleWallet\GetGoogleWalletUrlUseCase;
@@ -58,7 +59,7 @@ class GoogleWalletUrlController extends Controller
         $token = $request->query('token');
         $projectId = AdminContext::getCurrentProjectId();
         $project = AdminContext::getCurrentProject();
-        $projectKey = $project !== null ? $project->project_key : \App\Support\ProjectKey::fromConfig();
+        $projectKey = $project !== null ? $project->project_key : ProjectKey::fromConfig();
         $projectName = $project !== null ? $project->name : null;
 
         $user = null;

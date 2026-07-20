@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AdminUser;
+use App\Models\Project;
+use App\Support\ProjectKey;
 use App\Util\AdminContext;
 
 class AdminBaseController extends Controller
@@ -32,12 +34,12 @@ class AdminBaseController extends Controller
             return (string) $project->project_key;
         }
 
-        $configured = \App\Support\ProjectKey::fromConfig();
+        $configured = ProjectKey::fromConfig();
         if ($configured !== null) {
             return $configured;
         }
 
-        $defaultKey = \App\Models\Project::where('is_active', true)->orderBy('id')->value('project_key');
+        $defaultKey = Project::where('is_active', true)->orderBy('id')->value('project_key');
         if (! is_string($defaultKey) || trim($defaultKey) === '') {
             throw new \RuntimeException('No active project available for admin context.');
         }
