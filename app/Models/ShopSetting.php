@@ -624,7 +624,7 @@ class ShopSetting
 
     // ── プロフィール項目設定（スマレジ連携・必須/任意・任意項目） ──
 
-    /** スマレジと同一内容で登録できるプロフィール項目のキーとラベル */
+    /** プロフィール項目のキーとラベル（フォーム表示用。一部はローカル専用） */
     public const PROFILE_SMAREGI_FIELDS = [
         'name' => 'お名前',
         'kana' => 'お名前（カナ）',
@@ -637,7 +637,27 @@ class ShopSetting
         'address' => '住所（自由入力）',
         'birthday' => '生年月日',
         'sex' => '性別',
+        'mail_receive_flag' => '店舗からの案内メールを受け取る',
     ];
+
+    /**
+     * スマレジ会員 API に連携する項目キー（owlshop SmaregiCustomerFieldEnum 相当）。
+     * prefecture / city / street は住所補助用で、スマレジへは address にまとめて送る。
+     */
+    public const PROFILE_SMAREGI_LINKED_KEYS = [
+        'name',
+        'kana',
+        'phone',
+        'email',
+        'postal_code',
+        'address',
+        'birthday',
+        'sex',
+        'mail_receive_flag',
+    ];
+
+    /** 追加項目の上限（owlshop と同様） */
+    public const PROFILE_CUSTOM_FIELD_MAX = 5;
 
     /** プロフィール項目設定のデフォルト（スマレジ項目は表示ON・名前と電話は必須、任意項目は空） */
     public static function defaultProfileFieldSettings(): array
@@ -646,7 +666,8 @@ class ShopSetting
         foreach (self::PROFILE_SMAREGI_FIELDS as $key => $label) {
             $smaregi[$key] = [
                 'label' => $label,
-                'enabled' => true,
+                // 案内メールは既存会員の未設定上書きを避けるため、管理者が明示ONするまで非表示
+                'enabled' => $key !== 'mail_receive_flag',
                 'required' => in_array($key, ['name', 'phone'], true),
             ];
         }
@@ -655,6 +676,11 @@ class ShopSetting
             'smaregi_fields' => $smaregi,
             'custom_fields' => [],
         ];
+    }
+
+    public static function isSmaregiLinkedProfileField(string $key): bool
+    {
+        return in_array($key, self::PROFILE_SMAREGI_LINKED_KEYS, true);
     }
 
     /** プロフィール項目設定を取得（会員登録・編集フォームの表示とバリデーションに使用） */
@@ -675,9 +701,14 @@ class ShopSetting
                     'required' => (bool) ($raw['smaregi_fields'][$key]['required'] ?? $def['required']),
                 ];
             }
+            // スマレジ API 必須の氏名は非表示・任意にできない（owlshop と同様）
+            if ($key === 'name') {
+                $smaregi[$key]['enabled'] = true;
+                $smaregi[$key]['required'] = true;
+            }
         }
         $custom = isset($raw['custom_fields']) && is_array($raw['custom_fields'])
-            ? $raw['custom_fields']
+            ? array_slice(array_values($raw['custom_fields']), 0, self::PROFILE_CUSTOM_FIELD_MAX)
             : [];
 
         return [

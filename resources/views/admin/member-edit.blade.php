@@ -133,6 +133,14 @@
                         <option value="2" {{ old('sex', $member->sex) === '2' ? 'selected' : '' }}>女性</option>
                     </select>
                 </div>
+                <div class="form-group">
+                    <label for="mail_receive_flag" class="form-label">店舗からの案内メールを受け取る</label>
+                    <select name="mail_receive_flag" id="mail_receive_flag" class="form-control">
+                        <option value="">— 未設定 —</option>
+                        <option value="1" {{ old('mail_receive_flag', $member->mail_receive_flag) === '1' ? 'selected' : '' }}>許可する</option>
+                        <option value="0" {{ old('mail_receive_flag', $member->mail_receive_flag) === '0' ? 'selected' : '' }}>許可しない</option>
+                    </select>
+                </div>
             </section>
 
             <section class="form-section mb-4">

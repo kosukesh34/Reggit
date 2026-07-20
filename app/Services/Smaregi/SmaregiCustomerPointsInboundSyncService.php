@@ -413,6 +413,9 @@ class SmaregiCustomerPointsInboundSyncService
         if (array_key_exists('sex', $customer)) {
             $updates['sex'] = $this->stringOrNull($customer['sex']);
         }
+        if (array_key_exists('mailReceiveFlag', $customer)) {
+            $updates['mail_receive_flag'] = $this->stringOrNull($customer['mailReceiveFlag']);
+        }
 
         return $updates;
     }

@@ -22,6 +22,7 @@
     @php
         $memberRegistrationMode = $settings['member_registration_mode'] ?? \App\Enums\MemberRegistrationMode::OPTIONAL;
         $modeOptions = $memberRegistrationModeOptions ?? \App\Enums\MemberRegistrationMode::getValues();
+        $customFieldMax = \App\Models\ShopSetting::PROFILE_CUSTOM_FIELD_MAX;
     @endphp
     <div class="card mb-4">
         <div class="card-header">
@@ -46,7 +47,12 @@
     <div class="card mb-4">
         <div class="card-header">
             <h2 class="card-title">スマレジ連携用項目（表示ON/OFF・必須/任意）</h2>
-            <p class="card-desc text-muted small mb-0">会員アプリのプロフィールで表示する項目と、必須か任意かを設定します。スマレジと同一内容を登録する場合に利用できます。</p>
+            <p class="card-desc text-muted small mb-0">
+                会員アプリのプロフィールで表示する項目と、必須か任意かを設定します。
+                <i class="fas fa-link"></i> マークが付いている項目はスマレジ会員情報と連携します。
+                都道府県・市区町村・番地は住所入力の補助で、スマレジへは「住所」にまとめて送ります。
+            </p>
+            <p class="card-desc text-muted small mb-0 mt-1">※ スマレジ POS 側の「会員必須項目」設定とは独立です。POS 側は基本的に任意入力にしてください。</p>
         </div>
         <div class="card-body">
             <table class="table">
@@ -59,22 +65,37 @@
                 </thead>
                 <tbody>
                     @foreach($settings['smaregi_fields'] ?? [] as $key => $field)
+                    @php
+                        $isName = $key === 'name';
+                        $isLinked = \App\Models\ShopSetting::isSmaregiLinkedProfileField($key);
+                    @endphp
                     <tr>
-                        <td>{{ $field['label'] ?? $key }}</td>
                         <td>
-                            <input type="hidden" name="smaregi_fields[{{ $key }}][enabled]" value="0">
+                            {{ $field['label'] ?? $key }}
+                            @if($isLinked)
+                                <i class="fas fa-link text-muted" title="スマレジ会員情報と連携"></i>
+                            @endif
+                        </td>
+                        <td>
+                            <input type="hidden" name="smaregi_fields[{{ $key }}][enabled]" value="{{ $isName ? '1' : '0' }}">
                             <label class="checkbox-label mb-0">
-                                <input type="checkbox" name="smaregi_fields[{{ $key }}][enabled]" value="1" {{ ($field['enabled'] ?? true) ? 'checked' : '' }}>
+                                <input type="checkbox" name="smaregi_fields[{{ $key }}][enabled]" value="1" {{ ($field['enabled'] ?? true) ? 'checked' : '' }} {{ $isName ? 'disabled' : '' }}>
                                 <span>表示する</span>
                             </label>
+                            @if($isName)
+                                <div class="text-muted small">氏名はスマレジ登録に必要なため常に表示</div>
+                            @endif
                         </td>
                         <td>
                             <label class="radio-label-inline">
-                                <input type="radio" name="smaregi_fields[{{ $key }}][required]" value="1" {{ ($field['required'] ?? false) ? 'checked' : '' }}> 必須
+                                <input type="radio" name="smaregi_fields[{{ $key }}][required]" value="1" {{ ($field['required'] ?? false) ? 'checked' : '' }} {{ $isName ? 'disabled' : '' }}> 必須
                             </label>
                             <label class="radio-label-inline">
-                                <input type="radio" name="smaregi_fields[{{ $key }}][required]" value="0" {{ !($field['required'] ?? false) ? 'checked' : '' }}> 任意
+                                <input type="radio" name="smaregi_fields[{{ $key }}][required]" value="0" {{ !($field['required'] ?? false) ? 'checked' : '' }} {{ $isName ? 'disabled' : '' }}> 任意
                             </label>
+                            @if($isName)
+                                <input type="hidden" name="smaregi_fields[{{ $key }}][required]" value="1">
+                            @endif
                         </td>
                     </tr>
                     @endforeach
@@ -89,7 +110,7 @@
             <button type="button" class="btn btn-sm btn-outline-primary" id="addCustomField"><i class="fas fa-plus"></i> 項目を追加</button>
         </div>
         <div class="card-body">
-            <p class="text-muted small mb-3">会員プロフィールに独自の入力項目を追加できます。キーは半角英数字とアンダースコアのみ（例: company_name）。</p>
+            <p class="text-muted small mb-3">会員プロフィールに独自の入力項目を追加できます（最大 {{ $customFieldMax }} 件）。キーは半角英数字とアンダースコアのみ（例: company_name）。追加項目はアプリ内のみで、スマレジには送信されません。</p>
             <div id="customFieldsContainer">
                 @foreach($settings['custom_fields'] ?? [] as $i => $cf)
                 <div class="custom-field-row form-row align-items-center mb-2">
@@ -125,8 +146,20 @@
     var container = document.getElementById('customFieldsContainer');
     var addBtn = document.getElementById('addCustomField');
     var index = (container && container.querySelectorAll('.custom-field-row').length) || 0;
+    var maxFields = {{ (int) $customFieldMax }};
+
+    function syncAddButton() {
+        if (!addBtn || !container) return;
+        var count = container.querySelectorAll('.custom-field-row').length;
+        addBtn.disabled = count >= maxFields;
+        addBtn.title = count >= maxFields ? ('追加項目は' + maxFields + '個までです') : '';
+    }
 
     function addRow() {
+        if (container.querySelectorAll('.custom-field-row').length >= maxFields) {
+            syncAddButton();
+            return;
+        }
         var row = document.createElement('div');
         row.className = 'custom-field-row form-row align-items-center mb-2';
         row.innerHTML =
@@ -135,13 +168,18 @@
             '<div class="col-md-2"><label class="checkbox-label mb-0"><input type="hidden" name="custom_fields[' + index + '][required]" value="0"><input type="checkbox" name="custom_fields[' + index + '][required]" value="1"> 必須</label></div>' +
             '<div class="col-md-1"><button type="button" class="btn btn-sm btn-danger remove-custom-field"><i class="fas fa-times"></i></button></div>';
         container.appendChild(row);
-        row.querySelector('.remove-custom-field').addEventListener('click', function() { row.remove(); });
+        row.querySelector('.remove-custom-field').addEventListener('click', function() { row.remove(); syncAddButton(); });
         index++;
+        syncAddButton();
     }
     addBtn.addEventListener('click', addRow);
     container.addEventListener('click', function(e) {
-        if (e.target.closest('.remove-custom-field')) e.target.closest('.custom-field-row').remove();
+        if (e.target.closest('.remove-custom-field')) {
+            e.target.closest('.custom-field-row').remove();
+            syncAddButton();
+        }
     });
+    syncAddButton();
 })();
 </script>
 @endsection
