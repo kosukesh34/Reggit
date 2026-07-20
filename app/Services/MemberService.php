@@ -152,7 +152,7 @@ class MemberService
     {
         $settings = $this->shopSettingRepository->getProfileFieldSettings($projectId);
         $rules = [];
-        $stringMax = ['name' => 255, 'kana' => 255, 'phone' => 50, 'email' => 255, 'postal_code' => 16, 'prefecture' => 64, 'city' => 128, 'street' => 256, 'address' => 500, 'sex' => 16];
+        $stringMax = ['name' => 255, 'kana' => 255, 'phone' => 50, 'email' => 255, 'postal_code' => 16, 'prefecture' => 64, 'city' => 128, 'street' => 256, 'address' => 500, 'sex' => 16, 'mail_receive_flag' => 1];
         foreach ($settings['smaregi_fields'] ?? [] as $key => $field) {
             if ((bool) ($field['enabled'] ?? false) === false) {
                 continue;
@@ -166,6 +166,12 @@ class MemberService
             }
             if ($key === 'birthday') {
                 $rule[] = 'date';
+            }
+            if ($key === 'sex') {
+                $rule[] = 'in:0,1,2';
+            }
+            if ($key === 'mail_receive_flag') {
+                $rule[] = 'in:0,1';
             }
             if (isset($stringMax[$key])) {
                 $rule[] = 'string';
@@ -224,6 +230,7 @@ class MemberService
             'address' => $member->address,
             'birthday' => $member->birthday ? $member->birthday->format('Y-m-d') : null,
             'sex' => $member->sex ?? null,
+            'mail_receive_flag' => $member->mail_receive_flag ?? null,
         ];
         $extra = $member->profile_extra ?? [];
         if (is_array($extra)) {
@@ -261,7 +268,7 @@ class MemberService
             $userUpdates[$key] = $val === '' ? null : $val;
         }
 
-        $memberKeys = ['birthday', 'address', 'postal_code', 'prefecture', 'city', 'street', 'sex'];
+        $memberKeys = ['birthday', 'address', 'postal_code', 'prefecture', 'city', 'street', 'sex', 'mail_receive_flag'];
         foreach ($memberKeys as $key) {
             if (! array_key_exists($key, $data)) {
                 continue;
@@ -383,6 +390,7 @@ class MemberService
                 'city' => $data['city'] ?? null,
                 'street' => $data['street'] ?? null,
                 'sex' => $data['sex'] ?? null,
+                'mail_receive_flag' => $data['mail_receive_flag'] ?? null,
                 'profile_extra' => $this->extractCustomProfileExtra($projectId, $data),
             ]);
 
@@ -413,55 +421,11 @@ class MemberService
     /** スマレジ会員登録用のリクエストボディを組み立て（会員コードは20文字以内） */
     private function buildSmaregiCustomerBody(string $memberNumber, array $data): array
     {
-        $name = trim((string) ($data['name'] ?? ''));
-        $kana = trim((string) ($data['kana'] ?? ''));
-        $parts = $name !== '' ? preg_split('/\s+/u', $name, 2) : ['', ''];
-        $lastName = $parts[0] ?? '';
-        $firstName = $parts[1] ?? '';
-        if ($lastName === '' && $name !== '') {
-            $lastName = $name;
-        }
-        // スマレジの lastKana/firstKana はカタカナのみ受け付ける
-        $kanaParts = $kana !== '' ? preg_split('/\s+/u', $kana, 2) : ['', ''];
-        $lastKana = trim((string) ($kanaParts[0] ?? ''));
-        $firstKana = trim((string) ($kanaParts[1] ?? ''));
-        if ($lastKana === '' && $kana !== '') {
-            $lastKana = trim($kana);
-        }
+        $body = $this->smaregiCustomerUpdatePayloadBuilder->buildFromProfileData($data);
+        $body['customerCode'] = Str::limit($memberNumber, 20, '');
+        $body['entryDate'] = now()->format('Y-m-d');
 
-        $body = [
-            'customerCode' => Str::limit($memberNumber, 20, ''),
-            'lastName' => $lastName !== '' ? $lastName : '—',
-            'firstName' => $firstName !== '' ? $firstName : '—',
-            'lastKana' => $this->normalizeSmaregiKana($lastKana),
-            'firstKana' => $this->normalizeSmaregiKana($firstKana),
-        ];
-        $email = trim((string) ($data['email'] ?? ''));
-        if ($email !== '') {
-            $body['mailAddress'] = $email;
-        }
-        $phone = trim((string) ($data['phone'] ?? ''));
-        if ($phone !== '') {
-            $body['phoneNumber'] = $phone;
-        }
-
-        return $body;
-    }
-
-    /** ひらがなはカタカナへ変換し、カタカナ以外はプレースホルダにする */
-    private function normalizeSmaregiKana(string $value): string
-    {
-        $value = trim($value);
-        if ($value === '') {
-            return 'ー';
-        }
-
-        $katakana = mb_convert_kana($value, 'CKV', 'UTF-8');
-        if (preg_match('/^[\x{30A1}-\x{30F6}\x{30FC}\x{30FB}ー]+$/u', $katakana) === 1) {
-            return $katakana;
-        }
-
-        return 'ー';
+        return $this->smaregiCustomerUpdatePayloadBuilder->withRegisterNamePlaceholders($body);
     }
 
     private function syncMemberRank(Member $member): void
