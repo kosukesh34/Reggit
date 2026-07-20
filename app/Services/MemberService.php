@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Services\Smaregi\SmaregiApiService;
 use App\Services\Smaregi\SmaregiCustomerPointsInboundSyncService;
 use App\Services\Smaregi\SmaregiCustomerUpdatePayloadBuilder;
+use App\UseCases\Coupon\IssueCouponOnRankUpUseCase;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
 use Illuminate\Support\Facades\Cache;
@@ -27,6 +28,7 @@ class MemberService
         private SmaregiCustomerPointsInboundSyncService $smaregiCustomerPointsInboundSyncService,
         private MemberRankCalculator $rankCalculator,
         private ShopSettingRepository $shopSettingRepository,
+        private IssueCouponOnRankUpUseCase $issueCouponOnRankUpUseCase,
     ) {}
 
     public function getMemberData(User $user): array
@@ -433,9 +435,12 @@ class MemberService
 
     private function syncMemberRank(Member $member): void
     {
+        $previousRank = (string) ($member->rank ?? '');
         $rankInfo = $this->getRankInfo($member);
-        if (($rankInfo['current_rank'] ?? '') !== '' && $rankInfo['current_rank'] !== $member->rank) {
-            $member->update(['rank' => $rankInfo['current_rank']]);
+        $newRank = (string) ($rankInfo['current_rank'] ?? '');
+        if ($newRank !== '' && $newRank !== $previousRank) {
+            $member->update(['rank' => $newRank]);
+            $this->issueCouponOnRankUpUseCase->handle($member->fresh() ?? $member, $previousRank, $newRank);
         }
     }
 

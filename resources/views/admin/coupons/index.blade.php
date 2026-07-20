@@ -2,8 +2,10 @@
 
 @section('title', 'クーポン')
 @section('page-title', 'クーポン')
+@section('page-kind', 'coupon-index')
 
 @section('content')
+<div class="coupon-admin">
 @if(session('success'))
 <div class="alert alert-success" role="alert">
     <i class="fas fa-check-circle"></i> {{ session('success') }}
@@ -22,14 +24,14 @@
 
 <div class="page-header">
     <h1 class="page-header-title"><i class="fas fa-ticket-alt"></i> クーポン</h1>
-    <p class="page-header-desc">クーポンコードの作成と管理</p>
+    <p class="page-header-desc">クーポンの作成・管理・配布</p>
 </div>
 
-<div class="card">
+<div class="card cp-list-card">
     <div class="card-header card-header-with-action">
         <h2 class="card-title">クーポン一覧</h2>
         <div>
-            <a href="{{ admin_route('admin.coupons.bulk-issue') }}" class="btn btn-outline-primary"><i class="fas fa-gift"></i> 一括配布</a>
+            <a href="{{ admin_route('admin.coupons.bulk-issue') }}" class="btn btn-outline-primary"><i class="fas fa-gift"></i> 配布</a>
             <a href="{{ admin_route('admin.coupons.create') }}" class="btn btn-primary"><i class="fas fa-plus"></i> 作成</a>
         </div>
     </div>
@@ -38,7 +40,7 @@
         <div class="empty-state">
             <i class="fas fa-ticket-alt"></i>
             <p>クーポンがありません</p>
-            <p class="empty-state-hint">「一括配布」から作成するか、右上の「作成」ボタンでクーポンを追加できます</p>
+            <p class="empty-state-hint">「作成」からクーポンを追加し、「配布」で会員へ届けられます</p>
         </div>
         @else
         <table class="table">
@@ -79,7 +81,9 @@
                             <span class="badge badge-secondary">手動</span>
                         @endif
                     </td>
-                    <td>{{ $coupon->used_count }}{{ $coupon->usage_limit ? ' / ' . $coupon->usage_limit : '' }}</td>
+                    <td>
+                        <a href="{{ admin_route('admin.coupons.redemptions', ['id' => $coupon->id]) }}">{{ $coupon->used_count }}{{ $coupon->usage_limit ? ' / ' . $coupon->usage_limit : '' }}</a>
+                    </td>
                     <td>
                         @if($coupon->smaregi_coupon_id)
                             <span class="badge badge-success" title="ID: {{ $coupon->smaregi_coupon_id }}">連携済</span>
@@ -91,6 +95,7 @@
                     <td><span class="badge badge-{{ $coupon->is_active ? 'success' : 'danger' }}">{{ $coupon->is_active ? '有効' : '無効' }}</span></td>
                     <td class="table-actions-cell">
                         <div class="table-actions">
+                            <a href="{{ admin_route('admin.coupons.redemptions', ['id' => $coupon->id]) }}" class="btn btn-action btn-edit"><i class="fas fa-receipt"></i> 利用履歴</a>
                             <a href="{{ admin_route('admin.coupons.edit', ['id' => $coupon->id]) }}" class="btn btn-action btn-edit"><i class="fas fa-edit"></i> 編集</a>
                             <form action="{{ admin_route('admin.coupons.delete', ['id' => $coupon->id]) }}" method="POST" class="d-inline" onsubmit="return confirm('削除しますか？');">@csrf @method('DELETE')<button type="submit" class="btn btn-action btn-danger"><i class="fas fa-trash"></i> 削除</button></form>
                         </div>
@@ -103,4 +108,8 @@
         @endif
     </div>
 </div>
+</div>
+@push('styles')
+<link rel="stylesheet" href="{{ asset('css/admin/coupons.css') }}?v={{ config('app.asset_version') }}">
+@endpush
 @endsection
