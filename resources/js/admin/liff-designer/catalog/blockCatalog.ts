@@ -56,6 +56,23 @@ export const DETAIL_PAGE_ICONS: Record<string, string> = {
 
 export const MENU_TABS = Object.keys(TAB_LABELS);
 
+/** 外部Webページタブ（管理者がURLを設定するカスタムタブ）のキー */
+export const LINK_MENU_TABS = ['link_1', 'link_2', 'link_3'];
+
+export function isLinkMenuTab(tab: string): boolean {
+    return LINK_MENU_TABS.includes(tab);
+}
+
+/** 商品カテゴリ絞り込み（ProductIndexUseCase::CATEGORY_META と同じキー） */
+export const PRODUCT_CATEGORY_CHOICES = [
+    { value: '', label: '絞り込みなし（すべて）' },
+    { value: 'food', label: 'フード' },
+    { value: 'drink', label: 'ドリンク' },
+    { value: 'dessert', label: 'デザート' },
+    { value: 'side', label: 'サイドメニュー' },
+    { value: 'other', label: 'その他' },
+];
+
 export const DETAIL_PAGES = Object.keys(DETAIL_PAGE_LABELS);
 
 export const ALL_SCREEN_KEYS = [...MENU_TABS, ...DETAIL_PAGES];
@@ -273,6 +290,34 @@ export const MEMBER_CARD_CODE_TYPES = [
     { value: 'qrcode', label: 'QRコード' },
 ];
 
+export const STAMP_SCREEN_DESIGNS = [
+    { value: '', label: '店舗設定に従う' },
+    { value: 'grid_card', label: 'グリッドカード' },
+    { value: 'wallet', label: 'ウォレット' },
+    { value: 'circle_board', label: 'サークルボード' },
+    { value: 'minimal', label: 'ミニマル' },
+];
+
+export const STAMP_SCREEN_DESIGN_CHOICES = STAMP_SCREEN_DESIGNS.filter((d) => d.value !== '');
+
+export const STAMP_SLOT_STYLES = [
+    { value: 'circle', label: '円形' },
+    { value: 'rounded', label: '角丸' },
+    { value: 'square', label: 'スクエア' },
+];
+
+export const STAMP_FILLED_STYLES = [
+    { value: 'image', label: '押印画像' },
+    { value: 'solid', label: 'ソリッド' },
+    { value: 'icon', label: 'アイコン' },
+];
+
+export const MEMBER_CARD_BG_STYLES = [
+    { value: 'gradient', label: 'グラデーション' },
+    { value: 'solid', label: 'ソリッド' },
+    { value: 'image', label: '画像風' },
+];
+
 export const SOCIAL_LINK_TYPES = [
     { value: 'instagram', label: 'Instagram' },
     { value: 'x', label: 'X' },
@@ -300,8 +345,14 @@ export function defaultGlobalSettings(): GlobalSettings {
         member_card_design: 'default',
         member_card_display_type: 'card',
         member_card_code_type: 'barcode',
+        member_card_accent_color: '',
+        member_card_bg_style: 'gradient',
         app_display_name: '',
         member_screen_design: 'wallet',
+        stamp_screen_design: 'grid_card',
+        stamp_slot_style: 'circle',
+        stamp_filled_style: 'image',
+        stamp_accent_color: '',
         coupon_screen_design: 'ticket',
         reservation_screen_design: 'cards',
         activity_screen_design: 'cards',
@@ -431,6 +482,10 @@ export function normalizeBlock(item: Record<string, unknown>, idCounter: { n: nu
             block.show_dots = item.show_dots !== false;
             block.section_label = item.section_label || item.title || '';
             block.design = pickDesign('slider', item.design);
+            if (item.source === 'gallery') {
+                block.source = 'gallery';
+                block.slides = [];
+            }
             break;
         case 'icon_text':
             block.rows = item.rows || [
@@ -463,6 +518,10 @@ export function normalizeBlock(item: Record<string, unknown>, idCounter: { n: nu
         case 'data':
             block.source = item.source === 'member' ? 'member_card' : (item.source || (rawType === 'gallery' ? 'gallery' : 'products'));
             block.card_design = typeof item.card_design === 'string' ? item.card_design : '';
+            block.stamp_design = typeof item.stamp_design === 'string' ? item.stamp_design : '';
+            block.stamp_slot_style = typeof item.stamp_slot_style === 'string' ? item.stamp_slot_style : '';
+            block.stamp_filled_style = typeof item.stamp_filled_style === 'string' ? item.stamp_filled_style : '';
+            block.stamp_accent_color = typeof item.stamp_accent_color === 'string' ? item.stamp_accent_color : '';
             block.design = pickDesign('data', item.design);
             break;
         case 'member_summary':
@@ -472,9 +531,9 @@ export function normalizeBlock(item: Record<string, unknown>, idCounter: { n: nu
         case 'stats_row':
             block.section_label = item.section_label || item.title || '';
             block.items = Array.isArray(item.items) && item.items.length > 0 ? item.items : [
-                { label: 'ポイント', value: '1,240', hint: 'pt' },
-                { label: 'クーポン', value: '3', hint: '枚' },
-                { label: 'スタンプ', value: '7', hint: '/10' },
+                { label: 'ポイント', value: '1,240', hint: 'pt', field: 'points' },
+                { label: 'ランク', value: 'ゴールド', hint: '', field: 'rank' },
+                { label: '次回特典まで', value: '720', hint: 'pt', field: 'points_to_next' },
             ];
             break;
         case 'quick_actions':
@@ -554,7 +613,7 @@ export function normalizeMenuItems(raw: unknown): MenuItem[] {
             }
         });
     }
-    const items = MENU_TABS.map((tab, i) => {
+    const items: MenuItem[] = MENU_TABS.map((tab, i) => {
         const saved = byTab[tab] || {};
         return {
             tab,
@@ -566,6 +625,21 @@ export function normalizeMenuItems(raw: unknown): MenuItem[] {
             order: typeof saved.order === 'number' ? saved.order : i,
             enabled: saved.enabled !== false,
         };
+    });
+    LINK_MENU_TABS.forEach((tab) => {
+        const saved = byTab[tab];
+        if (saved === undefined || typeof saved.url !== 'string' || saved.url === '') {
+            return;
+        }
+        items.push({
+            tab,
+            label: typeof saved.label === 'string' && saved.label !== '' ? saved.label : 'リンク',
+            icon: typeof saved.icon === 'string' && saved.icon !== '' ? saved.icon : 'fa-globe',
+            order: typeof saved.order === 'number' ? saved.order : items.length,
+            enabled: saved.enabled !== false,
+            url: saved.url,
+            open: 'embed',
+        });
     });
     items.sort((a, b) => a.order - b.order);
     items.forEach((item, i) => {

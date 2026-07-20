@@ -3,6 +3,7 @@
 namespace App\Services\Admin;
 
 use App\Models\ShopSetting;
+use App\Support\LiffDesignerSanitizer;
 
 /**
  * LIFF デザイナー・フロントメニュー設定の永続化と取得を担当する。
@@ -70,7 +71,7 @@ class LiffSettingsService
         $raw = ShopSetting::getValue('frontend_menu_items', null, $projectId);
         $byTab = collect(is_array($raw) ? $raw : [])->keyBy('tab');
 
-        return collect($defaults)->map(function (array $item) use ($byTab) {
+        $items = collect($defaults)->map(function (array $item) use ($byTab) {
             $saved = $byTab->get($item['tab']);
             $icon = (string) ($saved['icon'] ?? $item['icon']);
 
@@ -81,7 +82,18 @@ class LiffSettingsService
                 'order' => $saved['order'] ?? $item['order'],
                 'enabled' => ! isset($saved['enabled']) || $saved['enabled'] !== false,
             ];
-        })->sortBy('order')->values()->all();
+        });
+
+        $linkItems = collect(is_array($raw) ? $raw : [])
+            ->filter(fn ($item) => in_array($item['tab'] ?? '', LiffDesignerSanitizer::LINK_MENU_TABS, true)
+                && isset($item['url']))
+            ->map(function (array $item) {
+                $item['open'] = 'embed';
+
+                return $item;
+            });
+
+        return $items->concat($linkItems)->sortBy('order')->values()->all();
     }
 
     /**
@@ -153,6 +165,10 @@ class LiffSettingsService
         $defaults = collect(ShopSetting::defaultFrontendMenuItems())->keyBy('tab');
 
         return array_values(array_filter(array_map(function (array $item) use ($defaults) {
+            // 外部ページタブはサニタイザーで label / icon 補完済みのためそのまま通す
+            if (in_array($item['tab'] ?? '', LiffDesignerSanitizer::LINK_MENU_TABS, true)) {
+                return $item;
+            }
             $default = $defaults->get($item['tab']);
             if ($default === null) {
                 return null;

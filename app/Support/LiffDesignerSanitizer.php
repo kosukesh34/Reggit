@@ -27,6 +27,12 @@ class LiffDesignerSanitizer
         'queue', 'reservations', 'member', 'gallery', 'announcements',
     ];
 
+    /** 外部Webページタブ（管理者がURLを設定するカスタムタブ）のキー */
+    public const LINK_MENU_TABS = ['link_1', 'link_2', 'link_3'];
+
+    /** 外部Webページタブの表示方法 */
+    private const LINK_MENU_OPEN_MODES = ['embed', 'external'];
+
     /** 詳細ページレイアウト（タブと並列） */
     private const ALLOWED_DETAIL_KEYS = [
         'announcement_detail',
@@ -54,6 +60,10 @@ class LiffDesignerSanitizer
 
     private const MEMBER_SUMMARY_DESIGNS = [
         'rewards', 'wallet', 'compact', 'emblem', 'minimal', 'split', 'glass', 'tier',
+    ];
+
+    private const STATS_ROW_FIELDS = [
+        'static', 'points', 'rank', 'points_to_next',
     ];
 
     private const MEMBER_CARD_DESIGNS = [
@@ -88,6 +98,14 @@ class LiffDesignerSanitizer
     private const FAQ_DESIGNS = ['accordion', 'cards', 'minimal'];
 
     private const DATA_DESIGNS = ['cards', 'timeline', 'compact', 'premium'];
+
+    private const STAMP_SCREEN_DESIGNS = ['grid_card', 'wallet', 'circle_board', 'minimal'];
+
+    private const STAMP_SLOT_STYLES = ['circle', 'rounded', 'square'];
+
+    private const STAMP_FILLED_STYLES = ['image', 'solid', 'icon'];
+
+    private const MEMBER_CARD_BG_STYLES = ['solid', 'gradient', 'image'];
 
     public static function sanitizeLayouts(array $layouts): array
     {
@@ -293,6 +311,36 @@ class LiffDesignerSanitizer
             $item['member_card_code_type'] = $memberCardCodeType;
         }
 
+        $memberCardAccent = self::color($row['member_card_accent_color'] ?? null);
+        if ($memberCardAccent !== null) {
+            $item['member_card_accent_color'] = $memberCardAccent;
+        }
+
+        $memberCardBgStyle = (string) ($row['member_card_bg_style'] ?? '');
+        if (in_array($memberCardBgStyle, self::MEMBER_CARD_BG_STYLES, true)) {
+            $item['member_card_bg_style'] = $memberCardBgStyle;
+        }
+
+        $stampScreenDesign = (string) ($row['stamp_screen_design'] ?? '');
+        if (in_array($stampScreenDesign, self::STAMP_SCREEN_DESIGNS, true)) {
+            $item['stamp_screen_design'] = $stampScreenDesign;
+        }
+
+        $stampSlotStyle = (string) ($row['stamp_slot_style'] ?? '');
+        if (in_array($stampSlotStyle, self::STAMP_SLOT_STYLES, true)) {
+            $item['stamp_slot_style'] = $stampSlotStyle;
+        }
+
+        $stampFilledStyle = (string) ($row['stamp_filled_style'] ?? '');
+        if (in_array($stampFilledStyle, self::STAMP_FILLED_STYLES, true)) {
+            $item['stamp_filled_style'] = $stampFilledStyle;
+        }
+
+        $stampAccent = self::color($row['stamp_accent_color'] ?? null);
+        if ($stampAccent !== null) {
+            $item['stamp_accent_color'] = $stampAccent;
+        }
+
         $appDisplayName = trim((string) ($row['app_display_name'] ?? ''));
         if ($appDisplayName !== '') {
             $item['app_display_name'] = mb_substr($appDisplayName, 0, 80);
@@ -372,10 +420,10 @@ class LiffDesignerSanitizer
                 continue;
             }
             $tab = (string) ($row['tab'] ?? '');
-            if (! in_array($tab, self::MENU_TABS, true) || isset($seen[$tab])) {
+            $isLinkTab = in_array($tab, self::LINK_MENU_TABS, true);
+            if ((! in_array($tab, self::MENU_TABS, true) && ! $isLinkTab) || isset($seen[$tab])) {
                 continue;
             }
-            $seen[$tab] = true;
 
             $label = self::text($row['label'] ?? '', 12);
             $icon = (string) ($row['icon'] ?? '');
@@ -383,13 +431,28 @@ class LiffDesignerSanitizer
                 $icon = '';
             }
 
-            $safe[] = [
+            $item = [
                 'tab' => $tab,
                 'label' => $label,
                 'icon' => $icon,
-                'order' => $order++,
+                'order' => $order,
                 'enabled' => ! isset($row['enabled']) || $row['enabled'] !== false,
             ];
+
+            if ($isLinkTab) {
+                $url = self::text($row['url'] ?? '', 1000);
+                if (preg_match('/^https:\/\//i', $url) !== 1) {
+                    continue;
+                }
+                $item['url'] = $url;
+                $item['open'] = 'embed';
+                $item['label'] = $label !== '' ? $label : 'リンク';
+                $item['icon'] = $icon !== '' ? $icon : 'fa-globe';
+            }
+
+            $seen[$tab] = true;
+            $safe[] = $item;
+            $order++;
         }
 
         return $safe;
@@ -551,6 +614,12 @@ class LiffDesignerSanitizer
                 $b['auto_play'] = ! isset($row['auto_play']) || (bool) $row['auto_play'];
                 $b['show_dots'] = ! isset($row['show_dots']) || (bool) $row['show_dots'];
                 $b['design'] = self::pickDesign((string) ($row['design'] ?? ''), self::SLIDER_DESIGNS, 'hero');
+                $sliderSource = (string) ($row['source'] ?? '');
+                if ($sliderSource === 'gallery') {
+                    $b['source'] = 'gallery';
+                    $b['slides'] = [];
+                    break;
+                }
                 $slides = is_array($row['slides'] ?? null) ? array_slice($row['slides'], 0, 12) : [];
                 $b['slides'] = array_values(array_filter(array_map(function ($it) {
                     if (! is_array($it)) {
@@ -606,6 +675,10 @@ class LiffDesignerSanitizer
                     }
                 }
                 $b['design'] = self::pickDesign((string) ($row['design'] ?? ''), self::BANNER_DESIGNS, 'promo');
+                $bannerField = self::statsRowField($row['field'] ?? null);
+                if ($bannerField === 'points_to_next') {
+                    $b['field'] = $bannerField;
+                }
                 break;
             case 'spacer':
                 $b['height'] = self::num($row['height'] ?? 16, 4, 120, 16);
@@ -626,6 +699,22 @@ class LiffDesignerSanitizer
                 if ($cardDesign !== '' && in_array($cardDesign, self::MEMBER_CARD_DESIGNS, true)) {
                     $b['card_design'] = $cardDesign;
                 }
+                $stampDesign = (string) ($row['stamp_design'] ?? '');
+                if ($stampDesign !== '' && in_array($stampDesign, self::STAMP_SCREEN_DESIGNS, true)) {
+                    $b['stamp_design'] = $stampDesign;
+                }
+                $stampSlotStyle = (string) ($row['stamp_slot_style'] ?? '');
+                if (in_array($stampSlotStyle, self::STAMP_SLOT_STYLES, true)) {
+                    $b['stamp_slot_style'] = $stampSlotStyle;
+                }
+                $stampFilledStyle = (string) ($row['stamp_filled_style'] ?? '');
+                if (in_array($stampFilledStyle, self::STAMP_FILLED_STYLES, true)) {
+                    $b['stamp_filled_style'] = $stampFilledStyle;
+                }
+                $stampAccent = self::color($row['stamp_accent_color'] ?? null);
+                if ($stampAccent !== null) {
+                    $b['stamp_accent_color'] = $stampAccent;
+                }
                 break;
             case 'member_summary':
                 $b['greeting'] = self::text($row['greeting'] ?? '', 60);
@@ -638,12 +727,17 @@ class LiffDesignerSanitizer
                     if (! is_array($it)) {
                         return null;
                     }
-
-                    return [
+                    $item = [
                         'label' => self::text($it['label'] ?? '', 40),
                         'value' => self::text($it['value'] ?? '', 40),
                         'hint' => self::text($it['hint'] ?? '', 40),
                     ];
+                    $field = self::statsRowField($it['field'] ?? null);
+                    if ($field !== 'static') {
+                        $item['field'] = $field;
+                    }
+
+                    return $item;
                 }, $items)));
                 break;
             case 'quick_actions':
@@ -837,6 +931,17 @@ class LiffDesignerSanitizer
     private static function pickDesign(string $value, array $allowed, string $default): string
     {
         return in_array($value, $allowed, true) ? $value : $default;
+    }
+
+    /** @param mixed $value */
+    private static function statsRowField($value): string
+    {
+        $field = is_scalar($value) ? (string) $value : '';
+        if ($field === '' || ! in_array($field, self::STATS_ROW_FIELDS, true)) {
+            return 'static';
+        }
+
+        return $field;
     }
 
     private static function safeUrl($url, bool $allowAnchor): string

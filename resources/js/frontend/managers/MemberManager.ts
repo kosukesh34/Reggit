@@ -1061,6 +1061,12 @@ export class MemberManager {
             MemberManager.getLiffGlobalSetting('member_card_code_type', '') ||
             data.member_card_code_type ||
             'barcode';
+        const memberCardAccent =
+            MemberManager.getLiffGlobalSetting('member_card_accent_color', '') ||
+            '';
+        const memberCardBgStyle =
+            MemberManager.getLiffGlobalSetting('member_card_bg_style', '') ||
+            'gradient';
 
         let expiryText = '';
         if (pointsExpiry && pointsExpiry.expires_at_label) {
@@ -1075,8 +1081,18 @@ export class MemberManager {
         const codeBlock = isQR
             ? `<div class="idnect-card-barcode-wrap idnect-card-code-wrap--qrcode"><div id="${codeId}" class="idnect-card-qrcode-wrap" aria-label="会員番号QRコード"></div></div>`
             : `<div class="idnect-card-barcode-wrap idnect-card-code-wrap--barcode"><svg id="${codeId}" class="idnect-card-barcode-svg"></svg></div>`;
-        const cardStyle = currentRankColor ? ` data-rank-color="true" style="--idnect-card-rank-color: ${DomHelper.escapeHtml(currentRankColor)}"` : '';
-        const cardDesignClass = 'idnect-card-wrapper--design-' + (availableDesigns.indexOf(memberCardDesign) >= 0 ? memberCardDesign : 'default');
+        const cardStyleParts = [];
+        if (currentRankColor) {
+            cardStyleParts.push('--idnect-card-rank-color: ' + DomHelper.escapeHtml(currentRankColor));
+        }
+        if (memberCardAccent !== '') {
+            cardStyleParts.push('--member-card-accent-color: ' + DomHelper.escapeHtml(memberCardAccent));
+        }
+        const cardStyle = cardStyleParts.length > 0
+            ? ` data-rank-color="true" style="${cardStyleParts.join('; ')}"`
+            : '';
+        const cardDesignClass = 'idnect-card-wrapper--design-' + (availableDesigns.indexOf(memberCardDesign) >= 0 ? memberCardDesign : 'default')
+            + ' idnect-card-wrapper--bg-' + (['solid', 'gradient', 'image'].indexOf(memberCardBgStyle) >= 0 ? memberCardBgStyle : 'gradient');
         const showLogoOnCard = (memberCardDesign === 'logo_top' || memberCardDesign === 'logo_center' || memberCardDesign === 'logo_header' || memberCardDesign === 'split_banner' || memberCardDesign === 'emblem') && memberCardLogoUrl;
         const logoBlock = showLogoOnCard
             ? `<div class="idnect-card-logo-wrap"><img src="${DomHelper.escapeHtml(memberCardLogoUrl)}" class="idnect-card-logo" alt="" onerror="this.parentElement.style.display='none'"></div>`

@@ -5,8 +5,8 @@
    ============================================================ */
 
 :root {
-    --glass-bg: rgba(255, 255, 255, 0.72);
-    --glass-bg-strong: rgba(255, 255, 255, 0.92);
+    --glass-bg: rgba(255, 255, 255, 0.88);
+    --glass-bg-strong: rgba(255, 255, 255, 0.96);
     --glass-border: rgba(255, 255, 255, 0.55);
     --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.08), 0 1px 0 rgba(255, 255, 255, 0.6) inset;
     --glass-blur: saturate(180%) blur(24px);
