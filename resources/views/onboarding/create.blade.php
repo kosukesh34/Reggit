@@ -8,19 +8,20 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="{{ asset('css/admin/admin.css') }}">
 </head>
-<body class="admin-login-page">
-    <div class="admin-container onboarding-container">
-        <div class="page-header system-admin-page-header">
-            <h1 class="page-title">プロジェクト入力ホーム</h1>
-            <p class="page-header-desc">プロジェクトと管理者アカウントを作成します。スマレジ・デベロッパーズの契約情報を入力してください。</p>
-        </div>
+<body class="admin-login-page onboarding-page">
+    <div class="onboarding-shell">
+        <header class="onboarding-header">
+            <p class="onboarding-brand"><i class="fas fa-store"></i> Reggit</p>
+            <h1 class="onboarding-title">プロジェクト入力ホーム</h1>
+            <p class="onboarding-lead">プロジェクトと管理者アカウントを作成します。<br>スマレジ・デベロッパーズの契約情報を入力してください。</p>
+        </header>
 
         <div id="onboarding-alert" class="alert alert-danger d-none" role="alert"></div>
         <div id="onboarding-success" class="alert alert-success d-none" role="alert"></div>
 
-        <form id="onboarding-form" action="{{ url('/api/onboarding/projects') }}" method="POST">
+        <form id="onboarding-form" class="onboarding-form" action="{{ url('/api/onboarding/projects') }}" method="POST">
             @include('admin.projects._form')
-            <div class="form-actions mt-3">
+            <div class="onboarding-actions">
                 <button type="submit" class="btn btn-primary" id="onboarding-submit">プロジェクトを作成</button>
                 <a href="{{ route('admin.login') }}" class="btn btn-secondary">ログイン画面へ</a>
             </div>
@@ -28,9 +29,107 @@
     </div>
 
     <style>
-        .onboarding-container { max-width: 720px; margin: 0 auto; padding: 24px 16px; }
-        .onboarding-container .page-title { font-size: 1.5rem; margin-bottom: 0.5rem; }
-        .d-none { display: none !important; }
+        .onboarding-page {
+            align-items: flex-start;
+            justify-content: center;
+            padding: 40px 16px 64px;
+        }
+
+        .onboarding-shell {
+            width: 100%;
+            max-width: 640px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .onboarding-header {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        .onboarding-brand {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0 auto 14px;
+            padding: 6px 12px;
+            border-radius: 999px;
+            background: var(--primary-bg);
+            color: var(--primary);
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+
+        .onboarding-brand i {
+            font-size: 12px;
+        }
+
+        .onboarding-title {
+            margin: 0 0 10px;
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: var(--letter-spacing-tight);
+            line-height: 1.3;
+        }
+
+        .onboarding-lead {
+            margin: 0 auto;
+            max-width: 28em;
+            font-size: 14px;
+            line-height: 1.7;
+            color: var(--text-secondary);
+        }
+
+        .onboarding-form .card {
+            margin-top: 0;
+        }
+
+        .onboarding-form .card + .card {
+            margin-top: 16px;
+        }
+
+        .onboarding-actions {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 24px;
+            padding: 20px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-xs);
+        }
+
+        .onboarding-actions .btn {
+            min-width: 180px;
+        }
+
+        .d-none {
+            display: none !important;
+        }
+
+        @media (max-width: 560px) {
+            .onboarding-page {
+                padding: 28px 12px 48px;
+            }
+
+            .onboarding-title {
+                font-size: 1.4rem;
+            }
+
+            .onboarding-actions {
+                flex-direction: column;
+            }
+
+            .onboarding-actions .btn {
+                width: 100%;
+                min-width: 0;
+            }
+        }
     </style>
 
     <script>
