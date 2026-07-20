@@ -21,7 +21,7 @@ class VerifySmaregiWebhookSecret
         }
 
         if (! hash_equals($secret, trim((string) $request->header($header)))) {
-            return response('', 401);
+            return response('', Response::HTTP_UNAUTHORIZED);
         }
 
         return $next($request);
