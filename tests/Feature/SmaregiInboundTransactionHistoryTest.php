@@ -3,12 +3,17 @@
 namespace Tests\Feature;
 
 use App\Enums\MemberVisitSource;
+use App\Enums\PointTransactionType;
 use App\Jobs\SmaregiSyncInboundTransactionsJob;
 use App\Models\Member;
+use App\Models\MemberStamp;
+use App\Models\MemberStampTransaction;
 use App\Models\MemberVisit;
+use App\Models\PointTransaction;
 use App\Models\Product;
 use App\Models\Project;
 use App\Models\ShopSetting;
+use App\Models\StampCard;
 use App\Models\User;
 use App\Services\Admin\MemberAdminService;
 use App\Services\Smaregi\SmaregiTransactionInboundSyncService;
@@ -24,10 +29,14 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
 
     private const CONTRACT_ID = 'test_contract_tx_history';
 
+    /** @var array<string, array<string, string|int|float|bool|array|null>> */
+    private array $transactionHttpFixtures = [];
+
     protected function setUp(): void
     {
         parent::setUp();
         Cache::flush();
+        $this->transactionHttpFixtures = [];
         config([
             'smaregi.client_id' => 'test_client_id',
             'smaregi.client_secret' => 'test_client_secret',
@@ -118,6 +127,120 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
         $this->assertSame(1, $summary['total_orders']);
     }
 
+    public function test_通常販売取引でスタンプ設定がある場合はスタンプが付与されること(): void
+    {
+        $project = Project::factory()->create();
+        ShopSetting::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        ShopSetting::setValue('stamp_earn_per_amount', 100, 'integer', (int) $project->id);
+        $stampCard = StampCard::factory()->create([
+            'project_id' => $project->id,
+            'required_stamps' => 10,
+            'is_active' => true,
+        ]);
+        ShopSetting::setValue('order_stamp_card_id', (int) $stampCard->id, 'integer', (int) $project->id);
+
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $member = Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+            'smaregi_customer_id' => '259',
+        ]);
+
+        $this->fakeTransactionHttp([
+            'transactionHeadId' => '39',
+            'transactionHeadDivision' => '1',
+            'cancelDivision' => '0',
+            'customerId' => '259',
+            'total' => '2046',
+            'terminalTranDateTime' => '2026-07-19T01:44:25+09:00',
+        ]);
+
+        $service = app(SmaregiTransactionInboundSyncService::class);
+        $service->syncByTransactionHeadIds(self::CONTRACT_ID, ['39']);
+        $service->syncByTransactionHeadIds(self::CONTRACT_ID, ['39']);
+
+        $this->assertDatabaseHas('member_stamp_transactions', [
+            'member_id' => $member->id,
+            'project_id' => $project->id,
+            'stamp_card_id' => $stampCard->id,
+            'delta' => 20,
+            'description' => 'スマレジ取引によるスタンプ付与 #39',
+        ]);
+        $this->assertSame(1, MemberStampTransaction::query()->where('member_id', $member->id)->count());
+        $this->assertDatabaseHas('member_stamps', [
+            'member_id' => $member->id,
+            'stamp_card_id' => $stampCard->id,
+            'current_stamps' => 20,
+        ]);
+    }
+
+    public function test_通常販売取引でポイント付与レートがある場合はポイントが付与されること(): void
+    {
+        $project = Project::factory()->create();
+        ShopSetting::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        ShopSetting::setValue('point_earn_rate', 100, 'integer', (int) $project->id);
+        ShopSetting::setValue('points_valid_days', 365, 'integer', (int) $project->id);
+
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $member = Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+            'smaregi_customer_id' => '259',
+            'rank' => 'bronze',
+            'points' => 0,
+        ]);
+
+        $this->fakeTransactionHttp([
+            'transactionHeadId' => '39',
+            'transactionHeadDivision' => '1',
+            'cancelDivision' => '0',
+            'customerId' => '259',
+            'total' => '2046',
+            'terminalTranDateTime' => '2026-07-19T01:44:25+09:00',
+        ]);
+
+        $service = app(SmaregiTransactionInboundSyncService::class);
+        $service->syncByTransactionHeadIds(self::CONTRACT_ID, ['39']);
+        $service->syncByTransactionHeadIds(self::CONTRACT_ID, ['39']);
+
+        $this->assertDatabaseHas('point_transactions', [
+            'member_id' => $member->id,
+            'project_id' => $project->id,
+            'points' => 20,
+            'description' => 'スマレジ取引によるポイント付与 #39',
+        ]);
+        $this->assertSame(1, PointTransaction::query()->where('member_id', $member->id)->count());
+        $this->assertSame(20, (int) $member->fresh()->points);
+    }
+
+    public function test_スタンプ未設定の場合はスタンプを付与しないこと(): void
+    {
+        $project = Project::factory()->create();
+        ShopSetting::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        ShopSetting::setValue('stamp_earn_per_amount', 0, 'integer', (int) $project->id);
+
+        $user = User::factory()->create(['project_id' => $project->id]);
+        Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+            'smaregi_customer_id' => '259',
+        ]);
+
+        $this->fakeTransactionHttp([
+            'transactionHeadId' => '39',
+            'transactionHeadDivision' => '1',
+            'cancelDivision' => '0',
+            'customerId' => '259',
+            'total' => '2046',
+            'terminalTranDateTime' => '2026-07-19T01:44:25+09:00',
+        ]);
+
+        app(SmaregiTransactionInboundSyncService::class)
+            ->syncByTransactionHeadIds(self::CONTRACT_ID, ['39']);
+
+        $this->assertSame(0, MemberStampTransaction::query()->count());
+    }
+
     public function test_同一取引は冪等で二重登録されないこと(): void
     {
         $project = Project::factory()->create();
@@ -192,18 +315,275 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
         $this->assertSame(0, MemberVisit::query()->count());
     }
 
+    public function test_取消取引で来店とポイントとスタンプが巻き戻されること(): void
+    {
+        $project = Project::factory()->create();
+        ShopSetting::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        ShopSetting::setValue('point_earn_rate', 100, 'integer', (int) $project->id);
+        ShopSetting::setValue('points_valid_days', 365, 'integer', (int) $project->id);
+        ShopSetting::setValue('stamp_earn_per_amount', 100, 'integer', (int) $project->id);
+        $stampCard = StampCard::factory()->create([
+            'project_id' => $project->id,
+            'required_stamps' => 10,
+            'is_active' => true,
+        ]);
+        ShopSetting::setValue('order_stamp_card_id', (int) $stampCard->id, 'integer', (int) $project->id);
+
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $member = Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+            'smaregi_customer_id' => '259',
+            'points' => 0,
+        ]);
+
+        $sale = [
+            'transactionHeadId' => '39',
+            'transactionHeadDivision' => '1',
+            'cancelDivision' => '0',
+            'customerId' => '259',
+            'total' => '2046',
+            'terminalTranDateTime' => '2026-07-19T01:44:25+09:00',
+        ];
+        $this->fakeTransactionHttp($sale);
+
+        $service = app(SmaregiTransactionInboundSyncService::class);
+        $service->syncByTransactionHeadIds(self::CONTRACT_ID, ['39']);
+        $this->assertSame(20, (int) $member->fresh()->points);
+        $this->assertSame(1, MemberVisit::query()->where('smaregi_transaction_head_id', '39')->count());
+
+        $cancelled = $sale;
+        $cancelled['cancelDivision'] = '1';
+        $this->fakeTransactionHttp($cancelled);
+        $service->syncByTransactionHeadIds(self::CONTRACT_ID, ['39']);
+        $service->syncByTransactionHeadIds(self::CONTRACT_ID, ['39']);
+
+        $this->assertSame(0, MemberVisit::query()->where('smaregi_transaction_head_id', '39')->count());
+        $this->assertSame(0, (int) $member->fresh()->points);
+        $this->assertDatabaseHas('point_transactions', [
+            'member_id' => $member->id,
+            'description' => 'スマレジ取引取消によるポイント取消 #39',
+            'type' => PointTransactionType::REVERSED,
+        ]);
+        $this->assertDatabaseHas('member_stamp_transactions', [
+            'member_id' => $member->id,
+            'description' => 'スマレジ取引取消によるスタンプ取消 #39',
+            'delta' => -20,
+        ]);
+        $this->assertDatabaseHas('member_stamps', [
+            'member_id' => $member->id,
+            'stamp_card_id' => $stampCard->id,
+            'current_stamps' => 0,
+        ]);
+        $this->assertSame(
+            1,
+            PointTransaction::query()
+                ->where('member_id', $member->id)
+                ->where('description', 'スマレジ取引取消によるポイント取消 #39')
+                ->count()
+        );
+    }
+
+    public function test_返品取引でポイントとスタンプが減算され来店が負金額で残ること(): void
+    {
+        $project = Project::factory()->create();
+        ShopSetting::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        ShopSetting::setValue('point_earn_rate', 100, 'integer', (int) $project->id);
+        ShopSetting::setValue('points_valid_days', 365, 'integer', (int) $project->id);
+        ShopSetting::setValue('stamp_earn_per_amount', 100, 'integer', (int) $project->id);
+        $stampCard = StampCard::factory()->create([
+            'project_id' => $project->id,
+            'required_stamps' => 10,
+            'is_active' => true,
+        ]);
+        ShopSetting::setValue('order_stamp_card_id', (int) $stampCard->id, 'integer', (int) $project->id);
+
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $member = Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+            'smaregi_customer_id' => '259',
+            'points' => 0,
+        ]);
+
+        $this->fakeTransactionHttp([
+            'transactionHeadId' => '39',
+            'transactionHeadDivision' => '1',
+            'cancelDivision' => '0',
+            'customerId' => '259',
+            'total' => '2046',
+            'terminalTranDateTime' => '2026-07-19T01:44:25+09:00',
+        ]);
+        $service = app(SmaregiTransactionInboundSyncService::class);
+        $service->syncByTransactionHeadIds(self::CONTRACT_ID, ['39']);
+
+        $this->fakeTransactionHttp([
+            'transactionHeadId' => '50',
+            'transactionHeadDivision' => '1',
+            'cancelDivision' => '0',
+            'returnSales' => '1',
+            'customerId' => '259',
+            'total' => '1000',
+            'terminalTranDateTime' => '2026-07-19T02:00:00+09:00',
+        ]);
+        $service->syncByTransactionHeadIds(self::CONTRACT_ID, ['50']);
+        $service->syncByTransactionHeadIds(self::CONTRACT_ID, ['50']);
+
+        $this->assertDatabaseHas('member_visits', [
+            'member_id' => $member->id,
+            'smaregi_transaction_head_id' => '50',
+            'amount' => -1000,
+        ]);
+        $this->assertSame(10, (int) $member->fresh()->points);
+        $this->assertDatabaseHas('point_transactions', [
+            'member_id' => $member->id,
+            'description' => 'スマレジ取引返品によるポイント取消 #50',
+        ]);
+        $this->assertDatabaseHas('member_stamp_transactions', [
+            'member_id' => $member->id,
+            'description' => 'スマレジ取引返品によるスタンプ取消 #50',
+            'delta' => -10,
+        ]);
+        $this->assertDatabaseHas('member_stamps', [
+            'member_id' => $member->id,
+            'stamp_card_id' => $stampCard->id,
+            'current_stamps' => 10,
+        ]);
+        $this->assertSame(
+            1,
+            PointTransaction::query()
+                ->where('member_id', $member->id)
+                ->where('description', 'スマレジ取引返品によるポイント取消 #50')
+                ->count()
+        );
+    }
+
+    public function test_salesHeadDivisionが1でも通常販売としてポイント付与されること(): void
+    {
+        $project = Project::factory()->create();
+        ShopSetting::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        ShopSetting::setValue('point_earn_rate', 100, 'integer', (int) $project->id);
+        ShopSetting::setValue('points_valid_days', 365, 'integer', (int) $project->id);
+
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $member = Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+            'smaregi_customer_id' => '259',
+            'points' => 0,
+        ]);
+
+        $this->fakeTransactionHttp([
+            'transactionHeadId' => '41',
+            'transactionHeadDivision' => '1',
+            'cancelDivision' => '0',
+            'salesHeadDivision' => '1',
+            'returnSales' => '0',
+            'customerId' => '259',
+            'total' => '1000',
+            'terminalTranDateTime' => '2026-07-19T03:00:00+09:00',
+        ]);
+
+        app(SmaregiTransactionInboundSyncService::class)
+            ->syncByTransactionHeadIds(self::CONTRACT_ID, ['41']);
+
+        $this->assertDatabaseHas('member_visits', [
+            'member_id' => $member->id,
+            'smaregi_transaction_head_id' => '41',
+            'amount' => 1000,
+        ]);
+        $this->assertSame(10, (int) $member->fresh()->points);
+        $this->assertDatabaseHas('point_transactions', [
+            'member_id' => $member->id,
+            'description' => 'スマレジ取引によるポイント付与 #41',
+            'points' => 10,
+        ]);
+    }
+
+    public function test_返品でnewPointがある場合はローカルポイントを減算しないこと(): void
+    {
+        $project = Project::factory()->create();
+        ShopSetting::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        ShopSetting::setValue('point_earn_rate', 100, 'integer', (int) $project->id);
+        ShopSetting::setValue('points_valid_days', 365, 'integer', (int) $project->id);
+        ShopSetting::setValue('stamp_earn_per_amount', 100, 'integer', (int) $project->id);
+        $stampCard = StampCard::factory()->create([
+            'project_id' => $project->id,
+            'required_stamps' => 10,
+            'is_active' => true,
+        ]);
+        ShopSetting::setValue('order_stamp_card_id', (int) $stampCard->id, 'integer', (int) $project->id);
+
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $member = Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+            'smaregi_customer_id' => '259',
+            'points' => 50,
+        ]);
+        MemberStamp::factory()->create([
+            'project_id' => $project->id,
+            'member_id' => $member->id,
+            'stamp_card_id' => $stampCard->id,
+            'current_stamps' => 20,
+        ]);
+
+        $this->fakeTransactionHttp([
+            'transactionHeadId' => '51',
+            'transactionHeadDivision' => '1',
+            'cancelDivision' => '0',
+            'returnSales' => '1',
+            'newPoint' => '-10',
+            'customerId' => '259',
+            'total' => '1000',
+            'terminalTranDateTime' => '2026-07-19T04:00:00+09:00',
+        ]);
+
+        app(SmaregiTransactionInboundSyncService::class)
+            ->syncByTransactionHeadIds(self::CONTRACT_ID, ['51']);
+
+        $this->assertSame(50, (int) $member->fresh()->points);
+        $this->assertSame(
+            0,
+            PointTransaction::query()
+                ->where('member_id', $member->id)
+                ->where('description', 'スマレジ取引返品によるポイント取消 #51')
+                ->count()
+        );
+        $this->assertDatabaseHas('member_stamp_transactions', [
+            'member_id' => $member->id,
+            'description' => 'スマレジ取引返品によるスタンプ取消 #51',
+            'delta' => -10,
+        ]);
+        $this->assertDatabaseHas('member_stamps', [
+            'member_id' => $member->id,
+            'stamp_card_id' => $stampCard->id,
+            'current_stamps' => 10,
+        ]);
+    }
+
     /**
-     * @param  array<string, string|int|float|bool|null>  $transaction
+     * @param  array<string, string|int|float|bool|array|null>  $transaction
      */
     private function fakeTransactionHttp(array $transaction): void
     {
-        Http::fake(function ($request) use ($transaction) {
+        $headId = trim((string) ($transaction['transactionHeadId'] ?? ''));
+        if ($headId !== '') {
+            $this->transactionHttpFixtures[$headId] = $transaction;
+        }
+
+        // Http::fake は後勝ちではなく先勝ちのため、常に fixtures を参照するコールバックにする
+        Http::fake(function ($request) {
             $url = $request->url();
             if (str_contains($url, 'id.smaregi.dev') && str_contains($url, '/token')) {
                 return Http::response(['access_token' => 'fake', 'expires_in' => 3600], 200);
             }
-            if (str_contains($url, self::CONTRACT_ID.'/pos/transactions/')) {
-                return Http::response($transaction, 200);
+            if (preg_match('#/pos/transactions/([^/?]+)#', $url, $matches) === 1) {
+                $requestedHeadId = rawurldecode($matches[1]);
+                $payload = $this->transactionHttpFixtures[$requestedHeadId] ?? null;
+                if (is_array($payload)) {
+                    return Http::response($payload, 200);
+                }
             }
 
             return Http::response([], 404);

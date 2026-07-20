@@ -138,11 +138,18 @@
     text-align: center;
 }
 
+.ranks-th-sub {
+    display: block;
+    font-size: 10px;
+    font-weight: 400;
+    color: var(--text-muted, #a8a29e);
+}
+
 .ranks-settings-table td {
     vertical-align: middle;
 }
 
-.ranks-settings-table tbody td:nth-child(5) {
+.ranks-settings-table tbody td:nth-child(6) {
     border-left: 1px solid var(--border-light, #f0eeec);
 }
 

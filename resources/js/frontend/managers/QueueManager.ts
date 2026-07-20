@@ -85,8 +85,38 @@ export class QueueManager {
         if (typeof window === 'undefined' || !window.app || !window.app.memberManager) {
             return false;
         }
-        const manager = window.app.memberManager as { isMember?: () => boolean };
-        return typeof manager.isMember === 'function' && manager.isMember() === true;
+        const manager = window.app.memberManager as {
+            isMember?: () => boolean;
+            getMemberData?: () => { is_member?: boolean } | null;
+        };
+        if (typeof manager.isMember === 'function') {
+            return manager.isMember() === true;
+        }
+        const data = typeof manager.getMemberData === 'function' ? manager.getMemberData() : null;
+        return !!(data && data.is_member === true);
+    }
+
+    async ensureMemberContextForGate(): Promise<void> {
+        if (typeof window === 'undefined' || !window.app || !window.app.memberManager) {
+            return;
+        }
+        const manager = window.app.memberManager as {
+            ensureIdentityReady?: (maxWaitMs?: number) => Promise<unknown>;
+            resolveLineUserIdForClient?: () => Promise<unknown>;
+            fetchMemberContext?: (options?: { force?: boolean }) => Promise<unknown>;
+            isMember?: () => boolean;
+        };
+        if (typeof manager.ensureIdentityReady === 'function') {
+            await manager.ensureIdentityReady(1500);
+        } else if (typeof manager.resolveLineUserIdForClient === 'function' && !window.__LINE_USER_ID__) {
+            await manager.resolveLineUserIdForClient();
+        }
+        if (typeof manager.isMember === 'function' && manager.isMember() === true) {
+            return;
+        }
+        if (typeof manager.fetchMemberContext === 'function') {
+            await manager.fetchMemberContext({ force: true });
+        }
     }
 
     getMembershipRequiredTemplate(): string {
@@ -308,6 +338,9 @@ export class QueueManager {
         }
         section.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i><p>読み込み中...</p></div>';
         try {
+            if (this.isQueueMembershipRequired()) {
+                await this.ensureMemberContextForGate();
+            }
             const result = await this.apiClient.get(AppConstants.API_ENDPOINTS.QUEUE_ME);
             if (result.success !== true) {
                 section.innerHTML = this.getErrorTemplate(result.error);
