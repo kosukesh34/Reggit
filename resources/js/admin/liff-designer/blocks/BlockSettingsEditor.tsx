@@ -4,6 +4,9 @@ import {
     DATA_SOURCES,
     MEMBER_CARD_DESIGNS,
     SOCIAL_LINK_TYPES,
+    STAMP_FILLED_STYLES,
+    STAMP_SCREEN_DESIGNS,
+    STAMP_SLOT_STYLES,
     findBlockMeta,
 } from '../catalog/blockCatalog';
 import type { LiffBlock } from '../catalog/types';
@@ -36,7 +39,6 @@ function CommonSettings({ block, onChange }: { block: LiffBlock; onChange: (patc
             <AlignField value={String(block.text_align || 'left')} onChange={(v) => onChange({ text_align: v })} />
             <RangeField label="角丸" value={Number(block.border_radius ?? 10)} min={0} max={24} onChange={(v) => onChange({ border_radius: v })} />
             <RangeField label="下マージン" value={Number(block.margin_bottom ?? 0)} min={0} max={48} onChange={(v) => onChange({ margin_bottom: v })} />
-            <RangeField label="不透明度" value={Number(block.opacity ?? 100)} min={20} max={100} onChange={(v) => onChange({ opacity: v })} />
             <ColorField label="背景色" value={String(block.background_color || '#ffffff')} onChange={(v) => onChange({ background_color: v })} />
             <CheckboxField label="影をつける" checked={block.shadow === true} onChange={(v) => onChange({ shadow: v })} />
         </div>
@@ -294,19 +296,36 @@ function TypeEditor({ block, onChange, friendAddUrl }: EditorProps) {
             return (
                 <>
                     <DesignPicker type="slider" value={String(block.design || '')} options={designOptions} onChange={setDesign} />
+                    <SelectField
+                        label="データソース"
+                        value={String(block.source || '')}
+                        options={[
+                            { value: '', label: '手動（画像を設定）' },
+                            { value: 'gallery', label: 'ギャラリー（実データ）' },
+                        ]}
+                        onChange={(v) => onChange(v === 'gallery'
+                            ? { source: 'gallery', slides: [] }
+                            : { source: '', slides: Array.isArray(block.slides) && (block.slides as unknown[]).length > 0 ? block.slides : [
+                                { image_url: '', caption: '' },
+                            ] })}
+                    />
                     <RangeField label="スライドの高さ" value={Number(block.slide_height || 160)} min={80} max={300} onChange={(v) => onChange({ slide_height: v })} />
                     <CheckboxField label="自動再生" checked={block.auto_play !== false} onChange={(v) => onChange({ auto_play: v })} />
                     <CheckboxField label="ドット表示" checked={block.show_dots !== false} onChange={(v) => onChange({ show_dots: v })} />
-                    <ArrayEditor
-                        label="スライド"
-                        items={(Array.isArray(block.slides) ? block.slides : []) as Array<Record<string, unknown>>}
-                        createItem={() => ({ image_url: '', caption: '' })}
-                        fields={[
-                            { key: 'image_url', label: '画像', kind: 'image' },
-                            { key: 'caption', label: 'キャプション' },
-                        ]}
-                        onChange={(slides) => onChange({ slides })}
-                    />
+                    {String(block.source || '') === 'gallery' ? (
+                        <p className="ld-settings__hint">店舗に登録したギャラリー画像が自動で表示されます。</p>
+                    ) : (
+                        <ArrayEditor
+                            label="スライド"
+                            items={(Array.isArray(block.slides) ? block.slides : []) as Array<Record<string, unknown>>}
+                            createItem={() => ({ image_url: '', caption: '' })}
+                            fields={[
+                                { key: 'image_url', label: '画像', kind: 'image' },
+                                { key: 'caption', label: 'キャプション' },
+                            ]}
+                            onChange={(slides) => onChange({ slides })}
+                        />
+                    )}
                 </>
             );
         case 'icon_text':
@@ -351,6 +370,15 @@ function TypeEditor({ block, onChange, friendAddUrl }: EditorProps) {
                 <>
                     <DesignPicker type="banner" value={String(block.design || '')} options={designOptions} onChange={setDesign} />
                     <TextInput label="テキスト" value={String(block.text || '')} onChange={(v) => onChange({ text: v })} />
+                    <SelectField
+                        label="データ紐づけ"
+                        value={String(block.field || 'static')}
+                        options={[
+                            { value: 'static', label: '固定テキスト' },
+                            { value: 'points_to_next', label: '次ランクまで（会員実データ）' },
+                        ]}
+                        onChange={(v) => onChange({ field: v === 'static' ? '' : v })}
+                    />
                     <TextInput label="アイコン (fa-*)" value={String(block.icon || '')} onChange={(v) => onChange({ icon: v })} />
                     <ColorField label="背景色" value={String(block.color || '#3b82f6')} onChange={(v) => onChange({ color: v })} />
                     <ColorField label="文字色" value={String(block.text_color || '#ffffff')} onChange={(v) => onChange({ text_color: v })} />
@@ -392,6 +420,32 @@ function TypeEditor({ block, onChange, friendAddUrl }: EditorProps) {
                             onChange={(v) => onChange({ card_design: v })}
                         />
                     ) : null}
+                    {block.source === 'stamps' ? (
+                        <>
+                            <DesignPicker
+                                value={String(block.stamp_design || '')}
+                                options={STAMP_SCREEN_DESIGNS}
+                                onChange={(v) => onChange({ stamp_design: v })}
+                            />
+                            <SelectField
+                                label="スロット形状"
+                                value={String(block.stamp_slot_style || 'circle')}
+                                options={STAMP_SLOT_STYLES}
+                                onChange={(v) => onChange({ stamp_slot_style: v })}
+                            />
+                            <SelectField
+                                label="押印スタイル"
+                                value={String(block.stamp_filled_style || 'image')}
+                                options={STAMP_FILLED_STYLES}
+                                onChange={(v) => onChange({ stamp_filled_style: v })}
+                            />
+                            <ColorField
+                                label="アクセント色（空欄=ブランド色）"
+                                value={String(block.stamp_accent_color || '')}
+                                onChange={(v) => onChange({ stamp_accent_color: v })}
+                            />
+                        </>
+                    ) : null}
                 </>
             );
         case 'member_summary':
@@ -407,11 +461,25 @@ function TypeEditor({ block, onChange, friendAddUrl }: EditorProps) {
                     <TextInput label="セクション見出し" value={String(block.section_label || '')} onChange={(v) => onChange({ section_label: v })} />
                     <ArrayEditor
                         label="統計項目"
-                        items={(Array.isArray(block.items) ? block.items : []) as Array<Record<string, unknown>>}
-                        createItem={() => ({ label: '項目', value: '0', hint: '' })}
+                        items={(Array.isArray(block.items) ? block.items : []).map((it) => ({
+                            ...(it as Record<string, unknown>),
+                            field: String((it as Record<string, unknown>).field || 'static'),
+                        })) as Array<Record<string, unknown>>}
+                        createItem={() => ({ label: '項目', value: '0', hint: '', field: 'static' })}
                         fields={[
                             { key: 'label', label: 'ラベル' },
-                            { key: 'value', label: '値' },
+                            {
+                                key: 'field',
+                                label: 'データ紐づけ',
+                                kind: 'select',
+                                options: [
+                                    { value: 'static', label: '固定値（下の値を表示）' },
+                                    { value: 'points', label: 'ポイント（会員実データ）' },
+                                    { value: 'rank', label: 'ランク（会員実データ）' },
+                                    { value: 'points_to_next', label: '次ランクまで（会員実データ）' },
+                                ],
+                            },
+                            { key: 'value', label: 'プレビュー用の値' },
                             { key: 'hint', label: '単位' },
                         ]}
                         onChange={(items) => onChange({ items })}

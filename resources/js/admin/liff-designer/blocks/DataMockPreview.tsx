@@ -48,6 +48,54 @@ function ProductCard({ img, name, price, tag }: { img: string; name: string; pri
     );
 }
 
+function StampCardMock({
+    slotStyle = '',
+    filledStyle = '',
+    accentColor = '',
+}: {
+    slotStyle?: string;
+    filledStyle?: string;
+    accentColor?: string;
+}) {
+    const radius = slotStyle === 'square' ? 8 : slotStyle === 'rounded' ? 12 : 999;
+    const accent = accentColor !== '' ? accentColor : undefined;
+    const filledIcon = filledStyle === 'icon' ? 'fa-stamp' : filledStyle === 'solid' ? 'fa-check' : 'fa-check';
+    const dots = [];
+    for (let i = 0; i < 10; i += 1) {
+        dots.push(
+            <span
+                key={i}
+                className={`ld-crm-stamp${i < 7 ? ' is-on' : ''}`}
+                style={{
+                    borderRadius: radius,
+                    ...(i < 7 && accent ? { background: accent, borderColor: accent } : {}),
+                }}
+            >
+                {i < 7 ? <i className={`fas ${filledIcon}`} /> : i + 1}
+            </span>,
+        );
+    }
+    return (
+        <div className="ld-crm-stampcard">
+            <div className="ld-crm-stampcard__head">
+                <div>
+                    <span>来店スタンプ</span>
+                    <strong>7 / 10</strong>
+                </div>
+                <em style={accent ? { color: accent } : undefined}>あと3で特典</em>
+            </div>
+            <div className="ld-crm-stampcard__grid">{dots}</div>
+            <div className="ld-crm-stampcard__bar">
+                <i style={{ width: '70%', ...(accent ? { background: accent } : {}) }} />
+            </div>
+            <div className="ld-crm-stampcard__reward">
+                <i className="fas fa-gift" style={accent ? { color: accent } : undefined} />
+                満了でドリンク無料クーポン
+            </div>
+        </div>
+    );
+}
+
 const MOCKS: Record<string, () => React.ReactNode> = {
     member_card: () => (
         <div className="ld-crm-wallet">
@@ -95,35 +143,7 @@ const MOCKS: Record<string, () => React.ReactNode> = {
             <CouponItem icon="fa-gift" title="デザートプレゼント" meta="使用済み" available={false} value="GIFT" />
         </>
     ),
-    stamps: () => {
-        const dots = [];
-        for (let i = 0; i < 10; i += 1) {
-            dots.push(
-                <span key={i} className={`ld-crm-stamp${i < 7 ? ' is-on' : ''}`}>
-                    {i < 7 ? <i className="fas fa-star" /> : i + 1}
-                </span>,
-            );
-        }
-        return (
-            <div className="ld-crm-stampcard">
-                <div className="ld-crm-stampcard__head">
-                    <div>
-                        <span>来店スタンプ</span>
-                        <strong>7 / 10</strong>
-                    </div>
-                    <em>あと3で特典</em>
-                </div>
-                <div className="ld-crm-stampcard__grid">{dots}</div>
-                <div className="ld-crm-stampcard__bar">
-                    <i style={{ width: '70%' }} />
-                </div>
-                <div className="ld-crm-stampcard__reward">
-                    <i className="fas fa-gift" />
-                    満了でドリンク無料クーポン
-                </div>
-            </div>
-        );
-    },
+    stamps: () => <StampCardMock />,
     products: () => (
         <div className="ld-crm-grid2">
             <ProductCard img="https://images.unsplash.com/photo-1550547660-d9450f859349?w=300" name="シグネチャーバーガー" price="980" tag="BEST" />
@@ -322,18 +342,33 @@ export function DataMockPreview({
     source,
     design,
     cardDesign,
+    stampSlotStyle,
+    stampFilledStyle,
+    stampAccentColor,
     shopName,
     asGuest = false,
 }: {
     source: string;
     design?: string;
     cardDesign?: string;
+    stampSlotStyle?: string;
+    stampFilledStyle?: string;
+    stampAccentColor?: string;
     shopName?: string;
     asGuest?: boolean;
 }) {
     const label = DATA_SOURCES.find((d) => d.value === source)?.label || source;
     const variant = design || '';
-    const render = MOCKS[source] || (() => <div className="ld-crm-empty">このデータは実際の利用者画面に表示されます</div>);
+    const render =
+        source === 'stamps'
+            ? () => (
+                <StampCardMock
+                    slotStyle={stampSlotStyle || ''}
+                    filledStyle={stampFilledStyle || ''}
+                    accentColor={stampAccentColor || ''}
+                />
+            )
+            : MOCKS[source] || (() => <div className="ld-crm-empty">このデータは実際の利用者画面に表示されます</div>);
     if (source === 'member_card' || source === 'member') {
         if (asGuest) {
             return (

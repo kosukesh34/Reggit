@@ -122,7 +122,9 @@
 
 .builder-carousel--design-cards {
     padding: 8px;
-    background: rgba(255, 255, 255, 0.68);
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-xs);
 }
 
 .builder-carousel--design-cards .builder-carousel__track,
@@ -214,8 +216,8 @@
 
 .builder-data-block--design-premium {
     background:
-        linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.72)),
-        radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--primary-color) 20%, transparent), transparent 32%) !important;
-    border: 1px solid rgba(255, 255, 255, 0.72);
-    box-shadow: 0 18px 44px rgba(15, 23, 42, 0.12) !important;
+        linear-gradient(135deg, #ffffff, #f9f9fb),
+        radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--primary-color) 12%, #ffffff), transparent 32%) !important;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm) !important;
 }

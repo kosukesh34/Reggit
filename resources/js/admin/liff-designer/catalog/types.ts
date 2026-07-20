@@ -12,6 +12,10 @@ export type MenuItem = {
     icon: string;
     order: number;
     enabled: boolean;
+    /** 外部Webページタブのみ: https の埋め込み/リンク先URL */
+    url?: string;
+    /** 外部Webページタブのみ: 'embed'（アプリ内表示） | 'external'（外部ブラウザ） */
+    open?: string;
 };
 
 export type LiffBlock = Record<string, unknown> & {
