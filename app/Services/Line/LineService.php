@@ -21,6 +21,7 @@ class LineService
         $this->channelSecret = env('LINE_CHANNEL_SECRET');
         $this->client = new Client([
             'base_uri' => 'https://api.line.me/v2/',
+            'timeout' => 10,
             'headers' => [
                 'Authorization' => 'Bearer '.($this->channelAccessToken ?? ''),
                 'Content-Type' => 'application/json',

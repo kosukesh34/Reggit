@@ -5,6 +5,7 @@ namespace Tests\Unit\Services;
 use App\Models\Announcement;
 use App\Models\Member;
 use App\Models\Project;
+use App\Models\ShopSetting;
 use App\Models\User;
 use App\Services\AnnouncementNotificationService;
 use App\Services\Line\LineService;
@@ -19,13 +20,17 @@ class AnnouncementNotificationServiceTest extends TestCase
 
     protected function tearDown(): void
     {
-        Mockery::close();
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 
     public function test_send_delivers_native_push_and_line_message(): void
     {
         $project = $this->createProject();
+        ShopSetting::setLineChannelAccessToken('test-token', $project->id);
         $lineUserId = 'U'.str_repeat('a', 32);
         $user = User::factory()->create([
             'project_id' => $project->id,
@@ -59,17 +64,17 @@ class AnnouncementNotificationServiceTest extends TestCase
         $lineMock = Mockery::mock(LineService::class);
         $lineMock->shouldReceive('pushMessage')
             ->once()
-            ->with($lineUserId, Mockery::on(fn ($message) => is_array($message)
-                && ($message['type'] ?? '') === 'flex'
-                && ($message['altText'] ?? '') === '春のお知らせ'))
+            ->with(
+                $lineUserId,
+                Mockery::on(fn ($message) => is_array($message)
+                    && ($message['type'] ?? '') === 'flex'
+                    && ($message['altText'] ?? '') === '春のお知らせ'),
+                'test-token'
+            )
             ->andReturn([]);
-
-        $this->setLineChannelAccessTokenForTest('test-token');
 
         $service = new AnnouncementNotificationService($pushMock, $lineMock);
         $result = $service->send($announcement);
-
-        $this->clearLineChannelAccessTokenForTest();
 
         $this->assertSame(1, $result['sent']);
         $this->assertSame(1, $result['line_sent']);
@@ -79,6 +84,7 @@ class AnnouncementNotificationServiceTest extends TestCase
     public function test_send_skips_line_when_member_has_no_line_user_id(): void
     {
         $project = $this->createProject();
+        ShopSetting::setLineChannelAccessToken('test-token', $project->id);
         $user = User::factory()->create([
             'project_id' => $project->id,
             'line_user_id' => 'guest-no-line',
@@ -109,12 +115,8 @@ class AnnouncementNotificationServiceTest extends TestCase
         $lineMock = Mockery::mock(LineService::class);
         $lineMock->shouldNotReceive('pushMessage');
 
-        $this->setLineChannelAccessTokenForTest('test-token');
-
         $service = new AnnouncementNotificationService($pushMock, $lineMock);
         $result = $service->send($announcement);
-
-        $this->clearLineChannelAccessTokenForTest();
 
         $this->assertSame(0, $result['line_sent']);
         $this->assertSame(0, $result['line_failed']);
@@ -126,18 +128,5 @@ class AnnouncementNotificationServiceTest extends TestCase
             ['project_key' => 'default'],
             ['name' => 'Default Project', 'description' => 'Test', 'is_active' => true]
         );
-    }
-
-    private function setLineChannelAccessTokenForTest(string $token): void
-    {
-        putenv('LINE_CHANNEL_ACCESS_TOKEN='.$token);
-        $_ENV['LINE_CHANNEL_ACCESS_TOKEN'] = $token;
-        $_SERVER['LINE_CHANNEL_ACCESS_TOKEN'] = $token;
-    }
-
-    private function clearLineChannelAccessTokenForTest(): void
-    {
-        putenv('LINE_CHANNEL_ACCESS_TOKEN');
-        unset($_ENV['LINE_CHANNEL_ACCESS_TOKEN'], $_SERVER['LINE_CHANNEL_ACCESS_TOKEN']);
     }
 }
