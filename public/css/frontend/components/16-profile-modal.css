@@ -248,6 +248,23 @@
     margin-bottom: var(--space-3, 12px);
 }
 
+/* 会員登録・プロフィール編集はタブではなく一枚画面で表示 */
+body.member-screen-overlay .header,
+body.member-screen-overlay #announcementsTopBar,
+body.member-screen-overlay .main-tabs {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+
+body.member-screen-overlay .main-content {
+    padding-bottom: 0;
+}
+
+body.member-screen-overlay .tab-content.active .tab-section {
+    padding-bottom: 0;
+}
+
 /* 会員登録・全画面表示（プロフィール編集が全て表示されるようスクロール・高さを確保） */
 .member-register-fullscreen {
     position: fixed;
@@ -270,6 +287,11 @@
 body.native-app-embed .member-register-fullscreen,
 body.designer-live-preview-embed .member-register-fullscreen {
     bottom: 0;
+}
+
+body.member-screen-overlay .member-register-fullscreen {
+    bottom: 0;
+    z-index: 500;
 }
 
 .member-register-fullscreen-header {
@@ -439,4 +461,21 @@ body.designer-live-preview-embed .member-register-fullscreen {
 
 .member-form-postal-row .member-btn--secondary:active {
     background: var(--surface-muted, #f5f5f4);
+}
+
+.member-registration-prompt-body {
+    flex-direction: column;
+    text-align: center;
+}
+
+.member-registration-prompt-text {
+    margin: 0 0 16px;
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--text-primary, #111);
+}
+
+.member-registration-prompt-actions {
+    justify-content: center;
+    gap: 8px;
 }

@@ -45,6 +45,7 @@ class MemberService
                 'is_member' => false,
                 'message' => '会員登録がまだです',
                 'show_member_card_for_guest' => $this->shopSettingRepository->getShowMemberCardForGuest($projectId),
+                'member_registration_mode' => $this->shopSettingRepository->getMemberRegistrationMode($projectId),
                 'profile_field_settings' => $profileFormFields,
                 'profile' => [],
             ];
@@ -84,6 +85,7 @@ class MemberService
             'points_expiry' => $expiryInfo,
             'show_points_display' => $this->shopSettingRepository->getShowPointsDisplay($projectId),
             'show_rank_progress' => $this->shopSettingRepository->getShowRankProgress($projectId),
+            'member_registration_mode' => $this->shopSettingRepository->getMemberRegistrationMode($projectId),
             'member_card_design' => $this->shopSettingRepository->getMemberCardDesign($projectId),
             'member_card_logo_url' => $this->shopSettingRepository->getFrontendLogoUrl($projectId),
             'member_card_display_type' => $this->shopSettingRepository->getMemberCardDisplayType($projectId),

@@ -19,6 +19,30 @@
 
 <form action="{{ admin_route('admin.settings.profile.update') }}" method="POST">
     @csrf
+    @php
+        $memberRegistrationMode = $settings['member_registration_mode'] ?? \App\Enums\MemberRegistrationMode::OPTIONAL;
+        $modeOptions = $memberRegistrationModeOptions ?? \App\Enums\MemberRegistrationMode::getValues();
+    @endphp
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2 class="card-title">未会員時の扱い</h2>
+            <p class="card-desc text-muted small mb-0">LIFF アプリで、会員登録していないユーザーへの案内方法を選びます。</p>
+        </div>
+        <div class="card-body">
+            @foreach($modeOptions as $value => $label)
+            <label class="radio-label d-block mb-2">
+                <input type="radio" name="member_registration_mode" value="{{ $value }}" {{ $memberRegistrationMode === $value ? 'checked' : '' }} required>
+                <span>{{ $label }}</span>
+            </label>
+            @endforeach
+            <ul class="text-muted small mb-0 mt-2 pl-3">
+                <li>そのまま使える … 未会員のままアプリを利用できます</li>
+                <li>登録を促す … 起動時に会員登録フォームを表示します（キャンセル可）</li>
+                <li>会員登録を必須にする … 登録画面を表示し、登録するまでアプリを使えません</li>
+            </ul>
+        </div>
+    </div>
+
     <div class="card mb-4">
         <div class="card-header">
             <h2 class="card-title">スマレジ連携用項目（表示ON/OFF・必須/任意）</h2>
