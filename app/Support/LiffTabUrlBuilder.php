@@ -9,7 +9,7 @@ class LiffTabUrlBuilder
 {
     public static function build(int $projectId, string $projectKey, string $tab): string
     {
-        $projectKey = trim($projectKey) !== '' ? trim($projectKey) : 'default';
+        $projectKey = ProjectKey::require($projectKey);
         $tab = trim($tab) !== '' ? trim($tab) : 'home';
         $baseUrl = QueueLiffUrlBuilder::resolveBaseUrl($projectId, $projectKey);
 

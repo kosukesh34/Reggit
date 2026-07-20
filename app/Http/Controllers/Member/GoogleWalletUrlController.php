@@ -58,7 +58,7 @@ class GoogleWalletUrlController extends Controller
         $token = $request->query('token');
         $projectId = AdminContext::getCurrentProjectId();
         $project = AdminContext::getCurrentProject();
-        $projectKey = $project !== null ? $project->project_key : config('app.default_project_key', 'default');
+        $projectKey = $project !== null ? $project->project_key : \App\Support\ProjectKey::fromConfig();
         $projectName = $project !== null ? $project->name : null;
 
         $user = null;
