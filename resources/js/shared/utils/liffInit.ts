@@ -135,7 +135,7 @@ function bootstrapLiffInit(): void {
         window.__LINE_USER_ID__ = valid ? normalized : null;
         if (valid) {
             try {
-                const projectKey = window.__PROJECT_KEY__ || 'default';
+                const projectKey = window.__PROJECT_KEY__ || '';
                 window.localStorage?.setItem(`mobile_order_line_user_id_${projectKey}`, normalized);
                 window.localStorage?.removeItem('mobile_order_line_user_id');
             } catch (_e) {
@@ -147,7 +147,7 @@ function bootstrapLiffInit(): void {
         if (previous) {
             debug('liff_user_cleared', { source: source || 'unknown', previous_tail: previous.slice(-4) });
             try {
-                const projectKey = window.__PROJECT_KEY__ || 'default';
+                const projectKey = window.__PROJECT_KEY__ || '';
                 window.localStorage?.removeItem(`mobile_order_line_user_id_${projectKey}`);
                 window.localStorage?.removeItem('mobile_order_line_user_id');
             } catch (_e) {

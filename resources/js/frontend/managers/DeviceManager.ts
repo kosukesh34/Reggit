@@ -70,7 +70,7 @@ export class DeviceManager {
         const projectKey =
             typeof window !== 'undefined' && window.__PROJECT_KEY__
                 ? window.__PROJECT_KEY__
-                : 'default';
+                : '';
         const url = apiBase + '/devices/session';
         const headers = {
             'X-Device-Identifier': deviceIdentifier,

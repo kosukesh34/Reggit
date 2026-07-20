@@ -9,7 +9,7 @@ class QueueLaunchUrlBuilder
 {
     public static function buildOpenUrl(string $projectKey, string $token): string
     {
-        $projectKey = trim($projectKey) !== '' ? trim($projectKey) : 'default';
+        $projectKey = ProjectKey::require($projectKey);
         $token = trim($token);
 
         return url('/queue/open/'.$projectKey.'/'.$token);
@@ -17,7 +17,7 @@ class QueueLaunchUrlBuilder
 
     public static function buildNativeSchemeUrl(string $projectKey, string $token): string
     {
-        $projectKey = trim($projectKey) !== '' ? trim($projectKey) : 'default';
+        $projectKey = ProjectKey::require($projectKey);
         $token = trim($token);
 
         return NativeApp::urlScheme().'://queue?'.http_build_query([
@@ -28,7 +28,7 @@ class QueueLaunchUrlBuilder
 
     public static function buildNativeWebUrl(string $projectKey, string $token): string
     {
-        $projectKey = trim($projectKey) !== '' ? trim($projectKey) : 'default';
+        $projectKey = ProjectKey::require($projectKey);
         $token = trim($token);
 
         return url('/liff/'.$projectKey.'?'.http_build_query([
