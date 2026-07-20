@@ -27,6 +27,11 @@ class EloquentShopSettingRepository implements ShopSettingRepository
         return (int) ShopSetting::getPointEarnRate($projectId);
     }
 
+    public function getPointEarnRateForRank(int $projectId, ?string $rankKey): int
+    {
+        return (int) ShopSetting::getPointEarnRateForRank($projectId, $rankKey);
+    }
+
     public function getStampEarnPerAmount(int $projectId): int
     {
         return (int) ShopSetting::getStampEarnPerAmount($projectId);

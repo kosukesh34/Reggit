@@ -302,6 +302,10 @@ export class MemberManager {
         return this.memberData;
     }
 
+    isMember(): boolean {
+        return !!(this.memberData && this.memberData.is_member === true);
+    }
+
     isForcedRegistrationActive(): boolean {
         return this._forcedRegister === true && !(this.memberData && this.memberData.is_member === true);
     }
@@ -2318,7 +2322,14 @@ export class MemberManager {
             if (typeof ToastManager !== 'undefined') ToastManager.info(msg);
         };
 
+        const scope = container && container.querySelector ? container : doc;
+        const lookupBtn = (scope.querySelector('.postal-code-lookup-btn')
+            || scope.querySelector('[data-action="postal-code-lookup"]')) as HTMLButtonElement | null;
+
         const fetchAddress = () => {
+            if (postalInput.disabled) {
+                return;
+            }
             const raw = (postalInput.value || '').trim().replace(/[‐－−ー]/g, '-');
             const digits = raw.replace(/\D/g, '');
             if (digits.length < 3) {
@@ -2331,7 +2342,13 @@ export class MemberManager {
             }
 
             const url = AppConstants.API_ENDPOINTS.POSTAL_CODE + '?postal_code=' + encodeURIComponent(digits);
+            const lookupBtnHtml = lookupBtn ? lookupBtn.innerHTML : '';
             postalInput.disabled = true;
+            if (lookupBtn) {
+                lookupBtn.disabled = true;
+                lookupBtn.setAttribute('aria-busy', 'true');
+                lookupBtn.innerHTML = '<i class="fas fa-spinner fa-spin" aria-hidden="true"></i> 検索中...';
+            }
             this.apiClient.get(url)
                 .then((result) => {
                     if (result && result.success === false) {
@@ -2372,7 +2389,16 @@ export class MemberManager {
                     }
                 })
                 .catch(() => { showInputFailed(); })
-                .finally(() => { postalInput.disabled = false; });
+                .finally(() => {
+                    postalInput.disabled = false;
+                    if (lookupBtn) {
+                        lookupBtn.disabled = false;
+                        lookupBtn.removeAttribute('aria-busy');
+                        if (lookupBtnHtml !== '') {
+                            lookupBtn.innerHTML = lookupBtnHtml;
+                        }
+                    }
+                });
         };
 
         postalInput.addEventListener('blur', fetchAddress);
@@ -2380,8 +2406,6 @@ export class MemberManager {
             const digits = (this.value || '').replace(/\D/g, '');
             if (digits.length === 7) fetchAddress();
         });
-        const scope = container && container.querySelector ? container : doc;
-        const lookupBtn = scope.querySelector('.postal-code-lookup-btn') || scope.querySelector('[data-action="postal-code-lookup"]');
         if (lookupBtn) {
             lookupBtn.addEventListener('click', () => fetchAddress());
         }
