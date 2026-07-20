@@ -76,6 +76,8 @@ interface ShopSettingRepository
      */
     public function getProfileFieldSettings(int $projectId): array;
 
+    public function getMemberRegistrationMode(int $projectId): string;
+
     public function getShowMemberCardForGuest(int $projectId): bool;
 
     public function getMemberCodeType(int $projectId): string;
@@ -128,6 +130,8 @@ interface ShopSettingRepository
 
     /** @param array{smaregi_fields: array<string, array{enabled?: bool, required?: bool}>, custom_fields?: list<array<string, mixed>>} $settings */
     public function setProfileFieldSettings(array $settings, int $projectId): void;
+
+    public function setMemberRegistrationMode(string $mode, int $projectId): void;
 
     public function setShowMemberCardForGuest(bool $value, int $projectId): void;
 

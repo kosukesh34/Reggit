@@ -16,6 +16,7 @@ class AdminSettingsInputFactory
             projectId: $projectId,
             rawSmaregiFields: (array) $request->input('smaregi_fields', []),
             rawCustomFields: is_array($rawCustomFields) ? $rawCustomFields : null,
+            memberRegistrationMode: (string) $request->input('member_registration_mode', ''),
         );
     }
 

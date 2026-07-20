@@ -17,6 +17,7 @@ class ProjectProfileSmaregiSetting extends Model
     protected $fillable = [
         'project_id',
         'profile_field_settings',
+        'member_registration_mode',
         'smaregi_contract_id',
         'smaregi_client_id',
         'smaregi_client_secret',
@@ -36,6 +37,8 @@ class ProjectProfileSmaregiSetting extends Model
     /** @return array<string, mixed> */
     public static function getDefaultAttributes(): array
     {
-        return [];
+        return [
+            'member_registration_mode' => 'optional',
+        ];
     }
 }

@@ -99,6 +99,7 @@ class AppConfigService
             'liff_tab_settings' => ShopSetting::getLiffTabSettings($projectId),
             'liff_detail_layouts' => ShopSetting::getLiffDetailLayouts($projectId),
             'queue_require_membership' => ShopSetting::getQueueRequireMembership($projectId),
+            'member_registration_mode' => ShopSetting::getMemberRegistrationMode($projectId),
         ];
     }
 

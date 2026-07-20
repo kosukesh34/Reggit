@@ -138,6 +138,11 @@ class EloquentShopSettingRepository implements ShopSettingRepository
         return ShopSetting::getProfileFieldSettings($projectId);
     }
 
+    public function getMemberRegistrationMode(int $projectId): string
+    {
+        return ShopSetting::getMemberRegistrationMode($projectId);
+    }
+
     public function getShowMemberCardForGuest(int $projectId): bool
     {
         return (bool) ShopSetting::getShowMemberCardForGuest($projectId);
@@ -255,6 +260,11 @@ class EloquentShopSettingRepository implements ShopSettingRepository
     public function setProfileFieldSettings(array $settings, int $projectId): void
     {
         ShopSetting::setProfileFieldSettings($settings, $projectId);
+    }
+
+    public function setMemberRegistrationMode(string $mode, int $projectId): void
+    {
+        ShopSetting::setMemberRegistrationMode($mode, $projectId);
     }
 
     public function setShowMemberCardForGuest(bool $value, int $projectId): void
