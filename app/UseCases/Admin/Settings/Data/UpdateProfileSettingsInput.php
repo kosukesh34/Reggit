@@ -12,5 +12,6 @@ final class UpdateProfileSettingsInput
         public readonly int $projectId,
         public readonly array $rawSmaregiFields,
         public readonly ?array $rawCustomFields,
+        public readonly string $memberRegistrationMode,
     ) {}
 }

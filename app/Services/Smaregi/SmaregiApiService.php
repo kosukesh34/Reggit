@@ -19,9 +19,16 @@ class SmaregiApiService
 {
     private ?string $lastErrorDetail = null;
 
+    private ?int $lastHttpStatus = null;
+
     public function getLastErrorDetail(): ?string
     {
         return $this->lastErrorDetail;
+    }
+
+    public function getLastHttpStatus(): ?int
+    {
+        return $this->lastHttpStatus;
     }
 
     public function clearLastErrorDetail(): void
@@ -145,6 +152,7 @@ class SmaregiApiService
      */
     public function request(string $contractId, string $method, string $path, array $body = [], bool $bodyAsRequestJsonForm = false): ?array
     {
+        $this->lastHttpStatus = null;
         $token = $this->getAppAccessToken($contractId);
         if ($token === null) {
             return null;
@@ -172,6 +180,8 @@ class SmaregiApiService
         } else {
             $response = $request->{$methodLower}($url, $body);
         }
+
+        $this->lastHttpStatus = $response->status();
 
         if (! $response->successful()) {
             $responseBody = $response->body();
@@ -387,10 +397,24 @@ class SmaregiApiService
         return $this->request($contractId, 'PATCH', 'pos/customers/'.$customerId, $body);
     }
 
-    /** 会員削除（pos.customers:write） */
+    /** 会員削除（pos.customers:write）。404 は既に削除済みとみなし成功扱い。 */
     public function deleteCustomer(string $contractId, string $customerId): ?array
     {
-        return $this->request($contractId, 'DELETE', 'pos/customers/'.$customerId);
+        $result = $this->request($contractId, 'DELETE', 'pos/customers/'.$customerId);
+        if ($result !== null) {
+            return $result;
+        }
+        if ($this->lastHttpStatus === 404) {
+            Log::info('[Smaregi] deleteCustomer treated as success (already gone)', [
+                'smaregi_contract_id' => $contractId,
+                'smaregi_customer_id' => $customerId,
+            ]);
+            $this->lastErrorDetail = null;
+
+            return [];
+        }
+
+        return null;
     }
 
     /** 取引一覧取得（pos.transactions:read） */

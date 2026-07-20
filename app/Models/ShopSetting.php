@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\MemberRegistrationMode;
 use App\Models\Settings\ProjectAdminUiSetting;
 use App\Models\Settings\ProjectAnnouncementSetting;
 use App\Models\Settings\ProjectBusinessSetting;
@@ -71,6 +72,7 @@ class ShopSetting
         'frontend_logo_url' => ProjectAdminUiSetting::class,
         'frontend_header_text' => ProjectAdminUiSetting::class,
         'profile_field_settings' => ProjectProfileSmaregiSetting::class,
+        'member_registration_mode' => ProjectProfileSmaregiSetting::class,
         'smaregi_contract_id' => ProjectProfileSmaregiSetting::class,
         'smaregi_client_id' => ProjectProfileSmaregiSetting::class,
         'smaregi_client_secret' => ProjectProfileSmaregiSetting::class,
@@ -674,6 +676,24 @@ class ShopSetting
     {
         $projectId = $projectId ?? 1;
         self::setValue('profile_field_settings', $settings, 'json', $projectId);
+    }
+
+    public static function getMemberRegistrationMode(?int $projectId = null): string
+    {
+        $value = (string) self::getValue('member_registration_mode', MemberRegistrationMode::OPTIONAL, $projectId);
+        if (array_key_exists($value, MemberRegistrationMode::getValues())) {
+            return $value;
+        }
+
+        return MemberRegistrationMode::OPTIONAL;
+    }
+
+    public static function setMemberRegistrationMode(string $mode, ?int $projectId = null): void
+    {
+        if (! array_key_exists($mode, MemberRegistrationMode::getValues())) {
+            $mode = MemberRegistrationMode::OPTIONAL;
+        }
+        self::setValue('member_registration_mode', $mode, 'string', $projectId);
     }
 
     // ── UI カスタマイズ（管理画面） ──
