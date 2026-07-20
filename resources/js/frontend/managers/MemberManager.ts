@@ -80,6 +80,7 @@ export class MemberManager {
             if (this._registerFullScreen || this._profileEditFullScreen) {
                 this._registerFullScreen = false;
                 this._profileEditFullScreen = false;
+                this._syncMemberScreenOverlay();
                 this.load();
             }
         });
@@ -303,6 +304,17 @@ export class MemberManager {
 
     isForcedRegistrationActive(): boolean {
         return this._forcedRegister === true && !(this.memberData && this.memberData.is_member === true);
+    }
+
+    isMemberScreenOverlayActive(): boolean {
+        return this._registerFullScreen === true || this._profileEditFullScreen === true;
+    }
+
+    _syncMemberScreenOverlay() {
+        if (typeof document === 'undefined') {
+            return;
+        }
+        document.body.classList.toggle('member-screen-overlay', this.isMemberScreenOverlayActive());
     }
 
     hasAuthenticatedIdentity() {
@@ -2251,11 +2263,13 @@ export class MemberManager {
             });
         }
         this._setupPostalCodeLookup(container);
+        this._syncMemberScreenOverlay();
     }
 
     closeProfileEdit(options: any = {}) {
         options = options || {};
         this._profileEditFullScreen = false;
+        this._syncMemberScreenOverlay();
         if (!options.skipHistory) {
             this._updateMemberScreenUrl('', true);
         }
@@ -2550,6 +2564,7 @@ export class MemberManager {
             });
         }
         this._setupPostalCodeLookup(container);
+        this._syncMemberScreenOverlay();
     }
 
     closeRegisterFullScreen() {
@@ -2561,6 +2576,7 @@ export class MemberManager {
         }
         this._registerFullScreen = false;
         this._forcedRegister = false;
+        this._syncMemberScreenOverlay();
         this._updateMemberScreenUrl('', true);
         this.load();
     }
