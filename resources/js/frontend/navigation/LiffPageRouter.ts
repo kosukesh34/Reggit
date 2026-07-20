@@ -231,7 +231,7 @@ export class LiffPageRouter {
 }
 
 export type ParsedLiffHash =
-    | { kind: 'tab'; tab: string }
+    | { kind: 'tab'; tab: string; category?: string }
     | { kind: 'announcement'; id: string }
     | { kind: 'product'; id: string }
     | { kind: 'coupon'; id: string }
@@ -246,8 +246,14 @@ export function parseLiffHash(rawHash: string): ParsedLiffHash {
     if (hash === '') {
         return { kind: 'unknown', raw: hash };
     }
-    if (TAB_KEYS.has(hash)) {
+    if (TAB_KEYS.has(hash) || /^link_[0-9]+$/.test(hash)) {
         return { kind: 'tab', tab: hash };
+    }
+    const tabWithQuery = hash.match(/^([a-z_0-9]+)\?(.+)$/);
+    if (tabWithQuery !== null && TAB_KEYS.has(tabWithQuery[1])) {
+        const params = new URLSearchParams(tabWithQuery[2]);
+        const category = params.get('category') || undefined;
+        return { kind: 'tab', tab: tabWithQuery[1], category };
     }
     const announcement = hash.match(/^announcement\/([^/]+)$/);
     if (announcement !== null) {

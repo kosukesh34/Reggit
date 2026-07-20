@@ -1,6 +1,6 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { DETAIL_PAGE_LABELS, DETAIL_PAGE_ICONS, DETAIL_PAGES } from '../catalog/blockCatalog';
+import { DETAIL_PAGE_LABELS, DETAIL_PAGE_ICONS, DETAIL_PAGES, LINK_MENU_TABS, isLinkMenuTab } from '../catalog/blockCatalog';
 import { useTabFeatureMap } from './tabHelpers';
 import { useDesigner } from '../state/DesignerContext';
 
@@ -80,9 +80,10 @@ export function ScreenList({ embedded = false }: { embedded?: boolean }) {
     const canMoveUp = openTabIndex > 0;
     const canMoveDown = openTabIndex >= 0 && openTabIndex < state.menuItems.length - 1;
 
-    const renderTab = (tab: string, item: { label: string; icon: string; enabled: boolean }, editable: boolean) => {
+    const renderTab = (tab: string, item: { label: string; icon: string; enabled: boolean; url?: string; open?: string }, editable: boolean) => {
         const featureKey = featureMap[tab];
         const featureOff = featureKey !== undefined && config.featureFlags?.[featureKey] === false;
+        const isLink = isLinkMenuTab(tab);
         const count = (state.layouts[tab] || []).length;
         const isActive = state.activeTab === tab;
         const isRenaming = renamingTab === tab;
@@ -125,11 +126,24 @@ export function ScreenList({ embedded = false }: { embedded?: boolean }) {
                             <span className="ld-tab-card__name ld-tab-card__name--static">{item.label}</span>
                         )}
                         <span className="ld-tab-card__meta">
-                            {count} ブロック
+                            {isLink
+                                ? '外部ページ · アプリ内表示'
+                                : `${count} ブロック`}
                             {!editable ? ' · 詳細' : null}
                             {featureOff ? ' · OFF' : null}
                             {!item.enabled && editable ? ' · 非表示' : null}
                         </span>
+                        {isLink ? (
+                            <input
+                                type="url"
+                                className="ld-tab-card__url-input"
+                                value={item.url ?? ''}
+                                placeholder="https://example.com"
+                                onClick={(e) => e.stopPropagation()}
+                                onChange={(e) => dispatch({ type: 'UPDATE_MENU_ITEM', tab, patch: { url: e.target.value } })}
+                                aria-label={`${item.label}のURL`}
+                            />
+                        ) : null}
                     </span>
                     {isActive ? <span className="ld-tab-card__active-dot" aria-hidden /> : null}
                 </button>
@@ -191,6 +205,16 @@ export function ScreenList({ embedded = false }: { embedded?: boolean }) {
             <div className="ld-screens__list">
                 <div className="ld-screens__group-label">タブ</div>
                 {state.menuItems.map((item) => renderTab(item.tab, item, true))}
+                {state.menuItems.filter((m) => isLinkMenuTab(m.tab)).length < LINK_MENU_TABS.length ? (
+                    <button
+                        type="button"
+                        className="ld-btn ld-btn--soft ld-btn--block ld-btn--xs"
+                        onClick={() => dispatch({ type: 'ADD_LINK_MENU_ITEM' })}
+                    >
+                        <i className="fas fa-globe" />
+                        外部ページタブを追加
+                    </button>
+                ) : null}
                 <div className="ld-screens__group-label">詳細ページ</div>
                 {DETAIL_PAGES.map((key) => renderTab(key, {
                     label: DETAIL_PAGE_LABELS[key] || key,
@@ -266,6 +290,22 @@ export function ScreenList({ embedded = false }: { embedded?: boolean }) {
                             <i className={`fas ${openItem.enabled ? 'fa-eye-slash' : 'fa-eye'}`} />
                             {openItem.enabled ? 'タブを非表示' : 'タブを表示'}
                         </button>
+                        {isLinkMenuTab(menuOpenTab) ? (
+                            <>
+                                <button
+                                    type="button"
+                                    role="menuitem"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        dispatch({ type: 'REMOVE_MENU_ITEM', tab: menuOpenTab });
+                                        closeMenu();
+                                    }}
+                                >
+                                    <i className="fas fa-trash" />
+                                    タブを削除
+                                </button>
+                            </>
+                        ) : null}
                     </div>,
                     document.body,
                 )

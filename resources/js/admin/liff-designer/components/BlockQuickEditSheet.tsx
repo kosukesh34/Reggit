@@ -1,5 +1,5 @@
 import React from 'react';
-import { BLOCK_DESIGNS, DATA_SOURCES, findBlockMeta, MEMBER_CARD_DESIGNS } from '../catalog/blockCatalog';
+import { BLOCK_DESIGNS, DATA_SOURCES, findBlockMeta, MEMBER_CARD_DESIGNS, STAMP_FILLED_STYLES, STAMP_SCREEN_DESIGNS, STAMP_SLOT_STYLES } from '../catalog/blockCatalog';
 import type { LiffBlock } from '../catalog/types';
 import { ActionField, ColorField, DesignPicker, ImageUrlField, RangeField, SelectField, TextArea, TextInput } from './fields/FormFields';
 
@@ -210,7 +210,7 @@ function FaqQuickEdit({ block, onChange }: { block: LiffBlock; onChange: (patch:
     );
 }
 
-function QuickFields({ block, friendAddUrl, onChange }: Omit<SheetProps, 'onClose'>) {
+function QuickFields({ block, friendAddUrl, onChange }: Omit<PanelProps, 'onClose'>) {
     switch (block.type) {
         case 'hero':
             return (
@@ -356,6 +356,32 @@ function QuickFields({ block, friendAddUrl, onChange }: Omit<SheetProps, 'onClos
                             options={MEMBER_CARD_DESIGNS}
                             onChange={(v) => onChange({ card_design: v })}
                         />
+                    ) : null}
+                    {block.source === 'stamps' ? (
+                        <>
+                            <DesignPicker
+                                value={String(block.stamp_design || '')}
+                                options={STAMP_SCREEN_DESIGNS}
+                                onChange={(v) => onChange({ stamp_design: v })}
+                            />
+                            <SelectField
+                                label="スロット形状"
+                                value={String(block.stamp_slot_style || 'circle')}
+                                options={STAMP_SLOT_STYLES}
+                                onChange={(v) => onChange({ stamp_slot_style: v })}
+                            />
+                            <SelectField
+                                label="押印スタイル"
+                                value={String(block.stamp_filled_style || 'image')}
+                                options={STAMP_FILLED_STYLES}
+                                onChange={(v) => onChange({ stamp_filled_style: v })}
+                            />
+                            <ColorField
+                                label="アクセント色"
+                                value={String(block.stamp_accent_color || '')}
+                                onChange={(v) => onChange({ stamp_accent_color: v })}
+                            />
+                        </>
                     ) : null}
                 </>
             );

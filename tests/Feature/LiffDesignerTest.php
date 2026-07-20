@@ -494,7 +494,7 @@ class LiffDesignerTest extends TestCase
         $layouts = [
             'home' => [
                 ['type' => 'stats_row', 'section_label' => 'Overview', 'items' => [
-                    ['label' => 'ポイント', 'value' => '1,240', 'hint' => 'pt'],
+                    ['label' => 'ポイント', 'value' => '1,240', 'hint' => 'pt', 'field' => 'points'],
                     ['label' => 'クーポン', 'value' => '3', 'hint' => '枚'],
                 ]],
                 ['type' => 'member_summary', 'design' => 'tier', 'greeting' => 'Club Member'],
@@ -534,6 +534,8 @@ class LiffDesignerTest extends TestCase
         $this->assertSame('chip_scroll', $stored['home'][3]['design']);
         $this->assertSame('featured', $stored['home'][4]['design']);
         $this->assertCount(2, $stored['home'][0]['items']);
+        $this->assertSame('points', $stored['home'][0]['items'][0]['field']);
+        $this->assertArrayNotHasKey('field', $stored['home'][0]['items'][1]);
 
         $settings = ShopSetting::getLiffTabSettings($project->id);
         $this->assertSame('apple_system', $settings['_global']['theme_preset']);
@@ -545,5 +547,113 @@ class LiffDesignerTest extends TestCase
         $this->assertContains('rg-suite-loyalty', $ids);
         $this->assertContains('rg-screen-rewards', $ids);
         $this->assertSame('rg-suite-loyalty', $ids[0] ?? null);
+    }
+
+    public function test_liff_designer_会員証とスタンプのデザイン設定を保存できること(): void
+    {
+        $project = Project::firstOrCreate(
+            ['project_key' => 'default'],
+            ['name' => 'Default Project', 'description' => 'Test', 'is_active' => true]
+        );
+
+        $admin = AdminUser::create([
+            'login_id' => 'admin_stamp_card_design',
+            'email' => 'admin_stamp_card_design@example.com',
+            'password' => 'password',
+            'name' => 'Admin Stamp Card Design',
+            'role' => AdminUser::ROLE_ADMIN,
+            'project_id' => $project->id,
+        ]);
+
+        $layouts = [
+            'stamps' => [
+                [
+                    'type' => 'data',
+                    'source' => 'stamps',
+                    'design' => 'premium',
+                    'stamp_design' => 'wallet',
+                    'stamp_slot_style' => 'rounded',
+                    'stamp_filled_style' => 'solid',
+                    'stamp_accent_color' => '#007aff',
+                ],
+            ],
+        ];
+
+        $tabSettings = [
+            '_global' => [
+                'member_card_design' => 'split_banner',
+                'member_card_accent_color' => '#5856d6',
+                'member_card_bg_style' => 'solid',
+                'stamp_screen_design' => 'circle_board',
+                'stamp_slot_style' => 'square',
+                'stamp_filled_style' => 'icon',
+                'stamp_accent_color' => '#ff9500',
+            ],
+        ];
+
+        $response = $this->actingAs($admin, 'admin')
+            ->post(route('admin.settings.liff-designer.update', ['project_key' => $project->project_key]), [
+                'layouts_json' => json_encode($layouts),
+                'tab_settings_json' => json_encode($tabSettings),
+            ]);
+
+        $response->assertRedirect(route('admin.settings.liff-designer', ['project_key' => $project->project_key]));
+
+        $stored = ShopSetting::getLiffTabLayouts($project->id);
+        $this->assertSame('wallet', $stored['stamps'][0]['stamp_design'] ?? null);
+        $this->assertSame('rounded', $stored['stamps'][0]['stamp_slot_style'] ?? null);
+        $this->assertSame('solid', $stored['stamps'][0]['stamp_filled_style'] ?? null);
+        $this->assertSame('#007aff', $stored['stamps'][0]['stamp_accent_color'] ?? null);
+
+        $settings = ShopSetting::getLiffTabSettings($project->id);
+        $this->assertSame('split_banner', $settings['_global']['member_card_design']);
+        $this->assertSame('#5856d6', $settings['_global']['member_card_accent_color']);
+        $this->assertSame('solid', $settings['_global']['member_card_bg_style']);
+        $this->assertSame('circle_board', $settings['_global']['stamp_screen_design']);
+        $this->assertSame('square', $settings['_global']['stamp_slot_style']);
+        $this->assertSame('icon', $settings['_global']['stamp_filled_style']);
+        $this->assertSame('#ff9500', $settings['_global']['stamp_accent_color']);
+    }
+
+    public function test_liff_designer_外部ページタブを保存しフロントメニューへ反映できること(): void
+    {
+        $project = Project::firstOrCreate(
+            ['project_key' => 'default'],
+            ['name' => 'Default Project', 'description' => 'Test', 'is_active' => true]
+        );
+
+        $admin = AdminUser::create([
+            'login_id' => 'admin_link_tab',
+            'email' => 'admin_link_tab@example.com',
+            'password' => 'password',
+            'name' => 'Admin Link Tab',
+            'role' => AdminUser::ROLE_ADMIN,
+            'project_id' => $project->id,
+        ]);
+
+        $menuItems = [
+            ['tab' => 'home', 'label' => 'ホーム', 'icon' => 'fa-house', 'enabled' => true],
+            ['tab' => 'link_1', 'label' => '公式サイト', 'icon' => 'fa-globe', 'url' => 'https://example.com', 'open' => 'embed', 'enabled' => true],
+            ['tab' => 'link_2', 'label' => 'NG', 'icon' => 'fa-globe', 'url' => 'http://insecure.example.com', 'open' => 'embed', 'enabled' => true],
+        ];
+
+        $response = $this->actingAs($admin, 'admin')
+            ->post(route('admin.settings.liff-designer.update', ['project_key' => $project->project_key]), [
+                'layouts_json' => json_encode(['home' => []]),
+                'menu_items_json' => json_encode($menuItems),
+            ]);
+
+        $response->assertRedirect(route('admin.settings.liff-designer', ['project_key' => $project->project_key]));
+
+        $raw = ShopSetting::getValue('frontend_menu_items', null, $project->id);
+        $this->assertSame(['home', 'link_1'], array_column($raw, 'tab'));
+        $this->assertSame('https://example.com', $raw[1]['url']);
+        $this->assertSame('embed', $raw[1]['open']);
+
+        $visible = ShopSetting::getFrontendMenuItems($project->id);
+        $link = collect($visible)->firstWhere('tab', 'link_1');
+        $this->assertNotNull($link);
+        $this->assertSame('公式サイト', $link['label']);
+        $this->assertSame('https://example.com', $link['url']);
     }
 }

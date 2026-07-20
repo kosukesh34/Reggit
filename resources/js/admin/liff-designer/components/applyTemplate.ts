@@ -1,4 +1,4 @@
-import { normalizeBlock, TAB_LABELS, TAB_ICONS, defaultTabSettings } from '../catalog/blockCatalog';
+import { normalizeBlock, TAB_LABELS, TAB_ICONS, defaultTabSettings, isLinkMenuTab } from '../catalog/blockCatalog';
 import type { DesignerState, LiffBlock, MenuItem, ThemePreset } from '../catalog/types';
 import { expandThemeIntoGlobal } from '../utils/globalDesign';
 import { isAllScreensTemplate, paletteLabelFor, type TemplateItem } from './templateGalleryMeta';
@@ -212,7 +212,8 @@ export function buildMenuItemsForTemplate(tpl: TemplateItem, current: MenuItem[]
         if (enabledSet.has(item.tab)) return;
         ordered.push({
             ...item,
-            enabled: false,
+            // 外部ページタブはテンプレの対象外なので表示状態を維持する
+            enabled: isLinkMenuTab(item.tab) ? item.enabled : false,
             order: ordered.length,
         });
     });

@@ -324,8 +324,13 @@ class ReggitApp {
             if (wasPage) {
                 this.closeActivePage(false);
             }
-            if (parsed.kind === 'tab' && (parsed.tab !== this.currentTab || wasPage)) {
-                this.switchTab(parsed.tab);
+            if (parsed.kind === 'tab') {
+                if (parsed.tab !== this.currentTab || wasPage) {
+                    void this.switchTab(parsed.tab);
+                }
+                if (parsed.tab === AppConstants.TABS.PRODUCTS && typeof parsed.category === 'string') {
+                    this.applyProductCategory(parsed.category);
+                }
             }
         };
         window.addEventListener('hashchange', applyHash);
@@ -628,6 +633,15 @@ class ReggitApp {
         this.setupNativeAppEventListeners();
     }
 
+    /** 外部Webページタブ: LIFF内は外部ブラウザで、それ以外は新規タブで開く */
+    openExternalUrl(url: string) {
+        if (typeof window !== 'undefined' && window.__IS_LIFF__ && typeof liff !== 'undefined' && typeof liff.openWindow === 'function') {
+            liff.openWindow({ url, external: true });
+            return;
+        }
+        window.open(url, '_blank', 'noopener');
+    }
+
     /** 友だち追加リンク: LINE内なら liff.openWindow で開き、LINE内ブラウザで友だち追加画面を表示 */
     setupFriendAddLink() {
         const url = typeof window !== 'undefined' ? (window.__LINE_FRIEND_ADD_URL__ || '') : '';
@@ -695,6 +709,7 @@ class ReggitApp {
             const btn = target ? target.closest('.main-tab-btn') as HTMLElement | null : null;
             if (!btn || !btn.dataset.tab) return;
             e.preventDefault();
+            // 外部ページタブは常にアプリ内（iframe）で表示する
             this.switchTab(btn.dataset.tab);
         });
     }
@@ -892,6 +907,23 @@ class ReggitApp {
             this.renderProducts();
         } catch (error) {
             this.handleProductLoadError(error);
+        }
+    }
+
+    /** ブロックの action（#products?category=xxx）から商品カテゴリを絞り込む */
+    applyProductCategory(category: string) {
+        this.productManager.setCurrentCategory(category);
+        const container = DomHelper.getCategoryTabsContainer();
+        if (container) {
+            container.querySelectorAll('.tab-btn[data-category]').forEach((btn) => {
+                DomHelper.removeClass(btn, AppConstants.CSS_CLASSES.ACTIVE);
+                if ((btn as HTMLElement).dataset.category === category) {
+                    DomHelper.addClass(btn, AppConstants.CSS_CLASSES.ACTIVE);
+                }
+            });
+        }
+        if (this.productManager.getCategories().length > 0) {
+            this.renderProducts();
         }
     }
 
@@ -1477,6 +1509,36 @@ class ReggitApp {
         if (tabContentEl.querySelector('.' + M.ANNOUNCEMENTS)) this.announcementManager.load();
     }
 
+    isLinkTab(tab: string): boolean {
+        return /^link_[0-9]+$/.test(tab);
+    }
+
+    /** 外部Webページタブ（埋め込み表示）: 初回表示時に iframe を遅延生成する */
+    mountLinkTabEmbed(section: HTMLElement | null) {
+        if (!section || section.dataset.layoutRendered === '1') return;
+        const url = section.dataset.linkUrl || '';
+        if (url === '') return;
+        section.dataset.layoutRendered = '1';
+        const iframe = document.createElement('iframe');
+        iframe.className = 'link-tab-frame';
+        iframe.src = url;
+        iframe.setAttribute('loading', 'lazy');
+        iframe.setAttribute('referrerpolicy', 'no-referrer');
+        iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-popups');
+        section.appendChild(iframe);
+
+        const fallback = document.createElement('div');
+        fallback.className = 'link-tab-fallback';
+        fallback.innerHTML = `
+            <p class="link-tab-fallback__text">ページを表示できない場合はこちら</p>
+            <button type="button" class="link-tab-fallback__btn">
+                <i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i> ブラウザで開く
+            </button>
+        `;
+        fallback.querySelector('button')?.addEventListener('click', () => this.openExternalUrl(url));
+        section.appendChild(fallback);
+    }
+
     switchTab(tab) {
         if (typeof window.__mobileOrderLog === 'function') window.__mobileOrderLog('switchTab', { tab });
         if (this.memberManager && typeof this.memberManager.isForcedRegistrationActive === 'function'
@@ -1513,7 +1575,7 @@ class ReggitApp {
                 [AppConstants.TABS.GALLERY]: AppConstants.ELEMENT_IDS.GALLERY_TAB,
                 [AppConstants.TABS.ANNOUNCEMENTS]: AppConstants.ELEMENT_IDS.ANNOUNCEMENTS_TAB,
             };
-            const tabEl = DomHelper.getElementById(tabIdMap[tab]);
+            const tabEl = DomHelper.getElementById(tabIdMap[tab]) || document.getElementById(tab + 'Tab');
             if (tabEl) DomHelper.addClass(tabEl, AppConstants.CSS_CLASSES.ACTIVE);
 
             const mainContent = document.querySelector('.main-content') as HTMLElement | null;
@@ -1525,7 +1587,9 @@ class ReggitApp {
             const sectionContainer = document.getElementById(tab + 'Section');
             const layoutWasRendered = !!(sectionContainer && sectionContainer.dataset.layoutRendered === '1');
 
-            if (!(this.designerPreviewSource && this.designerPreviewEmbed)) {
+            if (this.isLinkTab(tab)) {
+                this.mountLinkTabEmbed(sectionContainer);
+            } else if (!(this.designerPreviewSource && this.designerPreviewEmbed)) {
                 this.layoutManager.render(tab);
             }
             if (layoutWasRendered) {

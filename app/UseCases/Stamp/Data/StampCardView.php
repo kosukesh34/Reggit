@@ -18,10 +18,12 @@ class StampCardView
         public string $layoutStyle = 'grid',
         public ?int $validDays = null,
         public ?string $validUntil = null,
-        public ?string $memberStampValidUntil = null
+        public ?string $memberStampValidUntil = null,
+        /** @var array<string, string> */
+        public array $stampImages = []
     ) {}
 
-    /** @return array{id: int, name: string, required_stamps: int, reward_description: string|null, reward_milestones: array<int, array{stamp_count: int, description: string}>, image_url: string|null, current_stamps: int, completed_at: string|null, layout_style: string, valid_days: int|null, valid_until: string|null, member_stamp_valid_until: string|null} */
+    /** @return array{id: int, name: string, required_stamps: int, reward_description: string|null, reward_milestones: array<int, array{stamp_count: int, description: string}>, image_url: string|null, current_stamps: int, completed_at: string|null, layout_style: string, valid_days: int|null, valid_until: string|null, member_stamp_valid_until: string|null, stamp_images: array<string, string>} */
     public function toArray(): array
     {
         return [
@@ -37,6 +39,7 @@ class StampCardView
             'valid_days' => $this->validDays,
             'valid_until' => $this->validUntil,
             'member_stamp_valid_until' => $this->memberStampValidUntil,
+            'stamp_images' => $this->stampImages,
         ];
     }
 }

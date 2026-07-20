@@ -90,6 +90,9 @@ class LiffAppStudioTemplates
                 'system_ui_style' => 'refined',
                 'system_header_style' => 'minimal',
                 'member_screen_design' => 'apple',
+                'stamp_screen_design' => 'grid_card',
+                'stamp_slot_style' => 'circle',
+                'stamp_filled_style' => 'image',
                 'coupon_screen_design' => 'apple',
                 'reservation_screen_design' => 'apple',
                 'activity_screen_design' => 'cards',
@@ -129,7 +132,7 @@ class LiffAppStudioTemplates
                 'radius_scale' => 'round',
                 'system_ui_style' => 'luxe',
                 'system_header_style' => 'minimal',
-                'member_screen_design' => 'glass',
+                'member_screen_design' => 'wallet',
                 'coupon_screen_design' => 'gallery',
                 'reservation_screen_design' => 'concierge',
                 'activity_screen_design' => 'cards',
@@ -167,7 +170,7 @@ class LiffAppStudioTemplates
                 'radius_scale' => 'soft',
                 'system_ui_style' => 'editorial',
                 'system_header_style' => 'editorial',
-                'member_screen_design' => 'glass',
+                'member_screen_design' => 'wallet',
                 'coupon_screen_design' => 'gallery',
                 'reservation_screen_design' => 'concierge',
                 'activity_screen_design' => 'cards',
@@ -500,16 +503,11 @@ class LiffAppStudioTemplates
             'home' => [
                 ['type' => 'member_summary', 'design' => 'wallet', 'greeting' => 'おかえりなさい'],
                 ['type' => 'stats_row', 'section_label' => 'マイステータス', 'items' => [
-                    ['label' => 'ポイント', 'value' => '2,480', 'hint' => 'pt'],
-                    ['label' => 'ランク', 'value' => 'ゴールド', 'hint' => ''],
-                    ['label' => '次回特典まで', 'value' => '520', 'hint' => 'pt'],
+                    ['label' => 'ポイント', 'value' => '2,480', 'hint' => 'pt', 'field' => 'points'],
+                    ['label' => 'ランク', 'value' => 'ゴールド', 'hint' => '', 'field' => 'rank'],
+                    ['label' => '次回特典まで', 'value' => '520', 'hint' => 'pt', 'field' => 'points_to_next'],
                 ]],
-                ['type' => 'banner', 'design' => 'soft', 'icon' => 'fa-crown', 'text' => '会員限定 — 今週末はポイント3倍デー', 'color' => $a],
-                ['type' => 'collection', 'design' => 'picks', 'section_label' => '交換できる特典', 'layout' => 'scroll', 'item_image_height' => 110, 'items' => [
-                    ['title' => 'ドリンク無料券', 'description' => '500ptで交換', 'badge' => '人気', 'image_url' => 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=800'],
-                    ['title' => 'デザートプレゼント', 'description' => '800ptで交換', 'image_url' => 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=800'],
-                    ['title' => '10%OFFクーポン', 'description' => '300ptで交換', 'badge' => '新着', 'image_url' => 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800'],
-                ]],
+                ['type' => 'banner', 'design' => 'promo', 'icon' => 'fa-crown', 'text' => '会員限定 — 今週末はポイント3倍デー', 'color' => $a],
                 ['type' => 'quick_actions', 'design' => 'pill', 'actions' => [
                     ['icon' => 'fa-qrcode', 'label' => '会員証', 'action' => '#member'],
                     ['icon' => 'fa-ticket-alt', 'label' => 'クーポン', 'action' => '#coupons'],
@@ -522,16 +520,16 @@ class LiffAppStudioTemplates
                 ['type' => 'heading', 'design' => 'section', 'text' => '交換メニュー', 'size' => 'large'],
                 ['type' => 'text', 'design' => 'lead', 'text' => 'ポイントで交換できるアイテムはこちら。'],
                 ['type' => 'data', 'source' => 'products', 'design' => 'cards'],
-                ['type' => 'button', 'design' => 'soft', 'text' => '特典で交換', 'action' => '#coupons', 'color' => $a],
+                ['type' => 'button', 'design' => 'cta', 'text' => '特典で交換', 'action' => '#coupons', 'color' => $a],
             ],
             'orders' => [
                 ['type' => 'heading', 'design' => 'section', 'text' => 'ご利用履歴', 'size' => 'large'],
-                ['type' => 'banner', 'design' => 'soft', 'icon' => 'fa-coins', 'text' => 'ご利用ごとにポイントが貯まります', 'color' => $a],
+                ['type' => 'banner', 'design' => 'promo', 'icon' => 'fa-coins', 'text' => 'ご利用ごとにポイントが貯まります', 'color' => $a],
                 ['type' => 'data', 'source' => 'orders', 'design' => 'timeline'],
             ],
             'stamps' => [
                 ['type' => 'heading', 'design' => 'section', 'text' => 'スタンプ', 'size' => 'large'],
-                ['type' => 'banner', 'design' => 'soft', 'icon' => 'fa-gift', 'text' => '10個達成で特典クーポンをプレゼント', 'color' => $a],
+                ['type' => 'banner', 'design' => 'promo', 'icon' => 'fa-gift', 'text' => '10個達成で特典クーポンをプレゼント', 'color' => $a],
                 ['type' => 'icon_text', 'rows' => [
                     ['icon' => 'fa-stamp', 'text' => 'ご来店ごとにスタンプ1個', 'color' => $a],
                     ['icon' => 'fa-crown', 'text' => 'ランクアップで特典が増えます', 'color' => $a],
@@ -540,10 +538,6 @@ class LiffAppStudioTemplates
             ],
             'coupons' => [
                 ['type' => 'heading', 'design' => 'section', 'text' => 'クーポン・特典', 'size' => 'large'],
-                ['type' => 'collection', 'design' => 'picks', 'section_label' => '交換特典', 'layout' => 'scroll', 'item_image_height' => 96, 'items' => [
-                    ['title' => 'ドリンク1杯無料', 'description' => '500pt', 'badge' => '人気', 'image_url' => 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=600'],
-                    ['title' => '10%OFF', 'description' => '300pt', 'image_url' => 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=600'],
-                ]],
                 ['type' => 'data', 'source' => 'coupons', 'design' => 'cards'],
             ],
             'queue' => [
@@ -560,8 +554,8 @@ class LiffAppStudioTemplates
                 ['type' => 'member_summary', 'design' => 'wallet', 'greeting' => 'こんにちは'],
                 ['type' => 'data', 'source' => 'member_card', 'card_design' => 'emblem'],
                 ['type' => 'stats_row', 'items' => [
-                    ['label' => 'ポイント', 'value' => '2,480', 'hint' => 'pt'],
-                    ['label' => 'ランク', 'value' => 'ゴールド', 'hint' => ''],
+                    ['label' => 'ポイント', 'value' => '2,480', 'hint' => 'pt', 'field' => 'points'],
+                    ['label' => 'ランク', 'value' => 'ゴールド', 'hint' => '', 'field' => 'rank'],
                 ]],
                 ['type' => 'quick_actions', 'design' => 'pill', 'actions' => [
                     ['icon' => 'fa-qrcode', 'label' => '提示', 'action' => '#member'],
@@ -592,19 +586,7 @@ class LiffAppStudioTemplates
         return [
             'home' => [
                 ['type' => 'banner', 'design' => 'countdown', 'icon' => 'fa-fire', 'text' => '今すぐ受取予約 — ランチ20%OFF 残り2時間', 'color' => $a, 'text_color' => '#ffffff', 'action' => '#products'],
-                ['type' => 'collection', 'design' => 'chip_scroll', 'section_label' => 'カテゴリ', 'items' => [
-                    ['title' => 'バーガー', 'action' => '#products'],
-                    ['title' => 'サイド', 'action' => '#products'],
-                    ['title' => 'ドリンク', 'action' => '#products'],
-                    ['title' => 'セット', 'action' => '#products'],
-                    ['title' => 'デザート', 'action' => '#products'],
-                ]],
-                ['type' => 'collection', 'design' => 'product_shelf', 'section_label' => '人気メニュー', 'layout' => 'grid', 'columns' => 2, 'item_image_height' => 130, 'items' => [
-                    ['title' => 'クラシックバーガー', 'description' => '¥590', 'badge' => '人気No.1', 'image_url' => 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600'],
-                    ['title' => 'チキンナゲット', 'description' => '¥350', 'image_url' => 'https://images.unsplash.com/photo-1562967914-608f82629710?w=600'],
-                    ['title' => 'テリヤキバーガー', 'description' => '¥680', 'image_url' => 'https://images.unsplash.com/photo-1572802419224-296b0aeee0d9?w=600'],
-                    ['title' => 'ポテトL', 'description' => '¥320', 'image_url' => 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=600'],
-                ]],
+                ['type' => 'data', 'source' => 'products', 'design' => 'cards'],
                 ['type' => 'stats_row', 'section_label' => '本日の目安', 'items' => [
                     ['label' => '平均受取', 'value' => '8', 'hint' => '分'],
                     ['label' => '本日注文', 'value' => '142', 'hint' => '件'],
@@ -613,20 +595,8 @@ class LiffAppStudioTemplates
                 ['type' => 'button', 'design' => 'sticky', 'text' => 'メニューを開く', 'action' => '#products', 'color' => $a, 'full_width' => true],
             ],
             'products' => [
-                ['type' => 'collection', 'design' => 'chip_scroll', 'section_label' => 'カテゴリ', 'items' => [
-                    ['title' => 'バーガー', 'action' => '#products'],
-                    ['title' => 'サイド', 'action' => '#products'],
-                    ['title' => 'ドリンク', 'action' => '#products'],
-                    ['title' => 'セット', 'action' => '#products'],
-                ]],
-                ['type' => 'collection', 'design' => 'product_shelf', 'section_label' => 'バーガー', 'layout' => 'grid', 'columns' => 2, 'item_image_height' => 130, 'items' => [
-                    ['title' => 'クラシックバーガー', 'description' => '¥590', 'image_url' => 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600'],
-                    ['title' => 'チーズバーガー', 'description' => '¥650', 'image_url' => 'https://images.unsplash.com/photo-1553979459-d2229ba7433b?w=600'],
-                    ['title' => 'テリヤキバーガー', 'description' => '¥680', 'image_url' => 'https://images.unsplash.com/photo-1572802419224-296b0aeee0d9?w=600'],
-                    ['title' => 'ダブルバーガー', 'description' => '¥890', 'image_url' => 'https://images.unsplash.com/photo-1586190848861-99aa4a171e90?w=600'],
-                ]],
                 ['type' => 'data', 'source' => 'products', 'design' => 'cards'],
-                ['type' => 'button', 'design' => 'sticky', 'text' => 'カートに進む', 'action' => '#orders', 'color' => $a, 'full_width' => true],
+                ['type' => 'button', 'design' => 'sticky', 'text' => 'カートに進む', 'action' => '#order/cart', 'color' => $a, 'full_width' => true],
             ],
             'orders' => [
                 ['type' => 'banner', 'design' => 'pill', 'icon' => 'fa-clock', 'text' => 'リアルタイムで更新', 'color' => $a, 'text_color' => '#ffffff'],
@@ -634,11 +604,11 @@ class LiffAppStudioTemplates
                     ['icon' => 'fa-check-circle', 'text' => '受付 → 調理中 → 受取可能', 'color' => $a],
                 ]],
                 ['type' => 'data', 'source' => 'orders', 'design' => 'timeline'],
-                ['type' => 'button', 'design' => 'soft', 'text' => '再注文する', 'action' => '#products', 'color' => $a],
+                ['type' => 'button', 'design' => 'cta', 'text' => '再注文する', 'action' => '#products', 'color' => $a],
             ],
             'stamps' => [
                 ['type' => 'heading', 'design' => 'section', 'text' => 'スタンプ', 'size' => 'large'],
-                ['type' => 'banner', 'design' => 'soft', 'icon' => 'fa-gift', 'text' => '10個でお好きなセットメニュー無料', 'color' => $a],
+                ['type' => 'banner', 'design' => 'promo', 'icon' => 'fa-gift', 'text' => '10個でお好きなセットメニュー無料', 'color' => $a],
                 ['type' => 'data', 'source' => 'stamps', 'design' => 'cards'],
             ],
             'coupons' => [
@@ -690,14 +660,10 @@ class LiffAppStudioTemplates
             'home' => [
                 ['type' => 'card', 'design' => 'featured', 'title' => '次回のご予約', 'description' => '7月25日（金）14:00〜 カット＋カラー / 担当 田中', 'image_url' => 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=800', 'action' => '#reservations'],
                 ['type' => 'hero', 'design' => 'split', 'title' => '次はいつ来る？', 'subtitle' => '空き枠からワンタップで予約', 'image_url' => 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=1400&q=80'],
-                ['type' => 'collection', 'design' => 'picks', 'section_label' => '直近の空き枠', 'layout' => 'scroll', 'item_image_height' => 120, 'items' => [
-                    ['title' => '本日 18:00', 'description' => 'カット 空きあり', 'badge' => '当日OK', 'image_url' => 'https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?w=800'],
-                    ['title' => '明日 11:00', 'description' => 'カラー 空きあり', 'image_url' => 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=800'],
-                    ['title' => '7/27 15:00', 'description' => 'ヘッドスパ', 'badge' => '人気', 'image_url' => 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=800'],
-                ]],
+                ['type' => 'data', 'source' => 'reservations', 'design' => 'cards'],
                 ['type' => 'stats_row', 'section_label' => 'マイサロン', 'items' => [
                     ['label' => '次回', 'value' => '7/25', 'hint' => ''],
-                    ['label' => 'ポイント', 'value' => '1,120', 'hint' => 'pt'],
+                    ['label' => 'ポイント', 'value' => '1,120', 'hint' => 'pt', 'field' => 'points'],
                 ]],
                 ['type' => 'quick_actions', 'design' => 'grid', 'actions' => [
                     ['icon' => 'fa-calendar-plus', 'label' => '予約する', 'action' => '#reservations'],
@@ -709,23 +675,17 @@ class LiffAppStudioTemplates
             ],
             'products' => [
                 ['type' => 'heading', 'design' => 'section', 'text' => 'メニュー', 'size' => 'large'],
-                ['type' => 'collection', 'design' => 'chip_scroll', 'section_label' => 'カテゴリ', 'items' => [
-                    ['title' => 'カット', 'action' => '#products'],
-                    ['title' => 'カラー', 'action' => '#products'],
-                    ['title' => 'パーマ', 'action' => '#products'],
-                    ['title' => 'ケア', 'action' => '#products'],
-                ]],
                 ['type' => 'data', 'source' => 'products', 'design' => 'cards'],
                 ['type' => 'button', 'design' => 'sticky', 'text' => 'このメニューで予約', 'action' => '#reservations', 'color' => $a, 'full_width' => true],
             ],
             'orders' => [
                 ['type' => 'heading', 'design' => 'section', 'text' => 'ご利用履歴', 'size' => 'large'],
                 ['type' => 'data', 'source' => 'orders', 'design' => 'timeline'],
-                ['type' => 'button', 'design' => 'soft', 'text' => '同じメニューで予約', 'action' => '#reservations', 'color' => $a],
+                ['type' => 'button', 'design' => 'cta', 'text' => '同じメニューで予約', 'action' => '#reservations', 'color' => $a],
             ],
             'stamps' => [
                 ['type' => 'heading', 'design' => 'section', 'text' => 'スタンプ', 'size' => 'large'],
-                ['type' => 'banner', 'design' => 'soft', 'icon' => 'fa-gift', 'text' => '来店5回ごとにトリートメント無料', 'color' => $a],
+                ['type' => 'banner', 'design' => 'promo', 'icon' => 'fa-gift', 'text' => '来店5回ごとにトリートメント無料', 'color' => $a],
                 ['type' => 'data', 'source' => 'stamps', 'design' => 'cards'],
             ],
             'coupons' => [
@@ -756,10 +716,7 @@ class LiffAppStudioTemplates
             ],
             'gallery' => [
                 ['type' => 'heading', 'design' => 'section', 'text' => 'スタイルギャラリー', 'size' => 'large'],
-                ['type' => 'slider', 'design' => 'hero', 'slide_height' => 220, 'slides' => [
-                    ['image_url' => 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=1200', 'caption' => 'ボブスタイル'],
-                    ['image_url' => 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=1200', 'caption' => 'ロングレイヤー'],
-                ]],
+                ['type' => 'slider', 'source' => 'gallery', 'design' => 'hero', 'slide_height' => 220],
                 ['type' => 'data', 'source' => 'gallery', 'design' => 'cards'],
             ],
             'announcements' => [
@@ -778,42 +735,30 @@ class LiffAppStudioTemplates
             'home' => [
                 ['type' => 'hero', 'design' => 'apple', 'eyebrow' => 'おはようございます', 'title' => '今日の一杯を選ぶ', 'subtitle' => '〇〇カフェへようこそ', 'image_url' => 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=1400&q=80'],
                 ['type' => 'card', 'design' => 'featured', 'title' => '本日のシグネチャー', 'description' => '季節のラテ ¥620 — 焙煎したての一杯を', 'image_url' => 'https://images.unsplash.com/photo-1511920170033-f8396924c348?w=800', 'action' => '#products'],
-                ['type' => 'banner', 'design' => 'soft', 'icon' => 'fa-mug-hot', 'text' => 'スタンプあと3個でドリンク1杯無料', 'color' => $a, 'action' => '#stamps'],
+                ['type' => 'banner', 'design' => 'promo', 'icon' => 'fa-mug-hot', 'text' => 'スタンプあと3個でドリンク1杯無料', 'color' => $a, 'action' => '#stamps'],
                 ['type' => 'data', 'source' => 'stamps', 'design' => 'compact'],
                 ['type' => 'quick_actions', 'design' => 'compact', 'actions' => [
                     ['icon' => 'fa-bag-shopping', 'label' => 'オーダー', 'action' => '#products'],
                     ['icon' => 'fa-stamp', 'label' => 'スタンプ', 'action' => '#stamps'],
                     ['icon' => 'fa-ticket-alt', 'label' => 'クーポン', 'action' => '#coupons'],
                 ]],
-                ['type' => 'button', 'design' => 'soft', 'text' => 'モバイルオーダーする', 'action' => '#products', 'color' => $a, 'full_width' => true],
+                ['type' => 'button', 'design' => 'cta', 'text' => 'モバイルオーダーする', 'action' => '#products', 'color' => $a, 'full_width' => true],
             ],
             'products' => [
                 ['type' => 'heading', 'design' => 'section', 'text' => 'ドリンク & フード', 'size' => 'large'],
-                ['type' => 'collection', 'design' => 'chip_scroll', 'section_label' => 'カテゴリ', 'items' => [
-                    ['title' => 'ホット', 'action' => '#products'],
-                    ['title' => 'アイス', 'action' => '#products'],
-                    ['title' => 'スイーツ', 'action' => '#products'],
-                    ['title' => 'フード', 'action' => '#products'],
-                ]],
-                ['type' => 'collection', 'design' => 'product_shelf', 'section_label' => 'コーヒー', 'layout' => 'grid', 'columns' => 2, 'item_image_height' => 120, 'items' => [
-                    ['title' => 'ドリップ', 'description' => '¥380', 'image_url' => 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600'],
-                    ['title' => 'カフェラテ', 'description' => '¥480', 'image_url' => 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=600'],
-                    ['title' => 'カプチーノ', 'description' => '¥480', 'image_url' => 'https://images.unsplash.com/photo-1511920170033-f8396924c348?w=600'],
-                    ['title' => '抹茶ラテ', 'description' => '¥550', 'image_url' => 'https://images.unsplash.com/photo-1536256263959-770b48d82b0a?w=600'],
-                ]],
                 ['type' => 'data', 'source' => 'products', 'design' => 'cards'],
-                ['type' => 'button', 'design' => 'soft', 'text' => 'カートに追加', 'action' => '#orders', 'color' => $a],
+                ['type' => 'button', 'design' => 'cta', 'text' => 'カートを見る', 'action' => '#order/cart', 'color' => $a],
             ],
             'orders' => [
                 ['type' => 'heading', 'design' => 'section', 'text' => '注文状況', 'size' => 'large'],
-                ['type' => 'banner', 'design' => 'soft', 'icon' => 'fa-bell', 'text' => 'お呼び出しは LINE でお知らせ', 'color' => $a],
+                ['type' => 'banner', 'design' => 'promo', 'icon' => 'fa-bell', 'text' => 'お呼び出しは LINE でお知らせ', 'color' => $a],
                 ['type' => 'data', 'source' => 'orders', 'design' => 'timeline'],
-                ['type' => 'button', 'design' => 'soft', 'text' => 'もう一杯注文', 'action' => '#products', 'color' => $a],
+                ['type' => 'button', 'design' => 'cta', 'text' => 'もう一杯注文', 'action' => '#products', 'color' => $a],
             ],
             'stamps' => [
                 ['type' => 'member_summary', 'design' => 'compact'],
                 ['type' => 'heading', 'design' => 'section', 'text' => 'コーヒースタンプ', 'size' => 'large'],
-                ['type' => 'banner', 'design' => 'soft', 'icon' => 'fa-mug-hot', 'text' => 'コーヒー10杯でお好きなドリンク1杯無料', 'color' => $a],
+                ['type' => 'banner', 'design' => 'promo', 'icon' => 'fa-mug-hot', 'text' => 'コーヒー10杯でお好きなドリンク1杯無料', 'color' => $a],
                 ['type' => 'icon_text', 'rows' => [
                     ['icon' => 'fa-mug-hot', 'text' => 'ドリンク注文ごとにスタンプ1個', 'color' => $a],
                     ['icon' => 'fa-seedling', 'text' => 'マイボトル持参でボーナス1個', 'color' => $a],
@@ -846,10 +791,7 @@ class LiffAppStudioTemplates
             ],
             'gallery' => [
                 ['type' => 'heading', 'design' => 'section', 'text' => 'ギャラリー', 'size' => 'large'],
-                ['type' => 'slider', 'design' => 'hero', 'slide_height' => 200, 'slides' => [
-                    ['image_url' => 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=1200', 'caption' => '店内'],
-                    ['image_url' => 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=1200', 'caption' => 'ラテアート'],
-                ]],
+                ['type' => 'slider', 'source' => 'gallery', 'design' => 'hero', 'slide_height' => 200],
                 ['type' => 'data', 'source' => 'gallery', 'design' => 'cards'],
             ],
             'announcements' => [
@@ -866,17 +808,8 @@ class LiffAppStudioTemplates
 
         return [
             'home' => [
-                ['type' => 'slider', 'design' => 'hero', 'section_label' => 'スタイルギャラリー', 'slide_height' => 300, 'slides' => [
-                    ['image_url' => 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=1200', 'caption' => 'ショートボブ'],
-                    ['image_url' => 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=1200', 'caption' => 'ウェーブロング'],
-                    ['image_url' => 'https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?w=1200', 'caption' => 'メンズショート'],
-                ]],
-                ['type' => 'collection', 'design' => 'magazine', 'section_label' => '最新スタイル', 'layout' => 'scroll', 'item_image_height' => 190, 'items' => [
-                    ['title' => '夏のショートヘア', 'description' => 'スタイリスト推薦', 'badge' => '人気', 'image_url' => 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=800'],
-                    ['title' => 'ナチュラルウェーブ', 'description' => 'トレンド', 'image_url' => 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=800'],
-                    ['title' => 'ハイトーンカラー', 'description' => '新着', 'badge' => '新着', 'image_url' => 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=800'],
-                ]],
-                ['type' => 'member_summary', 'design' => 'glass'],
+                ['type' => 'slider', 'source' => 'gallery', 'design' => 'hero', 'section_label' => 'スタイルギャラリー', 'slide_height' => 300],
+                ['type' => 'member_summary', 'design' => 'wallet'],
                 ['type' => 'quick_actions', 'design' => 'pill', 'actions' => [
                     ['icon' => 'fa-calendar-plus', 'label' => '予約', 'action' => '#reservations'],
                     ['icon' => 'fa-images', 'label' => 'ギャラリー', 'action' => '#gallery'],
@@ -893,11 +826,11 @@ class LiffAppStudioTemplates
             'orders' => [
                 ['type' => 'heading', 'design' => 'section', 'text' => '施術履歴', 'size' => 'large'],
                 ['type' => 'data', 'source' => 'orders', 'design' => 'timeline'],
-                ['type' => 'button', 'design' => 'soft', 'text' => '同じメニューで再予約', 'action' => '#reservations', 'color' => $a],
+                ['type' => 'button', 'design' => 'cta', 'text' => '同じメニューで再予約', 'action' => '#reservations', 'color' => $a],
             ],
             'stamps' => [
                 ['type' => 'heading', 'design' => 'section', 'text' => 'スタンプ', 'size' => 'large'],
-                ['type' => 'banner', 'design' => 'soft', 'icon' => 'fa-gift', 'text' => '来店5回でトリートメント無料', 'color' => $a],
+                ['type' => 'banner', 'design' => 'promo', 'icon' => 'fa-gift', 'text' => '来店5回でトリートメント無料', 'color' => $a],
                 ['type' => 'data', 'source' => 'stamps', 'design' => 'cards'],
             ],
             'coupons' => [
@@ -916,7 +849,7 @@ class LiffAppStudioTemplates
                 ['type' => 'button', 'design' => 'sticky', 'text' => '新規予約', 'action' => '#reservations', 'color' => $a, 'full_width' => true],
             ],
             'member' => [
-                ['type' => 'member_summary', 'design' => 'glass', 'greeting' => 'こんにちは'],
+                ['type' => 'member_summary', 'design' => 'wallet', 'greeting' => 'こんにちは'],
                 ['type' => 'data', 'source' => 'member_card', 'card_design' => 'emblem'],
                 ['type' => 'quick_actions', 'design' => 'pill', 'actions' => [
                     ['icon' => 'fa-qrcode', 'label' => '提示', 'action' => '#member'],
@@ -925,16 +858,7 @@ class LiffAppStudioTemplates
                 ]],
             ],
             'gallery' => [
-                ['type' => 'slider', 'design' => 'hero', 'section_label' => 'スタイルギャラリー', 'slide_height' => 300, 'slides' => [
-                    ['image_url' => 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=1200', 'caption' => 'ボブスタイル'],
-                    ['image_url' => 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=1200', 'caption' => 'ロングレイヤー'],
-                    ['image_url' => 'https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?w=1200', 'caption' => 'メンズカット'],
-                ]],
-                ['type' => 'collection', 'design' => 'magazine', 'section_label' => 'カテゴリ別スタイル', 'layout' => 'scroll', 'item_image_height' => 190, 'items' => [
-                    ['title' => 'ショート', 'description' => '32 styles', 'image_url' => 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=800'],
-                    ['title' => 'ミディアム', 'description' => '48 styles', 'image_url' => 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=800'],
-                    ['title' => 'ロング', 'description' => '56 styles', 'image_url' => 'https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?w=800'],
-                ]],
+                ['type' => 'slider', 'source' => 'gallery', 'design' => 'hero', 'section_label' => 'スタイルギャラリー', 'slide_height' => 300],
                 ['type' => 'data', 'source' => 'gallery', 'design' => 'cards'],
                 ['type' => 'button', 'design' => 'sticky', 'text' => 'このスタイルで予約', 'action' => '#reservations', 'color' => $a, 'full_width' => true],
             ],
@@ -953,57 +877,26 @@ class LiffAppStudioTemplates
         return [
             'home' => [
                 ['type' => 'banner', 'design' => 'countdown', 'icon' => 'fa-fire', 'text' => '週末セール — 最大50%OFF 残り2日', 'color' => $a, 'text_color' => '#ffffff', 'action' => '#products'],
-                ['type' => 'collection', 'design' => 'editorial', 'section_label' => '今週のルック', 'layout' => 'scroll', 'item_image_height' => 200, 'items' => [
-                    ['title' => 'サマーコレクション', 'description' => 'スタッフ推薦', 'image_url' => 'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=800'],
-                    ['title' => 'ビジネスカジュアル', 'description' => 'オフィス対応', 'image_url' => 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800'],
-                ]],
-                ['type' => 'collection', 'design' => 'chip_scroll', 'section_label' => 'カテゴリ', 'items' => [
-                    ['title' => 'New', 'action' => '#products'],
-                    ['title' => 'Sale', 'action' => '#products'],
-                    ['title' => 'Best', 'action' => '#products'],
-                    ['title' => 'コラボ', 'action' => '#products'],
-                ]],
-                ['type' => 'collection', 'design' => 'product_shelf', 'section_label' => '注目アイテム', 'layout' => 'grid', 'columns' => 2, 'item_image_height' => 160, 'items' => [
-                    ['title' => 'リネンジャケット', 'description' => '¥18,900', 'badge' => '新着', 'image_url' => 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600'],
-                    ['title' => 'レザートート', 'description' => '¥24,800', 'badge' => '人気', 'image_url' => 'https://images.unsplash.com/photo-1548036328-387074abb645?w=600'],
-                    ['title' => 'スニーカー', 'description' => '¥12,800', 'image_url' => 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600'],
-                    ['title' => 'コットンTシャツ', 'description' => '¥4,900', 'image_url' => 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600'],
-                ]],
+                ['type' => 'slider', 'source' => 'gallery', 'design' => 'hero', 'section_label' => '今週のルック', 'slide_height' => 200],
+                ['type' => 'data', 'source' => 'products', 'design' => 'cards'],
                 ['type' => 'card', 'design' => 'overlay', 'title' => 'New Arrivals', 'description' => '会員先行で公開中', 'image_url' => 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800', 'action' => '#products'],
                 ['type' => 'button', 'design' => 'cta', 'text' => 'ショップを見る', 'action' => '#products', 'color' => $a, 'full_width' => true],
             ],
             'products' => [
-                ['type' => 'collection', 'design' => 'chip_scroll', 'section_label' => 'カテゴリ', 'items' => [
-                    ['title' => 'すべて', 'action' => '#products'],
-                    ['title' => 'アウター', 'action' => '#products'],
-                    ['title' => 'トップス', 'action' => '#products'],
-                    ['title' => 'ボトムス', 'action' => '#products'],
-                    ['title' => '小物', 'action' => '#products'],
-                ]],
-                ['type' => 'collection', 'design' => 'product_shelf', 'section_label' => '新着', 'layout' => 'grid', 'columns' => 2, 'item_image_height' => 160, 'items' => [
-                    ['title' => 'リネンジャケット', 'description' => '¥18,900', 'image_url' => 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600'],
-                    ['title' => 'コットンTシャツ', 'description' => '¥4,900', 'image_url' => 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600'],
-                    ['title' => 'スリムパンツ', 'description' => '¥9,800', 'image_url' => 'https://images.unsplash.com/photo-1473966968600-fa801b869a1a?w=600'],
-                    ['title' => 'レザーベルト', 'description' => '¥6,500', 'image_url' => 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=600'],
-                ]],
                 ['type' => 'data', 'source' => 'products', 'design' => 'cards'],
             ],
             'orders' => [
                 ['type' => 'heading', 'design' => 'section', 'text' => '注文履歴', 'size' => 'large'],
                 ['type' => 'data', 'source' => 'orders', 'design' => 'timeline'],
-                ['type' => 'button', 'design' => 'soft', 'text' => '商品を見る', 'action' => '#products', 'color' => $a],
+                ['type' => 'button', 'design' => 'cta', 'text' => '商品を見る', 'action' => '#products', 'color' => $a],
             ],
             'stamps' => [
                 ['type' => 'heading', 'design' => 'section', 'text' => 'スタンプ', 'size' => 'large'],
-                ['type' => 'banner', 'design' => 'soft', 'icon' => 'fa-gift', 'text' => 'お買い上げ5回で1,000ptプレゼント', 'color' => $a],
+                ['type' => 'banner', 'design' => 'promo', 'icon' => 'fa-gift', 'text' => 'お買い上げ5回で1,000ptプレゼント', 'color' => $a],
                 ['type' => 'data', 'source' => 'stamps', 'design' => 'cards'],
             ],
             'coupons' => [
                 ['type' => 'banner', 'design' => 'countdown', 'icon' => 'fa-ticket-alt', 'text' => '会員限定シークレットセール 残り12時間', 'color' => $a, 'text_color' => '#ffffff'],
-                ['type' => 'collection', 'design' => 'editorial', 'section_label' => 'VIPクーポン', 'layout' => 'scroll', 'item_image_height' => 170, 'items' => [
-                    ['title' => '全品15%OFF', 'description' => 'プラチナ会員限定', 'badge' => '限定', 'image_url' => 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800'],
-                    ['title' => '送料無料', 'description' => '今月末まで', 'image_url' => 'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=800'],
-                ]],
                 ['type' => 'data', 'source' => 'coupons', 'design' => 'cards'],
             ],
             'queue' => [
@@ -1026,10 +919,7 @@ class LiffAppStudioTemplates
             ],
             'gallery' => [
                 ['type' => 'heading', 'design' => 'section', 'text' => 'ルックブック', 'size' => 'large'],
-                ['type' => 'slider', 'design' => 'hero', 'slide_height' => 240, 'slides' => [
-                    ['image_url' => 'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=1200', 'caption' => 'サマーコレクション'],
-                    ['image_url' => 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1200', 'caption' => 'ショップ'],
-                ]],
+                ['type' => 'slider', 'source' => 'gallery', 'design' => 'hero', 'slide_height' => 240],
                 ['type' => 'data', 'source' => 'gallery', 'design' => 'cards'],
             ],
             'announcements' => [
@@ -1053,7 +943,7 @@ class LiffAppStudioTemplates
                     ['label' => '待ち人数', 'value' => '5', 'hint' => '人'],
                     ['label' => '次回予約', 'value' => '8/3', 'hint' => ''],
                 ]],
-                ['type' => 'banner', 'design' => 'soft', 'icon' => 'fa-info-circle', 'text' => '本日の診察は通常通り受付中です', 'color' => $a],
+                ['type' => 'banner', 'design' => 'promo', 'icon' => 'fa-info-circle', 'text' => '本日の診察は通常通り受付中です', 'color' => $a],
                 ['type' => 'hours', 'design' => 'card', 'title' => '診療時間', 'rows' => [
                     ['day' => '月〜金', 'time' => '9:00 - 18:00'],
                     ['day' => '土', 'time' => '9:00 - 13:00'],
@@ -1069,11 +959,6 @@ class LiffAppStudioTemplates
             ],
             'products' => [
                 ['type' => 'heading', 'design' => 'section', 'text' => '診療メニュー', 'size' => 'large'],
-                ['type' => 'collection', 'design' => 'chip_scroll', 'section_label' => '科目', 'items' => [
-                    ['title' => '内科', 'action' => '#products'],
-                    ['title' => '皮膚科', 'action' => '#products'],
-                    ['title' => '健診', 'action' => '#products'],
-                ]],
                 ['type' => 'data', 'source' => 'products', 'design' => 'cards'],
             ],
             'orders' => [
@@ -1082,7 +967,7 @@ class LiffAppStudioTemplates
             ],
             'stamps' => [
                 ['type' => 'heading', 'design' => 'section', 'text' => 'スタンプ', 'size' => 'large'],
-                ['type' => 'banner', 'design' => 'soft', 'icon' => 'fa-gift', 'text' => '定期受診でポイントが貯まります', 'color' => $a],
+                ['type' => 'banner', 'design' => 'promo', 'icon' => 'fa-gift', 'text' => '定期受診でポイントが貯まります', 'color' => $a],
                 ['type' => 'data', 'source' => 'stamps', 'design' => 'cards'],
             ],
             'coupons' => [
@@ -1119,10 +1004,7 @@ class LiffAppStudioTemplates
             ],
             'gallery' => [
                 ['type' => 'heading', 'design' => 'section', 'text' => '院内のご案内', 'size' => 'large'],
-                ['type' => 'slider', 'design' => 'hero', 'slide_height' => 200, 'slides' => [
-                    ['image_url' => 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=1200', 'caption' => '待合室'],
-                    ['image_url' => 'https://images.unsplash.com/photo-1538108149393-fbbd81895907?w=1200', 'caption' => '診察室'],
-                ]],
+                ['type' => 'slider', 'source' => 'gallery', 'design' => 'hero', 'slide_height' => 200],
                 ['type' => 'data', 'source' => 'gallery', 'design' => 'cards'],
             ],
             'announcements' => [
@@ -1143,11 +1025,7 @@ class LiffAppStudioTemplates
                 ['type' => 'banner', 'design' => 'pill', 'icon' => 'fa-motorcycle', 'text' => '配達中 — あと約12分でお届け', 'color' => $a, 'text_color' => '#ffffff', 'action' => '#orders'],
                 ['type' => 'data', 'source' => 'orders', 'design' => 'timeline'],
                 ['type' => 'banner', 'design' => 'countdown', 'icon' => 'fa-tag', 'text' => '配達料無料キャンペーン中 残り3日', 'color' => $a, 'text_color' => '#ffffff', 'action' => '#products'],
-                ['type' => 'collection', 'design' => 'compact', 'section_label' => 'よく頼むメニュー', 'layout' => 'scroll', 'item_image_height' => 96, 'items' => [
-                    ['title' => 'デリバリーセットA', 'description' => '¥1,280', 'badge' => 'リピート', 'image_url' => 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=800'],
-                    ['title' => 'マルゲリータ', 'description' => '¥1,480', 'image_url' => 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=800'],
-                    ['title' => 'チキンBOX', 'description' => '¥980', 'image_url' => 'https://images.unsplash.com/photo-1562967914-608f82629710?w=800'],
-                ]],
+                ['type' => 'data', 'source' => 'products', 'design' => 'cards'],
                 ['type' => 'quick_actions', 'design' => 'grid', 'actions' => [
                     ['icon' => 'fa-utensils', 'label' => '注文する', 'action' => '#products'],
                     ['icon' => 'fa-truck', 'label' => '配達状況', 'action' => '#orders'],
@@ -1157,21 +1035,8 @@ class LiffAppStudioTemplates
                 ['type' => 'button', 'design' => 'sticky', 'text' => 'もう一度注文', 'action' => '#products', 'color' => $a, 'full_width' => true],
             ],
             'products' => [
-                ['type' => 'collection', 'design' => 'chip_scroll', 'section_label' => 'カテゴリ', 'items' => [
-                    ['title' => '人気', 'action' => '#products'],
-                    ['title' => 'ピザ', 'action' => '#products'],
-                    ['title' => 'バーガー', 'action' => '#products'],
-                    ['title' => 'サイド', 'action' => '#products'],
-                    ['title' => 'ドリンク', 'action' => '#products'],
-                ]],
-                ['type' => 'collection', 'design' => 'product_shelf', 'section_label' => '人気', 'layout' => 'grid', 'columns' => 2, 'item_image_height' => 120, 'items' => [
-                    ['title' => 'マルゲリータ', 'description' => '¥1,480', 'image_url' => 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600'],
-                    ['title' => 'テリヤキバーガー', 'description' => '¥680', 'image_url' => 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600'],
-                    ['title' => 'フライドチキン', 'description' => '¥580', 'image_url' => 'https://images.unsplash.com/photo-1562967914-608f82629710?w=600'],
-                    ['title' => 'ポテト', 'description' => '¥320', 'image_url' => 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=600'],
-                ]],
                 ['type' => 'data', 'source' => 'products', 'design' => 'cards'],
-                ['type' => 'button', 'design' => 'sticky', 'text' => 'カートに進む', 'action' => '#orders', 'color' => $a, 'full_width' => true],
+                ['type' => 'button', 'design' => 'sticky', 'text' => 'カートに進む', 'action' => '#order/cart', 'color' => $a, 'full_width' => true],
             ],
             'orders' => [
                 ['type' => 'banner', 'design' => 'pill', 'icon' => 'fa-truck', 'text' => 'リアルタイムで配達状況を表示', 'color' => $a, 'text_color' => '#ffffff'],
@@ -1180,11 +1045,11 @@ class LiffAppStudioTemplates
                     ['icon' => 'fa-bell', 'text' => '配達完了で LINE 通知', 'color' => $a],
                 ]],
                 ['type' => 'data', 'source' => 'orders', 'design' => 'timeline'],
-                ['type' => 'button', 'design' => 'soft', 'text' => '再注文する', 'action' => '#products', 'color' => $a],
+                ['type' => 'button', 'design' => 'cta', 'text' => '再注文する', 'action' => '#products', 'color' => $a],
             ],
             'stamps' => [
                 ['type' => 'heading', 'design' => 'section', 'text' => 'スタンプ', 'size' => 'large'],
-                ['type' => 'banner', 'design' => 'soft', 'icon' => 'fa-gift', 'text' => '注文5回で500円OFFクーポン', 'color' => $a],
+                ['type' => 'banner', 'design' => 'promo', 'icon' => 'fa-gift', 'text' => '注文5回で500円OFFクーポン', 'color' => $a],
                 ['type' => 'data', 'source' => 'stamps', 'design' => 'cards'],
             ],
             'coupons' => [
@@ -1232,16 +1097,12 @@ class LiffAppStudioTemplates
         return [
             ['type' => 'member_summary', 'design' => 'rewards', 'greeting' => 'おかえりなさい'],
             ['type' => 'stats_row', 'section_label' => 'マイリワード', 'items' => [
-                ['label' => 'ポイント', 'value' => '3,280', 'hint' => 'pt'],
-                ['label' => 'ランク', 'value' => 'ゴールド', 'hint' => ''],
-                ['label' => '次回特典', 'value' => '720', 'hint' => 'ptで達成'],
+                ['label' => 'ポイント', 'value' => '3,280', 'hint' => 'pt', 'field' => 'points'],
+                ['label' => 'ランク', 'value' => 'ゴールド', 'hint' => '', 'field' => 'rank'],
+                ['label' => '次回特典', 'value' => '720', 'hint' => 'ptで達成', 'field' => 'points_to_next'],
             ]],
-            ['type' => 'banner', 'design' => 'soft', 'icon' => 'fa-crown', 'text' => 'ゴールド会員限定 — 今週末ポイント3倍', 'color' => '#5856d6'],
-            ['type' => 'collection', 'design' => 'picks', 'section_label' => '交換できる特典', 'layout' => 'scroll', 'item_image_height' => 110, 'items' => [
-                ['title' => 'ドリンク無料', 'description' => '500pt', 'badge' => '人気', 'image_url' => 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=800'],
-                ['title' => 'デザート', 'description' => '800pt', 'image_url' => 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=800'],
-                ['title' => '割引券', 'description' => '300pt', 'badge' => '新着', 'image_url' => 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800'],
-            ]],
+            ['type' => 'banner', 'design' => 'promo', 'icon' => 'fa-crown', 'text' => 'ゴールド会員限定 — 今週末ポイント3倍', 'color' => '#5856d6'],
+            ['type' => 'data', 'source' => 'coupons', 'design' => 'cards'],
             ['type' => 'quick_actions', 'design' => 'pill', 'actions' => [
                 ['icon' => 'fa-qrcode', 'label' => '会員証', 'action' => '#member'],
                 ['icon' => 'fa-ticket-alt', 'label' => 'クーポン', 'action' => '#coupons'],
@@ -1260,12 +1121,7 @@ class LiffAppStudioTemplates
                 ['label' => '残り時間', 'value' => '5:42:18', 'hint' => ''],
                 ['label' => '対象商品', 'value' => '48', 'hint' => '点'],
             ]],
-            ['type' => 'collection', 'design' => 'product_shelf', 'section_label' => 'セール対象', 'layout' => 'grid', 'columns' => 2, 'item_image_height' => 150, 'items' => [
-                ['title' => 'リネンシャツ', 'description' => '¥3,900 → ¥1,950', 'badge' => '50%OFF', 'image_url' => 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600'],
-                ['title' => 'デニムパンツ', 'description' => '¥8,900 → ¥4,450', 'badge' => '50%OFF', 'image_url' => 'https://images.unsplash.com/photo-1473966968600-fa801b869a1a?w=600'],
-                ['title' => 'スニーカー', 'description' => '¥12,800 → ¥7,680', 'badge' => '40%OFF', 'image_url' => 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600'],
-                ['title' => 'トートバッグ', 'description' => '¥6,800 → ¥2,720', 'badge' => '60%OFF', 'image_url' => 'https://images.unsplash.com/photo-1548036328-387074abb645?w=600'],
-            ]],
+            ['type' => 'data', 'source' => 'products', 'design' => 'cards'],
             ['type' => 'button', 'design' => 'sticky', 'text' => 'セール商品をすべて見る', 'action' => '#products', 'color' => '#dc2626', 'full_width' => true],
         ];
     }
@@ -1277,8 +1133,8 @@ class LiffAppStudioTemplates
             ['type' => 'member_summary', 'design' => 'emblem', 'greeting' => '会員証'],
             ['type' => 'data', 'source' => 'member_card', 'card_design' => 'emblem'],
             ['type' => 'stats_row', 'items' => [
-                ['label' => 'ポイント', 'value' => '2,480', 'hint' => 'pt'],
-                ['label' => 'ランク', 'value' => 'ゴールド', 'hint' => ''],
+                ['label' => 'ポイント', 'value' => '2,480', 'hint' => 'pt', 'field' => 'points'],
+                ['label' => 'ランク', 'value' => 'ゴールド', 'hint' => '', 'field' => 'rank'],
             ]],
             ['type' => 'icon_text', 'rows' => [
                 ['icon' => 'fa-qrcode', 'text' => 'レジでこの画面をご提示ください', 'color' => '#5856d6'],
@@ -1303,7 +1159,7 @@ class LiffAppStudioTemplates
                 ['label' => '累計', 'value' => '42', 'hint' => '個'],
                 ['label' => '達成特典', 'value' => '4', 'hint' => '回'],
             ]],
-            ['type' => 'banner', 'design' => 'soft', 'icon' => 'fa-trophy', 'text' => 'あと3個で「ドリンク無料」達成！', 'color' => '#f59e0b'],
+            ['type' => 'banner', 'design' => 'promo', 'icon' => 'fa-trophy', 'text' => 'あと3個で「ドリンク無料」達成！', 'color' => '#f59e0b'],
             ['type' => 'icon_text', 'rows' => [
                 ['icon' => 'fa-stamp', 'text' => 'ご来店・ご注文ごとにスタンプ1個', 'color' => '#f59e0b'],
                 ['icon' => 'fa-gift', 'text' => '10個達成: ドリンク無料', 'color' => '#f59e0b'],
@@ -1318,21 +1174,8 @@ class LiffAppStudioTemplates
     private static function screenMenu(): array
     {
         return [
-            ['type' => 'collection', 'design' => 'chip_scroll', 'section_label' => 'カテゴリ', 'items' => [
-                ['title' => 'すべて', 'action' => '#products'],
-                ['title' => 'バーガー', 'action' => '#products'],
-                ['title' => 'サイド', 'action' => '#products'],
-                ['title' => 'ドリンク', 'action' => '#products'],
-                ['title' => 'デザート', 'action' => '#products'],
-            ]],
-            ['type' => 'collection', 'design' => 'product_shelf', 'section_label' => 'おすすめ', 'layout' => 'grid', 'columns' => 2, 'item_image_height' => 130, 'items' => [
-                ['title' => 'クラシックバーガー', 'description' => '¥590', 'badge' => '人気', 'image_url' => 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600'],
-                ['title' => 'テリヤキバーガー', 'description' => '¥680', 'image_url' => 'https://images.unsplash.com/photo-1572802419224-296b0aeee0d9?w=600'],
-                ['title' => 'フライドポテト', 'description' => '¥320', 'badge' => '定番', 'image_url' => 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=600'],
-                ['title' => 'シェイク', 'description' => '¥450', 'image_url' => 'https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=600'],
-            ]],
             ['type' => 'data', 'source' => 'products', 'design' => 'cards'],
-            ['type' => 'button', 'design' => 'sticky', 'text' => 'カートに進む', 'action' => '#orders', 'color' => '#ff9500', 'full_width' => true],
+            ['type' => 'button', 'design' => 'sticky', 'text' => 'カートに進む', 'action' => '#order/cart', 'color' => '#ff9500', 'full_width' => true],
         ];
     }
 
@@ -1353,7 +1196,7 @@ class LiffAppStudioTemplates
                 ['icon' => 'fa-bell', 'text' => '準備完了で LINE 通知', 'color' => '#6b7280'],
             ]],
             ['type' => 'data', 'source' => 'orders', 'design' => 'timeline'],
-            ['type' => 'button', 'design' => 'soft', 'text' => '追加注文する', 'action' => '#products', 'color' => '#16a34a'],
+            ['type' => 'button', 'design' => 'cta', 'text' => '追加注文する', 'action' => '#products', 'color' => '#16a34a'],
         ];
     }
 
@@ -1367,7 +1210,7 @@ class LiffAppStudioTemplates
                 ['label' => '推奨', 'value' => '4週後', 'hint' => ''],
                 ['label' => '空き', 'value' => '5', 'hint' => '枠'],
             ]],
-            ['type' => 'banner', 'design' => 'soft', 'icon' => 'fa-calendar-check', 'text' => '前回と同じメニューで再予約できます', 'color' => '#af52de', 'action' => '#reservations'],
+            ['type' => 'banner', 'design' => 'promo', 'icon' => 'fa-calendar-check', 'text' => '前回と同じメニューで再予約できます', 'color' => '#af52de', 'action' => '#reservations'],
             ['type' => 'list', 'style' => 'number', 'items' => ['メニューを確認', '希望日時を選択', '予約を確定']],
             ['type' => 'data', 'source' => 'reservations', 'design' => 'cards'],
             ['type' => 'button', 'design' => 'sticky', 'text' => '空き枠を見る', 'action' => '#reservations', 'color' => '#af52de', 'full_width' => true],
@@ -1397,15 +1240,7 @@ class LiffAppStudioTemplates
     private static function screenLookbook(): array
     {
         return [
-            ['type' => 'slider', 'design' => 'hero', 'section_label' => 'スタイルギャラリー', 'slide_height' => 300, 'slides' => [
-                ['image_url' => 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=1200', 'caption' => 'ショートボブ'],
-                ['image_url' => 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=1200', 'caption' => 'ウェーブロング'],
-                ['image_url' => 'https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?w=1200', 'caption' => 'メンズショート'],
-            ]],
-            ['type' => 'collection', 'design' => 'magazine', 'section_label' => '最新スタイル', 'layout' => 'scroll', 'item_image_height' => 180, 'items' => [
-                ['title' => '夏のショートヘア', 'description' => 'スタイリスト推薦', 'badge' => '人気', 'image_url' => 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=800'],
-                ['title' => 'ナチュラルウェーブ', 'description' => 'トレンド', 'image_url' => 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=800'],
-            ]],
+            ['type' => 'slider', 'source' => 'gallery', 'design' => 'hero', 'section_label' => 'スタイルギャラリー', 'slide_height' => 300],
             ['type' => 'data', 'source' => 'gallery', 'design' => 'cards'],
             ['type' => 'button', 'design' => 'sticky', 'text' => 'このスタイルで予約', 'action' => '#reservations', 'color' => '#ff2d55', 'full_width' => true],
         ];
@@ -1417,10 +1252,6 @@ class LiffAppStudioTemplates
         return [
             ['type' => 'heading', 'design' => 'section', 'text' => 'お知らせ', 'size' => 'large'],
             ['type' => 'banner', 'design' => 'pill', 'icon' => 'fa-bullhorn', 'text' => '最新のお知らせ', 'color' => '#007aff', 'text_color' => '#ffffff'],
-            ['type' => 'collection', 'design' => 'magazine', 'section_label' => 'ハイライト', 'layout' => 'scroll', 'item_image_height' => 120, 'items' => [
-                ['title' => '夏季限定メニュー開始', 'description' => '7月1日〜', 'badge' => '新着', 'image_url' => 'https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=800'],
-                ['title' => '営業時間変更のお知らせ', 'description' => '8月から', 'image_url' => 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800'],
-            ]],
             ['type' => 'data', 'source' => 'announcements', 'design' => 'cards'],
         ];
     }
@@ -1455,13 +1286,9 @@ class LiffAppStudioTemplates
     {
         return [
             ['type' => 'hero', 'design' => 'editorial', 'eyebrow' => 'VIPラウンジ', 'title' => 'プラチナ会員限定', 'subtitle' => '特別なオファーと優待をお楽しみください', 'image_url' => 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1400&q=80'],
-            ['type' => 'member_summary', 'design' => 'glass'],
-            ['type' => 'collection', 'design' => 'picks', 'section_label' => '限定オファー', 'layout' => 'scroll', 'item_image_height' => 130, 'items' => [
-                ['title' => '先行セール招待', 'description' => 'プラチナ限定', 'badge' => '限定', 'image_url' => 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800'],
-                ['title' => 'バースデー特典', 'description' => '20%OFFクーポン', 'badge' => '特典', 'image_url' => 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800'],
-                ['title' => '限定アイテム', 'description' => '会員先行販売', 'image_url' => 'https://images.unsplash.com/photo-1548036328-387074abb645?w=800'],
-            ]],
-            ['type' => 'banner', 'design' => 'soft', 'icon' => 'fa-gem', 'text' => '年間お買い上げ ¥100,000 でプラチナ維持', 'color' => '#92400e'],
+            ['type' => 'member_summary', 'design' => 'wallet'],
+            ['type' => 'data', 'source' => 'coupons', 'design' => 'cards'],
+            ['type' => 'banner', 'design' => 'promo', 'icon' => 'fa-gem', 'text' => '年間お買い上げ ¥100,000 でプラチナ維持', 'color' => '#92400e'],
             ['type' => 'icon_text', 'rows' => [
                 ['icon' => 'fa-crown', 'text' => 'ポイント2倍還元', 'color' => '#92400e'],
                 ['icon' => 'fa-gift', 'text' => '毎月の限定特典', 'color' => '#92400e'],
@@ -1476,22 +1303,13 @@ class LiffAppStudioTemplates
     {
         return [
             ['type' => 'hero', 'design' => 'apple', 'eyebrow' => 'おはようございます', 'title' => 'モーニングメニュー', 'subtitle' => '7:00〜10:30限定のお得なセット', 'image_url' => 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1400&q=80'],
-            ['type' => 'banner', 'design' => 'soft', 'icon' => 'fa-clock', 'text' => 'モーニングタイム 7:00〜10:30', 'color' => '#ca8a04'],
-            ['type' => 'collection', 'design' => 'picks', 'section_label' => 'モーニングセット', 'layout' => 'scroll', 'item_image_height' => 120, 'items' => [
-                ['title' => 'トーストセット', 'description' => '¥480', 'badge' => '人気', 'image_url' => 'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=800'],
-                ['title' => 'エッグベネディクト', 'description' => '¥780', 'badge' => '新着', 'image_url' => 'https://images.unsplash.com/photo-1608039829572-9b4e8d0a13e2?w=800'],
-                ['title' => 'グラノーラボウル', 'description' => '¥650', 'image_url' => 'https://images.unsplash.com/photo-1490474418585-ba9bad8fd0ea?w=800'],
-            ]],
+            ['type' => 'banner', 'design' => 'promo', 'icon' => 'fa-clock', 'text' => 'モーニングタイム 7:00〜10:30', 'color' => '#ca8a04'],
             ['type' => 'stats_row', 'items' => [
                 ['label' => 'スタンプ', 'value' => '7', 'hint' => '/10'],
-                ['label' => 'ポイント', 'value' => '340', 'hint' => 'pt'],
+                ['label' => 'ポイント', 'value' => '340', 'hint' => 'pt', 'field' => 'points'],
             ]],
-            ['type' => 'collection', 'design' => 'chip_scroll', 'section_label' => 'ドリンク', 'items' => [
-                ['title' => 'ブレンド', 'action' => '#products'],
-                ['title' => 'カフェラテ', 'action' => '#products'],
-                ['title' => 'フレッシュジュース', 'action' => '#products'],
-            ]],
-            ['type' => 'button', 'design' => 'soft', 'text' => 'モーニングを注文', 'action' => '#products', 'color' => '#ca8a04', 'full_width' => true],
+            ['type' => 'data', 'source' => 'products', 'design' => 'cards'],
+            ['type' => 'button', 'design' => 'cta', 'text' => 'モーニングを注文', 'action' => '#products', 'color' => '#ca8a04', 'full_width' => true],
         ];
     }
 
@@ -1503,19 +1321,15 @@ class LiffAppStudioTemplates
             ['type' => 'stats_row', 'section_label' => '今月の記録', 'items' => [
                 ['label' => '来館', 'value' => '12', 'hint' => '回'],
                 ['label' => '連続', 'value' => '5', 'hint' => '日'],
-                ['label' => 'ポイント', 'value' => '1,200', 'hint' => 'pt'],
+                ['label' => 'ポイント', 'value' => '1,200', 'hint' => 'pt', 'field' => 'points'],
             ]],
-            ['type' => 'banner', 'design' => 'soft', 'icon' => 'fa-medal', 'text' => '今月の来館15回でボーナスポイント', 'color' => '#16a34a', 'action' => '#stamps'],
+            ['type' => 'banner', 'design' => 'promo', 'icon' => 'fa-medal', 'text' => '今月の来館15回でボーナスポイント', 'color' => '#16a34a', 'action' => '#stamps'],
             ['type' => 'quick_actions', 'design' => 'pill', 'actions' => [
                 ['icon' => 'fa-dumbbell', 'label' => 'チェックイン', 'action' => '#stamps'],
                 ['icon' => 'fa-calendar-check', 'label' => 'レッスン予約', 'action' => '#reservations'],
                 ['icon' => 'fa-id-card', 'label' => '会員証', 'action' => '#member'],
             ]],
-            ['type' => 'collection', 'design' => 'picks', 'section_label' => '本日のレッスン', 'layout' => 'scroll', 'item_image_height' => 110, 'items' => [
-                ['title' => 'HIIT 30分', 'description' => '10:00〜 空きあり', 'badge' => '人気', 'image_url' => 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800'],
-                ['title' => 'ヨガフロー', 'description' => '14:00〜 残席2', 'image_url' => 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800'],
-                ['title' => 'ピラティス', 'description' => '18:00〜', 'badge' => '新着', 'image_url' => 'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=800'],
-            ]],
+            ['type' => 'data', 'source' => 'reservations', 'design' => 'cards'],
             ['type' => 'data', 'source' => 'stamps', 'design' => 'cards'],
             ['type' => 'button', 'design' => 'sticky', 'text' => 'チェックイン', 'action' => '#stamps', 'color' => '#16a34a', 'full_width' => true],
         ];
