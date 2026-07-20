@@ -12,4 +12,8 @@ enum MobileWebShellSession {
         sharedViewModel = created
         return created
     }
+
+    static func reset() {
+        sharedViewModel = nil
+    }
 }

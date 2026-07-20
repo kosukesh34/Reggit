@@ -33,6 +33,8 @@ return [
     'debug' => (bool) env('APP_DEBUG', false),
     'url' => env('APP_URL', 'http://reggit.test'),
     'api_base' => env('APP_API_BASE', '/api'),
+    /** プロジェクトキー未指定時のフォールバック（未設定なら先頭の active プロジェクト） */
+    'default_project_key' => env('APP_DEFAULT_PROJECT_KEY'),
     'timezone' => 'Asia/Tokyo',
     'locale' => 'ja',
     'fallback_locale' => 'en',

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Announcement;
 use App\Models\Member;
 use App\Models\Project;
+use App\Models\ShopSetting;
 use App\Services\Line\LineService;
 use App\Support\LiffTabUrlBuilder;
 use App\Support\MemberChannel;
@@ -45,7 +46,7 @@ class AnnouncementNotificationService
      */
     private function sendLinePushes(Announcement $announcement): array
     {
-        if (trim((string) env('LINE_CHANNEL_ACCESS_TOKEN', '')) === '') {
+        if (! ShopSetting::hasLineChannelAccessToken((int) $announcement->project_id)) {
             LogHelper::info('[Announcement] LINE push skipped (token not configured)', [
                 'announcement_id' => $announcement->id,
                 'project_id' => $announcement->project_id,
@@ -59,9 +60,11 @@ class AnnouncementNotificationService
             return ['line_sent' => 0, 'line_failed' => 0, 'line_skipped' => 0];
         }
 
-        $projectKey = Project::query()->where('id', (int) $announcement->project_id)->value('project_key') ?? 'default';
+        $projectId = (int) $announcement->project_id;
+        $channelAccessToken = ShopSetting::getLineChannelAccessToken($projectId);
+        $projectKey = Project::query()->where('id', $projectId)->value('project_key') ?? 'default';
         $announcementsUrl = LiffTabUrlBuilder::build(
-            (int) $announcement->project_id,
+            $projectId,
             (string) $projectKey,
             'announcements'
         );
@@ -83,7 +86,8 @@ class AnnouncementNotificationService
             try {
                 $this->lineService->pushMessage(
                     $lineUserId,
-                    $this->buildFlexMessage($title, $body, $announcementsUrl)
+                    $this->buildFlexMessage($title, $body, $announcementsUrl),
+                    $channelAccessToken
                 );
                 $sent++;
             } catch (\Throwable $e) {

@@ -19,6 +19,7 @@ use App\UseCases\Admin\Member\AdminMemberUpdateMemoUseCase;
 use App\UseCases\Admin\Member\AdminMemberUpdateUseCase;
 use App\UseCases\Admin\Member\AdminMemberVisitDetailUseCase;
 use App\UseCases\Admin\Member\Data\AdminMemberUpdateInput;
+use App\UseCases\Admin\Member\GetAdminMemberListExtrasUseCase;
 use App\UseCases\Admin\MemberTag\AdminMemberTagIndexUseCase;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -44,7 +45,8 @@ class MemberController extends AdminBaseController
         private AdminMemberDetachTagUseCase $detachTagUseCase,
         private AdminMemberUpdateMemoUseCase $updateMemoUseCase,
         private AdminMemberExportUseCase $exportUseCase,
-        private AdminMemberTagIndexUseCase $tagIndexUseCase
+        private AdminMemberTagIndexUseCase $tagIndexUseCase,
+        private GetAdminMemberListExtrasUseCase $memberListExtrasUseCase,
     ) {}
 
     public function members(Request $request)
@@ -52,10 +54,13 @@ class MemberController extends AdminBaseController
         $projectId = $this->resolveAdminProjectId();
         $filters = $request->only(['keyword', 'status', 'rank', 'channel']);
         $output = $this->listUseCase->handle($projectId, $filters);
+        $extras = $this->memberListExtrasUseCase->handle($projectId);
 
         return view('admin.members', [
             'members' => $output->members,
             'filters' => $filters,
+            'lineInviteUrl' => $extras->lineInviteUrl,
+            'lineInviteLabel' => $extras->lineInviteLabel,
         ]);
     }
 

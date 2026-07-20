@@ -1,3 +1,9 @@
+@php
+    $isOnboarding = $isOnboarding ?? false;
+    $showAdminAccount = $showAdminAccount ?? false;
+    $requireSmaregi = $requireSmaregi ?? false;
+@endphp
+
 <div class="card">
     <div class="card-header">
         <h3 class="card-title"><i class="fas fa-layer-group"></i> 基本情報</h3>
@@ -38,6 +44,67 @@
     </div>
 </div>
 
+<div class="card mt-3">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-cash-register"></i> スマレジ連携</h3>
+    </div>
+    <div class="card-body">
+        <div class="form-group">
+            <label for="smaregi_contract_id" class="form-label">契約ID @if($requireSmaregi)<span class="text-danger">*</span>@endif</label>
+            <input type="text" name="smaregi_contract_id" id="smaregi_contract_id" class="form-control" value="{{ old('smaregi_contract_id', $projectSettings['smaregi_contract_id'] ?? '') }}" @if($requireSmaregi) required @endif maxlength="255" placeholder="例: sb_skx928r2">
+            <p class="form-text text-muted">スマレジ・デベロッパーズの契約IDです。</p>
+            @error('smaregi_contract_id')<span class="invalid-feedback">{{ $message }}</span>@enderror
+        </div>
+        <div class="form-group">
+            <label for="smaregi_client_id" class="form-label">クライアントID @if($requireSmaregi)<span class="text-danger">*</span>@endif</label>
+            <input type="text" name="smaregi_client_id" id="smaregi_client_id" class="form-control" value="{{ old('smaregi_client_id', $projectSettings['smaregi_client_id'] ?? '') }}" @if($requireSmaregi) required @endif maxlength="255">
+            @error('smaregi_client_id')<span class="invalid-feedback">{{ $message }}</span>@enderror
+        </div>
+        <div class="form-group">
+            <label for="smaregi_client_secret" class="form-label">クライアントシークレット @if($requireSmaregi)<span class="text-danger">*</span>@endif</label>
+            <input type="password" name="smaregi_client_secret" id="smaregi_client_secret" class="form-control" value="" @if($requireSmaregi) required @endif maxlength="512" autocomplete="new-password" placeholder="{{ $project ? '変更する場合のみ入力' : '' }}">
+            <p class="form-text text-muted">作成時または再発行時のみスマレジ側に表示されます。リダイレクトURIは <code>urn:ietf:wg:oauth:2.0:oob</code> で問題ありません。</p>
+            @error('smaregi_client_secret')<span class="invalid-feedback">{{ $message }}</span>@enderror
+        </div>
+    </div>
+</div>
+
+@if($showAdminAccount)
+<div class="card mt-3">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-user-shield"></i> 管理者アカウント</h3>
+    </div>
+    <div class="card-body">
+        <div class="form-group">
+            <label for="admin_name" class="form-label">管理者名 <span class="text-danger">*</span></label>
+            <input type="text" name="admin_name" id="admin_name" class="form-control" value="{{ old('admin_name', '') }}" required maxlength="255">
+            @error('admin_name')<span class="invalid-feedback">{{ $message }}</span>@enderror
+        </div>
+        <div class="form-group">
+            <label for="admin_login_id" class="form-label">ログインID <span class="text-danger">*</span></label>
+            <input type="text" name="admin_login_id" id="admin_login_id" class="form-control" value="{{ old('admin_login_id', '') }}" required maxlength="100" pattern="[a-zA-Z0-9_-]+" autocomplete="username">
+            <p class="form-text text-muted">英数字・ハイフン・アンダースコア。</p>
+            @error('admin_login_id')<span class="invalid-feedback">{{ $message }}</span>@enderror
+        </div>
+        <div class="form-group">
+            <label for="admin_email" class="form-label">メールアドレス <span class="text-danger">*</span></label>
+            <input type="email" name="admin_email" id="admin_email" class="form-control" value="{{ old('admin_email', '') }}" required maxlength="255" autocomplete="email">
+            @error('admin_email')<span class="invalid-feedback">{{ $message }}</span>@enderror
+        </div>
+        <div class="form-group">
+            <label for="admin_password" class="form-label">パスワード <span class="text-danger">*</span></label>
+            <input type="password" name="admin_password" id="admin_password" class="form-control" required autocomplete="new-password">
+            @error('admin_password')<span class="invalid-feedback">{{ $message }}</span>@enderror
+        </div>
+        <div class="form-group">
+            <label for="admin_password_confirmation" class="form-label">パスワード（確認） <span class="text-danger">*</span></label>
+            <input type="password" name="admin_password_confirmation" id="admin_password_confirmation" class="form-control" required autocomplete="new-password">
+        </div>
+    </div>
+</div>
+@endif
+
+@if(! $isOnboarding)
 <div class="card mt-3">
     <div class="card-header">
         <h3 class="card-title"><i class="fab fa-line"></i> LINE連携（必須）</h3>
@@ -123,3 +190,4 @@
         </div>
     </div>
 </div>
+@endif

@@ -38,10 +38,16 @@ class BindProjectFromRequest
         }
 
         if ($isExplicitProjectKey === false) {
-            $projectKey = config('app.default_project_key', 'default');
+            $configured = config('app.default_project_key');
+            if (is_string($configured) && trim($configured) !== '') {
+                $projectKey = trim($configured);
+            }
         }
 
-        $project = $this->projectRepository->findActiveByProjectKey($projectKey);
+        $project = null;
+        if (is_string($projectKey) && $projectKey !== '') {
+            $project = $this->projectRepository->findActiveByProjectKey($projectKey);
+        }
 
         if ($project === null && $isExplicitProjectKey === false) {
             $project = $this->projectRepository->findFirstActive();
