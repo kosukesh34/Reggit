@@ -82,4 +82,19 @@ class AdminProjectControllerTest extends TestCase
         $response->assertRedirect(route('system-admin.projects.index'));
         $this->assertDatabaseHas('projects', ['id' => $project->id, 'name' => 'New']);
     }
+
+    public function test_index_ダッシュボードリンクが店舗ダッシュボードへ遷移すること(): void
+    {
+        $this->loginSystemAdmin();
+        $project = Project::factory()->create(['project_key' => 'proj-dash', 'is_active' => true]);
+
+        $response = $this->get('/system-admin/projects');
+
+        $response->assertOk();
+        $response->assertSee(route('admin.dashboard', ['project_key' => $project->project_key]), false);
+        $response->assertSee(route('liff.project', ['project_key' => $project->project_key]), false);
+
+        $dashboard = $this->get('/admin/'.$project->project_key);
+        $dashboard->assertRedirect(route('admin.dashboard', ['project_key' => $project->project_key]));
+    }
 }

@@ -105,8 +105,19 @@
         'smaregi' => [
             'title' => 'スマレジ連携設定の役割',
             'changes' => ['契約IDの紐づけ', '商品同期の実行'],
-            'notes' => ['Client ID/Secret は .env で管理し、管理画面からは変更しません。'],
-            'links' => [],
+            'notes' => ['Client ID/Secret はプロジェクト作成時またはプロジェクト編集で設定できます（未設定時は .env にフォールバック）。'],
+            'links' => [
+                ['label' => 'LIFF設定', 'url' => admin_route('admin.settings.liff-connection'), 'permission' => 'settings.view'],
+            ],
+        ],
+        'liff-connection' => [
+            'title' => 'LIFF設定の役割',
+            'changes' => ['LIFF ID', 'LIFF URL', 'Messaging API チャネルアクセストークン / シークレット'],
+            'notes' => ['画面レイアウトやタブの見た目は「LIFFデザイン」で設定します。'],
+            'links' => [
+                ['label' => 'LIFFデザイン', 'url' => admin_route('admin.settings.liff-designer'), 'permission' => 'liff_designer.manage'],
+                ['label' => 'ホーム設定', 'url' => admin_route('admin.settings.home'), 'permission' => 'settings.view'],
+            ],
         ],
     ];
     $guide = $guides[$pageKey] ?? null;

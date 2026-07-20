@@ -18,11 +18,14 @@ class ProjectProfileSmaregiSetting extends Model
         'project_id',
         'profile_field_settings',
         'smaregi_contract_id',
+        'smaregi_client_id',
+        'smaregi_client_secret',
     ];
 
     /** @var array<string, string> */
     protected $casts = [
         'profile_field_settings' => 'array',
+        'smaregi_client_secret' => 'encrypted',
     ];
 
     public function project(): BelongsTo

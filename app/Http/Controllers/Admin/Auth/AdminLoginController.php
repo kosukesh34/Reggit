@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\LoginRequest;
 use App\Http\Support\AdminAuthInputFactory;
 use App\Http\Support\AdminRedirect;
-use App\Models\Project;
 use App\UseCases\Admin\Auth\AdminLoginUseCase;
 use App\UseCases\Admin\Auth\GetAdminDashboardRedirectUseCase;
 use Illuminate\Support\Facades\Auth;
@@ -20,15 +19,10 @@ class AdminLoginController extends Controller
         private AdminAuthInputFactory $inputFactory,
     ) {}
 
-    /** プロジェクト選択画面（/admin/login） */
+    /** プロジェクト選択なしのログイン画面（一覧は出さない） */
     public function show()
     {
-        if (Auth::guard('admin')->check()) {
-            return AdminRedirect::toResponse($this->getDashboardRedirectUseCase->handle());
-        }
-        $projects = Project::where('is_active', true)->orderBy('name')->get();
-
-        return view('admin.project-login-select', ['projects' => $projects]);
+        return $this->showLoginForm();
     }
 
     /** ID・パスワードのみのログイン画面（プロジェクトはログイン後に自動選択） */

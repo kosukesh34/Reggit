@@ -42,6 +42,9 @@ class ShopSetting
         'line_danger_color' => ProjectLineLiffSetting::class,
         'line_liff_id' => ProjectLineLiffSetting::class,
         'line_liff_url' => ProjectLineLiffSetting::class,
+        'line_channel_access_token' => ProjectLineLiffSetting::class,
+        'line_channel_secret' => ProjectLineLiffSetting::class,
+        'line_friend_add_url' => ProjectLineLiffSetting::class,
         'liff_builder_blocks' => ProjectLineLiffSetting::class,
         'liff_tab_layouts' => ProjectLineLiffSetting::class,
         'liff_detail_layouts' => ProjectLineLiffSetting::class,
@@ -69,6 +72,8 @@ class ShopSetting
         'frontend_header_text' => ProjectAdminUiSetting::class,
         'profile_field_settings' => ProjectProfileSmaregiSetting::class,
         'smaregi_contract_id' => ProjectProfileSmaregiSetting::class,
+        'smaregi_client_id' => ProjectProfileSmaregiSetting::class,
+        'smaregi_client_secret' => ProjectProfileSmaregiSetting::class,
         'point_earn_rate' => ProjectMemberPointsSetting::class,
         'points_per_order' => ProjectMemberPointsSetting::class,
         'stamp_earn_per_amount' => ProjectMemberPointsSetting::class,
@@ -483,6 +488,49 @@ class ShopSetting
     public static function setLineLiffUrl(?string $liffUrl, ?int $projectId = null): void
     {
         self::setValue('line_liff_url', trim((string) ($liffUrl ?? '')), 'string', $projectId);
+    }
+
+    public static function getLineChannelAccessToken(?int $projectId = null): string
+    {
+        $value = trim((string) self::getValue('line_channel_access_token', '', $projectId));
+        if ($value !== '') {
+            return $value;
+        }
+
+        return trim((string) (config('line.channel_access_token') ?: env('LINE_CHANNEL_ACCESS_TOKEN', '')));
+    }
+
+    public static function setLineChannelAccessToken(?string $token, ?int $projectId = null): void
+    {
+        $trimmed = trim((string) ($token ?? ''));
+        if ($trimmed === '') {
+            return;
+        }
+        self::setValue('line_channel_access_token', $trimmed, 'string', $projectId);
+    }
+
+    public static function getLineChannelSecret(?int $projectId = null): string
+    {
+        $value = trim((string) self::getValue('line_channel_secret', '', $projectId));
+        if ($value !== '') {
+            return $value;
+        }
+
+        return trim((string) (config('line.channel_secret') ?: env('LINE_CHANNEL_SECRET', '')));
+    }
+
+    public static function setLineChannelSecret(?string $secret, ?int $projectId = null): void
+    {
+        $trimmed = trim((string) ($secret ?? ''));
+        if ($trimmed === '') {
+            return;
+        }
+        self::setValue('line_channel_secret', $trimmed, 'string', $projectId);
+    }
+
+    public static function hasLineChannelAccessToken(?int $projectId = null): bool
+    {
+        return self::getLineChannelAccessToken($projectId) !== '';
     }
 
     /** LINE公式アカウントの友だち追加URL（メッセージ・クーポン配布用）。例: https://line.me/R/ti/p/@xxx */

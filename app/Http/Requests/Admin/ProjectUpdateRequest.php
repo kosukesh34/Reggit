@@ -40,6 +40,9 @@ class ProjectUpdateRequest extends FormRequest
             'line_primary_dark' => ['nullable', 'string', 'regex:'.self::HEX_REGEX],
             'line_success_color' => ['nullable', 'string', 'regex:'.self::HEX_REGEX],
             'line_danger_color' => ['nullable', 'string', 'regex:'.self::HEX_REGEX],
+            'smaregi_contract_id' => 'nullable|string|max:255',
+            'smaregi_client_id' => 'nullable|string|max:255',
+            'smaregi_client_secret' => 'nullable|string|max:512',
         ];
     }
 
@@ -56,7 +59,7 @@ class ProjectUpdateRequest extends FormRequest
 
     public function toProjectSettingsPayload(): array
     {
-        return [
+        $payload = [
             'line_liff_id' => trim((string) $this->validated('line_liff_id')),
             'line_liff_url' => trim((string) $this->validated('line_liff_url')),
             'frontend_header_text' => trim((string) $this->validated('frontend_header_text')),
@@ -67,6 +70,15 @@ class ProjectUpdateRequest extends FormRequest
             'line_primary_dark' => $this->validated('line_primary_dark') ?? '#333333',
             'line_success_color' => $this->validated('line_success_color') ?? '#000000',
             'line_danger_color' => $this->validated('line_danger_color') ?? '#dc3545',
+            'smaregi_contract_id' => trim((string) ($this->validated('smaregi_contract_id') ?? '')),
+            'smaregi_client_id' => trim((string) ($this->validated('smaregi_client_id') ?? '')),
         ];
+
+        $secret = trim((string) ($this->validated('smaregi_client_secret') ?? ''));
+        if ($secret !== '') {
+            $payload['smaregi_client_secret'] = $secret;
+        }
+
+        return $payload;
     }
 }
