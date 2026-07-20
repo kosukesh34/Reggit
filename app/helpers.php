@@ -64,7 +64,7 @@ if (! function_exists('admin_route')) {
                 } else {
                     $defaultKey = Project::where('is_active', true)->orderBy('id')->value('project_key');
                     if (! is_string($defaultKey) || trim($defaultKey) === '') {
-                        throw new \RuntimeException('No active project available for admin_route.');
+                        throw new RuntimeException('No active project available for admin_route.');
                     }
                     $params['project_key'] = $defaultKey;
                 }
