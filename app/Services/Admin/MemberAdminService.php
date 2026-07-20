@@ -546,12 +546,12 @@ class MemberAdminService
 
         $allowedMember = [
             'member_number', 'status', 'rank', 'birthday', 'address',
-            'postal_code', 'prefecture', 'city', 'street', 'sex', 'profile_extra',
+            'postal_code', 'prefecture', 'city', 'street', 'sex', 'mail_receive_flag', 'profile_extra',
         ];
         $updateMember = array_intersect_key($memberData, array_flip($allowedMember));
         $updateMember = array_filter(
             $updateMember,
-            static fn ($value, string $key): bool => $key === 'profile_extra' || $value !== null,
+            static fn ($value, string $key): bool => $key === 'profile_extra' || $key === 'mail_receive_flag' || $value !== null,
             ARRAY_FILTER_USE_BOTH
         );
         $previousRank = (string) ($member->rank ?? '');
@@ -595,7 +595,7 @@ class MemberAdminService
 
         $mergedUser = array_merge($user->only(['name', 'kana', 'email', 'phone']), $updateUser);
         $body = $this->smaregiCustomerUpdatePayloadBuilder->buildFromAdminMemberData($mergedUser, $member->only([
-            'member_number', 'birthday', 'address', 'postal_code', 'sex',
+            'member_number', 'birthday', 'address', 'postal_code', 'prefecture', 'city', 'street', 'sex', 'mail_receive_flag',
         ]));
         if ($body === []) {
             return;

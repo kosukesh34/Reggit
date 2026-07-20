@@ -2452,6 +2452,23 @@ export class MemberManager {
                     '</div></fieldset>',
                 ];
             }
+            if (key === 'mail_receive_flag') {
+                // 未設定はどちらも未選択のままにする（デフォルト許可で既存の拒否設定を上書きしない）
+                const checked1 = val === '1' ? ' checked' : '';
+                const checked0 = val === '0' ? ' checked' : '';
+                return [
+                    '<fieldset class="member-form-group member-form-group--choice">' +
+                    '<legend class="member-form-group-label">' + DomHelper.escapeHtml(label) + (f.required ? ' <span class="required">*</span>' : '') + '</legend>' +
+                    '<div class="member-form-segment member-form-segment--cols-2" role="radiogroup" aria-label="' + DomHelper.escapeHtml(label) + '">' +
+                    '<label class="member-form-segment-btn">' +
+                    '<input type="radio" id="' + id + '_1" name="mail_receive_flag" value="1"' + checked1 + required + '>' +
+                    '<span class="member-form-segment-btn-text">許可する</span></label>' +
+                    '<label class="member-form-segment-btn">' +
+                    '<input type="radio" id="' + id + '_0" name="mail_receive_flag" value="0"' + checked0 + required + '>' +
+                    '<span class="member-form-segment-btn-text">許可しない</span></label>' +
+                    '</div></fieldset>',
+                ];
+            }
             if (key === 'birthday') {
                 input = '<input type="date" id="' + id + '" name="' + DomHelper.escapeHtml(key) + '" value="' + DomHelper.escapeHtml(val || birthdayVal) + '"' + required + '>';
             } else if (key === 'email') {
@@ -2609,7 +2626,11 @@ export class MemberManager {
         const submitButtons = Array.from(document.querySelectorAll(
             '#registerForm button[type="submit"], button[type="submit"][form="registerForm"]'
         )) as HTMLButtonElement[];
-        submitButtons.forEach((btn) => { btn.disabled = true; });
+        const submitButtonHtml = submitButtons.map((btn) => btn.innerHTML);
+        submitButtons.forEach((btn) => {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin" aria-hidden="true"></i> 登録中...';
+        });
 
         try {
             const payload: any = {};
@@ -2626,16 +2647,18 @@ export class MemberManager {
                     payload.name = (lastVal + ' ' + firstVal).trim() || null;
                     return;
                 }
-                const el = asInput(key === 'sex'
-                    ? form.querySelector('[name="sex"]:checked')
+                const el = asInput(key === 'sex' || key === 'mail_receive_flag'
+                    ? form.querySelector('[name="' + key + '"]:checked')
                     : form.querySelector('[name="' + key.replace(/"/g, '\\"') + '"]'));
                 if (el) {
                     let v: any = (el.value || '').trim();
                     if (key === 'birthday' && !v) v = null;
-                    payload[key] = v || null;
+                    // mail_receive_flag の '0' は falsy 扱いにしない
+                    payload[key] = (key === 'mail_receive_flag') ? v : (v || null);
                 } else if (key === 'sex') {
                     payload[key] = null;
                 }
+                // mail_receive_flag 未選択時はキー自体を送らず、既存値・スマレジ側を維持する
             });
             if (Object.keys(payload).length === 0 && form.elements.length) {
                 for (let i = 0; i < form.elements.length; i++) {
@@ -2644,7 +2667,7 @@ export class MemberManager {
                         if (el.type === 'radio' && !el.checked) continue;
                         let v: any = (el.value || '').trim();
                         if (el.name === 'birthday' && !v) v = null;
-                        payload[el.name] = v || null;
+                        payload[el.name] = (el.name === 'mail_receive_flag') ? v : (v || null);
                     }
                 }
             }
@@ -2695,9 +2718,12 @@ export class MemberManager {
             ToastManager.error('登録に失敗しました: ' + (error.message || 'エラーが発生しました'));
         } finally {
             this._isRegisterSubmitting = false;
-            submitButtons.forEach((btn) => {
+            submitButtons.forEach((btn, index) => {
                 if (document.body.contains(btn)) {
                     btn.disabled = false;
+                    if (submitButtonHtml[index] != null) {
+                        btn.innerHTML = submitButtonHtml[index];
+                    }
                 }
             });
         }
@@ -2707,6 +2733,14 @@ export class MemberManager {
         if (e) e.preventDefault();
         const form = document.getElementById('profileEditForm') as HTMLFormElement | null;
         if (!form) return;
+        const submitButtons = Array.from(document.querySelectorAll(
+            '#profileEditForm button[type="submit"], button[type="submit"][form="profileEditForm"]'
+        )) as HTMLButtonElement[];
+        const submitButtonHtml = submitButtons.map((btn) => btn.innerHTML);
+        submitButtons.forEach((btn) => {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin" aria-hidden="true"></i> 保存中...';
+        });
         const payload: any = {};
         const asInput = (el: Element | null): HTMLInputElement | null => el as HTMLInputElement | null;
         const root = (this.memberData && this.memberData.member) ? this.memberData.member : this.memberData;
@@ -2721,16 +2755,18 @@ export class MemberManager {
                 payload.name = (lastVal + ' ' + firstVal).trim() || null;
                 return;
             }
-            const el = asInput(key === 'sex'
-                ? form.querySelector('[name="sex"]:checked')
+            const el = asInput(key === 'sex' || key === 'mail_receive_flag'
+                ? form.querySelector('[name="' + key + '"]:checked')
                 : form.querySelector('[name="' + key.replace(/"/g, '\\"') + '"]'));
             if (el) {
                 let v: any = (el.value || '').trim();
                 if (key === 'birthday' && !v) v = null;
-                payload[key] = v || null;
+                // mail_receive_flag の '0' は falsy 扱いにしない
+                payload[key] = (key === 'mail_receive_flag') ? v : (v || null);
             } else if (key === 'sex') {
                 payload[key] = null;
             }
+            // mail_receive_flag 未選択時はキー自体を送らず、既存値・スマレジ側を維持する
         });
         if (Object.keys(payload).length === 0 && form.elements.length) {
             for (let i = 0; i < form.elements.length; i++) {
@@ -2739,7 +2775,7 @@ export class MemberManager {
                     if (el.type === 'radio' && !el.checked) continue;
                     let v: any = (el.value || '').trim();
                     if (el.name === 'birthday' && !v) v = null;
-                    payload[el.name] = v || null;
+                    payload[el.name] = (el.name === 'mail_receive_flag') ? v : (v || null);
                 }
             }
         }
@@ -2774,6 +2810,15 @@ export class MemberManager {
         } catch (error) {
             console.error('Profile update error:', error);
             ToastManager.error('更新に失敗しました: ' + (error.message || 'エラーが発生しました'));
+        } finally {
+            submitButtons.forEach((btn, index) => {
+                if (document.body.contains(btn)) {
+                    btn.disabled = false;
+                    if (submitButtonHtml[index] != null) {
+                        btn.innerHTML = submitButtonHtml[index];
+                    }
+                }
+            });
         }
     }
 }
