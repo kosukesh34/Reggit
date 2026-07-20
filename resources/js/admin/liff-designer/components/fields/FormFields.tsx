@@ -1,6 +1,6 @@
 import React, { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ACTION_TYPES, ALIGN_OPTIONS, TAB_LABELS } from '../../catalog/blockCatalog';
+import { ACTION_TYPES, ALIGN_OPTIONS, PRODUCT_CATEGORY_CHOICES, TAB_LABELS } from '../../catalog/blockCatalog';
 
 const COLOR_PRESETS: string[] = [
     '#ffffff', '#fafaf9', '#f5f5f4', '#e7e5e4', '#d6d3d1', '#a8a29e', '#78716c', '#57534e', '#292524', '#1c1917', '#000000',
@@ -467,18 +467,25 @@ export function ColorField({
     );
 }
 
-function parseAction(action: string): { kind: string; param: string } {
+function parseAction(action: string): { kind: string; param: string; category: string } {
     const s = String(action || '');
-    if (s === '') return { kind: '', param: '' };
-    if (s.startsWith('#')) return { kind: 'tab', param: s.slice(1) };
-    if (/^tel:/i.test(s)) return { kind: 'tel', param: s.replace(/^tel:/i, '') };
-    if (/^mailto:/i.test(s)) return { kind: 'mailto', param: s.replace(/^mailto:/i, '') };
-    return { kind: 'url', param: s };
+    if (s === '') return { kind: '', param: '', category: '' };
+    if (s.startsWith('#')) {
+        const [tab, query] = s.slice(1).split('?');
+        const category = query !== undefined ? (new URLSearchParams(query).get('category') || '') : '';
+        return { kind: 'tab', param: tab, category };
+    }
+    if (/^tel:/i.test(s)) return { kind: 'tel', param: s.replace(/^tel:/i, ''), category: '' };
+    if (/^mailto:/i.test(s)) return { kind: 'mailto', param: s.replace(/^mailto:/i, ''), category: '' };
+    return { kind: 'url', param: s, category: '' };
 }
 
-function buildAction(kind: string, param: string): string {
+function buildAction(kind: string, param: string, category = ''): string {
     if (kind === '') return '';
-    if (kind === 'tab') return param ? `#${param}` : '';
+    if (kind === 'tab') {
+        if (!param) return '';
+        return category !== '' && param === 'products' ? `#${param}?category=${category}` : `#${param}`;
+    }
     if (kind === 'tel') return param ? `tel:${param}` : '';
     if (kind === 'mailto') return param ? `mailto:${param}` : '';
     return param || '';
@@ -523,6 +530,18 @@ export function ActionField({
                 >
                     {tabOptions.map((o) => (
                         <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                </select>
+            ) : null}
+            {current.kind === 'tab' && current.param === 'products' ? (
+                <select
+                    className="ld-form-select ld-form-select--nested"
+                    value={current.category}
+                    onChange={(e) => onChange(buildAction('tab', 'products', e.target.value))}
+                    aria-label="商品カテゴリ絞り込み"
+                >
+                    {PRODUCT_CATEGORY_CHOICES.map((o) => (
+                        <option key={o.value === '' ? '_all' : o.value} value={o.value}>{o.label}</option>
                     ))}
                 </select>
             ) : null}

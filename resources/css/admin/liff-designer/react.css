@@ -614,6 +614,24 @@
     opacity: 0.55;
 }
 
+.ld.ld-react .ld-tab-card__url-input {
+    display: block;
+    width: 100%;
+    margin-top: 4px;
+    padding: 4px 8px;
+    font-size: 11px;
+    color: var(--ld-text);
+    background: #fff;
+    border: 1px solid var(--ld-line);
+    border-radius: 8px;
+}
+
+.ld.ld-react .ld-tab-card__url-input:focus {
+    outline: none;
+    border-color: rgba(37, 99, 235, 0.45);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
 /* —— Editor / Phone stage —— */
 .ld.ld-react .ld-editor {
     background: transparent;
@@ -4527,6 +4545,16 @@
     letter-spacing: 0.06em;
     text-transform: uppercase;
     color: #78716c;
+}
+
+.ld.ld-react .ld-settings__hint {
+    margin: 8px 0 0;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: #f5f5f4;
+    color: #57534e;
+    font-size: 12px;
+    line-height: 1.5;
 }
 
 .ld.ld-react .ld-block-settings {

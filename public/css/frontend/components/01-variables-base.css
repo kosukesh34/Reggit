@@ -18,9 +18,9 @@
 
     /* ===== Ink / Text（iOS ラベル系ニュートラル）===== */
     --text-primary: #1c1c1e;
-    --text-secondary: rgba(60, 60, 67, 0.68);
-    --text-tertiary: rgba(60, 60, 67, 0.36);
-    --text-muted: rgba(60, 60, 67, 0.48);
+    --text-secondary: rgba(60, 60, 67, 0.78);
+    --text-tertiary: rgba(60, 60, 67, 0.52);
+    --text-muted: rgba(60, 60, 67, 0.6);
 
     /* ===== Surfaces / Background（iOS grouped）===== */
     --bg-light: #ffffff;
@@ -29,7 +29,7 @@
     --surface: #ffffff;
     --surface-2: #f9f9fb;
     --surface-muted: #ebebf0;
-    --surface-glass: rgba(255, 255, 255, 0.72);
+    --surface-glass: #ffffff;
 
     /* ===== Borders ===== */
     --border-color: rgba(60, 60, 67, 0.18);
