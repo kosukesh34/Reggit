@@ -64,7 +64,7 @@ class AdminLiffConnectionSettingsTest extends TestCase
         $this->assertSame('test-channel-secret', ShopSetting::getLineChannelSecret((int) $project->id));
     }
 
-    public function test_liff設定画面にMessaging_API項目があること(): void
+    public function test_liff設定画面に_messaging_ap_i項目があること(): void
     {
         $project = $this->createProject();
         $admin = $this->createAdmin((int) $project->id);
