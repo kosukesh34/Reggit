@@ -11,6 +11,7 @@ use App\UseCases\Admin\Member\AdminMemberDetachTagUseCase;
 use App\UseCases\Admin\Member\AdminMemberDetailUseCase;
 use App\UseCases\Admin\Member\AdminMemberEditUseCase;
 use App\UseCases\Admin\Member\AdminMemberExportUseCase;
+use App\UseCases\Admin\Member\AdminMemberHistorySectionUseCase;
 use App\UseCases\Admin\Member\AdminMemberIssueCouponUseCase;
 use App\UseCases\Admin\Member\AdminMemberListUseCase;
 use App\UseCases\Admin\Member\AdminMemberRecordVisitUseCase;
@@ -19,15 +20,18 @@ use App\UseCases\Admin\Member\AdminMemberUpdateUseCase;
 use App\UseCases\Admin\Member\AdminMemberVisitDetailUseCase;
 use App\UseCases\Admin\Member\Data\AdminMemberUpdateInput;
 use App\UseCases\Admin\MemberTag\AdminMemberTagIndexUseCase;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Validation\Rule;
+use InvalidArgumentException;
 
 class MemberController extends AdminBaseController
 {
     public function __construct(
         private AdminMemberListUseCase $listUseCase,
         private AdminMemberDetailUseCase $detailUseCase,
+        private AdminMemberHistorySectionUseCase $historySectionUseCase,
         private AdminMemberEditUseCase $editUseCase,
         private AdminMemberUpdateUseCase $updateUseCase,
         private AdminMemberDeleteUseCase $deleteUseCase,
@@ -58,13 +62,54 @@ class MemberController extends AdminBaseController
     public function memberDetail(string $project_key, int $id)
     {
         $projectId = $this->resolveAdminProjectId();
-        $output = $this->detailUseCase->handle($projectId, $id);
+        $filters = request()->only([
+            'visits_q', 'visits_from', 'visits_to',
+            'points_q', 'points_from', 'points_to',
+            'coupons_q', 'coupons_from', 'coupons_to',
+            'stamps_q', 'stamps_from', 'stamps_to',
+            'rank_q', 'rank_from', 'rank_to',
+            'redemptions_q', 'redemptions_from', 'redemptions_to',
+        ]);
+        $output = $this->detailUseCase->handle($projectId, $id, $filters);
         $tags = $this->tagIndexUseCase->handle($projectId);
 
         return view('admin.member-detail', [
             'member' => $output->member,
             'purchaseSummary' => $output->purchaseSummary,
             'allTags' => $tags,
+            'visits' => $output->visits,
+            'pointTransactions' => $output->pointTransactions,
+            'memberCoupons' => $output->memberCoupons,
+            'stampTransactions' => $output->stampTransactions,
+            'rankHistories' => $output->rankHistories,
+            'couponRedemptions' => $output->couponRedemptions,
+            'historyFilters' => $output->historyFilters,
+        ]);
+    }
+
+    public function memberHistory(string $project_key, int $id, string $section): JsonResponse
+    {
+        $projectId = $this->resolveAdminProjectId();
+        try {
+            $output = $this->historySectionUseCase->handle(
+                $projectId,
+                $id,
+                $section,
+                (string) request()->query('q', ''),
+                (string) request()->query('from', ''),
+                (string) request()->query('to', ''),
+            );
+        } catch (InvalidArgumentException $e) {
+            return response()->json(['message' => '不正なセクションです'], 422);
+        }
+
+        return response()->json([
+            'html' => $output->html,
+            'total' => $output->total,
+            'section' => $output->section,
+            'keyword' => $output->keyword,
+            'from' => $output->from,
+            'to' => $output->to,
         ]);
     }
 

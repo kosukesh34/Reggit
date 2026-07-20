@@ -7,6 +7,7 @@ use App\Enums\MemberStatus;
 use App\Jobs\SendAfterRegistrationJob;
 use App\Models\AfterRegistrationDelivery;
 use App\Models\Member;
+use App\Models\MemberRankHistory;
 use App\Models\PointTransaction;
 use App\Models\User;
 use App\Services\Smaregi\SmaregiApiService;
@@ -87,7 +88,35 @@ class MemberService
             'member_card_logo_url' => $this->shopSettingRepository->getFrontendLogoUrl($projectId),
             'member_card_display_type' => $this->shopSettingRepository->getMemberCardDisplayType($projectId),
             'member_card_code_type' => $this->shopSettingRepository->getMemberCardCodeType($projectId),
+            'rank_up_history' => $this->buildRankUpHistory($member),
         ];
+    }
+
+    /**
+     * @return list<array{from_rank_label: string, to_rank_label: string, achieved_at: string}>
+     */
+    private function buildRankUpHistory(Member $member): array
+    {
+        $rows = [];
+        foreach (
+            $member->rankHistories()
+                ->orderByDesc('achieved_at')
+                ->get() as $history
+        ) {
+            $rows[] = [
+                'from_rank_label' => trim((string) ($history->from_rank_label ?? '')) !== ''
+                    ? (string) $history->from_rank_label
+                    : '—',
+                'to_rank_label' => trim((string) ($history->to_rank_label ?? '')) !== ''
+                    ? (string) $history->to_rank_label
+                    : (string) ($history->to_rank ?? '—'),
+                'achieved_at' => $history->achieved_at !== null
+                    ? $history->achieved_at->format('Y/m/d')
+                    : '',
+            ];
+        }
+
+        return $rows;
     }
 
     private function maybeSyncMemberPointsFromSmaregi(Member $member): void
@@ -440,8 +469,47 @@ class MemberService
         $newRank = (string) ($rankInfo['current_rank'] ?? '');
         if ($newRank !== '' && $newRank !== $previousRank) {
             $member->update(['rank' => $newRank]);
+            $this->recordRankHistory(
+                $member,
+                $previousRank,
+                $newRank,
+                $this->resolveRankLabel((int) $member->project_id, $previousRank),
+                (string) ($rankInfo['current_rank_label'] ?? $newRank),
+            );
             $this->issueCouponOnRankUpUseCase->handle($member->fresh() ?? $member, $previousRank, $newRank);
         }
+    }
+
+    private function recordRankHistory(
+        Member $member,
+        string $fromRank,
+        string $toRank,
+        string $fromLabel,
+        string $toLabel,
+    ): void {
+        MemberRankHistory::create([
+            'project_id' => (int) $member->project_id,
+            'member_id' => (int) $member->id,
+            'from_rank' => $fromRank !== '' ? $fromRank : null,
+            'to_rank' => $toRank,
+            'from_rank_label' => $fromRank !== '' ? $fromLabel : null,
+            'to_rank_label' => $toLabel,
+            'achieved_at' => now(),
+        ]);
+    }
+
+    private function resolveRankLabel(int $projectId, string $rankKey): string
+    {
+        if ($rankKey === '') {
+            return '—';
+        }
+        foreach ($this->shopSettingRepository->getMemberRankSettings($projectId) as $rank) {
+            if ((string) ($rank['key'] ?? '') === $rankKey) {
+                return (string) ($rank['label'] ?? $rankKey);
+            }
+        }
+
+        return $rankKey;
     }
 
     private function getRankInfo(Member $member): array

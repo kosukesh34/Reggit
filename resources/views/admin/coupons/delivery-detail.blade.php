@@ -44,17 +44,16 @@
     </div>
 </div>
 
-@unless($isEventRankUp)
 <div class="card cp-list-card mb-4">
     <div class="card-header">
-        <h3 class="card-title">配信対象</h3>
-        <span class="card-header-note">{{ count($targetMembers) }}人</span>
+        <h3 class="card-title">対象会員</h3>
+        <span class="card-header-note">{{ count($members) }}人</span>
     </div>
     <div class="card-body">
-        @if(count($targetMembers) === 0)
+        @if(count($members) === 0)
         <div class="empty-state">
             <i class="fas fa-users"></i>
-            <p>配信対象の会員が記録されていません</p>
+            <p>{{ $isEventRankUp ? 'まだ発行された会員はいません' : '対象の会員が記録されていません' }}</p>
         </div>
         @else
         <div class="table-responsive">
@@ -63,11 +62,12 @@
                     <tr>
                         <th>会員名</th>
                         <th>会員番号</th>
+                        <th>状態</th>
                         <th></th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach($targetMembers as $member)
+                    @foreach($members as $member)
                     <tr>
                         <td>
                             @if($member['member_id'] !== null)
@@ -77,55 +77,9 @@
                             @endif
                         </td>
                         <td>{{ $member['member_number'] }}</td>
-                        <td class="table-actions-cell">
-                            @if($member['member_id'] !== null)
-                            <div class="table-actions">
-                                <a href="{{ admin_route('admin.members.detail', ['id' => $member['member_id']]) }}" class="btn btn-action btn-edit"><i class="fas fa-eye"></i> 詳細</a>
-                            </div>
-                            @endif
-                        </td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-        @endif
-    </div>
-</div>
-@endunless
-
-<div class="card cp-list-card mb-4">
-    <div class="card-header">
-        <h3 class="card-title">発行済み</h3>
-        <span class="card-header-note">{{ count($issuedMembers) }}人</span>
-    </div>
-    <div class="card-body">
-        @if(count($issuedMembers) === 0)
-        <div class="empty-state">
-            <i class="fas fa-ticket-alt"></i>
-            <p>まだ発行された会員はいません</p>
-        </div>
-        @else
-        <div class="table-responsive">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>会員名</th>
-                        <th>会員番号</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($issuedMembers as $member)
-                    <tr>
                         <td>
-                            @if($member['member_id'] !== null)
-                                <a href="{{ admin_route('admin.members.detail', ['id' => $member['member_id']]) }}">{{ $member['member_name'] }}</a>
-                            @else
-                                {{ $member['member_name'] }}
-                            @endif
+                            <span class="badge badge-{{ $member['is_issued'] ? 'success' : 'secondary' }}">{{ $member['status_label'] }}</span>
                         </td>
-                        <td>{{ $member['member_number'] }}</td>
                         <td class="table-actions-cell">
                             @if($member['member_id'] !== null)
                             <div class="table-actions">
