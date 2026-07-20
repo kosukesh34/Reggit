@@ -40,6 +40,7 @@ class MemberUpdateRequest extends FormRequest
             'city' => ['nullable', 'string', 'max:128'],
             'street' => ['nullable', 'string', 'max:256'],
             'sex' => ['nullable', 'string', 'max:16'],
+            'mail_receive_flag' => ['nullable', 'in:0,1'],
 
             // ポイント操作（任意）
             'point_set' => ['nullable', 'integer', 'min:0', 'max:10000000'],
