@@ -144,10 +144,14 @@ class SettingsService
         ShopSetting::setFrontendMenuItems($items, $projectId);
     }
 
-    /** @return array{smaregi_fields: array<string, mixed>, custom_fields: list<array<string, mixed>>} */
+    /** @return array{smaregi_fields: array<string, mixed>, custom_fields: list<array<string, mixed>>, member_registration_mode: string} */
     public function getProfileSettings(?int $projectId = null): array
     {
-        return ShopSetting::getProfileFieldSettings($projectId ?? 1);
+        $projectId = $projectId ?? 1;
+        $settings = ShopSetting::getProfileFieldSettings($projectId);
+        $settings['member_registration_mode'] = ShopSetting::getMemberRegistrationMode($projectId);
+
+        return $settings;
     }
 
     /** @param array<string, bool> $featureFlags */

@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Member;
 use App\Models\PointTransaction;
 use App\Models\Project;
+use App\Models\ShopSetting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -76,6 +77,12 @@ class MemberControllerTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJsonPath('is_member', true);
+
+        ShopSetting::setMemberRegistrationMode('prompt', (int) $project->id);
+        $response = $this->withHeaders(['X-Line-User-Id' => self::LINE_USER_ID])
+            ->get('/api/members/me?project_key=default');
+        $response->assertStatus(200)
+            ->assertJsonPath('member_registration_mode', 'prompt');
     }
 
     public function test_get_points_ポイント情報を返すこと(): void

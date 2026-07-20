@@ -40,8 +40,16 @@ class MemberWithdrawUseCase
             $member->delete();
         }
 
-        if (method_exists($user, 'tokens')) {
-            $user->tokens()->delete();
+        try {
+            if (method_exists($user, 'tokens')) {
+                $user->tokens()->delete();
+            }
+        } catch (\Throwable $e) {
+            LogHelper::warning('[Member] token cleanup skipped', [
+                'project_id' => $projectId,
+                'user_id' => $user->id,
+                'message' => $e->getMessage(),
+            ]);
         }
 
         $this->userService->releaseLineUserIdForWithdraw($user);
