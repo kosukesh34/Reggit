@@ -216,7 +216,8 @@ class OrderService
         }
 
         $pointsPerOrder = $this->shopSettingRepository->getPointsPerOrder($projectId);
-        $rate = $this->getPointsEarnRate($projectId);
+        $rankKey = $user->member !== null && is_string($user->member->rank) ? (string) $user->member->rank : null;
+        $rate = $this->getPointsEarnRate($projectId, $rankKey);
         $pointsFromAmount = $rate > 0 && $finalAmount > 0 ? (int) floor($finalAmount / $rate) : 0;
         $pointsEarned = $pointsPerOrder + $pointsFromAmount;
 
@@ -295,9 +296,9 @@ class OrderService
         }
     }
 
-    private function getPointsEarnRate(int $projectId): int
+    private function getPointsEarnRate(int $projectId, ?string $rankKey = null): int
     {
-        $rate = $this->shopSettingRepository->getPointEarnRate($projectId);
+        $rate = $this->shopSettingRepository->getPointEarnRateForRank($projectId, $rankKey);
 
         return $rate > 0 ? $rate : self::DEFAULT_POINTS_EARN_RATE;
     }

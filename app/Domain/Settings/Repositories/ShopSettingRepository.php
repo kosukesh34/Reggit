@@ -15,6 +15,8 @@ interface ShopSettingRepository
 
     public function getPointEarnRate(int $projectId): int;
 
+    public function getPointEarnRateForRank(int $projectId, ?string $rankKey): int;
+
     public function getStampEarnPerAmount(int $projectId): int;
 
     public function getOrderStampCardId(int $projectId): ?int;
@@ -47,7 +49,9 @@ interface ShopSettingRepository
      *     icon_url: string|null,
      *     stamp_background_url?: string|null,
      *     card_color: string|null,
-     *     order: int
+     *     order: int,
+     *     point_earn_rate?: int|null,
+     *     smaregi_rank_id?: string|null
      * }>
      */
     public function getMemberRankSettings(int $projectId): array;

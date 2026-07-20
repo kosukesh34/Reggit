@@ -2,10 +2,18 @@
 
 namespace App\Services\Smaregi;
 
+use App\Domain\Member\Events\PointsEarned;
+use App\Domain\Member\Repositories\MemberRepository;
+use App\Domain\Order\Policies\StampEarnPolicy;
+use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
 use App\Enums\MemberVisitSource;
+use App\Enums\PointTransactionType;
 use App\Models\Member;
+use App\Models\MemberStampTransaction;
 use App\Models\MemberVisit;
 use App\Models\MemberVisitItem;
+use App\Models\PointTransaction;
 use App\Models\Product;
 use App\Models\Project;
 use App\Models\Settings\ProjectProfileSmaregiSetting;
@@ -13,10 +21,12 @@ use App\Models\SmaregiContract;
 use App\Services\Admin\MemberAdminService;
 use Carbon\Carbon;
 use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
  * スマレジ POS の通常販売取引を来店・購入履歴として取り込む。
+ * 取消・返品時は付与済みポイント／スタンプ／来店を巻き戻す。
  */
 class SmaregiTransactionInboundSyncService
 {
@@ -24,9 +34,18 @@ class SmaregiTransactionInboundSyncService
 
     private const CANCEL_DIVISION_NORMAL = '0';
 
+    private const CANCEL_DIVISION_CANCELLED = '1';
+
+    private const RETURN_SALES_YES = '1';
+
     public function __construct(
         private SmaregiApiService $smaregiApi,
         private MemberAdminService $memberAdminService,
+        private ShopSettingRepository $shopSettingRepository,
+        private StampEarnPolicy $stampEarnPolicy,
+        private MemberRepository $memberRepository,
+        private DomainEventDispatcher $domainEvents,
+        private SmaregiPointsSyncService $pointsSync,
     ) {}
 
     /**
@@ -56,6 +75,12 @@ class SmaregiTransactionInboundSyncService
                 'smaregi_contract_id' => $contractId,
                 'transaction_head_id' => $headId,
             ]);
+
+            return;
+        }
+
+        if ($this->isCancelledTransaction($transaction)) {
+            $this->handleCancelledTransaction($contractId, $headId, $transaction);
 
             return;
         }
@@ -112,9 +137,277 @@ class SmaregiTransactionInboundSyncService
             return;
         }
 
+        $isReturn = $this->isReturnSalesTransaction($transaction);
         foreach ($members as $member) {
-            $this->recordVisitWithItems($member, $headId, $visitedAt, $amount, $transaction);
+            if ($isReturn) {
+                $this->handleReturnTransaction($member, $headId, $visitedAt, abs($amount), $transaction);
+            } else {
+                $this->recordVisitWithItems($member, $headId, $visitedAt, $amount, $transaction);
+            }
         }
+    }
+
+    /**
+     * @param  array<string, string|int|float|bool|array|null>  $transaction
+     */
+    private function isCancelledTransaction(array $transaction): bool
+    {
+        $cancel = trim((string) ($transaction['cancelDivision'] ?? self::CANCEL_DIVISION_NORMAL));
+
+        return $cancel === self::CANCEL_DIVISION_CANCELLED;
+    }
+
+    /**
+     * @param  array<string, string|int|float|bool|array|null>  $transaction
+     */
+    private function isReturnSalesTransaction(array $transaction): bool
+    {
+        return trim((string) ($transaction['returnSales'] ?? '0')) === self::RETURN_SALES_YES;
+    }
+
+    /**
+     * @param  array<string, string|int|float|bool|array|null>  $transaction
+     */
+    private function handleCancelledTransaction(string $contractId, string $headId, array $transaction): void
+    {
+        $customerId = $this->extractCustomerId($transaction);
+        if ($customerId === '') {
+            Log::info('[Smaregi] Inbound transaction cancel skipped: no customerId', [
+                'smaregi_contract_id' => $contractId,
+                'transaction_head_id' => $headId,
+            ]);
+
+            return;
+        }
+
+        $members = $this->findMembers($contractId, $customerId);
+        if ($members === []) {
+            return;
+        }
+
+        foreach ($members as $member) {
+            $this->reverseAwardsForTransaction($member, $headId, '取消');
+            $this->deleteVisitForTransaction($member, $headId);
+            Log::info('[Smaregi] Inbound transaction cancel reversed', [
+                'member_id' => (int) $member->id,
+                'project_id' => (int) $member->project_id,
+                'transaction_head_id' => $headId,
+            ]);
+        }
+    }
+
+    /**
+     * @param  array<string, string|int|float|bool|array|null>  $transaction
+     */
+    private function handleReturnTransaction(
+        Member $member,
+        string $headId,
+        Carbon $visitedAt,
+        float $absAmount,
+        array $transaction,
+    ): void {
+        $this->recordVisitWithItems($member, $headId, $visitedAt, -1 * $absAmount, $transaction);
+        // スマレジ側でポイント増減済みならローカル再計算で減算しない（会員ポイント inbound に任せる）
+        if (! $this->hasSmaregiManagedPointDelta($transaction)) {
+            $this->reversePointsByAmount($member, $absAmount, $headId, '返品');
+        }
+        $this->reverseStampsByAmount($member, $absAmount, $headId, '返品');
+    }
+
+    private function reverseAwardsForTransaction(Member $member, string $headId, string $reasonLabel): void
+    {
+        $this->reverseAwardedPoints($member, $headId, $reasonLabel);
+        $this->reverseAwardedStamps($member, $headId, $reasonLabel);
+    }
+
+    private function reverseAwardedPoints(Member $member, string $headId, string $reasonLabel): void
+    {
+        $earnDescription = $this->pointAwardDescription($headId);
+        $reverseDescription = $this->pointReverseDescription($headId, $reasonLabel);
+        if ($this->hasPointTransaction($member, PointTransactionType::USED, $reverseDescription)
+            || $this->hasPointTransaction($member, PointTransactionType::REVERSED, $reverseDescription)) {
+            return;
+        }
+
+        $earned = PointTransaction::query()
+            ->where('project_id', $member->project_id)
+            ->where('member_id', $member->id)
+            ->where('type', PointTransactionType::EARNED)
+            ->where('description', $earnDescription)
+            ->sum('points');
+        $points = (int) $earned;
+        if ($points <= 0) {
+            return;
+        }
+
+        $this->applyPointReversal($member, $points, $reverseDescription);
+    }
+
+    private function reversePointsByAmount(Member $member, float $absAmount, string $headId, string $reasonLabel): void
+    {
+        if ($absAmount <= 0) {
+            return;
+        }
+        $reverseDescription = $this->pointReverseDescription($headId, $reasonLabel);
+        if ($this->hasPointTransaction($member, PointTransactionType::USED, $reverseDescription)
+            || $this->hasPointTransaction($member, PointTransactionType::REVERSED, $reverseDescription)) {
+            return;
+        }
+
+        $projectId = (int) $member->project_id;
+        $rankKey = is_string($member->rank) ? $member->rank : null;
+        $rate = $this->shopSettingRepository->getPointEarnRateForRank($projectId, $rankKey);
+        if ($rate <= 0) {
+            return;
+        }
+        $points = (int) floor($absAmount / $rate);
+        if ($points <= 0) {
+            return;
+        }
+
+        $this->applyPointReversal($member, $points, $reverseDescription);
+    }
+
+    private function applyPointReversal(Member $member, int $points, string $description): void
+    {
+        $projectId = (int) $member->project_id;
+        $this->pointsSync->markOutboundPending((int) $member->id);
+
+        $reversed = DB::transaction(function () use ($member, $projectId, $points, $description): int {
+            $this->memberRepository->syncPointsLedger((int) $member->id, $projectId);
+            $aggregate = $this->memberRepository->findByIdForUpdate((int) $member->id, $projectId);
+            if ($aggregate === null) {
+                return 0;
+            }
+            if ($this->hasPointTransaction($member, PointTransactionType::USED, $description)
+                || $this->hasPointTransaction($member, PointTransactionType::REVERSED, $description)) {
+                return 0;
+            }
+            $aggregate->reverseEarnedPoints($points, $description, null);
+            $this->memberRepository->save($aggregate);
+
+            return $points;
+        });
+
+        if ($reversed <= 0) {
+            $this->pointsSync->clearOutboundPending((int) $member->id);
+
+            return;
+        }
+
+        $this->domainEvents->dispatch(new PointsEarned(
+            (int) $member->id,
+            $projectId,
+            -1 * $reversed,
+            null,
+            true,
+        ));
+    }
+
+    private function reverseAwardedStamps(Member $member, string $headId, string $reasonLabel): void
+    {
+        $earnDescription = $this->stampAwardDescription($headId);
+        $reverseDescription = $this->stampReverseDescription($headId, $reasonLabel);
+        if ($this->hasStampTransaction($member, $reverseDescription)) {
+            return;
+        }
+
+        $earned = MemberStampTransaction::query()
+            ->where('project_id', $member->project_id)
+            ->where('member_id', $member->id)
+            ->where('description', $earnDescription)
+            ->where('delta', '>', 0)
+            ->get();
+        if ($earned->isEmpty()) {
+            return;
+        }
+
+        foreach ($earned as $tx) {
+            $delta = (int) $tx->delta;
+            if ($delta <= 0) {
+                continue;
+            }
+            $this->memberAdminService->adjustStampsToMember(
+                $member,
+                (int) $tx->stamp_card_id,
+                -1 * $delta,
+                $reverseDescription,
+                null
+            );
+        }
+    }
+
+    private function reverseStampsByAmount(Member $member, float $absAmount, string $headId, string $reasonLabel): void
+    {
+        if ($absAmount <= 0) {
+            return;
+        }
+        $reverseDescription = $this->stampReverseDescription($headId, $reasonLabel);
+        if ($this->hasStampTransaction($member, $reverseDescription)) {
+            return;
+        }
+
+        $projectId = (int) $member->project_id;
+        $stampCardId = $this->shopSettingRepository->getOrderStampCardId($projectId);
+        $stampEarnPerAmount = $this->shopSettingRepository->getStampEarnPerAmount($projectId);
+        if ($stampCardId === null || $stampEarnPerAmount <= 0) {
+            return;
+        }
+        $stampCount = $this->stampEarnPolicy->calculateCount($absAmount, $stampEarnPerAmount);
+        if ($stampCount <= 0) {
+            return;
+        }
+
+        $this->memberAdminService->adjustStampsToMember(
+            $member,
+            $stampCardId,
+            -1 * $stampCount,
+            $reverseDescription,
+            null
+        );
+    }
+
+    private function deleteVisitForTransaction(Member $member, string $headId): void
+    {
+        $visit = MemberVisit::withoutGlobalScopes()
+            ->where('project_id', $member->project_id)
+            ->where('member_id', $member->id)
+            ->where('smaregi_transaction_head_id', $headId)
+            ->first();
+        if ($visit === null) {
+            return;
+        }
+        $visit->items()->delete();
+        $visit->delete();
+    }
+
+    private function pointReverseDescription(string $headId, string $reasonLabel): string
+    {
+        return 'スマレジ取引'.$reasonLabel.'によるポイント取消 #'.$headId;
+    }
+
+    private function stampReverseDescription(string $headId, string $reasonLabel): string
+    {
+        return 'スマレジ取引'.$reasonLabel.'によるスタンプ取消 #'.$headId;
+    }
+
+    private function hasPointTransaction(Member $member, string $type, string $description): bool
+    {
+        return PointTransaction::query()
+            ->where('project_id', $member->project_id)
+            ->where('member_id', $member->id)
+            ->where('type', $type)
+            ->where('description', $description)
+            ->exists();
+    }
+
+    private function hasStampTransaction(Member $member, string $description): bool
+    {
+        return MemberStampTransaction::query()
+            ->where('project_id', $member->project_id)
+            ->where('member_id', $member->id)
+            ->where('description', $description)
+            ->exists();
     }
 
     /**
@@ -254,11 +547,192 @@ class SmaregiTransactionInboundSyncService
             }
         }
 
+        $this->awardStampsForPurchase($member, $amount, $headId);
+        $this->awardPointsForPurchase($member, $amount, $headId, $transaction);
+
         if ($visit->items()->exists()) {
             return;
         }
 
         $this->saveVisitItems($visit, $transaction);
+    }
+
+    /**
+     * @param  array<string, string|int|float|bool|array|null>  $transaction
+     */
+    private function awardPointsForPurchase(Member $member, float $amount, string $headId, array $transaction): void
+    {
+        if ($amount <= 0) {
+            return;
+        }
+
+        // スマレジ側で既に付与済みならローカル計算はせず、会員ポイント inbound に任せる
+        if ($this->hasSmaregiManagedPointDelta($transaction)) {
+            return;
+        }
+
+        $projectId = (int) $member->project_id;
+        $rankKey = is_string($member->rank) ? $member->rank : null;
+        $rate = $this->shopSettingRepository->getPointEarnRateForRank($projectId, $rankKey);
+        if ($rate <= 0) {
+            return;
+        }
+
+        $points = (int) floor($amount / $rate);
+        if ($points <= 0) {
+            return;
+        }
+
+        $description = $this->pointAwardDescription($headId);
+        if ($this->hasPointAwardedForTransaction($member, $description)) {
+            return;
+        }
+
+        $this->pointsSync->markOutboundPending((int) $member->id);
+
+        $awarded = DB::transaction(function () use ($member, $projectId, $points, $description): int {
+            $this->memberRepository->syncPointsLedger((int) $member->id, $projectId);
+            $aggregate = $this->memberRepository->findByIdForUpdate((int) $member->id, $projectId);
+            if ($aggregate === null) {
+                return 0;
+            }
+            if ($this->hasPointAwardedForTransaction($member, $description)) {
+                return 0;
+            }
+            $validDays = $this->shopSettingRepository->getPointsValidDays($projectId);
+            $aggregate->earnPoints(
+                $points,
+                $description,
+                null,
+                now()->addDays($validDays),
+            );
+            $this->memberRepository->save($aggregate);
+
+            return $points;
+        });
+
+        if ($awarded <= 0) {
+            $this->pointsSync->clearOutboundPending((int) $member->id);
+
+            return;
+        }
+
+        $this->domainEvents->dispatch(new PointsEarned(
+            (int) $member->id,
+            $projectId,
+            $awarded,
+            null,
+            true,
+        ));
+        Log::info('[Smaregi] Inbound transaction sync points awarded', [
+            'member_id' => (int) $member->id,
+            'project_id' => $projectId,
+            'transaction_head_id' => $headId,
+            'points' => $awarded,
+            'amount' => $amount,
+            'rate' => $rate,
+        ]);
+    }
+
+    /**
+     * @param  string|int|float|bool|array|null  $value
+     */
+    private function parseOptionalInt($value): ?int
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+        if (is_int($value)) {
+            return $value;
+        }
+        if (is_string($value) && is_numeric($value)) {
+            return (int) $value;
+        }
+        if (is_float($value)) {
+            return (int) $value;
+        }
+
+        return null;
+    }
+
+    /**
+     * スマレジ取引の newPoint が増減している場合、ポイントはスマレジ側管理とみなす。
+     *
+     * @param  array<string, string|int|float|bool|array|null>  $transaction
+     */
+    private function hasSmaregiManagedPointDelta(array $transaction): bool
+    {
+        $newPoint = $this->parseOptionalInt($transaction['newPoint'] ?? null);
+
+        return $newPoint !== null && $newPoint !== 0;
+    }
+
+    private function pointAwardDescription(string $headId): string
+    {
+        return 'スマレジ取引によるポイント付与 #'.$headId;
+    }
+
+    private function hasPointAwardedForTransaction(Member $member, string $description): bool
+    {
+        return PointTransaction::query()
+            ->where('project_id', $member->project_id)
+            ->where('member_id', $member->id)
+            ->where('type', PointTransactionType::EARNED)
+            ->where('description', $description)
+            ->exists();
+    }
+
+    private function awardStampsForPurchase(Member $member, float $amount, string $headId): void
+    {
+        if ($amount <= 0) {
+            return;
+        }
+
+        $projectId = (int) $member->project_id;
+        $stampCardId = $this->shopSettingRepository->getOrderStampCardId($projectId);
+        $stampEarnPerAmount = $this->shopSettingRepository->getStampEarnPerAmount($projectId);
+        if ($stampCardId === null || $stampEarnPerAmount <= 0) {
+            return;
+        }
+
+        $stampCount = $this->stampEarnPolicy->calculateCount($amount, $stampEarnPerAmount);
+        if ($stampCount <= 0) {
+            return;
+        }
+
+        $description = $this->stampAwardDescription($headId);
+        if ($this->hasStampAwardedForTransaction($member, $description)) {
+            return;
+        }
+
+        $this->memberAdminService->addStampsToMember(
+            $member,
+            $stampCardId,
+            $stampCount,
+            $description,
+            null
+        );
+        Log::info('[Smaregi] Inbound transaction sync stamps awarded', [
+            'member_id' => (int) $member->id,
+            'project_id' => $projectId,
+            'transaction_head_id' => $headId,
+            'stamp_count' => $stampCount,
+            'amount' => $amount,
+        ]);
+    }
+
+    private function stampAwardDescription(string $headId): string
+    {
+        return 'スマレジ取引によるスタンプ付与 #'.$headId;
+    }
+
+    private function hasStampAwardedForTransaction(Member $member, string $description): bool
+    {
+        return MemberStampTransaction::query()
+            ->where('project_id', $member->project_id)
+            ->where('member_id', $member->id)
+            ->where('description', $description)
+            ->exists();
     }
 
     /**
