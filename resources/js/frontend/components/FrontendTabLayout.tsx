@@ -4,7 +4,13 @@ type FrontendMenuItem = {
     tab: string;
     label: string;
     icon?: string;
+    url?: string;
+    open?: string;
 };
+
+export function isLinkTabKey(tab: string): boolean {
+    return /^link_[0-9]+$/.test(tab);
+}
 
 /** タブバー外遷移用も含め、既知タブのセクションは常にマウントする */
 const ALL_TAB_SECTIONS: FrontendMenuItem[] = [
@@ -32,12 +38,15 @@ function getFrontendMenu(): FrontendMenuItem[] {
             tab: item.tab,
             label: typeof item.label === 'string' && item.label.length > 0 ? item.label : item.tab,
             icon: typeof item.icon === 'string' && item.icon.length > 0 ? item.icon : 'fa-circle',
+            url: typeof item.url === 'string' ? item.url : undefined,
+            open: typeof item.open === 'string' ? item.open : undefined,
         }));
 }
 
 export function FrontendTabLayout(): JSX.Element {
     const menu = getFrontendMenu();
     const firstTab = menu[0]?.tab ?? 'home';
+    const linkTabs = menu.filter((m) => isLinkTabKey(m.tab) && typeof m.url === 'string' && m.url !== '');
     const mountedTabs = ALL_TAB_SECTIONS.map((item) => {
         const fromMenu = menu.find((m) => m.tab === item.tab);
         return fromMenu ?? item;
@@ -53,6 +62,16 @@ export function FrontendTabLayout(): JSX.Element {
                     id={`${item.tab}Tab`}
                 >
                     <div className="tab-section" id={`${item.tab}Section`} data-tab={item.tab} />
+                </div>
+            ))}
+            {linkTabs.map((item) => (
+                <div key={item.tab} className="tab-content" id={`${item.tab}Tab`}>
+                    <div
+                        className="tab-section tab-section--link-embed"
+                        id={`${item.tab}Section`}
+                        data-tab={item.tab}
+                        data-link-url={item.url}
+                    />
                 </div>
             ))}
             <div
@@ -95,6 +114,8 @@ export function FrontendTabFooter(): JSX.Element | null {
                     type="button"
                     className={`main-tab-btn ${index === 0 ? 'active' : ''}`}
                     data-tab={item.tab}
+                    data-link-url={isLinkTabKey(item.tab) ? item.url : undefined}
+                    data-link-open="embed"
                 >
                     <i className={`fas ${item.icon ?? 'fa-circle'}`} />
                     <span>{item.label}</span>
