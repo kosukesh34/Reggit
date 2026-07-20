@@ -61,6 +61,7 @@ class SmaregiCustomerRankSyncService
                 if ($oldName !== '') {
                     unset($existingByName[$oldName]);
                 }
+
                 continue;
             }
 
@@ -70,6 +71,7 @@ class SmaregiCustomerRankSyncService
                 $usedRankIds[] = $rankId;
                 $rankIdsByKey[$key] = $rankId;
                 unset($existingByName[$name]);
+
                 continue;
             }
 
