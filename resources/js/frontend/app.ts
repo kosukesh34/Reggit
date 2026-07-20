@@ -47,6 +47,8 @@ class ReggitApp {
     designerPreviewSample: boolean;
     designerPreviewBootstrappedSource: string | null;
     currentTab: string;
+    /** 外部ページタブへ入る直前のタブ（戻るで復元） */
+    linkTabReturnTab: string;
     lastOrderCompleteMessage: string | null = null;
     _detailProduct: (CartProduct & {
         description?: string;
@@ -80,6 +82,7 @@ class ReggitApp {
         this.designerPreviewBootstrappedSource = null;
 
         this.currentTab = this.getInitialTab();
+        this.linkTabReturnTab = AppConstants.TABS.HOME;
         this.init();
     }
 
@@ -1513,30 +1516,76 @@ class ReggitApp {
         return /^link_[0-9]+$/.test(tab);
     }
 
-    /** 外部Webページタブ（埋め込み表示）: 初回表示時に iframe を遅延生成する */
+    /** 外部Webページタブ（埋め込み表示）: iframe内に閉じ込め、上部に戻る導線を付ける */
     mountLinkTabEmbed(section: HTMLElement | null) {
         if (!section || section.dataset.layoutRendered === '1') return;
         const url = section.dataset.linkUrl || '';
         if (url === '') return;
         section.dataset.layoutRendered = '1';
+        section.classList.add('tab-section--link-embed');
+
+        let navDepth = 0;
+        let ignoreNextLoad = false;
+        const initialUrl = url;
+
+        const chrome = document.createElement('div');
+        chrome.className = 'link-tab-chrome';
+        chrome.innerHTML = `
+            <button type="button" class="link-tab-chrome__back" aria-label="戻る">
+                <i class="fas fa-chevron-left" aria-hidden="true"></i>
+                <span>戻る</span>
+            </button>
+            <span class="link-tab-chrome__title">Webページ</span>
+        `;
+        const backBtn = chrome.querySelector('.link-tab-chrome__back') as HTMLButtonElement | null;
+
         const iframe = document.createElement('iframe');
         iframe.className = 'link-tab-frame';
-        iframe.src = url;
+        iframe.src = initialUrl;
         iframe.setAttribute('loading', 'lazy');
         iframe.setAttribute('referrerpolicy', 'no-referrer');
-        iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-popups');
-        section.appendChild(iframe);
+        // allow-popups を付けない: target=_blank / window.open を抑止しアプリ内で完結させる
+        iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-downloads');
+        iframe.setAttribute('title', '埋め込みWebページ');
 
-        const fallback = document.createElement('div');
-        fallback.className = 'link-tab-fallback';
-        fallback.innerHTML = `
-            <p class="link-tab-fallback__text">ページを表示できない場合はこちら</p>
-            <button type="button" class="link-tab-fallback__btn">
-                <i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i> ブラウザで開く
-            </button>
-        `;
-        fallback.querySelector('button')?.addEventListener('click', () => this.openExternalUrl(url));
-        section.appendChild(fallback);
+        const leaveLinkTab = () => {
+            const returnTab = this.linkTabReturnTab && !this.isLinkTab(this.linkTabReturnTab)
+                ? this.linkTabReturnTab
+                : 'home';
+            void this.switchTab(returnTab);
+        };
+
+        const goBackInEmbed = () => {
+            if (navDepth <= 1) {
+                leaveLinkTab();
+                return;
+            }
+            ignoreNextLoad = true;
+            navDepth = Math.max(1, navDepth - 1);
+            try {
+                iframe.contentWindow?.history.back();
+            } catch (_e) {
+                ignoreNextLoad = false;
+                iframe.src = initialUrl;
+                navDepth = 1;
+            }
+        };
+
+        backBtn?.addEventListener('click', (e) => {
+            e.preventDefault();
+            goBackInEmbed();
+        });
+
+        iframe.addEventListener('load', () => {
+            if (ignoreNextLoad) {
+                ignoreNextLoad = false;
+                return;
+            }
+            navDepth += 1;
+        });
+
+        section.appendChild(chrome);
+        section.appendChild(iframe);
     }
 
     switchTab(tab) {
@@ -1548,6 +1597,9 @@ class ReggitApp {
         }
 
         const apply = () => {
+            if (this.isLinkTab(tab) && !this.isLinkTab(this.currentTab)) {
+                this.linkTabReturnTab = this.currentTab || 'home';
+            }
             this.currentTab = tab;
 
             if (this.pageRouter.isOpen()) {
