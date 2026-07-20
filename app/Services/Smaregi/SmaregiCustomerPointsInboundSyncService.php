@@ -8,9 +8,6 @@ use App\Domain\Order\Repositories\OrderRepository;
 use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
 use App\Models\Member;
-use App\Models\Project;
-use App\Models\Settings\ProjectProfileSmaregiSetting;
-use App\Models\SmaregiContract;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -28,6 +25,7 @@ class SmaregiCustomerPointsInboundSyncService
         private SmaregiPointsSyncService $pointsSync,
         private OrderRepository $orderRepository,
         private DomainEventDispatcher $domainEvents,
+        private SmaregiContractProjectResolver $projectResolver,
     ) {}
 
     /**
@@ -130,7 +128,7 @@ class SmaregiCustomerPointsInboundSyncService
 
     private function syncOneCustomer(string $contractId, string $smaregiCustomerId, ?int $pointsHint = null): void
     {
-        $projectIds = $this->projectIdsForContract($contractId);
+        $projectIds = $this->projectResolver->projectIdsForContract($contractId);
         if ($projectIds === []) {
             Log::info('[Smaregi] Inbound customer sync skipped: no project for contract', [
                 'smaregi_contract_id' => $contractId,
@@ -227,39 +225,6 @@ class SmaregiCustomerPointsInboundSyncService
                 $order['userId'],
             ));
         }
-    }
-
-    /**
-     * @return list<int>
-     */
-    private function projectIdsForContract(string $contractId): array
-    {
-        $contractId = trim($contractId);
-        $fromSettings = ProjectProfileSmaregiSetting::query()
-            ->where('smaregi_contract_id', $contractId)
-            ->pluck('project_id')
-            ->all();
-        $fromContracts = SmaregiContract::query()
-            ->where('contract_id', $contractId)
-            ->whereNotNull('project_id')
-            ->pluck('project_id')
-            ->all();
-
-        $ids = array_values(array_unique(array_map('intval', array_merge($fromSettings, $fromContracts))));
-        if ($ids !== []) {
-            return $ids;
-        }
-
-        // ShopSetting / SmaregiContract 未登録でも config フォールバックで契約を使うプロジェクトを含める
-        $fromEffectiveContract = [];
-        foreach (Project::query()->pluck('id') as $projectId) {
-            $effective = $this->smaregiApi->getContractIdForProject((int) $projectId);
-            if (is_string($effective) && trim($effective) === $contractId) {
-                $fromEffectiveContract[] = (int) $projectId;
-            }
-        }
-
-        return array_values(array_unique($fromEffectiveContract));
     }
 
     /**

@@ -8,6 +8,7 @@ use App\Services\Smaregi\SmaregiWebhookNotificationService;
 use App\UseCases\Smaregi\Data\SmaregiNotificationInput;
 use App\Util\StrHelper;
 use Illuminate\Support\Facades\Log;
+use Symfony\Component\HttpFoundation\Response;
 
 class SmaregiIdpHandleUseCase
 {
@@ -26,7 +27,7 @@ class SmaregiIdpHandleUseCase
         if ($input->isGetOrHead()) {
             Log::info('[Smaregi] IDP GET/HEAD 受信（接続確認など）');
 
-            return ['status' => 200, 'body' => ''];
+            return ['status' => Response::HTTP_OK, 'body' => ''];
         }
 
         $eventFromHeader = $input->header('smaregi-event');
@@ -40,7 +41,7 @@ class SmaregiIdpHandleUseCase
         if ($eventRaw === '') {
             Log::warning('[Smaregi] IDP missing event');
 
-            return ['status' => 400, 'body' => ''];
+            return ['status' => Response::HTTP_BAD_REQUEST, 'body' => ''];
         }
 
         if ($eventNormalized !== strtolower(SmaregiEvent::APP_SUBSCRIPTION)) {
@@ -57,14 +58,14 @@ class SmaregiIdpHandleUseCase
                 'has_contract_id_header' => $contractIdFromHeader !== null && $contractIdFromHeader !== '',
             ]);
 
-            return ['status' => 200, 'body' => ''];
+            return ['status' => Response::HTTP_OK, 'body' => ''];
         }
 
         $contractId = $contractIdFromHeader ?? $input->input('contractId');
         if (! is_string($contractId) || StrHelper::isEmptyStringOrNull($contractId)) {
             Log::warning('[Smaregi] IDP missing contract_id');
 
-            return ['status' => 400, 'body' => ''];
+            return ['status' => Response::HTTP_BAD_REQUEST, 'body' => ''];
         }
 
         $action = $input->input('action');
@@ -88,9 +89,9 @@ class SmaregiIdpHandleUseCase
                 'error' => $e->getMessage(),
             ]);
 
-            return ['status' => 500, 'body' => ''];
+            return ['status' => Response::HTTP_INTERNAL_SERVER_ERROR, 'body' => ''];
         }
 
-        return ['status' => 200, 'body' => ''];
+        return ['status' => Response::HTTP_OK, 'body' => ''];
     }
 }
