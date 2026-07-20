@@ -2,6 +2,7 @@ import { AppConstants } from '../../shared/constants';
 import { DomHelper } from '../../shared/utils/domHelper';
 import { ToastManager } from '../../shared/utils/toast';
 import { ConfirmDialog } from '../../shared/utils/confirmDialog';
+import { getGuestRegisterMessage, getMemberRegistrationMode, shouldShowRegistrationForm, syncMemberRegistrationModeFromPayload } from '../utils/membershipPolicy';
 
 declare const liff: any;
 declare const JsBarcode: any;
@@ -21,6 +22,7 @@ export class MemberManager {
     _memberContextLineUserId: string | null;
     _trackedLineUserIdForMemberContext: string | null;
     _registerFullScreen: boolean;
+    _forcedRegister: boolean;
     _profileEditFullScreen: boolean;
     _historyHandlerBound: boolean;
     _liffIdentityRetryRegistered: boolean;
@@ -45,6 +47,7 @@ export class MemberManager {
         this._memberContextLineUserId = null;
         this._trackedLineUserIdForMemberContext = null;
         this._registerFullScreen = false;
+        this._forcedRegister = false;
         this._profileEditFullScreen = false;
         this._historyHandlerBound = false;
         this._liffIdentityRetryRegistered = false;
@@ -60,10 +63,14 @@ export class MemberManager {
         if (this._historyHandlerBound || typeof window === 'undefined') return;
         this._historyHandlerBound = true;
         window.addEventListener('popstate', () => {
+            if (this._forcedRegister && !(this.memberData && this.memberData.is_member === true)) {
+                this.openRegisterFullScreen({ skipHistory: true, forced: true });
+                return;
+            }
             const registerMode = this.isRegisterPageMode();
             const editMode = this.isEditPageMode();
             if (registerMode) {
-                this.openRegisterFullScreen({ skipHistory: true });
+                this.openRegisterFullScreen({ skipHistory: true, forced: this._forcedRegister });
                 return;
             }
             if (editMode) {
@@ -294,6 +301,10 @@ export class MemberManager {
         return this.memberData;
     }
 
+    isForcedRegistrationActive(): boolean {
+        return this._forcedRegister === true && !(this.memberData && this.memberData.is_member === true);
+    }
+
     hasAuthenticatedIdentity() {
         if (typeof window === 'undefined') return false;
         if (window.__LINE_USER_ID__) return true;
@@ -401,6 +412,7 @@ export class MemberManager {
 
     _setMemberContextCache(payload, lineUserId) {
         if (payload && typeof payload === 'object') {
+            syncMemberRegistrationModeFromPayload(payload);
             this.memberData = payload;
             this._memberContextFetchedAt = Date.now();
             this._memberContextLineUserId = lineUserId || this._getLineUserIdForMemberApi() || null;
@@ -577,6 +589,7 @@ export class MemberManager {
     }
 
     async _handleGuestContext(payload: any) {
+        syncMemberRegistrationModeFromPayload(payload);
         const container = this.getContainer();
         if (!container) return;
 
@@ -586,6 +599,10 @@ export class MemberManager {
         }
         if (this.memberData && this.memberData.is_member === true) {
             this.render(this.memberData);
+            return;
+        }
+        if (shouldShowRegistrationForm()) {
+            await this.ensureRegistrationFormShown();
             return;
         }
         if (payload && payload.show_member_card_for_guest === false) {
@@ -599,6 +616,67 @@ export class MemberManager {
         }
         container.innerHTML = this.getGuestRegisterTemplate();
         this._attachRegisterTrigger(container);
+    }
+
+    isRegisterFullScreenActive(): boolean {
+        return this._registerFullScreen === true;
+    }
+
+    async ensureRegistrationFormShown(options: any = {}) {
+        if (this.memberData && this.memberData.is_member === true) {
+            this._forcedRegister = false;
+            return;
+        }
+        if (!shouldShowRegistrationForm() && options.forced !== true) {
+            return;
+        }
+        const forced = options.forced === true || getMemberRegistrationMode() === 'force';
+        try {
+            await this.ensureGuestMemberContext();
+        } catch (e) {
+            console.warn('ensureGuestMemberContext failed', e);
+        }
+        if (this.memberData && this.memberData.is_member === true) {
+            this._forcedRegister = false;
+            return;
+        }
+        if (this._registerFullScreen) {
+            return;
+        }
+        let container = this.getContainer();
+        if (!container) {
+            await new Promise((resolve) => { window.setTimeout(resolve, 100); });
+            container = this.getContainer();
+        }
+        if (!container) {
+            return;
+        }
+        await this.openRegisterFullScreen({
+            forced,
+            skipHistory: true,
+        });
+    }
+
+    _isMemberRegistrationPromptDismissed() {
+        if (typeof window === 'undefined') {
+            return false;
+        }
+        try {
+            return window.sessionStorage.getItem('member_registration_prompt_dismissed') === '1';
+        } catch (e) {
+            return false;
+        }
+    }
+
+    _dismissMemberRegistrationPrompt() {
+        if (typeof window === 'undefined') {
+            return;
+        }
+        try {
+            window.sessionStorage.setItem('member_registration_prompt_dismissed', '1');
+        } catch (e) {
+            // ignore
+        }
     }
 
     /**
@@ -703,10 +781,7 @@ export class MemberManager {
     }
 
     getGuestRegisterTemplate() {
-        const optional = typeof window !== 'undefined'
-            && window.__LIFF_TAB_SETTINGS__
-            && window.__LIFF_TAB_SETTINGS__._global
-            && window.__LIFF_TAB_SETTINGS__._global.require_membership === false;
+        const copy = getGuestRegisterMessage();
         return `
             <div class="member-card-container">
                 <div class="member-card member-card--line-only">
@@ -714,10 +789,10 @@ export class MemberManager {
                         <h2 class="member-card-title"><i class="fas fa-id-card"></i> 会員証</h2>
                     </div>
                     <div class="member-card-line-only-body">
-                        <p class="member-card-line-only-message">${optional ? '会員登録は任意です。' : '会員登録されていません。'}</p>
-                        <p class="member-card-line-only-sub">${optional ? '登録するとポイント・クーポン・予約履歴を利用できます。' : '会員登録すると会員証が表示されます。'}</p>
-                        <button type="button" class="btn ${optional ? 'btn-secondary' : 'btn-primary'} mt-2 member-register-trigger" data-action="member-open-register" onclick="typeof window.app !== 'undefined' && window.app.memberManager && window.app.memberManager.navigateToRegisterPage()">
-                            <i class="fas fa-user-plus"></i> ${optional ? '任意で会員登録' : '会員登録する'}
+                        <p class="member-card-line-only-message">${DomHelper.escapeHtml(copy.title)}</p>
+                        <p class="member-card-line-only-sub">${DomHelper.escapeHtml(copy.subtitle)}</p>
+                        <button type="button" class="btn ${copy.buttonClass} mt-2 member-register-trigger" data-action="member-open-register" onclick="typeof window.app !== 'undefined' && window.app.memberManager && window.app.memberManager.navigateToRegisterPage()">
+                            <i class="fas fa-user-plus"></i> ${DomHelper.escapeHtml(copy.buttonLabel)}
                         </button>
                     </div>
                 </div>
@@ -770,6 +845,10 @@ export class MemberManager {
     async load() {
         const container = this.getContainer();
         if (!container) return;
+
+        if (this._registerFullScreen && !(this.memberData && this.memberData.is_member)) {
+            return;
+        }
 
         if (typeof window !== 'undefined' && window.__IS_LIFF__) {
             await this.ensureIdentityReady();
@@ -1195,7 +1274,9 @@ export class MemberManager {
                 this._trackedLineUserIdForMemberContext = null;
                 this._memberContextFetchGeneration += 1;
                 if (typeof ToastManager !== 'undefined') ToastManager.success(result.message || '退会が完了しました');
-                this.load();
+                window.setTimeout(function () {
+                    window.location.reload();
+                }, 800);
             } else {
                 throw new Error(result && result.message ? result.message : '退会に失敗しました');
             }
@@ -2182,6 +2263,9 @@ export class MemberManager {
     }
 
     closeMemberScreen() {
+        if (this.isForcedRegistrationActive()) {
+            return;
+        }
         if (this._registerFullScreen) {
             this.closeRegisterFullScreen();
             return;
@@ -2390,9 +2474,15 @@ export class MemberManager {
         const submitLabel = isRegister ? '登録する' : '保存';
         const titleIcon = isRegister ? 'fa-user-plus' : 'fa-user-edit';
         const isFullScreen = options.fullScreen === true;
+        const hideCancel = options.forced === true || (isRegister && this._forcedRegister);
         const cancelLabel = 'キャンセル';
         const cancelOnclick = isFullScreen ? 'window.app.memberManager.closeMemberScreen()' : 'window.app.memberManager.closeProfileEdit()';
-        const actionsHtml = `
+        const actionsHtml = hideCancel
+            ? `
+                    <div class="member-form-actions">
+                        <button type="submit" class="member-btn member-btn--primary"${isFullScreen ? ' form="' + formId + '"' : ''}><i class="fas fa-check"></i> ${DomHelper.escapeHtml(submitLabel)}</button>
+                    </div>`
+            : `
                     <div class="member-form-actions">
                         <button type="button" class="member-btn member-btn--secondary" onclick="${cancelOnclick}">${DomHelper.escapeHtml(cancelLabel)}</button>
                         <button type="submit" class="member-btn member-btn--primary"${isFullScreen ? ' form="' + formId + '"' : ''}><i class="fas fa-check"></i> ${DomHelper.escapeHtml(submitLabel)}</button>
@@ -2431,7 +2521,10 @@ export class MemberManager {
         } catch (e) {
             console.warn('ensureGuestMemberContext failed', e);
         }
-        if (this.memberData && this.memberData.is_member) return;
+        if (this.memberData && this.memberData.is_member) {
+            this._forcedRegister = false;
+            return;
+        }
         if (!options.skipHistory && !this.isRegisterPageMode()) {
             this._updateMemberScreenUrl('register', false);
         }
@@ -2440,8 +2533,14 @@ export class MemberManager {
         const initialProfile = (typeof window !== 'undefined' && window.__LINE_PROFILE__ && window.__LINE_PROFILE__.displayName)
             ? { name: window.__LINE_PROFILE__.displayName } : {};
         this._registerFullScreen = true;
+        this._forcedRegister = options.forced === true;
         this._profileEditFullScreen = false;
-        container.innerHTML = this._getProfileEditFormHtml(null, null, { isRegister: true, initialProfile: initialProfile, fullScreen: true });
+        container.innerHTML = this._getProfileEditFormHtml(null, null, {
+            isRegister: true,
+            initialProfile: initialProfile,
+            fullScreen: true,
+            forced: this._forcedRegister,
+        });
         container.scrollTop = 0;
         const form = document.getElementById('registerForm');
         if (form) {
@@ -2454,7 +2553,14 @@ export class MemberManager {
     }
 
     closeRegisterFullScreen() {
+        if (this.isForcedRegistrationActive()) {
+            return;
+        }
+        if (getMemberRegistrationMode() === 'prompt') {
+            this._dismissMemberRegistrationPrompt();
+        }
         this._registerFullScreen = false;
+        this._forcedRegister = false;
         this._updateMemberScreenUrl('', true);
         this.load();
     }
@@ -2525,6 +2631,7 @@ export class MemberManager {
             const data = this._normalizeMemberPayload(raw) || raw;
             if (data && (data.is_member === true || typeof data.is_member !== 'undefined')) {
                 this.memberData = data;
+                this._forcedRegister = false;
                 if (this._registerFullScreen) {
                     this.closeRegisterFullScreen();
                 } else {
@@ -2537,6 +2644,7 @@ export class MemberManager {
                 }
             } else if (data) {
                 this.memberData = data;
+                this._forcedRegister = false;
                 if (this._registerFullScreen) {
                     this.closeRegisterFullScreen();
                 } else {
