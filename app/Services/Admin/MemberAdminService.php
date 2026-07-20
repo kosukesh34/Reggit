@@ -7,13 +7,17 @@ use App\Domain\Coupon\ValueObjects\PendingIssuedCoupon;
 use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Enums\MemberVisitSource;
 use App\Enums\OrderStatus;
+use App\Enums\PointTransactionType;
 use App\Models\Coupon;
+use App\Models\CouponRedemption;
 use App\Models\Member;
 use App\Models\MemberCoupon;
+use App\Models\MemberRankHistory;
 use App\Models\MemberStamp;
 use App\Models\MemberStampTransaction;
 use App\Models\MemberVisit;
 use App\Models\Order;
+use App\Models\PointTransaction;
 use App\Models\Scopes\ProjectScope;
 use App\Models\StampCard;
 use App\Models\User;
@@ -28,6 +32,8 @@ use App\Util\LogHelper;
 use App\Util\StrHelper;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 
@@ -89,17 +95,10 @@ class MemberAdminService
         $query = Member::with([
             'user',
             'user.devices',
-            'pointTransactions' => fn ($q) => $q->orderByDesc('created_at'),
-            'pointTransactions.order',
+            'tags',
             'memberStamps.stampCard',
             'memberCoupons' => fn ($q) => $q->orderByDesc('issued_at'),
             'memberCoupons.coupon',
-            'visits' => fn ($q) => $q->orderByDesc('visited_at'),
-            'visits.order',
-            'visits.items',
-            'stampTransactions' => fn ($q) => $q->orderByDesc('created_at'),
-            'stampTransactions.stampCard',
-            'stampTransactions.order',
         ]);
         if ($projectId !== null) {
             $query->where('project_id', $projectId);
@@ -504,6 +503,24 @@ class MemberAdminService
         return $options;
     }
 
+    private function recordRankHistory(
+        Member $member,
+        string $fromRank,
+        string $toRank,
+        ?string $fromLabel,
+        string $toLabel,
+    ): void {
+        MemberRankHistory::create([
+            'project_id' => (int) $member->project_id,
+            'member_id' => (int) $member->id,
+            'from_rank' => $fromRank !== '' ? $fromRank : null,
+            'to_rank' => $toRank,
+            'from_rank_label' => $fromLabel,
+            'to_rank_label' => $toLabel,
+            'achieved_at' => now(),
+        ]);
+    }
+
     /**
      * 会員のユーザー情報・会員情報を一括更新する。
      * ローカルを先に保存し、スマレジ連携はベストエフォート（失敗してもローカル更新は維持）。
@@ -537,11 +554,25 @@ class MemberAdminService
             static fn ($value, string $key): bool => $key === 'profile_extra' || $value !== null,
             ARRAY_FILTER_USE_BOTH
         );
+        $previousRank = (string) ($member->rank ?? '');
         if ($updateMember !== []) {
             $member->offsetUnset('rank_label');
             $member->offsetUnset('points_expiry');
             $member->update($updateMember);
             $member->refresh();
+            if (array_key_exists('rank', $updateMember)) {
+                $newRank = (string) $updateMember['rank'];
+                if ($newRank !== '' && $newRank !== $previousRank) {
+                    $options = $this->getRankOptionsForSelect((int) $member->project_id);
+                    $this->recordRankHistory(
+                        $member,
+                        $previousRank,
+                        $newRank,
+                        $previousRank !== '' ? ($options[$previousRank] ?? $previousRank) : null,
+                        $options[$newRank] ?? $newRank,
+                    );
+                }
+            }
         }
 
         $smaregiCustomerId = trim((string) ($member->smaregi_customer_id ?? ''));
@@ -580,6 +611,221 @@ class MemberAdminService
                 'detail' => $this->smaregiApi->getLastErrorDetail(),
             ]);
         }
+    }
+
+    public const HISTORY_PER_PAGE = 20;
+
+    public function getPaginatedVisits(
+        int $memberId,
+        string $keyword = '',
+        int $perPage = self::HISTORY_PER_PAGE,
+        string $pageName = 'visits_page',
+        string $from = '',
+        string $to = '',
+    ): LengthAwarePaginator {
+        $query = MemberVisit::query()
+            ->where('member_id', $memberId)
+            ->with(['order', 'items'])
+            ->orderByDesc('visited_at');
+
+        $this->applyHistoryKeyword($query, $keyword, function ($q, string $like, string $keyword) {
+            $sourceKeys = $this->matchEnumKeys(MemberVisitSource::getValues(), $keyword);
+            $q->where('note', 'like', $like)
+                ->orWhere('smaregi_transaction_head_id', 'like', $like)
+                ->orWhereHas('items', fn ($iq) => $iq->where('product_name', 'like', $like))
+                ->orWhereHas('order', fn ($oq) => $oq->where('order_number', 'like', $like));
+            if ($sourceKeys !== []) {
+                $q->orWhereIn('source', $sourceKeys);
+            }
+        });
+        $this->applyDateRange($query, 'visited_at', $from, $to);
+
+        return $query->paginate($perPage, ['*'], $pageName);
+    }
+
+    public function getPaginatedPointTransactions(
+        int $memberId,
+        string $keyword = '',
+        int $perPage = self::HISTORY_PER_PAGE,
+        string $pageName = 'points_page',
+        string $from = '',
+        string $to = '',
+    ): LengthAwarePaginator {
+        $query = PointTransaction::query()
+            ->where('member_id', $memberId)
+            ->with('order')
+            ->orderByDesc('created_at');
+
+        $this->applyHistoryKeyword($query, $keyword, function ($q, string $like, string $keyword) {
+            $typeKeys = $this->matchEnumKeys(PointTransactionType::getValues(), $keyword);
+            $q->where('description', 'like', $like)
+                ->orWhereHas('order', fn ($oq) => $oq->where('order_number', 'like', $like));
+            if ($typeKeys !== []) {
+                $q->orWhereIn('type', $typeKeys);
+            }
+        });
+        $this->applyDateRange($query, 'created_at', $from, $to);
+
+        return $query->paginate($perPage, ['*'], $pageName);
+    }
+
+    public function getPaginatedMemberCoupons(
+        int $memberId,
+        string $keyword = '',
+        int $perPage = self::HISTORY_PER_PAGE,
+        string $pageName = 'coupons_page',
+        string $from = '',
+        string $to = '',
+    ): LengthAwarePaginator {
+        $query = MemberCoupon::query()
+            ->where('member_id', $memberId)
+            ->with('coupon')
+            ->orderByDesc('issued_at');
+
+        $this->applyHistoryKeyword($query, $keyword, function ($q, string $like, string $keyword) {
+            $statusKeys = [];
+            if ($keyword === 'unused' || mb_strpos($keyword, '未使用') !== false) {
+                $statusKeys[] = 'unused';
+            }
+            if ($keyword === 'used' || mb_strpos($keyword, '使用済') !== false) {
+                $statusKeys[] = 'used';
+            }
+            $q->where('coupon_name_snapshot', 'like', $like)
+                ->orWhereHas('coupon', fn ($cq) => $cq->where('name', 'like', $like)->orWhere('code', 'like', $like));
+            if ($statusKeys !== []) {
+                $q->orWhereIn('status', $statusKeys);
+            }
+        });
+        $this->applyDateRange($query, 'issued_at', $from, $to);
+
+        return $query->paginate($perPage, ['*'], $pageName);
+    }
+
+    public function getPaginatedStampTransactions(
+        int $memberId,
+        string $keyword = '',
+        int $perPage = self::HISTORY_PER_PAGE,
+        string $pageName = 'stamps_page',
+        string $from = '',
+        string $to = '',
+    ): LengthAwarePaginator {
+        $query = MemberStampTransaction::query()
+            ->where('member_id', $memberId)
+            ->with('stampCard')
+            ->orderByDesc('created_at');
+
+        $this->applyHistoryKeyword($query, $keyword, function ($q, string $like) {
+            $q->where('description', 'like', $like)
+                ->orWhereHas('stampCard', fn ($sq) => $sq->where('name', 'like', $like));
+        });
+        $this->applyDateRange($query, 'created_at', $from, $to);
+
+        return $query->paginate($perPage, ['*'], $pageName);
+    }
+
+    public function getPaginatedRankHistories(
+        int $memberId,
+        string $keyword = '',
+        int $perPage = self::HISTORY_PER_PAGE,
+        string $pageName = 'rank_page',
+        string $from = '',
+        string $to = '',
+    ): LengthAwarePaginator {
+        $query = MemberRankHistory::query()
+            ->where('member_id', $memberId)
+            ->orderByDesc('achieved_at');
+
+        $this->applyHistoryKeyword($query, $keyword, function ($q, string $like) {
+            $q->where('from_rank', 'like', $like)
+                ->orWhere('to_rank', 'like', $like)
+                ->orWhere('from_rank_label', 'like', $like)
+                ->orWhere('to_rank_label', 'like', $like);
+        });
+        $this->applyDateRange($query, 'achieved_at', $from, $to);
+
+        return $query->paginate($perPage, ['*'], $pageName);
+    }
+
+    public function getPaginatedCouponRedemptions(
+        int $memberId,
+        string $keyword = '',
+        int $perPage = self::HISTORY_PER_PAGE,
+        string $pageName = 'redemptions_page',
+        string $from = '',
+        string $to = '',
+    ): LengthAwarePaginator {
+        $query = CouponRedemption::query()
+            ->where('member_id', $memberId)
+            ->with('coupon')
+            ->orderByDesc('used_at');
+
+        $this->applyHistoryKeyword($query, $keyword, function ($q, string $like) {
+            $q->whereHas('coupon', fn ($cq) => $cq->where('name', 'like', $like)->orWhere('code', 'like', $like));
+        });
+        $this->applyDateRange($query, 'used_at', $from, $to);
+
+        return $query->paginate($perPage, ['*'], $pageName);
+    }
+
+    /**
+     * @param  Builder<Model>  $query
+     * @param  callable(Builder<Model>, string, string): void  $callback
+     */
+    private function applyHistoryKeyword($query, string $keyword, callable $callback): void
+    {
+        $keyword = trim($keyword);
+        if ($keyword === '') {
+            return;
+        }
+        $like = '%'.$keyword.'%';
+        $query->where(function ($q) use ($callback, $like, $keyword) {
+            $callback($q, $like, $keyword);
+        });
+    }
+
+    /**
+     * @param  Builder<Model>  $query
+     */
+    private function applyDateRange($query, string $column, string $from, string $to): void
+    {
+        $fromDate = $this->normalizeHistoryDate($from);
+        $toDate = $this->normalizeHistoryDate($to);
+        if ($fromDate !== null) {
+            $query->where($column, '>=', $fromDate.' 00:00:00');
+        }
+        if ($toDate !== null) {
+            $query->where($column, '<=', $toDate.' 23:59:59');
+        }
+    }
+
+    private function normalizeHistoryDate(string $value): ?string
+    {
+        $value = trim($value);
+        if ($value === '' || preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) !== 1) {
+            return null;
+        }
+
+        return $value;
+    }
+
+    /**
+     * @param  array<string, string>  $enumValues
+     * @return list<string>
+     */
+    private function matchEnumKeys(array $enumValues, string $keyword): array
+    {
+        $keys = [];
+        $lower = mb_strtolower($keyword);
+        foreach ($enumValues as $key => $label) {
+            if ($key === $keyword
+                || mb_strpos((string) $label, $keyword) !== false
+                || mb_strpos(mb_strtolower((string) $label), $lower) !== false
+            ) {
+                $keys[] = (string) $key;
+            }
+        }
+
+        return $keys;
     }
 
     /**

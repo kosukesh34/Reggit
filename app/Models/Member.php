@@ -96,6 +96,11 @@ class Member extends Model
         return $this->hasMany(CouponRedemption::class);
     }
 
+    public function rankHistories()
+    {
+        return $this->hasMany(MemberRankHistory::class);
+    }
+
     public function queueEntries()
     {
         return $this->hasMany(QueueEntry::class);
