@@ -29,23 +29,27 @@ class AdminCouponDeliveryDetailUseCase
 
         $targetIds = $this->normalizeIds((array) ($delivery->target_member_ids ?? []));
         $issuedIds = $this->normalizeIds((array) ($delivery->issued_member_ids ?? []));
-        $labels = $this->resolveMemberRows($projectId, array_values(array_unique(array_merge($targetIds, $issuedIds))));
+        $issuedSet = array_fill_keys($issuedIds, true);
 
-        $targetMembers = [];
-        foreach ($targetIds as $id) {
-            $targetMembers[] = $labels[$id] ?? [
+        $memberIds = $isEvent
+            ? $issuedIds
+            : array_values(array_unique(array_merge($targetIds, $issuedIds)));
+        $labels = $this->resolveMemberRows($projectId, $memberIds);
+
+        $members = [];
+        foreach ($memberIds as $id) {
+            $isIssued = isset($issuedSet[$id]);
+            $row = $labels[$id] ?? [
                 'member_id' => $id,
                 'member_name' => 'ID:'.$id,
                 'member_number' => '—',
             ];
-        }
-
-        $issuedMembers = [];
-        foreach ($issuedIds as $id) {
-            $issuedMembers[] = $labels[$id] ?? [
-                'member_id' => $id,
-                'member_name' => 'ID:'.$id,
-                'member_number' => '—',
+            $members[] = [
+                'member_id' => $row['member_id'],
+                'member_name' => $row['member_name'],
+                'member_number' => $row['member_number'],
+                'is_issued' => $isIssued,
+                'status_label' => $isIssued ? '発行済み' : '未発行',
             ];
         }
 
@@ -69,8 +73,7 @@ class AdminCouponDeliveryDetailUseCase
             $this->formatTimingLabel($delivery),
             number_format((int) $delivery->issued_count).'人',
             $targetSummary,
-            $targetMembers,
-            $issuedMembers,
+            $members,
             $isEvent,
         );
     }

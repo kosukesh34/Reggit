@@ -2,6 +2,7 @@
 
 @section('title', '会員詳細')
 @section('page-title', '会員詳細 #' . $member->id)
+@section('page-kind', 'member-detail')
 
 @section('content')
 @if(session('success'))
@@ -245,191 +246,83 @@
 </div>
 @endif
 
-<div class="card">
-    <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-store"></i> 来店履歴</h3>
-    </div>
-    <table class="table">
-        <thead>
-            <tr>
-                <th>来店日時</th>
-                <th>経路</th>
-                <th>購入額</th>
-                <th>購入商品</th>
-                <th>注文番号</th>
-                <th>メモ</th>
-            </tr>
-        </thead>
-        <tbody>
-            @forelse($member->visits as $visit)
-            @php
-                $visitDetailUrl = admin_route('admin.members.visits.detail', ['id' => $member->id, 'visitId' => $visit->id]);
-                $orderDetailUrl = $visit->order !== null
-                    ? admin_route('admin.orders.detail', ['id' => $visit->order->id])
-                    : null;
-                $rowHref = $orderDetailUrl ?? $visitDetailUrl;
-                $productSummary = $visit->items->take(3)->pluck('product_name')->filter()->implode('、');
-                if ($visit->items->count() > 3) {
-                    $productSummary .= ' 他'.($visit->items->count() - 3).'点';
-                }
-            @endphp
-            <tr class="clickable-row" onclick="window.location='{{ $rowHref }}'" style="cursor:pointer;">
-                <td>{{ $visit->visited_at->format('Y/m/d H:i') }}</td>
-                <td>{{ \App\Enums\MemberVisitSource::getLabel($visit->source) }}</td>
-                <td>
-                    @if($visit->amount !== null)
-                        ¥{{ number_format($visit->amount) }}
-                    @else
-                        —
-                    @endif
-                </td>
-                <td>{{ $productSummary !== '' ? $productSummary : '—' }}</td>
-                <td>
-                    @if($visit->order !== null)
-                        {{ $visit->order->formattedOrderNumber() }}
-                    @elseif($visit->smaregi_transaction_head_id !== null)
-                        #{{ $visit->smaregi_transaction_head_id }}
-                    @else
-                        —
-                    @endif
-                </td>
-                <td>{{ $visit->note ?? '—' }}</td>
-            </tr>
-            @empty
-            <tr>
-                <td colspan="6" class="empty-state">
-                    <i class="fas fa-store"></i>
-                    <p>来店履歴がありません</p>
-                </td>
-            </tr>
-            @endforelse
-        </tbody>
-    </table>
-</div>
+@include('admin.partials.member-history.panel', [
+    'section' => 'visits',
+    'title' => '来店履歴',
+    'icon' => 'fas fa-store',
+    'placeholder' => 'メモ・商品・注文番号',
+    'queryKey' => 'visits_q',
+    'fromKey' => 'visits_from',
+    'toKey' => 'visits_to',
+    'items' => $visits,
+    'member' => $member,
+    'historyFilters' => $historyFilters,
+])
 
-<div class="card">
-    <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-coins"></i> ポイント履歴</h3>
-    </div>
-    <table class="table">
-        <thead>
-            <tr>
-                <th>日時</th>
-                <th>種類</th>
-                <th>ポイント</th>
-                <th>説明</th>
-                <th>注文番号</th>
-            </tr>
-        </thead>
-        <tbody>
-            @forelse($member->pointTransactions as $transaction)
-            <tr>
-                <td>{{ $transaction->created_at->format('Y/m/d H:i') }}</td>
-                <td>
-                    @php
-                        $typeLabel = \App\Enums\PointTransactionType::getLabel($transaction->type);
-                        $typeBadge = $transaction->type === \App\Enums\PointTransactionType::EARNED || $transaction->type === \App\Enums\PointTransactionType::REFUNDED
-                            ? 'success'
-                            : 'danger';
-                    @endphp
-                    <span class="badge badge-{{ $typeBadge }}">{{ $typeLabel }}</span>
-                </td>
-                <td>{{ $transaction->points > 0 ? '+' : '' }}{{ number_format($transaction->points) }}pt</td>
-                <td>{{ $transaction->description ?? 'N/A' }}</td>
-                <td>{{ $transaction->order !== null ? $transaction->order->formattedOrderNumber() : 'N/A' }}</td>
-            </tr>
-            @empty
-            <tr>
-                <td colspan="5" class="empty-state">
-                    <i class="fas fa-coins"></i>
-                    <p>ポイント履歴がありません</p>
-                </td>
-            </tr>
-            @endforelse
-        </tbody>
-    </table>
-</div>
+@include('admin.partials.member-history.panel', [
+    'section' => 'points',
+    'title' => 'ポイント履歴',
+    'icon' => 'fas fa-coins',
+    'placeholder' => '説明・種別・注文番号',
+    'queryKey' => 'points_q',
+    'fromKey' => 'points_from',
+    'toKey' => 'points_to',
+    'items' => $pointTransactions,
+    'member' => $member,
+    'historyFilters' => $historyFilters,
+])
 
-<div class="card">
-    <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-ticket-alt"></i> クーポン発行履歴</h3>
-    </div>
-    <table class="table">
-        <thead>
-            <tr>
-                <th>クーポン名</th>
-                <th>状態</th>
-                <th>発行日</th>
-                <th>有効期限</th>
-            </tr>
-        </thead>
-        <tbody>
-            @forelse($member->memberCoupons as $mc)
-            <tr>
-                <td>{{ $mc->coupon_name_snapshot ?? $mc->coupon->name ?? '—' }}</td>
-                <td>
-                    <span class="badge badge-{{ $mc->status === 'unused' ? 'success' : 'secondary' }}">
-                        {{ $mc->status === 'unused' ? '未使用' : '使用済み' }}
-                    </span>
-                </td>
-                <td>{{ $mc->issued_at ? $mc->issued_at->format('Y/m/d H:i') : '—' }}</td>
-                <td>{{ $mc->valid_until ? $mc->valid_until->format('Y/m/d H:i') : '—' }}</td>
-            </tr>
-            @empty
-            <tr>
-                <td colspan="4" class="empty-state">
-                    <i class="fas fa-ticket-alt"></i>
-                    <p>クーポン発行履歴がありません</p>
-                </td>
-            </tr>
-            @endforelse
-        </tbody>
-    </table>
-</div>
+@include('admin.partials.member-history.panel', [
+    'section' => 'coupons',
+    'title' => 'クーポン発行履歴',
+    'icon' => 'fas fa-ticket-alt',
+    'placeholder' => 'クーポン名・状態',
+    'queryKey' => 'coupons_q',
+    'fromKey' => 'coupons_from',
+    'toKey' => 'coupons_to',
+    'items' => $memberCoupons,
+    'member' => $member,
+    'historyFilters' => $historyFilters,
+])
 
-<div class="card">
-    <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-stamp"></i> スタンプ付与履歴</h3>
-    </div>
-    @if($member->memberStamps->isNotEmpty())
-    <div class="card-body pb-0">
-        <p class="text-muted small mb-2">現在の状況:
-            @foreach($member->memberStamps as $ms)
-                {{ $ms->stampCard->name ?? '—' }} {{ $ms->current_stamps }} / {{ $ms->stampCard->required_stamps ?? 0 }}{{ $ms->completed_at ? '（達成済み）' : '' }}@if(!$loop->last)、@endif
-            @endforeach
-        </p>
-    </div>
-    @endif
-    <table class="table">
-        <thead>
-            <tr>
-                <th>日時</th>
-                <th>スタンプカード</th>
-                <th>増減</th>
-                <th>付与後残高</th>
-                <th>説明</th>
-            </tr>
-        </thead>
-        <tbody>
-            @forelse($member->stampTransactions as $tx)
-            <tr>
-                <td>{{ $tx->created_at->format('Y/m/d H:i') }}</td>
-                <td>{{ $tx->stampCard->name ?? '—' }}</td>
-                <td>{{ $tx->delta > 0 ? '+' : '' }}{{ $tx->delta }}</td>
-                <td>{{ $tx->balance_after }}</td>
-                <td>{{ $tx->description ?? '—' }}</td>
-            </tr>
-            @empty
-            <tr>
-                <td colspan="5" class="empty-state">
-                    <i class="fas fa-stamp"></i>
-                    <p>スタンプ付与履歴がありません</p>
-                </td>
-            </tr>
-            @endforelse
-        </tbody>
-    </table>
-</div>
+@include('admin.partials.member-history.panel', [
+    'section' => 'redemptions',
+    'title' => 'クーポン使用履歴',
+    'icon' => 'fas fa-receipt',
+    'placeholder' => 'クーポン名',
+    'queryKey' => 'redemptions_q',
+    'fromKey' => 'redemptions_from',
+    'toKey' => 'redemptions_to',
+    'items' => $couponRedemptions,
+    'member' => $member,
+    'historyFilters' => $historyFilters,
+])
+
+@include('admin.partials.member-history.panel', [
+    'section' => 'rank',
+    'title' => 'ランクアップ履歴',
+    'icon' => 'fas fa-trophy',
+    'placeholder' => 'ランク名',
+    'queryKey' => 'rank_q',
+    'fromKey' => 'rank_from',
+    'toKey' => 'rank_to',
+    'items' => $rankHistories,
+    'member' => $member,
+    'historyFilters' => $historyFilters,
+])
+
+@include('admin.partials.member-history.panel', [
+    'section' => 'stamps',
+    'title' => 'スタンプ付与履歴',
+    'icon' => 'fas fa-stamp',
+    'placeholder' => 'カード名・説明',
+    'queryKey' => 'stamps_q',
+    'fromKey' => 'stamps_from',
+    'toKey' => 'stamps_to',
+    'items' => $stampTransactions,
+    'member' => $member,
+    'historyFilters' => $historyFilters,
+])
 
 <div class="form-actions">
     <a href="{{ admin_route('admin.members') }}" class="btn btn-secondary">
@@ -437,3 +330,11 @@
     </a>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+window.MemberDetailHistoryConfig = {
+    memberId: {{ (int) $member->id }},
+};
+</script>
+@endpush
