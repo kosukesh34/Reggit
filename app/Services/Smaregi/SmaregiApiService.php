@@ -10,6 +10,7 @@ use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * スマレジ・プラットフォームAPI 呼び出し用サービス。
@@ -397,14 +398,14 @@ class SmaregiApiService
         return $this->request($contractId, 'PATCH', 'pos/customers/'.$customerId, $body);
     }
 
-    /** 会員削除（pos.customers:write）。404 は既に削除済みとみなし成功扱い。 */
+    /** 会員削除（pos.customers:write）。Not Found は既に削除済みとみなし成功扱い。 */
     public function deleteCustomer(string $contractId, string $customerId): ?array
     {
         $result = $this->request($contractId, 'DELETE', 'pos/customers/'.$customerId);
         if ($result !== null) {
             return $result;
         }
-        if ($this->lastHttpStatus === 404) {
+        if ($this->lastHttpStatus === Response::HTTP_NOT_FOUND) {
             Log::info('[Smaregi] deleteCustomer treated as success (already gone)', [
                 'smaregi_contract_id' => $contractId,
                 'smaregi_customer_id' => $customerId,
