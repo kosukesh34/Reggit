@@ -458,7 +458,7 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
         );
     }
 
-    public function test_salesHeadDivisionが1でも通常販売としてポイント付与されること(): void
+    public function test_sales_head_divisionが1でも通常販売としてポイント付与されること(): void
     {
         $project = Project::factory()->create();
         ShopSetting::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
@@ -500,7 +500,7 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
         ]);
     }
 
-    public function test_返品でnewPointがある場合はローカルポイントを減算しないこと(): void
+    public function test_返品でnew_pointがある場合はローカルポイントを減算しないこと(): void
     {
         $project = Project::factory()->create();
         ShopSetting::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
