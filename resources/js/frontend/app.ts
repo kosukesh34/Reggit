@@ -13,7 +13,7 @@ import { StampsManager } from './managers/StampsManager';
 import { CheckoutManager } from './managers/CheckoutManager';
 import { QueueManager } from './managers/QueueManager';
 import { CouponsManager } from './managers/CouponsManager';
-import { isMembershipRequired } from './utils/membershipPolicy';
+import { getMemberRegistrationMode, isMembershipRequired, isRegistrationFormDismissed, shouldShowRegistrationForm, syncMemberRegistrationModeFromPayload } from './utils/membershipPolicy';
 import { mountDetailLayoutChrome } from './utils/detailLayoutMount';
 import { LiffLayoutManager } from './managers/LiffLayoutManager';
 import { ReservationManager } from './managers/ReservationManager';
@@ -54,6 +54,8 @@ class ReggitApp {
         [key: string]: any;
     }) | null = null;
     _detailQty: number = 1;
+    _memberRegistrationGateHandled: boolean = false;
+    _memberTabLoadInFlight: Promise<void> | null = null;
 
     constructor() {
         this.apiClient = new ApiClient();
@@ -225,10 +227,61 @@ class ReggitApp {
             this.memberManager.preload(null);
         }
         if (this.shouldOpenMemberRegisterOnLoad()) {
-            this.switchTab(AppConstants.TABS.MEMBER);
-            this.memberManager.openRegisterFullScreen();
+            void this.openMemberRegisterOnLoad();
+        } else {
+            void this.applyMemberRegistrationGate();
         }
         this.setupNativePushDeepLink();
+    }
+
+    async openMemberRegisterOnLoad() {
+        await this.switchTab(AppConstants.TABS.MEMBER);
+        await this.loadMemberTab();
+        await this.memberManager.ensureRegistrationFormShown({ forced: true });
+    }
+
+    async applyMemberRegistrationGate() {
+        if (typeof window !== 'undefined' && window.__IS_DESIGNER_EMBED_PREVIEW__) {
+            return;
+        }
+        if (this._memberRegistrationGateHandled) {
+            return;
+        }
+        const mode = getMemberRegistrationMode();
+        if (mode === 'optional') {
+            this._memberRegistrationGateHandled = true;
+            return;
+        }
+        try {
+            await this.memberManager.ensureIdentityReady(1500);
+            if (typeof window !== 'undefined' && window.__IS_LIFF__ && !window.__LINE_USER_ID__) {
+                return;
+            }
+            if (typeof this.memberManager.fetchMemberContext === 'function') {
+                await this.memberManager.fetchMemberContext({});
+            }
+        } catch (e) {
+            if (typeof window !== 'undefined' && window.__IS_LIFF__ && !window.__LINE_USER_ID__) {
+                return;
+            }
+        }
+        syncMemberRegistrationModeFromPayload(this.memberManager.getMemberData());
+        const data = this.memberManager.getMemberData();
+        if (data && data.is_member === true) {
+            this._memberRegistrationGateHandled = true;
+            return;
+        }
+        if (!shouldShowRegistrationForm()) {
+            this._memberRegistrationGateHandled = true;
+            return;
+        }
+        this._memberRegistrationGateHandled = true;
+        await this.switchTab(AppConstants.TABS.MEMBER);
+        await this.loadMemberTab();
+    }
+
+    isMemberRegistrationPromptDismissed(): boolean {
+        return isRegistrationFormDismissed();
     }
 
     setupHashRouting() {
@@ -524,6 +577,7 @@ class ReggitApp {
         if (this.currentTab === AppConstants.TABS.MEMBER) {
             await this.loadMemberTab();
         }
+        await this.applyMemberRegistrationGate();
     }
 
     preventZoom() {
@@ -1403,6 +1457,9 @@ class ReggitApp {
         if (!tabContentEl) return;
         const M = AppConstants.TAB_MOUNTS;
         if (tabContentEl.querySelector('.' + M.MEMBER)) {
+            if (this.memberManager.isRegisterFullScreenActive()) {
+                return;
+            }
             const memberData = this.memberManager.getMemberData();
             if (memberData && memberData.is_member === true) {
                 this.memberManager.render(memberData);
@@ -1422,6 +1479,11 @@ class ReggitApp {
 
     switchTab(tab) {
         if (typeof window.__mobileOrderLog === 'function') window.__mobileOrderLog('switchTab', { tab });
+        if (this.memberManager && typeof this.memberManager.isForcedRegistrationActive === 'function'
+            && this.memberManager.isForcedRegistrationActive()
+            && tab !== AppConstants.TABS.MEMBER) {
+            return Promise.resolve();
+        }
 
         const apply = () => {
             this.currentTab = tab;
@@ -1493,8 +1555,12 @@ class ReggitApp {
 
         if (canViewTransition) {
             try {
-                (document as Document & { startViewTransition: (cb: () => void) => unknown }).startViewTransition(apply);
-                return;
+                return new Promise<void>((resolve) => {
+                    (document as Document & { startViewTransition: (cb: () => void) => unknown }).startViewTransition(() => {
+                        apply();
+                        resolve();
+                    });
+                });
             } catch (_err) {
                 // fallback below
             }
@@ -1505,6 +1571,7 @@ class ReggitApp {
             window.setTimeout(() => document.body.classList.remove('liff-nav-animating'), 320);
         }
         apply();
+        return Promise.resolve();
     }
 
     async loadOrdersTab() {
@@ -1552,6 +1619,16 @@ class ReggitApp {
     }
 
     async loadMemberTab(useSample = false) {
+        if (this._memberTabLoadInFlight) {
+            return this._memberTabLoadInFlight;
+        }
+        this._memberTabLoadInFlight = this._loadMemberTabBody(useSample).finally(() => {
+            this._memberTabLoadInFlight = null;
+        });
+        return this._memberTabLoadInFlight;
+    }
+
+    async _loadMemberTabBody(useSample = false) {
         if (typeof window !== 'undefined' && window.__IS_LIFF__) {
             await this.memberManager.ensureIdentityReady();
         } else if (typeof window !== 'undefined' && !window.__LINE_USER_ID__) {
@@ -1569,11 +1646,14 @@ class ReggitApp {
             return;
         }
         const cached = this.memberManager.getMemberData();
+        if (this.memberManager.isRegisterFullScreenActive() && !(cached && cached.is_member)) {
+            return;
+        }
         if (cached && cached.is_member) {
             this.memberManager.render(cached);
         } else {
             const container = this.memberManager.getContainer();
-            if (container && (!cached || !cached.is_member)) {
+            if (container && (!cached || !cached.is_member) && !this.memberManager.isRegisterFullScreenActive()) {
                 container.innerHTML = this.memberManager.getSkeletonHtml();
             }
         }
@@ -1582,6 +1662,7 @@ class ReggitApp {
             const payload = await this.memberManager._fetchMemberContextWithIdentityRetry({
                 force: !(cached && cached.is_member),
             });
+            syncMemberRegistrationModeFromPayload(payload);
             if (payload && payload.is_member) {
                 this.memberManager.setMemberData(payload);
                 this.memberManager.render(payload);
@@ -1599,7 +1680,7 @@ class ReggitApp {
         if (data && data.is_member) {
             this.memberManager.render(data);
             this.memberManager.preload(null);
-        } else if (!cached || !cached.is_member) {
+        } else if ((!cached || !cached.is_member) && !this.memberManager.isRegisterFullScreenActive()) {
             this.memberManager.load();
         }
     }

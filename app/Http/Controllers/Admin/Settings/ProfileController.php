@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers\Admin\Settings;
 
+use App\Enums\MemberRegistrationMode;
 use App\Http\Controllers\Admin\AdminBaseController;
 use App\Http\Support\AdminSettingsInputFactory;
 use App\UseCases\Admin\Settings\GetProfileSettingsUseCase;
 use App\UseCases\Admin\Settings\UpdateProfileSettingsUseCase;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class ProfileController extends AdminBaseController
 {
@@ -20,14 +22,16 @@ class ProfileController extends AdminBaseController
     {
         $projectId = $this->resolveAdminProjectId();
         $settings = $this->getProfileSettingsUseCase->handle($projectId);
+        $memberRegistrationModeOptions = MemberRegistrationMode::getValues();
 
-        return view('admin.settings.profile', compact('settings'));
+        return view('admin.settings.profile', compact('settings', 'memberRegistrationModeOptions'));
     }
 
     public function update(Request $request)
     {
         $projectId = $this->resolveAdminProjectId();
         $request->validate([
+            'member_registration_mode' => ['required', 'string', Rule::in(array_keys(MemberRegistrationMode::getValues()))],
             'smaregi_fields' => 'required|array',
             'smaregi_fields.*.enabled' => 'nullable|boolean',
             'smaregi_fields.*.required' => 'nullable|boolean',

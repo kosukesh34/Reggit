@@ -3,6 +3,7 @@
 namespace App\UseCases\Admin\Settings;
 
 use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Enums\MemberRegistrationMode;
 use App\Models\ShopSetting;
 use App\UseCases\Admin\Settings\Data\UpdateProfileSettingsInput;
 
@@ -41,5 +42,11 @@ class UpdateProfileSettingsUseCase
             'smaregi_fields' => $smaregi,
             'custom_fields' => $custom,
         ], $input->projectId);
+
+        $mode = $input->memberRegistrationMode;
+        if (! array_key_exists($mode, MemberRegistrationMode::getValues())) {
+            $mode = MemberRegistrationMode::OPTIONAL;
+        }
+        $this->shopSettingRepository->setMemberRegistrationMode($mode, $input->projectId);
     }
 }
