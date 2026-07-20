@@ -26,11 +26,6 @@ class BindAdminProject
         $admin = $request->user('admin');
         $project = $this->projectRepository->findActiveByProjectKey($projectKey);
 
-        // project_key が "default" で該当が無い場合、管理者がアクセス可能な先頭プロジェクトを使用する
-        if ($project === null && $projectKey === 'default' && $admin !== null) {
-            $project = $this->projectRepository->findFirstActiveByIds($admin->getAllowedProjectIds());
-        }
-
         if ($project === null) {
             abort(404, 'プロジェクトが見つかりません。');
         }

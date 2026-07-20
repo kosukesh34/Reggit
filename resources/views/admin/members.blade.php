@@ -20,6 +20,26 @@
     <p class="page-header-desc">会員情報の確認・編集・削除を行います</p>
 </div>
 
+@if(!empty($lineInviteUrl))
+<div class="card card-mb-16" id="member-line-qr-card">
+    <div class="card-header member-line-qr-header">
+        <h3 class="card-title"><i class="fab fa-line"></i> LINE招待QR</h3>
+        <button type="button" class="btn btn-sm btn-primary" id="member-line-qr-toggle" aria-expanded="false" aria-controls="member-line-qr-panel">
+            QRを表示
+        </button>
+    </div>
+    <div id="member-line-qr-panel" class="card-body member-line-qr-body" hidden>
+        <div id="member-line-qr" class="member-line-qr" data-url="{{ $lineInviteUrl }}" aria-label="LINE招待QRコード"></div>
+        <div class="member-line-qr-meta">
+            <p class="form-label">{{ $lineInviteLabel ?? 'LINE URL' }}</p>
+            <code class="smaregi-url">{{ $lineInviteUrl }}</code>
+            <p class="form-text text-muted mt-2">来店客にこのQRを読み取ってもらい、LINEアプリへ誘導できます。友だち追加URLは「LIFF設定」で変更できます。</p>
+            <a href="{{ admin_route('admin.settings.liff-connection') }}" class="btn btn-sm btn-secondary mt-2">LIFF設定へ</a>
+        </div>
+    </div>
+</div>
+@endif
+
 <div class="card card-mb-16">
     <div class="card-header">
         <h3 class="card-title"><i class="fas fa-search"></i> 検索・絞り込み</h3>

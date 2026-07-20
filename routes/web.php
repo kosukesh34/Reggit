@@ -32,6 +32,7 @@ use App\Http\Controllers\Admin\Settings\CouponsController;
 use App\Http\Controllers\Admin\Settings\FeaturesController as SettingsFeaturesController;
 use App\Http\Controllers\Admin\Settings\GalleryController;
 use App\Http\Controllers\Admin\Settings\HomeController as SettingsHomeController;
+use App\Http\Controllers\Admin\Settings\LiffConnectionController as SettingsLiffConnectionController;
 use App\Http\Controllers\Admin\Settings\LiffDesignerController as SettingsLiffDesignerController;
 use App\Http\Controllers\Admin\Settings\MenuController as SettingsMenuController;
 use App\Http\Controllers\Admin\Settings\ProfileController;
@@ -44,6 +45,7 @@ use App\Http\Controllers\Admin\StampController as AdminStampController;
 use App\Http\Controllers\Admin\SystemAdminDashboardController;
 use App\Http\Controllers\GoogleWalletSaveRedirectController;
 use App\Http\Controllers\LiffController;
+use App\Http\Controllers\Onboarding\OnboardingPageController;
 use App\Http\Controllers\Queue\QueueOpenController;
 use App\Http\Controllers\Smaregi\SmaregiIdpController;
 use App\Http\Controllers\Smaregi\SmaregiWebhookController;
@@ -54,7 +56,11 @@ use Illuminate\Support\Facades\Route;
 
 // ========== 公開 ==========
 Route::get('/', function () {
-    return view('index');
+    if (auth('admin')->check()) {
+        return redirect()->route('admin.root');
+    }
+
+    return redirect()->route('admin.login');
 });
 
 Route::get('/api', function () {
@@ -111,6 +117,9 @@ Route::get('/queue/open/{project_key}/{token}', QueueOpenController::class)
     ->middleware('bind.project')
     ->name('queue.open');
 
+// ========== 公開オンボーディング（スマレジ初回遷移・認証不要） ==========
+Route::get('/onboarding', OnboardingPageController::class)->name('onboarding.create');
+
 // ========== 管理画面ログイン（認証不要・スロットリング適用） ==========
 Route::get('/admin/login', [AdminLoginController::class, 'show'])->name('admin.login');
 Route::get('/admin/login/form', [AdminLoginController::class, 'showLoginForm'])->name('admin.login.form');
@@ -131,7 +140,13 @@ Route::get('/admin', function () {
         ->where('is_active', true)
         ->orderBy('name')
         ->first();
-    $projectKey = $first ? $first->project_key : 'default';
+    $projectKey = $first
+        ? $first->project_key
+        : (config('app.default_project_key') ?: Project::where('is_active', true)->orderBy('id')->value('project_key'));
+
+    if ($projectKey === null || $projectKey === '') {
+        return redirect()->route('admin.login');
+    }
 
     return redirect()->route('admin.dashboard', ['project_key' => $projectKey]);
 })->middleware('web')->name('admin.root');
@@ -141,6 +156,10 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'bind.admin.project', '
     Route::post('/logout', [LogoutController::class, '__invoke'])->name('admin.logout')->withoutMiddleware('bind.admin.project');
 
     Route::prefix('{project_key}')->group(function () {
+        Route::get('/', function (string $project_key) {
+            return redirect()->route('admin.dashboard', ['project_key' => $project_key]);
+        })->name('admin.project.home')->middleware('admin.permission:dashboard.view');
+
         Route::get('/dashboard', [DashboardController::class, 'dashboard'])
             ->name('admin.dashboard')->middleware('admin.permission:dashboard.view');
 
@@ -250,6 +269,8 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'bind.admin.project', '
         Route::post('/settings/smaregi', [SmaregiController::class, 'update'])->name('admin.settings.smaregi.update')->middleware('admin.permission:settings.manage');
         Route::post('/settings/smaregi/sync-products', [SmaregiController::class, 'syncProducts'])->name('admin.settings.smaregi.sync-products')->middleware('admin.permission:settings.manage');
         Route::post('/settings/smaregi/full-sync-products', [SmaregiController::class, 'fullSyncProducts'])->name('admin.settings.smaregi.full-sync-products')->middleware('admin.permission:settings.manage');
+        Route::get('/settings/liff-connection', [SettingsLiffConnectionController::class, 'index'])->name('admin.settings.liff-connection')->middleware('admin.permission:settings.view');
+        Route::post('/settings/liff-connection', [SettingsLiffConnectionController::class, 'update'])->name('admin.settings.liff-connection.update')->middleware('admin.permission:settings.manage');
         Route::get('/settings/liff-designer', [SettingsLiffDesignerController::class, 'index'])->name('admin.settings.liff-designer')->middleware('admin.permission:liff_designer.manage');
         Route::post('/settings/liff-designer', [SettingsLiffDesignerController::class, 'update'])->name('admin.settings.liff-designer.update')->middleware('admin.permission:liff_designer.manage');
         Route::get('/settings/reservations', [ReservationsController::class, 'index'])->name('admin.settings.reservations')->middleware('admin.permission:reservations.view');
@@ -288,8 +309,8 @@ Route::prefix('system-admin')->middleware(['web', 'auth:admin', 'system.admin', 
 
     Route::get('/dashboard', [SystemAdminDashboardController::class, 'dashboard'])->name('system-admin.dashboard');
     Route::get('/projects', [AdminProjectController::class, 'index'])->name('system-admin.projects.index');
-    Route::get('/projects/input-home', [AdminProjectController::class, 'create'])->name('system-admin.projects.input-home');
-    Route::get('/projects/create', [AdminProjectController::class, 'create'])->name('system-admin.projects.create');
+    Route::get('/projects/input-home', fn () => redirect()->route('onboarding.create'))->name('system-admin.projects.input-home');
+    Route::get('/projects/create', fn () => redirect()->route('onboarding.create'))->name('system-admin.projects.create');
     Route::post('/projects', [AdminProjectController::class, 'store'])->name('system-admin.projects.store');
     Route::get('/projects/{id}/edit', [AdminProjectController::class, 'edit'])->name('system-admin.projects.edit');
     Route::put('/projects/{id}', [AdminProjectController::class, 'update'])->name('system-admin.projects.update');

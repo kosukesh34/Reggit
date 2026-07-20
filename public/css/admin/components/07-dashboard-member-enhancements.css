@@ -311,6 +311,47 @@
     margin-bottom: 16px;
 }
 
+/* ---- 会員一覧: LINE招待QR ---- */
+.member-line-qr-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.member-line-qr-body {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    align-items: flex-start;
+}
+
+.member-line-qr-body[hidden] {
+    display: none !important;
+}
+
+.member-line-qr {
+    flex: 0 0 auto;
+    width: 180px;
+    height: 180px;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 8px;
+    box-sizing: content-box;
+}
+
+.member-line-qr-meta {
+    flex: 1 1 240px;
+    min-width: 0;
+}
+
+.member-line-qr-meta .smaregi-url {
+    display: block;
+    word-break: break-all;
+    font-size: 13px;
+}
+
 /* ---- 会員タグ ---- */
 .member-tag-badge {
     display: inline-block;
@@ -455,7 +496,32 @@
     }
 }
 
-/* ---- テキストヘルパー ---- */
-.text-muted {
-    color: var(--text-tertiary);
+/* ---- 会員管理 LINE招待QR ---- */
+.member-line-qr-body {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    align-items: flex-start;
 }
+
+.member-line-qr {
+    width: 180px;
+    height: 180px;
+    flex-shrink: 0;
+    background: #fff;
+    border: 1px solid var(--border-color, #e5e7eb);
+    border-radius: 8px;
+    padding: 8px;
+}
+
+.member-line-qr-meta {
+    min-width: 220px;
+    flex: 1;
+}
+
+.member-line-qr-meta .smaregi-url {
+    display: inline-block;
+    word-break: break-all;
+    margin-top: 4px;
+}
+
