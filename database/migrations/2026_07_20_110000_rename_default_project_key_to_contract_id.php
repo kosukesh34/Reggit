@@ -74,6 +74,7 @@ return new class extends Migration
             }
         }
 
-        return 'project-'.$projectId;
+        // 契約IDが無い環境（テスト等）ではキーを維持する
+        return 'default';
     }
 };
