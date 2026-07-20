@@ -424,7 +424,7 @@
     border-radius: 4px;
     font-size: 13px;
     font-weight: 600;
-    background: rgba(79, 70, 229, calc(var(--pct, 0) / 100));
+    background: rgba(37, 99, 235, calc(var(--pct, 0) / 100));
     color: var(--text-primary);
 }
 
