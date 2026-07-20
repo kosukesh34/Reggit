@@ -241,7 +241,7 @@ export function PhoneCanvas() {
                                 <i className="fas fa-globe ld-empty-canvas__icon" />
                                 <p>{activeLabel}</p>
                                 <p className="ld-empty-canvas__hint">
-                                    このタブは設定したURLのWebページを表示します。URLと表示方法は「画面一覧」で変更できます。
+                                    このタブは設定したURLのWebページをアプリ内に表示します。上部の「戻る」でサイト内の前ページ、または元のタブへ戻れます。URLは「画面一覧」で変更できます。
                                 </p>
                             </div>
                         ) : blocks.length === 0 ? (
