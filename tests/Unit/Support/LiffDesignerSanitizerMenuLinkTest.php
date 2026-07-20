@@ -7,7 +7,7 @@ use PHPUnit\Framework\TestCase;
 
 class LiffDesignerSanitizerMenuLinkTest extends TestCase
 {
-    public function test_sanitizeMenuItems_外部ページタブを許可すること(): void
+    public function test_sanitize_menu_items_外部ページタブを許可すること(): void
     {
         $result = LiffDesignerSanitizer::sanitizeMenuItems([
             ['tab' => 'home', 'label' => 'ホーム', 'icon' => 'fa-house', 'enabled' => true],
@@ -23,7 +23,7 @@ class LiffDesignerSanitizerMenuLinkTest extends TestCase
         $this->assertSame('embed', $result[2]['open']);
     }
 
-    public function test_sanitizeMenuItems_external指定でもembedに正規化すること(): void
+    public function test_sanitize_menu_items_external指定でもembedに正規化すること(): void
     {
         $result = LiffDesignerSanitizer::sanitizeMenuItems([
             ['tab' => 'link_1', 'label' => '公式', 'icon' => 'fa-globe', 'url' => 'https://example.com', 'open' => 'external', 'enabled' => true],
@@ -33,7 +33,7 @@ class LiffDesignerSanitizerMenuLinkTest extends TestCase
         $this->assertSame('embed', $result[0]['open']);
     }
 
-    public function test_sanitizeMenuItems_httpsでないURLの外部ページタブは除外されること(): void
+    public function test_sanitize_menu_items_httpsでない_ur_lの外部ページタブは除外されること(): void
     {
         $result = LiffDesignerSanitizer::sanitizeMenuItems([
             ['tab' => 'link_1', 'label' => 'NG', 'icon' => 'fa-globe', 'url' => 'http://example.com', 'enabled' => true],

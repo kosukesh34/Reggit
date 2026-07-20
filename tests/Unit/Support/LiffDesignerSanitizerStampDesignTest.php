@@ -7,7 +7,7 @@ use PHPUnit\Framework\TestCase;
 
 class LiffDesignerSanitizerStampDesignTest extends TestCase
 {
-    public function test_sanitizeTabSettings_スタンプと会員証のデザイン設定を許可すること(): void
+    public function test_sanitize_tab_settings_スタンプと会員証のデザイン設定を許可すること(): void
     {
         $result = LiffDesignerSanitizer::sanitizeTabSettings([
             '_global' => [
@@ -30,7 +30,7 @@ class LiffDesignerSanitizerStampDesignTest extends TestCase
         $this->assertSame('#abcdef', $global['stamp_accent_color']);
     }
 
-    public function test_sanitizeLayouts_dataスタンプブロックの上書き設定を許可すること(): void
+    public function test_sanitize_layouts_dataスタンプブロックの上書き設定を許可すること(): void
     {
         $result = LiffDesignerSanitizer::sanitizeLayouts([
             'stamps' => [[

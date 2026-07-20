@@ -7,7 +7,7 @@ use PHPUnit\Framework\TestCase;
 
 class LiffDesignerSanitizerSliderSourceTest extends TestCase
 {
-    public function test_sanitizeLayouts_sliderのsourceがgalleryのとき実データ連携として保存できること(): void
+    public function test_sanitize_layouts_sliderのsourceがgalleryのとき実データ連携として保存できること(): void
     {
         $result = LiffDesignerSanitizer::sanitizeLayouts([
             'gallery' => [[
@@ -32,7 +32,7 @@ class LiffDesignerSanitizerSliderSourceTest extends TestCase
         $this->assertSame([], $block['slides']);
     }
 
-    public function test_sanitizeLayouts_sliderの不正なsourceは無視すること(): void
+    public function test_sanitize_layouts_sliderの不正なsourceは無視すること(): void
     {
         $result = LiffDesignerSanitizer::sanitizeLayouts([
             'home' => [[
