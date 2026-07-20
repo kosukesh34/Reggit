@@ -45,7 +45,7 @@
 .builder-hero__scrim {
     position: absolute;
     inset: 0;
-    background: linear-gradient(180deg, rgba(12, 10, 9, 0.08) 0%, rgba(12, 10, 9, 0.62) 100%);
+    background: linear-gradient(180deg, rgba(12, 10, 9, 0) 0%, rgba(12, 10, 9, 0.06) 42%, rgba(12, 10, 9, 0.56) 100%);
     pointer-events: none;
 }
 .builder-hero__content {
@@ -203,9 +203,9 @@
     gap: 12px;
     padding: 14px 16px !important;
     border-radius: var(--radius-lg) !important;
-    background: rgba(var(--primary-rgb), 0.08) !important;
+    background: #ffffff !important;
     color: var(--text-primary) !important;
-    border: 1px solid rgba(var(--primary-rgb), 0.12);
+    border: 1px solid var(--border-color);
     box-shadow: var(--shadow-xs);
     text-decoration: none;
     -webkit-tap-highlight-color: transparent;
@@ -222,7 +222,7 @@
     width: 36px;
     height: 36px;
     border-radius: 12px;
-    background: rgba(var(--primary-rgb), 0.14);
+    background: color-mix(in srgb, var(--primary-color) 12%, #ffffff);
     color: var(--primary-color);
     font-size: 15px;
 }
@@ -563,6 +563,7 @@ body.theme-card-style-elevated .builder-collection__item {
     opacity: 0;
     transition: opacity 0.55s var(--ease);
     pointer-events: none;
+    cursor: pointer;
 }
 .builder-carousel__slide.is-active {
     opacity: 1;

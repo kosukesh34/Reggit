@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { DETAIL_PAGE_LABELS, DETAIL_PAGES, TAB_LABELS, findBlockMeta, normalizeBlock } from '../catalog/blockCatalog';
+import { DETAIL_PAGE_LABELS, DETAIL_PAGES, TAB_LABELS, findBlockMeta, isLinkMenuTab, normalizeBlock } from '../catalog/blockCatalog';
 import { BlockPreview } from '../blocks/BlockPreview';
 import {
     DEVICE_SHELL_HEIGHT,
@@ -235,7 +235,16 @@ export function PhoneCanvas() {
                             finishDrag();
                         } : undefined}
                     >
-                        {blocks.length === 0 ? (
+                        {isLinkMenuTab(state.activeTab) ? (
+                            <div className="ld-empty-canvas">
+                                <div className="ld-empty-canvas__badge">外部ページ</div>
+                                <i className="fas fa-globe ld-empty-canvas__icon" />
+                                <p>{activeLabel}</p>
+                                <p className="ld-empty-canvas__hint">
+                                    このタブは設定したURLのWebページを表示します。URLと表示方法は「画面一覧」で変更できます。
+                                </p>
+                            </div>
+                        ) : blocks.length === 0 ? (
                             <div className="ld-empty-canvas">
                                 {Object.values(state.layouts).some((rows) => Array.isArray(rows) && rows.length > 0) ? (
                                     <>

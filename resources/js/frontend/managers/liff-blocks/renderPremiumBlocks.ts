@@ -143,11 +143,20 @@ const premium: PremiumRenderer = {
         const fg = block.text_color || '';
         let style = '';
         if (design === 'outline') style = `${bg ? `border-color:${esc(bg)};color:${esc(bg)};` : ''}`;
-        else if (design === 'soft') style = `${bg ? `background:${esc(bg)}18;color:${esc(bg)};` : ''}`;
+        else if (design === 'soft') {
+            style = bg
+                ? `background:color-mix(in srgb, ${esc(bg)} 14%, #ffffff);color:${esc(bg)};border:1px solid color-mix(in srgb, ${esc(bg)} 24%, #e5e5ea);`
+                : '';
+        }
         else style = `${bg ? `background:${esc(bg)};` : ''}${fg ? `color:${esc(fg)};` : ''}`;
         const countdown = design === 'countdown'
             ? `<span class="builder-promo-banner__countdown" aria-hidden="true"><em>限定</em><strong>24h</strong></span>`
             : '';
+        const bindField = block.field === 'points_to_next'
+            || /次のランクまで/.test(String(block.text || ''))
+            ? 'points_to_next'
+            : '';
+        const bindAttr = bindField !== '' ? ` data-source="banner_bind" data-bind-field="${esc(bindField)}"` : '';
         const inner = `${block.icon ? `<span class="builder-promo-banner__icon"><i class="fas ${esc(block.icon)}" aria-hidden="true"></i></span>` : ''}
             <span class="builder-promo-banner__text">${esc(block.text)}</span>
             ${countdown}
@@ -156,9 +165,9 @@ const premium: PremiumRenderer = {
         const designClass = ` builder-promo-banner--${esc(design)}`;
         if (action) {
             const nav = liffBlockNavAttrs(action, esc);
-            return `<a href="${nav.href}" class="builder-block builder-promo-banner builder-promo-banner--link${designClass} builder-nav"${nav.dataExternal} style="${style}${baseStyle}">${inner}</a>`;
+            return `<a href="${nav.href}" class="builder-block builder-promo-banner builder-promo-banner--link${designClass} builder-nav"${nav.dataExternal}${bindAttr} style="${style}${baseStyle}">${inner}</a>`;
         }
-        return `<section class="builder-block builder-promo-banner${designClass}" style="${style}${baseStyle}">${inner}</section>`;
+        return `<section class="builder-block builder-promo-banner${designClass}"${bindAttr} style="${style}${baseStyle}">${inner}</section>`;
     },
     collection(block, esc, baseStyle) {
         const items = Array.isArray(block.items) ? block.items : [];
@@ -212,6 +221,16 @@ const premium: PremiumRenderer = {
         const slides = Array.isArray(block.slides) ? block.slides : [];
         const h = block.slide_height || 200;
         const design = block.design || 'hero';
+        if (block.source === 'gallery') {
+            const label = block.section_label || block.title || '';
+            const head = label ? `<div class="builder-section-head"><span class="builder-section-head__label">${esc(label)}</span></div>` : '';
+            return `<section class="builder-block builder-carousel-wrap builder-carousel-wrap--design-${esc(design)}" style="${baseStyle}" data-source="gallery_slider" data-design="${esc(design)}" data-slide-height="${h}" data-auto-play="${block.auto_play !== false ? '1' : '0'}" data-show-dots="${block.show_dots !== false ? '1' : '0'}">
+                ${head}
+                <div class="builder-carousel builder-carousel--loading" style="--carousel-h:${h}px">
+                    <div class="loading"><i class="fas fa-spinner fa-spin"></i><p>読み込み中...</p></div>
+                </div>
+            </section>`;
+        }
         if (slides.length === 0) {
             return `<section class="builder-block builder-carousel builder-carousel--empty builder-carousel--design-${esc(design)}" style="--carousel-h:${h}px;${baseStyle}">
                 <div class="builder-carousel__empty"><i class="fas fa-images" aria-hidden="true"></i></div>

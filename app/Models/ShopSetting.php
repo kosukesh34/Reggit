@@ -12,6 +12,7 @@ use App\Models\Settings\ProjectMemberPointsSetting;
 use App\Models\Settings\ProjectMemberRankSetting;
 use App\Models\Settings\ProjectProfileSmaregiSetting;
 use App\Models\Settings\ProjectWalletSetting;
+use App\Support\LiffDesignerSanitizer;
 use App\Support\ShopSettingLiffDefaults;
 use App\Util\AdminContext;
 use App\Util\StrHelper;
@@ -250,7 +251,20 @@ class ShopSetting
         $merged = [];
         foreach ($items as $item) {
             $tab = $item['tab'] ?? null;
-            if (StrHelper::isEmptyStringOrNull($tab) || $defaults->has($tab) === false) {
+            $isLinkTab = in_array($tab, LiffDesignerSanitizer::LINK_MENU_TABS, true);
+            if (StrHelper::isEmptyStringOrNull($tab) || ($defaults->has($tab) === false && $isLinkTab === false)) {
+                continue;
+            }
+            if ($isLinkTab) {
+                if (isset($item['enabled']) && $item['enabled'] === false) {
+                    continue;
+                }
+                if (! isset($item['url']) || preg_match('/^https:\/\//i', (string) $item['url']) !== 1) {
+                    continue;
+                }
+                // リンクタブはアプリ内埋め込みを優先（旧デフォルト external も上書き）
+                $item['open'] = 'embed';
+                $merged[] = $item;
                 continue;
             }
             $row = array_merge($defaults->get($tab), $item);

@@ -141,7 +141,13 @@ export function buildGlobalDesignCss(
         extraVars.push('--hairline: rgba(28,25,23,0.08);');
     }
     if (toneTokens['--surface-glass'] === undefined) {
-        extraVars.push('--surface-glass: rgba(255,255,255,0.96);');
+        extraVars.push('--surface-glass: #ffffff;');
+    }
+    if (String(g.member_card_accent_color || '') !== '') {
+        extraVars.push(`--member-card-accent-color: ${String(g.member_card_accent_color)};`);
+    }
+    if (String(g.stamp_accent_color || '') !== '') {
+        extraVars.push(`--stamp-accent-color: ${String(g.stamp_accent_color)};`);
     }
 
     return [
