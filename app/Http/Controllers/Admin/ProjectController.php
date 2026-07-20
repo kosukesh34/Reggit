@@ -73,7 +73,13 @@ class ProjectController extends Controller
                 'line_primary_dark' => (string) ShopSetting::getValue('line_primary_dark', '#333333', (int) $project->id),
                 'line_success_color' => (string) ShopSetting::getValue('line_success_color', '#000000', (int) $project->id),
                 'line_danger_color' => (string) ShopSetting::getValue('line_danger_color', '#dc3545', (int) $project->id),
+                'smaregi_contract_id' => (string) (ShopSetting::getValue('smaregi_contract_id', '', (int) $project->id) ?? ''),
+                'smaregi_client_id' => (string) (ShopSetting::getValue('smaregi_client_id', '', (int) $project->id) ?? ''),
+                'smaregi_client_secret' => '',
             ],
+            'isOnboarding' => false,
+            'showAdminAccount' => false,
+            'requireSmaregi' => false,
         ]);
     }
 

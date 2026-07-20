@@ -25,8 +25,11 @@ class CouponNotificationTest extends TestCase
 
     protected function tearDown(): void
     {
-        Mockery::close();
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 
     private function createProject(): Project
@@ -61,6 +64,7 @@ class CouponNotificationTest extends TestCase
     public function test_notify_issued_sends_native_push_and_line_message(): void
     {
         $project = $this->createProject();
+        ShopSetting::setLineChannelAccessToken('test-token', $project->id);
         $lineUserId = 'U'.str_repeat('a', 32);
         $user = User::factory()->create([
             'project_id' => $project->id,
@@ -101,15 +105,16 @@ class CouponNotificationTest extends TestCase
         $lineMock = Mockery::mock(LineService::class);
         $lineMock->shouldReceive('pushMessage')
             ->once()
-            ->with($lineUserId, Mockery::on(fn ($message) => is_array($message) && ($message['type'] ?? '') === 'flex'))
-            ->andReturnNull();
-
-        $this->setLineChannelAccessTokenForTest('test-token');
+            ->with(
+                $lineUserId,
+                Mockery::on(fn ($message) => is_array($message) && ($message['type'] ?? '') === 'flex'),
+                'test-token'
+            )
+            ->andReturn([]);
 
         $service = new CouponNotificationService($pushMock, $lineMock, app(ShopSettingRepository::class));
         $service->notifyIssued($memberCoupon);
 
-        $this->clearLineChannelAccessTokenForTest();
         $this->addToAssertionCount(2);
     }
 
@@ -117,6 +122,7 @@ class CouponNotificationTest extends TestCase
     {
         $project = $this->createProject();
         ShopSetting::setValue('feature_coupons_enabled', '0', 'boolean', $project->id);
+        ShopSetting::setLineChannelAccessToken('test-token', $project->id);
 
         $lineUserId = 'U'.str_repeat('b', 32);
         $user = User::factory()->create([
@@ -147,25 +153,9 @@ class CouponNotificationTest extends TestCase
         $lineMock = Mockery::mock(LineService::class);
         $lineMock->shouldNotReceive('pushMessage');
 
-        $this->setLineChannelAccessTokenForTest('test-token');
-
         $service = new CouponNotificationService($pushMock, $lineMock, app(ShopSettingRepository::class));
         $service->notifyIssued($memberCoupon);
 
-        $this->clearLineChannelAccessTokenForTest();
         $this->addToAssertionCount(2);
-    }
-
-    private function setLineChannelAccessTokenForTest(string $token): void
-    {
-        putenv('LINE_CHANNEL_ACCESS_TOKEN='.$token);
-        $_ENV['LINE_CHANNEL_ACCESS_TOKEN'] = $token;
-        $_SERVER['LINE_CHANNEL_ACCESS_TOKEN'] = $token;
-    }
-
-    private function clearLineChannelAccessTokenForTest(): void
-    {
-        putenv('LINE_CHANNEL_ACCESS_TOKEN');
-        unset($_ENV['LINE_CHANNEL_ACCESS_TOKEN'], $_SERVER['LINE_CHANNEL_ACCESS_TOKEN']);
     }
 }

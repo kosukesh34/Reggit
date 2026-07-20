@@ -8,6 +8,7 @@ import { LiffDesignerApp, readDesignerConfigFromDom } from './liff-designer/Liff
 import './admin';
 import './couponBulkIssue';
 import './memberDetailHistory';
+import './memberLineQr';
 import './liffBuilderPage';
 
 function AdminBootstrap(): null {

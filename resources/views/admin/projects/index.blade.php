@@ -10,7 +10,7 @@
 <div class="card">
     <div class="card-header card-header-with-action">
         <h3 class="card-title"><i class="fas fa-building"></i> プロジェクト一覧</h3>
-        <a href="{{ route('system-admin.projects.input-home') }}" class="btn btn-primary"><i class="fas fa-plus"></i> 入力ホームから作成</a>
+        <a href="{{ route('onboarding.create') }}" class="btn btn-primary"><i class="fas fa-plus"></i> 入力ホームから作成</a>
     </div>
     <table class="table">
         <thead>
@@ -49,7 +49,8 @@
                     <td class="table-actions-cell">
                         <div class="table-actions">
                             @if($project->is_active)
-                                <a href="{{ url('/admin/' . $project->project_key) }}" class="btn btn-action btn-edit"><i class="fas fa-th-large"></i> ダッシュボード</a>
+                                <a href="{{ route('admin.dashboard', ['project_key' => $project->project_key]) }}" class="btn btn-action btn-edit"><i class="fas fa-th-large"></i> ダッシュボード</a>
+                                <a href="{{ route('liff.project', ['project_key' => $project->project_key]) }}" class="btn btn-action btn-outline" target="_blank" rel="noopener noreferrer"><i class="fas fa-external-link-alt"></i> フロント</a>
                             @endif
                             <a href="{{ route('system-admin.projects.edit', $project->id) }}" class="btn btn-action btn-outline"><i class="fas fa-sliders-h"></i> 入力ホーム</a>
                         </div>

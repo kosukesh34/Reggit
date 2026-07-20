@@ -1,13 +1,16 @@
 # スマレジ・プラットフォームAPI 連携 セットアップ
 
-## 1. 環境変数（.env）
+## 1. 認証情報（Client ID / Secret）
 
-**SMAREGI_CLIENT_ID と SMAREGI_CLIENT_SECRET は、このプロジェクトでは .env ファイルにのみ設定します。** 管理画面やDBでは設定・保存できません。スマレジ・デベロッパーズで発行した値を、プロジェクト直下の `.env` に記載してください。
+認証情報は次のいずれかで設定できます。
 
-以下を設定してください。スマレジ・デベロッパーズの「環境設定」で確認・発行できます。
+1. **プロジェクト単位（推奨・オンボーディング）**  
+   公開画面 `{APP_URL}/onboarding`（または `POST /api/onboarding/projects`）で、契約ID・クライアントID・クライアントシークレットを入力してプロジェクトを作成します。DB（`project_profile_smaregi_settings`）にプロジェクト単位で保存されます。
+2. **アプリ共通のフォールバック（.env）**  
+   プロジェクトに credentials が無い場合のみ、`.env` の値が使われます。
 
 ```env
-# スマレジ・デベロッパーズの「環境設定」で表示される値を設定
+# フォールバック用（プロジェクト未設定時）
 SMAREGI_CLIENT_ID=あなたのクライアントID
 SMAREGI_CLIENT_SECRET=あなたのクライアントシークレット
 
@@ -32,7 +35,7 @@ APP_URL=https://あなたのngrokサブドメイン.ngrok-free.dev
 
 | 項目 | 設定するURL |
 |------|-------------|
-| **アプリURL（必須）** | ユーザーがアプリを利用するURL（例: 上記 ngrok のURL や `https://あなたのドメイン`） |
+| **アプリURL（必須）** | `{APP_URL}/onboarding`（初回遷移でプロジェクト・管理者アカウント作成） |
 | **利用者契約通知先URL（必須）** | `{APP_URL}/api/smaregi/idp` または `{APP_URL}/smaregi/idp`（後者は `/api` 省略用） |
 | **Webhook送信先エンドポイント** | `{APP_URL}/api/smaregi/webhook`（推奨）または `{APP_URL}/smaregi/webhook`（`/api` 省略用。任意） |
 
@@ -40,29 +43,46 @@ APP_URL=https://あなたのngrokサブドメイン.ngrok-free.dev
 
 | スマレジ・デベロッパーズの項目 | 設定する値 |
 |------------------------------|------------|
-| **アプリURL（必須）** | `https://あなたのサブドメイン.ngrok-free.dev` |
+| **アプリURL（必須）** | `https://あなたのサブドメイン.ngrok-free.dev/onboarding` |
 | **利用者契約通知先URL（必須）** | `https://あなたのサブドメイン.ngrok-free.dev/api/smaregi/idp` |
 | **Webhook送信先エンドポイント** | `https://あなたのサブドメイン.ngrok-free.dev/api/smaregi/webhook` |
 
 上記の「あなたのサブドメイン」を実際の ngrok のサブドメインに置き換えてください。  
 リダイレクトURIは認可コードフロー用です。アプリアクセストークン（Client Credentials）のみ使う場合は `urn:ietf:wg:oauth:2.0:oob` のままで問題ありません。
 
-## 3. マイグレーション
+## 3. 公開オンボーディング（プロジェクト作成）
+
+1. スマレジのアプリURLから `{APP_URL}/onboarding` を開く（認証不要）。
+2. プロジェクト基本情報・スマレジ認証情報・管理者アカウントを入力して作成。
+3. 作成後、店舗管理ログイン（`/admin/{project_key}/login`）へ誘導される。
+
+JSON API（将来の画面切り出し用）:
+
+```http
+POST /api/onboarding/projects
+Content-Type: application/json
+```
+
+作成ロールは常に `project_admin` です。レスポンスにクライアントシークレットは含まれません。
+
+## 4. マイグレーション
 
 ```bash
 php artisan migrate
 ```
 
-`smaregi_contracts` テーブルが作成されます。
+`smaregi_contracts` およびプロジェクト別 credentials 用カラムが作成されます。
 
-## 4. 管理画面での紐付け
+## 5. 管理画面での紐付け（既存プロジェクト）
 
 1. 管理画面 → **設定** → **スマレジ連携** を開く。
 2. 画面上部に表示される **利用者契約通知先URL** と **Webhook送信先** を、スマレジ・デベロッパーズの該当項目にコピーして保存。
 3. スマレジ側でアプリを利用開始（またはお試し利用）すると、契約通知が送られ、**受信した契約一覧** に契約IDが表示されます。
 4. **このプロジェクトに紐づける契約** で対象の契約を選び **保存**。
 
-## 5. API の利用例（スマレジから取得）
+プロジェクト編集（入力ホーム）からも契約ID・Client ID / Secret を更新できます。
+
+## 6. API の利用例（スマレジから取得）
 
 プロジェクトに契約を紐づけたあと、コードからは次のように利用できます。
 
@@ -78,7 +98,7 @@ if ($contractId !== null) {
 }
 ```
 
-## 6. こちらからスマレジへ送信する
+## 7. こちらからスマレジへ送信する
 
 こちらのアプリで発生した内容をスマレジに送る場合は、以下のAPIを使用します。
 
@@ -151,7 +171,7 @@ if ($result !== null) {
 
 **POS API のその他エンドポイント**（会員作成・取引登録・部門・セール・在庫・精算・クーポンなど）は、`$service->request($contractId, $method, $path, $params)` で任意の path を指定して呼び出せます。全パス一覧は [docs/SMAREGI_POS_API_REFERENCE.md](SMAREGI_POS_API_REFERENCE.md) を参照してください。
 
-## 7. Webhook の検証（任意）
+## 8. Webhook の検証（任意）
 
 Webhook でカスタムヘッダーにシークレットを設定している場合:
 
@@ -162,7 +182,7 @@ SMAREGI_WEBHOOK_SECRET_HEADER=X-Smaregi-Webhook-Secret
 
 スマレジの Webhook 設定で付与したヘッダー名と `SMAREGI_WEBHOOK_SECRET_HEADER` を一致させ、値に `SMAREGI_WEBHOOK_SECRET` を設定してください。
 
-## 8. 実接続のテスト（任意）
+## 9. 実接続のテスト（任意）
 
 モックではなく、**現状の .env と紐付いた契約**を使って実際のスマレジAPIへ接続する統合テストがあります。
 
