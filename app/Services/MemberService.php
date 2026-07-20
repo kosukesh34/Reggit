@@ -351,11 +351,21 @@ class MemberService
             $projectId = $user->project_id ?? AdminContext::getCurrentProjectId() ?? 1;
             $memberNumber = $this->generateMemberNumber($projectId);
             $smaregiCustomerId = null;
+            $rankSettings = $this->shopSettingRepository->getMemberRankSettings($projectId);
+            $defaultRank = collect($rankSettings)->first(fn ($r) => ($r['is_active'] ?? false) === true);
+            $defaultRankKey = is_array($defaultRank) ? ((string) ($defaultRank['key'] ?? 'bronze')) : 'bronze';
+            $smaregiRankId = is_array($defaultRank) && isset($defaultRank['smaregi_rank_id'])
+                ? trim((string) $defaultRank['smaregi_rank_id'])
+                : '';
 
             $contractId = $this->smaregiApi->getContractIdForProject($projectId);
             $contractId = is_string($contractId) ? trim($contractId) : '';
             if ($contractId !== '') {
-                $body = $this->buildSmaregiCustomerBody($memberNumber, $data);
+                $body = $this->buildSmaregiCustomerBody(
+                    $memberNumber,
+                    $data,
+                    $smaregiRankId !== '' ? $smaregiRankId : null
+                );
                 $this->smaregiApi->clearLastErrorDetail();
                 $result = $this->smaregiApi->createCustomer($contractId, $body);
                 if ($result === null || ! isset($result['customerId']) || (string) $result['customerId'] === '') {
@@ -373,8 +383,6 @@ class MemberService
                 $smaregiCustomerId = (string) $result['customerId'];
             }
 
-            $rankSettings = $this->shopSettingRepository->getMemberRankSettings($projectId);
-            $defaultRankKey = collect($rankSettings)->first(fn ($r) => ($r['is_active'] ?? false) === true)['key'] ?? 'bronze';
             $member = Member::create([
                 'project_id' => $projectId,
                 'user_id' => $user->id,
@@ -419,11 +427,14 @@ class MemberService
     }
 
     /** スマレジ会員登録用のリクエストボディを組み立て（会員コードは20文字以内） */
-    private function buildSmaregiCustomerBody(string $memberNumber, array $data): array
+    private function buildSmaregiCustomerBody(string $memberNumber, array $data, ?string $smaregiRankId = null): array
     {
         $body = $this->smaregiCustomerUpdatePayloadBuilder->buildFromProfileData($data);
         $body['customerCode'] = Str::limit($memberNumber, 20, '');
         $body['entryDate'] = now()->format('Y-m-d');
+        if ($smaregiRankId !== null && $smaregiRankId !== '') {
+            $body['rank'] = $smaregiRankId;
+        }
 
         return $this->smaregiCustomerUpdatePayloadBuilder->withRegisterNamePlaceholders($body);
     }
@@ -443,7 +454,55 @@ class MemberService
                 (string) ($rankInfo['current_rank_label'] ?? $newRank),
             );
             $this->issueCouponOnRankUpUseCase->handle($member->fresh() ?? $member, $previousRank, $newRank);
+            $this->syncSmaregiCustomerRank($member, $newRank);
         }
+    }
+
+    private function syncSmaregiCustomerRank(Member $member, string $rankKey): void
+    {
+        $smaregiCustomerId = trim((string) ($member->smaregi_customer_id ?? ''));
+        if ($smaregiCustomerId === '') {
+            return;
+        }
+        $smaregiRankId = $this->resolveSmaregiRankId((int) $member->project_id, $rankKey);
+        if ($smaregiRankId === null) {
+            return;
+        }
+        $contractId = $this->smaregiApi->getContractIdForProject((int) $member->project_id);
+        $contractId = is_string($contractId) ? trim($contractId) : '';
+        if ($contractId === '') {
+            return;
+        }
+        $this->smaregiApi->clearLastErrorDetail();
+        $result = $this->smaregiApi->updateCustomer($contractId, $smaregiCustomerId, [
+            'rank' => $smaregiRankId,
+        ]);
+        if ($result === null) {
+            LogHelper::warning('[Member] smaregi customer rank sync failed', [
+                'project_id' => (int) $member->project_id,
+                'member_id' => (int) $member->id,
+                'rank_key' => $rankKey,
+                'smaregi_rank_id' => $smaregiRankId,
+                'detail' => $this->smaregiApi->getLastErrorDetail(),
+            ]);
+        }
+    }
+
+    private function resolveSmaregiRankId(int $projectId, string $rankKey): ?string
+    {
+        if ($rankKey === '') {
+            return null;
+        }
+        foreach ($this->shopSettingRepository->getMemberRankSettings($projectId) as $rank) {
+            if ((string) ($rank['key'] ?? '') !== $rankKey) {
+                continue;
+            }
+            $smaregiRankId = isset($rank['smaregi_rank_id']) ? trim((string) $rank['smaregi_rank_id']) : '';
+
+            return $smaregiRankId !== '' ? $smaregiRankId : null;
+        }
+
+        return null;
     }
 
     private function recordRankHistory(
