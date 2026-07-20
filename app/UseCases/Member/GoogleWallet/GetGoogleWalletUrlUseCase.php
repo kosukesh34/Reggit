@@ -55,7 +55,7 @@ class GetGoogleWalletUrlUseCase
                 'project_id' => $input->projectId,
             ]);
 
-            return GetGoogleWalletUrlOutput::success($this->wrapClientUrl($url, $input->projectKey, $input->requestOrigin));
+            return GetGoogleWalletUrlOutput::success($this->wrapClientUrl($url, (string) ($input->projectKey ?? ''), $input->requestOrigin));
         }
 
         $sessionResult = $this->resolveUrlBySession($input);
@@ -68,7 +68,7 @@ class GetGoogleWalletUrlUseCase
                 'project_id' => $input->projectId,
             ]);
 
-            return GetGoogleWalletUrlOutput::success($this->wrapClientUrl($sessionResult, $input->projectKey, $input->requestOrigin));
+            return GetGoogleWalletUrlOutput::success($this->wrapClientUrl($sessionResult, (string) ($input->projectKey ?? ''), $input->requestOrigin));
         }
 
         $this->logUrlFailed($input);

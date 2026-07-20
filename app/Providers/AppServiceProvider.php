@@ -48,7 +48,6 @@ use App\UseCases\Payment\PaymentGateway;
 use App\UseCases\Payment\StripePaymentGateway;
 use App\Util\AdminContext;
 use GuzzleHttp\Client;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -105,20 +104,7 @@ class AppServiceProvider extends ServiceProvider
         }
 
         // CLI（composer, package:discover 等）では DB 未接続のためスキップ
-        if ($this->app->runningInConsole() === false) {
-            try {
-                if (Schema::hasTable('projects') && Project::count() === 0) {
-                    Project::create([
-                        'project_key' => 'default',
-                        'name' => 'デフォルト店舗',
-                        'description' => '複数店舗対応前の既存データ用',
-                        'is_active' => true,
-                    ]);
-                }
-            } catch (\Throwable $e) {
-                // マイグレーション前や DB 未起動時は無視
-            }
-        }
+        // 空 DB 時の default プロジェクト自動作成は行わない（オンボーディングで作成する）
 
         // admin.layout はテスト時にも必要（認証済み管理画面で $projects 等を渡す）
         View::composer('admin.layout', function ($view) {
@@ -166,7 +152,7 @@ class AppServiceProvider extends ServiceProvider
                 $projectId = $project ? ((int) $project->id) : 1;
                 $view->with('lineTheme', ShopSetting::getLineThemeColors($projectId));
                 $view->with('frontendMenu', ShopSetting::getFrontendMenuItems($projectId));
-                $view->with('projectKey', $project ? ((string) $project->project_key) : 'default');
+                $view->with('projectKey', $project ? ((string) $project->project_key) : '');
                 $view->with('projectName', $project ? ((string) $project->name) : config('app.name'));
                 $view->with('featureFlags', ShopSetting::getFeatureFlags($projectId));
                 $googleWalletPassService = app(GoogleWalletPassService::class);
@@ -204,7 +190,7 @@ class AppServiceProvider extends ServiceProvider
                     'danger' => '#dc2626',
                 ]);
                 $view->with('frontendMenu', ShopSetting::defaultFrontendMenuItems());
-                $view->with('projectKey', 'default');
+                $view->with('projectKey', '');
                 $view->with('projectName', config('app.name'));
                 $view->with('featureFlags', []);
                 $view->with('walletPassEnabled', false);

@@ -48,10 +48,10 @@ struct BundleMobileWebConfigRepository: MobileWebConfigRepository {
             androidKeys: ["LiffProjectKeyAndroid", "LIFF_PROJECT_KEY_ANDROID"]
         )
         let sharedProjectKey = readMetaString(keys: ["LiffProjectKey", "LIFF_PROJECT_KEY"])
-        let normalized = normalizeValue(platformProjectKey) ?? normalizeValue(sharedProjectKey) ?? "default"
+        let normalized = normalizeValue(platformProjectKey) ?? normalizeValue(sharedProjectKey) ?? ""
         let allowed = CharacterSet(charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-")
-        if normalized.rangeOfCharacter(from: allowed.inverted) != nil {
-            return "default"
+        if normalized.isEmpty || normalized.rangeOfCharacter(from: allowed.inverted) != nil {
+            return ""
         }
         return normalized
     }

@@ -23,9 +23,14 @@ class GoogleWalletSaveUrlIssuer
             'project_id' => AdminContext::getCurrentProjectId(),
         ], now()->addMinutes(self::TTL_MINUTES));
 
-        return rtrim($requestOrigin, '/').'/google-wallet/save/'.$token.'?'.http_build_query([
-            'project_key' => $projectKey !== '' ? $projectKey : 'default',
-        ]);
+        $query = ['project_key' => $projectKey];
+        if ($projectKey === '') {
+            $query = [];
+        }
+
+        return rtrim($requestOrigin, '/').'/google-wallet/save/'.$token.(
+            $query === [] ? '' : '?'.http_build_query($query)
+        );
     }
 
     /**

@@ -41,7 +41,7 @@ enum AppConstants {
     enum DefaultSettings {
         static let baseURL = "https://unadministrable-idiocratically-annalee.ngrok-free.dev"
         static let liffURL = "https://miniapp.line.me/2008962886-K2CRmPwV"
-        static let projectKey = "default"
+        static let projectKey = ""
         static let backgroundColorHex = "#F2F4F8"
         static let passcode = "1234"
     }

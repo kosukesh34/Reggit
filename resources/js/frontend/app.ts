@@ -505,7 +505,7 @@ class ReggitApp {
             // 未ログインなどは無視
         }
         this.memberManager.preload(null);
-        const projectKey = (typeof window !== 'undefined' && window.__PROJECT_KEY__) ? window.__PROJECT_KEY__ : 'default';
+        const projectKey = (typeof window !== 'undefined' && window.__PROJECT_KEY__) ? window.__PROJECT_KEY__ : '';
         if (this.memberManager && typeof this.memberManager._prefetchAppleWalletOpenUrl === 'function') {
             this.memberManager._prefetchAppleWalletOpenUrl(projectKey);
         }
@@ -1701,7 +1701,7 @@ if (typeof window !== 'undefined' && !window.__LIFF_APP_BOOTSTRAP__) {
         // LIFF では liff-ready 後に LIFF トークンで ID を確定するため、ここでは復元しない
         if (typeof window === 'undefined' || window.__LINE_USER_ID__ || window.__IS_LIFF__) return;
         try {
-            const projectKey = window.__PROJECT_KEY__ || 'default';
+            const projectKey = window.__PROJECT_KEY__ || '';
             const scoped = String(window.localStorage.getItem('mobile_order_line_user_id_' + projectKey) || '').trim();
             const legacy = String(window.localStorage.getItem('mobile_order_line_user_id') || '').trim();
             const cached = /^U[0-9a-f]{32}$/i.test(scoped) ? scoped : (/^U[0-9a-f]{32}$/i.test(legacy) ? legacy : '');
