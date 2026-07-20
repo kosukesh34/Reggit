@@ -265,6 +265,7 @@ class ShopSetting
                 // リンクタブはアプリ内埋め込みを優先（旧デフォルト external も上書き）
                 $item['open'] = 'embed';
                 $merged[] = $item;
+
                 continue;
             }
             $row = array_merge($defaults->get($tab), $item);
