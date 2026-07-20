@@ -30,7 +30,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="line-liff-id" content="{{ $liffId ?? config('line.liff_id', '') }}">
-    <meta name="project-key" content="{{ $projectKey ?? 'default' }}">
+    <meta name="project-key" content="{{ $projectKey ?? '' }}">
     <meta name="api-base" content="{{ config('app.api_base', '/api') }}">
     @include('frontend.partials._native-app-config')
     <title>{{ $projectName ?? config('app.name') }}</title>

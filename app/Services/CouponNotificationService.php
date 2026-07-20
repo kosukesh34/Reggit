@@ -46,9 +46,18 @@ class CouponNotificationService
             return;
         }
 
-        $projectKey = Project::query()->where('id', $projectId)->value('project_key') ?? 'default';
+        $projectKey = Project::query()->where('id', $projectId)->value('project_key');
+        $projectKey = is_string($projectKey) ? trim($projectKey) : '';
 
         $this->sendNativePush($member, $projectId, $title, $body, $memberCoupon);
+        if ($projectKey === '') {
+            LogHelper::error('[Coupon] LINE push skipped (project_key missing)', [
+                'member_id' => $member->id,
+                'project_id' => $projectId,
+            ]);
+
+            return;
+        }
         $this->sendLinePush($member, $projectId, $projectKey, $title, $body, $couponName);
     }
 
