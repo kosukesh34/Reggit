@@ -32,6 +32,8 @@ use App\Util\LogHelper;
 use App\Util\StrHelper;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 
@@ -766,8 +768,8 @@ class MemberAdminService
     }
 
     /**
-     * @param  \Illuminate\Database\Eloquent\Builder<\Illuminate\Database\Eloquent\Model>  $query
-     * @param  callable(\Illuminate\Database\Eloquent\Builder<\Illuminate\Database\Eloquent\Model>, string, string): void  $callback
+     * @param  Builder<Model>  $query
+     * @param  callable(Builder<Model>, string, string): void  $callback
      */
     private function applyHistoryKeyword($query, string $keyword, callable $callback): void
     {
@@ -782,7 +784,7 @@ class MemberAdminService
     }
 
     /**
-     * @param  \Illuminate\Database\Eloquent\Builder<\Illuminate\Database\Eloquent\Model>  $query
+     * @param  Builder<Model>  $query
      */
     private function applyDateRange($query, string $column, string $from, string $to): void
     {

@@ -25,7 +25,7 @@ class MemberRankHistoryTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_syncMemberRankでランク変更時に履歴が記録されること(): void
+    public function test_sync_member_rankでランク変更時に履歴が記録されること(): void
     {
         $project = Project::firstOrCreate(
             ['project_key' => 'default'],
