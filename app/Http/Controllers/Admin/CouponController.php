@@ -351,8 +351,7 @@ class CouponController extends AdminBaseController
             'timingLabel' => $output->timingLabel,
             'issuedCountLabel' => $output->issuedCountLabel,
             'targetSummary' => $output->targetSummary,
-            'targetMembers' => $output->targetMembers,
-            'issuedMembers' => $output->issuedMembers,
+            'members' => $output->members,
             'isEventRankUp' => $output->isEventRankUp,
         ]);
     }

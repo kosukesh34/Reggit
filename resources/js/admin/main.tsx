@@ -7,6 +7,7 @@ import { exposeAdminLegacyGlobals } from '../shared/utils/exposeAdminLegacyGloba
 import { LiffDesignerApp, readDesignerConfigFromDom } from './liff-designer/LiffDesignerApp';
 import './admin';
 import './couponBulkIssue';
+import './memberDetailHistory';
 import './liffBuilderPage';
 
 function AdminBootstrap(): null {
