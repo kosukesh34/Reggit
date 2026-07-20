@@ -62,10 +62,19 @@ class AnnouncementNotificationService
 
         $projectId = (int) $announcement->project_id;
         $channelAccessToken = ShopSetting::getLineChannelAccessToken($projectId);
-        $projectKey = Project::query()->where('id', $projectId)->value('project_key') ?? 'default';
+        $projectKey = Project::query()->where('id', $projectId)->value('project_key');
+        $projectKey = is_string($projectKey) ? trim($projectKey) : '';
+        if ($projectKey === '') {
+            LogHelper::error('[Announcement] LINE push skipped (project_key missing)', [
+                'announcement_id' => $announcement->id,
+                'project_id' => $projectId,
+            ]);
+
+            return ['line_sent' => 0, 'line_failed' => 0, 'line_skipped' => $members->count()];
+        }
         $announcementsUrl = LiffTabUrlBuilder::build(
             $projectId,
-            (string) $projectKey,
+            $projectKey,
             'announcements'
         );
         $title = trim((string) $announcement->title);

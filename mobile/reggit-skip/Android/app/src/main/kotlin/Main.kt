@@ -301,7 +301,7 @@ private fun resolveCancelledIdsProjectKey(context: Context): String {
     return listOf("LiffProjectKeyAndroid", "LIFF_PROJECT_KEY_ANDROID", "LiffProjectKey", "LIFF_PROJECT_KEY")
         .mapNotNull { key -> meta?.getString(key)?.trim()?.takeIf { it.isNotEmpty() && it != "undefined" && it != "null" } }
         .firstOrNull()
-        ?: "default"
+        ?: ""
 }
 
 private fun parseCancelledAnnouncementItems(body: String): List<CancelledAnnouncementItem> {

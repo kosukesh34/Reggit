@@ -18,8 +18,12 @@ class QueueOpenUseCase
 
     public function handle(string $projectKey, string $token): QueueOpenView
     {
-        $projectKey = trim($projectKey) !== '' ? trim($projectKey) : 'default';
+        $projectKey = trim($projectKey);
         $token = trim($token);
+
+        if ($projectKey === '') {
+            return new QueueOpenView('error', $projectKey, $token, null, null, '店舗が見つかりませんでした。');
+        }
 
         $project = Project::query()
             ->where('project_key', $projectKey)

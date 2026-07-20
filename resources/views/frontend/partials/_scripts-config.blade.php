@@ -7,7 +7,7 @@
 @endphp
 <meta name="stripe-key" content="{{ env('STRIPE_KEY', '') }}">
 <script>
-    window.__PROJECT_KEY__ = "{{ $projectKey ?? 'default' }}";
+    window.__PROJECT_KEY__ = "{{ $projectKey ?? '' }}";
     (function () {
         var apiBaseMeta = document.querySelector('meta[name="api-base"]');
         window.__API_BASE__ = (apiBaseMeta ? apiBaseMeta.getAttribute('content') : null) || '/api';
