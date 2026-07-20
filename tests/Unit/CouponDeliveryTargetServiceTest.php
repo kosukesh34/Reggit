@@ -7,7 +7,9 @@ use App\Enums\CouponDeliveryType;
 use App\Models\Coupon;
 use App\Models\CouponDelivery;
 use App\Models\Member;
+use App\Models\MemberStamp;
 use App\Models\Project;
+use App\Models\StampCard;
 use App\Services\Admin\CouponDeliveryTargetService;
 use App\UseCases\Admin\Coupon\AdminCouponBulkIssueUseCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -63,17 +65,160 @@ class CouponDeliveryTargetServiceTest extends TestCase
         ]);
     }
 
-    public function test_handle_全員即時配布では空配列でも配布処理を呼べること(): void
+    public function test_handle_全員即時配布では対象会員_i_dを保存すること(): void
     {
         $project = $this->createProject();
         $coupon = Coupon::factory()->create(['project_id' => $project->id]);
-        Member::factory()->create(['project_id' => $project->id]);
+        $memberA = Member::factory()->create(['project_id' => $project->id]);
+        $memberB = Member::factory()->create(['project_id' => $project->id]);
 
         $result = app(AdminCouponBulkIssueUseCase::class)->handle($project->id, $coupon->id, [
             'delivery_type' => CouponDeliveryType::IMMEDIATE_ALL,
         ]);
 
-        $this->assertSame(1, $result['issued']);
+        $this->assertSame(2, $result['issued']);
         $this->assertFalse($result['scheduled']);
+
+        $delivery = CouponDelivery::query()
+            ->where('project_id', $project->id)
+            ->where('coupon_id', $coupon->id)
+            ->first();
+        $this->assertNotNull($delivery);
+        $this->assertSame(
+            [$memberA->id, $memberB->id],
+            array_values(array_map('intval', $delivery->target_member_ids ?? [])),
+        );
+        $this->assertSame(
+            [$memberA->id, $memberB->id],
+            array_values(array_map('intval', $delivery->issued_member_ids ?? [])),
+        );
+    }
+
+    public function test_handle_ランクアップ達成配信は有効ステータスで登録されること(): void
+    {
+        $project = $this->createProject();
+        $coupon = Coupon::factory()->create(['project_id' => $project->id]);
+
+        $result = app(AdminCouponBulkIssueUseCase::class)->handle($project->id, $coupon->id, [
+            'delivery_type' => CouponDeliveryType::EVENT_RANK_UP_ARRIVAL,
+            'target_rank' => 'gold',
+        ]);
+
+        $this->assertTrue($result['scheduled']);
+        $delivery = CouponDelivery::query()
+            ->where('project_id', $project->id)
+            ->where('coupon_id', $coupon->id)
+            ->first();
+        $this->assertNotNull($delivery);
+        $this->assertSame(CouponDeliveryStatus::ACTIVE, $delivery->status);
+        $this->assertSame(['rank' => 'gold'], $delivery->segment_criteria);
+    }
+
+    public function test_resolve_全員配信は全会員_i_dを返すこと(): void
+    {
+        $project = $this->createProject();
+        $memberA = Member::factory()->create(['project_id' => $project->id]);
+        $memberB = Member::factory()->create(['project_id' => $project->id]);
+
+        $resolved = app(CouponDeliveryTargetService::class)->resolve(
+            $project->id,
+            CouponDeliveryType::IMMEDIATE_ALL,
+            [],
+        );
+
+        $this->assertNull($resolved['error']);
+        $this->assertSame([$memberA->id, $memberB->id], $resolved['member_ids']);
+    }
+
+    public function test_resolve_指定ランクの会員のみ返すこと(): void
+    {
+        $project = $this->createProject();
+        $gold = Member::factory()->create(['project_id' => $project->id, 'rank' => 'gold']);
+        Member::factory()->create(['project_id' => $project->id, 'rank' => 'silver']);
+
+        $resolved = app(CouponDeliveryTargetService::class)->resolve(
+            $project->id,
+            CouponDeliveryType::IMMEDIATE_RANK,
+            ['target_rank' => 'gold'],
+        );
+
+        $this->assertNull($resolved['error']);
+        $this->assertSame([$gold->id], $resolved['member_ids']);
+        $this->assertSame(['rank' => 'gold'], $resolved['segment_criteria']);
+    }
+
+    public function test_resolve_スタンプ累計条件の会員を返すこと(): void
+    {
+        $project = $this->createProject();
+        $card = StampCard::factory()->create(['project_id' => $project->id, 'required_stamps' => 10]);
+        $matched = Member::factory()->create(['project_id' => $project->id]);
+        $other = Member::factory()->create(['project_id' => $project->id]);
+        MemberStamp::factory()->create([
+            'project_id' => $project->id,
+            'member_id' => $matched->id,
+            'stamp_card_id' => $card->id,
+            'current_stamps' => 5,
+        ]);
+        MemberStamp::factory()->create([
+            'project_id' => $project->id,
+            'member_id' => $other->id,
+            'stamp_card_id' => $card->id,
+            'current_stamps' => 2,
+        ]);
+
+        $resolved = app(CouponDeliveryTargetService::class)->resolve(
+            $project->id,
+            CouponDeliveryType::IMMEDIATE_STAMP,
+            [
+                'stamp_card_id' => $card->id,
+                'stamp_count_min' => 5,
+            ],
+        );
+
+        $this->assertNull($resolved['error']);
+        $this->assertSame([$matched->id], $resolved['member_ids']);
+    }
+
+    public function test_resolve_最終来店からちょうど_n日後の会員を返すこと(): void
+    {
+        $project = $this->createProject();
+        $matched = Member::factory()->create([
+            'project_id' => $project->id,
+            'last_visited_at' => now()->subDays(7)->toDateString(),
+        ]);
+        Member::factory()->create([
+            'project_id' => $project->id,
+            'last_visited_at' => now()->subDays(3)->toDateString(),
+        ]);
+
+        $resolved = app(CouponDeliveryTargetService::class)->resolve(
+            $project->id,
+            CouponDeliveryType::IMMEDIATE_DAYS_AFTER_VISIT,
+            ['days_after_last_visit' => 7],
+        );
+
+        $this->assertNull($resolved['error']);
+        $this->assertSame([$matched->id], $resolved['member_ids']);
+        $this->assertSame(['days_after_last_visit' => 7], $resolved['segment_criteria']);
+    }
+
+    public function test_build_resolve_params_from_delivery_新配信条件を復元すること(): void
+    {
+        $project = $this->createProject();
+        $coupon = Coupon::factory()->create(['project_id' => $project->id]);
+        $delivery = CouponDelivery::create([
+            'project_id' => $project->id,
+            'coupon_id' => $coupon->id,
+            'delivery_type' => CouponDeliveryType::SCHEDULED_DAYS_AFTER_VISIT,
+            'status' => CouponDeliveryStatus::SCHEDULED,
+            'scheduled_at' => now()->addDay(),
+            'segment_criteria' => [
+                'days_after_last_visit' => 10,
+            ],
+        ]);
+
+        $params = app(CouponDeliveryTargetService::class)->buildResolveParamsFromDelivery($delivery);
+
+        $this->assertSame(10, $params['days_after_last_visit']);
     }
 }

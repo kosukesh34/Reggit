@@ -311,6 +311,52 @@
     color: var(--text-secondary);
 }
 
+.coupon-use-modal-expire {
+    margin: -8px 0 16px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.coupon-use-modal-expire.is-expired {
+    color: var(--text-muted, #9ca3af);
+}
+
+.coupon-use-modal-expire i {
+    margin-right: 6px;
+    color: var(--primary-color);
+}
+
+.coupon-use-modal-expire.is-expired i {
+    color: var(--text-muted, #9ca3af);
+}
+
+.coupon-use-code-expired {
+    padding: 24px 16px;
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+.coupon-use-code-expired i {
+    display: block;
+    margin-bottom: 10px;
+    font-size: 28px;
+    color: var(--text-muted, #9ca3af);
+}
+
+.coupon-use-code-expired p {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.coupon-use-code-expired-sub {
+    margin: 6px 0 0;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted, #9ca3af);
+}
+
 .coupon-use-modal-complete {
     display: inline-flex;
     align-items: center;

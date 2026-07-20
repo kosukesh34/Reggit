@@ -43,4 +43,45 @@ class CouponDeliverySegmentPolicyTest extends TestCase
         $this->assertTrue($policy->requiresPersonalMembers(CouponDeliveryType::IMMEDIATE_PERSONAL));
         $this->assertFalse($policy->requiresPersonalMembers(CouponDeliveryType::IMMEDIATE_ALL));
     }
+
+    public function test_build_segment_criteria_ランク配信を組み立てること(): void
+    {
+        $criteria = (new CouponDeliverySegmentPolicy)->buildSegmentCriteria(
+            CouponDeliveryType::IMMEDIATE_RANK,
+            ['target_rank' => 'gold'],
+            5,
+        );
+
+        $this->assertSame(['rank' => 'gold'], $criteria);
+    }
+
+    public function test_build_segment_criteria_スタンプ配信を組み立てること(): void
+    {
+        $criteria = (new CouponDeliverySegmentPolicy)->buildSegmentCriteria(
+            CouponDeliveryType::IMMEDIATE_STAMP,
+            [
+                'stamp_card_id' => 3,
+                'stamp_count_min' => 5,
+                'stamp_completed' => '1',
+            ],
+            5,
+        );
+
+        $this->assertSame([
+            'stamp_card_id' => 3,
+            'stamp_count_min' => 5,
+            'stamp_completed' => true,
+        ], $criteria);
+    }
+
+    public function test_build_segment_criteria_最終来店_n日後を組み立てること(): void
+    {
+        $criteria = (new CouponDeliverySegmentPolicy)->buildSegmentCriteria(
+            CouponDeliveryType::IMMEDIATE_DAYS_AFTER_VISIT,
+            ['days_after_last_visit' => 14],
+            5,
+        );
+
+        $this->assertSame(['days_after_last_visit' => 14], $criteria);
+    }
 }
