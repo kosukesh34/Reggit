@@ -60,7 +60,7 @@ final class PointLedgerEntry
     public static function reversed(
         int $points,
         ?string $description,
-        int $orderId,
+        ?int $orderId,
     ): self {
         return new self(
             PointTransactionType::REVERSED,
