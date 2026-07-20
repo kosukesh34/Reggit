@@ -11,12 +11,20 @@ import { AppConstants } from '../../shared/constants';
 export class LiffLayoutManager {
     app: any;
     tabSettings: Record<string, any>;
+    _memberMeCache: Promise<any> | null;
+
+    static readonly STATS_SAMPLE_VALUES: Record<string, string> = {
+        points: '1,280',
+        rank: 'ゴールド',
+        points_to_next: '720',
+    };
 
     constructor(app: any) {
         this.app = app;
         this.tabSettings = (typeof window !== 'undefined' && window.__LIFF_TAB_SETTINGS__)
             ? window.__LIFF_TAB_SETTINGS__
             : {};
+        this._memberMeCache = null;
     }
 
     /**
@@ -32,6 +40,7 @@ export class LiffLayoutManager {
         }
 
         try {
+            this._memberMeCache = null;
             container.innerHTML = this._renderBlocks(blocks);
             this._bindInlineHandlers(container);
             this._initSliders(container);
@@ -180,21 +189,20 @@ export class LiffLayoutManager {
         const esc = (s: any): string => this._esc(s);
         const br = block.border_radius != null ? block.border_radius : 10;
         const mb = block.margin_bottom ? `margin-bottom:${block.margin_bottom}px;` : '';
-        const opacityRaw = Number(block.opacity);
-        const opacity =
-            Number.isFinite(opacityRaw) && opacityRaw < 100 && opacityRaw >= 0
-                ? `opacity:${Math.max(0.2, opacityRaw / 100)};`
-                : '';
         const shadow = block.shadow ? 'box-shadow:0 4px 12px rgba(0,0,0,0.1);' : '';
         const pad = block.padding !== undefined && block.padding !== null ? `padding:${block.padding}px;` : '';
         const bgColor = block.background_color ? `background-color:${block.background_color};` : '';
         const textColor = block.text_color ? `color:${block.text_color};` : '';
-        const baseStyle = `border-radius:${br}px;${mb}${opacity}${shadow}${pad}${bgColor}${textColor}`;
+        const baseStyle = `border-radius:${br}px;${mb}${shadow}${pad}${bgColor}${textColor}`;
 
         if (type === 'data') {
             const cardDesign = block.card_design ? ` data-card-design="${esc(block.card_design)}"` : '';
+            const stampDesign = block.stamp_design ? ` data-stamp-design="${esc(block.stamp_design)}"` : '';
+            const stampSlotStyle = block.stamp_slot_style ? ` data-stamp-slot-style="${esc(block.stamp_slot_style)}"` : '';
+            const stampFilledStyle = block.stamp_filled_style ? ` data-stamp-filled-style="${esc(block.stamp_filled_style)}"` : '';
+            const stampAccent = block.stamp_accent_color ? ` data-stamp-accent-color="${esc(block.stamp_accent_color)}"` : '';
             const design = esc(block.design || 'cards');
-            return `<section class="builder-block builder-data-block builder-data-block--design-${design}" style="${baseStyle}" data-source="${esc(block.source || '')}" data-design="${design}"${cardDesign}></section>`;
+            return `<section class="builder-block builder-data-block builder-data-block--design-${design}" style="${baseStyle}" data-source="${esc(block.source || '')}" data-design="${design}"${cardDesign}${stampDesign}${stampSlotStyle}${stampFilledStyle}${stampAccent}></section>`;
         }
         if (type === 'member_summary') {
             const greeting = block.greeting ? esc(block.greeting) : '';
@@ -210,13 +218,14 @@ export class LiffLayoutManager {
         if (type === 'stats_row') {
             const items = Array.isArray(block.items) ? block.items : [];
             const label = block.section_label ? `<div class="builder-section-head"><span class="builder-section-head__label">${esc(block.section_label)}</span></div>` : '';
-            const cells = items.map((it: any) =>
-                `<div class="builder-stats-row__cell">
+            const cells = items.map((it: any) => {
+                const field = LiffLayoutManager.resolveStatsField(it);
+                return `<div class="builder-stats-row__cell" data-stats-field="${esc(field)}">
                     <span class="builder-stats-row__value">${esc(it.value || '')}</span>
                     <span class="builder-stats-row__label">${esc(it.label || '')}${it.hint ? ` <em>${esc(it.hint)}</em>` : ''}</span>
-                </div>`
-            ).join('');
-            return `<section class="builder-block builder-stats-row" style="${mb}">${label}<div class="builder-stats-row__grid">${cells}</div></section>`;
+                </div>`;
+            }).join('');
+            return `<section class="builder-block builder-stats-row" data-source="stats_row" style="${mb}">${label}<div class="builder-stats-row__grid">${cells}</div></section>`;
         }
         if (type === 'quick_actions') {
             const actions = (Array.isArray(block.actions) && block.actions.length > 0)
@@ -335,16 +344,21 @@ export class LiffLayoutManager {
             const premium = this._premium();
             if (premium) return premium.banner(block, esc, baseStyle);
             const action = block.action || block.link || '';
-            const inner = `${block.icon ? `<i class="fas ${block.icon}" style="font-size:16px;flex-shrink:0;"></i>` : ''}<span>${esc(block.text)}</span>`;
+            const bindField = block.field === 'points_to_next'
+                || /次のランクまで/.test(String(block.text || ''))
+                ? 'points_to_next'
+                : '';
+            const bindAttr = bindField !== '' ? ` data-source="banner_bind" data-bind-field="${esc(bindField)}"` : '';
+            const inner = `${block.icon ? `<i class="fas ${block.icon}" style="font-size:16px;flex-shrink:0;"></i>` : ''}<span class="builder-promo-banner__text">${esc(block.text)}</span>`;
             const wrapStyle = `display:flex;align-items:center;gap:8px;padding:12px 14px;font-size:13px;font-weight:600;background:${block.color || '#eef2ff'};color:${block.text_color || '#374151'};${baseStyle}`;
             if (action) {
                 const isExternal = action !== '#' && (action.startsWith('http://') || action.startsWith('https://'));
                 const dataExternal = isExternal ? ' data-builder-external="1"' : '';
-                return `<section class="builder-block" style="${wrapStyle}">
+                return `<section class="builder-block"${bindAttr} style="${wrapStyle}">
                     <a href="${esc(action)}" class="builder-nav"${dataExternal} style="display:flex;align-items:center;gap:8px;color:inherit;text-decoration:none;width:100%;">${inner}</a>
                 </section>`;
             }
-            return `<section class="builder-block" style="${wrapStyle}">${inner}</section>`;
+            return `<section class="builder-block"${bindAttr} style="${wrapStyle}">${inner}</section>`;
         }
         if (type === 'spacer') return `<div style="height:${block.height || 16}px;${mb}"></div>`;
         if (type === 'divider') return `<div style="padding:8px 0;${mb}"><hr style="border:none;border-top:1px ${block.divider_style || 'solid'} ${block.divider_color || '#e5e7eb'};margin:0;"></div>`;
@@ -390,6 +404,16 @@ export class LiffLayoutManager {
         const slides = Array.isArray(block.slides) ? block.slides : [];
         const h = block.slide_height || 160;
         const design = esc(block.design || 'hero');
+        if (block.source === 'gallery') {
+            const label = block.section_label || block.title || '';
+            const head = label ? `<div class="builder-section-head"><span class="builder-section-head__label">${esc(label)}</span></div>` : '';
+            return `<section class="builder-block builder-carousel-wrap builder-carousel-wrap--design-${design}" style="${baseStyle}" data-source="gallery_slider" data-design="${design}" data-slide-height="${h}" data-auto-play="${block.auto_play !== false ? '1' : '0'}" data-show-dots="${block.show_dots !== false ? '1' : '0'}">
+                ${head}
+                <div class="builder-carousel builder-carousel--loading" style="--carousel-h:${h}px">
+                    <div class="loading"><i class="fas fa-spinner fa-spin"></i><p>読み込み中...</p></div>
+                </div>
+            </section>`;
+        }
         if (slides.length === 0) {
             return `<section class="builder-block builder-slider-block builder-slider-block--design-${design}" style="height:${h}px;background:#f3f4f6;display:flex;align-items:center;justify-content:center;color:#9ca3af;${baseStyle}"><i class="fas fa-images" style="font-size:28px;"></i></section>`;
         }
@@ -582,12 +606,15 @@ export class LiffLayoutManager {
             if (source === 'reservations') { (el as HTMLElement).innerHTML += '<div class="reservations-data-mount reservations-section"></div>'; this.app.checkMembershipAndLoadReservations(); return; }
             if (source === 'member' || source === 'member_card') { (el as HTMLElement).innerHTML += '<div class="member-section member-card-mount"></div>'; this.app.loadMemberTab(); return; }
             if (source === 'gallery') { (el as HTMLElement).innerHTML += '<div class="gallery-data-mount"></div>'; this.app.galleryManager.load(); return; }
+            if (source === 'gallery_slider') { this._mountGallerySlider(el as HTMLElement); return; }
             if (source === 'announcements') { (el as HTMLElement).innerHTML += '<div class="announcements-data-mount"></div>'; this.app.announcementManager.load(); return; }
             if (source === 'announcement_detail') { return; }
             if (source === 'product_detail' || source === 'coupon_detail' || source === 'gallery_detail' || source === 'stamp_detail') { return; }
             if (source === 'order_cart' || source === 'order_confirm' || source === 'order_complete') { return; }
             if (source === 'reservation_new' || source === 'reservation_confirm' || source === 'reservation_complete') { return; }
-            if (source === 'member_summary') { this._mountMemberSummary(el as HTMLElement); }
+            if (source === 'member_summary') { this._mountMemberSummary(el as HTMLElement); return; }
+            if (source === 'stats_row') { this._mountStatsRow(el as HTMLElement); return; }
+            if (source === 'banner_bind') { this._mountBannerBind(el as HTMLElement); return; }
         });
     }
 
@@ -599,20 +626,150 @@ export class LiffLayoutManager {
             el.innerHTML = html;
             this._bindInlineHandlers(el);
         };
-        let data: any = null;
-        try {
-            if (this.app && this.app.apiClient && typeof AppConstants !== 'undefined') {
-                const result = await this.app.apiClient.get(AppConstants.API_ENDPOINTS.MEMBERS_ME);
-                if (result && result.success && result.data) data = result.data;
-            }
-        } catch (_e) {
-            data = null;
-        }
+        const data = await this._fetchMemberMe();
         fill((() => {
             const premium = this._premium();
             if (premium) return premium.memberSummaryHtml(data, greeting, (s: any) => this._esc(s), design);
             return `<div class="member-summary-card member-summary-card--guest"><p class="ms-guest-title">${this._esc(greeting || 'ようこそ')}</p></div>`;
         })());
+    }
+
+    /** ギャラリーAPIの画像をカルーセルとして描画する */
+    async _mountGallerySlider(el: HTMLElement): Promise<void> {
+        if (!this.app || !this.app.galleryManager || typeof this.app.galleryManager.loadCarousel !== 'function') {
+            return;
+        }
+        await this.app.galleryManager.loadCarousel(el, {
+            design: el.getAttribute('data-design') || 'hero',
+            slideHeight: Number(el.getAttribute('data-slide-height') || 200),
+            autoPlay: el.getAttribute('data-auto-play') !== '0',
+            showDots: el.getAttribute('data-show-dots') !== '0',
+            onReady: () => {
+                this._initSliders(el);
+                this._bindInlineHandlers(el);
+            },
+        });
+    }
+
+    /** stats_row のポイント・ランク等を会員APIの実値で上書きする */
+    async _mountStatsRow(el: HTMLElement): Promise<void> {
+        const cells = el.querySelectorAll<HTMLElement>('[data-stats-field]');
+        const needsLive = Array.from(cells).some((cell) => {
+            const field = cell.getAttribute('data-stats-field') || 'static';
+            return field !== 'static';
+        });
+        if (!needsLive) return;
+
+        const data = await this._fetchMemberMe();
+        cells.forEach((cell) => {
+            const field = cell.getAttribute('data-stats-field') || 'static';
+            if (field === 'static') return;
+            const valueEl = cell.querySelector('.builder-stats-row__value');
+            if (!valueEl) return;
+            valueEl.textContent = LiffLayoutManager.formatStatsValue(field, data);
+        });
+    }
+
+    /** banner の「次のランクまで」文言を会員APIの実値で上書きする */
+    async _mountBannerBind(el: HTMLElement): Promise<void> {
+        const field = el.getAttribute('data-bind-field') || '';
+        if (field !== 'points_to_next') return;
+        const textEl = el.querySelector('.builder-promo-banner__text');
+        if (!textEl) return;
+        const data = await this._fetchMemberMe();
+        textEl.textContent = LiffLayoutManager.formatBannerPointsToNext(data);
+    }
+
+    _fetchMemberMe(): Promise<any> {
+        if (this._memberMeCache !== null) {
+            return this._memberMeCache;
+        }
+        this._memberMeCache = (async () => {
+            try {
+                if (typeof window !== 'undefined') {
+                    const params = new URLSearchParams(window.location.search || '');
+                    if (params.get('designer_live_preview') === '1') {
+                        const payload = window.__DESIGNER_PREVIEW_MEMBER_PAYLOAD__;
+                        if (payload && typeof payload === 'object') {
+                            return payload;
+                        }
+                        if (this.app && typeof this.app.getDesignerSampleMemberData === 'function') {
+                            return this.app.getDesignerSampleMemberData();
+                        }
+                    }
+                }
+                if (this.app && this.app.apiClient && typeof AppConstants !== 'undefined') {
+                    const result = await this.app.apiClient.get(AppConstants.API_ENDPOINTS.MEMBERS_ME);
+                    if (result && result.success && result.data) {
+                        return result.data;
+                    }
+                }
+            } catch (_e) {
+                return null;
+            }
+            return null;
+        })();
+        return this._memberMeCache;
+    }
+
+    static resolveStatsField(item: { field?: string; label?: string } | null | undefined): string {
+        if (item == null) return 'static';
+        const explicit = typeof item.field === 'string' ? item.field.trim() : '';
+        if (explicit === 'points' || explicit === 'rank' || explicit === 'points_to_next' || explicit === 'static') {
+            return explicit;
+        }
+        const label = typeof item.label === 'string' ? item.label.trim() : '';
+        if (label === 'ポイント' || label === '保有ポイント' || label === '所持ポイント') {
+            return 'points';
+        }
+        if (label === 'ランク' || label === '会員ランク' || label === '現在のランク') {
+            return 'rank';
+        }
+        if (/次回特典|次のランク|特典まで|ランクアップまで/.test(label)) {
+            return 'points_to_next';
+        }
+        return 'static';
+    }
+
+    static formatStatsValue(field: string, data: any): string {
+        const isMember = !!(data && data.is_member === true);
+        if (!isMember) {
+            return '—';
+        }
+        if (field === 'points') {
+            const points = Number(data.points != null ? data.points : (data.member && data.member.points) || 0);
+            return points.toLocaleString('ja-JP');
+        }
+        if (field === 'rank') {
+            const rankLabel = data.current_rank_label != null ? String(data.current_rank_label) : '';
+            return rankLabel !== '' ? rankLabel : '—';
+        }
+        if (field === 'points_to_next') {
+            if (data.show_rank_progress === false) {
+                return '—';
+            }
+            if (data.points_to_next_rank == null) {
+                return 'MAX';
+            }
+            return Number(data.points_to_next_rank).toLocaleString('ja-JP');
+        }
+        return '—';
+    }
+
+    static formatBannerPointsToNext(data: any): string {
+        const isMember = !!(data && data.is_member === true);
+        if (!isMember) {
+            return '会員登録でランク特典が使えます';
+        }
+        if (data.show_rank_progress === false) {
+            return '会員ランク特典をチェック';
+        }
+        const nextRankLabel = data.next_rank_label != null ? String(data.next_rank_label) : '';
+        if (data.points_to_next_rank == null || nextRankLabel === '') {
+            return '最高ランクに到達しています';
+        }
+        const toNext = Number(data.points_to_next_rank).toLocaleString('ja-JP');
+        return `次の${nextRankLabel}まであと ${toNext} pt`;
     }
 
     _buildMemberSummaryHtml(data: any, greeting: string, design: string): string {

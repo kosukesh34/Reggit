@@ -90,6 +90,53 @@ body.tab-style-pill .main-tab-btn.active {
     box-shadow: 0 6px 16px rgba(var(--primary-rgb), 0.28);
 }
 
+/* 外部Webページタブ（埋め込み表示） */
+.tab-section--link-embed {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - var(--main-tabs-height) - 60px);
+    min-height: 420px;
+    padding: 0;
+}
+
+.link-tab-frame {
+    flex: 1;
+    width: 100%;
+    border: 0;
+    background: #ffffff;
+}
+
+.link-tab-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px var(--content-padding) calc(10px + var(--safe-area-bottom-capped));
+    background: var(--surface, #ffffff);
+    border-top: 1px solid var(--hairline);
+}
+
+.link-tab-fallback__text {
+    margin: 0;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.link-tab-fallback__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border: none;
+    border-radius: var(--radius-pill);
+    background: var(--primary-color);
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
 /* タブコンテンツ */
 .tab-content {
     display: none;

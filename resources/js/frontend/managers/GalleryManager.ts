@@ -90,6 +90,76 @@ export class GalleryManager {
         }
     }
 
+    /** ギャラリー画像をカルーセルとして描画する（slider source=gallery 用） */
+    async loadCarousel(
+        container: Element | null,
+        options: {
+            design?: string;
+            slideHeight?: number;
+            autoPlay?: boolean;
+            showDots?: boolean;
+            onReady?: () => void;
+        } = {},
+    ): Promise<void> {
+        if (!container) {
+            return;
+        }
+        const design = options.design || 'hero';
+        const slideHeight = options.slideHeight || 200;
+        const autoPlay = options.autoPlay !== false;
+        const showDots = options.showDots !== false;
+        const head = container.querySelector('.builder-section-head');
+        const headHtml = head !== null ? head.outerHTML : '';
+        try {
+            const result = await this.apiClient.get(AppConstants.API_ENDPOINTS.GALLERY);
+            const data = (result.success ? result.data : null) as { items?: GalleryItem[] } | null;
+            const items = (data?.items || [])
+                .filter((item) => typeof item.image_url === 'string' && item.image_url !== '')
+                .slice(0, 12)
+                .map((item, index) => ({
+                    ...item,
+                    id: item.id ?? index,
+                }));
+            this.cache = items;
+            if (items.length === 0) {
+                container.innerHTML = `${headHtml}
+                    <div class="builder-carousel builder-carousel--empty builder-carousel--design-${DomHelper.escapeHtml(design)}" style="--carousel-h:${slideHeight}px">
+                        <div class="builder-carousel__empty"><i class="fas fa-images" aria-hidden="true"></i><p>ギャラリー画像がありません</p></div>
+                    </div>`;
+                if (typeof options.onReady === 'function') {
+                    options.onReady();
+                }
+                return;
+            }
+            const slideHtml = items.map((item, i) => {
+                const display = i === 0 ? ' is-active' : '';
+                const caption = item.title
+                    ? `<div class="builder-carousel__caption"><span>${DomHelper.escapeHtml(item.title)}</span></div>`
+                    : '';
+                return `<div class="builder-carousel__slide${display}" data-slide-index="${i}" data-gallery-id="${DomHelper.escapeHtml(String(item.id ?? ''))}">
+                    <img class="builder-carousel__img" src="${DomHelper.escapeHtml(item.image_url || '')}" alt="${DomHelper.escapeHtml(item.title || '')}" loading="lazy">
+                    ${caption}
+                </div>`;
+            }).join('');
+            const dots = (showDots && items.length > 1)
+                ? `<div class="builder-carousel__dots">${items.map((_, i) =>
+                    `<button type="button" class="builder-carousel__dot${i === 0 ? ' is-active' : ''}" data-slide-index="${i}" aria-label="スライド ${i + 1}"></button>`
+                ).join('')}</div>`
+                : '';
+            container.innerHTML = `${headHtml}
+                <div class="builder-carousel builder-carousel--design-${DomHelper.escapeHtml(design)}" style="--carousel-h:${slideHeight}px" data-auto-play="${autoPlay ? '1' : '0'}" data-slide-count="${items.length}">
+                    <div class="builder-carousel__track">${slideHtml}</div>
+                    ${dots}
+                </div>`;
+            this.bindDetailClicks(container);
+            if (typeof options.onReady === 'function') {
+                options.onReady();
+            }
+        } catch (_error) {
+            container.innerHTML = `${headHtml}<div class="gallery-error"><p>ギャラリーの読み込みに失敗しました</p></div>`;
+        }
+    }
+
     async openDetail(id: number | string, returnHash?: string): Promise<void> {
         if (this.cache.length === 0) {
             await this.load(this.currentCategoryId);

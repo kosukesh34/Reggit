@@ -498,3 +498,66 @@
     align-items: center;
     justify-content: space-between;
     gap: 12px;
+}
+
+/* ネイティブ Wallet 品質 — LIFF デザイナ設定 */
+.idnect-card-wrapper {
+    --member-card-accent-color: var(--primary-color);
+}
+
+.idnect-card-face {
+    border: 1px solid color-mix(in srgb, var(--member-card-accent-color) 18%, #ffffff);
+}
+
+.idnect-card-wrapper--bg-solid .idnect-card-face--front,
+.idnect-card-wrapper--bg-solid .idnect-card-face--back {
+    background: var(--member-card-accent-color);
+    color: #ffffff;
+}
+
+.idnect-card-wrapper--bg-gradient .idnect-card-face--front,
+.idnect-card-wrapper--bg-gradient .idnect-card-face--back {
+    background: linear-gradient(
+        145deg,
+        color-mix(in srgb, var(--member-card-accent-color) 82%, #ffffff) 0%,
+        var(--member-card-accent-color) 42%,
+        color-mix(in srgb, var(--member-card-accent-color) 78%, #000000) 100%
+    );
+    color: #ffffff;
+}
+
+.idnect-card-wrapper--bg-image .idnect-card-face--front,
+.idnect-card-wrapper--bg-image .idnect-card-face--back {
+    background:
+        linear-gradient(160deg, rgba(255, 255, 255, 0.08), rgba(0, 0, 0, 0.18)),
+        radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--member-card-accent-color) 28%, #ffffff), transparent 42%),
+        linear-gradient(145deg, color-mix(in srgb, var(--member-card-accent-color) 70%, #ffffff), var(--member-card-accent-color));
+    color: #ffffff;
+}
+
+.member-screen-wallet .idnect-card,
+.member-screen-apple .idnect-card,
+.member-screen-premium .idnect-card {
+    max-width: min(100%, 360px);
+    border-radius: 24px;
+}
+
+.member-screen-wallet .idnect-card-face,
+.member-screen-apple .idnect-card-face {
+    box-shadow: var(--shadow-lg);
+}
+
+.member-screen-wallet .idnect-card-rank-wrap .idnect-card-rank-badge,
+.member-screen-apple .idnect-card-rank-wrap .idnect-card-rank-badge {
+    background: #ffffff;
+    color: var(--member-card-accent-color);
+    border: 1px solid color-mix(in srgb, var(--member-card-accent-color) 18%, #ffffff);
+}
+
+.member-screen-wallet .idnect-card-barcode-wrap,
+.member-screen-apple .idnect-card-barcode-wrap {
+    background: #ffffff;
+    border-radius: 14px;
+    padding: 10px 12px;
+    box-shadow: var(--shadow-xs);
+}

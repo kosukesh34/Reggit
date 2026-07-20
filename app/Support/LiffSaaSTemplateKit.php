@@ -125,8 +125,8 @@ class LiffSaaSTemplateKit
                 'blocks' => [
                     ['type' => 'member_summary', 'design' => 'wallet', 'greeting' => 'おかえりなさい'],
                     ['type' => 'stats_row', 'section_label' => 'マイステータス', 'items' => [
-                        ['label' => 'ポイント', 'value' => '1,240', 'hint' => 'pt'],
-                        ['label' => 'ランク', 'value' => 'ゴールド', 'hint' => ''],
+                        ['label' => 'ポイント', 'value' => '1,240', 'hint' => 'pt', 'field' => 'points'],
+                        ['label' => 'ランク', 'value' => 'ゴールド', 'hint' => '', 'field' => 'rank'],
                         ['label' => 'クーポン', 'value' => '3', 'hint' => '枚'],
                     ]],
                     ['type' => 'collection', 'design' => 'chip_scroll', 'section_label' => 'カテゴリ', 'items' => [
@@ -184,7 +184,7 @@ class LiffSaaSTemplateKit
                     ['type' => 'hero', 'design' => 'apple', 'eyebrow' => 'Beauty', 'title' => '次回のご予約をかんたんに', 'subtitle' => '空き枠から最短3ステップで予約完了', 'image_url' => 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=1400&q=80'],
                     ['type' => 'stats_row', 'section_label' => 'マイステータス', 'items' => [
                         ['label' => '次回予約', 'value' => '3/28', 'hint' => ''],
-                        ['label' => 'ポイント', 'value' => '820', 'hint' => 'pt'],
+                        ['label' => 'ポイント', 'value' => '820', 'hint' => 'pt', 'field' => 'points'],
                         ['label' => '特典', 'value' => '2', 'hint' => '枚'],
                     ]],
                     ['type' => 'quick_actions', 'design' => 'grid', 'actions' => [
@@ -272,7 +272,7 @@ class LiffSaaSTemplateKit
                     ['type' => 'stats_row', 'section_label' => '今週の記録', 'items' => [
                         ['label' => 'ワークアウト', 'value' => '4', 'hint' => '回'],
                         ['label' => '連続来館', 'value' => '12', 'hint' => '日'],
-                        ['label' => 'ポイント', 'value' => '560', 'hint' => 'pt'],
+                        ['label' => 'ポイント', 'value' => '560', 'hint' => 'pt', 'field' => 'points'],
                     ]],
                     ['type' => 'quick_actions', 'design' => 'pill', 'actions' => [
                         ['icon' => 'fa-dumbbell', 'label' => 'レッスン予約', 'action' => '#reservations'],
@@ -344,8 +344,8 @@ class LiffSaaSTemplateKit
                 'blocks' => [
                     ['type' => 'member_summary', 'design' => 'tier', 'greeting' => '〇〇店 会員クラブ'],
                     ['type' => 'stats_row', 'items' => [
-                        ['label' => 'ランク', 'value' => 'ゴールド', 'hint' => ''],
-                        ['label' => 'ポイント', 'value' => '3,420', 'hint' => 'pt'],
+                        ['label' => 'ランク', 'value' => 'ゴールド', 'hint' => '', 'field' => 'rank'],
+                        ['label' => 'ポイント', 'value' => '3,420', 'hint' => 'pt', 'field' => 'points'],
                         ['label' => '特典', 'value' => '5', 'hint' => '枚'],
                     ]],
                     ['type' => 'banner', 'design' => 'pill', 'icon' => 'fa-gift', 'text' => '誕生月の特別クーポンを受け取る', 'color' => '#007aff', 'text_color' => '#ffffff', 'action' => '#coupons'],
@@ -579,8 +579,8 @@ class LiffSaaSTemplateKit
             'home' => [
                 ['type' => 'member_summary', 'design' => 'wallet', 'greeting' => 'おかえりなさい'],
                 ['type' => 'stats_row', 'section_label' => 'マイステータス', 'items' => [
-                    ['label' => 'ポイント', 'value' => '1,240', 'hint' => 'pt'],
-                    ['label' => 'ランク', 'value' => 'ゴールド', 'hint' => ''],
+                    ['label' => 'ポイント', 'value' => '1,240', 'hint' => 'pt', 'field' => 'points'],
+                    ['label' => 'ランク', 'value' => 'ゴールド', 'hint' => '', 'field' => 'rank'],
                     ['label' => 'クーポン', 'value' => '3', 'hint' => '枚'],
                 ]],
                 ['type' => 'quick_actions', 'design' => 'pill', 'actions' => [
@@ -716,8 +716,8 @@ class LiffSaaSTemplateKit
         $layouts['home'] = [
             ['type' => 'member_summary', 'design' => 'wallet', 'greeting' => 'おかえりなさい、〇〇さん'],
             ['type' => 'stats_row', 'section_label' => 'マイステータス', 'items' => [
-                ['label' => 'ポイント', 'value' => '1,240', 'hint' => 'pt'],
-                ['label' => 'ランク', 'value' => 'ゴールド', 'hint' => ''],
+                ['label' => 'ポイント', 'value' => '1,240', 'hint' => 'pt', 'field' => 'points'],
+                ['label' => 'ランク', 'value' => 'ゴールド', 'hint' => '', 'field' => 'rank'],
                 ['label' => 'スタンプ', 'value' => '7', 'hint' => '/10'],
             ]],
             ['type' => 'quick_actions', 'design' => 'pill', 'actions' => [
@@ -756,7 +756,7 @@ class LiffSaaSTemplateKit
             ['type' => 'member_summary', 'design' => 'tier', 'greeting' => 'おはようございます'],
             ['type' => 'stats_row', 'section_label' => 'マイステータス', 'items' => [
                 ['label' => 'スタンプ', 'value' => '7', 'hint' => '/10'],
-                ['label' => 'ポイント', 'value' => '640', 'hint' => 'pt'],
+                ['label' => 'ポイント', 'value' => '640', 'hint' => 'pt', 'field' => 'points'],
                 ['label' => 'クーポン', 'value' => '2', 'hint' => '枚'],
             ]],
             ['type' => 'collection', 'design' => 'chip_scroll', 'section_label' => 'カテゴリ', 'items' => [
@@ -859,7 +859,7 @@ class LiffSaaSTemplateKit
             ['type' => 'member_summary', 'design' => 'glass', 'greeting' => 'いらっしゃいませ'],
             ['type' => 'stats_row', 'section_label' => 'マイステータス', 'items' => [
                 ['label' => '次回予約', 'value' => '3/28', 'hint' => ''],
-                ['label' => 'ポイント', 'value' => '820', 'hint' => 'pt'],
+                ['label' => 'ポイント', 'value' => '820', 'hint' => 'pt', 'field' => 'points'],
                 ['label' => '特典', 'value' => '2', 'hint' => '枚'],
             ]],
             ['type' => 'quick_actions', 'design' => 'grid', 'actions' => [
@@ -907,8 +907,8 @@ class LiffSaaSTemplateKit
             ['type' => 'banner', 'design' => 'countdown', 'icon' => 'fa-fire', 'text' => '週末限定 — 最大40%OFF', 'color' => $accent, 'text_color' => '#ffffff', 'action' => '#products'],
             ['type' => 'member_summary', 'design' => 'wallet', 'greeting' => 'ようこそ〇〇ショップへ'],
             ['type' => 'stats_row', 'section_label' => 'マイステータス', 'items' => [
-                ['label' => 'ポイント', 'value' => '2,180', 'hint' => 'pt'],
-                ['label' => 'ランク', 'value' => 'プラチナ', 'hint' => ''],
+                ['label' => 'ポイント', 'value' => '2,180', 'hint' => 'pt', 'field' => 'points'],
+                ['label' => 'ランク', 'value' => 'プラチナ', 'hint' => '', 'field' => 'rank'],
                 ['label' => 'クーポン', 'value' => '4', 'hint' => '枚'],
             ]],
             ['type' => 'collection', 'design' => 'chip_scroll', 'section_label' => 'カテゴリ', 'items' => [
@@ -968,7 +968,7 @@ class LiffSaaSTemplateKit
             ['type' => 'stats_row', 'section_label' => '今週の記録', 'items' => [
                 ['label' => 'ワークアウト', 'value' => '4', 'hint' => '回'],
                 ['label' => '連続来館', 'value' => '12', 'hint' => '日'],
-                ['label' => 'ポイント', 'value' => '560', 'hint' => 'pt'],
+                ['label' => 'ポイント', 'value' => '560', 'hint' => 'pt', 'field' => 'points'],
             ]],
             ['type' => 'quick_actions', 'design' => 'pill', 'actions' => [
                 ['icon' => 'fa-dumbbell', 'label' => 'レッスン予約', 'action' => '#reservations'],
@@ -1143,7 +1143,7 @@ class LiffSaaSTemplateKit
         ];
         $layouts['member'] = [
             ['type' => 'member_summary', 'design' => 'emblem', 'greeting' => 'VIP Member'],
-            ['type' => 'banner', 'design' => 'outline', 'icon' => 'fa-crown', 'text' => '次のランクまであと 2,400 pt', 'color' => $accent],
+            ['type' => 'banner', 'design' => 'outline', 'icon' => 'fa-crown', 'text' => '次のランクまであと 2,400 pt', 'field' => 'points_to_next', 'color' => $accent],
             ['type' => 'icon_text', 'rows' => [
                 ['icon' => 'fa-gem', 'text' => 'VIP限定のプライベートイベントにご招待', 'color' => $accent],
                 ['icon' => 'fa-wallet', 'text' => 'Apple Wallet / Google ウォレットに会員証を追加', 'color' => $accent],
@@ -1237,8 +1237,8 @@ class LiffSaaSTemplateKit
             self::screenEntry('flagship-dashboard', 'フラッグシップ・ホーム', 'home', '会員ウォレット・ショートカット・おすすめ棚を備えた、〇〇店向け定番アプリホーム。', ['home'], ['accent_color' => '#1c1917'], [
                 ['type' => 'member_summary', 'design' => 'wallet', 'greeting' => 'おかえりなさい、〇〇さん'],
                 ['type' => 'stats_row', 'section_label' => 'マイステータス', 'items' => [
-                    ['label' => 'ポイント', 'value' => '1,240', 'hint' => 'pt'],
-                    ['label' => 'ランク', 'value' => 'ゴールド', 'hint' => ''],
+                    ['label' => 'ポイント', 'value' => '1,240', 'hint' => 'pt', 'field' => 'points'],
+                    ['label' => 'ランク', 'value' => 'ゴールド', 'hint' => '', 'field' => 'rank'],
                     ['label' => 'クーポン', 'value' => '3', 'hint' => '枚'],
                 ]],
                 ['type' => 'quick_actions', 'design' => 'pill', 'actions' => [
@@ -1482,7 +1482,7 @@ class LiffSaaSTemplateKit
                 ['type' => 'stats_row', 'section_label' => '今週の記録', 'items' => [
                     ['label' => '今週', 'value' => '4', 'hint' => '回'],
                     ['label' => '連続', 'value' => '12', 'hint' => '日'],
-                    ['label' => 'ポイント', 'value' => '560', 'hint' => 'pt'],
+                    ['label' => 'ポイント', 'value' => '560', 'hint' => 'pt', 'field' => 'points'],
                 ]],
                 ['type' => 'quick_actions', 'design' => 'pill', 'actions' => [
                     ['icon' => 'fa-calendar-check', 'label' => '予約', 'action' => '#reservations'],
@@ -1633,7 +1633,7 @@ class LiffSaaSTemplateKit
                 ['type' => 'member_summary', 'design' => 'tier', 'greeting' => 'おはようございます'],
                 ['type' => 'stats_row', 'section_label' => 'マイステータス', 'items' => [
                     ['label' => 'スタンプ', 'value' => '7', 'hint' => '/10'],
-                    ['label' => 'ポイント', 'value' => '640', 'hint' => 'pt'],
+                    ['label' => 'ポイント', 'value' => '640', 'hint' => 'pt', 'field' => 'points'],
                     ['label' => 'クーポン', 'value' => '2', 'hint' => '枚'],
                 ]],
                 ['type' => 'card', 'design' => 'featured', 'title' => '本日のシグネチャー', 'description' => '季節のラテ ¥620', 'image_url' => 'https://images.unsplash.com/photo-1511920170033-f8396924c348?w=800', 'action' => '#products'],
@@ -1650,7 +1650,7 @@ class LiffSaaSTemplateKit
                 ['type' => 'hero', 'design' => 'apple', 'eyebrow' => 'Beauty', 'title' => '次回のご予約をかんたんに', 'subtitle' => '空き枠から最短3ステップで予約完了', 'image_url' => 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=1400&q=80'],
                 ['type' => 'stats_row', 'section_label' => 'マイステータス', 'items' => [
                     ['label' => '次回予約', 'value' => '3/28', 'hint' => ''],
-                    ['label' => 'ポイント', 'value' => '820', 'hint' => 'pt'],
+                    ['label' => 'ポイント', 'value' => '820', 'hint' => 'pt', 'field' => 'points'],
                     ['label' => '特典', 'value' => '2', 'hint' => '枚'],
                 ]],
                 ['type' => 'quick_actions', 'design' => 'grid', 'actions' => [
@@ -1680,7 +1680,7 @@ class LiffSaaSTemplateKit
                 ['type' => 'stats_row', 'section_label' => '今週の記録', 'items' => [
                     ['label' => 'ワークアウト', 'value' => '4', 'hint' => '回'],
                     ['label' => '連続', 'value' => '12', 'hint' => '日'],
-                    ['label' => 'ポイント', 'value' => '560', 'hint' => 'pt'],
+                    ['label' => 'ポイント', 'value' => '560', 'hint' => 'pt', 'field' => 'points'],
                 ]],
                 ['type' => 'banner', 'design' => 'soft', 'icon' => 'fa-medal', 'text' => '今月の来館8回 — あと2回で特典クーポン獲得', 'color' => '#16a34a', 'action' => '#stamps'],
                 ['type' => 'quick_actions', 'design' => 'pill', 'actions' => [
@@ -1747,8 +1747,8 @@ class LiffSaaSTemplateKit
             self::screenEntry('crm-native-wallet-home', 'CRM・ネイティブウォレット', 'home', 'Starbucks 系。会員ウォレット＋ピルショートカットの定番アプリホーム。', ['home'], ['accent_color' => '#007aff'], [
                 ['type' => 'member_summary', 'design' => 'wallet', 'greeting' => 'おかえりなさい'],
                 ['type' => 'stats_row', 'section_label' => 'マイステータス', 'items' => [
-                    ['label' => 'ポイント', 'value' => '1,240', 'hint' => 'pt'],
-                    ['label' => 'ランク', 'value' => 'ゴールド', 'hint' => ''],
+                    ['label' => 'ポイント', 'value' => '1,240', 'hint' => 'pt', 'field' => 'points'],
+                    ['label' => 'ランク', 'value' => 'ゴールド', 'hint' => '', 'field' => 'rank'],
                     ['label' => 'スタンプ', 'value' => '7', 'hint' => '/10'],
                 ]],
                 ['type' => 'quick_actions', 'design' => 'pill', 'actions' => [
@@ -1893,7 +1893,7 @@ class LiffSaaSTemplateKit
             ]),
             self::screenEntry('member-status-pro', '会員ステータス Pro', 'member', '航空会社マイル / ホテルステータス系。スプリット会員表示＋エンブレム会員証。', ['member', 'home'], ['accent_color' => '#b8860b'], [
                 ['type' => 'member_summary', 'design' => 'split', 'greeting' => 'ステータス会員'],
-                ['type' => 'banner', 'design' => 'soft', 'icon' => 'fa-plane', 'text' => '次のランクまであと 2,400 pt', 'color' => '#b8860b'],
+                ['type' => 'banner', 'design' => 'soft', 'icon' => 'fa-plane', 'text' => '次のランクまであと 2,400 pt', 'field' => 'points_to_next', 'color' => '#b8860b'],
                 ['type' => 'data', 'source' => 'member_card', 'design' => 'premium', 'card_design' => 'split_banner'],
                 ['type' => 'quick_actions', 'design' => 'pill', 'actions' => [
                     ['icon' => 'fa-history', 'label' => '履歴', 'action' => '#orders'],
