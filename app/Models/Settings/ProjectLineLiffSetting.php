@@ -22,6 +22,9 @@ class ProjectLineLiffSetting extends Model
         'line_danger_color',
         'line_liff_id',
         'line_liff_url',
+        'line_channel_access_token',
+        'line_channel_secret',
+        'line_friend_add_url',
         'liff_builder_blocks',
         'liff_tab_layouts',
         'liff_detail_layouts',
@@ -40,6 +43,8 @@ class ProjectLineLiffSetting extends Model
         'liff_tab_settings' => 'array',
         'liff_saved_screens' => 'array',
         'frontend_menu_items' => 'array',
+        'line_channel_access_token' => 'encrypted',
+        'line_channel_secret' => 'encrypted',
     ];
 
     public function project(): BelongsTo

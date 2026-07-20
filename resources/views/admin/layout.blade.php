@@ -63,6 +63,10 @@
                         <i class="fas fa-home"></i>
                         <span>ホーム設定</span>
                     </a>
+                    <a href="{{ admin_route('admin.settings.liff-connection') }}" class="nav-item nav-item--sub {{ request()->routeIs('admin.settings.liff-connection*') ? 'active' : '' }}">
+                        <i class="fab fa-line"></i>
+                        <span>LIFF設定</span>
+                    </a>
                     @endif
                     @if($adminUser === null || $adminUser->hasPermission('liff_designer.manage'))
                     <a href="{{ admin_route('admin.settings.liff-designer') }}" class="nav-item nav-item--sub {{ request()->routeIs('admin.settings.liff-designer*') ? 'active' : '' }}">
@@ -229,10 +233,13 @@
                 </div>
                 @endif
                 <div class="nav-group nav-group-footer">
-                    <a href="/" class="nav-item">
+                    @php $frontUrl = request()->routeIs('system-admin.*') ? null : admin_front_url(); @endphp
+                    @if($frontUrl !== null)
+                    <a href="{{ $frontUrl }}" class="nav-item" target="_blank" rel="noopener noreferrer">
                         <i class="fas fa-external-link-alt"></i>
                         <span>フロントに戻る</span>
                     </a>
+                    @endif
                 </div>
             </nav>
         </aside>
