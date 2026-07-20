@@ -3,17 +3,10 @@ import { findBlockMeta } from '../catalog/blockCatalog';
 import type { LiffBlock } from '../catalog/types';
 import { DataMockPreview, MemberSummaryMock } from './DataMockPreview';
 
-function resolveBlockOpacity(value: unknown): number {
-    const raw = Number(value);
-    if (!Number.isFinite(raw)) return 1;
-    return Math.min(1, Math.max(0.2, raw / 100));
-}
-
 function baseStyle(block: LiffBlock): React.CSSProperties {
     return {
         borderRadius: Number(block.border_radius ?? 14),
         marginBottom: Number(block.margin_bottom ?? 0),
-        opacity: resolveBlockOpacity(block.opacity ?? 100),
         textAlign: (block.text_align as React.CSSProperties['textAlign']) || 'left',
         background: String(block.background_color || '') || undefined,
         boxShadow: block.shadow === true ? '0 8px 24px rgba(15,23,42,0.08)' : undefined,
@@ -242,6 +235,7 @@ export function BlockPreview({
             );
         }
         case 'slider': {
+            const isGallery = String(block.source || '') === 'gallery';
             const slides = Array.isArray(block.slides) ? (block.slides as Array<Record<string, unknown>>) : [];
             const first = slides[0] || {};
             return (
@@ -250,15 +244,15 @@ export function BlockPreview({
                     style={{
                         ...style,
                         height: Number(block.slide_height || 168),
-                        backgroundImage: first.image_url ? `url(${String(first.image_url)})` : undefined,
+                        backgroundImage: !isGallery && first.image_url ? `url(${String(first.image_url)})` : undefined,
                     }}
                 >
                     <div className="ld-app-slider__cap">
                         {block.section_label ? <em>{String(block.section_label)}</em> : null}
-                        <strong>{String(first.caption || 'Campaign')}</strong>
+                        <strong>{isGallery ? 'ギャラリー（実データ）' : String(first.caption || 'Campaign')}</strong>
                     </div>
                     <div className="ld-app-slider__dots">
-                        {(slides.length > 0 ? slides : [0, 1, 2]).slice(0, 4).map((_, i) => (
+                        {(isGallery ? [0, 1, 2] : (slides.length > 0 ? slides : [0, 1, 2])).slice(0, 4).map((_, i) => (
                             <i key={i} className={i === 0 ? 'is-on' : ''} />
                         ))}
                     </div>
@@ -331,6 +325,9 @@ export function BlockPreview({
                         source={String(block.source || 'products')}
                         design={String(block.design || '')}
                         cardDesign={resolvedCardDesign}
+                        stampSlotStyle={String(block.stamp_slot_style || '')}
+                        stampFilledStyle={String(block.stamp_filled_style || '')}
+                        stampAccentColor={String(block.stamp_accent_color || '')}
                         shopName={shopName}
                         asGuest={asGuest}
                     />
@@ -348,21 +345,40 @@ export function BlockPreview({
             );
         case 'stats_row': {
             const items = Array.isArray(block.items) ? (block.items as Array<Record<string, unknown>>) : [];
+            const sampleByField: Record<string, string> = {
+                points: '1,280',
+                rank: 'ゴールド',
+                points_to_next: '720',
+            };
             return (
                 <div className="ld-app-stats" style={style}>
                     {block.section_label ? (
                         <div className="ld-app-stats__label">{String(block.section_label)}</div>
                     ) : null}
                     <div className="ld-app-stats__grid">
-                        {items.slice(0, 6).map((it, i) => (
-                            <div key={i} className="ld-app-stats__cell">
-                                <strong>{String(it.value || '')}</strong>
-                                <span>
-                                    {String(it.label || '')}
-                                    {it.hint ? ` ${String(it.hint)}` : ''}
-                                </span>
-                            </div>
-                        ))}
+                        {items.slice(0, 6).map((it, i) => {
+                            const field = String(it.field || '');
+                            const label = String(it.label || '');
+                            let display = String(it.value || '');
+                            if (field === 'points' || field === 'rank' || field === 'points_to_next') {
+                                display = sampleByField[field] || display;
+                            } else if (label === 'ポイント' || label === '保有ポイント' || label === '所持ポイント') {
+                                display = sampleByField.points;
+                            } else if (label === 'ランク' || label === '会員ランク' || label === '現在のランク') {
+                                display = sampleByField.rank;
+                            } else if (/次回特典|次のランク|特典まで|ランクアップまで/.test(label)) {
+                                display = sampleByField.points_to_next;
+                            }
+                            return (
+                                <div key={i} className="ld-app-stats__cell">
+                                    <strong>{display}</strong>
+                                    <span>
+                                        {label}
+                                        {it.hint ? ` ${String(it.hint)}` : ''}
+                                    </span>
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             );

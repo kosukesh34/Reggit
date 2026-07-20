@@ -63,6 +63,7 @@ type AppLike = {
     stampsManager?: InstanceType<typeof StampsManager>;
     layoutManager?: InstanceType<typeof LiffLayoutManager>;
     reservationManager?: InstanceType<typeof ReservationManager>;
+    deviceManager?: InstanceType<typeof DeviceManager>;
 };
 
 declare global {
@@ -77,7 +78,7 @@ declare global {
         __FEATURE_FLAGS__?: Record<string, boolean>;
         __QUEUE_REQUIRE_MEMBERSHIP__?: boolean;
         __MEMBER_REGISTRATION_MODE__?: 'optional' | 'prompt' | 'force' | string;
-        __FRONTEND_MENU__?: Array<{ tab: string; label?: string; icon?: string }>;
+        __FRONTEND_MENU__?: Array<{ tab: string; label?: string; icon?: string; url?: string; open?: string }>;
         __FRONTEND_HEADER__?: { title?: string; logoUrl?: string; friendAddUrl?: string };
         __IS_DESIGNER_EMBED_PREVIEW__?: boolean;
         __LIFF_TAB_SETTINGS__?: { _global?: Record<string, unknown> } & Record<string, Record<string, unknown>>;

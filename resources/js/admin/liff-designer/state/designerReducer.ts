@@ -4,6 +4,7 @@ import {
     defaultGlobalSettings,
     defaultTabSettings,
     DETAIL_PAGES,
+    LINK_MENU_TABS,
     MENU_TABS,
     normalizeBlock,
     normalizeMenuItems,
@@ -146,8 +147,10 @@ export type DesignerAction =
     | { type: 'UPDATE_TAB_SETTINGS'; patch: Record<string, unknown> }
     | { type: 'UPDATE_GLOBAL'; patch: Record<string, unknown> }
     | { type: 'APPLY_GLOBAL_BACKGROUND' }
-    | { type: 'UPDATE_MENU_ITEM'; tab: string; patch: Partial<{ label: string; icon: string; enabled: boolean }> }
+    | { type: 'UPDATE_MENU_ITEM'; tab: string; patch: Partial<{ label: string; icon: string; enabled: boolean; url: string; open: string }> }
     | { type: 'MOVE_MENU_ITEM'; tab: string; delta: number }
+    | { type: 'ADD_LINK_MENU_ITEM' }
+    | { type: 'REMOVE_MENU_ITEM'; tab: string }
     | { type: 'SET_CUSTOM_CSS'; value: string }
     | { type: 'IMPORT_SNAPSHOT'; snapshot: DesignerSnapshot }
     | {
@@ -368,6 +371,32 @@ export function designerReducer(state: DesignerState, action: DesignerAction): D
                 item.order = k;
             });
             return withHistory(state, { ...state, menuItems: items });
+        }
+        case 'ADD_LINK_MENU_ITEM': {
+            const used = new Set(state.menuItems.map((m) => m.tab));
+            const nextKey = LINK_MENU_TABS.find((key) => !used.has(key));
+            if (nextKey === undefined) return state;
+            const menuItems = [
+                ...state.menuItems,
+                {
+                    tab: nextKey,
+                    label: 'リンク',
+                    icon: 'fa-globe',
+                    order: state.menuItems.length,
+                    enabled: true,
+                    url: '',
+                    open: 'embed',
+                },
+            ];
+            return withHistory(state, { ...state, menuItems });
+        }
+        case 'REMOVE_MENU_ITEM': {
+            const menuItems = state.menuItems.filter((m) => m.tab !== action.tab);
+            menuItems.forEach((item, k) => {
+                item.order = k;
+            });
+            const activeTab = state.activeTab === action.tab ? 'home' : state.activeTab;
+            return withHistory(state, { ...state, menuItems, activeTab });
         }
         case 'SET_CUSTOM_CSS':
             return withHistory(state, { ...state, customCss: action.value });

@@ -46,9 +46,7 @@ body.app-bg-image:not(.has-bg-image-loaded)::before {
 
 body.app-bg-image .app-container,
 body.app-bg-gradient .app-container {
-    background: var(--surface-glass, rgba(255, 255, 255, 0.88));
-    backdrop-filter: blur(12px) saturate(1.2);
-    -webkit-backdrop-filter: blur(12px) saturate(1.2);
+    background: var(--surface, #ffffff);
 }
 
 body.app-bg-solid .app-container {

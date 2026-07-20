@@ -3,9 +3,13 @@ import { useDesigner } from '../state/DesignerContext';
 import { expandThemeIntoGlobal } from '../utils/globalDesign';
 import { ColorField, FieldGroup, ImageUrlField, RangeField, SelectField, TextInput } from './fields/FormFields';
 import {
+    MEMBER_CARD_BG_STYLES,
     MEMBER_CARD_CODE_TYPES,
     MEMBER_CARD_DESIGN_CHOICES,
     MEMBER_CARD_DISPLAY_TYPES,
+    STAMP_FILLED_STYLES,
+    STAMP_SCREEN_DESIGN_CHOICES,
+    STAMP_SLOT_STYLES,
 } from '../catalog/blockCatalog';
 
 function Accordion({ title, open, onToggle, children }: { title: string; open: boolean; onToggle: () => void; children: React.ReactNode }) {
@@ -282,6 +286,17 @@ export function ThemePanel() {
                     options={MEMBER_CARD_CODE_TYPES}
                     onChange={(v) => dispatch({ type: 'UPDATE_GLOBAL', patch: { member_card_code_type: v } })}
                 />
+                <ColorField
+                    label="会員証アクセント色（空欄=ブランド色）"
+                    value={String(g.member_card_accent_color || '')}
+                    onChange={(v) => dispatch({ type: 'UPDATE_GLOBAL', patch: { member_card_accent_color: v } })}
+                />
+                <SelectField
+                    label="会員証背景スタイル"
+                    value={String(g.member_card_bg_style || 'gradient')}
+                    options={MEMBER_CARD_BG_STYLES}
+                    onChange={(v) => dispatch({ type: 'UPDATE_GLOBAL', patch: { member_card_bg_style: v } })}
+                />
                 <div className="ld-member-card-preview">
                     <div className={`ld-crm-wallet ld-crm-wallet--${String(g.member_card_design || 'default')}`}>
                         <div className="ld-crm-wallet__top">
@@ -309,12 +324,34 @@ export function ThemePanel() {
                     options={[
                         { value: 'wallet', label: 'ウォレット' },
                         { value: 'apple', label: 'Apple' },
-                        { value: 'glass', label: 'グラス' },
                         { value: 'premium', label: 'プレミアム' },
                         { value: 'minimal', label: 'ミニマル' },
                         { value: 'compact', label: 'コンパクト' },
                     ]}
                     onChange={(v) => dispatch({ type: 'UPDATE_GLOBAL', patch: { member_screen_design: v } })}
+                />
+                <SelectField
+                    label="スタンプ画面デザイン"
+                    value={String(g.stamp_screen_design || 'grid_card')}
+                    options={STAMP_SCREEN_DESIGN_CHOICES}
+                    onChange={(v) => dispatch({ type: 'UPDATE_GLOBAL', patch: { stamp_screen_design: v } })}
+                />
+                <SelectField
+                    label="スタンプスロット形状"
+                    value={String(g.stamp_slot_style || 'circle')}
+                    options={STAMP_SLOT_STYLES}
+                    onChange={(v) => dispatch({ type: 'UPDATE_GLOBAL', patch: { stamp_slot_style: v } })}
+                />
+                <SelectField
+                    label="スタンプ押印スタイル"
+                    value={String(g.stamp_filled_style || 'image')}
+                    options={STAMP_FILLED_STYLES}
+                    onChange={(v) => dispatch({ type: 'UPDATE_GLOBAL', patch: { stamp_filled_style: v } })}
+                />
+                <ColorField
+                    label="スタンプアクセント色（空欄=ブランド色）"
+                    value={String(g.stamp_accent_color || '')}
+                    onChange={(v) => dispatch({ type: 'UPDATE_GLOBAL', patch: { stamp_accent_color: v } })}
                 />
                 <SelectField
                     label="クーポン画面UI"

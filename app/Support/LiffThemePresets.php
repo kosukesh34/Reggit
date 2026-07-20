@@ -146,7 +146,7 @@ class LiffThemePresets
                     '--surface' => '#ffffff',
                     '--surface-2' => '#f9f9fb',
                     '--surface-muted' => '#ebebf0',
-                    '--surface-glass' => 'rgba(255, 255, 255, 0.72)',
+                    '--surface-glass' => '#ffffff',
                     '--text-primary' => '#1c1c1e',
                     '--text-secondary' => 'rgba(60, 60, 67, 0.68)',
                     '--text-tertiary' => 'rgba(60, 60, 67, 0.36)',
@@ -567,6 +567,16 @@ class LiffThemePresets
             $vars[$name] = $value;
         }
 
+        $memberCardAccent = self::normalizeHex($global['member_card_accent_color'] ?? null);
+        if ($memberCardAccent !== null) {
+            $vars['--member-card-accent-color'] = $memberCardAccent;
+        }
+
+        $stampAccent = self::normalizeHex($global['stamp_accent_color'] ?? null);
+        if ($stampAccent !== null) {
+            $vars['--stamp-accent-color'] = $stampAccent;
+        }
+
         return $vars;
     }
 
@@ -687,6 +697,26 @@ class LiffThemePresets
 
         $memberScreen = (string) ($global['member_screen_design'] ?? ($preset['member_screen_design'] ?? 'wallet'));
         $classes[] = 'member-screen-'.(in_array($memberScreen, ['wallet', 'premium', 'minimal', 'compact', 'apple', 'glass'], true) ? $memberScreen : 'wallet');
+
+        $memberCardBgStyle = (string) ($global['member_card_bg_style'] ?? 'gradient');
+        if (in_array($memberCardBgStyle, ['solid', 'gradient', 'image'], true)) {
+            $classes[] = 'member-card-bg-'.$memberCardBgStyle;
+        } else {
+            $classes[] = 'member-card-bg-gradient';
+        }
+
+        $stampScreen = (string) ($global['stamp_screen_design'] ?? 'grid_card');
+        $classes[] = 'stamp-screen-'.(in_array($stampScreen, ['grid_card', 'wallet', 'circle_board', 'minimal'], true) ? $stampScreen : 'grid_card');
+
+        $stampSlotStyle = (string) ($global['stamp_slot_style'] ?? 'circle');
+        if (in_array($stampSlotStyle, ['rounded', 'square'], true)) {
+            $classes[] = 'stamp-slot-style-'.$stampSlotStyle;
+        }
+
+        $stampFilledStyle = (string) ($global['stamp_filled_style'] ?? 'image');
+        if (in_array($stampFilledStyle, ['solid', 'icon'], true)) {
+            $classes[] = 'stamp-filled-style-'.$stampFilledStyle;
+        }
 
         $couponScreen = (string) ($global['coupon_screen_design'] ?? ($preset['coupon_screen_design'] ?? 'ticket'));
         $classes[] = 'coupon-screen-'.(in_array($couponScreen, ['ticket', 'gallery', 'compact', 'luxury', 'apple', 'glass'], true) ? $couponScreen : 'ticket');
