@@ -21,7 +21,10 @@ class AppConfigController extends Controller
     {
         $projectKey = trim((string) $request->query('project_key', ''));
         if ($projectKey === '') {
-            $projectKey = (string) (config('app.default_project_key') ?: 'default');
+            $projectKey = (string) (\App\Support\ProjectKey::fromConfig() ?? '');
+        }
+        if ($projectKey === '') {
+            return response()->json(['error' => 'project_key は必須です。'], 400);
         }
         $view = $this->getAppConfigUseCase->handle($projectKey);
 

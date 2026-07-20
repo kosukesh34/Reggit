@@ -86,4 +86,12 @@ class AppConfigApiTest extends TestCase
             $this->assertIsArray($layouts[$key]);
         }
     }
+
+    public function test_app_config_project_key未指定は400を返すこと(): void
+    {
+        $response = $this->getJson('/api/v1/app-config');
+
+        $response->assertStatus(400);
+        $response->assertJsonPath('error', 'project_key は必須です。');
+    }
 }

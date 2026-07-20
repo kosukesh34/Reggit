@@ -12,7 +12,7 @@ class QueueLiffUrlBuilder
 {
     public static function build(int $projectId, string $projectKey, ?string $qrToken, ?int $queueId = null): string
     {
-        $projectKey = trim($projectKey) !== '' ? trim($projectKey) : 'default';
+        $projectKey = ProjectKey::require($projectKey);
         $token = trim((string) ($qrToken ?? ''));
         $id = $queueId !== null && $queueId > 0 ? $queueId : null;
 
@@ -30,7 +30,7 @@ class QueueLiffUrlBuilder
      */
     public static function buildEntryUrl(int $projectId, string $projectKey): string
     {
-        $projectKey = trim($projectKey) !== '' ? trim($projectKey) : 'default';
+        $projectKey = ProjectKey::require($projectKey);
         $liffId = trim(ShopSetting::getLineLiffId($projectId));
         if ($liffId !== '') {
             return 'https://liff.line.me/'.$liffId.'?'.http_build_query([
@@ -57,6 +57,7 @@ class QueueLiffUrlBuilder
 
     public static function resolveBaseUrl(int $projectId, string $projectKey): string
     {
+        $projectKey = ProjectKey::require($projectKey);
         $liffUrl = trim(ShopSetting::getLineLiffUrl($projectId));
         if ($liffUrl !== '') {
             return self::normalizeLiffWebBase($liffUrl) ?? $liffUrl;
@@ -67,7 +68,7 @@ class QueueLiffUrlBuilder
             return 'https://liff.line.me/'.$liffId;
         }
 
-        return url('/liff/'.(trim($projectKey) !== '' ? trim($projectKey) : 'default'));
+        return url('/liff/'.$projectKey);
     }
 
     /**
@@ -79,7 +80,7 @@ class QueueLiffUrlBuilder
         string $queueParamName,
         string $queueParamValue
     ): string {
-        $projectKey = trim($projectKey) !== '' ? trim($projectKey) : 'default';
+        $projectKey = ProjectKey::require($projectKey);
         $queueParamValue = trim($queueParamValue);
         if ($queueParamValue === '') {
             return $baseUrl;

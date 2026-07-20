@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Project;
+use App\Support\ProjectKey;
 use App\Util\AdminContext;
 use App\Util\StrHelper;
 
@@ -57,8 +58,16 @@ if (! function_exists('admin_route')) {
             if (! StrHelper::isEmptyStringOrNull($projectKey)) {
                 $params['project_key'] = $projectKey;
             } else {
-                $defaultKey = Project::where('is_active', true)->orderBy('id')->value('project_key');
-                $params['project_key'] = $defaultKey ?? (config('app.default_project_key') ?: 'default');
+                $configured = ProjectKey::fromConfig();
+                if ($configured !== null) {
+                    $params['project_key'] = $configured;
+                } else {
+                    $defaultKey = Project::where('is_active', true)->orderBy('id')->value('project_key');
+                    if (! is_string($defaultKey) || trim($defaultKey) === '') {
+                        throw new \RuntimeException('No active project available for admin_route.');
+                    }
+                    $params['project_key'] = $defaultKey;
+                }
             }
         }
 

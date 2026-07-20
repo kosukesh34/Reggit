@@ -25,12 +25,17 @@ class WalletAddPageController extends Controller
     {
         $walletUrl = $request->query('wallet_url');
         $passToken = $request->query('pass_token');
-        $projectKey = $request->query('project_key', 'default');
+        $projectKey = \App\Support\ProjectKey::normalize(
+            is_string($request->query('project_key')) ? $request->query('project_key') : null
+        ) ?? \App\Support\ProjectKey::fromConfig();
         $walletUrlFromPassToken = false;
         if ((! is_string($walletUrl) || trim($walletUrl) === '') && is_string($passToken) && trim($passToken) !== '') {
+            if ($projectKey === null) {
+                abort(400, 'project_key は必須です。');
+            }
             $walletUrl = $this->walletPassUrlIssueUseCase->buildPassDownloadUrl(
                 trim($passToken),
-                is_string($projectKey) && trim($projectKey) !== '' ? trim($projectKey) : 'default',
+                $projectKey,
                 RequestOrigin::fromRequest($request),
             );
             $walletUrlFromPassToken = is_string($walletUrl) && trim($walletUrl) !== '';
@@ -53,7 +58,7 @@ class WalletAddPageController extends Controller
         $returnUrl = $this->resolveReturnUrl(
             $this->sanitizeReturnUrl($returnUrl),
             $returnTarget,
-            is_string($projectKey) && trim($projectKey) !== '' ? trim($projectKey) : 'default'
+            $projectKey ?? ''
         );
 
         return view('wallet-add', [
@@ -172,9 +177,14 @@ class WalletAddPageController extends Controller
             return $returnUrl;
         }
 
+        $projectKey = trim($projectKey);
+        if ($projectKey === '') {
+            return $returnUrl;
+        }
+
         $projectId = AdminContext::getCurrentProjectId();
         if ($projectId === null || $projectId === false) {
-            $projectId = 1;
+            return $returnUrl;
         }
 
         return $this->sanitizeReturnUrl(

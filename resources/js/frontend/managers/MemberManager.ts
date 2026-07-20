@@ -139,7 +139,7 @@ export class MemberManager {
         if (typeof window !== 'undefined' && window.__IS_LIFF__ === true) {
             const projectKey = (typeof window !== 'undefined' && window.__PROJECT_KEY__)
                 ? String(window.__PROJECT_KEY__)
-                : 'default';
+                : '';
             const liffUrl = MemberManager.buildLiffEntryUrl(projectKey);
             if (liffUrl) {
                 return { returnUrl: liffUrl, returnTarget: 'line' };
@@ -167,7 +167,7 @@ export class MemberManager {
     /** Wallet 追加後に LINE アプリへ戻るための LIFF エントリ URL */
     static buildLiffEntryUrl(projectKey) {
         const liffId = MemberManager.getLineLiffIdFromMeta();
-        const pk = (projectKey && String(projectKey).trim()) || 'default';
+        const pk = (projectKey && String(projectKey).trim()) || '';
         if (!liffId) return null;
         const liffState = new URLSearchParams({ project_key: pk }).toString();
         return 'https://liff.line.me/' + liffId + '?' + new URLSearchParams({ 'liff.state': liffState }).toString();
@@ -1053,7 +1053,7 @@ export class MemberManager {
                 : '';
         const showAddToAppleWallet = MemberManager.shouldShowAppleWallet();
         const showAddToGoogleWallet = MemberManager.shouldShowGoogleWallet();
-        const projectKey = (typeof window !== 'undefined' && window.__PROJECT_KEY__) ? window.__PROJECT_KEY__ : 'default';
+        const projectKey = (typeof window !== 'undefined' && window.__PROJECT_KEY__) ? window.__PROJECT_KEY__ : '';
         const walletPassUrl = AppConstants.API_ENDPOINTS.MEMBERS_WALLET_PASS + '?project_key=' + encodeURIComponent(projectKey);
         let addToWalletBlock = '';
         if (showAddToAppleWallet) {
@@ -1210,7 +1210,7 @@ export class MemberManager {
     }
 
     _setupAddToWallet() {
-        const projectKey = (typeof window !== 'undefined' && window.__PROJECT_KEY__) ? window.__PROJECT_KEY__ : 'default';
+        const projectKey = (typeof window !== 'undefined' && window.__PROJECT_KEY__) ? window.__PROJECT_KEY__ : '';
         const appleBtn = document.querySelector('.member-card-add-to-wallet-btn[data-wallet-pass-url]');
         if (appleBtn) {
             appleBtn.addEventListener('click', (e) => this._onAddToAppleWallet(e, appleBtn, projectKey));
@@ -1371,7 +1371,7 @@ export class MemberManager {
             const params = new URLSearchParams(parsed.search);
             const passToken = params.get('pass_token');
             if (!passToken) return null;
-            const pk = params.get('project_key') || projectKey || 'default';
+            const pk = params.get('project_key') || projectKey || '';
             const origin = MemberManager.resolveAppOrigin();
             if (!origin) return null;
             const downloadParams = new URLSearchParams();
@@ -1611,7 +1611,7 @@ export class MemberManager {
             const params = new URLSearchParams(parsed.search);
             const passToken = params.get('pass_token');
             const projectKey = params.get('project_key')
-                || (typeof window !== 'undefined' && window.__PROJECT_KEY__ ? window.__PROJECT_KEY__ : 'default');
+                || (typeof window !== 'undefined' && window.__PROJECT_KEY__ ? window.__PROJECT_KEY__ : '');
             const walletType = type || params.get('type') || 'apple';
             const ret = MemberManager.getWalletReturnParams();
 
