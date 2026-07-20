@@ -39,6 +39,7 @@ class SettingsRanksRequest extends FormRequest
             'ranks.*.icon_url' => 'nullable|url|max:500',
             'ranks.*.stamp_background_url' => 'nullable|url|max:500',
             'ranks.*.card_color' => 'nullable|string|max:20|regex:/^#[0-9A-Fa-f]{3,6}$/',
+            'ranks.*.point_earn_rate' => 'nullable|integer|min:1|max:100000',
         ];
     }
 

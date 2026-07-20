@@ -927,6 +927,12 @@ class ShopSetting
                 'stamp_background_url' => $row['stamp_background_url'] ?? null,
                 'card_color' => isset($row['card_color']) && $row['card_color'] !== '' ? (string) $row['card_color'] : null,
                 'order' => (int) ($row['order'] ?? 0),
+                'point_earn_rate' => isset($row['point_earn_rate']) && $row['point_earn_rate'] !== null && $row['point_earn_rate'] !== ''
+                    ? (int) $row['point_earn_rate']
+                    : null,
+                'smaregi_rank_id' => isset($row['smaregi_rank_id']) && trim((string) $row['smaregi_rank_id']) !== ''
+                    ? (string) $row['smaregi_rank_id']
+                    : null,
             ];
         }
         if ($normalized === []) {
@@ -937,6 +943,30 @@ class ShopSetting
         return $normalized;
     }
 
+    /**
+     * ランク別の付与レート（円/1pt）。未設定時はプロジェクト全体のデフォルトを返す。
+     */
+    public static function getPointEarnRateForRank(?int $projectId, ?string $rankKey): int
+    {
+        $default = self::getPointEarnRate($projectId);
+        if ($rankKey === null || $rankKey === '') {
+            return $default;
+        }
+        foreach (self::getMemberRankSettings($projectId) as $rank) {
+            if ((string) ($rank['key'] ?? '') !== $rankKey) {
+                continue;
+            }
+            $rate = $rank['point_earn_rate'] ?? null;
+            if ($rate !== null && (int) $rate > 0) {
+                return (int) $rate;
+            }
+
+            return $default;
+        }
+
+        return $default;
+    }
+
     public static function setMemberRankSettings(array $settings, ?int $projectId = null): void
     {
         self::setValue('member_rank_settings', $settings, 'json', $projectId);
@@ -945,10 +975,10 @@ class ShopSetting
     public static function defaultMemberRankSettings(): array
     {
         return [
-            ['key' => 'bronze', 'label' => 'ブロンズ', 'min_points' => 0, 'is_active' => true, 'icon_url' => null, 'stamp_background_url' => null, 'card_color' => '#cd7f32', 'order' => 1],
-            ['key' => 'silver', 'label' => 'シルバー', 'min_points' => 1000, 'is_active' => true, 'icon_url' => null, 'stamp_background_url' => null, 'card_color' => '#c0c0c0', 'order' => 2],
-            ['key' => 'gold', 'label' => 'ゴールド', 'min_points' => 5000, 'is_active' => true, 'icon_url' => null, 'stamp_background_url' => null, 'card_color' => '#ffd700', 'order' => 3],
-            ['key' => 'platinum', 'label' => 'プラチナ', 'min_points' => 10000, 'is_active' => true, 'icon_url' => null, 'stamp_background_url' => null, 'card_color' => '#e5e4e2', 'order' => 4],
+            ['key' => 'bronze', 'label' => 'ブロンズ', 'min_points' => 0, 'is_active' => true, 'icon_url' => null, 'stamp_background_url' => null, 'card_color' => '#cd7f32', 'order' => 1, 'point_earn_rate' => null, 'smaregi_rank_id' => null],
+            ['key' => 'silver', 'label' => 'シルバー', 'min_points' => 1000, 'is_active' => true, 'icon_url' => null, 'stamp_background_url' => null, 'card_color' => '#c0c0c0', 'order' => 2, 'point_earn_rate' => null, 'smaregi_rank_id' => null],
+            ['key' => 'gold', 'label' => 'ゴールド', 'min_points' => 5000, 'is_active' => true, 'icon_url' => null, 'stamp_background_url' => null, 'card_color' => '#ffd700', 'order' => 3, 'point_earn_rate' => null, 'smaregi_rank_id' => null],
+            ['key' => 'platinum', 'label' => 'プラチナ', 'min_points' => 10000, 'is_active' => true, 'icon_url' => null, 'stamp_background_url' => null, 'card_color' => '#e5e4e2', 'order' => 4, 'point_earn_rate' => null, 'smaregi_rank_id' => null],
         ];
     }
 
