@@ -197,6 +197,45 @@ class SmaregiApiTest extends TestCase
         });
     }
 
+    /** 会員削除で 404（既に存在しない）は成功扱いになること */
+    public function test_delete_customer_404は既に削除済みとして成功扱いになること(): void
+    {
+        $this->createProjectWithContract();
+        $idBase = 'https://id.smaregi.dev';
+        $apiBase = 'https://api.smaregi.dev';
+
+        Http::fake(function ($request) use ($idBase, $apiBase) {
+            $url = $request->url();
+            if (str_contains($url, $idBase) && str_contains($url, '/token')) {
+                return Http::response([
+                    'access_token' => 'fake_access_token_'.self::CONTRACT_ID,
+                    'expires_in' => 3600,
+                ], 200);
+            }
+            if (strtoupper($request->method()) === 'DELETE'
+                && str_contains($url, $apiBase)
+                && str_contains($url, self::CONTRACT_ID)
+                && str_contains($url, '/pos/customers/132')) {
+                return Http::response([
+                    'type' => 'about:blank',
+                    'title' => 'NotFound',
+                    'detail' => '指定されたIDのリソースが見つかりません',
+                    'status' => 404,
+                ], 404);
+            }
+
+            return Http::response([], 500);
+        });
+
+        $service = app(SmaregiApiService::class);
+        $result = $service->deleteCustomer(self::CONTRACT_ID, '132');
+
+        $this->assertNotNull($result);
+        $this->assertSame([], $result);
+        $this->assertSame(404, $service->getLastHttpStatus());
+        $this->assertNull($service->getLastErrorDetail());
+    }
+
     private function createProjectWithContract(): Project
     {
         $project = Project::factory()->create();

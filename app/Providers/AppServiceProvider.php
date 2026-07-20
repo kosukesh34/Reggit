@@ -12,6 +12,7 @@ use App\Domain\Queue\Repositories\QueueEntryRepository;
 use App\Domain\Reservation\Repositories\ReservationRepository;
 use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
+use App\Enums\MemberRegistrationMode;
 use App\Infrastructure\Events\LoggingDomainEventListener;
 use App\Infrastructure\Events\MulticastDomainEventDispatcher;
 use App\Infrastructure\Events\SyncOrderPointsToSmaregiListener;
@@ -171,6 +172,7 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('liffUrl', ShopSetting::getLineLiffUrl($projectId));
                 $view->with('lineFriendAddUrl', ShopSetting::getLineFriendAddUrl($projectId));
                 $view->with('queueRequireMembership', ShopSetting::getQueueRequireMembership($projectId));
+                $view->with('memberRegistrationMode', ShopSetting::getMemberRegistrationMode($projectId));
 
                 // LIFFデザイナー埋め込みプレビュー（会員証）: ランク設定から実際の表示用ペイロードを組み立てる
                 $designerPreviewMemberPayload = null;
@@ -207,6 +209,7 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('liffUrl', trim((string) config('line.liff_url', '')));
                 $view->with('lineFriendAddUrl', '');
                 $view->with('queueRequireMembership', false);
+                $view->with('memberRegistrationMode', MemberRegistrationMode::OPTIONAL);
                 $view->with('designerPreviewMemberPayload', null);
             }
         });

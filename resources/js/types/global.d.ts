@@ -76,6 +76,7 @@ declare global {
         __LINE_USER_ID__?: string | null;
         __FEATURE_FLAGS__?: Record<string, boolean>;
         __QUEUE_REQUIRE_MEMBERSHIP__?: boolean;
+        __MEMBER_REGISTRATION_MODE__?: 'optional' | 'prompt' | 'force' | string;
         __FRONTEND_MENU__?: Array<{ tab: string; label?: string; icon?: string }>;
         __FRONTEND_HEADER__?: { title?: string; logoUrl?: string; friendAddUrl?: string };
         __IS_DESIGNER_EMBED_PREVIEW__?: boolean;

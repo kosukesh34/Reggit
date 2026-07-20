@@ -28,6 +28,7 @@ class UpdateProfileSettingsUseCaseTest extends TestCase
             rawCustomFields: [
                 ['key' => 'nickname', 'label' => 'ニックネーム', 'required' => '1'],
             ],
+            memberRegistrationMode: 'prompt',
         ));
 
         $settings = ShopSetting::getProfileFieldSettings((int) $project->id);
@@ -37,5 +38,23 @@ class UpdateProfileSettingsUseCaseTest extends TestCase
         $this->assertSame('nickname', $settings['custom_fields'][0]['key']);
         $this->assertSame('ニックネーム', $settings['custom_fields'][0]['label']);
         $this->assertTrue($settings['custom_fields'][0]['required']);
+        $this->assertSame('prompt', ShopSetting::getMemberRegistrationMode((int) $project->id));
+    }
+
+    public function test_handle_会員登録モードをforceで保存できること(): void
+    {
+        $project = Project::factory()->create();
+
+        $useCase = new UpdateProfileSettingsUseCase(app(ShopSettingRepository::class));
+        $useCase->handle(new UpdateProfileSettingsInput(
+            projectId: (int) $project->id,
+            rawSmaregiFields: [
+                'name' => ['enabled' => '1', 'required' => '0'],
+            ],
+            rawCustomFields: null,
+            memberRegistrationMode: 'force',
+        ));
+
+        $this->assertSame('force', ShopSetting::getMemberRegistrationMode((int) $project->id));
     }
 }
