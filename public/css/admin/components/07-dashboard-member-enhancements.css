@@ -173,6 +173,118 @@
     color: var(--text-tertiary);
 }
 
+/* ---- 会員詳細: 履歴セクション検索（AJAX・ヘッダ内） ---- */
+.member-history-panel {
+    position: relative;
+}
+
+.member-history-panel.is-loading .member-history-body {
+    opacity: 0.45;
+    pointer-events: none;
+}
+
+.member-history-panel.is-loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 1.25rem;
+    height: 1.25rem;
+    margin: -0.625rem 0 0 -0.625rem;
+    border: 2px solid var(--border-color, #d0d5dd);
+    border-top-color: var(--primary, #4f6bed);
+    border-radius: 50%;
+    animation: member-history-spin 0.7s linear infinite;
+    z-index: 2;
+}
+
+@keyframes member-history-spin {
+    to { transform: rotate(360deg); }
+}
+
+.member-history-actions {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+}
+
+.member-history-search {
+    display: none;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 6px;
+}
+
+.member-history-panel.is-search-open .member-history-search {
+    display: flex;
+}
+
+.member-history-search[hidden] {
+    display: none !important;
+}
+
+.member-history-search .member-history-keyword {
+    width: 180px;
+    max-width: 28vw;
+    height: 31px;
+    box-sizing: border-box;
+}
+
+.member-history-search .member-history-date {
+    width: 132px;
+    height: 31px;
+    box-sizing: border-box;
+}
+
+.member-history-date-sep {
+    color: var(--text-tertiary);
+    font-size: 12px;
+    flex-shrink: 0;
+    line-height: 1;
+}
+
+.member-history-search .member-history-submit,
+.member-history-toggle {
+    height: 31px;
+    min-height: 31px;
+    width: 31px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-sizing: border-box;
+}
+
+.member-history-search .member-history-submit {
+    width: auto;
+    padding: 0 12px;
+}
+
+.member-history-pagination {
+    padding: 0 16px 16px;
+}
+
+@media (max-width: 900px) {
+    .member-history-actions {
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        max-width: 100%;
+    }
+
+    .member-history-panel.is-search-open .member-history-search {
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+
+    .member-history-search .member-history-keyword {
+        max-width: none;
+        width: min(220px, 100%);
+    }
+}
+
 /* ---- 会員一覧: 検索フォーム ---- */
 .member-search-form {
     padding: 4px 0 8px;

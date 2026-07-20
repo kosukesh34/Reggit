@@ -160,10 +160,56 @@ class AdminCouponsTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('配信詳細');
         $response->assertSee('詳細確認クーポン');
-        $response->assertSee('配信対象');
+        $response->assertSee('対象会員');
         $response->assertSee('発行済み');
         $response->assertSee('詳細太郎');
         $response->assertSee('M-DETAIL-1');
+    }
+
+    public function test_bulk_issue_配信詳細で未発行と発行済みを区別できること(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        $coupon = Coupon::factory()->create([
+            'project_id' => $project->id,
+            'name' => 'スキップ確認クーポン',
+            'code' => 'SKIP10',
+        ]);
+        $issuedUser = User::factory()->create(['name' => '発行済太郎']);
+        $skippedUser = User::factory()->create(['name' => '未発行太郎']);
+        $issuedMember = Member::factory()->create([
+            'user_id' => $issuedUser->id,
+            'project_id' => $project->id,
+            'member_number' => 'M-ISSUED-1',
+        ]);
+        $skippedMember = Member::factory()->create([
+            'user_id' => $skippedUser->id,
+            'project_id' => $project->id,
+            'member_number' => 'M-SKIP-1',
+        ]);
+        $delivery = CouponDelivery::create([
+            'project_id' => $project->id,
+            'coupon_id' => $coupon->id,
+            'delivery_type' => CouponDeliveryType::IMMEDIATE_PERSONAL,
+            'status' => CouponDeliveryStatus::SENT,
+            'sent_at' => now(),
+            'target_member_ids' => [$issuedMember->id, $skippedMember->id],
+            'issued_member_ids' => [$issuedMember->id],
+            'issued_count' => 1,
+        ]);
+
+        $response = $this->actingAs($admin, 'admin')
+            ->get(route('admin.coupons.deliveries.show', [
+                'project_key' => $project->project_key,
+                'id' => $delivery->id,
+            ]));
+
+        $response->assertStatus(200);
+        $response->assertSee('対象会員');
+        $response->assertSee('発行済太郎');
+        $response->assertSee('未発行太郎');
+        $response->assertSee('未発行');
+        $response->assertDontSee('配信対象</h3>', false);
     }
 
     public function test_bulk_issue_ランクアップ達成配信を登録できること(): void
