@@ -31,6 +31,9 @@ class ProjectStoreRequest extends FormRequest
             'line_primary_dark' => ['nullable', 'string', 'regex:'.self::HEX_REGEX],
             'line_success_color' => ['nullable', 'string', 'regex:'.self::HEX_REGEX],
             'line_danger_color' => ['nullable', 'string', 'regex:'.self::HEX_REGEX],
+            'smaregi_contract_id' => 'nullable|string|max:255',
+            'smaregi_client_id' => 'nullable|string|max:255',
+            'smaregi_client_secret' => 'nullable|string|max:512',
         ];
     }
 
@@ -58,6 +61,9 @@ class ProjectStoreRequest extends FormRequest
             'line_primary_dark' => $this->validated('line_primary_dark') ?? '#333333',
             'line_success_color' => $this->validated('line_success_color') ?? '#000000',
             'line_danger_color' => $this->validated('line_danger_color') ?? '#dc3545',
+            'smaregi_contract_id' => trim((string) ($this->validated('smaregi_contract_id') ?? '')),
+            'smaregi_client_id' => trim((string) ($this->validated('smaregi_client_id') ?? '')),
+            'smaregi_client_secret' => trim((string) ($this->validated('smaregi_client_secret') ?? '')),
         ];
     }
 }

@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\V1\Member\MemberWithdrawController as ApiV1MemberWi
 use App\Http\Controllers\Api\V1\OrderController as ApiV1OrderController;
 use App\Http\Controllers\Api\V1\PaymentController as ApiV1PaymentController;
 use App\Http\Controllers\Api\V1\ProductController as ApiV1ProductController;
+use App\Http\Controllers\Api\V1\ProjectListController as ApiV1ProjectListController;
 use App\Http\Controllers\Api\V1\Reservation\ReservationIndexController as ApiV1ReservationIndexController;
 use App\Http\Controllers\Api\V1\StampController as ApiV1StampController;
 use App\Http\Controllers\ContactController;
@@ -51,6 +52,7 @@ use App\Http\Controllers\Reservation\ReservationCancelController;
 use App\Http\Controllers\Reservation\ReservationIndexController;
 use App\Http\Controllers\Reservation\ReservationStoreController;
 use App\Http\Controllers\Reservation\ReservationUpdateController;
+use App\Http\Controllers\Onboarding\OnboardingProjectStoreController;
 use App\Http\Controllers\Smaregi\SmaregiIdpController;
 use App\Http\Controllers\Smaregi\SmaregiWebhookController;
 use App\Http\Controllers\StampController;
@@ -67,6 +69,11 @@ Route::match(['get', 'head', 'post'], '/smaregi/idp', [SmaregiIdpController::cla
 Route::match(['get', 'head', 'post'], '/smaregi/webhook', [SmaregiWebhookController::class, '__invoke'])
     ->middleware('verify.smaregi.webhook')
     ->name('smaregi.webhook');
+
+// 公開オンボーディング（将来切り出し可能な JSON API）
+Route::post('/onboarding/projects', OnboardingProjectStoreController::class)
+    ->middleware('throttle:onboarding')
+    ->name('api.onboarding.projects.store');
 
 // API v1（Bearer トークン認証・モバイルアプリ用）※従来: トークンの project でコンテキスト設定
 Route::prefix('v1')->middleware([AuthenticateApiToken::class])->group(function () {
@@ -117,6 +124,7 @@ Route::prefix('v1')->middleware([CheckApiProject::class, AuthenticateApiToken::c
 
 // ネイティブアプリ設定（認証不要・project_key クエリで取得）
 Route::get('/v1/app-config', AppConfigController::class);
+Route::get('/v1/projects', ApiV1ProjectListController::class);
 // 削除済みお知らせ通知の取消しID（認証不要・起動時掃除用）
 Route::get('/v1/announcements/cancelled-ids', ApiV1AnnouncementCancelledIdsController::class);
 

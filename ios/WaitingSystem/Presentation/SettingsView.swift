@@ -109,9 +109,33 @@ struct SettingsView: View {
                 .keyboardType(.URL)
                 .textInputAutocapitalization(.never)
                 .disableAutocorrection(true)
-            TextField(Strings.Settings.projectKeyPlaceholder, text: $viewModel.settings.projectKey)
-                .textInputAutocapitalization(.never)
-                .disableAutocorrection(true)
+
+            if viewModel.isLoadingProjects {
+                ProgressView("プロジェクト読み込み中…")
+            } else if !viewModel.projects.isEmpty {
+                Picker("プロジェクト", selection: $viewModel.settings.projectKey) {
+                    ForEach(viewModel.projects) { project in
+                        Text(project.name).tag(project.projectKey)
+                    }
+                }
+            } else {
+                TextField(Strings.Settings.projectKeyPlaceholder, text: $viewModel.settings.projectKey)
+                    .textInputAutocapitalization(.never)
+                    .disableAutocorrection(true)
+            }
+
+            Button("プロジェクト一覧を再取得") {
+                Task { await viewModel.loadProjects() }
+            }
+
+            if let projectsError = viewModel.projectsError {
+                Text(projectsError)
+                    .font(.footnote)
+                    .foregroundColor(.red)
+            }
+        }
+        .task {
+            await viewModel.loadProjects()
         }
     }
 

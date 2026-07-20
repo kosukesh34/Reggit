@@ -222,8 +222,6 @@ class AllScreensAccessibleTest extends TestCase
         return [
             'dashboard' => ['system-admin.dashboard', []],
             'projects.index' => ['system-admin.projects.index', []],
-            'projects.input-home' => ['system-admin.projects.input-home', []],
-            'projects.create' => ['system-admin.projects.create', []],
             'projects.edit' => ['system-admin.projects.edit', ['id' => 1]],
             'accounts.index' => ['system-admin.accounts.index', []],
             'accounts.create' => ['system-admin.accounts.create', []],
@@ -234,6 +232,20 @@ class AllScreensAccessibleTest extends TestCase
             'audit-logs.index' => ['system-admin.audit-logs.index', []],
             'audit-logs.show' => ['system-admin.audit-logs.show', ['id' => 1]],
         ];
+    }
+
+    public function test_projects_create_はオンボーディングへリダイレクトすること(): void
+    {
+        $systemAdmin = AdminUser::factory()->create(['role' => AdminUser::ROLE_SYSTEM_ADMIN]);
+
+        $this->actingAs($systemAdmin, 'admin')
+            ->get('/system-admin/projects/create')
+            ->assertRedirect(route('onboarding.create'));
+    }
+
+    public function test_onboarding_create_は未認証で開けること(): void
+    {
+        $this->get('/onboarding')->assertStatus(200);
     }
 
     #[DataProvider('systemAdminScreenProvider')]
