@@ -203,7 +203,10 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'bind.admin.project', '
         Route::post('/coupons/full-sync-smaregi', [AdminCouponController::class, 'fullSyncCouponsWithSmaregi'])->name('admin.coupons.full-sync-smaregi')->middleware('admin.permission:coupons.manage');
         Route::get('/coupons/ajax/members', [AdminCouponController::class, 'searchMembers'])->name('admin.coupons.ajax.members')->middleware('admin.permission:coupons.manage');
         Route::get('/coupons/delivery-preview', [AdminCouponController::class, 'deliveryPreview'])->name('admin.coupons.delivery.preview')->middleware('admin.permission:coupons.manage');
+        Route::get('/coupons/delivery-preview-members', [AdminCouponController::class, 'deliveryPreviewMembers'])->name('admin.coupons.delivery.preview-members')->middleware('admin.permission:coupons.manage');
+        Route::get('/coupons/deliveries/{id}', [AdminCouponController::class, 'deliveryShow'])->name('admin.coupons.deliveries.show')->middleware('admin.permission:coupons.manage');
         Route::get('/coupons/{id}/edit', [AdminCouponController::class, 'editCoupon'])->name('admin.coupons.edit')->middleware('admin.permission:coupons.manage');
+        Route::get('/coupons/{id}/redemptions', [AdminCouponController::class, 'couponRedemptions'])->name('admin.coupons.redemptions')->middleware('admin.permission:coupons.view');
         Route::put('/coupons/{id}', [AdminCouponController::class, 'updateCoupon'])->name('admin.coupons.update')->middleware('admin.permission:coupons.manage');
         Route::delete('/coupons/{id}', [AdminCouponController::class, 'deleteCoupon'])->name('admin.coupons.delete')->middleware('admin.permission:coupons.manage');
 
