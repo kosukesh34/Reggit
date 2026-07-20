@@ -18,12 +18,12 @@ docker compose exec app php artisan db:seed --force
 | 種別 | ログインID | パスワード | ログインURL |
 |------|------------|------------|-------------|
 | システム管理者 | `demo_sys` | `DemoSys#2026` | http://localhost:8080/system-admin/login |
-| プロジェクト管理者 | `demo_proj` | `DemoProj#2026` | http://localhost:8080/admin/default/login などプロジェクト別URL |
-| 店舗管理者 | `demo_store` | `DemoStore#2026` | http://localhost:8080/admin/default/login などプロジェクト別URL |
+| プロジェクト管理者 | `demo_proj` | `DemoProj#2026` | http://localhost:8080/admin/{project_key}/login |
+| 店舗管理者 | `demo_store` | `DemoStore#2026` | http://localhost:8080/admin/{project_key}/login |
 | 初回システム管理者（.env） | `reserve` | `reserve` | http://localhost:8080/system-admin/login |
 
 ※ **システム管理者**は `/system-admin/login` からのみログインでき、**全プロジェクト**にアクセス可能です。
-※ **店舗・プロジェクト管理者**は `/admin/login` でプロジェクトを選択し、`/admin/{project_key}/login` でログイン後、そのプロジェクトのダッシュボードに遷移します。
+※ **店舗・プロジェクト管理者**は `/admin/login`（ID・パスワードのみ）または `/admin/{project_key}/login` でログインします。プロジェクト一覧は公開しません。
 
 ---
 
@@ -31,19 +31,19 @@ docker compose exec app php artisan db:seed --force
 
 | 画面 | URL | ルート名 | 説明 |
 |------|-----|----------|------|
-| プロジェクト選択（店舗管理の入口） | `/admin/login` | `admin.login` | ログインするプロジェクトを選択（GET のみ） |
-| プロジェクト別ログイン | `/admin/{project_key}/login` | `admin.project.login` | 指定プロジェクトのログイン画面（GET: 表示 / POST: 認証） |
+| 店舗管理ログイン | `/admin/login` | `admin.login` | ID・パスワードでログイン（プロジェクト一覧は非表示） |
+| プロジェクト別ログイン | `/admin/{project_key}/login` | `admin.project.login` | 指定プロジェクトのログイン画面（URLを知っている場合） |
 | システム管理者ログイン | `/system-admin/login` | `system-admin.login` | **システム管理者専用**（GET: 表示 / POST: 認証）。システム管理者のみログイン可。 |
 
 ### 補足
 
-- **店舗・プロジェクト管理者**: `/admin/login` でプロジェクトを選び、`/admin/default/login` などプロジェクト別URLでログイン。ログイン後は `/admin/{project_key}/dashboard` などにアクセスします。
+- **店舗・プロジェクト管理者**: `/admin/login` または `/admin/{project_key}/login` でログイン。ログイン後は許可されたプロジェクトのダッシュボードへ遷移します。
 - **システム管理者**: `/system-admin/login` からログイン。**システム管理者ロールのアカウントのみ**ログイン可能。ログイン後は `/system-admin/dashboard` でプロジェクト・アカウント・API・監査ログを管理し、**全プロジェクトの店舗管理画面にもアクセス**できます。システム管理画面（`/system-admin/*`）はシステム管理者以外は 403 です。
 - ベースURLは `APP_URL`（`.env` の `APP_URL`、未設定時は `http://localhost`）です。
 
 **例（ローカル）**
-- プロジェクト選択: `http://localhost:8080/admin/login`
-- プロジェクト別ログイン: `http://localhost:8080/admin/default/login`（`default` は project_key）
+- 店舗管理ログイン: `http://localhost:8080/admin/login`
+- プロジェクト別ログイン: `http://localhost:8080/admin/sb_skp835t6/login`（`project_key` はプロジェクトごと）
 - システム管理ログイン: `http://localhost:8080/system-admin/login`
 
 ---

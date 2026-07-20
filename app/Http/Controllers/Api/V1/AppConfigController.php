@@ -19,7 +19,10 @@ class AppConfigController extends Controller
 
     public function __invoke(Request $request): JsonResponse
     {
-        $projectKey = (string) $request->query('project_key', 'default');
+        $projectKey = trim((string) $request->query('project_key', ''));
+        if ($projectKey === '') {
+            $projectKey = (string) (config('app.default_project_key') ?: 'default');
+        }
         $view = $this->getAppConfigUseCase->handle($projectKey);
 
         return response()->json($view->toArray());

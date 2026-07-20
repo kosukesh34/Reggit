@@ -3,7 +3,6 @@
 namespace App\Services\Admin;
 
 use App\Models\AdminAuditLog;
-use App\Models\Project;
 use App\Repositories\Contracts\AdminUserRepository;
 use App\Repositories\Contracts\ProjectRepository;
 use App\UseCases\Admin\Auth\Data\AdminAuthAuditContext;
@@ -73,16 +72,10 @@ class AdminAuthService
 
         if ($input->projectKey !== null) {
             $project = $this->projectRepository->findActiveByProjectKey($input->projectKey);
-            if ($project === null && $input->projectKey === 'default') {
-                $project = Project::firstOrCreate(
-                    ['project_key' => 'default'],
-                    ['name' => 'デフォルト店舗', 'description' => 'デモ用プロジェクト', 'is_active' => true]
-                );
-            }
             if ($project === null) {
                 Log::warning('[AdminLogin] project not found', ['project_key' => $input->projectKey]);
                 throw ValidationException::withMessages([
-                    'login_id' => ['指定されたプロジェクトが見つかりません。'],
+                    'login_id' => ['IDまたはパスワードが正しくありません。'],
                 ]);
             }
         }
