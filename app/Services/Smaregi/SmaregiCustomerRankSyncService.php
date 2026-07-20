@@ -15,6 +15,11 @@ class SmaregiCustomerRankSyncService
 
     private const RESPONSE_KEY_RANKS_ALT = 'customerRanks';
 
+    /** スマレジ API の pointGivingUnitPrice 上限 */
+    private const POINT_GIVING_UNIT_PRICE_MAX = 99999;
+
+    private const POINT_GIVING_UNIT = '1';
+
     private SmaregiApiService $smaregiApi;
 
     public function __construct(SmaregiApiService $smaregiApi)
@@ -23,17 +28,20 @@ class SmaregiCustomerRankSyncService
     }
 
     /**
-     * @param  array<int, array{key: string, label: string, min_points: int, is_active: bool, ...}>  $rows
+     * @param  array<int, array{key: string, label: string, min_points: int, is_active: bool, order?: int, point_earn_rate?: int|null, smaregi_rank_id?: string|null, ...}>  $rows
+     * @return array<string, string> ローカル key => スマレジ rank ID
      */
-    public function sync(int $projectId, array $rows): void
+    public function sync(int $projectId, array $rows): array
     {
         $contractId = $this->smaregiApi->getContractIdForProject($projectId);
         if (StrHelper::isEmptyStringOrNull($contractId)) {
-            return;
+            return [];
         }
 
         $existing = $this->fetchExistingRanks($contractId);
-        $appKeys = array_column($rows, 'key');
+        $existingByName = $this->indexByName($existing);
+        $usedRankIds = [];
+        $rankIdsByKey = [];
 
         foreach ($rows as $row) {
             $key = isset($row['key']) ? (string) $row['key'] : '';
@@ -41,15 +49,38 @@ class SmaregiCustomerRankSyncService
                 continue;
             }
             $label = isset($row['label']) ? (string) $row['label'] : $key;
-            $body = ['rankName' => mb_substr($label, 0, self::RANK_NAME_MAX_LENGTH)];
-            if (isset($existing[$key])) {
-                $this->updateRank($contractId, $key, $body);
-            } else {
-                $this->createRank($contractId, $key, $body);
+            $name = mb_substr($label, 0, self::RANK_NAME_MAX_LENGTH);
+            $body = $this->buildRequestBody($name, $row);
+            $savedRankId = isset($row['smaregi_rank_id']) ? trim((string) $row['smaregi_rank_id']) : '';
+
+            if ($savedRankId !== '' && isset($existing[$savedRankId])) {
+                $this->updateRank($contractId, $savedRankId, $body, $key);
+                $usedRankIds[] = $savedRankId;
+                $rankIdsByKey[$key] = $savedRankId;
+                $oldName = isset($existing[$savedRankId]['name']) ? (string) $existing[$savedRankId]['name'] : '';
+                if ($oldName !== '') {
+                    unset($existingByName[$oldName]);
+                }
+                continue;
             }
+
+            if (isset($existingByName[$name])) {
+                $rankId = $existingByName[$name];
+                $this->updateRank($contractId, $rankId, $body, $key);
+                $usedRankIds[] = $rankId;
+                $rankIdsByKey[$key] = $rankId;
+                unset($existingByName[$name]);
+                continue;
+            }
+
+            $createdRankId = $this->createRank($contractId, $key, $body);
+            $usedRankIds[] = $createdRankId;
+            $rankIdsByKey[$key] = $createdRankId;
         }
 
-        $this->deleteRemovedRanks($contractId, $appKeys, $existing, $projectId);
+        $this->deleteRemovedRanks($contractId, $usedRankIds, $existing, $projectId);
+
+        return $rankIdsByKey;
     }
 
     public function hasSmaregiContract(int $projectId): bool
@@ -60,27 +91,69 @@ class SmaregiCustomerRankSyncService
     }
 
     /**
-     * @param  array<string, array<string, string|int|float|bool|null>>  $existing  ランクkey => API応答1件
+     * @param  array{key?: string, label?: string, min_points?: int, is_active?: bool, order?: int, point_earn_rate?: int|null, ...}  $row
+     * @return array{name: string, displaySequence: string, displayFlag: string, pointGivingUnitPrice: string, pointGivingUnit: string}
      */
-    private function deleteRemovedRanks(string $contractId, array $appKeys, array $existing, int $projectId): void
+    private function buildRequestBody(string $name, array $row): array
     {
-        foreach (array_keys($existing) as $rankKey) {
-            if (in_array($rankKey, $appKeys, true)) {
+        $isActive = $row['is_active'] ?? true;
+        $order = (int) ($row['order'] ?? 1);
+        $pointEarnRate = (int) ($row['point_earn_rate'] ?? 0);
+        $unitPrice = max(1, min(self::POINT_GIVING_UNIT_PRICE_MAX, $pointEarnRate > 0 ? $pointEarnRate : 100));
+
+        return [
+            'name' => $name,
+            'displaySequence' => (string) max(1, min(999, $order > 0 ? $order : 1)),
+            'displayFlag' => ($isActive === true || $isActive === 1 || $isActive === '1') ? '1' : '0',
+            'pointGivingUnitPrice' => (string) $unitPrice,
+            'pointGivingUnit' => self::POINT_GIVING_UNIT,
+        ];
+    }
+
+    /**
+     * @param  array<string, array<string, string|int|float|bool|null>>  $existing  rankId => API応答1件
+     * @return array<string, string> name => rankId
+     */
+    private function indexByName(array $existing): array
+    {
+        $byName = [];
+        foreach ($existing as $rankId => $item) {
+            $name = isset($item['name']) ? (string) $item['name'] : '';
+            if ($name === '') {
                 continue;
             }
-            $res = $this->smaregiApi->deleteCustomerRank($contractId, $rankKey);
+            $byName[$name] = (string) $rankId;
+        }
+
+        return $byName;
+    }
+
+    /**
+     * @param  array<int, string>  $usedRankIds
+     * @param  array<string, array<string, string|int|float|bool|null>>  $existing
+     */
+    private function deleteRemovedRanks(string $contractId, array $usedRankIds, array $existing, int $projectId): void
+    {
+        foreach (array_keys($existing) as $rankId) {
+            if (in_array((string) $rankId, $usedRankIds, true)) {
+                continue;
+            }
+            $res = $this->smaregiApi->deleteCustomerRank($contractId, (string) $rankId);
             if ($res === null) {
                 Log::warning('[Smaregi] customer_rank delete failed or skipped', [
                     'project_id' => $projectId,
-                    'rank' => $rankKey,
+                    'rank' => $rankId,
                 ]);
             }
         }
     }
 
-    private function updateRank(string $contractId, string $key, array $body): void
+    /**
+     * @param  array{name: string, displaySequence: string, displayFlag: string, pointGivingUnitPrice: string, pointGivingUnit: string}  $body
+     */
+    private function updateRank(string $contractId, string $rankId, array $body, string $key): void
     {
-        $res = $this->smaregiApi->updateCustomerRank($contractId, $key, $body);
+        $res = $this->smaregiApi->updateCustomerRank($contractId, $rankId, $body);
         if ($res === null) {
             throw new \RuntimeException(
                 'スマレジの会員ランク更新に失敗しました（'.$key.'）。ログ(storage/logs/laravel.log)の [Smaregi] を確認してください。'
@@ -88,19 +161,29 @@ class SmaregiCustomerRankSyncService
         }
     }
 
-    private function createRank(string $contractId, string $key, array $body): void
+    /**
+     * @param  array{name: string, displaySequence: string, displayFlag: string, pointGivingUnitPrice: string, pointGivingUnit: string}  $body
+     */
+    private function createRank(string $contractId, string $key, array $body): string
     {
-        $body['rank'] = $key;
         $res = $this->smaregiApi->createCustomerRank($contractId, $body);
         if ($res === null) {
             throw new \RuntimeException(
                 'スマレジの会員ランク登録に失敗しました（'.$key.'）。ログ(storage/logs/laravel.log)の [Smaregi] を確認してください。'
             );
         }
+        $rankId = isset($res['rank']) ? (string) $res['rank'] : '';
+        if ($rankId === '') {
+            throw new \RuntimeException(
+                'スマレジの会員ランク登録に失敗しました（'.$key.'）。ログ(storage/logs/laravel.log)の [Smaregi] を確認してください。'
+            );
+        }
+
+        return $rankId;
     }
 
     /**
-     * @return array<string, array<string, string|int|float|bool|null>> ランクkey => API応答1件
+     * @return array<string, array<string, string|int|float|bool|null>> ランクID => API応答1件
      */
     private function fetchExistingRanks(string $contractId): array
     {

@@ -4,6 +4,10 @@ import { DomHelper } from '../../shared/utils/domHelper';
 import { isMembershipRequired } from '../utils/membershipPolicy';
 import { mountDetailLayoutChrome } from '../utils/detailLayoutMount';
 
+declare const MemberManager: {
+    isMobileAppMode: () => boolean;
+};
+
 type StampRewardMilestone = {
     stamp_count?: number | string;
     description?: string;
@@ -130,6 +134,34 @@ export class StampsManager {
         if (!section) {
             return;
         }
+
+        const appAny = (typeof window !== 'undefined' ? (window.app as any) : null) || null;
+        const memberManager = appAny && appAny.memberManager ? appAny.memberManager : null;
+        if (memberManager) {
+            if (typeof MemberManager !== 'undefined' && MemberManager.isMobileAppMode()) {
+                await memberManager.ensureIdentityReady(2500);
+            } else if (typeof window !== 'undefined' && window.__IS_LIFF__) {
+                if (!window.__LINE_USER_ID__) {
+                    await memberManager.resolveLineUserIdForClient();
+                }
+                if (!window.__LINE_USER_ID__) {
+                    section.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i><p>読み込み中...</p></div>';
+                    return;
+                }
+            } else {
+                if (!window.__LINE_USER_ID__) {
+                    await memberManager.resolveLineUserIdForClient();
+                }
+                const hasIdentity = typeof memberManager.hasAuthenticatedIdentity === 'function'
+                    ? memberManager.hasAuthenticatedIdentity()
+                    : !!(typeof window !== 'undefined' && window.__LINE_USER_ID__);
+                if (!hasIdentity) {
+                    section.innerHTML = this.getGuestTemplate();
+                    return;
+                }
+            }
+        }
+
         section.innerHTML =
             '<div class="loading"><i class="fas fa-spinner fa-spin"></i><p>読み込み中...</p></div>';
         try {
