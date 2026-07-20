@@ -11,6 +11,7 @@ use App\Util\AdminContext;
 use App\Util\LogHelper;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\Response;
 
 class AnnouncementController extends BaseApiController
 {
@@ -33,7 +34,7 @@ class AnnouncementController extends BaseApiController
                 'error' => $e->getMessage(),
             ]);
 
-            return $this->error('お知らせの取得に失敗しました', 500);
+            return $this->error('お知らせの取得に失敗しました', Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -47,7 +48,7 @@ class AnnouncementController extends BaseApiController
 
             return $this->success($result, '既読にしました');
         } catch (ValidationException $e) {
-            return $this->error('対象のお知らせが見つかりません', 404, [], $e->errors());
+            return $this->error('対象のお知らせが見つかりません', Response::HTTP_NOT_FOUND, [], $e->errors());
         } catch (\Exception $e) {
             LogHelper::error('[Announcement] markRead failed', [
                 'project_id' => AdminContext::getCurrentProjectId() ?? 1,
@@ -55,7 +56,7 @@ class AnnouncementController extends BaseApiController
                 'error' => $e->getMessage(),
             ]);
 
-            return $this->error('既読更新に失敗しました', 500);
+            return $this->error('既読更新に失敗しました', Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 

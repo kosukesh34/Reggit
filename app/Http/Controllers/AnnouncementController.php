@@ -8,6 +8,7 @@ use App\UseCases\Announcement\AnnouncementMarkReadUseCase;
 use App\UseCases\Announcement\Data\AnnouncementMarkReadInput;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\Response;
 
 class AnnouncementController extends Controller
 {
@@ -38,7 +39,7 @@ class AnnouncementController extends Controller
                 'success' => false,
                 'message' => '対象のお知らせが見つかりません',
                 'errors' => $e->errors(),
-            ], 404);
+            ], Response::HTTP_NOT_FOUND);
         }
     }
 }

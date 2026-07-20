@@ -7,6 +7,7 @@ use App\Jobs\SmaregiSyncInboundTransactionsJob;
 use App\UseCases\Smaregi\Data\SmaregiNotificationInput;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Log;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * スマレジ Webhook / IDP 通知の共通処理（ボディ解析・イベント受付・会員同期ジョブ投入）。
@@ -28,7 +29,7 @@ class SmaregiWebhookNotificationService
         if ($input->isGetOrHead()) {
             Log::info('[Smaregi] Webhook GET/HEAD 受信（接続確認など）。200 空ボディ');
 
-            return ['status' => 200, 'body' => ''];
+            return ['status' => Response::HTTP_OK, 'body' => ''];
         }
 
         $eventFromHeader = $input->header('smaregi-event');
@@ -40,7 +41,7 @@ class SmaregiWebhookNotificationService
         if ($event === '') {
             Log::warning('[Smaregi] Webhook missing event (header smaregi-event or body event)');
 
-            return ['status' => 400, 'body' => ''];
+            return ['status' => Response::HTTP_BAD_REQUEST, 'body' => ''];
         }
 
         $contractIdHeader = $input->header('smaregi-contract-id');
@@ -83,7 +84,7 @@ class SmaregiWebhookNotificationService
             }
         }
 
-        return ['status' => 200, 'body' => ''];
+        return ['status' => Response::HTTP_OK, 'body' => ''];
     }
 
     /**
