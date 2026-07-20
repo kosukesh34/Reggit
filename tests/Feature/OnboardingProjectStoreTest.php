@@ -68,4 +68,37 @@ class OnboardingProjectStoreTest extends TestCase
         $response->assertStatus(422);
         $this->assertDatabaseMissing('projects', ['project_key' => 'store-b']);
     }
+
+    public function test_既存店舗の契約IDを付け替えたら旧店舗設定から外れること(): void
+    {
+        $oldProject = Project::factory()->create([
+            'project_key' => 'old-store',
+            'is_active' => true,
+        ]);
+        ShopSetting::setValue('smaregi_contract_id', 'sb_shared_contract', 'string', (int) $oldProject->id);
+        \App\Models\SmaregiContract::create([
+            'contract_id' => 'sb_shared_contract',
+            'project_id' => $oldProject->id,
+        ]);
+
+        $response = $this->postJson('/api/onboarding/projects', $this->validPayload([
+            'project_key' => 'new-store',
+            'smaregi_contract_id' => 'sb_shared_contract',
+            'admin_login_id' => 'new_store_admin',
+            'admin_email' => 'new-admin@example.com',
+        ]));
+
+        $response->assertCreated();
+        $newProject = Project::where('project_key', 'new-store')->firstOrFail();
+
+        $this->assertSame('sb_shared_contract', ShopSetting::getValue('smaregi_contract_id', null, (int) $newProject->id));
+        $this->assertTrue(
+            ShopSetting::getValue('smaregi_contract_id', null, (int) $oldProject->id) === null
+            || ShopSetting::getValue('smaregi_contract_id', null, (int) $oldProject->id) === ''
+        );
+        $this->assertDatabaseHas('smaregi_contracts', [
+            'contract_id' => 'sb_shared_contract',
+            'project_id' => $newProject->id,
+        ]);
+    }
 }

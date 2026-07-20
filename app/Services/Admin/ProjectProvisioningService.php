@@ -5,6 +5,7 @@ namespace App\Services\Admin;
 use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Models\AdminUser;
 use App\Models\Project;
+use App\Models\Settings\ProjectProfileSmaregiSetting;
 use App\Models\SmaregiContract;
 use App\Services\Line\LineLiffAdminService;
 use App\Util\StrHelper;
@@ -152,6 +153,10 @@ class ProjectProvisioningService
         }
 
         $this->shopSettingRepository->setValue('smaregi_contract_id', $trimmed, 'string', $projectId);
+        ProjectProfileSmaregiSetting::query()
+            ->where('smaregi_contract_id', $trimmed)
+            ->where('project_id', '!=', $projectId)
+            ->update(['smaregi_contract_id' => null]);
         SmaregiContract::where('project_id', $projectId)->where('contract_id', '!=', $trimmed)->update(['project_id' => null]);
         SmaregiContract::where('contract_id', $trimmed)->update(['project_id' => $projectId]);
     }
