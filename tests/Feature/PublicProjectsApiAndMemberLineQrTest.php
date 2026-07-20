@@ -39,7 +39,7 @@ class PublicProjectsApiAndMemberLineQrTest extends TestCase
         ]);
     }
 
-    public function test_members_LINE招待QRのURLが表示されること(): void
+    public function test_members_lin_e招待_q_rの_ur_lが表示されること(): void
     {
         $project = Project::create([
             'project_key' => 'shop_qr',

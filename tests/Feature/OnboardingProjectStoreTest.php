@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\AdminUser;
 use App\Models\Project;
 use App\Models\ShopSetting;
+use App\Models\SmaregiContract;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -69,14 +70,14 @@ class OnboardingProjectStoreTest extends TestCase
         $this->assertDatabaseMissing('projects', ['project_key' => 'store-b']);
     }
 
-    public function test_既存店舗の契約IDを付け替えたら旧店舗設定から外れること(): void
+    public function test_既存店舗の契約_i_dを付け替えたら旧店舗設定から外れること(): void
     {
         $oldProject = Project::factory()->create([
             'project_key' => 'old-store',
             'is_active' => true,
         ]);
         ShopSetting::setValue('smaregi_contract_id', 'sb_shared_contract', 'string', (int) $oldProject->id);
-        \App\Models\SmaregiContract::create([
+        SmaregiContract::create([
             'contract_id' => 'sb_shared_contract',
             'project_id' => $oldProject->id,
         ]);
