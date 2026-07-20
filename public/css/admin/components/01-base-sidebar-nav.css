@@ -1,5 +1,5 @@
 /* ===================================================================
-   管理画面デザイントークン（クリーンSaaS / インディゴ基調）
+   管理画面デザイントークン（クリーンSaaS / ブルー基調）
    ここが唯一の :root トークン定義。他ファイルは var() 参照のみ。
    =================================================================== */
 
@@ -10,13 +10,13 @@
 }
 
 :root {
-    /* アクセント（インディゴ単色） */
-    --primary: #4f46e5;
-    --primary-hover: #4338ca;
-    --primary-light: #6366f1;
-    --primary-bg: #eef2ff;
-    --primary-bg-hover: #e0e7ff;
-    --primary-ring: 0 0 0 3px rgba(79, 70, 229, 0.12);
+    /* アクセント（ブルー単色） */
+    --primary: #2563eb;
+    --primary-hover: #1d4ed8;
+    --primary-light: #3b82f6;
+    --primary-bg: #eff6ff;
+    --primary-bg-hover: #dbeafe;
+    --primary-ring: 0 0 0 3px rgba(37, 99, 235, 0.12);
     /* セマンティックカラー */
     --secondary: #64748b;
     --success: #059669;
