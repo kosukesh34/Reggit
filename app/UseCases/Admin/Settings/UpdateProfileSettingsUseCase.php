@@ -18,16 +18,25 @@ class UpdateProfileSettingsUseCase
         $smaregi = [];
         foreach (ShopSetting::PROFILE_SMAREGI_FIELDS as $key => $label) {
             $row = $input->rawSmaregiFields[$key] ?? [];
+            $enabled = filter_var($row['enabled'] ?? false, FILTER_VALIDATE_BOOLEAN);
+            $required = in_array($row['required'] ?? false, [1, '1', true], true);
+            if ($key === 'name') {
+                $enabled = true;
+                $required = true;
+            }
             $smaregi[$key] = [
                 'label' => $label,
-                'enabled' => filter_var($row['enabled'] ?? false, FILTER_VALIDATE_BOOLEAN),
-                'required' => in_array($row['required'] ?? false, [1, '1', true], true),
+                'enabled' => $enabled,
+                'required' => $required,
             ];
         }
 
         $custom = [];
         if ($input->rawCustomFields !== null) {
             foreach ($input->rawCustomFields as $i => $row) {
+                if (count($custom) >= ShopSetting::PROFILE_CUSTOM_FIELD_MAX) {
+                    break;
+                }
                 $key = $row['key'] ?? ('custom_'.($i + 1));
                 $key = preg_replace('/[^a-z0-9_]/', '', $key) ?: ('custom_'.($i + 1));
                 $custom[] = [
