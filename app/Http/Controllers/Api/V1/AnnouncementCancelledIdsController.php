@@ -19,7 +19,10 @@ class AnnouncementCancelledIdsController extends Controller
 
     public function __invoke(Request $request): JsonResponse
     {
-        $projectKey = (string) $request->query('project_key', 'default');
+        $projectKey = trim((string) $request->query('project_key', ''));
+        if ($projectKey === '') {
+            return response()->json(['cancelled_ids' => [], 'items' => []]);
+        }
         $payload = $this->cancelledIdsUseCase->handleByProjectKey($projectKey);
 
         return response()->json($payload);

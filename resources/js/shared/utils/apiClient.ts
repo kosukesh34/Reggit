@@ -28,8 +28,8 @@ export class ApiClient {
             || (typeof document !== 'undefined'
                 ? document.querySelector('meta[name="project-key"]')?.getAttribute('content') || ''
                 : '')
-            || 'default';
-        return `${ApiClient.LINE_USER_ID_STORAGE_KEY}_${pk}`;
+            || '';
+        return `${ApiClient.LINE_USER_ID_STORAGE_KEY}_${pk || 'unknown'}`;
     }
 
     getLiffTokenLineUserId(): string | null {

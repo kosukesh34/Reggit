@@ -28,8 +28,21 @@ class AdminBaseController extends Controller
     protected function resolveAdminProjectKey(): string
     {
         $project = AdminContext::getCurrentProject();
+        if ($project !== null && trim((string) $project->project_key) !== '') {
+            return (string) $project->project_key;
+        }
 
-        return $project ? $project->project_key : 'default';
+        $configured = \App\Support\ProjectKey::fromConfig();
+        if ($configured !== null) {
+            return $configured;
+        }
+
+        $defaultKey = \App\Models\Project::where('is_active', true)->orderBy('id')->value('project_key');
+        if (! is_string($defaultKey) || trim($defaultKey) === '') {
+            throw new \RuntimeException('No active project available for admin context.');
+        }
+
+        return $defaultKey;
     }
 
     /** 管理画面ルート用のパラメータ配列を組み立てる */

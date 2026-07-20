@@ -20,7 +20,7 @@ function readMetaContent(name: string): string {
 
 export function readRuntimeConfig(): RuntimeConfig {
     return {
-        projectKey: window.__PROJECT_KEY__ || readMetaContent('project-key') || 'default',
+        projectKey: window.__PROJECT_KEY__ || readMetaContent('project-key') || '',
         apiBase: window.__API_BASE__ || readMetaContent('api-base') || '/api',
         orderMode: window.__ORDER_MODE__ ?? 'both',
         isMobileAppMode: window.__MOBILE_APP_MODE__ === true,
