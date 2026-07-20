@@ -81,7 +81,7 @@ final class Member
         $this->ledgerBalance += $points;
     }
 
-    public function reverseEarnedPointsForOrder(int $orderId, int $points, ?string $description): void
+    public function reverseEarnedPoints(int $points, ?string $description, ?int $orderId = null): void
     {
         if ($points <= 0) {
             return;
@@ -89,6 +89,11 @@ final class Member
 
         $this->pendingEntries[] = PointLedgerEntry::reversed($points, $description, $orderId);
         $this->ledgerBalance -= $points;
+    }
+
+    public function reverseEarnedPointsForOrder(int $orderId, int $points, ?string $description): void
+    {
+        $this->reverseEarnedPoints($points, $description, $orderId);
     }
 
     /** @return list<PointLedgerEntry> */
