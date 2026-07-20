@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Support\ProjectKey;
 use App\UseCases\AppConfig\GetAppConfigUseCase;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -21,7 +22,10 @@ class AppConfigController extends Controller
     {
         $projectKey = trim((string) $request->query('project_key', ''));
         if ($projectKey === '') {
-            $projectKey = (string) (config('app.default_project_key') ?: 'default');
+            $projectKey = (string) (ProjectKey::fromConfig() ?? '');
+        }
+        if ($projectKey === '') {
+            return response()->json(['error' => 'project_key は必須です。'], 400);
         }
         $view = $this->getAppConfigUseCase->handle($projectKey);
 

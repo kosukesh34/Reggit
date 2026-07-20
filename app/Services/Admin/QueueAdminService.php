@@ -163,9 +163,18 @@ class QueueAdminService
         $message = sprintf('順番が近づきました。受付番号: %s', $entry->formattedQueueNumber());
         try {
             $project = Project::find((int) $entry->project_id);
-            $projectKey = trim((string) ($project?->project_key ?? 'default'));
+            $projectKey = trim((string) ($project?->project_key ?? ''));
             if ($projectKey === '') {
-                $projectKey = 'default';
+                LogHelper::error('[Queue] push skipped (project_key missing)', [
+                    'queue_id' => $entry->id,
+                    'project_id' => $entry->project_id,
+                ]);
+                $callLog->update([
+                    'push_status' => 'skipped',
+                    'error_message' => 'project_key missing',
+                ]);
+
+                return;
             }
             $liffUri = QueueLiffUrlBuilder::build(
                 (int) $entry->project_id,

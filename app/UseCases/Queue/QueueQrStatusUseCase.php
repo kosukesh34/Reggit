@@ -127,9 +127,14 @@ class QueueQrStatusUseCase
             $project = Project::find($entry->project_id);
             $projectName = $project?->name ?? '店舗';
             $queueNo = $entry->formattedQueueNumber();
-            $projectKey = trim((string) ($project?->project_key ?? 'default'));
+            $projectKey = trim((string) ($project?->project_key ?? ''));
             if ($projectKey === '') {
-                $projectKey = 'default';
+                LogHelper::error('[Queue] linked completion skipped (project_key missing)', [
+                    'queue_id' => $entry->id,
+                    'project_id' => $entry->project_id,
+                ]);
+
+                return;
             }
             $uri = QueueLiffUrlBuilder::build(
                 (int) $entry->project_id,
