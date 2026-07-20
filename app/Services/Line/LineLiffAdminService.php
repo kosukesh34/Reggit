@@ -25,14 +25,17 @@ class LineLiffAdminService
     /**
      * LIFF Module mode を有効化し、ヘッダーのアクションメニューを非表示にする。
      */
-    public function hideActionMenu(string $liffId): void
+    public function hideActionMenu(string $liffId, ?string $channelAccessToken = null): void
     {
         $liffId = trim($liffId);
         if ($liffId === '') {
             return;
         }
 
-        $token = (string) config('services.line.channel_access_token', env('LINE_CHANNEL_ACCESS_TOKEN', ''));
+        $token = trim((string) ($channelAccessToken ?? ''));
+        if ($token === '') {
+            $token = trim((string) (config('line.channel_access_token') ?: env('LINE_CHANNEL_ACCESS_TOKEN', '')));
+        }
         if (StrHelper::isEmptyStringOrNull($token)) {
             LogHelper::warning('[LINE LIFF] skip module mode: channel access token is not configured', [
                 'liff_id' => $liffId,

@@ -37,6 +37,12 @@ struct BundleMobileWebConfigRepository: MobileWebConfigRepository {
     }
 
     private func resolveProjectKey() -> String {
+        if let selected = MobileSelectedProjectStore.selectedProjectKey {
+            let allowed = CharacterSet(charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-")
+            if selected.rangeOfCharacter(from: allowed.inverted) == nil {
+                return selected
+            }
+        }
         let platformProjectKey = readPlatformMetaString(
             iosKeys: ["LiffProjectKeyIos", "LIFF_PROJECT_KEY_IOS"],
             androidKeys: ["LiffProjectKeyAndroid", "LIFF_PROJECT_KEY_ANDROID"]

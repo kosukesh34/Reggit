@@ -45,6 +45,11 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinute(5)->by($key);
         });
 
+        // 公開オンボーディング: 10回/分まで
+        RateLimiter::for('onboarding', function (Request $request) {
+            return Limit::perMinute(10)->by($request->ip());
+        });
+
         $this->routes(function () {
             Route::middleware('api')
                 ->prefix('api')

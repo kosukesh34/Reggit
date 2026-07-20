@@ -21,6 +21,7 @@ class LineService
         $this->channelSecret = env('LINE_CHANNEL_SECRET');
         $this->client = new Client([
             'base_uri' => 'https://api.line.me/v2/',
+            'timeout' => 10,
             'headers' => [
                 'Authorization' => 'Bearer '.($this->channelAccessToken ?? ''),
                 'Content-Type' => 'application/json',
@@ -64,13 +65,18 @@ class LineService
     }
 
     /** @param array<int, array{type: string, text?: string}>|array{type: string, text?: string} $messages */
-    public function pushMessage(string $userId, array $messages): array
+    public function pushMessage(string $userId, array $messages, ?string $channelAccessToken = null): array
     {
-        $this->ensureConfigured();
+        $token = $this->resolveAccessToken($channelAccessToken);
+        $this->ensureTokenConfigured($token);
         $normalizedMessages = $this->normalizeMessages($messages);
 
         try {
             $response = $this->client->post('bot/message/push', [
+                'headers' => [
+                    'Authorization' => 'Bearer '.$token,
+                    'Content-Type' => 'application/json',
+                ],
                 'json' => [
                     'to' => $userId,
                     'messages' => $normalizedMessages,
@@ -134,12 +140,29 @@ class LineService
 
     private function ensureConfigured(bool $requireSecret = false): void
     {
-        if (StrHelper::isEmptyStringOrNull($this->channelAccessToken)) {
-            throw new RuntimeException('LINE Messaging API access token is not configured.');
-        }
+        $this->ensureTokenConfigured($this->resolveAccessToken(null));
         if ($requireSecret && StrHelper::isEmptyStringOrNull($this->channelSecret)) {
             throw new RuntimeException('LINE Messaging API credentials are not configured.');
         }
+    }
+
+    private function ensureTokenConfigured(?string $token): void
+    {
+        if (StrHelper::isEmptyStringOrNull($token)) {
+            throw new RuntimeException('LINE Messaging API access token is not configured.');
+        }
+    }
+
+    private function resolveAccessToken(?string $channelAccessToken): ?string
+    {
+        $token = trim((string) ($channelAccessToken ?? ''));
+        if ($token !== '') {
+            return $token;
+        }
+
+        $fallback = trim((string) ($this->channelAccessToken ?? ''));
+
+        return $fallback !== '' ? $fallback : null;
     }
 
     /** @param array<int, array{type: string, text?: string}>|array{type: string, text?: string} $messages */

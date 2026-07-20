@@ -3,6 +3,7 @@
 namespace App\Services\Smaregi;
 
 use App\Enums\SmaregiContractStatus;
+use App\Models\Settings\ProjectProfileSmaregiSetting;
 use App\Models\ShopSetting;
 use App\Models\SmaregiContract;
 use Illuminate\Http\Client\ConnectionException;
@@ -34,14 +35,15 @@ class SmaregiApiService
 
     public function getAppAccessToken(string $contractId): ?string
     {
-        $cacheKey = self::CACHE_KEY_PREFIX.$contractId;
+        $credentials = $this->resolveCredentialsForContract($contractId);
+        $clientId = $credentials['client_id'];
+        $clientSecret = $credentials['client_secret'];
+        $cacheKey = self::CACHE_KEY_PREFIX.$contractId.':'.$clientId;
         $cached = Cache::get($cacheKey);
         if (is_string($cached) && $cached !== '') {
             return $cached;
         }
 
-        $clientId = config('smaregi.client_id');
-        $clientSecret = config('smaregi.client_secret');
         $idBaseUrl = rtrim(config('smaregi.id_base_url'), '/');
         $scope = config('smaregi.scope');
 
@@ -90,6 +92,46 @@ class SmaregiApiService
         Cache::put($cacheKey, $token, $expiresIn - self::CACHE_BUFFER_SECONDS);
 
         return $token;
+    }
+
+    /**
+     * 契約IDに紐づくプロジェクトの credentials を優先し、なければ .env にフォールバックする。
+     *
+     * @return array{client_id: string, client_secret: string}
+     */
+    public function resolveCredentialsForContract(string $contractId): array
+    {
+        $projectId = $this->resolveProjectIdForContract($contractId);
+        if ($projectId !== null) {
+            $clientId = ShopSetting::getValue('smaregi_client_id', null, $projectId);
+            $clientSecret = ShopSetting::getValue('smaregi_client_secret', null, $projectId);
+            $clientId = is_string($clientId) ? trim($clientId) : '';
+            $clientSecret = is_string($clientSecret) ? trim($clientSecret) : '';
+            if ($clientId !== '' && $clientSecret !== '') {
+                return ['client_id' => $clientId, 'client_secret' => $clientSecret];
+            }
+        }
+
+        return [
+            'client_id' => trim((string) config('smaregi.client_id', '')),
+            'client_secret' => trim((string) config('smaregi.client_secret', '')),
+        ];
+    }
+
+    private function resolveProjectIdForContract(string $contractId): ?int
+    {
+        $linked = SmaregiContract::where('contract_id', $contractId)
+            ->whereNotNull('project_id')
+            ->value('project_id');
+        if (is_numeric($linked)) {
+            return (int) $linked;
+        }
+
+        $setting = ProjectProfileSmaregiSetting::query()
+            ->where('smaregi_contract_id', $contractId)
+            ->value('project_id');
+
+        return is_numeric($setting) ? (int) $setting : null;
     }
 
     /**

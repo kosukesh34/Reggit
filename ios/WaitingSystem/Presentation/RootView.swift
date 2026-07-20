@@ -9,6 +9,18 @@ struct RootView: View {
     @EnvironmentObject private var appState: AppState
 
     var body: some View {
+        Group {
+            if appState.needsProjectSelection {
+                ProjectSelectionView {
+                    appState.completeProjectSelection()
+                }
+            } else {
+                mainContent
+            }
+        }
+    }
+
+    private var mainContent: some View {
         ZStack {
             HomeViewWrapper(appState: appState)
                 .allowsHitTesting(appState.currentTicket == nil)
