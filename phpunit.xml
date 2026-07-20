@@ -28,6 +28,7 @@
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
+        <env name="LINE_LIFF_AUTO_MODULE_MODE" value="false"/>
     </php>
 </phpunit>
 
