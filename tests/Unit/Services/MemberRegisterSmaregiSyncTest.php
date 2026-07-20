@@ -37,6 +37,18 @@ class MemberRegisterSmaregiSyncTest extends TestCase
         $smaregiApi->shouldReceive('clearLastErrorDetail')->once();
         $smaregiApi->shouldReceive('createCustomer')
             ->once()
+            ->withArgs(function (string $contractId, array $body): bool {
+                return $contractId === 'sb_test_contract'
+                    && ($body['lastName'] ?? null) === '山田'
+                    && ($body['firstName'] ?? null) === '太郎'
+                    && ($body['phoneNumber'] ?? null) === '09012345678'
+                    && ($body['postCode'] ?? null) === '1000001'
+                    && ($body['address'] ?? null) === '東京都千代田区'
+                    && ($body['birthDate'] ?? null) === '1990-01-02'
+                    && ($body['sex'] ?? null) === '1'
+                    && ($body['mailReceiveFlag'] ?? null) === '1'
+                    && isset($body['entryDate']);
+            })
             ->andReturn(['customerId' => 'smaregi-123']);
 
         $couponIssue = Mockery::mock(CouponIssueService::class);
@@ -49,12 +61,19 @@ class MemberRegisterSmaregiSyncTest extends TestCase
             'name' => '山田 太郎',
             'kana' => 'ヤマダ タロウ',
             'phone' => '09012345678',
+            'postal_code' => '1000001',
+            'address' => '東京都千代田区',
+            'birthday' => '1990-01-02',
+            'sex' => '1',
+            'mail_receive_flag' => '1',
         ]);
 
         $this->assertSame('smaregi-123', $member->smaregi_customer_id);
+        $this->assertSame('1', $member->mail_receive_flag);
         $this->assertDatabaseHas('members', [
             'user_id' => $user->id,
             'smaregi_customer_id' => 'smaregi-123',
+            'mail_receive_flag' => '1',
         ]);
     }
 
