@@ -26,7 +26,7 @@ class SmaregiOrderTransactionOutboundServiceTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_未連携商品がある注文は同期せずAPIを呼ばないこと(): void
+    public function test_未連携商品がある注文は同期せず_ap_iを呼ばないこと(): void
     {
         Queue::fake();
 
@@ -215,7 +215,7 @@ class SmaregiOrderTransactionOutboundServiceTest extends TestCase
         $this->assertSame('8001', $fresh->smaregi_layaway_head_id);
     }
 
-    public function test_Stripe注文は通常販売として登録し冪等になること(): void
+    public function test_stripe注文は通常販売として登録し冪等になること(): void
     {
         Queue::fake();
 

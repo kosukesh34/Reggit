@@ -8,7 +8,6 @@ use App\Enums\OrderType;
 use App\Models\Member;
 use App\Models\Order;
 use App\Models\OrderItem;
-use App\Models\Product;
 use App\Models\Scopes\ProjectScope;
 use App\Services\OrderNumberAssigner;
 use Carbon\Carbon;
@@ -57,7 +56,7 @@ class SmaregiInboundOrderRecorder
         }
 
         try {
-            $order = DB::transaction(function () use ($member, $headId, $amount, $details, $visitedAt, $projectId, $userId): Order {
+            $order = DB::transaction(function () use ($headId, $amount, $details, $visitedAt, $projectId, $userId): Order {
                 $order = Order::withoutGlobalScope(ProjectScope::class)->create([
                     'project_id' => $projectId,
                     'user_id' => $userId,
@@ -121,68 +120,26 @@ class SmaregiInboundOrderRecorder
      */
     private function saveOrderItems(Order $order, array $details): void
     {
-        $productIdBySmaregi = Product::query()
-            ->where('project_id', $order->project_id)
-            ->whereNotNull('smaregi_product_id')
-            ->pluck('id', 'smaregi_product_id')
-            ->all();
+        $productIdBySmaregi = SmaregiInboundDetailHelper::productIdsBySmaregiProductId((int) $order->project_id);
 
         foreach ($details as $detail) {
-            $productName = trim((string) ($detail['productName'] ?? $detail['printReceiptProductName'] ?? ''));
-            if ($productName === '') {
+            $lineItem = SmaregiInboundDetailHelper::parseLineItem($detail);
+            if ($lineItem === null) {
                 continue;
-            }
-
-            $smaregiProductId = trim((string) ($detail['productId'] ?? ''));
-            $quantity = $this->parsePositiveInt($detail['quantity'] ?? 1) ?? 1;
-            $unitPrice = $this->parseMoney($detail['salesPrice'] ?? $detail['price'] ?? 0) ?? 0.0;
-
-            $localProductId = null;
-            if ($smaregiProductId !== '' && isset($productIdBySmaregi[$smaregiProductId])) {
-                $localProductId = (int) $productIdBySmaregi[$smaregiProductId];
             }
 
             OrderItem::create([
                 'project_id' => (int) $order->project_id,
                 'order_id' => (int) $order->id,
-                'product_id' => $localProductId,
-                'product_name' => $productName,
-                'smaregi_product_id' => $smaregiProductId !== '' ? $smaregiProductId : null,
-                'quantity' => $quantity,
-                'price' => $unitPrice,
+                'product_id' => SmaregiInboundDetailHelper::resolveLocalProductId(
+                    $lineItem['smaregiProductId'],
+                    $productIdBySmaregi,
+                ),
+                'product_name' => $lineItem['productName'],
+                'smaregi_product_id' => SmaregiInboundDetailHelper::nullableSmaregiProductId($lineItem['smaregiProductId']),
+                'quantity' => $lineItem['quantity'],
+                'price' => $lineItem['unitPrice'],
             ]);
         }
-    }
-
-    private function parsePositiveInt(string|int|float|bool|array|null $value): ?int
-    {
-        if (is_int($value) && $value > 0) {
-            return $value;
-        }
-        if (is_string($value) && $value !== '' && is_numeric($value)) {
-            $parsed = (int) $value;
-
-            return $parsed > 0 ? $parsed : null;
-        }
-        if (is_float($value) && $value > 0) {
-            return (int) round($value);
-        }
-
-        return null;
-    }
-
-    private function parseMoney(string|int|float|bool|array|null $value): ?float
-    {
-        if ($value === null || $value === '') {
-            return null;
-        }
-        if (is_int($value) || is_float($value)) {
-            return (float) $value;
-        }
-        if (is_string($value) && is_numeric($value)) {
-            return (float) $value;
-        }
-
-        return null;
     }
 }
