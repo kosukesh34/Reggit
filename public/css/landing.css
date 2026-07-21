@@ -262,10 +262,6 @@ img {
     animation: lpMarqueeLeftToRight 90s linear infinite;
 }
 
-.lp-marquee:hover .lp-marquee__track {
-    animation-play-state: paused;
-}
-
 .lp-marquee__group {
     list-style: none;
     margin: 0;
