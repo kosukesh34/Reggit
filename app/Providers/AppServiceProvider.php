@@ -16,6 +16,7 @@ use App\Enums\MemberRegistrationMode;
 use App\Infrastructure\Events\LoggingDomainEventListener;
 use App\Infrastructure\Events\MulticastDomainEventDispatcher;
 use App\Infrastructure\Events\SyncOrderPointsToSmaregiListener;
+use App\Infrastructure\Events\SyncOrderTransactionToSmaregiListener;
 use App\Infrastructure\Events\SyncPointsEarnedToSmaregiListener;
 use App\Infrastructure\Persistence\Eloquent\Coupon\EloquentCouponDeliveryTargetRepository;
 use App\Infrastructure\Persistence\Eloquent\Coupon\EloquentMemberCouponRepository;
@@ -75,6 +76,7 @@ class AppServiceProvider extends ServiceProvider
                 $app->make(LoggingDomainEventListener::class),
                 $app->make(SyncPointsEarnedToSmaregiListener::class),
                 $app->make(SyncOrderPointsToSmaregiListener::class),
+                $app->make(SyncOrderTransactionToSmaregiListener::class),
             ]);
         });
 

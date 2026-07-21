@@ -3,14 +3,17 @@
 namespace App\Services\Admin;
 
 use App\Enums\OrderStatus;
+use App\Enums\PaymentMethod;
 use App\Models\Order;
 use App\Services\CouponIssueService;
+use App\Services\Smaregi\SmaregiOrderTransactionOutboundService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class OrderAdminService
 {
     public function __construct(
-        private CouponIssueService $couponIssueService
+        private CouponIssueService $couponIssueService,
+        private SmaregiOrderTransactionOutboundService $smaregiOrderTransactionOutbound,
     ) {}
 
     /** 決済済み = 確定・準備中・受け取り可能・完了 */
@@ -55,7 +58,11 @@ class OrderAdminService
 
     public function updateStatus(int $id, string $status): void
     {
+        $order = Order::with('user')->findOrFail($id);
         Order::whereKey($id)->update(['status' => $status]);
+        if ($status === OrderStatus::COMPLETED) {
+            $this->finalizeCashLayawayIfNeeded($order->fresh());
+        }
     }
 
     public function complete(int $id): void
@@ -69,5 +76,25 @@ class OrderAdminService
                 $this->couponIssueService->issueForFirstOrder($member);
             }
         }
+        $this->finalizeCashLayawayIfNeeded($order->fresh());
+    }
+
+    private function finalizeCashLayawayIfNeeded(?Order $order): void
+    {
+        if ($order === null) {
+            return;
+        }
+        if ($order->payment_method !== PaymentMethod::CASH) {
+            return;
+        }
+        if ($order->user_id === null) {
+            return;
+        }
+
+        $this->smaregiOrderTransactionOutbound->finalizeCashLayawayWithRetry(
+            (int) $order->id,
+            (int) $order->project_id,
+            (int) $order->user_id,
+        );
     }
 }
