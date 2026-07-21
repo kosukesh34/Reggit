@@ -59,6 +59,16 @@
                 <label class="form-label" for="smaregi_contract_id">契約ID</label>
                 <input type="text" name="smaregi_contract_id" id="smaregi_contract_id" class="form-control" value="{{ old('smaregi_contract_id', $view->linkedContractId) }}" placeholder="例: sb_xxxxxxxx">
             </div>
+            <div class="form-group mt-3">
+                <label class="form-label" for="smaregi_store_id">店舗ID（取引登録用）</label>
+                <input type="text" name="smaregi_store_id" id="smaregi_store_id" class="form-control" value="{{ old('smaregi_store_id', $view->storeId) }}" placeholder="未設定時はAPIの先頭店舗を使用">
+                <p class="form-text text-muted">Reggit注文をスマレジ取引として登録するときに使います。未設定の場合はスマレジ店舗一覧の先頭を使います。</p>
+            </div>
+            <div class="form-group mt-3">
+                <label class="form-label" for="smaregi_terminal_id">レジ端末ID（取引登録用）</label>
+                <input type="text" name="smaregi_terminal_id" id="smaregi_terminal_id" class="form-control" value="{{ old('smaregi_terminal_id', $view->terminalId) }}" placeholder="未設定時はAPIの先頭端末を使用">
+                <p class="form-text text-muted">未設定の場合はスマレジ端末一覧の先頭を使います。</p>
+            </div>
             <div class="form-actions mt-3">
                 <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> 保存</button>
             </div>

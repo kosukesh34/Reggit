@@ -30,10 +30,19 @@ class SmaregiController extends AdminBaseController
     {
         $request->validate([
             'smaregi_contract_id' => 'nullable|string|max:255',
+            'smaregi_store_id' => 'nullable|string|max:64',
+            'smaregi_terminal_id' => 'nullable|string|max:64',
         ]);
         $projectId = $this->resolveAdminProjectId();
         $contractId = $request->input('smaregi_contract_id');
-        $this->updateSmaregiLinkUseCase->handle($projectId, is_string($contractId) ? $contractId : null);
+        $storeId = $request->input('smaregi_store_id');
+        $terminalId = $request->input('smaregi_terminal_id');
+        $this->updateSmaregiLinkUseCase->handle(
+            $projectId,
+            is_string($contractId) ? $contractId : null,
+            is_string($storeId) ? $storeId : '',
+            is_string($terminalId) ? $terminalId : '',
+        );
 
         return redirect()->route('admin.settings.smaregi', $this->buildAdminRouteParams())
             ->with('success', 'スマレジ連携を更新しました');
