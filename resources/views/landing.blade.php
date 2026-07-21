@@ -51,7 +51,7 @@
         <div class="lp-hero__visual">
             <img
                 class="lp-hero__image"
-                src="{{ asset('images/landing/lp-hero-cafe.jpg') }}?v=4"
+                src="{{ asset('images/landing/lp-hero-cafe.jpg') }}?v=5"
                 alt="店舗の風景"
                 width="1600"
                 height="900"
@@ -102,7 +102,7 @@
         <section class="lp-feature lp-feature--order lp-reveal">
             <div class="lp-feature__media">
                 <img
-                    src="{{ asset('images/landing/lp-feature-order.jpg') }}?v=4"
+                    src="{{ asset('images/landing/lp-feature-order.jpg') }}?v=5"
                     alt="店舗でのモバイルオーダーの風景"
                     width="1600"
                     height="900"
@@ -120,7 +120,7 @@
         <section class="lp-feature lp-feature--member lp-reveal">
             <div class="lp-feature__media">
                 <img
-                    src="{{ asset('images/landing/lp-feature-member.jpg') }}?v=4"
+                    src="{{ asset('images/landing/lp-feature-member.jpg') }}?v=5"
                     alt="会員証を使う店舗の風景"
                     width="1600"
                     height="900"
@@ -138,7 +138,7 @@
         <section class="lp-feature lp-feature--queue lp-reveal">
             <div class="lp-feature__media">
                 <img
-                    src="{{ asset('images/landing/lp-feature-queue.jpg') }}?v=4"
+                    src="{{ asset('images/landing/lp-feature-queue.jpg') }}?v=5"
                     alt="順番待ちのある店舗の風景"
                     width="1600"
                     height="900"
