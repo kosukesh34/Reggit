@@ -400,7 +400,7 @@ class QueueApiTest extends TestCase
         $this->assertSame('app', $matched['link_channel']);
     }
 
-    public function test_list_LINE連携済みはlink_channelがlineになること(): void
+    public function test_list_lin_e連携済みはlink_channelがlineになること(): void
     {
         $this->createProject();
         $lineUserId = 'Uaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';

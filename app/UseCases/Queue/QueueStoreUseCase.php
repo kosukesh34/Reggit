@@ -65,10 +65,6 @@ class QueueStoreUseCase
         return hash_equals(self::WAITING_SYSTEM_CLIENT, $client);
     }
 
-    /**
-     * @param  string|null  $guestName
-     * @param  string|null  $guestPhone
-     */
     private function createEntryWithUniqueQueueNumber(
         int $projectId,
         ?int $memberId,
