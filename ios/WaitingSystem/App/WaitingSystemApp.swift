@@ -13,6 +13,13 @@ struct WaitingSystemApp: App {
         WindowGroup {
             RootView()
                 .environmentObject(appState)
+                // 受付端末はローカル iPad と同じライト配色で固定（ダークモードだと文字が消える）
+                .preferredColorScheme(.light)
+                .task {
+                    await WaitingRemoteConfigStore.refreshFromAPI()
+                    let store = SettingsStore()
+                    store.save(store.load())
+                }
         }
     }
 }

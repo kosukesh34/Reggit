@@ -9,22 +9,23 @@ struct TicketView: View {
     var body: some View {
         GeometryReader { geo in
             let compact = geo.size.height < 760
-            let qrSize = min(AppConstants.Layout.qrCodeSize, compact ? 200 : 240)
+            let qrSize = min(AppConstants.Layout.qrCodeSize, compact ? 160 : 200)
 
             ZStack(alignment: .topTrailing) {
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: compact ? 20 : 28) {
-                        successHeader(compact: compact)
-                        ticketNumberCard(compact: compact)
-                        summaryRow(compact: compact)
-                        qrSection(qrSize: qrSize, compact: compact)
-                        actionButtons
-                    }
-                    .padding(.top, compact ? 44 : 56)
-                    .padding(.horizontal, Theme.Spacing.xxl)
-                    .padding(.bottom, Theme.Spacing.xxl + 4)
-                    .frame(maxWidth: .infinity)
+                VStack(spacing: compact ? 14 : 20) {
+                    successHeader(compact: compact)
+                    ticketNumberCard(compact: compact)
+                    summaryRow(compact: compact)
+                    qrSection(qrSize: qrSize, compact: compact)
+                    Text(Strings.Ticket.autoReturnNotice)
+                        .font(.system(size: compact ? 12 : 13))
+                        .foregroundColor(Theme.Colors.textSecondary)
+                    Spacer(minLength: 0)
+                    actionButtons
                 }
+                .padding(.top, compact ? 36 : 48)
+                .padding(.horizontal, Theme.Spacing.xxl)
+                .padding(.bottom, Theme.Spacing.xl)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(viewModel.backgroundColorHex.toColor().ignoresSafeArea())
 
@@ -42,9 +43,7 @@ struct TicketView: View {
             )
         }
         .onAppear {
-            if viewModel.currentTicket.lineLinked {
-                viewModel.scheduleAutoReturn()
-            }
+            viewModel.scheduleAutoReturn()
             viewModel.startAutoRefresh()
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { showCheckmark = true }
             withAnimation(.easeOut(duration: 0.5).delay(0.2)) { animateIn = true }
@@ -71,10 +70,10 @@ struct TicketView: View {
             ZStack {
                 Circle()
                     .fill(Theme.Colors.successSubtle)
-                    .frame(width: 56, height: 56)
+                    .frame(width: compact ? 48 : 56, height: compact ? 48 : 56)
                     .scaleEffect(showCheckmark ? 1.0 : 0.5)
                 Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 32))
+                    .font(.system(size: compact ? 28 : 32))
                     .foregroundColor(Theme.Colors.success)
                     .scaleEffect(showCheckmark ? 1.0 : 0.0)
             }
@@ -94,10 +93,10 @@ struct TicketView: View {
                 .font(.system(size: 13, weight: .medium))
                 .foregroundColor(Theme.Colors.textSecondary)
             Text(viewModel.currentTicket.displayNumber)
-                .font(.system(size: compact ? 56 : 72, weight: .heavy, design: .rounded))
+                .font(.system(size: compact ? 48 : 64, weight: .heavy, design: .rounded))
                 .foregroundColor(Theme.Colors.accent)
         }
-        .padding(.vertical, compact ? Theme.Spacing.lg : Theme.Spacing.xxl)
+        .padding(.vertical, compact ? Theme.Spacing.md : Theme.Spacing.xl)
         .padding(.horizontal, Theme.Spacing.xxxl)
         .frame(maxWidth: AppConstants.Layout.contentMaxWidth)
         .background(Theme.Colors.background)
@@ -118,52 +117,61 @@ struct TicketView: View {
             Label("\(viewModel.currentTicket.waitingCount)組待ち", systemImage: "person.3.sequence.fill")
             Label("約\(viewModel.currentTicket.estimatedWaitMinutes)分", systemImage: "clock.fill")
         }
-        .font(.system(size: compact ? 15 : 17, weight: .medium))
+        .font(.system(size: compact ? 14 : 16, weight: .medium))
         .foregroundColor(Theme.Colors.textSecondary)
         .opacity(animateIn ? 1 : 0)
     }
 
     @ViewBuilder
     private func qrSection(qrSize: CGFloat, compact: Bool) -> some View {
-        let qrURL = viewModel.liffURLString()
-        let isLinked = viewModel.currentTicket.lineLinked
-        VStack(spacing: Theme.Spacing.md) {
-            if isLinked {
+        let channel = viewModel.currentTicket.linkChannel
+        VStack(spacing: Theme.Spacing.sm) {
+            if channel.isLinked {
                 Image(systemName: "checkmark.seal.fill")
-                    .font(.system(size: compact ? 44 : 56))
+                    .font(.system(size: compact ? 40 : 48))
                     .foregroundColor(Theme.Colors.success)
-                Text(Strings.Ticket.lineLinked)
+                Text(linkedTitle(for: channel))
                     .font(.system(size: compact ? 16 : 18, weight: .semibold))
                     .foregroundColor(Theme.Colors.success)
                     .multilineTextAlignment(.center)
                 Text(Strings.Ticket.qrNotifyMessage)
-                    .font(.system(size: compact ? 13 : 15))
+                    .font(.system(size: compact ? 13 : 14))
                     .foregroundColor(Theme.Colors.textSecondary)
                     .multilineTextAlignment(.center)
             } else {
-                if let qr = QRCodeGenerator().generate(from: qrURL, size: qrSize) {
+                if let qr = QRCodeGenerator().generate(from: viewModel.liffURLString(), size: qrSize) {
                     Image(uiImage: qr)
                         .interpolation(.none)
                         .resizable()
                         .frame(width: qrSize, height: qrSize)
-                        .padding(Theme.Spacing.lg)
+                        .padding(Theme.Spacing.md)
                         .background(Color.white)
                         .cornerRadius(Theme.Radius.lg)
                         .applyShadow(Theme.Shadow.sm)
                 }
-                Text(Strings.Ticket.lineNotLinked)
-                    .font(.system(size: compact ? 14 : 16, weight: .semibold))
-                    .foregroundColor(Theme.Colors.warning)
-                    .multilineTextAlignment(.center)
                 Text(Strings.Ticket.qrScanMessage)
-                    .font(.system(size: compact ? 13 : 15))
+                    .font(.system(size: compact ? 13 : 14))
                     .foregroundColor(Theme.Colors.textSecondary)
                     .multilineTextAlignment(.center)
+                    .padding(.horizontal, Theme.Spacing.lg)
             }
         }
-        .animation(.easeInOut(duration: 0.25), value: isLinked)
+        .animation(.easeInOut(duration: 0.25), value: channel)
         .opacity(animateIn ? 1 : 0)
         .offset(y: animateIn ? 0 : 16)
+    }
+
+    private func linkedTitle(for channel: QueueLinkChannel) -> String {
+        switch channel {
+        case .line:
+            return Strings.Ticket.linkedLine
+        case .app:
+            return Strings.Ticket.linkedApp
+        case .both:
+            return Strings.Ticket.linkedBoth
+        case .none:
+            return ""
+        }
     }
 
     @ViewBuilder
