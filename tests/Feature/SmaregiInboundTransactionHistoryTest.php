@@ -3,12 +3,16 @@
 namespace Tests\Feature;
 
 use App\Enums\MemberVisitSource;
+use App\Enums\OrderStatus;
+use App\Enums\OrderType;
+use App\Enums\PaymentMethod;
 use App\Enums\PointTransactionType;
 use App\Jobs\SmaregiSyncInboundTransactionsJob;
 use App\Models\Member;
 use App\Models\MemberStamp;
 use App\Models\MemberStampTransaction;
 use App\Models\MemberVisit;
+use App\Models\Order;
 use App\Models\PointTransaction;
 use App\Models\Product;
 use App\Models\Project;
@@ -129,8 +133,8 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
         $this->assertDatabaseHas('orders', [
             'project_id' => $project->id,
             'user_id' => $user->id,
-            'order_type' => \App\Enums\OrderType::POS,
-            'status' => \App\Enums\OrderStatus::COMPLETED,
+            'order_type' => OrderType::POS,
+            'status' => OrderStatus::COMPLETED,
             'smaregi_transaction_head_id' => '39',
             'total_amount' => 2046,
         ]);
@@ -147,7 +151,7 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
         $this->assertNotNull($visit->order_id);
     }
 
-    public function test_Reggit起点の取引は来店もポイントも二重に取り込まないこと(): void
+    public function test_reggit起点の取引は来店もポイントも二重に取り込まないこと(): void
     {
         $project = Project::factory()->create();
         ShopSetting::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
@@ -159,15 +163,15 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
             'smaregi_customer_id' => '259',
             'points' => 0,
         ]);
-        $order = \App\Models\Order::create([
+        $order = Order::create([
             'project_id' => $project->id,
             'user_id' => $user->id,
             'total_amount' => 2046,
-            'status' => \App\Enums\OrderStatus::COMPLETED,
-            'payment_method' => \App\Enums\PaymentMethod::CASH,
+            'status' => OrderStatus::COMPLETED,
+            'payment_method' => PaymentMethod::CASH,
             'points_used' => 0,
             'points_earned' => 20,
-            'order_type' => \App\Enums\OrderType::MOBILE,
+            'order_type' => OrderType::MOBILE,
             'smaregi_transaction_head_id' => '39',
             'smaregi_transaction_synced_at' => now(),
         ]);
@@ -196,7 +200,7 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
 
         $this->assertSame(0, MemberVisit::query()->where('smaregi_transaction_head_id', '39')->count());
         $this->assertSame(0, PointTransaction::query()->where('member_id', $member->id)->count());
-        $this->assertSame(1, \App\Models\Order::query()->where('smaregi_transaction_head_id', '39')->count());
+        $this->assertSame(1, Order::query()->where('smaregi_transaction_head_id', '39')->count());
     }
 
     public function test_通常販売取引でスタンプ設定がある場合はスタンプが付与されること(): void
@@ -456,8 +460,8 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
         );
         $this->assertDatabaseHas('orders', [
             'smaregi_transaction_head_id' => '39',
-            'status' => \App\Enums\OrderStatus::CANCELLED,
-            'order_type' => \App\Enums\OrderType::POS,
+            'status' => OrderStatus::CANCELLED,
+            'order_type' => OrderType::POS,
         ]);
     }
 
