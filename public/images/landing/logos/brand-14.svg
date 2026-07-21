@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 64" role="img" aria-label="森のテーブル">
+  <title>森のテーブル</title>
+  <defs>
+    <filter id="s" x="-8%" y="-20%" width="116%" height="140%">
+      <feDropShadow dx="0" dy="1" stdDeviation="1.2" flood-color="#000000" flood-opacity="0.06"/>
+    </filter>
+  </defs>
+
+  <rect width="200" height="64" rx="16" fill="#EAF6F1" stroke="#D5EBE2" filter="url(#s)"/>
+  <path d="M32 46v-12" stroke="#12352C" stroke-width="3" stroke-linecap="round"/>
+  <path d="M32 12l15 20H17z" fill="#0B7A66"/>
+  <path d="M32 22l11 14H21z" fill="#12352C"/>
+  <text x="58" y="38" font-family="'Hiragino Mincho ProN', serif" font-size="18" font-weight="600" fill="#12352C">森のテーブル</text>
+
+</svg>
