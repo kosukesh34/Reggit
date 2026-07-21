@@ -399,6 +399,7 @@
 				DEVELOPMENT_TEAM = T29T2L39T5;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Reggit Wait";
 				INFOPLIST_KEY_NSAppTransportSecurity = "{NSAllowsArbitraryLoads=YES;}";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -433,6 +434,7 @@
 				DEVELOPMENT_TEAM = T29T2L39T5;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Reggit Wait";
 				INFOPLIST_KEY_NSAppTransportSecurity = "{NSAllowsArbitraryLoads=YES;}";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
