@@ -11,11 +11,12 @@ class RootRouteTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_root_未ログイン時は管理ログインへリダイレクトすること(): void
+    public function test_root_未ログイン時はランディングページを表示すること(): void
     {
         $response = $this->get('/');
 
-        $response->assertRedirect(route('admin.login'));
+        $response->assertOk();
+        $response->assertViewIs('landing');
     }
 
     public function test_root_ログイン済みは管理画面へリダイレクトすること(): void

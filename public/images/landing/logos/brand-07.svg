@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 208 64" role="img" aria-label="LUMINA BAKE">
+  <title>LUMINA BAKE</title>
+  <defs>
+    <filter id="s" x="-8%" y="-20%" width="116%" height="140%">
+      <feDropShadow dx="0" dy="1" stdDeviation="1.2" flood-color="#000000" flood-opacity="0.06"/>
+    </filter>
+  </defs>
+
+  <rect width="208" height="64" rx="16" fill="#FFFFFF" stroke="#E5E5EA" filter="url(#s)"/>
+  <circle cx="32" cy="32" r="18" fill="#FFE08A"/>
+  <circle cx="32" cy="32" r="6.5" fill="#1D1D1F"/>
+  <g stroke="#1D1D1F" stroke-width="2.2" stroke-linecap="round">
+    <path d="M32 10v4M32 50v4M10 32h4M50 32h4M15.5 15.5l2.8 2.8M45.7 45.7l2.8 2.8M15.5 48.5l2.8-2.8M45.7 18.3l2.8-2.8"/>
+  </g>
+  <text x="60" y="38" font-family="'Helvetica Neue', Arial, sans-serif" font-size="15" font-weight="700" letter-spacing="0.08em" fill="#1D1D1F">LUMINA BAKE</text>
+
+</svg>
