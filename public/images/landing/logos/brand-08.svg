@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 64" role="img" aria-label="翠庭レストラン">
+  <title>翠庭レストラン</title>
+  <defs>
+    <filter id="s" x="-8%" y="-20%" width="116%" height="140%">
+      <feDropShadow dx="0" dy="1" stdDeviation="1.2" flood-color="#000000" flood-opacity="0.06"/>
+    </filter>
+  </defs>
+
+  <rect width="220" height="64" rx="16" fill="#EAF6F1" stroke="#D5EBE2" filter="url(#s)"/>
+  <path d="M16 46V24l16-12 16 12v22h-9V30H25v16H16z" fill="#0B7A66"/>
+  <circle cx="32" cy="22" r="3.5" fill="#C8F0E2"/>
+  <text x="58" y="38" font-family="'Hiragino Sans', 'Yu Gothic', sans-serif" font-size="16" font-weight="700" fill="#12352C">翠庭レストラン</text>
+
+</svg>

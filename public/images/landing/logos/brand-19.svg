@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 64" role="img" aria-label="CANVAS BISTRO">
+  <title>CANVAS BISTRO</title>
+  <defs>
+    <filter id="s" x="-8%" y="-20%" width="116%" height="140%">
+      <feDropShadow dx="0" dy="1" stdDeviation="1.2" flood-color="#000000" flood-opacity="0.06"/>
+    </filter>
+  </defs>
+
+  <rect width="220" height="64" rx="16" fill="#FFFFFF" stroke="#E5E5EA" filter="url(#s)"/>
+  <rect x="14" y="14" width="36" height="36" rx="6" fill="#F5F5F7" stroke="#D2D2D7"/>
+  <path d="M20 42l7-14 5.5 9 3.5-6 7 11H20z" fill="#0071E3"/>
+  <circle cx="42" cy="24" r="3" fill="#1D1D1F"/>
+  <text x="62" y="38" font-family="'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="700" letter-spacing="0.08em" fill="#1D1D1F">CANVAS BISTRO</text>
+
+</svg>
