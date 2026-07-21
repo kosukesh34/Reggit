@@ -4,6 +4,7 @@ namespace Tests\Unit\Payment;
 
 use App\Domain\Order\Events\OrderConfirmed;
 use App\Domain\Order\Events\OrderPointsSyncRequested;
+use App\Domain\Order\Events\OrderTransactionSyncRequested;
 use App\Domain\Order\Repositories\OrderRepository;
 use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
 use App\Enums\OrderStatus;
@@ -52,6 +53,14 @@ class PaymentConfirmUseCaseTest extends TestCase
             ->once()
             ->with(\Mockery::on(function ($event) use ($order, $user): bool {
                 return $event instanceof OrderPointsSyncRequested
+                    && $event->orderId === (int) $order->id
+                    && $event->projectId === 1
+                    && $event->userId === (int) $user->id;
+            }));
+        $dispatcher->shouldReceive('dispatch')
+            ->once()
+            ->with(\Mockery::on(function ($event) use ($order, $user): bool {
+                return $event instanceof OrderTransactionSyncRequested
                     && $event->orderId === (int) $order->id
                     && $event->projectId === 1
                     && $event->userId === (int) $user->id;
@@ -105,6 +114,14 @@ class PaymentConfirmUseCaseTest extends TestCase
             ->once()
             ->with(\Mockery::on(function ($event) use ($order, $user): bool {
                 return $event instanceof OrderPointsSyncRequested
+                    && $event->orderId === (int) $order->id
+                    && $event->projectId === 1
+                    && $event->userId === (int) $user->id;
+            }));
+        $dispatcher->shouldReceive('dispatch')
+            ->once()
+            ->with(\Mockery::on(function ($event) use ($order, $user): bool {
+                return $event instanceof OrderTransactionSyncRequested
                     && $event->orderId === (int) $order->id
                     && $event->projectId === 1
                     && $event->userId === (int) $user->id;

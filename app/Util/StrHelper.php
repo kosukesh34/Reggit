@@ -4,6 +4,15 @@ namespace App\Util;
 
 final class StrHelper
 {
+    public static function trimmedOrEmpty(mixed $value): string
+    {
+        if ($value === null) {
+            return '';
+        }
+
+        return trim((string) $value);
+    }
+
     public static function isEmptyStringOrNull($value): bool
     {
         if ($value === null) {

@@ -127,6 +127,9 @@ class PaymentWebhookUseCaseTest extends TestCase
         $dispatcher->shouldReceive('dispatch')
             ->once()
             ->with(\Mockery::type(OrderPointsSyncRequested::class));
+        $dispatcher->shouldReceive('dispatch')
+            ->once()
+            ->with(\Mockery::type(\App\Domain\Order\Events\OrderTransactionSyncRequested::class));
 
         $useCase = new PaymentWebhookUseCase(
             $gateway,
