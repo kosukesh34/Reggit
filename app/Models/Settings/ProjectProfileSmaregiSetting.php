@@ -21,6 +21,8 @@ class ProjectProfileSmaregiSetting extends Model
         'smaregi_contract_id',
         'smaregi_client_id',
         'smaregi_client_secret',
+        'smaregi_store_id',
+        'smaregi_terminal_id',
     ];
 
     /** @var array<string, string> */
