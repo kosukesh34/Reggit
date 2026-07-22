@@ -4,14 +4,17 @@ namespace App\Services;
 
 use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Enums\MemberStatus;
+use App\Enums\ProfileCustomFieldInputType;
 use App\Jobs\SendAfterRegistrationJob;
 use App\Models\AfterRegistrationDelivery;
 use App\Models\Member;
 use App\Models\MemberRankHistory;
 use App\Models\PointTransaction;
 use App\Models\User;
+use App\Rules\ProfileValidationRules;
 use App\Services\Smaregi\SmaregiApiService;
 use App\Services\Smaregi\SmaregiCustomerPointsInboundSyncService;
+use App\Services\Smaregi\SmaregiCustomerRankAssignmentService;
 use App\Services\Smaregi\SmaregiCustomerUpdatePayloadBuilder;
 use App\UseCases\Coupon\IssueCouponOnRankUpUseCase;
 use App\Util\AdminContext;
@@ -27,6 +30,7 @@ class MemberService
         private SmaregiApiService $smaregiApi,
         private SmaregiCustomerUpdatePayloadBuilder $smaregiCustomerUpdatePayloadBuilder,
         private SmaregiCustomerPointsInboundSyncService $smaregiCustomerPointsInboundSyncService,
+        private SmaregiCustomerRankAssignmentService $smaregiCustomerRankAssignmentService,
         private MemberRankCalculator $rankCalculator,
         private ShopSettingRepository $shopSettingRepository,
         private IssueCouponOnRankUpUseCase $issueCouponOnRankUpUseCase,
@@ -152,42 +156,63 @@ class MemberService
     {
         $settings = $this->shopSettingRepository->getProfileFieldSettings($projectId);
         $rules = [];
-        $stringMax = ['name' => 255, 'kana' => 255, 'phone' => 50, 'email' => 255, 'postal_code' => 16, 'prefecture' => 64, 'city' => 128, 'street' => 256, 'address' => 500, 'sex' => 16, 'mail_receive_flag' => 1];
+        $formatRules = ProfileValidationRules::formatRulesByField();
         foreach ($settings['smaregi_fields'] ?? [] as $key => $field) {
             if ((bool) ($field['enabled'] ?? false) === false) {
                 continue;
             }
-            $rule = ['nullable'];
-            if ((bool) ($field['required'] ?? false) === true) {
-                $rule = ['required'];
-            }
-            if ($key === 'email') {
-                $rule[] = 'email';
-            }
-            if ($key === 'birthday') {
-                $rule[] = 'date';
-            }
-            if ($key === 'sex') {
-                $rule[] = 'in:0,1,2';
-            }
-            if ($key === 'mail_receive_flag') {
-                $rule[] = 'in:0,1';
-            }
-            if (isset($stringMax[$key])) {
-                $rule[] = 'string';
-                $rule[] = 'max:'.$stringMax[$key];
+            $rule = [(bool) ($field['required'] ?? false) === true ? 'required' : 'nullable'];
+            foreach ($formatRules[$key] ?? ['string', 'max:'.ProfileValidationRules::CUSTOM_TEXT_MAX] as $formatRule) {
+                $rule[] = $formatRule;
             }
             $rules[$key] = $rule;
         }
         foreach ($settings['custom_fields'] ?? [] as $cf) {
             $key = $cf['key'] ?? null;
-            if ($key === null) {
+            if ($key === null || $key === '') {
                 continue;
             }
-            $rules[$key] = (bool) ($cf['required'] ?? false) === true ? ['required', 'string', 'max:500'] : ['nullable', 'string', 'max:500'];
+            foreach ($this->buildCustomFieldValidationRules((string) $key, $cf) as $ruleKey => $rule) {
+                $rules[$ruleKey] = $rule;
+            }
         }
 
         return $rules;
+    }
+
+    /**
+     * @param  array<string, mixed>  $cf
+     * @return array<string, list<string>>
+     */
+    private function buildCustomFieldValidationRules(string $key, array $cf): array
+    {
+        $required = (bool) ($cf['required'] ?? false) === true;
+        $inputType = (string) ($cf['input_type'] ?? ProfileCustomFieldInputType::TEXT);
+        $base = [$required ? 'required' : 'nullable'];
+        $values = isset($cf['values']) && is_array($cf['values'])
+            ? array_values(array_filter(array_map('strval', $cf['values']), static fn (string $v): bool => $v !== ''))
+            : [];
+
+        if ($inputType === ProfileCustomFieldInputType::CHECKBOX) {
+            $rules = [
+                $key => array_merge($base, ['array']),
+            ];
+            if ($values !== []) {
+                $rules[$key.'.*'] = ['string', 'in:'.implode(',', $values)];
+            }
+
+            return $rules;
+        }
+
+        if ($inputType === ProfileCustomFieldInputType::TEXTAREA) {
+            return [$key => array_merge($base, ['string', 'max:'.ProfileValidationRules::CUSTOM_TEXT_MAX])];
+        }
+
+        if (ProfileCustomFieldInputType::needsValues($inputType) && $values !== []) {
+            return [$key => array_merge($base, ['string', 'in:'.implode(',', $values)])];
+        }
+
+        return [$key => array_merge($base, ['string', 'max:'.ProfileValidationRules::CUSTOM_TEXT_MAX])];
     }
 
     /** プロフィール設定で有効な項目のみのフォーム用定義（キー・ラベル・必須） */
@@ -202,6 +227,7 @@ class MemberService
                 'key' => $key,
                 'label' => $field['label'] ?? $key,
                 'required' => (bool) ($field['required'] ?? false) === true,
+                'input_type' => $this->resolveBasicFieldInputType($key),
             ];
         }
         foreach ($profileSettings['custom_fields'] ?? [] as $cf) {
@@ -209,10 +235,23 @@ class MemberService
                 'key' => $cf['key'] ?? '',
                 'label' => $cf['label'] ?? '',
                 'required' => (bool) ($cf['required'] ?? false) === true,
+                'input_type' => (string) ($cf['input_type'] ?? ProfileCustomFieldInputType::TEXT),
+                'values' => isset($cf['values']) && is_array($cf['values']) ? array_values($cf['values']) : [],
+                'description' => isset($cf['description']) ? (string) $cf['description'] : null,
             ];
         }
 
         return $out;
+    }
+
+    private function resolveBasicFieldInputType(string $key): string
+    {
+        return match ($key) {
+            'birthday' => 'date',
+            'sex', 'mail_receive_flag' => ProfileCustomFieldInputType::RADIO,
+            'address' => ProfileCustomFieldInputType::TEXTAREA,
+            default => ProfileCustomFieldInputType::TEXT,
+        };
     }
 
     /** 会員・ユーザーからプロフィール値を配列で取得 */
@@ -454,55 +493,8 @@ class MemberService
                 (string) ($rankInfo['current_rank_label'] ?? $newRank),
             );
             $this->issueCouponOnRankUpUseCase->handle($member->fresh() ?? $member, $previousRank, $newRank);
-            $this->syncSmaregiCustomerRank($member, $newRank);
+            $this->smaregiCustomerRankAssignmentService->assignRankToCustomer($member, $newRank);
         }
-    }
-
-    private function syncSmaregiCustomerRank(Member $member, string $rankKey): void
-    {
-        $smaregiCustomerId = trim((string) ($member->smaregi_customer_id ?? ''));
-        if ($smaregiCustomerId === '') {
-            return;
-        }
-        $smaregiRankId = $this->resolveSmaregiRankId((int) $member->project_id, $rankKey);
-        if ($smaregiRankId === null) {
-            return;
-        }
-        $contractId = $this->smaregiApi->getContractIdForProject((int) $member->project_id);
-        $contractId = is_string($contractId) ? trim($contractId) : '';
-        if ($contractId === '') {
-            return;
-        }
-        $this->smaregiApi->clearLastErrorDetail();
-        $result = $this->smaregiApi->updateCustomer($contractId, $smaregiCustomerId, [
-            'rank' => $smaregiRankId,
-        ]);
-        if ($result === null) {
-            LogHelper::warning('[Member] smaregi customer rank sync failed', [
-                'project_id' => (int) $member->project_id,
-                'member_id' => (int) $member->id,
-                'rank_key' => $rankKey,
-                'smaregi_rank_id' => $smaregiRankId,
-                'detail' => $this->smaregiApi->getLastErrorDetail(),
-            ]);
-        }
-    }
-
-    private function resolveSmaregiRankId(int $projectId, string $rankKey): ?string
-    {
-        if ($rankKey === '') {
-            return null;
-        }
-        foreach ($this->shopSettingRepository->getMemberRankSettings($projectId) as $rank) {
-            if ((string) ($rank['key'] ?? '') !== $rankKey) {
-                continue;
-            }
-            $smaregiRankId = isset($rank['smaregi_rank_id']) ? trim((string) $rank['smaregi_rank_id']) : '';
-
-            return $smaregiRankId !== '' ? $smaregiRankId : null;
-        }
-
-        return null;
     }
 
     private function recordRankHistory(
