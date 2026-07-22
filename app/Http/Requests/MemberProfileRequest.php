@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Services\MemberService;
 use App\Services\UserService;
+use App\Rules\ProfileValidationRules;
 use Illuminate\Foundation\Http\FormRequest;
 
 class MemberProfileRequest extends FormRequest
@@ -22,5 +23,10 @@ class MemberProfileRequest extends FormRequest
             : (int) ($user->project_id ?? 0);
 
         return resolve(MemberService::class)->getProfileValidationRules($projectId);
+    }
+
+    public function messages(): array
+    {
+        return ProfileValidationRules::messages();
     }
 }

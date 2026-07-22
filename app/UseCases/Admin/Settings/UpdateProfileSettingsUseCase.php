@@ -4,6 +4,7 @@ namespace App\UseCases\Admin\Settings;
 
 use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Enums\MemberRegistrationMode;
+use App\Enums\ProfileCustomFieldInputType;
 use App\Models\ShopSetting;
 use App\UseCases\Admin\Settings\Data\UpdateProfileSettingsInput;
 
@@ -37,12 +38,38 @@ class UpdateProfileSettingsUseCase
                 if (count($custom) >= ShopSetting::PROFILE_CUSTOM_FIELD_MAX) {
                     break;
                 }
+                if (! is_array($row)) {
+                    continue;
+                }
                 $key = $row['key'] ?? ('custom_'.($i + 1));
-                $key = preg_replace('/[^a-z0-9_]/', '', $key) ?: ('custom_'.($i + 1));
+                $key = preg_replace('/[^a-z0-9_]/', '', (string) $key) ?: ('custom_'.($i + 1));
+                $inputType = (string) ($row['input_type'] ?? ProfileCustomFieldInputType::TEXT);
+                if (! array_key_exists($inputType, ProfileCustomFieldInputType::getValues())) {
+                    $inputType = ProfileCustomFieldInputType::TEXT;
+                }
+                $values = [];
+                if (ProfileCustomFieldInputType::needsValues($inputType)) {
+                    $rawValues = $row['values'] ?? [];
+                    if (is_string($rawValues)) {
+                        $rawValues = preg_split('/\r\n|\r|\n/', $rawValues) ?: [];
+                    }
+                    if (is_array($rawValues)) {
+                        foreach ($rawValues as $value) {
+                            $value = trim((string) $value);
+                            if ($value !== '') {
+                                $values[] = $value;
+                            }
+                        }
+                        $values = array_slice($values, 0, ProfileCustomFieldInputType::VALUES_MAX);
+                    }
+                }
                 $custom[] = [
                     'key' => $key,
-                    'label' => $row['label'] ?? '項目'.($i + 1),
+                    'label' => (string) ($row['label'] ?? '項目'.($i + 1)),
                     'required' => (bool) ($row['required'] ?? false),
+                    'input_type' => $inputType,
+                    'values' => $values,
+                    'description' => trim((string) ($row['description'] ?? '')),
                 ];
             }
         }
