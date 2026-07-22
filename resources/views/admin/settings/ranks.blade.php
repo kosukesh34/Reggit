@@ -83,12 +83,12 @@
                         <div class="ranks-settings-fields">
                             <div class="form-group">
                                 <label for="points_per_order" class="form-label">注文ごとの固定ポイント（pt）</label>
-                                <input type="number" name="points_per_order" id="points_per_order" class="form-control" value="{{ old('points_per_order', $view->pointsPerOrder ?? 0) }}" min="0" max="100000" placeholder="0で無効">
+                                <input type="number" name="points_per_order" id="points_per_order" class="form-control" value="{{ old('points_per_order', $view->pointsPerOrder ?? 0) }}" min="0" max="99999" placeholder="0で無効">
                                 <p class="form-text text-muted">例: 100 で毎回の注文に100pt付与。0の場合は付与しません。</p>
                             </div>
                             <div class="form-group">
                                 <label for="point_earn_rate" class="form-label">デフォルト付与レート（円/1pt）</label>
-                                <input type="number" name="point_earn_rate" id="point_earn_rate" class="form-control" value="{{ old('point_earn_rate', $view->pointEarnRate ?? 100) }}" min="1" max="100000" required>
+                                <input type="number" name="point_earn_rate" id="point_earn_rate" class="form-control" value="{{ old('point_earn_rate', $view->pointEarnRate ?? 100) }}" min="1" max="99999" required>
                                 <p class="form-text text-muted">例: 100 で100円ごとに1pt付与。ランク別レートが未設定のときのデフォルトです。保存時にスマレジ会員ランクへも同期します。</p>
                             </div>
                             <div class="form-group">
@@ -205,7 +205,7 @@
                                     <td><input type="text" name="ranks[{{ $i }}][key]" class="form-control form-control-sm" value="{{ old('ranks.' . $i . '.key', $rank['key'] ?? '') }}" required placeholder="例: gold"></td>
                                     <td><input type="text" name="ranks[{{ $i }}][label]" class="form-control form-control-sm" value="{{ old('ranks.' . $i . '.label', $rank['label'] ?? '') }}" placeholder="例: ゴールド"></td>
                                     <td><input type="number" name="ranks[{{ $i }}][min_points]" class="form-control form-control-sm" value="{{ old('ranks.' . $i . '.min_points', $rank['min_points'] ?? 0) }}" min="0"></td>
-                                    <td><input type="number" name="ranks[{{ $i }}][point_earn_rate]" class="form-control form-control-sm" value="{{ old('ranks.' . $i . '.point_earn_rate', $rank['point_earn_rate'] ?? '') }}" min="1" max="100000" placeholder="{{ $view->pointEarnRate ?? 100 }}"></td>
+                                    <td><input type="number" name="ranks[{{ $i }}][point_earn_rate]" class="form-control form-control-sm" value="{{ old('ranks.' . $i . '.point_earn_rate', $rank['point_earn_rate'] ?? '') }}" min="1" max="99999" placeholder="{{ $view->pointEarnRate ?? 100 }}"></td>
                                     <td class="text-center"><input type="checkbox" name="ranks[{{ $i }}][is_active]" value="1" {{ ((bool) old('ranks.' . $i . '.is_active', $rank['is_active'] ?? true)) ? 'checked' : '' }}></td>
                                     <td><input type="text" name="ranks[{{ $i }}][card_color]" class="form-control form-control-sm ranks-input-color" value="{{ old('ranks.' . $i . '.card_color', $rank['card_color'] ?? '') }}" placeholder="#cd7f32" maxlength="20"></td>
                                     <td><input type="url" name="ranks[{{ $i }}][icon_url]" class="form-control form-control-sm" value="{{ old('ranks.' . $i . '.icon_url', $rank['icon_url'] ?? '') }}" placeholder="https://..."></td>
@@ -316,7 +316,7 @@
         <td><input type="text" name="__NAME__[key]" class="form-control form-control-sm" required placeholder="例: gold"></td>
         <td><input type="text" name="__NAME__[label]" class="form-control form-control-sm" placeholder="例: ゴールド"></td>
         <td><input type="number" name="__NAME__[min_points]" class="form-control form-control-sm" value="0" min="0"></td>
-        <td><input type="number" name="__NAME__[point_earn_rate]" class="form-control form-control-sm" min="1" max="100000" placeholder="{{ $view->pointEarnRate ?? 100 }}"></td>
+        <td><input type="number" name="__NAME__[point_earn_rate]" class="form-control form-control-sm" min="1" max="99999" placeholder="{{ $view->pointEarnRate ?? 100 }}"></td>
         <td class="text-center"><input type="checkbox" name="__NAME__[is_active]" value="1" checked></td>
         <td><input type="text" name="__NAME__[card_color]" class="form-control form-control-sm ranks-input-color" placeholder="#cd7f32" maxlength="20"></td>
         <td><input type="url" name="__NAME__[icon_url]" class="form-control form-control-sm" placeholder="https://..."></td>
