@@ -30,6 +30,11 @@ class AppConfigApiTest extends TestCase
             'feature_flags',
             'theme',
             'header',
+            'line' => [
+                'liff_id',
+                'liff_url',
+                'friend_add_url',
+            ],
             'liff_tab_layouts',
             'liff_tab_settings',
             'liff_detail_layouts',
