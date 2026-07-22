@@ -7,12 +7,14 @@ struct SettingsSheetView: View {
     @StateObject private var viewModel = SettingsViewModel()
     let queueListEntries: [QueueListEntry]
     let onSelectPrinter: (@escaping () -> Void) -> Void
+    let onQueueMutated: () -> Void
 
     var body: some View {
         SettingsView(
             viewModel: viewModel,
             queueListEntries: queueListEntries,
             onSelectPrinter: onSelectPrinter,
+            onQueueMutated: onQueueMutated,
             onSave: {
                 viewModel.save()
                 appState.isShowingSettings = false
@@ -30,6 +32,7 @@ struct SettingsView: View {
     @ObservedObject var viewModel: SettingsViewModel
     let queueListEntries: [QueueListEntry]
     let onSelectPrinter: (@escaping () -> Void) -> Void
+    let onQueueMutated: () -> Void
     let onSave: () -> Void
     let onClose: () -> Void
 
@@ -66,8 +69,29 @@ struct SettingsView: View {
                     .padding(.vertical, Theme.Spacing.xs)
             } else {
                 ForEach(queueListEntries) { entry in
-                    QueueEntryRow(entry: entry)
+                    QueueEntryRow(
+                        entry: entry,
+                        isActing: viewModel.actingEntryId == entry.id,
+                        onRecall: {
+                            Task {
+                                await viewModel.recall(id: entry.id)
+                                onQueueMutated()
+                            }
+                        },
+                        onEnter: {
+                            Task {
+                                await viewModel.enter(id: entry.id)
+                                onQueueMutated()
+                            }
+                        }
+                    )
                 }
+            }
+
+            if let message = viewModel.actionMessage {
+                Text(message)
+                    .font(.footnote)
+                    .foregroundColor(Theme.Colors.textSecondary)
             }
         } header: {
             Label(Strings.Home.waitingListTitle, systemImage: "list.number")
@@ -79,7 +103,10 @@ struct SettingsView: View {
     private var callSection: some View {
         Section(header: Text(Strings.Settings.callSection)) {
             Button {
-                Task { await viewModel.callNext() }
+                Task {
+                    await viewModel.callNext()
+                    onQueueMutated()
+                }
             } label: {
                 HStack {
                     Image(systemName: "bell.badge.fill")
@@ -87,7 +114,7 @@ struct SettingsView: View {
                     Text(viewModel.isCallingNext ? Strings.Settings.callingButton : Strings.Settings.callNextButton)
                 }
             }
-            .disabled(viewModel.isCallingNext)
+            .disabled(viewModel.isCallingNext || viewModel.actingEntryId != nil)
 
             if let message = viewModel.callNextMessage {
                 Text(message)
@@ -97,45 +124,28 @@ struct SettingsView: View {
         }
     }
 
-    // MARK: - Server
+    // MARK: - Server（ビルド時固定・LINE は API）
 
     private var serverSection: some View {
-        Section(header: Text(Strings.Settings.serverSection)) {
-            TextField(Strings.Settings.baseURLPlaceholder, text: $viewModel.settings.baseURL)
-                .keyboardType(.URL)
-                .textInputAutocapitalization(.never)
-                .disableAutocorrection(true)
-            TextField(Strings.Settings.liffURLPlaceholder, text: $viewModel.settings.liffURL)
-                .keyboardType(.URL)
-                .textInputAutocapitalization(.never)
-                .disableAutocorrection(true)
-
-            if viewModel.isLoadingProjects {
-                ProgressView("プロジェクト読み込み中…")
-            } else if !viewModel.projects.isEmpty {
-                Picker("プロジェクト", selection: $viewModel.settings.projectKey) {
-                    ForEach(viewModel.projects) { project in
-                        Text(project.name).tag(project.projectKey)
-                    }
-                }
-            } else {
-                TextField(Strings.Settings.projectKeyPlaceholder, text: $viewModel.settings.projectKey)
-                    .textInputAutocapitalization(.never)
-                    .disableAutocorrection(true)
+        let remote = WaitingRemoteConfigStore.current
+        return Section {
+            LabeledContent("向け先", value: AppBuildConfig.serverTargetLabel)
+            LabeledContent("API URL", value: AppBuildConfig.baseURL)
+            LabeledContent("プロジェクト", value: AppBuildConfig.projectKey)
+            if !remote.projectName.isEmpty {
+                LabeledContent("店舗名", value: remote.projectName)
             }
-
-            Button("プロジェクト一覧を再取得") {
-                Task { await viewModel.loadProjects() }
+            if !remote.lineLiffId.isEmpty {
+                LabeledContent("LIFF ID", value: remote.lineLiffId)
             }
-
-            if let projectsError = viewModel.projectsError {
-                Text(projectsError)
-                    .font(.footnote)
-                    .foregroundColor(.red)
+            if !remote.lineLiffUrl.isEmpty {
+                LabeledContent("LIFF URL", value: remote.lineLiffUrl)
             }
-        }
-        .task {
-            await viewModel.loadProjects()
+        } header: {
+            Text(Strings.Settings.serverSection)
+        } footer: {
+            Text("接続先とプロジェクトはビルド時固定。LINE / LIFF はサーバー設定を API から取得します。")
+                .font(.footnote)
         }
     }
 
@@ -193,10 +203,17 @@ struct SettingsView: View {
     }
 }
 
-// MARK: - Queue Entry Row (SRP: display-only component)
+// MARK: - Queue Entry Row
 
 private struct QueueEntryRow: View {
     let entry: QueueListEntry
+    let isActing: Bool
+    let onRecall: () -> Void
+    let onEnter: () -> Void
+
+    private var isCalled: Bool {
+        QueueStatus(raw: entry.status) == .called
+    }
 
     var body: some View {
         HStack(spacing: Theme.Spacing.md) {
@@ -214,20 +231,52 @@ private struct QueueEntryRow: View {
                     .foregroundColor(Theme.Colors.textSecondary)
             }
 
-            Spacer()
+            Spacer(minLength: Theme.Spacing.sm)
 
             HStack(spacing: Theme.Spacing.xs) {
-                if entry.memberLinked {
-                    LinkBadge(label: Strings.Home.memberLinked, color: Theme.Colors.success)
-                }
-                if entry.lineLinked {
-                    LinkBadge(label: Strings.Home.lineLinkedShort, color: Color(red: 0.0, green: 0.72, blue: 0.36))
+                ForEach(linkBadges(for: entry.linkChannel), id: \.label) { badge in
+                    LinkBadge(label: badge.label, color: badge.color)
                 }
             }
 
-            QueueStatusBadge(status: QueueStatus(raw: entry.status))
+            if isCalled {
+                HStack(spacing: Theme.Spacing.md) {
+                    Button(action: onRecall) {
+                        Text(isActing ? Strings.Settings.recallingButton : Strings.Settings.recallButton)
+                            .font(.system(size: 13, weight: .medium))
+                    }
+                    .foregroundColor(Theme.Colors.accent)
+                    .disabled(isActing)
+
+                    Button(action: onEnter) {
+                        Text(isActing ? Strings.Settings.enteringButton : Strings.Settings.enterButton)
+                            .font(.system(size: 13, weight: .semibold))
+                    }
+                    .foregroundColor(Theme.Colors.success)
+                    .disabled(isActing)
+                }
+                .buttonStyle(.plain)
+            } else {
+                QueueStatusBadge(status: QueueStatus(raw: entry.status))
+            }
         }
         .padding(.vertical, Theme.Spacing.xs)
+    }
+
+    private func linkBadges(for channel: QueueLinkChannel) -> [(label: String, color: Color)] {
+        switch channel {
+        case .none:
+            return [(Strings.Home.linkChannelNone, Theme.Colors.textSecondary)]
+        case .line:
+            return [(Strings.Home.linkChannelLine, Color(red: 0.0, green: 0.72, blue: 0.36))]
+        case .app:
+            return [(Strings.Home.linkChannelApp, Theme.Colors.accent)]
+        case .both:
+            return [
+                (Strings.Home.linkChannelLine, Color(red: 0.0, green: 0.72, blue: 0.36)),
+                (Strings.Home.linkChannelApp, Theme.Colors.accent),
+            ]
+        }
     }
 }
 

@@ -20,13 +20,14 @@ enum Theme {
         static let warning = Color.orange
         static let warningSubtle = Color.orange.opacity(0.12)
 
-        static let textPrimary = Color.primary
-        static let textSecondary = Color.secondary
+        // ライト配色固定（受付端末）。Color.primary 依存だとダークモードで文字が消える
+        static let textPrimary = Color(red: 0.11, green: 0.11, blue: 0.12)
+        static let textSecondary = Color(red: 0.36, green: 0.36, blue: 0.38)
         static let textOnAccent = Color.white
-        static let separator = Color(.separator)
-        static let background = Color(.systemBackground)
-        static let secondaryBackground = Color(.secondarySystemBackground)
-        static let groupedBackground = Color(.systemGroupedBackground)
+        static let separator = Color(red: 0.78, green: 0.78, blue: 0.80)
+        static let background = Color.white
+        static let secondaryBackground = Color(red: 0.95, green: 0.95, blue: 0.97)
+        static let groupedBackground = Color(red: 0.95, green: 0.95, blue: 0.97)
 
         static let gradientAccent = LinearGradient(
             colors: [accent, accentLight],

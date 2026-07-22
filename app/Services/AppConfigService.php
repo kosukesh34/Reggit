@@ -95,6 +95,11 @@ class AppConfigService
                 'logo_url' => ShopSetting::getFrontendLogoUrl($projectId),
                 'text' => ShopSetting::getFrontendHeaderText($projectId),
             ],
+            'line' => [
+                'liff_id' => ShopSetting::getLineLiffId($projectId),
+                'liff_url' => ShopSetting::getLineLiffUrl($projectId),
+                'friend_add_url' => ShopSetting::getLineFriendAddUrl($projectId),
+            ],
             'liff_tab_layouts' => ShopSetting::getLiffTabLayouts($projectId),
             'liff_tab_settings' => ShopSetting::getLiffTabSettings($projectId),
             'liff_detail_layouts' => ShopSetting::getLiffDetailLayouts($projectId),

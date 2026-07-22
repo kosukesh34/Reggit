@@ -60,7 +60,7 @@ Route::get('/', function () {
         return redirect()->route('admin.root');
     }
 
-    return redirect()->route('admin.login');
+    return view('landing');
 });
 
 Route::get('/api', function () {

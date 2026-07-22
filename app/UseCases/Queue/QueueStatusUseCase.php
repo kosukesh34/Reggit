@@ -18,7 +18,7 @@ class QueueStatusUseCase
     {
         $entry = QueueEntryModel::where('project_id', $projectId)
             ->whereKey($entryId)
-            ->with('user')
+            ->with('user.devices')
             ->first();
 
         if ($entry === null) {

@@ -26,8 +26,17 @@ final class SettingsStore: SettingsStoreProtocol {
 
     private func normalize(_ settings: AppSettings) -> AppSettings {
         var updated = settings
-        if updated.baseURL.contains("localhost") || updated.baseURL.contains("127.0.0.1") {
-            updated.baseURL = AppSettings.default.baseURL
+        // 向け先・プロジェクトはビルド時固定。LINE URL は API 取得値を使う。
+        updated.baseURL = AppBuildConfig.baseURL
+        updated.projectKey = AppBuildConfig.projectKey
+        let remoteLiff = WaitingRemoteConfigStore.current.lineLiffUrl
+        if !remoteLiff.isEmpty {
+            updated.liffURL = remoteLiff
+        }
+        // 空や無効な背景はローカルと同じ既定色へ
+        let bg = updated.backgroundColorHex.trimmingCharacters(in: .whitespacesAndNewlines)
+        if bg.isEmpty {
+            updated.backgroundColorHex = AppConstants.DefaultSettings.backgroundColorHex
         }
         return updated
     }
