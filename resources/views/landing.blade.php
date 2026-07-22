@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ asset('css/landing.css') }}?v=18">
+    <link rel="stylesheet" href="{{ asset('css/landing.css') }}?v=23">
 </head>
 <body class="lp">
     <header class="lp-nav">
@@ -83,7 +83,7 @@
                             <li class="lp-marquee__item">
                                 <img
                                     class="lp-brand-logo"
-                                    src="{{ asset('images/landing/logos/brand-'.$file.'.png') }}?v=14"
+                                    src="{{ asset('images/landing/logos/brand-'.$file.'.png') }}?v=19"
                                     alt=""
                                     width="200"
                                     height="80"
@@ -103,7 +103,7 @@
                             <li class="lp-marquee__item">
                                 <img
                                     class="lp-brand-logo"
-                                    src="{{ asset('images/landing/logos/brand-'.$file.'.png') }}?v=14"
+                                    src="{{ asset('images/landing/logos/brand-'.$file.'.png') }}?v=19"
                                     alt=""
                                     width="200"
                                     height="80"
