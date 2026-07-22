@@ -44,16 +44,36 @@
 
             <section class="form-section mb-4">
                 <h4 class="form-section-title"><span class="form-section-num">1</span> ユーザー情報（登録情報）</h4>
+                @php
+                    [$nameLast, $nameFirst] = \App\Support\PersonNameParts::split(old('name', $member->user->name ?? ''));
+                    [$kanaLast, $kanaFirst] = \App\Support\PersonNameParts::split(old('kana', $member->user->kana ?? ''));
+                    $nameLast = old('name_last', $nameLast);
+                    $nameFirst = old('name_first', $nameFirst);
+                    $kanaLast = old('kana_last', $kanaLast);
+                    $kanaFirst = old('kana_first', $kanaFirst);
+                @endphp
                 <div class="row">
-                    <div class="col-md-6 form-group">
-                        <label for="name" class="form-label">名前</label>
-                        <input type="text" name="name" id="name" class="form-control" value="{{ old('name', $member->user->name ?? '') }}" maxlength="255">
+                    <div class="col-md-3 form-group">
+                        <label for="name_last" class="form-label">姓</label>
+                        <input type="text" name="name_last" id="name_last" class="form-control" value="{{ $nameLast }}" maxlength="85" autocomplete="family-name">
+                        @error('name_last')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
                         @error('name')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
                     </div>
-                    <div class="col-md-6 form-group">
-                        <label for="kana" class="form-label">名前（カナ）</label>
-                        <input type="text" name="kana" id="kana" class="form-control" value="{{ old('kana', $member->user->kana ?? '') }}" maxlength="255">
+                    <div class="col-md-3 form-group">
+                        <label for="name_first" class="form-label">名</label>
+                        <input type="text" name="name_first" id="name_first" class="form-control" value="{{ $nameFirst }}" maxlength="85" autocomplete="given-name">
+                        @error('name_first')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
+                    </div>
+                    <div class="col-md-3 form-group">
+                        <label for="kana_last" class="form-label">フリガナ（姓）</label>
+                        <input type="text" name="kana_last" id="kana_last" class="form-control" value="{{ $kanaLast }}" maxlength="85" placeholder="ヤマダ">
+                        @error('kana_last')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
                         @error('kana')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
+                    </div>
+                    <div class="col-md-3 form-group">
+                        <label for="kana_first" class="form-label">フリガナ（名）</label>
+                        <input type="text" name="kana_first" id="kana_first" class="form-control" value="{{ $kanaFirst }}" maxlength="85" placeholder="タロウ">
+                        @error('kana_first')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
                     </div>
                 </div>
                 <div class="row">
@@ -64,7 +84,7 @@
                     </div>
                     <div class="col-md-6 form-group">
                         <label for="phone" class="form-label">電話番号</label>
-                        <input type="text" name="phone" id="phone" class="form-control" value="{{ old('phone', $member->user->phone ?? '') }}" maxlength="32">
+                        <input type="text" name="phone" id="phone" class="form-control" value="{{ old('phone', $member->user->phone ?? '') }}" maxlength="20">
                         @error('phone')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
                     </div>
                 </div>
@@ -102,7 +122,7 @@
                 </div>
                 <div class="form-group">
                     <label for="postal_code" class="form-label">郵便番号</label>
-                    <input type="text" name="postal_code" id="postal_code" class="form-control" value="{{ old('postal_code', $member->postal_code ?? '') }}" maxlength="16" placeholder="例: 100-0001">
+                    <input type="text" name="postal_code" id="postal_code" class="form-control" value="{{ old('postal_code', $member->postal_code ?? '') }}" maxlength="8" placeholder="例: 100-0001">
                     @error('postal_code')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
                 </div>
                 <div class="form-group">
@@ -122,7 +142,7 @@
                 </div>
                 <div class="form-group">
                     <label for="address" class="form-label">住所（まとめ）</label>
-                    <textarea name="address" id="address" class="form-control" rows="2" maxlength="500">{{ old('address', $member->address ?? '') }}</textarea>
+                    <textarea name="address" id="address" class="form-control" rows="2" maxlength="85">{{ old('address', $member->address ?? '') }}</textarea>
                     @error('address')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
                 </div>
                 <div class="form-group">
@@ -170,15 +190,72 @@
                 <p class="text-muted small mb-0">現在のポイント: <strong>{{ number_format($member->points) }}pt</strong></p>
             </section>
 
+            @php
+                $customProfileFields = $customProfileFields ?? [];
+                $profileExtra = is_array($member->profile_extra) ? $member->profile_extra : [];
+            @endphp
+            @if($customProfileFields !== [])
             <section class="form-section mb-4">
-                <h4 class="form-section-title"><span class="form-section-num">4</span> 任意項目（JSON）</h4>
-                <p class="text-muted small mb-2">プロフィールの追加項目を JSON で編集できます。例: <code>{"company_name":"株式会社 Example"}</code></p>
-                <div class="form-group">
-                    <label for="profile_extra" class="form-label">profile_extra</label>
-                    <textarea name="profile_extra" id="profile_extra" class="form-control font-monospace" rows="4" maxlength="2000" placeholder='{"key": "value"}'>{{ old('profile_extra', $member->profile_extra ? json_encode($member->profile_extra, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) : '') }}</textarea>
-                    @error('profile_extra')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
-                </div>
+                <h4 class="form-section-title"><span class="form-section-num">4</span> 追加プロフィール項目</h4>
+                <p class="text-muted small mb-3">プロフィール設定で追加した項目です（アプリ内のみ・スマレジ非送信）。</p>
+                @foreach($customProfileFields as $cf)
+                    @php
+                        $fieldKey = (string) ($cf['key'] ?? '');
+                        $fieldLabel = (string) ($cf['label'] ?? $fieldKey);
+                        $inputType = (string) ($cf['input_type'] ?? \App\Enums\ProfileCustomFieldInputType::TEXT);
+                        $values = isset($cf['values']) && is_array($cf['values']) ? $cf['values'] : [];
+                        $description = (string) ($cf['description'] ?? '');
+                        $current = old('custom_profile.'.$fieldKey, $profileExtra[$fieldKey] ?? null);
+                    @endphp
+                    @if($fieldKey === '')
+                        @continue
+                    @endif
+                    <div class="form-group">
+                        <label class="form-label" @if($inputType !== \App\Enums\ProfileCustomFieldInputType::RADIO && $inputType !== \App\Enums\ProfileCustomFieldInputType::CHECKBOX) for="custom_profile_{{ $fieldKey }}" @endif>
+                            {{ $fieldLabel }}
+                            @if(!empty($cf['required'])) <span class="text-danger">*</span>@endif
+                        </label>
+                        @if($inputType === \App\Enums\ProfileCustomFieldInputType::TEXTAREA)
+                            <textarea name="custom_profile[{{ $fieldKey }}]" id="custom_profile_{{ $fieldKey }}" class="form-control" rows="3" maxlength="500">{{ is_array($current) ? '' : $current }}</textarea>
+                        @elseif($inputType === \App\Enums\ProfileCustomFieldInputType::SELECTBOX)
+                            <select name="custom_profile[{{ $fieldKey }}]" id="custom_profile_{{ $fieldKey }}" class="form-control">
+                                <option value="">未選択</option>
+                                @foreach($values as $option)
+                                    <option value="{{ $option }}" {{ (string) $current === (string) $option ? 'selected' : '' }}>{{ $option }}</option>
+                                @endforeach
+                            </select>
+                        @elseif($inputType === \App\Enums\ProfileCustomFieldInputType::RADIO)
+                            <div>
+                                @foreach($values as $optionIndex => $option)
+                                    <label class="radio-label-inline me-3">
+                                        <input type="radio" name="custom_profile[{{ $fieldKey }}]" value="{{ $option }}" {{ (string) $current === (string) $option ? 'checked' : '' }}>
+                                        {{ $option }}
+                                    </label>
+                                @endforeach
+                            </div>
+                        @elseif($inputType === \App\Enums\ProfileCustomFieldInputType::CHECKBOX)
+                            @php
+                                $checkedValues = is_array($current) ? $current : (is_string($current) && $current !== '' ? [$current] : []);
+                            @endphp
+                            <div>
+                                @foreach($values as $option)
+                                    <label class="checkbox-label d-block mb-1">
+                                        <input type="checkbox" name="custom_profile[{{ $fieldKey }}][]" value="{{ $option }}" {{ in_array($option, $checkedValues, true) ? 'checked' : '' }}>
+                                        {{ $option }}
+                                    </label>
+                                @endforeach
+                            </div>
+                        @else
+                            <input type="text" name="custom_profile[{{ $fieldKey }}]" id="custom_profile_{{ $fieldKey }}" class="form-control" value="{{ is_array($current) ? '' : $current }}" maxlength="500">
+                        @endif
+                        @if($description !== '')
+                            <div class="text-muted small mt-1">{{ $description }}</div>
+                        @endif
+                        @error('custom_profile.'.$fieldKey)<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
+                    </div>
+                @endforeach
             </section>
+            @endif
 
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary"><i class="fas fa-check me-1"></i>変更を保存</button>

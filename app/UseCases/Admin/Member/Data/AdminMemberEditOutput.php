@@ -13,6 +13,7 @@ use Illuminate\Support\Collection;
  * @param  array<string, string>  $rankOptions  key => label
  * @param  Collection<int, Coupon>  $activeCoupons
  * @param  Collection<int, StampCard>  $activeStampCards
+ * @param  list<array<string, mixed>>  $customProfileFields
  */
 class AdminMemberEditOutput
 {
@@ -20,6 +21,7 @@ class AdminMemberEditOutput
         public Member $member,
         public array $rankOptions,
         public Collection $activeCoupons,
-        public Collection $activeStampCards
+        public Collection $activeStampCards,
+        public array $customProfileFields = [],
     ) {}
 }
