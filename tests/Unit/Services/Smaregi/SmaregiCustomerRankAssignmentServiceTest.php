@@ -17,7 +17,7 @@ class SmaregiCustomerRankAssignmentServiceTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_assignRankToCustomer_スマレジ顧客へrankを送信すること(): void
+    public function test_assign_rank_to_customer_スマレジ顧客へrankを送信すること(): void
     {
         $project = Project::factory()->create();
         ShopSetting::setMemberRankSettings([
@@ -50,7 +50,7 @@ class SmaregiCustomerRankAssignmentServiceTest extends TestCase
         $this->addToAssertionCount(1);
     }
 
-    public function test_assignRankToCustomer_smaregi_customer_idが無い場合は送信しないこと(): void
+    public function test_assign_rank_to_customer_smaregi_customer_idが無い場合は送信しないこと(): void
     {
         $project = Project::factory()->create();
         $user = User::factory()->create(['project_id' => $project->id]);

@@ -2,9 +2,9 @@
 
 namespace App\Http\Requests;
 
+use App\Rules\ProfileValidationRules;
 use App\Services\MemberService;
 use App\Services\UserService;
-use App\Rules\ProfileValidationRules;
 use Illuminate\Foundation\Http\FormRequest;
 
 class MemberProfileRequest extends FormRequest

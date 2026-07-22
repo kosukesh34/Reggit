@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\MemberRegistrationMode;
+use App\Enums\ProfileCustomFieldInputType;
 use App\Models\Settings\ProjectAdminUiSetting;
 use App\Models\Settings\ProjectAnnouncementSetting;
 use App\Models\Settings\ProjectBusinessSetting;
@@ -711,9 +712,9 @@ class ShopSetting
             ? array_slice(array_values($raw['custom_fields']), 0, self::PROFILE_CUSTOM_FIELD_MAX)
             : [];
         $custom = array_map(static function (array $cf): array {
-            $inputType = (string) ($cf['input_type'] ?? \App\Enums\ProfileCustomFieldInputType::TEXT);
-            if (! array_key_exists($inputType, \App\Enums\ProfileCustomFieldInputType::getValues())) {
-                $inputType = \App\Enums\ProfileCustomFieldInputType::TEXT;
+            $inputType = (string) ($cf['input_type'] ?? ProfileCustomFieldInputType::TEXT);
+            if (! array_key_exists($inputType, ProfileCustomFieldInputType::getValues())) {
+                $inputType = ProfileCustomFieldInputType::TEXT;
             }
             $values = [];
             if (isset($cf['values']) && is_array($cf['values'])) {
@@ -723,7 +724,7 @@ class ShopSetting
                         $values[] = $value;
                     }
                 }
-                $values = array_slice($values, 0, \App\Enums\ProfileCustomFieldInputType::VALUES_MAX);
+                $values = array_slice($values, 0, ProfileCustomFieldInputType::VALUES_MAX);
             }
 
             return [
