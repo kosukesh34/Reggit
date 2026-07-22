@@ -265,20 +265,36 @@ body.card-style-outline .gallery-item {
     border: 1px solid var(--border-strong);
 }
 
-/* ===== テーマ分岐: ボタン形状（button_shape）===== */
+/* ===== テーマ分岐: ボタン形状（button_shape）=====
+   --btn-radius を先に置き、22/26 の border-radius: var(--btn-radius) !important が追従する */
+body.button-shape-rounded {
+    --btn-radius: var(--radius-sm);
+    --chip-radius: var(--radius-sm);
+}
+
+body.button-shape-pill {
+    --btn-radius: var(--radius-pill);
+    --chip-radius: var(--radius-pill);
+}
+
+body.button-shape-square {
+    --btn-radius: 6px;
+    --chip-radius: 6px;
+}
+
 body.button-shape-rounded .builder-btn,
 body.button-shape-rounded .ms-guest-cta {
-    border-radius: var(--radius-sm);
+    border-radius: var(--btn-radius);
 }
 
 body.button-shape-pill .builder-btn,
 body.button-shape-pill .ms-guest-cta {
-    border-radius: var(--radius-pill);
+    border-radius: var(--btn-radius);
 }
 
 body.button-shape-square .builder-btn,
 body.button-shape-square .ms-guest-cta {
-    border-radius: 6px;
+    border-radius: var(--btn-radius);
 }
 
 /* ===== テーマ分岐: 余白の密度（density）=====

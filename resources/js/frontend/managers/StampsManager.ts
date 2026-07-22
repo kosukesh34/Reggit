@@ -91,7 +91,7 @@ export class StampsManager {
                     <div class="member-card-line-only-body">
                         <p class="member-card-line-only-message">この端末はゲスト状態です。</p>
                         <p class="member-card-line-only-sub">会員登録するとスタンプ履歴を引き継げます。</p>
-                        <button type="button" class="btn btn-secondary mt-2" onclick="app.switchTab('${AppConstants.TABS.MEMBER}')">
+                        <button type="button" class="btn btn-primary mt-2" onclick="app.switchTab('${AppConstants.TABS.MEMBER}')">
                             <i class="fas fa-user-plus"></i> 会員登録へ
                         </button>
                     </div>

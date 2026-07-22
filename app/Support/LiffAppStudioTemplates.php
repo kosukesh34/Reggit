@@ -52,9 +52,9 @@ class LiffAppStudioTemplates
      */
     public static function theme(array $over = []): array
     {
-        $preset = (string) ($over['theme_preset'] ?? 'apple_system');
+        $preset = (string) ($over['theme_preset'] ?? 'store');
         if ($preset === '') {
-            $preset = 'apple_system';
+            $preset = 'store';
         }
 
         return array_merge(
@@ -75,6 +75,28 @@ class LiffAppStudioTemplates
     private static function presetSeed(string $preset): array
     {
         $seeds = [
+            'store' => [
+                'accent_color' => '#0E7C66',
+                'font_family' => 'sans',
+                'surface_tone' => 'sage',
+                'card_style' => 'flat',
+                'button_shape' => 'pill',
+                'tab_style' => 'floating',
+                'density' => 'default',
+                'background_style' => 'solid',
+                'bg_color' => '#F1F5F4',
+                'content_width' => 'comfy',
+                'radius_scale' => 'soft',
+                'system_ui_style' => 'refined',
+                'system_header_style' => 'minimal',
+                'member_screen_design' => 'apple',
+                'stamp_screen_design' => 'grid_card',
+                'stamp_slot_style' => 'circle',
+                'stamp_filled_style' => 'image',
+                'coupon_screen_design' => 'apple',
+                'reservation_screen_design' => 'apple',
+                'activity_screen_design' => 'cards',
+            ],
             'apple_system' => [
                 'accent_color' => '#007aff',
                 'font_family' => 'sans',
@@ -287,16 +309,20 @@ class LiffAppStudioTemplates
                 'loyalty',
                 'ポイント・ランク・特典を主役にしたロイヤリティアプリ。Starbucks Rewards のように会員証とリワードが中心で、ホームに商品棚は置かない。',
                 [
-                    'theme_preset' => 'apple_system',
-                    'accent_color' => '#5856d6',
+                    'theme_preset' => 'store',
+                    'accent_color' => '#0E7C66',
                     'member_card_design' => 'emblem',
                     'member_screen_design' => 'apple',
                     'density' => 'default',
                     'content_width' => 'comfy',
+                    'card_style' => 'flat',
+                    'button_shape' => 'pill',
+                    'surface_tone' => 'sage',
+                    'bg_color' => '#F1F5F4',
                     'app_display_name' => '〇〇店',
                 ],
                 self::menu(['home', 'stamps', 'coupons', 'member', 'announcements']),
-                '.builder-btn--sticky{--btn-radius:999px;}'
+                ''
             ),
             self::suiteEntry(
                 'rg-suite-order',
