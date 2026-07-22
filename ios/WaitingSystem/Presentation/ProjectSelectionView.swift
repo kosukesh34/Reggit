@@ -7,22 +7,20 @@ struct ProjectSelectionView: View {
     var body: some View {
         NavigationView {
             Form {
-                Section(header: Text("サーバー")) {
-                    TextField("Base URL", text: $viewModel.baseURL)
-                        .keyboardType(.URL)
-                        .textInputAutocapitalization(.never)
-                        .disableAutocorrection(true)
-                    Button("プロジェクト一覧を取得") {
-                        Task { await viewModel.loadProjects() }
-                    }
-                    .disabled(viewModel.isLoading)
+                Section {
+                    LabeledContent("向け先", value: AppBuildConfig.serverTargetLabel)
+                    LabeledContent("API URL", value: AppBuildConfig.baseURL)
+                } header: {
+                    Text("サーバー")
+                } footer: {
+                    Text("接続先は AppBuildConfig.swift でビルド時に固定されています。LINE 設定は API から取得します。")
                 }
 
                 Section(header: Text("プロジェクト")) {
                     if viewModel.isLoading {
                         ProgressView("読み込み中…")
                     } else if viewModel.projects.isEmpty {
-                        Text("プロジェクトがありません。Base URL を確認して再取得してください。")
+                        Text("プロジェクトがありません。AppBuildConfig の向け先を確認してください。")
                             .foregroundColor(Theme.Colors.textSecondary)
                     } else {
                         Picker("店舗", selection: $viewModel.selectedProjectKey) {

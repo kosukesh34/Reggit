@@ -29,12 +29,12 @@ class QueueQrStatusUseCase
 
     public function handle(QueueQrStatusInput $input): ?QueueQrStatusOutput
     {
-        $entry = QueueEntryModel::with('user')
+        $entry = QueueEntryModel::with('user.devices')
             ->where('project_id', $input->projectId)
             ->where('qr_token', $input->token)
             ->first();
         if ($entry === null && ctype_digit($input->token)) {
-            $entry = QueueEntryModel::with('user')
+            $entry = QueueEntryModel::with('user.devices')
                 ->where('project_id', $input->projectId)
                 ->whereKey((int) $input->token)
                 ->first();
@@ -42,6 +42,7 @@ class QueueQrStatusUseCase
                 $entry->qr_token = $this->generateQrToken();
                 $entry->save();
                 $entry->refresh();
+                $entry->load('user.devices');
             }
         }
         if ($entry === null) {
@@ -59,8 +60,10 @@ class QueueQrStatusUseCase
         if ($entry->user_id !== null && (int) $entry->user_id === (int) $user->id) {
             $stats = $this->statsService->getStats($projectId, $entry->queue_number);
 
+            $entry->loadMissing('user.devices');
+
             return new QueueQrStatusOutput(
-                $this->entryFactory->create($entry->refresh(), $stats),
+                $this->entryFactory->create($entry, $stats),
                 (int) $entry->id,
                 (int) $entry->project_id,
             );
@@ -73,6 +76,7 @@ class QueueQrStatusUseCase
                     $entry->user_id = $user->id;
                     $entry->save();
                     $entry->refresh();
+                    $entry->load('user.devices');
                 } else {
                     throw new \RuntimeException('別のLINEアカウントで登録済みです');
                 }
@@ -88,6 +92,7 @@ class QueueQrStatusUseCase
             }
             $entry->save();
             $entry->refresh();
+            $entry->load('user.devices');
             $linkedNow = true;
         }
 
@@ -97,6 +102,7 @@ class QueueQrStatusUseCase
         if ($linkedNow && ! $hasLine) {
             $this->ensureNativeDeviceLinked($input, $user);
             $this->sendLinkedCompleteNativePush($entry, (int) $user->id);
+            $entry->load('user.devices');
         }
 
         $stats = $this->statsService->getStats($projectId, $entry->queue_number);

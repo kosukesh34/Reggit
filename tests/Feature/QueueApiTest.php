@@ -184,6 +184,91 @@ class QueueApiTest extends TestCase
             ->assertJsonPath('queue_entry.status', QueueStatus::CALLED);
     }
 
+    public function test_list_入店済みは一覧に出ないこと(): void
+    {
+        $this->createProject();
+        $waiting = QueueEntry::factory()->create([
+            'project_id' => 1,
+            'status' => QueueStatus::WAITING,
+            'queue_number' => 1,
+            'guest_name' => 'Waiting Guest',
+        ]);
+        $entered = QueueEntry::factory()->create([
+            'project_id' => 1,
+            'status' => QueueStatus::ENTERED,
+            'queue_number' => 2,
+            'guest_name' => 'Entered Guest',
+            'entered_at' => now(),
+        ]);
+
+        $response = $this->get('/api/queue/list?project_key=default');
+
+        $response->assertStatus(200);
+        $ids = collect($response->json('entries') ?? [])->pluck('id');
+        $this->assertTrue($ids->contains($waiting->id));
+        $this->assertFalse($ids->contains($entered->id));
+    }
+
+    public function test_recall_呼び出し済みを再呼び出しできること(): void
+    {
+        $this->createProject();
+        $entry = QueueEntry::factory()->create([
+            'project_id' => 1,
+            'status' => QueueStatus::CALLED,
+            'queue_number' => 3,
+            'called_at' => now()->subMinutes(5),
+        ]);
+
+        $response = $this->post("/api/queue/{$entry->id}/recall?project_key=default");
+
+        $response->assertStatus(200)
+            ->assertJsonPath('queue_entry.id', $entry->id)
+            ->assertJsonPath('queue_entry.status', QueueStatus::CALLED);
+
+        $entry->refresh();
+        $this->assertTrue($entry->called_at->gt(now()->subMinute()));
+    }
+
+    public function test_recall_待機中は422になること(): void
+    {
+        $this->createProject();
+        $entry = QueueEntry::factory()->create([
+            'project_id' => 1,
+            'status' => QueueStatus::WAITING,
+            'queue_number' => 4,
+        ]);
+
+        $response = $this->post("/api/queue/{$entry->id}/recall?project_key=default");
+
+        $response->assertStatus(422);
+    }
+
+    public function test_enter_呼び出し済みを入店にできること(): void
+    {
+        $this->createProject();
+        $entry = QueueEntry::factory()->create([
+            'project_id' => 1,
+            'status' => QueueStatus::CALLED,
+            'queue_number' => 5,
+            'called_at' => now()->subMinutes(2),
+        ]);
+
+        $response = $this->post("/api/queue/{$entry->id}/enter?project_key=default");
+
+        $response->assertStatus(200)
+            ->assertJsonPath('queue_entry.id', $entry->id)
+            ->assertJsonPath('queue_entry.status', QueueStatus::ENTERED);
+
+        $this->assertDatabaseHas('queue_entries', [
+            'id' => $entry->id,
+            'status' => QueueStatus::ENTERED,
+        ]);
+
+        $list = $this->get('/api/queue/list?project_key=default');
+        $ids = collect($list->json('entries') ?? [])->pluck('id');
+        $this->assertFalse($ids->contains($entry->id));
+    }
+
     public function test_qr_status_lin_eログイン必須で未ログインなら403を返すこと(): void
     {
         $this->createProject();
@@ -290,7 +375,7 @@ class QueueApiTest extends TestCase
         $this->assertSame($user->id, $entry->user_id);
     }
 
-    public function test_list_ネイティブ連携済みはline_linkedがtrueになること(): void
+    public function test_list_ネイティブ連携済みはline_linkedがtrueでlink_channelがappになること(): void
     {
         $this->createProject();
         $user = User::factory()->create([
@@ -312,6 +397,53 @@ class QueueApiTest extends TestCase
         $matched = collect($response->json('entries') ?? [])->firstWhere('id', $entry->id);
         $this->assertNotNull($matched);
         $this->assertTrue($matched['line_linked']);
+        $this->assertSame('app', $matched['link_channel']);
+    }
+
+    public function test_list_LINE連携済みはlink_channelがlineになること(): void
+    {
+        $this->createProject();
+        $lineUserId = 'Uaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+        $user = User::factory()->create([
+            'line_user_id' => $lineUserId,
+            'project_id' => 1,
+            'name' => 'Line List User',
+        ]);
+        $entry = QueueEntry::factory()->create([
+            'project_id' => 1,
+            'user_id' => $user->id,
+            'member_id' => null,
+            'status' => QueueStatus::WAITING,
+            'qr_token' => 'token-line-list',
+        ]);
+
+        $response = $this->get('/api/queue/list?project_key=default');
+
+        $response->assertStatus(200);
+        $matched = collect($response->json('entries') ?? [])->firstWhere('id', $entry->id);
+        $this->assertNotNull($matched);
+        $this->assertTrue($matched['line_linked']);
+        $this->assertSame('line', $matched['link_channel']);
+    }
+
+    public function test_list_未登録はlink_channelがnoneになること(): void
+    {
+        $this->createProject();
+        $entry = QueueEntry::factory()->create([
+            'project_id' => 1,
+            'user_id' => null,
+            'member_id' => null,
+            'status' => QueueStatus::WAITING,
+            'qr_token' => 'token-none-list',
+        ]);
+
+        $response = $this->get('/api/queue/list?project_key=default');
+
+        $response->assertStatus(200);
+        $matched = collect($response->json('entries') ?? [])->firstWhere('id', $entry->id);
+        $this->assertNotNull($matched);
+        $this->assertFalse($matched['line_linked']);
+        $this->assertSame('none', $matched['link_channel']);
     }
 
     public function test_qr_status_同一ユーザーで複数件あっても紐づくこと(): void
