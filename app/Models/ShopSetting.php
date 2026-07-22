@@ -626,8 +626,8 @@ class ShopSetting
 
     /** プロフィール項目のキーとラベル（フォーム表示用。一部はローカル専用） */
     public const PROFILE_SMAREGI_FIELDS = [
-        'name' => 'お名前',
-        'kana' => 'お名前（カナ）',
+        'name' => 'お名前（姓・名）',
+        'kana' => 'フリガナ（姓・名）',
         'phone' => '電話番号',
         'email' => 'メールアドレス',
         'postal_code' => '郵便番号',
@@ -641,7 +641,7 @@ class ShopSetting
     ];
 
     /**
-     * スマレジ会員 API に連携する項目キー（owlshop SmaregiCustomerFieldEnum 相当）。
+     * スマレジ会員 API に連携する項目キー。
      * prefecture / city / street は住所補助用で、スマレジへは address にまとめて送る。
      */
     public const PROFILE_SMAREGI_LINKED_KEYS = [
@@ -656,7 +656,7 @@ class ShopSetting
         'mail_receive_flag',
     ];
 
-    /** 追加項目の上限（owlshop と同様） */
+    /** 追加項目の上限 */
     public const PROFILE_CUSTOM_FIELD_MAX = 5;
 
     /** プロフィール項目設定のデフォルト（スマレジ項目は表示ON・名前と電話は必須、任意項目は空） */
@@ -701,7 +701,7 @@ class ShopSetting
                     'required' => (bool) ($raw['smaregi_fields'][$key]['required'] ?? $def['required']),
                 ];
             }
-            // スマレジ API 必須の氏名は非表示・任意にできない（owlshop と同様）
+            // スマレジ API 必須の氏名は非表示・任意にできない
             if ($key === 'name') {
                 $smaregi[$key]['enabled'] = true;
                 $smaregi[$key]['required'] = true;
@@ -710,10 +710,35 @@ class ShopSetting
         $custom = isset($raw['custom_fields']) && is_array($raw['custom_fields'])
             ? array_slice(array_values($raw['custom_fields']), 0, self::PROFILE_CUSTOM_FIELD_MAX)
             : [];
+        $custom = array_map(static function (array $cf): array {
+            $inputType = (string) ($cf['input_type'] ?? \App\Enums\ProfileCustomFieldInputType::TEXT);
+            if (! array_key_exists($inputType, \App\Enums\ProfileCustomFieldInputType::getValues())) {
+                $inputType = \App\Enums\ProfileCustomFieldInputType::TEXT;
+            }
+            $values = [];
+            if (isset($cf['values']) && is_array($cf['values'])) {
+                foreach ($cf['values'] as $value) {
+                    $value = trim((string) $value);
+                    if ($value !== '') {
+                        $values[] = $value;
+                    }
+                }
+                $values = array_slice($values, 0, \App\Enums\ProfileCustomFieldInputType::VALUES_MAX);
+            }
+
+            return [
+                'key' => (string) ($cf['key'] ?? ''),
+                'label' => (string) ($cf['label'] ?? ''),
+                'required' => (bool) ($cf['required'] ?? false),
+                'input_type' => $inputType,
+                'values' => $values,
+                'description' => isset($cf['description']) ? (string) $cf['description'] : '',
+            ];
+        }, array_filter($custom, static fn ($row): bool => is_array($row)));
 
         return [
             'smaregi_fields' => $smaregi,
-            'custom_fields' => $custom,
+            'custom_fields' => array_values($custom),
         ];
     }
 
