@@ -403,7 +403,9 @@ class MemberService
                 $body = $this->buildSmaregiCustomerBody(
                     $memberNumber,
                     $data,
-                    $smaregiRankId !== '' ? $smaregiRankId : null
+                    $smaregiRankId !== '' ? $smaregiRankId : null,
+                    $defaultRankKey,
+                    $projectId,
                 );
                 $this->smaregiApi->clearLastErrorDetail();
                 $result = $this->smaregiApi->createCustomer($contractId, $body);
@@ -466,12 +468,24 @@ class MemberService
     }
 
     /** スマレジ会員登録用のリクエストボディを組み立て（会員コードは20文字以内） */
-    private function buildSmaregiCustomerBody(string $memberNumber, array $data, ?string $smaregiRankId = null): array
-    {
+    private function buildSmaregiCustomerBody(
+        string $memberNumber,
+        array $data,
+        ?string $smaregiRankId = null,
+        ?string $rankKey = null,
+        ?int $projectId = null,
+    ): array {
         $body = $this->smaregiCustomerUpdatePayloadBuilder->buildFromProfileData($data);
         $body['customerCode'] = Str::limit($memberNumber, 20, '');
         $body['entryDate'] = now()->format('Y-m-d');
-        if ($smaregiRankId !== null && $smaregiRankId !== '') {
+        if ($smaregiRankId !== null && $smaregiRankId !== '' && $rankKey !== null && $projectId !== null) {
+            $rankBody = $this->smaregiCustomerRankAssignmentService->buildCustomerRankBody($projectId, $rankKey);
+            if ($rankBody !== []) {
+                $body = array_merge($body, $rankBody);
+            } else {
+                $body['rank'] = $smaregiRankId;
+            }
+        } elseif ($smaregiRankId !== null && $smaregiRankId !== '') {
             $body['rank'] = $smaregiRankId;
         }
 
