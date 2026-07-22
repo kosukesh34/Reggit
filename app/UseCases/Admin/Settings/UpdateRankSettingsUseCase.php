@@ -4,6 +4,7 @@ namespace App\UseCases\Admin\Settings;
 
 use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Models\StampCard;
+use App\Services\Smaregi\SmaregiCustomerRankAssignmentService;
 use App\Services\Smaregi\SmaregiCustomerRankSyncService;
 use App\Util\StrHelper;
 
@@ -11,6 +12,7 @@ class UpdateRankSettingsUseCase
 {
     public function __construct(
         private SmaregiCustomerRankSyncService $smaregiRankSync,
+        private SmaregiCustomerRankAssignmentService $smaregiCustomerRankAssignmentService,
         private ShopSettingRepository $shopSettingRepository,
     ) {}
 
@@ -136,6 +138,10 @@ class UpdateRankSettingsUseCase
         }
         if (array_key_exists('member_card_code_type', $payload) && in_array($payload['member_card_code_type'] ?? '', ['barcode', 'qrcode'], true)) {
             $this->shopSettingRepository->setMemberCardCodeType((string) $payload['member_card_code_type'], $projectId);
+        }
+
+        if ($this->smaregiRankSync->hasSmaregiContract($projectId)) {
+            $this->smaregiCustomerRankAssignmentService->syncPointRatesForProject($projectId);
         }
     }
 
