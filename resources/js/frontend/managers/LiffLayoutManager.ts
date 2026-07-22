@@ -251,7 +251,7 @@ export class LiffLayoutManager {
             if (premium) return premium.hero(block, esc, baseStyle);
             const bg = block.image_url
                 ? `background-image:url('${esc(block.image_url)}');background-size:cover;background-position:center;`
-                : `background:linear-gradient(135deg,${block.gradient_start || '#4f46e5'} 0%,${block.gradient_end || '#4338ca'} 100%);`;
+                : `background:linear-gradient(135deg,${block.gradient_start || 'var(--primary-color)'} 0%,${block.gradient_end || 'var(--primary-dark)'} 100%);`;
             return `<section class="builder-block builder-hero" style="${bg}color:#fff;padding:32px 20px;text-align:center;${baseStyle}">
                 <h2 style="font-size:18px;font-weight:700;margin:0 0 4px;">${esc(block.title)}</h2>
                 <p style="font-size:12px;opacity:0.85;margin:0;">${esc(block.subtitle || block.text)}</p>
@@ -272,15 +272,18 @@ export class LiffLayoutManager {
         if (type === 'button') {
             const premium = this._premium();
             if (premium) return premium.button(block, esc, baseStyle);
-            const w = block.full_width !== false ? 'display:block;width:100%;box-sizing:border-box;' : 'display:inline-block;';
+            const full = block.full_width !== false ? ' builder-btn--full' : '';
             const action = block.action || '#';
             const isExternal = action !== '#' && (action.startsWith('http://') || action.startsWith('https://'));
             const dataExternal = isExternal ? ' data-builder-external="1"' : '';
             const design = block.design || 'cta';
             const stickyWrap = design === 'sticky' ? ' builder-button-wrap--sticky' : '';
             const stickyBtn = design === 'sticky' ? ' builder-btn--sticky' : '';
+            const colorStyle = block.color
+                ? ` style="--btn-bg:${esc(block.color)};${block.text_color ? `--btn-fg:${esc(block.text_color)};` : ''}"`
+                : '';
             return `<section class="builder-block builder-button-wrap${stickyWrap}" style="text-align:center;padding:8px;${baseStyle}">
-                <a href="${esc(action)}" class="builder-btn${stickyBtn}"${dataExternal} style="${w}padding:12px 24px;border-radius:8px;background:${block.color || '#4f46e5'};color:${block.text_color || '#fff'};font-size:14px;font-weight:700;text-decoration:none;text-align:center;">${esc(block.text)}</a>
+                <a href="${esc(action)}" class="builder-btn builder-btn--cta${stickyBtn}${full}"${dataExternal}${colorStyle}>${esc(block.text)}</a>
             </section>`;
         }
         if (type === 'image') {
@@ -295,8 +298,11 @@ export class LiffLayoutManager {
             const friendAddUrl = String(block.url || globalUrl || '');
             if (!friendAddUrl) return '';
             const text = block.text || '友だち追加';
+            const colorStyle = block.color
+                ? ` style="--btn-bg:${esc(block.color)};${block.text_color ? `--btn-fg:${esc(block.text_color)};` : ''}"`
+                : ' style="--btn-bg:#06C755;"';
             return `<section class="builder-block builder-friend-add" style="text-align:center;padding:8px;${baseStyle}" data-friend-add-url="${esc(friendAddUrl)}">
-                <a href="${esc(friendAddUrl)}" class="builder-btn builder-btn--friend-add" data-builder-external="1" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 24px;border-radius:8px;background:${block.color || '#06C755'};color:${block.text_color || '#fff'};font-size:14px;font-weight:700;text-decoration:none;"><i class="fab fa-line"></i> ${esc(text)}</a>
+                <a href="${esc(friendAddUrl)}" class="builder-btn builder-btn--friend-add"${colorStyle} data-builder-external="1"><i class="fab fa-line"></i> ${esc(text)}</a>
             </section>`;
         }
         if (type === 'card') {
@@ -327,7 +333,7 @@ export class LiffLayoutManager {
             const rows = Array.isArray(block.rows) ? block.rows : [];
             const html = rows.map((r: any) =>
                 `<div style="display:flex;align-items:center;gap:10px;font-size:13px;color:#374151;">`
-                + `<i class="fas ${r.icon || 'fa-check'}" style="color:${r.color || '#4f46e5'};font-size:16px;flex-shrink:0;"></i>`
+                + `<i class="fas ${r.icon || 'fa-check'}" style="color:${r.color || 'var(--primary-color)'};font-size:16px;flex-shrink:0;"></i>`
                 + `<span>${esc(r.text)}</span></div>`
             ).join('');
             return `<section class="builder-block" style="background:#fff;padding:12px 14px;display:flex;flex-direction:column;gap:8px;${baseStyle}">${html}</section>`;
@@ -350,7 +356,7 @@ export class LiffLayoutManager {
                 : '';
             const bindAttr = bindField !== '' ? ` data-source="banner_bind" data-bind-field="${esc(bindField)}"` : '';
             const inner = `${block.icon ? `<i class="fas ${block.icon}" style="font-size:16px;flex-shrink:0;"></i>` : ''}<span class="builder-promo-banner__text">${esc(block.text)}</span>`;
-            const wrapStyle = `display:flex;align-items:center;gap:8px;padding:12px 14px;font-size:13px;font-weight:600;background:${block.color || '#eef2ff'};color:${block.text_color || '#374151'};${baseStyle}`;
+            const wrapStyle = `display:flex;align-items:center;gap:8px;padding:12px 14px;font-size:13px;font-weight:600;background:${block.color || 'rgba(var(--primary-rgb), 0.1)'};color:${block.text_color || 'var(--text-primary)'};${baseStyle}`;
             if (action) {
                 const isExternal = action !== '#' && (action.startsWith('http://') || action.startsWith('https://'));
                 const dataExternal = isExternal ? ' data-builder-external="1"' : '';
@@ -515,9 +521,11 @@ export class LiffLayoutManager {
             const isOutline = b.variant === 'outline';
             const color = b.color || '';
             const style = color
-                ? (isOutline ? `color:${color};border-color:${color};` : `background:${color};`)
+                ? (isOutline
+                    ? `style="--btn-accent:${esc(color)};color:${esc(color)};border-color:${esc(color)};"`
+                    : `style="--btn-bg:${esc(color)};"`)
                 : '';
-            return `<a href="${esc(action)}" class="builder-btn builder-btn-group__btn${isOutline ? ' builder-btn-group__btn--outline' : ''}"${dataExternal} style="${style}">${esc(b.text)}</a>`;
+            return `<a href="${esc(action)}" class="builder-btn builder-btn-group__btn${isOutline ? ' builder-btn-group__btn--outline' : ''}"${dataExternal} ${style}>${esc(b.text)}</a>`;
         }).join('');
         return `<section class="builder-block builder-btn-group" style="${baseStyle}"><div class="builder-btn-group__row" data-count="${buttons.length}">${html}</div></section>`;
     }

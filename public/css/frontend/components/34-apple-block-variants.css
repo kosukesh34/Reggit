@@ -55,15 +55,17 @@
     flex-shrink: 0;
     display: inline-flex;
     align-items: center;
-    padding: 8px 14px;
-    border-radius: 999px;
-    background: rgba(118, 118, 128, 0.12);
-    color: var(--text-primary);
-    font-size: 13px;
-    font-weight: 600;
+    min-height: var(--chip-height, 36px);
+    padding: 0 14px;
+    border-radius: var(--chip-radius, var(--radius));
+    background: var(--surface-muted);
+    color: var(--text-secondary);
+    font-size: var(--chip-font-size, 13px);
+    font-weight: var(--chip-font-weight, 600);
     text-decoration: none;
     letter-spacing: -0.01em;
     white-space: nowrap;
+    border: 1px solid transparent;
 }
 
 .builder-chip:active {
