@@ -17,12 +17,13 @@ class SmaregiCustomerRankAssignmentServiceTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_assign_rank_to_customer_スマレジ顧客へrankを送信すること(): void
+    public function test_assign_rank_to_customer_スマレジ顧客へrankと付与率を送信すること(): void
     {
         $project = Project::factory()->create();
+        ShopSetting::setValue('point_earn_rate', 100, 'integer', $project->id);
         ShopSetting::setMemberRankSettings([
-            ['key' => 'bronze', 'label' => 'ブロンズ', 'min_points' => 0, 'order' => 1, 'is_active' => true, 'smaregi_rank_id' => '1'],
-            ['key' => 'silver', 'label' => 'シルバー', 'min_points' => 50, 'order' => 2, 'is_active' => true, 'smaregi_rank_id' => '2'],
+            ['key' => 'bronze', 'label' => 'ブロンズ', 'min_points' => 0, 'order' => 1, 'is_active' => true, 'smaregi_rank_id' => '1', 'point_earn_rate' => 100],
+            ['key' => 'silver', 'label' => 'シルバー', 'min_points' => 50, 'order' => 2, 'is_active' => true, 'smaregi_rank_id' => '2', 'point_earn_rate' => 50],
         ], $project->id);
 
         $user = User::factory()->create(['project_id' => $project->id]);
@@ -38,7 +39,11 @@ class SmaregiCustomerRankAssignmentServiceTest extends TestCase
         $smaregiApi->shouldReceive('clearLastErrorDetail')->once();
         $smaregiApi->shouldReceive('updateCustomer')
             ->once()
-            ->with('contract-1', 'cust-100', ['rank' => '2'])
+            ->with('contract-1', 'cust-100', [
+                'rank' => '2',
+                'pointGivingUnitPrice' => '50',
+                'pointGivingUnit' => '1',
+            ])
             ->andReturn(['customerId' => 'cust-100']);
 
         $service = new SmaregiCustomerRankAssignmentService(
@@ -68,6 +73,43 @@ class SmaregiCustomerRankAssignmentServiceTest extends TestCase
             app(ShopSettingRepository::class),
         );
         $service->assignRankToCustomer($member, 'silver');
+
+        $this->addToAssertionCount(1);
+    }
+
+    public function test_sync_point_rates_for_project_連携済み会員へ付与率を反映すること(): void
+    {
+        $project = Project::factory()->create();
+        ShopSetting::setValue('point_earn_rate', 100, 'integer', $project->id);
+        ShopSetting::setMemberRankSettings([
+            ['key' => 'gold', 'label' => 'ゴールド', 'min_points' => 100, 'order' => 1, 'is_active' => true, 'smaregi_rank_id' => '9', 'point_earn_rate' => 80],
+        ], $project->id);
+
+        $user = User::factory()->create(['project_id' => $project->id]);
+        Member::factory()->create([
+            'user_id' => $user->id,
+            'project_id' => $project->id,
+            'rank' => 'gold',
+            'smaregi_customer_id' => 'cust-200',
+        ]);
+
+        $smaregiApi = Mockery::mock(SmaregiApiService::class);
+        $smaregiApi->shouldReceive('getContractIdForProject')->andReturn('contract-1');
+        $smaregiApi->shouldReceive('clearLastErrorDetail')->once();
+        $smaregiApi->shouldReceive('updateCustomer')
+            ->once()
+            ->with('contract-1', 'cust-200', [
+                'rank' => '9',
+                'pointGivingUnitPrice' => '80',
+                'pointGivingUnit' => '1',
+            ])
+            ->andReturn(['customerId' => 'cust-200']);
+
+        $service = new SmaregiCustomerRankAssignmentService(
+            $smaregiApi,
+            app(ShopSettingRepository::class),
+        );
+        $service->syncPointRatesForProject((int) $project->id);
 
         $this->addToAssertionCount(1);
     }

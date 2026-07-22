@@ -15,7 +15,7 @@ class SettingsRanksRequest extends FormRequest
     {
         return [
             'rank_basis' => 'required|in:points,stamps,max',
-            'point_earn_rate' => 'required|integer|min:1|max:100000',
+            'point_earn_rate' => 'required|integer|min:1|max:99999',
             'points_per_order' => 'nullable|integer|min:0|max:100000',
             'points_valid_days' => 'required|integer|min:1|max:3650',
             'stamp_earn_per_amount' => 'nullable|integer|min:0|max:10000000',
@@ -39,7 +39,7 @@ class SettingsRanksRequest extends FormRequest
             'ranks.*.icon_url' => 'nullable|url|max:500',
             'ranks.*.stamp_background_url' => 'nullable|url|max:500',
             'ranks.*.card_color' => 'nullable|string|max:20|regex:/^#[0-9A-Fa-f]{3,6}$/',
-            'ranks.*.point_earn_rate' => 'nullable|integer|min:1|max:100000',
+            'ranks.*.point_earn_rate' => 'nullable|integer|min:1|max:99999',
         ];
     }
 
