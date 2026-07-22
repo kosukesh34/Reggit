@@ -1,14 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 64" role="img" aria-label="翠庭レストラン">
-  <title>翠庭レストラン</title>
-  <defs>
-    <filter id="s" x="-8%" y="-20%" width="116%" height="140%">
-      <feDropShadow dx="0" dy="1" stdDeviation="1.2" flood-color="#000000" flood-opacity="0.06"/>
-    </filter>
-  </defs>
-
-  <rect width="220" height="64" rx="16" fill="#EAF6F1" stroke="#D5EBE2" filter="url(#s)"/>
-  <path d="M16 46V24l16-12 16 12v22h-9V30H25v16H16z" fill="#0B7A66"/>
-  <circle cx="32" cy="22" r="3.5" fill="#C8F0E2"/>
-  <text x="58" y="38" font-family="'Hiragino Sans', 'Yu Gothic', sans-serif" font-size="16" font-weight="700" fill="#12352C">翠庭レストラン</text>
-
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 80" role="img" aria-label="翠庭">
+  <rect width="200" height="80" fill="#fff"/>
+  <circle cx="40" cy="40" r="28" fill="#14532D"/>
+  <path d="M28 46c6-16 14-22 24-24-2 12-4 20-6 28-8 0-14-2-18-4z" fill="#BBF7D0"/>
+  <path d="M48 28c-2 8-2 16 0 24" stroke="#86EFAC" stroke-width="1.5" fill="none"/>
+  <text x="78" y="35" font-family="'Hiragino Sans','Noto Sans JP',sans-serif" font-size="20" font-weight="800" fill="#14532D">翠庭</text>
+  <text x="78" y="54" font-family="'Hiragino Sans','Noto Sans JP',sans-serif" font-size="9" font-weight="600" letter-spacing="0.2em" fill="#4D7C5A">RESTAURANT</text>
 </svg>
