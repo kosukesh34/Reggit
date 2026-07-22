@@ -26,8 +26,12 @@ final class AppState: ObservableObject {
     }
 
     static func shouldShowProjectSelection(_ projectKey: String) -> Bool {
+        // ビルド時にプロジェクトが固定されていれば選択画面は出さない
+        if AppBuildConfig.hasFixedProjectKey {
+            return false
+        }
         let key = projectKey.trimmingCharacters(in: .whitespacesAndNewlines)
-        return key.isEmpty || key == "default"
+        return key.isEmpty
     }
 
     func completeProjectSelection() {
