@@ -78,6 +78,8 @@ class ShopSetting
         'smaregi_contract_id' => ProjectProfileSmaregiSetting::class,
         'smaregi_client_id' => ProjectProfileSmaregiSetting::class,
         'smaregi_client_secret' => ProjectProfileSmaregiSetting::class,
+        'smaregi_store_id' => ProjectProfileSmaregiSetting::class,
+        'smaregi_terminal_id' => ProjectProfileSmaregiSetting::class,
         'point_earn_rate' => ProjectMemberPointsSetting::class,
         'points_per_order' => ProjectMemberPointsSetting::class,
         'stamp_earn_per_amount' => ProjectMemberPointsSetting::class,

@@ -253,6 +253,39 @@ class SmaregiApiService
         return $id !== null ? (string) $id : null;
     }
 
+    /**
+     * 取引登録などで使用する先頭レジ端末IDを取得する。端末が無い場合は null。
+     */
+    public function getFirstTerminalId(string $contractId, ?string $storeId = null): ?string
+    {
+        $query = [];
+        if ($storeId !== null && trim($storeId) !== '') {
+            $query['store_id'] = trim($storeId);
+        }
+        $result = $this->getTerminals($contractId, $query);
+        if ($result === null) {
+            return null;
+        }
+        $list = is_array($result) && ! isset($result[0]) && isset($result['terminals'])
+            ? $result['terminals']
+            : $result;
+        $first = is_array($list) ? ($list[0] ?? null) : null;
+        if (! is_array($first)) {
+            return null;
+        }
+        $id = $first['terminalId'] ?? $first['terminal_id'] ?? $first['id'] ?? null;
+
+        return $id !== null ? (string) $id : null;
+    }
+
+    /**
+     * @param  array<string, int|string>  $query
+     */
+    public function getTerminals(string $contractId, array $query = []): ?array
+    {
+        return $this->request($contractId, 'GET', 'pos/terminals', $query);
+    }
+
     /** 商品一覧を取得（pos.products:read スコープ必要） */
     public function getProducts(string $contractId): ?array
     {
@@ -576,6 +609,12 @@ class SmaregiApiService
     public function createTransaction(string $contractId, array $body): ?array
     {
         return $this->request($contractId, 'POST', 'pos/transactions', $body);
+    }
+
+    /** 取置き登録（pos.transactions:write） */
+    public function createLayaway(string $contractId, array $body): ?array
+    {
+        return $this->request($contractId, 'POST', 'pos/transactions/layaways', $body);
     }
 
     /** 取引更新（pos.transactions:write） */

@@ -14,6 +14,8 @@ class OrderItem extends Model
         'project_id',
         'order_id',
         'product_id',
+        'product_name',
+        'smaregi_product_id',
         'quantity',
         'price',
         'notes',

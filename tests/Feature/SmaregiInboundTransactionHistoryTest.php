@@ -3,12 +3,16 @@
 namespace Tests\Feature;
 
 use App\Enums\MemberVisitSource;
+use App\Enums\OrderStatus;
+use App\Enums\OrderType;
+use App\Enums\PaymentMethod;
 use App\Enums\PointTransactionType;
 use App\Jobs\SmaregiSyncInboundTransactionsJob;
 use App\Models\Member;
 use App\Models\MemberStamp;
 use App\Models\MemberStampTransaction;
 use App\Models\MemberVisit;
+use App\Models\Order;
 use App\Models\PointTransaction;
 use App\Models\Product;
 use App\Models\Project;
@@ -125,6 +129,78 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
         $summary = app(MemberAdminService::class)->getPurchaseSummary($member->fresh());
         $this->assertSame(2046.0, $summary['total_revenue']);
         $this->assertSame(1, $summary['total_orders']);
+
+        $this->assertDatabaseHas('orders', [
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+            'order_type' => OrderType::POS,
+            'status' => OrderStatus::COMPLETED,
+            'smaregi_transaction_head_id' => '39',
+            'total_amount' => 2046,
+        ]);
+        $this->assertDatabaseHas('order_items', [
+            'product_id' => $product->id,
+            'smaregi_product_id' => '8000205',
+            'product_name' => 'フリーライト チョコレートケーキ',
+            'quantity' => 3,
+        ]);
+        $visit = MemberVisit::query()
+            ->where('smaregi_transaction_head_id', '39')
+            ->first();
+        $this->assertNotNull($visit);
+        $this->assertNotNull($visit->order_id);
+    }
+
+    public function test_reggit起点の取引は来店もポイントも二重に取り込まないこと(): void
+    {
+        $project = Project::factory()->create();
+        ShopSetting::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        ShopSetting::setValue('point_earn_rate', 1, 'integer', (int) $project->id);
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $member = Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+            'smaregi_customer_id' => '259',
+            'points' => 0,
+        ]);
+        $order = Order::create([
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+            'total_amount' => 2046,
+            'status' => OrderStatus::COMPLETED,
+            'payment_method' => PaymentMethod::CASH,
+            'points_used' => 0,
+            'points_earned' => 20,
+            'order_type' => OrderType::MOBILE,
+            'smaregi_transaction_head_id' => '39',
+            'smaregi_transaction_synced_at' => now(),
+        ]);
+
+        $this->fakeTransactionHttp([
+            'transactionHeadId' => '39',
+            'transactionHeadDivision' => '1',
+            'cancelDivision' => '0',
+            'customerId' => '259',
+            'total' => '2046',
+            'terminalTranId' => 'RG'.$order->id,
+            'terminalTranDateTime' => '2026-07-19T01:44:25+09:00',
+            'transactionDateTime' => '2026-07-19T01:44:26+09:00',
+            'details' => [[
+                'transactionDetailId' => '1',
+                'productId' => '8000205',
+                'productName' => 'ケーキ',
+                'quantity' => '1',
+                'salesPrice' => '2046',
+                'unitDiscountedSum' => '2046',
+            ]],
+        ]);
+
+        app(SmaregiTransactionInboundSyncService::class)
+            ->syncByTransactionHeadIds(self::CONTRACT_ID, ['39']);
+
+        $this->assertSame(0, MemberVisit::query()->where('smaregi_transaction_head_id', '39')->count());
+        $this->assertSame(0, PointTransaction::query()->where('member_id', $member->id)->count());
+        $this->assertSame(1, Order::query()->where('smaregi_transaction_head_id', '39')->count());
     }
 
     public function test_通常販売取引でスタンプ設定がある場合はスタンプが付与されること(): void
@@ -382,6 +458,11 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
                 ->where('description', 'スマレジ取引取消によるポイント取消 #39')
                 ->count()
         );
+        $this->assertDatabaseHas('orders', [
+            'smaregi_transaction_head_id' => '39',
+            'status' => OrderStatus::CANCELLED,
+            'order_type' => OrderType::POS,
+        ]);
     }
 
     public function test_返品取引でポイントとスタンプが減算され来店が負金額で残ること(): void

@@ -4,6 +4,7 @@ namespace App\UseCases\Payment;
 
 use App\Domain\Order\Events\OrderConfirmed;
 use App\Domain\Order\Events\OrderPointsSyncRequested;
+use App\Domain\Order\Events\OrderTransactionSyncRequested;
 use App\Domain\Order\Repositories\OrderRepository;
 use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
 use App\Enums\OrderStatus;
@@ -36,7 +37,8 @@ class PaymentWebhookUseCase
 
         $confirmedEvent = null;
         $pointsSyncEvent = null;
-        DB::transaction(function () use ($orderId, &$confirmedEvent, &$pointsSyncEvent) {
+        $transactionSyncEvent = null;
+        DB::transaction(function () use ($orderId, &$confirmedEvent, &$pointsSyncEvent, &$transactionSyncEvent) {
             $aggregate = $this->orderRepository->findByPrimaryKeyForUpdate((int) $orderId);
             if ($aggregate === null) {
                 return;
@@ -63,6 +65,11 @@ class PaymentWebhookUseCase
                         $aggregate->projectId(),
                         $aggregate->userId(),
                     );
+                    $transactionSyncEvent = new OrderTransactionSyncRequested(
+                        $aggregate->id()->value(),
+                        $aggregate->projectId(),
+                        $aggregate->userId(),
+                    );
                 }
             } catch (\Exception $e) {
                 LogHelper::warning('[Payment] webhook confirm skipped', [
@@ -78,6 +85,9 @@ class PaymentWebhookUseCase
         }
         if ($pointsSyncEvent !== null) {
             $this->domainEvents->dispatch($pointsSyncEvent);
+        }
+        if ($transactionSyncEvent !== null) {
+            $this->domainEvents->dispatch($transactionSyncEvent);
         }
 
         return true;

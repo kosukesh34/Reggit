@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Domain\Member\Aggregates\Member as MemberAggregate;
 use App\Domain\Member\Repositories\MemberRepository;
 use App\Domain\Order\Events\OrderPointsSyncRequested;
+use App\Domain\Order\Events\OrderTransactionSyncRequested;
 use App\Domain\Order\Policies\OrderPlacementPolicy;
 use App\Domain\Order\Policies\ProductAvailabilityPolicy;
 use App\Domain\Order\Policies\ProductOptionSelectionPolicy;
@@ -105,6 +106,11 @@ class OrderService
         // commit 後に同期する（失敗しても注文は残す。try/catch 外で rollBack しない）
         if ($paymentMethod !== PaymentMethod::STRIPE) {
             $this->domainEvents->dispatch(new OrderPointsSyncRequested(
+                (int) $order->id,
+                $projectId,
+                (int) $user->id,
+            ));
+            $this->domainEvents->dispatch(new OrderTransactionSyncRequested(
                 (int) $order->id,
                 $projectId,
                 (int) $user->id,
