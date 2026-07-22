@@ -7,6 +7,11 @@ use Illuminate\Support\Facades\Log;
 
 class SmaregiCustomerRankSyncService
 {
+    /** スマレジ API の pointGivingUnitPrice 上限 */
+    public const POINT_GIVING_UNIT_PRICE_MAX = 99999;
+
+    public const POINT_GIVING_UNIT = '1';
+
     private const RANK_NAME_MAX_LENGTH = 85;
 
     private const FETCH_RANKS_LIMIT = 200;
@@ -14,11 +19,6 @@ class SmaregiCustomerRankSyncService
     private const RESPONSE_KEY_RANKS = 'customer_ranks';
 
     private const RESPONSE_KEY_RANKS_ALT = 'customerRanks';
-
-    /** スマレジ API の pointGivingUnitPrice 上限 */
-    private const POINT_GIVING_UNIT_PRICE_MAX = 99999;
-
-    private const POINT_GIVING_UNIT = '1';
 
     private SmaregiApiService $smaregiApi;
 
