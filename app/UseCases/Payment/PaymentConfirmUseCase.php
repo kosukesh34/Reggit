@@ -4,6 +4,7 @@ namespace App\UseCases\Payment;
 
 use App\Domain\Order\Events\OrderConfirmed;
 use App\Domain\Order\Events\OrderPointsSyncRequested;
+use App\Domain\Order\Events\OrderTransactionSyncRequested;
 use App\Domain\Order\Repositories\OrderRepository;
 use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
 use App\Enums\OrderStatus;
@@ -40,7 +41,8 @@ class PaymentConfirmUseCase
 
         $confirmedEvent = null;
         $pointsSyncEvent = null;
-        $output = DB::transaction(function () use ($orderId, $projectId, $status, &$confirmedEvent, &$pointsSyncEvent) {
+        $transactionSyncEvent = null;
+        $output = DB::transaction(function () use ($orderId, $projectId, $status, &$confirmedEvent, &$pointsSyncEvent, &$transactionSyncEvent) {
             $aggregate = $this->orderRepository->findByIdForUpdate($orderId, $projectId);
             if ($aggregate === null) {
                 throw (new ModelNotFoundException)->setModel(Order::class, [$orderId]);
@@ -71,6 +73,11 @@ class PaymentConfirmUseCase
                     $aggregate->projectId(),
                     $aggregate->userId(),
                 );
+                $transactionSyncEvent = new OrderTransactionSyncRequested(
+                    $aggregate->id()->value(),
+                    $aggregate->projectId(),
+                    $aggregate->userId(),
+                );
             }
 
             return new PaymentConfirmOutput(
@@ -89,6 +96,9 @@ class PaymentConfirmUseCase
         }
         if ($pointsSyncEvent !== null) {
             $this->domainEvents->dispatch($pointsSyncEvent);
+        }
+        if ($transactionSyncEvent !== null) {
+            $this->domainEvents->dispatch($transactionSyncEvent);
         }
 
         return $output;
