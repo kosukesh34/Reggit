@@ -36,12 +36,13 @@ enum AppConstants {
         static let `default` = 2
     }
 
-    // MARK: - デフォルト設定値
+    // MARK: - デフォルト設定値（向け先・プロジェクトは AppBuildConfig）
 
     enum DefaultSettings {
-        static let baseURL = "https://unadministrable-idiocratically-annalee.ngrok-free.dev"
-        static let liffURL = "https://miniapp.line.me/2008962886-K2CRmPwV"
-        static let projectKey = ""
+        static var baseURL: String { AppBuildConfig.baseURL }
+        static var projectKey: String { AppBuildConfig.projectKey }
+        static var liffURL: String { WaitingRemoteConfigStore.current.lineLiffUrl }
+        /// ローカル iPad と同じライト配色の既定背景
         static let backgroundColorHex = "#F2F4F8"
         static let passcode = "1234"
     }

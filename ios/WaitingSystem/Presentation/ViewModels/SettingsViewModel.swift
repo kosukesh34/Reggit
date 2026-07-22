@@ -8,6 +8,8 @@ final class SettingsViewModel: ObservableObject {
     @Published var projectsError: String?
     @Published var isCallingNext = false
     @Published var callNextMessage: String?
+    @Published var actingEntryId: Int?
+    @Published var actionMessage: String?
 
     private let store: SettingsStoreProtocol
     private let apiClient: QueueAPIClientProtocol
@@ -61,6 +63,32 @@ final class SettingsViewModel: ObservableObject {
             }
         } catch {
             callNextMessage = error.localizedDescription
+        }
+    }
+
+    func recall(id: Int) async {
+        actingEntryId = id
+        actionMessage = nil
+        defer { actingEntryId = nil }
+
+        do {
+            let ticket = try await apiClient.recallTicket(id: id)
+            actionMessage = String(format: Strings.Settings.recallResultFormat, ticket.displayNumber)
+        } catch {
+            actionMessage = error.localizedDescription
+        }
+    }
+
+    func enter(id: Int) async {
+        actingEntryId = id
+        actionMessage = nil
+        defer { actingEntryId = nil }
+
+        do {
+            let ticket = try await apiClient.enterTicket(id: id)
+            actionMessage = String(format: Strings.Settings.enterResultFormat, ticket.displayNumber)
+        } catch {
+            actionMessage = error.localizedDescription
         }
     }
 }

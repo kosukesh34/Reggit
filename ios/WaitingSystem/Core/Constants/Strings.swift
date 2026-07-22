@@ -26,6 +26,7 @@ enum Strings {
 
     enum Home {
         static let title = "順番待ち受付"
+        static let heroTitle = "受付番号をお取りください"
         static let subtitle = "受付後にQRを読み取ると通知と待ち状況連携が有効になります"
         static let acceptButton = "受付する"
         static let currentQueueTitle = "現在の待ち状況"
@@ -37,8 +38,10 @@ enum Strings {
         static let waitingGuideBody = "1. 受付する\n2. QRをお客様が読み取る\n3. 店舗で呼び出すと通知"
         static let waitingListTitle = "待ち順一覧"
         static let waitingListEmpty = "待機中の方はいません"
-        static let memberLinked = "会員"
-        static let lineLinkedShort = "アプリ"
+        static let linkChannelNone = "未登録"
+        static let linkChannelLine = "LINE"
+        static let linkChannelApp = "アプリ"
+        static let linkChannelBoth = "LINE・アプリ"
     }
 
     // MARK: - チケット
@@ -49,11 +52,12 @@ enum Strings {
         static let waitingCountFormat = "待ち人数: %d組"
         static let estimatedWaitFormat = "予想待ち時間: 約%d分"
         static let qrLineMessage = "QRを読み取るとアプリが起動します"
-        static let qrScanMessage = "QRを読み取って待ち状況を受け取れます"
+        static let qrScanMessage = "スマートフォンでQRを読み取ると、呼び出し通知を受け取れます"
         static let qrNotifyMessage = "順番が近づくと通知します"
-        static let lineLinked = "アプリ連携: 連携済み"
-        static let lineNotLinked = "アプリ連携: 未連携（QR読み取り待ち）"
-        static let autoReturnNotice = "この画面は30秒後に自動で戻ります"
+        static let linkedLine = "LINEで連携済み"
+        static let linkedApp = "アプリで連携済み"
+        static let linkedBoth = "LINE・アプリで連携済み"
+        static let autoReturnNotice = "しばらくすると受付画面に戻ります"
         static let newAccept = "新規受付"
         static let cancelTicket = "キャンセル"
         static let unlockHint = "戻るには右上の歯車から解除してください"
@@ -109,6 +113,12 @@ enum Strings {
         static let callNextButton = "次を呼び出し"
         static let callingButton = "呼び出し中..."
         static let callResultFormat = "呼び出し: %@"
+        static let recallButton = "再呼出"
+        static let recallingButton = "送信中"
+        static let recallResultFormat = "再呼び出し: %@"
+        static let enterButton = "入店"
+        static let enteringButton = "処理中"
+        static let enterResultFormat = "入店: %@"
         static let noWaiting = "待ちがありません"
     }
 
