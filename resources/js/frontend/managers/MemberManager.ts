@@ -2437,20 +2437,38 @@ export class MemberManager {
         const nameParts = (profile.name != null && String(profile.name).trim() !== '') ? String(profile.name).trim().split(/\s+/) : ['', ''];
         const nameLast = nameParts[0] || '';
         const nameFirst = nameParts.slice(1).join(' ') || '';
+        const kanaParts = (profile.kana != null && String(profile.kana).trim() !== '') ? String(profile.kana).trim().split(/\s+/) : ['', ''];
+        const kanaLast = kanaParts[0] || '';
+        const kanaFirst = kanaParts.slice(1).join(' ') || '';
         const rows = fields.flatMap(function (f) {
             const key = f.key;
             const label = f.label || key;
             const required = f.required ? ' required' : '';
             const val = profile[key] != null ? String(profile[key]) : '';
+            const inputType = f.input_type || 'text';
+            const values = Array.isArray(f.values) ? f.values : [];
+            const description = f.description ? '<p class="member-form-field-hint">' + DomHelper.escapeHtml(String(f.description)) + '</p>' : '';
             if (key === 'name') {
                 const idLast = 'profileEdit_name_last';
                 const idFirst = 'profileEdit_name_first';
-                const inputLast = '<input type="text" id="' + idLast + '" name="name_last" value="' + DomHelper.escapeHtml(nameLast) + '" maxlength="128" placeholder="例: 山田" autocomplete="family-name"' + required + '>';
-                const inputFirst = '<input type="text" id="' + idFirst + '" name="name_first" value="' + DomHelper.escapeHtml(nameFirst) + '" maxlength="128" placeholder="例: 太郎" autocomplete="given-name"' + required + '>';
+                const inputLast = '<input type="text" id="' + idLast + '" name="name_last" value="' + DomHelper.escapeHtml(nameLast) + '" maxlength="85" placeholder="例: 山田" autocomplete="family-name"' + required + '>';
+                const inputFirst = '<input type="text" id="' + idFirst + '" name="name_first" value="' + DomHelper.escapeHtml(nameFirst) + '" maxlength="85" placeholder="例: 太郎" autocomplete="given-name"' + required + '>';
                 return [
                     '<div class="member-form-name-row">' +
                     '<div class="member-form-group"><label for="' + idLast + '">姓' + (f.required ? ' <span class="required">*</span>' : '') + '</label>' + inputLast + '</div>' +
                     '<div class="member-form-group"><label for="' + idFirst + '">名' + (f.required ? ' <span class="required">*</span>' : '') + '</label>' + inputFirst + '</div>' +
+                    '</div>',
+                ];
+            }
+            if (key === 'kana') {
+                const idLast = 'profileEdit_kana_last';
+                const idFirst = 'profileEdit_kana_first';
+                const inputLast = '<input type="text" id="' + idLast + '" name="kana_last" value="' + DomHelper.escapeHtml(kanaLast) + '" maxlength="85" placeholder="例: ヤマダ" inputmode="katakana"' + required + '>';
+                const inputFirst = '<input type="text" id="' + idFirst + '" name="kana_first" value="' + DomHelper.escapeHtml(kanaFirst) + '" maxlength="85" placeholder="例: タロウ" inputmode="katakana"' + required + '>';
+                return [
+                    '<div class="member-form-name-row">' +
+                    '<div class="member-form-group"><label for="' + idLast + '">フリガナ（姓）' + (f.required ? ' <span class="required">*</span>' : '') + '</label>' + inputLast + '</div>' +
+                    '<div class="member-form-group"><label for="' + idFirst + '">フリガナ（名）' + (f.required ? ' <span class="required">*</span>' : '') + '</label>' + inputFirst + '</div>' +
                     '</div>',
                 ];
             }
@@ -2493,6 +2511,58 @@ export class MemberManager {
                     '</div></fieldset>',
                 ];
             }
+            if (inputType === 'radio' && values.length > 0) {
+                const optionsHtml = values.map(function (option, optionIndex) {
+                    const optionVal = String(option);
+                    const checked = val === optionVal ? ' checked' : '';
+                    return '<label class="member-form-segment-btn">' +
+                        '<input type="radio" id="' + id + '_' + optionIndex + '" name="' + DomHelper.escapeHtml(key) + '" value="' + DomHelper.escapeHtml(optionVal) + '"' + checked + required + '>' +
+                        '<span class="member-form-segment-btn-text">' + DomHelper.escapeHtml(optionVal) + '</span></label>';
+                }).join('');
+                return [
+                    '<fieldset class="member-form-group member-form-group--choice">' +
+                    '<legend class="member-form-group-label">' + DomHelper.escapeHtml(label) + (f.required ? ' <span class="required">*</span>' : '') + '</legend>' +
+                    '<div class="member-form-segment" role="radiogroup" aria-label="' + DomHelper.escapeHtml(label) + '">' + optionsHtml + '</div>' +
+                    description +
+                    '</fieldset>',
+                ];
+            }
+            if (inputType === 'selectbox' && values.length > 0) {
+                const optionsHtml = ['<option value="">未選択</option>'].concat(values.map(function (option) {
+                    const optionVal = String(option);
+                    const selected = val === optionVal ? ' selected' : '';
+                    return '<option value="' + DomHelper.escapeHtml(optionVal) + '"' + selected + '>' + DomHelper.escapeHtml(optionVal) + '</option>';
+                })).join('');
+                input = '<select id="' + id + '" name="' + DomHelper.escapeHtml(key) + '"' + required + '>' + optionsHtml + '</select>';
+                return ['<div class="member-form-group"><label for="' + id + '">' + DomHelper.escapeHtml(label) + (f.required ? ' <span class="required">*</span>' : '') + '</label>' + input + description + '</div>'];
+            }
+            if (inputType === 'checkbox' && values.length > 0) {
+                let checkedList: string[] = [];
+                if (Array.isArray(profile[key])) {
+                    checkedList = profile[key].map(function (v: any) { return String(v); });
+                } else if (val) {
+                    checkedList = [val];
+                }
+                const optionsHtml = values.map(function (option, optionIndex) {
+                    const optionVal = String(option);
+                    const checked = checkedList.indexOf(optionVal) !== -1 ? ' checked' : '';
+                    return '<label class="member-form-checkbox">' +
+                        '<input type="checkbox" id="' + id + '_' + optionIndex + '" name="' + DomHelper.escapeHtml(key) + '[]" value="' + DomHelper.escapeHtml(optionVal) + '"' + checked + '>' +
+                        '<span>' + DomHelper.escapeHtml(optionVal) + '</span></label>';
+                }).join('');
+                return [
+                    '<fieldset class="member-form-group member-form-group--choice">' +
+                    '<legend class="member-form-group-label">' + DomHelper.escapeHtml(label) + (f.required ? ' <span class="required">*</span>' : '') + '</legend>' +
+                    '<div class="member-form-checkbox-list">' + optionsHtml + '</div>' +
+                    description +
+                    '</fieldset>',
+                ];
+            }
+            if (inputType === 'textarea' || key === 'address') {
+                const maxLen = key === 'address' ? 85 : 500;
+                input = '<textarea id="' + id + '" name="' + DomHelper.escapeHtml(key) + '" maxlength="' + maxLen + '" rows="3"' + required + '>' + DomHelper.escapeHtml(val) + '</textarea>';
+                return ['<div class="member-form-group"><label for="' + id + '">' + DomHelper.escapeHtml(label) + (f.required ? ' <span class="required">*</span>' : '') + '</label>' + input + description + '</div>'];
+            }
             if (key === 'birthday') {
                 input = '<input type="date" id="' + id + '" name="' + DomHelper.escapeHtml(key) + '" value="' + DomHelper.escapeHtml(val || birthdayVal) + '"' + required + '>';
             } else if (key === 'email') {
@@ -2503,12 +2573,11 @@ export class MemberManager {
                     '<button type="button" class="member-btn member-btn--secondary postal-code-lookup-btn" data-action="postal-code-lookup"><i class="fas fa-search-location"></i> 住所を自動入力</button>' +
                     '</div>';
             } else if (key === 'phone') {
-                input = '<input type="tel" id="' + id + '" name="' + DomHelper.escapeHtml(key) + '" value="' + DomHelper.escapeHtml(val) + '" maxlength="50"' + required + '>';
+                input = '<input type="tel" id="' + id + '" name="' + DomHelper.escapeHtml(key) + '" value="' + DomHelper.escapeHtml(val) + '" maxlength="20"' + required + '>';
             } else {
-                const maxLen = (key === 'address' || key === 'street') ? 500 : 255;
-                input = '<input type="text" id="' + id + '" name="' + DomHelper.escapeHtml(key) + '" value="' + DomHelper.escapeHtml(val) + '" maxlength="' + maxLen + '"' + (key === 'address' ? ' autocomplete="street-address"' : '') + required + '>';
+                input = '<input type="text" id="' + id + '" name="' + DomHelper.escapeHtml(key) + '" value="' + DomHelper.escapeHtml(val) + '" maxlength="255"' + required + '>';
             }
-            return ['<div class="member-form-group"><label for="' + id + '">' + DomHelper.escapeHtml(label) + (f.required ? ' <span class="required">*</span>' : '') + '</label>' + input + '</div>'];
+            return ['<div class="member-form-group"><label for="' + id + '">' + DomHelper.escapeHtml(label) + (f.required ? ' <span class="required">*</span>' : '') + '</label>' + input + description + '</div>'];
         });
         const addressKeys = ['postal_code', 'prefecture', 'city', 'street', 'address'];
         const groupedRows = [];
@@ -2657,51 +2726,9 @@ export class MemberManager {
         });
 
         try {
-            const payload: any = {};
-            const asInput = (el: Element | null): HTMLInputElement | null => el as HTMLInputElement | null;
             const root = this.memberData || {};
             const fields = (root.profile_field_settings) ? root.profile_field_settings : [];
-            const keys = fields.map(function (f) { return f.key; });
-            keys.forEach(function (key) {
-                if (key === 'name') {
-                    const elLast = asInput(form.querySelector('[name="name_last"]'));
-                    const elFirst = asInput(form.querySelector('[name="name_first"]'));
-                    const lastVal = elLast ? (elLast.value || '').trim() : '';
-                    const firstVal = elFirst ? (elFirst.value || '').trim() : '';
-                    payload.name = (lastVal + ' ' + firstVal).trim() || null;
-                    return;
-                }
-                const el = asInput(key === 'sex' || key === 'mail_receive_flag'
-                    ? form.querySelector('[name="' + key + '"]:checked')
-                    : form.querySelector('[name="' + key.replace(/"/g, '\\"') + '"]'));
-                if (el) {
-                    let v: any = (el.value || '').trim();
-                    if (key === 'birthday' && !v) v = null;
-                    // mail_receive_flag の '0' は falsy 扱いにしない
-                    payload[key] = (key === 'mail_receive_flag') ? v : (v || null);
-                } else if (key === 'sex') {
-                    payload[key] = null;
-                }
-                // mail_receive_flag 未選択時はキー自体を送らず、既存値・スマレジ側を維持する
-            });
-            if (Object.keys(payload).length === 0 && form.elements.length) {
-                for (let i = 0; i < form.elements.length; i++) {
-                    const el = form.elements[i] as HTMLInputElement;
-                    if (el.name && el.name !== '_token') {
-                        if (el.type === 'radio' && !el.checked) continue;
-                        let v: any = (el.value || '').trim();
-                        if (el.name === 'birthday' && !v) v = null;
-                        payload[el.name] = (el.name === 'mail_receive_flag') ? v : (v || null);
-                    }
-                }
-            }
-            const nameLast = asInput(form.querySelector('[name="name_last"]'));
-            const nameFirst = asInput(form.querySelector('[name="name_first"]'));
-            if (nameLast || nameFirst) {
-                const lastVal = nameLast ? (nameLast.value || '').trim() : '';
-                const firstVal = nameFirst ? (nameFirst.value || '').trim() : '';
-                payload.name = (lastVal + ' ' + firstVal).trim() || null;
-            }
+            const payload: any = this._collectProfileFormPayload(form, fields);
             if (typeof window !== 'undefined' && window.__LINE_PROFILE__ && window.__LINE_PROFILE__.displayName && !payload.name) {
                 payload.name = window.__LINE_PROFILE__.displayName;
             }
@@ -2765,51 +2792,13 @@ export class MemberManager {
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin" aria-hidden="true"></i> 保存中...';
         });
-        const payload: any = {};
-        const asInput = (el: Element | null): HTMLInputElement | null => el as HTMLInputElement | null;
-        const root = (this.memberData && this.memberData.member) ? this.memberData.member : this.memberData;
-        const fields = (root && root.profile_field_settings) ? root.profile_field_settings : [];
-        const keys = fields.map(function (f) { return f.key; });
-        keys.forEach(function (key) {
-            if (key === 'name') {
-                const elLast = asInput(form.querySelector('[name="name_last"]'));
-                const elFirst = asInput(form.querySelector('[name="name_first"]'));
-                const lastVal = elLast ? (elLast.value || '').trim() : '';
-                const firstVal = elFirst ? (elFirst.value || '').trim() : '';
-                payload.name = (lastVal + ' ' + firstVal).trim() || null;
-                return;
-            }
-            const el = asInput(key === 'sex' || key === 'mail_receive_flag'
-                ? form.querySelector('[name="' + key + '"]:checked')
-                : form.querySelector('[name="' + key.replace(/"/g, '\\"') + '"]'));
-            if (el) {
-                let v: any = (el.value || '').trim();
-                if (key === 'birthday' && !v) v = null;
-                // mail_receive_flag の '0' は falsy 扱いにしない
-                payload[key] = (key === 'mail_receive_flag') ? v : (v || null);
-            } else if (key === 'sex') {
-                payload[key] = null;
-            }
-            // mail_receive_flag 未選択時はキー自体を送らず、既存値・スマレジ側を維持する
-        });
-        if (Object.keys(payload).length === 0 && form.elements.length) {
-            for (let i = 0; i < form.elements.length; i++) {
-                const el = form.elements[i] as HTMLInputElement;
-                if (el.name && el.name !== '_token') {
-                    if (el.type === 'radio' && !el.checked) continue;
-                    let v: any = (el.value || '').trim();
-                    if (el.name === 'birthday' && !v) v = null;
-                    payload[el.name] = (el.name === 'mail_receive_flag') ? v : (v || null);
-                }
-            }
-        }
-        const nameLast = asInput(form.querySelector('[name="name_last"]'));
-        const nameFirst = asInput(form.querySelector('[name="name_first"]'));
-        if (nameLast || nameFirst) {
-            const lastVal = nameLast ? (nameLast.value || '').trim() : '';
-            const firstVal = nameFirst ? (nameFirst.value || '').trim() : '';
-            payload.name = (lastVal + ' ' + firstVal).trim() || null;
-        }
+        const root = (this.memberData && this.memberData.profile_field_settings)
+            ? this.memberData
+            : ((this.memberData && this.memberData.member) ? this.memberData.member : this.memberData);
+        const fields = (root && root.profile_field_settings)
+            ? root.profile_field_settings
+            : ((this.memberData && this.memberData.profile_field_settings) ? this.memberData.profile_field_settings : []);
+        const payload: any = this._collectProfileFormPayload(form, fields);
         try {
             const result = await this.apiClient.request(AppConstants.API_ENDPOINTS.MEMBERS_ME, {
                 method: 'PUT',
@@ -2844,5 +2833,62 @@ export class MemberManager {
                 }
             });
         }
+    }
+
+    _collectProfileFormPayload(form: HTMLFormElement, fields: any[]): Record<string, any> {
+        const payload: Record<string, any> = {};
+        const asInput = (el: Element | null): HTMLInputElement | null => el as HTMLInputElement | null;
+        const fieldList = Array.isArray(fields) ? fields : [];
+        fieldList.forEach((field) => {
+            const key = field && field.key != null ? String(field.key) : '';
+            if (key === '') {
+                return;
+            }
+            const inputType = field.input_type || 'text';
+            if (key === 'name') {
+                const elLast = asInput(form.querySelector('[name="name_last"]'));
+                const elFirst = asInput(form.querySelector('[name="name_first"]'));
+                const lastVal = elLast ? (elLast.value || '').trim() : '';
+                const firstVal = elFirst ? (elFirst.value || '').trim() : '';
+                payload.name = (lastVal + ' ' + firstVal).trim() || null;
+                return;
+            }
+            if (key === 'kana') {
+                const elLast = asInput(form.querySelector('[name="kana_last"]'));
+                const elFirst = asInput(form.querySelector('[name="kana_first"]'));
+                const lastVal = elLast ? (elLast.value || '').trim() : '';
+                const firstVal = elFirst ? (elFirst.value || '').trim() : '';
+                payload.kana = (lastVal + ' ' + firstVal).trim() || null;
+                return;
+            }
+            if (inputType === 'checkbox') {
+                const checked = Array.from(form.querySelectorAll('[name="' + key.replace(/"/g, '\\"') + '[]"]:checked')) as HTMLInputElement[];
+                payload[key] = checked.map((el) => (el.value || '').trim()).filter((v) => v !== '');
+                return;
+            }
+            if (inputType === 'radio' || key === 'sex' || key === 'mail_receive_flag') {
+                const el = asInput(form.querySelector('[name="' + key.replace(/"/g, '\\"') + '"]:checked'));
+                if (el) {
+                    const v = (el.value || '').trim();
+                    if (key === 'mail_receive_flag') {
+                        payload[key] = v;
+                    } else {
+                        payload[key] = v || null;
+                    }
+                } else if (key === 'sex') {
+                    payload[key] = null;
+                }
+                return;
+            }
+            const el = asInput(form.querySelector('[name="' + key.replace(/"/g, '\\"') + '"]'));
+            if (el) {
+                let v: any = (el.value || '').trim();
+                if (key === 'birthday' && !v) {
+                    v = null;
+                }
+                payload[key] = v || null;
+            }
+        });
+        return payload;
     }
 }

@@ -25,6 +25,7 @@ use App\Services\MemberPointsExpiryCalculator;
 use App\Services\MemberRankCalculator;
 use App\Services\Smaregi\SmaregiApiService;
 use App\Services\Smaregi\SmaregiCustomerPointsInboundSyncService;
+use App\Services\Smaregi\SmaregiCustomerRankAssignmentService;
 use App\Services\Smaregi\SmaregiCustomerUpdatePayloadBuilder;
 use App\Services\UserService;
 use App\Support\MemberChannel;
@@ -43,6 +44,7 @@ class MemberAdminService
         private SmaregiApiService $smaregiApi,
         private SmaregiCustomerUpdatePayloadBuilder $smaregiCustomerUpdatePayloadBuilder,
         private SmaregiCustomerPointsInboundSyncService $smaregiCustomerPointsInboundSyncService,
+        private SmaregiCustomerRankAssignmentService $smaregiCustomerRankAssignmentService,
         private MemberRankCalculator $rankCalculator,
         private MemberPointsExpiryCalculator $expiryCalculator,
         private MemberCouponRepository $memberCouponRepository,
@@ -572,6 +574,7 @@ class MemberAdminService
                         $previousRank !== '' ? ($options[$previousRank] ?? $previousRank) : null,
                         $options[$newRank] ?? $newRank,
                     );
+                    $this->smaregiCustomerRankAssignmentService->assignRankToCustomer($member, $newRank);
                 }
             }
         }
