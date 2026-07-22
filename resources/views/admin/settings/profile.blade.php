@@ -23,6 +23,7 @@
         $memberRegistrationMode = $settings['member_registration_mode'] ?? \App\Enums\MemberRegistrationMode::OPTIONAL;
         $modeOptions = $memberRegistrationModeOptions ?? \App\Enums\MemberRegistrationMode::getValues();
         $customFieldMax = \App\Models\ShopSetting::PROFILE_CUSTOM_FIELD_MAX;
+        $inputTypeOptions = $customFieldInputTypeOptions ?? \App\Enums\ProfileCustomFieldInputType::getValues();
     @endphp
     <div class="card mb-4">
         <div class="card-header">
@@ -50,9 +51,10 @@
             <p class="card-desc text-muted small mb-0">
                 会員アプリのプロフィールで表示する項目と、必須か任意かを設定します。
                 <i class="fas fa-link"></i> マークが付いている項目はスマレジ会員情報と連携します。
+                お名前・フリガナは姓/名に分けて入力され、スマレジの lastName / firstName / lastKana / firstKana に対応します。
                 都道府県・市区町村・番地は住所入力の補助で、スマレジへは「住所」にまとめて送ります。
             </p>
-            <p class="card-desc text-muted small mb-0 mt-1">※ スマレジ POS 側の「会員必須項目」設定とは独立です。POS 側は基本的に任意入力にしてください。</p>
+            <p class="card-desc text-muted small mb-0 mt-1">※ 入力形式（電話・郵便番号・カナ等）はスマレジ制約に合わせて検証します。POS 側の「会員必須項目」設定とは独立です。</p>
         </div>
         <div class="card-body">
             <table class="table">
@@ -110,24 +112,51 @@
             <button type="button" class="btn btn-sm btn-outline-primary" id="addCustomField"><i class="fas fa-plus"></i> 項目を追加</button>
         </div>
         <div class="card-body">
-            <p class="text-muted small mb-3">会員プロフィールに独自の入力項目を追加できます（最大 {{ $customFieldMax }} 件）。キーは半角英数字とアンダースコアのみ（例: company_name）。追加項目はアプリ内のみで、スマレジには送信されません。</p>
+            <p class="text-muted small mb-3">会員プロフィールに独自の入力項目を追加できます（最大 {{ $customFieldMax }} 件）。入力タイプと選択肢を設定できます。キーは半角英数字とアンダースコアのみ（例: company_name）。追加項目はアプリ内のみで、スマレジには送信されません。</p>
             <div id="customFieldsContainer">
                 @foreach($settings['custom_fields'] ?? [] as $i => $cf)
-                <div class="custom-field-row form-row align-items-center mb-2">
-                    <div class="col-md-3">
-                        <input type="text" name="custom_fields[{{ $i }}][key]" class="form-control form-control-sm" value="{{ $cf['key'] ?? '' }}" placeholder="key_name" pattern="[a-z0-9_]+" title="半角英小文字・数字・アンダースコア">
+                @php
+                    $inputType = $cf['input_type'] ?? \App\Enums\ProfileCustomFieldInputType::TEXT;
+                    $needsValues = \App\Enums\ProfileCustomFieldInputType::needsValues($inputType);
+                    $valuesText = implode("\n", $cf['values'] ?? []);
+                @endphp
+                <div class="custom-field-row border rounded p-3 mb-3" data-index="{{ $i }}">
+                    <div class="form-row align-items-end">
+                        <div class="col-md-2 mb-2">
+                            <label class="form-label small mb-1">キー</label>
+                            <input type="text" name="custom_fields[{{ $i }}][key]" class="form-control form-control-sm" value="{{ $cf['key'] ?? '' }}" placeholder="key_name" pattern="[a-z0-9_]+" title="半角英小文字・数字・アンダースコア" required>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <label class="form-label small mb-1">表示名</label>
+                            <input type="text" name="custom_fields[{{ $i }}][label]" class="form-control form-control-sm" value="{{ $cf['label'] ?? '' }}" placeholder="表示名（例: 会社名）" required>
+                        </div>
+                        <div class="col-md-2 mb-2">
+                            <label class="form-label small mb-1">入力タイプ</label>
+                            <select name="custom_fields[{{ $i }}][input_type]" class="form-control form-control-sm custom-field-input-type">
+                                @foreach($inputTypeOptions as $typeValue => $typeLabel)
+                                    <option value="{{ $typeValue }}" {{ $inputType === $typeValue ? 'selected' : '' }}>{{ $typeLabel }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-2 mb-2">
+                            <label class="checkbox-label mb-0 d-block mt-4">
+                                <input type="hidden" name="custom_fields[{{ $i }}][required]" value="0">
+                                <input type="checkbox" name="custom_fields[{{ $i }}][required]" value="1" {{ ($cf['required'] ?? false) ? 'checked' : '' }}> 必須
+                            </label>
+                        </div>
+                        <div class="col-md-2 mb-2">
+                            <button type="button" class="btn btn-sm btn-danger remove-custom-field"><i class="fas fa-times"></i> 削除</button>
+                        </div>
                     </div>
-                    <div class="col-md-4">
-                        <input type="text" name="custom_fields[{{ $i }}][label]" class="form-control form-control-sm" value="{{ $cf['label'] ?? '' }}" placeholder="表示名（例: 会社名）">
-                    </div>
-                    <div class="col-md-2">
-                        <label class="checkbox-label mb-0">
-                            <input type="hidden" name="custom_fields[{{ $i }}][required]" value="0">
-                            <input type="checkbox" name="custom_fields[{{ $i }}][required]" value="1" {{ ($cf['required'] ?? false) ? 'checked' : '' }}> 必須
-                        </label>
-                    </div>
-                    <div class="col-md-1">
-                        <button type="button" class="btn btn-sm btn-danger remove-custom-field"><i class="fas fa-times"></i></button>
+                    <div class="form-row">
+                        <div class="col-md-6 mb-2">
+                            <label class="form-label small mb-1">説明（任意）</label>
+                            <input type="text" name="custom_fields[{{ $i }}][description]" class="form-control form-control-sm" value="{{ $cf['description'] ?? '' }}" maxlength="255" placeholder="入力欄の下に表示する補足">
+                        </div>
+                        <div class="col-md-6 mb-2 custom-field-values-wrap" style="{{ $needsValues ? '' : 'display:none;' }}">
+                            <label class="form-label small mb-1">選択肢（1行に1つ・最大 {{ \App\Enums\ProfileCustomFieldInputType::VALUES_MAX }}）</label>
+                            <textarea name="custom_fields[{{ $i }}][values]" class="form-control form-control-sm" rows="3" placeholder="選択肢A&#10;選択肢B">{{ $valuesText }}</textarea>
+                        </div>
                     </div>
                 </div>
                 @endforeach
@@ -141,12 +170,23 @@
     </div>
 </form>
 
+    @php
+        $needsValuesTypes = [
+            \App\Enums\ProfileCustomFieldInputType::RADIO,
+            \App\Enums\ProfileCustomFieldInputType::SELECTBOX,
+            \App\Enums\ProfileCustomFieldInputType::CHECKBOX,
+        ];
+        $valuesMax = \App\Enums\ProfileCustomFieldInputType::VALUES_MAX;
+    @endphp
 <script>
 (function() {
     var container = document.getElementById('customFieldsContainer');
     var addBtn = document.getElementById('addCustomField');
     var index = (container && container.querySelectorAll('.custom-field-row').length) || 0;
     var maxFields = {{ (int) $customFieldMax }};
+    var inputTypeOptions = @json($inputTypeOptions);
+    var valuesMax = {{ (int) $valuesMax }};
+    var needsValuesTypes = @json($needsValuesTypes);
 
     function syncAddButton() {
         if (!addBtn || !container) return;
@@ -155,23 +195,45 @@
         addBtn.title = count >= maxFields ? ('追加項目は' + maxFields + '個までです') : '';
     }
 
+    function syncValuesVisibility(row) {
+        var select = row.querySelector('.custom-field-input-type');
+        var wrap = row.querySelector('.custom-field-values-wrap');
+        if (!select || !wrap) return;
+        wrap.style.display = needsValuesTypes.indexOf(select.value) !== -1 ? '' : 'none';
+    }
+
+    function buildInputTypeOptions(selected) {
+        return Object.keys(inputTypeOptions).map(function(value) {
+            return '<option value="' + value + '"' + (value === selected ? ' selected' : '') + '>' + inputTypeOptions[value] + '</option>';
+        }).join('');
+    }
+
     function addRow() {
         if (container.querySelectorAll('.custom-field-row').length >= maxFields) {
             syncAddButton();
             return;
         }
         var row = document.createElement('div');
-        row.className = 'custom-field-row form-row align-items-center mb-2';
+        row.className = 'custom-field-row border rounded p-3 mb-3';
+        row.setAttribute('data-index', String(index));
         row.innerHTML =
-            '<div class="col-md-3"><input type="text" name="custom_fields[' + index + '][key]" class="form-control form-control-sm" placeholder="key_name" pattern="[a-z0-9_]+"></div>' +
-            '<div class="col-md-4"><input type="text" name="custom_fields[' + index + '][label]" class="form-control form-control-sm" placeholder="表示名"></div>' +
-            '<div class="col-md-2"><label class="checkbox-label mb-0"><input type="hidden" name="custom_fields[' + index + '][required]" value="0"><input type="checkbox" name="custom_fields[' + index + '][required]" value="1"> 必須</label></div>' +
-            '<div class="col-md-1"><button type="button" class="btn btn-sm btn-danger remove-custom-field"><i class="fas fa-times"></i></button></div>';
+            '<div class="form-row align-items-end">' +
+            '<div class="col-md-2 mb-2"><label class="form-label small mb-1">キー</label><input type="text" name="custom_fields[' + index + '][key]" class="form-control form-control-sm" placeholder="key_name" pattern="[a-z0-9_]+" required></div>' +
+            '<div class="col-md-3 mb-2"><label class="form-label small mb-1">表示名</label><input type="text" name="custom_fields[' + index + '][label]" class="form-control form-control-sm" placeholder="表示名" required></div>' +
+            '<div class="col-md-2 mb-2"><label class="form-label small mb-1">入力タイプ</label><select name="custom_fields[' + index + '][input_type]" class="form-control form-control-sm custom-field-input-type">' + buildInputTypeOptions('text') + '</select></div>' +
+            '<div class="col-md-2 mb-2"><label class="checkbox-label mb-0 d-block mt-4"><input type="hidden" name="custom_fields[' + index + '][required]" value="0"><input type="checkbox" name="custom_fields[' + index + '][required]" value="1"> 必須</label></div>' +
+            '<div class="col-md-2 mb-2"><button type="button" class="btn btn-sm btn-danger remove-custom-field"><i class="fas fa-times"></i> 削除</button></div>' +
+            '</div>' +
+            '<div class="form-row">' +
+            '<div class="col-md-6 mb-2"><label class="form-label small mb-1">説明（任意）</label><input type="text" name="custom_fields[' + index + '][description]" class="form-control form-control-sm" maxlength="255" placeholder="入力欄の下に表示する補足"></div>' +
+            '<div class="col-md-6 mb-2 custom-field-values-wrap" style="display:none;"><label class="form-label small mb-1">選択肢（1行に1つ・最大 ' + valuesMax + '）</label><textarea name="custom_fields[' + index + '][values]" class="form-control form-control-sm" rows="3" placeholder="選択肢A&#10;選択肢B"></textarea></div>' +
+            '</div>';
         container.appendChild(row);
-        row.querySelector('.remove-custom-field').addEventListener('click', function() { row.remove(); syncAddButton(); });
+        syncValuesVisibility(row);
         index++;
         syncAddButton();
     }
+
     addBtn.addEventListener('click', addRow);
     container.addEventListener('click', function(e) {
         if (e.target.closest('.remove-custom-field')) {
@@ -179,6 +241,12 @@
             syncAddButton();
         }
     });
+    container.addEventListener('change', function(e) {
+        if (e.target.classList.contains('custom-field-input-type')) {
+            syncValuesVisibility(e.target.closest('.custom-field-row'));
+        }
+    });
+    container.querySelectorAll('.custom-field-row').forEach(syncValuesVisibility);
     syncAddButton();
 })();
 </script>
