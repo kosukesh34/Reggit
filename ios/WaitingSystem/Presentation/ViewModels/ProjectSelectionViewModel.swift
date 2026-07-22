@@ -19,7 +19,7 @@ final class ProjectSelectionViewModel: ObservableObject {
         self.settingsStore = settingsStore
         self.projectsClient = projectsClient
         let settings = settingsStore.load()
-        self.baseURL = settings.baseURL
+        self.baseURL = AppBuildConfig.baseURL
         self.selectedProjectKey = settings.projectKey
     }
 
@@ -28,7 +28,7 @@ final class ProjectSelectionViewModel: ObservableObject {
         errorMessage = nil
         defer { isLoading = false }
         do {
-            let fetched = try await projectsClient.fetchProjects(baseURLOverride: baseURL)
+            let fetched = try await projectsClient.fetchProjects(baseURLOverride: AppBuildConfig.baseURL)
             projects = fetched
             if selectedProjectKey.isEmpty || !fetched.contains(where: { $0.projectKey == selectedProjectKey }) {
                 selectedProjectKey = fetched.first?.projectKey ?? ""
@@ -45,8 +45,12 @@ final class ProjectSelectionViewModel: ObservableObject {
             return false
         }
         var settings = settingsStore.load()
-        settings.baseURL = baseURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        settings.baseURL = AppBuildConfig.baseURL
         settings.projectKey = key
+        let remoteLiff = WaitingRemoteConfigStore.current.lineLiffUrl
+        if !remoteLiff.isEmpty {
+            settings.liffURL = remoteLiff
+        }
         settingsStore.save(settings)
         return true
     }
