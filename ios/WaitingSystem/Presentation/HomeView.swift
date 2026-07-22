@@ -43,6 +43,9 @@ struct HomeView: View {
                             refresh()
                         }
                     }
+                },
+                onQueueMutated: {
+                    Task { await viewModel.refreshQueueOverview() }
                 }
             )
         }
@@ -69,8 +72,9 @@ struct HomeView: View {
     @ViewBuilder
     private func heroSection(compact: Bool) -> some View {
         VStack(spacing: compact ? 28 : 40) {
-            Text("順番をお受け取りください")
+            Text(Strings.Home.heroTitle)
                 .font(.system(size: compact ? 34 : 42, weight: .bold, design: .rounded))
+                .foregroundColor(Theme.Colors.textPrimary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, Theme.Spacing.xxxl)
                 .opacity(animateIn ? 1 : 0)
@@ -132,6 +136,7 @@ private struct WaitingCountBanner: View {
             HStack(alignment: .firstTextBaseline, spacing: Theme.Spacing.xxs) {
                 Text(value)
                     .font(.system(size: 42, weight: .bold, design: .rounded))
+                    .foregroundColor(Theme.Colors.textPrimary)
                 Text(unit)
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(Theme.Colors.textSecondary)

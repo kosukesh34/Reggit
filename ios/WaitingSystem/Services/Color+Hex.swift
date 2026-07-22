@@ -3,9 +3,12 @@ import SwiftUI
 extension String {
     func toColor() -> Color {
         let hex = trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+        if hex.isEmpty {
+            return Color(red: 0.949, green: 0.957, blue: 0.973) // #F2F4F8
+        }
         guard hex.count == 6,
               let value = UInt64(hex, radix: 16) else {
-            return Color(.systemGroupedBackground)
+            return Color(red: 0.949, green: 0.957, blue: 0.973)
         }
         let r = Double((value & 0xFF0000) >> 16) / 255.0
         let g = Double((value & 0x00FF00) >> 8) / 255.0

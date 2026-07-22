@@ -11,11 +11,14 @@ use App\UseCases\Queue\Data\QueueStoreInput;
 use App\UseCases\Queue\Data\QueueStoreOutput;
 use App\Util\AdminContext;
 use App\Util\StrHelper;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Str;
 
 class QueueStoreUseCase
 {
     public const WAITING_SYSTEM_CLIENT = 'waiting-system';
+
+    private const MAX_CREATE_ATTEMPTS = 5;
 
     public function __construct(
         private QueueStatsService $statsService,
@@ -39,19 +42,14 @@ class QueueStoreUseCase
             return new QueueStoreOutput(true, null);
         }
 
-        $nextNumber = $this->getNextQueueNumber($projectId);
-
-        $entry = QueueEntryModel::create([
-            'project_id' => $projectId,
-            'member_id' => $member?->id,
-            'user_id' => StrHelper::isEmptyStringOrNull($effectiveLineUserId) ? null : $user->id,
-            'guest_name' => $input->guestName ?? $user->name,
-            'guest_phone' => $input->guestPhone ?? $user->phone,
-            'party_size' => $input->partySize,
-            'status' => QueueStatus::WAITING,
-            'queue_number' => $nextNumber,
-            'qr_token' => $this->generateQrToken(),
-        ]);
+        $entry = $this->createEntryWithUniqueQueueNumber(
+            $projectId,
+            $member?->id,
+            StrHelper::isEmptyStringOrNull($effectiveLineUserId) ? null : $user->id,
+            $input->guestName ?? $user->name,
+            $input->guestPhone ?? $user->phone,
+            $input->partySize,
+        );
 
         $stats = $this->statsService->getStats($projectId, $entry->queue_number);
         $entry->refresh();
@@ -65,6 +63,36 @@ class QueueStoreUseCase
         $client = trim((string) request()->header('X-Queue-Client', ''));
 
         return hash_equals(self::WAITING_SYSTEM_CLIENT, $client);
+    }
+
+    private function createEntryWithUniqueQueueNumber(
+        int $projectId,
+        ?int $memberId,
+        ?int $userId,
+        ?string $guestName,
+        ?string $guestPhone,
+        int $partySize,
+    ): QueueEntryModel {
+        $lastError = null;
+        for ($attempt = 0; $attempt < self::MAX_CREATE_ATTEMPTS; $attempt++) {
+            try {
+                return QueueEntryModel::create([
+                    'project_id' => $projectId,
+                    'member_id' => $memberId,
+                    'user_id' => $userId,
+                    'guest_name' => $guestName,
+                    'guest_phone' => $guestPhone,
+                    'party_size' => $partySize,
+                    'status' => QueueStatus::WAITING,
+                    'queue_number' => $this->getNextQueueNumber($projectId),
+                    'qr_token' => $this->generateQrToken(),
+                ]);
+            } catch (UniqueConstraintViolationException $e) {
+                $lastError = $e;
+            }
+        }
+
+        throw $lastError ?? new \RuntimeException('受付番号の採番に失敗しました');
     }
 
     private function getNextQueueNumber(int $projectId): int

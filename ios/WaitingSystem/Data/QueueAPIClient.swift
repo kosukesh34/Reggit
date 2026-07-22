@@ -60,6 +60,30 @@ final class QueueAPIClient: QueueAPIClientProtocol {
         return apiResponse.queueEntry?.toTicket()
     }
 
+    func recallTicket(id: Int) async throws -> QueueTicket {
+        let url = try buildURL(path: "/api/queue/\(id)/recall")
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        applyWaitingSystemHeader(&request)
+
+        let data = try await execute(request)
+        let apiResponse = try decodeTicketResponse(from: data)
+        guard let entry = apiResponse.queueEntry else { throw QueueAPIError.invalidResponse }
+        return entry.toTicket()
+    }
+
+    func enterTicket(id: Int) async throws -> QueueTicket {
+        let url = try buildURL(path: "/api/queue/\(id)/enter")
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        applyWaitingSystemHeader(&request)
+
+        let data = try await execute(request)
+        let apiResponse = try decodeTicketResponse(from: data)
+        guard let entry = apiResponse.queueEntry else { throw QueueAPIError.invalidResponse }
+        return entry.toTicket()
+    }
+
     func fetchTicketStatus(id: Int) async throws -> QueueTicket? {
         let url = try buildURL(path: "/api/queue/\(id)")
         var request = URLRequest(url: url)
@@ -180,13 +204,15 @@ private struct QueueMePayload: Codable {
 
 private extension QueueTicketResponse.QueueEntryPayload {
     func toTicket() -> QueueTicket {
-        QueueTicket(
+        let channel = QueueLinkChannel.resolve(raw: linkChannel, lineLinked: lineLinked)
+        return QueueTicket(
             id: id,
             queueNumber: queueNumber,
             formattedQueueNumber: formattedQueueNumber,
             partySize: partySize,
             status: status,
-            lineLinked: lineLinked ?? false,
+            lineLinked: channel.isLinked,
+            linkChannel: channel,
             qrToken: qrToken,
             createdAt: createdAt,
             updatedAt: updatedAt,
