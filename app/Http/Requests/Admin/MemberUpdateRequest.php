@@ -91,10 +91,12 @@ class MemberUpdateRequest extends FormRequest
                 if ($values !== []) {
                     $rules['custom_profile.'.$key.'.*'] = ['string', 'in:'.implode(',', $values)];
                 }
+
                 continue;
             }
             if (ProfileCustomFieldInputType::needsValues($inputType) && $values !== []) {
                 $rules['custom_profile.'.$key] = ['nullable', 'string', 'in:'.implode(',', $values)];
+
                 continue;
             }
             $rules['custom_profile.'.$key] = ['nullable', 'string', 'max:'.ProfileValidationRules::CUSTOM_TEXT_MAX];
@@ -205,10 +207,12 @@ class MemberUpdateRequest extends FormRequest
             if ($inputType === ProfileCustomFieldInputType::CHECKBOX) {
                 $values = $customInput[$key] ?? [];
                 $extra[$key] = is_array($values) ? array_values($values) : [];
+
                 continue;
             }
             if (! array_key_exists($key, $customInput)) {
                 $extra[$key] = null;
+
                 continue;
             }
             $value = $customInput[$key];

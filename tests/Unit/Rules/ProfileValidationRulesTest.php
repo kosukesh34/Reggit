@@ -22,7 +22,7 @@ class ProfileValidationRulesTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_getProfileValidationRules_スマレジ制約の形式ルールを含むこと(): void
+    public function test_get_profile_validation_rules_スマレジ制約の形式ルールを含むこと(): void
     {
         $project = Project::factory()->create();
         AdminContext::setCurrentProject($project);

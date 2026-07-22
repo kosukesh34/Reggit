@@ -2,16 +2,16 @@
 
 namespace App\Services;
 
-use App\Enums\ProfileCustomFieldInputType;
-use App\Rules\ProfileValidationRules;
 use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Enums\MemberStatus;
+use App\Enums\ProfileCustomFieldInputType;
 use App\Jobs\SendAfterRegistrationJob;
 use App\Models\AfterRegistrationDelivery;
 use App\Models\Member;
 use App\Models\MemberRankHistory;
 use App\Models\PointTransaction;
 use App\Models\User;
+use App\Rules\ProfileValidationRules;
 use App\Services\Smaregi\SmaregiApiService;
 use App\Services\Smaregi\SmaregiCustomerPointsInboundSyncService;
 use App\Services\Smaregi\SmaregiCustomerRankAssignmentService;
