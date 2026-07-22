@@ -206,6 +206,125 @@ class EloquentOrderRepository implements OrderRepository
             ->all();
     }
 
+    public function isSmaregiTransactionSynced(int $orderId, int $projectId): bool
+    {
+        return $this->newQuery()
+            ->whereKey($orderId)
+            ->where('project_id', $projectId)
+            ->whereNotNull('smaregi_transaction_synced_at')
+            ->exists();
+    }
+
+    public function tryClaimSmaregiTransactionSync(int $orderId, int $projectId, int $claimTtlMinutes): ?string
+    {
+        $claimExpiredBefore = now()->subMinutes($claimTtlMinutes);
+        $claimedAt = now()->format('Y-m-d H:i:s');
+
+        $affected = $this->newQuery()
+            ->whereKey($orderId)
+            ->where('project_id', $projectId)
+            ->whereNull('smaregi_transaction_synced_at')
+            ->where(function ($query) use ($claimExpiredBefore): void {
+                $query->whereNull('smaregi_transaction_sync_started_at')
+                    ->orWhere('smaregi_transaction_sync_started_at', '<', $claimExpiredBefore);
+            })
+            ->update(['smaregi_transaction_sync_started_at' => $claimedAt]);
+
+        return $affected === 1 ? $claimedAt : null;
+    }
+
+    public function markSmaregiTransactionSynced(
+        int $orderId,
+        int $projectId,
+        string $smaregiTransactionHeadId,
+    ): void {
+        $this->newQuery()
+            ->whereKey($orderId)
+            ->where('project_id', $projectId)
+            ->update([
+                'smaregi_transaction_head_id' => $smaregiTransactionHeadId,
+                'smaregi_transaction_synced_at' => now(),
+                'smaregi_transaction_sync_started_at' => null,
+            ]);
+    }
+
+    public function releaseSmaregiTransactionSyncClaim(int $orderId, int $projectId, string $claimedAt): void
+    {
+        $this->newQuery()
+            ->whereKey($orderId)
+            ->where('project_id', $projectId)
+            ->whereNull('smaregi_transaction_synced_at')
+            ->where('smaregi_transaction_sync_started_at', $claimedAt)
+            ->update(['smaregi_transaction_sync_started_at' => null]);
+    }
+
+    public function existsBySmaregiTransactionHeadId(int $projectId, string $smaregiTransactionHeadId): bool
+    {
+        $headId = trim($smaregiTransactionHeadId);
+        if ($headId === '') {
+            return false;
+        }
+
+        return $this->newQuery()
+            ->where('project_id', $projectId)
+            ->where('smaregi_transaction_head_id', $headId)
+            ->exists();
+    }
+
+    public function findIdBySmaregiTransactionHeadId(int $projectId, string $smaregiTransactionHeadId): ?int
+    {
+        $headId = trim($smaregiTransactionHeadId);
+        if ($headId === '') {
+            return null;
+        }
+
+        $id = $this->newQuery()
+            ->where('project_id', $projectId)
+            ->where('smaregi_transaction_head_id', $headId)
+            ->value('id');
+
+        return $id !== null ? (int) $id : null;
+    }
+
+    public function hasSmaregiLayaway(int $orderId, int $projectId): bool
+    {
+        return $this->newQuery()
+            ->whereKey($orderId)
+            ->where('project_id', $projectId)
+            ->whereNotNull('smaregi_layaway_head_id')
+            ->where('smaregi_layaway_head_id', '!=', '')
+            ->exists();
+    }
+
+    public function markSmaregiLayawayRegistered(
+        int $orderId,
+        int $projectId,
+        string $smaregiLayawayHeadId,
+    ): void {
+        $this->newQuery()
+            ->whereKey($orderId)
+            ->where('project_id', $projectId)
+            ->update([
+                'smaregi_layaway_head_id' => $smaregiLayawayHeadId,
+                'smaregi_transaction_sync_started_at' => null,
+            ]);
+    }
+
+    public function findIdBySmaregiLayawayHeadId(int $projectId, string $smaregiLayawayHeadId): ?int
+    {
+        $headId = trim($smaregiLayawayHeadId);
+        if ($headId === '') {
+            return null;
+        }
+
+        $id = $this->newQuery()
+            ->where('project_id', $projectId)
+            ->where('smaregi_layaway_head_id', $headId)
+            ->value('id');
+
+        return $id !== null ? (int) $id : null;
+    }
+
     private function newQuery(): Builder
     {
         return OrderModel::query()->withoutGlobalScope(ProjectScope::class);

@@ -12,5 +12,7 @@ class SmaregiSettingsView
         public readonly string $webhookUrl,
         public readonly string $appUrl,
         public readonly string $linkedContractId,
+        public readonly string $storeId = '',
+        public readonly string $terminalId = '',
     ) {}
 }

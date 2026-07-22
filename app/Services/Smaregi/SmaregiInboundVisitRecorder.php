@@ -30,7 +30,7 @@ class SmaregiInboundVisitRecorder
         Carbon $visitedAt,
         float $amount,
         array $details,
-    ): void {
+    ): ?MemberVisit {
         $visit = MemberVisit::withoutGlobalScopes()
             ->where('project_id', $member->project_id)
             ->where('smaregi_transaction_head_id', $headId)
@@ -65,11 +65,20 @@ class SmaregiInboundVisitRecorder
             }
         }
 
-        if ($visit->items()->exists()) {
-            return;
+        if ($visit !== null && ! $visit->items()->exists()) {
+            $this->saveVisitItems($visit, $details);
         }
 
-        $this->saveVisitItems($visit, $details);
+        return $visit;
+    }
+
+    public function attachOrder(MemberVisit $visit, int $orderId): void
+    {
+        if ($visit->order_id !== null) {
+            return;
+        }
+        $visit->order_id = $orderId;
+        $visit->save();
     }
 
     public function deleteForTransaction(Member $member, string $headId): void

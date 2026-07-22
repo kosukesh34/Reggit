@@ -182,6 +182,7 @@ class MemberAdminService
         $posVisits = MemberVisit::query()
             ->where('member_id', $member->id)
             ->where('source', MemberVisitSource::SMAREGI)
+            ->whereNull('order_id')
             ->whereNotNull('amount')
             ->get(['amount', 'visited_at']);
         $posRevenue = (float) $posVisits->sum('amount');

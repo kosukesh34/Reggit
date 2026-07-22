@@ -24,6 +24,10 @@ class Order extends Model
         'points_earned',
         'smaregi_points_synced_at',
         'smaregi_points_sync_started_at',
+        'smaregi_transaction_head_id',
+        'smaregi_transaction_synced_at',
+        'smaregi_transaction_sync_started_at',
+        'smaregi_layaway_head_id',
     ];
 
     /** @var array<string, string> */
@@ -33,6 +37,8 @@ class Order extends Model
         'points_earned' => 'integer',
         'smaregi_points_synced_at' => 'datetime',
         'smaregi_points_sync_started_at' => 'datetime',
+        'smaregi_transaction_synced_at' => 'datetime',
+        'smaregi_transaction_sync_started_at' => 'datetime',
     ];
 
     public function project()
