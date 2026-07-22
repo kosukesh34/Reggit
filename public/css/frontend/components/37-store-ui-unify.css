@@ -32,9 +32,8 @@ body.theme-store.button-shape-square {
     --chip-radius: 8px;
 }
 
-/* LP と同じセージの空気感 */
-body.theme-store.app-bg-solid,
-body.theme-store {
+/* LP と同じセージの空気感（gradient / image / カスタム solid は触らない） */
+body.theme-store:not(.app-bg-gradient):not(.app-bg-image):not(.app-bg-solid) {
     background:
         radial-gradient(900px 480px at 12% -10%, rgba(215, 232, 226, 0.95), transparent 58%),
         radial-gradient(720px 420px at 96% 0%, rgba(196, 214, 222, 0.45), transparent 52%),
