@@ -2,6 +2,12 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Enums\ProfileCustomFieldInputType;
+use App\Models\Member;
+use App\Models\Scopes\ProjectScope;
+use App\Rules\ProfileValidationRules;
+use App\Support\PersonNameParts;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -13,18 +19,40 @@ class MemberUpdateRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('name_last') || $this->has('name_first')) {
+            $this->merge([
+                'name' => PersonNameParts::join(
+                    $this->input('name_last'),
+                    $this->input('name_first')
+                ),
+            ]);
+        }
+        if ($this->has('kana_last') || $this->has('kana_first')) {
+            $this->merge([
+                'kana' => PersonNameParts::join(
+                    $this->input('kana_last'),
+                    $this->input('kana_first')
+                ),
+            ]);
+        }
+    }
+
     public function rules(): array
     {
         $memberId = (int) $this->route('id');
+        $format = ProfileValidationRules::formatRulesByField();
+        $rules = [
+            'name_last' => ['nullable', 'string', 'max:'.ProfileValidationRules::NAME_PART_MAX],
+            'name_first' => ['nullable', 'string', 'max:'.ProfileValidationRules::NAME_PART_MAX],
+            'kana_last' => ['nullable', 'string', 'max:'.ProfileValidationRules::KANA_PART_MAX, 'regex:'.ProfileValidationRules::KANA_REGEX],
+            'kana_first' => ['nullable', 'string', 'max:'.ProfileValidationRules::KANA_PART_MAX, 'regex:'.ProfileValidationRules::KANA_REGEX],
+            'name' => array_merge(['nullable'], $format['name']),
+            'kana' => array_merge(['nullable'], $format['kana']),
+            'email' => array_merge(['nullable'], $format['email']),
+            'phone' => array_merge(['nullable'], $format['phone']),
 
-        return [
-            // ユーザー情報
-            'name' => ['nullable', 'string', 'max:255'],
-            'kana' => ['nullable', 'string', 'max:255'],
-            'email' => ['nullable', 'email', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:32'],
-
-            // 会員情報
             'member_number' => [
                 'required',
                 'string',
@@ -33,33 +61,73 @@ class MemberUpdateRequest extends FormRequest
             ],
             'status' => ['required', Rule::in(['active', 'inactive'])],
             'rank' => ['nullable', 'string', 'max:64'],
-            'birthday' => ['nullable', 'date'],
-            'address' => ['nullable', 'string', 'max:500'],
-            'postal_code' => ['nullable', 'string', 'max:16'],
-            'prefecture' => ['nullable', 'string', 'max:64'],
-            'city' => ['nullable', 'string', 'max:128'],
-            'street' => ['nullable', 'string', 'max:256'],
-            'sex' => ['nullable', 'string', 'max:16'],
-            'mail_receive_flag' => ['nullable', 'in:0,1'],
+            'birthday' => array_merge(['nullable'], $format['birthday']),
+            'address' => array_merge(['nullable'], $format['address']),
+            'postal_code' => array_merge(['nullable'], $format['postal_code']),
+            'prefecture' => array_merge(['nullable'], $format['prefecture']),
+            'city' => array_merge(['nullable'], $format['city']),
+            'street' => array_merge(['nullable'], $format['street']),
+            'sex' => array_merge(['nullable'], $format['sex']),
+            'mail_receive_flag' => array_merge(['nullable'], $format['mail_receive_flag']),
 
-            // ポイント操作（任意）
             'point_set' => ['nullable', 'integer', 'min:0', 'max:10000000'],
             'point_add' => ['nullable', 'integer', 'min:0'],
             'point_subtract' => ['nullable', 'integer', 'min:0'],
             'point_description' => ['nullable', 'string', 'max:255'],
 
-            // 任意項目（JSON）
             'profile_extra' => ['nullable', 'string', 'max:2000'],
+            'custom_profile' => ['nullable', 'array'],
         ];
+
+        foreach ($this->customProfileFieldDefinitions() as $cf) {
+            $key = (string) ($cf['key'] ?? '');
+            if ($key === '') {
+                continue;
+            }
+            $inputType = (string) ($cf['input_type'] ?? ProfileCustomFieldInputType::TEXT);
+            $values = isset($cf['values']) && is_array($cf['values']) ? array_map('strval', $cf['values']) : [];
+            if ($inputType === ProfileCustomFieldInputType::CHECKBOX) {
+                $rules['custom_profile.'.$key] = ['nullable', 'array'];
+                if ($values !== []) {
+                    $rules['custom_profile.'.$key.'.*'] = ['string', 'in:'.implode(',', $values)];
+                }
+                continue;
+            }
+            if (ProfileCustomFieldInputType::needsValues($inputType) && $values !== []) {
+                $rules['custom_profile.'.$key] = ['nullable', 'string', 'in:'.implode(',', $values)];
+                continue;
+            }
+            $rules['custom_profile.'.$key] = ['nullable', 'string', 'max:'.ProfileValidationRules::CUSTOM_TEXT_MAX];
+        }
+
+        return $rules;
     }
 
     public function messages(): array
     {
-        return [
+        return array_merge(ProfileValidationRules::messages(), [
             'member_number.required' => '会員番号を入力してください',
             'member_number.unique' => 'この会員番号は既に使用されています',
             'status.in' => 'ステータスを選択してください',
-        ];
+            'kana_last.regex' => 'フリガナ（姓）はカタカナで入力してください',
+            'kana_first.regex' => 'フリガナ（名）はカタカナで入力してください',
+        ]);
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function customProfileFieldDefinitions(): array
+    {
+        $member = Member::query()
+            ->withoutGlobalScope(ProjectScope::class)
+            ->find((int) $this->route('id'));
+        if ($member === null) {
+            return [];
+        }
+        $settings = resolve(ShopSettingRepository::class)->getProfileFieldSettings((int) $member->project_id);
+
+        return array_values($settings['custom_fields'] ?? []);
     }
 
     public function withValidator(Validator $validator): void
@@ -103,16 +171,50 @@ class MemberUpdateRequest extends FormRequest
     }
 
     /**
-     * profile_extra を配列で取得（JSON 文字列をデコード）
+     * profile_extra を配列で取得（カスタム項目フォーム優先、なければ JSON 文字列をデコード）
+     *
+     * @return array<string, mixed>|null
      */
     public function getProfileExtraArray(): ?array
     {
-        $raw = $this->input('profile_extra');
-        if ($raw === null || $raw === '') {
-            return null;
-        }
-        $decoded = json_decode($raw, true);
+        $definitions = $this->customProfileFieldDefinitions();
+        if ($definitions === []) {
+            $raw = $this->input('profile_extra');
+            if ($raw === null || $raw === '') {
+                return null;
+            }
+            $decoded = json_decode($raw, true);
 
-        return is_array($decoded) ? $decoded : null;
+            return is_array($decoded) ? $decoded : null;
+        }
+
+        $member = Member::query()
+            ->withoutGlobalScope(ProjectScope::class)
+            ->find((int) $this->route('id'));
+        $extra = is_array($member?->profile_extra ?? null) ? $member->profile_extra : [];
+        $customInput = $this->input('custom_profile', []);
+        if (! is_array($customInput)) {
+            $customInput = [];
+        }
+        foreach ($definitions as $cf) {
+            $key = (string) ($cf['key'] ?? '');
+            if ($key === '') {
+                continue;
+            }
+            $inputType = (string) ($cf['input_type'] ?? ProfileCustomFieldInputType::TEXT);
+            if ($inputType === ProfileCustomFieldInputType::CHECKBOX) {
+                $values = $customInput[$key] ?? [];
+                $extra[$key] = is_array($values) ? array_values($values) : [];
+                continue;
+            }
+            if (! array_key_exists($key, $customInput)) {
+                $extra[$key] = null;
+                continue;
+            }
+            $value = $customInput[$key];
+            $extra[$key] = is_string($value) && $value === '' ? null : $value;
+        }
+
+        return $extra;
     }
 }

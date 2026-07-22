@@ -139,6 +139,7 @@ class MemberController extends AdminBaseController
             'rankOptions' => $output->rankOptions,
             'activeCoupons' => $output->activeCoupons,
             'activeStampCards' => $output->activeStampCards,
+            'customProfileFields' => $output->customProfileFields,
         ]);
     }
 
@@ -166,8 +167,11 @@ class MemberController extends AdminBaseController
             'mail_receive_flag' => $request->input('mail_receive_flag') !== null && $request->input('mail_receive_flag') !== ''
                 ? (string) $request->input('mail_receive_flag')
                 : null,
-            'profile_extra' => $request->getProfileExtraArray(),
         ];
+        $profileExtra = $request->getProfileExtraArray();
+        if ($profileExtra !== null) {
+            $memberData['profile_extra'] = $profileExtra;
+        }
 
         $input = new AdminMemberUpdateInput(
             $projectId,
