@@ -1,15 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 228 64" role="img" aria-label="HARBOR DINING">
-  <title>HARBOR DINING</title>
-  <defs>
-    <filter id="s" x="-8%" y="-20%" width="116%" height="140%">
-      <feDropShadow dx="0" dy="1" stdDeviation="1.2" flood-color="#000000" flood-opacity="0.06"/>
-    </filter>
-  </defs>
-
-  <rect width="228" height="64" rx="16" fill="#EAF2FB" stroke="#D6E6F8" filter="url(#s)"/>
-  <circle cx="32" cy="32" r="18" fill="#0071E3"/>
-  <path d="M20 36c4-5 8-5 12 0s8 5 12 0" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round"/>
-  <path d="M20 28c4-5 8-5 12 0s8 5 12 0" fill="none" stroke="#BFD9FF" stroke-width="2.2" stroke-linecap="round"/>
-  <text x="60" y="38" font-family="'Helvetica Neue', Arial, sans-serif" font-size="14" font-weight="700" letter-spacing="0.08em" fill="#1D1D1F">HARBOR DINING</text>
-
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 80" role="img" aria-label="HARBOR DINING">
+  <rect width="200" height="80" fill="#fff"/>
+  <circle cx="40" cy="40" r="26" fill="#1D4E89"/>
+  <path d="M40 20v28M28 36h24" stroke="#E8F1FA" stroke-width="2.5"/>
+  <path d="M28 48c4 6 12 10 12 10s8-4 12-10" fill="none" stroke="#7EB0DE" stroke-width="2"/>
+  <circle cx="40" cy="24" r="3" fill="#F4C430"/>
+  <text x="78" y="36" font-family="'Hiragino Sans','Noto Sans JP',sans-serif" font-size="13" font-weight="800" letter-spacing="0.08em" fill="#1D4E89">HARBOR</text>
+  <text x="78" y="54" font-family="'Hiragino Sans','Noto Sans JP',sans-serif" font-size="10" font-weight="600" letter-spacing="0.2em" fill="#6B7280">DINING</text>
 </svg>
