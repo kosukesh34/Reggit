@@ -9,6 +9,7 @@ use App\Models\ShopSetting;
 use App\Models\User;
 use App\Services\Admin\MemberAdminService;
 use App\Services\MemberService;
+use App\Services\Smaregi\SmaregiApiService;
 use App\Util\AdminContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Support\GrantsMemberPoints;
@@ -112,7 +113,7 @@ class MemberRankHistoryTest extends TestCase
         ]);
 
         $rankSynced = false;
-        $smaregiApi = \Mockery::mock(\App\Services\Smaregi\SmaregiApiService::class)->makePartial();
+        $smaregiApi = \Mockery::mock(SmaregiApiService::class)->makePartial();
         $smaregiApi->shouldReceive('getContractIdForProject')->andReturn('contract-x');
         $smaregiApi->shouldReceive('clearLastErrorDetail')->andReturnNull();
         $smaregiApi->shouldReceive('updateCustomer')
@@ -123,7 +124,7 @@ class MemberRankHistoryTest extends TestCase
 
                 return ['customerId' => 'cust-200'];
             });
-        $this->app->instance(\App\Services\Smaregi\SmaregiApiService::class, $smaregiApi);
+        $this->app->instance(SmaregiApiService::class, $smaregiApi);
         config(['smaregi.client_id' => 'test-client', 'smaregi.client_secret' => 'test-secret']);
 
         app(MemberAdminService::class)->updateMemberProfile($member, [], ['rank' => 'silver']);
