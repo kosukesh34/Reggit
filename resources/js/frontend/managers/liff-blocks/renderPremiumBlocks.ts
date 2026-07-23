@@ -77,7 +77,12 @@ const premium: PremiumRenderer = {
             : design === 'sticky' ? ' builder-btn--cta builder-btn--sticky'
             : ' builder-btn--cta';
         const wrapClass = design === 'sticky' ? ' builder-button-wrap--sticky' : '';
-        const colorStyle = block.color ? ` style="--btn-bg:${esc(block.color)};${block.text_color ? `--btn-fg:${esc(block.text_color)};` : ''}${design === 'outline' || design === 'soft' ? `--btn-accent:${esc(block.color)};` : ''}"` : '';
+        const rawColor = typeof block.color === 'string' ? block.color.trim() : '';
+        const isLegacyAccent = /^#(007aff|4f46e5|5856d6|4338ca)$/i.test(rawColor);
+        const color = rawColor !== '' && !isLegacyAccent ? rawColor : '';
+        const colorStyle = color !== ''
+            ? ` style="--btn-bg:${esc(color)};${block.text_color ? `--btn-fg:${esc(block.text_color)};` : ''}${design === 'outline' || design === 'soft' ? `--btn-accent:${esc(color)};` : ''}"`
+            : '';
         return `<section class="builder-block builder-button-wrap${wrapClass}" style="${baseStyle}">
             <a href="${esc(action)}" class="builder-btn${variantClass}${full}"${dataExternal}${colorStyle}>${esc(block.text)}</a>
         </section>`;
