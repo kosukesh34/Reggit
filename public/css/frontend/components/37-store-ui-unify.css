@@ -1,0 +1,199 @@
+/* ============================================================
+   店舗 View 統一レイヤー（Reggit LP と同系）
+   スコープ: body.theme-store のみ（他業種プリセットを壊さない）
+   ============================================================ */
+
+body.theme-store {
+    --btn-height: 44px;
+    --btn-height-sm: 36px;
+    --btn-padding-x: 20px;
+    --btn-radius: 999px;
+    --btn-font-size: 14px;
+    --btn-font-weight: 700;
+    --btn-shadow: 0 1px 2px rgba(15, 28, 26, 0.06);
+    --chip-height: 36px;
+    --chip-radius: 999px;
+    --chip-font-size: 13px;
+    --chip-font-weight: 600;
+    --font-base: "Manrope", "Noto Sans JP", "Hiragino Sans", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+    --font-display: "Manrope", "Noto Sans JP", "Hiragino Sans", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+    font-family: var(--font-base);
+    letter-spacing: -0.01em;
+    -webkit-font-smoothing: antialiased;
+}
+
+body.theme-store.button-shape-rounded {
+    --btn-radius: var(--radius, 16px);
+    --chip-radius: var(--radius, 16px);
+}
+
+body.theme-store.button-shape-square {
+    --btn-radius: 8px;
+    --chip-radius: 8px;
+}
+
+/* LP と同じセージの空気感（gradient / image / カスタム solid は触らない） */
+body.theme-store:not(.app-bg-gradient):not(.app-bg-image):not(.app-bg-solid) {
+    background:
+        radial-gradient(900px 480px at 12% -10%, rgba(215, 232, 226, 0.95), transparent 58%),
+        radial-gradient(720px 420px at 96% 0%, rgba(196, 214, 222, 0.45), transparent 52%),
+        var(--bg-canvas, #f1f5f4) !important;
+    background-attachment: fixed;
+}
+
+body.theme-store .header .logo,
+body.theme-store .builder-heading__text,
+body.theme-store .builder-hero__title,
+body.theme-store .section-title,
+body.theme-store .member-card-title {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+}
+
+/* ── Primary CTA ── */
+body.theme-store .product-add-btn,
+body.theme-store .order-btn--primary,
+body.theme-store .order-btn--mobile,
+body.theme-store .btn-primary,
+body.theme-store .builder-btn,
+body.theme-store .builder-btn--cta,
+body.theme-store .builder-btn-group__btn:not(.builder-btn-group__btn--outline),
+body.theme-store .queue-button:not(.queue-button-secondary):not(.queue-button-ghost),
+body.theme-store .ms-guest-cta {
+    box-sizing: border-box;
+    min-height: var(--btn-height);
+    padding: 0 var(--btn-padding-x) !important;
+    border-radius: var(--btn-radius) !important;
+    font-size: var(--btn-font-size) !important;
+    font-weight: var(--btn-font-weight) !important;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+    border: 1px solid transparent;
+    box-shadow: var(--btn-shadow) !important;
+    background: var(--btn-bg, var(--primary-color)) !important;
+    color: var(--btn-fg, #fff) !important;
+}
+
+body.theme-store .product-add-btn:hover,
+body.theme-store .order-btn--primary:hover:not(:disabled),
+body.theme-store .order-btn--mobile:hover:not(:disabled),
+body.theme-store .btn-primary:hover:not(:disabled),
+body.theme-store .builder-btn:hover,
+body.theme-store .builder-btn--cta:hover,
+body.theme-store .ms-guest-cta:hover {
+    background: var(--primary-dark) !important;
+    filter: none;
+    box-shadow: var(--shadow-sm) !important;
+}
+
+body.theme-store .product-card .product-add-btn {
+    min-height: var(--btn-height-sm);
+    border-radius: var(--btn-radius) !important;
+    font-size: 13px !important;
+    box-shadow: var(--btn-shadow) !important;
+}
+
+body.theme-store .product-card .product-add-btn.added,
+body.theme-store .product-card .product-add-btn.is-added {
+    background: var(--primary-color) !important;
+    opacity: 0.88;
+}
+
+/* ── Secondary ── */
+body.theme-store .btn-secondary,
+body.theme-store .order-btn--secondary,
+body.theme-store .builder-btn--outline,
+body.theme-store .builder-btn-group__btn--outline,
+body.theme-store .queue-button-secondary {
+    box-sizing: border-box;
+    min-height: var(--btn-height);
+    padding: 0 var(--btn-padding-x) !important;
+    border-radius: var(--btn-radius) !important;
+    font-size: var(--btn-font-size) !important;
+    font-weight: var(--btn-font-weight) !important;
+    background: var(--surface) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border-color) !important;
+    box-shadow: none !important;
+}
+
+body.theme-store .btn-secondary:hover:not(:disabled),
+body.theme-store .order-btn--secondary:hover:not(:disabled),
+body.theme-store .builder-btn--outline:hover {
+    border-color: var(--primary-color) !important;
+    color: var(--primary-color) !important;
+}
+
+body.theme-store .builder-btn--soft {
+    background: rgba(var(--primary-rgb), 0.12) !important;
+    color: var(--primary-color) !important;
+    border: 1px solid rgba(var(--primary-rgb), 0.2) !important;
+    box-shadow: none !important;
+    border-radius: var(--btn-radius) !important;
+    min-height: var(--btn-height);
+    font-weight: var(--btn-font-weight) !important;
+}
+
+body.theme-store .builder-btn--friend-add {
+    min-height: var(--btn-height);
+    border-radius: var(--btn-radius) !important;
+    font-size: var(--btn-font-size) !important;
+    font-weight: var(--btn-font-weight) !important;
+    box-shadow: var(--btn-shadow) !important;
+}
+
+/* ── Chip / タブ ── */
+body.theme-store .builder-chip,
+body.theme-store .tab-btn,
+body.theme-store .category-tabs .tab-btn,
+body.theme-store .coupons-list-tab {
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: var(--chip-height);
+    padding: 0 14px !important;
+    border-radius: var(--chip-radius) !important;
+    font-size: var(--chip-font-size) !important;
+    font-weight: var(--chip-font-weight) !important;
+    background: var(--surface-muted) !important;
+    color: var(--text-secondary) !important;
+    border: 1px solid transparent !important;
+    box-shadow: none !important;
+    text-decoration: none;
+}
+
+body.theme-store .builder-chip.is-active,
+body.theme-store .builder-chip[aria-current="true"],
+body.theme-store .tab-btn.active,
+body.theme-store .category-tabs .tab-btn.active,
+body.theme-store .coupons-list-tab.active {
+    background: var(--primary-color) !important;
+    color: #fff !important;
+    border-color: var(--primary-color) !important;
+    box-shadow: none !important;
+}
+
+body.theme-store .tab-btn.active .tab-count {
+    background: rgba(255, 255, 255, 0.24) !important;
+    color: #fff !important;
+}
+
+body.theme-store .cart-btn,
+body.theme-store .header-action-btn,
+body.theme-store .account-btn {
+    border-radius: 12px !important;
+}
+
+body.theme-store.card-style-flat .builder-block,
+body.theme-store.card-style-flat .product-card,
+body.theme-store.card-style-flat .coupon-item,
+body.theme-store.card-style-flat .queue-card {
+    box-shadow: none !important;
+}
+
+body.theme-store.card-style-flat .product-card,
+body.theme-store.card-style-flat .coupon-item {
+    border: 1px solid var(--hairline);
+}

@@ -1,5 +1,5 @@
 /* フロントエンドスタイル：コンポーネントを @import で読み込み（各ファイル500行以内） */
-@import url('components/01-variables-base.css');
+@import url('components/01-variables-base.css?v=4');
 @import url('components/02-loading-layout.css');
 @import url('components/03-header-main-products.css');
 @import url('components/04-cart.css');
@@ -35,3 +35,4 @@
 @import url('components/34-apple-block-variants.css');
 @import url('components/35-app-studio-recipes.css');
 @import url('components/36-app-transitions.css');
+@import url('components/37-store-ui-unify.css?v=6');
