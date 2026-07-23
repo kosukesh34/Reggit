@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { iconForPrimary } from '../ios/icons';
+import { iconForPrimary } from '../demo/icons';
 import {
     buildBottomTabs,
     buildCardSegments,
@@ -7,7 +7,7 @@ import {
     isFeatureEnabled,
     primaryForTab,
     type PrimaryTab,
-} from '../ios/navigation';
+} from '../demo/navigation';
 
 type FrontendMenuItem = {
     tab: string;

@@ -1,7 +1,7 @@
 import React from 'react';
-import { IconCart } from '../ios/icons';
-import { isFeatureEnabled } from '../ios/navigation';
-import { isIosFixedUiDemo } from '../ios/demoMode';
+import { IconCart } from '../demo/icons';
+import { isFeatureEnabled } from '../demo/navigation';
+import { isIosFixedUiDemo } from '../demo/demoMode';
 
 type FrontendHeaderConfig = {
     title: string;

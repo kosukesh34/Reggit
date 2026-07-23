@@ -405,18 +405,19 @@ body.ios-fixed-ui .ios-announce-list .ios-row__title {
 }
 
 /* —— Segmented control —— */
+/* sticky の基準は .main-content（ヘッダー下）なので top に nav 高を足さない */
 body.ios-fixed-ui .ios-segment-bar {
     position: sticky;
-    top: calc(var(--ios-nav-h) + env(safe-area-inset-top, 0px));
-    z-index: 15;
-    padding: 0 16px 10px;
-    background: rgba(242, 242, 247, 0.92);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    top: 0;
+    z-index: 25;
+    padding: 8px 16px 10px;
+    background: rgba(247, 249, 252, 0.96);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
 }
 
 body.ios-fixed-ui .ios-large-title + .ios-segment-bar {
-    top: calc(var(--ios-nav-h) + env(safe-area-inset-top, 0px));
+    top: 0;
 }
 
 body.ios-fixed-ui .main-content > .ios-large-title {
@@ -2077,6 +2078,47 @@ body.ios-fixed-ui #liffDetailSection {
     padding: 0 0 32px !important;
 }
 
+/* 予約フロー: 内側ScrollViewをやめ、ページ本体でユーザーがスクロール */
+body.ios-fixed-ui.liff-page-reservation-flow #liffDetailPage.page-content--detail {
+    min-height: auto;
+    height: auto;
+    overflow: visible;
+}
+
+body.ios-fixed-ui.liff-page-reservation-flow #liffDetailSection {
+    flex: none;
+    height: auto;
+    overflow: visible !important;
+    padding: 0 16px 40px !important;
+}
+
+body.ios-fixed-ui.liff-page-reservation-flow #liffDetailSection .liff-flow-page {
+    padding: 12px 0 24px;
+}
+
+body.ios-fixed-ui.liff-page-reservation-flow #liffDetailSection .reservation-modal-content,
+body.ios-fixed-ui.liff-page-reservation-flow #liffDetailSection .modal-content {
+    max-width: none;
+    max-height: none !important;
+    height: auto !important;
+    overflow: visible !important;
+    box-shadow: none;
+    border-radius: 16px;
+}
+
+body.ios-fixed-ui.liff-page-reservation-flow #liffDetailSection .reservation-form {
+    overflow: visible !important;
+}
+
+body.ios-fixed-ui.liff-page-reservation-flow #liffDetailSection .modal-header .close-btn {
+    display: none;
+}
+
+body.ios-fixed-ui.liff-page-reservation-flow #liffDetailSection .time-options-grid {
+    max-height: none;
+    overflow: visible;
+}
+
 body.ios-fixed-ui .ios-detail {
     margin: 0;
 }
@@ -2114,9 +2156,10 @@ body.ios-fixed-ui .ios-detail__hero .ios-detail__chips {
     position: absolute;
     left: 16px;
     right: 16px;
-    bottom: 14px;
+    top: 14px;
+    bottom: auto;
     margin: 0;
-    z-index: 1;
+    z-index: 2;
 }
 
 body.ios-fixed-ui .ios-detail__chip {
@@ -2137,7 +2180,7 @@ body.ios-fixed-ui .ios-detail__chip--status {
 
 body.ios-fixed-ui .ios-detail__panel {
     margin: 0 16px;
-    padding: 18px 16px 20px;
+    padding: 20px 16px 20px;
     background: #fff;
     border-radius: 18px;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
@@ -2148,7 +2191,7 @@ body.ios-fixed-ui .ios-detail__panel {
 body.ios-fixed-ui .ios-detail--has-hero .ios-detail__panel,
 body.ios-fixed-ui .ios-detail--coupon .ios-detail__panel,
 body.ios-fixed-ui .ios-detail--stamp .ios-detail__panel {
-    margin-top: -24px;
+    margin-top: -20px;
 }
 
 body.ios-fixed-ui .ios-detail__hero {
@@ -2506,6 +2549,7 @@ body.ios-fixed-ui .design-lab__screen figcaption {
     color: var(--ios-secondary);
 }
 
+/* PayPay風スクラッチくじ */
 body.ios-fixed-ui .design-lab__scratch-card {
     display: flex;
     flex-direction: column;
@@ -2754,289 +2798,6 @@ body.ios-fixed-ui .gacha-machine__cta {
 
 @keyframes design-lab-spin {
     to { transform: rotate(360deg); }
-}
-
-/* LP風 会員証 UI */
-body.ios-fixed-ui .ios-wallet-member {
-    padding: 8px 16px calc(40px + var(--ios-tab-h) + env(safe-area-inset-bottom, 0px));
-}
-
-body.ios-fixed-ui .ios-wallet-member__hello {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 16px;
-}
-
-body.ios-fixed-ui .ios-wallet-member__avatar {
-    display: grid;
-    place-items: center;
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: var(--ios-tint);
-    color: #fff;
-    font-family: var(--ios-font-display);
-    font-size: 18px;
-    font-weight: 800;
-}
-
-body.ios-fixed-ui .ios-wallet-member__hello-title {
-    margin: 0;
-    font-size: 20px;
-    font-weight: 800;
-    letter-spacing: -0.02em;
-}
-
-body.ios-fixed-ui .ios-wallet-member__hello-sub {
-    margin: 2px 0 0;
-    font-size: 13px;
-    color: var(--ios-secondary);
-}
-
-body.ios-fixed-ui .ios-wallet-member__edit {
-    margin-left: auto;
-    width: 36px;
-    height: 36px;
-    border: 0;
-    border-radius: 18px;
-    background: rgba(14, 124, 102, 0.1);
-    color: var(--ios-tint);
-}
-
-body.ios-fixed-ui .ios-wallet-card {
-    border-radius: 22px;
-    overflow: hidden;
-    background: linear-gradient(160deg, #0F3D34 0%, #0E7C66 58%, #0A5C4C 100%);
-    color: #fff;
-    box-shadow: 0 18px 40px rgba(15, 61, 52, 0.24);
-}
-
-body.ios-fixed-ui .ios-wallet-card__top {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 18px 18px 8px;
-}
-
-body.ios-fixed-ui .ios-wallet-card__brand {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-body.ios-fixed-ui .ios-wallet-card__logo {
-    display: grid;
-    place-items: center;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.16);
-    font-family: var(--ios-font-display);
-    font-weight: 800;
-}
-
-body.ios-fixed-ui .ios-wallet-card__brand-name {
-    margin: 0;
-    font-size: 14px;
-    font-weight: 700;
-}
-
-body.ios-fixed-ui .ios-wallet-card__brand-sub {
-    margin: 2px 0 0;
-    font-size: 10px;
-    letter-spacing: 0.08em;
-    opacity: 0.75;
-}
-
-body.ios-fixed-ui .ios-wallet-card__tier {
-    display: inline-flex;
-    padding: 5px 10px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.16);
-    border: 1px solid rgba(255, 255, 255, 0.28);
-    font-size: 11px;
-    font-weight: 800;
-}
-
-body.ios-fixed-ui .ios-wallet-card__points {
-    padding: 8px 18px 4px;
-}
-
-body.ios-fixed-ui .ios-wallet-card__points-label {
-    margin: 0;
-    font-size: 12px;
-    opacity: 0.8;
-}
-
-body.ios-fixed-ui .ios-wallet-card__points-value {
-    margin: 4px 0 0;
-    font-family: var(--ios-font-display);
-    font-size: 34px;
-    font-weight: 800;
-    letter-spacing: -0.03em;
-    line-height: 1.1;
-}
-
-body.ios-fixed-ui .ios-wallet-card__points-value small {
-    font-size: 14px;
-    font-weight: 700;
-}
-
-body.ios-fixed-ui .ios-wallet-card__progress {
-    padding: 10px 18px 14px;
-}
-
-body.ios-fixed-ui .ios-wallet-card__progress-bar {
-    height: 8px;
-    border-radius: 999px;
-    background: rgba(0, 0, 0, 0.25);
-    overflow: hidden;
-}
-
-body.ios-fixed-ui .ios-wallet-card__progress-bar > span {
-    display: block;
-    height: 100%;
-    border-radius: inherit;
-    background: linear-gradient(90deg, #7ED9C1, #E8FFF7);
-}
-
-body.ios-fixed-ui .ios-wallet-card__progress-text {
-    margin: 8px 0 0;
-    font-size: 12px;
-    opacity: 0.85;
-}
-
-body.ios-fixed-ui .ios-wallet-card__scan {
-    margin-top: 4px;
-    padding: 14px 14px 16px;
-    background: #fff;
-    color: var(--ios-forest);
-}
-
-body.ios-fixed-ui .ios-wallet-card__scan-label {
-    margin: 0 0 10px;
-    text-align: center;
-    font-size: 10px;
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    color: var(--ios-tint);
-}
-
-body.ios-fixed-ui .ios-wallet-card__code-wrap {
-    display: grid;
-    place-items: center;
-    min-height: 64px;
-}
-
-body.ios-fixed-ui .ios-wallet-card__barcode {
-    width: min(100%, 280px);
-    height: 56px;
-}
-
-body.ios-fixed-ui .ios-wallet-card__number {
-    margin: 8px 0 0;
-    text-align: center;
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    color: var(--ios-secondary);
-}
-
-body.ios-fixed-ui .ios-wallet-member__meta {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    margin: 12px 2px 18px;
-    font-size: 12px;
-    color: var(--ios-secondary);
-}
-
-body.ios-fixed-ui .ios-wallet-member__enlarge {
-    border: 0;
-    background: transparent;
-    color: var(--ios-tint);
-    font: inherit;
-    font-size: 12px;
-    font-weight: 700;
-    cursor: pointer;
-}
-
-body.ios-fixed-ui .ios-wallet-member__quick {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
-    margin-bottom: 18px;
-}
-
-body.ios-fixed-ui .ios-wallet-member__quick-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-    min-height: 72px;
-    padding: 10px 4px;
-    border: 0;
-    border-radius: 14px;
-    background: var(--ios-surface);
-    box-shadow: 0 6px 16px rgba(15, 28, 26, 0.06);
-    color: var(--ios-label);
-    font: inherit;
-    font-size: 11px;
-    font-weight: 700;
-    cursor: pointer;
-}
-
-body.ios-fixed-ui .ios-wallet-member__quick-icon {
-    display: grid;
-    place-items: center;
-    width: 28px;
-    height: 28px;
-    border-radius: 10px;
-    background: var(--ios-mint);
-    color: var(--ios-tint);
-    font-size: 12px;
-}
-
-body.ios-fixed-ui .is-visually-hidden {
-    position: absolute !important;
-    width: 1px !important;
-    height: 1px !important;
-    padding: 0 !important;
-    margin: -1px !important;
-    overflow: hidden !important;
-    clip: rect(0, 0, 0, 0) !important;
-    border: 0 !important;
-}
-
-body.ios-fixed-ui .design-lab__btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 44px;
-    padding: 0 18px;
-    border: 0;
-    border-radius: 999px;
-    background: var(--ios-tint);
-    color: #fff;
-    font: inherit;
-    font-size: 15px;
-    font-weight: 700;
-    cursor: pointer;
-}
-
-body.ios-fixed-ui .design-lab__btn:disabled {
-    opacity: 0.55;
-    cursor: default;
-}
-
-body.ios-fixed-ui .design-lab__btn--ghost {
-    margin-top: 10px;
-    background: transparent;
-    color: var(--ios-tint);
-    border: 1px solid rgba(14, 124, 102, 0.28);
 }
 
 body.ios-fixed-ui .design-lab__won {

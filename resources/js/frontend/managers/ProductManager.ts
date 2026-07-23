@@ -1,6 +1,6 @@
 import { ApiClient } from '../../shared/utils/apiClient';
 import { AppConstants } from '../../shared/constants';
-import { isIosFixedUiDemo } from '../ios/demoMode';
+import { isIosFixedUiDemo } from '../demo/demoMode';
 
 type Product = {
     id: number | string;
