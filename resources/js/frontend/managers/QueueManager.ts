@@ -1,6 +1,7 @@
 import type { ApiClient } from '../../shared/utils/apiClient';
 import { AppConstants } from '../../shared/constants';
 import { DomHelper } from '../../shared/utils/domHelper';
+import { isIosFixedUiDemo } from '../ios/demoMode';
 
 type QueueStats = {
     waiting_count?: number | null;
@@ -29,6 +30,7 @@ type QueueEntry = {
     aheadCount?: number | string;
     estimated_wait_minutes?: number | string;
     estimatedWaitMinutes?: number | string;
+    is_sample_preview?: boolean;
 };
 
 type QueueLinkResult = {
@@ -331,6 +333,10 @@ export class QueueManager {
         if (!section) {
             return;
         }
+        if (isIosFixedUiDemo()) {
+            this.renderSampleQueueCard();
+            return;
+        }
         const queueToken = this.getQueueTokenFromUrl();
         if (queueToken) {
             await this.loadByToken(queueToken, section);
@@ -343,18 +349,30 @@ export class QueueManager {
             }
             const result = await this.apiClient.get(AppConstants.API_ENDPOINTS.QUEUE_ME);
             if (result.success !== true) {
+                if (this.shouldShowSampleQueue()) {
+                    this.renderSampleQueueCard();
+                    return;
+                }
                 section.innerHTML = this.getErrorTemplate(result.error);
                 this.attachQueueHandlers(section);
                 return;
             }
             const data = (result.data || {}) as QueueStats;
             if (!data || Object.keys(data).length === 0 || data.queue_entry === null) {
+                if (this.shouldShowSampleQueue()) {
+                    this.renderSampleQueueCard();
+                    return;
+                }
                 section.innerHTML = this.getEmptyTemplate(data.updated_at || null, data);
                 this.attachQueueHandlers(section);
                 return;
             }
             const entry = (data.queue_entry || data) as QueueEntry;
             if (entry.status === 'cancelled' || entry.status === 'entered') {
+                if (this.shouldShowSampleQueue()) {
+                    this.renderSampleQueueCard();
+                    return;
+                }
                 section.innerHTML = this.getEmptyTemplate(data.updated_at || null, data);
                 this.attachQueueHandlers(section);
                 return;
@@ -365,6 +383,10 @@ export class QueueManager {
         } catch (error) {
             // eslint-disable-next-line no-console
             console.error('Failed to load queue:', error);
+            if (this.shouldShowSampleQueue()) {
+                this.renderSampleQueueCard();
+                return;
+            }
             const message = error instanceof Error ? error.message : undefined;
             section.innerHTML = this.getErrorTemplate(message);
             this.attachQueueHandlers(section);
@@ -569,7 +591,47 @@ export class QueueManager {
         setTimeout(rerun, 2000);
     }
 
+    shouldShowSampleQueue(): boolean {
+        if (isIosFixedUiDemo()) {
+            return true;
+        }
+        return this.isQueueMembershipRequired() && !this.isCurrentUserMember();
+    }
+
+    getDesignerSampleQueueEntry(): QueueEntry {
+        if (typeof window !== 'undefined'
+            && window.app
+            && typeof (window.app as { getDesignerSampleQueueEntry?: () => QueueEntry }).getDesignerSampleQueueEntry === 'function') {
+            return (window.app as { getDesignerSampleQueueEntry: () => QueueEntry }).getDesignerSampleQueueEntry();
+        }
+        return {
+            id: 'sample',
+            formatted_queue_number: String(new Date().getDate()) + '12',
+            status: 'waiting',
+            party_size: 2,
+            waiting_count: 5,
+            ahead_count: 3,
+            estimated_wait_minutes: 15,
+            line_linked: true,
+            is_sample_preview: true,
+        };
+    }
+
+    renderSampleQueueCard(): void {
+        const section = this.getSection();
+        if (!section) {
+            return;
+        }
+        const entry = {
+            ...this.getDesignerSampleQueueEntry(),
+            is_sample_preview: true,
+        };
+        section.innerHTML = this.renderQueueCard(entry, false, new Date().toISOString());
+        this.attachQueueHandlers(section);
+    }
+
     renderQueueCard(entry: QueueEntry, isQrView = false, updatedAt: string | null = null): string {
+        const isSample = entry.is_sample_preview === true;
         const rawQueueNumber =
             entry.formatted_queue_number != null && entry.formatted_queue_number !== ''
                 ? entry.formatted_queue_number
@@ -606,47 +668,35 @@ export class QueueManager {
             : '';
         const statusInfo = this.getStatusInfo(status);
         return `
-            <div class="queue-card">
-                <h2 class="section-title"><i class="fas fa-users"></i> 順番待ち受付</h2>
-                ${isQrView ? '<p class="queue-subtitle">QRから登録済みの待ち状況です。</p>' : ''}
-                <div class="queue-info">
-                    <div class="queue-row">
-                        <div class="queue-label">受付番号</div>
-                        <div class="queue-value"><strong class="queue-ticket-no">${DomHelper.escapeHtml(queueNumber)}</strong></div>
+            <div class="ios-queue">
+                ${isQrView ? '<p class="ios-queue__note">QRから登録済みの待ち状況です</p>' : ''}
+                <div class="ios-queue__ticket">
+                    <p class="ios-queue__label">受付番号</p>
+                    <p class="ios-queue__number">${DomHelper.escapeHtml(queueNumber)}</p>
+                    <span class="ios-queue__status ${statusInfo.className}">${DomHelper.escapeHtml(statusInfo.label)}</span>
+                </div>
+                <div class="ios-queue__stats">
+                    <div class="ios-queue__stat">
+                        <span class="ios-queue__stat-value">${DomHelper.escapeHtml(estimated)}</span>
+                        <span class="ios-queue__stat-label">予想待ち（分）</span>
                     </div>
-                    <div class="queue-row">
-                        <div class="queue-label">状態</div>
-                        <div class="queue-value"><span class="queue-badge ${statusInfo.className}">${DomHelper.escapeHtml(statusInfo.label)}</span></div>
+                    <div class="ios-queue__stat">
+                        <span class="ios-queue__stat-value">${DomHelper.escapeHtml(aheadCount)}</span>
+                        <span class="ios-queue__stat-label">あと（組）</span>
                     </div>
-                    <div class="queue-row">
-                        <div class="queue-label">人数</div>
-                        <div class="queue-value">${DomHelper.escapeHtml(partySize)} 名</div>
-                    </div>
-                    <div class="queue-row">
-                        <div class="queue-label">待ち人数</div>
-                        <div class="queue-value">${DomHelper.escapeHtml(waitingCount)} 組</div>
-                    </div>
-                    <div class="queue-row">
-                        <div class="queue-label">あと</div>
-                        <div class="queue-value">${DomHelper.escapeHtml(aheadCount)} 組</div>
-                    </div>
-                    <div class="queue-row">
-                        <div class="queue-label">予想待ち時間</div>
-                        <div class="queue-value">${DomHelper.escapeHtml(estimated)} 分</div>
-                    </div>
-                    <div class="queue-row">
-                        <div class="queue-label">アプリ連携</div>
-                        <div class="queue-value">
-                            <span class="queue-link-status ${lineLinked ? 'is-linked' : 'is-unlinked'}">
-                                ${lineLinked ? '連携済み' : '未連携'}
-                            </span>
-                        </div>
+                    <div class="ios-queue__stat">
+                        <span class="ios-queue__stat-value">${DomHelper.escapeHtml(partySize)}</span>
+                        <span class="ios-queue__stat-label">人数</span>
                     </div>
                 </div>
-                <div class="queue-actions">
-                    ${canCancel ? `<button class="queue-button queue-button-secondary" data-queue-action="cancel" data-queue-id="${DomHelper.escapeHtml(entry.id)}">キャンセル</button>` : ''}
-                    <button class="queue-button queue-button-secondary" data-queue-action="refresh">更新</button>
-                    <button class="queue-button queue-button-ghost" data-queue-action="go-member">会員証</button>
+                <div class="ios-queue__meta">
+                    <span>待ち ${DomHelper.escapeHtml(waitingCount)} 組</span>
+                    <span class="${lineLinked ? 'is-linked' : 'is-unlinked'}">${lineLinked ? 'アプリ連携済み' : '未連携'}</span>
+                </div>
+                <div class="ios-queue__actions">
+                    ${canCancel && !isSample ? `<button class="ios-queue__btn ios-queue__btn--ghost" data-queue-action="cancel" data-queue-id="${DomHelper.escapeHtml(entry.id)}">キャンセル</button>` : ''}
+                    <button class="ios-queue__btn ios-queue__btn--ghost" data-queue-action="refresh">更新</button>
+                    <button class="ios-queue__btn" data-queue-action="go-member">会員証</button>
                 </div>
                 ${updated}
             </div>

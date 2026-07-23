@@ -3,6 +3,7 @@ import { DomHelper } from '../../shared/utils/domHelper';
 import { ToastManager } from '../../shared/utils/toast';
 import { ConfirmDialog } from '../../shared/utils/confirmDialog';
 import { getGuestRegisterMessage, getMemberRegistrationMode, shouldShowRegistrationForm, syncMemberRegistrationModeFromPayload } from '../utils/membershipPolicy';
+import { isIosFixedUiDemo } from '../ios/demoMode';
 
 declare const liff: any;
 declare const JsBarcode: any;
@@ -630,8 +631,34 @@ export class MemberManager {
             await this.autoRegister();
             return;
         }
+        this.renderSampleMemberCard();
+    }
+
+    /** ゲスト向け会員登録誘導を描画 */
+    renderGuestCard(): void {
+        const container = this.getContainer();
+        if (!container) return;
         container.innerHTML = this.getGuestRegisterTemplate();
         this._attachRegisterTrigger(container);
+    }
+
+    /** サンプル会員証を描画（固定UIデモ／未登録時） */
+    renderSampleMemberCard(): void {
+        if (isIosFixedUiDemo()) {
+            const sample = (typeof window !== 'undefined'
+                && window.app
+                && typeof window.app.getDesignerSampleMemberData === 'function')
+                ? window.app.getDesignerSampleMemberData()
+                : null;
+            if (sample !== null && typeof sample === 'object') {
+                this.render({
+                    ...sample,
+                    is_sample_preview: true,
+                });
+                return;
+            }
+        }
+        this.renderGuestCard();
     }
 
     isRegisterFullScreenActive(): boolean {
@@ -1027,6 +1054,13 @@ export class MemberManager {
         if (!container) return;
         if (!data || typeof data !== 'object') return;
 
+        if (typeof document !== 'undefined'
+            && document.body
+            && document.body.classList.contains('ios-fixed-ui')) {
+            this._renderIosWalletMember(container, data);
+            return;
+        }
+
         const member = data.member && typeof data.member === 'object' ? data.member : null;
         const user = data.user || (member && member.user) || null;
         const displayName =
@@ -1183,14 +1217,23 @@ export class MemberManager {
         }
 
         container.innerHTML = `
-            <div class="member-card-container">
+            <div class="member-card-container${data.is_sample_preview === true ? ' member-card-container--demo' : ''}">
                 <div class="member-card-idnect-header">
-                    <h2 class="member-card-title"><i class="fas fa-id-card"></i> 会員証</h2>
-                    <button type="button" class="member-card-edit-btn" onclick="window.app.memberManager.openProfileEdit()" aria-label="プロフィール編集"><i class="fas fa-pen"></i></button>
+                    <h2 class="member-card-title">会員証</h2>
+                    ${data.is_sample_preview === true
+                        ? ''
+                        : '<button type="button" class="member-card-edit-btn" onclick="window.app.memberManager.openProfileEdit()" aria-label="プロフィール編集"><i class="fas fa-pen"></i></button>'}
                 </div>
                 ${permissionDeniedNotice}
                 ${cardVisualBlock}
-                ${addToWalletBlock}
+                ${data.is_sample_preview === true ? '' : addToWalletBlock}
+                ${data.is_sample_preview === true ? `
+                    <div class="member-demo-actions">
+                        <button type="button" class="btn btn-primary member-register-trigger" data-action="member-open-register">
+                            会員登録する
+                        </button>
+                    </div>
+                ` : `
                 <div class="member-purchase-history">
                     <button type="button" class="member-purchase-history-toggle" aria-expanded="false" aria-controls="memberPurchaseHistoryList" id="memberPurchaseHistoryToggle">
                         <span class="member-purchase-history-toggle-label">購入履歴</span>
@@ -1215,6 +1258,7 @@ export class MemberManager {
                 <div class="member-withdraw-wrap">
                     <button type="button" class="member-withdraw-btn" id="memberWithdrawBtn" aria-label="退会する">退会する</button>
                 </div>
+                `}
             </div>
         `;
 
@@ -1225,11 +1269,157 @@ export class MemberManager {
         }
         if (!isSheet) this._setupFlip();
         this._setupCodeEnlargeButton();
+        if (data.is_sample_preview === true) {
+            this._attachRegisterTrigger(container);
+            return;
+        }
         this._setupAddToWallet();
         this._registerWalletVisibilityRefresh();
         this._setupPurchaseHistoryToggle();
         this._setupPointHistoryToggle();
         this._setupRankHistoryToggle();
+        this._setupWithdrawButton();
+    }
+
+    /** 固定UI向け: LP会員証スクショ相当のウォレット型レイアウト */
+    _renderIosWalletMember(container, data) {
+        const member = data.member && typeof data.member === 'object' ? data.member : null;
+        const user = data.user || (member && member.user) || null;
+        const displayName =
+            (user && user.name) ||
+            (typeof window !== 'undefined' && window.__LINE_PROFILE__ && window.__LINE_PROFILE__.displayName) ||
+            'ゲスト';
+        const points = data.points != null ? data.points : (member && member.points != null ? member.points : 0);
+        const memberNumber = (member && member.member_number) ? String(member.member_number) : '';
+        const currentRankLabel = data.current_rank_label || 'MEMBER';
+        const nextRankLabel = data.next_rank_label || null;
+        const pointsToNextRank = data.points_to_next_rank != null ? Number(data.points_to_next_rank) : null;
+        const showPointsDisplay = data.show_points_display !== false;
+        const showRankProgress = data.show_rank_progress !== false;
+        const isSample = data.is_sample_preview === true;
+        const codeId = `member-code-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        const progressTotal = pointsToNextRank !== null ? points + pointsToNextRank : Math.max(points, 1);
+        const progressPct = pointsToNextRank !== null
+            ? Math.max(8, Math.min(100, Math.round((points / progressTotal) * 100)))
+            : 100;
+        const progressText = nextRankLabel && pointsToNextRank !== null
+            ? `${nextRankLabel}まであと ${pointsToNextRank.toLocaleString('ja-JP')} pt`
+            : 'ポイントは失効しません';
+
+        container.innerHTML = `
+            <div class="ios-wallet-member${isSample ? ' ios-wallet-member--demo' : ''}">
+                <header class="ios-wallet-member__hello">
+                    <span class="ios-wallet-member__avatar" aria-hidden="true">${DomHelper.escapeHtml(String(displayName).slice(0, 1))}</span>
+                    <div class="ios-wallet-member__hello-copy">
+                        <p class="ios-wallet-member__hello-title">Hello, ${DomHelper.escapeHtml(displayName)}</p>
+                        <p class="ios-wallet-member__hello-sub">いつもご来店ありがとうございます</p>
+                    </div>
+                    ${isSample ? '' : '<button type="button" class="ios-wallet-member__edit" onclick="window.app.memberManager.openProfileEdit()" aria-label="プロフィール編集"><i class="fas fa-pen"></i></button>'}
+                </header>
+
+                <article class="ios-wallet-card" aria-label="会員証">
+                    <div class="ios-wallet-card__top">
+                        <div class="ios-wallet-card__brand">
+                            <span class="ios-wallet-card__logo" aria-hidden="true">R</span>
+                            <div>
+                                <p class="ios-wallet-card__brand-name">Reggit Rewards</p>
+                                <p class="ios-wallet-card__brand-sub">MEMBER</p>
+                            </div>
+                        </div>
+                        <span class="ios-wallet-card__tier">${DomHelper.escapeHtml(currentRankLabel)}</span>
+                    </div>
+                    ${showPointsDisplay ? `
+                    <div class="ios-wallet-card__points">
+                        <p class="ios-wallet-card__points-label">Available Points</p>
+                        <p class="ios-wallet-card__points-value">${points.toLocaleString('ja-JP')} <small>Points</small></p>
+                    </div>` : ''}
+                    ${showRankProgress ? `
+                    <div class="ios-wallet-card__progress">
+                        <div class="ios-wallet-card__progress-bar" aria-hidden="true">
+                            <span style="width:${progressPct}%"></span>
+                        </div>
+                        <p class="ios-wallet-card__progress-text">${DomHelper.escapeHtml(progressText)}</p>
+                    </div>` : ''}
+                    <div class="ios-wallet-card__scan">
+                        <p class="ios-wallet-card__scan-label">SCAN TO EARN OR REDEEM</p>
+                        <div class="ios-wallet-card__code-wrap">
+                            <svg id="${codeId}" class="ios-wallet-card__barcode" aria-label="会員番号バーコード"></svg>
+                        </div>
+                        <p class="ios-wallet-card__number">${DomHelper.escapeHtml(memberNumber.replace(/(.{4})/g, '$1 ').trim())}</p>
+                    </div>
+                </article>
+
+                <div class="ios-wallet-member__meta">
+                    <p>ポイントは失効しません</p>
+                    <button type="button" class="ios-wallet-member__enlarge" data-member-number="${DomHelper.escapeHtml(memberNumber)}" data-code-type="barcode">会員証を拡大</button>
+                </div>
+
+                <nav class="ios-wallet-member__quick" aria-label="会員メニュー">
+                    <button type="button" class="ios-wallet-member__quick-item" data-ios-member-nav="coupons">
+                        <span class="ios-wallet-member__quick-icon" aria-hidden="true">券</span>クーポン
+                    </button>
+                    <button type="button" class="ios-wallet-member__quick-item" data-ios-member-nav="stamps">
+                        <span class="ios-wallet-member__quick-icon" aria-hidden="true">印</span>スタンプ
+                    </button>
+                    <button type="button" class="ios-wallet-member__quick-item" data-ios-member-nav="orders">
+                        <span class="ios-wallet-member__quick-icon" aria-hidden="true">歴</span>履歴
+                    </button>
+                    <button type="button" class="ios-wallet-member__quick-item" data-action="member-open-register">
+                        <span class="ios-wallet-member__quick-icon" aria-hidden="true">登</span>登録
+                    </button>
+                </nav>
+
+                <button type="button" class="member-card-enlarge-code-btn is-visually-hidden" data-member-number="${DomHelper.escapeHtml(memberNumber)}" data-code-type="barcode" tabindex="-1" aria-hidden="true">会員証拡大</button>
+
+                ${isSample ? `
+                    <div class="member-demo-actions">
+                        <button type="button" class="btn btn-primary member-register-trigger" data-action="member-open-register">
+                            会員登録する
+                        </button>
+                    </div>
+                ` : `
+                    <div class="member-purchase-history">
+                        <button type="button" class="member-purchase-history-toggle" aria-expanded="false" aria-controls="memberPurchaseHistoryList" id="memberPurchaseHistoryToggle">
+                            <span class="member-purchase-history-toggle-label">購入履歴</span>
+                            <i class="fas fa-chevron-down member-purchase-history-toggle-icon" aria-hidden="true"></i>
+                        </button>
+                        <div id="memberPurchaseHistoryList" class="member-purchase-history-list" hidden aria-labelledby="memberPurchaseHistoryToggle"></div>
+                    </div>
+                    <div class="member-point-history">
+                        <button type="button" class="member-purchase-history-toggle" aria-expanded="false" aria-controls="memberPointHistoryList" id="memberPointHistoryToggle">
+                            <span class="member-purchase-history-toggle-label">ポイント履歴</span>
+                            <i class="fas fa-chevron-down member-purchase-history-toggle-icon" aria-hidden="true"></i>
+                        </button>
+                        <div id="memberPointHistoryList" class="member-purchase-history-list" hidden aria-labelledby="memberPointHistoryToggle"></div>
+                    </div>
+                    <div class="member-withdraw-wrap">
+                        <button type="button" class="member-withdraw-btn" id="memberWithdrawBtn" aria-label="退会する">退会する</button>
+                    </div>
+                `}
+            </div>
+        `;
+
+        this._generateBarcode(codeId, memberNumber);
+        this._setupCodeEnlargeButton();
+        const enlargeBtn = container.querySelector('.ios-wallet-member__enlarge') as HTMLElement | null;
+        const hiddenEnlarge = container.querySelector('.member-card-enlarge-code-btn') as HTMLElement | null;
+        if (enlargeBtn !== null && hiddenEnlarge !== null) {
+            enlargeBtn.addEventListener('click', () => hiddenEnlarge.click());
+        }
+        container.querySelectorAll('[data-ios-member-nav]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const tab = (btn as HTMLElement).getAttribute('data-ios-member-nav');
+                if (tab && typeof window.app?.switchTab === 'function') {
+                    void window.app.switchTab(tab);
+                }
+            });
+        });
+        if (isSample) {
+            this._attachRegisterTrigger(container);
+            return;
+        }
+        this._setupPurchaseHistoryToggle();
+        this._setupPointHistoryToggle();
         this._setupWithdrawButton();
     }
 
