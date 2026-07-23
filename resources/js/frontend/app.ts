@@ -13,6 +13,7 @@ import { StampsManager } from './managers/StampsManager';
 import { CheckoutManager } from './managers/CheckoutManager';
 import { QueueManager } from './managers/QueueManager';
 import { CouponsManager } from './managers/CouponsManager';
+import { DesignLabManager } from './managers/DesignLabManager';
 import { getMemberRegistrationMode, isMembershipRequired, isRegistrationFormDismissed, shouldShowRegistrationForm, syncMemberRegistrationModeFromPayload } from './utils/membershipPolicy';
 import { mountDetailLayoutChrome } from './utils/detailLayoutMount';
 import { LiffLayoutManager } from './managers/LiffLayoutManager';
@@ -20,6 +21,7 @@ import { ReservationManager } from './managers/ReservationManager';
 import { MemberManager } from './managers/MemberManager';
 import { LiffPageRouter, parseLiffHash, isDeepLiffHash } from './navigation/LiffPageRouter';
 import type { LiffPageKey } from './navigation/LiffPageRouter';
+import { primaryForTab } from './ios/navigation';
 import './managers/liff-blocks/renderPremiumBlocks';
 import '../shared/utils/liffInit';
 
@@ -34,6 +36,7 @@ class ReggitApp {
     memberManager: MemberManager;
     stampsManager: StampsManager;
     couponsManager: CouponsManager;
+    designLabManager: DesignLabManager;
     galleryManager: GalleryManager;
     layoutManager: LiffLayoutManager;
     queueManager: QueueManager;
@@ -58,6 +61,7 @@ class ReggitApp {
     _detailQty: number = 1;
     _memberRegistrationGateHandled: boolean = false;
     _memberTabLoadInFlight: Promise<void> | null = null;
+    _productsViewMode: string | null = null;
 
     constructor() {
         this.apiClient = new ApiClient();
@@ -68,6 +72,7 @@ class ReggitApp {
         this.memberManager = new MemberManager(this.apiClient, this.orderManager);
         this.stampsManager = new StampsManager(this.apiClient);
         this.couponsManager = new CouponsManager(this.apiClient);
+        this.designLabManager = new DesignLabManager();
         this.galleryManager = new GalleryManager(this.apiClient);
         this.layoutManager = new LiffLayoutManager(this);
         this.queueManager = new QueueManager(this.apiClient);
@@ -87,7 +92,7 @@ class ReggitApp {
     }
 
     getInitialTab() {
-        const allowedTabs = new Set(['home', 'products', 'orders', 'stamps', 'coupons', 'queue', 'member', 'reservations', 'gallery', 'announcements']);
+        const allowedTabs = new Set(['home', 'products', 'orders', 'stamps', 'coupons', 'queue', 'member', 'reservations', 'gallery', 'announcements', 'designlab']);
         if (typeof window.__NATIVE_TARGET_TAB__ !== 'undefined' && window.__NATIVE_TARGET_TAB__ && allowedTabs.has(window.__NATIVE_TARGET_TAB__)) {
             return window.__NATIVE_TARGET_TAB__;
         }
@@ -97,21 +102,38 @@ class ReggitApp {
         if (fromHash) return fromHash;
         const firstBtn = (document.querySelector('.main-tab-btn.active') || document.querySelector('.main-tab-btn')) as HTMLElement | null;
         if (firstBtn && firstBtn.dataset.tab) return firstBtn.dataset.tab;
-        return AppConstants.TABS.PRODUCTS;
+        return AppConstants.TABS.HOME;
     }
 
     getTabFromUrl() {
         if (typeof window === 'undefined') return null;
-        const allowedTabs = new Set(['home', 'products', 'orders', 'stamps', 'coupons', 'queue', 'member', 'reservations', 'gallery', 'announcements']);
+        const allowedTabs = new Set(['home', 'products', 'orders', 'stamps', 'coupons', 'queue', 'member', 'reservations', 'gallery', 'announcements', 'designlab']);
+        const aliases: Record<string, string> = {
+            order: 'products',
+            card: 'member',
+            visit: 'queue',
+            more: 'home',
+        };
+        const resolve = (raw: string | null): string | null => {
+            if (raw === null || raw === '') {
+                return null;
+            }
+            const mapped = aliases[raw] ?? raw;
+            if (allowedTabs.has(mapped) || /^link_[0-9]+$/.test(mapped)) {
+                return mapped;
+            }
+            return null;
+        };
         const params = new URLSearchParams(window.location.search || '');
-        const tab = params.get('tab');
-        if (tab && allowedTabs.has(tab)) return tab;
+        const fromQuery = resolve(params.get('tab'));
+        if (fromQuery !== null) {
+            return fromQuery;
+        }
         const liffState = params.get('liff.state');
         if (liffState) {
             const normalized = liffState.startsWith('?') ? liffState.slice(1) : liffState;
             const stateParams = new URLSearchParams(normalized);
-            const stateTab = stateParams.get('tab');
-            if (stateTab && allowedTabs.has(stateTab)) return stateTab;
+            return resolve(stateParams.get('tab'));
         }
         return null;
     }
@@ -219,6 +241,10 @@ class ReggitApp {
         if (!(this.designerPreviewSource && this.designerPreviewEmbed)) {
             this.layoutManager.render(this.currentTab);
         }
+        // React タブマウントとの競合を吸収し、active クラスを確実に合わせる
+        window.requestAnimationFrame(() => {
+            void this.switchTab(this.currentTab);
+        });
         if (typeof window.__mobileOrderLog === 'function') window.__mobileOrderLog('app.init render done', { tab: this.currentTab });
         if (this.designerPreviewSource) {
             this.applyDesignerPreviewMode(false);
@@ -365,19 +391,26 @@ class ReggitApp {
     /** ネイティブアプリ: プッシュ通知タップ等で指定タブを開く */
     setupNativePushDeepLink() {
         if (typeof window === 'undefined' || !window.__MOBILE_APP_MODE__) return;
-        const allowedTabs = new Set(['home', 'products', 'orders', 'stamps', 'coupons', 'queue', 'member', 'reservations', 'gallery', 'announcements']);
+        const allowedTabs = new Set(['home', 'products', 'orders', 'stamps', 'coupons', 'queue', 'member', 'reservations', 'gallery', 'announcements', 'designlab']);
         window.__nativeOpenTab__ = (tabKey, options) => {
             options = options || {};
-            if (!tabKey || !allowedTabs.has(tabKey)) return false;
-            this.switchTab(tabKey);
-            if (tabKey === AppConstants.TABS.COUPONS && this.couponsManager) {
+            const aliases: Record<string, string> = {
+                order: 'products',
+                card: 'member',
+                visit: 'queue',
+                more: 'home',
+            };
+            const resolved = aliases[tabKey] ?? tabKey;
+            if (!resolved || !allowedTabs.has(resolved)) return false;
+            this.switchTab(resolved);
+            if (resolved === AppConstants.TABS.COUPONS && this.couponsManager) {
                 if (options.couponReceived) {
                     this.couponsManager.onCouponReceived(options);
                 } else {
                     this.couponsManager.load();
                 }
             }
-            if (tabKey === AppConstants.TABS.QUEUE && this.queueManager) {
+            if (resolved === AppConstants.TABS.QUEUE && this.queueManager) {
                 this.queueManager.load();
             }
             return true;
@@ -662,7 +695,7 @@ class ReggitApp {
     /** ネイティブアプリでデバイス情報が注入されたあと、初期タブへ切り替え・会員タブのウォレット表示を更新する */
     setupNativeAppEventListeners() {
         const app = this;
-        const allowedTabs = new Set(['home', 'products', 'orders', 'stamps', 'coupons', 'queue', 'member', 'reservations', 'gallery']);
+        const allowedTabs = new Set(['home', 'products', 'orders', 'stamps', 'coupons', 'queue', 'member', 'reservations', 'gallery', 'announcements', 'designlab']);
         document.addEventListener('mobile-device-info-injected', () => {
             if (typeof window.__MOBILE_APP_MODE__ === 'undefined' || !window.__MOBILE_APP_MODE__) return;
             if (!window.__NATIVE_WEB_READY__) return;
@@ -688,6 +721,9 @@ class ReggitApp {
     setupCartEventListeners() {
         const cartBtn = DomHelper.getElementById(AppConstants.ELEMENT_IDS.CART_BTN);
         const accountBtn = DomHelper.getElementById(AppConstants.ELEMENT_IDS.ACCOUNT_BTN);
+        const menuBtn = DomHelper.getElementById(AppConstants.ELEMENT_IDS.MENU_BTN);
+        const closeMenuBtn = DomHelper.getElementById(AppConstants.ELEMENT_IDS.CLOSE_MENU_BTN);
+        const sideMenu = DomHelper.getElementById(AppConstants.ELEMENT_IDS.SIDE_MENU);
         const closeCartBtn = DomHelper.getElementById(AppConstants.ELEMENT_IDS.CLOSE_CART_BTN);
         const overlay = DomHelper.getElementById(AppConstants.ELEMENT_IDS.OVERLAY);
         if (cartBtn) {
@@ -699,8 +735,30 @@ class ReggitApp {
                 this.switchTab(AppConstants.TABS.MEMBER);
             });
         }
+        if (menuBtn) {
+            menuBtn.addEventListener('click', () => this.openSideMenu());
+        }
+        if (closeMenuBtn) {
+            closeMenuBtn.addEventListener('click', () => this.closeSideMenu());
+        }
+        if (sideMenu) {
+            sideMenu.addEventListener('click', (event) => {
+                const target = event.target as HTMLElement | null;
+                const item = target !== null ? target.closest('[data-menu-tab]') as HTMLElement | null : null;
+                if (!item || !item.dataset.menuTab) {
+                    return;
+                }
+                this.closeSideMenu();
+                void this.switchTab(item.dataset.menuTab);
+            });
+        }
         if (closeCartBtn) closeCartBtn.addEventListener('click', () => this.closeCart());
-        if (overlay) overlay.addEventListener('click', () => this.closeCart());
+        if (overlay) {
+            overlay.addEventListener('click', () => {
+                this.closeCart();
+                this.closeSideMenu();
+            });
+        }
     }
 
     setupTabEventListeners() {
@@ -973,9 +1031,70 @@ class ReggitApp {
         `;
     }
 
+    getProductsViewMode() {
+        if (this._productsViewMode === 'collection' || this._productsViewMode === 'list') {
+            return this._productsViewMode;
+        }
+        try {
+            const stored = String(window.localStorage.getItem('liff_products_view_mode') || '').trim();
+            if (stored === 'collection' || stored === 'list') {
+                this._productsViewMode = stored;
+                return stored;
+            }
+        } catch (_e) { /* ignore */ }
+        this._productsViewMode = 'list';
+        return 'list';
+    }
+
+    setProductsViewMode(mode) {
+        const next = mode === 'collection' ? 'collection' : 'list';
+        this._productsViewMode = next;
+        try {
+            window.localStorage.setItem('liff_products_view_mode', next);
+        } catch (_e) { /* ignore */ }
+        const section = document.getElementById('productsSection');
+        if (section !== null) {
+            const mount = section.querySelector('.products-data-mount');
+            if (mount instanceof HTMLElement) {
+                mount.setAttribute('data-products-view', next);
+            }
+            section.querySelectorAll('.ios-view-toggle__btn').forEach((btn) => {
+                const view = btn.getAttribute('data-products-view');
+                const isActive = view === next;
+                btn.classList.toggle('is-active', isActive);
+                btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+            });
+        }
+    }
+
+    bindProductsViewToggle(container) {
+        if (!(container instanceof HTMLElement)) {
+            return;
+        }
+        container.querySelectorAll('[data-products-view]').forEach((btn) => {
+            if (!(btn instanceof HTMLButtonElement)) {
+                return;
+            }
+            btn.addEventListener('click', () => {
+                const view = btn.getAttribute('data-products-view');
+                if (view === 'collection' || view === 'list') {
+                    this.setProductsViewMode(view);
+                }
+            });
+        });
+        this.setProductsViewMode(this.getProductsViewMode());
+    }
+
     renderProducts() {
         const grid = DomHelper.getProductsGrid();
         if (!grid) return;
+        const section = document.getElementById('productsSection');
+        if (section !== null) {
+            const mount = section.querySelector('.products-data-mount');
+            if (mount instanceof HTMLElement) {
+                mount.setAttribute('data-products-view', this.getProductsViewMode());
+            }
+        }
         const currentCat = this.productManager.getCurrentCategory();
         const products = this.productManager.getProductsByCategory(currentCat);
 
@@ -1012,31 +1131,38 @@ class ReggitApp {
     renderProductCard(product) {
         const cartQuantity = this.cartManager.getQuantityForProduct(product.id);
         const isInCart = cartQuantity > 0;
-        const imageUrl = product.image_url || '';
+        const placeholder = '/images/liff/product-placeholder.jpg';
+        const imageUrl = product.image_url || placeholder;
         const hasOptions = Array.isArray(product.option_groups) && product.option_groups.length > 0;
-        const btnLabel = hasOptions
-            ? '<i class="fas fa-sliders-h"></i> 選んで追加'
-            : (isInCart ? '<i class="fas fa-check"></i> 追加済み' : '<i class="fas fa-cart-plus"></i> カートに追加');
+        const productIdLiteral = JSON.stringify(product.id);
         const cardAction = hasOptions
-            ? `app.openProductDetail(${product.id})`
-            : `app.addToCart(${product.id})`;
-        const btnAction = hasOptions
-            ? `app.openProductDetail(${product.id})`
-            : `app.addToCart(${product.id})`;
+            ? `app.openProductDetail(${productIdLiteral})`
+            : (isInCart ? '' : `app.addToCart(${productIdLiteral})`);
+        const actionHtml = hasOptions
+            ? `<button type="button" class="product-add-btn" onclick='event.stopPropagation(); app.openProductDetail(${productIdLiteral})'>
+                    <i class="fas fa-sliders-h"></i> 選んで追加
+               </button>`
+            : (isInCart
+                ? `<div class="product-qty-stepper" onclick="event.stopPropagation()">
+                        <button type="button" class="product-qty-btn" aria-label="減らす" onclick='app.adjustProductQuantity(${productIdLiteral}, -1)'>−</button>
+                        <span class="product-qty-value" aria-live="polite">${cartQuantity}</span>
+                        <button type="button" class="product-qty-btn" aria-label="増やす" onclick='app.adjustProductQuantity(${productIdLiteral}, 1)'>+</button>
+                   </div>`
+                : `<button type="button" class="product-add-btn" onclick='event.stopPropagation(); app.addToCart(${productIdLiteral})'>
+                        <i class="fas fa-cart-plus"></i> カートに追加
+                   </button>`);
         return `
-            <div class="product-card ${isInCart ? AppConstants.CSS_CLASSES.IN_CART : ''}" data-product-id="${product.id}" onclick="${cardAction}">
+            <div class="product-card ${isInCart ? AppConstants.CSS_CLASSES.IN_CART : ''}" data-product-id="${DomHelper.escapeHtml(String(product.id))}"${cardAction ? ` onclick='${cardAction}'` : ''}>
                 <div class="product-image-wrapper">
-                    ${isInCart ? `<div class="cart-badge"><i class="fas fa-check"></i> ${cartQuantity}</div>` : ''}
-                    <img src="${imageUrl}" alt="${DomHelper.escapeHtml(product.name)}" class="product-image" loading="lazy"
-                         onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22150%22%3E%3Crect fill=%22%23f0f0f0%22 width=%22200%22 height=%22150%22/%3E%3Ctext fill=%22%23999%22 font-family=%22sans-serif%22 font-size=%2214%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22%3E画像なし%3C/text%3E%3C/svg%3E'">
+                    ${isInCart ? `<div class="cart-badge">${cartQuantity}</div>` : ''}
+                    <img src="${DomHelper.escapeHtml(imageUrl)}" alt="${DomHelper.escapeHtml(product.name)}" class="product-image" loading="lazy"
+                         onerror="this.onerror=null; this.src='${placeholder}'">
                     ${hasOptions ? '<span class="product-option-tag"><i class="fas fa-sliders-h"></i> カスタム可</span>' : ''}
                 </div>
                 <div class="product-info">
                     <div class="product-name">${DomHelper.escapeHtml(product.name)}</div>
                     <div class="product-price">${DomHelper.formatPrice(product.price)}${hasOptions ? '<span class="product-price-from">〜</span>' : ''}</div>
-                    <button class="product-add-btn ${isInCart ? AppConstants.CSS_CLASSES.ADDED : ''}" onclick="event.stopPropagation(); ${btnAction}">
-                        ${btnLabel}
-                    </button>
+                    ${actionHtml}
                 </div>
             </div>
         `;
@@ -1061,6 +1187,42 @@ class ReggitApp {
         ToastManager.success(`${product.name || '商品'}をカートに追加しました`);
     }
 
+    /** オーダー一覧から数量を増減する（0で削除） */
+    adjustProductQuantity(productId, change) {
+        const product = this.productManager.getProductById(productId);
+        if (!product) {
+            return;
+        }
+        const hasOptions = Array.isArray(product.option_groups) && product.option_groups.length > 0;
+        if (change > 0) {
+            const lineKey = this.cartManager.getAdjustableLineKey(productId);
+            if (lineKey === null) {
+                if (hasOptions) {
+                    this.openProductDetail(productId);
+                    return;
+                }
+                this.addToCart(productId);
+                return;
+            }
+            const line = this.cartManager.getItem(lineKey);
+            if (line && line.optionIds && line.optionIds.length > 0 && hasOptions) {
+                this.openProductDetail(productId);
+                return;
+            }
+            this.updateQuantity(lineKey, 1);
+            return;
+        }
+        const lineKey = this.cartManager.getAdjustableLineKey(productId);
+        if (lineKey === null) {
+            return;
+        }
+        const before = this.cartManager.getItem(lineKey);
+        this.updateQuantity(lineKey, -1);
+        if (before && this.cartManager.getItem(lineKey) === undefined) {
+            ToastManager.info(`${before.name}をカートから削除しました`);
+        }
+    }
+
     removeFromCart(lineKey) {
         const item = this.cartManager.getItem(lineKey);
         this.cartManager.removeItem(lineKey);
@@ -1079,6 +1241,14 @@ class ReggitApp {
         const count = this.cartManager.getTotalCount();
         const countEl = DomHelper.getElementById(AppConstants.ELEMENT_IDS.CART_COUNT);
         if (countEl) countEl.textContent = String(count);
+        const cartBtn = DomHelper.getElementById(AppConstants.ELEMENT_IDS.CART_BTN);
+        if (cartBtn) {
+            if (count > 0) {
+                DomHelper.addClass(cartBtn, 'has-items');
+            } else {
+                DomHelper.removeClass(cartBtn, 'has-items');
+            }
+        }
 
         const cartItems = DomHelper.getElementById(AppConstants.ELEMENT_IDS.CART_ITEMS);
         const total = this.cartManager.getTotalAmount();
@@ -1359,11 +1529,16 @@ class ReggitApp {
         this.showCartNotification();
         this.renderProducts();
         ToastManager.success(`${product.name}をカートに追加しました`);
-        this.openOrderFlow('cart');
     }
 
     openCart() {
-        this.openOrderFlow('cart');
+        this.closeSideMenu();
+        this.updateCartUI();
+        const sidebar = DomHelper.getElementById(AppConstants.ELEMENT_IDS.CART_SIDEBAR);
+        const overlay = DomHelper.getElementById(AppConstants.ELEMENT_IDS.OVERLAY);
+        if (sidebar) DomHelper.addClass(sidebar, AppConstants.CSS_CLASSES.OPEN);
+        if (overlay) DomHelper.addClass(overlay, AppConstants.CSS_CLASSES.ACTIVE);
+        document.body.style.overflow = 'hidden';
     }
 
     closeCart() {
@@ -1374,11 +1549,56 @@ class ReggitApp {
         const sidebar = DomHelper.getElementById(AppConstants.ELEMENT_IDS.CART_SIDEBAR);
         const overlay = DomHelper.getElementById(AppConstants.ELEMENT_IDS.OVERLAY);
         if (sidebar) DomHelper.removeClass(sidebar, AppConstants.CSS_CLASSES.OPEN);
-        if (overlay) DomHelper.removeClass(overlay, AppConstants.CSS_CLASSES.ACTIVE);
-        document.body.style.overflow = '';
+        const menu = DomHelper.getElementById(AppConstants.ELEMENT_IDS.SIDE_MENU);
+        const menuOpen = menu !== null && menu.classList.contains('is-open');
+        if (!menuOpen) {
+            if (overlay) DomHelper.removeClass(overlay, AppConstants.CSS_CLASSES.ACTIVE);
+            document.body.style.overflow = '';
+        }
+    }
+
+    openSideMenu() {
+        this.closeCart();
+        const menu = DomHelper.getElementById(AppConstants.ELEMENT_IDS.SIDE_MENU);
+        const overlay = DomHelper.getElementById(AppConstants.ELEMENT_IDS.OVERLAY);
+        const menuBtn = DomHelper.getElementById(AppConstants.ELEMENT_IDS.MENU_BTN);
+        if (menu !== null) {
+            menu.setAttribute('aria-hidden', 'false');
+            DomHelper.addClass(menu, 'is-open');
+        }
+        if (overlay) DomHelper.addClass(overlay, AppConstants.CSS_CLASSES.ACTIVE);
+        if (menuBtn !== null) menuBtn.setAttribute('aria-expanded', 'true');
+        document.body.style.overflow = 'hidden';
+    }
+
+    closeSideMenu() {
+        const menu = DomHelper.getElementById(AppConstants.ELEMENT_IDS.SIDE_MENU);
+        const overlay = DomHelper.getElementById(AppConstants.ELEMENT_IDS.OVERLAY);
+        const menuBtn = DomHelper.getElementById(AppConstants.ELEMENT_IDS.MENU_BTN);
+        const sidebar = DomHelper.getElementById(AppConstants.ELEMENT_IDS.CART_SIDEBAR);
+        if (menu !== null) {
+            menu.setAttribute('aria-hidden', 'true');
+            DomHelper.removeClass(menu, 'is-open');
+        }
+        if (menuBtn !== null) menuBtn.setAttribute('aria-expanded', 'false');
+        const cartOpen = sidebar !== null && sidebar.classList.contains(AppConstants.CSS_CLASSES.OPEN);
+        if (!cartOpen) {
+            if (overlay) DomHelper.removeClass(overlay, AppConstants.CSS_CLASSES.ACTIVE);
+            document.body.style.overflow = '';
+        }
     }
 
     openOrderFlow(step: 'cart' | 'confirm' | 'complete', options: { fromHash?: boolean } = {}) {
+        if (step === 'cart' && options.fromHash !== true) {
+            this.openCart();
+            return;
+        }
+        const sidebar = DomHelper.getElementById(AppConstants.ELEMENT_IDS.CART_SIDEBAR);
+        const overlay = DomHelper.getElementById(AppConstants.ELEMENT_IDS.OVERLAY);
+        if (sidebar) DomHelper.removeClass(sidebar, AppConstants.CSS_CLASSES.OPEN);
+        if (overlay) DomHelper.removeClass(overlay, AppConstants.CSS_CLASSES.ACTIVE);
+        document.body.style.overflow = '';
+
         const keyMap: Record<typeof step, LiffPageKey> = {
             cart: 'order_cart',
             confirm: 'order_confirm',
@@ -1531,10 +1751,7 @@ class ReggitApp {
         const chrome = document.createElement('div');
         chrome.className = 'link-tab-chrome';
         chrome.innerHTML = `
-            <button type="button" class="link-tab-chrome__back" aria-label="戻る">
-                <i class="fas fa-chevron-left" aria-hidden="true"></i>
-                <span>戻る</span>
-            </button>
+            <button type="button" class="link-tab-chrome__back" aria-label="戻る">‹</button>
             <span class="link-tab-chrome__title">Webページ</span>
         `;
         const backBtn = chrome.querySelector('.link-tab-chrome__back') as HTMLButtonElement | null;
@@ -1602,13 +1819,22 @@ class ReggitApp {
             }
             this.currentTab = tab;
 
+            let closedDetailPage = false;
             if (this.pageRouter.isOpen()) {
                 this.closeActivePage(false);
+                closedDetailPage = true;
             }
 
+            const primary = primaryForTab(tab);
             DomHelper.querySelectorAll('.main-tab-btn').forEach((btn) => {
                 DomHelper.removeClass(btn, AppConstants.CSS_CLASSES.ACTIVE);
-                if ((btn as HTMLElement).dataset.tab === tab) DomHelper.addClass(btn, AppConstants.CSS_CLASSES.ACTIVE);
+                const el = btn as HTMLElement;
+                const btnPrimary = el.dataset.primaryTab || el.dataset.tab;
+                if (primary !== null && btnPrimary === primary) {
+                    DomHelper.addClass(btn, AppConstants.CSS_CLASSES.ACTIVE);
+                } else if (primary === null && el.dataset.tab === tab) {
+                    DomHelper.addClass(btn, AppConstants.CSS_CLASSES.ACTIVE);
+                }
             });
             DomHelper.querySelectorAll('.tab-content').forEach((content) => {
                 DomHelper.removeClass(content, AppConstants.CSS_CLASSES.ACTIVE);
@@ -1626,9 +1852,13 @@ class ReggitApp {
                 [AppConstants.TABS.RESERVATIONS]: AppConstants.ELEMENT_IDS.RESERVATIONS_TAB,
                 [AppConstants.TABS.GALLERY]: AppConstants.ELEMENT_IDS.GALLERY_TAB,
                 [AppConstants.TABS.ANNOUNCEMENTS]: AppConstants.ELEMENT_IDS.ANNOUNCEMENTS_TAB,
+                [AppConstants.TABS.DESIGNLAB]: AppConstants.ELEMENT_IDS.DESIGNLAB_TAB,
             };
             const tabEl = DomHelper.getElementById(tabIdMap[tab]) || document.getElementById(tab + 'Tab');
             if (tabEl) DomHelper.addClass(tabEl, AppConstants.CSS_CLASSES.ACTIVE);
+            if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('ios-tab-changed', { detail: { tab, primary } }));
+            }
 
             const mainContent = document.querySelector('.main-content') as HTMLElement | null;
             if (mainContent) {
@@ -1654,7 +1884,7 @@ class ReggitApp {
             if (
                 typeof window !== 'undefined'
                 && !(this.designerPreviewSource && this.designerPreviewEmbed)
-                && !isDeepLiffHash(window.location.hash || '')
+                && (closedDetailPage || !isDeepLiffHash(window.location.hash || ''))
             ) {
                 const nextHash = '#' + tab;
                 if (window.location.hash !== nextHash) {
@@ -1767,11 +1997,8 @@ class ReggitApp {
         }
         if (cached && cached.is_member) {
             this.memberManager.render(cached);
-        } else {
-            const container = this.memberManager.getContainer();
-            if (container && (!cached || !cached.is_member) && !this.memberManager.isRegisterFullScreenActive()) {
-                container.innerHTML = this.memberManager.getSkeletonHtml();
-            }
+        } else if (!this.memberManager.isRegisterFullScreenActive()) {
+            this.memberManager.renderSampleMemberCard();
         }
 
         try {
@@ -1796,43 +2023,129 @@ class ReggitApp {
         if (data && data.is_member) {
             this.memberManager.render(data);
             this.memberManager.preload(null);
-        } else if ((!cached || !cached.is_member) && !this.memberManager.isRegisterFullScreenActive()) {
-            this.memberManager.load();
+        } else if (!this.memberManager.isRegisterFullScreenActive()) {
+            this.memberManager.renderSampleMemberCard();
         }
     }
 
     getDesignerSampleMemberData() {
         return {
             is_member: true,
-            points: 1280,
-            current_rank: 'gold',
-            current_rank_label: 'ゴールド',
-            current_rank_color: '#d97706',
-            next_rank_label: 'プラチナ',
-            points_to_next_rank: 720,
+            points: 2450,
+            current_rank: 'green',
+            current_rank_label: 'GREEN',
+            current_rank_color: '#0E7C66',
+            next_rank_label: 'GOLD',
+            points_to_next_rank: 550,
             days_to_next_rank: 18,
             days_required_for_next_rank: 30,
             show_points_display: true,
             show_rank_progress: true,
-            member_card_design: 'default',
+            member_card_design: 'emblem',
             member_card_display_type: 'card',
             member_card_code_type: 'barcode',
             points_expiry: {
-                expires_at_label: '2026/12/31',
-                points_expiring: 200,
+                expires_at_label: '無期限',
+                points_expiring: 0,
             },
             rank_up_history: [
-                { from_rank_label: 'ブロンズ', to_rank_label: 'シルバー', achieved_at: '2025/11/03' },
-                { from_rank_label: 'シルバー', to_rank_label: 'ゴールド', achieved_at: '2026/01/20' },
+                { from_rank_label: 'ブロンズ', to_rank_label: 'GREEN', achieved_at: '2025/11/03' },
             ],
             user: {
-                name: 'サンプル会員',
+                name: 'Alex',
             },
             member: {
-                member_number: '000123456789',
-                points: 1280,
+                member_number: '1234567890123456',
+                points: 2450,
             },
+            is_sample_preview: true,
         };
+    }
+
+    getDesignerSampleProducts() {
+        return ProductManager.buildBuiltinSampleCatalog();
+    }
+
+    getDesignerSampleQueueEntry() {
+        return {
+            id: 'sample',
+            formatted_queue_number: String(new Date().getDate()) + '12',
+            status: 'waiting',
+            party_size: 2,
+            waiting_count: 5,
+            ahead_count: 3,
+            estimated_wait_minutes: 15,
+            line_linked: true,
+            is_sample_preview: true,
+        };
+    }
+
+    getDesignerSampleStampCards() {
+        return [
+            {
+                id: 'sample-stamp-1',
+                name: '来店スタンプラリー',
+                current_stamps: 6,
+                required_stamps: 10,
+                layout_style: 'grid',
+                image_url: '/images/liff/stamp-card-bg.jpg',
+                reward_description: '10個集めるとドリンク1杯無料',
+                valid_until: '2026-12-31',
+                is_sample_preview: true,
+                reward_milestones: [
+                    { stamp_count: 5, description: 'お菓子プレゼント' },
+                    { stamp_count: 10, description: 'ドリンク無料' },
+                ],
+            },
+        ];
+    }
+
+    getDesignerSampleCoupons() {
+        const until = new Date();
+        until.setDate(until.getDate() + 14);
+        return [
+            {
+                id: 'sample-coupon-1',
+                coupon_name: 'ドリンク1杯無料',
+                description: 'お好きなドリンク1杯を無料でご提供します',
+                status: 'available',
+                valid_until: until.toISOString(),
+                issued_at: new Date().toISOString(),
+                image_url: '/images/liff/coupon-drink.jpg',
+                code: 'DRINK-FREE-2401',
+                use_display: 'barcode',
+                is_sample_preview: true,
+            },
+            {
+                id: 'sample-coupon-2',
+                coupon_name: 'デザート20%OFF',
+                description: 'デザートメニューが20%割引になります',
+                status: 'available',
+                valid_until: until.toISOString(),
+                issued_at: new Date().toISOString(),
+                image_url: '/images/liff/coupon-dessert.jpg',
+                code: 'DESSERT-20-2401',
+                use_display: 'barcode',
+                is_sample_preview: true,
+            },
+        ];
+    }
+
+    getDesignerSampleReservations() {
+        const reservedAt = new Date();
+        reservedAt.setDate(reservedAt.getDate() + 3);
+        reservedAt.setHours(18, 0, 0, 0);
+        return [
+            {
+                id: -1,
+                reserved_at: reservedAt.toISOString(),
+                status: 'confirmed',
+                reservation_number: String(new Date().getDate()) + '1',
+                number_of_people: 2,
+                notes: '窓側の席希望',
+                is_sample_preview: true,
+            },
+        ];
     }
 
     async checkMembershipAndLoadReservations() {
@@ -1849,10 +2162,7 @@ class ReggitApp {
             ? this.memberManager.hasAuthenticatedIdentity()
             : (typeof window !== 'undefined' && !!window.__LINE_USER_ID__);
         if (!hasIdentity) {
-            section.innerHTML = this.memberManager.getLoginOptionalTemplate(
-                '予約',
-                'ログインすると予約をご利用いただけます。'
-            );
+            this.reservationManager.renderSampleReservations();
             return;
         }
         try {
@@ -1865,19 +2175,19 @@ class ReggitApp {
                 } else if (!isMembershipRequired()) {
                     this.reservationManager.loadReservations();
                 } else {
-                    section.innerHTML = this.reservationManager.getMembershipRequiredTemplate();
+                    this.reservationManager.renderSampleReservations();
                 }
             } else if (!isMembershipRequired()) {
                 this.reservationManager.loadReservations();
             } else {
-                section.innerHTML = this.reservationManager.getMembershipRequiredTemplate();
+                this.reservationManager.renderSampleReservations();
             }
         } catch (error) {
             console.error('Failed to check membership:', error);
             if (!isMembershipRequired()) {
                 this.reservationManager.loadReservations();
             } else {
-                section.innerHTML = this.reservationManager.getMembershipRequiredTemplate();
+                this.reservationManager.renderSampleReservations();
             }
         }
     }
