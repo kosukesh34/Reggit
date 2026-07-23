@@ -1,8 +1,8 @@
 import type { ApiClient } from '../../shared/utils/apiClient';
 import { AppConstants } from '../../shared/constants';
 import { DomHelper } from '../../shared/utils/domHelper';
-import { isMembershipRequired } from '../utils/membershipPolicy';
 import { mountDetailLayoutChrome } from '../utils/detailLayoutMount';
+import { isIosFixedUiDemo } from '../ios/demoMode';
 
 declare const MemberManager: {
     isMobileAppMode: () => boolean;
@@ -26,6 +26,7 @@ type StampCard = {
     reward_milestones?: StampRewardMilestone[];
     name?: string;
     reward_description?: string | null;
+    is_sample_preview?: boolean;
 };
 
 type StampsResponse = {
@@ -82,22 +83,7 @@ export class StampsManager {
     }
 
     getGuestTemplate(): string {
-        return `
-            <div class="member-card-container">
-                <div class="member-card member-card--line-only">
-                    <div class="member-card-header">
-                        <h2 class="member-card-title"><i class="fas fa-stamp"></i> スタンプカード</h2>
-                    </div>
-                    <div class="member-card-line-only-body">
-                        <p class="member-card-line-only-message">この端末はゲスト状態です。</p>
-                        <p class="member-card-line-only-sub">会員登録するとスタンプ履歴を引き継げます。</p>
-                        <button type="button" class="btn btn-primary mt-2" onclick="app.switchTab('${AppConstants.TABS.MEMBER}')">
-                            <i class="fas fa-user-plus"></i> 会員登録へ
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
+        return '';
     }
 
     getMemberRequiredTemplate(message = '会員登録が必要です'): string {
@@ -111,6 +97,40 @@ export class StampsManager {
                 </button>
             </div>
         `;
+    }
+
+    getDesignerSampleStampCards(): StampCard[] {
+        if (typeof window !== 'undefined'
+            && window.app
+            && typeof (window.app as { getDesignerSampleStampCards?: () => StampCard[] }).getDesignerSampleStampCards === 'function') {
+            return (window.app as { getDesignerSampleStampCards: () => StampCard[] }).getDesignerSampleStampCards();
+        }
+        return [
+            {
+                id: 'sample-stamp-1',
+                name: '来店スタンプラリー',
+                current_stamps: 6,
+                required_stamps: 10,
+                layout_style: 'grid',
+                image_url: '/images/liff/stamp-card-bg.jpg',
+                reward_description: '10個集めるとドリンク1杯無料',
+                valid_until: '2026-12-31',
+                is_sample_preview: true,
+                reward_milestones: [
+                    { stamp_count: 5, description: 'お菓子プレゼント' },
+                    { stamp_count: 10, description: 'ドリンク無料' },
+                ],
+            },
+        ];
+    }
+
+    renderSampleStampCards(): void {
+        const cards = this.getDesignerSampleStampCards().map((card) => ({
+            ...card,
+            is_sample_preview: true,
+        }));
+        this.cache = cards;
+        this.render(cards, null, true);
     }
 
     getErrorTemplate(error?: { message?: string } | Error | null): string {
@@ -135,6 +155,11 @@ export class StampsManager {
             return;
         }
 
+        if (isIosFixedUiDemo()) {
+            this.renderSampleStampCards();
+            return;
+        }
+
         const appAny = (typeof window !== 'undefined' ? (window.app as any) : null) || null;
         const memberManager = appAny && appAny.memberManager ? appAny.memberManager : null;
         if (memberManager) {
@@ -145,7 +170,7 @@ export class StampsManager {
                     await memberManager.resolveLineUserIdForClient();
                 }
                 if (!window.__LINE_USER_ID__) {
-                    section.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i><p>読み込み中...</p></div>';
+                    this.renderSampleStampCards();
                     return;
                 }
             } else {
@@ -156,7 +181,7 @@ export class StampsManager {
                     ? memberManager.hasAuthenticatedIdentity()
                     : !!(typeof window !== 'undefined' && window.__LINE_USER_ID__);
                 if (!hasIdentity) {
-                    section.innerHTML = this.getGuestTemplate();
+                    this.renderSampleStampCards();
                     return;
                 }
             }
@@ -176,9 +201,7 @@ export class StampsManager {
             const defaultImage = data && data.default_image_url ? data.default_image_url : null;
             const message = data && data.message ? data.message : null;
             if ((!cards || cards.length === 0) && message) {
-                section.innerHTML = isMembershipRequired()
-                    ? this.getMemberRequiredTemplate(message)
-                    : this.getGuestTemplate();
+                this.renderSampleStampCards();
                 return;
             }
 
@@ -221,23 +244,38 @@ export class StampsManager {
         }
         const current = card.current_stamps || 0;
         const required = card.required_stamps || 10;
-        const layoutStyle = card.layout_style || 'grid';
-        const imageUrl = card.image_url || this.lastDefaultImage;
+        const remaining = Math.max(0, required - current);
+        const progress = Math.min(100, required > 0 ? (current / required) * 100 : 0);
+        const imageUrl = card.image_url || this.lastDefaultImage || '/images/liff/stamp-card-bg.jpg';
         const validUntilDate = this.formatValidUntil(
             card.member_stamp_valid_until || card.valid_until,
         );
-        const design = StampsManager.getStampDesignSettings();
         const completed = !!card.completed_at;
+        const slots = [];
+        for (let i = 0; i < required; i++) {
+            const filled = i < current;
+            slots.push(`<span class="ios-stamp-dot${filled ? ' is-filled' : ''}${!filled && i === current ? ' is-next' : ''}" aria-hidden="true">${filled ? '<i class="fas fa-check"></i>' : (i + 1)}</span>`);
+        }
         const bodyHtml = `
-            <div class="liff-entity-detail stamp-detail-page stamp-screen--${DomHelper.escapeHtml(design.screenDesign)}">
-                ${imageUrl ? `<div class="liff-entity-detail__image"><img src="${DomHelper.escapeHtml(imageUrl)}" alt=""></div>` : ''}
-                <h1 class="liff-entity-detail__title">${DomHelper.escapeHtml(card.name || 'スタンプカード')}</h1>
-                <p class="liff-entity-detail__meta">${current} / ${required} スタンプ${validUntilDate ? ` · 有効期限: ${DomHelper.escapeHtml(validUntilDate)}` : ''}</p>
-                ${this.renderProgressSummary(current, required, completed)}
-                ${this.renderSlots(current, required, layoutStyle, card.stamp_images || null, design)}
-                ${this.renderRewardMilestones(Array.isArray(card.reward_milestones) ? card.reward_milestones : [], current)}
-                ${card.reward_description ? `<div class="liff-entity-detail__body">${DomHelper.escapeHtml(card.reward_description)}</div>` : ''}
-            </div>
+            <article class="ios-detail ios-detail--stamp">
+                <div class="ios-detail__hero" style="background-image:url('${DomHelper.escapeHtml(imageUrl)}');background-size:cover;background-position:center">
+                    <div class="ios-detail__hero-shade"></div>
+                    <div class="ios-detail__chips">
+                        <span class="ios-detail__chip ios-detail__chip--status">スタンプ</span>
+                        ${completed ? '<span class="ios-detail__chip">達成</span>' : `<span class="ios-detail__chip">あと ${remaining}</span>`}
+                    </div>
+                </div>
+                <div class="ios-detail__panel">
+                    <h1 class="ios-detail__title">${DomHelper.escapeHtml(card.name || 'スタンプカード')}</h1>
+                    ${validUntilDate ? `<p class="ios-detail__meta"><i class="far fa-calendar-alt" aria-hidden="true"></i>有効期限 ${DomHelper.escapeHtml(validUntilDate)}</p>` : ''}
+                    <div class="ios-stamp-card__meter" style="margin-bottom:14px">
+                        <div class="ios-stamp-card__count"><strong>${current}</strong><span>/${required}</span></div>
+                        <div class="ios-stamp-card__bar"><i style="width:${progress}%"></i></div>
+                    </div>
+                    <div class="ios-stamp-dots" role="img" aria-label="${current}/${required} スタンプ">${slots.join('')}</div>
+                    ${card.reward_description ? `<p class="ios-detail__body" style="margin-top:16px;margin-bottom:0">${DomHelper.escapeHtml(card.reward_description)}</p>` : ''}
+                </div>
+            </article>
         `;
         mountDetailLayoutChrome({
             section,
@@ -383,71 +421,71 @@ export class StampsManager {
         return `<ul class="stamp-card-milestones">${items}</ul>`;
     }
 
-    render(cards: StampCard[], defaultImage?: string | null): void {
+    render(cards: StampCard[], defaultImage?: string | null, isSample = false): void {
         const section = this.getSection();
         if (!section) {
             return;
         }
         if (!cards || cards.length === 0) {
             section.innerHTML = `
-                <div class="stamps-empty">
-                    <i class="fas fa-stamp"></i>
-                    <p>スタンプカードはありません</p>
-                    <p class="stamps-empty-sub">お店でスタンプを集めましょう</p>
+                <div class="ios-empty">
+                    <div class="ios-empty__icon"><i class="fas fa-stamp"></i></div>
+                    <h3 class="ios-empty__title">スタンプカードはありません</h3>
+                    <p class="ios-empty__text">お店でスタンプを集めましょう</p>
                 </div>
             `;
             return;
         }
 
-        const design = StampsManager.getStampDesignSettings();
-        const accentStyle = design.accentColor !== ''
-            ? ` style="--stamp-accent-color:${DomHelper.escapeHtml(design.accentColor)}"`
-            : '';
-
         const html = cards
             .map((card) => {
                 const current = card.current_stamps || 0;
                 const required = card.required_stamps || 10;
-                const progress = Math.min(100, (current / required) * 100);
+                const remaining = Math.max(0, required - current);
+                const progress = Math.min(100, required > 0 ? (current / required) * 100 : 0);
                 const completed = !!card.completed_at;
-                const layoutStyle = card.layout_style || 'grid';
-                const imageUrl = card.image_url || defaultImage;
+                const imageUrl = card.image_url || defaultImage || '/images/liff/stamp-card-bg.jpg';
                 const validUntilDate = this.formatValidUntil(
                     card.member_stamp_valid_until || card.valid_until,
                 );
-                const rewardMilestones = Array.isArray(card.reward_milestones)
-                    ? card.reward_milestones
-                    : [];
+                const reward = card.reward_description
+                    ? DomHelper.escapeHtml(card.reward_description)
+                    : '特典をゲット';
+                const slots = [];
+                for (let i = 0; i < required; i++) {
+                    const filled = i < current;
+                    slots.push(`<span class="ios-stamp-dot${filled ? ' is-filled' : ''}${!filled && i === current ? ' is-next' : ''}" aria-hidden="true">${filled ? '<i class="fas fa-check"></i>' : (i + 1)}</span>`);
+                }
                 return `
-                    <button type="button" class="stamp-card-item stamp-card-item--layout-${layoutStyle} stamp-card-item--screen-${design.screenDesign} ${completed ? 'stamp-card-item--completed' : ''}" data-stamp-id="${DomHelper.escapeHtml(String(card.id ?? ''))}"${accentStyle}>
-                        <div class="stamp-card-item__hero">
-                            ${imageUrl
-                                ? `<div class="stamp-card-image"><img src="${DomHelper.escapeHtml(imageUrl)}" alt="スタンプカード" loading="lazy" onerror="this.closest('.stamp-card-image').style.display='none'"></div>`
-                                : '<div class="stamp-card-image stamp-card-image--badge"><span class="stamp-card-image__mark"><i class="fas fa-stamp" aria-hidden="true"></i></span></div>'}
-                            <div class="stamp-card-item__headline">
-                                <h3 class="stamp-card-name">${DomHelper.escapeHtml(card.name || 'スタンプカード')}</h3>
-                                ${completed ? '<span class="stamp-card-badge"><i class="fas fa-check-circle"></i> 達成</span>' : ''}
+                    <button type="button" class="ios-stamp-card${completed ? ' is-completed' : ''}" data-stamp-id="${DomHelper.escapeHtml(String(card.id ?? ''))}">
+                        <div class="ios-stamp-card__hero" style="background-image:url('${DomHelper.escapeHtml(imageUrl)}')">
+                            <div class="ios-stamp-card__hero-shade"></div>
+                            <div class="ios-stamp-card__hero-top">
+                                <span class="ios-stamp-card__eyebrow">スタンプカード</span>
+                                ${completed ? '<span class="ios-stamp-card__done">達成</span>' : `<span class="ios-stamp-card__remain">あと ${remaining}</span>`}
                             </div>
+                            <h3 class="ios-stamp-card__title">${DomHelper.escapeHtml(card.name || 'スタンプカード')}</h3>
+                            <p class="ios-stamp-card__reward">${reward}</p>
                         </div>
-                        ${this.renderProgressSummary(current, required, completed)}
-                        ${this.renderSlots(current, required, layoutStyle, card.stamp_images || null, design)}
-                        <div class="stamp-card-meta">
-                            <p class="stamp-card-count">${current} / ${required} スタンプ</p>
-                            ${validUntilDate ? `<p class="stamp-card-valid">有効期限: ${DomHelper.escapeHtml(validUntilDate)}</p>` : ''}
+                        <div class="ios-stamp-card__body">
+                            <div class="ios-stamp-card__meter">
+                                <div class="ios-stamp-card__count"><strong>${current}</strong><span>/${required}</span></div>
+                                <div class="ios-stamp-card__bar"><i style="width:${progress}%"></i></div>
+                                ${validUntilDate ? `<p class="ios-stamp-card__expiry">有効期限 ${DomHelper.escapeHtml(validUntilDate)}</p>` : ''}
+                            </div>
+                            <div class="ios-stamp-dots" role="img" aria-label="${current}/${required} スタンプ">${slots.join('')}</div>
                         </div>
-                        ${layoutStyle !== 'minimal' ? `<div class="stamp-card-progress"><div class="stamp-card-progress-bar" style="width: ${progress}%"></div></div>` : ''}
-                        ${this.renderRewardMilestones(rewardMilestones, current)}
-                        ${card.reward_description ? `<p class="stamp-card-reward">${DomHelper.escapeHtml(card.reward_description)}</p>` : ''}
                     </button>
                 `;
             })
             .join('');
 
         section.innerHTML = `
-            <div class="stamps-header">
-                <h2 class="section-title"><i class="fas fa-stamp"></i> スタンプカード</h2>
+            <div class="ios-panel-head">
+                <h2 class="ios-panel-head__title">スタンプ</h2>
+                <p class="ios-panel-head__sub">来店するたび貯まる</p>
             </div>
-            <div class="stamps-list stamp-screen--${DomHelper.escapeHtml(design.screenDesign)}"${accentStyle}>${html}</div>
+            <div class="ios-stamp-stack">${html}</div>
         `;
         section.querySelectorAll('[data-stamp-id]').forEach((el) => {
             el.addEventListener('click', () => {

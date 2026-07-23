@@ -21,8 +21,11 @@
         : (string) ($latestAssetMtime > 0 ? $latestAssetMtime : time());
     $host = request()->getHost();
     $useInlineLocalAssets = str_contains($host, 'ngrok-free.dev') || str_contains($host, 'ngrok-free.app');
+    $isIosDemoData = request()->query('demo') === '1';
 @endphp
 <html lang="ja" @class([
+    'ios-fixed-ui' => true,
+    'ios-demo-data' => $isIosDemoData,
     'designer-live-preview-embed' => $isDesignerEmbedPreview,
 ])>
 <head>
@@ -45,6 +48,8 @@
     @include('frontend.partials._head-theme')
 </head>
 <body @class([
+    'ios-fixed-ui' => true,
+    'ios-demo-data' => $isIosDemoData,
     'designer-live-preview-embed' => $isDesignerEmbedPreview,
 ])>
     <div id="liff-loading" class="liff-loading" aria-live="polite">

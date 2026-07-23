@@ -24,7 +24,7 @@ export type OpenPageOptions = {
 
 const TAB_KEYS = new Set([
     'home', 'products', 'orders', 'stamps', 'coupons', 'queue',
-    'member', 'reservations', 'gallery', 'announcements',
+    'member', 'reservations', 'gallery', 'announcements', 'designlab',
 ]);
 
 const PAGE_TITLES: Partial<Record<LiffPageKey, string>> = {
@@ -122,17 +122,18 @@ export class LiffPageRouter {
         if (this.currentKey === null) {
             return;
         }
+        const back = this.returnHash || 'home';
         const page = this.getPage();
         this.hidePage(page);
         this.currentKey = null;
         if (updateHash && typeof window !== 'undefined') {
-            const back = this.returnHash || 'home';
             const nextHash = '#' + back;
             if (window.location.hash !== nextHash) {
                 this.suppressHashUntil = nextHash;
                 window.location.hash = nextHash;
-            } else if (window.app && typeof window.app.switchTab === 'function') {
-                window.app.switchTab(back);
+            }
+            if (window.app && typeof window.app.switchTab === 'function') {
+                void window.app.switchTab(back);
             }
         }
     }
@@ -245,6 +246,16 @@ export function parseLiffHash(rawHash: string): ParsedLiffHash {
     const hash = (rawHash || '').replace(/^#/, '');
     if (hash === '') {
         return { kind: 'unknown', raw: hash };
+    }
+    const aliases: Record<string, string> = {
+        order: 'products',
+        card: 'member',
+        visit: 'queue',
+        more: 'home',
+    };
+    const aliased = aliases[hash];
+    if (aliased !== undefined) {
+        return { kind: 'tab', tab: aliased };
     }
     if (TAB_KEYS.has(hash) || /^link_[0-9]+$/.test(hash)) {
         return { kind: 'tab', tab: hash };
