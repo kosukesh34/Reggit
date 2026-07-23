@@ -195,7 +195,7 @@ export function FrontendChrome(): JSX.Element | null {
                             className="ios-side-menu__item ios-side-menu__item--lab"
                             data-menu-tab="designlab"
                         >
-                            デザイン変更
+                            ガチャ・スクラッチ
                         </button>
                     </div>
                 ) : null}
