@@ -14,6 +14,7 @@ import type { StampsManager } from '../frontend/managers/StampsManager';
 import type { CheckoutManager } from '../frontend/managers/CheckoutManager';
 import type { QueueManager } from '../frontend/managers/QueueManager';
 import type { CouponsManager } from '../frontend/managers/CouponsManager';
+import type { DesignLabManager } from '../frontend/managers/DesignLabManager';
 import type { LiffLayoutManager } from '../frontend/managers/LiffLayoutManager';
 import type { ReservationManager } from '../frontend/managers/ReservationManager';
 import type { MemberManager } from '../frontend/managers/MemberManager';
@@ -59,6 +60,7 @@ type AppLike = {
     pageRouter?: import('../frontend/navigation/LiffPageRouter').LiffPageRouter;
     announcementManager?: InstanceType<typeof AnnouncementManager>;
     couponsManager?: InstanceType<typeof CouponsManager>;
+    designLabManager?: InstanceType<typeof DesignLabManager>;
     galleryManager?: InstanceType<typeof GalleryManager>;
     stampsManager?: InstanceType<typeof StampsManager>;
     layoutManager?: InstanceType<typeof LiffLayoutManager>;

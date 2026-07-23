@@ -7,6 +7,7 @@
 declare const liff: any;
 import { DomHelper } from '../../shared/utils/domHelper';
 import { AppConstants } from '../../shared/constants';
+import { isIosFixedUiDemo } from '../ios/demoMode';
 
 export class LiffLayoutManager {
     app: any;
@@ -54,29 +55,255 @@ export class LiffLayoutManager {
     }
 
     /**
-     * タブ切替時にカスタムレイアウトを描画する。
+     * タブ切替時の描画。固定UIモードでは Designer レイアウトを無視する。
      */
     render(tab: string): void {
         if (typeof window.__mobileOrderLog === 'function') window.__mobileOrderLog('LiffLayoutManager.render', { tab });
-        const layouts = (typeof window !== 'undefined' && window.__LIFF_TAB_LAYOUTS__)
-            ? window.__LIFF_TAB_LAYOUTS__
-            : {};
-        const blocks = layouts[tab];
         const sectionId = tab + 'Section';
-        const container = document.getElementById(sectionId) as any;
-        if (!container) {
+        const container = document.getElementById(sectionId) as HTMLElement | null;
+        if (container === null) {
             if (typeof window.__mobileOrderLog === 'function') window.__mobileOrderLog('LiffLayoutManager.render: no container', { sectionId });
             return;
         }
-        if (typeof window.__mobileOrderLog === 'function') window.__mobileOrderLog('LiffLayoutManager.render container found', { tab, hasBlocks: Array.isArray(blocks) && blocks.length > 0 });
-        if (!Array.isArray(blocks) || blocks.length === 0) {
-            this._loadDefaultTabContent(tab);
+        // iOS 固定UI: 店舗 Designer のブロック配列は使わない
+        this._loadDefaultTabContent(tab);
+    }
+
+    _flagEnabled(key: string): boolean {
+        if (isIosFixedUiDemo()) {
+            return true;
+        }
+        const flags = (typeof window !== 'undefined' && window.__FEATURE_FLAGS__) ? window.__FEATURE_FLAGS__ : {};
+        return flags[key] !== false;
+    }
+
+    _buildIosHomeHtml(): string {
+        const title = (window.__FRONTEND_HEADER__ && typeof window.__FRONTEND_HEADER__.title === 'string'
+            && window.__FRONTEND_HEADER__.title.trim() !== '')
+            ? window.__FRONTEND_HEADER__.title
+            : (document.title || 'Reggit');
+
+        const actions: Array<{ tab: string; en: string; ja: string; svg: string }> = [];
+        if (this._flagEnabled('feature_orders_enabled')) {
+            actions.push({
+                tab: 'products',
+                en: 'Order',
+                ja: '事前に注文する',
+                svg: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M8 4h8v3H8V4zM5 8h14l-1.2 11.2A2 2 0 0 1 15.8 21H8.2a2 2 0 0 1-2-1.8L5 8z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M9 12h6M9 15h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+            });
+        }
+        if (this._flagEnabled('feature_members_enabled')) {
+            actions.push({
+                tab: 'member',
+                en: 'Membership',
+                ja: '会員証を表示する',
+                svg: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none"><rect x="3" y="6" width="18" height="12" rx="2.5" stroke="currentColor" stroke-width="1.6"/><path d="M3 10h18M7 15h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+            });
+        }
+        if (this._flagEnabled('feature_queue_enabled')) {
+            actions.push({
+                tab: 'queue',
+                en: 'Queue',
+                ja: '順番待ち状況を確認',
+                svg: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none"><circle cx="8" cy="9" r="2.2" stroke="currentColor" stroke-width="1.6"/><circle cx="16" cy="9" r="2.2" stroke="currentColor" stroke-width="1.6"/><path d="M4 18c.6-2.4 2.4-3.6 4-3.6s3.4 1.2 4 3.6M12 18c.6-2.4 2.4-3.6 4-3.6s3.4 1.2 4 3.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+            });
+        }
+
+        const actionsHtml = actions.slice(0, 3).map((a) => `
+            <button type="button" class="lp-home-action" data-ios-nav-tab="${a.tab}">
+                <span class="lp-home-action__icon" aria-hidden="true">${a.svg}</span>
+                <span class="lp-home-action__en">${this._esc(a.en)}</span>
+                <span class="lp-home-action__ja">${this._esc(a.ja)}</span>
+                <span class="lp-home-action__chevron" aria-hidden="true">›</span>
+            </button>
+        `).join('');
+
+        const day = new Date().getDate();
+        const queueNo = String(day) + '2';
+        const queueCardHtml = !this._flagEnabled('feature_queue_enabled')
+            ? ''
+            : (isIosFixedUiDemo()
+                ? `
+                <button type="button" class="lp-home-queue" data-ios-nav-tab="queue">
+                    <span class="lp-home-queue__ticket" aria-hidden="true">${this._esc(queueNo)}</span>
+                    <span class="lp-home-queue__body">
+                        <span class="lp-home-queue__label">あなたの現在の番号</span>
+                        <span class="lp-home-queue__num">${this._esc(queueNo)} <small>番</small></span>
+                    </span>
+                    <span class="lp-home-queue__meta">
+                        <span class="lp-home-queue__badge">ご案内中</span>
+                        <span class="lp-home-queue__wait">あと 5 組 · 目安 25 分</span>
+                    </span>
+                    <span class="lp-home-queue__chevron" aria-hidden="true">›</span>
+                </button>
+                `
+                : `
+                <button type="button" class="lp-home-queue" data-ios-nav-tab="queue">
+                    <span class="lp-home-queue__body">
+                        <span class="lp-home-queue__label">順番待ち</span>
+                        <span class="lp-home-queue__num">状況を確認する</span>
+                    </span>
+                    <span class="lp-home-queue__chevron" aria-hidden="true">›</span>
+                </button>
+                `);
+
+        return `
+            <div class="home-content ios-home lp-home" data-ios-home-version="5">
+                <section class="lp-home-brand">
+                    <p class="lp-home-brand__name">${this._esc(title)}</p>
+                    <p class="lp-home-brand__tag">スマートに、心地よく、あなたの時間を。</p>
+                </section>
+
+                ${queueCardHtml}
+
+                ${actionsHtml !== '' ? `<div class="lp-home-actions">${actionsHtml}</div>` : ''}
+
+                ${this._flagEnabled('feature_members_enabled') ? `
+                <button type="button" class="lp-home-promo" data-ios-nav-tab="member">
+                    <span class="lp-home-promo__eyebrow">Reggit Members</span>
+                    <span class="lp-home-promo__title">会員登録で特典を受け取ろう</span>
+                    <span class="lp-home-promo__text">登録すると、ドリンク1杯サービス！</span>
+                    <span class="lp-home-promo__chevron" aria-hidden="true">›</span>
+                </button>
+                ` : ''}
+
+                <div class="ios-status-card" id="iosHomeStatus" hidden>
+                    <p class="ios-status-card__title" id="iosHomeStatusTitle"></p>
+                    <p class="ios-status-card__text" id="iosHomeStatusText"></p>
+                </div>
+                <p class="ios-section-label">お知らせ</p>
+                <div class="ios-group ios-announce-list announcements-data-mount" id="iosHomeAnnouncements">
+                    <div class="ios-row home-loading"><div class="ios-row__body"><div class="ios-row__title">読み込み中…</div></div></div>
+                </div>
+            </div>
+        `;
+    }
+
+    _iosMoreIcon(kind: string): string {
+        const icons: Record<string, string> = {
+            history: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 7v5l3 2" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="12" r="8" stroke="#fff" stroke-width="1.8"/></svg>',
+            megaphone: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 10v4h3l7 4V6L7 10H4z" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/><path d="M18 9.5v5" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg>',
+            photos: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3.5" y="5" width="17" height="14" rx="2" stroke="#fff" stroke-width="1.8"/><circle cx="9" cy="10" r="1.6" fill="#fff"/><path d="M3.5 16l4.5-4 3.5 3 3-2.5 6 3.5" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/></svg>',
+            ticket: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 8.5A2.5 2.5 0 0 0 6.5 11 2.5 2.5 0 0 0 4 13.5v2h16v-2A2.5 2.5 0 0 0 17.5 11 2.5 2.5 0 0 0 20 8.5v-2H4v2z" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/></svg>',
+            stamp: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="9" r="4" stroke="#fff" stroke-width="1.8"/><path d="M6 19h12" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg>',
+            link: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M10 13a5 5 0 0 0 7.1.1l2-2a5 5 0 0 0-7.1-7.1l-1.1 1.1" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/><path d="M14 11a5 5 0 0 0-7.1-.1l-2 2a5 5 0 0 0 7.1 7.1l1.1-1.1" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg>',
+        };
+        return icons[kind] || icons.link;
+    }
+
+    _iosMoreRow(tab: string, label: string, iconKind: string): string {
+        const colorClass =
+            iconKind === 'history' ? 'ios-row__icon--gray'
+                : (iconKind === 'megaphone' ? 'ios-row__icon--orange'
+                    : (iconKind === 'photos' ? 'ios-row__icon--pink'
+                        : (iconKind === 'ticket' ? 'ios-row__icon--purple'
+                            : (iconKind === 'stamp' ? 'ios-row__icon--green' : 'ios-row__icon--gray'))));
+        return `
+            <button type="button" class="ios-row" data-ios-nav-tab="${this._esc(tab)}">
+                <span class="ios-row__icon ${colorClass}" aria-hidden="true">${this._iosMoreIcon(iconKind)}</span>
+                <span class="ios-row__body"><span class="ios-row__title">${this._esc(label)}</span></span>
+                <span class="ios-row__chevron" aria-hidden="true">›</span>
+            </button>
+        `;
+    }
+
+    _buildIosWalletHtml(data: any): string {
+        const isMember = !!(data && data.is_member === true);
+        let title = '会員登録でポイントが貯まります';
+        let hint = 'タップして開く';
+        if (isMember) {
+            const points = Number(data.points != null ? data.points : (data.member && data.member.points) || 0);
+            const rankLabel = data.current_rank_label != null ? String(data.current_rank_label) : '';
+            const pointsLabel = points.toLocaleString('ja-JP') + ' pt';
+            title = rankLabel !== '' ? `${pointsLabel} · ${rankLabel}` : pointsLabel;
+            hint = 'タップして会員証を開く';
+        }
+        return `
+                <button type="button" class="ios-wallet" data-ios-nav-tab="member">
+                    <span class="ios-wallet__bg" aria-hidden="true"></span>
+                    <span class="ios-wallet__body">
+                        <span class="ios-wallet__label">会員カード</span>
+                        <span class="ios-wallet__title">${this._esc(title)}</span>
+                        <span class="ios-wallet__hint">${this._esc(hint)}</span>
+                    </span>
+                    <span class="ios-wallet__chevron" aria-hidden="true">›</span>
+                </button>
+            `;
+    }
+
+    async _refreshIosWallet(container: HTMLElement): Promise<void> {
+        if (!this._flagEnabled('feature_members_enabled')) {
             return;
         }
-        if (container.dataset.layoutRendered === '1') return;
-        container.dataset.layoutRendered = '1';
+        let data = await this._fetchMemberMe();
+        if ((!data || data.is_member !== true)
+            && isIosFixedUiDemo()
+            && this.app
+            && typeof this.app.getDesignerSampleMemberData === 'function') {
+            data = this.app.getDesignerSampleMemberData();
+        }
+        const next = this._buildIosWalletHtml(data);
+        const current = container.querySelector('.ios-wallet');
+        if (current !== null) {
+            current.outerHTML = next.trim();
+        } else if (container.querySelector('.lp-home') !== null) {
+            // LP風ホームはプロモカードを使うため wallet は差し込まない
+            return;
+        } else {
+            const hero = container.querySelector('.ios-hero');
+            if (hero !== null) {
+                hero.insertAdjacentHTML('afterend', next);
+            }
+        }
+        this._bindIosHomeNav(container);
+    }
 
-        this.renderCustomLayout(container, tab, blocks);
+    _bindIosHomeNav(container: HTMLElement): void {
+        if (container.dataset.iosHomeNavBound === '1') {
+            return;
+        }
+        container.dataset.iosHomeNavBound = '1';
+        container.addEventListener('click', (event) => {
+            const target = event.target as HTMLElement | null;
+            const el = target !== null ? target.closest('[data-ios-nav-tab]') : null;
+            if (!(el instanceof HTMLElement)) {
+                return;
+            }
+            const tab = el.getAttribute('data-ios-nav-tab');
+            if (tab !== null && tab !== '' && this.app && typeof this.app.switchTab === 'function') {
+                void this.app.switchTab(tab);
+            }
+        });
+    }
+
+    _productsViewToggleHtml(activeView: string): string {
+        const isCollection = activeView === 'collection';
+        return `
+            <div class="ios-large-title-row">
+                <h1 class="ios-large-title">オーダー</h1>
+                <div class="ios-view-toggle" role="group" aria-label="表示切替">
+                    <button type="button" class="ios-view-toggle__btn${isCollection ? ' is-active' : ''}" data-products-view="collection" aria-label="コレクション表示" title="コレクション" aria-pressed="${isCollection ? 'true' : 'false'}">
+                        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5" stroke="currentColor" stroke-width="1.8"/></svg>
+                    </button>
+                    <button type="button" class="ios-view-toggle__btn${!isCollection ? ' is-active' : ''}" data-products-view="list" aria-label="リスト表示" title="リスト" aria-pressed="${!isCollection ? 'true' : 'false'}">
+                        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    _readProductsViewMode(): string {
+        if (this.app && typeof this.app.getProductsViewMode === 'function') {
+            return this.app.getProductsViewMode();
+        }
+        try {
+            const stored = String(window.localStorage.getItem('liff_products_view_mode') || '').trim();
+            if (stored === 'collection' || stored === 'list') {
+                return stored;
+            }
+        } catch (_e) { /* ignore */ }
+        return 'list';
     }
 
     _loadDefaultTabContent(tab: string): void {
@@ -84,38 +311,98 @@ export class LiffLayoutManager {
         if (!this.app) return;
         const sectionId = tab + 'Section';
         const container = document.getElementById(sectionId);
-        // デフォルトレイアウト時も products タブには productsGrid が必要（Blade では空のためここで挿入）
         if (tab === 'products' && container && !container.querySelector('.products-data-grid') && !container.querySelector('#productsGrid')) {
+            const viewMode = this._readProductsViewMode();
             container.innerHTML = `
-                <div class="products-data-mount">
+                ${this._productsViewToggleHtml(viewMode)}
+                <div class="products-data-mount" data-products-view="${viewMode}">
                     <div class="category-tabs products-category-tabs" id="categoryTabs">
-                        <button class="tab-btn active" data-category="all"><i class="fas fa-th-large"></i><span>すべて</span></button>
+                        <button class="tab-btn active" data-category="all"><span>すべて</span></button>
                     </div>
                     <div class="products-section"><div class="products-grid products-data-grid" id="productsGrid"></div></div>
                 </div>
             `;
+            if (typeof this.app.bindProductsViewToggle === 'function') {
+                this.app.bindProductsViewToggle(container);
+            }
+        } else if (tab === 'products' && container && !container.querySelector('.ios-view-toggle')) {
+            const viewMode = this._readProductsViewMode();
+            const oldTitle = container.querySelector('.ios-large-title');
+            if (oldTitle !== null) {
+                oldTitle.outerHTML = this._productsViewToggleHtml(viewMode);
+            } else {
+                container.insertAdjacentHTML('afterbegin', this._productsViewToggleHtml(viewMode));
+            }
+            const mount = container.querySelector('.products-data-mount');
+            if (mount instanceof HTMLElement) {
+                mount.setAttribute('data-products-view', viewMode);
+            }
+            if (typeof this.app.bindProductsViewToggle === 'function') {
+                this.app.bindProductsViewToggle(container);
+            }
+        } else if (tab === 'products' && container && !container.querySelector('.ios-large-title') && !container.querySelector('.ios-large-title-row')) {
+            const viewMode = this._readProductsViewMode();
+            container.insertAdjacentHTML('afterbegin', this._productsViewToggleHtml(viewMode));
+            const mount = container.querySelector('.products-data-mount');
+            if (mount instanceof HTMLElement) {
+                mount.setAttribute('data-products-view', viewMode);
+            }
+            if (typeof this.app.bindProductsViewToggle === 'function') {
+                this.app.bindProductsViewToggle(container);
+            }
         }
-        // ホームタブ: Blade の homeSection は空のため、プレースホルダを表示しつつお知らせを読み込む
-        if (tab === 'home' && container && !container.querySelector('.home-content')) {
+        if (tab === 'home' && container && (!container.querySelector('.ios-home') || container.querySelector('.ios-home')?.getAttribute('data-ios-home-version') !== '5')) {
+            container.innerHTML = this._buildIosHomeHtml();
+            this._bindIosHomeNav(container);
+            void this._refreshIosWallet(container);
+        }
+        if (tab === 'orders' && container && !container.querySelector('.orders-data-mount')) {
             container.innerHTML = `
-                <div class="home-content">
-                    <div class="loading home-loading"><i class="fas fa-spinner fa-spin"></i><p>お知らせを読み込み中...</p></div>
-                </div>
+                <h1 class="ios-large-title">注文履歴</h1>
+                <div class="orders-data-mount"></div>
             `;
+        }
+        if (tab === 'gallery' && container && !container.querySelector('.gallery-data-mount')) {
+            container.innerHTML = `
+                <h1 class="ios-large-title">ギャラリー</h1>
+                <div class="gallery-data-mount"></div>
+            `;
+        }
+        if (tab === 'announcements' && container && !container.querySelector('.announcements-data-mount')) {
+            container.innerHTML = `
+                <h1 class="ios-large-title">お知らせ</h1>
+                <div class="announcements-data-mount"></div>
+            `;
+        }
+        if (tab === 'stamps' && container && !container.querySelector('.stamps-data-mount') && container.childElementCount === 0) {
+            container.innerHTML = `<div class="stamps-data-mount"></div>`;
+        }
+        if (tab === 'coupons' && container && !container.querySelector('.coupons-data-mount') && container.childElementCount === 0) {
+            container.innerHTML = `<div class="coupons-data-mount"></div>`;
+        }
+        if (tab === 'queue' && container && !container.querySelector('.queue-data-mount') && container.childElementCount === 0) {
+            container.innerHTML = `<div class="queue-data-mount"></div>`;
+        }
+        if (tab === 'reservations' && container && !container.querySelector('.reservations-data-mount') && container.childElementCount === 0) {
+            container.innerHTML = `<div class="reservations-data-mount"></div>`;
+        }
+        if (tab === 'member' && container && !container.querySelector('.member-card-mount') && !container.querySelector('.member-section') && container.childElementCount === 0) {
+            container.innerHTML = `<div class="member-section member-card-mount"></div>`;
+        }
+        if (tab === 'designlab' && container !== null) {
+            if (this.app.designLabManager && typeof this.app.designLabManager.mount === 'function') {
+                this.app.designLabManager.mount(container);
+            }
         }
         const tabLoaders: Record<string, () => void> = {
             home: () => {
-                setTimeout(() => {
-                    const c = document.getElementById('homeSection');
-                    const loading = c && c.querySelector('.home-loading');
-                    if (!loading) return;
-                    const mount = c.querySelector('.announcements-data-mount');
-                    if (mount && mount.innerHTML.trim() !== '') {
-                        (loading as HTMLElement).outerHTML = '';
-                    } else {
-                        (loading as HTMLElement).innerHTML = '<p class="section-title" style="margin:0;"><i class="fas fa-bullhorn"></i> お知らせはありません</p>';
-                    }
-                }, 1200);
+                const homeSection = document.getElementById('homeSection');
+                if (homeSection !== null) {
+                    void this._refreshIosWallet(homeSection);
+                }
+                if (this.app.announcementManager && typeof this.app.announcementManager.load === 'function') {
+                    void this.app.announcementManager.load();
+                }
             },
             member: () => this.app.loadMemberTab(),
             products: () => this.app.loadProducts(),
@@ -126,6 +413,12 @@ export class LiffLayoutManager {
             reservations: () => this.app.checkMembershipAndLoadReservations(),
             gallery: () => this.app.galleryManager.load(),
             announcements: () => this.app.announcementManager.load(),
+            designlab: () => {
+                const section = document.getElementById('designlabSection');
+                if (section !== null && this.app.designLabManager) {
+                    this.app.designLabManager.mount(section);
+                }
+            },
         };
         const loader = tabLoaders[tab];
         if (loader) {

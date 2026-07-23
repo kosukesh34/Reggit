@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ asset('css/landing.css') }}?v=23">
+    <link rel="stylesheet" href="{{ asset('css/landing.css') }}?v=25">
 </head>
 <body class="lp">
     <header class="lp-nav">
@@ -30,6 +30,7 @@
                     <a class="lp-nav__link" href="#platform">プラットフォーム</a>
                     <a class="lp-nav__link" href="#faq">FAQ</a>
                 </nav>
+                <a class="lp-nav__app" href="/liff?demo=1">デモアプリはこちら</a>
                 <a class="lp-nav__cta" href="{{ route('admin.login') }}">管理画面ログイン</a>
             </div>
         </div>
@@ -83,7 +84,7 @@
                             <li class="lp-marquee__item">
                                 <img
                                     class="lp-brand-logo"
-                                    src="{{ asset('images/landing/logos/brand-'.$file.'.png') }}?v=19"
+                                    src="{{ asset('images/landing/logos/brand-'.$file.'.png') }}?v=20"
                                     alt=""
                                     width="200"
                                     height="80"
@@ -103,7 +104,7 @@
                             <li class="lp-marquee__item">
                                 <img
                                     class="lp-brand-logo"
-                                    src="{{ asset('images/landing/logos/brand-'.$file.'.png') }}?v=19"
+                                    src="{{ asset('images/landing/logos/brand-'.$file.'.png') }}?v=20"
                                     alt=""
                                     width="200"
                                     height="80"
@@ -213,6 +214,7 @@
                 <p class="lp-section__eyebrow">App</p>
                 <h2 class="lp-section__title">お客様の手元で完結する体験</h2>
                 <p class="lp-section__lead">ホーム・注文・会員・スタンプ・順番待ちまで、LINE内の画面でつながります。</p>
+                <a class="lp-screens__app-link" href="/liff?demo=1">デモアプリはこちら</a>
             </div>
             <div class="lp-screens__rail">
                 <figure class="lp-screens__item">
