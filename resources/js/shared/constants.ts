@@ -76,6 +76,7 @@ export const AppConstants = {
         RESERVATIONS: 'reservations',
         GALLERY: 'gallery',
         ANNOUNCEMENTS: 'announcements',
+        DESIGNLAB: 'designlab',
     },
 
     CATEGORIES: {
@@ -218,6 +219,9 @@ export const AppConstants = {
         PRODUCTS_GRID: 'productsGrid',
         CART_BTN: 'cartBtn',
         ACCOUNT_BTN: 'accountBtn',
+        MENU_BTN: 'menuBtn',
+        CLOSE_MENU_BTN: 'closeMenuBtn',
+        SIDE_MENU: 'sideMenu',
         CART_COUNT: 'cartCount',
         CART_ITEMS: 'cartItems',
         CART_SIDEBAR: 'cartSidebar',
@@ -243,6 +247,8 @@ export const AppConstants = {
         GALLERY_TAB: 'galleryTab',
         GALLERY_SECTION: 'gallerySection',
         ANNOUNCEMENTS_TAB: 'announcementsTab',
+        DESIGNLAB_TAB: 'designlabTab',
+        DESIGNLAB_SECTION: 'designlabSection',
     },
 
     CSS_CLASSES: {
