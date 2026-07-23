@@ -111,6 +111,16 @@ export class CartManager {
             .reduce((sum, item) => sum + item.quantity, 0);
     }
 
+    /** 数量調整用の主ライン（オプションなし優先、なければ末尾） */
+    getAdjustableLineKey(productId: number | string): string | null {
+        const items = this.items.filter((item) => String(item.id) === String(productId));
+        if (items.length === 0) {
+            return null;
+        }
+        const plain = items.find((item) => !item.optionIds || item.optionIds.length === 0);
+        return (plain || items[items.length - 1]).lineKey;
+    }
+
     getTotalCount(): number {
         return this.items.reduce((sum, item) => sum + item.quantity, 0);
     }
