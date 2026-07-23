@@ -7,8 +7,8 @@ namespace App\Support;
  *
  * Reggit は LINE を基盤にした「店舗の会員アプリ + モバイルオーダー / 予約」の SaaS。
  * ここで返すテンプレートは、Starbucks / サロン予約 / リテールロイヤリティのような
- * 本番ネイティブアプリの質感（Apple iOS トーン・#f2f2f7・フローティングタブ・
- * apple_system プリセット）を、日本語のみのコピーで再現する。
+ * 本番ネイティブアプリの質感（店舗スタンダード・紙キャンバス・単一アクセント・
+ * store プリセット）を、日本語のみのコピーで再現する。
  *
  * 店名は「〇〇店」、業種別は「〇〇カフェ」等のプレースホルダで表現し、
  * デモデータは各店舗がそのまま差し替えられる SaaS 前提の内容にしている。
@@ -37,16 +37,16 @@ class LiffSaaSTemplateKit
     public static function appleTheme(array $overrides = []): array
     {
         return array_merge([
-            'theme_preset' => 'apple_system',
-            'accent_color' => '#007aff',
+            'theme_preset' => 'store',
+            'accent_color' => '#0E7C66',
             'font_family' => 'sans',
-            'surface_tone' => 'ios',
-            'card_style' => 'elevated',
+            'surface_tone' => 'sage',
+            'card_style' => 'flat',
             'button_shape' => 'pill',
             'tab_style' => 'floating',
             'density' => 'default',
             'background_style' => 'solid',
-            'bg_color' => '#f2f2f7',
+            'bg_color' => '#F1F5F4',
             'content_width' => 'comfy',
             'system_ui_style' => 'refined',
             'system_header_style' => 'minimal',

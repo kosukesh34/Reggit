@@ -5,31 +5,44 @@
 }
 
 :root {
-    /* ===== Brand（テーマで上書きされる）===== */
-    --primary-color: #1c1917;
-    --primary-rgb: 28, 25, 23;
-    --primary-dark: #0c0a09;
-    --secondary-color: #78716c;
+    /* ===== Brand（LP / Reggit と同一）===== */
+    --primary-color: #0e7c66;
+    --primary-rgb: 14, 124, 102;
+    --primary-dark: #0a6b58;
+    --secondary-color: #5c6b67;
 
-    /* ===== Chrome（ライト／ガラス。アクセントとは独立）===== */
-    --chrome: #f2f2f7;
-    --chrome-dark: #e5e5ea;
-    --chrome-rgb: 242, 242, 247;
+    /* ===== Chrome ===== */
+    --chrome: #f1f5f4;
+    --chrome-dark: #d7e8e2;
+    --chrome-rgb: 241, 245, 244;
 
-    /* ===== Ink / Text（iOS ラベル系ニュートラル）===== */
-    --text-primary: #1c1c1e;
-    --text-secondary: rgba(60, 60, 67, 0.78);
-    --text-tertiary: rgba(60, 60, 67, 0.52);
-    --text-muted: rgba(60, 60, 67, 0.6);
+    /* ===== Ink / Text（LP）===== */
+    --text-primary: #0f1c1a;
+    --text-secondary: #5c6b67;
+    --text-tertiary: #8a9793;
+    --text-muted: #5c6b67;
 
-    /* ===== Surfaces / Background（iOS grouped）===== */
+    /* ===== Surfaces / Background（LP sage）===== */
     --bg-light: #ffffff;
-    --bg-canvas: #f2f2f7;
-    --bg-subtle: #e5e5ea;
+    --bg-canvas: #f1f5f4;
+    --bg-subtle: #e8efec;
     --surface: #ffffff;
-    --surface-2: #f9f9fb;
-    --surface-muted: #ebebf0;
-    --surface-glass: #ffffff;
+    --surface-2: #f7faf9;
+    --surface-muted: #d7e8e2;
+    --surface-glass: rgba(255, 255, 255, 0.92);
+
+    /* ===== Control language（共通寸法。角丸はテーマ / button_shape が上書き）===== */
+    --btn-height: 44px;
+    --btn-height-sm: 36px;
+    --btn-padding-x: 20px;
+    --btn-radius: var(--radius);
+    --btn-font-size: 14px;
+    --btn-font-weight: 700;
+    --btn-shadow: var(--shadow-xs);
+    --chip-height: 36px;
+    --chip-radius: var(--radius);
+    --chip-font-size: 13px;
+    --chip-font-weight: 600;
 
     /* ===== Borders ===== */
     --border-color: rgba(60, 60, 67, 0.18);
@@ -81,8 +94,8 @@
     --dur-fast: 0.14s;
     --dur: 0.24s;
 
-    /* ===== Typography（OS標準日本語。テーマプリセットで --font-base / --font-display を上書き）===== */
-    --font-sans: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Yu Gothic Medium", "Yu Gothic", Meiryo, sans-serif;
+    /* ===== Typography（LP: Manrope + Noto Sans JP）===== */
+    --font-sans: "Manrope", "Noto Sans JP", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Yu Gothic", Meiryo, sans-serif;
     --font-serif: "Hiragino Mincho ProN", "Yu Mincho", YuMincho, "MS PMincho", serif;
     --font-rounded: "Hiragino Maru Gothic ProN", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Yu Gothic", Meiryo, sans-serif;
     --font-base: var(--font-sans);

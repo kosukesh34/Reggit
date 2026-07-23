@@ -9,7 +9,7 @@ namespace App\Support;
  *   - theme_preset : プリセットID（下記 PRESETS のいずれか / 'custom'）
  *   - accent_color : アクセント（ブランド）カラー hex（プリセットを上書き）
  *   - font_family  : フォント（sans / rounded / serif / serif-display）
- *   - surface_tone : 背景トーン（paper / warm / cool / mist / charcoal）
+ *   - surface_tone : 背景トーン（paper / warm / cool / mist / charcoal / sage / ios）
  *   - card_style   : カードの質感（flat / elevated / outline）
  *   - button_shape : ボタン形状（rounded / pill / square）
  *   - density           : 余白の密度（compact / default / relaxed）
@@ -137,6 +137,26 @@ class LiffThemePresets
                     '--hairline' => 'rgba(15, 23, 42, 0.06)',
                 ],
             ],
+            'sage' => [
+                'label' => 'セージ（LP）',
+                'tokens' => [
+                    '--bg-canvas' => '#F1F5F4',
+                    '--bg-light' => '#FFFFFF',
+                    '--bg-subtle' => '#E8EFEC',
+                    '--surface' => '#FFFFFF',
+                    '--surface-2' => '#F7FAF9',
+                    '--surface-muted' => '#D7E8E2',
+                    '--surface-glass' => 'rgba(255, 255, 255, 0.92)',
+                    '--text-primary' => '#0F1C1A',
+                    '--text-secondary' => '#5C6B67',
+                    '--text-tertiary' => '#8A9793',
+                    '--border-color' => 'rgba(15, 28, 26, 0.1)',
+                    '--border-strong' => 'rgba(15, 28, 26, 0.18)',
+                    '--hairline' => 'rgba(15, 28, 26, 0.08)',
+                    '--chrome' => '#F1F5F4',
+                    '--chrome-dark' => '#D7E8E2',
+                ],
+            ],
             'ios' => [
                 'label' => 'iOS（システム）',
                 'tokens' => [
@@ -202,6 +222,29 @@ class LiffThemePresets
     public static function all(): array
     {
         return [
+            [
+                'id' => 'store',
+                'name' => '店舗スタンダード（LP）',
+                'description' => 'Reggit LPと同じセージ×ティール。ピル型CTAと紙キャンバス。',
+                'accent_color' => '#0E7C66',
+                'font_family' => 'sans',
+                'surface_tone' => 'sage',
+                'radius_scale' => 'soft',
+                'tab_style' => 'floating',
+                'section_gap' => 18,
+                'card_style' => 'flat',
+                'button_shape' => 'pill',
+                'density' => 'default',
+                'background_style' => 'solid',
+                'bg_color' => '#F1F5F4',
+                'content_width' => 'comfy',
+                'system_ui_style' => 'refined',
+                'system_header_style' => 'minimal',
+                'member_screen_design' => 'apple',
+                'coupon_screen_design' => 'apple',
+                'reservation_screen_design' => 'apple',
+                'activity_screen_design' => 'cards',
+            ],
             [
                 'id' => 'apple_system',
                 'name' => 'Apple System',

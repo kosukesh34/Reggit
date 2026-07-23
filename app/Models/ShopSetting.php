@@ -201,12 +201,12 @@ class ShopSetting
 
     public static function getLineThemeColors(?int $projectId = 1): array
     {
-        $primary = self::getValue('line_primary_color', '#4f46e5', $projectId);
+        $primary = self::getValue('line_primary_color', '#0E7C66', $projectId);
 
         return [
             'primary' => $primary,
             'primary_rgb' => self::hexToRgb($primary),
-            'primary_dark' => self::getValue('line_primary_dark', '#4338ca', $projectId),
+            'primary_dark' => self::getValue('line_primary_dark', '#0A6B58', $projectId),
             'success' => self::getValue('line_success_color', '#059669', $projectId),
             'danger' => self::getValue('line_danger_color', '#dc2626', $projectId),
         ];
