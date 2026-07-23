@@ -3,7 +3,7 @@ import { ApiClient } from '../../shared/utils/apiClient';
 import { DomHelper } from '../../shared/utils/domHelper';
 import { ConfirmDialog } from '../../shared/utils/confirmDialog';
 import { ToastManager } from '../../shared/utils/toast';
-import { isIosFixedUiDemo } from '../demo/demoMode';
+import { isDemoDataMode } from '../demo/demoMode';
 import { buildBuiltinSampleReservations } from '../demo/sampleData';
 
 const DEFAULT_ADVANCE_DAYS = 30;
@@ -79,7 +79,7 @@ export class ReservationManager {
         this.reservationsSection = this._getSection();
         if (!this.reservationsSection) return;
 
-        if (isIosFixedUiDemo()) {
+        if (isDemoDataMode()) {
             this.renderSampleReservations();
             return;
         }

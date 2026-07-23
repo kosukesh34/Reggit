@@ -1,7 +1,7 @@
 import type { ApiClient } from '../../shared/utils/apiClient';
 import { AppConstants } from '../../shared/constants';
 import { DomHelper } from '../../shared/utils/domHelper';
-import { isIosFixedUiDemo } from '../demo/demoMode';
+import { isDemoDataMode } from '../demo/demoMode';
 import { buildBuiltinSampleQueueEntry } from '../demo/sampleData';
 
 type QueueStats = {
@@ -334,7 +334,7 @@ export class QueueManager {
         if (!section) {
             return;
         }
-        if (isIosFixedUiDemo()) {
+        if (isDemoDataMode()) {
             this.renderSampleQueueCard();
             return;
         }
@@ -593,7 +593,7 @@ export class QueueManager {
     }
 
     shouldShowSampleQueue(): boolean {
-        if (isIosFixedUiDemo()) {
+        if (isDemoDataMode()) {
             return true;
         }
         return this.isQueueMembershipRequired() && !this.isCurrentUserMember();

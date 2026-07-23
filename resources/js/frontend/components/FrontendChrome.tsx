@@ -1,7 +1,6 @@
 import React from 'react';
+import { isFixedUiShell } from '../demo/demoMode';
 import { IconCart } from '../demo/icons';
-import { isFeatureEnabled } from '../demo/navigation';
-import { isIosFixedUiDemo } from '../demo/demoMode';
 
 type FrontendHeaderConfig = {
     title: string;
@@ -33,7 +32,11 @@ function getHeaderConfig(): FrontendHeaderConfig {
 }
 
 function hasOrderMenus(): boolean {
-    return isFeatureEnabled('products');
+    const menu = window.__FRONTEND_MENU__;
+    if (!Array.isArray(menu)) {
+        return true;
+    }
+    return menu.some((item) => item?.tab === 'products' || item?.tab === 'orders');
 }
 
 /** ネイティブアプリではモバイル注文を主CTA、LIFF/Web では店内注文を主CTAにする */
@@ -41,59 +44,37 @@ function prefersMobileOrderPrimary(): boolean {
     return window.__MOBILE_APP_MODE__ === true;
 }
 
-function buildMenuItems(): MenuItem[] {
-    const items: MenuItem[] = [];
-    if (isFeatureEnabled('home')) {
-        items.push({ tab: 'home', label: 'ホーム' });
-    }
-    if (isFeatureEnabled('products')) {
-        items.push({ tab: 'products', label: 'オーダー' });
-    }
-    if (isFeatureEnabled('member')) {
-        items.push({ tab: 'member', label: '会員証' });
-    }
-    if (isFeatureEnabled('coupons')) {
-        items.push({ tab: 'coupons', label: 'クーポン' });
-    }
-    if (isFeatureEnabled('stamps')) {
-        items.push({ tab: 'stamps', label: 'スタンプ' });
-    }
-    if (isFeatureEnabled('queue')) {
-        items.push({ tab: 'queue', label: '順番待ち' });
-    }
-    if (isFeatureEnabled('reservations')) {
-        items.push({ tab: 'reservations', label: '予約' });
-    }
-    if (isFeatureEnabled('orders')) {
-        items.push({ tab: 'orders', label: '注文履歴' });
-    }
-    if (isFeatureEnabled('announcements')) {
-        items.push({ tab: 'announcements', label: 'お知らせ' });
-    }
-    if (isFeatureEnabled('gallery')) {
-        items.push({ tab: 'gallery', label: 'ギャラリー' });
-    }
-    return items;
+/** デモ固定UI用のサイドメニュー（店舗メニュー設定に依存しない） */
+function buildDemoMenuItems(): MenuItem[] {
+    return [
+        { tab: 'home', label: 'ホーム' },
+        { tab: 'products', label: 'オーダー' },
+        { tab: 'member', label: '会員証' },
+        { tab: 'coupons', label: 'クーポン' },
+        { tab: 'stamps', label: 'スタンプ' },
+        { tab: 'queue', label: '順番待ち' },
+        { tab: 'reservations', label: '予約' },
+        { tab: 'orders', label: '注文履歴' },
+        { tab: 'announcements', label: 'お知らせ' },
+        { tab: 'gallery', label: 'ギャラリー' },
+    ];
 }
 
-export function FrontendChrome(): JSX.Element | null {
-    const isDesignerEmbedPreview = window.__IS_DESIGNER_EMBED_PREVIEW__ === true;
-    if (isDesignerEmbedPreview) {
-        return null;
-    }
-
-    const header = getHeaderConfig();
-    const preferMobilePrimary = prefersMobileOrderPrimary();
-    const showCart = hasOrderMenus();
-    const menuItems = buildMenuItems();
-
+function OrderActionButtons({
+    preferMobilePrimary,
+    withIcons,
+}: {
+    preferMobilePrimary: boolean;
+    withIcons: boolean;
+}): JSX.Element {
     const mobileOrderButton = (
         <button
             className={`order-btn ${preferMobilePrimary ? 'order-btn--primary' : 'order-btn--secondary'}`}
             id="orderBtn"
             disabled
         >
-            モバイル注文（今すぐ決済）
+            {withIcons ? <i className="fas fa-credit-card" /> : null}
+            {withIcons ? ' モバイル注文（今すぐ決済）' : 'モバイル注文（今すぐ決済）'}
         </button>
     );
     const inStoreOrderButton = (
@@ -102,9 +83,38 @@ export function FrontendChrome(): JSX.Element | null {
             id="inStoreOrderBtn"
             disabled
         >
-            店内注文（後で決済）
+            {withIcons ? <i className="fas fa-store" /> : null}
+            {withIcons ? ' 店内注文（後で決済）' : '店内注文（後で決済）'}
         </button>
     );
+
+    if (preferMobilePrimary) {
+        return (
+            <>
+                {mobileOrderButton}
+                {inStoreOrderButton}
+            </>
+        );
+    }
+    return (
+        <>
+            {inStoreOrderButton}
+            {mobileOrderButton}
+        </>
+    );
+}
+
+/** /liff デモ専用クローム */
+function DemoFixedChrome({
+    header,
+    preferMobilePrimary,
+    showCart,
+}: {
+    header: FrontendHeaderConfig;
+    preferMobilePrimary: boolean;
+    showCart: boolean;
+}): JSX.Element {
+    const menuItems = buildDemoMenuItems();
 
     return (
         <>
@@ -153,16 +163,12 @@ export function FrontendChrome(): JSX.Element | null {
                         {showCart ? (
                             <button type="button" className="cart-btn" id="cartBtn" title="注文内容" aria-label="注文内容">
                                 <IconCart />
-                                <span className="cart-count" id="cartCount">
-                                    0
-                                </span>
+                                <span className="cart-count" id="cartCount">0</span>
                             </button>
                         ) : (
                             <button type="button" className="cart-btn is-hidden" id="cartBtn" hidden aria-hidden="true">
                                 <IconCart />
-                                <span className="cart-count" id="cartCount">
-                                    0
-                                </span>
+                                <span className="cart-count" id="cartCount">0</span>
                             </button>
                         )}
                     </div>
@@ -188,17 +194,15 @@ export function FrontendChrome(): JSX.Element | null {
                         </button>
                     ))}
                 </nav>
-                {isIosFixedUiDemo() ? (
-                    <div className="ios-side-menu__footer">
-                        <button
-                            type="button"
-                            className="ios-side-menu__item ios-side-menu__item--lab"
-                            data-menu-tab="designlab"
-                        >
-                            ガチャ・スクラッチ
-                        </button>
-                    </div>
-                ) : null}
+                <div className="ios-side-menu__footer">
+                    <button
+                        type="button"
+                        className="ios-side-menu__item ios-side-menu__item--lab"
+                        data-menu-tab="designlab"
+                    >
+                        ガチャ・スクラッチ
+                    </button>
+                </div>
             </aside>
 
             <div className="cart-sidebar ios-cart-sheet" id="cartSidebar">
@@ -214,27 +218,125 @@ export function FrontendChrome(): JSX.Element | null {
                 <div className="cart-footer">
                     <div className="cart-total">
                         <span>合計 </span>
-                        <span className="total-price" id="totalPrice">
-                            ¥0
-                        </span>
+                        <span className="total-price" id="totalPrice">¥0</span>
                     </div>
                     <div className="order-actions">
-                        {preferMobilePrimary ? (
-                            <>
-                                {mobileOrderButton}
-                                {inStoreOrderButton}
-                            </>
-                        ) : (
-                            <>
-                                {inStoreOrderButton}
-                                {mobileOrderButton}
-                            </>
-                        )}
+                        <OrderActionButtons preferMobilePrimary={preferMobilePrimary} withIcons={false} />
                     </div>
                 </div>
             </div>
 
             <div className="overlay" id="overlay" />
         </>
+    );
+}
+
+/** 店舗LIFF: Designer 以前のクラシックヘッダー／カート */
+function StoreClassicChrome({
+    header,
+    preferMobilePrimary,
+    showCart,
+}: {
+    header: FrontendHeaderConfig;
+    preferMobilePrimary: boolean;
+    showCart: boolean;
+}): JSX.Element {
+    return (
+        <>
+            <header className="header">
+                <div className="header-content">
+                    {header.logoUrl ? <img src={header.logoUrl} alt={header.title} className="header-logo" /> : null}
+                    <h1 className="logo">{header.title}</h1>
+                    {header.friendAddUrl ? (
+                        <a
+                            href={header.friendAddUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="header-friend-add"
+                            id="headerFriendAdd"
+                            title="友だち追加でメッセージやクーポンを受け取れます"
+                        >
+                            <i className="fab fa-line" /> 友だち追加
+                        </a>
+                    ) : null}
+                    <div className="header-actions">
+                        <button
+                            type="button"
+                            className="account-btn"
+                            id="accountBtn"
+                            title="会員・設定"
+                            aria-label="会員・設定"
+                        >
+                            <i className="fas fa-user" />
+                        </button>
+                        {showCart ? (
+                            <button type="button" className="cart-btn" id="cartBtn" title="注文内容" aria-label="注文内容">
+                                <i className="fas fa-shopping-bag" />
+                                <span className="cart-count" id="cartCount">0</span>
+                            </button>
+                        ) : (
+                            <button type="button" className="cart-btn is-hidden" id="cartBtn" hidden aria-hidden="true">
+                                <i className="fas fa-shopping-bag" />
+                                <span className="cart-count" id="cartCount">0</span>
+                            </button>
+                        )}
+                    </div>
+                </div>
+            </header>
+
+            <div className="cart-sidebar" id="cartSidebar">
+                <div className="cart-header">
+                    <h2>
+                        <i className="fas fa-shopping-bag" /> 注文内容
+                    </h2>
+                    <button className="close-btn" id="closeCartBtn" type="button" aria-label="閉じる">
+                        <i className="fas fa-times" />
+                    </button>
+                </div>
+                <div className="cart-items" id="cartItems">
+                    <div className="empty-cart">カートは空です</div>
+                </div>
+                <div className="cart-footer">
+                    <div className="cart-total">
+                        <span>合計: </span>
+                        <span className="total-price" id="totalPrice">¥0</span>
+                    </div>
+                    <div className="order-actions">
+                        <OrderActionButtons preferMobilePrimary={preferMobilePrimary} withIcons={true} />
+                    </div>
+                </div>
+            </div>
+
+            <div className="overlay" id="overlay" />
+        </>
+    );
+}
+
+export function FrontendChrome(): JSX.Element | null {
+    const isDesignerEmbedPreview = window.__IS_DESIGNER_EMBED_PREVIEW__ === true;
+    if (isDesignerEmbedPreview) {
+        return null;
+    }
+
+    const header = getHeaderConfig();
+    const preferMobilePrimary = prefersMobileOrderPrimary();
+    const showCart = hasOrderMenus();
+
+    if (isFixedUiShell()) {
+        return (
+            <DemoFixedChrome
+                header={header}
+                preferMobilePrimary={preferMobilePrimary}
+                showCart={showCart}
+            />
+        );
+    }
+
+    return (
+        <StoreClassicChrome
+            header={header}
+            preferMobilePrimary={preferMobilePrimary}
+            showCart={showCart}
+        />
     );
 }

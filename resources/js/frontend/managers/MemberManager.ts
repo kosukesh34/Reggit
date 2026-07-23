@@ -3,7 +3,7 @@ import { DomHelper } from '../../shared/utils/domHelper';
 import { ToastManager } from '../../shared/utils/toast';
 import { ConfirmDialog } from '../../shared/utils/confirmDialog';
 import { getGuestRegisterMessage, getMemberRegistrationMode, shouldShowRegistrationForm, syncMemberRegistrationModeFromPayload } from '../utils/membershipPolicy';
-import { isIosFixedUiDemo } from '../demo/demoMode';
+import { isDemoDataMode, isFixedUiShell } from '../demo/demoMode';
 import { buildBuiltinSampleMemberData } from '../demo/sampleData';
 
 declare const liff: any;
@@ -643,12 +643,9 @@ export class MemberManager {
         this._attachRegisterTrigger(container);
     }
 
-    /** サンプル会員証を描画（固定UI／未登録時） */
+    /** サンプル会員証を描画（デモモード時のみ。通常の固定UIはゲスト登録導線） */
     renderSampleMemberCard(): void {
-        const isFixedUi = typeof document !== 'undefined'
-            && document.body !== null
-            && document.body.classList.contains('ios-fixed-ui');
-        if (isFixedUi || isIosFixedUiDemo()) {
+        if (isDemoDataMode()) {
             const app = typeof window !== 'undefined'
                 ? (window.app as { getDesignerSampleMemberData?: () => Record<string, unknown> } | undefined)
                 : undefined;
@@ -1057,9 +1054,7 @@ export class MemberManager {
         if (!container) return;
         if (!data || typeof data !== 'object') return;
 
-        if (typeof document !== 'undefined'
-            && document.body
-            && document.body.classList.contains('ios-fixed-ui')) {
+        if (isFixedUiShell()) {
             this._renderIosWalletMember(container, data);
             return;
         }

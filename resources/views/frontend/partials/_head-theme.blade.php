@@ -13,9 +13,12 @@
 @isset($liffTabSettings['_global'])
 @php
     $g = $liffTabSettings['_global'];
-    $themeVars = \App\Support\LiffThemePresets::cssVariablesFor($g);
-    $themeBodyClasses = \App\Support\LiffThemePresets::bodyClassesFor($g);
+    // /liff デモ固定UIは店舗 Designer テーマを適用しない（デモとして独立）
+    $applyStoreTheme = !(isset($isFixedUi) && $isFixedUi);
+    $themeVars = $applyStoreTheme ? \App\Support\LiffThemePresets::cssVariablesFor($g) : [];
+    $themeBodyClasses = $applyStoreTheme ? \App\Support\LiffThemePresets::bodyClassesFor($g) : [];
 @endphp
+@if($applyStoreTheme && $themeVars !== [])
 <style id="liff-design-tokens">
 :root {
 @foreach($themeVars as $name => $value)
@@ -43,12 +46,13 @@
     --radius-xl: {{ $scale['xl'] }};
 }
 </style>
-@if($themeBodyClasses !== [])
+@endif
+@if($applyStoreTheme && $themeBodyClasses !== [])
 <script>document.addEventListener('DOMContentLoaded',function(){document.body.classList.add.apply(document.body.classList,@json($themeBodyClasses));},{once:true});</script>
 @endif
 @php
-    $bgImageUrl = $g['bg_image_url'] ?? null;
-    if (($g['background_style'] ?? '') === 'image' && empty($bgImageUrl)) {
+    $bgImageUrl = ($applyStoreTheme) ? ($g['bg_image_url'] ?? null) : null;
+    if ($applyStoreTheme && ($g['background_style'] ?? '') === 'image' && empty($bgImageUrl)) {
         $preset = \App\Support\LiffThemePresets::find($g['theme_preset'] ?? null);
         $bgImageUrl = $preset['bg_image_url'] ?? null;
     }

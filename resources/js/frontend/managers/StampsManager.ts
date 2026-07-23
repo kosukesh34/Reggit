@@ -2,7 +2,7 @@ import type { ApiClient } from '../../shared/utils/apiClient';
 import { AppConstants } from '../../shared/constants';
 import { DomHelper } from '../../shared/utils/domHelper';
 import { mountDetailLayoutChrome } from '../utils/detailLayoutMount';
-import { isIosFixedUiDemo } from '../demo/demoMode';
+import { isDemoDataMode } from '../demo/demoMode';
 import { ensureLiffIdentityForLoad } from '../demo/ensureIdentity';
 import { buildBuiltinSampleStampCards } from '../demo/sampleData';
 
@@ -103,7 +103,7 @@ export class StampsManager {
             return;
         }
 
-        if (isIosFixedUiDemo()) {
+        if (isDemoDataMode()) {
             this.renderSampleStampCards();
             return;
         }

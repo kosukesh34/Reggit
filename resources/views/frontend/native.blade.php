@@ -21,12 +21,14 @@
         : (string) ($latestAssetMtime > 0 ? $latestAssetMtime : time());
     $host = request()->getHost();
     $useInlineLocalAssets = str_contains($host, 'ngrok-free.dev') || str_contains($host, 'ngrok-free.app');
-    $isIosDemoData = request()->query('demo') === '1';
+    // /liff のみ固定デモUI。/liff/{project_key} は LIFF Designer 設定を反映する
+    $isFixedUi = request()->route('project_key') === null;
+    $isDemoData = $isFixedUi;
 @endphp
 <html lang="ja" @class([
     'native-app-embed' => true,
-    'ios-fixed-ui' => true,
-    'ios-demo-data' => $isIosDemoData,
+    'liff-fixed-ui' => $isFixedUi,
+    'liff-demo-data' => $isDemoData,
     'designer-live-preview-embed' => $isDesignerEmbedPreview,
 ])>
 <head>
@@ -61,7 +63,7 @@
         .main-content { padding-bottom: 0 !important; }
     </style>
 </head>
-<body class="native-app-embed ios-fixed-ui {{ $isIosDemoData ? 'ios-demo-data' : '' }} {{ $isDesignerEmbedPreview ? 'designer-live-preview-embed' : '' }}">
+<body class="native-app-embed {{ $isFixedUi ? 'liff-fixed-ui' : '' }} {{ $isDemoData ? 'liff-demo-data' : '' }} {{ $isDesignerEmbedPreview ? 'designer-live-preview-embed' : '' }}">
     <script>
     (function() {
         window.__MOBILE_APP_MODE__ = true;
@@ -127,10 +129,13 @@
                 'gallery' => 'feature_gallery_enabled',
                 'announcements' => 'feature_announcements_enabled',
             ];
-            $filteredMenu = array_filter(
-                $frontendMenu ?? \App\Models\ShopSetting::defaultFrontendMenuItems(),
-                fn($item) => ($flags[$tabFeatureMap[$item['tab']] ?? ''] ?? true)
-            );
+            // デモ固定UIのメニューは scripts-config 側で独立定義する
+            $filteredMenu = $isFixedUi
+                ? []
+                : array_filter(
+                    $frontendMenu ?? \App\Models\ShopSetting::defaultFrontendMenuItems(),
+                    fn($item) => ($flags[$tabFeatureMap[$item['tab']] ?? ''] ?? true)
+                );
         @endphp
 
         <main class="main-content" style="flex: 1 1 auto; min-height: max(500px, 50vh); overflow: auto; background: #fff; visibility: visible; -webkit-overflow-scrolling: touch; box-sizing: border-box;">
