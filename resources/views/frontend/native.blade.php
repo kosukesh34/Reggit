@@ -21,9 +21,12 @@
         : (string) ($latestAssetMtime > 0 ? $latestAssetMtime : time());
     $host = request()->getHost();
     $useInlineLocalAssets = str_contains($host, 'ngrok-free.dev') || str_contains($host, 'ngrok-free.app');
+    $isIosDemoData = request()->query('demo') === '1';
 @endphp
 <html lang="ja" @class([
     'native-app-embed' => true,
+    'ios-fixed-ui' => true,
+    'ios-demo-data' => $isIosDemoData,
     'designer-live-preview-embed' => $isDesignerEmbedPreview,
 ])>
 <head>
@@ -58,7 +61,7 @@
         .main-content { padding-bottom: 0 !important; }
     </style>
 </head>
-<body class="native-app-embed {{ $isDesignerEmbedPreview ? 'designer-live-preview-embed' : '' }}">
+<body class="native-app-embed ios-fixed-ui {{ $isIosDemoData ? 'ios-demo-data' : '' }} {{ $isDesignerEmbedPreview ? 'designer-live-preview-embed' : '' }}">
     <script>
     (function() {
         window.__MOBILE_APP_MODE__ = true;
