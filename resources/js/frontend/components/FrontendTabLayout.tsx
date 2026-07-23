@@ -144,7 +144,12 @@ function IosDynamicChrome(): JSX.Element | null {
         );
     }
     if (activeTab === 'designlab') {
-        return null;
+        return (
+            <>
+                <h1 className="ios-large-title">カード</h1>
+                <IosSegmentBar items={cardSegments} activeTab={activeTab} />
+            </>
+        );
     }
     return null;
 }

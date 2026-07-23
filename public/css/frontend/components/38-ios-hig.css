@@ -851,18 +851,18 @@ body.ios-fixed-ui .product-card:active {
 }
 
 body.ios-fixed-ui .product-image-wrapper {
-    width: 72px !important;
-    height: 72px !important;
-    min-width: 72px !important;
-    min-height: 72px !important;
-    max-width: 72px !important;
-    max-height: 72px !important;
+    width: 96px !important;
+    height: 96px !important;
+    min-width: 96px !important;
+    min-height: 96px !important;
+    max-width: 96px !important;
+    max-height: 96px !important;
     padding: 0 !important;
     padding-top: 0 !important;
     aspect-ratio: 1 / 1 !important;
-    flex: 0 0 72px !important;
+    flex: 0 0 96px !important;
     align-self: center !important;
-    border-radius: 10px !important;
+    border-radius: 12px !important;
     overflow: hidden !important;
     margin: 0 !important;
     background: #ECECEF !important;
@@ -2549,82 +2549,366 @@ body.ios-fixed-ui .design-lab__screen figcaption {
     color: var(--ios-secondary);
 }
 
-/* PayPay風スクラッチくじ */
-body.ios-fixed-ui .design-lab__scratch-card {
+/* ポイント運試し風: ドームガチャ + 円形スクラッチ */
+body.ios-fixed-ui {
+    --pp-red: #FF0033;
+    --pp-red-deep: #D1002A;
+    --pp-red-grad: linear-gradient(135deg, #FF3355 0%, #FF0033 55%, #D1002A 100%);
+    --pp-gold: #FFC93C;
+    --pp-gold-deep: #E8960A;
+}
+
+body.ios-fixed-ui .pp-play-card {
+    margin-top: 12px;
+    padding: 18px 16px 16px;
+    border-radius: 20px;
+    background: #fff;
+    box-shadow: 0 2px 10px rgba(20, 20, 30, 0.06);
+}
+
+body.ios-fixed-ui .pp-play-card__top {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 16px;
-    margin-top: 14px;
-    padding: 18px 16px 22px;
-    border-radius: 22px;
-    background: var(--ios-surface);
-    box-shadow: 0 10px 24px rgba(15, 28, 26, 0.08);
+    justify-content: space-between;
+    gap: 10px;
 }
 
-body.ios-fixed-ui .design-lab__scratch-info {
-    text-align: center;
-}
-
-body.ios-fixed-ui .design-lab__scratch-info-label {
-    margin: 0;
-    font-family: "Fraunces", Georgia, serif;
-    font-size: 18px;
-    font-weight: 700;
+body.ios-fixed-ui .pp-play-card__title {
+    font-size: 14.5px;
+    font-weight: 800;
     color: var(--ios-ink);
 }
 
-body.ios-fixed-ui .design-lab__scratch-info-hint {
-    margin: 4px 0 0;
-    font-size: 12px;
+body.ios-fixed-ui .pp-play-card__chip {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--pp-red);
+    background: #FFE7EB;
+    padding: 4px 10px;
+    border-radius: 999px;
+}
+
+body.ios-fixed-ui .pp-play-card__rule {
+    margin: 6px 0 12px;
+    font-size: 11.5px;
+    line-height: 1.55;
     color: var(--ios-secondary);
 }
 
-body.ios-fixed-ui .design-lab__scratch-circle {
+body.ios-fixed-ui .pp-cta {
+    display: block;
+    width: 100%;
+    margin-top: 16px;
+    border: 0;
+    border-radius: 999px;
+    padding: 14px;
+    font-size: 15px;
+    font-weight: 800;
+    color: #fff;
+    cursor: pointer;
+    background: var(--pp-red-grad);
+    box-shadow: 0 8px 18px rgba(255, 0, 51, 0.32);
+    -webkit-tap-highlight-color: transparent;
+}
+
+body.ios-fixed-ui .pp-cta:active {
+    transform: scale(0.97);
+}
+
+body.ios-fixed-ui .pp-cta:disabled {
+    background: #D8D9DE;
+    color: #A6A7AE;
+    box-shadow: none;
+    cursor: not-allowed;
+}
+
+body.ios-fixed-ui .pp-cta--ghost {
+    background: #fff;
+    color: var(--pp-red);
+    border: 1.5px solid rgba(255, 0, 51, 0.35);
+    box-shadow: none;
+}
+
+/* ===== ドーム型ガチャ ===== */
+body.ios-fixed-ui .pp-gacha {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+body.ios-fixed-ui .pp-gacha__machine {
+    position: relative;
+    width: 188px;
+}
+
+body.ios-fixed-ui .pp-gacha__price {
+    position: absolute;
+    right: -4px;
+    top: -8px;
+    z-index: 3;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: var(--pp-gold);
+    color: #5a3a00;
+    font-size: 10.5px;
+    font-weight: 900;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.22);
+    transform: rotate(4deg);
+}
+
+body.ios-fixed-ui .pp-gacha__dome {
+    position: relative;
+    width: 188px;
+    height: 150px;
+    overflow: hidden;
+    border: 4px solid #d64058;
+    border-bottom: 0;
+    border-radius: 94px 94px 14px 14px;
+    background: radial-gradient(circle at 32% 24%, #ffffff 0%, #eaf0ff 22%, #c3cdea 62%, #a6b1d9 100%);
+    box-shadow: inset 0 -18px 26px rgba(70, 80, 140, 0.28);
+}
+
+body.ios-fixed-ui .pp-gacha__gloss {
+    position: absolute;
+    top: -10px;
+    left: 22px;
+    width: 70px;
+    height: 150px;
+    background: linear-gradient(100deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0) 70%);
+    transform: rotate(-8deg);
+    filter: blur(1px);
+    pointer-events: none;
+}
+
+body.ios-fixed-ui .pp-gacha__ball {
+    position: absolute;
+    border-radius: 50%;
+    background:
+        radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.85), transparent 45%),
+        var(--ball-color, #ffb3c0);
+    box-shadow: inset -3px -3px 0 rgba(0, 0, 0, 0.1);
+}
+
+body.ios-fixed-ui .pp-gacha__body {
+    position: relative;
+    width: 188px;
+    padding: 12px 14px 16px;
+    border: 4px solid #d64058;
+    border-top: 0;
+    border-radius: 0 0 16px 16px;
+    background: var(--pp-red-grad);
+    box-shadow: 0 10px 20px rgba(255, 0, 51, 0.28);
+}
+
+body.ios-fixed-ui .pp-gacha__body::before {
+    content: "";
+    position: absolute;
+    left: 14px;
+    top: 0;
+    bottom: 16px;
+    width: 6px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.28);
+    filter: blur(0.5px);
+}
+
+body.ios-fixed-ui .pp-gacha__rivet {
+    position: absolute;
+    top: 8px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.18);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+body.ios-fixed-ui .pp-gacha__rivet--l { left: 10px; }
+body.ios-fixed-ui .pp-gacha__rivet--r { right: 10px; }
+
+body.ios-fixed-ui .pp-gacha__slot {
+    width: 38px;
+    height: 9px;
+    margin: 0 auto 10px;
+    border-radius: 5px;
+    background: #3a1015;
+    box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.7), 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+body.ios-fixed-ui .pp-gacha__knob-wrap {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 8px;
+}
+
+body.ios-fixed-ui .pp-gacha__knob {
+    position: relative;
+    width: 56px;
+    height: 56px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    cursor: pointer;
+    background: repeating-conic-gradient(from 0deg, #f4d489 0deg 6deg, #d99f2c 6deg 12deg);
+    box-shadow: 0 5px 0 #8a5f10, 0 9px 14px rgba(0, 0, 0, 0.35);
+    transition: transform 0.12s;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body.ios-fixed-ui .pp-gacha__knob::before {
+    content: "";
+    position: absolute;
+    inset: 6px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #fff2c8, #e3ac2c 65%, #b1791c 100%);
+}
+
+body.ios-fixed-ui .pp-gacha__knob::after {
+    content: "";
+    position: absolute;
+    inset: 20px;
+    border-radius: 50%;
+    background: #8a5f10;
+    box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.5);
+}
+
+body.ios-fixed-ui .pp-gacha__knob:active {
+    transform: translateY(3px);
+    box-shadow: 0 2px 0 #8a5f10;
+}
+
+body.ios-fixed-ui .pp-gacha__knob.is-spin {
+    animation: pp-knob-spin 0.7s cubic-bezier(0.3, 0.9, 0.4, 1);
+}
+
+body.ios-fixed-ui .pp-gacha__flap {
+    width: 64px;
+    height: 14px;
+    margin: 2px auto 0;
+    border-radius: 0 0 7px 7px;
+    background: #3a1015;
+    box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.75);
+}
+
+body.ios-fixed-ui .pp-gacha__tray {
+    width: 96px;
+    height: 8px;
+    margin: 8px auto 0;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.18);
+    filter: blur(1px);
+}
+
+body.ios-fixed-ui .pp-gacha__fall {
+    position: absolute;
+    left: 50%;
+    top: 128px;
+    z-index: 5;
+    width: 30px;
+    height: 30px;
+    transform: translateX(-50%);
+    opacity: 0;
+    pointer-events: none;
+}
+
+body.ios-fixed-ui .pp-gacha__fall-half {
+    position: absolute;
+    left: 0;
+    width: 30px;
+    height: 15px;
+    overflow: hidden;
+}
+
+body.ios-fixed-ui .pp-gacha__fall-half--top {
+    top: 0;
+    border-radius: 15px 15px 0 0;
+}
+
+body.ios-fixed-ui .pp-gacha__fall-half--bot {
+    bottom: 0;
+    border-radius: 0 0 15px 15px;
+}
+
+body.ios-fixed-ui .pp-gacha__fall-half i {
+    display: block;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background:
+        radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.75), transparent 45%),
+        var(--cap-color, #ffb3c0);
+}
+
+body.ios-fixed-ui .pp-gacha__fall-half--bot i {
+    margin-top: -15px;
+}
+
+body.ios-fixed-ui .pp-gacha__fall.is-drop {
+    animation: pp-cap-drop 1s cubic-bezier(0.45, 0, 0.3, 1) forwards;
+}
+
+body.ios-fixed-ui .pp-gacha__fall.is-open .pp-gacha__fall-half--top {
+    animation: pp-cap-open-top 0.5s ease forwards;
+}
+
+body.ios-fixed-ui .pp-gacha__fall.is-open .pp-gacha__fall-half--bot {
+    animation: pp-cap-open-bot 0.5s ease forwards;
+}
+
+/* ===== 円形スクラッチ ===== */
+body.ios-fixed-ui .pp-scratch {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+body.ios-fixed-ui .pp-scratch__circle {
     position: relative;
     width: min(220px, 68vw);
     aspect-ratio: 1;
     border-radius: 50%;
     overflow: hidden;
-    box-shadow:
-        0 0 0 6px rgba(47, 107, 92, 0.12),
-        0 12px 28px rgba(15, 28, 26, 0.14);
     touch-action: none;
+    box-shadow:
+        0 0 0 6px rgba(255, 0, 51, 0.12),
+        0 12px 28px rgba(15, 28, 26, 0.14);
 }
 
-body.ios-fixed-ui .design-lab__scratch-prize {
+body.ios-fixed-ui .pp-scratch__prize {
     position: absolute;
     inset: 0;
     display: grid;
     place-content: center;
-    gap: 6px;
+    gap: 4px;
     padding: 20px;
     text-align: center;
-    background: radial-gradient(circle at 40% 35%, #F7FBFA 0%, var(--ios-mint) 70%, #D7E8E2 100%);
+    background: radial-gradient(circle at 40% 35%, #FFF8F0 0%, #fff 70%, #FFE7EB 100%);
 }
 
-body.ios-fixed-ui .design-lab__scratch-name {
+body.ios-fixed-ui .pp-scratch__prize-eyebrow {
+    margin: 0;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    color: var(--pp-red);
+}
+
+body.ios-fixed-ui .pp-scratch__prize-name {
     margin: 0;
     font-size: 16px;
     font-weight: 800;
-    line-height: 1.25;
-    color: var(--ios-forest);
+    line-height: 1.3;
+    color: #1a1a1a;
 }
 
-body.ios-fixed-ui .design-lab__scratch-desc,
-body.ios-fixed-ui .design-lab__scratch-hint {
+body.ios-fixed-ui .pp-scratch__prize-desc {
     margin: 0;
-    font-size: 12px;
+    font-size: 11.5px;
+    line-height: 1.4;
     color: var(--ios-secondary);
 }
 
-body.ios-fixed-ui .design-lab__scratch-hint {
-    font-size: 28px;
-    font-weight: 700;
-    color: rgba(47, 107, 92, 0.35);
-}
-
-body.ios-fixed-ui .design-lab__scratch-canvas {
+body.ios-fixed-ui .pp-scratch__canvas {
     position: absolute;
     inset: 0;
     width: 100%;
@@ -2632,172 +2916,504 @@ body.ios-fixed-ui .design-lab__scratch-canvas {
     border-radius: 50%;
     touch-action: none;
     cursor: pointer;
-    transition: opacity 0.35s ease;
 }
 
-body.ios-fixed-ui .design-lab__scratch-progress {
-    margin: 0;
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    color: var(--ios-secondary);
-}
-
-body.ios-fixed-ui .gacha-machine {
-    margin: 14px 0 12px;
-    border-radius: 24px;
-    overflow: hidden;
-    background: linear-gradient(180deg, #1A4A40 0%, #0F3D34 100%);
-    box-shadow: 0 16px 36px rgba(15, 61, 52, 0.28);
-    color: #fff;
-}
-
-body.ios-fixed-ui .gacha-machine__top {
-    padding: 14px 16px 8px;
-    text-align: center;
-}
-
-body.ios-fixed-ui .gacha-machine__sign {
-    display: inline-flex;
-    padding: 6px 12px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.12);
-    font-family: var(--ios-font-display);
-    font-size: 12px;
-    font-weight: 800;
-    letter-spacing: 0.08em;
-}
-
-body.ios-fixed-ui .gacha-machine__glass {
-    position: relative;
-    margin: 0 16px;
-    height: 160px;
-    border-radius: 18px;
-    border: 2px solid rgba(255, 255, 255, 0.18);
-    background:
-        radial-gradient(circle at 20% 30%, rgba(126, 217, 193, 0.35), transparent 40%),
-        linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.04));
-    overflow: hidden;
-}
-
-body.ios-fixed-ui .gacha-machine__capsules {
+body.ios-fixed-ui .pp-scratch__shine {
     position: absolute;
     inset: 0;
-}
-
-body.ios-fixed-ui .gacha-machine__ball {
-    position: absolute;
-    width: 34px;
-    height: 34px;
+    z-index: 3;
+    overflow: hidden;
     border-radius: 50%;
-    box-shadow: inset -4px -6px 10px rgba(0, 0, 0, 0.2), 0 4px 8px rgba(0, 0, 0, 0.18);
+    pointer-events: none;
 }
 
-body.ios-fixed-ui .gacha-machine__ball--a { left: 12%; top: 18%; background: radial-gradient(circle at 30% 30%, #9AF0D8, #0E7C66); }
-body.ios-fixed-ui .gacha-machine__ball--b { left: 38%; top: 42%; background: radial-gradient(circle at 30% 30%, #FFE08A, #E0A100); width: 28px; height: 28px; }
-body.ios-fixed-ui .gacha-machine__ball--c { left: 62%; top: 16%; background: radial-gradient(circle at 30% 30%, #FFB4B4, #E25B5B); width: 40px; height: 40px; }
-body.ios-fixed-ui .gacha-machine__ball--d { left: 74%; top: 48%; background: radial-gradient(circle at 30% 30%, #B8D4FF, #4B7FD6); }
-body.ios-fixed-ui .gacha-machine__ball--e { left: 28%; top: 62%; background: radial-gradient(circle at 30% 30%, #E8C7FF, #9B59D6); width: 30px; height: 30px; }
-
-body.ios-fixed-ui .gacha-machine.is-spinning .gacha-machine__ball {
-    animation: gacha-bounce 0.45s ease-in-out infinite alternate;
-}
-
-body.ios-fixed-ui .gacha-machine.is-spinning .gacha-machine__ball--b { animation-delay: 0.05s; }
-body.ios-fixed-ui .gacha-machine.is-spinning .gacha-machine__ball--c { animation-delay: 0.1s; }
-body.ios-fixed-ui .gacha-machine.is-spinning .gacha-machine__ball--d { animation-delay: 0.15s; }
-body.ios-fixed-ui .gacha-machine.is-spinning .gacha-machine__ball--e { animation-delay: 0.2s; }
-
-body.ios-fixed-ui .gacha-machine__prize {
+body.ios-fixed-ui .pp-scratch__shine::before {
+    content: "";
     position: absolute;
-    inset: 16px;
-    display: grid;
-    place-content: center;
-    gap: 4px;
-    border-radius: 14px;
-    background: rgba(255, 255, 255, 0.94);
-    color: var(--ios-forest);
-    text-align: center;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+    top: -40%;
+    bottom: -40%;
+    left: -60%;
+    width: 36%;
+    background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+    animation: pp-shine-sweep 3.2s ease-in-out infinite;
 }
 
-body.ios-fixed-ui .gacha-machine__prize-eyebrow {
+body.ios-fixed-ui .pp-scratch__shine[hidden] {
+    display: none;
+}
+
+body.ios-fixed-ui .pp-scratch__progress-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: min(220px, 68vw);
+    margin-top: 14px;
+}
+
+body.ios-fixed-ui .pp-scratch__track {
+    flex: 1;
+    height: 7px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #EDEDF2;
+}
+
+body.ios-fixed-ui .pp-scratch__fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 999px;
+    background: var(--pp-red-grad);
+    transition: width 0.12s ease-out;
+}
+
+body.ios-fixed-ui .pp-scratch__pct {
+    width: 36px;
+    text-align: right;
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--pp-red);
+}
+
+body.ios-fixed-ui .pp-scratch__hint {
+    margin: 10px 0 0;
+    font-size: 11.5px;
+    color: var(--ios-secondary);
+    text-align: center;
+}
+
+/* ===== 当選モーダル ===== */
+.pp-prize-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 12000;
+    display: grid;
+    place-items: center;
+    padding: 26px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.pp-prize-modal.is-in { opacity: 1; }
+.pp-prize-modal.is-out { opacity: 0; }
+
+.pp-prize-modal__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 15, 20, 0.66);
+}
+
+.pp-prize-modal__panel {
+    position: relative;
+    z-index: 1;
+    width: min(100%, 280px);
+    padding: 26px 20px 20px;
+    border-radius: 22px;
+    background: #fff;
+    text-align: center;
+    box-shadow: 0 20px 46px rgba(0, 0, 0, 0.45);
+    transform: scale(0.72);
+    opacity: 0;
+    transition: none;
+}
+
+.pp-prize-modal.is-in .pp-prize-modal__panel {
+    animation: pp-modal-pop 0.48s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.pp-prize-modal__ribbon {
+    display: inline-block;
+    margin-bottom: 10px;
+    padding: 3px 12px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #FF3355 0%, #FF0033 55%, #D1002A 100%);
+    color: #fff;
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+}
+
+.pp-prize-modal__name {
+    margin: 0 0 6px;
+    font-size: 18px;
+    font-weight: 800;
+    line-height: 1.35;
+    color: #1a1a1a;
+}
+
+.pp-prize-modal__desc {
     margin: 0;
+    font-size: 12px;
+    line-height: 1.5;
+    color: #8a8a8f;
+}
+
+.pp-prize-modal__panel .pp-cta {
+    margin-top: 18px;
+}
+
+.pp-prize-modal__sub {
+    margin: 10px 0 0;
+    font-size: 11px;
+    color: #8a8a8f;
+}
+
+@keyframes pp-knob-spin {
+    to { transform: rotate(400deg); }
+}
+
+@keyframes pp-cap-drop {
+    0% { opacity: 1; top: 128px; transform: translateX(-50%) rotate(0deg) scale(1); }
+    62% { top: 214px; transform: translateX(-50%) rotate(360deg) scale(1); }
+    72% { top: 222px; transform: translateX(-50%) rotate(370deg) scale(1.15, 0.78); }
+    84% { top: 210px; transform: translateX(-50%) rotate(375deg) scale(0.95, 1.05); }
+    100% { top: 214px; transform: translateX(-50%) rotate(378deg) scale(1); opacity: 1; }
+}
+
+@keyframes pp-cap-open-top {
+    to { transform: translateY(-16px) rotate(-25deg); opacity: 0; }
+}
+
+@keyframes pp-cap-open-bot {
+    to { transform: translateY(16px) rotate(20deg); opacity: 0; }
+}
+
+@keyframes pp-shine-sweep {
+    0% { left: -60%; }
+    45% { left: 130%; }
+    100% { left: 130%; }
+}
+
+@keyframes pp-modal-pop {
+    to { transform: scale(1); opacity: 1; }
+}
+
+
+/* Design Lab 獲得クーポン */
+body.ios-fixed-ui .design-lab__won {
+    list-style: none;
+    margin: 12px 0 10px;
+    padding: 0;
+    display: grid;
+    gap: 8px;
+}
+
+body.ios-fixed-ui .design-lab__won-empty {
+    padding: 14px;
+    border-radius: 12px;
+    background: var(--ios-grouped);
+    color: var(--ios-secondary);
+    font-size: 13px;
+}
+
+body.ios-fixed-ui .design-lab__won-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: var(--ios-surface);
+    box-shadow: 0 4px 14px rgba(15, 28, 26, 0.05);
+}
+
+body.ios-fixed-ui .design-lab__won-badge {
+    flex: 0 0 auto;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: var(--ios-mint);
+    color: var(--ios-tint);
     font-size: 11px;
     font-weight: 700;
-    color: var(--ios-tint);
 }
 
-body.ios-fixed-ui .gacha-machine__prize-name {
-    margin: 0;
+body.ios-fixed-ui .design-lab__won-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ios-label);
+}
+
+/* LP風 会員証 UI */
+body.ios-fixed-ui .ios-wallet-member {
+    padding: 8px 16px calc(40px + var(--ios-tab-h) + env(safe-area-inset-bottom, 0px));
+}
+
+body.ios-fixed-ui .ios-wallet-member__hello {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+body.ios-fixed-ui .ios-wallet-member__avatar {
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--ios-tint);
+    color: #fff;
+    font-family: var(--ios-font-display);
     font-size: 18px;
     font-weight: 800;
 }
 
-body.ios-fixed-ui .gacha-machine__body {
-    display: grid;
-    grid-template-columns: 72px 1fr;
+body.ios-fixed-ui .ios-wallet-member__hello-title {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+}
+
+body.ios-fixed-ui .ios-wallet-member__hello-sub {
+    margin: 2px 0 0;
+    font-size: 13px;
+    color: var(--ios-secondary);
+}
+
+body.ios-fixed-ui .ios-wallet-member__edit {
+    margin-left: auto;
+    width: 36px;
+    height: 36px;
+    border: 0;
+    border-radius: 18px;
+    background: rgba(14, 124, 102, 0.1);
+    color: var(--ios-tint);
+}
+
+body.ios-fixed-ui .ios-wallet-card {
+    border-radius: 22px;
+    overflow: hidden;
+    background: linear-gradient(160deg, #0F3D34 0%, #0E7C66 58%, #0A5C4C 100%);
+    color: #fff;
+    box-shadow: 0 18px 40px rgba(15, 61, 52, 0.24);
+}
+
+body.ios-fixed-ui .ios-wallet-card__top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
     gap: 12px;
+    padding: 18px 18px 8px;
+}
+
+body.ios-fixed-ui .ios-wallet-card__brand {
+    display: flex;
     align-items: center;
-    padding: 14px 16px 18px;
+    gap: 10px;
 }
 
-body.ios-fixed-ui .gacha-machine__knob {
-    width: 54px;
-    height: 54px;
-    margin: 0 auto;
+body.ios-fixed-ui .ios-wallet-card__logo {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
-    border: 4px solid rgba(255, 255, 255, 0.35);
-    background:
-        conic-gradient(from 20deg, #D7E8E2, #0E7C66, #7ED9C1, #0F3D34, #D7E8E2);
-    box-shadow: inset 0 0 0 6px rgba(15, 61, 52, 0.35);
+    background: rgba(255, 255, 255, 0.16);
+    font-family: var(--ios-font-display);
+    font-weight: 800;
 }
 
-body.ios-fixed-ui .gacha-machine.is-spinning .gacha-machine__knob {
-    animation: design-lab-spin 0.35s linear infinite;
+body.ios-fixed-ui .ios-wallet-card__brand-name {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 700;
 }
 
-body.ios-fixed-ui .gacha-machine__slot {
-    position: relative;
-    height: 48px;
-    border-radius: 12px;
-    background: rgba(0, 0, 0, 0.28);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+body.ios-fixed-ui .ios-wallet-card__brand-sub {
+    margin: 2px 0 0;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    opacity: 0.75;
+}
+
+body.ios-fixed-ui .ios-wallet-card__tier {
+    display: inline-flex;
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.16);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    font-size: 11px;
+    font-weight: 800;
+}
+
+body.ios-fixed-ui .ios-wallet-card__points {
+    padding: 8px 18px 4px;
+}
+
+body.ios-fixed-ui .ios-wallet-card__points-label {
+    margin: 0;
+    font-size: 12px;
+    opacity: 0.8;
+}
+
+body.ios-fixed-ui .ios-wallet-card__points-value {
+    margin: 4px 0 0;
+    font-family: var(--ios-font-display);
+    font-size: 34px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+}
+
+body.ios-fixed-ui .ios-wallet-card__points-value small {
+    font-size: 14px;
+    font-weight: 700;
+}
+
+body.ios-fixed-ui .ios-wallet-card__progress {
+    padding: 10px 18px 14px;
+}
+
+body.ios-fixed-ui .ios-wallet-card__progress-bar {
+    height: 8px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.25);
     overflow: hidden;
 }
 
-body.ios-fixed-ui .gacha-machine__dispense {
-    position: absolute;
-    left: 16px;
-    top: 8px;
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    background: radial-gradient(circle at 30% 30%, #9AF0D8, #0E7C66);
-    opacity: 0;
-    transform: translateY(-24px);
+body.ios-fixed-ui .ios-wallet-card__progress-bar > span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #7ED9C1, #E8FFF7);
 }
 
-body.ios-fixed-ui .gacha-machine__dispense.is-out {
-    opacity: 1;
-    animation: gacha-dispense 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+body.ios-fixed-ui .ios-wallet-card__progress-text {
+    margin: 8px 0 0;
+    font-size: 12px;
+    opacity: 0.85;
 }
 
-body.ios-fixed-ui .gacha-machine__cta {
+body.ios-fixed-ui .ios-wallet-card__scan {
+    margin-top: 4px;
+    padding: 14px 14px 16px;
+    background: #fff;
+    color: var(--ios-forest);
+}
+
+body.ios-fixed-ui .ios-wallet-card__scan-label {
+    margin: 0 0 10px;
+    text-align: center;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    color: var(--ios-tint);
+}
+
+body.ios-fixed-ui .ios-wallet-card__code-wrap {
+    display: grid;
+    place-items: center;
+    min-height: 108px;
     width: 100%;
 }
 
-@keyframes gacha-bounce {
-    from { transform: translateY(0); }
-    to { transform: translateY(-10px); }
+body.ios-fixed-ui .ios-wallet-card__barcode {
+    width: 100%;
+    max-width: 100%;
+    height: 96px;
 }
 
-@keyframes gacha-dispense {
-    to { transform: translateY(4px); }
+body.ios-fixed-ui .ios-wallet-card__number {
+    margin: 10px 0 0;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    color: var(--ios-secondary);
 }
 
-@keyframes design-lab-spin {
-    to { transform: rotate(360deg); }
+body.ios-fixed-ui .ios-wallet-member__meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 12px 2px 18px;
+    font-size: 12px;
+    color: var(--ios-secondary);
+}
+
+body.ios-fixed-ui .ios-wallet-member__enlarge {
+    border: 0;
+    background: transparent;
+    color: var(--ios-tint);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+body.ios-fixed-ui .ios-wallet-member__quick {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 18px;
+}
+
+body.ios-fixed-ui .ios-wallet-member__quick-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    min-height: 72px;
+    padding: 10px 4px;
+    border: 0;
+    border-radius: 14px;
+    background: var(--ios-surface);
+    box-shadow: 0 6px 16px rgba(15, 28, 26, 0.06);
+    color: var(--ios-label);
+    font: inherit;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+body.ios-fixed-ui .ios-wallet-member__quick-icon {
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 10px;
+    background: var(--ios-mint);
+    color: var(--ios-tint);
+    font-size: 12px;
+}
+
+body.ios-fixed-ui .is-visually-hidden {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    border: 0 !important;
+}
+
+body.ios-fixed-ui .design-lab__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 0 18px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--ios-tint);
+    color: #fff;
+    font: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+body.ios-fixed-ui .design-lab__btn:disabled {
+    opacity: 0.55;
+    cursor: default;
+}
+
+body.ios-fixed-ui .design-lab__btn--ghost {
+    margin-top: 10px;
+    background: transparent;
+    color: var(--ios-tint);
+    border: 1px solid rgba(14, 124, 102, 0.28);
 }
 
 body.ios-fixed-ui .design-lab__won {
@@ -2857,4 +3473,101 @@ body.ios-fixed-ui .design-lab__won-name {
     body.ios-fixed-ui .lp-home-action__en {
         margin-top: 0;
     }
+}
+
+@media (max-width: 380px) {
+    body.ios-fixed-ui .lp-home-actions {
+        grid-template-columns: 1fr;
+    }
+
+    body.ios-fixed-ui .lp-home-action {
+        min-height: 0;
+        flex-direction: row;
+        align-items: center;
+        gap: 12px;
+    }
+
+    body.ios-fixed-ui .lp-home-action__en {
+        margin-top: 0;
+    }
+}
+
+/* デモ: クーポン一覧からのガチャ／スクラッチ導線 */
+body.ios-fixed-ui .demo-play-entry {
+    margin: 0 0 18px;
+    padding: 16px;
+    border-radius: 18px;
+    background:
+        linear-gradient(145deg, rgba(255, 0, 51, 0.08), rgba(14, 124, 102, 0.08)),
+        var(--ios-surface);
+    border: 1px solid rgba(14, 124, 102, 0.12);
+}
+
+body.ios-fixed-ui .demo-play-entry__eyebrow {
+    margin: 0 0 4px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    color: #ff0033;
+}
+
+body.ios-fixed-ui .demo-play-entry__title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--ios-label);
+}
+
+body.ios-fixed-ui .demo-play-entry__sub {
+    margin: 4px 0 0;
+    font-size: 13px;
+    line-height: 1.4;
+    color: var(--ios-secondary);
+}
+
+body.ios-fixed-ui .demo-play-entry__actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 14px;
+}
+
+body.ios-fixed-ui .demo-play-entry__btn {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    margin: 0;
+    padding: 14px 12px;
+    border: 0;
+    border-radius: 14px;
+    text-align: left;
+    cursor: pointer;
+}
+
+body.ios-fixed-ui .demo-play-entry__btn--gacha {
+    background: linear-gradient(160deg, #ff4d6d, #d6002a);
+    color: #fff;
+    box-shadow: 0 8px 18px rgba(214, 0, 42, 0.28);
+}
+
+body.ios-fixed-ui .demo-play-entry__btn--scratch {
+    background: linear-gradient(160deg, #2aa88a, #0e7c66);
+    color: #fff;
+    box-shadow: 0 8px 18px rgba(14, 124, 102, 0.24);
+}
+
+body.ios-fixed-ui .demo-play-entry__btn-label {
+    font-size: 15px;
+    font-weight: 800;
+}
+
+body.ios-fixed-ui .demo-play-entry__btn-hint {
+    font-size: 11px;
+    opacity: 0.88;
+}
+
+body.ios-fixed-ui .ios-coupon__chip--play {
+    background: rgba(255, 0, 51, 0.92) !important;
+    color: #fff !important;
 }
