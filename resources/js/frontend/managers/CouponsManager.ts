@@ -3,10 +3,11 @@ import { DomHelper } from '../../shared/utils/domHelper';
 import type { ApiClient } from '../../shared/utils/apiClient';
 import { ConfirmDialog } from '../../shared/utils/confirmDialog';
 import { mountDetailLayoutChrome } from '../utils/detailLayoutMount';
-import { applyDemoCouponUsageState, isDemoCouponId, markDemoCouponUsed, readDemoWonCoupons } from '../ios/demoCoupons';
-import { isIosFixedUiDemo } from '../ios/demoMode';
+import { applyDemoCouponUsageState, isDemoCouponId, markDemoCouponUsed, readDemoWonCoupons } from '../demo/demoCoupons';
+import { isIosFixedUiDemo } from '../demo/demoMode';
+import { ensureLiffIdentityForLoad } from '../demo/ensureIdentity';
+import { buildBuiltinSampleCoupons } from '../demo/sampleData';
 
-declare const MemberManager: any;
 declare const JsBarcode: any;
 declare const QRCode: any;
 
@@ -21,28 +22,12 @@ export class CouponsManager {
         this._receivedToastTimer = null;
     }
 
-    getGlobalSetting(key: string, fallback: string): string {
-        return DomHelper.getLiffGlobalSetting(key, fallback);
-    }
-
-    getDefaultCouponDesign(): string {
-        const screenDesign = this.getGlobalSetting('coupon_screen_design', 'ticket');
-        if (screenDesign === 'gallery') return 'card';
-        if (screenDesign === 'compact') return 'minimal';
-        if (screenDesign === 'luxury') return 'vintage';
-        return 'ticket';
-    }
-
     getSection(): Element | null {
         return DomHelper.getTabMount(
             AppConstants.TAB_MOUNTS.COUPONS,
             AppConstants.ELEMENT_IDS.COUPONS_SECTION,
             { silent: true },
         );
-    }
-
-    getLoginTemplate(): string {
-        return '';
     }
 
     getMemberRequiredTemplate(message: unknown): string {
@@ -59,40 +44,13 @@ export class CouponsManager {
         `;
     }
 
-    getDesignerSampleCoupons(): any[] {
+    getDesignerSampleCoupons(): ReturnType<typeof buildBuiltinSampleCoupons> {
         if (typeof window !== 'undefined'
             && window.app
-            && typeof (window.app as { getDesignerSampleCoupons?: () => any[] }).getDesignerSampleCoupons === 'function') {
-            return (window.app as { getDesignerSampleCoupons: () => any[] }).getDesignerSampleCoupons();
+            && typeof (window.app as { getDesignerSampleCoupons?: () => ReturnType<typeof buildBuiltinSampleCoupons> }).getDesignerSampleCoupons === 'function') {
+            return (window.app as { getDesignerSampleCoupons: () => ReturnType<typeof buildBuiltinSampleCoupons> }).getDesignerSampleCoupons();
         }
-        const until = new Date();
-        until.setDate(until.getDate() + 14);
-        return [
-            {
-                id: 'sample-coupon-1',
-                coupon_name: 'ドリンク1杯無料',
-                description: 'お好きなドリンク1杯を無料でご提供します',
-                status: 'available',
-                valid_until: until.toISOString(),
-                issued_at: new Date().toISOString(),
-                image_url: '/images/liff/coupon-drink.jpg',
-                code: 'DRINK-FREE-2401',
-                use_display: 'barcode',
-                is_sample_preview: true,
-            },
-            {
-                id: 'sample-coupon-2',
-                coupon_name: 'デザート20%OFF',
-                description: 'デザートメニューが20%割引になります',
-                status: 'available',
-                valid_until: until.toISOString(),
-                issued_at: new Date().toISOString(),
-                image_url: '/images/liff/coupon-dessert.jpg',
-                code: 'DESSERT-20-2401',
-                use_display: 'barcode',
-                is_sample_preview: true,
-            },
-        ];
+        return buildBuiltinSampleCoupons();
     }
 
     renderSampleCoupons(): void {
@@ -114,20 +72,6 @@ export class CouponsManager {
         `;
     }
 
-    async _waitForNativeDeviceInfo(maxWaitMs: number): Promise<void> {
-        if (typeof window === 'undefined' || typeof MemberManager === 'undefined' || !MemberManager.isMobileAppMode()) {
-            return;
-        }
-        const limit = typeof maxWaitMs === 'number' ? maxWaitMs : 2500;
-        const start = Date.now();
-        while (Date.now() - start < limit) {
-            const deviceId = window.__MOBILE_DEVICE_INFO__
-                && String(window.__MOBILE_DEVICE_INFO__.device_identifier || '').trim();
-            if (deviceId) return;
-            await new Promise((resolve) => setTimeout(resolve, 50));
-        }
-    }
-
     async load(): Promise<void> {
         const section = this.getSection();
         if (!section) return;
@@ -137,33 +81,10 @@ export class CouponsManager {
             return;
         }
 
-        const appAny = (window.app as any) || null;
-        const memberManager = appAny && appAny.memberManager ? appAny.memberManager : null;
-
-        if (memberManager) {
-            if (typeof MemberManager !== 'undefined' && MemberManager.isMobileAppMode()) {
-                await this._waitForNativeDeviceInfo(2500);
-                await memberManager.ensureIdentityReady(2500);
-            } else if (typeof window !== 'undefined' && window.__IS_LIFF__) {
-                if (!window.__LINE_USER_ID__) {
-                    await memberManager.resolveLineUserIdForClient();
-                }
-                if (!window.__LINE_USER_ID__) {
-                    this.renderSampleCoupons();
-                    return;
-                }
-            } else {
-                if (!window.__LINE_USER_ID__) {
-                    await memberManager.resolveLineUserIdForClient();
-                }
-                const hasIdentity = typeof memberManager.hasAuthenticatedIdentity === 'function'
-                    ? memberManager.hasAuthenticatedIdentity()
-                    : !!(typeof window !== 'undefined' && window.__LINE_USER_ID__);
-                if (!hasIdentity) {
-                    this.renderSampleCoupons();
-                    return;
-                }
-            }
+        const canCallApi = await ensureLiffIdentityForLoad({ waitNativeDevice: true });
+        if (!canCallApi) {
+            this.renderSampleCoupons();
+            return;
         }
 
         section.innerHTML =
@@ -641,7 +562,7 @@ export class CouponsManager {
     }
 
     _isMobileAppMode(): boolean {
-        return typeof MemberManager !== 'undefined' && MemberManager.isMobileAppMode();
+        return typeof window !== 'undefined' && window.__MOBILE_APP_MODE__ === true;
     }
 
     _fixNativeCouponsScroll(): void {

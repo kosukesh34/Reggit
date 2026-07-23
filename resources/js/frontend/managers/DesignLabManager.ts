@@ -6,7 +6,7 @@ import {
     readDemoWonCoupons,
     saveDemoWonCoupon,
     type DemoCoupon,
-} from '../ios/demoCoupons';
+} from '../demo/demoCoupons';
 
 const SCREEN_ITEMS: Array<{ src: string; caption: string }> = [
     { src: '/images/landing/app/screen-home.png', caption: 'ホーム' },
@@ -161,6 +161,9 @@ export class DesignLabManager {
         const dpr = window.devicePixelRatio || 1;
         const rect = canvas.getBoundingClientRect();
         const cssSize = Math.max(1, Math.min(rect.width, rect.height));
+        if (cssSize < 48) {
+            return;
+        }
         const pixelSize = Math.max(1, Math.round(cssSize * dpr));
         canvas.width = pixelSize;
         canvas.height = pixelSize;
@@ -171,13 +174,14 @@ export class DesignLabManager {
         const cx = radius;
         const cy = radius;
         const brush = Math.max(18, cssSize * 0.1);
+        const arcRadius = Math.max(1, radius - 1);
 
         const paintFoil = () => {
             ctx.save();
             ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
             ctx.clearRect(0, 0, cssSize, cssSize);
             ctx.beginPath();
-            ctx.arc(cx, cy, radius - 1, 0, Math.PI * 2);
+            ctx.arc(cx, cy, arcRadius, 0, Math.PI * 2);
             ctx.closePath();
             ctx.clip();
 
@@ -217,7 +221,7 @@ export class DesignLabManager {
             ctx.save();
             ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
             ctx.beginPath();
-            ctx.arc(cx, cy, radius - 1, 0, Math.PI * 2);
+            ctx.arc(cx, cy, arcRadius, 0, Math.PI * 2);
             ctx.clip();
             ctx.globalCompositeOperation = 'destination-out';
             ctx.lineCap = 'round';
