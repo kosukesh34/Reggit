@@ -2202,11 +2202,11 @@ export class MemberManager {
                     const isWalletCard = el.classList.contains('ios-wallet-card__barcode');
                     JsBarcode(`#${barcodeId}`, memberNumber, {
                         format: 'CODE128',
-                        width: isWalletCard ? 2.4 : 3,
-                        height: isWalletCard ? 120 : 150,
+                        width: isWalletCard ? 2.2 : 3,
+                        height: isWalletCard ? 96 : 150,
                         displayValue: !isWalletCard,
                         fontSize: 18,
-                        margin: isWalletCard ? 8 : 14,
+                        margin: isWalletCard ? 6 : 14,
                         background: '#ffffff',
                         lineColor: '#000000',
                     });

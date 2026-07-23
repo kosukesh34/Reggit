@@ -27,6 +27,7 @@ export const TAB_TO_PRIMARY: Record<string, PrimaryTab> = {
     stamps: 'member',
     coupons: 'member',
     member: 'member',
+    designlab: 'member',
     queue: 'queue',
     reservations: 'queue',
     gallery: 'home',
@@ -112,6 +113,10 @@ export function buildCardSegments(flags?: FeatureFlags): SegmentItem[] {
     }
     if (isFeatureEnabled('coupons', source)) {
         items.push({ tab: 'coupons', label: 'クーポン' });
+    }
+    // デモ専用: スクラッチ／ガチャでクーポン配布
+    if (isIosFixedUiDemo()) {
+        items.push({ tab: 'designlab', label: 'あそび' });
     }
     return items;
 }
