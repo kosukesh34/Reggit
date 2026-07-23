@@ -3,7 +3,8 @@ import { ApiClient } from '../../shared/utils/apiClient';
 import { DomHelper } from '../../shared/utils/domHelper';
 import { ConfirmDialog } from '../../shared/utils/confirmDialog';
 import { ToastManager } from '../../shared/utils/toast';
-import { isIosFixedUiDemo } from '../ios/demoMode';
+import { isIosFixedUiDemo } from '../demo/demoMode';
+import { buildBuiltinSampleReservations } from '../demo/sampleData';
 
 const DEFAULT_ADVANCE_DAYS = 30;
 
@@ -125,20 +126,7 @@ export class ReservationManager {
             && typeof (window.app as { getDesignerSampleReservations?: () => Reservation[] }).getDesignerSampleReservations === 'function') {
             return (window.app as { getDesignerSampleReservations: () => Reservation[] }).getDesignerSampleReservations();
         }
-        const reservedAt = new Date();
-        reservedAt.setDate(reservedAt.getDate() + 3);
-        reservedAt.setHours(18, 0, 0, 0);
-        return [
-            {
-                id: -1,
-                reserved_at: reservedAt.toISOString(),
-                status: AppConstants.RESERVATION_STATUS.CONFIRMED,
-                reservation_number: String(new Date().getDate()) + '1',
-                number_of_people: 2,
-                notes: '窓側の席希望',
-                is_sample_preview: true,
-            },
-        ];
+        return buildBuiltinSampleReservations();
     }
 
     /** 固定UIデモ用サンプル予約を描画 */
