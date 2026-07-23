@@ -7,7 +7,8 @@
 declare const liff: any;
 import { DomHelper } from '../../shared/utils/domHelper';
 import { AppConstants } from '../../shared/constants';
-import { isIosFixedUiDemo } from '../ios/demoMode';
+import { isIosFixedUiDemo } from '../demo/demoMode';
+import { readFeatureFlags } from '../demo/navigation';
 
 export class LiffLayoutManager {
     app: any;
@@ -70,11 +71,7 @@ export class LiffLayoutManager {
     }
 
     _flagEnabled(key: string): boolean {
-        if (isIosFixedUiDemo()) {
-            return true;
-        }
-        const flags = (typeof window !== 'undefined' && window.__FEATURE_FLAGS__) ? window.__FEATURE_FLAGS__ : {};
-        return flags[key] !== false;
+        return readFeatureFlags()[key] !== false;
     }
 
     _buildIosHomeHtml(): string {
