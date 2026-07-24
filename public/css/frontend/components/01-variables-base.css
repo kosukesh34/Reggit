@@ -74,9 +74,12 @@
     --radius-pill: 999px;
 
     /* ===== Layout tokens ===== */
-    --content-padding: 20px;
-    --section-gap: 20px;
+    --content-padding: clamp(14px, 4.2vw, 20px);
+    --section-gap: clamp(14px, 4.2vw, 20px);
     --content-max-width: min(100%, 440px);
+    /* 一般的なスマホCSS幅の上限（SE〜Pro Max / 主要Android）。PCプレビュー枠にも使う */
+    --liff-phone-max: 430px;
+    --liff-desktop-phone-width: var(--liff-phone-max);
 
     /* ===== Spacing scale ===== */
     --space-1: 4px;

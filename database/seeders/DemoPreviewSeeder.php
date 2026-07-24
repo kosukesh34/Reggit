@@ -362,16 +362,16 @@ class DemoPreviewSeeder extends Seeder
         }
 
         $categories = [
-            '料理' => [
-                ['title' => 'シグネチャーバーガー', 'image_url' => 'https://images.unsplash.com/photo-1550547660-d9450f859349?w=800'],
-                ['title' => '季節のサラダ', 'image_url' => 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800'],
-                ['title' => '本日のパスタ', 'image_url' => 'https://images.unsplash.com/photo-1473093295043-cdd812d0e601?w=800'],
-                ['title' => 'クラフトドリンク', 'image_url' => 'https://images.unsplash.com/photo-1559339352-11d035aa65de?w=800'],
+            'メニュー' => [
+                ['title' => 'アイスラテ', 'image_url' => '/images/liff/menu-iced-latte.jpg'],
+                ['title' => 'カプチーノ', 'image_url' => '/images/liff/menu-cappuccino.jpg'],
+                ['title' => '抹茶ラテ', 'image_url' => '/images/liff/menu-matcha.jpg'],
+                ['title' => 'アボカドトースト', 'image_url' => '/images/liff/menu-avocado-toast.jpg'],
+                ['title' => 'チーズケーキ', 'image_url' => '/images/liff/menu-cheesecake.jpg'],
             ],
             '店内' => [
-                ['title' => '落ち着いた店内', 'image_url' => 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800'],
-                ['title' => 'テラス席', 'image_url' => 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800'],
-                ['title' => 'カウンター', 'image_url' => 'https://images.unsplash.com/photo-1559329007-40df8a9345d8?w=800'],
+                ['title' => '店内の雰囲気', 'image_url' => '/images/liff/home-hero.jpg'],
+                ['title' => 'カウンター', 'image_url' => '/images/liff/announce-hero.jpg'],
             ],
         ];
 

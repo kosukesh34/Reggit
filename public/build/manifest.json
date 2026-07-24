@@ -3,32 +3,32 @@
     "file": "assets/GalleryManager-C47ec8Pf.css",
     "src": "_GalleryManager-!~{003}~.js"
   },
-  "_GalleryManager-BGBnov9C.js": {
-    "file": "assets/GalleryManager-BGBnov9C.js",
+  "_GalleryManager-CHy104V_.js": {
+    "file": "assets/GalleryManager-CHy104V_.js",
     "name": "GalleryManager",
     "css": [
       "assets/GalleryManager-C47ec8Pf.css"
     ]
   },
   "resources/js/admin/main.tsx": {
-    "file": "assets/main-Daq7Mpjs.js",
+    "file": "assets/main-DVdtyanZ.js",
     "name": "main",
     "src": "resources/js/admin/main.tsx",
     "isEntry": true,
     "imports": [
-      "_GalleryManager-BGBnov9C.js"
+      "_GalleryManager-CHy104V_.js"
     ],
     "css": [
       "assets/main-tB4AGMqk.css"
     ]
   },
   "resources/js/frontend/main.tsx": {
-    "file": "assets/main-DIE7Ax2F.js",
+    "file": "assets/main-B4YqAKp1.js",
     "name": "main",
     "src": "resources/js/frontend/main.tsx",
     "isEntry": true,
     "imports": [
-      "_GalleryManager-BGBnov9C.js"
+      "_GalleryManager-CHy104V_.js"
     ]
   }
 }
