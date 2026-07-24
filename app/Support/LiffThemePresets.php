@@ -9,7 +9,7 @@ namespace App\Support;
  *   - theme_preset : プリセットID（下記 PRESETS のいずれか / 'custom'）
  *   - accent_color : アクセント（ブランド）カラー hex（プリセットを上書き）
  *   - font_family  : フォント（sans / rounded / serif / serif-display）
- *   - surface_tone : 背景トーン（paper / warm / cool / mist / charcoal / sage / ios）
+ *   - surface_tone : 背景トーン（paper / warm / cool / mist / charcoal / sage / ios=システム標準）
  *   - card_style   : カードの質感（flat / elevated / outline）
  *   - button_shape : ボタン形状（rounded / pill / square）
  *   - density           : 余白の密度（compact / default / relaxed）
@@ -158,7 +158,7 @@ class LiffThemePresets
                 ],
             ],
             'ios' => [
-                'label' => 'iOS（システム）',
+                'label' => 'システム（標準）',
                 'tokens' => [
                     '--bg-canvas' => '#f2f2f7',
                     '--bg-light' => '#ffffff',
@@ -247,8 +247,8 @@ class LiffThemePresets
             ],
             [
                 'id' => 'apple_system',
-                'name' => 'Apple System',
-                'description' => 'iOS Liquid Glass 風。ライトクローム・フローティングタブの標準アプリ体験。',
+                'name' => 'システム標準',
+                'description' => 'ライトクローム・フローティングタブの標準モバイルアプリ体験（iOS / Android 共通）。',
                 'accent_color' => '#007aff',
                 'font_family' => 'sans',
                 'surface_tone' => 'ios',

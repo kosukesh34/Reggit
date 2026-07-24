@@ -7,7 +7,8 @@
 declare const liff: any;
 import { DomHelper } from '../../shared/utils/domHelper';
 import { AppConstants } from '../../shared/constants';
-import { isIosFixedUiDemo } from '../ios/demoMode';
+import { isFixedUiShell, isDemoDataMode } from '../demo/demoMode';
+import { readFeatureFlags } from '../demo/navigation';
 
 export class LiffLayoutManager {
     app: any;
@@ -55,7 +56,8 @@ export class LiffLayoutManager {
     }
 
     /**
-     * タブ切替時の描画。固定UIモードでは Designer レイアウトを無視する。
+     * タブ切替時の描画。
+     * /liff 固定UIでは Designer レイアウトを使わず、/liff/{project_key} では店舗 Designer 設定を反映する。
      */
     render(tab: string): void {
         if (typeof window.__mobileOrderLog === 'function') window.__mobileOrderLog('LiffLayoutManager.render', { tab });
@@ -65,16 +67,33 @@ export class LiffLayoutManager {
             if (typeof window.__mobileOrderLog === 'function') window.__mobileOrderLog('LiffLayoutManager.render: no container', { sectionId });
             return;
         }
-        // iOS 固定UI: 店舗 Designer のブロック配列は使わない
-        this._loadDefaultTabContent(tab);
+        if (isFixedUiShell()) {
+            this._loadDefaultTabContent(tab);
+            return;
+        }
+        const layouts = (typeof window !== 'undefined' && window.__LIFF_TAB_LAYOUTS__)
+            ? window.__LIFF_TAB_LAYOUTS__
+            : {};
+        const blocks = layouts[tab];
+        if (typeof window.__mobileOrderLog === 'function') {
+            window.__mobileOrderLog('LiffLayoutManager.render container found', {
+                tab,
+                hasBlocks: Array.isArray(blocks) && blocks.length > 0,
+            });
+        }
+        if (!Array.isArray(blocks) || blocks.length === 0) {
+            this._loadDefaultTabContent(tab);
+            return;
+        }
+        if (container.dataset.layoutRendered === '1') {
+            return;
+        }
+        container.dataset.layoutRendered = '1';
+        this.renderCustomLayout(container, tab, blocks);
     }
 
     _flagEnabled(key: string): boolean {
-        if (isIosFixedUiDemo()) {
-            return true;
-        }
-        const flags = (typeof window !== 'undefined' && window.__FEATURE_FLAGS__) ? window.__FEATURE_FLAGS__ : {};
-        return flags[key] !== false;
+        return readFeatureFlags()[key] !== false;
     }
 
     _buildIosHomeHtml(): string {
@@ -122,7 +141,7 @@ export class LiffLayoutManager {
         const queueNo = String(day) + '2';
         const queueCardHtml = !this._flagEnabled('feature_queue_enabled')
             ? ''
-            : (isIosFixedUiDemo()
+            : (isDemoDataMode()
                 ? `
                 <button type="button" class="lp-home-queue" data-ios-nav-tab="queue">
                     <span class="lp-home-queue__ticket" aria-hidden="true">${this._esc(queueNo)}</span>
@@ -237,7 +256,7 @@ export class LiffLayoutManager {
         }
         let data = await this._fetchMemberMe();
         if ((!data || data.is_member !== true)
-            && isIosFixedUiDemo()
+            && isDemoDataMode()
             && this.app
             && typeof this.app.getDesignerSampleMemberData === 'function') {
             data = this.app.getDesignerSampleMemberData();
@@ -311,21 +330,33 @@ export class LiffLayoutManager {
         if (!this.app) return;
         const sectionId = tab + 'Section';
         const container = document.getElementById(sectionId);
+        const useFixedUi = isFixedUiShell();
         if (tab === 'products' && container && !container.querySelector('.products-data-grid') && !container.querySelector('#productsGrid')) {
-            const viewMode = this._readProductsViewMode();
-            container.innerHTML = `
-                ${this._productsViewToggleHtml(viewMode)}
-                <div class="products-data-mount" data-products-view="${viewMode}">
-                    <div class="category-tabs products-category-tabs" id="categoryTabs">
-                        <button class="tab-btn active" data-category="all"><span>すべて</span></button>
+            if (useFixedUi) {
+                const viewMode = this._readProductsViewMode();
+                container.innerHTML = `
+                    ${this._productsViewToggleHtml(viewMode)}
+                    <div class="products-data-mount" data-products-view="${viewMode}">
+                        <div class="category-tabs products-category-tabs" id="categoryTabs">
+                            <button class="tab-btn active" data-category="all"><span>すべて</span></button>
+                        </div>
+                        <div class="products-section"><div class="products-grid products-data-grid" id="productsGrid"></div></div>
                     </div>
-                    <div class="products-section"><div class="products-grid products-data-grid" id="productsGrid"></div></div>
-                </div>
-            `;
-            if (typeof this.app.bindProductsViewToggle === 'function') {
-                this.app.bindProductsViewToggle(container);
+                `;
+                if (typeof this.app.bindProductsViewToggle === 'function') {
+                    this.app.bindProductsViewToggle(container);
+                }
+            } else {
+                container.innerHTML = `
+                    <div class="products-data-mount">
+                        <div class="category-tabs products-category-tabs" id="categoryTabs">
+                            <button class="tab-btn active" data-category="all"><i class="fas fa-th-large"></i><span>すべて</span></button>
+                        </div>
+                        <div class="products-section"><div class="products-grid products-data-grid" id="productsGrid"></div></div>
+                    </div>
+                `;
             }
-        } else if (tab === 'products' && container && !container.querySelector('.ios-view-toggle')) {
+        } else if (useFixedUi && tab === 'products' && container && !container.querySelector('.ios-view-toggle')) {
             const viewMode = this._readProductsViewMode();
             const oldTitle = container.querySelector('.ios-large-title');
             if (oldTitle !== null) {
@@ -340,7 +371,7 @@ export class LiffLayoutManager {
             if (typeof this.app.bindProductsViewToggle === 'function') {
                 this.app.bindProductsViewToggle(container);
             }
-        } else if (tab === 'products' && container && !container.querySelector('.ios-large-title') && !container.querySelector('.ios-large-title-row')) {
+        } else if (useFixedUi && tab === 'products' && container && !container.querySelector('.ios-large-title') && !container.querySelector('.ios-large-title-row')) {
             const viewMode = this._readProductsViewMode();
             container.insertAdjacentHTML('afterbegin', this._productsViewToggleHtml(viewMode));
             const mount = container.querySelector('.products-data-mount');
@@ -351,28 +382,31 @@ export class LiffLayoutManager {
                 this.app.bindProductsViewToggle(container);
             }
         }
-        if (tab === 'home' && container && (!container.querySelector('.ios-home') || container.querySelector('.ios-home')?.getAttribute('data-ios-home-version') !== '5')) {
+        if (useFixedUi && tab === 'home' && container && (!container.querySelector('.ios-home') || container.querySelector('.ios-home')?.getAttribute('data-ios-home-version') !== '5')) {
             container.innerHTML = this._buildIosHomeHtml();
             this._bindIosHomeNav(container);
             void this._refreshIosWallet(container);
+        } else if (!useFixedUi && tab === 'home' && container && !container.querySelector('.home-content')) {
+            container.innerHTML = `
+                <div class="home-content">
+                    <div class="loading home-loading"><i class="fas fa-spinner fa-spin"></i><p>お知らせを読み込み中...</p></div>
+                </div>
+            `;
         }
         if (tab === 'orders' && container && !container.querySelector('.orders-data-mount')) {
-            container.innerHTML = `
-                <h1 class="ios-large-title">注文履歴</h1>
-                <div class="orders-data-mount"></div>
-            `;
+            container.innerHTML = useFixedUi
+                ? `<h1 class="ios-large-title">注文履歴</h1><div class="orders-data-mount"></div>`
+                : `<div class="orders-data-mount"></div>`;
         }
         if (tab === 'gallery' && container && !container.querySelector('.gallery-data-mount')) {
-            container.innerHTML = `
-                <h1 class="ios-large-title">ギャラリー</h1>
-                <div class="gallery-data-mount"></div>
-            `;
+            container.innerHTML = useFixedUi
+                ? `<h1 class="ios-large-title">ギャラリー</h1><div class="gallery-data-mount"></div>`
+                : `<div class="gallery-data-mount"></div>`;
         }
         if (tab === 'announcements' && container && !container.querySelector('.announcements-data-mount')) {
-            container.innerHTML = `
-                <h1 class="ios-large-title">お知らせ</h1>
-                <div class="announcements-data-mount"></div>
-            `;
+            container.innerHTML = useFixedUi
+                ? `<h1 class="ios-large-title">お知らせ</h1><div class="announcements-data-mount"></div>`
+                : `<div class="announcements-data-mount"></div>`;
         }
         if (tab === 'stamps' && container && !container.querySelector('.stamps-data-mount') && container.childElementCount === 0) {
             container.innerHTML = `<div class="stamps-data-mount"></div>`;
@@ -396,10 +430,27 @@ export class LiffLayoutManager {
         }
         const tabLoaders: Record<string, () => void> = {
             home: () => {
-                const homeSection = document.getElementById('homeSection');
-                if (homeSection !== null) {
-                    void this._refreshIosWallet(homeSection);
+                if (useFixedUi) {
+                    const homeSection = document.getElementById('homeSection');
+                    if (homeSection !== null) {
+                        void this._refreshIosWallet(homeSection);
+                    }
+                    if (this.app.announcementManager && typeof this.app.announcementManager.load === 'function') {
+                        void this.app.announcementManager.load();
+                    }
+                    return;
                 }
+                setTimeout(() => {
+                    const c = document.getElementById('homeSection');
+                    const loading = c && c.querySelector('.home-loading');
+                    if (!loading) return;
+                    const mount = c.querySelector('.announcements-data-mount');
+                    if (mount && mount.innerHTML.trim() !== '') {
+                        (loading as HTMLElement).outerHTML = '';
+                    } else {
+                        (loading as HTMLElement).innerHTML = '<p class="section-title" style="margin:0;"><i class="fas fa-bullhorn"></i> お知らせはありません</p>';
+                    }
+                }, 1200);
                 if (this.app.announcementManager && typeof this.app.announcementManager.load === 'function') {
                     void this.app.announcementManager.load();
                 }
