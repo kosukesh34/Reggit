@@ -1,8 +1,8 @@
 /* フロントエンドスタイル：コンポーネントを @import で読み込み（各ファイル500行以内） */
-@import url('components/01-variables-base.css?v=4');
-@import url('components/02-loading-layout.css');
+@import url('components/01-variables-base.css?v=6');
+@import url('components/02-loading-layout.css?v=3');
 @import url('components/03-header-main-products.css');
-@import url('components/04-cart.css');
+@import url('components/04-cart.css?v=3');
 @import url('components/05-overlay-skeleton-toast.css');
 @import url('components/06-payment-method-modal.css');
 @import url('components/07-payment-modal.css');
@@ -23,7 +23,7 @@
 @import url('components/22-chrome-accent.css');
 @import url('components/23-builder-blocks-theme.css');
 @import url('components/24-theme-background.css');
-@import url('components/25-theme-width.css');
+@import url('components/25-theme-width.css?v=3');
 @import url('components/26-retail-app-ui.css');
 @import url('components/27-component-designs.css');
 @import url('components/28-native-app-polish.css');
@@ -36,4 +36,4 @@
 @import url('components/35-app-studio-recipes.css');
 @import url('components/36-app-transitions.css');
 @import url('components/37-store-ui-unify.css?v=6');
-@import url('components/38-liff-fixed-ui.css?v=88');
+@import url('components/38-liff-fixed-ui.css?v=90');

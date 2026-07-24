@@ -5,7 +5,7 @@
 
 @section('content')
 <nav class="breadcrumb" aria-label="パンくず">
-    <a href="{{ admin_route('admin.gallery.categories') }}">ギャラリー</a>
+    <a href="{{ admin_route('admin.gallery.items') }}">ギャラリー</a>
     <span class="breadcrumb-sep">/</span>
     <span>画像一覧</span>
 </nav>
@@ -13,6 +13,7 @@
 <div class="card card-mb-24">
     <div class="card-header">
         <h3 class="card-title"><i class="fas fa-plus"></i> 画像追加</h3>
+        <a href="{{ admin_route('admin.gallery.categories') }}" class="btn btn-secondary btn-sm"><i class="fas fa-tags"></i> カテゴリ管理</a>
     </div>
     <div class="card-body">
         <form method="POST" action="{{ admin_route('admin.gallery.items.store') }}" class="form-inline form-inline-flex">
