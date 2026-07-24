@@ -34,7 +34,6 @@ const ALL_TAB_SECTIONS: FrontendMenuItem[] = [
     { tab: 'reservations', label: '予約' },
     { tab: 'gallery', label: 'ギャラリー' },
     { tab: 'announcements', label: 'お知らせ' },
-    { tab: 'designlab', label: 'デザイン変更' },
 ];
 
 function getFrontendMenu(): FrontendMenuItem[] {
@@ -141,14 +140,6 @@ function FixedShellChrome(): JSX.Element | null {
             <>
                 <h1 className="ios-large-title">来店</h1>
                 <IosSegmentBar items={visitSegments} activeTab={activeTab} />
-            </>
-        );
-    }
-    if (activeTab === 'designlab') {
-        return (
-            <>
-                <h1 className="ios-large-title">カード</h1>
-                <IosSegmentBar items={cardSegments} activeTab={activeTab} />
             </>
         );
     }

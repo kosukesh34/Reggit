@@ -1,3 +1,4 @@
+import { isFixedUiShell } from '../demo/demoMode';
 import type { ApiClient } from '../../shared/utils/apiClient';
 import { AppConstants } from '../../shared/constants';
 import { DomHelper } from '../../shared/utils/domHelper';
@@ -260,6 +261,39 @@ export class AnnouncementManager {
     }
 
     private renderDetailBody(item: Announcement): string {
+        if (isFixedUiShell()) {
+            return this._renderFixedUiDetailBody(item);
+        }
+        return this._renderClassicDetailBody(item);
+    }
+
+    private _renderClassicDetailBody(item: Announcement): string {
+        const date = item.published_at ? new Date(item.published_at).toLocaleString('ja-JP') : '';
+        const hasImage = typeof item.image_url === 'string' && item.image_url !== '';
+        const isPinned = item.is_pinned === true;
+        const image = hasImage
+            ? `<div class="announcement-detail__hero"><img src="${DomHelper.escapeHtml(item.image_url || '')}" alt=""></div>`
+            : '';
+        const body = DomHelper.escapeHtml(item.body || '').replace(/\n/g, '<br>');
+        const badges: string[] = [];
+        if (isPinned) {
+            badges.push('<span class="announcement-badge announcement-badge--pinned"><i class="fas fa-thumbtack" aria-hidden="true"></i>固定</span>');
+        }
+
+        return `
+            <article class="announcement-detail${hasImage ? ' announcement-detail--has-image' : ''}">
+                ${image}
+                <div class="announcement-detail__panel">
+                    ${badges.length > 0 ? `<div class="announcement-detail__badges">${badges.join('')}</div>` : ''}
+                    <h1 class="announcement-detail__title">${DomHelper.escapeHtml(item.title || '')}</h1>
+                    ${date !== '' ? `<p class="announcement-detail__date"><i class="far fa-clock" aria-hidden="true"></i>${DomHelper.escapeHtml(date)}</p>` : ''}
+                    ${body !== '' ? `<div class="announcement-detail__body">${body}</div>` : ''}
+                </div>
+            </article>
+        `;
+    }
+
+    private _renderFixedUiDetailBody(item: Announcement): string {
         const date = item.published_at
             ? new Date(item.published_at).toLocaleDateString('ja-JP', {
                 year: 'numeric',
