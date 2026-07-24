@@ -105,7 +105,10 @@ class OrderService
                 $this->applyOrderPointChanges($user, $order, $pointsUsed, $finalAmount);
                 $this->recordMemberVisit($user, $order);
                 $this->awardStamps($user, $order, $finalAmount);
-                $this->awardLotteryEntitlements($user, $order, $finalAmount);
+                // 現金（店内注文・後で決済）のガチャは取置き時点では付与しない。注文完了時に付与する
+                if ($paymentMethod !== PaymentMethod::CASH) {
+                    $this->awardLotteryEntitlements($user, $order, $finalAmount);
+                }
             }
 
             DB::commit();
@@ -174,6 +177,28 @@ class OrderService
         }
 
         $this->awardLotteryEntitlements($user, $order, $finalAmount);
+    }
+
+    /**
+     * 現金注文の取引完了後のガチャ権利付与（冪等）。
+     * 取置き登録時点では付与せず、管理画面での完了（引取・会計確定）時に付与する。
+     */
+    public function applyCashOrderLotteryIfNeeded(Order $order): void
+    {
+        if ($order->payment_method !== PaymentMethod::CASH) {
+            return;
+        }
+        if ($order->status !== OrderStatus::COMPLETED) {
+            return;
+        }
+
+        $order->loadMissing('user.member');
+        $user = $order->user;
+        if ($user === null) {
+            return;
+        }
+
+        $this->awardLotteryEntitlements($user, $order, (float) $order->total_amount);
     }
 
     /**
