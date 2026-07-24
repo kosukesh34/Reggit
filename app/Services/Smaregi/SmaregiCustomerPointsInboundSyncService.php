@@ -267,23 +267,13 @@ class SmaregiCustomerPointsInboundSyncService
             }
 
             if ($delta > 0) {
-                // TEMP: テスト用。ポイント増分を 2〜5 倍（最終的に削除）
-                $multiplier = random_int(2, 5);
-                $boosted = $delta * $multiplier;
                 $validDays = $this->shopSettingRepository->getPointsValidDays($aggregate->projectId());
                 $aggregate->earnPoints(
-                    $boosted,
-                    self::SYNC_DESCRIPTION.' [TEMP x'.$multiplier.']',
+                    $delta,
+                    self::SYNC_DESCRIPTION,
                     null,
                     now()->addDays($validDays),
                 );
-                Log::info('[Smaregi] TEMP customer point boost applied', [
-                    'member_id' => $aggregate->id()->value(),
-                    'project_id' => $aggregate->projectId(),
-                    'delta_original' => $delta,
-                    'multiplier' => $multiplier,
-                    'delta_boosted' => $boosted,
-                ]);
             } else {
                 $aggregate->usePoints(abs($delta), self::SYNC_DESCRIPTION, null);
             }
