@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { iconForPrimary } from '../ios/icons';
+import { isFixedUiShell } from '../demo/demoMode';
+import { iconForPrimary } from '../demo/icons';
 import {
     buildBottomTabs,
     buildCardSegments,
@@ -7,7 +8,7 @@ import {
     isFeatureEnabled,
     primaryForTab,
     type PrimaryTab,
-} from '../ios/navigation';
+} from '../demo/navigation';
 
 type FrontendMenuItem = {
     tab: string;
@@ -47,7 +48,7 @@ function getFrontendMenu(): FrontendMenuItem[] {
         .map((item) => ({
             tab: item.tab,
             label: typeof item.label === 'string' && item.label.length > 0 ? item.label : item.tab,
-            icon: typeof item.icon === 'string' && item.icon.length > 0 ? item.icon : undefined,
+            icon: typeof item.icon === 'string' && item.icon.length > 0 ? item.icon : 'fa-circle',
             url: typeof item.url === 'string' ? item.url : undefined,
             open: typeof item.open === 'string' ? item.open : undefined,
         }));
@@ -121,7 +122,7 @@ function IosSegmentBar({
 }
 
 /** セグメント・Large Title のみ。再レンダーしてもタブ中身を消さない */
-function IosDynamicChrome(): JSX.Element | null {
+function FixedShellChrome(): JSX.Element | null {
     const activeTab = useActiveTab();
     const primary = primaryForTab(activeTab);
     const cardSegments = useMemo(() => buildCardSegments(), []);
@@ -144,7 +145,12 @@ function IosDynamicChrome(): JSX.Element | null {
         );
     }
     if (activeTab === 'designlab') {
-        return null;
+        return (
+            <>
+                <h1 className="ios-large-title">カード</h1>
+                <IosSegmentBar items={cardSegments} activeTab={activeTab} />
+            </>
+        );
     }
     return null;
 }
@@ -213,7 +219,7 @@ export function FrontendTabLayout(): JSX.Element {
     return (
         <>
             <div id="announcementsTopBar" className="announcements-section announcements-top-bar" aria-label="お知らせバー" hidden />
-            <IosDynamicChrome />
+            {isFixedUiShell() ? <FixedShellChrome /> : null}
             <StaticTabMounts />
             <LiffDetailShell />
         </>
@@ -227,27 +233,57 @@ export function FrontendTabFooter(): JSX.Element | null {
     }
 
     const isNativeEmbed = window.__MOBILE_APP_MODE__ === true || document.body.classList.contains('native-app-embed');
-    const tabs = buildBottomTabs();
     const activeTab = useActiveTab();
-    const activePrimary: PrimaryTab | null = primaryForTab(activeTab);
+    const embedStyle = isNativeEmbed
+        ? { display: 'none', visibility: 'hidden' as const, height: '0', overflow: 'hidden' as const }
+        : undefined;
 
+    // /liff デモ: 下部タブ数・IAは固定（ホーム / オーダー / カード / 来店）
+    if (isFixedUiShell()) {
+        const tabs = buildBottomTabs();
+        const activePrimary: PrimaryTab | null = primaryForTab(activeTab);
+        return (
+            <footer
+                className="main-tabs liff-tab-bar ios-tab-bar"
+                style={embedStyle}
+                aria-hidden={isNativeEmbed ? true : undefined}
+            >
+                {tabs.map((item, index) => (
+                    <button
+                        key={item.primary}
+                        type="button"
+                        className={`main-tab-btn${activePrimary === item.primary || (activePrimary === null && index === 0) ? ' active' : ''}`}
+                        data-tab={item.tab}
+                        data-primary-tab={item.primary}
+                    >
+                        <span className="ios-tab-icon" aria-hidden="true">
+                            {iconForPrimary(item.primary)}
+                        </span>
+                        <span>{item.label}</span>
+                    </button>
+                ))}
+            </footer>
+        );
+    }
+
+    // 店舗LIFF: 管理画面で設定したタブ数・ラベル・アイコンをそのまま表示
+    const menu = getFrontendMenu();
     return (
         <footer
-            className="main-tabs ios-tab-bar"
-            style={isNativeEmbed ? { display: 'none', visibility: 'hidden', height: '0', overflow: 'hidden' } : undefined}
+            className="main-tabs"
+            style={embedStyle}
             aria-hidden={isNativeEmbed ? true : undefined}
         >
-            {tabs.map((item, index) => (
+            {menu.map((item, index) => (
                 <button
-                    key={item.primary}
+                    key={item.tab}
                     type="button"
-                    className={`main-tab-btn${activePrimary === item.primary || (activePrimary === null && index === 0) ? ' active' : ''}`}
+                    className={`main-tab-btn${activeTab === item.tab || (activeTab === '' && index === 0) ? ' active' : ''}`}
                     data-tab={item.tab}
-                    data-primary-tab={item.primary}
+                    data-link-url={isLinkTabKey(item.tab) ? item.url : undefined}
+                    data-link-open="embed"
                 >
-                    <span className="ios-tab-icon" aria-hidden="true">
-                        {iconForPrimary(item.primary)}
-                    </span>
+                    <i className={`fas ${item.icon ?? 'fa-circle'}`} aria-hidden="true" />
                     <span>{item.label}</span>
                 </button>
             ))}

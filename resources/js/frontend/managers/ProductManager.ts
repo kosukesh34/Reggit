@@ -1,6 +1,6 @@
 import { ApiClient } from '../../shared/utils/apiClient';
 import { AppConstants } from '../../shared/constants';
-import { isIosFixedUiDemo } from '../ios/demoMode';
+import { isDemoDataMode, isFixedUiShell } from '../demo/demoMode';
 
 type Product = {
     id: number | string;
@@ -46,33 +46,70 @@ export class ProductManager {
     }
 
     async loadProducts(): Promise<Product[]> {
-        if (isIosFixedUiDemo()) {
-            const catalog = this.getSampleCatalog();
-            this.products = catalog.products;
-            this.categories = catalog.categories;
+        if (isDemoDataMode()) {
+            return this._applySampleCatalog();
+        }
+
+        try {
+            const result = await this.apiClient.get(AppConstants.API_ENDPOINTS.PRODUCTS);
+            if (result.success !== true) {
+                throw new Error(result.error || 'Failed to load products');
+            }
+
+            const payload = result.data;
+            if (payload && (payload as { products?: Product[] }).products
+                && Array.isArray((payload as { products: Product[] }).products)) {
+                const data = payload as { products: Product[]; categories?: Category[] };
+                this.products = data.products;
+                this.categories = data.categories || [];
+            } else if (Array.isArray(payload)) {
+                this.products = payload as Product[];
+                this.categories = this._buildCategoriesFromProducts(payload as Product[]);
+            } else {
+                throw new Error('Invalid product data format');
+            }
+
+            if (this.products.length === 0 && this._isFixedUi()) {
+                return this._applySampleCatalog();
+            }
+
+            this._fillMissingProductImages();
             return this.products;
+        } catch (error) {
+            if (this._isFixedUi()) {
+                return this._applySampleCatalog();
+            }
+            throw error;
         }
+    }
 
-        const result = await this.apiClient.get(AppConstants.API_ENDPOINTS.PRODUCTS);
+    _isFixedUi(): boolean {
+        return isFixedUiShell();
+    }
 
-        if (result.success !== true) {
-            throw new Error(result.error || 'Failed to load products');
-        }
-
-        const payload = result.data;
-        if (payload && (payload as { products?: Product[] }).products
-            && Array.isArray((payload as { products: Product[] }).products)) {
-            const data = payload as { products: Product[]; categories?: Category[] };
-            this.products = data.products;
-            this.categories = data.categories || [];
-        } else if (Array.isArray(payload)) {
-            this.products = payload as Product[];
-            this.categories = this._buildCategoriesFromProducts(payload as Product[]);
-        } else {
-            throw new Error('Invalid product data format');
-        }
-
+    _applySampleCatalog(): Product[] {
+        const catalog = this.getSampleCatalog();
+        this.products = catalog.products;
+        this.categories = catalog.categories;
         return this.products;
+    }
+
+    _fillMissingProductImages(): void {
+        const samples = ProductManager.buildBuiltinSampleCatalog().products;
+        if (samples.length === 0) {
+            return;
+        }
+        this.products = this.products.map((product, index) => {
+            if (typeof product.image_url === 'string' && product.image_url !== '') {
+                return product;
+            }
+            const byName = samples.find((sample) => sample.name === product.name);
+            const fallback = byName || samples[index % samples.length];
+            return {
+                ...product,
+                image_url: fallback.image_url,
+            };
+        });
     }
 
     getSampleCatalog(): ProductCatalog {

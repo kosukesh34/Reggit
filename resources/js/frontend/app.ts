@@ -21,7 +21,15 @@ import { ReservationManager } from './managers/ReservationManager';
 import { MemberManager } from './managers/MemberManager';
 import { LiffPageRouter, parseLiffHash, isDeepLiffHash } from './navigation/LiffPageRouter';
 import type { LiffPageKey } from './navigation/LiffPageRouter';
-import { primaryForTab } from './ios/navigation';
+import { primaryForTab } from './demo/navigation';
+import { isFixedUiShell } from './demo/demoMode';
+import {
+    buildBuiltinSampleCoupons,
+    buildBuiltinSampleMemberData,
+    buildBuiltinSampleQueueEntry,
+    buildBuiltinSampleReservations,
+    buildBuiltinSampleStampCards,
+} from './demo/sampleData';
 import './managers/liff-blocks/renderPremiumBlocks';
 import '../shared/utils/liffInit';
 
@@ -1826,13 +1834,20 @@ class ReggitApp {
             }
 
             const primary = primaryForTab(tab);
+            const useFixedPrimary = isFixedUiShell();
             DomHelper.querySelectorAll('.main-tab-btn').forEach((btn) => {
                 DomHelper.removeClass(btn, AppConstants.CSS_CLASSES.ACTIVE);
                 const el = btn as HTMLElement;
-                const btnPrimary = el.dataset.primaryTab || el.dataset.tab;
-                if (primary !== null && btnPrimary === primary) {
-                    DomHelper.addClass(btn, AppConstants.CSS_CLASSES.ACTIVE);
-                } else if (primary === null && el.dataset.tab === tab) {
+                if (useFixedPrimary) {
+                    const btnPrimary = el.dataset.primaryTab || el.dataset.tab;
+                    if (primary !== null && btnPrimary === primary) {
+                        DomHelper.addClass(btn, AppConstants.CSS_CLASSES.ACTIVE);
+                    } else if (primary === null && el.dataset.tab === tab) {
+                        DomHelper.addClass(btn, AppConstants.CSS_CLASSES.ACTIVE);
+                    }
+                    return;
+                }
+                if (el.dataset.tab === tab) {
                     DomHelper.addClass(btn, AppConstants.CSS_CLASSES.ACTIVE);
                 }
             });
@@ -2029,37 +2044,7 @@ class ReggitApp {
     }
 
     getDesignerSampleMemberData() {
-        return {
-            is_member: true,
-            points: 2450,
-            current_rank: 'green',
-            current_rank_label: 'GREEN',
-            current_rank_color: '#0E7C66',
-            next_rank_label: 'GOLD',
-            points_to_next_rank: 550,
-            days_to_next_rank: 18,
-            days_required_for_next_rank: 30,
-            show_points_display: true,
-            show_rank_progress: true,
-            member_card_design: 'emblem',
-            member_card_display_type: 'card',
-            member_card_code_type: 'barcode',
-            points_expiry: {
-                expires_at_label: '無期限',
-                points_expiring: 0,
-            },
-            rank_up_history: [
-                { from_rank_label: 'ブロンズ', to_rank_label: 'GREEN', achieved_at: '2025/11/03' },
-            ],
-            user: {
-                name: 'Alex',
-            },
-            member: {
-                member_number: '1234567890123456',
-                points: 2450,
-            },
-            is_sample_preview: true,
-        };
+        return buildBuiltinSampleMemberData();
     }
 
     getDesignerSampleProducts() {
@@ -2067,85 +2052,19 @@ class ReggitApp {
     }
 
     getDesignerSampleQueueEntry() {
-        return {
-            id: 'sample',
-            formatted_queue_number: String(new Date().getDate()) + '12',
-            status: 'waiting',
-            party_size: 2,
-            waiting_count: 5,
-            ahead_count: 3,
-            estimated_wait_minutes: 15,
-            line_linked: true,
-            is_sample_preview: true,
-        };
+        return buildBuiltinSampleQueueEntry();
     }
 
     getDesignerSampleStampCards() {
-        return [
-            {
-                id: 'sample-stamp-1',
-                name: '来店スタンプラリー',
-                current_stamps: 6,
-                required_stamps: 10,
-                layout_style: 'grid',
-                image_url: '/images/liff/stamp-card-bg.jpg',
-                reward_description: '10個集めるとドリンク1杯無料',
-                valid_until: '2026-12-31',
-                is_sample_preview: true,
-                reward_milestones: [
-                    { stamp_count: 5, description: 'お菓子プレゼント' },
-                    { stamp_count: 10, description: 'ドリンク無料' },
-                ],
-            },
-        ];
+        return buildBuiltinSampleStampCards();
     }
 
     getDesignerSampleCoupons() {
-        const until = new Date();
-        until.setDate(until.getDate() + 14);
-        return [
-            {
-                id: 'sample-coupon-1',
-                coupon_name: 'ドリンク1杯無料',
-                description: 'お好きなドリンク1杯を無料でご提供します',
-                status: 'available',
-                valid_until: until.toISOString(),
-                issued_at: new Date().toISOString(),
-                image_url: '/images/liff/coupon-drink.jpg',
-                code: 'DRINK-FREE-2401',
-                use_display: 'barcode',
-                is_sample_preview: true,
-            },
-            {
-                id: 'sample-coupon-2',
-                coupon_name: 'デザート20%OFF',
-                description: 'デザートメニューが20%割引になります',
-                status: 'available',
-                valid_until: until.toISOString(),
-                issued_at: new Date().toISOString(),
-                image_url: '/images/liff/coupon-dessert.jpg',
-                code: 'DESSERT-20-2401',
-                use_display: 'barcode',
-                is_sample_preview: true,
-            },
-        ];
+        return buildBuiltinSampleCoupons();
     }
 
     getDesignerSampleReservations() {
-        const reservedAt = new Date();
-        reservedAt.setDate(reservedAt.getDate() + 3);
-        reservedAt.setHours(18, 0, 0, 0);
-        return [
-            {
-                id: -1,
-                reserved_at: reservedAt.toISOString(),
-                status: 'confirmed',
-                reservation_number: String(new Date().getDate()) + '1',
-                number_of_people: 2,
-                notes: '窓側の席希望',
-                is_sample_preview: true,
-            },
-        ];
+        return buildBuiltinSampleReservations();
     }
 
     async checkMembershipAndLoadReservations() {

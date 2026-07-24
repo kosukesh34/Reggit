@@ -3,7 +3,8 @@ import { DomHelper } from '../../shared/utils/domHelper';
 import { ToastManager } from '../../shared/utils/toast';
 import { ConfirmDialog } from '../../shared/utils/confirmDialog';
 import { getGuestRegisterMessage, getMemberRegistrationMode, shouldShowRegistrationForm, syncMemberRegistrationModeFromPayload } from '../utils/membershipPolicy';
-import { isIosFixedUiDemo } from '../ios/demoMode';
+import { isDemoDataMode, isFixedUiShell } from '../demo/demoMode';
+import { buildBuiltinSampleMemberData } from '../demo/sampleData';
 
 declare const liff: any;
 declare const JsBarcode: any;
@@ -642,21 +643,20 @@ export class MemberManager {
         this._attachRegisterTrigger(container);
     }
 
-    /** サンプル会員証を描画（固定UIデモ／未登録時） */
+    /** サンプル会員証を描画（デモモード時のみ。通常の固定UIはゲスト登録導線） */
     renderSampleMemberCard(): void {
-        if (isIosFixedUiDemo()) {
-            const sample = (typeof window !== 'undefined'
-                && window.app
-                && typeof window.app.getDesignerSampleMemberData === 'function')
-                ? window.app.getDesignerSampleMemberData()
-                : null;
-            if (sample !== null && typeof sample === 'object') {
-                this.render({
-                    ...sample,
-                    is_sample_preview: true,
-                });
-                return;
-            }
+        if (isDemoDataMode()) {
+            const app = typeof window !== 'undefined'
+                ? (window.app as { getDesignerSampleMemberData?: () => Record<string, unknown> } | undefined)
+                : undefined;
+            const sample = (app && typeof app.getDesignerSampleMemberData === 'function')
+                ? app.getDesignerSampleMemberData()
+                : buildBuiltinSampleMemberData();
+            this.render({
+                ...sample,
+                is_sample_preview: true,
+            });
+            return;
         }
         this.renderGuestCard();
     }
@@ -1054,9 +1054,7 @@ export class MemberManager {
         if (!container) return;
         if (!data || typeof data !== 'object') return;
 
-        if (typeof document !== 'undefined'
-            && document.body
-            && document.body.classList.contains('ios-fixed-ui')) {
+        if (isFixedUiShell()) {
             this._renderIosWalletMember(container, data);
             return;
         }
@@ -2196,13 +2194,14 @@ export class MemberManager {
             try {
                 const el = document.getElementById(barcodeId);
                 if (el) {
+                    const isWalletCard = el.classList.contains('ios-wallet-card__barcode');
                     JsBarcode(`#${barcodeId}`, memberNumber, {
                         format: 'CODE128',
-                        width: 3,
-                        height: 150,
-                        displayValue: true,
+                        width: isWalletCard ? 2.2 : 3,
+                        height: isWalletCard ? 96 : 150,
+                        displayValue: !isWalletCard,
                         fontSize: 18,
-                        margin: 14,
+                        margin: isWalletCard ? 6 : 14,
                         background: '#ffffff',
                         lineColor: '#000000',
                     });
