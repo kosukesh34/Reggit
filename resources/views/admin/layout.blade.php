@@ -154,6 +154,10 @@
                         <i class="fas fa-cog"></i>
                         <span>クーポン設定</span>
                     </a>
+                    <a href="{{ admin_route('admin.settings.lottery') }}" class="nav-item nav-item--sub {{ request()->routeIs('admin.settings.lottery*') ? 'active' : '' }}">
+                        <i class="fas fa-dice"></i>
+                        <span>ガチャ・スクラッチ</span>
+                    </a>
                     @endif
                 </div>
                 @endif

@@ -7,7 +7,9 @@ use App\Domain\Order\Events\OrderPointsSyncRequested;
 use App\Domain\Order\Repositories\OrderRepository;
 use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
+use App\Enums\LotterySourceType;
 use App\Models\Member;
+use App\Services\Lottery\LotteryEntitlementService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -26,6 +28,7 @@ class SmaregiCustomerPointsInboundSyncService
         private OrderRepository $orderRepository,
         private DomainEventDispatcher $domainEvents,
         private SmaregiContractProjectResolver $projectResolver,
+        private LotteryEntitlementService $lotteryEntitlementService,
     ) {}
 
     /**
@@ -267,18 +270,37 @@ class SmaregiCustomerPointsInboundSyncService
             }
 
             if ($delta > 0) {
+                // TEMP: テスト用。ポイント増分を 2〜5 倍（最終的に削除）
+                $multiplier = random_int(2, 5);
+                $boosted = $delta * $multiplier;
                 $validDays = $this->shopSettingRepository->getPointsValidDays($aggregate->projectId());
                 $aggregate->earnPoints(
-                    $delta,
-                    self::SYNC_DESCRIPTION,
+                    $boosted,
+                    self::SYNC_DESCRIPTION.' [TEMP x'.$multiplier.']',
                     null,
                     now()->addDays($validDays),
                 );
+                Log::info('[Smaregi] TEMP customer point boost applied', [
+                    'member_id' => $aggregate->id()->value(),
+                    'project_id' => $aggregate->projectId(),
+                    'delta_original' => $delta,
+                    'multiplier' => $multiplier,
+                    'delta_boosted' => $boosted,
+                ]);
             } else {
                 $aggregate->usePoints(abs($delta), self::SYNC_DESCRIPTION, null);
             }
 
             $this->memberRepository->save($aggregate);
+
+            if ($delta > 0) {
+                // TEMP: ポイント増分同期時もガチャ権利を付与（最終的に削除）
+                $this->lotteryEntitlementService->forceGrantGachaForTest(
+                    $member,
+                    LotterySourceType::SMAREGI_TRANSACTION,
+                    'customer-points-'.now()->format('YmdHis').'-'.$member->id,
+                );
+            }
 
             Log::info('[Smaregi] Inbound point sync applied', [
                 'member_id' => $aggregate->id()->value(),

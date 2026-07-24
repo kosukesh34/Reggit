@@ -384,14 +384,19 @@ export class CouponsManager {
     _renderClassicCoupons(coupons: any[], defaultImage: string | null): void {
         const section = this.getSection();
         if (!section) return;
+        const showPlay = this._shouldShowLotteryEntry();
+        const playEntry = showPlay ? this._renderLotteryPlayEntry() : '';
         if (!coupons || coupons.length === 0) {
-            section.innerHTML = `
+            section.innerHTML = playEntry + `
                 <div class="coupons-empty">
                     <i class="fas fa-ticket-alt"></i>
                     <p>クーポンはありません</p>
-                    <p class="coupons-empty-sub">お店から発行されるとここに表示されます</p>
+                    <p class="coupons-empty-sub">${showPlay
+                        ? 'ガチャやスクラッチでクーポンを獲得できます'
+                        : 'お店から発行されるとここに表示されます'}</p>
                 </div>
             `;
+            this._bindLotteryPlayEntry(section);
             this._fixNativeCouponsScroll();
             return;
         }
@@ -497,8 +502,8 @@ export class CouponsManager {
         const renderEmpty = (message: string): string =>
             `<div class="coupons-tab-empty"><i class="fas fa-ticket-alt"></i><p>${DomHelper.escapeHtml(message)}</p></div>`;
 
-        let html =
-            `<div class="coupons-header"><h2 class="section-title"><i class="fas fa-ticket-alt"></i> マイクーポン</h2></div>`
+        let html = playEntry
+            + `<div class="coupons-header"><h2 class="section-title"><i class="fas fa-ticket-alt"></i> マイクーポン</h2></div>`
             + `<div class="coupons-list-tabs" role="tablist" aria-label="クーポン一覧">`
             + `<button type="button" class="coupons-list-tab${defaultTab === 'available' ? ' is-active' : ''}" role="tab" data-tab="available" aria-selected="${defaultTab === 'available' ? 'true' : 'false'}">`
             + `<i class="fas fa-check-circle" aria-hidden="true"></i> 利用可能`
@@ -517,6 +522,7 @@ export class CouponsManager {
             + `</div>`;
 
         section.innerHTML = html;
+        this._bindLotteryPlayEntry(section);
         this._bindCouponTabs(section);
         this._bindUseButtons(section);
         this._bindDetailLinks(section);
@@ -525,15 +531,20 @@ export class CouponsManager {
     _renderFixedUiCoupons(coupons: any[], defaultImage: string | null, isSample = false): void {
         const section = this.getSection();
         if (!section) return;
+        const showPlay = isDemoDataMode() || this._shouldShowLotteryEntry();
+        const playEntry = showPlay ? this._renderLotteryPlayEntry() : '';
 
         if (!coupons || coupons.length === 0) {
-            section.innerHTML = `
+            section.innerHTML = playEntry + `
                 <div class="ios-empty">
                     <div class="ios-empty__icon"><i class="fas fa-ticket-alt"></i></div>
                     <h3 class="ios-empty__title">クーポンはありません</h3>
-                    <p class="ios-empty__text">お店から発行されるとここに表示されます</p>
+                    <p class="ios-empty__text">${showPlay
+                        ? 'ガチャやスクラッチでクーポンを獲得できます'
+                        : 'お店から発行されるとここに表示されます'}</p>
                 </div>
             `;
+            this._bindLotteryPlayEntry(section);
             this._fixNativeCouponsScroll();
             return;
         }
@@ -615,7 +626,8 @@ export class CouponsManager {
             `<div class="ios-empty ios-empty--compact"><p>${DomHelper.escapeHtml(message)}</p></div>`;
 
         const html =
-            `<div class="ios-panel-head">
+            playEntry
+            + `<div class="ios-panel-head">
                 <h2 class="ios-panel-head__title">クーポン</h2>
                 <p class="ios-panel-head__sub">使えるお得な特典</p>
             </div>`
@@ -635,9 +647,71 @@ export class CouponsManager {
             + `</div>`;
 
         section.innerHTML = html;
+        this._bindLotteryPlayEntry(section);
         this._bindCouponTabs(section);
         this._bindUseButtons(section);
         this._bindDetailLinks(section);
+    }
+
+    _shouldShowLotteryEntry(): boolean {
+        const flags = window.__FEATURE_FLAGS__;
+        if (flags === null || typeof flags !== 'object') {
+            return false;
+        }
+        return Boolean(flags.feature_gacha_enabled) || Boolean(flags.feature_scratch_enabled);
+    }
+
+    _renderLotteryPlayEntry(): string {
+        const eyebrow = isDemoDataMode() ? 'DEMO PLAY' : 'SPECIAL PLAY';
+        return `
+            <section class="demo-play-entry" aria-label="クーポンあそび">
+                <div class="demo-play-entry__head">
+                    <p class="demo-play-entry__eyebrow">${eyebrow}</p>
+                    <h3 class="demo-play-entry__title">クーポンを当てよう</h3>
+                    <p class="demo-play-entry__sub">ガチャやスクラッチで特典クーポンを獲得できます</p>
+                </div>
+                <div class="demo-play-entry__actions">
+                    <button type="button" class="demo-play-entry__btn demo-play-entry__btn--gacha" data-demo-play="gacha">
+                        <span class="demo-play-entry__btn-label">ガチャガチャ</span>
+                        <span class="demo-play-entry__btn-hint">回して当てる</span>
+                    </button>
+                    <button type="button" class="demo-play-entry__btn demo-play-entry__btn--scratch" data-demo-play="scratch">
+                        <span class="demo-play-entry__btn-label">スクラッチ</span>
+                        <span class="demo-play-entry__btn-hint">こすって開ける</span>
+                    </button>
+                </div>
+            </section>
+        `;
+    }
+
+    _bindLotteryPlayEntry(section: Element): void {
+        section.querySelectorAll('[data-demo-play]').forEach((btn) => {
+            btn.addEventListener('click', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                const play = (btn as HTMLElement).dataset.demoPlay;
+                if (play === 'gacha' || play === 'scratch') {
+                    try {
+                        window.sessionStorage.setItem(
+                            isDemoDataMode() ? 'liff_demo_play_focus' : 'liff_lottery_play_focus',
+                            play,
+                        );
+                    } catch {
+                        // ignore
+                    }
+                }
+                if (typeof window.app?.switchTab === 'function') {
+                    const designLab = (window.app as any)?.designLabManager;
+                    if (play === 'gacha' && designLab !== undefined && typeof designLab.openGachaPopup === 'function') {
+                        void designLab.openGachaPopup();
+                        return;
+                    }
+                    window.app.switchTab('designlab');
+                } else {
+                    window.location.hash = 'designlab';
+                }
+            });
+        });
     }
 
     _bindDetailLinks(section: Element): void {
