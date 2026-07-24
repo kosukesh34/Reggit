@@ -129,8 +129,8 @@ function DemoFixedChrome({
                         aria-controls="sideMenu"
                         aria-expanded="false"
                     >
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                            <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
                         </svg>
                     </button>
                     {header.logoUrl ? <img src={header.logoUrl} alt="" className="header-logo" /> : null}
@@ -155,9 +155,9 @@ function DemoFixedChrome({
                             title="会員・設定"
                             aria-label="会員・設定"
                         >
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                <circle cx="12" cy="8" r="3.5" stroke="currentColor" strokeWidth="1.7" />
-                                <path d="M5 19.5c1.8-3.2 4-4.8 7-4.8s5.2 1.6 7 4.8" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+                            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                <circle cx="12" cy="8" r="3.5" stroke="currentColor" strokeWidth="2" />
+                                <path d="M5 19.5c1.8-3.2 4-4.8 7-4.8s5.2 1.6 7 4.8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                             </svg>
                         </button>
                         {showCart ? (
@@ -194,15 +194,6 @@ function DemoFixedChrome({
                         </button>
                     ))}
                 </nav>
-                <div className="ios-side-menu__footer">
-                    <button
-                        type="button"
-                        className="ios-side-menu__item ios-side-menu__item--lab"
-                        data-menu-tab="designlab"
-                    >
-                        ガチャ・スクラッチ
-                    </button>
-                </div>
             </aside>
 
             <div className="cart-sidebar ios-cart-sheet" id="cartSidebar">

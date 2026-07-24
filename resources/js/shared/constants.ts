@@ -76,7 +76,6 @@ export const AppConstants = {
         RESERVATIONS: 'reservations',
         GALLERY: 'gallery',
         ANNOUNCEMENTS: 'announcements',
-        DESIGNLAB: 'designlab',
     },
 
     CATEGORIES: {
@@ -247,8 +246,6 @@ export const AppConstants = {
         GALLERY_TAB: 'galleryTab',
         GALLERY_SECTION: 'gallerySection',
         ANNOUNCEMENTS_TAB: 'announcementsTab',
-        DESIGNLAB_TAB: 'designlabTab',
-        DESIGNLAB_SECTION: 'designlabSection',
     },
 
     CSS_CLASSES: {
