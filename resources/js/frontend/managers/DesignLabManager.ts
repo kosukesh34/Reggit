@@ -67,8 +67,9 @@ export class DesignLabManager {
     /**
      * ガチャ筐体だけのポップアップを開く。
      * デモ以外は未消化のガチャ権利があるときだけ表示する。
+     * @returns 表示した場合 true
      */
-    async openGachaPopup(): Promise<void> {
+    async openGachaPopup(): Promise<boolean> {
         this._lotteryLog('popup_open_start', { demo: isDemoDataMode() });
         this.closeGachaPopup();
         document.body.classList.add('liff-lottery-ui');
@@ -83,7 +84,7 @@ export class DesignLabManager {
             });
             if (pending === null) {
                 this._lotteryLog('popup_abort_no_pending');
-                return;
+                return false;
             }
         }
 
@@ -113,7 +114,7 @@ export class DesignLabManager {
         const panel = overlay.querySelector('.pp-gacha-popup__panel') as HTMLElement | null;
         if (panel === null) {
             this._lotteryLog('popup_abort_no_panel');
-            return;
+            return false;
         }
         this._fillDomeCapsules(panel);
         this._bind(panel);
@@ -121,6 +122,7 @@ export class DesignLabManager {
         this._lotteryLog('popup_mounted', {
             hasDome: panel.querySelector('.pp-gacha__dome') !== null,
         });
+        return true;
     }
 
     closeGachaPopup(): void {
