@@ -1,4 +1,4 @@
-/** デモ用スクラッチ／ガチャで獲得したクーポン（localStorage） */
+/** デモ用クーポンの獲得・利用状態（localStorage） */
 
 export type DemoCoupon = {
     id: string;

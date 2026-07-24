@@ -4,7 +4,7 @@ import type { ApiClient } from '../../shared/utils/apiClient';
 import { ConfirmDialog } from '../../shared/utils/confirmDialog';
 import { mountDetailLayoutChrome } from '../utils/detailLayoutMount';
 import { applyDemoCouponUsageState, isDemoCouponId, markDemoCouponUsed, readDemoWonCoupons } from '../demo/demoCoupons';
-import { isFixedUiShell, isDemoDataMode } from '../demo/demoMode';
+import { isDemoDataMode, isFixedUiShell } from '../demo/demoMode';
 import { ensureLiffIdentityForLoad } from '../demo/ensureIdentity';
 import { buildBuiltinSampleCoupons } from '../demo/sampleData';
 
@@ -22,12 +22,48 @@ export class CouponsManager {
         this._receivedToastTimer = null;
     }
 
+    getGlobalSetting(key: string, fallback: string): string {
+        return DomHelper.getLiffGlobalSetting(key, fallback);
+    }
+
+    getDefaultCouponDesign(): string {
+        const screenDesign = this.getGlobalSetting('coupon_screen_design', 'ticket');
+        if (screenDesign === 'gallery') return 'card';
+        if (screenDesign === 'compact') return 'minimal';
+        if (screenDesign === 'luxury') return 'vintage';
+        return 'ticket';
+    }
+
     getSection(): Element | null {
         return DomHelper.getTabMount(
             AppConstants.TAB_MOUNTS.COUPONS,
             AppConstants.ELEMENT_IDS.COUPONS_SECTION,
             { silent: true },
         );
+    }
+
+    getLoginTemplate(): string {
+        const nativeHint = (typeof MemberManager !== 'undefined' && MemberManager.isMobileAppMode())
+            ? '会員登録するとクーポンをご利用いただけます。'
+            : 'ログインするとクーポンをご利用いただけます。';
+        const actionBlock = (typeof MemberManager !== 'undefined' && MemberManager.isMobileAppMode())
+            ? `<button type="button" class="btn btn-primary mt-2" onclick="app.switchTab('${AppConstants.TABS.MEMBER}')">
+                    <i class="fas fa-user-plus"></i> 会員登録へ
+                </button>`
+            : '';
+        return `
+            <div class="member-card-container">
+                <div class="member-card member-card--line-only">
+                    <div class="member-card-header">
+                        <h2 class="member-card-title"><i class="fas fa-ticket-alt"></i> マイクーポン</h2>
+                    </div>
+                    <div class="member-card-line-only-body">
+                        <p class="member-card-line-only-message">${DomHelper.escapeHtml(nativeHint)}</p>
+                        ${actionBlock}
+                    </div>
+                </div>
+            </div>
+        `;
     }
 
     getMemberRequiredTemplate(message: unknown): string {
@@ -83,7 +119,11 @@ export class CouponsManager {
 
         const canCallApi = await ensureLiffIdentityForLoad({ waitNativeDevice: true });
         if (!canCallApi) {
-            this.renderSampleCoupons();
+            if (isDemoDataMode()) {
+                this.renderSampleCoupons();
+                return;
+            }
+            section.innerHTML = this.getLoginTemplate();
             return;
         }
 
@@ -118,6 +158,77 @@ export class CouponsManager {
     }
 
     async openDetail(id: number | string, returnHash?: string): Promise<void> {
+        if (!isFixedUiShell()) {
+            await this._openClassicCouponDetail(id, returnHash);
+            return;
+        }
+        await this._openFixedUiCouponDetail(id, returnHash);
+    }
+
+    async _openClassicCouponDetail(id: number | string, returnHash?: string): Promise<void> {
+        if (this.cache.length === 0) {
+            try {
+                const result = await this.apiClient.get(AppConstants.API_ENDPOINTS.MY_COUPONS);
+                const data = result.success === true ? result.data as { coupons?: any[]; default_image_url?: string | null } : null;
+                this.cache = data && Array.isArray(data.coupons) ? data.coupons : [];
+                this.lastDefaultImage = data && data.default_image_url ? data.default_image_url : null;
+            } catch {
+                this.cache = [];
+            }
+        }
+        const cp = this.cache.find((c) => String(c.id) === String(id));
+        if (!cp) {
+            return;
+        }
+        const router = typeof window !== 'undefined' && window.app && window.app.pageRouter
+            ? window.app.pageRouter
+            : null;
+        if (router === null) {
+            return;
+        }
+        const section = router.openPage({
+            key: 'coupon_detail',
+            hash: 'coupon/' + String(id),
+            returnHash: router.resolveReturnHash('coupons', returnHash),
+            title: cp.coupon_name || 'クーポン詳細',
+            bodyClass: 'liff-page-coupon-detail',
+        });
+        if (section === null) {
+            return;
+        }
+        const status = this.normalizeStatus(cp.status);
+        const design = cp.design_template || this.getDefaultCouponDesign();
+        const validFrom = this.formatDate(cp.valid_from);
+        const validUntil = this.formatDate(cp.valid_until);
+        let validText = '';
+        if (validFrom && validUntil) validText = `${validFrom} - ${validUntil}`;
+        else if (validUntil) validText = `有効期限: ${validUntil}`;
+        const imageUrl = cp.image_url || this.lastDefaultImage;
+        const code = (cp.code && String(cp.code).trim()) ? cp.code : '';
+        const useDisplay = this._normalizeUseDisplay(cp.use_display, code);
+        const canShowCode = useDisplay === 'barcode' || useDisplay === 'qr' || useDisplay === 'both';
+        const showUse = status === 'available' && (canShowCode || code);
+        const bodyHtml = `
+            <div class="liff-entity-detail coupon-detail-page">
+                ${imageUrl ? `<div class="liff-entity-detail__image"><img src="${DomHelper.escapeHtml(imageUrl)}" alt=""></div>` : ''}
+                <h1 class="liff-entity-detail__title">${DomHelper.escapeHtml(cp.coupon_name || 'クーポン')}</h1>
+                <p class="liff-entity-detail__meta">状態: ${DomHelper.escapeHtml(status)} · デザイン: ${DomHelper.escapeHtml(design)}</p>
+                ${validText ? `<p class="liff-entity-detail__meta">${DomHelper.escapeHtml(validText)}</p>` : ''}
+                ${cp.description ? `<div class="liff-entity-detail__body">${DomHelper.escapeHtml(cp.description)}</div>` : ''}
+                ${showUse ? `<div class="liff-entity-detail__cta"><button type="button" class="btn btn-primary coupon-use-btn" data-member-coupon-id="${DomHelper.escapeHtml(String(cp.id))}" data-use-display="${DomHelper.escapeHtml(useDisplay)}" data-code="${DomHelper.escapeHtml(code)}" data-coupon-name="${DomHelper.escapeHtml(cp.coupon_name || 'クーポン')}"><i class="fas fa-hand-holding-usd me-1"></i>使用する</button></div>` : ''}
+            </div>
+        `;
+        mountDetailLayoutChrome({
+            section,
+            layoutKey: 'coupon_detail',
+            dataSource: 'coupon_detail',
+            bodyHtml,
+            slotClassName: 'liff-detail-slot coupon-detail-slot',
+        });
+        this._bindUseButtons(section);
+    }
+
+    async _openFixedUiCouponDetail(id: number | string, returnHash?: string): Promise<void> {
         if (this.cache.length === 0) {
             try {
                 const result = await this.apiClient.get(AppConstants.API_ENDPOINTS.MY_COUPONS);
@@ -263,22 +374,166 @@ export class CouponsManager {
     }
 
     render(coupons: any[], defaultImage: string | null, isSample = false): void {
+        if (isFixedUiShell()) {
+            this._renderFixedUiCoupons(coupons, defaultImage, isSample);
+            return;
+        }
+        this._renderClassicCoupons(coupons, defaultImage);
+    }
+
+    _renderClassicCoupons(coupons: any[], defaultImage: string | null): void {
         const section = this.getSection();
         if (!section) return;
-        const showDemoPlay = isFixedUiShell() || isDemoDataMode() || isSample;
-        const playEntry = showDemoPlay ? this._renderDemoPlayEntry() : '';
+        if (!coupons || coupons.length === 0) {
+            section.innerHTML = `
+                <div class="coupons-empty">
+                    <i class="fas fa-ticket-alt"></i>
+                    <p>クーポンはありません</p>
+                    <p class="coupons-empty-sub">お店から発行されるとここに表示されます</p>
+                </div>
+            `;
+            this._fixNativeCouponsScroll();
+            return;
+        }
+        const statusLabels: Record<string, string> = { available: '利用可能', upcoming: '開始前', used: '使用済み', expired: '期限切れ' };
+        const statusGroups: Record<string, any[]> = { available: [], upcoming: [], used: [], expired: [] };
+
+        coupons.forEach((cp) => {
+            const status = this.normalizeStatus(cp.status);
+            if (!statusGroups[status]) statusGroups[status] = [];
+            statusGroups[status].push(cp);
+        });
+
+        const renderCoupon = (cp: any): string => {
+            const status = this.normalizeStatus(cp.status);
+            const design = cp.design_template || this.getDefaultCouponDesign();
+            const themeColor = cp.theme_color && /^#[0-9A-Fa-f]{6}$/.test(cp.theme_color) ? cp.theme_color : '';
+            const label = statusLabels[status] || status;
+            const validFrom = this.formatDate(cp.valid_from);
+            const validUntil = this.formatDate(cp.valid_until);
+            const issuedAt = this.formatDate(cp.issued_at);
+            const usedAt = this.formatDate(cp.used_at);
+            const daysUntilExpiry = status === 'available' ? this.getDaysUntil(cp.valid_until) : null;
+            const expiryClass = daysUntilExpiry !== null && daysUntilExpiry >= 0 && daysUntilExpiry <= 7
+                ? ' coupon-item-valid--urgent'
+                : '';
+            let validText = '';
+            if (validFrom && validUntil) validText = `${validFrom} - ${validUntil}`;
+            else if (validUntil) validText = `有効期限: ${validUntil}`;
+            else if (validFrom) validText = `${validFrom} から利用可能`;
+            const expiryBadge = daysUntilExpiry !== null && daysUntilExpiry >= 0 && daysUntilExpiry <= 7
+                ? `<span class="coupon-item-badge coupon-item-badge--urgent">あと${daysUntilExpiry}日</span>`
+                : '';
+            const imageUrl = cp.image_url || defaultImage;
+            const accentStyle = themeColor ? ` style="--coupon-accent: ${DomHelper.escapeHtml(themeColor)}"` : '';
+            const iconClass = design === 'barcode' ? 'fa-barcode' : design === 'qr' ? 'fa-qrcode' : 'fa-ticket-alt';
+            let imageBlock;
+            if (design === 'barcode') {
+                imageBlock = `<div class="coupon-item-barcode"><div class="coupon-item-barcode-lines"></div><span class="coupon-item-barcode-code">${DomHelper.escapeHtml(cp.coupon_name || 'クーポン')}</span></div>`;
+            } else if (design === 'qr') {
+                imageBlock = '<div class="coupon-item-qr"><div class="coupon-item-qr-grid"></div></div>';
+            } else if (imageUrl) {
+                imageBlock = `<div class="coupon-item-image"><img src="${DomHelper.escapeHtml(imageUrl)}" alt="クーポン"></div>`;
+            } else {
+                imageBlock = `<div class="coupon-item-image coupon-item-image--icon"><i class="fas ${iconClass}" aria-hidden="true"></i></div>`;
+            }
+            const descriptionBlock = (cp.description && cp.description.trim()) ? `<p class="coupon-item-description">${DomHelper.escapeHtml(cp.description)}</p>` : '';
+            const code = (cp.code && String(cp.code).trim()) ? cp.code : '';
+            const useDisplay = this._normalizeUseDisplay(cp.use_display, code);
+            const canShowCode = useDisplay === 'barcode' || useDisplay === 'qr' || useDisplay === 'both';
+            const showUseButton = status === 'available' && (canShowCode || code);
+            const unavailableHint = status === 'upcoming' && validFrom
+                ? `<p class="coupon-item-unavailable"><i class="fas fa-clock" aria-hidden="true"></i>${DomHelper.escapeHtml(validFrom)}から利用できます</p>`
+                : '';
+            const useBtnBlock = showUseButton
+                ? `<div class="coupon-item-actions"><button type="button" class="btn btn-primary coupon-use-btn" data-member-coupon-id="${DomHelper.escapeHtml(String(cp.id))}" data-use-display="${DomHelper.escapeHtml(useDisplay)}" data-code="${DomHelper.escapeHtml(code)}" data-coupon-name="${DomHelper.escapeHtml(cp.coupon_name || 'クーポン')}"><i class="fas fa-hand-holding-usd me-1"></i>使用する</button></div>`
+                : '';
+            const showNewBadge = status === 'available' && this.isRecentlyIssued(cp.issued_at);
+            const newBadge = showNewBadge ? '<span class="coupon-item-badge coupon-item-badge--new">NEW</span>' : '';
+            const usedMeta = status === 'used' && usedAt
+                ? `<span><i class="fas fa-check" aria-hidden="true"></i> 使用日: ${DomHelper.escapeHtml(usedAt)}</span>`
+                : '';
+            const issuedMeta = issuedAt
+                ? `<span><i class="fas fa-plus-circle" aria-hidden="true"></i> 発行日: ${DomHelper.escapeHtml(issuedAt)}</span>`
+                : '';
+            const metaBlock = (issuedMeta || usedMeta)
+                ? `<div class="coupon-item-meta">${usedMeta}${issuedMeta}</div>`
+                : '';
+            return `
+                <div class="coupon-item coupon-item--${status} coupon-item--design-${design} coupon-item--link" data-coupon-id="${DomHelper.escapeHtml(String(cp.id))}"${accentStyle} role="button" tabindex="0">
+                    ${imageBlock}
+                    <div class="coupon-item-header">
+                        <span class="coupon-item-name"><i class="fas ${iconClass} coupon-item-name-icon" aria-hidden="true"></i>${DomHelper.escapeHtml(cp.coupon_name || 'クーポン')}${newBadge}${expiryBadge}</span>
+                        <span class="coupon-item-status coupon-item-status--${status}">${DomHelper.escapeHtml(label)}</span>
+                    </div>
+                    ${validText ? `<p class="coupon-item-valid${expiryClass}">${DomHelper.escapeHtml(validText)}</p>` : ''}
+                    ${descriptionBlock}
+                    ${metaBlock}
+                    ${unavailableHint}
+                    ${useBtnBlock}
+                </div>
+            `;
+        };
+
+        const visibleCoupons = statusGroups.available.concat(statusGroups.upcoming).sort((a, b) => {
+            const weight: Record<string, number> = { available: 0, upcoming: 1 };
+            const statusA = weight[this.normalizeStatus(a.status)] || 0;
+            const statusB = weight[this.normalizeStatus(b.status)] || 0;
+            if (statusA !== statusB) return statusA - statusB;
+            const dateA = a.valid_until || a.valid_from || a.issued_at || '';
+            const dateB = b.valid_until || b.valid_from || b.issued_at || '';
+            return String(dateA).localeCompare(String(dateB));
+        });
+
+        const historyCoupons = statusGroups.used.concat(statusGroups.expired).sort((a, b) => {
+            const dateA = a.used_at || a.valid_until || a.issued_at || '';
+            const dateB = b.used_at || b.valid_until || b.issued_at || '';
+            return String(dateB).localeCompare(String(dateA));
+        });
+
+        const availableCount = visibleCoupons.length;
+        const historyCount = historyCoupons.length;
+        const defaultTab = availableCount > 0 ? 'available' : 'history';
+        const renderEmpty = (message: string): string =>
+            `<div class="coupons-tab-empty"><i class="fas fa-ticket-alt"></i><p>${DomHelper.escapeHtml(message)}</p></div>`;
+
+        let html =
+            `<div class="coupons-header"><h2 class="section-title"><i class="fas fa-ticket-alt"></i> マイクーポン</h2></div>`
+            + `<div class="coupons-list-tabs" role="tablist" aria-label="クーポン一覧">`
+            + `<button type="button" class="coupons-list-tab${defaultTab === 'available' ? ' is-active' : ''}" role="tab" data-tab="available" aria-selected="${defaultTab === 'available' ? 'true' : 'false'}">`
+            + `<i class="fas fa-check-circle" aria-hidden="true"></i> 利用可能`
+            + `<span class="coupons-list-tab-count">${availableCount}</span>`
+            + `</button>`
+            + `<button type="button" class="coupons-list-tab${defaultTab === 'history' ? ' is-active' : ''}" role="tab" data-tab="history" aria-selected="${defaultTab === 'history' ? 'true' : 'false'}">`
+            + `<i class="fas fa-history" aria-hidden="true"></i> 利用済み・期限切れ`
+            + `<span class="coupons-list-tab-count">${historyCount}</span>`
+            + `</button>`
+            + `</div>`
+            + `<div class="coupons-tab-panel${defaultTab === 'available' ? ' is-active' : ''}" data-panel="available" role="tabpanel">`
+            + (availableCount > 0 ? `<div class="coupons-list">${visibleCoupons.map(renderCoupon).join('')}</div>` : renderEmpty('利用可能なクーポンはありません'))
+            + `</div>`
+            + `<div class="coupons-tab-panel${defaultTab === 'history' ? ' is-active' : ''}" data-panel="history" role="tabpanel">`
+            + (historyCount > 0 ? `<div class="coupons-list">${historyCoupons.map(renderCoupon).join('')}</div>` : renderEmpty('利用済み・期限切れのクーポンはありません'))
+            + `</div>`;
+
+        section.innerHTML = html;
+        this._bindCouponTabs(section);
+        this._bindUseButtons(section);
+        this._bindDetailLinks(section);
+    }
+
+    _renderFixedUiCoupons(coupons: any[], defaultImage: string | null, isSample = false): void {
+        const section = this.getSection();
+        if (!section) return;
 
         if (!coupons || coupons.length === 0) {
-            section.innerHTML = playEntry + `
+            section.innerHTML = `
                 <div class="ios-empty">
                     <div class="ios-empty__icon"><i class="fas fa-ticket-alt"></i></div>
                     <h3 class="ios-empty__title">クーポンはありません</h3>
-                    <p class="ios-empty__text">${showDemoPlay
-                        ? 'ガチャやスクラッチでクーポンを獲得できます'
-                        : 'お店から発行されるとここに表示されます'}</p>
+                    <p class="ios-empty__text">お店から発行されるとここに表示されます</p>
                 </div>
             `;
-            this._bindDemoPlayEntry(section);
             this._fixNativeCouponsScroll();
             return;
         }
@@ -315,11 +570,6 @@ export class CouponsManager {
                 ? `あと${daysUntilExpiry}日`
                 : (validUntil ? `〜${validUntil}` : '');
             const desc = (cp.description && String(cp.description).trim()) ? String(cp.description).trim() : '';
-            const sourceBadge = cp.source === 'gacha'
-                ? '<span class="ios-coupon__chip ios-coupon__chip--play">ガチャ</span>'
-                : (cp.source === 'scratch'
-                    ? '<span class="ios-coupon__chip ios-coupon__chip--play">スクラッチ</span>'
-                    : '');
             return `
                 <article class="ios-coupon ios-coupon--${status}" data-coupon-id="${DomHelper.escapeHtml(String(cp.id))}" role="button" tabindex="0">
                     <div class="ios-coupon__media">
@@ -328,7 +578,6 @@ export class CouponsManager {
                         <div class="ios-coupon__chips">
                             <span class="ios-coupon__status">${DomHelper.escapeHtml(label)}</span>
                             ${showNewBadge ? '<span class="ios-coupon__chip ios-coupon__chip--new">NEW</span>' : ''}
-                            ${sourceBadge}
                             ${expiryText ? `<span class="ios-coupon__chip">${DomHelper.escapeHtml(expiryText)}</span>` : ''}
                         </div>
                     </div>
@@ -366,8 +615,7 @@ export class CouponsManager {
             `<div class="ios-empty ios-empty--compact"><p>${DomHelper.escapeHtml(message)}</p></div>`;
 
         const html =
-            playEntry
-            + `<div class="ios-panel-head">
+            `<div class="ios-panel-head">
                 <h2 class="ios-panel-head__title">クーポン</h2>
                 <p class="ios-panel-head__sub">使えるお得な特典</p>
             </div>`
@@ -387,54 +635,9 @@ export class CouponsManager {
             + `</div>`;
 
         section.innerHTML = html;
-        this._bindDemoPlayEntry(section);
         this._bindCouponTabs(section);
         this._bindUseButtons(section);
         this._bindDetailLinks(section);
-    }
-
-    _renderDemoPlayEntry(): string {
-        return `
-            <section class="demo-play-entry" aria-label="クーポンあそび">
-                <div class="demo-play-entry__head">
-                    <p class="demo-play-entry__eyebrow">PLAY</p>
-                    <h3 class="demo-play-entry__title">クーポンを当てよう</h3>
-                    <p class="demo-play-entry__sub">ガチャやスクラッチで特典クーポンを獲得できます</p>
-                </div>
-                <div class="demo-play-entry__actions">
-                    <button type="button" class="demo-play-entry__btn demo-play-entry__btn--gacha" data-demo-play="gacha">
-                        <span class="demo-play-entry__btn-label">ガチャガチャ</span>
-                        <span class="demo-play-entry__btn-hint">回して当てる</span>
-                    </button>
-                    <button type="button" class="demo-play-entry__btn demo-play-entry__btn--scratch" data-demo-play="scratch">
-                        <span class="demo-play-entry__btn-label">スクラッチ</span>
-                        <span class="demo-play-entry__btn-hint">こすって開ける</span>
-                    </button>
-                </div>
-            </section>
-        `;
-    }
-
-    _bindDemoPlayEntry(section: Element): void {
-        section.querySelectorAll('[data-demo-play]').forEach((btn) => {
-            btn.addEventListener('click', (event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                const play = (btn as HTMLElement).dataset.demoPlay;
-                if (play === 'gacha' || play === 'scratch') {
-                    try {
-                        window.sessionStorage.setItem('liff_demo_play_focus', play);
-                    } catch {
-                        // ignore
-                    }
-                }
-                if (typeof window.app?.switchTab === 'function') {
-                    void window.app.switchTab('designlab');
-                } else {
-                    window.location.hash = 'designlab';
-                }
-            });
-        });
     }
 
     _bindDetailLinks(section: Element): void {
