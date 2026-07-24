@@ -44,6 +44,9 @@ class SmaregiInboundAwardApplier
     ): void {
         $this->awardStamps($member, $amount, $headId);
         $this->awardPoints($member, $amount, $headId, $hasSmaregiManagedPointDelta);
+        if ($amount <= 0) {
+            return;
+        }
         $this->lotteryEntitlementService->grantForPurchase(
             $member,
             $amount,
