@@ -41,6 +41,7 @@ export const AppConstants = {
         MY_COUPON_USE: (id: string | number) => `${API_BASE}/members/me/coupons/${id}/use`,
         MEMBERS_LOTTERY: `${API_BASE}/members/me/lottery`,
         MEMBERS_LOTTERY_PLAY: (id: string | number) => `${API_BASE}/members/me/lottery/${id}/play`,
+        MEMBERS_LOTTERY_NOTIFY_WIN: (id: string | number) => `${API_BASE}/members/me/lottery/${id}/notify-win`,
         MEMBERS_WALLET_SUMMARY: `${API_BASE}/members/me/wallet-summary`,
         GALLERY: `${API_BASE}/gallery`,
         QUEUE: `${API_BASE}/queue`,

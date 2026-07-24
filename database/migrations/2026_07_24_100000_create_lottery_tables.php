@@ -32,7 +32,8 @@ return new class extends Migration
                 $table->id();
                 $table->foreignId('project_id')->constrained('projects')->cascadeOnDelete();
                 $table->string('reward_type', 16);
-                $table->foreignId('coupon_id')->constrained('coupons')->cascadeOnDelete();
+                $table->foreignId('coupon_id')->nullable()->constrained('coupons')->nullOnDelete();
+                $table->boolean('is_lose')->default(false);
                 $table->unsignedTinyInteger('probability');
                 $table->unsignedInteger('sort_order')->default(0);
                 $table->boolean('is_active')->default(true);

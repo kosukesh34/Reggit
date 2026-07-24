@@ -7,6 +7,7 @@ use App\Domain\Coupon\Repositories\MemberCouponRepository;
 use App\Domain\Coupon\ValueObjects\PendingIssuedCoupon;
 use App\Models\Coupon;
 use App\Models\Member;
+use App\Models\MemberCoupon;
 use Illuminate\Support\Collection;
 
 class CouponIssueService
@@ -72,10 +73,22 @@ class CouponIssueService
         }
     }
 
-    /** 管理画面またはバッチから手動でクーポンを1件発行する */
-    public function issueManualCoupon(Member $member, Coupon $coupon): void
+    /**
+     * 管理画面またはバッチから手動でクーポンを1件発行する
+     *
+     * @param  bool  $shouldNotify  false のとき MemberCouponObserver の即時通知を抑止する（ガチャ演出後に別途通知する用）
+     */
+    public function issueManualCoupon(Member $member, Coupon $coupon, bool $shouldNotify = true): void
     {
-        $this->createMemberCoupon($member, $coupon, now());
+        if ($shouldNotify) {
+            $this->createMemberCoupon($member, $coupon, now());
+
+            return;
+        }
+
+        MemberCoupon::withoutEvents(function () use ($member, $coupon): void {
+            $this->createMemberCoupon($member, $coupon, now());
+        });
     }
 
     private function issueByTrigger(Member $member, string $trigger): void
