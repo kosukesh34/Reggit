@@ -9,11 +9,13 @@ use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
 use App\Domain\Smaregi\Services\PurchasePointCalculator;
 use App\Domain\Smaregi\Services\SmaregiInboundAwardDescription;
+use App\Enums\LotterySourceType;
 use App\Enums\PointTransactionType;
 use App\Models\Member;
 use App\Models\MemberStampTransaction;
 use App\Models\PointTransaction;
 use App\Services\Admin\MemberAdminService;
+use App\Services\Lottery\LotteryEntitlementService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -31,6 +33,7 @@ class SmaregiInboundAwardApplier
         private SmaregiPointsSyncService $pointsSync,
         private PurchasePointCalculator $pointCalculator,
         private SmaregiInboundAwardDescription $descriptions,
+        private LotteryEntitlementService $lotteryEntitlementService,
     ) {}
 
     public function awardForPurchase(
@@ -41,12 +44,26 @@ class SmaregiInboundAwardApplier
     ): void {
         $this->awardStamps($member, $amount, $headId);
         $this->awardPoints($member, $amount, $headId, $hasSmaregiManagedPointDelta);
+        if ($amount <= 0) {
+            return;
+        }
+        $this->lotteryEntitlementService->grantForPurchase(
+            $member,
+            $amount,
+            LotterySourceType::SMAREGI_TRANSACTION,
+            $headId,
+        );
     }
 
     public function reverseForCancel(Member $member, string $headId): void
     {
         $this->reverseAwardedPoints($member, $headId, SmaregiInboundAwardDescription::REASON_CANCEL);
         $this->reverseAwardedStamps($member, $headId, SmaregiInboundAwardDescription::REASON_CANCEL);
+        $this->lotteryEntitlementService->revokePendingForSource(
+            $member,
+            LotterySourceType::SMAREGI_TRANSACTION,
+            $headId,
+        );
     }
 
     public function reverseForReturn(
@@ -68,6 +85,11 @@ class SmaregiInboundAwardApplier
             $absAmount,
             $headId,
             SmaregiInboundAwardDescription::REASON_RETURN,
+        );
+        $this->lotteryEntitlementService->revokePendingForSource(
+            $member,
+            LotterySourceType::SMAREGI_TRANSACTION,
+            $headId,
         );
     }
 

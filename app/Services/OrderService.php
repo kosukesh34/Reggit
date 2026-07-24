@@ -17,6 +17,7 @@ use App\Domain\Order\ValueObjects\OrderLineItem;
 use App\Domain\Order\ValueObjects\PendingOrder;
 use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
+use App\Enums\LotterySourceType;
 use App\Enums\MemberVisitSource;
 use App\Enums\OrderType;
 use App\Enums\PaymentMethod;
@@ -24,6 +25,7 @@ use App\Enums\PointTransactionType;
 use App\Models\Order;
 use App\Models\User;
 use App\Services\Admin\MemberAdminService;
+use App\Services\Lottery\LotteryEntitlementService;
 use App\Util\AdminContext;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -45,6 +47,7 @@ class OrderService
         private ProductOptionSelectionPolicy $productOptionSelectionPolicy,
         private StampEarnPolicy $stampEarnPolicy,
         private OrderNumberAssigner $orderNumberAssigner,
+        private LotteryEntitlementService $lotteryEntitlementService,
     ) {}
 
     private const DESC_REFUND_CANCEL = '注文キャンセルによる返却';
@@ -95,6 +98,7 @@ class OrderService
             $this->applyOrderPointChanges($user, $order, $pointsUsed, $finalAmount);
             $this->recordMemberVisit($user, $order);
             $this->awardStamps($user, $order, $finalAmount);
+            $this->awardLotteryEntitlements($user, $order, $finalAmount);
 
             DB::commit();
         } catch (\Exception $e) {
@@ -302,6 +306,21 @@ class OrderService
         }
     }
 
+    private function awardLotteryEntitlements(User $user, Order $order, float $finalAmount): void
+    {
+        $member = $user->member;
+        if ($member === null || $finalAmount <= 0) {
+            return;
+        }
+
+        $this->lotteryEntitlementService->grantForPurchase(
+            $member,
+            $finalAmount,
+            LotterySourceType::ORDER,
+            (string) $order->id,
+        );
+    }
+
     private function getPointsEarnRate(int $projectId, ?string $rankKey = null): int
     {
         $rate = $this->shopSettingRepository->getPointEarnRateForRank($projectId, $rankKey);
@@ -330,6 +349,13 @@ class OrderService
                     $this->refundPointsUsed($order, $member);
                     $this->reversePointsEarned($order, $member);
                     $this->memberRepository->save($member);
+                }
+                if ($order->user->member !== null) {
+                    $this->lotteryEntitlementService->revokePendingForSource(
+                        $order->user->member,
+                        LotterySourceType::ORDER,
+                        (string) $order->id,
+                    );
                 }
             }
 

@@ -29,6 +29,7 @@ const ALL_TAB_SECTIONS: FrontendMenuItem[] = [
     { tab: 'orders', label: '注文履歴' },
     { tab: 'stamps', label: 'スタンプ' },
     { tab: 'coupons', label: 'クーポン' },
+    { tab: 'designlab', label: 'あそび' },
     { tab: 'queue', label: '順番待ち' },
     { tab: 'member', label: '会員証' },
     { tab: 'reservations', label: '予約' },
