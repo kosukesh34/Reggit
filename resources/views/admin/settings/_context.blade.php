@@ -59,6 +59,16 @@
             'links' => [
                 ['label' => 'クーポン一覧', 'url' => admin_route('admin.coupons'), 'permission' => 'coupons.view'],
                 ['label' => '一括配布', 'url' => admin_route('admin.coupons.bulk-issue'), 'permission' => 'coupons.manage'],
+                ['label' => 'ガチャ・スクラッチ', 'url' => admin_route('admin.settings.lottery'), 'permission' => 'coupons.view'],
+            ],
+        ],
+        'lottery' => [
+            'title' => 'ガチャ・スクラッチ設定の役割',
+            'changes' => ['機能ON/OFF', '権利の付与タイミング', '景品クーポンと確率'],
+            'notes' => ['取引後に権利がDBへ保存されます。プレイするとクーポンが発行されます。'],
+            'links' => [
+                ['label' => 'クーポン一覧', 'url' => admin_route('admin.coupons'), 'permission' => 'coupons.view'],
+                ['label' => 'クーポン設定', 'url' => admin_route('admin.settings.coupons'), 'permission' => 'coupons.view'],
             ],
         ],
         'announcements' => [
