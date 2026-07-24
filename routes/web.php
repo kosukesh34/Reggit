@@ -34,6 +34,7 @@ use App\Http\Controllers\Admin\Settings\GalleryController;
 use App\Http\Controllers\Admin\Settings\HomeController as SettingsHomeController;
 use App\Http\Controllers\Admin\Settings\LiffConnectionController as SettingsLiffConnectionController;
 use App\Http\Controllers\Admin\Settings\LiffDesignerController as SettingsLiffDesignerController;
+use App\Http\Controllers\Admin\Settings\LotteryController as SettingsLotteryController;
 use App\Http\Controllers\Admin\Settings\MenuController as SettingsMenuController;
 use App\Http\Controllers\Admin\Settings\ProfileController;
 use App\Http\Controllers\Admin\Settings\QueueController;
@@ -279,6 +280,8 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'bind.admin.project', '
         Route::post('/settings/queue', [QueueController::class, 'update'])->name('admin.settings.queue.update')->middleware('admin.permission:settings.manage');
         Route::get('/settings/coupons', [CouponsController::class, 'index'])->name('admin.settings.coupons')->middleware('admin.permission:coupons.view');
         Route::post('/settings/coupons', [CouponsController::class, 'update'])->name('admin.settings.coupons.update')->middleware('admin.permission:settings.manage');
+        Route::get('/settings/lottery', [SettingsLotteryController::class, 'index'])->name('admin.settings.lottery')->middleware('admin.permission:coupons.view');
+        Route::post('/settings/lottery', [SettingsLotteryController::class, 'update'])->name('admin.settings.lottery.update')->middleware('admin.permission:coupons.manage');
         Route::get('/settings/announcements', [AnnouncementsController::class, 'index'])->name('admin.settings.announcements')->middleware('admin.permission:announcements.view');
         Route::post('/settings/announcements', [AnnouncementsController::class, 'update'])->name('admin.settings.announcements.update')->middleware('admin.permission:settings.manage');
         Route::get('/settings/gallery', [GalleryController::class, 'index'])->name('admin.settings.gallery')->middleware('admin.permission:gallery.view');

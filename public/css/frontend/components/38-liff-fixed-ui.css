@@ -2472,19 +2472,99 @@ body.liff-fixed-ui .lp-home-promo__chevron {
 }
 
 /* Design Lab */
+body.liff-fixed-ui .design-lab,
+body.liff-lottery-ui .design-lab {
+    padding: 8px 16px calc(32px + var(--ios-tab-h) + env(safe-area-inset-bottom, 0px));
+}
 
+body.liff-fixed-ui .design-lab__hero,
+body.liff-lottery-ui .design-lab__hero {
+    margin-bottom: 20px;
+}
 
+body.liff-fixed-ui .design-lab__eyebrow,
+body.liff-lottery-ui .design-lab__eyebrow {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ios-tint);
+}
 
+body.liff-fixed-ui .design-lab__title,
+body.liff-lottery-ui .design-lab__title {
+    margin: 6px 0 0;
+    font-family: var(--ios-font-display);
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: var(--ios-label);
+}
 
+body.liff-fixed-ui .design-lab__lead,
+body.liff-fixed-ui .design-lab__section-lead,
+body.liff-lottery-ui .design-lab__lead,
+body.liff-lottery-ui .design-lab__section-lead {
+    margin: 8px 0 0;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--ios-secondary);
+}
 
+body.liff-fixed-ui .design-lab__section,
+body.liff-lottery-ui .design-lab__section {
+    margin: 0 0 28px;
+}
 
+body.liff-fixed-ui .design-lab__section-title,
+body.liff-lottery-ui .design-lab__section-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--ios-label);
+}
 
+body.liff-fixed-ui .design-lab__rail,
+body.liff-lottery-ui .design-lab__rail {
+    display: flex;
+    gap: 12px;
+    margin-top: 14px;
+    padding-bottom: 4px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+}
 
+body.liff-fixed-ui .design-lab__screen,
+body.liff-lottery-ui .design-lab__screen {
+    flex: 0 0 auto;
+    width: min(168px, 58vw);
+    margin: 0;
+    scroll-snap-align: start;
+}
 
+body.liff-fixed-ui .design-lab__screen img,
+body.liff-lottery-ui .design-lab__screen img {
+    width: 100%;
+    border-radius: 18px;
+    border: 1px solid var(--ios-separator);
+    box-shadow: 0 12px 28px rgba(15, 28, 26, 0.1);
+    background: var(--ios-mint);
+}
 
+body.liff-fixed-ui .design-lab__screen figcaption,
+body.liff-lottery-ui .design-lab__screen figcaption {
+    margin-top: 8px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ios-secondary);
+}
 
 /* ポイント運試し風: ドームガチャ + 円形スクラッチ */
-body.liff-fixed-ui {
+body.liff-fixed-ui,
+body.liff-lottery-ui {
     --pp-red: #FF0033;
     --pp-red-deep: #D1002A;
     --pp-red-grad: linear-gradient(135deg, #FF3355 0%, #FF0033 55%, #D1002A 100%);
@@ -2492,111 +2572,1063 @@ body.liff-fixed-ui {
     --pp-gold-deep: #E8960A;
 }
 
+body.liff-fixed-ui .pp-play-card,
+body.liff-lottery-ui .pp-play-card {
+    margin-top: 12px;
+    padding: 20px 16px 18px;
+    border-radius: 20px;
+    background: #fff;
+    box-shadow: 0 2px 10px rgba(20, 20, 30, 0.06);
+}
 
+body.liff-fixed-ui .pp-play-card__top,
+body.liff-lottery-ui .pp-play-card__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 2px;
+}
 
+body.liff-fixed-ui .pp-play-card__title,
+body.liff-lottery-ui .pp-play-card__title {
+    font-family: "M PLUS Rounded 1c", "Noto Sans JP", sans-serif;
+    font-size: 14.5px;
+    font-weight: 800;
+    color: #1a1a1a;
+}
 
+body.liff-fixed-ui .pp-play-card__chip,
+body.liff-lottery-ui .pp-play-card__chip {
+    flex: 0 0 auto;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: #FFE7EB;
+    color: var(--pp-red);
+    font-size: 11px;
+    font-weight: 700;
+}
 
+body.liff-fixed-ui .pp-play-card__rule,
+body.liff-lottery-ui .pp-play-card__rule {
+    margin: 4px 0 10px;
+    font-size: 11px;
+    line-height: 1.6;
+    color: #8a8a8f;
+}
 
-body.liff-fixed-ui .pp-cta {
+body.liff-fixed-ui .pp-cta,
+body.liff-lottery-ui .pp-cta {
     display: block;
     width: 100%;
-    margin-top: 16px;
+    margin-top: 18px;
     border: 0;
     border-radius: 999px;
     padding: 14px;
+    font-family: "M PLUS Rounded 1c", "Noto Sans JP", sans-serif;
     font-size: 15px;
-    font-weight: 800;
+    font-weight: 900;
     color: #fff;
     cursor: pointer;
-    background: var(--pp-red-grad);
-    box-shadow: 0 8px 18px rgba(255, 0, 51, 0.32);
+    background: var(--ios-tint, #0E7C66);
+    box-shadow: 0 8px 18px rgba(14, 124, 102, 0.28);
     -webkit-tap-highlight-color: transparent;
 }
 
-body.liff-fixed-ui .pp-cta:active {
+body.liff-fixed-ui .pp-cta:active,
+body.liff-lottery-ui .pp-cta:active {
     transform: scale(0.97);
 }
 
-body.liff-fixed-ui .pp-cta:disabled {
+body.liff-fixed-ui .pp-cta:disabled,
+body.liff-lottery-ui .pp-cta:disabled {
     background: #D8D9DE;
     color: #A6A7AE;
     box-shadow: none;
     cursor: not-allowed;
 }
 
-body.liff-fixed-ui .pp-cta--ghost {
+body.liff-fixed-ui .pp-cta--ghost,
+body.liff-lottery-ui .pp-cta--ghost {
     background: #fff;
-    color: var(--pp-red);
-    border: 1.5px solid rgba(255, 0, 51, 0.35);
+    color: var(--ios-tint, #0E7C66);
+    border: 1.5px solid rgba(14, 124, 102, 0.35);
     box-shadow: none;
 }
 
 /* ===== ドーム型ガチャ ===== */
+/* ===== ドーム型ガチャ ===== */
 /* 参考: カプセルトイ筐体のガラス球＋二色カプセルの自然な積み上げ（ゲームUIは含めない） */
+body.liff-fixed-ui .pp-gacha,
+body.liff-lottery-ui .pp-gacha {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
 
+body.liff-fixed-ui .pp-gacha__stage,
+body.liff-lottery-ui .pp-gacha__stage {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    padding: 18px 8px 10px;
+    border-radius: 22px;
+    background:
+        radial-gradient(ellipse at 50% 8%, rgba(255, 140, 175, 0.22), transparent 52%),
+        radial-gradient(ellipse at 50% 100%, rgba(90, 110, 170, 0.1), transparent 48%),
+        linear-gradient(180deg, #fafbfd 0%, #eef1f6 100%);
+}
 
+body.liff-fixed-ui .pp-gacha__machine,
+body.liff-lottery-ui .pp-gacha__machine {
+    position: relative;
+    width: 252px;
+    filter: drop-shadow(0 20px 32px rgba(190, 35, 85, 0.28));
+    transform-origin: 50% 82%;
+}
 
+body.liff-fixed-ui .pp-gacha__machine.is-shake,
+body.liff-lottery-ui .pp-gacha__machine.is-shake {
+    animation: pp-machine-shake 0.85s ease-in-out;
+}
 
+body.liff-fixed-ui .pp-gacha__machine.is-shake .pp-gacha__ball,
+body.liff-lottery-ui .pp-gacha__machine.is-shake .pp-gacha__ball {
+    animation: pp-ball-tumble 0.7s ease-in-out var(--ball-delay, 0s);
+}
 
+body.liff-fixed-ui .pp-gacha__price,
+body.liff-lottery-ui .pp-gacha__price {
+    position: absolute;
+    right: -10px;
+    top: 10px;
+    z-index: 40;
+    padding: 7px 13px;
+    border-radius: 999px;
+    background: linear-gradient(180deg, #fff0b8, #ffc933 70%, #f0a800);
+    color: #5a3a00;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 0.02em;
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.65) inset,
+        0 6px 14px rgba(0, 0, 0, 0.18);
+    transform: rotate(6deg);
+}
 
+body.liff-fixed-ui .pp-gacha__dome,
+body.liff-lottery-ui .pp-gacha__dome {
+    position: relative;
+    width: 252px;
+    height: 252px;
+    z-index: 2;
+}
 
+body.liff-fixed-ui .pp-gacha__dome-glass,
+body.liff-lottery-ui .pp-gacha__dome-glass {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    border-radius: 50%;
+    border: 8px solid #ff4f88;
+    background:
+        radial-gradient(circle at 50% 78%, rgba(40, 55, 110, 0.14) 0%, transparent 42%),
+        radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.72) 0%, transparent 26%),
+        linear-gradient(168deg, rgba(255, 255, 255, 0.5) 0%, rgba(210, 222, 255, 0.18) 40%, rgba(150, 168, 220, 0.28) 100%);
+    box-shadow:
+        inset 0 -42px 46px rgba(50, 70, 130, 0.2),
+        inset 0 16px 24px rgba(255, 255, 255, 0.55),
+        0 0 0 3px rgba(255, 255, 255, 0.45),
+        0 0 0 5px rgba(255, 95, 143, 0.35),
+        0 12px 22px rgba(255, 70, 120, 0.2);
+}
 
+body.liff-fixed-ui .pp-gacha__dome-shine,
+body.liff-lottery-ui .pp-gacha__dome-shine {
+    position: absolute;
+    top: 16px;
+    left: 40px;
+    width: 58px;
+    height: 108px;
+    border-radius: 50%;
+    background: linear-gradient(112deg, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0) 70%);
+    transform: rotate(-18deg);
+    filter: blur(0.6px);
+    pointer-events: none;
+    z-index: 30;
+}
 
+body.liff-fixed-ui .pp-gacha__dome-shine--soft,
+body.liff-lottery-ui .pp-gacha__dome-shine--soft {
+    top: 34px;
+    left: auto;
+    right: 36px;
+    width: 30px;
+    height: 60px;
+    opacity: 0.5;
+    transform: rotate(20deg);
+}
 
+body.liff-fixed-ui .pp-gacha__dome-rim,
+body.liff-lottery-ui .pp-gacha__dome-rim {
+    position: absolute;
+    inset: 4px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(255, 255, 255, 0.55);
+    pointer-events: none;
+    z-index: 28;
+    box-shadow: inset 0 0 0 1px rgba(180, 40, 90, 0.12);
+}
 
-
-
+body.liff-fixed-ui .pp-gacha__collar,
+body.liff-lottery-ui .pp-gacha__collar {
+    position: absolute;
+    left: 14px;
+    right: 14px;
+    bottom: -4px;
+    height: 22px;
+    border-radius: 999px;
+    background:
+        linear-gradient(180deg, #ffffff 0%, #e8ecf4 42%, #b8c0d0 78%, #9aa3b5 100%);
+    box-shadow:
+        0 2px 0 rgba(255, 255, 255, 0.7),
+        0 8px 14px rgba(0, 0, 0, 0.16),
+        inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    z-index: 4;
+}
 
 /* 実物空カプセル準拠: 上=乳白半透明フタ / 下=ソリッドカラー身 */
+body.liff-fixed-ui .pp-gacha__ball,
+body.liff-lottery-ui .pp-gacha__ball {
+    position: absolute;
+    border-radius: 50%;
+    transform: rotate(var(--ball-rot, 0deg));
+    background:
+        radial-gradient(circle at 32% 24%, rgba(255, 255, 255, 0.95) 0 12%, transparent 34%),
+        linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.78) 0%,
+            rgba(248, 250, 255, 0.62) 38%,
+            rgba(230, 236, 248, 0.42) 47%,
+            rgba(190, 200, 220, 0.35) 49.5%,
+            var(--ball-color, #ff3b5c) 50.5%,
+            var(--ball-color, #ff3b5c) 76%,
+            color-mix(in srgb, var(--ball-color, #ff3b5c) 72%, #1a1020) 100%
+        );
+    box-shadow:
+        inset 0 -8px 12px rgba(0, 0, 0, 0.18),
+        inset 0 6px 10px rgba(255, 255, 255, 0.55),
+        0 5px 10px rgba(20, 30, 60, 0.22),
+        0 1px 0 rgba(255, 255, 255, 0.35);
+}
 
+body.liff-fixed-ui .pp-gacha__ball::before,
+body.liff-lottery-ui .pp-gacha__ball::before {
+    content: "";
+    position: absolute;
+    left: 7%;
+    right: 7%;
+    top: 47%;
+    height: 5px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.32), transparent);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
+}
 
+body.liff-fixed-ui .pp-gacha__ball::after,
+body.liff-lottery-ui .pp-gacha__ball::after {
+    content: "";
+    position: absolute;
+    left: 15%;
+    top: 11%;
+    width: 38%;
+    height: 26%;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.2) 62%, transparent 100%);
+}
+
+body.liff-fixed-ui .pp-gacha__body,
+body.liff-lottery-ui .pp-gacha__body {
+    position: relative;
+    width: 252px;
+    margin-top: 6px;
+    padding: 18px 16px 16px;
+    border: 7px solid #ff4f88;
+    border-top: 0;
+    border-radius: 0 0 28px 28px;
+    background:
+        linear-gradient(180deg, #ff9abb 0%, #ff5f95 38%, #ef3a74 72%, #d92a62 100%);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.4),
+        inset 0 -10px 18px rgba(120, 10, 50, 0.22),
+        0 16px 28px rgba(220, 45, 100, 0.3);
+    z-index: 1;
+}
+
+body.liff-fixed-ui .pp-gacha__body-gloss,
+body.liff-lottery-ui .pp-gacha__body-gloss {
+    position: absolute;
+    left: 14px;
+    top: 12px;
+    bottom: 22px;
+    width: 10px;
+    border-radius: 8px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.12));
+    pointer-events: none;
+}
+
+body.liff-fixed-ui .pp-gacha__body::before,
+body.liff-lottery-ui .pp-gacha__body::before {
+    content: "";
+    position: absolute;
+    right: 14px;
+    top: 14px;
+    bottom: 24px;
+    width: 5px;
+    border-radius: 6px;
+    background: rgba(120, 20, 50, 0.18);
+}
+
+body.liff-fixed-ui .pp-gacha__sign,
+body.liff-lottery-ui .pp-gacha__sign {
+    display: block;
+    width: fit-content;
+    margin: 0 auto 14px;
+    padding: 6px 16px;
+    border-radius: 999px;
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.22));
+    color: #fff;
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: 0.14em;
+    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.2);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.28),
+        0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+body.liff-fixed-ui .pp-gacha__rivet,
+body.liff-lottery-ui .pp-gacha__rivet {
+    position: absolute;
+    top: 16px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #fff9, #7a2030 68%, #4a1018);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.45), 0 2px 3px rgba(0, 0, 0, 0.25);
+}
+
+body.liff-fixed-ui .pp-gacha__rivet--l,
+body.liff-lottery-ui .pp-gacha__rivet--l { left: 16px; }
+body.liff-fixed-ui .pp-gacha__rivet--r,
+body.liff-lottery-ui .pp-gacha__rivet--r { right: 16px; }
+
+body.liff-fixed-ui .pp-gacha__slot,
+body.liff-lottery-ui .pp-gacha__slot {
+    width: 52px;
+    height: 12px;
+    margin: 0 auto 14px;
+    border-radius: 8px;
+    background: #1f080e;
+    box-shadow:
+        inset 0 3px 5px rgba(0, 0, 0, 0.8),
+        0 1px 0 rgba(255, 255, 255, 0.28);
+}
+
+body.liff-fixed-ui .pp-gacha__knob-wrap,
+body.liff-lottery-ui .pp-gacha__knob-wrap {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 12px;
+}
+
+body.liff-fixed-ui .pp-gacha__knob,
+body.liff-lottery-ui .pp-gacha__knob {
+    position: relative;
+    width: 78px;
+    height: 78px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    cursor: pointer;
+    background:
+        radial-gradient(circle at 34% 28%, #ffffff, #d0d6e2 48%, #8f98a9 100%);
+    box-shadow:
+        0 8px 0 #6a7282,
+        0 14px 22px rgba(0, 0, 0, 0.3),
+        inset 0 2px 0 rgba(255, 255, 255, 0.85);
+    transition: transform 0.12s, box-shadow 0.12s;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body.liff-fixed-ui .pp-gacha__knob::before,
+body.liff-lottery-ui .pp-gacha__knob::before {
+    content: "";
+    position: absolute;
+    inset: 11px;
+    border-radius: 50%;
+    background:
+        repeating-conic-gradient(from 0deg, #f4f6fb 0deg 7deg, #aeb6c6 7deg 14deg);
+    box-shadow:
+        inset 0 0 0 2px rgba(255, 255, 255, 0.4),
+        inset 0 0 10px rgba(0, 0, 0, 0.12);
+}
+
+body.liff-fixed-ui .pp-gacha__knob::after,
+body.liff-lottery-ui .pp-gacha__knob::after {
+    content: "";
+    position: absolute;
+    inset: 28px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 40% 34%, #fff, #8a93a4 68%, #545d6d);
+    box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.5);
+}
+
+body.liff-fixed-ui .pp-gacha__knob:active,
+body.liff-lottery-ui .pp-gacha__knob:active {
+    transform: translateY(5px);
+    box-shadow: 0 3px 0 #6a7282, 0 6px 12px rgba(0, 0, 0, 0.24);
+}
+
+body.liff-fixed-ui .pp-gacha__knob.is-spin,
+body.liff-lottery-ui .pp-gacha__knob.is-spin {
+    animation: pp-knob-spin 0.85s cubic-bezier(0.3, 0.9, 0.4, 1);
+}
+
+body.liff-fixed-ui .pp-gacha__outlet,
+body.liff-lottery-ui .pp-gacha__outlet {
+    position: relative;
+    z-index: 6;
+    width: 96px;
+    height: 28px;
+    margin: 0 auto;
+    padding-top: 0;
+    border-radius: 0 0 12px 12px;
+    background: #12050a;
+    box-shadow: inset 0 6px 12px rgba(0, 0, 0, 0.9);
+    overflow: visible;
+}
+
+body.liff-fixed-ui .pp-gacha__flap,
+body.liff-lottery-ui .pp-gacha__flap {
+    position: absolute;
+    left: 50%;
+    top: 4px;
+    z-index: 6;
+    display: block;
+    width: 78px;
+    height: 16px;
+    margin-left: -39px;
+    border-radius: 0 0 9px 9px;
+    background: linear-gradient(180deg, #7a2a38, #1a070c 70%);
+    box-shadow: 0 3px 4px rgba(0, 0, 0, 0.35);
+    pointer-events: none;
+}
+
+/* 排出口内でクリップ → 口から出てトレイへ（見えない場所から出さない） */
+body.liff-fixed-ui .pp-gacha__chute,
+body.liff-lottery-ui .pp-gacha__chute {
+    position: absolute;
+    left: 50%;
+    top: 2px;
+    z-index: 3;
+    width: 48px;
+    height: 92px;
+    margin-left: -24px;
+    overflow: hidden;
+    pointer-events: none;
+    border-radius: 0 0 10px 10px;
+}
+
+body.liff-fixed-ui .pp-gacha__tray,
+body.liff-lottery-ui .pp-gacha__tray {
+    position: relative;
+    z-index: 2;
+    width: 120px;
+    height: 14px;
+    margin: 8px auto 0;
+    border-radius: 999px;
+    background:
+        linear-gradient(180deg, #d8dde8 0%, #aeb6c6 55%, #8e97a8 100%);
+    box-shadow:
+        0 4px 8px rgba(0, 0, 0, 0.18),
+        inset 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+
+body.liff-fixed-ui .pp-gacha__stand,
+body.liff-lottery-ui .pp-gacha__stand {
+    width: 168px;
+    height: 10px;
+    margin: 6px auto 0;
+    border-radius: 999px;
+    background: rgba(20, 20, 30, 0.14);
+    filter: blur(1.2px);
+}
+
+body.liff-fixed-ui .pp-gacha__fall,
+body.liff-lottery-ui .pp-gacha__fall {
+    position: absolute;
+    left: 50%;
+    top: -46px;
+    z-index: 1;
+    width: 42px;
+    height: 42px;
+    margin-left: -21px;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(0) rotate(0deg) scale(0.7);
+    transform-origin: 50% 50%;
+    filter: brightness(0.5);
+}
+
+body.liff-fixed-ui .pp-gacha__fall-half,
+body.liff-lottery-ui .pp-gacha__fall-half {
+    position: absolute;
+    left: 0;
+    width: 42px;
+    height: 21px;
+    overflow: hidden;
+}
+
+body.liff-fixed-ui .pp-gacha__fall-half--top,
+body.liff-lottery-ui .pp-gacha__fall-half--top {
+    top: 0;
+    border-radius: 21px 21px 0 0;
+}
+
+body.liff-fixed-ui .pp-gacha__fall-half--bot,
+body.liff-lottery-ui .pp-gacha__fall-half--bot {
+    bottom: 0;
+    border-radius: 0 0 21px 21px;
+}
+
+body.liff-fixed-ui .pp-gacha__fall-half i,
+body.liff-lottery-ui .pp-gacha__fall-half i {
+    display: block;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background:
+        radial-gradient(circle at 30% 26%, rgba(255, 255, 255, 0.95) 0 12%, transparent 34%),
+        linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.55) 0%,
+            rgba(248, 250, 255, 0.42) 36%,
+            rgba(220, 228, 245, 0.28) 47%,
+            rgba(170, 185, 215, 0.25) 49.4%,
+            var(--cap-color, #ff3b5c) 50.6%,
+            var(--cap-color, #ff3b5c) 74%,
+            color-mix(in srgb, var(--cap-color, #ff3b5c) 70%, #1a1020) 100%
+        );
+    box-shadow: inset 0 -6px 10px rgba(0, 0, 0, 0.16);
+}
+
+body.liff-fixed-ui .pp-gacha__fall-half--bot i,
+body.liff-lottery-ui .pp-gacha__fall-half--bot i {
+    margin-top: -21px;
+}
+
+body.liff-fixed-ui .pp-gacha__fall.is-drop,
+body.liff-lottery-ui .pp-gacha__fall.is-drop {
+    /* linear: 排出口の奥で隠れる時間を安定させる */
+    animation: pp-cap-exit 1.4s linear forwards;
+}
+
+body.liff-fixed-ui .pp-gacha__fall.is-open .pp-gacha__fall-half--top,
+body.liff-lottery-ui .pp-gacha__fall.is-open .pp-gacha__fall-half--top {
+    animation: pp-cap-open-top 0.55s ease forwards;
+}
+
+body.liff-fixed-ui .pp-gacha__fall.is-open .pp-gacha__fall-half--bot,
+body.liff-lottery-ui .pp-gacha__fall.is-open .pp-gacha__fall-half--bot {
+    animation: pp-cap-open-bot 0.55s ease forwards;
+}
+
+body.liff-fixed-ui .pp-gacha__dome-cap,
+body.liff-lottery-ui .pp-gacha__dome-cap {
+    position: absolute;
+    left: 50%;
+    top: -18px;
+    z-index: 35;
+    width: 96px;
+    height: 40px;
+    margin-left: -48px;
+    border-radius: 999px 999px 16px 16px;
+    background:
+        linear-gradient(180deg, #ffb0cc 0%, #ff5a92 48%, #e23470 100%);
+    box-shadow:
+        0 8px 14px rgba(200, 40, 90, 0.38),
+        inset 0 3px 0 rgba(255, 255, 255, 0.55),
+        inset 0 -3px 6px rgba(120, 10, 50, 0.28);
+}
+
+body.liff-fixed-ui .pp-gacha__dome-star,
+body.liff-lottery-ui .pp-gacha__dome-star {
+    position: absolute;
+    left: 50%;
+    top: -10px;
+    width: 22px;
+    height: 22px;
+    margin-left: -11px;
+    background: linear-gradient(145deg, #ffe56a 0%, #ffc933 45%, #f0a000 100%);
+    clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+    filter: drop-shadow(0 2px 4px rgba(200, 120, 0, 0.45));
+}
+
+body.liff-fixed-ui .pp-gacha__collar,
+body.liff-lottery-ui .pp-gacha__collar {
+    position: absolute;
+    left: 14px;
+    right: 14px;
+    bottom: -4px;
+    height: 22px;
+    border-radius: 999px;
+    background:
+        linear-gradient(180deg, #ffffff 0%, #e8ecf4 42%, #b8c0d0 78%, #9aa3b5 100%);
+    box-shadow:
+        0 2px 0 rgba(255, 255, 255, 0.7),
+        0 8px 14px rgba(0, 0, 0, 0.16),
+        inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    z-index: 4;
+}
+
+/* 実物空カプセル準拠: 上=乳白半透明フタ / 下=ソリッドカラー身 */
+body.liff-fixed-ui .pp-gacha__ball,
+body.liff-lottery-ui .pp-gacha__ball {
+    position: absolute;
+    border-radius: 50%;
+    transform: rotate(var(--ball-rot, 0deg)) scale(var(--ball-scale, 1));
+    filter: brightness(var(--ball-bright, 1));
+    background:
+        radial-gradient(circle at 32% 22%, rgba(255, 255, 255, 0.98) 0 10%, transparent 32%),
+        linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.55) 0%,
+            rgba(248, 250, 255, 0.42) 36%,
+            rgba(220, 228, 245, 0.28) 47%,
+            rgba(170, 185, 215, 0.25) 49.4%,
+            var(--ball-color, #ff3b5c) 50.6%,
+            var(--ball-color, #ff3b5c) 74%,
+            color-mix(in srgb, var(--ball-color, #ff3b5c) 70%, #1a1020) 100%
+        );
+    box-shadow:
+        inset 0 -9px 14px rgba(0, 0, 0, 0.2),
+        inset 0 5px 10px rgba(255, 255, 255, 0.4),
+        0 6px 12px rgba(20, 30, 60, 0.24),
+        0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+body.liff-fixed-ui .pp-gacha__ball::before,
+body.liff-lottery-ui .pp-gacha__ball::before {
+    content: "";
+    position: absolute;
+    left: 7%;
+    right: 7%;
+    top: 47%;
+    height: 5px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.32), transparent);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+body.liff-fixed-ui .pp-gacha__ball::after,
+body.liff-lottery-ui .pp-gacha__ball::after {
+    content: "";
+    position: absolute;
+    left: 15%;
+    top: 11%;
+    width: 38%;
+    height: 26%;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.2) 62%, transparent 100%);
+}
 
 /* 参考画像: ピンク円柱ボディ + 横棒ハンドル + 下矢印 + 排出口 */
+body.liff-fixed-ui .pp-gacha__body,
+body.liff-lottery-ui .pp-gacha__body {
+    position: relative;
+    width: 252px;
+    margin-top: 4px;
+    padding: 22px 16px 14px;
+    border: 7px solid #ff4f88;
+    border-top: 0;
+    border-radius: 0 0 42px 42px;
+    background:
+        linear-gradient(90deg, rgba(255, 255, 255, 0.22) 0%, transparent 16%, transparent 84%, rgba(120, 20, 55, 0.14) 100%),
+        linear-gradient(180deg, #ff9ec0 0%, #ff5f95 36%, #ef3a74 70%, #d92a62 100%);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.45),
+        inset 0 -12px 20px rgba(120, 10, 50, 0.24),
+        0 16px 28px rgba(220, 45, 100, 0.3);
+    z-index: 5;
+}
 
+body.liff-fixed-ui .pp-gacha__body-gloss,
+body.liff-lottery-ui .pp-gacha__body-gloss {
+    position: absolute;
+    left: 14px;
+    top: 14px;
+    bottom: 28px;
+    width: 11px;
+    border-radius: 8px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0.1));
+    pointer-events: none;
+}
 
+body.liff-fixed-ui .pp-gacha__turn-hint,
+body.liff-lottery-ui .pp-gacha__turn-hint {
+    display: block;
+    width: 0;
+    height: 0;
+    margin: 0 auto 10px;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-top: 12px solid #ffd24a;
+    filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.18));
+}
 
+body.liff-fixed-ui .pp-gacha__knob-wrap,
+body.liff-lottery-ui .pp-gacha__knob-wrap {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 14px;
+}
 
 /* ガチャ2系: 円盤 + 横棒ハンドル（参考画像の回す部分） */
+body.liff-fixed-ui .pp-gacha__knob,
+body.liff-lottery-ui .pp-gacha__knob {
+    position: relative;
+    width: 92px;
+    height: 92px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    cursor: pointer;
+    background: transparent;
+    box-shadow: none;
+    transition: transform 0.12s;
+    -webkit-tap-highlight-color: transparent;
+}
 
+body.liff-fixed-ui .pp-gacha__knob-plate,
+body.liff-lottery-ui .pp-gacha__knob-plate {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background:
+        radial-gradient(circle at 34% 28%, #ffffff 0%, #e8ecf4 38%, #aeb6c6 78%, #7e8798 100%);
+    box-shadow:
+        0 9px 0 #5f6778,
+        0 14px 22px rgba(0, 0, 0, 0.32),
+        inset 0 3px 0 rgba(255, 255, 255, 0.9),
+        inset 0 -4px 8px rgba(0, 0, 0, 0.18);
+}
 
+body.liff-fixed-ui .pp-gacha__knob-bar,
+body.liff-lottery-ui .pp-gacha__knob-bar {
+    position: absolute;
+    left: 10px;
+    right: 10px;
+    top: 50%;
+    height: 22px;
+    margin-top: -11px;
+    z-index: 2;
+    border-radius: 11px;
+    background:
+        linear-gradient(180deg, #f7f9fd 0%, #c5ccd8 42%, #8e97a8 100%);
+    box-shadow:
+        0 3px 0 #5a6272,
+        inset 0 2px 0 rgba(255, 255, 255, 0.85),
+        inset 0 -2px 3px rgba(0, 0, 0, 0.2);
+}
 
+body.liff-fixed-ui .pp-gacha__knob-bar::before,
+body.liff-fixed-ui .pp-gacha__knob-bar::after,
+body.liff-lottery-ui .pp-gacha__knob-bar::before,
+body.liff-fixed-ui .pp-gacha__knob-bar::after {
+    content: "";
+    position: absolute;
+    top: 3px;
+    bottom: 3px;
+    width: 14px;
+    border-radius: 8px;
+    background:
+        linear-gradient(180deg, #ffffff, #b0b8c8 55%, #7a8496);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
 
+body.liff-fixed-ui .pp-gacha__knob-bar::before,
+body.liff-lottery-ui .pp-gacha__knob-bar::before { left: 4px; }
+body.liff-fixed-ui .pp-gacha__knob-bar::after,
+body.liff-lottery-ui .pp-gacha__knob-bar::after { right: 4px; }
 
+body.liff-fixed-ui .pp-gacha__knob-hub,
+body.liff-lottery-ui .pp-gacha__knob-hub {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    z-index: 3;
+    width: 26px;
+    height: 26px;
+    margin: -13px 0 0 -13px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 38% 32%, #fff, #9aa3b4 62%, #5d6676);
+    box-shadow:
+        0 2px 0 #4e5666,
+        inset 0 2px 3px rgba(0, 0, 0, 0.45),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.35);
+}
 
+body.liff-fixed-ui .pp-gacha__knob:active,
+body.liff-lottery-ui .pp-gacha__knob:active {
+    transform: translateY(5px);
+}
 
+body.liff-fixed-ui .pp-gacha__knob:active .pp-gacha__knob-plate,
+body.liff-lottery-ui .pp-gacha__knob:active .pp-gacha__knob-plate {
+    box-shadow:
+        0 4px 0 #5f6778,
+        0 8px 14px rgba(0, 0, 0, 0.28),
+        inset 0 3px 0 rgba(255, 255, 255, 0.9);
+}
 
+body.liff-fixed-ui .pp-gacha__knob:active .pp-gacha__knob-bar,
+body.liff-lottery-ui .pp-gacha__knob:active .pp-gacha__knob-bar {
+    box-shadow:
+        0 1px 0 #5a6272,
+        inset 0 2px 0 rgba(255, 255, 255, 0.85);
+}
 
+body.liff-fixed-ui .pp-gacha__knob.is-spin,
+body.liff-lottery-ui .pp-gacha__knob.is-spin {
+    animation: pp-knob-spin 0.85s cubic-bezier(0.3, 0.9, 0.4, 1);
+}
 
+body.liff-fixed-ui .pp-gacha__caption,
+body.liff-lottery-ui .pp-gacha__caption {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: #8a8a8f;
+    text-align: center;
+}
 
+body.liff-fixed-ui .pp-gacha__machine.is-shake,
+body.liff-lottery-ui .pp-gacha__machine.is-shake {
+    animation: pp-machine-shake 0.85s ease-in-out;
+}
 
-/* 排出口内部でクリップ → 下のトレイへ（見えない所から出さない） */
+body.liff-fixed-ui .pp-gacha__machine.is-shake .pp-gacha__ball,
+body.liff-lottery-ui .pp-gacha__machine.is-shake .pp-gacha__ball {
+    animation: pp-ball-tumble 0.7s ease-in-out var(--ball-delay, 0s);
+}
 
+@keyframes pp-machine-shake {
+    0%, 100% { transform: rotate(0deg); }
+    20% { transform: rotate(-2.2deg) translateX(-2px); }
+    40% { transform: rotate(2deg) translateX(2px); }
+    60% { transform: rotate(-1.6deg); }
+    80% { transform: rotate(1.2deg); }
+}
 
+@keyframes pp-ball-tumble {
+    0%, 100% { transform: rotate(var(--ball-rot, 0deg)) translateY(0); }
+    35% { transform: rotate(calc(var(--ball-rot, 0deg) + 18deg)) translateY(-6px); }
+    70% { transform: rotate(calc(var(--ball-rot, 0deg) - 10deg)) translateY(2px); }
+}
 
+@keyframes pp-knob-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
 
+@keyframes pp-cap-exit {
+    /* 排出口の奥（暗くクリップ）→ 口から出てトレイへ */
+    0% {
+        opacity: 1;
+        top: -40px;
+        transform: translateY(0) rotate(-10deg) scale(0.58);
+        filter: brightness(0.35);
+    }
+    42% {
+        opacity: 1;
+        top: -6px;
+        transform: translateY(0) rotate(100deg) scale(0.72);
+        filter: brightness(0.5);
+    }
+    58% {
+        top: 12px;
+        transform: translateY(0) rotate(210deg) scale(0.9);
+        filter: brightness(0.85);
+    }
+    72% {
+        top: 40px;
+        transform: translateY(0) rotate(310deg) scale(1.08, 0.78);
+        filter: brightness(1);
+    }
+    86% {
+        top: 32px;
+        transform: translateY(0) rotate(350deg) scale(0.94, 1.05);
+        filter: brightness(1);
+    }
+    100% {
+        opacity: 1;
+        top: 36px;
+        transform: translateY(0) rotate(368deg) scale(1);
+        filter: brightness(1);
+    }
+}
 
+@keyframes pp-cap-open-top {
+    to { transform: translateY(-10px) rotate(-18deg); opacity: 0.95; }
+}
 
+@keyframes pp-cap-open-bot {
+    to { transform: translateY(10px) rotate(18deg); opacity: 0.95; }
+}
 
+body.liff-fixed-ui .pp-scratch,
+body.liff-lottery-ui .pp-scratch {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
 
+body.liff-fixed-ui .pp-scratch__circle,
+body.liff-lottery-ui .pp-scratch__circle {
+    position: relative;
+    width: min(220px, 68vw);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    overflow: hidden;
+    touch-action: none;
+    box-shadow:
+        0 0 0 6px rgba(255, 0, 51, 0.12),
+        0 12px 28px rgba(15, 28, 26, 0.14);
+}
 
+body.liff-fixed-ui .pp-scratch__prize,
+body.liff-lottery-ui .pp-scratch__prize {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-content: center;
+    gap: 4px;
+    padding: 20px;
+    text-align: center;
+    background: radial-gradient(circle at 40% 35%, #FFF8F0 0%, #fff 70%, #FFE7EB 100%);
+}
 
+body.liff-fixed-ui .pp-scratch__prize-eyebrow,
+body.liff-lottery-ui .pp-scratch__prize-eyebrow {
+    margin: 0;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    color: var(--pp-red);
+}
 
+body.liff-fixed-ui .pp-scratch__prize-name,
+body.liff-lottery-ui .pp-scratch__prize-name {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 800;
+    line-height: 1.3;
+    color: #1a1a1a;
+}
 
-/* ===== 円形スクラッチ ===== */
+body.liff-fixed-ui .pp-scratch__prize-desc,
+body.liff-lottery-ui .pp-scratch__prize-desc {
+    margin: 0;
+    font-size: 11.5px;
+    line-height: 1.4;
+    color: var(--ios-secondary);
+}
 
+body.liff-fixed-ui .pp-scratch__canvas,
+body.liff-lottery-ui .pp-scratch__canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    touch-action: none;
+    cursor: pointer;
+}
 
+body.liff-fixed-ui .pp-scratch__shine,
+body.liff-lottery-ui .pp-scratch__shine {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    overflow: hidden;
+    border-radius: 50%;
+    pointer-events: none;
+}
 
+body.liff-fixed-ui .pp-scratch__shine::before,
+body.liff-lottery-ui .pp-scratch__shine::before {
+    content: "";
+    position: absolute;
+    top: -40%;
+    bottom: -40%;
+    left: -60%;
+    width: 36%;
+    background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+    animation: pp-shine-sweep 3.2s ease-in-out infinite;
+}
 
+body.liff-fixed-ui .pp-scratch__shine[hidden],
+body.liff-lottery-ui .pp-scratch__shine[hidden] {
+    display: none;
+}
 
+body.liff-fixed-ui .pp-scratch__progress-row,
+body.liff-lottery-ui .pp-scratch__progress-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: min(220px, 68vw);
+    margin-top: 14px;
+}
 
+body.liff-fixed-ui .pp-scratch__track,
+body.liff-lottery-ui .pp-scratch__track {
+    flex: 1;
+    height: 7px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #EDEDF2;
+}
 
+body.liff-fixed-ui .pp-scratch__fill,
+body.liff-lottery-ui .pp-scratch__fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 999px;
+    background: var(--pp-red-grad);
+    transition: width 0.12s ease-out;
+}
 
+body.liff-fixed-ui .pp-scratch__pct,
+body.liff-lottery-ui .pp-scratch__pct {
+    width: 36px;
+    text-align: right;
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--pp-red);
+}
 
-
-
-
-
-
+body.liff-fixed-ui .pp-scratch__hint,
+body.liff-lottery-ui .pp-scratch__hint {
+    margin: 10px 0 0;
+    font-size: 11.5px;
+    color: var(--ios-secondary);
+    text-align: center;
+}
 
 /* ===== 当選モーダル ===== */
 .pp-prize-modal {
@@ -2649,22 +3681,6 @@ body.liff-fixed-ui .pp-cta--ghost {
     letter-spacing: 0.04em;
 }
 
-.pp-prize-modal__media {
-    width: 100%;
-    aspect-ratio: 16 / 10;
-    margin: 0 0 14px;
-    border-radius: 14px;
-    overflow: hidden;
-    background: #f2f3f7;
-}
-
-.pp-prize-modal__media img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-}
-
 .pp-prize-modal__name {
     margin: 0 0 6px;
     font-size: 18px;
@@ -2691,60 +3707,15 @@ body.liff-fixed-ui .pp-cta--ghost {
 }
 
 @keyframes pp-knob-spin {
-    to { transform: rotate(420deg); }
-}
-
-
-@keyframes pp-ball-tumble {
-    0%, 100% { transform: translateY(0) rotate(var(--ball-rot, 0deg)) scale(var(--ball-scale, 1)); }
-    25% { transform: translateY(-10px) rotate(calc(var(--ball-rot, 0deg) + 18deg)) scale(var(--ball-scale, 1)); }
-    50% { transform: translateY(5px) rotate(calc(var(--ball-rot, 0deg) - 14deg)) scale(var(--ball-scale, 1)); }
-    75% { transform: translateY(-6px) rotate(calc(var(--ball-rot, 0deg) + 10deg)) scale(var(--ball-scale, 1)); }
-}
-
-@keyframes pp-cap-exit {
-    /* 排出口内（クリップで非表示）→ 口から出てトレイへ着地 */
-    0% {
-        opacity: 1;
-        top: -44px;
-        transform: translateY(0) rotate(-10deg) scale(0.62);
-        filter: brightness(0.4);
-    }
-    30% {
-        opacity: 1;
-        top: -8px;
-        transform: translateY(0) rotate(100deg) scale(0.78);
-        filter: brightness(0.65);
-    }
-    52% {
-        top: 18px;
-        transform: translateY(0) rotate(220deg) scale(0.95);
-        filter: brightness(0.9);
-    }
-    68% {
-        top: 42px;
-        transform: translateY(0) rotate(310deg) scale(1.08, 0.78);
-        filter: brightness(1);
-    }
-    82% {
-        top: 34px;
-        transform: translateY(0) rotate(350deg) scale(0.94, 1.05);
-        filter: brightness(1);
-    }
-    100% {
-        opacity: 1;
-        top: 36px;
-        transform: translateY(0) rotate(368deg) scale(1);
-        filter: brightness(1);
-    }
+    to { transform: rotate(400deg); }
 }
 
 @keyframes pp-cap-open-top {
-    to { transform: translateY(-20px) rotate(-32deg); opacity: 0; }
+    to { transform: translateY(-16px) rotate(-25deg); opacity: 0; }
 }
 
 @keyframes pp-cap-open-bot {
-    to { transform: translateY(20px) rotate(28deg); opacity: 0; }
+    to { transform: translateY(16px) rotate(20deg); opacity: 0; }
 }
 
 @keyframes pp-shine-sweep {
@@ -2759,24 +3730,64 @@ body.liff-fixed-ui .pp-cta--ghost {
 
 
 /* Design Lab 獲得クーポン */
+body.liff-fixed-ui .design-lab__won,
+body.liff-lottery-ui .design-lab__won {
+    list-style: none;
+    margin: 12px 0 10px;
+    padding: 0;
+    display: grid;
+    gap: 8px;
+}
 
+body.liff-fixed-ui .design-lab__won-empty,
+body.liff-lottery-ui .design-lab__won-empty {
+    padding: 14px;
+    border-radius: 12px;
+    background: var(--ios-grouped);
+    color: var(--ios-secondary);
+    font-size: 13px;
+}
 
+body.liff-fixed-ui .design-lab__won-item,
+body.liff-lottery-ui .design-lab__won-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: var(--ios-surface);
+    box-shadow: 0 4px 14px rgba(15, 28, 26, 0.05);
+}
 
+body.liff-fixed-ui .design-lab__won-badge,
+body.liff-lottery-ui .design-lab__won-badge {
+    flex: 0 0 auto;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: var(--ios-mint);
+    color: var(--ios-tint);
+    font-size: 11px;
+    font-weight: 700;
+}
 
+body.liff-fixed-ui .design-lab__won-name,
+body.liff-lottery-ui .design-lab__won-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ios-label);
+}
 
 /* LP風 会員証 UI */
 body.liff-fixed-ui .ios-wallet-member {
     padding: 8px 16px calc(40px + var(--ios-tab-h) + env(safe-area-inset-bottom, 0px));
-}
-
-body.liff-fixed-ui .ios-wallet-member__hello {
+}body.liff-fixed-ui .ios-wallet-member__hello,
+body.liff-lottery-ui .ios-wallet-member__hello {
     display: flex;
     align-items: center;
     gap: 12px;
     margin-bottom: 16px;
-}
-
-body.liff-fixed-ui .ios-wallet-member__avatar {
+}body.liff-fixed-ui .ios-wallet-member__avatar,
+body.liff-lottery-ui .ios-wallet-member__avatar {
     display: grid;
     place-items: center;
     width: 48px;
@@ -2787,22 +3798,19 @@ body.liff-fixed-ui .ios-wallet-member__avatar {
     font-family: var(--ios-font-display);
     font-size: 18px;
     font-weight: 800;
-}
-
-body.liff-fixed-ui .ios-wallet-member__hello-title {
+}body.liff-fixed-ui .ios-wallet-member__hello-title,
+body.liff-lottery-ui .ios-wallet-member__hello-title {
     margin: 0;
     font-size: 20px;
     font-weight: 800;
     letter-spacing: -0.02em;
-}
-
-body.liff-fixed-ui .ios-wallet-member__hello-sub {
+}body.liff-fixed-ui .ios-wallet-member__hello-sub,
+body.liff-lottery-ui .ios-wallet-member__hello-sub {
     margin: 2px 0 0;
     font-size: 13px;
     color: var(--ios-secondary);
-}
-
-body.liff-fixed-ui .ios-wallet-member__edit {
+}body.liff-fixed-ui .ios-wallet-member__edit,
+body.liff-lottery-ui .ios-wallet-member__edit {
     margin-left: auto;
     width: 36px;
     height: 36px;
@@ -2810,31 +3818,27 @@ body.liff-fixed-ui .ios-wallet-member__edit {
     border-radius: 18px;
     background: rgba(14, 124, 102, 0.1);
     color: var(--ios-tint);
-}
-
-body.liff-fixed-ui .ios-wallet-card {
+}body.liff-fixed-ui .ios-wallet-card,
+body.liff-lottery-ui .ios-wallet-card {
     border-radius: 22px;
     overflow: hidden;
     background: linear-gradient(160deg, #0F3D34 0%, #0E7C66 58%, #0A5C4C 100%);
     color: #fff;
     box-shadow: 0 18px 40px rgba(15, 61, 52, 0.24);
-}
-
-body.liff-fixed-ui .ios-wallet-card__top {
+}body.liff-fixed-ui .ios-wallet-card__top,
+body.liff-lottery-ui .ios-wallet-card__top {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
     gap: 12px;
     padding: 18px 18px 8px;
-}
-
-body.liff-fixed-ui .ios-wallet-card__brand {
+}body.liff-fixed-ui .ios-wallet-card__brand,
+body.liff-lottery-ui .ios-wallet-card__brand {
     display: flex;
     align-items: center;
     gap: 10px;
-}
-
-body.liff-fixed-ui .ios-wallet-card__logo {
+}body.liff-fixed-ui .ios-wallet-card__logo,
+body.liff-lottery-ui .ios-wallet-card__logo {
     display: grid;
     place-items: center;
     width: 36px;
@@ -2843,22 +3847,19 @@ body.liff-fixed-ui .ios-wallet-card__logo {
     background: rgba(255, 255, 255, 0.16);
     font-family: var(--ios-font-display);
     font-weight: 800;
-}
-
-body.liff-fixed-ui .ios-wallet-card__brand-name {
+}body.liff-fixed-ui .ios-wallet-card__brand-name,
+body.liff-lottery-ui .ios-wallet-card__brand-name {
     margin: 0;
     font-size: 14px;
     font-weight: 700;
-}
-
-body.liff-fixed-ui .ios-wallet-card__brand-sub {
+}body.liff-fixed-ui .ios-wallet-card__brand-sub,
+body.liff-lottery-ui .ios-wallet-card__brand-sub {
     margin: 2px 0 0;
     font-size: 10px;
     letter-spacing: 0.08em;
     opacity: 0.75;
-}
-
-body.liff-fixed-ui .ios-wallet-card__tier {
+}body.liff-fixed-ui .ios-wallet-card__tier,
+body.liff-lottery-ui .ios-wallet-card__tier {
     display: inline-flex;
     padding: 5px 10px;
     border-radius: 999px;
@@ -2866,95 +3867,81 @@ body.liff-fixed-ui .ios-wallet-card__tier {
     border: 1px solid rgba(255, 255, 255, 0.28);
     font-size: 11px;
     font-weight: 800;
-}
-
-body.liff-fixed-ui .ios-wallet-card__points {
+}body.liff-fixed-ui .ios-wallet-card__points,
+body.liff-lottery-ui .ios-wallet-card__points {
     padding: 8px 18px 4px;
-}
-
-body.liff-fixed-ui .ios-wallet-card__points-label {
+}body.liff-fixed-ui .ios-wallet-card__points-label,
+body.liff-lottery-ui .ios-wallet-card__points-label {
     margin: 0;
     font-size: 12px;
     opacity: 0.8;
-}
-
-body.liff-fixed-ui .ios-wallet-card__points-value {
+}body.liff-fixed-ui .ios-wallet-card__points-value,
+body.liff-lottery-ui .ios-wallet-card__points-value {
     margin: 4px 0 0;
     font-family: var(--ios-font-display);
     font-size: 34px;
     font-weight: 800;
     letter-spacing: -0.03em;
     line-height: 1.1;
-}
-
-body.liff-fixed-ui .ios-wallet-card__points-value small {
+}body.liff-fixed-ui .ios-wallet-card__points-value small,
+body.liff-lottery-ui .ios-wallet-card__points-value small {
     font-size: 14px;
     font-weight: 700;
-}
-
-body.liff-fixed-ui .ios-wallet-card__progress {
+}body.liff-fixed-ui .ios-wallet-card__progress,
+body.liff-lottery-ui .ios-wallet-card__progress {
     padding: 10px 18px 14px;
-}
-
-body.liff-fixed-ui .ios-wallet-card__progress-bar {
+}body.liff-fixed-ui .ios-wallet-card__progress-bar,
+body.liff-lottery-ui .ios-wallet-card__progress-bar {
     height: 8px;
     border-radius: 999px;
     background: rgba(0, 0, 0, 0.25);
     overflow: hidden;
-}
-
-body.liff-fixed-ui .ios-wallet-card__progress-bar > span {
+}body.liff-fixed-ui .ios-wallet-card__progress-bar > span,
+body.liff-lottery-ui .ios-wallet-card__progress-bar > span {
     display: block;
     height: 100%;
     border-radius: inherit;
     background: linear-gradient(90deg, #7ED9C1, #E8FFF7);
-}
-
-body.liff-fixed-ui .ios-wallet-card__progress-text {
+}body.liff-fixed-ui .ios-wallet-card__progress-text,
+body.liff-lottery-ui .ios-wallet-card__progress-text {
     margin: 8px 0 0;
     font-size: 12px;
     opacity: 0.85;
-}
-
-body.liff-fixed-ui .ios-wallet-card__scan {
+}body.liff-fixed-ui .ios-wallet-card__scan,
+body.liff-lottery-ui .ios-wallet-card__scan {
     margin-top: 4px;
     padding: 14px 14px 16px;
     background: #fff;
     color: var(--ios-forest);
-}
-
-body.liff-fixed-ui .ios-wallet-card__scan-label {
+}body.liff-fixed-ui .ios-wallet-card__scan-label,
+body.liff-lottery-ui .ios-wallet-card__scan-label {
     margin: 0 0 10px;
     text-align: center;
     font-size: 10px;
     font-weight: 800;
     letter-spacing: 0.08em;
     color: var(--ios-tint);
-}
-
-body.liff-fixed-ui .ios-wallet-card__code-wrap {
+}body.liff-fixed-ui .ios-wallet-card__code-wrap,
+body.liff-lottery-ui .ios-wallet-card__code-wrap {
     display: grid;
     place-items: center;
     min-height: 108px;
     width: 100%;
-}
-
-body.liff-fixed-ui .ios-wallet-card__barcode {
+}body.liff-fixed-ui .ios-wallet-card__barcode,
+body.liff-lottery-ui .ios-wallet-card__barcode {
     width: 100%;
     max-width: 100%;
     height: 96px;
-}
-
-body.liff-fixed-ui .ios-wallet-card__number {
+}body.liff-fixed-ui .ios-wallet-card__number,
+body.liff-lottery-ui .ios-wallet-card__number {
     margin: 10px 0 0;
     text-align: center;
     font-size: 14px;
     font-weight: 600;
     letter-spacing: 0.1em;
     color: var(--ios-secondary);
-}
-
-body.liff-fixed-ui .ios-wallet-member__meta {
+}body.liff-fixed-ui .ios-wallet-member__meta,
+body.liff-lottery-ui .ios-wallet-member__meta {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -2962,9 +3949,8 @@ body.liff-fixed-ui .ios-wallet-member__meta {
     margin: 12px 2px 18px;
     font-size: 12px;
     color: var(--ios-secondary);
-}
-
-body.liff-fixed-ui .ios-wallet-member__enlarge {
+}body.liff-fixed-ui .ios-wallet-member__enlarge,
+body.liff-lottery-ui .ios-wallet-member__enlarge {
     border: 0;
     background: transparent;
     color: var(--ios-tint);
@@ -2972,16 +3958,14 @@ body.liff-fixed-ui .ios-wallet-member__enlarge {
     font-size: 12px;
     font-weight: 700;
     cursor: pointer;
-}
-
-body.liff-fixed-ui .ios-wallet-member__quick {
+}body.liff-fixed-ui .ios-wallet-member__quick,
+body.liff-lottery-ui .ios-wallet-member__quick {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 8px;
     margin-bottom: 18px;
-}
-
-body.liff-fixed-ui .ios-wallet-member__quick-item {
+}body.liff-fixed-ui .ios-wallet-member__quick-item,
+body.liff-lottery-ui .ios-wallet-member__quick-item {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -2997,9 +3981,8 @@ body.liff-fixed-ui .ios-wallet-member__quick-item {
     font-size: 11px;
     font-weight: 700;
     cursor: pointer;
-}
-
-body.liff-fixed-ui .ios-wallet-member__quick-icon {
+}body.liff-fixed-ui .ios-wallet-member__quick-icon,
+body.liff-lottery-ui .ios-wallet-member__quick-icon {
     display: grid;
     place-items: center;
     width: 28px;
@@ -3007,14 +3990,9 @@ body.liff-fixed-ui .ios-wallet-member__quick-icon {
     border-radius: 10px;
     background: var(--ios-mint);
     color: var(--ios-tint);
-    font-size: 13px;
-}
-
-body.liff-fixed-ui .ios-wallet-member__quick-icon i {
-    line-height: 1;
-}
-
-body.liff-fixed-ui .is-visually-hidden {
+    font-size: 12px;
+}body.liff-fixed-ui .is-visually-hidden,
+body.liff-lottery-ui .is-visually-hidden {
     position: absolute !important;
     width: 1px !important;
     height: 1px !important;
@@ -3023,46 +4001,286 @@ body.liff-fixed-ui .is-visually-hidden {
     overflow: hidden !important;
     clip: rect(0, 0, 0, 0) !important;
     border: 0 !important;
+}body.liff-fixed-ui .design-lab__btn,
+body.liff-lottery-ui .design-lab__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 0 18px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--ios-tint);
+    color: #fff;
+    font: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+}body.liff-fixed-ui .design-lab__btn:disabled,
+body.liff-lottery-ui .design-lab__btn:disabled {
+    opacity: 0.55;
+    cursor: default;
+}body.liff-fixed-ui .design-lab__btn--ghost,
+body.liff-lottery-ui .design-lab__btn--ghost {
+    margin-top: 10px;
+    background: transparent;
+    color: var(--ios-tint);
+    border: 1px solid rgba(14, 124, 102, 0.28);
+}body.liff-fixed-ui .design-lab__won,
+body.liff-lottery-ui .design-lab__won {
+    list-style: none;
+    margin: 12px 0 10px;
+    padding: 0;
+    display: grid;
+    gap: 8px;
+}body.liff-fixed-ui .design-lab__won-empty,
+body.liff-lottery-ui .design-lab__won-empty {
+    padding: 14px;
+    border-radius: 12px;
+    background: var(--ios-grouped);
+    color: var(--ios-secondary);
+    font-size: 13px;
+}body.liff-fixed-ui .design-lab__won-item,
+body.liff-lottery-ui .design-lab__won-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: var(--ios-surface);
+    box-shadow: 0 4px 14px rgba(15, 28, 26, 0.05);
+}body.liff-fixed-ui .design-lab__won-badge,
+body.liff-lottery-ui .design-lab__won-badge {
+    flex: 0 0 auto;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: var(--ios-mint);
+    color: var(--ios-tint);
+    font-size: 11px;
+    font-weight: 700;
+}body.liff-fixed-ui .design-lab__won-name,
+body.liff-lottery-ui .design-lab__won-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ios-label);
 }
 
-
-
-
-
-
-
-
-
-@media (max-width: 380px) {
-    body.liff-fixed-ui .lp-home-actions {
+@media (max-width: 380px) {body.liff-fixed-ui .lp-home-actions,
+body.liff-lottery-ui .lp-home-actions {
         grid-template-columns: 1fr;
-    }
-
-    body.liff-fixed-ui .lp-home-action {
+    }body.liff-fixed-ui .lp-home-action,
+body.liff-lottery-ui .lp-home-action {
         min-height: 0;
         flex-direction: row;
         align-items: center;
         gap: 12px;
-    }
-
-    body.liff-fixed-ui .lp-home-action__en {
+    }body.liff-fixed-ui .lp-home-action__en,
+body.liff-lottery-ui .lp-home-action__en {
         margin-top: 0;
     }
 }
 
-@media (max-width: 380px) {
-    body.liff-fixed-ui .lp-home-actions {
+@media (max-width: 380px) {body.liff-fixed-ui .lp-home-actions,
+body.liff-lottery-ui .lp-home-actions {
         grid-template-columns: 1fr;
-    }
-
-    body.liff-fixed-ui .lp-home-action {
+    }body.liff-fixed-ui .lp-home-action,
+body.liff-lottery-ui .lp-home-action {
         min-height: 0;
         flex-direction: row;
         align-items: center;
         gap: 12px;
-    }
-
-    body.liff-fixed-ui .lp-home-action__en {
+    }body.liff-fixed-ui .lp-home-action__en,
+body.liff-lottery-ui .lp-home-action__en {
         margin-top: 0;
     }
+}/* デモ: クーポン一覧からのガチャ／スクラッチ導線 */
+body.liff-fixed-ui .demo-play-entry,
+body.liff-lottery-ui .demo-play-entry {
+    margin: 0 0 18px;
+    padding: 16px;
+    border-radius: 18px;
+    background:
+        linear-gradient(145deg, rgba(255, 0, 51, 0.08), rgba(14, 124, 102, 0.08)),
+        var(--ios-surface);
+    border: 1px solid rgba(14, 124, 102, 0.12);
+}
+
+body.liff-fixed-ui .demo-play-entry__eyebrow,
+body.liff-lottery-ui .demo-play-entry__eyebrow {
+    margin: 0 0 4px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    color: #ff0033;
+}
+
+body.liff-fixed-ui .demo-play-entry__title,
+body.liff-lottery-ui .demo-play-entry__title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--ios-label);
+}
+
+body.liff-fixed-ui .demo-play-entry__sub,
+body.liff-lottery-ui .demo-play-entry__sub {
+    margin: 4px 0 0;
+    font-size: 13px;
+    line-height: 1.4;
+    color: var(--ios-secondary);
+}
+
+body.liff-fixed-ui .demo-play-entry__actions,
+body.liff-lottery-ui .demo-play-entry__actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 14px;
+}
+
+body.liff-fixed-ui .demo-play-entry__btn,
+body.liff-lottery-ui .demo-play-entry__btn {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    margin: 0;
+    padding: 14px 12px;
+    border: 0;
+    border-radius: 14px;
+    text-align: left;
+    cursor: pointer;
+}
+
+body.liff-fixed-ui .demo-play-entry__btn--gacha,
+body.liff-lottery-ui .demo-play-entry__btn--gacha {
+    background: linear-gradient(160deg, #ff4d6d, #d6002a);
+    color: #fff;
+    box-shadow: 0 8px 18px rgba(214, 0, 42, 0.28);
+}
+
+body.liff-fixed-ui .demo-play-entry__btn--scratch,
+body.liff-lottery-ui .demo-play-entry__btn--scratch {
+    background: linear-gradient(160deg, #2aa88a, #0e7c66);
+    color: #fff;
+    box-shadow: 0 8px 18px rgba(14, 124, 102, 0.24);
+}
+
+body.liff-fixed-ui .demo-play-entry__btn-label,
+body.liff-lottery-ui .demo-play-entry__btn-label {
+    font-size: 15px;
+    font-weight: 800;
+}
+
+body.liff-fixed-ui .demo-play-entry__btn-hint,
+body.liff-lottery-ui .demo-play-entry__btn-hint {
+    font-size: 11px;
+    opacity: 0.88;
+}
+
+/* member lottery CTA */
+.member-lottery-cta {
+    margin: 16px 12px 24px;
+    padding: 16px;
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 8px 24px rgba(15, 15, 20, 0.08);
+}
+.member-lottery-cta__text {
+    margin: 0 0 12px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #1a1a1a;
+}
+.member-lottery-cta .pp-cta {
+    display: block;
+    width: 100%;
+    margin-top: 0;
+    border: 0;
+    border-radius: 999px;
+    padding: 14px;
+    font-size: 15px;
+    font-weight: 800;
+    color: #fff;
+    cursor: pointer;
+    background: linear-gradient(135deg, #FF3355 0%, #FF0033 55%, #D1002A 100%);
+    box-shadow: 0 8px 18px rgba(255, 0, 51, 0.32);
+}
+
+
+/* ガチャポップアップ */
+.pp-gacha-popup {
+    position: fixed;
+    inset: 0;
+    z-index: 12050;
+    display: grid;
+    place-items: center;
+    padding: 20px 16px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+.pp-gacha-popup.is-in { opacity: 1; }
+.pp-gacha-popup.is-out { opacity: 0; }
+.pp-gacha-popup__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(17, 19, 24, 0.88);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+.pp-gacha-popup__panel {
+    position: relative;
+    z-index: 1;
+    width: min(100%, 360px);
+    max-height: min(92dvh, 760px);
+    overflow: auto;
+    padding: 0;
+    border-radius: 22px;
+    background: transparent;
+    box-shadow: none;
+    transform: translateY(12px) scale(0.96);
+    transition: transform 0.22s ease;
+}
+.pp-gacha-popup.is-in .pp-gacha-popup__panel { transform: translateY(0) scale(1); }
+.pp-gacha-popup__close {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    z-index: 2;
+    width: 36px;
+    height: 36px;
+    border: 0;
+    border-radius: 999px;
+    background: #e5e7eb;
+    color: #111827;
+    font-size: 22px;
+    line-height: 1;
+    font-weight: 700;
+    cursor: pointer;
+}
+.pp-gacha-popup .pp-play-card {
+    margin-top: 0;
+    padding-top: 22px;
+}
+.pp-gacha-popup .pp-cta,
+.pp-gacha-popup #designGachaBtn {
+    display: block !important;
+    width: 100% !important;
+    margin-top: 18px !important;
+    border: 0 !important;
+    border-radius: 999px !important;
+    padding: 14px !important;
+    font-family: "M PLUS Rounded 1c", "Noto Sans JP", sans-serif !important;
+    font-size: 15px !important;
+    font-weight: 900 !important;
+    color: #fff !important;
+    background: var(--ios-tint, #0E7C66) !important;
+    box-shadow: 0 8px 18px rgba(14, 124, 102, 0.28) !important;
+    opacity: 1 !important;
+}
+.pp-gacha-popup .pp-cta:disabled,
+.pp-gacha-popup #designGachaBtn:disabled {
+    background: #D8D9DE !important;
+    color: #A6A7AE !important;
+    box-shadow: none !important;
 }

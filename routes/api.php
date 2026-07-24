@@ -25,12 +25,14 @@ use App\Http\Controllers\GalleryController;
 use App\Http\Controllers\LineWebhookController;
 use App\Http\Controllers\Member\GoogleWalletUrlController;
 use App\Http\Controllers\Member\MemberAddPointsController;
+use App\Http\Controllers\Member\MemberLotteryController;
 use App\Http\Controllers\Member\MemberMeController;
 use App\Http\Controllers\Member\MemberPointCardController;
 use App\Http\Controllers\Member\MemberPointHistoryController;
 use App\Http\Controllers\Member\MemberPointsController;
 use App\Http\Controllers\Member\MemberRegisterController;
 use App\Http\Controllers\Member\MemberUpdateController;
+use App\Http\Controllers\Member\MemberWalletSummaryController;
 use App\Http\Controllers\Member\MemberWithdrawController;
 use App\Http\Controllers\Member\WalletPassController;
 use App\Http\Controllers\Member\WalletPassUrlController;
@@ -92,6 +94,9 @@ Route::prefix('v1')->middleware([AuthenticateApiToken::class])->group(function (
     Route::post('/members/withdraw', [ApiV1MemberWithdrawController::class, '__invoke']);
     Route::get('/members/me/coupons', [ApiV1CouponController::class, 'myCoupons']);
     Route::post('/members/me/coupons/{id}/use', [ApiV1CouponController::class, 'use']);
+    Route::get('/members/me/lottery', [MemberLotteryController::class, 'index']);
+    Route::post('/members/me/lottery/{id}/play', [MemberLotteryController::class, 'play']);
+    Route::get('/members/me/wallet-summary', MemberWalletSummaryController::class);
     Route::get('/stamps', [ApiV1StampController::class, 'index']);
     Route::get('/announcements', [ApiV1AnnouncementController::class, 'index']);
     Route::post('/announcements/{id}/read', [ApiV1AnnouncementController::class, 'markRead']);
@@ -115,6 +120,9 @@ Route::prefix('v1')->middleware([CheckApiProject::class, AuthenticateApiToken::c
     Route::post('/{project_key}/members/withdraw', [ApiV1MemberWithdrawController::class, '__invoke']);
     Route::get('/{project_key}/members/me/coupons', [ApiV1CouponController::class, 'myCoupons']);
     Route::post('/{project_key}/members/me/coupons/{id}/use', [ApiV1CouponController::class, 'use']);
+    Route::get('/{project_key}/members/me/lottery', [MemberLotteryController::class, 'index']);
+    Route::post('/{project_key}/members/me/lottery/{id}/play', [MemberLotteryController::class, 'play']);
+    Route::get('/{project_key}/members/me/wallet-summary', MemberWalletSummaryController::class);
     Route::get('/{project_key}/stamps', [ApiV1StampController::class, 'index']);
     Route::get('/{project_key}/announcements', [ApiV1AnnouncementController::class, 'index']);
     Route::get('/{project_key}/announcements/cancelled-ids', [ApiV1AnnouncementController::class, 'cancelledIds']);
@@ -155,6 +163,9 @@ Route::middleware(['web', 'bind.project'])->group(function () {
     Route::post('/members/points/add', [MemberAddPointsController::class, '__invoke']);
     Route::get('/members/me/coupons', [CouponController::class, 'myCoupons']);
     Route::post('/members/me/coupons/{id}/use', [CouponController::class, 'use']);
+    Route::get('/members/me/lottery', [MemberLotteryController::class, 'index']);
+    Route::post('/members/me/lottery/{id}/play', [MemberLotteryController::class, 'play']);
+    Route::get('/members/me/wallet-summary', MemberWalletSummaryController::class);
 
     Route::post('/payment/create-intent', [PaymentCreateIntentController::class, '__invoke']);
     Route::post('/payment/confirm', [PaymentConfirmController::class, '__invoke']);
