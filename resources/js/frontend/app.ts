@@ -13,7 +13,6 @@ import { StampsManager } from './managers/StampsManager';
 import { CheckoutManager } from './managers/CheckoutManager';
 import { QueueManager } from './managers/QueueManager';
 import { CouponsManager } from './managers/CouponsManager';
-import { DesignLabManager } from './managers/DesignLabManager';
 import { getMemberRegistrationMode, isMembershipRequired, isRegistrationFormDismissed, shouldShowRegistrationForm, syncMemberRegistrationModeFromPayload } from './utils/membershipPolicy';
 import { mountDetailLayoutChrome } from './utils/detailLayoutMount';
 import { LiffLayoutManager } from './managers/LiffLayoutManager';
@@ -44,7 +43,6 @@ class ReggitApp {
     memberManager: MemberManager;
     stampsManager: StampsManager;
     couponsManager: CouponsManager;
-    designLabManager: DesignLabManager;
     galleryManager: GalleryManager;
     layoutManager: LiffLayoutManager;
     queueManager: QueueManager;
@@ -80,7 +78,6 @@ class ReggitApp {
         this.memberManager = new MemberManager(this.apiClient, this.orderManager);
         this.stampsManager = new StampsManager(this.apiClient);
         this.couponsManager = new CouponsManager(this.apiClient);
-        this.designLabManager = new DesignLabManager();
         this.galleryManager = new GalleryManager(this.apiClient);
         this.layoutManager = new LiffLayoutManager(this);
         this.queueManager = new QueueManager(this.apiClient);
@@ -100,7 +97,7 @@ class ReggitApp {
     }
 
     getInitialTab() {
-        const allowedTabs = new Set(['home', 'products', 'orders', 'stamps', 'coupons', 'queue', 'member', 'reservations', 'gallery', 'announcements', 'designlab']);
+        const allowedTabs = new Set(['home', 'products', 'orders', 'stamps', 'coupons', 'queue', 'member', 'reservations', 'gallery', 'announcements']);
         if (typeof window.__NATIVE_TARGET_TAB__ !== 'undefined' && window.__NATIVE_TARGET_TAB__ && allowedTabs.has(window.__NATIVE_TARGET_TAB__)) {
             return window.__NATIVE_TARGET_TAB__;
         }
@@ -115,7 +112,7 @@ class ReggitApp {
 
     getTabFromUrl() {
         if (typeof window === 'undefined') return null;
-        const allowedTabs = new Set(['home', 'products', 'orders', 'stamps', 'coupons', 'queue', 'member', 'reservations', 'gallery', 'announcements', 'designlab']);
+        const allowedTabs = new Set(['home', 'products', 'orders', 'stamps', 'coupons', 'queue', 'member', 'reservations', 'gallery', 'announcements']);
         const aliases: Record<string, string> = {
             order: 'products',
             card: 'member',
@@ -399,7 +396,7 @@ class ReggitApp {
     /** ネイティブアプリ: プッシュ通知タップ等で指定タブを開く */
     setupNativePushDeepLink() {
         if (typeof window === 'undefined' || !window.__MOBILE_APP_MODE__) return;
-        const allowedTabs = new Set(['home', 'products', 'orders', 'stamps', 'coupons', 'queue', 'member', 'reservations', 'gallery', 'announcements', 'designlab']);
+        const allowedTabs = new Set(['home', 'products', 'orders', 'stamps', 'coupons', 'queue', 'member', 'reservations', 'gallery', 'announcements']);
         window.__nativeOpenTab__ = (tabKey, options) => {
             options = options || {};
             const aliases: Record<string, string> = {
@@ -703,7 +700,7 @@ class ReggitApp {
     /** ネイティブアプリでデバイス情報が注入されたあと、初期タブへ切り替え・会員タブのウォレット表示を更新する */
     setupNativeAppEventListeners() {
         const app = this;
-        const allowedTabs = new Set(['home', 'products', 'orders', 'stamps', 'coupons', 'queue', 'member', 'reservations', 'gallery', 'announcements', 'designlab']);
+        const allowedTabs = new Set(['home', 'products', 'orders', 'stamps', 'coupons', 'queue', 'member', 'reservations', 'gallery', 'announcements']);
         document.addEventListener('mobile-device-info-injected', () => {
             if (typeof window.__MOBILE_APP_MODE__ === 'undefined' || !window.__MOBILE_APP_MODE__) return;
             if (!window.__NATIVE_WEB_READY__) return;
@@ -1867,7 +1864,6 @@ class ReggitApp {
                 [AppConstants.TABS.RESERVATIONS]: AppConstants.ELEMENT_IDS.RESERVATIONS_TAB,
                 [AppConstants.TABS.GALLERY]: AppConstants.ELEMENT_IDS.GALLERY_TAB,
                 [AppConstants.TABS.ANNOUNCEMENTS]: AppConstants.ELEMENT_IDS.ANNOUNCEMENTS_TAB,
-                [AppConstants.TABS.DESIGNLAB]: AppConstants.ELEMENT_IDS.DESIGNLAB_TAB,
             };
             const tabEl = DomHelper.getElementById(tabIdMap[tab]) || document.getElementById(tab + 'Tab');
             if (tabEl) DomHelper.addClass(tabEl, AppConstants.CSS_CLASSES.ACTIVE);

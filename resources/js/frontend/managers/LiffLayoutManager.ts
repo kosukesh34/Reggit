@@ -423,11 +423,6 @@ export class LiffLayoutManager {
         if (tab === 'member' && container && !container.querySelector('.member-card-mount') && !container.querySelector('.member-section') && container.childElementCount === 0) {
             container.innerHTML = `<div class="member-section member-card-mount"></div>`;
         }
-        if (tab === 'designlab' && container !== null) {
-            if (this.app.designLabManager && typeof this.app.designLabManager.mount === 'function') {
-                this.app.designLabManager.mount(container);
-            }
-        }
         const tabLoaders: Record<string, () => void> = {
             home: () => {
                 if (useFixedUi) {
@@ -464,12 +459,6 @@ export class LiffLayoutManager {
             reservations: () => this.app.checkMembershipAndLoadReservations(),
             gallery: () => this.app.galleryManager.load(),
             announcements: () => this.app.announcementManager.load(),
-            designlab: () => {
-                const section = document.getElementById('designlabSection');
-                if (section !== null && this.app.designLabManager) {
-                    this.app.designLabManager.mount(section);
-                }
-            },
         };
         const loader = tabLoaders[tab];
         if (loader) {
