@@ -39,6 +39,9 @@ export const AppConstants = {
         STAMPS: `${API_BASE}/stamps`,
         MY_COUPONS: `${API_BASE}/members/me/coupons`,
         MY_COUPON_USE: (id: string | number) => `${API_BASE}/members/me/coupons/${id}/use`,
+        MEMBERS_LOTTERY: `${API_BASE}/members/me/lottery`,
+        MEMBERS_LOTTERY_PLAY: (id: string | number) => `${API_BASE}/members/me/lottery/${id}/play`,
+        MEMBERS_WALLET_SUMMARY: `${API_BASE}/members/me/wallet-summary`,
         GALLERY: `${API_BASE}/gallery`,
         QUEUE: `${API_BASE}/queue`,
         QUEUE_ME: `${API_BASE}/queue/me`,
@@ -73,6 +76,7 @@ export const AppConstants = {
         COUPONS: 'coupons',
         QUEUE: 'queue',
         MEMBER: 'member',
+        DESIGNLAB: 'designlab',
         RESERVATIONS: 'reservations',
         GALLERY: 'gallery',
         ANNOUNCEMENTS: 'announcements',
@@ -209,6 +213,7 @@ export const AppConstants = {
         GALLERY: 'gallery-data-mount',
         ANNOUNCEMENTS: 'announcements-data-mount',
         MEMBER: 'member-card-mount',
+        DESIGNLAB: 'designlab-data-mount',
     },
 
     ELEMENT_IDS: {

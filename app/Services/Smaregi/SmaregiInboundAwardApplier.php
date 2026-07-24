@@ -9,11 +9,13 @@ use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
 use App\Domain\Smaregi\Services\PurchasePointCalculator;
 use App\Domain\Smaregi\Services\SmaregiInboundAwardDescription;
+use App\Enums\LotterySourceType;
 use App\Enums\PointTransactionType;
 use App\Models\Member;
 use App\Models\MemberStampTransaction;
 use App\Models\PointTransaction;
 use App\Services\Admin\MemberAdminService;
+use App\Services\Lottery\LotteryEntitlementService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -31,6 +33,7 @@ class SmaregiInboundAwardApplier
         private SmaregiPointsSyncService $pointsSync,
         private PurchasePointCalculator $pointCalculator,
         private SmaregiInboundAwardDescription $descriptions,
+        private LotteryEntitlementService $lotteryEntitlementService,
     ) {}
 
     public function awardForPurchase(
@@ -41,12 +44,23 @@ class SmaregiInboundAwardApplier
     ): void {
         $this->awardStamps($member, $amount, $headId);
         $this->awardPoints($member, $amount, $headId, $hasSmaregiManagedPointDelta);
+        // TEMP: テスト用。Webhook 時は設定に関係なくガチャ権利を付与（最終的に削除）
+        $this->lotteryEntitlementService->forceGrantGachaForTest(
+            $member,
+            LotterySourceType::SMAREGI_TRANSACTION,
+            $headId,
+        );
     }
 
     public function reverseForCancel(Member $member, string $headId): void
     {
         $this->reverseAwardedPoints($member, $headId, SmaregiInboundAwardDescription::REASON_CANCEL);
         $this->reverseAwardedStamps($member, $headId, SmaregiInboundAwardDescription::REASON_CANCEL);
+        $this->lotteryEntitlementService->revokePendingForSource(
+            $member,
+            LotterySourceType::SMAREGI_TRANSACTION,
+            $headId,
+        );
     }
 
     public function reverseForReturn(
@@ -69,6 +83,11 @@ class SmaregiInboundAwardApplier
             $headId,
             SmaregiInboundAwardDescription::REASON_RETURN,
         );
+        $this->lotteryEntitlementService->revokePendingForSource(
+            $member,
+            LotterySourceType::SMAREGI_TRANSACTION,
+            $headId,
+        );
     }
 
     private function awardPoints(
@@ -77,7 +96,7 @@ class SmaregiInboundAwardApplier
         string $headId,
         bool $hasSmaregiManagedPointDelta,
     ): void {
-        if ($amount <= 0 || $hasSmaregiManagedPointDelta) {
+        if ($amount <= 0) {
             return;
         }
 
@@ -85,14 +104,35 @@ class SmaregiInboundAwardApplier
         $rankKey = is_string($member->rank) ? $member->rank : null;
         $rate = $this->shopSettingRepository->getPointEarnRateForRank($projectId, $rankKey);
         $points = $this->pointCalculator->calculate($amount, $rate);
+
+        // TEMP: テスト用。付与ポイントを 2〜5 倍にする（最終的に削除）
+        $multiplier = random_int(2, 5);
+        if ($points > 0) {
+            $points = $points * $multiplier;
+        } elseif ($hasSmaregiManagedPointDelta) {
+            $base = max(1, (int) floor($amount / max(1, $rate)));
+            $points = $base * $multiplier;
+        }
+
         if ($points <= 0) {
             return;
         }
 
-        $description = $this->descriptions->pointAward($headId);
-        if ($this->hasPointTransaction($member, PointTransactionType::EARNED, $description)) {
+        $baseDescription = $this->descriptions->pointAward($headId);
+        $description = $baseDescription.' [TEMP x'.$multiplier.']';
+        if ($this->hasPointTransaction($member, PointTransactionType::EARNED, $description)
+            || $this->hasPointTransaction($member, PointTransactionType::EARNED, $baseDescription)) {
             return;
         }
+
+        Log::info('[Smaregi] TEMP point boost applied', [
+            'member_id' => (int) $member->id,
+            'project_id' => $projectId,
+            'transaction_head_id' => $headId,
+            'multiplier' => $multiplier,
+            'points' => $points,
+            'has_smaregi_managed_point_delta' => $hasSmaregiManagedPointDelta,
+        ]);
 
         $this->pointsSync->markOutboundPending((int) $member->id);
 
