@@ -16,8 +16,9 @@ class PlayLotteryEntitlementUseCase
      * @return array{
      *     entitlement_id: int,
      *     reward_type: string,
-     *     coupon: array{id: int, name: string, description: string|null, image_url: string|null},
-     *     member_coupon_id: int
+     *     is_win: bool,
+     *     coupon: array{id: int, name: string, description: string|null, image_url: string|null}|null,
+     *     member_coupon_id: int|null
      * }
      */
     public function handle(User $user, int $entitlementId): array

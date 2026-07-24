@@ -11,6 +11,7 @@ use App\Enums\OrderStatus;
 use App\Enums\PaymentIntentStatus;
 use App\Models\Order;
 use App\Services\OrderNumberAssigner;
+use App\Services\OrderService;
 use App\UseCases\Payment\Data\PaymentConfirmOutput;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
@@ -22,6 +23,7 @@ class PaymentConfirmUseCase
         private OrderRepository $orderRepository,
         private DomainEventDispatcher $domainEvents,
         private OrderNumberAssigner $orderNumberAssigner,
+        private OrderService $orderService,
     ) {}
 
     public function handle(string $paymentIntentId, int $orderId, int $projectId): PaymentConfirmOutput
@@ -66,7 +68,13 @@ class PaymentConfirmUseCase
 
             $this->orderNumberAssigner->assignIfMissing($orderId, $projectId);
 
-            // 既確定の再送でも同期を要求する（失敗時リトライ。冪等は SyncService 側）。
+            $order = Order::query()
+                ->whereKey($orderId)
+                ->where('project_id', $projectId)
+                ->firstOrFail();
+            $this->orderService->applyStripePaymentRewardsIfNeeded($order);
+
+            // フロント決済完了経路では即時スマレジ同期（Webhook 遅延より先に送る）
             if ($this->shouldRequestPointsSync($aggregate->status(), $aggregate->isCancelled())) {
                 $pointsSyncEvent = new OrderPointsSyncRequested(
                     $aggregate->id()->value(),
@@ -84,10 +92,7 @@ class PaymentConfirmUseCase
                 true,
                 '決済が完了しました',
                 $status,
-                Order::query()
-                    ->whereKey($orderId)
-                    ->where('project_id', $projectId)
-                    ->firstOrFail(),
+                $order->fresh(),
             );
         });
 

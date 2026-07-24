@@ -14,6 +14,7 @@ class LotteryPrize extends Model
         'project_id',
         'reward_type',
         'coupon_id',
+        'is_lose',
         'probability',
         'sort_order',
         'is_active',
@@ -24,7 +25,13 @@ class LotteryPrize extends Model
         'probability' => 'integer',
         'sort_order' => 'integer',
         'is_active' => 'boolean',
+        'is_lose' => 'boolean',
     ];
+
+    public function isLose(): bool
+    {
+        return $this->is_lose === true || $this->coupon_id === null;
+    }
 
     public function project(): BelongsTo
     {

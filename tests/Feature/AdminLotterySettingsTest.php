@@ -42,7 +42,38 @@ class AdminLotterySettingsTest extends TestCase
 
         $response->assertStatus(200)
             ->assertSee('ガチャ・スクラッチ設定')
-            ->assertSee('権利の付与タイミング');
+            ->assertSee('権利の付与タイミング')
+            ->assertSee('実績サマリー')
+            ->assertSee('景品別の当選数');
+    }
+
+    public function test_lottery_settings_実績件数が表示されること(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        $coupon = Coupon::factory()->create([
+            'project_id' => $project->id,
+            'is_active' => true,
+            'name' => '統計確認クーポン',
+        ]);
+        \App\Models\MemberLotteryEntitlement::query()->create([
+            'project_id' => $project->id,
+            'member_id' => \App\Models\Member::factory()->create(['project_id' => $project->id])->id,
+            'reward_type' => LotteryRewardType::GACHA,
+            'source_type' => 'order',
+            'source_id' => 'stats-1',
+            'is_done' => true,
+            'done_at' => now(),
+            'won_coupon_id' => $coupon->id,
+            'member_coupon_id' => null,
+        ]);
+
+        $response = $this->actingAs($admin, 'admin')
+            ->get(route('admin.settings.lottery', ['project_key' => $project->project_key]));
+
+        $response->assertStatus(200)
+            ->assertSee('統計確認クーポン')
+            ->assertSee('当選');
     }
 
     public function test_lottery_settings_確率合計100で保存できること(): void
@@ -80,6 +111,47 @@ class AdminLotterySettingsTest extends TestCase
         $this->assertTrue($settings->gacha_enabled);
         $this->assertFalse($settings->scratch_enabled);
         $this->assertSame(24, $settings->entitlement_expires_hours);
+        $this->assertSame(2, LotteryPrize::query()->where('project_id', $project->id)->count());
+    }
+
+    public function test_lottery_settings_ハズレ景品を保存できること(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        $coupon = Coupon::factory()->create(['project_id' => $project->id, 'is_active' => true, 'name' => '景品A']);
+
+        $response = $this->actingAs($admin, 'admin')
+            ->post(route('admin.settings.lottery.update', ['project_key' => $project->project_key]), [
+                'gacha_enabled' => '1',
+                'scratch_enabled' => '0',
+                'grant_trigger' => LotteryGrantTrigger::EVERY_PURCHASE,
+                'min_amount' => null,
+                'entitlement_expires_hours' => null,
+                'prizes' => [
+                    [
+                        'reward_type' => LotteryRewardType::GACHA,
+                        'coupon_id' => $coupon->id,
+                        'is_lose' => '0',
+                        'probability' => 70,
+                    ],
+                    [
+                        'reward_type' => LotteryRewardType::GACHA,
+                        'coupon_id' => 'lose',
+                        'is_lose' => '1',
+                        'probability' => 30,
+                    ],
+                ],
+            ]);
+
+        $response->assertRedirect(route('admin.settings.lottery', ['project_key' => $project->project_key]));
+
+        $lose = LotteryPrize::query()
+            ->where('project_id', $project->id)
+            ->where('is_lose', true)
+            ->first();
+        $this->assertNotNull($lose);
+        $this->assertNull($lose->coupon_id);
+        $this->assertSame(30, $lose->probability);
         $this->assertSame(2, LotteryPrize::query()->where('project_id', $project->id)->count());
     }
 

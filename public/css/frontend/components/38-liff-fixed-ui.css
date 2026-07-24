@@ -3630,16 +3630,18 @@ body.liff-lottery-ui .pp-scratch__hint {
     text-align: center;
 }
 
-/* ===== 当選モーダル ===== */
+/* ===== 当選／ハズレ結果モーダル（ガチャポップアップより前面） ===== */
 .pp-prize-modal {
     position: fixed;
     inset: 0;
-    z-index: 12000;
+    z-index: 13000;
     display: grid;
     place-items: center;
+    place-content: center;
     padding: 26px;
     opacity: 0;
     transition: opacity 0.2s ease;
+    pointer-events: auto;
 }
 
 .pp-prize-modal.is-in { opacity: 1; }
@@ -3648,14 +3650,14 @@ body.liff-lottery-ui .pp-scratch__hint {
 .pp-prize-modal__backdrop {
     position: absolute;
     inset: 0;
-    background: rgba(15, 15, 20, 0.66);
+    background: rgba(15, 15, 20, 0.72);
 }
 
 .pp-prize-modal__panel {
     position: relative;
     z-index: 1;
-    width: min(100%, 280px);
-    padding: 26px 20px 20px;
+    width: min(100%, 300px);
+    padding: 28px 22px 22px;
     border-radius: 22px;
     background: #fff;
     text-align: center;
@@ -3671,22 +3673,34 @@ body.liff-lottery-ui .pp-scratch__hint {
 
 .pp-prize-modal__ribbon {
     display: inline-block;
-    margin-bottom: 10px;
-    padding: 3px 12px;
+    margin-bottom: 12px;
+    padding: 4px 14px;
     border-radius: 999px;
     background: linear-gradient(135deg, #FF3355 0%, #FF0033 55%, #D1002A 100%);
     color: #fff;
-    font-size: 10.5px;
+    font-size: 11px;
     font-weight: 800;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.06em;
+}
+
+.pp-prize-modal__ribbon--lose {
+    background: linear-gradient(135deg, #8A93A0 0%, #6B7580 55%, #555E6A 100%);
 }
 
 .pp-prize-modal__name {
-    margin: 0 0 6px;
-    font-size: 18px;
+    margin: 0 0 8px;
+    font-size: 20px;
     font-weight: 800;
     line-height: 1.35;
     color: #1a1a1a;
+}
+
+.pp-prize-modal__name--lose {
+    font-size: 36px;
+    font-weight: 900;
+    letter-spacing: 0.14em;
+    line-height: 1.15;
+    color: #3A4450;
 }
 
 .pp-prize-modal__desc {
@@ -3704,6 +3718,31 @@ body.liff-lottery-ui .pp-scratch__hint {
     margin: 10px 0 0;
     font-size: 11px;
     color: #8a8a8f;
+}
+
+.pp-cta--muted {
+    background: #5B6570 !important;
+    box-shadow: none !important;
+}
+
+body.liff-fixed-ui .pp-scratch__prize.is-lose,
+body.liff-lottery-ui .pp-scratch__prize.is-lose {
+    background: radial-gradient(circle at 50% 42%, #F7F8FA 0%, #ECEFF3 72%, #E2E6EB 100%);
+    gap: 8px;
+}
+
+body.liff-fixed-ui .pp-scratch__prize.is-lose .pp-scratch__prize-name,
+body.liff-lottery-ui .pp-scratch__prize.is-lose .pp-scratch__prize-name {
+    font-size: 34px;
+    font-weight: 900;
+    letter-spacing: 0.14em;
+    color: #3A4450;
+}
+
+body.liff-fixed-ui .pp-scratch__prize.is-lose .pp-scratch__prize-desc,
+body.liff-lottery-ui .pp-scratch__prize.is-lose .pp-scratch__prize-desc {
+    font-size: 12px;
+    color: #6B7580;
 }
 
 @keyframes pp-knob-spin {

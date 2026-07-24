@@ -7,6 +7,7 @@ use App\Enums\LotteryRewardType;
 use App\Util\AdminContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class LotterySettingsUpdateRequest extends FormRequest
 {
@@ -26,13 +27,28 @@ class LotterySettingsUpdateRequest extends FormRequest
             if (! is_array($prize)) {
                 continue;
             }
-            $couponId = $prize['coupon_id'] ?? null;
-            if ($couponId === null || $couponId === '') {
+            $couponRaw = $prize['coupon_id'] ?? null;
+            $isLose = $couponRaw === 'lose' || $couponRaw === '__lose__';
+
+            if ($isLose) {
+                $normalized[] = [
+                    'reward_type' => (string) ($prize['reward_type'] ?? ''),
+                    'coupon_id' => null,
+                    'is_lose' => true,
+                    'probability' => (int) ($prize['probability'] ?? 0),
+                    'sort_order' => (int) ($prize['sort_order'] ?? 0),
+                ];
                 continue;
             }
+
+            if ($couponRaw === null || $couponRaw === '') {
+                continue;
+            }
+
             $normalized[] = [
                 'reward_type' => (string) ($prize['reward_type'] ?? ''),
-                'coupon_id' => (int) $couponId,
+                'coupon_id' => (int) $couponRaw,
+                'is_lose' => false,
                 'probability' => (int) ($prize['probability'] ?? 0),
                 'sort_order' => (int) ($prize['sort_order'] ?? 0),
             ];
@@ -62,8 +78,9 @@ class LotterySettingsUpdateRequest extends FormRequest
             'entitlement_expires_hours' => 'nullable|integer|min:1|max:8760',
             'prizes' => 'nullable|array',
             'prizes.*.reward_type' => ['required', 'string', Rule::in(LotteryRewardType::keys())],
+            'prizes.*.is_lose' => 'required|boolean',
             'prizes.*.coupon_id' => [
-                'required',
+                'nullable',
                 'integer',
                 Rule::exists('coupons', 'id')->where(function ($query) use ($projectId) {
                     if ($projectId > 0) {
@@ -74,6 +91,35 @@ class LotterySettingsUpdateRequest extends FormRequest
             'prizes.*.probability' => 'required|integer|min:1|max:100',
             'prizes.*.sort_order' => 'nullable|integer|min:0',
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            $prizes = $this->input('prizes', []);
+            if (! is_array($prizes)) {
+                return;
+            }
+            foreach ($prizes as $index => $prize) {
+                if (! is_array($prize)) {
+                    continue;
+                }
+                $isLose = ($prize['is_lose'] ?? false) === true;
+                $couponId = $prize['coupon_id'] ?? null;
+                if ($isLose === true && $couponId !== null) {
+                    $validator->errors()->add(
+                        "prizes.{$index}.coupon_id",
+                        'ハズレ景品にクーポンは設定できません。'
+                    );
+                }
+                if ($isLose === false && $couponId === null) {
+                    $validator->errors()->add(
+                        "prizes.{$index}.coupon_id",
+                        'クーポンを選択するか、ハズレを選んでください。'
+                    );
+                }
+            }
+        });
     }
 
     /** @return array<string, string> */
