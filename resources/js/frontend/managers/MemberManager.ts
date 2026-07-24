@@ -41,8 +41,8 @@ export class MemberManager {
     _walletSummaryTimer: ReturnType<typeof setInterval> | null = null;
     _walletSummaryLast: { points: number; stamps_total: number; pending_lottery_count: number } | null = null;
     _walletVisibilityBound = false;
-    /** TEMP: 会員証表示でガチャ確認ポップアップを1回だけ出す */
-    _gachaPopupShownForProfile = false;
+    /** 同一の pending 件数では自動ポップアップを繰り返さない */
+    _gachaPopupOpenedForPendingCount: number | null = null;
 
     constructor(apiClient: any, orderManager: any) {
         this.apiClient = apiClient;
@@ -1066,7 +1066,9 @@ export class MemberManager {
         if (isFixedUiShell()) {
             this._renderIosWalletMember(container, data);
             this._renderLotteryCta(container, this._walletSummaryLast?.pending_lottery_count ?? 0);
-            this._openGachaPopupOnProfileShow('fixed_ui');
+            this._maybeOpenGachaPopupForPending(
+                this._walletSummaryLast?.pending_lottery_count ?? 0,
+            );
             return;
         }
 
@@ -1289,28 +1291,30 @@ export class MemberManager {
         this._setupRankHistoryToggle();
         this._setupWithdrawButton();
         this._renderLotteryCta(container, this._walletSummaryLast?.pending_lottery_count ?? 0);
-        this._openGachaPopupOnProfileShow('classic_ui');
+        this._maybeOpenGachaPopupForPending(
+            this._walletSummaryLast?.pending_lottery_count ?? 0,
+        );
     }
 
-    /** TEMP: 会員証表示時にガチャUIを出して見た目確認する */
-    _openGachaPopupOnProfileShow(source: string): void {
-        if (this._gachaPopupShownForProfile) {
+    /**
+     * 未消化のガチャ権利があるときだけポップアップを開く。
+     * 同一 pending 件数では重複表示しない（取引更新で件数が増えたら再度開く）。
+     */
+    _maybeOpenGachaPopupForPending(pendingCount: number): void {
+        if (pendingCount <= 0) {
+            this._gachaPopupOpenedForPendingCount = null;
             return;
         }
-        this._gachaPopupShownForProfile = true;
-        // eslint-disable-next-line no-console
-        console.info('[LotteryUI]', 'profile_show_trigger', { source, ts: Date.now() });
-        if (typeof window.__clientDebugLog === 'function') {
-            window.__clientDebugLog('lottery_ui_profile_show_trigger', { source });
+        if (this._gachaPopupOpenedForPendingCount === pendingCount) {
+            return;
         }
+        this._gachaPopupOpenedForPendingCount = pendingCount;
         const designLab = (window.app as any)?.designLabManager;
         if (designLab === undefined || typeof designLab.openGachaPopup !== 'function') {
-            // eslint-disable-next-line no-console
-            console.warn('[LotteryUI]', 'profile_show_no_design_lab', { source });
             return;
         }
         window.setTimeout(() => {
-            void designLab.openGachaPopup({ force: true });
+            void designLab.openGachaPopup();
         }, 300);
     }
 
@@ -3183,6 +3187,8 @@ export class MemberManager {
             const pointsChanged = prev === null || prev.points !== normalized.points;
             const lotteryIncreased = prev !== null
                 && normalized.pending_lottery_count > prev.pending_lottery_count;
+            const hasPendingOnFirstPoll = prev === null
+                && normalized.pending_lottery_count > 0;
 
             if (this.memberData !== null && pointsChanged) {
                 this.memberData.points = normalized.points;
@@ -3198,10 +3204,9 @@ export class MemberManager {
 
             if (lotteryIncreased) {
                 ToastManager.success('ガチャの権利が付与されました');
-                const designLab = (window.app as any)?.designLabManager;
-                if (designLab !== undefined && typeof designLab.openGachaPopup === 'function') {
-                    void designLab.openGachaPopup({ force: false });
-                }
+            }
+            if (lotteryIncreased || hasPendingOnFirstPoll) {
+                this._maybeOpenGachaPopupForPending(normalized.pending_lottery_count);
             }
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : 'unknown';

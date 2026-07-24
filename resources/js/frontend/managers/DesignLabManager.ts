@@ -66,11 +66,10 @@ export class DesignLabManager {
 
     /**
      * ガチャ筐体だけのポップアップを開く。
-     * @param options.force TEMP: 権利がなくても表示して見た目確認する
+     * デモ以外は未消化のガチャ権利があるときだけ表示する。
      */
-    async openGachaPopup(options: { force?: boolean } = {}): Promise<void> {
-        const force = options.force === true;
-        this._lotteryLog('popup_open_start', { force, demo: isDemoDataMode() });
+    async openGachaPopup(): Promise<void> {
+        this._lotteryLog('popup_open_start', { demo: isDemoDataMode() });
         this.closeGachaPopup();
         document.body.classList.add('liff-lottery-ui');
 
@@ -78,12 +77,11 @@ export class DesignLabManager {
             await this._fetchState();
             const pending = this._pending('gacha');
             this._lotteryLog('popup_state', {
-                force,
                 pendingId: pending?.id ?? null,
                 entitlementCount: this._state?.entitlements?.length ?? 0,
                 gachaEnabled: this._state?.gacha_enabled ?? false,
             });
-            if (pending === null && force !== true) {
+            if (pending === null) {
                 this._lotteryLog('popup_abort_no_pending');
                 return;
             }
@@ -120,19 +118,7 @@ export class DesignLabManager {
         this._fillDomeCapsules(panel);
         this._bind(panel);
         this._applyAvailability(panel);
-        if (force === true && this._pending('gacha') === null) {
-            const btn = panel.querySelector('#designGachaBtn') as HTMLButtonElement | null;
-            const chip = panel.querySelector('[data-gacha-chip]') as HTMLElement | null;
-            if (btn !== null) {
-                btn.disabled = false;
-                btn.textContent = 'レバーを回す';
-            }
-            if (chip !== null) {
-                chip.textContent = '体験';
-            }
-        }
         this._lotteryLog('popup_mounted', {
-            force,
             hasDome: panel.querySelector('.pp-gacha__dome') !== null,
         });
     }
