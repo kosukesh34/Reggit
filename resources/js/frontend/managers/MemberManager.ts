@@ -1308,13 +1308,20 @@ export class MemberManager {
         if (this._gachaPopupOpenedForPendingCount === pendingCount) {
             return;
         }
-        this._gachaPopupOpenedForPendingCount = pendingCount;
         const designLab = (window.app as any)?.designLabManager;
         if (designLab === undefined || typeof designLab.openGachaPopup !== 'function') {
             return;
         }
+        this._gachaPopupOpenedForPendingCount = pendingCount;
         window.setTimeout(() => {
-            void designLab.openGachaPopup();
+            void designLab.openGachaPopup().then((opened: unknown) => {
+                // openGachaPopup が権利なし等で表示しなかった場合は再試行できるようにする
+                if (opened === false) {
+                    this._gachaPopupOpenedForPendingCount = null;
+                }
+            }).catch(() => {
+                this._gachaPopupOpenedForPendingCount = null;
+            });
         }, 300);
     }
 
