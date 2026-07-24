@@ -7,7 +7,6 @@ use App\Enums\LotteryRewardType;
 use App\Models\LotteryPrize;
 use App\Models\Settings\ProjectLotterySetting;
 use App\Services\Admin\Data\LotterySettingsData;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
