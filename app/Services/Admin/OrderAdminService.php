@@ -6,6 +6,7 @@ use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
 use App\Models\Order;
 use App\Services\CouponIssueService;
+use App\Services\OrderService;
 use App\Services\Smaregi\SmaregiOrderTransactionOutboundService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
@@ -14,6 +15,7 @@ class OrderAdminService
     public function __construct(
         private CouponIssueService $couponIssueService,
         private SmaregiOrderTransactionOutboundService $smaregiOrderTransactionOutbound,
+        private OrderService $orderService,
     ) {}
 
     /** 決済済み = 確定・準備中・受け取り可能・完了 */
@@ -61,7 +63,11 @@ class OrderAdminService
         $order = Order::with('user')->findOrFail($id);
         Order::whereKey($id)->update(['status' => $status]);
         if ($status === OrderStatus::COMPLETED) {
-            $this->finalizeCashLayawayIfNeeded($order->fresh());
+            $completed = $order->fresh();
+            $this->finalizeCashLayawayIfNeeded($completed);
+            if ($completed !== null) {
+                $this->orderService->applyCashOrderLotteryIfNeeded($completed);
+            }
         }
     }
 
@@ -76,7 +82,11 @@ class OrderAdminService
                 $this->couponIssueService->issueForFirstOrder($member);
             }
         }
-        $this->finalizeCashLayawayIfNeeded($order->fresh());
+        $completed = $order->fresh();
+        $this->finalizeCashLayawayIfNeeded($completed);
+        if ($completed !== null) {
+            $this->orderService->applyCashOrderLotteryIfNeeded($completed);
+        }
     }
 
     private function finalizeCashLayawayIfNeeded(?Order $order): void
