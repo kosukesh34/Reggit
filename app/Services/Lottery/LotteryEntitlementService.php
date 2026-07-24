@@ -83,6 +83,7 @@ class LotteryEntitlementService
                 if ($memberCoupon === null) {
                     $entitlement->member_coupon_id = null;
                     $entitlement->save();
+
                     continue;
                 }
                 if ($memberCoupon->isUsed()) {

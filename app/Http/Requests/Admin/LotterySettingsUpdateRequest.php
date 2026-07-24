@@ -38,6 +38,7 @@ class LotterySettingsUpdateRequest extends FormRequest
                     'probability' => (int) ($prize['probability'] ?? 0),
                     'sort_order' => (int) ($prize['sort_order'] ?? 0),
                 ];
+
                 continue;
             }
 

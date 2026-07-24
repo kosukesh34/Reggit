@@ -7,6 +7,8 @@ use App\Enums\LotteryRewardType;
 use App\Models\AdminUser;
 use App\Models\Coupon;
 use App\Models\LotteryPrize;
+use App\Models\Member;
+use App\Models\MemberLotteryEntitlement;
 use App\Models\Project;
 use App\Models\Settings\ProjectLotterySetting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -56,9 +58,9 @@ class AdminLotterySettingsTest extends TestCase
             'is_active' => true,
             'name' => '統計確認クーポン',
         ]);
-        \App\Models\MemberLotteryEntitlement::query()->create([
+        MemberLotteryEntitlement::query()->create([
             'project_id' => $project->id,
-            'member_id' => \App\Models\Member::factory()->create(['project_id' => $project->id])->id,
+            'member_id' => Member::factory()->create(['project_id' => $project->id])->id,
             'reward_type' => LotteryRewardType::GACHA,
             'source_type' => 'order',
             'source_id' => 'stats-1',
