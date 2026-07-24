@@ -414,6 +414,9 @@ export class LiffLayoutManager {
         if (tab === 'coupons' && container && !container.querySelector('.coupons-data-mount') && container.childElementCount === 0) {
             container.innerHTML = `<div class="coupons-data-mount"></div>`;
         }
+        if (tab === 'designlab' && container && container.childElementCount === 0) {
+            container.innerHTML = `<div class="designlab-data-mount" id="designlabSectionMount"></div>`;
+        }
         if (tab === 'queue' && container && !container.querySelector('.queue-data-mount') && container.childElementCount === 0) {
             container.innerHTML = `<div class="queue-data-mount"></div>`;
         }
@@ -455,6 +458,7 @@ export class LiffLayoutManager {
             orders: () => this.app.loadOrdersTab(),
             stamps: () => this.app.stampsManager.load(),
             coupons: () => this.app.couponsManager.load(),
+            designlab: () => this.app.designLabManager.load(),
             queue: () => this.app.queueManager.load(),
             reservations: () => this.app.checkMembershipAndLoadReservations(),
             gallery: () => this.app.galleryManager.load(),
