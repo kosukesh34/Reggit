@@ -24,7 +24,7 @@ export type OpenPageOptions = {
 
 const TAB_KEYS = new Set([
     'home', 'products', 'orders', 'stamps', 'coupons', 'queue',
-    'member', 'reservations', 'gallery', 'announcements', 'designlab',
+    'member', 'reservations', 'gallery', 'announcements',
 ]);
 
 const PAGE_TITLES: Partial<Record<LiffPageKey, string>> = {
