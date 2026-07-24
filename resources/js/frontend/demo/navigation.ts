@@ -1,6 +1,6 @@
 /** /liff 固定デモUI用のタブ IA と機能フラグ判定 */
 
-import { isFixedUiShell, isDemoDataMode } from './demoMode';
+import { isDemoDataMode } from './demoMode';
 
 export type PrimaryTab = 'home' | 'products' | 'member' | 'queue';
 
@@ -27,7 +27,6 @@ export const TAB_TO_PRIMARY: Record<string, PrimaryTab> = {
     stamps: 'member',
     coupons: 'member',
     member: 'member',
-    designlab: 'member',
     queue: 'queue',
     reservations: 'queue',
     gallery: 'home',
@@ -113,10 +112,6 @@ export function buildCardSegments(flags?: FeatureFlags): SegmentItem[] {
     }
     if (isFeatureEnabled('coupons', source)) {
         items.push({ tab: 'coupons', label: 'クーポン' });
-    }
-    // 固定UIではガチャ／スクラッチ（あそび）を常時表示
-    if (isFixedUiShell()) {
-        items.push({ tab: 'designlab', label: 'あそび' });
     }
     return items;
 }

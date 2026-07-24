@@ -3,7 +3,7 @@ import { ApiClient } from '../../shared/utils/apiClient';
 import { DomHelper } from '../../shared/utils/domHelper';
 import { ConfirmDialog } from '../../shared/utils/confirmDialog';
 import { ToastManager } from '../../shared/utils/toast';
-import { isDemoDataMode } from '../demo/demoMode';
+import { isDemoDataMode, isFixedUiShell } from '../demo/demoMode';
 import { buildBuiltinSampleReservations } from '../demo/sampleData';
 
 const DEFAULT_ADVANCE_DAYS = 30;
@@ -95,7 +95,11 @@ export class ReservationManager {
             } else {
                 const data = (response as { data?: { requires_membership?: boolean } }).data;
                 if (data && data.requires_membership === true) {
-                    this.renderSampleReservations();
+                    if (isDemoDataMode()) {
+                        this.renderSampleReservations();
+                        return;
+                    }
+                    this.renderMembershipRequired();
                     return;
                 }
                 throw new Error(response.error);
@@ -106,7 +110,11 @@ export class ReservationManager {
             if (this.reservationsSection) {
                 const message = error instanceof Error ? error.message : '';
                 if (message && message.includes('会員登録が必要')) {
-                    this.renderSampleReservations();
+                    if (isDemoDataMode()) {
+                        this.renderSampleReservations();
+                    } else {
+                        this.renderMembershipRequired();
+                    }
                 } else {
                     this.reservationsSection.innerHTML = this.getErrorTemplate(error);
                 }
@@ -139,6 +147,21 @@ export class ReservationManager {
     }
 
     renderReservations(isSample = false): void {
+        if (isFixedUiShell()) {
+            this._renderFixedUiReservations(isSample);
+            return;
+        }
+        this._renderClassicReservations();
+    }
+
+    getReservationCardHtml(reservation: Reservation): string {
+        if (isFixedUiShell()) {
+            return this._getFixedUiReservationCardHtml(reservation);
+        }
+        return this._getClassicReservationCardHtml(reservation);
+    }
+
+    _renderClassicReservations(): void {
         this.reservationsSection = this._getSection();
         if (!this.reservationsSection) return;
 
@@ -148,6 +171,108 @@ export class ReservationManager {
         }
 
         const reservationsHtml = this.reservations.map((reservation) => this.getReservationCardHtml(reservation)).join('');
+
+        this.reservationsSection.innerHTML = `
+            <div class="reservations-header-section">
+                <h2 class="section-title">
+                    <i class="fas fa-calendar-check"></i> ${AppConstants.RESERVATION_LABELS.LIST_TITLE}
+                </h2>
+                <button class="btn btn-primary btn-create-reservation" onclick="app.reservationManager.showCreateForm()">
+                    <i class="fas fa-plus"></i> ${AppConstants.RESERVATION_LABELS.CREATE_BUTTON}
+                </button>
+            </div>
+            <div class="reservations-grid">
+                ${reservationsHtml}
+            </div>
+        `;
+    }
+
+    _getClassicReservationCardHtml(reservation: Reservation): string {
+        const reservedAt = new Date(reservation.reserved_at);
+        const dateStr = reservedAt.toLocaleDateString(AppConstants.DATE_FORMAT.LOCALE, AppConstants.DATE_FORMAT.DATE_OPTIONS as Intl.DateTimeFormatOptions);
+        const timeStr = reservedAt.toLocaleTimeString(AppConstants.DATE_FORMAT.LOCALE, AppConstants.DATE_FORMAT.TIME_OPTIONS as Intl.DateTimeFormatOptions);
+        const statusClass = this.getStatusClass(reservation.status);
+        const statusLabel = this.getStatusLabel(reservation.status);
+        const canEdit = reservation.status !== AppConstants.RESERVATION_STATUS.CANCELLED
+            && reservation.status !== AppConstants.RESERVATION_STATUS.COMPLETED;
+        const dayOfWeek = ['日', '月', '火', '水', '木', '金', '土'][reservedAt.getDay()];
+        const refNumber = DomHelper.formatReferenceNumber(reservation.reservation_number, reservation.id);
+
+        return `
+            <div class="reservation-card reservation-card--screen-${DomHelper.escapeHtml(this.getGlobalSetting('reservation_screen_design', 'cards'))}">
+                <div class="reservation-card-header">
+                    <span class="reservation-status-badge ${statusClass}">
+                        <i class="fas ${this.getStatusIcon(reservation.status)}"></i>
+                        ${statusLabel}
+                    </span>
+                    ${refNumber ? `<span class="ref-number" aria-label="予約番号">${DomHelper.escapeHtml(refNumber)}</span>` : ''}
+                </div>
+                <div class="reservation-card-body">
+                    <div class="reservation-info-item">
+                        <div class="reservation-info-icon">
+                            <i class="fas fa-calendar-alt"></i>
+                        </div>
+                        <div class="reservation-info-content">
+                            <div class="reservation-info-label">${AppConstants.RESERVATION_LABELS.DATE_TIME}</div>
+                            <div class="reservation-info-value">
+                                <div class="reservation-date-display">
+                                    <span class="reservation-date-main">${dateStr}</span>
+                                    <span class="reservation-date-day">(${dayOfWeek})</span>
+                                </div>
+                                <div class="reservation-time-display">
+                                    <i class="fas fa-clock"></i>
+                                    <span>${timeStr}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="reservation-info-item">
+                        <div class="reservation-info-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="reservation-info-content">
+                            <div class="reservation-info-label">${AppConstants.RESERVATION_LABELS.NUMBER_OF_PEOPLE}</div>
+                            <div class="reservation-info-value">
+                                <span class="reservation-people-count">${reservation.number_of_people}</span>
+                            </div>
+                        </div>
+                    </div>
+                    ${reservation.notes ? `
+                        <div class="reservation-info-item">
+                            <div class="reservation-info-icon">
+                                <i class="fas fa-comment-dots"></i>
+                            </div>
+                            <div class="reservation-info-content">
+                                <div class="reservation-info-label">${AppConstants.RESERVATION_LABELS.NOTES}</div>
+                                <div class="reservation-info-value reservation-notes">${DomHelper.escapeHtml(reservation.notes)}</div>
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+                ${canEdit ? `
+                    <div class="reservation-card-footer">
+                        <button class="btn btn-primary btn-edit-reservation" onclick="app.reservationManager.showEditForm(app.reservationManager.getReservationById(${reservation.id}))">
+                            <i class="fas fa-edit"></i> ${AppConstants.RESERVATION_LABELS.EDIT_BUTTON}
+                        </button>
+                        <button class="btn btn-danger btn-cancel-reservation" onclick="app.reservationManager.cancelReservation(${reservation.id})">
+                            <i class="fas fa-times-circle"></i> ${AppConstants.RESERVATION_LABELS.CANCEL_BUTTON}
+                        </button>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    _renderFixedUiReservations(isSample = false): void {
+        this.reservationsSection = this._getSection();
+        if (!this.reservationsSection) return;
+
+        if (this.reservations.length === 0) {
+            this.reservationsSection.innerHTML = this.getEmptyTemplate();
+            return;
+        }
+
+        const reservationsHtml = this.reservations.map((reservation) => this._getFixedUiReservationCardHtml(reservation)).join('');
 
         this.reservationsSection.innerHTML = `
             <div class="ios-panel-head">
@@ -165,7 +290,7 @@ export class ReservationManager {
         `;
     }
 
-    getReservationCardHtml(reservation: Reservation): string {
+    _getFixedUiReservationCardHtml(reservation: Reservation): string {
         const reservedAt = new Date(reservation.reserved_at);
         const timeStr = reservedAt.toLocaleTimeString(AppConstants.DATE_FORMAT.LOCALE, AppConstants.DATE_FORMAT.TIME_OPTIONS as Intl.DateTimeFormatOptions);
         const statusLabel = this.getStatusLabel(reservation.status);

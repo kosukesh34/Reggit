@@ -593,10 +593,7 @@ export class QueueManager {
     }
 
     shouldShowSampleQueue(): boolean {
-        if (isDemoDataMode()) {
-            return true;
-        }
-        return this.isQueueMembershipRequired() && !this.isCurrentUserMember();
+        return isDemoDataMode();
     }
 
     getDesignerSampleQueueEntry(): QueueEntry {
