@@ -2630,8 +2630,8 @@ body.liff-lottery-ui .pp-cta {
     font-weight: 900;
     color: #fff;
     cursor: pointer;
-    background: var(--pp-red-grad);
-    box-shadow: 0 8px 18px rgba(255, 0, 51, 0.35);
+    background: var(--ios-tint, #0E7C66);
+    box-shadow: 0 8px 18px rgba(14, 124, 102, 0.28);
     -webkit-tap-highlight-color: transparent;
 }
 
@@ -2651,8 +2651,8 @@ body.liff-lottery-ui .pp-cta:disabled {
 body.liff-fixed-ui .pp-cta--ghost,
 body.liff-lottery-ui .pp-cta--ghost {
     background: #fff;
-    color: var(--pp-red);
-    border: 1.5px solid rgba(255, 0, 51, 0.35);
+    color: var(--ios-tint, #0E7C66);
+    border: 1.5px solid rgba(14, 124, 102, 0.35);
     box-shadow: none;
 }
 
@@ -4274,8 +4274,8 @@ body.liff-lottery-ui .demo-play-entry__btn-hint {
     font-size: 15px !important;
     font-weight: 900 !important;
     color: #fff !important;
-    background: linear-gradient(135deg, #FF3355 0%, #FF0033 55%, #D1002A 100%) !important;
-    box-shadow: 0 8px 18px rgba(255, 0, 51, 0.35) !important;
+    background: var(--ios-tint, #0E7C66) !important;
+    box-shadow: 0 8px 18px rgba(14, 124, 102, 0.28) !important;
     opacity: 1 !important;
 }
 .pp-gacha-popup .pp-cta:disabled,

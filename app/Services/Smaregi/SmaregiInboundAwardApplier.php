@@ -44,9 +44,9 @@ class SmaregiInboundAwardApplier
     ): void {
         $this->awardStamps($member, $amount, $headId);
         $this->awardPoints($member, $amount, $headId, $hasSmaregiManagedPointDelta);
-        // TEMP: テスト用。Webhook 時は設定に関係なくガチャ権利を付与（最終的に削除）
-        $this->lotteryEntitlementService->forceGrantGachaForTest(
+        $this->lotteryEntitlementService->grantForPurchase(
             $member,
+            $amount,
             LotterySourceType::SMAREGI_TRANSACTION,
             $headId,
         );
