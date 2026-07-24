@@ -6,7 +6,6 @@ use App\Enums\LotteryGrantTrigger;
 use App\Enums\LotteryRewardType;
 use App\Models\Member;
 use App\Models\MemberLotteryEntitlement;
-use App\Models\Settings\ProjectFeatureFlags;
 use App\Models\Settings\ProjectLotterySetting;
 use Illuminate\Support\Carbon;
 
@@ -47,55 +46,6 @@ class LotteryEntitlementService
             ->where('source_id', $sourceId)
             ->where('is_done', false)
             ->delete();
-    }
-
-    /**
-     * TEMP: テスト用。設定ON/OFFや付与条件を無視してガチャ権利だけ付与する（最終的に削除）。
-     */
-    public function forceGrantGachaForTest(
-        Member $member,
-        string $sourceType,
-        string $sourceId,
-    ): void {
-        $projectId = (int) $member->project_id;
-        $settings = ProjectLotterySetting::query()->firstOrCreate(
-            ['project_id' => $projectId],
-            ProjectLotterySetting::getDefaultAttributes()
-        );
-
-        $exists = MemberLotteryEntitlement::query()
-            ->where('project_id', $projectId)
-            ->where('source_type', $sourceType)
-            ->where('source_id', $sourceId)
-            ->where('reward_type', LotteryRewardType::GACHA)
-            ->exists();
-        if ($exists) {
-            return;
-        }
-
-        MemberLotteryEntitlement::query()->create([
-            'project_id' => $projectId,
-            'member_id' => (int) $member->id,
-            'reward_type' => LotteryRewardType::GACHA,
-            'source_type' => $sourceType,
-            'source_id' => $sourceId,
-            'is_done' => false,
-            'expires_at' => now()->addHours(24),
-        ]);
-
-        // LIFF であそびタブが出るようフラグも仮ON
-        if ($settings->gacha_enabled !== true) {
-            $settings->gacha_enabled = true;
-            $settings->save();
-        }
-        $flags = ProjectFeatureFlags::query()->firstOrCreate(
-            ['project_id' => $projectId],
-            ProjectFeatureFlags::getDefaultAttributes()
-        );
-        if ($flags->feature_gacha_enabled !== true) {
-            $flags->feature_gacha_enabled = true;
-            $flags->save();
-        }
     }
 
     private function isRewardEnabled(ProjectLotterySetting $settings, string $rewardType): bool
