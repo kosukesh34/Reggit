@@ -16,7 +16,7 @@ const SCREEN_ITEMS: Array<{ src: string; caption: string }> = [
     { src: '/images/landing/app/screen-queue.png', caption: '順番待ち' },
 ];
 
-const CAPSULE_COLORS = ['#FF6F91', '#FFC93C', '#7B9BFF', '#5FD3B4', '#FF9A5A', '#B98CE0'];
+const CAPSULE_COLORS = ['#FF3B5C', '#2F6BFF', '#FFC933', '#2FCB6E', '#9B4DFF', '#FF6BCB', '#FF8A2B'];
 
 type Prize = (typeof DEMO_COUPON_PRIZES)[number];
 
@@ -25,6 +25,7 @@ export class DesignLabManager {
     mount(container: HTMLElement): void {
         const needsRemount = container.dataset.designLabMounted !== '1'
             || container.querySelector('.pp-gacha__dome') === null
+            || container.querySelector('.pp-gacha__chute') === null
             || container.querySelector('.pp-scratch__circle') === null;
         if (!needsRemount) {
             this._refreshWonList(container);
@@ -70,7 +71,7 @@ export class DesignLabManager {
         return `
             <div class="design-lab">
                 <header class="design-lab__hero">
-                    <p class="design-lab__eyebrow">Demo Play</p>
+                    <p class="design-lab__eyebrow">Play</p>
                     <h1 class="design-lab__title">ガチャ・スクラッチ</h1>
                     <p class="design-lab__lead">遊んでクーポンを獲得できます。獲得したクーポンはクーポン一覧に保存されます。</p>
                 </header>
@@ -87,26 +88,45 @@ export class DesignLabManager {
                     <div class="pp-play-card">
                         <div class="pp-play-card__top">
                             <span class="pp-play-card__title">クーポンガチャ</span>
-                            <span class="pp-play-card__chip">デモ</span>
+                            <span class="pp-play-card__chip">体験</span>
                         </div>
                         <p class="pp-play-card__rule">回すとカプセルが出ます。中身は開くまで見えません。</p>
                         <div class="pp-gacha" id="designGachaStage" data-state="idle">
-                            <div class="pp-gacha__machine">
-                                <span class="pp-gacha__price">1回 無料</span>
-                                <div class="pp-gacha__dome" id="designGachaDome"><div class="pp-gacha__gloss"></div></div>
-                                <div class="pp-gacha__body">
-                                    <span class="pp-gacha__rivet pp-gacha__rivet--l"></span>
-                                    <span class="pp-gacha__rivet pp-gacha__rivet--r"></span>
-                                    <div class="pp-gacha__slot"></div>
-                                    <div class="pp-gacha__knob-wrap">
-                                        <button type="button" class="pp-gacha__knob" id="designGachaKnob" aria-label="レバーを回す"></button>
+                            <div class="pp-gacha__stage">
+                                <div class="pp-gacha__machine" id="designGachaMachine">
+                                    <span class="pp-gacha__price">1回 無料</span>
+                                    <div class="pp-gacha__dome">
+                                        <span class="pp-gacha__dome-cap" aria-hidden="true">
+                                            <span class="pp-gacha__dome-star"></span>
+                                        </span>
+                                        <div class="pp-gacha__dome-glass" id="designGachaDome"></div>
+                                        <span class="pp-gacha__dome-shine" aria-hidden="true"></span>
+                                        <span class="pp-gacha__dome-shine pp-gacha__dome-shine--soft" aria-hidden="true"></span>
+                                        <span class="pp-gacha__dome-rim" aria-hidden="true"></span>
+                                        <span class="pp-gacha__collar" aria-hidden="true"></span>
                                     </div>
-                                    <div class="pp-gacha__flap"></div>
-                                </div>
-                                <div class="pp-gacha__tray"></div>
-                                <div class="pp-gacha__fall" id="designGachaFall" aria-hidden="true">
-                                    <span class="pp-gacha__fall-half pp-gacha__fall-half--top"><i></i></span>
-                                    <span class="pp-gacha__fall-half pp-gacha__fall-half--bot"><i></i></span>
+                                    <div class="pp-gacha__body">
+                                        <span class="pp-gacha__body-gloss" aria-hidden="true"></span>
+                                        <span class="pp-gacha__turn-hint" aria-hidden="true"></span>
+                                        <div class="pp-gacha__knob-wrap">
+                                            <button type="button" class="pp-gacha__knob" id="designGachaKnob" aria-label="レバーを回す">
+                                                <span class="pp-gacha__knob-plate" aria-hidden="true"></span>
+                                                <span class="pp-gacha__knob-bar" aria-hidden="true"></span>
+                                                <span class="pp-gacha__knob-hub" aria-hidden="true"></span>
+                                            </button>
+                                        </div>
+                                        <div class="pp-gacha__outlet" aria-hidden="true">
+                                            <span class="pp-gacha__flap"></span>
+                                            <div class="pp-gacha__chute">
+                                                <div class="pp-gacha__fall" id="designGachaFall">
+                                                    <span class="pp-gacha__fall-half pp-gacha__fall-half--top"><i></i></span>
+                                                    <span class="pp-gacha__fall-half pp-gacha__fall-half--bot"><i></i></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="pp-gacha__tray" aria-hidden="true"></div>
+                                    <div class="pp-gacha__stand" aria-hidden="true"></div>
                                 </div>
                             </div>
                             <button type="button" class="pp-cta" id="designGachaBtn">レバーを回す</button>
@@ -120,7 +140,7 @@ export class DesignLabManager {
                     <div class="pp-play-card">
                         <div class="pp-play-card__top">
                             <span class="pp-play-card__title">スクラッチくじ</span>
-                            <span class="pp-play-card__chip">デモ</span>
+                            <span class="pp-play-card__chip">体験</span>
                         </div>
                         <p class="pp-play-card__rule">銀面をこすって結果を確認しましょう。中身は削るまで見えません。</p>
                         <div class="pp-scratch" id="designScratchStage" data-state="sealed">
@@ -157,17 +177,37 @@ export class DesignLabManager {
         if (dome === null) {
             return;
         }
-        for (let i = 0; i < 12; i += 1) {
+        dome.querySelectorAll('.pp-gacha__ball').forEach((el) => el.remove());
+        // 余白のある自然な山積み（詰め込みすぎない）
+        const layout: Array<{ left: number; top: number; size: number; rot: number; z: number }> = [
+            { left: 28, top: 172, size: 52, rot: -14, z: 8 },
+            { left: 86, top: 178, size: 56, rot: 10, z: 12 },
+            { left: 148, top: 170, size: 52, rot: -8, z: 10 },
+            { left: 14, top: 128, size: 46, rot: 18, z: 6 },
+            { left: 64, top: 122, size: 52, rot: -22, z: 11 },
+            { left: 122, top: 118, size: 54, rot: 6, z: 13 },
+            { left: 178, top: 130, size: 46, rot: -16, z: 7 },
+            { left: 42, top: 78, size: 48, rot: 12, z: 9 },
+            { left: 100, top: 72, size: 50, rot: -18, z: 12 },
+            { left: 158, top: 84, size: 46, rot: 14, z: 8 },
+            { left: 72, top: 36, size: 44, rot: -6, z: 7 },
+            { left: 128, top: 42, size: 42, rot: 20, z: 6 },
+        ];
+        layout.forEach((item, i) => {
             const ball = document.createElement('span');
             ball.className = 'pp-gacha__ball';
-            const size = 20 + Math.floor(Math.random() * 10);
-            ball.style.width = `${size}px`;
-            ball.style.height = `${size}px`;
-            ball.style.left = `${10 + Math.random() * 148}px`;
-            ball.style.top = `${52 + Math.random() * 70}px`;
+            ball.style.width = `${item.size}px`;
+            ball.style.height = `${item.size}px`;
+            ball.style.left = `${item.left}px`;
+            ball.style.top = `${item.top}px`;
+            ball.style.zIndex = String(item.z);
             ball.style.setProperty('--ball-color', CAPSULE_COLORS[i % CAPSULE_COLORS.length]);
+            ball.style.setProperty('--ball-rot', `${item.rot}deg`);
+            ball.style.setProperty('--ball-scale', String(0.92 + item.z * 0.006));
+            ball.style.setProperty('--ball-bright', String(0.88 + item.z * 0.01));
+            ball.style.setProperty('--ball-delay', `${(i % 7) * 0.05}s`);
             dome.appendChild(ball);
-        }
+        });
     }
 
     private _bind(container: HTMLElement): void {
@@ -512,6 +552,7 @@ export class DesignLabManager {
 
     private _runGacha(container: HTMLElement): void {
         const stage = container.querySelector('#designGachaStage') as HTMLElement | null;
+        const machine = container.querySelector('#designGachaMachine') as HTMLElement | null;
         const knob = container.querySelector('#designGachaKnob') as HTMLElement | null;
         const fall = container.querySelector('#designGachaFall') as HTMLElement | null;
         const btn = container.querySelector('#designGachaBtn') as HTMLButtonElement | null;
@@ -523,6 +564,11 @@ export class DesignLabManager {
         }
         btn.disabled = true;
         stage.dataset.state = 'spinning';
+        if (machine !== null) {
+            machine.classList.remove('is-shake');
+            void machine.offsetWidth;
+            machine.classList.add('is-shake');
+        }
         if (knob !== null) {
             knob.classList.remove('is-spin');
             void knob.offsetWidth;
@@ -536,9 +582,10 @@ export class DesignLabManager {
         const prize = pickRandomPrize();
         window.setTimeout(() => {
             fall.classList.add('is-open');
-        }, 950);
+        }, 1150);
         window.setTimeout(() => {
             stage.dataset.state = 'idle';
+            machine?.classList.remove('is-shake');
             fall.classList.remove('is-drop', 'is-open');
             const coupon = saveDemoWonCoupon(prize, 'gacha');
             this._showPrizeModal(prize);
@@ -547,7 +594,7 @@ export class DesignLabManager {
             ToastManager.success(`${coupon.coupon_name} を獲得しました`);
             btn.disabled = false;
             btn.textContent = 'もう一度回す';
-        }, 1350);
+        }, 1650);
     }
 
     private _showPrizeModal(prize: Prize): void {
@@ -562,6 +609,9 @@ export class DesignLabManager {
             <div class="pp-prize-modal__backdrop" data-prize-close></div>
             <div class="pp-prize-modal__panel">
                 <span class="pp-prize-modal__ribbon">あたり</span>
+                <div class="pp-prize-modal__media">
+                    <img src="${DomHelper.escapeHtml(prize.image_url)}" alt="" loading="lazy">
+                </div>
                 <p class="pp-prize-modal__name">${DomHelper.escapeHtml(prize.coupon_name)}</p>
                 <p class="pp-prize-modal__desc">${DomHelper.escapeHtml(prize.description)}</p>
                 <button type="button" class="pp-cta" data-prize-close>受け取る</button>

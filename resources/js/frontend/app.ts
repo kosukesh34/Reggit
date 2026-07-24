@@ -22,6 +22,7 @@ import { MemberManager } from './managers/MemberManager';
 import { LiffPageRouter, parseLiffHash, isDeepLiffHash } from './navigation/LiffPageRouter';
 import type { LiffPageKey } from './navigation/LiffPageRouter';
 import { primaryForTab } from './demo/navigation';
+import { isFixedUiShell } from './demo/demoMode';
 import {
     buildBuiltinSampleCoupons,
     buildBuiltinSampleMemberData,
@@ -1833,13 +1834,20 @@ class ReggitApp {
             }
 
             const primary = primaryForTab(tab);
+            const useFixedPrimary = isFixedUiShell();
             DomHelper.querySelectorAll('.main-tab-btn').forEach((btn) => {
                 DomHelper.removeClass(btn, AppConstants.CSS_CLASSES.ACTIVE);
                 const el = btn as HTMLElement;
-                const btnPrimary = el.dataset.primaryTab || el.dataset.tab;
-                if (primary !== null && btnPrimary === primary) {
-                    DomHelper.addClass(btn, AppConstants.CSS_CLASSES.ACTIVE);
-                } else if (primary === null && el.dataset.tab === tab) {
+                if (useFixedPrimary) {
+                    const btnPrimary = el.dataset.primaryTab || el.dataset.tab;
+                    if (primary !== null && btnPrimary === primary) {
+                        DomHelper.addClass(btn, AppConstants.CSS_CLASSES.ACTIVE);
+                    } else if (primary === null && el.dataset.tab === tab) {
+                        DomHelper.addClass(btn, AppConstants.CSS_CLASSES.ACTIVE);
+                    }
+                    return;
+                }
+                if (el.dataset.tab === tab) {
                     DomHelper.addClass(btn, AppConstants.CSS_CLASSES.ACTIVE);
                 }
             });

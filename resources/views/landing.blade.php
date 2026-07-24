@@ -30,7 +30,7 @@
                     <a class="lp-nav__link" href="#platform">プラットフォーム</a>
                     <a class="lp-nav__link" href="#faq">FAQ</a>
                 </nav>
-                <a class="lp-nav__app" href="/liff?demo=1">デモアプリはこちら</a>
+                <a class="lp-nav__app" href="/liff">アプリを体験する</a>
                 <a class="lp-nav__cta" href="{{ route('admin.login') }}">管理画面ログイン</a>
             </div>
         </div>
@@ -214,7 +214,7 @@
                 <p class="lp-section__eyebrow">App</p>
                 <h2 class="lp-section__title">お客様の手元で完結する体験</h2>
                 <p class="lp-section__lead">ホーム・注文・会員・スタンプ・順番待ちまで、LINE内の画面でつながります。</p>
-                <a class="lp-screens__app-link" href="/liff?demo=1">デモアプリはこちら</a>
+                <a class="lp-screens__app-link" href="/liff">アプリを体験する</a>
             </div>
             <div class="lp-screens__rail">
                 <figure class="lp-screens__item">

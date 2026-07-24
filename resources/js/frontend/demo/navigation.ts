@@ -1,6 +1,6 @@
-/** iOS HIG 固定UI用のタブ IA と機能フラグ判定 */
+/** /liff 固定デモUI用のタブ IA と機能フラグ判定 */
 
-import { isIosFixedUiDemo } from './demoMode';
+import { isFixedUiShell, isDemoDataMode } from './demoMode';
 
 export type PrimaryTab = 'home' | 'products' | 'member' | 'queue';
 
@@ -35,8 +35,8 @@ export const TAB_TO_PRIMARY: Record<string, PrimaryTab> = {
 };
 
 export function readFeatureFlags(): FeatureFlags {
-    // デモ時のみ全機能を有効にして導線を確認できるようにする
-    if (isIosFixedUiDemo()) {
+    // 固定UIの体験（未ログイン）では全機能導線を見せる
+    if (isDemoDataMode()) {
         return {
             feature_home_enabled: true,
             feature_orders_enabled: true,
@@ -114,8 +114,8 @@ export function buildCardSegments(flags?: FeatureFlags): SegmentItem[] {
     if (isFeatureEnabled('coupons', source)) {
         items.push({ tab: 'coupons', label: 'クーポン' });
     }
-    // デモ専用: スクラッチ／ガチャでクーポン配布
-    if (isIosFixedUiDemo()) {
+    // 固定UIではガチャ／スクラッチ（あそび）を常時表示
+    if (isFixedUiShell()) {
         items.push({ tab: 'designlab', label: 'あそび' });
     }
     return items;

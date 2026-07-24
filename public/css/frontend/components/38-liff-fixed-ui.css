@@ -1,4 +1,4 @@
-/* Apple HIG fixed UI overlay for /liff — LPアプリ寄りの Evergreen トーン */
+/* LIFF 固定デモUI（/liff）— iOS/Android 共通のモバイル会員アプリ調 */
 :root {
     --ios-bg: #F1F5F4;
     --ios-bg-top: #E8F2EE;
@@ -21,8 +21,8 @@
     --ios-forest: #0F3D34;
 }
 
-html.ios-fixed-ui,
-body.ios-fixed-ui {
+html.liff-fixed-ui,
+body.liff-fixed-ui {
     font-family: var(--ios-font) !important;
     color: var(--ios-label);
     -webkit-font-smoothing: antialiased;
@@ -37,16 +37,16 @@ body.ios-fixed-ui {
     background-attachment: fixed !important;
 }
 
-body.ios-fixed-ui {
+body.liff-fixed-ui {
     /* Designer / shop theme backgrounds off — use atmospheric base above */
 }
 
-body.ios-fixed-ui #liff-custom-style,
-body.ios-fixed-ui #liff-design-tokens {
+body.liff-fixed-ui #liff-custom-style,
+body.liff-fixed-ui #liff-design-tokens {
     display: none !important;
 }
 
-body.ios-fixed-ui .app-container {
+body.liff-fixed-ui .app-container {
     background: transparent !important;
     min-height: 100dvh;
     max-width: 480px;
@@ -55,7 +55,7 @@ body.ios-fixed-ui .app-container {
 }
 
 /* —— Header (compact nav) —— */
-body.ios-fixed-ui .header {
+body.liff-fixed-ui .header {
     position: sticky;
     top: 0;
     z-index: 30;
@@ -68,7 +68,7 @@ body.ios-fixed-ui .header {
     padding-top: env(safe-area-inset-top, 0) !important;
 }
 
-body.ios-fixed-ui .header-content {
+body.liff-fixed-ui .header-content {
     min-height: var(--ios-nav-h);
     padding: 0 12px 0 8px;
     display: flex;
@@ -76,7 +76,7 @@ body.ios-fixed-ui .header-content {
     gap: 8px;
 }
 
-body.ios-fixed-ui .menu-btn {
+body.liff-fixed-ui .menu-btn {
     width: 36px;
     height: 36px;
     padding: 0 !important;
@@ -92,20 +92,20 @@ body.ios-fixed-ui .menu-btn {
     cursor: pointer;
 }
 
-body.ios-fixed-ui .menu-btn svg {
+body.liff-fixed-ui .menu-btn svg {
     width: 22px;
     height: 22px;
     display: block;
 }
 
-body.ios-fixed-ui .header-logo {
+body.liff-fixed-ui .header-logo {
     width: 28px;
     height: 28px;
     border-radius: 6px;
     object-fit: cover;
 }
 
-body.ios-fixed-ui .header .logo {
+body.liff-fixed-ui .header .logo {
     font-size: 17px !important;
     font-weight: 600 !important;
     letter-spacing: -0.02em;
@@ -114,7 +114,7 @@ body.ios-fixed-ui .header .logo {
     flex: 1;
 }
 
-body.ios-fixed-ui .header-friend-add {
+body.liff-fixed-ui .header-friend-add {
     font-size: 13px;
     color: var(--ios-tint);
     text-decoration: none;
@@ -124,14 +124,14 @@ body.ios-fixed-ui .header-friend-add {
     padding: 6px 8px !important;
 }
 
-body.ios-fixed-ui .header-actions {
+body.liff-fixed-ui .header-actions {
     display: flex;
     align-items: center;
     gap: 4px;
 }
 
-body.ios-fixed-ui .account-btn,
-body.ios-fixed-ui .cart-btn {
+body.liff-fixed-ui .account-btn,
+body.liff-fixed-ui .cart-btn {
     width: 36px;
     height: 36px;
     padding: 0 !important;
@@ -148,15 +148,15 @@ body.ios-fixed-ui .cart-btn {
     gap: 0 !important;
 }
 
-body.ios-fixed-ui .account-btn svg,
-body.ios-fixed-ui .cart-btn svg {
+body.liff-fixed-ui .account-btn svg,
+body.liff-fixed-ui .cart-btn svg {
     width: 22px !important;
     height: 22px !important;
     flex-shrink: 0;
     display: block;
 }
 
-body.ios-fixed-ui .cart-count {
+body.liff-fixed-ui .cart-count {
     position: absolute;
     top: 2px;
     right: 0;
@@ -172,29 +172,29 @@ body.ios-fixed-ui .cart-count {
     text-align: center;
 }
 
-body.ios-fixed-ui .cart-count:is(:empty, [data-count="0"]),
-body.ios-fixed-ui .cart-btn:not(.has-items) .cart-count {
+body.liff-fixed-ui .cart-count:is(:empty, [data-count="0"]),
+body.liff-fixed-ui .cart-btn:not(.has-items) .cart-count {
     display: none;
 }
 
 /* —— Main —— */
-body.ios-fixed-ui .main-content {
+body.liff-fixed-ui .main-content {
     background: transparent !important;
     padding-bottom: calc(108px + env(safe-area-inset-bottom, 0px)) !important;
     min-height: calc(100dvh - var(--ios-nav-h));
 }
 
-body.ios-fixed-ui .tab-content {
+body.liff-fixed-ui .tab-content {
     padding: 0 0 24px !important;
     background: transparent !important;
 }
 
-body.ios-fixed-ui .tab-section {
+body.liff-fixed-ui .tab-section {
     padding: 0 !important;
     background: transparent !important;
 }
 
-body.ios-fixed-ui .ios-large-title {
+body.liff-fixed-ui .ios-large-title {
     font-size: 34px;
     font-weight: 700;
     letter-spacing: -0.03em;
@@ -203,7 +203,7 @@ body.ios-fixed-ui .ios-large-title {
     color: var(--ios-label);
 }
 
-body.ios-fixed-ui .ios-large-title-row {
+body.liff-fixed-ui .ios-large-title-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -211,13 +211,13 @@ body.ios-fixed-ui .ios-large-title-row {
     margin: 8px 16px 12px;
 }
 
-body.ios-fixed-ui .ios-large-title-row .ios-large-title {
+body.liff-fixed-ui .ios-large-title-row .ios-large-title {
     margin: 0;
     flex: 1;
     min-width: 0;
 }
 
-body.ios-fixed-ui .ios-view-toggle {
+body.liff-fixed-ui .ios-view-toggle {
     display: inline-flex;
     align-items: center;
     background: rgba(118, 118, 128, 0.12);
@@ -226,7 +226,7 @@ body.ios-fixed-ui .ios-view-toggle {
     flex-shrink: 0;
 }
 
-body.ios-fixed-ui .ios-view-toggle__btn {
+body.liff-fixed-ui .ios-view-toggle__btn {
     width: 34px;
     height: 28px;
     border: none;
@@ -240,19 +240,19 @@ body.ios-fixed-ui .ios-view-toggle__btn {
     cursor: pointer;
 }
 
-body.ios-fixed-ui .ios-view-toggle__btn.is-active {
+body.liff-fixed-ui .ios-view-toggle__btn.is-active {
     background: var(--ios-surface);
     color: var(--ios-label);
     box-shadow: 0 0.5px 1px rgba(0, 0, 0, 0.12);
 }
 
-body.ios-fixed-ui .ios-view-toggle__btn svg {
+body.liff-fixed-ui .ios-view-toggle__btn svg {
     width: 16px;
     height: 16px;
     display: block;
 }
 
-body.ios-fixed-ui .ios-section-label {
+body.liff-fixed-ui .ios-section-label {
     font-size: 13px;
     font-weight: 400;
     color: var(--ios-secondary);
@@ -261,14 +261,14 @@ body.ios-fixed-ui .ios-section-label {
     margin: 20px 32px 6px;
 }
 
-body.ios-fixed-ui .ios-group {
+body.liff-fixed-ui .ios-group {
     margin: 0 16px 12px;
     background: var(--ios-surface);
     border-radius: var(--ios-radius-lg);
     overflow: hidden;
 }
 
-body.ios-fixed-ui .ios-row {
+body.liff-fixed-ui .ios-row {
     display: flex;
     align-items: center;
     gap: 12px;
@@ -285,7 +285,7 @@ body.ios-fixed-ui .ios-row {
     position: relative;
 }
 
-body.ios-fixed-ui .ios-row + .ios-row::before {
+body.liff-fixed-ui .ios-row + .ios-row::before {
     content: "";
     position: absolute;
     left: 16px;
@@ -295,11 +295,11 @@ body.ios-fixed-ui .ios-row + .ios-row::before {
     background: var(--ios-separator);
 }
 
-body.ios-fixed-ui .ios-row:active {
+body.liff-fixed-ui .ios-row:active {
     background: rgba(0, 0, 0, 0.06);
 }
 
-body.ios-fixed-ui .ios-row__icon {
+body.liff-fixed-ui .ios-row__icon {
     width: 30px;
     height: 30px;
     border-radius: 7px;
@@ -311,41 +311,41 @@ body.ios-fixed-ui .ios-row__icon {
     flex-shrink: 0;
 }
 
-body.ios-fixed-ui .ios-row__icon--green { background: #34C759; }
-body.ios-fixed-ui .ios-row__icon--orange { background: #FF9500; }
-body.ios-fixed-ui .ios-row__icon--purple { background: #AF52DE; }
-body.ios-fixed-ui .ios-row__icon--pink { background: #FF2D55; }
-body.ios-fixed-ui .ios-row__icon--gray { background: #8E8E93; }
+body.liff-fixed-ui .ios-row__icon--green { background: #34C759; }
+body.liff-fixed-ui .ios-row__icon--orange { background: #FF9500; }
+body.liff-fixed-ui .ios-row__icon--purple { background: #AF52DE; }
+body.liff-fixed-ui .ios-row__icon--pink { background: #FF2D55; }
+body.liff-fixed-ui .ios-row__icon--gray { background: #8E8E93; }
 
-body.ios-fixed-ui .ios-row__body {
+body.liff-fixed-ui .ios-row__body {
     flex: 1;
     min-width: 0;
 }
 
-body.ios-fixed-ui .ios-row__title {
+body.liff-fixed-ui .ios-row__title {
     font-size: 17px;
     font-weight: 400;
 }
 
-body.ios-fixed-ui .ios-row__subtitle {
+body.liff-fixed-ui .ios-row__subtitle {
     font-size: 13px;
     color: var(--ios-secondary);
     margin-top: 2px;
 }
 
-body.ios-fixed-ui .ios-row__chevron {
+body.liff-fixed-ui .ios-row__chevron {
     color: var(--ios-tertiary);
     flex-shrink: 0;
 }
 
-body.ios-fixed-ui .ios-quick-grid {
+body.liff-fixed-ui .ios-quick-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 10px;
     margin: 0 16px 8px;
 }
 
-body.ios-fixed-ui .ios-quick {
+body.liff-fixed-ui .ios-quick {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -360,11 +360,11 @@ body.ios-fixed-ui .ios-quick {
     text-decoration: none;
 }
 
-body.ios-fixed-ui .ios-quick:active {
+body.liff-fixed-ui .ios-quick:active {
     opacity: 0.7;
 }
 
-body.ios-fixed-ui .ios-quick__icon {
+body.liff-fixed-ui .ios-quick__icon {
     width: 44px;
     height: 44px;
     border-radius: 12px;
@@ -375,38 +375,38 @@ body.ios-fixed-ui .ios-quick__icon {
     justify-content: center;
 }
 
-body.ios-fixed-ui .ios-quick__label {
+body.liff-fixed-ui .ios-quick__label {
     font-size: 13px;
     font-weight: 500;
 }
 
-body.ios-fixed-ui .ios-status-card {
+body.liff-fixed-ui .ios-status-card {
     margin: 0 16px 12px;
     padding: 16px;
     background: var(--ios-surface);
     border-radius: var(--ios-radius-lg);
 }
 
-body.ios-fixed-ui .ios-status-card__title {
+body.liff-fixed-ui .ios-status-card__title {
     font-size: 15px;
     font-weight: 600;
     margin: 0 0 4px;
 }
 
-body.ios-fixed-ui .ios-status-card__text {
+body.liff-fixed-ui .ios-status-card__text {
     font-size: 13px;
     color: var(--ios-secondary);
     margin: 0;
 }
 
-body.ios-fixed-ui .ios-announce-list .ios-row__title {
+body.liff-fixed-ui .ios-announce-list .ios-row__title {
     font-size: 16px;
     font-weight: 500;
 }
 
 /* —— Segmented control —— */
 /* sticky の基準は .main-content（ヘッダー下）なので top に nav 高を足さない */
-body.ios-fixed-ui .ios-segment-bar {
+body.liff-fixed-ui .ios-segment-bar {
     position: sticky;
     top: 0;
     z-index: 25;
@@ -416,32 +416,32 @@ body.ios-fixed-ui .ios-segment-bar {
     -webkit-backdrop-filter: saturate(180%) blur(20px);
 }
 
-body.ios-fixed-ui .ios-large-title + .ios-segment-bar {
+body.liff-fixed-ui .ios-large-title + .ios-segment-bar {
     top: 0;
 }
 
-body.ios-fixed-ui .main-content > .ios-large-title {
+body.liff-fixed-ui .main-content > .ios-large-title {
     margin-top: 4px;
 }
 
-body.ios-fixed-ui .member-section,
-body.ios-fixed-ui #memberSection,
-body.ios-fixed-ui #stampsSection,
-body.ios-fixed-ui #couponsSection,
-body.ios-fixed-ui #queueSection,
-body.ios-fixed-ui #reservationsSection,
-body.ios-fixed-ui #ordersSection,
-body.ios-fixed-ui #gallerySection,
-body.ios-fixed-ui #announcementsSection {
+body.liff-fixed-ui .member-section,
+body.liff-fixed-ui #memberSection,
+body.liff-fixed-ui #stampsSection,
+body.liff-fixed-ui #couponsSection,
+body.liff-fixed-ui #queueSection,
+body.liff-fixed-ui #reservationsSection,
+body.liff-fixed-ui #ordersSection,
+body.liff-fixed-ui #gallerySection,
+body.liff-fixed-ui #announcementsSection {
     padding-left: 0;
     padding-right: 0;
 }
 
-body.ios-fixed-ui .orders-list,
-body.ios-fixed-ui .gallery-grid,
-body.ios-fixed-ui .announcements-list,
-body.ios-fixed-ui .stamps-list,
-body.ios-fixed-ui .coupons-list {
+body.liff-fixed-ui .orders-list,
+body.liff-fixed-ui .gallery-grid,
+body.liff-fixed-ui .announcements-list,
+body.liff-fixed-ui .stamps-list,
+body.liff-fixed-ui .coupons-list {
     margin: 0 16px;
     background: var(--ios-surface);
     border-radius: var(--ios-radius-lg);
@@ -449,7 +449,7 @@ body.ios-fixed-ui .coupons-list {
 }
 
 
-body.ios-fixed-ui .ios-segment {
+body.liff-fixed-ui .ios-segment {
     display: flex;
     padding: 2px;
     background: rgba(118, 118, 128, 0.12);
@@ -457,7 +457,7 @@ body.ios-fixed-ui .ios-segment {
     gap: 0;
 }
 
-body.ios-fixed-ui .ios-segment__btn {
+body.liff-fixed-ui .ios-segment__btn {
     flex: 1;
     border: none;
     background: transparent;
@@ -470,13 +470,13 @@ body.ios-fixed-ui .ios-segment__btn {
     cursor: pointer;
 }
 
-body.ios-fixed-ui .ios-segment__btn.is-active {
+body.liff-fixed-ui .ios-segment__btn.is-active {
     background: var(--ios-surface);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 1px rgba(0, 0, 0, 0.04);
 }
 
 /* —— Bottom tab bar (iOS 26 floating glass) —— */
-body.ios-fixed-ui .main-tabs.ios-tab-bar {
+body.liff-fixed-ui .main-tabs.ios-tab-bar {
     position: fixed;
     left: 50%;
     transform: translateX(-50%);
@@ -501,7 +501,7 @@ body.ios-fixed-ui .main-tabs.ios-tab-bar {
     gap: 2px !important;
 }
 
-body.ios-fixed-ui .main-tabs.ios-tab-bar .main-tab-btn {
+body.liff-fixed-ui .main-tabs.ios-tab-bar .main-tab-btn {
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -521,38 +521,38 @@ body.ios-fixed-ui .main-tabs.ios-tab-bar .main-tab-btn {
     transition: background 0.18s ease, color 0.18s ease;
 }
 
-body.ios-fixed-ui .main-tabs.ios-tab-bar .main-tab-btn i,
-body.ios-fixed-ui .main-tabs.ios-tab-bar .main-tab-btn .ios-tab-icon {
+body.liff-fixed-ui .main-tabs.ios-tab-bar .main-tab-btn i,
+body.liff-fixed-ui .main-tabs.ios-tab-bar .main-tab-btn .ios-tab-icon {
     font-size: 20px;
     width: 22px;
     height: 22px;
     display: block;
 }
 
-body.ios-fixed-ui .main-tabs.ios-tab-bar .main-tab-btn .ios-tab-icon svg {
+body.liff-fixed-ui .main-tabs.ios-tab-bar .main-tab-btn .ios-tab-icon svg {
     width: 22px;
     height: 22px;
 }
 
-body.ios-fixed-ui .main-tabs.ios-tab-bar .main-tab-btn.active {
+body.liff-fixed-ui .main-tabs.ios-tab-bar .main-tab-btn.active {
     color: var(--ios-tint) !important;
     background: rgba(14, 124, 102, 0.12) !important;
     transform: none !important;
 }
 
-body.ios-fixed-ui .main-tabs.ios-tab-bar .main-tab-btn span {
+body.liff-fixed-ui .main-tabs.ios-tab-bar .main-tab-btn span {
     line-height: 1.1;
 }
 
 /* —— Header: clearer glass —— */
-body.ios-fixed-ui .header {
+body.liff-fixed-ui .header {
     background: rgba(242, 242, 247, 0.55) !important;
     border-bottom: none !important;
     box-shadow: 0 0.5px 0 rgba(60, 60, 67, 0.12);
 }
 
 /* —— Home wallet card (Starbucks-like rewards front) —— */
-body.ios-fixed-ui .ios-wallet {
+body.liff-fixed-ui .ios-wallet {
     position: relative;
     display: flex;
     align-items: center;
@@ -570,7 +570,7 @@ body.ios-fixed-ui .ios-wallet {
     box-shadow: 0 10px 28px rgba(0, 60, 140, 0.22);
 }
 
-body.ios-fixed-ui .ios-wallet__bg {
+body.liff-fixed-ui .ios-wallet__bg {
     position: absolute;
     inset: 0;
     background:
@@ -578,7 +578,7 @@ body.ios-fixed-ui .ios-wallet__bg {
         url('/images/liff/member-card-bg.jpg') center / cover no-repeat;
 }
 
-body.ios-fixed-ui .ios-wallet__body {
+body.liff-fixed-ui .ios-wallet__body {
     position: relative;
     z-index: 1;
     flex: 1;
@@ -588,7 +588,7 @@ body.ios-fixed-ui .ios-wallet__body {
     min-width: 0;
 }
 
-body.ios-fixed-ui .ios-wallet__label {
+body.liff-fixed-ui .ios-wallet__label {
     font-size: 12px;
     font-weight: 600;
     letter-spacing: 0.04em;
@@ -596,19 +596,19 @@ body.ios-fixed-ui .ios-wallet__label {
     text-transform: uppercase;
 }
 
-body.ios-fixed-ui .ios-wallet__title {
+body.liff-fixed-ui .ios-wallet__title {
     font-size: 17px;
     font-weight: 700;
     letter-spacing: -0.02em;
 }
 
-body.ios-fixed-ui .ios-wallet__hint {
+body.liff-fixed-ui .ios-wallet__hint {
     font-size: 13px;
     opacity: 0.85;
     margin-top: 2px;
 }
 
-body.ios-fixed-ui .ios-wallet__chevron {
+body.liff-fixed-ui .ios-wallet__chevron {
     position: relative;
     z-index: 1;
     font-size: 22px;
@@ -616,28 +616,28 @@ body.ios-fixed-ui .ios-wallet__chevron {
     line-height: 1;
 }
 
-body.ios-fixed-ui .ios-wallet:active {
+body.liff-fixed-ui .ios-wallet:active {
     transform: scale(0.985);
 }
 
-body.ios-fixed-ui .ios-hero {
+body.liff-fixed-ui .ios-hero {
     margin-bottom: 12px;
 }
 
-body.ios-fixed-ui .ios-quick-grid {
+body.liff-fixed-ui .ios-quick-grid {
     margin-bottom: 4px;
 }
 
-body.ios-fixed-ui .ios-section-label {
+body.liff-fixed-ui .ios-section-label {
     margin-top: 18px;
 }
 
 /* —— Cart as bottom sheet —— */
-body.ios-fixed-ui .overlay {
+body.liff-fixed-ui .overlay {
     z-index: 55 !important;
 }
 
-body.ios-fixed-ui .cart-sidebar {
+body.liff-fixed-ui .cart-sidebar {
     z-index: 70 !important;
     top: auto !important;
     bottom: 0 !important;
@@ -652,12 +652,12 @@ body.ios-fixed-ui .cart-sidebar {
     transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1) !important;
 }
 
-body.ios-fixed-ui .cart-sidebar.open {
+body.liff-fixed-ui .cart-sidebar.open {
     transform: translate(-50%, 0);
     right: auto !important;
 }
 
-body.ios-fixed-ui .cart-header {
+body.liff-fixed-ui .cart-header {
     background: var(--ios-surface) !important;
     color: var(--ios-label) !important;
     border-bottom: 0.5px solid var(--ios-separator);
@@ -665,13 +665,13 @@ body.ios-fixed-ui .cart-header {
     border-radius: 14px 14px 0 0;
 }
 
-body.ios-fixed-ui .cart-header h2 {
+body.liff-fixed-ui .cart-header h2 {
     font-size: 17px !important;
     font-weight: 600 !important;
     color: var(--ios-label) !important;
 }
 
-body.ios-fixed-ui .cart-header .close-btn {
+body.liff-fixed-ui .cart-header .close-btn {
     background: rgba(120, 120, 128, 0.16) !important;
     color: var(--ios-secondary) !important;
     border: none !important;
@@ -680,16 +680,16 @@ body.ios-fixed-ui .cart-header .close-btn {
     border-radius: 15px;
 }
 
-body.ios-fixed-ui .cart-footer {
+body.liff-fixed-ui .cart-footer {
     background: var(--ios-surface);
     border-top: 0.5px solid var(--ios-separator);
     padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
 }
 
-body.ios-fixed-ui .order-btn,
-body.ios-fixed-ui .order-btn--primary,
-body.ios-fixed-ui .btn-primary,
-body.ios-fixed-ui button.btn.btn-primary {
+body.liff-fixed-ui .order-btn,
+body.liff-fixed-ui .order-btn--primary,
+body.liff-fixed-ui .btn-primary,
+body.liff-fixed-ui button.btn.btn-primary {
     background: var(--ios-tint) !important;
     border: none !important;
     border-radius: 12px !important;
@@ -698,44 +698,44 @@ body.ios-fixed-ui button.btn.btn-primary {
     box-shadow: none !important;
 }
 
-body.ios-fixed-ui .order-btn--secondary,
-body.ios-fixed-ui .btn-secondary {
+body.liff-fixed-ui .order-btn--secondary,
+body.liff-fixed-ui .btn-secondary {
     background: rgba(14, 124, 102, 0.12) !important;
     color: var(--ios-tint) !important;
     border: none !important;
     border-radius: 12px !important;
 }
 
-body.ios-fixed-ui .overlay.active {
+body.liff-fixed-ui .overlay.active {
     background: rgba(0, 0, 0, 0.36) !important;
 }
 
 /* —— Detail page nav —— */
-body.ios-fixed-ui .page-content--detail {
+body.liff-fixed-ui .page-content--detail {
     background: var(--ios-bg) !important;
 }
 
-body.ios-fixed-ui .page-content__bar {
+body.liff-fixed-ui .page-content__bar {
     background: rgba(242, 242, 247, 0.92) !important;
     backdrop-filter: blur(16px);
     border-bottom: 0.5px solid var(--ios-separator);
     min-height: var(--ios-nav-h);
 }
 
-body.ios-fixed-ui .page-content__back {
+body.liff-fixed-ui .page-content__back {
     color: var(--ios-tint) !important;
     font-size: 17px;
     text-decoration: none;
 }
 
-body.ios-fixed-ui .page-content__title {
+body.liff-fixed-ui .page-content__title {
     font-size: 17px;
     font-weight: 600;
 }
 
 /* —— Products / lists polish —— */
-body.ios-fixed-ui .products-category-tabs,
-body.ios-fixed-ui .category-tabs {
+body.liff-fixed-ui .products-category-tabs,
+body.liff-fixed-ui .category-tabs {
     display: flex;
     gap: 8px;
     overflow-x: auto;
@@ -745,8 +745,8 @@ body.ios-fixed-ui .category-tabs {
     scrollbar-width: none;
 }
 
-body.ios-fixed-ui .products-category-tabs .tab-btn,
-body.ios-fixed-ui .category-tabs .tab-btn {
+body.liff-fixed-ui .products-category-tabs .tab-btn,
+body.liff-fixed-ui .category-tabs .tab-btn {
     flex-shrink: 0;
     border-radius: 16px !important;
     background: rgba(118, 118, 128, 0.12) !important;
@@ -758,14 +758,14 @@ body.ios-fixed-ui .category-tabs .tab-btn {
     box-shadow: none !important;
 }
 
-body.ios-fixed-ui .products-category-tabs .tab-btn.active,
-body.ios-fixed-ui .category-tabs .tab-btn.active {
+body.liff-fixed-ui .products-category-tabs .tab-btn.active,
+body.liff-fixed-ui .category-tabs .tab-btn.active {
     background: var(--ios-tint) !important;
     color: #fff !important;
 }
 
-body.ios-fixed-ui .products-grid,
-body.ios-fixed-ui .products-data-grid {
+body.liff-fixed-ui .products-grid,
+body.liff-fixed-ui .products-data-grid {
     display: block !important;
     margin: 0 !important;
     background: transparent !important;
@@ -774,7 +774,7 @@ body.ios-fixed-ui .products-data-grid {
     padding: 0 !important;
 }
 
-body.ios-fixed-ui .products-grid-inner {
+body.liff-fixed-ui .products-grid-inner {
     display: flex !important;
     flex-direction: column !important;
     grid-template-columns: none !important;
@@ -786,18 +786,18 @@ body.ios-fixed-ui .products-grid-inner {
     width: auto !important;
 }
 
-body.ios-fixed-ui .product-category-section {
+body.liff-fixed-ui .product-category-section {
     margin-bottom: 12px !important;
 }
 
-body.ios-fixed-ui .product-category-header {
+body.liff-fixed-ui .product-category-header {
     margin: 8px 20px 6px !important;
     padding: 0 !important;
     border-bottom: none !important;
     gap: 8px !important;
 }
 
-body.ios-fixed-ui .product-category-header h3 {
+body.liff-fixed-ui .product-category-header h3 {
     font-size: 13px !important;
     font-weight: 600 !important;
     color: var(--ios-secondary) !important;
@@ -805,25 +805,25 @@ body.ios-fixed-ui .product-category-header h3 {
     letter-spacing: 0.02em;
 }
 
-body.ios-fixed-ui .product-category-header i {
+body.liff-fixed-ui .product-category-header i {
     width: 22px !important;
     height: 22px !important;
     font-size: 11px !important;
     border-radius: 6px !important;
 }
 
-body.ios-fixed-ui .product-category-count {
+body.liff-fixed-ui .product-category-count {
     background: transparent !important;
     color: var(--ios-tertiary) !important;
     font-weight: 500 !important;
     padding: 0 !important;
 }
 
-body.ios-fixed-ui .products-category-tabs .tab-btn i {
+body.liff-fixed-ui .products-category-tabs .tab-btn i {
     display: none;
 }
 
-body.ios-fixed-ui .product-card {
+body.liff-fixed-ui .product-card {
     display: flex !important;
     flex-direction: row !important;
     align-items: center !important;
@@ -840,17 +840,17 @@ body.ios-fixed-ui .product-card {
     transform: none !important;
 }
 
-body.ios-fixed-ui .product-card:last-child {
+body.liff-fixed-ui .product-card:last-child {
     border-bottom: none !important;
 }
 
-body.ios-fixed-ui .product-card:hover,
-body.ios-fixed-ui .product-card:active {
+body.liff-fixed-ui .product-card:hover,
+body.liff-fixed-ui .product-card:active {
     transform: none !important;
     box-shadow: none !important;
 }
 
-body.ios-fixed-ui .product-image-wrapper {
+body.liff-fixed-ui .product-image-wrapper {
     width: 96px !important;
     height: 96px !important;
     min-width: 96px !important;
@@ -869,9 +869,9 @@ body.ios-fixed-ui .product-image-wrapper {
     position: relative !important;
 }
 
-body.ios-fixed-ui .product-card img.product-image,
-body.ios-fixed-ui .product-image-wrapper .product-image,
-body.ios-fixed-ui .product-image-wrapper img {
+body.liff-fixed-ui .product-card img.product-image,
+body.liff-fixed-ui .product-image-wrapper .product-image,
+body.liff-fixed-ui .product-image-wrapper img {
     position: absolute !important;
     inset: 0 !important;
     width: 100% !important;
@@ -880,7 +880,7 @@ body.ios-fixed-ui .product-image-wrapper img {
     border-radius: 10px !important;
 }
 
-body.ios-fixed-ui .product-info {
+body.liff-fixed-ui .product-info {
     flex: 1 !important;
     min-width: 0 !important;
     display: flex !important;
@@ -891,7 +891,7 @@ body.ios-fixed-ui .product-info {
     padding: 0 !important;
 }
 
-body.ios-fixed-ui .product-name {
+body.liff-fixed-ui .product-name {
     font-size: 16px !important;
     font-weight: 600 !important;
     line-height: 1.25 !important;
@@ -900,13 +900,13 @@ body.ios-fixed-ui .product-name {
     max-height: none !important;
 }
 
-body.ios-fixed-ui .product-price {
+body.liff-fixed-ui .product-price {
     font-size: 15px !important;
     color: var(--ios-secondary) !important;
     font-weight: 500 !important;
 }
 
-body.ios-fixed-ui .product-add-btn {
+body.liff-fixed-ui .product-add-btn {
     margin-top: 6px !important;
     padding: 5px 12px !important;
     min-height: 0 !important;
@@ -921,14 +921,14 @@ body.ios-fixed-ui .product-add-btn {
     width: auto !important;
 }
 
-body.ios-fixed-ui .product-add-btn.added,
-body.ios-fixed-ui .product-card .product-add-btn.added,
-body.ios-fixed-ui .product-card .product-add-btn.is-added {
+body.liff-fixed-ui .product-add-btn.added,
+body.liff-fixed-ui .product-card .product-add-btn.added,
+body.liff-fixed-ui .product-card .product-add-btn.is-added {
     background: rgba(14, 124, 102, 0.12) !important;
     color: var(--ios-tint) !important;
 }
 
-body.ios-fixed-ui .cart-badge {
+body.liff-fixed-ui .cart-badge {
     top: 4px !important;
     right: 4px !important;
     width: auto !important;
@@ -945,7 +945,7 @@ body.ios-fixed-ui .cart-badge {
     gap: 0 !important;
 }
 
-body.ios-fixed-ui .product-qty-stepper {
+body.liff-fixed-ui .product-qty-stepper {
     display: inline-flex !important;
     align-items: center !important;
     gap: 2px !important;
@@ -955,7 +955,7 @@ body.ios-fixed-ui .product-qty-stepper {
     padding: 2px !important;
 }
 
-body.ios-fixed-ui .product-qty-btn {
+body.liff-fixed-ui .product-qty-btn {
     width: 30px !important;
     height: 30px !important;
     border: none !important;
@@ -973,11 +973,11 @@ body.ios-fixed-ui .product-qty-btn {
     box-shadow: 0 0.5px 1px rgba(0, 0, 0, 0.08) !important;
 }
 
-body.ios-fixed-ui .product-qty-btn:active {
+body.liff-fixed-ui .product-qty-btn:active {
     background: rgba(14, 124, 102, 0.12) !important;
 }
 
-body.ios-fixed-ui .product-qty-value {
+body.liff-fixed-ui .product-qty-value {
     min-width: 28px !important;
     text-align: center !important;
     font-size: 15px !important;
@@ -986,16 +986,16 @@ body.ios-fixed-ui .product-qty-value {
     line-height: 1 !important;
 }
 
-body.ios-fixed-ui .product-card.in-cart::before {
+body.liff-fixed-ui .product-card.in-cart::before {
     display: none !important;
 }
 
-body.ios-fixed-ui .product-card.in-cart {
+body.liff-fixed-ui .product-card.in-cart {
     border-color: transparent !important;
     box-shadow: none !important;
 }
 
-body.ios-fixed-ui .product-option-tag {
+body.liff-fixed-ui .product-option-tag {
     position: absolute !important;
     left: 4px !important;
     bottom: 4px !important;
@@ -1006,7 +1006,7 @@ body.ios-fixed-ui .product-option-tag {
 }
 
 /* Order collection (grid) view */
-body.ios-fixed-ui .products-data-mount[data-products-view="collection"] .products-grid-inner {
+body.liff-fixed-ui .products-data-mount[data-products-view="collection"] .products-grid-inner {
     display: grid !important;
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 12px !important;
@@ -1016,7 +1016,7 @@ body.ios-fixed-ui .products-data-mount[data-products-view="collection"] .product
     margin: 0 16px 16px !important;
 }
 
-body.ios-fixed-ui .products-data-mount[data-products-view="collection"] .product-card {
+body.liff-fixed-ui .products-data-mount[data-products-view="collection"] .product-card {
     display: flex !important;
     flex-direction: column !important;
     align-items: stretch !important;
@@ -1029,7 +1029,7 @@ body.ios-fixed-ui .products-data-mount[data-products-view="collection"] .product
     background: var(--ios-surface) !important;
 }
 
-body.ios-fixed-ui .products-data-mount[data-products-view="collection"] .product-image-wrapper {
+body.liff-fixed-ui .products-data-mount[data-products-view="collection"] .product-image-wrapper {
     width: 100% !important;
     max-width: none !important;
     min-width: 0 !important;
@@ -1041,19 +1041,19 @@ body.ios-fixed-ui .products-data-mount[data-products-view="collection"] .product
     border-radius: 0 !important;
 }
 
-body.ios-fixed-ui .products-data-mount[data-products-view="collection"] .product-card img.product-image,
-body.ios-fixed-ui .products-data-mount[data-products-view="collection"] .product-image-wrapper .product-image,
-body.ios-fixed-ui .products-data-mount[data-products-view="collection"] .product-image-wrapper img {
+body.liff-fixed-ui .products-data-mount[data-products-view="collection"] .product-card img.product-image,
+body.liff-fixed-ui .products-data-mount[data-products-view="collection"] .product-image-wrapper .product-image,
+body.liff-fixed-ui .products-data-mount[data-products-view="collection"] .product-image-wrapper img {
     border-radius: 0 !important;
 }
 
-body.ios-fixed-ui .products-data-mount[data-products-view="collection"] .product-info {
+body.liff-fixed-ui .products-data-mount[data-products-view="collection"] .product-info {
     padding: 10px 12px 12px !important;
     gap: 4px !important;
     justify-content: flex-start !important;
 }
 
-body.ios-fixed-ui .products-data-mount[data-products-view="collection"] .product-name {
+body.liff-fixed-ui .products-data-mount[data-products-view="collection"] .product-name {
     font-size: 14px !important;
     -webkit-line-clamp: 2 !important;
     display: -webkit-box !important;
@@ -1061,20 +1061,20 @@ body.ios-fixed-ui .products-data-mount[data-products-view="collection"] .product
     overflow: hidden;
 }
 
-body.ios-fixed-ui .products-data-mount[data-products-view="collection"] .product-add-btn {
+body.liff-fixed-ui .products-data-mount[data-products-view="collection"] .product-add-btn {
     width: 100% !important;
     margin-top: 8px !important;
     justify-content: center;
 }
 
-body.ios-fixed-ui .products-data-mount[data-products-view="collection"] .product-qty-stepper {
+body.liff-fixed-ui .products-data-mount[data-products-view="collection"] .product-qty-stepper {
     width: 100% !important;
     justify-content: space-between !important;
     margin-top: 8px !important;
 }
 
 /* Side menu — 閉じたときは完全非表示（PCで左端にはみ出さない） */
-body.ios-fixed-ui .ios-side-menu {
+body.liff-fixed-ui .ios-side-menu {
     position: fixed;
     top: 0;
     bottom: 0;
@@ -1095,7 +1095,7 @@ body.ios-fixed-ui .ios-side-menu {
     transform: translateX(-100%);
 }
 
-body.ios-fixed-ui .ios-side-menu.is-open {
+body.liff-fixed-ui .ios-side-menu.is-open {
     pointer-events: auto;
     visibility: visible;
     opacity: 1;
@@ -1103,12 +1103,12 @@ body.ios-fixed-ui .ios-side-menu.is-open {
 }
 
 @media (min-width: 481px) {
-    body.ios-fixed-ui .ios-side-menu {
+    body.liff-fixed-ui .ios-side-menu {
         left: calc(50% - 240px);
     }
 }
 
-body.ios-fixed-ui .ios-side-menu__head {
+body.liff-fixed-ui .ios-side-menu__head {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -1116,7 +1116,7 @@ body.ios-fixed-ui .ios-side-menu__head {
     padding: 8px 16px 16px;
 }
 
-body.ios-fixed-ui .ios-side-menu__title {
+body.liff-fixed-ui .ios-side-menu__title {
     margin: 0;
     font-size: 20px;
     font-weight: 700;
@@ -1124,7 +1124,7 @@ body.ios-fixed-ui .ios-side-menu__title {
     color: var(--ios-label);
 }
 
-body.ios-fixed-ui .ios-side-menu__close {
+body.liff-fixed-ui .ios-side-menu__close {
     width: 32px;
     height: 32px;
     border: none;
@@ -1135,7 +1135,7 @@ body.ios-fixed-ui .ios-side-menu__close {
     cursor: pointer;
 }
 
-body.ios-fixed-ui .ios-side-menu__nav {
+body.liff-fixed-ui .ios-side-menu__nav {
     display: flex;
     flex-direction: column;
     padding: 0 10px;
@@ -1143,18 +1143,18 @@ body.ios-fixed-ui .ios-side-menu__nav {
     flex: 1;
 }
 
-body.ios-fixed-ui .ios-side-menu__footer {
+body.liff-fixed-ui .ios-side-menu__footer {
     margin-top: auto;
     padding: 12px 10px 4px;
     border-top: 0.5px solid var(--ios-separator);
 }
 
-body.ios-fixed-ui .ios-side-menu__item--lab {
+body.liff-fixed-ui .ios-side-menu__item--lab {
     font-weight: 700;
     color: var(--ios-tint);
 }
 
-body.ios-fixed-ui .ios-side-menu__item {
+body.liff-fixed-ui .ios-side-menu__item {
     display: flex;
     align-items: center;
     width: 100%;
@@ -1171,36 +1171,36 @@ body.ios-fixed-ui .ios-side-menu__item {
     cursor: pointer;
 }
 
-body.ios-fixed-ui .ios-side-menu__item:active {
+body.liff-fixed-ui .ios-side-menu__item:active {
     background: rgba(0, 0, 0, 0.06);
 }
 
 /* Member card */
-body.ios-fixed-ui .member-card,
-body.ios-fixed-ui [data-card-design] {
+body.liff-fixed-ui .member-card,
+body.liff-fixed-ui [data-card-design] {
     border-radius: 16px !important;
     margin: 12px 16px !important;
 }
 
-body.ios-fixed-ui .member-card,
-body.ios-fixed-ui .member-card-container .member-card {
+body.liff-fixed-ui .member-card,
+body.liff-fixed-ui .member-card-container .member-card {
     background-image: url('/images/liff/member-card-bg.jpg') !important;
     background-size: cover !important;
     background-position: center !important;
 }
 
 /* Loading */
-body.ios-fixed-ui .liff-loading {
+body.liff-fixed-ui .liff-loading {
     background: var(--ios-bg) !important;
 }
 
-body.ios-fixed-ui .liff-loading-spinner {
+body.liff-fixed-ui .liff-loading-spinner {
     border-color: rgba(14, 124, 102, 0.2) !important;
     border-top-color: var(--ios-tint) !important;
 }
 
 /* —— Home hero —— */
-body.ios-fixed-ui .ios-hero {
+body.liff-fixed-ui .ios-hero {
     position: relative;
     margin: 0 16px 14px;
     border-radius: 18px;
@@ -1209,20 +1209,20 @@ body.ios-fixed-ui .ios-hero {
     background: #d9e2ec;
 }
 
-body.ios-fixed-ui .ios-hero__image {
+body.liff-fixed-ui .ios-hero__image {
     width: 100%;
     height: 168px;
     object-fit: cover;
     display: block;
 }
 
-body.ios-fixed-ui .ios-hero__scrim {
+body.liff-fixed-ui .ios-hero__scrim {
     position: absolute;
     inset: 0;
     background: linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.55) 100%);
 }
 
-body.ios-fixed-ui .ios-hero__copy {
+body.liff-fixed-ui .ios-hero__copy {
     position: absolute;
     left: 16px;
     right: 16px;
@@ -1230,14 +1230,14 @@ body.ios-fixed-ui .ios-hero__copy {
     color: #fff;
 }
 
-body.ios-fixed-ui .ios-hero__eyebrow {
+body.liff-fixed-ui .ios-hero__eyebrow {
     margin: 0 0 2px;
     font-size: 13px;
     font-weight: 500;
     opacity: 0.92;
 }
 
-body.ios-fixed-ui .ios-hero__title {
+body.liff-fixed-ui .ios-hero__title {
     margin: 0;
     font-size: 28px;
     font-weight: 700;
@@ -1245,18 +1245,18 @@ body.ios-fixed-ui .ios-hero__title {
     line-height: 1.15;
 }
 
-body.ios-fixed-ui .ios-quick__icon svg,
-body.ios-fixed-ui .ios-row__icon svg {
+body.liff-fixed-ui .ios-quick__icon svg,
+body.liff-fixed-ui .ios-row__icon svg {
     display: block;
 }
 
-body.ios-fixed-ui .member-sample-badge,
-body.ios-fixed-ui .ios-sample-banner,
-body.ios-fixed-ui .member-sample-cta {
+body.liff-fixed-ui .member-sample-badge,
+body.liff-fixed-ui .ios-sample-banner,
+body.liff-fixed-ui .member-sample-cta {
     display: none !important;
 }
 
-body.ios-fixed-ui .member-card-idnect-header {
+body.liff-fixed-ui .member-card-idnect-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -1265,7 +1265,7 @@ body.ios-fixed-ui .member-card-idnect-header {
     padding: 0;
 }
 
-body.ios-fixed-ui .member-card-idnect-header .member-card-title {
+body.liff-fixed-ui .member-card-idnect-header .member-card-title {
     margin: 0;
     font-family: var(--ios-font-display);
     font-size: 28px;
@@ -1274,11 +1274,11 @@ body.ios-fixed-ui .member-card-idnect-header .member-card-title {
     color: var(--ios-label);
 }
 
-body.ios-fixed-ui .member-demo-actions {
+body.liff-fixed-ui .member-demo-actions {
     margin: 8px 16px 20px;
 }
 
-body.ios-fixed-ui .member-demo-actions .btn {
+body.liff-fixed-ui .member-demo-actions .btn {
     width: 100%;
     border: 0 !important;
     border-radius: 14px !important;
@@ -1289,39 +1289,39 @@ body.ios-fixed-ui .member-demo-actions .btn {
     box-shadow: none !important;
 }
 
-body.ios-fixed-ui .member-card-visual-wrap {
+body.liff-fixed-ui .member-card-visual-wrap {
     margin: 0 16px 24px !important;
     position: relative;
 }
 
-body.ios-fixed-ui .member-card-enlarge-code-btn {
+body.liff-fixed-ui .member-card-enlarge-code-btn {
     right: 0 !important;
 }
 
-body.ios-fixed-ui .idnect-card-wrapper {
+body.liff-fixed-ui .idnect-card-wrapper {
     margin: 0 !important;
     border-radius: 22px !important;
     overflow: hidden;
     box-shadow: 0 18px 40px rgba(15, 61, 52, 0.22) !important;
 }
 
-body.ios-fixed-ui .idnect-card,
-body.ios-fixed-ui .idnect-card-face--front,
-body.ios-fixed-ui .idnect-card-face--back {
+body.liff-fixed-ui .idnect-card,
+body.liff-fixed-ui .idnect-card-face--front,
+body.liff-fixed-ui .idnect-card-face--back {
     background:
         radial-gradient(120% 90% at 100% 0%, rgba(126, 217, 193, 0.28) 0%, transparent 45%),
         linear-gradient(155deg, #0F3D34 0%, #0E7C66 55%, #0A5C4C 100%) !important;
     color: #fff !important;
 }
 
-body.ios-fixed-ui .idnect-card-display-name {
+body.liff-fixed-ui .idnect-card-display-name {
     font-family: var(--ios-font-display) !important;
     font-size: 22px !important;
     font-weight: 800 !important;
     letter-spacing: -0.02em !important;
 }
 
-body.ios-fixed-ui .idnect-card-rank-badge {
+body.liff-fixed-ui .idnect-card-rank-badge {
     background: rgba(255, 255, 255, 0.18) !important;
     color: #fff !important;
     border: 1px solid rgba(255, 255, 255, 0.28) !important;
@@ -1329,27 +1329,27 @@ body.ios-fixed-ui .idnect-card-rank-badge {
     font-weight: 700 !important;
 }
 
-body.ios-fixed-ui .idnect-card-points-value {
+body.liff-fixed-ui .idnect-card-points-value {
     font-family: var(--ios-font-display) !important;
     font-weight: 800 !important;
 }
 
-body.ios-fixed-ui .idnect-card-barcode-wrap {
+body.liff-fixed-ui .idnect-card-barcode-wrap {
     background: #fff !important;
     border-radius: 14px !important;
     padding: 12px 10px !important;
 }
 
-body.ios-fixed-ui .idnect-card-tap-hint {
+body.liff-fixed-ui .idnect-card-tap-hint {
     color: rgba(255, 255, 255, 0.78) !important;
 }
 
-body.ios-fixed-ui .member-card-container--demo,
-body.ios-fixed-ui .member-card-container--sample {
+body.liff-fixed-ui .member-card-container--demo,
+body.liff-fixed-ui .member-card-container--sample {
     padding-bottom: 8px;
 }
 
-body.ios-fixed-ui .ios-coupon__use {
+body.liff-fixed-ui .ios-coupon__use {
     display: inline-flex !important;
     align-items: center;
     justify-content: center;
@@ -1365,11 +1365,11 @@ body.ios-fixed-ui .ios-coupon__use {
     cursor: pointer;
 }
 
-body.ios-fixed-ui .ios-coupon__use:active {
+body.liff-fixed-ui .ios-coupon__use:active {
     background: var(--ios-tint-press);
 }
 
-body.ios-fixed-ui .product-add-btn {
+body.liff-fixed-ui .product-add-btn {
     background: var(--ios-tint) !important;
     color: #fff !important;
     border: 0 !important;
@@ -1377,19 +1377,19 @@ body.ios-fixed-ui .product-add-btn {
     font-weight: 700 !important;
 }
 
-body.ios-fixed-ui .product-qty-btn {
+body.liff-fixed-ui .product-qty-btn {
     color: var(--ios-tint) !important;
     border-color: rgba(14, 124, 102, 0.28) !important;
 }
 
-body.ios-fixed-ui .ios-sample-banner__text {
+body.liff-fixed-ui .ios-sample-banner__text {
     margin: 0;
     font-size: 13px;
     line-height: 1.45;
     color: var(--ios-secondary);
 }
 
-body.ios-fixed-ui .queue-card-header-row {
+body.liff-fixed-ui .queue-card-header-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -1397,20 +1397,20 @@ body.ios-fixed-ui .queue-card-header-row {
     margin-bottom: 8px;
 }
 
-body.ios-fixed-ui .queue-card-header-row .section-title {
+body.liff-fixed-ui .queue-card-header-row .section-title {
     margin: 0;
 }
 
-body.ios-fixed-ui .queue-card--sample .queue-info {
+body.liff-fixed-ui .queue-card--sample .queue-info {
     margin-bottom: 8px;
 }
 
 /* ===== Visit / Card feature redesign ===== */
-body.ios-fixed-ui .ios-panel-head {
+body.liff-fixed-ui .ios-panel-head {
     margin: 4px 16px 14px;
 }
 
-body.ios-fixed-ui .ios-panel-head__title {
+body.liff-fixed-ui .ios-panel-head__title {
     margin: 0;
     font-size: 28px;
     font-weight: 700;
@@ -1418,13 +1418,13 @@ body.ios-fixed-ui .ios-panel-head__title {
     color: var(--ios-label);
 }
 
-body.ios-fixed-ui .ios-panel-head__sub {
+body.liff-fixed-ui .ios-panel-head__sub {
     margin: 4px 0 0;
     font-size: 15px;
     color: var(--ios-secondary);
 }
 
-body.ios-fixed-ui .ios-seg {
+body.liff-fixed-ui .ios-seg {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 4px;
@@ -1434,7 +1434,7 @@ body.ios-fixed-ui .ios-seg {
     border-radius: 10px;
 }
 
-body.ios-fixed-ui .ios-seg__btn {
+body.liff-fixed-ui .ios-seg__btn {
     appearance: none;
     border: 0;
     background: transparent;
@@ -1445,17 +1445,17 @@ body.ios-fixed-ui .ios-seg__btn {
     color: var(--ios-label);
 }
 
-body.ios-fixed-ui .ios-seg__btn.is-active {
+body.liff-fixed-ui .ios-seg__btn.is-active {
     background: #fff !important;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12) !important;
     color: var(--ios-label) !important;
 }
 
-body.ios-fixed-ui .ios-seg__btn.is-active span {
+body.liff-fixed-ui .ios-seg__btn.is-active span {
     color: var(--ios-secondary) !important;
 }
 
-body.ios-fixed-ui .ios-empty {
+body.liff-fixed-ui .ios-empty {
     margin: 24px 16px;
     padding: 36px 20px;
     text-align: center;
@@ -1463,34 +1463,34 @@ body.ios-fixed-ui .ios-empty {
     border-radius: 18px;
 }
 
-body.ios-fixed-ui .ios-empty__icon {
+body.liff-fixed-ui .ios-empty__icon {
     font-size: 28px;
     color: var(--ios-tint);
     margin-bottom: 10px;
 }
 
-body.ios-fixed-ui .ios-empty__title {
+body.liff-fixed-ui .ios-empty__title {
     margin: 0 0 6px;
     font-size: 17px;
 }
 
-body.ios-fixed-ui .ios-empty__text,
-body.ios-fixed-ui .ios-empty--compact p {
+body.liff-fixed-ui .ios-empty__text,
+body.liff-fixed-ui .ios-empty--compact p {
     margin: 0;
     color: var(--ios-secondary);
     font-size: 14px;
 }
 
-body.ios-fixed-ui .ios-coupon-stack,
-body.ios-fixed-ui .ios-stamp-stack,
-body.ios-fixed-ui .ios-resv-stack {
+body.liff-fixed-ui .ios-coupon-stack,
+body.liff-fixed-ui .ios-stamp-stack,
+body.liff-fixed-ui .ios-resv-stack {
     display: flex;
     flex-direction: column;
     gap: 16px;
     padding: 0 16px 40px;
 }
 
-body.ios-fixed-ui .ios-coupon {
+body.liff-fixed-ui .ios-coupon {
     display: block;
     border: 0;
     padding: 0;
@@ -1502,26 +1502,26 @@ body.ios-fixed-ui .ios-coupon {
     cursor: pointer;
 }
 
-body.ios-fixed-ui .ios-coupon__media {
+body.liff-fixed-ui .ios-coupon__media {
     position: relative;
     height: 168px;
     background: #1c1c1e;
 }
 
-body.ios-fixed-ui .ios-coupon__media img {
+body.liff-fixed-ui .ios-coupon__media img {
     width: 100%;
     height: 100%;
     object-fit: cover;
     display: block;
 }
 
-body.ios-fixed-ui .ios-coupon__media-shade {
+body.liff-fixed-ui .ios-coupon__media-shade {
     position: absolute;
     inset: 0;
     background: linear-gradient(180deg, rgba(0,0,0,0.05) 35%, rgba(0,0,0,0.55) 100%);
 }
 
-body.ios-fixed-ui .ios-coupon__chips {
+body.liff-fixed-ui .ios-coupon__chips {
     position: absolute;
     left: 12px;
     right: 12px;
@@ -1532,8 +1532,8 @@ body.ios-fixed-ui .ios-coupon__chips {
     max-width: calc(100% - 24px);
 }
 
-body.ios-fixed-ui .ios-coupon__status,
-body.ios-fixed-ui .ios-coupon__chip {
+body.liff-fixed-ui .ios-coupon__status,
+body.liff-fixed-ui .ios-coupon__chip {
     display: inline-flex;
     align-items: center;
     max-width: 100%;
@@ -1549,25 +1549,25 @@ body.ios-fixed-ui .ios-coupon__chip {
     text-overflow: ellipsis;
 }
 
-body.ios-fixed-ui .ios-coupon__status {
+body.liff-fixed-ui .ios-coupon__status {
     background: var(--ios-tint);
 }
 
-body.ios-fixed-ui .ios-coupon__chip--new {
+body.liff-fixed-ui .ios-coupon__chip--new {
     background: #ff3b30;
 }
 
-body.ios-fixed-ui .ios-coupon--used .ios-coupon__media img,
-body.ios-fixed-ui .ios-coupon--expired .ios-coupon__media img {
+body.liff-fixed-ui .ios-coupon--used .ios-coupon__media img,
+body.liff-fixed-ui .ios-coupon--expired .ios-coupon__media img {
     filter: grayscale(0.7);
     opacity: 0.75;
 }
 
-body.ios-fixed-ui .ios-coupon__body {
+body.liff-fixed-ui .ios-coupon__body {
     padding: 14px 16px 16px;
 }
 
-body.ios-fixed-ui .ios-coupon__title {
+body.liff-fixed-ui .ios-coupon__title {
     margin: 0 0 6px;
     font-size: 20px;
     font-weight: 700;
@@ -1575,14 +1575,14 @@ body.ios-fixed-ui .ios-coupon__title {
     color: var(--ios-label);
 }
 
-body.ios-fixed-ui .ios-coupon__desc {
+body.liff-fixed-ui .ios-coupon__desc {
     margin: 0 0 12px;
     font-size: 14px;
     line-height: 1.45;
     color: var(--ios-secondary);
 }
 
-body.ios-fixed-ui .ios-coupon__use {
+body.liff-fixed-ui .ios-coupon__use {
     width: 100%;
     border: 0;
     border-radius: 12px;
@@ -1593,14 +1593,14 @@ body.ios-fixed-ui .ios-coupon__use {
     font-weight: 700;
 }
 
-body.ios-fixed-ui .ios-coupon__hint {
+body.liff-fixed-ui .ios-coupon__hint {
     display: block;
     font-size: 13px;
     color: var(--ios-tint);
     font-weight: 600;
 }
 
-body.ios-fixed-ui .ios-stamp-card {
+body.liff-fixed-ui .ios-stamp-card {
     display: block;
     width: 100%;
     border: 0;
@@ -1612,7 +1612,7 @@ body.ios-fixed-ui .ios-stamp-card {
     text-align: left;
 }
 
-body.ios-fixed-ui .ios-stamp-card__hero {
+body.liff-fixed-ui .ios-stamp-card__hero {
     position: relative;
     min-height: 150px;
     padding: 18px 18px 20px;
@@ -1621,62 +1621,62 @@ body.ios-fixed-ui .ios-stamp-card__hero {
     color: #fff;
 }
 
-body.ios-fixed-ui .ios-stamp-card__hero-shade {
+body.liff-fixed-ui .ios-stamp-card__hero-shade {
     position: absolute;
     inset: 0;
     background: linear-gradient(145deg, rgba(28, 28, 30, 0.35), rgba(28, 28, 30, 0.78));
 }
 
-body.ios-fixed-ui .ios-stamp-card__hero-top,
-body.ios-fixed-ui .ios-stamp-card__title,
-body.ios-fixed-ui .ios-stamp-card__reward {
+body.liff-fixed-ui .ios-stamp-card__hero-top,
+body.liff-fixed-ui .ios-stamp-card__title,
+body.liff-fixed-ui .ios-stamp-card__reward {
     position: relative;
     z-index: 1;
 }
 
-body.ios-fixed-ui .ios-stamp-card__hero-top {
+body.liff-fixed-ui .ios-stamp-card__hero-top {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 18px;
 }
 
-body.ios-fixed-ui .ios-stamp-card__eyebrow,
-body.ios-fixed-ui .ios-stamp-card__remain,
-body.ios-fixed-ui .ios-stamp-card__done {
+body.liff-fixed-ui .ios-stamp-card__eyebrow,
+body.liff-fixed-ui .ios-stamp-card__remain,
+body.liff-fixed-ui .ios-stamp-card__done {
     font-size: 12px;
     font-weight: 700;
 }
 
-body.ios-fixed-ui .ios-stamp-card__remain,
-body.ios-fixed-ui .ios-stamp-card__done {
+body.liff-fixed-ui .ios-stamp-card__remain,
+body.liff-fixed-ui .ios-stamp-card__done {
     padding: 5px 10px;
     border-radius: 980px;
     background: rgba(255, 255, 255, 0.2);
 }
 
-body.ios-fixed-ui .ios-stamp-card__title {
+body.liff-fixed-ui .ios-stamp-card__title {
     margin: 0 0 6px;
     font-size: 24px;
     font-weight: 800;
     letter-spacing: -0.03em;
 }
 
-body.ios-fixed-ui .ios-stamp-card__reward {
+body.liff-fixed-ui .ios-stamp-card__reward {
     margin: 0;
     font-size: 14px;
     opacity: 0.92;
 }
 
-body.ios-fixed-ui .ios-stamp-card__body {
+body.liff-fixed-ui .ios-stamp-card__body {
     padding: 16px;
 }
 
-body.ios-fixed-ui .ios-stamp-card__meter {
+body.liff-fixed-ui .ios-stamp-card__meter {
     margin-bottom: 14px;
 }
 
-body.ios-fixed-ui .ios-stamp-card__count {
+body.liff-fixed-ui .ios-stamp-card__count {
     display: flex;
     align-items: baseline;
     gap: 2px;
@@ -1684,46 +1684,46 @@ body.ios-fixed-ui .ios-stamp-card__count {
     color: var(--ios-label);
 }
 
-body.ios-fixed-ui .ios-stamp-card__count strong {
+body.liff-fixed-ui .ios-stamp-card__count strong {
     font-size: 34px;
     font-weight: 800;
     letter-spacing: -0.04em;
     line-height: 1;
 }
 
-body.ios-fixed-ui .ios-stamp-card__count span {
+body.liff-fixed-ui .ios-stamp-card__count span {
     font-size: 18px;
     color: var(--ios-secondary);
     font-weight: 600;
 }
 
-body.ios-fixed-ui .ios-stamp-card__bar {
+body.liff-fixed-ui .ios-stamp-card__bar {
     height: 8px;
     border-radius: 980px;
     background: rgba(60, 60, 67, 0.12);
     overflow: hidden;
 }
 
-body.ios-fixed-ui .ios-stamp-card__bar i {
+body.liff-fixed-ui .ios-stamp-card__bar i {
     display: block;
     height: 100%;
     border-radius: inherit;
     background: linear-gradient(90deg, #ff9f0a, #ff3b30);
 }
 
-body.ios-fixed-ui .ios-stamp-card__expiry {
+body.liff-fixed-ui .ios-stamp-card__expiry {
     margin: 8px 0 0;
     font-size: 12px;
     color: var(--ios-secondary);
 }
 
-body.ios-fixed-ui .ios-stamp-dots {
+body.liff-fixed-ui .ios-stamp-dots {
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 8px;
 }
 
-body.ios-fixed-ui .ios-stamp-dot {
+body.liff-fixed-ui .ios-stamp-dot {
     aspect-ratio: 1;
     border-radius: 50%;
     display: grid;
@@ -1735,7 +1735,7 @@ body.ios-fixed-ui .ios-stamp-dot {
     border: 1.5px dashed rgba(60, 60, 67, 0.28);
 }
 
-body.ios-fixed-ui .ios-stamp-dot.is-filled {
+body.liff-fixed-ui .ios-stamp-dot.is-filled {
     color: #fff;
     background: #ff9f0a;
     border-style: solid;
@@ -1743,13 +1743,13 @@ body.ios-fixed-ui .ios-stamp-dot.is-filled {
     box-shadow: 0 4px 10px rgba(255, 159, 10, 0.35);
 }
 
-body.ios-fixed-ui .ios-stamp-dot.is-next {
+body.liff-fixed-ui .ios-stamp-dot.is-next {
     border-color: var(--ios-tint);
     color: var(--ios-tint);
     background: rgba(14, 124, 102, 0.08);
 }
 
-body.ios-fixed-ui .ios-queue {
+body.liff-fixed-ui .ios-queue {
     margin: 8px 16px 24px;
     padding: 20px 18px 18px;
     background: #fff;
@@ -1758,33 +1758,33 @@ body.ios-fixed-ui .ios-queue {
     position: relative;
 }
 
-body.ios-fixed-ui .ios-queue__sample {
+body.liff-fixed-ui .ios-queue__sample {
     position: absolute;
     top: 14px;
     right: 14px;
 }
 
-body.ios-fixed-ui .ios-queue__note {
+body.liff-fixed-ui .ios-queue__note {
     margin: 0 0 10px;
     font-size: 13px;
     color: var(--ios-secondary);
 }
 
-body.ios-fixed-ui .ios-queue__ticket {
+body.liff-fixed-ui .ios-queue__ticket {
     text-align: center;
     padding: 8px 8px 18px;
     border-bottom: 1px dashed rgba(60, 60, 67, 0.18);
     margin-bottom: 14px;
 }
 
-body.ios-fixed-ui .ios-queue__label {
+body.liff-fixed-ui .ios-queue__label {
     margin: 0;
     font-size: 13px;
     font-weight: 600;
     color: var(--ios-secondary);
 }
 
-body.ios-fixed-ui .ios-queue__number {
+body.liff-fixed-ui .ios-queue__number {
     margin: 4px 0 12px;
     font-size: 72px;
     line-height: 1;
@@ -1794,7 +1794,7 @@ body.ios-fixed-ui .ios-queue__number {
     color: var(--ios-tint);
 }
 
-body.ios-fixed-ui .ios-queue__status {
+body.liff-fixed-ui .ios-queue__status {
     display: inline-flex;
     padding: 6px 12px;
     border-radius: 980px;
@@ -1804,26 +1804,26 @@ body.ios-fixed-ui .ios-queue__status {
     color: #9a6700;
 }
 
-body.ios-fixed-ui .ios-queue__status.queue-badge-called {
+body.liff-fixed-ui .ios-queue__status.queue-badge-called {
     background: #d1fadf;
     color: #087443;
 }
 
-body.ios-fixed-ui .ios-queue__stats {
+body.liff-fixed-ui .ios-queue__stats {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 8px;
     margin-bottom: 14px;
 }
 
-body.ios-fixed-ui .ios-queue__stat {
+body.liff-fixed-ui .ios-queue__stat {
     background: #f2f2f7;
     border-radius: 14px;
     padding: 12px 8px;
     text-align: center;
 }
 
-body.ios-fixed-ui .ios-queue__stat-value {
+body.liff-fixed-ui .ios-queue__stat-value {
     display: block;
     font-size: 24px;
     font-weight: 800;
@@ -1831,14 +1831,14 @@ body.ios-fixed-ui .ios-queue__stat-value {
     color: var(--ios-label);
 }
 
-body.ios-fixed-ui .ios-queue__stat-label {
+body.liff-fixed-ui .ios-queue__stat-label {
     display: block;
     margin-top: 2px;
     font-size: 11px;
     color: var(--ios-secondary);
 }
 
-body.ios-fixed-ui .ios-queue__meta {
+body.liff-fixed-ui .ios-queue__meta {
     display: flex;
     justify-content: space-between;
     gap: 8px;
@@ -1847,17 +1847,17 @@ body.ios-fixed-ui .ios-queue__meta {
     color: var(--ios-secondary);
 }
 
-body.ios-fixed-ui .ios-queue__meta .is-linked {
+body.liff-fixed-ui .ios-queue__meta .is-linked {
     color: #087443;
     font-weight: 600;
 }
 
-body.ios-fixed-ui .ios-queue__actions {
+body.liff-fixed-ui .ios-queue__actions {
     display: flex;
     gap: 8px;
 }
 
-body.ios-fixed-ui .ios-queue__btn {
+body.liff-fixed-ui .ios-queue__btn {
     flex: 1;
     border: 0;
     border-radius: 12px;
@@ -1868,16 +1868,16 @@ body.ios-fixed-ui .ios-queue__btn {
     font-weight: 700;
 }
 
-body.ios-fixed-ui .ios-queue__btn--ghost {
+body.liff-fixed-ui .ios-queue__btn--ghost {
     background: rgba(14, 124, 102, 0.12);
     color: var(--ios-tint);
 }
 
-body.ios-fixed-ui .ios-resv-create-wrap {
+body.liff-fixed-ui .ios-resv-create-wrap {
     padding: 0 16px 12px;
 }
 
-body.ios-fixed-ui .ios-resv-create {
+body.liff-fixed-ui .ios-resv-create {
     width: 100%;
     border: 0;
     border-radius: 14px;
@@ -1888,14 +1888,14 @@ body.ios-fixed-ui .ios-resv-create {
     font-weight: 700;
 }
 
-body.ios-fixed-ui .ios-resv {
+body.liff-fixed-ui .ios-resv {
     background: #fff;
     border-radius: 20px;
     overflow: hidden;
     box-shadow: 0 10px 28px rgba(0, 0, 0, 0.08);
 }
 
-body.ios-fixed-ui .ios-resv__when {
+body.liff-fixed-ui .ios-resv__when {
     display: grid;
     grid-template-columns: 88px 1fr;
     gap: 0;
@@ -1903,7 +1903,7 @@ body.ios-fixed-ui .ios-resv__when {
     color: #fff;
 }
 
-body.ios-fixed-ui .ios-resv__date {
+body.liff-fixed-ui .ios-resv__date {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -1912,14 +1912,14 @@ body.ios-fixed-ui .ios-resv__date {
     background: rgba(255, 255, 255, 0.08);
 }
 
-body.ios-fixed-ui .ios-resv__month,
-body.ios-fixed-ui .ios-resv__weekday {
+body.liff-fixed-ui .ios-resv__month,
+body.liff-fixed-ui .ios-resv__weekday {
     font-size: 12px;
     font-weight: 600;
     opacity: 0.85;
 }
 
-body.ios-fixed-ui .ios-resv__day {
+body.liff-fixed-ui .ios-resv__day {
     font-size: 34px;
     font-weight: 800;
     line-height: 1;
@@ -1927,7 +1927,7 @@ body.ios-fixed-ui .ios-resv__day {
     margin: 4px 0;
 }
 
-body.ios-fixed-ui .ios-resv__time {
+body.liff-fixed-ui .ios-resv__time {
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -1935,22 +1935,22 @@ body.ios-fixed-ui .ios-resv__time {
     gap: 4px;
 }
 
-body.ios-fixed-ui .ios-resv__time strong {
+body.liff-fixed-ui .ios-resv__time strong {
     font-size: 28px;
     font-weight: 800;
     letter-spacing: -0.03em;
 }
 
-body.ios-fixed-ui .ios-resv__time span {
+body.liff-fixed-ui .ios-resv__time span {
     font-size: 13px;
     opacity: 0.85;
 }
 
-body.ios-fixed-ui .ios-resv__details {
+body.liff-fixed-ui .ios-resv__details {
     padding: 14px 16px;
 }
 
-body.ios-fixed-ui .ios-resv__row {
+body.liff-fixed-ui .ios-resv__row {
     display: flex;
     justify-content: space-between;
     gap: 12px;
@@ -1959,24 +1959,24 @@ body.ios-fixed-ui .ios-resv__row {
     border-bottom: 1px solid rgba(60, 60, 67, 0.08);
 }
 
-body.ios-fixed-ui .ios-resv__row span {
+body.liff-fixed-ui .ios-resv__row span {
     color: var(--ios-secondary);
 }
 
-body.ios-fixed-ui .ios-resv__notes {
+body.liff-fixed-ui .ios-resv__notes {
     margin-top: 10px;
     font-size: 14px;
     color: var(--ios-secondary);
     line-height: 1.45;
 }
 
-body.ios-fixed-ui .ios-resv__actions {
+body.liff-fixed-ui .ios-resv__actions {
     display: flex;
     gap: 8px;
     padding: 0 16px 16px;
 }
 
-body.ios-fixed-ui .ios-resv__btn {
+body.liff-fixed-ui .ios-resv__btn {
     flex: 1;
     border: 0;
     border-radius: 12px;
@@ -1987,37 +1987,37 @@ body.ios-fixed-ui .ios-resv__btn {
     font-weight: 700;
 }
 
-body.ios-fixed-ui .ios-resv__btn--danger {
+body.liff-fixed-ui .ios-resv__btn--danger {
     background: rgba(255, 59, 48, 0.12);
     color: #ff3b30;
 }
 
-body.ios-fixed-ui #couponsSection .coupons-header,
-body.ios-fixed-ui #couponsSection .coupons-list-tabs,
-body.ios-fixed-ui #stampsSection .stamps-header,
-body.ios-fixed-ui #reservationsSection .reservations-header-section {
+body.liff-fixed-ui #couponsSection .coupons-header,
+body.liff-fixed-ui #couponsSection .coupons-list-tabs,
+body.liff-fixed-ui #stampsSection .stamps-header,
+body.liff-fixed-ui #reservationsSection .reservations-header-section {
     display: none !important;
 }
 
-body.ios-fixed-ui #couponsSection .coupons-tab-panel {
+body.liff-fixed-ui #couponsSection .coupons-tab-panel {
     display: none;
 }
 
-body.ios-fixed-ui #couponsSection .coupons-tab-panel.is-active {
+body.liff-fixed-ui #couponsSection .coupons-tab-panel.is-active {
     display: block;
 }
 
 /* —— Detail pages (coupon / announcement / etc.) —— */
-body.ios-fixed-ui.liff-page-detail .ios-large-title,
-body.ios-fixed-ui.liff-page-detail .ios-segment-bar,
-body.ios-fixed-ui.liff-page-detail .ios-tab-bar,
-body.ios-fixed-ui.liff-page-detail .liff-detail-chrome,
-body.ios-fixed-ui.liff-page-detail header.header,
-body.liff-page-detail.ios-fixed-ui .header {
+body.liff-fixed-ui.liff-page-detail .ios-large-title,
+body.liff-fixed-ui.liff-page-detail .ios-segment-bar,
+body.liff-fixed-ui.liff-page-detail .ios-tab-bar,
+body.liff-fixed-ui.liff-page-detail .liff-detail-chrome,
+body.liff-fixed-ui.liff-page-detail header.header,
+body.liff-page-detail.liff-fixed-ui .header {
     display: none !important;
 }
 
-body.ios-fixed-ui #liffDetailPage.page-content--detail {
+body.liff-fixed-ui #liffDetailPage.page-content--detail {
     position: relative;
     z-index: 40;
     display: flex;
@@ -2028,7 +2028,7 @@ body.ios-fixed-ui #liffDetailPage.page-content--detail {
     padding: 0 !important;
 }
 
-body.ios-fixed-ui #liffDetailPage .page-content__bar {
+body.liff-fixed-ui #liffDetailPage .page-content__bar {
     position: sticky;
     top: 0;
     z-index: 2;
@@ -2042,7 +2042,7 @@ body.ios-fixed-ui #liffDetailPage .page-content__bar {
     border-bottom: 0.5px solid var(--ios-separator);
 }
 
-body.ios-fixed-ui #liffDetailPage .page-content__back {
+body.liff-fixed-ui #liffDetailPage .page-content__back {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -2056,11 +2056,11 @@ body.ios-fixed-ui #liffDetailPage .page-content__back {
     text-decoration: none;
 }
 
-body.ios-fixed-ui #liffDetailPage .page-content__back::before {
+body.liff-fixed-ui #liffDetailPage .page-content__back::before {
     content: none;
 }
 
-body.ios-fixed-ui #liffDetailPage .page-content__title {
+body.liff-fixed-ui #liffDetailPage .page-content__title {
     flex: 1;
     min-width: 0;
     margin: 0;
@@ -2073,31 +2073,31 @@ body.ios-fixed-ui #liffDetailPage .page-content__title {
     padding-right: 44px;
 }
 
-body.ios-fixed-ui #liffDetailSection {
+body.liff-fixed-ui #liffDetailSection {
     flex: 1;
     padding: 0 0 32px !important;
 }
 
 /* 予約フロー: 内側ScrollViewをやめ、ページ本体でユーザーがスクロール */
-body.ios-fixed-ui.liff-page-reservation-flow #liffDetailPage.page-content--detail {
+body.liff-fixed-ui.liff-page-reservation-flow #liffDetailPage.page-content--detail {
     min-height: auto;
     height: auto;
     overflow: visible;
 }
 
-body.ios-fixed-ui.liff-page-reservation-flow #liffDetailSection {
+body.liff-fixed-ui.liff-page-reservation-flow #liffDetailSection {
     flex: none;
     height: auto;
     overflow: visible !important;
     padding: 0 16px 40px !important;
 }
 
-body.ios-fixed-ui.liff-page-reservation-flow #liffDetailSection .liff-flow-page {
+body.liff-fixed-ui.liff-page-reservation-flow #liffDetailSection .liff-flow-page {
     padding: 12px 0 24px;
 }
 
-body.ios-fixed-ui.liff-page-reservation-flow #liffDetailSection .reservation-modal-content,
-body.ios-fixed-ui.liff-page-reservation-flow #liffDetailSection .modal-content {
+body.liff-fixed-ui.liff-page-reservation-flow #liffDetailSection .reservation-modal-content,
+body.liff-fixed-ui.liff-page-reservation-flow #liffDetailSection .modal-content {
     max-width: none;
     max-height: none !important;
     height: auto !important;
@@ -2106,24 +2106,24 @@ body.ios-fixed-ui.liff-page-reservation-flow #liffDetailSection .modal-content {
     border-radius: 16px;
 }
 
-body.ios-fixed-ui.liff-page-reservation-flow #liffDetailSection .reservation-form {
+body.liff-fixed-ui.liff-page-reservation-flow #liffDetailSection .reservation-form {
     overflow: visible !important;
 }
 
-body.ios-fixed-ui.liff-page-reservation-flow #liffDetailSection .modal-header .close-btn {
+body.liff-fixed-ui.liff-page-reservation-flow #liffDetailSection .modal-header .close-btn {
     display: none;
 }
 
-body.ios-fixed-ui.liff-page-reservation-flow #liffDetailSection .time-options-grid {
+body.liff-fixed-ui.liff-page-reservation-flow #liffDetailSection .time-options-grid {
     max-height: none;
     overflow: visible;
 }
 
-body.ios-fixed-ui .ios-detail {
+body.liff-fixed-ui .ios-detail {
     margin: 0;
 }
 
-body.ios-fixed-ui .ios-detail__hero {
+body.liff-fixed-ui .ios-detail__hero {
     position: relative;
     margin: 0 0 0;
     height: 220px;
@@ -2131,28 +2131,28 @@ body.ios-fixed-ui .ios-detail__hero {
     overflow: hidden;
 }
 
-body.ios-fixed-ui .ios-detail__hero img {
+body.liff-fixed-ui .ios-detail__hero img {
     width: 100%;
     height: 100%;
     object-fit: cover;
     display: block;
 }
 
-body.ios-fixed-ui .ios-detail__hero-shade {
+body.liff-fixed-ui .ios-detail__hero-shade {
     position: absolute;
     inset: 0;
     background: linear-gradient(180deg, transparent 40%, rgba(0, 0, 0, 0.45) 100%);
     pointer-events: none;
 }
 
-body.ios-fixed-ui .ios-detail__chips {
+body.liff-fixed-ui .ios-detail__chips {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
     margin: 0 0 10px;
 }
 
-body.ios-fixed-ui .ios-detail__hero .ios-detail__chips {
+body.liff-fixed-ui .ios-detail__hero .ios-detail__chips {
     position: absolute;
     left: 16px;
     right: 16px;
@@ -2162,7 +2162,7 @@ body.ios-fixed-ui .ios-detail__hero .ios-detail__chips {
     z-index: 2;
 }
 
-body.ios-fixed-ui .ios-detail__chip {
+body.liff-fixed-ui .ios-detail__chip {
     display: inline-flex;
     align-items: center;
     padding: 5px 10px;
@@ -2174,11 +2174,11 @@ body.ios-fixed-ui .ios-detail__chip {
     backdrop-filter: blur(8px);
 }
 
-body.ios-fixed-ui .ios-detail__chip--status {
+body.liff-fixed-ui .ios-detail__chip--status {
     background: var(--ios-tint);
 }
 
-body.ios-fixed-ui .ios-detail__panel {
+body.liff-fixed-ui .ios-detail__panel {
     margin: 0 16px;
     padding: 20px 16px 20px;
     background: #fff;
@@ -2188,13 +2188,13 @@ body.ios-fixed-ui .ios-detail__panel {
     z-index: 1;
 }
 
-body.ios-fixed-ui .ios-detail--has-hero .ios-detail__panel,
-body.ios-fixed-ui .ios-detail--coupon .ios-detail__panel,
-body.ios-fixed-ui .ios-detail--stamp .ios-detail__panel {
+body.liff-fixed-ui .ios-detail--has-hero .ios-detail__panel,
+body.liff-fixed-ui .ios-detail--coupon .ios-detail__panel,
+body.liff-fixed-ui .ios-detail--stamp .ios-detail__panel {
     margin-top: -20px;
 }
 
-body.ios-fixed-ui .ios-detail__hero {
+body.liff-fixed-ui .ios-detail__hero {
     position: relative;
     margin: 0;
     height: 240px;
@@ -2202,7 +2202,7 @@ body.ios-fixed-ui .ios-detail__hero {
     overflow: hidden;
 }
 
-body.ios-fixed-ui .ios-detail__note {
+body.liff-fixed-ui .ios-detail__note {
     margin: 4px 0 0;
     padding: 12px 14px;
     border-radius: 12px;
@@ -2212,14 +2212,14 @@ body.ios-fixed-ui .ios-detail__note {
     line-height: 1.45;
 }
 
-body.ios-fixed-ui .ios-detail__eyebrow {
+body.liff-fixed-ui .ios-detail__eyebrow {
     margin: 0 0 6px;
     font-size: 13px;
     font-weight: 600;
     color: var(--ios-tint);
 }
 
-body.ios-fixed-ui .ios-detail__title {
+body.liff-fixed-ui .ios-detail__title {
     margin: 0 0 10px;
     font-size: 26px;
     font-weight: 800;
@@ -2228,7 +2228,7 @@ body.ios-fixed-ui .ios-detail__title {
     color: var(--ios-label);
 }
 
-body.ios-fixed-ui .ios-detail__meta {
+body.liff-fixed-ui .ios-detail__meta {
     display: flex;
     align-items: center;
     gap: 6px;
@@ -2237,18 +2237,18 @@ body.ios-fixed-ui .ios-detail__meta {
     color: var(--ios-secondary);
 }
 
-body.ios-fixed-ui .ios-detail__body {
+body.liff-fixed-ui .ios-detail__body {
     margin: 0 0 18px;
     font-size: 16px;
     line-height: 1.65;
     color: var(--ios-label);
 }
 
-body.ios-fixed-ui .ios-detail__body--rich {
+body.liff-fixed-ui .ios-detail__body--rich {
     white-space: normal;
 }
 
-body.ios-fixed-ui .ios-detail__cta {
+body.liff-fixed-ui .ios-detail__cta {
     width: 100%;
     border: 0;
     border-radius: 14px;
@@ -2259,7 +2259,7 @@ body.ios-fixed-ui .ios-detail__cta {
     font-weight: 700;
 }
 
-body.ios-fixed-ui .ios-detail__note {
+body.liff-fixed-ui .ios-detail__note {
     margin: 0;
     padding: 12px 14px;
     border-radius: 12px;
@@ -2270,11 +2270,11 @@ body.ios-fixed-ui .ios-detail__note {
 }
 
 /* LP風ホーム */
-body.ios-fixed-ui .lp-home {
+body.liff-fixed-ui .lp-home {
     padding: 8px 16px 28px;
 }
 
-body.ios-fixed-ui .lp-home-brand {
+body.liff-fixed-ui .lp-home-brand {
     margin: 4px 0 18px;
     padding: 28px 20px 24px;
     border-radius: 20px;
@@ -2283,7 +2283,7 @@ body.ios-fixed-ui .lp-home-brand {
         linear-gradient(160deg, #F7FBFA 0%, var(--ios-mint) 100%);
 }
 
-body.ios-fixed-ui .lp-home-brand__name {
+body.liff-fixed-ui .lp-home-brand__name {
     margin: 0;
     font-family: var(--ios-font-display);
     font-size: 34px;
@@ -2293,7 +2293,7 @@ body.ios-fixed-ui .lp-home-brand__name {
     line-height: 1.1;
 }
 
-body.ios-fixed-ui .lp-home-brand__tag {
+body.liff-fixed-ui .lp-home-brand__tag {
     margin: 10px 0 0;
     font-size: 14px;
     font-weight: 500;
@@ -2301,7 +2301,7 @@ body.ios-fixed-ui .lp-home-brand__tag {
     line-height: 1.5;
 }
 
-body.ios-fixed-ui .lp-home-queue {
+body.liff-fixed-ui .lp-home-queue {
     display: grid;
     grid-template-columns: auto 1fr auto auto;
     align-items: center;
@@ -2319,7 +2319,7 @@ body.ios-fixed-ui .lp-home-queue {
     color: inherit;
 }
 
-body.ios-fixed-ui .lp-home-queue__ticket {
+body.liff-fixed-ui .lp-home-queue__ticket {
     display: grid;
     place-items: center;
     width: 48px;
@@ -2332,13 +2332,13 @@ body.ios-fixed-ui .lp-home-queue__ticket {
     font-weight: 800;
 }
 
-body.ios-fixed-ui .lp-home-queue__label {
+body.liff-fixed-ui .lp-home-queue__label {
     display: block;
     font-size: 11px;
     color: var(--ios-secondary);
 }
 
-body.ios-fixed-ui .lp-home-queue__num {
+body.liff-fixed-ui .lp-home-queue__num {
     display: block;
     margin-top: 2px;
     font-size: 22px;
@@ -2347,19 +2347,19 @@ body.ios-fixed-ui .lp-home-queue__num {
     letter-spacing: -0.02em;
 }
 
-body.ios-fixed-ui .lp-home-queue__num small {
+body.liff-fixed-ui .lp-home-queue__num small {
     font-size: 14px;
     font-weight: 700;
 }
 
-body.ios-fixed-ui .lp-home-queue__meta {
+body.liff-fixed-ui .lp-home-queue__meta {
     display: flex;
     flex-direction: column;
     align-items: flex-end;
     gap: 4px;
 }
 
-body.ios-fixed-ui .lp-home-queue__badge {
+body.liff-fixed-ui .lp-home-queue__badge {
     display: inline-flex;
     padding: 3px 8px;
     border-radius: 999px;
@@ -2369,28 +2369,28 @@ body.ios-fixed-ui .lp-home-queue__badge {
     font-weight: 700;
 }
 
-body.ios-fixed-ui .lp-home-queue__wait {
+body.liff-fixed-ui .lp-home-queue__wait {
     font-size: 11px;
     color: var(--ios-secondary);
     white-space: nowrap;
 }
 
-body.ios-fixed-ui .lp-home-queue__chevron,
-body.ios-fixed-ui .lp-home-action__chevron,
-body.ios-fixed-ui .lp-home-promo__chevron {
+body.liff-fixed-ui .lp-home-queue__chevron,
+body.liff-fixed-ui .lp-home-action__chevron,
+body.liff-fixed-ui .lp-home-promo__chevron {
     color: var(--ios-tertiary);
     font-size: 22px;
     line-height: 1;
 }
 
-body.ios-fixed-ui .lp-home-actions {
+body.liff-fixed-ui .lp-home-actions {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 10px;
     margin-bottom: 14px;
 }
 
-body.ios-fixed-ui .lp-home-action {
+body.liff-fixed-ui .lp-home-action {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -2407,11 +2407,11 @@ body.ios-fixed-ui .lp-home-action {
     color: inherit;
 }
 
-body.ios-fixed-ui .lp-home-action__icon {
+body.liff-fixed-ui .lp-home-action__icon {
     color: var(--ios-tint);
 }
 
-body.ios-fixed-ui .lp-home-action__en {
+body.liff-fixed-ui .lp-home-action__en {
     margin-top: auto;
     font-family: var(--ios-font-display);
     font-size: 16px;
@@ -2420,13 +2420,13 @@ body.ios-fixed-ui .lp-home-action__en {
     letter-spacing: -0.02em;
 }
 
-body.ios-fixed-ui .lp-home-action__ja {
+body.liff-fixed-ui .lp-home-action__ja {
     font-size: 11px;
     line-height: 1.35;
     color: var(--ios-secondary);
 }
 
-body.ios-fixed-ui .lp-home-promo {
+body.liff-fixed-ui .lp-home-promo {
     position: relative;
     display: block;
     width: 100%;
@@ -2441,14 +2441,14 @@ body.ios-fixed-ui .lp-home-promo {
     color: inherit;
 }
 
-body.ios-fixed-ui .lp-home-promo__eyebrow {
+body.liff-fixed-ui .lp-home-promo__eyebrow {
     display: block;
     font-size: 11px;
     font-weight: 700;
     color: var(--ios-tint);
 }
 
-body.ios-fixed-ui .lp-home-promo__title {
+body.liff-fixed-ui .lp-home-promo__title {
     display: block;
     margin-top: 4px;
     font-size: 16px;
@@ -2456,14 +2456,14 @@ body.ios-fixed-ui .lp-home-promo__title {
     color: var(--ios-forest);
 }
 
-body.ios-fixed-ui .lp-home-promo__text {
+body.liff-fixed-ui .lp-home-promo__text {
     display: block;
     margin-top: 4px;
     font-size: 12px;
     color: var(--ios-secondary);
 }
 
-body.ios-fixed-ui .lp-home-promo__chevron {
+body.liff-fixed-ui .lp-home-promo__chevron {
     position: absolute;
     right: 14px;
     top: 50%;
@@ -2471,15 +2471,15 @@ body.ios-fixed-ui .lp-home-promo__chevron {
 }
 
 /* Design Lab */
-body.ios-fixed-ui .design-lab {
+body.liff-fixed-ui .design-lab {
     padding: 8px 16px calc(32px + var(--ios-tab-h) + env(safe-area-inset-bottom, 0px));
 }
 
-body.ios-fixed-ui .design-lab__hero {
+body.liff-fixed-ui .design-lab__hero {
     margin-bottom: 20px;
 }
 
-body.ios-fixed-ui .design-lab__eyebrow {
+body.liff-fixed-ui .design-lab__eyebrow {
     margin: 0;
     font-size: 12px;
     font-weight: 700;
@@ -2488,7 +2488,7 @@ body.ios-fixed-ui .design-lab__eyebrow {
     color: var(--ios-tint);
 }
 
-body.ios-fixed-ui .design-lab__title {
+body.liff-fixed-ui .design-lab__title {
     margin: 6px 0 0;
     font-family: var(--ios-font-display);
     font-size: 28px;
@@ -2497,26 +2497,26 @@ body.ios-fixed-ui .design-lab__title {
     color: var(--ios-label);
 }
 
-body.ios-fixed-ui .design-lab__lead,
-body.ios-fixed-ui .design-lab__section-lead {
+body.liff-fixed-ui .design-lab__lead,
+body.liff-fixed-ui .design-lab__section-lead {
     margin: 8px 0 0;
     font-size: 14px;
     line-height: 1.5;
     color: var(--ios-secondary);
 }
 
-body.ios-fixed-ui .design-lab__section {
+body.liff-fixed-ui .design-lab__section {
     margin: 0 0 28px;
 }
 
-body.ios-fixed-ui .design-lab__section-title {
+body.liff-fixed-ui .design-lab__section-title {
     margin: 0;
     font-size: 18px;
     font-weight: 800;
     color: var(--ios-label);
 }
 
-body.ios-fixed-ui .design-lab__rail {
+body.liff-fixed-ui .design-lab__rail {
     display: flex;
     gap: 12px;
     margin-top: 14px;
@@ -2526,14 +2526,14 @@ body.ios-fixed-ui .design-lab__rail {
     -webkit-overflow-scrolling: touch;
 }
 
-body.ios-fixed-ui .design-lab__screen {
+body.liff-fixed-ui .design-lab__screen {
     flex: 0 0 auto;
     width: min(168px, 58vw);
     margin: 0;
     scroll-snap-align: start;
 }
 
-body.ios-fixed-ui .design-lab__screen img {
+body.liff-fixed-ui .design-lab__screen img {
     width: 100%;
     border-radius: 18px;
     border: 1px solid var(--ios-separator);
@@ -2541,7 +2541,7 @@ body.ios-fixed-ui .design-lab__screen img {
     background: var(--ios-mint);
 }
 
-body.ios-fixed-ui .design-lab__screen figcaption {
+body.liff-fixed-ui .design-lab__screen figcaption {
     margin-top: 8px;
     text-align: center;
     font-size: 12px;
@@ -2550,7 +2550,7 @@ body.ios-fixed-ui .design-lab__screen figcaption {
 }
 
 /* ポイント運試し風: ドームガチャ + 円形スクラッチ */
-body.ios-fixed-ui {
+body.liff-fixed-ui {
     --pp-red: #FF0033;
     --pp-red-deep: #D1002A;
     --pp-red-grad: linear-gradient(135deg, #FF3355 0%, #FF0033 55%, #D1002A 100%);
@@ -2558,7 +2558,7 @@ body.ios-fixed-ui {
     --pp-gold-deep: #E8960A;
 }
 
-body.ios-fixed-ui .pp-play-card {
+body.liff-fixed-ui .pp-play-card {
     margin-top: 12px;
     padding: 18px 16px 16px;
     border-radius: 20px;
@@ -2566,20 +2566,20 @@ body.ios-fixed-ui .pp-play-card {
     box-shadow: 0 2px 10px rgba(20, 20, 30, 0.06);
 }
 
-body.ios-fixed-ui .pp-play-card__top {
+body.liff-fixed-ui .pp-play-card__top {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 10px;
 }
 
-body.ios-fixed-ui .pp-play-card__title {
+body.liff-fixed-ui .pp-play-card__title {
     font-size: 14.5px;
     font-weight: 800;
     color: var(--ios-ink);
 }
 
-body.ios-fixed-ui .pp-play-card__chip {
+body.liff-fixed-ui .pp-play-card__chip {
     font-size: 11px;
     font-weight: 700;
     color: var(--pp-red);
@@ -2588,14 +2588,14 @@ body.ios-fixed-ui .pp-play-card__chip {
     border-radius: 999px;
 }
 
-body.ios-fixed-ui .pp-play-card__rule {
+body.liff-fixed-ui .pp-play-card__rule {
     margin: 6px 0 12px;
     font-size: 11.5px;
     line-height: 1.55;
     color: var(--ios-secondary);
 }
 
-body.ios-fixed-ui .pp-cta {
+body.liff-fixed-ui .pp-cta {
     display: block;
     width: 100%;
     margin-top: 16px;
@@ -2611,18 +2611,18 @@ body.ios-fixed-ui .pp-cta {
     -webkit-tap-highlight-color: transparent;
 }
 
-body.ios-fixed-ui .pp-cta:active {
+body.liff-fixed-ui .pp-cta:active {
     transform: scale(0.97);
 }
 
-body.ios-fixed-ui .pp-cta:disabled {
+body.liff-fixed-ui .pp-cta:disabled {
     background: #D8D9DE;
     color: #A6A7AE;
     box-shadow: none;
     cursor: not-allowed;
 }
 
-body.ios-fixed-ui .pp-cta--ghost {
+body.liff-fixed-ui .pp-cta--ghost {
     background: #fff;
     color: var(--pp-red);
     border: 1.5px solid rgba(255, 0, 51, 0.35);
@@ -2630,239 +2630,499 @@ body.ios-fixed-ui .pp-cta--ghost {
 }
 
 /* ===== ドーム型ガチャ ===== */
-body.ios-fixed-ui .pp-gacha {
+/* 参考: カプセルトイ筐体のガラス球＋二色カプセルの自然な積み上げ（ゲームUIは含めない） */
+body.liff-fixed-ui .pp-gacha {
     display: flex;
     flex-direction: column;
     align-items: center;
+    gap: 12px;
 }
 
-body.ios-fixed-ui .pp-gacha__machine {
+body.liff-fixed-ui .pp-gacha__stage {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    padding: 34px 8px 8px;
+    border-radius: 22px;
+    background:
+        radial-gradient(ellipse at 50% 12%, rgba(255, 150, 185, 0.26), transparent 55%),
+        radial-gradient(ellipse at 50% 100%, rgba(90, 110, 170, 0.1), transparent 48%),
+        linear-gradient(180deg, #fafbfd 0%, #eef1f6 100%);
+}
+
+body.liff-fixed-ui .pp-gacha__machine {
     position: relative;
-    width: 188px;
+    width: 252px;
+    filter: drop-shadow(0 20px 32px rgba(190, 35, 85, 0.28));
+    transform-origin: 50% 82%;
 }
 
-body.ios-fixed-ui .pp-gacha__price {
+body.liff-fixed-ui .pp-gacha__machine.is-shake {
+    animation: pp-machine-shake 0.85s ease-in-out;
+}
+
+body.liff-fixed-ui .pp-gacha__machine.is-shake .pp-gacha__ball {
+    animation: pp-ball-tumble 0.7s ease-in-out var(--ball-delay, 0s);
+}
+
+body.liff-fixed-ui .pp-gacha__price {
     position: absolute;
-    right: -4px;
-    top: -8px;
-    z-index: 3;
-    padding: 3px 9px;
+    right: -10px;
+    top: 10px;
+    z-index: 40;
+    padding: 7px 13px;
     border-radius: 999px;
-    background: var(--pp-gold);
+    background: linear-gradient(180deg, #fff0b8, #ffc933 70%, #f0a800);
     color: #5a3a00;
-    font-size: 10.5px;
+    font-size: 11px;
     font-weight: 900;
-    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.22);
-    transform: rotate(4deg);
+    letter-spacing: 0.02em;
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.65) inset,
+        0 6px 14px rgba(0, 0, 0, 0.18);
+    transform: rotate(6deg);
 }
 
-body.ios-fixed-ui .pp-gacha__dome {
+body.liff-fixed-ui .pp-gacha__dome {
     position: relative;
-    width: 188px;
-    height: 150px;
-    overflow: hidden;
-    border: 4px solid #d64058;
-    border-bottom: 0;
-    border-radius: 94px 94px 14px 14px;
-    background: radial-gradient(circle at 32% 24%, #ffffff 0%, #eaf0ff 22%, #c3cdea 62%, #a6b1d9 100%);
-    box-shadow: inset 0 -18px 26px rgba(70, 80, 140, 0.28);
+    width: 252px;
+    height: 252px;
+    z-index: 5;
 }
 
-body.ios-fixed-ui .pp-gacha__gloss {
+body.liff-fixed-ui .pp-gacha__dome-glass {
     position: absolute;
+    inset: 0;
+    overflow: hidden;
+    border-radius: 50%;
+    border: 8px solid #ff4f88;
+    background:
+        radial-gradient(circle at 50% 82%, rgba(35, 50, 110, 0.16) 0%, transparent 44%),
+        radial-gradient(circle at 28% 18%, rgba(255, 255, 255, 0.85) 0%, transparent 28%),
+        radial-gradient(circle at 72% 28%, rgba(255, 255, 255, 0.35) 0%, transparent 16%),
+        linear-gradient(168deg, rgba(255, 255, 255, 0.55) 0%, rgba(210, 222, 255, 0.16) 42%, rgba(140, 160, 215, 0.3) 100%);
+    box-shadow:
+        inset 0 -48px 52px rgba(45, 65, 125, 0.22),
+        inset 0 18px 26px rgba(255, 255, 255, 0.58),
+        0 0 0 3px rgba(255, 255, 255, 0.5),
+        0 0 0 5px rgba(255, 95, 143, 0.38),
+        0 12px 22px rgba(255, 70, 120, 0.2);
+}
+
+body.liff-fixed-ui .pp-gacha__dome-shine {
+    position: absolute;
+    top: 14px;
+    left: 38px;
+    width: 64px;
+    height: 118px;
+    border-radius: 50%;
+    background: linear-gradient(112deg, rgba(255, 255, 255, 1), rgba(255, 255, 255, 0) 68%);
+    transform: rotate(-18deg);
+    filter: blur(0.4px);
+    pointer-events: none;
+    z-index: 30;
+}
+
+body.liff-fixed-ui .pp-gacha__dome-shine--soft {
+    top: 32px;
+    left: auto;
+    right: 34px;
+    width: 32px;
+    height: 64px;
+    opacity: 0.55;
+    transform: rotate(20deg);
+}
+
+body.liff-fixed-ui .pp-gacha__dome-rim {
+    position: absolute;
+    inset: 4px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(255, 255, 255, 0.55);
+    pointer-events: none;
+    z-index: 28;
+    box-shadow: inset 0 0 0 1px rgba(180, 40, 90, 0.12);
+}
+
+body.liff-fixed-ui .pp-gacha__dome-cap {
+    position: absolute;
+    left: 50%;
+    top: -18px;
+    z-index: 35;
+    width: 96px;
+    height: 40px;
+    margin-left: -48px;
+    border-radius: 999px 999px 16px 16px;
+    background:
+        linear-gradient(180deg, #ffb0cc 0%, #ff5a92 48%, #e23470 100%);
+    box-shadow:
+        0 8px 14px rgba(200, 40, 90, 0.38),
+        inset 0 3px 0 rgba(255, 255, 255, 0.55),
+        inset 0 -3px 6px rgba(120, 10, 50, 0.28);
+}
+
+body.liff-fixed-ui .pp-gacha__dome-star {
+    position: absolute;
+    left: 50%;
     top: -10px;
-    left: 22px;
-    width: 70px;
-    height: 150px;
-    background: linear-gradient(100deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0) 70%);
-    transform: rotate(-8deg);
-    filter: blur(1px);
+    width: 22px;
+    height: 22px;
+    margin-left: -11px;
+    background: linear-gradient(145deg, #ffe56a 0%, #ffc933 45%, #f0a000 100%);
+    clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+    filter: drop-shadow(0 2px 4px rgba(200, 120, 0, 0.45));
+}
+
+body.liff-fixed-ui .pp-gacha__collar {
+    position: absolute;
+    left: 14px;
+    right: 14px;
+    bottom: -4px;
+    height: 22px;
+    border-radius: 999px;
+    background:
+        linear-gradient(180deg, #ffffff 0%, #e8ecf4 42%, #b8c0d0 78%, #9aa3b5 100%);
+    box-shadow:
+        0 2px 0 rgba(255, 255, 255, 0.7),
+        0 8px 14px rgba(0, 0, 0, 0.16),
+        inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    z-index: 4;
+}
+
+/* 実物空カプセル準拠: 上=乳白半透明フタ / 下=ソリッドカラー身 */
+body.liff-fixed-ui .pp-gacha__ball {
+    position: absolute;
+    border-radius: 50%;
+    transform: rotate(var(--ball-rot, 0deg)) scale(var(--ball-scale, 1));
+    filter: brightness(var(--ball-bright, 1));
+    background:
+        radial-gradient(circle at 32% 22%, rgba(255, 255, 255, 0.98) 0 10%, transparent 32%),
+        linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.55) 0%,
+            rgba(248, 250, 255, 0.42) 36%,
+            rgba(220, 228, 245, 0.28) 47%,
+            rgba(170, 185, 215, 0.25) 49.4%,
+            var(--ball-color, #ff3b5c) 50.6%,
+            var(--ball-color, #ff3b5c) 74%,
+            color-mix(in srgb, var(--ball-color, #ff3b5c) 70%, #1a1020) 100%
+        );
+    box-shadow:
+        inset 0 -9px 14px rgba(0, 0, 0, 0.2),
+        inset 0 5px 10px rgba(255, 255, 255, 0.4),
+        0 6px 12px rgba(20, 30, 60, 0.24),
+        0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+body.liff-fixed-ui .pp-gacha__ball::before {
+    content: "";
+    position: absolute;
+    left: 7%;
+    right: 7%;
+    top: 47%;
+    height: 5px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.32), transparent);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+body.liff-fixed-ui .pp-gacha__ball::after {
+    content: "";
+    position: absolute;
+    left: 15%;
+    top: 11%;
+    width: 38%;
+    height: 26%;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.2) 62%, transparent 100%);
+}
+
+/* 参考画像: ピンク円柱ボディ + 横棒ハンドル + 下矢印 + 排出口 */
+body.liff-fixed-ui .pp-gacha__body {
+    position: relative;
+    width: 252px;
+    margin-top: 4px;
+    padding: 22px 16px 14px;
+    border: 7px solid #ff4f88;
+    border-top: 0;
+    border-radius: 0 0 42px 42px;
+    background:
+        linear-gradient(90deg, rgba(255, 255, 255, 0.22) 0%, transparent 16%, transparent 84%, rgba(120, 20, 55, 0.14) 100%),
+        linear-gradient(180deg, #ff9ec0 0%, #ff5f95 36%, #ef3a74 70%, #d92a62 100%);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.45),
+        inset 0 -12px 20px rgba(120, 10, 50, 0.24),
+        0 16px 28px rgba(220, 45, 100, 0.3);
+    z-index: 4;
+}
+
+body.liff-fixed-ui .pp-gacha__body-gloss {
+    position: absolute;
+    left: 14px;
+    top: 14px;
+    bottom: 28px;
+    width: 11px;
+    border-radius: 8px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0.1));
     pointer-events: none;
 }
 
-body.ios-fixed-ui .pp-gacha__ball {
-    position: absolute;
-    border-radius: 50%;
-    background:
-        radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.85), transparent 45%),
-        var(--ball-color, #ffb3c0);
-    box-shadow: inset -3px -3px 0 rgba(0, 0, 0, 0.1);
-}
-
-body.ios-fixed-ui .pp-gacha__body {
-    position: relative;
-    width: 188px;
-    padding: 12px 14px 16px;
-    border: 4px solid #d64058;
-    border-top: 0;
-    border-radius: 0 0 16px 16px;
-    background: var(--pp-red-grad);
-    box-shadow: 0 10px 20px rgba(255, 0, 51, 0.28);
-}
-
-body.ios-fixed-ui .pp-gacha__body::before {
-    content: "";
-    position: absolute;
-    left: 14px;
-    top: 0;
-    bottom: 16px;
-    width: 6px;
-    border-radius: 4px;
-    background: rgba(255, 255, 255, 0.28);
-    filter: blur(0.5px);
-}
-
-body.ios-fixed-ui .pp-gacha__rivet {
-    position: absolute;
-    top: 8px;
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: rgba(0, 0, 0, 0.18);
-    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
-}
-
-body.ios-fixed-ui .pp-gacha__rivet--l { left: 10px; }
-body.ios-fixed-ui .pp-gacha__rivet--r { right: 10px; }
-
-body.ios-fixed-ui .pp-gacha__slot {
-    width: 38px;
-    height: 9px;
+body.liff-fixed-ui .pp-gacha__turn-hint {
+    display: block;
+    width: 0;
+    height: 0;
     margin: 0 auto 10px;
-    border-radius: 5px;
-    background: #3a1015;
-    box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.7), 0 1px 0 rgba(255, 255, 255, 0.15);
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-top: 12px solid #ffd24a;
+    filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.18));
 }
 
-body.ios-fixed-ui .pp-gacha__knob-wrap {
+body.liff-fixed-ui .pp-gacha__knob-wrap {
     display: flex;
     justify-content: center;
-    margin-bottom: 8px;
+    margin-bottom: 14px;
 }
 
-body.ios-fixed-ui .pp-gacha__knob {
+/* ガチャ2系: 円盤 + 横棒ハンドル（参考画像の回す部分） */
+body.liff-fixed-ui .pp-gacha__knob {
     position: relative;
-    width: 56px;
-    height: 56px;
+    width: 92px;
+    height: 92px;
     margin: 0;
     padding: 0;
     border: 0;
     border-radius: 50%;
     cursor: pointer;
-    background: repeating-conic-gradient(from 0deg, #f4d489 0deg 6deg, #d99f2c 6deg 12deg);
-    box-shadow: 0 5px 0 #8a5f10, 0 9px 14px rgba(0, 0, 0, 0.35);
+    background: transparent;
+    box-shadow: none;
     transition: transform 0.12s;
     -webkit-tap-highlight-color: transparent;
 }
 
-body.ios-fixed-ui .pp-gacha__knob::before {
+body.liff-fixed-ui .pp-gacha__knob-plate {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background:
+        radial-gradient(circle at 34% 28%, #ffffff 0%, #e8ecf4 38%, #aeb6c6 78%, #7e8798 100%);
+    box-shadow:
+        0 9px 0 #5f6778,
+        0 14px 22px rgba(0, 0, 0, 0.32),
+        inset 0 3px 0 rgba(255, 255, 255, 0.9),
+        inset 0 -4px 8px rgba(0, 0, 0, 0.18);
+}
+
+body.liff-fixed-ui .pp-gacha__knob-bar {
+    position: absolute;
+    left: 10px;
+    right: 10px;
+    top: 50%;
+    height: 22px;
+    margin-top: -11px;
+    z-index: 2;
+    border-radius: 11px;
+    background:
+        linear-gradient(180deg, #f7f9fd 0%, #c5ccd8 42%, #8e97a8 100%);
+    box-shadow:
+        0 3px 0 #5a6272,
+        inset 0 2px 0 rgba(255, 255, 255, 0.85),
+        inset 0 -2px 3px rgba(0, 0, 0, 0.2);
+}
+
+body.liff-fixed-ui .pp-gacha__knob-bar::before,
+body.liff-fixed-ui .pp-gacha__knob-bar::after {
     content: "";
     position: absolute;
-    inset: 6px;
-    border-radius: 50%;
-    background: radial-gradient(circle at 35% 30%, #fff2c8, #e3ac2c 65%, #b1791c 100%);
+    top: 3px;
+    bottom: 3px;
+    width: 14px;
+    border-radius: 8px;
+    background:
+        linear-gradient(180deg, #ffffff, #b0b8c8 55%, #7a8496);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 
-body.ios-fixed-ui .pp-gacha__knob::after {
-    content: "";
-    position: absolute;
-    inset: 20px;
-    border-radius: 50%;
-    background: #8a5f10;
-    box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.5);
-}
+body.liff-fixed-ui .pp-gacha__knob-bar::before { left: 4px; }
+body.liff-fixed-ui .pp-gacha__knob-bar::after { right: 4px; }
 
-body.ios-fixed-ui .pp-gacha__knob:active {
-    transform: translateY(3px);
-    box-shadow: 0 2px 0 #8a5f10;
-}
-
-body.ios-fixed-ui .pp-gacha__knob.is-spin {
-    animation: pp-knob-spin 0.7s cubic-bezier(0.3, 0.9, 0.4, 1);
-}
-
-body.ios-fixed-ui .pp-gacha__flap {
-    width: 64px;
-    height: 14px;
-    margin: 2px auto 0;
-    border-radius: 0 0 7px 7px;
-    background: #3a1015;
-    box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.75);
-}
-
-body.ios-fixed-ui .pp-gacha__tray {
-    width: 96px;
-    height: 8px;
-    margin: 8px auto 0;
-    border-radius: 999px;
-    background: rgba(0, 0, 0, 0.18);
-    filter: blur(1px);
-}
-
-body.ios-fixed-ui .pp-gacha__fall {
+body.liff-fixed-ui .pp-gacha__knob-hub {
     position: absolute;
     left: 50%;
-    top: 128px;
-    z-index: 5;
-    width: 30px;
-    height: 30px;
-    transform: translateX(-50%);
-    opacity: 0;
+    top: 50%;
+    z-index: 3;
+    width: 26px;
+    height: 26px;
+    margin: -13px 0 0 -13px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 38% 32%, #fff, #9aa3b4 62%, #5d6676);
+    box-shadow:
+        0 2px 0 #4e5666,
+        inset 0 2px 3px rgba(0, 0, 0, 0.45),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.35);
+}
+
+body.liff-fixed-ui .pp-gacha__knob:active {
+    transform: translateY(5px);
+}
+
+body.liff-fixed-ui .pp-gacha__knob:active .pp-gacha__knob-plate {
+    box-shadow:
+        0 4px 0 #5f6778,
+        0 8px 14px rgba(0, 0, 0, 0.28),
+        inset 0 3px 0 rgba(255, 255, 255, 0.9);
+}
+
+body.liff-fixed-ui .pp-gacha__knob:active .pp-gacha__knob-bar {
+    box-shadow:
+        0 1px 0 #5a6272,
+        inset 0 2px 0 rgba(255, 255, 255, 0.85);
+}
+
+body.liff-fixed-ui .pp-gacha__knob.is-spin {
+    animation: pp-knob-spin 0.85s cubic-bezier(0.3, 0.9, 0.4, 1);
+}
+
+body.liff-fixed-ui .pp-gacha__outlet {
+    position: relative;
+    z-index: 4;
+    width: 96px;
+    height: 28px;
+    margin: 0 auto;
+    padding-top: 0;
+    border-radius: 0 0 12px 12px;
+    background: #12050a;
+    box-shadow: inset 0 6px 12px rgba(0, 0, 0, 0.9);
+    overflow: visible;
+}
+
+body.liff-fixed-ui .pp-gacha__flap {
+    position: absolute;
+    left: 50%;
+    top: 6px;
+    z-index: 6;
+    display: block;
+    width: 72px;
+    height: 12px;
+    margin-left: -36px;
+    border-radius: 0 0 8px 8px;
+    background: linear-gradient(180deg, #6a2230, #1a070c);
     pointer-events: none;
 }
 
-body.ios-fixed-ui .pp-gacha__fall-half {
+/* 排出口内部でクリップ → 下のトレイへ（見えない所から出さない） */
+body.liff-fixed-ui .pp-gacha__chute {
+    position: absolute;
+    left: 50%;
+    top: 2px;
+    z-index: 3;
+    width: 48px;
+    height: 92px;
+    margin-left: -24px;
+    overflow: hidden;
+    pointer-events: none;
+    border-radius: 0 0 10px 10px;
+}
+
+body.liff-fixed-ui .pp-gacha__tray {
+    position: relative;
+    z-index: 2;
+    width: 120px;
+    height: 14px;
+    margin: 8px auto 0;
+    border-radius: 999px;
+    background:
+        linear-gradient(180deg, #d8dde8 0%, #aeb6c6 55%, #8e97a8 100%);
+    box-shadow:
+        0 4px 8px rgba(0, 0, 0, 0.18),
+        inset 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+
+body.liff-fixed-ui .pp-gacha__stand {
+    width: 168px;
+    height: 10px;
+    margin: 6px auto 0;
+    border-radius: 999px;
+    background: rgba(20, 20, 30, 0.14);
+    filter: blur(1.2px);
+}
+
+body.liff-fixed-ui .pp-gacha__fall {
+    position: absolute;
+    left: 50%;
+    top: -46px;
+    z-index: 1;
+    width: 42px;
+    height: 42px;
+    margin-left: -21px;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(0) rotate(0deg) scale(0.7);
+    transform-origin: 50% 50%;
+    filter: brightness(0.5);
+}
+
+body.liff-fixed-ui .pp-gacha__fall-half {
     position: absolute;
     left: 0;
-    width: 30px;
-    height: 15px;
+    width: 42px;
+    height: 21px;
     overflow: hidden;
 }
 
-body.ios-fixed-ui .pp-gacha__fall-half--top {
+body.liff-fixed-ui .pp-gacha__fall-half--top {
     top: 0;
-    border-radius: 15px 15px 0 0;
+    border-radius: 21px 21px 0 0;
 }
 
-body.ios-fixed-ui .pp-gacha__fall-half--bot {
+body.liff-fixed-ui .pp-gacha__fall-half--bot {
     bottom: 0;
-    border-radius: 0 0 15px 15px;
+    border-radius: 0 0 21px 21px;
 }
 
-body.ios-fixed-ui .pp-gacha__fall-half i {
+body.liff-fixed-ui .pp-gacha__fall-half i {
     display: block;
-    width: 30px;
-    height: 30px;
+    width: 42px;
+    height: 42px;
     border-radius: 50%;
     background:
-        radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.75), transparent 45%),
-        var(--cap-color, #ffb3c0);
+        radial-gradient(circle at 30% 26%, rgba(255, 255, 255, 0.95) 0 12%, transparent 34%),
+        linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.55) 0%,
+            rgba(248, 250, 255, 0.42) 36%,
+            rgba(220, 228, 245, 0.28) 47%,
+            rgba(170, 185, 215, 0.25) 49.4%,
+            var(--cap-color, #ff3b5c) 50.6%,
+            var(--cap-color, #ff3b5c) 74%,
+            color-mix(in srgb, var(--cap-color, #ff3b5c) 70%, #1a1020) 100%
+        );
+    box-shadow: inset 0 -6px 10px rgba(0, 0, 0, 0.16);
 }
 
-body.ios-fixed-ui .pp-gacha__fall-half--bot i {
-    margin-top: -15px;
+body.liff-fixed-ui .pp-gacha__fall-half--bot i {
+    margin-top: -21px;
 }
 
-body.ios-fixed-ui .pp-gacha__fall.is-drop {
-    animation: pp-cap-drop 1s cubic-bezier(0.45, 0, 0.3, 1) forwards;
+body.liff-fixed-ui .pp-gacha__fall.is-drop {
+    animation: pp-cap-exit 1.2s cubic-bezier(0.4, 0.05, 0.25, 1) forwards;
 }
 
-body.ios-fixed-ui .pp-gacha__fall.is-open .pp-gacha__fall-half--top {
-    animation: pp-cap-open-top 0.5s ease forwards;
+body.liff-fixed-ui .pp-gacha__fall.is-open .pp-gacha__fall-half--top {
+    animation: pp-cap-open-top 0.55s ease forwards;
 }
 
-body.ios-fixed-ui .pp-gacha__fall.is-open .pp-gacha__fall-half--bot {
-    animation: pp-cap-open-bot 0.5s ease forwards;
+body.liff-fixed-ui .pp-gacha__fall.is-open .pp-gacha__fall-half--bot {
+    animation: pp-cap-open-bot 0.55s ease forwards;
 }
 
 /* ===== 円形スクラッチ ===== */
-body.ios-fixed-ui .pp-scratch {
+body.liff-fixed-ui .pp-scratch {
     display: flex;
     flex-direction: column;
     align-items: center;
 }
 
-body.ios-fixed-ui .pp-scratch__circle {
+body.liff-fixed-ui .pp-scratch__circle {
     position: relative;
     width: min(220px, 68vw);
     aspect-ratio: 1;
@@ -2874,7 +3134,7 @@ body.ios-fixed-ui .pp-scratch__circle {
         0 12px 28px rgba(15, 28, 26, 0.14);
 }
 
-body.ios-fixed-ui .pp-scratch__prize {
+body.liff-fixed-ui .pp-scratch__prize {
     position: absolute;
     inset: 0;
     display: grid;
@@ -2885,7 +3145,7 @@ body.ios-fixed-ui .pp-scratch__prize {
     background: radial-gradient(circle at 40% 35%, #FFF8F0 0%, #fff 70%, #FFE7EB 100%);
 }
 
-body.ios-fixed-ui .pp-scratch__prize-eyebrow {
+body.liff-fixed-ui .pp-scratch__prize-eyebrow {
     margin: 0;
     font-size: 11px;
     font-weight: 800;
@@ -2893,7 +3153,7 @@ body.ios-fixed-ui .pp-scratch__prize-eyebrow {
     color: var(--pp-red);
 }
 
-body.ios-fixed-ui .pp-scratch__prize-name {
+body.liff-fixed-ui .pp-scratch__prize-name {
     margin: 0;
     font-size: 16px;
     font-weight: 800;
@@ -2901,14 +3161,14 @@ body.ios-fixed-ui .pp-scratch__prize-name {
     color: #1a1a1a;
 }
 
-body.ios-fixed-ui .pp-scratch__prize-desc {
+body.liff-fixed-ui .pp-scratch__prize-desc {
     margin: 0;
     font-size: 11.5px;
     line-height: 1.4;
     color: var(--ios-secondary);
 }
 
-body.ios-fixed-ui .pp-scratch__canvas {
+body.liff-fixed-ui .pp-scratch__canvas {
     position: absolute;
     inset: 0;
     width: 100%;
@@ -2918,7 +3178,7 @@ body.ios-fixed-ui .pp-scratch__canvas {
     cursor: pointer;
 }
 
-body.ios-fixed-ui .pp-scratch__shine {
+body.liff-fixed-ui .pp-scratch__shine {
     position: absolute;
     inset: 0;
     z-index: 3;
@@ -2927,7 +3187,7 @@ body.ios-fixed-ui .pp-scratch__shine {
     pointer-events: none;
 }
 
-body.ios-fixed-ui .pp-scratch__shine::before {
+body.liff-fixed-ui .pp-scratch__shine::before {
     content: "";
     position: absolute;
     top: -40%;
@@ -2938,11 +3198,11 @@ body.ios-fixed-ui .pp-scratch__shine::before {
     animation: pp-shine-sweep 3.2s ease-in-out infinite;
 }
 
-body.ios-fixed-ui .pp-scratch__shine[hidden] {
+body.liff-fixed-ui .pp-scratch__shine[hidden] {
     display: none;
 }
 
-body.ios-fixed-ui .pp-scratch__progress-row {
+body.liff-fixed-ui .pp-scratch__progress-row {
     display: flex;
     align-items: center;
     gap: 10px;
@@ -2950,7 +3210,7 @@ body.ios-fixed-ui .pp-scratch__progress-row {
     margin-top: 14px;
 }
 
-body.ios-fixed-ui .pp-scratch__track {
+body.liff-fixed-ui .pp-scratch__track {
     flex: 1;
     height: 7px;
     overflow: hidden;
@@ -2958,7 +3218,7 @@ body.ios-fixed-ui .pp-scratch__track {
     background: #EDEDF2;
 }
 
-body.ios-fixed-ui .pp-scratch__fill {
+body.liff-fixed-ui .pp-scratch__fill {
     height: 100%;
     width: 0%;
     border-radius: 999px;
@@ -2966,7 +3226,7 @@ body.ios-fixed-ui .pp-scratch__fill {
     transition: width 0.12s ease-out;
 }
 
-body.ios-fixed-ui .pp-scratch__pct {
+body.liff-fixed-ui .pp-scratch__pct {
     width: 36px;
     text-align: right;
     font-size: 11px;
@@ -2974,7 +3234,7 @@ body.ios-fixed-ui .pp-scratch__pct {
     color: var(--pp-red);
 }
 
-body.ios-fixed-ui .pp-scratch__hint {
+body.liff-fixed-ui .pp-scratch__hint {
     margin: 10px 0 0;
     font-size: 11.5px;
     color: var(--ios-secondary);
@@ -3032,6 +3292,22 @@ body.ios-fixed-ui .pp-scratch__hint {
     letter-spacing: 0.04em;
 }
 
+.pp-prize-modal__media {
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    margin: 0 0 14px;
+    border-radius: 14px;
+    overflow: hidden;
+    background: #f2f3f7;
+}
+
+.pp-prize-modal__media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
 .pp-prize-modal__name {
     margin: 0 0 6px;
     font-size: 18px;
@@ -3058,23 +3334,68 @@ body.ios-fixed-ui .pp-scratch__hint {
 }
 
 @keyframes pp-knob-spin {
-    to { transform: rotate(400deg); }
+    to { transform: rotate(420deg); }
 }
 
-@keyframes pp-cap-drop {
-    0% { opacity: 1; top: 128px; transform: translateX(-50%) rotate(0deg) scale(1); }
-    62% { top: 214px; transform: translateX(-50%) rotate(360deg) scale(1); }
-    72% { top: 222px; transform: translateX(-50%) rotate(370deg) scale(1.15, 0.78); }
-    84% { top: 210px; transform: translateX(-50%) rotate(375deg) scale(0.95, 1.05); }
-    100% { top: 214px; transform: translateX(-50%) rotate(378deg) scale(1); opacity: 1; }
+@keyframes pp-machine-shake {
+    0%, 100% { transform: rotate(0deg) translateX(0); }
+    15% { transform: rotate(-2.4deg) translateX(-2px); }
+    30% { transform: rotate(2.2deg) translateX(2px); }
+    45% { transform: rotate(-1.8deg) translateX(-1px); }
+    60% { transform: rotate(1.6deg) translateX(1px); }
+    75% { transform: rotate(-0.8deg); }
+}
+
+@keyframes pp-ball-tumble {
+    0%, 100% { transform: translateY(0) rotate(var(--ball-rot, 0deg)) scale(var(--ball-scale, 1)); }
+    25% { transform: translateY(-10px) rotate(calc(var(--ball-rot, 0deg) + 18deg)) scale(var(--ball-scale, 1)); }
+    50% { transform: translateY(5px) rotate(calc(var(--ball-rot, 0deg) - 14deg)) scale(var(--ball-scale, 1)); }
+    75% { transform: translateY(-6px) rotate(calc(var(--ball-rot, 0deg) + 10deg)) scale(var(--ball-scale, 1)); }
+}
+
+@keyframes pp-cap-exit {
+    /* 排出口内（クリップで非表示）→ 口から出てトレイへ着地 */
+    0% {
+        opacity: 1;
+        top: -44px;
+        transform: translateY(0) rotate(-10deg) scale(0.62);
+        filter: brightness(0.4);
+    }
+    30% {
+        opacity: 1;
+        top: -8px;
+        transform: translateY(0) rotate(100deg) scale(0.78);
+        filter: brightness(0.65);
+    }
+    52% {
+        top: 18px;
+        transform: translateY(0) rotate(220deg) scale(0.95);
+        filter: brightness(0.9);
+    }
+    68% {
+        top: 42px;
+        transform: translateY(0) rotate(310deg) scale(1.08, 0.78);
+        filter: brightness(1);
+    }
+    82% {
+        top: 34px;
+        transform: translateY(0) rotate(350deg) scale(0.94, 1.05);
+        filter: brightness(1);
+    }
+    100% {
+        opacity: 1;
+        top: 36px;
+        transform: translateY(0) rotate(368deg) scale(1);
+        filter: brightness(1);
+    }
 }
 
 @keyframes pp-cap-open-top {
-    to { transform: translateY(-16px) rotate(-25deg); opacity: 0; }
+    to { transform: translateY(-20px) rotate(-32deg); opacity: 0; }
 }
 
 @keyframes pp-cap-open-bot {
-    to { transform: translateY(16px) rotate(20deg); opacity: 0; }
+    to { transform: translateY(20px) rotate(28deg); opacity: 0; }
 }
 
 @keyframes pp-shine-sweep {
@@ -3089,7 +3410,7 @@ body.ios-fixed-ui .pp-scratch__hint {
 
 
 /* Design Lab 獲得クーポン */
-body.ios-fixed-ui .design-lab__won {
+body.liff-fixed-ui .design-lab__won {
     list-style: none;
     margin: 12px 0 10px;
     padding: 0;
@@ -3097,7 +3418,7 @@ body.ios-fixed-ui .design-lab__won {
     gap: 8px;
 }
 
-body.ios-fixed-ui .design-lab__won-empty {
+body.liff-fixed-ui .design-lab__won-empty {
     padding: 14px;
     border-radius: 12px;
     background: var(--ios-grouped);
@@ -3105,7 +3426,7 @@ body.ios-fixed-ui .design-lab__won-empty {
     font-size: 13px;
 }
 
-body.ios-fixed-ui .design-lab__won-item {
+body.liff-fixed-ui .design-lab__won-item {
     display: flex;
     align-items: center;
     gap: 10px;
@@ -3115,7 +3436,7 @@ body.ios-fixed-ui .design-lab__won-item {
     box-shadow: 0 4px 14px rgba(15, 28, 26, 0.05);
 }
 
-body.ios-fixed-ui .design-lab__won-badge {
+body.liff-fixed-ui .design-lab__won-badge {
     flex: 0 0 auto;
     padding: 3px 8px;
     border-radius: 999px;
@@ -3125,25 +3446,25 @@ body.ios-fixed-ui .design-lab__won-badge {
     font-weight: 700;
 }
 
-body.ios-fixed-ui .design-lab__won-name {
+body.liff-fixed-ui .design-lab__won-name {
     font-size: 14px;
     font-weight: 700;
     color: var(--ios-label);
 }
 
 /* LP風 会員証 UI */
-body.ios-fixed-ui .ios-wallet-member {
+body.liff-fixed-ui .ios-wallet-member {
     padding: 8px 16px calc(40px + var(--ios-tab-h) + env(safe-area-inset-bottom, 0px));
 }
 
-body.ios-fixed-ui .ios-wallet-member__hello {
+body.liff-fixed-ui .ios-wallet-member__hello {
     display: flex;
     align-items: center;
     gap: 12px;
     margin-bottom: 16px;
 }
 
-body.ios-fixed-ui .ios-wallet-member__avatar {
+body.liff-fixed-ui .ios-wallet-member__avatar {
     display: grid;
     place-items: center;
     width: 48px;
@@ -3156,20 +3477,20 @@ body.ios-fixed-ui .ios-wallet-member__avatar {
     font-weight: 800;
 }
 
-body.ios-fixed-ui .ios-wallet-member__hello-title {
+body.liff-fixed-ui .ios-wallet-member__hello-title {
     margin: 0;
     font-size: 20px;
     font-weight: 800;
     letter-spacing: -0.02em;
 }
 
-body.ios-fixed-ui .ios-wallet-member__hello-sub {
+body.liff-fixed-ui .ios-wallet-member__hello-sub {
     margin: 2px 0 0;
     font-size: 13px;
     color: var(--ios-secondary);
 }
 
-body.ios-fixed-ui .ios-wallet-member__edit {
+body.liff-fixed-ui .ios-wallet-member__edit {
     margin-left: auto;
     width: 36px;
     height: 36px;
@@ -3179,7 +3500,7 @@ body.ios-fixed-ui .ios-wallet-member__edit {
     color: var(--ios-tint);
 }
 
-body.ios-fixed-ui .ios-wallet-card {
+body.liff-fixed-ui .ios-wallet-card {
     border-radius: 22px;
     overflow: hidden;
     background: linear-gradient(160deg, #0F3D34 0%, #0E7C66 58%, #0A5C4C 100%);
@@ -3187,7 +3508,7 @@ body.ios-fixed-ui .ios-wallet-card {
     box-shadow: 0 18px 40px rgba(15, 61, 52, 0.24);
 }
 
-body.ios-fixed-ui .ios-wallet-card__top {
+body.liff-fixed-ui .ios-wallet-card__top {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
@@ -3195,13 +3516,13 @@ body.ios-fixed-ui .ios-wallet-card__top {
     padding: 18px 18px 8px;
 }
 
-body.ios-fixed-ui .ios-wallet-card__brand {
+body.liff-fixed-ui .ios-wallet-card__brand {
     display: flex;
     align-items: center;
     gap: 10px;
 }
 
-body.ios-fixed-ui .ios-wallet-card__logo {
+body.liff-fixed-ui .ios-wallet-card__logo {
     display: grid;
     place-items: center;
     width: 36px;
@@ -3212,20 +3533,20 @@ body.ios-fixed-ui .ios-wallet-card__logo {
     font-weight: 800;
 }
 
-body.ios-fixed-ui .ios-wallet-card__brand-name {
+body.liff-fixed-ui .ios-wallet-card__brand-name {
     margin: 0;
     font-size: 14px;
     font-weight: 700;
 }
 
-body.ios-fixed-ui .ios-wallet-card__brand-sub {
+body.liff-fixed-ui .ios-wallet-card__brand-sub {
     margin: 2px 0 0;
     font-size: 10px;
     letter-spacing: 0.08em;
     opacity: 0.75;
 }
 
-body.ios-fixed-ui .ios-wallet-card__tier {
+body.liff-fixed-ui .ios-wallet-card__tier {
     display: inline-flex;
     padding: 5px 10px;
     border-radius: 999px;
@@ -3235,17 +3556,17 @@ body.ios-fixed-ui .ios-wallet-card__tier {
     font-weight: 800;
 }
 
-body.ios-fixed-ui .ios-wallet-card__points {
+body.liff-fixed-ui .ios-wallet-card__points {
     padding: 8px 18px 4px;
 }
 
-body.ios-fixed-ui .ios-wallet-card__points-label {
+body.liff-fixed-ui .ios-wallet-card__points-label {
     margin: 0;
     font-size: 12px;
     opacity: 0.8;
 }
 
-body.ios-fixed-ui .ios-wallet-card__points-value {
+body.liff-fixed-ui .ios-wallet-card__points-value {
     margin: 4px 0 0;
     font-family: var(--ios-font-display);
     font-size: 34px;
@@ -3254,43 +3575,43 @@ body.ios-fixed-ui .ios-wallet-card__points-value {
     line-height: 1.1;
 }
 
-body.ios-fixed-ui .ios-wallet-card__points-value small {
+body.liff-fixed-ui .ios-wallet-card__points-value small {
     font-size: 14px;
     font-weight: 700;
 }
 
-body.ios-fixed-ui .ios-wallet-card__progress {
+body.liff-fixed-ui .ios-wallet-card__progress {
     padding: 10px 18px 14px;
 }
 
-body.ios-fixed-ui .ios-wallet-card__progress-bar {
+body.liff-fixed-ui .ios-wallet-card__progress-bar {
     height: 8px;
     border-radius: 999px;
     background: rgba(0, 0, 0, 0.25);
     overflow: hidden;
 }
 
-body.ios-fixed-ui .ios-wallet-card__progress-bar > span {
+body.liff-fixed-ui .ios-wallet-card__progress-bar > span {
     display: block;
     height: 100%;
     border-radius: inherit;
     background: linear-gradient(90deg, #7ED9C1, #E8FFF7);
 }
 
-body.ios-fixed-ui .ios-wallet-card__progress-text {
+body.liff-fixed-ui .ios-wallet-card__progress-text {
     margin: 8px 0 0;
     font-size: 12px;
     opacity: 0.85;
 }
 
-body.ios-fixed-ui .ios-wallet-card__scan {
+body.liff-fixed-ui .ios-wallet-card__scan {
     margin-top: 4px;
     padding: 14px 14px 16px;
     background: #fff;
     color: var(--ios-forest);
 }
 
-body.ios-fixed-ui .ios-wallet-card__scan-label {
+body.liff-fixed-ui .ios-wallet-card__scan-label {
     margin: 0 0 10px;
     text-align: center;
     font-size: 10px;
@@ -3299,20 +3620,20 @@ body.ios-fixed-ui .ios-wallet-card__scan-label {
     color: var(--ios-tint);
 }
 
-body.ios-fixed-ui .ios-wallet-card__code-wrap {
+body.liff-fixed-ui .ios-wallet-card__code-wrap {
     display: grid;
     place-items: center;
     min-height: 108px;
     width: 100%;
 }
 
-body.ios-fixed-ui .ios-wallet-card__barcode {
+body.liff-fixed-ui .ios-wallet-card__barcode {
     width: 100%;
     max-width: 100%;
     height: 96px;
 }
 
-body.ios-fixed-ui .ios-wallet-card__number {
+body.liff-fixed-ui .ios-wallet-card__number {
     margin: 10px 0 0;
     text-align: center;
     font-size: 14px;
@@ -3321,7 +3642,7 @@ body.ios-fixed-ui .ios-wallet-card__number {
     color: var(--ios-secondary);
 }
 
-body.ios-fixed-ui .ios-wallet-member__meta {
+body.liff-fixed-ui .ios-wallet-member__meta {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -3331,7 +3652,7 @@ body.ios-fixed-ui .ios-wallet-member__meta {
     color: var(--ios-secondary);
 }
 
-body.ios-fixed-ui .ios-wallet-member__enlarge {
+body.liff-fixed-ui .ios-wallet-member__enlarge {
     border: 0;
     background: transparent;
     color: var(--ios-tint);
@@ -3341,14 +3662,14 @@ body.ios-fixed-ui .ios-wallet-member__enlarge {
     cursor: pointer;
 }
 
-body.ios-fixed-ui .ios-wallet-member__quick {
+body.liff-fixed-ui .ios-wallet-member__quick {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 8px;
     margin-bottom: 18px;
 }
 
-body.ios-fixed-ui .ios-wallet-member__quick-item {
+body.liff-fixed-ui .ios-wallet-member__quick-item {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -3366,7 +3687,7 @@ body.ios-fixed-ui .ios-wallet-member__quick-item {
     cursor: pointer;
 }
 
-body.ios-fixed-ui .ios-wallet-member__quick-icon {
+body.liff-fixed-ui .ios-wallet-member__quick-icon {
     display: grid;
     place-items: center;
     width: 28px;
@@ -3377,7 +3698,7 @@ body.ios-fixed-ui .ios-wallet-member__quick-icon {
     font-size: 12px;
 }
 
-body.ios-fixed-ui .is-visually-hidden {
+body.liff-fixed-ui .is-visually-hidden {
     position: absolute !important;
     width: 1px !important;
     height: 1px !important;
@@ -3388,7 +3709,7 @@ body.ios-fixed-ui .is-visually-hidden {
     border: 0 !important;
 }
 
-body.ios-fixed-ui .design-lab__btn {
+body.liff-fixed-ui .design-lab__btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -3404,19 +3725,19 @@ body.ios-fixed-ui .design-lab__btn {
     cursor: pointer;
 }
 
-body.ios-fixed-ui .design-lab__btn:disabled {
+body.liff-fixed-ui .design-lab__btn:disabled {
     opacity: 0.55;
     cursor: default;
 }
 
-body.ios-fixed-ui .design-lab__btn--ghost {
+body.liff-fixed-ui .design-lab__btn--ghost {
     margin-top: 10px;
     background: transparent;
     color: var(--ios-tint);
     border: 1px solid rgba(14, 124, 102, 0.28);
 }
 
-body.ios-fixed-ui .design-lab__won {
+body.liff-fixed-ui .design-lab__won {
     list-style: none;
     margin: 12px 0 10px;
     padding: 0;
@@ -3424,7 +3745,7 @@ body.ios-fixed-ui .design-lab__won {
     gap: 8px;
 }
 
-body.ios-fixed-ui .design-lab__won-empty {
+body.liff-fixed-ui .design-lab__won-empty {
     padding: 14px;
     border-radius: 12px;
     background: var(--ios-grouped);
@@ -3432,7 +3753,7 @@ body.ios-fixed-ui .design-lab__won-empty {
     font-size: 13px;
 }
 
-body.ios-fixed-ui .design-lab__won-item {
+body.liff-fixed-ui .design-lab__won-item {
     display: flex;
     align-items: center;
     gap: 10px;
@@ -3442,7 +3763,7 @@ body.ios-fixed-ui .design-lab__won-item {
     box-shadow: 0 4px 14px rgba(15, 28, 26, 0.05);
 }
 
-body.ios-fixed-ui .design-lab__won-badge {
+body.liff-fixed-ui .design-lab__won-badge {
     flex: 0 0 auto;
     padding: 3px 8px;
     border-radius: 999px;
@@ -3452,48 +3773,48 @@ body.ios-fixed-ui .design-lab__won-badge {
     font-weight: 700;
 }
 
-body.ios-fixed-ui .design-lab__won-name {
+body.liff-fixed-ui .design-lab__won-name {
     font-size: 14px;
     font-weight: 700;
     color: var(--ios-label);
 }
 
 @media (max-width: 380px) {
-    body.ios-fixed-ui .lp-home-actions {
+    body.liff-fixed-ui .lp-home-actions {
         grid-template-columns: 1fr;
     }
 
-    body.ios-fixed-ui .lp-home-action {
+    body.liff-fixed-ui .lp-home-action {
         min-height: 0;
         flex-direction: row;
         align-items: center;
         gap: 12px;
     }
 
-    body.ios-fixed-ui .lp-home-action__en {
+    body.liff-fixed-ui .lp-home-action__en {
         margin-top: 0;
     }
 }
 
 @media (max-width: 380px) {
-    body.ios-fixed-ui .lp-home-actions {
+    body.liff-fixed-ui .lp-home-actions {
         grid-template-columns: 1fr;
     }
 
-    body.ios-fixed-ui .lp-home-action {
+    body.liff-fixed-ui .lp-home-action {
         min-height: 0;
         flex-direction: row;
         align-items: center;
         gap: 12px;
     }
 
-    body.ios-fixed-ui .lp-home-action__en {
+    body.liff-fixed-ui .lp-home-action__en {
         margin-top: 0;
     }
 }
 
 /* デモ: クーポン一覧からのガチャ／スクラッチ導線 */
-body.ios-fixed-ui .demo-play-entry {
+body.liff-fixed-ui .demo-play-entry {
     margin: 0 0 18px;
     padding: 16px;
     border-radius: 18px;
@@ -3503,7 +3824,7 @@ body.ios-fixed-ui .demo-play-entry {
     border: 1px solid rgba(14, 124, 102, 0.12);
 }
 
-body.ios-fixed-ui .demo-play-entry__eyebrow {
+body.liff-fixed-ui .demo-play-entry__eyebrow {
     margin: 0 0 4px;
     font-size: 11px;
     font-weight: 800;
@@ -3511,28 +3832,28 @@ body.ios-fixed-ui .demo-play-entry__eyebrow {
     color: #ff0033;
 }
 
-body.ios-fixed-ui .demo-play-entry__title {
+body.liff-fixed-ui .demo-play-entry__title {
     margin: 0;
     font-size: 18px;
     font-weight: 800;
     color: var(--ios-label);
 }
 
-body.ios-fixed-ui .demo-play-entry__sub {
+body.liff-fixed-ui .demo-play-entry__sub {
     margin: 4px 0 0;
     font-size: 13px;
     line-height: 1.4;
     color: var(--ios-secondary);
 }
 
-body.ios-fixed-ui .demo-play-entry__actions {
+body.liff-fixed-ui .demo-play-entry__actions {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 10px;
     margin-top: 14px;
 }
 
-body.ios-fixed-ui .demo-play-entry__btn {
+body.liff-fixed-ui .demo-play-entry__btn {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -3545,29 +3866,29 @@ body.ios-fixed-ui .demo-play-entry__btn {
     cursor: pointer;
 }
 
-body.ios-fixed-ui .demo-play-entry__btn--gacha {
+body.liff-fixed-ui .demo-play-entry__btn--gacha {
     background: linear-gradient(160deg, #ff4d6d, #d6002a);
     color: #fff;
     box-shadow: 0 8px 18px rgba(214, 0, 42, 0.28);
 }
 
-body.ios-fixed-ui .demo-play-entry__btn--scratch {
+body.liff-fixed-ui .demo-play-entry__btn--scratch {
     background: linear-gradient(160deg, #2aa88a, #0e7c66);
     color: #fff;
     box-shadow: 0 8px 18px rgba(14, 124, 102, 0.24);
 }
 
-body.ios-fixed-ui .demo-play-entry__btn-label {
+body.liff-fixed-ui .demo-play-entry__btn-label {
     font-size: 15px;
     font-weight: 800;
 }
 
-body.ios-fixed-ui .demo-play-entry__btn-hint {
+body.liff-fixed-ui .demo-play-entry__btn-hint {
     font-size: 11px;
     opacity: 0.88;
 }
 
-body.ios-fixed-ui .ios-coupon__chip--play {
+body.liff-fixed-ui .ios-coupon__chip--play {
     background: rgba(255, 0, 51, 0.92) !important;
     color: #fff !important;
 }
