@@ -25,6 +25,7 @@ class LotteryController extends AdminBaseController
             'coupons' => $view->coupons,
             'grantTriggerOptions' => $view->grantTriggerOptions,
             'rewardTypeOptions' => $view->rewardTypeOptions,
+            'stats' => $view->stats,
         ]);
     }
 

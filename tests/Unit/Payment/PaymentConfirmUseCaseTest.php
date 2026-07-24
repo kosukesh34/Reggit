@@ -13,6 +13,7 @@ use App\Models\Order;
 use App\Models\Project;
 use App\Models\User;
 use App\Services\OrderNumberAssigner;
+use App\Services\OrderService;
 use App\Support\DailySequenceNumber;
 use App\UseCases\Payment\PaymentConfirmUseCase;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -71,6 +72,7 @@ class PaymentConfirmUseCaseTest extends TestCase
             app(OrderRepository::class),
             $dispatcher,
             app(OrderNumberAssigner::class),
+            app(OrderService::class),
         );
         $result = $useCase->handle('pi_test_123', $order->id, 1);
 
@@ -132,6 +134,7 @@ class PaymentConfirmUseCaseTest extends TestCase
             app(OrderRepository::class),
             $dispatcher,
             app(OrderNumberAssigner::class),
+            app(OrderService::class),
         );
         $result = $useCase->handle('pi_test_123', $order->id, 1);
 
@@ -166,6 +169,7 @@ class PaymentConfirmUseCaseTest extends TestCase
             app(OrderRepository::class),
             app(DomainEventDispatcher::class),
             app(OrderNumberAssigner::class),
+            app(OrderService::class),
         );
         $result = $useCase->handle('pi_test_123', $order->id, 1);
 
@@ -199,6 +203,7 @@ class PaymentConfirmUseCaseTest extends TestCase
             app(OrderRepository::class),
             app(DomainEventDispatcher::class),
             app(OrderNumberAssigner::class),
+            app(OrderService::class),
         );
 
         $this->expectException(ModelNotFoundException::class);
@@ -215,6 +220,7 @@ class PaymentConfirmUseCaseTest extends TestCase
             app(OrderRepository::class),
             app(DomainEventDispatcher::class),
             app(OrderNumberAssigner::class),
+            app(OrderService::class),
         );
 
         $this->expectException(ModelNotFoundException::class);

@@ -13,7 +13,19 @@ import {
 
 const CAPSULE_COLORS = ['#FF6F91', '#FFC93C', '#7B9BFF', '#5FD3B4', '#FF9A5A', '#B98CE0'];
 
-type Prize = { coupon_name: string; description: string; image_url?: string };
+type Prize = {
+    coupon_name: string;
+    description: string;
+    image_url?: string;
+    is_win?: boolean;
+    entitlement_id?: number;
+};
+
+type PlayResult = {
+    is_win: boolean;
+    entitlement_id: number;
+    coupon: { id: number; name: string; description: string | null; image_url: string | null } | null;
+};
 
 type LotteryEntitlement = {
     id: number;
@@ -663,8 +675,8 @@ export class DesignLabManager {
         if (isDemoDataMode()) {
             const prizeIndex = Number(prizeEl.dataset.prizeIndex);
             prize = (Number.isInteger(prizeIndex) && prizeIndex >= 0 && prizeIndex < DEMO_COUPON_PRIZES.length)
-                ? DEMO_COUPON_PRIZES[prizeIndex]
-                : DEMO_COUPON_PRIZES[0];
+                ? { ...DEMO_COUPON_PRIZES[prizeIndex], is_win: true }
+                : { ...DEMO_COUPON_PRIZES[0], is_win: true };
             saveDemoWonCoupon(prize, 'scratch');
         } else {
             const pending = this._pending('scratch');
@@ -686,37 +698,74 @@ export class DesignLabManager {
                 this._applyAvailability(container);
                 return;
             }
-            prize = {
-                coupon_name: result.coupon.name,
-                description: result.coupon.description || '',
-                image_url: result.coupon.image_url || undefined,
-            };
+            prize = result.is_win && result.coupon !== null
+                ? {
+                    coupon_name: result.coupon.name,
+                    description: result.coupon.description || '',
+                    image_url: result.coupon.image_url || undefined,
+                    is_win: true,
+                    entitlement_id: result.entitlement_id,
+                }
+                : {
+                    coupon_name: 'ハズレ',
+                    description: '残念！またチャレンジしてください',
+                    is_win: false,
+                    entitlement_id: result.entitlement_id,
+                };
         }
 
         const nameEl = container.querySelector('#designScratchName') as HTMLElement | null;
         const descEl = container.querySelector('#designScratchDesc') as HTMLElement | null;
         const eyebrow = container.querySelector('#designScratchEyebrow') as HTMLElement | null;
+        const prizeRoot = container.querySelector('#designScratchPrize') as HTMLElement | null;
+        const isWin = prize?.is_win !== false;
+        if (prizeRoot !== null) {
+            prizeRoot.classList.toggle('is-lose', !isWin);
+        }
         if (eyebrow !== null) {
-            eyebrow.hidden = false;
+            eyebrow.hidden = isWin ? false : true;
+            eyebrow.textContent = 'あたり';
         }
         if (nameEl !== null && prize !== null) {
-            nameEl.textContent = prize.coupon_name;
+            nameEl.textContent = isWin ? prize.coupon_name : 'ハズレ';
         }
         if (descEl !== null && prize !== null) {
-            descEl.textContent = prize.description;
+            descEl.textContent = isWin ? prize.description : (prize.description || '残念！またチャレンジしてください');
         }
-        if (prize !== null) {
-            ToastManager.success(`${prize.coupon_name} を獲得しました`);
+        if (hint !== null) {
+            hint.textContent = isWin ? 'クーポンを獲得しました' : 'ハズレでした';
+        }
+        if (prize !== null && isWin) {
             this._refreshWonList(container);
-            this._notifyCouponsUpdated(prize.coupon_name);
+            // スクラッチは結果が見えたタイミングで通知
+            void this._notifyLotteryWinAndToast(prize).finally(() => {
+                this._navigateAfterWin();
+            });
         }
         this._applyAvailability(container);
     }
-    private _notifyCouponsUpdated(name: string): void {
+    private _notifyCouponsUpdated(name: string, silent = false): void {
         const manager = (window.app as any)?.couponsManager;
         if (manager !== undefined && typeof manager.onCouponReceived === 'function') {
-            manager.onCouponReceived({ message: `${name} を獲得しました`, silent: false });
+            manager.onCouponReceived({ message: `${name} を獲得しました`, silent });
         }
+    }
+
+    private async _notifyLotteryWinAndToast(prize: Prize): Promise<void> {
+        if (prize.entitlement_id !== undefined && !isDemoDataMode()) {
+            try {
+                await this.apiClient.post(
+                    AppConstants.API_ENDPOINTS.MEMBERS_LOTTERY_NOTIFY_WIN(prize.entitlement_id),
+                    {},
+                );
+            } catch (error: any) {
+                this._lotteryLog('notify_win_error', {
+                    entitlementId: prize.entitlement_id,
+                    message: error?.message || 'unknown',
+                });
+            }
+        }
+        this._notifyCouponsUpdated(prize.coupon_name, true);
     }
 
     private _resetScratch(container: HTMLElement): void {
@@ -740,6 +789,10 @@ export class DesignLabManager {
         const hint = container.querySelector('#designScratchHint') as HTMLElement | null;
         if (hint !== null) {
             hint.textContent = '円の中をこすってください';
+        }
+        const prizeRoot = container.querySelector('#designScratchPrize') as HTMLElement | null;
+        if (prizeRoot !== null) {
+            prizeRoot.classList.remove('is-lose');
         }
         this._initScratch(container);
     }
@@ -780,17 +833,26 @@ export class DesignLabManager {
 
         let prize: Prize | null = null;
         if (isDemoDataMode()) {
-            prize = pickRandomPrize();
+            prize = { ...pickRandomPrize(), is_win: true };
         } else {
             const pending = this._pending('gacha');
             if (pending !== null) {
                 const result = await this._playEntitlement(pending.id);
                 if (result !== null) {
-                    prize = {
-                        coupon_name: result.coupon.name,
-                        description: result.coupon.description || '',
-                        image_url: result.coupon.image_url || undefined,
-                    };
+                    prize = result.is_win && result.coupon !== null
+                        ? {
+                            coupon_name: result.coupon.name,
+                            description: result.coupon.description || '',
+                            image_url: result.coupon.image_url || undefined,
+                            is_win: true,
+                            entitlement_id: result.entitlement_id,
+                        }
+                        : {
+                            coupon_name: 'ハズレ',
+                            description: '残念！またチャレンジしてください',
+                            is_win: false,
+                            entitlement_id: result.entitlement_id,
+                        };
                 }
             }
         }
@@ -803,13 +865,15 @@ export class DesignLabManager {
             machine?.classList.remove('is-shake');
             fall.classList.remove('is-drop', 'is-open');
             if (prize !== null) {
-                if (isDemoDataMode()) {
+                const isWin = prize.is_win !== false;
+                if (isDemoDataMode() && isWin) {
                     saveDemoWonCoupon(prize as (typeof DEMO_COUPON_PRIZES)[number], 'gacha');
                 }
+                // 結果モーダル表示。通知・トーストは自動クローズ時に送る（当たる前にバレないように）
                 this._showPrizeModal(prize);
-                this._refreshWonList(container);
-                this._notifyCouponsUpdated(prize.coupon_name);
-                ToastManager.success(`${prize.coupon_name} を獲得しました`);
+                if (isWin) {
+                    this._refreshWonList(container);
+                }
             }
             this._applyAvailability(container);
             if (isDemoDataMode()) {
@@ -818,18 +882,13 @@ export class DesignLabManager {
             } else if (this._pending('gacha') === null) {
                 btn.disabled = true;
                 btn.textContent = '権利がありません';
-                if (document.getElementById('ppGachaPopup') !== null) {
-                    window.setTimeout(() => this.closeGachaPopup(), 1800);
-                }
             } else {
                 btn.disabled = false;
                 btn.textContent = 'レバーを回す';
             }
         }, 1850);
     }
-    private async _playEntitlement(id: number): Promise<{
-        coupon: { id: number; name: string; description: string | null; image_url: string | null };
-    } | null> {
+    private async _playEntitlement(id: number): Promise<PlayResult | null> {
         if (this._playInFlight) {
             return null;
         }
@@ -841,23 +900,41 @@ export class DesignLabManager {
                 success?: boolean;
                 data?: {
                     success?: boolean;
-                    data?: { coupon?: { id: number; name: string; description: string | null; image_url: string | null } };
-                    coupon?: { id: number; name: string; description: string | null; image_url: string | null };
+                    data?: {
+                        entitlement_id?: number;
+                        is_win?: boolean;
+                        coupon?: { id: number; name: string; description: string | null; image_url: string | null } | null;
+                    };
+                    entitlement_id?: number;
+                    is_win?: boolean;
+                    coupon?: { id: number; name: string; description: string | null; image_url: string | null } | null;
                     message?: string;
                 };
                 message?: string;
             } : null;
             const nested = outer?.data;
-            const coupon = nested?.coupon ?? nested?.data?.coupon;
-            if (outer?.success !== true || coupon === undefined) {
+            const payload = nested?.data ?? nested;
+            const coupon = payload?.coupon ?? null;
+            const isWin = payload?.is_win !== false && coupon !== null;
+            if (outer?.success !== true || payload === undefined) {
                 const message = nested?.message || outer?.message || 'プレイに失敗しました';
                 this._lotteryLog('play_failed', { id, message });
                 ToastManager.error(message);
                 return null;
             }
+            if (isWin && (coupon === null || coupon === undefined)) {
+                const message = nested?.message || outer?.message || 'プレイに失敗しました';
+                this._lotteryLog('play_failed', { id, message: 'missing_coupon' });
+                ToastManager.error(message);
+                return null;
+            }
             await this._fetchState();
-            this._lotteryLog('play_ok', { id, couponName: coupon.name });
-            return { coupon };
+            this._lotteryLog('play_ok', { id, isWin, couponName: coupon?.name ?? null });
+            return {
+                is_win: isWin,
+                entitlement_id: payload?.entitlement_id ?? id,
+                coupon: isWin ? coupon : null,
+            };
         } catch (error: any) {
             this._lotteryLog('play_error', { id, message: error?.message || 'unknown' });
             ToastManager.error(error?.message || 'プレイに失敗しました');
@@ -867,37 +944,57 @@ export class DesignLabManager {
         }
     }
 
+    private _navigateAfterWin(): void {
+        this.closeGachaPopup();
+        const app = window.app as { switchTab?: (tab: string) => void } | undefined;
+        if (app !== undefined && typeof app.switchTab === 'function') {
+            app.switchTab(AppConstants.TABS.COUPONS);
+        }
+    }
+
     private _showPrizeModal(prize: Prize): void {
         document.getElementById('designPrizeModal')?.remove();
+        const isWin = prize.is_win !== false;
         const overlay = document.createElement('div');
         overlay.id = 'designPrizeModal';
-        overlay.className = 'pp-prize-modal';
+        overlay.className = isWin ? 'pp-prize-modal' : 'pp-prize-modal pp-prize-modal--lose';
         overlay.setAttribute('role', 'dialog');
         overlay.setAttribute('aria-modal', 'true');
-        overlay.setAttribute('aria-label', '当選結果');
+        overlay.setAttribute('aria-label', isWin ? '当選結果' : 'ハズレ');
+        // 中央のリボン＋名称のみ（下の説明・ボタン・トーストは出さない）
         overlay.innerHTML = `
             <div class="pp-prize-modal__backdrop" data-prize-close></div>
-            <div class="pp-prize-modal__panel">
-                <span class="pp-prize-modal__ribbon">あたり</span>
-                <p class="pp-prize-modal__name">${DomHelper.escapeHtml(prize.coupon_name)}</p>
-                <p class="pp-prize-modal__desc">${DomHelper.escapeHtml(prize.description)}</p>
-                <button type="button" class="pp-cta" data-prize-close>受け取る</button>
-                <p class="pp-prize-modal__sub">獲得したクーポンは一覧に保存されます</p>
+            <div class="pp-prize-modal__panel" data-prize-close>
+                <span class="pp-prize-modal__ribbon${isWin ? '' : ' pp-prize-modal__ribbon--lose'}">${isWin ? 'あたり' : 'ハズレ'}</span>
+                <p class="pp-prize-modal__name${isWin ? '' : ' pp-prize-modal__name--lose'}">${DomHelper.escapeHtml(isWin ? prize.coupon_name : 'ハズレ')}</p>
             </div>
         `;
-        const close = () => {
+        let finished = false;
+        const finish = () => {
+            if (finished) {
+                return;
+            }
+            finished = true;
             overlay.classList.add('is-out');
             window.setTimeout(() => overlay.remove(), 220);
+            if (isWin) {
+                void this._notifyLotteryWinAndToast(prize).finally(() => {
+                    this._navigateAfterWin();
+                });
+            } else {
+                this.closeGachaPopup();
+            }
         };
         overlay.addEventListener('click', (event) => {
             const t = event.target as HTMLElement | null;
             if (t !== null && t.closest('[data-prize-close]')) {
-                close();
+                finish();
             }
         });
         document.body.appendChild(overlay);
         void overlay.offsetWidth;
         overlay.classList.add('is-in');
+        window.setTimeout(finish, 2800);
     }
 
     private _refreshWonList(container: HTMLElement): void {

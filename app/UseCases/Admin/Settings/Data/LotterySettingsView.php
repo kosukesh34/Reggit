@@ -5,6 +5,7 @@ namespace App\UseCases\Admin\Settings\Data;
 use App\Models\Coupon;
 use App\Models\LotteryPrize;
 use App\Models\Settings\ProjectLotterySetting;
+use App\Services\Admin\Data\LotteryStatsData;
 use Illuminate\Support\Collection;
 
 /** 管理画面 ガチャ・スクラッチ設定 表示用 */
@@ -22,5 +23,6 @@ class LotterySettingsView
         public Collection $coupons,
         public array $grantTriggerOptions,
         public array $rewardTypeOptions,
+        public LotteryStatsData $stats,
     ) {}
 }

@@ -19,9 +19,12 @@ use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
 use App\Enums\LotterySourceType;
 use App\Enums\MemberVisitSource;
+use App\Enums\OrderStatus;
 use App\Enums\OrderType;
 use App\Enums\PaymentMethod;
 use App\Enums\PointTransactionType;
+use App\Models\MemberStampTransaction;
+use App\Models\MemberVisit;
 use App\Models\Order;
 use App\Models\User;
 use App\Services\Admin\MemberAdminService;
@@ -95,10 +98,15 @@ class OrderService
                 $order->refresh();
             }
             $this->updateProductStock($orderItems, $projectId);
-            $this->applyOrderPointChanges($user, $order, $pointsUsed, $finalAmount);
-            $this->recordMemberVisit($user, $order);
-            $this->awardStamps($user, $order, $finalAmount);
-            $this->awardLotteryEntitlements($user, $order, $finalAmount);
+            if ($paymentMethod === PaymentMethod::STRIPE) {
+                // 決済前はポイント消費のみ。獲得・来店・スタンプ・ガチャは決済確定後
+                $this->consumePointsForOrder($user, $order, $pointsUsed);
+            } else {
+                $this->applyOrderPointChanges($user, $order, $pointsUsed, $finalAmount);
+                $this->recordMemberVisit($user, $order);
+                $this->awardStamps($user, $order, $finalAmount);
+                $this->awardLotteryEntitlements($user, $order, $finalAmount);
+            }
 
             DB::commit();
         } catch (\Exception $e) {
@@ -122,6 +130,50 @@ class OrderService
         }
 
         return $order->load('items.product');
+    }
+
+    /**
+     * Stripe 決済確定後の付与（冪等）。ポイント獲得・来店・スタンプ・ガチャ権利。
+     */
+    public function applyStripePaymentRewardsIfNeeded(Order $order): void
+    {
+        if ($order->payment_method !== PaymentMethod::STRIPE) {
+            return;
+        }
+        if ($order->status === OrderStatus::PENDING || $order->status === OrderStatus::CANCELLED) {
+            return;
+        }
+
+        $order->loadMissing('user.member');
+        $user = $order->user;
+        if ($user === null) {
+            return;
+        }
+
+        $finalAmount = (float) $order->total_amount;
+        if ((int) $order->points_earned <= 0) {
+            $this->awardPoints($user, $order, $finalAmount);
+            $order->refresh();
+        }
+
+        $projectId = (int) $order->project_id;
+        $hasVisit = MemberVisit::query()
+            ->where('project_id', $projectId)
+            ->where('order_id', (int) $order->id)
+            ->exists();
+        if ($hasVisit === false) {
+            $this->recordMemberVisit($user, $order);
+        }
+
+        $hasStamp = MemberStampTransaction::query()
+            ->where('project_id', $projectId)
+            ->where('order_id', (int) $order->id)
+            ->exists();
+        if ($hasStamp === false) {
+            $this->awardStamps($user, $order, $finalAmount);
+        }
+
+        $this->awardLotteryEntitlements($user, $order, $finalAmount);
     }
 
     /**
