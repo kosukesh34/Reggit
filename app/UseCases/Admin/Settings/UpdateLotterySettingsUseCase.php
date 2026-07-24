@@ -19,7 +19,7 @@ class UpdateLotterySettingsUseCase
      *     grant_trigger: string,
      *     min_amount: float|null,
      *     entitlement_expires_hours: int|null,
-     *     prizes: list<array{reward_type: string, coupon_id: int, probability: int, sort_order?: int}>
+     *     prizes: list<array{reward_type: string, coupon_id: int|null, is_lose: bool, probability: int, sort_order?: int}>
      * }  $validated
      */
     public function handle(int $projectId, array $validated): void

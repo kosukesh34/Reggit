@@ -2,19 +2,21 @@
 
 namespace Tests\Unit\Payment;
 
-use App\Domain\Order\Events\OrderPointsSyncRequested;
-use App\Domain\Order\Events\OrderTransactionSyncRequested;
 use App\Domain\Order\Repositories\OrderRepository;
 use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
+use App\Jobs\SyncOrderPointsToSmaregiJob;
+use App\Jobs\SyncOrderTransactionToSmaregiJob;
 use App\Models\Order;
 use App\Models\Project;
 use App\Models\User;
 use App\Services\OrderNumberAssigner;
+use App\Services\OrderService;
 use App\Support\DailySequenceNumber;
 use App\UseCases\Payment\PaymentWebhookUseCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
 use Tests\Support\FakePaymentGateway;
 use Tests\TestCase;
 
@@ -24,6 +26,8 @@ class PaymentWebhookUseCaseTest extends TestCase
 
     public function test_handle_決済成功で注文を確定すること(): void
     {
+        Queue::fake();
+
         Project::firstOrCreate(
             ['project_key' => 'default'],
             ['name' => 'Default Project', 'description' => 'Test', 'is_active' => true]
@@ -51,6 +55,7 @@ class PaymentWebhookUseCaseTest extends TestCase
             app(OrderRepository::class),
             app(DomainEventDispatcher::class),
             app(OrderNumberAssigner::class),
+            app(OrderService::class),
         );
         $result = $useCase->handle('{}', 'sig', 'secret');
 
@@ -61,10 +66,14 @@ class PaymentWebhookUseCaseTest extends TestCase
             DailySequenceNumber::build(1),
             $fresh->order_number
         );
+        Queue::assertPushed(SyncOrderTransactionToSmaregiJob::class);
+        Queue::assertPushed(SyncOrderPointsToSmaregiJob::class);
     }
 
     public function test_handle_対象外注文は成功扱いのままスキップすること(): void
     {
+        Queue::fake();
+
         Project::firstOrCreate(
             ['project_key' => 'default'],
             ['name' => 'Default Project', 'description' => 'Test', 'is_active' => true]
@@ -92,15 +101,19 @@ class PaymentWebhookUseCaseTest extends TestCase
             app(OrderRepository::class),
             app(DomainEventDispatcher::class),
             app(OrderNumberAssigner::class),
+            app(OrderService::class),
         );
         $result = $useCase->handle('{}', 'sig', 'secret');
 
         $this->assertTrue($result);
         $this->assertSame(OrderStatus::PENDING, $order->fresh()->status);
+        Queue::assertNothingPushed();
     }
 
-    public function test_handle_既に確定済みなら再確定しても成功すること(): void
+    public function test_handle_既に確定済みなら遅延同期ジョブを積むこと(): void
     {
+        Queue::fake();
+
         Project::firstOrCreate(
             ['project_key' => 'default'],
             ['name' => 'Default Project', 'description' => 'Test', 'is_active' => true]
@@ -125,28 +138,28 @@ class PaymentWebhookUseCaseTest extends TestCase
         ];
 
         $dispatcher = \Mockery::mock(DomainEventDispatcher::class);
-        $dispatcher->shouldReceive('dispatch')
-            ->once()
-            ->with(\Mockery::type(OrderPointsSyncRequested::class));
-        $dispatcher->shouldReceive('dispatch')
-            ->once()
-            ->with(\Mockery::type(OrderTransactionSyncRequested::class));
+        $dispatcher->shouldNotReceive('dispatch');
 
         $useCase = new PaymentWebhookUseCase(
             $gateway,
             app(OrderRepository::class),
             $dispatcher,
             app(OrderNumberAssigner::class),
+            app(OrderService::class),
         );
         $result = $useCase->handle('{}', 'sig', 'secret');
 
         $this->assertTrue($result);
         $this->assertSame(OrderStatus::CONFIRMED, $order->fresh()->status);
         $this->assertSame(DailySequenceNumber::build(1), $order->fresh()->order_number);
+        Queue::assertPushed(SyncOrderTransactionToSmaregiJob::class);
+        Queue::assertPushed(SyncOrderPointsToSmaregiJob::class);
     }
 
     public function test_handle_進行中注文はステータスを上書きしないこと(): void
     {
+        Queue::fake();
+
         Project::firstOrCreate(
             ['project_key' => 'default'],
             ['name' => 'Default Project', 'description' => 'Test', 'is_active' => true]
@@ -175,6 +188,7 @@ class PaymentWebhookUseCaseTest extends TestCase
             app(OrderRepository::class),
             app(DomainEventDispatcher::class),
             app(OrderNumberAssigner::class),
+            app(OrderService::class),
         );
         $result = $useCase->handle('{}', 'sig', 'secret');
 

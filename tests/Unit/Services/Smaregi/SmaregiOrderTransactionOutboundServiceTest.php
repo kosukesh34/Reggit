@@ -340,4 +340,56 @@ class SmaregiOrderTransactionOutboundServiceTest extends TestCase
         ));
         Queue::assertPushed(SyncOrderTransactionToSmaregiJob::class);
     }
+
+    public function test_stripe未決済は取引登録しないこと(): void
+    {
+        $project = Project::factory()->create();
+        ShopSetting::setValue('smaregi_contract_id', 'contract-1', 'string', (int) $project->id);
+        ShopSetting::setValue('smaregi_store_id', '10', 'string', (int) $project->id);
+        ShopSetting::setValue('smaregi_terminal_id', '20', 'string', (int) $project->id);
+        $user = User::factory()->create(['project_id' => $project->id]);
+        Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+            'smaregi_customer_id' => '259',
+        ]);
+        $product = Product::factory()->create([
+            'project_id' => $project->id,
+            'smaregi_product_id' => '8000205',
+        ]);
+        $order = Order::create([
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+            'total_amount' => 1500,
+            'status' => OrderStatus::PENDING,
+            'payment_method' => PaymentMethod::STRIPE,
+            'points_used' => 0,
+            'points_earned' => 0,
+            'order_type' => OrderType::MOBILE,
+        ]);
+        OrderItem::create([
+            'order_id' => $order->id,
+            'product_id' => $product->id,
+            'quantity' => 1,
+            'price' => 1500,
+        ]);
+
+        $smaregiApi = Mockery::mock(SmaregiApiService::class);
+        $smaregiApi->shouldReceive('getContractIdForProject')->andReturn('contract-1');
+        $smaregiApi->shouldNotReceive('createTransaction');
+        $smaregiApi->shouldNotReceive('createLayaway');
+
+        $service = new SmaregiOrderTransactionOutboundService(
+            app(OrderRepository::class),
+            app(MemberRepository::class),
+            $smaregiApi,
+        );
+
+        $this->assertTrue($service->syncOrderTransaction(
+            (int) $order->id,
+            (int) $project->id,
+            (int) $user->id,
+        ));
+        $this->assertNull($order->fresh()->smaregi_transaction_head_id);
+    }
 }

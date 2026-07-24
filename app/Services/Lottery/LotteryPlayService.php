@@ -2,6 +2,7 @@
 
 namespace App\Services\Lottery;
 
+use App\Jobs\SendCouponIssuedNotificationJob;
 use App\Models\Coupon;
 use App\Models\LotteryPrize;
 use App\Models\Member;
@@ -9,6 +10,7 @@ use App\Models\MemberLotteryEntitlement;
 use App\Models\Settings\ProjectLotterySetting;
 use App\Services\CouponIssueService;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
@@ -62,8 +64,9 @@ class LotteryPlayService
      * @return array{
      *     entitlement_id: int,
      *     reward_type: string,
-     *     coupon: array{id: int, name: string, description: string|null, image_url: string|null},
-     *     member_coupon_id: int
+     *     is_win: bool,
+     *     coupon: array{id: int, name: string, description: string|null, image_url: string|null}|null,
+     *     member_coupon_id: int|null
      * }
      */
     public function play(Member $member, int $entitlementId): array
@@ -88,6 +91,23 @@ class LotteryPlayService
             }
 
             $prize = $this->drawPrize((int) $member->project_id, (string) $entitlement->reward_type);
+            $entitlement->is_done = true;
+            $entitlement->done_at = now();
+
+            if ($prize->isLose()) {
+                $entitlement->won_coupon_id = null;
+                $entitlement->member_coupon_id = null;
+                $entitlement->save();
+
+                return [
+                    'entitlement_id' => (int) $entitlement->id,
+                    'reward_type' => (string) $entitlement->reward_type,
+                    'is_win' => false,
+                    'coupon' => null,
+                    'member_coupon_id' => null,
+                ];
+            }
+
             $coupon = Coupon::query()
                 ->where('project_id', (int) $member->project_id)
                 ->where('id', (int) $prize->coupon_id)
@@ -97,7 +117,8 @@ class LotteryPlayService
                 throw new RuntimeException('景品クーポンが見つかりません', 422);
             }
 
-            $this->couponIssueService->issueManualCoupon($member, $coupon);
+            // 演出完了後にフロントから通知する（発行直後のプッシュだと結果前にバレる）
+            $this->couponIssueService->issueManualCoupon($member, $coupon, false);
             $memberCoupon = $member->memberCoupons()
                 ->where('coupon_id', (int) $coupon->id)
                 ->orderByDesc('id')
@@ -106,8 +127,6 @@ class LotteryPlayService
                 throw new RuntimeException('クーポンの発行に失敗しました', 500);
             }
 
-            $entitlement->is_done = true;
-            $entitlement->done_at = now();
             $entitlement->won_coupon_id = (int) $coupon->id;
             $entitlement->member_coupon_id = (int) $memberCoupon->id;
             $entitlement->save();
@@ -115,6 +134,7 @@ class LotteryPlayService
             return [
                 'entitlement_id' => (int) $entitlement->id,
                 'reward_type' => (string) $entitlement->reward_type,
+                'is_win' => true,
                 'coupon' => [
                     'id' => (int) $coupon->id,
                     'name' => (string) $coupon->name,
@@ -124,6 +144,32 @@ class LotteryPlayService
                 'member_coupon_id' => (int) $memberCoupon->id,
             ];
         });
+    }
+
+    /**
+     * ガチャ／スクラッチ結果開示後に当選通知を送る（二重送信は抑止）
+     */
+    public function notifyWin(Member $member, int $entitlementId): void
+    {
+        $entitlement = MemberLotteryEntitlement::query()
+            ->where('project_id', (int) $member->project_id)
+            ->where('member_id', (int) $member->id)
+            ->where('id', $entitlementId)
+            ->first();
+
+        if ($entitlement === null || $entitlement->is_done !== true) {
+            throw new RuntimeException('通知対象がありません', 404);
+        }
+        if ($entitlement->member_coupon_id === null) {
+            return;
+        }
+
+        $cacheKey = 'lottery_win_notified:'.(int) $entitlement->id;
+        if (! Cache::add($cacheKey, 1, now()->addDay())) {
+            return;
+        }
+
+        SendCouponIssuedNotificationJob::dispatch((int) $entitlement->member_coupon_id);
     }
 
     private function drawPrize(int $projectId, string $rewardType): LotteryPrize
@@ -168,7 +214,13 @@ class LotteryPlayService
             ->where('is_active', true)
             ->orderBy('sort_order')
             ->get()
-            ->map(fn (LotteryPrize $prize) => (string) ($prize->coupon->name ?? ''))
+            ->map(function (LotteryPrize $prize) {
+                if ($prize->isLose()) {
+                    return 'ハズレ';
+                }
+
+                return (string) ($prize->coupon->name ?? '');
+            })
             ->filter(fn (string $name) => $name !== '')
             ->values()
             ->all();

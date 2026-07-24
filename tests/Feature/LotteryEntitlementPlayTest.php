@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\LotteryGrantTrigger;
 use App\Enums\LotteryRewardType;
 use App\Enums\LotterySourceType;
+use App\Jobs\SendCouponIssuedNotificationJob;
 use App\Models\Coupon;
 use App\Models\LotteryPrize;
 use App\Models\Member;
@@ -16,6 +17,7 @@ use App\Models\User;
 use App\Services\Lottery\LotteryEntitlementService;
 use App\Services\Lottery\LotteryPlayService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 class LotteryEntitlementPlayTest extends TestCase
@@ -152,11 +154,126 @@ class LotteryEntitlementPlayTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJsonPath('success', true)
+            ->assertJsonPath('data.is_win', true)
             ->assertJsonPath('data.coupon.name', 'ガチャ当選クーポン');
 
         $entitlement->refresh();
         $this->assertTrue($entitlement->is_done);
         $this->assertSame(1, MemberCoupon::query()->where('member_id', $member->id)->count());
+    }
+
+    public function test_play_ではクーポン通知ジョブを即時投入しないこと(): void
+    {
+        Queue::fake();
+
+        $project = $this->createProject();
+        $user = User::factory()->create([
+            'line_user_id' => self::LINE_USER_ID,
+            'project_id' => $project->id,
+        ]);
+        $member = Member::factory()->create(['user_id' => $user->id, 'project_id' => $project->id]);
+        $coupon = Coupon::factory()->create([
+            'project_id' => $project->id,
+            'is_active' => true,
+            'name' => '通知テストクーポン',
+        ]);
+        $this->enableGacha($project, $coupon);
+        $entitlement = MemberLotteryEntitlement::query()->create([
+            'project_id' => $project->id,
+            'member_id' => $member->id,
+            'reward_type' => LotteryRewardType::GACHA,
+            'source_type' => LotterySourceType::ORDER,
+            'source_id' => 'notify-play',
+            'is_done' => false,
+        ]);
+
+        $this->withHeaders(['X-Line-User-Id' => self::LINE_USER_ID])
+            ->post('/api/members/me/lottery/'.$entitlement->id.'/play?project_key=default')
+            ->assertStatus(200);
+
+        Queue::assertNotPushed(SendCouponIssuedNotificationJob::class);
+    }
+
+    public function test_notify_win_でクーポン通知ジョブが投入されること(): void
+    {
+        Queue::fake();
+
+        $project = $this->createProject();
+        $user = User::factory()->create([
+            'line_user_id' => self::LINE_USER_ID,
+            'project_id' => $project->id,
+        ]);
+        $member = Member::factory()->create(['user_id' => $user->id, 'project_id' => $project->id]);
+        $coupon = Coupon::factory()->create(['project_id' => $project->id, 'is_active' => true]);
+        $this->enableGacha($project, $coupon);
+        $entitlement = MemberLotteryEntitlement::query()->create([
+            'project_id' => $project->id,
+            'member_id' => $member->id,
+            'reward_type' => LotteryRewardType::GACHA,
+            'source_type' => LotterySourceType::ORDER,
+            'source_id' => 'notify-win',
+            'is_done' => false,
+        ]);
+        resolve(LotteryPlayService::class)->play($member, (int) $entitlement->id);
+        $entitlement->refresh();
+
+        $response = $this->withHeaders(['X-Line-User-Id' => self::LINE_USER_ID])
+            ->post('/api/members/me/lottery/'.$entitlement->id.'/notify-win?project_key=default');
+
+        $response->assertStatus(200)->assertJsonPath('success', true);
+        Queue::assertPushed(SendCouponIssuedNotificationJob::class, function (SendCouponIssuedNotificationJob $job) use ($entitlement) {
+            return $job->memberCouponId === (int) $entitlement->member_coupon_id;
+        });
+    }
+
+    public function test_play_ハズレはクーポン発行せずis_win_falseになること(): void
+    {
+        $project = $this->createProject();
+        $user = User::factory()->create([
+            'line_user_id' => self::LINE_USER_ID,
+            'project_id' => $project->id,
+        ]);
+        $member = Member::factory()->create(['user_id' => $user->id, 'project_id' => $project->id]);
+        ProjectLotterySetting::query()->updateOrCreate(
+            ['project_id' => $project->id],
+            [
+                'gacha_enabled' => true,
+                'scratch_enabled' => false,
+                'grant_trigger' => LotteryGrantTrigger::EVERY_PURCHASE,
+                'min_amount' => null,
+                'entitlement_expires_hours' => null,
+            ]
+        );
+        LotteryPrize::query()->create([
+            'project_id' => $project->id,
+            'reward_type' => LotteryRewardType::GACHA,
+            'coupon_id' => null,
+            'is_lose' => true,
+            'probability' => 100,
+            'sort_order' => 0,
+            'is_active' => true,
+        ]);
+        $entitlement = MemberLotteryEntitlement::query()->create([
+            'project_id' => $project->id,
+            'member_id' => $member->id,
+            'reward_type' => LotteryRewardType::GACHA,
+            'source_type' => LotterySourceType::ORDER,
+            'source_id' => 'lose-1',
+            'is_done' => false,
+        ]);
+
+        $response = $this->withHeaders(['X-Line-User-Id' => self::LINE_USER_ID])
+            ->post('/api/members/me/lottery/'.$entitlement->id.'/play?project_key=default');
+
+        $response->assertStatus(200)
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.is_win', false)
+            ->assertJsonPath('data.coupon', null);
+
+        $entitlement->refresh();
+        $this->assertTrue($entitlement->is_done);
+        $this->assertNull($entitlement->member_coupon_id);
+        $this->assertSame(0, MemberCoupon::query()->where('member_id', $member->id)->count());
     }
 
     public function test_play_二重プレイは409になること(): void
@@ -207,6 +324,69 @@ class LotteryEntitlementPlayTest extends TestCase
         );
 
         $this->assertSame(0, MemberLotteryEntitlement::query()->where('member_id', $member->id)->count());
+    }
+
+    public function test_revoke_当選済み未使用クーポンを回収すること(): void
+    {
+        $project = $this->createProject();
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $member = Member::factory()->create(['user_id' => $user->id, 'project_id' => $project->id]);
+        $coupon = Coupon::factory()->create(['project_id' => $project->id, 'is_active' => true]);
+        $this->enableGacha($project, $coupon);
+        $entitlement = MemberLotteryEntitlement::query()->create([
+            'project_id' => $project->id,
+            'member_id' => $member->id,
+            'reward_type' => LotteryRewardType::GACHA,
+            'source_type' => LotterySourceType::ORDER,
+            'source_id' => 'cancel-win',
+            'is_done' => false,
+        ]);
+        resolve(LotteryPlayService::class)->play($member, (int) $entitlement->id);
+        $this->assertSame(1, MemberCoupon::query()->where('member_id', $member->id)->count());
+
+        resolve(LotteryEntitlementService::class)->revokePendingForSource(
+            $member,
+            LotterySourceType::ORDER,
+            'cancel-win',
+        );
+
+        $this->assertSame(0, MemberCoupon::query()->where('member_id', $member->id)->count());
+        $entitlement->refresh();
+        $this->assertTrue($entitlement->is_done);
+        $this->assertNull($entitlement->member_coupon_id);
+    }
+
+    public function test_revoke_使用済みクーポンは回収しないこと(): void
+    {
+        $project = $this->createProject();
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $member = Member::factory()->create(['user_id' => $user->id, 'project_id' => $project->id]);
+        $coupon = Coupon::factory()->create(['project_id' => $project->id, 'is_active' => true]);
+        $this->enableGacha($project, $coupon);
+        $entitlement = MemberLotteryEntitlement::query()->create([
+            'project_id' => $project->id,
+            'member_id' => $member->id,
+            'reward_type' => LotteryRewardType::GACHA,
+            'source_type' => LotterySourceType::ORDER,
+            'source_id' => 'cancel-used',
+            'is_done' => false,
+        ]);
+        resolve(LotteryPlayService::class)->play($member, (int) $entitlement->id);
+        $memberCoupon = MemberCoupon::query()->where('member_id', $member->id)->first();
+        $this->assertNotNull($memberCoupon);
+        $memberCoupon->status = MemberCoupon::STATUS_USED;
+        $memberCoupon->used_at = now();
+        $memberCoupon->save();
+
+        resolve(LotteryEntitlementService::class)->revokePendingForSource(
+            $member,
+            LotterySourceType::ORDER,
+            'cancel-used',
+        );
+
+        $this->assertSame(1, MemberCoupon::query()->where('member_id', $member->id)->count());
+        $entitlement->refresh();
+        $this->assertSame((int) $memberCoupon->id, (int) $entitlement->member_coupon_id);
     }
 
     public function test_wallet_summaryを取得できること(): void

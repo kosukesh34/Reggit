@@ -23,6 +23,7 @@ class GetLotterySettingsUseCase
             $data->coupons,
             LotteryGrantTrigger::getValues(),
             LotteryRewardType::getValues(),
+            $data->stats,
         );
     }
 }
