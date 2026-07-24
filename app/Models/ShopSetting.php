@@ -66,6 +66,8 @@ class ShopSetting
         'feature_announcements_enabled' => ProjectFeatureFlags::class,
         'feature_payments_enabled' => ProjectFeatureFlags::class,
         'feature_gallery_enabled' => ProjectFeatureFlags::class,
+        'feature_gacha_enabled' => ProjectFeatureFlags::class,
+        'feature_scratch_enabled' => ProjectFeatureFlags::class,
         'admin_sidebar_color' => ProjectAdminUiSetting::class,
         'admin_header_color' => ProjectAdminUiSetting::class,
         'admin_primary_color' => ProjectAdminUiSetting::class,
@@ -332,6 +334,8 @@ class ShopSetting
         'feature_announcements_enabled' => true,
         'feature_payments_enabled' => true,
         'feature_gallery_enabled' => true,
+        'feature_gacha_enabled' => false,
+        'feature_scratch_enabled' => false,
     ];
 
     /** 機能フラグの表示名（静的デフォルト。動的ラベルは featureFlagLabels() を使う） */
@@ -346,6 +350,8 @@ class ShopSetting
         'feature_announcements_enabled' => 'お知らせ',
         'feature_payments_enabled' => '決済（Stripe等）',
         'feature_gallery_enabled' => 'ギャラリー',
+        'feature_gacha_enabled' => 'ガチャ',
+        'feature_scratch_enabled' => 'スクラッチ',
     ];
 
     /** config/native_app.php を反映した機能フラグ表示名 */
