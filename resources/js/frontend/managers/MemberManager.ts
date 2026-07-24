@@ -38,6 +38,11 @@ export class MemberManager {
     _appleWalletOpenUrlAt?: number;
     _appleWalletPassDownloadUrl?: string | null;
     _appleWalletPassDownloadUrlAt?: number;
+    _walletSummaryTimer: ReturnType<typeof setInterval> | null = null;
+    _walletSummaryLast: { points: number; stamps_total: number; pending_lottery_count: number } | null = null;
+    _walletVisibilityBound = false;
+    /** 同一の pending 件数では自動ポップアップを繰り返さない */
+    _gachaPopupOpenedForPendingCount: number | null = null;
 
     constructor(apiClient: any, orderManager: any) {
         this.apiClient = apiClient;
@@ -494,6 +499,9 @@ export class MemberManager {
             this._lastMemberFetchWasNonMember = payload.is_member !== true;
             this._setMemberContextCache(payload, fetchLineUserId);
             this._syncLineUserIdFromMemberData(result.data);
+            if (payload.is_member === true) {
+                this.startWalletSummaryPolling();
+            }
             return payload;
         })();
 
@@ -1053,9 +1061,14 @@ export class MemberManager {
         const container = this.getContainer();
         if (!container) return;
         if (!data || typeof data !== 'object') return;
+        this.startWalletSummaryPolling();
 
         if (isFixedUiShell()) {
             this._renderIosWalletMember(container, data);
+            this._renderLotteryCta(container, this._walletSummaryLast?.pending_lottery_count ?? 0);
+            this._maybeOpenGachaPopupForPending(
+                this._walletSummaryLast?.pending_lottery_count ?? 0,
+            );
             return;
         }
 
@@ -1277,6 +1290,39 @@ export class MemberManager {
         this._setupPointHistoryToggle();
         this._setupRankHistoryToggle();
         this._setupWithdrawButton();
+        this._renderLotteryCta(container, this._walletSummaryLast?.pending_lottery_count ?? 0);
+        this._maybeOpenGachaPopupForPending(
+            this._walletSummaryLast?.pending_lottery_count ?? 0,
+        );
+    }
+
+    /**
+     * 未消化のガチャ権利があるときだけポップアップを開く。
+     * 同一 pending 件数では重複表示しない（取引更新で件数が増えたら再度開く）。
+     */
+    _maybeOpenGachaPopupForPending(pendingCount: number): void {
+        if (pendingCount <= 0) {
+            this._gachaPopupOpenedForPendingCount = null;
+            return;
+        }
+        if (this._gachaPopupOpenedForPendingCount === pendingCount) {
+            return;
+        }
+        const designLab = (window.app as any)?.designLabManager;
+        if (designLab === undefined || typeof designLab.openGachaPopup !== 'function') {
+            return;
+        }
+        this._gachaPopupOpenedForPendingCount = pendingCount;
+        window.setTimeout(() => {
+            void designLab.openGachaPopup().then((opened: unknown) => {
+                // openGachaPopup が権利なし等で表示しなかった場合は再試行できるようにする
+                if (opened === false) {
+                    this._gachaPopupOpenedForPendingCount = null;
+                }
+            }).catch(() => {
+                this._gachaPopupOpenedForPendingCount = null;
+            });
+        }, 300);
     }
 
     /** 固定UI向け: LP会員証スクショ相当のウォレット型レイアウト */
@@ -3079,5 +3125,129 @@ export class MemberManager {
             }
         });
         return payload;
+    }
+
+    startWalletSummaryPolling(): void {
+        if (isDemoDataMode()) {
+            return;
+        }
+        this.stopWalletSummaryPolling();
+        void this._pollWalletSummary();
+        // 会計直後の付与をすぐ拾うため短間隔（軽量 API）
+        this._walletSummaryTimer = window.setInterval(() => {
+            void this._pollWalletSummary();
+        }, 2000);
+        if (!this._walletVisibilityBound && typeof document !== 'undefined') {
+            this._walletVisibilityBound = true;
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'hidden') {
+                    this.stopWalletSummaryPolling();
+                    return;
+                }
+                this.startWalletSummaryPolling();
+            });
+        }
+    }
+
+    stopWalletSummaryPolling(): void {
+        if (this._walletSummaryTimer !== null) {
+            window.clearInterval(this._walletSummaryTimer);
+            this._walletSummaryTimer = null;
+        }
+    }
+
+    async _pollWalletSummary(): Promise<void> {
+        try {
+            const summary = await this.apiClient.get(AppConstants.API_ENDPOINTS.MEMBERS_WALLET_SUMMARY);
+            // wallet-summary も apiClient 経由なら data 包みの可能性あり
+            const raw = summary && typeof summary === 'object' && 'data' in summary
+                ? (summary as { data?: Record<string, unknown> }).data
+                : null;
+            const src = raw !== null && typeof raw === 'object' ? raw : summary;
+            const normalized = {
+                points: Number((src as any)?.points ?? 0),
+                stamps_total: Number((src as any)?.stamps_total ?? 0),
+                pending_lottery_count: Number((src as any)?.pending_lottery_count ?? 0),
+            };
+            const prev = this._walletSummaryLast;
+            this._walletSummaryLast = normalized;
+            if (prev !== null
+                && prev.points === normalized.points
+                && prev.stamps_total === normalized.stamps_total
+                && prev.pending_lottery_count === normalized.pending_lottery_count) {
+                return;
+            }
+
+            // eslint-disable-next-line no-console
+            console.info('[LotteryUI]', 'wallet_summary_changed', {
+                prev,
+                next: normalized,
+                ts: Date.now(),
+            });
+            if (typeof window.__clientDebugLog === 'function') {
+                window.__clientDebugLog('lottery_ui_wallet_summary_changed', {
+                    prev,
+                    next: normalized,
+                });
+            }
+
+            const pointsChanged = prev === null || prev.points !== normalized.points;
+            const lotteryIncreased = prev !== null
+                && normalized.pending_lottery_count > prev.pending_lottery_count;
+            const hasPendingOnFirstPoll = prev === null
+                && normalized.pending_lottery_count > 0;
+
+            if (this.memberData !== null && pointsChanged) {
+                this.memberData.points = normalized.points;
+                if ((window.app as any)?.currentTab === AppConstants.TABS.MEMBER) {
+                    this.render(this.memberData);
+                }
+            }
+
+            const container = this.getContainer();
+            if (container !== null && (window.app as any)?.currentTab === AppConstants.TABS.MEMBER) {
+                this._renderLotteryCta(container, normalized.pending_lottery_count);
+            }
+
+            if (lotteryIncreased) {
+                ToastManager.success('ガチャの権利が付与されました');
+            }
+            if (lotteryIncreased || hasPendingOnFirstPoll) {
+                this._maybeOpenGachaPopupForPending(normalized.pending_lottery_count);
+            }
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : 'unknown';
+            // eslint-disable-next-line no-console
+            console.warn('[LotteryUI]', 'wallet_summary_error', { message });
+        }
+    }
+
+    _renderLotteryCta(container: Element, pendingCount: number): void {
+        const existing = container.querySelector('.member-lottery-cta');
+        if (pendingCount <= 0) {
+            existing?.remove();
+            return;
+        }
+        const html = `
+            <div class="member-lottery-cta">
+                <p class="member-lottery-cta__text">プレイできる権利が ${pendingCount} 件あります</p>
+                <button type="button" class="pp-cta" data-open-lottery>ガチャを開く</button>
+            </div>
+        `;
+        if (existing !== null) {
+            existing.outerHTML = html;
+        } else {
+            container.insertAdjacentHTML('beforeend', html);
+        }
+        container.querySelector('[data-open-lottery]')?.addEventListener('click', () => {
+            const designLab = (window.app as any)?.designLabManager;
+            if (designLab !== undefined && typeof designLab.openGachaPopup === 'function') {
+                void designLab.openGachaPopup();
+                return;
+            }
+            if (typeof (window.app as any)?.switchTab === 'function') {
+                (window.app as any).switchTab('designlab');
+            }
+        });
     }
 }

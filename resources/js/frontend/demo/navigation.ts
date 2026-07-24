@@ -17,6 +17,8 @@ const FLAG = {
     member: 'feature_members_enabled',
     gallery: 'feature_gallery_enabled',
     announcements: 'feature_announcements_enabled',
+    gacha: 'feature_gacha_enabled',
+    scratch: 'feature_scratch_enabled',
 } as const;
 
 /** 旧タブ → 下部タブのグループ */
@@ -27,6 +29,7 @@ export const TAB_TO_PRIMARY: Record<string, PrimaryTab> = {
     stamps: 'member',
     coupons: 'member',
     member: 'member',
+    designlab: 'member',
     queue: 'queue',
     reservations: 'queue',
     gallery: 'home',
@@ -46,6 +49,8 @@ export function readFeatureFlags(): FeatureFlags {
             feature_members_enabled: true,
             feature_gallery_enabled: true,
             feature_announcements_enabled: true,
+            feature_gacha_enabled: true,
+            feature_scratch_enabled: true,
         };
     }
     const flags = window.__FEATURE_FLAGS__;
@@ -112,6 +117,9 @@ export function buildCardSegments(flags?: FeatureFlags): SegmentItem[] {
     }
     if (isFeatureEnabled('coupons', source)) {
         items.push({ tab: 'coupons', label: 'クーポン' });
+    }
+    if (isFeatureEnabled('gacha', source) || isFeatureEnabled('scratch', source) || isDemoDataMode()) {
+        items.push({ tab: 'designlab', label: 'あそび' });
     }
     return items;
 }
