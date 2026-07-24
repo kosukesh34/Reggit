@@ -4,6 +4,19 @@
         'logoUrl' => $frontendLogoUrl ?? null,
         'friendAddUrl' => $lineFriendAddUrl ?? null,
     ];
+    $isDemoFixedUi = isset($isFixedUi) && $isFixedUi === true;
+    $scriptLiffBuilder = $isDemoFixedUi ? [] : ($liffBuilderBlocks ?? []);
+    $scriptLiffTabLayouts = $isDemoFixedUi ? [] : ($liffTabLayouts ?? []);
+    $scriptLiffDetailLayouts = $isDemoFixedUi ? [] : ($liffDetailLayouts ?? []);
+    $scriptLiffTabSettings = $isDemoFixedUi ? [] : ($liffTabSettings ?? []);
+    $scriptFrontendMenu = $isDemoFixedUi
+        ? [
+            ['tab' => 'home', 'label' => 'ホーム', 'icon' => 'fa-house'],
+            ['tab' => 'products', 'label' => 'オーダー', 'icon' => 'fa-utensils'],
+            ['tab' => 'member', 'label' => 'カード', 'icon' => 'fa-id-card'],
+            ['tab' => 'queue', 'label' => '来店', 'icon' => 'fa-list-ol'],
+        ]
+        : array_values($filteredMenu ?? []);
 @endphp
 <meta name="stripe-key" content="{{ env('STRIPE_KEY', '') }}">
 <script>
@@ -18,14 +31,14 @@
     window.__GOOGLE_WALLET_ADD_BUTTON_IMAGE__ = "/images/add-to-google-wallet-logo.png";
     window.__ORDER_MODE__ = @json($orderMode ?? \App\Models\ShopSetting::ORDER_MODE_BOTH);
     window.__LINE_FRIEND_ADD_URL__ = @json($lineFriendAddUrl ?? '');
-    window.__LIFF_BUILDER__ = @json($liffBuilderBlocks ?? []);
-    window.__LIFF_TAB_LAYOUTS__ = @json($liffTabLayouts ?? []);
-    window.__LIFF_DETAIL_LAYOUTS__ = @json($liffDetailLayouts ?? []);
-    window.__LIFF_TAB_SETTINGS__ = @json($liffTabSettings ?? []);
+    window.__LIFF_BUILDER__ = @json($scriptLiffBuilder);
+    window.__LIFF_TAB_LAYOUTS__ = @json($scriptLiffTabLayouts);
+    window.__LIFF_DETAIL_LAYOUTS__ = @json($scriptLiffDetailLayouts);
+    window.__LIFF_TAB_SETTINGS__ = @json($scriptLiffTabSettings);
     window.__FEATURE_FLAGS__ = @json($featureFlags ?? []);
     window.__QUEUE_REQUIRE_MEMBERSHIP__ = {{ ($queueRequireMembership ?? false) ? 'true' : 'false' }};
     window.__MEMBER_REGISTRATION_MODE__ = @json($memberRegistrationMode ?? \App\Enums\MemberRegistrationMode::OPTIONAL);
-    window.__FRONTEND_MENU__ = @json(array_values($filteredMenu ?? []));
+    window.__FRONTEND_MENU__ = @json($scriptFrontendMenu);
     window.__FRONTEND_HEADER__ = @json($frontendHeaderConfig);
     window.__IS_DESIGNER_EMBED_PREVIEW__ = {{ ($isDesignerEmbedPreview ?? false) ? 'true' : 'false' }};
     window.__DESIGNER_PREVIEW_MEMBER_PAYLOAD__ = @json($designerPreviewMemberPayload ?? null);
