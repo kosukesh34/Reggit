@@ -1,4 +1,7 @@
-/* テーマ: コンテンツ幅 */
+/* テーマ: コンテンツ幅
+ * edge / comfy / narrow は「端末内」の余白感（実機では幅に追従）。
+ * PC（768px〜）のみスマホ枠（--liff-phone-max）で中央プレビューする。
+ */
 
 body.content-width-edge .app-container {
     max-width: 100%;
@@ -13,29 +16,37 @@ body.content-width-narrow .app-container {
 }
 
 @media (min-width: 768px) {
-    body.content-width-edge:not(.native-app-embed):not(.designer-live-preview-embed) .app-container {
-        max-width: 100%;
-        border-left: none;
-        border-right: none;
-        box-shadow: none;
-    }
-
+    body.content-width-edge:not(.native-app-embed):not(.designer-live-preview-embed) .app-container,
     body.content-width-comfy:not(.native-app-embed):not(.designer-live-preview-embed) .app-container,
     body.content-width-narrow:not(.native-app-embed):not(.designer-live-preview-embed) .app-container {
+        max-width: var(--liff-phone-max, 430px);
         border-left: 1px solid var(--hairline);
         border-right: 1px solid var(--hairline);
         box-shadow: var(--shadow-xl);
     }
 
+    body.content-width-edge:not(.native-app-embed):not(.designer-live-preview-embed) .main-tabs,
     body.content-width-comfy:not(.native-app-embed):not(.designer-live-preview-embed) .main-tabs,
     body.content-width-narrow:not(.native-app-embed):not(.designer-live-preview-embed) .main-tabs {
-        max-width: var(--content-max-width, 440px);
+        max-width: var(--liff-phone-max, 430px);
         width: 100%;
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%);
+    }
+
+    body.tab-style-floating:not(.native-app-embed):not(.designer-live-preview-embed) .main-tabs {
+        width: calc(var(--liff-phone-max, 430px) - 28px);
+        max-width: calc(var(--liff-phone-max, 430px) - 28px);
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%);
     }
 
     /* floating 以外だけ下部密着。floating は 09-tabs-sections.css の余白・角丸を維持する */
     body.content-width-comfy:not(.native-app-embed):not(.designer-live-preview-embed):not(.tab-style-floating) .main-tabs,
-    body.content-width-narrow:not(.native-app-embed):not(.designer-live-preview-embed):not(.tab-style-floating) .main-tabs {
+    body.content-width-narrow:not(.native-app-embed):not(.designer-live-preview-embed):not(.tab-style-floating) .main-tabs,
+    body.content-width-edge:not(.native-app-embed):not(.designer-live-preview-embed):not(.tab-style-floating) .main-tabs {
         margin: 0;
         bottom: 0;
     }

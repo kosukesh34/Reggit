@@ -15,9 +15,9 @@
     box-shadow: -16px 0 48px rgba(28, 25, 23, 0.16);
 }
 
-@media (min-width: 429px) {
-    .cart-sidebar {
-        max-width: 420px;
+@media (min-width: 768px) {
+    body:not(.native-app-embed):not(.designer-live-preview-embed) .cart-sidebar {
+        max-width: var(--liff-phone-max, 430px);
     }
 }
 
