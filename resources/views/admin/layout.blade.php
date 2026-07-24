@@ -203,9 +203,13 @@
                 @if($adminUser === null || $adminUser->hasPermission('gallery.view'))
                 <div class="nav-group">
                     <div class="nav-group-label">ギャラリー</div>
-                    <a href="{{ admin_route('admin.gallery.categories') }}" class="nav-item {{ request()->routeIs('admin.gallery*') && !request()->routeIs('admin.settings.gallery*') ? 'active' : '' }}">
+                    <a href="{{ admin_route('admin.gallery.items') }}" class="nav-item {{ request()->routeIs('admin.gallery.items*') ? 'active' : '' }}">
                         <i class="fas fa-images"></i>
-                        <span>ギャラリー</span>
+                        <span>画像一覧</span>
+                    </a>
+                    <a href="{{ admin_route('admin.gallery.categories') }}" class="nav-item nav-item--sub {{ request()->routeIs('admin.gallery.categories*') ? 'active' : '' }}">
+                        <i class="fas fa-tags"></i>
+                        <span>カテゴリ</span>
                     </a>
                     <a href="{{ admin_route('admin.settings.gallery') }}" class="nav-item nav-item--sub {{ request()->routeIs('admin.settings.gallery*') ? 'active' : '' }}">
                         <i class="fas fa-cog"></i>
