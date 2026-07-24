@@ -65,6 +65,82 @@ export function buildBuiltinSampleStampCards(): Array<{
     ];
 }
 
+export function buildBuiltinSampleGallery(): {
+    categories: Array<{ id: number; name: string }>;
+    items: Array<{
+        id: number;
+        category_id: number;
+        title: string;
+        description: string;
+        image_url: string;
+        size: string;
+        is_sample_preview: true;
+    }>;
+} {
+    return {
+        categories: [
+            { id: 1, name: 'メニュー' },
+            { id: 2, name: '店内' },
+        ],
+        items: [
+            {
+                id: 1,
+                category_id: 1,
+                title: 'アイスラテ',
+                description: 'なめらかなエスプレッソとミルク',
+                image_url: '/images/liff/menu-iced-latte.jpg',
+                size: 'large',
+                is_sample_preview: true,
+            },
+            {
+                id: 2,
+                category_id: 1,
+                title: 'カプチーノ',
+                description: 'ふわふわフォームの定番',
+                image_url: '/images/liff/menu-cappuccino.jpg',
+                size: 'medium',
+                is_sample_preview: true,
+            },
+            {
+                id: 3,
+                category_id: 1,
+                title: '抹茶ラテ',
+                description: 'ほろ苦い抹茶とミルク',
+                image_url: '/images/liff/menu-matcha.jpg',
+                size: 'medium',
+                is_sample_preview: true,
+            },
+            {
+                id: 4,
+                category_id: 1,
+                title: 'アボカドトースト',
+                description: '朝の軽食にぴったり',
+                image_url: '/images/liff/menu-avocado-toast.jpg',
+                size: 'medium',
+                is_sample_preview: true,
+            },
+            {
+                id: 5,
+                category_id: 2,
+                title: '店内の雰囲気',
+                description: '落ち着いて過ごせる空間',
+                image_url: '/images/liff/home-hero.jpg',
+                size: 'large',
+                is_sample_preview: true,
+            },
+            {
+                id: 6,
+                category_id: 1,
+                title: 'チーズケーキ',
+                description: '本日のデザート',
+                image_url: '/images/liff/menu-cheesecake.jpg',
+                size: 'small',
+                is_sample_preview: true,
+            },
+        ],
+    };
+}
+
 export function buildBuiltinSampleQueueEntry(): {
     id: string;
     formatted_queue_number: string;
