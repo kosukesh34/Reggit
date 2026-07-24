@@ -89,7 +89,7 @@ class LotteryOrderGrantTimingTest extends TestCase
         ]);
     }
 
-    public function test_Stripe注文の作成時点ではガチャ権利を付与しないこと(): void
+    public function test_stripe注文の作成時点ではガチャ権利を付与しないこと(): void
     {
         $project = $this->createProject();
         $this->enableGacha($project);
@@ -156,7 +156,7 @@ class LotteryOrderGrantTimingTest extends TestCase
         ]);
     }
 
-    public function test_Stripe決済確定後にガチャ権利が付与されること(): void
+    public function test_stripe決済確定後にガチャ権利が付与されること(): void
     {
         $project = $this->createProject();
         $this->enableGacha($project);
