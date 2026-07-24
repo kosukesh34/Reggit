@@ -4,7 +4,7 @@ import type { ApiClient } from '../../shared/utils/apiClient';
 import { ConfirmDialog } from '../../shared/utils/confirmDialog';
 import { mountDetailLayoutChrome } from '../utils/detailLayoutMount';
 import { applyDemoCouponUsageState, isDemoCouponId, markDemoCouponUsed, readDemoWonCoupons } from '../demo/demoCoupons';
-import { isIosFixedUiDemo } from '../demo/demoMode';
+import { isFixedUiShell, isDemoDataMode } from '../demo/demoMode';
 import { ensureLiffIdentityForLoad } from '../demo/ensureIdentity';
 import { buildBuiltinSampleCoupons } from '../demo/sampleData';
 
@@ -76,7 +76,7 @@ export class CouponsManager {
         const section = this.getSection();
         if (!section) return;
 
-        if (isIosFixedUiDemo()) {
+        if (isDemoDataMode()) {
             this.renderSampleCoupons();
             return;
         }
@@ -100,7 +100,9 @@ export class CouponsManager {
             const defaultImage = data && data.default_image_url ? data.default_image_url : null;
             const message = data && data.message ? data.message : null;
             if ((!coupons || coupons.length === 0) && message) {
-                this.renderSampleCoupons();
+                this.cache = [];
+                this.lastDefaultImage = defaultImage;
+                this.render([], defaultImage);
                 this._fixNativeCouponsScroll();
                 return;
             }
@@ -263,7 +265,7 @@ export class CouponsManager {
     render(coupons: any[], defaultImage: string | null, isSample = false): void {
         const section = this.getSection();
         if (!section) return;
-        const showDemoPlay = isSample || isIosFixedUiDemo();
+        const showDemoPlay = isFixedUiShell() || isDemoDataMode() || isSample;
         const playEntry = showDemoPlay ? this._renderDemoPlayEntry() : '';
 
         if (!coupons || coupons.length === 0) {
@@ -395,7 +397,7 @@ export class CouponsManager {
         return `
             <section class="demo-play-entry" aria-label="クーポンあそび">
                 <div class="demo-play-entry__head">
-                    <p class="demo-play-entry__eyebrow">DEMO PLAY</p>
+                    <p class="demo-play-entry__eyebrow">PLAY</p>
                     <h3 class="demo-play-entry__title">クーポンを当てよう</h3>
                     <p class="demo-play-entry__sub">ガチャやスクラッチで特典クーポンを獲得できます</p>
                 </div>
@@ -645,7 +647,7 @@ export class CouponsManager {
     }
 
     _normalizeUseDisplay(useDisplay: unknown, code: string): string {
-        if (isIosFixedUiDemo() && code) {
+        if (isDemoDataMode() && code) {
             return 'barcode';
         }
         const display = (useDisplay && String(useDisplay).trim()) || 'barcode';

@@ -1,6 +1,6 @@
 import { ApiClient } from '../../shared/utils/apiClient';
 import { AppConstants } from '../../shared/constants';
-import { isIosFixedUiDemo } from '../demo/demoMode';
+import { isDemoDataMode, isFixedUiShell } from '../demo/demoMode';
 
 type Product = {
     id: number | string;
@@ -46,7 +46,7 @@ export class ProductManager {
     }
 
     async loadProducts(): Promise<Product[]> {
-        if (isIosFixedUiDemo() || this._shouldUseFixedUiSampleCatalog()) {
+        if (isDemoDataMode()) {
             return this._applySampleCatalog();
         }
 
@@ -84,15 +84,7 @@ export class ProductManager {
     }
 
     _isFixedUi(): boolean {
-        return typeof document !== 'undefined'
-            && document.body !== null
-            && document.body.classList.contains('ios-fixed-ui');
-    }
-
-    _shouldUseFixedUiSampleCatalog(): boolean {
-        return this._isFixedUi()
-            && typeof window !== 'undefined'
-            && !window.__LINE_USER_ID__;
+        return isFixedUiShell();
     }
 
     _applySampleCatalog(): Product[] {
