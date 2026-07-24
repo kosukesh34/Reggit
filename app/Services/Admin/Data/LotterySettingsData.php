@@ -17,5 +17,6 @@ class LotterySettingsData
         public ProjectLotterySetting $settings,
         public Collection $prizes,
         public Collection $coupons,
+        public LotteryStatsData $stats,
     ) {}
 }

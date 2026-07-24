@@ -93,6 +93,9 @@ class OrderApiTest extends TestCase
             'order_number' => null,
             'status' => 'pending',
         ]);
+        $this->assertDatabaseMissing('member_visits', [
+            'order_id' => $response->json('order.id'),
+        ]);
     }
 
     public function test_index_自分の注文のみ返すこと(): void

@@ -4,6 +4,7 @@ namespace App\Services\Smaregi;
 
 use App\Domain\Member\Repositories\MemberRepository;
 use App\Domain\Order\Repositories\OrderRepository;
+use App\Enums\OrderStatus;
 use App\Enums\OrderType;
 use App\Enums\PaymentMethod;
 use App\Jobs\SyncOrderTransactionToSmaregiJob;
@@ -221,6 +222,16 @@ class SmaregiOrderTransactionOutboundService
             return true;
         }
         if ($this->isCashOrder($order) && $this->orderRepository->hasSmaregiLayaway($orderId, $projectId)) {
+            return true;
+        }
+
+        // Stripe 未決済はスマレジへ送らない（決済完了前の Webhook 往復を防ぐ）
+        if ($order->payment_method === PaymentMethod::STRIPE && $order->status === OrderStatus::PENDING) {
+            LogHelper::info('[Smaregi] order transaction sync skipped: stripe pending', [
+                'order_id' => $orderId,
+                'project_id' => $projectId,
+            ]);
+
             return true;
         }
 

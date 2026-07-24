@@ -96,6 +96,7 @@ Route::prefix('v1')->middleware([AuthenticateApiToken::class])->group(function (
     Route::post('/members/me/coupons/{id}/use', [ApiV1CouponController::class, 'use']);
     Route::get('/members/me/lottery', [MemberLotteryController::class, 'index']);
     Route::post('/members/me/lottery/{id}/play', [MemberLotteryController::class, 'play']);
+    Route::post('/members/me/lottery/{id}/notify-win', [MemberLotteryController::class, 'notifyWin']);
     Route::get('/members/me/wallet-summary', MemberWalletSummaryController::class);
     Route::get('/stamps', [ApiV1StampController::class, 'index']);
     Route::get('/announcements', [ApiV1AnnouncementController::class, 'index']);
@@ -122,6 +123,7 @@ Route::prefix('v1')->middleware([CheckApiProject::class, AuthenticateApiToken::c
     Route::post('/{project_key}/members/me/coupons/{id}/use', [ApiV1CouponController::class, 'use']);
     Route::get('/{project_key}/members/me/lottery', [MemberLotteryController::class, 'index']);
     Route::post('/{project_key}/members/me/lottery/{id}/play', [MemberLotteryController::class, 'play']);
+    Route::post('/{project_key}/members/me/lottery/{id}/notify-win', [MemberLotteryController::class, 'notifyWin']);
     Route::get('/{project_key}/members/me/wallet-summary', MemberWalletSummaryController::class);
     Route::get('/{project_key}/stamps', [ApiV1StampController::class, 'index']);
     Route::get('/{project_key}/announcements', [ApiV1AnnouncementController::class, 'index']);
@@ -165,6 +167,7 @@ Route::middleware(['web', 'bind.project'])->group(function () {
     Route::post('/members/me/coupons/{id}/use', [CouponController::class, 'use']);
     Route::get('/members/me/lottery', [MemberLotteryController::class, 'index']);
     Route::post('/members/me/lottery/{id}/play', [MemberLotteryController::class, 'play']);
+    Route::post('/members/me/lottery/{id}/notify-win', [MemberLotteryController::class, 'notifyWin']);
     Route::get('/members/me/wallet-summary', MemberWalletSummaryController::class);
 
     Route::post('/payment/create-intent', [PaymentCreateIntentController::class, '__invoke']);
