@@ -99,7 +99,7 @@ class SmaregiInboundAwardApplier
         string $headId,
         bool $hasSmaregiManagedPointDelta,
     ): void {
-        if ($amount <= 0) {
+        if ($amount <= 0 || $hasSmaregiManagedPointDelta) {
             return;
         }
 
@@ -107,35 +107,14 @@ class SmaregiInboundAwardApplier
         $rankKey = is_string($member->rank) ? $member->rank : null;
         $rate = $this->shopSettingRepository->getPointEarnRateForRank($projectId, $rankKey);
         $points = $this->pointCalculator->calculate($amount, $rate);
-
-        // TEMP: テスト用。付与ポイントを 2〜5 倍にする（最終的に削除）
-        $multiplier = random_int(2, 5);
-        if ($points > 0) {
-            $points = $points * $multiplier;
-        } elseif ($hasSmaregiManagedPointDelta) {
-            $base = max(1, (int) floor($amount / max(1, $rate)));
-            $points = $base * $multiplier;
-        }
-
         if ($points <= 0) {
             return;
         }
 
-        $baseDescription = $this->descriptions->pointAward($headId);
-        $description = $baseDescription.' [TEMP x'.$multiplier.']';
-        if ($this->hasPointTransaction($member, PointTransactionType::EARNED, $description)
-            || $this->hasPointTransaction($member, PointTransactionType::EARNED, $baseDescription)) {
+        $description = $this->descriptions->pointAward($headId);
+        if ($this->hasPointTransaction($member, PointTransactionType::EARNED, $description)) {
             return;
         }
-
-        Log::info('[Smaregi] TEMP point boost applied', [
-            'member_id' => (int) $member->id,
-            'project_id' => $projectId,
-            'transaction_head_id' => $headId,
-            'multiplier' => $multiplier,
-            'points' => $points,
-            'has_smaregi_managed_point_delta' => $hasSmaregiManagedPointDelta,
-        ]);
 
         $this->pointsSync->markOutboundPending((int) $member->id);
 

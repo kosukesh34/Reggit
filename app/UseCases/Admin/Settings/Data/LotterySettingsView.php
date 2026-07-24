@@ -2,6 +2,7 @@
 
 namespace App\UseCases\Admin\Settings\Data;
 
+use App\Models\Coupon;
 use App\Models\LotteryPrize;
 use App\Models\Settings\ProjectLotterySetting;
 use Illuminate\Support\Collection;
@@ -11,7 +12,7 @@ class LotterySettingsView
 {
     /**
      * @param  Collection<int, LotteryPrize>  $prizes
-     * @param  Collection<int, \App\Models\Coupon>  $coupons
+     * @param  Collection<int, Coupon>  $coupons
      * @param  array<string, string>  $grantTriggerOptions
      * @param  array<string, string>  $rewardTypeOptions
      */
