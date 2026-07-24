@@ -277,6 +277,42 @@
     color: var(--text-secondary);
 }
 
+.gallery-empty {
+    text-align: center;
+    padding: 48px 24px;
+    margin: 0 16px 24px;
+}
+
+.gallery-empty__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    background: rgba(0, 0, 0, 0.04);
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+}
+
+.gallery-empty__icon i {
+    font-size: 22px;
+}
+
+.gallery-empty__title {
+    margin: 0 0 6px;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.gallery-empty__hint {
+    margin: 0;
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
 .stamps-empty i,
 .coupons-empty i {
     font-size: 48px;

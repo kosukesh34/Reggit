@@ -49,9 +49,19 @@ body.liff-fixed-ui #liff-design-tokens {
 body.liff-fixed-ui .app-container {
     background: transparent !important;
     min-height: 100dvh;
-    max-width: 480px;
+    max-width: 100%;
     margin: 0 auto;
     box-shadow: none;
+}
+
+@media (min-width: 768px) {
+    body.liff-fixed-ui:not(.native-app-embed):not(.designer-live-preview-embed) .app-container {
+        max-width: var(--liff-phone-max, 430px);
+        box-shadow: var(--shadow-xl);
+        border-left: 1px solid var(--ios-separator);
+        border-right: 1px solid var(--ios-separator);
+        background: transparent !important;
+    }
 }
 
 /* —— Header (compact nav) —— */
@@ -449,6 +459,74 @@ body.liff-fixed-ui .coupons-list {
     overflow: hidden;
 }
 
+body.liff-fixed-ui .gallery-tabs {
+    padding-left: 16px;
+    padding-right: 16px;
+}
+
+body.liff-fixed-ui .gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    padding: 12px;
+    background: transparent;
+    overflow: visible;
+}
+
+body.liff-fixed-ui .gallery-item {
+    border: none;
+    border-radius: 14px;
+    background: var(--ios-surface);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    padding: 0;
+    text-align: left;
+    cursor: pointer;
+    overflow: hidden;
+}
+
+body.liff-fixed-ui .gallery-item img {
+    width: 100%;
+    height: 132px;
+    object-fit: cover;
+    display: block;
+}
+
+body.liff-fixed-ui .gallery-item--large {
+    grid-column: span 2;
+}
+
+body.liff-fixed-ui .gallery-item--large img {
+    height: 200px;
+}
+
+body.liff-fixed-ui .gallery-item-title {
+    padding: 10px 12px 2px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ios-label);
+}
+
+body.liff-fixed-ui .gallery-item-desc {
+    padding: 0 12px 12px;
+    font-size: 12px;
+    color: var(--ios-secondary);
+}
+
+body.liff-fixed-ui .gallery-empty {
+    margin: 0 16px 24px;
+    background: var(--ios-surface);
+    border-radius: var(--ios-radius-lg);
+}
+
+body.liff-fixed-ui .lp-home-more .ios-row {
+    width: 100%;
+    border: none;
+    background: transparent;
+    font: inherit;
+    cursor: pointer;
+    text-align: left;
+}
+
 
 body.liff-fixed-ui .ios-segment {
     display: flex;
@@ -483,7 +561,7 @@ body.liff-fixed-ui .main-tabs.ios-tab-bar {
     transform: translateX(-50%);
     bottom: calc(10px + env(safe-area-inset-bottom, 0px));
     width: calc(100% - 32px);
-    max-width: 420px;
+    max-width: calc(var(--liff-phone-max, 430px) - 32px);
     height: 58px;
     padding: 4px !important;
     padding-bottom: 4px !important;
@@ -646,7 +724,7 @@ body.liff-fixed-ui .cart-sidebar {
     left: 50% !important;
     transform: translate(-50%, 110%);
     width: 100%;
-    max-width: 480px;
+    max-width: min(100%, var(--liff-phone-max, 430px));
     height: min(78dvh, 640px);
     border-radius: 14px 14px 0 0;
     box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.18);
