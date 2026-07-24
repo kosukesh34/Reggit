@@ -167,7 +167,7 @@ export class LiffLayoutManager {
                 `);
 
         return `
-            <div class="home-content ios-home lp-home" data-ios-home-version="5">
+            <div class="home-content ios-home lp-home" data-ios-home-version="6">
                 <section class="lp-home-brand">
                     <p class="lp-home-brand__name">${this._esc(title)}</p>
                     <p class="lp-home-brand__tag">スマートに、心地よく、あなたの時間を。</p>
@@ -186,6 +186,8 @@ export class LiffLayoutManager {
                 </button>
                 ` : ''}
 
+                ${this._buildIosHomeMoreHtml()}
+
                 <div class="ios-status-card" id="iosHomeStatus" hidden>
                     <p class="ios-status-card__title" id="iosHomeStatusTitle"></p>
                     <p class="ios-status-card__text" id="iosHomeStatusText"></p>
@@ -195,6 +197,26 @@ export class LiffLayoutManager {
                     <div class="ios-row home-loading"><div class="ios-row__body"><div class="ios-row__title">読み込み中…</div></div></div>
                 </div>
             </div>
+        `;
+    }
+
+    /** ホーム下部タブに出ない機能（ギャラリー等）への導線 */
+    _buildIosHomeMoreHtml(): string {
+        const rows: string[] = [];
+        if (this._flagEnabled('feature_gallery_enabled')) {
+            rows.push(this._iosMoreRow('gallery', 'ギャラリー', 'photos'));
+        }
+        if (this._flagEnabled('feature_orders_enabled')) {
+            rows.push(this._iosMoreRow('orders', '注文履歴', 'history'));
+        }
+        if (rows.length === 0) {
+            return '';
+        }
+        return `
+                <p class="ios-section-label">もっと見る</p>
+                <div class="ios-group lp-home-more">
+                    ${rows.join('')}
+                </div>
         `;
     }
 
@@ -382,7 +404,7 @@ export class LiffLayoutManager {
                 this.app.bindProductsViewToggle(container);
             }
         }
-        if (useFixedUi && tab === 'home' && container && (!container.querySelector('.ios-home') || container.querySelector('.ios-home')?.getAttribute('data-ios-home-version') !== '5')) {
+        if (useFixedUi && tab === 'home' && container && (!container.querySelector('.ios-home') || container.querySelector('.ios-home')?.getAttribute('data-ios-home-version') !== '6')) {
             container.innerHTML = this._buildIosHomeHtml();
             this._bindIosHomeNav(container);
             void this._refreshIosWallet(container);

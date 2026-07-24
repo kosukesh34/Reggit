@@ -70,7 +70,10 @@ body:not(.native-app-embed) .main-content {
     -webkit-overflow-scrolling: touch;
 }
 
-/* デスクトップ閲覧時はスマホ幅で中央寄せ */
+/* 実機スマホ（〜767px）: 端末幅いっぱいで可変
+ * PC（768px〜）: 一般的なスマホ幅（〜430px）で中央寄せプレビュー
+ * ネイティブ埋め込み・デザイナー埋め込みは端末全幅のまま
+ */
 @media (min-width: 768px) {
     body:not(.native-app-embed):not(.designer-live-preview-embed) {
         background:
@@ -78,7 +81,8 @@ body:not(.native-app-embed) .main-content {
             var(--bg-canvas);
     }
     body:not(.native-app-embed):not(.designer-live-preview-embed) .app-container {
-        max-width: 440px;
+        max-width: var(--liff-phone-max, 430px);
+        width: 100%;
         min-height: 100dvh;
         height: 100dvh;
         max-height: 100dvh;
@@ -87,13 +91,23 @@ body:not(.native-app-embed) .main-content {
         border-right: 1px solid var(--hairline);
     }
     body:not(.native-app-embed):not(.designer-live-preview-embed) .main-tabs {
-        max-width: 440px;
+        max-width: var(--liff-phone-max, 430px);
         left: 50%;
         transform: translateX(-50%);
         border-radius: 0;
         margin: 0;
         width: 100%;
         bottom: 0;
+    }
+}
+
+/* 小さい端末（iPhone SE など）向けに余白を少し詰める */
+@media (max-width: 374px) {
+    :root {
+        --content-padding: 12px;
+        --section-gap: 12px;
+        --btn-height: 42px;
+        --chip-height: 34px;
     }
 }
 

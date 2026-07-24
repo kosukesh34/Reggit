@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ asset('css/landing.css') }}?v=25">
+    <link rel="stylesheet" href="{{ asset('css/landing.css') }}?v=26">
 </head>
 <body class="lp">
     <header class="lp-nav">
@@ -30,8 +30,14 @@
                     <a class="lp-nav__link" href="#platform">プラットフォーム</a>
                     <a class="lp-nav__link" href="#faq">FAQ</a>
                 </nav>
-                <a class="lp-nav__app" href="/liff">アプリを体験する</a>
-                <a class="lp-nav__cta" href="{{ route('admin.login') }}">管理画面ログイン</a>
+                <a class="lp-nav__app" href="/liff" aria-label="アプリを体験する">
+                    <span class="lp-nav__label lp-nav__label--full" aria-hidden="true">アプリを体験する</span>
+                    <span class="lp-nav__label lp-nav__label--short" aria-hidden="true">体験する</span>
+                </a>
+                <a class="lp-nav__cta" href="{{ route('admin.login') }}" aria-label="管理画面ログイン">
+                    <span class="lp-nav__label lp-nav__label--full" aria-hidden="true">管理画面ログイン</span>
+                    <span class="lp-nav__label lp-nav__label--short" aria-hidden="true">管理ログイン</span>
+                </a>
             </div>
         </div>
     </header>
