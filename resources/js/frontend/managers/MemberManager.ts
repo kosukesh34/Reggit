@@ -1354,16 +1354,16 @@ export class MemberManager {
 
                 <nav class="ios-wallet-member__quick" aria-label="会員メニュー">
                     <button type="button" class="ios-wallet-member__quick-item" data-ios-member-nav="coupons">
-                        <span class="ios-wallet-member__quick-icon" aria-hidden="true">券</span>クーポン
+                        <span class="ios-wallet-member__quick-icon" aria-hidden="true"><i class="fas fa-ticket-alt"></i></span>クーポン
                     </button>
                     <button type="button" class="ios-wallet-member__quick-item" data-ios-member-nav="stamps">
-                        <span class="ios-wallet-member__quick-icon" aria-hidden="true">印</span>スタンプ
+                        <span class="ios-wallet-member__quick-icon" aria-hidden="true"><i class="fas fa-stamp"></i></span>スタンプ
                     </button>
                     <button type="button" class="ios-wallet-member__quick-item" data-ios-member-nav="orders">
-                        <span class="ios-wallet-member__quick-icon" aria-hidden="true">歴</span>履歴
+                        <span class="ios-wallet-member__quick-icon" aria-hidden="true"><i class="fas fa-receipt"></i></span>履歴
                     </button>
                     <button type="button" class="ios-wallet-member__quick-item" data-action="member-open-register">
-                        <span class="ios-wallet-member__quick-icon" aria-hidden="true">登</span>登録
+                        <span class="ios-wallet-member__quick-icon" aria-hidden="true"><i class="fas fa-user-plus"></i></span>登録
                     </button>
                 </nav>
 

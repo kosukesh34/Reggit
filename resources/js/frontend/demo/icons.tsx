@@ -42,9 +42,9 @@ export function IconVisit({ className }: IconProps): JSX.Element {
 
 export function IconCart({ className }: IconProps): JSX.Element {
     return (
-        <svg className={className} width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M6 8h12l-1 11H7L6 8z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
-            <path d="M9 8V7a3 3 0 0 1 6 0v1" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+        <svg className={className} width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M6 8h12l-1 11H7L6 8z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+            <path d="M9 8V7a3 3 0 0 1 6 0v1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
         </svg>
     );
 }
