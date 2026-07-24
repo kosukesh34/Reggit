@@ -16,6 +16,6 @@
 @else
     <link rel="stylesheet" href="/css/frontend/style.css?v={{ urlencode($assetVersion) }}">
 @endif
-@if(isset($liffCustomCss) && $liffCustomCss !== null && $liffCustomCss !== '')
+@if(!(isset($isFixedUi) && $isFixedUi) && isset($liffCustomCss) && $liffCustomCss !== null && $liffCustomCss !== '')
     <style id="liff-custom-style">{!! $liffCustomCss !!}</style>
 @endif

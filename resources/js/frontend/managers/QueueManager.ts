@@ -1,7 +1,8 @@
 import type { ApiClient } from '../../shared/utils/apiClient';
 import { AppConstants } from '../../shared/constants';
 import { DomHelper } from '../../shared/utils/domHelper';
-import { isIosFixedUiDemo } from '../ios/demoMode';
+import { isDemoDataMode } from '../demo/demoMode';
+import { buildBuiltinSampleQueueEntry } from '../demo/sampleData';
 
 type QueueStats = {
     waiting_count?: number | null;
@@ -333,7 +334,7 @@ export class QueueManager {
         if (!section) {
             return;
         }
-        if (isIosFixedUiDemo()) {
+        if (isDemoDataMode()) {
             this.renderSampleQueueCard();
             return;
         }
@@ -592,7 +593,7 @@ export class QueueManager {
     }
 
     shouldShowSampleQueue(): boolean {
-        if (isIosFixedUiDemo()) {
+        if (isDemoDataMode()) {
             return true;
         }
         return this.isQueueMembershipRequired() && !this.isCurrentUserMember();
@@ -604,17 +605,7 @@ export class QueueManager {
             && typeof (window.app as { getDesignerSampleQueueEntry?: () => QueueEntry }).getDesignerSampleQueueEntry === 'function') {
             return (window.app as { getDesignerSampleQueueEntry: () => QueueEntry }).getDesignerSampleQueueEntry();
         }
-        return {
-            id: 'sample',
-            formatted_queue_number: String(new Date().getDate()) + '12',
-            status: 'waiting',
-            party_size: 2,
-            waiting_count: 5,
-            ahead_count: 3,
-            estimated_wait_minutes: 15,
-            line_linked: true,
-            is_sample_preview: true,
-        };
+        return buildBuiltinSampleQueueEntry();
     }
 
     renderSampleQueueCard(): void {

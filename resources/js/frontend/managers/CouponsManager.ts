@@ -3,10 +3,11 @@ import { DomHelper } from '../../shared/utils/domHelper';
 import type { ApiClient } from '../../shared/utils/apiClient';
 import { ConfirmDialog } from '../../shared/utils/confirmDialog';
 import { mountDetailLayoutChrome } from '../utils/detailLayoutMount';
-import { applyDemoCouponUsageState, isDemoCouponId, markDemoCouponUsed, readDemoWonCoupons } from '../ios/demoCoupons';
-import { isIosFixedUiDemo } from '../ios/demoMode';
+import { applyDemoCouponUsageState, isDemoCouponId, markDemoCouponUsed, readDemoWonCoupons } from '../demo/demoCoupons';
+import { isFixedUiShell, isDemoDataMode } from '../demo/demoMode';
+import { ensureLiffIdentityForLoad } from '../demo/ensureIdentity';
+import { buildBuiltinSampleCoupons } from '../demo/sampleData';
 
-declare const MemberManager: any;
 declare const JsBarcode: any;
 declare const QRCode: any;
 
@@ -21,28 +22,12 @@ export class CouponsManager {
         this._receivedToastTimer = null;
     }
 
-    getGlobalSetting(key: string, fallback: string): string {
-        return DomHelper.getLiffGlobalSetting(key, fallback);
-    }
-
-    getDefaultCouponDesign(): string {
-        const screenDesign = this.getGlobalSetting('coupon_screen_design', 'ticket');
-        if (screenDesign === 'gallery') return 'card';
-        if (screenDesign === 'compact') return 'minimal';
-        if (screenDesign === 'luxury') return 'vintage';
-        return 'ticket';
-    }
-
     getSection(): Element | null {
         return DomHelper.getTabMount(
             AppConstants.TAB_MOUNTS.COUPONS,
             AppConstants.ELEMENT_IDS.COUPONS_SECTION,
             { silent: true },
         );
-    }
-
-    getLoginTemplate(): string {
-        return '';
     }
 
     getMemberRequiredTemplate(message: unknown): string {
@@ -59,40 +44,13 @@ export class CouponsManager {
         `;
     }
 
-    getDesignerSampleCoupons(): any[] {
+    getDesignerSampleCoupons(): ReturnType<typeof buildBuiltinSampleCoupons> {
         if (typeof window !== 'undefined'
             && window.app
-            && typeof (window.app as { getDesignerSampleCoupons?: () => any[] }).getDesignerSampleCoupons === 'function') {
-            return (window.app as { getDesignerSampleCoupons: () => any[] }).getDesignerSampleCoupons();
+            && typeof (window.app as { getDesignerSampleCoupons?: () => ReturnType<typeof buildBuiltinSampleCoupons> }).getDesignerSampleCoupons === 'function') {
+            return (window.app as { getDesignerSampleCoupons: () => ReturnType<typeof buildBuiltinSampleCoupons> }).getDesignerSampleCoupons();
         }
-        const until = new Date();
-        until.setDate(until.getDate() + 14);
-        return [
-            {
-                id: 'sample-coupon-1',
-                coupon_name: 'ドリンク1杯無料',
-                description: 'お好きなドリンク1杯を無料でご提供します',
-                status: 'available',
-                valid_until: until.toISOString(),
-                issued_at: new Date().toISOString(),
-                image_url: '/images/liff/coupon-drink.jpg',
-                code: 'DRINK-FREE-2401',
-                use_display: 'barcode',
-                is_sample_preview: true,
-            },
-            {
-                id: 'sample-coupon-2',
-                coupon_name: 'デザート20%OFF',
-                description: 'デザートメニューが20%割引になります',
-                status: 'available',
-                valid_until: until.toISOString(),
-                issued_at: new Date().toISOString(),
-                image_url: '/images/liff/coupon-dessert.jpg',
-                code: 'DESSERT-20-2401',
-                use_display: 'barcode',
-                is_sample_preview: true,
-            },
-        ];
+        return buildBuiltinSampleCoupons();
     }
 
     renderSampleCoupons(): void {
@@ -114,56 +72,19 @@ export class CouponsManager {
         `;
     }
 
-    async _waitForNativeDeviceInfo(maxWaitMs: number): Promise<void> {
-        if (typeof window === 'undefined' || typeof MemberManager === 'undefined' || !MemberManager.isMobileAppMode()) {
-            return;
-        }
-        const limit = typeof maxWaitMs === 'number' ? maxWaitMs : 2500;
-        const start = Date.now();
-        while (Date.now() - start < limit) {
-            const deviceId = window.__MOBILE_DEVICE_INFO__
-                && String(window.__MOBILE_DEVICE_INFO__.device_identifier || '').trim();
-            if (deviceId) return;
-            await new Promise((resolve) => setTimeout(resolve, 50));
-        }
-    }
-
     async load(): Promise<void> {
         const section = this.getSection();
         if (!section) return;
 
-        if (isIosFixedUiDemo()) {
+        if (isDemoDataMode()) {
             this.renderSampleCoupons();
             return;
         }
 
-        const appAny = (window.app as any) || null;
-        const memberManager = appAny && appAny.memberManager ? appAny.memberManager : null;
-
-        if (memberManager) {
-            if (typeof MemberManager !== 'undefined' && MemberManager.isMobileAppMode()) {
-                await this._waitForNativeDeviceInfo(2500);
-                await memberManager.ensureIdentityReady(2500);
-            } else if (typeof window !== 'undefined' && window.__IS_LIFF__) {
-                if (!window.__LINE_USER_ID__) {
-                    await memberManager.resolveLineUserIdForClient();
-                }
-                if (!window.__LINE_USER_ID__) {
-                    this.renderSampleCoupons();
-                    return;
-                }
-            } else {
-                if (!window.__LINE_USER_ID__) {
-                    await memberManager.resolveLineUserIdForClient();
-                }
-                const hasIdentity = typeof memberManager.hasAuthenticatedIdentity === 'function'
-                    ? memberManager.hasAuthenticatedIdentity()
-                    : !!(typeof window !== 'undefined' && window.__LINE_USER_ID__);
-                if (!hasIdentity) {
-                    this.renderSampleCoupons();
-                    return;
-                }
-            }
+        const canCallApi = await ensureLiffIdentityForLoad({ waitNativeDevice: true });
+        if (!canCallApi) {
+            this.renderSampleCoupons();
+            return;
         }
 
         section.innerHTML =
@@ -179,7 +100,9 @@ export class CouponsManager {
             const defaultImage = data && data.default_image_url ? data.default_image_url : null;
             const message = data && data.message ? data.message : null;
             if ((!coupons || coupons.length === 0) && message) {
-                this.renderSampleCoupons();
+                this.cache = [];
+                this.lastDefaultImage = defaultImage;
+                this.render([], defaultImage);
                 this._fixNativeCouponsScroll();
                 return;
             }
@@ -342,14 +265,20 @@ export class CouponsManager {
     render(coupons: any[], defaultImage: string | null, isSample = false): void {
         const section = this.getSection();
         if (!section) return;
+        const showDemoPlay = isFixedUiShell() || isDemoDataMode() || isSample;
+        const playEntry = showDemoPlay ? this._renderDemoPlayEntry() : '';
+
         if (!coupons || coupons.length === 0) {
-            section.innerHTML = `
+            section.innerHTML = playEntry + `
                 <div class="ios-empty">
                     <div class="ios-empty__icon"><i class="fas fa-ticket-alt"></i></div>
                     <h3 class="ios-empty__title">クーポンはありません</h3>
-                    <p class="ios-empty__text">お店から発行されるとここに表示されます</p>
+                    <p class="ios-empty__text">${showDemoPlay
+                        ? 'ガチャやスクラッチでクーポンを獲得できます'
+                        : 'お店から発行されるとここに表示されます'}</p>
                 </div>
             `;
+            this._bindDemoPlayEntry(section);
             this._fixNativeCouponsScroll();
             return;
         }
@@ -386,6 +315,11 @@ export class CouponsManager {
                 ? `あと${daysUntilExpiry}日`
                 : (validUntil ? `〜${validUntil}` : '');
             const desc = (cp.description && String(cp.description).trim()) ? String(cp.description).trim() : '';
+            const sourceBadge = cp.source === 'gacha'
+                ? '<span class="ios-coupon__chip ios-coupon__chip--play">ガチャ</span>'
+                : (cp.source === 'scratch'
+                    ? '<span class="ios-coupon__chip ios-coupon__chip--play">スクラッチ</span>'
+                    : '');
             return `
                 <article class="ios-coupon ios-coupon--${status}" data-coupon-id="${DomHelper.escapeHtml(String(cp.id))}" role="button" tabindex="0">
                     <div class="ios-coupon__media">
@@ -394,6 +328,7 @@ export class CouponsManager {
                         <div class="ios-coupon__chips">
                             <span class="ios-coupon__status">${DomHelper.escapeHtml(label)}</span>
                             ${showNewBadge ? '<span class="ios-coupon__chip ios-coupon__chip--new">NEW</span>' : ''}
+                            ${sourceBadge}
                             ${expiryText ? `<span class="ios-coupon__chip">${DomHelper.escapeHtml(expiryText)}</span>` : ''}
                         </div>
                     </div>
@@ -431,7 +366,8 @@ export class CouponsManager {
             `<div class="ios-empty ios-empty--compact"><p>${DomHelper.escapeHtml(message)}</p></div>`;
 
         const html =
-            `<div class="ios-panel-head">
+            playEntry
+            + `<div class="ios-panel-head">
                 <h2 class="ios-panel-head__title">クーポン</h2>
                 <p class="ios-panel-head__sub">使えるお得な特典</p>
             </div>`
@@ -451,9 +387,54 @@ export class CouponsManager {
             + `</div>`;
 
         section.innerHTML = html;
+        this._bindDemoPlayEntry(section);
         this._bindCouponTabs(section);
         this._bindUseButtons(section);
         this._bindDetailLinks(section);
+    }
+
+    _renderDemoPlayEntry(): string {
+        return `
+            <section class="demo-play-entry" aria-label="クーポンあそび">
+                <div class="demo-play-entry__head">
+                    <p class="demo-play-entry__eyebrow">PLAY</p>
+                    <h3 class="demo-play-entry__title">クーポンを当てよう</h3>
+                    <p class="demo-play-entry__sub">ガチャやスクラッチで特典クーポンを獲得できます</p>
+                </div>
+                <div class="demo-play-entry__actions">
+                    <button type="button" class="demo-play-entry__btn demo-play-entry__btn--gacha" data-demo-play="gacha">
+                        <span class="demo-play-entry__btn-label">ガチャガチャ</span>
+                        <span class="demo-play-entry__btn-hint">回して当てる</span>
+                    </button>
+                    <button type="button" class="demo-play-entry__btn demo-play-entry__btn--scratch" data-demo-play="scratch">
+                        <span class="demo-play-entry__btn-label">スクラッチ</span>
+                        <span class="demo-play-entry__btn-hint">こすって開ける</span>
+                    </button>
+                </div>
+            </section>
+        `;
+    }
+
+    _bindDemoPlayEntry(section: Element): void {
+        section.querySelectorAll('[data-demo-play]').forEach((btn) => {
+            btn.addEventListener('click', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                const play = (btn as HTMLElement).dataset.demoPlay;
+                if (play === 'gacha' || play === 'scratch') {
+                    try {
+                        window.sessionStorage.setItem('liff_demo_play_focus', play);
+                    } catch {
+                        // ignore
+                    }
+                }
+                if (typeof window.app?.switchTab === 'function') {
+                    void window.app.switchTab('designlab');
+                } else {
+                    window.location.hash = 'designlab';
+                }
+            });
+        });
     }
 
     _bindDetailLinks(section: Element): void {
@@ -641,7 +622,7 @@ export class CouponsManager {
     }
 
     _isMobileAppMode(): boolean {
-        return typeof MemberManager !== 'undefined' && MemberManager.isMobileAppMode();
+        return typeof window !== 'undefined' && window.__MOBILE_APP_MODE__ === true;
     }
 
     _fixNativeCouponsScroll(): void {
@@ -666,7 +647,7 @@ export class CouponsManager {
     }
 
     _normalizeUseDisplay(useDisplay: unknown, code: string): string {
-        if (isIosFixedUiDemo() && code) {
+        if (isDemoDataMode() && code) {
             return 'barcode';
         }
         const display = (useDisplay && String(useDisplay).trim()) || 'barcode';

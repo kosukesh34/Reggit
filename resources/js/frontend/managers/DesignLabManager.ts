@@ -6,7 +6,7 @@ import {
     readDemoWonCoupons,
     saveDemoWonCoupon,
     type DemoCoupon,
-} from '../ios/demoCoupons';
+} from '../demo/demoCoupons';
 
 const SCREEN_ITEMS: Array<{ src: string; caption: string }> = [
     { src: '/images/landing/app/screen-home.png', caption: 'ホーム' },
@@ -16,21 +16,48 @@ const SCREEN_ITEMS: Array<{ src: string; caption: string }> = [
     { src: '/images/landing/app/screen-queue.png', caption: '順番待ち' },
 ];
 
+const CAPSULE_COLORS = ['#FF3B5C', '#2F6BFF', '#FFC933', '#2FCB6E', '#9B4DFF', '#FF6BCB', '#FF8A2B'];
+
+type Prize = (typeof DEMO_COUPON_PRIZES)[number];
+
 /** デモ用デザインラボ（スクラッチ／ガチャ／画面プレビュー） */
 export class DesignLabManager {
     mount(container: HTMLElement): void {
         const needsRemount = container.dataset.designLabMounted !== '1'
-            || container.querySelector('.gacha-machine') === null
-            || container.querySelector('.design-lab__scratch-circle') === null;
+            || container.querySelector('.pp-gacha__dome') === null
+            || container.querySelector('.pp-gacha__chute') === null
+            || container.querySelector('.pp-scratch__circle') === null;
         if (!needsRemount) {
             this._refreshWonList(container);
+            this._focusPlayTarget(container);
             return;
         }
         container.dataset.designLabMounted = '1';
         container.innerHTML = this._html();
         this._bind(container);
+        this._fillDomeCapsules(container);
         this._initScratch(container);
         this._refreshWonList(container);
+        this._focusPlayTarget(container);
+    }
+
+    private _focusPlayTarget(container: HTMLElement): void {
+        let focus: string | null = null;
+        try {
+            focus = window.sessionStorage.getItem('liff_demo_play_focus');
+            window.sessionStorage.removeItem('liff_demo_play_focus');
+        } catch {
+            focus = null;
+        }
+        const target = focus === 'scratch'
+            ? container.querySelector('.pp-scratch')
+            : (focus === 'gacha' ? container.querySelector('.pp-gacha') : null);
+        if (target === null) {
+            return;
+        }
+        window.requestAnimationFrame(() => {
+            (target as HTMLElement).scrollIntoView({ block: 'center', behavior: 'smooth' });
+        });
     }
 
     private _html(): string {
@@ -44,9 +71,9 @@ export class DesignLabManager {
         return `
             <div class="design-lab">
                 <header class="design-lab__hero">
-                    <p class="design-lab__eyebrow">Design Lab</p>
-                    <h1 class="design-lab__title">デザイン変更</h1>
-                    <p class="design-lab__lead">LP掲載イメージの体験と、クーポン配布ゲームです。</p>
+                    <p class="design-lab__eyebrow">Play</p>
+                    <h1 class="design-lab__title">ガチャ・スクラッチ</h1>
+                    <p class="design-lab__lead">遊んでクーポンを獲得できます。獲得したクーポンはクーポン一覧に保存されます。</p>
                 </header>
 
                 <section class="design-lab__section" aria-label="画面イメージ">
@@ -55,53 +82,85 @@ export class DesignLabManager {
                     <div class="design-lab__rail">${screens}</div>
                 </section>
 
-                <section class="design-lab__section" aria-label="スクラッチ">
-                    <h2 class="design-lab__section-title">スクラッチ</h2>
-                    <p class="design-lab__section-lead">丸い部分をこすってクーポンをゲット</p>
-                    <div class="design-lab__scratch-card">
-                        <div class="design-lab__scratch-info">
-                            <p class="design-lab__scratch-info-label">Scratch Coupon</p>
-                            <p class="design-lab__scratch-info-hint">銀面の円をこすって景品を開けよう</p>
-                        </div>
-                        <div class="design-lab__scratch-circle" id="designScratchCircle">
-                            <div class="design-lab__scratch-prize" id="designScratchPrize">
-                                <p class="design-lab__scratch-hint">?</p>
-                            </div>
-                            <canvas class="design-lab__scratch-canvas" id="designScratchCanvas" width="360" height="360" aria-label="スクラッチ円"></canvas>
-                        </div>
-                        <p class="design-lab__scratch-progress" id="designScratchProgress" aria-live="polite">0%</p>
-                    </div>
-                    <button type="button" class="design-lab__btn design-lab__btn--ghost" id="designScratchReset">リセット</button>
-                </section>
-
                 <section class="design-lab__section" aria-label="ガチャ">
                     <h2 class="design-lab__section-title">ガチャガチャ</h2>
-                    <p class="design-lab__section-lead">回してクーポンをゲット</p>
-                    <div class="gacha-machine" id="designGachaStage">
-                        <div class="gacha-machine__top" aria-hidden="true">
-                            <span class="gacha-machine__sign">COUPON GACHA</span>
+                    <p class="design-lab__section-lead">レバーを回してカプセルを取り出し、中身を開けます</p>
+                    <div class="pp-play-card">
+                        <div class="pp-play-card__top">
+                            <span class="pp-play-card__title">クーポンガチャ</span>
+                            <span class="pp-play-card__chip">体験</span>
                         </div>
-                        <div class="gacha-machine__glass">
-                            <div class="gacha-machine__capsules" aria-hidden="true">
-                                <span class="gacha-machine__ball gacha-machine__ball--a"></span>
-                                <span class="gacha-machine__ball gacha-machine__ball--b"></span>
-                                <span class="gacha-machine__ball gacha-machine__ball--c"></span>
-                                <span class="gacha-machine__ball gacha-machine__ball--d"></span>
-                                <span class="gacha-machine__ball gacha-machine__ball--e"></span>
+                        <p class="pp-play-card__rule">回すとカプセルが出ます。中身は開くまで見えません。</p>
+                        <div class="pp-gacha" id="designGachaStage" data-state="idle">
+                            <div class="pp-gacha__stage">
+                                <div class="pp-gacha__machine" id="designGachaMachine">
+                                    <span class="pp-gacha__price">1回 無料</span>
+                                    <div class="pp-gacha__dome">
+                                        <span class="pp-gacha__dome-cap" aria-hidden="true">
+                                            <span class="pp-gacha__dome-star"></span>
+                                        </span>
+                                        <div class="pp-gacha__dome-glass" id="designGachaDome"></div>
+                                        <span class="pp-gacha__dome-shine" aria-hidden="true"></span>
+                                        <span class="pp-gacha__dome-shine pp-gacha__dome-shine--soft" aria-hidden="true"></span>
+                                        <span class="pp-gacha__dome-rim" aria-hidden="true"></span>
+                                        <span class="pp-gacha__collar" aria-hidden="true"></span>
+                                    </div>
+                                    <div class="pp-gacha__body">
+                                        <span class="pp-gacha__body-gloss" aria-hidden="true"></span>
+                                        <span class="pp-gacha__turn-hint" aria-hidden="true"></span>
+                                        <div class="pp-gacha__knob-wrap">
+                                            <button type="button" class="pp-gacha__knob" id="designGachaKnob" aria-label="レバーを回す">
+                                                <span class="pp-gacha__knob-plate" aria-hidden="true"></span>
+                                                <span class="pp-gacha__knob-bar" aria-hidden="true"></span>
+                                                <span class="pp-gacha__knob-hub" aria-hidden="true"></span>
+                                            </button>
+                                        </div>
+                                        <div class="pp-gacha__outlet" aria-hidden="true">
+                                            <span class="pp-gacha__flap"></span>
+                                            <div class="pp-gacha__chute">
+                                                <div class="pp-gacha__fall" id="designGachaFall">
+                                                    <span class="pp-gacha__fall-half pp-gacha__fall-half--top"><i></i></span>
+                                                    <span class="pp-gacha__fall-half pp-gacha__fall-half--bot"><i></i></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="pp-gacha__tray" aria-hidden="true"></div>
+                                    <div class="pp-gacha__stand" aria-hidden="true"></div>
+                                </div>
                             </div>
-                            <div class="gacha-machine__prize" id="designGachaPrize" hidden>
-                                <p class="gacha-machine__prize-eyebrow">あたり</p>
-                                <p class="gacha-machine__prize-name" id="designGachaLabel">タップして回す</p>
-                            </div>
-                        </div>
-                        <div class="gacha-machine__body">
-                            <div class="gacha-machine__knob" id="designGachaCapsule" aria-hidden="true"></div>
-                            <div class="gacha-machine__slot" aria-hidden="true">
-                                <span class="gacha-machine__dispense" id="designGachaDispense"></span>
-                            </div>
+                            <button type="button" class="pp-cta" id="designGachaBtn">レバーを回す</button>
                         </div>
                     </div>
-                    <button type="button" class="design-lab__btn gacha-machine__cta" id="designGachaBtn">ガチャを回す</button>
+                </section>
+
+                <section class="design-lab__section" aria-label="スクラッチ">
+                    <h2 class="design-lab__section-title">スクラッチ</h2>
+                    <p class="design-lab__section-lead">円の銀面をこすってクーポンを開けます</p>
+                    <div class="pp-play-card">
+                        <div class="pp-play-card__top">
+                            <span class="pp-play-card__title">スクラッチくじ</span>
+                            <span class="pp-play-card__chip">体験</span>
+                        </div>
+                        <p class="pp-play-card__rule">銀面をこすって結果を確認しましょう。中身は削るまで見えません。</p>
+                        <div class="pp-scratch" id="designScratchStage" data-state="sealed">
+                            <div class="pp-scratch__circle" id="designScratchCircle">
+                                <div class="pp-scratch__prize" id="designScratchPrize">
+                                    <p class="pp-scratch__prize-eyebrow" id="designScratchEyebrow" hidden>あたり</p>
+                                    <p class="pp-scratch__prize-name" id="designScratchName"></p>
+                                    <p class="pp-scratch__prize-desc" id="designScratchDesc"></p>
+                                </div>
+                                <canvas class="pp-scratch__canvas" id="designScratchCanvas" width="360" height="360" aria-label="スクラッチ円"></canvas>
+                                <div class="pp-scratch__shine" aria-hidden="true"></div>
+                            </div>
+                            <div class="pp-scratch__progress-row">
+                                <div class="pp-scratch__track"><div class="pp-scratch__fill" id="designScratchFill"></div></div>
+                                <span class="pp-scratch__pct" id="designScratchProgress">0%</span>
+                            </div>
+                            <p class="pp-scratch__hint" id="designScratchHint">円の中をこすってください</p>
+                            <button type="button" class="pp-cta pp-cta--ghost" id="designScratchReset">新しいカード</button>
+                        </div>
+                    </div>
                 </section>
 
                 <section class="design-lab__section" aria-label="獲得クーポン">
@@ -111,6 +170,44 @@ export class DesignLabManager {
                 </section>
             </div>
         `;
+    }
+
+    private _fillDomeCapsules(container: HTMLElement): void {
+        const dome = container.querySelector('#designGachaDome');
+        if (dome === null) {
+            return;
+        }
+        dome.querySelectorAll('.pp-gacha__ball').forEach((el) => el.remove());
+        // 余白のある自然な山積み（詰め込みすぎない）
+        const layout: Array<{ left: number; top: number; size: number; rot: number; z: number }> = [
+            { left: 28, top: 172, size: 52, rot: -14, z: 8 },
+            { left: 86, top: 178, size: 56, rot: 10, z: 12 },
+            { left: 148, top: 170, size: 52, rot: -8, z: 10 },
+            { left: 14, top: 128, size: 46, rot: 18, z: 6 },
+            { left: 64, top: 122, size: 52, rot: -22, z: 11 },
+            { left: 122, top: 118, size: 54, rot: 6, z: 13 },
+            { left: 178, top: 130, size: 46, rot: -16, z: 7 },
+            { left: 42, top: 78, size: 48, rot: 12, z: 9 },
+            { left: 100, top: 72, size: 50, rot: -18, z: 12 },
+            { left: 158, top: 84, size: 46, rot: 14, z: 8 },
+            { left: 72, top: 36, size: 44, rot: -6, z: 7 },
+            { left: 128, top: 42, size: 42, rot: 20, z: 6 },
+        ];
+        layout.forEach((item, i) => {
+            const ball = document.createElement('span');
+            ball.className = 'pp-gacha__ball';
+            ball.style.width = `${item.size}px`;
+            ball.style.height = `${item.size}px`;
+            ball.style.left = `${item.left}px`;
+            ball.style.top = `${item.top}px`;
+            ball.style.zIndex = String(item.z);
+            ball.style.setProperty('--ball-color', CAPSULE_COLORS[i % CAPSULE_COLORS.length]);
+            ball.style.setProperty('--ball-rot', `${item.rot}deg`);
+            ball.style.setProperty('--ball-scale', String(0.92 + item.z * 0.006));
+            ball.style.setProperty('--ball-bright', String(0.88 + item.z * 0.01));
+            ball.style.setProperty('--ball-delay', `${(i % 7) * 0.05}s`);
+            dome.appendChild(ball);
+        });
     }
 
     private _bind(container: HTMLElement): void {
@@ -130,7 +227,7 @@ export class DesignLabManager {
                 this._resetScratch(container);
                 return;
             }
-            if (target.closest('#designGachaBtn') || target.closest('#designGachaStage')) {
+            if (target.closest('#designGachaBtn') || target.closest('#designGachaKnob')) {
                 this._runGacha(container);
             }
         });
@@ -139,19 +236,31 @@ export class DesignLabManager {
     private _initScratch(container: HTMLElement): void {
         const canvas = container.querySelector('#designScratchCanvas') as HTMLCanvasElement | null;
         const prizeEl = container.querySelector('#designScratchPrize') as HTMLElement | null;
+        const nameEl = container.querySelector('#designScratchName') as HTMLElement | null;
+        const descEl = container.querySelector('#designScratchDesc') as HTMLElement | null;
         const progressEl = container.querySelector('#designScratchProgress') as HTMLElement | null;
-        if (canvas === null || prizeEl === null) {
+        const fillEl = container.querySelector('#designScratchFill') as HTMLElement | null;
+        const stage = container.querySelector('#designScratchStage') as HTMLElement | null;
+        if (canvas === null || prizeEl === null || nameEl === null || descEl === null || stage === null) {
             return;
         }
-        const prize = DEMO_COUPON_PRIZES[0];
-        prizeEl.innerHTML = `
-            <p class="design-lab__scratch-name">${DomHelper.escapeHtml(prize.coupon_name)}</p>
-            <p class="design-lab__scratch-desc">${DomHelper.escapeHtml(prize.description)}</p>
-        `;
-        prizeEl.dataset.prizeIndex = '0';
+        const prize = pickRandomPrize();
+        nameEl.textContent = '';
+        descEl.textContent = '';
+        prizeEl.dataset.prizeIndex = String(DEMO_COUPON_PRIZES.indexOf(prize));
         prizeEl.dataset.awarded = '0';
+        prizeEl.dataset.prizeName = prize.coupon_name;
+        prizeEl.dataset.prizeDesc = prize.description;
+        const eyebrow = container.querySelector('#designScratchEyebrow') as HTMLElement | null;
+        if (eyebrow !== null) {
+            eyebrow.hidden = true;
+        }
+        stage.dataset.state = 'sealed';
         if (progressEl !== null) {
             progressEl.textContent = '0%';
+        }
+        if (fillEl !== null) {
+            fillEl.style.width = '0%';
         }
 
         const ctx = canvas.getContext('2d', { willReadFrequently: true });
@@ -161,50 +270,74 @@ export class DesignLabManager {
         const dpr = window.devicePixelRatio || 1;
         const rect = canvas.getBoundingClientRect();
         const cssSize = Math.max(1, Math.min(rect.width, rect.height));
+        if (cssSize < 48) {
+            return;
+        }
         const pixelSize = Math.max(1, Math.round(cssSize * dpr));
         canvas.width = pixelSize;
         canvas.height = pixelSize;
+        canvas.style.opacity = '1';
+        canvas.style.pointerEvents = '';
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.scale(dpr, dpr);
 
         const radius = cssSize / 2;
         const cx = radius;
         const cy = radius;
-        const brush = Math.max(18, cssSize * 0.1);
+        const brush = Math.max(16, cssSize * 0.09);
+        const arcRadius = Math.max(1, radius - 1);
 
         const paintFoil = () => {
-            ctx.save();
-            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-            ctx.clearRect(0, 0, cssSize, cssSize);
-            ctx.beginPath();
-            ctx.arc(cx, cy, radius - 1, 0, Math.PI * 2);
-            ctx.closePath();
-            ctx.clip();
+            const drawClipped = (drawBody: () => void) => {
+                ctx.save();
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+                ctx.clearRect(0, 0, cssSize, cssSize);
+                ctx.beginPath();
+                ctx.arc(cx, cy, arcRadius, 0, Math.PI * 2);
+                ctx.closePath();
+                ctx.clip();
+                drawBody();
+                ctx.fillStyle = 'rgba(26,26,26,0.55)';
+                ctx.font = `900 ${Math.max(13, cssSize * 0.07)}px "Noto Sans JP", sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('こすってね', cx, cy - 8);
+                ctx.font = `700 ${Math.max(10, cssSize * 0.045)}px "Noto Sans JP", sans-serif`;
+                ctx.fillStyle = 'rgba(26,26,26,0.4)';
+                ctx.fillText('SCRATCH', cx, cy + 14);
+                ctx.restore();
+            };
 
-            const base = ctx.createLinearGradient(0, 0, cssSize, cssSize);
-            base.addColorStop(0, '#E8ECED');
-            base.addColorStop(0.35, '#B8C0C4');
-            base.addColorStop(0.7, '#9AA3A8');
-            base.addColorStop(1, '#7E878C');
-            ctx.fillStyle = base;
-            ctx.fillRect(0, 0, cssSize, cssSize);
+            const paintGradient = () => {
+                drawClipped(() => {
+                    const base = ctx.createLinearGradient(0, 0, cssSize, cssSize);
+                    base.addColorStop(0, '#DCE0E8');
+                    base.addColorStop(0.5, '#AEB4C0');
+                    base.addColorStop(1, '#8A909C');
+                    ctx.fillStyle = base;
+                    ctx.fillRect(0, 0, cssSize, cssSize);
+                    ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+                    ctx.lineWidth = 2;
+                    for (let i = -cssSize; i < cssSize; i += 6) {
+                        ctx.beginPath();
+                        ctx.moveTo(i, cssSize);
+                        ctx.lineTo(i + cssSize, 0);
+                        ctx.stroke();
+                    }
+                });
+            };
 
-            const shine = ctx.createRadialGradient(cx * 0.55, cy * 0.4, 4, cx, cy, radius);
-            shine.addColorStop(0, 'rgba(255,255,255,0.55)');
-            shine.addColorStop(0.45, 'rgba(255,255,255,0.08)');
-            shine.addColorStop(1, 'rgba(0,0,0,0.12)');
-            ctx.fillStyle = shine;
-            ctx.fillRect(0, 0, cssSize, cssSize);
-
-            ctx.fillStyle = 'rgba(40,48,52,0.72)';
-            ctx.font = `700 ${Math.max(13, cssSize * 0.075)}px "Manrope", "Noto Sans JP", sans-serif`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText('こすってね', cx, cy - 8);
-            ctx.font = `600 ${Math.max(10, cssSize * 0.045)}px "Manrope", "Noto Sans JP", sans-serif`;
-            ctx.fillStyle = 'rgba(40,48,52,0.45)';
-            ctx.fillText('SCRATCH', cx, cy + 14);
-            ctx.restore();
+            const foil = new Image();
+            foil.onload = () => {
+                if (prizeEl.dataset.awarded === '1') {
+                    return;
+                }
+                drawClipped(() => {
+                    ctx.drawImage(foil, 0, 0, cssSize, cssSize);
+                });
+            };
+            foil.onerror = paintGradient;
+            foil.src = '/images/liff/scratch-foil.jpg';
         };
         paintFoil();
 
@@ -217,7 +350,7 @@ export class DesignLabManager {
             ctx.save();
             ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
             ctx.beginPath();
-            ctx.arc(cx, cy, radius - 1, 0, Math.PI * 2);
+            ctx.arc(cx, cy, arcRadius, 0, Math.PI * 2);
             ctx.clip();
             ctx.globalCompositeOperation = 'destination-out';
             ctx.lineCap = 'round';
@@ -233,40 +366,39 @@ export class DesignLabManager {
             ctx.restore();
         };
 
-        const pointInCircle = (x: number, y: number): boolean => {
-            const dx = x - cx;
-            const dy = y - cy;
-            return (dx * dx) + (dy * dy) <= (radius + brush) * (radius + brush);
-        };
-
         const scratchAt = (clientX: number, clientY: number, isStart: boolean) => {
             const box = canvas.getBoundingClientRect();
             const x = clientX - box.left;
             const y = clientY - box.top;
-            if (!pointInCircle(x, y)) {
+            const dx = x - cx;
+            const dy = y - cy;
+            if ((dx * dx) + (dy * dy) > (radius + brush) * (radius + brush)) {
                 lastX = x;
                 lastY = y;
                 return;
             }
-            if (isStart) {
-                eraseStroke(x, y, x, y);
-            } else {
-                eraseStroke(x, y, lastX, lastY);
-            }
+            eraseStroke(x, y, isStart ? x : lastX, isStart ? y : lastY);
             lastX = x;
             lastY = y;
             if (!checkQueued) {
                 checkQueued = true;
                 window.requestAnimationFrame(() => {
                     checkQueued = false;
-                    this._maybeAwardScratch(container, canvas, prizeEl, progressEl, cx, cy, radius, dpr);
+                    this._maybeAwardScratch(container, canvas, prizeEl, progressEl, fillEl, cx, cy, radius, dpr);
                 });
             }
         };
 
         const onStart = (e: PointerEvent) => {
+            if (prizeEl.dataset.awarded === '1') {
+                return;
+            }
             drawing = true;
-            canvas.setPointerCapture(e.pointerId);
+            try {
+                canvas.setPointerCapture(e.pointerId);
+            } catch {
+                // synthetic / unsupported pointer capture
+            }
             scratchAt(e.clientX, e.clientY, true);
         };
         const onMove = (e: PointerEvent) => {
@@ -289,6 +421,7 @@ export class DesignLabManager {
         canvas: HTMLCanvasElement,
         prizeEl: HTMLElement,
         progressEl: HTMLElement | null,
+        fillEl: HTMLElement | null,
         cx: number,
         cy: number,
         radius: number,
@@ -305,8 +438,7 @@ export class DesignLabManager {
         const data = ctx.getImageData(0, 0, width, height).data;
         const centerX = cx * dpr;
         const centerY = cy * dpr;
-        const radiusPx = radius * dpr;
-        const radiusSq = radiusPx * radiusPx;
+        const radiusSq = (radius * dpr) * (radius * dpr);
         let cleared = 0;
         let total = 0;
         const step = 6;
@@ -318,8 +450,7 @@ export class DesignLabManager {
                     continue;
                 }
                 total += 1;
-                const alpha = data[((y * width) + x) * 4 + 3];
-                if (alpha < 128) {
+                if (data[((y * width) + x) * 4 + 3] < 128) {
                     cleared += 1;
                 }
             }
@@ -328,22 +459,70 @@ export class DesignLabManager {
             return;
         }
         const ratio = cleared / total;
+        const pct = Math.min(100, Math.round(ratio * 100));
         if (progressEl !== null) {
-            progressEl.textContent = `${Math.min(100, Math.round(ratio * 100))}%`;
+            progressEl.textContent = `${pct}%`;
+        }
+        if (fillEl !== null) {
+            fillEl.style.width = `${pct}%`;
         }
         if (ratio < 0.5) {
             return;
         }
         prizeEl.dataset.awarded = '1';
-        canvas.style.pointerEvents = 'none';
+        canvas.style.transition = 'opacity 0.4s ease';
         canvas.style.opacity = '0';
+        canvas.style.pointerEvents = 'none';
+        const shine = container.querySelector('.pp-scratch__shine') as HTMLElement | null;
+        if (shine !== null) {
+            shine.hidden = true;
+        }
         if (progressEl !== null) {
             progressEl.textContent = '100%';
         }
-        const prize = DEMO_COUPON_PRIZES[0];
+        if (fillEl !== null) {
+            fillEl.style.width = '100%';
+        }
+        const stage = container.querySelector('#designScratchStage') as HTMLElement | null;
+        if (stage !== null) {
+            stage.dataset.state = 'revealed';
+        }
+        const hint = container.querySelector('#designScratchHint') as HTMLElement | null;
+        if (hint !== null) {
+            hint.textContent = 'クーポンを獲得しました';
+        }
+        const prizeIndex = Number(prizeEl.dataset.prizeIndex);
+        const prize = (Number.isInteger(prizeIndex) && prizeIndex >= 0 && prizeIndex < DEMO_COUPON_PRIZES.length)
+            ? DEMO_COUPON_PRIZES[prizeIndex]
+            : DEMO_COUPON_PRIZES[0];
+        const nameEl = container.querySelector('#designScratchName') as HTMLElement | null;
+        const descEl = container.querySelector('#designScratchDesc') as HTMLElement | null;
+        const eyebrow = container.querySelector('#designScratchEyebrow') as HTMLElement | null;
+        if (eyebrow !== null) {
+            eyebrow.hidden = false;
+        }
+        if (nameEl !== null) {
+            nameEl.textContent = prize.coupon_name;
+        }
+        if (descEl !== null) {
+            descEl.textContent = prize.description;
+        }
         const coupon = saveDemoWonCoupon(prize, 'scratch');
         ToastManager.success(`${coupon.coupon_name} を獲得しました`);
         this._refreshWonList(container);
+        this._notifyCouponsUpdated(coupon.coupon_name);
+    }
+
+    private _notifyCouponsUpdated(couponName: string): void {
+        const couponsManager = window.app?.couponsManager as
+            | { onCouponReceived?: (opts: { message?: string; silent?: boolean }) => void | Promise<void> }
+            | undefined;
+        if (couponsManager !== undefined && typeof couponsManager.onCouponReceived === 'function') {
+            void couponsManager.onCouponReceived({
+                message: `${couponName} を獲得しました`,
+                silent: false,
+            });
+        }
     }
 
     private _resetScratch(container: HTMLElement): void {
@@ -357,57 +536,101 @@ export class DesignLabManager {
             fresh.setAttribute('aria-label', 'スクラッチ円');
             fresh.style.pointerEvents = '';
             fresh.style.opacity = '1';
+            fresh.style.transition = '';
             old.replaceWith(fresh);
         }
-        const prizeEl = container.querySelector('#designScratchPrize') as HTMLElement | null;
-        if (prizeEl !== null) {
-            prizeEl.dataset.awarded = '0';
+        const shine = container.querySelector('.pp-scratch__shine') as HTMLElement | null;
+        if (shine !== null) {
+            shine.hidden = false;
         }
-        const progressEl = container.querySelector('#designScratchProgress') as HTMLElement | null;
-        if (progressEl !== null) {
-            progressEl.textContent = '0%';
+        const hint = container.querySelector('#designScratchHint') as HTMLElement | null;
+        if (hint !== null) {
+            hint.textContent = '円の中をこすってください';
         }
         this._initScratch(container);
     }
 
     private _runGacha(container: HTMLElement): void {
         const stage = container.querySelector('#designGachaStage') as HTMLElement | null;
-        const label = container.querySelector('#designGachaLabel') as HTMLElement | null;
-        const prizeBox = container.querySelector('#designGachaPrize') as HTMLElement | null;
-        const dispense = container.querySelector('#designGachaDispense') as HTMLElement | null;
+        const machine = container.querySelector('#designGachaMachine') as HTMLElement | null;
+        const knob = container.querySelector('#designGachaKnob') as HTMLElement | null;
+        const fall = container.querySelector('#designGachaFall') as HTMLElement | null;
         const btn = container.querySelector('#designGachaBtn') as HTMLButtonElement | null;
-        if (stage === null || label === null || btn === null || btn.disabled) {
+        if (stage === null || fall === null || btn === null || btn.disabled) {
+            return;
+        }
+        if (stage.dataset.state === 'spinning') {
             return;
         }
         btn.disabled = true;
-        stage.classList.remove('is-win');
-        stage.classList.add('is-spinning');
-        if (prizeBox !== null) {
-            prizeBox.hidden = true;
+        stage.dataset.state = 'spinning';
+        if (machine !== null) {
+            machine.classList.remove('is-shake');
+            void machine.offsetWidth;
+            machine.classList.add('is-shake');
         }
-        if (dispense !== null) {
-            dispense.className = 'gacha-machine__dispense';
+        if (knob !== null) {
+            knob.classList.remove('is-spin');
+            void knob.offsetWidth;
+            knob.classList.add('is-spin');
         }
-        label.textContent = '抽選中…';
+        const color = CAPSULE_COLORS[Math.floor(Math.random() * CAPSULE_COLORS.length)];
+        fall.style.setProperty('--cap-color', color);
+        fall.classList.remove('is-drop', 'is-open');
+        void fall.offsetWidth;
+        fall.classList.add('is-drop');
+        const prize = pickRandomPrize();
         window.setTimeout(() => {
-            const prize = pickRandomPrize();
+            fall.classList.add('is-open');
+        }, 1150);
+        window.setTimeout(() => {
+            stage.dataset.state = 'idle';
+            machine?.classList.remove('is-shake');
+            fall.classList.remove('is-drop', 'is-open');
             const coupon = saveDemoWonCoupon(prize, 'gacha');
-            stage.classList.remove('is-spinning');
-            stage.classList.add('is-win');
-            if (prizeBox !== null) {
-                prizeBox.hidden = false;
-            }
-            if (dispense !== null) {
-                dispense.classList.add('is-out');
-            }
-            label.textContent = coupon.coupon_name;
-            ToastManager.success(`${coupon.coupon_name} を獲得しました`);
+            this._showPrizeModal(prize);
             this._refreshWonList(container);
-            window.setTimeout(() => {
-                btn.disabled = false;
-                btn.textContent = 'もう一度回す';
-            }, 900);
-        }, 1400);
+            this._notifyCouponsUpdated(coupon.coupon_name);
+            ToastManager.success(`${coupon.coupon_name} を獲得しました`);
+            btn.disabled = false;
+            btn.textContent = 'もう一度回す';
+        }, 1650);
+    }
+
+    private _showPrizeModal(prize: Prize): void {
+        document.getElementById('designPrizeModal')?.remove();
+        const overlay = document.createElement('div');
+        overlay.id = 'designPrizeModal';
+        overlay.className = 'pp-prize-modal';
+        overlay.setAttribute('role', 'dialog');
+        overlay.setAttribute('aria-modal', 'true');
+        overlay.setAttribute('aria-label', '当選結果');
+        overlay.innerHTML = `
+            <div class="pp-prize-modal__backdrop" data-prize-close></div>
+            <div class="pp-prize-modal__panel">
+                <span class="pp-prize-modal__ribbon">あたり</span>
+                <div class="pp-prize-modal__media">
+                    <img src="${DomHelper.escapeHtml(prize.image_url)}" alt="" loading="lazy">
+                </div>
+                <p class="pp-prize-modal__name">${DomHelper.escapeHtml(prize.coupon_name)}</p>
+                <p class="pp-prize-modal__desc">${DomHelper.escapeHtml(prize.description)}</p>
+                <button type="button" class="pp-cta" data-prize-close>受け取る</button>
+                <p class="pp-prize-modal__sub">獲得したクーポンは一覧に保存されます</p>
+            </div>
+        `;
+        const close = () => {
+            overlay.classList.add('is-out');
+            window.setTimeout(() => overlay.remove(), 220);
+        };
+        overlay.addEventListener('click', (event) => {
+            const t = event.target as HTMLElement | null;
+            if (t !== null && t.closest('[data-prize-close]')) {
+                close();
+            }
+        });
+        document.body.appendChild(overlay);
+        void overlay.offsetWidth;
+        overlay.classList.add('is-in');
     }
 
     private _refreshWonList(container: HTMLElement): void {

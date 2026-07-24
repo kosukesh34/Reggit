@@ -30,10 +30,10 @@ use Illuminate\Support\Str;
 /**
  * ブラウザでの「実UIプレビュー」用デモ会員＆コンテンツ。
  *
- * LINEログイン無しのブラウザ（?demo=1）でも、会員証・ポイント・クーポン・
+ * LINEログイン無しのブラウザでも、会員証・ポイント・クーポン・
  * スタンプに加えて、注文履歴・予約・順番待ち・ギャラリーなど “実際のアプリ画面”
  * がすべて埋まった状態で確認できるよう、有効な LINE 形式 ID（U+32hex）を持つ
- * リッチなデモ会員と関連データを冪等に用意する。
+ * リッチなプレビュー用会員と関連データを冪等に用意する。
  */
 class DemoPreviewSeeder extends Seeder
 {
@@ -90,7 +90,7 @@ class DemoPreviewSeeder extends Seeder
         $this->seedQueue($pid, $member, $user);
         $this->seedGallery($pid);
 
-        $this->command?->info('デモプレビュー会員＆コンテンツを用意しました（?demo=1 で表示）。LINE ID: '.$lineId);
+        $this->command?->info('プレビュー用会員＆コンテンツを用意しました（/liff で表示）。LINE ID: '.$lineId);
     }
 
     /**
