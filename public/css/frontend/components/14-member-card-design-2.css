@@ -22,20 +22,22 @@
     align-items: center;
     justify-content: center;
     width: 100%;
-    min-height: 100px;
-    max-height: 120px;
-    padding: 12px 10px;
-    background: rgba(255, 255, 255, 0.95);
+    min-height: 68px;
+    max-height: 92px;
+    padding: 6px 8px 4px;
+    background: #ffffff;
     border-radius: 12px;
     margin-bottom: 8px;
+    overflow: hidden;
+    box-sizing: border-box;
 }
 
 .idnect-card-barcode-svg {
+    display: block;
+    width: 100% !important;
     max-width: 100%;
-    width: 100%;
-    height: auto;
-    max-height: 92px;
-    object-fit: contain;
+    height: auto !important;
+    background: transparent !important;
 }
 
 .idnect-card-code-wrap--qrcode .idnect-card-qrcode-wrap {
