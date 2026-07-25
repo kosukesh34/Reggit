@@ -117,6 +117,31 @@ class SmaregiProductRegisterService
     }
 
     /**
+     * 商品画像をスマレジへ登録する（非同期）。imageUrl はスマレジから取得可能な公開URLであること。
+     */
+    public function registerProductImage(int $projectId, string $smaregiProductId, string $imageUrl, ?string $callbackUrl = null): bool
+    {
+        $contractId = $this->smaregiApi->getContractIdForProject($projectId);
+        if (StrHelper::isEmptyStringOrNull($contractId)) {
+            return true;
+        }
+
+        $trimmedUrl = trim($imageUrl);
+        if ($trimmedUrl === '') {
+            return false;
+        }
+
+        $body = ['imageUrl' => mb_substr($trimmedUrl, 0, 511)];
+        if ($callbackUrl !== null && trim($callbackUrl) !== '') {
+            $body['callbackUrl'] = mb_substr(trim($callbackUrl), 0, 511);
+        }
+
+        $result = $this->smaregiApi->putProductImage($contractId, $smaregiProductId, $body);
+
+        return $result !== null;
+    }
+
+    /**
      * 商品の在庫数をスマレジに反映する。先頭店舗の在庫として更新する。店舗が無い場合は何もしない。
      */
     public function syncStockToSmaregi(int $projectId, string $smaregiProductId, int $stockAmount): bool
