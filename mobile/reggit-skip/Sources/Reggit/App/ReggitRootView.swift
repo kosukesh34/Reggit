@@ -3,7 +3,7 @@ import Observation
 import SwiftUI
 
 /* SKIP @bridge */public struct ReggitRootView : View {
-    @State private var needsProjectSelection: Bool? = nil
+    @State var needsProjectSelection: Bool? = nil
 
     /* SKIP @bridge */public init() {
     }
