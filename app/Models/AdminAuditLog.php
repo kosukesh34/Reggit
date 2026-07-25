@@ -129,6 +129,7 @@ class AdminAuditLog extends Model
         'admin.announcements.update' => 'お知らせを更新',
         'admin.announcements.delete' => 'お知らせを削除',
         'admin.settings.basic.update' => '基本設定を更新',
+        'admin.settings.kitchen-token.regenerate' => 'キッチンモニター用トークンを発行',
         'admin.settings.advanced.update' => '詳細設定を更新',
         'admin.settings.home.update' => 'ホーム設定を更新',
         'admin.settings.menu.update' => 'メニュー設定を更新', // 廃止（ホームへリダイレクト。互換のためキーは残す）

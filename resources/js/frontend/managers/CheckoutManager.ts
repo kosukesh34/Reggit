@@ -6,7 +6,11 @@ import { ToastManager } from '../../shared/utils/toast';
 
 type StripePaymentLike = {
     setupPaymentForm: (elementId: string, amount: number, orderId: number | string) => Promise<void>;
-    confirmPayment: (orderId: number | string) => Promise<{ success?: boolean; message?: string } | null>;
+    confirmPayment: (orderId: number | string) => Promise<{
+        success?: boolean;
+        message?: string;
+        order?: OrderLike;
+    } | null>;
 };
 
 type OrderLike = {
@@ -82,9 +86,14 @@ export class CheckoutManager {
                 return;
             }
 
-            const data = result.data as { message?: string };
-            ToastManager.success((data && data.message) || '店内注文を受け付けました');
-            this.afterOrderCompleted();
+            const data = result.data as { message?: string; order?: OrderLike };
+            const issuedNumber = DomHelper.formatReferenceNumber(data?.order?.order_number);
+            ToastManager.success(
+                issuedNumber
+                    ? `店内注文を受け付けました（引換番号: ${issuedNumber}）`
+                    : ((data && data.message) || '店内注文を受け付けました'),
+            );
+            this.afterOrderCompleted(data?.order?.order_number ?? null);
         } finally {
             this.isSubmitting = false;
         }
@@ -256,11 +265,11 @@ export class CheckoutManager {
                     );
                     ToastManager.success(
                         issuedNumber
-                            ? `モバイル注文が完了しました（注文番号: ${issuedNumber}）`
+                            ? `モバイル注文が完了しました（引換番号: ${issuedNumber}）`
                             : 'モバイル注文が完了しました',
                     );
                     this.closePaymentModal(false);
-                    this.afterOrderCompleted();
+                    this.afterOrderCompleted(confirmedOrder?.order_number ?? null);
                 } catch (error) {
                     const message =
                         error instanceof Error && error.message ? error.message : '決済に失敗しました';
@@ -317,15 +326,20 @@ export class CheckoutManager {
         }
     }
 
-    afterOrderCompleted(): void {
+    afterOrderCompleted(orderNumber: string | number | null = null): void {
         this.cartManager.clear();
         if (typeof window !== 'undefined' && window.app) {
             const app = window.app as AppLike & {
                 openOrderFlow?: (step: 'cart' | 'confirm' | 'complete') => void;
                 lastOrderCompleteMessage?: string | null;
+                lastOrderReferenceNumber?: string | null;
             };
+            const displayNumber = DomHelper.formatReferenceNumber(orderNumber);
             if (typeof app.lastOrderCompleteMessage !== 'undefined') {
                 app.lastOrderCompleteMessage = 'ご注文ありがとうございました';
+            }
+            if (typeof app.lastOrderReferenceNumber !== 'undefined') {
+                app.lastOrderReferenceNumber = displayNumber !== '' ? displayNumber : null;
             }
             if (typeof app.updateCartUI === 'function') {
                 app.updateCartUI();

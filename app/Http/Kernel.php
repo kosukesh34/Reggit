@@ -4,6 +4,7 @@ namespace App\Http;
 
 use App\Http\Middleware\AdminAuditLogger;
 use App\Http\Middleware\AuthenticateApiToken;
+use App\Http\Middleware\AuthenticateKitchenToken;
 use App\Http\Middleware\BindAdminProject;
 use App\Http\Middleware\BindProjectFromRequest;
 use App\Http\Middleware\CheckAdminPermission;
@@ -85,6 +86,7 @@ class Kernel extends HttpKernel
         'system.admin' => EnsureSystemAdmin::class,
         'admin.permission' => CheckAdminPermission::class,
         'api.token' => AuthenticateApiToken::class,
+        'kitchen.auth' => AuthenticateKitchenToken::class,
         'verify.smaregi.webhook' => VerifySmaregiWebhookSecret::class,
     ];
 }
