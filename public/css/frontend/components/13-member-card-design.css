@@ -451,8 +451,8 @@
 }
 .idnect-card-wrapper--design-emblem .idnect-card-barcode-wrap {
     width: 100%;
-    min-height: 62px;
-    max-height: 68px;
+    min-height: 72px;
+    max-height: 90px;
 }
 
 .idnect-card-front-top {
@@ -558,6 +558,6 @@
 .member-screen-apple .idnect-card-barcode-wrap {
     background: #ffffff;
     border-radius: 14px;
-    padding: 10px 12px;
+    padding: 6px 8px 4px;
     box-shadow: var(--shadow-xs);
 }
