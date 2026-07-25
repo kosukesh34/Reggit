@@ -1025,44 +1025,54 @@ body.liff-fixed-ui .cart-badge {
 }
 
 body.liff-fixed-ui .product-qty-stepper {
-    display: inline-flex !important;
+    display: flex !important;
     align-items: center !important;
-    gap: 2px !important;
-    margin-top: 6px !important;
-    background: rgba(118, 118, 128, 0.12) !important;
-    border-radius: 980px !important;
-    padding: 2px !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+    width: 100% !important;
+    margin-top: 8px !important;
+    min-height: 52px !important;
+    background: color-mix(in srgb, var(--ios-tint, #0e7c66) 10%, #fff) !important;
+    border: 1px solid color-mix(in srgb, var(--ios-tint, #0e7c66) 20%, transparent) !important;
+    border-radius: 999px !important;
+    padding: 4px !important;
+    box-sizing: border-box !important;
 }
 
 body.liff-fixed-ui .product-qty-btn {
-    width: 30px !important;
-    height: 30px !important;
+    width: 44px !important;
+    height: 44px !important;
+    min-width: 44px !important;
+    min-height: 44px !important;
     border: none !important;
-    border-radius: 15px !important;
-    background: var(--ios-surface) !important;
-    color: var(--ios-tint) !important;
-    font-size: 18px !important;
-    font-weight: 500 !important;
+    border-radius: 50% !important;
+    background: var(--ios-tint, #0e7c66) !important;
+    color: #fff !important;
+    font-size: 22px !important;
+    font-weight: 600 !important;
     line-height: 1 !important;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
     padding: 0 !important;
     cursor: pointer !important;
-    box-shadow: 0 0.5px 1px rgba(0, 0, 0, 0.08) !important;
+    box-shadow: 0 4px 12px rgba(14, 124, 102, 0.28) !important;
 }
 
 body.liff-fixed-ui .product-qty-btn:active {
-    background: rgba(14, 124, 102, 0.12) !important;
+    background: color-mix(in srgb, var(--ios-tint, #0e7c66) 85%, #000) !important;
+    transform: scale(0.94);
 }
 
 body.liff-fixed-ui .product-qty-value {
-    min-width: 28px !important;
+    flex: 1 1 auto !important;
+    min-width: 40px !important;
     text-align: center !important;
-    font-size: 15px !important;
-    font-weight: 600 !important;
-    color: var(--ios-label) !important;
+    font-size: 20px !important;
+    font-weight: 800 !important;
+    color: var(--ios-label, #1c1917) !important;
     line-height: 1 !important;
+    font-variant-numeric: tabular-nums !important;
 }
 
 body.liff-fixed-ui .product-card.in-cart::before {
@@ -1416,7 +1426,7 @@ body.liff-fixed-ui .idnect-card-points-value {
 body.liff-fixed-ui .idnect-card-barcode-wrap {
     background: #fff !important;
     border-radius: 14px !important;
-    padding: 12px 10px !important;
+    padding: 6px 8px 4px !important;
 }
 
 body.liff-fixed-ui .idnect-card-tap-hint {
@@ -1457,8 +1467,8 @@ body.liff-fixed-ui .product-add-btn {
 }
 
 body.liff-fixed-ui .product-qty-btn {
-    color: var(--ios-tint) !important;
-    border-color: rgba(14, 124, 102, 0.28) !important;
+    color: #fff !important;
+    border-color: transparent !important;
 }
 
 body.liff-fixed-ui .ios-sample-banner__text {
