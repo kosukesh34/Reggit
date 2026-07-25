@@ -15,6 +15,8 @@ use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
 use App\Enums\MemberRegistrationMode;
 use App\Infrastructure\Events\LoggingDomainEventListener;
 use App\Infrastructure\Events\MulticastDomainEventDispatcher;
+use App\Infrastructure\Events\NotifyOnOrderConfirmedListener;
+use App\Infrastructure\Events\NotifyOnOrderReadyListener;
 use App\Infrastructure\Events\SyncOrderPointsToSmaregiListener;
 use App\Infrastructure\Events\SyncOrderTransactionToSmaregiListener;
 use App\Infrastructure\Events\SyncPointsEarnedToSmaregiListener;
@@ -74,6 +76,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(DomainEventDispatcher::class, function ($app) {
             return new MulticastDomainEventDispatcher([
                 $app->make(LoggingDomainEventListener::class),
+                $app->make(NotifyOnOrderConfirmedListener::class),
+                $app->make(NotifyOnOrderReadyListener::class),
                 $app->make(SyncPointsEarnedToSmaregiListener::class),
                 $app->make(SyncOrderPointsToSmaregiListener::class),
                 $app->make(SyncOrderTransactionToSmaregiListener::class),

@@ -20,6 +20,8 @@ class SettingsService
             'advanceDays' => ShopSetting::getAdvanceBookingDays($projectId),
             'reservationCapacity' => ShopSetting::getReservationCapacityPerSlot($projectId),
             'orderMode' => ShopSetting::getOrderMode($projectId),
+            'orderLineNotifyEnabled' => ShopSetting::isOrderLineNotifyEnabled($projectId),
+            'orderReadyLineNotifyEnabled' => ShopSetting::isOrderReadyLineNotifyEnabled($projectId),
         ];
     }
 
@@ -62,6 +64,14 @@ class SettingsService
         }
 
         ShopSetting::setOrderMode((string) ($validated['order_mode'] ?? ShopSetting::ORDER_MODE_BOTH), $projectId);
+        ShopSetting::setOrderLineNotifyEnabled(
+            (bool) ($validated['order_line_notify_enabled'] ?? false),
+            $projectId
+        );
+        ShopSetting::setOrderReadyLineNotifyEnabled(
+            (bool) ($validated['order_ready_line_notify_enabled'] ?? false),
+            $projectId
+        );
     }
 
     /** 予約設定のみ取得（予約メニュー下の設定用） */
