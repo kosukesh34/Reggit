@@ -506,6 +506,48 @@ body.tab-style-pill .main-tab-btn.active {
     margin-bottom: 12px;
 }
 
+.order-flow-complete__pickup {
+    margin: 20px auto 18px;
+    max-width: 320px;
+    padding: 18px 16px 16px;
+    border-radius: 20px;
+    background:
+        linear-gradient(180deg, color-mix(in srgb, var(--primary-color, #0e7c66) 10%, #fff) 0%, #fff 100%);
+    border: 1px solid color-mix(in srgb, var(--primary-color, #0e7c66) 22%, transparent);
+    box-shadow: 0 10px 28px rgba(var(--primary-rgb, 14, 124, 102), 0.12);
+}
+
+.order-flow-complete__pickup-label {
+    margin: 0 0 8px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-secondary, #78716c);
+}
+
+.order-flow-complete__pickup-number {
+    margin: 0;
+    font-size: 48px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: 0.04em;
+    font-variant-numeric: tabular-nums;
+    color: var(--primary-color, #0e7c66);
+}
+
+.order-flow-complete__pickup-hint {
+    margin: 10px 0 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary, #78716c);
+}
+
+.order-flow-complete__message {
+    margin: 0 0 8px;
+    color: var(--text-secondary, #78716c);
+}
+
 .page-content__back {
     display: inline-flex;
     align-items: center;
