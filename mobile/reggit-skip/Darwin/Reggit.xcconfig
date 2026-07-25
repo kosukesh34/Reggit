@@ -1,7 +1,10 @@
 // デフォルト値（#include がビルド環境で解決されない場合のフォールバック）
-LIFF_BASE_URL = https://reggit.shop
-LIFF_BASE_URL_IOS = https://reggit.shop
-LIFF_BASE_URL_ANDROID = https://reggit.shop
+// xcconfig では // がコメントになるため、$() で URL を分割する
+LIFF_BASE_URL = https:/$()/reggit.jp
+LIFF_BASE_URL_IOS = https:/$()/reggit.jp
+LIFF_BASE_URL_ANDROID = https:/$()/reggit.jp
+LIFF_PROJECT_KEY = sb_skt733n4
+LIFF_FIXED_TAB = products
 #include "../Skip.env"
 
 // LIFF のベースURL（Skip.env の LIFF_BASE_URL を Info.plist に渡す）
@@ -9,6 +12,10 @@ INFOPLIST_KEY_LiffBaseUrl = $(LIFF_BASE_URL)
 INFOPLIST_KEY_LiffBaseUrlIos = $(LIFF_BASE_URL_IOS)
 INFOPLIST_KEY_LiffBaseUrlAndroid = $(LIFF_BASE_URL_ANDROID)
 INFOPLIST_KEY_LIFF_BASE_URL_ANDROID = $(LIFF_BASE_URL_ANDROID)
+INFOPLIST_KEY_LiffProjectKey = $(LIFF_PROJECT_KEY)
+INFOPLIST_KEY_LIFF_PROJECT_KEY = $(LIFF_PROJECT_KEY)
+INFOPLIST_KEY_LiffFixedTab = $(LIFF_FIXED_TAB)
+INFOPLIST_KEY_LIFF_FIXED_TAB = $(LIFF_FIXED_TAB)
 
 // Set the action that will be executed as part of the Xcode Run Script phase
 // Setting to "launch" will build and run the app in the first open Android emulator or device
