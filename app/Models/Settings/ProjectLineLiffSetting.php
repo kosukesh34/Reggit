@@ -32,6 +32,9 @@ class ProjectLineLiffSetting extends Model
         'liff_saved_screens',
         'liff_custom_css',
         'order_mode',
+        'order_line_notify_enabled',
+        'order_ready_line_notify_enabled',
+        'kitchen_access_token',
         'frontend_menu_items',
     ];
 
@@ -43,6 +46,8 @@ class ProjectLineLiffSetting extends Model
         'liff_tab_settings' => 'array',
         'liff_saved_screens' => 'array',
         'frontend_menu_items' => 'array',
+        'order_line_notify_enabled' => 'boolean',
+        'order_ready_line_notify_enabled' => 'boolean',
         'line_channel_access_token' => 'encrypted',
         'line_channel_secret' => 'encrypted',
     ];
@@ -61,6 +66,9 @@ class ProjectLineLiffSetting extends Model
             'line_success_color' => '#059669',
             'line_danger_color' => '#dc2626',
             'order_mode' => 'both',
+            'order_line_notify_enabled' => true,
+            'order_ready_line_notify_enabled' => true,
+            'kitchen_access_token' => null,
         ];
     }
 }

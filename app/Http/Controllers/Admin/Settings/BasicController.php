@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin\Settings;
 use App\Http\Controllers\Admin\AdminBaseController;
 use App\Http\Requests\Admin\SettingsBasicRequest;
 use App\UseCases\Admin\Settings\GetBasicSettingsUseCase;
+use App\UseCases\Admin\Settings\RegenerateKitchenAccessTokenUseCase;
 use App\UseCases\Admin\Settings\UpdateBasicFeatureFlagsUseCase;
 use App\UseCases\Admin\Settings\UpdateBasicSettingsUseCase;
 use Illuminate\Http\Request;
@@ -17,14 +18,18 @@ class BasicController extends AdminBaseController
 
     private UpdateBasicFeatureFlagsUseCase $updateBasicFeatureFlagsUseCase;
 
+    private RegenerateKitchenAccessTokenUseCase $regenerateKitchenAccessTokenUseCase;
+
     public function __construct(
         GetBasicSettingsUseCase $getBasicSettingsUseCase,
         UpdateBasicSettingsUseCase $updateBasicSettingsUseCase,
-        UpdateBasicFeatureFlagsUseCase $updateBasicFeatureFlagsUseCase
+        UpdateBasicFeatureFlagsUseCase $updateBasicFeatureFlagsUseCase,
+        RegenerateKitchenAccessTokenUseCase $regenerateKitchenAccessTokenUseCase
     ) {
         $this->getBasicSettingsUseCase = $getBasicSettingsUseCase;
         $this->updateBasicSettingsUseCase = $updateBasicSettingsUseCase;
         $this->updateBasicFeatureFlagsUseCase = $updateBasicFeatureFlagsUseCase;
+        $this->regenerateKitchenAccessTokenUseCase = $regenerateKitchenAccessTokenUseCase;
     }
 
     public function index()
@@ -45,6 +50,15 @@ class BasicController extends AdminBaseController
 
         return redirect()->route('admin.settings.basic', $this->buildAdminRouteParams())
             ->with('success', '基本設定を更新しました');
+    }
+
+    public function regenerateKitchenToken()
+    {
+        $projectId = $this->resolveAdminProjectId();
+        $this->regenerateKitchenAccessTokenUseCase->handle($projectId);
+
+        return redirect()->route('admin.settings.basic', $this->buildAdminRouteParams())
+            ->with('success', 'キッチンモニター用トークンを発行しました');
     }
 
     public function updateFeatureFlags(Request $request)
