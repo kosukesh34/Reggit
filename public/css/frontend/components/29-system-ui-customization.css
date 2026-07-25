@@ -66,7 +66,6 @@ body.system-media-arch { --system-media-radius: 999px 999px var(--radius-lg, 18p
 .member-card,
 .member-profile-card,
 .member-purchase-history-item,
-.member-summary-card,
 .coupons-tab-empty,
 .orders-empty,
 .reservation-empty,
@@ -74,6 +73,12 @@ body.system-media-arch { --system-media-radius: 999px 999px var(--radius-lg, 18p
     border: 1px solid var(--system-card-border) !important;
     border-radius: var(--system-card-radius) !important;
     background: var(--system-card-bg) !important;
+    box-shadow: var(--system-card-shadow) !important;
+}
+
+/* 会員サマリーはブランドグラデ＋白文字のため system-card 背景を当てない */
+.member-summary-card {
+    border-radius: var(--system-card-radius) !important;
     box-shadow: var(--system-card-shadow) !important;
 }
 
