@@ -27,7 +27,7 @@ class OrderNotificationServiceTest extends TestCase
         );
     }
 
-    public function test_設定OFFのときLINEを送らないこと(): void
+    public function test_設定_of_fのとき_lin_eを送らないこと(): void
     {
         $project = $this->createProject();
         ShopSetting::setOrderLineNotifyEnabled(false, (int) $project->id);
@@ -55,7 +55,7 @@ class OrderNotificationServiceTest extends TestCase
         $this->assertTrue(true);
     }
 
-    public function test_店内注文ではLINEを送らないこと(): void
+    public function test_店内注文では_lin_eを送らないこと(): void
     {
         $project = $this->createProject();
         ShopSetting::setOrderLineNotifyEnabled(true, (int) $project->id);
@@ -83,7 +83,7 @@ class OrderNotificationServiceTest extends TestCase
         $this->assertTrue(true);
     }
 
-    public function test_line_user_idがないときLINEを送らないこと(): void
+    public function test_line_user_idがないとき_lin_eを送らないこと(): void
     {
         $project = $this->createProject();
         ShopSetting::setOrderLineNotifyEnabled(true, (int) $project->id);
@@ -112,7 +112,7 @@ class OrderNotificationServiceTest extends TestCase
         $this->assertTrue(true);
     }
 
-    public function test_受取可通知_設定OFFのときLINEを送らないこと(): void
+    public function test_受取可通知_設定_of_fのとき_lin_eを送らないこと(): void
     {
         $project = $this->createProject();
         ShopSetting::setOrderReadyLineNotifyEnabled(false, (int) $project->id);

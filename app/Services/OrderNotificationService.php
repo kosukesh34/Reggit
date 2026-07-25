@@ -47,7 +47,7 @@ class OrderNotificationService
     }
 
     /**
-     * @param callable(string): string $bodyBuilder
+     * @param  callable(string): string  $bodyBuilder
      */
     private function notifyMobileOrder(
         int $orderId,
@@ -92,7 +92,7 @@ class OrderNotificationService
     }
 
     /**
-     * @param callable(string): string $bodyBuilder
+     * @param  callable(string): string  $bodyBuilder
      */
     private function sendLinePush(
         Order $order,
