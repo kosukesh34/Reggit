@@ -202,7 +202,7 @@ class OrderService
     }
 
     /**
-     * @param  array<int, array{product_id: int, quantity: int, price: float, notes?: string|null}>  $orderItems
+     * @param  array<int, array{product_id: int, quantity: int, price: float, notes?: string|null, product_name?: string|null}>  $orderItems
      * @return list<OrderLineItem>
      */
     private function toOrderLineItems(array $orderItems): array
@@ -214,6 +214,7 @@ class OrderService
                 (int) $item['quantity'],
                 (float) $item['price'],
                 $item['notes'] ?? null,
+                isset($item['product_name']) ? (string) $item['product_name'] : null,
             );
         }
 
@@ -249,6 +250,7 @@ class OrderService
 
             $orderItems[] = [
                 'product_id' => $product->id,
+                'product_name' => $product->name,
                 'quantity' => $quantity,
                 'price' => $unitPrice,
                 'notes' => $note,

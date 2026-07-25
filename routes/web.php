@@ -255,6 +255,7 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'bind.admin.project', '
 
         Route::get('/settings', [SettingsBasicController::class, 'index'])->name('admin.settings.basic')->middleware('admin.permission:settings.view');
         Route::post('/settings/basic', [SettingsBasicController::class, 'update'])->name('admin.settings.basic.update')->middleware('admin.permission:settings.manage');
+        Route::post('/settings/kitchen-token/regenerate', [SettingsBasicController::class, 'regenerateKitchenToken'])->name('admin.settings.kitchen-token.regenerate')->middleware('admin.permission:settings.manage');
         Route::post('/settings/feature-flags', [SettingsBasicController::class, 'updateFeatureFlags'])->name('admin.settings.feature-flags.update')->middleware('admin.permission:settings.manage');
         Route::get('/settings/advanced', [SettingsAdvancedController::class, 'index'])->name('admin.settings.advanced')->middleware('admin.permission:settings.view');
         Route::post('/settings/advanced', [SettingsAdvancedController::class, 'update'])->name('admin.settings.advanced.update')->middleware('admin.permission:settings.manage');

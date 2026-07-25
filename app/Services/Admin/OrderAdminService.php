@@ -2,6 +2,8 @@
 
 namespace App\Services\Admin;
 
+use App\Domain\Order\Events\OrderReady;
+use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
 use App\Models\Order;
@@ -16,6 +18,7 @@ class OrderAdminService
         private CouponIssueService $couponIssueService,
         private SmaregiOrderTransactionOutboundService $smaregiOrderTransactionOutbound,
         private OrderService $orderService,
+        private DomainEventDispatcher $domainEvents,
     ) {}
 
     /** 決済済み = 確定・準備中・受け取り可能・完了 */
@@ -61,7 +64,15 @@ class OrderAdminService
     public function updateStatus(int $id, string $status): void
     {
         $order = Order::with('user')->findOrFail($id);
+        $previousStatus = (string) $order->status;
         Order::whereKey($id)->update(['status' => $status]);
+        if ($status === OrderStatus::READY && $previousStatus !== OrderStatus::READY) {
+            $this->domainEvents->dispatch(new OrderReady(
+                (int) $order->id,
+                (int) $order->project_id,
+                (int) ($order->user_id ?? 0),
+            ));
+        }
         if ($status === OrderStatus::COMPLETED) {
             $completed = $order->fresh();
             $this->finalizeCashLayawayIfNeeded($completed);

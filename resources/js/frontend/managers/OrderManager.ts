@@ -1,9 +1,11 @@
 import type { ApiClient } from '../../shared/utils/apiClient';
 import { AppConstants } from '../../shared/constants';
 import { DomHelper } from '../../shared/utils/domHelper';
+import { ToastManager } from '../../shared/utils/toast';
 
 type OrderItem = {
     quantity?: number;
+    product_name?: string | null;
     product?: { name?: string } | null;
 };
 
@@ -17,8 +19,25 @@ type Order = {
     items?: OrderItem[];
 };
 
+type TrackerStep = {
+    key: string;
+    tMark: string;
+    label: string;
+    detail: string;
+};
+
+const ACTIVE_TRACKER_STEPS: TrackerStep[] = [
+    { key: 'confirmed', tMark: 'T+0', label: '受付', detail: '注文を受け付けました' },
+    { key: 'preparing', tMark: 'T+1', label: '準備中', detail: 'キッチンで準備しています' },
+    { key: 'ready', tMark: 'T+2', label: '受取可', detail: '受け取りの準備が整いました' },
+    { key: 'completed', tMark: 'T+3', label: '完了', detail: 'ミッション完了' },
+];
+
 export class OrderManager {
     apiClient: ApiClient;
+    private pollTimer: ReturnType<typeof setInterval> | null = null;
+    private lastFingerprint = '';
+    private knownStatuses: Record<string, string> = {};
 
     constructor(apiClient: ApiClient) {
         this.apiClient = apiClient;
@@ -39,9 +58,132 @@ export class OrderManager {
         return [];
     }
 
-    buildOrderCardHtml(order: Order): string {
+    startOrdersPolling(refresh: () => void | Promise<void>, intervalMs = 2500): void {
+        this.stopOrdersPolling();
+        this.pollTimer = setInterval(() => {
+            void refresh();
+        }, intervalMs);
+    }
+
+    stopOrdersPolling(): void {
+        if (this.pollTimer !== null) {
+            clearInterval(this.pollTimer);
+            this.pollTimer = null;
+        }
+    }
+
+    ordersFingerprint(orders: Order[]): string {
+        return orders
+            .map((o) => `${String(o.id ?? '')}:${String(o.status ?? '')}:${DomHelper.formatReferenceNumber(o.order_number)}`)
+            .join('|');
+    }
+
+    shouldSkipRender(orders: Order[]): boolean {
+        const next = this.ordersFingerprint(orders);
+        if (next === this.lastFingerprint && next !== '') {
+            return true;
+        }
+        this.lastFingerprint = next;
+        return false;
+    }
+
+    resetFingerprint(): void {
+        this.lastFingerprint = '';
+        this.knownStatuses = {};
+    }
+
+    notifyIfBecameReady(orders: Order[]): void {
+        const nextKnown: Record<string, string> = {};
+        orders.forEach((order) => {
+            const id = String(order.id ?? '');
+            if (id === '') {
+                return;
+            }
+            const status = String(order.status ?? '');
+            nextKnown[id] = status;
+            const prev = this.knownStatuses[id];
+            if (prev !== undefined && prev !== 'ready' && status === 'ready') {
+                const ref = DomHelper.formatReferenceNumber(order.order_number);
+                ToastManager.success(
+                    ref !== '' ? `引換番号 ${ref} が受け取り可能になりました` : '注文が受け取り可能になりました',
+                    5000
+                );
+            }
+        });
+        this.knownStatuses = nextKnown;
+    }
+
+    private trackerIndex(status: string | undefined): number {
+        const s = status || 'pending';
+        if (s === 'cancelled') {
+            return -1;
+        }
+        if (s === 'pending' || s === 'confirmed') {
+            return 0;
+        }
+        if (s === 'preparing') {
+            return 1;
+        }
+        if (s === 'ready') {
+            return 2;
+        }
+        if (s === 'completed') {
+            return 3;
+        }
+        return 0;
+    }
+
+    buildStatusTrackerHtml(status: string | undefined, isActive: boolean): string {
+        if (status === 'cancelled') {
+            return `
+                <div class="order-launch-timeline order-launch-timeline--cancelled" role="status">
+                    <span class="order-launch-timeline__cancelled">キャンセル済み</span>
+                </div>
+            `;
+        }
+        const current = this.trackerIndex(status);
+        const steps = ACTIVE_TRACKER_STEPS.map((step, index) => {
+            const isDone = index < current;
+            const isCurrent = index === current;
+            const stateClass = isDone
+                ? 'is-done'
+                : isCurrent
+                    ? 'is-current'
+                    : 'is-todo';
+            const nodeInner = isCurrent
+                ? '<i class="fas fa-rocket order-launch-timeline__rocket" aria-hidden="true"></i>'
+                : '';
+            return `
+                <li class="order-launch-timeline__item ${stateClass}" role="listitem">
+                    <span class="order-launch-timeline__t">${DomHelper.escapeHtml(step.tMark)}</span>
+                    <span class="order-launch-timeline__rail" aria-hidden="true">
+                        <span class="order-launch-timeline__node">${nodeInner}</span>
+                    </span>
+                    <div class="order-launch-timeline__body">
+                        <span class="order-launch-timeline__title">${DomHelper.escapeHtml(step.label)}</span>
+                        <span class="order-launch-timeline__detail">${DomHelper.escapeHtml(step.detail)}</span>
+                    </div>
+                </li>
+            `;
+        }).join('');
+
+        return `
+            <div class="order-launch-timeline ${isActive ? 'order-launch-timeline--live' : ''}" role="list" aria-label="注文状況タイムライン">
+                <div class="order-launch-timeline__header">
+                    <i class="fas fa-satellite" aria-hidden="true"></i>
+                    <span>MISSION TIMELINE</span>
+                </div>
+                <ol class="order-launch-timeline__list">
+                    ${steps}
+                </ol>
+            </div>
+        `;
+    }
+
+    buildOrderCardHtml(order: Order, options: { large?: boolean } = {}): string {
+        const large = options.large === true;
         const labels = AppConstants.ORDER_STATUS_LABELS || {};
-        const statusLabel = labels[order.status as keyof typeof labels] || order.status;
+        const statusLabel = labels[order.status as keyof typeof labels] || order.status || '';
         const typeLabels = AppConstants.ORDER_TYPE_LABELS || {};
         const typeKey = order.order_type || '';
         const typeLabel =
@@ -58,34 +200,40 @@ export class OrderManager {
             })
             : '';
         const items = (order.items || [])
-            .map(
-                (i) =>
-                    `<span class="order-item-line">${DomHelper.escapeHtml((i.product && i.product.name) || '商品')} × ${i.quantity || 0}</span>`,
-            )
+            .map((i) => {
+                const name = (i.product && i.product.name) || i.product_name || '商品';
+                return `<span class="order-item-line">${DomHelper.escapeHtml(name)} × ${i.quantity || 0}</span>`;
+            })
             .join('');
         const refNumber = DomHelper.formatReferenceNumber(order.order_number);
         const typeBadge = typeLabel
             ? `<span class="order-card-type order-card-type--${DomHelper.escapeHtml(typeKey)}">${DomHelper.escapeHtml(typeLabel)}</span>`
             : '';
+        const isActive = ['pending', 'confirmed', 'preparing', 'ready'].includes(String(order.status || ''));
+        const tracker = this.buildStatusTrackerHtml(order.status, isActive);
+
         return `
-            <div class="order-card">
+            <article class="order-card ${large ? 'order-card--hero' : ''}" data-order-id="${DomHelper.escapeHtml(String(order.id ?? ''))}" data-order-status="${DomHelper.escapeHtml(String(order.status ?? ''))}">
                 <div class="order-card-header">
-                    <span class="order-card-date">${DomHelper.escapeHtml(dateStr)}</span>
-                    ${typeBadge}
-                    <span class="order-card-status order-card-status--${order.status}">${DomHelper.escapeHtml(statusLabel)}</span>
-                    ${refNumber ? `<span class="ref-number" aria-label="注文番号">${DomHelper.escapeHtml(refNumber)}</span>` : ''}
+                    ${refNumber ? `<p class="order-card-ref" aria-label="引換番号">${DomHelper.escapeHtml(refNumber)}</p>` : ''}
+                    <div class="order-card-meta">
+                        <span class="order-card-date">${DomHelper.escapeHtml(dateStr)}</span>
+                        ${typeBadge}
+                        <span class="order-card-status order-card-status--${DomHelper.escapeHtml(String(order.status || ''))}">${DomHelper.escapeHtml(String(statusLabel))}</span>
+                    </div>
                 </div>
+                ${tracker}
                 <div class="order-card-items">${items}</div>
                 <div class="order-card-total">合計: ${DomHelper.formatPrice(order.total_amount || 0)}</div>
-            </div>
+            </article>
         `;
     }
 
-    buildOrderListHtml(orders: Order[]): string {
+    buildOrderListHtml(orders: Order[], options: { large?: boolean } = {}): string {
         if (!orders || orders.length === 0) {
             return '';
         }
-        return orders.map((order) => this.buildOrderCardHtml(order)).join('');
+        return orders.map((order) => this.buildOrderCardHtml(order, options)).join('');
     }
 
     renderOrdersSection(container: Element | null, orders: Order[]): void {
@@ -93,6 +241,8 @@ export class OrderManager {
             return;
         }
         if (!orders || orders.length === 0) {
+            this.lastFingerprint = '';
+            this.knownStatuses = {};
             container.innerHTML = `
                 <div class="orders-empty">
                     <i class="fas fa-receipt"></i>
@@ -102,6 +252,8 @@ export class OrderManager {
             `;
             return;
         }
+
+        this.notifyIfBecameReady(orders);
 
         const grouped: Record<string, Order[]> = {};
         orders.forEach((order) => {
@@ -125,7 +277,7 @@ export class OrderManager {
                     <span>進行中の注文</span>
                     <span class="order-group-count">${activeOrders.length}件</span>
                 </div>
-                <div class="orders-list">${this.buildOrderListHtml(activeOrders)}</div>
+                <div class="orders-list orders-list--active">${this.buildOrderListHtml(activeOrders, { large: true })}</div>
             </div>`;
         }
 
@@ -140,6 +292,7 @@ export class OrderManager {
             </div>`;
         }
 
+        this.lastFingerprint = this.ordersFingerprint(orders);
         container.innerHTML = html;
     }
 

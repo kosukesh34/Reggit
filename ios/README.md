@@ -60,3 +60,39 @@ static let serverTarget: AppServerTarget = .local
 | LINE / LIFF | API から自動取得 | 同左 |
 
 設定画面では向け先・API URL・プロジェクト・API取得の LINE 情報は表示のみです（プリンター・パスコード等は従来どおり編集可）。
+
+---
+
+# Reggit Kitchen（iPad キッチンモニター）
+
+モバイル注文の未完了一覧を表示し、準備中／受取可／完了へ進める店舗向け iPad アプリです。
+
+## 概要
+
+- **表示名**: Reggit Kitchen
+- **プロジェクト**: `KitchenMonitor.xcodeproj`
+- **Bundle ID**: `gamechanger.IDNect.KitchenMonitor`
+- **プラットフォーム**: iPadOS 18.0+
+
+## 機能
+
+- 未完了注文ボード（引換番号・品目・数量）
+- ステータス操作（準備中 → 受取可 → 完了）
+- 8秒ポーリング＋新規注文時の音
+- Push 通知（端末登録。送信は `PUSH_KITCHEN_ONESIGNAL_*` 設定時）
+- 管理パスコード／スリープ防止
+
+## セットアップ
+
+1. Xcode で `KitchenMonitor.xcodeproj` を開き、`AppBuildConfig.swift` の `projectKey` / `serverTarget` を設定（Waiting と同じ運用）
+2. 実機でビルドして起動（トークン入力は不要。`project_key` のみで接続）
+
+## API
+
+| メソッド | パス | 用途 |
+|----------|------|------|
+| GET | `/api/kitchen/{project_key}/orders` | 未完了一覧 |
+| POST | `/api/kitchen/{project_key}/orders/{id}/status` | ステータス更新 |
+| POST | `/api/kitchen/{project_key}/devices` | Push トークン登録 |
+
+認証: Waiting と同様に `project_key` のみ（トークン不要）。ヘッダ `X-Kitchen-Client: kitchen-monitor` を付与。
