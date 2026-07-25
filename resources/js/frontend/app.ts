@@ -1661,6 +1661,7 @@ class ReggitApp {
                     <div class="order-flow-complete__icon"><i class="fas fa-check-circle"></i></div>
                     <h2>注文が完了しました</h2>
                     ${pickupBlock}
+                    <div class="order-flow-complete__live" data-order-complete-live></div>
                     <p class="order-flow-complete__message">${DomHelper.escapeHtml(message)}</p>
                     <div class="liff-flow-actions">
                         <button type="button" class="btn btn-primary" onclick="app.switchTab('orders')">注文履歴を見る</button>
@@ -1668,6 +1669,7 @@ class ReggitApp {
                     </div>
                 </div>
             `;
+            void this.loadOrdersTab({ silent: true });
             return;
         }
 
@@ -1842,9 +1844,6 @@ class ReggitApp {
             if (this.isLinkTab(tab) && !this.isLinkTab(this.currentTab)) {
                 this.linkTabReturnTab = this.currentTab || 'home';
             }
-            if (tab !== AppConstants.TABS.ORDERS) {
-                this.orderManager.stopOrdersPolling();
-            }
             this.currentTab = tab;
 
             if (typeof document !== 'undefined' && document.body !== null) {
@@ -1965,7 +1964,9 @@ class ReggitApp {
             AppConstants.ELEMENT_IDS.ORDERS_SECTION,
             { silent: true }
         );
-        if (!section) return;
+        if (!section && this.pageRouter.getCurrentKey() !== 'order_complete') {
+            return;
+        }
         if (typeof window !== 'undefined' && !window.__LINE_USER_ID__ && this.memberManager) {
             await this.memberManager.resolveLineUserIdForClient();
         }
@@ -1973,17 +1974,23 @@ class ReggitApp {
             ? this.memberManager.hasAuthenticatedIdentity()
             : (typeof window !== 'undefined' && !!window.__LINE_USER_ID__);
         if (!hasIdentity) {
-            this.orderManager.stopOrdersPolling();
-            section.innerHTML = this.memberManager.getLoginOptionalTemplate(
-                '注文履歴',
-                'ログインすると注文履歴をご利用いただけます。'
-            );
+            if (!silent) {
+                this.orderManager.stopOrdersPolling();
+                if (section) {
+                    section.innerHTML = this.memberManager.getLoginOptionalTemplate(
+                        '注文履歴',
+                        'ログインすると注文履歴をご利用いただけます。'
+                    );
+                }
+            }
             return;
         }
         if (!silent) {
             this.orderManager.resetFingerprint();
-            section.innerHTML =
-                '<div class="loading"><i class="fas fa-spinner fa-spin"></i><p>読み込み中...</p></div>';
+            if (section) {
+                section.innerHTML =
+                    '<div class="loading"><i class="fas fa-spinner fa-spin"></i><p>読み込み中...</p></div>';
+            }
         } else if (this._ordersSilentRefreshInFlight) {
             return;
         }
@@ -1992,22 +1999,58 @@ class ReggitApp {
         }
         try {
             const orders = await this.orderManager.fetchOrders();
+            this.syncOrderCompleteLiveStatus(orders);
             if (silent && this.orderManager.shouldSkipRender(orders)) {
+                this.applyOrdersPollingState(orders);
                 return;
             }
-            this.orderManager.renderOrdersSection(section, orders);
-            this.orderManager.startOrdersPolling(() => this.loadOrdersTab({ silent: true }));
+            if (section) {
+                this.orderManager.renderOrdersSection(section, orders);
+            }
+            this.applyOrdersPollingState(orders);
         } catch (error) {
             console.error('Failed to load orders:', error);
             if (!silent) {
                 this.orderManager.stopOrdersPolling();
-                section.innerHTML = this.getOrdersErrorTemplate(error);
+                if (section) {
+                    section.innerHTML = this.getOrdersErrorTemplate(error);
+                }
             }
         } finally {
             if (silent) {
                 this._ordersSilentRefreshInFlight = false;
             }
         }
+    }
+
+    shouldKeepOrdersPolling(orders: Array<{ status?: string }>): boolean {
+        if (this.currentTab === AppConstants.TABS.ORDERS) {
+            return true;
+        }
+        if (this.pageRouter.getCurrentKey() === 'order_complete') {
+            return true;
+        }
+        return this.orderManager.hasActiveOrders(orders);
+    }
+
+    applyOrdersPollingState(orders: Array<{ status?: string }>): void {
+        if (this.shouldKeepOrdersPolling(orders)) {
+            this.orderManager.startOrdersPolling(() => this.loadOrdersTab({ silent: true }));
+            return;
+        }
+        this.orderManager.stopOrdersPolling();
+    }
+
+    syncOrderCompleteLiveStatus(orders: Array<{ id?: number | string; order_number?: string; status?: string }>): void {
+        if (this.pageRouter.getCurrentKey() !== 'order_complete') {
+            return;
+        }
+        const liveMount = document.querySelector('[data-order-complete-live]');
+        if (!liveMount) {
+            return;
+        }
+        const liveOrder = this.orderManager.pickLiveOrder(orders, this.lastOrderReferenceNumber);
+        this.orderManager.renderOrderCompleteLiveStatus(liveMount, liveOrder);
     }
 
     getOrdersErrorTemplate(error) {

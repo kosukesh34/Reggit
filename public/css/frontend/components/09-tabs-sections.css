@@ -543,6 +543,35 @@ body.tab-style-pill .main-tab-btn.active {
     color: var(--text-secondary, #78716c);
 }
 
+.order-flow-complete__live {
+    margin: 16px auto 8px;
+    max-width: 360px;
+    text-align: left;
+}
+
+.order-flow-complete__live:empty {
+    display: none;
+}
+
+.order-flow-complete__live-card {
+    padding: 14px 14px 8px;
+    border-radius: 18px;
+    background: #fff;
+    border: 1px solid color-mix(in srgb, var(--primary-color, #0e7c66) 16%, transparent);
+    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+}
+
+.order-flow-complete__live-ref {
+    margin: 0 0 8px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-secondary, #78716c);
+}
+
+.order-flow-complete__live-status {
+    margin: 0 0 10px;
+}
+
 .order-flow-complete__message {
     margin: 0 0 8px;
     color: var(--text-secondary, #78716c);
