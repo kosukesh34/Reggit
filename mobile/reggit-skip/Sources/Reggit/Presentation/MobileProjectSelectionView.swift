@@ -52,7 +52,7 @@ final class MobileProjectSelectionViewModel {
 }
 
 struct MobileProjectSelectionView: View {
-    @State private var viewModel = MobileProjectSelectionViewModel()
+    @State var viewModel = MobileProjectSelectionViewModel()
     let onCompleted: () -> Void
 
     var body: some View {

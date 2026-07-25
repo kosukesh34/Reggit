@@ -51,6 +51,7 @@ android {
                 ?.substringAfter("=", "")
                 ?.trim()
                 ?.trim('"', '\'')
+                ?.replace("/\$()/", "//")
                 ?.takeIf { it.isNotEmpty() }
                 ?: defaultValue
         }
