@@ -2239,23 +2239,59 @@ export class MemberManager {
         setTimeout(() => {
             try {
                 const el = document.getElementById(barcodeId);
-                if (el) {
-                    const isWalletCard = el.classList.contains('ios-wallet-card__barcode');
-                    JsBarcode(`#${barcodeId}`, memberNumber, {
-                        format: 'CODE128',
-                        width: isWalletCard ? 2.2 : 3,
-                        height: isWalletCard ? 96 : 150,
-                        displayValue: !isWalletCard,
-                        fontSize: 18,
-                        margin: isWalletCard ? 6 : 14,
-                        background: '#ffffff',
-                        lineColor: '#000000',
-                    });
-                }
+                if (!el) return;
+                this._drawFittedBarcode(el, memberNumber, {
+                    displayValue: !el.classList.contains('ios-wallet-card__barcode'),
+                    enlarged: false,
+                });
             } catch (err) {
                 console.error('Barcode generation error:', err);
             }
         }, AppConstants.ANIMATION_DURATION.BARCODE_DELAY);
+    }
+
+    /**
+     * コンテナ幅に合わせて CODE128 を描画する（max-height による横縮みを防ぐ）
+     * @param {HTMLElement} el
+     * @param {string} memberNumber
+     * @param {{ displayValue?: boolean, enlarged?: boolean }} options
+     */
+    _drawFittedBarcode(el, memberNumber, options = {}) {
+        const displayValue = options.displayValue !== false;
+        const enlarged = options.enlarged === true;
+        const wrap = el.closest(
+            '.idnect-card-barcode-wrap, .member-code-enlarge-barcode-wrap, .ios-wallet-card__pass'
+        ) || el.parentElement;
+        let padX = enlarged ? 40 : 20;
+        if (wrap) {
+            const wrapStyle = window.getComputedStyle(wrap);
+            padX = (parseFloat(wrapStyle.paddingLeft) || 0) + (parseFloat(wrapStyle.paddingRight) || 0);
+        }
+        const availableWidth = Math.max(enlarged ? 240 : 160, (wrap?.clientWidth || 280) - padX);
+        const base = {
+            format: 'CODE128',
+            height: enlarged ? 160 : (displayValue ? 44 : 64),
+            displayValue,
+            fontSize: enlarged ? 20 : 11,
+            textMargin: displayValue ? 3 : 0,
+            margin: enlarged ? 8 : 0,
+            background: 'transparent',
+            lineColor: '#000000',
+        };
+
+        JsBarcode(el, memberNumber, { ...base, width: 1 });
+        const probeWidth = parseFloat(el.getAttribute('width') || '0') || 0;
+        const barWidth = probeWidth > 0
+            ? Math.max(1, Math.min(enlarged ? 4.5 : 4, availableWidth / probeWidth))
+            : (enlarged ? 3 : 2);
+        JsBarcode(el, memberNumber, { ...base, width: barWidth });
+        el.removeAttribute('width');
+        el.removeAttribute('height');
+        el.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+        el.style.width = '100%';
+        el.style.height = 'auto';
+        el.style.maxWidth = '100%';
+        el.style.background = 'transparent';
     }
 
     _generateQR(containerId, memberNumber) {
@@ -2369,16 +2405,13 @@ export class MemberManager {
         } else {
             if (typeof JsBarcode !== 'undefined') {
                 try {
-                    JsBarcode('#' + codeId, memberNumber, {
-                        format: 'CODE128',
-                        width: 4,
-                        height: 220,
-                        displayValue: true,
-                        fontSize: 24,
-                        margin: 20,
-                        background: '#ffffff',
-                        lineColor: '#000000',
-                    });
+                    const enlargeEl = document.getElementById(codeId);
+                    if (enlargeEl) {
+                        this._drawFittedBarcode(enlargeEl, memberNumber, {
+                            displayValue: true,
+                            enlarged: true,
+                        });
+                    }
                 } catch (err) {
                     console.error('Barcode enlarge error:', err);
                 }
