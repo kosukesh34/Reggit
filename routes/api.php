@@ -61,11 +61,21 @@ use App\Http\Controllers\Smaregi\SmaregiIdpController;
 use App\Http\Controllers\Smaregi\SmaregiWebhookController;
 use App\Http\Controllers\StampController;
 use App\Http\Controllers\Wallet\AppleWalletPasskitController;
+use App\Http\Controllers\Api\Kitchen\KitchenDeviceController;
+use App\Http\Controllers\Api\Kitchen\KitchenOrderController;
 use App\Http\Middleware\AuthenticateApiToken;
+use App\Http\Middleware\AuthenticateKitchenToken;
 use App\Http\Middleware\CheckApiProject;
 use Illuminate\Support\Facades\Route;
 
 Route::match(['get', 'post'], '/line/webhook', [LineWebhookController::class, 'handle']);
+
+Route::prefix('kitchen/{project_key}')->middleware([AuthenticateKitchenToken::class])->group(function () {
+    Route::get('/orders', [KitchenOrderController::class, 'index']);
+    Route::post('/orders/{id}/status', [KitchenOrderController::class, 'updateStatus']);
+    Route::post('/devices', [KitchenDeviceController::class, 'store']);
+    Route::delete('/devices', [KitchenDeviceController::class, 'destroy']);
+});
 
 // スマレジ・プラットフォームAPI 連携（利用者契約通知・Webhook）
 // 公式: HTTPS POST / JSON。接続確認で GET/HEAD が来る場合があるため許可。
