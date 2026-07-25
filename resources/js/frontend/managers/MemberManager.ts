@@ -40,6 +40,7 @@ export class MemberManager {
     _appleWalletPassDownloadUrlAt?: number;
     _walletSummaryTimer: ReturnType<typeof setInterval> | null = null;
     _walletSummaryLast: { points: number; stamps_total: number; pending_lottery_count: number } | null = null;
+    _walletSummaryLastFetchedAt: number = 0;
     _walletVisibilityBound = false;
     /** 同一の pending 件数では自動ポップアップを繰り返さない */
     _gachaPopupOpenedForPendingCount: number | null = null;
@@ -500,7 +501,7 @@ export class MemberManager {
             this._setMemberContextCache(payload, fetchLineUserId);
             this._syncLineUserIdFromMemberData(result.data);
             if (payload.is_member === true) {
-                this.startWalletSummaryPolling();
+                this.refreshWalletSummaryOnLaunch();
             }
             return payload;
         })();
@@ -920,6 +921,7 @@ export class MemberManager {
 
         if (this.memberData && this.memberData.is_member) {
             this.render(this.memberData);
+            this.refreshWalletSummaryOnLaunch();
             this.preload();
             return;
         }
@@ -1061,7 +1063,7 @@ export class MemberManager {
         const container = this.getContainer();
         if (!container) return;
         if (!data || typeof data !== 'object') return;
-        this.startWalletSummaryPolling();
+        // Wallet サマリーは起動／フォアグラウンド時のみ更新（render のたびに叩かない）
 
         if (isFixedUiShell()) {
             this._renderIosWalletMember(container, data);
@@ -3160,26 +3162,21 @@ export class MemberManager {
         return payload;
     }
 
+    /**
+     * Wallet サマリーは起動時・フォアグラウンド復帰時のみ取得する。
+     * （旧: 2秒ポーリングで会員証 UI が毎回更新されていた）
+     */
     startWalletSummaryPolling(): void {
+        this.refreshWalletSummaryOnLaunch();
+    }
+
+    refreshWalletSummaryOnLaunch(options: { force?: boolean } = {}): void {
         if (isDemoDataMode()) {
             return;
         }
         this.stopWalletSummaryPolling();
-        void this._pollWalletSummary();
-        // 会計直後の付与をすぐ拾うため短間隔（軽量 API）
-        this._walletSummaryTimer = window.setInterval(() => {
-            void this._pollWalletSummary();
-        }, 2000);
-        if (!this._walletVisibilityBound && typeof document !== 'undefined') {
-            this._walletVisibilityBound = true;
-            document.addEventListener('visibilitychange', () => {
-                if (document.visibilityState === 'hidden') {
-                    this.stopWalletSummaryPolling();
-                    return;
-                }
-                this.startWalletSummaryPolling();
-            });
-        }
+        void this._pollWalletSummaryOnce(options);
+        this._bindWalletSummaryVisibilityRefresh();
     }
 
     stopWalletSummaryPolling(): void {
@@ -3187,6 +3184,32 @@ export class MemberManager {
             window.clearInterval(this._walletSummaryTimer);
             this._walletSummaryTimer = null;
         }
+    }
+
+    _bindWalletSummaryVisibilityRefresh(): void {
+        if (this._walletVisibilityBound || typeof document === 'undefined') {
+            return;
+        }
+        this._walletVisibilityBound = true;
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState !== 'visible') {
+                return;
+            }
+            void this._pollWalletSummaryOnce({ force: true });
+        });
+    }
+
+    async _pollWalletSummaryOnce(options: { force?: boolean } = {}): Promise<void> {
+        const force = options.force === true;
+        const now = Date.now();
+        const minIntervalMs = 5000;
+        if (!force
+            && this._walletSummaryLastFetchedAt > 0
+            && (now - this._walletSummaryLastFetchedAt) < minIntervalMs) {
+            return;
+        }
+        this._walletSummaryLastFetchedAt = now;
+        await this._pollWalletSummary();
     }
 
     async _pollWalletSummary(): Promise<void> {
@@ -3224,13 +3247,14 @@ export class MemberManager {
                 });
             }
 
-            const pointsChanged = prev === null || prev.points !== normalized.points;
+            const displayedPoints = this.memberData !== null ? Number(this.memberData.points ?? 0) : null;
+            const pointsDifferFromUi = displayedPoints !== null && displayedPoints !== normalized.points;
             const lotteryIncreased = prev !== null
                 && normalized.pending_lottery_count > prev.pending_lottery_count;
             const hasPendingOnFirstPoll = prev === null
                 && normalized.pending_lottery_count > 0;
 
-            if (this.memberData !== null && pointsChanged) {
+            if (this.memberData !== null && pointsDifferFromUi) {
                 this.memberData.points = normalized.points;
                 if ((window.app as any)?.currentTab === AppConstants.TABS.MEMBER) {
                     this.render(this.memberData);
