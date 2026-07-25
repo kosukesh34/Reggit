@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\AdminUser;
 use App\Models\Project;
+use App\Models\ShopSetting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -36,6 +37,36 @@ class AdminSettingsTest extends TestCase
             ->get(route('admin.settings.basic', ['project_key' => $project->project_key]));
 
         $response->assertStatus(200);
+    }
+
+    public function test_settings_注文_lin_e通知トグルを保存できること(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+
+        $this->actingAs($admin, 'admin')
+            ->post(route('admin.settings.basic.update', ['project_key' => $project->project_key]), [
+                'business_hours_start' => '10:00',
+                'business_hours_end' => '22:00',
+                'order_mode' => 'both',
+            ])
+            ->assertRedirect();
+
+        $this->assertFalse(ShopSetting::isOrderLineNotifyEnabled((int) $project->id));
+        $this->assertFalse(ShopSetting::isOrderReadyLineNotifyEnabled((int) $project->id));
+
+        $this->actingAs($admin, 'admin')
+            ->post(route('admin.settings.basic.update', ['project_key' => $project->project_key]), [
+                'business_hours_start' => '10:00',
+                'business_hours_end' => '22:00',
+                'order_mode' => 'both',
+                'order_line_notify_enabled' => '1',
+                'order_ready_line_notify_enabled' => '1',
+            ])
+            ->assertRedirect();
+
+        $this->assertTrue(ShopSetting::isOrderLineNotifyEnabled((int) $project->id));
+        $this->assertTrue(ShopSetting::isOrderReadyLineNotifyEnabled((int) $project->id));
     }
 
     public function test_settings_詳細設定ページにアクセスできること(): void

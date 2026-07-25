@@ -61,6 +61,8 @@ class ReggitApp {
     /** 外部ページタブへ入る直前のタブ（戻るで復元） */
     linkTabReturnTab: string;
     lastOrderCompleteMessage: string | null = null;
+    lastOrderReferenceNumber: string | null = null;
+    _ordersSilentRefreshInFlight = false;
     _detailProduct: (CartProduct & {
         description?: string;
         option_groups?: any[];
@@ -1621,6 +1623,9 @@ class ReggitApp {
         if (step === 'complete' && this.lastOrderCompleteMessage === null && !options.fromHash) {
             this.lastOrderCompleteMessage = 'ご注文ありがとうございました';
         }
+        if (step === 'complete' && options.fromHash === true) {
+            this.lastOrderReferenceNumber = null;
+        }
         const section = this.pageRouter.openPage({
             key,
             hash: 'order/' + step,
@@ -1641,11 +1646,22 @@ class ReggitApp {
         }
         if (step === 'complete') {
             const message = this.lastOrderCompleteMessage || 'ご注文ありがとうございました';
+            const refNumber = this.lastOrderReferenceNumber
+                ? DomHelper.formatReferenceNumber(this.lastOrderReferenceNumber)
+                : '';
+            const pickupBlock = refNumber !== ''
+                ? `<div class="order-flow-complete__pickup">
+                        <p class="order-flow-complete__pickup-label">引換番号</p>
+                        <p class="order-flow-complete__pickup-number" aria-label="引換番号">${DomHelper.escapeHtml(refNumber)}</p>
+                        <p class="order-flow-complete__pickup-hint">店舗でこの番号をお伝えください</p>
+                   </div>`
+                : '';
             section.innerHTML = `
                 <div class="liff-flow-page order-flow-complete">
                     <div class="order-flow-complete__icon"><i class="fas fa-check-circle"></i></div>
                     <h2>注文が完了しました</h2>
-                    <p>${DomHelper.escapeHtml(message)}</p>
+                    ${pickupBlock}
+                    <p class="order-flow-complete__message">${DomHelper.escapeHtml(message)}</p>
                     <div class="liff-flow-actions">
                         <button type="button" class="btn btn-primary" onclick="app.switchTab('orders')">注文履歴を見る</button>
                         <button type="button" class="btn btn-secondary" onclick="app.switchTab('home')">ホームへ</button>
@@ -1826,6 +1842,9 @@ class ReggitApp {
             if (this.isLinkTab(tab) && !this.isLinkTab(this.currentTab)) {
                 this.linkTabReturnTab = this.currentTab || 'home';
             }
+            if (tab !== AppConstants.TABS.ORDERS) {
+                this.orderManager.stopOrdersPolling();
+            }
             this.currentTab = tab;
 
             if (typeof document !== 'undefined' && document.body !== null) {
@@ -1939,7 +1958,8 @@ class ReggitApp {
         return Promise.resolve();
     }
 
-    async loadOrdersTab() {
+    async loadOrdersTab(options: { silent?: boolean } = {}) {
+        const silent = options.silent === true;
         const section = DomHelper.getTabMount(
             AppConstants.TAB_MOUNTS.ORDERS,
             AppConstants.ELEMENT_IDS.ORDERS_SECTION,
@@ -1953,20 +1973,40 @@ class ReggitApp {
             ? this.memberManager.hasAuthenticatedIdentity()
             : (typeof window !== 'undefined' && !!window.__LINE_USER_ID__);
         if (!hasIdentity) {
+            this.orderManager.stopOrdersPolling();
             section.innerHTML = this.memberManager.getLoginOptionalTemplate(
                 '注文履歴',
                 'ログインすると注文履歴をご利用いただけます。'
             );
             return;
         }
-        section.innerHTML =
-            '<div class="loading"><i class="fas fa-spinner fa-spin"></i><p>読み込み中...</p></div>';
+        if (!silent) {
+            this.orderManager.resetFingerprint();
+            section.innerHTML =
+                '<div class="loading"><i class="fas fa-spinner fa-spin"></i><p>読み込み中...</p></div>';
+        } else if (this._ordersSilentRefreshInFlight) {
+            return;
+        }
+        if (silent) {
+            this._ordersSilentRefreshInFlight = true;
+        }
         try {
             const orders = await this.orderManager.fetchOrders();
+            if (silent && this.orderManager.shouldSkipRender(orders)) {
+                return;
+            }
             this.orderManager.renderOrdersSection(section, orders);
+            this.orderManager.startOrdersPolling(() => this.loadOrdersTab({ silent: true }));
         } catch (error) {
             console.error('Failed to load orders:', error);
-            section.innerHTML = this.getOrdersErrorTemplate(error);
+            if (!silent) {
+                this.orderManager.stopOrdersPolling();
+                section.innerHTML = this.getOrdersErrorTemplate(error);
+            }
+        } finally {
+            if (silent) {
+                this._ordersSilentRefreshInFlight = false;
+            }
         }
     }
 

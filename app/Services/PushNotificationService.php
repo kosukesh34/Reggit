@@ -177,6 +177,62 @@ class PushNotificationService
         return $result;
     }
 
+    /**
+     * subscription_id リストへ直接 push（キッチン端末など user 非紐付け向け）
+     *
+     * @param  list<string>  $subscriptionIds
+     * @param  array<string, string>  $data
+     * @return array{target_tokens:int,sent:int,failed:int,skipped:int,notification_ids:list<string>}
+     */
+    public function sendToSubscriptionIds(
+        array $subscriptionIds,
+        string $title,
+        string $body,
+        array $data = [],
+        ?string $collapseId = null,
+        bool $useKitchenProvider = false
+    ): array {
+        if ($subscriptionIds === []) {
+            return ['target_tokens' => 0, 'sent' => 0, 'failed' => 0, 'skipped' => 0, 'notification_ids' => []];
+        }
+
+        if ($useKitchenProvider && $this->isKitchenOneSignalEnabled()) {
+            return $this->sendOneSignalPush(
+                $subscriptionIds,
+                $title,
+                $body,
+                $data,
+                $collapseId,
+                false,
+                false,
+                'kitchen_onesignal'
+            );
+        }
+
+        if ($this->isOneSignalEnabled()) {
+            return $this->sendOneSignalPush(
+                $subscriptionIds,
+                $title,
+                $body,
+                $data,
+                $collapseId
+            );
+        }
+
+        LogHelper::info('[Push] sendToSubscriptionIds skipped (provider not configured)', [
+            'target_tokens' => count($subscriptionIds),
+            'use_kitchen' => $useKitchenProvider,
+        ]);
+
+        return [
+            'target_tokens' => count($subscriptionIds),
+            'sent' => 0,
+            'failed' => 0,
+            'skipped' => count($subscriptionIds),
+            'notification_ids' => [],
+        ];
+    }
+
     /** @return array{target_tokens:int,sent:int,failed:int,skipped:int} */
     public function sendQueueCalledToUser(int $projectId, int $userId, string $queueNumber): array
     {
@@ -231,11 +287,13 @@ class PushNotificationService
         array $data,
         ?string $collapseId = null,
         bool $contentAvailable = false,
-        bool $isAnnouncementCancel = false
+        bool $isAnnouncementCancel = false,
+        string $configKey = 'onesignal'
     ): array {
-        $appId = trim((string) config('push.onesignal.app_id'));
-        $apiKey = trim((string) config('push.onesignal.api_key'));
-        $apiUrl = rtrim((string) config('push.onesignal.api_url'), '/');
+        $config = config('push.'.$configKey);
+        $appId = trim((string) ($config['app_id'] ?? ''));
+        $apiKey = trim((string) ($config['api_key'] ?? ''));
+        $apiUrl = rtrim((string) ($config['api_url'] ?? 'https://api.onesignal.com/notifications'), '/');
 
         if ($appId === '' || $apiKey === '') {
             return [
@@ -455,6 +513,15 @@ class PushNotificationService
     private function isOneSignalEnabled(): bool
     {
         $config = config('push.onesignal');
+
+        return (bool) ($config['enabled'] ?? false)
+            && trim((string) ($config['app_id'] ?? '')) !== ''
+            && trim((string) ($config['api_key'] ?? '')) !== '';
+    }
+
+    private function isKitchenOneSignalEnabled(): bool
+    {
+        $config = config('push.kitchen_onesignal');
 
         return (bool) ($config['enabled'] ?? false)
             && trim((string) ($config['app_id'] ?? '')) !== ''
