@@ -4,6 +4,20 @@
 <dict>
 	<key>OneSignalAppId</key>
 	<string>56c917d6-5297-415c-b4c4-67640702e10b</string>
+	<key>LiffBaseUrl</key>
+	<string>https://reggit.jp</string>
+	<key>LiffBaseUrlIos</key>
+	<string>https://reggit.jp</string>
+	<key>LIFF_BASE_URL</key>
+	<string>https://reggit.jp</string>
+	<key>LiffProjectKey</key>
+	<string>sb_skt733n4</string>
+	<key>LIFF_PROJECT_KEY</key>
+	<string>sb_skt733n4</string>
+	<key>LiffFixedTab</key>
+	<string>products</string>
+	<key>LIFF_FIXED_TAB</key>
+	<string>products</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>NSAppTransportSecurity</key>
