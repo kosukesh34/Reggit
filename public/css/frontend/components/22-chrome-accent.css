@@ -491,22 +491,37 @@
 .pd-qty {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
     border: 1.5px solid var(--border-color, #e7e5e4);
     border-radius: 999px;
     padding: 4px;
+    min-height: 52px;
 }
 .pd-qty-btn {
-    width: 34px;
-    height: 34px;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
     border: none;
     border-radius: 50%;
-    background: var(--bg-secondary, #f5f5f4);
-    color: var(--text-color, #1c1917);
-    font-size: 13px;
+    background: var(--primary-color, #0e7c66);
+    color: #fff;
+    font-size: 16px;
     cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(var(--primary-rgb, 14, 124, 102), 0.28);
+    -webkit-tap-highlight-color: transparent;
 }
-.pd-qty-value { min-width: 26px; text-align: center; font-weight: 800; font-size: 15px; }
+.pd-qty-btn:active { transform: scale(0.94); }
+.pd-qty-value {
+    min-width: 36px;
+    text-align: center;
+    font-weight: 800;
+    font-size: 18px;
+    font-variant-numeric: tabular-nums;
+}
 .pd-add-btn {
     flex: 1;
     display: flex;
