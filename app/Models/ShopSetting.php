@@ -55,6 +55,9 @@ class ShopSetting
         'liff_saved_screens' => ProjectLineLiffSetting::class,
         'liff_custom_css' => ProjectLineLiffSetting::class,
         'order_mode' => ProjectLineLiffSetting::class,
+        'order_line_notify_enabled' => ProjectLineLiffSetting::class,
+        'order_ready_line_notify_enabled' => ProjectLineLiffSetting::class,
+        'kitchen_access_token' => ProjectLineLiffSetting::class,
         'frontend_menu_items' => ProjectLineLiffSetting::class,
         'feature_home_enabled' => ProjectFeatureFlags::class,
         'feature_orders_enabled' => ProjectFeatureFlags::class,
@@ -394,6 +397,36 @@ class ShopSetting
             $mode = self::ORDER_MODE_BOTH;
         }
         self::setValue('order_mode', $mode, 'string', $projectId);
+    }
+
+    public static function isOrderLineNotifyEnabled(?int $projectId = null): bool
+    {
+        return (bool) self::getValue('order_line_notify_enabled', true, $projectId);
+    }
+
+    public static function setOrderLineNotifyEnabled(bool $enabled, ?int $projectId = null): void
+    {
+        self::setValue('order_line_notify_enabled', $enabled, 'boolean', $projectId);
+    }
+
+    public static function isOrderReadyLineNotifyEnabled(?int $projectId = null): bool
+    {
+        return (bool) self::getValue('order_ready_line_notify_enabled', true, $projectId);
+    }
+
+    public static function setOrderReadyLineNotifyEnabled(bool $enabled, ?int $projectId = null): void
+    {
+        self::setValue('order_ready_line_notify_enabled', $enabled, 'boolean', $projectId);
+    }
+
+    public static function getKitchenAccessToken(?int $projectId = null): string
+    {
+        return trim((string) self::getValue('kitchen_access_token', '', $projectId));
+    }
+
+    public static function setKitchenAccessToken(?string $token, ?int $projectId = null): void
+    {
+        self::setValue('kitchen_access_token', $token !== null ? trim($token) : '', 'string', $projectId);
     }
 
     public static function setLiffBuilderBlocks(array $blocks, ?int $projectId = null): void
