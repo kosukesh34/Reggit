@@ -2,9 +2,9 @@ import Foundation
 
 /// 開発/本番の接続先をコード1箇所で切り替えます。
 /// - Debug ビルド: 開発用（ngrok）に接続
-/// - Release ビルド: Skip.env / Info.plist の LIFF_BASE_URL（本番: reggit.shop）を使用
+/// - Release ビルド: Skip.env / Info.plist の LIFF_BASE_URL（本番: reggit.jp）を使用
 #if DEBUG
-private let useDevelopmentServer = true
+private let useDevelopmentServer = false
 #else
 private let useDevelopmentServer = false
 #endif
@@ -97,7 +97,7 @@ struct BundleMobileWebConfigRepository: MobileWebConfigRepository {
         return trimmed
     }
 
-    private static let fallbackBaseUrlIOS = "https://reggit.shop"
+    private static let fallbackBaseUrlIOS = "https://reggit.jp"
 
     private func defaultBaseUrl() -> String {
         #if os(Android)
