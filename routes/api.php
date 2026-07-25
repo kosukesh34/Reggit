@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\AnnouncementController;
+use App\Http\Controllers\Api\Kitchen\KitchenDeviceController;
+use App\Http\Controllers\Api\Kitchen\KitchenOrderController;
 use App\Http\Controllers\Api\V1\AnnouncementCancelledIdsController as ApiV1AnnouncementCancelledIdsController;
 use App\Http\Controllers\Api\V1\AnnouncementController as ApiV1AnnouncementController;
 use App\Http\Controllers\Api\V1\AppConfigController;
@@ -61,8 +63,6 @@ use App\Http\Controllers\Smaregi\SmaregiIdpController;
 use App\Http\Controllers\Smaregi\SmaregiWebhookController;
 use App\Http\Controllers\StampController;
 use App\Http\Controllers\Wallet\AppleWalletPasskitController;
-use App\Http\Controllers\Api\Kitchen\KitchenDeviceController;
-use App\Http\Controllers\Api\Kitchen\KitchenOrderController;
 use App\Http\Middleware\AuthenticateApiToken;
 use App\Http\Middleware\AuthenticateKitchenToken;
 use App\Http\Middleware\CheckApiProject;
