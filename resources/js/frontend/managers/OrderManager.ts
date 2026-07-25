@@ -33,11 +33,15 @@ const ACTIVE_TRACKER_STEPS: TrackerStep[] = [
     { key: 'completed', tMark: 'T+3', label: '完了', detail: 'ミッション完了' },
 ];
 
+const ACTIVE_ORDER_STATUSES = ['pending', 'confirmed', 'preparing', 'ready'];
+
 export class OrderManager {
     apiClient: ApiClient;
     private pollTimer: ReturnType<typeof setInterval> | null = null;
     private lastFingerprint = '';
     private knownStatuses: Record<string, string> = {};
+    private visibilityBound = false;
+    private visibilityHandler: (() => void) | null = null;
 
     constructor(apiClient: ApiClient) {
         this.apiClient = apiClient;
@@ -58,11 +62,63 @@ export class OrderManager {
         return [];
     }
 
+    hasActiveOrders(orders: Order[]): boolean {
+        return (orders || []).some((order) => ACTIVE_ORDER_STATUSES.includes(String(order.status || '')));
+    }
+
+    pickLiveOrder(orders: Order[], preferredRef?: string | null): Order | null {
+        const active = (orders || []).filter((order) =>
+            ACTIVE_ORDER_STATUSES.includes(String(order.status || ''))
+        );
+        if (active.length === 0) {
+            return null;
+        }
+        const preferred = typeof preferredRef === 'string' ? preferredRef.trim() : '';
+        if (preferred !== '') {
+            const matched = active.find(
+                (order) => DomHelper.formatReferenceNumber(order.order_number) === preferred
+            );
+            if (matched) {
+                return matched;
+            }
+        }
+        return active[0] ?? null;
+    }
+
+    renderOrderCompleteLiveStatus(
+        container: Element | null,
+        order: Order | null,
+    ): void {
+        if (!container) {
+            return;
+        }
+        if (!order) {
+            container.innerHTML = '';
+            return;
+        }
+        const labels = AppConstants.ORDER_STATUS_LABELS || {};
+        const statusLabel = labels[order.status as keyof typeof labels] || order.status || '';
+        const refNumber = DomHelper.formatReferenceNumber(order.order_number);
+        const refHtml = refNumber !== ''
+            ? `<p class="order-flow-complete__live-ref">引換番号 ${DomHelper.escapeHtml(refNumber)}</p>`
+            : '';
+        container.innerHTML = `
+            <div class="order-flow-complete__live-card" data-order-id="${DomHelper.escapeHtml(String(order.id ?? ''))}" data-order-status="${DomHelper.escapeHtml(String(order.status ?? ''))}">
+                ${refHtml}
+                <p class="order-flow-complete__live-status">
+                    <span class="order-card-status order-card-status--${DomHelper.escapeHtml(String(order.status || ''))}">${DomHelper.escapeHtml(String(statusLabel))}</span>
+                </p>
+                ${this.buildStatusTrackerHtml(order.status, true)}
+            </div>
+        `;
+    }
+
     startOrdersPolling(refresh: () => void | Promise<void>, intervalMs = 2500): void {
         this.stopOrdersPolling();
         this.pollTimer = setInterval(() => {
             void refresh();
         }, intervalMs);
+        this.bindVisibilityRefresh(refresh);
     }
 
     stopOrdersPolling(): void {
@@ -70,6 +126,23 @@ export class OrderManager {
             clearInterval(this.pollTimer);
             this.pollTimer = null;
         }
+    }
+
+    private bindVisibilityRefresh(refresh: () => void | Promise<void>): void {
+        if (typeof document === 'undefined' || this.visibilityBound) {
+            return;
+        }
+        this.visibilityBound = true;
+        this.visibilityHandler = () => {
+            if (document.visibilityState !== 'visible') {
+                return;
+            }
+            if (this.pollTimer === null) {
+                return;
+            }
+            void refresh();
+        };
+        document.addEventListener('visibilitychange', this.visibilityHandler);
     }
 
     ordersFingerprint(orders: Order[]): string {
@@ -209,7 +282,7 @@ export class OrderManager {
         const typeBadge = typeLabel
             ? `<span class="order-card-type order-card-type--${DomHelper.escapeHtml(typeKey)}">${DomHelper.escapeHtml(typeLabel)}</span>`
             : '';
-        const isActive = ['pending', 'confirmed', 'preparing', 'ready'].includes(String(order.status || ''));
+        const isActive = ACTIVE_ORDER_STATUSES.includes(String(order.status || ''));
         const tracker = this.buildStatusTrackerHtml(order.status, isActive);
 
         return `
@@ -264,8 +337,7 @@ export class OrderManager {
             grouped[s].push(order);
         });
 
-        const activeStatuses = ['pending', 'confirmed', 'preparing', 'ready'];
-        const activeOrders = activeStatuses.flatMap((s) => grouped[s] || []);
+        const activeOrders = ACTIVE_ORDER_STATUSES.flatMap((s) => grouped[s] || []);
         const pastOrders = ['completed', 'cancelled'].flatMap((s) => grouped[s] || []);
 
         let html = '<div class="orders-header"><h2 class="section-title"><i class="fas fa-receipt"></i> 注文履歴</h2></div>';
