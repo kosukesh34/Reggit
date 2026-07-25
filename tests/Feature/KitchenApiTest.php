@@ -7,6 +7,7 @@ use App\Enums\OrderType;
 use App\Enums\PaymentMethod;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Product;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -60,7 +61,7 @@ class KitchenApiTest extends TestCase
     {
         $project = $this->createProject();
         $user = User::factory()->create(['project_id' => $project->id]);
-        $product = \App\Models\Product::factory()->create([
+        $product = Product::factory()->create([
             'project_id' => $project->id,
             'name' => 'アボカドトースト',
             'is_available' => true,
