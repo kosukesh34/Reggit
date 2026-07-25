@@ -44,11 +44,16 @@
 .ld-phone__frame[class*="system-ui-"] .ld-block--card,
 .ld-phone__frame[class*="system-ui-"] .ld-store-card,
 .ld-phone__frame[class*="system-ui-"] .ld-collection__item,
-.ld-phone__frame[class*="system-ui-"] .member-summary-card,
 .ld-phone__frame[class*="system-ui-"] .ld-template-static-phone__block {
     border: 1px solid var(--ld-system-card-border) !important;
     border-radius: var(--ld-system-card-radius) !important;
     background: var(--ld-system-card-bg) !important;
+    box-shadow: var(--ld-system-card-shadow) !important;
+}
+
+/* 会員サマリーはブランドグラデ＋白文字のため system-card 背景を当てない */
+.ld-phone__frame[class*="system-ui-"] .member-summary-card {
+    border-radius: var(--ld-system-card-radius) !important;
     box-shadow: var(--ld-system-card-shadow) !important;
 }
 
