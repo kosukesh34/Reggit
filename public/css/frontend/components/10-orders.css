@@ -29,6 +29,23 @@
         linear-gradient(180deg, color-mix(in srgb, var(--primary-color, #0e7c66) 8%, #fff) 0%, #fff 42%);
 }
 
+.order-card--done {
+    padding: 16px 18px;
+    background: color-mix(in srgb, var(--primary-color, #0e7c66) 6%, #fff);
+}
+
+.order-card--done .order-card-header {
+    margin-bottom: 8px;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.order-card-done-message {
+    margin: 0;
+    font-size: 14px;
+    color: var(--text-secondary, #78716c);
+}
+
 .order-card-header {
     display: flex;
     flex-direction: column;
