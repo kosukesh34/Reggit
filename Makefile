@@ -1,7 +1,7 @@
 # Reggit - Docker 経由で artisan を実行するための Makefile
 # 使い方: make up → make migrate → make route-list など
 
-.PHONY: up down migrate seed reconcile-points test-env setup-dev route-list shell composer test test-db npm-build build-deploy ngrok-sync smaregi-webhook-doctor smaregi-webhook-probe
+.PHONY: up down migrate seed reconcile-points test-env setup-dev route-list shell composer test test-db npm-build build-deploy deploy ngrok-sync smaregi-webhook-doctor smaregi-webhook-probe
 
 # コンテナ起動（バックグラウンド）
 up:
@@ -82,6 +82,10 @@ test-security: test-env test-db
 # 出力: deploy-docker.zip → EB の「アップロードとデプロイ」でアップロード
 build-deploy:
 	./scripts/build-deploy-zip.sh
+
+# Xserver 本番へデプロイ（reggit deploy と同じ）
+deploy:
+	./scripts/reggit deploy
 
 # ngrok の公開 URL を APP_URL に同期（要: ngrok 起動済み・localhost:4040）
 ngrok-sync:

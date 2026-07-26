@@ -333,6 +333,13 @@ export class MemberManager {
         if (typeof window === 'undefined') return false;
         if (window.__LINE_USER_ID__) return true;
         if (this._getPersistedLineUserId()) return true;
+        if (MemberManager.isMobileAppMode()) {
+            const deviceId = window.__MOBILE_DEVICE_INFO__
+                && String(window.__MOBILE_DEVICE_INFO__.device_identifier || '').trim();
+            if (deviceId) {
+                return true;
+            }
+        }
         return !!(this.memberData && this.memberData.is_member === true);
     }
 

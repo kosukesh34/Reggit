@@ -8,14 +8,32 @@ extension Notification.Name {
 
 final class PushRegistrationManager: NSObject, UNUserNotificationCenterDelegate {
     static let shared = PushRegistrationManager()
+    private var isConfigured = false
 
     func configure() {
+        guard !isConfigured else { return }
+        isConfigured = true
         let center = UNUserNotificationCenter.current()
         center.delegate = self
-        center.requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
-            guard granted else { return }
-            DispatchQueue.main.async {
-                UIApplication.shared.registerForRemoteNotifications()
+    }
+
+    /// スプラッシュ表示後に呼ぶ（起動直後の許可ダイアログでスプラッシュを隠さない）
+    func requestAuthorizationIfNeeded() {
+        let center = UNUserNotificationCenter.current()
+        center.getNotificationSettings { settings in
+            guard settings.authorizationStatus == .notDetermined else {
+                if settings.authorizationStatus == .authorized {
+                    DispatchQueue.main.async {
+                        UIApplication.shared.registerForRemoteNotifications()
+                    }
+                }
+                return
+            }
+            center.requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
+                guard granted else { return }
+                DispatchQueue.main.async {
+                    UIApplication.shared.registerForRemoteNotifications()
+                }
             }
         }
     }

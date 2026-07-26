@@ -18,8 +18,7 @@ import SwiftUI
             } else if needsProjectSelection == false {
                 ContentView(viewModel: MobileWebShellSession.viewModel())
             } else {
-                ProgressView()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                ShellSplashView()
             }
         }
         .task {

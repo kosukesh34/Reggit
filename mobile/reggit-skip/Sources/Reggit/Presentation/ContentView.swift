@@ -7,9 +7,12 @@ struct ContentView: View {
     /// 表示用の値は `@State` に載せ、ポーリングで必ず再描画する。
     @State var mirroredIsLoading = true
     @State var mirroredShowFallback = false
+    @State var mirroredFallbackTitle = ShellUserFacingMessages.connectionTitle
+    @State var mirroredFallbackMessage = ""
     @State var mirroredActiveTab = ""
     @State var mirroredShowTabBar = false
     @State var mirroredTabBarID = ""
+    @State var showConnectionAlert = false
     /// Bool / String の代入だけでは Compose が再レイアウトしないことがあるため、毎ポールで進める。
     @State var renderTick = 0
 
@@ -22,7 +25,7 @@ struct ContentView: View {
         // renderTick を読むことで、ポールごとの再描画を Skip Android に強制する。
         let _ = renderTick
         let live = MobileWebShellSession.viewModel()
-        let showTabBar = live.showNativeTabBar && !live.tabs.isEmpty
+        let showTabBar = live.showNativeTabBar && !live.tabs.isEmpty && !mirroredShowFallback
 
         VStack(spacing: 0) {
             webContent
@@ -45,6 +48,14 @@ struct ContentView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .alert(mirroredFallbackTitle, isPresented: $showConnectionAlert) {
+            Button("再読み込み") {
+                viewModel.retryLoad()
+                syncMirroredShellState()
+            }
+        } message: {
+            Text(mirroredFallbackMessage)
+        }
         .onAppear {
             viewModel.onAppear()
             syncMirroredShellState()
@@ -89,16 +100,8 @@ struct ContentView: View {
                 InvalidURLView(urlDescription: viewModel.urlErrorDescription)
             }
 
-            if mirroredShowFallback {
-                ConnectionFallbackView(
-                    title: viewModel.fallbackTitle,
-                    message: viewModel.fallbackMessage
-                ) {
-                    viewModel.retryLoad()
-                    syncMirroredShellState()
-                }
-            } else if mirroredIsLoading {
-                ShellLoadingOverlay()
+            if mirroredShowFallback || mirroredIsLoading {
+                ShellSplashView()
             }
         }
     }
@@ -108,7 +111,17 @@ struct ContentView: View {
 
         mirroredIsLoading = live.isLoading
         mirroredShowFallback = live.showWhiteScreenFallback
+        mirroredFallbackTitle = live.fallbackTitle
+        mirroredFallbackMessage = live.fallbackMessage
         mirroredActiveTab = live.activeTab
+
+        if live.showWhiteScreenFallback {
+            if !showConnectionAlert {
+                showConnectionAlert = true
+            }
+        } else {
+            showConnectionAlert = false
+        }
 
         let tabBarID = live.tabs.map(\.key).joined(separator: ",")
         let shouldShow = live.showNativeTabBar && !live.tabs.isEmpty
