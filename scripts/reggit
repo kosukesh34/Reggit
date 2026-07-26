@@ -1,0 +1,744 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REGGIT_ROOT="${REGGIT_ROOT:-$HOME/reggit}"
+MOBILE_DIR="${REGGIT_ROOT}/mobile/reggit-skip"
+APK_PATH="${MOBILE_DIR}/.build/Android/app/outputs/apk/debug/app-debug.apk"
+
+IPAD_DEVICE="${REGGIT_IPAD_DEVICE:-Reggit iPad}"
+IPAD_DEVICE_TYPE="${REGGIT_IPAD_DEVICE_TYPE:-com.apple.CoreSimulator.SimDeviceType.iPad-Pro-11-inch-M5-12GB}"
+IPAD_BUNDLE_ID="${REGGIT_IPAD_BUNDLE_ID:-gamechanger.IDNect.WaitingSystem}"
+
+IOS_DEVICE="${REGGIT_IOS_DEVICE:-Reggit iPhone 16 Pro}"
+IOS_BUNDLE_ID="${REGGIT_IOS_BUNDLE_ID:-com.reggit.default}"
+
+ANDROID_AVD="${REGGIT_ANDROID_AVD:-Pixel_9}"
+ANDROID_APP_ID="${REGGIT_ANDROID_APP_ID:-com.reggit.default}"
+ANDROID_ACTIVITY="${ANDROID_APP_ID}/reggit.app.MainActivity"
+
+NGROK_PORT="${REGGIT_NGROK_PORT:-8080}"
+DOCKER_APP="${REGGIT_DOCKER_APP:-Rancher Desktop}"
+
+DEPLOY_HOST="${REGGIT_DEPLOY_HOST:-reggit@reggit.xsrv.jp}"
+DEPLOY_PATH="${REGGIT_DEPLOY_PATH:-reggit-app}"
+DEPLOY_SSH_KEY="${REGGIT_DEPLOY_SSH_KEY:-$HOME/.ssh/reggit.key}"
+DEPLOY_SSH_PORT="${REGGIT_DEPLOY_SSH_PORT:-10022}"
+DEPLOY_BRANCH="${REGGIT_DEPLOY_BRANCH:-main}"
+
+usage() {
+  cat <<'EOF'
+Usage:
+  reggit startup   Reggit 開発環境を一括起動
+  reggit setup     startup と同じ
+  reggit start     startup と同じ
+  reggit deploy    本番（Xserver）へデプロイ
+  reggit help      このヘルプを表示
+
+startup の処理内容:
+  1. Docker（Rancher Desktop）の起動
+  2. Laravel アプリ（docker-compose up -d）
+  3. ngrok の停止 → ngrok http 8080 の起動
+  4. APP_URL への ngrok URL 同期
+  5. iPad シミュレーター + WaitingSystem アプリ起動
+  6. iOS シミュレーター + Reggit App（Xcode）起動
+  7. Android エミュレーター + Reggit App 起動
+
+deploy の処理内容:
+  1. main ブランチへ切替 + pull
+  2. npm run build
+  3. rsync で Xserver の ~/reggit-app へ同期
+  4. composer install / migrate / キャッシュ再生成
+
+ビルド成果物（.app / .apk）があれば再利用し、なければ自動で新規ビルドします。
+
+環境変数:
+  REGGIT_ROOT           プロジェクトルート（既定: ~/reggit）
+  REGGIT_IPAD_DEVICE    iPad シミュレーター名（既定: Reggit iPad）
+  REGGIT_IOS_DEVICE     iOS シミュレーター名（既定: Reggit iPhone 16 Pro）
+  REGGIT_ANDROID_AVD    Android AVD 名（既定: Pixel_9）
+  REGGIT_DEPLOY_HOST    本番 SSH（既定: reggit@reggit.xsrv.jp）
+  REGGIT_DEPLOY_PATH    本番アプリ相対パス（既定: reggit-app）
+  REGGIT_DEPLOY_SSH_KEY SSH 鍵（既定: ~/.ssh/reggit.key）
+
+例:
+  reggit startup
+  reggit setup
+  reggit start
+  reggit deploy
+  reggit deploy --skip-build
+  reggit deploy --allow-dirty
+EOF
+}
+
+log() {
+  echo "[reggit] $*" >&2
+}
+
+require_reggit_root() {
+  if [[ ! -d "$REGGIT_ROOT" ]]; then
+    echo "error: プロジェクトが見つかりません: $REGGIT_ROOT" >&2
+    exit 1
+  fi
+  if [[ ! -f "$REGGIT_ROOT/docker-compose.yml" ]]; then
+    echo "error: docker-compose.yml が見つかりません: $REGGIT_ROOT" >&2
+    exit 1
+  fi
+}
+
+read_skip_env() {
+  local key="$1" default="$2" line val
+  if [[ ! -f "${MOBILE_DIR}/Skip.env" ]]; then
+    echo "$default"
+    return
+  fi
+  line=$(grep -E "^${key}[ =]" "${MOBILE_DIR}/Skip.env" 2>/dev/null | head -1 || true)
+  if [[ -z "$line" ]]; then
+    echo "$default"
+    return
+  fi
+  val=$(echo "$line" | sed "s/^${key}[= ]*//;s/^[ \"']*//;s/[ \"']*$//;s/\r//")
+  [[ -n "$val" ]] && echo "$val" || echo "$default"
+}
+
+docker_compose() {
+  if command -v docker-compose >/dev/null 2>&1; then
+    docker-compose "$@"
+  else
+    docker compose "$@"
+  fi
+}
+
+ensure_docker() {
+  if docker info >/dev/null 2>&1; then
+    log "Docker は起動済みです"
+    return 0
+  fi
+
+  log "Docker を起動しています ($DOCKER_APP)..."
+  open -a "$DOCKER_APP" >/dev/null 2>&1 || true
+
+  for _ in $(seq 1 60); do
+    if docker info >/dev/null 2>&1; then
+      log "Docker の起動が完了しました"
+      return 0
+    fi
+    sleep 2
+  done
+
+  echo "error: Docker の起動に失敗しました。$DOCKER_APP を確認してください。" >&2
+  exit 1
+}
+
+start_app() {
+  log "Laravel アプリを起動しています..."
+  (
+    cd "$REGGIT_ROOT"
+    docker_compose up -d
+  )
+
+  log "http://localhost:${NGROK_PORT} の応答を待っています..."
+  for _ in $(seq 1 45); do
+    if curl -sf "http://localhost:${NGROK_PORT}" >/dev/null 2>&1; then
+      log "アプリが起動しました: http://localhost:${NGROK_PORT}"
+      return 0
+    fi
+    sleep 2
+  done
+
+  echo "warning: アプリの起動確認がタイムアウトしました（処理は続行します）" >&2
+}
+
+stop_ngrok() {
+  log "ngrok を停止しています..."
+
+  if [[ -f /tmp/ngrok.pid ]]; then
+    local pid
+    pid=$(cat /tmp/ngrok.pid)
+    if ps -p "$pid" >/dev/null 2>&1; then
+      kill "$pid" 2>/dev/null || true
+    fi
+    rm -f /tmp/ngrok.pid
+  fi
+
+  pkill -x ngrok 2>/dev/null || true
+
+  for _ in $(seq 1 10); do
+    if ! curl -sf --max-time 1 http://localhost:4040/api/tunnels >/dev/null 2>&1; then
+      break
+    fi
+    sleep 1
+  done
+
+  log "ngrok を停止しました"
+}
+
+fetch_ngrok_url() {
+  local response url
+  response=$(curl -s --max-time 2 http://localhost:4040/api/tunnels 2>/dev/null || true)
+  if [[ -z "$response" ]]; then
+    return 0
+  fi
+  url=$(printf '%s' "$response" | python3 -c '
+import json, sys
+try:
+    data = json.load(sys.stdin)
+except Exception:
+    sys.exit(0)
+for tunnel in data.get("tunnels", []):
+    public_url = tunnel.get("public_url", "")
+    if public_url.startswith("https://"):
+        print(public_url)
+        break
+' 2>/dev/null || true)
+  if [[ -n "$url" ]]; then
+    echo "$url"
+  fi
+}
+
+ngrok_running() {
+  [[ -f /tmp/ngrok.pid ]] && ps -p "$(cat /tmp/ngrok.pid)" >/dev/null 2>&1
+}
+
+start_ngrok() {
+  local ngrok_url pid
+
+  if ! command -v ngrok >/dev/null 2>&1; then
+    echo "warning: ngrok が見つかりません。モバイルアプリの起動は続行します。" >&2
+    return 0
+  fi
+
+  log "ngrok http ${NGROK_PORT} を起動しています..."
+  ngrok http "${NGROK_PORT}" --log stdout >/tmp/ngrok.log 2>&1 &
+  pid=$!
+  echo "$pid" >/tmp/ngrok.pid
+
+  ngrok_url=""
+  for i in $(seq 1 30); do
+    if ! ngrok_running; then
+      echo "warning: ngrok の起動に失敗しました。/tmp/ngrok.log を確認してください。" >&2
+      tail -5 /tmp/ngrok.log >&2 2>/dev/null || true
+      return 0
+    fi
+
+    ngrok_url=$(fetch_ngrok_url || true)
+    if [[ -n "$ngrok_url" ]]; then
+      break
+    fi
+
+    if (( i % 5 == 0 )); then
+      log "ngrok の起動を待っています... (${i}/30)"
+    fi
+    sleep 1
+  done
+
+  if [[ -z "$ngrok_url" ]]; then
+    echo "warning: ngrok の公開 URL を取得できませんでした。http://localhost:4040 を確認してください。" >&2
+    return 0
+  fi
+
+  log "ngrok 公開 URL: ${ngrok_url}"
+
+  if docker info >/dev/null 2>&1; then
+    log "APP_URL を同期しています..."
+    (
+      cd "$REGGIT_ROOT"
+      docker_compose exec -T app php artisan "smaregi:sync-ngrok-url" --url="${ngrok_url}" >/dev/null 2>&1 || true
+      docker_compose exec -T app php artisan config:clear >/dev/null 2>&1 || true
+    )
+  fi
+}
+
+latest_ios_runtime() {
+  xcrun simctl list runtimes -j | python3 -c '
+import json, sys
+runtimes = [
+    r for r in json.load(sys.stdin).get("runtimes", [])
+    if r.get("isAvailable") and "iOS" in r.get("name", "")
+]
+runtimes.sort(key=lambda r: r.get("version", ""), reverse=True)
+print(runtimes[0]["identifier"] if runtimes else "")
+'
+}
+
+simulator_udid() {
+  local name="$1"
+  xcrun simctl list devices available | awk -v name="$name" '
+    index($0, name) && match($0, /\(([A-F0-9-]+)\)/) {
+      print substr($0, RSTART + 1, RLENGTH - 2)
+      exit
+    }
+  '
+}
+
+boot_simulator() {
+  local device="$1" udid
+
+  if command -v ios >/dev/null 2>&1; then
+    ios startup "$device" >&2
+    udid=$(simulator_udid "$device")
+  else
+    local state
+    udid=$(simulator_udid "$device")
+    if [[ -z "$udid" ]]; then
+      echo "error: シミュレーター '$device' が見つかりません。" >&2
+      exit 1
+    fi
+
+    state=$(xcrun simctl list devices | awk -v udid="$udid" '
+      index($0, udid) && $0 ~ /\(Booted\)/ { print "Booted"; exit }
+      index($0, udid) && $0 ~ /\(Shutdown\)/ { print "Shutdown"; exit }
+    ')
+
+    if [[ "$state" != "Booted" ]]; then
+      log "シミュレーターを起動しています: ${device}"
+      xcrun simctl boot "$udid"
+    else
+      log "シミュレーターは起動済みです: ${device}"
+    fi
+
+    open -a Simulator --args -CurrentDeviceUDID "$udid"
+    xcrun simctl bootstatus "$udid" -b >&2
+  fi
+
+  if [[ -z "$udid" ]]; then
+    echo "error: シミュレーター '$device' の UDID を取得できません。" >&2
+    exit 1
+  fi
+
+  echo "$udid"
+}
+
+ensure_ipad_simulator() {
+  if xcrun simctl list devices available | grep -F "${IPAD_DEVICE} (" >/dev/null; then
+    return 0
+  fi
+
+  local runtime
+  runtime=$(latest_ios_runtime)
+  if [[ -z "$runtime" ]]; then
+    echo "error: 利用可能な iOS ランタイムが見つかりません。" >&2
+    exit 1
+  fi
+
+  log "iPad シミュレーターを作成しています: ${IPAD_DEVICE}"
+  xcrun simctl create "$IPAD_DEVICE" "$IPAD_DEVICE_TYPE" "$runtime" >/dev/null
+}
+
+is_valid_ios_app() {
+  local app_path="$1" executable
+  [[ -d "$app_path" && -f "${app_path}/Info.plist" ]] || return 1
+  executable=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "${app_path}/Info.plist" 2>/dev/null || true)
+  [[ -n "$executable" && -f "${app_path}/${executable}" ]]
+}
+
+is_valid_apk() {
+  [[ -f "$1" && -s "$1" ]]
+}
+
+find_ios_app() {
+  local app_name="$1" candidate
+  candidate=$(
+    find "$HOME/Library/Developer/Xcode/DerivedData" \
+      -name "${app_name}" -path "*Debug-iphonesimulator*" -type d 2>/dev/null \
+      -exec stat -f "%m %N" {} \; \
+      | sort -rn \
+      | head -1 \
+      | cut -d' ' -f2-
+  )
+  if is_valid_ios_app "$candidate"; then
+    echo "$candidate"
+  fi
+}
+
+setup_skip_artifact() {
+  local derived_data project_dir artifact_dir skip_bundle
+  derived_data="${HOME}/Library/Developer/Xcode/DerivedData"
+  project_dir=$(find "$derived_data" -maxdepth 1 -type d -name "Project-*" 2>/dev/null | head -1)
+  [[ -z "$project_dir" ]] && project_dir="${derived_data}/Project-chmyacsiarinkyekzpihcwqjmhyn"
+  artifact_dir="${project_dir}/SourcePackages/artifacts/skip/skip"
+  skip_bundle="/opt/homebrew/Caskroom/skip/1.7.4/skip.artifactbundle"
+  if [[ -d "$skip_bundle" ]]; then
+    mkdir -p "$artifact_dir"
+    ln -sfn "$skip_bundle" "${artifact_dir}/skip.artifactbundle" 2>/dev/null || true
+  fi
+}
+
+install_and_launch_ios() {
+  local udid="$1" app_path="$2" bundle_id="$3" label="$4"
+  log "${label} をインストール・起動しています..."
+  xcrun simctl install "$udid" "$app_path"
+  xcrun simctl launch "$udid" "$bundle_id" >/dev/null
+  log "${label} の起動が完了しました"
+}
+
+resolve_or_build_ios_app() {
+  local app_name="$1" label="$2" build_cmd=("${@:3}")
+  local app_path
+
+  app_path=$(find_ios_app "$app_name")
+  if [[ -n "$app_path" ]]; then
+    log "既存の ${label} を使用します: ${app_path}"
+    echo "$app_path"
+    return 0
+  fi
+
+  log "${label} のビルド成果物が見つかりません。新規ビルドを開始します..."
+  # stdout は呼び出し側の $(...) に混ざるため、ビルドログは stderr へ送る
+  "${build_cmd[@]}" >&2
+
+  app_path=$(find_ios_app "$app_name")
+  if [[ -z "$app_path" ]]; then
+    echo "error: ${label} のビルドに失敗しました（${app_name} が見つかりません）。" >&2
+    exit 1
+  fi
+
+  log "${label} の新規ビルドが完了しました: ${app_path}"
+  echo "$app_path"
+}
+
+build_waiting_system() {
+  local destination="platform=iOS Simulator,name=${IPAD_DEVICE}"
+  xcodebuild \
+    -project "${REGGIT_ROOT}/ios/WaitingSystem.xcodeproj" \
+    -scheme WaitingSystem \
+    -destination "$destination" \
+    -configuration Debug \
+    -quiet \
+    build
+}
+
+build_waiting_system_if_needed() {
+  resolve_or_build_ios_app \
+    "WaitingSystem.app" \
+    "WaitingSystem（iPad）" \
+    build_waiting_system
+}
+
+start_ipad_app() {
+  local udid app_path
+  ensure_ipad_simulator
+  udid=$(boot_simulator "$IPAD_DEVICE")
+  app_path=$(build_waiting_system_if_needed)
+  install_and_launch_ios "$udid" "$app_path" "$IPAD_BUNDLE_ID" "WaitingSystem（iPad）"
+}
+
+build_reggit_ios() {
+  local destination="platform=iOS Simulator,name=${IOS_DEVICE}"
+
+  if [[ ! -d "${MOBILE_DIR}/Project.xcworkspace" ]]; then
+    echo "error: Xcode プロジェクトが見つかりません: ${MOBILE_DIR}/Project.xcworkspace" >&2
+    exit 1
+  fi
+
+  (
+    cd "$MOBILE_DIR"
+    setup_skip_artifact
+    swift package resolve
+    xcodebuild \
+      -workspace Project.xcworkspace \
+      -scheme "Reggit App" \
+      -destination "$destination" \
+      -configuration Debug \
+      -skipPackagePluginValidation \
+      -quiet \
+      build
+  )
+}
+
+build_reggit_ios_if_needed() {
+  resolve_or_build_ios_app \
+    "Reggit.app" \
+    "Reggit App（iOS）" \
+    build_reggit_ios
+}
+
+start_ios_mobile_app() {
+  local udid app_path bundle_id
+  bundle_id=$(read_skip_env "PRODUCT_BUNDLE_IDENTIFIER" "$IOS_BUNDLE_ID")
+  udid=$(boot_simulator "$IOS_DEVICE")
+  app_path=$(build_reggit_ios_if_needed)
+  install_and_launch_ios "$udid" "$app_path" "$bundle_id" "Reggit App（iOS）"
+}
+
+build_android_apk() {
+  export ANDROID_HOME="${ANDROID_HOME:-$HOME/Library/Android/sdk}"
+  (
+    cd "${MOBILE_DIR}/Android"
+    gradle assembleDebug
+  )
+}
+
+build_android_apk_if_needed() {
+  if is_valid_apk "$APK_PATH"; then
+    log "既存の APK を使用します: ${APK_PATH}"
+    echo "$APK_PATH"
+    return 0
+  fi
+
+  log "Android APK が見つかりません。新規ビルドを開始します..."
+  # stdout は呼び出し側の $(...) に混ざるため、ビルドログは stderr へ送る
+  build_android_apk >&2
+
+  if ! is_valid_apk "$APK_PATH"; then
+    echo "error: Android APK のビルドに失敗しました: ${APK_PATH}" >&2
+    exit 1
+  fi
+
+  log "Android APK の新規ビルドが完了しました: ${APK_PATH}"
+  echo "$APK_PATH"
+}
+
+ensure_android_device() {
+  local device
+  device=$(adb devices 2>/dev/null | awk '/^emulator-.*device$|^[^*].*device$/ {print $1; exit}')
+  if [[ -n "$device" ]]; then
+    log "Android デバイスは接続済みです: $device"
+    echo "$device"
+    return 0
+  fi
+
+  if command -v android >/dev/null 2>&1; then
+    android startup "$ANDROID_AVD" >&2
+  else
+    local emulator avd
+    emulator="${ANDROID_HOME:-$HOME/Library/Android/sdk}/emulator/emulator"
+    avd="$ANDROID_AVD"
+    log "Android エミュレーターを起動しています: ${avd}"
+    nohup "$emulator" -avd "$avd" -netdelay none -netspeed full >/dev/null 2>&1 &
+    adb wait-for-device
+    while [[ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" != "1" ]]; do
+      sleep 1
+    done
+  fi
+
+  device=$(adb devices 2>/dev/null | awk '/^emulator-.*device$|^[^*].*device$/ {print $1; exit}')
+  if [[ -z "$device" ]]; then
+    echo "error: Android デバイスに接続できません。" >&2
+    exit 1
+  fi
+  echo "$device"
+}
+
+start_android_mobile_app() {
+  local device apk_path app_id activity
+  app_id=$(read_skip_env "ANDROID_APPLICATION_ID" "$ANDROID_APP_ID")
+  activity="${app_id}/reggit.app.MainActivity"
+  device=$(ensure_android_device)
+  apk_path=$(build_android_apk_if_needed)
+  log "Reggit App（Android）をインストール・起動しています..."
+  adb -s "$device" install -r "$apk_path" >/dev/null
+
+  local launchable
+  launchable=$(resolve_android_launchable_activity "$apk_path" "$app_id")
+  if [[ -n "$launchable" ]]; then
+    adb -s "$device" shell am start -n "$launchable" >/dev/null
+  else
+    adb -s "$device" shell monkey -p "$app_id" -c android.intent.category.LAUNCHER 1 >/dev/null
+  fi
+  log "Reggit App（Android）の起動が完了しました"
+}
+
+resolve_android_launchable_activity() {
+  local apk_path="$1" app_id="$2" aapt launchable activity
+  aapt=$(ls -d "${ANDROID_HOME:-$HOME/Library/Android/sdk}/build-tools"/*/aapt 2>/dev/null | sort -V | tail -1)
+  [[ -z "$aapt" || ! -x "$aapt" ]] && return 0
+
+  launchable=$("$aapt" dump badging "$apk_path" 2>/dev/null | awk -F"'" '/launchable-activity:/{print $2; exit}')
+  if [[ -n "$launchable" ]]; then
+    echo "${app_id}/${launchable}"
+    return 0
+  fi
+
+  echo "${app_id}/reggit.app.MainActivity"
+}
+
+cmd_startup() {
+  require_reggit_root
+  IOS_BUNDLE_ID=$(read_skip_env "PRODUCT_BUNDLE_IDENTIFIER" "$IOS_BUNDLE_ID")
+  ANDROID_APP_ID=$(read_skip_env "ANDROID_APPLICATION_ID" "$ANDROID_APP_ID")
+  ANDROID_ACTIVITY="${ANDROID_APP_ID}/reggit.app.MainActivity"
+
+  log "=== Reggit 開発環境を起動します ==="
+
+  ensure_docker
+  start_app
+  stop_ngrok
+  start_ngrok
+
+  log "--- iPad アプリを起動します ---"
+  start_ipad_app
+
+  log "--- iOS アプリを起動します ---"
+  start_ios_mobile_app
+
+  log "--- Android アプリを起動します ---"
+  start_android_mobile_app
+
+  log "=== 起動完了 ==="
+  log "Web:     http://localhost:${NGROK_PORT}"
+  log "ngrok:   http://localhost:4040"
+  log "iPad:    ${IPAD_DEVICE}"
+  log "iOS:     ${IOS_DEVICE}"
+  log "Android: ${ANDROID_AVD}"
+}
+
+deploy_ssh() {
+  ssh -p "$DEPLOY_SSH_PORT" -i "$DEPLOY_SSH_KEY" \
+    -o BatchMode=yes -o IdentitiesOnly=yes "$@"
+}
+
+require_deploy_key() {
+  if [[ ! -f "$DEPLOY_SSH_KEY" ]]; then
+    echo "error: SSH 鍵が見つかりません: $DEPLOY_SSH_KEY" >&2
+    exit 1
+  fi
+}
+
+sync_deploy_branch() {
+  local allow_dirty="$1"
+  (
+    cd "$REGGIT_ROOT"
+    if [[ -n "$(git status --porcelain)" ]]; then
+      if [[ "$allow_dirty" != "1" ]]; then
+        echo "error: 作業ツリーに未コミット変更があります。" >&2
+        echo "  main のコミット済み内容だけをデプロイしたい場合は、先に commit / stash してください。" >&2
+        echo "  未コミット変更ごと送る場合は: reggit deploy --allow-dirty" >&2
+        exit 1
+      fi
+      log "警告: 未コミット変更を含めてデプロイします"
+    fi
+
+    local current
+    current=$(git branch --show-current)
+    if [[ "$current" != "$DEPLOY_BRANCH" ]]; then
+      log "${DEPLOY_BRANCH} ブランチへ切り替えます（現在: ${current}）"
+      git checkout "$DEPLOY_BRANCH"
+    fi
+
+    log "origin/${DEPLOY_BRANCH} を取得します"
+    git pull --ff-only origin "$DEPLOY_BRANCH"
+    log "デプロイ対象: $(git log -1 --oneline)"
+  )
+}
+
+build_frontend_assets() {
+  (
+    cd "$REGGIT_ROOT"
+    if [[ ! -d node_modules ]]; then
+      log "node_modules が無いため npm ci を実行します"
+      npm ci
+    fi
+    log "フロント資産をビルドします（npm run build）"
+    npm run build
+  )
+}
+
+rsync_to_production() {
+  log "本番へ rsync します: ${DEPLOY_HOST}:~/${DEPLOY_PATH}/"
+  rsync -avz --delete \
+    --exclude '.git' \
+    --exclude 'node_modules' \
+    --exclude 'vendor' \
+    --exclude '.env' \
+    --exclude '.env.*' \
+    --exclude 'storage/' \
+    --exclude 'bootstrap/cache/' \
+    --exclude 'ios/' \
+    --exclude 'mobile/' \
+    --exclude '.cursor/' \
+    --exclude '.od-skills/' \
+    --exclude '.github/' \
+    --exclude 'tests/' \
+    --exclude 'docs/' \
+    --exclude '*.zip' \
+    --exclude '.phpunit.result.cache' \
+    --exclude 'Dockerfile.bak' \
+    --exclude '.DS_Store' \
+    --exclude 'e2e/' \
+    --exclude 'maestro/' \
+    --exclude 'tmp-ui-review/' \
+    --exclude 'tmp-*.png' \
+    --exclude 'public/tmp-*' \
+    --exclude 'agent-transcripts/' \
+    -e "ssh -p ${DEPLOY_SSH_PORT} -i ${DEPLOY_SSH_KEY} -o BatchMode=yes -o IdentitiesOnly=yes" \
+    "${REGGIT_ROOT}/" "${DEPLOY_HOST}:~/${DEPLOY_PATH}/"
+}
+
+remote_post_deploy() {
+  log "本番で composer / migrate / キャッシュ再生成を実行します"
+  deploy_ssh "$DEPLOY_HOST" "bash -s" <<EOF
+set -e
+export PATH="\$HOME/bin:\$PATH"
+cd "\$HOME/${DEPLOY_PATH}"
+rm -f bootstrap/cache/*.php
+mkdir -p storage/framework/{cache,sessions,views} storage/logs bootstrap/cache
+chmod -R u+rwX storage bootstrap/cache
+php /usr/bin/composer install --no-dev --optimize-autoloader --no-interaction
+/usr/bin/php8.4 artisan migrate --force
+/usr/bin/php8.4 artisan optimize:clear
+/usr/bin/php8.4 artisan config:cache
+/usr/bin/php8.4 artisan route:cache
+/usr/bin/php8.4 artisan view:cache
+test -f public/build/manifest.json
+/usr/bin/php8.4 artisan --version
+EOF
+}
+
+cmd_deploy() {
+  local skip_build=0 allow_dirty=0
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --skip-build) skip_build=1 ;;
+      --allow-dirty) allow_dirty=1 ;;
+      -h|--help)
+        usage
+        return 0
+        ;;
+      *)
+        echo "error: 不明なオプション: $1" >&2
+        usage >&2
+        exit 1
+        ;;
+    esac
+    shift
+  done
+
+  require_reggit_root
+  require_deploy_key
+
+  log "=== 本番デプロイを開始します ==="
+  sync_deploy_branch "$allow_dirty"
+  if [[ "$skip_build" -eq 0 ]]; then
+    build_frontend_assets
+  else
+    log "フロントビルドをスキップします"
+  fi
+  rsync_to_production
+  remote_post_deploy
+  log "=== デプロイ完了 ==="
+  log "確認: https://reggit.jp/"
+}
+
+main() {
+  local command="${1:-help}"
+  shift || true
+
+  case "$command" in
+    startup|start|up|setup)
+      cmd_startup
+      ;;
+    deploy)
+      cmd_deploy "$@"
+      ;;
+    help|-h|--help)
+      usage
+      ;;
+    *)
+      echo "error: 不明なコマンド: $command" >&2
+      usage >&2
+      exit 1
+      ;;
+  esac
+}
+
+main "$@"

@@ -157,17 +157,6 @@ export class CheckoutManager {
         this.isPaymentCompleted = false;
         this.pendingMobileOrderId = order && order.id ? Number(order.id) : null;
 
-        const refNumber = DomHelper.formatReferenceNumber(order.order_number);
-        const orderNumberRow = refNumber
-            ? `<div class="payment-summary-item">
-                            <span>注文番号</span>
-                            <span class="order-number ref-number">${DomHelper.escapeHtml(refNumber)}</span>
-                        </div>`
-            : `<div class="payment-summary-item">
-                            <span>注文番号</span>
-                            <span class="order-number ref-number">決済完了後に発行</span>
-                        </div>`;
-
         const modal = document.createElement('div');
         modal.className = 'payment-modal';
         modal.innerHTML = `
@@ -178,7 +167,6 @@ export class CheckoutManager {
                 </div>
                 <div class="payment-modal-body">
                     <div class="payment-summary">
-                        ${orderNumberRow}
                         <div class="payment-summary-item">
                             <span>お支払い金額</span>
                             <span class="payment-amount">${DomHelper.formatPrice(order.total_amount || 0)}</span>
@@ -260,14 +248,7 @@ export class CheckoutManager {
                     }
                     this.isPaymentCompleted = true;
                     const confirmedOrder = (paymentResult as { order?: OrderLike }).order;
-                    const issuedNumber = DomHelper.formatReferenceNumber(
-                        confirmedOrder?.order_number,
-                    );
-                    ToastManager.success(
-                        issuedNumber
-                            ? `モバイル注文が完了しました（引換番号: ${issuedNumber}）`
-                            : 'モバイル注文が完了しました',
-                    );
+                    ToastManager.success('モバイル注文が完了しました');
                     this.closePaymentModal(false);
                     this.afterOrderCompleted(confirmedOrder?.order_number ?? null);
                 } catch (error) {
