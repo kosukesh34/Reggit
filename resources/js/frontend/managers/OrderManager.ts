@@ -88,27 +88,42 @@ export class OrderManager {
     renderOrderCompleteLiveStatus(
         container: Element | null,
         order: Order | null,
+        options: { showCompleted?: boolean } = {},
     ): void {
         if (!container) {
             return;
         }
         if (!order) {
+            if (options.showCompleted === true) {
+                container.innerHTML = this.buildOrderHandoffDoneHtml();
+                return;
+            }
             container.innerHTML = '';
+            return;
+        }
+        const status = String(order.status || '');
+        if (status === 'completed') {
+            container.innerHTML = this.buildOrderHandoffDoneHtml();
             return;
         }
         const labels = AppConstants.ORDER_STATUS_LABELS || {};
         const statusLabel = labels[order.status as keyof typeof labels] || order.status || '';
-        const refNumber = DomHelper.formatReferenceNumber(order.order_number);
-        const refHtml = refNumber !== ''
-            ? `<p class="order-flow-complete__live-ref">引換番号 ${DomHelper.escapeHtml(refNumber)}</p>`
-            : '';
         container.innerHTML = `
-            <div class="order-flow-complete__live-card" data-order-id="${DomHelper.escapeHtml(String(order.id ?? ''))}" data-order-status="${DomHelper.escapeHtml(String(order.status ?? ''))}">
-                ${refHtml}
+            <div class="order-flow-complete__live-card" data-order-id="${DomHelper.escapeHtml(String(order.id ?? ''))}" data-order-status="${DomHelper.escapeHtml(status)}">
                 <p class="order-flow-complete__live-status">
-                    <span class="order-card-status order-card-status--${DomHelper.escapeHtml(String(order.status || ''))}">${DomHelper.escapeHtml(String(statusLabel))}</span>
+                    <span class="order-card-status order-card-status--${DomHelper.escapeHtml(status)}">${DomHelper.escapeHtml(String(statusLabel))}</span>
                 </p>
                 ${this.buildStatusTrackerHtml(order.status, true)}
+            </div>
+        `;
+    }
+
+    /** 受け渡し完了後のシンプル表示（注文詳細・番号なし） */
+    buildOrderHandoffDoneHtml(): string {
+        return `
+            <div class="order-flow-complete__done" role="status">
+                <p class="order-flow-complete__done-title">受け渡しが完了しました</p>
+                <p class="order-flow-complete__done-message">ご来店ありがとうございました</p>
             </div>
         `;
     }
@@ -256,6 +271,7 @@ export class OrderManager {
     buildOrderCardHtml(order: Order, options: { large?: boolean } = {}): string {
         const large = options.large === true;
         const labels = AppConstants.ORDER_STATUS_LABELS || {};
+        const status = String(order.status || '');
         const statusLabel = labels[order.status as keyof typeof labels] || order.status || '';
         const typeLabels = AppConstants.ORDER_TYPE_LABELS || {};
         const typeKey = order.order_type || '';
@@ -272,27 +288,42 @@ export class OrderManager {
                 minute: '2-digit',
             })
             : '';
+        const typeBadge = typeLabel
+            ? `<span class="order-card-type order-card-type--${DomHelper.escapeHtml(typeKey)}">${DomHelper.escapeHtml(typeLabel)}</span>`
+            : '';
+        const isActive = ACTIVE_ORDER_STATUSES.includes(status);
+
+        // 受け渡し完了後は詳細・タイムライン・番号を出さずシンプル表示にする
+        if (status === 'completed') {
+            return `
+                <article class="order-card order-card--done" data-order-id="${DomHelper.escapeHtml(String(order.id ?? ''))}" data-order-status="completed">
+                    <div class="order-card-header">
+                        <div class="order-card-meta">
+                            <span class="order-card-date">${DomHelper.escapeHtml(dateStr)}</span>
+                            ${typeBadge}
+                            <span class="order-card-status order-card-status--completed">受け渡し完了</span>
+                        </div>
+                    </div>
+                    <p class="order-card-done-message">ご来店ありがとうございました</p>
+                </article>
+            `;
+        }
+
         const items = (order.items || [])
             .map((i) => {
                 const name = (i.product && i.product.name) || i.product_name || '商品';
                 return `<span class="order-item-line">${DomHelper.escapeHtml(name)} × ${i.quantity || 0}</span>`;
             })
             .join('');
-        const refNumber = DomHelper.formatReferenceNumber(order.order_number);
-        const typeBadge = typeLabel
-            ? `<span class="order-card-type order-card-type--${DomHelper.escapeHtml(typeKey)}">${DomHelper.escapeHtml(typeLabel)}</span>`
-            : '';
-        const isActive = ACTIVE_ORDER_STATUSES.includes(String(order.status || ''));
         const tracker = this.buildStatusTrackerHtml(order.status, isActive);
 
         return `
-            <article class="order-card ${large ? 'order-card--hero' : ''}" data-order-id="${DomHelper.escapeHtml(String(order.id ?? ''))}" data-order-status="${DomHelper.escapeHtml(String(order.status ?? ''))}">
+            <article class="order-card ${large ? 'order-card--hero' : ''}" data-order-id="${DomHelper.escapeHtml(String(order.id ?? ''))}" data-order-status="${DomHelper.escapeHtml(status)}">
                 <div class="order-card-header">
-                    ${refNumber ? `<p class="order-card-ref" aria-label="引換番号">${DomHelper.escapeHtml(refNumber)}</p>` : ''}
                     <div class="order-card-meta">
                         <span class="order-card-date">${DomHelper.escapeHtml(dateStr)}</span>
                         ${typeBadge}
-                        <span class="order-card-status order-card-status--${DomHelper.escapeHtml(String(order.status || ''))}">${DomHelper.escapeHtml(String(statusLabel))}</span>
+                        <span class="order-card-status order-card-status--${DomHelper.escapeHtml(status)}">${DomHelper.escapeHtml(String(statusLabel))}</span>
                     </div>
                 </div>
                 ${tracker}
@@ -340,7 +371,7 @@ export class OrderManager {
         const activeOrders = ACTIVE_ORDER_STATUSES.flatMap((s) => grouped[s] || []);
         const pastOrders = ['completed', 'cancelled'].flatMap((s) => grouped[s] || []);
 
-        let html = '<div class="orders-header"><h2 class="section-title"><i class="fas fa-receipt"></i> 注文履歴</h2></div>';
+        let html = '<div class="orders-header"><h2 class="section-title"><i class="fas fa-receipt"></i> 注文状況</h2></div>';
 
         if (activeOrders.length > 0) {
             html += `<div class="order-group">

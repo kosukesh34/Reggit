@@ -1646,25 +1646,14 @@ class ReggitApp {
         }
         if (step === 'complete') {
             const message = this.lastOrderCompleteMessage || 'ご注文ありがとうございました';
-            const refNumber = this.lastOrderReferenceNumber
-                ? DomHelper.formatReferenceNumber(this.lastOrderReferenceNumber)
-                : '';
-            const pickupBlock = refNumber !== ''
-                ? `<div class="order-flow-complete__pickup">
-                        <p class="order-flow-complete__pickup-label">引換番号</p>
-                        <p class="order-flow-complete__pickup-number" aria-label="引換番号">${DomHelper.escapeHtml(refNumber)}</p>
-                        <p class="order-flow-complete__pickup-hint">店舗でこの番号をお伝えください</p>
-                   </div>`
-                : '';
             section.innerHTML = `
                 <div class="liff-flow-page order-flow-complete">
                     <div class="order-flow-complete__icon"><i class="fas fa-check-circle"></i></div>
-                    <h2>注文が完了しました</h2>
-                    ${pickupBlock}
+                    <h2>注文を受け付けました</h2>
                     <div class="order-flow-complete__live" data-order-complete-live></div>
                     <p class="order-flow-complete__message">${DomHelper.escapeHtml(message)}</p>
                     <div class="liff-flow-actions">
-                        <button type="button" class="btn btn-primary" onclick="app.switchTab('orders')">注文履歴を見る</button>
+                        <button type="button" class="btn btn-primary" onclick="app.switchTab('orders')">注文状況を確認</button>
                         <button type="button" class="btn btn-secondary" onclick="app.switchTab('home')">ホームへ</button>
                     </div>
                 </div>
@@ -1970,16 +1959,19 @@ class ReggitApp {
         if (typeof window !== 'undefined' && !window.__LINE_USER_ID__ && this.memberManager) {
             await this.memberManager.resolveLineUserIdForClient();
         }
+        // 会員登録なしでも、LINE / ネイティブ端末 identity があれば現在の注文を確認できる
         const hasIdentity = this.memberManager && typeof this.memberManager.hasAuthenticatedIdentity === 'function'
             ? this.memberManager.hasAuthenticatedIdentity()
             : (typeof window !== 'undefined' && !!window.__LINE_USER_ID__);
-        if (!hasIdentity) {
+        const canViewOrders = hasIdentity
+            || (typeof MemberManager !== 'undefined' && MemberManager.isMobileAppMode());
+        if (!canViewOrders) {
             if (!silent) {
                 this.orderManager.stopOrdersPolling();
                 if (section) {
                     section.innerHTML = this.memberManager.getLoginOptionalTemplate(
-                        '注文履歴',
-                        'ログインすると注文履歴をご利用いただけます。'
+                        '注文状況',
+                        'ログインすると注文状況をご確認いただけます。'
                     );
                 }
             }
@@ -2050,7 +2042,17 @@ class ReggitApp {
             return;
         }
         const liveOrder = this.orderManager.pickLiveOrder(orders, this.lastOrderReferenceNumber);
-        this.orderManager.renderOrderCompleteLiveStatus(liveMount, liveOrder);
+        const preferred = typeof this.lastOrderReferenceNumber === 'string'
+            ? this.lastOrderReferenceNumber.trim()
+            : '';
+        const preferredCompleted = preferred !== ''
+            && (orders || []).some((order) => {
+                return String(order.status || '') === 'completed'
+                    && DomHelper.formatReferenceNumber(order.order_number) === preferred;
+            });
+        this.orderManager.renderOrderCompleteLiveStatus(liveMount, liveOrder, {
+            showCompleted: preferredCompleted,
+        });
     }
 
     getOrdersErrorTemplate(error) {

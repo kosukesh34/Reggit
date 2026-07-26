@@ -39,7 +39,8 @@ INFOPLIST_KEY_CFBundleDisplayName = Reggit
 // iOS-specific Info.plist property keys
 INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphone*] = YES
 INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphone*] = YES
-INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphone*] = YES
+// Info.plist の UILaunchScreen（LaunchLogo）を使う。Generation=YES だと空の起動画面になる。
+INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphone*] = NO
 INFOPLIST_KEY_UIStatusBarStyle[sdk=iphone*] = UIStatusBarStyleDefault
 INFOPLIST_KEY_UISupportedInterfaceOrientations[sdk=iphone*] = UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown
 

@@ -7,6 +7,7 @@ import SwiftUI
 
 struct RootView: View {
     @EnvironmentObject private var appState: AppState
+    @State private var showSplash = true
 
     var body: some View {
         Group {
@@ -16,6 +17,19 @@ struct RootView: View {
                 }
             } else {
                 mainContent
+            }
+        }
+        .overlay {
+            if showSplash {
+                SplashView()
+                    .transition(.opacity)
+            }
+        }
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                withAnimation(.easeOut(duration: 0.25)) {
+                    showSplash = false
+                }
             }
         }
     }
