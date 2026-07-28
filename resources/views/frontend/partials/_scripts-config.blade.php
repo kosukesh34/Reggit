@@ -5,7 +5,6 @@
         'friendAddUrl' => $lineFriendAddUrl ?? null,
     ];
     $isDemoFixedUi = isset($isFixedUi) && $isFixedUi === true;
-    $scriptLiffBuilder = $isDemoFixedUi ? [] : ($liffBuilderBlocks ?? []);
     $scriptLiffTabLayouts = $isDemoFixedUi ? [] : ($liffTabLayouts ?? []);
     $scriptLiffDetailLayouts = $isDemoFixedUi ? [] : ($liffDetailLayouts ?? []);
     $scriptLiffTabSettings = $isDemoFixedUi ? [] : ($liffTabSettings ?? []);
@@ -31,7 +30,6 @@
     window.__GOOGLE_WALLET_ADD_BUTTON_IMAGE__ = "/images/add-to-google-wallet-logo.png";
     window.__ORDER_MODE__ = @json($orderMode ?? \App\Models\ShopSetting::ORDER_MODE_BOTH);
     window.__LINE_FRIEND_ADD_URL__ = @json($lineFriendAddUrl ?? '');
-    window.__LIFF_BUILDER__ = @json($scriptLiffBuilder);
     window.__LIFF_TAB_LAYOUTS__ = @json($scriptLiffTabLayouts);
     window.__LIFF_DETAIL_LAYOUTS__ = @json($scriptLiffDetailLayouts);
     window.__LIFF_TAB_SETTINGS__ = @json($scriptLiffTabSettings);
