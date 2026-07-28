@@ -163,14 +163,4 @@ class SettingsService
 
         return $settings;
     }
-
-    /** @param array<string, bool> $featureFlags */
-    public function updateFeatureFlags(array $featureFlags, ?int $projectId = null): void
-    {
-        $projectId = $projectId ?? 1;
-        ShopSetting::setFeatureFlags(
-            ShopSetting::withPreservedLotteryManagedFlags($featureFlags, $projectId),
-            $projectId
-        );
-    }
 }
