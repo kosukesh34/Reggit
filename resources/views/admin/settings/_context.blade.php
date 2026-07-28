@@ -3,11 +3,12 @@
     $guides = [
         'basic' => [
             'title' => 'この画面で変更される内容',
-            'changes' => ['営業時間', '注文モード', '利用機能のON/OFF'],
-            'notes' => ['予約時間帯・休業日・予約枠は「予約設定」で管理します。'],
+            'changes' => ['営業時間', '注文モード', 'キッチンモニター用トークン'],
+            'notes' => ['予約時間帯・休業日・予約枠は「予約設定」で管理します。機能のON/OFFは「機能設定」で変更します。'],
             'links' => [
                 ['label' => '予約設定', 'url' => admin_route('admin.settings.reservations'), 'permission' => 'reservations.view'],
                 ['label' => '順番待ち設定', 'url' => admin_route('admin.settings.queue'), 'permission' => 'queue.view'],
+                ['label' => '機能設定', 'url' => admin_route('admin.settings.features'), 'permission' => 'settings.view'],
             ],
         ],
         'home' => [
@@ -29,15 +30,15 @@
         'queue' => [
             'title' => '順番待ち設定の役割',
             'changes' => ['1組あたり平均対応時間（待ち時間計算用）'],
-            'notes' => ['順番待ち機能自体の利用可否は「基本設定 > 利用機能」で切り替えます。'],
+            'notes' => ['順番待ち機能自体の利用可否は「機能設定」で切り替えます。'],
             'links' => [
-                ['label' => '基本設定', 'url' => admin_route('admin.settings.basic'), 'permission' => 'settings.view'],
+                ['label' => '機能設定', 'url' => admin_route('admin.settings.features'), 'permission' => 'settings.view'],
             ],
         ],
         'features' => [
             'title' => '機能設定の役割',
-            'changes' => ['管理画面とLIFFの機能ON/OFF', '管理画面の配色'],
-            'notes' => ['機能ごとの詳細設定は各機能メニュー内の「〜設定」で行います。'],
+            'changes' => ['LIFFの機能ON/OFF', '管理画面の配色', 'スタンプデフォルト画像・フロントヘッダー'],
+            'notes' => ['無効にした機能は顧客向け画面では非表示です。管理ナビは権限に応じて表示されたままです。機能ごとの詳細設定は各機能メニュー内の「〜設定」で行います。'],
             'links' => [
                 ['label' => '基本設定', 'url' => admin_route('admin.settings.basic'), 'permission' => 'settings.view'],
                 ['label' => '詳細設定（配色）', 'url' => admin_route('admin.settings.advanced'), 'permission' => 'settings.view'],
