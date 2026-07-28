@@ -84,13 +84,7 @@ declare global {
         __LIFF_TAB_SETTINGS__?: { _global?: Record<string, unknown> } & Record<string, Record<string, unknown>>;
         __LIFF_TAB_LAYOUTS__?: Record<string, unknown[]>;
         __LIFF_DETAIL_LAYOUTS__?: Record<string, unknown[]>;
-        __LIFF_BUILDER__?: unknown[];
         __LINE_FRIEND_ADD_URL__?: string;
-        LiffBuilderManager?: new (...args: any[]) => any;
-        LiffBuilderPageConfig?: {
-            templates?: Array<{ id: string; name?: string; blocks: Record<string, any>[] }>;
-            blocks?: Record<string, any>[];
-        };
         __MOBILE_DEVICE_INFO__?: {
             device_identifier?: string;
             platform?: string;
