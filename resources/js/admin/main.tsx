@@ -9,7 +9,6 @@ import './admin';
 import './couponBulkIssue';
 import './memberDetailHistory';
 import './memberLineQr';
-import './liffBuilderPage';
 
 function AdminBootstrap(): null {
     useEffect(() => {
