@@ -20,7 +20,7 @@
             <h3 class="card-title"><i class="fas fa-toggle-on"></i> 機能ON/OFF</h3>
         </div>
         <div class="card-body">
-            <p class="form-text text-muted text-muted-mb-16">有効化されていない機能はフロントエンド・管理画面の両方で非表示になります。</p>
+            <p class="form-text text-muted text-muted-mb-16">無効にした機能は顧客向け画面（LIFF）では非表示になります。管理画面のメニューは権限に応じて表示されたままです。</p>
             @foreach($view->featureFlagLabels as $key => $label)
                 <label class="checkbox-label checkbox-block">
                     <input type="checkbox" name="features[{{ $key }}]" value="1" {{ ($view->featureFlags[$key] ?? false) ? 'checked' : '' }}>
