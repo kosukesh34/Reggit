@@ -235,7 +235,7 @@ class ShopSetting
     {
         return [
             ['tab' => 'home', 'label' => 'ホーム', 'icon' => 'fa-house', 'order' => 0],
-            ['tab' => 'products', 'label' => '商品', 'icon' => 'fa-utensils', 'order' => 1],
+            ['tab' => 'products', 'label' => 'オーダー', 'icon' => 'fa-utensils', 'order' => 1],
             ['tab' => 'orders', 'label' => '注文', 'icon' => 'fa-receipt', 'order' => 2],
             ['tab' => 'stamps', 'label' => 'スタンプ', 'icon' => 'fa-stamp', 'order' => 3],
             ['tab' => 'coupons', 'label' => 'クーポン', 'icon' => 'fa-ticket-alt', 'order' => 4],
@@ -344,12 +344,12 @@ class ShopSetting
     /** 機能フラグの表示名（静的デフォルト。動的ラベルは featureFlagLabels() を使う） */
     public const FEATURE_FLAG_LABELS = [
         'feature_home_enabled' => 'ホーム',
-        'feature_orders_enabled' => '注文（商品・履歴）',
+        'feature_orders_enabled' => '注文（オーダー・履歴）',
         'feature_reservations_enabled' => '予約',
         'feature_queue_enabled' => '順番待ち',
         'feature_stamps_enabled' => 'スタンプカード',
         'feature_coupons_enabled' => 'クーポン',
-        'feature_members_enabled' => '会員管理',
+        'feature_members_enabled' => '会員証',
         'feature_announcements_enabled' => 'お知らせ',
         'feature_gallery_enabled' => 'ギャラリー',
     ];
