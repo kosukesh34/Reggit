@@ -46,11 +46,11 @@
         ],
         'advanced' => [
             'title' => '詳細設定（配色）の役割',
-            'changes' => ['LINE画面の配色（メイン/成功/注意色）'],
-            'notes' => ['タブの並びや表示内容は「ホーム設定」「LIFFデザイン」で調整します。'],
+            'changes' => ['成功色', '注意色'],
+            'notes' => ['メイン色（ブランド色）は LIFFデザインのテーマ／アクセント色が優先されます。タブの並びや表示内容は「ホーム設定」「LIFFデザイン」で調整します。'],
             'links' => [
-                ['label' => 'ホーム設定', 'url' => admin_route('admin.settings.home'), 'permission' => 'settings.view'],
                 ['label' => 'LIFFデザイン', 'url' => admin_route('admin.settings.liff-designer'), 'permission' => 'liff_designer.manage'],
+                ['label' => 'ホーム設定', 'url' => admin_route('admin.settings.home'), 'permission' => 'settings.view'],
             ],
         ],
         'coupons' => [
