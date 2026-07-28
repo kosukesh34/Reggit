@@ -12,7 +12,6 @@ class FeatureSettingsView
         public ?string $adminHeaderColor,
         public ?string $adminPrimaryColor,
         public ?string $stampDefaultImageUrl,
-        public ?string $couponDefaultImageUrl,
         public ?string $frontendLogoUrl,
         public ?string $frontendHeaderText
     ) {}
