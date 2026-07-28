@@ -23,7 +23,7 @@
 
 <div class="page-header">
     <h1 class="page-header-title"><i class="fas fa-home"></i> ホーム設定</h1>
-    <p class="page-header-desc">LINE画面（LIFF）で表示するタブの表示ON/OFF・並び順・ラベル・アイコンを一括で設定できます。</p>
+    <p class="page-header-desc">LINE画面（LIFF）で表示するタブの表示ON/OFF・並び順・ラベル・アイコンを設定できます。外部リンクタブは <a href="{{ admin_route('admin.settings.liff-designer') }}">LIFFデザイン</a> で追加・編集します（この画面の保存では消えません）。</p>
 </div>
 @include('admin.settings._context', ['pageKey' => 'home'])
 
