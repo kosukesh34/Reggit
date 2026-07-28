@@ -12,35 +12,35 @@
 
 | 用途 | ローカル用（.env） | AWS・本番用（EB 環境プロパティ） |
 |------|-------------------|----------------------------------|
-| **APP_URL** | `http://localhost:8080` | `https://reggit.shop`（独自ドメイン運用時） |
-| **アプリURL**（スマレジ画面） | `http://localhost:8080` | `https://reggit.shop` |
-| **利用者契約通知先URL** | `http://localhost:8080/api/smaregi/idp` | `https://reggit.shop/api/smaregi/idp` |
-| **Webhook送信先エンドポイント** | `http://localhost:8080/api/smaregi/webhook` | `https://reggit.shop/api/smaregi/webhook` |
+| **APP_URL** | `http://localhost:8080` | `https://reggit.jp`（独自ドメイン運用時） |
+| **アプリURL**（スマレジ画面） | `http://localhost:8080` | `https://reggit.jp` |
+| **利用者契約通知先URL** | `http://localhost:8080/api/smaregi/idp` | `https://reggit.jp/api/smaregi/idp` |
+| **Webhook送信先エンドポイント** | `http://localhost:8080/api/smaregi/webhook` | `https://reggit.jp/api/smaregi/webhook` |
 | **リダイレクトURI** | `urn:ietf:wg:oauth:2.0:oob`（共通） | `urn:ietf:wg:oauth:2.0:oob`（共通） |
 
 ※ スマレジ・デベロッパーズでは「開発環境」をローカル用URL or AWS用URL のどちらかに合わせて切り替えて利用する。
 
 ---
 
-## アクセスポイント一覧（本番: https://reggit.shop）
+## アクセスポイント一覧（本番: https://reggit.jp）
 
-本番のベースURLを **https://reggit.shop** とするときの主要な URL 一覧。**https://www.reggit.shop** でも同じパスでアクセス可能（DNS で www も同一 ALB に向けている場合）。
+本番のベースURLを **https://reggit.jp** とするときの主要な URL 一覧。**https://www.reggit.jp** でも同じパスでアクセス可能（DNS で www も同一 ALB に向けている場合）。
 
 | 用途 | URL（本番） |
 |------|-------------|
-| **トップ** | https://reggit.shop |
-| **LIFF（プロジェクト指定）** | https://reggit.shop/liff/default |
-| **管理画面ログイン** | https://reggit.shop/admin/login |
-| **システム管理ログイン** | https://reggit.shop/system-admin/login |
-| **API ベース** | https://reggit.shop/api |
-| **アプリ設定取得（モバイル用）** | https://reggit.shop/api/v1/app-config?project_key=default |
-| **LINE Webhook** | https://reggit.shop/api/line/webhook |
-| **スマレジ 利用者契約通知** | https://reggit.shop/api/smaregi/idp |
-| **スマレジ Webhook** | https://reggit.shop/api/smaregi/webhook |
-| **Stripe Webhook** | https://reggit.shop/api/payment/webhook |
-| **デバイス登録** | https://reggit.shop/api/devices/register |
+| **トップ** | https://reggit.jp |
+| **LIFF（プロジェクト指定）** | https://reggit.jp/liff/default |
+| **管理画面ログイン** | https://reggit.jp/admin/login |
+| **システム管理ログイン** | https://reggit.jp/system-admin/login |
+| **API ベース** | https://reggit.jp/api |
+| **アプリ設定取得（モバイル用）** | https://reggit.jp/api/v1/app-config?project_key=default |
+| **LINE Webhook** | https://reggit.jp/api/line/webhook |
+| **スマレジ 利用者契約通知** | https://reggit.jp/api/smaregi/idp |
+| **スマレジ Webhook** | https://reggit.jp/api/smaregi/webhook |
+| **Stripe Webhook** | https://reggit.jp/api/payment/webhook |
+| **デバイス登録** | https://reggit.jp/api/devices/register |
 
-**EB 環境プロパティ**の **APP_URL** は `https://reggit.shop` に設定する。スマレジ・LINE・Stripe の管理画面で登録する URL も上記のとおり。
+**EB 環境プロパティ**の **APP_URL** は `https://reggit.jp` に設定する。スマレジ・LINE・Stripe の管理画面で登録する URL も上記のとおり。
 
 ---
 
@@ -51,7 +51,7 @@
 | APP_ENV | 環境 | production |
 | APP_DEBUG | デバッグ | false |
 | APP_KEY | Laravel 鍵 | base64:... |
-| APP_URL | 本番URL | https://reggit.shop（独自ドメイン）または http://Reggit...（EB のまま） |
+| APP_URL | 本番URL | https://reggit.jp（独自ドメイン）または http://Reggit...（EB のまま） |
 | DB_HOST | RDS エンドポイント | xxx.rds.amazonaws.com |
 | DB_PORT | 3306 |
 | DB_DATABASE | reggit |
@@ -93,9 +93,9 @@
 
 | 項目 | ローカル用 | AWS・本番用 |
 |------|------------|-------------|
-| **アプリURL** | `http://localhost:8080` | `https://reggit.shop` |
-| **利用者契約通知先URL** | `http://localhost:8080/api/smaregi/idp` | `https://reggit.shop/api/smaregi/idp` |
-| **Webhook送信先エンドポイント** | `http://localhost:8080/api/smaregi/webhook` | `https://reggit.shop/api/smaregi/webhook` |
+| **アプリURL** | `http://localhost:8080` | `https://reggit.jp` |
+| **利用者契約通知先URL** | `http://localhost:8080/api/smaregi/idp` | `https://reggit.jp/api/smaregi/idp` |
+| **Webhook送信先エンドポイント** | `http://localhost:8080/api/smaregi/webhook` | `https://reggit.jp/api/smaregi/webhook` |
 | **リダイレクトURI** | `urn:ietf:wg:oauth:2.0:oob` | `urn:ietf:wg:oauth:2.0:oob` |
 
 このファイルはあくまでメモ用です。本番の秘密情報は EB の環境プロパティまたは手元の .env にだけ入れ、リポジトリには上げないでください。
@@ -113,7 +113,7 @@
 | APP_ENV | **要変更** | `production` にする |
 | APP_KEY | そのまま可 | 同じ鍵を本番でも使う場合 |
 | APP_DEBUG | **要変更** | 必ず `false` |
-| APP_URL | **要変更** | `https://reggit.shop`（独自ドメイン）または EB の URL |
+| APP_URL | **要変更** | `https://reggit.jp`（独自ドメイン）または EB の URL |
 | APP_API_BASE | そのまま可 | `/api` |
 | DEMO_SEED | 要変更推奨 | 本番では `false` が無難。デモ用なら `true` のまま |
 | DEMO_SYSTEM_LOGIN_ID 〜 DEMO_STORE_NAME | そのまま可 or 省略可 | デモ用アカウントを使う場合のみ EB に追加 |
@@ -131,7 +131,7 @@
 | LINE_CHANNEL_ACCESS_TOKEN | そのまま可 | 本番用チャネルなら本番用トークンに差し替え |
 | LINE_CHANNEL_SECRET | そのまま可 | 同上 |
 | LINE_LIFF_ID | 要確認 | 本番用 LIFF なら本番用 ID に。同じ LIFF ならそのまま |
-| LINE_LIFF_URL | **要変更** | 本番なら `https://reggit.shop/...` など |
+| LINE_LIFF_URL | **要変更** | 本番なら `https://reggit.jp/...` など |
 | STRIPE_KEY | **要変更** | 本番は Live 公開キー `pk_live_...` |
 | STRIPE_SECRET | **要変更** | 本番は Live シークレット `sk_live_...` |
 | STRIPE_WEBHOOK_SECRET | **要変更** | 本番用 Webhook の `whsec_...`（Stripe で本番 URL 登録後に取得） |
@@ -148,7 +148,7 @@
 | GOOGLE_WALLET_ENABLED | そのまま可 | true / false |
 | GOOGLE_WALLET_ISSUER_ID | そのまま可 | 本番用 Issuer なら差し替え |
 | GOOGLE_WALLET_CREDENTIALS_PATH | 要確認 | 本番ではパスを合わせるか S3 等から取得 |
-| GOOGLE_WALLET_ORIGINS | **要変更** | `https://reggit.shop` を追加（カンマ区切り） |
+| GOOGLE_WALLET_ORIGINS | **要変更** | `https://reggit.jp` を追加（カンマ区切り） |
 | GOOGLE_WALLET_CLASS_SUFFIX | そのまま可 | membership 等 |
 | GOOGLE_WALLET_ALLOW_DEMO_USER | 要変更推奨 | 本番では `false` が無難 |
 | BROADCAST_DRIVER | そのまま可 | log |
@@ -186,7 +186,7 @@
 | APP_ENV | production | 本番用 |
 | APP_DEBUG | false | 本番では必ず false |
 | APP_KEY | base64:xxxxxxxx... | ローカルで `php artisan key:generate --show` で表示した値。既に使っている鍵があればそのまま |
-| APP_URL | http://Reggit.ap-northeast-3.elasticbeanstalk.com | 独自ドメイン運用時は `https://reggit.shop` に変更 |
+| APP_URL | http://Reggit.ap-northeast-3.elasticbeanstalk.com | 独自ドメイン運用時は `https://reggit.jp` に変更 |
 | DB_CONNECTION | mysql | そのまま |
 | DB_HOST | database-1.cpi8emy64hbe.ap-northeast-3.rds.amazonaws.com | あなたの RDS エンドポイント |
 | DB_PORT | 3306 | |
@@ -236,9 +236,9 @@
 |------|-----|------|
 | STRIPE_KEY | （Stripe 公開キー `pk_live_...`） | フロントの Stripe.js 用。本番は Live キー |
 | STRIPE_SECRET | （Stripe シークレット `sk_live_...`） | サーバー側の決済処理用。本番は Live キー |
-| STRIPE_WEBHOOK_SECRET | （Webhook 署名シークレット `whsec_...`） | Stripe ダッシュボードで「開発者 → Webhook」でエンドポイント登録後に表示。本番用エンドポイントは `https://reggit.shop/api/...` など |
+| STRIPE_WEBHOOK_SECRET | （Webhook 署名シークレット `whsec_...`） | Stripe ダッシュボードで「開発者 → Webhook」でエンドポイント登録後に表示。本番用エンドポイントは `https://reggit.jp/api/...` など |
 
-※ Stripe ダッシュボードで本番用のキーと Webhook エンドポイント（`https://reggit.shop` ベース）を用意し、その値を EB の環境プロパティに設定する。
+※ Stripe ダッシュボードで本番用のキーと Webhook エンドポイント（`https://reggit.jp` ベース）を用意し、その値を EB の環境プロパティに設定する。
 
 **LINE（LIFF・メッセージ）** — LINE 連携・LIFF を使う場合。
 
@@ -246,8 +246,8 @@
 |------|-----|------|
 | LINE_CHANNEL_ACCESS_TOKEN | （チャネルアクセストークン） | LINE Developers のチャネル設定から |
 | LINE_CHANNEL_SECRET | （チャネルシークレット） | 同上 |
-| LINE_LIFF_ID | （LIFF ID） | LIFF アプリの ID。本番用 LIFF の URL は `https://reggit.shop` ベースに |
-| LINE_LIFF_URL | 未設定で可 | 必要なら `https://reggit.shop/...` を指定 |
+| LINE_LIFF_ID | （LIFF ID） | LIFF アプリの ID。本番用 LIFF の URL は `https://reggit.jp` ベースに |
+| LINE_LIFF_URL | 未設定で可 | 必要なら `https://reggit.jp/...` を指定 |
 
 **メール送信** — 本番でメールを送る場合（注文通知・パスワードリセット等）。
 
@@ -276,7 +276,7 @@
 
 | 名前 | 値 | 備考 |
 |------|-----|------|
-| SANCTUM_STATEFUL_DOMAINS | reggit.shop | 独自ドメインで SPA/API 認証を使う場合。複数はカンマ区切り |
+| SANCTUM_STATEFUL_DOMAINS | reggit.jp | 独自ドメインで SPA/API 認証を使う場合。複数はカンマ区切り |
 | JAPANPOST_API_HOST | （日本郵便 API ホスト） | 日本郵便 API を使う場合 |
 | JAPANPOST_CLIENT_ID | （クライアントID） | 同上 |
 | JAPANPOST_CLIENT_SECRET | （クライアントシークレット） | 同上 |
