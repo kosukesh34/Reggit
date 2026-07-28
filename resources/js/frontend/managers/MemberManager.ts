@@ -3295,7 +3295,7 @@ export class MemberManager {
         const html = `
             <div class="member-lottery-cta">
                 <p class="member-lottery-cta__text">プレイできる権利が ${pendingCount} 件あります</p>
-                <button type="button" class="pp-cta" data-open-lottery>ガチャを開く</button>
+                <button type="button" class="pp-cta" data-open-lottery>あそびを開く</button>
             </div>
         `;
         if (existing !== null) {
@@ -3306,7 +3306,14 @@ export class MemberManager {
         container.querySelector('[data-open-lottery]')?.addEventListener('click', () => {
             const designLab = (window.app as any)?.designLabManager;
             if (designLab !== undefined && typeof designLab.openGachaPopup === 'function') {
-                void designLab.openGachaPopup();
+                void designLab.openGachaPopup().then((opened: unknown) => {
+                    if (opened === true) {
+                        return;
+                    }
+                    if (typeof (window.app as any)?.switchTab === 'function') {
+                        (window.app as any).switchTab('designlab');
+                    }
+                });
                 return;
             }
             if (typeof (window.app as any)?.switchTab === 'function') {

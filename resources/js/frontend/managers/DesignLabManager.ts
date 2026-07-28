@@ -96,6 +96,7 @@ export class DesignLabManager {
             });
             if (pending === null) {
                 this._lotteryLog('popup_abort_no_pending');
+                ToastManager.info('プレイできる権利がありません');
                 return false;
             }
         }
@@ -147,10 +148,12 @@ export class DesignLabManager {
     }
 
     mount(container: HTMLElement): void {
+        const showGacha = isDemoDataMode() || this._state?.gacha_enabled === true;
+        const showScratch = isDemoDataMode() || this._state?.scratch_enabled === true;
         const needsRemount = container.dataset.designLabMounted !== '1'
-            || container.querySelector('.pp-gacha__dome') === null
-            || container.querySelector('.pp-gacha__outlet .pp-gacha__chute') === null
-            || container.querySelector('.pp-scratch__circle') === null;
+            || (showGacha && container.querySelector('.pp-gacha__dome') === null)
+            || (showGacha && container.querySelector('.pp-gacha__outlet .pp-gacha__chute') === null)
+            || (showScratch && container.querySelector('.pp-scratch__circle') === null);
         if (!needsRemount) {
             this._applyAvailability(container);
             this._refreshWonList(container);
@@ -211,6 +214,14 @@ export class DesignLabManager {
         if (isDemoDataMode()) {
             return;
         }
+        const gachaSection = container.querySelector('[data-lottery-section="gacha"]') as HTMLElement | null;
+        const scratchSection = container.querySelector('[data-lottery-section="scratch"]') as HTMLElement | null;
+        if (gachaSection !== null) {
+            gachaSection.hidden = this._state?.gacha_enabled !== true;
+        }
+        if (scratchSection !== null) {
+            scratchSection.hidden = this._state?.scratch_enabled !== true;
+        }
         const gachaBtn = container.querySelector('#designGachaBtn') as HTMLButtonElement | null;
         const gachaChip = container.querySelector('[data-gacha-chip]') as HTMLElement | null;
         const scratchChip = container.querySelector('[data-scratch-chip]') as HTMLElement | null;
@@ -265,7 +276,7 @@ export class DesignLabManager {
                 <div class="pp-gacha" id="designGachaStage" data-state="idle">
                     <div class="pp-gacha__stage">
                         <div class="pp-gacha__machine" id="designGachaMachine">
-                            <span class="pp-gacha__price">1回 無料</span>
+                            <span class="pp-gacha__price">権利で1回</span>
                             <div class="pp-gacha__dome">
                                 <div class="pp-gacha__dome-glass" id="designGachaDome"></div>
                                 <span class="pp-gacha__dome-shine" aria-hidden="true"></span>
@@ -306,13 +317,14 @@ export class DesignLabManager {
     private _html(): string {
         const isDemo = isDemoDataMode();
         const chip = isDemo ? '体験' : 'プレイ可';
-        return `
-            <div class="design-lab">
-                <section class="design-lab__section" aria-label="ガチャ">
-                    ${this._gachaMachineHtml(chip)}
-                </section>
-
-                <section class="design-lab__section" aria-label="スクラッチ">
+        const showGacha = isDemo || this._state?.gacha_enabled === true;
+        const showScratch = isDemo || this._state?.scratch_enabled === true;
+        const gachaSection = showGacha
+            ? `<section class="design-lab__section" data-lottery-section="gacha" aria-label="ガチャ">${this._gachaMachineHtml(chip)}</section>`
+            : '';
+        const scratchSection = showScratch
+            ? `
+                <section class="design-lab__section" data-lottery-section="scratch" aria-label="スクラッチ">
                     <h2 class="design-lab__section-title">スクラッチ</h2>
                     <p class="design-lab__section-lead">円の銀面をこすってクーポンを開けます</p>
                     <div class="pp-play-card">
@@ -340,7 +352,16 @@ export class DesignLabManager {
                         </div>
                     </div>
                 </section>
-
+            `
+            : '';
+        const emptyLead = !showGacha && !showScratch
+            ? '<p class="design-lab__section-lead">現在あそべるコンテンツはありません</p>'
+            : '';
+        return `
+            <div class="design-lab">
+                ${emptyLead}
+                ${gachaSection}
+                ${scratchSection}
                 <section class="design-lab__section" aria-label="獲得クーポン">
                     <h2 class="design-lab__section-title">獲得したクーポン</h2>
                     <ul class="design-lab__won" id="designWonList"></ul>
