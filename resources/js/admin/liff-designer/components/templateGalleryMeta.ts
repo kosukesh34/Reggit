@@ -102,7 +102,7 @@ const PRESET_PALETTES: Record<string, { label: string; accent: string }> = {
 
 const TAB_LABELS: Record<string, string> = {
     home: 'ホーム',
-    products: '商品',
+    products: 'オーダー',
     orders: '注文',
     stamps: 'スタンプ',
     coupons: 'クーポン',
