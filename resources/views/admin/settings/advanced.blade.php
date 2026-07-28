@@ -14,7 +14,7 @@
 
 <div class="page-header">
     <h1 class="page-header-title"><i class="fas fa-palette"></i> 配色</h1>
-    <p class="page-header-desc">LINEアプリでお客様に表示するボタンや強調色を変更します</p>
+    <p class="page-header-desc">成功・注意色を設定します。メイン色（ブランド色）は LIFFデザイン側が優先されます。</p>
 </div>
 @include('admin.settings._context', ['pageKey' => 'advanced'])
 
@@ -29,17 +29,18 @@
             <p class="form-section-desc">未設定の項目はデフォルトの色が使われます。</p>
             <div class="line-theme-grid">
                 <div class="form-group">
-                    <label class="form-label">メイン色</label>
+                    <label class="form-label">メイン色（参照）</label>
                     <div class="color-input-row">
-                        <input type="color" id="line_primary_color" class="color-picker" value="{{ $lineTheme['primary'] ?? '#000000' }}" aria-label="メイン色">
-                        <input type="text" name="line_primary_color" class="form-control color-hex" value="{{ $lineTheme['primary'] ?? '#000000' }}" maxlength="7">
+                        <input type="color" class="color-picker" value="{{ $lineTheme['primary'] ?? '#000000' }}" disabled aria-label="メイン色（参照）">
+                        <input type="text" class="form-control color-hex" value="{{ $lineTheme['primary'] ?? '#000000' }}" maxlength="7" readonly>
                     </div>
+                    <p class="form-text text-muted">ブランド色は <a href="{{ admin_route('admin.settings.liff-designer') }}">LIFFデザイン</a> のテーマ／アクセント色で変更します。デザイナー未設定時のみこの値が使われます。</p>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">メイン色（濃いめ）</label>
+                    <label class="form-label">メイン色（濃いめ・参照）</label>
                     <div class="color-input-row">
-                        <input type="color" id="line_primary_dark" class="color-picker" value="{{ $lineTheme['primary_dark'] ?? '#333333' }}" aria-label="メイン色（濃いめ）">
-                        <input type="text" name="line_primary_dark" class="form-control color-hex" value="{{ $lineTheme['primary_dark'] ?? '#333333' }}" maxlength="7">
+                        <input type="color" class="color-picker" value="{{ $lineTheme['primary_dark'] ?? '#333333' }}" disabled aria-label="メイン色（濃いめ・参照）">
+                        <input type="text" class="form-control color-hex" value="{{ $lineTheme['primary_dark'] ?? '#333333' }}" maxlength="7" readonly>
                     </div>
                 </div>
                 <div class="form-group">
@@ -66,11 +67,11 @@
 </form>
 
 <script>
-document.querySelectorAll('.color-picker').forEach(function(p) {
+document.querySelectorAll('.color-picker:not([disabled])').forEach(function(p) {
     const h = p.closest('.color-input-row').querySelector('.color-hex');
     p.addEventListener('input', function() { h.value = p.value; });
 });
-document.querySelectorAll('.color-hex').forEach(function(h) {
+document.querySelectorAll('.color-hex:not([readonly])').forEach(function(h) {
     const p = h.closest('.color-input-row').querySelector('.color-picker');
     h.addEventListener('input', function() {
         if (/^#[0-9A-Fa-f]{6}$/.test(h.value)) p.value = h.value;
