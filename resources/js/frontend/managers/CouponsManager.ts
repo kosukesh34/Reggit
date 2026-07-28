@@ -662,7 +662,27 @@ export class CouponsManager {
     }
 
     _renderLotteryPlayEntry(): string {
+        const flags = window.__FEATURE_FLAGS__;
+        const showGacha = isDemoDataMode()
+            || (flags !== null && typeof flags === 'object' && Boolean(flags.feature_gacha_enabled));
+        const showScratch = isDemoDataMode()
+            || (flags !== null && typeof flags === 'object' && Boolean(flags.feature_scratch_enabled));
+        if (!showGacha && !showScratch) {
+            return '';
+        }
         const eyebrow = isDemoDataMode() ? 'DEMO PLAY' : 'SPECIAL PLAY';
+        const gachaBtn = showGacha
+            ? `<button type="button" class="demo-play-entry__btn demo-play-entry__btn--gacha" data-demo-play="gacha">
+                        <span class="demo-play-entry__btn-label">ガチャガチャ</span>
+                        <span class="demo-play-entry__btn-hint">回して当てる</span>
+                    </button>`
+            : '';
+        const scratchBtn = showScratch
+            ? `<button type="button" class="demo-play-entry__btn demo-play-entry__btn--scratch" data-demo-play="scratch">
+                        <span class="demo-play-entry__btn-label">スクラッチ</span>
+                        <span class="demo-play-entry__btn-hint">こすって開ける</span>
+                    </button>`
+            : '';
         return `
             <section class="demo-play-entry" aria-label="クーポンあそび">
                 <div class="demo-play-entry__head">
@@ -671,14 +691,8 @@ export class CouponsManager {
                     <p class="demo-play-entry__sub">ガチャやスクラッチで特典クーポンを獲得できます</p>
                 </div>
                 <div class="demo-play-entry__actions">
-                    <button type="button" class="demo-play-entry__btn demo-play-entry__btn--gacha" data-demo-play="gacha">
-                        <span class="demo-play-entry__btn-label">ガチャガチャ</span>
-                        <span class="demo-play-entry__btn-hint">回して当てる</span>
-                    </button>
-                    <button type="button" class="demo-play-entry__btn demo-play-entry__btn--scratch" data-demo-play="scratch">
-                        <span class="demo-play-entry__btn-label">スクラッチ</span>
-                        <span class="demo-play-entry__btn-hint">こすって開ける</span>
-                    </button>
+                    ${gachaBtn}
+                    ${scratchBtn}
                 </div>
             </section>
         `;
@@ -703,7 +717,12 @@ export class CouponsManager {
                 if (typeof window.app?.switchTab === 'function') {
                     const designLab = (window.app as any)?.designLabManager;
                     if (play === 'gacha' && designLab !== undefined && typeof designLab.openGachaPopup === 'function') {
-                        void designLab.openGachaPopup();
+                        void designLab.openGachaPopup().then((opened: unknown) => {
+                            if (opened === true) {
+                                return;
+                            }
+                            window.app?.switchTab('designlab');
+                        });
                         return;
                     }
                     window.app.switchTab('designlab');
