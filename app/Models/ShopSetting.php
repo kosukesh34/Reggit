@@ -351,7 +351,6 @@ class ShopSetting
         'feature_coupons_enabled' => 'クーポン',
         'feature_members_enabled' => '会員管理',
         'feature_announcements_enabled' => 'お知らせ',
-        'feature_payments_enabled' => '決済（Stripe等）',
         'feature_gallery_enabled' => 'ギャラリー',
         'feature_gacha_enabled' => 'ガチャ',
         'feature_scratch_enabled' => 'スクラッチ',
