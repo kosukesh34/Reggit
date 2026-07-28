@@ -16,8 +16,6 @@ class SettingsAdvancedRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'line_primary_color' => ['nullable', 'string', self::HEX_REGEX],
-            'line_primary_dark' => ['nullable', 'string', self::HEX_REGEX],
             'line_success_color' => ['nullable', 'string', self::HEX_REGEX],
             'line_danger_color' => ['nullable', 'string', self::HEX_REGEX],
         ];
