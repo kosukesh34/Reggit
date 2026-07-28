@@ -167,6 +167,10 @@ class SettingsService
     /** @param array<string, bool> $featureFlags */
     public function updateFeatureFlags(array $featureFlags, ?int $projectId = null): void
     {
-        ShopSetting::setFeatureFlags($featureFlags, $projectId ?? 1);
+        $projectId = $projectId ?? 1;
+        ShopSetting::setFeatureFlags(
+            ShopSetting::withPreservedLotteryManagedFlags($featureFlags, $projectId),
+            $projectId
+        );
     }
 }
