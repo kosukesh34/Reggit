@@ -6,9 +6,7 @@ use App\Http\Controllers\Admin\AdminBaseController;
 use App\Http\Requests\Admin\SettingsBasicRequest;
 use App\UseCases\Admin\Settings\GetBasicSettingsUseCase;
 use App\UseCases\Admin\Settings\RegenerateKitchenAccessTokenUseCase;
-use App\UseCases\Admin\Settings\UpdateBasicFeatureFlagsUseCase;
 use App\UseCases\Admin\Settings\UpdateBasicSettingsUseCase;
-use Illuminate\Http\Request;
 
 class BasicController extends AdminBaseController
 {
@@ -16,19 +14,15 @@ class BasicController extends AdminBaseController
 
     private UpdateBasicSettingsUseCase $updateBasicSettingsUseCase;
 
-    private UpdateBasicFeatureFlagsUseCase $updateBasicFeatureFlagsUseCase;
-
     private RegenerateKitchenAccessTokenUseCase $regenerateKitchenAccessTokenUseCase;
 
     public function __construct(
         GetBasicSettingsUseCase $getBasicSettingsUseCase,
         UpdateBasicSettingsUseCase $updateBasicSettingsUseCase,
-        UpdateBasicFeatureFlagsUseCase $updateBasicFeatureFlagsUseCase,
         RegenerateKitchenAccessTokenUseCase $regenerateKitchenAccessTokenUseCase
     ) {
         $this->getBasicSettingsUseCase = $getBasicSettingsUseCase;
         $this->updateBasicSettingsUseCase = $updateBasicSettingsUseCase;
-        $this->updateBasicFeatureFlagsUseCase = $updateBasicFeatureFlagsUseCase;
         $this->regenerateKitchenAccessTokenUseCase = $regenerateKitchenAccessTokenUseCase;
     }
 
@@ -39,7 +33,6 @@ class BasicController extends AdminBaseController
 
         return view('admin.settings.basic', [
             'settings' => $view->settings,
-            'featureFlags' => $view->featureFlags,
         ]);
     }
 
@@ -59,15 +52,5 @@ class BasicController extends AdminBaseController
 
         return redirect()->route('admin.settings.basic', $this->buildAdminRouteParams())
             ->with('success', 'キッチンモニター用トークンを発行しました');
-    }
-
-    public function updateFeatureFlags(Request $request)
-    {
-        $projectId = $this->resolveAdminProjectId();
-        $flags = $request->input('feature_flags', []);
-        $this->updateBasicFeatureFlagsUseCase->handle($projectId, is_array($flags) ? $flags : []);
-
-        return redirect()->route('admin.settings.basic', $this->buildAdminRouteParams())
-            ->with('success', '利用機能を更新しました');
     }
 }
