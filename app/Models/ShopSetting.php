@@ -48,7 +48,6 @@ class ShopSetting
         'line_channel_access_token' => ProjectLineLiffSetting::class,
         'line_channel_secret' => ProjectLineLiffSetting::class,
         'line_friend_add_url' => ProjectLineLiffSetting::class,
-        'liff_builder_blocks' => ProjectLineLiffSetting::class,
         'liff_tab_layouts' => ProjectLineLiffSetting::class,
         'liff_detail_layouts' => ProjectLineLiffSetting::class,
         'liff_tab_settings' => ProjectLineLiffSetting::class,
@@ -372,18 +371,6 @@ class ShopSetting
 
     public const ORDER_MODE_IN_STORE_ONLY = 'in_store_only';
 
-    // ── LIFF ビルダー ──
-
-    public static function getLiffBuilderBlocks(?int $projectId = null): array
-    {
-        $blocks = self::getValue('liff_builder_blocks', null, $projectId);
-        if (! is_array($blocks) || $blocks === []) {
-            return ShopSettingLiffDefaults::defaultLiffBuilderTemplates()[0]['blocks'];
-        }
-
-        return $blocks;
-    }
-
     public static function getOrderMode(?int $projectId = null): string
     {
         $value = (string) self::getValue('order_mode', self::ORDER_MODE_BOTH, $projectId);
@@ -430,16 +417,6 @@ class ShopSetting
     public static function setKitchenAccessToken(?string $token, ?int $projectId = null): void
     {
         self::setValue('kitchen_access_token', $token !== null ? trim($token) : '', 'string', $projectId);
-    }
-
-    public static function setLiffBuilderBlocks(array $blocks, ?int $projectId = null): void
-    {
-        self::setValue('liff_builder_blocks', $blocks, 'json', $projectId);
-    }
-
-    public static function defaultLiffBuilderTemplates(): array
-    {
-        return ShopSettingLiffDefaults::defaultLiffBuilderTemplates();
     }
 
     public static function defaultLiffDesignerTemplates(): array
