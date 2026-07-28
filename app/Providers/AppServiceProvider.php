@@ -169,7 +169,6 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('frontendLogoUrl', ShopSetting::getFrontendLogoUrl($projectId));
                 $view->with('frontendHeaderText', ShopSetting::getFrontendHeaderText($projectId));
                 $view->with('orderMode', ShopSetting::getOrderMode($projectId));
-                $view->with('liffBuilderBlocks', ShopSetting::getLiffBuilderBlocks($projectId));
                 $view->with('liffTabLayouts', ShopSetting::getLiffTabLayouts($projectId));
                 $view->with('liffDetailLayouts', ShopSetting::getLiffDetailLayouts($projectId));
                 $view->with('liffCustomCss', ShopSetting::getLiffCustomCss($projectId));
@@ -206,7 +205,6 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('frontendLogoUrl', '');
                 $view->with('frontendHeaderText', config('app.name'));
                 $view->with('orderMode', ShopSetting::ORDER_MODE_BOTH);
-                $view->with('liffBuilderBlocks', ShopSetting::defaultLiffBuilderTemplates()[0]['blocks']);
                 $view->with('liffTabLayouts', ShopSetting::defaultLiffTabLayouts());
                 $view->with('liffDetailLayouts', ShopSetting::defaultLiffDetailLayouts());
                 $view->with('liffCustomCss', '');
