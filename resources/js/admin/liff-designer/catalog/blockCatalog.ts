@@ -2,7 +2,7 @@ import type { GlobalSettings, LiffBlock, MenuItem } from './types';
 
 export const TAB_LABELS: Record<string, string> = {
     home: 'ホーム',
-    products: '商品',
+    products: 'オーダー',
     orders: '注文',
     stamps: 'スタンプ',
     coupons: 'クーポン',
