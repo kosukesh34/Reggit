@@ -655,13 +655,31 @@ class ShopSetting
         return (bool) self::getValue($featureKey, $default, $projectId);
     }
 
-    /** 機能フラグを一括更新 */
+    /** 機能フラグを一括更新（未指定キーは OFF。false も OFF として扱う） */
     public static function setFeatureFlags(array $flags, ?int $projectId = null): void
     {
         foreach (self::FEATURE_FLAGS as $key => $default) {
-            $value = isset($flags[$key]) ? '1' : '0';
-            self::setValue($key, $value, 'boolean', $projectId);
+            $enabled = array_key_exists($key, $flags) && self::isTruthyFeatureFlag($flags[$key]);
+            self::setValue($key, $enabled ? '1' : '0', 'boolean', $projectId);
         }
+    }
+
+    /**
+     * @param  bool|int|float|string|null  $value
+     */
+    private static function isTruthyFeatureFlag($value): bool
+    {
+        if (is_bool($value)) {
+            return $value;
+        }
+        if (is_int($value) || is_float($value)) {
+            return (int) $value === 1;
+        }
+        if (is_string($value)) {
+            return in_array(strtolower($value), ['1', 'true', 'on', 'yes'], true);
+        }
+
+        return false;
     }
 
     // ── プロフィール項目設定（スマレジ連携・必須/任意・任意項目） ──
