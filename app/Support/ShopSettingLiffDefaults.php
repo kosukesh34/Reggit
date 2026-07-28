@@ -4,59 +4,6 @@ namespace App\Support;
 
 class ShopSettingLiffDefaults
 {
-    public static function defaultLiffBuilderTemplates(): array
-    {
-        return [
-            [
-                'id' => 'welcome',
-                'name' => 'ウェルカム',
-                'blocks' => [
-                    ['type' => 'hero', 'title' => 'ようこそ', 'body' => 'スマホで快適に注文・予約ができます。', 'image_url' => 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=1200', 'button_label' => 'メニューを見る', 'button_url' => '#products'],
-                    ['type' => 'text', 'title' => 'お知らせ', 'body' => '初回登録でクーポン配布中。'],
-                    ['type' => 'button', 'title' => '会員登録', 'button_label' => '会員証を作成', 'button_url' => '#member'],
-                ],
-            ],
-            [
-                'id' => 'campaign',
-                'name' => 'キャンペーン',
-                'blocks' => [
-                    ['type' => 'hero', 'title' => '期間限定キャンペーン', 'body' => '今週だけの特別メニュー。', 'image_url' => 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=1200'],
-                    ['type' => 'list', 'title' => 'おすすめ', 'list_items' => ['季節限定バーガー', 'スペシャルドリンク', '数量限定クーポン']],
-                    ['type' => 'button', 'button_label' => 'クーポンを確認', 'button_url' => '#coupons'],
-                ],
-            ],
-            [
-                'id' => 'reservation',
-                'name' => '予約案内',
-                'blocks' => [
-                    ['type' => 'hero', 'title' => '事前予約でスムーズに', 'body' => '予約枠を確認して、希望の時間を押さえましょう。', 'image_url' => 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1200'],
-                    ['type' => 'button', 'button_label' => '予約する', 'button_url' => '#reservations'],
-                    ['type' => 'text', 'title' => '注意事項', 'body' => '当日キャンセルはお控えください。'],
-                ],
-            ],
-            [
-                'id' => 'gallery',
-                'name' => 'ギャラリー',
-                'blocks' => [
-                    ['type' => 'text', 'title' => '店内・商品ギャラリー', 'body' => '最新の写真をチェック。'],
-                    ['type' => 'gallery', 'source' => 'gallery'],
-                ],
-            ],
-            [
-                'id' => 'form',
-                'name' => '問い合わせ',
-                'blocks' => [
-                    ['type' => 'text', 'title' => 'お問い合わせ', 'body' => 'ご意見・ご要望をお聞かせください。'],
-                    ['type' => 'form', 'title' => '簡単フォーム', 'form_fields' => [
-                        ['label' => 'お名前', 'type' => 'text', 'placeholder' => '例: 山田 太郎', 'required' => true],
-                        ['label' => 'メール', 'type' => 'email', 'placeholder' => 'example@example.com', 'required' => true],
-                        ['label' => '内容', 'type' => 'textarea', 'placeholder' => 'ご用件', 'required' => true],
-                    ]],
-                ],
-            ],
-        ];
-    }
-
     public static function defaultLiffDesignerTemplates(): array
     {
         return LiffAppStudioTemplates::catalog();
