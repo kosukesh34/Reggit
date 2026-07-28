@@ -353,8 +353,12 @@ class ShopSetting
         'feature_announcements_enabled' => 'お知らせ',
         'feature_payments_enabled' => '決済（Stripe等）',
         'feature_gallery_enabled' => 'ギャラリー',
-        'feature_gacha_enabled' => 'ガチャ',
-        'feature_scratch_enabled' => 'スクラッチ',
+    ];
+
+    /** ガチャ設定画面のみで編集し、機能設定のチェック保存では維持するフラグ */
+    public const LOTTERY_MANAGED_FEATURE_FLAGS = [
+        'feature_gacha_enabled',
+        'feature_scratch_enabled',
     ];
 
     /** config/native_app.php を反映した機能フラグ表示名 */
@@ -653,6 +657,28 @@ class ShopSetting
         $default = self::FEATURE_FLAGS[$featureKey] ?? true;
 
         return (bool) self::getValue($featureKey, $default, $projectId);
+    }
+
+    /**
+     * チェックボックス形式の保存用に、ガチャ系フラグを現行値で補完する。
+     * 有効なときだけキーを付け、無効は未指定のままにする（missing=OFF と両立）。
+     *
+     * @param  array<string, bool|string|int|null>  $flags
+     * @return array<string, bool|string|int|null>
+     */
+    public static function withPreservedLotteryManagedFlags(array $flags, ?int $projectId = null): array
+    {
+        $current = self::getFeatureFlags($projectId);
+        foreach (self::LOTTERY_MANAGED_FEATURE_FLAGS as $key) {
+            if (array_key_exists($key, $flags)) {
+                continue;
+            }
+            if (($current[$key] ?? false) === true) {
+                $flags[$key] = true;
+            }
+        }
+
+        return $flags;
     }
 
     /** 機能フラグを一括更新 */
