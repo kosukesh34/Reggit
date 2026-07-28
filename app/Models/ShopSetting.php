@@ -351,10 +351,13 @@ class ShopSetting
         'feature_coupons_enabled' => 'クーポン',
         'feature_members_enabled' => '会員証',
         'feature_announcements_enabled' => 'お知らせ',
-        'feature_payments_enabled' => '決済（Stripe等）',
         'feature_gallery_enabled' => 'ギャラリー',
-        'feature_gacha_enabled' => 'ガチャ',
-        'feature_scratch_enabled' => 'スクラッチ',
+    ];
+
+    /** ガチャ設定画面のみで編集し、機能設定のチェック保存では維持するフラグ */
+    public const LOTTERY_MANAGED_FEATURE_FLAGS = [
+        'feature_gacha_enabled',
+        'feature_scratch_enabled',
     ];
 
     /** config/native_app.php を反映した機能フラグ表示名 */
@@ -655,13 +658,53 @@ class ShopSetting
         return (bool) self::getValue($featureKey, $default, $projectId);
     }
 
-    /** 機能フラグを一括更新 */
+    /**
+     * チェックボックス形式の保存用に、ガチャ系フラグを現行値で補完する。
+     * 有効なときだけキーを付け、無効は未指定のままにする（missing=OFF と両立）。
+     *
+     * @param  array<string, bool|string|int|null>  $flags
+     * @return array<string, bool|string|int|null>
+     */
+    public static function withPreservedLotteryManagedFlags(array $flags, ?int $projectId = null): array
+    {
+        $current = self::getFeatureFlags($projectId);
+        foreach (self::LOTTERY_MANAGED_FEATURE_FLAGS as $key) {
+            if (array_key_exists($key, $flags)) {
+                continue;
+            }
+            if (($current[$key] ?? false) === true) {
+                $flags[$key] = true;
+            }
+        }
+
+        return $flags;
+    }
+
+    /** 機能フラグを一括更新（未指定キーは OFF。false も OFF として扱う） */
     public static function setFeatureFlags(array $flags, ?int $projectId = null): void
     {
         foreach (self::FEATURE_FLAGS as $key => $default) {
-            $value = isset($flags[$key]) ? '1' : '0';
-            self::setValue($key, $value, 'boolean', $projectId);
+            $enabled = array_key_exists($key, $flags) && self::isTruthyFeatureFlag($flags[$key]);
+            self::setValue($key, $enabled ? '1' : '0', 'boolean', $projectId);
         }
+    }
+
+    /**
+     * @param  bool|int|float|string|null  $value
+     */
+    private static function isTruthyFeatureFlag($value): bool
+    {
+        if (is_bool($value)) {
+            return $value;
+        }
+        if (is_int($value) || is_float($value)) {
+            return (int) $value === 1;
+        }
+        if (is_string($value)) {
+            return in_array(strtolower($value), ['1', 'true', 'on', 'yes'], true);
+        }
+
+        return false;
     }
 
     // ── プロフィール項目設定（スマレジ連携・必須/任意・任意項目） ──
