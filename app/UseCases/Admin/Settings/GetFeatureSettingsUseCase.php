@@ -20,7 +20,6 @@ class GetFeatureSettingsUseCase
             $this->shopSettingRepository->getAdminHeaderColor($projectId),
             $this->shopSettingRepository->getAdminPrimaryColor($projectId),
             $this->shopSettingRepository->getStampDefaultImageUrl($projectId),
-            $this->shopSettingRepository->getCouponDefaultImageUrl($projectId),
             $this->shopSettingRepository->getFrontendLogoUrl($projectId),
             $this->shopSettingRepository->getFrontendHeaderText($projectId)
         );
