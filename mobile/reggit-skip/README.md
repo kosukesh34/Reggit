@@ -21,7 +21,7 @@ LIFF/WebView のベースURLは **プロジェクトルートの `.env` の `APP
 
 ### 開発/本番をコード1箇所で切り替える（推奨）
 
-**Skip.env を触らずに**開発（ngrok）と本番（reggit.shop）を切り替えたい場合は、次の1ファイルだけ編集します。
+**Skip.env を触らずに**開発（ngrok）と本番（reggit.jp）を切り替えたい場合は、次の1ファイルだけ編集します。
 
 - **ファイル**: `Sources/Reggit/Data/BundleMobileWebConfigRepository.swift`
 - **切り替え方法**:
@@ -44,7 +44,7 @@ ngrok のURLを変更したときは、次のいずれかを実行してくだ�
 接続先を **AWS EB**（ngrok ではなく）にして iPad や実機で動作確認する手順です。
 
 1. **接続先を AWS EB にしておく**  
-   `Skip.env` の `LIFF_BASE_URL` / `LIFF_BASE_URL_IOS` が **http://Reggit.ap-northeast-3.elasticbeanstalk.com** になっていることを確認。独自ドメイン運用時は `https://reggit.shop` に変更可。
+   `Skip.env` の `LIFF_BASE_URL` / `LIFF_BASE_URL_IOS` が **http://Reggit.ap-northeast-3.elasticbeanstalk.com** になっていることを確認。独自ドメイン運用時は `https://reggit.jp` に変更可。
 
 2. **パッケージ解決**
    ```bash
