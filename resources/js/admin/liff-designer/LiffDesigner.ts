@@ -8,7 +8,7 @@ export class LiffDesigner {
 
     constructor(config) {
         this.TAB_LABELS = {
-            home: 'ホーム', products: '商品', orders: '注文', stamps: 'スタンプ',
+            home: 'ホーム', products: 'オーダー', orders: '注文', stamps: 'スタンプ',
             coupons: 'クーポン', queue: '順番待ち', reservations: '予約', member: '会員',
             gallery: 'ギャラリー', announcements: 'お知らせ'
         };
