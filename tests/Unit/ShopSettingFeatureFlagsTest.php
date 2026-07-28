@@ -19,7 +19,7 @@ class ShopSettingFeatureFlagsTest extends TestCase
         );
     }
 
-    public function test_setFeatureFlags_falseの値はOFFとして保存されること(): void
+    public function test_set_feature_flags_falseの値は無効として保存されること(): void
     {
         $project = $this->createProject();
         $flags = ShopSetting::getFeatureFlags($project->id);
@@ -32,7 +32,7 @@ class ShopSettingFeatureFlagsTest extends TestCase
         $this->assertTrue(ShopSetting::isFeatureEnabled('feature_orders_enabled', $project->id));
     }
 
-    public function test_setFeatureFlags_未指定キーはOFFになること(): void
+    public function test_set_feature_flags_未指定キーは無効になること(): void
     {
         $project = $this->createProject();
 
@@ -47,7 +47,7 @@ class ShopSettingFeatureFlagsTest extends TestCase
         $this->assertFalse(ShopSetting::isFeatureEnabled('feature_gacha_enabled', $project->id));
     }
 
-    public function test_setFeatureFlags_文字列0はOFFになること(): void
+    public function test_set_feature_flags_文字列0は無効になること(): void
     {
         $project = $this->createProject();
         $flags = ShopSetting::getFeatureFlags($project->id);
