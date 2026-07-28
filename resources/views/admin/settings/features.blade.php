@@ -64,11 +64,7 @@
                 <input type="url" name="stamp_default_image_url" id="stamp_default_image_url" class="form-control" value="{{ $view->stampDefaultImageUrl ?? '' }}" placeholder="https://example.com/stamp-default.png">
                 <p class="form-text text-muted">スタンプカードに画像が設定されていない場合に使用されます。</p>
             </div>
-            <div class="form-group">
-                <label for="coupon_default_image_url" class="form-label">クーポンデフォルト画像URL</label>
-                <input type="url" name="coupon_default_image_url" id="coupon_default_image_url" class="form-control" value="{{ $view->couponDefaultImageUrl ?? '' }}" placeholder="https://example.com/coupon-default.png">
-                <p class="form-text text-muted">クーポンに画像が設定されていない場合に使用されます。</p>
-            </div>
+            <p class="form-text text-muted">クーポンのデフォルト画像は <a href="{{ admin_route('admin.settings.coupons') }}">クーポン設定</a> で変更できます。</p>
         </div>
     </div>
 
