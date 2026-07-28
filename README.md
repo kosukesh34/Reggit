@@ -149,6 +149,7 @@ docker compose exec app php artisan admin:sync-password
 
 ## ドキュメント
 
+- [本番デプロイ（`reggit deploy`）](docs/DEPLOY.md)
 - [機能一覧・仕様](docs/FEATURES_SPEC.md)
 - [権限一覧](docs/PERMISSIONS.md)
 - [URL 一覧](docs/URL_LIST.md)
