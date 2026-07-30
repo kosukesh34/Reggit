@@ -1,4 +1,5 @@
 import Foundation
+@testable import Reggit
 
 @MainActor
 final class FakeWebViewScriptExecutor: WebViewScriptExecuting {
@@ -22,5 +23,9 @@ final class FakeWebViewScriptExecutor: WebViewScriptExecuting {
 
     func forceBootstrap() async -> String {
         bootstrapResult
+    }
+
+    func resetExecutedScripts() {
+        executedScripts.removeAll()
     }
 }

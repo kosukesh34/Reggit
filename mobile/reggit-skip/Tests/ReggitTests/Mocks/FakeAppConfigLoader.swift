@@ -1,4 +1,5 @@
 import Foundation
+@testable import Reggit
 
 @MainActor
 final class FakeAppConfigLoader: AppConfigLoading {
