@@ -1,4 +1,5 @@
 import Foundation
+@testable import Reggit
 
 struct FakeNativeDeviceContextProvider: NativeDeviceContextProvider {
     var platform: NativePlatform = .ios

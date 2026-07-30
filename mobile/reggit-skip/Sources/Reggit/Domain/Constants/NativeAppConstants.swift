@@ -23,6 +23,8 @@ enum NativeAppTabs {
 
 enum WebShellTiming {
     static let reachabilityTimeout: TimeInterval = 10
+    /// Splash 到達性確認中に activity を最低この時間見せてから結果を反映する。
+    static let splashActivityMinimum: TimeInterval = 2
     static let bootstrapDelay: TimeInterval = 4
     static let autoReloadDelay: TimeInterval = 9
     static let fallbackDelay: TimeInterval = 16

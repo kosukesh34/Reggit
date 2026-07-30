@@ -7,11 +7,9 @@ final class MobileWebShellViewModelTests: XCTestCase {
     func testNotificationDeepLinkDefersUntilWebReady() async {
         let scriptExecutor = FakeWebViewScriptExecutor()
         let whiteScreenMonitor = FakeWhiteScreenMonitor()
-        let reachability = FakeShellURLReachabilityChecker(isReachableResult: true)
         let viewModel = makeViewModel(
             scriptExecutor: scriptExecutor,
-            whiteScreenMonitor: whiteScreenMonitor,
-            reachabilityChecker: reachability
+            whiteScreenMonitor: whiteScreenMonitor
         )
 
         viewModel.onAppear()
@@ -27,27 +25,9 @@ final class MobileWebShellViewModelTests: XCTestCase {
         )
     }
 
-    func testUnreachableURLShowsFallback() async {
-        let reachability = FakeShellURLReachabilityChecker(isReachableResult: false)
-        let viewModel = makeViewModel(reachabilityChecker: reachability)
-
-        viewModel.onAppear()
-        try? await Task.sleep(nanoseconds: 50_000_000)
-
-        XCTAssertFalse(viewModel.isLoading)
-        XCTAssertTrue(viewModel.showWhiteScreenFallback)
-        XCTAssertFalse(viewModel.showNativeTabBar)
-        XCTAssertTrue(viewModel.fallbackMessage.contains("fake unreachable"))
-        XCTAssertEqual(viewModel.fallbackTitle, ShellUserFacingMessages.connectionTitle)
-    }
-
-    func testOnAppearStartsWhiteScreenMonitorBeforeReachabilityResolves() async {
+    func testOnAppearStartsWhiteScreenMonitor() async {
         let whiteScreenMonitor = FakeWhiteScreenMonitor()
-        let reachability = FakeShellURLReachabilityChecker(isReachableResult: true)
-        let viewModel = makeViewModel(
-            whiteScreenMonitor: whiteScreenMonitor,
-            reachabilityChecker: reachability
-        )
+        let viewModel = makeViewModel(whiteScreenMonitor: whiteScreenMonitor)
 
         viewModel.onAppear()
         try? await Task.sleep(nanoseconds: 20_000_000)
@@ -66,7 +46,7 @@ final class MobileWebShellViewModelTests: XCTestCase {
 
         viewModel.onAppear()
         whiteScreenMonitor.simulateContentVisible()
-        scriptExecutor.executedScripts.removeAll()
+        scriptExecutor.resetExecutedScripts()
 
         viewModel.selectTab("orders")
 
@@ -76,8 +56,7 @@ final class MobileWebShellViewModelTests: XCTestCase {
 
     private func makeViewModel(
         scriptExecutor: FakeWebViewScriptExecutor = FakeWebViewScriptExecutor(),
-        whiteScreenMonitor: FakeWhiteScreenMonitor = FakeWhiteScreenMonitor(),
-        reachabilityChecker: FakeShellURLReachabilityChecker = FakeShellURLReachabilityChecker()
+        whiteScreenMonitor: FakeWhiteScreenMonitor = FakeWhiteScreenMonitor()
     ) -> MobileWebShellViewModel {
         let config = MobileWebShellConfig(
             baseUrl: "https://example.com",
@@ -94,8 +73,7 @@ final class MobileWebShellViewModelTests: XCTestCase {
             scriptExecutor: scriptExecutor,
             appConfigLoader: FakeAppConfigLoader(),
             whiteScreenMonitor: whiteScreenMonitor,
-            pushNotificationObserver: FakePushNotificationObserver(),
-            reachabilityChecker: reachabilityChecker
+            pushNotificationObserver: FakePushNotificationObserver()
         )
     }
 }
