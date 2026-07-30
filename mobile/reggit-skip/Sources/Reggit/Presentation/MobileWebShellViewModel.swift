@@ -25,7 +25,6 @@ final class MobileWebShellViewModel: PushNotificationHandling {
     private let appConfigLoader: any AppConfigLoading
     private let whiteScreenMonitor: any WhiteScreenMonitoring
     private let pushNotificationObserver: any PushNotificationObserving
-    private let reachabilityChecker: any ShellURLReachabilityChecking
     private var pendingNotificationDeepLink: PendingNotificationDeepLink?
     private var pendingQueueToken: String?
 
@@ -38,8 +37,7 @@ final class MobileWebShellViewModel: PushNotificationHandling {
         scriptExecutor: any WebViewScriptExecuting,
         appConfigLoader: any AppConfigLoading,
         whiteScreenMonitor: any WhiteScreenMonitoring,
-        pushNotificationObserver: any PushNotificationObserving,
-        reachabilityChecker: any ShellURLReachabilityChecking
+        pushNotificationObserver: any PushNotificationObserving
     ) {
         self.config = config
         self.activeTab = config.fixedTab
@@ -51,7 +49,6 @@ final class MobileWebShellViewModel: PushNotificationHandling {
         self.appConfigLoader = appConfigLoader
         self.whiteScreenMonitor = whiteScreenMonitor
         self.pushNotificationObserver = pushNotificationObserver
-        self.reachabilityChecker = reachabilityChecker
     }
 
     var liffURL: URL? {
@@ -69,17 +66,8 @@ final class MobileWebShellViewModel: PushNotificationHandling {
             return
         }
         resetShellState()
-        Task { @MainActor in
-            // 到達性チェックは Android Skip の URLSession でハングし得るため、
-            // WhiteScreen 監視は先に開始し、到達性はタイムアウト付きのベストエフォートにする。
-            beginWhiteScreenMonitoring()
-            onNavigationFinished(applyInitialTab: false)
-
-            let reachable = await checkReachabilityWithTimeout()
-            if reachable == false {
-                markShellUnreachable()
-            }
-        }
+        beginWhiteScreenMonitoring()
+        onNavigationFinished(applyInitialTab: false)
         pushNotificationObserver.startObserving(handler: self)
     }
 
@@ -157,14 +145,7 @@ final class MobileWebShellViewModel: PushNotificationHandling {
     func retryLoad() {
         resetShellState()
         webViewReloadKey += 1
-        Task { @MainActor in
-            beginWhiteScreenMonitoring()
-
-            let reachable = await checkReachabilityWithTimeout()
-            if reachable == false {
-                markShellUnreachable()
-            }
-        }
+        beginWhiteScreenMonitoring()
     }
 
     // MARK: - PushNotificationHandling
@@ -210,19 +191,6 @@ final class MobileWebShellViewModel: PushNotificationHandling {
         pendingNotificationDeepLink = nil
         pendingQueueToken = nil
         whiteScreenMonitor.resetTracking()
-    }
-
-    private func markShellUnreachable() {
-        whiteScreenMonitor.stop()
-        isLoading = false
-        showWhiteScreenFallback = true
-        showNativeTabBar = false
-        isWebContentReady = false
-        pendingNotificationDeepLink = nil
-        pendingQueueToken = nil
-        fallbackTitle = ShellUserFacingMessages.connectionTitle
-        fallbackMessage = reachabilityChecker.unreachableMessage(for: config.liffURLString)
-        logger.error("Web shell unreachable url=\(self.config.liffURLString)")
     }
 
     private func markWebContentReadyIfNeeded() {
@@ -272,23 +240,6 @@ final class MobileWebShellViewModel: PushNotificationHandling {
                 self?.handleWhiteScreenEvent(event)
             }
         )
-    }
-
-    /// `nil` = タイムアウト（到達不能とはみなさず監視継続）
-    private func checkReachabilityWithTimeout() async -> Bool? {
-        await withTaskGroup(of: Bool?.self) { group in
-            group.addTask { [reachabilityChecker, config] in
-                await reachabilityChecker.isReachable(config.liffURLString)
-            }
-            group.addTask {
-                let nanos = UInt64(WebShellTiming.reachabilityTimeout * 1_000_000_000)
-                try? await Task.sleep(nanoseconds: nanos)
-                return nil
-            }
-            let first = await group.next() ?? nil
-            group.cancelAll()
-            return first ?? nil
-        }
     }
 
     private func handleWhiteScreenEvent(_ event: WhiteScreenMonitorEvent) {
