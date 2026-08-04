@@ -37,87 +37,19 @@
                     </a>
                     @endif
                 </div>
-                @if(
-                    $adminUser === null
-                    || $adminUser->hasPermission('orders.view')
-                    || $adminUser->hasPermission('products.view')
-                    || $adminUser->hasPermission('settings.view')
-                    || $adminUser->hasPermission('liff_designer.manage')
-                )
+                @if($adminUser === null || $adminUser->hasPermission('orders.view') || $adminUser->hasPermission('reservations.view') || $adminUser->hasPermission('queue.view'))
                 <div class="nav-group">
-                    <div class="nav-group-label">注文・商品・画面導線</div>
+                    <div class="nav-group-label">運用</div>
                     @if($adminUser === null || $adminUser->hasPermission('orders.view'))
                     <a href="{{ admin_route('admin.orders') }}" class="nav-item {{ request()->routeIs('admin.orders*') ? 'active' : '' }}">
                         <i class="fas fa-shopping-cart"></i>
-                        <span>注文（モバイル・店内）</span>
+                        <span>注文</span>
                     </a>
                     @endif
-                    @if($adminUser === null || $adminUser->hasPermission('products.view'))
-                    <a href="{{ admin_route('admin.products') }}" class="nav-item {{ request()->routeIs('admin.products*') ? 'active' : '' }}">
-                        <i class="fas fa-utensils"></i>
-                        <span>商品管理</span>
-                    </a>
-                    @endif
-                    @if($adminUser === null || $adminUser->hasPermission('settings.view'))
-                    <a href="{{ admin_route('admin.settings.home') }}" class="nav-item nav-item--sub {{ request()->routeIs('admin.settings.home*') ? 'active' : '' }}">
-                        <i class="fas fa-home"></i>
-                        <span>ホーム設定</span>
-                    </a>
-                    <a href="{{ admin_route('admin.settings.liff-connection') }}" class="nav-item nav-item--sub {{ request()->routeIs('admin.settings.liff-connection*') ? 'active' : '' }}">
-                        <i class="fab fa-line"></i>
-                        <span>LIFF設定</span>
-                    </a>
-                    @endif
-                    @if($adminUser === null || $adminUser->hasPermission('liff_designer.manage'))
-                    <a href="{{ admin_route('admin.settings.liff-designer') }}" class="nav-item nav-item--sub {{ request()->routeIs('admin.settings.liff-designer*') ? 'active' : '' }}">
-                        <i class="fas fa-paint-brush"></i>
-                        <span>LIFFデザイン</span>
-                    </a>
-                    @endif
-                </div>
-                @endif
-                @if($adminUser === null || $adminUser->hasPermission('members.view'))
-                <div class="nav-group">
-                    <div class="nav-group-label">会員・ポイント・ランク</div>
-                    <a href="{{ admin_route('admin.members') }}" class="nav-item {{ request()->routeIs('admin.members') || request()->routeIs('admin.members.detail') || request()->routeIs('admin.members.edit') ? 'active' : '' }}">
-                        <i class="fas fa-id-card"></i>
-                        <span>会員管理</span>
-                    </a>
-                    <a href="{{ admin_route('admin.rfm') }}" class="nav-item nav-item--sub {{ request()->routeIs('admin.rfm*') ? 'active' : '' }}">
-                        <i class="fas fa-chart-pie"></i>
-                        <span>RFM分析</span>
-                    </a>
-                    <a href="{{ admin_route('admin.member-tags') }}" class="nav-item nav-item--sub {{ request()->routeIs('admin.member-tags*') ? 'active' : '' }}">
-                        <i class="fas fa-tags"></i>
-                        <span>タグ管理</span>
-                    </a>
-                    @if($adminUser === null || $adminUser->hasPermission('settings.view'))
-                    <a href="{{ admin_route('admin.settings.ranks') }}" class="nav-item nav-item--sub {{ request()->routeIs('admin.settings.ranks*') ? 'active' : '' }}">
-                        <i class="fas fa-crown"></i>
-                        <span>ランク設定</span>
-                    </a>
-                    <a href="{{ admin_route('admin.settings.profile') }}" class="nav-item nav-item--sub {{ request()->routeIs('admin.settings.profile*') ? 'active' : '' }}">
-                        <i class="fas fa-user-cog"></i>
-                        <span>プロフィール設定</span>
-                    </a>
-                    <a href="{{ admin_route('admin.settings.wallet') }}" class="nav-item nav-item--sub {{ request()->routeIs('admin.settings.wallet*') ? 'active' : '' }}">
-                        <i class="fas fa-wallet"></i>
-                        <span>Wallet画像</span>
-                    </a>
-                    @endif
-                </div>
-                @endif
-                @if($adminUser === null || $adminUser->hasPermission('reservations.view') || $adminUser->hasPermission('queue.view'))
-                <div class="nav-group">
-                    <div class="nav-group-label">予約・順番待ち</div>
                     @if($adminUser === null || $adminUser->hasPermission('reservations.view'))
                     <a href="{{ admin_route('admin.reservations') }}" class="nav-item {{ request()->routeIs('admin.reservations*') && !request()->routeIs('admin.settings.reservations*') ? 'active' : '' }}">
                         <i class="fas fa-calendar-check"></i>
                         <span>予約</span>
-                    </a>
-                    <a href="{{ admin_route('admin.settings.reservations') }}" class="nav-item nav-item--sub {{ request()->routeIs('admin.settings.reservations*') ? 'active' : '' }}">
-                        <i class="fas fa-cog"></i>
-                        <span>予約設定</span>
                     </a>
                     @endif
                     @if($adminUser === null || $adminUser->hasPermission('queue.view'))
@@ -125,16 +57,34 @@
                         <i class="fas fa-list-ol"></i>
                         <span>順番待ち</span>
                     </a>
-                    <a href="{{ admin_route('admin.settings.queue') }}" class="nav-item nav-item--sub {{ request()->routeIs('admin.settings.queue*') ? 'active' : '' }}">
-                        <i class="fas fa-cog"></i>
-                        <span>順番待ち設定</span>
-                    </a>
                     @endif
                 </div>
                 @endif
-                @if($adminUser === null || $adminUser->hasPermission('stamps.view') || $adminUser->hasPermission('coupons.view'))
+                @if($adminUser === null || $adminUser->hasPermission('products.view'))
                 <div class="nav-group">
-                    <div class="nav-group-label">スタンプ・クーポン</div>
+                    <div class="nav-group-label">商品</div>
+                    <a href="{{ admin_route('admin.products') }}" class="nav-item {{ request()->routeIs('admin.products*') ? 'active' : '' }}">
+                        <i class="fas fa-utensils"></i>
+                        <span>商品管理</span>
+                    </a>
+                </div>
+                @endif
+                @if($adminUser === null || $adminUser->hasPermission('members.view'))
+                <div class="nav-group">
+                    <div class="nav-group-label">会員</div>
+                    <a href="{{ admin_route('admin.members') }}" class="nav-item {{ request()->routeIs('admin.members') || request()->routeIs('admin.members.detail') || request()->routeIs('admin.members.edit') ? 'active' : '' }}">
+                        <i class="fas fa-id-card"></i>
+                        <span>会員管理</span>
+                    </a>
+                    <a href="{{ admin_route('admin.member-tags') }}" class="nav-item nav-item--sub {{ request()->routeIs('admin.member-tags*') ? 'active' : '' }}">
+                        <i class="fas fa-tags"></i>
+                        <span>タグ管理</span>
+                    </a>
+                </div>
+                @endif
+                @if($adminUser === null || $adminUser->hasPermission('stamps.view') || $adminUser->hasPermission('coupons.view') || $adminUser->hasPermission('announcements.view'))
+                <div class="nav-group">
+                    <div class="nav-group-label">販促</div>
                     @if($adminUser === null || $adminUser->hasPermission('stamps.view'))
                     <a href="{{ admin_route('admin.stamps') }}" class="nav-item {{ request()->routeIs('admin.stamps*') ? 'active' : '' }}">
                         <i class="fas fa-stamp"></i>
@@ -142,7 +92,7 @@
                     </a>
                     @endif
                     @if($adminUser === null || $adminUser->hasPermission('coupons.view'))
-                    <a href="{{ admin_route('admin.coupons') }}" class="nav-item {{ request()->routeIs('admin.coupons*') && !request()->routeIs('admin.settings.coupons*') ? 'active' : '' }}">
+                    <a href="{{ admin_route('admin.coupons') }}" class="nav-item {{ request()->routeIs('admin.coupons*') && !request()->routeIs('admin.settings.coupons*') && !request()->routeIs('admin.coupons.bulk-issue*') ? 'active' : '' }}">
                         <i class="fas fa-ticket-alt"></i>
                         <span>クーポン</span>
                     </a>
@@ -150,21 +100,9 @@
                         <i class="fas fa-gift"></i>
                         <span>一括配布</span>
                     </a>
-                    <a href="{{ admin_route('admin.settings.coupons') }}" class="nav-item nav-item--sub {{ request()->routeIs('admin.settings.coupons*') ? 'active' : '' }}">
-                        <i class="fas fa-cog"></i>
-                        <span>クーポン設定</span>
-                    </a>
-                    <a href="{{ admin_route('admin.settings.lottery') }}" class="nav-item nav-item--sub {{ request()->routeIs('admin.settings.lottery*') ? 'active' : '' }}">
-                        <i class="fas fa-dice"></i>
-                        <span>ガチャ・スクラッチ</span>
-                    </a>
                     @endif
-                </div>
-                @endif
-                @if($adminUser === null || $adminUser->hasPermission('announcements.view'))
-                <div class="nav-group">
-                    <div class="nav-group-label">お知らせ</div>
-                    <a href="{{ admin_route('admin.announcements') }}" class="nav-item {{ request()->routeIs('admin.announcements*') && !request()->routeIs('admin.settings.announcements*') ? 'active' : '' }}">
+                    @if($adminUser === null || $adminUser->hasPermission('announcements.view'))
+                    <a href="{{ admin_route('admin.announcements') }}" class="nav-item {{ request()->routeIs('admin.announcements*') && !request()->routeIs('admin.settings.announcements*') && !request()->routeIs('admin.announcements.delivery*') ? 'active' : '' }}">
                         <i class="fas fa-bullhorn"></i>
                         <span>お知らせ</span>
                     </a>
@@ -176,33 +114,12 @@
                         <i class="fas fa-clock"></i>
                         <span>登録後配信</span>
                     </a>
-                    <a href="{{ admin_route('admin.settings.announcements') }}" class="nav-item nav-item--sub {{ request()->routeIs('admin.settings.announcements*') ? 'active' : '' }}">
-                        <i class="fas fa-cog"></i>
-                        <span>お知らせの設定</span>
-                    </a>
-                </div>
-                @endif
-                @if($adminUser === null || $adminUser->hasPermission('analytics.view'))
-                <div class="nav-group">
-                    <div class="nav-group-label">分析</div>
-                    <a href="{{ admin_route('admin.analytics') }}" class="nav-item {{ request()->routeIs('admin.analytics*') ? 'active' : '' }}">
-                        <i class="fas fa-chart-line"></i>
-                        <span>分析</span>
-                    </a>
-                </div>
-                @endif
-                @if($adminUser === null || $adminUser->hasPermission('audit_logs.view'))
-                <div class="nav-group">
-                    <div class="nav-group-label">セキュリティ</div>
-                    <a href="{{ admin_route('admin.audit-logs.index') }}" class="nav-item {{ request()->routeIs('admin.audit-logs*') ? 'active' : '' }}">
-                        <i class="fas fa-clipboard-list"></i>
-                        <span>監査ログ</span>
-                    </a>
+                    @endif
                 </div>
                 @endif
                 @if($adminUser === null || $adminUser->hasPermission('gallery.view'))
                 <div class="nav-group">
-                    <div class="nav-group-label">ギャラリー</div>
+                    <div class="nav-group-label">コンテンツ</div>
                     <a href="{{ admin_route('admin.gallery.items') }}" class="nav-item {{ request()->routeIs('admin.gallery.items*') ? 'active' : '' }}">
                         <i class="fas fa-images"></i>
                         <span>画像一覧</span>
@@ -211,13 +128,59 @@
                         <i class="fas fa-tags"></i>
                         <span>カテゴリ</span>
                     </a>
-                    <a href="{{ admin_route('admin.settings.gallery') }}" class="nav-item nav-item--sub {{ request()->routeIs('admin.settings.gallery*') ? 'active' : '' }}">
-                        <i class="fas fa-cog"></i>
-                        <span>ギャラリー設定</span>
-                    </a>
                 </div>
                 @endif
-                @if($adminUser === null || $adminUser->hasPermission('settings.view') || $adminUser->hasPermission('liff_designer.manage'))
+                @if($adminUser === null || $adminUser->hasPermission('analytics.view') || $adminUser->hasPermission('members.view'))
+                <div class="nav-group">
+                    <div class="nav-group-label">分析</div>
+                    @if($adminUser === null || $adminUser->hasPermission('analytics.view'))
+                    <a href="{{ admin_route('admin.analytics') }}" class="nav-item {{ request()->routeIs('admin.analytics*') ? 'active' : '' }}">
+                        <i class="fas fa-chart-line"></i>
+                        <span>分析</span>
+                    </a>
+                    @endif
+                    @if($adminUser === null || $adminUser->hasPermission('members.view'))
+                    <a href="{{ admin_route('admin.rfm') }}" class="nav-item {{ request()->routeIs('admin.rfm*') ? 'active' : '' }}">
+                        <i class="fas fa-chart-pie"></i>
+                        <span>RFM分析</span>
+                    </a>
+                    @endif
+                </div>
+                @endif
+                @if(
+                    $adminUser === null
+                    || $adminUser->hasPermission('settings.view')
+                    || $adminUser->hasPermission('liff_designer.manage')
+                )
+                <div class="nav-group">
+                    <div class="nav-group-label">アプリ・画面</div>
+                    @if($adminUser === null || $adminUser->hasPermission('settings.view'))
+                    <a href="{{ admin_route('admin.settings.home') }}" class="nav-item {{ request()->routeIs('admin.settings.home*') ? 'active' : '' }}">
+                        <i class="fas fa-home"></i>
+                        <span>ホーム設定</span>
+                    </a>
+                    <a href="{{ admin_route('admin.settings.liff-connection') }}" class="nav-item {{ request()->routeIs('admin.settings.liff-connection*') ? 'active' : '' }}">
+                        <i class="fab fa-line"></i>
+                        <span>LIFF設定</span>
+                    </a>
+                    @endif
+                    @if($adminUser === null || $adminUser->hasPermission('liff_designer.manage'))
+                    <a href="{{ admin_route('admin.settings.liff-designer') }}" class="nav-item {{ request()->routeIs('admin.settings.liff-designer*') ? 'active' : '' }}">
+                        <i class="fas fa-paint-brush"></i>
+                        <span>LIFFデザイン</span>
+                    </a>
+                    @endif
+                </div>
+                @endif
+                @if(
+                    $adminUser === null
+                    || $adminUser->hasPermission('settings.view')
+                    || $adminUser->hasPermission('reservations.view')
+                    || $adminUser->hasPermission('queue.view')
+                    || $adminUser->hasPermission('coupons.view')
+                    || $adminUser->hasPermission('announcements.view')
+                    || $adminUser->hasPermission('gallery.view')
+                )
                 <div class="nav-group">
                     <div class="nav-group-label">共通設定</div>
                     @if($adminUser === null || $adminUser->hasPermission('settings.view'))
@@ -238,6 +201,63 @@
                         <span>スマレジ連携</span>
                     </a>
                     @endif
+                    @if(($adminUser === null || $adminUser->hasPermission('members.view')) && ($adminUser === null || $adminUser->hasPermission('settings.view')))
+                    <a href="{{ admin_route('admin.settings.ranks') }}" class="nav-item nav-item--sub {{ request()->routeIs('admin.settings.ranks*') ? 'active' : '' }}">
+                        <i class="fas fa-crown"></i>
+                        <span>ランク設定</span>
+                    </a>
+                    <a href="{{ admin_route('admin.settings.profile') }}" class="nav-item nav-item--sub {{ request()->routeIs('admin.settings.profile*') ? 'active' : '' }}">
+                        <i class="fas fa-user-cog"></i>
+                        <span>プロフィール設定</span>
+                    </a>
+                    <a href="{{ admin_route('admin.settings.wallet') }}" class="nav-item nav-item--sub {{ request()->routeIs('admin.settings.wallet*') ? 'active' : '' }}">
+                        <i class="fas fa-wallet"></i>
+                        <span>Wallet画像</span>
+                    </a>
+                    @endif
+                    @if($adminUser === null || $adminUser->hasPermission('reservations.view'))
+                    <a href="{{ admin_route('admin.settings.reservations') }}" class="nav-item nav-item--sub {{ request()->routeIs('admin.settings.reservations*') ? 'active' : '' }}">
+                        <i class="fas fa-cog"></i>
+                        <span>予約設定</span>
+                    </a>
+                    @endif
+                    @if($adminUser === null || $adminUser->hasPermission('queue.view'))
+                    <a href="{{ admin_route('admin.settings.queue') }}" class="nav-item nav-item--sub {{ request()->routeIs('admin.settings.queue*') ? 'active' : '' }}">
+                        <i class="fas fa-cog"></i>
+                        <span>順番待ち設定</span>
+                    </a>
+                    @endif
+                    @if($adminUser === null || $adminUser->hasPermission('coupons.view'))
+                    <a href="{{ admin_route('admin.settings.coupons') }}" class="nav-item nav-item--sub {{ request()->routeIs('admin.settings.coupons*') ? 'active' : '' }}">
+                        <i class="fas fa-cog"></i>
+                        <span>クーポン設定</span>
+                    </a>
+                    <a href="{{ admin_route('admin.settings.lottery') }}" class="nav-item nav-item--sub {{ request()->routeIs('admin.settings.lottery*') ? 'active' : '' }}">
+                        <i class="fas fa-dice"></i>
+                        <span>ガチャ・スクラッチ</span>
+                    </a>
+                    @endif
+                    @if($adminUser === null || $adminUser->hasPermission('announcements.view'))
+                    <a href="{{ admin_route('admin.settings.announcements') }}" class="nav-item nav-item--sub {{ request()->routeIs('admin.settings.announcements*') ? 'active' : '' }}">
+                        <i class="fas fa-cog"></i>
+                        <span>お知らせの設定</span>
+                    </a>
+                    @endif
+                    @if($adminUser === null || $adminUser->hasPermission('gallery.view'))
+                    <a href="{{ admin_route('admin.settings.gallery') }}" class="nav-item nav-item--sub {{ request()->routeIs('admin.settings.gallery*') ? 'active' : '' }}">
+                        <i class="fas fa-cog"></i>
+                        <span>ギャラリー設定</span>
+                    </a>
+                    @endif
+                </div>
+                @endif
+                @if($adminUser === null || $adminUser->hasPermission('audit_logs.view'))
+                <div class="nav-group">
+                    <div class="nav-group-label">セキュリティ</div>
+                    <a href="{{ admin_route('admin.audit-logs.index') }}" class="nav-item {{ request()->routeIs('admin.audit-logs*') ? 'active' : '' }}">
+                        <i class="fas fa-clipboard-list"></i>
+                        <span>監査ログ</span>
+                    </a>
                 </div>
                 @endif
                 <div class="nav-group nav-group-footer">
