@@ -7,6 +7,8 @@ import SwiftUI
     @State var mirroredPhase: ShellLaunchReachabilityGate.Phase = .idle
     @State var mirroredAlertTitle = ShellUserFacingMessages.connectionTitle
     @State var mirroredAlertMessage = ""
+    @State var mirroredShellLoading = true
+    @State var mirroredShellFallback = false
     @State var showUnreachableAlert = false
     @State var renderTick = 0
 
@@ -15,20 +17,26 @@ import SwiftUI
 
     public var body: some View {
         let _ = renderTick
+        let showLaunchSplash = shouldShowLaunchSplash
         Group {
             if needsProjectSelection == true {
                 MobileProjectSelectionView {
                     MobileWebShellSession.reset()
                     reachabilityGate = ShellLaunchReachabilityGate()
                     mirroredPhase = .idle
+                    mirroredShellLoading = true
+                    mirroredShellFallback = false
                     showUnreachableAlert = false
                     needsProjectSelection = false
                 }
             } else if needsProjectSelection == false {
-                if mirroredPhase == .reachable {
-                    ContentView(viewModel: MobileWebShellSession.viewModel())
-                } else {
-                    ShellSplashView(showsActivityIndicator: mirroredPhase != .unreachable)
+                ZStack {
+                    if mirroredPhase == .reachable {
+                        ContentView(viewModel: MobileWebShellSession.viewModel())
+                    }
+                    if showLaunchSplash {
+                        ShellSplashView(showsActivityIndicator: shouldShowSplashActivity)
+                    }
                 }
             } else {
                 ShellSplashView()
@@ -57,17 +65,32 @@ import SwiftUI
                 await reachabilityGate.start()
                 syncMirroredGateState()
             }
-            while !Task.isCancelled && reachabilityGate.phase != .reachable {
+            while !Task.isCancelled {
                 syncMirroredGateState()
                 renderTick &+= 1
                 try? await Task.sleep(nanoseconds: 200_000_000)
             }
-            syncMirroredGateState()
-            renderTick &+= 1
         }
         .onAppear {
             logger.info("Skip app logs are viewable in the Xcode console for iOS; Android logs can be viewed in Studio or using adb logcat")
         }
+    }
+
+    private var shouldShowLaunchSplash: Bool {
+        if mirroredPhase != .reachable {
+            return true
+        }
+        return mirroredShellLoading || mirroredShellFallback
+    }
+
+    private var shouldShowSplashActivity: Bool {
+        if mirroredPhase == .unreachable {
+            return false
+        }
+        if mirroredPhase != .reachable {
+            return true
+        }
+        return mirroredShellLoading
     }
 
     private func syncMirroredGateState() {
@@ -80,6 +103,11 @@ import SwiftUI
             }
         } else {
             showUnreachableAlert = false
+        }
+        if reachabilityGate.phase == .reachable {
+            let live = MobileWebShellSession.viewModel()
+            mirroredShellLoading = live.isLoading
+            mirroredShellFallback = live.showWhiteScreenFallback
         }
     }
 }
