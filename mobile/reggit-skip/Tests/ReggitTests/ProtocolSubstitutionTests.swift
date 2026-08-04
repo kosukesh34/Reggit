@@ -4,10 +4,12 @@ import XCTest
 final class ProtocolSubstitutionTests: XCTestCase {
     func testFakeReachabilityCheckerIsSubstitutable() async {
         var checker: any ShellURLReachabilityChecking = FakeShellURLReachabilityChecker(isReachableResult: true)
-        XCTAssertTrue(await checker.isReachable("https://example.com"))
+        let reachable = await checker.isReachable("https://example.com")
+        XCTAssertTrue(reachable)
 
         checker = FakeShellURLReachabilityChecker(isReachableResult: false)
-        XCTAssertFalse(await checker.isReachable("https://example.com"))
+        let unreachable = await checker.isReachable("https://example.com")
+        XCTAssertFalse(unreachable)
     }
 
     func testFakeDeviceProviderIsSubstitutable() {
@@ -25,7 +27,8 @@ final class ProtocolSubstitutionTests: XCTestCase {
         let executor: any WebViewScriptExecuting = fake
         executor.run("window.test = 1")
         fake.normalizedResult = "{}"
-        XCTAssertEqual(await executor.runAndNormalize("return '{}'"), "{}")
+        let normalized = await executor.runAndNormalize("return '{}'")
+        XCTAssertEqual(normalized, "{}")
         XCTAssertEqual(fake.executedScripts.count, 2)
     }
 

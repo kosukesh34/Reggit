@@ -99,10 +99,6 @@ struct ContentView: View {
             } else {
                 InvalidURLView(urlDescription: viewModel.urlErrorDescription)
             }
-
-            if mirroredShowFallback || mirroredIsLoading {
-                ShellSplashView()
-            }
         }
     }
 
