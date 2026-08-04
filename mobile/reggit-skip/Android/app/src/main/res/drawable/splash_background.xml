@@ -1,13 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- アイコンはアプリ内 ShellSplashView のみで一度表示する（二重表示防止） -->
     <item android:drawable="@android:color/black"/>
-    <!-- API 23+: item の width/height で 1024px ロゴの実寸表示を防ぐ -->
-    <item
-        android:width="160dp"
-        android:height="160dp"
-        android:gravity="center">
-        <bitmap
-            android:gravity="fill"
-            android:src="@drawable/splash_logo"/>
-    </item>
 </layer-list>
