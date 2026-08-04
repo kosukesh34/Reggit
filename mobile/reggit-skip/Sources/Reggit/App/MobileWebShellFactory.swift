@@ -22,8 +22,7 @@ enum MobileWebShellFactory {
             scriptExecutor: scriptExecutor,
             appConfigLoader: appConfigLoader,
             whiteScreenMonitor: WhiteScreenMonitor(),
-            pushNotificationObserver: PushNotificationObserver(),
-            reachabilityChecker: NetworkShellURLReachabilityChecker()
+            pushNotificationObserver: PushNotificationObserver()
         )
     }
 }
