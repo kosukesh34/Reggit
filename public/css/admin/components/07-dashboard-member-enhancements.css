@@ -13,20 +13,26 @@
     padding-left: 2px;
 }
 
-/* ---- ダッシュボード: 今日・今月・累計グリッドの分割 ---- */
-.stats-grid--today {
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    margin-bottom: 8px;
-}
-
-.stats-grid--month {
+/* ---- ダッシュボード: 今日やること / 数字グリッド ---- */
+.stats-grid--actions {
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    margin-bottom: 8px;
+    margin-bottom: 24px;
+    gap: 16px;
 }
 
-.stats-grid--totals {
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+.stats-grid--metrics {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     margin-bottom: 28px;
+    gap: 16px;
+}
+
+.stat-card--alert {
+    border-color: #fde68a;
+    box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.25);
+}
+
+.stats-grid--actions .stat-card--link .stat-link {
+    margin-top: 8px;
 }
 
 /* ---- stat-card: トレンドバッジ ---- */
