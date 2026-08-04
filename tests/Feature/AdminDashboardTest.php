@@ -46,5 +46,34 @@ class AdminDashboardTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee('ダッシュボード', false);
+        $response->assertSee('今日やること', false);
+        $response->assertSee('今日・今月の数字', false);
+        $response->assertSee('最近の注文', false);
+        $response->assertSee('未処理注文', false);
+        $response->assertSee('注文を確認', false);
+        $response->assertDontSee('クイックメニュー', false);
+        $response->assertDontSee('総商品数', false);
+        $response->assertDontSee('総ユーザー数', false);
+    }
+
+    public function test_dashboard_サイドバーが運用と共通設定に分かれていること(): void
+    {
+        $project = $this->createProject();
+        $admin = AdminUser::factory()->create([
+            'role' => AdminUser::ROLE_ADMIN,
+            'project_id' => $project->id,
+        ]);
+
+        $response = $this->actingAs($admin, 'admin')
+            ->get(route('admin.dashboard', ['project_key' => $project->project_key]));
+
+        $response->assertStatus(200);
+        $response->assertSee('運用', false);
+        $response->assertSee('共通設定', false);
+        $response->assertSee('アプリ・画面', false);
+        $response->assertSee('予約設定', false);
+        $response->assertSee('クーポン設定', false);
+        $response->assertDontSee('注文（モバイル・店内）', false);
+        $response->assertDontSee('注文・商品・画面導線', false);
     }
 }
