@@ -1,7 +1,7 @@
 # Reggit - Docker 経由で artisan を実行するための Makefile
 # 使い方: make up → make migrate → make route-list など
 
-.PHONY: up down migrate seed reconcile-points test-env setup-dev route-list shell composer test test-db npm-build build-deploy deploy ngrok-sync smaregi-webhook-doctor smaregi-webhook-probe
+.PHONY: up down migrate seed reconcile-points test-env setup-dev route-list shell composer test test-db npm-build build-deploy deploy ngrok-sync smaregi-webhook-doctor smaregi-webhook-probe e2e-web e2e-mobile
 
 # コンテナ起動（バックグラウンド）
 up:
@@ -77,6 +77,15 @@ audit:
 # セキュリティテストのみ実行
 test-security: test-env test-db
 	docker-compose exec -e DB_DATABASE=reggit_test app php artisan test tests/Feature/SecurityTest.php
+
+# Web E2E（Playwright）。前提: make setup-dev 済み・:8080 で起動中
+e2e-web:
+	npx playwright install chromium
+	E2E_BASE_URL=http://localhost:8080 npm run test:e2e
+
+# Native E2E（Maestro / Android）。前提: APK インストール済み・adb 接続あり
+e2e-mobile:
+	./scripts/e2e-mobile-android.sh
 
 # AWS Elastic Beanstalk 用デプロイ zip をビルド（Docker プラットフォーム用）
 # 出力: deploy-docker.zip → EB の「アップロードとデプロイ」でアップロード
