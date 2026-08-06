@@ -7,6 +7,7 @@ use App\Domain\Order\Repositories\OrderRepository;
 use App\Enums\OrderStatus;
 use App\Enums\OrderType;
 use App\Enums\PaymentMethod;
+use App\Enums\SmaregiTransactionHeadDivision;
 use App\Jobs\SyncOrderTransactionToSmaregiJob;
 use App\Models\Member;
 use App\Models\Order;
@@ -122,7 +123,7 @@ class SmaregiOrderTransactionOutboundServiceTest extends TestCase
             ->once()
             ->withArgs(function (string $contractId, array $body) use ($order): bool {
                 return $contractId === 'contract-1'
-                    && $body['transactionHeadDivision'] === '10'
+                    && $body['transactionHeadDivision'] === SmaregiTransactionHeadDivision::LAYAWAY
                     && $body['terminalTranId'] === 'RG'.$order->id
                     && ! isset($body['depositCash']);
             })
@@ -190,7 +191,7 @@ class SmaregiOrderTransactionOutboundServiceTest extends TestCase
             ->once()
             ->withArgs(function (string $contractId, array $body) use ($order): bool {
                 return $contractId === 'contract-1'
-                    && $body['transactionHeadDivision'] === '1'
+                    && $body['transactionHeadDivision'] === SmaregiTransactionHeadDivision::NORMAL
                     && $body['layawayServerTransactionHeadId'] === '8001'
                     && $body['terminalTranId'] === 'RGP'.$order->id
                     && $body['depositCash'] === '1500';
@@ -257,7 +258,7 @@ class SmaregiOrderTransactionOutboundServiceTest extends TestCase
             ->once()
             ->withArgs(function (string $contractId, array $body) use ($order): bool {
                 return $contractId === 'contract-1'
-                    && $body['transactionHeadDivision'] === '1'
+                    && $body['transactionHeadDivision'] === SmaregiTransactionHeadDivision::NORMAL
                     && $body['terminalTranId'] === 'RG'.$order->id
                     && ! isset($body['layawayServerTransactionHeadId'])
                     && ! isset($body['newPoint']);
