@@ -7,6 +7,9 @@ use App\Domain\Order\Repositories\OrderRepository;
 use App\Enums\OrderStatus;
 use App\Enums\OrderType;
 use App\Enums\PaymentMethod;
+use App\Enums\SmaregiCancelDivision;
+use App\Enums\SmaregiTransactionDetailDivision;
+use App\Enums\SmaregiTransactionHeadDivision;
 use App\Jobs\SyncOrderTransactionToSmaregiJob;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -337,7 +340,7 @@ class SmaregiOrderTransactionOutboundService
         $projectId = (int) $order->project_id;
         $total = (int) round((float) $order->total_amount);
         $body = [
-            'transactionHeadDivision' => '10',
+            'transactionHeadDivision' => SmaregiTransactionHeadDivision::LAYAWAY,
             'subtotal' => (string) $total,
             'total' => (string) $total,
             'taxInclude' => '0',
@@ -401,8 +404,8 @@ class SmaregiOrderTransactionOutboundService
         $isPickup = $layawayHeadId !== null && $layawayHeadId !== '';
 
         $body = [
-            'transactionHeadDivision' => '1',
-            'cancelDivision' => '0',
+            'transactionHeadDivision' => SmaregiTransactionHeadDivision::NORMAL,
+            'cancelDivision' => SmaregiCancelDivision::NORMAL,
             'subtotal' => (string) $total,
             'total' => (string) $total,
             'taxInclude' => '0',
@@ -501,7 +504,7 @@ class SmaregiOrderTransactionOutboundService
             $price = (int) round((float) $item->price);
             $details[] = [
                 'transactionDetailId' => (string) $detailId,
-                'transactionDetailDivision' => '1',
+                'transactionDetailDivision' => SmaregiTransactionDetailDivision::NORMAL,
                 'productId' => $smaregiProductId,
                 'productName' => (string) ($item->product?->name ?? $item->product_name ?? ''),
                 'price' => (string) $price,

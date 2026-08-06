@@ -3,7 +3,10 @@
 namespace App\Domain\Smaregi\Services;
 
 use App\Domain\Smaregi\ValueObjects\SmaregiInboundTransaction;
+use App\Enums\SmaregiCancelDivision;
 use App\Enums\SmaregiInboundTransactionKind;
+use App\Enums\SmaregiReturnSalesDivision;
+use App\Enums\SmaregiTransactionHeadDivision;
 use Carbon\Carbon;
 
 /**
@@ -12,14 +15,6 @@ use Carbon\Carbon;
 final class SmaregiInboundTransactionClassifier
 {
     public const SKIP_REASON_NOT_NORMAL_SALE = 'not_a_normal_sale';
-
-    private const SALE_HEAD_DIVISION = '1';
-
-    private const CANCEL_DIVISION_NORMAL = '0';
-
-    private const CANCEL_DIVISION_CANCELLED = '1';
-
-    private const RETURN_SALES_YES = '1';
 
     /**
      * @param  array<string, string|int|float|bool|array|null>  $transaction
@@ -74,9 +69,9 @@ final class SmaregiInboundTransactionClassifier
      */
     private function isCancelled(array $transaction): bool
     {
-        $cancel = trim((string) ($transaction['cancelDivision'] ?? self::CANCEL_DIVISION_NORMAL));
+        $cancel = trim((string) ($transaction['cancelDivision'] ?? SmaregiCancelDivision::NORMAL));
 
-        return $cancel === self::CANCEL_DIVISION_CANCELLED;
+        return $cancel === SmaregiCancelDivision::CANCELLED;
     }
 
     /**
@@ -84,7 +79,8 @@ final class SmaregiInboundTransactionClassifier
      */
     private function isReturnSales(array $transaction): bool
     {
-        return trim((string) ($transaction['returnSales'] ?? '0')) === self::RETURN_SALES_YES;
+        return trim((string) ($transaction['returnSales'] ?? SmaregiReturnSalesDivision::NORMAL))
+            === SmaregiReturnSalesDivision::RETURN;
     }
 
     /**
@@ -93,13 +89,13 @@ final class SmaregiInboundTransactionClassifier
     private function isNormalSaleHead(array $transaction): bool
     {
         $division = trim((string) ($transaction['transactionHeadDivision'] ?? ''));
-        if ($division !== self::SALE_HEAD_DIVISION) {
+        if ($division !== SmaregiTransactionHeadDivision::NORMAL) {
             return false;
         }
 
-        $cancel = trim((string) ($transaction['cancelDivision'] ?? self::CANCEL_DIVISION_NORMAL));
+        $cancel = trim((string) ($transaction['cancelDivision'] ?? SmaregiCancelDivision::NORMAL));
 
-        return $cancel === '' || $cancel === self::CANCEL_DIVISION_NORMAL;
+        return $cancel === '' || $cancel === SmaregiCancelDivision::NORMAL;
     }
 
     /**

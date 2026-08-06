@@ -4,6 +4,7 @@ namespace App\Services\Smaregi;
 
 use App\Jobs\SmaregiSyncInboundCustomerPointsJob;
 use App\Jobs\SmaregiSyncInboundTransactionsJob;
+use App\Enums\SmaregiEvent;
 use App\UseCases\Smaregi\Data\SmaregiNotificationInput;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Log;
@@ -16,9 +17,9 @@ class SmaregiWebhookNotificationService
 {
     /** @var list<string> */
     private const INBOUND_SYNC_EVENTS = [
-        'pos:customers',
-        'pos:customer-points',
-        'pos:transactions',
+        SmaregiEvent::POS_CUSTOMERS,
+        SmaregiEvent::POS_CUSTOMER_POINTS,
+        SmaregiEvent::POS_TRANSACTIONS,
     ];
 
     /**
@@ -65,7 +66,7 @@ class SmaregiWebhookNotificationService
 
         if ($contractId !== null && $contractId !== '') {
             $eventLower = strtolower($event);
-            if ($eventLower === 'pos:transactions') {
+            if ($eventLower === SmaregiEvent::POS_TRANSACTIONS) {
                 $this->dispatchInboundTransactionSync(
                     $contractId,
                     $this->extractStringIds($input->input('transactionHeadIds')),
@@ -108,7 +109,7 @@ class SmaregiWebhookNotificationService
             return $empty;
         }
 
-        if ($event === 'pos:customers') {
+        if ($event === SmaregiEvent::POS_CUSTOMERS) {
             $customerIds = $this->extractStringIds($input->input('customerIds'));
             if ($customerIds === []) {
                 Log::info('[Smaregi] Webhook pos:customers だが customerIds が空のため会員同期はスキップ', [
