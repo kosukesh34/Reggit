@@ -153,6 +153,7 @@ docker compose exec app php artisan admin:sync-password
 - [機能一覧・仕様](docs/FEATURES_SPEC.md)
 - [権限一覧](docs/PERMISSIONS.md)
 - [URL 一覧](docs/URL_LIST.md)
+- [E2E テスト（Playwright / Maestro）](docs/E2E.md)
 - [スマレジ連携](docs/SMAREGI_SETUP.md) / [Webhook テスト](docs/SMAREGI_WEBHOOK_TEST.md) / [POS API リファレンス](docs/SMAREGI_POS_API_REFERENCE.md)
 - [日本郵便 API](docs/JAPANPOST_API.md)
 - [Google Wallet 会員証セットアップ](docs/GOOGLE_WALLET_SETUP.md) / [**やることチェックリスト**](docs/GOOGLE_WALLET_CHECKLIST.md) / [**Wallet 追加のアクセス用URL一覧**](docs/WALLET_ADD_URLS.md)

@@ -1,4 +1,4 @@
-# テスト・Lint 用 CI（GitHub 無料アカウントで利用可能）
+# テスト・Lint・E2E 用 CI（GitHub 無料アカウントで利用可能）
 # パブリックリポジトリ: 実行時間無制限 / プライベート: 月 2,000 分まで無料
 name: CI
 
@@ -48,13 +48,10 @@ jobs:
     # .env を composer install より前に用意（post-autoload-dump で artisan package:discover が動くため）
     - name: Prepare environment file
       run: |
-        if [ -f .env.example ]; then
+        if [ -f env.example ]; then
+          cp env.example .env
+        elif [ -f .env.example ]; then
           cp .env.example .env
-          sed -i 's/^APP_ENV=.*/APP_ENV=testing/' .env
-          sed -i 's|^DB_HOST=.*|DB_HOST=127.0.0.1|' .env
-          sed -i 's/^DB_DATABASE=.*/DB_DATABASE=reggit_test/' .env
-          sed -i 's/^DB_USERNAME=.*/DB_USERNAME=root/' .env
-          sed -i 's/^DB_PASSWORD=.*/DB_PASSWORD=root/' .env
         else
           echo 'APP_NAME="Reggit"' > .env
           echo 'APP_ENV=testing' >> .env
@@ -62,15 +59,15 @@ jobs:
           echo 'APP_DEBUG=true' >> .env
           echo 'APP_URL=http://localhost' >> .env
           echo 'DB_CONNECTION=mysql' >> .env
-          echo 'DB_HOST=127.0.0.1' >> .env
-          echo 'DB_PORT=3306' >> .env
-          echo 'DB_DATABASE=reggit_test' >> .env
-          echo 'DB_USERNAME=root' >> .env
-          echo 'DB_PASSWORD=root' >> .env
           echo 'SESSION_DRIVER=array' >> .env
           echo 'CACHE_DRIVER=array' >> .env
           echo 'QUEUE_CONNECTION=sync' >> .env
         fi
+        sed -i 's/^APP_ENV=.*/APP_ENV=testing/' .env
+        sed -i 's|^DB_HOST=.*|DB_HOST=127.0.0.1|' .env
+        sed -i 's/^DB_DATABASE=.*/DB_DATABASE=reggit_test/' .env
+        sed -i 's/^DB_USERNAME=.*/DB_USERNAME=root/' .env
+        sed -i 's/^DB_PASSWORD=.*/DB_PASSWORD=root/' .env
 
     - name: Install Dependencies
       run: composer install --prefer-dist --no-progress --no-interaction
@@ -134,10 +131,171 @@ jobs:
           echo "Laravel Pint not installed, skipping..."
         fi
 
+  e2e_web:
+    name: E2E Web (Playwright)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: reggit_e2e
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '24'
+        cache: 'npm'
+
+    - name: Install Node dependencies
+      run: npm ci
+
+    - name: Build frontend assets
+      run: npm run build
+
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.4'
+        extensions: mbstring, xml, mysql, pdo, pdo_mysql, gd, zip
+        coverage: none
+
+    - name: Prepare environment file
+      run: |
+        cp env.example .env
+        sed -i 's/^APP_ENV=.*/APP_ENV=local/' .env
+        sed -i 's|^APP_URL=.*|APP_URL=http://127.0.0.1:8080|' .env
+        sed -i 's|^DB_HOST=.*|DB_HOST=127.0.0.1|' .env
+        sed -i 's/^DB_DATABASE=.*/DB_DATABASE=reggit_e2e/' .env
+        sed -i 's/^DB_USERNAME=.*/DB_USERNAME=root/' .env
+        sed -i 's/^DB_PASSWORD=.*/DB_PASSWORD=root/' .env
+        sed -i 's/^SESSION_DRIVER=.*/SESSION_DRIVER=file/' .env
+        sed -i 's/^CACHE_DRIVER=.*/CACHE_DRIVER=file/' .env
+        sed -i 's/^DEMO_SEED=.*/DEMO_SEED=true/' .env
+
+    - name: Install PHP dependencies
+      run: composer install --prefer-dist --no-progress --no-interaction
+
+    - name: Generate application key
+      run: php artisan key:generate --force
+
+    - name: Migrate and seed
+      env:
+        DB_CONNECTION: mysql
+        DB_HOST: 127.0.0.1
+        DB_PORT: 3306
+        DB_DATABASE: reggit_e2e
+        DB_USERNAME: root
+        DB_PASSWORD: root
+      run: |
+        php artisan migrate --force
+        php artisan db:seed --force
+
+    - name: Start application server
+      env:
+        DB_CONNECTION: mysql
+        DB_HOST: 127.0.0.1
+        DB_PORT: 3306
+        DB_DATABASE: reggit_e2e
+        DB_USERNAME: root
+        DB_PASSWORD: root
+      run: |
+        php artisan serve --host=127.0.0.1 --port=8080 > /tmp/artisan-serve.log 2>&1 &
+        for i in $(seq 1 30); do
+          if curl -sf http://127.0.0.1:8080/admin/login >/dev/null; then
+            echo "Server is up"
+            exit 0
+          fi
+          sleep 1
+        done
+        echo "Server failed to start"
+        cat /tmp/artisan-serve.log
+        exit 1
+
+    - name: Install Playwright Chromium
+      run: npx playwright install chromium --with-deps
+
+    - name: Run Playwright E2E
+      env:
+        E2E_BASE_URL: http://127.0.0.1:8080
+        CI: true
+      run: npm run test:e2e
+
+    - name: Upload Playwright report
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: playwright-report
+        path: |
+          e2e/web/playwright-report
+          e2e/web/test-results
+        if-no-files-found: ignore
+
+  # Skip の Android ビルドは macOS + Xcode 依存。ランナーに Skip/AVD が無いと失敗しうるため当面 continue-on-error。
+  e2e_mobile:
+    name: E2E Mobile (Maestro / Android)
+    runs-on: macos-latest
+    continue-on-error: true
+    timeout-minutes: 120
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install Maestro
+      run: |
+        curl -Ls "https://get.maestro.mobile.dev" | bash
+        echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: temurin
+        java-version: '17'
+
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+
+    - name: Install Skip (for Android transpile)
+      run: |
+        brew install skiptools/skip/skip || brew upgrade skip || true
+        skip --version || true
+
+    - name: Create Android AVD
+      run: |
+        sdkmanager "system-images;android-34;google_apis;arm64-v8a" || sdkmanager "system-images;android-34;google_apis;x86_64"
+        echo no | avdmanager create avd -n Pixel_CI -k "system-images;android-34;google_apis;arm64-v8a" --device "pixel_6" || \
+          echo no | avdmanager create avd -n Pixel_CI -k "system-images;android-34;google_apis;x86_64" --device "pixel_6"
+        echo "ANDROID_AVD=Pixel_CI" >> "$GITHUB_ENV"
+
+    - name: Build and install mobile app
+      run: ./scripts/build-and-install-mobile.sh
+      env:
+        ANDROID_AVD: Pixel_CI
+        DESTINATION: 'platform=iOS Simulator,name=iPhone 16'
+
+    - name: Run Maestro flows
+      run: ./scripts/e2e-mobile-android.sh
+
+    - name: Upload Maestro artifacts
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: maestro-tests
+        path: ~/.maestro/tests/
+        if-no-files-found: ignore
+
   # ブランチ保護ルールが要求する required status check 名（context: main）
   main:
     runs-on: ubuntu-latest
-    needs: [ test, lint ]
+    needs: [ test, lint, e2e_web ]
 
     steps:
       - run: echo "All CI checks passed"
