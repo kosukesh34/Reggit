@@ -1,0 +1,16 @@
+appId: com.reggit.default
+---
+- launchApp:
+    clearState: true
+- tapOn:
+    text: "Allow"
+    optional: true
+- tapOn:
+    text: "許可"
+    optional: true
+- tapOn:
+    text: "Don't Allow"
+    optional: true
+- extendedWaitUntil:
+    visible: "Reggit"
+    timeout: 30000
