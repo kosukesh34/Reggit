@@ -2,9 +2,9 @@
 
 namespace App\Services\Smaregi;
 
+use App\Enums\SmaregiEvent;
 use App\Jobs\SmaregiSyncInboundCustomerPointsJob;
 use App\Jobs\SmaregiSyncInboundTransactionsJob;
-use App\Enums\SmaregiEvent;
 use App\UseCases\Smaregi\Data\SmaregiNotificationInput;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Log;
