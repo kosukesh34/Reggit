@@ -1,0 +1,57 @@
+appId: com.reggit.default
+---
+# Google Wallet 追加スモーク（Android）
+# 前提:
+# - 接続先で GOOGLE_WALLET_ENABLED=true
+# - 会員登録済み（サンプル会員証では Wallet ボタン非表示）
+# - ネイティブタブ「会員」が使えること
+# 検証範囲: 「Google Walletに追加」→ Google 側の保存 UI が開くこと
+# （Google アカウントでの最終「保存完了」までは自動化しない）
+- launchApp:
+    clearState: false
+- tapOn:
+    text: "Allow"
+    optional: true
+- tapOn:
+    text: "許可"
+    optional: true
+- tapOn:
+    text: "Don't Allow"
+    optional: true
+- extendedWaitUntil:
+    visible: "Reggit"
+    timeout: 30000
+- tapOn:
+    text: "会員"
+    optional: true
+- extendedWaitUntil:
+    visible: "会員証"
+    timeout: 45000
+- extendedWaitUntil:
+    visible: "Google Walletに追加"
+    timeout: 30000
+- tapOn: "Google Walletに追加"
+- runFlow:
+    when:
+      visible: ".*準備.*"
+    commands:
+      - extendedWaitUntil:
+          visible: "Google Walletに追加"
+          timeout: 20000
+      - tapOn: "Google Walletに追加"
+    optional: true
+# 外部ブラウザ / Google Wallet の保存 UI（いずれかが見えれば OK）
+- extendedWaitUntil:
+    visible: "Add to Google Wallet"
+    timeout: 45000
+    optional: true
+- extendedWaitUntil:
+    visible: "Google Wallet"
+    timeout: 15000
+    optional: true
+- extendedWaitUntil:
+    visible: "ウォレットに追加"
+    timeout: 5000
+    optional: true
+- assertVisible:
+    text: ".*(Add to Google Wallet|Google Wallet|ウォレットに追加).*"
