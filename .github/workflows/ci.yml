@@ -180,6 +180,9 @@ jobs:
         sed -i 's/^SESSION_DRIVER=.*/SESSION_DRIVER=file/' .env
         sed -i 's/^CACHE_DRIVER=.*/CACHE_DRIVER=file/' .env
         sed -i 's/^DEMO_SEED=.*/DEMO_SEED=true/' .env
+        # storage/framework は .gitignore のため checkout に無い。セッション無しだと /admin/login が 500 になる
+        mkdir -p storage/framework/sessions storage/framework/views storage/framework/cache storage/logs bootstrap/cache
+        chmod -R ug+rwx storage bootstrap/cache
 
     - name: Install PHP dependencies
       run: composer install --prefer-dist --no-progress --no-interaction
@@ -199,7 +202,11 @@ jobs:
         php artisan migrate --force
         php artisan db:seed --force
 
-    - name: Start application server
+    - name: Install Playwright Chromium
+      run: npx playwright install chromium --with-deps
+
+    # GHA はステップ終了でバックグラウンドプロセスを殺すため、起動とテストを同一ステップにする
+    - name: Start server and run Playwright E2E
       env:
         DB_CONNECTION: mysql
         DB_HOST: 127.0.0.1
@@ -207,27 +214,36 @@ jobs:
         DB_DATABASE: reggit_e2e
         DB_USERNAME: root
         DB_PASSWORD: root
+        E2E_BASE_URL: http://127.0.0.1:8080
+        CI: true
+        PHP_CLI_SERVER_WORKERS: 4
       run: |
-        php artisan serve --host=127.0.0.1 --port=8080 > /tmp/artisan-serve.log 2>&1 &
-        for i in $(seq 1 30); do
-          if curl -sf http://127.0.0.1:8080/admin/login >/dev/null; then
-            echo "Server is up"
-            exit 0
+        php artisan serve --host=127.0.0.1 --port=8080 --no-reload > /tmp/artisan-serve.log 2>&1 &
+        serve_pid=$!
+        cleanup() { kill "$serve_pid" 2>/dev/null || true; }
+        trap cleanup EXIT
+
+        for i in $(seq 1 60); do
+          code=$(curl -s -o /tmp/e2e-health.out -w "%{http_code}" --max-time 10 http://127.0.0.1:8080/admin/login || echo "000")
+          if [ "$code" = "200" ]; then
+            echo "Server is up (HTTP $code)"
+            break
+          fi
+          echo "Waiting for server... attempt=$i HTTP=$code"
+          if [ "$i" -eq 60 ]; then
+            echo "Server failed to become ready"
+            echo "---- health body ----"
+            head -c 2000 /tmp/e2e-health.out || true
+            echo "---- artisan serve log ----"
+            cat /tmp/artisan-serve.log || true
+            echo "---- laravel log ----"
+            tail -n 100 storage/logs/laravel.log 2>/dev/null || true
+            exit 1
           fi
           sleep 1
         done
-        echo "Server failed to start"
-        cat /tmp/artisan-serve.log
-        exit 1
 
-    - name: Install Playwright Chromium
-      run: npx playwright install chromium --with-deps
-
-    - name: Run Playwright E2E
-      env:
-        E2E_BASE_URL: http://127.0.0.1:8080
-        CI: true
-      run: npm run test:e2e
+        npm run test:e2e
 
     - name: Upload Playwright report
       if: failure()
