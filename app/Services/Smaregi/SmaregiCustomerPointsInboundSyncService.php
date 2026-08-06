@@ -7,6 +7,7 @@ use App\Domain\Order\Events\OrderPointsSyncRequested;
 use App\Domain\Order\Repositories\OrderRepository;
 use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
+use App\Enums\SmaregiWebhookAction;
 use App\Models\Member;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -106,8 +107,7 @@ class SmaregiCustomerPointsInboundSyncService
             return;
         }
 
-        $actionLower = $action !== null ? strtolower($action) : '';
-        if (in_array($actionLower, ['deleted', 'bulk-deleted'], true)) {
+        if (SmaregiWebhookAction::isCustomerDeletedAction($action)) {
             Log::info('[Smaregi] Inbound point sync skipped（会員削除系アクションのためポイント同期なし）', [
                 'smaregi_contract_id' => $contractId,
                 'action' => $action,
