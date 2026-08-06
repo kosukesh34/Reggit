@@ -3,7 +3,10 @@
 namespace Tests\Unit\Domain\Smaregi;
 
 use App\Domain\Smaregi\Services\SmaregiInboundTransactionClassifier;
+use App\Enums\SmaregiCancelDivision;
 use App\Enums\SmaregiInboundTransactionKind;
+use App\Enums\SmaregiReturnSalesDivision;
+use App\Enums\SmaregiTransactionHeadDivision;
 use PHPUnit\Framework\TestCase;
 
 class SmaregiInboundTransactionClassifierTest extends TestCase
@@ -11,8 +14,8 @@ class SmaregiInboundTransactionClassifierTest extends TestCase
     public function test_通常販売をsaleに分類すること(): void
     {
         $result = (new SmaregiInboundTransactionClassifier)->classify([
-            'transactionHeadDivision' => '1',
-            'cancelDivision' => '0',
+            'transactionHeadDivision' => SmaregiTransactionHeadDivision::NORMAL,
+            'cancelDivision' => SmaregiCancelDivision::NORMAL,
             'customerId' => '259',
             'total' => '2046',
             'terminalTranDateTime' => '2026-07-19T01:44:25+09:00',
@@ -29,9 +32,9 @@ class SmaregiInboundTransactionClassifierTest extends TestCase
     public function test_返品をreturnに分類し金額が負になること(): void
     {
         $result = (new SmaregiInboundTransactionClassifier)->classify([
-            'transactionHeadDivision' => '1',
-            'cancelDivision' => '0',
-            'returnSales' => '1',
+            'transactionHeadDivision' => SmaregiTransactionHeadDivision::NORMAL,
+            'cancelDivision' => SmaregiCancelDivision::NORMAL,
+            'returnSales' => SmaregiReturnSalesDivision::RETURN,
             'customerId' => '259',
             'total' => '1000',
             'terminalTranDateTime' => '2026-07-19T02:00:00+09:00',
@@ -47,8 +50,8 @@ class SmaregiInboundTransactionClassifierTest extends TestCase
     public function test_取消をcancelledに分類すること(): void
     {
         $result = (new SmaregiInboundTransactionClassifier)->classify([
-            'transactionHeadDivision' => '1',
-            'cancelDivision' => '1',
+            'transactionHeadDivision' => SmaregiTransactionHeadDivision::NORMAL,
+            'cancelDivision' => SmaregiCancelDivision::CANCELLED,
             'customerId' => '259',
             'total' => '2046',
         ]);
@@ -59,8 +62,8 @@ class SmaregiInboundTransactionClassifierTest extends TestCase
     public function test_ポイント加算取引はskipになること(): void
     {
         $result = (new SmaregiInboundTransactionClassifier)->classify([
-            'transactionHeadDivision' => '6',
-            'cancelDivision' => '0',
+            'transactionHeadDivision' => SmaregiTransactionHeadDivision::POINT_ADD,
+            'cancelDivision' => SmaregiCancelDivision::NORMAL,
             'customerId' => '263',
             'totalPoint' => '2000',
         ]);
