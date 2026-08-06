@@ -1,7 +1,7 @@
 # Reggit - Docker 経由で artisan を実行するための Makefile
 # 使い方: make up → make migrate → make route-list など
 
-.PHONY: up down migrate seed reconcile-points test-env setup-dev route-list shell composer test test-db npm-build build-deploy deploy ngrok-sync smaregi-webhook-doctor smaregi-webhook-probe e2e-web e2e-mobile
+.PHONY: up down migrate seed reconcile-points test-env setup-dev route-list shell composer test test-db npm-build build-deploy deploy ngrok-sync smaregi-webhook-doctor smaregi-webhook-probe e2e-web e2e-mobile e2e-mobile-ios
 
 # コンテナ起動（バックグラウンド）
 up:
@@ -86,6 +86,10 @@ e2e-web:
 # Native E2E（Maestro / Android）。前提: APK インストール済み・adb 接続あり
 e2e-mobile:
 	./scripts/e2e-mobile-android.sh
+
+# Native E2E（Maestro / iOS）。CI と同じ起動スモーク
+e2e-mobile-ios:
+	./scripts/e2e-mobile-ios-ci.sh
 
 # AWS Elastic Beanstalk 用デプロイ zip をビルド（Docker プラットフォーム用）
 # 出力: deploy-docker.zip → EB の「アップロードとデプロイ」でアップロード

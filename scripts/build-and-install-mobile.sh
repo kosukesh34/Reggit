@@ -28,8 +28,43 @@ fi
 ANDROID_APP_ID="$_android_app_id"
 ANDROID_ACTIVITY="${ANDROID_APP_ID}/reggit.app.MainActivity"
 
-# iOS のビルド先（変更する場合は環境変数 DESTINATION を指定。例: 'platform=iOS Simulator,name=iPhone 16 Pro,OS=26.0'）
-IOS_DESTINATION="${DESTINATION:-platform=iOS Simulator,name=iPhone 16 Pro}"
+# iOS のビルド先（DESTINATION 未指定時は利用可能な iPhone Simulator を自動選択）
+if [[ -n "${DESTINATION:-}" ]]; then
+  IOS_DESTINATION="${DESTINATION}"
+else
+  IOS_DESTINATION="$(python3 - <<'PY'
+import json, subprocess, sys
+raw = subprocess.check_output(["xcrun", "simctl", "list", "devices", "-j"], text=True)
+data = json.loads(raw)
+preferred = ["iPhone 17", "iPhone 17 Pro", "iPhone 16e", "iPhone Air", "iPhone 16 Pro", "iPhone 16"]
+candidates = []
+for runtime, devices in data.get("devices", {}).items():
+    if "iOS" not in runtime:
+        continue
+    for dev in devices:
+        if not dev.get("isAvailable", True):
+            continue
+        name = dev.get("name") or ""
+        if not name.startswith("iPhone"):
+            continue
+        os_ver = runtime.rsplit(".iOS-", 1)[-1].replace("-", ".") if ".iOS-" in runtime else ""
+        candidates.append((name, os_ver))
+if not candidates:
+    print("platform=iOS Simulator,name=iPhone 17")
+    sys.exit(0)
+def rank(item):
+    name, os_ver = item
+    try:
+        pref = preferred.index(name)
+    except ValueError:
+        pref = 100
+    return (pref, name, os_ver)
+name, os_ver = sorted(candidates, key=rank)[0]
+print(f"platform=iOS Simulator,name={name},OS={os_ver}" if os_ver else f"platform=iOS Simulator,name={name}")
+PY
+)"
+fi
+echo "iOS DESTINATION=${IOS_DESTINATION}"
 
 echo "== Reggit: ビルド＆インストール =="
 cd "$MOBILE_DIR"
@@ -43,11 +78,11 @@ if [[ -z "$PROJECT_DIR" ]]; then
   PROJECT_DIR="${DERIVED_DATA}/Project-chmyacsiarinkyekzpihcwqjmhyn"
 fi
 ARTIFACT_DIR="${PROJECT_DIR}/SourcePackages/artifacts/skip/skip"
-SKIP_BUNDLE="/opt/homebrew/Caskroom/skip/1.7.4/skip.artifactbundle"
-if [[ -d "$SKIP_BUNDLE" ]]; then
+SKIP_BUNDLE=$(find /opt/homebrew/Caskroom/skip /usr/local/Caskroom/skip -type d -name 'skip.artifactbundle' 2>/dev/null | sort -V | tail -1 || true)
+if [[ -n "${SKIP_BUNDLE}" && -d "${SKIP_BUNDLE}" ]]; then
   mkdir -p "$ARTIFACT_DIR"
   ln -sfn "$SKIP_BUNDLE" "$ARTIFACT_DIR/skip.artifactbundle" 2>/dev/null || true
-  echo "Skip artifact: $ARTIFACT_DIR/skip.artifactbundle"
+  echo "Skip artifact: $ARTIFACT_DIR/skip.artifactbundle -> $SKIP_BUNDLE"
 fi
 
 echo ""

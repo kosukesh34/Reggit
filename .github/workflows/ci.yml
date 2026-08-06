@@ -255,12 +255,12 @@ jobs:
           e2e/web/test-results
         if-no-files-found: ignore
 
-  # Skip の Android ビルドは macOS + Xcode 依存。ランナーに Skip/AVD が無いと失敗しうるため当面 continue-on-error。
+  # CI 必須は iOS Simulator + Maestro 起動スモーク。
+  # Android / Google Wallet フローはローカル（make e2e-mobile）向け。
   e2e_mobile:
-    name: E2E Mobile (Maestro / Android)
+    name: E2E Mobile (Maestro / iOS)
     runs-on: macos-latest
-    continue-on-error: true
-    timeout-minutes: 120
+    timeout-minutes: 90
 
     steps:
     - uses: actions/checkout@v4
@@ -270,35 +270,13 @@ jobs:
         curl -Ls "https://get.maestro.mobile.dev" | bash
         echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
 
-    - name: Setup Java
-      uses: actions/setup-java@v4
-      with:
-        distribution: temurin
-        java-version: '17'
-
-    - name: Setup Android SDK
-      uses: android-actions/setup-android@v3
-
-    - name: Install Skip (for Android transpile)
+    - name: Install Skip
       run: |
-        brew install skiptools/skip/skip || brew upgrade skip || true
-        skip --version || true
+        brew install skiptools/skip/skip || brew upgrade skip
+        skip --version
 
-    - name: Create Android AVD
-      run: |
-        sdkmanager "system-images;android-34;google_apis;arm64-v8a" || sdkmanager "system-images;android-34;google_apis;x86_64"
-        echo no | avdmanager create avd -n Pixel_CI -k "system-images;android-34;google_apis;arm64-v8a" --device "pixel_6" || \
-          echo no | avdmanager create avd -n Pixel_CI -k "system-images;android-34;google_apis;x86_64" --device "pixel_6"
-        echo "ANDROID_AVD=Pixel_CI" >> "$GITHUB_ENV"
-
-    - name: Build and install mobile app
-      run: ./scripts/build-and-install-mobile.sh
-      env:
-        ANDROID_AVD: Pixel_CI
-        DESTINATION: 'platform=iOS Simulator,name=iPhone 16'
-
-    - name: Run Maestro flows
-      run: ./scripts/e2e-mobile-android.sh
+    - name: Build iOS app and run Maestro launch smoke
+      run: ./scripts/e2e-mobile-ios-ci.sh
 
     - name: Upload Maestro artifacts
       if: always()
@@ -311,7 +289,7 @@ jobs:
   # ブランチ保護ルールが要求する required status check 名（context: main）
   main:
     runs-on: ubuntu-latest
-    needs: [ test, lint, e2e_web ]
+    needs: [ test, lint, e2e_web, e2e_mobile ]
 
     steps:
       - run: echo "All CI checks passed"
