@@ -2,6 +2,8 @@
 
 namespace App\Console\Commands;
 
+use App\Enums\SmaregiEvent;
+use App\Enums\SmaregiWebhookAction;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
 
@@ -86,7 +88,7 @@ class SmaregiWebhookDoctorCommand extends Command
     {
         $headers = [
             'Content-Type' => 'application/json',
-            'smaregi-event' => 'pos:customers',
+            'smaregi-event' => SmaregiEvent::POS_CUSTOMERS,
             'smaregi-contract-id' => $contractId !== '' ? $contractId : 'probe_contract',
             'User-Agent' => 'Smaregi-Platform-Api-Webhook/1.2.4(probe)',
         ];
@@ -98,8 +100,8 @@ class SmaregiWebhookDoctorCommand extends Command
             $response = Http::timeout(10)
                 ->withHeaders($headers)
                 ->post($url, [
-                    'event' => 'pos:customers',
-                    'action' => 'edited',
+                    'event' => SmaregiEvent::POS_CUSTOMERS,
+                    'action' => SmaregiWebhookAction::EDITED,
                     'contractId' => $contractId !== '' ? $contractId : 'probe_contract',
                     'customerIds' => [],
                 ]);
