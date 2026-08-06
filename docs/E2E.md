@@ -55,6 +55,6 @@ make e2e-mobile
 
 ### CI 上の注意（GitHub Actions）
 
-- `e2e_web` は Ubuntu で MySQL + `artisan serve` のうえ Playwright を実行します（必須チェック）。
+- `e2e_web` は Ubuntu で MySQL + `artisan serve` のうえ Playwright を実行します（必須チェック）。`storage/framework` は gitignore のため CI でディレクトリ作成が必要です。
 - `e2e_mobile` は `macos-latest` で Skip ビルド → Android エミュレータ → Maestro。Skip / AVD / Wallet 資格情報の都合で失敗しうるため当面 **`continue-on-error: true`** です。
 - GitLab CI（`.gitlab-ci.yml`）は使いません。
