@@ -7,6 +7,11 @@ use App\Enums\OrderStatus;
 use App\Enums\OrderType;
 use App\Enums\PaymentMethod;
 use App\Enums\PointTransactionType;
+use App\Enums\SmaregiCancelDivision;
+use App\Enums\SmaregiEvent;
+use App\Enums\SmaregiReturnSalesDivision;
+use App\Enums\SmaregiTransactionHeadDivision;
+use App\Enums\SmaregiWebhookAction;
 use App\Jobs\SmaregiSyncInboundTransactionsJob;
 use App\Models\Member;
 use App\Models\MemberStamp;
@@ -56,11 +61,11 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
 
         $this->postJson('/api/smaregi/webhook', [
             'contractId' => self::CONTRACT_ID,
-            'event' => 'pos:transactions',
-            'action' => 'created',
+            'event' => SmaregiEvent::POS_TRANSACTIONS,
+            'action' => SmaregiWebhookAction::CREATED,
             'transactionHeadIds' => ['39'],
         ], [
-            'smaregi-event' => 'pos:transactions',
+            'smaregi-event' => SmaregiEvent::POS_TRANSACTIONS,
             'smaregi-contract-id' => self::CONTRACT_ID,
             'Content-Type' => 'application/json',
         ])->assertStatus(200);
@@ -89,8 +94,8 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
 
         $this->fakeTransactionHttp([
             'transactionHeadId' => '39',
-            'transactionHeadDivision' => '1',
-            'cancelDivision' => '0',
+            'transactionHeadDivision' => SmaregiTransactionHeadDivision::NORMAL,
+            'cancelDivision' => SmaregiCancelDivision::NORMAL,
             'customerId' => '259',
             'total' => '2046',
             'terminalTranDateTime' => '2026-07-19T01:44:25+09:00',
@@ -178,8 +183,8 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
 
         $this->fakeTransactionHttp([
             'transactionHeadId' => '39',
-            'transactionHeadDivision' => '1',
-            'cancelDivision' => '0',
+            'transactionHeadDivision' => SmaregiTransactionHeadDivision::NORMAL,
+            'cancelDivision' => SmaregiCancelDivision::NORMAL,
             'customerId' => '259',
             'total' => '2046',
             'terminalTranId' => 'RG'.$order->id,
@@ -224,8 +229,8 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
 
         $this->fakeTransactionHttp([
             'transactionHeadId' => '39',
-            'transactionHeadDivision' => '1',
-            'cancelDivision' => '0',
+            'transactionHeadDivision' => SmaregiTransactionHeadDivision::NORMAL,
+            'cancelDivision' => SmaregiCancelDivision::NORMAL,
             'customerId' => '259',
             'total' => '2046',
             'terminalTranDateTime' => '2026-07-19T01:44:25+09:00',
@@ -268,8 +273,8 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
 
         $this->fakeTransactionHttp([
             'transactionHeadId' => '39',
-            'transactionHeadDivision' => '1',
-            'cancelDivision' => '0',
+            'transactionHeadDivision' => SmaregiTransactionHeadDivision::NORMAL,
+            'cancelDivision' => SmaregiCancelDivision::NORMAL,
             'customerId' => '259',
             'total' => '2046',
             'terminalTranDateTime' => '2026-07-19T01:44:25+09:00',
@@ -304,8 +309,8 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
 
         $this->fakeTransactionHttp([
             'transactionHeadId' => '39',
-            'transactionHeadDivision' => '1',
-            'cancelDivision' => '0',
+            'transactionHeadDivision' => SmaregiTransactionHeadDivision::NORMAL,
+            'cancelDivision' => SmaregiCancelDivision::NORMAL,
             'customerId' => '259',
             'total' => '2046',
             'terminalTranDateTime' => '2026-07-19T01:44:25+09:00',
@@ -330,8 +335,8 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
 
         $this->fakeTransactionHttp([
             'transactionHeadId' => '39',
-            'transactionHeadDivision' => '1',
-            'cancelDivision' => '0',
+            'transactionHeadDivision' => SmaregiTransactionHeadDivision::NORMAL,
+            'cancelDivision' => SmaregiCancelDivision::NORMAL,
             'customerId' => '259',
             'total' => '2046',
             'terminalTranDateTime' => '2026-07-19T01:44:25+09:00',
@@ -357,8 +362,8 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
 
         $this->fakeTransactionHttp([
             'transactionHeadId' => '38',
-            'transactionHeadDivision' => '6',
-            'cancelDivision' => '0',
+            'transactionHeadDivision' => SmaregiTransactionHeadDivision::POINT_ADD,
+            'cancelDivision' => SmaregiCancelDivision::NORMAL,
             'customerId' => '263',
             'total' => null,
             'totalPoint' => '2000',
@@ -378,8 +383,8 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
 
         $this->fakeTransactionHttp([
             'transactionHeadId' => '40',
-            'transactionHeadDivision' => '1',
-            'cancelDivision' => '0',
+            'transactionHeadDivision' => SmaregiTransactionHeadDivision::NORMAL,
+            'cancelDivision' => SmaregiCancelDivision::NORMAL,
             'customerId' => null,
             'total' => '528',
             'terminalTranDateTime' => '2026-07-19T01:50:02+09:00',
@@ -415,8 +420,8 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
 
         $sale = [
             'transactionHeadId' => '39',
-            'transactionHeadDivision' => '1',
-            'cancelDivision' => '0',
+            'transactionHeadDivision' => SmaregiTransactionHeadDivision::NORMAL,
+            'cancelDivision' => SmaregiCancelDivision::NORMAL,
             'customerId' => '259',
             'total' => '2046',
             'terminalTranDateTime' => '2026-07-19T01:44:25+09:00',
@@ -429,7 +434,7 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
         $this->assertSame(1, MemberVisit::query()->where('smaregi_transaction_head_id', '39')->count());
 
         $cancelled = $sale;
-        $cancelled['cancelDivision'] = '1';
+        $cancelled['cancelDivision'] = SmaregiCancelDivision::CANCELLED;
         $this->fakeTransactionHttp($cancelled);
         $service->syncByTransactionHeadIds(self::CONTRACT_ID, ['39']);
         $service->syncByTransactionHeadIds(self::CONTRACT_ID, ['39']);
@@ -489,8 +494,8 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
 
         $this->fakeTransactionHttp([
             'transactionHeadId' => '39',
-            'transactionHeadDivision' => '1',
-            'cancelDivision' => '0',
+            'transactionHeadDivision' => SmaregiTransactionHeadDivision::NORMAL,
+            'cancelDivision' => SmaregiCancelDivision::NORMAL,
             'customerId' => '259',
             'total' => '2046',
             'terminalTranDateTime' => '2026-07-19T01:44:25+09:00',
@@ -500,9 +505,9 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
 
         $this->fakeTransactionHttp([
             'transactionHeadId' => '50',
-            'transactionHeadDivision' => '1',
-            'cancelDivision' => '0',
-            'returnSales' => '1',
+            'transactionHeadDivision' => SmaregiTransactionHeadDivision::NORMAL,
+            'cancelDivision' => SmaregiCancelDivision::NORMAL,
+            'returnSales' => SmaregiReturnSalesDivision::RETURN,
             'customerId' => '259',
             'total' => '1000',
             'terminalTranDateTime' => '2026-07-19T02:00:00+09:00',
@@ -556,10 +561,10 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
 
         $this->fakeTransactionHttp([
             'transactionHeadId' => '41',
-            'transactionHeadDivision' => '1',
-            'cancelDivision' => '0',
+            'transactionHeadDivision' => SmaregiTransactionHeadDivision::NORMAL,
+            'cancelDivision' => SmaregiCancelDivision::NORMAL,
             'salesHeadDivision' => '1',
-            'returnSales' => '0',
+            'returnSales' => SmaregiReturnSalesDivision::NORMAL,
             'customerId' => '259',
             'total' => '1000',
             'terminalTranDateTime' => '2026-07-19T03:00:00+09:00',
@@ -611,9 +616,9 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
 
         $this->fakeTransactionHttp([
             'transactionHeadId' => '51',
-            'transactionHeadDivision' => '1',
-            'cancelDivision' => '0',
-            'returnSales' => '1',
+            'transactionHeadDivision' => SmaregiTransactionHeadDivision::NORMAL,
+            'cancelDivision' => SmaregiCancelDivision::NORMAL,
+            'returnSales' => SmaregiReturnSalesDivision::RETURN,
             'newPoint' => '-10',
             'customerId' => '259',
             'total' => '1000',
