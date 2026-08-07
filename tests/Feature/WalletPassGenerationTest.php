@@ -2,9 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\Member;
 use App\Models\Project;
-use App\Models\ShopSetting;
 use App\Models\User;
 use App\Services\WalletPassService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -184,7 +184,7 @@ class WalletPassGenerationTest extends TestCase
             ['project_key' => 'default'],
             ['name' => 'Default', 'description' => '', 'is_active' => true]
         );
-        ShopSetting::setLineLiffId('2008962885-AbCdEfGh', (int) $project->id);
+        ShopSettingStore::setLineLiffId('2008962885-AbCdEfGh', (int) $project->id);
         $walletUrl = 'https://wallet-test.example.test/api/members/me/wallet-pass?project_key=default&token=test';
 
         $response = $this->withServerVariables(['HTTP_HOST' => 'wallet-test.example.test'])

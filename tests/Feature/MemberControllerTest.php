@@ -2,10 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\Member;
 use App\Models\PointTransaction;
 use App\Models\Project;
-use App\Models\ShopSetting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -78,7 +78,7 @@ class MemberControllerTest extends TestCase
         $response->assertStatus(200)
             ->assertJsonPath('is_member', true);
 
-        ShopSetting::setMemberRegistrationMode('prompt', (int) $project->id);
+        ShopSettingStore::setMemberRegistrationMode('prompt', (int) $project->id);
         $response = $this->withHeaders(['X-Line-User-Id' => self::LINE_USER_ID])
             ->get('/api/members/me?project_key=default');
         $response->assertStatus(200)

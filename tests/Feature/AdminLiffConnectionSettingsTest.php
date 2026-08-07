@@ -2,9 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\AdminUser;
 use App\Models\Project;
-use App\Models\ShopSetting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -58,10 +58,10 @@ class AdminLiffConnectionSettingsTest extends TestCase
             ]);
 
         $response->assertRedirect(route('admin.settings.liff-connection', ['project_key' => $project->project_key]));
-        $this->assertSame('2000000000-abcdef', ShopSetting::getLineLiffId((int) $project->id));
-        $this->assertSame('https://miniapp.line.me/2000000000-abcdef', ShopSetting::getLineLiffUrl((int) $project->id));
-        $this->assertSame('test-channel-access-token', ShopSetting::getLineChannelAccessToken((int) $project->id));
-        $this->assertSame('test-channel-secret', ShopSetting::getLineChannelSecret((int) $project->id));
+        $this->assertSame('2000000000-abcdef', ShopSettingStore::getLineLiffId((int) $project->id));
+        $this->assertSame('https://miniapp.line.me/2000000000-abcdef', ShopSettingStore::getLineLiffUrl((int) $project->id));
+        $this->assertSame('test-channel-access-token', ShopSettingStore::getLineChannelAccessToken((int) $project->id));
+        $this->assertSame('test-channel-secret', ShopSettingStore::getLineChannelSecret((int) $project->id));
     }
 
     public function test_liff設定画面に_messaging_ap_i項目があること(): void

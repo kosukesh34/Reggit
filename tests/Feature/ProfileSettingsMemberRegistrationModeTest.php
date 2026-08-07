@@ -3,9 +3,9 @@
 namespace Tests\Feature;
 
 use App\Enums\MemberRegistrationMode;
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\AdminUser;
 use App\Models\Project;
-use App\Models\ShopSetting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -33,7 +33,7 @@ class ProfileSettingsMemberRegistrationModeTest extends TestCase
     private function defaultSmaregiFieldsPayload(): array
     {
         $fields = [];
-        foreach (ShopSetting::PROFILE_SMAREGI_FIELDS as $key => $_label) {
+        foreach (ShopSettingStore::PROFILE_SMAREGI_FIELDS as $key => $_label) {
             $fields[$key] = [
                 'enabled' => '1',
                 'required' => in_array($key, ['name', 'phone'], true) ? '1' : '0',
@@ -73,7 +73,7 @@ class ProfileSettingsMemberRegistrationModeTest extends TestCase
         $response->assertSessionHas('success');
         $this->assertSame(
             MemberRegistrationMode::FORCE,
-            ShopSetting::getMemberRegistrationMode((int) $project->id)
+            ShopSettingStore::getMemberRegistrationMode((int) $project->id)
         );
     }
 }

@@ -2,9 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\AdminUser;
 use App\Models\Project;
-use App\Models\ShopSetting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -47,7 +47,7 @@ class PublicProjectsApiAndMemberLineQrTest extends TestCase
             'description' => '',
             'is_active' => true,
         ]);
-        ShopSetting::setLineFriendAddUrl('https://line.me/R/ti/p/@example', $project->id);
+        ShopSettingStore::setLineFriendAddUrl('https://line.me/R/ti/p/@example', $project->id);
         $admin = AdminUser::factory()->create([
             'role' => AdminUser::ROLE_ADMIN,
             'project_id' => $project->id,

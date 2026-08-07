@@ -2,26 +2,36 @@
 
 namespace App\Services;
 
-use App\Models\ShopSetting;
+use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\ShopSettingKeys;
 
 class SettingsService
 {
     private const HEX_REGEX = '/^#[0-9A-Fa-f]{6}$/';
 
+    /** @var ShopSettingRepository */
+    private $shopSettingRepository;
+
+    public function __construct(ShopSettingRepository $shopSettingRepository)
+    {
+        $this->shopSettingRepository = $shopSettingRepository;
+    }
+
     public function getBasicSettings(?int $projectId = null): array
     {
         $projectId = $projectId ?? 1;
+        $repo = $this->shopSettingRepository;
 
         return [
-            'businessHours' => ShopSetting::getBusinessHours($projectId),
-            'timeSlots' => ShopSetting::getReservationTimeSlots($projectId),
-            'closedDays' => ShopSetting::getClosedDays($projectId),
-            'closedDates' => ShopSetting::getClosedDates($projectId),
-            'advanceDays' => ShopSetting::getAdvanceBookingDays($projectId),
-            'reservationCapacity' => ShopSetting::getReservationCapacityPerSlot($projectId),
-            'orderMode' => ShopSetting::getOrderMode($projectId),
-            'orderLineNotifyEnabled' => ShopSetting::isOrderLineNotifyEnabled($projectId),
-            'orderReadyLineNotifyEnabled' => ShopSetting::isOrderReadyLineNotifyEnabled($projectId),
+            'businessHours' => $repo->getBusinessHours($projectId),
+            'timeSlots' => $repo->getReservationTimeSlots($projectId),
+            'closedDays' => $repo->getClosedDays($projectId),
+            'closedDates' => $repo->getClosedDates($projectId),
+            'advanceDays' => $repo->getAdvanceBookingDays($projectId),
+            'reservationCapacity' => $repo->getReservationCapacityPerSlot($projectId),
+            'orderMode' => $repo->getOrderMode($projectId),
+            'orderLineNotifyEnabled' => $repo->isOrderLineNotifyEnabled($projectId),
+            'orderReadyLineNotifyEnabled' => $repo->isOrderReadyLineNotifyEnabled($projectId),
         ];
     }
 
@@ -29,46 +39,48 @@ class SettingsService
     {
         $projectId = $projectId ?? 1;
 
-        return ['lineTheme' => ShopSetting::getLineThemeColors($projectId)];
+        return ['lineTheme' => $this->shopSettingRepository->getLineThemeColors($projectId)];
     }
 
     public function updateReservationSettings(array $validated, ?int $projectId = null): void
     {
         $projectId = $projectId ?? 1;
-        ShopSetting::setValue('business_hours_start', $validated['business_hours_start'], 'time', $projectId);
-        ShopSetting::setValue('business_hours_end', $validated['business_hours_end'], 'time', $projectId);
+        $repo = $this->shopSettingRepository;
+
+        $repo->setValue('business_hours_start', $validated['business_hours_start'], 'time', $projectId);
+        $repo->setValue('business_hours_end', $validated['business_hours_end'], 'time', $projectId);
 
         // 基本設定画面からは予約詳細項目を送らないため、送信された場合のみ更新する。
         if (array_key_exists('reservation_time_slots', $validated) && is_array($validated['reservation_time_slots'])) {
-            ShopSetting::setValue('reservation_time_slots', $validated['reservation_time_slots'], 'json', $projectId);
+            $repo->setValue('reservation_time_slots', $validated['reservation_time_slots'], 'json', $projectId);
         }
 
         if (array_key_exists('closed_days', $validated) && is_array($validated['closed_days'])) {
             $closedDays = array_values(array_map('intval', $validated['closed_days']));
-            ShopSetting::setValue('closed_days', $closedDays, 'json', $projectId);
+            $repo->setValue('closed_days', $closedDays, 'json', $projectId);
         }
 
         if (array_key_exists('closed_dates', $validated) && is_array($validated['closed_dates'])) {
             $closedDates = array_values(array_filter($validated['closed_dates'], function ($date) {
                 return $date !== null && $date !== '';
             }));
-            ShopSetting::setValue('closed_dates', $closedDates, 'json', $projectId);
+            $repo->setValue('closed_dates', $closedDates, 'json', $projectId);
         }
 
         if (array_key_exists('advance_booking_days', $validated) && $validated['advance_booking_days'] !== null) {
-            ShopSetting::setValue('advance_booking_days', (int) $validated['advance_booking_days'], 'integer', $projectId);
+            $repo->setValue('advance_booking_days', (int) $validated['advance_booking_days'], 'integer', $projectId);
         }
 
         if (array_key_exists('reservation_capacity_per_slot', $validated) && $validated['reservation_capacity_per_slot'] !== null) {
-            ShopSetting::setValue('reservation_capacity_per_slot', (int) $validated['reservation_capacity_per_slot'], 'integer', $projectId);
+            $repo->setValue('reservation_capacity_per_slot', (int) $validated['reservation_capacity_per_slot'], 'integer', $projectId);
         }
 
-        ShopSetting::setOrderMode((string) ($validated['order_mode'] ?? ShopSetting::ORDER_MODE_BOTH), $projectId);
-        ShopSetting::setOrderLineNotifyEnabled(
+        $repo->setOrderMode((string) ($validated['order_mode'] ?? ShopSettingKeys::ORDER_MODE_BOTH), $projectId);
+        $repo->setOrderLineNotifyEnabled(
             (bool) ($validated['order_line_notify_enabled'] ?? false),
             $projectId
         );
-        ShopSetting::setOrderReadyLineNotifyEnabled(
+        $repo->setOrderReadyLineNotifyEnabled(
             (bool) ($validated['order_ready_line_notify_enabled'] ?? false),
             $projectId
         );
@@ -78,13 +90,14 @@ class SettingsService
     public function getReservationOnlySettings(?int $projectId = null): array
     {
         $projectId = $projectId ?? 1;
+        $repo = $this->shopSettingRepository;
 
         return [
-            'timeSlots' => ShopSetting::getReservationTimeSlots($projectId),
-            'closedDays' => ShopSetting::getClosedDays($projectId),
-            'closedDates' => ShopSetting::getClosedDates($projectId),
-            'advanceDays' => ShopSetting::getAdvanceBookingDays($projectId),
-            'reservationCapacity' => ShopSetting::getReservationCapacityPerSlot($projectId),
+            'timeSlots' => $repo->getReservationTimeSlots($projectId),
+            'closedDays' => $repo->getClosedDays($projectId),
+            'closedDates' => $repo->getClosedDates($projectId),
+            'advanceDays' => $repo->getAdvanceBookingDays($projectId),
+            'reservationCapacity' => $repo->getReservationCapacityPerSlot($projectId),
         ];
     }
 
@@ -92,12 +105,14 @@ class SettingsService
     public function updateReservationOnlySettings(array $validated, ?int $projectId = null): void
     {
         $projectId = $projectId ?? 1;
-        ShopSetting::setValue('reservation_time_slots', $validated['reservation_time_slots'] ?? [], 'json', $projectId);
-        ShopSetting::setValue('closed_days', $validated['closed_days'] ?? [], 'json', $projectId);
+        $repo = $this->shopSettingRepository;
+
+        $repo->setValue('reservation_time_slots', $validated['reservation_time_slots'] ?? [], 'json', $projectId);
+        $repo->setValue('closed_days', $validated['closed_days'] ?? [], 'json', $projectId);
         $closedDates = array_values(array_filter($validated['closed_dates'] ?? [], fn ($date) => $date !== null && $date !== ''));
-        ShopSetting::setValue('closed_dates', $closedDates, 'json', $projectId);
-        ShopSetting::setValue('advance_booking_days', (int) ($validated['advance_booking_days'] ?? 30), 'integer', $projectId);
-        ShopSetting::setValue('reservation_capacity_per_slot', (int) ($validated['reservation_capacity_per_slot'] ?? 20), 'integer', $projectId);
+        $repo->setValue('closed_dates', $closedDates, 'json', $projectId);
+        $repo->setValue('advance_booking_days', (int) ($validated['advance_booking_days'] ?? 30), 'integer', $projectId);
+        $repo->setValue('reservation_capacity_per_slot', (int) ($validated['reservation_capacity_per_slot'] ?? 20), 'integer', $projectId);
     }
 
     public function updateLineThemeSettings(array $validated, ?int $projectId = null): void
@@ -111,7 +126,7 @@ class SettingsService
         ];
         foreach ($keys as $key) {
             if (isset($validated[$key]) && $validated[$key] !== '' && preg_match(self::HEX_REGEX, $validated[$key]) === 1) {
-                ShopSetting::setValue($key, $validated[$key], 'string', $projectId);
+                $this->shopSettingRepository->setValue($key, $validated[$key], 'string', $projectId);
             }
         }
     }
@@ -119,7 +134,9 @@ class SettingsService
     public function getMenuSettings(?int $projectId = null): array
     {
         $projectId = $projectId ?? 1;
-        $defaults = ShopSetting::defaultFrontendMenuItems();
+        $repo = $this->shopSettingRepository;
+
+        $defaults = $repo->defaultFrontendMenuItems();
         $availableTabs = collect($defaults)->map(function ($item) {
             return [
                 'tab' => $item['tab'],
@@ -129,7 +146,7 @@ class SettingsService
         $availableIcons = collect($defaults)->pluck('icon')->unique()->values()->all();
 
         return [
-            'menuItems' => ShopSetting::getFrontendMenuItems($projectId),
+            'menuItems' => $repo->getFrontendMenuItems($projectId),
             'availableTabs' => $availableTabs,
             'availableIcons' => $availableIcons,
         ];
@@ -151,15 +168,17 @@ class SettingsService
             ->values()
             ->all();
 
-        ShopSetting::setFrontendMenuItems($items, $projectId);
+        $this->shopSettingRepository->setFrontendMenuItems($items, $projectId);
     }
 
     /** @return array{smaregi_fields: array<string, mixed>, custom_fields: list<array<string, mixed>>, member_registration_mode: string} */
     public function getProfileSettings(?int $projectId = null): array
     {
         $projectId = $projectId ?? 1;
-        $settings = ShopSetting::getProfileFieldSettings($projectId);
-        $settings['member_registration_mode'] = ShopSetting::getMemberRegistrationMode($projectId);
+        $repo = $this->shopSettingRepository;
+
+        $settings = $repo->getProfileFieldSettings($projectId);
+        $settings['member_registration_mode'] = $repo->getMemberRegistrationMode($projectId);
 
         return $settings;
     }

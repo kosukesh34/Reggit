@@ -2,17 +2,18 @@
 
 namespace App\UseCases\Coupon;
 
+use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Enums\CouponDeliveryStatus;
 use App\Enums\CouponDeliveryType;
 use App\Models\CouponDelivery;
 use App\Models\Member;
-use App\Models\ShopSetting;
 use App\Services\Admin\MemberAdminService;
 
 class IssueCouponOnRankUpUseCase
 {
     public function __construct(
         private MemberAdminService $memberAdminService,
+        private ShopSettingRepository $shopSettingRepository,
     ) {}
 
     public function handle(Member $member, string $previousRank, string $newRank): void
@@ -60,7 +61,7 @@ class IssueCouponOnRankUpUseCase
     private function isRankUpgrade(int $projectId, string $previousRank, string $newRank): bool
     {
         $orderByKey = [];
-        foreach (ShopSetting::getMemberRankSettings($projectId) as $index => $rank) {
+        foreach ($this->shopSettingRepository->getMemberRankSettings($projectId) as $index => $rank) {
             if (($rank['is_active'] ?? true) !== true) {
                 continue;
             }

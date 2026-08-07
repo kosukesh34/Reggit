@@ -2,8 +2,8 @@
 
 namespace App\Services\Smaregi;
 
+use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Models\Settings\ProjectProfileSmaregiSetting;
-use App\Models\ShopSetting;
 use App\Models\SmaregiContract;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Cache;
@@ -108,8 +108,9 @@ class SmaregiApiClient
     {
         $projectId = $this->resolveProjectIdForContract($contractId);
         if ($projectId !== null) {
-            $clientId = ShopSetting::getValue('smaregi_client_id', null, $projectId);
-            $clientSecret = ShopSetting::getValue('smaregi_client_secret', null, $projectId);
+            $repo = app(ShopSettingRepository::class);
+            $clientId = $repo->getValue('smaregi_client_id', null, $projectId);
+            $clientSecret = $repo->getValue('smaregi_client_secret', null, $projectId);
             $clientId = is_string($clientId) ? trim($clientId) : '';
             $clientSecret = is_string($clientSecret) ? trim($clientSecret) : '';
             if ($clientId !== '' && $clientSecret !== '') {
