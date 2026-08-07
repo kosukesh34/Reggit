@@ -1,5 +1,3 @@
-import { ensureLiffDesignerModules } from '../ensureModules';
-
 type PanelSide = 'left' | 'right';
 type PanelWidths = { left: number; right: number };
 type PanelLimits = { min: number; max: number };
@@ -183,4 +181,3 @@ export const panelResizer = {
     },
 };
 
-ensureLiffDesignerModules().panelResizer = panelResizer;

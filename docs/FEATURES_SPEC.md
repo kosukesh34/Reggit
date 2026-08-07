@@ -365,6 +365,6 @@
 - **全体仕様・アーキテクチャ**: `docs/SPECIFICATION.md`
 - **権限**: `docs/PERMISSIONS.md`
 - **LIFFデザイナー（PHP）**: `app/UseCases/Admin/Settings/`（GetLiffDesignerUseCase, UpdateLiffDesignerUseCase, SaveLiffScreenUseCase）、`app/Models/ShopSetting.php`（liff_tab_layouts, liff_tab_settings, liff_saved_screens, defaultLiffDesignerTemplates）
-- **LIFFデザイナー（JS）**: `public/js/admin/liff-designer.js`（ブロックタイプ・アクション・テンプレート利用・保存画面の読み込み）
-- **フロントLIFF表示**: `public/js/frontend/managers/LiffLayoutManager.js`、`resources/views/index.blade.php`
+- **LIFFデザイナー（JS）**: `resources/js/admin/liff-designer/LiffDesignerApp.tsx`（ブロックタイプ・アクション・テンプレート利用・保存画面の読み込み）
+- **フロントLIFF表示**: `resources/js/frontend/features/*`（React）、`resources/views/index.blade.php`
 - **会員・テーブル**: `app/Models/Member.php`（last_visited_at, orders()）、`database/migrations/`（members, users, orders, order_items, point_transactions, member_stamps, member_coupons, coupon_redemptions, reservations）
