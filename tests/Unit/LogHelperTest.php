@@ -29,7 +29,7 @@ class LogHelperTest extends TestCase
         LogHelper::info('test message', ['foo' => 'bar']);
     }
 
-    public function test_AdminContextのproject_idを付与すること(): void
+    public function test_admin_contextのproject_idを付与すること(): void
     {
         $project = new Project;
         $project->id = 42;
