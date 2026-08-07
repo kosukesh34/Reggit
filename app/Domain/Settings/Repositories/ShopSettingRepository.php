@@ -160,7 +160,7 @@ interface ShopSettingRepository
     public function getFeatureFlagLabels(): array;
 
     /**
-     * @param array<string, bool|string|int|null> $flags
+     * @param  array<string, bool|string|int|null>  $flags
      * @return array<string, bool|string|int|null>
      */
     public function withPreservedLotteryManagedFlags(array $flags, int $projectId): array;

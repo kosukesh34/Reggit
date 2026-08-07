@@ -3,8 +3,8 @@
 namespace Tests\Unit\Rules;
 
 use App\Enums\ProfileCustomFieldInputType;
-use App\Models\Project;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
+use App\Models\Project;
 use App\Rules\ProfileValidationRules;
 use App\Services\MemberService;
 use App\Util\AdminContext;

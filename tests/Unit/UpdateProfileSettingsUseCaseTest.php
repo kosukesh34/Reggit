@@ -4,8 +4,8 @@ namespace Tests\Unit;
 
 use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Enums\ProfileCustomFieldInputType;
-use App\Models\Project;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
+use App\Models\Project;
 use App\UseCases\Admin\Settings\Data\UpdateProfileSettingsInput;
 use App\UseCases\Admin\Settings\UpdateProfileSettingsUseCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;

@@ -2,13 +2,13 @@
 
 namespace App\UseCases\Admin\Coupon;
 
+use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Enums\CouponDeliveryStatus;
 use App\Enums\CouponDeliveryType;
 use App\Models\Coupon;
 use App\Models\CouponDelivery;
 use App\Models\Member;
 use App\Models\Product;
-use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Models\StampCard;
 use App\Services\Admin\CouponAdminService;
 use App\Services\Smaregi\SmaregiCouponSyncService;
