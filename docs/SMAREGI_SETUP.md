@@ -199,19 +199,19 @@ docker compose exec app php artisan test tests/Feature/SmaregiApiIntegrationTest
 docker compose exec app php artisan test --group=smaregi-integration
 ```
 
-資格情報や契約が無い環境では各テストはスキップされます（CI では secrets 未設定時に失敗します）。
+資格情報や契約が無い環境では各テストはスキップされます（CI も secrets 未設定時はスキップし、job は落としません）。
 
-## 10. GitHub Actions（CI）で必要な secrets
+## 10. GitHub Actions（CI）の secrets（任意・推奨）
 
-CI では `SmaregiApiIntegrationTest`（`--group=smaregi-integration`）が **必須** として実行されます。Repository secrets が未設定だとテスト job が失敗します。
+CI では `SmaregiApiIntegrationTest`（`--group=smaregi-integration`）も実行対象です。Repository secrets が設定されていれば実接続テストが走り、未設定ならスキップされます。
 
 **設定場所:** GitHub → Repository → Settings → Secrets and variables → Actions → New repository secret
 
 | Secret 名 | 必須 | 説明 |
 |-----------|------|------|
-| `SMAREGI_CLIENT_ID` | はい | スマレジ・デベロッパーズの Client ID |
-| `SMAREGI_CLIENT_SECRET` | はい | スマレジ・デベロッパーズの Client Secret |
-| `SMAREGI_TEST_CONTRACT_ID` | はい（推奨） | サンドボックス等のテスト用契約ID（例: `sb_xxxxxxxx`） |
+| `SMAREGI_CLIENT_ID` | 任意（推奨） | スマレジ・デベロッパーズの Client ID |
+| `SMAREGI_CLIENT_SECRET` | 任意（推奨） | スマレジ・デベロッパーズの Client Secret |
+| `SMAREGI_TEST_CONTRACT_ID` | 任意（推奨） | サンドボックス等のテスト用契約ID（例: `sb_xxxxxxxx`） |
 | `SMAREGI_CONTRACT_ID` | 任意 | 契約IDのフォールバック（`SMAREGI_TEST_CONTRACT_ID` 未設定時に参照） |
 
 `.github/workflows/ci.yml` の `test` job が上記 secrets を環境変数としてテストに渡します。ローカル開発では secrets は不要で、未設定時は従来どおりスキップされます。
