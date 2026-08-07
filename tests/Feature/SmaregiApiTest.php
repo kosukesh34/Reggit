@@ -2,8 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Models\Project;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
+use App\Models\Project;
 use App\Services\Smaregi\SmaregiApiService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;

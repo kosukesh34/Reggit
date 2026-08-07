@@ -2,9 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\Member;
 use App\Models\Project;
-use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\User;
 use App\Services\Smaregi\SmaregiApiService;
 use Illuminate\Foundation\Testing\RefreshDatabase;

@@ -3,9 +3,9 @@
 namespace Tests\Unit\Services\Smaregi;
 
 use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\Member;
 use App\Models\Project;
-use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\User;
 use App\Services\Smaregi\SmaregiApiService;
 use App\Services\Smaregi\SmaregiCustomerRankAssignmentService;

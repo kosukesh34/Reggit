@@ -3,12 +3,12 @@
 namespace Tests\Feature;
 
 use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Jobs\SendCouponIssuedNotificationJob;
 use App\Models\Coupon;
 use App\Models\Member;
 use App\Models\MemberCoupon;
 use App\Models\Project;
-use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\User;
 use App\Models\UserDevice;
 use App\Services\CouponNotificationService;
