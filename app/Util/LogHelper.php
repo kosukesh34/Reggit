@@ -28,7 +28,10 @@ final class LogHelper
     private static function write(string $level, string $message, array $context): void
     {
         if (! array_key_exists('project_id', $context)) {
-            $context['project_id'] = AdminContext::getCurrentProjectId() ?? 1;
+            $projectId = AdminContext::getCurrentProjectId();
+            if ($projectId !== null) {
+                $context['project_id'] = $projectId;
+            }
         }
 
         Log::{$level}($message, $context);
