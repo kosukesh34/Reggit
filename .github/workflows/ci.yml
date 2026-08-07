@@ -94,7 +94,11 @@ jobs:
         DB_DATABASE: reggit_test
         DB_USERNAME: root
         DB_PASSWORD: root
-      run: php artisan test --exclude-group=smaregi-integration
+        SMAREGI_CLIENT_ID: ${{ secrets.SMAREGI_CLIENT_ID }}
+        SMAREGI_CLIENT_SECRET: ${{ secrets.SMAREGI_CLIENT_SECRET }}
+        SMAREGI_TEST_CONTRACT_ID: ${{ secrets.SMAREGI_TEST_CONTRACT_ID }}
+        SMAREGI_CONTRACT_ID: ${{ secrets.SMAREGI_CONTRACT_ID }}
+      run: php artisan test
 
   lint:
     runs-on: ubuntu-latest

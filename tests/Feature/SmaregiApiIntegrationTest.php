@@ -17,7 +17,7 @@ use Tests\TestCase;
  *
  * 現状の .env（SMAREGI_CLIENT_ID / SMAREGI_CLIENT_SECRET）と、
  * 契約ID（.env の SMAREGI_CONTRACT_ID または SMAREGI_TEST_CONTRACT_ID、未設定時はプロジェクト1の紐付け）を使って実接続します。
- * 資格情報・契約が無い環境ではスキップされます。
+ * 資格情報・契約が無い環境ではスキップされます（CI では secrets 未設定時に失敗）。
  * 作成した会員・クーポンは tearDown で削除します。
  *
  * 実行例: php artisan test tests/Feature/SmaregiApiIntegrationTest.php
@@ -31,6 +31,14 @@ class SmaregiApiIntegrationTest extends TestCase
     use RefreshDatabase;
 
     private ?string $contractId = null;
+
+    private static function isCi(): bool
+    {
+        $ci = env('CI', '');
+        $gha = env('GITHUB_ACTIONS', '');
+
+        return filter_var($ci, FILTER_VALIDATE_BOOLEAN) || filter_var($gha, FILTER_VALIDATE_BOOLEAN);
+    }
 
     /** config / env / getenv の順で参照（Docker や .env.testing 利用時も値が拾えるようにする） */
     private static function readEnv(string $key): string
@@ -64,10 +72,15 @@ class SmaregiApiIntegrationTest extends TestCase
         $clientId = self::readEnv('SMAREGI_CLIENT_ID');
         $clientSecret = self::readEnv('SMAREGI_CLIENT_SECRET');
         if ($clientId === '' || $clientSecret === '') {
-            $this->markTestSkipped(
-                '.env に SMAREGI_CLIENT_ID と SMAREGI_CLIENT_SECRET を設定してください。'
-                .' Docker の場合はコンテナに .env がマウントされているか、または docker-compose の environment で渡しているか確認してください。'
-            );
+            $message = '.env に SMAREGI_CLIENT_ID と SMAREGI_CLIENT_SECRET を設定してください。'
+                .' Docker の場合はコンテナに .env がマウントされているか、または docker-compose の environment で渡しているか確認してください。';
+            if (self::isCi()) {
+                $this->fail(
+                    $message.' CI では GitHub Repository secrets に SMAREGI_CLIENT_ID / SMAREGI_CLIENT_SECRET を設定してください。'
+                    .' 詳細: docs/SMAREGI_SETUP.md'
+                );
+            }
+            $this->markTestSkipped($message);
         }
 
         $this->contractId = trim((string) (env('SMAREGI_TEST_CONTRACT_ID') ?: env('SMAREGI_CONTRACT_ID') ?: config('smaregi.contract_id') ?: ''));
@@ -76,7 +89,14 @@ class SmaregiApiIntegrationTest extends TestCase
             $this->contractId = $service->getContractIdForProject(1);
         }
         if ($this->contractId === null || $this->contractId === '') {
-            $this->markTestSkipped('契約IDがありません。.env に SMAREGI_CONTRACT_ID（または SMAREGI_TEST_CONTRACT_ID）を設定するか、テスト用DBのプロジェクト1にスマレジ契約を紐付けてください。');
+            $message = '契約IDがありません。.env に SMAREGI_CONTRACT_ID（または SMAREGI_TEST_CONTRACT_ID）を設定するか、テスト用DBのプロジェクト1にスマレジ契約を紐付けてください。';
+            if (self::isCi()) {
+                $this->fail(
+                    $message.' CI では GitHub Repository secrets に SMAREGI_TEST_CONTRACT_ID（または SMAREGI_CONTRACT_ID）を設定してください。'
+                    .' 詳細: docs/SMAREGI_SETUP.md'
+                );
+            }
+            $this->markTestSkipped($message);
         }
     }
 
