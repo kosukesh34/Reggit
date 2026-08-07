@@ -4,9 +4,9 @@ name: CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, develop, ver1.0.0 ]
   pull_request:
-    branches: [ main, develop, 'feature/**', 'fix/**' ]
+    branches: [ main, develop, ver1.0.0, 'feature/**', 'fix/**' ]
 
 jobs:
   test:
@@ -135,10 +135,10 @@ jobs:
           echo "Laravel Pint not installed, skipping..."
         fi
 
-  # PR ではスキップし、main への push（マージ後）のみ実行して CI 時間を抑える。
+  # PR / main ではスキップ。リリース統合ブランチ ver1.0.0 への push（マージ後）のみ実行。
   e2e_web:
     name: E2E Web (Playwright)
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/ver1.0.0'
     runs-on: ubuntu-latest
     timeout-minutes: 40
 
