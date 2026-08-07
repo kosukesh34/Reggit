@@ -1,14 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 212 64" role="img" aria-label="GOLDEN CRUST">
-  <title>GOLDEN CRUST</title>
-  <defs>
-    <filter id="s" x="-8%" y="-20%" width="116%" height="140%">
-      <feDropShadow dx="0" dy="1" stdDeviation="1.2" flood-color="#000000" flood-opacity="0.06"/>
-    </filter>
-  </defs>
-
-  <rect width="212" height="64" rx="16" fill="#FFF6EC" stroke="#F0E0CC" filter="url(#s)"/>
-  <circle cx="32" cy="32" r="17" fill="#1D1D1F"/>
-  <circle cx="32" cy="32" r="9" fill="none" stroke="#E8B84A" stroke-width="2.4" stroke-dasharray="3 2.5"/>
-  <text x="60" y="38" font-family="Georgia, serif" font-size="14" font-weight="700" letter-spacing="0.05em" fill="#1D1D1F">GOLDEN CRUST</text>
-
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 80" role="img" aria-label="GOLDEN CRUST">
+  <text x="120" y="36" text-anchor="middle" font-family="'Bodoni 72', Didot, Georgia, serif" font-size="20" font-weight="700" letter-spacing="0.08em" fill="#92400E">GOLDEN CRUST</text>
+  <line x1="70" y1="46" x2="170" y2="46" stroke="#D97706" stroke-width="1"/>
+  <text x="120" y="64" text-anchor="middle" font-family="'Avenir Next Condensed', 'Avenir Next', sans-serif" font-size="10" font-weight="500" letter-spacing="0.36em" fill="#B45309">BAKERY</text>
 </svg>
