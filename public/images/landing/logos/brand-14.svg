@@ -1,9 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 80" role="img" aria-label="NORTH OVEN">
-  <rect width="200" height="80" fill="#fff"/>
-  <circle cx="40" cy="40" r="26" fill="#374151"/>
-  <path d="M28 46h24v4H28z" fill="#F3F4F6"/>
-  <path d="M32 46V34c0-4 4-8 8-8s8 4 8 8v12" fill="none" stroke="#F3F4F6" stroke-width="2.5"/>
-  <path d="M40 20l3 7h7l-5.5 4 2 7L40 34l-6.5 4 2-7-5.5-4h7z" fill="#FBBF24"/>
-  <text x="78" y="36" font-family="'Hiragino Sans','Noto Sans JP',sans-serif" font-size="13" font-weight="800" letter-spacing="0.1em" fill="#111827">NORTH</text>
-  <text x="78" y="54" font-family="'Hiragino Sans','Noto Sans JP',sans-serif" font-size="13" font-weight="800" letter-spacing="0.1em" fill="#111827">OVEN</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 80" role="img" aria-label="NORTH OVEN">
+  <text x="120" y="36" text-anchor="middle" font-family="'American Typewriter', 'Courier New', monospace" font-size="20" font-weight="700" letter-spacing="0.14em" fill="#111827">NORTH OVEN</text>
+  <text x="120" y="58" text-anchor="middle" font-family="'Avenir Next Condensed', 'Avenir Next', sans-serif" font-size="10" font-weight="500" letter-spacing="0.4em" fill="#6B7280">BAKERY</text>
 </svg>
