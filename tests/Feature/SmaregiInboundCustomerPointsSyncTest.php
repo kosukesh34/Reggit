@@ -403,7 +403,7 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
         $this->assertSame(395, $resolved['points_by_customer_id']['247'] ?? null);
     }
 
-    public function test_resolveCustomers失敗時のhttp_statusがserviceから取得できること(): void
+    public function test_resolve_customers失敗時のhttp_statusがserviceから取得できること(): void
     {
         Http::fake(function ($request) {
             $url = $request->url();
