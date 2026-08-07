@@ -55,8 +55,7 @@ make e2e-mobile
 
 ### CI 上の注意（GitHub Actions）
 
-- **運用**: feature / fix は **`ver1.0.0` にマージ**する（main 直マージはしない想定）。
-- **PR → ver1.0.0（または main）**: `test` + `lint` のみ。Playwright（`e2e_web`）は走らせない（ローカルでは `make e2e-web` / `npm run test:e2e` を任意実行）。
-- **`ver1.0.0` への push（マージ後）**: `e2e_web` を実行する。Ubuntu で MySQL + `artisan serve` のうえ Playwright。`storage/framework` は gitignore のため CI でディレクトリ作成が必要。
+- **PR / feature / ver1.0.0 など**: `test` + `lint` のみ。Playwright（`e2e_web`）は走らせない（ローカルでは `make e2e-web` / `npm run test:e2e` を任意実行）。
+- **main への push（マージ後）のみ**: `e2e_web` を実行する。Ubuntu で MySQL + `artisan serve` のうえ Playwright。`storage/framework` は gitignore のため CI でディレクトリ作成が必要。
 - `e2e_mobile` は当面 **`if: false` でスキップ**（再開時は条件を外す）。
 - GitLab CI（`.gitlab-ci.yml`）は使いません。
