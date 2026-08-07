@@ -171,5 +171,6 @@ gh pr create --draft --base main --title "WIP: ..." --body "..."
 ## 9. 関連ドキュメント
 
 - [MR_AND_CODE_REVIEW_PROCEDURE.md](./MR_AND_CODE_REVIEW_PROCEDURE.md) — レビュー観点・コーディング規則
-- [CODE_RULES_COMPLIANCE.md](./CODE_RULES_COMPLIANCE.md) — アーキテクチャ・規約
+- [CLEAN_ARCHITECTURE.md](./CLEAN_ARCHITECTURE.md) / [DDD.md](./DDD.md) — アーキテクチャ・DDD
+- [CODING_STANDARDS.md](../CODING_STANDARDS.md) — コーディング規約
 - [CLEAN_ARCHITECTURE.md](./CLEAN_ARCHITECTURE.md) — UseCase / Controller の役割

@@ -82,7 +82,7 @@ git push -u origin <ブランチ名>
 - [ ] 単一責務: Controller・UseCase が 1 役割に収まっている
 - [ ] 依存性逆転: 具象を `new` せず注入。UseCase → Service の一方向
 
-詳細: [CLEAN_ARCHITECTURE.md](./CLEAN_ARCHITECTURE.md)、[CODE_RULES_COMPLIANCE.md](./CODE_RULES_COMPLIANCE.md)
+詳細: [CLEAN_ARCHITECTURE.md](./CLEAN_ARCHITECTURE.md)、[DDD.md](./DDD.md)
 
 ### 2.2 必須確認項目（テスト・セキュリティ）
 
@@ -172,7 +172,7 @@ git push -u origin <ブランチ名>
 
 - コーディング規則: [CODING_STANDARDS.md](../CODING_STANDARDS.md)
 - アーキテクチャ: [CLEAN_ARCHITECTURE.md](./CLEAN_ARCHITECTURE.md)
-- 準拠状況・SOLID: [CODE_RULES_COMPLIANCE.md](./CODE_RULES_COMPLIANCE.md)
+- アーキテクチャ・DDD: [CLEAN_ARCHITECTURE.md](./CLEAN_ARCHITECTURE.md)、[DDD.md](./DDD.md)
 - PR 作成ワークフロー: [GITHUB_PULL_REQUEST_WORKFLOW.md](./GITHUB_PULL_REQUEST_WORKFLOW.md)
 - CI 定義: `.github/workflows/ci.yml`（テスト・Laravel Pint）
 - テスト実行: `php artisan test`（PHP 8.2 必要）
