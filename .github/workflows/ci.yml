@@ -255,9 +255,11 @@ jobs:
           e2e/web/test-results
         if-no-files-found: ignore
 
-  # Skip の Android ビルドは macOS + Xcode 依存。ランナーに Skip/AVD が無いと失敗しうるため当面 continue-on-error。
+  # Maestro mobile はランナー（Skip/AVD/iOS Simulator）が不安定なため当面スキップ。
+  # 再開するときは if を外し、必要なら continue-on-error を戻す。
   e2e_mobile:
     name: E2E Mobile (Maestro / Android)
+    if: false
     runs-on: macos-latest
     continue-on-error: true
     timeout-minutes: 120
