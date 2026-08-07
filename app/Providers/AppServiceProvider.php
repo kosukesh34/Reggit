@@ -47,6 +47,7 @@ use App\Repositories\Eloquent\EloquentProjectRepository;
 use App\Repositories\Eloquent\EloquentUserDeviceRepository;
 use App\Repositories\Eloquent\EloquentUserRepository;
 use App\Services\GoogleWalletPassService;
+use App\Services\Smaregi\SmaregiApiClient;
 use App\Services\WalletPassService;
 use App\UseCases\Payment\PaymentGateway;
 use App\UseCases\Payment\StripePaymentGateway;
@@ -93,6 +94,9 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(Client::class, function () {
             return new Client(['timeout' => 15]);
         });
+
+        // Service と Resolver で同一インスタンスを共有しつつ、リクエスト／ジョブ単位で破棄する
+        $this->app->scoped(SmaregiApiClient::class);
     }
 
     public function boot(): void
