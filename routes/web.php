@@ -52,6 +52,8 @@ use App\Http\Controllers\Smaregi\SmaregiIdpController;
 use App\Http\Controllers\Smaregi\SmaregiWebhookController;
 use App\Http\Controllers\WalletAddPageController;
 use App\Models\Project;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 
@@ -69,7 +71,27 @@ Route::get('/api', function () {
 });
 
 // ELB / ロードバランサー用ヘルスチェック（EB の「パス」を /health に設定すること）
-Route::get('/health', function () {
+// 既定: DB 到達時 plain `ok`。?deep=1 で JSON {status,db} を返す。DB 障害時は 503。
+Route::get('/health', function (Request $request) {
+    $dbOk = false;
+    try {
+        DB::select('select 1');
+        $dbOk = true;
+    } catch (Throwable) {
+        $dbOk = false;
+    }
+
+    if ($request->query('deep') === '1') {
+        return response()->json(
+            ['status' => $dbOk ? 'ok' : 'error', 'db' => $dbOk],
+            $dbOk ? 200 : 503
+        );
+    }
+
+    if (! $dbOk) {
+        return response('error', 503, ['Content-Type' => 'text/plain']);
+    }
+
     return response('ok', 200, ['Content-Type' => 'text/plain']);
 });
 

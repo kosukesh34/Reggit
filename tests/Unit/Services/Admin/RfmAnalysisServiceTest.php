@@ -52,15 +52,15 @@ class RfmAnalysisServiceTest extends TestCase
             'user_id' => $user->id,
             'status' => 'active',
         ]);
-        Order::create([
+        $order = Order::create([
             'project_id' => $this->project->id,
             'user_id' => $user->id,
             'order_number' => 'ORD-'.uniqid(),
             'order_type' => 'take_out',
             'total_amount' => 1000,
             'status' => OrderStatus::COMPLETED,
-            'created_at' => now()->subDays(5),
         ]);
+        $order->forceFill(['created_at' => now()->subDays(5)])->save();
 
         $rows = $this->service->analyzeByProject($this->project->id);
 
@@ -76,15 +76,15 @@ class RfmAnalysisServiceTest extends TestCase
             'user_id' => $user->id,
             'status' => 'active',
         ]);
-        Order::create([
+        $order = Order::create([
             'project_id' => $this->project->id,
             'user_id' => $user->id,
             'order_number' => 'ORD-'.uniqid(),
             'order_type' => 'take_out',
             'total_amount' => 500,
             'status' => OrderStatus::COMPLETED,
-            'created_at' => now()->subDays(120),
         ]);
+        $order->forceFill(['created_at' => now()->subDays(120)])->save();
 
         $rows = $this->service->analyzeByProject($this->project->id);
 

@@ -154,7 +154,7 @@
 | BROADCAST_DRIVER | そのまま可 | log |
 | CACHE_DRIVER | そのまま可 | file |
 | FILESYSTEM_DISK | そのまま可 | local |
-| QUEUE_CONNECTION | そのまま可 | sync |
+| QUEUE_CONNECTION | **要変更（本番）** | 開発のみ `sync`。Xserver は `database` + `queue:work`、AWS は `sqs` + ワーカー |
 | SESSION_DRIVER | そのまま可 | file |
 | SESSION_LIFETIME | そのまま可 | 120 |
 | REDIS_HOST, REDIS_PASSWORD, REDIS_PORT | 省略可 | Redis を使う場合のみ EB に追加 |
@@ -225,7 +225,7 @@
 | SESSION_DRIVER | file | |
 | SESSION_LIFETIME | 120 | |
 | FILESYSTEM_DISK | local | |
-| QUEUE_CONNECTION | sync | |
+| QUEUE_CONNECTION | database（Xserver）または sqs（AWS） | 予約配信・スマレジ同期 Job はワーカー必須。`sync` は開発のみ |
 | BROADCAST_DRIVER | log | |
 
 ### 使う場合だけ設定（Stripe・LINE・メール・プッシュなど）

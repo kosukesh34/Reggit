@@ -17,9 +17,10 @@ class QueueLiffUrlBuilderTest extends TestCase
         );
 
         $this->assertStringStartsWith('https://liff.line.me/2008962885-AbCdEfGh?', $url);
+        $this->assertStringContainsString('liff.state=', $url);
         parse_str((string) parse_url($url, PHP_URL_QUERY), $query);
-        $this->assertArrayHasKey('liff.state', $query);
-        parse_str($query['liff.state'], $state);
+        $this->assertArrayHasKey('liff_state', $query);
+        parse_str($query['liff_state'], $state);
         $this->assertSame('default', $state['project_key']);
         $this->assertSame('abc123token', $state['queue_token']);
     }
@@ -34,8 +35,9 @@ class QueueLiffUrlBuilderTest extends TestCase
         );
 
         $this->assertStringStartsWith('https://liff.line.me/2008962885-AbCdEfGh?', $url);
+        $this->assertStringContainsString('liff.state=', $url);
         parse_str((string) parse_url($url, PHP_URL_QUERY), $query);
-        parse_str($query['liff.state'], $state);
+        parse_str($query['liff_state'], $state);
         $this->assertSame('shop-a', $state['project_key']);
         $this->assertSame('tok', $state['queue_token']);
     }
@@ -64,8 +66,9 @@ class QueueLiffUrlBuilderTest extends TestCase
             '42'
         );
 
+        $this->assertStringContainsString('liff.state=', $url);
         parse_str((string) parse_url($url, PHP_URL_QUERY), $query);
-        parse_str($query['liff.state'], $state);
+        parse_str($query['liff_state'], $state);
         $this->assertSame('42', $state['queue_id']);
     }
 }
