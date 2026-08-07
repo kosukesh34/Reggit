@@ -8,6 +8,7 @@ use App\Http\Middleware\AuthenticateKitchenToken;
 use App\Http\Middleware\BindAdminProject;
 use App\Http\Middleware\BindProjectFromRequest;
 use App\Http\Middleware\CheckAdminPermission;
+use App\Http\Middleware\EnsureProjectPlanFeature;
 use App\Http\Middleware\EnsureStoreAdmin;
 use App\Http\Middleware\EnsureSystemAdmin;
 use App\Http\Middleware\RedirectIfAuthenticated;
@@ -78,6 +79,7 @@ class Kernel extends HttpKernel
         'api.auth' => AuthenticateApiToken::class,
         'admin.audit' => AdminAuditLogger::class,
         'admin.permission' => CheckAdminPermission::class,
+        'admin.plan' => EnsureProjectPlanFeature::class,
         'throttle' => ThrottleRequests::class,
         'verified' => EnsureEmailIsVerified::class,
         // 管理画面用
