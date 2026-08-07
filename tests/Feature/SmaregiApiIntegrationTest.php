@@ -32,14 +32,6 @@ class SmaregiApiIntegrationTest extends TestCase
 
     private ?string $contractId = null;
 
-    private static function isCi(): bool
-    {
-        $ci = env('CI', '');
-        $gha = env('GITHUB_ACTIONS', '');
-
-        return filter_var($ci, FILTER_VALIDATE_BOOLEAN) || filter_var($gha, FILTER_VALIDATE_BOOLEAN);
-    }
-
     /** config / env / getenv の順で参照（Docker や .env.testing 利用時も値が拾えるようにする） */
     private static function readEnv(string $key): string
     {
@@ -72,15 +64,12 @@ class SmaregiApiIntegrationTest extends TestCase
         $clientId = self::readEnv('SMAREGI_CLIENT_ID');
         $clientSecret = self::readEnv('SMAREGI_CLIENT_SECRET');
         if ($clientId === '' || $clientSecret === '') {
-            $message = '.env に SMAREGI_CLIENT_ID と SMAREGI_CLIENT_SECRET を設定してください。'
-                .' Docker の場合はコンテナに .env がマウントされているか、または docker-compose の environment で渡しているか確認してください。';
-            if (self::isCi()) {
-                $this->fail(
-                    $message.' CI では GitHub Repository secrets に SMAREGI_CLIENT_ID / SMAREGI_CLIENT_SECRET を設定してください。'
-                    .' 詳細: docs/SMAREGI_SETUP.md'
-                );
-            }
-            $this->markTestSkipped($message);
+            // secrets 未設定でも CI を落とさない（設定済みなら実接続テストが走る）
+            $this->markTestSkipped(
+                '.env に SMAREGI_CLIENT_ID と SMAREGI_CLIENT_SECRET を設定してください。'
+                .' Docker の場合はコンテナに .env がマウントされているか、または docker-compose の environment で渡しているか確認してください。'
+                .' CI では Repository secrets に同名を設定すると実接続テストが実行されます。詳細: docs/SMAREGI_SETUP.md'
+            );
         }
 
         $this->contractId = trim((string) (env('SMAREGI_TEST_CONTRACT_ID') ?: env('SMAREGI_CONTRACT_ID') ?: config('smaregi.contract_id') ?: ''));
@@ -89,14 +78,10 @@ class SmaregiApiIntegrationTest extends TestCase
             $this->contractId = $service->getContractIdForProject(1);
         }
         if ($this->contractId === null || $this->contractId === '') {
-            $message = '契約IDがありません。.env に SMAREGI_CONTRACT_ID（または SMAREGI_TEST_CONTRACT_ID）を設定するか、テスト用DBのプロジェクト1にスマレジ契約を紐付けてください。';
-            if (self::isCi()) {
-                $this->fail(
-                    $message.' CI では GitHub Repository secrets に SMAREGI_TEST_CONTRACT_ID（または SMAREGI_CONTRACT_ID）を設定してください。'
-                    .' 詳細: docs/SMAREGI_SETUP.md'
-                );
-            }
-            $this->markTestSkipped($message);
+            $this->markTestSkipped(
+                '契約IDがありません。.env に SMAREGI_CONTRACT_ID（または SMAREGI_TEST_CONTRACT_ID）を設定するか、テスト用DBのプロジェクト1にスマレジ契約を紐付けてください。'
+                .' CI では Repository secrets に設定すると実接続テストが実行されます。詳細: docs/SMAREGI_SETUP.md'
+            );
         }
     }
 
