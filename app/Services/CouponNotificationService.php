@@ -6,7 +6,6 @@ use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Models\Member;
 use App\Models\MemberCoupon;
 use App\Models\Project;
-use App\Models\ShopSetting;
 use App\Services\Line\LineService;
 use App\Support\CouponLiffUrlBuilder;
 use App\Util\LogHelper;
@@ -103,7 +102,7 @@ class CouponNotificationService
             return;
         }
 
-        if (! ShopSetting::hasLineChannelAccessToken($projectId)) {
+        if (! $this->shopSettingRepository->hasLineChannelAccessToken($projectId)) {
             LogHelper::info('[Coupon] LINE push skipped (token not configured)', [
                 'member_id' => $member->id,
                 'project_id' => $projectId,
@@ -149,7 +148,7 @@ class CouponNotificationService
             $this->lineService->pushMessage(
                 $lineUserId,
                 $flex,
-                ShopSetting::getLineChannelAccessToken($projectId)
+                $this->shopSettingRepository->getLineChannelAccessToken($projectId)
             );
         } catch (\Throwable $e) {
             LogHelper::error('[Coupon] LINE push failed', [

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Models\Settings\ProjectAdminUiSetting;
 use App\Models\Settings\ProjectAnnouncementSetting;
 use App\Models\Settings\ProjectBusinessSetting;
@@ -142,7 +143,7 @@ class Project extends Model
 
     public function isSmaregiLinked(): bool
     {
-        $contractId = ShopSetting::getValue('smaregi_contract_id', null, $this->id);
+        $contractId = app(ShopSettingRepository::class)->getValue('smaregi_contract_id', null, $this->id);
         if (is_string($contractId) && trim($contractId) !== '') {
             return true;
         }

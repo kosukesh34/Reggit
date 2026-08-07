@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
+use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Enums\GoogleWalletApi;
 use App\Models\Member;
-use App\Models\ShopSetting;
 use App\Models\User;
 use App\Services\GoogleWallet\GoogleWalletLoyaltyPayloadBuilder;
 use App\Util\AdminContext;
@@ -43,9 +43,12 @@ class GoogleWalletPassService
 
     private ?string $lastError = null;
 
-    public function __construct(GoogleWalletLoyaltyPayloadBuilder $payloadBuilder)
+    private ShopSettingRepository $shopSettingRepository;
+
+    public function __construct(GoogleWalletLoyaltyPayloadBuilder $payloadBuilder, ShopSettingRepository $shopSettingRepository)
     {
         $this->payloadBuilder = $payloadBuilder;
+        $this->shopSettingRepository = $shopSettingRepository;
     }
 
     public function getLastError(): ?string
@@ -573,7 +576,7 @@ class GoogleWalletPassService
         $default = config('google_wallet.program_logo_uri', self::DEFAULT_LOGO_URI);
 
         return $projectId !== null
-            ? (ShopSetting::getWalletGoogleProgramLogoUrl($projectId) ?? $default)
+            ? ($this->shopSettingRepository->getWalletGoogleProgramLogoUrl($projectId) ?? $default)
             : $default;
     }
 
@@ -582,7 +585,7 @@ class GoogleWalletPassService
         $default = config('google_wallet.hero_image_uri', self::DEFAULT_LOGO_URI);
 
         return $projectId !== null
-            ? (ShopSetting::getWalletGoogleHeroImageUrl($projectId) ?? $default)
+            ? ($this->shopSettingRepository->getWalletGoogleHeroImageUrl($projectId) ?? $default)
             : $default;
     }
 

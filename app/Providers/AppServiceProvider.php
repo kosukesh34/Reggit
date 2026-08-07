@@ -11,6 +11,7 @@ use App\Domain\Order\Repositories\ProductStockRepository;
 use App\Domain\Queue\Repositories\QueueEntryRepository;
 use App\Domain\Reservation\Repositories\ReservationRepository;
 use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\ShopSettingKeys;
 use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
 use App\Enums\MemberRegistrationMode;
 use App\Infrastructure\Events\LoggingDomainEventListener;
@@ -33,7 +34,6 @@ use App\Models\MemberCoupon;
 use App\Models\MemberStamp;
 use App\Models\PointTransaction;
 use App\Models\Project;
-use App\Models\ShopSetting;
 use App\Observers\MemberCouponObserver;
 use App\Observers\MemberStampObserver;
 use App\Observers\PointTransactionObserver;
@@ -139,9 +139,10 @@ class AppServiceProvider extends ServiceProvider
             $view->with(compact('adminUser', 'currentProjectId', 'projects', 'isSystemAdmin'));
 
             try {
-                $view->with('adminSidebarColor', ShopSetting::getAdminSidebarColor($currentProjectId));
-                $view->with('adminHeaderColor', ShopSetting::getAdminHeaderColor($currentProjectId));
-                $view->with('adminPrimaryColor', ShopSetting::getAdminPrimaryColor($currentProjectId));
+                $settingsRepo = app(ShopSettingRepository::class);
+                $view->with('adminSidebarColor', $settingsRepo->getAdminSidebarColor($currentProjectId));
+                $view->with('adminHeaderColor', $settingsRepo->getAdminHeaderColor($currentProjectId));
+                $view->with('adminPrimaryColor', $settingsRepo->getAdminPrimaryColor($currentProjectId));
             } catch (\Throwable $e) {
                 $view->with('adminSidebarColor', null);
                 $view->with('adminHeaderColor', null);
@@ -161,27 +162,28 @@ class AppServiceProvider extends ServiceProvider
                     $project = AdminContext::getCurrentProject();
                 }
                 $projectId = $project ? ((int) $project->id) : 1;
-                $view->with('lineTheme', ShopSetting::getLineThemeColors($projectId));
-                $view->with('frontendMenu', ShopSetting::getFrontendMenuItems($projectId));
+                $settingsRepo = app(ShopSettingRepository::class);
+                $view->with('lineTheme', $settingsRepo->getLineThemeColors($projectId));
+                $view->with('frontendMenu', $settingsRepo->getFrontendMenuItems($projectId));
                 $view->with('projectKey', $project ? ((string) $project->project_key) : '');
                 $view->with('projectName', $project ? ((string) $project->name) : config('app.name'));
-                $view->with('featureFlags', ShopSetting::getFeatureFlags($projectId));
+                $view->with('featureFlags', $settingsRepo->getFeatureFlags($projectId));
                 $googleWalletPassService = app(GoogleWalletPassService::class);
                 $walletPassService = app(WalletPassService::class);
                 $view->with('walletPassEnabled', $walletPassService->isAvailable());
                 $view->with('googleWalletEnabled', $googleWalletPassService->isAvailable());
-                $view->with('frontendLogoUrl', ShopSetting::getFrontendLogoUrl($projectId));
-                $view->with('frontendHeaderText', ShopSetting::getFrontendHeaderText($projectId));
-                $view->with('orderMode', ShopSetting::getOrderMode($projectId));
-                $view->with('liffTabLayouts', ShopSetting::getLiffTabLayouts($projectId));
-                $view->with('liffDetailLayouts', ShopSetting::getLiffDetailLayouts($projectId));
-                $view->with('liffCustomCss', ShopSetting::getLiffCustomCss($projectId));
-                $view->with('liffTabSettings', ShopSetting::getLiffTabSettings($projectId));
-                $view->with('liffId', ShopSetting::getLineLiffId($projectId));
-                $view->with('liffUrl', ShopSetting::getLineLiffUrl($projectId));
-                $view->with('lineFriendAddUrl', ShopSetting::getLineFriendAddUrl($projectId));
-                $view->with('queueRequireMembership', ShopSetting::getQueueRequireMembership($projectId));
-                $view->with('memberRegistrationMode', ShopSetting::getMemberRegistrationMode($projectId));
+                $view->with('frontendLogoUrl', $settingsRepo->getFrontendLogoUrl($projectId));
+                $view->with('frontendHeaderText', $settingsRepo->getFrontendHeaderText($projectId));
+                $view->with('orderMode', $settingsRepo->getOrderMode($projectId));
+                $view->with('liffTabLayouts', $settingsRepo->getLiffTabLayouts($projectId));
+                $view->with('liffDetailLayouts', $settingsRepo->getLiffDetailLayouts($projectId));
+                $view->with('liffCustomCss', $settingsRepo->getLiffCustomCss($projectId));
+                $view->with('liffTabSettings', $settingsRepo->getLiffTabSettings($projectId));
+                $view->with('liffId', $settingsRepo->getLineLiffId($projectId));
+                $view->with('liffUrl', $settingsRepo->getLineLiffUrl($projectId));
+                $view->with('lineFriendAddUrl', $settingsRepo->getLineFriendAddUrl($projectId));
+                $view->with('queueRequireMembership', $settingsRepo->getQueueRequireMembership($projectId));
+                $view->with('memberRegistrationMode', $settingsRepo->getMemberRegistrationMode($projectId));
 
                 // LIFFデザイナー埋め込みプレビュー（会員証）: ランク設定から実際の表示用ペイロードを組み立てる
                 $designerPreviewMemberPayload = null;
@@ -200,7 +202,8 @@ class AppServiceProvider extends ServiceProvider
                     'success' => '#059669',
                     'danger' => '#dc2626',
                 ]);
-                $view->with('frontendMenu', ShopSetting::defaultFrontendMenuItems());
+                $fallbackRepo = app(ShopSettingRepository::class);
+                $view->with('frontendMenu', $fallbackRepo->defaultFrontendMenuItems());
                 $view->with('projectKey', '');
                 $view->with('projectName', config('app.name'));
                 $view->with('featureFlags', []);
@@ -208,9 +211,9 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('googleWalletEnabled', false);
                 $view->with('frontendLogoUrl', '');
                 $view->with('frontendHeaderText', config('app.name'));
-                $view->with('orderMode', ShopSetting::ORDER_MODE_BOTH);
-                $view->with('liffTabLayouts', ShopSetting::defaultLiffTabLayouts());
-                $view->with('liffDetailLayouts', ShopSetting::defaultLiffDetailLayouts());
+                $view->with('orderMode', ShopSettingKeys::ORDER_MODE_BOTH);
+                $view->with('liffTabLayouts', $fallbackRepo->defaultLiffTabLayouts());
+                $view->with('liffDetailLayouts', $fallbackRepo->defaultLiffDetailLayouts());
                 $view->with('liffCustomCss', '');
                 $view->with('liffTabSettings', []);
                 $view->with('liffId', trim((string) config('line.liff_id', '')));
@@ -229,7 +232,8 @@ class AppServiceProvider extends ServiceProvider
      */
     private static function buildDesignerPreviewMemberPayload(int $projectId): array
     {
-        $ranks = ShopSetting::getMemberRankSettings($projectId);
+        $settingsRepo = app(ShopSettingRepository::class);
+        $ranks = $settingsRepo->getMemberRankSettings($projectId);
         $activeRanks = array_values(array_filter($ranks, fn ($r) => ($r['is_active'] ?? false) === true));
         usort($activeRanks, fn ($a, $b) => ($a['min_points'] <=> $b['min_points']) ?: (($a['order'] ?? 0) <=> ($b['order'] ?? 0)));
 
@@ -270,12 +274,12 @@ class AppServiceProvider extends ServiceProvider
             'points_to_next_rank' => $pointsToNext,
             'days_to_next_rank' => 18,
             'days_required_for_next_rank' => 30,
-            'show_points_display' => ShopSetting::getShowPointsDisplay($projectId),
-            'show_rank_progress' => ShopSetting::getShowRankProgress($projectId),
-            'member_card_design' => ShopSetting::getMemberCardDesign($projectId),
-            'member_card_logo_url' => ShopSetting::getFrontendLogoUrl($projectId),
-            'member_card_display_type' => ShopSetting::getMemberCardDisplayType($projectId),
-            'member_card_code_type' => ShopSetting::getMemberCardCodeType($projectId),
+            'show_points_display' => $settingsRepo->getShowPointsDisplay($projectId),
+            'show_rank_progress' => $settingsRepo->getShowRankProgress($projectId),
+            'member_card_design' => $settingsRepo->getMemberCardDesign($projectId),
+            'member_card_logo_url' => $settingsRepo->getFrontendLogoUrl($projectId),
+            'member_card_display_type' => $settingsRepo->getMemberCardDisplayType($projectId),
+            'member_card_code_type' => $settingsRepo->getMemberCardCodeType($projectId),
             'points_expiry' => [
                 'expires_at_label' => '2026/12/31',
                 'points_expiring' => 200,

@@ -33,6 +33,13 @@ class AdminAnnouncementsTest extends TestCase
         ]);
     }
 
+    private function createDistributionProject(): Project
+    {
+        $project = Project::factory()->create(['plan' => 'distribution']);
+
+        return $project;
+    }
+
     public function test_announcements_お知らせ一覧にアクセスできること(): void
     {
         $project = $this->createProject();
@@ -111,7 +118,7 @@ class AdminAnnouncementsTest extends TestCase
 
     public function test_delivery_form_配信画面にアクセスできること(): void
     {
-        $project = $this->createProject();
+        $project = $this->createDistributionProject();
         $admin = $this->createAdmin($project);
 
         $response = $this->actingAs($admin, 'admin')
@@ -122,7 +129,7 @@ class AdminAnnouncementsTest extends TestCase
 
     public function test_store_delivery_一斉配信を登録できること(): void
     {
-        $project = $this->createProject();
+        $project = $this->createDistributionProject();
         $admin = $this->createAdmin($project);
 
         $response = $this->actingAs($admin, 'admin')
@@ -145,7 +152,7 @@ class AdminAnnouncementsTest extends TestCase
 
     public function test_store_delivery_配信と同時にクーポンを配布できること(): void
     {
-        $project = $this->createProject();
+        $project = $this->createDistributionProject();
         $admin = $this->createAdmin($project);
         $admin->projects()->sync([$project->id]);
         $user = User::factory()->create(['project_id' => $project->id]);
@@ -175,7 +182,7 @@ class AdminAnnouncementsTest extends TestCase
 
     public function test_store_delivery_属性セグメントで配信できること(): void
     {
-        $project = $this->createProject();
+        $project = $this->createDistributionProject();
         $admin = $this->createAdmin($project);
         $lineUser = User::factory()->create([
             'project_id' => $project->id,
@@ -292,7 +299,7 @@ class AdminAnnouncementsTest extends TestCase
 
     public function test_store_delivery_画像url付きで配信できること(): void
     {
-        $project = $this->createProject();
+        $project = $this->createDistributionProject();
         $admin = $this->createAdmin($project);
 
         $response = $this->actingAs($admin, 'admin')

@@ -2,9 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\AdminUser;
 use App\Models\Project;
-use App\Models\ShopSetting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -33,7 +33,7 @@ class AdminHomeSettingsPreserveLinkTabsTest extends TestCase
         $project = $this->createProject();
         $admin = $this->createAdmin($project);
 
-        ShopSetting::setFrontendMenuItems([
+        ShopSettingStore::setFrontendMenuItems([
             ['tab' => 'home', 'label' => 'ホーム', 'icon' => 'fa-home', 'order' => 0, 'enabled' => true],
             ['tab' => 'products', 'label' => 'オーダー', 'icon' => 'fa-utensils', 'order' => 1, 'enabled' => true],
             [
@@ -57,7 +57,7 @@ class AdminHomeSettingsPreserveLinkTabsTest extends TestCase
             ])
             ->assertRedirect();
 
-        $raw = ShopSetting::getValue('frontend_menu_items', null, $project->id);
+        $raw = ShopSettingStore::getValue('frontend_menu_items', null, $project->id);
         $this->assertIsArray($raw);
         $tabs = array_column($raw, 'tab');
         $this->assertContains('home', $tabs);

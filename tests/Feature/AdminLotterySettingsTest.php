@@ -20,10 +20,15 @@ class AdminLotterySettingsTest extends TestCase
 
     private function createProject(): Project
     {
-        return Project::firstOrCreate(
+        $project = Project::firstOrCreate(
             ['project_key' => 'default'],
-            ['name' => 'Default Project', 'description' => 'Test', 'is_active' => true]
+            ['name' => 'Default Project', 'description' => 'Test', 'is_active' => true, 'plan' => 'premium']
         );
+        if ($project->plan !== 'premium') {
+            $project->update(['plan' => 'premium']);
+        }
+
+        return $project;
     }
 
     private function createAdmin(Project $project): AdminUser

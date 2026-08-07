@@ -2,10 +2,10 @@
 
 namespace Tests\Unit\Services;
 
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\Member;
 use App\Models\MemberRankHistory;
 use App\Models\Project;
-use App\Models\ShopSetting;
 use App\Models\User;
 use App\Services\Admin\MemberAdminService;
 use App\Services\MemberService;
@@ -33,7 +33,7 @@ class MemberRankHistoryTest extends TestCase
             ['name' => 'Default Project', 'description' => 'Test', 'is_active' => true]
         );
         AdminContext::setCurrentProject($project);
-        ShopSetting::setMemberRankSettings([
+        ShopSettingStore::setMemberRankSettings([
             ['key' => 'bronze', 'label' => 'ブロンズ', 'min_points' => 0, 'order' => 1, 'is_active' => true],
             ['key' => 'gold', 'label' => 'ゴールド', 'min_points' => 100, 'order' => 2, 'is_active' => true],
         ], $project->id);
@@ -69,7 +69,7 @@ class MemberRankHistoryTest extends TestCase
             ['project_key' => 'default'],
             ['name' => 'Default Project', 'description' => 'Test', 'is_active' => true]
         );
-        ShopSetting::setMemberRankSettings([
+        ShopSettingStore::setMemberRankSettings([
             ['key' => 'bronze', 'label' => 'ブロンズ', 'min_points' => 0, 'order' => 1, 'is_active' => true],
             ['key' => 'silver', 'label' => 'シルバー', 'min_points' => 50, 'order' => 2, 'is_active' => true],
         ], $project->id);
@@ -99,7 +99,7 @@ class MemberRankHistoryTest extends TestCase
             ['project_key' => 'default'],
             ['name' => 'Default Project', 'description' => 'Test', 'is_active' => true]
         );
-        ShopSetting::setMemberRankSettings([
+        ShopSettingStore::setMemberRankSettings([
             ['key' => 'bronze', 'label' => 'ブロンズ', 'min_points' => 0, 'order' => 1, 'is_active' => true, 'smaregi_rank_id' => '11'],
             ['key' => 'silver', 'label' => 'シルバー', 'min_points' => 50, 'order' => 2, 'is_active' => true, 'smaregi_rank_id' => '22'],
         ], $project->id);

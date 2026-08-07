@@ -2,6 +2,7 @@
 
 namespace Tests\Unit;
 
+use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Enums\GoogleWalletApi;
 use App\Models\Project;
 use App\Models\User;
@@ -22,7 +23,10 @@ class GoogleWalletPassServiceTest extends TestCase
 
     private function createService(): GoogleWalletPassService
     {
-        return new GoogleWalletPassService(new GoogleWalletLoyaltyPayloadBuilder);
+        return new GoogleWalletPassService(
+            new GoogleWalletLoyaltyPayloadBuilder,
+            app(ShopSettingRepository::class)
+        );
     }
 
     public function test_is_available_無効設定でfalseを返すこと(): void
