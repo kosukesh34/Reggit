@@ -9,6 +9,47 @@ import {
     primaryForTab,
     type PrimaryTab,
 } from '../demo/navigation';
+import { useFrontendApp } from '../context/FrontendAppContext';
+import { HomePage } from '../features/home/HomePage';
+import { ProductsPage } from '../features/products/ProductsPage';
+import { OrdersPage } from '../features/orders/OrdersPage';
+import { StampsPage } from '../features/stamps/StampsPage';
+import { CouponsPage } from '../features/coupons/CouponsPage';
+import { QueuePage } from '../features/queue/QueuePage';
+import { MemberPage } from '../features/member/MemberPage';
+import { ReservationsPage } from '../features/reservations/ReservationsPage';
+import { GalleryPage } from '../features/gallery/GalleryPage';
+import { AnnouncementPage } from '../features/announcements/AnnouncementPage';
+import { DesignLabPage } from '../features/designlab/DesignLabPage';
+
+function TabPage({ tab }: { tab: string }): JSX.Element | null {
+    switch (tab) {
+        case 'home':
+            return <HomePage />;
+        case 'products':
+            return <ProductsPage />;
+        case 'orders':
+            return <OrdersPage />;
+        case 'stamps':
+            return <StampsPage />;
+        case 'coupons':
+            return <CouponsPage />;
+        case 'queue':
+            return <QueuePage />;
+        case 'member':
+            return <MemberPage />;
+        case 'reservations':
+            return <ReservationsPage />;
+        case 'gallery':
+            return <GalleryPage />;
+        case 'announcements':
+            return <AnnouncementPage />;
+        case 'designlab':
+            return <DesignLabPage />;
+        default:
+            return null;
+    }
+}
 
 type FrontendMenuItem = {
     tab: string;
@@ -92,6 +133,7 @@ function IosSegmentBar({
     items: Array<{ tab: string; label: string }>;
     activeTab: string;
 }): JSX.Element | null {
+    const { switchTab } = useFrontendApp();
     if (items.length < 2) {
         return null;
     }
@@ -107,11 +149,7 @@ function IosSegmentBar({
                         className={`ios-segment__btn${activeTab === item.tab ? ' is-active' : ''}`}
                         aria-selected={activeTab === item.tab}
                         data-ios-segment-tab={item.tab}
-                        onClick={() => {
-                            if (typeof window.app?.switchTab === 'function') {
-                                void window.app.switchTab(item.tab);
-                            }
-                        }}
+                        onClick={() => switchTab(item.tab)}
                     >
                         {item.label}
                     </button>
@@ -121,7 +159,54 @@ function IosSegmentBar({
     );
 }
 
-/** セグメント・Large Title のみ。再レンダーしてもタブ中身を消さない */
+/**
+ * 各タブを React ページとして描画する。
+ */
+function ReactTabMounts(): JSX.Element {
+    const { currentTab } = useFrontendApp();
+    const menu = getFrontendMenu();
+    const linkTabs = getLinkTabsFromMenu();
+    const mountedTabs = ALL_TAB_SECTIONS.map((item) => {
+        const fromMenu = menu.find((m) => m.tab === item.tab);
+        return fromMenu ?? item;
+    });
+
+    return (
+        <>
+            {mountedTabs.map((item) => (
+                <div
+                    key={item.tab}
+                    className={`tab-content${currentTab === item.tab ? ' active' : ''}`}
+                    id={`${item.tab}Tab`}
+                >
+                    <div className="tab-section" id={`${item.tab}Section`} data-tab={item.tab}>
+                        <TabPage tab={item.tab} />
+                    </div>
+                </div>
+            ))}
+            {linkTabs.map((item) => (
+                <div
+                    key={item.tab}
+                    className={`tab-content${currentTab === item.tab ? ' active' : ''}`}
+                    id={`${item.tab}Tab`}
+                >
+                    <div
+                        className="tab-section tab-section--link-embed"
+                        id={`${item.tab}Section`}
+                        data-tab={item.tab}
+                        data-link-url={item.url}
+                    >
+                        {item.url ? (
+                            <iframe title={item.label} src={item.url} className="link-embed-frame" />
+                        ) : null}
+                    </div>
+                </div>
+            ))}
+        </>
+    );
+}
+
+/** セグメント・Large Title のみ */
 function FixedShellChrome(): JSX.Element | null {
     const activeTab = useActiveTab();
     const primary = primaryForTab(activeTab);
@@ -147,49 +232,6 @@ function FixedShellChrome(): JSX.Element | null {
     return null;
 }
 
-/**
- * タブ DOM は初回のみ描画する。
- * 状態付き親の再レンダーで innerHTML（Manager 描画）が消えないよう分離する。
- */
-const StaticTabMounts = React.memo(function StaticTabMounts(): JSX.Element {
-    const menu = getFrontendMenu();
-    const linkTabs = getLinkTabsFromMenu();
-    const mountedTabs = ALL_TAB_SECTIONS.map((item) => {
-        const fromMenu = menu.find((m) => m.tab === item.tab);
-        return fromMenu ?? item;
-    });
-    // active クラスは ReggitApp.switchTab が管理する（React は触らない）
-    const initialActive = readActiveTab();
-
-    return (
-        <>
-            {mountedTabs.map((item) => (
-                <div
-                    key={item.tab}
-                    className={`tab-content${initialActive === item.tab ? ' active' : ''}`}
-                    id={`${item.tab}Tab`}
-                >
-                    <div className="tab-section" id={`${item.tab}Section`} data-tab={item.tab} />
-                </div>
-            ))}
-            {linkTabs.map((item) => (
-                <div
-                    key={item.tab}
-                    className={`tab-content${initialActive === item.tab ? ' active' : ''}`}
-                    id={`${item.tab}Tab`}
-                >
-                    <div
-                        className="tab-section tab-section--link-embed"
-                        id={`${item.tab}Section`}
-                        data-tab={item.tab}
-                        data-link-url={item.url}
-                    />
-                </div>
-            ))}
-        </>
-    );
-});
-
 function LiffDetailShell(): JSX.Element {
     return (
         <div
@@ -212,25 +254,25 @@ export function FrontendTabLayout(): JSX.Element {
         <>
             <div id="announcementsTopBar" className="announcements-section announcements-top-bar" aria-label="お知らせバー" hidden />
             {isFixedUiShell() ? <FixedShellChrome /> : null}
-            <StaticTabMounts />
+            <ReactTabMounts />
             <LiffDetailShell />
         </>
     );
 }
 
 export function FrontendTabFooter(): JSX.Element | null {
+    const { switchTab, currentTab } = useFrontendApp();
     const isDesignerEmbedPreview = window.__IS_DESIGNER_EMBED_PREVIEW__ === true;
-    if (isDesignerEmbedPreview) {
-        return null;
-    }
-
     const isNativeEmbed = window.__MOBILE_APP_MODE__ === true || document.body.classList.contains('native-app-embed');
-    const activeTab = useActiveTab();
+    const activeTab = currentTab;
     const embedStyle = isNativeEmbed
         ? { display: 'none', visibility: 'hidden' as const, height: '0', overflow: 'hidden' as const }
         : undefined;
 
-    // /liff デモ: 下部タブ数・IAは固定（ホーム / オーダー / カード / 来店）
+    if (isDesignerEmbedPreview) {
+        return null;
+    }
+
     if (isFixedUiShell()) {
         const tabs = buildBottomTabs();
         const activePrimary: PrimaryTab | null = primaryForTab(activeTab);
@@ -247,6 +289,7 @@ export function FrontendTabFooter(): JSX.Element | null {
                         className={`main-tab-btn${activePrimary === item.primary || (activePrimary === null && index === 0) ? ' active' : ''}`}
                         data-tab={item.tab}
                         data-primary-tab={item.primary}
+                        onClick={() => switchTab(item.tab)}
                     >
                         <span className="ios-tab-icon" aria-hidden="true">
                             {iconForPrimary(item.primary)}
@@ -258,7 +301,6 @@ export function FrontendTabFooter(): JSX.Element | null {
         );
     }
 
-    // 店舗LIFF: 管理画面で設定したタブ数・ラベル・アイコンをそのまま表示
     const menu = getFrontendMenu();
     return (
         <footer
@@ -274,6 +316,7 @@ export function FrontendTabFooter(): JSX.Element | null {
                     data-tab={item.tab}
                     data-link-url={isLinkTabKey(item.tab) ? item.url : undefined}
                     data-link-open="embed"
+                    onClick={() => switchTab(item.tab)}
                 >
                     <i className={`fas ${item.icon ?? 'fa-circle'}`} aria-hidden="true" />
                     <span>{item.label}</span>
