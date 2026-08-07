@@ -3,9 +3,9 @@
 namespace App\UseCases\Admin\Settings;
 
 use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\ShopSettingKeys;
 use App\Enums\MemberRegistrationMode;
 use App\Enums\ProfileCustomFieldInputType;
-use App\Models\ShopSetting;
 use App\UseCases\Admin\Settings\Data\UpdateProfileSettingsInput;
 
 class UpdateProfileSettingsUseCase
@@ -17,7 +17,7 @@ class UpdateProfileSettingsUseCase
     public function handle(UpdateProfileSettingsInput $input): void
     {
         $smaregi = [];
-        foreach (ShopSetting::PROFILE_SMAREGI_FIELDS as $key => $label) {
+        foreach (ShopSettingKeys::PROFILE_SMAREGI_FIELDS as $key => $label) {
             $row = $input->rawSmaregiFields[$key] ?? [];
             $enabled = filter_var($row['enabled'] ?? false, FILTER_VALIDATE_BOOLEAN);
             $required = in_array($row['required'] ?? false, [1, '1', true], true);
@@ -35,7 +35,7 @@ class UpdateProfileSettingsUseCase
         $custom = [];
         if ($input->rawCustomFields !== null) {
             foreach ($input->rawCustomFields as $i => $row) {
-                if (count($custom) >= ShopSetting::PROFILE_CUSTOM_FIELD_MAX) {
+                if (count($custom) >= ShopSettingKeys::PROFILE_CUSTOM_FIELD_MAX) {
                     break;
                 }
                 if (! is_array($row)) {

@@ -5,7 +5,7 @@ namespace Tests\Feature;
 use App\Jobs\SmaregiSyncInboundCustomerPointsJob;
 use App\Models\Member;
 use App\Models\Project;
-use App\Models\ShopSetting;
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\User;
 use App\Models\WalletPassUpdate;
 use App\Services\AppleWalletPushService;
@@ -167,7 +167,7 @@ class SmaregiWebhookWalletSyncTest extends TestCase
     private function createLinkedMember(int $initialPoints, string $smaregiCustomerId): Member
     {
         $project = Project::factory()->create();
-        ShopSetting::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
 
         $user = User::factory()->create(['project_id' => $project->id]);
         $member = Member::factory()->create([

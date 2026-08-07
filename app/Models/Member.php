@@ -168,7 +168,7 @@ class Member extends Model
             'points' => $points,
             'description' => self::POINTS_LEDGER_BACKFILL_DESCRIPTION,
             'order_id' => null,
-            'expires_at' => now()->addDays(ShopSetting::getPointsValidDays((int) $this->project_id)),
+            'expires_at' => now()->addDays(app(\App\Domain\Settings\Repositories\ShopSettingRepository::class)->getPointsValidDays((int) $this->project_id)),
         ]);
         $this->recalcPointsFromTransactions();
     }

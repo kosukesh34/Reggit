@@ -2,7 +2,7 @@
 
 namespace App\UseCases\Admin\Settings;
 
-use App\Models\ShopSetting;
+use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Services\Admin\LiffSettingsService;
 use App\UseCases\Admin\Settings\Data\UpdateLiffDesignerInput;
 
@@ -21,6 +21,7 @@ class UpdateLiffDesignerUseCase
 
     public function __construct(
         private LiffSettingsService $liffSettingsService,
+        private ShopSettingRepository $shopSettingRepository,
     ) {}
 
     public function handle(int $projectId, UpdateLiffDesignerInput $input): void
@@ -53,17 +54,17 @@ class UpdateLiffDesignerUseCase
 
         $design = (string) ($global['member_card_design'] ?? '');
         if (in_array($design, self::MEMBER_CARD_DESIGNS, true)) {
-            ShopSetting::setMemberCardDesign($design, $projectId);
+            $this->shopSettingRepository->setMemberCardDesign($design, $projectId);
         }
 
         $displayType = (string) ($global['member_card_display_type'] ?? '');
         if (in_array($displayType, ['card', 'sheet'], true)) {
-            ShopSetting::setMemberCardDisplayType($displayType, $projectId);
+            $this->shopSettingRepository->setMemberCardDisplayType($displayType, $projectId);
         }
 
         $codeType = (string) ($global['member_card_code_type'] ?? '');
         if (in_array($codeType, ['barcode', 'qrcode'], true)) {
-            ShopSetting::setMemberCardCodeType($codeType, $projectId);
+            $this->shopSettingRepository->setMemberCardCodeType($codeType, $projectId);
         }
     }
 }

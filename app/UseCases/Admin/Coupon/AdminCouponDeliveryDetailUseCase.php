@@ -6,7 +6,7 @@ use App\Enums\CouponDeliveryStatus;
 use App\Enums\CouponDeliveryType;
 use App\Models\CouponDelivery;
 use App\Models\Member;
-use App\Models\ShopSetting;
+use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\UseCases\Admin\Coupon\Data\AdminCouponDeliveryDetailOutput;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
@@ -133,7 +133,7 @@ class AdminCouponDeliveryDetailUseCase
         if ($rankKey === '') {
             return '';
         }
-        foreach (ShopSetting::getMemberRankSettings($projectId) as $rank) {
+        foreach (app(ShopSettingRepository::class)->getMemberRankSettings($projectId) as $rank) {
             if ((string) ($rank['key'] ?? '') === $rankKey) {
                 return (string) ($rank['label'] ?? $rankKey);
             }

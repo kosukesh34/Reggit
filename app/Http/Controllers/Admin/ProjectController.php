@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ProjectStoreRequest;
 use App\Http\Requests\Admin\ProjectUpdateRequest;
-use App\Models\ShopSetting;
 use App\UseCases\Admin\Project\ProjectEditUseCase;
 use App\UseCases\Admin\Project\ProjectIndexUseCase;
 use App\UseCases\Admin\Project\ProjectStoreUseCase;
@@ -17,7 +17,8 @@ class ProjectController extends Controller
         private ProjectIndexUseCase $indexUseCase,
         private ProjectStoreUseCase $storeUseCase,
         private ProjectEditUseCase $editUseCase,
-        private ProjectUpdateUseCase $updateUseCase
+        private ProjectUpdateUseCase $updateUseCase,
+        private ShopSettingRepository $shopSettingRepository,
     ) {}
 
     public function index()
@@ -63,18 +64,18 @@ class ProjectController extends Controller
         return view('admin.projects.edit', [
             'project' => $project,
             'projectSettings' => [
-                'line_liff_id' => ShopSetting::getLineLiffId((int) $project->id),
-                'line_liff_url' => ShopSetting::getLineLiffUrl((int) $project->id),
-                'frontend_header_text' => (string) (ShopSetting::getFrontendHeaderText((int) $project->id) ?? ''),
-                'frontend_logo_url' => (string) (ShopSetting::getFrontendLogoUrl((int) $project->id) ?? ''),
-                'business_hours_start' => (string) ShopSetting::getValue('business_hours_start', '10:00', (int) $project->id),
-                'business_hours_end' => (string) ShopSetting::getValue('business_hours_end', '22:00', (int) $project->id),
-                'line_primary_color' => (string) ShopSetting::getValue('line_primary_color', '#000000', (int) $project->id),
-                'line_primary_dark' => (string) ShopSetting::getValue('line_primary_dark', '#333333', (int) $project->id),
-                'line_success_color' => (string) ShopSetting::getValue('line_success_color', '#000000', (int) $project->id),
-                'line_danger_color' => (string) ShopSetting::getValue('line_danger_color', '#dc3545', (int) $project->id),
-                'smaregi_contract_id' => (string) (ShopSetting::getValue('smaregi_contract_id', '', (int) $project->id) ?? ''),
-                'smaregi_client_id' => (string) (ShopSetting::getValue('smaregi_client_id', '', (int) $project->id) ?? ''),
+                'line_liff_id' => $this->shopSettingRepository->getLineLiffId((int) $project->id),
+                'line_liff_url' => $this->shopSettingRepository->getLineLiffUrl((int) $project->id),
+                'frontend_header_text' => (string) ($this->shopSettingRepository->getFrontendHeaderText((int) $project->id) ?? ''),
+                'frontend_logo_url' => (string) ($this->shopSettingRepository->getFrontendLogoUrl((int) $project->id) ?? ''),
+                'business_hours_start' => (string) $this->shopSettingRepository->getValue('business_hours_start', '10:00', (int) $project->id),
+                'business_hours_end' => (string) $this->shopSettingRepository->getValue('business_hours_end', '22:00', (int) $project->id),
+                'line_primary_color' => (string) $this->shopSettingRepository->getValue('line_primary_color', '#000000', (int) $project->id),
+                'line_primary_dark' => (string) $this->shopSettingRepository->getValue('line_primary_dark', '#333333', (int) $project->id),
+                'line_success_color' => (string) $this->shopSettingRepository->getValue('line_success_color', '#000000', (int) $project->id),
+                'line_danger_color' => (string) $this->shopSettingRepository->getValue('line_danger_color', '#dc3545', (int) $project->id),
+                'smaregi_contract_id' => (string) ($this->shopSettingRepository->getValue('smaregi_contract_id', '', (int) $project->id) ?? ''),
+                'smaregi_client_id' => (string) ($this->shopSettingRepository->getValue('smaregi_client_id', '', (int) $project->id) ?? ''),
                 'smaregi_client_secret' => '',
             ],
             'isOnboarding' => false,

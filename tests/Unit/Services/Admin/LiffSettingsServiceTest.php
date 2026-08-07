@@ -3,7 +3,7 @@
 namespace Tests\Unit\Services\Admin;
 
 use App\Models\Project;
-use App\Models\ShopSetting;
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Services\Admin\LiffSettingsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -23,12 +23,12 @@ class LiffSettingsServiceTest extends TestCase
             ['project_key' => 'default'],
             ['name' => 'Test', 'description' => 'Test', 'is_active' => true]
         );
-        $this->service = new LiffSettingsService;
+        $this->service = app(LiffSettingsService::class);
     }
 
     public function test_get_menu_items_for_designer_デフォルトと保存値をマージしてorder順で返す(): void
     {
-        ShopSetting::setFrontendMenuItems([
+        ShopSettingStore::setFrontendMenuItems([
             ['tab' => 'reservations', 'label' => 'ご予約', 'icon' => 'fa-calendar-check', 'order' => 0, 'enabled' => true],
             ['tab' => 'products', 'label' => 'お品書き', 'icon' => 'fa-utensils', 'order' => 2, 'enabled' => false],
         ], $this->project->id);

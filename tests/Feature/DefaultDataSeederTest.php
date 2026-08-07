@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Product;
 use App\Models\Project;
-use App\Models\ShopSetting;
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Services\Admin\ProductDeduplicationService;
 use App\Services\Smaregi\SmaregiProductSyncService;
 use Database\Seeders\DefaultDataSeeder;
@@ -101,7 +101,7 @@ class DefaultDataSeederTest extends TestCase
         ]);
 
         $project = Project::factory()->create();
-        ShopSetting::setValue('smaregi_contract_id', 'test_contract_sb', 'string', (int) $project->id);
+        ShopSettingStore::setValue('smaregi_contract_id', 'test_contract_sb', 'string', (int) $project->id);
         Product::withoutGlobalScopes()->create([
             'project_id' => $project->id,
             'name' => 'フリーライト ハンバーガー',
