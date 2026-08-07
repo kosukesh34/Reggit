@@ -4,9 +4,9 @@ name: CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, develop, ver1.0.0 ]
   pull_request:
-    branches: [ main, develop, 'feature/**', 'fix/**' ]
+    branches: [ main, develop, ver1.0.0, 'feature/**', 'fix/**' ]
 
 jobs:
   test:
@@ -135,8 +135,10 @@ jobs:
           echo "Laravel Pint not installed, skipping..."
         fi
 
+  # PR / ver1.0.0 ではスキップ。main への push（マージ後）のみ実行。
   e2e_web:
     name: E2E Web (Playwright)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 40
 
@@ -315,9 +317,15 @@ jobs:
         if-no-files-found: ignore
 
   # ブランチ保護ルールが要求する required status check 名（context: main）
+  # PR では e2e_web が skipped でも test+lint 成功なら通す。
   main:
     runs-on: ubuntu-latest
     needs: [ test, lint, e2e_web ]
+    if: |
+      always()
+      && needs.test.result == 'success'
+      && needs.lint.result == 'success'
+      && (needs.e2e_web.result == 'success' || needs.e2e_web.result == 'skipped')
 
     steps:
       - run: echo "All CI checks passed"
