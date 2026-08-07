@@ -3,12 +3,8 @@
 namespace App\Services\Smaregi;
 
 use App\Enums\SmaregiContractStatus;
-use App\Models\Settings\ProjectProfileSmaregiSetting;
 use App\Models\ShopSetting;
 use App\Models\SmaregiContract;
-use Illuminate\Http\Client\ConnectionException;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -18,88 +14,29 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class SmaregiApiService
 {
-    private ?string $lastErrorDetail = null;
-
-    private ?int $lastHttpStatus = null;
+    public function __construct(
+        private SmaregiApiClient $client,
+        private SmaregiTransactionCustomerResolver $transactionCustomerResolver,
+    ) {}
 
     public function getLastErrorDetail(): ?string
     {
-        return $this->lastErrorDetail;
+        return $this->client->getLastErrorDetail();
     }
 
     public function getLastHttpStatus(): ?int
     {
-        return $this->lastHttpStatus;
+        return $this->client->getLastHttpStatus();
     }
 
     public function clearLastErrorDetail(): void
     {
-        $this->lastErrorDetail = null;
+        $this->client->clearLastErrorDetail();
     }
-
-    private const CACHE_KEY_PREFIX = 'smaregi_access_token:';
-
-    private const CACHE_BUFFER_SECONDS = 60;
 
     public function getAppAccessToken(string $contractId): ?string
     {
-        $credentials = $this->resolveCredentialsForContract($contractId);
-        $clientId = $credentials['client_id'];
-        $clientSecret = $credentials['client_secret'];
-        $cacheKey = self::CACHE_KEY_PREFIX.$contractId.':'.$clientId;
-        $cached = Cache::get($cacheKey);
-        if (is_string($cached) && $cached !== '') {
-            return $cached;
-        }
-
-        $idBaseUrl = rtrim(config('smaregi.id_base_url'), '/');
-        $scope = config('smaregi.scope');
-
-        if ($clientId === '' || $clientSecret === '') {
-            Log::warning('[Smaregi] token skip client not configured', ['smaregi_contract_id' => $contractId]);
-
-            return null;
-        }
-
-        $url = "{$idBaseUrl}/app/{$contractId}/token";
-        try {
-            $response = Http::asForm()
-                ->withBasicAuth($clientId, $clientSecret)
-                ->timeout(30)
-                ->connectTimeout(15)
-                ->post($url, [
-                    'grant_type' => 'client_credentials',
-                    'scope' => $scope,
-                ]);
-        } catch (ConnectionException $e) {
-            Log::warning('[Smaregi] token request connection failed (timeout or unreachable)', [
-                'smaregi_contract_id' => $contractId,
-                'message' => $e->getMessage(),
-            ]);
-
-            return null;
-        }
-
-        if (! $response->successful()) {
-            Log::error('[Smaregi] token request failed', [
-                'smaregi_contract_id' => $contractId,
-                'status' => $response->status(),
-            ]);
-
-            return null;
-        }
-
-        $data = $response->json();
-        $token = $data['access_token'] ?? null;
-        $expiresIn = (int) ($data['expires_in'] ?? 3600);
-
-        if (! is_string($token) || $token === '') {
-            return null;
-        }
-
-        Cache::put($cacheKey, $token, $expiresIn - self::CACHE_BUFFER_SECONDS);
-
-        return $token;
+        return $this->client->getAppAccessToken($contractId);
     }
 
     /**
@@ -109,37 +46,7 @@ class SmaregiApiService
      */
     public function resolveCredentialsForContract(string $contractId): array
     {
-        $projectId = $this->resolveProjectIdForContract($contractId);
-        if ($projectId !== null) {
-            $clientId = ShopSetting::getValue('smaregi_client_id', null, $projectId);
-            $clientSecret = ShopSetting::getValue('smaregi_client_secret', null, $projectId);
-            $clientId = is_string($clientId) ? trim($clientId) : '';
-            $clientSecret = is_string($clientSecret) ? trim($clientSecret) : '';
-            if ($clientId !== '' && $clientSecret !== '') {
-                return ['client_id' => $clientId, 'client_secret' => $clientSecret];
-            }
-        }
-
-        return [
-            'client_id' => trim((string) config('smaregi.client_id', '')),
-            'client_secret' => trim((string) config('smaregi.client_secret', '')),
-        ];
-    }
-
-    private function resolveProjectIdForContract(string $contractId): ?int
-    {
-        $linked = SmaregiContract::where('contract_id', $contractId)
-            ->whereNotNull('project_id')
-            ->value('project_id');
-        if (is_numeric($linked)) {
-            return (int) $linked;
-        }
-
-        $setting = ProjectProfileSmaregiSetting::query()
-            ->where('smaregi_contract_id', $contractId)
-            ->value('project_id');
-
-        return is_numeric($setting) ? (int) $setting : null;
+        return $this->client->resolveCredentialsForContract($contractId);
     }
 
     /**
@@ -153,77 +60,7 @@ class SmaregiApiService
      */
     public function request(string $contractId, string $method, string $path, array $body = [], bool $bodyAsRequestJsonForm = false): ?array
     {
-        $this->lastHttpStatus = null;
-        $token = $this->getAppAccessToken($contractId);
-        if ($token === null) {
-            return null;
-        }
-
-        $apiBaseUrl = rtrim(config('smaregi.api_base_url'), '/');
-        $path = ltrim($path, '/');
-        $url = "{$apiBaseUrl}/{$contractId}/{$path}";
-
-        $request = Http::withToken($token)
-            ->acceptJson()
-            ->timeout(30);
-
-        $methodLower = strtolower($method);
-        if ($methodLower === 'get') {
-            $response = $request->get($url, $body);
-        } elseif ($body !== [] && in_array($methodLower, ['post', 'put', 'patch'], true)) {
-            if ($bodyAsRequestJsonForm) {
-                $response = $request->asForm()
-                    ->{$methodLower}($url, ['request_json' => json_encode($body)]);
-            } else {
-                $response = $request->withBody(json_encode($body), 'application/json')
-                    ->{$methodLower}($url);
-            }
-        } else {
-            $response = $request->{$methodLower}($url, $body);
-        }
-
-        $this->lastHttpStatus = $response->status();
-
-        if (! $response->successful()) {
-            $responseBody = $response->body();
-            $this->lastErrorDetail = $this->parseErrorDetail($responseBody);
-            $context = [
-                'smaregi_contract_id' => $contractId,
-                'method' => $method,
-                'path' => $path,
-                'status' => $response->status(),
-                'response_body' => $responseBody !== '' ? $responseBody : null,
-            ];
-            if ($body !== [] && in_array(strtolower($method), ['post', 'patch'], true)) {
-                if ($path === 'pos/coupons' || str_starts_with($path, 'pos/products')) {
-                    $context['request_body_sent'] = $body;
-                }
-            }
-            Log::warning('[Smaregi] API request failed', $context);
-
-            return null;
-        }
-
-        $this->lastErrorDetail = null;
-
-        // 204 No Content 等で body が空の場合は [] を返し、呼び出し側で null=失敗 と区別できるようにする
-        return $response->json() ?? [];
-    }
-
-    private function parseErrorDetail(string $responseBody): ?string
-    {
-        if ($responseBody === '') {
-            return null;
-        }
-
-        $decoded = json_decode($responseBody, true);
-        if (! is_array($decoded)) {
-            return null;
-        }
-
-        $detail = $decoded['detail'] ?? $decoded['message'] ?? $decoded['title'] ?? null;
-
-        return is_string($detail) && trim($detail) !== '' ? trim($detail) : null;
+        return $this->client->request($contractId, $method, $path, $body, $bodyAsRequestJsonForm);
     }
 
     /** 店舗一覧を取得（pos.stores:read スコープ必要） */
@@ -319,7 +156,7 @@ class SmaregiApiService
             return null;
         }
 
-        $list = $this->extractList($result, ['customers']);
+        $list = $this->client->extractList($result, ['customers']);
         foreach ($list as $customer) {
             if (is_array($customer) && (string) ($customer['customerCode'] ?? '') === $customerCode) {
                 return $customer;
@@ -413,7 +250,7 @@ class SmaregiApiService
             }
         }
 
-        $list = $this->extractList($result, ['customer_points', 'customerPoints', 'points']);
+        $list = $this->client->extractList($result, ['customer_points', 'customerPoints', 'points']);
         $first = $list[0] ?? null;
 
         return is_array($first) ? $first : null;
@@ -438,12 +275,12 @@ class SmaregiApiService
         if ($result !== null) {
             return $result;
         }
-        if ($this->lastHttpStatus === Response::HTTP_NOT_FOUND) {
+        if ($this->client->getLastHttpStatus() === Response::HTTP_NOT_FOUND) {
             Log::info('[Smaregi] deleteCustomer treated as success (already gone)', [
                 'smaregi_contract_id' => $contractId,
                 'smaregi_customer_id' => $customerId,
             ]);
-            $this->lastErrorDetail = null;
+            $this->client->clearLastErrorDetail();
 
             return [];
         }
@@ -465,144 +302,18 @@ class SmaregiApiService
         return $this->request($contractId, 'GET', 'pos/transactions/'.$transactionId, $query);
     }
 
-    private const TRANSACTION_CUSTOMER_RESOLVE_ATTEMPTS = 3;
-
-    private const TRANSACTION_CUSTOMER_RESOLVE_DELAY_MICROSECONDS = 400000;
-
-    private function transactionCustomerResolveDelayMicroseconds(): int
-    {
-        if (app()->environment('testing')) {
-            return 0;
-        }
-
-        return self::TRANSACTION_CUSTOMER_RESOLVE_DELAY_MICROSECONDS;
-    }
-
     /**
      * Webhook の transactionHeadIds から会員IDと取引後ポイントを解決（pos:customer-points / pos:transactions 用）。
-     *
-     * ポイント更新直後は customerId が未反映のことがあるため、短時間リトライする。
-     * totalPoint が取れた場合はポイント同期のヒントとして返す（会員ポイントAPI失敗時のフォールバック）。
      *
      * @param  list<string|int>  $transactionHeadIds
      * @return array{customer_ids: list<string>, points_by_customer_id: array<string, int>}
      */
     public function resolveCustomersFromTransactionHeads(string $contractId, array $transactionHeadIds): array
     {
-        $customerIds = [];
-        $pointsByCustomerId = [];
-        foreach ($transactionHeadIds as $rawHeadId) {
-            $headId = trim((string) $rawHeadId);
-            if ($headId === '') {
-                continue;
-            }
-            $resolved = $this->resolveOneTransactionCustomer($contractId, $headId);
-            if ($resolved === null) {
-                continue;
-            }
-            $customerIds[] = $resolved['customer_id'];
-            if ($resolved['total_point'] !== null) {
-                $pointsByCustomerId[$resolved['customer_id']] = $resolved['total_point'];
-            }
-        }
-
-        return [
-            'customer_ids' => array_values(array_unique($customerIds)),
-            'points_by_customer_id' => $pointsByCustomerId,
-        ];
-    }
-
-    /**
-     * @return array{customer_id: string, total_point: int|null}|null
-     */
-    private function resolveOneTransactionCustomer(string $contractId, string $headId): ?array
-    {
-        $transaction = null;
-        $customerId = '';
-        for ($attempt = 1; $attempt <= self::TRANSACTION_CUSTOMER_RESOLVE_ATTEMPTS; $attempt++) {
-            $transaction = $this->getTransaction($contractId, $headId);
-            if ($transaction === null) {
-                Log::warning('[Smaregi] resolveCustomersFromTransactionHeads: getTransaction failed', [
-                    'smaregi_contract_id' => $contractId,
-                    'transaction_head_id' => $headId,
-                    'attempt' => $attempt,
-                ]);
-                if ($attempt < self::TRANSACTION_CUSTOMER_RESOLVE_ATTEMPTS) {
-                    usleep($this->transactionCustomerResolveDelayMicroseconds());
-                }
-
-                continue;
-            }
-
-            $customerId = $this->extractCustomerIdFromTransaction($transaction);
-            if ($customerId !== '') {
-                break;
-            }
-            if ($attempt < self::TRANSACTION_CUSTOMER_RESOLVE_ATTEMPTS) {
-                usleep($this->transactionCustomerResolveDelayMicroseconds());
-            }
-        }
-
-        if ($transaction === null) {
-            return null;
-        }
-        if ($customerId === '') {
-            Log::info('[Smaregi] resolveCustomersFromTransactionHeads: transaction has no customerId', [
-                'smaregi_contract_id' => $contractId,
-                'transaction_head_id' => $headId,
-                'transaction_head_division' => $transaction['transactionHeadDivision'] ?? null,
-                'total' => $transaction['total'] ?? null,
-                'new_point' => $transaction['newPoint'] ?? null,
-                'total_point' => $transaction['totalPoint'] ?? null,
-            ]);
-
-            return null;
-        }
-
-        return [
-            'customer_id' => $customerId,
-            'total_point' => $this->parseOptionalInt($transaction['totalPoint'] ?? null),
-        ];
-    }
-
-    /**
-     * @param  array<string, string|int|float|bool|array|null>  $transaction
-     */
-    private function extractCustomerIdFromTransaction(array $transaction): string
-    {
-        $customerId = $transaction['customerId'] ?? $transaction['customer_id'] ?? null;
-        if ($customerId === null || trim((string) $customerId) === '') {
-            $nested = $transaction['customer'] ?? null;
-            if (is_array($nested)) {
-                $customerId = $nested['customerId'] ?? $nested['customer_id'] ?? null;
-            }
-        }
-        if ($customerId === null) {
-            return '';
-        }
-
-        return trim((string) $customerId);
-    }
-
-    /**
-     * @param  string|int|float|bool|array|null  $value
-     */
-    private function parseOptionalInt($value): ?int
-    {
-        if ($value === null) {
-            return null;
-        }
-        if (is_int($value)) {
-            return $value;
-        }
-        if (is_float($value)) {
-            return (int) round($value);
-        }
-        if (is_string($value) && $value !== '' && is_numeric($value)) {
-            return (int) round((float) $value);
-        }
-
-        return null;
+        return $this->transactionCustomerResolver->resolveCustomersFromTransactionHeads(
+            $contractId,
+            $transactionHeadIds,
+        );
     }
 
     /** 取引登録（pos.transactions:write） */
@@ -799,33 +510,6 @@ class SmaregiApiService
     public function getStore(string $contractId, string $storeId): ?array
     {
         return $this->request($contractId, 'GET', 'pos/stores/'.$storeId);
-    }
-
-    /**
-     * 上記以外のエンドポイントは request() で直接指定可能。
-     * 例: $service->request($contractId, 'POST', 'pos/transactions/1/cancel', []);
-     * 全パス一覧は docs/SMAREGI_POS_API_REFERENCE.md を参照。
-     */
-
-    /**
-     * @param  array<int|string, string|int|float|bool|array|null>  $result
-     * @param  list<string>  $possibleKeys
-     * @return array<int, string|int|float|bool|array|null>
-     */
-    private function extractList(array $result, array $possibleKeys): array
-    {
-        if ($result === [] || array_keys($result) === range(0, count($result) - 1)) {
-            return $result;
-        }
-
-        foreach ($possibleKeys as $key) {
-            $list = $result[$key] ?? null;
-            if (is_array($list)) {
-                return $list;
-            }
-        }
-
-        return [];
     }
 
     /**

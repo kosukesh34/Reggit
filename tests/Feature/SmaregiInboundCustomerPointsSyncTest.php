@@ -403,6 +403,25 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
         $this->assertSame(395, $resolved['points_by_customer_id']['247'] ?? null);
     }
 
+    public function test_resolve_customers失敗時のhttp_statusがserviceから取得できること(): void
+    {
+        Http::fake(function ($request) {
+            $url = $request->url();
+            if (str_contains($url, 'id.smaregi.dev') && str_contains($url, '/token')) {
+                return Http::response(['access_token' => 'fake', 'expires_in' => 3600], 200);
+            }
+
+            return Http::response(['detail' => 'boom'], 500);
+        });
+
+        $service = app(SmaregiApiService::class);
+        $resolved = $service->resolveCustomersFromTransactionHeads(self::CONTRACT_ID, ['99']);
+
+        $this->assertSame([], $resolved['customer_ids']);
+        $this->assertSame(500, $service->getLastHttpStatus());
+        $this->assertSame('boom', $service->getLastErrorDetail());
+    }
+
     public function test_取引total_pointヒントがあれば会員ポイント_a_p_i失敗でも同期できること(): void
     {
         $project = Project::factory()->create();
