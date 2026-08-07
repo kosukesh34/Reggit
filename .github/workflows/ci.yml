@@ -135,10 +135,10 @@ jobs:
           echo "Laravel Pint not installed, skipping..."
         fi
 
-  # PR / main ではスキップ。リリース統合ブランチ ver1.0.0 への push（マージ後）のみ実行。
+  # PR / ver1.0.0 ではスキップ。main への push（マージ後）のみ実行。
   e2e_web:
     name: E2E Web (Playwright)
-    if: github.event_name == 'push' && github.ref == 'refs/heads/ver1.0.0'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 40
 
