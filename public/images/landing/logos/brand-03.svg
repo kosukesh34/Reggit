@@ -1,9 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 80" role="img" aria-label="MILL &amp; CO.">
-  <rect width="200" height="80" fill="#fff"/>
-  <rect x="14" y="18" width="44" height="44" rx="8" fill="#8B5E34"/>
-  <circle cx="36" cy="40" r="12" fill="none" stroke="#F5E6D3" stroke-width="3"/>
-  <circle cx="36" cy="40" r="3" fill="#F5E6D3"/>
-  <path d="M36 28v24M24 40h24" stroke="#F5E6D3" stroke-width="2"/>
-  <text x="72" y="37" font-family="'Hiragino Sans','Noto Sans JP',sans-serif" font-size="16" font-weight="800" letter-spacing="0.04em" fill="#3F2A1A">MILL &amp; CO.</text>
-  <text x="72" y="55" font-family="'Hiragino Sans','Noto Sans JP',sans-serif" font-size="9" font-weight="600" letter-spacing="0.2em" fill="#9A7B5A">BAKERY</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 96" role="img" aria-label="MILL &amp; CO. BAKERY">
+  <text x="120" y="42" text-anchor="middle" font-family="'Bodoni 72', Didot, Georgia, serif" font-size="28" font-weight="700" fill="#3F2A1A">Mill &amp; Co.</text>
+  <text x="120" y="66" text-anchor="middle" font-family="'Avenir Next', 'Helvetica Neue', sans-serif" font-size="10" font-weight="600" letter-spacing="0.46em" fill="#9A7B5A">BAKERY</text>
 </svg>
