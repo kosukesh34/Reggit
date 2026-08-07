@@ -1,8 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 80" role="img" aria-label="STONE &amp; SALT">
-  <rect width="200" height="80" fill="#fff"/>
-  <rect x="16" y="22" width="48" height="36" rx="3" fill="#44403C"/>
-  <rect x="22" y="28" width="36" height="10" fill="#A8A29E"/>
-  <rect x="22" y="42" width="20" height="8" fill="#D6D3D1"/>
-  <text x="76" y="36" font-family="'Hiragino Sans','Noto Sans JP',sans-serif" font-size="12" font-weight="800" letter-spacing="0.06em" fill="#292524">STONE &amp; SALT</text>
-  <text x="76" y="54" font-family="'Hiragino Sans','Noto Sans JP',sans-serif" font-size="9" font-weight="600" letter-spacing="0.22em" fill="#78716C">GRILL</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 96" role="img" aria-label="STONE &amp; SALT GRILL">
+  <text x="120" y="40" text-anchor="middle" font-family="'Avenir Next Condensed', 'Avenir Next', sans-serif" font-size="20" font-weight="700" letter-spacing="0.2em" fill="#292524">STONE &amp; SALT</text>
+  <rect x="88" y="48" width="64" height="2" fill="#A8A29E"/>
+  <text x="120" y="72" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="12" font-weight="400" letter-spacing="0.4em" fill="#78716C">GRILL</text>
 </svg>

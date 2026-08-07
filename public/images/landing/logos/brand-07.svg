@@ -1,8 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 80" role="img" aria-label="LUMINA BAKE">
-  <rect width="200" height="80" fill="#fff"/>
-  <rect x="16" y="18" width="48" height="44" rx="22" fill="#B45309"/>
-  <path d="M30 48c4-10 10-16 18-18-2 8-2 14 0 22H30z" fill="#FEF3C7"/>
-  <path d="M34 30c6-2 12 0 16 4" stroke="#FDE68A" stroke-width="1.5" fill="none"/>
-  <text x="78" y="36" font-family="'Hiragino Sans','Noto Sans JP',sans-serif" font-size="14" font-weight="800" letter-spacing="0.06em" fill="#92400E">LUMINA</text>
-  <text x="78" y="54" font-family="'Hiragino Sans','Noto Sans JP',sans-serif" font-size="10" font-weight="700" letter-spacing="0.22em" fill="#D97706">BAKE</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 96" role="img" aria-label="LUMINA BAKE">
+  <text x="120" y="44" text-anchor="middle" font-family="'Snell Roundhand', 'Apple Chancery', 'Brush Script MT', cursive" font-size="34" font-weight="500" fill="#92400E">Lumina</text>
+  <text x="120" y="70" text-anchor="middle" font-family="'Avenir Next Condensed', 'Avenir Next', sans-serif" font-size="11" font-weight="600" letter-spacing="0.5em" fill="#D97706">BAKE HOUSE</text>
 </svg>
