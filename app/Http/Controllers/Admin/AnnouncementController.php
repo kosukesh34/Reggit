@@ -137,7 +137,7 @@ class AnnouncementController extends AdminBaseController
     {
         $count = $this->segmentPreviewUseCase->handle(
             $this->resolveAdminProjectId(),
-            $request,
+            $request->query(),
         );
 
         return response()->json(['count' => $count]);
