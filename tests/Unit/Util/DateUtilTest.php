@@ -20,7 +20,7 @@ class DateUtilTest extends TestCase
         $this->assertNull(DateUtil::nullableCarbon('not-a-date'));
     }
 
-    public function test_パース可能な文字列はCarbonを返すこと(): void
+    public function test_パース可能な文字列は_carbonを返すこと(): void
     {
         $carbon = DateUtil::nullableCarbon('2026-07-19T01:44:25+09:00');
 
@@ -28,7 +28,7 @@ class DateUtilTest extends TestCase
         $this->assertSame('2026-07-19 01:44:25', $carbon->format('Y-m-d H:i:s'));
     }
 
-    public function test_Carbonはそのまま返すこと(): void
+    public function test_carbonはそのまま返すこと(): void
     {
         $original = Carbon::parse('2026-08-06 12:00:00');
 
