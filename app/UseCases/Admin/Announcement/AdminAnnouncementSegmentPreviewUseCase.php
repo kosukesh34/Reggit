@@ -3,7 +3,6 @@
 namespace App\UseCases\Admin\Announcement;
 
 use App\Services\Admin\MemberSegmentService;
-use Illuminate\Http\Request;
 
 class AdminAnnouncementSegmentPreviewUseCase
 {
@@ -11,9 +10,12 @@ class AdminAnnouncementSegmentPreviewUseCase
         private MemberSegmentService $memberSegmentService,
     ) {}
 
-    public function handle(int $projectId, Request $request): int
+    /**
+     * @param  array<string, string|string[]>  $query
+     */
+    public function handle(int $projectId, array $query): int
     {
-        $criteria = $this->memberSegmentService->buildCriteriaFromInput($request->query());
+        $criteria = $this->memberSegmentService->buildCriteriaFromInput($query);
         if ($criteria === null) {
             return 0;
         }
