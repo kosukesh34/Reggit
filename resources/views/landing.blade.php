@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reggit — LINEで届く、店舗のモバイルオーダーと会員証</title>
+    <title>Reggit — 店舗に必要な機能を簡単に</title>
     <meta name="description" content="注文・ポイント・スタンプ・順番待ちを、LINEミニアプリと管理画面でひとつに。">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ asset('css/landing.css') }}?v=26">
+    <link rel="stylesheet" href="{{ asset('css/landing.css') }}?v=38">
 </head>
 <body class="lp">
     <header class="lp-nav">
@@ -65,7 +65,7 @@
                 >
                 <span class="lp-hero__brand-name">Reggit</span>
             </p>
-            <h1 class="lp-hero__title">LINEで届く、<br>店舗のモバイルオーダーと会員証</h1>
+            <h1 class="lp-hero__title">店舗に必要な機能を<br>簡単に</h1>
             <p class="lp-hero__lead">注文・ポイント・スタンプ・順番待ちを、LINEミニアプリと管理画面でひとつに。</p>
             <div class="lp-hero__actions">
                 <a class="lp-btn lp-btn--primary" href="{{ route('admin.login') }}">管理画面ログイン</a>
@@ -75,9 +75,14 @@
     </section>
 
     @php
-        $logoBrandFiles = [
-            '01', '02', '03', '04', '05', '06', '07', '08', '09',
+        // 上下でブランドを分ける（重複なし）
+        $logoBrandFilesTop = [
+            '01', '02', '03', '04', '05', '20', '07', '08', '09',
+            '23', '24', '25', '26', '28', '29',
+        ];
+        $logoBrandFilesBottom = [
             '10', '11', '12', '13', '14', '15', '16', '17', '18',
+            '06', '30', '32', '33', '34', '35',
         ];
     @endphp
     <section class="lp-logos" aria-label="導入イメージ">
@@ -86,15 +91,15 @@
             <div class="lp-marquee__track">
                 @foreach ([1, 2] as $loopCopy)
                     <ul class="lp-marquee__group">
-                        @foreach ($logoBrandFiles as $file)
+                        @foreach ($logoBrandFilesTop as $file)
                             <li class="lp-marquee__item">
                                 <img
                                     class="lp-brand-logo"
-                                    src="{{ asset('images/landing/logos/brand-'.$file.'.png') }}?v=20"
+                                    src="{{ asset('images/landing/logos/brand-'.$file.'.png') }}?v=30"
                                     alt=""
-                                    width="200"
-                                    height="80"
-                                    loading="lazy"
+                                    height="56"
+                                    loading="eager"
+                                    decoding="async"
                                 >
                             </li>
                         @endforeach
@@ -106,15 +111,15 @@
             <div class="lp-marquee__track">
                 @foreach ([1, 2] as $loopCopy)
                     <ul class="lp-marquee__group">
-                        @foreach (array_reverse($logoBrandFiles) as $file)
+                        @foreach ($logoBrandFilesBottom as $file)
                             <li class="lp-marquee__item">
                                 <img
                                     class="lp-brand-logo"
-                                    src="{{ asset('images/landing/logos/brand-'.$file.'.png') }}?v=20"
+                                    src="{{ asset('images/landing/logos/brand-'.$file.'.png') }}?v=30"
                                     alt=""
-                                    width="200"
-                                    height="80"
-                                    loading="lazy"
+                                    height="56"
+                                    loading="eager"
+                                    decoding="async"
                                 >
                             </li>
                         @endforeach
@@ -313,6 +318,48 @@
                     <h3>セキュアな管理画面</h3>
                     <p>HTTPS前提の管理ログインと、役割に応じた操作権限で安全に運用できます。</p>
                 </article>
+            </div>
+            <div class="lp-platform__partners" aria-label="連携・対応">
+                <p class="lp-platform__partners-label">連携・対応</p>
+                <ul class="lp-platform__partners-list">
+                    <li>
+                        <img
+                            class="lp-platform__partner-logo lp-platform__partner-logo--line"
+                            src="{{ asset('images/landing/partners/line.png') }}?v=4"
+                            alt="LINE"
+                            width="80"
+                            height="80"
+                            loading="lazy"
+                        >
+                    </li>
+                    <li>
+                        <img
+                            class="lp-platform__partner-logo lp-platform__partner-logo--smaregi"
+                            src="{{ asset('images/landing/partners/smaregi.png') }}?v=4"
+                            alt="スマレジ"
+                            height="64"
+                            loading="lazy"
+                        >
+                    </li>
+                    <li>
+                        <img
+                            class="lp-platform__partner-logo lp-platform__partner-logo--store"
+                            src="{{ asset('images/landing/partners/apple.png') }}?v=4"
+                            alt="Download on the App Store"
+                            height="64"
+                            loading="lazy"
+                        >
+                    </li>
+                    <li>
+                        <img
+                            class="lp-platform__partner-logo lp-platform__partner-logo--store"
+                            src="{{ asset('images/landing/partners/android.png') }}?v=4"
+                            alt="Google Play で手に入れよう"
+                            height="64"
+                            loading="lazy"
+                        >
+                    </li>
+                </ul>
             </div>
         </section>
 
