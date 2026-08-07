@@ -2,7 +2,7 @@
 
 このドキュメントは、Reggit プロジェクトのコーディング規約を定義します。
 
-**アーキテクチャ（層の分離・依存の向き）を最優先**に確認し、詳細は [docs/CLEAN_ARCHITECTURE.md](docs/CLEAN_ARCHITECTURE.md) と [docs/CODE_RULES_COMPLIANCE.md](docs/CODE_RULES_COMPLIANCE.md) を参照してください。PR・レビュー手順は [docs/MR_AND_CODE_REVIEW_PROCEDURE.md](docs/MR_AND_CODE_REVIEW_PROCEDURE.md) です。
+**アーキテクチャ（層の分離・依存の向き）を最優先**に確認し、詳細は [docs/CLEAN_ARCHITECTURE.md](docs/CLEAN_ARCHITECTURE.md) と [docs/DDD.md](docs/DDD.md) を参照してください。PR・レビュー手順は [docs/MR_AND_CODE_REVIEW_PROCEDURE.md](docs/MR_AND_CODE_REVIEW_PROCEDURE.md) です。
 
 ## 0. 基本方針
 
