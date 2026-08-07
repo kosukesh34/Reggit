@@ -7,6 +7,7 @@ use App\Enums\SmaregiCancelDivision;
 use App\Enums\SmaregiInboundTransactionKind;
 use App\Enums\SmaregiReturnSalesDivision;
 use App\Enums\SmaregiTransactionHeadDivision;
+use App\Util\DateUtil;
 use Carbon\Carbon;
 
 /**
@@ -143,14 +144,9 @@ final class SmaregiInboundTransactionClassifier
     private function resolveVisitedAt(array $transaction): ?Carbon
     {
         foreach (['terminalTranDateTime', 'transactionDateTime'] as $key) {
-            $raw = $transaction[$key] ?? null;
-            if (! is_string($raw) || trim($raw) === '') {
-                continue;
-            }
-            try {
-                return Carbon::parse($raw);
-            } catch (\Throwable) {
-                continue;
+            $visitedAt = DateUtil::nullableCarbon($transaction[$key] ?? null);
+            if ($visitedAt !== null) {
+                return $visitedAt;
             }
         }
 
