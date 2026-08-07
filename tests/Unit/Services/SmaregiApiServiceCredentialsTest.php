@@ -2,8 +2,8 @@
 
 namespace Tests\Unit\Services;
 
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\Project;
-use App\Models\ShopSetting;
 use App\Models\SmaregiContract;
 use App\Services\Smaregi\SmaregiApiService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -21,9 +21,9 @@ class SmaregiApiServiceCredentialsTest extends TestCase
         ]);
 
         $project = Project::factory()->create();
-        ShopSetting::setValue('smaregi_contract_id', 'contract_proj', 'string', (int) $project->id);
-        ShopSetting::setValue('smaregi_client_id', 'proj_client_id', 'string', (int) $project->id);
-        ShopSetting::setValue('smaregi_client_secret', 'proj_client_secret', 'string', (int) $project->id);
+        ShopSettingStore::setValue('smaregi_contract_id', 'contract_proj', 'string', (int) $project->id);
+        ShopSettingStore::setValue('smaregi_client_id', 'proj_client_id', 'string', (int) $project->id);
+        ShopSettingStore::setValue('smaregi_client_secret', 'proj_client_secret', 'string', (int) $project->id);
         SmaregiContract::create([
             'contract_id' => 'contract_proj',
             'project_id' => $project->id,

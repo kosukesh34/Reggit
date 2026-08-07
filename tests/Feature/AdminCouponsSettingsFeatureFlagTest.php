@@ -2,9 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\AdminUser;
 use App\Models\Project;
-use App\Models\ShopSetting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -33,7 +33,7 @@ class AdminCouponsSettingsFeatureFlagTest extends TestCase
         $project = $this->createProject();
         $admin = $this->createAdmin($project);
 
-        ShopSetting::setFeatureFlags([
+        ShopSettingStore::setFeatureFlags([
             'feature_home_enabled' => true,
             'feature_orders_enabled' => true,
             'feature_reservations_enabled' => false,
@@ -55,11 +55,11 @@ class AdminCouponsSettingsFeatureFlagTest extends TestCase
             ])
             ->assertRedirect(route('admin.settings.coupons', ['project_key' => $project->project_key]));
 
-        $this->assertFalse(ShopSetting::isFeatureEnabled('feature_coupons_enabled', $project->id));
-        $this->assertTrue(ShopSetting::isFeatureEnabled('feature_orders_enabled', $project->id));
-        $this->assertFalse(ShopSetting::isFeatureEnabled('feature_reservations_enabled', $project->id));
-        $this->assertFalse(ShopSetting::isFeatureEnabled('feature_gallery_enabled', $project->id));
-        $this->assertFalse(ShopSetting::isFeatureEnabled('feature_announcements_enabled', $project->id));
-        $this->assertTrue(ShopSetting::isFeatureEnabled('feature_stamps_enabled', $project->id));
+        $this->assertFalse(ShopSettingStore::isFeatureEnabled('feature_coupons_enabled', $project->id));
+        $this->assertTrue(ShopSettingStore::isFeatureEnabled('feature_orders_enabled', $project->id));
+        $this->assertFalse(ShopSettingStore::isFeatureEnabled('feature_reservations_enabled', $project->id));
+        $this->assertFalse(ShopSettingStore::isFeatureEnabled('feature_gallery_enabled', $project->id));
+        $this->assertFalse(ShopSettingStore::isFeatureEnabled('feature_announcements_enabled', $project->id));
+        $this->assertTrue(ShopSettingStore::isFeatureEnabled('feature_stamps_enabled', $project->id));
     }
 }

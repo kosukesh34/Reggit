@@ -2,9 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\Member;
 use App\Models\Project;
-use App\Models\ShopSetting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -29,7 +29,7 @@ class MemberWithdrawTest extends TestCase
     public function test_withdraw_スマレジ会員が既に無い404でも退会できること(): void
     {
         $project = $this->createProject();
-        ShopSetting::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
         config([
             'smaregi.client_id' => 'test_client_id',
             'smaregi.client_secret' => 'test_client_secret',

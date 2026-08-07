@@ -3,7 +3,6 @@
 namespace App\UseCases\Admin\Settings;
 
 use App\Domain\Settings\Repositories\ShopSettingRepository;
-use App\Models\ShopSetting;
 use App\Services\Line\LineLiffAdminService;
 
 class UpdateLiffConnectionSettingsUseCase
@@ -28,7 +27,7 @@ class UpdateLiffConnectionSettingsUseCase
         $liffUrl = trim($payload['line_liff_url']);
         $this->shopSettingRepository->setLineLiffId($liffId, $projectId);
         $this->shopSettingRepository->setLineLiffUrl($liffUrl, $projectId);
-        ShopSetting::setLineFriendAddUrl(
+        $this->shopSettingRepository->setLineFriendAddUrl(
             isset($payload['line_friend_add_url']) ? (string) $payload['line_friend_add_url'] : '',
             $projectId
         );
@@ -37,20 +36,20 @@ class UpdateLiffConnectionSettingsUseCase
             ? trim((string) $payload['line_channel_access_token'])
             : '';
         if ($accessToken !== '') {
-            ShopSetting::setLineChannelAccessToken($accessToken, $projectId);
+            $this->shopSettingRepository->setLineChannelAccessToken($accessToken, $projectId);
         }
 
         $channelSecret = isset($payload['line_channel_secret'])
             ? trim((string) $payload['line_channel_secret'])
             : '';
         if ($channelSecret !== '') {
-            ShopSetting::setLineChannelSecret($channelSecret, $projectId);
+            $this->shopSettingRepository->setLineChannelSecret($channelSecret, $projectId);
         }
 
         if (config('line.auto_enable_liff_module_mode', true) && $liffId !== '') {
             $this->lineLiffAdminService->hideActionMenu(
                 $liffId,
-                ShopSetting::getLineChannelAccessToken($projectId),
+                $this->shopSettingRepository->getLineChannelAccessToken($projectId),
             );
         }
     }

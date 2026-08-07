@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\MemberVisitSource;
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\AdminUser;
 use App\Models\Coupon;
 use App\Models\CouponRedemption;
@@ -12,7 +13,6 @@ use App\Models\MemberRankHistory;
 use App\Models\MemberVisit;
 use App\Models\PointTransaction;
 use App\Models\Project;
-use App\Models\ShopSetting;
 use App\Models\StampCard;
 use App\Models\User;
 use App\Models\WalletPassRegistration;
@@ -242,7 +242,7 @@ class AdminMembersTest extends TestCase
         ]);
 
         $project = $this->createProject();
-        ShopSetting::setValue('smaregi_contract_id', 'test_contract_admin', 'string', (int) $project->id);
+        ShopSettingStore::setValue('smaregi_contract_id', 'test_contract_admin', 'string', (int) $project->id);
         $admin = $this->createAdmin($project);
         $user = User::factory()->create(['project_id' => $project->id, 'name' => '大牟田 テスト']);
         $member = Member::factory()->create([
@@ -512,7 +512,7 @@ class AdminMembersTest extends TestCase
         ]);
 
         $project = $this->createProject();
-        ShopSetting::setValue('smaregi_contract_id', 'test_contract_admin', 'string', (int) $project->id);
+        ShopSettingStore::setValue('smaregi_contract_id', 'test_contract_admin', 'string', (int) $project->id);
         $admin = $this->createAdmin($project);
         $user = User::factory()->create(['project_id' => $project->id, 'email' => 'old@example.com']);
         $member = Member::factory()->create([

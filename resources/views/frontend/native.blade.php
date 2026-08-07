@@ -133,7 +133,7 @@
             $filteredMenu = $isFixedUi
                 ? []
                 : array_filter(
-                    $frontendMenu ?? \App\Models\ShopSetting::defaultFrontendMenuItems(),
+                    $frontendMenu ?? app(\App\Domain\Settings\Repositories\ShopSettingRepository::class)->defaultFrontendMenuItems(),
                     fn($item) => ($flags[$tabFeatureMap[$item['tab']] ?? ''] ?? true)
                 );
         @endphp

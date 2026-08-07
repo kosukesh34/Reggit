@@ -2,12 +2,13 @@
 
 namespace Tests\Unit\Services;
 
+use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Enums\OrderStatus;
 use App\Enums\OrderType;
 use App\Enums\PaymentMethod;
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\Order;
 use App\Models\Project;
-use App\Models\ShopSetting;
 use App\Models\User;
 use App\Services\Line\LineService;
 use App\Services\OrderNotificationService;
@@ -30,7 +31,7 @@ class OrderNotificationServiceTest extends TestCase
     public function test_設定_of_fのとき_lin_eを送らないこと(): void
     {
         $project = $this->createProject();
-        ShopSetting::setOrderLineNotifyEnabled(false, (int) $project->id);
+        ShopSettingStore::setOrderLineNotifyEnabled(false, (int) $project->id);
         $user = User::factory()->create([
             'project_id' => $project->id,
             'line_user_id' => 'U'.str_repeat('a', 32),
@@ -50,7 +51,7 @@ class OrderNotificationServiceTest extends TestCase
         $line = Mockery::mock(LineService::class);
         $line->shouldReceive('pushMessage')->never();
 
-        $service = new OrderNotificationService($line);
+        $service = new OrderNotificationService($line, app(ShopSettingRepository::class));
         $service->notifyConfirmed((int) $order->id, (int) $project->id);
         $this->assertTrue(true);
     }
@@ -58,7 +59,7 @@ class OrderNotificationServiceTest extends TestCase
     public function test_店内注文では_lin_eを送らないこと(): void
     {
         $project = $this->createProject();
-        ShopSetting::setOrderLineNotifyEnabled(true, (int) $project->id);
+        ShopSettingStore::setOrderLineNotifyEnabled(true, (int) $project->id);
         $user = User::factory()->create([
             'project_id' => $project->id,
             'line_user_id' => 'U'.str_repeat('b', 32),
@@ -78,7 +79,7 @@ class OrderNotificationServiceTest extends TestCase
         $line = Mockery::mock(LineService::class);
         $line->shouldReceive('pushMessage')->never();
 
-        $service = new OrderNotificationService($line);
+        $service = new OrderNotificationService($line, app(ShopSettingRepository::class));
         $service->notifyConfirmed((int) $order->id, (int) $project->id);
         $this->assertTrue(true);
     }
@@ -86,8 +87,8 @@ class OrderNotificationServiceTest extends TestCase
     public function test_line_user_idがないとき_lin_eを送らないこと(): void
     {
         $project = $this->createProject();
-        ShopSetting::setOrderLineNotifyEnabled(true, (int) $project->id);
-        ShopSetting::setLineChannelAccessToken('test-token', (int) $project->id);
+        ShopSettingStore::setOrderLineNotifyEnabled(true, (int) $project->id);
+        ShopSettingStore::setLineChannelAccessToken('test-token', (int) $project->id);
         $user = User::factory()->create([
             'project_id' => $project->id,
             'line_user_id' => '',
@@ -107,7 +108,7 @@ class OrderNotificationServiceTest extends TestCase
         $line = Mockery::mock(LineService::class);
         $line->shouldReceive('pushMessage')->never();
 
-        $service = new OrderNotificationService($line);
+        $service = new OrderNotificationService($line, app(ShopSettingRepository::class));
         $service->notifyConfirmed((int) $order->id, (int) $project->id);
         $this->assertTrue(true);
     }
@@ -115,7 +116,7 @@ class OrderNotificationServiceTest extends TestCase
     public function test_受取可通知_設定_of_fのとき_lin_eを送らないこと(): void
     {
         $project = $this->createProject();
-        ShopSetting::setOrderReadyLineNotifyEnabled(false, (int) $project->id);
+        ShopSettingStore::setOrderReadyLineNotifyEnabled(false, (int) $project->id);
         $user = User::factory()->create([
             'project_id' => $project->id,
             'line_user_id' => 'U'.str_repeat('c', 32),
@@ -135,7 +136,7 @@ class OrderNotificationServiceTest extends TestCase
         $line = Mockery::mock(LineService::class);
         $line->shouldReceive('pushMessage')->never();
 
-        $service = new OrderNotificationService($line);
+        $service = new OrderNotificationService($line, app(ShopSettingRepository::class));
         $service->notifyReady((int) $order->id, (int) $project->id);
         $this->assertTrue(true);
     }
