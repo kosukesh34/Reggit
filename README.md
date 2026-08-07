@@ -4,7 +4,7 @@ LINE を起点としたモバイルオーダーと会員証（ポイントカー
 
 ## 技術スタック
 
-- **バックエンド**: PHP 8.2 / Laravel 10
+- **バックエンド**: PHP 8.4 / Laravel 12
 - **DB**: MySQL 8.0
 - **認証**: Laravel Sanctum（API Bearer トークン）、管理画面セッション
 - **決済**: Stripe（Payment Intents）
@@ -59,7 +59,7 @@ LINE を起点としたモバイルオーダーと会員証（ポイントカー
 ### 必要環境
 
 - Docker / Docker Compose（推奨）
-- または PHP 8.2 以上、Composer、MySQL 8.0
+- または PHP 8.4 以上、Composer、MySQL 8.0
 
 ### Docker で起動
 
@@ -156,10 +156,12 @@ docker compose exec app php artisan admin:sync-password
 - [E2E テスト（Playwright / Maestro）](docs/E2E.md)
 - [スマレジ連携](docs/SMAREGI_SETUP.md) / [Webhook テスト](docs/SMAREGI_WEBHOOK_TEST.md) / [POS API リファレンス](docs/SMAREGI_POS_API_REFERENCE.md)
 - [日本郵便 API](docs/JAPANPOST_API.md)
-- [Google Wallet 会員証セットアップ](docs/GOOGLE_WALLET_SETUP.md) / [**やることチェックリスト**](docs/GOOGLE_WALLET_CHECKLIST.md) / [**Wallet 追加のアクセス用URL一覧**](docs/WALLET_ADD_URLS.md)
+- [Google Wallet 会員証セットアップ](docs/GOOGLE_WALLET_SETUP.md)
 - [Docker DB 接続トラブル](docs/DOCKER_DB_FIX.md)
 - [セキュリティ](docs/SECURITY.md)
-- [クリーンアーキテクチャ](docs/CLEAN_ARCHITECTURE.md)
+- [**処理フロー（全体→細部）**](docs/PROCESS_FLOWS.md) … 大枠 → レーン → CRUD 詳細
+- [**全体アーキテクチャ**](docs/ARCHITECTURE.md) … 層・テナント・イベント
+- [クリーンアーキテクチャ](docs/CLEAN_ARCHITECTURE.md) / [DDD](docs/DDD.md)
 
 ## ライセンス
 

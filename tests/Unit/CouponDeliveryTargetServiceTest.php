@@ -84,11 +84,11 @@ class CouponDeliveryTargetServiceTest extends TestCase
             ->where('coupon_id', $coupon->id)
             ->first();
         $this->assertNotNull($delivery);
-        $this->assertSame(
+        $this->assertEqualsCanonicalizing(
             [$memberA->id, $memberB->id],
             array_values(array_map('intval', $delivery->target_member_ids ?? [])),
         );
-        $this->assertSame(
+        $this->assertEqualsCanonicalizing(
             [$memberA->id, $memberB->id],
             array_values(array_map('intval', $delivery->issued_member_ids ?? [])),
         );
