@@ -2,10 +2,10 @@
 
 namespace App\Services;
 
+use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Models\Announcement;
 use App\Models\Member;
 use App\Models\Project;
-use App\Models\ShopSetting;
 use App\Services\Line\LineService;
 use App\Support\LiffTabUrlBuilder;
 use App\Support\MemberChannel;
@@ -17,6 +17,7 @@ class AnnouncementNotificationService
     public function __construct(
         private PushNotificationService $pushNotificationService,
         private LineService $lineService,
+        private ShopSettingRepository $shopSettingRepository,
     ) {}
 
     /**
@@ -46,7 +47,7 @@ class AnnouncementNotificationService
      */
     private function sendLinePushes(Announcement $announcement): array
     {
-        if (! ShopSetting::hasLineChannelAccessToken((int) $announcement->project_id)) {
+        if (! $this->shopSettingRepository->hasLineChannelAccessToken((int) $announcement->project_id)) {
             LogHelper::info('[Announcement] LINE push skipped (token not configured)', [
                 'announcement_id' => $announcement->id,
                 'project_id' => $announcement->project_id,
@@ -61,7 +62,7 @@ class AnnouncementNotificationService
         }
 
         $projectId = (int) $announcement->project_id;
-        $channelAccessToken = ShopSetting::getLineChannelAccessToken($projectId);
+        $channelAccessToken = $this->shopSettingRepository->getLineChannelAccessToken($projectId);
         $projectKey = Project::query()->where('id', $projectId)->value('project_key');
         $projectKey = is_string($projectKey) ? trim($projectKey) : '';
         if ($projectKey === '') {

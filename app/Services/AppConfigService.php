@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\ShopSetting;
+use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Repositories\Contracts\ProjectRepository;
 use App\Support\LiffThemePresets;
 
@@ -13,6 +13,7 @@ class AppConfigService
 {
     public function __construct(
         private ProjectRepository $projectRepository,
+        private ShopSettingRepository $shopSettingRepository,
     ) {}
 
     /**
@@ -22,9 +23,10 @@ class AppConfigService
     {
         $project = $this->projectRepository->findActiveByProjectKey($projectKey);
         $projectId = $project !== null ? (int) $project->id : 1;
+        $repo = $this->shopSettingRepository;
 
-        $featureFlags = ShopSetting::getFeatureFlags($projectId);
-        $menuItems = ShopSetting::getFrontendMenuItems($projectId);
+        $featureFlags = $repo->getFeatureFlags($projectId);
+        $menuItems = $repo->getFrontendMenuItems($projectId);
 
         $tabFeatureMap = [
             'home' => 'feature_home_enabled',
@@ -45,8 +47,8 @@ class AppConfigService
             return $flagKey === null || ($featureFlags[$flagKey] ?? true);
         }));
 
-        $theme = ShopSetting::getLineThemeColors($projectId);
-        $tabSettings = ShopSetting::getLiffTabSettings($projectId);
+        $theme = $repo->getLineThemeColors($projectId);
+        $tabSettings = $repo->getLiffTabSettings($projectId);
         $global = is_array($tabSettings['_global'] ?? null) ? $tabSettings['_global'] : [];
         $themeVars = LiffThemePresets::cssVariablesFor($global);
         $accent = $themeVars['--primary-color'] ?? ($theme['primary'] ?? '#000000');
@@ -92,19 +94,19 @@ class AppConfigService
                 'activity_screen_design' => (string) ($global['activity_screen_design'] ?? 'cards'),
             ],
             'header' => [
-                'logo_url' => ShopSetting::getFrontendLogoUrl($projectId),
-                'text' => ShopSetting::getFrontendHeaderText($projectId),
+                'logo_url' => $repo->getFrontendLogoUrl($projectId),
+                'text' => $repo->getFrontendHeaderText($projectId),
             ],
             'line' => [
-                'liff_id' => ShopSetting::getLineLiffId($projectId),
-                'liff_url' => ShopSetting::getLineLiffUrl($projectId),
-                'friend_add_url' => ShopSetting::getLineFriendAddUrl($projectId),
+                'liff_id' => $repo->getLineLiffId($projectId),
+                'liff_url' => $repo->getLineLiffUrl($projectId),
+                'friend_add_url' => $repo->getLineFriendAddUrl($projectId),
             ],
-            'liff_tab_layouts' => ShopSetting::getLiffTabLayouts($projectId),
-            'liff_tab_settings' => ShopSetting::getLiffTabSettings($projectId),
-            'liff_detail_layouts' => ShopSetting::getLiffDetailLayouts($projectId),
-            'queue_require_membership' => ShopSetting::getQueueRequireMembership($projectId),
-            'member_registration_mode' => ShopSetting::getMemberRegistrationMode($projectId),
+            'liff_tab_layouts' => $repo->getLiffTabLayouts($projectId),
+            'liff_tab_settings' => $repo->getLiffTabSettings($projectId),
+            'liff_detail_layouts' => $repo->getLiffDetailLayouts($projectId),
+            'queue_require_membership' => $repo->getQueueRequireMembership($projectId),
+            'member_registration_mode' => $repo->getMemberRegistrationMode($projectId),
         ];
     }
 

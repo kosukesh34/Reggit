@@ -4,17 +4,18 @@ namespace Tests\Unit\Services\Smaregi;
 
 use App\Domain\Member\Repositories\MemberRepository;
 use App\Domain\Order\Repositories\OrderRepository;
+use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Enums\OrderStatus;
 use App\Enums\OrderType;
 use App\Enums\PaymentMethod;
 use App\Enums\SmaregiTransactionHeadDivision;
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Jobs\SyncOrderTransactionToSmaregiJob;
 use App\Models\Member;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\Project;
-use App\Models\ShopSetting;
 use App\Models\User;
 use App\Services\Smaregi\SmaregiApiService;
 use App\Services\Smaregi\SmaregiOrderTransactionOutboundService;
@@ -32,9 +33,9 @@ class SmaregiOrderTransactionOutboundServiceTest extends TestCase
         Queue::fake();
 
         $project = Project::factory()->create();
-        ShopSetting::setValue('smaregi_contract_id', 'contract-1', 'string', (int) $project->id);
-        ShopSetting::setValue('smaregi_store_id', '1', 'string', (int) $project->id);
-        ShopSetting::setValue('smaregi_terminal_id', '1', 'string', (int) $project->id);
+        ShopSettingStore::setValue('smaregi_contract_id', 'contract-1', 'string', (int) $project->id);
+        ShopSettingStore::setValue('smaregi_store_id', '1', 'string', (int) $project->id);
+        ShopSettingStore::setValue('smaregi_terminal_id', '1', 'string', (int) $project->id);
         $user = User::factory()->create(['project_id' => $project->id]);
         Member::factory()->create([
             'project_id' => $project->id,
@@ -71,6 +72,7 @@ class SmaregiOrderTransactionOutboundServiceTest extends TestCase
             app(OrderRepository::class),
             app(MemberRepository::class),
             $smaregiApi,
+            app(ShopSettingRepository::class),
         );
 
         $this->assertFalse($service->syncOrderTransaction(
@@ -86,9 +88,9 @@ class SmaregiOrderTransactionOutboundServiceTest extends TestCase
         Queue::fake();
 
         $project = Project::factory()->create();
-        ShopSetting::setValue('smaregi_contract_id', 'contract-1', 'string', (int) $project->id);
-        ShopSetting::setValue('smaregi_store_id', '10', 'string', (int) $project->id);
-        ShopSetting::setValue('smaregi_terminal_id', '20', 'string', (int) $project->id);
+        ShopSettingStore::setValue('smaregi_contract_id', 'contract-1', 'string', (int) $project->id);
+        ShopSettingStore::setValue('smaregi_store_id', '10', 'string', (int) $project->id);
+        ShopSettingStore::setValue('smaregi_terminal_id', '20', 'string', (int) $project->id);
         $user = User::factory()->create(['project_id' => $project->id]);
         Member::factory()->create([
             'project_id' => $project->id,
@@ -134,6 +136,7 @@ class SmaregiOrderTransactionOutboundServiceTest extends TestCase
             app(OrderRepository::class),
             app(MemberRepository::class),
             $smaregiApi,
+            app(ShopSettingRepository::class),
         );
 
         $this->assertTrue($service->syncOrderTransaction(
@@ -153,9 +156,9 @@ class SmaregiOrderTransactionOutboundServiceTest extends TestCase
         Queue::fake();
 
         $project = Project::factory()->create();
-        ShopSetting::setValue('smaregi_contract_id', 'contract-1', 'string', (int) $project->id);
-        ShopSetting::setValue('smaregi_store_id', '10', 'string', (int) $project->id);
-        ShopSetting::setValue('smaregi_terminal_id', '20', 'string', (int) $project->id);
+        ShopSettingStore::setValue('smaregi_contract_id', 'contract-1', 'string', (int) $project->id);
+        ShopSettingStore::setValue('smaregi_store_id', '10', 'string', (int) $project->id);
+        ShopSettingStore::setValue('smaregi_terminal_id', '20', 'string', (int) $project->id);
         $user = User::factory()->create(['project_id' => $project->id]);
         Member::factory()->create([
             'project_id' => $project->id,
@@ -202,6 +205,7 @@ class SmaregiOrderTransactionOutboundServiceTest extends TestCase
             app(OrderRepository::class),
             app(MemberRepository::class),
             $smaregiApi,
+            app(ShopSettingRepository::class),
         );
 
         $this->assertTrue($service->finalizeCashLayaway(
@@ -221,9 +225,9 @@ class SmaregiOrderTransactionOutboundServiceTest extends TestCase
         Queue::fake();
 
         $project = Project::factory()->create();
-        ShopSetting::setValue('smaregi_contract_id', 'contract-1', 'string', (int) $project->id);
-        ShopSetting::setValue('smaregi_store_id', '10', 'string', (int) $project->id);
-        ShopSetting::setValue('smaregi_terminal_id', '20', 'string', (int) $project->id);
+        ShopSettingStore::setValue('smaregi_contract_id', 'contract-1', 'string', (int) $project->id);
+        ShopSettingStore::setValue('smaregi_store_id', '10', 'string', (int) $project->id);
+        ShopSettingStore::setValue('smaregi_terminal_id', '20', 'string', (int) $project->id);
         $user = User::factory()->create(['project_id' => $project->id]);
         Member::factory()->create([
             'project_id' => $project->id,
@@ -270,6 +274,7 @@ class SmaregiOrderTransactionOutboundServiceTest extends TestCase
             app(OrderRepository::class),
             app(MemberRepository::class),
             $smaregiApi,
+            app(ShopSettingRepository::class),
         );
 
         $this->assertTrue($service->syncOrderTransaction(
@@ -294,9 +299,9 @@ class SmaregiOrderTransactionOutboundServiceTest extends TestCase
         Queue::fake();
 
         $project = Project::factory()->create();
-        ShopSetting::setValue('smaregi_contract_id', 'contract-1', 'string', (int) $project->id);
-        ShopSetting::setValue('smaregi_store_id', '10', 'string', (int) $project->id);
-        ShopSetting::setValue('smaregi_terminal_id', '20', 'string', (int) $project->id);
+        ShopSettingStore::setValue('smaregi_contract_id', 'contract-1', 'string', (int) $project->id);
+        ShopSettingStore::setValue('smaregi_store_id', '10', 'string', (int) $project->id);
+        ShopSettingStore::setValue('smaregi_terminal_id', '20', 'string', (int) $project->id);
         $user = User::factory()->create(['project_id' => $project->id]);
         Member::factory()->create([
             'project_id' => $project->id,
@@ -332,6 +337,7 @@ class SmaregiOrderTransactionOutboundServiceTest extends TestCase
             app(OrderRepository::class),
             app(MemberRepository::class),
             $smaregiApi,
+            app(ShopSettingRepository::class),
         );
 
         $this->assertFalse($service->syncOrderTransactionWithRetry(
@@ -345,9 +351,9 @@ class SmaregiOrderTransactionOutboundServiceTest extends TestCase
     public function test_stripe未決済は取引登録しないこと(): void
     {
         $project = Project::factory()->create();
-        ShopSetting::setValue('smaregi_contract_id', 'contract-1', 'string', (int) $project->id);
-        ShopSetting::setValue('smaregi_store_id', '10', 'string', (int) $project->id);
-        ShopSetting::setValue('smaregi_terminal_id', '20', 'string', (int) $project->id);
+        ShopSettingStore::setValue('smaregi_contract_id', 'contract-1', 'string', (int) $project->id);
+        ShopSettingStore::setValue('smaregi_store_id', '10', 'string', (int) $project->id);
+        ShopSettingStore::setValue('smaregi_terminal_id', '20', 'string', (int) $project->id);
         $user = User::factory()->create(['project_id' => $project->id]);
         Member::factory()->create([
             'project_id' => $project->id,
@@ -384,6 +390,7 @@ class SmaregiOrderTransactionOutboundServiceTest extends TestCase
             app(OrderRepository::class),
             app(MemberRepository::class),
             $smaregiApi,
+            app(ShopSettingRepository::class),
         );
 
         $this->assertTrue($service->syncOrderTransaction(

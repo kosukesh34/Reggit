@@ -57,8 +57,11 @@ class AllScreensAccessibleTest extends TestCase
         AdminContext::setCurrentProject(null);
         $this->project = Project::firstOrCreate(
             ['project_key' => 'default'],
-            ['name' => 'Default Project', 'description' => 'Test', 'is_active' => true]
+            ['name' => 'Default Project', 'description' => 'Test', 'is_active' => true, 'plan' => 'premium']
         );
+        if ($this->project->plan !== 'premium') {
+            $this->project->update(['plan' => 'premium']);
+        }
         $this->storeAdmin = AdminUser::factory()->create([
             'role' => AdminUser::ROLE_ADMIN,
             'project_id' => $this->project->id,

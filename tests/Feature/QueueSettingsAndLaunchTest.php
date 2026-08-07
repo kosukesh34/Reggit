@@ -2,11 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\AdminUser;
 use App\Models\Member;
 use App\Models\Project;
 use App\Models\QueueEntry;
-use App\Models\ShopSetting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -65,16 +65,16 @@ class QueueSettingsAndLaunchTest extends TestCase
         $response->assertRedirect(route('admin.settings.queue', ['project_key' => $project->project_key]));
         $response->assertSessionHas('success');
 
-        $this->assertSame(15, ShopSetting::getQueueAvgServeMinutes((int) $project->id));
-        $this->assertTrue(ShopSetting::getQueueRequireMembership((int) $project->id));
-        $this->assertTrue(ShopSetting::getQueueChannelLine((int) $project->id));
-        $this->assertTrue(ShopSetting::getQueueChannelNative((int) $project->id));
+        $this->assertSame(15, ShopSettingStore::getQueueAvgServeMinutes((int) $project->id));
+        $this->assertTrue(ShopSettingStore::getQueueRequireMembership((int) $project->id));
+        $this->assertTrue(ShopSettingStore::getQueueChannelLine((int) $project->id));
+        $this->assertTrue(ShopSettingStore::getQueueChannelNative((int) $project->id));
     }
 
     public function test_store_会員必須のとき非会員は403になること(): void
     {
         $project = $this->createProject();
-        ShopSetting::setValue('queue_require_membership', true, 'boolean', (int) $project->id);
+        ShopSettingStore::setValue('queue_require_membership', true, 'boolean', (int) $project->id);
 
         $lineUserId = 'U14141414141414141414141414141414';
         User::factory()->create(['line_user_id' => $lineUserId, 'project_id' => $project->id]);
@@ -91,7 +91,7 @@ class QueueSettingsAndLaunchTest extends TestCase
     public function test_store_会員必須でも会員なら登録できること(): void
     {
         $project = $this->createProject();
-        ShopSetting::setValue('queue_require_membership', true, 'boolean', (int) $project->id);
+        ShopSettingStore::setValue('queue_require_membership', true, 'boolean', (int) $project->id);
 
         $lineUserId = 'U15151515151515151515151515151515';
         $user = User::factory()->create(['line_user_id' => $lineUserId, 'project_id' => $project->id]);
@@ -107,7 +107,7 @@ class QueueSettingsAndLaunchTest extends TestCase
     public function test_store_会員必須のときヘッダなし非会員は403になること(): void
     {
         $project = $this->createProject();
-        ShopSetting::setValue('queue_require_membership', true, 'boolean', (int) $project->id);
+        ShopSettingStore::setValue('queue_require_membership', true, 'boolean', (int) $project->id);
 
         $response = $this->post('/api/queue?project_key=default', ['party_size' => 2]);
 
@@ -120,7 +120,7 @@ class QueueSettingsAndLaunchTest extends TestCase
     public function test_store_会員必須でもi_pad受付は非会員で登録できること(): void
     {
         $project = $this->createProject();
-        ShopSetting::setValue('queue_require_membership', true, 'boolean', (int) $project->id);
+        ShopSettingStore::setValue('queue_require_membership', true, 'boolean', (int) $project->id);
 
         $response = $this->withHeaders(['X-Queue-Client' => 'waiting-system'])
             ->post('/api/queue?project_key=default', ['party_size' => 3]);
@@ -132,9 +132,9 @@ class QueueSettingsAndLaunchTest extends TestCase
     public function test_queue_open_lin_eのみならリダイレクトすること(): void
     {
         $project = $this->createProject();
-        ShopSetting::setValue('queue_channel_line', true, 'boolean', (int) $project->id);
-        ShopSetting::setValue('queue_channel_native', false, 'boolean', (int) $project->id);
-        ShopSetting::setValue('line_liff_id', '2008962885-AbCdEfGh', 'string', (int) $project->id);
+        ShopSettingStore::setValue('queue_channel_line', true, 'boolean', (int) $project->id);
+        ShopSettingStore::setValue('queue_channel_native', false, 'boolean', (int) $project->id);
+        ShopSettingStore::setValue('line_liff_id', '2008962885-AbCdEfGh', 'string', (int) $project->id);
 
         $entry = QueueEntry::factory()->create([
             'project_id' => $project->id,
@@ -150,9 +150,9 @@ class QueueSettingsAndLaunchTest extends TestCase
     public function test_queue_open_両方なら選択画面を出すこと(): void
     {
         $project = $this->createProject();
-        ShopSetting::setValue('queue_channel_line', true, 'boolean', (int) $project->id);
-        ShopSetting::setValue('queue_channel_native', true, 'boolean', (int) $project->id);
-        ShopSetting::setValue('line_liff_id', '2008962885-AbCdEfGh', 'string', (int) $project->id);
+        ShopSettingStore::setValue('queue_channel_line', true, 'boolean', (int) $project->id);
+        ShopSettingStore::setValue('queue_channel_native', true, 'boolean', (int) $project->id);
+        ShopSettingStore::setValue('line_liff_id', '2008962885-AbCdEfGh', 'string', (int) $project->id);
 
         $entry = QueueEntry::factory()->create([
             'project_id' => $project->id,
@@ -171,8 +171,8 @@ class QueueSettingsAndLaunchTest extends TestCase
     public function test_queue_open_ネイティブのみならスキーム起動ページになること(): void
     {
         $project = $this->createProject();
-        ShopSetting::setValue('queue_channel_line', false, 'boolean', (int) $project->id);
-        ShopSetting::setValue('queue_channel_native', true, 'boolean', (int) $project->id);
+        ShopSettingStore::setValue('queue_channel_line', false, 'boolean', (int) $project->id);
+        ShopSettingStore::setValue('queue_channel_native', true, 'boolean', (int) $project->id);
 
         $entry = QueueEntry::factory()->create([
             'project_id' => $project->id,

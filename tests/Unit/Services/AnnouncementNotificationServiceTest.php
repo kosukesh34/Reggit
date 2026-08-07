@@ -2,10 +2,11 @@
 
 namespace Tests\Unit\Services;
 
+use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\Announcement;
 use App\Models\Member;
 use App\Models\Project;
-use App\Models\ShopSetting;
 use App\Models\User;
 use App\Services\AnnouncementNotificationService;
 use App\Services\Line\LineService;
@@ -30,7 +31,7 @@ class AnnouncementNotificationServiceTest extends TestCase
     public function test_send_delivers_native_push_and_line_message(): void
     {
         $project = $this->createProject();
-        ShopSetting::setLineChannelAccessToken('test-token', $project->id);
+        ShopSettingStore::setLineChannelAccessToken('test-token', $project->id);
         $lineUserId = 'U'.str_repeat('a', 32);
         $user = User::factory()->create([
             'project_id' => $project->id,
@@ -73,7 +74,7 @@ class AnnouncementNotificationServiceTest extends TestCase
             )
             ->andReturn([]);
 
-        $service = new AnnouncementNotificationService($pushMock, $lineMock);
+        $service = new AnnouncementNotificationService($pushMock, $lineMock, app(ShopSettingRepository::class));
         $result = $service->send($announcement);
 
         $this->assertSame(1, $result['sent']);
@@ -84,7 +85,7 @@ class AnnouncementNotificationServiceTest extends TestCase
     public function test_send_skips_line_when_member_has_no_line_user_id(): void
     {
         $project = $this->createProject();
-        ShopSetting::setLineChannelAccessToken('test-token', $project->id);
+        ShopSettingStore::setLineChannelAccessToken('test-token', $project->id);
         $user = User::factory()->create([
             'project_id' => $project->id,
             'line_user_id' => 'guest-no-line',
@@ -115,7 +116,7 @@ class AnnouncementNotificationServiceTest extends TestCase
         $lineMock = Mockery::mock(LineService::class);
         $lineMock->shouldNotReceive('pushMessage');
 
-        $service = new AnnouncementNotificationService($pushMock, $lineMock);
+        $service = new AnnouncementNotificationService($pushMock, $lineMock, app(ShopSettingRepository::class));
         $result = $service->send($announcement);
 
         $this->assertSame(0, $result['line_sent']);

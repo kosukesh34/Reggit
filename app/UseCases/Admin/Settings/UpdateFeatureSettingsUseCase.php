@@ -3,7 +3,6 @@
 namespace App\UseCases\Admin\Settings;
 
 use App\Domain\Settings\Repositories\ShopSettingRepository;
-use App\Models\ShopSetting;
 
 class UpdateFeatureSettingsUseCase
 {
@@ -13,7 +12,7 @@ class UpdateFeatureSettingsUseCase
 
     public function handle(int $projectId, array $payload): void
     {
-        $features = ShopSetting::withPreservedLotteryManagedFlags($payload['features'] ?? [], $projectId);
+        $features = $this->shopSettingRepository->withPreservedLotteryManagedFlags($payload['features'] ?? [], $projectId);
         $this->shopSettingRepository->setFeatureFlags($features, $projectId);
 
         $this->shopSettingRepository->setValue('admin_sidebar_color', $payload['admin_sidebar_color'] ?? '', 'string', $projectId);

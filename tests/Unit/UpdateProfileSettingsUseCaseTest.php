@@ -4,8 +4,8 @@ namespace Tests\Unit;
 
 use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Enums\ProfileCustomFieldInputType;
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\Project;
-use App\Models\ShopSetting;
 use App\UseCases\Admin\Settings\Data\UpdateProfileSettingsInput;
 use App\UseCases\Admin\Settings\UpdateProfileSettingsUseCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -32,7 +32,7 @@ class UpdateProfileSettingsUseCaseTest extends TestCase
             memberRegistrationMode: 'prompt',
         ));
 
-        $settings = ShopSetting::getProfileFieldSettings((int) $project->id);
+        $settings = ShopSettingStore::getProfileFieldSettings((int) $project->id);
         $this->assertTrue($settings['smaregi_fields']['name']['enabled']);
         $this->assertTrue($settings['smaregi_fields']['name']['required']);
         $this->assertFalse($settings['smaregi_fields']['phone']['required']);
@@ -40,7 +40,7 @@ class UpdateProfileSettingsUseCaseTest extends TestCase
         $this->assertSame('ニックネーム', $settings['custom_fields'][0]['label']);
         $this->assertTrue($settings['custom_fields'][0]['required']);
         $this->assertSame(ProfileCustomFieldInputType::TEXT, $settings['custom_fields'][0]['input_type']);
-        $this->assertSame('prompt', ShopSetting::getMemberRegistrationMode((int) $project->id));
+        $this->assertSame('prompt', ShopSettingStore::getMemberRegistrationMode((int) $project->id));
     }
 
     public function test_handle_カスタム項目の入力タイプと選択肢を保存できること(): void
@@ -66,7 +66,7 @@ class UpdateProfileSettingsUseCaseTest extends TestCase
             memberRegistrationMode: 'optional',
         ));
 
-        $settings = ShopSetting::getProfileFieldSettings((int) $project->id);
+        $settings = ShopSettingStore::getProfileFieldSettings((int) $project->id);
         $this->assertSame(ProfileCustomFieldInputType::RADIO, $settings['custom_fields'][0]['input_type']);
         $this->assertSame(['赤', '青', '緑'], $settings['custom_fields'][0]['values']);
         $this->assertSame('任意の説明', $settings['custom_fields'][0]['description']);
@@ -86,6 +86,6 @@ class UpdateProfileSettingsUseCaseTest extends TestCase
             memberRegistrationMode: 'force',
         ));
 
-        $this->assertSame('force', ShopSetting::getMemberRegistrationMode((int) $project->id));
+        $this->assertSame('force', ShopSettingStore::getMemberRegistrationMode((int) $project->id));
     }
 }
