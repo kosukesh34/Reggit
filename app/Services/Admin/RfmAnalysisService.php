@@ -42,7 +42,7 @@ class RfmAnalysisService
 
         return $members->map(function (Member $member) use ($orderStats): array {
             $stats = $orderStats[$member->user_id] ?? null;
-            $recencyDays = $stats !== null ? (int) now()->diffInDays($stats['last_order_at']) : null;
+            $recencyDays = $stats !== null ? (int) now()->diffInDays($stats['last_order_at'], true) : null;
             $frequency = $stats !== null ? (int) $stats['order_count'] : 0;
             $monetary = $stats !== null ? (float) $stats['total_amount'] : 0.0;
             $segment = $this->resolveSegment($recencyDays, $frequency, $monetary);
