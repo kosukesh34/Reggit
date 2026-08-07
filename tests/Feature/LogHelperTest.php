@@ -28,7 +28,7 @@ class LogHelperTest extends TestCase
         })->once();
     }
 
-    public function test_AdminContextがあるときproject_idがコンテキストに含まれること(): void
+    public function test_admin_contextがあるときproject_idがコンテキストに含まれること(): void
     {
         $project = new Project;
         $project->id = 7;
