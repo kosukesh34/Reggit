@@ -3,9 +3,9 @@
 namespace Tests\Feature;
 
 use App\Enums\MemberRegistrationMode;
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\AdminUser;
 use App\Models\Project;
-use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

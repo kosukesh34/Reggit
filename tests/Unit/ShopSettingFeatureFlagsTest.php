@@ -2,8 +2,8 @@
 
 namespace Tests\Unit;
 
-use App\Models\Project;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
+use App\Models\Project;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
