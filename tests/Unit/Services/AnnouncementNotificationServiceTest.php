@@ -3,10 +3,10 @@
 namespace Tests\Unit\Services;
 
 use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\Announcement;
 use App\Models\Member;
 use App\Models\Project;
-use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\User;
 use App\Services\AnnouncementNotificationService;
 use App\Services\Line\LineService;

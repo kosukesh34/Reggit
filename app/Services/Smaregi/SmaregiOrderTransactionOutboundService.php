@@ -4,6 +4,7 @@ namespace App\Services\Smaregi;
 
 use App\Domain\Member\Repositories\MemberRepository;
 use App\Domain\Order\Repositories\OrderRepository;
+use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Enums\OrderStatus;
 use App\Enums\OrderType;
 use App\Enums\PaymentMethod;
@@ -14,7 +15,6 @@ use App\Jobs\SyncOrderTransactionToSmaregiJob;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Scopes\ProjectScope;
-use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Util\LogHelper;
 use Illuminate\Support\Carbon;
 

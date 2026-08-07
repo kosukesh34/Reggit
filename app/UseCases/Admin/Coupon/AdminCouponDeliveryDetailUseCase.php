@@ -2,11 +2,11 @@
 
 namespace App\UseCases\Admin\Coupon;
 
+use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Enums\CouponDeliveryStatus;
 use App\Enums\CouponDeliveryType;
 use App\Models\CouponDelivery;
 use App\Models\Member;
-use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\UseCases\Admin\Coupon\Data\AdminCouponDeliveryDetailOutput;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 

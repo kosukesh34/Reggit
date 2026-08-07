@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\MemberVisitSource;
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\AdminUser;
 use App\Models\Coupon;
 use App\Models\CouponRedemption;
@@ -12,7 +13,6 @@ use App\Models\MemberRankHistory;
 use App\Models\MemberVisit;
 use App\Models\PointTransaction;
 use App\Models\Project;
-use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\StampCard;
 use App\Models\User;
 use App\Models\WalletPassRegistration;

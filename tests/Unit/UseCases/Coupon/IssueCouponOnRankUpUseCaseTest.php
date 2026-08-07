@@ -4,12 +4,12 @@ namespace Tests\Unit\UseCases\Coupon;
 
 use App\Enums\CouponDeliveryStatus;
 use App\Enums\CouponDeliveryType;
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\Coupon;
 use App\Models\CouponDelivery;
 use App\Models\Member;
 use App\Models\MemberCoupon;
 use App\Models\Project;
-use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\User;
 use App\UseCases\Coupon\IssueCouponOnRankUpUseCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;

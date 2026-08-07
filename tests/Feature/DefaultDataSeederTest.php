@@ -2,9 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\Product;
 use App\Models\Project;
-use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Services\Admin\ProductDeduplicationService;
 use App\Services\Smaregi\SmaregiProductSyncService;
 use Database\Seeders\DefaultDataSeeder;

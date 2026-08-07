@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
+use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Enums\GoogleWalletApi;
 use App\Models\Member;
-use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Models\User;
 use App\Services\GoogleWallet\GoogleWalletLoyaltyPayloadBuilder;
 use App\Util\AdminContext;
