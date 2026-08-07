@@ -2,8 +2,8 @@
 
 namespace App\Services\Smaregi;
 
+use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Enums\SmaregiContractStatus;
-use App\Models\ShopSetting;
 use App\Models\SmaregiContract;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
@@ -17,6 +17,7 @@ class SmaregiApiService
     public function __construct(
         private SmaregiApiClient $client,
         private SmaregiTransactionCustomerResolver $transactionCustomerResolver,
+        private ShopSettingRepository $shopSettingRepository,
     ) {}
 
     public function getLastErrorDetail(): ?string
@@ -544,7 +545,7 @@ class SmaregiApiService
      */
     public function getContractIdForProject(int $projectId): ?string
     {
-        $contractId = ShopSetting::getValue('smaregi_contract_id', null, $projectId);
+        $contractId = $this->shopSettingRepository->getValue('smaregi_contract_id', null, $projectId);
         if (is_string($contractId) && trim($contractId) !== '') {
             return trim($contractId);
         }

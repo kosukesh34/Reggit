@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\AdminUser;
 use App\Models\Project;
-use App\Models\ShopSetting;
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -34,7 +34,7 @@ class AdminFeaturesCouponImageIsolationTest extends TestCase
         $admin = $this->createAdmin($project);
         $imageUrl = 'https://example.com/coupon-default.png';
 
-        ShopSetting::setValue('coupon_default_image_url', $imageUrl, 'string', $project->id);
+        ShopSettingStore::setValue('coupon_default_image_url', $imageUrl, 'string', $project->id);
 
         $this->actingAs($admin, 'admin')
             ->post(route('admin.settings.features.update', ['project_key' => $project->project_key]), [
@@ -48,7 +48,7 @@ class AdminFeaturesCouponImageIsolationTest extends TestCase
             ])
             ->assertRedirect();
 
-        $this->assertSame($imageUrl, ShopSetting::getCouponDefaultImageUrl($project->id));
+        $this->assertSame($imageUrl, ShopSettingStore::getCouponDefaultImageUrl($project->id));
     }
 
     public function test_features_settings_画面にクーポンデフォルト画像入力がないこと(): void

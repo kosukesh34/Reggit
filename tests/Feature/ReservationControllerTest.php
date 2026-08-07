@@ -6,7 +6,7 @@ use App\Enums\ReservationStatus;
 use App\Models\Member;
 use App\Models\Project;
 use App\Models\Reservation;
-use App\Models\ShopSetting;
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -60,7 +60,7 @@ class ReservationControllerTest extends TestCase
         $project = $this->createDefaultProject();
         $user = User::factory()->create(['line_user_id' => self::TEST_USER_ID, 'project_id' => $project->id]);
         Member::factory()->create(['user_id' => $user->id, 'project_id' => $project->id]);
-        $timeSlots = ShopSetting::getReservationTimeSlots($project->id);
+        $timeSlots = ShopSettingStore::getReservationTimeSlots($project->id);
         $timeSlot = $timeSlots[0];
         $reservedAt = now()->addDay()->format('Y-m-d').'T'.$timeSlot;
 
@@ -152,7 +152,7 @@ class ReservationControllerTest extends TestCase
     {
         $project = $this->createDefaultProject();
         $user = User::factory()->create(['line_user_id' => self::TEST_USER_ID, 'project_id' => $project->id]);
-        $timeSlots = ShopSetting::getReservationTimeSlots($project->id);
+        $timeSlots = ShopSettingStore::getReservationTimeSlots($project->id);
         $timeSlot = $timeSlots[0];
         $reservedAt = now()->addDay()->format('Y-m-d').'T'.$timeSlot;
 
@@ -173,9 +173,9 @@ class ReservationControllerTest extends TestCase
         $user = User::factory()->create(['line_user_id' => self::TEST_USER_ID, 'project_id' => $project->id]);
         Member::factory()->create(['user_id' => $user->id, 'project_id' => $project->id]);
         $closedDate = now()->addDay()->format('Y-m-d');
-        $timeSlots = ShopSetting::getReservationTimeSlots($project->id);
+        $timeSlots = ShopSettingStore::getReservationTimeSlots($project->id);
         $timeSlot = $timeSlots[0];
-        ShopSetting::setValue('closed_dates', [$closedDate], 'json', $project->id);
+        ShopSettingStore::setValue('closed_dates', [$closedDate], 'json', $project->id);
 
         $response = $this->withSession($this->sessionForUser($project, $user))
             ->withHeaders(['X-Line-User-Id' => self::TEST_USER_ID])
@@ -193,11 +193,11 @@ class ReservationControllerTest extends TestCase
         $project = $this->createDefaultProject();
         $user = User::factory()->create(['line_user_id' => self::TEST_USER_ID, 'project_id' => $project->id]);
         Member::factory()->create(['user_id' => $user->id, 'project_id' => $project->id]);
-        $timeSlots = ShopSetting::getReservationTimeSlots($project->id);
+        $timeSlots = ShopSettingStore::getReservationTimeSlots($project->id);
         $timeSlot = $timeSlots[0];
         $reservedAt = Carbon::parse(now()->addDay()->format('Y-m-d').' '.$timeSlot);
 
-        ShopSetting::setValue('reservation_capacity_per_slot', 1, 'integer', $project->id);
+        ShopSettingStore::setValue('reservation_capacity_per_slot', 1, 'integer', $project->id);
 
         Reservation::factory()->create([
             'reserved_at' => $reservedAt,

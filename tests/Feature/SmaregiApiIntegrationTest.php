@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Member;
 use App\Models\Project;
-use App\Models\ShopSetting;
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\User;
 use App\Services\Smaregi\SmaregiApiService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -144,7 +144,7 @@ class SmaregiApiIntegrationTest extends TestCase
     public function test_integration_d_bの会員番号とスマレジの会員コードが一致すること(): void
     {
         $project = Project::factory()->create();
-        ShopSetting::setValue('smaregi_contract_id', $this->contractId, 'string', (int) $project->id);
+        ShopSettingStore::setValue('smaregi_contract_id', $this->contractId, 'string', (int) $project->id);
 
         $code = 'DC'.date('YmdHis');
         $user = User::factory()->create(['project_id' => $project->id]);

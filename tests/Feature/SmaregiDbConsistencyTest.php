@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Member;
 use App\Models\Project;
-use App\Models\ShopSetting;
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\User;
 use App\Services\Smaregi\SmaregiApiService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -36,7 +36,7 @@ class SmaregiDbConsistencyTest extends TestCase
     public function test_get_customers_d_bの会員番号とスマレジ会員コードが一致すること(): void
     {
         $project = Project::factory()->create();
-        ShopSetting::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
 
         $user = User::factory()->create(['project_id' => $project->id]);
         $member = Member::factory()->create([
@@ -82,7 +82,7 @@ class SmaregiDbConsistencyTest extends TestCase
     public function test_create_customer_登録した会員コードと_d_b会員番号が一致すること(): void
     {
         $project = Project::factory()->create();
-        ShopSetting::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
 
         $codeToUse = 'MATCH002';
         $this->fakeSmaregiHttp([
@@ -144,7 +144,7 @@ class SmaregiDbConsistencyTest extends TestCase
     public function test_get_customers_複数会員を会員コードで突き合わせられること(): void
     {
         $project = Project::factory()->create();
-        ShopSetting::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
 
         $user1 = User::factory()->create(['project_id' => $project->id]);
         $user2 = User::factory()->create(['project_id' => $project->id]);

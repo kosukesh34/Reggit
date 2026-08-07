@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\AdminUser;
 use App\Models\Project;
-use App\Models\ShopSetting;
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -33,8 +33,8 @@ class AdminLotteryFeatureFlagSourceTest extends TestCase
         $project = $this->createProject();
         $admin = $this->createAdmin($project);
 
-        ShopSetting::setValue('feature_gacha_enabled', '1', 'boolean', $project->id);
-        ShopSetting::setValue('feature_scratch_enabled', '1', 'boolean', $project->id);
+        ShopSettingStore::setValue('feature_gacha_enabled', '1', 'boolean', $project->id);
+        ShopSettingStore::setValue('feature_scratch_enabled', '1', 'boolean', $project->id);
 
         $this->actingAs($admin, 'admin')
             ->post(route('admin.settings.features.update', ['project_key' => $project->project_key]), [
@@ -45,14 +45,14 @@ class AdminLotteryFeatureFlagSourceTest extends TestCase
             ])
             ->assertRedirect();
 
-        $this->assertTrue(ShopSetting::isFeatureEnabled('feature_gacha_enabled', $project->id));
-        $this->assertTrue(ShopSetting::isFeatureEnabled('feature_scratch_enabled', $project->id));
-        $this->assertTrue(ShopSetting::isFeatureEnabled('feature_orders_enabled', $project->id));
+        $this->assertTrue(ShopSettingStore::isFeatureEnabled('feature_gacha_enabled', $project->id));
+        $this->assertTrue(ShopSettingStore::isFeatureEnabled('feature_scratch_enabled', $project->id));
+        $this->assertTrue(ShopSettingStore::isFeatureEnabled('feature_orders_enabled', $project->id));
     }
 
     public function test_feature_flag_labels_にガチャが含まれないこと(): void
     {
-        $labels = ShopSetting::featureFlagLabels();
+        $labels = ShopSettingStore::featureFlagLabels();
         $this->assertArrayNotHasKey('feature_gacha_enabled', $labels);
         $this->assertArrayNotHasKey('feature_scratch_enabled', $labels);
     }

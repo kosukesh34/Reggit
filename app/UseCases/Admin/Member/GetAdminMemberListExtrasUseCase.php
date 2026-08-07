@@ -2,20 +2,24 @@
 
 namespace App\UseCases\Admin\Member;
 
+use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Models\Project;
-use App\Models\ShopSetting;
 use App\UseCases\Admin\Member\Data\AdminMemberListExtras;
 
 class GetAdminMemberListExtrasUseCase
 {
+    public function __construct(
+        private ShopSettingRepository $shopSettingRepository,
+    ) {}
+
     public function handle(int $projectId): AdminMemberListExtras
     {
-        $friendAddUrl = trim(ShopSetting::getLineFriendAddUrl($projectId));
+        $friendAddUrl = trim($this->shopSettingRepository->getLineFriendAddUrl($projectId));
         if ($friendAddUrl !== '') {
             return new AdminMemberListExtras($friendAddUrl, 'LINE友だち追加URL');
         }
 
-        $liffUrl = trim(ShopSetting::getLineLiffUrl($projectId));
+        $liffUrl = trim($this->shopSettingRepository->getLineLiffUrl($projectId));
         if ($liffUrl !== '') {
             return new AdminMemberListExtras($liffUrl, 'LIFF URL');
         }
