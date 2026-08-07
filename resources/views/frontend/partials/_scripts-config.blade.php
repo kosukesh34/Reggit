@@ -28,7 +28,7 @@
     window.__GOOGLE_WALLET_ENABLED__ = {{ ($googleWalletEnabled ?? false) ? 'true' : 'false' }};
     window.__WALLET_PASS_ADD_BUTTON_IMAGE__ = "/images/add-to-apple-wallet-logo.png";
     window.__GOOGLE_WALLET_ADD_BUTTON_IMAGE__ = "/images/add-to-google-wallet-logo.png";
-    window.__ORDER_MODE__ = @json($orderMode ?? \App\Models\ShopSetting::ORDER_MODE_BOTH);
+    window.__ORDER_MODE__ = @json($orderMode ?? \App\Domain\Settings\ShopSettingKeys::ORDER_MODE_BOTH);
     window.__LINE_FRIEND_ADD_URL__ = @json($lineFriendAddUrl ?? '');
     window.__LIFF_TAB_LAYOUTS__ = @json($scriptLiffTabLayouts);
     window.__LIFF_DETAIL_LAYOUTS__ = @json($scriptLiffDetailLayouts);
