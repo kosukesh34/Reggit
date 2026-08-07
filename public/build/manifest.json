@@ -1,34 +1,34 @@
 {
   "_qrCodeCompat-!~{003}~.js": {
-    "file": "assets/qrCodeCompat-Br6xX-R8.css",
+    "file": "assets/qrCodeCompat-2lNR_hb5.css",
     "src": "_qrCodeCompat-!~{003}~.js"
   },
-  "_qrCodeCompat-C-YRUVBp.js": {
-    "file": "assets/qrCodeCompat-C-YRUVBp.js",
+  "_qrCodeCompat-DyjjKwMt.js": {
+    "file": "assets/qrCodeCompat-DyjjKwMt.js",
     "name": "qrCodeCompat",
     "css": [
-      "assets/qrCodeCompat-Br6xX-R8.css"
+      "assets/qrCodeCompat-2lNR_hb5.css"
     ]
   },
   "resources/js/admin/main.tsx": {
-    "file": "assets/main-D3nhKxtt.js",
+    "file": "assets/main-BZmgfw91.js",
     "name": "main",
     "src": "resources/js/admin/main.tsx",
     "isEntry": true,
     "imports": [
-      "_qrCodeCompat-C-YRUVBp.js"
+      "_qrCodeCompat-DyjjKwMt.js"
     ],
     "css": [
       "assets/main-tB4AGMqk.css"
     ]
   },
   "resources/js/frontend/main.tsx": {
-    "file": "assets/main-DgDbqzvV.js",
+    "file": "assets/main-DZGeRytb.js",
     "name": "main",
     "src": "resources/js/frontend/main.tsx",
     "isEntry": true,
     "imports": [
-      "_qrCodeCompat-C-YRUVBp.js"
+      "_qrCodeCompat-DyjjKwMt.js"
     ]
   }
 }

@@ -12,9 +12,8 @@ import { HelpModal } from './components/HelpModal';
 import { OnboardingOverlay } from './components/OnboardingOverlay';
 import { saveDesigner } from './persistence/saveDesigner';
 import { applyPanelWidths, loadSavedPanelWidths } from './utils/panelLayout';
-import { ensureLiffDesignerModules } from './ensureModules';
 import { useGlobalDesignCss } from './utils/globalDesignCss';
-import './modules/panelResizer';
+import { panelResizer } from './modules/panelResizer';
 
 function GlobalDesignStyles() {
     const { state, config } = useDesigner();
@@ -71,7 +70,7 @@ function PanelBootstrap() {
         if (root !== null) {
             applyPanelWidths(root, loadSavedPanelWidths());
         }
-        const resizer = ensureLiffDesignerModules().panelResizer;
+        const resizer = panelResizer;
         if (resizer !== undefined && typeof resizer.bindPanelResizer === 'function') {
             resizer.bindPanelResizer.call(resizer);
         }
