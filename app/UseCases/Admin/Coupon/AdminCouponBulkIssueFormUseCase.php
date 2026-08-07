@@ -8,7 +8,7 @@ use App\Models\Coupon;
 use App\Models\CouponDelivery;
 use App\Models\Member;
 use App\Models\Product;
-use App\Models\ShopSetting;
+use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Models\StampCard;
 use App\Services\Admin\CouponAdminService;
 use App\Services\Smaregi\SmaregiCouponSyncService;
@@ -22,6 +22,7 @@ class AdminCouponBulkIssueFormUseCase
     public function __construct(
         private CouponAdminService $couponAdminService,
         private SmaregiCouponSyncService $smaregiCouponSync,
+        private ShopSettingRepository $shopSettingRepository,
     ) {}
 
     public function handle(int $projectId, string $couponSearch = '', ?int $selectedCouponId = null): AdminCouponBulkIssueFormOutput
@@ -76,7 +77,7 @@ class AdminCouponBulkIssueFormUseCase
             ->get(['id', 'name', 'required_stamps']);
 
         $rankOptions = [];
-        foreach (ShopSetting::getMemberRankSettings($projectId) as $rank) {
+        foreach ($this->shopSettingRepository->getMemberRankSettings($projectId) as $rank) {
             if (($rank['is_active'] ?? true) !== true) {
                 continue;
             }

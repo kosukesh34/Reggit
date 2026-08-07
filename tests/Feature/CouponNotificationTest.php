@@ -8,7 +8,7 @@ use App\Models\Coupon;
 use App\Models\Member;
 use App\Models\MemberCoupon;
 use App\Models\Project;
-use App\Models\ShopSetting;
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\User;
 use App\Models\UserDevice;
 use App\Services\CouponNotificationService;
@@ -64,7 +64,7 @@ class CouponNotificationTest extends TestCase
     public function test_notify_issued_sends_native_push_and_line_message(): void
     {
         $project = $this->createProject();
-        ShopSetting::setLineChannelAccessToken('test-token', $project->id);
+        ShopSettingStore::setLineChannelAccessToken('test-token', $project->id);
         $lineUserId = 'U'.str_repeat('a', 32);
         $user = User::factory()->create([
             'project_id' => $project->id,
@@ -121,8 +121,8 @@ class CouponNotificationTest extends TestCase
     public function test_notify_issued_クーポン機能無効時は通知を送らないこと(): void
     {
         $project = $this->createProject();
-        ShopSetting::setValue('feature_coupons_enabled', '0', 'boolean', $project->id);
-        ShopSetting::setLineChannelAccessToken('test-token', $project->id);
+        ShopSettingStore::setValue('feature_coupons_enabled', '0', 'boolean', $project->id);
+        ShopSettingStore::setLineChannelAccessToken('test-token', $project->id);
 
         $lineUserId = 'U'.str_repeat('b', 32);
         $user = User::factory()->create([

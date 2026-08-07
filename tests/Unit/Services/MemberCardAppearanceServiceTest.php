@@ -4,7 +4,7 @@ namespace Tests\Unit\Services;
 
 use App\Models\Member;
 use App\Models\Project;
-use App\Models\ShopSetting;
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\User;
 use App\Services\MemberCardAppearanceService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -48,13 +48,13 @@ class MemberCardAppearanceServiceTest extends TestCase
         ]);
 
         if ($rankKey === 'gold') {
-            ShopSetting::setMemberRankSettings([
+            ShopSettingStore::setMemberRankSettings([
                 ['key' => 'bronze', 'label' => 'ブロンズ', 'min_points' => 0, 'is_active' => true, 'order' => 1, 'card_color' => '#cd7f32'],
                 ['key' => 'gold', 'label' => 'ゴールド', 'min_points' => 1000, 'is_active' => true, 'order' => 2, 'card_color' => '#d97706'],
             ], (int) $project->id);
             $this->grantMemberPoints($member, 1200, 'test');
         } else {
-            ShopSetting::setMemberRankSettings([
+            ShopSettingStore::setMemberRankSettings([
                 ['key' => 'bronze', 'label' => 'ブロンズ', 'min_points' => 0, 'is_active' => true, 'order' => 1],
             ], (int) $project->id);
             $this->grantMemberPoints($member, 100, 'test');

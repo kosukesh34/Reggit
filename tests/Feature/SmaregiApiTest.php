@@ -3,7 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Project;
-use App\Models\ShopSetting;
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Services\Smaregi\SmaregiApiService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -239,7 +239,7 @@ class SmaregiApiTest extends TestCase
     private function createProjectWithContract(): Project
     {
         $project = Project::factory()->create();
-        ShopSetting::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
 
         return $project;
     }

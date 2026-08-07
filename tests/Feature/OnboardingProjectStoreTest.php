@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\AdminUser;
 use App\Models\Project;
-use App\Models\ShopSetting;
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\SmaregiContract;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -54,9 +54,9 @@ class OnboardingProjectStoreTest extends TestCase
         ]);
 
         $project = Project::where('project_key', 'store-a')->firstOrFail();
-        $this->assertSame('sb_skx928r2', ShopSetting::getValue('smaregi_contract_id', null, (int) $project->id));
-        $this->assertSame('test_client_id_onboard', ShopSetting::getValue('smaregi_client_id', null, (int) $project->id));
-        $this->assertSame('test_client_secret_onboard', ShopSetting::getValue('smaregi_client_secret', null, (int) $project->id));
+        $this->assertSame('sb_skx928r2', ShopSettingStore::getValue('smaregi_contract_id', null, (int) $project->id));
+        $this->assertSame('test_client_id_onboard', ShopSettingStore::getValue('smaregi_client_id', null, (int) $project->id));
+        $this->assertSame('test_client_secret_onboard', ShopSettingStore::getValue('smaregi_client_secret', null, (int) $project->id));
     }
 
     public function test_必須項目不足なら422を返すこと(): void
@@ -76,7 +76,7 @@ class OnboardingProjectStoreTest extends TestCase
             'project_key' => 'old-store',
             'is_active' => true,
         ]);
-        ShopSetting::setValue('smaregi_contract_id', 'sb_shared_contract', 'string', (int) $oldProject->id);
+        ShopSettingStore::setValue('smaregi_contract_id', 'sb_shared_contract', 'string', (int) $oldProject->id);
         SmaregiContract::create([
             'contract_id' => 'sb_shared_contract',
             'project_id' => $oldProject->id,
@@ -92,10 +92,10 @@ class OnboardingProjectStoreTest extends TestCase
         $response->assertCreated();
         $newProject = Project::where('project_key', 'new-store')->firstOrFail();
 
-        $this->assertSame('sb_shared_contract', ShopSetting::getValue('smaregi_contract_id', null, (int) $newProject->id));
+        $this->assertSame('sb_shared_contract', ShopSettingStore::getValue('smaregi_contract_id', null, (int) $newProject->id));
         $this->assertTrue(
-            ShopSetting::getValue('smaregi_contract_id', null, (int) $oldProject->id) === null
-            || ShopSetting::getValue('smaregi_contract_id', null, (int) $oldProject->id) === ''
+            ShopSettingStore::getValue('smaregi_contract_id', null, (int) $oldProject->id) === null
+            || ShopSettingStore::getValue('smaregi_contract_id', null, (int) $oldProject->id) === ''
         );
         $this->assertDatabaseHas('smaregi_contracts', [
             'contract_id' => 'sb_shared_contract',

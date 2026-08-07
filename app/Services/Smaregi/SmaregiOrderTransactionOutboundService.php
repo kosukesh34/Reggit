@@ -14,7 +14,7 @@ use App\Jobs\SyncOrderTransactionToSmaregiJob;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Scopes\ProjectScope;
-use App\Models\ShopSetting;
+use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Util\LogHelper;
 use Illuminate\Support\Carbon;
 
@@ -35,6 +35,7 @@ class SmaregiOrderTransactionOutboundService
         private OrderRepository $orderRepository,
         private MemberRepository $memberRepository,
         private SmaregiApiService $smaregiApi,
+        private ShopSettingRepository $shopSettingRepository,
     ) {}
 
     /**
@@ -469,7 +470,7 @@ class SmaregiOrderTransactionOutboundService
 
     private function resolveStoreId(int $projectId, string $contractId): ?string
     {
-        $configured = trim((string) ShopSetting::getValue('smaregi_store_id', '', $projectId));
+        $configured = trim((string) $this->shopSettingRepository->getValue('smaregi_store_id', '', $projectId));
         if ($configured !== '') {
             return $configured;
         }
@@ -479,7 +480,7 @@ class SmaregiOrderTransactionOutboundService
 
     private function resolveTerminalId(int $projectId, string $contractId, ?string $storeId): ?string
     {
-        $configured = trim((string) ShopSetting::getValue('smaregi_terminal_id', '', $projectId));
+        $configured = trim((string) $this->shopSettingRepository->getValue('smaregi_terminal_id', '', $projectId));
         if ($configured !== '') {
             return $configured;
         }
