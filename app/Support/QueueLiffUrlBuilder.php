@@ -2,7 +2,7 @@
 
 namespace App\Support;
 
-use App\Models\ShopSetting;
+use App\Domain\Settings\Repositories\ShopSettingRepository;
 
 /**
  * 順番待ち QR / LINE 通知用の LIFF リンクを組み立てる。
@@ -31,7 +31,8 @@ class QueueLiffUrlBuilder
     public static function buildEntryUrl(int $projectId, string $projectKey): string
     {
         $projectKey = ProjectKey::require($projectKey);
-        $liffId = trim(ShopSetting::getLineLiffId($projectId));
+        $repo = app(ShopSettingRepository::class);
+        $liffId = trim($repo->getLineLiffId($projectId));
         if ($liffId !== '') {
             return 'https://liff.line.me/'.$liffId.'?'.http_build_query([
                 'liff.state' => http_build_query(['project_key' => $projectKey]),
@@ -58,12 +59,13 @@ class QueueLiffUrlBuilder
     public static function resolveBaseUrl(int $projectId, string $projectKey): string
     {
         $projectKey = ProjectKey::require($projectKey);
-        $liffUrl = trim(ShopSetting::getLineLiffUrl($projectId));
+        $repo = app(ShopSettingRepository::class);
+        $liffUrl = trim($repo->getLineLiffUrl($projectId));
         if ($liffUrl !== '') {
             return self::normalizeLiffWebBase($liffUrl) ?? $liffUrl;
         }
 
-        $liffId = trim(ShopSetting::getLineLiffId($projectId));
+        $liffId = trim($repo->getLineLiffId($projectId));
         if ($liffId !== '') {
             return 'https://liff.line.me/'.$liffId;
         }

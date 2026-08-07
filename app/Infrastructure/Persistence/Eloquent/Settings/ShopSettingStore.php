@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Models;
+namespace App\Infrastructure\Persistence\Eloquent\Settings;
 
+use App\Domain\Settings\ShopSettingKeys;
 use App\Enums\MemberRegistrationMode;
 use App\Enums\ProfileCustomFieldInputType;
 use App\Models\Settings\ProjectAdminUiSetting;
@@ -19,10 +20,10 @@ use App\Util\AdminContext;
 use App\Util\StrHelper;
 
 /**
- * 店舗設定のファサード。キーごとのテーブル（project_business_settings 等）を参照する。
- * 旧 shop_settings (EAV) は廃止し、設定種別ごとに正規化テーブルに分割済み。
+ * 店舗設定の永続化ストア。キーごとのテーブル（project_business_settings 等）を参照する。
+ * EloquentShopSettingRepository 経由で使用する。外部からの直接参照禁止。
  */
-class ShopSetting
+class ShopSettingStore
 {
     private const DEFAULT_RESERVATION_CAPACITY = 20;
 
@@ -324,40 +325,11 @@ class ShopSetting
 
     // ── 機能フラグ ──
 
-    /** 機能フラグのデフォルト値 */
-    public const FEATURE_FLAGS = [
-        'feature_home_enabled' => true,
-        'feature_orders_enabled' => true,
-        'feature_reservations_enabled' => true,
-        'feature_queue_enabled' => true,
-        'feature_stamps_enabled' => true,
-        'feature_coupons_enabled' => true,
-        'feature_members_enabled' => true,
-        'feature_announcements_enabled' => true,
-        'feature_payments_enabled' => true,
-        'feature_gallery_enabled' => true,
-        'feature_gacha_enabled' => false,
-        'feature_scratch_enabled' => false,
-    ];
+    public const FEATURE_FLAGS = ShopSettingKeys::FEATURE_FLAGS;
 
-    /** 機能フラグの表示名（静的デフォルト。動的ラベルは featureFlagLabels() を使う） */
-    public const FEATURE_FLAG_LABELS = [
-        'feature_home_enabled' => 'ホーム',
-        'feature_orders_enabled' => '注文（オーダー・履歴）',
-        'feature_reservations_enabled' => '予約',
-        'feature_queue_enabled' => '順番待ち',
-        'feature_stamps_enabled' => 'スタンプカード',
-        'feature_coupons_enabled' => 'クーポン',
-        'feature_members_enabled' => '会員証',
-        'feature_announcements_enabled' => 'お知らせ',
-        'feature_gallery_enabled' => 'ギャラリー',
-    ];
+    public const FEATURE_FLAG_LABELS = ShopSettingKeys::FEATURE_FLAG_LABELS;
 
-    /** ガチャ設定画面のみで編集し、機能設定のチェック保存では維持するフラグ */
-    public const LOTTERY_MANAGED_FEATURE_FLAGS = [
-        'feature_gacha_enabled',
-        'feature_scratch_enabled',
-    ];
+    public const LOTTERY_MANAGED_FEATURE_FLAGS = ShopSettingKeys::LOTTERY_MANAGED_FEATURE_FLAGS;
 
     /** config/native_app.php を反映した機能フラグ表示名 */
     public static function featureFlagLabels(): array
@@ -365,11 +337,11 @@ class ShopSetting
         return self::FEATURE_FLAG_LABELS;
     }
 
-    public const ORDER_MODE_BOTH = 'both';
+    public const ORDER_MODE_BOTH = ShopSettingKeys::ORDER_MODE_BOTH;
 
-    public const ORDER_MODE_MOBILE_ONLY = 'mobile_only';
+    public const ORDER_MODE_MOBILE_ONLY = ShopSettingKeys::ORDER_MODE_MOBILE_ONLY;
 
-    public const ORDER_MODE_IN_STORE_ONLY = 'in_store_only';
+    public const ORDER_MODE_IN_STORE_ONLY = ShopSettingKeys::ORDER_MODE_IN_STORE_ONLY;
 
     public static function getOrderMode(?int $projectId = null): string
     {
@@ -484,8 +456,7 @@ class ShopSetting
         self::setValue('liff_detail_layouts', ShopSettingLiffDefaults::ensureLiffDetailLayouts($layouts), 'json', $projectId);
     }
 
-    /** LIFF 保存画面の最大件数 */
-    public const LIFF_SAVED_SCREENS_MAX = 10;
+    public const LIFF_SAVED_SCREENS_MAX = ShopSettingKeys::LIFF_SAVED_SCREENS_MAX;
 
     public static function getLiffSavedScreens(?int $projectId = null): array
     {
@@ -686,40 +657,11 @@ class ShopSetting
 
     // ── プロフィール項目設定（スマレジ連携・必須/任意・任意項目） ──
 
-    /** プロフィール項目のキーとラベル（フォーム表示用。一部はローカル専用） */
-    public const PROFILE_SMAREGI_FIELDS = [
-        'name' => 'お名前（姓・名）',
-        'kana' => 'フリガナ（姓・名）',
-        'phone' => '電話番号',
-        'email' => 'メールアドレス',
-        'postal_code' => '郵便番号',
-        'prefecture' => '都道府県',
-        'city' => '市区町村',
-        'street' => '番地・建物名',
-        'address' => '住所（自由入力）',
-        'birthday' => '生年月日',
-        'sex' => '性別',
-        'mail_receive_flag' => '店舗からの案内メールを受け取る',
-    ];
+    public const PROFILE_SMAREGI_FIELDS = ShopSettingKeys::PROFILE_SMAREGI_FIELDS;
 
-    /**
-     * スマレジ会員 API に連携する項目キー。
-     * prefecture / city / street は住所補助用で、スマレジへは address にまとめて送る。
-     */
-    public const PROFILE_SMAREGI_LINKED_KEYS = [
-        'name',
-        'kana',
-        'phone',
-        'email',
-        'postal_code',
-        'address',
-        'birthday',
-        'sex',
-        'mail_receive_flag',
-    ];
+    public const PROFILE_SMAREGI_LINKED_KEYS = ShopSettingKeys::PROFILE_SMAREGI_LINKED_KEYS;
 
-    /** 追加項目の上限 */
-    public const PROFILE_CUSTOM_FIELD_MAX = 5;
+    public const PROFILE_CUSTOM_FIELD_MAX = ShopSettingKeys::PROFILE_CUSTOM_FIELD_MAX;
 
     /** プロフィール項目設定のデフォルト（スマレジ項目は表示ON・名前と電話は必須、任意項目は空） */
     public static function defaultProfileFieldSettings(): array

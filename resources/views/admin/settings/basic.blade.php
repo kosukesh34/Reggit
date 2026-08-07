@@ -6,7 +6,7 @@
 @section('content')
 @php
     $businessHours = $settings['businessHours'] ?? ['start' => '10:00', 'end' => '22:00'];
-    $orderMode = $settings['orderMode'] ?? \App\Models\ShopSetting::ORDER_MODE_BOTH;
+    $orderMode = $settings['orderMode'] ?? \App\Domain\Settings\ShopSettingKeys::ORDER_MODE_BOTH;
 @endphp
 
 <nav class="breadcrumb" aria-label="パンくず">

@@ -2,10 +2,10 @@
 
 namespace App\Services;
 
+use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Enums\OrderType;
 use App\Models\Order;
 use App\Models\Project;
-use App\Models\ShopSetting;
 use App\Services\Line\LineService;
 use App\Support\LiffTabUrlBuilder;
 use App\Util\LogHelper;
@@ -14,6 +14,7 @@ class OrderNotificationService
 {
     public function __construct(
         private LineService $lineService,
+        private ShopSettingRepository $shopSettingRepository,
     ) {}
 
     public function notifyConfirmed(int $orderId, int $projectId): void
@@ -21,7 +22,7 @@ class OrderNotificationService
         $this->notifyMobileOrder(
             $orderId,
             $projectId,
-            ShopSetting::isOrderLineNotifyEnabled($projectId),
+            $this->shopSettingRepository->isOrderLineNotifyEnabled($projectId),
             '注文が完了しました',
             static function (string $refNumber): string {
                 return $refNumber !== ''
@@ -36,7 +37,7 @@ class OrderNotificationService
         $this->notifyMobileOrder(
             $orderId,
             $projectId,
-            ShopSetting::isOrderReadyLineNotifyEnabled($projectId),
+            $this->shopSettingRepository->isOrderReadyLineNotifyEnabled($projectId),
             '受け取りの準備ができました',
             static function (string $refNumber): string {
                 return $refNumber !== ''
@@ -109,7 +110,7 @@ class OrderNotificationService
         if ($lineUserId === '' || $this->isValidLineUserId($lineUserId) === false) {
             return;
         }
-        if (ShopSetting::hasLineChannelAccessToken($projectId) === false) {
+        if ($this->shopSettingRepository->hasLineChannelAccessToken($projectId) === false) {
             LogHelper::info('[Order] LINE notify skipped (token not configured)', [
                 'order_id' => $order->id,
                 'project_id' => $projectId,
@@ -160,7 +161,7 @@ class OrderNotificationService
             $this->lineService->pushMessage(
                 $lineUserId,
                 $flex,
-                ShopSetting::getLineChannelAccessToken($projectId)
+                $this->shopSettingRepository->getLineChannelAccessToken($projectId)
             );
         } catch (\Throwable $e) {
             LogHelper::error('[Order] LINE notify failed', [

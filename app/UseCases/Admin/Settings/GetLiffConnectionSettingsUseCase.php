@@ -2,12 +2,16 @@
 
 namespace App\UseCases\Admin\Settings;
 
+use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Models\Project;
-use App\Models\ShopSetting;
 use App\UseCases\Admin\Settings\Data\LiffConnectionSettingsView;
 
 class GetLiffConnectionSettingsUseCase
 {
+    public function __construct(
+        private ShopSettingRepository $shopSettingRepository,
+    ) {}
+
     public function handle(int $projectId): LiffConnectionSettingsView
     {
         $project = Project::query()->find($projectId);
@@ -16,14 +20,15 @@ class GetLiffConnectionSettingsUseCase
             ? url('/liff/'.$projectKey)
             : url('/liff');
 
-        $dbToken = trim((string) ShopSetting::getValue('line_channel_access_token', '', $projectId));
-        $dbSecret = trim((string) ShopSetting::getValue('line_channel_secret', '', $projectId));
+        $repo = $this->shopSettingRepository;
+        $dbToken = trim((string) $repo->getValue('line_channel_access_token', '', $projectId));
+        $dbSecret = trim((string) $repo->getValue('line_channel_secret', '', $projectId));
 
         return new LiffConnectionSettingsView(
-            ShopSetting::getLineLiffId($projectId),
-            ShopSetting::getLineLiffUrl($projectId),
+            $repo->getLineLiffId($projectId),
+            $repo->getLineLiffUrl($projectId),
             $liffEntryUrl,
-            ShopSetting::getLineFriendAddUrl($projectId),
+            $repo->getLineFriendAddUrl($projectId),
             $dbToken !== '',
             $dbSecret !== '',
         );

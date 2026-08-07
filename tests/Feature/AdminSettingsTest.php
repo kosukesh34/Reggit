@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\AdminUser;
 use App\Models\Project;
-use App\Models\ShopSetting;
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -52,8 +52,8 @@ class AdminSettingsTest extends TestCase
             ])
             ->assertRedirect();
 
-        $this->assertFalse(ShopSetting::isOrderLineNotifyEnabled((int) $project->id));
-        $this->assertFalse(ShopSetting::isOrderReadyLineNotifyEnabled((int) $project->id));
+        $this->assertFalse(ShopSettingStore::isOrderLineNotifyEnabled((int) $project->id));
+        $this->assertFalse(ShopSettingStore::isOrderReadyLineNotifyEnabled((int) $project->id));
 
         $this->actingAs($admin, 'admin')
             ->post(route('admin.settings.basic.update', ['project_key' => $project->project_key]), [
@@ -65,8 +65,8 @@ class AdminSettingsTest extends TestCase
             ])
             ->assertRedirect();
 
-        $this->assertTrue(ShopSetting::isOrderLineNotifyEnabled((int) $project->id));
-        $this->assertTrue(ShopSetting::isOrderReadyLineNotifyEnabled((int) $project->id));
+        $this->assertTrue(ShopSettingStore::isOrderLineNotifyEnabled((int) $project->id));
+        $this->assertTrue(ShopSettingStore::isOrderReadyLineNotifyEnabled((int) $project->id));
     }
 
     public function test_settings_詳細設定ページにアクセスできること(): void

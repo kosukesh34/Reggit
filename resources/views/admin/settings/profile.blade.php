@@ -22,7 +22,7 @@
     @php
         $memberRegistrationMode = $settings['member_registration_mode'] ?? \App\Enums\MemberRegistrationMode::OPTIONAL;
         $modeOptions = $memberRegistrationModeOptions ?? \App\Enums\MemberRegistrationMode::getValues();
-        $customFieldMax = \App\Models\ShopSetting::PROFILE_CUSTOM_FIELD_MAX;
+        $customFieldMax = \App\Domain\Settings\ShopSettingKeys::PROFILE_CUSTOM_FIELD_MAX;
         $inputTypeOptions = $customFieldInputTypeOptions ?? \App\Enums\ProfileCustomFieldInputType::getValues();
     @endphp
     <div class="card mb-4">
@@ -69,7 +69,7 @@
                     @foreach($settings['smaregi_fields'] ?? [] as $key => $field)
                     @php
                         $isName = $key === 'name';
-                        $isLinked = \App\Models\ShopSetting::isSmaregiLinkedProfileField($key);
+                        $isLinked = \App\Domain\Settings\ShopSettingKeys::isSmaregiLinkedProfileField($key);
                     @endphp
                     <tr>
                         <td>

@@ -4,7 +4,7 @@ namespace Tests\Unit\Rules;
 
 use App\Enums\ProfileCustomFieldInputType;
 use App\Models\Project;
-use App\Models\ShopSetting;
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Rules\ProfileValidationRules;
 use App\Services\MemberService;
 use App\Util\AdminContext;
@@ -26,7 +26,7 @@ class ProfileValidationRulesTest extends TestCase
     {
         $project = Project::factory()->create();
         AdminContext::setCurrentProject($project);
-        ShopSetting::setProfileFieldSettings([
+        ShopSettingStore::setProfileFieldSettings([
             'smaregi_fields' => [
                 'name' => ['enabled' => true, 'required' => true],
                 'kana' => ['enabled' => true, 'required' => false],
