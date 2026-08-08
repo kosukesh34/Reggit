@@ -579,7 +579,8 @@ export class LiffLayoutManager {
             const label = block.section_label ? `<div class="builder-section-head"><span class="builder-section-head__label">${esc(block.section_label)}</span></div>` : '';
             const cells = items.map((it: any) => {
                 const field = LiffLayoutManager.resolveStatsField(it);
-                return `<div class="builder-stats-row__cell" data-stats-field="${esc(field)}">
+                const fieldClass = field !== 'static' ? ` builder-stats-row__cell--${esc(field)}` : '';
+                return `<div class="builder-stats-row__cell${fieldClass}" data-stats-field="${esc(field)}">
                     <span class="builder-stats-row__value">${esc(it.value || '')}</span>
                     <span class="builder-stats-row__label">${esc(it.label || '')}${it.hint ? ` <em>${esc(it.hint)}</em>` : ''}</span>
                 </div>`;
@@ -591,6 +592,9 @@ export class LiffLayoutManager {
                 ? block.actions
                 : LiffLayoutManager.DEFAULT_QUICK_ACTIONS;
             const design = esc(block.design || 'grid');
+            const head = block.section_label
+                ? `<div class="builder-section-head"><span class="builder-section-head__label">${esc(block.section_label)}</span></div>`
+                : '';
             const tiles = actions.map((a: any) => {
                 const action = a.action || '#';
                 const isExternal = action !== '#' && (action.startsWith('http://') || action.startsWith('https://'));
@@ -600,8 +604,8 @@ export class LiffLayoutManager {
                     <span class="qa-label">${esc(a.label || '')}</span>
                 </a>`;
             }).join('');
-            return `<section class="builder-block builder-quick-actions builder-quick-actions--${design}" style="${mb}">
-                <div class="builder-section-head"><span class="builder-section-head__label">ショートカット</span></div>
+            return `<section class="builder-block builder-quick-actions builder-quick-actions--${design}" data-qa-count="${actions.length}" style="${mb}">
+                ${head}
                 <div class="quick-actions-grid quick-actions--${design}">${tiles}</div>
             </section>`;
         }
