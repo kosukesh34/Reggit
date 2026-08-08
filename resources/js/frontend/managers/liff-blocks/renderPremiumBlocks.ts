@@ -329,7 +329,8 @@ const premium: PremiumRenderer = {
                 ${progressHtml}
             </div>`;
         }
-        return `<div class="member-summary-card member-summary-card--member ${designClass}"><div class="ms-top"><div class="ms-greeting"><p class="ms-eyebrow">Rewards</p><p class="ms-hello">${hello}</p>${rankBadge}</div>${cardLink}</div><div class="ms-points-row">${pointsBlock}${ringHtml}</div>${progressHtml}</div>`;
+        const redeemCta = `<a href="#coupons" class="builder-nav ms-redeem-cta">特典に交換</a>`;
+        return `<div class="member-summary-card member-summary-card--member ${designClass}"><div class="ms-top"><div class="ms-greeting"><p class="ms-eyebrow">Rewards</p><p class="ms-hello">${hello}</p>${rankBadge}</div>${cardLink}</div><div class="ms-points-row">${pointsBlock}${ringHtml}</div>${progressHtml}${redeemCta}</div>`;
     },
 };
 
