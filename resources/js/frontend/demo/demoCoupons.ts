@@ -11,7 +11,7 @@ export type DemoCoupon = {
     code: string;
     use_display: string;
     is_sample_preview: true;
-    source: 'scratch' | 'gacha';
+    source: 'scratch' | 'gacha' | 'roulette';
 };
 
 const STORAGE_KEY = 'liff_demo_won_coupons';
@@ -111,7 +111,7 @@ export function applyDemoCouponUsageState<T extends { id?: string | number; stat
 
 export function saveDemoWonCoupon(
     prize: (typeof DEMO_COUPON_PRIZES)[number],
-    source: 'scratch' | 'gacha',
+    source: 'scratch' | 'gacha' | 'roulette',
 ): DemoCoupon {
     const until = new Date();
     until.setDate(until.getDate() + 14);
