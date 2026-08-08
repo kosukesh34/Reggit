@@ -2,6 +2,8 @@
 
 iTunes Lookup API 経由で取得した公式 App Store スクリーンショット（16アプリ・109枚）を分析し、Reggit LIFF / App Studio テンプレへ反映した学習結果。
 
+**管理画面での閲覧:** システム管理 →「店舗アプリUI学習データ」（`/system-admin/shop-app-ui-research`）
+
 ## 取得済みスクショ
 
 - 代表カット（リポジトリ同梱）: [`_featured/`](_featured/)
