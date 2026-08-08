@@ -235,6 +235,47 @@ class LiffAppStudioTemplates
                 'reservation_screen_design' => 'timeline',
                 'activity_screen_design' => 'timeline',
             ],
+            // シャトレーゼ / コージーコーナー学習: 菓子・土産の温かいトーン
+            'pastry' => [
+                'accent_color' => '#5C3A21',
+                'font_family' => 'sans',
+                'surface_tone' => 'warm',
+                'card_style' => 'elevated',
+                'button_shape' => 'pill',
+                'tab_style' => 'floating',
+                'density' => 'default',
+                'background_style' => 'solid',
+                'bg_color' => '#F7F4F0',
+                'content_width' => 'comfy',
+                'radius_scale' => 'soft',
+                'system_ui_style' => 'refined',
+                'system_header_style' => 'minimal',
+                'member_screen_design' => 'wallet',
+                'stamp_screen_design' => 'grid_card',
+                'coupon_screen_design' => 'ticket',
+                'reservation_screen_design' => 'cards',
+                'activity_screen_design' => 'cards',
+            ],
+            // GODIVA / Lindt 学習: ラグジュアリー菓子
+            'chocolate' => [
+                'accent_color' => '#C5A059',
+                'font_family' => 'serif-display',
+                'surface_tone' => 'paper',
+                'card_style' => 'elevated',
+                'button_shape' => 'pill',
+                'tab_style' => 'pill',
+                'density' => 'relaxed',
+                'background_style' => 'solid',
+                'bg_color' => '#FAF8F4',
+                'content_width' => 'narrow',
+                'radius_scale' => 'soft',
+                'system_ui_style' => 'luxe',
+                'system_header_style' => 'editorial',
+                'member_screen_design' => 'wallet',
+                'coupon_screen_design' => 'gallery',
+                'reservation_screen_design' => 'concierge',
+                'activity_screen_design' => 'cards',
+            ],
         ];
 
         return $seeds[$preset] ?? $seeds['apple_system'];
@@ -268,6 +309,9 @@ class LiffAppStudioTemplates
             'retail' => 'rg-suite-retail',
             'fitness' => 'rg-suite-loyalty',
             'clinic' => 'rg-suite-clinic',
+            'sweets' => 'rg-suite-sweets',
+            'bakery' => 'rg-suite-sweets',
+            'souvenir' => 'rg-suite-sweets',
         ];
     }
 
@@ -434,6 +478,34 @@ class LiffAppStudioTemplates
                 ],
                 self::menu(['home', 'products', ['orders', '注文状況', 'fa-truck'], 'coupons', 'member'])
             ),
+            // シャトレーゼ / コージーコーナー / GODIVA スクショ学習
+            self::suiteEntry(
+                'rg-suite-sweets',
+                '菓子・土産OS',
+                'sweets',
+                'シャトレーゼ／コージーコーナー風。会員証バーコードとポイントを最優先し、季節ヒーロー→カテゴリ丸写真→店頭受取の導線。商品棚より「会計で使えるカード」が主役。',
+                [
+                    'theme_preset' => 'pastry',
+                    'accent_color' => '#5C3A21',
+                    'surface_tone' => 'warm',
+                    'bg_color' => '#F7F4F0',
+                    'member_card_design' => 'emblem',
+                    'member_screen_design' => 'wallet',
+                    'coupon_screen_design' => 'ticket',
+                    'density' => 'default',
+                    'content_width' => 'comfy',
+                    'button_shape' => 'pill',
+                    'app_display_name' => '〇〇スイーツ',
+                ],
+                self::menu([
+                    'home',
+                    ['member', '会員証', 'fa-barcode'],
+                    ['coupons', 'クーポン', 'fa-ticket-alt'],
+                    ['products', 'スイーツ', 'fa-birthday-cake'],
+                    'announcements',
+                ]),
+                '.theme-pastry .builder-btn--sticky{letter-spacing:.02em;}'
+            ),
         ];
     }
 
@@ -454,6 +526,7 @@ class LiffAppStudioTemplates
             'retail' => 'retail',
             'clinic' => 'clinic',
             'delivery' => 'delivery',
+            'sweets' => 'sweets',
         ];
 
         return [
@@ -492,6 +565,11 @@ class LiffAppStudioTemplates
             self::screenEntry('rg-screen-vip', 'VIPラウンジ', 'loyalty', 'American Express 風の上位会員ラウンジ。限定オファーと優待を編集的に見せる。', ['home', 'coupons'], ['theme_preset' => 'noir', 'accent_color' => '#92400e'], self::screenVip()),
             self::screenEntry('rg-screen-morning', 'モーニング特化カフェ', 'cafe', 'スターバックス朝アプリ風。時間帯限定のモーニングメニューを訴求。', ['home', 'products'], ['theme_preset' => 'sand', 'accent_color' => '#ca8a04'], self::screenMorning()),
             self::screenEntry('rg-screen-workout', 'ジムチェックイン', 'loyalty', 'Nike Training 風。来館チェックインと実績トラッキングを一画面に。', ['home', 'stamps', 'reservations'], ['accent_color' => '#16a34a'], self::screenWorkout()),
+            self::screenEntry('rg-screen-sweets-home', '菓子店ホーム', 'sweets', 'コージーコーナー風。マイル/ポイント→季節ヒーロー→会員証・クーポン大ボタン。', ['home'], ['theme_preset' => 'pastry', 'accent_color' => '#5C3A21'], self::screenSweetsHome()),
+            self::screenEntry('rg-screen-barcode-dock', 'バーコード提示', 'loyalty', 'シャトレーゼ風。ポイントカードとレジ提示バーコードだけに集中した会計画面。', ['member'], ['theme_preset' => 'pastry', 'accent_color' => '#5C3A21'], self::screenBarcodeDock()),
+            self::screenEntry('rg-screen-chocolate-club', 'チョコクラブ', 'sweets', 'GODIVA / Lindt 風。ラグジュアリーな会員クラブとスタンプ特典。', ['home', 'member', 'coupons'], ['theme_preset' => 'chocolate', 'accent_color' => '#C5A059'], self::screenChocolateClub()),
+            self::screenEntry('rg-screen-pickup-ready', '受取準備完了', 'order', 'Chipotle Pickup 風。時刻・場所・袋数・ヘルプで受取不安を消す。', ['orders'], ['theme_preset' => 'citrus', 'accent_color' => '#A81612'], self::screenPickupReady()),
+            self::screenEntry('rg-screen-category-browse', 'カテゴリ閲覧', 'retail', 'UNIQLO 風。検索導線と写真カテゴリグリッドで商品発見。', ['home', 'products'], ['theme_preset' => 'noir', 'accent_color' => '#111111'], self::screenCategoryBrowse()),
         ];
     }
 
@@ -520,24 +598,26 @@ class LiffAppStudioTemplates
     // 全 MAIN_TABS のキーを返す（デザイナー編集用）。アプリでの表示は menu が制御する。
     // ═══════════════════════════════════════════════════════════════════════
 
-    /** Starbucks Rewards 風 — 会員証とポイントが主役、ホームに商品棚なし */
+    /** Starbucks Rewards スクショ学習 — 挨拶→残高/進捗→特典交換CTA→会員証提示。商品棚なし */
     private static function loyaltyLayouts(): array
     {
-        $a = '#5856d6';
+        $a = '#00754A';
 
         return [
             'home' => [
-                ['type' => 'member_summary', 'design' => 'wallet', 'greeting' => 'おかえりなさい'],
-                ['type' => 'stats_row', 'section_label' => 'マイステータス', 'items' => [
-                    ['label' => 'ポイント', 'value' => '2,480', 'hint' => 'pt', 'field' => 'points'],
-                    ['label' => 'ランク', 'value' => 'ゴールド', 'hint' => '', 'field' => 'rank'],
-                    ['label' => '次回特典まで', 'value' => '520', 'hint' => 'pt', 'field' => 'points_to_next'],
+                ['type' => 'member_summary', 'design' => 'rewards', 'greeting' => 'おはようございます'],
+                ['type' => 'stats_row', 'section_label' => 'マイリワード', 'items' => [
+                    ['label' => 'ポイント', 'value' => '70', 'hint' => 'pt', 'field' => 'points'],
+                    ['label' => 'ランク', 'value' => 'グリーン', 'hint' => '', 'field' => 'rank'],
+                    ['label' => '次の特典まで', 'value' => '20', 'hint' => 'pt', 'field' => 'points_to_next'],
                 ]],
-                ['type' => 'banner', 'design' => 'promo', 'icon' => 'fa-crown', 'text' => '会員限定 — 今週末はポイント3倍デー', 'color' => $a],
+                ['type' => 'banner', 'design' => 'promo', 'icon' => 'fa-star', 'text' => 'スターリワードに交換できます', 'color' => $a, 'action' => '#coupons'],
+                ['type' => 'card', 'design' => 'featured', 'title' => 'モバイルオーダー', 'description' => 'レジに並ばず、お店で受け取り', 'image_url' => 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=800', 'action' => '#products'],
                 ['type' => 'quick_actions', 'design' => 'pill', 'actions' => [
-                    ['icon' => 'fa-qrcode', 'label' => '会員証', 'action' => '#member'],
-                    ['icon' => 'fa-ticket-alt', 'label' => 'クーポン', 'action' => '#coupons'],
+                    ['icon' => 'fa-barcode', 'label' => '会員証', 'action' => '#member'],
+                    ['icon' => 'fa-gift', 'label' => '特典交換', 'action' => '#coupons'],
                     ['icon' => 'fa-stamp', 'label' => 'スタンプ', 'action' => '#stamps'],
+                    ['icon' => 'fa-envelope', 'label' => 'Inbox', 'action' => '#announcements'],
                 ]],
                 ['type' => 'data', 'source' => 'coupons', 'design' => 'compact'],
                 ['type' => 'button', 'design' => 'sticky', 'text' => '会員証を提示', 'action' => '#member', 'color' => $a, 'full_width' => true],
@@ -604,21 +684,24 @@ class LiffAppStudioTemplates
         ];
     }
 
-    /** McDonald's / Uber 風 — 注文ファースト、会員は裏方、ホームに member_summary なし */
+    /** McDonald's / Chipotle スクショ学習 — 受取カード最上部、注文CTA明確、会員は裏方 */
     private static function orderLayouts(): array
     {
-        $a = '#ff9500';
+        $a = '#FFC72C';
+        $ink = '#292929';
 
         return [
             'home' => [
-                ['type' => 'banner', 'design' => 'countdown', 'icon' => 'fa-fire', 'text' => '今すぐ受取予約 — ランチ20%OFF 残り2時間', 'color' => $a, 'text_color' => '#ffffff', 'action' => '#products'],
-                ['type' => 'data', 'source' => 'products', 'design' => 'cards'],
-                ['type' => 'stats_row', 'section_label' => '本日の目安', 'items' => [
-                    ['label' => '平均受取', 'value' => '8', 'hint' => '分'],
-                    ['label' => '本日注文', 'value' => '142', 'hint' => '件'],
+                ['type' => 'card', 'design' => 'featured', 'title' => 'PICKUP #248', 'description' => '本日 12:00 受取 — 棚の2袋をご確認ください', 'image_url' => 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=800', 'action' => '#orders'],
+                ['type' => 'banner', 'design' => 'countdown', 'icon' => 'fa-bag-shopping', 'text' => 'モバイルオーダーもデリバリーも — 公式アプリが便利', 'color' => $ink, 'text_color' => '#FFC72C', 'action' => '#products'],
+                ['type' => 'quick_actions', 'design' => 'grid', 'actions' => [
+                    ['icon' => 'fa-utensils', 'label' => '注文する', 'action' => '#products'],
+                    ['icon' => 'fa-receipt', 'label' => '受取状況', 'action' => '#orders'],
+                    ['icon' => 'fa-ticket-alt', 'label' => 'クーポン', 'action' => '#coupons'],
+                    ['icon' => 'fa-redo', 'label' => '再注文', 'action' => '#orders'],
                 ]],
-                ['type' => 'data', 'source' => 'orders', 'design' => 'compact'],
-                ['type' => 'button', 'design' => 'sticky', 'text' => 'メニューを開く', 'action' => '#products', 'color' => $a, 'full_width' => true],
+                ['type' => 'data', 'source' => 'products', 'design' => 'cards'],
+                ['type' => 'button', 'design' => 'sticky', 'text' => 'メニューを開く', 'action' => '#products', 'color' => $ink, 'full_width' => true],
             ],
             'products' => [
                 ['type' => 'data', 'source' => 'products', 'design' => 'cards'],
@@ -752,23 +835,28 @@ class LiffAppStudioTemplates
         ];
     }
 
-    /** Warm カフェ — 朝の挨拶ヒーロー → シグネチャー → スタンプ進捗 → soft CTA */
+    /** Starbucks / ブルーボトル学習 — 挨拶→リワード進捗→オーダーCTA→Pay（会員証）常駐 */
     private static function cafeLayouts(): array
     {
         $a = '#8B5E3C';
 
         return [
             'home' => [
-                ['type' => 'hero', 'design' => 'apple', 'eyebrow' => 'おはようございます', 'title' => '今日の一杯を選ぶ', 'subtitle' => '〇〇カフェへようこそ', 'image_url' => 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=1400&q=80'],
+                ['type' => 'member_summary', 'design' => 'rewards', 'greeting' => 'おはようございます'],
+                ['type' => 'stats_row', 'section_label' => '本日のリワード', 'items' => [
+                    ['label' => 'スター', 'value' => '7', 'hint' => '/10', 'field' => 'points'],
+                    ['label' => '次特典', 'value' => '3', 'hint' => '個', 'field' => 'points_to_next'],
+                ]],
+                ['type' => 'hero', 'design' => 'apple', 'eyebrow' => '今日の一杯', 'title' => 'シグネチャーをオーダー', 'subtitle' => 'レジに並ばず受け取り', 'image_url' => 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=1400&q=80'],
                 ['type' => 'card', 'design' => 'featured', 'title' => '本日のシグネチャー', 'description' => '季節のラテ ¥620 — 焙煎したての一杯を', 'image_url' => 'https://images.unsplash.com/photo-1511920170033-f8396924c348?w=800', 'action' => '#products'],
                 ['type' => 'banner', 'design' => 'promo', 'icon' => 'fa-mug-hot', 'text' => 'スタンプあと3個でドリンク1杯無料', 'color' => $a, 'action' => '#stamps'],
-                ['type' => 'data', 'source' => 'stamps', 'design' => 'compact'],
-                ['type' => 'quick_actions', 'design' => 'compact', 'actions' => [
+                ['type' => 'quick_actions', 'design' => 'pill', 'actions' => [
                     ['icon' => 'fa-bag-shopping', 'label' => 'オーダー', 'action' => '#products'],
+                    ['icon' => 'fa-barcode', 'label' => 'Pay', 'action' => '#member'],
                     ['icon' => 'fa-stamp', 'label' => 'スタンプ', 'action' => '#stamps'],
                     ['icon' => 'fa-ticket-alt', 'label' => 'クーポン', 'action' => '#coupons'],
                 ]],
-                ['type' => 'button', 'design' => 'cta', 'text' => 'モバイルオーダーする', 'action' => '#products', 'color' => $a, 'full_width' => true],
+                ['type' => 'button', 'design' => 'sticky', 'text' => 'モバイルオーダーする', 'action' => '#products', 'color' => $a, 'full_width' => true],
             ],
             'products' => [
                 ['type' => 'heading', 'design' => 'section', 'text' => 'ドリンク & フード', 'size' => 'large'],
@@ -895,18 +983,25 @@ class LiffAppStudioTemplates
         ];
     }
 
-    /** ファッション EC / editorial noir — セールカウントダウン→エディトリアル→商品グリッド */
+    /** UNIQLO スクショ学習 — 検索/スキャン導線・カテゴリ発見・下部に会員証 */
     private static function retailLayouts(): array
     {
         $a = '#111111';
 
         return [
             'home' => [
-                ['type' => 'banner', 'design' => 'countdown', 'icon' => 'fa-fire', 'text' => '週末セール — 最大50%OFF 残り2日', 'color' => $a, 'text_color' => '#ffffff', 'action' => '#products'],
-                ['type' => 'slider', 'source' => 'gallery', 'design' => 'hero', 'section_label' => '今週のルック', 'slide_height' => 200],
+                ['type' => 'banner', 'design' => 'promo', 'icon' => 'fa-search', 'text' => '何をお探しですか？ — 商品検索・バーコードスキャン', 'color' => $a, 'text_color' => '#ffffff', 'action' => '#products'],
+                ['type' => 'banner', 'design' => 'countdown', 'icon' => 'fa-tag', 'text' => '会員登録で¥500クーポン — ¥5,000以上で利用可', 'color' => '#C2410C', 'text_color' => '#ffffff', 'action' => '#coupons'],
+                ['type' => 'quick_actions', 'design' => 'grid', 'actions' => [
+                    ['icon' => 'fa-barcode', 'label' => '会員証', 'action' => '#member'],
+                    ['icon' => 'fa-heart', 'label' => 'お気に入り', 'action' => '#gallery'],
+                    ['icon' => 'fa-bell', 'label' => 'お知らせ', 'action' => '#announcements'],
+                    ['icon' => 'fa-ticket-alt', 'label' => 'クーポン', 'action' => '#coupons'],
+                ]],
+                ['type' => 'slider', 'source' => 'gallery', 'design' => 'hero', 'section_label' => 'カテゴリから探す', 'slide_height' => 180],
                 ['type' => 'data', 'source' => 'products', 'design' => 'cards'],
                 ['type' => 'card', 'design' => 'overlay', 'title' => 'New Arrivals', 'description' => '会員先行で公開中', 'image_url' => 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800', 'action' => '#products'],
-                ['type' => 'button', 'design' => 'cta', 'text' => 'ショップを見る', 'action' => '#products', 'color' => $a, 'full_width' => true],
+                ['type' => 'button', 'design' => 'sticky', 'text' => '会員証を提示', 'action' => '#member', 'color' => $a, 'full_width' => true],
             ],
             'products' => [
                 ['type' => 'data', 'source' => 'products', 'design' => 'cards'],
@@ -951,6 +1046,89 @@ class LiffAppStudioTemplates
             'announcements' => [
                 ['type' => 'heading', 'design' => 'section', 'text' => 'お知らせ', 'size' => 'large'],
                 ['type' => 'banner', 'design' => 'pill', 'icon' => 'fa-bullhorn', 'text' => 'セール・入荷情報をお届け', 'color' => $a, 'text_color' => '#ffffff'],
+                ['type' => 'data', 'source' => 'announcements', 'design' => 'cards'],
+            ],
+        ];
+    }
+
+    /** シャトレーゼ / コージーコーナー スクショ学習 — 会員証バーコード最優先・季節ヒーロー・店頭受取 */
+    private static function sweetsLayouts(): array
+    {
+        $a = '#5C3A21';
+
+        return [
+            'home' => [
+                ['type' => 'member_summary', 'design' => 'wallet', 'greeting' => 'おかえりなさい'],
+                ['type' => 'stats_row', 'section_label' => 'マイポイント', 'items' => [
+                    ['label' => 'ポイント', 'value' => '1,000', 'hint' => 'pt', 'field' => 'points'],
+                    ['label' => 'ランク', 'value' => 'レギュラー', 'hint' => '', 'field' => 'rank'],
+                    ['label' => '次特典まで', 'value' => '200', 'hint' => 'pt', 'field' => 'points_to_next'],
+                ]],
+                ['type' => 'slider', 'source' => 'gallery', 'design' => 'hero', 'section_label' => '季節のおすすめ', 'slide_height' => 200],
+                ['type' => 'quick_actions', 'design' => 'grid', 'actions' => [
+                    ['icon' => 'fa-barcode', 'label' => '会員証', 'action' => '#member'],
+                    ['icon' => 'fa-ticket-alt', 'label' => 'クーポン', 'action' => '#coupons'],
+                    ['icon' => 'fa-store', 'label' => '店頭受取', 'action' => '#products'],
+                    ['icon' => 'fa-bullhorn', 'label' => '新作情報', 'action' => '#announcements'],
+                ]],
+                ['type' => 'banner', 'design' => 'promo', 'icon' => 'fa-birthday-cake', 'text' => 'アプリが会員証に — レジでバーコードをご提示ください', 'color' => $a, 'action' => '#member'],
+                ['type' => 'data', 'source' => 'coupons', 'design' => 'compact'],
+                ['type' => 'card', 'design' => 'featured', 'title' => 'カテゴリから探す', 'description' => 'ケーキ・焼菓子・アイス・ギフト', 'image_url' => 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=800', 'action' => '#products'],
+                ['type' => 'button', 'design' => 'sticky', 'text' => '会員証を提示', 'action' => '#member', 'color' => $a, 'full_width' => true],
+            ],
+            'products' => [
+                ['type' => 'heading', 'design' => 'section', 'text' => 'スイーツを探す', 'size' => 'large'],
+                ['type' => 'banner', 'design' => 'promo', 'icon' => 'fa-shopping-bag', 'text' => 'ネット予約・店頭受け取りがスムーズ', 'color' => $a],
+                ['type' => 'data', 'source' => 'products', 'design' => 'cards'],
+                ['type' => 'button', 'design' => 'sticky', 'text' => '予約・購入へ', 'action' => '#order/cart', 'color' => $a, 'full_width' => true],
+            ],
+            'orders' => [
+                ['type' => 'heading', 'design' => 'section', 'text' => 'ご注文・受取', 'size' => 'large'],
+                ['type' => 'banner', 'design' => 'pill', 'icon' => 'fa-store', 'text' => '店頭受取の準備ができたらお知らせします', 'color' => $a, 'text_color' => '#ffffff'],
+                ['type' => 'data', 'source' => 'orders', 'design' => 'timeline'],
+            ],
+            'stamps' => [
+                ['type' => 'heading', 'design' => 'section', 'text' => 'スタンプ', 'size' => 'large'],
+                ['type' => 'banner', 'design' => 'promo', 'icon' => 'fa-gift', 'text' => '対象商品のご購入でスタンプが貯まります', 'color' => $a],
+                ['type' => 'data', 'source' => 'stamps', 'design' => 'cards'],
+            ],
+            'coupons' => [
+                ['type' => 'heading', 'design' => 'section', 'text' => '限定クーポン', 'size' => 'large'],
+                ['type' => 'banner', 'design' => 'pill', 'icon' => 'fa-ticket-alt', 'text' => 'アプリ限定のお得なクーポン', 'color' => $a, 'text_color' => '#ffffff'],
+                ['type' => 'data', 'source' => 'coupons', 'design' => 'cards'],
+            ],
+            'queue' => [
+                ['type' => 'heading', 'design' => 'section', 'text' => '順番待ち', 'size' => 'large'],
+                ['type' => 'data', 'source' => 'queue', 'design' => 'cards'],
+            ],
+            'reservations' => [
+                ['type' => 'heading', 'design' => 'section', 'text' => 'ケーキ予約・店頭受取', 'size' => 'large'],
+                ['type' => 'text', 'design' => 'lead', 'text' => '人気ギフトやデコレーションケーキを予約して店頭で受け取れます。'],
+                ['type' => 'list', 'style' => 'number', 'items' => ['商品を選ぶ', '受取日時を指定', '店舗で受け取る']],
+                ['type' => 'data', 'source' => 'reservations', 'design' => 'cards'],
+                ['type' => 'button', 'design' => 'cta', 'text' => '予約する', 'action' => '#reservations', 'color' => $a, 'full_width' => true],
+            ],
+            'member' => [
+                ['type' => 'member_summary', 'design' => 'wallet', 'greeting' => '会員証'],
+                ['type' => 'data', 'source' => 'member_card', 'card_design' => 'emblem'],
+                ['type' => 'stats_row', 'items' => [
+                    ['label' => 'ポイント', 'value' => '1,000', 'hint' => 'pt', 'field' => 'points'],
+                    ['label' => '有効期限', 'value' => '2030.01', 'hint' => ''],
+                ]],
+                ['type' => 'icon_text', 'rows' => [
+                    ['icon' => 'fa-barcode', 'text' => 'レジでバーコードをご提示ください', 'color' => $a],
+                    ['icon' => 'fa-store', 'text' => 'マイショップ店舗を設定すると便利です', 'color' => $a],
+                ]],
+                ['type' => 'button', 'design' => 'sticky', 'text' => 'バーコードを拡大', 'action' => '#member', 'color' => $a, 'full_width' => true],
+            ],
+            'gallery' => [
+                ['type' => 'heading', 'design' => 'section', 'text' => '季節のスイーツ', 'size' => 'large'],
+                ['type' => 'slider', 'source' => 'gallery', 'design' => 'hero', 'slide_height' => 220],
+                ['type' => 'data', 'source' => 'gallery', 'design' => 'cards'],
+            ],
+            'announcements' => [
+                ['type' => 'heading', 'design' => 'section', 'text' => '最新スイーツ情報', 'size' => 'large'],
+                ['type' => 'banner', 'design' => 'pill', 'icon' => 'fa-bullhorn', 'text' => '新作・限定情報をお届け', 'color' => $a, 'text_color' => '#ffffff'],
                 ['type' => 'data', 'source' => 'announcements', 'design' => 'cards'],
             ],
         ];
@@ -1358,6 +1536,113 @@ class LiffAppStudioTemplates
             ['type' => 'data', 'source' => 'reservations', 'design' => 'cards'],
             ['type' => 'data', 'source' => 'stamps', 'design' => 'cards'],
             ['type' => 'button', 'design' => 'sticky', 'text' => 'チェックイン', 'action' => '#stamps', 'color' => '#16a34a', 'full_width' => true],
+        ];
+    }
+
+    /** コージーコーナー風ホーム */
+    /** @return array<int, array<string, mixed>> */
+    private static function screenSweetsHome(): array
+    {
+        $a = '#5C3A21';
+
+        return [
+            ['type' => 'member_summary', 'design' => 'wallet', 'greeting' => 'こんにちは'],
+            ['type' => 'stats_row', 'items' => [
+                ['label' => 'マイル', 'value' => '1,000', 'hint' => 'pt', 'field' => 'points'],
+                ['label' => '使えるクーポン', 'value' => '3', 'hint' => '枚'],
+            ]],
+            ['type' => 'slider', 'source' => 'gallery', 'design' => 'hero', 'section_label' => 'おすすめスイーツ', 'slide_height' => 220],
+            ['type' => 'quick_actions', 'design' => 'grid', 'actions' => [
+                ['icon' => 'fa-barcode', 'label' => '会員証', 'action' => '#member'],
+                ['icon' => 'fa-ticket-alt', 'label' => 'クーポン', 'action' => '#coupons'],
+            ]],
+            ['type' => 'banner', 'design' => 'promo', 'icon' => 'fa-percent', 'text' => 'お得情報満載 — マイルプログラム対象店舗', 'color' => $a],
+            ['type' => 'button', 'design' => 'sticky', 'text' => '会員証を提示', 'action' => '#member', 'color' => $a, 'full_width' => true],
+        ];
+    }
+
+    /** シャトレーゼ風バーコード提示 */
+    /** @return array<int, array<string, mixed>> */
+    private static function screenBarcodeDock(): array
+    {
+        $a = '#5C3A21';
+
+        return [
+            ['type' => 'heading', 'design' => 'section', 'text' => 'ポイントが貯まる・使える', 'size' => 'large'],
+            ['type' => 'member_summary', 'design' => 'wallet'],
+            ['type' => 'data', 'source' => 'member_card', 'card_design' => 'emblem'],
+            ['type' => 'stats_row', 'items' => [
+                ['label' => 'ポイント', 'value' => '10,000', 'hint' => 'pt', 'field' => 'points'],
+                ['label' => '有効期限', 'value' => '2030.01.01', 'hint' => ''],
+            ]],
+            ['type' => 'icon_text', 'rows' => [
+                ['icon' => 'fa-barcode', 'text' => 'レジでバーコードをご提示ください', 'color' => $a],
+            ]],
+            ['type' => 'button', 'design' => 'sticky', 'text' => 'バーコードを拡大表示', 'action' => '#member', 'color' => $a, 'full_width' => true],
+        ];
+    }
+
+    /** GODIVA / Lindt 風クラブ */
+    /** @return array<int, array<string, mixed>> */
+    private static function screenChocolateClub(): array
+    {
+        $a = '#C5A059';
+
+        return [
+            ['type' => 'hero', 'design' => 'editorial', 'eyebrow' => 'Member Club', 'title' => 'あなたにぴったりな Happiness を', 'subtitle' => 'いつでもどこでも、もっと楽しく', 'image_url' => 'https://images.unsplash.com/photo-1549007994-cb72beaad946?w=1400&q=80'],
+            ['type' => 'member_summary', 'design' => 'wallet'],
+            ['type' => 'stats_row', 'section_label' => 'クラブステータス', 'items' => [
+                ['label' => 'ランクP', 'value' => '2,400', 'hint' => '', 'field' => 'points'],
+                ['label' => '交換P', 'value' => '180', 'hint' => ''],
+                ['label' => 'スタンプ', 'value' => '4', 'hint' => '/8'],
+            ]],
+            ['type' => 'banner', 'design' => 'promo', 'icon' => 'fa-gift', 'text' => 'スタンプ達成で限定クーポン', 'color' => $a, 'action' => '#stamps'],
+            ['type' => 'data', 'source' => 'coupons', 'design' => 'cards'],
+            ['type' => 'button', 'design' => 'cta', 'text' => '会員証を提示', 'action' => '#member', 'color' => '#1c1917', 'full_width' => true],
+        ];
+    }
+
+    /** Chipotle Pickup 風 */
+    /** @return array<int, array<string, mixed>> */
+    private static function screenPickupReady(): array
+    {
+        $a = '#A81612';
+
+        return [
+            ['type' => 'heading', 'design' => 'section', 'text' => 'PICKUP', 'size' => 'large'],
+            ['type' => 'banner', 'design' => 'pill', 'icon' => 'fa-bag-shopping', 'text' => '受取準備完了 — 12:00 / 棚の2袋', 'color' => $a, 'text_color' => '#ffffff'],
+            ['type' => 'stats_row', 'items' => [
+                ['label' => '受取時刻', 'value' => '12:00', 'hint' => ''],
+                ['label' => '袋数', 'value' => '2', 'hint' => '袋'],
+                ['label' => '店舗', 'value' => '本店', 'hint' => ''],
+            ]],
+            ['type' => 'access', 'design' => 'card', 'title' => '受取店舗', 'address' => '東京都〇〇区〇〇 1-2-3', 'note' => 'ピックアップ棚でお受け取りください'],
+            ['type' => 'icon_text', 'rows' => [
+                ['icon' => 'fa-map-marker-alt', 'text' => '店舗マップで場所を確認', 'color' => $a],
+                ['icon' => 'fa-comment', 'text' => 'わからないときはスタッフへ', 'color' => $a],
+            ]],
+            ['type' => 'data', 'source' => 'orders', 'design' => 'timeline'],
+            ['type' => 'button', 'design' => 'sticky', 'text' => '注文詳細を見る', 'action' => '#orders', 'color' => $a, 'full_width' => true],
+        ];
+    }
+
+    /** UNIQLO 風カテゴリ */
+    /** @return array<int, array<string, mixed>> */
+    private static function screenCategoryBrowse(): array
+    {
+        $a = '#111111';
+
+        return [
+            ['type' => 'banner', 'design' => 'promo', 'icon' => 'fa-search', 'text' => '何をお探しですか？', 'color' => $a, 'text_color' => '#ffffff', 'action' => '#products'],
+            ['type' => 'heading', 'design' => 'section', 'text' => 'カテゴリから探す', 'size' => 'large'],
+            ['type' => 'quick_actions', 'design' => 'grid', 'actions' => [
+                ['icon' => 'fa-female', 'label' => 'WOMEN', 'action' => '#products'],
+                ['icon' => 'fa-male', 'label' => 'MEN', 'action' => '#products'],
+                ['icon' => 'fa-child', 'label' => 'KIDS', 'action' => '#products'],
+                ['icon' => 'fa-barcode', 'label' => '会員証', 'action' => '#member'],
+            ]],
+            ['type' => 'data', 'source' => 'products', 'design' => 'cards'],
+            ['type' => 'button', 'design' => 'sticky', 'text' => '商品一覧へ', 'action' => '#products', 'color' => $a, 'full_width' => true],
         ];
     }
 }

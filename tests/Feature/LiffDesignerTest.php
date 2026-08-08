@@ -551,7 +551,9 @@ class LiffDesignerTest extends TestCase
         $templates = ShopSettingLiffDefaults::defaultLiffDesignerTemplates();
         $ids = array_column($templates, 'id');
         $this->assertContains('rg-suite-loyalty', $ids);
+        $this->assertContains('rg-suite-sweets', $ids);
         $this->assertContains('rg-screen-rewards', $ids);
+        $this->assertContains('rg-screen-barcode-dock', $ids);
         $this->assertSame('rg-suite-loyalty', $ids[0] ?? null);
     }
 
