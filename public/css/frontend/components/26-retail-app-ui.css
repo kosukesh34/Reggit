@@ -383,6 +383,24 @@
 }
 .ms-progress-goal { opacity: 0.9; }
 
+.ms-redeem-cta {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 14px;
+    min-height: 44px;
+    padding: 0 18px;
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 800;
+    text-decoration: none;
+    color: var(--primary-dark, #0e4f3d);
+    background: #fff;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+}
+
 /* ── 商品カード（ドミナント画像・価格強調）── */
 .product-card {
     border-radius: var(--radius-xl, 18px);
