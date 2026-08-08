@@ -1238,9 +1238,27 @@
 
 ---
 
-## 9. 次の調査ステップ
+## 9. スクショ学習とUI改善（実施済み）
 
-1. セクション6の優先アプリのApp Storeスクショでチェックリストを埋める
+詳細: [`docs/research/APP_UI_SCREENSHOT_LEARNINGS.md`](research/APP_UI_SCREENSHOT_LEARNINGS.md)
+
+代表スクショ: [`docs/research/app-ui-screenshots/_featured/`](research/app-ui-screenshots/_featured/)
+
+### Reggit への反映
+
+| 学習元 | 反映 |
+|--------|------|
+| Starbucks Rewards | `rg-suite-loyalty` / `rg-suite-cafe` ホーム改善 |
+| シャトレーゼ / コージーコーナー | **新** `rg-suite-sweets`、`rg-screen-barcode-dock` |
+| GODIVA / Lindt | `rg-screen-chocolate-club`、theme `chocolate` |
+| McDonald's / Chipotle | `rg-suite-order`、`rg-screen-pickup-ready` |
+| UNIQLO | `rg-suite-retail`、`rg-screen-category-browse` |
+
+CSS: `public/css/frontend/components/35-app-studio-recipes.css`（pastry/chocolate・バーコード提示）
+
+## 10. 次の調査ステップ
+
+1. コナミ / 東横INN / ヨドバシ / コンビニ公式のスクショを同手順で追加取得
 2. Yappli / GMO / toypo / dinii の公式画面を同じ表で比較する
 3. 全店舗CSVをベースに「導入可能性 A/B/C」列を追加して営業リスト化する
 
