@@ -135,10 +135,10 @@ jobs:
           echo "Laravel Pint not installed, skipping..."
         fi
 
-  # PR / ver1.0.0 ではスキップ。main への push（マージ後）のみ実行。
+  # 一時停止: main 運用中は Playwright を走らせない（再開時は条件を戻す）。
   e2e_web:
     name: E2E Web (Playwright)
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: false
     runs-on: ubuntu-latest
     timeout-minutes: 40
 
