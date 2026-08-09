@@ -105,7 +105,7 @@ export function TemplateGallery({ compact = false }: { compact?: boolean }) {
             <div className="ld-studio__segment ld-inline-gallery__scope">
                 <button type="button" className={scope === 'all' ? 'is-active' : ''} onClick={() => setScope('all')}>すべて</button>
                 <button type="button" className={scope === 'tab' ? 'is-active' : ''} onClick={() => setScope('tab')}>画面用</button>
-                <button type="button" className={scope === 'super' ? 'is-active' : ''} onClick={() => setScope('super')}>Suite</button>
+                <button type="button" className={scope === 'super' ? 'is-active' : ''} onClick={() => setScope('super')}>全画面</button>
             </div>
 
             <div className="ld-palette-categories ld-inline-gallery__cats">

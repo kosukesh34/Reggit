@@ -43,6 +43,7 @@ use App\Http\Controllers\Admin\Settings\ReservationsController;
 use App\Http\Controllers\Admin\Settings\SmaregiController;
 use App\Http\Controllers\Admin\Settings\WalletController;
 use App\Http\Controllers\Admin\StampController as AdminStampController;
+use App\Http\Controllers\Admin\ShopAppUiResearchController;
 use App\Http\Controllers\Admin\SystemAdminDashboardController;
 use App\Http\Controllers\GoogleWalletSaveRedirectController;
 use App\Http\Controllers\LiffController;
@@ -357,4 +358,9 @@ Route::prefix('system-admin')->middleware(['web', 'auth:admin', 'system.admin', 
 
     Route::get('/audit-logs', [AdminAuditLogController::class, 'index'])->name('system-admin.audit-logs.index');
     Route::get('/audit-logs/{id}', [AdminAuditLogController::class, 'show'])->name('system-admin.audit-logs.show');
+
+    Route::get('/shop-app-ui-research', [ShopAppUiResearchController::class, 'index'])->name('system-admin.shop-app-ui-research');
+    Route::get('/shop-app-ui-research/asset/{path}', [ShopAppUiResearchController::class, 'asset'])
+        ->where('path', '.*')
+        ->name('system-admin.shop-app-ui-research.asset');
 });

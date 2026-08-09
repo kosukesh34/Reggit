@@ -40,6 +40,21 @@ function Toast() {
     );
 }
 
+function SavingBusy() {
+    const { state } = useDesigner();
+    if (!state.saving) return null;
+    const title = state.templateOpen ? '適用して保存中…' : '保存中…';
+    return (
+        <div className="ld-save-busy" role="status" aria-live="polite" aria-busy="true">
+            <div className="ld-save-busy__card">
+                <i className="fas fa-spinner fa-spin" aria-hidden />
+                <strong>{title}</strong>
+                <span>完了するまでお待ちください</span>
+            </div>
+        </div>
+    );
+}
+
 function LegacyNotes() {
     const { state, dispatch } = useDesigner();
     useEffect(() => {
@@ -90,9 +105,17 @@ function KeyboardShortcuts() {
             }
             if (meta && e.key.toLowerCase() === 's') {
                 e.preventDefault();
-                const formAction = config.formAction;
-                const csrfToken = config.csrfToken || (document.querySelector('input[name="_token"]') as HTMLInputElement | null)?.value;
-                if (formAction === undefined || formAction === '' || csrfToken === undefined || csrfToken === '') return;
+                if (state.saving) return;
+                const formAction = String(config.formAction || '').trim();
+                const csrfToken = String(
+                    config.csrfToken
+                    || (document.querySelector('input[name="_token"]') as HTMLInputElement | null)?.value
+                    || '',
+                ).trim();
+                if (formAction === '' || csrfToken === '') {
+                    dispatch({ type: 'SHOW_TOAST', message: '保存設定が見つかりません。ページを再読み込みしてください', isError: true });
+                    return;
+                }
                 dispatch({ type: 'SET_SAVING', saving: true });
                 saveDesigner(state, formAction, csrfToken)
                     .then((message) => {
@@ -185,6 +208,7 @@ function DesignerShell() {
             <PreviewOverlay />
             <HelpModal open={state.helpOpen} onClose={() => dispatch({ type: 'SET_UI', patch: { helpOpen: false } })} />
             <OnboardingOverlay />
+            <SavingBusy />
             <Toast />
             <LegacyNotes />
             <DirtyGuard />
