@@ -1125,6 +1125,12 @@ export class MemberManager {
         const memberCardBgStyle =
             MemberManager.getLiffGlobalSetting('member_card_bg_style', '') ||
             'gradient';
+        const memberCardGloss =
+            MemberManager.getLiffGlobalSetting('member_card_gloss', '') ||
+            'soft';
+        const memberCardSurface =
+            MemberManager.getLiffGlobalSetting('member_card_surface', '') ||
+            'plastic';
 
         let expiryText = '';
         if (pointsExpiry && pointsExpiry.expires_at_label) {
@@ -1149,8 +1155,12 @@ export class MemberManager {
         const cardStyle = cardStyleParts.length > 0
             ? ` data-rank-color="true" style="${cardStyleParts.join('; ')}"`
             : '';
+        const glossSafe = ['matte', 'soft', 'gloss', 'mirror'].indexOf(memberCardGloss) >= 0 ? memberCardGloss : 'soft';
+        const surfaceSafe = ['plastic', 'metal', 'paper', 'glass'].indexOf(memberCardSurface) >= 0 ? memberCardSurface : 'plastic';
         const cardDesignClass = 'idnect-card-wrapper--design-' + (availableDesigns.indexOf(memberCardDesign) >= 0 ? memberCardDesign : 'default')
-            + ' idnect-card-wrapper--bg-' + (['solid', 'gradient', 'image'].indexOf(memberCardBgStyle) >= 0 ? memberCardBgStyle : 'gradient');
+            + ' idnect-card-wrapper--bg-' + (['solid', 'gradient', 'image'].indexOf(memberCardBgStyle) >= 0 ? memberCardBgStyle : 'gradient')
+            + ' idnect-card-wrapper--gloss-' + glossSafe
+            + ' idnect-card-wrapper--surface-' + surfaceSafe;
         const showLogoOnCard = (memberCardDesign === 'logo_top' || memberCardDesign === 'logo_center' || memberCardDesign === 'logo_header' || memberCardDesign === 'split_banner' || memberCardDesign === 'emblem') && memberCardLogoUrl;
         const logoBlock = showLogoOnCard
             ? `<div class="idnect-card-logo-wrap"><img src="${DomHelper.escapeHtml(memberCardLogoUrl)}" class="idnect-card-logo" alt="" onerror="this.parentElement.style.display='none'"></div>`

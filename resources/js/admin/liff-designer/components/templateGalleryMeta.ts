@@ -50,60 +50,63 @@ export const CATEGORY_LABELS: Record<string, string> = {
     other: 'その他',
 };
 
-/** 空キャンバスやギャラリー推奨枠で優先表示するテンプレ ID */
+/** 空キャンバスやギャラリー推奨枠で優先表示するテンプレ ID（注文・カフェ・菓子を先頭） */
 export const FEATURED_TEMPLATE_IDS = [
-    'rg-suite-loyalty',
-    'rg-suite-sweets',
-    'rg-suite-cafe',
-    'rg-suite-salon',
     'rg-suite-order',
+    'rg-suite-cafe',
+    'rg-suite-sweets',
+    'rg-suite-loyalty',
     'rg-suite-retail',
+    'rg-suite-salon',
+    'rg-screen-pickup-ready',
+    'rg-screen-barcode-dock',
     'rg-screen-rewards',
     'rg-screen-sweets-home',
-    'rg-screen-barcode-dock',
     'rg-screen-pass',
-    'rg-screen-pickup-ready',
+    'rg-screen-menu',
     'rg-screen-flash',
     'rg-screen-next-visit',
-    'rg-screen-vip',
 ] as const;
 
 export const CATEGORY_ACCENTS: Record<string, GalleryAccent> = {
-    suite: { color: '#007aff', soft: '#e8f1ff', icon: 'fa-mobile-alt' },
-    loyalty: { color: '#5856d6', soft: '#eeedfe', icon: 'fa-crown' },
-    order: { color: '#ff9500', soft: '#fff4e5', icon: 'fa-bag-shopping' },
+    suite: { color: '#0f172a', soft: '#f1f5f9', icon: 'fa-mobile-alt' },
+    loyalty: { color: '#00754A', soft: '#e8f5ef', icon: 'fa-crown' },
+    order: { color: '#A81612', soft: '#FDF8F2', icon: 'fa-bag-shopping' },
     booking: { color: '#af52de', soft: '#f6e9fc', icon: 'fa-calendar-check' },
-    cafe: { color: '#8B5E3C', soft: '#f5ebe3', icon: 'fa-coffee' },
+    cafe: { color: '#00754A', soft: '#eef7f2', icon: 'fa-coffee' },
     salon: { color: '#ff2d55', soft: '#ffe5ec', icon: 'fa-spa' },
     retail: { color: '#1c1c1e', soft: '#f2f2f7', icon: 'fa-shopping-bag' },
     sweets: { color: '#5c3a21', soft: '#f7f4f0', icon: 'fa-birthday-cake' },
-    clinic: { color: '#32ade6', soft: '#e5f6fc', icon: 'fa-stethoscope' },
+    clinic: { color: '#0284c7', soft: '#e5f6fc', icon: 'fa-stethoscope' },
     delivery: { color: '#ff3b30', soft: '#ffe8e6', icon: 'fa-motorcycle' },
-    screen: { color: '#34c759', soft: '#e8f9ee', icon: 'fa-layer-group' },
-    home: { color: '#2563eb', soft: '#dbeafe', icon: 'fa-home' },
-    member: { color: '#7c3aed', soft: '#ede9fe', icon: 'fa-id-card' },
+    screen: { color: '#334155', soft: '#f1f5f9', icon: 'fa-layer-group' },
+    home: { color: '#0f172a', soft: '#f1f5f9', icon: 'fa-home' },
+    member: { color: '#00754A', soft: '#e8f5ef', icon: 'fa-id-card' },
     reservation: { color: '#0891b2', soft: '#cffafe', icon: 'fa-calendar-alt' },
     campaign: { color: '#e11d48', soft: '#ffe4e6', icon: 'fa-bullhorn' },
     story: { color: '#c2410c', soft: '#ffedd5', icon: 'fa-book-open' },
     support: { color: '#0f766e', soft: '#ccfbf1', icon: 'fa-headset' },
-    industry: { color: '#4f46e5', soft: '#e0e7ff', icon: 'fa-store' },
+    industry: { color: '#334155', soft: '#e2e8f0', icon: 'fa-store' },
     native: { color: '#0f172a', soft: '#e2e8f0', icon: 'fa-mobile-alt' },
     apple: { color: '#007aff', soft: '#e8f1ff', icon: 'fa-apple' },
-    luxury: { color: '#92400e', soft: '#fef3c7', icon: 'fa-gem' },
-    super: { color: '#007aff', soft: '#e8f1ff', icon: 'fa-layer-group' },
+    luxury: { color: '#C5A059', soft: '#faf8f4', icon: 'fa-gem' },
+    super: { color: '#0f172a', soft: '#f1f5f9', icon: 'fa-layer-group' },
     other: { color: '#57534e', soft: '#f5f5f4', icon: 'fa-th-large' },
 };
 
 const PRESET_PALETTES: Record<string, { label: string; accent: string }> = {
-    apple_system: { label: 'Apple System', accent: '#007aff' },
-    noir: { label: 'Noir / Stone', accent: '#1c1917' },
-    ocean: { label: 'Blue / Cyan', accent: '#0284c7' },
-    bordeaux: { label: 'Rose / Wine', accent: '#9f1239' },
-    citrus: { label: 'Orange / Amber', accent: '#ea580c' },
-    terracotta: { label: 'Clay / Warm', accent: '#c2410c' },
-    lavender: { label: 'Violet / Soft', accent: '#7c3aed' },
-    sand: { label: 'Sand / Sage', accent: '#78716c' },
-    royal: { label: 'Indigo / Royal', accent: '#4f46e5' },
+    apple_system: { label: 'システム標準', accent: '#007aff' },
+    store: { label: '店舗スタンダード', accent: '#0E7C66' },
+    noir: { label: 'ノワール', accent: '#1c1917' },
+    ocean: { label: 'オーシャン', accent: '#0284c7' },
+    bordeaux: { label: 'ボルドー', accent: '#9f1239' },
+    citrus: { label: 'シトラス（QSR）', accent: '#A81612' },
+    terracotta: { label: 'テラコッタ', accent: '#c2410c' },
+    lavender: { label: 'ラベンダー', accent: '#7c3aed' },
+    sand: { label: 'サンド', accent: '#a8763e' },
+    royal: { label: 'ロイヤル', accent: '#4f46e5' },
+    pastry: { label: 'ペイストリー', accent: '#5C3A21' },
+    chocolate: { label: 'チョコレート', accent: '#C5A059' },
 };
 
 const TAB_LABELS: Record<string, string> = {
@@ -172,8 +175,41 @@ export function paletteLabelFor(tpl: TemplateItem): string {
     if (PRESET_PALETTES[preset] !== undefined) {
         return PRESET_PALETTES[preset].label;
     }
-    if (isAllScreensTemplate(tpl)) return 'Full App';
+    if (isAllScreensTemplate(tpl)) return '全画面アプリ';
     return categoryLabel(templateCategoryKey(tpl));
+}
+
+/**
+ * ギャラリーカード用。ホームが似通うので、業種ごとに差が分かるタブを優先する。
+ */
+export function signaturePreviewTab(tpl: TemplateItem): string {
+    const layouts = tpl.layouts;
+    const has = (tab: string) =>
+        layouts !== undefined && Array.isArray(layouts[tab]) && layouts[tab].length > 0;
+
+    const targets = Array.isArray(tpl.target_tabs) ? tpl.target_tabs : [];
+    if (targets.includes('stamps') && has('stamps')) return 'stamps';
+    if (String(tpl.id || '').includes('stamp') && has('stamps')) return 'stamps';
+
+    const byCategory: Record<string, string> = {
+        loyalty: 'stamps',
+        order: 'home',
+        cafe: 'home',
+        sweets: 'home',
+        booking: 'reservations',
+        salon: 'gallery',
+        retail: 'products',
+        clinic: 'home',
+        delivery: 'orders',
+    };
+    const preferred = byCategory[templateCategoryKey(tpl)];
+    if (preferred !== undefined && has(preferred)) return preferred;
+    if (has('home')) return 'home';
+    if (layouts !== undefined) {
+        const first = Object.keys(layouts).find((tab) => has(tab));
+        if (first !== undefined) return first;
+    }
+    return 'home';
 }
 
 export function previewBlocksFor(tpl: TemplateItem, tab?: string): Record<string, unknown>[] {
@@ -181,9 +217,7 @@ export function previewBlocksFor(tpl: TemplateItem, tab?: string): Record<string
         const preferred =
             tab !== undefined && tab !== '' && Array.isArray(tpl.layouts[tab])
                 ? tab
-                : Array.isArray(tpl.layouts.home)
-                  ? 'home'
-                  : Object.keys(tpl.layouts)[0];
+                : signaturePreviewTab(tpl);
         if (preferred === undefined) return [];
         const rows = Array.isArray(tpl.layouts[preferred]) ? tpl.layouts[preferred] : [];
         return rows as Record<string, unknown>[];
@@ -211,6 +245,12 @@ export function templateTags(tpl: TemplateItem): string[] {
         tags.push(categoryLabel(templateCategoryKey(tpl)));
     }
 
+    const stampDesign = String(theme.stamp_screen_design || '');
+    if (stampDesign === 'wallet') tags.push('Wallet印');
+    else if (stampDesign === 'circle_board') tags.push('サークル印');
+    else if (stampDesign === 'minimal') tags.push('ミニマル印');
+    else if (stampDesign === 'grid_card') tags.push('グリッド印');
+
     const blocks = previewBlocksFor(tpl);
     const types = new Set(blocks.map((b) => String(b.type || '')));
     if (types.has('member_summary')) tags.push('会員');
@@ -219,7 +259,7 @@ export function templateTags(tpl: TemplateItem): string[] {
     else if (types.has('data')) tags.push('データ');
     else if (types.has('quick_actions')) tags.push('導線');
 
-    return tags.slice(0, 3);
+    return tags.slice(0, 4);
 }
 
 export function collectCategoryKeys(templates: TemplateItem[]): string[] {

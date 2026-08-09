@@ -6,9 +6,9 @@ import { ScreenList } from './ScreenList';
 import { TemplateGallery } from './TemplateGallery';
 
 const LEFT_TABS: Array<{ id: LeftStudioTab; label: string; icon: string }> = [
-    { id: 'screens', label: 'Screens', icon: 'fa-mobile-alt' },
-    { id: 'templates', label: 'Templates', icon: 'fa-th-large' },
-    { id: 'blocks', label: 'Blocks', icon: 'fa-cube' },
+    { id: 'screens', label: '画面', icon: 'fa-mobile-alt' },
+    { id: 'templates', label: 'テンプレ', icon: 'fa-th-large' },
+    { id: 'blocks', label: 'ブロック', icon: 'fa-cube' },
 ];
 
 export function LeftStudioPanel() {

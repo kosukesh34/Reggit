@@ -27,7 +27,18 @@ const PRESET_THEME_KEYS = [
     'system_media_shape',
     'system_header_style',
     'member_screen_design',
+    'member_card_bg_style',
+    'member_card_gloss',
+    'member_card_surface',
+    'stamp_screen_design',
+    'stamp_slot_style',
+    'stamp_filled_style',
+    'stamp_accent_color',
     'coupon_screen_design',
+    'coupon_media_style',
+    'coupon_show_available',
+    'coupon_show_history',
+    'products_group_by_category',
     'reservation_screen_design',
     'activity_screen_design',
 ] as const;
@@ -43,6 +54,13 @@ export type TemplateSetupOptions = {
     memberCardDesign: string;
     memberCardDisplayType: string;
     memberCardCodeType: string;
+    memberCardBgStyle: string;
+    memberCardGloss: string;
+    memberCardSurface: string;
+    couponScreenDesign: string;
+    couponMediaStyle: string;
+    couponShowAvailable: boolean;
+    couponShowHistory: boolean;
     heroTitle: string;
     fontFamily: string;
     contentWidth: string;
@@ -55,6 +73,13 @@ export const DEFAULT_TEMPLATE_SETUP: TemplateSetupOptions = {
     memberCardDesign: 'default',
     memberCardDisplayType: 'card',
     memberCardCodeType: 'barcode',
+    memberCardBgStyle: 'gradient',
+    memberCardGloss: 'soft',
+    memberCardSurface: 'plastic',
+    couponScreenDesign: 'ticket',
+    couponMediaStyle: 'image',
+    couponShowAvailable: true,
+    couponShowHistory: true,
     heroTitle: '',
     fontFamily: '',
     contentWidth: '',
@@ -195,14 +220,27 @@ export function buildMenuItemsForTemplate(tpl: TemplateItem, current: MenuItem[]
     const enabledTabs = resolveTemplateEnabledTabs(tpl);
     const enabledSet = new Set(enabledTabs);
     const byTab = Object.fromEntries(current.map((item) => [item.tab, item]));
+    const tplMenuByTab = new Map<string, { label?: string; icon?: string }>();
+    if (Array.isArray(tpl.menu)) {
+        tpl.menu.forEach((row) => {
+            if (isPlainObject(row) && typeof row.tab === 'string') {
+                tplMenuByTab.set(row.tab, {
+                    label: typeof row.label === 'string' ? row.label : undefined,
+                    icon: typeof row.icon === 'string' ? row.icon : undefined,
+                });
+            }
+        });
+    }
     const ordered: MenuItem[] = [];
 
     enabledTabs.forEach((tab, index) => {
+        const fromTpl = tplMenuByTab.get(tab);
         const existing = byTab[tab];
         ordered.push({
             tab,
-            label: existing?.label || TAB_LABELS[tab] || tab,
-            icon: existing?.icon || TAB_ICONS[tab] || 'fa-circle',
+            // テンプレ menu のラベル/アイコンを優先（業種ごとの実データをそのまま反映）
+            label: fromTpl?.label || existing?.label || TAB_LABELS[tab] || tab,
+            icon: fromTpl?.icon || existing?.icon || TAB_ICONS[tab] || 'fa-circle',
             order: index,
             enabled: true,
         });
@@ -279,32 +317,26 @@ function personalizeBlock(
     accent: string,
 ): LiffBlock {
     const next: LiffBlock = { ...block };
-    const shop = setup.shopName.trim();
 
-    if (next.type === 'hero') {
-        if (setup.heroTitle.trim() !== '') {
-            next.title = setup.heroTitle.trim();
-        } else if (shop !== '') {
-            next.title = shop;
-        }
+    // テンプレ本文は原則そのまま。明示指定された項目だけ上書きする
+    if (next.type === 'hero' && setup.heroTitle.trim() !== '') {
+        next.title = setup.heroTitle.trim();
     }
 
-    if (next.type === 'member_summary' && shop !== '') {
-        next.greeting = `おかえりなさい、${shop}のお客様`;
-    }
-
-    if (next.type === 'access' && shop !== '') {
-        next.title = shop;
-        if (String(next.address || '').trim() === '') {
-            next.address = '店舗住所を入力してください';
-        }
-    }
-
-    if (next.type === 'data' && (next.source === 'member_card' || next.source === 'member')) {
+    if (
+        next.type === 'data'
+        && (next.source === 'member_card' || next.source === 'member')
+        && setup.memberCardDesign !== ''
+        && (next.card_design === undefined || next.card_design === '' || next.card_design === 'default')
+    ) {
         next.card_design = setup.memberCardDesign;
     }
 
-    if (next.type === 'button' && (next.design === 'cta' || next.design === undefined || next.design === '')) {
+    if (
+        next.type === 'button'
+        && (next.design === 'cta' || next.design === undefined || next.design === '')
+        && (next.color === undefined || next.color === '')
+    ) {
         next.color = accent;
     }
 
@@ -334,11 +366,18 @@ function setupGlobalPatch(setup: TemplateSetupOptions | undefined): Record<strin
     if (setup === undefined) return {};
     const shop = setup.shopName.trim();
     const patch: Record<string, unknown> = {
-        app_display_name: shop,
-        member_card_design: setup.memberCardDesign,
+        member_card_design: setup.memberCardDesign || 'default',
         member_card_display_type: setup.memberCardDisplayType,
         member_card_code_type: setup.memberCardCodeType,
+        member_card_bg_style: setup.memberCardBgStyle || 'gradient',
+        member_card_gloss: setup.memberCardGloss || 'soft',
+        member_card_surface: setup.memberCardSurface || 'plastic',
+        coupon_screen_design: setup.couponScreenDesign || 'ticket',
+        coupon_media_style: setup.couponMediaStyle || 'image',
+        coupon_show_available: setup.couponShowAvailable !== false,
+        coupon_show_history: setup.couponShowHistory !== false,
     };
+    if (shop !== '') patch.app_display_name = shop;
     if (setup.fontFamily !== '') patch.font_family = setup.fontFamily;
     if (setup.contentWidth !== '') patch.content_width = setup.contentWidth;
     if (setup.buttonShape !== '') patch.button_shape = setup.buttonShape;
@@ -358,15 +397,17 @@ export function buildPersonalizedPreviewTemplate(
     };
     const accent = accentFromTheme(theme);
 
-    const mapBlocks = (rows: unknown[]): Record<string, unknown>[] =>
-        rows.map((item) => {
+    const mapBlocks = (rows: unknown[]): Record<string, unknown>[] => {
+        const idCounter = { n: 1 };
+        return rows.map((item) => {
             const block = personalizeBlock(
-                normalizeBlock((item || {}) as Record<string, unknown>, { n: Date.now() % 100000 }),
+                normalizeBlock((item || {}) as Record<string, unknown>, idCounter),
                 setup,
                 accent,
             );
             return block as unknown as Record<string, unknown>;
         });
+    };
 
     if (isAllScreensTemplate(tpl) && isPlainObject(tpl.layouts)) {
         const layouts: Record<string, unknown[]> = {};

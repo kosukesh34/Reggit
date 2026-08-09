@@ -470,20 +470,61 @@ class LiffThemePresets
             [
                 'id' => 'citrus',
                 'name' => 'シトラス',
-                'description' => '元気なオレンジで注文をあと押し。テイクアウト・ファストに。',
-                'accent_color' => '#ea580c',
+                'description' => 'クリーム×赤茶のQSRトーン。モバイルオーダー・ファストフードに。',
+                'accent_color' => '#A81612',
                 'font_family' => 'sans',
-                'surface_tone' => 'mist',
-                'radius_scale' => 'default',
-                'tab_style' => 'default',
+                'surface_tone' => 'warm',
+                'radius_scale' => 'round',
+                'tab_style' => 'floating',
                 'section_gap' => 14,
-                'card_style' => 'flat',
-                'button_shape' => 'rounded',
+                'card_style' => 'elevated',
+                'button_shape' => 'pill',
                 'density' => 'compact',
-                'background_style' => 'gradient',
-                'bg_gradient_start' => '#fff7ed',
-                'bg_gradient_end' => '#ffedd5',
+                'background_style' => 'solid',
+                'bg_color' => '#FDF8F2',
                 'content_width' => 'edge',
+                'coupon_screen_design' => 'ticket',
+                'member_screen_design' => 'wallet',
+            ],
+            [
+                'id' => 'pastry',
+                'name' => 'ペイストリー',
+                'description' => '茶×クリームの菓子店トーン。会員証バーコードと店頭受取が主役。',
+                'accent_color' => '#5C3A21',
+                'font_family' => 'sans',
+                'surface_tone' => 'warm',
+                'radius_scale' => 'soft',
+                'tab_style' => 'floating',
+                'section_gap' => 16,
+                'card_style' => 'elevated',
+                'button_shape' => 'pill',
+                'density' => 'default',
+                'background_style' => 'solid',
+                'bg_color' => '#F7F4F0',
+                'content_width' => 'comfy',
+                'member_screen_design' => 'wallet',
+                'coupon_screen_design' => 'ticket',
+            ],
+            [
+                'id' => 'chocolate',
+                'name' => 'チョコレート',
+                'description' => '金×余白のラグジュアリー菓子。GODIVA / Lindt 風の会員クラブに。',
+                'accent_color' => '#C5A059',
+                'font_family' => 'serif-display',
+                'surface_tone' => 'paper',
+                'radius_scale' => 'soft',
+                'tab_style' => 'pill',
+                'section_gap' => 18,
+                'card_style' => 'elevated',
+                'button_shape' => 'pill',
+                'density' => 'relaxed',
+                'background_style' => 'solid',
+                'bg_color' => '#FAF8F4',
+                'content_width' => 'narrow',
+                'member_screen_design' => 'wallet',
+                'coupon_screen_design' => 'gallery',
+                'system_ui_style' => 'luxe',
+                'system_header_style' => 'editorial',
             ],
             [
                 'id' => 'gold',
@@ -748,6 +789,12 @@ class LiffThemePresets
             $classes[] = 'member-card-bg-gradient';
         }
 
+        $memberCardGloss = (string) ($global['member_card_gloss'] ?? 'soft');
+        $classes[] = 'member-card-gloss-'.(in_array($memberCardGloss, ['matte', 'soft', 'gloss', 'mirror'], true) ? $memberCardGloss : 'soft');
+
+        $memberCardSurface = (string) ($global['member_card_surface'] ?? 'plastic');
+        $classes[] = 'member-card-surface-'.(in_array($memberCardSurface, ['plastic', 'metal', 'paper', 'glass'], true) ? $memberCardSurface : 'plastic');
+
         $stampScreen = (string) ($global['stamp_screen_design'] ?? 'grid_card');
         $classes[] = 'stamp-screen-'.(in_array($stampScreen, ['grid_card', 'wallet', 'circle_board', 'minimal'], true) ? $stampScreen : 'grid_card');
 
@@ -765,7 +812,7 @@ class LiffThemePresets
         $classes[] = 'coupon-screen-'.(in_array($couponScreen, ['ticket', 'gallery', 'compact', 'luxury', 'apple', 'glass'], true) ? $couponScreen : 'ticket');
 
         $reservationScreen = (string) ($global['reservation_screen_design'] ?? ($preset['reservation_screen_design'] ?? 'cards'));
-        $classes[] = 'reservation-screen-'.(in_array($reservationScreen, ['cards', 'timeline', 'compact', 'concierge', 'apple'], true) ? $reservationScreen : 'cards');
+        $classes[] = 'reservation-screen-'.(in_array($reservationScreen, ['cards', 'timeline', 'compact', 'concierge', 'apple', 'glass'], true) ? $reservationScreen : 'cards');
 
         $activityScreen = (string) ($global['activity_screen_design'] ?? ($preset['activity_screen_design'] ?? 'cards'));
         $classes[] = 'activity-screen-'.(in_array($activityScreen, ['cards', 'timeline', 'compact', 'dashboard'], true) ? $activityScreen : 'cards');
@@ -794,7 +841,7 @@ class LiffThemePresets
             return null;
         }
         $value = trim($value);
-        if ($value === '' || ! preg_match('#^https://[a-zA-Z0-9\-._~:/?#\[\]@!$&\'()*+,;=%]+$#', $value)) {
+        if ($value === '' || ! preg_match('/^https:\/\/[a-zA-Z0-9\-._~:\/?#\[\]@!$&\'()*+,;=%]+$/', $value)) {
             return null;
         }
 

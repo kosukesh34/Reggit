@@ -1,4 +1,4 @@
-/** LIFF 固定UIシェルかどうか（/liff デモ体験用。iOS専用ではない） */
+/** LIFF 固定UIシェルかどうか（?demo=1 のデモ体験用。iOS専用ではない） */
 export function isFixedUiShell(): boolean {
     if (typeof document === 'undefined' || document.body === null) {
         return false;
@@ -9,7 +9,7 @@ export function isFixedUiShell(): boolean {
 
 /**
  * サンプル体験モード（会員・クーポン等をDBではなくサンプル表示）。
- * /liff 固定UIでは常時オン。店舗LIFF（/liff/{project_key}）は通常API/DBを使う。
+ * ?demo=1（または互換クラス）のときだけオン。通常の店舗LIFFは API/DB を使う。
  */
 export function isDemoDataMode(): boolean {
     if (typeof document === 'undefined' || document.body === null) {
