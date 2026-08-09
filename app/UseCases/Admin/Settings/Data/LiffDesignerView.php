@@ -11,6 +11,7 @@ namespace App\UseCases\Admin\Settings\Data;
  * @param  array<string, bool>  $featureFlags  機能フラグ
  * @param  array<int, array<string, mixed>>  $menuItems  タブメニュー項目（非表示タブ含む全件・order順）
  * @param  array<string, array<int, array<string, mixed>>>  $detailLayouts  詳細ページレイアウト
+ * @param  array<string, mixed>  $previewData  テンプレ/キャンバス用の店舗プレビューデータ
  */
 class LiffDesignerView
 {
@@ -22,6 +23,7 @@ class LiffDesignerView
         public readonly array $featureFlags = [],
         public readonly string $lineFriendAddUrl = '',
         public readonly array $menuItems = [],
-        public readonly array $detailLayouts = []
+        public readonly array $detailLayouts = [],
+        public readonly array $previewData = [],
     ) {}
 }

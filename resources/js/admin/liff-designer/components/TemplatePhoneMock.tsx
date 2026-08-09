@@ -12,10 +12,11 @@ import {
     galleryAccentFor,
     previewBlocksFor,
     screenBgFor,
+    signaturePreviewTab,
     templateDisplayName,
     type TemplateItem,
 } from './templateGalleryMeta';
-import { screenTabStyleClass } from '../utils/globalDesign';
+import { frameSystemClasses, screenTabStyleClass } from '../utils/globalDesign';
 import type { GlobalSettings } from '../catalog/types';
 
 type FontStackMeta = { label: string; base?: string; display?: string };
@@ -25,6 +26,8 @@ type Props = {
     size?: 'card' | 'large';
     interactive?: boolean;
     fontStacks?: Record<string, FontStackMeta>;
+    /** ウィザード等から「この画面を見せたい」ときだけ指定。設定変更では渡さないこと */
+    preferredTab?: string;
 };
 
 function useFitPhoneMaxHeight(enabled: boolean): number | undefined {
@@ -84,6 +87,19 @@ function resolveFontStack(
 }
 
 function previewTabsFor(template: TemplateItem) {
+    // テンプレに定義された menu をそのまま使う（業種ごとのラベル・順・アイコン）
+    if (Array.isArray(template.menu) && template.menu.length > 0) {
+        const fromMenu = template.menu
+            .filter((row) => row !== null && typeof row === 'object' && typeof row.tab === 'string' && row.enabled !== false)
+            .map((row) => ({
+                tab: String(row.tab),
+                label: String(row.label || TAB_LABELS[row.tab] || row.tab),
+                icon: String(row.icon || TAB_ICONS[row.tab] || 'fa-circle'),
+            }))
+            .filter((row) => TAB_LABELS[row.tab] !== undefined || row.tab !== '');
+        if (fromMenu.length > 0) return fromMenu.slice(0, 6);
+    }
+
     const keys: string[] = [];
     const push = (tab: string) => {
         if (TAB_LABELS[tab] === undefined || keys.includes(tab)) return;
@@ -136,47 +152,82 @@ export function TemplatePhoneMock({
     size = 'card',
     interactive = false,
     fontStacks,
+    preferredTab,
 }: Props) {
     const accent = galleryAccentFor(template).color;
     const bg = screenBgFor(template);
     const isDark = bg.includes('rgba(15,23,42') || String(template.theme?.bg_color || '').toLowerCase() === '#0f172a';
     const shopName = String(template.theme?.app_display_name || '').trim();
     const title = shopName !== '' ? shopName : templateDisplayName(template);
-    const tabSignature = useMemo(() => {
-        const targets = Array.isArray(template.target_tabs) ? template.target_tabs.join(',') : '';
-        const layoutKeys =
-            template.layouts !== undefined && typeof template.layouts === 'object'
-                ? Object.keys(template.layouts).join(',')
-                : '';
-        return `${String(template.id || '')}|${targets}|${layoutKeys}`;
-    }, [template.id, template.target_tabs, template.layouts]);
+    const layoutKeysSig = useMemo(() => {
+        if (template.layouts === undefined || typeof template.layouts !== 'object') return '';
+        return Object.keys(template.layouts).join(',');
+    }, [template.layouts]);
+    const targetsSig = useMemo(
+        () => (Array.isArray(template.target_tabs) ? template.target_tabs.join(',') : ''),
+        [template.target_tabs],
+    );
+    const menuSignature = useMemo(
+        () => (Array.isArray(template.menu) ? template.menu.map((m) => `${m.tab}:${m.label}:${m.icon}`).join('|') : ''),
+        [template.menu],
+    );
+    const structureSignature = `${String(template.id || '')}|${targetsSig}|${layoutKeysSig}|${menuSignature}`;
 
-    const tabs = useMemo(() => previewTabsFor(template), [tabSignature, template]);
-    const [activeTab, setActiveTab] = useState(tabs[0]?.tab || 'home');
+    const tabs = useMemo(() => previewTabsFor(template), [structureSignature]);
+    const initialTab = size === 'card' ? signaturePreviewTab(template) : (tabs[0]?.tab || 'home');
+    const [activeTab, setActiveTab] = useState(initialTab);
     const pad = Number(template.theme?.content_padding ?? 18);
     const gap = Number(template.theme?.section_gap ?? 16);
     const cardDesign = String(template.theme?.member_card_design || '');
+    const cardBgStyle = String(template.theme?.member_card_bg_style || 'gradient');
+    const cardGloss = String(template.theme?.member_card_gloss || 'soft');
+    const cardSurface = String(template.theme?.member_card_surface || 'plastic');
+    const couponScreenDesign = String(template.theme?.coupon_screen_design || 'ticket');
+    const couponMediaStyle = String(template.theme?.coupon_media_style || 'image');
+    const couponShowAvailable = template.theme?.coupon_show_available !== false;
+    const couponShowHistory = template.theme?.coupon_show_history !== false;
+    const stampDesign = String(template.theme?.stamp_screen_design || '');
+    const stampSlot = String(template.theme?.stamp_slot_style || '');
+    const stampFilled = String(template.theme?.stamp_filled_style || '');
+    const stampAccent = String(template.theme?.stamp_accent_color || template.theme?.accent_color || '');
     const fontKey = String(template.theme?.font_family || 'sans');
     const fonts = resolveFontStack(fontKey, fontStacks);
     const buttonShape = String(template.theme?.button_shape || '');
     const cardStyle = String(template.theme?.card_style || '');
     const contentWidth = String(template.theme?.content_width || 'comfy');
-    const tabStyleClass = screenTabStyleClass((template.theme || {}) as GlobalSettings);
+    const themeAsGlobal = (template.theme || {}) as GlobalSettings;
+    const tabStyleClass = screenTabStyleClass(themeAsGlobal);
+    const systemClass = frameSystemClasses(themeAsGlobal);
     const showCart = tabs.some((t) => t.tab === 'products' || t.tab === 'orders');
     const fitMaxHeight = useFitPhoneMaxHeight(size === 'large');
 
     useEffect(() => {
-        setActiveTab(tabs[0]?.tab || 'home');
-    }, [tabSignature]);
+        // 構造（タブ一覧）が変わったときだけフォールバック。テーマ/setup の再生成では飛ばさない
+        const nextTabs = previewTabsFor(template);
+        setActiveTab((prev) => {
+            if (nextTabs.some((t) => t.tab === prev)) {
+                return prev;
+            }
+            if (size === 'card') {
+                return signaturePreviewTab(template);
+            }
+            return nextTabs[0]?.tab || 'home';
+        });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [structureSignature, size]);
 
     useEffect(() => {
-        if (tabs.some((t) => t.tab === activeTab)) return;
-        setActiveTab(tabs[0]?.tab || 'home');
-    }, [tabs, activeTab]);
+        if (preferredTab === undefined || preferredTab === '') return;
+        const nextTabs = previewTabsFor(template);
+        if (!nextTabs.some((t) => t.tab === preferredTab)) return;
+        setActiveTab(preferredTab);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [preferredTab]);
 
     const blocks = useMemo(() => {
         const idCounter = { n: 1 };
-        const limit = size === 'large' ? 14 : 7;
+        // card サムネは先頭のみ、large はテンプレ実データをそのまま全部表示
+        const limit = size === 'large' ? Number.POSITIVE_INFINITY : 6;
         const sourceRows = previewBlocksFor(template, activeTab);
         return sourceRows.slice(0, limit).map((item) => {
             const block = normalizeBlock((item || {}) as Record<string, unknown>, idCounter);
@@ -184,12 +235,22 @@ export function TemplatePhoneMock({
                 cardDesign !== ''
                 && block.type === 'data'
                 && (block.source === 'member_card' || block.source === 'member')
+                && (block.card_design === undefined || block.card_design === '' || block.card_design === 'default')
             ) {
                 return { ...block, card_design: cardDesign };
             }
+            if (block.type === 'data' && block.source === 'stamps') {
+                return {
+                    ...block,
+                    stamp_design: block.stamp_design || stampDesign || 'grid_card',
+                    stamp_slot_style: block.stamp_slot_style || stampSlot || 'circle',
+                    stamp_filled_style: block.stamp_filled_style || stampFilled || 'image',
+                    stamp_accent_color: block.stamp_accent_color || stampAccent,
+                };
+            }
             return block;
         });
-    }, [template, size, cardDesign, activeTab]);
+    }, [template, size, cardDesign, stampDesign, stampSlot, stampFilled, stampAccent, activeTab]);
 
     const contentMaxWidth =
         contentWidth === 'edge' ? '100%' : contentWidth === 'narrow' ? 'min(100%, 320px)' : 'min(100%, 360px)';
@@ -229,6 +290,8 @@ export function TemplatePhoneMock({
     };
 
     const themePreset = String(template.theme?.theme_preset || '');
+    const density = String(template.theme?.density || '');
+    const surfaceTone = String(template.theme?.surface_tone || '');
     const styleClass = [
         `ld-tpm ld-tpm--${size}`,
         isDark ? 'ld-tpm--dark' : '',
@@ -238,7 +301,18 @@ export function TemplatePhoneMock({
         cardStyle !== '' ? `ld-tpm-card--${cardStyle}` : '',
         `ld-tpm-width--${contentWidth || 'comfy'}`,
         themePreset !== '' ? `theme-${themePreset}` : '',
-        String(template.theme?.density || '') !== '' ? `ld-tpm-density--${String(template.theme?.density)}` : '',
+        density !== '' ? `density-${density}` : '',
+        density !== '' ? `ld-tpm-density--${density}` : '',
+        surfaceTone !== '' ? `surface-${surfaceTone}` : '',
+        systemClass,
+    ].filter(Boolean).join(' ');
+
+    const screenClassName = [
+        tabStyleClass,
+        systemClass,
+        themePreset !== '' ? `theme-${themePreset}` : '',
+        density !== '' ? `density-${density}` : '',
+        surfaceTone !== '' ? `surface-${surfaceTone}` : '',
     ].filter(Boolean).join(' ');
 
     return (
@@ -250,11 +324,11 @@ export function TemplatePhoneMock({
             }}
         >
             <PhoneDeviceFrame
-                className={themePreset !== '' ? `theme-${themePreset}` : undefined}
+                className={screenClassName || undefined}
                 size={size === 'large' ? 'large' : 'card'}
                 maxHeight={fitMaxHeight}
                 screenStyle={screenVars}
-                screenClassName={[tabStyleClass, themePreset !== '' ? `theme-${themePreset}` : ''].filter(Boolean).join(' ')}
+                screenClassName={screenClassName}
             >
                 <PhoneAppHeader
                     title={title}
@@ -277,7 +351,22 @@ export function TemplatePhoneMock({
                     ) : (
                         blocks.map((block) => (
                             <div key={block.id} className={`ld-block ld-block--${block.type}`}>
-                                <BlockPreview block={block} shopName={shopName !== '' ? shopName : undefined} />
+                                <BlockPreview
+                                    block={block}
+                                    shopName={shopName !== '' ? shopName : undefined}
+                                    memberCardDesign={cardDesign}
+                                    memberCardBgStyle={cardBgStyle}
+                                    memberCardGloss={cardGloss}
+                                    memberCardSurface={cardSurface}
+                                    couponScreenDesign={couponScreenDesign}
+                                    couponMediaStyle={couponMediaStyle}
+                                    couponShowAvailable={couponShowAvailable}
+                                    couponShowHistory={couponShowHistory}
+                                    stampScreenDesign={stampDesign}
+                                    stampSlotStyle={stampSlot}
+                                    stampFilledStyle={stampFilled}
+                                    stampAccentColor={stampAccent}
+                                />
                             </div>
                         ))
                     )}

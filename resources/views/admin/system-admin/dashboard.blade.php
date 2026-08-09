@@ -58,6 +58,9 @@
             <a href="{{ route('system-admin.api-tokens.create') }}" class="btn btn-outline-secondary btn-lg">
                 <i class="fas fa-key"></i> APIトークン発行
             </a>
+            <a href="{{ route('system-admin.shop-app-ui-research') }}" class="btn btn-outline-primary btn-lg">
+                <i class="fas fa-lightbulb"></i> 店舗アプリUI学習データ
+            </a>
         </div>
     </div>
 </div>

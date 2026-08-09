@@ -1,6 +1,12 @@
 @php
+    $appDisplayName = trim((string) (($liffTabSettings['_global']['app_display_name'] ?? '') ?: ''));
+    $headerTitle = $appDisplayName !== ''
+        ? $appDisplayName
+        : (trim((string) ($frontendHeaderText ?? '')) !== ''
+            ? (string) $frontendHeaderText
+            : ($projectName ?? config('app.name')));
     $frontendHeaderConfig = [
-        'title' => $frontendHeaderText ?? $projectName ?? config('app.name'),
+        'title' => $headerTitle,
         'logoUrl' => $frontendLogoUrl ?? null,
         'friendAddUrl' => $lineFriendAddUrl ?? null,
     ];

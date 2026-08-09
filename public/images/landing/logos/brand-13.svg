@@ -1,7 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 80" role="img" aria-label="CANVAS BISTRO">
-  <rect width="200" height="80" fill="#fff"/>
-  <rect x="18" y="18" width="44" height="44" rx="6" fill="#7C2D12"/>
-  <path d="M28 50l8-18 6 10 6-14 8 22" fill="none" stroke="#FED7AA" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-  <text x="74" y="36" font-family="'Hiragino Sans','Noto Sans JP',sans-serif" font-size="13" font-weight="800" letter-spacing="0.08em" fill="#7C2D12">CANVAS</text>
-  <text x="74" y="54" font-family="'Hiragino Sans','Noto Sans JP',sans-serif" font-size="10" font-weight="700" letter-spacing="0.2em" fill="#A16207">BISTRO</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 96" role="img" aria-label="CANVAS BISTRO">
+  <text x="120" y="40" text-anchor="middle" font-family="'Bodoni 72', Didot, Georgia, serif" font-size="24" font-weight="400" letter-spacing="0.22em" fill="#7C2D12">CANVAS</text>
+  <line x1="70" y1="50" x2="170" y2="50" stroke="#D6A574" stroke-width="1"/>
+  <text x="120" y="70" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="12" font-style="italic" letter-spacing="0.28em" fill="#A16207">Bistro</text>
 </svg>

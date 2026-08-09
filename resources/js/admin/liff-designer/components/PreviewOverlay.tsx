@@ -132,6 +132,13 @@ export function PreviewOverlay() {
                                             shopName={shopTitle}
                                             asGuest={asGuest}
                                             memberCardDesign={String(state.globalSettings.member_card_design || '')}
+                                            memberCardBgStyle={String(state.globalSettings.member_card_bg_style || 'gradient')}
+                                            memberCardGloss={String(state.globalSettings.member_card_gloss || 'soft')}
+                                            memberCardSurface={String(state.globalSettings.member_card_surface || 'plastic')}
+                                            couponScreenDesign={String(state.globalSettings.coupon_screen_design || 'ticket')}
+                                            couponMediaStyle={String(state.globalSettings.coupon_media_style || 'image')}
+                                            couponShowAvailable={state.globalSettings.coupon_show_available !== false}
+                                            couponShowHistory={state.globalSettings.coupon_show_history !== false}
                                         />
                                     </div>
                                 ))
