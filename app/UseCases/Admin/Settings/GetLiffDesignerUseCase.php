@@ -3,6 +3,7 @@
 namespace App\UseCases\Admin\Settings;
 
 use App\Services\Admin\LiffSettingsService;
+use App\Support\LiffDesignerPreviewData;
 use App\UseCases\Admin\Settings\Data\LiffDesignerView;
 
 class GetLiffDesignerUseCase
@@ -22,6 +23,7 @@ class GetLiffDesignerUseCase
             $this->liffSettingsService->getLineFriendAddUrl($projectId),
             $this->liffSettingsService->getMenuItemsForDesigner($projectId),
             $this->liffSettingsService->getDetailLayouts($projectId),
+            LiffDesignerPreviewData::forProject($projectId),
         );
     }
 }

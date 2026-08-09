@@ -6,7 +6,7 @@ body.theme-citrus .app-container {
 }
 
 body.theme-citrus .main-tabs {
-    box-shadow: 0 8px 28px rgba(234, 88, 12, 0.12);
+    box-shadow: 0 8px 28px rgba(168, 22, 18, 0.12);
 }
 
 body.theme-citrus .main-content,
@@ -227,7 +227,10 @@ body.theme-store .builder-button-wrap--sticky,
 body.theme-pastry .builder-button-wrap--sticky,
 body.theme-sand .builder-button-wrap--sticky,
 body.theme-citrus .builder-button-wrap--sticky,
-body.theme-noir .builder-button-wrap--sticky {
+body.theme-noir .builder-button-wrap--sticky,
+body.theme-lavender .builder-button-wrap--sticky,
+body.theme-sakura .builder-button-wrap--sticky,
+body.theme-slate .builder-button-wrap--sticky {
     position: sticky;
     bottom: calc(var(--main-tabs-height, 78px) + 8px);
     z-index: 20;
@@ -303,15 +306,62 @@ body.theme-pastry .builder-slider-block--design-hero {
     box-shadow: 0 10px 28px rgba(92, 58, 33, 0.12);
 }
 
-/* 注文OS: 受取カードを主役化（Chipotle 学習） */
+/* 注文OS: 受取カードを主役化（BK / Chipotle 学習） */
 body.theme-citrus .builder-editorial-card--featured {
-    border: 2px solid rgba(255, 149, 0, 0.35);
-    box-shadow: 0 12px 28px rgba(255, 149, 0, 0.14);
+    border: 2px solid rgba(168, 22, 18, 0.28);
+    box-shadow: 0 12px 28px rgba(61, 43, 31, 0.12);
+    border-radius: 18px;
 }
 body.theme-citrus .builder-editorial-card--featured .builder-editorial-card__title {
     font-size: 18px;
     letter-spacing: 0.04em;
     text-transform: uppercase;
+}
+
+/* クーポン2列カード（BK / マクド学習 + ticket / sand・store・pastry） */
+body.theme-citrus .builder-collection[data-source="coupons"] .builder-collection__grid,
+body.theme-citrus .builder-collection--source-coupons .builder-collection__grid,
+body.theme-sand .builder-collection[data-source="coupons"] .builder-collection__grid,
+body.theme-sand .builder-collection--source-coupons .builder-collection__grid,
+body.theme-store .builder-collection[data-source="coupons"] .builder-collection__grid,
+body.theme-store .builder-collection--source-coupons .builder-collection__grid,
+body.theme-pastry .builder-collection[data-source="coupons"] .builder-collection__grid,
+body.theme-pastry .builder-collection--source-coupons .builder-collection__grid,
+body.coupon-screen-ticket .builder-collection[data-source="coupons"] .builder-collection__grid,
+body.coupon-screen-ticket .builder-collection--source-coupons .builder-collection__grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+body.theme-citrus .builder-collection[data-source="coupons"] .builder-collection__item,
+body.theme-sand .builder-collection[data-source="coupons"] .builder-collection__item,
+body.theme-store .builder-collection[data-source="coupons"] .builder-collection__item,
+body.theme-pastry .builder-collection[data-source="coupons"] .builder-collection__item,
+body.coupon-screen-ticket .builder-collection[data-source="coupons"] .builder-collection__item {
+    border-radius: 14px;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: 0 4px 14px rgba(61, 43, 31, 0.08);
+}
+
+/* 会員証バーコード最小高さ（会計時の読み取り） */
+#memberSection .idnect-card-barcode-wrap svg,
+#memberSection .idnect-card-barcode-wrap img,
+#memberSection .idnect-card-barcode-wrap canvas {
+    min-height: 72px;
+    width: 100%;
+}
+body.theme-pastry #memberSection .idnect-card-barcode-wrap svg,
+body.theme-pastry #memberSection .idnect-card-barcode-wrap img {
+    min-height: 88px;
+}
+
+/* カフェ: スタバ風の緑アクセント余白 */
+body.theme-store .builder-hero--design-apple,
+body.theme-store .builder-hero-block--design-apple {
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 12px 32px rgba(0, 117, 74, 0.12);
 }
 
 /* 小売: 検索バー風バナー（UNIQLO 学習） */

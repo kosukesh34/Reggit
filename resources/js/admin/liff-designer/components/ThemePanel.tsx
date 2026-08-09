@@ -3,14 +3,14 @@ import { useDesigner } from '../state/DesignerContext';
 import { expandThemeIntoGlobal } from '../utils/globalDesign';
 import { ColorField, FieldGroup, ImageUrlField, RangeField, SelectField, TextInput } from './fields/FormFields';
 import {
-    MEMBER_CARD_BG_STYLES,
     MEMBER_CARD_CODE_TYPES,
-    MEMBER_CARD_DESIGN_CHOICES,
     MEMBER_CARD_DISPLAY_TYPES,
     STAMP_FILLED_STYLES,
     STAMP_SCREEN_DESIGN_CHOICES,
     STAMP_SLOT_STYLES,
 } from '../catalog/blockCatalog';
+import { MemberCardDesignPicker, MemberCardFinishControls } from './MemberCardFinishControls';
+import { CouponScreenControls } from './CouponScreenControls';
 
 function Accordion({ title, open, onToggle, children }: { title: string; open: boolean; onToggle: () => void; children: React.ReactNode }) {
     return (
@@ -268,37 +268,49 @@ export function ThemePanel() {
                     ]}
                     onChange={(v) => dispatch({ type: 'UPDATE_GLOBAL', patch: { system_card_style: v } })}
                 />
-                <SelectField
-                    label="会員証レイアウト"
+                <p className="ld-mcard-finish__label">会員証</p>
+                <MemberCardDesignPicker
                     value={String(g.member_card_design || 'default')}
-                    options={MEMBER_CARD_DESIGN_CHOICES}
                     onChange={(v) => dispatch({ type: 'UPDATE_GLOBAL', patch: { member_card_design: v } })}
                 />
-                <SelectField
-                    label="会員証の表示形式"
-                    value={String(g.member_card_display_type || 'card')}
-                    options={MEMBER_CARD_DISPLAY_TYPES}
-                    onChange={(v) => dispatch({ type: 'UPDATE_GLOBAL', patch: { member_card_display_type: v } })}
-                />
-                <SelectField
-                    label="会員番号の表示"
-                    value={String(g.member_card_code_type || 'barcode')}
-                    options={MEMBER_CARD_CODE_TYPES}
-                    onChange={(v) => dispatch({ type: 'UPDATE_GLOBAL', patch: { member_card_code_type: v } })}
-                />
+                <div className="ld-apply-setup__row">
+                    <SelectField
+                        label="表示形式"
+                        value={String(g.member_card_display_type || 'card')}
+                        options={MEMBER_CARD_DISPLAY_TYPES}
+                        onChange={(v) => dispatch({ type: 'UPDATE_GLOBAL', patch: { member_card_display_type: v } })}
+                    />
+                    <SelectField
+                        label="会員番号"
+                        value={String(g.member_card_code_type || 'barcode')}
+                        options={MEMBER_CARD_CODE_TYPES}
+                        onChange={(v) => dispatch({ type: 'UPDATE_GLOBAL', patch: { member_card_code_type: v } })}
+                    />
+                </div>
                 <ColorField
                     label="会員証アクセント色（空欄=ブランド色）"
                     value={String(g.member_card_accent_color || '')}
                     onChange={(v) => dispatch({ type: 'UPDATE_GLOBAL', patch: { member_card_accent_color: v } })}
                 />
-                <SelectField
-                    label="会員証背景スタイル"
-                    value={String(g.member_card_bg_style || 'gradient')}
-                    options={MEMBER_CARD_BG_STYLES}
-                    onChange={(v) => dispatch({ type: 'UPDATE_GLOBAL', patch: { member_card_bg_style: v } })}
+                <MemberCardFinishControls
+                    bgStyle={String(g.member_card_bg_style || 'gradient')}
+                    gloss={String(g.member_card_gloss || 'soft')}
+                    surface={String(g.member_card_surface || 'plastic')}
+                    onBgStyle={(v) => dispatch({ type: 'UPDATE_GLOBAL', patch: { member_card_bg_style: v } })}
+                    onGloss={(v) => dispatch({ type: 'UPDATE_GLOBAL', patch: { member_card_gloss: v } })}
+                    onSurface={(v) => dispatch({ type: 'UPDATE_GLOBAL', patch: { member_card_surface: v } })}
                 />
                 <div className="ld-member-card-preview">
-                    <div className={`ld-crm-wallet ld-crm-wallet--${String(g.member_card_design || 'default')}`}>
+                    <div
+                        className={[
+                            'ld-crm-wallet',
+                            `ld-crm-wallet--${String(g.member_card_design || 'default')}`,
+                            `ld-crm-wallet--bg-${String(g.member_card_bg_style || 'gradient')}`,
+                            `ld-crm-wallet--gloss-${String(g.member_card_gloss || 'soft')}`,
+                            `ld-crm-wallet--surface-${String(g.member_card_surface || 'plastic')}`,
+                        ].join(' ')}
+                    >
+                        <div className="ld-crm-wallet__shine" aria-hidden />
                         <div className="ld-crm-wallet__top">
                             <div>
                                 <span className="ld-crm-wallet__shop">{String(g.app_display_name || 'Members')}</span>
@@ -353,19 +365,38 @@ export function ThemePanel() {
                     value={String(g.stamp_accent_color || '')}
                     onChange={(v) => dispatch({ type: 'UPDATE_GLOBAL', patch: { stamp_accent_color: v } })}
                 />
-                <SelectField
-                    label="クーポン画面UI"
-                    value={String(g.coupon_screen_design || 'ticket')}
-                    options={[
-                        { value: 'ticket', label: 'チケット' },
-                        { value: 'apple', label: 'Apple' },
-                        { value: 'glass', label: 'グラス' },
-                        { value: 'gallery', label: 'ギャラリー' },
-                        { value: 'compact', label: 'コンパクト' },
-                        { value: 'luxury', label: 'ラグジュアリー' },
-                    ]}
-                    onChange={(v) => dispatch({ type: 'UPDATE_GLOBAL', patch: { coupon_screen_design: v } })}
+                <p className="ld-mcard-finish__label">クーポン画面</p>
+                <CouponScreenControls
+                    design={String(g.coupon_screen_design || 'ticket')}
+                    mediaStyle={String(g.coupon_media_style || 'image')}
+                    showAvailable={g.coupon_show_available !== false}
+                    showHistory={g.coupon_show_history !== false}
+                    onDesign={(v) => dispatch({ type: 'UPDATE_GLOBAL', patch: { coupon_screen_design: v } })}
+                    onMediaStyle={(v) => dispatch({ type: 'UPDATE_GLOBAL', patch: { coupon_media_style: v } })}
+                    onShowAvailable={(v) => dispatch({ type: 'UPDATE_GLOBAL', patch: { coupon_show_available: v } })}
+                    onShowHistory={(v) => dispatch({ type: 'UPDATE_GLOBAL', patch: { coupon_show_history: v } })}
                 />
+                <p className="ld-mcard-finish__label">商品・モバイルオーダー</p>
+                <div className="ld-coupon-controls__toggles">
+                    <button
+                        type="button"
+                        className={`ld-coupon-toggle${g.products_group_by_category !== false ? ' is-active' : ''}`}
+                        onClick={() => dispatch({ type: 'UPDATE_GLOBAL', patch: { products_group_by_category: true } })}
+                        aria-pressed={g.products_group_by_category !== false}
+                    >
+                        <i className="fas fa-layer-group" />
+                        カテゴリで分ける
+                    </button>
+                    <button
+                        type="button"
+                        className={`ld-coupon-toggle${g.products_group_by_category === false ? ' is-active' : ''}`}
+                        onClick={() => dispatch({ type: 'UPDATE_GLOBAL', patch: { products_group_by_category: false } })}
+                        aria-pressed={g.products_group_by_category === false}
+                    >
+                        <i className="fas fa-th" />
+                        一覧のみ
+                    </button>
+                </div>
                 <SelectField
                     label="予約画面UI"
                     value={String(g.reservation_screen_design || 'cards')}

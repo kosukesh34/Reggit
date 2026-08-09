@@ -58,7 +58,7 @@ export function PhoneCanvas() {
         || '店舗アプリ';
     const suggestedTemplates = featuredTemplates(
         (Array.isArray(config.templates) ? config.templates : []) as TemplateItem[],
-        4,
+        3,
     );
     const activeLabel = state.menuItems.find((m) => m.tab === state.activeTab)?.label
         || DETAIL_PAGE_LABELS[state.activeTab]
@@ -277,9 +277,9 @@ export function PhoneCanvas() {
                                     <>
                                         <div className="ld-empty-canvas__badge">スタート</div>
                                         <i className="fas fa-mobile-alt ld-empty-canvas__icon" />
-                                        <p>顧客アプリの画面を組み立てましょう</p>
+                                        <p>業種テンプレから始めましょう</p>
                                         <p className="ld-empty-canvas__hint">
-                                            テンプレートから始めるか、ブロックを追加してください
+                                            注文・カフェ・菓子など、実店舗アプリに近い全画面テンプレを1つ選ぶのが最短です
                                         </p>
                                         <div className="ld-empty-canvas__actions">
                                             <button
@@ -402,6 +402,17 @@ export function PhoneCanvas() {
                                                     shopName={String(state.globalSettings.app_display_name || '').trim() || undefined}
                                                     asGuest={state.previewAsGuest}
                                                     memberCardDesign={String(state.globalSettings.member_card_design || '')}
+                                                    memberCardBgStyle={String(state.globalSettings.member_card_bg_style || 'gradient')}
+                                                    memberCardGloss={String(state.globalSettings.member_card_gloss || 'soft')}
+                                                    memberCardSurface={String(state.globalSettings.member_card_surface || 'plastic')}
+                                                    couponScreenDesign={String(state.globalSettings.coupon_screen_design || 'ticket')}
+                                                    couponMediaStyle={String(state.globalSettings.coupon_media_style || 'image')}
+                                                    couponShowAvailable={state.globalSettings.coupon_show_available !== false}
+                                                    couponShowHistory={state.globalSettings.coupon_show_history !== false}
+                                                    stampScreenDesign={String(state.globalSettings.stamp_screen_design || '')}
+                                                    stampSlotStyle={String(state.globalSettings.stamp_slot_style || '')}
+                                                    stampFilledStyle={String(state.globalSettings.stamp_filled_style || '')}
+                                                    stampAccentColor={String(state.globalSettings.stamp_accent_color || state.globalSettings.accent_color || '')}
                                                 />
                                             </div>
                                         </React.Fragment>

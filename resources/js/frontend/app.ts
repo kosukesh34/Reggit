@@ -999,10 +999,22 @@ class ReggitApp {
         }
     }
 
+    isProductsGroupedByCategory(): boolean {
+        const raw = DomHelper.getLiffGlobalSetting('products_group_by_category', 'true');
+        return raw !== '0' && raw !== 'false';
+    }
+
     /** APIから取得したカテゴリでタブを動的に構築 */
     renderCategoryTabs() {
         const container = DomHelper.getCategoryTabsContainer();
         if (!container) return;
+        if (!this.isProductsGroupedByCategory()) {
+            container.innerHTML = '';
+            container.hidden = true;
+            this.productManager.setCurrentCategory('all');
+            return;
+        }
+        container.hidden = false;
         const categories = this.productManager.getCategories();
         if (!categories || categories.length === 0) return;
 
@@ -1114,8 +1126,8 @@ class ReggitApp {
             return;
         }
 
-        // 「すべて」の場合はカテゴリ別セクションで表示
-        if (currentCat === 'all') {
+        // 「すべて」かつカテゴリ分割ONのときだけセクション分け
+        if (currentCat === 'all' && this.isProductsGroupedByCategory()) {
             const grouped = this.productManager.getProductsGroupedByCategory();
             const categories = this.productManager.getCategories().filter(c => c.key !== 'all');
             let html = '';
