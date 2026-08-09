@@ -1,9 +1,27 @@
 import React, { useEffect, useState } from 'react';
 import { AppConstants } from '../../../shared/constants';
+import { DomHelper } from '../../../shared/utils/domHelper';
 import { useFrontendApp } from '../../context/FrontendAppContext';
 import { isDemoDataMode, isFixedUiShell } from '../../demo/demoMode';
 import { buildBuiltinSampleCoupons } from '../../demo/sampleData';
 import { applyDemoCouponUsageState, readDemoWonCoupons } from '../../demo/demoCoupons';
+
+type CouponMediaStyle = 'image' | 'icon' | 'none';
+
+function getCouponMediaStyle(): CouponMediaStyle {
+    const value = DomHelper.getLiffGlobalSetting('coupon_media_style', 'image');
+    return value === 'icon' || value === 'none' ? value : 'image';
+}
+
+function getCouponShowAvailable(): boolean {
+    const raw = DomHelper.getLiffGlobalSetting('coupon_show_available', 'true');
+    return raw !== '0' && raw !== 'false';
+}
+
+function getCouponShowHistory(): boolean {
+    const raw = DomHelper.getLiffGlobalSetting('coupon_show_history', 'true');
+    return raw !== '0' && raw !== 'false';
+}
 
 type Coupon = {
     id?: number | string;
@@ -91,6 +109,10 @@ function FixedCouponsList({ coupons }: { coupons: Coupon[] }): JSX.Element {
     const { switchTab } = useFrontendApp();
     const [tab, setTab] = useState<'available' | 'history'>('available');
     const demo = isDemoDataMode();
+    const mediaStyle = getCouponMediaStyle();
+    const showAvailable = getCouponShowAvailable();
+    const showHistory = getCouponShowHistory();
+    const showTabs = showAvailable && showHistory;
     const statusLabels: Record<string, string> = {
         available: '利用可能',
         upcoming: '開始前',
@@ -111,7 +133,12 @@ function FixedCouponsList({ coupons }: { coupons: Coupon[] }): JSX.Element {
 
     const visible = groups.available.concat(groups.upcoming);
     const history = groups.used.concat(groups.expired);
-    const activeTab = visible.length > 0 || tab === 'available' ? tab : 'history';
+    const defaultTab: 'available' | 'history' = showAvailable && visible.length > 0
+        ? 'available'
+        : (showHistory ? 'history' : 'available');
+    const activeTab = showTabs
+        ? (visible.length > 0 || tab === 'available' ? tab : 'history')
+        : defaultTab;
 
     const openPlay = (play: 'gacha' | 'scratch' | 'roulette') => {
         try {
@@ -136,35 +163,53 @@ function FixedCouponsList({ coupons }: { coupons: Coupon[] }): JSX.Element {
         const name = cp.coupon_name || cp.title || 'クーポン';
         const desc = (cp.description && cp.description.trim() !== '') ? cp.description.trim() : '';
 
+        let mediaBlock: JSX.Element | null = null;
+        if (mediaStyle === 'image' && imageUrl !== null) {
+            mediaBlock = (
+                <div className="ios-coupon__media">
+                    <img
+                        src={imageUrl}
+                        alt=""
+                        loading="lazy"
+                        onError={(e) => {
+                            e.currentTarget.closest('.ios-coupon__media')?.remove();
+                        }}
+                    />
+                    <div className="ios-coupon__media-shade" />
+                    <div className="ios-coupon__chips">
+                        <span className="ios-coupon__status">{label}</span>
+                        {expiryText !== '' ? <span className="ios-coupon__chip">{expiryText}</span> : null}
+                    </div>
+                </div>
+            );
+        } else if (mediaStyle === 'icon') {
+            mediaBlock = (
+                <div className="ios-coupon__media ios-coupon__media--icon">
+                    <i className="fas fa-ticket-alt" aria-hidden="true" />
+                    <div className="ios-coupon__chips">
+                        <span className="ios-coupon__status">{label}</span>
+                    </div>
+                </div>
+            );
+        }
+
         return (
             <article
                 key={String(cp.id ?? `${name}-${index}`)}
-                className={`ios-coupon ios-coupon--${status}`}
+                className={`ios-coupon ios-coupon--${status}${mediaStyle === 'none' ? ' ios-coupon--no-media' : ''}`}
                 data-coupon-id={String(cp.id ?? '')}
             >
-                {imageUrl !== null ? (
-                    <div className="ios-coupon__media">
-                        <img
-                            src={imageUrl}
-                            alt=""
-                            loading="lazy"
-                            onError={(e) => {
-                                e.currentTarget.closest('.ios-coupon__media')?.remove();
-                            }}
-                        />
-                        <div className="ios-coupon__media-shade" />
-                        <div className="ios-coupon__chips">
-                            <span className="ios-coupon__status">{label}</span>
-                            {expiryText !== '' ? <span className="ios-coupon__chip">{expiryText}</span> : null}
-                        </div>
-                    </div>
-                ) : (
+                {mediaBlock}
+                {mediaStyle === 'image' && imageUrl === null ? (
                     <div className="ios-coupon__chips ios-coupon__chips--solo">
                         <span className="ios-coupon__status">{label}</span>
                         {expiryText !== '' ? <span className="ios-coupon__chip">{expiryText}</span> : null}
                     </div>
-                )}
+                ) : null}
                 <div className="ios-coupon__body">
+                    {mediaStyle === 'none' ? (
+                        <span className="ios-coupon__status ios-coupon__status--inline">{label}</span>
+                    ) : null}
                     <h3 className="ios-coupon__title">{name}</h3>
                     {desc !== '' ? <p className="ios-coupon__desc">{desc}</p> : null}
                     {status === 'available'
@@ -190,39 +235,45 @@ function FixedCouponsList({ coupons }: { coupons: Coupon[] }): JSX.Element {
                 <h2 className="ios-panel-head__title">クーポン</h2>
                 <p className="ios-panel-head__sub">使えるお得な特典</p>
             </div>
-            <div className="ios-seg" role="tablist" aria-label="クーポン一覧">
-                <button
-                    type="button"
-                    className={`ios-seg__btn${activeTab === 'available' ? ' is-active' : ''}`}
-                    role="tab"
-                    aria-selected={activeTab === 'available'}
-                    onClick={() => setTab('available')}
-                >
-                    利用可能 <span>{visible.length}</span>
-                </button>
-                <button
-                    type="button"
-                    className={`ios-seg__btn${activeTab === 'history' ? ' is-active' : ''}`}
-                    role="tab"
-                    aria-selected={activeTab === 'history'}
-                    onClick={() => setTab('history')}
-                >
-                    履歴 <span>{history.length}</span>
-                </button>
-            </div>
-            {activeTab === 'available' ? (
+            {showTabs ? (
+                <div className="ios-seg" role="tablist" aria-label="クーポン一覧">
+                    <button
+                        type="button"
+                        className={`ios-seg__btn${activeTab === 'available' ? ' is-active' : ''}`}
+                        role="tab"
+                        aria-selected={activeTab === 'available'}
+                        onClick={() => setTab('available')}
+                    >
+                        利用可能 <span>{visible.length}</span>
+                    </button>
+                    <button
+                        type="button"
+                        className={`ios-seg__btn${activeTab === 'history' ? ' is-active' : ''}`}
+                        role="tab"
+                        aria-selected={activeTab === 'history'}
+                        onClick={() => setTab('history')}
+                    >
+                        履歴 <span>{history.length}</span>
+                    </button>
+                </div>
+            ) : null}
+            {showAvailable && activeTab === 'available' ? (
                 <div className="coupons-tab-panel is-active" role="tabpanel">
                     {visible.length > 0
                         ? <div className="ios-coupon-stack">{visible.map(renderCoupon)}</div>
                         : <div className="ios-empty ios-empty--compact"><p>利用可能なクーポンはありません</p></div>}
                 </div>
-            ) : (
+            ) : null}
+            {showHistory && activeTab === 'history' ? (
                 <div className="coupons-tab-panel is-active" role="tabpanel">
                     {history.length > 0
                         ? <div className="ios-coupon-stack">{history.map(renderCoupon)}</div>
                         : <div className="ios-empty ios-empty--compact"><p>利用済み・期限切れのクーポンはありません</p></div>}
                 </div>
-            )}
+            ) : null}
+            {!showAvailable && !showHistory ? (
+                <div className="ios-empty ios-empty--compact"><p>表示するクーポンがありません（設定を確認してください）</p></div>
+            ) : null}
         </>
     );
 }
@@ -287,15 +338,22 @@ export function CouponsPage(): JSX.Element {
         return <div className="coupons-empty"><p>クーポンはまだありません</p></div>;
     }
 
+    const mediaStyle = getCouponMediaStyle();
+
     return (
         <div className="coupons-list">
             {coupons.map((c) => {
                 const imageUrl = (c.image_url && c.image_url.trim() !== '') ? c.image_url : null;
                 return (
                     <div key={String(c.id)} className="coupon-card">
-                        {imageUrl !== null ? (
+                        {mediaStyle === 'image' && imageUrl !== null ? (
                             <div className="coupon-card__media">
                                 <img src={imageUrl} alt="" loading="lazy" />
+                            </div>
+                        ) : null}
+                        {mediaStyle === 'icon' ? (
+                            <div className="coupon-card__media coupon-card__media--icon">
+                                <i className="fas fa-ticket-alt" aria-hidden="true" />
                             </div>
                         ) : null}
                         <h3>{c.coupon_name || c.title || 'クーポン'}</h3>

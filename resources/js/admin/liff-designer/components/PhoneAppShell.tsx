@@ -169,8 +169,18 @@ type TabsProps = {
 };
 
 export function PhoneAppTabs({ items, activeTab, onSelect }: TabsProps) {
+    const count = items.length;
+    const isDense = count > 5;
+    const isScroll = count > 6;
     return (
-        <footer className="main-tabs ld-phone-app-tabs">
+        <footer
+            className={[
+                'main-tabs',
+                'ld-phone-app-tabs',
+                isDense ? 'ld-phone-app-tabs--dense' : '',
+                isScroll ? 'ld-phone-app-tabs--scroll' : '',
+            ].filter(Boolean).join(' ')}
+        >
             {items.map((item) => {
                 const isActive = activeTab === item.tab;
                 return (
@@ -178,6 +188,8 @@ export function PhoneAppTabs({ items, activeTab, onSelect }: TabsProps) {
                         key={item.tab}
                         type="button"
                         className={`main-tab-btn${isActive ? ' active' : ''}`}
+                        title={item.label}
+                        aria-label={item.label}
                         onClick={(e) => {
                             e.stopPropagation();
                             onSelect?.(item.tab);
