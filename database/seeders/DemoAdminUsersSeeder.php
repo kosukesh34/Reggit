@@ -19,7 +19,7 @@ class DemoAdminUsersSeeder extends Seeder
         $project = Project::where('is_active', true)->orderBy('id')->first();
         if ($project === null) {
             $project = Project::create([
-                'project_key' => 'default',
+                'project_key' => AdminUserSeeder::defaultProjectKey(),
                 'name' => 'デモ店舗',
                 'description' => 'デモ用プロジェクト',
                 'is_active' => true,

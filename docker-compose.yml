@@ -47,7 +47,22 @@ services:
       - "8080:80"
     volumes:
       - ./:/var/www/html
-      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    # 単一ファイル bind は環境によってディレクトリ化して壊れることがあるため、
+    # コンテナ起動時に設定をコピーする。
+    command:
+      - /bin/sh
+      - -c
+      - |
+        rm -f /etc/nginx/conf.d/default.conf
+        if [ -f /var/www/html/docker/nginx/reggit.conf ]; then
+          cp /var/www/html/docker/nginx/reggit.conf /etc/nginx/conf.d/reggit.conf
+        elif [ -f /var/www/html/docker/nginx/default.conf ]; then
+          cp /var/www/html/docker/nginx/default.conf /etc/nginx/conf.d/reggit.conf
+        else
+          echo "nginx config not found" >&2
+          exit 1
+        fi
+        exec nginx -g 'daemon off;'
     networks:
       - reggit_network
     depends_on:

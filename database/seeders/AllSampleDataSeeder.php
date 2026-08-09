@@ -48,7 +48,7 @@ class AllSampleDataSeeder extends Seeder
         $this->project = Project::where('is_active', true)->orderBy('id')->first();
         if ($this->project === null) {
             $this->project = Project::create([
-                'project_key' => 'default',
+                'project_key' => AdminUserSeeder::defaultProjectKey(),
                 'name' => 'サンプル店舗',
                 'description' => '全サンプルデータ用',
                 'is_active' => true,

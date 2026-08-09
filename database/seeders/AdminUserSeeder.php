@@ -54,12 +54,26 @@ class AdminUserSeeder extends Seeder
         // 初回のみデフォルトプロジェクトを作成（DemoAdminUsersSeeder で使う）
         if (! Project::where('is_active', true)->exists()) {
             Project::create([
-                'project_key' => 'default',
+                'project_key' => self::defaultProjectKey(),
                 'name' => 'デフォルト店舗',
                 'description' => 'デモ用プロジェクト',
                 'is_active' => true,
             ]);
         }
+    }
+
+    /** ローカルではスマレジ契約IDを project_key にする（/liff/{contract_id} と揃える） */
+    public static function defaultProjectKey(): string
+    {
+        $contractId = config('smaregi.contract_id');
+        if (is_string($contractId)) {
+            $trimmed = trim($contractId);
+            if ($trimmed !== '' && preg_match('/^[a-zA-Z0-9_-]+$/', $trimmed) === 1) {
+                return $trimmed;
+            }
+        }
+
+        return 'default';
     }
 
     /** ドキュメント記載のデモ用システム管理者（既定: demo_sys）を DB に反映する */

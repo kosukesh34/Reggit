@@ -13,13 +13,17 @@ class DatabaseSeeder extends Seeder
         $this->call(DemoAdminUsersSeeder::class);
 
         // デフォルトプロジェクトを取得（なければ作成）
-        $project = Project::where('project_key', 'default')->where('is_active', true)->first();
+        $preferredKey = AdminUserSeeder::defaultProjectKey();
+        $project = Project::where('project_key', $preferredKey)->where('is_active', true)->first();
+        if ($project === null) {
+            $project = Project::where('project_key', 'default')->where('is_active', true)->first();
+        }
         if ($project === null) {
             $project = Project::where('is_active', true)->orderBy('id')->first();
         }
         if ($project === null) {
             $project = Project::create([
-                'project_key' => 'default',
+                'project_key' => $preferredKey,
                 'name' => 'デフォルト店舗',
                 'description' => 'デモ用プロジェクト',
                 'is_active' => true,
