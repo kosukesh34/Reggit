@@ -54,6 +54,30 @@ export type DesignerConfig = {
     lineFriendAddUrl?: string;
     contentWidths?: Record<string, { label: string }>;
     backgroundStyles?: Record<string, string>;
+    previewData?: {
+        products?: Array<{
+            id: string | number;
+            name: string;
+            price: string | number;
+            category: string;
+            image_url?: string | null;
+        }>;
+        coupons?: Array<{
+            id: string | number;
+            title: string;
+            meta: string;
+            image_url?: string | null;
+            available: boolean;
+        }>;
+        stamps?: Array<{
+            id: string | number;
+            name: string;
+            required: number;
+            reward: string;
+            image_url?: string | null;
+        }>;
+        member?: Record<string, unknown> | null;
+    };
 };
 
 export type DesignerSnapshot = {

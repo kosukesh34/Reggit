@@ -10,7 +10,7 @@ Reggit はクリーンアーキテクチャ（UseCase 層）完了後、**Bounde
 | **Application (UseCase)** | オーケストレーション | ✅ Domain / Repository 経由 |
 | **Infrastructure** | Eloquent・外部 API | ✅ `app/Infrastructure/Persistence` |
 
-**DDD コア移行: 完了（Settings）**。Settings は `ShopSettingRepository` / `ShopSettingStore`。全体図は [ARCHITECTURE.md](./ARCHITECTURE.md)。
+**DDD コア移行: 完了**。Settings は `ShopSettingRepository` / `ShopSettingStore`。LIFF 顧客フロントは React `features/*`。全体図は [ARCHITECTURE.md](./ARCHITECTURE.md)。
 
 ## 2. ディレクトリ構成
 
@@ -56,6 +56,7 @@ Domain → Eloquent / ShopSetting に依存しない
 - `OrderIndex` / `OrderShow` 等の **読み取り専用 Eloquent**（CQRS 読みモデルとして許容）
 - Eloquent `Member::syncPointsLedger` / `MemberRepository::syncPointsLedger` のバックフィル（レガシーデータ整合。読取時は自動実行せず、ポイント更新前など明示呼び出しのみ）
 - **薄 UseCase ラッパー**はクリーンアーキテクチャ方針として**維持**する（削除・統合しない。Request 直受けの Input 化のみ進める）
+- LIFF 顧客フロントの legacy managers / Admin デザイナー残骸 → **✅ W2 完了**（`features/*Page` + `frontendStore`、managers/`app.ts` 削除）
 
 ## 7. テスト方針
 

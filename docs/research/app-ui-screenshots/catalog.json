@@ -1,0 +1,303 @@
+[
+  {
+    "name": "starbucks_jp",
+    "trackName": "スターバックス ジャパン公式モバイルアプリ",
+    "sellerName": "Starbucks Coffee Company",
+    "appId": 1113037275,
+    "country": "jp",
+    "description": "こんにちは。スターバックスの公式アプリへようこそ。\nさまざまな機能で、みなさまにもっと便利で楽しいスターバックス体験をお届けします。\n\n■Starbucks® Rewards\nWeb登録済みのスターバックス カードによるお支払いでStarがたまります。たくさんStarをためることで、さまざまなごほうび「スター リワード」と交換できたり、会員ステータスに応じたリワードもお楽しみいただけます。\n\n■Mobile Order & Pay\nお店でレジに並ばずに注文できます。お持ち帰りはもちろん、お席でもゆっくりじっくり、お好みのカスタマイズも選べます。\n\n■店舗でアプリ支払い\nお手持ちのスターバックス カードをアプリに登録いただくと、画面に表示される二次元コードでお支払いいただけます。\n\n■スターバックス カード管理\n登録したスターバックス カードの残高・履歴照会、入金、オートチャージ設定、他のカードへ残高移行もできます。\n\n■Starbucks eTicket\nStarbucks eTicketは、店頭で商品と交換できるチケットです。スター リワード eTicketなど、受け取ったチケットはアプリ内で確認できます。\n\n■Gift\n好きなデザインのメッセージカードにスターバックスのドリンクを添えて贈ることができるStarbucks eGiftと、デジタルタイプのスターバックス カード。あなたの気持ちを添えてギフトを贈ってみませんか？\n\n■店舗検索\n最寄りのスターバックス店舗を検索し、店舗の営業時間や場所を確認できます。\n\n■商品情報\nアプリのHome画面内のPRODUCTSの「もっと見る」から、店舗で販売しているビバレッジやフード、タンブラーやマグカップ、コーヒー豆などの情報を見ることができます。\n\n■お知らせ配信（Inbox）\n新商品情報やキャンペーン、Starbucks® Re",
+    "screenshotCount": 6,
+    "saved": [
+      "docs/research/app-ui-screenshots/starbucks_jp/01.jpg",
+      "docs/research/app-ui-screenshots/starbucks_jp/02.jpg",
+      "docs/research/app-ui-screenshots/starbucks_jp/03.jpg",
+      "docs/research/app-ui-screenshots/starbucks_jp/04.jpg",
+      "docs/research/app-ui-screenshots/starbucks_jp/05.jpg",
+      "docs/research/app-ui-screenshots/starbucks_jp/06.jpg"
+    ],
+    "primaryGenre": "Food & Drink"
+  },
+  {
+    "name": "chateraise",
+    "trackName": "シャトレーゼ公式アプリ",
+    "sellerName": "Chateraise K.K.",
+    "appId": 844024333,
+    "country": "jp",
+    "description": "ケーキ、洋菓子、和菓子、アイス、およそ400種類のお菓子をお届けしている「シャトレーゼ」の公式アプリがリニューアル。\nさらに、便利で使いやすくなりました！\n「YATSUDOKI」のキャンペーン情報についてもお届けします。\n\n-----------------------------------\nシャトレーゼ公式アプリのご紹介\n-----------------------------------\n\n■ポイントカード（カシポ）\nシャトレーゼ専用のポイントカード（カシポ）をアプリの中に。\n店頭でバーコードを表示して、100円で1ポイント貯まり、1ポイント1円からお値引でご利用いただけます。ポイントカード(カシポ)は、「YATSUDOKI」および「シャトレーゼ」共通でご利用いただけます。\n\n■WEB予約・店舗受け取り\n人気のギフトやデコレーションケーキもアプリでWEB予約・店頭受け取りがスムーズにご利用いただけます。\n\n■アプリ限定クーポン\nお得にお買い物いただけるクーポンを随時配信します。\n\n■プッシュ通知\n新商品情報やお得なお知らせをプッシュ通知にていち早くお届けします。\n\n■店舗検索\n現在位置から全国の店舗をらくらく検索が可能です。\n\n※ ネットワーク環境が良好でない状況でご利用されるとコンテンツが表示されない等、正常に動作しないことがあります。\n\n【プッシュ通知について】\nお得な情報をプッシュ通知でお知らせします。アプリの初回起動時にプッシュ通知を「ON」に設定するようお願いします。なお、オン・オフの設定は後から変更もできます。\n\n【位置情報の取得について】\n近くのショップを探す目的、その他の情報配信の目的で位置情報取得の許可をアプリからさせて頂く場合がございます。\n位置情報は個人情報とは一切関連するものではなく、また本アプリ以外での利用は一切行いませんので安心してご利用",
+    "screenshotCount": 6,
+    "saved": [
+      "docs/research/app-ui-screenshots/chateraise/01.jpg",
+      "docs/research/app-ui-screenshots/chateraise/02.jpg",
+      "docs/research/app-ui-screenshots/chateraise/03.jpg",
+      "docs/research/app-ui-screenshots/chateraise/04.jpg",
+      "docs/research/app-ui-screenshots/chateraise/05.jpg",
+      "docs/research/app-ui-screenshots/chateraise/06.jpg"
+    ],
+    "primaryGenre": "Food & Drink"
+  },
+  {
+    "name": "cozycorner",
+    "trackName": "銀座コージーコーナー 公式アプリ",
+    "sellerName": "Ginza Cozy Corner Co.,Ltd.",
+    "appId": 6446264862,
+    "country": "jp",
+    "description": "銀座コージーコーナーの公式アプリがついに誕生！\n新商品やキャンペーン情報など、お客様のお役に立つ情報が満載のアプリです。\n\n会員登録をすると、お得なクーポンや最新情報をお届けします。また、一部店舗で利用できるマイルプログラムでお得に楽しくアプリを活用してみませんか。\n\n＜アプリの特徴＞\n■クーポン\n会員登録して、マイルを貯めると一部店舗で利用できるお得なクーポンと交換できます。\n\n■ショップ\n「近くの店舗」から、簡単にお店を探すことができます。\nいちばん身近なスイーツショップを見つけよう！\n\n■オンラインショップ\n銀座コージーコーナーのスイーツを宅配便でお届け。\nオンラインショップ限定品も要チェック！\n\n■ネット予約\nお店に行かなくても、ネットで予約し、店舗で受け取りができるサービス。\n※限定店舗で実施。実施店舗と取扱商品はネット予約サイトで予めご確認ください。\n\n■会員証\n銀座コージーコーナーマイルプログラムへご登録いただくと、対象店舗でのお買い物でマイルが貯められ、貯めたマイルはクーポンと交換可能です。\n\n※マイルプログラム対応店舗は限られております。対応店舗をアプリ内でご確認の上、ご登録ください。\n\n\n※ネットワーク環境が良好でない状況でご利用されるとコンテンツが表示されない等、正常に動作しないことがあります。\n\n【プッシュ通知について】\n最新情報をプッシュ通知でお知らせします。アプリの初回起動時にプッシュ通知を「ON」に設定するようお願いします。なお、オン・オフの設定は後から変更もできます。\n\n【位置情報の取得について】\n近くの店舗を探す目的、その他の情報配信の目的で位置情報取得の許可をアプリからさせて頂く場合がございます。\n位置情報は個人情報とは一切関連するものではなく、また本アプリ以外での利用は一切行いませんので安心してご利用ください。\n\n【著作権について】\n本",
+    "screenshotCount": 4,
+    "saved": [
+      "docs/research/app-ui-screenshots/cozycorner/01.jpg",
+      "docs/research/app-ui-screenshots/cozycorner/02.jpg",
+      "docs/research/app-ui-screenshots/cozycorner/03.jpg",
+      "docs/research/app-ui-screenshots/cozycorner/04.jpg"
+    ],
+    "primaryGenre": "Food & Drink"
+  },
+  {
+    "name": "godiva",
+    "trackName": "ゴディバ（GODIVA）公式アプリ",
+    "sellerName": "Godiva Japan, Inc.",
+    "appId": 1543392103,
+    "country": "jp",
+    "description": "ゴディバをもっと便利に、お得に楽しめる公式アプリです。\n店舗やオンラインショップでのご購入ごとにポイントが貯まり、スイーツやドリンク、クーポンなどの特典と交換できます。\n\n会員ランクに応じた限定特典や誕生月のバースデーギフト、毎月5のつく日のポイントアップなど、うれしいサービスをご用意。\nさらに、アプリ限定のスタンプカードやクーポン配信、新商品・限定情報もお届けします。\n\n■GODIVA Club会員特典\n会員制ポイントプログラム「GODIVA Club」に登録すると、店舗・オンラインでのご購入に応じて、ランクポイントと特典交換ポイントの2種類のポイントが貯まります。\n\nスタンプを貯めてアプリ限定クーポンを獲得できるほか、バースデーギフトや会員限定クーポンなど、アプリならではのお得な特典をご利用いただけます。\n※特典内容は会員ランクにより異なります。\n\n■HOME\n新商品や季節限定情報、キャンペーンなどの最新ニュースをお届けします。\nプッシュ通知で、お得な情報や重要なお知らせも見逃しません。\nギフトやご褒美など、シーンに合わせたコンテンツでお買い物をよりお楽しみいただけます。\n\n■Card/クーポン・特典\n対象商品や対象店舗でのご購入でスタンプが貯まる、アプリ限定のスタンプカードをご用意。\nスタンプを貯めると、アプリ限定クーポンを獲得できます。\n\n特典交換ポイントは、お好きな景品と交換可能。\nさらに、会員ランクに応じたバースデーギフトや特典クーポンもご利用いただけます。\n\n■その他\n毎月5のつく日のポイントアップなど、アプリ会員限定キャンペーンも実施。\nGODIVAをより便利に、お得にお楽しみいただけます。",
+    "screenshotCount": 6,
+    "saved": [
+      "docs/research/app-ui-screenshots/godiva/01.jpg",
+      "docs/research/app-ui-screenshots/godiva/02.jpg",
+      "docs/research/app-ui-screenshots/godiva/03.jpg",
+      "docs/research/app-ui-screenshots/godiva/04.jpg",
+      "docs/research/app-ui-screenshots/godiva/05.jpg",
+      "docs/research/app-ui-screenshots/godiva/06.jpg"
+    ],
+    "primaryGenre": "Food & Drink"
+  },
+  {
+    "name": "uniqlo",
+    "trackName": "UNIQLOアプリ-ユニクロアプリ",
+    "sellerName": "UNIQLO CO., LTD.",
+    "appId": 460989014,
+    "country": "jp",
+    "description": "【世界最大級のユニクロを指先一つで。ユニクロ公式ファッション通販アプリで買いもの上手になろう！】\n\n■ 500円クーポンプレゼント アプリを新規ダウンロード\n・新規会員登録で、店舗で5,000円（税込）以上お買い上げの際に使える500円クーポンをゲット。\n\n■ 欲しいアイテムがお店にあるか在庫を探せる\n・おでかけ前に欲しい商品の在庫がお店にあるか自宅で確認できます。さらにお店でも商品のバーコードをスキャンすれば在庫やレビューがチェックが可能に。\n\n■ お店にはないデザインやサイズも選べる\n・豊富なサイズラインナップからショッピング。\n・メンズはXSから4XL、ウィメンズはXSから3XL、キッズは100から160cm、ベビー（乳幼児）は70から110cmまで、豊富なサイズを購入いただけます。\n・オンラインストアなら、パンツの裾直しだけでなく、ジャケット、シャツの袖丈、スカートの裾丈のお直しも可能です。\n\n■ 気になる商品のレビューを参考に買える\n・商品を購入する際に参考になるサイズ感・使用感など、購入した方のリアルな評価を参考に、お買い物をお楽しみいただけます。\n\n■ ファッショントレンドをチェック\n・ユニクロの洋服を使ったコーディネートを紹介する『スタイリングブック』や、ファッションニュースをお届けする『TODAY'S PICK UP』で最新ファッショントレンドをチェック。\n\nアプリのアップデートが行えない場合・アプリが強制終了してしまう場合\n以下をお試し頂けますようお願い致します。\n・お使いの端末を【再起動】する\n・お使いのiOSのバージョンの確認\n※アップデートされていない場合は、最新のバージョンにアップデートしてください。",
+    "screenshotCount": 9,
+    "saved": [
+      "docs/research/app-ui-screenshots/uniqlo/01.jpg",
+      "docs/research/app-ui-screenshots/uniqlo/02.jpg",
+      "docs/research/app-ui-screenshots/uniqlo/03.jpg",
+      "docs/research/app-ui-screenshots/uniqlo/04.jpg",
+      "docs/research/app-ui-screenshots/uniqlo/05.jpg",
+      "docs/research/app-ui-screenshots/uniqlo/06.jpg",
+      "docs/research/app-ui-screenshots/uniqlo/07.jpg",
+      "docs/research/app-ui-screenshots/uniqlo/08.jpg",
+      "docs/research/app-ui-screenshots/uniqlo/09.jpg"
+    ],
+    "primaryGenre": "Shopping"
+  },
+  {
+    "name": "ikea",
+    "trackName": "IKEA",
+    "sellerName": "Inter IKEA Systems B.V.",
+    "appId": 1452164827,
+    "country": "jp",
+    "description": "インスピレーションをキャッチして、あなたの家を最大限に活用しましょう。新商品を見つけたり、夢のスペースを視覚化したり。お好きな場所どこからでも、もっと簡単にショッピングをお楽しみいただけます。\n\nIKEAアプリで、想像を超える体験をお楽しみください。\n\n•\tオファー、新製品の発売、パーソナライズされたおすすめを見つける\n•\tお気に入りのアイテムをリストに保存して、すべてを1カ所で確認\n•\tわかりやすいナビゲーションを使って、イケア店舗内を歩き回る\n•\tポイントをためて交換し、特典を楽しむ\n•\t店舗でショッピングをしながらスキャンして、スピーディーにチェックアウト\n•\tインタラクティブなプランナーで理想のキッチンをデザイン\n•\t部屋をスキャンし、商品を追加して自分のスペース内で視覚化\n•\tアプリ内のお買いもので、スピーディーで安全な会計を体験\n•\t好きな場所から注文を追跡・管理\n•\t在庫状況を確認して、アイテムが再入荷したときに通知を受け取る\n•\tデジタルレシートと購入履歴を1カ所でチェック\n•\t店舗の混雑状況を確認して、店舗での次のショッピングに備える\n•\tIKEA Live（ライブショッピング）を視聴して、インテリアデザインの専門家からヒントを得る\n\n 国によっては一部の機能を利用できない場合がありますが、今後リリースされる予定です。新機能が利用可能になったときに体験できるように、IKEAアプリを常に最新の状態に保つことをおすすめします。\n\nイケアはお客さまのデータプライバシーを尊重し、お客さまデータが倫理的に使用されることを信じています。そのためお客さまはご自分のデータを常に管理できます。",
+    "screenshotCount": 8,
+    "saved": [
+      "docs/research/app-ui-screenshots/ikea/01.jpg",
+      "docs/research/app-ui-screenshots/ikea/02.jpg",
+      "docs/research/app-ui-screenshots/ikea/03.jpg",
+      "docs/research/app-ui-screenshots/ikea/04.jpg",
+      "docs/research/app-ui-screenshots/ikea/05.jpg",
+      "docs/research/app-ui-screenshots/ikea/06.jpg",
+      "docs/research/app-ui-screenshots/ikea/07.jpg",
+      "docs/research/app-ui-screenshots/ikea/08.jpg"
+    ],
+    "primaryGenre": "Shopping"
+  },
+  {
+    "name": "mcdonalds_jp",
+    "trackName": "マクドナルド",
+    "sellerName": "McDonald's JAPAN",
+    "appId": 413618155,
+    "country": "jp",
+    "description": "マクドナルド公式アプリは、クーポンなどのお得な情報を毎日配信しているだけでなく、注文からお支払いまでを完了できるアプリです。さらに、マクドナルドのお食事がもっと楽しく・お得になる、リワード(特典)プログラムにご参加いただけます！\n\n\n【ご利用いただける機能】\n●Myマクドナルド リワード\n本アプリ上での商品購入で、ポイントが付与されるリワード(特典)プログラムです。ポイントは、マクドナルド商品の割引・無料クーポン、オリジナルのデジタルコンテンツ・グッズや他社サービスなど、多彩なリワードに交換できます。\nさらに、初回注文時のボーナスポイントキャンペーンも実施中！通常購入分に加え、100ポイントが加算されます。 \n\n●最新のクーポンを使える\n店舗やモバイルオーダーでご利用いただけるお得なクーポンを配信しています。レジのスタッフに「お店で使う」を押して表示されるクーポン番号をご提示いただくか、モバイルオーダーのメニューカテゴリーからクーポンを選択してください。\n\n●マクドナルドのニュースとメニューをチェックできる\nあなたにおすすめのニュースやおすすめの商品がホーム画面に表示されます。マクドナルドの商品の「食材」・「アレルギー情報」・「栄養成分」など、詳細な商品情報をご確認いただけます。\n\n●注文からお支払いまでをアプリで、モバイルオーダーが使える\n注文の列に並ばずに、商品を受け取れます。じっくり商品を選べて、お席にいながら注文もできるので、お食事中に追加の注文も可能に。商品はお席までお届けいたします。（＊一部店舗・時間帯除く）\n\n●おうちで注文、おうちへお届け、アプリでマックデリバリー®サービスが使える\n\n【モバイルオーダーご注文方法】\n＜Step 1 ログイン＞\nクーポンのご利用、または商品のご注文時には会員登録、ログインが必要です。\nパスワードをお忘れの方は、「パスワードを忘",
+    "screenshotCount": 6,
+    "saved": [
+      "docs/research/app-ui-screenshots/mcdonalds_jp/01.jpg",
+      "docs/research/app-ui-screenshots/mcdonalds_jp/02.jpg",
+      "docs/research/app-ui-screenshots/mcdonalds_jp/03.jpg",
+      "docs/research/app-ui-screenshots/mcdonalds_jp/04.jpg",
+      "docs/research/app-ui-screenshots/mcdonalds_jp/05.jpg",
+      "docs/research/app-ui-screenshots/mcdonalds_jp/06.jpg"
+    ],
+    "primaryGenre": "Food & Drink"
+  },
+  {
+    "name": "lindt",
+    "trackName": "リンツ公式アプリ　My Lindt Club",
+    "sellerName": "LINDT&SPRUNGLI JAPAN CO.,LTD.",
+    "appId": 1569279518,
+    "country": "jp",
+    "description": "スイスで1845年に創業、世界120カ国以上で愛されているプレミアムチョコレートブランド「Lindt（リンツ）」の公式アプリです。\nリンツをもっとお得に、便利にご利用いただくことができます。期間限定キャンペーン情報やリンツの美味しさの秘密など、アプリだけの情報もご用意しています。\n簡単な情報入力で会員登録いただき「My Lindt Club」にご参加いただくと、さらにお得にお買いものを楽しめます。\n\n【My Lindt Clubとは】\nお店でもオンラインでも共通のポイントが貯められ、ポイントをご利用いただけるリンツ会員プログラムです。\n会員ランク応じて、様々な特典をご用意しています。\n\n●会員特典\n・定番のPICK＆MIX（チョコレート量り売り）が10%OFF\n・アウトレット店舗でのお買い物がお得に\n・ランクごとや、季節ごとにお得なクーポンをプレゼント\n・誕生月にリンツからチョコレートをプレゼント ※ランク特典のため一部ランク除く\n・会員限定のスペシャルなご案内をお届け\n・お買い物ごとにポイントをプレゼント。1ポイント1円から使えます ※アウトレット店舗はポイント付与のみ\n\nランクによって受けられる特典が異なります。\nMy Lindt Clubでお得で楽しいお買い物体験をお楽しみください。\n\n【アプリの主な機能】\n●HOME(トピックス、商品紹介、リンツの世界）\n最新情報から、お楽しみコンテンツまでご用意しています。\nシーズン限定商品、キャンペーン、イベントなど、リンツに関する情報をお届けします。\n商品紹介のリンドールフレーバーから、あなたのお気に入りフレーバーを登録できます。\n\n●COUPON（クーポン）\n期間限定のお得なクーポンや、アプリ会員限定の特典などもご利用いただけます。\n\n●MEMBER（メンバー）\n会員証のご提示で店舗やオンラインショップでのお買い物で共通のポ",
+    "screenshotCount": 6,
+    "saved": [
+      "docs/research/app-ui-screenshots/lindt/01.jpg",
+      "docs/research/app-ui-screenshots/lindt/02.jpg",
+      "docs/research/app-ui-screenshots/lindt/03.jpg",
+      "docs/research/app-ui-screenshots/lindt/04.jpg",
+      "docs/research/app-ui-screenshots/lindt/05.jpg",
+      "docs/research/app-ui-screenshots/lindt/06.jpg"
+    ],
+    "primaryGenre": "Food & Drink"
+  },
+  {
+    "name": "nike",
+    "trackName": "Nike公式アプリ",
+    "sellerName": "Nike, Inc",
+    "appId": 1095459556,
+    "country": "jp",
+    "description": "NIKEアプリは、Nikeが提供するあらゆるサービスへのパーソナルガイド。メンバー登録して、NikeとJordanの商品や最新情報を手に入れよう。革新的で人気の高いスポーツウェアやストリートウェア、シューズをチェック。スポーツやスタイルに関係なく使えるアイテムが勢揃い。メンバーだけの特典や、あなたにぴったりなスタイリングの提案をチェックして、ショッピングを快適に楽しもう。配送や返品もスムーズ。\n\nNIKEアプリに新規メンバー登録すると初回購入が10%オフ。スニーカーやアパレルがかつてないほどお得に。\n\n今すぐダウンロードしてNikeメンバーに登録しよう。限定コンテンツや、最新のスポーツ イノベーション、あなたのためにカスタマイズされたおすすめ商品やコーディネートのアドバイスをチェック。\n \nショッピングに嬉しいメンバー特典\nNikeとJordanの最新＆注目の情報もお見逃しなく。スニーカー、ワークアウト用ウェア、アクセサリー、ストリートウェアのトレンドをチェックできるだけでなく、メンズシューズ、ウィメンズアパレル、キッズウェアも豊富に見つかる。\n• メンバーだけの特典：NIKEアプリで購入すると、通常配送無料＆受領日から30日以内なら未使用品に限り返品可能（一部例外あり）。安心してオンラインショッピングを楽しもう。\n• アプリ限定オファーを利用してショッピング：新規Nikeメンバーは、NIKEアプリでの初回購入時に10％オフ。\n• Jordanモード：ジョーダンの最新ウェアとスニーカーをチェック。Jordanモードでしか見られない特別コンテンツもあり。\n• メンバープロフィール：快適なNIKEアプリで、アクティビティ、注文内容、購入履歴を確認。\n• メンバーだけの限定特典：誕生日などの特別なイベントを、メンバーだけの限定特典でお祝いしよう。\n• 最新情報と新商品：最新のスポ",
+    "screenshotCount": 7,
+    "saved": [
+      "docs/research/app-ui-screenshots/nike/01.jpg",
+      "docs/research/app-ui-screenshots/nike/02.jpg",
+      "docs/research/app-ui-screenshots/nike/03.jpg",
+      "docs/research/app-ui-screenshots/nike/04.jpg",
+      "docs/research/app-ui-screenshots/nike/05.jpg",
+      "docs/research/app-ui-screenshots/nike/06.jpg",
+      "docs/research/app-ui-screenshots/nike/07.jpg"
+    ],
+    "primaryGenre": "Shopping"
+  },
+  {
+    "name": "zara",
+    "trackName": "ZARA",
+    "sellerName": "Industria de Diseno Textil, S.A.",
+    "appId": 547951480,
+    "country": "jp",
+    "description": "レディース、メンズ、キッズ向けに提案するZaraのコレクションをご覧ください。当社アプリケーションおよびオンラインストアを通じて、これからのシーズン向けの新作コレクションおよびファッションエディトリアルの商品をご購入およびご覧いただけます。 \n\n\nレディース： \nZaraのレディース向け提案の中には、衣類やアクセサリーの次のカテゴリーがあります: \n-\tシャツ \n-\tＴシャツ/ボディ\n-\tトップス\n-\tスウェットシャツ\n-\tスカート\n-\tパンツ\n-\tデニムパンツ\n-\tショートパンツ\n-\tオーバーコート\n-\tシューズ\n-\tバッグ\n-\tスイムウェア\n-\tアクセサリー\n-\tランジェリー\n-\tビューティ\n-\tパフューム \n-\tベーシック\n-\tトータルルック\n-\tスーツ\n\n\nメンズ:\nメンズZaraコレクションには、以下のものが含まれています: \n-\tベーシック\n-\tパンツ\n-\tカーゴパンツ/パラシュートパンツ \n-\tデニムパンツ\n-\tジャケット/シャツジャケット\n-\tスウェットシャツ\n-\tＴシャツ\n-\tシャツ\n-\tポロシャツ\n-\tバミューダパンツ\n-\tセーター/ジャケット\n-\tスーツ\n-\tトレンチコート\n-\tブレザー/ジャケット\n-\tシューズ\n-\tバッグ/バックパック\n-\tアクセサリー\n-\tパフューム \n\n\nキッズ:\n衣類、アクセサリーとシューズのセレクション： \n-\tガール: 6～14歳\n-\tボーイ: 6～14歳\n-\tベビーガール: 9ヶ月～6歳\n-\tベビーボーイ: 9ヶ月～6歳\n-\t新生児0～12ヶ月\n\t\nさらに、Zaraのキッズ向けコレクションには、毎週更新され、カスタマイズできる衣類やアクセサリーのセレクション「Edited/カスタマイズ」セクションがあります。 \n\n\n常設コレクションに加えてZaraのアプリでは、特別新発売やビューティカテゴリー、そしてランジェリーラインす",
+    "screenshotCount": 6,
+    "saved": [
+      "docs/research/app-ui-screenshots/zara/01.jpg",
+      "docs/research/app-ui-screenshots/zara/02.jpg",
+      "docs/research/app-ui-screenshots/zara/03.jpg",
+      "docs/research/app-ui-screenshots/zara/04.jpg",
+      "docs/research/app-ui-screenshots/zara/05.jpg",
+      "docs/research/app-ui-screenshots/zara/06.jpg"
+    ],
+    "primaryGenre": "Shopping"
+  },
+  {
+    "name": "hm",
+    "trackName": "H&M",
+    "sellerName": "H & M Hennes & Mauritz AB",
+    "appId": 834465911,
+    "country": "jp",
+    "description": "いつでも、どこでもH&Mのファッションフィードに直ぐアクセスできる H&Mアプリ。 \n最新情報や注文履歴から、アップロードした写真に似たアイテムをご紹介。世界中のユーザーから集まるインスピレーションまで、便利で役立つ機能が勢揃い！ \n\nフィードをチェックしながら、H&Mの世界をリアルに楽しめる。\n面白いと思ったら、そのまま読み進めて！\n\nアプリで気に入ったアイテムを発見。店舗の在庫状況が知りたい？そんな時は、FIND IN STORE機能！この機能は在庫のあるサイズと色、店舗を教えてくれます。\n\nアプリは店頭でお買い物中にも役立ちます。\n自分のサイズが見つからなくて、他のサイズや色で在庫があるか知りたいときは？値札をスキャン！ SCAN & FIND機能が教えてくれます！\n\n気になるアイテムやインスピレーションに出会った？VISUAL SEARCHがあなたがアップロードした写真やスクリーンショットをもとにおススメアイテムを提案。模様・色・スタイルを認識し、在庫のある商品または似た商品を一挙にご紹介。\n\nお気に入りリストの中から一番のお気に入りを保存したい？ HEART ICONをタップ。 \n\nPUSH NOTIFICATIONをオンにしてファッションの最新情報をゲット！ デザイナーコレクションの発表から特別なオファーやイベントまで、いち早くお知らせします！\n\nお見逃しなく。H&Mアプリを今すぐダウンロード！\n\nH&Mアプリをダウンロードすると、お客様のデータはH&Mのプライバシー通知にそって取り扱われます。詳しくは hm.com をご覧ください。",
+    "screenshotCount": 10,
+    "saved": [
+      "docs/research/app-ui-screenshots/hm/01.jpg",
+      "docs/research/app-ui-screenshots/hm/02.jpg",
+      "docs/research/app-ui-screenshots/hm/03.jpg",
+      "docs/research/app-ui-screenshots/hm/04.jpg",
+      "docs/research/app-ui-screenshots/hm/05.jpg",
+      "docs/research/app-ui-screenshots/hm/06.jpg",
+      "docs/research/app-ui-screenshots/hm/07.jpg",
+      "docs/research/app-ui-screenshots/hm/08.jpg",
+      "docs/research/app-ui-screenshots/hm/09.jpg",
+      "docs/research/app-ui-screenshots/hm/10.jpg"
+    ],
+    "primaryGenre": "Shopping"
+  },
+  {
+    "name": "chipotle",
+    "trackName": "Chipotle",
+    "sellerName": "Chipotle Mexican Grill",
+    "appId": 327228455,
+    "country": "us",
+    "description": "Like a tiny Chipotle that lives in your phone, our app lets you order real, delicious food for pickup or delivery.\n\nAnd…\n\nABOUT CHIPOTLE REWARDS\n• Members bank points automatically for in-app orders.\n• In-person, scan the app to earn points and redeem rewards.\n• Redeem points on Food, Goods and Giving in the Rewards Exchange.\n• Set a favorite reward to track points as you go.\n• Get rewarded faster with extra point offers and early access to new menu items.\n• Oh, and let’s just say… we won’t forget you on your birthday.\n \nFEATURES\n• Pick up quicker with mobile pickup shelves and Chipotlane.\n• Get your food delivery bought straight to your door.\n• Try tasty menu items you can only get in-app or online.\n• Get your faves faster with saved meals and recent orders.\n• Go crazy with ‘extra’ ‘light",
+    "screenshotCount": 7,
+    "saved": [
+      "docs/research/app-ui-screenshots/chipotle/01.jpg",
+      "docs/research/app-ui-screenshots/chipotle/02.jpg",
+      "docs/research/app-ui-screenshots/chipotle/03.jpg",
+      "docs/research/app-ui-screenshots/chipotle/04.jpg",
+      "docs/research/app-ui-screenshots/chipotle/05.jpg",
+      "docs/research/app-ui-screenshots/chipotle/06.jpg",
+      "docs/research/app-ui-screenshots/chipotle/07.jpg"
+    ],
+    "primaryGenre": "Food & Drink"
+  },
+  {
+    "name": "dunkin",
+    "trackName": "Dunkin'",
+    "sellerName": "Dunkin' Donuts",
+    "appId": 1056813463,
+    "country": "us",
+    "description": "Order ahead & skip the wait!\nOrdering through the Dunkin’ app is fast, easy and contactless! All app users can place their order ahead through the Dunkin’ app and skip the wait in store. Try all our contactless pickup options – walk-in pickup, drive-thru and curbside pickup! Options will vary by store. Check app for details.\n\nJoin Dunkin’ Rewards to earn FREE food and drinks!\nRunnin' has its rewards. Join our new rewards program, DUNKIN’ REWARDS, to earn your choice of free food and drinks, unlock Boosted Status to earn points faster and score members-only exclusive offers. Members earn 10 points per $1 spent on qualifying purchases in-store or when they order ahead.\n\nPay Any Way\nDunkin’ Rewards members earn points any way they pay – cash, credit/debit, Dunkin’ Card or Apple Pay. Dunkin' R",
+    "screenshotCount": 7,
+    "saved": [
+      "docs/research/app-ui-screenshots/dunkin/01.jpg",
+      "docs/research/app-ui-screenshots/dunkin/02.jpg",
+      "docs/research/app-ui-screenshots/dunkin/03.jpg",
+      "docs/research/app-ui-screenshots/dunkin/04.jpg",
+      "docs/research/app-ui-screenshots/dunkin/05.jpg",
+      "docs/research/app-ui-screenshots/dunkin/06.jpg",
+      "docs/research/app-ui-screenshots/dunkin/07.jpg"
+    ],
+    "primaryGenre": "Food & Drink"
+  },
+  {
+    "name": "starbucks_us",
+    "trackName": "Starbucks",
+    "sellerName": "Starbucks Coffee Company",
+    "appId": 331177714,
+    "country": "us",
+    "description": "Ordering ahead is just a download away. Get the Starbucks® app for an easier way to enjoy your favorites and discover Rewards in every sip as a member. \n\nORDER SEAMLESSLY \n• Order in the app when you’re on your way\n• Customize and create your perfect drink\n• Save your favorite stores\n• View past orders & save custom drinks \n• Save payment methods and scan to pay in stores\n• Tip your barista for your delicious drink\n\nJOIN STARBUCKS® REWARDS\n• Earn Stars to use on free food & drinks\n• Start at Green status & level up to Gold or Reserve for exclusive benefits\n• Enjoy a free drink on your birthday*, plus more time to redeem as you level up\n• Try one free customization a month on Free Mod Mondays**\n• Enjoy early access to new items\n• Get Bonus Stars for digitally reloading your Starbucks Card (",
+    "screenshotCount": 9,
+    "saved": [
+      "docs/research/app-ui-screenshots/starbucks_us/01.jpg",
+      "docs/research/app-ui-screenshots/starbucks_us/02.jpg",
+      "docs/research/app-ui-screenshots/starbucks_us/03.jpg",
+      "docs/research/app-ui-screenshots/starbucks_us/04.jpg",
+      "docs/research/app-ui-screenshots/starbucks_us/05.jpg",
+      "docs/research/app-ui-screenshots/starbucks_us/06.jpg",
+      "docs/research/app-ui-screenshots/starbucks_us/07.jpg",
+      "docs/research/app-ui-screenshots/starbucks_us/08.jpg",
+      "docs/research/app-ui-screenshots/starbucks_us/09.jpg"
+    ],
+    "primaryGenre": "Food & Drink"
+  },
+  {
+    "name": "wendys",
+    "trackName": "Wendy’s",
+    "sellerName": "Wendys International, LLC",
+    "appId": 540518599,
+    "country": "us",
+    "description": "If you love Wendy's — (who doesn't, right?) — you need this app. Earn Rewards for FREE fresh food, get exclusive offers on our latest deals, and order delivery wherever you are. We could keep going, but they only give us so many characters. For more nuggets to ponder below ... it's gotta be Wendy's.\n\nEasy Sign Up\nCreating a Wendy's account couldn't be simpler. Download the app. Answer a few questions. And bam\n— fresh food faster is around the corner.\n\nAmazing Offers\nThis app is your hookup. Get app-exclusive offers on burgers, breakfast, all the bacon things, and every Frosty® in between. All the deals, zero FOMO.\n\nBreakfast\nRise, shine, and dine with Wendy's exciting new breakfast menu. Biscuits and burritos and cold brews — oh my. Stop snoozing and stop by early.\n\nDaily Deals\nGet the lat",
+    "screenshotCount": 6,
+    "saved": [
+      "docs/research/app-ui-screenshots/wendys/01.jpg",
+      "docs/research/app-ui-screenshots/wendys/02.jpg",
+      "docs/research/app-ui-screenshots/wendys/03.jpg",
+      "docs/research/app-ui-screenshots/wendys/04.jpg",
+      "docs/research/app-ui-screenshots/wendys/05.jpg",
+      "docs/research/app-ui-screenshots/wendys/06.jpg"
+    ],
+    "primaryGenre": "Food & Drink"
+  },
+  {
+    "name": "adidas",
+    "trackName": "adidas: スニーカーとアパレルのショッピングアプリ",
+    "sellerName": "Adidas International Marketing B.V.",
+    "appId": 1266591536,
+    "country": "jp",
+    "description": "【公式アディダスアプリで、最新のスニーカーやアパレル情報を入手】\n\nアディダスアプリなら、最新トレンドのスニーカーやアパレル、アクセサリーがすぐに見つかる。ストリートからカジュアル、アクティブまで、あなたのスタイルにぴったりのアイテムをスマートにセレクト。\n\n今すぐadiClubに参加して、限定アイテムやファッション、オンライン限定の特典を楽しもう。\n\nadidasは、あらゆる世代のためのスニーカー、アパレル、サッカースパイク、ランニングシューズ、スポーツウェアが揃うワンストップショップです。\n最新のスニーカーやファッションアパレルにいち早くアクセスできる特別なオンラインショッピング体験を、あなたの手元にお届けします。\n\nお気に入りのアディダススタイルを、タップひとつでショッピング。\nスニーカー、ジャージ、スポーツウェアなど、強力な検索機能でお気に入りのスタイルを見つけよう。\nサイズ、カラー、価格、スポーツ種目などで絞り込み、シンプルで安全なチェックアウトで商品をすぐに注文。\nアディダスが、究極のアパレル＆スニーカーアプリをあなたにお届けします。\n\nアディダスアプリは、ただのショッピングツールではありません。 adiClubに参加すれば、限定メンバー特典やポイント制度、スペシャルイベントへの招待、さらには世界的アイコンとのコラボアイテムにもアクセス可能。\nファレル・ウィリアムスやリオネル・メッシなどとの限定コレクションも見逃せません。\n\nアディダスアプリをダウンロードして、ファッション、スニーカー、限定コンテンツの世界を楽しもう。\n All in or nothing ― アディダスで、あなたらしいスタイルをもっと自由に。\n\nファッション＆スニーカーの究極アプリ\n- スニーカー、アパレル、アクセサリーなど、アディダスの最新スタイルをチェック\n- アディダスのアパレル＆スニー",
+    "screenshotCount": 6,
+    "saved": [
+      "docs/research/app-ui-screenshots/adidas/01.jpg",
+      "docs/research/app-ui-screenshots/adidas/02.jpg",
+      "docs/research/app-ui-screenshots/adidas/03.jpg",
+      "docs/research/app-ui-screenshots/adidas/04.jpg",
+      "docs/research/app-ui-screenshots/adidas/05.jpg",
+      "docs/research/app-ui-screenshots/adidas/06.jpg"
+    ],
+    "primaryGenre": "Shopping"
+  }
+]

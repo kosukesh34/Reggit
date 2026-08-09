@@ -5,7 +5,7 @@
 @section('page-kind', 'liff-designer')
 
 @push('styles-before-vite')
-<link rel="stylesheet" href="{{ asset('css/admin/liff-designer.css') }}?v=20260715f">
+<link rel="stylesheet" href="{{ asset('css/admin/liff-designer.css') }}?v=20260809a">
 @endpush
 
 @section('content')
@@ -38,6 +38,12 @@
         'csrfToken' => csrf_token(),
         'backUrl' => admin_route('admin.settings.basic'),
         'lineFriendAddUrl' => old('line_friend_add_url', $lineFriendAddUrl ?? ''),
+        'previewData' => $previewData ?? [
+            'products' => [],
+            'coupons' => [],
+            'stamps' => [],
+            'member' => null,
+        ],
     ];
 @endphp
 <script type="application/json" id="ldDesignerConfig">@json($ldDesignerConfig)</script>
