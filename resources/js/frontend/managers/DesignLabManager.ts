@@ -1,15 +1,15 @@
-import { DomHelper } from '../../../shared/utils/domHelper';
-import { ToastManager } from '../../../shared/utils/toast';
-import type { ApiClient } from '../../../shared/utils/apiClient';
-import { AppConstants } from '../../../shared/constants';
-import { isDemoDataMode } from '../../demo/demoMode';
+import { DomHelper } from '../../shared/utils/domHelper';
+import { ToastManager } from '../../shared/utils/toast';
+import type { ApiClient } from '../../shared/utils/apiClient';
+import { AppConstants } from '../../shared/constants';
+import { isDemoDataMode } from '../demo/demoMode';
 import {
     DEMO_COUPON_PRIZES,
     pickRandomPrize,
     readDemoWonCoupons,
     saveDemoWonCoupon,
     type DemoCoupon,
-} from '../../demo/demoCoupons';
+} from '../demo/demoCoupons';
 
 const CAPSULE_COLORS = ['#FF6F91', '#FFC93C', '#7B9BFF', '#5FD3B4', '#FF9A5A', '#B98CE0'];
 
@@ -59,9 +59,8 @@ export class DesignLabManager {
         }
     }
 
-    async load(container?: HTMLElement | null): Promise<void> {
-        const section = container
-            ?? (document.getElementById('designlabSection') as HTMLElement | null);
+    async load(): Promise<void> {
+        const section = document.getElementById('designlabSection') as HTMLElement | null;
         if (section === null) {
             this._lotteryLog('load_skip_no_section');
             return;
@@ -151,14 +150,10 @@ export class DesignLabManager {
     mount(container: HTMLElement): void {
         const showGacha = isDemoDataMode() || this._state?.gacha_enabled === true;
         const showScratch = isDemoDataMode() || this._state?.scratch_enabled === true;
-        const showRoulette = isDemoDataMode();
         const needsRemount = container.dataset.designLabMounted !== '1'
             || (showGacha && container.querySelector('.pp-gacha__dome') === null)
             || (showGacha && container.querySelector('.pp-gacha__outlet .pp-gacha__chute') === null)
-            || (showScratch && container.querySelector('.pp-scratch__circle') === null)
-            || (showScratch && container.querySelector('#designScratchImage') === null)
-            || (showGacha && container.querySelectorAll('.pp-gacha__ball').length < 9)
-            || (showRoulette && container.querySelector('.pp-roulette__lights') === null);
+            || (showScratch && container.querySelector('.pp-scratch__circle') === null);
         if (!needsRemount) {
             this._applyAvailability(container);
             this._refreshWonList(container);
@@ -170,7 +165,6 @@ export class DesignLabManager {
         this._bind(container);
         this._fillDomeCapsules(container);
         this._initScratch(container);
-        this._paintRoulette(container);
         this._applyAvailability(container);
         this._refreshWonList(container);
         this._focusPlayTarget(container);
@@ -262,9 +256,7 @@ export class DesignLabManager {
         }
         const target = focus === 'scratch'
             ? container.querySelector('.pp-scratch')
-            : (focus === 'roulette'
-                ? container.querySelector('.pp-roulette')
-                : (focus === 'gacha' ? container.querySelector('.pp-gacha') : null));
+            : (focus === 'gacha' ? container.querySelector('.pp-gacha') : null);
         if (target === null) {
             return;
         }
@@ -344,8 +336,6 @@ export class DesignLabManager {
                         <div class="pp-scratch" id="designScratchStage" data-state="sealed">
                             <div class="pp-scratch__circle" id="designScratchCircle">
                                 <div class="pp-scratch__prize" id="designScratchPrize">
-                                    <p class="pp-scratch__prize-mystery" id="designScratchMystery" aria-hidden="true" hidden>?</p>
-                                    <img class="pp-scratch__prize-image" id="designScratchImage" alt="" hidden>
                                     <p class="pp-scratch__prize-eyebrow" id="designScratchEyebrow" hidden>あたり</p>
                                     <p class="pp-scratch__prize-name" id="designScratchName"></p>
                                     <p class="pp-scratch__prize-desc" id="designScratchDesc"></p>
@@ -364,36 +354,7 @@ export class DesignLabManager {
                 </section>
             `
             : '';
-        const rouletteSection = isDemo
-            ? `
-                <section class="design-lab__section" data-lottery-section="roulette" aria-label="ルーレット">
-                    <h2 class="design-lab__section-title">ルーレット</h2>
-                    <p class="design-lab__section-lead">回して止まったマスのクーポンを獲得します</p>
-                    <div class="pp-play-card">
-                        <div class="pp-play-card__top">
-                            <span class="pp-play-card__title">クーポンルーレット</span>
-                            <span class="pp-play-card__chip">体験</span>
-                        </div>
-                        <p class="pp-play-card__rule">針の先に止まった景品が当たりです。</p>
-                        <div class="pp-roulette" id="designRouletteStage" data-state="idle">
-                            <div class="pp-roulette__stage">
-                                <div class="pp-roulette__frame">
-                                    <span class="pp-roulette__glow" aria-hidden="true"></span>
-                                    <div class="pp-roulette__lights" aria-hidden="true" id="designRouletteLights"></div>
-                                    <span class="pp-roulette__pointer" aria-hidden="true"></span>
-                                    <span class="pp-roulette__rim" aria-hidden="true"></span>
-                                    <div class="pp-roulette__wheel" id="designRouletteWheel" role="img" aria-label="ルーレット盤"></div>
-                                    <div class="pp-roulette__hub" aria-hidden="true"><span></span></div>
-                                </div>
-                                <div class="pp-roulette__pedestal" aria-hidden="true"></div>
-                            </div>
-                            <button type="button" class="pp-cta" id="designRouletteBtn">ルーレットを回す</button>
-                        </div>
-                    </div>
-                </section>
-            `
-            : '';
-        const emptyLead = !showGacha && !showScratch && !isDemo
+        const emptyLead = !showGacha && !showScratch
             ? '<p class="design-lab__section-lead">現在あそべるコンテンツはありません</p>'
             : '';
         return `
@@ -401,7 +362,6 @@ export class DesignLabManager {
                 ${emptyLead}
                 ${gachaSection}
                 ${scratchSection}
-                ${rouletteSection}
                 <section class="design-lab__section" aria-label="獲得クーポン">
                     <h2 class="design-lab__section-title">獲得したクーポン</h2>
                     <ul class="design-lab__won" id="designWonList"></ul>
@@ -415,105 +375,33 @@ export class DesignLabManager {
         if (dome === null) {
             return;
         }
-        dome.querySelectorAll('.pp-gacha__ball, .pp-gacha__pile-fill').forEach((el) => el.remove());
-
-        const domeSize = 252;
-        const border = 8;
-        const collarPad = 28; // 襟・筐体に隠れる下端を床として扱わない
-        const cx = domeSize / 2;
-        const cy = domeSize / 2;
-        const innerR = domeSize / 2 - border - 3;
-        const floorY = domeSize - collarPad;
-        const diameters = [46, 44, 48, 42, 44, 40, 42, 38, 40];
-        type Ball = { x: number; y: number; r: number; rot: number };
-        const clampInDome = (ball: Ball): void => {
-            // 円形ドーム拘束
-            const dx = ball.x - cx;
-            const dy = ball.y - cy;
-            const dist = Math.hypot(dx, dy) || 0.001;
-            const maxDist = innerR - ball.r;
-            if (dist > maxDist) {
-                const scale = maxDist / dist;
-                ball.x = cx + dx * scale;
-                ball.y = cy + dy * scale;
-            }
-            // 見た目の床（襟の上）より下へは落とさない
-            if (ball.y + ball.r > floorY) {
-                ball.y = floorY - ball.r;
-            }
-        };
-        // 底（襟の上）から積み上げ → 軽い重力で密着。上半球は空ける
-        const balls: Ball[] = [];
-        const sorted = diameters.slice().sort((a, b) => b - a);
-        let row = 0;
-        let col = 0;
-        for (const d of sorted) {
-            const r = d / 2;
-            const rowY = floorY - r - 2 - (row * (r * 1.6));
-            const colsInRow = Math.max(1, 4 - row);
-            const rowWidth = (colsInRow - 1) * (r * 1.75);
-            const x0 = cx - rowWidth / 2;
-            balls.push({
-                x: x0 + (col * (r * 1.75)),
-                y: rowY,
-                r,
-                rot: ((balls.length * 17) % 40) - 20,
-            });
-            col += 1;
-            if (col >= colsInRow) {
-                col = 0;
-                row += 1;
-            }
-        }
-
-        for (let iter = 0; iter < 90; iter += 1) {
-            for (const ball of balls) {
-                ball.y += 2.6;
-                clampInDome(ball);
-            }
-            for (let i = 0; i < balls.length; i += 1) {
-                for (let j = i + 1; j < balls.length; j += 1) {
-                    const a = balls[i];
-                    const b = balls[j];
-                    const dx = b.x - a.x;
-                    const dy = b.y - a.y;
-                    const dist = Math.hypot(dx, dy) || 0.001;
-                    const minDist = a.r + b.r - 0.5;
-                    if (dist >= minDist) {
-                        continue;
-                    }
-                    const push = (minDist - dist) / 2;
-                    const nx = dx / dist;
-                    const ny = dy / dist;
-                    a.x -= nx * push;
-                    a.y -= ny * push;
-                    b.x += nx * push;
-                    b.y += ny * push;
-                }
-            }
-            for (const ball of balls) {
-                clampInDome(ball);
-            }
-        }
-
-        balls
-            .slice()
-            .sort((a, b) => a.y - b.y)
-            .forEach((ball, i) => {
-                const el = document.createElement('span');
-                el.className = 'pp-gacha__ball';
-                el.style.width = `${ball.r * 2}px`;
-                el.style.height = `${ball.r * 2}px`;
-                el.style.left = `${ball.x - ball.r}px`;
-                el.style.top = `${ball.y - ball.r}px`;
-                el.style.zIndex = String(8 + Math.round(ball.y / 20));
-                el.style.setProperty('--ball-color', CAPSULE_COLORS[i % CAPSULE_COLORS.length]);
-                el.style.setProperty('--ball-rot', `${ball.rot}deg`);
-                el.style.setProperty('--ball-scale', '1');
-                el.style.setProperty('--ball-bright', String(0.9 + (ball.y / domeSize) * 0.12));
-                el.style.setProperty('--ball-delay', `${(i % 5) * 0.04}s`);
-                dome.appendChild(el);
-            });
+        dome.querySelectorAll('.pp-gacha__ball').forEach((el) => el.remove());
+        // 詰め込みすぎない山積み（下寄り・上は空ける）
+        const layout: Array<{ left: number; top: number; size: number; rot: number; z: number }> = [
+            { left: 24, top: 178, size: 52, rot: -14, z: 8 },
+            { left: 86, top: 186, size: 56, rot: 10, z: 12 },
+            { left: 148, top: 180, size: 52, rot: -8, z: 10 },
+            { left: 44, top: 136, size: 50, rot: 18, z: 9 },
+            { left: 110, top: 130, size: 54, rot: -16, z: 11 },
+            { left: 170, top: 142, size: 48, rot: 12, z: 7 },
+            { left: 72, top: 96, size: 46, rot: -10, z: 8 },
+            { left: 128, top: 92, size: 44, rot: 16, z: 6 },
+        ];
+        layout.forEach((item, i) => {
+            const ball = document.createElement('span');
+            ball.className = 'pp-gacha__ball';
+            ball.style.width = `${item.size}px`;
+            ball.style.height = `${item.size}px`;
+            ball.style.left = `${item.left}px`;
+            ball.style.top = `${item.top}px`;
+            ball.style.zIndex = String(item.z);
+            ball.style.setProperty('--ball-color', CAPSULE_COLORS[i % CAPSULE_COLORS.length]);
+            ball.style.setProperty('--ball-rot', `${item.rot}deg`);
+            ball.style.setProperty('--ball-scale', String(0.92 + item.z * 0.006));
+            ball.style.setProperty('--ball-bright', String(0.88 + item.z * 0.01));
+            ball.style.setProperty('--ball-delay', `${(i % 5) * 0.05}s`);
+            dome.appendChild(ball);
+        });
     }
 
     private _bind(container: HTMLElement): void {
@@ -531,10 +419,6 @@ export class DesignLabManager {
             }
             if (target.closest('#designScratchReset')) {
                 this._resetScratch(container);
-                return;
-            }
-            if (target.closest('#designRouletteBtn')) {
-                void this._runRoulette(container);
                 return;
             }
             if (target.closest('#designGachaBtn') || target.closest('#designGachaKnob')) {
@@ -557,46 +441,19 @@ export class DesignLabManager {
         nameEl.textContent = '';
         descEl.textContent = '';
         prizeEl.dataset.awarded = '0';
-        prizeEl.classList.remove('is-lose', 'is-revealed');
-        const mystery = container.querySelector('#designScratchMystery') as HTMLElement | null;
-        const imageEl = container.querySelector('#designScratchImage') as HTMLImageElement | null;
-        const eyebrow = container.querySelector('#designScratchEyebrow') as HTMLElement | null;
-        if (imageEl !== null) {
-            imageEl.hidden = true;
-            imageEl.removeAttribute('src');
-            imageEl.alt = '';
-        }
         if (isDemoDataMode()) {
             const prize = pickRandomPrize();
             prizeEl.dataset.prizeIndex = String(DEMO_COUPON_PRIZES.indexOf(prize));
             prizeEl.dataset.prizeName = prize.coupon_name;
             prizeEl.dataset.prizeDesc = prize.description;
-            prizeEl.dataset.prizeImage = prize.image_url;
-            // 銀面の下にあたり内容を先に置いて、こすると見えるようにする
-            if (mystery !== null) {
-                mystery.hidden = true;
-            }
-            if (eyebrow !== null) {
-                eyebrow.hidden = false;
-            }
-            nameEl.textContent = prize.coupon_name;
-            descEl.textContent = prize.description;
-            if (imageEl !== null && prize.image_url !== '') {
-                imageEl.src = prize.image_url;
-                imageEl.alt = prize.coupon_name;
-                imageEl.hidden = false;
-            }
         } else {
             delete prizeEl.dataset.prizeIndex;
             delete prizeEl.dataset.prizeName;
             delete prizeEl.dataset.prizeDesc;
-            delete prizeEl.dataset.prizeImage;
-            if (mystery !== null) {
-                mystery.hidden = false;
-            }
-            if (eyebrow !== null) {
-                eyebrow.hidden = true;
-            }
+        }
+        const eyebrow = container.querySelector('#designScratchEyebrow') as HTMLElement | null;
+        if (eyebrow !== null) {
+            eyebrow.hidden = true;
         }
         stage.dataset.state = 'sealed';
         if (progressEl !== null) {
@@ -737,10 +594,6 @@ export class DesignLabManager {
                 return;
             }
             drawing = true;
-            const shine = container.querySelector('.pp-scratch__shine') as HTMLElement | null;
-            if (shine !== null) {
-                shine.hidden = true;
-            }
             try {
                 canvas.setPointerCapture(e.pointerId);
             } catch {
@@ -836,7 +689,7 @@ export class DesignLabManager {
         }
         const hint = container.querySelector('#designScratchHint') as HTMLElement | null;
         if (hint !== null) {
-            hint.textContent = '結果を確認しています…';
+            hint.textContent = 'クーポンを獲得しました';
         }
 
         let prize: Prize | null = null;
@@ -882,15 +735,33 @@ export class DesignLabManager {
                 };
         }
 
-        const isWin = prize?.is_win === true;
+        const nameEl = container.querySelector('#designScratchName') as HTMLElement | null;
+        const descEl = container.querySelector('#designScratchDesc') as HTMLElement | null;
+        const eyebrow = container.querySelector('#designScratchEyebrow') as HTMLElement | null;
+        const prizeRoot = container.querySelector('#designScratchPrize') as HTMLElement | null;
+        const isWin = prize?.is_win !== false;
+        if (prizeRoot !== null) {
+            prizeRoot.classList.toggle('is-lose', !isWin);
+        }
+        if (eyebrow !== null) {
+            eyebrow.hidden = isWin ? false : true;
+            eyebrow.textContent = 'あたり';
+        }
+        if (nameEl !== null && prize !== null) {
+            nameEl.textContent = isWin ? prize.coupon_name : 'ハズレ';
+        }
+        if (descEl !== null && prize !== null) {
+            descEl.textContent = isWin ? prize.description : (prize.description || '残念！またチャレンジしてください');
+        }
         if (hint !== null) {
             hint.textContent = isWin ? 'クーポンを獲得しました' : 'ハズレでした';
         }
-        if (prize !== null) {
-            if (isWin) {
-                this._refreshWonList(container);
-            }
-            this._showPrizeModal(prize);
+        if (prize !== null && isWin) {
+            this._refreshWonList(container);
+            // スクラッチは結果が見えたタイミングで通知
+            void this._notifyLotteryWinAndToast(prize).finally(() => {
+                this._navigateAfterWin();
+            });
         }
         this._applyAvailability(container);
     }
@@ -945,134 +816,6 @@ export class DesignLabManager {
             prizeRoot.classList.remove('is-lose');
         }
         this._initScratch(container);
-    }
-
-    private _rouletteItems(): Array<Prize & { color: string; short: string }> {
-        const palette = ['#E8C84A', '#3EC9A8', '#E8924A', '#8FA0B4', '#F0B14A', '#3AAFA3'];
-        return [
-            { ...DEMO_COUPON_PRIZES[0], short: 'ドリンク無料', is_win: true, color: palette[0] },
-            { ...DEMO_COUPON_PRIZES[1], short: 'デザート割', is_win: true, color: palette[1] },
-            {
-                coupon_name: 'ハズレ',
-                description: '残念！またチャレンジしてください',
-                image_url: '',
-                short: 'ハズレ',
-                is_win: false,
-                color: palette[3],
-            },
-            { ...DEMO_COUPON_PRIZES[2], short: '50pt', is_win: true, color: palette[2] },
-            { ...DEMO_COUPON_PRIZES[0], short: 'ドリンク無料', is_win: true, color: palette[4] },
-            {
-                coupon_name: 'ハズレ',
-                description: '残念！またチャレンジしてください',
-                image_url: '',
-                short: 'ハズレ',
-                is_win: false,
-                color: '#A8B2C0',
-            },
-            { ...DEMO_COUPON_PRIZES[1], short: 'デザート割', is_win: true, color: palette[5] },
-            { ...DEMO_COUPON_PRIZES[2], short: '50pt', is_win: true, color: palette[0] },
-        ];
-    }
-
-    private _paintRoulette(container: HTMLElement): void {
-        const frame = container.querySelector('.pp-roulette__frame') as HTMLElement | null;
-        const wheel = container.querySelector('#designRouletteWheel') as HTMLElement | null;
-        const lights = container.querySelector('#designRouletteLights') as HTMLElement | null;
-        if (wheel === null) {
-            return;
-        }
-        const size = Math.min(280, Math.max(220, Math.floor(window.innerWidth * 0.78)));
-        if (frame !== null) {
-            frame.style.width = `${size}px`;
-            frame.style.height = `${size}px`;
-            frame.style.margin = '0 auto';
-            frame.style.position = 'relative';
-        }
-        if (lights !== null && lights.childElementCount === 0) {
-            lights.innerHTML = Array.from({ length: 18 }, (_, i) => (
-                `<span class="pp-roulette__bulb" style="--bulb-i:${i}"></span>`
-            )).join('');
-        }
-        wheel.style.position = 'absolute';
-        wheel.style.inset = '14px';
-        wheel.style.width = 'auto';
-        wheel.style.height = 'auto';
-        wheel.style.borderRadius = '50%';
-        wheel.style.overflow = 'hidden';
-        const items = this._rouletteItems();
-        const slice = 360 / items.length;
-        const stops = items.map((item, index) => {
-            const start = index * slice;
-            const end = (index + 1) * slice;
-            return `${item.color} ${start}deg ${end}deg`;
-        }).join(', ');
-        // from 0deg（真上が起点）で色・ラベル・着地判定を揃える。from -90deg だとハズレ表示と結果がズレる
-        wheel.style.background = `
-            radial-gradient(circle at 50% 50%, transparent 28%, rgba(0,0,0,0.18) 29%, transparent 31%),
-            conic-gradient(from 0deg, ${stops})
-        `;
-        wheel.innerHTML = items.map((item, index) => {
-            const angle = (index * slice) + (slice / 2);
-            return `
-                <span class="pp-roulette__label" style="--roulette-angle:${angle}deg">
-                    <span class="pp-roulette__label-text">${DomHelper.escapeHtml(item.short)}</span>
-                </span>
-            `;
-        }).join('');
-        wheel.style.transform = 'rotate(0deg)';
-        wheel.style.transition = '';
-        wheel.dataset.spinDeg = '0';
-        wheel.dataset.segmentCount = String(items.length);
-    }
-
-    private async _runRoulette(container: HTMLElement): Promise<void> {
-        if (!isDemoDataMode()) {
-            return;
-        }
-        const stage = container.querySelector('#designRouletteStage') as HTMLElement | null;
-        const wheel = container.querySelector('#designRouletteWheel') as HTMLElement | null;
-        const btn = container.querySelector('#designRouletteBtn') as HTMLButtonElement | null;
-        if (stage === null || wheel === null || btn === null || btn.disabled) {
-            return;
-        }
-        if (stage.dataset.state === 'spinning') {
-            return;
-        }
-        const items = this._rouletteItems();
-        const pickIndex = Math.floor(Math.random() * items.length);
-        const slice = 360 / items.length;
-        const targetCenter = (pickIndex * slice) + (slice / 2);
-        // 前回の角度から積み上げる（毎回同じ帯域だと2回目以降ほぼ回らない）
-        const prevDeg = Number(wheel.dataset.spinDeg || '0');
-        const landing = (360 - targetCenter) % 360;
-        const nextBase = prevDeg + (360 * 7);
-        const nextMod = ((nextBase % 360) + 360) % 360;
-        const finalDeg = nextBase + ((landing - nextMod + 360) % 360);
-        wheel.dataset.spinDeg = String(finalDeg);
-        btn.disabled = true;
-        stage.dataset.state = 'spinning';
-        wheel.style.transition = 'transform 5.2s cubic-bezier(0.08, 0.82, 0.08, 1)';
-        wheel.style.transform = `rotate(${finalDeg}deg)`;
-        await new Promise<void>((resolve) => {
-            window.setTimeout(resolve, 5300);
-        });
-        stage.dataset.state = 'idle';
-        btn.disabled = false;
-        // 見た目の着地位置から再計算（ラベルと結果を一致させる）
-        const landedAngle = ((360 - (finalDeg % 360)) % 360);
-        const landedIndex = Math.min(items.length - 1, Math.floor(landedAngle / slice));
-        const prize = items[landedIndex] ?? items[pickIndex];
-        const isWin = prize.is_win === true;
-        if (isWin) {
-            saveDemoWonCoupon(prize, 'roulette');
-            this._refreshWonList(container);
-        }
-        this._showPrizeModal({
-            coupon_name: prize.coupon_name,
-            description: prize.description,
-            is_win: isWin,
-        });
     }
 
     private async _runGacha(container: HTMLElement): Promise<void> {
@@ -1143,7 +886,7 @@ export class DesignLabManager {
             machine?.classList.remove('is-shake');
             fall.classList.remove('is-drop', 'is-open');
             if (prize !== null) {
-                const isWin = prize.is_win === true;
+                const isWin = prize.is_win !== false;
                 if (isDemoDataMode() && isWin) {
                     saveDemoWonCoupon(prize as (typeof DEMO_COUPON_PRIZES)[number], 'gacha');
                 }
@@ -1193,7 +936,7 @@ export class DesignLabManager {
             const nested = outer?.data;
             const payload = nested?.data ?? nested;
             const coupon = payload?.coupon ?? null;
-            const isWin = payload?.is_win === true && coupon !== null;
+            const isWin = payload?.is_win !== false && coupon !== null;
             if (outer?.success !== true || payload === undefined) {
                 const message = nested?.message || outer?.message || 'プレイに失敗しました';
                 this._lotteryLog('play_failed', { id, message });
@@ -1232,14 +975,14 @@ export class DesignLabManager {
 
     private _showPrizeModal(prize: Prize): void {
         document.getElementById('designPrizeModal')?.remove();
-        const isWin = prize.is_win === true;
+        const isWin = prize.is_win !== false;
         const overlay = document.createElement('div');
         overlay.id = 'designPrizeModal';
         overlay.className = isWin ? 'pp-prize-modal' : 'pp-prize-modal pp-prize-modal--lose';
         overlay.setAttribute('role', 'dialog');
         overlay.setAttribute('aria-modal', 'true');
         overlay.setAttribute('aria-label', isWin ? '当選結果' : 'ハズレ');
-        // 中央のリボン＋クーポン名（ガチャと同じ当選演出）
+        // 中央のリボン＋名称のみ（下の説明・ボタン・トーストは出さない）
         overlay.innerHTML = `
             <div class="pp-prize-modal__backdrop" data-prize-close></div>
             <div class="pp-prize-modal__panel" data-prize-close>
@@ -1289,23 +1032,12 @@ export class DesignLabManager {
             list.innerHTML = '<li class="design-lab__won-empty">まだありません</li>';
             return;
         }
-        list.innerHTML = won.map((c: DemoCoupon) => {
-            const badge = c.source === 'scratch'
-                ? 'スクラッチ'
-                : (c.source === 'roulette' ? 'ルーレット' : 'ガチャ');
-            const image = c.image_url
-                ? `<img class="design-lab__won-image" src="${DomHelper.escapeHtml(c.image_url)}" alt="">`
-                : '';
-            return `
+        list.innerHTML = won.map((c: DemoCoupon) => `
             <li class="design-lab__won-item">
-                ${image}
-                <div class="design-lab__won-copy">
-                    <span class="design-lab__won-badge">${badge}</span>
-                    <span class="design-lab__won-name">${DomHelper.escapeHtml(c.coupon_name)}</span>
-                </div>
+                <span class="design-lab__won-badge">${c.source === 'scratch' ? 'スクラッチ' : 'ガチャ'}</span>
+                <span class="design-lab__won-name">${DomHelper.escapeHtml(c.coupon_name)}</span>
             </li>
-        `;
-        }).join('');
+        `).join('');
     }
 
 }
