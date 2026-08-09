@@ -7,9 +7,9 @@ type PanelLimits = { min: number; max: number };
  */
 export const panelResizer = {
     STORAGE_KEY: 'ld-panel-widths-v1',
-    DEFAULTS: { left: 248, right: 388 } as PanelWidths,
+    DEFAULTS: { left: 260, right: 388 } as PanelWidths,
     LIMITS: {
-        left: { min: 176, max: 420 },
+        left: { min: 240, max: 420 },
         right: { min: 280, max: 560 },
     } as Record<PanelSide, PanelLimits>,
 
@@ -68,10 +68,10 @@ export const panelResizer = {
 
     _presetWidths(this: typeof panelResizer, preset: string | undefined): PanelWidths | null {
         const map: Record<string, PanelWidths> = {
-            compact: { left: 200, right: 300 },
-            standard: { left: 248, right: 388 },
+            compact: { left: 240, right: 300 },
+            standard: { left: 260, right: 388 },
             wide: { left: 300, right: 460 },
-            focus: { left: 200, right: 520 },
+            focus: { left: 240, right: 520 },
         };
         if (preset === undefined) {
             return null;

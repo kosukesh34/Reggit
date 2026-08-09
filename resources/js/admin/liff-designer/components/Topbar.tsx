@@ -37,6 +37,7 @@ export function Topbar() {
     }, [state.moreOpen, dispatch]);
 
     const save = useCallback(async () => {
+        if (state.saving) return;
         const formAction = config.formAction;
         const csrfToken = config.csrfToken || (document.querySelector('input[name="_token"]') as HTMLInputElement | null)?.value;
         if (formAction === undefined || formAction === '' || csrfToken === undefined || csrfToken === '') {
@@ -115,11 +116,11 @@ export function Topbar() {
                 </a>
                 <div className="ld-topbar__brand">
                     <span className="ld-topbar__mark" aria-hidden>
-                        <i className="fas fa-layer-group" />
+                        <i className="fas fa-store" />
                     </span>
                     <div className="ld-topbar__brand-text">
-                        <strong>LIFF Studio</strong>
-                        <span>顧客アプリデザイナー</span>
+                        <strong>App Studio</strong>
+                        <span>店舗アプリを組み立てる</span>
                     </div>
                 </div>
                 <div className="ld-topbar__context">

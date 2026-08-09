@@ -51,7 +51,17 @@ export function isRegistrationFormDismissed(): boolean {
 }
 
 export function isMembershipRequired(): boolean {
-    return getMemberRegistrationMode() === 'force';
+    if (getMemberRegistrationMode() === 'force') {
+        return true;
+    }
+    // Designer の require_membership が未同期でも即時反映する
+    const globalSettings =
+        typeof window !== 'undefined'
+        && window.__LIFF_TAB_SETTINGS__
+        && typeof window.__LIFF_TAB_SETTINGS__ === 'object'
+            ? (window.__LIFF_TAB_SETTINGS__ as { _global?: { require_membership?: unknown } })._global
+            : undefined;
+    return globalSettings?.require_membership === true;
 }
 
 export function getGuestRegisterMessage(): { title: string; subtitle: string; buttonLabel: string; buttonClass: string } {
