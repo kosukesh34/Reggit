@@ -77,9 +77,23 @@ class AllSampleDataSeeder extends Seeder
     private function applySmaregiContractFromEnv(): void
     {
         $contractId = config('smaregi.contract_id');
-        if (is_string($contractId) && trim($contractId) !== '') {
-            app(ShopSettingRepository::class)->setValue('smaregi_contract_id', trim($contractId), 'string', $this->project->id);
-            $this->command->info('スマレジ契約IDを .env の値で設定しました: '.trim($contractId));
+        if (! is_string($contractId) || trim($contractId) === '') {
+            return;
+        }
+        $trimmed = trim($contractId);
+        app(ShopSettingRepository::class)->setValue('smaregi_contract_id', $trimmed, 'string', $this->project->id);
+        $this->command->info('スマレジ契約IDを .env の値で設定しました: '.$trimmed);
+
+        // migrate 時点では契約ID未設定のため default のまま残ることがある。
+        // マイグレーション 2026_07_20_110000 と同じく、契約IDを project_key に揃える。
+        if (
+            (string) $this->project->project_key === 'default'
+            && preg_match('/^[a-zA-Z0-9_-]+$/', $trimmed) === 1
+            && Project::query()->where('project_key', $trimmed)->where('id', '!=', $this->project->id)->doesntExist()
+        ) {
+            $this->project->project_key = $trimmed;
+            $this->project->save();
+            $this->command->info('project_key を契約IDに更新しました: '.$trimmed);
         }
     }
 

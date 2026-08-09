@@ -8,6 +8,11 @@ interface ProjectRepository
 {
     public function findActiveByProjectKey(string $projectKey): ?Project;
 
+    /**
+     * スマレジ契約ID（ShopSetting / SmaregiContract）で有効プロジェクトを探す。
+     */
+    public function findActiveBySmaregiContractId(string $contractId): ?Project;
+
     public function findFirstActive(): ?Project;
 
     /**

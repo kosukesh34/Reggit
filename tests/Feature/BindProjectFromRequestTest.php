@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\Project;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -18,6 +19,19 @@ class BindProjectFromRequestTest extends TestCase
         ]);
 
         $response = $this->get('/liff');
+
+        $response->assertStatus(200);
+    }
+
+    public function test_bind_スマレジ契約_i_dでもliffが開けること(): void
+    {
+        $project = Project::factory()->create([
+            'project_key' => 'store-seed-key',
+            'is_active' => true,
+        ]);
+        ShopSettingStore::setValue('smaregi_contract_id', 'sb_skx928r2', 'string', (int) $project->id);
+
+        $response = $this->get('/liff/sb_skx928r2');
 
         $response->assertStatus(200);
     }

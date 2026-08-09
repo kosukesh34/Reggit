@@ -3,6 +3,8 @@
 namespace App\Repositories\Eloquent;
 
 use App\Models\Project;
+use App\Models\Settings\ProjectProfileSmaregiSetting;
+use App\Models\SmaregiContract;
 use App\Repositories\Contracts\ProjectRepository;
 
 class EloquentProjectRepository implements ProjectRepository
@@ -11,6 +13,32 @@ class EloquentProjectRepository implements ProjectRepository
     {
         return Project::query()
             ->where('project_key', $projectKey)
+            ->where('is_active', true)
+            ->first();
+    }
+
+    public function findActiveBySmaregiContractId(string $contractId): ?Project
+    {
+        $trimmed = trim($contractId);
+        if ($trimmed === '') {
+            return null;
+        }
+
+        $projectId = ProjectProfileSmaregiSetting::query()
+            ->where('smaregi_contract_id', $trimmed)
+            ->value('project_id');
+        if (! is_numeric($projectId)) {
+            $projectId = SmaregiContract::query()
+                ->where('contract_id', $trimmed)
+                ->whereNotNull('project_id')
+                ->value('project_id');
+        }
+        if (! is_numeric($projectId)) {
+            return null;
+        }
+
+        return Project::query()
+            ->where('id', (int) $projectId)
             ->where('is_active', true)
             ->first();
     }

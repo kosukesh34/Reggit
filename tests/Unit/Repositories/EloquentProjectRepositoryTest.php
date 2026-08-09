@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Repositories;
 
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\Project;
 use App\Repositories\Eloquent\EloquentProjectRepository;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -27,6 +28,22 @@ class EloquentProjectRepositoryTest extends TestCase
 
         $this->assertNotNull($found);
         $this->assertSame((int) $project->id, (int) $found->id);
+    }
+
+    public function test_find_active_by_smaregi_contract_id_契約_i_dで有効プロジェクトを返すこと(): void
+    {
+        $project = Project::factory()->create([
+            'project_key' => 'store-seed-key',
+            'is_active' => true,
+        ]);
+        ShopSettingStore::setValue('smaregi_contract_id', 'sb_skx928r2', 'string', (int) $project->id);
+
+        $repository = new EloquentProjectRepository;
+        $found = $repository->findActiveBySmaregiContractId('sb_skx928r2');
+
+        $this->assertNotNull($found);
+        $this->assertSame((int) $project->id, (int) $found->id);
+        $this->assertNull($repository->findActiveBySmaregiContractId('missing-contract'));
     }
 
     public function test_find_active_by_project_key_無効または存在しない場合nullを返すこと(): void

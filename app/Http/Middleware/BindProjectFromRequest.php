@@ -47,6 +47,10 @@ class BindProjectFromRequest
         $project = null;
         if (is_string($projectKey) && $projectKey !== '') {
             $project = $this->projectRepository->findActiveByProjectKey($projectKey);
+            // /liff/{contract_id} など、URL に契約IDが載っているケースの互換
+            if ($project === null) {
+                $project = $this->projectRepository->findActiveBySmaregiContractId($projectKey);
+            }
         }
 
         if ($project === null && $isExplicitProjectKey === false) {
