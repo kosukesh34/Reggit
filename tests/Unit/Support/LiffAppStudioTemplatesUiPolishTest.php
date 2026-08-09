@@ -28,10 +28,13 @@ class LiffAppStudioTemplatesUiPolishTest extends TestCase
 
         $home = $cafe['layouts']['home'] ?? [];
         $types = array_column($home, 'type');
-        $this->assertSame(['member_summary', 'hero', 'quick_actions', 'button'], $types);
+        $this->assertSame(['member_summary', 'stats_row', 'hero', 'quick_actions', 'button'], $types);
         $this->assertSame('rewards', $home[0]['design'] ?? null);
-        $this->assertSame('sticky', $home[3]['design'] ?? null);
-        $this->assertSame('#products', $home[3]['action'] ?? null);
+        $this->assertSame('sticky', $home[4]['design'] ?? null);
+        $this->assertSame('#products', $home[4]['action'] ?? null);
+        $this->assertSame('sand', $cafe['theme']['theme_preset'] ?? null);
+        $this->assertSame('#00754A', $cafe['theme']['accent_color'] ?? null);
+        $this->assertSame('ticket', $cafe['theme']['coupon_screen_design'] ?? null);
     }
 
     public function test_菓子ホームは会員ステータスと会員証クーポン2導線である(): void
@@ -62,8 +65,11 @@ class LiffAppStudioTemplatesUiPolishTest extends TestCase
 
         $home = $order['layouts']['home'] ?? [];
         $this->assertSame('card', $home[0]['type'] ?? null);
-        $this->assertStringContainsString('PICKUP', (string) ($home[0]['title'] ?? ''));
+        $this->assertStringContainsString('受取番号', (string) ($home[0]['title'] ?? ''));
         $this->assertStringContainsString('2袋', (string) ($home[0]['description'] ?? ''));
+        $types = array_column($home, 'type');
+        $this->assertSame(['card', 'stats_row', 'heading', 'data', 'quick_actions', 'button'], $types);
+        $this->assertNotContains('slider', $types);
     }
 
     public function test_小売メニューに会員証タブがある(): void

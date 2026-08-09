@@ -1,5 +1,14 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { DATA_SOURCES } from '../catalog/blockCatalog';
+import { useDesigner } from '../state/DesignerContext';
+import {
+    categoryLabel,
+    formatPrice,
+    readPreviewData,
+    type PreviewCoupon,
+    type PreviewProduct,
+    type PreviewStamp,
+} from '../preview/previewCatalog';
 
 function CouponItem({
     icon,
@@ -7,15 +16,28 @@ function CouponItem({
     meta,
     available,
     value,
+    mediaStyle = 'image',
+    imageUrl,
 }: {
     icon: string;
     title: string;
     meta: string;
     available: boolean;
     value: string;
+    mediaStyle?: string;
+    imageUrl?: string;
 }) {
     return (
-        <div className={`ld-crm-coupon${available ? ' is-on' : ''}`}>
+        <div className={`ld-crm-coupon ld-crm-coupon--media-${mediaStyle}${available ? ' is-on' : ''}`}>
+            {mediaStyle !== 'none' ? (
+                <div
+                    className={`ld-crm-coupon__media ld-crm-coupon__media--${mediaStyle}`}
+                    aria-hidden
+                    style={mediaStyle === 'image' && imageUrl ? { backgroundImage: `url(${imageUrl})` } : undefined}
+                >
+                    {mediaStyle === 'icon' ? <i className={`fas ${icon}`} /> : (mediaStyle === 'image' && imageUrl ? null : <span>{value}</span>)}
+                </div>
+            ) : null}
             <div className="ld-crm-coupon__value">
                 <strong>{value}</strong>
             </div>
@@ -27,6 +49,106 @@ function CouponItem({
                 <span>{meta}</span>
             </div>
             <em>{available ? '利用可' : '使用済'}</em>
+        </div>
+    );
+}
+
+function CouponsMock({
+    mediaStyle = 'image',
+    showAvailable = true,
+    showHistory = true,
+    coupons,
+}: {
+    mediaStyle?: string;
+    showAvailable?: boolean;
+    showHistory?: boolean;
+    coupons: PreviewCoupon[];
+}) {
+    const items = coupons
+        .filter((item) => (item.available ? showAvailable : showHistory))
+        .map((item) => ({
+            icon: item.available ? 'fa-ticket-alt' : 'fa-history',
+            title: item.title,
+            meta: item.meta,
+            available: item.available,
+            value: item.available ? 'ON' : 'USED',
+            mediaStyle,
+            imageUrl: item.image_url || undefined,
+        }));
+
+    return (
+        <>
+            {showAvailable && showHistory ? (
+                <div className="ld-crm-coupon-tabs" aria-hidden>
+                    <span className="is-on">未使用</span>
+                    <span>利用済み</span>
+                </div>
+            ) : null}
+            {items.length === 0 ? (
+                <div className="ld-crm-empty">表示するクーポンがありません</div>
+            ) : (
+                items.map((item) => (
+                    <CouponItem key={`${item.title}-${item.value}`} {...item} />
+                ))
+            )}
+        </>
+    );
+}
+
+function ProductsMock({
+    products,
+    groupByCategory,
+}: {
+    products: PreviewProduct[];
+    groupByCategory: boolean;
+}) {
+    if (products.length === 0) {
+        return <div className="ld-crm-empty">商品がまだ登録されていません</div>;
+    }
+
+    if (!groupByCategory) {
+        return (
+            <div className="ld-crm-grid2">
+                {products.slice(0, 6).map((p) => (
+                    <ProductCard
+                        key={String(p.id)}
+                        img={p.image_url || '/images/liff/product-placeholder.jpg'}
+                        name={p.name}
+                        price={formatPrice(p.price)}
+                    />
+                ))}
+            </div>
+        );
+    }
+
+    const groups = new Map<string, PreviewProduct[]>();
+    products.forEach((p) => {
+        const key = p.category || 'other';
+        const rows = groups.get(key) || [];
+        rows.push(p);
+        groups.set(key, rows);
+    });
+
+    return (
+        <div className="ld-crm-products-grouped">
+            {Array.from(groups.entries()).map(([key, rows]) => (
+                <div key={key} className="ld-crm-products-grouped__section">
+                    <div className="ld-crm-products-grouped__head">
+                        <strong>{categoryLabel(key)}</strong>
+                        <span>{rows.length}</span>
+                    </div>
+                    <div className="ld-crm-grid2">
+                        {rows.slice(0, 4).map((p) => (
+                            <ProductCard
+                                key={String(p.id)}
+                                img={p.image_url || '/images/liff/product-placeholder.jpg'}
+                                name={p.name}
+                                price={formatPrice(p.price)}
+                            />
+                        ))}
+                    </div>
+                </div>
+            ))}
         </div>
     );
 }
@@ -49,48 +171,109 @@ function ProductCard({ img, name, price, tag }: { img: string; name: string; pri
 }
 
 function StampCardMock({
+    design = 'grid_card',
     slotStyle = '',
     filledStyle = '',
     accentColor = '',
+    stamp,
 }: {
+    design?: string;
     slotStyle?: string;
     filledStyle?: string;
     accentColor?: string;
+    stamp?: PreviewStamp | null;
 }) {
-    const radius = slotStyle === 'square' ? 8 : slotStyle === 'rounded' ? 12 : 999;
-    const accent = accentColor !== '' ? accentColor : undefined;
-    const filledIcon = filledStyle === 'icon' ? 'fa-stamp' : filledStyle === 'solid' ? 'fa-check' : 'fa-check';
+    const layout = design !== '' ? design : 'grid_card';
+    const radius = slotStyle === 'square' ? 6 : slotStyle === 'rounded' ? 12 : 999;
+    const accent = accentColor !== '' ? accentColor : '#16a34a';
+    const filledIcon = filledStyle === 'icon' ? 'fa-stamp' : filledStyle === 'solid' ? 'fa-check' : 'fa-certificate';
+    const total = stamp && stamp.required > 0
+        ? stamp.required
+        : (layout === 'minimal' ? 5 : layout === 'circle_board' ? 8 : 10);
+    const filled = Math.min(total, Math.max(1, Math.floor(total * 0.7)));
+    const stampName = stamp?.name || 'スタンプカード';
+    const rewardText = stamp?.reward || '満了でドリンク無料クーポン';
     const dots = [];
-    for (let i = 0; i < 10; i += 1) {
+    for (let i = 0; i < total; i += 1) {
+        const isOn = i < filled;
         dots.push(
             <span
                 key={i}
-                className={`ld-crm-stamp${i < 7 ? ' is-on' : ''}`}
+                className={`ld-crm-stamp${isOn ? ' is-on' : ''}`}
                 style={{
                     borderRadius: radius,
-                    ...(i < 7 && accent ? { background: accent, borderColor: accent } : {}),
+                    ...(isOn ? { background: accent, borderColor: accent, color: '#fff' } : {}),
                 }}
             >
-                {i < 7 ? <i className={`fas ${filledIcon}`} /> : i + 1}
+                {isOn ? <i className={`fas ${filledIcon}`} /> : i + 1}
             </span>,
         );
     }
+
+    const remain = Math.max(0, total - filled);
+    const progress = `${Math.round((filled / Math.max(total, 1)) * 100)}%`;
+
+    if (layout === 'wallet') {
+        return (
+            <div className="ld-crm-stampcard ld-crm-stampcard--wallet" style={{ ['--stamp-accent' as string]: accent }}>
+                <div className="ld-crm-stampcard__wallet-top">
+                    <span>{stampName}</span>
+                    <strong>{filled} / {total}</strong>
+                </div>
+                <div className="ld-crm-stampcard__strip">{dots}</div>
+                <p className="ld-crm-stampcard__wallet-foot">あと{remain}で特典</p>
+            </div>
+        );
+    }
+
+    if (layout === 'circle_board') {
+        return (
+            <div className="ld-crm-stampcard ld-crm-stampcard--board" style={{ ['--stamp-accent' as string]: accent }}>
+                <div className="ld-crm-stampcard__board-ring">
+                    <div className="ld-crm-stampcard__board-core">
+                        <em>{filled}</em>
+                        <span>/ {total}</span>
+                    </div>
+                    <div className="ld-crm-stampcard__board-dots">{dots}</div>
+                </div>
+                <p className="ld-crm-stampcard__board-label">{rewardText || `あと${remain}で特典ゲット`}</p>
+            </div>
+        );
+    }
+
+    if (layout === 'minimal') {
+        return (
+            <div className="ld-crm-stampcard ld-crm-stampcard--minimal" style={{ ['--stamp-accent' as string]: accent }}>
+                <div className="ld-crm-stampcard__head">
+                    <div>
+                        <span>{stampName}</span>
+                        <strong>{filled} / {total}</strong>
+                    </div>
+                </div>
+                <div className="ld-crm-stampcard__row">{dots}</div>
+                <div className="ld-crm-stampcard__bar">
+                    <i style={{ width: progress, background: accent }} />
+                </div>
+            </div>
+        );
+    }
+
     return (
-        <div className="ld-crm-stampcard">
+        <div className="ld-crm-stampcard ld-crm-stampcard--grid" style={{ ['--stamp-accent' as string]: accent }}>
             <div className="ld-crm-stampcard__head">
                 <div>
-                    <span>来店スタンプ</span>
-                    <strong>7 / 10</strong>
+                    <span>{stampName}</span>
+                    <strong>{filled} / {total}</strong>
                 </div>
-                <em style={accent ? { color: accent } : undefined}>あと3で特典</em>
+                <em style={{ color: accent, background: `${accent}22` }}>あと{remain}で特典</em>
             </div>
             <div className="ld-crm-stampcard__grid">{dots}</div>
             <div className="ld-crm-stampcard__bar">
-                <i style={{ width: '70%', ...(accent ? { background: accent } : {}) }} />
+                <i style={{ width: progress, background: accent }} />
             </div>
-            <div className="ld-crm-stampcard__reward">
-                <i className="fas fa-gift" style={accent ? { color: accent } : undefined} />
-                満了でドリンク無料クーポン
+            <div className="ld-crm-stampcard__reward" style={{ color: accent, background: `${accent}14` }}>
+                <i className="fas fa-gift" />
+                {rewardText}
             </div>
         </div>
     );
@@ -136,22 +319,7 @@ const MOCKS: Record<string, () => React.ReactNode> = {
             </div>
         </div>
     ),
-    coupons: () => (
-        <>
-            <CouponItem icon="fa-mug-hot" title="ドリンク1杯無料" meta="〜2027/6/30 · 会員限定" available value="FREE" />
-            <CouponItem icon="fa-percent" title="会計から10%OFF" meta="平日限定 · 〜今月末" available value="10%" />
-            <CouponItem icon="fa-gift" title="デザートプレゼント" meta="使用済み" available={false} value="GIFT" />
-        </>
-    ),
     stamps: () => <StampCardMock />,
-    products: () => (
-        <div className="ld-crm-grid2">
-            <ProductCard img="https://images.unsplash.com/photo-1550547660-d9450f859349?w=300" name="シグネチャーバーガー" price="980" tag="BEST" />
-            <ProductCard img="https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=300" name="季節のサラダ" price="680" tag="NEW" />
-            <ProductCard img="https://images.unsplash.com/photo-1473093295043-cdd812d0e601?w=300" name="本日のパスタ" price="1,100" />
-            <ProductCard img="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=300" name="カフェラテ" price="480" />
-        </div>
-    ),
     orders: () => (
         <>
             <div className="ld-crm-order is-live">
@@ -342,33 +510,80 @@ export function DataMockPreview({
     source,
     design,
     cardDesign,
+    cardBgStyle,
+    cardGloss,
+    cardSurface,
+    stampDesign,
     stampSlotStyle,
     stampFilledStyle,
     stampAccentColor,
+    couponScreenDesign,
+    couponMediaStyle,
+    couponShowAvailable,
+    couponShowHistory,
     shopName,
     asGuest = false,
 }: {
     source: string;
     design?: string;
     cardDesign?: string;
+    cardBgStyle?: string;
+    cardGloss?: string;
+    cardSurface?: string;
+    stampDesign?: string;
     stampSlotStyle?: string;
     stampFilledStyle?: string;
     stampAccentColor?: string;
+    couponScreenDesign?: string;
+    couponMediaStyle?: string;
+    couponShowAvailable?: boolean;
+    couponShowHistory?: boolean;
     shopName?: string;
     asGuest?: boolean;
 }) {
+    const { config, state } = useDesigner();
+    const preview = useMemo(() => readPreviewData(config), [config]);
+    const groupByCategory = state.globalSettings.products_group_by_category !== false;
     const label = DATA_SOURCES.find((d) => d.value === source)?.label || source;
-    const variant = design || '';
+    const variant = source === 'coupons' ? (design || couponScreenDesign || '') : (design || '');
+    const memberName = String(
+        (preview.member?.user as { name?: string } | undefined)?.name
+        || 'プレビュー会員',
+    );
+    const memberPoints = Number(preview.member?.points ?? 1280);
+    const memberRank = String(preview.member?.current_rank_label || 'Gold');
+    const memberNo = String(
+        (preview.member?.member as { member_number?: string } | undefined)?.member_number
+        || '000123456789',
+    );
     const render =
         source === 'stamps'
             ? () => (
                 <StampCardMock
+                    design={stampDesign || ''}
                     slotStyle={stampSlotStyle || ''}
                     filledStyle={stampFilledStyle || ''}
                     accentColor={stampAccentColor || ''}
+                    stamp={preview.stamps[0] || null}
                 />
             )
-            : MOCKS[source] || (() => <div className="ld-crm-empty">このデータは実際の利用者画面に表示されます</div>);
+            : source === 'coupons'
+              ? () => (
+                  <CouponsMock
+                      mediaStyle={couponMediaStyle || 'image'}
+                      showAvailable={couponShowAvailable !== false}
+                      showHistory={couponShowHistory !== false}
+                      coupons={preview.coupons}
+                  />
+              )
+              : source === 'products'
+                ? () => (
+                    <ProductsMock
+                        products={preview.products}
+                        groupByCategory={groupByCategory}
+                    />
+                  )
+              : MOCKS[source] || (() => <div className="ld-crm-empty">このデータは実際の利用者画面に表示されます</div>);
     if (source === 'member_card' || source === 'member') {
         if (asGuest) {
             return (
@@ -385,18 +600,27 @@ export function DataMockPreview({
         }
         return (
             <SampleDataShell label={label} design={variant || cardDesign || 'premium'}>
-                <div className={`ld-crm-wallet ld-crm-wallet--${cardDesign || 'default'}`}>
+                <div
+                    className={[
+                        'ld-crm-wallet',
+                        `ld-crm-wallet--${cardDesign || 'default'}`,
+                        `ld-crm-wallet--bg-${cardBgStyle || 'gradient'}`,
+                        `ld-crm-wallet--gloss-${cardGloss || 'soft'}`,
+                        `ld-crm-wallet--surface-${cardSurface || 'plastic'}`,
+                    ].join(' ')}
+                >
+                    <div className="ld-crm-wallet__shine" aria-hidden />
                     <div className="ld-crm-wallet__top">
                         <div>
                             <span className="ld-crm-wallet__shop">{shopName && shopName.trim() !== '' ? shopName : 'Members'}</span>
-                            <strong>デモ 太郎</strong>
+                            <strong>{memberName}</strong>
                         </div>
-                        <em className="ld-crm-wallet__rank">Gold</em>
+                        <em className="ld-crm-wallet__rank">{memberRank}</em>
                     </div>
                     <div className="ld-crm-wallet__stats">
                         <div>
                             <span>Points</span>
-                            <strong>1,280</strong>
+                            <strong>{memberPoints.toLocaleString('ja-JP')}</strong>
                         </div>
                         <div>
                             <span>Visits</span>
@@ -404,7 +628,7 @@ export function DataMockPreview({
                         </div>
                         <div>
                             <span>Rank</span>
-                            <strong>68%</strong>
+                            <strong>{memberRank}</strong>
                         </div>
                     </div>
                     <div className="ld-crm-wallet__barcode">
@@ -412,7 +636,7 @@ export function DataMockPreview({
                             <i key={i} style={{ width: `${(i % 4) + 1}px` }} />
                         ))}
                     </div>
-                    <div className="ld-crm-wallet__no">No. M999001</div>
+                    <div className="ld-crm-wallet__no">No. {memberNo}</div>
                     <div className="ld-crm-wallet__btns">
                         <span>
                             <i className="fab fa-apple" /> Apple Wallet
