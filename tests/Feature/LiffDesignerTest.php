@@ -664,4 +664,88 @@ class LiffDesignerTest extends TestCase
         $this->assertSame('公式サイト', $link['label']);
         $this->assertSame('https://example.com', $link['url']);
     }
+
+    public function test_liff_designer_保存内容がエンドユーザー画面に反映されること(): void
+    {
+        $project = Project::firstOrCreate(
+            ['project_key' => 'default'],
+            ['name' => 'Default Project', 'description' => 'Test', 'is_active' => true, 'plan' => 'premium']
+        );
+
+        $admin = AdminUser::create([
+            'login_id' => 'admin_runtime_reflect',
+            'email' => 'admin_runtime_reflect@example.com',
+            'password' => 'password',
+            'name' => 'Admin Runtime',
+            'role' => AdminUser::ROLE_ADMIN,
+            'project_id' => $project->id,
+        ]);
+
+        $layouts = [
+            'home' => [
+                ['type' => 'heading', 'design' => 'section', 'text' => '反映確認ホーム', 'size' => 'large'],
+                ['type' => 'text', 'design' => 'lead', 'text' => 'デザイナー保存の本文'],
+            ],
+        ];
+        $tabSettings = [
+            '_global' => [
+                'theme_preset' => 'citrus',
+                'accent_color' => '#A81612',
+                'app_display_name' => '反映テスト店',
+                'coupon_screen_design' => 'ticket',
+                'require_membership' => true,
+                'member_card_design' => 'emblem',
+                'member_card_display_type' => 'card',
+                'member_card_code_type' => 'qrcode',
+            ],
+        ];
+
+        $this->actingAs($admin, 'admin')
+            ->post(route('admin.settings.liff-designer.update', ['project_key' => $project->project_key]), [
+                'layouts_json' => json_encode($layouts),
+                'tab_settings_json' => json_encode($tabSettings),
+                'custom_css' => '.runtime-reflect-marker{color:#A81612}',
+            ])
+            ->assertRedirect(route('admin.settings.liff-designer', ['project_key' => $project->project_key]));
+
+        $this->assertSame('反映テスト店', ShopSettingStore::getValue('frontend_header_text', null, $project->id));
+        $this->assertSame('#a81612', strtolower((string) ShopSettingStore::getValue('line_primary_color', null, $project->id)));
+        $this->assertSame('force', ShopSettingStore::getMemberRegistrationMode($project->id));
+        $this->assertSame('emblem', ShopSettingStore::getMemberCardDesign($project->id));
+        $this->assertSame('qrcode', ShopSettingStore::getMemberCardCodeType($project->id));
+
+        $withKey = $this->get(route('liff.project', ['project_key' => $project->project_key]));
+        $withKey->assertOk();
+        $withKeyHtml = $withKey->getContent();
+        $this->assertStringNotContainsString('class="liff-fixed-ui"', $withKeyHtml);
+        $this->assertStringNotContainsString("class='liff-fixed-ui'", $withKeyHtml);
+        $this->assertTrue(
+            str_contains($withKeyHtml, '反映テスト店')
+            || str_contains($withKeyHtml, substr(json_encode('反映テスト店'), 1, -1)),
+            'エンドユーザー画面に店舗名が含まれること'
+        );
+        $this->assertTrue(
+            str_contains($withKeyHtml, '反映確認ホーム')
+            || str_contains($withKeyHtml, substr(json_encode('反映確認ホーム'), 1, -1)),
+            'エンドユーザー画面に保存レイアウトが含まれること'
+        );
+        $this->assertStringContainsString('theme-citrus', $withKeyHtml);
+        $this->assertStringContainsString('coupon-screen-ticket', $withKeyHtml);
+        $this->assertStringContainsString('runtime-reflect-marker', $withKeyHtml);
+        $this->assertStringContainsString('__LIFF_TAB_LAYOUTS__', $withKeyHtml);
+
+        $withoutKey = $this->get(route('liff.index'));
+        $withoutKey->assertOk();
+        $withoutKeyHtml = $withoutKey->getContent();
+        $this->assertStringNotContainsString('class="liff-fixed-ui"', $withoutKeyHtml);
+        $this->assertTrue(
+            str_contains($withoutKeyHtml, '反映確認ホーム')
+            || str_contains($withoutKeyHtml, substr(json_encode('反映確認ホーム'), 1, -1)),
+            '/liff でも保存レイアウトが含まれること'
+        );
+
+        $demo = $this->get(route('liff.index', ['demo' => '1']));
+        $demo->assertOk();
+        $this->assertMatchesRegularExpression('/<(html|body)[^>]*liff-fixed-ui/', $demo->getContent());
+    }
 }

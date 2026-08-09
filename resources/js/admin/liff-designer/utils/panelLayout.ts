@@ -3,11 +3,19 @@ export type PanelPresetId = 'compact' | 'standard' | 'wide' | 'focus';
 export type PanelWidths = { left: number; right: number };
 
 export const PANEL_PRESETS: Record<PanelPresetId, { label: string; widths: PanelWidths }> = {
-    compact: { label: 'コンパクト', widths: { left: 200, right: 300 } },
-    standard: { label: '標準', widths: { left: 248, right: 388 } },
+    compact: { label: 'コンパクト', widths: { left: 240, right: 300 } },
+    standard: { label: '標準', widths: { left: 260, right: 388 } },
     wide: { label: 'ワイド', widths: { left: 300, right: 460 } },
-    focus: { label: '編集重視', widths: { left: 200, right: 520 } },
+    focus: { label: '編集重視', widths: { left: 240, right: 520 } },
 };
+
+const LEFT_MIN = 240;
+const RIGHT_MIN = 280;
+
+function clampWidth(value: number, min: number, max: number): number {
+    if (!Number.isFinite(value)) return min;
+    return Math.max(min, Math.min(max, Math.round(value)));
+}
 
 const STORAGE_KEY = 'ld-panel-widths-v1';
 
@@ -33,8 +41,16 @@ export function loadSavedPanelWidths(): PanelWidths {
         if (raw === null) return PANEL_PRESETS.standard.widths;
         const parsed = JSON.parse(raw) as Partial<PanelWidths>;
         return {
-            left: Number.isFinite(parsed.left) ? Number(parsed.left) : PANEL_PRESETS.standard.widths.left,
-            right: Number.isFinite(parsed.right) ? Number(parsed.right) : PANEL_PRESETS.standard.widths.right,
+            left: clampWidth(
+                Number.isFinite(parsed.left) ? Number(parsed.left) : PANEL_PRESETS.standard.widths.left,
+                LEFT_MIN,
+                420,
+            ),
+            right: clampWidth(
+                Number.isFinite(parsed.right) ? Number(parsed.right) : PANEL_PRESETS.standard.widths.right,
+                RIGHT_MIN,
+                560,
+            ),
         };
     } catch {
         return PANEL_PRESETS.standard.widths;

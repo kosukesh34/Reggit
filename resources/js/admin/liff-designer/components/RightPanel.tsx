@@ -107,9 +107,9 @@ function EditPanel() {
 }
 
 const RIGHT_TABS: Array<{ id: RightStudioTab; label: string; icon: string }> = [
-    { id: 'edit', label: 'Edit', icon: 'fa-sliders-h' },
-    { id: 'theme', label: 'Theme', icon: 'fa-swatchbook' },
-    { id: 'layers', label: 'Layers', icon: 'fa-layer-group' },
+    { id: 'edit', label: '編集', icon: 'fa-sliders-h' },
+    { id: 'theme', label: 'テーマ', icon: 'fa-swatchbook' },
+    { id: 'layers', label: 'レイヤー', icon: 'fa-layer-group' },
 ];
 
 export function RightPanel() {

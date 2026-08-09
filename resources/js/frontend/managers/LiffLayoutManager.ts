@@ -57,7 +57,7 @@ export class LiffLayoutManager {
 
     /**
      * タブ切替時の描画。
-     * /liff 固定UIでは Designer レイアウトを使わず、/liff/{project_key} では店舗 Designer 設定を反映する。
+     * ?demo=1 の固定UIでは Designer レイアウトを使わず、通常は店舗 Designer 設定を反映する。
      */
     render(tab: string): void {
         if (typeof window.__mobileOrderLog === 'function') window.__mobileOrderLog('LiffLayoutManager.render', { tab });
