@@ -131,46 +131,6 @@ class SettingsService
         }
     }
 
-    public function getMenuSettings(?int $projectId = null): array
-    {
-        $projectId = $projectId ?? 1;
-        $repo = $this->shopSettingRepository;
-
-        $defaults = $repo->defaultFrontendMenuItems();
-        $availableTabs = collect($defaults)->map(function ($item) {
-            return [
-                'tab' => $item['tab'],
-                'label' => $item['label'],
-            ];
-        })->values()->all();
-        $availableIcons = collect($defaults)->pluck('icon')->unique()->values()->all();
-
-        return [
-            'menuItems' => $repo->getFrontendMenuItems($projectId),
-            'availableTabs' => $availableTabs,
-            'availableIcons' => $availableIcons,
-        ];
-    }
-
-    public function updateMenuSettings(array $validated, ?int $projectId = null): void
-    {
-        $projectId = $projectId ?? 1;
-        $items = collect($validated['menu_items'] ?? [])
-            ->map(function ($item) {
-                return [
-                    'tab' => $item['tab'] ?? '',
-                    'label' => $item['label'] ?? null,
-                    'icon' => $item['icon'] ?? null,
-                    'enabled' => isset($item['enabled']) ? (bool) $item['enabled'] : false,
-                    'order' => isset($item['order']) ? (int) $item['order'] : 999,
-                ];
-            })
-            ->values()
-            ->all();
-
-        $this->shopSettingRepository->setFrontendMenuItems($items, $projectId);
-    }
-
     /** @return array{smaregi_fields: array<string, mixed>, custom_fields: list<array<string, mixed>>, member_registration_mode: string} */
     public function getProfileSettings(?int $projectId = null): array
     {

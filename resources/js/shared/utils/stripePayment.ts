@@ -43,7 +43,7 @@ export class StripePayment {
         }
     }
 
-    async createPaymentIntent(amount: number, orderId: number | string | null = null): Promise<any> {
+    async createPaymentIntent(orderId: number | string): Promise<any> {
         const headers: Record<string, string> = {
             'Content-Type': 'application/json',
             Accept: 'application/json',
@@ -57,7 +57,6 @@ export class StripePayment {
             headers,
             credentials: 'same-origin',
             body: JSON.stringify({
-                amount,
                 order_id: orderId,
             }),
         });
@@ -87,12 +86,12 @@ export class StripePayment {
         throw new Error(data.error || 'Payment intent creation failed');
     }
 
-    async setupPaymentForm(containerId: string, amount: number, orderId: number | string): Promise<void> {
+    async setupPaymentForm(containerId: string, _amount: number, orderId: number | string): Promise<void> {
         if (!this.stripe) {
             await this.init();
             await new Promise((resolve) => setTimeout(resolve, 500));
         }
-        const { clientSecret } = await this.createPaymentIntent(amount, orderId);
+        const { clientSecret } = await this.createPaymentIntent(orderId);
         this.clientSecret = clientSecret;
         this.elements = this.stripe.elements({
             clientSecret,

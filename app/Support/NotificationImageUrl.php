@@ -55,6 +55,10 @@ class NotificationImageUrl
 
     private static function rebaseStorageUrlToCurrentApp(string $url): ?string
     {
+        if (! self::shouldRebaseStorageUrl($url)) {
+            return null;
+        }
+
         $path = self::extractPublicStoragePath($url);
         if ($path === null) {
             return null;
@@ -68,14 +72,47 @@ class NotificationImageUrl
         return $base.'/storage/'.$path;
     }
 
+    /**
+     * 外部 CDN など、すでに公開ホスト上の storage URL は書き換えない。
+     * 相対パス・非公開ホスト・ngrok・APP_URL 同一ホストのみ差し替える。
+     */
+    private static function shouldRebaseStorageUrl(string $url): bool
+    {
+        if (preg_match('#^https?://#i', $url) !== 1 && ! str_starts_with($url, '//')) {
+            return true;
+        }
+
+        $host = strtolower((string) parse_url($url, PHP_URL_HOST));
+        if ($host === '') {
+            return true;
+        }
+
+        if (self::isNonPublicHost($host) || str_contains($host, 'ngrok')) {
+            return true;
+        }
+
+        $appHost = strtolower((string) parse_url(rtrim((string) config('app.url'), '/'), PHP_URL_HOST));
+
+        return $appHost !== '' && $host === $appHost;
+    }
+
     private static function extractPublicStoragePath(string $url): ?string
     {
-        if (preg_match('#/storage/(.+)$#', $url, $matches) === 1) {
+        $path = $url;
+        if (preg_match('#^https?://#i', $url) === 1 || str_starts_with($url, '//')) {
+            $parsedPath = parse_url($url, PHP_URL_PATH);
+            if (! is_string($parsedPath) || $parsedPath === '') {
+                return null;
+            }
+            $path = $parsedPath;
+        }
+
+        if (preg_match('#/storage/(.+)$#', $path, $matches) === 1) {
             return $matches[1];
         }
 
-        if (str_starts_with($url, 'storage/')) {
-            return substr($url, strlen('storage/'));
+        if (str_starts_with($path, 'storage/')) {
+            return substr($path, strlen('storage/'));
         }
 
         return null;
@@ -146,19 +183,33 @@ class NotificationImageUrl
         }
 
         $host = strtolower((string) parse_url($url, PHP_URL_HOST));
-        if ($host === '') {
-            return false;
-        }
-
-        if (in_array($host, ['localhost', '127.0.0.1', '0.0.0.0', '[::1]'], true)) {
-            return false;
-        }
-
-        if (str_ends_with($host, '.local') || str_ends_with($host, '.test')) {
+        if ($host === '' || self::isNonPublicHost($host)) {
             return false;
         }
 
         return true;
+    }
+
+    private static function isNonPublicHost(string $host): bool
+    {
+        if (in_array($host, ['localhost', '127.0.0.1', '0.0.0.0', '[::1]', '::1'], true)) {
+            return true;
+        }
+
+        if (str_ends_with($host, '.local') || str_ends_with($host, '.test')) {
+            return true;
+        }
+
+        $ip = $host;
+        if (str_starts_with($ip, '[') && str_ends_with($ip, ']')) {
+            $ip = substr($ip, 1, -1);
+        }
+
+        if (filter_var($ip, FILTER_VALIDATE_IP) !== false) {
+            return filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false;
+        }
+
+        return false;
     }
 
     /**

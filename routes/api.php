@@ -26,7 +26,6 @@ use App\Http\Controllers\Diagnostics\ClientDebugController;
 use App\Http\Controllers\GalleryController;
 use App\Http\Controllers\LineWebhookController;
 use App\Http\Controllers\Member\GoogleWalletUrlController;
-use App\Http\Controllers\Member\MemberAddPointsController;
 use App\Http\Controllers\Member\MemberLotteryController;
 use App\Http\Controllers\Member\MemberMeController;
 use App\Http\Controllers\Member\MemberPointCardController;
@@ -172,7 +171,6 @@ Route::middleware(['web', 'bind.project'])->group(function () {
     Route::get('/members/points', [MemberPointsController::class, '__invoke']);
     Route::get('/members/points/history', [MemberPointHistoryController::class, '__invoke']);
     Route::get('/members/points/card', [MemberPointCardController::class, '__invoke']);
-    Route::post('/members/points/add', [MemberAddPointsController::class, '__invoke']);
     Route::get('/members/me/coupons', [CouponController::class, 'myCoupons']);
     Route::post('/members/me/coupons/{id}/use', [CouponController::class, 'use']);
     Route::get('/members/me/lottery', [MemberLotteryController::class, 'index']);

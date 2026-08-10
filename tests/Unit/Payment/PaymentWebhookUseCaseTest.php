@@ -48,6 +48,7 @@ class PaymentWebhookUseCaseTest extends TestCase
         $gateway->event = [
             'type' => 'payment_intent.succeeded',
             'metadata' => ['order_id' => $order->id],
+            'amount' => 1000,
         ];
 
         $useCase = new PaymentWebhookUseCase(
@@ -94,6 +95,7 @@ class PaymentWebhookUseCaseTest extends TestCase
         $gateway->event = [
             'type' => 'payment_intent.succeeded',
             'metadata' => ['order_id' => $order->id],
+            'amount' => 1000,
         ];
 
         $useCase = new PaymentWebhookUseCase(
@@ -135,6 +137,7 @@ class PaymentWebhookUseCaseTest extends TestCase
         $gateway->event = [
             'type' => 'payment_intent.succeeded',
             'metadata' => ['order_id' => $order->id],
+            'amount' => 1000,
         ];
 
         $dispatcher = \Mockery::mock(DomainEventDispatcher::class);
@@ -181,6 +184,7 @@ class PaymentWebhookUseCaseTest extends TestCase
         $gateway->event = [
             'type' => 'payment_intent.succeeded',
             'metadata' => ['order_id' => $order->id],
+            'amount' => 1000,
         ];
 
         $useCase = new PaymentWebhookUseCase(

@@ -46,8 +46,10 @@ class PaymentWebhookUseCase
         $syncOrderId = 0;
         $syncProjectId = 0;
         $syncUserId = 0;
+        $paidAmount = (int) ($event['amount'] ?? 0);
         DB::transaction(function () use (
             $orderId,
+            $paidAmount,
             &$confirmedEvent,
             &$shouldDelaySmaregiSync,
             &$syncOrderId,
@@ -56,6 +58,23 @@ class PaymentWebhookUseCase
         ) {
             $aggregate = $this->orderRepository->findByPrimaryKeyForUpdate((int) $orderId);
             if ($aggregate === null) {
+                return;
+            }
+
+            $order = Order::query()->whereKey((int) $orderId)->first();
+            if ($order === null) {
+                return;
+            }
+
+            $expectedAmount = (int) round((float) $order->total_amount);
+            if ($paidAmount !== $expectedAmount) {
+                LogHelper::warning('[Payment] webhook amount mismatch', [
+                    'order_id' => (int) $orderId,
+                    'project_id' => $aggregate->projectId(),
+                    'paid_amount' => $paidAmount,
+                    'expected_amount' => $expectedAmount,
+                ]);
+
                 return;
             }
 
@@ -74,10 +93,7 @@ class PaymentWebhookUseCase
                     $aggregate->projectId(),
                 );
 
-                $order = Order::query()->whereKey((int) $orderId)->first();
-                if ($order !== null) {
-                    $this->orderService->applyStripePaymentRewardsIfNeeded($order);
-                }
+                $this->orderService->applyStripePaymentRewardsIfNeeded($order);
 
                 // Stripe Webhook 経路は即時同期しない（決済完了 UI より先にスマレジ Webhook が来るのを防ぐ）
                 // フロント confirm が来ない場合のフォールバックとして遅延ジョブを積む
