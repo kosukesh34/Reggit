@@ -44,11 +44,22 @@ type AppLike = {
     loadOrdersTab?: () => void | Promise<void>;
     loadMemberTab?: () => void | Promise<void>;
     checkMembershipAndLoadReservations?: () => void | Promise<void>;
+    apiClient?: ApiClient;
     couponsManager?: { load?: () => void | Promise<void> };
-    stampsManager?: { load?: () => void | Promise<void> };
+    stampsManager?: {
+        load?: () => void | Promise<void>;
+        openDetail?: (id: number | string, returnHash?: string) => void | Promise<void>;
+        primeCache?: (cards: unknown[], defaultImage?: string | null) => void;
+    };
     queueManager?: { load?: () => void | Promise<void> };
-    galleryManager?: { load?: () => void | Promise<void> };
-    announcementManager?: { load?: () => void | Promise<void> };
+    galleryManager?: {
+        load?: () => void | Promise<void>;
+        openDetail?: (id: number | string, returnHash?: string) => void | Promise<void>;
+    };
+    announcementManager?: {
+        load?: () => void | Promise<void>;
+        openDetail?: (id: number | string, returnHash?: string) => void | Promise<void>;
+    };
     designLabManager?: { load?: () => void | Promise<void> };
 };
 
@@ -60,7 +71,9 @@ declare global {
         __ORDER_MODE__?: string;
         __MOBILE_APP_MODE__?: boolean;
         __IS_LIFF__?: boolean;
+        __LINE_FRIEND_ADD_URL__?: string;
         __LINE_USER_ID__?: string | null;
+        __LINE_PROFILE__?: { displayName?: string; [key: string]: unknown } | null;
         __FEATURE_FLAGS__?: Record<string, boolean>;
         __QUEUE_REQUIRE_MEMBERSHIP__?: boolean;
         __MEMBER_REGISTRATION_MODE__?: 'optional' | 'prompt' | 'force' | string;
