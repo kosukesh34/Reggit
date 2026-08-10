@@ -41,9 +41,10 @@ class SmaregiInboundAwardApplier
         float $amount,
         string $headId,
         bool $hasSmaregiManagedPointDelta,
+        ?int $orderId = null,
     ): void {
-        $this->awardStamps($member, $amount, $headId);
-        $this->awardPoints($member, $amount, $headId, $hasSmaregiManagedPointDelta);
+        $this->awardStamps($member, $amount, $headId, $orderId);
+        $this->awardPoints($member, $amount, $headId, $hasSmaregiManagedPointDelta, $orderId);
         if ($amount <= 0) {
             return;
         }
@@ -98,6 +99,7 @@ class SmaregiInboundAwardApplier
         float $amount,
         string $headId,
         bool $hasSmaregiManagedPointDelta,
+        ?int $orderId = null,
     ): void {
         if ($amount <= 0 || $hasSmaregiManagedPointDelta) {
             return;
@@ -118,7 +120,7 @@ class SmaregiInboundAwardApplier
 
         $this->pointsSync->markOutboundPending((int) $member->id);
 
-        $awarded = DB::transaction(function () use ($member, $projectId, $points, $description): int {
+        $awarded = DB::transaction(function () use ($member, $projectId, $points, $description, $orderId): int {
             $this->memberRepository->syncPointsLedger((int) $member->id, $projectId);
             $aggregate = $this->memberRepository->findByIdForUpdate((int) $member->id, $projectId);
             if ($aggregate === null) {
@@ -131,7 +133,7 @@ class SmaregiInboundAwardApplier
             $aggregate->earnPoints(
                 $points,
                 $description,
-                null,
+                $orderId,
                 now()->addDays($validDays),
             );
             $this->memberRepository->save($aggregate);
@@ -149,20 +151,21 @@ class SmaregiInboundAwardApplier
             (int) $member->id,
             $projectId,
             $awarded,
-            null,
+            $orderId,
             true,
         ));
         Log::info('[Smaregi] Inbound transaction sync points awarded', [
             'member_id' => (int) $member->id,
             'project_id' => $projectId,
             'transaction_head_id' => $headId,
+            'order_id' => $orderId,
             'points' => $awarded,
             'amount' => $amount,
             'rate' => $rate,
         ]);
     }
 
-    private function awardStamps(Member $member, float $amount, string $headId): void
+    private function awardStamps(Member $member, float $amount, string $headId, ?int $orderId = null): void
     {
         if ($amount <= 0) {
             return;
@@ -190,12 +193,13 @@ class SmaregiInboundAwardApplier
             $stampCardId,
             $stampCount,
             $description,
-            null
+            $orderId
         );
         Log::info('[Smaregi] Inbound transaction sync stamps awarded', [
             'member_id' => (int) $member->id,
             'project_id' => $projectId,
             'transaction_head_id' => $headId,
+            'order_id' => $orderId,
             'stamp_count' => $stampCount,
             'amount' => $amount,
         ]);

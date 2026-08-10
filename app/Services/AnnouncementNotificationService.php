@@ -125,6 +125,8 @@ class AnnouncementNotificationService
                             $channelAccessToken
                         );
                         $sent++;
+                        // 画像起因の失敗なら以降の会員にも同じ失敗を繰り返さない
+                        $imageUrl = null;
 
                         continue;
                     } catch (\Throwable $retryError) {
@@ -165,7 +167,10 @@ class AnnouncementNotificationService
             Announcement::DELIVERY_TYPE_SEGMENT,
             Announcement::DELIVERY_TYPE_AFTER_REGISTRATION,
         ], true);
-        if ($isTargeted && $targetMemberIds !== []) {
+        if ($isTargeted) {
+            if ($targetMemberIds === []) {
+                return collect();
+            }
             $query->whereIn('id', $targetMemberIds);
         }
 

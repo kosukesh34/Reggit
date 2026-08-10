@@ -451,7 +451,10 @@ class PushNotificationService
             Announcement::DELIVERY_TYPE_SEGMENT,
             Announcement::DELIVERY_TYPE_AFTER_REGISTRATION,
         ], true);
-        if ($isTargeted && $targetMemberIds !== []) {
+        if ($isTargeted) {
+            if ($targetMemberIds === []) {
+                return [];
+            }
             $userIds = Member::where('project_id', (int) $announcement->project_id)
                 ->whereIn('id', $targetMemberIds)
                 ->pluck('user_id')

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Payment;
 
 use App\Http\Controllers\Controller;
+use App\Services\UserService;
 use App\UseCases\Payment\PaymentConfirmUseCase;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
@@ -12,7 +13,8 @@ use Illuminate\Validation\Rule;
 class PaymentConfirmController extends Controller
 {
     public function __construct(
-        private PaymentConfirmUseCase $confirmUseCase
+        private PaymentConfirmUseCase $confirmUseCase,
+        private UserService $userService,
     ) {}
 
     public function __invoke(Request $request)
@@ -26,8 +28,18 @@ class PaymentConfirmController extends Controller
             ],
         ]);
 
+        $user = $this->userService->findUser($request);
+        if ($user === null) {
+            return response()->json(['error' => 'ユーザーを特定できません'], 401);
+        }
+
         try {
-            $result = $this->confirmUseCase->handle($request->payment_intent_id, (int) $request->order_id, $projectId);
+            $result = $this->confirmUseCase->handle(
+                $request->payment_intent_id,
+                (int) $request->order_id,
+                $projectId,
+                (int) $user->id,
+            );
             if ($result->isSuccess === false) {
                 return response()->json([
                     'success' => false,
