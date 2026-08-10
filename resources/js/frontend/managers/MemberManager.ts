@@ -5,6 +5,7 @@ import { ConfirmDialog } from '../../shared/utils/confirmDialog';
 import { getGuestRegisterMessage, getMemberRegistrationMode, shouldShowRegistrationForm, syncMemberRegistrationModeFromPayload } from '../utils/membershipPolicy';
 import { isDemoDataMode, isFixedUiShell } from '../demo/demoMode';
 import { buildBuiltinSampleMemberData } from '../demo/sampleData';
+import { isReactOwnedMount } from '../utils/reactOwnedMount';
 
 declare const liff: any;
 declare const JsBarcode: any;
@@ -640,6 +641,10 @@ export class MemberManager {
             return;
         }
         if (payload && payload.show_member_card_for_guest === false) {
+            if (this._isReactOwnedMemberMount(container)) {
+                this._emitMemberReactEvent('liff-member-reload');
+                return;
+            }
             container.innerHTML = this.getGuestNoCardTemplate();
             this._attachRegisterTrigger(container);
             return;
@@ -655,6 +660,10 @@ export class MemberManager {
     renderGuestCard(): void {
         const container = this.getContainer();
         if (!container) return;
+        if (this._isReactOwnedMemberMount(container)) {
+            this._emitMemberReactEvent('liff-member-reload');
+            return;
+        }
         container.innerHTML = this.getGuestRegisterTemplate();
         this._attachRegisterTrigger(container);
     }
@@ -708,6 +717,12 @@ export class MemberManager {
             container = this.getContainer();
         }
         if (!container) {
+            return;
+        }
+        if (this._isReactOwnedMemberMount(container)) {
+            this._forcedRegister = forced;
+            this._registerFullScreen = true;
+            this._emitMemberReactEvent('liff-member-open-register', { forced });
             return;
         }
         await this.openRegisterFullScreen({
@@ -800,6 +815,17 @@ export class MemberManager {
             AppConstants.ELEMENT_IDS.MEMBER_SECTION,
             { silent: true }
         );
+    }
+
+    _isReactOwnedMemberMount(container?: Element | null): boolean {
+        return isReactOwnedMount(container || this.getContainer());
+    }
+
+    _emitMemberReactEvent(name: string, detail?: Record<string, unknown>): void {
+        if (typeof document === 'undefined') {
+            return;
+        }
+        document.dispatchEvent(new CustomEvent(name, { detail: detail || {} }));
     }
 
     getLoginOptionalTemplate(title, message) {
@@ -904,6 +930,10 @@ export class MemberManager {
     async load() {
         const container = this.getContainer();
         if (!container) return;
+        if (this._isReactOwnedMemberMount(container)) {
+            this._emitMemberReactEvent('liff-member-reload');
+            return;
+        }
 
         if (this._registerFullScreen && !(this.memberData && this.memberData.is_member)) {
             return;
@@ -1005,7 +1035,9 @@ export class MemberManager {
             }
             this._autoRegisterAttempted = false;
             const container = this.getContainer();
-            if (container) {
+            if (container && this._isReactOwnedMemberMount(container)) {
+                this._emitMemberReactEvent('liff-member-reload');
+            } else if (container) {
                 container.innerHTML = this.getGuestRegisterTemplate();
                 this._attachRegisterTrigger(container);
             }
@@ -1063,6 +1095,12 @@ export class MemberManager {
             window.app.switchTab(AppConstants.TABS.MEMBER);
         }
         this._updateMemberScreenUrl('register', false);
+        if (this._isReactOwnedMemberMount()) {
+            this._forcedRegister = getMemberRegistrationMode() === 'force';
+            this._registerFullScreen = true;
+            this._emitMemberReactEvent('liff-member-open-register', { forced: this._forcedRegister });
+            return;
+        }
         this.openRegisterFullScreen({ skipHistory: true });
     }
 
@@ -1070,6 +1108,11 @@ export class MemberManager {
         const container = this.getContainer();
         if (!container) return;
         if (!data || typeof data !== 'object') return;
+        if (this._isReactOwnedMemberMount(container)) {
+            this.memberData = data;
+            this._emitMemberReactEvent('liff-member-reload');
+            return;
+        }
         // Wallet サマリーは起動／フォアグラウンド時のみ更新（render のたびに叩かない）
 
         if (isFixedUiShell()) {
@@ -2541,18 +2584,29 @@ export class MemberManager {
     openProfileEdit(options: any = {}) {
         options = options || {};
         if (!this.memberData) return;
-        const user = this.memberData.user || (this.memberData.member && this.memberData.member.user);
-        const member = this.memberData.member;
-        const container = this.getContainer();
-        if (!container) return;
         if (!options.skipHistory && !this.isEditPageMode()) {
             this._updateMemberScreenUrl('edit', false);
         }
+        if (this._isReactOwnedMemberMount()) {
+            this._registerFullScreen = false;
+            this._profileEditFullScreen = true;
+            this._emitMemberReactEvent('liff-member-open-edit');
+            return;
+        }
+        const container = this.getContainer();
+        if (!container) return;
+        void this.paintProfileEditInto(container as HTMLElement);
+    }
+
+    async paintProfileEditInto(container: HTMLElement): Promise<void> {
+        if (!this.memberData) return;
+        const user = this.memberData.user || (this.memberData.member && this.memberData.member.user);
+        const member = this.memberData.member;
         this._registerFullScreen = false;
         this._profileEditFullScreen = true;
         container.innerHTML = this._getProfileEditFormHtml(user, member, { fullScreen: true, isRegister: false });
         container.scrollTop = 0;
-        const form = document.getElementById('profileEditForm');
+        const form = container.querySelector('#profileEditForm') || document.getElementById('profileEditForm');
         if (form) {
             form.addEventListener('submit', (e) => {
                 e.preventDefault();
@@ -2945,8 +2999,28 @@ export class MemberManager {
         if (!options.skipHistory && !this.isRegisterPageMode()) {
             this._updateMemberScreenUrl('register', false);
         }
-        const container = this.getContainer();
+        if (this._isReactOwnedMemberMount() && options.into == null) {
+            this._registerFullScreen = true;
+            this._forcedRegister = options.forced === true;
+            this._profileEditFullScreen = false;
+            this._emitMemberReactEvent('liff-member-open-register', { forced: this._forcedRegister });
+            return;
+        }
+        const container = (options.into as HTMLElement | undefined) || this.getContainer();
         if (!container) return;
+        await this.paintRegisterInto(container as HTMLElement, { forced: options.forced === true });
+    }
+
+    async paintRegisterInto(container: HTMLElement, options: { forced?: boolean } = {}): Promise<void> {
+        try {
+            await this.ensureGuestMemberContext();
+        } catch (e) {
+            console.warn('ensureGuestMemberContext failed', e);
+        }
+        if (this.memberData && this.memberData.is_member) {
+            this._forcedRegister = false;
+            return;
+        }
         const initialProfile = (typeof window !== 'undefined' && window.__LINE_PROFILE__ && window.__LINE_PROFILE__.displayName)
             ? { name: window.__LINE_PROFILE__.displayName } : {};
         this._registerFullScreen = true;
@@ -2959,7 +3033,7 @@ export class MemberManager {
             forced: this._forcedRegister,
         });
         container.scrollTop = 0;
-        const form = document.getElementById('registerForm');
+        const form = container.querySelector('#registerForm') || document.getElementById('registerForm');
         if (form) {
             form.addEventListener('submit', (e) => {
                 e.preventDefault();

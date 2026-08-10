@@ -1,6 +1,7 @@
 import React from 'react';
 import { isFixedUiShell } from '../demo/demoMode';
 import { IconCart } from '../demo/icons';
+import { CartPanel } from '../features/cart/CartPanel';
 
 type FrontendHeaderConfig = {
     title: string;
@@ -204,7 +205,7 @@ function DemoFixedChrome({
                     </button>
                 </div>
                 <div className="cart-items" id="cartItems">
-                    <div className="empty-cart">カートは空です</div>
+                    <CartPanel />
                 </div>
                 <div className="cart-footer">
                     <div className="cart-total">
@@ -285,7 +286,7 @@ function StoreClassicChrome({
                     </button>
                 </div>
                 <div className="cart-items" id="cartItems">
-                    <div className="empty-cart">カートは空です</div>
+                    <CartPanel />
                 </div>
                 <div className="cart-footer">
                     <div className="cart-total">

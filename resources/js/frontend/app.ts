@@ -5,7 +5,6 @@ import { ToastManager } from '../shared/utils/toast';
 import { AnnouncementManager } from './managers/AnnouncementManager';
 import { GalleryManager } from './managers/GalleryManager';
 import { CartManager } from './managers/CartManager';
-import type { CartProduct } from './managers/CartManager';
 import { ProductManager } from './managers/ProductManager';
 import { OrderManager } from './managers/OrderManager';
 import { DeviceManager } from './managers/DeviceManager';
@@ -14,7 +13,6 @@ import { CheckoutManager } from './managers/CheckoutManager';
 import { QueueManager } from './managers/QueueManager';
 import { CouponsManager } from './managers/CouponsManager';
 import { getMemberRegistrationMode, isMembershipRequired, isRegistrationFormDismissed, shouldShowRegistrationForm, syncMemberRegistrationModeFromPayload } from './utils/membershipPolicy';
-import { mountDetailLayoutChrome } from './utils/detailLayoutMount';
 import { LiffLayoutManager } from './managers/LiffLayoutManager';
 import { ReservationManager } from './managers/ReservationManager';
 import { DesignLabManager } from './managers/DesignLabManager';
@@ -63,12 +61,6 @@ class ReggitApp {
     lastOrderCompleteMessage: string | null = null;
     lastOrderReferenceNumber: string | null = null;
     _ordersSilentRefreshInFlight = false;
-    _detailProduct: (CartProduct & {
-        description?: string;
-        option_groups?: any[];
-        [key: string]: any;
-    }) | null = null;
-    _detailQty: number = 1;
     _memberRegistrationGateHandled: boolean = false;
     _memberTabLoadInFlight: Promise<void> | null = null;
     _productsViewMode: string | null = null;
@@ -966,7 +958,33 @@ class ReggitApp {
         }
     }
 
+    /** React ProductsGrid / CartPanel が DOM を所有しているか */
+    _hasReactProducts(): boolean {
+        return document.querySelector('[data-react-products]') !== null;
+    }
+
+    _hasReactCart(): boolean {
+        return document.querySelector('[data-react-cart]') !== null;
+    }
+
+    _dispatchProductsUpdated(): void {
+        document.dispatchEvent(new CustomEvent('liff-products-updated'));
+    }
+
+    _dispatchCartUpdated(): void {
+        document.dispatchEvent(new CustomEvent('liff-cart-updated'));
+    }
+
     async loadProducts() {
+        if (this._hasReactProducts()) {
+            try {
+                await this.productManager.loadProducts();
+                this._dispatchProductsUpdated();
+            } catch (error) {
+                this.handleProductLoadError(error);
+            }
+            return;
+        }
         const grid = DomHelper.getProductsGrid();
         if (!grid) {
             if (typeof window.__mobileOrderLog === 'function') window.__mobileOrderLog('loadProducts: productsGrid not found', { currentTab: this.currentTab });
@@ -985,6 +1003,10 @@ class ReggitApp {
     /** ブロックの action（#products?category=xxx）から商品カテゴリを絞り込む */
     applyProductCategory(category: string) {
         this.productManager.setCurrentCategory(category);
+        if (this._hasReactProducts()) {
+            this._dispatchProductsUpdated();
+            return;
+        }
         const container = DomHelper.getCategoryTabsContainer();
         if (container) {
             container.querySelectorAll('.tab-btn[data-category]').forEach((btn) => {
@@ -999,27 +1021,17 @@ class ReggitApp {
         }
     }
 
-    /** APIから取得したカテゴリでタブを動的に構築 */
+    /** React ProductsGrid へ同期（レガシー HTML タブ描画は廃止） */
     renderCategoryTabs() {
-        const container = DomHelper.getCategoryTabsContainer();
-        if (!container) return;
-        const categories = this.productManager.getCategories();
-        if (!categories || categories.length === 0) return;
-
-        const current = this.productManager.getCurrentCategory();
-        container.innerHTML = categories.map(cat => {
-            const isActive = cat.key === current ? 'active' : '';
-            return `<button class="tab-btn ${isActive}" data-category="${DomHelper.escapeHtml(cat.key)}">
-                <i class="fas ${DomHelper.escapeHtml(cat.icon)}"></i>
-                <span>${DomHelper.escapeHtml(cat.label)}</span>
-                <span class="tab-count">${cat.count || 0}</span>
-            </button>`;
-        }).join('');
-        this._attachCategoryListeners();
+        this._dispatchProductsUpdated();
     }
 
     handleProductLoadError(error) {
         console.error('Failed to load products:', error);
+        if (this._hasReactProducts()) {
+            this._dispatchProductsUpdated();
+            return;
+        }
         const grid = DomHelper.getProductsGrid();
         if (grid) {
             grid.innerHTML = this.getErrorTemplate(
@@ -1096,87 +1108,10 @@ class ReggitApp {
         this.setProductsViewMode(this.getProductsViewMode());
     }
 
+    /** React ProductsGrid / CartPanel へ同期（レガシー HTML 商品描画は廃止） */
     renderProducts() {
-        const grid = DomHelper.getProductsGrid();
-        if (!grid) return;
-        const section = document.getElementById('productsSection');
-        if (section !== null) {
-            const mount = section.querySelector('.products-data-mount');
-            if (mount instanceof HTMLElement) {
-                mount.setAttribute('data-products-view', this.getProductsViewMode());
-            }
-        }
-        const currentCat = this.productManager.getCurrentCategory();
-        const products = this.productManager.getProductsByCategory(currentCat);
-
-        if (products.length === 0) {
-            grid.innerHTML = '<div class="loading"><i class="fas fa-search"></i><p>商品が見つかりませんでした</p></div>';
-            return;
-        }
-
-        // 「すべて」の場合はカテゴリ別セクションで表示
-        if (currentCat === 'all') {
-            const grouped = this.productManager.getProductsGroupedByCategory();
-            const categories = this.productManager.getCategories().filter(c => c.key !== 'all');
-            let html = '';
-            categories.forEach(cat => {
-                const catProducts = grouped[cat.key];
-                if (!catProducts || catProducts.length === 0) return;
-                html += `<div class="product-category-section">
-                    <div class="product-category-header">
-                        <i class="fas ${DomHelper.escapeHtml(cat.icon)}"></i>
-                        <h3>${DomHelper.escapeHtml(cat.label)}</h3>
-                        <span class="product-category-count">${catProducts.length}品</span>
-                    </div>
-                    <div class="products-grid-inner">
-                        ${catProducts.map(p => this.renderProductCard(p)).join('')}
-                    </div>
-                </div>`;
-            });
-            grid.innerHTML = html;
-        } else {
-            grid.innerHTML = `<div class="products-grid-inner">${products.map(p => this.renderProductCard(p)).join('')}</div>`;
-        }
-    }
-
-    renderProductCard(product) {
-        const cartQuantity = this.cartManager.getQuantityForProduct(product.id);
-        const isInCart = cartQuantity > 0;
-        const placeholder = '/images/liff/product-placeholder.jpg';
-        const imageUrl = product.image_url || placeholder;
-        const hasOptions = Array.isArray(product.option_groups) && product.option_groups.length > 0;
-        const productIdLiteral = JSON.stringify(product.id);
-        const cardAction = hasOptions
-            ? `app.openProductDetail(${productIdLiteral})`
-            : (isInCart ? '' : `app.addToCart(${productIdLiteral})`);
-        const actionHtml = hasOptions
-            ? `<button type="button" class="product-add-btn" onclick='event.stopPropagation(); app.openProductDetail(${productIdLiteral})'>
-                    <i class="fas fa-sliders-h"></i> 選んで追加
-               </button>`
-            : (isInCart
-                ? `<div class="product-qty-stepper" onclick="event.stopPropagation()">
-                        <button type="button" class="product-qty-btn" aria-label="減らす" onclick='app.adjustProductQuantity(${productIdLiteral}, -1)'>−</button>
-                        <span class="product-qty-value" aria-live="polite">${cartQuantity}</span>
-                        <button type="button" class="product-qty-btn" aria-label="増やす" onclick='app.adjustProductQuantity(${productIdLiteral}, 1)'>+</button>
-                   </div>`
-                : `<button type="button" class="product-add-btn" onclick='event.stopPropagation(); app.addToCart(${productIdLiteral})'>
-                        <i class="fas fa-cart-plus"></i> カートに追加
-                   </button>`);
-        return `
-            <div class="product-card ${isInCart ? AppConstants.CSS_CLASSES.IN_CART : ''}" data-product-id="${DomHelper.escapeHtml(String(product.id))}"${cardAction ? ` onclick='${cardAction}'` : ''}>
-                <div class="product-image-wrapper">
-                    ${isInCart ? `<div class="cart-badge">${cartQuantity}</div>` : ''}
-                    <img src="${DomHelper.escapeHtml(imageUrl)}" alt="${DomHelper.escapeHtml(product.name)}" class="product-image" loading="lazy"
-                         onerror="this.onerror=null; this.src='${placeholder}'">
-                    ${hasOptions ? '<span class="product-option-tag"><i class="fas fa-sliders-h"></i> カスタム可</span>' : ''}
-                </div>
-                <div class="product-info">
-                    <div class="product-name">${DomHelper.escapeHtml(product.name)}</div>
-                    <div class="product-price">${DomHelper.formatPrice(product.price)}${hasOptions ? '<span class="product-price-from">〜</span>' : ''}</div>
-                    ${actionHtml}
-                </div>
-            </div>
-        `;
+        this._dispatchProductsUpdated();
+        this._dispatchCartUpdated();
     }
 
     /** 商品をワンタップで追加（オプションなし商品向けのフォールバック）。 */
@@ -1249,6 +1184,10 @@ class ReggitApp {
     }
 
     updateCartUI() {
+        // カート行は CartPanel（React）。バッジ／合計／注文ボタンのみ同期する。
+        this._dispatchCartUpdated();
+        this._dispatchProductsUpdated();
+
         const count = this.cartManager.getTotalCount();
         const countEl = DomHelper.getElementById(AppConstants.ELEMENT_IDS.CART_COUNT);
         if (countEl) countEl.textContent = String(count);
@@ -1261,60 +1200,21 @@ class ReggitApp {
             }
         }
 
-        const cartItems = DomHelper.getElementById(AppConstants.ELEMENT_IDS.CART_ITEMS);
         const total = this.cartManager.getTotalAmount();
         const orderBtn = DomHelper.getElementById(AppConstants.ELEMENT_IDS.ORDER_BTN);
         const inStoreOrderBtn = DomHelper.getElementById(AppConstants.ELEMENT_IDS.IN_STORE_ORDER_BTN);
         const totalPrice = DomHelper.getElementById(AppConstants.ELEMENT_IDS.TOTAL_PRICE);
 
         if (this.cartManager.isEmpty()) {
-            if (cartItems) cartItems.innerHTML = '<div class="empty-cart">カートは空です</div>';
             if (orderBtn) (orderBtn as HTMLButtonElement).disabled = true;
             if (inStoreOrderBtn) (inStoreOrderBtn as HTMLButtonElement).disabled = true;
         } else {
-            if (cartItems) {
-                cartItems.innerHTML = this.cartManager.items
-                    .map((item) => this.renderCartItem(item))
-                    .join('');
-            }
             if (orderBtn) (orderBtn as HTMLButtonElement).disabled = false;
             if (inStoreOrderBtn) (inStoreOrderBtn as HTMLButtonElement).disabled = false;
         }
         if (this.orderMode === 'mobile_only' && inStoreOrderBtn) (inStoreOrderBtn as HTMLButtonElement).disabled = true;
         if (this.orderMode === 'in_store_only' && orderBtn) (orderBtn as HTMLButtonElement).disabled = true;
         if (totalPrice) totalPrice.textContent = DomHelper.formatPrice(total);
-
-        const key = this.pageRouter.getCurrentKey();
-        if (key === 'order_cart' || key === 'order_confirm') {
-            this.renderOrderFlowPage(key === 'order_confirm' ? 'confirm' : 'cart');
-        }
-    }
-
-    renderCartItem(item) {
-        const imageUrl = item.image_url || '';
-        const key = item.lineKey;
-        const optionsText = (item.options && item.options.length > 0)
-            ? item.options.map(o => DomHelper.escapeHtml(o.name)).join('・')
-            : '';
-        const notesText = item.notes ? DomHelper.escapeHtml(item.notes) : '';
-        return `
-            <div class="cart-item">
-                <img src="${imageUrl}" alt="${DomHelper.escapeHtml(item.name)}" class="cart-item-image"
-                     onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2280%22 height=%2280%22%3E%3Crect fill=%22%23f0f0f0%22 width=%2280%22 height=%2280%22/%3E%3C/svg%3E'">
-                <div class="cart-item-info">
-                    <div class="cart-item-name">${DomHelper.escapeHtml(item.name)}</div>
-                    ${optionsText ? `<div class="cart-item-options">${optionsText}</div>` : ''}
-                    ${notesText ? `<div class="cart-item-note"><i class="fas fa-comment-dots"></i> ${notesText}</div>` : ''}
-                    <div class="cart-item-price">${DomHelper.formatPrice(item.price)}</div>
-                    <div class="cart-item-controls">
-                        <button class="quantity-btn" onclick="app.updateQuantity('${key}', -1)"><i class="fas fa-minus"></i></button>
-                        <span class="quantity">${item.quantity}</span>
-                        <button class="quantity-btn" onclick="app.updateQuantity('${key}', 1)"><i class="fas fa-plus"></i></button>
-                        <button class="remove-btn" onclick="app.removeFromCart('${key}')"><i class="fas fa-trash"></i></button>
-                    </div>
-                </div>
-            </div>
-        `;
     }
 
     /* ===== 商品詳細ページ（#product/{id}） ===== */
@@ -1337,14 +1237,6 @@ class ReggitApp {
             ToastManager.error('商品が見つかりませんでした');
             return;
         }
-        this._detailProduct = {
-            ...product,
-            id: product.id,
-            name: product.name || '',
-            price: product.price ?? 0,
-            image_url: product.image_url,
-        };
-        this._detailQty = 1;
 
         const section = this.pageRouter.openPage({
             key: 'product_detail',
@@ -1356,18 +1248,8 @@ class ReggitApp {
         if (section === null) {
             return;
         }
-        const bodyHtml = `<div class="liff-entity-detail product-detail-page">${this._renderProductDetailPage(product)}</div>`;
-        mountDetailLayoutChrome({
-            section,
-            layoutKey: 'product_detail',
-            dataSource: 'product_detail',
-            bodyHtml,
-            slotClassName: 'liff-detail-slot product-detail-slot',
-        });
-        section.querySelectorAll('input[data-opt]').forEach(input => {
-            input.addEventListener('change', () => this._recalcProductDetail());
-        });
-        this._recalcProductDetail();
+        // 中身は LiffDetailHost（ProductDetailPage）が hash で描画
+        document.dispatchEvent(new CustomEvent('liff-detail-changed'));
     }
 
     closeProductDetail() {
@@ -1380,166 +1262,6 @@ class ReggitApp {
             host.innerHTML = '';
         }
         document.body.style.overflow = '';
-    }
-
-    detailQty(change) {
-        this._detailQty = Math.max(1, (this._detailQty || 1) + change);
-        const el = document.getElementById('detailQtyValue');
-        if (el) el.textContent = String(this._detailQty);
-        this._recalcProductDetail();
-    }
-
-    _renderProductDetailPage(product) {
-        const imageUrl = product.image_url || '';
-        const groups = Array.isArray(product.option_groups) ? product.option_groups : [];
-        const esc = (s) => DomHelper.escapeHtml(s);
-        const desc = product.description ? `<p class="pd-desc">${esc(product.description)}</p>` : '';
-
-        const groupsHtml = groups.map(group => {
-            const multiple = group.selection_type === 'multiple';
-            const type = multiple ? 'checkbox' : 'radio';
-            const required = group.is_required;
-            const max = group.max_select || 0;
-            const meta = multiple
-                ? (max > 0 ? `最大${max}個` : '複数選択可')
-                : '1つ選択';
-            const options = (group.options || []).map((opt, i) => {
-                const defChecked = (!multiple && (opt.is_default || i === 0)) ? 'checked' : (multiple && opt.is_default ? 'checked' : '');
-                const delta = Number(opt.price_delta) || 0;
-                const deltaLabel = delta > 0 ? `+${DomHelper.formatPrice(delta)}` : (delta < 0 ? DomHelper.formatPrice(delta) : '');
-                return `
-                    <label class="pd-option">
-                        <input type="${type}" name="grp_${group.id}" value="${opt.id}"
-                               data-opt data-group="${group.id}" data-group-type="${group.selection_type}"
-                               data-max="${max}" data-price="${delta}" data-name="${esc(opt.name)}" ${defChecked}>
-                        <span class="pd-option-check"></span>
-                        <span class="pd-option-name">${esc(opt.name)}</span>
-                        ${deltaLabel ? `<span class="pd-option-price">${deltaLabel}</span>` : ''}
-                    </label>`;
-            }).join('');
-            return `
-                <div class="pd-group" data-group-wrap="${group.id}">
-                    <div class="pd-group-head">
-                        <span class="pd-group-name">${esc(group.name)}</span>
-                        <span class="pd-group-meta">${required ? '<span class="pd-required">必須</span>' : ''}${esc(meta)}</span>
-                    </div>
-                    <div class="pd-group-options">${options}</div>
-                </div>`;
-        }).join('');
-
-        return `
-            <div class="pd-page" id="productDetailHost">
-                <div class="pd-hero">
-                    <img src="${imageUrl}" alt="${esc(product.name)}" class="pd-image"
-                         onerror="this.style.display='none'">
-                </div>
-                <div class="pd-body">
-                    <h2 class="pd-name">${esc(product.name)}</h2>
-                    <div class="pd-base-price">${DomHelper.formatPrice(product.price)}</div>
-                    ${desc}
-                    ${groupsHtml}
-                    <div class="pd-group">
-                        <div class="pd-group-head"><span class="pd-group-name">ご要望（任意）</span></div>
-                        <input type="text" id="pdNotes" class="pd-notes" maxlength="500" placeholder="例: ソース少なめ など">
-                    </div>
-                </div>
-                <div class="pd-footer pd-footer--page">
-                    <div class="pd-qty">
-                        <button class="pd-qty-btn" onclick="app.detailQty(-1)" aria-label="減らす"><i class="fas fa-minus"></i></button>
-                        <span id="detailQtyValue" class="pd-qty-value">1</span>
-                        <button class="pd-qty-btn" onclick="app.detailQty(1)" aria-label="増やす"><i class="fas fa-plus"></i></button>
-                    </div>
-                    <button class="pd-add-btn" id="pdAddBtn" onclick="app.addToCartFromDetail()">
-                        <span>カートに追加</span>
-                        <span class="pd-add-total" id="pdAddTotal"></span>
-                    </button>
-                </div>
-            </div>
-        `;
-    }
-
-    _renderProductDetail(product) {
-        return this._renderProductDetailPage(product);
-    }
-
-    _collectDetailSelection() {
-        const host = document.getElementById('productDetailHost')
-            || this.pageRouter.getSection()
-            || document.getElementById('productDetailModal');
-        if (!host) return { options: [], delta: 0, valid: true };
-        const product = this._detailProduct;
-        if (!product) return { options: [], delta: 0, valid: true };
-        const groups = Array.isArray(product.option_groups) ? product.option_groups : [];
-        const options = [];
-        let delta = 0;
-        let valid = true;
-
-        groups.forEach(group => {
-            const checked = host.querySelectorAll(`input[data-group="${group.id}"]:checked`);
-            if (group.is_required && checked.length === 0) valid = false;
-            const max = group.max_select || 0;
-            if (group.selection_type === 'multiple' && max > 0 && checked.length > max) valid = false;
-            checked.forEach(input => {
-                const price = Number(input.getAttribute('data-price')) || 0;
-                delta += price;
-                options.push({
-                    group_name: group.name,
-                    option_id: parseInt((input as HTMLInputElement).value, 10),
-                    name: input.getAttribute('data-name') || '',
-                    price_delta: price,
-                });
-            });
-        });
-        return { options, delta, valid };
-    }
-
-    _recalcProductDetail() {
-        const host = document.getElementById('productDetailHost')
-            || this.pageRouter.getSection()
-            || document.getElementById('productDetailModal');
-        if (!host) return;
-        const product = this._detailProduct;
-        if (!product) return;
-
-        // 複数選択の上限を超えたら最後の選択を外す
-        const groups = Array.isArray(product.option_groups) ? product.option_groups : [];
-        groups.forEach(group => {
-            const max = group.max_select || 0;
-            if (group.selection_type === 'multiple' && max > 0) {
-                const checked = host.querySelectorAll(`input[data-group="${group.id}"]:checked`);
-                if (checked.length > max) {
-                    (checked[checked.length - 1] as HTMLInputElement).checked = false;
-                    ToastManager.info(`${group.name}は最大${max}個までです`);
-                }
-            }
-        });
-
-        const sel = this._collectDetailSelection();
-        const base = Number(product.price) || 0;
-        const qty = this._detailQty || 1;
-        const total = (base + sel.delta) * qty;
-        const totalEl = document.getElementById('pdAddTotal');
-        if (totalEl) totalEl.textContent = DomHelper.formatPrice(total);
-        const addBtn = document.getElementById('pdAddBtn');
-        if (addBtn) addBtn.classList.toggle('is-disabled', !sel.valid);
-    }
-
-    addToCartFromDetail() {
-        const product = this._detailProduct;
-        if (!product) return;
-        const sel = this._collectDetailSelection();
-        if (!sel.valid) {
-            ToastManager.error('必須の選択を確認してください');
-            return;
-        }
-        const notesEl = document.getElementById('pdNotes');
-        const notes = notesEl ? (notesEl as HTMLTextAreaElement).value : '';
-        this.cartManager.addItem(product, { options: sel.options, quantity: this._detailQty || 1, notes });
-        this.closeProductDetail();
-        this.updateCartUI();
-        this.showCartNotification();
-        this.renderProducts();
-        ToastManager.success(`${product.name}をカートに追加しました`);
     }
 
     openCart() {
@@ -1636,66 +1358,8 @@ class ReggitApp {
         if (section === null) {
             return;
         }
-        this.renderOrderFlowPage(step);
-    }
-
-    renderOrderFlowPage(step: 'cart' | 'confirm' | 'complete') {
-        const section = this.pageRouter.getSection();
-        if (section === null) {
-            return;
-        }
-        if (step === 'complete') {
-            const message = this.lastOrderCompleteMessage || 'ご注文ありがとうございました';
-            section.innerHTML = `
-                <div class="liff-flow-page order-flow-complete">
-                    <div class="order-flow-complete__icon"><i class="fas fa-check-circle"></i></div>
-                    <h2>注文を受け付けました</h2>
-                    <div class="order-flow-complete__live" data-order-complete-live></div>
-                    <p class="order-flow-complete__message">${DomHelper.escapeHtml(message)}</p>
-                    <div class="liff-flow-actions">
-                        <button type="button" class="btn btn-primary" onclick="app.switchTab('orders')">注文状況を確認</button>
-                        <button type="button" class="btn btn-secondary" onclick="app.switchTab('home')">ホームへ</button>
-                    </div>
-                </div>
-            `;
-            void this.loadOrdersTab({ silent: true });
-            return;
-        }
-
-        const itemsHtml = this.cartManager.isEmpty()
-            ? '<div class="empty-cart">カートは空です</div>'
-            : this.cartManager.items.map((item) => this.renderCartItem(item)).join('');
-        const total = DomHelper.formatPrice(this.cartManager.getTotalAmount());
-        const canOrder = !this.cartManager.isEmpty();
-        const mobileEnabled = this.checkoutManager.isMobileOrderEnabled();
-        const inStoreEnabled = this.checkoutManager.isInStoreOrderEnabled();
-
-        if (step === 'cart') {
-            section.innerHTML = `
-                <div class="liff-flow-page order-flow-cart">
-                    <div class="cart-items">${itemsHtml}</div>
-                    <div class="cart-total"><span>合計</span><strong>${total}</strong></div>
-                    <div class="liff-flow-actions">
-                        <button type="button" class="btn btn-primary" ${canOrder ? '' : 'disabled'}
-                            onclick="app.openOrderFlow('confirm')">注文内容を確認</button>
-                        <button type="button" class="btn btn-secondary" onclick="app.switchTab('products')">商品一覧へ</button>
-                    </div>
-                </div>
-            `;
-            return;
-        }
-
-        section.innerHTML = `
-            <div class="liff-flow-page order-flow-confirm">
-                <div class="cart-items">${itemsHtml}</div>
-                <div class="cart-total"><span>合計</span><strong>${total}</strong></div>
-                <div class="liff-flow-actions">
-                    ${mobileEnabled ? `<button type="button" class="btn btn-primary" ${canOrder ? '' : 'disabled'} onclick="app.checkoutManager.placeMobileOrder()"><i class="fas fa-mobile-alt"></i> モバイル注文する</button>` : ''}
-                    ${inStoreEnabled ? `<button type="button" class="btn btn-secondary" ${canOrder ? '' : 'disabled'} onclick="app.checkoutManager.placeInStoreOrder()"><i class="fas fa-store"></i> 店内注文する</button>` : ''}
-                    <button type="button" class="btn btn-secondary" onclick="app.openOrderFlow('cart')">カートへ戻る</button>
-                </div>
-            </div>
-        `;
+        // 中身は LiffDetailHost（OrderFlowPage）が hash で描画
+        document.dispatchEvent(new CustomEvent('liff-detail-changed'));
     }
 
     showCartNotification() {
@@ -1716,9 +1380,13 @@ class ReggitApp {
     }
 
     handlePaymentSuccess() {
-        const paymentModal = document.querySelector('.payment-modal');
-        if (paymentModal && typeof paymentModal.remove === 'function') {
-            paymentModal.remove();
+        if (typeof this.checkoutManager?.closePaymentModal === 'function') {
+            this.checkoutManager.closePaymentModal(false);
+        } else {
+            const paymentModal = document.querySelector('.payment-modal');
+            if (paymentModal && typeof paymentModal.remove === 'function') {
+                paymentModal.remove();
+            }
         }
         this.handleOrderSuccess();
     }
@@ -1897,7 +1565,10 @@ class ReggitApp {
 
             if (this.isLinkTab(tab)) {
                 this.mountLinkTabEmbed(sectionContainer);
-            } else if (!(this.designerPreviewSource && this.designerPreviewEmbed)) {
+            } else if (
+                !(this.designerPreviewSource && this.designerPreviewEmbed)
+                && !(sectionContainer && sectionContainer.dataset.reactOwned === '1')
+            ) {
                 this.layoutManager.render(tab);
             }
             if (layoutWasRendered) {
@@ -1956,6 +1627,10 @@ class ReggitApp {
         if (!section && this.pageRouter.getCurrentKey() !== 'order_complete') {
             return;
         }
+        const reactOwned = !!(section && (
+            (section as HTMLElement).dataset.reactOwned === '1'
+            || section.closest('[data-react-owned="1"]') !== null
+        ));
         if (typeof window !== 'undefined' && !window.__LINE_USER_ID__ && this.memberManager) {
             await this.memberManager.resolveLineUserIdForClient();
         }
@@ -1968,7 +1643,7 @@ class ReggitApp {
         if (!canViewOrders) {
             if (!silent) {
                 this.orderManager.stopOrdersPolling();
-                if (section) {
+                if (section && !reactOwned) {
                     section.innerHTML = this.memberManager.getLoginOptionalTemplate(
                         '注文状況',
                         'ログインすると注文状況をご確認いただけます。'
@@ -1977,13 +1652,13 @@ class ReggitApp {
             }
             return;
         }
-        if (!silent) {
+        if (!silent && !reactOwned) {
             this.orderManager.resetFingerprint();
             if (section) {
                 section.innerHTML =
                     '<div class="loading"><i class="fas fa-spinner fa-spin"></i><p>読み込み中...</p></div>';
             }
-        } else if (this._ordersSilentRefreshInFlight) {
+        } else if (silent && this._ordersSilentRefreshInFlight) {
             return;
         }
         if (silent) {
@@ -1992,6 +1667,13 @@ class ReggitApp {
         try {
             const orders = await this.orderManager.fetchOrders();
             this.syncOrderCompleteLiveStatus(orders);
+            if (reactOwned) {
+                // 一覧は React OrdersView が描画。order_complete のライブ更新のみここで維持
+                if (this.pageRouter.getCurrentKey() === 'order_complete') {
+                    this.applyOrdersPollingState(orders);
+                }
+                return;
+            }
             if (silent && this.orderManager.shouldSkipRender(orders)) {
                 this.applyOrdersPollingState(orders);
                 return;
@@ -2004,7 +1686,7 @@ class ReggitApp {
             console.error('Failed to load orders:', error);
             if (!silent) {
                 this.orderManager.stopOrdersPolling();
-                if (section) {
+                if (section && !reactOwned) {
                     section.innerHTML = this.getOrdersErrorTemplate(error);
                 }
             }
@@ -2093,6 +1775,23 @@ class ReggitApp {
                 return;
             }
             this.memberManager.render(this.getDesignerSampleMemberData());
+            return;
+        }
+        // React MemberView が描画を担当する場合はデータ取得＋イベントのみ
+        if (this.memberManager._isReactOwnedMemberMount()) {
+            try {
+                const payload = await this.memberManager._fetchMemberContextWithIdentityRetry({ force: true });
+                syncMemberRegistrationModeFromPayload(payload);
+                if (payload && payload.is_member) {
+                    this.memberManager.setMemberData(payload);
+                    this.memberManager.preload(null);
+                } else if (payload) {
+                    await this.memberManager._handleGuestContext(payload);
+                }
+            } catch (e) {
+                // 未ログインなど
+            }
+            document.dispatchEvent(new CustomEvent('liff-member-reload'));
             return;
         }
         const cached = this.memberManager.getMemberData();
