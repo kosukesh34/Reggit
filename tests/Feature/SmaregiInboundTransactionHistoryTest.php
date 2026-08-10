@@ -290,6 +290,16 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
             'points' => 20,
             'description' => 'スマレジ取引によるポイント付与 #39',
         ]);
+        $order = Order::query()
+            ->where('project_id', $project->id)
+            ->where('smaregi_transaction_head_id', '39')
+            ->first();
+        $this->assertNotNull($order);
+        $this->assertDatabaseHas('point_transactions', [
+            'member_id' => $member->id,
+            'order_id' => $order->id,
+            'description' => 'スマレジ取引によるポイント付与 #39',
+        ]);
         $this->assertSame(1, PointTransaction::query()->where('member_id', $member->id)->count());
         $this->assertSame(20, (int) $member->fresh()->points);
     }

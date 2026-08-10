@@ -22,8 +22,20 @@
                 <span class="badge badge-{{ $typeBadge }}">{{ $typeLabel }}</span>
             </td>
             <td>{{ $transaction->points > 0 ? '+' : '' }}{{ number_format($transaction->points) }}pt</td>
-            <td>{{ $transaction->description ?? 'N/A' }}</td>
-            <td>{{ $transaction->order !== null ? $transaction->order->formattedOrderNumber() : 'N/A' }}</td>
+            <td>{{ $transaction->description ?? '—' }}</td>
+            <td>
+                @if($transaction->order !== null)
+                    @php
+                        $orderLabel = $transaction->order->formattedOrderNumber();
+                        if ($orderLabel === '') {
+                            $orderLabel = '#'.$transaction->order->id;
+                        }
+                    @endphp
+                    <a href="{{ admin_route('admin.orders.detail', ['id' => $transaction->order->id]) }}">{{ $orderLabel }}</a>
+                @else
+                    —
+                @endif
+            </td>
         </tr>
         @empty
         <tr>

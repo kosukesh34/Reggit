@@ -44,7 +44,7 @@ class PaymentConfirmUseCaseTest extends TestCase
         ]);
 
         $gateway = new FakePaymentGateway;
-        $gateway->intent = ['status' => 'succeeded', 'metadata' => ['order_id' => $order->id]];
+        $gateway->intent = ['status' => 'succeeded', 'amount' => 1000, 'currency' => 'jpy', 'metadata' => ['order_id' => $order->id]];
 
         $dispatcher = \Mockery::mock(DomainEventDispatcher::class);
         $dispatcher->shouldReceive('dispatch')
@@ -74,7 +74,7 @@ class PaymentConfirmUseCaseTest extends TestCase
             app(OrderNumberAssigner::class),
             app(OrderService::class),
         );
-        $result = $useCase->handle('pi_test_123', $order->id, 1);
+        $result = $useCase->handle('pi_test_123', $order->id, 1, (int) $user->id);
 
         $this->assertTrue($result->isSuccess);
         $fresh = $order->fresh();
@@ -109,7 +109,7 @@ class PaymentConfirmUseCaseTest extends TestCase
         ]);
 
         $gateway = new FakePaymentGateway;
-        $gateway->intent = ['status' => 'succeeded', 'metadata' => ['order_id' => $order->id]];
+        $gateway->intent = ['status' => 'succeeded', 'amount' => 1000, 'currency' => 'jpy', 'metadata' => ['order_id' => $order->id]];
 
         $dispatcher = \Mockery::mock(DomainEventDispatcher::class);
         $dispatcher->shouldReceive('dispatch')
@@ -136,7 +136,7 @@ class PaymentConfirmUseCaseTest extends TestCase
             app(OrderNumberAssigner::class),
             app(OrderService::class),
         );
-        $result = $useCase->handle('pi_test_123', $order->id, 1);
+        $result = $useCase->handle('pi_test_123', $order->id, 1, (int) $user->id);
 
         $this->assertTrue($result->isSuccess);
         $this->assertSame(OrderStatus::CONFIRMED, $order->fresh()->status);
@@ -162,7 +162,7 @@ class PaymentConfirmUseCaseTest extends TestCase
         ]);
 
         $gateway = new FakePaymentGateway;
-        $gateway->intent = ['status' => 'succeeded', 'metadata' => ['order_id' => $order->id + 1]];
+        $gateway->intent = ['status' => 'succeeded', 'amount' => 1000, 'currency' => 'jpy', 'metadata' => ['order_id' => $order->id + 1]];
 
         $useCase = new PaymentConfirmUseCase(
             $gateway,
@@ -171,7 +171,7 @@ class PaymentConfirmUseCaseTest extends TestCase
             app(OrderNumberAssigner::class),
             app(OrderService::class),
         );
-        $result = $useCase->handle('pi_test_123', $order->id, 1);
+        $result = $useCase->handle('pi_test_123', $order->id, 1, (int) $user->id);
 
         $this->assertFalse($result->isSuccess);
         $this->assertSame('決済情報と注文が一致しません', $result->message);
@@ -196,7 +196,7 @@ class PaymentConfirmUseCaseTest extends TestCase
         ]);
 
         $gateway = new FakePaymentGateway;
-        $gateway->intent = ['status' => 'succeeded', 'metadata' => ['order_id' => $order->id]];
+        $gateway->intent = ['status' => 'succeeded', 'amount' => 1000, 'currency' => 'jpy', 'metadata' => ['order_id' => $order->id]];
 
         $useCase = new PaymentConfirmUseCase(
             $gateway,
@@ -207,7 +207,7 @@ class PaymentConfirmUseCaseTest extends TestCase
         );
 
         $this->expectException(ModelNotFoundException::class);
-        $useCase->handle('pi_test_123', $order->id, (int) $other->id);
+        $useCase->handle('pi_test_123', $order->id, (int) $other->id, (int) $user->id);
     }
 
     public function test_confirm_注文が無い場合は_model_not_found_exceptionになること(): void
@@ -224,6 +224,6 @@ class PaymentConfirmUseCaseTest extends TestCase
         );
 
         $this->expectException(ModelNotFoundException::class);
-        $useCase->handle('pi_test_123', 999999, 1);
+        $useCase->handle('pi_test_123', 999999, 1, 1);
     }
 }

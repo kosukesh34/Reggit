@@ -26,6 +26,8 @@ class FakePaymentGateway implements PaymentGateway
     {
         return $this->intent ?: [
             'status' => 'succeeded',
+            'amount' => 0,
+            'currency' => 'jpy',
             'metadata' => [],
         ];
     }
@@ -36,6 +38,7 @@ class FakePaymentGateway implements PaymentGateway
             'type' => 'payment_intent.succeeded',
             'metadata' => [],
             'status' => 'succeeded',
+            'amount' => 0,
         ];
     }
 }

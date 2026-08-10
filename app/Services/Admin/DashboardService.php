@@ -67,7 +67,7 @@ class DashboardService
     /** 前期比トレンド計算 (パーセンテージ、方向 up/down/flat) */
     private function calcTrend(float $current, float $previous): array
     {
-        if ($previous == 0) {
+        if ($previous === 0.0) {
             return ['direction' => $current > 0 ? 'up' : 'flat', 'percent' => null];
         }
         $percent = round((($current - $previous) / $previous) * 100, 1);

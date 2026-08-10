@@ -188,6 +188,80 @@ class AnnouncementNotificationServiceTest extends TestCase
         $this->assertSame(1, $result['line_sent']);
     }
 
+    public function test_send_drops_hero_for_remaining_members_after_image_retry_succeeds(): void
+    {
+        $project = $this->createProject();
+        ShopSettingStore::setLineChannelAccessToken('test-token', $project->id);
+        $lineUserId1 = 'U'.str_repeat('1', 32);
+        $lineUserId2 = 'U'.str_repeat('2', 32);
+        $user1 = User::factory()->create([
+            'project_id' => $project->id,
+            'line_user_id' => $lineUserId1,
+        ]);
+        $user2 = User::factory()->create([
+            'project_id' => $project->id,
+            'line_user_id' => $lineUserId2,
+        ]);
+        $member1 = Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => $user1->id,
+        ]);
+        $member2 = Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => $user2->id,
+        ]);
+        $imageUrl = 'https://cdn.example.com/broken.png';
+        $announcement = Announcement::factory()->create([
+            'project_id' => $project->id,
+            'title' => '画像失敗後フォールバック',
+            'body' => '本文',
+            'image_url' => $imageUrl,
+            'delivery_type' => Announcement::DELIVERY_TYPE_PERSONAL,
+            'delivery_status' => Announcement::DELIVERY_STATUS_SENT,
+            'target_member_ids' => [$member1->id, $member2->id],
+        ]);
+
+        $pushMock = Mockery::mock(PushNotificationService::class);
+        $pushMock->shouldReceive('sendAnnouncement')
+            ->once()
+            ->andReturn([
+                'target_tokens' => 0,
+                'sent' => 0,
+                'failed' => 0,
+                'skipped' => 0,
+                'notification_ids' => [],
+            ]);
+
+        $withHero = 0;
+        $withoutHero = 0;
+        $lineMock = Mockery::mock(LineService::class);
+        $lineMock->shouldReceive('pushMessage')
+            ->times(3)
+            ->with(
+                Mockery::type('string'),
+                Mockery::type('array'),
+                'test-token'
+            )
+            ->andReturnUsing(function (string $lineUserId, array $message) use (&$withHero, &$withoutHero, $imageUrl): array {
+                if (isset($message['contents']['hero'])) {
+                    $withHero++;
+                    $this->assertSame($imageUrl, $message['contents']['hero']['url'] ?? null);
+                    throw new \RuntimeException('invalid image');
+                }
+                $withoutHero++;
+
+                return [];
+            });
+
+        $service = new AnnouncementNotificationService($pushMock, $lineMock, app(ShopSettingRepository::class));
+        $result = $service->send($announcement);
+
+        $this->assertSame(2, $result['line_sent']);
+        $this->assertSame(0, $result['line_failed']);
+        $this->assertSame(1, $withHero);
+        $this->assertSame(2, $withoutHero);
+    }
+
     public function test_send_skips_line_when_member_has_no_line_user_id(): void
     {
         $project = $this->createProject();
@@ -227,6 +301,50 @@ class AnnouncementNotificationServiceTest extends TestCase
 
         $this->assertSame(0, $result['line_sent']);
         $this->assertSame(0, $result['line_failed']);
+    }
+
+    public function test_send_ターゲット配信で対象が空なら誰にも送らないこと(): void
+    {
+        $project = $this->createProject();
+        ShopSettingStore::setLineChannelAccessToken('test-token', $project->id);
+        $lineUserId = 'U'.str_repeat('a', 32);
+        $user = User::factory()->create([
+            'project_id' => $project->id,
+            'line_user_id' => $lineUserId,
+        ]);
+        Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+        ]);
+        $announcement = Announcement::factory()->create([
+            'project_id' => $project->id,
+            'title' => '空ターゲット',
+            'body' => '本文',
+            'delivery_type' => Announcement::DELIVERY_TYPE_PERSONAL,
+            'delivery_status' => Announcement::DELIVERY_STATUS_SENT,
+            'target_member_ids' => [],
+        ]);
+
+        $pushMock = Mockery::mock(PushNotificationService::class);
+        $pushMock->shouldReceive('sendAnnouncement')
+            ->once()
+            ->andReturn([
+                'target_tokens' => 0,
+                'sent' => 0,
+                'failed' => 0,
+                'skipped' => 0,
+                'notification_ids' => [],
+            ]);
+
+        $lineMock = Mockery::mock(LineService::class);
+        $lineMock->shouldNotReceive('pushMessage');
+
+        $service = new AnnouncementNotificationService($pushMock, $lineMock, app(ShopSettingRepository::class));
+        $result = $service->send($announcement);
+
+        $this->assertSame(0, $result['line_sent']);
+        $this->assertSame(0, $result['line_failed']);
+        $this->assertSame(0, $result['line_skipped']);
     }
 
     private function createProject(): Project
