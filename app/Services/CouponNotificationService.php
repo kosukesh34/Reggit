@@ -3,11 +3,13 @@
 namespace App\Services;
 
 use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Models\Coupon;
 use App\Models\Member;
 use App\Models\MemberCoupon;
 use App\Models\Project;
 use App\Services\Line\LineService;
 use App\Support\CouponLiffUrlBuilder;
+use App\Support\NotificationImageUrl;
 use App\Util\LogHelper;
 
 class CouponNotificationService
@@ -57,7 +59,15 @@ class CouponNotificationService
 
             return;
         }
-        $this->sendLinePush($member, $projectId, $projectKey, $title, $body, $couponName);
+        $this->sendLinePush(
+            $member,
+            $projectId,
+            $projectKey,
+            $title,
+            $body,
+            $couponName,
+            $this->resolveNotificationImageUrl($coupon, $projectId)
+        );
     }
 
     private function sendNativePush(Member $member, int $projectId, string $title, string $body, MemberCoupon $memberCoupon): void
@@ -95,7 +105,8 @@ class CouponNotificationService
         string $projectKey,
         string $title,
         string $body,
-        string $couponName
+        string $couponName,
+        ?string $imageUrl
     ): void {
         $lineUserId = trim((string) ($member->user?->line_user_id ?? ''));
         if ($lineUserId === '' || ! $this->isValidLineUserId($lineUserId)) {
@@ -111,52 +122,119 @@ class CouponNotificationService
             return;
         }
 
+        $couponsUrl = CouponLiffUrlBuilder::buildCouponsTabUrl($projectId, $projectKey);
+        $lineImageUrl = $imageUrl !== null && $imageUrl !== ''
+            ? NotificationImageUrl::forLine($imageUrl)
+            : null;
+        if ($imageUrl !== null && $imageUrl !== '' && $lineImageUrl === null) {
+            LogHelper::warning('[Coupon] LINE image URL skipped (not publicly accessible via HTTPS)', [
+                'member_id' => $member->id,
+                'image_url' => $imageUrl,
+            ]);
+        }
+        $channelAccessToken = $this->shopSettingRepository->getLineChannelAccessToken($projectId);
+
         try {
-            $couponsUrl = CouponLiffUrlBuilder::buildCouponsTabUrl($projectId, $projectKey);
-            $flex = [
-                'type' => 'flex',
-                'altText' => $title,
-                'contents' => [
-                    'type' => 'bubble',
-                    'body' => [
-                        'type' => 'box',
-                        'layout' => 'vertical',
-                        'spacing' => 'md',
-                        'contents' => [
-                            ['type' => 'text', 'text' => $title, 'weight' => 'bold', 'size' => 'lg', 'color' => '#06C755'],
-                            ['type' => 'text', 'text' => $body, 'wrap' => true, 'size' => 'sm'],
-                            ['type' => 'text', 'text' => $couponName, 'wrap' => true, 'size' => 'md', 'weight' => 'bold'],
-                        ],
-                    ],
-                    'footer' => [
-                        'type' => 'box',
-                        'layout' => 'vertical',
-                        'contents' => [[
-                            'type' => 'button',
-                            'style' => 'primary',
-                            'height' => 'sm',
-                            'action' => [
-                                'type' => 'uri',
-                                'label' => 'クーポンを見る',
-                                'uri' => $couponsUrl,
-                            ],
-                            'color' => '#06C755',
-                        ]],
-                    ],
-                ],
-            ];
             $this->lineService->pushMessage(
                 $lineUserId,
-                $flex,
-                $this->shopSettingRepository->getLineChannelAccessToken($projectId)
+                $this->buildLineFlexMessage($title, $body, $couponName, $couponsUrl, $lineImageUrl),
+                $channelAccessToken
             );
         } catch (\Throwable $e) {
+            if ($lineImageUrl !== null) {
+                LogHelper::warning('[Coupon] LINE push with image failed; retrying without image', [
+                    'member_id' => $member->id,
+                    'line_user_id' => $lineUserId,
+                    'image_url' => $lineImageUrl,
+                    'error' => $e->getMessage(),
+                ]);
+                try {
+                    $this->lineService->pushMessage(
+                        $lineUserId,
+                        $this->buildLineFlexMessage($title, $body, $couponName, $couponsUrl, null),
+                        $channelAccessToken
+                    );
+
+                    return;
+                } catch (\Throwable $retryError) {
+                    $e = $retryError;
+                }
+            }
             LogHelper::error('[Coupon] LINE push failed', [
                 'member_id' => $member->id,
                 'line_user_id' => $lineUserId,
                 'error' => $e->getMessage(),
             ]);
         }
+    }
+
+    private function resolveNotificationImageUrl(Coupon $coupon, int $projectId): ?string
+    {
+        foreach ([
+            trim((string) ($coupon->image_url ?? '')),
+            trim((string) ($this->shopSettingRepository->getCouponDefaultImageUrl($projectId) ?? '')),
+        ] as $candidate) {
+            if ($candidate !== '') {
+                return $candidate;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array{type: string, altText: string, contents: array<string, mixed>}
+     */
+    private function buildLineFlexMessage(
+        string $title,
+        string $body,
+        string $couponName,
+        string $couponsUrl,
+        ?string $imageUrl
+    ): array {
+        $bubble = [
+            'type' => 'bubble',
+            'body' => [
+                'type' => 'box',
+                'layout' => 'vertical',
+                'spacing' => 'md',
+                'contents' => [
+                    ['type' => 'text', 'text' => $title, 'weight' => 'bold', 'size' => 'lg', 'color' => '#06C755'],
+                    ['type' => 'text', 'text' => $body, 'wrap' => true, 'size' => 'sm'],
+                    ['type' => 'text', 'text' => $couponName, 'wrap' => true, 'size' => 'md', 'weight' => 'bold'],
+                ],
+            ],
+            'footer' => [
+                'type' => 'box',
+                'layout' => 'vertical',
+                'contents' => [[
+                    'type' => 'button',
+                    'style' => 'primary',
+                    'height' => 'sm',
+                    'action' => [
+                        'type' => 'uri',
+                        'label' => 'クーポンを見る',
+                        'uri' => $couponsUrl,
+                    ],
+                    'color' => '#06C755',
+                ]],
+            ],
+        ];
+        if ($imageUrl !== null) {
+            $bubble['hero'] = [
+                'type' => 'image',
+                'url' => $imageUrl,
+                'size' => 'full',
+                'aspectRatio' => '20:13',
+                'aspectMode' => 'cover',
+            ];
+        }
+
+        return [
+            'type' => 'flex',
+            'altText' => $title,
+            'contents' => $bubble,
+        ];
     }
 
     private function isValidLineUserId(string $lineUserId): bool
