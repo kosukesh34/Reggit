@@ -193,6 +193,11 @@ class ShopSettingLiffDefaults
         return self::layoutsFromSuite('rg-suite-delivery');
     }
 
+    public static function defaultLiffSweetsPatternLayouts(): array
+    {
+        return self::layoutsFromSuite('rg-suite-sweets');
+    }
+
     /**
      * @return array<string, array<int, array<string, mixed>>>
      */

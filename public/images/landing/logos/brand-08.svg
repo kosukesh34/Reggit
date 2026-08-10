@@ -1,8 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 80" role="img" aria-label="翠庭">
-  <rect width="200" height="80" fill="#fff"/>
-  <circle cx="40" cy="40" r="28" fill="#14532D"/>
-  <path d="M28 46c6-16 14-22 24-24-2 12-4 20-6 28-8 0-14-2-18-4z" fill="#BBF7D0"/>
-  <path d="M48 28c-2 8-2 16 0 24" stroke="#86EFAC" stroke-width="1.5" fill="none"/>
-  <text x="78" y="35" font-family="'Hiragino Sans','Noto Sans JP',sans-serif" font-size="20" font-weight="800" fill="#14532D">翠庭</text>
-  <text x="78" y="54" font-family="'Hiragino Sans','Noto Sans JP',sans-serif" font-size="9" font-weight="600" letter-spacing="0.2em" fill="#4D7C5A">RESTAURANT</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 96" role="img" aria-label="翠庭 RESTAURANT">
+  <circle cx="48" cy="48" r="28" fill="none" stroke="#14532D" stroke-width="1.5"/>
+  <circle cx="48" cy="48" r="22" fill="none" stroke="#14532D" stroke-width="0.75"/>
+  <text x="48" y="54" text-anchor="middle" font-family="'Hiragino Mincho ProN', 'Yu Mincho', serif" font-size="20" font-weight="600" fill="#14532D">翠</text>
+  <text x="98" y="44" font-family="'Hiragino Mincho ProN', 'Yu Mincho', serif" font-size="28" font-weight="600" fill="#14532D">翠庭</text>
+  <text x="100" y="66" font-family="'Avenir Next Condensed', 'Avenir Next', sans-serif" font-size="9" font-weight="500" letter-spacing="0.36em" fill="#4D7C5A">RESTAURANT</text>
 </svg>

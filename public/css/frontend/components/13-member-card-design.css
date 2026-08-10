@@ -561,3 +561,110 @@
     padding: 6px 8px 4px;
     box-shadow: var(--shadow-xs);
 }
+/* 光沢 */
+.idnect-card-wrapper--gloss-matte .idnect-card-face::before,
+.idnect-card-wrapper--gloss-matte .idnect-card-face::after,
+.idnect-card-wrapper--gloss-matte .idnect-card-shimmer {
+    opacity: 0 !important;
+}
+.idnect-card-wrapper--gloss-soft .idnect-card-face::before { opacity: 0.65; }
+.idnect-card-wrapper--gloss-soft .idnect-card-face::after { opacity: 0.45; }
+.idnect-card-wrapper--gloss-gloss .idnect-card-face::before {
+    opacity: 1;
+    background: linear-gradient(
+        165deg,
+        rgba(255, 255, 255, 0.5) 0%,
+        rgba(255, 255, 255, 0.22) 18%,
+        rgba(255, 255, 255, 0.08) 34%,
+        transparent 55%
+    );
+}
+.idnect-card-wrapper--gloss-gloss .idnect-card-face::after { opacity: 0.85; }
+.idnect-card-wrapper--gloss-mirror .idnect-card-face::before {
+    opacity: 1;
+    background: linear-gradient(
+        155deg,
+        rgba(255, 255, 255, 0.7) 0%,
+        rgba(255, 255, 255, 0.28) 22%,
+        rgba(255, 255, 255, 0.05) 40%,
+        transparent 58%
+    );
+}
+.idnect-card-wrapper--gloss-mirror .idnect-card-face::after {
+    opacity: 1;
+    background: linear-gradient(
+        105deg,
+        transparent 0%,
+        transparent 30%,
+        rgba(255, 255, 255, 0.22) 44%,
+        rgba(255, 255, 255, 0.45) 50%,
+        rgba(255, 255, 255, 0.16) 56%,
+        transparent 70%,
+        transparent 100%
+    );
+}
+
+/* 表面質感 */
+.idnect-card-wrapper--surface-plastic .idnect-card-face {
+    box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.15) inset,
+        0 2px 4px rgba(0, 0, 0, 0.08),
+        0 12px 24px rgba(0, 0, 0, 0.12),
+        0 24px 48px rgba(0, 0, 0, 0.18);
+}
+.idnect-card-wrapper--surface-metal .idnect-card-face {
+    filter: saturate(0.88) contrast(1.08);
+    box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.28) inset,
+        0 1px 0 rgba(255, 255, 255, 0.2) inset,
+        0 10px 22px rgba(15, 23, 42, 0.28),
+        0 28px 48px rgba(15, 23, 42, 0.22);
+}
+.idnect-card-wrapper--surface-metal .idnect-card-face--front,
+.idnect-card-wrapper--surface-metal .idnect-card-face--back {
+    background-image:
+        linear-gradient(115deg, rgba(255, 255, 255, 0.18) 0%, transparent 38%, rgba(0, 0, 0, 0.12) 100%),
+        linear-gradient(
+            145deg,
+            color-mix(in srgb, var(--member-card-accent-color) 70%, #ffffff) 0%,
+            var(--member-card-accent-color) 48%,
+            color-mix(in srgb, var(--member-card-accent-color) 70%, #000000) 100%
+        );
+}
+.idnect-card-wrapper--surface-paper .idnect-card-face {
+    border-radius: 18px;
+    box-shadow:
+        0 0 0 1px rgba(15, 23, 42, 0.08),
+        0 6px 16px rgba(15, 23, 42, 0.08);
+}
+.idnect-card-wrapper--surface-paper .idnect-card-face::before,
+.idnect-card-wrapper--surface-paper .idnect-card-face::after {
+    opacity: 0.2;
+}
+.idnect-card-wrapper--surface-paper .idnect-card-face--front,
+.idnect-card-wrapper--surface-paper .idnect-card-face--back {
+    background:
+        radial-gradient(circle at 20% 10%, rgba(255, 255, 255, 0.22), transparent 42%),
+        linear-gradient(
+            160deg,
+            color-mix(in srgb, var(--member-card-accent-color) 55%, #f8fafc) 0%,
+            color-mix(in srgb, var(--member-card-accent-color) 82%, #e2e8f0) 100%
+        );
+}
+.idnect-card-wrapper--surface-glass .idnect-card-face {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.45) inset,
+        0 10px 30px rgba(15, 23, 42, 0.18);
+}
+.idnect-card-wrapper--surface-glass .idnect-card-face--front,
+.idnect-card-wrapper--surface-glass .idnect-card-face--back {
+    background:
+        linear-gradient(160deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.08)),
+        linear-gradient(
+            145deg,
+            color-mix(in srgb, var(--member-card-accent-color) 55%, #ffffff),
+            color-mix(in srgb, var(--member-card-accent-color) 85%, #0f172a)
+        );
+}

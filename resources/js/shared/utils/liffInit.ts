@@ -304,12 +304,20 @@ function bootstrapLiffInit(): void {
         }
     }
 
+    function hideLiffLoading(): void {
+        const el = document.getElementById('liff-loading');
+        if (el !== null) {
+            el.classList.add('liff-loading--hidden');
+        }
+    }
+
     function dispatchReady(): void {
         if (typeof window.__mobileOrderLog === 'function') {
             window.__mobileOrderLog('liff-ready', { hasLineUserId: !!window.__LINE_USER_ID__ });
         }
         debug('liff_dispatch_ready', { hasLineUserId: !!window.__LINE_USER_ID__, isLiff: !!window.__IS_LIFF__ });
         shortenUrl();
+        hideLiffLoading();
         document.dispatchEvent(new CustomEvent('liff-ready', {
             detail: {
                 lineUserId: window.__LINE_USER_ID__,
@@ -520,6 +528,17 @@ function bootstrapLiffInit(): void {
     applyEmbedModeClass(window.__IS_LIFF__);
     const liffId = getLiffId();
     debug('liff_boot_start', { isLiff: !!window.__IS_LIFF__, hasLiffId: !!liffId });
+
+    // React 移行で app.ts の bootstrap が消えたあと、liff-ready 未着でも固まるのを防ぐ
+    setTimeout(() => {
+        const loadingEl = document.getElementById('liff-loading');
+        if (loadingEl !== null && !loadingEl.classList.contains('liff-loading--hidden')) {
+            if (document.getElementById('liff-login-retry-btn') !== null) {
+                return;
+            }
+            loadingEl.classList.add('liff-loading--hidden');
+        }
+    }, 5000);
 
     if (!liffId) {
         window.__LIFF_ID_MISSING__ = true;

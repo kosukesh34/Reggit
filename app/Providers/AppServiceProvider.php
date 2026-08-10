@@ -190,7 +190,7 @@ class AppServiceProvider extends ServiceProvider
                 if ($req && $req->query('designer_live_preview') === '1' && $req->query('designer_embed') === '1') {
                     $src = $req->query('designer_source');
                     if ($src === 'member' || $src === 'member_card') {
-                        $designerPreviewMemberPayload = self::buildDesignerPreviewMemberPayload($projectId);
+                        $designerPreviewMemberPayload = self::buildDesignerPreviewMemberPayloadForProject($projectId);
                     }
                 }
                 $view->with('designerPreviewMemberPayload', $designerPreviewMemberPayload);
@@ -230,7 +230,7 @@ class AppServiceProvider extends ServiceProvider
      * LIFFデザイナー埋め込みプレビュー用に、DBのランク設定・会員証設定から会員証表示用のサンプルペイロードを組み立てる。
      * 実際の画面で表示される会員証UIと同じ設定（レイアウト・ランク色・バーコード/QR等）でプレビューできるようにする。
      */
-    private static function buildDesignerPreviewMemberPayload(int $projectId): array
+    public static function buildDesignerPreviewMemberPayloadForProject(int $projectId): array
     {
         $settingsRepo = app(ShopSettingRepository::class);
         $ranks = $settingsRepo->getMemberRankSettings($projectId);

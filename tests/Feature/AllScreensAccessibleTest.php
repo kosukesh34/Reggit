@@ -234,6 +234,7 @@ class AllScreensAccessibleTest extends TestCase
             'api-tokens.edit' => ['system-admin.api-tokens.edit', ['id' => 1]],
             'audit-logs.index' => ['system-admin.audit-logs.index', []],
             'audit-logs.show' => ['system-admin.audit-logs.show', ['id' => 1]],
+            'shop-app-ui-research' => ['system-admin.shop-app-ui-research', []],
         ];
     }
 

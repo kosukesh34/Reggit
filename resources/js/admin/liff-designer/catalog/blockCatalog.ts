@@ -318,6 +318,38 @@ export const MEMBER_CARD_BG_STYLES = [
     { value: 'image', label: '画像風' },
 ];
 
+/** 会員証の光沢 */
+export const MEMBER_CARD_GLOSS_CHOICES = [
+    { value: 'matte', label: 'マット' },
+    { value: 'soft', label: 'ソフト' },
+    { value: 'gloss', label: 'グロス' },
+    { value: 'mirror', label: 'ミラー' },
+];
+
+/** 会員証の表面質感 */
+export const MEMBER_CARD_SURFACE_CHOICES = [
+    { value: 'plastic', label: 'プラスチック' },
+    { value: 'metal', label: 'メタル' },
+    { value: 'paper', label: '紙' },
+    { value: 'glass', label: 'ガラス' },
+];
+
+export const COUPON_SCREEN_DESIGN_CHOICES = [
+    { value: 'ticket', label: 'チケット' },
+    { value: 'apple', label: 'Apple' },
+    { value: 'glass', label: 'グラス' },
+    { value: 'gallery', label: 'ギャラリー' },
+    { value: 'compact', label: 'コンパクト' },
+    { value: 'luxury', label: 'ラグジュアリー' },
+];
+
+/** クーポン一覧の画像表示 */
+export const COUPON_MEDIA_STYLES = [
+    { value: 'image', label: '画像あり' },
+    { value: 'icon', label: 'アイコン' },
+    { value: 'none', label: '画像なし' },
+];
+
 export const SOCIAL_LINK_TYPES = [
     { value: 'instagram', label: 'Instagram' },
     { value: 'x', label: 'X' },
@@ -347,6 +379,8 @@ export function defaultGlobalSettings(): GlobalSettings {
         member_card_code_type: 'barcode',
         member_card_accent_color: '',
         member_card_bg_style: 'gradient',
+        member_card_gloss: 'soft',
+        member_card_surface: 'plastic',
         app_display_name: '',
         member_screen_design: 'wallet',
         stamp_screen_design: 'grid_card',
@@ -354,6 +388,10 @@ export function defaultGlobalSettings(): GlobalSettings {
         stamp_filled_style: 'image',
         stamp_accent_color: '',
         coupon_screen_design: 'ticket',
+        coupon_media_style: 'image',
+        coupon_show_available: true,
+        coupon_show_history: true,
+        products_group_by_category: true,
         reservation_screen_design: 'cards',
         activity_screen_design: 'cards',
         accent_color: '#1c1917',

@@ -107,6 +107,10 @@ class LiffDesignerSanitizer
 
     private const MEMBER_CARD_BG_STYLES = ['solid', 'gradient', 'image'];
 
+    private const MEMBER_CARD_GLOSS = ['matte', 'soft', 'gloss', 'mirror'];
+
+    private const MEMBER_CARD_SURFACE = ['plastic', 'metal', 'paper', 'glass'];
+
     public static function sanitizeLayouts(array $layouts): array
     {
         $safe = [];
@@ -321,6 +325,16 @@ class LiffDesignerSanitizer
             $item['member_card_bg_style'] = $memberCardBgStyle;
         }
 
+        $memberCardGloss = (string) ($row['member_card_gloss'] ?? '');
+        if (in_array($memberCardGloss, self::MEMBER_CARD_GLOSS, true)) {
+            $item['member_card_gloss'] = $memberCardGloss;
+        }
+
+        $memberCardSurface = (string) ($row['member_card_surface'] ?? '');
+        if (in_array($memberCardSurface, self::MEMBER_CARD_SURFACE, true)) {
+            $item['member_card_surface'] = $memberCardSurface;
+        }
+
         $stampScreenDesign = (string) ($row['stamp_screen_design'] ?? '');
         if (in_array($stampScreenDesign, self::STAMP_SCREEN_DESIGNS, true)) {
             $item['stamp_screen_design'] = $stampScreenDesign;
@@ -354,6 +368,21 @@ class LiffDesignerSanitizer
         $couponScreenDesign = (string) ($row['coupon_screen_design'] ?? '');
         if (in_array($couponScreenDesign, ['ticket', 'gallery', 'compact', 'luxury', 'apple', 'glass'], true)) {
             $item['coupon_screen_design'] = $couponScreenDesign;
+        }
+
+        $couponMediaStyle = (string) ($row['coupon_media_style'] ?? '');
+        if (in_array($couponMediaStyle, ['image', 'icon', 'none'], true)) {
+            $item['coupon_media_style'] = $couponMediaStyle;
+        }
+
+        if (array_key_exists('coupon_show_available', $row)) {
+            $item['coupon_show_available'] = filter_var($row['coupon_show_available'], FILTER_VALIDATE_BOOLEAN);
+        }
+        if (array_key_exists('coupon_show_history', $row)) {
+            $item['coupon_show_history'] = filter_var($row['coupon_show_history'], FILTER_VALIDATE_BOOLEAN);
+        }
+        if (array_key_exists('products_group_by_category', $row)) {
+            $item['products_group_by_category'] = filter_var($row['products_group_by_category'], FILTER_VALIDATE_BOOLEAN);
         }
 
         $reservationScreenDesign = (string) ($row['reservation_screen_design'] ?? '');

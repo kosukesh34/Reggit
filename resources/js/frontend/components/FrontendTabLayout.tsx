@@ -9,6 +9,18 @@ import {
     primaryForTab,
     type PrimaryTab,
 } from '../demo/navigation';
+import { HomePage } from '../features/home/HomePage';
+import { ProductsPage } from '../features/products/ProductsPage';
+import { OrdersPage } from '../features/orders/OrdersPage';
+import { StampsPage } from '../features/stamps/StampsPage';
+import { CouponsPage } from '../features/coupons/CouponsPage';
+import { DesignLabPage } from '../features/designlab/DesignLabPage';
+import { QueuePage } from '../features/queue/QueuePage';
+import { MemberPage } from '../features/member/MemberPage';
+import { ReservationsPage } from '../features/reservations/ReservationsPage';
+import { GalleryPage } from '../features/gallery/GalleryPage';
+import { AnnouncementPage } from '../features/announcements/AnnouncementPage';
+import { ManagerTabHost } from '../features/ManagerTabHost';
 
 type FrontendMenuItem = {
     tab: string;
@@ -147,18 +159,46 @@ function FixedShellChrome(): JSX.Element | null {
     return null;
 }
 
+function TabPage({ tab }: { tab: string }): JSX.Element {
+    switch (tab) {
+        case 'home':
+            return <HomePage />;
+        case 'products':
+            return <ProductsPage />;
+        case 'orders':
+            return <OrdersPage />;
+        case 'stamps':
+            return <StampsPage />;
+        case 'coupons':
+            return <CouponsPage />;
+        case 'designlab':
+            return <DesignLabPage />;
+        case 'queue':
+            return <QueuePage />;
+        case 'member':
+            return <MemberPage />;
+        case 'reservations':
+            return <ReservationsPage />;
+        case 'gallery':
+            return <GalleryPage />;
+        case 'announcements':
+            return <AnnouncementPage />;
+        default:
+            return <ManagerTabHost tab={tab} />;
+    }
+}
+
 /**
- * タブ DOM は初回のみ描画する。
- * 状態付き親の再レンダーで innerHTML（Manager 描画）が消えないよう分離する。
+ * タブは React Page 経由でマウントする。
+ * active クラスは ReggitApp.switchTab が管理する（React は触らない）。
  */
-const StaticTabMounts = React.memo(function StaticTabMounts(): JSX.Element {
+const ReactTabMounts = React.memo(function ReactTabMounts(): JSX.Element {
     const menu = getFrontendMenu();
     const linkTabs = getLinkTabsFromMenu();
     const mountedTabs = ALL_TAB_SECTIONS.map((item) => {
         const fromMenu = menu.find((m) => m.tab === item.tab);
         return fromMenu ?? item;
     });
-    // active クラスは ReggitApp.switchTab が管理する（React は触らない）
     const initialActive = readActiveTab();
 
     return (
@@ -169,7 +209,7 @@ const StaticTabMounts = React.memo(function StaticTabMounts(): JSX.Element {
                     className={`tab-content${initialActive === item.tab ? ' active' : ''}`}
                     id={`${item.tab}Tab`}
                 >
-                    <div className="tab-section" id={`${item.tab}Section`} data-tab={item.tab} />
+                    <TabPage tab={item.tab} />
                 </div>
             ))}
             {linkTabs.map((item) => (
@@ -178,11 +218,10 @@ const StaticTabMounts = React.memo(function StaticTabMounts(): JSX.Element {
                     className={`tab-content${initialActive === item.tab ? ' active' : ''}`}
                     id={`${item.tab}Tab`}
                 >
-                    <div
+                    <ManagerTabHost
+                        tab={item.tab}
                         className="tab-section tab-section--link-embed"
-                        id={`${item.tab}Section`}
-                        data-tab={item.tab}
-                        data-link-url={item.url}
+                        linkUrl={item.url}
                     />
                 </div>
             ))}
@@ -212,7 +251,7 @@ export function FrontendTabLayout(): JSX.Element {
         <>
             <div id="announcementsTopBar" className="announcements-section announcements-top-bar" aria-label="お知らせバー" hidden />
             {isFixedUiShell() ? <FixedShellChrome /> : null}
-            <StaticTabMounts />
+            <ReactTabMounts />
             <LiffDetailShell />
         </>
     );
