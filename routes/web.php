@@ -42,8 +42,8 @@ use App\Http\Controllers\Admin\Settings\RanksController as SettingsRanksControll
 use App\Http\Controllers\Admin\Settings\ReservationsController;
 use App\Http\Controllers\Admin\Settings\SmaregiController;
 use App\Http\Controllers\Admin\Settings\WalletController;
-use App\Http\Controllers\Admin\StampController as AdminStampController;
 use App\Http\Controllers\Admin\ShopAppUiResearchController;
+use App\Http\Controllers\Admin\StampController as AdminStampController;
 use App\Http\Controllers\Admin\SystemAdminDashboardController;
 use App\Http\Controllers\GoogleWalletSaveRedirectController;
 use App\Http\Controllers\LiffController;

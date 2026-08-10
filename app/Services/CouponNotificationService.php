@@ -66,7 +66,7 @@ class CouponNotificationService
             $title,
             $body,
             $couponName,
-            $this->resolveNotificationImageUrl($coupon, $projectId)
+            $this->resolveLineImageUrl($coupon, $projectId)
         );
     }
 
@@ -123,29 +123,21 @@ class CouponNotificationService
         }
 
         $couponsUrl = CouponLiffUrlBuilder::buildCouponsTabUrl($projectId, $projectKey);
-        $lineImageUrl = $imageUrl !== null && $imageUrl !== ''
-            ? NotificationImageUrl::forLine($imageUrl)
-            : null;
-        if ($imageUrl !== null && $imageUrl !== '' && $lineImageUrl === null) {
-            LogHelper::warning('[Coupon] LINE image URL skipped (not publicly accessible via HTTPS)', [
-                'member_id' => $member->id,
-                'image_url' => $imageUrl,
-            ]);
-        }
         $channelAccessToken = $this->shopSettingRepository->getLineChannelAccessToken($projectId);
 
         try {
             $this->lineService->pushMessage(
                 $lineUserId,
-                $this->buildLineFlexMessage($title, $body, $couponName, $couponsUrl, $lineImageUrl),
+                $this->buildLineFlexMessage($title, $body, $couponName, $couponsUrl, $imageUrl),
                 $channelAccessToken
             );
         } catch (\Throwable $e) {
-            if ($lineImageUrl !== null) {
+            if ($imageUrl !== null) {
                 LogHelper::warning('[Coupon] LINE push with image failed; retrying without image', [
                     'member_id' => $member->id,
+                    'project_id' => $projectId,
                     'line_user_id' => $lineUserId,
-                    'image_url' => $lineImageUrl,
+                    'image_url' => $imageUrl,
                     'error' => $e->getMessage(),
                 ]);
                 try {
@@ -162,20 +154,26 @@ class CouponNotificationService
             }
             LogHelper::error('[Coupon] LINE push failed', [
                 'member_id' => $member->id,
+                'project_id' => $projectId,
                 'line_user_id' => $lineUserId,
                 'error' => $e->getMessage(),
             ]);
         }
     }
 
-    private function resolveNotificationImageUrl(Coupon $coupon, int $projectId): ?string
+    /** クーポン画像 → 店舗デフォルトの順で、LINE が取得できる URL を返す。 */
+    private function resolveLineImageUrl(Coupon $coupon, int $projectId): ?string
     {
         foreach ([
             trim((string) ($coupon->image_url ?? '')),
             trim((string) ($this->shopSettingRepository->getCouponDefaultImageUrl($projectId) ?? '')),
         ] as $candidate) {
-            if ($candidate !== '') {
-                return $candidate;
+            if ($candidate === '') {
+                continue;
+            }
+            $resolved = NotificationImageUrl::forLine($candidate);
+            if ($resolved !== null) {
+                return $resolved;
             }
         }
 
