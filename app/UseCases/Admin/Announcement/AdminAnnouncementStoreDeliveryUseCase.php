@@ -183,6 +183,15 @@ class AdminAnnouncementStoreDeliveryUseCase
             ? $announcement->target_member_ids
             : [];
 
+        $isTargeted = in_array($announcement->delivery_type, [
+            Announcement::DELIVERY_TYPE_PERSONAL,
+            Announcement::DELIVERY_TYPE_SEGMENT,
+            Announcement::DELIVERY_TYPE_AFTER_REGISTRATION,
+        ], true);
+        if ($isTargeted && $targetMemberIds === []) {
+            return;
+        }
+
         $this->memberAdminService->issueCouponToMembers(
             (int) $announcement->project_id,
             (int) $announcement->delivery_coupon_id,
