@@ -9,6 +9,7 @@ use App\Models\Project;
 use App\Services\Line\LineService;
 use App\Support\LiffTabUrlBuilder;
 use App\Support\MemberChannel;
+use App\Support\NotificationImageUrl;
 use App\Util\LogHelper;
 use Illuminate\Support\Collection;
 
@@ -80,6 +81,14 @@ class AnnouncementNotificationService
         );
         $title = trim((string) $announcement->title);
         $body = trim((string) ($announcement->body ?? ''));
+        $rawImageUrl = trim((string) ($announcement->image_url ?? ''));
+        $imageUrl = NotificationImageUrl::forLine($rawImageUrl !== '' ? $rawImageUrl : null);
+        if ($rawImageUrl !== '' && $imageUrl === null) {
+            LogHelper::warning('[Announcement] LINE image URL skipped (not publicly accessible via HTTPS)', [
+                'announcement_id' => $announcement->id,
+                'image_url' => $rawImageUrl,
+            ]);
+        }
 
         $sent = 0;
         $failed = 0;
@@ -96,11 +105,32 @@ class AnnouncementNotificationService
             try {
                 $this->lineService->pushMessage(
                     $lineUserId,
-                    $this->buildFlexMessage($title, $body, $announcementsUrl),
+                    $this->buildFlexMessage($title, $body, $announcementsUrl, $imageUrl),
                     $channelAccessToken
                 );
                 $sent++;
             } catch (\Throwable $e) {
+                if ($imageUrl !== null) {
+                    LogHelper::warning('[Announcement] LINE push with image failed; retrying without image', [
+                        'announcement_id' => $announcement->id,
+                        'member_id' => $member->id,
+                        'line_user_id' => $lineUserId,
+                        'image_url' => $imageUrl,
+                        'error' => $e->getMessage(),
+                    ]);
+                    try {
+                        $this->lineService->pushMessage(
+                            $lineUserId,
+                            $this->buildFlexMessage($title, $body, $announcementsUrl, null),
+                            $channelAccessToken
+                        );
+                        $sent++;
+
+                        continue;
+                    } catch (\Throwable $retryError) {
+                        $e = $retryError;
+                    }
+                }
                 $failed++;
                 LogHelper::error('[Announcement] LINE push failed', [
                     'announcement_id' => $announcement->id,
@@ -145,7 +175,7 @@ class AnnouncementNotificationService
     /**
      * @return array{type: string, altText: string, contents: array<string, mixed>}
      */
-    private function buildFlexMessage(string $title, string $body, string $announcementsUrl): array
+    private function buildFlexMessage(string $title, string $body, string $announcementsUrl, ?string $imageUrl): array
     {
         $displayTitle = $title !== '' ? $title : 'お知らせ';
         $bodyContents = [
@@ -155,33 +185,44 @@ class AnnouncementNotificationService
             $bodyContents[] = ['type' => 'text', 'text' => $body, 'wrap' => true, 'size' => 'sm'];
         }
 
+        $bubble = [
+            'type' => 'bubble',
+            'body' => [
+                'type' => 'box',
+                'layout' => 'vertical',
+                'spacing' => 'md',
+                'contents' => $bodyContents,
+            ],
+            'footer' => [
+                'type' => 'box',
+                'layout' => 'vertical',
+                'contents' => [[
+                    'type' => 'button',
+                    'style' => 'primary',
+                    'height' => 'sm',
+                    'action' => [
+                        'type' => 'uri',
+                        'label' => 'お知らせを見る',
+                        'uri' => $announcementsUrl,
+                    ],
+                    'color' => '#06C755',
+                ]],
+            ],
+        ];
+        if ($imageUrl !== null) {
+            $bubble['hero'] = [
+                'type' => 'image',
+                'url' => $imageUrl,
+                'size' => 'full',
+                'aspectRatio' => '20:13',
+                'aspectMode' => 'cover',
+            ];
+        }
+
         return [
             'type' => 'flex',
             'altText' => $displayTitle,
-            'contents' => [
-                'type' => 'bubble',
-                'body' => [
-                    'type' => 'box',
-                    'layout' => 'vertical',
-                    'spacing' => 'md',
-                    'contents' => $bodyContents,
-                ],
-                'footer' => [
-                    'type' => 'box',
-                    'layout' => 'vertical',
-                    'contents' => [[
-                        'type' => 'button',
-                        'style' => 'primary',
-                        'height' => 'sm',
-                        'action' => [
-                            'type' => 'uri',
-                            'label' => 'お知らせを見る',
-                            'uri' => $announcementsUrl,
-                        ],
-                        'color' => '#06C755',
-                    ]],
-                ],
-            ],
+            'contents' => $bubble,
         ];
     }
 }
