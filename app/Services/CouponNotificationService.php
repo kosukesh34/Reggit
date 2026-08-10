@@ -9,6 +9,7 @@ use App\Models\MemberCoupon;
 use App\Models\Project;
 use App\Services\Line\LineService;
 use App\Support\CouponLiffUrlBuilder;
+use App\Support\MemberChannel;
 use App\Support\NotificationImageUrl;
 use App\Util\LogHelper;
 
@@ -109,7 +110,7 @@ class CouponNotificationService
         ?string $imageUrl
     ): void {
         $lineUserId = trim((string) ($member->user?->line_user_id ?? ''));
-        if ($lineUserId === '' || ! $this->isValidLineUserId($lineUserId)) {
+        if ($lineUserId === '' || ! MemberChannel::isValidLineUserId($lineUserId)) {
             return;
         }
 
@@ -233,10 +234,5 @@ class CouponNotificationService
             'altText' => $title,
             'contents' => $bubble,
         ];
-    }
-
-    private function isValidLineUserId(string $lineUserId): bool
-    {
-        return preg_match('/^U[0-9a-f]{32}$/i', $lineUserId) === 1;
     }
 }

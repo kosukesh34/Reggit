@@ -26,7 +26,7 @@ class PaymentConfirmUseCase
         private OrderService $orderService,
     ) {}
 
-    public function handle(string $paymentIntentId, int $orderId, int $projectId): PaymentConfirmOutput
+    public function handle(string $paymentIntentId, int $orderId, int $projectId, int $userId): PaymentConfirmOutput
     {
         $intent = $this->gateway->retrievePaymentIntent($paymentIntentId);
         $status = $intent['status'] ?? null;
@@ -44,10 +44,23 @@ class PaymentConfirmUseCase
         $confirmedEvent = null;
         $pointsSyncEvent = null;
         $transactionSyncEvent = null;
-        $output = DB::transaction(function () use ($orderId, $projectId, $status, &$confirmedEvent, &$pointsSyncEvent, &$transactionSyncEvent) {
+        $output = DB::transaction(function () use ($orderId, $projectId, $userId, $status, $intent, &$confirmedEvent, &$pointsSyncEvent, &$transactionSyncEvent) {
             $aggregate = $this->orderRepository->findByIdForUpdate($orderId, $projectId);
             if ($aggregate === null) {
                 throw (new ModelNotFoundException)->setModel(Order::class, [$orderId]);
+            }
+
+            if ($aggregate->userId() !== $userId) {
+                return new PaymentConfirmOutput(false, '注文の所有者と一致しません', (string) $status, null);
+            }
+
+            $paidAmount = (int) ($intent['amount'] ?? 0);
+            $expectedAmount = (int) round((float) Order::query()
+                ->whereKey($orderId)
+                ->where('project_id', $projectId)
+                ->value('total_amount'));
+            if ($paidAmount !== $expectedAmount) {
+                return new PaymentConfirmOutput(false, '決済金額と注文金額が一致しません', (string) $status, null);
             }
 
             try {

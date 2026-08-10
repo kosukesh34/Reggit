@@ -37,6 +37,8 @@ class StripePaymentGateway implements PaymentGateway
 
         return [
             'status' => $intent->status,
+            'amount' => (int) ($intent->amount ?? 0),
+            'currency' => (string) ($intent->currency ?? ''),
             'metadata' => $intent->metadata ? $intent->metadata->toArray() : [],
         ];
     }
@@ -54,6 +56,7 @@ class StripePaymentGateway implements PaymentGateway
             'type' => $event->type,
             'metadata' => $metadata,
             'status' => $data->status ?? null,
+            'amount' => isset($data->amount) ? (int) $data->amount : 0,
         ];
     }
 }
