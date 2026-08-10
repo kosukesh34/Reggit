@@ -40,13 +40,17 @@ class NotificationImageUrl
             return [];
         }
 
-        $candidates = [$normalized];
         $rebased = self::rebaseStorageUrlToCurrentApp($normalized);
-        if ($rebased !== null && ! in_array($rebased, $candidates, true)) {
-            $candidates[] = $rebased;
+        if ($rebased === null || $rebased === $normalized) {
+            return [$normalized];
         }
 
-        return $candidates;
+        // LINE_NOTIFICATION_IMAGE_BASE_URL があるときは rebase を優先（DBに残った旧公開URLを差し替える）
+        if (trim((string) config('line.notification_image_base_url', '')) !== '') {
+            return [$rebased, $normalized];
+        }
+
+        return [$normalized, $rebased];
     }
 
     private static function rebaseStorageUrlToCurrentApp(string $url): ?string
