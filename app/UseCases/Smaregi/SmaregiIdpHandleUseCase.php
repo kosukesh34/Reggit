@@ -4,7 +4,6 @@ namespace App\UseCases\Smaregi;
 
 use App\Enums\SmaregiEvent;
 use App\Models\SmaregiContract;
-use App\Services\Smaregi\SmaregiWebhookNotificationService;
 use App\UseCases\Smaregi\Data\SmaregiNotificationInput;
 use App\Util\StrHelper;
 use Illuminate\Support\Facades\Log;
@@ -12,13 +11,10 @@ use Symfony\Component\HttpFoundation\Response;
 
 class SmaregiIdpHandleUseCase
 {
-    public function __construct(
-        private SmaregiWebhookNotificationService $webhookNotificationService,
-    ) {}
-
     /**
      * 利用者契約通知を処理し、契約を保存する。
      * 3秒以内に応答するため重い処理は行わない。
+     * POS 系イベントは Webhook URL（秘密検証あり）専用。
      *
      * @return array{status: int, body: string}
      */
@@ -45,14 +41,7 @@ class SmaregiIdpHandleUseCase
         }
 
         if ($eventNormalized !== strtolower(SmaregiEvent::APP_SUBSCRIPTION)) {
-            if (str_starts_with($eventNormalized, 'pos:')) {
-                Log::info('[Smaregi] 利用者契約通知先URLで POS 系イベントを受信。Webhook と同じ処理に振り替えます', [
-                    'event' => $eventRaw,
-                ]);
-
-                return $this->webhookNotificationService->handleNotification($input);
-            }
-
+            // POS 系は Webhook URL（秘密検証あり）専用。IDP は契約通知のみ受け付ける。
             Log::info('[Smaregi] IDP ignored non-subscription event (use Webhook URL for pos: etc.)', [
                 'event' => $eventRaw,
                 'has_contract_id_header' => $contractIdFromHeader !== null && $contractIdFromHeader !== '',

@@ -72,7 +72,7 @@ class SmaregiWebhookTest extends TestCase
         $this->assertDatabaseMissing('smaregi_contracts', ['contract_id' => 'test_contract_002']);
     }
 
-    public function test_idp_urlにpos_customersが来た場合もポイント同期ジョブがディスパッチされること(): void
+    public function test_idp_urlにpos_customersが来た場合は無視してジョブを投げないこと(): void
     {
         Bus::fake();
 
@@ -88,11 +88,7 @@ class SmaregiWebhookTest extends TestCase
         ]);
 
         $response->assertStatus(200);
-        Bus::assertDispatched(SmaregiSyncInboundCustomerPointsJob::class, function (SmaregiSyncInboundCustomerPointsJob $job): bool {
-            return $job->contractId === 'test_contract_idp_webhook'
-                && $job->customerIds === ['101']
-                && $job->action === 'edited';
-        });
+        Bus::assertNotDispatched(SmaregiSyncInboundCustomerPointsJob::class);
     }
 
     public function test_idp_契約_i_dがない場合は400を返すこと(): void

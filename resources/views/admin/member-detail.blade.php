@@ -5,16 +5,6 @@
 @section('page-kind', 'member-detail')
 
 @section('content')
-@if(session('success'))
-<div class="alert alert-success" role="alert">
-    <i class="fas fa-check-circle"></i> {{ session('success') }}
-</div>
-@endif
-@if(session('error'))
-<div class="alert alert-error" role="alert">
-    <i class="fas fa-exclamation-circle"></i> {{ session('error') }}
-</div>
-@endif
 
 {{-- 購買サマリーKPI --}}
 <div class="member-kpi-grid">
