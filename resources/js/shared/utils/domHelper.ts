@@ -36,6 +36,11 @@ export class DomHelper {
                 }
             }
         }
+        // セクションIDより data-mount を優先（非アクティブタブの Builder 全体を潰さない）
+        const anyMount = document.querySelector('.' + mountClass);
+        if (anyMount) {
+            return anyMount;
+        }
         if (fallbackId) {
             const fallbackElement = document.getElementById(fallbackId);
             if (fallbackElement) {
@@ -46,10 +51,6 @@ export class DomHelper {
                 console.error('Mount not found: .' + mountClass + ' / #' + fallbackId);
             }
             return null;
-        }
-        const anyMount = document.querySelector('.' + mountClass);
-        if (anyMount) {
-            return anyMount;
         }
         if (!silent) {
             // eslint-disable-next-line no-console

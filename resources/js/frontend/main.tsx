@@ -1,36 +1,18 @@
 import '../../css/app.css';
-import React from 'react';
+import './app';
 import { createRoot } from 'react-dom/client';
-import { LiffBootstrap } from './hooks/useLiffBootstrap';
+import { useLegacyBootstrap } from './hooks/useLegacyBootstrap';
 import { FrontendChrome } from './components/FrontendChrome';
 import { FrontendTabFooter, FrontendTabLayout } from './components/FrontendTabLayout';
-import { AppConstants } from '../shared/constants';
-import { ApiClient } from '../shared/utils/apiClient';
-import { DomHelper } from '../shared/utils/domHelper';
-import { ToastManager } from '../shared/utils/toast';
-import { ConfirmDialog } from '../shared/utils/confirmDialog';
-import { TooltipManager } from '../shared/utils/tooltip';
-import JsBarcode from 'jsbarcode';
-import { QRCodeCompat } from '../shared/utils/qrCodeCompat';
-import { StripePayment } from '../shared/utils/stripePayment';
 
-function exposeSharedGlobals(): void {
-    window.AppConstants = AppConstants;
-    window.ApiClient = ApiClient;
-    window.DomHelper = DomHelper;
-    window.ToastManager = ToastManager;
-    window.ConfirmDialog = ConfirmDialog;
-    window.TooltipManager = TooltipManager;
-    window.JsBarcode = JsBarcode;
-    window.QRCode = QRCodeCompat as unknown as typeof window.QRCode;
-    window.StripePayment = StripePayment;
+function FrontendBootstrap(): null {
+    useLegacyBootstrap();
+    return null;
 }
-
-exposeSharedGlobals();
 
 const mount = document.getElementById('react-frontend-root');
 if (mount !== null) {
-    createRoot(mount).render(<LiffBootstrap />);
+    createRoot(mount).render(<FrontendBootstrap />);
 }
 
 const tabsRoot = document.getElementById('react-frontend-tabs-root');

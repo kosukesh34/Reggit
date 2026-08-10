@@ -21,8 +21,8 @@
         : (string) ($latestAssetMtime > 0 ? $latestAssetMtime : time());
     $host = request()->getHost();
     $useInlineLocalAssets = str_contains($host, 'ngrok-free.dev') || str_contains($host, 'ngrok-free.app');
-    // デモ固定UIは ?demo=1 のときだけ。/liff でも bind 済み店舗の Designer 設定を反映する
-    $isFixedUi = request()->query('demo') === '1';
+    // /liff のみ固定デモUI。/liff/{project_key} は LIFF Designer 設定を反映する
+    $isFixedUi = request()->route('project_key') === null;
     $isDemoData = $isFixedUi;
 @endphp
 <html lang="ja" @class([
