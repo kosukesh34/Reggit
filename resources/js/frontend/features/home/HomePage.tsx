@@ -1,29 +1,20 @@
 import React from 'react';
-import { useFrontendApp } from '../../context/FrontendAppContext';
+import { isFixedUiShell } from '../../demo/demoMode';
+import { BuilderLayout } from '../../layout/BuilderLayout';
+import { getTabBlocks } from '../../layout/getTabBlocks';
+import { ManagerTabHost } from '../ManagerTabHost';
 
-/** ホーム: LIFF レイアウトブロックは段階移行。最低限の導線を React で提供 */
-export function HomePage(): JSX.Element {
-    const { switchTab } = useFrontendApp();
-    const menu = Array.isArray(window.__FRONTEND_MENU__) ? window.__FRONTEND_MENU__ : [];
-
-    return (
-        <div className="home-react">
-            <h2 className="section-title">ホーム</h2>
-            <div className="home-react__links">
-                {menu
-                    .filter((item): item is { tab: string; label: string } => typeof item?.tab === 'string' && item.tab !== 'home')
-                    .slice(0, 8)
-                    .map((item) => (
-                        <button
-                            key={item.tab}
-                            type="button"
-                            className="home-react__link"
-                            onClick={() => switchTab(item.tab)}
-                        >
-                            {item.label || item.tab}
-                        </button>
-                    ))}
-            </div>
-        </div>
-    );
-}
+/**
+ * ホーム: Designer レイアウトがあるときは React BuilderLayout、
+ * それ以外（固定デモUI・未設定）は Manager 経路。
+ */
+export const HomePage = React.memo(function HomePage(): JSX.Element {
+    if (isFixedUiShell()) {
+        return <ManagerTabHost tab="home" />;
+    }
+    const blocks = getTabBlocks('home');
+    if (blocks !== null) {
+        return <BuilderLayout tab="home" blocks={blocks} />;
+    }
+    return <ManagerTabHost tab="home" />;
+});

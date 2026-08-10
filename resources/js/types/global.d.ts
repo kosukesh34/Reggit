@@ -30,10 +30,26 @@ type StripePaymentCtor = new () => {
     confirmPayment: (orderId: number | string) => Promise<{ success?: boolean; message?: string } | null>;
 };
 
+type LayoutManagerLike = {
+    render?: (tab: string) => void;
+    renderCustomLayout?: (container: HTMLElement, tab: string, blocks: unknown[]) => void;
+};
+
 type AppLike = {
-    switchTab?: (tab: string) => void;
+    switchTab?: (tab: string) => void | Promise<void>;
     currentTab?: string;
     pageRouter?: import('../frontend/navigation/LiffPageRouter').LiffPageRouter;
+    layoutManager?: LayoutManagerLike;
+    loadProducts?: () => void | Promise<void>;
+    loadOrdersTab?: () => void | Promise<void>;
+    loadMemberTab?: () => void | Promise<void>;
+    checkMembershipAndLoadReservations?: () => void | Promise<void>;
+    couponsManager?: { load?: () => void | Promise<void> };
+    stampsManager?: { load?: () => void | Promise<void> };
+    queueManager?: { load?: () => void | Promise<void> };
+    galleryManager?: { load?: () => void | Promise<void> };
+    announcementManager?: { load?: () => void | Promise<void> };
+    designLabManager?: { load?: () => void | Promise<void> };
 };
 
 declare global {
@@ -50,6 +66,8 @@ declare global {
         __MEMBER_REGISTRATION_MODE__?: 'optional' | 'prompt' | 'force' | string;
         __FRONTEND_MENU__?: Array<{ tab: string; label?: string; icon?: string; url?: string; open?: string }>;
         __FRONTEND_HEADER__?: { title?: string; logoUrl?: string | null; friendAddUrl?: string | null };
+        __LIFF_TAB_LAYOUTS__?: Record<string, unknown[]>;
+        __LIFF_TAB_SETTINGS__?: Record<string, unknown>;
         __IS_DESIGNER_EMBED_PREVIEW__?: boolean;
         __MOBILE_DEVICE_INFO__?: { device_identifier?: string; [key: string]: unknown };
         __GOOGLE_WALLET_ENABLED__?: boolean;
