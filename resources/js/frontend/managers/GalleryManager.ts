@@ -4,6 +4,7 @@ import { DomHelper } from '../../shared/utils/domHelper';
 import { isDemoDataMode, isFixedUiShell } from '../demo/demoMode';
 import { buildBuiltinSampleGallery } from '../demo/sampleData';
 import { mountDetailLayoutChrome } from '../utils/detailLayoutMount';
+import { isReactOwnedMount } from '../utils/reactOwnedMount';
 
 type GalleryCategory = {
     id: string | number;
@@ -45,6 +46,9 @@ export class GalleryManager {
     async load(categoryId?: string | number | null): Promise<void> {
         const section = this.getSection();
         if (!section) {
+            return;
+        }
+        if (isReactOwnedMount(section)) {
             return;
         }
         this.currentCategoryId = categoryId ?? null;

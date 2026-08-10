@@ -30,10 +30,14 @@ export class LiffLayoutManager {
     }
 
     /**
-     * カスタムレイアウト（LIFF Builder ブロック）をコンテナに描画
+     * カスタムレイアウト（LIFF Builder ブロック）をコンテナに描画。
+     * React 所有ノード（data-react-owned）には塗らない。詳細 before/after は非所有 div へ描画する。
      */
     renderCustomLayout(container: any, tab: string, blocks: any[]): void {
         if (!container || !Array.isArray(blocks)) return;
+        if (container.dataset?.reactOwned === '1') {
+            return;
+        }
         this._applyTabSettings(container, tab);
 
         const defaultSource = LiffLayoutManager.DEFAULT_TAB_SOURCES[tab];
@@ -67,14 +71,11 @@ export class LiffLayoutManager {
             if (typeof window.__mobileOrderLog === 'function') window.__mobileOrderLog('LiffLayoutManager.render: no container', { sectionId });
             return;
         }
-        // React BuilderLayout が所有するタブは、未描画ならこちらでは塗らない（React effect に任せる）
+        // タブ本体は React Page が所有。二重描画を避ける。
         if (container.dataset.reactOwned === '1') {
-            if (container.dataset.layoutRendered === '1' && (container.innerHTML || '').trim() !== '') {
-                return;
-            }
-            // React 側の paint 待ち。二重描画を避けるためここでは return。
             return;
         }
+        // link_* など React 外の埋め込みのみ従来経路
         if (isFixedUiShell()) {
             this._loadDefaultTabContent(tab);
             return;
