@@ -3,6 +3,7 @@ import type { ApiClient } from '../../shared/utils/apiClient';
 import { AppConstants } from '../../shared/constants';
 import { DomHelper } from '../../shared/utils/domHelper';
 import { mountDetailLayoutChrome } from '../utils/detailLayoutMount';
+import { isReactOwnedMount } from '../utils/reactOwnedMount';
 
 type Announcement = {
     id?: number | string;
@@ -38,6 +39,9 @@ export class AnnouncementManager {
     async load(): Promise<void> {
         const section = this.getSection();
         if (!section) {
+            return;
+        }
+        if (isReactOwnedMount(section)) {
             return;
         }
         const isIosHome = section.classList.contains('ios-announce-list') || section.id === 'iosHomeAnnouncements';

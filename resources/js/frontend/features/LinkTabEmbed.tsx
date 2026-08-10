@@ -1,46 +1,45 @@
 import React, { useEffect, useRef } from 'react';
 
-type ManagerTabHostProps = {
+type LinkTabEmbedProps = {
     tab: string;
-    className?: string;
     linkUrl?: string;
 };
 
 /**
- * Manager 描画用の安定マウント点。
- * 再レンダーで innerHTML が消えないよう memo 化し、描画は ReggitApp / LiffLayoutManager に任せる。
+ * 外部 URL タブ（link_*）の iframe 埋め込み。
+ * 描画は ReggitApp.mountLinkTabEmbed に委譲する。
  */
-function ManagerTabHostInner({ tab, className, linkUrl }: ManagerTabHostProps): JSX.Element {
+function LinkTabEmbedInner({ tab, linkUrl }: LinkTabEmbedProps): JSX.Element {
     const sectionRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const section = sectionRef.current;
-        if (section === null) {
+        if (section === null || linkUrl === undefined || linkUrl === '') {
             return;
         }
-        // app 生成後に未描画なら一度だけ layoutManager に任せる（初回レース対策）
-        const tryPaint = (): boolean => {
-            const app = window.app;
-            if (app === undefined || app === null || typeof app.layoutManager?.render !== 'function') {
+
+        const tryMount = (): boolean => {
+            const app = window.app as { mountLinkTabEmbed?: (el: HTMLElement | null) => void } | undefined;
+            if (app === undefined || typeof app.mountLinkTabEmbed !== 'function') {
                 return false;
             }
             if (section.dataset.layoutRendered === '1') {
                 return true;
             }
-            app.layoutManager.render(tab);
-            return section.dataset.layoutRendered === '1' || (section.innerHTML || '').trim() !== '';
+            app.mountLinkTabEmbed(section);
+            return section.dataset.layoutRendered === '1';
         };
 
-        if (tryPaint()) {
+        if (tryMount()) {
             return;
         }
 
         const onReady = (): void => {
-            tryPaint();
+            tryMount();
         };
         document.addEventListener('liff-ready', onReady);
         const timer = window.setInterval(() => {
-            if (tryPaint()) {
+            if (tryMount()) {
                 window.clearInterval(timer);
             }
         }, 50);
@@ -51,14 +50,12 @@ function ManagerTabHostInner({ tab, className, linkUrl }: ManagerTabHostProps): 
             window.clearInterval(timer);
             window.clearTimeout(stop);
         };
-    }, [tab]);
-
-    const sectionClass = className ?? 'tab-section';
+    }, [tab, linkUrl]);
 
     return (
         <div
             ref={sectionRef}
-            className={sectionClass}
+            className="tab-section tab-section--link-embed"
             id={`${tab}Section`}
             data-tab={tab}
             data-link-url={linkUrl}
@@ -66,4 +63,4 @@ function ManagerTabHostInner({ tab, className, linkUrl }: ManagerTabHostProps): 
     );
 }
 
-export const ManagerTabHost = React.memo(ManagerTabHostInner);
+export const LinkTabEmbed = React.memo(LinkTabEmbedInner);

@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
+import { useLiffApp } from '../context/LiffAppContext';
 import { isFixedUiShell } from '../demo/demoMode';
 import { iconForPrimary } from '../demo/icons';
 import {
@@ -20,7 +21,8 @@ import { MemberPage } from '../features/member/MemberPage';
 import { ReservationsPage } from '../features/reservations/ReservationsPage';
 import { GalleryPage } from '../features/gallery/GalleryPage';
 import { AnnouncementPage } from '../features/announcements/AnnouncementPage';
-import { ManagerTabHost } from '../features/ManagerTabHost';
+import { LinkTabEmbed } from '../features/LinkTabEmbed';
+import { LiffDetailHost } from './LiffDetailHost';
 
 type FrontendMenuItem = {
     tab: string;
@@ -70,31 +72,8 @@ function getLinkTabsFromMenu(): FrontendMenuItem[] {
     return getFrontendMenu().filter((m) => isLinkTabKey(m.tab) && typeof m.url === 'string' && m.url !== '');
 }
 
-function readActiveTab(): string {
-    if (typeof window.app?.currentTab === 'string' && window.app.currentTab !== '') {
-        return window.app.currentTab;
-    }
-    const hash = (window.location.hash || '').replace(/^#/, '');
-    if (hash !== '' && !hash.includes('/')) {
-        return hash.split('?')[0] ?? 'home';
-    }
-    return 'home';
-}
-
 function useActiveTab(): string {
-    const [activeTab, setActiveTab] = useState(readActiveTab);
-
-    useEffect(() => {
-        const sync = () => setActiveTab(readActiveTab());
-        window.addEventListener('hashchange', sync);
-        window.addEventListener('ios-tab-changed', sync);
-        return () => {
-            window.removeEventListener('hashchange', sync);
-            window.removeEventListener('ios-tab-changed', sync);
-        };
-    }, []);
-
-    return activeTab;
+    return useLiffApp().activeTab;
 }
 
 function IosSegmentBar({
@@ -104,6 +83,7 @@ function IosSegmentBar({
     items: Array<{ tab: string; label: string }>;
     activeTab: string;
 }): JSX.Element | null {
+    const { switchTab } = useLiffApp();
     if (items.length < 2) {
         return null;
     }
@@ -119,11 +99,7 @@ function IosSegmentBar({
                         className={`ios-segment__btn${activeTab === item.tab ? ' is-active' : ''}`}
                         aria-selected={activeTab === item.tab}
                         data-ios-segment-tab={item.tab}
-                        onClick={() => {
-                            if (typeof window.app?.switchTab === 'function') {
-                                void window.app.switchTab(item.tab);
-                            }
-                        }}
+                        onClick={() => switchTab(item.tab)}
                     >
                         {item.label}
                     </button>
@@ -184,7 +160,7 @@ function TabPage({ tab }: { tab: string }): JSX.Element {
         case 'announcements':
             return <AnnouncementPage />;
         default:
-            return <ManagerTabHost tab={tab} />;
+            return <div className="tab-section" id={`${tab}Section`} data-tab={tab} data-react-owned="1" />;
     }
 }
 
@@ -192,21 +168,21 @@ function TabPage({ tab }: { tab: string }): JSX.Element {
  * タブは React Page 経由でマウントする。
  * active クラスは ReggitApp.switchTab が管理する（React は触らない）。
  */
-const ReactTabMounts = React.memo(function ReactTabMounts(): JSX.Element {
+function ReactTabMounts(): JSX.Element {
+    const { activeTab } = useLiffApp();
     const menu = getFrontendMenu();
     const linkTabs = getLinkTabsFromMenu();
     const mountedTabs = ALL_TAB_SECTIONS.map((item) => {
         const fromMenu = menu.find((m) => m.tab === item.tab);
         return fromMenu ?? item;
     });
-    const initialActive = readActiveTab();
 
     return (
         <>
             {mountedTabs.map((item) => (
                 <div
                     key={item.tab}
-                    className={`tab-content${initialActive === item.tab ? ' active' : ''}`}
+                    className={`tab-content${activeTab === item.tab ? ' active' : ''}`}
                     id={`${item.tab}Tab`}
                 >
                     <TabPage tab={item.tab} />
@@ -215,21 +191,21 @@ const ReactTabMounts = React.memo(function ReactTabMounts(): JSX.Element {
             {linkTabs.map((item) => (
                 <div
                     key={item.tab}
-                    className={`tab-content${initialActive === item.tab ? ' active' : ''}`}
+                    className={`tab-content${activeTab === item.tab ? ' active' : ''}`}
                     id={`${item.tab}Tab`}
                 >
-                    <ManagerTabHost
-                        tab={item.tab}
-                        className="tab-section tab-section--link-embed"
-                        linkUrl={item.url}
-                    />
+                    <LinkTabEmbed tab={item.tab} linkUrl={item.url} />
                 </div>
             ))}
         </>
     );
-});
+}
 
-function LiffDetailShell(): JSX.Element {
+/**
+ * 詳細シェル。中身は LiffDetailHost（product/order）または Manager innerHTML。
+ * props 無し memo でカート更新時の再レンダーによる section クリアを防ぐ。
+ */
+const LiffDetailShell = React.memo(function LiffDetailShell(): JSX.Element {
     return (
         <div
             id="liffDetailPage"
@@ -242,9 +218,10 @@ function LiffDetailShell(): JSX.Element {
                 <span className="page-content__title" id="liffDetailPageTitle" />
             </div>
             <div className="page-content__body tab-section" id="liffDetailSection" data-page="" />
+            <LiffDetailHost />
         </div>
     );
-}
+});
 
 export function FrontendTabLayout(): JSX.Element {
     return (

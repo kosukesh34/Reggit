@@ -5,6 +5,7 @@ import { ConfirmDialog } from '../../shared/utils/confirmDialog';
 import { ToastManager } from '../../shared/utils/toast';
 import { isDemoDataMode, isFixedUiShell } from '../demo/demoMode';
 import { buildBuiltinSampleReservations } from '../demo/sampleData';
+import { isReactOwnedMount } from '../utils/reactOwnedMount';
 
 const DEFAULT_ADVANCE_DAYS = 30;
 
@@ -78,6 +79,9 @@ export class ReservationManager {
     async loadReservations(): Promise<void> {
         this.reservationsSection = this._getSection();
         if (!this.reservationsSection) return;
+        if (isReactOwnedMount(this.reservationsSection)) {
+            return;
+        }
 
         if (isDemoDataMode()) {
             this.renderSampleReservations();
@@ -125,6 +129,9 @@ export class ReservationManager {
     renderMembershipRequired(): void {
         this.reservationsSection = this._getSection();
         if (!this.reservationsSection) return;
+        if (isReactOwnedMount(this.reservationsSection)) {
+            return;
+        }
         this.reservationsSection.innerHTML = this.getMembershipRequiredTemplate();
     }
 
@@ -147,6 +154,10 @@ export class ReservationManager {
     }
 
     renderReservations(isSample = false): void {
+        this.reservationsSection = this._getSection();
+        if (isReactOwnedMount(this.reservationsSection)) {
+            return;
+        }
         if (isFixedUiShell()) {
             this._renderFixedUiReservations(isSample);
             return;
