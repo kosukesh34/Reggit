@@ -41,18 +41,56 @@ export function BlockPreview({
     shopName,
     asGuest = false,
     memberCardDesign,
+    memberCardBgStyle,
+    memberCardGloss,
+    memberCardSurface,
+    couponScreenDesign,
+    couponMediaStyle,
+    couponShowAvailable,
+    couponShowHistory,
+    stampScreenDesign,
+    stampSlotStyle,
+    stampFilledStyle,
+    stampAccentColor,
 }: {
     block: LiffBlock;
     friendAddUrl?: string;
     shopName?: string;
     asGuest?: boolean;
     memberCardDesign?: string;
+    memberCardBgStyle?: string;
+    memberCardGloss?: string;
+    memberCardSurface?: string;
+    couponScreenDesign?: string;
+    couponMediaStyle?: string;
+    couponShowAvailable?: boolean;
+    couponShowHistory?: boolean;
+    stampScreenDesign?: string;
+    stampSlotStyle?: string;
+    stampFilledStyle?: string;
+    stampAccentColor?: string;
 }) {
     const style = baseStyle(block);
     const resolvedCardDesign =
         String(block.card_design || '') !== ''
             ? String(block.card_design)
             : String(memberCardDesign || '');
+    const resolvedStampDesign =
+        String(block.stamp_design || '') !== ''
+            ? String(block.stamp_design)
+            : String(stampScreenDesign || '');
+    const resolvedStampSlot =
+        String(block.stamp_slot_style || '') !== ''
+            ? String(block.stamp_slot_style)
+            : String(stampSlotStyle || '');
+    const resolvedStampFilled =
+        String(block.stamp_filled_style || '') !== ''
+            ? String(block.stamp_filled_style)
+            : String(stampFilledStyle || '');
+    const resolvedStampAccent =
+        String(block.stamp_accent_color || '') !== ''
+            ? String(block.stamp_accent_color)
+            : String(stampAccentColor || '');
     switch (block.type) {
         case 'hero': {
             const design = String(block.design || 'editorial');
@@ -325,9 +363,17 @@ export function BlockPreview({
                         source={String(block.source || 'products')}
                         design={String(block.design || '')}
                         cardDesign={resolvedCardDesign}
-                        stampSlotStyle={String(block.stamp_slot_style || '')}
-                        stampFilledStyle={String(block.stamp_filled_style || '')}
-                        stampAccentColor={String(block.stamp_accent_color || '')}
+                        cardBgStyle={memberCardBgStyle}
+                        cardGloss={memberCardGloss}
+                        cardSurface={memberCardSurface}
+                        couponScreenDesign={couponScreenDesign}
+                        couponMediaStyle={couponMediaStyle}
+                        couponShowAvailable={couponShowAvailable}
+                        couponShowHistory={couponShowHistory}
+                        stampDesign={resolvedStampDesign}
+                        stampSlotStyle={resolvedStampSlot}
+                        stampFilledStyle={resolvedStampFilled}
+                        stampAccentColor={resolvedStampAccent}
                         shopName={shopName}
                         asGuest={asGuest}
                     />

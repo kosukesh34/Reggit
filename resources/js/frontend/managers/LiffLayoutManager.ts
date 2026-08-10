@@ -67,6 +67,14 @@ export class LiffLayoutManager {
             if (typeof window.__mobileOrderLog === 'function') window.__mobileOrderLog('LiffLayoutManager.render: no container', { sectionId });
             return;
         }
+        // React BuilderLayout が所有するタブは、未描画ならこちらでは塗らない（React effect に任せる）
+        if (container.dataset.reactOwned === '1') {
+            if (container.dataset.layoutRendered === '1' && (container.innerHTML || '').trim() !== '') {
+                return;
+            }
+            // React 側の paint 待ち。二重描画を避けるためここでは return。
+            return;
+        }
         if (isFixedUiShell()) {
             this._loadDefaultTabContent(tab);
             return;

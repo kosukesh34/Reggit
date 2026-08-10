@@ -11,7 +11,7 @@
     ]
   },
   "resources/js/admin/main.tsx": {
-    "file": "assets/main-D3nhKxtt.js",
+    "file": "assets/main-EH9Afs5d.js",
     "name": "main",
     "src": "resources/js/admin/main.tsx",
     "isEntry": true,
@@ -19,11 +19,11 @@
       "_qrCodeCompat-C-YRUVBp.js"
     ],
     "css": [
-      "assets/main-tB4AGMqk.css"
+      "assets/main-MImg_wPW.css"
     ]
   },
   "resources/js/frontend/main.tsx": {
-    "file": "assets/main-DgDbqzvV.js",
+    "file": "assets/main-B0kMAvzY.js",
     "name": "main",
     "src": "resources/js/frontend/main.tsx",
     "isEntry": true,
