@@ -3,6 +3,7 @@ import { AppConstants } from '../../shared/constants';
 import { DomHelper } from '../../shared/utils/domHelper';
 import { isDemoDataMode } from '../demo/demoMode';
 import { buildBuiltinSampleQueueEntry } from '../demo/sampleData';
+import { isReactOwnedMount } from '../utils/reactOwnedMount';
 
 type QueueStats = {
     waiting_count?: number | null;
@@ -332,6 +333,9 @@ export class QueueManager {
         this.stopLinkStatusPolling();
         const section = this.getSection();
         if (!section) {
+            return;
+        }
+        if (isReactOwnedMount(section)) {
             return;
         }
         if (isDemoDataMode()) {
