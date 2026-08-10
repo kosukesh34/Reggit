@@ -4,16 +4,6 @@
 @section('page-title', '会員管理')
 
 @section('content')
-@if(session('success'))
-<div class="alert alert-success" role="alert">
-    <i class="fas fa-check-circle"></i> {{ session('success') }}
-</div>
-@endif
-@if(session('error'))
-<div class="alert alert-error" role="alert">
-    <i class="fas fa-exclamation-circle"></i> {{ session('error') }}
-</div>
-@endif
 
 <div class="page-header">
     <h1 class="page-header-title"><i class="fas fa-users"></i> 会員管理</h1>

@@ -663,14 +663,83 @@ class MemberAdminService
         $this->applyHistoryKeyword($query, $keyword, function ($q, string $like, string $keyword) {
             $typeKeys = $this->matchEnumKeys(PointTransactionType::getValues(), $keyword);
             $q->where('description', 'like', $like)
-                ->orWhereHas('order', fn ($oq) => $oq->where('order_number', 'like', $like));
+                ->orWhereHas('order', function ($oq) use ($like, $keyword): void {
+                    $oq->where('order_number', 'like', $like);
+                    if (ctype_digit($keyword)) {
+                        $oq->orWhere('id', (int) $keyword);
+                    }
+                });
             if ($typeKeys !== []) {
                 $q->orWhereIn('type', $typeKeys);
             }
         });
         $this->applyDateRange($query, 'created_at', $from, $to);
 
-        return $query->paginate($perPage, ['*'], $pageName);
+        $paginator = $query->paginate($perPage, ['*'], $pageName);
+        $this->attachOrdersFromSmaregiDescriptions($paginator->getCollection());
+
+        return $paginator;
+    }
+
+    /**
+     * 過去データで order_id 未設定のスマレジ取引付与を、description の headId から注文へ紐づける。
+     *
+     * @param  Collection<int, PointTransaction>  $transactions
+     */
+    private function attachOrdersFromSmaregiDescriptions($transactions): void
+    {
+        $headIdsByProject = [];
+        foreach ($transactions as $transaction) {
+            if ($transaction->order !== null || $transaction->order_id !== null) {
+                continue;
+            }
+            $headId = $this->extractSmaregiHeadIdFromDescription((string) ($transaction->description ?? ''));
+            if ($headId === null) {
+                continue;
+            }
+            $projectId = (int) $transaction->project_id;
+            $headIdsByProject[$projectId][$headId] = true;
+        }
+
+        if ($headIdsByProject === []) {
+            return;
+        }
+
+        $ordersByKey = [];
+        foreach ($headIdsByProject as $projectId => $headIdMap) {
+            $orders = Order::query()
+                ->where('project_id', $projectId)
+                ->whereIn('smaregi_transaction_head_id', array_keys($headIdMap))
+                ->get();
+            foreach ($orders as $order) {
+                $ordersByKey[$projectId.'|'.(string) $order->smaregi_transaction_head_id] = $order;
+            }
+        }
+
+        foreach ($transactions as $transaction) {
+            if ($transaction->order !== null) {
+                continue;
+            }
+            $headId = $this->extractSmaregiHeadIdFromDescription((string) ($transaction->description ?? ''));
+            if ($headId === null) {
+                continue;
+            }
+            $order = $ordersByKey[(int) $transaction->project_id.'|'.$headId] ?? null;
+            if ($order === null) {
+                continue;
+            }
+            $transaction->setRelation('order', $order);
+        }
+    }
+
+    private function extractSmaregiHeadIdFromDescription(string $description): ?string
+    {
+        if (preg_match('/#([A-Za-z0-9_-]+)\s*$/u', $description, $matches) !== 1) {
+            return null;
+        }
+        $headId = trim($matches[1]);
+
+        return $headId !== '' ? $headId : null;
     }
 
     public function getPaginatedMemberCoupons(

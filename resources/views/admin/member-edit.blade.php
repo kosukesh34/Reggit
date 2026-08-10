@@ -11,16 +11,6 @@
     <span>編集</span>
 </nav>
 
-@if(session('success'))
-<div class="alert alert-success" role="alert">
-    <i class="fas fa-check-circle"></i> {{ session('success') }}
-</div>
-@endif
-@if(session('error'))
-<div class="alert alert-error" role="alert">
-    <i class="fas fa-exclamation-circle"></i> {{ session('error') }}
-</div>
-@endif
 @if($errors->any())
 <div class="alert alert-danger" role="alert">
     <i class="fas fa-exclamation-circle"></i> 入力内容に誤りがあります。ご確認ください。
