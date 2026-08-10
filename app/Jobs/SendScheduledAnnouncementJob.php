@@ -32,11 +32,18 @@ class SendScheduledAnnouncementJob implements ShouldQueue
             $targetMemberIds = is_array($announcement->target_member_ids) && $announcement->target_member_ids !== []
                 ? $announcement->target_member_ids
                 : [];
-            $memberAdminService->issueCouponToMembers(
-                (int) $announcement->project_id,
-                (int) $announcement->delivery_coupon_id,
-                $targetMemberIds
-            );
+            $isTargeted = in_array($announcement->delivery_type, [
+                Announcement::DELIVERY_TYPE_PERSONAL,
+                Announcement::DELIVERY_TYPE_SEGMENT,
+                Announcement::DELIVERY_TYPE_AFTER_REGISTRATION,
+            ], true);
+            if ($isTargeted === false || $targetMemberIds !== []) {
+                $memberAdminService->issueCouponToMembers(
+                    (int) $announcement->project_id,
+                    (int) $announcement->delivery_coupon_id,
+                    $targetMemberIds
+                );
+            }
         }
 
         $announcement->update([

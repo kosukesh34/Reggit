@@ -193,18 +193,20 @@ class SmaregiTransactionInboundSyncService
             $amount,
             $inbound->details(),
         );
-        $this->awardApplier->awardForPurchase(
-            $member,
-            $amount,
-            $headId,
-            $inbound->hasSmaregiManagedPointDelta(),
-        );
+        // 先に注文を作ってからポイント／スタンプへ order_id を渡す（履歴の注文番号表示用）
         $order = $this->orderRecorder->recordSale(
             $member,
             $headId,
             $amount,
             $inbound->details(),
             $visitedAt,
+        );
+        $this->awardApplier->awardForPurchase(
+            $member,
+            $amount,
+            $headId,
+            $inbound->hasSmaregiManagedPointDelta(),
+            $order !== null ? (int) $order->id : null,
         );
         if ($visit !== null && $order !== null) {
             $this->visitRecorder->attachOrder($visit, (int) $order->id);

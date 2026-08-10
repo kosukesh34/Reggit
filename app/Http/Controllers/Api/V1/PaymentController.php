@@ -2,35 +2,47 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Models\Order;
+use App\Services\UserService;
 use App\UseCases\Payment\PaymentConfirmUseCase;
 use App\UseCases\Payment\PaymentCreateIntentUseCase;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use InvalidArgumentException;
 
 class PaymentController extends BaseApiController
 {
     public function __construct(
         private PaymentCreateIntentUseCase $createIntentUseCase,
-        private PaymentConfirmUseCase $confirmUseCase
+        private PaymentConfirmUseCase $confirmUseCase,
+        private UserService $userService,
     ) {}
 
     public function createPaymentIntent(Request $request)
     {
         $projectId = AdminContext::getCurrentProjectId() ?? 1;
         $request->validate([
-            'amount' => 'required|numeric|min:1',
             'order_id' => [
-                'nullable',
+                'required',
+                'integer',
                 Rule::exists('orders', 'id')->where('project_id', $projectId),
             ],
         ]);
 
+        $user = $this->userService->findUser($request);
+        if ($user === null) {
+            return $this->error('ユーザーを特定できません', 401);
+        }
+
         try {
-            $dto = $this->createIntentUseCase->handle((float) $request->amount, $request->order_id);
+            $order = Order::where('project_id', $projectId)->findOrFail((int) $request->order_id);
+            $dto = $this->createIntentUseCase->handle($order, (int) $user->id);
 
             return $this->success($dto->toArray());
+        } catch (InvalidArgumentException $e) {
+            return $this->error($e->getMessage(), 422);
         } catch (\Exception $e) {
             LogHelper::error('[Payment] create intent failed', [
                 'project_id' => $projectId,
@@ -52,8 +64,18 @@ class PaymentController extends BaseApiController
             ],
         ]);
 
+        $user = $this->userService->findUser($request);
+        if ($user === null) {
+            return $this->error('ユーザーを特定できません', 401);
+        }
+
         try {
-            $result = $this->confirmUseCase->handle($request->payment_intent_id, (int) $request->order_id, $projectId);
+            $result = $this->confirmUseCase->handle(
+                $request->payment_intent_id,
+                (int) $request->order_id,
+                $projectId,
+                (int) $user->id,
+            );
             if ($result->isSuccess === false) {
                 return $this->error($result->message, 400, ['status' => $result->status]);
             }
