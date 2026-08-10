@@ -14,8 +14,8 @@ declare const QRCode: any;
 export class CouponsManager {
     apiClient: ApiClient;
     _receivedToastTimer: number | null;
-    private cache: any[] = [];
-    private lastDefaultImage: string | null = null;
+    cache: any[] = [];
+    lastDefaultImage: string | null = null;
 
     constructor(apiClient: ApiClient) {
         this.apiClient = apiClient;
@@ -108,7 +108,66 @@ export class CouponsManager {
         `;
     }
 
+    _hasReactCoupons(): boolean {
+        return typeof document !== 'undefined'
+            && document.querySelector('[data-react-coupons]') !== null;
+    }
+
+    /** React CouponsView 向け: 使用フローを公開 */
+    async useCouponFromUi(opts: {
+        memberCouponId: string;
+        couponName: string;
+        useDisplay: string;
+        code: string;
+    }): Promise<void> {
+        const memberCouponId = opts.memberCouponId;
+        if (!memberCouponId) {
+            return;
+        }
+        const couponName = opts.couponName || 'クーポン';
+        const confirmed = await this._confirmCouponUse(couponName);
+        if (!confirmed) {
+            return;
+        }
+
+        if (isDemoCouponId(memberCouponId)) {
+            const code = opts.code || memberCouponId;
+            const useDisplay = this._normalizeUseDisplay(opts.useDisplay, code);
+            markDemoCouponUsed(memberCouponId);
+            const cached = this.cache.find((cp) => String(cp.id) === String(memberCouponId));
+            if (cached) {
+                cached.status = 'used';
+            }
+            this._showCouponCodeModal(couponName, useDisplay, code)
+                .catch(() => {})
+                .then(() => this.load());
+            return;
+        }
+
+        const result = await this.apiClient.post(AppConstants.API_ENDPOINTS.MY_COUPON_USE(memberCouponId), {});
+        if (result.success !== true) {
+            window.alert(result.error || 'クーポンの使用に失敗しました');
+            return;
+        }
+
+        const payload = (result.data as any) && (result.data as any).data ? (result.data as any).data : result.data as any;
+        const name = (payload && payload.coupon_name) || couponName;
+        const code = (payload && payload.code) || opts.code || '';
+        const useDisplay = this._normalizeUseDisplay(
+            (payload && payload.use_display) || opts.useDisplay,
+            code,
+        );
+        this._showCouponCodeModal(name, useDisplay, code)
+            .catch(() => {})
+            .then(() => this.load());
+    }
+
     async load(): Promise<void> {
+        if (this._hasReactCoupons()) {
+            document.dispatchEvent(new CustomEvent('liff-coupons-reload'));
+            return;
+        }
+
         const section = this.getSection();
         if (!section) return;
 
@@ -374,6 +433,12 @@ export class CouponsManager {
     }
 
     render(coupons: any[], defaultImage: string | null, isSample = false): void {
+        if (this._hasReactCoupons()) {
+            this.cache = coupons;
+            this.lastDefaultImage = defaultImage;
+            document.dispatchEvent(new CustomEvent('liff-coupons-reload'));
+            return;
+        }
         if (isFixedUiShell()) {
             this._renderFixedUiCoupons(coupons, defaultImage, isSample);
             return;

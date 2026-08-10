@@ -5,6 +5,7 @@ import { mountDetailLayoutChrome } from '../utils/detailLayoutMount';
 import { isDemoDataMode, isFixedUiShell } from '../demo/demoMode';
 import { ensureLiffIdentityForLoad } from '../demo/ensureIdentity';
 import { buildBuiltinSampleStampCards } from '../demo/sampleData';
+import { isReactOwnedMount } from '../utils/reactOwnedMount';
 
 type StampRewardMilestone = {
     stamp_count?: number | string;
@@ -146,9 +147,48 @@ export class StampsManager {
         `;
     }
 
+    primeCache(cards: StampCard[], defaultImage?: string | null): void {
+        this.cache = cards.map((card, index) => ({
+            ...card,
+            id: card.id ?? index,
+        }));
+        this.lastDefaultImage = defaultImage ?? null;
+    }
+
+    private async ensureCacheLoaded(): Promise<void> {
+        if (this.cache.length > 0) {
+            return;
+        }
+        if (isDemoDataMode()) {
+            this.cache = this.getDesignerSampleStampCards().map((card) => ({
+                ...card,
+                is_sample_preview: true,
+            }));
+            return;
+        }
+        const canCallApi = await ensureLiffIdentityForLoad();
+        if (!canCallApi) {
+            return;
+        }
+        const result = await this.apiClient.get(AppConstants.API_ENDPOINTS.STAMPS);
+        if (result.success !== true) {
+            return;
+        }
+        const data = result.data as StampsResponse;
+        const cards = data && data.stamp_cards ? data.stamp_cards : [];
+        this.cache = cards.map((card, index) => ({
+            ...card,
+            id: card.id ?? index,
+        }));
+        this.lastDefaultImage = data && data.default_image_url ? data.default_image_url : null;
+    }
+
     async load(): Promise<void> {
         const section = this.getSection();
         if (!section) {
+            return;
+        }
+        if (isReactOwnedMount(section)) {
             return;
         }
 
@@ -212,7 +252,7 @@ export class StampsManager {
 
     async _openClassicStampDetail(id: number | string, returnHash?: string): Promise<void> {
         if (this.cache.length === 0) {
-            await this.load();
+            await this.ensureCacheLoaded();
         }
         const card = this.cache.find((c) => String(c.id) === String(id));
         if (!card) {
@@ -265,7 +305,7 @@ export class StampsManager {
 
     async _openFixedUiStampDetail(id: number | string, returnHash?: string): Promise<void> {
         if (this.cache.length === 0) {
-            await this.load();
+            await this.ensureCacheLoaded();
         }
         const card = this.cache.find((c) => String(c.id) === String(id));
         if (!card) {
