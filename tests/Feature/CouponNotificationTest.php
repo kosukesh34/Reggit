@@ -118,6 +118,103 @@ class CouponNotificationTest extends TestCase
         $this->addToAssertionCount(2);
     }
 
+    public function test_notify_issued_attaches_hero_image_for_https_image_url(): void
+    {
+        $project = $this->createProject();
+        ShopSettingStore::setLineChannelAccessToken('test-token', $project->id);
+        $lineUserId = 'U'.str_repeat('f', 32);
+        $user = User::factory()->create([
+            'project_id' => $project->id,
+            'line_user_id' => $lineUserId,
+        ]);
+        $member = Member::factory()->create(['project_id' => $project->id, 'user_id' => $user->id]);
+        $imageUrl = 'https://cdn.example.com/coupon.png';
+        $coupon = Coupon::factory()->create([
+            'project_id' => $project->id,
+            'name' => '画像付き',
+            'image_url' => $imageUrl,
+        ]);
+        $memberCoupon = MemberCoupon::withoutEvents(function () use ($project, $member, $coupon) {
+            return MemberCoupon::factory()->create([
+                'project_id' => $project->id,
+                'member_id' => $member->id,
+                'coupon_id' => $coupon->id,
+                'coupon_name_snapshot' => '画像付き',
+            ]);
+        });
+
+        $pushMock = Mockery::mock(PushNotificationService::class);
+        $pushMock->shouldReceive('sendToUser')
+            ->once()
+            ->andReturn(['target_tokens' => 0, 'sent' => 0, 'failed' => 0, 'skipped' => 0]);
+
+        $lineMock = Mockery::mock(LineService::class);
+        $lineMock->shouldReceive('pushMessage')
+            ->once()
+            ->with(
+                $lineUserId,
+                Mockery::on(fn ($message) => is_array($message)
+                    && ($message['type'] ?? '') === 'flex'
+                    && ($message['contents']['hero']['type'] ?? '') === 'image'
+                    && ($message['contents']['hero']['url'] ?? '') === $imageUrl),
+                'test-token'
+            )
+            ->andReturn([]);
+
+        $service = new CouponNotificationService($pushMock, $lineMock, app(ShopSettingRepository::class));
+        $service->notifyIssued($memberCoupon);
+
+        $this->addToAssertionCount(2);
+    }
+
+    public function test_notify_issued_omits_hero_when_image_url_is_not_public_https(): void
+    {
+        config(['app.url' => 'http://localhost']);
+        $project = $this->createProject();
+        ShopSettingStore::setLineChannelAccessToken('test-token', $project->id);
+        $lineUserId = 'U'.str_repeat('e', 32);
+        $user = User::factory()->create([
+            'project_id' => $project->id,
+            'line_user_id' => $lineUserId,
+        ]);
+        $member = Member::factory()->create(['project_id' => $project->id, 'user_id' => $user->id]);
+        $coupon = Coupon::factory()->create([
+            'project_id' => $project->id,
+            'name' => 'ローカル画像',
+            'image_url' => 'http://localhost/storage/coupon.png',
+        ]);
+        $memberCoupon = MemberCoupon::withoutEvents(function () use ($project, $member, $coupon) {
+            return MemberCoupon::factory()->create([
+                'project_id' => $project->id,
+                'member_id' => $member->id,
+                'coupon_id' => $coupon->id,
+                'coupon_name_snapshot' => 'ローカル画像',
+            ]);
+        });
+
+        $pushMock = Mockery::mock(PushNotificationService::class);
+        $pushMock->shouldReceive('sendToUser')
+            ->once()
+            ->andReturn(['target_tokens' => 0, 'sent' => 0, 'failed' => 0, 'skipped' => 0]);
+
+        $lineMock = Mockery::mock(LineService::class);
+        $lineMock->shouldReceive('pushMessage')
+            ->once()
+            ->with(
+                $lineUserId,
+                Mockery::on(fn ($message) => is_array($message)
+                    && ($message['type'] ?? '') === 'flex'
+                    && ! isset($message['contents']['hero'])),
+                'test-token'
+            )
+            ->andReturn([]);
+
+        $service = new CouponNotificationService($pushMock, $lineMock, app(ShopSettingRepository::class));
+        $service->notifyIssued($memberCoupon);
+
+        $this->addToAssertionCount(2);
+    }
+
     public function test_notify_issued_クーポン機能無効時は通知を送らないこと(): void
     {
         $project = $this->createProject();
