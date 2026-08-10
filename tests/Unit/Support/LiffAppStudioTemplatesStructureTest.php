@@ -3,6 +3,7 @@
 namespace Tests\Unit\Support;
 
 use App\Support\LiffAppStudioTemplates;
+use App\Support\LiffThemePresets;
 use PHPUnit\Framework\TestCase;
 
 class LiffAppStudioTemplatesStructureTest extends TestCase
@@ -77,7 +78,7 @@ class LiffAppStudioTemplatesStructureTest extends TestCase
 
     public function test_pastryとchocolateがテーマピッカーに載っている(): void
     {
-        $ids = array_column(\App\Support\LiffThemePresets::all(), 'id');
+        $ids = array_column(LiffThemePresets::all(), 'id');
         $this->assertContains('pastry', $ids);
         $this->assertContains('chocolate', $ids);
         $this->assertContains('citrus', $ids);

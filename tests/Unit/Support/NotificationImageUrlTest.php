@@ -40,4 +40,30 @@ class NotificationImageUrlTest extends TestCase
             NotificationImageUrl::forLine('https://abc.ngrok-free.app/storage/a.png')
         );
     }
+
+    public function test_for_line_overrideがあるとき旧storage_urlを差し替える(): void
+    {
+        config([
+            'app.url' => 'https://app.example.com',
+            'line.notification_image_base_url' => 'https://abc.ngrok-free.app',
+        ]);
+
+        $this->assertSame(
+            'https://abc.ngrok-free.app/storage/a.png?ngrok-skip-browser-warning=1',
+            NotificationImageUrl::forLine('https://old.ngrok-free.app/storage/a.png')
+        );
+    }
+
+    public function test_for_line_overrideなしでは外部cdnを書き換えない(): void
+    {
+        config([
+            'app.url' => 'https://app.example.com',
+            'line.notification_image_base_url' => '',
+        ]);
+
+        $this->assertSame(
+            'https://cdn.example.com/a.png',
+            NotificationImageUrl::forLine('https://cdn.example.com/a.png')
+        );
+    }
 }

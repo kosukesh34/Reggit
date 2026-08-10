@@ -2,6 +2,8 @@
 
 namespace App\Support;
 
+use Illuminate\Support\Str;
+
 /**
  * docs/research 配下の店舗アプリ UI 学習データを読み取り用に整形する。
  */
@@ -194,7 +196,7 @@ class ShopAppUiResearchCatalog
             return '';
         }
 
-        return \Illuminate\Support\Str::markdown((string) file_get_contents($path));
+        return Str::markdown((string) file_get_contents($path));
     }
 
     /**
