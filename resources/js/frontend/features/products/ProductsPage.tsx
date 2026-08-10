@@ -1,15 +1,78 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { isFixedUiShell } from '../../demo/demoMode';
 import { BuilderLayout } from '../../layout/BuilderLayout';
 import { getTabBlocks } from '../../layout/getTabBlocks';
-import { ManagerTabHost } from '../ManagerTabHost';
+import { ProductsGrid } from './ProductsGrid';
 
-/**
- * オーダー: Designer レイアウトがあれば BuilderLayout、
- * 固定デモUIは Manager、それ以外は React シェル（同一クラス）+ app.loadProducts。
- */
-function ProductsShell(): JSX.Element {
+type ProductsViewMode = 'collection' | 'list';
+
+function readViewMode(): ProductsViewMode {
+    const app = window.app as { getProductsViewMode?: () => string } | undefined;
+    if (typeof app?.getProductsViewMode === 'function') {
+        const mode = app.getProductsViewMode();
+        if (mode === 'collection' || mode === 'list') {
+            return mode;
+        }
+    }
+    try {
+        const stored = String(window.localStorage.getItem('liff_products_view_mode') || '').trim();
+        if (stored === 'collection' || stored === 'list') {
+            return stored;
+        }
+    } catch {
+        /* ignore */
+    }
+    return 'list';
+}
+
+function ProductsViewToggle({
+    mode,
+    onChange,
+}: {
+    mode: ProductsViewMode;
+    onChange: (mode: ProductsViewMode) => void;
+}): JSX.Element {
+    return (
+        <div className="ios-large-title-row">
+            <h1 className="ios-large-title">オーダー</h1>
+            <div className="ios-view-toggle" role="group" aria-label="表示切替">
+                <button
+                    type="button"
+                    className={`ios-view-toggle__btn${mode === 'collection' ? ' is-active' : ''}`}
+                    data-products-view="collection"
+                    aria-label="コレクション表示"
+                    title="コレクション"
+                    aria-pressed={mode === 'collection'}
+                    onClick={() => onChange('collection')}
+                >
+                    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <rect x="3" y="3" width="7.5" height="7.5" rx="1.5" stroke="currentColor" strokeWidth="1.8" />
+                        <rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5" stroke="currentColor" strokeWidth="1.8" />
+                        <rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5" stroke="currentColor" strokeWidth="1.8" />
+                        <rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5" stroke="currentColor" strokeWidth="1.8" />
+                    </svg>
+                </button>
+                <button
+                    type="button"
+                    className={`ios-view-toggle__btn${mode === 'list' ? ' is-active' : ''}`}
+                    data-products-view="list"
+                    aria-label="リスト表示"
+                    title="リスト"
+                    aria-pressed={mode === 'list'}
+                    onClick={() => onChange('list')}
+                >
+                    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    );
+}
+
+function ProductsShell({ fixed }: { fixed: boolean }): JSX.Element {
     const sectionRef = useRef<HTMLDivElement>(null);
+    const [viewMode, setViewMode] = useState<ProductsViewMode>(() => (fixed ? readViewMode() : 'list'));
 
     useEffect(() => {
         const section = sectionRef.current;
@@ -18,37 +81,15 @@ function ProductsShell(): JSX.Element {
         }
         section.dataset.reactOwned = '1';
         section.dataset.layoutRendered = '1';
-
-        const load = (): boolean => {
-            const app = window.app as { loadProducts?: () => void | Promise<void> } | undefined;
-            if (app === undefined || typeof app.loadProducts !== 'function') {
-                return false;
-            }
-            void app.loadProducts();
-            return true;
-        };
-
-        if (load()) {
-            return;
-        }
-
-        const onReady = (): void => {
-            load();
-        };
-        document.addEventListener('liff-ready', onReady);
-        const timer = window.setInterval(() => {
-            if (load()) {
-                window.clearInterval(timer);
-            }
-        }, 50);
-        const stop = window.setTimeout(() => window.clearInterval(timer), 5000);
-
-        return () => {
-            document.removeEventListener('liff-ready', onReady);
-            window.clearInterval(timer);
-            window.clearTimeout(stop);
-        };
     }, []);
+
+    const handleViewChange = (mode: ProductsViewMode): void => {
+        setViewMode(mode);
+        const app = window.app as { setProductsViewMode?: (m: string) => void } | undefined;
+        if (typeof app?.setProductsViewMode === 'function') {
+            app.setProductsViewMode(mode);
+        }
+    };
 
     return (
         <div
@@ -57,29 +98,31 @@ function ProductsShell(): JSX.Element {
             id="productsSection"
             data-tab="products"
             data-react-owned="1"
+            data-layout-rendered="1"
         >
-            <div className="products-data-mount">
-                <div className="category-tabs products-category-tabs" id="categoryTabs">
-                    <button type="button" className="tab-btn active" data-category="all">
-                        <i className="fas fa-th-large" aria-hidden="true" />
-                        <span>すべて</span>
-                    </button>
-                </div>
-                <div className="products-section">
-                    <div className="products-grid products-data-grid" id="productsGrid" />
-                </div>
+            {fixed ? <ProductsViewToggle mode={viewMode} onChange={handleViewChange} /> : null}
+            <div
+                className="products-data-mount"
+                data-react-products="1"
+                data-products-view={fixed ? viewMode : undefined}
+            >
+                <ProductsGrid />
             </div>
         </div>
     );
 }
 
+/**
+ * オーダー: Designer レイアウトがあれば BuilderLayout、
+ * 固定デモUI・未設定は React ProductsGrid。
+ */
 export const ProductsPage = React.memo(function ProductsPage(): JSX.Element {
     if (isFixedUiShell()) {
-        return <ManagerTabHost tab="products" />;
+        return <ProductsShell fixed />;
     }
     const blocks = getTabBlocks('products');
     if (blocks !== null) {
         return <BuilderLayout tab="products" blocks={blocks} />;
     }
-    return <ProductsShell />;
+    return <ProductsShell fixed={false} />;
 });

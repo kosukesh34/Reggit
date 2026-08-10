@@ -153,6 +153,19 @@ export class CheckoutManager {
 
     async openPaymentModal(order: OrderLike): Promise<void> {
         this.closePaymentModal(false);
+        // React CheckoutModal があるときは CustomEvent で UI を開く
+        const hasReactCheckout =
+            typeof document !== 'undefined'
+            && (document.getElementById('app-container') !== null
+                || document.getElementById('react-frontend-root') !== null);
+        if (hasReactCheckout) {
+            this.isPaymentFlowActive = true;
+            this.isPaymentCompleted = false;
+            this.pendingMobileOrderId = order && order.id ? Number(order.id) : null;
+            document.dispatchEvent(new CustomEvent('liff-open-payment', { detail: { order } }));
+            return;
+        }
+
         this.isPaymentFlowActive = true;
         this.isPaymentCompleted = false;
         this.pendingMobileOrderId = order && order.id ? Number(order.id) : null;
@@ -267,15 +280,28 @@ export class CheckoutManager {
     }
 
     closePaymentModal(shouldCancelOrder: boolean): void {
-        if (this.paymentModal && typeof this.paymentModal.remove === 'function') {
-            this.paymentModal.remove();
-        }
-        document.querySelectorAll('.payment-modal').forEach((el) => {
-            if (el !== this.paymentModal && typeof (el as HTMLElement).remove === 'function') {
-                (el as HTMLElement).remove();
+        const hasReactCheckout =
+            typeof document !== 'undefined'
+            && (document.getElementById('app-container') !== null
+                || document.getElementById('react-frontend-root') !== null);
+
+        if (hasReactCheckout) {
+            // React CheckoutModal はイベントでアンマウント（DOM を直接 remove しない）
+            document.dispatchEvent(new CustomEvent('liff-close-payment', {
+                detail: { shouldCancelOrder: shouldCancelOrder === true },
+            }));
+        } else {
+            if (this.paymentModal && typeof this.paymentModal.remove === 'function') {
+                this.paymentModal.remove();
             }
-        });
-        this.paymentModal = null;
+            document.querySelectorAll('.payment-modal').forEach((el) => {
+                if (el !== this.paymentModal && typeof (el as HTMLElement).remove === 'function') {
+                    (el as HTMLElement).remove();
+                }
+            });
+            this.paymentModal = null;
+        }
+
         const orderId = this.pendingMobileOrderId;
         const shouldCancel = shouldCancelOrder === true && !this.isPaymentCompleted && !!orderId;
         this.isPaymentFlowActive = false;

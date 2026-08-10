@@ -10,6 +10,7 @@ import {
     saveDemoWonCoupon,
     type DemoCoupon,
 } from '../demo/demoCoupons';
+import { isReactOwnedMount } from '../utils/reactOwnedMount';
 
 const CAPSULE_COLORS = ['#FF6F91', '#FFC93C', '#7B9BFF', '#5FD3B4', '#FF9A5A', '#B98CE0'];
 
@@ -65,6 +66,10 @@ export class DesignLabManager {
             this._lotteryLog('load_skip_no_section');
             return;
         }
+        if (isReactOwnedMount(section)) {
+            this._lotteryLog('load_skip_react_owned');
+            return;
+        }
         document.body.classList.add('liff-lottery-ui');
         if (!isDemoDataMode()) {
             await this._fetchState();
@@ -74,6 +79,46 @@ export class DesignLabManager {
             pendingGacha: this._pending('gacha') !== null,
             entitlementCount: this._state?.entitlements?.length ?? 0,
         });
+    }
+
+    /** React DesignLabView 用: state 取得のみ */
+    async prepareForReact(): Promise<LotteryState | null> {
+        document.body.classList.add('liff-lottery-ui');
+        if (!isDemoDataMode()) {
+            await this._fetchState();
+        }
+        return this._state;
+    }
+
+    getLotteryState(): LotteryState | null {
+        return this._state;
+    }
+
+    /**
+     * React が描いた DOM にガチャ／スクラッチ操作をバインドする（innerHTML しない）。
+     * scratchInit=false のときスクラッチは呼び出し側 useEffect で初期化する。
+     */
+    hydrateFromReact(container: HTMLElement, options: { scratchInit?: boolean } = {}): void {
+        container.dataset.designLabMounted = '1';
+        if (container.dataset.designLabBound !== '1') {
+            this._bind(container);
+            container.dataset.designLabBound = '1';
+        }
+        this._fillDomeCapsules(container);
+        if (options.scratchInit !== false) {
+            this._initScratch(container);
+        }
+        this._applyAvailability(container);
+        this._refreshWonList(container);
+        this._focusPlayTarget(container);
+    }
+
+    initScratchFromReact(container: HTMLElement): void {
+        this._initScratch(container);
+    }
+
+    resetScratchFromReact(container: HTMLElement): void {
+        this._resetScratch(container);
     }
 
     /**
