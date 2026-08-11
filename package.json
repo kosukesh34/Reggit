@@ -11,12 +11,15 @@
     "test:e2e:ui": "playwright test --config=e2e/web/playwright.config.ts --ui"
   },
   "dependencies": {
+    "date-fns": "^4.4.0",
     "jsbarcode": "^3.12.3",
+    "lucide-react": "^1.31.0",
     "qrcode": "^1.5.4",
     "qrcodejs": "^1.0.0",
     "qrcodejs2": "^0.0.2",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^7.18.2"
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",

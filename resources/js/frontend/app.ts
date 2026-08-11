@@ -236,6 +236,14 @@ class ReggitApp {
     _continueInit() {
         this.deviceManager.init();
         this.preventZoom();
+        // DesignMock 全面刷新 UI では DOM タブ／ハッシュ制御をしない（API・会員だけ維持）
+        if (typeof window !== 'undefined' && window.__REGGIT_LIFF_UI__ === true) {
+            if (!(typeof window !== 'undefined' && window.__IS_LIFF__ && !window.__LINE_USER_ID__)) {
+                this.memberManager.preload(null);
+            }
+            this.setupNativePushDeepLink();
+            return;
+        }
         this.setupEventListeners();
         this.setupPullToRefresh();
         // デザイナー埋め込みプレビューではカスタムレイアウトを描画せず、

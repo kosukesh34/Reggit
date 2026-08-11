@@ -66,6 +66,7 @@ type AppLike = {
 declare global {
     interface Window {
         __PROJECT_KEY__?: string;
+        __REGGIT_LIFF_UI__?: boolean;
         __API_BASE__?: string;
         __API_TOKEN__?: string;
         __ORDER_MODE__?: string;
