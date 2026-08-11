@@ -25,6 +25,7 @@ export const AppConstants = {
         MEMBERS_ME: `${API_BASE}/members/me`,
         MEMBERS_REGISTER: `${API_BASE}/members/register`,
         MEMBERS_WITHDRAW: `${API_BASE}/members/withdraw`,
+        MEMBERS_SESSION_CLEAR: `${API_BASE}/members/session/clear`,
         DEVICE_REGISTER: `${API_BASE}/devices/register`,
         DEVICE_SESSION: `${API_BASE}/devices/session`,
         POSTAL_CODE: `${API_BASE}/postal-code`,
