@@ -47,33 +47,47 @@ class SyncOrderTransactionToSmaregiJob implements ShouldBeUnique, ShouldQueue
         SmaregiOrderTransactionOutboundService $transactionSync,
         OrderRepository $orderRepository,
     ): void {
-        if ($orderRepository->isSmaregiTransactionSynced($this->orderId, $this->projectId)) {
-            return;
+        try {
+            if ($orderRepository->isSmaregiTransactionSynced($this->orderId, $this->projectId)) {
+                return;
+            }
+
+            $succeeded = $this->finalize
+                ? $transactionSync->finalizeCashLayaway($this->orderId, $this->projectId, $this->userId)
+                : $transactionSync->syncOrderTransaction($this->orderId, $this->projectId, $this->userId);
+
+            if ($succeeded) {
+                return;
+            }
+
+            if ($orderRepository->isSmaregiTransactionSynced($this->orderId, $this->projectId)) {
+                return;
+            }
+
+            if (! $this->finalize && $orderRepository->hasSmaregiLayaway($this->orderId, $this->projectId)) {
+                return;
+            }
+
+            LogHelper::warning('[Smaregi] order transaction sync job incomplete', [
+                'order_id' => $this->orderId,
+                'project_id' => $this->projectId,
+                'user_id' => $this->userId,
+                'attempt' => $this->attempt,
+                'finalize' => $this->finalize,
+            ]);
+        } catch (\Throwable $e) {
+            LogHelper::error('[Smaregi] order transaction sync job threw', [
+                'order_id' => $this->orderId,
+                'project_id' => $this->projectId,
+                'error' => $e->getMessage(),
+                'attempt' => $this->attempt,
+                'finalize' => $this->finalize,
+            ]);
+            if (config('queue.default') === 'sync') {
+                return;
+            }
+            throw $e;
         }
-
-        $succeeded = $this->finalize
-            ? $transactionSync->finalizeCashLayaway($this->orderId, $this->projectId, $this->userId)
-            : $transactionSync->syncOrderTransaction($this->orderId, $this->projectId, $this->userId);
-
-        if ($succeeded) {
-            return;
-        }
-
-        if ($orderRepository->isSmaregiTransactionSynced($this->orderId, $this->projectId)) {
-            return;
-        }
-
-        if (! $this->finalize && $orderRepository->hasSmaregiLayaway($this->orderId, $this->projectId)) {
-            return;
-        }
-
-        LogHelper::warning('[Smaregi] order transaction sync job incomplete', [
-            'order_id' => $this->orderId,
-            'project_id' => $this->projectId,
-            'user_id' => $this->userId,
-            'attempt' => $this->attempt,
-            'finalize' => $this->finalize,
-        ]);
 
         if (config('queue.default') === 'sync') {
             return;

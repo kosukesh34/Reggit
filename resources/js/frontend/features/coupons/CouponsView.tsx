@@ -13,11 +13,9 @@ import {
     isRecentlyIssued,
     normalizeCouponStatus,
     normalizeUseDisplay,
-    shouldShowLotteryEntry,
     sortHistoryCoupons,
     sortVisibleCoupons,
 } from './couponHelpers';
-import { LotteryPlayEntry } from './LotteryPlayEntry';
 
 type CouponsManagerLike = {
     getDesignerSampleCoupons: () => CouponRecord[];
@@ -375,7 +373,6 @@ export function CouponsView({ className = 'coupons-data-mount' }: CouponsViewPro
     const [defaultImage, setDefaultImage] = useState<string | null>(null);
     const [errorMessage, setErrorMessage] = useState('');
     const [activeTab, setActiveTab] = useState<'available' | 'history'>('available');
-    const showPlay = shouldShowLotteryEntry();
 
     const reload = useCallback(async (): Promise<boolean> => {
         if (window.app?.couponsManager === undefined) {
@@ -510,32 +507,22 @@ export function CouponsView({ className = 'coupons-data-mount' }: CouponsViewPro
         if (fixed) {
             return (
                 <div className={className} data-react-coupons="1">
-                    {showPlay ? <LotteryPlayEntry /> : null}
                     <div className="ios-empty">
                         <div className="ios-empty__icon">
                             <i className="fas fa-ticket-alt" aria-hidden="true" />
                         </div>
                         <h3 className="ios-empty__title">クーポンはありません</h3>
-                        <p className="ios-empty__text">
-                            {showPlay
-                                ? 'ガチャやスクラッチでクーポンを獲得できます'
-                                : 'お店から発行されるとここに表示されます'}
-                        </p>
+                        <p className="ios-empty__text">お店から発行されるとここに表示されます</p>
                     </div>
                 </div>
             );
         }
         return (
             <div className={className} data-react-coupons="1">
-                {showPlay ? <LotteryPlayEntry /> : null}
                 <div className="coupons-empty">
                     <i className="fas fa-ticket-alt" aria-hidden="true" />
                     <p>クーポンはありません</p>
-                    <p className="coupons-empty-sub">
-                        {showPlay
-                            ? 'ガチャやスクラッチでクーポンを獲得できます'
-                            : 'お店から発行されるとここに表示されます'}
-                    </p>
+                    <p className="coupons-empty-sub">お店から発行されるとここに表示されます</p>
                 </div>
             </div>
         );
@@ -544,7 +531,6 @@ export function CouponsView({ className = 'coupons-data-mount' }: CouponsViewPro
     if (fixed) {
         return (
             <div className={className} data-react-coupons="1">
-                {showPlay ? <LotteryPlayEntry /> : null}
                 <div className="ios-panel-head">
                     <h2 className="ios-panel-head__title">クーポン</h2>
                     <p className="ios-panel-head__sub">使えるお得な特典</p>
@@ -568,7 +554,7 @@ export function CouponsView({ className = 'coupons-data-mount' }: CouponsViewPro
                         aria-selected={activeTab === 'history'}
                         onClick={() => setActiveTab('history')}
                     >
-                        履歴 <span>{historyCoupons.length}</span>
+                        利用済み・期限切れ <span>{historyCoupons.length}</span>
                     </button>
                 </div>
                 <div className={`coupons-tab-panel${activeTab === 'available' ? ' is-active' : ''}`} data-panel="available" role="tabpanel">
@@ -603,7 +589,6 @@ export function CouponsView({ className = 'coupons-data-mount' }: CouponsViewPro
 
     return (
         <div className={className} data-react-coupons="1">
-            {showPlay ? <LotteryPlayEntry /> : null}
             <div className="coupons-header">
                 <h2 className="section-title">
                     <i className="fas fa-ticket-alt" aria-hidden="true" /> マイクーポン

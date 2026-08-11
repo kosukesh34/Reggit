@@ -60,13 +60,21 @@ class SmaregiPointsSyncService
      */
     public function syncOrderNetPointsWithRetry(int $orderId, int $projectId, int $userId): bool
     {
-        $succeeded = $this->syncOrderNetPoints($orderId, $projectId, $userId);
-        if ($succeeded) {
-            return true;
-        }
+        try {
+            $succeeded = $this->syncOrderNetPoints($orderId, $projectId, $userId);
+            if ($succeeded) {
+                return true;
+            }
 
-        if ($this->orderRepository->isSmaregiPointsSynced($orderId, $projectId)) {
-            return true;
+            if ($this->orderRepository->isSmaregiPointsSynced($orderId, $projectId)) {
+                return true;
+            }
+        } catch (\Throwable $e) {
+            LogHelper::error('[Smaregi] order points sync threw', [
+                'order_id' => $orderId,
+                'project_id' => $projectId,
+                'error' => $e->getMessage(),
+            ]);
         }
 
         SyncOrderPointsToSmaregiJob::dispatch($orderId, $projectId, $userId)

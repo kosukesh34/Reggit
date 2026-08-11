@@ -1,4 +1,4 @@
-import { ChevronRight, CircleHelp, Dices, FileText, Heart, History, LogOut, MapPin, MessageCircle, Settings, ShoppingBag, UserRound } from "lucide-react";
+import { ChevronRight, CircleHelp, FileText, Heart, History, LogOut, MapPin, MessageCircle, Settings, ShoppingBag, UserRound } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState } from "react";
 import { useAppConfig } from "../context/AppConfigContext";
@@ -7,7 +7,6 @@ import { Button } from "../components/ui/Button";
 import { featureDefinitions } from "../features/demo/featureCatalog";
 import { useRuntimeData } from "../context/RuntimeDataContext";
 import { reggitApi } from "../services/reggitApi";
-import { lotteryFlags } from "../../frontend/features/coupons/couponHelpers";
 import { openProfileEdit, openRegister } from "../../frontend/features/member/api";
 
 const accountItems = [
@@ -28,7 +27,6 @@ export function MorePage() {
   const { activeStore } = useAppConfig();
   const { member, mode, refresh } = useRuntimeData();
   const availableFeatures = featureDefinitions.filter((feature) => activeStore.features[feature.type]);
-  const { showGacha, showScratch } = lotteryFlags();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
 
@@ -90,13 +88,6 @@ export function MorePage() {
               <ChevronRight size={16} />
             </button>
           )}
-          {(showGacha || showScratch) ? (
-            <Link className="menu-list__item" to="/designlab">
-              <span className="menu-list__icon"><Dices size={19} /></span>
-              <span>ガチャ・スクラッチ</span>
-              <ChevronRight size={16} />
-            </Link>
-          ) : null}
         </Card>
       ) : null}
 

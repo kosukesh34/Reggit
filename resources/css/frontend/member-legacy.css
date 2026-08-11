@@ -145,3 +145,56 @@ body.reggit-liff-ui .member-register-react-host .loading {
     min-height: 0;
     padding: 0;
 }
+
+/*
+ * クーポン一覧: globals.css の button リセット後もタブ／カードが崩れないように補強
+ * （19-coupon.css は blade で先に読み込まれる）
+ */
+body.reggit-liff-ui .coupons-list-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    padding: 4px;
+    background: var(--bg-subtle, #e8efec);
+    border-radius: 12px;
+}
+
+body.reggit-liff-ui .coupons-list-tab {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 44px;
+    padding: 8px 10px;
+    border: none;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--text-secondary, #5c6b67);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+body.reggit-liff-ui .coupons-list-tab.is-active {
+    background: #fff;
+    color: var(--primary-color, #0e7c66);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+body.reggit-liff-ui .coupon-item {
+    background: #fff;
+    border: 2px solid var(--border-color, rgba(60, 60, 67, 0.18));
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+    box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.05));
+}
+
+body.reggit-liff-ui .coupons-tab-panel {
+    display: none;
+}
+
+body.reggit-liff-ui .coupons-tab-panel.is-active {
+    display: block;
+}

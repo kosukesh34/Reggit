@@ -19,7 +19,7 @@ class PaymentWebhookController extends Controller
     {
         $payload = $request->getContent();
         $sigHeader = $request->header('Stripe-Signature');
-        $endpointSecret = env('STRIPE_WEBHOOK_SECRET');
+        $endpointSecret = (string) config('services.stripe.webhook_secret', '');
 
         if (StrHelper::isEmptyStringOrNull($endpointSecret)) {
             LogHelper::warning('[Payment] webhook secret missing', [
