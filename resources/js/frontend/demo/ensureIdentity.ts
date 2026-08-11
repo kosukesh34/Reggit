@@ -57,18 +57,16 @@ export async function ensureLiffIdentityForLoad(options?: {
         return true;
     }
 
+    if (typeof memberManager.ensureIdentityReady === 'function') {
+        await memberManager.ensureIdentityReady(2500);
+    } else if (typeof memberManager.resolveLineUserIdForClient === 'function') {
+        await memberManager.resolveLineUserIdForClient();
+    }
+
     if (typeof window !== 'undefined' && window.__IS_LIFF__) {
-        if (!window.__LINE_USER_ID__ && typeof memberManager.resolveLineUserIdForClient === 'function') {
-            await memberManager.resolveLineUserIdForClient();
-        }
         return !!window.__LINE_USER_ID__;
     }
 
-    if (typeof window !== 'undefined'
-        && !window.__LINE_USER_ID__
-        && typeof memberManager.resolveLineUserIdForClient === 'function') {
-        await memberManager.resolveLineUserIdForClient();
-    }
     if (typeof memberManager.hasAuthenticatedIdentity === 'function') {
         return memberManager.hasAuthenticatedIdentity();
     }

@@ -122,6 +122,7 @@ export interface MemberProfile {
   points: number;
   expiration: string;
   nextRankLabel: string;
+  isMember: boolean;
 }
 
 export interface CouponItem {
