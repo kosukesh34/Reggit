@@ -1,4 +1,5 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Component, type ErrorInfo, type ReactNode } from "react";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { AppShell } from "../components/layout/AppShell";
 import { HomePage } from "../pages/HomePage";
 import { MembershipPage } from "../pages/MembershipPage";
@@ -6,10 +7,37 @@ import { MorePage } from "../pages/MorePage";
 import { ThemePreviewPage } from "../pages/ThemePreviewPage";
 import { FeaturePage } from "../pages/FeaturePage";
 
-export function AppRouter() {
+class ScreenErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error("[liff-ui] screen render failed", error, info);
+  }
+
+  render() {
+    if (this.state.failed) {
+      return (
+        <div className="page">
+          <div className="card card--lg feature-success" role="alert">
+            <h1>画面を表示できませんでした</h1>
+            <p>下のタブから別の画面へ移動するか、もう一度このタブを開いてください。</p>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+function ScreenRoutes() {
+  const location = useLocation();
   return (
-    <AppShell>
-      <Routes>
+    <ScreenErrorBoundary key={location.pathname}>
+      <Routes location={location}>
         <Route path="/" element={<Navigate to="/home" replace />} />
         <Route path="/home" element={<HomePage />} />
         <Route path="/membership" element={<MembershipPage />} />
@@ -17,6 +45,14 @@ export function AppRouter() {
         <Route path="/dev/themes" element={<ThemePreviewPage />} />
         <Route path="/:feature" element={<FeaturePage />} />
       </Routes>
+    </ScreenErrorBoundary>
+  );
+}
+
+export function AppRouter() {
+  return (
+    <AppShell>
+      <ScreenRoutes />
     </AppShell>
   );
 }

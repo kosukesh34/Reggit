@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="{{ asset('css/admin/admin.css') }}">
     {{-- レガシーページCSSは先に読み込み、Vite の React スタイルを優先する --}}
     @stack('styles-before-vite')
+    @viteReactRefresh
     @vite(['resources/js/admin/main.tsx'])
     @stack('styles')
 </head>

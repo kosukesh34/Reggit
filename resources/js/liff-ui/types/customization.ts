@@ -17,6 +17,7 @@ export type DesignPreset =
 export type CouponStatus = "available" | "ended";
 export type CouponLayout = "cards" | "compact";
 export type OrderCtaPosition = "inline" | "sticky";
+export type OrderCatalogLayout = "cards" | "compact";
 export type MembershipTemplate = "classic" | "minimal" | "barcodeFocus" | "split" | "pointFocus" | "pass";
 export type MembershipAlignment = "left" | "center";
 export type StampStyle = "circles" | "squares" | "progress";
@@ -73,6 +74,8 @@ export interface AppCustomization {
     showEarliestPickup: boolean;
     showItemImages: boolean;
     ctaPosition: OrderCtaPosition;
+    catalogLayout: OrderCatalogLayout;
+    groupByCategory: boolean;
   };
   membership: {
     template: MembershipTemplate;

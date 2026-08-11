@@ -18,6 +18,8 @@
 
 @php
     $ldDesignerConfig = [
+        'layouts' => $layouts ?? [],
+        'detailLayouts' => $detailLayouts ?? [],
         'tabSettings' => $tabSettings ?? [],
         'customCss' => $customCss ?? '',
         'menuItems' => $menuItems ?? [],

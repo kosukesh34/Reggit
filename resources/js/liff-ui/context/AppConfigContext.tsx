@@ -96,6 +96,7 @@ function loadInitialCustomizations(stores: StoreAppConfig[]): Record<string, App
 
 export function AppConfigProvider({ children, isAdminStudio = false }: { children: ReactNode; isAdminStudio?: boolean }) {
   const stores = useMemo(() => resolveStores(isAdminStudio), [isAdminStudio]);
+  const isDesignerEmbedPreview = !isAdminStudio && window.__IS_DESIGNER_EMBED_PREVIEW__ === true;
   const [activeStoreId, setActiveStoreId] = useState(stores[0]?.storeId ?? 'default');
   const [activeThemeId, setActiveThemeId] = useState(
     themeMap[stores[0]?.themeId ?? 'minimal-light']?.id ?? 'minimal-light',
@@ -103,9 +104,42 @@ export function AppConfigProvider({ children, isAdminStudio = false }: { childre
   const [customizations, setCustomizations] = useState<Record<string, AppCustomization>>(() => loadInitialCustomizations(stores));
 
   useEffect(() => {
+    if (isDesignerEmbedPreview) {
+      return;
+    }
     const payload: PersistedCustomizations = { version: 3, experienceVersion: 5, byStore: customizations };
     window.localStorage.setItem(customizationStorageKey, JSON.stringify(payload));
-  }, [customizations]);
+  }, [customizations, isDesignerEmbedPreview]);
+
+  useEffect(() => {
+    if (!isDesignerEmbedPreview) {
+      return undefined;
+    }
+    const previewStore = stores[0];
+    if (previewStore === undefined) {
+      return undefined;
+    }
+
+    const receivePreviewCustomization = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin || event.data?.type !== 'reggit:designer-preview:update') {
+        return;
+      }
+      const patch = event.data.customization as AppCustomizationPatch | undefined;
+      if (patch === undefined || patch === null || typeof patch !== 'object') {
+        return;
+      }
+      setCustomizations((current) => ({
+        ...current,
+        [previewStore.storeId]: mergeCustomization(previewStore, patch),
+      }));
+    };
+
+    window.addEventListener('message', receivePreviewCustomization);
+    if (window.parent !== window) {
+      window.parent.postMessage({ type: 'reggit:designer-preview:ready' }, window.location.origin);
+    }
+    return () => window.removeEventListener('message', receivePreviewCustomization);
+  }, [isDesignerEmbedPreview, stores]);
 
   const activeStore = useMemo(() => {
     return stores.find((store) => store.storeId === activeStoreId) ?? stores[0];

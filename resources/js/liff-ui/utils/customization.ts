@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import type { AppCustomization, DesignPreset } from "../types/customization";
+import type { ThemeConfig } from "../types/theme";
 
 const presetTokens: Record<Exclude<DesignPreset, "editorial">, Record<string, string>> = {
   bold: {
@@ -195,5 +196,21 @@ export function customizationToCssVars(customization: AppCustomization): CSSProp
     ...(customization.colors.surface ? { ["--color-surface" as string]: customization.colors.surface } : {}),
     ...(customization.colors.textPrimary ? { ["--color-text-primary" as string]: customization.colors.textPrimary } : {}),
     ...(customization.colors.textSecondary ? { ["--color-text-secondary" as string]: customization.colors.textSecondary } : {}),
+  };
+}
+
+export function resolveCustomizationColors(
+  customization: AppCustomization,
+  theme: ThemeConfig,
+): Required<AppCustomization["colors"]> {
+  const variables = customizationToCssVars(customization) as Record<string, string>;
+  return {
+    primary: variables["--color-primary"] ?? theme.colors.primary,
+    secondary: variables["--color-secondary"] ?? theme.colors.secondary,
+    accent: variables["--color-accent"] ?? theme.colors.accent,
+    background: variables["--color-background"] ?? theme.colors.background,
+    surface: variables["--color-surface"] ?? theme.colors.surface,
+    textPrimary: variables["--color-text-primary"] ?? theme.colors.textPrimary,
+    textSecondary: variables["--color-text-secondary"] ?? theme.colors.textSecondary,
   };
 }
