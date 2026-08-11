@@ -1,0 +1,19 @@
+import type { TabType } from "../types/app";
+
+export const tabOptions: Array<{ type: TabType; label: string }> = [
+  { type: "home", label: "ホーム" },
+  { type: "membership", label: "会員証" },
+  { type: "mobileOrder", label: "モバイル注文" },
+  { type: "dineInOrder", label: "店内注文" },
+  { type: "reservation", label: "予約" },
+  { type: "queue", label: "順番待ち" },
+  { type: "coupon", label: "クーポン" },
+  { type: "stamp", label: "スタンプ" },
+  { type: "point", label: "ポイント" },
+  { type: "menu", label: "メニュー" },
+  { type: "store", label: "店舗" },
+  { type: "news", label: "お知らせ" },
+  { type: "more", label: "その他" },
+];
+
+export const tabLabelMap = Object.fromEntries(tabOptions.map((option) => [option.type, option.label])) as Record<TabType, string>;

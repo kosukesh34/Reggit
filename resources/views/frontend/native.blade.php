@@ -111,41 +111,7 @@
         </div>
     </div>
 
-    <div class="app-container" id="app-container" style="display: flex; flex-direction: column; min-height: max(100vh, 800px); height: 100%; background: #fff; visibility: visible; box-sizing: border-box;">
-        
-        <div id="react-frontend-chrome-root"></div>
-
-        @php
-            $flags = $featureFlags ?? [];
-            $tabFeatureMap = [
-                'home' => 'feature_home_enabled',
-                'products' => 'feature_orders_enabled',
-                'orders' => 'feature_orders_enabled',
-                'stamps' => 'feature_stamps_enabled',
-                'coupons' => 'feature_coupons_enabled',
-                'queue' => 'feature_queue_enabled',
-                'reservations' => 'feature_reservations_enabled',
-                'member' => 'feature_members_enabled',
-                'gallery' => 'feature_gallery_enabled',
-                'announcements' => 'feature_announcements_enabled',
-            ];
-            // デモ固定UIのメニューは scripts-config 側で独立定義する
-            $filteredMenu = $isFixedUi
-                ? []
-                : array_filter(
-                    $frontendMenu ?? app(\App\Domain\Settings\Repositories\ShopSettingRepository::class)->defaultFrontendMenuItems(),
-                    fn($item) => ($flags[$tabFeatureMap[$item['tab']] ?? ''] ?? true)
-                );
-        @endphp
-
-        <main class="main-content" style="flex: 1 1 auto; min-height: max(500px, 50vh); overflow: auto; background: #fff; visibility: visible; -webkit-overflow-scrolling: touch; box-sizing: border-box;">
-            <div id="react-frontend-tabs-root"></div>
-        </main>
-
-        @unless($isDesignerEmbedPreview)
-        <div id="react-frontend-footer-root"></div>
-        @endunless
-    </div>
+    <div class="app-container" id="app-container" style="display: flex; flex-direction: column; min-height: max(100vh, 800px); height: 100%; background: #fff; visibility: visible; box-sizing: border-box;"></div>
     <div id="react-frontend-root" aria-hidden="true"></div>
 
     @include('frontend.partials._scripts-config')

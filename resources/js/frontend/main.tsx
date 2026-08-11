@@ -1,15 +1,22 @@
+import './liffUiFlag';
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import { HashRouter } from 'react-router-dom';
 import '../../css/app.css';
 import './app';
-import { createRoot } from 'react-dom/client';
-import { FrontendApp } from './FrontendApp';
+import { App } from '../liff-ui/app/App';
+import '../liff-ui/styles/tokens.css';
+import '../liff-ui/styles/globals.css';
 
-const appContainer = document.getElementById('app-container');
-if (appContainer !== null) {
-    appContainer.replaceChildren();
-    createRoot(appContainer).render(<FrontendApp />);
-} else {
-    const fallback = document.getElementById('react-frontend-root');
-    if (fallback !== null) {
-        createRoot(fallback).render(<FrontendApp />);
-    }
+const mountNode = document.getElementById('app-container') ?? document.getElementById('react-frontend-root');
+if (mountNode !== null) {
+  mountNode.replaceChildren();
+  mountNode.classList.add('reggit-liff-ui-root');
+  createRoot(mountNode).render(
+    <React.StrictMode>
+      <HashRouter>
+        <App />
+      </HashRouter>
+    </React.StrictMode>,
+  );
 }

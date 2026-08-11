@@ -34,12 +34,16 @@ class AdminSyncPasswordCommand extends Command
             return self::FAILURE;
         }
 
-        $password = $loginId === env('DEMO_SYSTEM_LOGIN_ID', 'demo_sys')
-            ? AdminUserSeeder::demoSystemPassword()
-            : env('ADMIN_PASSWORD', 'reserve');
+        $password = match ($loginId) {
+            env('DEMO_SYSTEM_LOGIN_ID', 'demo_sys') => AdminUserSeeder::demoSystemPassword(),
+            env('DEMO_STORE_LOGIN_ID', 'demo_store') => (string) env('DEMO_STORE_PASSWORD', 'DemoStore#2026'),
+            env('DEMO_PROJECT_LOGIN_ID', 'demo_proj') => (string) env('DEMO_PROJECT_PASSWORD', 'DemoProj#2026'),
+            env('DEMO_STAFF_LOGIN_ID', 'demo_staff') => (string) env('DEMO_STAFF_PASSWORD', 'DemoStaff#2026'),
+            default => (string) env('ADMIN_PASSWORD', 'reserve'),
+        };
 
-        if ($password === '' || $password === null) {
-            $this->error('.env に DEMO_SYSTEM_PASSWORD または ADMIN_PASSWORD を設定してください。');
+        if ($password === '') {
+            $this->error('.env に対象ユーザーのパスワード（DEMO_*_PASSWORD または ADMIN_PASSWORD）を設定してください。');
 
             return self::FAILURE;
         }
