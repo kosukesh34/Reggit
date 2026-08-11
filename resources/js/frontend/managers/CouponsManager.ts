@@ -601,7 +601,7 @@ export class CouponsManager {
     _renderFixedUiCoupons(coupons: any[], defaultImage: string | null, isSample = false): void {
         const section = this.getSection();
         if (!section) return;
-        const showPlay = isDemoDataMode() || this._shouldShowLotteryEntry();
+        const showPlay = this._shouldShowLotteryEntry();
         const playEntry = showPlay ? this._renderLotteryPlayEntry() : '';
 
         if (!coupons || coupons.length === 0) {
@@ -703,7 +703,7 @@ export class CouponsManager {
             </div>`
             + `<div class="ios-seg" role="tablist" aria-label="クーポン一覧">`
             + `<button type="button" class="ios-seg__btn coupons-list-tab${defaultTab === 'available' ? ' is-active' : ''}" role="tab" data-tab="available" aria-selected="${defaultTab === 'available' ? 'true' : 'false'}">利用可能 <span>${availableCount}</span></button>`
-            + `<button type="button" class="ios-seg__btn coupons-list-tab${defaultTab === 'history' ? ' is-active' : ''}" role="tab" data-tab="history" aria-selected="${defaultTab === 'history' ? 'true' : 'false'}">履歴 <span>${historyCount}</span></button>`
+            + `<button type="button" class="ios-seg__btn coupons-list-tab${defaultTab === 'history' ? ' is-active' : ''}" role="tab" data-tab="history" aria-selected="${defaultTab === 'history' ? 'true' : 'false'}">利用済み・期限切れ <span>${historyCount}</span></button>`
             + `</div>`
             + `<div class="coupons-tab-panel${defaultTab === 'available' ? ' is-active' : ''}" data-panel="available" role="tabpanel">`
             + (availableCount > 0
@@ -724,11 +724,8 @@ export class CouponsManager {
     }
 
     _shouldShowLotteryEntry(): boolean {
-        const flags = window.__FEATURE_FLAGS__;
-        if (flags === null || typeof flags !== 'object') {
-            return false;
-        }
-        return Boolean(flags.feature_gacha_enabled) || Boolean(flags.feature_scratch_enabled);
+        // クーポン画面ではガチャ・スクラッチ導線を出さない
+        return false;
     }
 
     _renderLotteryPlayEntry(): string {
