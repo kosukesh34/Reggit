@@ -3,35 +3,35 @@
     "file": "assets/customization-kRI_uz7s.css",
     "src": "_customization-!~{003}~.js"
   },
-  "_customization-CRV3_iWl.js": {
-    "file": "assets/customization-CRV3_iWl.js",
+  "_customization-DVIJfv-M.js": {
+    "file": "assets/customization-DVIJfv-M.js",
     "name": "customization",
     "css": [
       "assets/customization-kRI_uz7s.css"
     ]
   },
   "resources/js/admin/main.tsx": {
-    "file": "assets/main-DTqAf0ae.js",
+    "file": "assets/main-DHRojFAm.js",
     "name": "main",
     "src": "resources/js/admin/main.tsx",
     "isEntry": true,
     "imports": [
-      "_customization-CRV3_iWl.js"
+      "_customization-DVIJfv-M.js"
     ],
     "css": [
       "assets/main-MImg_wPW.css"
     ]
   },
   "resources/js/frontend/main.tsx": {
-    "file": "assets/main-BYA3LHHh.js",
+    "file": "assets/main-BrWF0zgH.js",
     "name": "main",
     "src": "resources/js/frontend/main.tsx",
     "isEntry": true,
     "imports": [
-      "_customization-CRV3_iWl.js"
+      "_customization-DVIJfv-M.js"
     ],
     "css": [
-      "assets/main-DA2tRAuC.css"
+      "assets/main-J4CZFcWt.css"
     ]
   }
 }

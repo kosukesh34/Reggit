@@ -135,7 +135,22 @@ export function resolveCardDesign(data: MemberPayload, container: HTMLElement | 
 }
 
 export async function loadMemberView(): Promise<MemberLoadResult> {
-    const mm = getMemberManager();
+    const waitManager = async (): Promise<MemberManagerLike | undefined> => {
+        const existing = getMemberManager();
+        if (existing !== undefined) {
+            return existing;
+        }
+        for (let i = 0; i < 40; i += 1) {
+            await new Promise((resolve) => { window.setTimeout(resolve, 50); });
+            const next = getMemberManager();
+            if (next !== undefined) {
+                return next;
+            }
+        }
+        return undefined;
+    };
+
+    const mm = await waitManager();
     if (mm === undefined) {
         return { kind: 'error', message: '会員情報の読み込みに失敗しました' };
     }
@@ -276,21 +291,61 @@ export function openProfileEdit(): void {
     document.dispatchEvent(new CustomEvent('liff-member-open-edit'));
 }
 
+function detectIosClient(): boolean {
+    if (typeof window === 'undefined') {
+        return false;
+    }
+    const native = window.__MOBILE_DEVICE_INFO__?.platform;
+    if (native === 'ios') {
+        return true;
+    }
+    if (native === 'android') {
+        return false;
+    }
+    if (typeof navigator === 'undefined') {
+        return false;
+    }
+    return /iPad|iPhone|iPod/.test(navigator.userAgent)
+        || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
+function detectAndroidClient(): boolean {
+    if (typeof window === 'undefined') {
+        return false;
+    }
+    const native = window.__MOBILE_DEVICE_INFO__?.platform;
+    if (native === 'android') {
+        return true;
+    }
+    if (native === 'ios') {
+        return false;
+    }
+    if (typeof navigator === 'undefined') {
+        return false;
+    }
+    return /Android/.test(navigator.userAgent);
+}
+
 export function shouldShowAppleWallet(): boolean {
-    // MemberManager の static。インスタンス constructor 経由で参照する。
+    if (typeof window === 'undefined' || window.__WALLET_PASS_ENABLED__ !== true) {
+        return false;
+    }
     const mgr = getMemberManager() as { constructor?: { shouldShowAppleWallet?: () => boolean } } | undefined;
     if (typeof mgr?.constructor?.shouldShowAppleWallet === 'function') {
         return mgr.constructor.shouldShowAppleWallet() === true;
     }
-    return false;
+    return detectIosClient();
 }
 
 export function shouldShowGoogleWallet(): boolean {
+    if (typeof window === 'undefined' || window.__GOOGLE_WALLET_ENABLED__ !== true) {
+        return false;
+    }
     const mgr = getMemberManager() as { constructor?: { shouldShowGoogleWallet?: () => boolean } } | undefined;
     if (typeof mgr?.constructor?.shouldShowGoogleWallet === 'function') {
         return mgr.constructor.shouldShowGoogleWallet() === true;
     }
-    return false;
+    return detectAndroidClient();
 }
 
 export function walletPassUrl(): string {
