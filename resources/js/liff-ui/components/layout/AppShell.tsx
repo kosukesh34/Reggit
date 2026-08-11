@@ -31,8 +31,9 @@ export function AppShell({ children }: PropsWithChildren) {
         <Header />
         {showNavigationBelowHeader ? <BottomNavigation /> : null}
         <main className="app-shell__main">{children}</main>
-        {!showNavigationBelowHeader ? <BottomNavigation /> : null}
       </div>
+      {/* fixed タブは overflow:clip の外に置き、スクロール時の位置ずれを防ぐ */}
+      {!showNavigationBelowHeader ? <BottomNavigation /> : null}
     </div>
   );
 }
