@@ -18,7 +18,7 @@ import { ReservationsView } from "../../frontend/features/reservations/Reservati
 export function FeaturePage() {
   const { feature } = useParams();
   const { activeStore, customization } = useAppConfig();
-  const { member, coupons, news, stores, commerce, history, mode } = useRuntimeData();
+  const { member, coupons, news, stores, commerce, history, mode, markAnnouncementRead } = useRuntimeData();
   const activeVenue = stores[0];
   const orderPath = activeStore.features.mobileOrder ? "/mobileOrder" : activeStore.features.dineInOrder ? "/dineInOrder" : "/reservation";
   const isLiveBound = mode !== "preview";
@@ -33,6 +33,18 @@ export function FeaturePage() {
           <SearchX size={40} />
           <h1>ページが見つかりません</h1>
           <p>URLをご確認のうえ、ホームからもう一度お試しください。</p>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!activeStore.features[feature]) {
+    return (
+      <div className="page">
+        <Card className="feature-success" padding="lg">
+          <SearchX size={40} />
+          <h1>現在このサービスは利用できません</h1>
+          <p>店舗の設定により、この機能は現在非公開になっています。</p>
         </Card>
       </div>
     );
@@ -98,6 +110,7 @@ export function FeaturePage() {
           orderPath={orderPath}
           liveCatalog={commerce?.items}
           history={history}
+          onReadNews={markAnnouncementRead}
         />
       );
   }

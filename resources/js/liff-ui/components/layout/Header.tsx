@@ -1,6 +1,6 @@
 import { Bell, Check, ChevronDown, CloudOff } from "lucide-react";
 import { useMemo, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAppConfig } from "../../context/AppConfigContext";
 import { BottomSheet } from "../ui/BottomSheet";
 import { Button } from "../ui/Button";
@@ -16,6 +16,7 @@ export function Header() {
   const { mode, notificationCount } = useRuntimeData();
   const [open, setOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   const title = useMemo(() => {
     if (location.pathname === "/membership") {
@@ -50,7 +51,7 @@ export function Header() {
         </button>
         <div className="header__actions">
           {mode === "offline" ? <span className="header__connection" aria-label="オフライン"><CloudOff size={14} /></span> : null}
-          {customization.header.showNotifications ? <Button className="header__notification" variant="ghost" size="icon" ariaLabel="通知">
+          {customization.header.showNotifications && activeStore.features.news ? <Button className="header__notification" variant="ghost" size="icon" ariaLabel="通知" onClick={() => navigate("/news")}>
             <Bell size={18} />
             {notificationCount > 0 ? <span className="header__notification-dot">{notificationCount}</span> : null}
           </Button> : null}

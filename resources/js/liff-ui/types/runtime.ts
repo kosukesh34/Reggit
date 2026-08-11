@@ -2,6 +2,23 @@ import type { CouponItem, MemberProfile, NewsItem, StoreSummary } from "./app";
 
 export type DataMode = "live" | "preview" | "offline";
 
+export interface RuntimeProductOption {
+  id: string;
+  name: string;
+  priceDelta: number;
+  isDefault: boolean;
+}
+
+export interface RuntimeProductOptionGroup {
+  id: string;
+  name: string;
+  selectionType: "single" | "multiple";
+  isRequired: boolean;
+  minSelect: number;
+  maxSelect: number;
+  options: RuntimeProductOption[];
+}
+
 export interface RuntimeCatalogItem {
   id: string;
   name: string;
@@ -9,6 +26,7 @@ export interface RuntimeCatalogItem {
   price: number;
   image?: string;
   category?: string;
+  optionGroups?: RuntimeProductOptionGroup[];
 }
 
 export interface RuntimeHistoryItem {
@@ -51,6 +69,9 @@ export interface OrderLineInput {
   name: string;
   quantity: number;
   unitPrice: number;
+  optionIds?: string[];
+  optionNames?: string[];
+  notes?: string;
 }
 
 export interface OrderInput {

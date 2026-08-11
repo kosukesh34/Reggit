@@ -19,7 +19,9 @@ export function MembershipPage() {
   if (mode !== "preview") {
     return (
       <div className="page membership-page stack stack--lg">
-        <MemberView />
+        <div id="memberSection" className="member-section member-card-mount" data-react-owned="1">
+          <MemberView />
+        </div>
       </div>
     );
   }

@@ -36,6 +36,7 @@ interface RuntimeDataContextValue extends RuntimeBootstrap {
   redeemPoints: (points: number) => Promise<OperationReceipt>;
   saveSettings: (settings: NotificationSettings) => Promise<OperationReceipt>;
   submitContact: (input: ContactInput) => Promise<OperationReceipt>;
+  markAnnouncementRead: (announcementId: string) => Promise<void>;
 }
 
 const RuntimeDataContext = createContext<RuntimeDataContextValue | null>(null);
@@ -153,6 +154,18 @@ export function RuntimeDataProvider({ children }: { children: ReactNode }) {
   }, [isDemoPreview, mode, refresh, updateLocal]);
 
   const data = remoteData ?? mockData;
+  const markAnnouncementRead = useCallback(async (announcementId: string) => {
+    if (reggitApi.configured && !isDemoPreview) {
+      if (mode !== 'live') throw new Error('店舗システムに接続できないため、既読状態を保存できません');
+      await reggitApi.markAnnouncementRead(announcementId);
+    }
+    setRemoteData((current) => current === undefined ? current : {
+      ...current,
+      news: current.news.map((item) => item.id === announcementId ? { ...item, isRead: true } : item),
+      notificationCount: Math.max(0, current.notificationCount - (current.news.some((item) => item.id === announcementId && item.isRead !== true) ? 1 : 0)),
+    });
+  }, [isDemoPreview, mode]);
+
   const value = useMemo<RuntimeDataContextValue>(() => ({
     ...data,
     mode,
@@ -175,7 +188,8 @@ export function RuntimeDataProvider({ children }: { children: ReactNode }) {
     redeemPoints: (points) => run(() => reggitApi.redeemPoints(activeStore.storeId, points), "PTS"),
     saveSettings: (settings) => run(() => reggitApi.saveSettings(activeStore.storeId, settings), "SET"),
     submitContact: (input) => run(() => reggitApi.submitContact(activeStore.storeId, input), "CNT"),
-  }), [activeStore.storeId, data, error, loading, mode, refresh, run, updateLocal]);
+    markAnnouncementRead,
+  }), [activeStore.storeId, data, error, loading, markAnnouncementRead, mode, refresh, run, updateLocal]);
 
   return <RuntimeDataContext.Provider value={value}>{children}</RuntimeDataContext.Provider>;
 }

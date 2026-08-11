@@ -4,7 +4,7 @@ import { BottomSheet } from "../../components/ui/BottomSheet";
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import type { AppCustomization } from "../../types/customization";
-import type { OperationReceipt } from "../../types/runtime";
+import type { OperationReceipt, RuntimeProductOptionGroup } from "../../types/runtime";
 import { useRuntimeData } from "../../context/RuntimeDataContext";
 
 interface OrderItem {
@@ -14,6 +14,7 @@ interface OrderItem {
   price: number;
   image?: string;
   category?: string;
+  optionGroups?: RuntimeProductOptionGroup[];
 }
 
 interface OrderProfile {
@@ -120,6 +121,15 @@ interface OrderDemoProps {
 export function OrderDemo({ dineIn, image, config, storeId, venueName }: OrderDemoProps) {
   const { createOrder, commerce, mode } = useRuntimeData();
   const [quantities, setQuantities] = useState<Record<string, number>>({});
+  const [selectedOptions, setSelectedOptions] = useState<Record<string, string[]>>({});
+  const [configuringItemId, setConfiguringItemId] = useState<string>();
+  const [pendingOptions, setPendingOptions] = useState<string[]>([]);
+  const [optionError, setOptionError] = useState<string>();
+  const [tableSheetOpen, setTableSheetOpen] = useState(false);
+  const [tableNumber, setTableNumber] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("table_number") || params.get("table") || window.sessionStorage.getItem("reggit-table-number") || "";
+  });
   const [sheetOpen, setSheetOpen] = useState(false);
   const [completed, setCompleted] = useState(false);
   const [reference, setReference] = useState<string>();
@@ -134,7 +144,16 @@ export function OrderDemo({ dineIn, image, config, storeId, venueName }: OrderDe
   const pickupTime = commerce?.pickupEstimate || profile.pickupTime;
   const dineInDetail = commerce?.dineInDetail || profile.dineInDetail;
   const count = Object.values(quantities).reduce((sum, quantity) => sum + quantity, 0);
-  const total = orderItems.reduce((sum, item) => sum + item.price * (quantities[item.id] ?? 0), 0);
+  const optionPrice = (item: OrderItem, optionIds = selectedOptions[item.id] ?? []) => (item.optionGroups ?? [])
+    .flatMap((group) => group.options)
+    .filter((option) => optionIds.includes(option.id))
+    .reduce((sum, option) => sum + option.priceDelta, 0);
+  const itemUnitPrice = (item: OrderItem) => item.price + optionPrice(item);
+  const selectedOptionNames = (item: OrderItem) => (item.optionGroups ?? [])
+    .flatMap((group) => group.options)
+    .filter((option) => (selectedOptions[item.id] ?? []).includes(option.id))
+    .map((option) => option.name);
+  const total = orderItems.reduce((sum, item) => sum + itemUnitPrice(item) * (quantities[item.id] ?? 0), 0);
   const categories = useMemo(() => Array.from(new Set(orderItems.map((item) => item.category || "other"))), [orderItems]);
   const visibleItems = !config.groupByCategory || selectedCategory === "all"
     ? orderItems
@@ -146,8 +165,54 @@ export function OrderDemo({ dineIn, image, config, storeId, venueName }: OrderDe
     }
   }, [categories, selectedCategory]);
 
-  const changeQuantity = (id: string, amount: number) => {
-    setQuantities((current) => ({ ...current, [id]: Math.max(0, (current[id] ?? 0) + amount) }));
+  const defaultsForItem = (item: OrderItem): string[] => (item.optionGroups ?? []).flatMap((group) => {
+    const defaults = group.options.filter((option) => option.isDefault).map((option) => option.id);
+    if (defaults.length > 0) return group.selectionType === "single" ? defaults.slice(0, 1) : defaults.slice(0, group.maxSelect);
+    return group.isRequired && group.options[0] ? [group.options[0].id] : [];
+  });
+
+  const openItemOptions = (item: OrderItem) => {
+    setPendingOptions(selectedOptions[item.id] ?? defaultsForItem(item));
+    setConfiguringItemId(item.id);
+    setOptionError(undefined);
+  };
+
+  const changeQuantity = (item: OrderItem, amount: number) => {
+    const currentQuantity = quantities[item.id] ?? 0;
+    if (amount > 0 && currentQuantity === 0 && (item.optionGroups?.length ?? 0) > 0) {
+      openItemOptions(item);
+      return;
+    }
+    setQuantities((current) => ({ ...current, [item.id]: Math.max(0, (current[item.id] ?? 0) + amount) }));
+  };
+
+  const toggleOption = (group: RuntimeProductOptionGroup, optionId: string) => {
+    setOptionError(undefined);
+    setPendingOptions((current) => {
+      const groupIds = group.options.map((option) => option.id);
+      if (group.selectionType === "single") {
+        return [...current.filter((id) => !groupIds.includes(id)), ...(current.includes(optionId) && !group.isRequired ? [] : [optionId])];
+      }
+      if (current.includes(optionId)) return current.filter((id) => id !== optionId);
+      const selectedInGroup = current.filter((id) => groupIds.includes(id));
+      if (selectedInGroup.length >= group.maxSelect) return current;
+      return [...current, optionId];
+    });
+  };
+
+  const confirmItemOptions = () => {
+    const item = orderItems.find((candidate) => candidate.id === configuringItemId);
+    if (!item) return;
+    for (const group of item.optionGroups ?? []) {
+      const selectedCount = group.options.filter((option) => pendingOptions.includes(option.id)).length;
+      if (selectedCount < group.minSelect) {
+        setOptionError(`${group.name}を${group.minSelect}つ以上選択してください`);
+        return;
+      }
+    }
+    setSelectedOptions((current) => ({ ...current, [item.id]: pendingOptions }));
+    setQuantities((current) => ({ ...current, [item.id]: Math.max(1, current[item.id] ?? 0) }));
+    setConfiguringItemId(undefined);
   };
 
   const submitOrder = async () => {
@@ -157,16 +222,23 @@ export function OrderDemo({ dineIn, image, config, storeId, venueName }: OrderDe
       if (mode === "live" && !hasLiveCatalog) {
         throw new Error("注文できる商品がありません。しばらくしてから再度お試しください");
       }
+      if (dineIn && tableNumber.trim() === "") {
+        setSheetOpen(false);
+        setTableSheetOpen(true);
+        throw new Error("卓番を入力してください");
+      }
       const receipt = await createOrder({
         storeId,
         venueName,
         fulfillment: dineIn ? "dine_in" : "pickup",
-        tableNumber: dineIn ? "A-12" : undefined,
+        tableNumber: dineIn ? tableNumber.trim() : undefined,
         lines: orderItems.filter((item) => quantities[item.id]).map((item) => ({
           itemId: item.id,
           name: item.name,
           quantity: quantities[item.id],
-          unitPrice: item.price,
+          unitPrice: itemUnitPrice(item),
+          optionIds: selectedOptions[item.id] ?? [],
+          optionNames: selectedOptionNames(item),
         })),
         total,
       });
@@ -190,9 +262,9 @@ export function OrderDemo({ dineIn, image, config, storeId, venueName }: OrderDe
         <CheckCircle2 size={44} />
         <div className="feature-success__eyebrow">受付完了</div>
         <h2>ご注文を受け付けました</h2>
-        <p>{dineIn ? "テーブル A-12 までお持ちします。" : `受取番号 ${reference ?? "—"}${pickupTime ? `。${pickupTime.replace("最短受取 ", "")}でご用意します。` : "。"}`}</p>
+        <p>{dineIn ? `テーブル ${tableNumber} までお持ちします。` : `受取番号 ${reference ?? "—"}${pickupTime ? `。${pickupTime.replace("最短受取 ", "")}でご用意します。` : "。"}`}</p>
         {reference ? <span className="operation-reference">受付ID {reference}</span> : null}
-        <Button onClick={() => { setCompleted(false); setQuantities({}); setReference(undefined); }}>続けて注文する</Button>
+        <Button onClick={() => { setCompleted(false); setQuantities({}); setSelectedOptions({}); setReference(undefined); }}>続けて注文する</Button>
       </Card>
     );
   }
@@ -202,11 +274,11 @@ export function OrderDemo({ dineIn, image, config, storeId, venueName }: OrderDe
       <Card className="order-context" padding="md">
         <ShoppingBag size={20} />
         <div>
-          <strong>{dineIn ? "テーブル A-12" : `${venueName}で受取`}</strong>
+          <strong>{dineIn ? (tableNumber ? `テーブル ${tableNumber}` : "卓番を設定") : `${venueName}で受取`}</strong>
           {dineIn ? <span>{dineInDetail}</span> : null}
           {!dineIn && config.showEarliestPickup ? <span>{pickupTime}</span> : null}
         </div>
-        <Button variant="soft" size="sm">変更</Button>
+        {dineIn ? <Button variant="soft" size="sm" onClick={() => setTableSheetOpen(true)}>{tableNumber ? "変更" : "設定"}</Button> : null}
       </Card>
 
       <section className="order-catalog" aria-label="商品メニュー">
@@ -244,7 +316,10 @@ export function OrderDemo({ dineIn, image, config, storeId, venueName }: OrderDe
                   <span>{item.description}</span>
                   <b>¥{item.price.toLocaleString()}</b>
                 </div>
-                <QuantityControl item={item} quantity={quantities[item.id] ?? 0} onChange={changeQuantity} />
+                <div className="order-row__actions">
+                  {(quantities[item.id] ?? 0) > 0 && (item.optionGroups?.length ?? 0) > 0 ? <button type="button" className="order-option-edit" onClick={() => openItemOptions(item)}>内容変更</button> : null}
+                  <QuantityControl item={item} quantity={quantities[item.id] ?? 0} onChange={changeQuantity} />
+                </div>
               </Card>
             ))}
           </div>
@@ -267,9 +342,12 @@ export function OrderDemo({ dineIn, image, config, storeId, venueName }: OrderDe
                     <p>{item.description}</p>
                     <b>¥{item.price.toLocaleString()}</b>
                     {quantity === 0 ? (
-                      <button type="button" className="order-product-card__add" onClick={() => changeQuantity(item.id, 1)}><Plus size={15} />カートに追加</button>
+                      <button type="button" className="order-product-card__add" onClick={() => changeQuantity(item, 1)}><Plus size={15} />カートに追加</button>
                     ) : (
-                      <QuantityControl item={item} quantity={quantity} onChange={changeQuantity} />
+                      <>
+                        {(item.optionGroups?.length ?? 0) > 0 ? <button type="button" className="order-option-edit" onClick={() => openItemOptions(item)}>内容変更</button> : null}
+                        <QuantityControl item={item} quantity={quantity} onChange={changeQuantity} />
+                      </>
                     )}
                   </div>
                 </article>
@@ -279,7 +357,8 @@ export function OrderDemo({ dineIn, image, config, storeId, venueName }: OrderDe
         )}
       </section>
 
-      <Card className={`order-summary${config.ctaPosition === "sticky" || count > 0 ? " order-summary--sticky" : ""}`} padding="md">
+      {count > 0 ? <div className="order-summary-spacer" aria-hidden="true" /> : null}
+      <Card className={`order-summary${count > 0 ? " order-summary--dock" : ""}`} padding="md">
         <div aria-live="polite"><span>カート · {count}点</span><strong>¥{total.toLocaleString()}</strong></div>
         <Button disabled={count === 0} onClick={() => setSheetOpen(true)}>{count === 0 ? "商品を選択" : "カートを見る"}</Button>
       </Card>
@@ -288,7 +367,7 @@ export function OrderDemo({ dineIn, image, config, storeId, venueName }: OrderDe
         <div className="stack stack--lg">
           <div className="checkout-lines">
             {orderItems.filter((item) => quantities[item.id]).map((item) => (
-              <div key={item.id}><span>{item.name} × {quantities[item.id]}</span><strong>¥{(item.price * quantities[item.id]).toLocaleString()}</strong></div>
+              <div className="checkout-line" key={item.id}><span>{item.name} × {quantities[item.id]}{selectedOptionNames(item).length > 0 ? <small>{selectedOptionNames(item).join(" / ")}</small> : null}</span><strong>¥{(itemUnitPrice(item) * quantities[item.id]).toLocaleString()}</strong></div>
             ))}
             <div className="checkout-lines__total"><span>合計</span><strong>¥{total.toLocaleString()}</strong></div>
           </div>
@@ -296,16 +375,43 @@ export function OrderDemo({ dineIn, image, config, storeId, venueName }: OrderDe
           <Button size="lg" disabled={submitting} onClick={() => void submitOrder()}>{submitting ? (dineIn ? "送信中…" : "決済準備中…") : (dineIn ? "注文を確定する" : "決済へ進む")}</Button>
         </div>
       </BottomSheet>
+
+      <BottomSheet open={configuringItemId !== undefined} onClose={() => setConfiguringItemId(undefined)} title="商品オプション">
+        {(() => {
+          const item = orderItems.find((candidate) => candidate.id === configuringItemId);
+          if (!item) return null;
+          return <div className="stack stack--lg order-option-sheet">
+            <div><span className="feature-success__eyebrow">{item.category ? categoryLabels[item.category] ?? item.category : "メニュー"}</span><h2>{item.name}</h2><strong>¥{(item.price + optionPrice(item, pendingOptions)).toLocaleString()}</strong></div>
+            {(item.optionGroups ?? []).map((group) => <fieldset className="order-option-group" key={group.id}>
+              <legend>{group.name}<small>{group.isRequired ? "必須" : "任意"}{group.selectionType === "multiple" ? `・${group.maxSelect}つまで` : ""}</small></legend>
+              {group.options.map((option) => <label key={option.id} className={pendingOptions.includes(option.id) ? "is-selected" : undefined}>
+                <input type={group.selectionType === "single" ? "radio" : "checkbox"} name={`option-${group.id}`} checked={pendingOptions.includes(option.id)} onChange={() => toggleOption(group, option.id)} />
+                <span>{option.name}</span><b>{option.priceDelta === 0 ? "追加料金なし" : `${option.priceDelta > 0 ? "+" : ""}¥${option.priceDelta.toLocaleString()}`}</b>
+              </label>)}
+            </fieldset>)}
+            {optionError ? <div className="form-error" role="alert">{optionError}</div> : null}
+            <Button size="lg" onClick={confirmItemOptions}>カートに反映する</Button>
+          </div>;
+        })()}
+      </BottomSheet>
+
+      <BottomSheet open={tableSheetOpen} onClose={() => setTableSheetOpen(false)} title="卓番を設定">
+        <div className="stack stack--lg table-number-sheet">
+          <p>テーブルに表示されている卓番を入力してください。</p>
+          <label><span>卓番</span><input value={tableNumber} onChange={(event) => setTableNumber(event.target.value)} placeholder="例: A-12" autoComplete="off" /></label>
+          <Button size="lg" disabled={tableNumber.trim() === ""} onClick={() => { const normalized = tableNumber.trim(); setTableNumber(normalized); window.sessionStorage.setItem("reggit-table-number", normalized); setTableSheetOpen(false); setError(undefined); }}>この卓番に設定する</Button>
+        </div>
+      </BottomSheet>
     </>
   );
 }
 
-function QuantityControl({ item, quantity, onChange }: { item: OrderItem; quantity: number; onChange: (id: string, amount: number) => void }) {
+function QuantityControl({ item, quantity, onChange }: { item: OrderItem; quantity: number; onChange: (item: OrderItem, amount: number) => void }) {
   return (
     <div className="quantity-stepper" aria-label={`${item.name}の数量`}>
-      <button type="button" aria-label={`${item.name}を減らす`} onClick={() => onChange(item.id, -1)} disabled={quantity === 0}><Minus size={16} /></button>
+      <button type="button" aria-label={`${item.name}を減らす`} onClick={() => onChange(item, -1)} disabled={quantity === 0}><Minus size={16} /></button>
       <span>{quantity}</span>
-      <button type="button" aria-label={`${item.name}を増やす`} onClick={() => onChange(item.id, 1)}><Plus size={16} /></button>
+      <button type="button" aria-label={`${item.name}を増やす`} onClick={() => onChange(item, 1)}><Plus size={16} /></button>
     </div>
   );
 }
