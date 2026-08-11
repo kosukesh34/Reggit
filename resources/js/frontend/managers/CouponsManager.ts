@@ -7,6 +7,7 @@ import { applyDemoCouponUsageState, isDemoCouponId, markDemoCouponUsed, readDemo
 import { isDemoDataMode, isFixedUiShell } from '../demo/demoMode';
 import { ensureLiffIdentityForLoad } from '../demo/ensureIdentity';
 import { buildBuiltinSampleCoupons } from '../demo/sampleData';
+import { isMembershipRequired } from '../utils/membershipPolicy';
 
 declare const JsBarcode: any;
 declare const QRCode: any;
@@ -178,7 +179,7 @@ export class CouponsManager {
 
         const canCallApi = await ensureLiffIdentityForLoad({ waitNativeDevice: true });
         if (!canCallApi) {
-            if (isDemoDataMode()) {
+            if (isDemoDataMode() || !isMembershipRequired()) {
                 this.renderSampleCoupons();
                 return;
             }
@@ -199,6 +200,10 @@ export class CouponsManager {
             const defaultImage = data && data.default_image_url ? data.default_image_url : null;
             const message = data && data.message ? data.message : null;
             if ((!coupons || coupons.length === 0) && message) {
+                if (!isMembershipRequired()) {
+                    this.renderSampleCoupons();
+                    return;
+                }
                 this.cache = [];
                 this.lastDefaultImage = defaultImage;
                 this.render([], defaultImage);
