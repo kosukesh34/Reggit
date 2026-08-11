@@ -5,6 +5,7 @@ import { ConfirmDialog } from '../../shared/utils/confirmDialog';
 import { ToastManager } from '../../shared/utils/toast';
 import { isDemoDataMode, isFixedUiShell } from '../demo/demoMode';
 import { buildBuiltinSampleReservations } from '../demo/sampleData';
+import { isMembershipRequired } from '../utils/membershipPolicy';
 import { isReactOwnedMount } from '../utils/reactOwnedMount';
 
 const DEFAULT_ADVANCE_DAYS = 30;
@@ -99,7 +100,7 @@ export class ReservationManager {
             } else {
                 const data = (response as { data?: { requires_membership?: boolean } }).data;
                 if (data && data.requires_membership === true) {
-                    if (isDemoDataMode()) {
+                    if (isDemoDataMode() || !isMembershipRequired()) {
                         this.renderSampleReservations();
                         return;
                     }
@@ -114,7 +115,7 @@ export class ReservationManager {
             if (this.reservationsSection) {
                 const message = error instanceof Error ? error.message : '';
                 if (message && message.includes('会員登録が必要')) {
-                    if (isDemoDataMode()) {
+                    if (isDemoDataMode() || !isMembershipRequired()) {
                         this.renderSampleReservations();
                     } else {
                         this.renderMembershipRequired();
