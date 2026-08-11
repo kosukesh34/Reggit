@@ -231,6 +231,20 @@ export async function loadMemberView(): Promise<MemberLoadResult> {
 }
 
 export function openRegister(forced = false): void {
+    if (typeof window !== 'undefined' && window.__REGGIT_LIFF_UI__ === true) {
+        document.dispatchEvent(new CustomEvent('liff-ui-navigate', {
+            detail: { path: '/membership' },
+        }));
+        window.setTimeout(() => {
+            const mm = getMemberManager();
+            if (mm !== undefined && typeof mm.openRegisterFullScreen === 'function') {
+                void mm.openRegisterFullScreen({ forced, skipHistory: true });
+                return;
+            }
+            document.dispatchEvent(new CustomEvent('liff-member-open-register', { detail: { forced } }));
+        }, 80);
+        return;
+    }
     const mm = getMemberManager();
     if (typeof window.app?.switchTab === 'function' && window.app.currentTab !== AppConstants.TABS.MEMBER) {
         window.app.switchTab(AppConstants.TABS.MEMBER);
@@ -243,6 +257,15 @@ export function openRegister(forced = false): void {
 }
 
 export function openProfileEdit(): void {
+    if (typeof window !== 'undefined' && window.__REGGIT_LIFF_UI__ === true) {
+        document.dispatchEvent(new CustomEvent('liff-ui-navigate', {
+            detail: { path: '/membership' },
+        }));
+        window.setTimeout(() => {
+            document.dispatchEvent(new CustomEvent('liff-member-open-edit'));
+        }, 80);
+        return;
+    }
     document.dispatchEvent(new CustomEvent('liff-member-open-edit'));
 }
 

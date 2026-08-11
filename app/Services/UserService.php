@@ -29,6 +29,7 @@ class UserService
         if ($lineUserId !== null) {
             $user = $this->findActiveUserByLineId($lineUserId, $projectId);
             if ($user !== null) {
+                Session::put($this->getSessionKey($projectId), $user->id);
                 $this->logResolution('line', $user, $lineUserId, $deviceIdentifier);
 
                 return $user;
@@ -92,6 +93,7 @@ class UserService
         if ($lineUserId !== null) {
             $byLine = $this->findActiveUserByLineId($lineUserId, $projectId);
             if ($byLine !== null) {
+                Session::put($this->getSessionKey($projectId), $byLine->id);
                 $this->logResolution('get_or_create_line', $byLine, $lineUserId, $deviceIdentifier);
 
                 return $byLine;
@@ -104,6 +106,7 @@ class UserService
                 $this->releaseLineUserIdHeldByWithdrawnUsers($lineUserId, $projectId);
                 $this->linkLineUserIdIfPossible($existing, $lineUserId, $projectId);
             }
+            Session::put($this->getSessionKey($projectId), $existing->id);
             $this->logResolution('get_or_create_existing', $existing, $lineUserId, $deviceIdentifier);
 
             return $existing;
