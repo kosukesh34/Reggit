@@ -41,24 +41,37 @@ class SyncOrderPointsToSmaregiJob implements ShouldBeUnique, ShouldQueue
 
     public function handle(SmaregiPointsSyncService $pointsSync, OrderRepository $orderRepository): void
     {
-        if ($orderRepository->isSmaregiPointsSynced($this->orderId, $this->projectId)) {
-            return;
-        }
+        try {
+            if ($orderRepository->isSmaregiPointsSynced($this->orderId, $this->projectId)) {
+                return;
+            }
 
-        if ($pointsSync->syncOrderNetPoints($this->orderId, $this->projectId, $this->userId)) {
-            return;
-        }
+            if ($pointsSync->syncOrderNetPoints($this->orderId, $this->projectId, $this->userId)) {
+                return;
+            }
 
-        if ($orderRepository->isSmaregiPointsSynced($this->orderId, $this->projectId)) {
-            return;
-        }
+            if ($orderRepository->isSmaregiPointsSynced($this->orderId, $this->projectId)) {
+                return;
+            }
 
-        LogHelper::warning('[Smaregi] order points sync job incomplete', [
-            'order_id' => $this->orderId,
-            'project_id' => $this->projectId,
-            'user_id' => $this->userId,
-            'attempt' => $this->attempt,
-        ]);
+            LogHelper::warning('[Smaregi] order points sync job incomplete', [
+                'order_id' => $this->orderId,
+                'project_id' => $this->projectId,
+                'user_id' => $this->userId,
+                'attempt' => $this->attempt,
+            ]);
+        } catch (\Throwable $e) {
+            LogHelper::error('[Smaregi] order points sync job threw', [
+                'order_id' => $this->orderId,
+                'project_id' => $this->projectId,
+                'error' => $e->getMessage(),
+                'attempt' => $this->attempt,
+            ]);
+            if (config('queue.default') === 'sync') {
+                return;
+            }
+            throw $e;
+        }
 
         // sync では例外・再ディスパッチしない（注文作成の HTTP を壊さない）
         if (config('queue.default') === 'sync') {

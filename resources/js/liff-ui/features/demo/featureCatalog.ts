@@ -30,7 +30,7 @@ export interface FeatureDefinition {
 
 export const featureDefinitions: FeatureDefinition[] = [
   { type: "membership", label: "会員証", shortLabel: "会員証", description: "会員バーコードを表示", icon: CreditCard },
-  { type: "mobileOrder", label: "モバイルオーダー", shortLabel: "注文", description: "受取注文を事前に決済", icon: Coffee },
+  { type: "mobileOrder", label: "モバイルオーダー", shortLabel: "注文", description: "受取注文。カード決済または店頭払い", icon: Coffee },
   { type: "dineInOrder", label: "店内注文", shortLabel: "店内注文", description: "テーブルから追加注文", icon: UtensilsCrossed },
   { type: "reservation", label: "予約", shortLabel: "予約", description: "日時を選んで予約", icon: CalendarDays },
   { type: "queue", label: "順番待ち", shortLabel: "順番待ち", description: "受付番号をオンライン発行", icon: Users },

@@ -22,6 +22,18 @@ class OrderPlacementPolicyTest extends TestCase
         $this->assertTrue(true);
     }
 
+    public function test_assert_valid_モバイル注文と現金は許可されること(): void
+    {
+        (new OrderPlacementPolicy)->assertValid(
+            OrderType::MOBILE,
+            PaymentMethod::CASH,
+            OrderPlacementPolicy::MODE_BOTH,
+            'Reggit',
+        );
+
+        $this->assertTrue(true);
+    }
+
     public function test_assert_valid_店内注文は現金のみ許可されること(): void
     {
         (new OrderPlacementPolicy)->assertValid(

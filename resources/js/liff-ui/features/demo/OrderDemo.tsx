@@ -215,7 +215,7 @@ export function OrderDemo({ dineIn, image, config, storeId, venueName }: OrderDe
     setConfiguringItemId(undefined);
   };
 
-  const submitOrder = async () => {
+  const submitOrder = async (paymentMethod: 'stripe' | 'cash' = 'stripe') => {
     setSubmitting(true);
     setError(undefined);
     try {
@@ -231,6 +231,7 @@ export function OrderDemo({ dineIn, image, config, storeId, venueName }: OrderDe
         storeId,
         venueName,
         fulfillment: dineIn ? "dine_in" : "pickup",
+        paymentMethod: dineIn ? "cash" : paymentMethod,
         tableNumber: dineIn ? tableNumber.trim() : undefined,
         lines: orderItems.filter((item) => quantities[item.id]).map((item) => ({
           itemId: item.id,
@@ -243,7 +244,7 @@ export function OrderDemo({ dineIn, image, config, storeId, venueName }: OrderDe
         total,
       });
       let referenceValue = receipt.reference;
-      if (!dineIn && receipt.needsPayment === true && receipt.orderId !== undefined) {
+      if (!dineIn && paymentMethod === "stripe" && receipt.needsPayment === true && receipt.orderId !== undefined) {
         referenceValue = await waitForStripePayment(receipt);
       }
       setReference(referenceValue);
@@ -262,7 +263,7 @@ export function OrderDemo({ dineIn, image, config, storeId, venueName }: OrderDe
         <CheckCircle2 size={44} />
         <div className="feature-success__eyebrow">受付完了</div>
         <h2>ご注文を受け付けました</h2>
-        <p>{dineIn ? `テーブル ${tableNumber} までお持ちします。` : `受取番号 ${reference ?? "—"}${pickupTime ? `。${pickupTime.replace("最短受取 ", "")}でご用意します。` : "。"}`}</p>
+        <p>{dineIn ? `テーブル ${tableNumber} までお持ちします。` : `受取番号 ${reference ?? "—"}${pickupTime ? `。${pickupTime.replace("最短受取 ", "")}でご用意します。` : "。店頭でお受け取りください。"}`}</p>
         {reference ? <span className="operation-reference">受付ID {reference}</span> : null}
         <Button onClick={() => { setCompleted(false); setQuantities({}); setSelectedOptions({}); setReference(undefined); }}>続けて注文する</Button>
       </Card>
@@ -372,7 +373,14 @@ export function OrderDemo({ dineIn, image, config, storeId, venueName }: OrderDe
             <div className="checkout-lines__total"><span>合計</span><strong>¥{total.toLocaleString()}</strong></div>
           </div>
           {error ? <div className="form-error" role="alert">{error}</div> : null}
-          <Button size="lg" disabled={submitting} onClick={() => void submitOrder()}>{submitting ? (dineIn ? "送信中…" : "決済準備中…") : (dineIn ? "注文を確定する" : "決済へ進む")}</Button>
+          {dineIn ? (
+            <Button size="lg" disabled={submitting} onClick={() => void submitOrder("cash")}>{submitting ? "送信中…" : "注文を確定する"}</Button>
+          ) : (
+            <div className="stack stack--md">
+              <Button size="lg" disabled={submitting} onClick={() => void submitOrder("stripe")}>{submitting ? "決済準備中…" : "カードで払う"}</Button>
+              <Button size="lg" variant="soft" disabled={submitting} onClick={() => void submitOrder("cash")}>{submitting ? "送信中…" : "店頭で払う"}</Button>
+            </div>
+          )}
         </div>
       </BottomSheet>
 
