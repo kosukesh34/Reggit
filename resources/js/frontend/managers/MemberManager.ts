@@ -2,7 +2,7 @@ import { AppConstants } from '../../shared/constants';
 import { DomHelper } from '../../shared/utils/domHelper';
 import { ToastManager } from '../../shared/utils/toast';
 import { ConfirmDialog } from '../../shared/utils/confirmDialog';
-import { getGuestRegisterMessage, getMemberRegistrationMode, shouldShowRegistrationForm, syncMemberRegistrationModeFromPayload } from '../utils/membershipPolicy';
+import { getGuestRegisterMessage, getMemberRegistrationMode, isMembershipRequired, shouldShowRegistrationForm, syncMemberRegistrationModeFromPayload } from '../utils/membershipPolicy';
 import { isDemoDataMode, isFixedUiShell } from '../demo/demoMode';
 import { buildBuiltinSampleMemberData } from '../demo/sampleData';
 import { isReactOwnedMount } from '../utils/reactOwnedMount';
@@ -640,7 +640,7 @@ export class MemberManager {
             await this.ensureRegistrationFormShown();
             return;
         }
-        if (payload && payload.show_member_card_for_guest === false) {
+        if (payload && payload.show_member_card_for_guest === false && isMembershipRequired()) {
             if (this._isReactOwnedMemberMount(container)) {
                 this._emitMemberReactEvent('liff-member-reload');
                 return;
@@ -668,9 +668,9 @@ export class MemberManager {
         this._attachRegisterTrigger(container);
     }
 
-    /** サンプル会員証を描画（デモモード時のみ。通常の固定UIはゲスト登録導線） */
+    /** サンプル会員証を描画（デモ／会員任意時。会員必須時はゲスト登録導線） */
     renderSampleMemberCard(): void {
-        if (isDemoDataMode()) {
+        if (isDemoDataMode() || !isMembershipRequired()) {
             const app = typeof window !== 'undefined'
                 ? (window.app as { getDesignerSampleMemberData?: () => Record<string, unknown> } | undefined)
                 : undefined;
@@ -949,6 +949,10 @@ export class MemberManager {
             if (typeof window !== 'undefined' && window.__IS_LIFF__) {
                 this._registerLiffIdentityRetry();
                 container.innerHTML = this.getSkeletonHtml();
+                return;
+            }
+            if (!isMembershipRequired()) {
+                this.renderSampleMemberCard();
                 return;
             }
             container.innerHTML = this.getLoginOptionalTemplate('会員証', 'ログインすると会員証をご利用いただけます。');

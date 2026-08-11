@@ -26,14 +26,19 @@ body.reggit-liff-ui {
     --radius-xs: 8px;
     --radius-sm: 12px;
     --radius: 16px;
+    --radius-lg: 20px;
+    --section-gap: clamp(14px, 4.2vw, 20px);
+    --font-base: "Manrope", "Noto Sans JP", "Hiragino Sans", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+    --font-display: var(--font-base);
     --font-weight-heading: 700;
     --content-padding: clamp(14px, 4.2vw, 20px);
     --ease: cubic-bezier(0.4, 0, 0.2, 1);
     --dur-fast: 0.14s;
+    --safe-area-bottom-capped: env(safe-area-inset-bottom, 0px);
     --main-tabs-height: var(--bottom-nav-height, 86px);
 }
 
-/* 誘導ボタン用（10-orders.css 全体は取り込まない） */
+/* 誘導ボタン用（10-orders.css 読込前でも最低限の .btn が使えるようにする） */
 body.reggit-liff-ui .btn {
     display: inline-flex;
     align-items: center;
@@ -62,12 +67,67 @@ body.reggit-liff-ui .btn-primary {
     color: #fff;
 }
 
+body.reggit-liff-ui .btn-secondary {
+    background: var(--surface-2);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+body.reggit-liff-ui .btn-danger {
+    background: var(--danger);
+    border-color: var(--danger);
+    color: #fff;
+}
+
 body.reggit-liff-ui .mt-2 {
     margin-top: 8px;
 }
 
 body.member-screen-overlay .bottom-nav {
     display: none !important;
+}
+
+/*
+ * スタンプ・クーポン等の「読み込み中」
+ * 旧 05-overlay-skeleton-toast.css の .loading が LIFF に無いため、ページ中央に寄せる
+ */
+body.reggit-liff-ui .loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin: 0;
+    padding: 40px 20px;
+    text-align: center;
+    color: var(--text-secondary, #5c6b67);
+    box-sizing: border-box;
+}
+
+body.reggit-liff-ui .loading p {
+    margin: 0;
+}
+
+body.reggit-liff-ui .loading .fa-spinner {
+    font-size: 28px;
+}
+
+body.reggit-liff-ui .page > .loading,
+body.reggit-liff-ui .page > .coupons-data-mount:has(> .loading) {
+    min-height: calc(
+        100dvh
+        - 76px
+        - var(--bottom-nav-height, 86px)
+        - env(safe-area-inset-top, 0px)
+        - env(safe-area-inset-bottom, 0px)
+        - 48px
+    );
+}
+
+body.reggit-liff-ui .page > .coupons-data-mount:has(> .loading) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* 登録準備中の「読み込み中」を画面中央に */
@@ -82,21 +142,6 @@ body.reggit-liff-ui .member-register-react-host:has(> .loading) {
 }
 
 body.reggit-liff-ui .member-register-react-host .loading {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    margin: 0;
+    min-height: 0;
     padding: 0;
-    text-align: center;
-    color: var(--text-secondary);
-}
-
-body.reggit-liff-ui .member-register-react-host .loading p {
-    margin: 0;
-}
-
-body.reggit-liff-ui .member-register-react-host .loading .fa-spinner {
-    font-size: 28px;
 }
