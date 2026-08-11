@@ -4,10 +4,6 @@
 @section('page-title', 'LIFFデザイン')
 @section('page-kind', 'liff-designer')
 
-@push('styles-before-vite')
-<link rel="stylesheet" href="{{ asset('css/admin/liff-designer.css') }}?v=20260809a">
-@endpush
-
 @section('content')
 <form action="{{ admin_route('admin.settings.liff-designer.update') }}" method="POST" id="liffDesignerForm" hidden>
     @csrf
@@ -22,29 +18,22 @@
 
 @php
     $ldDesignerConfig = [
-        'layouts' => $layouts ?? [],
-        'detailLayouts' => $detailLayouts ?? [],
         'tabSettings' => $tabSettings ?? [],
-        'templates' => $templates ?? [],
         'customCss' => $customCss ?? '',
-        'featureFlags' => $featureFlags ?? [],
         'menuItems' => $menuItems ?? [],
-        'themePresets' => \App\Support\LiffThemePresets::all(),
-        'fontStacks' => \App\Support\LiffThemePresets::fontStacks(),
-        'surfaceTones' => \App\Support\LiffThemePresets::surfaceTones(),
-        'contentWidths' => collect(\App\Support\LiffThemePresets::contentWidths())->map(fn ($w) => ['label' => $w['label']])->all(),
-        'backgroundStyles' => \App\Support\LiffThemePresets::backgroundStyles(),
         'formAction' => admin_route('admin.settings.liff-designer.update'),
         'csrfToken' => csrf_token(),
         'backUrl' => admin_route('admin.settings.basic'),
-        'lineFriendAddUrl' => old('line_friend_add_url', $lineFriendAddUrl ?? ''),
-        'previewData' => $previewData ?? [
-            'products' => [],
-            'coupons' => [],
-            'stamps' => [],
-            'member' => null,
-        ],
     ];
 @endphp
+<script>
+    window.__PROJECT_KEY__ = @json(request()->route('project_key') ?? 'default');
+    window.__FRONTEND_HEADER__ = {
+        title: @json(($tabSettings['_global']['app_display_name'] ?? null) ?: config('app.name')),
+        logoUrl: null,
+        friendAddUrl: @json($lineFriendAddUrl ?? ''),
+    };
+    window.__LIFF_TAB_SETTINGS__ = @json($tabSettings ?? []);
+</script>
 <script type="application/json" id="ldDesignerConfig">@json($ldDesignerConfig)</script>
 @endsection

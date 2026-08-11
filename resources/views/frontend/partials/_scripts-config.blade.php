@@ -14,6 +14,25 @@
     $scriptLiffTabLayouts = $isDemoFixedUi ? [] : ($liffTabLayouts ?? []);
     $scriptLiffDetailLayouts = $isDemoFixedUi ? [] : ($liffDetailLayouts ?? []);
     $scriptLiffTabSettings = $isDemoFixedUi ? [] : ($liffTabSettings ?? []);
+    $flags = $featureFlags ?? [];
+    $tabFeatureMap = [
+        'home' => 'feature_home_enabled',
+        'products' => 'feature_orders_enabled',
+        'orders' => 'feature_orders_enabled',
+        'stamps' => 'feature_stamps_enabled',
+        'coupons' => 'feature_coupons_enabled',
+        'queue' => 'feature_queue_enabled',
+        'reservations' => 'feature_reservations_enabled',
+        'member' => 'feature_members_enabled',
+        'gallery' => 'feature_gallery_enabled',
+        'announcements' => 'feature_announcements_enabled',
+    ];
+    $filteredMenu = $isDemoFixedUi
+        ? []
+        : array_filter(
+            $frontendMenu ?? app(\App\Domain\Settings\Repositories\ShopSettingRepository::class)->defaultFrontendMenuItems(),
+            fn ($item) => ($flags[$tabFeatureMap[$item['tab'] ?? ''] ?? ''] ?? true)
+        );
     $scriptFrontendMenu = $isDemoFixedUi
         ? [
             ['tab' => 'home', 'label' => 'ホーム', 'icon' => 'fa-house'],
@@ -21,7 +40,7 @@
             ['tab' => 'member', 'label' => 'カード', 'icon' => 'fa-id-card'],
             ['tab' => 'queue', 'label' => '来店', 'icon' => 'fa-list-ol'],
         ]
-        : array_values($filteredMenu ?? []);
+        : array_values($filteredMenu);
 @endphp
 <meta name="stripe-key" content="{{ env('STRIPE_KEY', '') }}">
 <script>

@@ -1,0 +1,207 @@
+{
+  "stores": [
+    {
+      "storeId": "store_cafe",
+      "storeName": "REGGIT COFFEE",
+      "brandName": "REGGIT COFFEE",
+      "logoText": "RC",
+      "themeId": "cafe-natural",
+      "heroTitle": "夏の終わりを、いちじくと。",
+      "heroSubtitle": "旬の果実を使ったデニッシュと、深煎りのハウスブレンドをどうぞ。",
+      "home": {
+        "heroImage": "/assets/cafe-hero.webp",
+        "heroEyebrow": "SEASONAL · LIMITED",
+        "statusLabel": "営業中 · 20:00まで",
+        "primaryActionLabel": "モバイルオーダー",
+        "primaryActionFeature": "mobileOrder",
+        "featuredImage": "/assets/cafe-feature.webp",
+        "featuredTitle": "いちじくのデニッシュ",
+        "featuredDescription": "旬のいちじくとアーモンドクリーム。数量限定でご用意しています。",
+        "featuredActionLabel": "メニューを見る",
+        "featuredFeature": "menu"
+      },
+      "features": {
+        "membership": true,
+        "mobileOrder": true,
+        "dineInOrder": true,
+        "reservation": true,
+        "queue": true,
+        "coupon": true,
+        "stamp": true,
+        "point": true,
+        "menu": true,
+        "gallery": true,
+        "news": true,
+        "storeSearch": true,
+        "purchaseHistory": true,
+        "orderHistory": true,
+        "favorite": true,
+        "ticket": true,
+        "subscription": true
+      },
+      "tabs": [
+        { "id": "home", "type": "home", "label": "ホーム", "enabled": true, "order": 1 },
+        { "id": "membership", "type": "membership", "label": "会員証", "enabled": true, "order": 2 },
+        { "id": "order", "type": "mobileOrder", "label": "注文", "enabled": true, "order": 3 },
+        { "id": "coupon", "type": "coupon", "label": "クーポン", "enabled": true, "order": 4 },
+        { "id": "more", "type": "more", "label": "その他", "enabled": true, "order": 5 }
+      ],
+      "quickActions": [
+        { "id": "qa_order", "feature": "mobileOrder", "label": "注文", "icon": "cup", "order": 1 },
+        { "id": "qa_coupon", "feature": "coupon", "label": "クーポン", "icon": "ticket", "order": 2 },
+        { "id": "qa_stamp", "feature": "stamp", "label": "スタンプ", "icon": "stamp", "order": 3 },
+        { "id": "qa_store", "feature": "storeSearch", "label": "店舗", "icon": "map", "order": 4 }
+      ],
+      "membershipCard": {
+        "templateId": "standard",
+        "backgroundType": "gradient",
+        "gradientFrom": "#35271f",
+        "gradientTo": "#8f5538",
+        "textColor": "#fffaf4",
+        "logoVisible": true,
+        "memberNameVisible": true,
+        "memberNumberVisible": true,
+        "rankVisible": true,
+        "pointVisible": true,
+        "barcodeVisible": true,
+        "borderRadius": 28,
+        "shadow": "large"
+      }
+    },
+    {
+      "storeId": "store_apparel",
+      "storeName": "REGGIT STORE",
+      "brandName": "REGGIT STORE",
+      "logoText": "RS",
+      "themeId": "fashion-chic",
+      "heroTitle": "静かな輪郭を、秋の装いに。",
+      "heroSubtitle": "上質な素材と端正なシルエットでつくる、新しい季節のワードローブ。",
+      "home": {
+        "heroImage": "/assets/apparel-hero.webp",
+        "heroEyebrow": "AUTUMN EDIT · 2026",
+        "statusLabel": "表参道店 · 20:00まで",
+        "primaryActionLabel": "新作を見る",
+        "primaryActionFeature": "favorite",
+        "featuredImage": "/assets/apparel-feature.webp",
+        "featuredTitle": "Soft Structure Bag",
+        "featuredDescription": "しなやかなレザーと、日常に馴染む構築的なフォルム。",
+        "featuredActionLabel": "アイテムを見る",
+        "featuredFeature": "favorite"
+      },
+      "features": {
+        "membership": true,
+        "mobileOrder": false,
+        "dineInOrder": false,
+        "reservation": false,
+        "queue": false,
+        "coupon": true,
+        "stamp": false,
+        "point": true,
+        "menu": false,
+        "gallery": false,
+        "news": true,
+        "storeSearch": true,
+        "purchaseHistory": true,
+        "orderHistory": false,
+        "favorite": true,
+        "ticket": false,
+        "subscription": false
+      },
+      "tabs": [
+        { "id": "home", "type": "home", "label": "ホーム", "enabled": true, "order": 1 },
+        { "id": "membership", "type": "membership", "label": "会員証", "enabled": true, "order": 2 },
+        { "id": "point", "type": "point", "label": "ポイント", "enabled": true, "order": 3 },
+        { "id": "coupon", "type": "coupon", "label": "クーポン", "enabled": true, "order": 4 },
+        { "id": "more", "type": "more", "label": "その他", "enabled": true, "order": 5 }
+      ],
+      "quickActions": [
+        { "id": "qa_point", "feature": "point", "label": "ポイント", "icon": "coins", "order": 1 },
+        { "id": "qa_coupon", "feature": "coupon", "label": "クーポン", "icon": "ticket", "order": 2 },
+        { "id": "qa_store", "feature": "storeSearch", "label": "店舗", "icon": "map", "order": 3 },
+        { "id": "qa_favorite", "feature": "favorite", "label": "お気に入り", "icon": "heart", "order": 4 }
+      ],
+      "membershipCard": {
+        "templateId": "point-focus",
+        "backgroundType": "solid",
+        "backgroundColor": "#171717",
+        "textColor": "#ffffff",
+        "logoVisible": true,
+        "memberNameVisible": true,
+        "memberNumberVisible": true,
+        "rankVisible": false,
+        "pointVisible": true,
+        "barcodeVisible": true,
+        "borderRadius": 30,
+        "shadow": "large"
+      }
+    },
+    {
+      "storeId": "store_salon",
+      "storeName": "REGGIT SALON",
+      "brandName": "REGGIT SALON",
+      "logoText": "RG",
+      "themeId": "salon-elegant",
+      "heroTitle": "髪と気持ちが、ほどける時間。",
+      "heroSubtitle": "夏の疲れをやさしく整える、季節限定のスカルプケアをご用意しました。",
+      "home": {
+        "heroImage": "/assets/salon-hero.webp",
+        "heroEyebrow": "SEASONAL CARE · AUGUST",
+        "statusLabel": "本日 16:30以降 ご案内可",
+        "primaryActionLabel": "空き時間を確認",
+        "primaryActionFeature": "reservation",
+        "featuredImage": "/assets/salon-feature.webp",
+        "featuredTitle": "Botanical Head Spa",
+        "featuredDescription": "植物由来のオイルで頭皮をほぐす、30分の集中ケア。",
+        "featuredActionLabel": "メニューを見る",
+        "featuredFeature": "reservation"
+      },
+      "features": {
+        "membership": true,
+        "mobileOrder": false,
+        "dineInOrder": false,
+        "reservation": true,
+        "queue": false,
+        "coupon": true,
+        "stamp": true,
+        "point": false,
+        "menu": false,
+        "gallery": true,
+        "news": true,
+        "storeSearch": false,
+        "purchaseHistory": false,
+        "orderHistory": false,
+        "favorite": false,
+        "ticket": false,
+        "subscription": false
+      },
+      "tabs": [
+        { "id": "home", "type": "home", "label": "ホーム", "enabled": true, "order": 1 },
+        { "id": "membership", "type": "membership", "label": "会員証", "enabled": true, "order": 2 },
+        { "id": "reservation", "type": "reservation", "label": "予約", "enabled": true, "order": 3 },
+        { "id": "stamp", "type": "stamp", "label": "スタンプ", "enabled": true, "order": 4 },
+        { "id": "more", "type": "more", "label": "その他", "enabled": true, "order": 5 }
+      ],
+      "quickActions": [
+        { "id": "qa_reservation", "feature": "reservation", "label": "予約", "icon": "calendar", "order": 1 },
+        { "id": "qa_coupon", "feature": "coupon", "label": "クーポン", "icon": "ticket", "order": 2 },
+        { "id": "qa_stamp", "feature": "stamp", "label": "スタンプ", "icon": "stamp", "order": 3 },
+        { "id": "qa_gallery", "feature": "gallery", "label": "ギャラリー", "icon": "image", "order": 4 }
+      ],
+      "membershipCard": {
+        "templateId": "luxury",
+        "backgroundType": "gradient",
+        "gradientFrom": "#452e35",
+        "gradientTo": "#9b6570",
+        "textColor": "#fff9f7",
+        "logoVisible": true,
+        "memberNameVisible": true,
+        "memberNumberVisible": true,
+        "rankVisible": true,
+        "pointVisible": false,
+        "barcodeVisible": true,
+        "borderRadius": 30,
+        "shadow": "large"
+      }
+    }
+  ]
+}
