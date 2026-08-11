@@ -701,6 +701,7 @@ rsync_to_production() {
     --exclude 'tmp-ui-review/' \
     --exclude 'tmp-*.png' \
     --exclude 'public/tmp-*' \
+    --exclude 'public/hot' \
     --exclude 'agent-transcripts/' \
     -e "ssh -p ${DEPLOY_SSH_PORT} -i ${DEPLOY_SSH_KEY} -o BatchMode=yes -o IdentitiesOnly=yes" \
     "${REGGIT_ROOT}/" "${DEPLOY_HOST}:~/${DEPLOY_PATH}/"
@@ -712,6 +713,7 @@ remote_post_deploy() {
 set -e
 export PATH="\$HOME/bin:\$PATH"
 cd "\$HOME/${DEPLOY_PATH}"
+rm -f public/hot
 rm -f bootstrap/cache/*.php
 mkdir -p storage/framework/{cache,sessions,views} storage/logs bootstrap/cache
 chmod -R u+rwX storage bootstrap/cache
@@ -722,6 +724,7 @@ php /usr/bin/composer install --no-dev --optimize-autoloader --no-interaction
 /usr/bin/php8.4 artisan route:cache
 /usr/bin/php8.4 artisan view:cache
 test -f public/build/manifest.json
+test ! -e public/hot
 /usr/bin/php8.4 artisan --version
 EOF
 }

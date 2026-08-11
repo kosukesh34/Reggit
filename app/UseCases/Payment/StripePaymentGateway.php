@@ -20,6 +20,11 @@ class StripePaymentGateway implements PaymentGateway
         $intent = PaymentIntent::create([
             'amount' => $amount,
             'currency' => 'jpy',
+            // LIFF 内完結のためリダイレクト系決済は無効（カード 3DS のモーダルは利用可）
+            'automatic_payment_methods' => [
+                'enabled' => true,
+                'allow_redirects' => 'never',
+            ],
             'metadata' => [
                 'order_id' => $orderId,
             ],
