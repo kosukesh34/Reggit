@@ -1,5 +1,5 @@
 import { appConfig } from './appConfig';
-import type { StoreAppConfig } from '../types/app';
+import type { FeatureConfig, FeatureType, QuickAction, StoreAppConfig, TabConfig, TabType } from '../types/app';
 import { createDefaultCustomization } from './customization';
 import type { AppCustomizationPatch } from '../types/customization';
 
@@ -14,6 +14,156 @@ function headerTitle(): string {
   return document.title || '店舗アプリ';
 }
 
+const featureFlagMap: Partial<Record<FeatureType, string>> = {
+  membership: 'feature_members_enabled',
+  point: 'feature_members_enabled',
+  mobileOrder: 'feature_orders_enabled',
+  dineInOrder: 'feature_orders_enabled',
+  menu: 'feature_orders_enabled',
+  purchaseHistory: 'feature_orders_enabled',
+  orderHistory: 'feature_orders_enabled',
+  reservation: 'feature_reservations_enabled',
+  queue: 'feature_queue_enabled',
+  coupon: 'feature_coupons_enabled',
+  stamp: 'feature_stamps_enabled',
+  gallery: 'feature_gallery_enabled',
+  news: 'feature_announcements_enabled',
+};
+
+function buildFeatures(): FeatureConfig {
+  const flags = window.__FEATURE_FLAGS__ ?? {};
+  const orderMode = String(window.__ORDER_MODE__ ?? 'both');
+  const enabled = (feature: FeatureType): boolean => {
+    const key = featureFlagMap[feature];
+    return key === undefined ? false : flags[key] !== false;
+  };
+
+  return {
+    membership: enabled('membership'),
+    mobileOrder: enabled('mobileOrder') && orderMode !== 'in_store_only',
+    dineInOrder: enabled('dineInOrder') && orderMode !== 'mobile_only',
+    reservation: enabled('reservation'),
+    queue: enabled('queue'),
+    coupon: enabled('coupon'),
+    stamp: enabled('stamp'),
+    point: enabled('point'),
+    menu: enabled('menu'),
+    gallery: enabled('gallery'),
+    news: enabled('news'),
+    storeSearch: false,
+    purchaseHistory: enabled('purchaseHistory'),
+    orderHistory: enabled('orderHistory'),
+    favorite: false,
+    ticket: false,
+    subscription: false,
+  };
+}
+
+const menuTabMap: Record<string, TabType | undefined> = {
+  home: 'home',
+  products: 'mobileOrder',
+  member: 'membership',
+  coupons: 'coupon',
+  stamps: 'stamp',
+  queue: 'queue',
+  reservations: 'reservation',
+  announcements: 'news',
+};
+
+const tabFeatureMap: Partial<Record<TabType, FeatureType>> = {
+  membership: 'membership',
+  mobileOrder: 'mobileOrder',
+  dineInOrder: 'dineInOrder',
+  reservation: 'reservation',
+  queue: 'queue',
+  coupon: 'coupon',
+  stamp: 'stamp',
+  point: 'point',
+  menu: 'menu',
+  news: 'news',
+};
+
+function buildTabs(features: FeatureConfig, homeEnabled: boolean): TabConfig[] {
+  const configuredMenu = Array.isArray(window.__FRONTEND_MENU__) ? window.__FRONTEND_MENU__ : [];
+  const seen = new Set<TabType>();
+  const candidates = configuredMenu.map((item) => ({
+    type: item.tab === 'products' && !features.mobileOrder && features.dineInOrder
+      ? 'dineInOrder' as const
+      : menuTabMap[item.tab],
+    label: item.label,
+  }));
+
+  if (candidates.length === 0) {
+    candidates.push(
+      { type: homeEnabled ? 'home' : undefined, label: 'ホーム' },
+      { type: features.mobileOrder ? 'mobileOrder' : features.dineInOrder ? 'dineInOrder' : undefined, label: 'オーダー' },
+      { type: features.membership ? 'membership' : undefined, label: '会員証' },
+      { type: features.queue ? 'queue' : features.reservation ? 'reservation' : undefined, label: '来店' },
+    );
+  }
+
+  const tabs: TabConfig[] = [];
+  candidates.forEach((candidate) => {
+    const type = candidate.type;
+    const feature = type === undefined ? undefined : tabFeatureMap[type];
+    if (type === undefined || seen.has(type) || (type === 'home' && !homeEnabled) || (feature !== undefined && !features[feature])) {
+      return;
+    }
+    seen.add(type);
+    tabs.push({
+      id: type,
+      type,
+      label: candidate.label?.trim() || (type === 'home' ? 'ホーム' : 'サービス'),
+      enabled: true,
+      order: tabs.length + 1,
+    });
+  });
+
+  if (homeEnabled && !seen.has('home')) {
+    tabs.unshift({ id: 'home', type: 'home', label: 'ホーム', enabled: true, order: 0 });
+  }
+  if (!seen.has('more')) {
+    tabs.push({ id: 'more', type: 'more', label: 'その他', enabled: true, order: tabs.length + 1 });
+  }
+
+  return tabs.slice(0, 6).map((tab, index) => ({ ...tab, order: index + 1 }));
+}
+
+const quickActionIconMap: Partial<Record<FeatureType, string>> = {
+  mobileOrder: 'cup',
+  dineInOrder: 'cup',
+  membership: 'coins',
+  coupon: 'ticket',
+  stamp: 'stamp',
+  queue: 'calendar',
+  reservation: 'calendar',
+  gallery: 'image',
+  news: 'image',
+};
+
+function buildQuickActions(tabs: TabConfig[], features: FeatureConfig): QuickAction[] {
+  const actions: QuickAction[] = [];
+  tabs.forEach((tab) => {
+    const feature = tabFeatureMap[tab.type];
+    if (feature === undefined || !features[feature] || actions.some((item) => item.feature === feature)) {
+      return;
+    }
+    actions.push({
+      id: feature,
+      feature,
+      label: tab.label,
+      icon: quickActionIconMap[feature] ?? 'cup',
+      order: actions.length + 1,
+    });
+  });
+  return actions.slice(0, 4);
+}
+
+function primaryFeature(features: FeatureConfig): FeatureType {
+  const candidates: FeatureType[] = ['membership', 'mobileOrder', 'dineInOrder', 'queue', 'reservation', 'coupon'];
+  return candidates.find((feature) => features[feature]) ?? 'membership';
+}
+
 /** 現在の Reggit プロジェクトを DesignMock の StoreAppConfig に写す */
 export function buildProjectStore(): StoreAppConfig {
   const projectKey = typeof window !== 'undefined' && window.__PROJECT_KEY__
@@ -21,6 +171,10 @@ export function buildProjectStore(): StoreAppConfig {
     : 'default';
   const template = appConfig.stores[0];
   const name = headerTitle();
+  const features = buildFeatures();
+  const tabs = buildTabs(features, window.__FEATURE_FLAGS__?.feature_home_enabled !== false);
+  const quickActions = buildQuickActions(tabs, features);
+  const primaryActionFeature = primaryFeature(features);
 
   if (template === undefined) {
     return {
@@ -29,32 +183,9 @@ export function buildProjectStore(): StoreAppConfig {
       brandName: name,
       logoText: name.slice(0, 1).toUpperCase(),
       themeId: 'minimal-light',
-      features: {
-        membership: true,
-        mobileOrder: true,
-        dineInOrder: true,
-        reservation: true,
-        queue: true,
-        coupon: true,
-        stamp: true,
-        point: true,
-        menu: true,
-        gallery: true,
-        news: true,
-        storeSearch: false,
-        purchaseHistory: true,
-        orderHistory: true,
-        favorite: false,
-        ticket: false,
-        subscription: false,
-      },
-      tabs: [
-        { id: 'home', type: 'home', label: 'ホーム', enabled: true, order: 1 },
-        { id: 'membership', type: 'membership', label: '会員証', enabled: true, order: 2 },
-        { id: 'coupon', type: 'coupon', label: 'クーポン', enabled: true, order: 3 },
-        { id: 'more', type: 'more', label: 'その他', enabled: true, order: 4 },
-      ],
-      quickActions: [],
+      features,
+      tabs,
+      quickActions,
       membershipCard: {
         templateId: 'classic',
         backgroundType: 'gradient',
@@ -76,8 +207,8 @@ export function buildProjectStore(): StoreAppConfig {
         heroImage: '',
         heroEyebrow: 'Welcome',
         statusLabel: '営業中',
-        primaryActionLabel: '会員証を開く',
-        primaryActionFeature: 'membership',
+        primaryActionLabel: primaryActionFeature === 'membership' ? '会員証を開く' : 'サービスを開く',
+        primaryActionFeature,
         featuredImage: '',
         featuredTitle: '',
         featuredDescription: '',
@@ -95,6 +226,14 @@ export function buildProjectStore(): StoreAppConfig {
     logoText: name.slice(0, 1).toUpperCase() || template.logoText,
     heroTitle: name,
     heroSubtitle: template.heroSubtitle,
+    features,
+    tabs,
+    quickActions,
+    home: {
+      ...template.home,
+      primaryActionFeature,
+      primaryActionLabel: primaryActionFeature === 'membership' ? '会員証を開く' : 'サービスを開く',
+    },
   };
 }
 

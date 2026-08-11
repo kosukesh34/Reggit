@@ -11,11 +11,16 @@ use App\Http\Controllers\Api\V1\Member\MemberMeController as ApiV1MemberMeContro
 use App\Http\Controllers\Api\V1\Member\MemberPointCardController as ApiV1MemberPointCardController;
 use App\Http\Controllers\Api\V1\Member\MemberPointHistoryController as ApiV1MemberPointHistoryController;
 use App\Http\Controllers\Api\V1\Member\MemberPointsController as ApiV1MemberPointsController;
+use App\Http\Controllers\Api\V1\Member\MemberRegisterController as ApiV1MemberRegisterController;
+use App\Http\Controllers\Api\V1\Member\MemberUpdateController as ApiV1MemberUpdateController;
 use App\Http\Controllers\Api\V1\Member\MemberWithdrawController as ApiV1MemberWithdrawController;
 use App\Http\Controllers\Api\V1\OrderController as ApiV1OrderController;
 use App\Http\Controllers\Api\V1\PaymentController as ApiV1PaymentController;
 use App\Http\Controllers\Api\V1\ProductController as ApiV1ProductController;
 use App\Http\Controllers\Api\V1\ProjectListController as ApiV1ProjectListController;
+use App\Http\Controllers\Api\V1\Queue\QueueCancelController as ApiV1QueueCancelController;
+use App\Http\Controllers\Api\V1\Queue\QueueMeController as ApiV1QueueMeController;
+use App\Http\Controllers\Api\V1\Queue\QueueStoreController as ApiV1QueueStoreController;
 use App\Http\Controllers\Api\V1\Reservation\ReservationIndexController as ApiV1ReservationIndexController;
 use App\Http\Controllers\Api\V1\StampController as ApiV1StampController;
 use App\Http\Controllers\ContactController;
@@ -98,6 +103,8 @@ Route::prefix('v1')->middleware([AuthenticateApiToken::class])->group(function (
     Route::get('/orders', [ApiV1OrderController::class, 'index']);
     Route::get('/orders/{id}', [ApiV1OrderController::class, 'show']);
     Route::get('/members/me', [ApiV1MemberMeController::class, '__invoke']);
+    Route::put('/members/me', ApiV1MemberUpdateController::class);
+    Route::post('/members/register', ApiV1MemberRegisterController::class);
     Route::get('/members/points', [ApiV1MemberPointsController::class, '__invoke']);
     Route::get('/members/points/card', [ApiV1MemberPointCardController::class, '__invoke']);
     Route::get('/members/points/history', [ApiV1MemberPointHistoryController::class, '__invoke']);
@@ -112,12 +119,15 @@ Route::prefix('v1')->middleware([AuthenticateApiToken::class])->group(function (
     Route::get('/announcements', [ApiV1AnnouncementController::class, 'index']);
     Route::post('/announcements/{id}/read', [ApiV1AnnouncementController::class, 'markRead']);
     Route::get('/reservations', [ApiV1ReservationIndexController::class, '__invoke']);
+    Route::post('/queue', ApiV1QueueStoreController::class);
+    Route::get('/queue/me', ApiV1QueueMeController::class);
+    Route::post('/queue/{id}/cancel', ApiV1QueueCancelController::class);
     Route::post('/payment/create-intent', [ApiV1PaymentController::class, 'createPaymentIntent']);
     Route::post('/payment/confirm', [ApiV1PaymentController::class, 'confirmPayment']);
 });
 
 // API v1（SaaS: URL に project_key を含む）api/v1/{project_key}/...
-Route::prefix('v1')->middleware([CheckApiProject::class, AuthenticateApiToken::class])->group(function () {
+Route::prefix('v1')->middleware([AuthenticateApiToken::class, CheckApiProject::class])->group(function () {
     Route::get('/{project_key}/products', [ApiV1ProductController::class, 'index']);
     Route::get('/{project_key}/products/{id}', [ApiV1ProductController::class, 'show']);
     Route::post('/{project_key}/orders', [ApiV1OrderController::class, 'store']);
@@ -125,6 +135,8 @@ Route::prefix('v1')->middleware([CheckApiProject::class, AuthenticateApiToken::c
     Route::get('/{project_key}/orders', [ApiV1OrderController::class, 'index']);
     Route::get('/{project_key}/orders/{id}', [ApiV1OrderController::class, 'show']);
     Route::get('/{project_key}/members/me', [ApiV1MemberMeController::class, '__invoke']);
+    Route::put('/{project_key}/members/me', ApiV1MemberUpdateController::class);
+    Route::post('/{project_key}/members/register', ApiV1MemberRegisterController::class);
     Route::get('/{project_key}/members/points', [ApiV1MemberPointsController::class, '__invoke']);
     Route::get('/{project_key}/members/points/card', [ApiV1MemberPointCardController::class, '__invoke']);
     Route::get('/{project_key}/members/points/history', [ApiV1MemberPointHistoryController::class, '__invoke']);
@@ -140,6 +152,9 @@ Route::prefix('v1')->middleware([CheckApiProject::class, AuthenticateApiToken::c
     Route::get('/{project_key}/announcements/cancelled-ids', [ApiV1AnnouncementController::class, 'cancelledIds']);
     Route::post('/{project_key}/announcements/{id}/read', [ApiV1AnnouncementController::class, 'markRead']);
     Route::get('/{project_key}/reservations', [ApiV1ReservationIndexController::class, '__invoke']);
+    Route::post('/{project_key}/queue', ApiV1QueueStoreController::class);
+    Route::get('/{project_key}/queue/me', ApiV1QueueMeController::class);
+    Route::post('/{project_key}/queue/{id}/cancel', ApiV1QueueCancelController::class);
     Route::post('/{project_key}/payment/create-intent', [ApiV1PaymentController::class, 'createPaymentIntent']);
     Route::post('/{project_key}/payment/confirm', [ApiV1PaymentController::class, 'confirmPayment']);
 });
