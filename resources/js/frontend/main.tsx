@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client';
 import { HashRouter } from 'react-router-dom';
 import '../../css/app.css';
 import './app';
+import { CheckoutModal } from './features/cart/CheckoutModal';
 import { App } from '../liff-ui/app/App';
 import '../liff-ui/styles/tokens.css';
 import '../liff-ui/styles/globals.css';
@@ -16,6 +17,7 @@ if (mountNode !== null) {
     <React.StrictMode>
       <HashRouter>
         <App />
+        <CheckoutModal />
       </HashRouter>
     </React.StrictMode>,
   );

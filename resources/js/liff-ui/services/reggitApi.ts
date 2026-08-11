@@ -1,5 +1,6 @@
 import { ApiClient } from '../../shared/utils/apiClient';
 import { AppConstants } from '../../shared/constants';
+import { ensureLiffIdentityForLoad } from '../../frontend/demo/ensureIdentity';
 import type {
   ContactInput,
   NotificationSettings,
@@ -16,6 +17,10 @@ import type { CouponItem, MemberProfile, NewsItem, StoreSummary } from '../types
 function client(): ApiClient {
   const app = window.app as { apiClient?: ApiClient } | undefined;
   return app?.apiClient ?? new ApiClient();
+}
+
+async function ensureIdentity(): Promise<void> {
+  await ensureLiffIdentityForLoad({ waitNativeDevice: true });
 }
 
 function withProject(path: string): string {
@@ -37,11 +42,12 @@ function asArray(value: unknown): unknown[] {
   return Array.isArray(value) ? value : [];
 }
 
-function receiptFrom(reference: string): OperationReceipt {
+function receiptFrom(reference: string, extras?: Partial<OperationReceipt>): OperationReceipt {
   return {
     reference,
     acceptedAt: new Date().toISOString(),
     status: 'accepted',
+    ...extras,
   };
 }
 
@@ -49,7 +55,8 @@ function mapMember(payload: Record<string, unknown>): MemberProfile {
   const member = asRecord(payload.member);
   const user = asRecord(payload.user);
   const pointsExpiry = asRecord(payload.points_expiry);
-  const name = String(user.name ?? member.name ?? 'ゲスト');
+  const isMember = payload.is_member === true;
+  const name = String(user.name ?? member.name ?? (isMember ? '会員' : 'ゲスト'));
   const number = String(member.member_number ?? member.memberNumber ?? '');
   return {
     name,
@@ -58,6 +65,7 @@ function mapMember(payload: Record<string, unknown>): MemberProfile {
     points: Number(payload.points ?? member.points ?? 0) || 0,
     expiration: String(pointsExpiry.expires_at_label ?? pointsExpiry.expires_at ?? '—'),
     nextRankLabel: String(payload.next_rank_label ?? '次のランク'),
+    isMember,
   };
 }
 
@@ -131,6 +139,7 @@ export const reggitApi = {
   configured: typeof window !== 'undefined',
 
   async bootstrap(_storeId: string): Promise<RuntimeBootstrap> {
+    await ensureIdentity();
     const [memberRes, couponRes, newsRes, productRes, stampRes, queueRes, orderRes, reservationRes] = await Promise.allSettled([
       getJson(AppConstants.API_ENDPOINTS.MEMBERS_ME),
       getJson(AppConstants.API_ENDPOINTS.MY_COUPONS),
@@ -207,14 +216,26 @@ export const reggitApi = {
   },
 
   async createOrder(input: OrderInput): Promise<OperationReceipt> {
+    await ensureIdentity();
     const orderType = input.fulfillment === 'dine_in' ? 'in_store' : 'mobile';
-    const result = await client().post(withProject(AppConstants.API_ENDPOINTS.ORDERS), {
-      items: input.lines.map((line) => ({
-        product_id: Number(line.itemId),
+    const isStripe = input.fulfillment === 'pickup';
+    const items = input.lines.map((line) => {
+      const productId = Number(line.itemId);
+      if (!Number.isFinite(productId) || productId <= 0) {
+        throw new Error('注文できる商品が見つかりません。画面を再読み込みしてください');
+      }
+      return {
+        product_id: productId,
         quantity: line.quantity,
         notes: null,
-      })),
-      payment_method: 'cash',
+      };
+    });
+    if (items.length === 0) {
+      throw new Error('カートが空です');
+    }
+    const result = await client().post(withProject(AppConstants.API_ENDPOINTS.ORDERS), {
+      items,
+      payment_method: isStripe ? 'stripe' : 'cash',
       points_used: 0,
       notes: input.tableNumber ? `卓番: ${input.tableNumber}` : null,
       order_type: orderType,
@@ -224,7 +245,12 @@ export const reggitApi = {
     }
     const data = asRecord(result.data);
     const order = asRecord(data.order);
-    return receiptFrom(String(order.order_number ?? order.id ?? data.message ?? 'ORDER'));
+    const orderId = Number(order.id);
+    return receiptFrom(String(order.order_number ?? order.id ?? data.message ?? 'ORDER'), {
+      orderId: Number.isFinite(orderId) && orderId > 0 ? orderId : undefined,
+      totalAmount: Number(order.total_amount ?? input.total) || input.total,
+      needsPayment: isStripe,
+    });
   },
 
   async createReservation(input: ReservationInput): Promise<OperationReceipt> {
@@ -288,5 +314,38 @@ export const reggitApi = {
       throw new Error(result.error || '問い合わせの送信に失敗しました');
     }
     return receiptFrom('CNT');
+  },
+
+  async logout(): Promise<void> {
+    await ensureIdentity();
+    await client().post(withProject(AppConstants.API_ENDPOINTS.MEMBERS_SESSION_CLEAR), {});
+    client().clearPersistedLineUserId();
+    if (typeof window !== 'undefined') {
+      window.__LINE_USER_ID__ = null;
+      const mm = (window.app as { memberManager?: { memberData?: unknown } } | undefined)?.memberManager;
+      if (mm !== undefined) {
+        mm.memberData = null;
+      }
+      try {
+        const liffSdk = window.liff as { logout?: () => void; isLoggedIn?: () => boolean } | undefined;
+        if (liffSdk !== undefined && typeof liffSdk.logout === 'function' && typeof liffSdk.isLoggedIn === 'function' && liffSdk.isLoggedIn()) {
+          liffSdk.logout();
+        }
+      } catch {
+        // LIFF logout はベストエフォート
+      }
+    }
+  },
+
+  async withdraw(): Promise<void> {
+    await ensureIdentity();
+    const result = await client().post(withProject(AppConstants.API_ENDPOINTS.MEMBERS_WITHDRAW), {});
+    if (!result.success) {
+      throw new Error(('error' in result ? result.error : undefined) || '退会に失敗しました');
+    }
+    client().clearPersistedLineUserId();
+    if (typeof window !== 'undefined') {
+      window.__LINE_USER_ID__ = null;
+    }
   },
 };

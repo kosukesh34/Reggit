@@ -10,13 +10,18 @@ import { ReservationDemo } from "../features/demo/ReservationDemo";
 import { CouponDemo, PointDemo, QueueDemo, StampDemo, SubscriptionDemo, TicketDemo } from "../features/demo/RewardsDemo";
 import { isUtilityType, UtilityDemo } from "../features/demo/UtilityDemo";
 import { useRuntimeData } from "../context/RuntimeDataContext";
+import { CouponsView } from "../../frontend/features/coupons/CouponsView";
+import { StampsView } from "../../frontend/features/stamps/StampsView";
+import { QueueView } from "../../frontend/features/queue/QueueView";
+import { ReservationsView } from "../../frontend/features/reservations/ReservationsView";
 
 export function FeaturePage() {
   const { feature } = useParams();
   const { activeStore, customization } = useAppConfig();
-  const { member, coupons, news, stores, commerce, history } = useRuntimeData();
+  const { member, coupons, news, stores, commerce, history, mode } = useRuntimeData();
   const activeVenue = stores[0];
   const orderPath = activeStore.features.mobileOrder ? "/mobileOrder" : activeStore.features.dineInOrder ? "/dineInOrder" : "/reservation";
+  const isLiveBound = mode !== "preview";
 
   if (!isFeatureType(feature)) {
     if (isUtilityType(feature)) {
@@ -31,6 +36,22 @@ export function FeaturePage() {
         </Card>
       </div>
     );
+  }
+
+  // 本番接続時は旧UIの実Viewを載せて会員・スマレジと結ぶ
+  if (isLiveBound) {
+    if (feature === "coupon") {
+      return <div className="page feature-page"><CouponsView /></div>;
+    }
+    if (feature === "stamp") {
+      return <div className="page feature-page"><StampsView /></div>;
+    }
+    if (feature === "queue") {
+      return <div className="page feature-page"><QueueView /></div>;
+    }
+    if (feature === "reservation") {
+      return <div className="page feature-page"><ReservationsView /></div>;
+    }
   }
 
   const definition = featureDefinitionMap[feature];

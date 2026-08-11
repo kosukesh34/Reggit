@@ -2,16 +2,8 @@ import type { ApiClient } from '../../shared/utils/apiClient';
 import type { CartManager } from './CartManager';
 import { AppConstants } from '../../shared/constants';
 import { DomHelper } from '../../shared/utils/domHelper';
+import { StripePayment } from '../../shared/utils/stripePayment';
 import { ToastManager } from '../../shared/utils/toast';
-
-type StripePaymentLike = {
-    setupPaymentForm: (elementId: string, amount: number, orderId: number | string) => Promise<void>;
-    confirmPayment: (orderId: number | string) => Promise<{
-        success?: boolean;
-        message?: string;
-        order?: OrderLike;
-    } | null>;
-};
 
 type OrderLike = {
     id?: number | string;
@@ -30,7 +22,7 @@ type AppLike = {
 export class CheckoutManager {
     apiClient: ApiClient;
     cartManager: CartManager;
-    stripePayment: StripePaymentLike | null;
+    stripePayment: StripePayment;
     paymentModal: HTMLElement | null;
     isSubmitting: boolean;
     isPaymentFlowActive: boolean;
@@ -40,10 +32,7 @@ export class CheckoutManager {
     constructor(apiClient: ApiClient, cartManager: CartManager) {
         this.apiClient = apiClient;
         this.cartManager = cartManager;
-        this.stripePayment =
-            typeof window !== 'undefined' && typeof window.StripePayment === 'function'
-                ? new window.StripePayment()
-                : null;
+        this.stripePayment = new StripePayment();
         this.paymentModal = null;
         this.isSubmitting = false;
         this.isPaymentFlowActive = false;
@@ -111,11 +100,6 @@ export class CheckoutManager {
             ToastManager.error('カートが空です');
             return;
         }
-        if (!this.stripePayment) {
-            ToastManager.error('決済機能の読み込みに失敗しました');
-            return;
-        }
-
         this.isSubmitting = true;
         try {
             const payload = {
@@ -219,9 +203,6 @@ export class CheckoutManager {
         const confirmBtn = document.getElementById('mobileOrderConfirmBtn') as HTMLButtonElement | null;
 
         try {
-            if (!this.stripePayment) {
-                throw new Error('決済機能の読み込みに失敗しました');
-            }
             await this.stripePayment.setupPaymentForm(
                 'mobileOrderPaymentElement',
                 Number(order.total_amount || 0),
@@ -250,9 +231,6 @@ export class CheckoutManager {
                 const original = confirmBtn.innerHTML;
                 confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 決済中...';
                 try {
-                    if (!this.stripePayment) {
-                        throw new Error('決済機能の読み込みに失敗しました');
-                    }
                     const paymentResult = await this.stripePayment.confirmPayment(order.id);
                     if (!paymentResult || paymentResult.success !== true) {
                         throw new Error(
@@ -262,6 +240,9 @@ export class CheckoutManager {
                     this.isPaymentCompleted = true;
                     const confirmedOrder = (paymentResult as { order?: OrderLike }).order;
                     ToastManager.success('モバイル注文が完了しました');
+                    document.dispatchEvent(new CustomEvent('liff-payment-completed', {
+                        detail: { order: confirmedOrder ?? order },
+                    }));
                     this.closePaymentModal(false);
                     this.afterOrderCompleted(confirmedOrder?.order_number ?? null);
                 } catch (error) {
