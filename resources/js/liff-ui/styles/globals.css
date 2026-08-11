@@ -95,7 +95,8 @@ figure {
   min-height: 100vh;
   margin: 0 auto;
   padding-bottom: calc(var(--bottom-nav-height) + 24px + env(safe-area-inset-bottom));
-  overflow: clip;
+  overflow-x: clip;
+  overflow-y: visible;
   background: color-mix(in srgb, var(--color-background) 94%, transparent);
   box-shadow: 0 0 0 1px rgb(19 26 21 / 0.05), 0 0 60px rgb(19 26 21 / 0.08);
 }
@@ -629,6 +630,23 @@ figure {
   border-radius: 999px;
 }
 
+.membership-summary__barcode {
+  position: relative;
+  z-index: 1;
+  padding: 10px 12px 8px;
+  background: #fff;
+  border-radius: 16px;
+}
+
+.membership-summary__barcode .barcode__svg {
+  height: 48px;
+}
+
+.membership-summary__barcode .barcode__value {
+  font-size: 10px;
+  letter-spacing: .14em;
+}
+
 .membership-summary__track span {
   display: block;
   height: 100%;
@@ -885,21 +903,24 @@ figure {
 
 .bottom-nav {
   position: fixed;
-  right: 50%;
+  left: 0;
+  right: 0;
   bottom: calc(12px + env(safe-area-inset-bottom));
   z-index: 28;
   display: grid;
   grid-template-columns: repeat(var(--tab-count), minmax(0, 1fr));
   width: min(calc(100% - 24px), calc(var(--page-width) - 24px));
+  max-width: calc(var(--page-width) - 24px);
   min-height: 68px;
+  margin-inline: auto;
   padding: 6px;
   color: color-mix(in srgb, var(--color-on-dark) 56%, transparent);
   background: color-mix(in srgb, var(--color-primary) 94%, transparent);
   border: 1px solid color-mix(in srgb, var(--color-on-dark) 13%, transparent);
   border-radius: 24px;
   box-shadow: 0 18px 54px rgb(8 15 10 / .28);
-  transform: translateX(50%);
   backdrop-filter: blur(22px);
+  /* transform 中央寄せはスクロール時にサブピクセルずれするので使わない */
 }
 
 .bottom-nav__item {
@@ -940,7 +961,7 @@ figure {
 
 .bottom-nav--icons-only .bottom-nav__item { font-size: 0; }
 .bottom-nav--emphasize-center .bottom-nav__item:nth-child(3) { color: #102017; background: var(--color-accent); }
-.bottom-nav--top { position: sticky; top: calc(76px + env(safe-area-inset-top)); bottom: auto; width: calc(100% - 28px); margin: 0 auto 8px; transform: none; }
+.bottom-nav--top { position: sticky; top: calc(76px + env(safe-area-inset-top)); bottom: auto; width: calc(100% - 28px); margin: 0 auto 8px; }
 
 .button {
   display: inline-flex;
@@ -1437,6 +1458,37 @@ figure {
 .feature-empty h2, .empty-state__title { margin: 0; font-size: 16px; }
 .feature-empty p, .empty-state__description { margin: 0; color: var(--color-text-secondary); font-size: 10px; line-height: 1.6; }
 .skeleton { background: linear-gradient(100deg, var(--color-border) 20%, var(--color-surface) 50%, var(--color-border) 80%) 0 0 / 200% 100%; border-radius: 12px; animation: shimmer 1.4s linear infinite; }
+
+.home-skeleton,
+.feature-skeleton,
+.membership-skeleton {
+  display: grid;
+  gap: 14px;
+}
+
+.home-skeleton__lead { height: 48px; }
+.home-skeleton__hero { height: 180px; border-radius: 24px; }
+.home-skeleton__card { height: 120px; border-radius: 22px; }
+.home-skeleton__card--short { height: 88px; }
+
+.feature-skeleton__title { height: 64px; }
+.feature-skeleton__card { height: 110px; border-radius: 18px; }
+
+.membership-skeleton__card { height: 220px; border-radius: 24px; }
+.membership-skeleton__line { height: 18px; }
+.membership-skeleton__line--short { width: 55%; }
+
+.membership-wallet-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.membership-wallet-actions .member-card-add-to-wallet-btn {
+  width: 100%;
+  min-height: 48px;
+  border-radius: 12px;
+  font-weight: 700;
+}
 
 .account-card { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 14px; color: var(--color-on-dark); background: var(--color-primary); border: 0; }
 .account-card__monogram { display: grid; place-items: center; width: 54px; height: 54px; color: #102017; font-size: 10px; font-weight: 900; background: var(--color-accent); border-radius: 17px; }

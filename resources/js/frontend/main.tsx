@@ -6,9 +6,12 @@ import '../../css/app.css';
 import './app';
 import { CheckoutModal } from './features/cart/CheckoutModal';
 import { App } from '../liff-ui/app/App';
+import { normalizeLegacyLocationHash } from '../liff-ui/navigation/tabPath';
 import '../liff-ui/styles/tokens.css';
 import '../liff-ui/styles/globals.css';
 import '../../css/frontend/member-legacy.css';
+
+normalizeLegacyLocationHash();
 
 const mountNode = document.getElementById('app-container') ?? document.getElementById('react-frontend-root');
 if (mountNode !== null) {
