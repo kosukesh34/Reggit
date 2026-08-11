@@ -42,7 +42,7 @@
         ]
         : array_values($filteredMenu);
 @endphp
-<meta name="stripe-key" content="{{ env('STRIPE_KEY', '') }}">
+<meta name="stripe-key" content="{{ config('services.stripe.key', '') }}">
 <script>
     window.__PROJECT_KEY__ = "{{ $projectKey ?? '' }}";
     (function () {

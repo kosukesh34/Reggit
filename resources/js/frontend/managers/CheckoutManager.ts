@@ -88,7 +88,7 @@ export class CheckoutManager {
         }
     }
 
-    async placeMobileOrder(): Promise<void> {
+    async placeMobileOrder(paymentMethod: 'stripe' | 'cash' = 'stripe'): Promise<void> {
         if (this.isSubmitting || this.isPaymentFlowActive) {
             return;
         }
@@ -104,7 +104,7 @@ export class CheckoutManager {
         try {
             const payload = {
                 items: this.cartManager.getItemsForOrder(),
-                payment_method: 'stripe',
+                payment_method: paymentMethod,
                 points_used: 0,
                 notes: '',
                 order_type: 'mobile',
@@ -128,8 +128,18 @@ export class CheckoutManager {
                 return;
             }
 
-        const order = (result.data as { order: OrderLike }).order;
-        await this.openPaymentModal(order);
+            const order = (result.data as { order: OrderLike }).order;
+            if (paymentMethod === 'cash') {
+                const issuedNumber = DomHelper.formatReferenceNumber(order.order_number);
+                ToastManager.success(
+                    issuedNumber
+                        ? `店頭払いの注文を受け付けました（引換番号: ${issuedNumber}）`
+                        : '店頭払いの注文を受け付けました',
+                );
+                this.afterOrderCompleted(order.order_number ?? null);
+                return;
+            }
+            await this.openPaymentModal(order);
         } finally {
             this.isSubmitting = false;
         }

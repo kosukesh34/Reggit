@@ -21,7 +21,7 @@ export function MembershipSummary({ member }: MembershipSummaryProps) {
         </div>
         <div className="membership-summary__body">
           <div>
-            <div className="membership-summary__meta">登録するとポイント・クーポン・ガチャなどがご利用いただけます。</div>
+            <div className="membership-summary__meta">登録するとポイント・クーポンなどがご利用いただけます。</div>
           </div>
           <Button
             size="sm"

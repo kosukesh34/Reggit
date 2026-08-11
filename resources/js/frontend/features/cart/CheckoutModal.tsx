@@ -18,6 +18,12 @@ type CheckoutManagerLike = {
             message?: string;
             order?: OrderLike;
         } | null>;
+        confirmOnServer: (paymentIntentId: string, orderId: number | string) => Promise<{
+            success?: boolean;
+            message?: string;
+            order?: OrderLike;
+        } | null>;
+        destroyPaymentForm: () => void;
     } | null;
     isPaymentCompleted: boolean;
     pendingMobileOrderId: number | null;
@@ -36,6 +42,9 @@ type OpenPaymentDetail = {
 /**
  * Stripe 決済モーダル（CheckoutManager.openPaymentModal の JSX 版）。
  * `liff-open-payment` で開き、実処理は CheckoutManager の Stripe / キャンセル API を使う。
+ *
+ * Stripe Elements のマウント先 (#PAYMENT_ELEMENT_ID) には React 管理の子を置かない。
+ * isReady 切替で子を消すと iframe ごと消えて決済フォームが壊れる。
  */
 export function CheckoutModal(): JSX.Element | null {
     const [order, setOrder] = useState<OrderLike | null>(null);
@@ -63,6 +72,7 @@ export function CheckoutModal(): JSX.Element | null {
         }
         closingRef.current = true;
         const cm = getCheckout();
+        cm?.stripePayment?.destroyPaymentForm();
         if (cm !== null) {
             cm.closePaymentModal(shouldCancel);
         } else {
@@ -70,6 +80,19 @@ export function CheckoutModal(): JSX.Element | null {
         }
         closingRef.current = false;
     }, [resetUi]);
+
+    const finishSuccess = useCallback((confirmedOrder: OrderLike | null | undefined, fallback: OrderLike): void => {
+        const cm = getCheckout();
+        if (cm !== null) {
+            cm.isPaymentCompleted = true;
+        }
+        ToastManager.success('モバイル注文が完了しました');
+        document.dispatchEvent(new CustomEvent('liff-payment-completed', {
+            detail: { order: confirmedOrder ?? fallback },
+        }));
+        requestClose(false);
+        cm?.afterOrderCompleted(confirmedOrder?.order_number ?? null);
+    }, [requestClose]);
 
     useEffect(() => {
         const onOpen = (event: Event): void => {
@@ -93,6 +116,49 @@ export function CheckoutModal(): JSX.Element | null {
             document.removeEventListener(LIFF_CLOSE_PAYMENT, onClose);
         };
     }, [resetUi]);
+
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const paymentIntentId = params.get('payment_intent');
+        const redirectStatus = params.get('redirect_status');
+        const orderIdRaw = params.get('order_id');
+        if (paymentIntentId === null || paymentIntentId === '' || orderIdRaw === null || orderIdRaw === '') {
+            return;
+        }
+        if (redirectStatus !== null && redirectStatus !== '' && redirectStatus !== 'succeeded') {
+            ToastManager.error('決済が完了しませんでした');
+            return;
+        }
+        const cm = getCheckout();
+        if (cm?.stripePayment === null || cm?.stripePayment === undefined) {
+            return;
+        }
+        let cancelled = false;
+        void cm.stripePayment.confirmOnServer(paymentIntentId, orderIdRaw).then((paymentResult) => {
+            if (cancelled) {
+                return;
+            }
+            if (paymentResult === null || paymentResult.success !== true) {
+                throw new Error((paymentResult && paymentResult.message) || '決済の確認に失敗しました');
+            }
+            const url = new URL(window.location.href);
+            url.searchParams.delete('payment_intent');
+            url.searchParams.delete('payment_intent_client_secret');
+            url.searchParams.delete('redirect_status');
+            url.searchParams.delete('order_id');
+            window.history.replaceState({}, '', url.toString());
+            finishSuccess(paymentResult.order, { id: orderIdRaw, order_number: paymentResult.order?.order_number });
+        }).catch((error: unknown) => {
+            if (cancelled) {
+                return;
+            }
+            const message = error instanceof Error && error.message ? error.message : '決済の確認に失敗しました';
+            ToastManager.error(message);
+        });
+        return () => {
+            cancelled = true;
+        };
+    }, [finishSuccess]);
 
     useEffect(() => {
         if (order === null || order.id === undefined || order.id === null) {
@@ -126,6 +192,11 @@ export function CheckoutModal(): JSX.Element | null {
                 ToastManager.error(message);
                 requestClose(true);
             });
+        return () => {
+            if (setupToken.current === token) {
+                cm.stripePayment?.destroyPaymentForm();
+            }
+        };
     }, [order, requestClose]);
 
     const handleConfirm = async (): Promise<void> => {
@@ -146,14 +217,7 @@ export function CheckoutModal(): JSX.Element | null {
                     (paymentResult && paymentResult.message) || '決済の確認に失敗しました',
                 );
             }
-            cm.isPaymentCompleted = true;
-            ToastManager.success('モバイル注文が完了しました');
-            const confirmedOrder = paymentResult.order;
-            document.dispatchEvent(new CustomEvent('liff-payment-completed', {
-                detail: { order: confirmedOrder ?? order },
-            }));
-            requestClose(false);
-            cm.afterOrderCompleted(confirmedOrder?.order_number ?? null);
+            finishSuccess(paymentResult.order, order);
         } catch (error) {
             const message =
                 error instanceof Error && error.message ? error.message : '決済に失敗しました';
@@ -203,14 +267,14 @@ export function CheckoutModal(): JSX.Element | null {
                         <h3>
                             <i className="fas fa-lock" aria-hidden="true" /> カード情報
                         </h3>
-                        <div className="payment-element-container" id={PAYMENT_ELEMENT_ID}>
-                            {!isReady && errorMessage === '' ? (
-                                <div className="payment-loading">
-                                    <i className="fas fa-spinner fa-spin" aria-hidden="true" />
-                                    <p>決済フォームを準備中...</p>
-                                </div>
-                            ) : null}
-                        </div>
+                        {!isReady && errorMessage === '' ? (
+                            <div className="payment-loading">
+                                <i className="fas fa-spinner fa-spin" aria-hidden="true" />
+                                <p>決済フォームを準備中...</p>
+                            </div>
+                        ) : null}
+                        {/* Stripe iframe のマウント先。React の子を置かないこと */}
+                        <div className="payment-element-container" id={PAYMENT_ELEMENT_ID} />
                     </div>
                     {errorMessage !== '' ? (
                         <div className="payment-error-message" style={{ display: 'flex' }}>

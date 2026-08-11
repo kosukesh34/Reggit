@@ -17,8 +17,7 @@ if (mountNode !== null) {
   createRoot(mountNode).render(
     <React.StrictMode>
       <HashRouter>
-        <App />
-        <CheckoutModal />
+        <App checkout={<CheckoutModal />} />
       </HashRouter>
     </React.StrictMode>,
   );

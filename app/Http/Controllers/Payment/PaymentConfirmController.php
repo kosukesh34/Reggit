@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Payment;
 
 use App\Http\Controllers\Controller;
 use App\Services\UserService;
+use App\UseCases\Order\Data\OrderFactory;
 use App\UseCases\Payment\PaymentConfirmUseCase;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
@@ -15,6 +16,7 @@ class PaymentConfirmController extends Controller
     public function __construct(
         private PaymentConfirmUseCase $confirmUseCase,
         private UserService $userService,
+        private OrderFactory $orderFactory,
     ) {}
 
     public function __invoke(Request $request)
@@ -51,7 +53,9 @@ class PaymentConfirmController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => $result->message,
-                'order' => $result->order,
+                'order' => $result->order !== null
+                    ? $this->orderFactory->create($result->order)->toArray()
+                    : null,
             ]);
         } catch (\Exception $e) {
             LogHelper::error('[Payment] confirm failed', [
