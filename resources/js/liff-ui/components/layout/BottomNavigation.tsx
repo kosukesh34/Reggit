@@ -45,9 +45,30 @@ function resolveActive(pathname: string, tab: TabConfig) {
 }
 
 export function BottomNavigation() {
-  const { customization } = useAppConfig();
+  const { activeStore, customization } = useAppConfig();
   const location = useLocation();
-  const tabs: TabConfig[] = customization.navigation.tabs.slice(0, 6).map((type, index) => ({
+  const featureByTab: Partial<Record<TabType, keyof typeof activeStore.features>> = {
+    membership: "membership",
+    mobileOrder: "mobileOrder",
+    dineInOrder: "dineInOrder",
+    reservation: "reservation",
+    queue: "queue",
+    coupon: "coupon",
+    stamp: "stamp",
+    point: "point",
+    menu: "menu",
+    store: "storeSearch",
+    news: "news",
+  };
+  const visibleTypes = customization.navigation.tabs.filter((type) => {
+    if (type === "home" && window.__FEATURE_FLAGS__?.feature_home_enabled === false) {
+      return false;
+    }
+    const feature = featureByTab[type];
+    return feature === undefined || activeStore.features[feature];
+  });
+  const safeTypes: TabType[] = visibleTypes.length > 0 ? visibleTypes : ["home", "more"];
+  const tabs: TabConfig[] = safeTypes.slice(0, 6).map((type, index) => ({
     id: `${type}-${index}`,
     type,
     label: tabLabelMap[type],

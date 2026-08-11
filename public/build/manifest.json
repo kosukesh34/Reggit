@@ -1,34 +1,34 @@
 {
   "_customization-!~{003}~.js": {
-    "file": "assets/customization-BgghSwzJ.css",
+    "file": "assets/customization-CEfm8aV1.css",
     "src": "_customization-!~{003}~.js"
   },
-  "_customization-CdEI0ZsY.js": {
-    "file": "assets/customization-CdEI0ZsY.js",
+  "_customization-h9ZQn7Uw.js": {
+    "file": "assets/customization-h9ZQn7Uw.js",
     "name": "customization",
     "css": [
-      "assets/customization-BgghSwzJ.css"
+      "assets/customization-CEfm8aV1.css"
     ]
   },
   "resources/js/admin/main.tsx": {
-    "file": "assets/main-CCFMKUxf.js",
+    "file": "assets/main-DNNl7i6B.js",
     "name": "main",
     "src": "resources/js/admin/main.tsx",
     "isEntry": true,
     "imports": [
-      "_customization-CdEI0ZsY.js"
+      "_customization-h9ZQn7Uw.js"
     ],
     "css": [
       "assets/main-MImg_wPW.css"
     ]
   },
   "resources/js/frontend/main.tsx": {
-    "file": "assets/main-BLS3kDYZ.js",
+    "file": "assets/main-BUC3JuYF.js",
     "name": "main",
     "src": "resources/js/frontend/main.tsx",
     "isEntry": true,
     "imports": [
-      "_customization-CdEI0ZsY.js"
+      "_customization-h9ZQn7Uw.js"
     ]
   }
 }

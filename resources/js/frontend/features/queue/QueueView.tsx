@@ -207,7 +207,7 @@ export function QueueView(): JSX.Element {
     const [view, setView] = useState<ViewState>({ kind: 'loading' });
     const [busy, setBusy] = useState(false);
 
-    const load = useCallback(async () => {
+    const load = useCallback(async (silent = false) => {
         if (isDemoDataMode()) {
             setView({
                 kind: 'entry',
@@ -232,7 +232,9 @@ export function QueueView(): JSX.Element {
                     return;
                 }
             }
-            setView({ kind: 'loading' });
+            if (!silent) {
+                setView({ kind: 'loading' });
+            }
             const result = await fetchQueueByToken(token);
             if (result.success !== true) {
                 setView({ kind: 'error', message: result.error });
@@ -259,7 +261,9 @@ export function QueueView(): JSX.Element {
             return;
         }
 
-        setView({ kind: 'loading' });
+        if (!silent) {
+            setView({ kind: 'loading' });
+        }
         try {
             if (isQueueMembershipRequired()) {
                 await ensureMemberContextForGate();
@@ -311,9 +315,22 @@ export function QueueView(): JSX.Element {
         };
         document.addEventListener('liff-ready', onReady);
         document.addEventListener('mobile-device-info-injected', onReady);
+        const intervalId = window.setInterval(() => {
+            if (document.visibilityState === 'visible') {
+                void load(true);
+            }
+        }, 10_000);
+        const onVisibilityChange = (): void => {
+            if (document.visibilityState === 'visible') {
+                void load(true);
+            }
+        };
+        document.addEventListener('visibilitychange', onVisibilityChange);
         return () => {
             document.removeEventListener('liff-ready', onReady);
             document.removeEventListener('mobile-device-info-injected', onReady);
+            document.removeEventListener('visibilitychange', onVisibilityChange);
+            window.clearInterval(intervalId);
         };
     }, [load]);
 

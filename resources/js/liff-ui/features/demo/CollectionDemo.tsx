@@ -1,6 +1,6 @@
 import { CalendarDays, ChevronLeft, ChevronRight, Heart, MapPin, Navigation, RotateCcw } from "lucide-react";
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { BottomSheet } from "../../components/ui/BottomSheet";
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
@@ -52,10 +52,12 @@ interface CollectionDemoProps {
   orderPath: string;
   liveCatalog?: RuntimeCatalogItem[];
   history?: RuntimeHistoryItem[];
+  onReadNews?: (announcementId: string) => Promise<void>;
 }
 
-export function CollectionDemo({ feature, featureImage, heroImage, news, stores, storeId, orderPath, liveCatalog, history }: CollectionDemoProps) {
+export function CollectionDemo({ feature, featureImage, heroImage, news, stores, storeId, orderPath, liveCatalog, history, onReadNews }: CollectionDemoProps) {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [favorites, setFavorites] = useState<string[]>(["p1", "p2"]);
   const [favoriteStore, setFavoriteStore] = useState(stores[0]?.name);
   const [selectedGallery, setSelectedGallery] = useState<number | null>(null);
@@ -67,6 +69,25 @@ export function CollectionDemo({ feature, featureImage, heroImage, news, stores,
   const toggleFavorite = (id: string) => {
     setFavorites((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
   };
+
+  const openNews = (item: NewsItem) => {
+    setSelectedNews(item);
+    if (item.isRead !== true) {
+      void onReadNews?.(item.id);
+    }
+  };
+
+  useEffect(() => {
+    if (feature !== "news" || news.length === 0) return;
+    const requestedId = searchParams.get("announcement");
+    if (!requestedId) return;
+    const requested = news.find((item) => item.id === requestedId);
+    if (!requested) return;
+    setSelectedNews(requested);
+    if (requested.isRead !== true) {
+      void onReadNews?.(requested.id);
+    }
+  }, [feature, news, onReadNews, searchParams]);
 
   if (feature === "gallery") {
     const selectedItem = selectedGallery === null ? null : galleryItems[selectedGallery];
@@ -99,21 +120,20 @@ export function CollectionDemo({ feature, featureImage, heroImage, news, stores,
     return (
       <>
         <div className="feature-card-list">
-          {news.map((item, index) => (
+          {news.map((item) => (
             <Card className="news-detail-card" padding="lg" key={item.id}>
-              {index === 0 ? <img src={heroImage} alt={`${item.title}のイメージ`} /> : null}
-              <div><span className="feature-success__eyebrow">{item.category} · {item.date}</span><h2>{item.title}</h2><p>店舗からのお知らせです。詳しい内容と対象条件をご確認いただけます。</p><Button variant="soft" onClick={() => setSelectedNews(item)}>詳しく見る <ChevronRight size={15} /></Button></div>
+              {item.image ? <img src={item.image} alt={`${item.title}のイメージ`} /> : null}
+              <div><span className="feature-success__eyebrow">{item.category} · {item.date}{item.isRead ? " · 既読" : " · 未読"}</span><h2>{item.title}</h2><p>{item.body || "店舗からのお知らせです。"}</p><Button variant="soft" onClick={() => openNews(item)}>詳しく見る <ChevronRight size={15} /></Button></div>
             </Card>
           ))}
+          {news.length === 0 ? <Card className="feature-empty" padding="lg"><CalendarDays size={28} /><h2>お知らせはありません</h2><p>新しいお知らせが公開されると、ここに表示されます。</p></Card> : null}
         </div>
         <BottomSheet open={selectedNews !== null} onClose={() => setSelectedNews(null)} title="お知らせ詳細">
           {selectedNews ? <article className="news-sheet-detail">
-            <img src={heroImage} alt={`${selectedNews.title}のイメージ`} />
+            {selectedNews.image ? <img src={selectedNews.image} alt={`${selectedNews.title}のイメージ`} /> : null}
             <div className="news-sheet-detail__meta"><span>{selectedNews.category}</span><time><CalendarDays size={14} />{selectedNews.date}</time></div>
             <h2>{selectedNews.title}</h2>
-            <p>いつも当店をご利用いただき、ありがとうございます。</p>
-            <p>店舗からの最新情報をご案内します。対象期間や利用条件をご確認のうえ、店頭またはアプリ内のサービスをご利用ください。</p>
-            <div className="news-sheet-detail__notice"><strong>ご利用にあたって</strong><span>内容は予告なく変更となる場合があります。詳しくは店舗スタッフまでお問い合わせください。</span></div>
+            <p className="news-sheet-detail__body">{selectedNews.body || "店舗からのお知らせです。"}</p>
             <Button size="lg" onClick={() => setSelectedNews(null)}>内容を確認しました</Button>
           </article> : null}
         </BottomSheet>

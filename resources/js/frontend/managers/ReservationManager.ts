@@ -636,8 +636,8 @@ export class ReservationManager {
                             <label class="form-label">
                                 <i class="fas fa-comment"></i> ${AppConstants.RESERVATION_LABELS.NOTES_OPTIONAL}
                             </label>
-                            <textarea name="notes" class="form-control" 
-                                rows="${AppConstants.RESERVATION_VALIDATION.TEXTAREA_ROWS}" 
+                            <textarea name="notes" class="form-control"
+                                rows="${AppConstants.RESERVATION_VALIDATION.TEXTAREA_ROWS}"
                                 maxlength="${AppConstants.RESERVATION_VALIDATION.MAX_NOTES_LENGTH}">${notes}</textarea>
                         </div>
                     </div>
@@ -735,8 +735,8 @@ export class ReservationManager {
                             <label class="form-label">
                                 <i class="fas fa-comment"></i> ${AppConstants.RESERVATION_LABELS.NOTES_OPTIONAL}
                             </label>
-                            <textarea name="notes" class="form-control" 
-                                rows="${AppConstants.RESERVATION_VALIDATION.TEXTAREA_ROWS}" 
+                            <textarea name="notes" class="form-control"
+                                rows="${AppConstants.RESERVATION_VALIDATION.TEXTAREA_ROWS}"
                                 maxlength="${AppConstants.RESERVATION_VALIDATION.MAX_NOTES_LENGTH}">${notes}</textarea>
                         </div>
                     </div>
