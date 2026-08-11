@@ -73,6 +73,7 @@ export function RuntimeDataProvider({ children }: { children: ReactNode }) {
       points: 0,
       expiration: '—',
       nextRankLabel: '次のランク',
+      isMember: false,
     };
     return {
       member,
@@ -112,6 +113,18 @@ export function RuntimeDataProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     void refresh();
+  }, [refresh]);
+
+  useEffect(() => {
+    const onMemberChanged = (): void => {
+      void refresh();
+    };
+    document.addEventListener("liff-member-reload", onMemberChanged);
+    document.addEventListener("liff-payment-completed", onMemberChanged);
+    return () => {
+      document.removeEventListener("liff-member-reload", onMemberChanged);
+      document.removeEventListener("liff-payment-completed", onMemberChanged);
+    };
   }, [refresh]);
 
   useEffect(() => {

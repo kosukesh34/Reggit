@@ -93,4 +93,7 @@ export interface OperationReceipt {
   reference: string;
   acceptedAt: string;
   status: "accepted" | "queued";
+  orderId?: number;
+  totalAmount?: number;
+  needsPayment?: boolean;
 }

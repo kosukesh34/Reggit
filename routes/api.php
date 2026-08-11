@@ -32,6 +32,7 @@ use App\Http\Controllers\Member\MemberPointCardController;
 use App\Http\Controllers\Member\MemberPointHistoryController;
 use App\Http\Controllers\Member\MemberPointsController;
 use App\Http\Controllers\Member\MemberRegisterController;
+use App\Http\Controllers\Member\MemberSessionClearController;
 use App\Http\Controllers\Member\MemberUpdateController;
 use App\Http\Controllers\Member\MemberWalletSummaryController;
 use App\Http\Controllers\Member\MemberWithdrawController;
@@ -166,6 +167,7 @@ Route::middleware(['web', 'bind.project'])->group(function () {
     Route::get('/members/me/google-wallet-url', [GoogleWalletUrlController::class, '__invoke']);
     Route::post('/members/register', [MemberRegisterController::class, '__invoke']);
     Route::post('/members/withdraw', [MemberWithdrawController::class, '__invoke']);
+    Route::post('/members/session/clear', [MemberSessionClearController::class, '__invoke']);
     Route::post('/devices/register', DeviceRegisterController::class);
     Route::get('/devices/session', DeviceSessionController::class);
     Route::get('/members/points', [MemberPointsController::class, '__invoke']);

@@ -1,11 +1,15 @@
-import { Component, type ErrorInfo, type ReactNode } from "react";
-import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { Component, type ErrorInfo, type ReactNode, useCallback } from "react";
+import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { AppShell } from "../components/layout/AppShell";
 import { HomePage } from "../pages/HomePage";
 import { MembershipPage } from "../pages/MembershipPage";
 import { MorePage } from "../pages/MorePage";
 import { ThemePreviewPage } from "../pages/ThemePreviewPage";
 import { FeaturePage } from "../pages/FeaturePage";
+import { DesignLabPage } from "../../frontend/features/designlab/DesignLabPage";
+import { useMembershipGate } from "../../frontend/hooks/useMembershipGate";
+import { useLegacyTabBridge } from "../navigation/useLegacyTabBridge";
+import { pathForLegacyTab } from "../navigation/tabPath";
 
 class ScreenErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
   state = { failed: false };
@@ -41,6 +45,7 @@ function ScreenRoutes() {
         <Route path="/" element={<Navigate to="/home" replace />} />
         <Route path="/home" element={<HomePage />} />
         <Route path="/membership" element={<MembershipPage />} />
+        <Route path="/designlab" element={<div className="page feature-page"><DesignLabPage /></div>} />
         <Route path="/more" element={<MorePage />} />
         <Route path="/dev/themes" element={<ThemePreviewPage />} />
         <Route path="/:feature" element={<FeaturePage />} />
@@ -49,9 +54,21 @@ function ScreenRoutes() {
   );
 }
 
+function MembershipGate() {
+  const navigate = useNavigate();
+  const switchTab = useCallback((tab: string) => {
+    const path = pathForLegacyTab(tab);
+    navigate(path ?? `/${tab}`);
+  }, [navigate]);
+  useMembershipGate(switchTab);
+  return null;
+}
+
 export function AppRouter() {
+  useLegacyTabBridge();
   return (
     <AppShell>
+      <MembershipGate />
       <ScreenRoutes />
     </AppShell>
   );
