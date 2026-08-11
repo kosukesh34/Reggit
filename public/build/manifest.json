@@ -1,34 +1,37 @@
 {
   "_customization-!~{003}~.js": {
-    "file": "assets/customization-CEfm8aV1.css",
+    "file": "assets/customization-D4eLpMpm.css",
     "src": "_customization-!~{003}~.js"
   },
-  "_customization-h9ZQn7Uw.js": {
-    "file": "assets/customization-h9ZQn7Uw.js",
+  "_customization-DLm1dGZi.js": {
+    "file": "assets/customization-DLm1dGZi.js",
     "name": "customization",
     "css": [
-      "assets/customization-CEfm8aV1.css"
+      "assets/customization-D4eLpMpm.css"
     ]
   },
   "resources/js/admin/main.tsx": {
-    "file": "assets/main-DNNl7i6B.js",
+    "file": "assets/main-B0TJ8Efi.js",
     "name": "main",
     "src": "resources/js/admin/main.tsx",
     "isEntry": true,
     "imports": [
-      "_customization-h9ZQn7Uw.js"
+      "_customization-DLm1dGZi.js"
     ],
     "css": [
       "assets/main-MImg_wPW.css"
     ]
   },
   "resources/js/frontend/main.tsx": {
-    "file": "assets/main-BUC3JuYF.js",
+    "file": "assets/main-CdsSr2X3.js",
     "name": "main",
     "src": "resources/js/frontend/main.tsx",
     "isEntry": true,
     "imports": [
-      "_customization-h9ZQn7Uw.js"
+      "_customization-DLm1dGZi.js"
+    ],
+    "css": [
+      "assets/main-DeRcRhEw.css"
     ]
   }
 }
