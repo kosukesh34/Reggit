@@ -219,11 +219,20 @@ class LiffDesignerSanitizer
 
     /**
      * @param  array<string, mixed>  $row
-     * @return array<string, bool|int|string>
+     * @return array<string, mixed>
      */
     private static function sanitizeGlobalSettings(array $row): array
     {
         $item = [];
+        if (isset($row['app_customization']) && is_array($row['app_customization'])) {
+            $encoded = json_encode($row['app_customization'], JSON_UNESCAPED_UNICODE);
+            if (is_string($encoded) && strlen($encoded) <= 120000) {
+                $decoded = json_decode($encoded, true);
+                if (is_array($decoded)) {
+                    $item['app_customization'] = $decoded;
+                }
+            }
+        }
         if (isset($row['content_padding']) && is_numeric($row['content_padding'])) {
             $item['content_padding'] = self::num($row['content_padding'], 8, 40, 18);
         }

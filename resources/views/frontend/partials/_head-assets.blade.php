@@ -1,26 +1,11 @@
-@if($useInlineLocalAssets)
-    @php
-        $mainCss = @file_get_contents($cssDir . '/style.css') ?: '';
-        $inlineCss = $mainCss;
-        if (preg_match_all('/@import\s+url\([\'"]([^\'"]+)[\'"]\)\s*;/', $mainCss, $m)) {
-            $inlineCss = '';
-            foreach ($m[1] as $importPath) {
-                // cache-bust 用 ?v= を除いて実ファイルを読む（ngrok インライン時）
-                $relativePath = explode('?', $importPath, 2)[0];
-                $full = $cssDir . '/' . $relativePath;
-                if (is_file($full)) {
-                    $inlineCss .= file_get_contents($full) . "\n";
-                }
-            }
-        }
-    @endphp
-    <style id="inline-frontend-style">{!! $inlineCss !!}</style>
-@else
-    <link rel="stylesheet" href="/css/frontend/style.css?v={{ urlencode($assetVersion) }}">
-@endif
+{{-- 旧 frontend/style.css は DesignMock 全面刷新後は読み込まない（衝突回避） --}}
+<style>
+  #liff-loading { display: none !important; }
+  body.reggit-liff-ui, .reggit-liff-ui-root { min-height: 100vh; }
+</style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@700;800;900&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Noto+Sans+JP:wght@400;500;700&display=swap">
 @if(!(isset($isFixedUi) && $isFixedUi) && isset($liffCustomCss) && $liffCustomCss !== null && $liffCustomCss !== '')
     <style id="liff-custom-style">{!! $liffCustomCss !!}</style>
 @endif
