@@ -1,37 +1,37 @@
 {
   "_customization-!~{003}~.js": {
-    "file": "assets/customization-kRI_uz7s.css",
+    "file": "assets/customization-BLTQmqgB.css",
     "src": "_customization-!~{003}~.js"
   },
-  "_customization-DVIJfv-M.js": {
-    "file": "assets/customization-DVIJfv-M.js",
+  "_customization-BM-ZEOMI.js": {
+    "file": "assets/customization-BM-ZEOMI.js",
     "name": "customization",
     "css": [
-      "assets/customization-kRI_uz7s.css"
+      "assets/customization-BLTQmqgB.css"
     ]
   },
   "resources/js/admin/main.tsx": {
-    "file": "assets/main-DHRojFAm.js",
+    "file": "assets/main-MQa4YXFd.js",
     "name": "main",
     "src": "resources/js/admin/main.tsx",
     "isEntry": true,
     "imports": [
-      "_customization-DVIJfv-M.js"
+      "_customization-BM-ZEOMI.js"
     ],
     "css": [
       "assets/main-MImg_wPW.css"
     ]
   },
   "resources/js/frontend/main.tsx": {
-    "file": "assets/main-BrWF0zgH.js",
+    "file": "assets/main-BI6L4d4y.js",
     "name": "main",
     "src": "resources/js/frontend/main.tsx",
     "isEntry": true,
     "imports": [
-      "_customization-DVIJfv-M.js"
+      "_customization-BM-ZEOMI.js"
     ],
     "css": [
-      "assets/main-J4CZFcWt.css"
+      "assets/main-Hg2P_V_b.css"
     ]
   }
 }
