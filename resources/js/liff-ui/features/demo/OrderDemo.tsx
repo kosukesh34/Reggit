@@ -4,6 +4,7 @@ import { BottomSheet } from "../../components/ui/BottomSheet";
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import type { AppCustomization } from "../../types/customization";
+import type { OperationReceipt } from "../../types/runtime";
 import { useRuntimeData } from "../../context/RuntimeDataContext";
 
 interface OrderItem {
@@ -60,6 +61,54 @@ const categoryLabels: Record<string, string> = {
   other: "その他",
 };
 
+type CheckoutManagerLike = {
+  openPaymentModal: (order: {
+    id: number;
+    order_number?: string | null;
+    total_amount?: number;
+  }) => Promise<void>;
+};
+
+function waitForStripePayment(receipt: OperationReceipt): Promise<string> {
+  const app = window.app as { checkoutManager?: CheckoutManagerLike } | undefined;
+  const checkoutManager = app?.checkoutManager;
+  if (checkoutManager === undefined || receipt.orderId === undefined) {
+    return Promise.reject(new Error("決済機能の読み込みに失敗しました"));
+  }
+
+  return new Promise((resolve, reject) => {
+    const onCompleted = (event: Event): void => {
+      cleanup();
+      const detail = (event as CustomEvent<{ order?: { order_number?: string | number | null; id?: number | string } }>).detail;
+      const orderNumber = detail?.order?.order_number ?? detail?.order?.id ?? receipt.reference;
+      resolve(String(orderNumber));
+    };
+    const onClosed = (event: Event): void => {
+      const detail = (event as CustomEvent<{ shouldCancelOrder?: boolean }>).detail;
+      if (detail?.shouldCancelOrder !== true) {
+        return;
+      }
+      cleanup();
+      reject(new Error("決済がキャンセルされました"));
+    };
+    const cleanup = (): void => {
+      document.removeEventListener("liff-payment-completed", onCompleted);
+      document.removeEventListener("liff-close-payment", onClosed);
+    };
+
+    document.addEventListener("liff-payment-completed", onCompleted);
+    document.addEventListener("liff-close-payment", onClosed);
+    void checkoutManager.openPaymentModal({
+      id: receipt.orderId!,
+      order_number: receipt.reference,
+      total_amount: receipt.totalAmount,
+    }).catch((error: unknown) => {
+      cleanup();
+      reject(error instanceof Error ? error : new Error("決済画面を開けませんでした"));
+    });
+  });
+}
+
 interface OrderDemoProps {
   dineIn: boolean;
   image: string;
@@ -69,7 +118,7 @@ interface OrderDemoProps {
 }
 
 export function OrderDemo({ dineIn, image, config, storeId, venueName }: OrderDemoProps) {
-  const { createOrder, commerce } = useRuntimeData();
+  const { createOrder, commerce, mode } = useRuntimeData();
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [sheetOpen, setSheetOpen] = useState(false);
   const [completed, setCompleted] = useState(false);
@@ -78,7 +127,10 @@ export function OrderDemo({ dineIn, image, config, storeId, venueName }: OrderDe
   const [error, setError] = useState<string>();
   const [selectedCategory, setSelectedCategory] = useState("all");
   const profile = orderProfiles[storeId] ?? defaultOrderProfile;
-  const orderItems = commerce?.items?.length ? commerce.items : profile.items;
+  const hasLiveCatalog = mode === "live" && (commerce?.items?.length ?? 0) > 0;
+  const orderItems = hasLiveCatalog || mode !== "live"
+    ? (commerce?.items?.length ? commerce.items : profile.items)
+    : [];
   const pickupTime = commerce?.pickupEstimate || profile.pickupTime;
   const dineInDetail = commerce?.dineInDetail || profile.dineInDetail;
   const count = Object.values(quantities).reduce((sum, quantity) => sum + quantity, 0);
@@ -102,6 +154,9 @@ export function OrderDemo({ dineIn, image, config, storeId, venueName }: OrderDe
     setSubmitting(true);
     setError(undefined);
     try {
+      if (mode === "live" && !hasLiveCatalog) {
+        throw new Error("注文できる商品がありません。しばらくしてから再度お試しください");
+      }
       const receipt = await createOrder({
         storeId,
         venueName,
@@ -115,7 +170,11 @@ export function OrderDemo({ dineIn, image, config, storeId, venueName }: OrderDe
         })),
         total,
       });
-      setReference(receipt.reference);
+      let referenceValue = receipt.reference;
+      if (!dineIn && receipt.needsPayment === true && receipt.orderId !== undefined) {
+        referenceValue = await waitForStripePayment(receipt);
+      }
+      setReference(referenceValue);
       setSheetOpen(false);
       setCompleted(true);
     } catch (caught) {
@@ -131,7 +190,7 @@ export function OrderDemo({ dineIn, image, config, storeId, venueName }: OrderDe
         <CheckCircle2 size={44} />
         <div className="feature-success__eyebrow">受付完了</div>
         <h2>ご注文を受け付けました</h2>
-        <p>{dineIn ? "テーブル A-12 までお持ちします。" : `受取番号 M-024。${pickupTime.replace("最短受取 ", "")}でご用意します。`}</p>
+        <p>{dineIn ? "テーブル A-12 までお持ちします。" : `受取番号 ${reference ?? "—"}${pickupTime ? `。${pickupTime.replace("最短受取 ", "")}でご用意します。` : "。"}`}</p>
         {reference ? <span className="operation-reference">受付ID {reference}</span> : null}
         <Button onClick={() => { setCompleted(false); setQuantities({}); setReference(undefined); }}>続けて注文する</Button>
       </Card>
@@ -155,6 +214,12 @@ export function OrderDemo({ dineIn, image, config, storeId, venueName }: OrderDe
           <div><span>MENU</span><h2>商品を選ぶ</h2></div>
           <small>{orderItems.length}品</small>
         </div>
+
+        {mode === "live" && !hasLiveCatalog ? (
+          <Card padding="lg">
+            <p>現在注文できる商品がありません。商品が登録されるとここに表示されます。</p>
+          </Card>
+        ) : null}
 
         {config.groupByCategory && categories.length > 1 ? (
           <div className="order-category-tabs" role="group" aria-label="商品カテゴリ">
@@ -228,7 +293,7 @@ export function OrderDemo({ dineIn, image, config, storeId, venueName }: OrderDe
             <div className="checkout-lines__total"><span>合計</span><strong>¥{total.toLocaleString()}</strong></div>
           </div>
           {error ? <div className="form-error" role="alert">{error}</div> : null}
-          <Button size="lg" disabled={submitting} onClick={() => void submitOrder()}>{submitting ? "送信中…" : "注文を確定する"}</Button>
+          <Button size="lg" disabled={submitting} onClick={() => void submitOrder()}>{submitting ? (dineIn ? "送信中…" : "決済準備中…") : (dineIn ? "注文を確定する" : "決済へ進む")}</Button>
         </div>
       </BottomSheet>
     </>

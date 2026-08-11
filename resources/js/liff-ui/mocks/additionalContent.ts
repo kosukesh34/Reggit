@@ -1,16 +1,16 @@
 import type { CouponItem, MemberProfile, NewsItem, StoreSummary } from "../types/app";
 
 export const additionalMemberProfiles: Record<string, MemberProfile> = {
-  store_bakery: { name: "高橋 美咲", number: "000123401", rank: "Bread Lover", points: 1260, expiration: "2027-04-30", nextRankLabel: "あと240ptで Baker's Circle" },
-  store_fitness: { name: "伊藤 健", number: "000123402", rank: "Active", points: 3420, expiration: "2027-08-31", nextRankLabel: "今月あと2回来館でランクアップ" },
-  store_flower: { name: "渡辺 葵", number: "000123403", rank: "Bloom", points: 760, expiration: "2027-05-31", nextRankLabel: "あと3回のご利用で特典を獲得" },
-  store_hotel: { name: "中村 直子", number: "000123404", rank: "Suite", points: 12800, expiration: "2027-12-31", nextRankLabel: "次の滞在でレイトチェックアウト無料" },
-  store_pets: { name: "小林 海", number: "000123405", rank: "Best Friend", points: 1890, expiration: "2027-02-28", nextRankLabel: "あと110ptでケア特典を獲得" },
-  store_clinic: { name: "加藤 亮", number: "000123406", rank: "Wellness", points: 0, expiration: "2027-07-31", nextRankLabel: "次回の定期チェックは11月です" },
-  store_market: { name: "吉田 恵", number: "000123407", rank: "Local Plus", points: 3150, expiration: "2027-03-31", nextRankLabel: "あと350ptで送料無料特典" },
-  store_dining: { name: "山本 誠", number: "000123408", rank: "Regular", points: 1840, expiration: "2027-09-30", nextRankLabel: "あと160ptでお食事特典を獲得" },
-  store_izakaya: { name: "松本 拓也", number: "000123409", rank: "常連", points: 960, expiration: "2027-08-31", nextRankLabel: "あと2回来店で裏メニュー特典" },
-  store_fastfood: { name: "井上 さくら", number: "000123410", rank: "GOLD BITE", points: 2380, expiration: "2027-08-31", nextRankLabel: "あと620ptでPLATINUM BITE" },
+  store_bakery: { name: "高橋 美咲", number: "000123401", rank: "Bread Lover", points: 1260, expiration: "2027-04-30", nextRankLabel: "あと240ptで Baker's Circle", isMember: true },
+  store_fitness: { name: "伊藤 健", number: "000123402", rank: "Active", points: 3420, expiration: "2027-08-31", nextRankLabel: "今月あと2回来館でランクアップ", isMember: true },
+  store_flower: { name: "渡辺 葵", number: "000123403", rank: "Bloom", points: 760, expiration: "2027-05-31", nextRankLabel: "あと3回のご利用で特典を獲得", isMember: true },
+  store_hotel: { name: "中村 直子", number: "000123404", rank: "Suite", points: 12800, expiration: "2027-12-31", nextRankLabel: "次の滞在でレイトチェックアウト無料", isMember: true },
+  store_pets: { name: "小林 海", number: "000123405", rank: "Best Friend", points: 1890, expiration: "2027-02-28", nextRankLabel: "あと110ptでケア特典を獲得", isMember: true },
+  store_clinic: { name: "加藤 亮", number: "000123406", rank: "Wellness", points: 0, expiration: "2027-07-31", nextRankLabel: "次回の定期チェックは11月です", isMember: true },
+  store_market: { name: "吉田 恵", number: "000123407", rank: "Local Plus", points: 3150, expiration: "2027-03-31", nextRankLabel: "あと350ptで送料無料特典", isMember: true },
+  store_dining: { name: "山本 誠", number: "000123408", rank: "Regular", points: 1840, expiration: "2027-09-30", nextRankLabel: "あと160ptでお食事特典を獲得", isMember: true },
+  store_izakaya: { name: "松本 拓也", number: "000123409", rank: "常連", points: 960, expiration: "2027-08-31", nextRankLabel: "あと2回来店で裏メニュー特典", isMember: true },
+  store_fastfood: { name: "井上 さくら", number: "000123410", rank: "GOLD BITE", points: 2380, expiration: "2027-08-31", nextRankLabel: "あと620ptでPLATINUM BITE", isMember: true },
 };
 
 export const additionalCoupons: Record<string, CouponItem[]> = {

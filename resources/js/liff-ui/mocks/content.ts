@@ -9,6 +9,7 @@ export const memberProfileByStore: Record<string, MemberProfile> = {
     points: 2450,
     expiration: "2027-03-31",
     nextRankLabel: "あと 550pt で Platinum",
+    isMember: true,
   },
   store_apparel: {
     name: "佐藤 花子",
@@ -17,6 +18,7 @@ export const memberProfileByStore: Record<string, MemberProfile> = {
     points: 980,
     expiration: "2027-01-31",
     nextRankLabel: "あと 120pt で Gold",
+    isMember: true,
   },
   store_salon: {
     name: "鈴木 一郎",
@@ -25,6 +27,7 @@ export const memberProfileByStore: Record<string, MemberProfile> = {
     points: 0,
     expiration: "2027-06-30",
     nextRankLabel: "次回ご来店で特典が更新されます",
+    isMember: true,
   },
   ...additionalMemberProfiles,
 };

@@ -1,5 +1,7 @@
 declare const Stripe: ((key: string) => any) | undefined;
 
+import { ApiClient } from './apiClient';
+
 type StripeConfirmResult = {
     error?: { message?: string } | null;
     paymentIntent: { id: string; status: string };
@@ -10,12 +12,14 @@ export class StripePayment {
     elements: any;
     paymentElement: any;
     clientSecret: string | null;
+    apiClient: ApiClient;
 
     constructor() {
         this.stripe = null;
         this.elements = null;
         this.paymentElement = null;
         this.clientSecret = null;
+        this.apiClient = new ApiClient();
         void this.init();
     }
 
@@ -44,41 +48,13 @@ export class StripePayment {
     }
 
     async createPaymentIntent(orderId: number | string): Promise<any> {
-        const headers: Record<string, string> = {
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-            'ngrok-skip-browser-warning': 'true',
-        };
-        if (typeof window !== 'undefined' && window.__PROJECT_KEY__) {
-            headers['X-Project-Key'] = window.__PROJECT_KEY__;
-        }
-        const response = await fetch('/api/payment/create-intent', {
-            method: 'POST',
-            headers,
-            credentials: 'same-origin',
-            body: JSON.stringify({
-                order_id: orderId,
-            }),
+        const result = await this.apiClient.post('/api/payment/create-intent', {
+            order_id: orderId,
         });
-
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-            const text = await response.text();
-            if (typeof window.__clientDebugLog === 'function') {
-                window.__clientDebugLog('stripe_non_json', {
-                    endpoint: '/api/payment/create-intent',
-                    status: response.status,
-                    contentType: contentType || '',
-                    bodyHead: text ? String(text).slice(0, 300) : '',
-                });
-            }
-            throw new Error('サーバーエラーが発生しました。JSON形式のレスポンスが返されませんでした。');
+        if (!result.success) {
+            throw new Error(result.error || 'Payment intent creation failed');
         }
-
-        const data = await response.json();
-        if (!response.ok) {
-            throw new Error(data.error || data.message || 'Payment intent creation failed');
-        }
+        const data = result.data as { clientSecret?: string; error?: string };
         if (data.clientSecret) {
             this.clientSecret = data.clientSecret;
             return data;
@@ -119,42 +95,13 @@ export class StripePayment {
             return { success: false, status: paymentIntent.status };
         }
 
-        const headers: Record<string, string> = {
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-            'ngrok-skip-browser-warning': 'true',
-        };
-        if (typeof window !== 'undefined' && window.__PROJECT_KEY__) {
-            headers['X-Project-Key'] = window.__PROJECT_KEY__;
-        }
-        const response = await fetch('/api/payment/confirm', {
-            method: 'POST',
-            headers,
-            credentials: 'same-origin',
-            body: JSON.stringify({
-                payment_intent_id: paymentIntent.id,
-                order_id: orderId,
-            }),
+        const result = await this.apiClient.post('/api/payment/confirm', {
+            payment_intent_id: paymentIntent.id,
+            order_id: orderId,
         });
-
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-            const text = await response.text();
-            if (typeof window.__clientDebugLog === 'function') {
-                window.__clientDebugLog('stripe_non_json', {
-                    endpoint: '/api/payment/confirm',
-                    status: response.status,
-                    contentType: contentType || '',
-                    bodyHead: text ? String(text).slice(0, 300) : '',
-                });
-            }
-            throw new Error('サーバーエラーが発生しました。JSON形式のレスポンスが返されませんでした。');
+        if (!result.success) {
+            throw new Error(result.error || 'Payment confirmation failed');
         }
-
-        const data = await response.json();
-        if (!response.ok) {
-            throw new Error(data.error || data.message || 'Payment confirmation failed');
-        }
-        return data;
+        return result.data;
     }
 }

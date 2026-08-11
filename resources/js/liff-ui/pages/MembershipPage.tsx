@@ -8,11 +8,21 @@ import { useState } from "react";
 import { BottomSheet } from "../components/ui/BottomSheet";
 import { MembershipBarcode } from "../components/membership/MembershipBarcode";
 import { formatDisplayDate } from "../utils/date";
+import { MemberView } from "../../frontend/features/member/MemberView";
 
 export function MembershipPage() {
   const { activeStore, customization } = useAppConfig();
-  const { member } = useRuntimeData();
+  const { member, mode } = useRuntimeData();
   const [barcodeOpen, setBarcodeOpen] = useState(false);
+
+  // デモ以外は旧UIと同じ MemberView（登録・会員証・本人紐付け）を使う
+  if (mode !== "preview") {
+    return (
+      <div className="page membership-page stack stack--lg">
+        <MemberView />
+      </div>
+    );
+  }
 
   return (
     <div className="page membership-page stack stack--lg">
