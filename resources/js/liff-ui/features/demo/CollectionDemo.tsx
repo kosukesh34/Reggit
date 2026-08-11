@@ -6,6 +6,7 @@ import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import type { FeatureType, NewsItem, StoreSummary } from "../../types/app";
 import type { RuntimeCatalogItem, RuntimeHistoryItem } from "../../types/runtime";
+import { formatDisplayDate } from "../../utils/date";
 
 interface CatalogItem {
   id: string;
@@ -55,6 +56,14 @@ interface CollectionDemoProps {
   onReadNews?: (announcementId: string) => Promise<void>;
 }
 
+function newsExcerpt(body: string, maxLen = 96): string {
+  const text = body.replace(/\s+/g, " ").trim();
+  if (text.length <= maxLen) {
+    return text;
+  }
+  return `${text.slice(0, maxLen)}…`;
+}
+
 export function CollectionDemo({ feature, featureImage, heroImage, news, stores, storeId, orderPath, liveCatalog, history, onReadNews }: CollectionDemoProps) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -72,15 +81,24 @@ export function CollectionDemo({ feature, featureImage, heroImage, news, stores,
 
   const openNews = (item: NewsItem) => {
     setSelectedNews(item);
+    navigate(`/news?announcement=${encodeURIComponent(item.id)}`, { replace: false });
     if (item.isRead !== true) {
       void onReadNews?.(item.id);
     }
   };
 
+  const closeNews = () => {
+    setSelectedNews(null);
+    navigate("/news", { replace: true });
+  };
+
   useEffect(() => {
-    if (feature !== "news" || news.length === 0) return;
+    if (feature !== "news") return;
     const requestedId = searchParams.get("announcement");
-    if (!requestedId) return;
+    if (!requestedId) {
+      setSelectedNews(null);
+      return;
+    }
     const requested = news.find((item) => item.id === requestedId);
     if (!requested) return;
     setSelectedNews(requested);
@@ -117,27 +135,75 @@ export function CollectionDemo({ feature, featureImage, heroImage, news, stores,
   }
 
   if (feature === "news") {
+    if (selectedNews !== null) {
+      const body = selectedNews.body || "店舗からのお知らせです。";
+      return (
+        <article className="news-article">
+          <button type="button" className="news-article__back" onClick={closeNews}>
+            <ChevronLeft size={18} aria-hidden="true" />
+            お知らせ一覧
+          </button>
+          {selectedNews.image ? (
+            <div className="news-article__hero">
+              <img src={selectedNews.image} alt="" />
+            </div>
+          ) : null}
+          <div className="news-article__panel">
+            <div className="news-article__meta">
+              <span className="news-article__category">{selectedNews.category}</span>
+              <time className="news-article__date">
+                <CalendarDays size={14} aria-hidden="true" />
+                {formatDisplayDate(selectedNews.date, "yyyy年M月d日", selectedNews.date)}
+              </time>
+            </div>
+            <h1 className="news-article__title">{selectedNews.title}</h1>
+            <div className="news-article__body">{body}</div>
+          </div>
+        </article>
+      );
+    }
+
     return (
-      <>
-        <div className="feature-card-list">
-          {news.map((item) => (
-            <Card className="news-detail-card" padding="lg" key={item.id}>
-              {item.image ? <img src={item.image} alt={`${item.title}のイメージ`} /> : null}
-              <div><span className="feature-success__eyebrow">{item.category} · {item.date}{item.isRead ? " · 既読" : " · 未読"}</span><h2>{item.title}</h2><p>{item.body || "店舗からのお知らせです。"}</p><Button variant="soft" onClick={() => openNews(item)}>詳しく見る <ChevronRight size={15} /></Button></div>
-            </Card>
-          ))}
-          {news.length === 0 ? <Card className="feature-empty" padding="lg"><CalendarDays size={28} /><h2>お知らせはありません</h2><p>新しいお知らせが公開されると、ここに表示されます。</p></Card> : null}
-        </div>
-        <BottomSheet open={selectedNews !== null} onClose={() => setSelectedNews(null)} title="お知らせ詳細">
-          {selectedNews ? <article className="news-sheet-detail">
-            {selectedNews.image ? <img src={selectedNews.image} alt={`${selectedNews.title}のイメージ`} /> : null}
-            <div className="news-sheet-detail__meta"><span>{selectedNews.category}</span><time><CalendarDays size={14} />{selectedNews.date}</time></div>
-            <h2>{selectedNews.title}</h2>
-            <p className="news-sheet-detail__body">{selectedNews.body || "店舗からのお知らせです。"}</p>
-            <Button size="lg" onClick={() => setSelectedNews(null)}>内容を確認しました</Button>
-          </article> : null}
-        </BottomSheet>
-      </>
+      <div className="news-feed">
+        {news.map((item) => {
+          const excerpt = newsExcerpt(item.body || "店舗からのお知らせです。");
+          return (
+            <button
+              type="button"
+              className={`news-feed-item${item.isRead === true ? "" : " news-feed-item--unread"}`}
+              key={item.id}
+              onClick={() => openNews(item)}
+            >
+              {item.image ? (
+                <div className="news-feed-item__media">
+                  <img src={item.image} alt="" loading="lazy" />
+                </div>
+              ) : (
+                <div className="news-feed-item__media news-feed-item__media--placeholder" aria-hidden="true">
+                  <CalendarDays size={22} />
+                </div>
+              )}
+              <div className="news-feed-item__body">
+                <div className="news-feed-item__meta">
+                  <span>{item.category}</span>
+                  <time>{formatDisplayDate(item.date, "yyyy.MM.dd", item.date)}</time>
+                  {item.isRead !== true ? <span className="news-feed-item__new">NEW</span> : null}
+                </div>
+                <h2 className="news-feed-item__title">{item.title}</h2>
+                <p className="news-feed-item__excerpt">{excerpt}</p>
+                <span className="news-feed-item__more">続きを読む <ChevronRight size={14} aria-hidden="true" /></span>
+              </div>
+            </button>
+          );
+        })}
+        {news.length === 0 ? (
+          <Card className="feature-empty" padding="lg">
+            <CalendarDays size={28} />
+            <h2>お知らせはありません</h2>
+            <p>新しいお知らせが公開されると、ここに表示されます。</p>
+          </Card>
+        ) : null}
+      </div>
     );
   }
 
