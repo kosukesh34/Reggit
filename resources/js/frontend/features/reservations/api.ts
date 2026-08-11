@@ -111,12 +111,18 @@ export async function loadReservations(): Promise<ReservationsLoadResult> {
         }
         const data = (response as { data?: { requires_membership?: boolean } }).data;
         if (data && data.requires_membership === true) {
+            if (!isMembershipRequired()) {
+                return { kind: 'sample', reservations: getSampleReservations() };
+            }
             return { kind: 'membership' };
         }
         return { kind: 'error', message: response.error || AppConstants.RESERVATION_MESSAGES.ERROR_DEFAULT };
     } catch (error) {
         const message = error instanceof Error ? error.message : '';
         if (message.includes('会員登録が必要')) {
+            if (!isMembershipRequired()) {
+                return { kind: 'sample', reservations: getSampleReservations() };
+            }
             return { kind: 'membership' };
         }
         return { kind: 'error', message: message || AppConstants.RESERVATION_MESSAGES.ERROR_DEFAULT };
