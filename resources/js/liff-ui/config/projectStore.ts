@@ -98,7 +98,7 @@ export function buildProjectStore(): StoreAppConfig {
   };
 }
 
-export function readServerCustomizationPatch(storeId: string): AppCustomizationPatch | undefined {
+export function readServerCustomizationPatch(_storeId: string): AppCustomizationPatch | undefined {
   const settings = window.__LIFF_TAB_SETTINGS__;
   if (settings === undefined || settings === null || typeof settings !== 'object') {
     return undefined;
@@ -109,18 +109,30 @@ export function readServerCustomizationPatch(storeId: string): AppCustomizationP
   }
   const raw = global.app_customization;
   if (raw === undefined || raw === null) {
+    if (typeof global.products_group_by_category === 'boolean') {
+      return { order: { groupByCategory: global.products_group_by_category } };
+    }
     return undefined;
   }
+  const withLegacyOrderSetting = (patch: AppCustomizationPatch): AppCustomizationPatch => ({
+    ...patch,
+    order: {
+      ...patch.order,
+      ...(patch.order?.groupByCategory === undefined && typeof global.products_group_by_category === 'boolean'
+        ? { groupByCategory: global.products_group_by_category }
+        : {}),
+    },
+  });
   if (typeof raw === 'string') {
     try {
       const parsed = JSON.parse(raw) as AppCustomizationPatch;
-      return { ...parsed, storeId };
+      return withLegacyOrderSetting(parsed);
     } catch {
       return undefined;
     }
   }
   if (typeof raw === 'object') {
-    return { ...(raw as AppCustomizationPatch), storeId };
+    return withLegacyOrderSetting(raw as AppCustomizationPatch);
   }
   return undefined;
 }

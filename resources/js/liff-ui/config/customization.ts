@@ -41,6 +41,8 @@ export const defaultCustomization: AppCustomization = {
     showEarliestPickup: true,
     showItemImages: true,
     ctaPosition: "inline",
+    catalogLayout: "cards",
+    groupByCategory: true,
   },
   membership: {
     template: "classic",

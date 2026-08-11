@@ -1,34 +1,34 @@
 {
-  "_navigation-!~{003}~.js": {
-    "file": "assets/navigation-7CKYCIwf.css",
-    "src": "_navigation-!~{003}~.js"
+  "_customization-!~{003}~.js": {
+    "file": "assets/customization-BgghSwzJ.css",
+    "src": "_customization-!~{003}~.js"
   },
-  "_navigation-DwogFCLt.js": {
-    "file": "assets/navigation-DwogFCLt.js",
-    "name": "navigation",
+  "_customization-CdEI0ZsY.js": {
+    "file": "assets/customization-CdEI0ZsY.js",
+    "name": "customization",
     "css": [
-      "assets/navigation-7CKYCIwf.css"
+      "assets/customization-BgghSwzJ.css"
     ]
   },
   "resources/js/admin/main.tsx": {
-    "file": "assets/main-yPJ3i3_z.js",
+    "file": "assets/main-CCFMKUxf.js",
     "name": "main",
     "src": "resources/js/admin/main.tsx",
     "isEntry": true,
     "imports": [
-      "_navigation-DwogFCLt.js"
+      "_customization-CdEI0ZsY.js"
     ],
     "css": [
       "assets/main-MImg_wPW.css"
     ]
   },
   "resources/js/frontend/main.tsx": {
-    "file": "assets/main-DJOtqMmN.js",
+    "file": "assets/main-BLS3kDYZ.js",
     "name": "main",
     "src": "resources/js/frontend/main.tsx",
     "isEntry": true,
     "imports": [
-      "_navigation-DwogFCLt.js"
+      "_customization-CdEI0ZsY.js"
     ]
   }
 }

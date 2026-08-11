@@ -1,8 +1,8 @@
 import { Calendar } from "lucide-react";
-import { format } from "date-fns";
 import type { NewsItem } from "../../types/app";
 import { ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
+import { formatDisplayDate } from "../../utils/date";
 
 interface NewsSectionProps {
   news: NewsItem[];
@@ -23,7 +23,7 @@ export function NewsSection({ news }: NewsSectionProps) {
                 <span className="news-row__category">{item.category}</span>
                 <span className="news-row__date">
                   <Calendar size={12} />
-                  {format(new Date(item.date), "yyyy.MM.dd")}
+                  {formatDisplayDate(item.date, "yyyy.MM.dd", "日付未設定")}
                 </span>
               </div>
               <div className="news-row__title">{item.title}</div>

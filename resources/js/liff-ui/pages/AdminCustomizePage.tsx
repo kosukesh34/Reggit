@@ -3,6 +3,7 @@ import {
   ArrowLeft,
   ArrowUp,
   Check,
+  Eye,
   ExternalLink,
   LayoutGrid,
   Palette,
@@ -11,63 +12,181 @@ import {
   Settings2,
   SlidersHorizontal,
   Trash2,
+  X,
 } from "lucide-react";
-import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "../components/ui/Button";
-import { designPresetMap, designPresets } from "../config/designPresets";
+import { designPresets } from "../config/designPresets";
 import { tabLabelMap, tabOptions } from "../config/navigation";
 import { useAppConfig } from "../context/AppConfigContext";
+import { themeMap } from "../themes/themes";
 import type { TabType } from "../types/app";
-import type { AppCustomization, DesignPreset } from "../types/customization";
+import type { AppCustomization } from "../types/customization";
+import { resolveCustomizationColors } from "../utils/customization";
 
-export function AdminCustomizePage({ previewUrl, showMemberAppLink = true }: { previewUrl?: string; showMemberAppLink?: boolean }) {
-  const { activeStore, stores, setActiveStoreId, customization, updateCustomization, resetCustomization } = useAppConfig();
-  const preset = designPresetMap[customization.designPreset];
-  const previewPrimary = customization.colors.primary ?? preset.palette[0];
-  const previewAccent = customization.colors.accent ?? preset.palette[1];
-  const previewBackground = customization.colors.background ?? preset.palette[2];
+type DesignerSaveState = "saved" | "unsaved" | "saving" | "error";
+
+interface AdminCustomizePageProps {
+  previewUrl?: string;
+  showMemberAppLink?: boolean;
+  embedded?: boolean;
+  saveState?: DesignerSaveState;
+}
+
+const sectionLinks = [
+  { id: "design", label: "デザイン", icon: Palette },
+  { id: "layout", label: "レイアウト", icon: LayoutGrid },
+  { id: "features", label: "機能設定", icon: SlidersHorizontal },
+  { id: "navigation", label: "ナビゲーション", icon: Settings2 },
+] as const;
+
+const saveStateLabels: Record<DesignerSaveState, string> = {
+  saved: "保存済み",
+  unsaved: "未保存の変更あり",
+  saving: "保存中…",
+  error: "保存できませんでした",
+};
+
+const previewPathByTab: Record<TabType, string> = {
+  home: "/home",
+  membership: "/membership",
+  mobileOrder: "/mobileOrder",
+  dineInOrder: "/dineInOrder",
+  reservation: "/reservation",
+  queue: "/queue",
+  coupon: "/coupon",
+  stamp: "/stamp",
+  point: "/point",
+  menu: "/menu",
+  store: "/storeSearch",
+  news: "/news",
+  more: "/more",
+};
+
+function buildEmbeddedPreviewUrl(baseUrl: string, tab: TabType): string {
+  const separator = baseUrl.includes("?") ? "&" : "?";
+  return `${baseUrl}${separator}designer_live_preview=1&designer_embed=1#${previewPathByTab[tab]}`;
+}
+
+export function AdminCustomizePage({
+  previewUrl,
+  showMemberAppLink = true,
+  embedded = false,
+  saveState = "saved",
+}: AdminCustomizePageProps) {
+  const { activeStore, stores, setActiveStoreId, activeThemeId, customization, updateCustomization, resetCustomization } = useAppConfig();
+  const activeTheme = themeMap[activeThemeId] ?? themeMap[activeStore.themeId] ?? themeMap["minimal-light"];
+  const resolvedColors = resolveCustomizationColors(customization, activeTheme);
   const appPreviewHref = previewUrl ?? '/home';
+  const [activeSection, setActiveSection] = useState<(typeof sectionLinks)[number]["id"]>("design");
+  const [isPreviewOpen, setPreviewOpen] = useState(false);
+  const [previewTab, setPreviewTab] = useState<TabType>(customization.navigation.tabs[0] ?? "home");
+  const previewFrameRef = useRef<HTMLIFrameElement>(null);
+  const embeddedPreviewUrl = buildEmbeddedPreviewUrl(appPreviewHref, previewTab);
+
+  const sendCustomizationToPreview = useCallback(() => {
+    previewFrameRef.current?.contentWindow?.postMessage({
+      type: "reggit:designer-preview:update",
+      customization,
+    }, window.location.origin);
+  }, [customization]);
+
+  useEffect(() => {
+    const sections = sectionLinks
+      .map(({ id }) => document.getElementById(id))
+      .filter((section): section is HTMLElement => section !== null);
+    const observer = new IntersectionObserver((entries) => {
+      const visible = entries
+        .filter((entry) => entry.isIntersecting)
+        .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+      if (visible?.target.id) setActiveSection(visible.target.id as (typeof sectionLinks)[number]["id"]);
+    }, { rootMargin: "-18% 0px -62%", threshold: [0, 0.2, 0.6] });
+    sections.forEach((section) => observer.observe(section));
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!customization.navigation.tabs.includes(previewTab)) {
+      setPreviewTab(customization.navigation.tabs[0] ?? "home");
+    }
+  }, [customization.navigation.tabs, previewTab]);
+
+  useEffect(() => {
+    sendCustomizationToPreview();
+  }, [sendCustomizationToPreview]);
+
+  useEffect(() => {
+    const handlePreviewReady = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin || event.data?.type !== "reggit:designer-preview:ready") {
+        return;
+      }
+      sendCustomizationToPreview();
+    };
+    window.addEventListener("message", handlePreviewReady);
+    return () => window.removeEventListener("message", handlePreviewReady);
+  }, [sendCustomizationToPreview]);
+
+  const requestReset = () => {
+    if (window.confirm(`「${activeStore.storeName}」のデザイン設定を初期状態に戻しますか？\n保存するまでは店舗アプリに反映されません。`)) {
+      resetCustomization();
+    }
+  };
 
   return (
-    <div className="admin-shell">
-      <header className="admin-header">
+    <div className={`admin-shell${embedded ? " admin-shell--embedded" : ""}`}>
+      {!embedded ? <header className="admin-header">
         <div className="admin-header__brand"><span>R</span><div><strong>Reggit 店舗アプリ管理</strong><small>店舗運用・会員施策</small></div></div>
         <div className="admin-header__actions">
-          <Button variant="outline" onClick={resetCustomization}><RotateCcw size={16} />この店舗を初期設定へ戻す</Button>
+          <Button variant="outline" onClick={requestReset}><RotateCcw size={16} />この店舗を初期設定へ戻す</Button>
           {previewUrl !== undefined ? (
             <a className="button button--solid button--md" href={appPreviewHref} target="_blank" rel="noreferrer">アプリを確認 <ExternalLink size={16} /></a>
           ) : (
             <Link className="button button--solid button--md" to="/home">アプリを確認 <ExternalLink size={16} /></Link>
           )}
         </div>
-      </header>
+      </header> : null}
 
       <aside className="admin-sidebar">
         {showMemberAppLink ? <Link to="/more"><ArrowLeft size={17} />会員アプリへ戻る</Link> : null}
-        <nav>
-          <a href="#design"><Palette size={17} />デザイン</a>
-          <a href="#layout"><LayoutGrid size={17} />レイアウト</a>
-          <a href="#features"><SlidersHorizontal size={17} />機能設定</a>
-          <a href="#navigation"><Settings2 size={17} />ナビゲーション</a>
+        <nav aria-label="デザイン設定のセクション">
+          {sectionLinks.map(({ id, label, icon: Icon }) => (
+            <a href={`#${id}`} className={activeSection === id ? "is-active" : undefined} aria-current={activeSection === id ? "location" : undefined} onClick={() => setActiveSection(id)} key={id}>
+              <Icon size={17} />{label}
+            </a>
+          ))}
         </nav>
-        <label className="admin-sidebar__store">
-          <span>編集中の店舗</span>
-          <select value={activeStore.storeId} onChange={(event) => setActiveStoreId(event.target.value)}>
-            {stores.map((store) => <option value={store.storeId} key={store.storeId}>{store.storeName}</option>)}
-          </select>
-          <small>店舗ごとに設定・自動保存されます</small>
-        </label>
+        {embedded ? (
+          <div className="admin-sidebar__store" aria-label={`編集中の店舗：${activeStore.storeName}`}>
+            <span>編集中の店舗</span>
+            <strong>{activeStore.storeName}</strong>
+            <small>変更後は上部の保存ボタンで反映</small>
+          </div>
+        ) : (
+          <label className="admin-sidebar__store">
+            <span>編集中の店舗</span>
+            <select value={activeStore.storeId} onChange={(event) => setActiveStoreId(event.target.value)}>
+              {stores.map((store) => <option value={store.storeId} key={store.storeId}>{store.storeName}</option>)}
+            </select>
+            <small>店舗ごとに設定・端末へ一時保存されます</small>
+          </label>
+        )}
       </aside>
 
       <main className="admin-main">
-        <div className="admin-main__heading"><div><span>店舗アプリ設定</span><h1>{activeStore.storeName}</h1><p>会員向けアプリの表示内容と運用設定を店舗単位で管理します。</p></div><div className="admin-save-state"><Check size={15} />変更を保存済み</div></div>
+        <div className="admin-main__heading">
+          <div><span>店舗アプリ設定</span><h1>{activeStore.storeName}</h1><p>項目を変更し、プレビューを確認してから店舗へ保存します。</p></div>
+          <div className="admin-main__status">
+            <div className={`admin-save-state is-${saveState}`} aria-live="polite"><Check size={15} />{saveStateLabels[saveState]}</div>
+            <button type="button" className="admin-preview-toggle" aria-expanded={isPreviewOpen} onClick={() => setPreviewOpen(true)}><Eye size={16} />プレビュー</button>
+          </div>
+        </div>
 
         <section className="admin-section" id="design">
           <SectionHead number="01" title="基本デザイン" description="業態に合う構成を選び、店舗のブランドカラーへ調整します。" />
           <div className="preset-grid preset-grid--compact" aria-label="基本デザインを選択">
             {designPresets.map((item) => (
-              <button type="button" className={`preset-card preset-card--${item.id}${customization.designPreset === item.id ? " is-active" : ""}`} key={item.id} title={item.description} aria-label={`${item.name}：${item.description}`} aria-pressed={customization.designPreset === item.id} onClick={() => updateCustomization({ designPreset: item.id })}>
+              <button type="button" className={`preset-card preset-card--${item.id}${customization.designPreset === item.id ? " is-active" : ""}`} key={item.id} title={item.description} aria-label={`${item.name}：${item.description}`} aria-pressed={customization.designPreset === item.id} onClick={() => updateCustomization({ designPreset: item.id, colors: { primary: undefined, secondary: undefined, accent: undefined, background: undefined, surface: undefined, textPrimary: undefined, textSecondary: undefined } })}>
                 <span className="preset-card__visual" style={{ "--preset-a": item.palette[0], "--preset-b": item.palette[1], "--preset-c": item.palette[2] } as CSSProperties}><i /><i /><i /></span>
                 <span className="preset-card__body"><strong>{item.name}</strong></span>
                 {customization.designPreset === item.id ? <span className="preset-card__check"><Check size={10} /></span> : null}
@@ -78,13 +197,13 @@ export function AdminCustomizePage({ previewUrl, showMemberAppLink = true }: { p
           <div className="admin-panel">
             <div className="admin-panel__title"><h3>カスタムカラー</h3><p>カラーピッカーまたはHEXコードで、画面の各色を自由に上書きします。</p></div>
             <div className="color-grid">
-              <ColorField label="メイン" value={customization.colors.primary ?? previewPrimary} onChange={(primary) => updateCustomization({ colors: { primary } })} />
-              <ColorField label="サブ" value={customization.colors.secondary ?? "#75665A"} onChange={(secondary) => updateCustomization({ colors: { secondary } })} />
-              <ColorField label="アクセント" value={customization.colors.accent ?? previewAccent} onChange={(accent) => updateCustomization({ colors: { accent } })} />
-              <ColorField label="背景" value={customization.colors.background ?? previewBackground} onChange={(background) => updateCustomization({ colors: { background } })} />
-              <ColorField label="カード" value={customization.colors.surface ?? "#FFFDF8"} onChange={(surface) => updateCustomization({ colors: { surface } })} />
-              <ColorField label="本文" value={customization.colors.textPrimary ?? "#2C211A"} onChange={(textPrimary) => updateCustomization({ colors: { textPrimary } })} />
-              <ColorField label="補助テキスト" value={customization.colors.textSecondary ?? "#75665A"} onChange={(textSecondary) => updateCustomization({ colors: { textSecondary } })} />
+              <ColorField label="メイン" value={resolvedColors.primary} onChange={(primary) => updateCustomization({ colors: { primary } })} />
+              <ColorField label="サブ" value={resolvedColors.secondary} onChange={(secondary) => updateCustomization({ colors: { secondary } })} />
+              <ColorField label="アクセント" value={resolvedColors.accent} onChange={(accent) => updateCustomization({ colors: { accent } })} />
+              <ColorField label="背景" value={resolvedColors.background} onChange={(background) => updateCustomization({ colors: { background } })} />
+              <ColorField label="カード" value={resolvedColors.surface} onChange={(surface) => updateCustomization({ colors: { surface } })} />
+              <ColorField label="本文" value={resolvedColors.textPrimary} onChange={(textPrimary) => updateCustomization({ colors: { textPrimary } })} />
+              <ColorField label="補助テキスト" value={resolvedColors.textSecondary} onChange={(textSecondary) => updateCustomization({ colors: { textSecondary } })} />
             </div>
             <Button variant="ghost" size="sm" onClick={() => updateCustomization({ colors: { primary: undefined, secondary: undefined, accent: undefined, background: undefined, surface: undefined, textPrimary: undefined, textSecondary: undefined } })}>プリセットの色に戻す</Button>
           </div>
@@ -135,7 +254,9 @@ export function AdminCustomizePage({ previewUrl, showMemberAppLink = true }: { p
               <ToggleRow label="店舗切替にデザイン名" checked={customization.header.showStoreTheme} onChange={(showStoreTheme) => updateCustomization({ header: { showStoreTheme } })} />
             </SettingsGroup>
 
-            <SettingsGroup title="モバイルオーダー" description="受取情報と購入導線">
+            <SettingsGroup title="モバイルオーダー" description="商品を探しやすく、カートへ追加しやすい表示">
+              <SelectRow label="商品表示" value={customization.order.catalogLayout} onChange={(catalogLayout) => updateCustomization({ order: { catalogLayout: catalogLayout as AppCustomization["order"]["catalogLayout"] } })}><option value="cards">商品カード</option><option value="compact">コンパクトリスト</option></SelectRow>
+              <ToggleRow label="カテゴリで分ける" checked={customization.order.groupByCategory} onChange={(groupByCategory) => updateCustomization({ order: { groupByCategory } })} />
               <ToggleRow label="最短受取時間" checked={customization.order.showEarliestPickup} onChange={(showEarliestPickup) => updateCustomization({ order: { showEarliestPickup } })} />
               <ToggleRow label="商品画像" checked={customization.order.showItemImages} onChange={(showItemImages) => updateCustomization({ order: { showItemImages } })} />
               <SelectRow label="注文確認ボタン" value={customization.order.ctaPosition} onChange={(ctaPosition) => updateCustomization({ order: { ctaPosition: ctaPosition as AppCustomization["order"]["ctaPosition"] } })}><option value="inline">コンテンツ内</option><option value="sticky">画面下部に固定</option></SelectRow>
@@ -170,21 +291,28 @@ export function AdminCustomizePage({ previewUrl, showMemberAppLink = true }: { p
         </section>
       </main>
 
-      <aside className="admin-preview">
-        <div className="admin-preview__head"><span>プレビュー</span><strong>{preset.name}</strong></div>
-        <div
-          className={`admin-phone admin-phone--${customization.designPreset} admin-phone--cta-${customization.home.primaryActionPlacement}`}
-          data-button-style={customization.appearance.buttonStyle}
-          style={{ "--preview-primary": previewPrimary, "--preview-accent": previewAccent, "--preview-background": previewBackground, "--preview-columns": customization.home.quickActionColumns } as CSSProperties}
-        >
-          <div className="admin-phone__header">{customization.header.showLogo ? <span>{activeStore.logoText}</span> : null}<strong>{activeStore.storeName}</strong>{customization.header.showNotifications ? <i /> : null}</div>
-          <div className="admin-phone__hero">{customization.home.showHeroStatus ? <small>OPEN · TODAY</small> : null}<strong>{activeStore.heroTitle}</strong>{customization.home.primaryActionPlacement === "hero" ? <button type="button">{activeStore.home.primaryActionLabel}</button> : null}</div>
-          {customization.home.primaryActionPlacement === "belowHero" ? <button className="admin-phone__primary" type="button">{activeStore.home.primaryActionLabel}</button> : null}
-          {customization.home.showMembership ? <div className="admin-phone__member"><span>MEMBER</span><strong>2,450 pt</strong><i /></div> : null}
-          {customization.home.showQuickActions ? <div className="admin-phone__actions">{Array.from({ length: customization.home.quickActionColumns * 2 }).map((_, index) => <i key={index} />)}</div> : null}
-          {customization.home.primaryActionPlacement === "floating" ? <button className="admin-phone__primary admin-phone__primary--floating" type="button">{activeStore.home.primaryActionLabel}</button> : null}
+      <button type="button" className={`admin-preview__backdrop${isPreviewOpen ? " is-open" : ""}`} aria-label="プレビューを閉じる" onClick={() => setPreviewOpen(false)} />
+      <aside className={`admin-preview${isPreviewOpen ? " is-open" : ""}`} aria-label="アプリプレビュー">
+        <div className="admin-preview__head">
+          <span><Eye size={14} />プレビュー</span>
+          <select aria-label="プレビュー画面" value={previewTab} onChange={(event) => setPreviewTab(event.target.value as TabType)}>
+            {customization.navigation.tabs.map((tab) => <option value={tab} key={tab}>{tabLabelMap[tab]}</option>)}
+          </select>
+          <button type="button" aria-label="プレビューを閉じる" onClick={() => setPreviewOpen(false)}><X size={17} /></button>
         </div>
-        <Link to="/home">実際のアプリで確認 <ExternalLink size={15} /></Link>
+        <div className="admin-phone-frame">
+          <iframe
+            ref={previewFrameRef}
+            title={`${activeStore.storeName}の実画面プレビュー`}
+            src={embeddedPreviewUrl}
+            onLoad={sendCustomizationToPreview}
+          />
+        </div>
+        {previewUrl !== undefined ? (
+          <a href={appPreviewHref} target="_blank" rel="noreferrer">実際のアプリで確認 <ExternalLink size={15} /></a>
+        ) : (
+          <Link to="/home">実際のアプリで確認 <ExternalLink size={15} /></Link>
+        )}
       </aside>
     </div>
   );
