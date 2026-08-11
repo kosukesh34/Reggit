@@ -149,6 +149,9 @@ export function CheckoutModal(): JSX.Element | null {
             cm.isPaymentCompleted = true;
             ToastManager.success('モバイル注文が完了しました');
             const confirmedOrder = paymentResult.order;
+            document.dispatchEvent(new CustomEvent('liff-payment-completed', {
+                detail: { order: confirmedOrder ?? order },
+            }));
             requestClose(false);
             cm.afterOrderCompleted(confirmedOrder?.order_number ?? null);
         } catch (error) {
