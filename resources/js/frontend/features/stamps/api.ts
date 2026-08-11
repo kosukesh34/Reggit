@@ -4,6 +4,7 @@ import { DomHelper } from '../../../shared/utils/domHelper';
 import { isDemoDataMode } from '../../demo/demoMode';
 import { ensureLiffIdentityForLoad } from '../../demo/ensureIdentity';
 import { buildBuiltinSampleStampCards } from '../../demo/sampleData';
+import { isMembershipRequired } from '../../utils/membershipPolicy';
 
 export type StampRewardMilestone = {
     stamp_count?: number | string;
@@ -82,7 +83,7 @@ export async function loadStamps(): Promise<StampsLoadResult> {
 
     const canCallApi = await ensureLiffIdentityForLoad();
     if (!canCallApi) {
-        if (isDemoDataMode()) {
+        if (isDemoDataMode() || !isMembershipRequired()) {
             return { kind: 'demo', cards: sampleCards(), defaultImage: null };
         }
         return { kind: 'guest' };
@@ -102,7 +103,7 @@ export async function loadStamps(): Promise<StampsLoadResult> {
         const defaultImage = data && data.default_image_url ? data.default_image_url : null;
         const message = data && data.message ? data.message : null;
         if ((!cards || cards.length === 0) && message) {
-            if (isDemoDataMode()) {
+            if (isDemoDataMode() || !isMembershipRequired()) {
                 return { kind: 'demo', cards: sampleCards(), defaultImage: null };
             }
             return { kind: 'member_required', message };
