@@ -18,7 +18,8 @@ interface BarcodeBar {
 }
 
 function encodeCode128B(value: string) {
-  const safeValue = Array.from(value).filter((character) => {
+  const source = typeof value === "string" ? value : String(value ?? "");
+  const safeValue = Array.from(source).filter((character) => {
     const code = character.charCodeAt(0);
     return code >= 32 && code <= 126;
   }).join("");
@@ -31,7 +32,11 @@ function encodeCode128B(value: string) {
   let x = quietZone;
 
   symbols.forEach((symbol) => {
-    Array.from(code128Patterns[symbol]).forEach((widthCharacter, index) => {
+    const pattern = code128Patterns[symbol];
+    if (pattern === undefined) {
+      return;
+    }
+    Array.from(pattern).forEach((widthCharacter, index) => {
       const width = Number(widthCharacter);
       if (index % 2 === 0) {
         bars.push({ x, width });
@@ -40,14 +45,14 @@ function encodeCode128B(value: string) {
     });
   });
 
-  return { bars, safeValue, width: x + quietZone };
+  return { bars, safeValue, width: Math.max(x + quietZone, quietZone * 2 + 20) };
 }
 
-export function MembershipBarcode({ value }: { value: string }) {
-  const barcode = encodeCode128B(value);
+export function MembershipBarcode({ value }: { value?: string | null }) {
+  const barcode = encodeCode128B(String(value ?? "0"));
 
   return (
-    <figure className="barcode" aria-label={`会員番号 ${barcode.safeValue} のCode 128バーコード`}>
+    <figure className="barcode" aria-label={`会員番号 ${barcode.safeValue || "—"} のCode 128バーコード`}>
       <svg
         className="barcode__svg"
         viewBox={`0 0 ${barcode.width} 66`}
@@ -61,7 +66,7 @@ export function MembershipBarcode({ value }: { value: string }) {
           <rect key={`${bar.x}-${index}`} x={bar.x} y="4" width={bar.width} height="48" className="barcode__ink" />
         ))}
       </svg>
-      <figcaption className="barcode__value">{barcode.safeValue}</figcaption>
+      <figcaption className="barcode__value">{barcode.safeValue || "—"}</figcaption>
     </figure>
   );
 }

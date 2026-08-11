@@ -8,18 +8,37 @@ import { MembershipSummary } from "../components/home/MembershipSummary";
 import { NewsSection } from "../components/home/NewsSection";
 import { QuickActions } from "../components/home/QuickActions";
 import { StoreSummaryCard } from "../components/home/StoreSummary";
+import { Skeleton } from "../components/ui/Skeleton";
 import { useAppConfig } from "../context/AppConfigContext";
 import { useRuntimeData } from "../context/RuntimeDataContext";
 
+function HomePageSkeleton(): JSX.Element {
+  return (
+    <div className="page home-page stack stack--lg" aria-busy="true" aria-label="読み込み中">
+      <div className="home-skeleton">
+        <Skeleton className="home-skeleton__lead" />
+        <Skeleton className="home-skeleton__hero" />
+        <Skeleton className="home-skeleton__card" />
+        <Skeleton className="home-skeleton__card home-skeleton__card--short" />
+      </div>
+    </div>
+  );
+}
+
 export function HomePage() {
   const { activeStore, customization } = useAppConfig();
-  const { member, coupons, news, stores, mode, error, refresh } = useRuntimeData();
+  const { member, coupons, news, stores, mode, error, refresh, loading } = useRuntimeData();
+
+  if (loading && mode !== "live" && mode !== "preview") {
+    return <HomePageSkeleton />;
+  }
+
   const summary = stores[0];
   const { home } = customization;
   const primaryActionEnabled = activeStore.features[activeStore.home.primaryActionFeature];
   const sections: ReactNode[] = [
     <section className="home-lead" key="lead">
-      <div><span>YOUR DAY, YOUR PLACE</span><strong>{member.name.split(/[\s　]/)[0]}さん、こんにちは。</strong></div>
+      <div><span>YOUR DAY, YOUR PLACE</span><strong>{(member.name || "ゲスト").split(/[\s　]/)[0]}さん、こんにちは。</strong></div>
       <time>{new Intl.DateTimeFormat("ja-JP", { month: "short", day: "numeric", weekday: "short" }).format(new Date())}</time>
     </section>,
     mode === "offline" ? <button className="data-notice" type="button" onClick={() => void refresh()} key="data-notice">
