@@ -54,7 +54,7 @@
     'liff-demo-data' => $isDemoData,
     'designer-live-preview-embed' => $isDesignerEmbedPreview,
 ])>
-    <div id="liff-loading" class="liff-loading" aria-live="polite">
+    <div id="liff-loading" class="liff-loading" aria-hidden="true" hidden>
         <div class="liff-loading-inner">
             <div class="liff-loading-spinner"></div>
             <p class="liff-loading-text">読み込み中...</p>
@@ -65,6 +65,7 @@
     <div id="react-frontend-root" aria-hidden="true"></div>
 
     @include('frontend.partials._scripts-config')
+    @viteReactRefresh
     @vite(['resources/js/frontend/main.tsx'])
     @include('frontend.partials._scripts-load')
 </body>
