@@ -78,6 +78,8 @@ export interface OrderInput {
   storeId: string;
   venueName: string;
   fulfillment: "pickup" | "dine_in";
+  /** pickup 時のみ。未指定ならカード決済 */
+  paymentMethod?: "stripe" | "cash";
   tableNumber?: string;
   lines: OrderLineInput[];
   total: number;
