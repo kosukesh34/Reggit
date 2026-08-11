@@ -75,13 +75,21 @@ class SmaregiOrderTransactionOutboundService
 
     public function syncOrderTransactionWithRetry(int $orderId, int $projectId, int $userId): bool
     {
-        $succeeded = $this->syncOrderTransaction($orderId, $projectId, $userId);
-        if ($succeeded) {
-            return true;
-        }
+        try {
+            $succeeded = $this->syncOrderTransaction($orderId, $projectId, $userId);
+            if ($succeeded) {
+                return true;
+            }
 
-        if ($this->isCreatePhaseDone($orderId, $projectId, $this->loadOrder($orderId, $projectId))) {
-            return true;
+            if ($this->isCreatePhaseDone($orderId, $projectId, $this->loadOrder($orderId, $projectId))) {
+                return true;
+            }
+        } catch (\Throwable $e) {
+            LogHelper::error('[Smaregi] order transaction sync threw', [
+                'order_id' => $orderId,
+                'project_id' => $projectId,
+                'error' => $e->getMessage(),
+            ]);
         }
 
         SyncOrderTransactionToSmaregiJob::dispatch($orderId, $projectId, $userId)

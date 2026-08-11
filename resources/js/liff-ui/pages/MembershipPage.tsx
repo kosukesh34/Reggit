@@ -10,13 +10,13 @@ import { MembershipBarcode } from "../components/membership/MembershipBarcode";
 import { formatDisplayDate } from "../utils/date";
 import { MemberView } from "../../frontend/features/member/MemberView";
 
-export function MembershipPage() {
-  const { activeStore, customization } = useAppConfig();
-  const { member, mode } = useRuntimeData();
-  const [barcodeOpen, setBarcodeOpen] = useState(false);
+function isDesignMockPreview(): boolean {
+  return typeof document !== "undefined" && document.body.classList.contains("liff-demo-data");
+}
 
-  // デモ以外は旧UIと同じ MemberView（登録・会員証・本人紐付け）を使う
-  if (mode !== "preview") {
+export function MembershipPage() {
+  // 本番LIFFは RuntimeData に依存せず MemberView を出す（Context 不整合でも会員証を落とさない）
+  if (!isDesignMockPreview()) {
     return (
       <div className="page membership-page stack stack--lg">
         <div id="memberSection" className="member-section member-card-mount" data-react-owned="1">
@@ -25,6 +25,14 @@ export function MembershipPage() {
       </div>
     );
   }
+
+  return <PreviewMembershipPage />;
+}
+
+function PreviewMembershipPage() {
+  const { activeStore, customization } = useAppConfig();
+  const { member } = useRuntimeData();
+  const [barcodeOpen, setBarcodeOpen] = useState(false);
 
   return (
     <div className="page membership-page stack stack--lg">
@@ -53,7 +61,7 @@ export function MembershipPage() {
           </div> : null}
           {customization.membership.showPoints ? <div>
             <div className="detail-grid__label">現在ポイント</div>
-            <div className="detail-grid__value">{member.points.toLocaleString()} pt</div>
+            <div className="detail-grid__value">{Number(member.points || 0).toLocaleString()} pt</div>
           </div> : null}
           {customization.membership.showRank ? <div>
             <div className="detail-grid__label">会員ランク</div>
@@ -67,7 +75,7 @@ export function MembershipPage() {
       {customization.membership.showBarcode ? <p className="page-note"><Info size={15} /> お会計時に会員証のバーコードをご提示ください。</p> : null}
       <BottomSheet open={barcodeOpen} onClose={() => setBarcodeOpen(false)} title="会員バーコード">
         <div className="barcode-modal">
-          <MembershipBarcode value={member.number} />
+          <MembershipBarcode value={member.number || "0"} />
           <p>読み取りやすいよう、画面の明るさを上げてご提示ください。</p>
         </div>
       </BottomSheet>

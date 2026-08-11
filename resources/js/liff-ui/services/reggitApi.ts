@@ -251,7 +251,10 @@ export const reggitApi = {
   async createOrder(input: OrderInput): Promise<OperationReceipt> {
     await ensureIdentity();
     const orderType = input.fulfillment === 'dine_in' ? 'in_store' : 'mobile';
-    const isStripe = input.fulfillment === 'pickup';
+    const paymentMethod = input.fulfillment === 'dine_in'
+      ? 'cash'
+      : (input.paymentMethod === 'cash' ? 'cash' : 'stripe');
+    const isStripe = paymentMethod === 'stripe';
     const items = input.lines.map((line) => {
       const productId = Number(line.itemId);
       if (!Number.isFinite(productId) || productId <= 0) {
@@ -269,7 +272,7 @@ export const reggitApi = {
     }
     const result = await client().post(withProject(AppConstants.API_ENDPOINTS.ORDERS), {
       items,
-      payment_method: isStripe ? 'stripe' : 'cash',
+      payment_method: paymentMethod,
       points_used: 0,
       notes: input.tableNumber ? `卓番: ${input.tableNumber}` : null,
       order_type: orderType,

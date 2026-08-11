@@ -17,7 +17,7 @@ type AppOrderFlow = {
     checkoutManager?: {
         isMobileOrderEnabled?: () => boolean;
         isInStoreOrderEnabled?: () => boolean;
-        placeMobileOrder?: () => void;
+        placeMobileOrder?: (paymentMethod?: 'stripe' | 'cash') => void;
         placeInStoreOrder?: () => void;
     };
 };
@@ -128,14 +128,24 @@ export function OrderFlowPage({ step }: OrderFlowPageProps): JSX.Element {
             </div>
             <div className="liff-flow-actions">
                 {mobileEnabled ? (
-                    <button
-                        type="button"
-                        className="btn btn-primary"
-                        disabled={!canOrder}
-                        onClick={() => app?.checkoutManager?.placeMobileOrder?.()}
-                    >
-                        <i className="fas fa-mobile-alt" aria-hidden="true" /> モバイル注文する
-                    </button>
+                    <>
+                        <button
+                            type="button"
+                            className="btn btn-primary"
+                            disabled={!canOrder}
+                            onClick={() => app?.checkoutManager?.placeMobileOrder?.('stripe')}
+                        >
+                            <i className="fas fa-credit-card" aria-hidden="true" /> カードで払う
+                        </button>
+                        <button
+                            type="button"
+                            className="btn btn-secondary"
+                            disabled={!canOrder}
+                            onClick={() => app?.checkoutManager?.placeMobileOrder?.('cash')}
+                        >
+                            <i className="fas fa-store" aria-hidden="true" /> 店頭で払う
+                        </button>
+                    </>
                 ) : null}
                 {inStoreEnabled ? (
                     <button
@@ -144,7 +154,7 @@ export function OrderFlowPage({ step }: OrderFlowPageProps): JSX.Element {
                         disabled={!canOrder}
                         onClick={() => app?.checkoutManager?.placeInStoreOrder?.()}
                     >
-                        <i className="fas fa-store" aria-hidden="true" /> 店内注文する
+                        <i className="fas fa-utensils" aria-hidden="true" /> 店内注文する
                     </button>
                 ) : null}
                 <button
