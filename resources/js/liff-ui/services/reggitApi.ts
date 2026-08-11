@@ -89,6 +89,7 @@ function mapProduct(row: Record<string, unknown>): RuntimeCatalogItem {
     description: String(row.description ?? ''),
     price: Number(row.price ?? 0) || 0,
     image: row.image_url ? String(row.image_url) : (row.image ? String(row.image) : undefined),
+    category: row.category ? String(row.category) : undefined,
   };
 }
 

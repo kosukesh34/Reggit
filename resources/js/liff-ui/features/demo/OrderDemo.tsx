@@ -1,5 +1,5 @@
 import { CheckCircle2, Minus, Plus, ShoppingBag } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { BottomSheet } from "../../components/ui/BottomSheet";
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
@@ -12,6 +12,7 @@ interface OrderItem {
   description: string;
   price: number;
   image?: string;
+  category?: string;
 }
 
 interface OrderProfile {
@@ -22,9 +23,9 @@ interface OrderProfile {
 
 const defaultOrderProfile: OrderProfile = {
   items: [
-  { id: "seasonal", name: "季節のおすすめ", description: "旬の素材を使った限定メニュー", price: 680 },
-  { id: "standard", name: "ハウスシグネチャー", description: "定番の人気メニュー", price: 520 },
-  { id: "side", name: "デイリーサイド", description: "注文に合わせやすい一品", price: 380 },
+    { id: "seasonal", name: "季節のおすすめ", description: "旬の素材を使った限定メニュー", price: 680, category: "dessert" },
+    { id: "standard", name: "ハウスシグネチャー", description: "定番の人気メニュー", price: 520, category: "drink" },
+    { id: "side", name: "デイリーサイド", description: "注文に合わせやすい一品", price: 380, category: "food" },
   ],
   pickupTime: "最短受取 10〜15分",
   dineInDetail: "店内注文・スタッフがお届け",
@@ -33,22 +34,30 @@ const defaultOrderProfile: OrderProfile = {
 const orderProfiles: Record<string, OrderProfile> = {
   store_izakaya: {
     items: [
-      { id: "yakitori", name: "炭火焼き鳥 五本盛り", description: "本日のおすすめ串を盛り合わせ", price: 980 },
-      { id: "dashimaki", name: "だし巻き玉子", description: "注文ごとに焼き上げる酒場の定番", price: 680 },
-      { id: "edamame", name: "塩ゆで枝豆", description: "まずの一品にちょうどいい定番肴", price: 420 },
+      { id: "yakitori", name: "炭火焼き鳥 五本盛り", description: "本日のおすすめ串を盛り合わせ", price: 980, category: "food" },
+      { id: "dashimaki", name: "だし巻き玉子", description: "注文ごとに焼き上げる酒場の定番", price: 680, category: "food" },
+      { id: "edamame", name: "塩ゆで枝豆", description: "まずの一品にちょうどいい定番肴", price: 420, category: "side" },
     ],
     pickupTime: "",
     dineInDetail: "テーブル注文・お会計は退店時にまとめて",
   },
   store_fastfood: {
     items: [
-      { id: "double-cheese", name: "ゴールデンダブルチーズ", description: "ビーフパティ2枚と濃厚チェダーチーズ", price: 690 },
-      { id: "spicy-chicken", name: "スパイシーチキンセット", description: "ポテトM・ドリンクM付き", price: 780 },
-      { id: "fries", name: "クリスピーポテト M", description: "外はカリッと、中はほくほく", price: 320 },
+      { id: "double-cheese", name: "ゴールデンダブルチーズ", description: "ビーフパティ2枚と濃厚チェダーチーズ", price: 690, category: "food" },
+      { id: "spicy-chicken", name: "スパイシーチキンセット", description: "ポテトM・ドリンクM付き", price: 780, category: "food" },
+      { id: "fries", name: "クリスピーポテト M", description: "外はカリッと、中はほくほく", price: 320, category: "side" },
     ],
     pickupTime: "最短受取 8〜12分",
     dineInDetail: "店内注文・受取カウンターでお渡し",
   },
+};
+
+const categoryLabels: Record<string, string> = {
+  food: "フード",
+  drink: "ドリンク",
+  dessert: "デザート",
+  side: "サイド",
+  other: "その他",
 };
 
 interface OrderDemoProps {
@@ -67,12 +76,23 @@ export function OrderDemo({ dineIn, image, config, storeId, venueName }: OrderDe
   const [reference, setReference] = useState<string>();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string>();
+  const [selectedCategory, setSelectedCategory] = useState("all");
   const profile = orderProfiles[storeId] ?? defaultOrderProfile;
   const orderItems = commerce?.items?.length ? commerce.items : profile.items;
   const pickupTime = commerce?.pickupEstimate || profile.pickupTime;
   const dineInDetail = commerce?.dineInDetail || profile.dineInDetail;
   const count = Object.values(quantities).reduce((sum, quantity) => sum + quantity, 0);
   const total = orderItems.reduce((sum, item) => sum + item.price * (quantities[item.id] ?? 0), 0);
+  const categories = useMemo(() => Array.from(new Set(orderItems.map((item) => item.category || "other"))), [orderItems]);
+  const visibleItems = !config.groupByCategory || selectedCategory === "all"
+    ? orderItems
+    : orderItems.filter((item) => (item.category || "other") === selectedCategory);
+
+  useEffect(() => {
+    if (selectedCategory !== "all" && !categories.includes(selectedCategory)) {
+      setSelectedCategory("all");
+    }
+  }, [categories, selectedCategory]);
 
   const changeQuantity = (id: string, amount: number) => {
     setQuantities((current) => ({ ...current, [id]: Math.max(0, (current[id] ?? 0) + amount) }));
@@ -130,35 +150,73 @@ export function OrderDemo({ dineIn, image, config, storeId, venueName }: OrderDe
         <Button variant="soft" size="sm">変更</Button>
       </Card>
 
-      <div className="order-list">
-        {orderItems.map((item, index) => (
-          <Card className={`order-row${config.showItemImages ? "" : " order-row--no-image"}`} padding="md" key={item.id}>
-            {config.showItemImages ? (
-              <div className="order-row__image" style={item.image || index === 0 ? { backgroundImage: `url(${item.image ?? image})` } : undefined}>
-                {item.image || index === 0 ? null : <span>{index + 1}</span>}
-              </div>
-            ) : null}
-            <div className="order-row__body">
-              <strong>{item.name}</strong>
-              <span>{item.description}</span>
-              <b>¥{item.price.toLocaleString()}</b>
-            </div>
-            <div className="quantity-stepper" aria-label={`${item.name}の数量`}>
-              <button type="button" aria-label={`${item.name}を減らす`} onClick={() => changeQuantity(item.id, -1)} disabled={!quantities[item.id]}>
-                <Minus size={16} />
-              </button>
-              <span>{quantities[item.id] ?? 0}</span>
-              <button type="button" aria-label={`${item.name}を増やす`} onClick={() => changeQuantity(item.id, 1)}>
-                <Plus size={16} />
-              </button>
-            </div>
-          </Card>
-        ))}
-      </div>
+      <section className="order-catalog" aria-label="商品メニュー">
+        <div className="order-catalog__heading">
+          <div><span>MENU</span><h2>商品を選ぶ</h2></div>
+          <small>{orderItems.length}品</small>
+        </div>
 
-      <Card className={`order-summary${config.ctaPosition === "sticky" ? " order-summary--sticky" : ""}`} padding="md">
-        <div><span>{count}点</span><strong>¥{total.toLocaleString()}</strong></div>
-        <Button disabled={count === 0} onClick={() => setSheetOpen(true)}>注文内容を確認</Button>
+        {config.groupByCategory && categories.length > 1 ? (
+          <div className="order-category-tabs" role="group" aria-label="商品カテゴリ">
+            <button type="button" className={selectedCategory === "all" ? "is-active" : undefined} aria-pressed={selectedCategory === "all"} onClick={() => setSelectedCategory("all")}>すべて</button>
+            {categories.map((category) => (
+              <button type="button" className={selectedCategory === category ? "is-active" : undefined} aria-pressed={selectedCategory === category} onClick={() => setSelectedCategory(category)} key={category}>{categoryLabels[category] ?? category}</button>
+            ))}
+          </div>
+        ) : null}
+
+        {config.catalogLayout === "compact" ? (
+          <div className="order-list">
+            {visibleItems.map((item, index) => (
+              <Card className={`order-row${config.showItemImages ? "" : " order-row--no-image"}`} padding="md" key={item.id}>
+                {config.showItemImages ? (
+                  <div className="order-row__image" style={item.image || index === 0 ? { backgroundImage: `url(${item.image ?? image})` } : undefined}>
+                    {item.image || index === 0 ? null : <span>{index + 1}</span>}
+                  </div>
+                ) : null}
+                <div className="order-row__body">
+                  <strong>{item.name}</strong>
+                  <span>{item.description}</span>
+                  <b>¥{item.price.toLocaleString()}</b>
+                </div>
+                <QuantityControl item={item} quantity={quantities[item.id] ?? 0} onChange={changeQuantity} />
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <div className="order-product-grid">
+            {visibleItems.map((item, index) => {
+              const quantity = quantities[item.id] ?? 0;
+              const productImage = item.image || (index === 0 ? image : "");
+              return (
+                <article className={`order-product-card${config.showItemImages ? "" : " order-product-card--no-image"}`} key={item.id}>
+                  {config.showItemImages ? (
+                    <div className="order-product-card__image" style={productImage ? { backgroundImage: `url(${productImage})` } : undefined}>
+                      {!productImage ? <span>{String(index + 1).padStart(2, "0")}</span> : null}
+                      {quantity > 0 ? <b>{quantity}</b> : null}
+                    </div>
+                  ) : null}
+                  <div className="order-product-card__body">
+                    <small>{categoryLabels[item.category || "other"] ?? item.category ?? "メニュー"}</small>
+                    <strong>{item.name}</strong>
+                    <p>{item.description}</p>
+                    <b>¥{item.price.toLocaleString()}</b>
+                    {quantity === 0 ? (
+                      <button type="button" className="order-product-card__add" onClick={() => changeQuantity(item.id, 1)}><Plus size={15} />カートに追加</button>
+                    ) : (
+                      <QuantityControl item={item} quantity={quantity} onChange={changeQuantity} />
+                    )}
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+      <Card className={`order-summary${config.ctaPosition === "sticky" || count > 0 ? " order-summary--sticky" : ""}`} padding="md">
+        <div aria-live="polite"><span>カート · {count}点</span><strong>¥{total.toLocaleString()}</strong></div>
+        <Button disabled={count === 0} onClick={() => setSheetOpen(true)}>{count === 0 ? "商品を選択" : "カートを見る"}</Button>
       </Card>
 
       <BottomSheet open={sheetOpen} onClose={() => setSheetOpen(false)} title="注文内容の確認">
@@ -174,5 +232,15 @@ export function OrderDemo({ dineIn, image, config, storeId, venueName }: OrderDe
         </div>
       </BottomSheet>
     </>
+  );
+}
+
+function QuantityControl({ item, quantity, onChange }: { item: OrderItem; quantity: number; onChange: (id: string, amount: number) => void }) {
+  return (
+    <div className="quantity-stepper" aria-label={`${item.name}の数量`}>
+      <button type="button" aria-label={`${item.name}を減らす`} onClick={() => onChange(item.id, -1)} disabled={quantity === 0}><Minus size={16} /></button>
+      <span>{quantity}</span>
+      <button type="button" aria-label={`${item.name}を増やす`} onClick={() => onChange(item.id, 1)}><Plus size={16} /></button>
+    </div>
   );
 }

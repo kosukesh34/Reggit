@@ -8,6 +8,7 @@ export interface RuntimeCatalogItem {
   description: string;
   price: number;
   image?: string;
+  category?: string;
 }
 
 export interface RuntimeHistoryItem {

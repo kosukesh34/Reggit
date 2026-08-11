@@ -1,4 +1,3 @@
-import { format } from "date-fns";
 import { useAppConfig } from "../context/AppConfigContext";
 import { MembershipCard } from "../components/membership/MembershipCard";
 import { Card } from "../components/ui/Card";
@@ -8,6 +7,7 @@ import { Info, Maximize2 } from "lucide-react";
 import { useState } from "react";
 import { BottomSheet } from "../components/ui/BottomSheet";
 import { MembershipBarcode } from "../components/membership/MembershipBarcode";
+import { formatDisplayDate } from "../utils/date";
 
 export function MembershipPage() {
   const { activeStore, customization } = useAppConfig();
@@ -37,7 +37,7 @@ export function MembershipPage() {
           </div>
           {customization.membership.showExpiry ? <div>
             <div className="detail-grid__label">有効期限</div>
-            <div className="detail-grid__value">{format(new Date(member.expiration), "yyyy/MM/dd")}</div>
+            <div className="detail-grid__value">{formatDisplayDate(member.expiration, "yyyy/MM/dd")}</div>
           </div> : null}
           {customization.membership.showPoints ? <div>
             <div className="detail-grid__label">現在ポイント</div>
