@@ -87,10 +87,41 @@ function mapNews(row: Record<string, unknown>): NewsItem {
     title: String(row.title ?? ''),
     date: String(row.published_at ?? row.date ?? ''),
     category: row.is_pinned === true ? '重要' : 'お知らせ',
+    body: String(row.body ?? ''),
+    image: row.image_url ? String(row.image_url) : undefined,
+    isRead: row.is_read === true,
+    isPinned: row.is_pinned === true,
   };
 }
 
 function mapProduct(row: Record<string, unknown>): RuntimeCatalogItem {
+  const optionGroups = asArray(row.option_groups).map((groupValue) => {
+    const group = asRecord(groupValue);
+    const selectionType = String(group.selection_type ?? 'single') === 'multiple' ? 'multiple' as const : 'single' as const;
+    const options = asArray(group.options).map((optionValue) => {
+      const option = asRecord(optionValue);
+      return {
+        id: String(option.id ?? ''),
+        name: String(option.name ?? ''),
+        priceDelta: Number(option.price_delta ?? 0) || 0,
+        isDefault: option.is_default === true,
+      };
+    }).filter((option) => option.id !== '');
+    const requiredFlag = group.is_required === true;
+    const configuredMin = Number(group.min_select ?? (requiredFlag ? 1 : 0));
+    const isRequired = requiredFlag || configuredMin > 0;
+    const configuredMax = Number(group.max_select ?? (selectionType === 'single' ? 1 : options.length));
+    return {
+      id: String(group.id ?? ''),
+      name: String(group.name ?? 'オプション'),
+      selectionType,
+      isRequired,
+      minSelect: Math.max(0, Number.isFinite(configuredMin) ? configuredMin : (isRequired ? 1 : 0)),
+      maxSelect: Math.max(1, Number.isFinite(configuredMax) ? configuredMax : 1),
+      options,
+    };
+  }).filter((group) => group.id !== '' && group.options.length > 0);
+
   return {
     id: String(row.id ?? ''),
     name: String(row.name ?? 'メニュー'),
@@ -98,6 +129,7 @@ function mapProduct(row: Record<string, unknown>): RuntimeCatalogItem {
     price: Number(row.price ?? 0) || 0,
     image: row.image_url ? String(row.image_url) : (row.image ? String(row.image) : undefined),
     category: row.category ? String(row.category) : undefined,
+    optionGroups,
   };
 }
 
@@ -163,6 +195,7 @@ export const reggitApi = {
     const productPayload = productRes.status === 'fulfilled' ? productRes.value : {};
     const stampPayload = stampRes.status === 'fulfilled' ? stampRes.value : {};
     const queuePayload = queueRes.status === 'fulfilled' ? queueRes.value : {};
+    const queueEntry = asRecord(queuePayload.queue_entry);
     const orderPayload = orderRes.status === 'fulfilled' ? orderRes.value : {};
     const reservationPayload = reservationRes.status === 'fulfilled' ? reservationRes.value : {};
 
@@ -208,8 +241,8 @@ export const reggitApi = {
           }
         : undefined,
       queueStatus: {
-        waitingGroups: Number(queuePayload.waiting_count ?? 0) || 0,
-        estimatedMinutes: Number(queuePayload.estimated_wait_minutes ?? 0) || 0,
+        waitingGroups: Number(queueEntry.waiting_count ?? queuePayload.waiting_count ?? 0) || 0,
+        estimatedMinutes: Number(queueEntry.estimated_wait_minutes ?? queuePayload.estimated_wait_minutes ?? 0) || 0,
       },
       history,
     };
@@ -227,7 +260,8 @@ export const reggitApi = {
       return {
         product_id: productId,
         quantity: line.quantity,
-        notes: null,
+        notes: line.notes ?? null,
+        option_ids: (line.optionIds ?? []).map((id) => Number(id)).filter((id) => Number.isFinite(id) && id > 0),
       };
     });
     if (items.length === 0) {
@@ -290,6 +324,14 @@ export const reggitApi = {
       throw new Error(result.error || 'クーポンを利用できませんでした');
     }
     return receiptFrom(`CPN-${couponId}`);
+  },
+
+  async markAnnouncementRead(announcementId: string): Promise<void> {
+    await ensureIdentity();
+    const result = await client().post(withProject(AppConstants.API_ENDPOINTS.ANNOUNCEMENT_READ(announcementId)), {});
+    if (!result.success) {
+      throw new Error(result.error || 'お知らせの既読登録に失敗しました');
+    }
   },
 
   async addStamp(_storeId: string, _staffCode: string): Promise<OperationReceipt> {

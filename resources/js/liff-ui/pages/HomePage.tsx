@@ -16,6 +16,7 @@ export function HomePage() {
   const { member, coupons, news, stores, mode, error, refresh } = useRuntimeData();
   const summary = stores[0];
   const { home } = customization;
+  const primaryActionEnabled = activeStore.features[activeStore.home.primaryActionFeature];
   const sections: ReactNode[] = [
     <section className="home-lead" key="lead">
       <div><span>YOUR DAY, YOUR PLACE</span><strong>{member.name.split(/[\s　]/)[0]}さん、こんにちは。</strong></div>
@@ -31,20 +32,20 @@ export function HomePage() {
       content={activeStore.home}
       showImage={home.showHeroImage}
       showStatus={home.showHeroStatus}
-      showCta={home.primaryActionPlacement === "hero"}
+      showCta={home.primaryActionPlacement === "hero" && primaryActionEnabled}
     />,
   ];
 
-  if (home.primaryActionPlacement === "belowHero") {
+  if (home.primaryActionPlacement === "belowHero" && primaryActionEnabled) {
     sections.push(<PrimaryAction key="primary-action" className="home-primary-action" />);
   }
-  if (home.showMembership) sections.push(<MembershipSummary key="membership" member={member} />);
-  if (home.showQuickActions) sections.push(<QuickActions key="quick" actions={activeStore.quickActions} columns={home.quickActionColumns} />);
-  if (home.showFeatured) sections.push(<FeaturedContent key="featured" content={activeStore.home} />);
-  if (home.showCoupons) sections.push(<CouponCarousel key="coupon" coupons={coupons} config={customization.coupon} />);
-  if (home.showNews) sections.push(<NewsSection key="news" news={news} />);
+  if (home.showMembership && activeStore.features.membership) sections.push(<MembershipSummary key="membership" member={member} />);
+  if (home.showQuickActions && activeStore.quickActions.length > 0) sections.push(<QuickActions key="quick" actions={activeStore.quickActions} columns={home.quickActionColumns} />);
+  if (home.showFeatured && activeStore.features[activeStore.home.featuredFeature]) sections.push(<FeaturedContent key="featured" content={activeStore.home} />);
+  if (home.showCoupons && activeStore.features.coupon) sections.push(<CouponCarousel key="coupon" coupons={coupons} config={customization.coupon} />);
+  if (home.showNews && activeStore.features.news) sections.push(<NewsSection key="news" news={news} />);
   if (home.showStoreInfo && summary) sections.push(<StoreSummaryCard key="store" summary={summary} />);
-  if (home.primaryActionPlacement === "floating") {
+  if (home.primaryActionPlacement === "floating" && primaryActionEnabled) {
     sections.push(<PrimaryAction key="floating-primary-action" className="home-primary-action home-primary-action--floating" />);
   }
 

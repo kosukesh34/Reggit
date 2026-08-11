@@ -140,6 +140,10 @@ export interface NewsItem {
   title: string;
   date: string;
   category: string;
+  body?: string;
+  image?: string;
+  isRead?: boolean;
+  isPinned?: boolean;
 }
 
 export interface StoreSummary {

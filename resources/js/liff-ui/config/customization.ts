@@ -138,7 +138,7 @@ export function createDefaultCustomization(store: StoreAppConfig): AppCustomizat
     stamp: { ...defaultCustomization.stamp, style: experience.stampStyle, goal: experience.stampGoal },
     navigation: {
       ...defaultCustomization.navigation,
-      tabs: tabs.length >= 2 ? tabs : defaultCustomization.navigation.tabs,
+      tabs: tabs.length > 0 ? tabs : defaultCustomization.navigation.tabs,
       position: experience.navigationPosition,
       emphasizeCenterTab: experience.emphasizeCenterTab,
     },

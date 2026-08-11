@@ -15,8 +15,9 @@ class QueueCancelController extends BaseApiController
         private QueueCancelUseCase $cancelUseCase
     ) {}
 
-    public function __invoke(Request $request, int $id)
+    public function __invoke(Request $request)
     {
+        $id = (int) $request->route('id');
         try {
             $entry = $this->cancelUseCase->handle(
                 $id,
