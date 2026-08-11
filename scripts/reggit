@@ -9,6 +9,10 @@ IPAD_DEVICE="${REGGIT_IPAD_DEVICE:-Reggit iPad}"
 IPAD_DEVICE_TYPE="${REGGIT_IPAD_DEVICE_TYPE:-com.apple.CoreSimulator.SimDeviceType.iPad-Pro-11-inch-M5-12GB}"
 IPAD_BUNDLE_ID="${REGGIT_IPAD_BUNDLE_ID:-gamechanger.IDNect.WaitingSystem}"
 
+KITCHEN_IPAD_DEVICE="${REGGIT_KITCHEN_IPAD_DEVICE:-Reggit Kitchen iPad}"
+KITCHEN_IPAD_DEVICE_TYPE="${REGGIT_KITCHEN_IPAD_DEVICE_TYPE:-$IPAD_DEVICE_TYPE}"
+KITCHEN_IPAD_BUNDLE_ID="${REGGIT_KITCHEN_IPAD_BUNDLE_ID:-gamechanger.IDNect.KitchenMonitor}"
+
 IOS_DEVICE="${REGGIT_IOS_DEVICE:-Reggit iPhone 16 Pro}"
 IOS_BUNDLE_ID="${REGGIT_IOS_BUNDLE_ID:-com.reggit.default}"
 
@@ -40,8 +44,9 @@ startup の処理内容:
   3. ngrok の停止 → ngrok http 8080 の起動
   4. APP_URL への ngrok URL 同期
   5. iPad シミュレーター + WaitingSystem アプリ起動
-  6. iOS シミュレーター + Reggit App（Xcode）起動
-  7. Android エミュレーター + Reggit App 起動
+  6. 別 iPad シミュレーター + KitchenMonitor アプリ起動
+  7. iOS シミュレーター + Reggit App（Xcode）起動
+  8. Android エミュレーター + Reggit App 起動
 
 deploy の処理内容:
   1. main ブランチへ切替 + pull
@@ -52,13 +57,14 @@ deploy の処理内容:
 ビルド成果物（.app / .apk）があれば再利用し、なければ自動で新規ビルドします。
 
 環境変数:
-  REGGIT_ROOT           プロジェクトルート（既定: ~/reggit）
-  REGGIT_IPAD_DEVICE    iPad シミュレーター名（既定: Reggit iPad）
-  REGGIT_IOS_DEVICE     iOS シミュレーター名（既定: Reggit iPhone 16 Pro）
-  REGGIT_ANDROID_AVD    Android AVD 名（既定: Pixel_9）
-  REGGIT_DEPLOY_HOST    本番 SSH（既定: reggit@reggit.xsrv.jp）
-  REGGIT_DEPLOY_PATH    本番アプリ相対パス（既定: reggit-app）
-  REGGIT_DEPLOY_SSH_KEY SSH 鍵（既定: ~/.ssh/reggit.key）
+  REGGIT_ROOT                 プロジェクトルート（既定: ~/reggit）
+  REGGIT_IPAD_DEVICE          Waiting 用 iPad 名（既定: Reggit iPad）
+  REGGIT_KITCHEN_IPAD_DEVICE  Kitchen 用 iPad 名（既定: Reggit Kitchen iPad）
+  REGGIT_IOS_DEVICE           iOS シミュレーター名（既定: Reggit iPhone 16 Pro）
+  REGGIT_ANDROID_AVD          Android AVD 名（既定: Pixel_9）
+  REGGIT_DEPLOY_HOST          本番 SSH（既定: reggit@reggit.xsrv.jp）
+  REGGIT_DEPLOY_PATH          本番アプリ相対パス（既定: reggit-app）
+  REGGIT_DEPLOY_SSH_KEY       SSH 鍵（既定: ~/.ssh/reggit.key）
 
 例:
   reggit startup
@@ -308,8 +314,10 @@ boot_simulator() {
   echo "$udid"
 }
 
-ensure_ipad_simulator() {
-  if xcrun simctl list devices available | grep -F "${IPAD_DEVICE} (" >/dev/null; then
+ensure_simulator_device() {
+  local device="$1" device_type="$2"
+
+  if xcrun simctl list devices available | grep -F "${device} (" >/dev/null; then
     return 0
   fi
 
@@ -320,8 +328,8 @@ ensure_ipad_simulator() {
     exit 1
   fi
 
-  log "iPad シミュレーターを作成しています: ${IPAD_DEVICE}"
-  xcrun simctl create "$IPAD_DEVICE" "$IPAD_DEVICE_TYPE" "$runtime" >/dev/null
+  log "シミュレーターを作成しています: ${device}"
+  xcrun simctl create "$device" "$device_type" "$runtime" >/dev/null
 }
 
 is_valid_ios_app() {
@@ -416,10 +424,36 @@ build_waiting_system_if_needed() {
 
 start_ipad_app() {
   local udid app_path
-  ensure_ipad_simulator
+  ensure_simulator_device "$IPAD_DEVICE" "$IPAD_DEVICE_TYPE"
   udid=$(boot_simulator "$IPAD_DEVICE")
   app_path=$(build_waiting_system_if_needed)
   install_and_launch_ios "$udid" "$app_path" "$IPAD_BUNDLE_ID" "WaitingSystem（iPad）"
+}
+
+build_kitchen_monitor() {
+  local destination="platform=iOS Simulator,name=${KITCHEN_IPAD_DEVICE}"
+  xcodebuild \
+    -project "${REGGIT_ROOT}/ios/KitchenMonitor.xcodeproj" \
+    -scheme KitchenMonitor \
+    -destination "$destination" \
+    -configuration Debug \
+    -quiet \
+    build
+}
+
+build_kitchen_monitor_if_needed() {
+  resolve_or_build_ios_app \
+    "KitchenMonitor.app" \
+    "KitchenMonitor（iPad）" \
+    build_kitchen_monitor
+}
+
+start_kitchen_ipad_app() {
+  local udid app_path
+  ensure_simulator_device "$KITCHEN_IPAD_DEVICE" "$KITCHEN_IPAD_DEVICE_TYPE"
+  udid=$(boot_simulator "$KITCHEN_IPAD_DEVICE")
+  app_path=$(build_kitchen_monitor_if_needed)
+  install_and_launch_ios "$udid" "$app_path" "$KITCHEN_IPAD_BUNDLE_ID" "KitchenMonitor（iPad）"
 }
 
 build_reggit_ios() {
@@ -565,8 +599,11 @@ cmd_startup() {
   stop_ngrok
   start_ngrok
 
-  log "--- iPad アプリを起動します ---"
+  log "--- iPad アプリ（WaitingSystem）を起動します ---"
   start_ipad_app
+
+  log "--- iPad アプリ（KitchenMonitor）を起動します ---"
+  start_kitchen_ipad_app
 
   log "--- iOS アプリを起動します ---"
   start_ios_mobile_app
@@ -575,11 +612,12 @@ cmd_startup() {
   start_android_mobile_app
 
   log "=== 起動完了 ==="
-  log "Web:     http://localhost:${NGROK_PORT}"
-  log "ngrok:   http://localhost:4040"
-  log "iPad:    ${IPAD_DEVICE}"
-  log "iOS:     ${IOS_DEVICE}"
-  log "Android: ${ANDROID_AVD}"
+  log "Web:         http://localhost:${NGROK_PORT}"
+  log "ngrok:       http://localhost:4040"
+  log "iPad Waiting: ${IPAD_DEVICE}"
+  log "iPad Kitchen: ${KITCHEN_IPAD_DEVICE}"
+  log "iOS:         ${IOS_DEVICE}"
+  log "Android:     ${ANDROID_AVD}"
 }
 
 deploy_ssh() {
