@@ -1,6 +1,6 @@
 import { SearchX } from "lucide-react";
 import type { ReactNode } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { Card } from "../components/ui/Card";
 import { useAppConfig } from "../context/AppConfigContext";
 import { CollectionDemo } from "../features/demo/CollectionDemo";
@@ -17,11 +17,13 @@ import { ReservationsView } from "../../frontend/features/reservations/Reservati
 
 export function FeaturePage() {
   const { feature } = useParams();
+  const [searchParams] = useSearchParams();
   const { activeStore, customization } = useAppConfig();
   const { member, coupons, news, stores, commerce, history, mode, markAnnouncementRead } = useRuntimeData();
   const activeVenue = stores[0];
   const orderPath = activeStore.features.mobileOrder ? "/mobileOrder" : activeStore.features.dineInOrder ? "/dineInOrder" : "/reservation";
   const isLiveBound = mode !== "preview";
+  const isNewsArticle = feature === "news" && searchParams.get("announcement") !== null;
 
   if (!isFeatureType(feature)) {
     if (isUtilityType(feature)) {
@@ -116,11 +118,13 @@ export function FeaturePage() {
   }
 
   return (
-    <div className="page feature-page stack stack--lg">
-      <section className="feature-intro">
-        <span className="feature-intro__icon"><Icon size={22} /></span>
-        <div><h1>{definition.label}</h1><p>{definition.description}</p></div>
-      </section>
+    <div className={`page feature-page stack stack--lg${isNewsArticle ? " feature-page--news-article" : ""}`}>
+      {isNewsArticle ? null : (
+        <section className="feature-intro">
+          <span className="feature-intro__icon"><Icon size={22} /></span>
+          <div><h1>{definition.label}</h1><p>{definition.description}</p></div>
+        </section>
+      )}
       {content}
     </div>
   );
