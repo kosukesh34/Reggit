@@ -5,6 +5,7 @@ import { mountDetailLayoutChrome } from '../utils/detailLayoutMount';
 import { isDemoDataMode, isFixedUiShell } from '../demo/demoMode';
 import { ensureLiffIdentityForLoad } from '../demo/ensureIdentity';
 import { buildBuiltinSampleStampCards } from '../demo/sampleData';
+import { isMembershipRequired } from '../utils/membershipPolicy';
 import { isReactOwnedMount } from '../utils/reactOwnedMount';
 
 type StampRewardMilestone = {
@@ -199,7 +200,7 @@ export class StampsManager {
 
         const canCallApi = await ensureLiffIdentityForLoad();
         if (!canCallApi) {
-            if (isDemoDataMode()) {
+            if (isDemoDataMode() || !isMembershipRequired()) {
                 this.renderSampleStampCards();
                 return;
             }
@@ -221,7 +222,7 @@ export class StampsManager {
             const defaultImage = data && data.default_image_url ? data.default_image_url : null;
             const message = data && data.message ? data.message : null;
             if ((!cards || cards.length === 0) && message) {
-                if (isDemoDataMode()) {
+                if (isDemoDataMode() || !isMembershipRequired()) {
                     this.renderSampleStampCards();
                     return;
                 }

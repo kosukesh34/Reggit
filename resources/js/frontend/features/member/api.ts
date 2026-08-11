@@ -5,6 +5,7 @@ import { buildBuiltinSampleMemberData } from '../../demo/sampleData';
 import {
     getGuestRegisterMessage,
     getMemberRegistrationMode,
+    isMembershipRequired,
     shouldShowRegistrationForm,
     syncMemberRegistrationModeFromPayload,
 } from '../../utils/membershipPolicy';
@@ -166,6 +167,9 @@ export async function loadMemberView(): Promise<MemberLoadResult> {
             }
             return { kind: 'loading' };
         }
+        if (!isMembershipRequired()) {
+            return { kind: 'sample', data: getSampleMemberData() };
+        }
         return { kind: 'login' };
     }
 
@@ -210,7 +214,7 @@ export async function loadMemberView(): Promise<MemberLoadResult> {
         if (shouldShowRegistrationForm()) {
             return { kind: 'register', forced: getMemberRegistrationMode() === 'force' };
         }
-        if (payload.show_member_card_for_guest === false) {
+        if (payload.show_member_card_for_guest === false && isMembershipRequired()) {
             return { kind: 'guest_nocard' };
         }
         if (typeof mm.canAutoRegister === 'function' && mm.canAutoRegister() === true && typeof mm.autoRegister === 'function') {
@@ -219,6 +223,9 @@ export async function loadMemberView(): Promise<MemberLoadResult> {
             if (after && after.is_member === true) {
                 return { kind: 'member', data: after };
             }
+        }
+        if (!isMembershipRequired()) {
+            return { kind: 'sample', data: getSampleMemberData() };
         }
         return { kind: 'guest_prompt' };
     } catch (error) {

@@ -3,6 +3,7 @@ import { AppConstants } from '../../../shared/constants';
 import { applyDemoCouponUsageState, readDemoWonCoupons } from '../../demo/demoCoupons';
 import { isDemoDataMode, isFixedUiShell } from '../../demo/demoMode';
 import { ensureLiffIdentityForLoad } from '../../demo/ensureIdentity';
+import { isMembershipRequired } from '../../utils/membershipPolicy';
 import { LIFF_COUPONS_RELOAD, LIFF_COUPONS_UPDATED } from '../products/types';
 import {
     type CouponRecord,
@@ -61,7 +62,7 @@ async function fetchCoupons(): Promise<{
 
     const canCallApi = await ensureLiffIdentityForLoad({ waitNativeDevice: true });
     if (!canCallApi) {
-        if (isDemoDataMode()) {
+        if (isDemoDataMode() || !isMembershipRequired()) {
             const samples = manager?.getDesignerSampleCoupons() ?? [];
             return {
                 state: 'ready',
@@ -94,11 +95,21 @@ async function fetchCoupons(): Promise<{
     } | null;
     const coupons = data?.coupons ?? [];
     const defaultImage = data?.default_image_url ?? null;
+    const message = data?.message || '';
+    if (coupons.length === 0 && message !== '' && !isMembershipRequired()) {
+        const samples = manager?.getDesignerSampleCoupons() ?? [];
+        return {
+            state: 'ready',
+            coupons: applyDemoCouponUsageState([...readDemoWonCoupons(), ...samples]),
+            defaultImage,
+            message: '',
+        };
+    }
     if (manager !== null) {
         manager.cache = coupons;
         manager.lastDefaultImage = defaultImage;
     }
-    return { state: 'ready', coupons, defaultImage, message: data?.message || '' };
+    return { state: 'ready', coupons, defaultImage, message };
 }
 
 function openDetail(id: number | string): void {
