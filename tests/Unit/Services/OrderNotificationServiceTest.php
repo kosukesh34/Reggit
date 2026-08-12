@@ -12,6 +12,7 @@ use App\Models\Project;
 use App\Models\User;
 use App\Services\Line\LineService;
 use App\Services\OrderNotificationService;
+use App\Services\PushNotificationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use Tests\TestCase;
@@ -50,8 +51,10 @@ class OrderNotificationServiceTest extends TestCase
 
         $line = Mockery::mock(LineService::class);
         $line->shouldReceive('pushMessage')->never();
+        $push = Mockery::mock(PushNotificationService::class);
+        $push->shouldReceive('sendToUser')->never();
 
-        $service = new OrderNotificationService($line, app(ShopSettingRepository::class));
+        $service = new OrderNotificationService($line, app(ShopSettingRepository::class), $push);
         $service->notifyConfirmed((int) $order->id, (int) $project->id);
         $this->assertTrue(true);
     }
@@ -78,8 +81,10 @@ class OrderNotificationServiceTest extends TestCase
 
         $line = Mockery::mock(LineService::class);
         $line->shouldReceive('pushMessage')->never();
+        $push = Mockery::mock(PushNotificationService::class);
+        $push->shouldReceive('sendToUser')->never();
 
-        $service = new OrderNotificationService($line, app(ShopSettingRepository::class));
+        $service = new OrderNotificationService($line, app(ShopSettingRepository::class), $push);
         $service->notifyConfirmed((int) $order->id, (int) $project->id);
         $this->assertTrue(true);
     }
@@ -107,8 +112,19 @@ class OrderNotificationServiceTest extends TestCase
 
         $line = Mockery::mock(LineService::class);
         $line->shouldReceive('pushMessage')->never();
+        $push = Mockery::mock(PushNotificationService::class);
+        $push->shouldReceive('sendToUser')
+            ->once()
+            ->with(
+                (int) $project->id,
+                (int) $user->id,
+                '注文が完了しました',
+                Mockery::type('string'),
+                Mockery::on(fn (array $data): bool => ($data['type'] ?? '') === 'order_confirmed')
+            )
+            ->andReturn(['target_tokens' => 0, 'sent' => 0, 'failed' => 0, 'skipped' => 0]);
 
-        $service = new OrderNotificationService($line, app(ShopSettingRepository::class));
+        $service = new OrderNotificationService($line, app(ShopSettingRepository::class), $push);
         $service->notifyConfirmed((int) $order->id, (int) $project->id);
         $this->assertTrue(true);
     }
@@ -135,8 +151,10 @@ class OrderNotificationServiceTest extends TestCase
 
         $line = Mockery::mock(LineService::class);
         $line->shouldReceive('pushMessage')->never();
+        $push = Mockery::mock(PushNotificationService::class);
+        $push->shouldReceive('sendToUser')->never();
 
-        $service = new OrderNotificationService($line, app(ShopSettingRepository::class));
+        $service = new OrderNotificationService($line, app(ShopSettingRepository::class), $push);
         $service->notifyReady((int) $order->id, (int) $project->id);
         $this->assertTrue(true);
     }
