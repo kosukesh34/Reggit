@@ -199,6 +199,33 @@ export function customizationToCssVars(customization: AppCustomization): CSSProp
   };
 }
 
+function readableTextColor(background: string): string {
+  const match = background.trim().match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+  if (match === null) {
+    return "#ffffff";
+  }
+  const raw = match[1].length === 3
+    ? match[1].split("").map((part) => `${part}${part}`).join("")
+    : match[1];
+  const channels = [0, 2, 4].map((offset) => {
+    const value = Number.parseInt(raw.slice(offset, offset + 2), 16) / 255;
+    return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+  });
+  const luminance = 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+  return luminance > 0.179 ? "#101712" : "#ffffff";
+}
+
+export function contrastCssVars(
+  customization: AppCustomization,
+  theme: ThemeConfig,
+): CSSProperties {
+  const colors = resolveCustomizationColors(customization, theme);
+  return {
+    ["--color-on-primary" as string]: readableTextColor(colors.primary),
+    ["--color-on-accent" as string]: readableTextColor(colors.accent),
+  };
+}
+
 export function resolveCustomizationColors(
   customization: AppCustomization,
   theme: ThemeConfig,

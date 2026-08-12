@@ -4,10 +4,10 @@ interface BarcodeEnlargeViewProps {
   value: string;
 }
 
-/** 会員バーコードの拡大表示（BottomSheet 内コンテンツ） */
+/** 会員バーコードの拡大表示（中央ポップアップ内コンテンツ） */
 export function BarcodeEnlargeView({ value }: BarcodeEnlargeViewProps) {
   return (
-    <div className="membership-barcode-enlarge membership-barcode-enlarge--sheet">
+    <div className="membership-barcode-enlarge membership-barcode-enlarge--popup">
       <div className="membership-barcode-enlarge__stage">
         <MembershipBarcode value={value || "0"} enlarged />
       </div>

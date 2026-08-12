@@ -155,17 +155,31 @@
                         <h4 class="ranks-settings-subtitle">会員証デザイン</h4>
                         <div class="ranks-settings-fields ranks-settings-fields--wide">
                             <div class="form-group" style="grid-column: 1 / -1;">
-                                <p class="form-text" style="margin: 0 0 8px;">
-                                    会員証のレイアウト・表示形式・バーコード/QR は
-                                    <a href="{{ admin_route('admin.settings.liff-designer') }}">LIFFデザイン</a>
-                                    （テーマ設定 / テンプレート適用）で設定します。
+                                @php
+                                    $currentMemberCardDesign = old('member_card_design', $view->memberCardDesign ?? 'default');
+                                    $currentMemberCardDesignLabel = [
+                                        'default' => 'スタンダード',
+                                        'logo_top' => 'ポイント',
+                                        'logo_center' => 'デジタルパス',
+                                        'logo_header' => 'レジ提示',
+                                        'compact' => 'レジ提示',
+                                        'split_banner' => 'スプリット',
+                                        'minimal_line' => 'ミニマル',
+                                        'emblem' => 'デジタルパス',
+                                    ][$currentMemberCardDesign] ?? 'スタンダード';
+                                @endphp
+                                <p class="form-text" style="margin: 0 0 10px;">
+                                    レイアウトの選択と表示項目は「LIFFデザイン」に集約しています。この画面ではランク条件とランク別のカード色・アイコンを管理します。
                                 </p>
-                                <p class="form-text text-muted" style="margin: 0;">
-                                    現在: レイアウト「{{ $view->memberCardDesign ?? 'default' }}」 /
+                                <a class="btn btn-secondary btn-sm" href="{{ admin_route('admin.settings.liff-designer') }}#features">
+                                    <i class="fas fa-id-card"></i> 会員証デザインを変更
+                                </a>
+                                <p class="form-text text-muted" style="margin: 10px 0 0;">
+                                    現在: レイアウト「{{ $currentMemberCardDesignLabel }}」 /
                                     表示「{{ ($view->memberCardDisplayType ?? 'card') === 'sheet' ? 'シート型' : 'カード型' }}」 /
                                     番号「{{ ($view->memberCardCodeType ?? 'barcode') === 'qrcode' ? 'QRコード' : 'バーコード' }}」
                                 </p>
-                                <input type="hidden" name="member_card_design" value="{{ old('member_card_design', $view->memberCardDesign ?? 'default') }}">
+                                <input type="hidden" name="member_card_design" value="{{ $currentMemberCardDesign }}">
                                 <input type="hidden" name="member_card_display_type" value="{{ old('member_card_display_type', $view->memberCardDisplayType ?? 'card') }}">
                                 <input type="hidden" name="member_card_code_type" value="{{ old('member_card_code_type', $view->memberCardCodeType ?? 'barcode') }}">
                             </div>
@@ -245,8 +259,8 @@
                 </div>
                 <div class="card-body">
                     <div class="ranks-preview-section">
-                        <h4 class="ranks-preview-section-title">選択中デザインで各ランクをプレビュー</h4>
-                        <p class="ranks-preview-desc">「会員証レイアウト」で選んだデザインを、各ランクで表示します。</p>
+                        <h4 class="ranks-preview-section-title">ランク別のカード色・アイコンを確認</h4>
+                        <p class="ranks-preview-desc">レイアウトはLIFFデザインで選択中の「{{ e($previewDesignLabel) }}」です。この画面では各ランクの色とアイコンの違いを確認できます。</p>
                         <p class="ranks-preview-desc">ロゴ画像: {{ (isset($previewLogoUrl) && (string)$previewLogoUrl !== '') ? '設定済み（機能設定でアップロード）' : '未設定（機能設定でアップロード）' }}</p>
                         <div class="rank-card-preview-wrap" data-preview-design="{{ e($previewDesign) }}">
                             <div class="rank-card-preview-grid" id="rankCardPreviewGrid">
