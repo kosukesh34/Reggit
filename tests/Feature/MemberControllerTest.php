@@ -41,6 +41,27 @@ class MemberControllerTest extends TestCase
             ->assertJsonPath('is_member', true);
     }
 
+    public function test_register_ライン名だけ送ってもプロフィール名は空のままであること(): void
+    {
+        $this->createProject();
+        config(['smaregi.contract_id' => '']);
+
+        $response = $this->withHeaders(['X-Line-User-Id' => self::LINE_USER_ID])
+            ->post('/api/members/register?project_key=default', [
+                'line_name' => 'LINE花子',
+                'phone' => '090-1234-5678',
+            ]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('is_member', true)
+            ->assertJsonMissingPath('user.line_name');
+
+        $user = User::query()->where('line_user_id', self::LINE_USER_ID)->first();
+        $this->assertNotNull($user);
+        $this->assertNull($user->name);
+        $this->assertSame('LINE花子', $user->line_name);
+    }
+
     public function test_register_二重送信でも会員は1件のみ作成されること(): void
     {
         $this->createProject();

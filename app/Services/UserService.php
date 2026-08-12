@@ -172,7 +172,6 @@ class UserService
         return User::create([
             'project_id' => $projectId,
             'line_user_id' => $lineUserId,
-            'name' => 'Guest User',
         ]);
     }
 

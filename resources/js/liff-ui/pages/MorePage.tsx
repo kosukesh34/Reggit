@@ -1,4 +1,4 @@
-import { ChevronRight, CircleHelp, FileText, Heart, History, LogOut, MapPin, MessageCircle, Settings, ShoppingBag, UserRound } from "lucide-react";
+import { ChevronRight, CircleHelp, FileText, Heart, History, LogOut, MapPin, MessageCircle, Settings, ShoppingBag, Sparkles, UserRound } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState } from "react";
 import { useAppConfig } from "../context/AppConfigContext";
@@ -8,6 +8,7 @@ import { featureDefinitions } from "../features/demo/featureCatalog";
 import { useRuntimeData } from "../context/RuntimeDataContext";
 import { reggitApi } from "../services/reggitApi";
 import { openProfileEdit, openRegister } from "../../frontend/features/member/api";
+import { shouldShowLotteryEntry } from "../../frontend/features/coupons/couponHelpers";
 
 const accountItems = [
   { to: "/orderHistory", label: "ご利用履歴", icon: History },
@@ -27,6 +28,13 @@ export function MorePage() {
   const { activeStore } = useAppConfig();
   const { member, mode, refresh } = useRuntimeData();
   const availableFeatures = featureDefinitions.filter((feature) => activeStore.features[feature.type]);
+  const lotteryServices = shouldShowLotteryEntry()
+    ? [
+      { to: "/designlab", label: "ガチャ", icon: Sparkles, focus: "gacha" },
+      { to: "/designlab", label: "スクラッチ", icon: Sparkles, focus: "scratch" },
+      { to: "/designlab", label: "ルーレット", icon: Sparkles, focus: "roulette" },
+    ]
+    : [];
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
 
@@ -67,7 +75,7 @@ export function MorePage() {
         <div className="account-card__monogram">{activeStore.logoText}</div>
         <div>
           <div className="account-card__label">{member.isMember ? "会員情報" : "ゲスト"}</div>
-          <h2 className="account-card__title">{member.isMember ? `${member.name} 様` : "会員登録してください"}</h2>
+          <h2 className="account-card__title">{member.isMember ? `${member.name.trim() !== "" ? member.name : "会員"} 様` : "会員登録してください"}</h2>
           <div className="account-card__meta">{member.isMember ? "会員証・プロフィールを確認" : "登録するとポイントやクーポンが使えます"}</div>
         </div>
         <ChevronRight size={18} />
@@ -116,6 +124,28 @@ export function MorePage() {
             <Link className="all-feature-grid__item" to={`/${feature.type}`} key={feature.type}>
               <span><feature.icon size={19} /></span>
               <strong>{feature.shortLabel}</strong>
+            </Link>
+          ))}
+          {lotteryServices.map((item) => (
+            <Link
+              className="all-feature-grid__item"
+              to={item.to}
+              key={item.focus}
+              onClick={() => {
+                try {
+                  window.sessionStorage.setItem(
+                    mode === "preview" || document.body.classList.contains("liff-demo-data")
+                      ? "liff_demo_play_focus"
+                      : "liff_lottery_play_focus",
+                    item.focus,
+                  );
+                } catch {
+                  // ignore
+                }
+              }}
+            >
+              <span><item.icon size={19} /></span>
+              <strong>{item.label}</strong>
             </Link>
           ))}
         </div>

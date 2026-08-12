@@ -6,9 +6,7 @@ import { isDemoDataMode } from '../demo/demoMode';
 import {
     DEMO_COUPON_PRIZES,
     pickRandomPrize,
-    readDemoWonCoupons,
     saveDemoWonCoupon,
-    type DemoCoupon,
 } from '../demo/demoCoupons';
 import { isReactOwnedMount } from '../utils/reactOwnedMount';
 
@@ -105,11 +103,11 @@ export class DesignLabManager {
             container.dataset.designLabBound = '1';
         }
         this._fillDomeCapsules(container);
+        this._paintRoulette(container);
         if (options.scratchInit !== false) {
             this._initScratch(container);
         }
         this._applyAvailability(container);
-        this._refreshWonList(container);
         this._focusPlayTarget(container);
     }
 
@@ -198,10 +196,11 @@ export class DesignLabManager {
         const needsRemount = container.dataset.designLabMounted !== '1'
             || (showGacha && container.querySelector('.pp-gacha__dome') === null)
             || (showGacha && container.querySelector('.pp-gacha__outlet .pp-gacha__chute') === null)
-            || (showScratch && container.querySelector('.pp-scratch__circle') === null);
+            || (showScratch && container.querySelector('#designScratchImage') === null)
+            || (isDemoDataMode() && container.querySelector('.pp-roulette__lights') === null);
         if (!needsRemount) {
             this._applyAvailability(container);
-            this._refreshWonList(container);
+            this._paintRoulette(container);
             this._focusPlayTarget(container);
             return;
         }
@@ -209,9 +208,9 @@ export class DesignLabManager {
         container.innerHTML = this._html();
         this._bind(container);
         this._fillDomeCapsules(container);
+        this._paintRoulette(container);
         this._initScratch(container);
         this._applyAvailability(container);
-        this._refreshWonList(container);
         this._focusPlayTarget(container);
     }
 
@@ -301,7 +300,9 @@ export class DesignLabManager {
         }
         const target = focus === 'scratch'
             ? container.querySelector('.pp-scratch')
-            : (focus === 'gacha' ? container.querySelector('.pp-gacha') : null);
+            : (focus === 'roulette'
+                ? container.querySelector('.pp-roulette')
+                : (focus === 'gacha' ? container.querySelector('.pp-gacha') : null));
         if (target === null) {
             return;
         }
@@ -377,10 +378,12 @@ export class DesignLabManager {
                             <span class="pp-play-card__title">スクラッチくじ</span>
                             <span class="pp-play-card__chip" data-scratch-chip>${chip}</span>
                         </div>
-                        <p class="pp-play-card__rule">銀面をこすって結果を確認しましょう。中身は削るまで見えません。</p>
+                        <p class="pp-play-card__rule">銀面をこすると、下のクーポンが見えてきます。</p>
                         <div class="pp-scratch" id="designScratchStage" data-state="sealed">
                             <div class="pp-scratch__circle" id="designScratchCircle">
                                 <div class="pp-scratch__prize" id="designScratchPrize">
+                                    <p class="pp-scratch__prize-mystery" id="designScratchMystery" aria-hidden="true" hidden>?</p>
+                                    <img class="pp-scratch__prize-image" id="designScratchImage" alt="" hidden>
                                     <p class="pp-scratch__prize-eyebrow" id="designScratchEyebrow" hidden>あたり</p>
                                     <p class="pp-scratch__prize-name" id="designScratchName"></p>
                                     <p class="pp-scratch__prize-desc" id="designScratchDesc"></p>
@@ -399,7 +402,36 @@ export class DesignLabManager {
                 </section>
             `
             : '';
-        const emptyLead = !showGacha && !showScratch
+        const rouletteSection = isDemo
+            ? `
+                <section class="design-lab__section" data-lottery-section="roulette" aria-label="ルーレット">
+                    <h2 class="design-lab__section-title">ルーレット</h2>
+                    <p class="design-lab__section-lead">回して止まったマスのクーポンを獲得します</p>
+                    <div class="pp-play-card">
+                        <div class="pp-play-card__top">
+                            <span class="pp-play-card__title">クーポンルーレット</span>
+                            <span class="pp-play-card__chip">体験</span>
+                        </div>
+                        <p class="pp-play-card__rule">針の先に止まった景品が当たりです。</p>
+                        <div class="pp-roulette" id="designRouletteStage" data-state="idle">
+                            <div class="pp-roulette__stage">
+                                <div class="pp-roulette__frame">
+                                    <span class="pp-roulette__glow" aria-hidden="true"></span>
+                                    <div class="pp-roulette__lights" aria-hidden="true" id="designRouletteLights"></div>
+                                    <span class="pp-roulette__pointer" aria-hidden="true"></span>
+                                    <span class="pp-roulette__rim" aria-hidden="true"></span>
+                                    <div class="pp-roulette__wheel" id="designRouletteWheel" role="img" aria-label="ルーレット盤"></div>
+                                    <div class="pp-roulette__hub" aria-hidden="true"><span></span></div>
+                                </div>
+                                <div class="pp-roulette__pedestal" aria-hidden="true"></div>
+                            </div>
+                            <button type="button" class="pp-cta" id="designRouletteBtn">ルーレットを回す</button>
+                        </div>
+                    </div>
+                </section>
+            `
+            : '';
+        const emptyLead = !showGacha && !showScratch && !isDemo
             ? '<p class="design-lab__section-lead">現在あそべるコンテンツはありません</p>'
             : '';
         return `
@@ -407,10 +439,7 @@ export class DesignLabManager {
                 ${emptyLead}
                 ${gachaSection}
                 ${scratchSection}
-                <section class="design-lab__section" aria-label="獲得クーポン">
-                    <h2 class="design-lab__section-title">獲得したクーポン</h2>
-                    <ul class="design-lab__won" id="designWonList"></ul>
-                </section>
+                ${rouletteSection}
             </div>
         `;
     }
@@ -466,6 +495,10 @@ export class DesignLabManager {
                 this._resetScratch(container);
                 return;
             }
+            if (target.closest('#designRouletteBtn')) {
+                void this._runRoulette(container);
+                return;
+            }
             if (target.closest('#designGachaBtn') || target.closest('#designGachaKnob')) {
                 void this._runGacha(container);
             }
@@ -486,19 +519,47 @@ export class DesignLabManager {
         nameEl.textContent = '';
         descEl.textContent = '';
         prizeEl.dataset.awarded = '0';
+        delete prizeEl.dataset.resolved;
+        prizeEl.classList.remove('is-lose', 'is-revealed');
+        const mystery = container.querySelector('#designScratchMystery') as HTMLElement | null;
+        const imageEl = container.querySelector('#designScratchImage') as HTMLImageElement | null;
+        const eyebrow = container.querySelector('#designScratchEyebrow') as HTMLElement | null;
+        if (imageEl !== null) {
+            imageEl.hidden = true;
+            imageEl.removeAttribute('src');
+            imageEl.alt = '';
+        }
         if (isDemoDataMode()) {
             const prize = pickRandomPrize();
             prizeEl.dataset.prizeIndex = String(DEMO_COUPON_PRIZES.indexOf(prize));
             prizeEl.dataset.prizeName = prize.coupon_name;
             prizeEl.dataset.prizeDesc = prize.description;
+            prizeEl.dataset.prizeImage = prize.image_url;
+            // 銀面の下にあたり内容を先に置いて、こすると見えるようにする
+            if (mystery !== null) {
+                mystery.hidden = true;
+            }
+            if (eyebrow !== null) {
+                eyebrow.hidden = false;
+            }
+            nameEl.textContent = prize.coupon_name;
+            descEl.textContent = prize.description;
+            if (imageEl !== null && prize.image_url !== '') {
+                imageEl.src = prize.image_url;
+                imageEl.alt = prize.coupon_name;
+                imageEl.hidden = false;
+            }
         } else {
             delete prizeEl.dataset.prizeIndex;
             delete prizeEl.dataset.prizeName;
             delete prizeEl.dataset.prizeDesc;
-        }
-        const eyebrow = container.querySelector('#designScratchEyebrow') as HTMLElement | null;
-        if (eyebrow !== null) {
-            eyebrow.hidden = true;
+            delete prizeEl.dataset.prizeImage;
+            if (mystery !== null) {
+                mystery.hidden = false;
+            }
+            if (eyebrow !== null) {
+                eyebrow.hidden = true;
+            }
         }
         stage.dataset.state = 'sealed';
         if (progressEl !== null) {
@@ -711,6 +772,9 @@ export class DesignLabManager {
         if (fillEl !== null) {
             fillEl.style.width = `${pct}%`;
         }
+        if (ratio > 0.02 && prizeEl.dataset.resolved !== '1' && !isDemoDataMode()) {
+            await this._resolveLiveScratchPrize(container, prizeEl);
+        }
         if (ratio < 0.5) {
             return;
         }
@@ -733,9 +797,6 @@ export class DesignLabManager {
             stage.dataset.state = 'revealed';
         }
         const hint = container.querySelector('#designScratchHint') as HTMLElement | null;
-        if (hint !== null) {
-            hint.textContent = 'クーポンを獲得しました';
-        }
 
         let prize: Prize | null = null;
         if (isDemoDataMode()) {
@@ -744,19 +805,19 @@ export class DesignLabManager {
                 ? { ...DEMO_COUPON_PRIZES[prizeIndex], is_win: true }
                 : { ...DEMO_COUPON_PRIZES[0], is_win: true };
             saveDemoWonCoupon(prize, 'scratch');
+        } else if (prizeEl.dataset.resolved === '1') {
+            prize = {
+                coupon_name: prizeEl.dataset.prizeName || 'ハズレ',
+                description: prizeEl.dataset.prizeDesc || '',
+                image_url: prizeEl.dataset.prizeImage || undefined,
+                is_win: prizeEl.dataset.prizeWin !== '0',
+                entitlement_id: prizeEl.dataset.entitlementId
+                    ? Number(prizeEl.dataset.entitlementId)
+                    : undefined,
+            };
         } else {
-            const pending = this._pending('scratch');
-            if (pending === null) {
-                prizeEl.dataset.awarded = '0';
-                canvas.style.opacity = '1';
-                canvas.style.pointerEvents = '';
-                canvas.style.transition = '';
-                ToastManager.error('スクラッチの権利がありません');
-                this._applyAvailability(container);
-                return;
-            }
-            const result = await this._playEntitlement(pending.id);
-            if (result === null) {
+            await this._resolveLiveScratchPrize(container, prizeEl);
+            if (prizeEl.dataset.resolved !== '1') {
                 prizeEl.dataset.awarded = '0';
                 canvas.style.opacity = '1';
                 canvas.style.pointerEvents = '';
@@ -764,20 +825,15 @@ export class DesignLabManager {
                 this._applyAvailability(container);
                 return;
             }
-            prize = result.is_win && result.coupon !== null
-                ? {
-                    coupon_name: result.coupon.name,
-                    description: result.coupon.description || '',
-                    image_url: result.coupon.image_url || undefined,
-                    is_win: true,
-                    entitlement_id: result.entitlement_id,
-                }
-                : {
-                    coupon_name: 'ハズレ',
-                    description: '残念！またチャレンジしてください',
-                    is_win: false,
-                    entitlement_id: result.entitlement_id,
-                };
+            prize = {
+                coupon_name: prizeEl.dataset.prizeName || 'ハズレ',
+                description: prizeEl.dataset.prizeDesc || '',
+                image_url: prizeEl.dataset.prizeImage || undefined,
+                is_win: prizeEl.dataset.prizeWin !== '0',
+                entitlement_id: prizeEl.dataset.entitlementId
+                    ? Number(prizeEl.dataset.entitlementId)
+                    : undefined,
+            };
         }
 
         const nameEl = container.querySelector('#designScratchName') as HTMLElement | null;
@@ -801,14 +857,88 @@ export class DesignLabManager {
         if (hint !== null) {
             hint.textContent = isWin ? 'クーポンを獲得しました' : 'ハズレでした';
         }
-        if (prize !== null && isWin) {
-            this._refreshWonList(container);
-            // スクラッチは結果が見えたタイミングで通知
-            void this._notifyLotteryWinAndToast(prize).finally(() => {
-                this._navigateAfterWin();
-            });
+        if (prize !== null) {
+            this._showPrizeModal(prize);
         }
         this._applyAvailability(container);
+    }
+
+    private _paintScratchPrize(container: HTMLElement, prize: Prize): void {
+        const prizeEl = container.querySelector('#designScratchPrize') as HTMLElement | null;
+        const nameEl = container.querySelector('#designScratchName') as HTMLElement | null;
+        const descEl = container.querySelector('#designScratchDesc') as HTMLElement | null;
+        const imageEl = container.querySelector('#designScratchImage') as HTMLImageElement | null;
+        const mystery = container.querySelector('#designScratchMystery') as HTMLElement | null;
+        const eyebrow = container.querySelector('#designScratchEyebrow') as HTMLElement | null;
+        const isWin = prize.is_win !== false;
+        if (prizeEl !== null) {
+            prizeEl.dataset.prizeName = prize.coupon_name;
+            prizeEl.dataset.prizeDesc = prize.description;
+            prizeEl.dataset.prizeImage = prize.image_url || '';
+            prizeEl.dataset.prizeWin = isWin ? '1' : '0';
+            if (prize.entitlement_id !== undefined) {
+                prizeEl.dataset.entitlementId = String(prize.entitlement_id);
+            }
+            prizeEl.dataset.resolved = '1';
+            prizeEl.classList.toggle('is-lose', !isWin);
+        }
+        if (mystery !== null) {
+            mystery.hidden = true;
+        }
+        if (eyebrow !== null) {
+            eyebrow.hidden = !isWin;
+            eyebrow.textContent = 'あたり';
+        }
+        if (nameEl !== null) {
+            nameEl.textContent = isWin ? prize.coupon_name : 'ハズレ';
+        }
+        if (descEl !== null) {
+            descEl.textContent = isWin ? prize.description : (prize.description || '残念！またチャレンジしてください');
+        }
+        if (imageEl !== null) {
+            if (isWin && prize.image_url) {
+                imageEl.src = prize.image_url;
+                imageEl.alt = prize.coupon_name;
+                imageEl.hidden = false;
+            } else {
+                imageEl.hidden = true;
+                imageEl.removeAttribute('src');
+            }
+        }
+    }
+
+    private async _resolveLiveScratchPrize(container: HTMLElement, prizeEl: HTMLElement): Promise<void> {
+        if (prizeEl.dataset.resolved === '1' || prizeEl.dataset.resolving === '1') {
+            return;
+        }
+        const pending = this._pending('scratch');
+        if (pending === null) {
+            ToastManager.error('スクラッチの権利がありません');
+            this._applyAvailability(container);
+            return;
+        }
+        prizeEl.dataset.resolving = '1';
+        const result = await this._playEntitlement(pending.id);
+        delete prizeEl.dataset.resolving;
+        if (result === null) {
+            this._applyAvailability(container);
+            return;
+        }
+        const prize: Prize = result.is_win && result.coupon !== null
+            ? {
+                coupon_name: result.coupon.name,
+                description: result.coupon.description || '',
+                image_url: result.coupon.image_url || undefined,
+                is_win: true,
+                entitlement_id: result.entitlement_id,
+            }
+            : {
+                coupon_name: 'ハズレ',
+                description: '残念！またチャレンジしてください',
+                is_win: false,
+                entitlement_id: result.entitlement_id,
+            };
+        this._paintScratchPrize(container, prize);
     }
     private _notifyCouponsUpdated(name: string, silent = false): void {
         const manager = (window.app as any)?.couponsManager;
@@ -861,6 +991,136 @@ export class DesignLabManager {
             prizeRoot.classList.remove('is-lose');
         }
         this._initScratch(container);
+    }
+
+    private _rouletteItems(): Array<Prize & { color: string; short: string }> {
+        const palette = ['#E8C84A', '#3EC9A8', '#E8924A', '#8FA0B4', '#F0B14A', '#3AAFA3'];
+        return [
+            { ...DEMO_COUPON_PRIZES[0], short: 'ドリンク無料', is_win: true, color: palette[0] },
+            { ...DEMO_COUPON_PRIZES[1], short: 'デザート割', is_win: true, color: palette[1] },
+            {
+                coupon_name: 'ハズレ',
+                description: '残念！またチャレンジしてください',
+                image_url: '',
+                short: 'ハズレ',
+                is_win: false,
+                color: palette[3],
+            },
+            { ...DEMO_COUPON_PRIZES[2], short: '50pt', is_win: true, color: palette[2] },
+            { ...DEMO_COUPON_PRIZES[0], short: 'ドリンク無料', is_win: true, color: palette[4] },
+            {
+                coupon_name: 'ハズレ',
+                description: '残念！またチャレンジしてください',
+                image_url: '',
+                short: 'ハズレ',
+                is_win: false,
+                color: '#A8B2C0',
+            },
+            { ...DEMO_COUPON_PRIZES[1], short: 'デザート割', is_win: true, color: palette[5] },
+            { ...DEMO_COUPON_PRIZES[2], short: '50pt', is_win: true, color: palette[0] },
+        ];
+    }
+
+    private _paintRoulette(container: HTMLElement): void {
+        if (!isDemoDataMode()) {
+            return;
+        }
+        const frame = container.querySelector('.pp-roulette__frame') as HTMLElement | null;
+        const wheel = container.querySelector('#designRouletteWheel') as HTMLElement | null;
+        const lights = container.querySelector('#designRouletteLights') as HTMLElement | null;
+        if (wheel === null) {
+            return;
+        }
+        const size = Math.min(280, Math.max(220, Math.floor(window.innerWidth * 0.78)));
+        if (frame !== null) {
+            frame.style.width = `${size}px`;
+            frame.style.height = `${size}px`;
+            frame.style.margin = '0 auto';
+            frame.style.position = 'relative';
+        }
+        if (lights !== null && lights.childElementCount === 0) {
+            lights.innerHTML = Array.from({ length: 18 }, (_, i) => (
+                `<span class="pp-roulette__bulb" style="--bulb-i:${i}"></span>`
+            )).join('');
+        }
+        wheel.style.position = 'absolute';
+        wheel.style.inset = '14px';
+        wheel.style.width = 'auto';
+        wheel.style.height = 'auto';
+        wheel.style.borderRadius = '50%';
+        wheel.style.overflow = 'hidden';
+        const items = this._rouletteItems();
+        const slice = 360 / items.length;
+        const stops = items.map((item, index) => {
+            const start = index * slice;
+            const end = (index + 1) * slice;
+            return `${item.color} ${start}deg ${end}deg`;
+        }).join(', ');
+        wheel.style.background = `
+            radial-gradient(circle at 50% 50%, transparent 28%, rgba(0,0,0,0.18) 29%, transparent 31%),
+            conic-gradient(from 0deg, ${stops})
+        `;
+        wheel.innerHTML = items.map((item, index) => {
+            const angle = (index * slice) + (slice / 2);
+            return `
+                <span class="pp-roulette__label" style="--roulette-angle:${angle}deg">
+                    <span class="pp-roulette__label-text">${DomHelper.escapeHtml(item.short)}</span>
+                </span>
+            `;
+        }).join('');
+        if (wheel.dataset.spinDeg === undefined) {
+            wheel.style.transform = 'rotate(0deg)';
+            wheel.style.transition = '';
+            wheel.dataset.spinDeg = '0';
+        }
+        wheel.dataset.segmentCount = String(items.length);
+    }
+
+    private async _runRoulette(container: HTMLElement): Promise<void> {
+        if (!isDemoDataMode()) {
+            return;
+        }
+        const stage = container.querySelector('#designRouletteStage') as HTMLElement | null;
+        const wheel = container.querySelector('#designRouletteWheel') as HTMLElement | null;
+        const btn = container.querySelector('#designRouletteBtn') as HTMLButtonElement | null;
+        if (stage === null || wheel === null || btn === null || btn.disabled) {
+            return;
+        }
+        if (stage.dataset.state === 'spinning') {
+            return;
+        }
+        const items = this._rouletteItems();
+        const pickIndex = Math.floor(Math.random() * items.length);
+        const slice = 360 / items.length;
+        const targetCenter = (pickIndex * slice) + (slice / 2);
+        const prevDeg = Number(wheel.dataset.spinDeg || '0');
+        const landing = (360 - targetCenter) % 360;
+        const nextBase = prevDeg + (360 * 7);
+        const nextMod = ((nextBase % 360) + 360) % 360;
+        const finalDeg = nextBase + ((landing - nextMod + 360) % 360);
+        wheel.dataset.spinDeg = String(finalDeg);
+        btn.disabled = true;
+        stage.dataset.state = 'spinning';
+        wheel.style.transition = 'transform 5.2s cubic-bezier(0.08, 0.82, 0.08, 1)';
+        wheel.style.transform = `rotate(${finalDeg}deg)`;
+        await new Promise<void>((resolve) => {
+            window.setTimeout(resolve, 5300);
+        });
+        stage.dataset.state = 'idle';
+        btn.disabled = false;
+        const landedAngle = ((360 - (finalDeg % 360)) % 360);
+        const landedIndex = Math.min(items.length - 1, Math.floor(landedAngle / slice));
+        const prize = items[landedIndex] ?? items[pickIndex];
+        const isWin = prize.is_win === true;
+        if (isWin) {
+            saveDemoWonCoupon(prize, 'roulette');
+        }
+        this._showPrizeModal({
+            coupon_name: prize.coupon_name,
+            description: prize.description,
+            image_url: prize.image_url,
+            is_win: isWin,
+        });
     }
 
     private async _runGacha(container: HTMLElement): Promise<void> {
@@ -935,11 +1195,7 @@ export class DesignLabManager {
                 if (isDemoDataMode() && isWin) {
                     saveDemoWonCoupon(prize as (typeof DEMO_COUPON_PRIZES)[number], 'gacha');
                 }
-                // 結果モーダル表示。通知・トーストは自動クローズ時に送る（当たる前にバレないように）
                 this._showPrizeModal(prize);
-                if (isWin) {
-                    this._refreshWonList(container);
-                }
             }
             this._applyAvailability(container);
             if (isDemoDataMode()) {
@@ -1027,12 +1283,19 @@ export class DesignLabManager {
         overlay.setAttribute('role', 'dialog');
         overlay.setAttribute('aria-modal', 'true');
         overlay.setAttribute('aria-label', isWin ? '当選結果' : 'ハズレ');
-        // 中央のリボン＋名称のみ（下の説明・ボタン・トーストは出さない）
+        const imageHtml = isWin && prize.image_url
+            ? `<img class="pp-prize-modal__image" src="${DomHelper.escapeHtml(prize.image_url)}" alt="">`
+            : '';
+        const descHtml = isWin && prize.description
+            ? `<p class="pp-prize-modal__desc">${DomHelper.escapeHtml(prize.description)}</p>`
+            : '';
         overlay.innerHTML = `
             <div class="pp-prize-modal__backdrop" data-prize-close></div>
             <div class="pp-prize-modal__panel" data-prize-close>
                 <span class="pp-prize-modal__ribbon${isWin ? '' : ' pp-prize-modal__ribbon--lose'}">${isWin ? 'あたり' : 'ハズレ'}</span>
+                ${imageHtml}
                 <p class="pp-prize-modal__name${isWin ? '' : ' pp-prize-modal__name--lose'}">${DomHelper.escapeHtml(isWin ? prize.coupon_name : 'ハズレ')}</p>
+                ${descHtml}
             </div>
         `;
         let finished = false;
@@ -1061,28 +1324,6 @@ export class DesignLabManager {
         void overlay.offsetWidth;
         overlay.classList.add('is-in');
         window.setTimeout(finish, 2800);
-    }
-
-    private _refreshWonList(container: HTMLElement): void {
-        const list = container.querySelector('#designWonList');
-        if (list === null) {
-            return;
-        }
-        if (!isDemoDataMode()) {
-            list.innerHTML = '<li class="design-lab__won-empty">獲得クーポンはクーポン一覧で確認できます</li>';
-            return;
-        }
-        const won = readDemoWonCoupons();
-        if (won.length === 0) {
-            list.innerHTML = '<li class="design-lab__won-empty">まだありません</li>';
-            return;
-        }
-        list.innerHTML = won.map((c: DemoCoupon) => `
-            <li class="design-lab__won-item">
-                <span class="design-lab__won-badge">${c.source === 'scratch' ? 'スクラッチ' : 'ガチャ'}</span>
-                <span class="design-lab__won-name">${DomHelper.escapeHtml(c.coupon_name)}</span>
-            </li>
-        `).join('');
     }
 
 }

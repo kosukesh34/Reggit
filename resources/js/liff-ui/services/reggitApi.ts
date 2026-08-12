@@ -56,7 +56,8 @@ function mapMember(payload: Record<string, unknown>): MemberProfile {
   const user = asRecord(payload.user);
   const pointsExpiry = asRecord(payload.points_expiry);
   const isMember = payload.is_member === true;
-  const name = String(user.name ?? member.name ?? (isMember ? '会員' : 'ゲスト'));
+  const rawName = typeof user.name === 'string' ? user.name.trim() : '';
+  const name = rawName !== '' ? rawName : (isMember ? '会員' : 'ゲスト');
   const number = String(member.member_number ?? member.memberNumber ?? '');
   return {
     name,

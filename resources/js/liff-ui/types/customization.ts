@@ -1,4 +1,4 @@
-import type { TabType } from "./app";
+import type { LinkTabType, TabType } from "./app";
 
 export type DesignPreset =
   | "editorial"
@@ -99,6 +99,7 @@ export interface AppCustomization {
     position: NavigationPosition;
     showLabels: boolean;
     emphasizeCenterTab: boolean;
+    linkUrls?: Partial<Record<LinkTabType, string>>;
   };
 }
 

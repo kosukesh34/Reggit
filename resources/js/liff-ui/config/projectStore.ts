@@ -1,5 +1,5 @@
 import { appConfig } from './appConfig';
-import type { FeatureConfig, FeatureType, QuickAction, StoreAppConfig, TabConfig, TabType } from '../types/app';
+import { isLinkTabType, type FeatureConfig, type FeatureType, type QuickAction, type StoreAppConfig, type TabConfig, type TabType } from '../types/app';
 import { createDefaultCustomization } from './customization';
 import type { AppCustomizationPatch } from '../types/customization';
 
@@ -86,11 +86,14 @@ const tabFeatureMap: Partial<Record<TabType, FeatureType>> = {
 function buildTabs(features: FeatureConfig, homeEnabled: boolean): TabConfig[] {
   const configuredMenu = Array.isArray(window.__FRONTEND_MENU__) ? window.__FRONTEND_MENU__ : [];
   const seen = new Set<TabType>();
-  const candidates = configuredMenu.map((item) => ({
-    type: item.tab === 'products' && !features.mobileOrder && features.dineInOrder
-      ? 'dineInOrder' as const
-      : menuTabMap[item.tab],
+  const candidates: Array<{ type: TabType | undefined; label?: string; url?: string }> = configuredMenu.map((item) => ({
+    type: isLinkTabType(item.tab)
+      ? item.tab
+      : (item.tab === 'products' && !features.mobileOrder && features.dineInOrder
+        ? 'dineInOrder' as const
+        : menuTabMap[item.tab]),
     label: item.label,
+    url: typeof item.url === 'string' ? item.url : undefined,
   }));
 
   if (candidates.length === 0) {
@@ -113,7 +116,8 @@ function buildTabs(features: FeatureConfig, homeEnabled: boolean): TabConfig[] {
     tabs.push({
       id: type,
       type,
-      label: candidate.label?.trim() || (type === 'home' ? 'ホーム' : 'サービス'),
+      label: candidate.label?.trim() || (type === 'home' ? 'ホーム' : (isLinkTabType(type) ? '外部サイト' : 'サービス')),
+      url: candidate.url,
       enabled: true,
       order: tabs.length + 1,
     });

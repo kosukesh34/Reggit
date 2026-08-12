@@ -177,6 +177,14 @@ class MemberService
             }
         }
 
+        if (isset($rules['name']) && is_array($rules['name'])) {
+            $rules['name'] = array_map(
+                static fn (string $rule): string => $rule === 'required' ? 'required_without:line_name' : $rule,
+                $rules['name'],
+            );
+        }
+        $rules['line_name'] = ['nullable', 'string', 'max:'.ProfileValidationRules::NAME_MAX];
+
         return $rules;
     }
 
@@ -454,11 +462,15 @@ class MemberService
                 });
 
             $userUpdates = array_filter([
-                'name' => $data['name'] ?? null,
+                'name' => isset($data['name']) ? trim((string) $data['name']) : null,
                 'kana' => $data['kana'] ?? null,
                 'email' => $data['email'] ?? null,
                 'phone' => $data['phone'] ?? null,
             ], fn ($v) => $v !== null && $v !== '');
+            $lineName = isset($data['line_name']) ? trim((string) $data['line_name']) : '';
+            if ($lineName !== '') {
+                $userUpdates['line_name'] = $lineName;
+            }
             if ($userUpdates !== []) {
                 $user->update($userUpdates);
             }

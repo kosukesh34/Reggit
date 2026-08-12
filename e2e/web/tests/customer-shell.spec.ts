@@ -161,6 +161,29 @@ test.describe('顧客向けシェル（LINE LIFF）', () => {
     await expectGachaStyled(page);
     await expect(page.locator('[data-lottery-section="scratch"], .pp-scratch').first()).toBeVisible();
   });
+
+  test('ガチャ UI が demo=1 なしでも表示される', async ({ page }) => {
+    await gotoLiff(page, `${liffPath}#/designlab`);
+    await expectAppShell(page);
+    await expectGachaStyled(page);
+    await expect(page.locator('.pp-roulette').first()).toBeVisible();
+    await expect(page.locator('#designWonList')).toHaveCount(0);
+  });
+
+  test('その他にガチャ・スクラッチ・ルーレット導線がある', async ({ page }) => {
+    await gotoLiff(page, `${liffPath}#/more`);
+    await expectAppShell(page);
+    await expect(page.getByRole('link', { name: 'ガチャ' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'スクラッチ' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'ルーレット' })).toBeVisible();
+  });
+
+  test('外部ページタブは chrome を表示する', async ({ page }) => {
+    await gotoLiff(page, `${liffPath}#/link_1`);
+    await expectAppShell(page);
+    await expect(page.locator('.link-tab-chrome')).toBeVisible();
+    await expect(page.locator('.link-tab-frame, .page-note').first()).toBeVisible();
+  });
 });
 
 test.describe('顧客向けシェル（ネイティブ WebView）', () => {
