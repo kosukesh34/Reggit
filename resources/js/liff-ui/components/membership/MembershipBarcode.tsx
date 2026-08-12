@@ -48,17 +48,20 @@ function encodeCode128B(value: string) {
   return { bars, safeValue, width: Math.max(x + quietZone, quietZone * 2 + 20) };
 }
 
-export function MembershipBarcode({ value }: { value?: string | null }) {
+export function MembershipBarcode({ value, enlarged = false }: { value?: string | null; enlarged?: boolean }) {
   const barcode = encodeCode128B(String(value ?? "0"));
 
   return (
-    <figure className="barcode" aria-label={`会員番号 ${barcode.safeValue || "—"} のCode 128バーコード`}>
+    <figure
+      className={`barcode${enlarged ? " barcode--enlarged" : ""}`}
+      aria-label={`会員番号 ${barcode.safeValue || "—"} のCode 128バーコード`}
+    >
       <svg
         className="barcode__svg"
         viewBox={`0 0 ${barcode.width} 66`}
         role="img"
         aria-hidden="true"
-        preserveAspectRatio="none"
+        preserveAspectRatio="xMidYMid meet"
         shapeRendering="crispEdges"
       >
         <rect width={barcode.width} height="66" className="barcode__paper" />

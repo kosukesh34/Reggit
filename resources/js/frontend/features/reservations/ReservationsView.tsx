@@ -3,7 +3,7 @@ import { AppConstants } from '../../../shared/constants';
 import { ConfirmDialog } from '../../../shared/utils/confirmDialog';
 import { ToastManager } from '../../../shared/utils/toast';
 import { ApiClient } from '../../../shared/utils/apiClient';
-import { isFixedUiShell } from '../../demo/demoMode';
+import { isFeatureUiShell } from '../../demo/demoMode';
 import {
     canEditReservation,
     dayOfWeekLabel,
@@ -169,7 +169,7 @@ function FixedCard({
 
 export function ReservationsView(): JSX.Element {
     const [view, setView] = useState<ViewState>({ kind: 'loading' });
-    const fixed = isFixedUiShell();
+    const fixed = isFeatureUiShell();
 
     const reload = useCallback(async () => {
         setView({ kind: 'loading' });

@@ -53,10 +53,14 @@ export function MembershipCard({ cardConfig, member, brandName, logoText, custom
         {cardConfig.rankVisible && customization.showRank ? <RankBadge rank={member.rank} /> : null}
         {cardConfig.memberNameVisible && customization.showMemberName ? <><span className="membership-card__member-label">会員名</span><h2 className="membership-card__name">{member.name}</h2></> : null}
         {cardConfig.memberNumberVisible && customization.showMemberNumber ? <div className="membership-card__number">No. {member.number}</div> : null}
-        {customization.showExpiry || customization.showRank ? <div className="membership-card__meta">
-          {customization.showExpiry ? <span>有効期限 {formatDisplayDate(member.expiration, "yyyy/MM/dd")}</span> : null}
-          {customization.showRank ? <span>{member.nextRankLabel}</span> : null}
-        </div> : null}
+        {customization.showExpiry ? (
+          <div className="membership-card__meta">
+            <span>有効期限 {formatDisplayDate(member.expiration, "yyyy/MM/dd")}</span>
+          </div>
+        ) : null}
+        {customization.showNextRank && member.nextRankLabel !== "" ? (
+          <div className="membership-card__next-rank">{member.nextRankLabel}</div>
+        ) : null}
       </div>
 
       <div className="membership-card__footer">

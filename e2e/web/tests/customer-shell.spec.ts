@@ -86,9 +86,72 @@ test.describe('顧客向けシェル（LINE LIFF）', () => {
     await expect(page.getByRole('navigation', { name: '主要ナビゲーション' }).getByRole('link').first()).toBeVisible();
   });
 
+  test('デモ画面で店舗デザインを切り替えられる', async ({ page }) => {
+    await gotoLiff(page, `${liffPath}#/home`);
+    await expectAppShell(page);
+    const switcher = page.getByRole('button', { name: '店舗を切り替える' });
+    await expect(switcher).toBeVisible({ timeout: 30_000 });
+    await switcher.click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    const options = page.locator('.store-switcher');
+    await expect(options.first()).toBeVisible();
+    const count = await options.count();
+    expect(count).toBeGreaterThan(1);
+    await options.nth(1).getByRole('button', { name: '切り替え' }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await expect(page.locator('.app-shell')).toBeVisible();
+  });
+
+  test('デザインプリセット用の配置CSSが読み込まれる', async ({ page }) => {
+    await gotoLiff(page, `${liffPath}#/home`);
+    await expectAppShell(page);
+    const hasPresetRule = await page.evaluate(() => {
+      const sheets = Array.from(document.styleSheets);
+      for (const sheet of sheets) {
+        let rules: CSSRuleList;
+        try {
+          rules = sheet.cssRules;
+        } catch {
+          continue;
+        }
+        for (const rule of Array.from(rules)) {
+          if (rule instanceof CSSStyleRule && rule.selectorText.includes('data-design-preset')) {
+            return true;
+          }
+        }
+      }
+      return false;
+    });
+    expect(hasPresetRule).toBe(true);
+  });
+
   test('機能画面用 CSS（会員・スタンプ・クーポン・順番待ち・ガチャ）が読み込まれる', async ({ page }) => {
     await gotoLiff(page, liffPath);
     await expectLegacyFeatureCssLinks(page);
+  });
+
+  test('順番待ちの ios-queue スタイルが reggit-liff-ui でも効く', async ({ page }) => {
+    await gotoLiff(page, `${liffPath}#/queue`);
+    await expectAppShell(page);
+    const probe = await page.evaluate(() => {
+      const host = document.createElement('div');
+      host.className = 'ios-queue';
+      host.style.position = 'absolute';
+      host.style.left = '-9999px';
+      document.body.appendChild(host);
+      const style = window.getComputedStyle(host);
+      const result = {
+        bodyHasReggit: document.body.classList.contains('reggit-liff-ui'),
+        borderRadius: style.borderRadius,
+        backgroundColor: style.backgroundColor,
+      };
+      host.remove();
+      return result;
+    });
+    expect(probe.bodyHasReggit).toBe(true);
+    // 38-liff-fixed-ui.css の body.reggit-liff-ui .ios-queue { border-radius: 24px; background: #fff }
+    expect(probe.borderRadius).toContain('24px');
+    expect(probe.backgroundColor).not.toBe('rgba(0, 0, 0, 0)');
   });
 
   test('demo モードでガチャ UI が CSS 付きで表示される', async ({ page }) => {

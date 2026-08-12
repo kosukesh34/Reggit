@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { isFixedUiShell } from '../../demo/demoMode';
+import { isFeatureUiShell } from '../../demo/demoMode';
 import {
     formatValidUntil,
     getStampDesignSettings,
@@ -422,7 +422,7 @@ export function StampsView(): JSX.Element {
     }
 
     const { cards, defaultImage } = view;
-    const fixed = isFixedUiShell();
+    const fixed = isFeatureUiShell();
 
     if (cards.length === 0) {
         if (fixed) {
