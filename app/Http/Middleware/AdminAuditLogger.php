@@ -6,6 +6,7 @@ use App\Models\AdminAuditLog;
 use App\Util\AdminContext;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Symfony\Component\HttpFoundation\Response;
 
 class AdminAuditLogger
@@ -27,7 +28,7 @@ class AdminAuditLogger
             return $response;
         }
 
-        $payload = $request->all();
+        $payload = $this->sanitizePayload($request->all());
         foreach (self::SENSITIVE_KEYS as $key) {
             if (array_key_exists($key, $payload)) {
                 $payload[$key] = '***';
@@ -56,5 +57,28 @@ class AdminAuditLogger
         ]);
 
         return $response;
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    private function sanitizePayload(array $payload): array
+    {
+        foreach ($payload as $key => $value) {
+            if ($value instanceof UploadedFile) {
+                $payload[$key] = [
+                    'original_name' => $value->getClientOriginalName(),
+                    'size' => $value->getSize(),
+                ];
+
+                continue;
+            }
+            if (is_array($value)) {
+                $payload[$key] = $this->sanitizePayload($value);
+            }
+        }
+
+        return $payload;
     }
 }

@@ -247,7 +247,7 @@
                     <div class="ranks-preview-section">
                         <h4 class="ranks-preview-section-title">選択中デザインで各ランクをプレビュー</h4>
                         <p class="ranks-preview-desc">「会員証レイアウト」で選んだデザインを、各ランクで表示します。</p>
-                        <p class="ranks-preview-desc">ロゴ画像URL: {{ (isset($previewLogoUrl) && (string)$previewLogoUrl !== '') ? e($previewLogoUrl) : '未設定（機能設定で指定）' }}</p>
+                        <p class="ranks-preview-desc">ロゴ画像: {{ (isset($previewLogoUrl) && (string)$previewLogoUrl !== '') ? '設定済み（機能設定でアップロード）' : '未設定（機能設定でアップロード）' }}</p>
                         <div class="rank-card-preview-wrap" data-preview-design="{{ e($previewDesign) }}">
                             <div class="rank-card-preview-grid" id="rankCardPreviewGrid">
                                 @foreach($view->rankSettings as $rank)

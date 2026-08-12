@@ -39,9 +39,17 @@ export function Header() {
     return activeStore.storeName;
   }, [activeStore.storeName, location.pathname]);
 
+  const logoUrl = typeof activeStore.logoUrl === 'string' && activeStore.logoUrl.trim() !== ''
+    ? activeStore.logoUrl.trim()
+    : null;
+
   const brandContent = (
     <>
-      {customization.header.showLogo ? <span className="header__logo" aria-hidden="true"><i />{activeStore.logoText}</span> : null}
+      {customization.header.showLogo ? (
+        <span className={`header__logo${logoUrl !== null ? ' header__logo--image' : ''}`} aria-hidden="true">
+          {logoUrl !== null ? <img src={logoUrl} alt="" /> : <><i />{activeStore.logoText}</>}
+        </span>
+      ) : null}
       <span className="header__text">
         {customization.header.showSubtitle ? <span className="header__subtitle">REGGIT MEMBER</span> : null}
         <span className="header__title">{title}</span>
@@ -83,7 +91,13 @@ export function Header() {
               const preset = designPresetMap[storeCustomization.designPreset];
               return (
                 <Card key={store.storeId} className={`store-switcher${active ? " is-active" : ""}`} padding="md">
-                  <span className="store-switcher__mark" style={{ background: `linear-gradient(135deg, ${primary} 0 58%, ${accent} 58%)` }}>{store.logoText}</span>
+                  {typeof store.logoUrl === 'string' && store.logoUrl.trim() !== '' ? (
+                    <span className="store-switcher__mark store-switcher__mark--image">
+                      <img src={store.logoUrl.trim()} alt="" />
+                    </span>
+                  ) : (
+                    <span className="store-switcher__mark" style={{ background: `linear-gradient(135deg, ${primary} 0 58%, ${accent} 58%)` }}>{store.logoText}</span>
+                  )}
                   <div className="store-switcher__body">
                     <div className="store-switcher__name">{store.storeName}</div>
                     <div className="store-switcher__meta">{store.brandName}</div>
