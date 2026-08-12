@@ -49,6 +49,57 @@ class MemberApiV1Test extends TestCase
         $this->assertDatabaseHas('members', ['project_id' => $project->id]);
     }
 
+    public function test_register_ライン名だけ送ってもプロフィール名は空のままであること(): void
+    {
+        $project = $this->createProject();
+        config(['smaregi.contract_id' => '']);
+
+        $response = $this->withoutMiddleware(AuthenticateApiToken::class)
+            ->withHeader('X-Line-User-Id', self::LINE_USER_ID)
+            ->post('/api/v1/members/register', [
+                'line_name' => 'LINE花子',
+                'phone' => '090-1234-5678',
+            ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.member.is_member', true)
+            ->assertJsonMissingPath('data.member.user.line_name')
+            ->assertJsonMissingPath('data.member.line_name');
+
+        $this->assertDatabaseHas('users', [
+            'project_id' => $project->id,
+            'line_user_id' => self::LINE_USER_ID,
+            'line_name' => 'LINE花子',
+        ]);
+        $user = User::query()->where('line_user_id', self::LINE_USER_ID)->first();
+        $this->assertNotNull($user);
+        $this->assertNull($user->name);
+    }
+
+    public function test_register_プロフィール名とライン名を分けて保存すること(): void
+    {
+        $this->createProject();
+        config(['smaregi.contract_id' => '']);
+
+        $response = $this->withoutMiddleware(AuthenticateApiToken::class)
+            ->withHeader('X-Line-User-Id', self::LINE_USER_ID)
+            ->post('/api/v1/members/register', [
+                'name' => '田中太郎',
+                'line_name' => 'LINE花子',
+                'phone' => '090-1234-5678',
+            ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('success', true);
+
+        $this->assertDatabaseHas('users', [
+            'line_user_id' => self::LINE_USER_ID,
+            'name' => '田中太郎',
+            'line_name' => 'LINE花子',
+        ]);
+    }
+
     public function test_update_モバイルアプリと管理画面が同じ会員を更新すること(): void
     {
         $project = $this->createProject();

@@ -36,8 +36,13 @@ function toMemberProfile(payload: MemberPayload | null | undefined, fallback: Me
   const pointsRaw = payload.points != null
     ? Number(payload.points)
     : (member && member.points != null ? Number(member.points) : fallback.points);
+  const rawName = user && typeof user.name === "string" ? user.name.trim() : "";
+  const fallbackName = typeof fallback.name === "string" ? fallback.name.trim() : "";
+  const displayName = rawName !== ""
+    ? rawName
+    : (payload.is_member === true ? "会員" : (fallbackName !== "" ? fallbackName : "ゲスト"));
   return {
-    name: String((user && user.name) || fallback.name || "会員"),
+    name: displayName,
     number: number !== "" ? number : fallback.number,
     rank: String(payload.current_rank_label || payload.current_rank || fallback.rank || "MEMBER"),
     points: Number.isFinite(pointsRaw) ? pointsRaw : 0,

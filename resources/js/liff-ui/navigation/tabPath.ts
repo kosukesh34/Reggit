@@ -20,6 +20,9 @@ const TAB_PATHS: Record<string, string> = {
   news: '/news',
   gallery: '/gallery',
   more: '/more',
+  link_1: '/link_1',
+  link_2: '/link_2',
+  link_3: '/link_3',
   card: '/membership',
   visit: '/queue',
   order: '/menu',
@@ -38,6 +41,9 @@ const PATH_TO_LEGACY_TAB: Record<string, string> = {
   '/news': 'announcements',
   '/gallery': 'gallery',
   '/more': 'more',
+  '/link_1': 'link_1',
+  '/link_2': 'link_2',
+  '/link_3': 'link_3',
 };
 
 /** HashRouter が解釈する前に旧 `#member` 形式を `#/membership` へ直す */

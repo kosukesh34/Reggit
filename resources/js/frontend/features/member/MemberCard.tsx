@@ -109,10 +109,9 @@ export function ClassicMemberCard({ data }: { data: MemberPayload }): JSX.Elemen
     const design = resolveCardDesign(data, rootRef.current);
     const member = data.member && typeof data.member === 'object' ? data.member : null;
     const user = data.user || (member && member.user) || null;
-    const displayName =
-        (user && user.name)
-        || (typeof window !== 'undefined' && window.__LINE_PROFILE__ && window.__LINE_PROFILE__.displayName)
-        || '';
+    const displayName = (user && typeof user.name === 'string' && user.name.trim() !== '')
+        ? user.name.trim()
+        : (data.is_member === true ? '会員' : '');
     const pointsRaw = data.points != null ? Number(data.points) : (member && member.points != null ? Number(member.points) : 0);
     const points = Number.isFinite(pointsRaw) ? pointsRaw : 0;
     const memberNumber = member && member.member_number ? String(member.member_number) : '';
@@ -421,10 +420,9 @@ export function IosWalletMemberCard({ data }: { data: MemberPayload }): JSX.Elem
     const codeId = `member-code-${reactId}`;
     const member = data.member && typeof data.member === 'object' ? data.member : null;
     const user = data.user || (member && member.user) || null;
-    const displayName =
-        (user && user.name)
-        || (typeof window !== 'undefined' && window.__LINE_PROFILE__ && window.__LINE_PROFILE__.displayName)
-        || 'ゲスト';
+    const displayName = (user && typeof user.name === 'string' && user.name.trim() !== '')
+        ? user.name.trim()
+        : (data.is_member === true ? '会員' : 'ゲスト');
     const pointsRaw = data.points != null ? Number(data.points) : (member && member.points != null ? Number(member.points) : 0);
     const points = Number.isFinite(pointsRaw) ? pointsRaw : 0;
     const memberNumber = member && member.member_number ? String(member.member_number) : '';

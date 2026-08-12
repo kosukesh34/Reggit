@@ -23,6 +23,7 @@ class User extends Authenticatable
         'project_id',
         'line_user_id',
         'name',
+        'line_name',
         'kana',
         'email',
         'phone',
@@ -32,6 +33,7 @@ class User extends Authenticatable
 
     protected $hidden = [
         'remember_token',
+        'line_name',
     ];
 
     /** @var array<string, string> */

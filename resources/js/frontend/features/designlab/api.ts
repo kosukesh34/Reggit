@@ -1,5 +1,4 @@
 import { isDemoDataMode } from '../../demo/demoMode';
-import { readDemoWonCoupons, type DemoCoupon } from '../../demo/demoCoupons';
 
 export type LotteryEntitlement = {
     id: number;
@@ -57,11 +56,4 @@ export function showGachaSection(state: LotteryState | null): boolean {
 
 export function showScratchSection(state: LotteryState | null): boolean {
     return isDemoDataMode() || state?.scratch_enabled === true;
-}
-
-export function wonCouponsForDisplay(): DemoCoupon[] | null {
-    if (!isDemoDataMode()) {
-        return null;
-    }
-    return readDemoWonCoupons();
 }

@@ -995,7 +995,7 @@ export class MemberManager {
 
         const payload: any = {};
         if (typeof window !== 'undefined' && window.__LINE_PROFILE__ && window.__LINE_PROFILE__.displayName) {
-            payload.name = window.__LINE_PROFILE__.displayName;
+            payload.line_name = window.__LINE_PROFILE__.displayName;
         }
         try {
             const result = await this.apiClient.post(AppConstants.API_ENDPOINTS.MEMBERS_REGISTER, payload);
@@ -1131,10 +1131,9 @@ export class MemberManager {
 
         const member = data.member && typeof data.member === 'object' ? data.member : null;
         const user = data.user || (member && member.user) || null;
-        const displayName =
-            (user && user.name) ||
-            (typeof window !== 'undefined' && window.__LINE_PROFILE__ && window.__LINE_PROFILE__.displayName) ||
-            '';
+        const displayName = (user && typeof user.name === 'string' && user.name.trim() !== '')
+            ? user.name.trim()
+            : (data.is_member === true ? '会員' : '');
         const points = data.points != null ? data.points : (member && member.points != null ? member.points : 0);
         const memberNumber = (member && member.member_number) ? member.member_number : '';
         const currentRankLabel = data.current_rank_label || 'ブロンズ';
@@ -1386,10 +1385,9 @@ export class MemberManager {
     _renderIosWalletMember(container, data) {
         const member = data.member && typeof data.member === 'object' ? data.member : null;
         const user = data.user || (member && member.user) || null;
-        const displayName =
-            (user && user.name) ||
-            (typeof window !== 'undefined' && window.__LINE_PROFILE__ && window.__LINE_PROFILE__.displayName) ||
-            'ゲスト';
+        const displayName = (user && typeof user.name === 'string' && user.name.trim() !== '')
+            ? user.name.trim()
+            : (data.is_member === true ? '会員' : 'ゲスト');
         const points = data.points != null ? data.points : (member && member.points != null ? member.points : 0);
         const memberNumber = (member && member.member_number) ? String(member.member_number) : '';
         const currentRankLabel = data.current_rank_label || 'MEMBER';
@@ -3026,8 +3024,7 @@ export class MemberManager {
             this._forcedRegister = false;
             return;
         }
-        const initialProfile = (typeof window !== 'undefined' && window.__LINE_PROFILE__ && window.__LINE_PROFILE__.displayName)
-            ? { name: window.__LINE_PROFILE__.displayName } : {};
+        const initialProfile = {};
         this._registerFullScreen = true;
         this._forcedRegister = options.forced === true;
         this._profileEditFullScreen = false;
@@ -3085,8 +3082,8 @@ export class MemberManager {
             const root = this.memberData || {};
             const fields = (root.profile_field_settings) ? root.profile_field_settings : [];
             const payload: any = this._collectProfileFormPayload(form, fields);
-            if (typeof window !== 'undefined' && window.__LINE_PROFILE__ && window.__LINE_PROFILE__.displayName && !payload.name) {
-                payload.name = window.__LINE_PROFILE__.displayName;
+            if (typeof window !== 'undefined' && window.__LINE_PROFILE__ && window.__LINE_PROFILE__.displayName) {
+                payload.line_name = window.__LINE_PROFILE__.displayName;
             }
             const result = await this.apiClient.post(AppConstants.API_ENDPOINTS.MEMBERS_REGISTER, payload);
             const raw = (result && result.data) != null ? result.data : result;

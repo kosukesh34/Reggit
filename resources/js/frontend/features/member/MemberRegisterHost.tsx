@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { getMemberManager } from './api';
 import { MemberProfileForm } from './MemberProfileForm';
 
@@ -28,17 +28,6 @@ export function MemberRegisterHost({
 }): JSX.Element {
     const containerRef = useRef<HTMLDivElement>(null);
     const [ready, setReady] = useState(mode === 'edit');
-
-    const initialProfile = useMemo((): Record<string, unknown> | null => {
-        if (mode !== 'register') {
-            return null;
-        }
-        const displayName = window.__LINE_PROFILE__?.displayName;
-        if (typeof displayName === 'string' && displayName !== '') {
-            return { name: displayName };
-        }
-        return null;
-    }, [mode]);
 
     useEffect(() => {
         const mm = getMemberManager() as MemberManagerHooks | undefined;
@@ -126,7 +115,7 @@ export function MemberRegisterHost({
                 forced={forced === true}
                 fullScreen
                 containerRef={containerRef}
-                initialProfile={initialProfile}
+                initialProfile={null}
                 onSubmit={handleSubmit}
                 onCancel={handleCancel}
             />
