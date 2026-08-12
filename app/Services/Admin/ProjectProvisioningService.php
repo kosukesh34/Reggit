@@ -9,6 +9,7 @@ use App\Models\Settings\ProjectProfileSmaregiSetting;
 use App\Models\SmaregiContract;
 use App\Services\Line\LineLiffAdminService;
 use App\Util\StrHelper;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 
 class ProjectProvisioningService
@@ -16,6 +17,7 @@ class ProjectProvisioningService
     public function __construct(
         private readonly ShopSettingRepository $shopSettingRepository,
         private readonly LineLiffAdminService $lineLiffAdminService,
+        private readonly PublicImageStorageService $publicImageStorage,
     ) {}
 
     /**
@@ -30,7 +32,6 @@ class ProjectProvisioningService
      *     line_liff_id?: string,
      *     line_liff_url?: string,
      *     frontend_header_text?: string,
-     *     frontend_logo_url?: string,
      *     business_hours_start?: string,
      *     business_hours_end?: string,
      *     line_primary_color?: string,
@@ -77,7 +78,6 @@ class ProjectProvisioningService
      *     line_liff_id?: string,
      *     line_liff_url?: string,
      *     frontend_header_text?: string,
-     *     frontend_logo_url?: string,
      *     business_hours_start?: string,
      *     business_hours_end?: string,
      *     line_primary_color?: string,
@@ -95,7 +95,6 @@ class ProjectProvisioningService
         $this->shopSettingRepository->setLineLiffId($liffId, $projectId);
         $this->shopSettingRepository->setLineLiffUrl((string) ($settingsPayload['line_liff_url'] ?? ''), $projectId);
         $this->shopSettingRepository->setValue('frontend_header_text', (string) ($settingsPayload['frontend_header_text'] ?? ''), 'string', $projectId);
-        $this->shopSettingRepository->setValue('frontend_logo_url', (string) ($settingsPayload['frontend_logo_url'] ?? ''), 'string', $projectId);
         $this->shopSettingRepository->setValue('business_hours_start', (string) ($settingsPayload['business_hours_start'] ?? '10:00'), 'time', $projectId);
         $this->shopSettingRepository->setValue('business_hours_end', (string) ($settingsPayload['business_hours_end'] ?? '22:00'), 'time', $projectId);
         $this->shopSettingRepository->setValue('line_primary_color', (string) ($settingsPayload['line_primary_color'] ?? '#000000'), 'string', $projectId);
@@ -105,6 +104,24 @@ class ProjectProvisioningService
 
         if (config('line.auto_enable_liff_module_mode', true) && trim($liffId) !== '') {
             $this->lineLiffAdminService->hideActionMenu($liffId);
+        }
+    }
+
+    public function syncFrontendLogo(int $projectId, ?UploadedFile $file, bool $clear): void
+    {
+        if ($file !== null) {
+            $logoUrl = $this->publicImageStorage->store(
+                $file,
+                $projectId,
+                PublicImageStorageService::DIR_FRONTEND_LOGO,
+            );
+            $this->shopSettingRepository->setValue('frontend_logo_url', $logoUrl, 'string', $projectId);
+
+            return;
+        }
+
+        if ($clear) {
+            $this->shopSettingRepository->setValue('frontend_logo_url', '', 'string', $projectId);
         }
     }
 

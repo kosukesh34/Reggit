@@ -100,6 +100,8 @@ export interface StoreAppConfig {
   storeName: string;
   brandName: string;
   logoText: string;
+  /** 店舗設定のヘッダー画像。未設定時は logoText モノグラムを表示 */
+  logoUrl?: string | null;
   themeId: string;
   features: FeatureConfig;
   tabs: TabConfig[];
