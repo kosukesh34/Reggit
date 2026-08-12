@@ -1,7 +1,8 @@
 import { SearchX } from "lucide-react";
 import type { ReactNode } from "react";
-import { useParams, useSearchParams } from "react-router-dom";
+import { Navigate, useParams, useSearchParams } from "react-router-dom";
 import { Card } from "../components/ui/Card";
+import { Skeleton } from "../components/ui/Skeleton";
 import { useAppConfig } from "../context/AppConfigContext";
 import { CollectionDemo } from "../features/demo/CollectionDemo";
 import { featureDefinitionMap, isFeatureType } from "../features/demo/featureCatalog";
@@ -14,16 +15,64 @@ import { CouponsView } from "../../frontend/features/coupons/CouponsView";
 import { StampsView } from "../../frontend/features/stamps/StampsView";
 import { QueueView } from "../../frontend/features/queue/QueueView";
 import { ReservationsView } from "../../frontend/features/reservations/ReservationsView";
+import { pathForLegacyTab } from "../navigation/tabPath";
+
+const FEATURE_ALIASES: Record<string, string> = {
+  member: "membership",
+  coupons: "coupon",
+  stamps: "stamp",
+  reservations: "reservation",
+  products: "menu",
+  announcements: "news",
+  card: "membership",
+};
+
+function FeaturePageSkeleton(): JSX.Element {
+  return (
+    <div className="page feature-page stack stack--lg" aria-busy="true" aria-label="読み込み中">
+      <div className="feature-skeleton">
+        <Skeleton className="feature-skeleton__title" />
+        <Skeleton className="feature-skeleton__card" />
+        <Skeleton className="feature-skeleton__card" />
+      </div>
+    </div>
+  );
+}
 
 export function FeaturePage() {
-  const { feature } = useParams();
+  const { feature: rawFeature } = useParams();
   const [searchParams] = useSearchParams();
   const { activeStore, customization } = useAppConfig();
-  const { member, coupons, news, stores, commerce, history, mode, markAnnouncementRead } = useRuntimeData();
+  const { member, coupons, news, stores, commerce, history, mode, loading, markAnnouncementRead } = useRuntimeData();
   const activeVenue = stores[0];
   const orderPath = activeStore.features.mobileOrder ? "/mobileOrder" : activeStore.features.dineInOrder ? "/dineInOrder" : "/reservation";
-  const isLiveBound = mode !== "preview";
+  const isLiveBound = mode === "live";
+
+  if (rawFeature === undefined || rawFeature === "") {
+    return <Navigate to="/home" replace />;
+  }
+
+  const aliased = FEATURE_ALIASES[rawFeature];
+  if (aliased === "membership" || rawFeature === "membership") {
+    return <Navigate to="/membership" replace />;
+  }
+
+  const legacyPath = pathForLegacyTab(rawFeature);
+  if (
+    legacyPath !== null
+    && legacyPath !== `/${rawFeature}`
+    && !isFeatureType(rawFeature)
+    && !isUtilityType(rawFeature)
+  ) {
+    return <Navigate to={legacyPath} replace />;
+  }
+
+  const feature = aliased !== undefined ? aliased : rawFeature;
   const isNewsArticle = feature === "news" && searchParams.get("announcement") !== null;
+
+  if (loading && mode !== "live" && mode !== "preview") {
+    return <FeaturePageSkeleton />;
+  }
 
   if (!isFeatureType(feature)) {
     if (isUtilityType(feature)) {
@@ -52,10 +101,15 @@ export function FeaturePage() {
     );
   }
 
-  // 本番接続時は旧UIの実Viewを載せて会員・スマレジと結ぶ
   if (isLiveBound) {
     if (feature === "coupon") {
-      return <div className="page feature-page"><CouponsView /></div>;
+      return (
+        <div className="page feature-page">
+          <div id="couponsSection" className="coupons-section">
+            <CouponsView />
+          </div>
+        </div>
+      );
     }
     if (feature === "stamp") {
       return <div className="page feature-page"><StampsView /></div>;

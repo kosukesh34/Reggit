@@ -113,7 +113,8 @@ export function ClassicMemberCard({ data }: { data: MemberPayload }): JSX.Elemen
         (user && user.name)
         || (typeof window !== 'undefined' && window.__LINE_PROFILE__ && window.__LINE_PROFILE__.displayName)
         || '';
-    const points = data.points != null ? Number(data.points) : (member && member.points != null ? Number(member.points) : 0);
+    const pointsRaw = data.points != null ? Number(data.points) : (member && member.points != null ? Number(member.points) : 0);
+    const points = Number.isFinite(pointsRaw) ? pointsRaw : 0;
     const memberNumber = member && member.member_number ? String(member.member_number) : '';
     const currentRankLabel = data.current_rank_label || 'ブロンズ';
     const currentRankIcon = data.current_rank_icon || null;
@@ -157,6 +158,22 @@ export function ClassicMemberCard({ data }: { data: MemberPayload }): JSX.Elemen
             return;
         }
         bindCardEffects(el, data, codeId, isQR, isSheet);
+        const onWalletSummary = (): void => {
+            const mm = getMemberManager() as Record<string, unknown> | undefined;
+            const renderLottery = mm?._renderLotteryCta as ((c: Element, n: number) => void) | undefined;
+            const maybeGacha = mm?._maybeOpenGachaPopupForPending as ((n: number) => void) | undefined;
+            const pending = pendingLotteryCount();
+            if (typeof renderLottery === 'function') {
+                renderLottery(el, pending);
+            }
+            if (typeof maybeGacha === 'function') {
+                maybeGacha(pending);
+            }
+        };
+        document.addEventListener('liff-wallet-summary-updated', onWalletSummary);
+        return () => {
+            document.removeEventListener('liff-wallet-summary-updated', onWalletSummary);
+        };
     }, [data, codeId, isQR, isSheet]);
 
     const codeBlock = isQR
@@ -408,7 +425,8 @@ export function IosWalletMemberCard({ data }: { data: MemberPayload }): JSX.Elem
         (user && user.name)
         || (typeof window !== 'undefined' && window.__LINE_PROFILE__ && window.__LINE_PROFILE__.displayName)
         || 'ゲスト';
-    const points = data.points != null ? Number(data.points) : (member && member.points != null ? Number(member.points) : 0);
+    const pointsRaw = data.points != null ? Number(data.points) : (member && member.points != null ? Number(member.points) : 0);
+    const points = Number.isFinite(pointsRaw) ? pointsRaw : 0;
     const memberNumber = member && member.member_number ? String(member.member_number) : '';
     const currentRankLabel = data.current_rank_label || 'MEMBER';
     const nextRankLabel = data.next_rank_label || null;
@@ -439,6 +457,7 @@ export function IosWalletMemberCard({ data }: { data: MemberPayload }): JSX.Elem
         const setupPurchase = mm._setupPurchaseHistoryToggle as (() => void) | undefined;
         const setupPoint = mm._setupPointHistoryToggle as (() => void) | undefined;
         const setupWithdraw = mm._setupWithdrawButton as (() => void) | undefined;
+        const setupWallet = mm._setupAddToWallet as (() => void) | undefined;
         const renderLottery = mm._renderLotteryCta as ((c: Element, n: number) => void) | undefined;
         const maybeGacha = mm._maybeOpenGachaPopupForPending as ((n: number) => void) | undefined;
 
@@ -470,6 +489,9 @@ export function IosWalletMemberCard({ data }: { data: MemberPayload }): JSX.Elem
             }
             return;
         }
+        if (typeof setupWallet === 'function') {
+            setupWallet();
+        }
         if (typeof setupPurchase === 'function') {
             setupPurchase();
         }
@@ -486,7 +508,23 @@ export function IosWalletMemberCard({ data }: { data: MemberPayload }): JSX.Elem
         if (typeof maybeGacha === 'function') {
             maybeGacha(pending);
         }
+        const onWalletSummary = (): void => {
+            const nextPending = pendingLotteryCount();
+            if (typeof renderLottery === 'function') {
+                renderLottery(el, nextPending);
+            }
+            if (typeof maybeGacha === 'function') {
+                maybeGacha(nextPending);
+            }
+        };
+        document.addEventListener('liff-wallet-summary-updated', onWalletSummary);
+        return () => {
+            document.removeEventListener('liff-wallet-summary-updated', onWalletSummary);
+        };
     }, [data, codeId, memberNumber, isSample]);
+
+    const showApple = !isSample && shouldShowAppleWallet();
+    const showGoogle = !isSample && shouldShowGoogleWallet();
 
     return (
         <div ref={rootRef} className={`ios-wallet-member${isSample ? ' ios-wallet-member--demo' : ''}`}>
@@ -548,6 +586,34 @@ export function IosWalletMemberCard({ data }: { data: MemberPayload }): JSX.Elem
                     会員証を拡大
                 </button>
             </div>
+            {showApple ? (
+                <div className="member-card-add-to-wallet-wrap">
+                    <button
+                        type="button"
+                        className="member-card-add-to-wallet-btn member-card-add-to-wallet-btn--apple"
+                        data-wallet-pass-url={walletPassUrl()}
+                        aria-label="Apple Walletに追加"
+                    >
+                        <span className="member-card-add-to-wallet-text">
+                            <i className="fab fa-apple" aria-hidden="true" /> Apple Walletに追加
+                        </span>
+                    </button>
+                </div>
+            ) : null}
+            {showGoogle ? (
+                <div className="member-card-add-to-wallet-wrap">
+                    <button
+                        type="button"
+                        className="member-card-add-to-wallet-btn member-card-add-to-wallet-btn--google"
+                        data-google-wallet
+                        aria-label="Google Walletに追加"
+                    >
+                        <span className="member-card-add-to-wallet-text">
+                            <i className="fab fa-google" aria-hidden="true" /> Google Walletに追加
+                        </span>
+                    </button>
+                </div>
+            ) : null}
             <nav className="ios-wallet-member__quick" aria-label="会員メニュー">
                 <button type="button" className="ios-wallet-member__quick-item" data-ios-member-nav="coupons">
                     <span className="ios-wallet-member__quick-icon" aria-hidden="true"><i className="fas fa-ticket-alt" /></span>クーポン
