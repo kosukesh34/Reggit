@@ -8,6 +8,8 @@ use App\Http\Requests\Admin\CouponQuickCreateRequest;
 use App\Http\Requests\Admin\CouponStoreRequest;
 use App\Http\Requests\Admin\CouponUpdateRequest;
 use App\Models\Coupon;
+use App\Services\Admin\PublicImageStorageService;
+use App\UseCases\Admin\AdminSavePublicImageUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponBulkIssueFormUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponBulkIssueUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponCreateFormUseCase;
@@ -20,7 +22,6 @@ use App\UseCases\Admin\Coupon\AdminCouponFullSyncWithSmaregiUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponIndexUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponPushToSmaregiUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponRedemptionsUseCase;
-use App\UseCases\Admin\Coupon\AdminCouponSaveImageUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponStoreUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponSyncFromSmaregiUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponUpdateUseCase;
@@ -37,7 +38,7 @@ class CouponController extends AdminBaseController
         private AdminCouponDeleteUseCase $deleteUseCase,
         private AdminCouponBulkIssueFormUseCase $bulkIssueFormUseCase,
         private AdminCouponBulkIssueUseCase $bulkIssueUseCase,
-        private AdminCouponSaveImageUseCase $saveImageUseCase,
+        private AdminSavePublicImageUseCase $saveImageUseCase,
         private AdminCouponSyncFromSmaregiUseCase $syncFromSmaregiUseCase,
         private AdminCouponPushToSmaregiUseCase $pushToSmaregiUseCase,
         private AdminCouponFullSyncWithSmaregiUseCase $fullSyncWithSmaregiUseCase,
@@ -73,7 +74,11 @@ class CouponController extends AdminBaseController
         $projectId = $this->resolveAdminProjectId();
         $validated = $request->validated();
         if ($request->hasFile('image')) {
-            $validated['image_url'] = $this->saveImageUseCase->handle($request->file('image'), $projectId);
+            $validated['image_url'] = $this->saveImageUseCase->handle(
+                $request->file('image'),
+                $projectId,
+                PublicImageStorageService::DIR_COUPON,
+            );
         }
         unset($validated['image']);
         $returnTo = $request->input('return') === 'bulk-issue' ? 'bulk-issue' : null;
@@ -118,7 +123,11 @@ class CouponController extends AdminBaseController
         $projectId = $this->resolveAdminProjectId();
         $validated = $request->validated();
         if ($request->hasFile('image')) {
-            $validated['image_url'] = $this->saveImageUseCase->handle($request->file('image'), $projectId);
+            $validated['image_url'] = $this->saveImageUseCase->handle(
+                $request->file('image'),
+                $projectId,
+                PublicImageStorageService::DIR_COUPON,
+            );
         }
         unset($validated['image']);
         try {

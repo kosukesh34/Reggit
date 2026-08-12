@@ -51,7 +51,8 @@ class ProjectController extends Controller
     {
         $this->storeUseCase->handle(
             $request->toProjectPayload(),
-            $request->toProjectSettingsPayload()
+            $request->toProjectSettingsPayload(),
+            $request->file('frontend_logo'),
         );
 
         return redirect()->route('system-admin.projects.index')->with('success', 'プロジェクトを作成しました');
@@ -89,7 +90,9 @@ class ProjectController extends Controller
         $this->updateUseCase->handle(
             $id,
             $request->toProjectPayload(),
-            $request->toProjectSettingsPayload()
+            $request->toProjectSettingsPayload(),
+            $request->file('frontend_logo'),
+            $request->input('frontend_logo_clear') === '1',
         );
 
         return redirect()->route('system-admin.projects.index')->with('success', 'プロジェクトを更新しました');

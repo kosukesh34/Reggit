@@ -11,7 +11,7 @@
 </nav>
 @include('admin.settings._context', ['pageKey' => 'features'])
 
-<form action="{{ admin_route('admin.settings.features.update') }}" method="POST">
+<form action="{{ admin_route('admin.settings.features.update') }}" method="POST" enctype="multipart/form-data">
     @csrf
 
     {{-- 機能ON/OFF --}}
@@ -74,11 +74,10 @@
             <h3 class="card-title"><i class="fas fa-mobile-alt"></i> フロントエンドカスタマイズ</h3>
         </div>
         <div class="card-body">
-            <div class="form-group">
-                <label for="frontend_logo_url" class="form-label">ヘッダー画像（ロゴ）</label>
-                <input type="url" name="frontend_logo_url" id="frontend_logo_url" class="form-control" value="{{ $view->frontendLogoUrl ?? '' }}" placeholder="https://example.com/logo.png">
-                <p class="form-text text-muted">フロント・アプリのヘッダーに表示する画像のURL。未設定の場合はテキストのみ表示されます。</p>
-            </div>
+            @include('admin.partials._frontend_logo_dropzone', [
+                'logoCurrentUrl' => (string) ($view->frontendLogoUrl ?? ''),
+                'logoHelp' => 'LIFF各画面の左上に表示するロゴです。未設定の場合は店舗名の頭文字を表示します。',
+            ])
             <div class="form-group">
                 <label for="frontend_header_text" class="form-label">ヘッダーテキスト</label>
                 <input type="text" name="frontend_header_text" id="frontend_header_text" class="form-control" value="{{ $view->frontendHeaderText ?? '' }}" placeholder="店舗名を入力">
