@@ -66,6 +66,7 @@ export class MemberManager {
         this._googleWalletOpenUrl = null;
         this._googleWalletOpenUrlAt = 0;
         this._bindScreenPopState();
+        this._bindWalletSummaryVisibilityRefresh();
     }
 
     _bindScreenPopState() {
@@ -3282,6 +3283,13 @@ export class MemberManager {
             }
             void this._pollWalletSummaryOnce({ force: true });
         });
+        // 会計・ポイント付与直後に権利を即時反映（旧UIの体感に合わせる）
+        document.addEventListener('liff-payment-completed', () => {
+            void this._pollWalletSummaryOnce({ force: true });
+        });
+        document.addEventListener('liff-member-reload', () => {
+            void this._pollWalletSummaryOnce({ force: true });
+        });
     }
 
     async _pollWalletSummaryOnce(options: { force?: boolean } = {}): Promise<void> {
@@ -3347,8 +3355,13 @@ export class MemberManager {
             }
 
             const container = this.getContainer();
-            if (container !== null && (window.app as any)?.currentTab === AppConstants.TABS.MEMBER) {
+            if (container !== null) {
                 this._renderLotteryCta(container, normalized.pending_lottery_count);
+            }
+            if (typeof document !== 'undefined') {
+                document.dispatchEvent(new CustomEvent('liff-wallet-summary-updated', {
+                    detail: { pending_lottery_count: normalized.pending_lottery_count, points: normalized.points },
+                }));
             }
 
             if (lotteryIncreased) {
