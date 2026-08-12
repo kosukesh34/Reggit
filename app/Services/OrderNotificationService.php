@@ -15,6 +15,7 @@ class OrderNotificationService
     public function __construct(
         private LineService $lineService,
         private ShopSettingRepository $shopSettingRepository,
+        private PushNotificationService $pushNotificationService,
     ) {}
 
     public function notifyConfirmed(int $orderId, int $projectId): void
@@ -24,6 +25,7 @@ class OrderNotificationService
             $projectId,
             $this->shopSettingRepository->isOrderLineNotifyEnabled($projectId),
             '注文が完了しました',
+            'order_confirmed',
             static function (string $refNumber): string {
                 return $refNumber !== ''
                     ? '引換番号: '.$refNumber."\n店舗でこの番号をお伝えください。"
@@ -39,6 +41,7 @@ class OrderNotificationService
             $projectId,
             $this->shopSettingRepository->isOrderReadyLineNotifyEnabled($projectId),
             '受け取りの準備ができました',
+            'order_ready',
             static function (string $refNumber): string {
                 return $refNumber !== ''
                     ? '引換番号: '.$refNumber."\n店舗でお受け取りください。"
@@ -55,6 +58,7 @@ class OrderNotificationService
         int $projectId,
         bool $isEnabled,
         string $title,
+        string $pushType,
         callable $bodyBuilder,
     ): void {
         $order = Order::query()
@@ -69,7 +73,7 @@ class OrderNotificationService
             return;
         }
         if ($isEnabled === false) {
-            LogHelper::info('[Order] LINE notify skipped (disabled)', [
+            LogHelper::info('[Order] notify skipped (disabled)', [
                 'order_id' => $orderId,
                 'project_id' => $projectId,
                 'title' => $title,
@@ -77,6 +81,10 @@ class OrderNotificationService
 
             return;
         }
+
+        $refNumber = $order->formattedOrderNumber();
+        $body = $bodyBuilder($refNumber);
+        $this->sendNativePush($order, $projectId, $title, $body, $pushType);
 
         $projectKey = Project::query()->where('id', $projectId)->value('project_key');
         $projectKey = is_string($projectKey) ? trim($projectKey) : '';
@@ -89,18 +97,48 @@ class OrderNotificationService
             return;
         }
 
-        $this->sendLinePush($order, $projectId, $projectKey, $title, $bodyBuilder);
+        $this->sendLinePush($order, $projectId, $projectKey, $title, $body);
     }
 
-    /**
-     * @param  callable(string): string  $bodyBuilder
-     */
+    private function sendNativePush(
+        Order $order,
+        int $projectId,
+        string $title,
+        string $body,
+        string $pushType,
+    ): void {
+        $userId = (int) ($order->user_id ?? 0);
+        if ($userId <= 0) {
+            return;
+        }
+
+        $result = $this->pushNotificationService->sendToUser(
+            $projectId,
+            $userId,
+            $title,
+            $body,
+            [
+                'type' => $pushType,
+                'tab' => 'orders',
+                'order_id' => (string) $order->id,
+                'project_id' => (string) $projectId,
+            ]
+        );
+
+        if (($result['sent'] ?? 0) === 0 && ($result['target_tokens'] ?? 0) === 0) {
+            LogHelper::info('[Order] native push skipped (no device tokens)', [
+                'order_id' => $order->id,
+                'project_id' => $projectId,
+            ]);
+        }
+    }
+
     private function sendLinePush(
         Order $order,
         int $projectId,
         string $projectKey,
         string $title,
-        callable $bodyBuilder,
+        string $body,
     ): void {
         $user = $order->user;
         if ($user === null) {
@@ -120,7 +158,6 @@ class OrderNotificationService
         }
 
         $refNumber = $order->formattedOrderNumber();
-        $body = $bodyBuilder($refNumber);
 
         try {
             $ordersUrl = LiffTabUrlBuilder::build($projectId, $projectKey, 'orders');
