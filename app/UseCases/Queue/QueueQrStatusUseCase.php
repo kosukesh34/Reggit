@@ -2,6 +2,7 @@
 
 namespace App\UseCases\Queue;
 
+use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Models\Project;
 use App\Models\QueueEntry as QueueEntryModel;
 use App\Models\User;
@@ -25,6 +26,7 @@ class QueueQrStatusUseCase
         private LineService $lineService,
         private PushNotificationService $pushNotificationService,
         private DeviceService $deviceService,
+        private ShopSettingRepository $shopSettingRepository,
     ) {}
 
     public function handle(QueueQrStatusInput $input): ?QueueQrStatusOutput
@@ -130,7 +132,17 @@ class QueueQrStatusUseCase
     private function sendLinkedCompleteMessage(QueueEntryModel $entry, string $lineUserId): void
     {
         try {
-            $project = Project::find($entry->project_id);
+            $projectId = (int) $entry->project_id;
+            if (! $this->shopSettingRepository->hasLineChannelAccessToken($projectId)) {
+                LogHelper::info('[Queue] linked completion skipped (token not configured)', [
+                    'queue_id' => $entry->id,
+                    'project_id' => $projectId,
+                ]);
+
+                return;
+            }
+
+            $project = Project::find($projectId);
             $projectName = $project?->name ?? '店舗';
             $queueNo = $entry->formattedQueueNumber();
             $projectKey = trim((string) ($project?->project_key ?? ''));
@@ -143,7 +155,7 @@ class QueueQrStatusUseCase
                 return;
             }
             $uri = QueueLiffUrlBuilder::build(
-                (int) $entry->project_id,
+                $projectId,
                 $projectKey,
                 (string) ($entry->qr_token ?? ''),
                 (int) $entry->id
@@ -202,7 +214,11 @@ class QueueQrStatusUseCase
                 ],
             ];
 
-            $this->lineService->pushMessage($lineUserId, $flex);
+            $this->lineService->pushMessage(
+                $lineUserId,
+                $flex,
+                $this->shopSettingRepository->getLineChannelAccessToken($projectId)
+            );
         } catch (\Throwable $e) {
             LogHelper::warning('[Queue] linked completion message failed', [
                 'queue_id' => $entry->id,
