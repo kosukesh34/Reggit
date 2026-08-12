@@ -58,7 +58,7 @@ export function HomePage() {
   if (home.primaryActionPlacement === "belowHero" && primaryActionEnabled) {
     sections.push(<PrimaryAction key="primary-action" className="home-primary-action" />);
   }
-  if (home.showMembership && activeStore.features.membership) sections.push(<MembershipSummary key="membership" member={member} />);
+  if (home.showMembership && activeStore.features.membership) sections.push(<MembershipSummary key="membership" member={member} showNextRank={customization.membership.showNextRank} />);
   if (home.showQuickActions && activeStore.quickActions.length > 0) sections.push(<QuickActions key="quick" actions={activeStore.quickActions} columns={home.quickActionColumns} />);
   if (home.showFeatured && activeStore.features[activeStore.home.featuredFeature]) sections.push(<FeaturedContent key="featured" content={activeStore.home} />);
   if (home.showCoupons && activeStore.features.coupon) sections.push(<CouponCarousel key="coupon" coupons={coupons} config={customization.coupon} />);

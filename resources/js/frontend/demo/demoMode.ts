@@ -8,6 +8,20 @@ export function isFixedUiShell(): boolean {
 }
 
 /**
+ * クーポン・スタンプ・予約・順番待ちなどの機能画面で、ios-* スタイルを使うか。
+ * DesignMock（reggit-liff-ui）では ?demo=1 でなくても有効にする。
+ */
+export function isFeatureUiShell(): boolean {
+    if (typeof document === 'undefined' || document.body === null) {
+        return false;
+    }
+    if (isFixedUiShell()) {
+        return true;
+    }
+    return document.body.classList.contains('reggit-liff-ui');
+}
+
+/**
  * サンプル体験モード（会員・クーポン等をDBではなくサンプル表示）。
  * /liff 固定UIでは常時オン。店舗LIFF（/liff/{project_key}）は通常API/DBを使う。
  */

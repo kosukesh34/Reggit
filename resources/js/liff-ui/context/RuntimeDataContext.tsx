@@ -59,8 +59,10 @@ export function RuntimeDataProvider({ children }: { children: ReactNode }) {
   const [localState, setLocalState] = useState<LocalState>(loadLocalState);
   const [remoteData, setRemoteData] = useState<RuntimeBootstrap>();
   const isDemoPreview = typeof document !== 'undefined' && document.body.classList.contains('liff-demo-data');
-  const [mode, setMode] = useState<DataMode>(!reggitApi.configured || isDemoPreview ? 'preview' : 'offline');
-  const [loading, setLoading] = useState(reggitApi.configured && !isDemoPreview);
+  const isMockShowcaseStore = activeStore.storeId.startsWith('store_');
+  const usePreviewData = isDemoPreview || isMockShowcaseStore || !reggitApi.configured;
+  const [mode, setMode] = useState<DataMode>(usePreviewData ? 'preview' : 'offline');
+  const [loading, setLoading] = useState(reggitApi.configured && !usePreviewData);
   const [error, setError] = useState<string>();
 
   const localStore = localState[activeStore.storeId] ?? { usedCouponIds: [], stampCount: 6, receipts: [] };
@@ -90,7 +92,7 @@ export function RuntimeDataProvider({ children }: { children: ReactNode }) {
   }, [activeStore.storeId, localStore.stampCount, localStore.usedCouponIds]);
 
   const refresh = useCallback(async () => {
-    if (!reggitApi.configured || isDemoPreview) {
+    if (!reggitApi.configured || isDemoPreview || isMockShowcaseStore) {
       setRemoteData(undefined);
       setMode('preview');
       setLoading(false);
@@ -110,7 +112,7 @@ export function RuntimeDataProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, [activeStore.storeId, isDemoPreview]);
+  }, [activeStore.storeId, isDemoPreview, isMockShowcaseStore]);
 
   useEffect(() => {
     void refresh();
@@ -140,7 +142,7 @@ export function RuntimeDataProvider({ children }: { children: ReactNode }) {
   }, [activeStore.storeId]);
 
   const run = useCallback(async (live: () => Promise<OperationReceipt>, prefix: string, after?: (receipt: OperationReceipt) => void) => {
-    if (reggitApi.configured && !isDemoPreview) {
+    if (reggitApi.configured && !isDemoPreview && !isMockShowcaseStore) {
       if (mode !== 'live') throw new Error('店舗システムに接続できないため、この操作は完了できません');
       const receipt = await live();
       after?.(receipt);
@@ -151,13 +153,13 @@ export function RuntimeDataProvider({ children }: { children: ReactNode }) {
     updateLocal((current) => ({ ...current, receipts: [receipt, ...current.receipts].slice(0, 30) }));
     after?.(receipt);
     return receipt;
-  }, [isDemoPreview, mode, refresh, updateLocal]);
+  }, [isDemoPreview, isMockShowcaseStore, mode, refresh, updateLocal]);
 
   const data = remoteData ?? mockData;
   // 初回ロード中はモック店舗データを画面に出さない（ユーザー困惑防止）
-  const isBootstrapping = loading && remoteData === undefined && !isDemoPreview;
+  const isBootstrapping = loading && remoteData === undefined && !usePreviewData;
   const markAnnouncementRead = useCallback(async (announcementId: string) => {
-    if (reggitApi.configured && !isDemoPreview) {
+    if (reggitApi.configured && !isDemoPreview && !isMockShowcaseStore) {
       if (mode !== 'live') throw new Error('店舗システムに接続できないため、既読状態を保存できません');
       await reggitApi.markAnnouncementRead(announcementId);
     }
@@ -166,7 +168,7 @@ export function RuntimeDataProvider({ children }: { children: ReactNode }) {
       news: current.news.map((item) => item.id === announcementId ? { ...item, isRead: true } : item),
       notificationCount: Math.max(0, current.notificationCount - (current.news.some((item) => item.id === announcementId && item.isRead !== true) ? 1 : 0)),
     });
-  }, [isDemoPreview, mode]);
+  }, [isDemoPreview, isMockShowcaseStore, mode]);
 
   const value = useMemo<RuntimeDataContextValue>(() => ({
     ...data,
