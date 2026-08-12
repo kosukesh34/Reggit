@@ -19,6 +19,7 @@ import { DesignLabManager } from './managers/DesignLabManager';
 import { MemberManager } from './managers/MemberManager';
 import { LiffPageRouter, parseLiffHash, isDeepLiffHash } from './navigation/LiffPageRouter';
 import type { LiffPageKey } from './navigation/LiffPageRouter';
+import { LIFF_UI_NAVIGATE, pathForLegacyTab } from '../liff-ui/navigation/tabPath';
 import { primaryForTab } from './demo/navigation';
 import { isFixedUiShell } from './demo/demoMode';
 import {
@@ -619,11 +620,15 @@ class ReggitApp {
         if (hasQueueToken) {
             await this.queueManager.linkPendingQueueOnStartup();
             this.switchTab(AppConstants.TABS.QUEUE);
-            await this.queueManager.load();
+            if (window.__REGGIT_LIFF_UI__ !== true) {
+                await this.queueManager.load();
+            }
             return;
         }
         if (this.currentTab === AppConstants.TABS.QUEUE) {
-            this.queueManager.load();
+            if (window.__REGGIT_LIFF_UI__ !== true) {
+                this.queueManager.load();
+            }
             return;
         }
         if (this.currentTab === AppConstants.TABS.MEMBER) {
@@ -1502,6 +1507,22 @@ class ReggitApp {
         if (this.memberManager && typeof this.memberManager.isForcedRegistrationActive === 'function'
             && this.memberManager.isForcedRegistrationActive()
             && tab !== AppConstants.TABS.MEMBER) {
+            return Promise.resolve();
+        }
+
+        if (typeof window !== 'undefined' && window.__REGGIT_LIFF_UI__ === true) {
+            this.currentTab = tab === 'membership' ? 'member' : tab;
+            if (document.body !== null) {
+                document.body.classList.toggle('liff-lottery-ui', tab === 'designlab');
+            }
+            const path = pathForLegacyTab(tab);
+            if (path !== null) {
+                const nextHash = '#' + path;
+                if (window.location.hash !== nextHash) {
+                    window.history.replaceState(null, '', nextHash);
+                }
+                document.dispatchEvent(new CustomEvent(LIFF_UI_NAVIGATE, { detail: { path, replace: true } }));
+            }
             return Promise.resolve();
         }
 

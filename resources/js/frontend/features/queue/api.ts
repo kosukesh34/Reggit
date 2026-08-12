@@ -3,6 +3,8 @@ import { AppConstants } from '../../../shared/constants';
 import { DomHelper } from '../../../shared/utils/domHelper';
 import { buildBuiltinSampleQueueEntry } from '../../demo/sampleData';
 
+export { clearQueueTokenFromUrl, getQueueTokenFromUrl } from '../../../shared/utils/queueToken';
+
 export type QueueStats = {
     waiting_count?: number | null;
     waitingCount?: number | null;
@@ -31,8 +33,6 @@ export type QueueEntry = {
     estimatedWaitMinutes?: number | string;
     is_sample_preview?: boolean;
 };
-
-const PENDING_QUEUE_TOKEN_KEY = 'mobile_order_pending_queue_token';
 
 function client(): ApiClient {
     const app = window.app as { apiClient?: ApiClient } | undefined;
@@ -164,49 +164,6 @@ export function getStatusInfo(status: string): { label: string; className: strin
         cancelled: { label: 'キャンセル', className: 'queue-badge-cancelled' },
     };
     return map[status] || { label: status || '-', className: 'queue-badge-default' };
-}
-
-export function getQueueTokenFromUrl(): string | null {
-    if (typeof window === 'undefined') {
-        return null;
-    }
-    const params = new URLSearchParams(window.location.search || '');
-    const direct = params.get('queue_token') || params.get('queue_id');
-    if (direct) {
-        persistQueueToken(direct);
-        return direct;
-    }
-    try {
-        return window.sessionStorage.getItem(PENDING_QUEUE_TOKEN_KEY);
-    } catch {
-        return null;
-    }
-}
-
-export function persistQueueToken(token: string): void {
-    try {
-        window.sessionStorage.setItem(PENDING_QUEUE_TOKEN_KEY, token);
-    } catch {
-        /* ignore */
-    }
-}
-
-export function clearQueueTokenFromUrl(): void {
-    if (typeof window === 'undefined' || !window.history) {
-        return;
-    }
-    const url = new URL(window.location.href);
-    url.searchParams.delete('queue_token');
-    url.searchParams.delete('queue_id');
-    url.searchParams.delete('state');
-    url.searchParams.delete('liff.state');
-    url.searchParams.delete('liffRedirectUri');
-    window.history.replaceState({}, '', url.toString());
-    try {
-        window.sessionStorage.removeItem(PENDING_QUEUE_TOKEN_KEY);
-    } catch {
-        /* ignore */
-    }
 }
 
 export function switchToMemberTab(): void {
