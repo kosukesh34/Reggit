@@ -16,6 +16,8 @@ class LiffAppStudioTemplatesStructureTest extends TestCase
             'rg-suite-order',
             'rg-suite-booking',
             'rg-suite-cafe',
+            'rg-suite-landing',
+            'rg-suite-simple-rewards',
             'rg-suite-salon',
             'rg-suite-retail',
             'rg-suite-clinic',
@@ -82,6 +84,37 @@ class LiffAppStudioTemplatesStructureTest extends TestCase
         $this->assertContains('pastry', $ids);
         $this->assertContains('chocolate', $ids);
         $this->assertContains('citrus', $ids);
+    }
+
+    public function test_公開ランディングページスタイルは配色と主要導線を持つ(): void
+    {
+        $suite = $this->findTemplate('rg-suite-landing');
+        $this->assertIsArray($suite);
+        $this->assertSame('store', $suite['theme']['theme_preset'] ?? null);
+        $this->assertSame('#0E7C66', $suite['theme']['accent_color'] ?? null);
+        $this->assertSame('#F1F5F4', $suite['theme']['bg_color'] ?? null);
+
+        $home = $suite['layouts']['home'] ?? [];
+        $this->assertSame('hero', $home[0]['type'] ?? null);
+        $this->assertSame('/images/landing/lp-hero-cafe.jpg', $home[0]['image_url'] ?? null);
+        $this->assertStringContainsString('店舗に必要な機能', (string) ($home[0]['title'] ?? ''));
+
+        $menuTabs = array_column($suite['menu'] ?? [], 'tab');
+        $this->assertSame(['home', 'products', 'member', 'queue', 'coupons'], $menuTabs);
+        $this->assertSame('all_tabs', $suite['scope'] ?? null);
+    }
+
+    public function test_シンプル会員証は4タブだけで構成される(): void
+    {
+        $suite = $this->findTemplate('rg-suite-simple-rewards');
+        $this->assertIsArray($suite);
+        $this->assertSame('#171717', $suite['theme']['accent_color'] ?? null);
+        $this->assertSame('compact', $suite['theme']['density'] ?? null);
+
+        $menuTabs = array_column($suite['menu'] ?? [], 'tab');
+        $this->assertSame(['home', 'member', 'coupons', 'stamps'], $menuTabs);
+        $this->assertSame('member_summary', $suite['layouts']['home'][0]['type'] ?? null);
+        $this->assertSame('all_tabs', $suite['scope'] ?? null);
     }
 
     public function test_スイートはthemeとtab_settings_globalが一致する(): void

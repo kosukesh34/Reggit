@@ -54,6 +54,8 @@ export const CATEGORY_LABELS: Record<string, string> = {
 export const FEATURED_TEMPLATE_IDS = [
     'rg-suite-order',
     'rg-suite-cafe',
+    'rg-suite-landing',
+    'rg-suite-simple-rewards',
     'rg-suite-sweets',
     'rg-suite-loyalty',
     'rg-suite-retail',
