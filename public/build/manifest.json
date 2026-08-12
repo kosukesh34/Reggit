@@ -3,32 +3,32 @@
     "file": "assets/customization-Cusmima4.css",
     "src": "_customization-!~{003}~.js"
   },
-  "_customization-DRTfWHY1.js": {
-    "file": "assets/customization-DRTfWHY1.js",
+  "_customization-Cta5mnEP.js": {
+    "file": "assets/customization-Cta5mnEP.js",
     "name": "customization",
     "css": [
       "assets/customization-Cusmima4.css"
     ]
   },
   "resources/js/admin/main.tsx": {
-    "file": "assets/main-BD1aaXaq.js",
+    "file": "assets/main-BTh9A2O-.js",
     "name": "main",
     "src": "resources/js/admin/main.tsx",
     "isEntry": true,
     "imports": [
-      "_customization-DRTfWHY1.js"
+      "_customization-Cta5mnEP.js"
     ],
     "css": [
       "assets/main-MImg_wPW.css"
     ]
   },
   "resources/js/frontend/main.tsx": {
-    "file": "assets/main-BuLjJX2h.js",
+    "file": "assets/main-C1_QiJHv.js",
     "name": "main",
     "src": "resources/js/frontend/main.tsx",
     "isEntry": true,
     "imports": [
-      "_customization-DRTfWHY1.js"
+      "_customization-Cta5mnEP.js"
     ],
     "css": [
       "assets/main-Hg2P_V_b.css"
