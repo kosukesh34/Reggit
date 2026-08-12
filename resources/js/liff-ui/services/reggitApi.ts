@@ -338,8 +338,23 @@ export const reggitApi = {
     }
   },
 
-  async addStamp(_storeId: string, _staffCode: string): Promise<OperationReceipt> {
-    throw new Error('スタンプは店舗端末から付与されます');
+  async addStamp(_storeId: string, staffCode: string): Promise<OperationReceipt> {
+    await ensureIdentity();
+    let grantUrl: URL;
+    try {
+      grantUrl = new URL(staffCode, window.location.origin);
+    } catch {
+      throw new Error('スタンプ付与QRを読み取ってください');
+    }
+    if (grantUrl.origin !== window.location.origin || !/^\/api\/stamps\/grant\/\d+$/.test(grantUrl.pathname)) {
+      throw new Error('このスタンプ付与URLは利用できません');
+    }
+    const result = await client().post(grantUrl.toString(), {});
+    if (!result.success) {
+      throw new Error(('error' in result ? result.error : undefined) || 'スタンプを追加できませんでした');
+    }
+    const payload = asRecord(result.data);
+    return receiptFrom(`STP-${String(payload.stamp_card_id ?? 'QR')}`);
   },
 
   async redeemPoints(_storeId: string, _points: number): Promise<OperationReceipt> {

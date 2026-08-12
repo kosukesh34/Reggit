@@ -1,8 +1,11 @@
-import { Check, ChevronRight, CreditCard, Gift, Stamp, Ticket } from "lucide-react";
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Camera, Check, ChevronRight, CreditCard, QrCode, Stamp, Ticket } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
+import { StampScannerPopup } from "../components/stamp/StampScannerPopup";
 import { BottomSheet } from "../components/ui/BottomSheet";
+import { CenterPopup } from "../components/ui/CenterPopup";
 import { useRuntimeData } from "../context/RuntimeDataContext";
+import { parseStampGrant } from "../utils/stampGrant";
 
 export const SIMPLE_REWARDS_STORE_ID = "store_simple_rewards";
 
@@ -38,9 +41,9 @@ export function SimpleRewardsMembership() {
       </section>
       <button className="simple-rewards__primary" type="button" onClick={() => setLarge(true)}>バーコードを大きく表示</button>
       <p className="simple-rewards__note">お会計の前に、この会員証をご提示ください。</p>
-      <BottomSheet open={large} onClose={() => setLarge(false)} title="会員証バーコード">
+      <CenterPopup open={large} onClose={() => setLarge(false)} title="会員証バーコード" className="barcode-popup">
         <div className="simple-barcode-large"><i /><strong>{member.number}</strong><button type="button" onClick={() => setLarge(false)}>閉じる</button></div>
-      </BottomSheet>
+      </CenterPopup>
     </div>
   );
 }
@@ -78,28 +81,58 @@ export function SimpleRewardsCoupons() {
 export function SimpleRewardsStamp() {
   const { stampCount, addStamp } = useRuntimeData();
   const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const [newStampIndex, setNewStampIndex] = useState<number>();
+  const [animationKey, setAnimationKey] = useState(0);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const queryHandled = useRef(false);
   const goal = 10;
   const visibleCount = Math.min(stampCount, goal);
 
-  const simulate = async () => {
+  const grantStamp = useCallback(async (rawValue: string) => {
     if (visibleCount >= goal) {
       setMessage("スタンプが貯まりました。特典をご利用ください。いつでも確認できます。");
       return;
     }
-    await addStamp("DEMO");
-    setMessage("スタンプを1個追加しました。いつでも確認できます。");
-  };
+    const payload = parseStampGrant(rawValue);
+    if (!payload) return;
+    setError("");
+    try {
+      await addStamp(payload.value);
+      setNewStampIndex(visibleCount);
+      setAnimationKey((current) => current + 1);
+      setMessage(`スタンプを1個追加しました。現在 ${visibleCount + 1} / ${goal} 個です。`);
+      setScannerOpen(false);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "スタンプを追加できませんでした。");
+    }
+  }, [addStamp, visibleCount]);
+
+  useEffect(() => {
+    const grant = searchParams.get("grant") ?? searchParams.get("stampCode");
+    if (!grant || queryHandled.current) return;
+    queryHandled.current = true;
+    void grantStamp(grant).finally(() => setSearchParams({}, { replace: true }));
+  }, [grantStamp, searchParams, setSearchParams]);
+
+  const handleDetected = useCallback((value: string) => {
+    void grantStamp(value);
+  }, [grantStamp]);
 
   return (
     <div className="simple-rewards simple-rewards--stamp">
       <div className="simple-screen-title"><span>スタンプカード</span><h1>スタンプ</h1><p>10個貯まると、次回使える特典をプレゼント。</p></div>
       <section className="simple-stamp-card">
         <div><strong>{visibleCount}</strong><span>/ {goal}</span></div>
-        <div className="simple-stamp-grid">{Array.from({ length: goal }, (_, index) => <span className={index < visibleCount ? "is-filled" : ""} key={index}>{index < visibleCount ? <Check size={18} /> : index + 1}</span>)}</div>
+        <div className="simple-stamp-grid">{Array.from({ length: goal }, (_, index) => <span className={`${index < visibleCount ? "is-filled" : ""}${index === newStampIndex ? " is-new" : ""}`} key={`${index}-${index === newStampIndex ? animationKey : 0}`}>{index < visibleCount ? <Check size={18} /> : index + 1}</span>)}</div>
         <p>{goal - visibleCount > 0 ? `特典まであと ${goal - visibleCount} 個です。` : "特典を獲得しました！"}</p>
       </section>
-      <button className="simple-rewards__primary" type="button" onClick={() => void simulate()}><Gift size={18} />デモ用スタンプを追加</button>
-      {message !== "" ? <p className="simple-rewards__message" role="status"><Check size={16} />{message}</p> : null}
+      <button className="simple-rewards__primary" type="button" disabled={visibleCount >= goal} onClick={() => setScannerOpen(true)}><Camera size={18} />カメラでQRを読み取る</button>
+      <Link className="simple-rewards__secondary-link" to="/stamp/issue"><QrCode size={17} />店舗用の付与QRを作成</Link>
+      {message !== "" ? <p className="simple-rewards__message is-animated" role="status" key={animationKey}><Check size={16} />{message}</p> : null}
+      {error !== "" ? <p className="form-error" role="alert">{error}</p> : null}
+      <StampScannerPopup open={scannerOpen} onClose={() => setScannerOpen(false)} onDetected={handleDetected} />
     </div>
   );
 }

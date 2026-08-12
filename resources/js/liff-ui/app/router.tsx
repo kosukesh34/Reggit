@@ -6,6 +6,7 @@ import { MembershipPage } from "../pages/MembershipPage";
 import { MorePage } from "../pages/MorePage";
 import { ThemePreviewPage } from "../pages/ThemePreviewPage";
 import { FeaturePage } from "../pages/FeaturePage";
+import { StampIssuePage } from "../pages/StampIssuePage";
 import { DesignLabPage } from "../../frontend/features/designlab/DesignLabPage";
 import { useMembershipGate } from "../../frontend/hooks/useMembershipGate";
 import { useLegacyTabBridge } from "../navigation/useLegacyTabBridge";
@@ -69,6 +70,7 @@ function ScreenRoutes() {
         <Route path="/designlab" element={<div className="page feature-page"><DesignLabPage /></div>} />
         <Route path="/more" element={<MorePage />} />
         <Route path="/dev/themes" element={<ThemePreviewPage />} />
+        <Route path="/stamp/issue" element={<StampIssuePage />} />
         <Route path="/coupons" element={<Navigate to="/coupon" replace />} />
         <Route path="/stamps" element={<Navigate to="/stamp" replace />} />
         <Route path="/reservations" element={<Navigate to="/reservation" replace />} />
