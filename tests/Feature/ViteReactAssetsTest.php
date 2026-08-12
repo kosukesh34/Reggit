@@ -37,7 +37,7 @@ class ViteReactAssetsTest extends TestCase
         $response->assertSee('/build/assets/', false);
     }
 
-    public function test_ネイティブUAのliff画面でも機能CSSとシェルが含まれること(): void
+    public function test_ネイティブユーザーエージェントのliff画面でも機能スタイルとシェルが含まれること(): void
     {
         $this->createProject();
 
