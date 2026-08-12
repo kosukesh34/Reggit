@@ -470,6 +470,67 @@ class LiffAppStudioTemplates
                 self::menu(['home', ['reservations', '予約', 'fa-calendar-check'], 'products', 'gallery', 'member'])
             ),
             self::suiteEntry(
+                'rg-suite-counter-operations',
+                '店舗運営・注文カウンター',
+                'counter',
+                '注文、現在の待ち組数、最短受取時間を最上部に集約。大きな2ボタンからモバイルオーダーと順番待ちへ分岐する、日々の店舗運営に強い構成。',
+                [
+                    'theme_preset' => 'citrus',
+                    'accent_color' => '#151515',
+                    'bg_color' => '#F2F0E9',
+                    'surface_tone' => 'warm',
+                    'density' => 'compact',
+                    'content_width' => 'edge',
+                    'card_style' => 'outline',
+                    'button_shape' => 'rounded',
+                    'tab_style' => 'default',
+                    'system_header_style' => 'minimal',
+                    'stamp_screen_design' => 'wallet',
+                    'stamp_slot_style' => 'rounded',
+                    'stamp_filled_style' => 'solid',
+                    'app_display_name' => '〇〇カウンター',
+                ],
+                self::menu([
+                    'home',
+                    ['products', '注文', 'fa-bag-shopping'],
+                    ['queue', '順番待ち', 'fa-users'],
+                    ['member', '会員証', 'fa-id-card'],
+                    ['orders', '受取状況', 'fa-receipt'],
+                ]),
+                '.builder-quick-actions--counter{grid-template-columns:1.15fr .85fr;}.builder-quick-actions--counter .builder-action{min-height:132px;align-items:flex-end;}'
+            ),
+            self::suiteEntry(
+                'rg-suite-appointment-operations',
+                '店舗運営・予約スタジオ',
+                'appointment',
+                '次回予約をホームの主役にし、直近の空き枠を横並びで提示。予約確認・新規予約・会員証を少ない操作で使える来店運営向け構成。',
+                [
+                    'theme_preset' => 'store',
+                    'accent_color' => '#203F3A',
+                    'bg_color' => '#F5F3EE',
+                    'surface_tone' => 'sage',
+                    'font_family' => 'serif-display',
+                    'density' => 'relaxed',
+                    'content_width' => 'narrow',
+                    'card_style' => 'elevated',
+                    'button_shape' => 'pill',
+                    'tab_style' => 'floating',
+                    'system_header_style' => 'minimal',
+                    'stamp_screen_design' => 'circle_board',
+                    'stamp_slot_style' => 'circle',
+                    'stamp_filled_style' => 'icon',
+                    'app_display_name' => '〇〇スタジオ',
+                ],
+                self::menu([
+                    'home',
+                    ['reservations', '予約', 'fa-calendar-check'],
+                    ['member', '会員証', 'fa-id-card'],
+                    ['coupons', 'ご優待', 'fa-ticket-alt'],
+                    ['gallery', 'スタイル', 'fa-images'],
+                ]),
+                '.builder-card--next-appointment{border-radius:26px;}.builder-quick-actions--slots{grid-template-columns:repeat(3,1fr);}'
+            ),
+            self::suiteEntry(
                 'rg-suite-cafe',
                 'カフェ専用',
                 'cafe',
@@ -695,6 +756,8 @@ class LiffAppStudioTemplates
             'cafe' => 'cafe',
             'landing' => 'story',
             'simple' => 'loyalty',
+            'counter' => 'order',
+            'appointment' => 'booking',
             'salon' => 'salon',
             'retail' => 'retail',
             'clinic' => 'clinic',
@@ -837,6 +900,59 @@ class LiffAppStudioTemplates
                 ['type' => 'text', 'design' => 'body', 'text' => 'このシンプル構成では使用しません。'],
             ],
         ];
+    }
+
+    /** 店舗カウンター向け — 状況数値→注文/順番待ちの大ボタン→店頭ツール。 */
+    private static function counterLayouts(): array
+    {
+        $layouts = self::orderLayouts();
+        $a = '#151515';
+
+        $layouts['home'] = [
+            ['type' => 'stats_row', 'section_label' => '現在の店舗状況', 'items' => [
+                ['label' => '最短受取', 'value' => '12', 'hint' => '分'],
+                ['label' => '店内待ち', 'value' => '3', 'hint' => '組'],
+                ['label' => '営業', 'value' => '21:00', 'hint' => 'まで'],
+            ]],
+            ['type' => 'quick_actions', 'design' => 'counter', 'actions' => [
+                ['icon' => 'fa-bag-shopping', 'label' => '持ち帰りを注文', 'action' => '#products'],
+                ['icon' => 'fa-users', 'label' => '順番待ちを受付', 'action' => '#queue'],
+            ]],
+            ['type' => 'heading', 'design' => 'section', 'text' => '店舗で使う', 'size' => 'large'],
+            ['type' => 'quick_actions', 'design' => 'list', 'actions' => [
+                ['icon' => 'fa-id-card', 'label' => '会員証を表示', 'action' => '#member'],
+                ['icon' => 'fa-ticket-alt', 'label' => 'クーポンを選ぶ', 'action' => '#coupons'],
+                ['icon' => 'fa-receipt', 'label' => '注文・受取状況', 'action' => '#orders'],
+            ]],
+            ['type' => 'button', 'design' => 'sticky', 'text' => '持ち帰りを注文する', 'action' => '#products', 'color' => $a, 'full_width' => true],
+        ];
+
+        return $layouts;
+    }
+
+    /** 来店予約向け — 次回予定→空き枠→予約CTA→来店ツール。 */
+    private static function appointmentLayouts(): array
+    {
+        $layouts = self::bookingLayouts();
+        $a = '#203F3A';
+
+        $layouts['home'] = [
+            ['type' => 'card', 'design' => 'next_appointment', 'title' => '次のご予約', 'description' => '8月21日（金）14:00〜 カット＋カラー / 担当 田中', 'image_url' => '/assets/salon-feature.webp', 'action' => '#reservations'],
+            ['type' => 'heading', 'design' => 'section', 'text' => '空き時間から選ぶ', 'size' => 'large'],
+            ['type' => 'quick_actions', 'design' => 'slots', 'actions' => [
+                ['icon' => 'fa-clock', 'label' => '本日 17:30', 'action' => '#reservations'],
+                ['icon' => 'fa-clock', 'label' => '明日 11:00', 'action' => '#reservations'],
+                ['icon' => 'fa-clock', 'label' => '8/14 15:30', 'action' => '#reservations'],
+            ]],
+            ['type' => 'button', 'design' => 'cta', 'text' => '新しい予約を取る', 'action' => '#reservations', 'color' => $a, 'full_width' => true],
+            ['type' => 'quick_actions', 'design' => 'grid', 'actions' => [
+                ['icon' => 'fa-id-card', 'label' => '会員証', 'action' => '#member'],
+                ['icon' => 'fa-ticket-alt', 'label' => 'ご優待', 'action' => '#coupons'],
+                ['icon' => 'fa-images', 'label' => 'スタイル', 'action' => '#gallery'],
+            ]],
+        ];
+
+        return $layouts;
     }
 
     /** Starbucks Rewards — 挨拶→残高/次特典→主役1つ→クイック→提示CTA。商品棚なし */

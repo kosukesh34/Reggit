@@ -3,6 +3,8 @@ import type { CouponItem, MemberProfile, NewsItem, StoreSummary } from "../types
 export const additionalMemberProfiles: Record<string, MemberProfile> = {
   store_landing_showcase: { name: "Alex", number: "1234567890123456", rank: "GREEN", points: 2450, expiration: "2099-12-31", nextRankLabel: "あと550ポイントでGold", isMember: true },
   store_simple_rewards: { name: "山田 花子", number: "1000 2345", rank: "メンバー", points: 0, expiration: "2027-12-31", nextRankLabel: "", isMember: true },
+  store_counter_operations: { name: "佐藤 直樹", number: "5000 0138", rank: "REGULAR", points: 1380, expiration: "2027-12-31", nextRankLabel: "あと120ptでドリンク特典", isMember: true },
+  store_appointment_operations: { name: "高橋 美咲", number: "6000 0821", rank: "STUDIO MEMBER", points: 820, expiration: "2027-12-31", nextRankLabel: "次回の来店でケア特典", isMember: true },
   store_bakery: { name: "高橋 美咲", number: "000123401", rank: "Bread Lover", points: 1260, expiration: "2027-04-30", nextRankLabel: "あと240ptで Baker's Circle", isMember: true },
   store_fitness: { name: "伊藤 健", number: "000123402", rank: "Active", points: 3420, expiration: "2027-08-31", nextRankLabel: "今月あと2回来館でランクアップ", isMember: true },
   store_flower: { name: "渡辺 葵", number: "000123403", rank: "Bloom", points: 760, expiration: "2027-05-31", nextRankLabel: "あと3回のご利用で特典を獲得", isMember: true },
@@ -23,6 +25,14 @@ export const additionalCoupons: Record<string, CouponItem[]> = {
   store_simple_rewards: [
     { id: "sr1", title: "お会計 100円OFF", description: "税込1,000円以上のお会計で使えます", validUntil: "2027-12-31", featured: true },
     { id: "sr2", title: "ドリンク 1杯無料", description: "お好きなドリンク1杯に使えます", validUntil: "2027-12-31" },
+  ],
+  store_counter_operations: [
+    { id: "co1", title: "セットポテト無料", description: "モバイルオーダー限定で利用できます", validUntil: "2026-09-30", image: "/assets/fastfood-feature.webp", featured: true },
+    { id: "co2", title: "ドリンクサイズアップ", description: "店頭・モバイルオーダー共通特典", validUntil: "2026-10-31", image: "/assets/fastfood-hero.webp" },
+  ],
+  store_appointment_operations: [
+    { id: "ao1", title: "ヘッドスパ 10分無料", description: "カットまたはカラーの予約時に利用できます", validUntil: "2026-10-31", image: "/assets/salon-feature.webp", featured: true },
+    { id: "ao2", title: "ホームケア商品 10% OFF", description: "来店当日のお会計で利用できます", validUntil: "2026-09-30", image: "/assets/salon-hero.webp" },
   ],
   store_bakery: [
     { id: "b1", title: "焼きたてパン 100円OFF", description: "店内焼き上げ商品に利用できます", validUntil: "2026-09-30", image: "/assets/cafe-feature.webp", featured: true },
@@ -67,6 +77,8 @@ export const additionalCoupons: Record<string, CouponItem[]> = {
 
 export const additionalNews: Record<string, NewsItem[]> = {
   store_landing_showcase: [{ id: "lpn1", title: "LPスマホUIデモを公開しました", date: "2026-08-12", category: "DEMO" }],
+  store_counter_operations: [{ id: "con1", title: "受取時間をリアルタイム表示しています", date: "2026-08-12", category: "店舗状況" }],
+  store_appointment_operations: [{ id: "aon1", title: "8月後半の予約枠を公開しました", date: "2026-08-12", category: "予約案内" }],
   store_bakery: [{ id: "bn1", title: "秋の焼き上がりスケジュール", date: "2026-08-10", category: "BAKE" }, { id: "bn2", title: "パンの取り置きを開始しました", date: "2026-08-05", category: "INFO" }],
   store_fitness: [{ id: "fn1", title: "9月のグループレッスンを公開", date: "2026-08-10", category: "PROGRAM" }, { id: "fn2", title: "混雑状況をアプリで確認できます", date: "2026-08-03", category: "UPDATE" }],
   store_flower: [{ id: "ln1", title: "秋色ブーケの予約を開始", date: "2026-08-09", category: "FLOWERS" }, { id: "ln2", title: "花の定期便に新コースが登場", date: "2026-08-04", category: "NEWS" }],
@@ -82,6 +94,8 @@ export const additionalNews: Record<string, NewsItem[]> = {
 export const additionalStoreSummaries: Record<string, StoreSummary> = {
   store_landing_showcase: { name: "Laurel & Ivy", address: "東京都渋谷区神南1-2-3", openHours: "08:00 - 20:00", access: "渋谷駅 徒歩5分", phone: "03-1234-5678" },
   store_simple_rewards: { name: "SIMPLE PASS 本店", address: "東京都渋谷区神南1-1-1", openHours: "10:00 - 19:00", access: "渋谷駅 徒歩5分", phone: "03-1000-2345" },
+  store_counter_operations: { name: "渋谷駅前カウンター", address: "東京都渋谷区道玄坂1-2-3", openHours: "08:00 - 21:00", access: "渋谷駅 徒歩1分", phone: "03-5000-0138" },
+  store_appointment_operations: { name: "銀座スタジオ", address: "東京都中央区銀座4-3-2", openHours: "10:00 - 20:00", access: "銀座駅 徒歩2分", phone: "03-6000-0821" },
   store_bakery: { name: "代々木上原店", address: "東京都渋谷区西原3-8-2", openHours: "07:30 - 19:00", access: "代々木上原駅 徒歩2分", phone: "03-4100-1101" },
   store_fitness: { name: "恵比寿スタジオ", address: "東京都渋谷区恵比寿1-9-5", openHours: "06:30 - 23:00", access: "恵比寿駅 徒歩3分", phone: "03-4100-1102" },
   store_flower: { name: "中目黒店", address: "東京都目黒区上目黒2-12-3", openHours: "10:00 - 19:00", access: "中目黒駅 徒歩4分", phone: "03-4100-1103" },

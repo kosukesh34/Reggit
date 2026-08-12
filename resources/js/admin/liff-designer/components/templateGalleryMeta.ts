@@ -53,6 +53,8 @@ export const CATEGORY_LABELS: Record<string, string> = {
 /** 空キャンバスやギャラリー推奨枠で優先表示するテンプレ ID（注文・カフェ・菓子を先頭） */
 export const FEATURED_TEMPLATE_IDS = [
     'rg-suite-order',
+    'rg-suite-counter-operations',
+    'rg-suite-appointment-operations',
     'rg-suite-cafe',
     'rg-suite-landing',
     'rg-suite-simple-rewards',
