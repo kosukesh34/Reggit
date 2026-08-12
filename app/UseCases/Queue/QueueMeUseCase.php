@@ -7,7 +7,6 @@ use App\Models\QueueEntry as QueueEntryModel;
 use App\UseCases\Queue\Data\QueueEntryFactory;
 use App\UseCases\Queue\Data\QueueMeInput;
 use App\UseCases\Queue\Data\QueueMeOutput;
-use App\Util\StrHelper;
 
 class QueueMeUseCase
 {
@@ -22,11 +21,6 @@ class QueueMeUseCase
         if ($entry === null) {
             $entry = $this->findActiveEntryFromSession($input);
         }
-        if ($entry !== null && $this->isValidLineUserId($input->lineUserId)) {
-            $this->linkEntryToLineUserIfNeeded($input, $entry);
-            $entry->refresh();
-        }
-
         $user = $input->user;
         $member = $user->member;
         $projectId = $member !== null ? $member->project_id : $input->projectId;
@@ -38,6 +32,12 @@ class QueueMeUseCase
             }
         } else {
             $projectId = $entry->project_id;
+        }
+
+        if ($entry !== null) {
+            $this->linkEntryToUserIfNeeded($input, $entry);
+            $entry->refresh();
+            $entry->loadMissing(['user.devices', 'member.user.devices']);
         }
 
         $stats = $this->statsService->getStats($projectId, $entry?->queue_number);
@@ -212,26 +212,22 @@ class QueueMeUseCase
         return [$token, $queueId];
     }
 
-    private function linkEntryToLineUserIfNeeded(QueueMeInput $input, QueueEntryModel $entry): void
+    /** LINE / ネイティブ問わず、未紐付けの券を現在ユーザーへ紐付ける */
+    private function linkEntryToUserIfNeeded(QueueMeInput $input, QueueEntryModel $entry): void
     {
-        if ($entry->user_id !== null) {
+        $user = $input->user;
+        $needsUser = $entry->user_id === null;
+        $needsMember = $entry->member_id === null && $user->member !== null;
+        if (! $needsUser && ! $needsMember) {
             return;
         }
 
-        $user = $input->user;
-        $entry->user_id = $user->id;
-        if ($user->member !== null) {
+        if ($needsUser) {
+            $entry->user_id = $user->id;
+        }
+        if ($needsMember) {
             $entry->member_id = $user->member->id;
         }
         $entry->save();
-    }
-
-    private function isValidLineUserId(string $lineUserId): bool
-    {
-        if (StrHelper::isEmptyStringOrNull($lineUserId)) {
-            return false;
-        }
-
-        return preg_match('/^U[0-9a-f]{32}$/i', $lineUserId) === 1;
     }
 }

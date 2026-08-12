@@ -99,6 +99,12 @@ class QueueAdminService
             return;
         }
 
+        if ($entry->user_id === null && $entry->member?->user_id !== null) {
+            $entry->user_id = (int) $entry->member->user_id;
+            $entry->save();
+            $entry->load('user');
+        }
+
         $lineUserId = $entry->user?->line_user_id ?? $entry->member?->user?->line_user_id;
         $notifyUserId = (int) ($entry->user_id ?? ($entry->member?->user_id ?? 0));
         $callLog = QueueCallLog::updateOrCreate(

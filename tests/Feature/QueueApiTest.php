@@ -515,4 +515,108 @@ class QueueApiTest extends TestCase
         $entry->refresh();
         $this->assertNotNull($entry->qr_token);
     }
+
+    public function test_store_ネイティブ会員はuser_idが紐づきline_linkedがtrueになること(): void
+    {
+        $this->createProject();
+        $user = User::factory()->create([
+            'line_user_id' => 'guest-native-member-store-1',
+            'project_id' => 1,
+            'name' => 'Native Member',
+            'phone' => '09012345678',
+        ]);
+        $member = Member::factory()->create(['user_id' => $user->id, 'project_id' => 1]);
+        UserDevice::create([
+            'project_id' => 1,
+            'user_id' => $user->id,
+            'platform' => 'ios',
+            'device_identifier' => 'native-device-member-store-1',
+            'push_token' => 'push-token-member-store-1',
+            'last_used_at' => now(),
+        ]);
+
+        $response = $this->withHeaders([
+            'X-Device-Identifier' => 'native-device-member-store-1',
+        ])->post('/api/queue?project_key=default', ['party_size' => 2]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('queue_entry.line_linked', true)
+            ->assertJsonPath('queue_entry.link_channel', 'app');
+
+        $entry = QueueEntry::query()->latest('id')->first();
+        $this->assertNotNull($entry);
+        $this->assertSame($user->id, $entry->user_id);
+        $this->assertSame($member->id, $entry->member_id);
+    }
+
+    public function test_me_ネイティブ会員はmemberのみ紐付けの券をuser_id補完すること(): void
+    {
+        $this->createProject();
+        $user = User::factory()->create([
+            'line_user_id' => 'guest-native-member-me-1',
+            'project_id' => 1,
+            'name' => 'Native Me',
+        ]);
+        $member = Member::factory()->create(['user_id' => $user->id, 'project_id' => 1]);
+        UserDevice::create([
+            'project_id' => 1,
+            'user_id' => $user->id,
+            'platform' => 'ios',
+            'device_identifier' => 'native-device-member-me-1',
+            'push_token' => 'push-token-member-me-1',
+            'last_used_at' => now(),
+        ]);
+        $entry = QueueEntry::factory()->create([
+            'project_id' => 1,
+            'user_id' => null,
+            'member_id' => $member->id,
+            'status' => QueueStatus::WAITING,
+            'guest_name' => 'Native Me',
+        ]);
+
+        $response = $this->withHeaders([
+            'X-Device-Identifier' => 'native-device-member-me-1',
+        ])->get('/api/queue/me?project_key=default');
+
+        $response->assertStatus(200)
+            ->assertJsonPath('queue_entry.id', $entry->id)
+            ->assertJsonPath('queue_entry.line_linked', true);
+
+        $entry->refresh();
+        $this->assertSame($user->id, $entry->user_id);
+    }
+
+    public function test_list_memberのみ紐付けでもline_linkedがtrueになること(): void
+    {
+        $this->createProject();
+        $user = User::factory()->create([
+            'line_user_id' => 'guest-native-member-list-1',
+            'project_id' => 1,
+            'name' => 'Native List Member',
+        ]);
+        $member = Member::factory()->create(['user_id' => $user->id, 'project_id' => 1]);
+        UserDevice::create([
+            'project_id' => 1,
+            'user_id' => $user->id,
+            'platform' => 'ios',
+            'device_identifier' => 'native-device-member-list-1',
+            'push_token' => 'push-token-member-list-1',
+            'last_used_at' => now(),
+        ]);
+        $entry = QueueEntry::factory()->create([
+            'project_id' => 1,
+            'user_id' => null,
+            'member_id' => $member->id,
+            'status' => QueueStatus::WAITING,
+            'qr_token' => 'token-member-only-list',
+        ]);
+
+        $response = $this->get('/api/queue/list?project_key=default');
+
+        $response->assertStatus(200);
+        $matched = collect($response->json('entries') ?? [])->firstWhere('id', $entry->id);
+        $this->assertNotNull($matched);
+        $this->assertTrue($matched['line_linked']);
+        $this->assertSame('app', $matched['link_channel']);
+    }
 }

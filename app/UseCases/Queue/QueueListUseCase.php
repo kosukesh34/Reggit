@@ -38,7 +38,11 @@ class QueueListUseCase
     private function toListItem(QueueEntry $e): array
     {
         $displayName = $e->member?->user?->name ?? $e->user?->name ?? $e->guest_name ?? '—';
-        $linkChannel = QueueLinkChannel::resolve($e->user, $e->user_id !== null ? (int) $e->user_id : null);
+        $user = $e->user ?? $e->member?->user;
+        $userId = $e->user_id !== null
+            ? (int) $e->user_id
+            : ($user !== null ? (int) $user->id : null);
+        $linkChannel = QueueLinkChannel::resolve($user, $userId);
         $memberLinked = $e->member_id !== null || $e->user_id !== null;
 
         return [
