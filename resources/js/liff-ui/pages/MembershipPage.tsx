@@ -19,6 +19,8 @@ import {
   type MemberPayload,
 } from "../../frontend/features/member/api";
 import type { MemberProfile } from "../types/app";
+import { LANDING_SHOWCASE_STORE_ID, LandingShowcaseMembership } from "./LandingShowcasePage";
+import { SIMPLE_REWARDS_STORE_ID, SimpleRewardsMembership } from "./SimpleRewardsPage";
 
 function isDesignMockPreview(): boolean {
   return typeof document !== "undefined" && document.body.classList.contains("liff-demo-data");
@@ -359,6 +361,15 @@ function PreviewMembershipPage() {
 }
 
 export function MembershipPage() {
+  const { activeStore } = useAppConfig();
+
+  if (activeStore.storeId === LANDING_SHOWCASE_STORE_ID) {
+    return <LandingShowcaseMembership />;
+  }
+  if (activeStore.storeId === SIMPLE_REWARDS_STORE_ID) {
+    return <SimpleRewardsMembership />;
+  }
+
   return (
     <MembershipErrorBoundary>
       {isDesignMockPreview() ? <PreviewMembershipPage /> : <LiveMembershipPage />}

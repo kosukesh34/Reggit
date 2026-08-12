@@ -84,6 +84,8 @@ const storePresetMap: Record<string, DesignPreset> = {
   store_dining: "restaurant",
   store_izakaya: "izakaya",
   store_fastfood: "fastfood",
+  store_landing_showcase: "editorial",
+  store_simple_rewards: "minimal",
 };
 
 const storeExperienceMap: Record<string, {
@@ -110,6 +112,8 @@ const storeExperienceMap: Record<string, {
   store_dining: { buttonStyle: "filled", density: "standard", primaryActionPlacement: "hero", quickActionColumns: 4, navigationPosition: "bottom", emphasizeCenterTab: false, membershipTemplate: "split", stampStyle: "squares", stampGoal: 5 },
   store_izakaya: { buttonStyle: "filled", density: "standard", primaryActionPlacement: "hero", quickActionColumns: 4, navigationPosition: "bottom", emphasizeCenterTab: false, membershipTemplate: "split", stampStyle: "squares", stampGoal: 5 },
   store_fastfood: { buttonStyle: "filled", density: "compact", primaryActionPlacement: "belowHero", quickActionColumns: 4, navigationPosition: "floating", emphasizeCenterTab: true, membershipTemplate: "pointFocus", stampStyle: "progress", stampGoal: 5 },
+  store_landing_showcase: { buttonStyle: "filled", density: "standard", primaryActionPlacement: "hero", quickActionColumns: 3, navigationPosition: "bottom", emphasizeCenterTab: false, membershipTemplate: "pointFocus", stampStyle: "circles", stampGoal: 10 },
+  store_simple_rewards: { buttonStyle: "filled", density: "compact", primaryActionPlacement: "belowHero", quickActionColumns: 3, navigationPosition: "bottom", emphasizeCenterTab: false, membershipTemplate: "barcodeFocus", stampStyle: "squares", stampGoal: 10 },
 };
 
 const designPresetExperienceMap: Record<DesignPreset, (typeof storeExperienceMap)[string]> = {

@@ -1,4 +1,4 @@
-import { Bell, Check, ChevronDown, CloudOff } from "lucide-react";
+import { Bell, Check, ChevronDown, CloudOff, Menu, ShoppingBag, UserRound, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { designPresetMap } from "../../config/designPresets";
@@ -10,6 +10,8 @@ import { themeMap } from "../../themes/themes";
 import { BottomSheet } from "../ui/BottomSheet";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
+import { LANDING_SHOWCASE_STORE_ID } from "../../pages/LandingShowcasePage";
+import { SIMPLE_REWARDS_STORE_ID } from "../../pages/SimpleRewardsPage";
 
 export function Header() {
   const { activeStore, stores, setActiveStoreId, customization, getStoreCustomization } = useAppConfig();
@@ -18,6 +20,8 @@ export function Header() {
   const location = useLocation();
   const navigate = useNavigate();
   const canSwitchStore = stores.length > 1;
+  const isLandingShowcase = activeStore.storeId === LANDING_SHOWCASE_STORE_ID;
+  const isSimpleRewards = activeStore.storeId === SIMPLE_REWARDS_STORE_ID;
 
   const title = useMemo(() => {
     if (location.pathname === "/membership") {
@@ -58,25 +62,74 @@ export function Header() {
     </>
   );
 
+  const showcaseTitle = location.pathname === "/mobileOrder"
+    ? "メニュー"
+    : location.pathname === "/membership"
+      ? "会員証"
+      : location.pathname === "/stamp"
+        ? "スタンプカード"
+        : location.pathname === "/queue"
+          ? "LAUREL & IVY"
+          : "Reggit";
+  const ShowcaseActionIcon = location.pathname === "/mobileOrder"
+    ? ShoppingBag
+    : location.pathname === "/home"
+      ? X
+      : UserRound;
+
   return (
     <>
-      <header className="header">
-        {canSwitchStore ? (
-          <button className="header__brand" onClick={() => setOpen(true)} type="button" aria-label="店舗を切り替える">
-            {brandContent}
+      <header className={`header${isLandingShowcase ? " header--landing-showcase" : isSimpleRewards ? " header--simple-rewards" : ""}`}>
+        {isLandingShowcase ? (
+          <>
+            <button className="header__showcase-menu" onClick={() => setOpen(true)} type="button" aria-label="店舗を切り替える">
+              <Menu size={27} />
+            </button>
+            <div className="header__showcase-title">
+              <strong>{showcaseTitle}</strong>
+              {location.pathname === "/home" ? <span>LINE ミニアプリ</span> : null}
+              {location.pathname === "/queue" ? <span>モダンキッチン</span> : null}
+            </div>
+            <button
+              className="header__showcase-action"
+              type="button"
+              aria-label={location.pathname === "/home" ? "LPデモを終了" : location.pathname === "/mobileOrder" ? "注文履歴を見る" : "登録情報を見る"}
+              onClick={() => {
+                if (location.pathname === "/home") {
+                  setActiveStoreId("store_cafe");
+                  navigate("/home");
+                  return;
+                }
+                navigate(location.pathname === "/mobileOrder" ? "/orderHistory" : "/more");
+              }}
+            >
+              <ShowcaseActionIcon size={location.pathname === "/home" ? 29 : 26} />
+            </button>
+          </>
+        ) : isSimpleRewards ? (
+          <button className="header__simple-brand" type="button" onClick={() => setOpen(true)} aria-label="店舗を切り替える">
+            <span>SIMPLE PASS</span><strong>{location.pathname === "/home" ? "ホーム" : title}</strong><ChevronDown size={15} />
           </button>
         ) : (
-          <div className="header__brand">{brandContent}</div>
+          <>
+            {canSwitchStore ? (
+              <button className="header__brand" onClick={() => setOpen(true)} type="button" aria-label="店舗を切り替える">
+                {brandContent}
+              </button>
+            ) : (
+              <div className="header__brand">{brandContent}</div>
+            )}
+            <div className="header__actions">
+              {mode === "offline" ? <span className="header__connection" aria-label="オフライン"><CloudOff size={14} /></span> : null}
+              {customization.header.showNotifications && activeStore.features.news ? (
+                <Button className="header__notification" variant="ghost" size="icon" ariaLabel="通知" onClick={() => navigate("/news")}>
+                  <Bell size={18} />
+                  {notificationCount > 0 ? <span className="header__notification-dot">{notificationCount}</span> : null}
+                </Button>
+              ) : null}
+            </div>
+          </>
         )}
-        <div className="header__actions">
-          {mode === "offline" ? <span className="header__connection" aria-label="オフライン"><CloudOff size={14} /></span> : null}
-          {customization.header.showNotifications && activeStore.features.news ? (
-            <Button className="header__notification" variant="ghost" size="icon" ariaLabel="通知" onClick={() => navigate("/news")}>
-              <Bell size={18} />
-              {notificationCount > 0 ? <span className="header__notification-dot">{notificationCount}</span> : null}
-            </Button>
-          ) : null}
-        </div>
       </header>
 
       {canSwitchStore ? (
@@ -102,7 +155,7 @@ export function Header() {
                     <div className="store-switcher__name">{store.storeName}</div>
                     <div className="store-switcher__meta">{store.brandName}</div>
                     {customization.header.showStoreTheme && preset !== undefined ? (
-                      <div className="store-switcher__theme">{preset.name}</div>
+                      <div className="store-switcher__theme">{store.themeId === "landing-showcase" ? "LPスマホUI" : store.themeId === "simple-rewards" ? "シンプルリワード" : preset.name}</div>
                     ) : null}
                   </div>
                   <Button
@@ -111,6 +164,7 @@ export function Header() {
                     onClick={() => {
                       setActiveStoreId(store.storeId);
                       setOpen(false);
+                      navigate("/home");
                     }}
                   >
                     {active ? <><Check size={14} />選択中</> : "切り替え"}
