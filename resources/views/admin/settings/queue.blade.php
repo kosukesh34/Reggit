@@ -41,7 +41,7 @@
                     <input type="checkbox" name="queue_channel_native" value="1" {{ old('queue_channel_native', $channelNative ? '1' : '0') === '1' ? 'checked' : '' }}>
                     <span>ネイティブアプリ</span>
                 </label>
-                <small class="form-text text-muted">両方選択時はお客様が起動アプリを選べます。片方のみの場合はそのアプリを起動します。</small>
+                <small class="form-text text-muted">両方選択時はお客様が起動アプリを選べます。片方のみの場合はそのアプリを起動します。呼び出し通知をLINEで受け取るにはLINEにチェックを入れてください（お知らせ配信と同じ経路です）。</small>
             </div>
             <div class="form-group">
                 <label class="form-label">会員登録</label>
