@@ -61,6 +61,9 @@
                     <td><span class="badge badge-{{ $card->is_active ? 'success' : 'danger' }}">{{ $card->is_active ? '有効' : '無効' }}</span></td>
                     <td class="table-actions-cell">
                         <div class="table-actions">
+                            @if($card->is_active)
+                            <a href="{{ admin_route('admin.stamps.grant-qr', ['id' => $card->id]) }}" class="btn btn-action btn-outline"><i class="fas fa-qrcode"></i> 付与QR</a>
+                            @endif
                             <a href="{{ admin_route('admin.stamps.edit', ['id' => $card->id]) }}" class="btn btn-action btn-edit"><i class="fas fa-edit"></i> 編集</a>
                             <form action="{{ admin_route('admin.stamps.delete', ['id' => $card->id]) }}" method="POST" class="d-inline" onsubmit="return confirm('削除しますか？');">@csrf @method('DELETE')<button type="submit" class="btn btn-action btn-danger"><i class="fas fa-trash"></i> 削除</button></form>
                         </div>

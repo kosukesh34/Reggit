@@ -18,6 +18,7 @@ import './admin';
 import './couponBulkIssue';
 import './memberDetailHistory';
 import './memberLineQr';
+import './stampGrantQr';
 
 type DesignerDomConfig = {
   formAction: string;
