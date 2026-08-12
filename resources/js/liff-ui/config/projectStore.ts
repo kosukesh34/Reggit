@@ -14,6 +14,19 @@ function headerTitle(): string {
   return document.title || '店舗アプリ';
 }
 
+function headerLogoUrl(): string | null {
+  const header = window.__FRONTEND_HEADER__;
+  if (header === undefined || header === null || typeof header !== 'object') {
+    return null;
+  }
+  const logoUrl = (header as { logoUrl?: string | null }).logoUrl;
+  if (typeof logoUrl !== 'string') {
+    return null;
+  }
+  const trimmed = logoUrl.trim();
+  return trimmed !== '' ? trimmed : null;
+}
+
 const featureFlagMap: Partial<Record<FeatureType, string>> = {
   membership: 'feature_members_enabled',
   point: 'feature_members_enabled',
@@ -175,6 +188,7 @@ export function buildProjectStore(): StoreAppConfig {
     : 'default';
   const template = appConfig.stores[0];
   const name = headerTitle();
+  const logoUrl = headerLogoUrl();
   const features = buildFeatures();
   const tabs = buildTabs(features, window.__FEATURE_FLAGS__?.feature_home_enabled !== false);
   const quickActions = buildQuickActions(tabs, features);
@@ -186,6 +200,7 @@ export function buildProjectStore(): StoreAppConfig {
       storeName: name,
       brandName: name,
       logoText: name.slice(0, 1).toUpperCase(),
+      logoUrl,
       themeId: 'minimal-light',
       features,
       tabs,
@@ -228,6 +243,7 @@ export function buildProjectStore(): StoreAppConfig {
     storeName: name,
     brandName: name,
     logoText: name.slice(0, 1).toUpperCase() || template.logoText,
+    logoUrl,
     heroTitle: name,
     heroSubtitle: template.heroSubtitle,
     features,
