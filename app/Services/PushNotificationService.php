@@ -356,21 +356,43 @@ class PushNotificationService
             }
 
             $responsePayload = json_decode((string) $response->getBody(), true);
-            $recipients = $responsePayload['recipients'] ?? 0;
-            $totalSent += (int) $recipients;
-            $totalFailed += count($chunk) - (int) $recipients;
+            if (! is_array($responsePayload)) {
+                $responsePayload = [];
+            }
 
             $notificationId = trim((string) ($responsePayload['id'] ?? ''));
             if ($notificationId !== '') {
                 $notificationIds[] = $notificationId;
             }
 
+            // OneSignal は recipients を省略することがある。非空 id なら作成成功とみなす。
+            $chunkSent = 0;
+            if (array_key_exists('recipients', $responsePayload) && is_numeric($responsePayload['recipients'])) {
+                $chunkSent = max(0, (int) $responsePayload['recipients']);
+            } elseif ($notificationId !== '') {
+                $chunkSent = count($chunk);
+            }
+
+            $totalSent += $chunkSent;
+            $totalFailed += max(0, count($chunk) - $chunkSent);
+
+            $errors = $responsePayload['errors'] ?? null;
+            if ($notificationId === '' || $errors !== null) {
+                LogHelper::warning('[Push] OneSignal response incomplete', [
+                    'notification_id' => $notificationId !== '' ? $notificationId : null,
+                    'chunk_size' => count($chunk),
+                    'recipients' => $responsePayload['recipients'] ?? null,
+                    'errors' => $errors,
+                    'title' => $title,
+                ]);
+            }
+
             if ($isAnnouncementCancel) {
                 LogHelper::info('[Push] announcement cancel push sent', [
                     'notification_id' => $notificationId,
                     'chunk_size' => count($chunk),
-                    'recipients' => (int) $recipients,
-                    'errors' => $responsePayload['errors'] ?? null,
+                    'recipients' => $chunkSent,
+                    'errors' => $errors,
                 ]);
             }
         }
