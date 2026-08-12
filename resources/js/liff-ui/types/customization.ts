@@ -86,6 +86,7 @@ export interface AppCustomization {
     showBarcode: boolean;
     showPoints: boolean;
     showRank: boolean;
+    showNextRank: boolean;
     showExpiry: boolean;
   };
   stamp: {

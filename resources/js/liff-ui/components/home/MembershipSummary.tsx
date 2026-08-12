@@ -8,6 +8,7 @@ import { getMemberManager, openRegister } from "../../../frontend/features/membe
 
 interface MembershipSummaryProps {
   member: MemberProfile;
+  showNextRank?: boolean;
 }
 
 function resolveMemberNumber(member: MemberProfile): string {
@@ -26,7 +27,7 @@ function resolveMemberNumber(member: MemberProfile): string {
   return "";
 }
 
-export function MembershipSummary({ member }: MembershipSummaryProps) {
+export function MembershipSummary({ member, showNextRank = true }: MembershipSummaryProps) {
   if (!member.isMember) {
     return (
       <Card className="membership-summary membership-summary--guest" padding="md">
@@ -37,11 +38,8 @@ export function MembershipSummary({ member }: MembershipSummaryProps) {
           </div>
         </div>
         <div className="membership-summary__body">
-          <div>
-            <div className="membership-summary__meta">登録するとポイント・クーポンなどがご利用いただけます。</div>
-          </div>
+          <div className="membership-summary__meta">登録するとポイント・クーポンなどがご利用いただけます。</div>
           <Button
-            size="sm"
             onClick={() => openRegister(false)}
             aria-label="会員登録する"
           >
@@ -69,7 +67,9 @@ export function MembershipSummary({ member }: MembershipSummaryProps) {
       <div className="membership-summary__body">
         <div>
           <div className="membership-summary__points">{points.toLocaleString()} <span>pt</span></div>
-          <div className="membership-summary__meta">{member.nextRankLabel || ""}</div>
+          {showNextRank && member.nextRankLabel !== "" ? (
+            <div className="membership-summary__meta">{member.nextRankLabel}</div>
+          ) : null}
         </div>
         <Link className="membership-summary__link" to="/membership" aria-label="会員証を表示">
           <ScanLine size={23} aria-hidden="true" />

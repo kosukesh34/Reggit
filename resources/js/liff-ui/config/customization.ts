@@ -1,5 +1,5 @@
 import type { StoreAppConfig } from "../types/app";
-import type { AppCustomization, DesignPreset } from "../types/customization";
+import type { AppCustomization, AppCustomizationPatch, DesignPreset } from "../types/customization";
 
 export const defaultCustomization: AppCustomization = {
   designPreset: "editorial",
@@ -53,6 +53,7 @@ export const defaultCustomization: AppCustomization = {
     showBarcode: true,
     showPoints: true,
     showRank: true,
+    showNextRank: true,
     showExpiry: true,
   },
   stamp: {
@@ -109,6 +110,56 @@ const storeExperienceMap: Record<string, {
   store_izakaya: { buttonStyle: "filled", density: "standard", primaryActionPlacement: "hero", quickActionColumns: 4, navigationPosition: "bottom", emphasizeCenterTab: false, membershipTemplate: "split", stampStyle: "squares", stampGoal: 5 },
   store_fastfood: { buttonStyle: "filled", density: "compact", primaryActionPlacement: "belowHero", quickActionColumns: 4, navigationPosition: "floating", emphasizeCenterTab: true, membershipTemplate: "pointFocus", stampStyle: "progress", stampGoal: 5 },
 };
+
+const designPresetExperienceMap: Record<DesignPreset, (typeof storeExperienceMap)[string]> = {
+  editorial: storeExperienceMap.store_cafe,
+  bold: storeExperienceMap.store_market,
+  airy: storeExperienceMap.store_flower,
+  minimal: storeExperienceMap.store_apparel,
+  luxury: storeExperienceMap.store_salon,
+  pop: storeExperienceMap.store_pets,
+  natural: storeExperienceMap.store_bakery,
+  monochrome: storeExperienceMap.store_clinic,
+  glass: storeExperienceMap.store_hotel,
+  neo: storeExperienceMap.store_fitness,
+  restaurant: storeExperienceMap.store_dining,
+  izakaya: storeExperienceMap.store_izakaya,
+  fastfood: storeExperienceMap.store_fastfood,
+};
+
+/** デザインプリセット選択時に色だけでなく配置も切り替える */
+export function designPresetLayoutPatch(designPreset: DesignPreset): AppCustomizationPatch {
+  const experience = designPresetExperienceMap[designPreset] ?? storeExperienceMap.store_cafe;
+  return {
+    designPreset,
+    colors: {
+      primary: undefined,
+      secondary: undefined,
+      accent: undefined,
+      background: undefined,
+      surface: undefined,
+      textPrimary: undefined,
+      textSecondary: undefined,
+    },
+    appearance: { buttonStyle: experience.buttonStyle, density: experience.density },
+    home: {
+      primaryActionPlacement: experience.primaryActionPlacement,
+      quickActionColumns: experience.quickActionColumns,
+    },
+    membership: {
+      template: experience.membershipTemplate,
+      alignment: experience.membershipTemplate === "pass" || experience.membershipTemplate === "pointFocus" ? "center" : "left",
+    },
+    stamp: { style: experience.stampStyle, goal: experience.stampGoal },
+    navigation: {
+      position: experience.navigationPosition,
+      emphasizeCenterTab: experience.emphasizeCenterTab,
+    },
+    order: {
+      ctaPosition: designPreset === "fastfood" ? "sticky" : "inline",
+    },
+  };
+}
 
 export function createDefaultCustomization(store: StoreAppConfig): AppCustomization {
   const tabs = [...store.tabs]

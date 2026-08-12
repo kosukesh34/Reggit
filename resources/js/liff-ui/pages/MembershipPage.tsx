@@ -2,11 +2,11 @@ import { Component, type ErrorInfo, type ReactNode, useEffect, useMemo, useState
 import { Info, Maximize2 } from "lucide-react";
 import { useAppConfig } from "../context/AppConfigContext";
 import { MembershipCard } from "../components/membership/MembershipCard";
+import { BarcodeEnlargeView } from "../components/membership/BarcodeEnlargeView";
+import { BottomSheet } from "../components/ui/BottomSheet";
 import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { useRuntimeData } from "../context/RuntimeDataContext";
-import { BottomSheet } from "../components/ui/BottomSheet";
-import { MembershipBarcode } from "../components/membership/MembershipBarcode";
 import { Skeleton } from "../components/ui/Skeleton";
 import { formatDisplayDate } from "../utils/date";
 import {
@@ -239,6 +239,12 @@ function LiveMembershipPage(): JSX.Element {
               <div className="detail-grid__value">{member.rank}</div>
             </div>
           ) : null}
+          {customization.membership.showNextRank && member.nextRankLabel !== "" ? (
+            <div className="detail-grid__full">
+              <div className="detail-grid__label">次のランクまで</div>
+              <div className="detail-grid__value detail-grid__value--wrap">{member.nextRankLabel}</div>
+            </div>
+          ) : null}
         </div>
         <div className="actions-row">
           {customization.membership.showBarcode && barcodeValue !== "" ? (
@@ -256,11 +262,8 @@ function LiveMembershipPage(): JSX.Element {
         <p className="page-note"><Info size={15} /> お会計時に会員証のバーコードをご提示ください。</p>
       ) : null}
 
-      <BottomSheet open={barcodeOpen} onClose={() => setBarcodeOpen(false)} title="会員バーコード">
-        <div className="barcode-modal">
-          <MembershipBarcode value={barcodeValue || "0"} />
-          <p>読み取りやすいよう、画面の明るさを上げてご提示ください。</p>
-        </div>
+      <BottomSheet open={barcodeOpen && barcodeValue !== ""} onClose={() => setBarcodeOpen(false)} title="会員バーコード">
+        <BarcodeEnlargeView value={barcodeValue} />
       </BottomSheet>
     </div>
   );
@@ -297,6 +300,7 @@ function PreviewMembershipPage() {
   const { activeStore, customization } = useAppConfig();
   const { member } = useRuntimeData();
   const [barcodeOpen, setBarcodeOpen] = useState(false);
+  const barcodeValue = member.number && member.number !== "未発行" ? member.number : "";
 
   return (
     <div className="page membership-page stack stack--lg">
@@ -331,17 +335,19 @@ function PreviewMembershipPage() {
             <div className="detail-grid__label">会員ランク</div>
             <div className="detail-grid__value">{member.rank}</div>
           </div> : null}
+          {customization.membership.showNextRank && member.nextRankLabel !== "" ? <div className="detail-grid__full">
+            <div className="detail-grid__label">次のランクまで</div>
+            <div className="detail-grid__value detail-grid__value--wrap">{member.nextRankLabel}</div>
+          </div> : null}
         </div>
-        {customization.membership.showBarcode ? <div className="actions-row">
+        {customization.membership.showBarcode && barcodeValue !== "" ? <div className="actions-row">
           <Button variant="solid" onClick={() => setBarcodeOpen(true)}><Maximize2 size={17} /> バーコードを拡大</Button>
         </div> : null}
       </Card>
       {customization.membership.showBarcode ? <p className="page-note"><Info size={15} /> お会計時に会員証のバーコードをご提示ください。</p> : null}
-      <BottomSheet open={barcodeOpen} onClose={() => setBarcodeOpen(false)} title="会員バーコード">
-        <div className="barcode-modal">
-          <MembershipBarcode value={member.number || "0"} />
-          <p>読み取りやすいよう、画面の明るさを上げてご提示ください。</p>
-        </div>
+
+      <BottomSheet open={barcodeOpen && barcodeValue !== ""} onClose={() => setBarcodeOpen(false)} title="会員バーコード">
+        <BarcodeEnlargeView value={barcodeValue} />
       </BottomSheet>
     </div>
   );
