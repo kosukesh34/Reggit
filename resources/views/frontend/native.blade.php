@@ -115,6 +115,7 @@
     <div id="react-frontend-root" aria-hidden="true"></div>
 
     @include('frontend.partials._scripts-config')
+    @viteReactRefresh
     @vite(['resources/js/frontend/main.tsx'])
     @include('frontend.partials._scripts-load')
 </body>
