@@ -18,6 +18,8 @@ import { ReservationsView } from "../../frontend/features/reservations/Reservati
 import { pathForLegacyTab } from "../navigation/tabPath";
 import { isLinkTabType } from "../types/app";
 import { LinkSitePage } from "./LinkSitePage";
+import { LANDING_SHOWCASE_STORE_ID, LandingShowcaseFeature } from "./LandingShowcasePage";
+import { SIMPLE_REWARDS_STORE_ID, SimpleRewardsFeature } from "./SimpleRewardsPage";
 
 const FEATURE_ALIASES: Record<string, string> = {
   member: "membership",
@@ -75,6 +77,13 @@ export function FeaturePage() {
 
   const feature = aliased !== undefined ? aliased : rawFeature;
   const isNewsArticle = feature === "news" && searchParams.get("announcement") !== null;
+
+  if (activeStore.storeId === LANDING_SHOWCASE_STORE_ID && ["mobileOrder", "stamp", "queue"].includes(feature)) {
+    return <LandingShowcaseFeature feature={feature} />;
+  }
+  if (activeStore.storeId === SIMPLE_REWARDS_STORE_ID && ["coupon", "stamp"].includes(feature)) {
+    return <SimpleRewardsFeature feature={feature} />;
+  }
 
   if (loading && mode !== "live" && mode !== "preview") {
     return <FeaturePageSkeleton />;

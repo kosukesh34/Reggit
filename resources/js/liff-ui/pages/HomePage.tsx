@@ -11,6 +11,8 @@ import { StoreSummaryCard } from "../components/home/StoreSummary";
 import { Skeleton } from "../components/ui/Skeleton";
 import { useAppConfig } from "../context/AppConfigContext";
 import { useRuntimeData } from "../context/RuntimeDataContext";
+import { LANDING_SHOWCASE_STORE_ID, LandingShowcaseHome } from "./LandingShowcasePage";
+import { SIMPLE_REWARDS_STORE_ID, SimpleRewardsHome } from "./SimpleRewardsPage";
 
 function HomePageSkeleton(): JSX.Element {
   return (
@@ -28,6 +30,13 @@ function HomePageSkeleton(): JSX.Element {
 export function HomePage() {
   const { activeStore, customization } = useAppConfig();
   const { member, coupons, news, stores, mode, error, refresh, loading } = useRuntimeData();
+
+  if (activeStore.storeId === LANDING_SHOWCASE_STORE_ID) {
+    return <LandingShowcaseHome />;
+  }
+  if (activeStore.storeId === SIMPLE_REWARDS_STORE_ID) {
+    return <SimpleRewardsHome />;
+  }
 
   if (loading && mode !== "live" && mode !== "preview") {
     return <HomePageSkeleton />;

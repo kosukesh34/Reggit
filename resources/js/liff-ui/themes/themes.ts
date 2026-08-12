@@ -133,6 +133,44 @@ export const quickServiceTheme: ThemeConfig = {
   appearance: { cardStyle: "shadow", buttonStyle: "solid", iconStyle: "filled", density: "compact" },
 };
 
+export const landingShowcaseTheme: ThemeConfig = {
+  id: "landing-showcase",
+  name: "LP Smartphone UI",
+  colors: {
+    primary: "#007b61",
+    secondary: "#5f666d",
+    accent: "#4fc4a7",
+    background: "#f7fbfa",
+    surface: "#ffffff",
+    elevated: "#ffffff",
+    textPrimary: "#111719",
+    textSecondary: "#66707a",
+    border: "#dce7e4",
+  },
+  radius: { button: 12, card: 18, image: 16 },
+  typography: { headingWeight: 700, bodyWeight: 500 },
+  appearance: { cardStyle: "shadow", buttonStyle: "solid", iconStyle: "outline", density: "normal" },
+};
+
+export const simpleRewardsTheme: ThemeConfig = {
+  id: "simple-rewards",
+  name: "Simple Rewards",
+  colors: {
+    primary: "#171717",
+    secondary: "#666666",
+    accent: "#dff54a",
+    background: "#f7f7f5",
+    surface: "#ffffff",
+    elevated: "#ffffff",
+    textPrimary: "#171717",
+    textSecondary: "#6f6f6b",
+    border: "#deded9",
+  },
+  radius: { button: 8, card: 12, image: 8 },
+  typography: { headingWeight: 700, bodyWeight: 500 },
+  appearance: { cardStyle: "border", buttonStyle: "solid", iconStyle: "outline", density: "compact" },
+};
+
 export const allThemes = [
   minimalLightTheme,
   cafeNaturalTheme,
@@ -141,6 +179,8 @@ export const allThemes = [
   premiumGoldTheme,
   izakayaNightTheme,
   quickServiceTheme,
+  landingShowcaseTheme,
+  simpleRewardsTheme,
 ] satisfies ThemeConfig[];
 
 export const themeMap = Object.fromEntries(allThemes.map((theme) => [theme.id, theme])) as Record<

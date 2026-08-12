@@ -20,6 +20,7 @@ export function AppShell({ children }: PropsWithChildren) {
   return (
     <div
       className="app-shell"
+      data-store-id={activeStore.storeId}
       data-design-preset={customization.designPreset}
       data-nav-position={customization.navigation.position}
       data-button-style={customization.appearance.buttonStyle}
