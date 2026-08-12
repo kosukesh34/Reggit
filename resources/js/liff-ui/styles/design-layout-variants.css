@@ -156,7 +156,7 @@
 }
 
 .app-shell[data-design-preset="airy"] .bottom-nav {
-  bottom: 8px;
+  bottom: auto;
   width: min(calc(100% - 24px), calc(var(--page-width) - 24px));
   border: 1px solid var(--color-border);
   border-radius: 24px;
@@ -181,8 +181,8 @@
 }
 
 .bottom-nav--top {
-  position: sticky;
-  top: calc(70px + env(safe-area-inset-top));
+  position: relative;
+  top: auto;
   bottom: auto;
   left: 0;
   z-index: 17;
@@ -257,7 +257,8 @@
 }
 
 .bottom-nav--floating {
-  bottom: 10px;
+  bottom: auto;
+  margin-bottom: max(10px, env(safe-area-inset-bottom));
   width: min(calc(100% - 24px), calc(var(--page-width) - 24px));
   border: 1px solid var(--color-border);
   border-radius: 24px;
@@ -320,6 +321,13 @@
 .app-shell[data-design-preset="minimal"] .hero-banner__title { font-size: 29px; font-weight: 600; }
 
 .app-shell[data-design-preset="minimal"] .membership-summary { width: 100%; margin: 0; box-shadow: none; }
+
+.app-shell[data-design-preset="minimal"] .membership-summary__link,
+.app-shell[data-design-preset="monochrome"] .membership-summary__link {
+  color: var(--color-primary);
+  background: var(--color-surface);
+  border: 1px solid color-mix(in srgb, var(--color-on-accent) 30%, transparent);
+}
 
 .app-shell[data-design-preset="minimal"] .quick-grid__item,
 .app-shell[data-design-preset="minimal"] .card,
@@ -393,11 +401,33 @@
 .app-shell[data-design-preset="glass"] .news-list,
 .app-shell[data-design-preset="glass"] .store-summary { background: color-mix(in srgb, var(--color-surface) 68%, transparent); backdrop-filter: blur(18px) saturate(140%); }
 
+.app-shell[data-design-preset="glass"] .store-summary {
+  color: var(--color-text-primary);
+  border-color: color-mix(in srgb, var(--color-primary) 16%, transparent);
+}
+
+.app-shell[data-design-preset="glass"] .store-summary__body > span,
+.app-shell[data-design-preset="glass"] .store-summary__route {
+  color: var(--color-text-secondary);
+}
+
+.app-shell[data-design-preset="glass"] .store-summary__status {
+  color: var(--color-primary) !important;
+}
+
 .app-shell[data-design-preset="glass"] .hero-banner { min-height: 360px; box-shadow: 0 24px 70px color-mix(in srgb, var(--color-primary) 20%, transparent); }
 
 .app-shell[data-design-preset="glass"] .membership-summary { border-color: color-mix(in srgb, #ffffff 70%, transparent); }
 
-.app-shell[data-design-preset="glass"] .bottom-nav { background: color-mix(in srgb, var(--color-surface) 72%, transparent); }
+.app-shell[data-design-preset="glass"] .bottom-nav {
+  color: var(--color-text-secondary);
+  background: color-mix(in srgb, var(--color-surface) 92%, transparent);
+  border-color: color-mix(in srgb, var(--color-primary) 16%, transparent);
+}
+
+.app-shell[data-design-preset="glass"] .bottom-nav__item.is-active {
+  color: var(--color-on-accent);
+}
 
 .app-shell[data-design-preset="neo"] .header { color: var(--color-on-dark); background: var(--color-primary); border-bottom: 2px solid var(--color-accent); }
 
@@ -1242,11 +1272,10 @@
 }
 
 .app-shell[data-design-preset="fastfood"] {
-  background:
-    linear-gradient(135deg, var(--color-primary) 0 10px, var(--color-accent) 10px 20px, transparent 20px 32px),
-    var(--color-background);
-  background-size: 32px 32px;
+  background: #ffffff;
 }
+
+.app-shell[data-design-preset="fastfood"] .app-shell__backdrop { display: none; }
 
 .app-shell[data-design-preset="fastfood"] .app-shell__frame {
   background: var(--color-background);
@@ -1438,7 +1467,7 @@
 }
 
 .app-shell[data-nav-position="top"] .bottom-nav--top {
-  top: calc(70px + env(safe-area-inset-top));
+  top: auto;
   bottom: auto;
   width: 100%;
   border-top: 0;
@@ -1471,4 +1500,87 @@
 
 .app-shell[data-nav-position="floating"] .home-primary-action--floating {
   bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom) + 22px);
+}
+
+/* 固定CTAが会員証やカードを常時覆わないよう、ページ終端の通常ボタンにする */
+.home-page .home-primary-action--floating {
+  position: relative;
+  right: auto;
+  bottom: auto;
+  width: 100%;
+  min-width: 0;
+  justify-self: stretch;
+  margin: 0;
+}
+
+.app-shell[data-nav-position="top"] .home-page .home-primary-action--floating {
+  bottom: auto;
+}
+
+/* REGGIT COUNTER: 店頭で長時間使っても疲れにくい淡色オペレーション配色 */
+.app-shell[data-store-id="store_counter_operations"] .app-shell__frame {
+  background: #f7f8f4;
+  box-shadow: 0 0 0 1px rgb(49 95 85 / .08);
+}
+
+.app-shell[data-store-id="store_counter_operations"] .header {
+  color: #233b35;
+  background: rgb(255 255 255 / .96);
+  border-bottom: 1px solid #e3e9e5;
+  backdrop-filter: blur(18px);
+}
+
+.app-shell[data-store-id="store_counter_operations"] .header__subtitle,
+.app-shell[data-store-id="store_counter_operations"] .header__chevron {
+  color: #708079;
+}
+
+.app-shell[data-store-id="store_counter_operations"] .header__logo {
+  color: #315f55;
+  background: #e6efeb;
+  border: 1px solid #d5e4de;
+  border-radius: 11px;
+}
+
+.app-shell[data-store-id="store_counter_operations"] .bottom-nav--top {
+  top: auto;
+  color: #687872;
+  background: #f9fbf8;
+  border-bottom: 1px solid #dfe7e2;
+  box-shadow: 0 5px 18px rgb(49 95 85 / .05);
+}
+
+.app-shell[data-store-id="store_counter_operations"] .bottom-nav--top .bottom-nav__item.is-active {
+  color: #315f55;
+  background: #e2eee9;
+}
+
+.app-shell[data-store-id="store_counter_operations"] .app-shell__main > .page {
+  padding-inline: 18px;
+}
+
+.app-shell[data-store-id="store_counter_operations"] .counter-status {
+  color: #233b35;
+  background: #fff;
+  border: 1px solid #dfe7e2;
+  box-shadow: 0 8px 24px rgb(49 95 85 / .05);
+}
+
+.app-shell[data-store-id="store_counter_operations"] .counter-status > div { border-right-color: #e6ece8; }
+.app-shell[data-store-id="store_counter_operations"] .counter-status svg { color: #5f8a7e; }
+.app-shell[data-store-id="store_counter_operations"] .counter-status span { color: #71807a; }
+.app-shell[data-store-id="store_counter_operations"] .counter-status strong { color: #233b35; }
+.app-shell[data-store-id="store_counter_operations"] .counter-launcher__primary { color: #294d44; background: #dcece6; }
+.app-shell[data-store-id="store_counter_operations"] .counter-launcher__secondary { color: #5d4434 !important; background: #f2e4d8; }
+.app-shell[data-store-id="store_counter_operations"] .counter-launcher a { border: 1px solid rgb(49 95 85 / .08); box-shadow: 0 10px 24px rgb(49 95 85 / .06); }
+.app-shell[data-store-id="store_counter_operations"] .counter-service-panel { border-color: #dde6e1; box-shadow: 0 8px 24px rgb(49 95 85 / .04); }
+.app-shell[data-store-id="store_counter_operations"] .counter-service-list a > svg:first-child { color: #5b8177; }
+.app-shell[data-store-id="store_counter_operations"] .counter-store-strip { color: #314a43; background: #e9f0ec; border: 1px solid #dce7e1; }
+
+@media (max-width: 390px) {
+  .app-shell[data-store-id="store_counter_operations"] .counter-status { grid-template-columns: 1fr; }
+  .app-shell[data-store-id="store_counter_operations"] .counter-status > div { min-height: 54px; border-right: 0; border-bottom: 1px solid #e6ece8; }
+  .app-shell[data-store-id="store_counter_operations"] .counter-status > div:last-child { border-bottom: 0; }
+  .app-shell[data-store-id="store_counter_operations"] .counter-launcher { grid-template-columns: 1fr; }
+  .app-shell[data-store-id="store_counter_operations"] .counter-launcher a { min-height: 144px; }
 }

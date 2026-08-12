@@ -31,6 +31,15 @@ type DesignerDomConfig = {
   backUrl: string;
 };
 
+const memberCardDesignByTemplate: Record<AppCustomization['membership']['template'], string> = {
+  classic: 'default',
+  split: 'split_banner',
+  barcodeFocus: 'logo_header',
+  pointFocus: 'logo_top',
+  pass: 'emblem',
+  minimal: 'minimal_line',
+};
+
 function customizationFingerprint(customization: AppCustomization): string {
   return JSON.stringify(customization, (_key, value: unknown) => {
     if (value === null || Array.isArray(value) || typeof value !== 'object') return value;
@@ -143,6 +152,7 @@ async function saveCustomization(config: DesignerDomConfig, customization: AppCu
       ...previousGlobal,
       app_display_name: projectStore.storeName,
       app_customization: customization,
+      member_card_design: memberCardDesignByTemplate[customization.membership.template],
       accent_color: customization.colors.primary ?? previousGlobal.accent_color,
       products_group_by_category: customization.order.groupByCategory,
     },
