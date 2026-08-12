@@ -15,6 +15,8 @@ class LiffAppStudioTemplatesStructureTest extends TestCase
             'rg-suite-loyalty',
             'rg-suite-order',
             'rg-suite-booking',
+            'rg-suite-counter-operations',
+            'rg-suite-appointment-operations',
             'rg-suite-cafe',
             'rg-suite-landing',
             'rg-suite-simple-rewards',
@@ -115,6 +117,23 @@ class LiffAppStudioTemplatesStructureTest extends TestCase
         $this->assertSame(['home', 'member', 'coupons', 'stamps'], $menuTabs);
         $this->assertSame('member_summary', $suite['layouts']['home'][0]['type'] ?? null);
         $this->assertSame('all_tabs', $suite['scope'] ?? null);
+    }
+
+    public function test_店舗運営テンプレートは主要操作の配置が異なる(): void
+    {
+        $counter = $this->findTemplate('rg-suite-counter-operations');
+        $appointment = $this->findTemplate('rg-suite-appointment-operations');
+        $this->assertIsArray($counter);
+        $this->assertIsArray($appointment);
+
+        $this->assertSame('stats_row', $counter['layouts']['home'][0]['type'] ?? null);
+        $this->assertSame('counter', $counter['layouts']['home'][1]['design'] ?? null);
+        $this->assertSame(['home', 'products', 'queue', 'member', 'orders'], array_column($counter['menu'] ?? [], 'tab'));
+
+        $this->assertSame('card', $appointment['layouts']['home'][0]['type'] ?? null);
+        $this->assertSame('next_appointment', $appointment['layouts']['home'][0]['design'] ?? null);
+        $this->assertSame('slots', $appointment['layouts']['home'][2]['design'] ?? null);
+        $this->assertSame(['home', 'reservations', 'member', 'coupons', 'gallery'], array_column($appointment['menu'] ?? [], 'tab'));
     }
 
     public function test_スイートはthemeとtab_settings_globalが一致する(): void
