@@ -8,6 +8,8 @@ class WalletSettingsView
     public function __construct(
         public ?string $googleProgramLogoUrl,
         public ?string $googleHeroImageUrl,
-        public bool $appleAssetsSet
+        public bool $appleAssetsSet,
+        public ?string $appleIconUrl = null,
+        public ?string $appleLogoUrl = null,
     ) {}
 }

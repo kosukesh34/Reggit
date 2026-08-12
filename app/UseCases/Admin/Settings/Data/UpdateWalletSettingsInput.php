@@ -8,13 +8,13 @@ final class UpdateWalletSettingsInput
 {
     public function __construct(
         public readonly int $projectId,
-        public readonly ?string $walletGoogleProgramLogoUrl,
-        public readonly ?string $walletGoogleHeroImageUrl,
         public readonly ?UploadedFile $walletAppleIcon,
         public readonly ?UploadedFile $walletAppleLogo,
         public readonly ?UploadedFile $walletGoogleProgramLogoFile,
         public readonly ?UploadedFile $walletGoogleHeroFile,
-        public readonly bool $hasWalletGoogleProgramLogoUrlField,
-        public readonly bool $hasWalletGoogleHeroImageUrlField,
+        public readonly bool $clearAppleIcon = false,
+        public readonly bool $clearAppleLogo = false,
+        public readonly bool $clearGoogleProgramLogo = false,
+        public readonly bool $clearGoogleHero = false,
     ) {}
 }

@@ -17,10 +17,28 @@ class WalletAssetService
 
     public function hasAppleAssets(int $projectId): bool
     {
-        $base = self::APPLE_ASSETS_DIR.'/'.(string) $projectId;
+        return $this->getAppleIconUrl($projectId) !== null
+            || $this->getAppleLogoUrl($projectId) !== null;
+    }
 
-        return Storage::disk('public')->exists($base.'/icon.png')
-            || Storage::disk('public')->exists($base.'/logo.png');
+    public function getAppleIconUrl(int $projectId): ?string
+    {
+        return $this->publicAssetUrl(self::APPLE_ASSETS_DIR.'/'.$projectId, ['icon@3x.png', 'icon.png']);
+    }
+
+    public function getAppleLogoUrl(int $projectId): ?string
+    {
+        return $this->publicAssetUrl(self::APPLE_ASSETS_DIR.'/'.$projectId, ['logo@2x.png', 'logo.png']);
+    }
+
+    public function clearAppleIcon(int $projectId): void
+    {
+        $this->deletePublicFiles(self::APPLE_ASSETS_DIR.'/'.$projectId, ['icon.png', 'icon@2x.png', 'icon@3x.png']);
+    }
+
+    public function clearAppleLogo(int $projectId): void
+    {
+        $this->deletePublicFiles(self::APPLE_ASSETS_DIR.'/'.$projectId, ['logo.png', 'logo@2x.png']);
     }
 
     public function saveAppleAssets(int $projectId, ?UploadedFile $icon, ?UploadedFile $logo): bool
@@ -63,6 +81,37 @@ class WalletAssetService
         }
 
         return asset('storage/'.$path);
+    }
+
+    /**
+     * @param  list<string>  $candidates
+     */
+    private function publicAssetUrl(string $baseDir, array $candidates): ?string
+    {
+        foreach ($candidates as $name) {
+            $path = $baseDir.'/'.$name;
+            if (! Storage::disk('public')->exists($path)) {
+                continue;
+            }
+            $modified = Storage::disk('public')->lastModified($path);
+
+            return asset('storage/'.$path).'?v='.(string) $modified;
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  list<string>  $names
+     */
+    private function deletePublicFiles(string $baseDir, array $names): void
+    {
+        foreach ($names as $name) {
+            $path = $baseDir.'/'.$name;
+            if (Storage::disk('public')->exists($path)) {
+                Storage::disk('public')->delete($path);
+            }
+        }
     }
 
     private function resizeAndSaveIcon(string $sourcePath, string $baseDir): void
