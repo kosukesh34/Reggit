@@ -150,19 +150,27 @@ class QueueAdminService
 
             return;
         }
-        if (app()->environment('testing')) {
+
+        $projectId = (int) $entry->project_id;
+        if (! $this->shopSettingRepository->hasLineChannelAccessToken($projectId)) {
             if (! $nativeSent) {
                 $callLog->update([
                     'push_status' => 'skipped',
-                    'error_message' => 'testing environment',
+                    'error_message' => 'line channel token not configured',
                 ]);
             }
+            LogHelper::info('[Queue] line push skipped (token not configured)', [
+                'queue_id' => $entry->id,
+                'project_id' => $projectId,
+                'native_sent' => $nativeSent,
+            ]);
 
             return;
         }
+
         $message = sprintf('順番が近づきました。受付番号: %s', $entry->formattedQueueNumber());
         try {
-            $project = Project::find((int) $entry->project_id);
+            $project = Project::find($projectId);
             $projectKey = trim((string) ($project?->project_key ?? ''));
             if ($projectKey === '') {
                 LogHelper::error('[Queue] push skipped (project_key missing)', [
@@ -177,7 +185,7 @@ class QueueAdminService
                 return;
             }
             $liffUri = QueueLiffUrlBuilder::build(
-                (int) $entry->project_id,
+                $projectId,
                 $projectKey,
                 (string) ($entry->qr_token ?? ''),
                 (int) $entry->id
@@ -218,7 +226,11 @@ class QueueAdminService
                 'project_key' => $projectKey,
                 'is_liff_host' => str_contains($liffUri, 'liff.line.me'),
             ]);
-            $this->lineService->pushMessage($lineUserId, $flex);
+            $this->lineService->pushMessage(
+                $lineUserId,
+                $flex,
+                $this->shopSettingRepository->getLineChannelAccessToken($projectId)
+            );
             $callLog->update([
                 'push_status' => 'sent',
                 'error_message' => null,
