@@ -198,3 +198,288 @@ body.reggit-liff-ui .coupons-tab-panel {
 body.reggit-liff-ui .coupons-tab-panel.is-active {
     display: block;
 }
+
+/* 19-coupon.css が参照する変数のフォールバック（旧 style.css 非読込時） */
+body.reggit-liff-ui {
+    --success-color: #16a34a;
+    --bg-secondary: #eef2f1;
+    --bg-light: #f3f4f6;
+    --shadow: 0 2px 8px rgba(0, 0, 0, 0.04), 0 16px 32px rgba(0, 0, 0, 0.06);
+}
+
+body.reggit-liff-ui .coupons-header {
+    margin-bottom: 14px;
+}
+
+body.reggit-liff-ui .coupons-header h2,
+body.reggit-liff-ui .coupons-header .coupons-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary, #0f1c1a);
+}
+
+body.reggit-liff-ui .coupons-list {
+    display: grid;
+    gap: 12px;
+}
+
+body.reggit-liff-ui .coupon-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+body.reggit-liff-ui .coupon-item-name {
+    min-width: 0;
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--text-primary, #0f1c1a);
+    line-height: 1.4;
+}
+
+body.reggit-liff-ui .coupon-item-status {
+    flex-shrink: 0;
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--border-color, rgba(60, 60, 67, 0.18));
+    color: var(--text-secondary, #5c6b67);
+}
+
+body.reggit-liff-ui .coupon-item-status--available {
+    background: #d4edda;
+    color: #155724;
+}
+
+body.reggit-liff-ui .coupon-item-status--upcoming {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+body.reggit-liff-ui .coupon-item-status--used {
+    background: #e5e7eb;
+    color: #374151;
+}
+
+body.reggit-liff-ui .coupon-item-status--expired {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+body.reggit-liff-ui .coupon-item-valid,
+body.reggit-liff-ui .coupon-item-description,
+body.reggit-liff-ui .coupon-item-meta,
+body.reggit-liff-ui .coupon-item-unavailable {
+    margin: 6px 0 0;
+    font-size: 13px;
+    color: var(--text-secondary, #5c6b67);
+    line-height: 1.5;
+}
+
+body.reggit-liff-ui .coupon-item-actions {
+    margin-top: 12px;
+}
+
+body.reggit-liff-ui .coupon-item-actions .btn,
+body.reggit-liff-ui .coupon-use-btn {
+    width: 100%;
+    min-height: 44px;
+}
+
+body.reggit-liff-ui .coupon-item-image {
+    width: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 12px;
+    background: var(--bg-secondary, #eef2f1);
+}
+
+body.reggit-liff-ui .coupon-item-image img {
+    display: block;
+    width: 100%;
+    height: 140px;
+    object-fit: cover;
+}
+
+body.reggit-liff-ui .coupon-item-image--icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100px;
+    color: var(--primary-color, #0e7c66);
+    font-size: 2.5rem;
+}
+
+body.reggit-liff-ui .coupons-empty,
+body.reggit-liff-ui .coupons-error,
+body.reggit-liff-ui .coupons-tab-empty {
+    padding: 32px 16px;
+    text-align: center;
+    color: var(--text-secondary, #5c6b67);
+}
+
+body.reggit-liff-ui .ios-seg {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 16px;
+    padding: 4px;
+    background: var(--bg-subtle, #e8efec);
+    border-radius: 12px;
+}
+
+body.reggit-liff-ui .ios-seg__btn {
+    flex: 1;
+    min-height: 44px;
+    border: none;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--text-secondary, #5c6b67);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+body.reggit-liff-ui .ios-seg__btn.is-active {
+    background: #fff;
+    color: var(--primary-color, #0e7c66);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+body.reggit-liff-ui .ios-coupon-stack {
+    display: grid;
+    gap: 12px;
+}
+
+body.reggit-liff-ui .ios-coupon {
+    position: relative;
+    overflow: hidden;
+    border-radius: 18px;
+    background: #fff;
+    border: 1px solid var(--border-color, rgba(60, 60, 67, 0.18));
+    box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.05));
+}
+
+body.reggit-liff-ui .ios-coupon__media {
+    position: relative;
+    min-height: 120px;
+    background: linear-gradient(135deg, #0e7c66, #0a6b58);
+}
+
+body.reggit-liff-ui .ios-coupon__media img {
+    width: 100%;
+    height: 140px;
+    object-fit: cover;
+}
+
+body.reggit-liff-ui .ios-coupon__body {
+    padding: 14px 16px 16px;
+}
+
+body.reggit-liff-ui .ios-coupon__title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary, #0f1c1a);
+}
+
+body.reggit-liff-ui .ios-coupon__desc,
+body.reggit-liff-ui .ios-coupon__hint {
+    margin: 8px 0 0;
+    font-size: 12px;
+    color: var(--text-secondary, #5c6b67);
+    line-height: 1.5;
+}
+
+body.reggit-liff-ui .ios-coupon__use {
+    width: 100%;
+    margin-top: 12px;
+    min-height: 44px;
+    border-radius: 12px;
+    background: var(--primary-color, #0e7c66);
+    color: #fff;
+    font-weight: 700;
+}
+
+/* 会員証カードが liff-ui 上でも崩れないように最低限のレイアウトを補強 */
+body.reggit-liff-ui .member-card-container,
+body.reggit-liff-ui .member-card-mount {
+    width: 100%;
+    max-width: 100%;
+}
+
+body.reggit-liff-ui .member-card-idnect-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+body.reggit-liff-ui .member-card-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary, #0f1c1a);
+}
+
+body.reggit-liff-ui .member-card-edit-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: var(--surface-2, #f7faf9);
+    color: var(--text-primary, #0f1c1a);
+}
+
+body.reggit-liff-ui .member-lottery-cta {
+    margin-top: 16px;
+    padding: 14px 16px;
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--primary-color, #0e7c66) 10%, #fff);
+    border: 1px solid color-mix(in srgb, var(--primary-color, #0e7c66) 28%, transparent);
+}
+
+body.reggit-liff-ui .member-lottery-cta__text {
+    margin: 0 0 10px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary, #0f1c1a);
+}
+
+body.reggit-liff-ui .member-lottery-cta .pp-cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    padding: 0 16px;
+    border-radius: 10px;
+    background: var(--primary-color, #0e7c66);
+    color: #fff;
+    font-weight: 700;
+}
+
+body.reggit-liff-ui .member-card-add-to-wallet-wrap {
+    margin: 12px 0;
+}
+
+body.reggit-liff-ui .member-card-add-to-wallet-btn {
+    width: 100%;
+    min-height: 48px;
+    border-radius: 12px;
+    font-weight: 700;
+}
+
+body.reggit-liff-ui .member-card-add-to-wallet-btn--apple {
+    background: #000;
+    color: #fff;
+}
+
+body.reggit-liff-ui .member-card-add-to-wallet-btn--google {
+    background: #fff;
+    color: #1f1f1f;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+}
