@@ -119,14 +119,16 @@ export function RuntimeDataProvider({ children }: { children: ReactNode }) {
   }, [refresh]);
 
   useEffect(() => {
-    const onMemberChanged = (): void => {
+    const onReady = (): void => {
       void refresh();
     };
-    document.addEventListener("liff-member-reload", onMemberChanged);
-    document.addEventListener("liff-payment-completed", onMemberChanged);
+    document.addEventListener('liff-ready', onReady);
+    document.addEventListener('liff-member-reload', onReady);
+    document.addEventListener('liff-payment-completed', onReady);
     return () => {
-      document.removeEventListener("liff-member-reload", onMemberChanged);
-      document.removeEventListener("liff-payment-completed", onMemberChanged);
+      document.removeEventListener('liff-ready', onReady);
+      document.removeEventListener('liff-member-reload', onReady);
+      document.removeEventListener('liff-payment-completed', onReady);
     };
   }, [refresh]);
 
@@ -155,7 +157,31 @@ export function RuntimeDataProvider({ children }: { children: ReactNode }) {
     return receipt;
   }, [isDemoPreview, isMockShowcaseStore, mode, refresh, updateLocal]);
 
-  const data = remoteData ?? mockData;
+  const emptyLiveData = useMemo<RuntimeBootstrap>(() => ({
+    member: {
+      name: 'ゲスト',
+      number: '未発行',
+      rank: 'レギュラー',
+      points: 0,
+      expiration: '—',
+      nextRankLabel: '次のランク',
+      isMember: false,
+    },
+    coupons: [],
+    news: [],
+    stores: [{
+      name: activeStore.storeName,
+      address: '',
+      openHours: '',
+      access: '',
+      phone: '',
+    }],
+    usedCouponIds: [],
+    stampCount: 0,
+    notificationCount: 0,
+  }), [activeStore.storeName]);
+
+  const data = remoteData ?? (usePreviewData ? mockData : emptyLiveData);
   // 初回ロード中はモック店舗データを画面に出さない（ユーザー困惑防止）
   const isBootstrapping = loading && remoteData === undefined && !usePreviewData;
   const markAnnouncementRead = useCallback(async (announcementId: string) => {
