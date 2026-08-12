@@ -56,6 +56,7 @@ function mergeCustomization(store: StoreAppConfig, patch?: AppCustomizationPatch
       ...base.navigation,
       ...patch.navigation,
       tabs: patch.navigation?.tabs?.length ? patch.navigation.tabs.slice(0, 6) : base.navigation.tabs,
+      linkUrls: { ...base.navigation.linkUrls, ...patch.navigation?.linkUrls },
     },
   };
 }

@@ -38,7 +38,7 @@ export function HomePage() {
   const primaryActionEnabled = activeStore.features[activeStore.home.primaryActionFeature];
   const sections: ReactNode[] = [
     <section className="home-lead" key="lead">
-      <div><span>YOUR DAY, YOUR PLACE</span><strong>{(member.name || "ゲスト").split(/[\s　]/)[0]}さん、こんにちは。</strong></div>
+      <div><span>YOUR DAY, YOUR PLACE</span><strong>{(member.name.trim() !== "" ? member.name : "ゲスト").split(/[\s　]/)[0]}さん、こんにちは。</strong></div>
       <time>{new Intl.DateTimeFormat("ja-JP", { month: "short", day: "numeric", weekday: "short" }).format(new Date())}</time>
     </section>,
     mode === "offline" ? <button className="data-notice" type="button" onClick={() => void refresh()} key="data-notice">

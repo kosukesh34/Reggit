@@ -76,15 +76,18 @@ class LineWebhookHandleUseCase
     {
         $user = User::firstOrCreate(
             ['line_user_id' => $userId],
-            ['name' => 'LINE User']
         );
 
         $profile = $this->lineService->getProfile($userId);
         if ($profile !== null && $profile !== false) {
-            $user->update([
-                'name' => $profile['displayName'] ?? $user->name,
+            $displayName = trim((string) ($profile['displayName'] ?? ''));
+            $updates = [
                 'profile_image_url' => $profile['pictureUrl'] ?? null,
-            ]);
+            ];
+            if ($displayName !== '') {
+                $updates['line_name'] = $displayName;
+            }
+            $user->update($updates);
         }
 
         $message = $this->lineService->createTextMessage(

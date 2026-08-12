@@ -22,7 +22,7 @@ import { designPresetLayoutPatch } from "../config/customization";
 import { tabLabelMap, tabOptions } from "../config/navigation";
 import { useAppConfig } from "../context/AppConfigContext";
 import { themeMap } from "../themes/themes";
-import type { TabType } from "../types/app";
+import { isLinkTabType, type TabType } from "../types/app";
 import type { AppCustomization } from "../types/customization";
 import { resolveCustomizationColors } from "../utils/customization";
 
@@ -63,6 +63,9 @@ const previewPathByTab: Record<TabType, string> = {
   store: "/storeSearch",
   news: "/news",
   more: "/more",
+  link_1: "/link_1",
+  link_2: "/link_2",
+  link_3: "/link_3",
 };
 
 function buildEmbeddedPreviewUrl(baseUrl: string, tab: TabType): string {
@@ -285,7 +288,36 @@ export function AdminCustomizePage({
           <SectionHead number="04" title="タブとナビゲーション" description="2〜6個の範囲で、タブの種類・順番・配置を自由に変更できます。" />
           <div className="admin-panel">
             <div className="admin-panel__title"><h3>タブ構成</h3><p>矢印で並び替え、プルダウンで機能を変更できます。</p></div>
-            <TabEditor tabs={customization.navigation.tabs} onChange={(tabs) => updateCustomization({ navigation: { tabs } })} />
+            <TabEditor
+              tabs={customization.navigation.tabs}
+              onChange={(tabs) => {
+                const linkUrls = { ...customization.navigation.linkUrls };
+                for (const type of tabs) {
+                  if (isLinkTabType(type) && (linkUrls[type] === undefined || linkUrls[type] === "")) {
+                    linkUrls[type] = "https://example.com";
+                  }
+                }
+                updateCustomization({ navigation: { tabs, linkUrls } });
+              }}
+            />
+            {customization.navigation.tabs.filter(isLinkTabType).map((type) => (
+              <label className="admin-select" key={type}>
+                <span>{tabLabelMap[type]} URL</span>
+                <input
+                  type="url"
+                  value={customization.navigation.linkUrls?.[type] ?? ""}
+                  placeholder="https://"
+                  onChange={(event) => updateCustomization({
+                    navigation: {
+                      linkUrls: {
+                        ...customization.navigation.linkUrls,
+                        [type]: event.target.value,
+                      },
+                    },
+                  })}
+                />
+              </label>
+            ))}
             <SelectRow label="ナビゲーション配置" value={customization.navigation.position} onChange={(position) => updateCustomization({ navigation: { position: position as AppCustomization["navigation"]["position"] } })}><option value="bottom">画面下</option><option value="floating">フローティング</option><option value="top">ヘッダー下</option></SelectRow>
             <ToggleRow label="タブ名を表示" checked={customization.navigation.showLabels} onChange={(showLabels) => updateCustomization({ navigation: { showLabels } })} />
             <ToggleRow label="中央タブを強調" checked={customization.navigation.emphasizeCenterTab} onChange={(emphasizeCenterTab) => updateCustomization({ navigation: { emphasizeCenterTab } })} />

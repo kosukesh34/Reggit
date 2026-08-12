@@ -7,7 +7,6 @@ import {
     prepareLottery,
     showGachaSection,
     showScratchSection,
-    wonCouponsForDisplay,
     type LotteryState,
 } from './api';
 
@@ -70,10 +69,12 @@ function ScratchPanel({ chip }: { chip: string }): JSX.Element {
                     <span className="pp-play-card__title">スクラッチくじ</span>
                     <span className="pp-play-card__chip" data-scratch-chip>{chip}</span>
                 </div>
-                <p className="pp-play-card__rule">銀面をこすって結果を確認しましょう。中身は削るまで見えません。</p>
+                <p className="pp-play-card__rule">銀面をこすると、下のクーポンが見えてきます。</p>
                 <div className="pp-scratch" id="designScratchStage" data-state="sealed">
                     <div className="pp-scratch__circle" id="designScratchCircle">
                         <div className="pp-scratch__prize" id="designScratchPrize">
+                            <p className="pp-scratch__prize-mystery" id="designScratchMystery" aria-hidden="true" hidden>?</p>
+                            <img className="pp-scratch__prize-image" id="designScratchImage" alt="" hidden />
                             <p className="pp-scratch__prize-eyebrow" id="designScratchEyebrow" hidden>あたり</p>
                             <p className="pp-scratch__prize-name" id="designScratchName" />
                             <p className="pp-scratch__prize-desc" id="designScratchDesc" />
@@ -101,23 +102,33 @@ function ScratchPanel({ chip }: { chip: string }): JSX.Element {
     );
 }
 
-function WonList(): JSX.Element {
-    const won = wonCouponsForDisplay();
-    if (won === null) {
-        return <li className="design-lab__won-empty">獲得クーポンはクーポン一覧で確認できます</li>;
-    }
-    if (won.length === 0) {
-        return <li className="design-lab__won-empty">まだありません</li>;
-    }
+function RoulettePanel(): JSX.Element {
     return (
-        <>
-            {won.map((c, i) => (
-                <li key={`${c.coupon_name}-${i}`} className="design-lab__won-item">
-                    <span className="design-lab__won-badge">{c.source === 'scratch' ? 'スクラッチ' : 'ガチャ'}</span>
-                    <span className="design-lab__won-name">{c.coupon_name}</span>
-                </li>
-            ))}
-        </>
+        <section className="design-lab__section" data-lottery-section="roulette" aria-label="ルーレット">
+            <h2 className="design-lab__section-title">ルーレット</h2>
+            <p className="design-lab__section-lead">回して止まったマスのクーポンを獲得します</p>
+            <div className="pp-play-card">
+                <div className="pp-play-card__top">
+                    <span className="pp-play-card__title">クーポンルーレット</span>
+                    <span className="pp-play-card__chip">体験</span>
+                </div>
+                <p className="pp-play-card__rule">針の先に止まった景品が当たりです。</p>
+                <div className="pp-roulette" id="designRouletteStage" data-state="idle">
+                    <div className="pp-roulette__stage">
+                        <div className="pp-roulette__frame">
+                            <span className="pp-roulette__glow" aria-hidden="true" />
+                            <div className="pp-roulette__lights" aria-hidden="true" id="designRouletteLights" />
+                            <span className="pp-roulette__pointer" aria-hidden="true" />
+                            <span className="pp-roulette__rim" aria-hidden="true" />
+                            <div className="pp-roulette__wheel" id="designRouletteWheel" role="img" aria-label="ルーレット盤" />
+                            <div className="pp-roulette__hub" aria-hidden="true"><span /></div>
+                        </div>
+                        <div className="pp-roulette__pedestal" aria-hidden="true" />
+                    </div>
+                    <button type="button" className="pp-cta" id="designRouletteBtn">ルーレットを回す</button>
+                </div>
+            </div>
+        </section>
     );
 }
 
@@ -144,6 +155,7 @@ export function DesignLabView(): JSX.Element {
 
     const showGacha = showGachaSection(state);
     const showScratch = showScratchSection(state);
+    const showRoulette = isDemoDataMode();
     const gachaChip = chipLabel(hasPending(state, 'gacha'));
     const scratchChip = chipLabel(hasPending(state, 'scratch'));
 
@@ -156,19 +168,17 @@ export function DesignLabView(): JSX.Element {
         if (root === null || mgr === undefined) {
             return;
         }
-        // ガチャ操作は Manager、スクラッチ canvas は useEffect で Manager の init を canvas に適用
         if (typeof mgr.hydrateFromReact === 'function') {
             mgr.hydrateFromReact(root, { scratchInit: false });
         }
         if (showScratch && typeof mgr.initScratchFromReact === 'function') {
-            // rAF: canvas の layout 確定後に foil を描く（cssSize < 48 ガード回避）
             const raf = window.requestAnimationFrame(() => {
                 mgr.initScratchFromReact?.(root);
             });
             return () => window.cancelAnimationFrame(raf);
         }
         return undefined;
-    }, [ready, showGacha, showScratch, state]);
+    }, [ready, showGacha, showScratch, showRoulette, state]);
 
     if (!ready) {
         return (
@@ -181,7 +191,7 @@ export function DesignLabView(): JSX.Element {
 
     return (
         <div ref={rootRef} className="design-lab">
-            {!showGacha && !showScratch ? (
+            {!showGacha && !showScratch && !showRoulette ? (
                 <p className="design-lab__section-lead">現在あそべるコンテンツはありません</p>
             ) : null}
             {showGacha ? (
@@ -190,12 +200,7 @@ export function DesignLabView(): JSX.Element {
                 </section>
             ) : null}
             {showScratch ? <ScratchPanel chip={scratchChip} /> : null}
-            <section className="design-lab__section" aria-label="獲得クーポン">
-                <h2 className="design-lab__section-title">獲得したクーポン</h2>
-                <ul className="design-lab__won" id="designWonList">
-                    <WonList />
-                </ul>
-            </section>
+            {showRoulette ? <RoulettePanel /> : null}
         </div>
     );
 }

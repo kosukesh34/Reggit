@@ -1,4 +1,4 @@
-import { Home, CreditCard, CircleEllipsis, Ticket, Sparkles, CalendarDays, ShoppingBag, MapPinned, Stamp, ScanSearch } from "lucide-react";
+import { Home, CreditCard, CircleEllipsis, Ticket, Sparkles, CalendarDays, ShoppingBag, MapPinned, Stamp, ScanSearch, ExternalLink } from "lucide-react";
 import type { CSSProperties } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { tabLabelMap } from "../../config/navigation";
@@ -19,6 +19,9 @@ const iconMap: Record<TabType, typeof Home> = {
   store: MapPinned,
   news: Sparkles,
   more: CircleEllipsis,
+  link_1: ExternalLink,
+  link_2: ExternalLink,
+  link_3: ExternalLink,
 };
 
 const pathByType: Record<TabType, string> = {
@@ -35,6 +38,9 @@ const pathByType: Record<TabType, string> = {
   store: "/storeSearch",
   news: "/news",
   more: "/more",
+  link_1: "/link_1",
+  link_2: "/link_2",
+  link_3: "/link_3",
 };
 
 function resolveActive(pathname: string, tab: TabConfig) {
@@ -68,13 +74,17 @@ export function BottomNavigation() {
     return feature === undefined || activeStore.features[feature];
   });
   const safeTypes: TabType[] = visibleTypes.length > 0 ? visibleTypes : ["home", "more"];
-  const tabs: TabConfig[] = safeTypes.slice(0, 6).map((type, index) => ({
-    id: `${type}-${index}`,
-    type,
-    label: tabLabelMap[type],
-    enabled: true,
-    order: index,
-  }));
+  const tabs: TabConfig[] = safeTypes.slice(0, 6).map((type, index) => {
+    const storeTab = activeStore.tabs.find((tab) => tab.type === type);
+    return {
+      id: `${type}-${index}`,
+      type,
+      label: (storeTab?.label?.trim() || tabLabelMap[type]),
+      url: storeTab?.url,
+      enabled: true,
+      order: index,
+    };
+  });
 
   return (
     <nav

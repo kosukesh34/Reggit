@@ -14,6 +14,9 @@ export const tabOptions: Array<{ type: TabType; label: string }> = [
   { type: "store", label: "店舗" },
   { type: "news", label: "お知らせ" },
   { type: "more", label: "その他" },
+  { type: "link_1", label: "外部サイト1" },
+  { type: "link_2", label: "外部サイト2" },
+  { type: "link_3", label: "外部サイト3" },
 ];
 
 export const tabLabelMap = Object.fromEntries(tabOptions.map((option) => [option.type, option.label])) as Record<TabType, string>;
