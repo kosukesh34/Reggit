@@ -154,6 +154,8 @@ export function RuntimeDataProvider({ children }: { children: ReactNode }) {
   }, [isDemoPreview, mode, refresh, updateLocal]);
 
   const data = remoteData ?? mockData;
+  // 初回ロード中はモック店舗データを画面に出さない（ユーザー困惑防止）
+  const isBootstrapping = loading && remoteData === undefined && !isDemoPreview;
   const markAnnouncementRead = useCallback(async (announcementId: string) => {
     if (reggitApi.configured && !isDemoPreview) {
       if (mode !== 'live') throw new Error('店舗システムに接続できないため、既読状態を保存できません');
@@ -168,9 +170,9 @@ export function RuntimeDataProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<RuntimeDataContextValue>(() => ({
     ...data,
-    mode,
-    loading,
-    error,
+    mode: isBootstrapping ? 'offline' : mode,
+    loading: isBootstrapping || loading,
+    error: isBootstrapping ? undefined : error,
     refresh,
     createOrder: (input) => run(() => reggitApi.createOrder(input), "ORD"),
     createReservation: (input) => run(() => reggitApi.createReservation(input), "RSV"),
@@ -189,7 +191,7 @@ export function RuntimeDataProvider({ children }: { children: ReactNode }) {
     saveSettings: (settings) => run(() => reggitApi.saveSettings(activeStore.storeId, settings), "SET"),
     submitContact: (input) => run(() => reggitApi.submitContact(activeStore.storeId, input), "CNT"),
     markAnnouncementRead,
-  }), [activeStore.storeId, data, error, loading, markAnnouncementRead, mode, refresh, run, updateLocal]);
+  }), [activeStore.storeId, data, error, isBootstrapping, loading, markAnnouncementRead, mode, refresh, run, updateLocal]);
 
   return <RuntimeDataContext.Provider value={value}>{children}</RuntimeDataContext.Provider>;
 }
