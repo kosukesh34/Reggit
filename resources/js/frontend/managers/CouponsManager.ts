@@ -1044,8 +1044,8 @@ export class CouponsManager {
         return null;
     }
 
-    _renderCouponCodeTextFallback(codeArea: HTMLElement, code: string): void {
-        codeArea.innerHTML = `<p class="coupon-use-code-label">クーポンコード</p><p class="coupon-use-code-text">${DomHelper.escapeHtml(code)}</p>`;
+    _renderCouponCodeTextFallback(codeArea: HTMLElement, _code: string): void {
+        codeArea.innerHTML = '<p class="coupon-use-code-text text-muted">バーコードを表示できませんでした</p>';
     }
 
     _isBarcodeElementRendered(element: any): boolean {
@@ -1073,8 +1073,8 @@ export class CouponsManager {
         const wrapClass = enlarged ? 'member-code-enlarge-barcode-wrap' : 'coupon-use-barcode-wrap';
         const svgClass = enlarged ? 'member-code-enlarge-barcode-svg' : 'coupon-use-barcode-svg';
         const options = enlarged
-            ? { format: 'CODE128', width: isMobile ? 4 : 3, height: isMobile ? 220 : 180, displayValue: true, fontSize: isMobile ? 24 : 20, margin: 20, background: '#ffffff', lineColor: '#000000' }
-            : { format: 'CODE128', width: isMobile ? 3 : 2, height: isMobile ? 100 : 72, displayValue: true, fontSize: isMobile ? 16 : 14, margin: isMobile ? 10 : 8, background: '#ffffff', lineColor: '#000000' };
+            ? { format: 'CODE128', width: isMobile ? 4 : 3, height: isMobile ? 220 : 180, displayValue: false, margin: 20, background: '#ffffff', lineColor: '#000000' }
+            : { format: 'CODE128', width: isMobile ? 3 : 2, height: isMobile ? 100 : 72, displayValue: false, margin: isMobile ? 10 : 8, background: '#ffffff', lineColor: '#000000' };
 
         codeArea.innerHTML =
             `<div class="${wrapClass}">`
