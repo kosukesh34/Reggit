@@ -125,7 +125,12 @@ figure {
   gap: 11px;
   min-width: 0;
   min-height: 50px;
+  padding: 0;
+  color: inherit;
   text-align: left;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
 }
 
 .header__logo {
@@ -639,7 +644,7 @@ figure {
 }
 
 .membership-summary__barcode .barcode__svg {
-  height: 48px;
+  height: 58px;
 }
 
 .membership-summary__barcode .barcode__value {
@@ -653,6 +658,28 @@ figure {
   background: #102017;
 }
 
+.membership-summary--guest::after {
+  display: none;
+}
+
+.membership-summary--guest .membership-summary__body {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+}
+
+.membership-summary--guest .membership-summary__meta {
+  margin-top: 0;
+  line-height: 1.55;
+  opacity: .78;
+}
+
+.membership-summary--guest .membership-summary__body .button {
+  width: 100%;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
 .home-section {
   min-width: 0;
 }
@@ -661,12 +688,15 @@ figure {
   display: grid;
   grid-template-columns: repeat(var(--quick-columns, 4), minmax(0, 1fr));
   gap: 10px;
+  align-items: stretch;
 }
 
 .quick-grid__item {
   position: relative;
   display: grid;
+  align-content: space-between;
   min-width: 0;
+  height: 100%;
   min-height: 105px;
   padding: 13px 11px 12px;
   overflow: hidden;
@@ -674,10 +704,7 @@ figure {
   border: 1px solid var(--color-border);
   border-radius: 18px;
   box-shadow: var(--shadow-soft);
-}
-
-.quick-grid__item:nth-child(even) {
-  transform: translateY(5px);
+  transform: none;
 }
 
 .quick-grid__index {
@@ -960,7 +987,6 @@ figure {
 }
 
 .bottom-nav--icons-only .bottom-nav__item { font-size: 0; }
-.bottom-nav--emphasize-center .bottom-nav__item:nth-child(3) { color: #102017; background: var(--color-accent); }
 .bottom-nav--top { position: sticky; top: calc(76px + env(safe-area-inset-top)); bottom: auto; width: calc(100% - 28px); margin: 0 auto 8px; }
 
 .button {
@@ -1039,6 +1065,13 @@ figure {
 
 .membership-page { padding-top: 14px; }
 
+/* 旧 .member-section 余白を打ち消し、会員証カードをコンテンツ幅いっぱいに表示 */
+body.reggit-liff-ui .membership-page .member-section.member-card-mount {
+  padding: 0;
+  min-height: 0;
+  overflow: visible;
+}
+
 .membership-card {
   position: relative;
   display: grid;
@@ -1075,8 +1108,22 @@ figure {
 .membership-card__name { margin: 5px 0; font-size: 30px; font-weight: 760; letter-spacing: -.06em; }
 .membership-card__number { font-size: 11px; letter-spacing: .12em; opacity: .72; }
 .membership-card__meta { display: flex; flex-wrap: wrap; gap: 7px 15px; margin-top: 14px; font-size: 8px; opacity: .7; }
+.membership-card__next-rank {
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 12px;
+  padding: 10px 12px;
+  color: inherit;
+  font-size: 12px;
+  font-weight: 720;
+  line-height: 1.45;
+  letter-spacing: -.01em;
+  background: color-mix(in srgb, currentColor 12%, transparent);
+  border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+  border-radius: 12px;
+}
 .membership-card__footer { position: relative; z-index: 1; align-self: end; display: grid; gap: 15px; }
-.membership-card__visuals { padding: 10px; background: #fff; border-radius: 13px; }
+.membership-card__visuals { padding: 8px; background: #fff; border-radius: 13px; }
 .membership-card--align-center { text-align: center; }
 .membership-card--align-center .membership-card__top { justify-content: center; }
 .membership-card--align-center .membership-card__brand, .membership-card--align-center .membership-card__edition { text-align: center; }
@@ -1090,17 +1137,63 @@ figure {
 .point-summary__label { font-size: 8px; font-weight: 800; letter-spacing: .15em; opacity: .66; }
 .point-summary__value { margin-top: 2px; font-size: 25px; font-weight: 820; letter-spacing: -.055em; }
 .barcode { margin: 0; color: #111; }
-.barcode__svg { width: 100%; height: 58px; }
+.barcode__svg { width: 100%; height: 70px; }
 .barcode__paper { fill: #fff; }
 .barcode__ink { fill: #111; }
 .barcode__value { margin-top: 3px; color: #111; font-size: 8px; letter-spacing: .18em; text-align: center; }
-.barcode-modal { display: grid; gap: 18px; padding: 14px 10px; text-align: center; }
-.barcode-modal .barcode { padding: 20px 13px; background: #fff; border-radius: 17px; }
-.barcode-modal p { margin: 0; color: var(--color-text-secondary); font-size: 11px; line-height: 1.7; }
+
+.membership-barcode-enlarge {
+  display: grid;
+  gap: 14px;
+}
+
+.membership-barcode-enlarge--sheet {
+  padding: 4px 0 8px;
+}
+
+.membership-barcode-enlarge__stage {
+  display: grid;
+  place-items: center;
+  padding: 8px 0 4px;
+}
+
+.membership-barcode-enlarge .barcode--enlarged {
+  width: min(100%, 420px);
+  padding: 28px 18px 18px;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: 22px;
+  box-shadow: 0 18px 40px rgb(16 24 18 / .08);
+}
+
+.membership-barcode-enlarge .barcode--enlarged .barcode__svg {
+  display: block;
+  width: 100%;
+  height: clamp(144px, 34vw, 202px);
+}
+
+.membership-barcode-enlarge .barcode--enlarged .barcode__value {
+  margin-top: 14px;
+  font-size: 15px;
+  font-weight: 760;
+  letter-spacing: .22em;
+}
+
+.membership-barcode-enlarge__hint {
+  margin: 0;
+  padding: 0 4px;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  line-height: 1.7;
+  text-align: center;
+}
+
 .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; overflow: hidden; background: var(--color-border); border: 1px solid var(--color-border); border-radius: 17px; }
 .detail-grid > div { min-width: 0; padding: 15px; background: var(--color-surface); }
+.detail-grid__full { grid-column: 1 / -1; }
 .detail-grid__label { color: var(--color-text-secondary); font-size: 8px; font-weight: 700; }
 .detail-grid__value { margin-top: 5px; overflow: hidden; font-size: 12px; font-weight: 750; text-overflow: ellipsis; white-space: nowrap; }
+.detail-grid__value--wrap { white-space: normal; text-overflow: unset; line-height: 1.45; }
 .actions-row { display: flex; margin-top: 18px; }
 .page-note { display: flex; align-items: center; gap: 7px; margin: -10px 5px 0; color: var(--color-text-secondary); font-size: 9px; line-height: 1.5; }
 

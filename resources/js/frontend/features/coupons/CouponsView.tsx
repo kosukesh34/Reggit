@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { AppConstants } from '../../../shared/constants';
 import { applyDemoCouponUsageState, readDemoWonCoupons } from '../../demo/demoCoupons';
-import { isDemoDataMode, isFixedUiShell } from '../../demo/demoMode';
+import { isDemoDataMode, isFeatureUiShell } from '../../demo/demoMode';
 import { ensureLiffIdentityForLoad } from '../../demo/ensureIdentity';
 import { isMembershipRequired } from '../../utils/membershipPolicy';
 import { LIFF_COUPONS_RELOAD, LIFF_COUPONS_UPDATED } from '../products/types';
@@ -367,7 +367,7 @@ type CouponsViewProps = {
 };
 
 export function CouponsView({ className = 'coupons-data-mount' }: CouponsViewProps): JSX.Element {
-    const fixed = isFixedUiShell();
+    const fixed = isFeatureUiShell();
     const [loadState, setLoadState] = useState<LoadState>('idle');
     const [coupons, setCoupons] = useState<CouponRecord[]>([]);
     const [defaultImage, setDefaultImage] = useState<string | null>(null);

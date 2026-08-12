@@ -18,6 +18,7 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties, type Reac
 import { Link } from "react-router-dom";
 import { Button } from "../components/ui/Button";
 import { designPresets } from "../config/designPresets";
+import { designPresetLayoutPatch } from "../config/customization";
 import { tabLabelMap, tabOptions } from "../config/navigation";
 import { useAppConfig } from "../context/AppConfigContext";
 import { themeMap } from "../themes/themes";
@@ -186,7 +187,7 @@ export function AdminCustomizePage({
           <SectionHead number="01" title="基本デザイン" description="業態に合う構成を選び、店舗のブランドカラーへ調整します。" />
           <div className="preset-grid preset-grid--compact" aria-label="基本デザインを選択">
             {designPresets.map((item) => (
-              <button type="button" className={`preset-card preset-card--${item.id}${customization.designPreset === item.id ? " is-active" : ""}`} key={item.id} title={item.description} aria-label={`${item.name}：${item.description}`} aria-pressed={customization.designPreset === item.id} onClick={() => updateCustomization({ designPreset: item.id, colors: { primary: undefined, secondary: undefined, accent: undefined, background: undefined, surface: undefined, textPrimary: undefined, textSecondary: undefined } })}>
+              <button type="button" className={`preset-card preset-card--${item.id}${customization.designPreset === item.id ? " is-active" : ""}`} key={item.id} title={item.description} aria-label={`${item.name}：${item.description}`} aria-pressed={customization.designPreset === item.id} onClick={() => updateCustomization(designPresetLayoutPatch(item.id))}>
                 <span className="preset-card__visual" style={{ "--preset-a": item.palette[0], "--preset-b": item.palette[1], "--preset-c": item.palette[2] } as CSSProperties}><i /><i /><i /></span>
                 <span className="preset-card__body"><strong>{item.name}</strong></span>
                 {customization.designPreset === item.id ? <span className="preset-card__check"><Check size={10} /></span> : null}
@@ -270,7 +271,8 @@ export function AdminCustomizePage({
               <ToggleRow label="会員番号" checked={customization.membership.showMemberNumber} onChange={(showMemberNumber) => updateCustomization({ membership: { showMemberNumber } })} />
               <ToggleRow label="バーコード" checked={customization.membership.showBarcode} onChange={(showBarcode) => updateCustomization({ membership: { showBarcode } })} />
               <ToggleRow label="ポイント" checked={customization.membership.showPoints} onChange={(showPoints) => updateCustomization({ membership: { showPoints } })} />
-              <ToggleRow label="ランク" checked={customization.membership.showRank} onChange={(showRank) => updateCustomization({ membership: { showRank } })} />
+              <ToggleRow label="会員ランク" checked={customization.membership.showRank} onChange={(showRank) => updateCustomization({ membership: { showRank } })} />
+              <ToggleRow label="次ランクまでのポイント" checked={customization.membership.showNextRank} onChange={(showNextRank) => updateCustomization({ membership: { showNextRank } })} />
               <ToggleRow label="会員有効期限" checked={customization.membership.showExpiry} onChange={(showExpiry) => updateCustomization({ membership: { showExpiry } })} />
               <SelectRow label="スタンプ形式" value={customization.stamp.style} onChange={(style) => updateCustomization({ stamp: { style: style as AppCustomization["stamp"]["style"] } })}><option value="circles">丸型</option><option value="squares">スクエア</option><option value="progress">プログレスバー</option></SelectRow>
               <SelectRow label="達成スタンプ数" value={String(customization.stamp.goal)} onChange={(goal) => updateCustomization({ stamp: { goal: Number(goal) } })}><option value="5">5個</option><option value="10">10個</option><option value="12">12個</option></SelectRow>

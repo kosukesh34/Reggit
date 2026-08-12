@@ -60,13 +60,27 @@ function mergeCustomization(store: StoreAppConfig, patch?: AppCustomizationPatch
   };
 }
 
-function resolveStores(isAdminStudio: boolean): StoreAppConfig[] {
-  const projectStore = buildProjectStore();
-  if (!isAdminStudio) {
-    return [projectStore];
+/** /liff（プロジェクトキーなし）や ?demo=1 では業態モックを並べてデザイン切替できる */
+function isStoreShowcaseMode(): boolean {
+  if (typeof document !== 'undefined' && document.body.classList.contains('liff-demo-data')) {
+    return true;
   }
-  // 管理画面では既存モック業態も参照用に残す
-  return [projectStore, ...appConfig.stores.filter((store) => store.storeId !== projectStore.storeId)];
+  if (typeof window === 'undefined') {
+    return false;
+  }
+  const path = window.location.pathname.replace(/\/+$/, '') || '/';
+  return path === '/liff';
+}
+
+function resolveStores(isAdminStudio: boolean): StoreAppConfig[] {
+  if (isAdminStudio) {
+    const projectStore = buildProjectStore();
+    return [projectStore, ...appConfig.stores.filter((store) => store.storeId !== projectStore.storeId)];
+  }
+  if (isStoreShowcaseMode()) {
+    return appConfig.stores;
+  }
+  return [buildProjectStore()];
 }
 
 function loadInitialCustomizations(stores: StoreAppConfig[]): Record<string, AppCustomization> {
@@ -83,11 +97,14 @@ function loadInitialCustomizations(stores: StoreAppConfig[]): Record<string, App
     byStore = {};
   }
 
-  const projectStore = stores[0];
-  if (projectStore !== undefined) {
-    const serverPatch = readServerCustomizationPatch(projectStore.storeId);
+  const projectKey = typeof window !== 'undefined' && window.__PROJECT_KEY__
+    ? String(window.__PROJECT_KEY__)
+    : '';
+  const serverTarget = stores.find((store) => store.storeId === projectKey) ?? stores[0];
+  if (serverTarget !== undefined) {
+    const serverPatch = readServerCustomizationPatch(serverTarget.storeId);
     if (serverPatch !== undefined) {
-      byStore[projectStore.storeId] = serverPatch;
+      byStore[serverTarget.storeId] = serverPatch;
     }
   }
 

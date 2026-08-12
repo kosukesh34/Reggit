@@ -5,6 +5,7 @@ import '../../css/app.css';
 import '../../css/admin/liff-designer/react.css';
 import '../liff-ui/styles/tokens.css';
 import '../liff-ui/styles/globals.css';
+import '../liff-ui/styles/design-layout-variants.css';
 import { AdminSidebar } from './components/AdminSidebar';
 import { exposeAdminLegacyGlobals } from '../shared/utils/exposeAdminLegacyGlobals';
 import { MemoryRouter } from 'react-router-dom';
