@@ -35,7 +35,11 @@ export function isDemoDataMode(): boolean {
     }
     try {
         const params = new URLSearchParams(window.location.search || '');
-        return params.get('demo') === '1';
+        if (params.get('demo') === '1') {
+            return true;
+        }
+        const path = window.location.pathname.replace(/\/+$/, '') || '/';
+        return path === '/liff';
     } catch (_e) {
         return false;
     }

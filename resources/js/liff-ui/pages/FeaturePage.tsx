@@ -16,6 +16,8 @@ import { StampsView } from "../../frontend/features/stamps/StampsView";
 import { QueueView } from "../../frontend/features/queue/QueueView";
 import { ReservationsView } from "../../frontend/features/reservations/ReservationsView";
 import { pathForLegacyTab } from "../navigation/tabPath";
+import { isLinkTabType } from "../types/app";
+import { LinkSitePage } from "./LinkSitePage";
 
 const FEATURE_ALIASES: Record<string, string> = {
   member: "membership",
@@ -50,6 +52,10 @@ export function FeaturePage() {
 
   if (rawFeature === undefined || rawFeature === "") {
     return <Navigate to="/home" replace />;
+  }
+
+  if (isLinkTabType(rawFeature)) {
+    return <LinkSitePage tab={rawFeature} />;
   }
 
   const aliased = FEATURE_ALIASES[rawFeature];

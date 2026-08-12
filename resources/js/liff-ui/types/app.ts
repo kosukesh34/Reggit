@@ -37,6 +37,8 @@ export interface FeatureConfig {
   subscription: boolean;
 }
 
+export type LinkTabType = "link_1" | "link_2" | "link_3";
+
 export type TabType =
   | "home"
   | "membership"
@@ -50,13 +52,19 @@ export type TabType =
   | "menu"
   | "store"
   | "news"
-  | "more";
+  | "more"
+  | LinkTabType;
+
+export function isLinkTabType(type: string): type is LinkTabType {
+  return type === "link_1" || type === "link_2" || type === "link_3";
+}
 
 export interface TabConfig {
   id: string;
   type: TabType;
   label: string;
   icon?: string;
+  url?: string;
   enabled: boolean;
   order: number;
 }

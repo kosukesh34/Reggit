@@ -283,7 +283,6 @@ class QueueQrStatusUseCase
         return User::create([
             'project_id' => $input->projectId,
             'line_user_id' => $input->lineUserId,
-            'name' => 'LINE User',
         ]);
     }
 

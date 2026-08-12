@@ -1,4 +1,4 @@
-import type { StoreAppConfig } from "../types/app";
+import { isLinkTabType, type StoreAppConfig } from "../types/app";
 import type { AppCustomization, AppCustomizationPatch, DesignPreset } from "../types/customization";
 
 export const defaultCustomization: AppCustomization = {
@@ -66,6 +66,7 @@ export const defaultCustomization: AppCustomization = {
     position: "bottom",
     showLabels: true,
     emphasizeCenterTab: false,
+    linkUrls: {},
   },
 };
 
@@ -192,6 +193,11 @@ export function createDefaultCustomization(store: StoreAppConfig): AppCustomizat
       tabs: tabs.length > 0 ? tabs : defaultCustomization.navigation.tabs,
       position: experience.navigationPosition,
       emphasizeCenterTab: experience.emphasizeCenterTab,
+      linkUrls: Object.fromEntries(
+        store.tabs
+          .filter((tab) => isLinkTabType(tab.type) && typeof tab.url === "string" && tab.url !== "")
+          .map((tab) => [tab.type, tab.url as string]),
+      ),
     },
   };
 }
