@@ -1,24 +1,32 @@
-{{-- ヘッダーロゴのドラッグ&ドロップ（機能設定・プロジェクト入力ホーム共通） --}}
+{{-- 管理画面共通: 画像ドラッグ&ドロップ + プレビュー --}}
 @php
     $logoInputName = $logoInputName ?? 'frontend_logo';
     $logoClearName = $logoClearName ?? 'frontend_logo_clear';
     $logoCurrentUrl = (string) ($logoCurrentUrl ?? '');
     $logoFieldId = $logoFieldId ?? 'frontend_logo';
+    $logoAccept = $logoAccept ?? 'image/*';
+    $logoHint = $logoHint ?? 'PNG / JPG 2MBまで';
+    $logoLabel = $logoLabel ?? '画像';
+    $logoHelp = $logoHelp ?? '';
 @endphp
-<div class="form-group">
-    <label class="form-label">{{ $logoLabel ?? 'ヘッダー画像（ロゴ）' }}</label>
+<div class="form-group admin-image-upload" data-image-upload="{{ $logoFieldId }}">
+    <label class="form-label">{{ $logoLabel }}</label>
     <input type="hidden" name="{{ $logoClearName }}" id="{{ $logoFieldId }}_clear_flag" value="0">
-    <input type="file" name="{{ $logoInputName }}" id="{{ $logoFieldId }}" class="d-none" accept="image/*">
-    <div class="coupon-image-dropzone" id="{{ $logoFieldId }}_dropzone" tabindex="0" role="button" aria-label="ロゴ画像を選択">
-        <span class="coupon-image-dropzone-icon"><i class="fas fa-cloud-upload-alt"></i></span>
-        <span class="coupon-image-dropzone-text">クリックまたはドラッグ＆ドロップで画像を選択</span>
-        <span class="coupon-image-dropzone-hint">PNG / JPG 2MBまで</span>
-    </div>
-    <div class="coupon-image-preview mt-2" id="{{ $logoFieldId }}_preview" style="{{ $logoCurrentUrl !== '' ? '' : 'display:none;' }}">
-        <img id="{{ $logoFieldId }}_preview_img" src="{{ $logoCurrentUrl }}" alt="" style="max-width:200px;max-height:120px;object-fit:contain;">
+    <input type="file" name="{{ $logoInputName }}" id="{{ $logoFieldId }}" class="d-none" accept="{{ $logoAccept }}">
+
+    <div class="coupon-image-preview admin-image-upload__preview" id="{{ $logoFieldId }}_preview" @if($logoCurrentUrl === '') hidden @endif>
+        <p class="admin-image-upload__preview-label">現在の画像 / 選択中のプレビュー</p>
+        <img id="{{ $logoFieldId }}_preview_img" src="{{ $logoCurrentUrl }}" alt="{{ $logoLabel }}のプレビュー">
         <button type="button" class="btn btn-sm btn-outline-secondary mt-1" id="{{ $logoFieldId }}_clear">画像をクリア</button>
     </div>
-    @if(($logoHelp ?? '') !== '')
+
+    <div class="coupon-image-dropzone" id="{{ $logoFieldId }}_dropzone" tabindex="0" role="button" aria-label="{{ $logoLabel }}を選択">
+        <span class="coupon-image-dropzone-icon"><i class="fas fa-cloud-upload-alt"></i></span>
+        <span class="coupon-image-dropzone-text">クリックまたはドラッグ＆ドロップで画像を選択</span>
+        <span class="coupon-image-dropzone-hint">{{ $logoHint }}</span>
+    </div>
+
+    @if($logoHelp !== '')
         <p class="form-text text-muted">{{ $logoHelp }}</p>
     @endif
     @error($logoInputName)<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
@@ -27,6 +35,28 @@
 @once
 @push('styles')
 <style>
+.admin-image-upload__preview {
+    margin-bottom: 12px;
+    padding: 12px;
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 8px;
+    background: #fff;
+}
+.admin-image-upload__preview-label {
+    margin: 0 0 8px;
+    font-size: 12px;
+    color: var(--text-muted, #64748b);
+}
+.admin-image-upload__preview img {
+    display: block;
+    max-width: 240px;
+    max-height: 160px;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    background: repeating-conic-gradient(#f1f5f9 0% 25%, #fff 0% 50%) 50% / 16px 16px;
+    border-radius: 4px;
+}
 .coupon-image-dropzone {
     display: flex;
     flex-direction: column;
@@ -64,9 +94,12 @@
     if (!fileInput || !dropzone) return;
 
     function showPreview(src) {
-        if (preview && previewImg) {
-            previewImg.src = src || '';
-            preview.style.display = src ? '' : 'none';
+        if (preview === null || previewImg === null) return;
+        previewImg.src = src || '';
+        if (src) {
+            preview.hidden = false;
+        } else {
+            preview.hidden = true;
         }
     }
 

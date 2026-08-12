@@ -34,6 +34,14 @@ class UpdateWalletSettingsUseCase
                 $messages[] = 'Apple Wallet の画像を更新しました。';
             }
         }
+        if ($input->walletAppleIcon === null && $input->clearAppleIcon) {
+            $this->walletAssetService->clearAppleIcon($input->projectId);
+            $messages[] = 'Apple Wallet アイコンをクリアしました。';
+        }
+        if ($input->walletAppleLogo === null && $input->clearAppleLogo) {
+            $this->walletAssetService->clearAppleLogo($input->projectId);
+            $messages[] = 'Apple Wallet ロゴをクリアしました。';
+        }
 
         if ($input->walletGoogleProgramLogoFile !== null) {
             $url = $this->walletAssetService->saveGoogleAsset(
@@ -45,7 +53,11 @@ class UpdateWalletSettingsUseCase
                 $this->shopSettingRepository->setWalletGoogleProgramLogoUrl($url, $input->projectId);
                 $messages[] = 'Google Wallet プログラムロゴを更新しました。';
             }
+        } elseif ($input->clearGoogleProgramLogo) {
+            $this->shopSettingRepository->setWalletGoogleProgramLogoUrl(null, $input->projectId);
+            $messages[] = 'Google Wallet プログラムロゴをクリアしました。';
         }
+
         if ($input->walletGoogleHeroFile !== null) {
             $url = $this->walletAssetService->saveGoogleAsset(
                 $input->projectId,
@@ -56,19 +68,9 @@ class UpdateWalletSettingsUseCase
                 $this->shopSettingRepository->setWalletGoogleHeroImageUrl($url, $input->projectId);
                 $messages[] = 'Google Wallet ヒーロー画像を更新しました。';
             }
-        }
-
-        if ($input->walletGoogleProgramLogoFile === null && $input->hasWalletGoogleProgramLogoUrlField) {
-            $this->shopSettingRepository->setWalletGoogleProgramLogoUrl(
-                $input->walletGoogleProgramLogoUrl !== '' ? $input->walletGoogleProgramLogoUrl : null,
-                $input->projectId,
-            );
-        }
-        if ($input->walletGoogleHeroFile === null && $input->hasWalletGoogleHeroImageUrlField) {
-            $this->shopSettingRepository->setWalletGoogleHeroImageUrl(
-                $input->walletGoogleHeroImageUrl !== '' ? $input->walletGoogleHeroImageUrl : null,
-                $input->projectId,
-            );
+        } elseif ($input->clearGoogleHero) {
+            $this->shopSettingRepository->setWalletGoogleHeroImageUrl(null, $input->projectId);
+            $messages[] = 'Google Wallet ヒーロー画像をクリアしました。';
         }
 
         return $messages;
