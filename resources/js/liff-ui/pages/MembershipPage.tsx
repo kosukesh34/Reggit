@@ -3,7 +3,7 @@ import { Info, Maximize2 } from "lucide-react";
 import { useAppConfig } from "../context/AppConfigContext";
 import { MembershipCard } from "../components/membership/MembershipCard";
 import { BarcodeEnlargeView } from "../components/membership/BarcodeEnlargeView";
-import { BottomSheet } from "../components/ui/BottomSheet";
+import { CenterPopup } from "../components/ui/CenterPopup";
 import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { useRuntimeData } from "../context/RuntimeDataContext";
@@ -269,9 +269,9 @@ function LiveMembershipPage(): JSX.Element {
         <p className="page-note"><Info size={15} /> お会計時に会員証のバーコードをご提示ください。</p>
       ) : null}
 
-      <BottomSheet open={barcodeOpen && barcodeValue !== ""} onClose={() => setBarcodeOpen(false)} title="会員バーコード">
+      <CenterPopup open={barcodeOpen && barcodeValue !== ""} onClose={() => setBarcodeOpen(false)} title="会員バーコード" className="barcode-popup">
         <BarcodeEnlargeView value={barcodeValue} />
-      </BottomSheet>
+      </CenterPopup>
     </div>
   );
 }
@@ -353,9 +353,9 @@ function PreviewMembershipPage() {
       </Card>
       {customization.membership.showBarcode ? <p className="page-note"><Info size={15} /> お会計時に会員証のバーコードをご提示ください。</p> : null}
 
-      <BottomSheet open={barcodeOpen && barcodeValue !== ""} onClose={() => setBarcodeOpen(false)} title="会員バーコード">
+      <CenterPopup open={barcodeOpen && barcodeValue !== ""} onClose={() => setBarcodeOpen(false)} title="会員バーコード" className="barcode-popup">
         <BarcodeEnlargeView value={barcodeValue} />
-      </BottomSheet>
+      </CenterPopup>
     </div>
   );
 }

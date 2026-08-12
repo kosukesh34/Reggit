@@ -1,7 +1,7 @@
 import { appConfig } from './appConfig';
 import { isLinkTabType, type FeatureConfig, type FeatureType, type QuickAction, type StoreAppConfig, type TabConfig, type TabType } from '../types/app';
 import { createDefaultCustomization } from './customization';
-import type { AppCustomizationPatch } from '../types/customization';
+import type { AppCustomizationPatch, MembershipTemplate } from '../types/customization';
 
 function headerTitle(): string {
   const header = window.__FRONTEND_HEADER__;
@@ -267,11 +267,26 @@ export function readServerCustomizationPatch(_storeId: string): AppCustomization
     return undefined;
   }
   const raw = global.app_customization;
+  const legacyMemberCardTemplate: AppCustomizationPatch['membership'] = (() => {
+    const design = String(global.member_card_design ?? '');
+    const templateMap: Record<string, MembershipTemplate> = {
+      default: 'classic',
+      logo_top: 'pointFocus',
+      logo_center: 'pass',
+      logo_header: 'barcodeFocus',
+      compact: 'barcodeFocus',
+      split_banner: 'split',
+      minimal_line: 'minimal',
+      emblem: 'pass',
+    };
+    const template = templateMap[design];
+    return template === undefined ? {} : { template };
+  })();
   if (raw === undefined || raw === null) {
     if (typeof global.products_group_by_category === 'boolean') {
-      return { order: { groupByCategory: global.products_group_by_category } };
+      return { order: { groupByCategory: global.products_group_by_category }, membership: legacyMemberCardTemplate };
     }
-    return undefined;
+    return Object.keys(legacyMemberCardTemplate).length > 0 ? { membership: legacyMemberCardTemplate } : undefined;
   }
   const withLegacyOrderSetting = (patch: AppCustomizationPatch): AppCustomizationPatch => ({
     ...patch,
@@ -280,6 +295,10 @@ export function readServerCustomizationPatch(_storeId: string): AppCustomization
       ...(patch.order?.groupByCategory === undefined && typeof global.products_group_by_category === 'boolean'
         ? { groupByCategory: global.products_group_by_category }
         : {}),
+    },
+    membership: {
+      ...legacyMemberCardTemplate,
+      ...patch.membership,
     },
   });
   if (typeof raw === 'string') {

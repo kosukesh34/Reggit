@@ -25,6 +25,7 @@ export type NavigationPosition = "bottom" | "floating" | "top";
 export type PrimaryActionPlacement = "hero" | "belowHero" | "floating";
 export type ButtonStyle = "filled" | "soft" | "outline";
 export type ContentDensity = "compact" | "standard" | "relaxed";
+export type HeaderShortcut = "news" | "membership" | "coupon" | "stamp" | "reservation" | "queue" | "mobileOrder" | "none";
 
 export interface AppCustomization {
   designPreset: DesignPreset;
@@ -58,6 +59,7 @@ export interface AppCustomization {
     showSubtitle: boolean;
     showNotifications: boolean;
     showStoreTheme: boolean;
+    shortcut: HeaderShortcut;
   };
   coupon: {
     showStatusTabs: boolean;
