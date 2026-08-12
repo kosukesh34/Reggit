@@ -28,20 +28,7 @@ class QueueMeController extends Controller
             );
             $this->sessionStore->applyMeOutput($request, $result);
 
-            if ($result->queueEntry === null) {
-                return response()->json([
-                    'queue_entry' => null,
-                    'message' => '待ち番号はありません',
-                    'waiting_count' => $result->waitingCount,
-                    'estimated_wait_minutes' => $result->estimatedWaitMinutes,
-                    'updated_at' => now()->toIso8601String(),
-                ]);
-            }
-
-            return response()->json([
-                'updated_at' => now()->toIso8601String(),
-                'queue_entry' => $result->queueEntry->toArray(),
-            ]);
+            return response()->json($result->toArray());
         } catch (\Exception $e) {
             LogHelper::error('[Queue] me failed', [
                 'project_id' => AdminContext::getCurrentProjectId() ?? 1,
