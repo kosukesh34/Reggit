@@ -67,6 +67,7 @@ use App\Http\Controllers\Reservation\ReservationUpdateController;
 use App\Http\Controllers\Smaregi\SmaregiIdpController;
 use App\Http\Controllers\Smaregi\SmaregiWebhookController;
 use App\Http\Controllers\StampController;
+use App\Http\Controllers\StampGrantController;
 use App\Http\Controllers\Wallet\AppleWalletPasskitController;
 use App\Http\Middleware\AuthenticateApiToken;
 use App\Http\Middleware\AuthenticateKitchenToken;
@@ -93,6 +94,11 @@ Route::match(['get', 'head', 'post'], '/smaregi/webhook', [SmaregiWebhookControl
 Route::post('/onboarding/projects', OnboardingProjectStoreController::class)
     ->middleware('throttle:onboarding')
     ->name('api.onboarding.projects.store');
+
+// 店舗管理画面で発行した期限付きQRから、会員本人へスタンプを付与する。
+Route::post('/stamps/grant/{stampCard}', StampGrantController::class)
+    ->middleware(['bind.project', 'signed', 'throttle:60,1'])
+    ->name('api.stamps.grant');
 
 // API v1（Bearer トークン認証・モバイルアプリ用）※従来: トークンの project でコンテキスト設定
 Route::prefix('v1')->middleware([AuthenticateApiToken::class])->group(function () {

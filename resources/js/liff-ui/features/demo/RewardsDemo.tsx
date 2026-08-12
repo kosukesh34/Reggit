@@ -3,6 +3,7 @@ import {
   CheckCircle2,
   Clock3,
   Beer,
+  Camera,
   Coins,
   Coffee,
   Croissant,
@@ -13,6 +14,7 @@ import {
   Hotel,
   PawPrint,
   RefreshCcw,
+  QrCode,
   Sandwich,
   Scissors,
   Shirt,
@@ -22,13 +24,16 @@ import {
   UtensilsCrossed,
   Users,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { BottomSheet } from "../../components/ui/BottomSheet";
+import { StampScannerPopup } from "../../components/stamp/StampScannerPopup";
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import type { CouponItem } from "../../types/app";
 import type { AppCustomization, CouponStatus } from "../../types/customization";
 import { useRuntimeData } from "../../context/RuntimeDataContext";
+import { parseStampGrant } from "../../utils/stampGrant";
 
 export function QueueDemo({ storeId }: { storeId: string }) {
   const { joinQueue, queueStatus } = useRuntimeData();
@@ -184,27 +189,54 @@ export function StampDemo({ config, storeId, brandName }: { config: AppCustomiza
   const { stampCount, addStamp } = useRuntimeData();
   const count = Math.min(stampCount, config.goal);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [scannerOpen, setScannerOpen] = useState(false);
   const [staffCode, setStaffCode] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string>();
+  const [successMessage, setSuccessMessage] = useState<string>();
+  const [newStampIndex, setNewStampIndex] = useState<number>();
+  const [animationKey, setAnimationKey] = useState(0);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const queryHandled = useRef(false);
   const complete = count >= config.goal;
   const profile = rewardProfileMap[storeId] ?? rewardProfileMap.store_cafe;
   const RewardIcon = profile.Icon;
   const brandClass = storeId.replace("store_", "");
 
-  const submitStamp = async () => {
+  const grantStamp = useCallback(async (rawValue: string) => {
+    const payload = parseStampGrant(rawValue);
+    if (!payload) {
+      setError("QRコードまたは認証コードを確認してください。");
+      return;
+    }
     setSubmitting(true);
     setError(undefined);
+    setSuccessMessage(undefined);
     try {
-      await addStamp(staffCode);
+      await addStamp(payload.value);
+      setNewStampIndex(Math.min(count, config.goal - 1));
+      setAnimationKey((current) => current + 1);
+      setSuccessMessage(`スタンプを1個追加しました。現在 ${Math.min(count + 1, config.goal)} / ${config.goal} 個です。`);
       setSheetOpen(false);
+      setScannerOpen(false);
       setStaffCode("");
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "スタンプを追加できませんでした");
     } finally {
       setSubmitting(false);
     }
-  };
+  }, [addStamp, config.goal, count]);
+
+  useEffect(() => {
+    const grant = searchParams.get("grant") ?? searchParams.get("stampCode");
+    if (!grant || queryHandled.current) return;
+    queryHandled.current = true;
+    void grantStamp(grant).finally(() => setSearchParams({}, { replace: true }));
+  }, [grantStamp, searchParams, setSearchParams]);
+
+  const handleDetected = useCallback((value: string) => {
+    void grantStamp(value);
+  }, [grantStamp]);
 
   return (
     <div className="stack stack--lg">
@@ -215,17 +247,24 @@ export function StampDemo({ config, storeId, brandName }: { config: AppCustomiza
           <div className="stamp-progress"><span style={{ width: `${(count / config.goal) * 100}%` }} /></div>
         ) : <div className="stamp-grid">
           {Array.from({ length: config.goal }).map((_, index) => (
-            <div className={index < count ? "is-stamped" : ""} key={index}>{index < count ? <RewardIcon size={20} /> : index + 1}</div>
+            <div className={`${index < count ? "is-stamped" : ""}${index === newStampIndex ? " is-new" : ""}`} key={`${index}-${index === newStampIndex ? animationKey : 0}`}>{index < count ? <RewardIcon size={20} /> : index + 1}</div>
           ))}
         </div>}
         {config.showRewardText ? <p>{complete ? `${profile.reward}。次回ご利用時にお使いください。` : `あと${config.goal - count}個で、${profile.reward}。`}</p> : null}
       </Card>
-      <Button size="lg" disabled={complete} onClick={() => setSheetOpen(true)}>{complete ? "特典獲得済み" : "店舗スタッフ認証で追加"}</Button>
+      {successMessage ? <div className="stamp-grant-success" role="status" key={animationKey}><span><Check size={19} /></span><div><strong>スタンプ付与完了</strong><p>{successMessage}</p></div></div> : null}
+      {error ? <div className="form-error" role="alert">{error}</div> : null}
+      <div className="stamp-action-grid">
+        <Button size="lg" disabled={complete || submitting} onClick={() => { setError(undefined); setScannerOpen(true); }}><Camera size={19} />{complete ? "特典獲得済み" : "カメラでQRを読み取る"}</Button>
+        <Button size="lg" variant="outline" disabled={complete || submitting} onClick={() => { setError(undefined); setSheetOpen(true); }}>認証コードを入力</Button>
+      </div>
+      <Link className="stamp-issue-link" to="/stamp/issue"><QrCode size={17} /><span><strong>店舗用：付与QRを作成</strong><small>QRコードと付与URLを表示します</small></span></Link>
+      <StampScannerPopup open={scannerOpen} onClose={() => setScannerOpen(false)} onDetected={handleDetected} />
       <BottomSheet open={sheetOpen} onClose={() => setSheetOpen(false)} title="来店スタンプを追加">
         <div className="stack stack--lg">
           <div className="staff-code"><span>店舗スタッフが認証コードを入力します</span><input value={staffCode} onChange={(event) => setStaffCode(event.target.value)} inputMode="numeric" autoComplete="one-time-code" placeholder="認証コード" /></div>
           {error ? <div className="form-error" role="alert">{error}</div> : null}
-          <Button size="lg" disabled={submitting || staffCode.length < 4} onClick={() => void submitStamp()}>{submitting ? "確認中…" : profile.action}</Button>
+          <Button size="lg" disabled={submitting || staffCode.length < 4} onClick={() => void grantStamp(staffCode)}>{submitting ? "確認中…" : profile.action}</Button>
         </div>
       </BottomSheet>
     </div>

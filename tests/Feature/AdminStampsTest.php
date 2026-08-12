@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\AdminUser;
 use App\Models\Project;
+use App\Models\StampCard;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -36,5 +37,27 @@ class AdminStampsTest extends TestCase
             ->get(route('admin.stamps', ['project_key' => $project->project_key]));
 
         $response->assertStatus(200);
+    }
+
+    public function test_有効なスタンプカードの付与qr画面を表示できること(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        $card = StampCard::factory()->create([
+            'project_id' => $project->id,
+            'name' => '来店スタンプ',
+            'is_active' => true,
+        ]);
+
+        $response = $this->actingAs($admin, 'admin')
+            ->get(route('admin.stamps.grant-qr', [
+                'project_key' => $project->project_key,
+                'id' => $card->id,
+            ]));
+
+        $response->assertOk()
+            ->assertSee('スタンプ付与QR')
+            ->assertSee('来店スタンプ')
+            ->assertSee('grant=', false);
     }
 }
