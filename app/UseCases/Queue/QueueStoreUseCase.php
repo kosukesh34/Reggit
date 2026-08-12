@@ -4,8 +4,11 @@ namespace App\UseCases\Queue;
 
 use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Enums\QueueStatus;
+use App\Models\Member;
 use App\Models\QueueEntry as QueueEntryModel;
+use App\Models\User;
 use App\Support\DailySequenceNumber;
+use App\Support\MemberChannel;
 use App\UseCases\Queue\Data\QueueEntryFactory;
 use App\UseCases\Queue\Data\QueueStoreInput;
 use App\UseCases\Queue\Data\QueueStoreOutput;
@@ -45,7 +48,7 @@ class QueueStoreUseCase
         $entry = $this->createEntryWithUniqueQueueNumber(
             $projectId,
             $member?->id,
-            StrHelper::isEmptyStringOrNull($effectiveLineUserId) ? null : $user->id,
+            $this->resolveQueueUserId($user, $member, $effectiveLineUserId),
             $input->guestName ?? $user->name,
             $input->guestPhone ?? $user->phone,
             $input->partySize,
@@ -125,18 +128,32 @@ class QueueStoreUseCase
 
     private function resolveLineUserId(?string $headerLineUserId, ?string $userLineUserId): ?string
     {
-        if (is_string($headerLineUserId) && $this->isValidLineUserId($headerLineUserId)) {
+        if (is_string($headerLineUserId) && MemberChannel::isValidLineUserId($headerLineUserId)) {
             return $headerLineUserId;
         }
-        if (is_string($userLineUserId) && $this->isValidLineUserId($userLineUserId)) {
+        if (is_string($userLineUserId) && MemberChannel::isValidLineUserId($userLineUserId)) {
             return $userLineUserId;
         }
 
         return null;
     }
 
-    private function isValidLineUserId(string $lineUserId): bool
+    /**
+     * 会員・LINE・ネイティブ端末ユーザーは券に紐付ける。
+     * 店頭の使い捨てゲスト（会員なし・LINEなし・端末なし）は null のままにする。
+     */
+    private function resolveQueueUserId(User $user, ?Member $member, ?string $effectiveLineUserId): ?int
     {
-        return preg_match('/^U[0-9a-f]{32}$/i', $lineUserId) === 1;
+        if ($member !== null) {
+            return (int) $user->id;
+        }
+        if (! StrHelper::isEmptyStringOrNull($effectiveLineUserId)) {
+            return (int) $user->id;
+        }
+        if (MemberChannel::hasApp($user)) {
+            return (int) $user->id;
+        }
+
+        return null;
     }
 }
