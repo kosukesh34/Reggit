@@ -32,7 +32,25 @@ class ViteReactAssetsTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee('id="react-frontend-root"', false);
+        $response->assertSee('css/frontend/components/29-system-ui-customization.css', false);
+        $response->assertSee('css/frontend/components/38-liff-fixed-ui.css', false);
         $response->assertSee('/build/assets/', false);
+    }
+
+    public function test_ネイティブUAのliff画面でも機能CSSとシェルが含まれること(): void
+    {
+        $this->createProject();
+
+        $response = $this->withHeaders([
+            'User-Agent' => 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) Reggit/1.0',
+        ])->get('/liff?project_key=default');
+
+        $response->assertStatus(200);
+        $response->assertSee('native-app-embed', false);
+        $response->assertSee('id="app-container"', false);
+        $response->assertSee('css/frontend/components/22-chrome-accent.css', false);
+        $response->assertSee('css/frontend/components/29-system-ui-customization.css', false);
+        $response->assertSee('css/frontend/components/38-liff-fixed-ui.css', false);
     }
 
     public function test_管理画面にreactとviteの読み込みが含まれること(): void

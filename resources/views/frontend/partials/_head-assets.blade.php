@@ -16,6 +16,17 @@
 <link rel="stylesheet" href="{{ asset('css/frontend/components/18-liff-builder-gallery.css') }}?v={{ $memberCssVersion }}">
 <link rel="stylesheet" href="{{ asset('css/frontend/components/19-coupon.css') }}?v={{ $memberCssVersion }}">
 <link rel="stylesheet" href="{{ asset('css/frontend/components/20-queue.css') }}?v={{ $memberCssVersion }}">
+{{-- Designer 画面バリアント（coupon/reservation/member-screen-* / system-ui-*）。body クラスは _head-theme が付与 --}}
+<link rel="stylesheet" href="{{ asset('css/frontend/components/22-chrome-accent.css') }}?v={{ $memberCssVersion }}">
+<link rel="stylesheet" href="{{ asset('css/frontend/components/29-system-ui-customization.css') }}?v={{ $memberCssVersion }}">
+{{-- LIFF Designer / DesignLab のビルダーブロック（hero・collection・design バリアント等）。18 だけでは足りない --}}
+<link rel="stylesheet" href="{{ asset('css/frontend/components/23-builder-blocks-theme.css') }}?v={{ $memberCssVersion }}">
+<link rel="stylesheet" href="{{ asset('css/frontend/components/26-retail-app-ui.css') }}?v={{ $memberCssVersion }}">
+<link rel="stylesheet" href="{{ asset('css/frontend/components/27-component-designs.css') }}?v={{ $memberCssVersion }}">
+<link rel="stylesheet" href="{{ asset('css/frontend/components/30-builder-component-variants.css') }}?v={{ $memberCssVersion }}">
+<link rel="stylesheet" href="{{ asset('css/frontend/components/34-apple-block-variants.css') }}?v={{ $memberCssVersion }}">
+{{-- ガチャ・スクラッチ・design-lab（body.liff-lottery-ui / liff-fixed-ui 配下）。style.css 全体は読まない方針のため個別に読む --}}
+<link rel="stylesheet" href="{{ asset('css/frontend/components/38-liff-fixed-ui.css') }}?v={{ $memberCssVersion }}">
 <style>
   #liff-loading { display: none !important; visibility: hidden !important; pointer-events: none !important; }
   body.reggit-liff-ui, .reggit-liff-ui-root { min-height: 100vh; }
