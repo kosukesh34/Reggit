@@ -27,18 +27,14 @@ class AdminSettingsInputFactory
     {
         return new UpdateWalletSettingsInput(
             projectId: $projectId,
-            walletGoogleProgramLogoUrl: isset($validated['wallet_google_program_logo_url'])
-                ? (string) $validated['wallet_google_program_logo_url']
-                : null,
-            walletGoogleHeroImageUrl: isset($validated['wallet_google_hero_image_url'])
-                ? (string) $validated['wallet_google_hero_image_url']
-                : null,
             walletAppleIcon: $request->file('wallet_apple_icon'),
             walletAppleLogo: $request->file('wallet_apple_logo'),
             walletGoogleProgramLogoFile: $request->file('wallet_google_program_logo_file'),
             walletGoogleHeroFile: $request->file('wallet_google_hero_file'),
-            hasWalletGoogleProgramLogoUrlField: array_key_exists('wallet_google_program_logo_url', $validated),
-            hasWalletGoogleHeroImageUrlField: array_key_exists('wallet_google_hero_image_url', $validated),
+            clearAppleIcon: ($validated['wallet_apple_icon_clear'] ?? '0') === '1',
+            clearAppleLogo: ($validated['wallet_apple_logo_clear'] ?? '0') === '1',
+            clearGoogleProgramLogo: ($validated['wallet_google_program_logo_clear'] ?? '0') === '1',
+            clearGoogleHero: ($validated['wallet_google_hero_clear'] ?? '0') === '1',
         );
     }
 }

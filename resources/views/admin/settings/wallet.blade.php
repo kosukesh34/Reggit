@@ -26,19 +26,26 @@
         </div>
         <div class="card-body">
             <p class="form-text text-muted text-muted-mb-16">会員証を Apple Wallet に追加したときに表示されるアイコン・ロゴです。アップロードすると既存設定を上書きします。</p>
-            @if($appleAssetsSet)
-                <p class="text-success small mb-2"><i class="fas fa-check"></i> 画像が設定されています</p>
-            @endif
-            <div class="form-group">
-                <label for="wallet_apple_icon" class="form-label">アイコン画像</label>
-                <input type="file" name="wallet_apple_icon" id="wallet_apple_icon" class="form-control" accept="image/png,image/jpeg,image/jpg">
-                <small class="form-text text-muted">推奨: 正方形 87×87px 以上（PNG/JPEG、2MB以内）。29/58/87px に自動リサイズされます。</small>
-            </div>
-            <div class="form-group">
-                <label for="wallet_apple_logo" class="form-label">ロゴ画像</label>
-                <input type="file" name="wallet_apple_logo" id="wallet_apple_logo" class="form-control" accept="image/png,image/jpeg,image/jpg">
-                <small class="form-text text-muted">推奨: 横長 320×100px 程度（PNG/JPEG、2MB以内）。160×50 / 320×100 に自動リサイズされます。</small>
-            </div>
+            @include('admin.partials._frontend_logo_dropzone', [
+                'logoFieldId' => 'wallet_apple_icon',
+                'logoInputName' => 'wallet_apple_icon',
+                'logoClearName' => 'wallet_apple_icon_clear',
+                'logoLabel' => 'アイコン画像',
+                'logoCurrentUrl' => (string) ($appleIconUrl ?? ''),
+                'logoAccept' => 'image/png,image/jpeg,image/jpg',
+                'logoHint' => 'PNG / JPG 2MBまで（推奨: 正方形 87×87px 以上）',
+                'logoHelp' => '29/58/87px に自動リサイズされます。',
+            ])
+            @include('admin.partials._frontend_logo_dropzone', [
+                'logoFieldId' => 'wallet_apple_logo',
+                'logoInputName' => 'wallet_apple_logo',
+                'logoClearName' => 'wallet_apple_logo_clear',
+                'logoLabel' => 'ロゴ画像',
+                'logoCurrentUrl' => (string) ($appleLogoUrl ?? ''),
+                'logoAccept' => 'image/png,image/jpeg,image/jpg',
+                'logoHint' => 'PNG / JPG 2MBまで（推奨: 横長 320×100px 程度）',
+                'logoHelp' => '160×50 / 320×100 に自動リサイズされます。',
+            ])
         </div>
     </div>
 
@@ -48,27 +55,27 @@
             <h3 class="card-title"><i class="fab fa-google"></i> Google Wallet</h3>
         </div>
         <div class="card-body">
-            <p class="form-text text-muted text-muted-mb-16">会員証を Google Wallet に追加したときに表示される画像です。URL またはファイルアップロードで設定できます。Google からアクセスできる公開URLが必要です。</p>
-            <div class="form-group">
-                <label for="wallet_google_program_logo_url" class="form-label">プログラムロゴ URL</label>
-                <input type="url" name="wallet_google_program_logo_url" id="wallet_google_program_logo_url" class="form-control" value="{{ old('wallet_google_program_logo_url', $googleProgramLogoUrl) }}" maxlength="2048" placeholder="https://...">
-                <small class="form-text text-muted">または下のファイルで上書き</small>
-            </div>
-            <div class="form-group">
-                <label for="wallet_google_program_logo_file" class="form-label">プログラムロゴ（ファイルで設定）</label>
-                <input type="file" name="wallet_google_program_logo_file" id="wallet_google_program_logo_file" class="form-control" accept="image/png,image/jpeg,image/jpg">
-                <small class="form-text text-muted">アップロードすると公開URLが自動で設定されます（PNG/JPEG、2MB以内）。</small>
-            </div>
-            <div class="form-group">
-                <label for="wallet_google_hero_image_url" class="form-label">ヒーロー画像 URL</label>
-                <input type="url" name="wallet_google_hero_image_url" id="wallet_google_hero_image_url" class="form-control" value="{{ old('wallet_google_hero_image_url', $googleHeroImageUrl) }}" maxlength="2048" placeholder="https://...">
-                <small class="form-text text-muted">または下のファイルで上書き</small>
-            </div>
-            <div class="form-group">
-                <label for="wallet_google_hero_file" class="form-label">ヒーロー画像（ファイルで設定）</label>
-                <input type="file" name="wallet_google_hero_file" id="wallet_google_hero_file" class="form-control" accept="image/png,image/jpeg,image/jpg">
-                <small class="form-text text-muted">アップロードすると公開URLが自動で設定されます（PNG/JPEG、2MB以内）。</small>
-            </div>
+            <p class="form-text text-muted text-muted-mb-16">会員証を Google Wallet に追加したときに表示される画像です。アップロードすると公開URLが自動で設定されます。</p>
+            @include('admin.partials._frontend_logo_dropzone', [
+                'logoFieldId' => 'wallet_google_program_logo_file',
+                'logoInputName' => 'wallet_google_program_logo_file',
+                'logoClearName' => 'wallet_google_program_logo_clear',
+                'logoLabel' => 'プログラムロゴ',
+                'logoCurrentUrl' => (string) ($googleProgramLogoUrl ?? ''),
+                'logoAccept' => 'image/png,image/jpeg,image/jpg',
+                'logoHint' => 'PNG / JPG 2MBまで',
+                'logoHelp' => 'カード上部に表示されるロゴです。',
+            ])
+            @include('admin.partials._frontend_logo_dropzone', [
+                'logoFieldId' => 'wallet_google_hero_file',
+                'logoInputName' => 'wallet_google_hero_file',
+                'logoClearName' => 'wallet_google_hero_clear',
+                'logoLabel' => 'ヒーロー画像',
+                'logoCurrentUrl' => (string) ($googleHeroImageUrl ?? ''),
+                'logoAccept' => 'image/png,image/jpeg,image/jpg',
+                'logoHint' => 'PNG / JPG 2MBまで',
+                'logoHelp' => 'カード中央に表示される画像です。',
+            ])
         </div>
     </div>
 
