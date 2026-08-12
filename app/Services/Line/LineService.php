@@ -17,8 +17,8 @@ class LineService
 
     public function __construct()
     {
-        $this->channelAccessToken = env('LINE_CHANNEL_ACCESS_TOKEN');
-        $this->channelSecret = env('LINE_CHANNEL_SECRET');
+        $this->channelAccessToken = config('line.channel_access_token') ?: null;
+        $this->channelSecret = config('line.channel_secret') ?: null;
         $this->client = new Client([
             'base_uri' => 'https://api.line.me/v2/',
             'timeout' => 10,
