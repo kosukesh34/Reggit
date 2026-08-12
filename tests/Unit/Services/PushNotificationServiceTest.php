@@ -204,6 +204,50 @@ class PushNotificationServiceTest extends TestCase
         );
     }
 
+    public function test_send_to_user_counts_sent_when_onesignal_omits_recipients(): void
+    {
+        [$project, $user] = $this->createProjectAndUser();
+        $this->createUserDevice($project, $user, 'subscription-id-no-recipients');
+
+        /** @var Client&MockObject $http */
+        $http = $this->createMock(Client::class);
+        $http->expects($this->once())
+            ->method('post')
+            ->willReturn(new Response(200, [], json_encode([
+                'id' => 'onesignal-notification-without-recipients',
+                'external_id' => null,
+            ])));
+
+        $service = new PushNotificationService($http);
+        $result = $service->sendQueueCalledToUser((int) $project->id, (int) $user->id, '7');
+
+        $this->assertSame(1, $result['target_tokens']);
+        $this->assertSame(1, $result['sent']);
+        $this->assertSame(0, $result['failed']);
+    }
+
+    public function test_send_to_user_counts_failed_when_onesignal_id_empty(): void
+    {
+        [$project, $user] = $this->createProjectAndUser();
+        $this->createUserDevice($project, $user, 'subscription-id-empty');
+
+        /** @var Client&MockObject $http */
+        $http = $this->createMock(Client::class);
+        $http->expects($this->once())
+            ->method('post')
+            ->willReturn(new Response(200, [], json_encode([
+                'id' => '',
+                'errors' => ['All included players are not subscribed'],
+            ])));
+
+        $service = new PushNotificationService($http);
+        $result = $service->sendQueueCalledToUser((int) $project->id, (int) $user->id, '8');
+
+        $this->assertSame(1, $result['target_tokens']);
+        $this->assertSame(0, $result['sent']);
+        $this->assertSame(1, $result['failed']);
+    }
+
     /**
      * @param  callable(PushNotificationService): void  $callback
      * @return array<string, mixed>
@@ -224,7 +268,7 @@ class PushNotificationServiceTest extends TestCase
                     return is_array($capturedPayload);
                 })
             )
-            ->willReturn(new Response(200, [], json_encode(['recipients' => 1])));
+            ->willReturn(new Response(200, [], json_encode(['id' => 'payload-capture-id', 'recipients' => 1])));
 
         $callback(new PushNotificationService($http));
 
