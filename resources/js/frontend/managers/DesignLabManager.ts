@@ -1283,19 +1283,26 @@ export class DesignLabManager {
         overlay.setAttribute('role', 'dialog');
         overlay.setAttribute('aria-modal', 'true');
         overlay.setAttribute('aria-label', isWin ? '当選結果' : 'ハズレ');
-        const imageHtml = isWin && prize.image_url
-            ? `<img class="pp-prize-modal__image" src="${DomHelper.escapeHtml(prize.image_url)}" alt="">`
+        const hasImage = isWin && Boolean(prize.image_url);
+        const imageHtml = hasImage
+            ? `<div class="pp-prize-modal__media"><img class="pp-prize-modal__image" src="${DomHelper.escapeHtml(prize.image_url || '')}" alt=""></div>`
             : '';
         const descHtml = isWin && prize.description
             ? `<p class="pp-prize-modal__desc">${DomHelper.escapeHtml(prize.description)}</p>`
             : '';
+        const actionHtml = isWin
+            ? '<button type="button" class="pp-cta pp-prize-modal__cta" data-prize-close>クーポンを見る</button>'
+            : '<button type="button" class="pp-cta pp-cta--ghost pp-prize-modal__cta" data-prize-close>閉じる</button>';
         overlay.innerHTML = `
             <div class="pp-prize-modal__backdrop" data-prize-close></div>
-            <div class="pp-prize-modal__panel" data-prize-close>
+            <div class="pp-prize-modal__panel${hasImage ? ' pp-prize-modal__panel--media' : ''}">
                 <span class="pp-prize-modal__ribbon${isWin ? '' : ' pp-prize-modal__ribbon--lose'}">${isWin ? 'あたり' : 'ハズレ'}</span>
                 ${imageHtml}
-                <p class="pp-prize-modal__name${isWin ? '' : ' pp-prize-modal__name--lose'}">${DomHelper.escapeHtml(isWin ? prize.coupon_name : 'ハズレ')}</p>
-                ${descHtml}
+                <div class="pp-prize-modal__body">
+                    <p class="pp-prize-modal__name${isWin ? '' : ' pp-prize-modal__name--lose'}">${DomHelper.escapeHtml(isWin ? prize.coupon_name : 'ハズレ')}</p>
+                    ${descHtml}
+                    ${actionHtml}
+                </div>
             </div>
         `;
         let finished = false;
@@ -1323,7 +1330,6 @@ export class DesignLabManager {
         document.body.appendChild(overlay);
         void overlay.offsetWidth;
         overlay.classList.add('is-in');
-        window.setTimeout(finish, 2800);
     }
 
 }

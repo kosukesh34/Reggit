@@ -3950,7 +3950,7 @@ body.liff-lottery-ui .pp-roulette__pedestal {
     display: grid;
     place-items: center;
     place-content: center;
-    padding: 26px;
+    padding: 22px 18px;
     opacity: 0;
     transition: opacity 0.2s ease;
     pointer-events: auto;
@@ -3962,77 +3962,113 @@ body.liff-lottery-ui .pp-roulette__pedestal {
 .pp-prize-modal__backdrop {
     position: absolute;
     inset: 0;
-    background: rgba(15, 15, 20, 0.72);
+    background: rgba(12, 14, 18, 0.68);
+    backdrop-filter: blur(2px);
 }
 
 .pp-prize-modal__panel {
     position: relative;
     z-index: 1;
-    width: min(100%, 300px);
-    padding: 28px 22px 22px;
-    border-radius: 22px;
+    width: min(100%, 312px);
+    overflow: hidden;
+    border-radius: 24px;
     background: #fff;
     text-align: center;
-    box-shadow: 0 20px 46px rgba(0, 0, 0, 0.45);
-    transform: scale(0.72);
+    box-shadow:
+        0 24px 48px rgba(0, 0, 0, 0.36),
+        0 0 0 1px rgba(255, 255, 255, 0.08);
+    transform: scale(0.86) translateY(12px);
     opacity: 0;
     transition: none;
 }
 
 .pp-prize-modal.is-in .pp-prize-modal__panel {
-    animation: pp-modal-pop 0.48s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    animation: pp-modal-pop 0.42s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 .pp-prize-modal__ribbon {
+    position: absolute;
+    top: 14px;
+    left: 50%;
+    z-index: 2;
     display: inline-block;
-    margin-bottom: 12px;
-    padding: 4px 14px;
+    padding: 5px 14px;
     border-radius: 999px;
-    background: linear-gradient(135deg, #FF3355 0%, #FF0033 55%, #D1002A 100%);
+    background: linear-gradient(135deg, #FF4D6A 0%, #E6002D 55%, #B80024 100%);
     color: #fff;
     font-size: 11px;
     font-weight: 800;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.08em;
+    transform: translateX(-50%);
+    box-shadow: 0 6px 14px rgba(230, 0, 45, 0.35);
 }
 
 .pp-prize-modal__ribbon--lose {
-    background: linear-gradient(135deg, #8A93A0 0%, #6B7580 55%, #555E6A 100%);
+    background: linear-gradient(135deg, #9AA3AE 0%, #6E7886 55%, #525B68 100%);
+    box-shadow: 0 6px 14px rgba(70, 80, 95, 0.28);
+}
+
+.pp-prize-modal__media {
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    background: #F2F3F5;
 }
 
 .pp-prize-modal__image {
-    width: min(180px, 58vw);
-    height: 112px;
-    margin: 0 0 12px;
-    border-radius: 14px;
+    display: block;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    border-radius: 0;
     object-fit: cover;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+    box-shadow: none;
+}
+
+.pp-prize-modal__body {
+    padding: 18px 20px 20px;
+}
+
+.pp-prize-modal__panel:not(.pp-prize-modal__panel--media) .pp-prize-modal__body {
+    padding-top: 52px;
+}
+
+.pp-prize-modal__panel--media .pp-prize-modal__ribbon {
+    top: 12px;
 }
 
 .pp-prize-modal__name {
     margin: 0 0 8px;
-    font-size: 20px;
+    font-size: 18px;
     font-weight: 800;
-    line-height: 1.35;
-    color: #1a1a1a;
+    line-height: 1.4;
+    color: #15181d;
+    word-break: break-word;
 }
 
 .pp-prize-modal__name--lose {
-    font-size: 36px;
+    margin-top: 4px;
+    font-size: 32px;
     font-weight: 900;
-    letter-spacing: 0.14em;
+    letter-spacing: 0.12em;
     line-height: 1.15;
     color: #3A4450;
 }
 
 .pp-prize-modal__desc {
-    margin: 0;
-    font-size: 12px;
-    line-height: 1.5;
-    color: #8a8a8f;
+    margin: 0 0 4px;
+    font-size: 12.5px;
+    line-height: 1.55;
+    color: #6b7280;
+}
+
+.pp-prize-modal__cta {
+    display: block;
+    width: 100%;
+    margin-top: 16px;
 }
 
 .pp-prize-modal__panel .pp-cta {
-    margin-top: 18px;
+    margin-top: 16px;
 }
 
 .pp-prize-modal__sub {
@@ -4085,7 +4121,7 @@ body.liff-lottery-ui .pp-scratch__prize.is-lose .pp-scratch__prize-desc {
 }
 
 @keyframes pp-modal-pop {
-    to { transform: scale(1); opacity: 1; }
+    to { transform: scale(1) translateY(0); opacity: 1; }
 }
 
 
