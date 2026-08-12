@@ -28,6 +28,8 @@ class WalletController extends AdminBaseController
             'googleProgramLogoUrl' => $view->googleProgramLogoUrl,
             'googleHeroImageUrl' => $view->googleHeroImageUrl,
             'appleAssetsSet' => $view->appleAssetsSet,
+            'appleIconUrl' => $view->appleIconUrl,
+            'appleLogoUrl' => $view->appleLogoUrl,
         ]);
     }
 
@@ -35,12 +37,14 @@ class WalletController extends AdminBaseController
     {
         $projectId = $this->resolveAdminProjectId();
         $validated = $request->validate([
-            'wallet_google_program_logo_url' => 'nullable|url|max:2048',
-            'wallet_google_hero_image_url' => 'nullable|url|max:2048',
             'wallet_apple_icon' => 'nullable|image|mimes:png,jpg,jpeg|max:2048',
             'wallet_apple_logo' => 'nullable|image|mimes:png,jpg,jpeg|max:2048',
             'wallet_google_program_logo_file' => 'nullable|image|mimes:png,jpg,jpeg|max:2048',
             'wallet_google_hero_file' => 'nullable|image|mimes:png,jpg,jpeg|max:2048',
+            'wallet_apple_icon_clear' => 'nullable|in:0,1',
+            'wallet_apple_logo_clear' => 'nullable|in:0,1',
+            'wallet_google_program_logo_clear' => 'nullable|in:0,1',
+            'wallet_google_hero_clear' => 'nullable|in:0,1',
         ]);
         $messages = $this->updateWalletSettingsUseCase->handle(
             $this->inputFactory->walletSettings($projectId, $request, $validated),
