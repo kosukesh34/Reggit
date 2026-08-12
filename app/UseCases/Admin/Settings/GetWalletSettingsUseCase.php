@@ -15,10 +15,12 @@ class GetWalletSettingsUseCase
 
     public function handle(int $projectId): WalletSettingsView
     {
-        $googleProgramLogoUrl = $this->shopSettingRepository->getWalletGoogleProgramLogoUrl($projectId);
-        $googleHeroImageUrl = $this->shopSettingRepository->getWalletGoogleHeroImageUrl($projectId);
-        $appleAssetsSet = $this->walletAssetService->hasAppleAssets($projectId);
-
-        return new WalletSettingsView($googleProgramLogoUrl, $googleHeroImageUrl, $appleAssetsSet);
+        return new WalletSettingsView(
+            $this->shopSettingRepository->getWalletGoogleProgramLogoUrl($projectId),
+            $this->shopSettingRepository->getWalletGoogleHeroImageUrl($projectId),
+            $this->walletAssetService->hasAppleAssets($projectId),
+            $this->walletAssetService->getAppleIconUrl($projectId),
+            $this->walletAssetService->getAppleLogoUrl($projectId),
+        );
     }
 }
