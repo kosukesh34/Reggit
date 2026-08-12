@@ -22,8 +22,8 @@ import { designPresetLayoutPatch } from "../config/customization";
 import { tabLabelMap, tabOptions } from "../config/navigation";
 import { useAppConfig } from "../context/AppConfigContext";
 import { themeMap } from "../themes/themes";
-import { isLinkTabType, type TabType } from "../types/app";
-import type { AppCustomization } from "../types/customization";
+import { isLinkTabType, type FeatureType, type TabType } from "../types/app";
+import type { AppCustomization, HeaderShortcut } from "../types/customization";
 import { resolveCustomizationColors } from "../utils/customization";
 
 type DesignerSaveState = "saved" | "unsaved" | "saving" | "error";
@@ -41,6 +41,21 @@ const sectionLinks = [
   { id: "features", label: "機能設定", icon: SlidersHorizontal },
   { id: "navigation", label: "ナビゲーション", icon: Settings2 },
 ] as const;
+
+const headerShortcutOptions: Array<{
+  value: HeaderShortcut;
+  label: string;
+  feature?: FeatureType;
+}> = [
+  { value: "news", label: "お知らせ", feature: "news" },
+  { value: "membership", label: "会員証", feature: "membership" },
+  { value: "coupon", label: "クーポン", feature: "coupon" },
+  { value: "stamp", label: "スタンプ", feature: "stamp" },
+  { value: "reservation", label: "予約", feature: "reservation" },
+  { value: "queue", label: "順番待ち", feature: "queue" },
+  { value: "mobileOrder", label: "モバイルオーダー", feature: "mobileOrder" },
+  { value: "none", label: "表示しない" },
+];
 
 const saveStateLabels: Record<DesignerSaveState, string> = {
   saved: "保存済み",
@@ -251,10 +266,27 @@ export function AdminCustomizePage({
               <SelectRow label="カード表示" value={customization.coupon.layout} onChange={(layout) => updateCustomization({ coupon: { layout: layout as AppCustomization["coupon"]["layout"] } })}><option value="cards">カード</option><option value="compact">コンパクトリスト</option></SelectRow>
             </SettingsGroup>
 
-            <SettingsGroup title="ヘッダー" description="店舗切替と通知の表示">
+            <SettingsGroup title="ヘッダー" description="店舗切替と右上ショートカットの表示">
               <ToggleRow label="店舗ロゴ" checked={customization.header.showLogo} onChange={(showLogo) => updateCustomization({ header: { showLogo } })} />
               <ToggleRow label="会員アプリ表記" checked={customization.header.showSubtitle} onChange={(showSubtitle) => updateCustomization({ header: { showSubtitle } })} />
-              <ToggleRow label="通知ボタン" checked={customization.header.showNotifications} onChange={(showNotifications) => updateCustomization({ header: { showNotifications } })} />
+              <SelectRow
+                label="右上ショートカット"
+                value={customization.header.showNotifications ? customization.header.shortcut : "none"}
+                onChange={(value) => {
+                  const shortcut = value as HeaderShortcut;
+                  updateCustomization({ header: { shortcut, showNotifications: shortcut !== "none" } });
+                }}
+              >
+                {headerShortcutOptions.map((option) => (
+                  <option
+                    value={option.value}
+                    disabled={option.feature !== undefined && !activeStore.features[option.feature]}
+                    key={option.value}
+                  >
+                    {option.label}{option.feature !== undefined && !activeStore.features[option.feature] ? "（機能OFF）" : ""}
+                  </option>
+                ))}
+              </SelectRow>
               <ToggleRow label="店舗切替にデザイン名" checked={customization.header.showStoreTheme} onChange={(showStoreTheme) => updateCustomization({ header: { showStoreTheme } })} />
             </SettingsGroup>
 
@@ -266,9 +298,12 @@ export function AdminCustomizePage({
               <SelectRow label="注文確認ボタン" value={customization.order.ctaPosition} onChange={(ctaPosition) => updateCustomization({ order: { ctaPosition: ctaPosition as AppCustomization["order"]["ctaPosition"] } })}><option value="inline">コンテンツ内</option><option value="sticky">画面下部に固定</option></SelectRow>
             </SettingsGroup>
 
-            <SettingsGroup title="会員証・スタンプ" description="レジ提示時の見やすさと会員情報">
+            <SettingsGroup title="会員証デザイン" description="用途に合うレイアウトを選択。右の実画面プレビューへ即時反映されます">
               <MembershipLayoutPicker value={customization.membership.template} onChange={(template) => updateCustomization({ membership: { template } })} />
               <SelectRow label="情報の揃え位置" value={customization.membership.alignment} onChange={(alignment) => updateCustomization({ membership: { alignment: alignment as AppCustomization["membership"]["alignment"] } })}><option value="left">左揃え</option><option value="center">中央揃え</option></SelectRow>
+            </SettingsGroup>
+
+            <SettingsGroup title="会員証の表示内容" description="レジで必要な情報だけを表示">
               <ToggleRow label="店舗ロゴ" checked={customization.membership.showLogo} onChange={(showLogo) => updateCustomization({ membership: { showLogo } })} />
               <ToggleRow label="会員名" checked={customization.membership.showMemberName} onChange={(showMemberName) => updateCustomization({ membership: { showMemberName } })} />
               <ToggleRow label="会員番号" checked={customization.membership.showMemberNumber} onChange={(showMemberNumber) => updateCustomization({ membership: { showMemberNumber } })} />
@@ -277,6 +312,9 @@ export function AdminCustomizePage({
               <ToggleRow label="会員ランク" checked={customization.membership.showRank} onChange={(showRank) => updateCustomization({ membership: { showRank } })} />
               <ToggleRow label="次ランクまでのポイント" checked={customization.membership.showNextRank} onChange={(showNextRank) => updateCustomization({ membership: { showNextRank } })} />
               <ToggleRow label="会員有効期限" checked={customization.membership.showExpiry} onChange={(showExpiry) => updateCustomization({ membership: { showExpiry } })} />
+            </SettingsGroup>
+
+            <SettingsGroup title="スタンプ" description="カード形式と達成条件">
               <SelectRow label="スタンプ形式" value={customization.stamp.style} onChange={(style) => updateCustomization({ stamp: { style: style as AppCustomization["stamp"]["style"] } })}><option value="circles">丸型</option><option value="squares">スクエア</option><option value="progress">プログレスバー</option></SelectRow>
               <SelectRow label="達成スタンプ数" value={String(customization.stamp.goal)} onChange={(goal) => updateCustomization({ stamp: { goal: Number(goal) } })}><option value="5">5個</option><option value="10">10個</option><option value="12">12個</option></SelectRow>
               <ToggleRow label="特典説明" checked={customization.stamp.showRewardText} onChange={(showRewardText) => updateCustomization({ stamp: { showRewardText } })} />
@@ -369,21 +407,21 @@ function SelectRow({ label, value, onChange, children }: { label: string; value:
 }
 
 const membershipLayouts: Array<{ id: AppCustomization["membership"]["template"]; name: string; description: string }> = [
-  { id: "classic", name: "標準", description: "情報を縦に整理" },
-  { id: "split", name: "左右分割", description: "会員情報とコードを分離" },
-  { id: "barcodeFocus", name: "コード重視", description: "レジ提示を優先" },
-  { id: "pointFocus", name: "ポイント重視", description: "残高を大きく表示" },
-  { id: "pass", name: "デジタルパス", description: "中央配置の会員パス" },
-  { id: "minimal", name: "最小構成", description: "必要情報だけを表示" },
+  { id: "classic", name: "スタンダード", description: "会員情報を見やすく縦に整理" },
+  { id: "split", name: "スプリット", description: "ポイントとコードを左右に分離" },
+  { id: "barcodeFocus", name: "レジ提示", description: "バーコードを最も大きく表示" },
+  { id: "pointFocus", name: "ポイント", description: "ポイント残高を主役に表示" },
+  { id: "pass", name: "デジタルパス", description: "中央配置の上質な会員パス" },
+  { id: "minimal", name: "ミニマル", description: "装飾を抑えたコンパクト構成" },
 ];
 
 function MembershipLayoutPicker({ value, onChange }: { value: AppCustomization["membership"]["template"]; onChange: (value: AppCustomization["membership"]["template"]) => void }) {
   return (
     <div className="membership-layout-control">
-      <div className="membership-layout-control__label">会員証レイアウト</div>
+      <div className="membership-layout-control__label">会員証レイアウト <small>1つ選択</small></div>
       <div className="membership-layout-grid">
         {membershipLayouts.map((layout) => (
-          <button type="button" className={`membership-layout-option${value === layout.id ? " is-active" : ""}`} onClick={() => onChange(layout.id)} key={layout.id}>
+          <button type="button" className={`membership-layout-option${value === layout.id ? " is-active" : ""}`} aria-pressed={value === layout.id} onClick={() => onChange(layout.id)} key={layout.id}>
             <span className={`membership-layout-option__preview membership-layout-option__preview--${layout.id}`}><i /><i /><i /><i /></span>
             <span><strong>{layout.name}</strong><small>{layout.description}</small></span>
             {value === layout.id ? <Check size={13} /> : null}

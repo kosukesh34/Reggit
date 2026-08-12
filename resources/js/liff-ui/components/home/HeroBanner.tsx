@@ -21,7 +21,6 @@ export function HeroBanner({ title, subtitle, content, showImage, showStatus, sh
           <span className="hero-banner__status-dot" />
           {content.statusLabel}
         </div> : null}
-        <div className="hero-banner__index"><span>01</span><i /><span>03</span></div>
       </div>
       <div className="hero-banner__content">
         <div className="hero-banner__eyebrow">{content.heroEyebrow}</div>

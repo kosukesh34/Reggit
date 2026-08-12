@@ -15,6 +15,7 @@ class LiffDesignerSanitizerAppCustomizationTest extends TestCase
                 'app_customization' => [
                     'designPreset' => 'editorial',
                     'colors' => ['primary' => '#112233'],
+                    'header' => ['shortcut' => 'membership'],
                     'navigation' => [
                         'tabs' => [
                             ['id' => 'home', 'type' => 'home', 'label' => 'ホーム', 'enabled' => true],
@@ -28,6 +29,7 @@ class LiffDesignerSanitizerAppCustomizationTest extends TestCase
         $this->assertIsArray($result['_global']['app_customization']);
         $this->assertSame('editorial', $result['_global']['app_customization']['designPreset']);
         $this->assertSame('#112233', $result['_global']['app_customization']['colors']['primary']);
+        $this->assertSame('membership', $result['_global']['app_customization']['header']['shortcut']);
     }
 
     public function test_不正なapp_customizationは捨てられること(): void

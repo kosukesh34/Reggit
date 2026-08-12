@@ -1,4 +1,4 @@
-import { Bell, Check, ChevronDown, CloudOff, Menu, ShoppingBag, UserRound, X } from "lucide-react";
+import { Bell, CalendarDays, Check, ChevronDown, CloudOff, CreditCard, Menu, QrCode, ShoppingBag, Stamp, Ticket, UserRound, X, type LucideIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { designPresetMap } from "../../config/designPresets";
@@ -12,6 +12,23 @@ import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 import { LANDING_SHOWCASE_STORE_ID } from "../../pages/LandingShowcasePage";
 import { SIMPLE_REWARDS_STORE_ID } from "../../pages/SimpleRewardsPage";
+import type { FeatureType } from "../../types/app";
+import type { HeaderShortcut } from "../../types/customization";
+
+const headerShortcutDefinitions: Record<Exclude<HeaderShortcut, "none">, {
+  feature: FeatureType;
+  label: string;
+  path: string;
+  icon: LucideIcon;
+}> = {
+  news: { feature: "news", label: "お知らせ", path: "/news", icon: Bell },
+  membership: { feature: "membership", label: "会員証", path: "/membership", icon: CreditCard },
+  coupon: { feature: "coupon", label: "クーポン", path: "/coupon", icon: Ticket },
+  stamp: { feature: "stamp", label: "スタンプ", path: "/stamp", icon: Stamp },
+  reservation: { feature: "reservation", label: "予約", path: "/reservation", icon: CalendarDays },
+  queue: { feature: "queue", label: "順番待ち", path: "/queue", icon: QrCode },
+  mobileOrder: { feature: "mobileOrder", label: "モバイルオーダー", path: "/mobileOrder", icon: ShoppingBag },
+};
 
 export function Header() {
   const { activeStore, stores, setActiveStoreId, customization, getStoreCustomization } = useAppConfig();
@@ -22,6 +39,10 @@ export function Header() {
   const canSwitchStore = stores.length > 1;
   const isLandingShowcase = activeStore.storeId === LANDING_SHOWCASE_STORE_ID;
   const isSimpleRewards = activeStore.storeId === SIMPLE_REWARDS_STORE_ID;
+  const shortcutKey = customization.header.showNotifications ? customization.header.shortcut : "none";
+  const shortcut = shortcutKey === "none" ? null : headerShortcutDefinitions[shortcutKey];
+  const visibleShortcut = shortcut !== null && activeStore.features[shortcut.feature] ? shortcut : null;
+  const ShortcutIcon = visibleShortcut?.icon;
 
   const title = useMemo(() => {
     if (location.pathname === "/membership") {
@@ -121,10 +142,10 @@ export function Header() {
             )}
             <div className="header__actions">
               {mode === "offline" ? <span className="header__connection" aria-label="オフライン"><CloudOff size={14} /></span> : null}
-              {customization.header.showNotifications && activeStore.features.news ? (
-                <Button className="header__notification" variant="ghost" size="icon" ariaLabel="通知" onClick={() => navigate("/news")}>
-                  <Bell size={18} />
-                  {notificationCount > 0 ? <span className="header__notification-dot">{notificationCount}</span> : null}
+              {visibleShortcut !== null && ShortcutIcon !== undefined ? (
+                <Button className="header__notification header__shortcut" variant="ghost" size="icon" ariaLabel={`${visibleShortcut.label}を開く`} onClick={() => navigate(visibleShortcut.path)}>
+                  <ShortcutIcon size={18} />
+                  {shortcutKey === "news" && notificationCount > 0 ? <span className="header__notification-dot">{notificationCount}</span> : null}
                 </Button>
               ) : null}
             </div>
@@ -155,7 +176,13 @@ export function Header() {
                     <div className="store-switcher__name">{store.storeName}</div>
                     <div className="store-switcher__meta">{store.brandName}</div>
                     {customization.header.showStoreTheme && preset !== undefined ? (
-                      <div className="store-switcher__theme">{store.themeId === "landing-showcase" ? "LPスマホUI" : store.themeId === "simple-rewards" ? "シンプルリワード" : preset.name}</div>
+                      <div className="store-switcher__theme">{
+                        store.themeId === "landing-showcase" ? "LPスマホUI"
+                          : store.themeId === "simple-rewards" ? "シンプルリワード"
+                            : store.themeId === "operations-counter" ? "店舗オペレーション・注文型"
+                              : store.themeId === "operations-booking" ? "店舗オペレーション・予約型"
+                                : preset.name
+                      }</div>
                     ) : null}
                   </div>
                   <Button

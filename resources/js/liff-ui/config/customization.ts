@@ -25,6 +25,7 @@ export const defaultCustomization: AppCustomization = {
     showSubtitle: true,
     showNotifications: true,
     showStoreTheme: true,
+    shortcut: "news",
   },
   coupon: {
     showStatusTabs: true,
@@ -86,6 +87,8 @@ const storePresetMap: Record<string, DesignPreset> = {
   store_fastfood: "fastfood",
   store_landing_showcase: "editorial",
   store_simple_rewards: "minimal",
+  store_counter_operations: "airy",
+  store_appointment_operations: "airy",
 };
 
 const storeExperienceMap: Record<string, {
@@ -114,6 +117,8 @@ const storeExperienceMap: Record<string, {
   store_fastfood: { buttonStyle: "filled", density: "compact", primaryActionPlacement: "belowHero", quickActionColumns: 4, navigationPosition: "floating", emphasizeCenterTab: true, membershipTemplate: "pointFocus", stampStyle: "progress", stampGoal: 5 },
   store_landing_showcase: { buttonStyle: "filled", density: "standard", primaryActionPlacement: "hero", quickActionColumns: 3, navigationPosition: "bottom", emphasizeCenterTab: false, membershipTemplate: "pointFocus", stampStyle: "circles", stampGoal: 10 },
   store_simple_rewards: { buttonStyle: "filled", density: "compact", primaryActionPlacement: "belowHero", quickActionColumns: 3, navigationPosition: "bottom", emphasizeCenterTab: false, membershipTemplate: "barcodeFocus", stampStyle: "squares", stampGoal: 10 },
+  store_counter_operations: { buttonStyle: "filled", density: "compact", primaryActionPlacement: "belowHero", quickActionColumns: 2, navigationPosition: "top", emphasizeCenterTab: false, membershipTemplate: "pointFocus", stampStyle: "progress", stampGoal: 5 },
+  store_appointment_operations: { buttonStyle: "soft", density: "relaxed", primaryActionPlacement: "belowHero", quickActionColumns: 3, navigationPosition: "bottom", emphasizeCenterTab: false, membershipTemplate: "pass", stampStyle: "circles", stampGoal: 5 },
 };
 
 const designPresetExperienceMap: Record<DesignPreset, (typeof storeExperienceMap)[string]> = {
