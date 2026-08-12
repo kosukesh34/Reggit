@@ -1,34 +1,34 @@
 {
-  "_customization-!~{003}~.js": {
-    "file": "assets/customization-Cusmima4.css",
-    "src": "_customization-!~{003}~.js"
+  "_browser-!~{003}~.js": {
+    "file": "assets/browser-D0vHqczW.css",
+    "src": "_browser-!~{003}~.js"
   },
-  "_customization-Cta5mnEP.js": {
-    "file": "assets/customization-Cta5mnEP.js",
-    "name": "customization",
+  "_browser-BTvyIWVX.js": {
+    "file": "assets/browser-BTvyIWVX.js",
+    "name": "browser",
     "css": [
-      "assets/customization-Cusmima4.css"
+      "assets/browser-D0vHqczW.css"
     ]
   },
   "resources/js/admin/main.tsx": {
-    "file": "assets/main-BTh9A2O-.js",
+    "file": "assets/main-Bsl6uEgy.js",
     "name": "main",
     "src": "resources/js/admin/main.tsx",
     "isEntry": true,
     "imports": [
-      "_customization-Cta5mnEP.js"
+      "_browser-BTvyIWVX.js"
     ],
     "css": [
       "assets/main-MImg_wPW.css"
     ]
   },
   "resources/js/frontend/main.tsx": {
-    "file": "assets/main-C1_QiJHv.js",
+    "file": "assets/main-l3OBGMXv.js",
     "name": "main",
     "src": "resources/js/frontend/main.tsx",
     "isEntry": true,
     "imports": [
-      "_customization-Cta5mnEP.js"
+      "_browser-BTvyIWVX.js"
     ],
     "css": [
       "assets/main-Hg2P_V_b.css"
