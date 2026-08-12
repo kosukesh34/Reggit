@@ -2,9 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\AdminUser;
 use App\Models\Project;
+use App\Services\Admin\PublicImageStorageService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class AdminProjectControllerTest extends TestCase
@@ -31,7 +35,6 @@ class AdminProjectControllerTest extends TestCase
             'line_liff_id' => '1234567890-abcd',
             'line_liff_url' => 'https://liff.line.me/1234',
             'frontend_header_text' => 'Test',
-            'frontend_logo_url' => '',
             'business_hours_start' => '10:00',
             'business_hours_end' => '22:00',
             'line_primary_color' => '#000000',
@@ -39,6 +42,38 @@ class AdminProjectControllerTest extends TestCase
             'line_success_color' => '#000000',
             'line_danger_color' => '#dc3545',
         ], $overrides);
+    }
+
+    public function test_store_プロジェクト作成時にロゴをアップロードできること(): void
+    {
+        Storage::fake('public');
+        $this->loginSystemAdmin();
+        $file = UploadedFile::fake()->image('project-logo.png', 64, 64);
+
+        $response = $this->post('/system-admin/projects', $this->projectFormPayload([
+            'project_key' => 'proj-logo',
+            'name' => 'Logo Project',
+            'frontend_logo' => $file,
+        ]));
+
+        $response->assertRedirect(route('system-admin.projects.index'));
+        $project = Project::where('project_key', 'proj-logo')->first();
+        $this->assertNotNull($project);
+        $savedUrl = ShopSettingStore::getFrontendLogoUrl((int) $project->id);
+        $this->assertNotNull($savedUrl);
+        $this->assertStringContainsString('storage/'.PublicImageStorageService::DIR_FRONTEND_LOGO.'/'.$project->id, (string) $savedUrl);
+    }
+
+    public function test_edit_画面にロゴのurl入力がなくアップロードがあること(): void
+    {
+        $this->loginSystemAdmin();
+        $project = Project::factory()->create();
+
+        $this->get('/system-admin/projects/'.$project->id.'/edit')
+            ->assertStatus(200)
+            ->assertSee('name="frontend_logo"', false)
+            ->assertDontSee('name="frontend_logo_url"', false)
+            ->assertDontSee('ロゴ画像URL', false);
     }
 
     public function test_index_プロジェクト一覧が表示されること(): void

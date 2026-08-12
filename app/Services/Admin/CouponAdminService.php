@@ -7,7 +7,6 @@ use App\Models\CouponRedemption;
 use App\Models\StampCard;
 use App\Services\Smaregi\SmaregiCouponSyncService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 
 class CouponAdminService
@@ -18,20 +17,6 @@ class CouponAdminService
     public function __construct(SmaregiCouponSyncService $smaregiCouponSync)
     {
         $this->smaregiCouponSync = $smaregiCouponSync;
-    }
-
-    private const COUPON_IMAGE_DIR = 'coupon_images';
-
-    /** アップロードした画像を保存し、公開URLを返す */
-    public function saveCouponImage(UploadedFile $file, int $projectId): string
-    {
-        $dir = self::COUPON_IMAGE_DIR.'/'.(string) $projectId;
-        $path = $file->store($dir, 'public');
-        if ($path === false) {
-            throw new \RuntimeException('Failed to store coupon image');
-        }
-
-        return asset('storage/'.$path);
     }
 
     public function getPaginatedList(int $projectId, int $perPage = 20): LengthAwarePaginator
