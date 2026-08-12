@@ -13,6 +13,11 @@ import { useAppConfig } from "../context/AppConfigContext";
 import { useRuntimeData } from "../context/RuntimeDataContext";
 import { LANDING_SHOWCASE_STORE_ID, LandingShowcaseHome } from "./LandingShowcasePage";
 import { SIMPLE_REWARDS_STORE_ID, SimpleRewardsHome } from "./SimpleRewardsPage";
+import {
+  APPOINTMENT_OPERATIONS_STORE_ID,
+  COUNTER_OPERATIONS_STORE_ID,
+  OperationalHomePage,
+} from "./OperationalHomePage";
 
 function HomePageSkeleton(): JSX.Element {
   return (
@@ -36,6 +41,12 @@ export function HomePage() {
   }
   if (activeStore.storeId === SIMPLE_REWARDS_STORE_ID) {
     return <SimpleRewardsHome />;
+  }
+  if (activeStore.storeId === COUNTER_OPERATIONS_STORE_ID) {
+    return <OperationalHomePage variant="counter" />;
+  }
+  if (activeStore.storeId === APPOINTMENT_OPERATIONS_STORE_ID) {
+    return <OperationalHomePage variant="appointment" />;
   }
 
   if (loading && mode !== "live" && mode !== "preview") {

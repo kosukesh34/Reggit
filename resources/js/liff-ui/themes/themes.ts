@@ -171,6 +171,44 @@ export const simpleRewardsTheme: ThemeConfig = {
   appearance: { cardStyle: "border", buttonStyle: "solid", iconStyle: "outline", density: "compact" },
 };
 
+export const operationsCounterTheme: ThemeConfig = {
+  id: "operations-counter",
+  name: "Counter Operations",
+  colors: {
+    primary: "#315f55",
+    secondary: "#6f817b",
+    accent: "#e8d7a6",
+    background: "#f7f8f4",
+    surface: "#ffffff",
+    elevated: "#ffffff",
+    textPrimary: "#233b35",
+    textSecondary: "#687872",
+    border: "#dce5e0",
+  },
+  radius: { button: 12, card: 16, image: 14 },
+  typography: { headingWeight: 800, bodyWeight: 600 },
+  appearance: { cardStyle: "border", buttonStyle: "solid", iconStyle: "filled", density: "compact" },
+};
+
+export const operationsBookingTheme: ThemeConfig = {
+  id: "operations-booking",
+  name: "Appointment Operations",
+  colors: {
+    primary: "#203f3a",
+    secondary: "#6d7771",
+    accent: "#d6b879",
+    background: "#f5f3ee",
+    surface: "#ffffff",
+    elevated: "#ffffff",
+    textPrimary: "#1e2926",
+    textSecondary: "#6b746f",
+    border: "#dde1dc",
+  },
+  radius: { button: 18, card: 26, image: 24 },
+  typography: { headingWeight: 700, bodyWeight: 500 },
+  appearance: { cardStyle: "shadow", buttonStyle: "soft", iconStyle: "outline", density: "comfortable" },
+};
+
 export const allThemes = [
   minimalLightTheme,
   cafeNaturalTheme,
@@ -181,6 +219,8 @@ export const allThemes = [
   quickServiceTheme,
   landingShowcaseTheme,
   simpleRewardsTheme,
+  operationsCounterTheme,
+  operationsBookingTheme,
 ] satisfies ThemeConfig[];
 
 export const themeMap = Object.fromEntries(allThemes.map((theme) => [theme.id, theme])) as Record<
