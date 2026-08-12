@@ -150,6 +150,29 @@ figure {
   border-radius: 14px;
 }
 
+.header__logo--image {
+  width: 48px;
+  padding: 0;
+  background: transparent;
+}
+
+.header__logo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+}
+
+/* プリセットの背景・回転・枠は文字モノグラム向け。画像ロゴでは無効化 */
+.app-shell[data-design-preset] .header__logo--image {
+  color: transparent;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  transform: none;
+}
+
 .header__logo i {
   position: absolute;
   top: 0;
@@ -1059,6 +1082,8 @@ figure {
 
 .store-switcher.is-active { border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-border)); box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent) 23%, transparent) inset; }
 .store-switcher__mark { display: grid; flex: none; place-items: center; width: 48px; height: 48px; color: #fff; font-size: 9px; font-weight: 900; border-radius: 15px; }
+.store-switcher__mark--image { overflow: hidden; background: transparent; }
+.store-switcher__mark--image img { display: block; width: 100%; height: 100%; object-fit: contain; }
 .store-switcher__body { display: grid; flex: 1; min-width: 0; gap: 2px; }
 .store-switcher__name { font-size: 12px; font-weight: 780; }
 .store-switcher__meta, .store-switcher__theme { color: var(--color-text-secondary); font-size: 9px; }

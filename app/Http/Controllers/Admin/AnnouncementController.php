@@ -5,12 +5,13 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Requests\Admin\AnnouncementDeliveryStoreRequest;
 use App\Http\Requests\Admin\AnnouncementStoreRequest;
 use App\Http\Requests\Admin\AnnouncementUpdateRequest;
+use App\Services\Admin\PublicImageStorageService;
+use App\UseCases\Admin\AdminSavePublicImageUseCase;
 use App\UseCases\Admin\Announcement\AdminAnnouncementDeleteUseCase;
 use App\UseCases\Admin\Announcement\AdminAnnouncementDeliveryFormUseCase;
 use App\UseCases\Admin\Announcement\AdminAnnouncementEditUseCase;
 use App\UseCases\Admin\Announcement\AdminAnnouncementIndexUseCase;
 use App\UseCases\Admin\Announcement\AdminAnnouncementReadsUseCase;
-use App\UseCases\Admin\Announcement\AdminAnnouncementSaveImageUseCase;
 use App\UseCases\Admin\Announcement\AdminAnnouncementSegmentPreviewUseCase;
 use App\UseCases\Admin\Announcement\AdminAnnouncementStoreDeliveryUseCase;
 use App\UseCases\Admin\Announcement\AdminAnnouncementStoreUseCase;
@@ -30,7 +31,7 @@ class AnnouncementController extends AdminBaseController
         private AdminAnnouncementDeliveryFormUseCase $deliveryFormUseCase,
         private AdminAnnouncementSegmentPreviewUseCase $segmentPreviewUseCase,
         private AdminMemberSearchByKeywordUseCase $searchMembersUseCase,
-        private AdminAnnouncementSaveImageUseCase $saveImageUseCase,
+        private AdminSavePublicImageUseCase $saveImageUseCase,
         private AdminAnnouncementReadsUseCase $readsUseCase,
     ) {}
 
@@ -64,7 +65,11 @@ class AnnouncementController extends AdminBaseController
         $validated = $request->validated();
 
         if ($request->hasFile('image_file')) {
-            $validated['image_url'] = $this->saveImageUseCase->handle($request->file('image_file'), $projectId);
+            $validated['image_url'] = $this->saveImageUseCase->handle(
+                $request->file('image_file'),
+                $projectId,
+                PublicImageStorageService::DIR_ANNOUNCEMENT,
+            );
         }
         unset($validated['image_file']);
 
@@ -93,7 +98,11 @@ class AnnouncementController extends AdminBaseController
         $validated = $request->validated();
 
         if ($request->hasFile('image_file')) {
-            $validated['image_url'] = $this->saveImageUseCase->handle($request->file('image_file'), $projectId);
+            $validated['image_url'] = $this->saveImageUseCase->handle(
+                $request->file('image_file'),
+                $projectId,
+                PublicImageStorageService::DIR_ANNOUNCEMENT,
+            );
         }
         unset($validated['image_file']);
 
@@ -159,7 +168,11 @@ class AnnouncementController extends AdminBaseController
         $validated = $request->validated();
 
         if ($request->hasFile('image_file')) {
-            $validated['image_url'] = $this->saveImageUseCase->handle($request->file('image_file'), $projectId);
+            $validated['image_url'] = $this->saveImageUseCase->handle(
+                $request->file('image_file'),
+                $projectId,
+                PublicImageStorageService::DIR_ANNOUNCEMENT,
+            );
         }
         unset($validated['image_file']);
 

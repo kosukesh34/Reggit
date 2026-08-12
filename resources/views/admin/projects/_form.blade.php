@@ -133,11 +133,11 @@
             <input type="text" name="frontend_header_text" id="frontend_header_text" class="form-control" value="{{ old('frontend_header_text', $projectSettings['frontend_header_text'] ?? '') }}" required maxlength="255" placeholder="例: デフォルト店舗">
             @error('frontend_header_text')<span class="invalid-feedback">{{ $message }}</span>@enderror
         </div>
-        <div class="form-group">
-            <label for="frontend_logo_url" class="form-label">ロゴ画像URL</label>
-            <input type="url" name="frontend_logo_url" id="frontend_logo_url" class="form-control" value="{{ old('frontend_logo_url', $projectSettings['frontend_logo_url'] ?? '') }}" maxlength="2048" placeholder="例: https://example.com/logo.png">
-            @error('frontend_logo_url')<span class="invalid-feedback">{{ $message }}</span>@enderror
-        </div>
+        @include('admin.partials._frontend_logo_dropzone', [
+            'logoLabel' => 'ヘッダー画像（ロゴ）',
+            'logoCurrentUrl' => (string) ($projectSettings['frontend_logo_url'] ?? ''),
+            'logoHelp' => 'LIFF各画面の左上に表示するロゴです。未設定の場合は店舗名の頭文字を表示します。',
+        ])
     </div>
 </div>
 

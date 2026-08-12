@@ -43,7 +43,6 @@ class AdminFeaturesCouponImageIsolationTest extends TestCase
                     'feature_members_enabled' => '1',
                 ],
                 'stamp_default_image_url' => '',
-                'frontend_logo_url' => '',
                 'frontend_header_text' => '',
             ])
             ->assertRedirect();
