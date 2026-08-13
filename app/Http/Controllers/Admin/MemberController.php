@@ -241,19 +241,20 @@ class MemberController extends AdminBaseController
 
         $add = (int) ($validated['stamp_add'] ?? 0);
         $subtract = (int) ($validated['stamp_subtract'] ?? 0);
-        $delta = $add - $subtract;
-        if ($delta === 0) {
-            return redirect()->route('admin.members.edit', array_merge(['id' => $id], $this->buildAdminRouteParams()))
-                ->with('error', 'スタンプの加算または減算を指定してください');
-        }
 
-        $this->adjustStampsUseCase->handle(
-            $projectId,
-            $id,
-            (int) $validated['stamp_card_id'],
-            $delta,
-            $validated['stamp_description'] ?? null
-        );
+        try {
+            $this->adjustStampsUseCase->handle(
+                $projectId,
+                $id,
+                (int) $validated['stamp_card_id'],
+                $add,
+                $subtract,
+                $validated['stamp_description'] ?? null
+            );
+        } catch (InvalidArgumentException $e) {
+            return redirect()->route('admin.members.edit', array_merge(['id' => $id], $this->buildAdminRouteParams()))
+                ->with('error', $e->getMessage());
+        }
 
         return redirect()->route('admin.members.edit', array_merge(['id' => $id], $this->buildAdminRouteParams()))
             ->with('success', 'スタンプを更新しました');

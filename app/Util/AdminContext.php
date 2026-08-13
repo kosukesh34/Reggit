@@ -2,6 +2,7 @@
 
 namespace App\Util;
 
+use App\Exceptions\ProjectContextMissingException;
 use App\Models\Project;
 
 class AdminContext
@@ -20,6 +21,25 @@ class AdminContext
 
     public static function getCurrentProjectId(): ?int
     {
-        return self::$currentProject ? self::$currentProject->id : null;
+        return self::$currentProject !== null ? (int) self::$currentProject->id : null;
+    }
+
+    public static function requireCurrentProjectId(): int
+    {
+        $projectId = self::getCurrentProjectId();
+        if ($projectId === null) {
+            throw new ProjectContextMissingException;
+        }
+
+        return $projectId;
+    }
+
+    public static function resolveProjectId(?int $explicitProjectId): int
+    {
+        if ($explicitProjectId !== null) {
+            return $explicitProjectId;
+        }
+
+        return self::requireCurrentProjectId();
     }
 }

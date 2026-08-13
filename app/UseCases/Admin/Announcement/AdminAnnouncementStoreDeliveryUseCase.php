@@ -10,7 +10,7 @@ use App\Services\Admin\MemberAdminService;
 use App\Services\Admin\MemberSegmentService;
 use App\Services\AnnouncementNotificationService;
 use App\UseCases\Admin\Announcement\Data\StoreDeliveryOutput;
-use Illuminate\Support\Carbon;
+use App\Util\DateUtil;
 use Illuminate\Support\Collection;
 
 class AdminAnnouncementStoreDeliveryUseCase
@@ -104,7 +104,7 @@ class AdminAnnouncementStoreDeliveryUseCase
         Collection $targetMemberIds
     ): Announcement {
         $isScheduled = $deliveryType === Announcement::DELIVERY_TYPE_SCHEDULED;
-        $scheduledAt = $isScheduled ? Carbon::parse((string) $validated['scheduled_at']) : null;
+        $scheduledAt = $isScheduled ? DateUtil::nullableCarbon((string) $validated['scheduled_at']) : null;
         $now = now();
 
         return $this->announcementAdminService->create($projectId, [
@@ -136,7 +136,7 @@ class AdminAnnouncementStoreDeliveryUseCase
             SendScheduledAnnouncementJob::dispatch($announcement->id)
                 ->delay($announcement->scheduled_at);
 
-            $formattedDate = Carbon::parse($announcement->scheduled_at)->format('Y/m/d H:i');
+            $formattedDate = DateUtil::nullableCarbon($announcement->scheduled_at)?->format('Y/m/d H:i') ?? '';
 
             return new StoreDeliveryOutput(true, false, "お知らせ配信を予約しました（{$formattedDate}）");
         }

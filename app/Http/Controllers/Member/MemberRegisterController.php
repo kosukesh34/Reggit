@@ -7,7 +7,6 @@ use App\Http\Requests\MemberProfileRequest;
 use App\Services\UserService;
 use App\UseCases\Member\Data\MemberRegisterInput;
 use App\UseCases\Member\MemberRegisterUseCase;
-use App\Util\AdminContext;
 use App\Util\LogHelper;
 
 class MemberRegisterController extends Controller
@@ -28,7 +27,6 @@ class MemberRegisterController extends Controller
             return response()->json($result->member->toArray(), $status);
         } catch (\Exception $e) {
             LogHelper::error('[Member] register failed', [
-                'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'error' => $e->getMessage(),
             ]);
 

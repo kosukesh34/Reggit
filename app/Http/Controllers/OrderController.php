@@ -33,7 +33,6 @@ class OrderController extends Controller
             return response()->json($orders);
         } catch (\Exception $e) {
             LogHelper::error('[Order] index failed', [
-                'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'error' => $e->getMessage(),
             ]);
 
@@ -49,7 +48,6 @@ class OrderController extends Controller
             return response()->json($order);
         } catch (\Exception $e) {
             LogHelper::error('[Order] show failed', [
-                'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'order_id' => $id,
                 'error' => $e->getMessage(),
             ]);
@@ -60,7 +58,7 @@ class OrderController extends Controller
 
     public function store(Request $request)
     {
-        $projectId = AdminContext::getCurrentProjectId() ?? 1;
+        $projectId = AdminContext::requireCurrentProjectId();
         $validated = $request->validate([
             'items' => 'required|array|min:1',
             'items.*.product_id' => [

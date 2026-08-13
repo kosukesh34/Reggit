@@ -66,6 +66,15 @@ final class QueueEntry
         }
     }
 
+    public function recall(\DateTimeInterface $now): void
+    {
+        if ($this->status !== QueueStatus::CALLED) {
+            throw new \InvalidArgumentException('呼び出し済みの受付のみ再呼び出しできます');
+        }
+
+        $this->calledAt = $now;
+    }
+
     public function markAsEntered(\DateTimeInterface $now): void
     {
         if (in_array($this->status, [QueueStatus::CANCELLED, QueueStatus::ENTERED], true)) {

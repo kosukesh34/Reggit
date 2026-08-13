@@ -5,7 +5,7 @@ namespace App\UseCases\Reservation;
 use App\Services\ReservationService;
 use App\UseCases\Reservation\Data\ReservationActionOutput;
 use App\UseCases\Reservation\Data\ReservationUpdateInput;
-use Carbon\Carbon;
+use App\Util\DateUtil;
 
 class ReservationUpdateUseCase
 {
@@ -21,7 +21,10 @@ class ReservationUpdateUseCase
         }
 
         $reservationPayload = $input->reservationPayload;
-        $reservedAt = Carbon::parse($reservationPayload['reserved_at']);
+        $reservedAt = DateUtil::nullableCarbon($reservationPayload['reserved_at']);
+        if ($reservedAt === null) {
+            return new ReservationActionOutput(false, null, '予約日時が不正です');
+        }
         $availabilityError = $this->availabilityService->getAvailabilityError($reservedAt, $input->reservationId);
         if ($availabilityError !== null) {
             return new ReservationActionOutput(false, null, $availabilityError);

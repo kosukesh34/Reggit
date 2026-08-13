@@ -45,7 +45,7 @@ class QueueCallNextUseCaseTest extends TestCase
         ]);
 
         AdminContext::setCurrentProject($project);
-        $result = app(QueueCallNextUseCase::class)->handle();
+        $result = app(QueueCallNextUseCase::class)->handle((int) $project->id);
 
         $this->assertNotNull($result);
         $this->assertSame($target->id, $result->id);

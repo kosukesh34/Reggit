@@ -50,6 +50,36 @@ class QueueEntryAggregateTest extends TestCase
         $this->assertSame($now->getTimestamp(), $entry->calledAt()?->getTimestamp());
     }
 
+    public function test_mark_as_entered_呼び出しから入店に遷移すること(): void
+    {
+        $entry = $this->createEntry(QueueStatus::CALLED);
+        $now = Carbon::parse('2026-07-10 12:05:00');
+
+        $entry->markAsEntered($now);
+
+        $this->assertSame(QueueStatus::ENTERED, $entry->status());
+        $this->assertSame($now->getTimestamp(), $entry->enteredAt()?->getTimestamp());
+    }
+
+    public function test_recall_呼び出し済みのcalled_atを更新すること(): void
+    {
+        $entry = $this->createEntry(QueueStatus::CALLED);
+        $now = Carbon::parse('2026-07-10 12:10:00');
+
+        $entry->recall($now);
+
+        $this->assertSame(QueueStatus::CALLED, $entry->status());
+        $this->assertSame($now->getTimestamp(), $entry->calledAt()?->getTimestamp());
+    }
+
+    public function test_recall_待ち中は拒否されること(): void
+    {
+        $entry = $this->createEntry(QueueStatus::WAITING);
+
+        $this->expectException(\InvalidArgumentException::class);
+        $entry->recall(Carbon::now());
+    }
+
     public function test_apply_admin_status_waitingも設定できること(): void
     {
         $entry = $this->createEntry(QueueStatus::CALLED);

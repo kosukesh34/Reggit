@@ -169,8 +169,11 @@ class AdminUser extends Authenticatable
                 return (int) $projectId;
             }
             $fallback = Project::where('is_active', true)->min('id');
+            if ($fallback === null) {
+                throw new \RuntimeException('有効な店舗がありません');
+            }
 
-            return (int) ($fallback ?? 1);
+            return (int) $fallback;
         }
 
         if ($sessionId && $admin->canAccessProject($sessionId)) {

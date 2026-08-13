@@ -7,7 +7,6 @@ use App\Http\Requests\Admin\CouponBulkIssueRequest;
 use App\Http\Requests\Admin\CouponQuickCreateRequest;
 use App\Http\Requests\Admin\CouponStoreRequest;
 use App\Http\Requests\Admin\CouponUpdateRequest;
-use App\Models\Coupon;
 use App\Services\Admin\PublicImageStorageService;
 use App\UseCases\Admin\AdminSavePublicImageUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponBulkIssueFormUseCase;
@@ -202,15 +201,9 @@ class CouponController extends AdminBaseController
     {
         $projectId = $this->resolveAdminProjectId();
         $validated = $request->validated();
-        $validated = array_merge($validated, [
-            'is_active' => true,
-            'issue_trigger' => Coupon::ISSUE_TRIGGER_MANUAL,
-            'use_display' => $validated['use_display'] ?? Coupon::USE_DISPLAY_BARCODE,
-            'design_template' => Coupon::DESIGN_CLASSIC,
-        ]);
 
         try {
-            $coupon = $this->storeUseCase->handle($projectId, $validated);
+            $coupon = $this->storeUseCase->handle($projectId, $validated, true);
         } catch (\RuntimeException $e) {
             return redirect()->route('admin.coupons.bulk-issue', $this->buildAdminRouteParams())
                 ->withInput()

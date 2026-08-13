@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\UseCases\Gallery\GalleryIndexUseCase;
-use App\Util\AdminContext;
 use App\Util\LogHelper;
 use Illuminate\Http\Request;
 
@@ -25,7 +24,6 @@ class GalleryController extends Controller
             ]);
         } catch (\Exception $e) {
             LogHelper::error('[Gallery] index failed', [
-                'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'error' => $e->getMessage(),
             ]);
 

@@ -19,7 +19,7 @@ class MemberRankCalculator
      */
     public function getRankInfo(Member $member): array
     {
-        $projectId = $member->project_id ?? (AdminContext::getCurrentProjectId() ?? 1);
+        $projectId = AdminContext::resolveProjectId($member->project_id !== null ? (int) $member->project_id : null);
 
         return $this->memberRankResolver->resolve(
             $this->shopSettingRepository->getMemberRankSettings((int) $projectId),
