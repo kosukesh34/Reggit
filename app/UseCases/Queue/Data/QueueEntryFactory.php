@@ -10,7 +10,12 @@ class QueueEntryFactory
 {
     public function create(QueueEntryModel $entry, array $stats): QueueEntry
     {
-        $linkChannel = QueueLinkChannel::resolve($entry->user, $entry->user_id !== null ? (int) $entry->user_id : null);
+        $entry->loadMissing(['user.devices', 'member.user.devices']);
+        $user = $entry->user ?? $entry->member?->user;
+        $userId = $entry->user_id !== null
+            ? (int) $entry->user_id
+            : ($user !== null ? (int) $user->id : null);
+        $linkChannel = QueueLinkChannel::resolve($user, $userId);
 
         return new QueueEntry(
             $entry->id,
