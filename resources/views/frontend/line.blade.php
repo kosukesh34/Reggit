@@ -24,7 +24,9 @@
     // デモ固定UIは ?demo=1 のときだけ。/liff でも bind 済み店舗の Designer 設定を反映する
     $isFixedUi = request()->query('demo') === '1';
     $isDemoData = $isFixedUi;
-    $themeBodyClasses = [];
+    $themeBodyClasses = (! $isFixedUi && isset($liffTabSettings['_global']) && is_array($liffTabSettings['_global']))
+        ? \App\Support\LiffThemePresets::bodyClassesFor($liffTabSettings['_global'])
+        : [];
 @endphp
 <html lang="ja" @class([
     'liff-fixed-ui' => $isFixedUi,
