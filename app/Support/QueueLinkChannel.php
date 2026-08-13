@@ -15,9 +15,14 @@ final class QueueLinkChannel
 
     public const BOTH = MemberChannel::BOTH;
 
-    public static function resolve(?User $user, ?int $userId): string
+    public static function resolve(?User $user, ?int $userId = null): string
     {
-        if ($userId === null || $user === null) {
+        // user が取れれば連携済み（member 経由の旧データで user_id が null のケースも含む）
+        if ($user === null) {
+            return self::NONE;
+        }
+        if ($userId === null && ! MemberChannel::hasLine($user) && ! MemberChannel::hasApp($user)) {
+            // 紐付け先ユーザーはあるがチャネル判定材料がない店頭ゲスト等
             return self::NONE;
         }
 
@@ -31,7 +36,7 @@ final class QueueLinkChannel
             return self::LINE;
         }
 
-        // user_id ありで LINE ID でも端末でもない場合はネイティブゲスト扱い
+        // user ありで LINE でなければネイティブ（アプリ）連携
         return self::APP;
     }
 }
