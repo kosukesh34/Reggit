@@ -10,9 +10,12 @@ class LotterySourceType extends EnumBase
 
     public const ORDER = 'order';
 
+    public const STAMP = 'stamp';
+
     protected static array $values = [
         self::SMAREGI_TRANSACTION => 'スマレジ取引',
         self::ORDER => 'アプリ注文',
+        self::STAMP => 'スタンプカード',
     ];
 
     /** @return list<string> */
