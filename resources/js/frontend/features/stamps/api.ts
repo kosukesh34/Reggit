@@ -19,6 +19,7 @@ export type StampCard = {
     layout_style?: string;
     image_url?: string | null;
     stamp_images?: Record<string, string> | null;
+    stamp_empty_images?: Record<string, string> | null;
     member_stamp_valid_until?: string | null;
     valid_until?: string | null;
     reward_milestones?: StampRewardMilestone[];

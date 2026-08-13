@@ -1,5 +1,5 @@
 import { isLinkTabType, type StoreAppConfig } from "../types/app";
-import type { AppCustomization, AppCustomizationPatch, DesignPreset } from "../types/customization";
+import type { AppCustomization, AppCustomizationPatch, DesignPreset, HomeLayout } from "../types/customization";
 
 export const defaultCustomization: AppCustomization = {
   designPreset: "editorial",
@@ -9,6 +9,7 @@ export const defaultCustomization: AppCustomization = {
     density: "standard",
   },
   home: {
+    layout: "standard",
     primaryActionPlacement: "hero",
     quickActionColumns: 4,
     showHeroImage: true,
@@ -70,6 +71,13 @@ export const defaultCustomization: AppCustomization = {
     linkUrls: {},
   },
 };
+
+export function resolveHomeLayout(value: string | undefined): HomeLayout {
+  if (value === "wallet" || value === "magazine" || value === "minimal") {
+    return value;
+  }
+  return "standard";
+}
 
 const storePresetMap: Record<string, DesignPreset> = {
   store_cafe: "editorial",

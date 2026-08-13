@@ -11,6 +11,7 @@ import { DesignLabPage } from "../../frontend/features/designlab/DesignLabPage";
 import { useMembershipGate } from "../../frontend/hooks/useMembershipGate";
 import { useLegacyTabBridge } from "../navigation/useLegacyTabBridge";
 import { pathForLegacyTab } from "../navigation/tabPath";
+import { getStampGrantCodeFromUrl } from "../../shared/utils/stampGrantToken";
 
 class ScreenErrorBoundary extends Component<
   { children: ReactNode; pathname: string },
@@ -89,7 +90,12 @@ function MembershipGate() {
   const switchTab = useCallback((tab: string) => {
     if (
       location.pathname === "/stamp"
-      && (location.search.includes("grant=") || location.search.includes("stampCode="))
+      && (
+        location.search.includes("g=")
+        || location.search.includes("grant=")
+        || location.search.includes("stampCode=")
+        || getStampGrantCodeFromUrl() !== null
+      )
     ) {
       return;
     }

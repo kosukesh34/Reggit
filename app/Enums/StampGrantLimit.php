@@ -12,6 +12,8 @@ class StampGrantLimit extends EnumBase
 
     public const UNLIMITED = 'unlimited';
 
+    public const NEVER_EXPIRES = 0;
+
     public const DEFAULT_EXPIRES_MINUTES = 15;
 
     public const MAX_AMOUNT = 20;
@@ -26,11 +28,13 @@ class StampGrantLimit extends EnumBase
     /** @var array<int, string> */
     public const EXPIRES_OPTIONS = [
         15 => '15分',
-        30 => '30分',
         60 => '1時間',
-        180 => '3時間',
         1440 => '1日',
         10080 => '7日',
+        43200 => '30日',
+        129600 => '90日',
+        525600 => '1年',
+        self::NEVER_EXPIRES => '無期限',
     ];
 
     public static function normalize(string $value): string
@@ -45,6 +49,6 @@ class StampGrantLimit extends EnumBase
 
     public static function normalizeExpiresMinutes(int $minutes): int
     {
-        return isset(self::EXPIRES_OPTIONS[$minutes]) ? $minutes : self::DEFAULT_EXPIRES_MINUTES;
+        return array_key_exists($minutes, self::EXPIRES_OPTIONS) ? $minutes : self::DEFAULT_EXPIRES_MINUTES;
     }
 }

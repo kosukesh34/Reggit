@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useSearchParams } from "react-router-dom";
 import { useRuntimeData } from "../context/RuntimeDataContext";
-import { parseStampGrant } from "../utils/stampGrant";
+import { parseStampGrant, resolveStampGrantFromLocation } from "../utils/stampGrant";
+import { clearStampGrantCodeFromUrl } from "../../shared/utils/stampGrantToken";
 
 export type StampGrantPhase = "idle" | "granting" | "success" | "error";
 
@@ -31,7 +32,7 @@ export function useStampGrantFromUrl(): StampGrantFromUrl {
     const payload = parseStampGrant(raw);
     if (payload === null) {
       setPhase("error");
-      setMessage("QRコードまたは認証コードを確認してください。");
+      setMessage("QRコードを確認してください。");
       return false;
     }
     setPhase("granting");
@@ -57,13 +58,15 @@ export function useStampGrantFromUrl(): StampGrantFromUrl {
     if (location.pathname !== "/stamp" || mode !== "live") {
       return;
     }
-    const grant = searchParams.get("grant") ?? searchParams.get("stampCode");
-    if (!grant || handled.current) {
+    const payload = resolveStampGrantFromLocation()
+      ?? parseStampGrant(searchParams.get("grant") ?? searchParams.get("g") ?? searchParams.get("stampCode") ?? "");
+    if (payload === null || handled.current) {
       return;
     }
     handled.current = true;
-    void grantFromRaw(grant).then((ok) => {
+    void grantFromRaw(payload.value).then((ok) => {
       if (ok) {
+        clearStampGrantCodeFromUrl();
         setSearchParams({}, { replace: true });
       }
     });

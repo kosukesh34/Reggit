@@ -2,20 +2,23 @@
 
 namespace App\UseCases\Admin\Stamp;
 
-use App\Models\StampCard;
 use App\Services\Admin\StampAdminService;
+use App\UseCases\Admin\Stamp\Data\AdminStampFormOutput;
 
 class AdminStampEditUseCase
 {
-    private StampAdminService $stampAdminService;
+    public function __construct(
+        private StampAdminService $stampAdminService,
+    ) {}
 
-    public function __construct(StampAdminService $stampAdminService)
+    public function handle(int $projectId, int $id): AdminStampFormOutput
     {
-        $this->stampAdminService = $stampAdminService;
-    }
+        $stampCard = $this->stampAdminService->findOrFail($id);
 
-    public function handle(int $id): StampCard
-    {
-        return $this->stampAdminService->findOrFail($id);
+        return new AdminStampFormOutput(
+            $stampCard,
+            $this->stampAdminService->getCouponsForStampForm($projectId, $stampCard),
+            $this->stampAdminService->isGachaEnabled($projectId),
+        );
     }
 }
