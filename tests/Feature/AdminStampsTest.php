@@ -151,7 +151,8 @@ class AdminStampsTest extends TestCase
             ->assertSee('ガチャ')
             ->assertSee('ドリンク無料券')
             ->assertSee('押す前')
-            ->assertSee('押したあと');
+            ->assertSee('押したあと')
+            ->assertDontSee('value="text"', false);
     }
 
     public function test_押す前と押したあとのスタンプ画像を保存できること(): void
@@ -200,11 +201,6 @@ class AdminStampsTest extends TestCase
                         'stamp_count' => 10,
                         'reward_type' => 'gacha',
                     ],
-                    [
-                        'stamp_count' => 3,
-                        'reward_type' => 'text',
-                        'description' => '店員にお声がけ',
-                    ],
                 ],
             ])
             ->assertRedirect(route('admin.stamps', ['project_key' => $project->project_key]));
@@ -212,11 +208,6 @@ class AdminStampsTest extends TestCase
         $card = StampCard::query()->where('name', '来店スタンプ')->first();
         $this->assertNotNull($card);
         $this->assertEquals([
-            [
-                'stamp_count' => 3,
-                'reward_type' => 'text',
-                'description' => '店員にお声がけ',
-            ],
             [
                 'stamp_count' => 5,
                 'reward_type' => 'coupon',
@@ -229,6 +220,29 @@ class AdminStampsTest extends TestCase
                 'description' => 'ガチャ1回',
             ],
         ], $card->reward_milestones);
+    }
+
+    public function test_テキスト特典は保存できないこと(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+
+        $this->actingAs($admin, 'admin')
+            ->from(route('admin.stamps.create', ['project_key' => $project->project_key]))
+            ->post(route('admin.stamps.store', ['project_key' => $project->project_key]), [
+                'name' => '来店スタンプ',
+                'required_stamps' => 10,
+                'reward_milestones' => [
+                    [
+                        'stamp_count' => 3,
+                        'reward_type' => 'text',
+                        'description' => '店員にお声がけ',
+                    ],
+                ],
+            ])
+            ->assertRedirect(route('admin.stamps.create', ['project_key' => $project->project_key]))
+            ->assertSessionHasErrors('reward_milestones.0.reward_type');
+        $this->assertSame(0, StampCard::query()->where('name', '来店スタンプ')->count());
     }
 
     public function test_他店舗のクーポンは特典に設定できないこと(): void
@@ -256,5 +270,147 @@ class AdminStampsTest extends TestCase
             ->assertRedirect(route('admin.stamps.create', ['project_key' => $project->project_key]))
             ->assertSessionHasErrors('reward_milestones.0.coupon_id');
         $this->assertSame(0, StampCard::query()->where('name', '来店スタンプ')->count());
+    }
+
+    public function test_編集画面でクーポンとガチャを特典に選べること(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        $card = StampCard::factory()->create([
+            'project_id' => $project->id,
+            'name' => '来店スタンプ',
+            'required_stamps' => 10,
+            'is_active' => true,
+            'reward_milestones' => [
+                [
+                    'stamp_count' => 5,
+                    'reward_type' => 'text',
+                    'description' => '店員にお声がけ',
+                ],
+            ],
+        ]);
+        Coupon::factory()->create([
+            'project_id' => $project->id,
+            'name' => 'ドリンク無料券',
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($admin, 'admin')
+            ->get(route('admin.stamps.edit', [
+                'project_key' => $project->project_key,
+                'id' => $card->id,
+            ]))
+            ->assertOk()
+            ->assertSee('特典の種類')
+            ->assertSee('クーポン')
+            ->assertSee('ガチャ')
+            ->assertSee('ドリンク無料券')
+            ->assertDontSee('value="text"', false)
+            ->assertDontSee('店員にお声がけ');
+    }
+
+    public function test_編集でクーポンとガチャの達成特典を更新できること(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        $coupon = Coupon::factory()->create([
+            'project_id' => $project->id,
+            'name' => 'デザート割引',
+            'is_active' => true,
+        ]);
+        $card = StampCard::factory()->create([
+            'project_id' => $project->id,
+            'name' => '来店スタンプ',
+            'required_stamps' => 10,
+            'is_active' => true,
+            'reward_milestones' => [
+                [
+                    'stamp_count' => 10,
+                    'reward_type' => 'gacha',
+                    'description' => 'ガチャ1回',
+                ],
+            ],
+        ]);
+
+        $this->actingAs($admin, 'admin')
+            ->put(route('admin.stamps.update', [
+                'project_key' => $project->project_key,
+                'id' => $card->id,
+            ]), [
+                'name' => '来店スタンプ',
+                'required_stamps' => 10,
+                'is_active' => '1',
+                'reward_milestones' => [
+                    [
+                        'stamp_count' => 5,
+                        'reward_type' => 'coupon',
+                        'coupon_id' => $coupon->id,
+                    ],
+                    [
+                        'stamp_count' => 10,
+                        'reward_type' => 'gacha',
+                    ],
+                ],
+            ])
+            ->assertRedirect(route('admin.stamps', ['project_key' => $project->project_key]));
+
+        $card->refresh();
+        $this->assertEquals([
+            [
+                'stamp_count' => 5,
+                'reward_type' => 'coupon',
+                'coupon_id' => $coupon->id,
+                'description' => 'デザート割引',
+            ],
+            [
+                'stamp_count' => 10,
+                'reward_type' => 'gacha',
+                'description' => 'ガチャ1回',
+            ],
+        ], $card->reward_milestones);
+    }
+
+    public function test_編集で他店舗のクーポンは特典に設定できないこと(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        $card = StampCard::factory()->create([
+            'project_id' => $project->id,
+            'name' => '来店スタンプ',
+            'required_stamps' => 10,
+            'is_active' => true,
+        ]);
+        $otherCoupon = Coupon::factory()->create([
+            'project_id' => Project::factory()->create()->id,
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($admin, 'admin')
+            ->from(route('admin.stamps.edit', [
+                'project_key' => $project->project_key,
+                'id' => $card->id,
+            ]))
+            ->put(route('admin.stamps.update', [
+                'project_key' => $project->project_key,
+                'id' => $card->id,
+            ]), [
+                'name' => '来店スタンプ',
+                'required_stamps' => 10,
+                'reward_milestones' => [
+                    [
+                        'stamp_count' => 5,
+                        'reward_type' => 'coupon',
+                        'coupon_id' => $otherCoupon->id,
+                    ],
+                ],
+            ])
+            ->assertRedirect(route('admin.stamps.edit', [
+                'project_key' => $project->project_key,
+                'id' => $card->id,
+            ]))
+            ->assertSessionHasErrors('reward_milestones.0.coupon_id');
+
+        $card->refresh();
+        $this->assertNull($card->reward_milestones);
     }
 }
