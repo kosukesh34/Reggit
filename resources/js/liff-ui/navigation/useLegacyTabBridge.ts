@@ -37,7 +37,9 @@ export function useLegacyTabBridge(): void {
       if (detail?.path === undefined || detail.path === '') {
         return;
       }
-      navigate(detail.path, { replace: detail.replace === true });
+      if (location.pathname !== detail.path) {
+        navigate(detail.path, { replace: detail.replace === true });
+      }
       syncLegacyCurrentTab(detail.path);
     };
     document.addEventListener(LIFF_UI_NAVIGATE, onNavigate);
@@ -54,7 +56,9 @@ export function useLegacyTabBridge(): void {
       const path = pathForLegacyTab(tab);
       if (path !== null) {
         app.currentTab = tab === 'membership' ? 'member' : tab;
-        navigate(path);
+        if (location.pathname !== path) {
+          navigate(path);
+        }
         document.body.classList.toggle('liff-lottery-ui', tab === 'designlab');
         return Promise.resolve();
       }
@@ -65,5 +69,5 @@ export function useLegacyTabBridge(): void {
       document.removeEventListener(LIFF_UI_NAVIGATE, onNavigate);
       app.switchTab = original;
     };
-  }, [navigate]);
+  }, [location.pathname, navigate]);
 }
