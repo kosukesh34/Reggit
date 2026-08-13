@@ -19,6 +19,7 @@ class AdminStampEditUseCase
             $stampCard,
             $this->stampAdminService->getCouponsForStampForm($projectId, $stampCard),
             $this->stampAdminService->isGachaEnabled($projectId),
+            $this->stampAdminService->getCycleTargetCards($projectId, (int) $stampCard->id),
         );
     }
 }

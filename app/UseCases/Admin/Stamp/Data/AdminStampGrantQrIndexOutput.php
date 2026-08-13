@@ -17,5 +17,7 @@ class AdminStampGrantQrIndexOutput
         public readonly int $expiresMinutes,
         public readonly int $amount,
         public readonly string $limit,
+        public readonly int $quota,
+        public readonly ?StampGrantCode $issuedCode,
     ) {}
 }

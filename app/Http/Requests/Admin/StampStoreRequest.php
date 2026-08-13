@@ -2,10 +2,12 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Enums\StampCycleMode;
 use App\Enums\StampRewardType;
 use App\Util\AdminContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Exists;
 use Illuminate\Validation\Validator;
 
 class StampStoreRequest extends FormRequest
@@ -39,6 +41,8 @@ class StampStoreRequest extends FormRequest
             'valid_days' => 'nullable|integer|min:1|max:3650',
             'valid_until' => 'nullable|date',
             'is_active' => 'nullable|boolean',
+            'cycle_mode' => ['nullable', 'string', Rule::in(StampCycleMode::keys())],
+            'next_stamp_card_id' => ['nullable', 'integer', $this->nextStampCardRule($projectId)],
         ];
     }
 
@@ -46,6 +50,7 @@ class StampStoreRequest extends FormRequest
     {
         $validator->after(function (Validator $validator): void {
             $this->validateMilestones($validator);
+            $this->validateCycleMode($validator);
         });
     }
 
@@ -112,6 +117,34 @@ class StampStoreRequest extends FormRequest
                 "reward_milestones.{$index}.coupon_id",
                 '特典クーポンを選択してください。'
             );
+        }
+    }
+
+    private function nextStampCardRule(int $projectId): Exists
+    {
+        $exists = Rule::exists('stamp_cards', 'id');
+        if ($projectId > 0) {
+            $exists = $exists->where('project_id', $projectId);
+        }
+
+        return $exists;
+    }
+
+    private function validateCycleMode(Validator $validator): void
+    {
+        $mode = StampCycleMode::normalize((string) ($this->input('cycle_mode') ?? ''));
+        if ($mode !== StampCycleMode::NEXT_CARD) {
+            return;
+        }
+        $nextId = (int) ($this->input('next_stamp_card_id') ?? 0);
+        if ($nextId <= 0) {
+            $validator->errors()->add('next_stamp_card_id', '切り替えるスタンプカードを選んでください。');
+
+            return;
+        }
+        $currentId = (int) $this->route('id');
+        if ($currentId > 0 && $nextId === $currentId) {
+            $validator->errors()->add('next_stamp_card_id', '同じカードは選べません。');
         }
     }
 }

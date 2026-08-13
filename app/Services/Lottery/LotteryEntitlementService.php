@@ -39,7 +39,7 @@ class LotteryEntitlementService
         }
     }
 
-    public function grantForStamp(Member $member, int $stampCardId, int $stampCount): void
+    public function grantForStamp(Member $member, int $stampCardId, int $stampCount, int $cycleIndex = 0): void
     {
         $settings = ProjectLotterySetting::query()->firstOrCreate(
             ['project_id' => (int) $member->project_id],
@@ -49,7 +49,7 @@ class LotteryEntitlementService
             $member,
             LotteryRewardType::GACHA,
             LotterySourceType::STAMP,
-            $stampCardId.':'.(int) $member->id.':'.$stampCount,
+            $stampCardId.':'.(int) $member->id.':'.$cycleIndex.':'.$stampCount,
             $settings,
         );
     }

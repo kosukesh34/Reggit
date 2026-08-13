@@ -12,12 +12,15 @@ class MemberStamp extends Model
     use BelongsToProject, HasFactory;
 
     protected $fillable = [
-        'project_id', 'member_id', 'stamp_card_id', 'current_stamps', 'completed_at', 'valid_until',
+        'project_id', 'member_id', 'stamp_card_id', 'current_stamps', 'cycle_count', 'completed_at', 'valid_until',
     ];
+
+    public int $cyclesCompletedNow = 0;
 
     /** @var array<string, string> */
     protected $casts = [
         'current_stamps' => 'integer',
+        'cycle_count' => 'integer',
         'completed_at' => 'datetime',
         'valid_until' => 'datetime',
     ];

@@ -444,7 +444,69 @@
 .stamps-header + .stamp-grant-success,
 .ios-panel-head + .stamp-grant-success,
 .stamps-list + .stamp-grant-scan,
-.ios-stamp-stack + .stamp-grant-scan {
+.ios-stamp-stack + .stamp-grant-scan,
+.stamp-archive + .stamp-grant-scan {
     margin-left: 20px;
     margin-right: 20px;
+}
+
+.stamp-complete-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background: rgba(15, 23, 42, 0.45);
+}
+
+.stamp-complete-card {
+    display: grid;
+    gap: 10px;
+    width: min(100%, 340px);
+    padding: 22px 20px 18px;
+    text-align: center;
+    background: #fff;
+    border-radius: 22px;
+}
+
+.stamp-complete-kicker {
+    margin: 0;
+    color: #3d8d6f;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.stamp-complete-card h3 {
+    margin: 0;
+    font-size: 22px;
+}
+
+.stamp-complete-card p {
+    margin: 0;
+    color: #475569;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.stamp-complete-next {
+    font-weight: 700;
+    color: #245c49 !important;
+}
+
+.stamp-archive {
+    margin: 8px 20px 16px;
+}
+
+.stamp-archive summary {
+    cursor: pointer;
+    color: #64748b;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.stamp-card-next-hint {
+    margin: 8px 0 0;
+    color: #3d8d6f;
+    font-size: 12px;
 }

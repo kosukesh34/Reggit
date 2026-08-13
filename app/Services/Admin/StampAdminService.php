@@ -2,6 +2,7 @@
 
 namespace App\Services\Admin;
 
+use App\Enums\StampCycleMode;
 use App\Enums\StampRewardType;
 use App\Models\Coupon;
 use App\Models\Settings\ProjectLotterySetting;
@@ -96,11 +97,42 @@ class StampAdminService
     /** @param array<string, mixed> $data
      * @return array<string, mixed>
      */
+    /** @return Collection<int, StampCard> */
+    public function getCycleTargetCards(int $projectId, ?int $excludeId = null): Collection
+    {
+        $query = StampCard::query()
+            ->where('project_id', $projectId)
+            ->orderBy('name');
+        if ($excludeId !== null) {
+            $query->whereKeyNot($excludeId);
+        }
+
+        return $query->get(['id', 'name', 'is_active']);
+    }
+
     private function normalizePayload(array $data, int $projectId): array
     {
         $data = $this->normalizeMilestones($data, $projectId);
         $data = $this->normalizeCardImage($data);
         $data = $this->normalizeStampImages($data);
+        $data = $this->normalizeCycle($data);
+
+        return $data;
+    }
+
+    /** @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    private function normalizeCycle(array $data): array
+    {
+        $data['cycle_mode'] = StampCycleMode::normalize(isset($data['cycle_mode']) ? (string) $data['cycle_mode'] : null);
+        if ($data['cycle_mode'] !== StampCycleMode::NEXT_CARD) {
+            $data['next_stamp_card_id'] = null;
+
+            return $data;
+        }
+        $nextId = (int) ($data['next_stamp_card_id'] ?? 0);
+        $data['next_stamp_card_id'] = $nextId > 0 ? $nextId : null;
 
         return $data;
     }

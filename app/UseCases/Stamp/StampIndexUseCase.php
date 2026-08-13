@@ -3,11 +3,14 @@
 namespace App\UseCases\Stamp;
 
 use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Enums\StampCycleMode;
+use App\Models\MemberStamp;
 use App\Models\StampCard;
 use App\Models\User;
 use App\UseCases\Stamp\Data\StampCardView;
 use App\UseCases\Stamp\Data\StampListView;
 use App\Util\AdminContext;
+use Illuminate\Support\Collection;
 
 class StampIndexUseCase
 {
@@ -27,7 +30,8 @@ class StampIndexUseCase
         }
 
         $today = now()->startOfDay();
-        $cards = StampCard::where('project_id', $member->project_id)
+        $cards = StampCard::query()
+            ->where('project_id', $member->project_id)
             ->where('is_active', true)
             ->where(function ($q) use ($today) {
                 $q->whereNull('valid_until')->orWhere('valid_until', '>=', $today);
@@ -37,41 +41,105 @@ class StampIndexUseCase
 
         $memberStamps = $member->memberStamps()->with('stampCard')->get()->keyBy('stamp_card_id');
         $defaultImageUrl = $this->shopSettingRepository->getStampDefaultImageUrl($member->project_id);
+        $visibleCards = $this->visibleCards($cards, $memberStamps);
 
-        $stampCards = $cards->map(function ($card) use ($memberStamps) {
-            $memberStamp = $memberStamps->get($card->id);
-
-            $completedAt = null;
-            if ($memberStamp !== null && $memberStamp->completed_at !== null) {
-                $completedAt = $memberStamp->completed_at->toIso8601String();
-            }
-            $memberStampValidUntil = $memberStamp !== null && $memberStamp->valid_until !== null
-                ? $memberStamp->valid_until->toIso8601String()
-                : null;
-            $validUntil = $card->valid_until !== null ? $card->valid_until->format('Y-m-d') : null;
-
-            $stampImages = is_array($card->stamp_images) ? $card->stamp_images : [];
-            $stampEmptyImages = is_array($card->stamp_empty_images) ? $card->stamp_empty_images : [];
-
-            return new StampCardView(
-                (int) $card->id,
-                (string) $card->name,
-                (int) $card->required_stamps,
-                $card->reward_description,
-                $this->normalizeRewardMilestones(is_array($card->reward_milestones) ? $card->reward_milestones : null),
-                $card->image_url,
-                $memberStamp !== null ? (int) $memberStamp->current_stamps : 0,
-                $completedAt,
-                (string) ($card->layout_style ?? 'grid'),
-                $card->valid_days !== null ? (int) $card->valid_days : null,
-                $validUntil,
-                $memberStampValidUntil,
-                $stampImages,
-                $stampEmptyImages
-            );
-        })->all();
+        $stampCards = $visibleCards->map(function (StampCard $card) use ($memberStamps, $cards) {
+            return $this->toCardView($card, $memberStamps->get($card->id), $cards);
+        })->sortBy(function (StampCardView $view) {
+            return ($view->isArchived ? '1' : '0').$view->name;
+        })->values()->all();
 
         return new StampListView($stampCards, $defaultImageUrl, false);
+    }
+
+    /**
+     * @param  Collection<int, StampCard>  $cards
+     * @param  Collection<int, MemberStamp>  $memberStamps
+     * @return Collection<int, StampCard>
+     */
+    private function visibleCards(Collection $cards, Collection $memberStamps): Collection
+    {
+        $completedIds = [];
+        foreach ($memberStamps as $stampCardId => $memberStamp) {
+            if ($memberStamp->completed_at !== null) {
+                $completedIds[(int) $stampCardId] = true;
+            }
+        }
+
+        $visible = $cards->filter(function (StampCard $card) use ($cards, $completedIds) {
+            $predecessors = $cards->filter(
+                static fn (StampCard $candidate): bool => (int) ($candidate->next_stamp_card_id ?? 0) === (int) $card->id
+            );
+            if ($predecessors->isEmpty()) {
+                return true;
+            }
+            foreach ($predecessors as $predecessor) {
+                if (isset($completedIds[(int) $predecessor->id])) {
+                    return true;
+                }
+            }
+
+            return false;
+        });
+        if ($visible->isEmpty() && $cards->isNotEmpty()) {
+            return $cards->values();
+        }
+
+        return $visible->values();
+    }
+
+    /**
+     * @param  Collection<int, StampCard>  $cards
+     */
+    private function toCardView(StampCard $card, ?MemberStamp $memberStamp, Collection $cards): StampCardView
+    {
+        $mode = StampCycleMode::normalize($card->cycle_mode);
+        $required = max(1, (int) $card->required_stamps);
+        $current = $memberStamp !== null ? (int) $memberStamp->current_stamps : 0;
+        $cycleCount = $memberStamp !== null ? (int) $memberStamp->cycle_count : 0;
+        $completedAt = null;
+        if ($memberStamp !== null && $memberStamp->completed_at !== null) {
+            $completedAt = $memberStamp->completed_at->toIso8601String();
+        }
+        if ($mode === StampCycleMode::REPEAT && $current >= $required) {
+            $cycleCount += intdiv($current, $required);
+            $current = $current % $required;
+            $completedAt = null;
+        }
+        $isArchived = $completedAt !== null && $mode !== StampCycleMode::REPEAT;
+        $nextName = null;
+        $nextId = (int) ($card->next_stamp_card_id ?? 0);
+        if ($mode === StampCycleMode::NEXT_CARD && $nextId > 0) {
+            $next = $cards->firstWhere('id', $nextId);
+            $nextName = $next !== null ? (string) $next->name : null;
+        }
+        $memberStampValidUntil = $memberStamp !== null && $memberStamp->valid_until !== null
+            ? $memberStamp->valid_until->toIso8601String()
+            : null;
+        $validUntil = $card->valid_until !== null ? $card->valid_until->format('Y-m-d') : null;
+        $stampImages = is_array($card->stamp_images) ? $card->stamp_images : [];
+        $stampEmptyImages = is_array($card->stamp_empty_images) ? $card->stamp_empty_images : [];
+
+        return new StampCardView(
+            (int) $card->id,
+            (string) $card->name,
+            $required,
+            $card->reward_description,
+            $this->normalizeRewardMilestones(is_array($card->reward_milestones) ? $card->reward_milestones : null),
+            $card->image_url,
+            $current,
+            $completedAt,
+            (string) ($card->layout_style ?? 'grid'),
+            $card->valid_days !== null ? (int) $card->valid_days : null,
+            $validUntil,
+            $memberStampValidUntil,
+            $stampImages,
+            $stampEmptyImages,
+            $mode,
+            $cycleCount,
+            $isArchived,
+            $nextName,
+        );
     }
 
     /**
