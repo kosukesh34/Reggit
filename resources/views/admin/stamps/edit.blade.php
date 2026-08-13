@@ -5,12 +5,15 @@
 @section('content')
 <nav class="breadcrumb"><a href="{{ admin_route('admin.stamps') }}">スタンプ</a><span class="breadcrumb-sep">/</span><span>編集</span></nav>
 @php($layoutOptions = \App\Models\StampCard::getLayoutOptions())
+@php($coupons = $coupons ?? collect())
 @php($milestones = old('reward_milestones', $stampCard->reward_milestones ?? [['stamp_count' => '', 'description' => '']]))
 @if(!is_array($milestones) || $milestones === [])
     @php($milestones = [['stamp_count' => '', 'description' => '']])
 @endif
 @php($existingStampImages = old('stamp_images_data') ? json_decode(old('stamp_images_data'), true) : ($stampCard->stamp_images ?? []))
 @if(!is_array($existingStampImages)) @php($existingStampImages = []) @endif
+@php($existingStampEmptyImages = old('stamp_empty_images_data') ? json_decode(old('stamp_empty_images_data'), true) : ($stampCard->stamp_empty_images ?? []))
+@if(!is_array($existingStampEmptyImages)) @php($existingStampEmptyImages = []) @endif
 
 <div class="stamp-studio">
     <section class="card stamp-studio-form-card">
@@ -69,23 +72,23 @@
                     </div>
                     <div class="stamp-milestones" id="editMilestonesContainer">
                         @foreach($milestones as $index => $milestone)
-                        <div class="stamp-milestone-row" data-edit-milestone-row>
-                            <div class="stamp-milestone-count-wrap">
-                                <label class="form-label" for="edit_reward_milestones_{{ $index }}_stamp_count">スタンプ数</label>
-                                <input type="number" min="1" max="999" class="form-control edit-milestone-count-input" id="edit_reward_milestones_{{ $index }}_stamp_count" name="reward_milestones[{{ $index }}][stamp_count]" value="{{ is_array($milestone) ? ($milestone['stamp_count'] ?? '') : '' }}" placeholder="10">
-                            </div>
-                            <div class="stamp-milestone-reward-wrap">
-                                <label class="form-label" for="edit_reward_milestones_{{ $index }}_description">特典内容</label>
-                                <input type="text" maxlength="500" class="form-control edit-milestone-description-input" id="edit_reward_milestones_{{ $index }}_description" name="reward_milestones[{{ $index }}][description]" value="{{ is_array($milestone) ? ($milestone['description'] ?? '') : '' }}" placeholder="例）ドリンク1杯無料">
-                            </div>
-                            <div class="stamp-milestone-action-wrap">
-                                <button type="button" class="btn btn-sm btn-outline-danger" data-edit-remove-milestone aria-label="特典を削除"><i class="fas fa-trash"></i></button>
-                            </div>
-                        </div>
+                            @include('admin.stamps._milestone_row', [
+                                'index' => $index,
+                                'milestone' => is_array($milestone) ? $milestone : [],
+                                'coupons' => $coupons,
+                                'isNamed' => true,
+                                'idPrefix' => 'edit_reward_milestones',
+                            ])
                         @endforeach
                     </div>
+                    <p class="form-text text-muted">クーポン／ガチャは到達時に自動で付与され、テキストは表示のみです。</p>
+                    @if(($isGachaEnabled ?? false) !== true)
+                    <p class="form-text text-muted">ガチャ特典を使う場合は、設定のガチャを有効にしてください。</p>
+                    @endif
                     @error('reward_milestones')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
                     @error('reward_milestones.*.stamp_count')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
+                    @error('reward_milestones.*.reward_type')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
+                    @error('reward_milestones.*.coupon_id')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
                     @error('reward_milestones.*.description')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
 
                     <div class="form-group stamp-form-note-group">
@@ -123,7 +126,7 @@
 
                     <div class="stamp-visual-subsection stamp-images-section">
                         <label class="form-label">個別スタンプ画像</label>
-                        <p class="form-text text-muted">各スタンプ位置をクリックして画像を設定できます。未設定の場合はデフォルトアイコンが表示されます。</p>
+                        <p class="form-text text-muted">各スタンプ位置をクリックして、押す前と押したあとの画像を設定できます。未設定の場合は番号またはデフォルトアイコンが表示されます。</p>
 
                         <div class="si-grid" id="stampImagesGrid"></div>
 
@@ -133,24 +136,8 @@
                                 <button type="button" class="btn btn-sm btn-outline-secondary si-editor-close" id="stampImageEditorClose"><i class="fas fa-times"></i></button>
                             </div>
                             <div class="si-editor-body">
-                                <div class="si-dropzone si-dropzone-sm" id="stampImageDropzone" tabindex="0">
-                                    <input type="file" class="si-file-input" id="stampImageFileInput" accept="image/png,image/jpeg,image/gif,image/webp">
-                                    <div class="si-dropzone-content" id="stampImageDropzoneContent">
-                                        <span class="si-dropzone-icon"><i class="fas fa-cloud-upload-alt"></i></span>
-                                        <span class="si-dropzone-text">ドラッグ＆ドロップ</span>
-                                    </div>
-                                    <div class="si-dropzone-preview" id="stampImagePreview" hidden>
-                                        <img id="stampImagePreviewImg" src="" alt="">
-                                        <button type="button" class="si-dropzone-clear" id="stampImageClear"><i class="fas fa-times"></i></button>
-                                    </div>
-                                </div>
-                                <div class="si-editor-url">
-                                    <label class="form-label small">または URL</label>
-                                    <div class="si-editor-url-row">
-                                        <input type="url" class="form-control form-control-sm" id="stampImageUrlInput" placeholder="https://example.com/stamp.png">
-                                        <button type="button" class="btn btn-sm btn-primary" id="stampImageUrlApply">適用</button>
-                                    </div>
-                                </div>
+                                @include('admin.stamps._stamp_image_pane', ['kind' => 'empty'])
+                                @include('admin.stamps._stamp_image_pane', ['kind' => 'filled'])
                             </div>
                         </div>
 
@@ -164,6 +151,7 @@
                         </div>
 
                         <input type="hidden" name="stamp_images_data" id="stampImagesData">
+                        <input type="hidden" name="stamp_empty_images_data" id="stampEmptyImagesData">
                     </div>
                 </div>
 
@@ -222,19 +210,13 @@
 </div>
 
 <template id="editMilestoneRowTemplate">
-    <div class="stamp-milestone-row" data-edit-milestone-row>
-        <div class="stamp-milestone-count-wrap">
-            <label class="form-label" data-edit-label-count>スタンプ数</label>
-            <input type="number" min="1" max="999" class="form-control edit-milestone-count-input" placeholder="10">
-        </div>
-        <div class="stamp-milestone-reward-wrap">
-            <label class="form-label" data-edit-label-description>特典内容</label>
-            <input type="text" maxlength="500" class="form-control edit-milestone-description-input" placeholder="例）ドリンク1杯無料">
-        </div>
-        <div class="stamp-milestone-action-wrap">
-            <button type="button" class="btn btn-sm btn-outline-danger" data-edit-remove-milestone aria-label="特典を削除"><i class="fas fa-trash"></i></button>
-        </div>
-    </div>
+    @include('admin.stamps._milestone_row', [
+        'index' => 0,
+        'milestone' => [],
+        'coupons' => $coupons,
+        'isNamed' => false,
+        'idPrefix' => 'edit_reward_milestones',
+    ])
 </template>
 
 <script>
@@ -290,19 +272,27 @@
 
     // ── Stamp Images State ──
     const existingStampImages = @json($existingStampImages);
+    const existingStampEmptyImages = @json($existingStampEmptyImages);
     const stampImages = {};
+    const stampEmptyImages = {};
     Object.keys(existingStampImages).forEach(k => { if (existingStampImages[k]) stampImages[k] = existingStampImages[k]; });
+    Object.keys(existingStampEmptyImages).forEach(k => { if (existingStampEmptyImages[k]) stampEmptyImages[k] = existingStampEmptyImages[k]; });
 
     let cardImageData = null;
     let selectedStampPos = null;
     const stampImagesGrid = document.getElementById('stampImagesGrid');
     const stampImagesDataInput = document.getElementById('stampImagesData');
+    const stampEmptyImagesDataInput = document.getElementById('stampEmptyImagesData');
     const imageDataInput = document.getElementById('imageData');
 
-    const syncStampImagesInput = () => {
+    const syncImageMapInput = (map, input) => {
         const filtered = {};
-        Object.keys(stampImages).forEach(k => { if (stampImages[k]) filtered[k] = stampImages[k]; });
-        stampImagesDataInput.value = Object.keys(filtered).length > 0 ? JSON.stringify(filtered) : '';
+        Object.keys(map).forEach(k => { if (map[k]) filtered[k] = map[k]; });
+        input.value = Object.keys(filtered).length > 0 ? JSON.stringify(filtered) : '';
+    };
+    const syncStampImagesInput = () => {
+        syncImageMapInput(stampImages, stampImagesDataInput);
+        syncImageMapInput(stampEmptyImages, stampEmptyImagesDataInput);
     };
     const syncCardImageInput = () => { imageDataInput.value = cardImageData || ''; };
 
@@ -356,9 +346,13 @@
         const maxShow = Math.min(count, 50);
         let html = '';
         for (let i = 1; i <= maxShow; i++) {
-            const hasImage = !!stampImages[String(i)];
-            html += '<button type="button" class="si-grid-slot' + (hasImage ? ' has-image' : '') + (selectedStampPos === i ? ' is-selected' : '') + '" data-si-pos="' + i + '">';
-            if (hasImage) { html += '<img src="' + esc(stampImages[String(i)]) + '" alt="" class="si-grid-slot-img">'; }
+            const filledImg = stampImages[String(i)];
+            const emptyImg = stampEmptyImages[String(i)];
+            const thumb = filledImg || emptyImg;
+            html += '<button type="button" class="si-grid-slot' +
+                (filledImg ? ' has-image' : (emptyImg ? ' has-empty-image' : '')) +
+                (selectedStampPos === i ? ' is-selected' : '') + '" data-si-pos="' + i + '">';
+            if (thumb) { html += '<img src="' + esc(thumb) + '" alt="" class="si-grid-slot-img">'; }
             else { html += '<span class="si-grid-slot-num">' + i + '</span>'; }
             html += '</button>';
         }
@@ -381,99 +375,169 @@
         e.preventDefault(); slot.classList.remove('is-dragover');
         const pos = parseInt(slot.dataset.siPos, 10);
         const f = e.dataTransfer?.files?.[0];
-        if (f) readFileAsDataUrl(f, (d) => { stampImages[String(pos)] = d; syncStampImagesInput(); renderStampGrid(); renderPreview(); if (selectedStampPos === pos) refreshStampEditor(); });
+        if (f) readFileAsDataUrl(f, (d) => setStampImage(stampImages, pos, d));
     });
 
     // ── Stamp Image Editor ──
     const editorEl = document.getElementById('stampImageEditor');
     const editorPos = document.getElementById('stampImageEditorPos');
-    const editorDropzone = document.getElementById('stampImageDropzone');
-    const editorFileInput = document.getElementById('stampImageFileInput');
-    const editorDropContent = document.getElementById('stampImageDropzoneContent');
-    const editorPreview = document.getElementById('stampImagePreview');
-    const editorPreviewImg = document.getElementById('stampImagePreviewImg');
-    const editorClear = document.getElementById('stampImageClear');
-    const editorUrlInput = document.getElementById('stampImageUrlInput');
-    const editorUrlApply = document.getElementById('stampImageUrlApply');
     const editorClose = document.getElementById('stampImageEditorClose');
     const bulkApply = document.getElementById('stampImageBulkApply');
     const bulkClear = document.getElementById('stampImageBulkClear');
-
-    const openStampEditor = (pos) => { selectedStampPos = pos; editorPos.textContent = pos; editorEl.hidden = false; refreshStampEditor(); renderStampGrid(); };
-    const refreshStampEditor = () => {
-        const data = stampImages[String(selectedStampPos)] || null;
-        editorUrlInput.value = '';
-        if (data) { editorPreviewImg.src = data; editorPreview.hidden = false; editorDropContent.hidden = true; }
-        else { editorPreviewImg.src = ''; editorPreview.hidden = true; editorDropContent.hidden = false; }
-        bulkApply.disabled = !data;
+    const filledPane = {
+        dropzone: document.getElementById('stampImageDropzone'),
+        fileInput: document.getElementById('stampImageFileInput'),
+        dropContent: document.getElementById('stampImageDropzoneContent'),
+        preview: document.getElementById('stampImagePreview'),
+        previewImg: document.getElementById('stampImagePreviewImg'),
+        clear: document.getElementById('stampImageClear'),
+        urlInput: document.getElementById('stampImageUrlInput'),
+        urlApply: document.getElementById('stampImageUrlApply'),
     };
-    const setStampImage = (pos, dataUrl) => {
-        if (dataUrl) stampImages[String(pos)] = dataUrl; else delete stampImages[String(pos)];
+    const emptyPane = {
+        dropzone: document.getElementById('stampEmptyImageDropzone'),
+        fileInput: document.getElementById('stampEmptyImageFileInput'),
+        dropContent: document.getElementById('stampEmptyImageDropzoneContent'),
+        preview: document.getElementById('stampEmptyImagePreview'),
+        previewImg: document.getElementById('stampEmptyImagePreviewImg'),
+        clear: document.getElementById('stampEmptyImageClear'),
+        urlInput: document.getElementById('stampEmptyImageUrlInput'),
+        urlApply: document.getElementById('stampEmptyImageUrlApply'),
+    };
+
+    const setStampImage = (map, pos, dataUrl) => {
+        if (dataUrl) map[String(pos)] = dataUrl; else delete map[String(pos)];
         syncStampImagesInput(); renderStampGrid(); renderPreview();
         if (selectedStampPos === pos) refreshStampEditor();
     };
+    const refreshPane = (map, pane) => {
+        const data = map[String(selectedStampPos)] || null;
+        pane.urlInput.value = '';
+        if (data) { pane.previewImg.src = data; pane.preview.hidden = false; pane.dropContent.hidden = true; }
+        else { pane.previewImg.src = ''; pane.preview.hidden = true; pane.dropContent.hidden = false; }
+    };
+    const openStampEditor = (pos) => { selectedStampPos = pos; editorPos.textContent = pos; editorEl.hidden = false; refreshStampEditor(); renderStampGrid(); };
+    const refreshStampEditor = () => {
+        refreshPane(stampImages, filledPane);
+        refreshPane(stampEmptyImages, emptyPane);
+        bulkApply.disabled = !stampImages[String(selectedStampPos)] && !stampEmptyImages[String(selectedStampPos)];
+    };
+    const bindStampImagePane = (map, pane) => {
+        pane.dropzone.addEventListener('click', (e) => { if (e.target.closest('.si-dropzone-clear')) return; pane.fileInput.click(); });
+        pane.fileInput.addEventListener('change', () => { const f = pane.fileInput.files[0]; if (f && selectedStampPos) readFileAsDataUrl(f, (d) => setStampImage(map, selectedStampPos, d)); });
+        pane.dropzone.addEventListener('dragover', (e) => { e.preventDefault(); pane.dropzone.classList.add('is-dragover'); });
+        pane.dropzone.addEventListener('dragleave', () => pane.dropzone.classList.remove('is-dragover'));
+        pane.dropzone.addEventListener('drop', (e) => {
+            e.preventDefault(); pane.dropzone.classList.remove('is-dragover');
+            const f = e.dataTransfer?.files?.[0]; if (f && selectedStampPos) readFileAsDataUrl(f, (d) => setStampImage(map, selectedStampPos, d));
+        });
+        pane.clear.addEventListener('click', (e) => { e.stopPropagation(); if (selectedStampPos) setStampImage(map, selectedStampPos, null); pane.fileInput.value = ''; });
+        pane.urlApply.addEventListener('click', () => { const url = pane.urlInput.value.trim(); if (url && selectedStampPos) setStampImage(map, selectedStampPos, url); });
+        pane.urlInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); pane.urlApply.click(); } });
+    };
+    bindStampImagePane(stampImages, filledPane);
+    bindStampImagePane(stampEmptyImages, emptyPane);
 
-    editorDropzone.addEventListener('click', (e) => { if (e.target.closest('.si-dropzone-clear')) return; editorFileInput.click(); });
-    editorFileInput.addEventListener('change', () => { const f = editorFileInput.files[0]; if (f && selectedStampPos) readFileAsDataUrl(f, (d) => setStampImage(selectedStampPos, d)); });
-    editorDropzone.addEventListener('dragover', (e) => { e.preventDefault(); editorDropzone.classList.add('is-dragover'); });
-    editorDropzone.addEventListener('dragleave', () => editorDropzone.classList.remove('is-dragover'));
-    editorDropzone.addEventListener('drop', (e) => {
-        e.preventDefault(); editorDropzone.classList.remove('is-dragover');
-        const f = e.dataTransfer?.files?.[0]; if (f && selectedStampPos) readFileAsDataUrl(f, (d) => setStampImage(selectedStampPos, d));
-    });
-    editorClear.addEventListener('click', (e) => { e.stopPropagation(); if (selectedStampPos) setStampImage(selectedStampPos, null); editorFileInput.value = ''; });
-    editorUrlApply.addEventListener('click', () => { const url = editorUrlInput.value.trim(); if (url && selectedStampPos) setStampImage(selectedStampPos, url); });
-    editorUrlInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); editorUrlApply.click(); } });
     editorClose.addEventListener('click', () => { editorEl.hidden = true; selectedStampPos = null; renderStampGrid(); });
     bulkApply.addEventListener('click', () => {
-        if (!selectedStampPos || !stampImages[String(selectedStampPos)]) return;
-        const src = stampImages[String(selectedStampPos)];
+        if (!selectedStampPos) return;
+        const filledSrc = stampImages[String(selectedStampPos)];
+        const emptySrc = stampEmptyImages[String(selectedStampPos)];
+        if (!filledSrc && !emptySrc) return;
         const count = Math.max(1, Math.min(999, toNumber(fields.requiredStamps.value, 20)));
-        for (let i = 1; i <= count; i++) stampImages[String(i)] = src;
+        for (let i = 1; i <= count; i++) {
+            if (filledSrc) stampImages[String(i)] = filledSrc;
+            if (emptySrc) stampEmptyImages[String(i)] = emptySrc;
+        }
         syncStampImagesInput(); renderStampGrid(); renderPreview();
     });
     bulkClear.addEventListener('click', () => {
         Object.keys(stampImages).forEach(k => delete stampImages[k]);
+        Object.keys(stampEmptyImages).forEach(k => delete stampEmptyImages[k]);
         syncStampImagesInput(); renderStampGrid(); renderPreview();
         if (selectedStampPos) refreshStampEditor();
     });
 
     // ── Milestones ──
-    const rows = () => Array.from(container.querySelectorAll('[data-edit-milestone-row]'));
+    const GACHA_DESCRIPTION = 'ガチャ1回';
+    const rows = () => Array.from(container.querySelectorAll('[data-milestone-row]'));
+    const syncMilestoneRewardFields = (row) => {
+        const type = (row.querySelector('.milestone-type-input')?.value || 'text');
+        const textWrap = row.querySelector('[data-reward-text]');
+        const couponWrap = row.querySelector('[data-reward-coupon]');
+        const gachaWrap = row.querySelector('[data-reward-gacha]');
+        if (textWrap) textWrap.hidden = type !== 'text';
+        if (couponWrap) couponWrap.hidden = type !== 'coupon';
+        if (gachaWrap) gachaWrap.hidden = type !== 'gacha';
+    };
     const reindex = () => {
         rows().forEach((row, index) => {
-            const ci = row.querySelector('.edit-milestone-count-input');
-            const di = row.querySelector('.edit-milestone-description-input');
-            const cl = row.querySelector('[data-edit-label-count]') || row.querySelector('.stamp-milestone-count-wrap .form-label');
-            const dl = row.querySelector('[data-edit-label-description]') || row.querySelector('.stamp-milestone-reward-wrap .form-label');
-            if (!ci || !di) return;
+            const ci = row.querySelector('.milestone-count-input');
+            const ti = row.querySelector('.milestone-type-input');
+            const di = row.querySelector('.milestone-description-input');
+            const qi = row.querySelector('.milestone-coupon-input');
+            const cl = row.querySelector('[data-label-count]');
+            const tl = row.querySelector('[data-label-type]');
+            const dl = row.querySelector('[data-label-description]');
+            const ql = row.querySelector('[data-label-coupon]');
+            if (!ci || !ti || !di || !qi) return;
             const cid = 'edit_reward_milestones_' + index + '_stamp_count';
+            const tid = 'edit_reward_milestones_' + index + '_reward_type';
             const did = 'edit_reward_milestones_' + index + '_description';
+            const qid = 'edit_reward_milestones_' + index + '_coupon_id';
             ci.name = 'reward_milestones[' + index + '][stamp_count]'; ci.id = cid;
+            ti.name = 'reward_milestones[' + index + '][reward_type]'; ti.id = tid;
             di.name = 'reward_milestones[' + index + '][description]'; di.id = did;
-            if (cl) cl.setAttribute('for', cid); if (dl) dl.setAttribute('for', did);
+            qi.name = 'reward_milestones[' + index + '][coupon_id]'; qi.id = qid;
+            if (cl) cl.setAttribute('for', cid);
+            if (tl) tl.setAttribute('for', tid);
+            if (dl) dl.setAttribute('for', did);
+            if (ql) ql.setAttribute('for', qid);
+            syncMilestoneRewardFields(row);
         });
     };
     addButton.addEventListener('click', () => { container.appendChild(template.content.cloneNode(true)); reindex(); renderPreview(); });
     container.addEventListener('click', (e) => {
-        const btn = e.target.closest('[data-edit-remove-milestone]'); if (!btn) return;
-        const row = btn.closest('[data-edit-milestone-row]'); if (!row) return;
+        const btn = e.target.closest('[data-remove-milestone]'); if (!btn) return;
+        const row = btn.closest('[data-milestone-row]'); if (!row) return;
         if (rows().length <= 1) {
-            const ci = row.querySelector('.edit-milestone-count-input');
-            const di = row.querySelector('.edit-milestone-description-input');
-            if (ci) ci.value = ''; if (di) di.value = '';
+            const ci = row.querySelector('.milestone-count-input');
+            const ti = row.querySelector('.milestone-type-input');
+            const di = row.querySelector('.milestone-description-input');
+            const qi = row.querySelector('.milestone-coupon-input');
+            if (ci) ci.value = '';
+            if (ti) ti.value = 'text';
+            if (di) di.value = '';
+            if (qi) qi.value = '';
+            syncMilestoneRewardFields(row);
             renderPreview(); return;
         }
         row.remove(); reindex(); renderPreview();
+    });
+    container.addEventListener('change', (e) => {
+        const typeInput = e.target.closest('.milestone-type-input');
+        if (!typeInput) return;
+        const row = typeInput.closest('[data-milestone-row]');
+        if (row) syncMilestoneRewardFields(row);
     });
 
     const collectMilestones = () => {
         const norm = [];
         rows().forEach(row => {
-            const ci = row.querySelector('.edit-milestone-count-input');
-            const di = row.querySelector('.edit-milestone-description-input');
+            const ci = row.querySelector('.milestone-count-input');
+            const ti = row.querySelector('.milestone-type-input');
+            const di = row.querySelector('.milestone-description-input');
+            const qi = row.querySelector('.milestone-coupon-input');
             if (!ci || !di) return;
-            const sc = toNumber(ci.value, 0); const desc = (di.value || '').trim();
+            const sc = toNumber(ci.value, 0);
+            const type = ti ? ti.value : 'text';
+            let desc = (di.value || '').trim();
+            if (type === 'coupon' && qi && qi.value) {
+                const opt = qi.options[qi.selectedIndex];
+                desc = opt ? opt.textContent.trim() : desc;
+            } else if (type === 'gacha') {
+                desc = GACHA_DESCRIPTION;
+            }
             if (sc <= 0 || desc === '') return;
             norm.push({ stamp_count: sc, description: desc });
         });
@@ -493,7 +557,7 @@
         for (let i = 1; i <= renderCount; i++) {
             const filled = i <= current;
             const isMilestone = milestoneMap.has(i);
-            const stampImg = stampImages[String(i)];
+            const stampImg = filled ? stampImages[String(i)] : stampEmptyImages[String(i)];
             let content;
             if (stampImg) content = '<img src="' + esc(stampImg) + '" alt="" class="stamp-preview-slot-img">';
             else if (filled) content = '<i class="fas fa-stamp"></i>';
@@ -594,8 +658,9 @@
 .btn-outline-danger:hover { background: #fef2f2; border-color: #fda4af; }
 
 .stamp-milestones { margin-top: 12px; display: flex; flex-direction: column; gap: 10px; }
-.stamp-milestone-row { display: grid; grid-template-columns: 132px minmax(0, 1fr) auto; gap: 10px; align-items: end; padding: 12px; border: 1px solid #d7e0ea; border-radius: 11px; background: var(--studio-bg); }
+.stamp-milestone-row { display: grid; grid-template-columns: 110px 148px minmax(0, 1fr) auto; gap: 10px; align-items: end; padding: 12px; border: 1px solid #d7e0ea; border-radius: 11px; background: var(--studio-bg); }
 .stamp-milestone-action-wrap { display: flex; align-items: flex-end; }
+.stamp-milestone-gacha-note { margin: 0; font-size: 13px; color: #64748b; padding: 8px 0; }
 .mt-3 { margin-top: 12px; }
 
 .stamp-visual-subsection { margin-top: 14px; }
@@ -624,6 +689,9 @@
 .si-grid-slot.is-selected { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2); }
 .si-grid-slot.is-dragover { border-color: #3b82f6; background: #eff6ff; }
 .si-grid-slot.has-image { border-color: #22c55e; }
+.si-grid-slot.has-empty-image { border-color: #94a3b8; }
+.si-editor-pane { display: flex; flex-direction: column; gap: 8px; }
+.si-editor-pane-title { margin: 0; font-size: 12px; font-weight: 700; color: #334155; }
 .si-grid-slot-num { font-size: 12px; font-weight: 700; color: #9ca3af; }
 .si-grid-slot-img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
 .si-grid-overflow { display: flex; align-items: center; font-size: 12px; color: #6b7280; padding: 0 8px; }

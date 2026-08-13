@@ -18,12 +18,12 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties, type Reac
 import { Link } from "react-router-dom";
 import { Button } from "../components/ui/Button";
 import { designPresets } from "../config/designPresets";
-import { designPresetLayoutPatch } from "../config/customization";
+import { designPresetLayoutPatch, resolveHomeLayout } from "../config/customization";
 import { tabLabelMap, tabOptions } from "../config/navigation";
 import { useAppConfig } from "../context/AppConfigContext";
 import { themeMap } from "../themes/themes";
 import { isLinkTabType, type FeatureType, type TabType } from "../types/app";
-import type { AppCustomization, HeaderShortcut } from "../types/customization";
+import type { AppCustomization, HeaderShortcut, HomeLayout } from "../types/customization";
 import { resolveCustomizationColors } from "../utils/customization";
 
 type DesignerSaveState = "saved" | "unsaved" | "saving" | "error";
@@ -231,6 +231,10 @@ export function AdminCustomizePage({
         <section className="admin-section" id="layout">
           <SectionHead number="02" title="レイアウトとボタン" description="情報量、主要ボタンの位置、ホーム画面の構成を調整できます。" />
           <div className="admin-settings-grid">
+            <SettingsGroup title="ホームのレイアウト" description="ホーム画面の情報の並びを選びます。右のプレビューへ即時反映されます">
+              <HomeLayoutPicker value={resolveHomeLayout(customization.home.layout)} onChange={(layout) => updateCustomization({ home: { layout } })} />
+            </SettingsGroup>
+
             <SettingsGroup title="画面スタイル" description="全体の密度とボタン表現">
               <SelectRow label="コンテンツ密度" value={customization.appearance.density} onChange={(density) => updateCustomization({ appearance: { density: density as AppCustomization["appearance"]["density"] } })}><option value="compact">コンパクト</option><option value="standard">標準</option><option value="relaxed">ゆったり</option></SelectRow>
               <SelectRow label="ボタンスタイル" value={customization.appearance.buttonStyle} onChange={(buttonStyle) => updateCustomization({ appearance: { buttonStyle: buttonStyle as AppCustomization["appearance"]["buttonStyle"] } })}><option value="filled">塗り</option><option value="soft">ソフト</option><option value="outline">アウトライン</option></SelectRow>
@@ -404,6 +408,30 @@ function ToggleRow({ label, checked, onChange }: { label: string; checked: boole
 
 function SelectRow({ label, value, onChange, children }: { label: string; value: string; onChange: (value: string) => void; children: ReactNode }) {
   return <label className="admin-select"><span>{label}</span><select value={value} onChange={(event) => onChange(event.target.value)}>{children}</select></label>;
+}
+
+const homeLayouts: Array<{ id: HomeLayout; name: string; description: string }> = [
+  { id: "standard", name: "スタンダード", description: "挨拶・メイン画像・会員情報の順" },
+  { id: "wallet", name: "ウォレット", description: "会員証とサービスを先頭に表示" },
+  { id: "magazine", name: "マガジン", description: "メイン画像とおすすめを大きく" },
+  { id: "minimal", name: "ミニマル", description: "会員証とサービス中心の簡潔構成" },
+];
+
+function HomeLayoutPicker({ value, onChange }: { value: HomeLayout; onChange: (value: HomeLayout) => void }) {
+  return (
+    <div className="membership-layout-control">
+      <div className="membership-layout-control__label">ホームレイアウト <small>1つ選択</small></div>
+      <div className="membership-layout-grid">
+        {homeLayouts.map((layout) => (
+          <button type="button" className={`membership-layout-option${value === layout.id ? " is-active" : ""}`} aria-pressed={value === layout.id} onClick={() => onChange(layout.id)} key={layout.id}>
+            <span className={`membership-layout-option__preview home-layout-preview home-layout-preview--${layout.id}`}><i /><i /><i /><i /></span>
+            <span><strong>{layout.name}</strong><small>{layout.description}</small></span>
+            {value === layout.id ? <Check size={13} /> : null}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 const membershipLayouts: Array<{ id: AppCustomization["membership"]["template"]; name: string; description: string }> = [

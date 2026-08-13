@@ -51,6 +51,7 @@ class StampIndexUseCase
             $validUntil = $card->valid_until !== null ? $card->valid_until->format('Y-m-d') : null;
 
             $stampImages = is_array($card->stamp_images) ? $card->stamp_images : [];
+            $stampEmptyImages = is_array($card->stamp_empty_images) ? $card->stamp_empty_images : [];
 
             return new StampCardView(
                 (int) $card->id,
@@ -65,7 +66,8 @@ class StampIndexUseCase
                 $card->valid_days !== null ? (int) $card->valid_days : null,
                 $validUntil,
                 $memberStampValidUntil,
-                $stampImages
+                $stampImages,
+                $stampEmptyImages
             );
         })->all();
 

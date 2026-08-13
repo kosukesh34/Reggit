@@ -14,7 +14,6 @@ import {
   Hotel,
   PawPrint,
   RefreshCcw,
-  QrCode,
   Sandwich,
   Scissors,
   Shirt,
@@ -25,7 +24,7 @@ import {
   Users,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { BottomSheet } from "../../components/ui/BottomSheet";
 import { StampScannerPopup } from "../../components/stamp/StampScannerPopup";
 import { Button } from "../../components/ui/Button";
@@ -188,9 +187,7 @@ const rewardProfileMap: Record<string, { eyebrow: string; title: string; reward:
 export function StampDemo({ config, storeId, brandName }: { config: AppCustomization["stamp"]; storeId: string; brandName: string }) {
   const { stampCount, addStamp } = useRuntimeData();
   const count = Math.min(stampCount, config.goal);
-  const [sheetOpen, setSheetOpen] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
-  const [staffCode, setStaffCode] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string>();
   const [successMessage, setSuccessMessage] = useState<string>();
@@ -206,7 +203,7 @@ export function StampDemo({ config, storeId, brandName }: { config: AppCustomiza
   const grantStamp = useCallback(async (rawValue: string) => {
     const payload = parseStampGrant(rawValue);
     if (!payload) {
-      setError("QRコードまたは認証コードを確認してください。");
+      setError("QRコードを確認してください。");
       return;
     }
     setSubmitting(true);
@@ -217,9 +214,7 @@ export function StampDemo({ config, storeId, brandName }: { config: AppCustomiza
       setNewStampIndex(Math.min(count, config.goal - 1));
       setAnimationKey((current) => current + 1);
       setSuccessMessage(`スタンプを1個追加しました。現在 ${Math.min(count + 1, config.goal)} / ${config.goal} 個です。`);
-      setSheetOpen(false);
       setScannerOpen(false);
-      setStaffCode("");
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "スタンプを追加できませんでした");
     } finally {
@@ -228,7 +223,7 @@ export function StampDemo({ config, storeId, brandName }: { config: AppCustomiza
   }, [addStamp, config.goal, count]);
 
   useEffect(() => {
-    const grant = searchParams.get("grant") ?? searchParams.get("stampCode");
+    const grant = searchParams.get("g") ?? searchParams.get("grant") ?? searchParams.get("stampCode");
     if (!grant || queryHandled.current) return;
     queryHandled.current = true;
     void grantStamp(grant).finally(() => setSearchParams({}, { replace: true }));
@@ -254,19 +249,8 @@ export function StampDemo({ config, storeId, brandName }: { config: AppCustomiza
       </Card>
       {successMessage ? <div className="stamp-grant-success" role="status" key={animationKey}><span><Check size={19} /></span><div><strong>スタンプ付与完了</strong><p>{successMessage}</p></div></div> : null}
       {error ? <div className="form-error" role="alert">{error}</div> : null}
-      <div className="stamp-action-grid">
-        <Button size="lg" disabled={complete || submitting} onClick={() => { setError(undefined); setScannerOpen(true); }}><Camera size={19} />{complete ? "特典獲得済み" : "カメラでQRを読み取る"}</Button>
-        <Button size="lg" variant="outline" disabled={complete || submitting} onClick={() => { setError(undefined); setSheetOpen(true); }}>認証コードを入力</Button>
-      </div>
-      <Link className="stamp-issue-link" to="/stamp/issue"><QrCode size={17} /><span><strong>店舗用：付与QRを作成</strong><small>QRコードと付与URLを表示します</small></span></Link>
+      <Button size="lg" disabled={complete || submitting} onClick={() => { setError(undefined); setScannerOpen(true); }}><Camera size={19} />{complete ? "特典獲得済み" : "カメラでQRを読み取る"}</Button>
       <StampScannerPopup open={scannerOpen} onClose={() => setScannerOpen(false)} onDetected={handleDetected} />
-      <BottomSheet open={sheetOpen} onClose={() => setSheetOpen(false)} title="来店スタンプを追加">
-        <div className="stack stack--lg">
-          <div className="staff-code"><span>店舗スタッフが認証コードを入力します</span><input value={staffCode} onChange={(event) => setStaffCode(event.target.value)} inputMode="numeric" autoComplete="one-time-code" placeholder="認証コード" /></div>
-          {error ? <div className="form-error" role="alert">{error}</div> : null}
-          <Button size="lg" disabled={submitting || staffCode.length < 4} onClick={() => void grantStamp(staffCode)}>{submitting ? "確認中…" : profile.action}</Button>
-        </div>
-      </BottomSheet>
     </div>
   );
 }

@@ -6,8 +6,10 @@ use App\Enums\StampGrantLimit;
 use App\Models\Member;
 use App\Models\Project;
 use App\Models\StampCard;
+use App\Models\StampGrantCode;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\URL;
 use Tests\TestCase;
 
@@ -132,6 +134,122 @@ class StampGrantTest extends TestCase
         ]);
     }
 
+    public function test_短縮トークンのqrからスタンプを付与できること(): void
+    {
+        [$project, $member, $card] = $this->createGrantFixtures(self::LINE_USER_ID);
+        $code = $this->createGrantCode($project, $card, [
+            'amount' => 3,
+            'usage_limit' => StampGrantLimit::PER_MEMBER,
+        ]);
+
+        $this->withHeaders(['X-Line-User-Id' => self::LINE_USER_ID])
+            ->postJson('/api/stamps/grant-code/'.$code->token)
+            ->assertOk()
+            ->assertJsonPath('current_stamps', 3)
+            ->assertJsonPath('granted_count', 3);
+
+        $this->assertDatabaseHas('member_stamps', [
+            'member_id' => $member->id,
+            'stamp_card_id' => $card->id,
+            'current_stamps' => 3,
+        ]);
+        $this->assertDatabaseHas('stamp_grant_redemptions', [
+            'stamp_grant_code_id' => $code->id,
+            'member_id' => $member->id,
+        ]);
+
+        $this->withHeaders(['X-Line-User-Id' => self::LINE_USER_ID])
+            ->postJson('/api/stamps/grant-code/'.$code->token)
+            ->assertStatus(409)
+            ->assertJsonPath('error', 'このQRからのスタンプは付与済みです');
+    }
+
+    public function test_短縮トークンの全体1回qrは別会員でも再利用できないこと(): void
+    {
+        [$project, $member, $card] = $this->createGrantFixtures(self::LINE_USER_ID);
+        $otherLineUserId = 'Uabcdef1234567890abcdef1234567890';
+        $otherUser = User::factory()->create([
+            'project_id' => $project->id,
+            'line_user_id' => $otherLineUserId,
+        ]);
+        Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => $otherUser->id,
+        ]);
+        $code = $this->createGrantCode($project, $card, [
+            'usage_limit' => StampGrantLimit::ONCE,
+        ]);
+
+        $this->withHeaders(['X-Line-User-Id' => self::LINE_USER_ID])
+            ->postJson('/api/stamps/grant-code/'.$code->token)
+            ->assertOk();
+        $this->withHeaders(['X-Line-User-Id' => $otherLineUserId])
+            ->postJson('/api/stamps/grant-code/'.$code->token)
+            ->assertStatus(409)
+            ->assertJsonPath('error', 'このQRは使用済みです');
+
+        $this->assertDatabaseHas('member_stamps', [
+            'member_id' => $member->id,
+            'current_stamps' => 1,
+        ]);
+    }
+
+    public function test_短縮トークンの無制限qrは同じ会員でも繰り返し付与できること(): void
+    {
+        [$project, $member, $card] = $this->createGrantFixtures(self::LINE_USER_ID);
+        $code = $this->createGrantCode($project, $card, [
+            'usage_limit' => StampGrantLimit::UNLIMITED,
+            'expires_at' => null,
+        ]);
+
+        $headers = ['X-Line-User-Id' => self::LINE_USER_ID];
+        $this->withHeaders($headers)->postJson('/api/stamps/grant-code/'.$code->token)
+            ->assertOk()
+            ->assertJsonPath('current_stamps', 1);
+        $this->withHeaders($headers)->postJson('/api/stamps/grant-code/'.$code->token)
+            ->assertOk()
+            ->assertJsonPath('current_stamps', 2);
+
+        $this->assertDatabaseHas('member_stamps', [
+            'member_id' => $member->id,
+            'current_stamps' => 2,
+        ]);
+        $this->assertDatabaseCount('stamp_grant_redemptions', 0);
+    }
+
+    public function test_期限切れの短縮トークンは付与できないこと(): void
+    {
+        [$project, $member, $card] = $this->createGrantFixtures(self::LINE_USER_ID);
+        $code = $this->createGrantCode($project, $card, [
+            'expires_at' => now()->subMinute(),
+        ]);
+
+        $this->withHeaders(['X-Line-User-Id' => self::LINE_USER_ID])
+            ->postJson('/api/stamps/grant-code/'.$code->token)
+            ->assertStatus(410)
+            ->assertJsonPath('error', 'このQRの有効期限が切れています');
+
+        $this->assertDatabaseMissing('member_stamps', [
+            'member_id' => $member->id,
+        ]);
+    }
+
+    public function test_短縮トークンの公開urlはスタンプ画面へリダイレクトすること(): void
+    {
+        [$project, $member, $card] = $this->createGrantFixtures(self::LINE_USER_ID);
+        $code = $this->createGrantCode($project, $card);
+
+        $location = $this->get('/g/'.$code->token)->assertRedirect()->headers->get('Location');
+        $this->assertNotNull($location);
+        $this->assertStringContainsString('tab=stamps', $location);
+        $this->assertStringContainsString('g='.$code->token, $location);
+    }
+
+    public function test_存在しない短縮トークンの公開urlは404になること(): void
+    {
+        $this->get('/g/ffffffffffff')->assertNotFound();
+    }
+
     /** @return array{0: Project, 1: Member, 2: StampCard} */
     private function createGrantFixtures(string $lineUserId): array
     {
@@ -150,6 +268,26 @@ class StampGrantTest extends TestCase
         ]);
 
         return [$project, $member, $card];
+    }
+
+    /**
+     * @param  array{
+     *     amount?: int,
+     *     usage_limit?: string,
+     *     expires_at?: Carbon|null,
+     *     token?: string,
+     * }  $attrs
+     */
+    private function createGrantCode(Project $project, StampCard $card, array $attrs = []): StampGrantCode
+    {
+        return StampGrantCode::query()->create(array_merge([
+            'project_id' => $project->id,
+            'stamp_card_id' => $card->id,
+            'token' => bin2hex(random_bytes(6)),
+            'amount' => 1,
+            'usage_limit' => StampGrantLimit::PER_MEMBER,
+            'expires_at' => now()->addMinutes(15),
+        ], $attrs));
     }
 
     private function signedGrantUrl(
