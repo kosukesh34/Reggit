@@ -19,6 +19,7 @@ import { DesignLabManager } from './managers/DesignLabManager';
 import { MemberManager } from './managers/MemberManager';
 import { LiffPageRouter, parseLiffHash, isDeepLiffHash } from './navigation/LiffPageRouter';
 import type { LiffPageKey } from './navigation/LiffPageRouter';
+import { LIFF_UI_NAVIGATE, pathForLegacyTab } from '../liff-ui/navigation/tabPath';
 import { primaryForTab } from './demo/navigation';
 import { isFixedUiShell } from './demo/demoMode';
 import {
@@ -413,6 +414,9 @@ class ReggitApp {
             const resolved = aliases[tabKey] ?? tabKey;
             if (!resolved || !allowedTabs.has(resolved)) return false;
             this.switchTab(resolved);
+            if (window.__REGGIT_LIFF_UI__ === true) {
+                return true;
+            }
             if (resolved === AppConstants.TABS.COUPONS && this.couponsManager) {
                 if (options.couponReceived) {
                     this.couponsManager.onCouponReceived(options);
@@ -619,11 +623,15 @@ class ReggitApp {
         if (hasQueueToken) {
             await this.queueManager.linkPendingQueueOnStartup();
             this.switchTab(AppConstants.TABS.QUEUE);
-            await this.queueManager.load();
+            if (window.__REGGIT_LIFF_UI__ !== true) {
+                await this.queueManager.load();
+            }
             return;
         }
         if (this.currentTab === AppConstants.TABS.QUEUE) {
-            this.queueManager.load();
+            if (window.__REGGIT_LIFF_UI__ !== true) {
+                this.queueManager.load();
+            }
             return;
         }
         if (this.currentTab === AppConstants.TABS.MEMBER) {
@@ -966,7 +974,7 @@ class ReggitApp {
         }
     }
 
-    /** React ProductsGrid / CartPanel が DOM を所有しているか */
+    /** 旧 React 商品グリッドが DOM を所有しているか（liff-ui では未マウント） */
     _hasReactProducts(): boolean {
         return document.querySelector('[data-react-products]') !== null;
     }
@@ -1029,7 +1037,7 @@ class ReggitApp {
         }
     }
 
-    /** React ProductsGrid へ同期（レガシー HTML タブ描画は廃止） */
+    /** 商品グリッドへ同期（レガシー HTML タブ描画は廃止） */
     renderCategoryTabs() {
         this._dispatchProductsUpdated();
     }
@@ -1116,7 +1124,7 @@ class ReggitApp {
         this.setProductsViewMode(this.getProductsViewMode());
     }
 
-    /** React ProductsGrid / CartPanel へ同期（レガシー HTML 商品描画は廃止） */
+    /** 商品グリッドへ同期（レガシー HTML 商品描画は廃止） */
     renderProducts() {
         this._dispatchProductsUpdated();
         this._dispatchCartUpdated();
@@ -1192,7 +1200,7 @@ class ReggitApp {
     }
 
     updateCartUI() {
-        // カート行は CartPanel（React）。バッジ／合計／注文ボタンのみ同期する。
+        // バッジ／合計／注文ボタンを同期する。
         this._dispatchCartUpdated();
         this._dispatchProductsUpdated();
 
@@ -1256,8 +1264,7 @@ class ReggitApp {
         if (section === null) {
             return;
         }
-        // 中身は LiffDetailHost（ProductDetailPage）が hash で描画
-        document.dispatchEvent(new CustomEvent('liff-detail-changed'));
+        // liff-ui では HashRouter が画面を持つ。旧 DOM 詳細ホストは無い。
     }
 
     closeProductDetail() {
@@ -1366,8 +1373,7 @@ class ReggitApp {
         if (section === null) {
             return;
         }
-        // 中身は LiffDetailHost（OrderFlowPage）が hash で描画
-        document.dispatchEvent(new CustomEvent('liff-detail-changed'));
+        // liff-ui では HashRouter が画面を持つ。旧 DOM 詳細ホストは無い。
     }
 
     showCartNotification() {
@@ -1502,6 +1508,22 @@ class ReggitApp {
         if (this.memberManager && typeof this.memberManager.isForcedRegistrationActive === 'function'
             && this.memberManager.isForcedRegistrationActive()
             && tab !== AppConstants.TABS.MEMBER) {
+            return Promise.resolve();
+        }
+
+        if (typeof window !== 'undefined' && window.__REGGIT_LIFF_UI__ === true) {
+            this.currentTab = tab === 'membership' ? 'member' : tab;
+            if (document.body !== null) {
+                document.body.classList.toggle('liff-lottery-ui', tab === 'designlab');
+            }
+            const path = pathForLegacyTab(tab);
+            if (path !== null) {
+                const nextHash = '#' + path;
+                if (window.location.hash !== nextHash) {
+                    window.history.replaceState(null, '', nextHash);
+                }
+                document.dispatchEvent(new CustomEvent(LIFF_UI_NAVIGATE, { detail: { path, replace: true } }));
+            }
             return Promise.resolve();
         }
 
