@@ -23,9 +23,34 @@ class StampCardView
         public array $stampImages = [],
         /** @var array<string, string> */
         public array $stampEmptyImages = [],
+        public string $cycleMode = 'repeat',
+        public int $cycleCount = 0,
+        public bool $isArchived = false,
+        public ?string $nextStampCardName = null,
     ) {}
 
-    /** @return array{id: int, name: string, required_stamps: int, reward_description: string|null, reward_milestones: array<int, array{stamp_count: int, description: string}>, image_url: string|null, current_stamps: int, completed_at: string|null, layout_style: string, valid_days: int|null, valid_until: string|null, member_stamp_valid_until: string|null, stamp_images: array<string, string>, stamp_empty_images: array<string, string>} */
+    /**
+     * @return array{
+     *     id: int,
+     *     name: string,
+     *     required_stamps: int,
+     *     reward_description: string|null,
+     *     reward_milestones: array<int, array{stamp_count: int, description: string}>,
+     *     image_url: string|null,
+     *     current_stamps: int,
+     *     completed_at: string|null,
+     *     layout_style: string,
+     *     valid_days: int|null,
+     *     valid_until: string|null,
+     *     member_stamp_valid_until: string|null,
+     *     stamp_images: array<string, string>,
+     *     stamp_empty_images: array<string, string>,
+     *     cycle_mode: string,
+     *     cycle_count: int,
+     *     is_archived: bool,
+     *     next_stamp_card_name: string|null
+     * }
+     */
     public function toArray(): array
     {
         return [
@@ -43,6 +68,10 @@ class StampCardView
             'member_stamp_valid_until' => $this->memberStampValidUntil,
             'stamp_images' => $this->stampImages,
             'stamp_empty_images' => $this->stampEmptyImages,
+            'cycle_mode' => $this->cycleMode,
+            'cycle_count' => $this->cycleCount,
+            'is_archived' => $this->isArchived,
+            'next_stamp_card_name' => $this->nextStampCardName,
         ];
     }
 }

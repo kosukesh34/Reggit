@@ -20,6 +20,12 @@ class StampQrScanContractTest extends TestCase
         $this->assertStringNotContainsString('BarcodeDetector', $popup);
         $this->assertStringNotContainsString('CenterPopup', $popup);
         $this->assertStringNotContainsString('この端末ではアプリ内カメラに対応していません', $popup);
+        $this->assertStringContainsString('parseStampGrant', $popup);
+        $this->assertStringContainsString('STAMP_GRANT_INVALID_QR_MESSAGE', $popup);
+        $this->assertStringContainsString('onInvalid', $popup);
+
+        $grantUtil = (string) file_get_contents($root.'/resources/js/liff-ui/utils/stampGrant.ts');
+        $this->assertStringContainsString("export const STAMP_GRANT_INVALID_QR_MESSAGE = 'スタンプ付与用のQRではありません'", $grantUtil);
     }
 
     public function test_カメラ起動はクリックのユーザー操作内で始めること(): void

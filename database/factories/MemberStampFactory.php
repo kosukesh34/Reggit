@@ -18,6 +18,7 @@ class MemberStampFactory extends Factory
             'member_id' => Member::factory(),
             'stamp_card_id' => StampCard::factory(),
             'current_stamps' => 0,
+            'cycle_count' => 0,
             'completed_at' => null,
         ];
     }
