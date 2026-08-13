@@ -36,8 +36,17 @@ class QueueRequestContext
     public static function queueToken(Request $request): ?string
     {
         $token = self::normalizeString($request->query('queue_token'));
+        if ($token !== '') {
+            return $token;
+        }
+        foreach (self::embeddedRawParams($request) as $raw) {
+            [$embeddedToken] = self::extractQueueIdentifierFromRaw($raw);
+            if ($embeddedToken !== null) {
+                return $embeddedToken;
+            }
+        }
 
-        return $token !== '' ? $token : null;
+        return null;
     }
 
     public static function queueId(Request $request): ?int
@@ -46,21 +55,108 @@ class QueueRequestContext
         if ($id !== '' && ctype_digit($id)) {
             return (int) $id;
         }
+        foreach (self::embeddedRawParams($request) as $raw) {
+            [, $embeddedId] = self::extractQueueIdentifierFromRaw($raw);
+            if ($embeddedId !== null) {
+                return $embeddedId;
+            }
+        }
 
         return null;
     }
 
     /**
-     * @return list<string|null>
+     * @return array{0: string|null, 1: int|null}
      */
-    public static function embeddedRawParams(Request $request): array
+    public static function extractQueueIdentifierFromRaw(?string $raw): array
     {
-        return [
+        if ($raw === null) {
+            return [null, null];
+        }
+
+        $candidates = [];
+        $value = trim($raw);
+        if ($value !== '') {
+            $candidates[] = $value;
+            $decoded = $value;
+            for ($i = 0; $i < 2; $i++) {
+                $next = urldecode($decoded);
+                if ($next === $decoded) {
+                    break;
+                }
+                $decoded = $next;
+                $candidates[] = $decoded;
+            }
+        }
+
+        foreach ($candidates as $candidate) {
+            [$token, $id] = self::extractQueueIdentifierFromString($candidate);
+            if ($token !== null || $id !== null) {
+                return [$token, $id];
+            }
+        }
+
+        return [null, null];
+    }
+
+    /**
+     * @return list<string>
+     */
+    private static function embeddedRawParams(Request $request): array
+    {
+        $raws = [];
+        foreach ([
             $request->query('liff.state'),
+            $request->query('liff_state'),
             $request->query('state'),
             $request->query('liffRedirectUri'),
             $request->headers->get('referer'),
-        ];
+        ] as $value) {
+            if (is_string($value) && trim($value) !== '') {
+                $raws[] = $value;
+            }
+        }
+
+        return $raws;
+    }
+
+    /**
+     * @return array{0: string|null, 1: int|null}
+     */
+    private static function extractQueueIdentifierFromString(string $value): array
+    {
+        $normalized = ltrim($value, '#');
+        $params = [];
+
+        $parts = parse_url($normalized);
+        if (is_array($parts)) {
+            if (isset($parts['query'])) {
+                parse_str($parts['query'], $params);
+            } elseif (isset($parts['fragment'])) {
+                parse_str($parts['fragment'], $params);
+            }
+        }
+
+        if ($params === []) {
+            $query = str_contains($normalized, '?')
+                ? (string) parse_url($normalized, PHP_URL_QUERY)
+                : $normalized;
+            parse_str((string) $query, $params);
+        }
+
+        $token = isset($params['queue_token']) && is_string($params['queue_token'])
+            ? trim($params['queue_token'])
+            : null;
+        if ($token === '') {
+            $token = null;
+        }
+
+        $queueIdRaw = isset($params['queue_id']) && is_string($params['queue_id'])
+            ? trim($params['queue_id'])
+            : '';
+        $queueId = ctype_digit($queueIdRaw) ? (int) $queueIdRaw : null;
+
+        return [$token, $queueId];
     }
 
     private static function normalizeString(mixed $value): string
