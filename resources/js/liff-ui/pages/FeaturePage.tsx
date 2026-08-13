@@ -89,21 +89,20 @@ export function FeaturePage() {
     return <SimpleRewardsFeature feature={feature} />;
   }
 
-  if (loading && mode !== "live" && mode !== "preview") {
+  if (mode !== "live" && mode !== "preview") {
+    if (mode === "offline" && !loading) {
+      return (
+        <div className="page feature-page">
+          <ErrorState
+            title="店舗データに接続できません"
+            description={error ?? "通信環境をご確認ください"}
+            actionLabel="再読み込み"
+            onAction={() => { void refresh(); }}
+          />
+        </div>
+      );
+    }
     return <FeaturePageSkeleton />;
-  }
-
-  if (mode === "offline") {
-    return (
-      <div className="page feature-page">
-        <ErrorState
-          title="店舗データに接続できません"
-          description={error ?? "通信環境をご確認ください"}
-          actionLabel="再読み込み"
-          onAction={() => { void refresh(); }}
-        />
-      </div>
-    );
   }
 
   if (!isFeatureType(feature)) {

@@ -72,6 +72,7 @@ declare global {
         __ORDER_MODE__?: string;
         __MOBILE_APP_MODE__?: boolean;
         __IS_LIFF__?: boolean;
+        __LIFF_READY__?: boolean;
         __LINE_FRIEND_ADD_URL__?: string;
         __LINE_USER_ID__?: string | null;
         __LINE_PROFILE__?: { displayName?: string; [key: string]: unknown } | null;
