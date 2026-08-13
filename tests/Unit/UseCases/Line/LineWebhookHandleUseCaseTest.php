@@ -4,6 +4,7 @@ namespace Tests\Unit\UseCases\Line;
 
 use App\Models\Project;
 use App\Models\User;
+use App\Repositories\Contracts\ProjectRepository;
 use App\Services\Line\LineService;
 use App\UseCases\Line\Data\LineWebhookInput;
 use App\UseCases\Line\LineWebhookHandleUseCase;
@@ -32,7 +33,7 @@ class LineWebhookHandleUseCaseTest extends TestCase
         $line->shouldReceive('createTextMessage')->once()->andReturn(['type' => 'text', 'text' => 'ok']);
         $line->shouldReceive('replyMessage')->once()->andReturn([]);
 
-        $useCase = new LineWebhookHandleUseCase($line);
+        $useCase = new LineWebhookHandleUseCase($line, app(ProjectRepository::class));
         $result = $useCase->handle(new LineWebhookInput(
             false,
             'sig',

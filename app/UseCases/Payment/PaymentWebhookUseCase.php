@@ -61,18 +61,12 @@ class PaymentWebhookUseCase
                 return;
             }
 
-            $order = Order::query()->whereKey((int) $orderId)->first();
-            if ($order === null) {
-                return;
-            }
-
-            $expectedAmount = (int) round((float) $order->total_amount);
-            if ($paidAmount !== $expectedAmount) {
+            if ($paidAmount !== $aggregate->totalAmount()) {
                 LogHelper::warning('[Payment] webhook amount mismatch', [
                     'order_id' => (int) $orderId,
                     'project_id' => $aggregate->projectId(),
                     'paid_amount' => $paidAmount,
-                    'expected_amount' => $expectedAmount,
+                    'expected_amount' => $aggregate->totalAmount(),
                 ]);
 
                 return;
@@ -93,7 +87,13 @@ class PaymentWebhookUseCase
                     $aggregate->projectId(),
                 );
 
-                $this->orderService->applyStripePaymentRewardsIfNeeded($order);
+                $order = Order::query()
+                    ->whereKey($aggregate->id()->value())
+                    ->where('project_id', $aggregate->projectId())
+                    ->first();
+                if ($order !== null) {
+                    $this->orderService->applyStripePaymentRewardsIfNeeded($order);
+                }
 
                 // Stripe Webhook 経路は即時同期しない（決済完了 UI より先にスマレジ Webhook が来るのを防ぐ）
                 // フロント confirm が来ない場合のフォールバックとして遅延ジョブを積む

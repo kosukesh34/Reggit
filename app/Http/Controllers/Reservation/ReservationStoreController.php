@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Services\UserService;
 use App\UseCases\Reservation\Data\ReservationStoreInput;
 use App\UseCases\Reservation\ReservationStoreUseCase;
-use App\Util\AdminContext;
 use App\Util\LogHelper;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -55,7 +54,6 @@ class ReservationStoreController extends Controller
             ], 201);
         } catch (\Exception $e) {
             LogHelper::error('[Reservation] store failed', [
-                'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'error' => $e->getMessage(),
             ]);
 

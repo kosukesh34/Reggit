@@ -4,14 +4,17 @@ namespace App\UseCases\Line;
 
 use App\Enums\MemberStatus;
 use App\Models\User;
+use App\Repositories\Contracts\ProjectRepository;
 use App\Services\Line\LineService;
 use App\UseCases\Line\Data\LineWebhookInput;
+use App\Util\AdminContext;
 use App\Util\LogHelper;
 
 class LineWebhookHandleUseCase
 {
     public function __construct(
-        private LineService $lineService
+        private LineService $lineService,
+        private ProjectRepository $projectRepository,
     ) {}
 
     public function handle(LineWebhookInput $input): array
@@ -74,8 +77,17 @@ class LineWebhookHandleUseCase
 
     private function handleFollow(array $event, string $userId): void
     {
+        $projectId = AdminContext::getCurrentProjectId()
+            ?? $this->projectRepository->findFirstActive()?->id;
+        if ($projectId === null) {
+            LogHelper::warning('[LINE] follow skipped: no active project');
+
+            return;
+        }
+
         $user = User::firstOrCreate(
             ['line_user_id' => $userId],
+            ['project_id' => $projectId],
         );
 
         $profile = $this->lineService->getProfile($userId);

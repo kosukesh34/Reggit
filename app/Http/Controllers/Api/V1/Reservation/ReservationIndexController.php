@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api\V1\Reservation;
 use App\Http\Controllers\Api\V1\BaseApiController;
 use App\Services\UserService;
 use App\UseCases\Reservation\ReservationIndexUseCase;
-use App\Util\AdminContext;
 use App\Util\LogHelper;
 use Illuminate\Http\Request;
 
@@ -27,7 +26,6 @@ class ReservationIndexController extends BaseApiController
             return $this->success(['reservations' => $result->reservations]);
         } catch (\Exception $e) {
             LogHelper::error('[Reservation] index failed', [
-                'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'error' => $e->getMessage(),
             ]);
 

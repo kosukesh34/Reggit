@@ -3,7 +3,8 @@
 namespace App\Http\Controllers\Api\Kitchen;
 
 use App\Http\Controllers\Controller;
-use App\Services\Kitchen\KitchenOrderService;
+use App\UseCases\Kitchen\KitchenRegisterDeviceUseCase;
+use App\UseCases\Kitchen\KitchenUnregisterDeviceUseCase;
 use App\Util\AdminContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -11,24 +12,19 @@ use InvalidArgumentException;
 
 class KitchenDeviceController extends Controller
 {
-    public function __construct(
-        private KitchenOrderService $kitchenOrderService,
-    ) {}
-
-    public function store(Request $request): JsonResponse
+    public function store(Request $request, KitchenRegisterDeviceUseCase $useCase): JsonResponse
     {
         $pushToken = trim((string) $request->input('push_token', ''));
         $platform = trim((string) $request->input('platform', 'ios'));
         $deviceName = $request->input('device_name');
         $deviceName = is_string($deviceName) ? trim($deviceName) : null;
-        $projectId = (int) AdminContext::getCurrentProjectId();
 
         try {
-            $device = $this->kitchenOrderService->registerDevice(
-                $projectId,
+            $device = $useCase->handle(
+                AdminContext::requireCurrentProjectId(),
                 $pushToken,
                 $platform !== '' ? $platform : 'ios',
-                $deviceName !== '' ? $deviceName : null
+                $deviceName !== null && $deviceName !== '' ? $deviceName : null,
             );
         } catch (InvalidArgumentException $e) {
             return response()->json(['success' => false, 'error' => $e->getMessage()], 422);
@@ -44,11 +40,12 @@ class KitchenDeviceController extends Controller
         ], 201);
     }
 
-    public function destroy(Request $request): JsonResponse
+    public function destroy(Request $request, KitchenUnregisterDeviceUseCase $useCase): JsonResponse
     {
-        $pushToken = trim((string) $request->input('push_token', ''));
-        $projectId = (int) AdminContext::getCurrentProjectId();
-        $this->kitchenOrderService->unregisterDevice($projectId, $pushToken);
+        $useCase->handle(
+            AdminContext::requireCurrentProjectId(),
+            trim((string) $request->input('push_token', '')),
+        );
 
         return response()->json(['success' => true]);
     }

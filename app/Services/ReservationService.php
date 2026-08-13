@@ -8,8 +8,8 @@ use App\Enums\ReservationStatus;
 use App\Models\Reservation;
 use App\Models\User;
 use App\Util\AdminContext;
+use App\Util\DateUtil;
 use App\Util\LogHelper;
-use Carbon\Carbon;
 
 class ReservationService
 {
@@ -19,10 +19,10 @@ class ReservationService
 
     public function createReservation(User $user, array $data): Reservation
     {
-        $projectId = (int) ($user->project_id ?? AdminContext::getCurrentProjectId() ?? 1);
-        $reservedAt = $data['reserved_at'];
-        if ($reservedAt instanceof \DateTimeInterface === false) {
-            $reservedAt = Carbon::parse((string) $reservedAt);
+        $projectId = (int) (AdminContext::resolveProjectId($user->project_id !== null ? (int) $user->project_id : null));
+        $reservedAt = DateUtil::nullableCarbon($data['reserved_at']);
+        if ($reservedAt === null) {
+            throw new \InvalidArgumentException('予約日時が不正です');
         }
 
         $reservationId = $this->reservationRepository->persistPending(new PendingReservation(
@@ -43,7 +43,7 @@ class ReservationService
 
     public function cancelReservation(int $reservationId, User $user): Reservation
     {
-        $projectId = (int) ($user->project_id ?? AdminContext::getCurrentProjectId() ?? 1);
+        $projectId = (int) (AdminContext::resolveProjectId($user->project_id !== null ? (int) $user->project_id : null));
         $aggregate = $this->reservationRepository->findByIdAndUserIdOrFail(
             $reservationId,
             (int) $user->id,
@@ -63,16 +63,16 @@ class ReservationService
 
     public function updateReservation(int $reservationId, User $user, array $data): Reservation
     {
-        $projectId = (int) ($user->project_id ?? AdminContext::getCurrentProjectId() ?? 1);
+        $projectId = (int) (AdminContext::resolveProjectId($user->project_id !== null ? (int) $user->project_id : null));
         $aggregate = $this->reservationRepository->findByIdAndUserIdOrFail(
             $reservationId,
             (int) $user->id,
             $projectId,
         );
 
-        $reservedAt = $data['reserved_at'];
-        if ($reservedAt instanceof \DateTimeInterface === false) {
-            $reservedAt = Carbon::parse((string) $reservedAt);
+        $reservedAt = DateUtil::nullableCarbon($data['reserved_at']);
+        if ($reservedAt === null) {
+            throw new \InvalidArgumentException('予約日時が不正です');
         }
 
         $aggregate->updateDetails(
@@ -98,19 +98,10 @@ class ReservationService
                 ->get();
 
             return $reservations->map(function ($reservation) {
-                $reservedAt = $reservation->reserved_at;
-                if ($reservedAt === null) {
-                    $reservedAtStr = null;
-                } elseif ($reservedAt instanceof Carbon || $reservedAt instanceof \DateTime) {
-                    $reservedAtStr = $reservedAt->format('c');
-                } else {
-                    $reservedAtStr = is_string($reservedAt) ? $reservedAt : (string) $reservedAt;
-                }
-
                 return [
                     'id' => $reservation->id,
                     'reservation_number' => $reservation->reservation_number ?? '',
-                    'reserved_at' => $reservedAtStr,
+                    'reserved_at' => DateUtil::nullableCarbon($reservation->reserved_at)?->format('c'),
                     'number_of_people' => $reservation->number_of_people ?? 1,
                     'status' => $reservation->status ?? ReservationStatus::PENDING,
                     'notes' => $reservation->notes ?? null,

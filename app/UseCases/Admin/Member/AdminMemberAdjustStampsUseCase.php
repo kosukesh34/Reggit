@@ -10,8 +10,13 @@ class AdminMemberAdjustStampsUseCase
         private MemberAdminService $memberAdminService
     ) {}
 
-    public function handle(int $projectId, int $memberId, int $stampCardId, int $delta, ?string $description = null): void
+    public function handle(int $projectId, int $memberId, int $stampCardId, int $add, int $subtract, ?string $description = null): void
     {
+        $delta = $add - $subtract;
+        if ($delta === 0) {
+            throw new \InvalidArgumentException('スタンプの加算または減算を指定してください');
+        }
+
         $member = $this->memberAdminService->findForWrite($memberId, $projectId);
         $this->memberAdminService->adjustStampsToMember(
             $member,

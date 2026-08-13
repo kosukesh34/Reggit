@@ -7,7 +7,8 @@ use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Enums\ReservationStatus;
 use App\Models\Reservation;
 use App\Util\AdminContext;
-use Carbon\Carbon;
+use App\Util\DateUtil;
+use InvalidArgumentException;
 
 class ReservationAdminService
 {
@@ -35,20 +36,25 @@ class ReservationAdminService
         $reservationCapacity = $this->shopSettingRepository->getReservationCapacityPerSlot($projectId);
 
         if ($selectedDate !== null && $selectedDate !== '') {
-            $date = Carbon::parse($selectedDate);
-            $selectedDateLabel = $date->format('Y年m月d日');
-            $dateStatusCounts = $this->getStatusCounts($selectedDate);
-            $timeSlots = $this->shopSettingRepository->getReservationTimeSlots($projectId);
-            foreach ($timeSlots as $slot) {
-                $slotStart = Carbon::parse($date->format('Y-m-d').' '.$slot);
-                $slotEnd = $slotStart->copy()->addHour();
-                $count = Reservation::whereBetween('reserved_at', [$slotStart, $slotEnd])->count();
-                $timeSlotSummary[] = [
-                    'time' => $slot,
-                    'count' => $count,
-                    'capacity' => $reservationCapacity,
-                    'is_full' => $count >= $reservationCapacity,
-                ];
+            $date = DateUtil::nullableCarbon($selectedDate);
+            if ($date !== null) {
+                $selectedDateLabel = $date->format('Y年m月d日');
+                $dateStatusCounts = $this->getStatusCounts($selectedDate);
+                $timeSlots = $this->shopSettingRepository->getReservationTimeSlots($projectId);
+                foreach ($timeSlots as $slot) {
+                    $slotStart = DateUtil::nullableCarbon($date->format('Y-m-d').' '.$slot);
+                    if ($slotStart === null) {
+                        continue;
+                    }
+                    $slotEnd = $slotStart->copy()->addHour();
+                    $count = Reservation::whereBetween('reserved_at', [$slotStart, $slotEnd])->count();
+                    $timeSlotSummary[] = [
+                        'time' => $slot,
+                        'count' => $count,
+                        'capacity' => $reservationCapacity,
+                        'is_full' => $count >= $reservationCapacity,
+                    ];
+                }
             }
         }
 
@@ -86,7 +92,7 @@ class ReservationAdminService
 
     public function updateStatus(int $id, string $status): void
     {
-        $projectId = (int) (AdminContext::getCurrentProjectId() ?? 1);
+        $projectId = AdminContext::requireCurrentProjectId();
         $aggregate = $this->reservationRepository->findById($id, $projectId);
         if ($aggregate === null) {
             return;
@@ -98,7 +104,7 @@ class ReservationAdminService
 
     public function complete(int $id): void
     {
-        $projectId = (int) (AdminContext::getCurrentProjectId() ?? 1);
+        $projectId = AdminContext::requireCurrentProjectId();
         $aggregate = $this->reservationRepository->findById($id, $projectId);
         if ($aggregate === null) {
             return;
@@ -110,7 +116,10 @@ class ReservationAdminService
 
     public function store(array $data, int $projectId): Reservation
     {
-        $reservedAt = Carbon::parse($data['reserved_at_date'].' '.$data['reserved_at_time']);
+        $reservedAt = DateUtil::nullableCarbon($data['reserved_at_date'].' '.$data['reserved_at_time']);
+        if ($reservedAt === null) {
+            throw new InvalidArgumentException('予約日時が不正です');
+        }
 
         return Reservation::create([
             'project_id' => $projectId,
@@ -125,7 +134,10 @@ class ReservationAdminService
     {
         $reservation = Reservation::findOrFail($id);
 
-        $reservedAt = Carbon::parse($data['reserved_at_date'].' '.$data['reserved_at_time']);
+        $reservedAt = DateUtil::nullableCarbon($data['reserved_at_date'].' '.$data['reserved_at_time']);
+        if ($reservedAt === null) {
+            throw new InvalidArgumentException('予約日時が不正です');
+        }
 
         $reservation->update([
             'reserved_at' => $reservedAt,

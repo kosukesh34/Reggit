@@ -6,7 +6,7 @@ use App\Domain\Queue\Aggregates\QueueEntry as QueueEntryAggregate;
 use App\Domain\Queue\Repositories\QueueEntryRepository;
 use App\Enums\QueueStatus;
 use App\Models\QueueEntry as QueueEntryModel;
-use Carbon\Carbon;
+use App\Util\DateUtil;
 
 class EloquentQueueEntryRepository implements QueueEntryRepository
 {
@@ -28,7 +28,7 @@ class EloquentQueueEntryRepository implements QueueEntryRepository
     {
         $model = QueueEntryModel::query()
             ->where('project_id', $projectId)
-            ->whereDate('created_at', Carbon::parse($day)->toDateString())
+            ->whereDate('created_at', DateUtil::nullableCarbon($day)?->toDateString() ?? $day->format('Y-m-d'))
             ->where('status', QueueStatus::WAITING)
             ->orderBy('queue_number')
             ->first();

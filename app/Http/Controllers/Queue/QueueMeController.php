@@ -7,7 +7,6 @@ use App\Http\Support\QueueMeInputFactory;
 use App\Services\UserService;
 use App\Support\QueueSessionStore;
 use App\UseCases\Queue\QueueMeUseCase;
-use App\Util\AdminContext;
 use App\Util\LogHelper;
 use Illuminate\Http\Request;
 
@@ -31,7 +30,6 @@ class QueueMeController extends Controller
             return response()->json($result->toArray());
         } catch (\Exception $e) {
             LogHelper::error('[Queue] me failed', [
-                'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'error' => $e->getMessage(),
             ]);
 

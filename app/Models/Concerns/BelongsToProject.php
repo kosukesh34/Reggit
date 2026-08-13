@@ -12,8 +12,12 @@ trait BelongsToProject
         static::addGlobalScope(new ProjectScope);
 
         static::creating(function ($model) {
-            if ($model->project_id === null) {
-                $model->project_id = AdminContext::getCurrentProjectId() ?? 1;
+            if ($model->project_id !== null) {
+                return;
+            }
+            $projectId = AdminContext::getCurrentProjectId();
+            if ($projectId !== null) {
+                $model->project_id = $projectId;
             }
         });
     }

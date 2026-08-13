@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Services\UserService;
 use App\UseCases\Stamp\StampIndexUseCase;
-use App\Util\AdminContext;
 use App\Util\LogHelper;
 use Illuminate\Http\Request;
 
@@ -32,7 +31,6 @@ class StampController extends BaseApiController
             ]);
         } catch (\Exception $e) {
             LogHelper::error('[Stamp] index failed', [
-                'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'error' => $e->getMessage(),
             ]);
 

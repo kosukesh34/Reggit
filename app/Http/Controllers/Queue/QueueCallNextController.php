@@ -17,7 +17,7 @@ class QueueCallNextController extends Controller
     public function __invoke(Request $request)
     {
         try {
-            $dto = $this->callNextUseCase->handle();
+            $dto = $this->callNextUseCase->handle(AdminContext::requireCurrentProjectId());
             if ($dto === null) {
                 return response()->noContent();
             }
@@ -28,7 +28,6 @@ class QueueCallNextController extends Controller
             ]);
         } catch (\Exception $e) {
             LogHelper::error('[Queue] callNext failed', [
-                'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'error' => $e->getMessage(),
             ]);
 
