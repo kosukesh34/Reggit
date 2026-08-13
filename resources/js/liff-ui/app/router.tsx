@@ -85,10 +85,17 @@ function ScreenRoutes() {
 
 function MembershipGate() {
   const navigate = useNavigate();
+  const location = useLocation();
   const switchTab = useCallback((tab: string) => {
+    if (
+      location.pathname === "/stamp"
+      && (location.search.includes("grant=") || location.search.includes("stampCode="))
+    ) {
+      return;
+    }
     const path = pathForLegacyTab(tab);
     navigate(path ?? `/${tab}`);
-  }, [navigate]);
+  }, [location.pathname, location.search, navigate]);
   useMembershipGate(switchTab);
   return null;
 }

@@ -340,21 +340,31 @@ export const reggitApi = {
 
   async addStamp(_storeId: string, staffCode: string): Promise<OperationReceipt> {
     await ensureIdentity();
+    const raw = staffCode.trim();
     let grantUrl: URL;
     try {
-      grantUrl = new URL(staffCode, window.location.origin);
+      grantUrl = new URL(raw, window.location.origin);
     } catch {
       throw new Error('スタンプ付与QRを読み取ってください');
     }
-    if (grantUrl.origin !== window.location.origin || !/^\/api\/stamps\/grant\/\d+$/.test(grantUrl.pathname)) {
+    if (!/^https?:$/.test(grantUrl.protocol) || !/^\/api\/stamps\/grant\/\d+$/.test(grantUrl.pathname)) {
       throw new Error('このスタンプ付与URLは利用できません');
     }
-    const result = await client().post(grantUrl.toString(), {});
+    const postUrl = /^https?:\/\//i.test(raw) ? raw : grantUrl.href;
+    const result = await client().post(postUrl, {});
     if (!result.success) {
       throw new Error(('error' in result ? result.error : undefined) || 'スタンプを追加できませんでした');
     }
     const payload = asRecord(result.data);
-    return receiptFrom(`STP-${String(payload.stamp_card_id ?? 'QR')}`);
+    const stampCardId = Number(payload.stamp_card_id);
+    const currentStamps = Number(payload.current_stamps);
+    const grantedCount = Number(payload.granted_count);
+    return receiptFrom(`STP-${String(payload.stamp_card_id ?? 'QR')}`, {
+      stampCardId: Number.isFinite(stampCardId) && stampCardId > 0 ? stampCardId : undefined,
+      currentStamps: Number.isFinite(currentStamps) && currentStamps >= 0 ? currentStamps : undefined,
+      grantedCount: Number.isFinite(grantedCount) && grantedCount > 0 ? grantedCount : 1,
+      message: typeof payload.message === 'string' ? payload.message : undefined,
+    });
   },
 
   async redeemPoints(_storeId: string, _points: number): Promise<OperationReceipt> {

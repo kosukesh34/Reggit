@@ -24,6 +24,7 @@
     // デモ固定UIは ?demo=1 のときだけ。/liff でも bind 済み店舗の Designer 設定を反映する
     $isFixedUi = request()->query('demo') === '1';
     $isDemoData = $isFixedUi;
+    $themeBodyClasses = [];
 @endphp
 <html lang="ja" @class([
     'liff-fixed-ui' => $isFixedUi,
@@ -49,11 +50,7 @@
     @include('frontend.partials._head-assets')
     @include('frontend.partials._head-theme')
 </head>
-<body @class([
-    'liff-fixed-ui' => $isFixedUi,
-    'liff-demo-data' => $isDemoData,
-    'designer-live-preview-embed' => $isDesignerEmbedPreview,
-])>
+<body class="reggit-liff-ui{{ $isFixedUi ? ' liff-fixed-ui' : '' }}{{ $isDemoData ? ' liff-demo-data' : '' }}{{ $isDesignerEmbedPreview ? ' designer-live-preview-embed' : '' }}{{ $themeBodyClasses !== [] ? ' '.implode(' ', $themeBodyClasses) : '' }}">
     <div id="liff-loading" class="liff-loading" aria-hidden="true" hidden>
         <div class="liff-loading-inner">
             <div class="liff-loading-spinner"></div>

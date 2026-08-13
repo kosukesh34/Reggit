@@ -408,3 +408,37 @@
 .stamp-detail-page .stamp-slots {
     margin-top: 18px;
 }
+
+.stamp-slot--new,
+.ios-stamp-dot.is-new {
+    animation: stamp-pop 0.72s cubic-bezier(0.16, 0.9, 0.26, 1.35) both;
+}
+
+@keyframes stamp-pop {
+    0% { opacity: 0.2; transform: scale(0.3) rotate(-18deg); }
+    55% { opacity: 1; transform: scale(1.28) rotate(8deg); }
+    100% { transform: scale(1) rotate(0); }
+}
+
+.stamp-grant-status {
+    margin: 0 20px 12px;
+    color: var(--text-secondary);
+    font-size: 13px;
+}
+
+.stamp-grant-scan {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: calc(100% - 40px);
+    margin: 4px 20px 24px;
+}
+
+.stamps-header + .stamp-grant-success,
+.ios-panel-head + .stamp-grant-success,
+.stamps-list + .stamp-grant-scan,
+.ios-stamp-stack + .stamp-grant-scan {
+    margin-left: 20px;
+    margin-right: 20px;
+}

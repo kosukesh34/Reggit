@@ -10,5 +10,6 @@ class StampGrantOutput
         public readonly string $message,
         public readonly ?int $stampCardId = null,
         public readonly ?int $currentStamps = null,
+        public readonly int $grantedCount = 0,
     ) {}
 }
