@@ -414,6 +414,9 @@ class ReggitApp {
             const resolved = aliases[tabKey] ?? tabKey;
             if (!resolved || !allowedTabs.has(resolved)) return false;
             this.switchTab(resolved);
+            if (window.__REGGIT_LIFF_UI__ === true) {
+                return true;
+            }
             if (resolved === AppConstants.TABS.COUPONS && this.couponsManager) {
                 if (options.couponReceived) {
                     this.couponsManager.onCouponReceived(options);

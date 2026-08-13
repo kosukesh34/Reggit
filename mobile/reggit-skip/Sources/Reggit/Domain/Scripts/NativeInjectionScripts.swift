@@ -205,12 +205,31 @@ enum NativeInjectionScripts {
                         padding-bottom: 24px !important;
                         box-sizing: border-box !important;
                     }
-                    .native-app-embed .main-tabs {
+                    .native-app-embed .main-tabs,
+                    .native-app-embed .bottom-nav {
                         display: none !important;
                         visibility: hidden !important;
                         height: 0 !important;
                         overflow: hidden !important;
                         pointer-events: none !important;
+                    }
+                    .native-app-embed .app-shell,
+                    .native-app-embed .app-shell__frame,
+                    .native-app-embed #app-container {
+                        min-height: var(--native-viewport-height, 100vh) !important;
+                        max-height: var(--native-viewport-height, 100vh) !important;
+                        height: var(--native-viewport-height, 100vh) !important;
+                        width: 100% !important;
+                        max-width: 100vw !important;
+                        overflow: hidden !important;
+                    }
+                    .native-app-embed .app-shell__main {
+                        flex: 1 1 auto !important;
+                        min-height: 0 !important;
+                        overflow-y: auto !important;
+                        overflow-x: hidden !important;
+                        -webkit-overflow-scrolling: touch !important;
+                        padding-bottom: 24px !important;
                     }
                     .native-app-embed #app, .native-app-embed [data-v-app], .native-app-embed main {
                         width: 100% !important;
@@ -275,14 +294,13 @@ enum NativeInjectionScripts {
 
     static let hideWebTabBar = """
         const hideWebTabBar = () => {
-            const footer = document.querySelector('.main-tabs');
-            if (footer) {
-                footer.style.display = 'none';
-                footer.style.visibility = 'hidden';
-                footer.style.height = '0';
-                footer.style.overflow = 'hidden';
-                footer.style.pointerEvents = 'none';
-            }
+            document.querySelectorAll('.main-tabs, .bottom-nav').forEach((el) => {
+                el.style.display = 'none';
+                el.style.visibility = 'hidden';
+                el.style.height = '0';
+                el.style.overflow = 'hidden';
+                el.style.pointerEvents = 'none';
+            });
         };
         """
 
@@ -302,15 +320,15 @@ enum NativeInjectionScripts {
                 window.__NATIVE_INITIAL_TAB_APPLIED__ = true;
                 return false;
             }
+            \(MobileWebShellScripts.hashNavigateJavaScript(tabKey: activeTab))
             if (window.app && typeof window.app.switchTab === 'function') {
                 const current = String(window.app.currentTab || '');
                 if (current !== \(activeTab.jsStringLiteral)) {
                     window.app.switchTab(\(activeTab.jsStringLiteral));
                 }
-                window.__NATIVE_INITIAL_TAB_APPLIED__ = true;
-                return true;
             }
-            return false;
+            window.__NATIVE_INITIAL_TAB_APPLIED__ = true;
+            return true;
         };
         """
     }

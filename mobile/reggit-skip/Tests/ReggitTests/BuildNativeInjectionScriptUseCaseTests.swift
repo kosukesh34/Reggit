@@ -11,6 +11,10 @@ final class BuildNativeInjectionScriptUseCaseTests: XCTestCase {
 
         XCTAssertTrue(script.contains(".native-app-embed #react-frontend-tabs-root"))
         XCTAssertTrue(script.contains(".native-app-embed .tab-content.active"))
+        XCTAssertTrue(script.contains(".native-app-embed .app-shell"))
+        XCTAssertTrue(script.contains(".native-app-embed .bottom-nav"))
+        XCTAssertTrue(script.contains("url.hash = \"/menu\""))
+        XCTAssertTrue(script.contains("liff-ui-navigate"))
     }
 
     func testRedirectGuardDoesNotTreatNgrokHostItselfAsInterception() {
