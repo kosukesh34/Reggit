@@ -6,9 +6,21 @@
 <nav class="breadcrumb"><a href="{{ admin_route('admin.stamps') }}">スタンプ</a><span class="breadcrumb-sep">/</span><span>編集</span></nav>
 @php($layoutOptions = \App\Models\StampCard::getLayoutOptions())
 @php($coupons = $coupons ?? collect())
-@php($milestones = old('reward_milestones', $stampCard->reward_milestones ?? [['stamp_count' => '', 'description' => '']]))
+@php($milestones = old('reward_milestones', $stampCard->reward_milestones ?? [['stamp_count' => '']]))
 @if(!is_array($milestones) || $milestones === [])
-    @php($milestones = [['stamp_count' => '', 'description' => '']])
+    @php($milestones = [['stamp_count' => '']])
+@else
+    @php($milestones = array_values(array_filter($milestones, static function ($milestone): bool {
+        if (! is_array($milestone)) {
+            return false;
+        }
+        $rewardType = (string) ($milestone['reward_type'] ?? '');
+
+        return $rewardType === '' || in_array($rewardType, \App\Enums\StampRewardType::keys(), true);
+    })))
+    @if($milestones === [])
+        @php($milestones = [['stamp_count' => '']])
+    @endif
 @endif
 @php($existingStampImages = old('stamp_images_data') ? json_decode(old('stamp_images_data'), true) : ($stampCard->stamp_images ?? []))
 @if(!is_array($existingStampImages)) @php($existingStampImages = []) @endif
@@ -81,7 +93,7 @@
                             ])
                         @endforeach
                     </div>
-                    <p class="form-text text-muted">クーポン／ガチャは到達時に自動で付与され、テキストは表示のみです。</p>
+                    <p class="form-text text-muted">到達時にクーポンまたはガチャ権利が自動で付与されます。</p>
                     @if(($isGachaEnabled ?? false) !== true)
                     <p class="form-text text-muted">ガチャ特典を使う場合は、設定のガチャを有効にしてください。</p>
                     @endif
@@ -89,7 +101,6 @@
                     @error('reward_milestones.*.stamp_count')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
                     @error('reward_milestones.*.reward_type')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
                     @error('reward_milestones.*.coupon_id')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
-                    @error('reward_milestones.*.description')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
 
                     <div class="form-group stamp-form-note-group">
                         <label for="reward_description" class="form-label">補足テキスト</label>
@@ -462,11 +473,9 @@
     const GACHA_DESCRIPTION = 'ガチャ1回';
     const rows = () => Array.from(container.querySelectorAll('[data-milestone-row]'));
     const syncMilestoneRewardFields = (row) => {
-        const type = (row.querySelector('.milestone-type-input')?.value || 'text');
-        const textWrap = row.querySelector('[data-reward-text]');
+        const type = (row.querySelector('.milestone-type-input')?.value || 'coupon');
         const couponWrap = row.querySelector('[data-reward-coupon]');
         const gachaWrap = row.querySelector('[data-reward-gacha]');
-        if (textWrap) textWrap.hidden = type !== 'text';
         if (couponWrap) couponWrap.hidden = type !== 'coupon';
         if (gachaWrap) gachaWrap.hidden = type !== 'gacha';
     };
@@ -474,24 +483,19 @@
         rows().forEach((row, index) => {
             const ci = row.querySelector('.milestone-count-input');
             const ti = row.querySelector('.milestone-type-input');
-            const di = row.querySelector('.milestone-description-input');
             const qi = row.querySelector('.milestone-coupon-input');
             const cl = row.querySelector('[data-label-count]');
             const tl = row.querySelector('[data-label-type]');
-            const dl = row.querySelector('[data-label-description]');
             const ql = row.querySelector('[data-label-coupon]');
-            if (!ci || !ti || !di || !qi) return;
+            if (!ci || !ti || !qi) return;
             const cid = 'edit_reward_milestones_' + index + '_stamp_count';
             const tid = 'edit_reward_milestones_' + index + '_reward_type';
-            const did = 'edit_reward_milestones_' + index + '_description';
             const qid = 'edit_reward_milestones_' + index + '_coupon_id';
             ci.name = 'reward_milestones[' + index + '][stamp_count]'; ci.id = cid;
             ti.name = 'reward_milestones[' + index + '][reward_type]'; ti.id = tid;
-            di.name = 'reward_milestones[' + index + '][description]'; di.id = did;
             qi.name = 'reward_milestones[' + index + '][coupon_id]'; qi.id = qid;
             if (cl) cl.setAttribute('for', cid);
             if (tl) tl.setAttribute('for', tid);
-            if (dl) dl.setAttribute('for', did);
             if (ql) ql.setAttribute('for', qid);
             syncMilestoneRewardFields(row);
         });
@@ -503,11 +507,9 @@
         if (rows().length <= 1) {
             const ci = row.querySelector('.milestone-count-input');
             const ti = row.querySelector('.milestone-type-input');
-            const di = row.querySelector('.milestone-description-input');
             const qi = row.querySelector('.milestone-coupon-input');
             if (ci) ci.value = '';
-            if (ti) ti.value = 'text';
-            if (di) di.value = '';
+            if (ti) ti.value = 'coupon';
             if (qi) qi.value = '';
             syncMilestoneRewardFields(row);
             renderPreview(); return;
@@ -526,15 +528,14 @@
         rows().forEach(row => {
             const ci = row.querySelector('.milestone-count-input');
             const ti = row.querySelector('.milestone-type-input');
-            const di = row.querySelector('.milestone-description-input');
             const qi = row.querySelector('.milestone-coupon-input');
-            if (!ci || !di) return;
+            if (!ci) return;
             const sc = toNumber(ci.value, 0);
-            const type = ti ? ti.value : 'text';
-            let desc = (di.value || '').trim();
+            const type = ti ? ti.value : 'coupon';
+            let desc = '';
             if (type === 'coupon' && qi && qi.value) {
                 const opt = qi.options[qi.selectedIndex];
-                desc = opt ? opt.textContent.trim() : desc;
+                desc = opt ? opt.textContent.trim() : '';
             } else if (type === 'gacha') {
                 desc = GACHA_DESCRIPTION;
             }
