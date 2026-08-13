@@ -130,6 +130,12 @@ test.describe('顧客向けシェル（LINE LIFF）', () => {
     await expectLegacyFeatureCssLinks(page);
   });
 
+  test('?tab=queue で HashRouter の順番待ちを開く', async ({ page }) => {
+    await gotoLiff(page, `${liffPath}?tab=queue`);
+    await expectAppShell(page);
+    await expect(page).toHaveURL(/#\/queue/);
+  });
+
   test('順番待ちの ios-queue スタイルが reggit-liff-ui でも効く', async ({ page }) => {
     await gotoLiff(page, `${liffPath}#/queue`);
     await expectAppShell(page);
@@ -194,6 +200,13 @@ test.describe('顧客向けシェル（ネイティブ WebView）', () => {
     await expect(page.locator('html')).toHaveClass(/native-app-embed/);
     await expectAppShell(page);
     await expectLegacyFeatureCssLinks(page);
+  });
+
+  test('ネイティブ UA で ?tab=queue が HashRouter の /queue になる', async ({ page }) => {
+    await gotoLiff(page, `${liffPath}?tab=queue`);
+    await expect(page.locator('html')).toHaveClass(/native-app-embed/);
+    await expectAppShell(page);
+    await expect(page).toHaveURL(/#\/queue/);
   });
 
   test('ネイティブ + demo でガチャ UI が CSS 付きで表示される', async ({ page }) => {

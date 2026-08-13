@@ -149,6 +149,76 @@ class QueueApiTest extends TestCase
             ->assertJsonPath('queue_entry.id', $entry->id);
     }
 
+    public function test_me_券がないときは待ち人数を返すこと(): void
+    {
+        $this->createProject();
+        $lineUserId = 'U35353535353535353535353535353535';
+        $user = User::factory()->create(['line_user_id' => $lineUserId, 'project_id' => 1]);
+        Member::factory()->create(['user_id' => $user->id, 'project_id' => 1]);
+
+        $response = $this->withHeaders(['X-Line-User-Id' => $lineUserId])
+            ->get('/api/queue/me?project_key=default');
+
+        $response->assertStatus(200)
+            ->assertJsonPath('queue_entry', null)
+            ->assertJsonPath('message', '待ち番号はありません')
+            ->assertJsonPath('waiting_count', 0);
+    }
+
+    public function test_me_他店舗のqueue_tokenでは券を返さないこと(): void
+    {
+        $this->createProject();
+        $other = Project::create([
+            'project_key' => 'other',
+            'name' => 'Other Project',
+            'description' => 'Test',
+            'is_active' => true,
+        ]);
+        $lineUserId = 'U36363636363636363636363636363636';
+        $user = User::factory()->create(['line_user_id' => $lineUserId, 'project_id' => 1]);
+        Member::factory()->create(['user_id' => $user->id, 'project_id' => 1]);
+        QueueEntry::factory()->create([
+            'project_id' => $other->id,
+            'user_id' => null,
+            'member_id' => null,
+            'status' => QueueStatus::WAITING,
+            'qr_token' => 'token-other-project',
+        ]);
+
+        $response = $this->withHeaders(['X-Line-User-Id' => $lineUserId])
+            ->get('/api/queue/me?project_key=default&queue_token=token-other-project');
+
+        $response->assertStatus(200)
+            ->assertJsonPath('queue_entry', null)
+            ->assertJsonPath('message', '待ち番号はありません');
+    }
+
+    public function test_me_liff_stateのqueue_tokenで券を返すこと(): void
+    {
+        $this->createProject();
+        $lineUserId = 'U34343434343434343434343434343434';
+        User::factory()->create(['line_user_id' => $lineUserId, 'project_id' => 1]);
+        $entry = QueueEntry::factory()->create([
+            'project_id' => 1,
+            'user_id' => null,
+            'member_id' => null,
+            'status' => QueueStatus::WAITING,
+            'qr_token' => 'token-from-liff-state',
+            'queue_number' => 4,
+        ]);
+
+        $response = $this->withHeaders(['X-Line-User-Id' => $lineUserId])
+            ->get('/api/queue/me?project_key=default&'.http_build_query([
+                'liff.state' => 'queue_token=token-from-liff-state&tab=queue',
+            ]));
+
+        $response->assertStatus(200)
+            ->assertJsonPath('queue_entry.id', $entry->id);
+
+        $entry->refresh();
+        $this->assertNotNull($entry->user_id);
+    }
+
     public function test_cancel_キャンセルでステータスが更新されること(): void
     {
         $this->createProject();

@@ -2,6 +2,7 @@ import { SearchX } from "lucide-react";
 import type { ReactNode } from "react";
 import { Navigate, useParams, useSearchParams } from "react-router-dom";
 import { Card } from "../components/ui/Card";
+import { ErrorState } from "../components/ui/ErrorState";
 import { Skeleton } from "../components/ui/Skeleton";
 import { useAppConfig } from "../context/AppConfigContext";
 import { CollectionDemo } from "../features/demo/CollectionDemo";
@@ -15,6 +16,8 @@ import { CouponsView } from "../../frontend/features/coupons/CouponsView";
 import { StampsView } from "../../frontend/features/stamps/StampsView";
 import { QueueView } from "../../frontend/features/queue/QueueView";
 import { ReservationsView } from "../../frontend/features/reservations/ReservationsView";
+import { GalleryView } from "../../frontend/features/gallery/GalleryView";
+import { OrdersView } from "../../frontend/features/orders/OrdersView";
 import { pathForLegacyTab } from "../navigation/tabPath";
 import { isLinkTabType } from "../types/app";
 import { LinkSitePage } from "./LinkSitePage";
@@ -47,7 +50,7 @@ export function FeaturePage() {
   const { feature: rawFeature } = useParams();
   const [searchParams] = useSearchParams();
   const { activeStore, customization } = useAppConfig();
-  const { member, coupons, news, stores, commerce, history, mode, loading, markAnnouncementRead } = useRuntimeData();
+  const { member, coupons, news, stores, commerce, history, mode, loading, error, refresh, markAnnouncementRead } = useRuntimeData();
   const activeVenue = stores[0];
   const orderPath = activeStore.features.mobileOrder ? "/mobileOrder" : activeStore.features.dineInOrder ? "/dineInOrder" : "/reservation";
   const isLiveBound = mode === "live";
@@ -87,6 +90,19 @@ export function FeaturePage() {
 
   if (loading && mode !== "live" && mode !== "preview") {
     return <FeaturePageSkeleton />;
+  }
+
+  if (mode === "offline") {
+    return (
+      <div className="page feature-page">
+        <ErrorState
+          title="店舗データに接続できません"
+          description={error ?? "通信環境をご確認ください"}
+          actionLabel="再読み込み"
+          onAction={() => { void refresh(); }}
+        />
+      </div>
+    );
   }
 
   if (!isFeatureType(feature)) {
@@ -135,6 +151,12 @@ export function FeaturePage() {
     if (feature === "reservation") {
       return <div className="page feature-page"><ReservationsView /></div>;
     }
+    if (feature === "gallery") {
+      return <div className="page feature-page"><GalleryView /></div>;
+    }
+    if (feature === "orderHistory") {
+      return <div className="page feature-page"><OrdersView /></div>;
+    }
   }
 
   const definition = featureDefinitionMap[feature];
@@ -182,6 +204,7 @@ export function FeaturePage() {
           liveCatalog={commerce?.items}
           history={history}
           onReadNews={markAnnouncementRead}
+          isLive={isLiveBound}
         />
       );
   }

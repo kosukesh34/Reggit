@@ -1,6 +1,10 @@
 import type { ApiClient } from '../../shared/utils/apiClient';
 import { AppConstants } from '../../shared/constants';
 import { DomHelper } from '../../shared/utils/domHelper';
+import {
+    clearQueueTokenFromUrl as clearSharedQueueTokenFromUrl,
+    getQueueTokenFromUrl as getSharedQueueTokenFromUrl,
+} from '../../shared/utils/queueToken';
 import { isDemoDataMode } from '../demo/demoMode';
 import { buildBuiltinSampleQueueEntry } from '../demo/sampleData';
 import { isReactOwnedMount } from '../utils/reactOwnedMount';
@@ -206,127 +210,11 @@ export class QueueManager {
     }
 
     getQueueTokenFromUrl(): string | null {
-        if (typeof window === 'undefined') {
-            return null;
-        }
-        const params = new URLSearchParams(window.location.search || '');
-        const direct = params.get('queue_token') || params.get('queue_id');
-        if (direct) {
-            this.persistQueueToken(direct);
-            return direct;
-        }
-
-        const fromHash = this.extractQueueTokenFromString(window.location.hash || '');
-        if (fromHash) {
-            this.persistQueueToken(fromHash);
-            return fromHash;
-        }
-
-        const fromLiffState = this.extractQueueTokenFromEncodedParam(params.get('liff.state'));
-        if (fromLiffState) {
-            this.persistQueueToken(fromLiffState);
-            return fromLiffState;
-        }
-
-        const fromState = this.extractQueueTokenFromEncodedParam(params.get('state'));
-        if (fromState) {
-            this.persistQueueToken(fromState);
-            return fromState;
-        }
-
-        const fromRedirect = this.extractQueueTokenFromEncodedParam(params.get('liffRedirectUri'));
-        if (fromRedirect) {
-            this.persistQueueToken(fromRedirect);
-            return fromRedirect;
-        }
-
-        return this.getPersistedQueueToken();
-    }
-
-    extractQueueTokenFromEncodedParam(raw: string | null): string | null {
-        if (!raw) {
-            return null;
-        }
-        try {
-            const decoded = decodeURIComponent(raw);
-            const value = this.extractQueueTokenFromString(decoded);
-            if (value) {
-                return value;
-            }
-        } catch (_e) {
-            // ignore decode errors
-        }
-        return this.extractQueueTokenFromString(raw);
-    }
-
-    extractQueueTokenFromString(str: string | null): string | null {
-        if (!str) {
-            return null;
-        }
-        const normalized = str.startsWith('#') ? str.slice(1) : str;
-        try {
-            const full = new URL(normalized);
-            const token = full.searchParams.get('queue_token') || full.searchParams.get('queue_id');
-            if (token) {
-                return token;
-            }
-        } catch (_e) {
-            // relative query style or plain query
-        }
-
-        const query = normalized.includes('?') ? normalized.split('?')[1] : normalized;
-        const params = new URLSearchParams(query);
-        return params.get('queue_token') || params.get('queue_id');
+        return getSharedQueueTokenFromUrl();
     }
 
     clearQueueTokenFromUrl(): void {
-        if (typeof window === 'undefined' || !window.history) {
-            return;
-        }
-        const url = new URL(window.location.href);
-        url.searchParams.delete('queue_token');
-        url.searchParams.delete('queue_id');
-        url.searchParams.delete('state');
-        url.searchParams.delete('liff.state');
-        url.searchParams.delete('liffRedirectUri');
-        window.history.replaceState({}, '', url.toString());
-        this.clearPersistedQueueToken();
-    }
-
-    persistQueueToken(token: string): void {
-        if (typeof window === 'undefined' || typeof window.sessionStorage === 'undefined') {
-            return;
-        }
-        if (!token) {
-            return;
-        }
-        try {
-            window.sessionStorage.setItem(QueueManager.PENDING_QUEUE_TOKEN_KEY, token);
-        } catch (_e) {
-            // ignore
-        }
-    }
-
-    getPersistedQueueToken(): string | null {
-        if (typeof window === 'undefined' || typeof window.sessionStorage === 'undefined') {
-            return null;
-        }
-        try {
-            return window.sessionStorage.getItem(QueueManager.PENDING_QUEUE_TOKEN_KEY);
-        } catch (_e) {
-            return null;
-        }
-    }
-
-    clearPersistedQueueToken(): void {
-        if (typeof window === 'undefined' || typeof window.sessionStorage === 'undefined') {
-            return;
-        }
-        try {
-            window.sessionStorage.removeItem(QueueManager.PENDING_QUEUE_TOKEN_KEY);
-        } catch (_e) {
-            // ignore
-        }
+        clearSharedQueueTokenFromUrl();
     }
 
     async load(): Promise<void> {

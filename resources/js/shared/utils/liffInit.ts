@@ -1,4 +1,11 @@
 import { AppConstants } from '../constants';
+import {
+    extractQueueTokenFromEncodedParam,
+    extractQueueTokenFromLocation,
+    extractQueueTokenFromString,
+    getPersistedQueueToken,
+    persistQueueToken,
+} from './queueToken';
 
 declare const liff: any;
 
@@ -8,7 +15,6 @@ function bootstrapLiffInit(): void {
     }
     window.__LIFF_INIT_BOOTSTRAPPED__ = true;
 
-    const QUEUE_TOKEN_STORAGE_KEY = 'mobile_order_pending_queue_token';
     const uaString = typeof navigator !== 'undefined' && navigator.userAgent ? navigator.userAgent : '';
     const debug = (eventName: string, payload?: Record<string, unknown>): void => {
         if (typeof window.__clientDebugLog === 'function') {
@@ -49,75 +55,10 @@ function bootstrapLiffInit(): void {
         }
     }
 
-    function extractQueueFromRaw(raw: string | null): string | null {
-        if (!raw) {
-            return null;
-        }
-        const parseFromString = (value: string): string | null => {
-            const normalized = value.startsWith('#') ? value.slice(1) : value;
-            try {
-                const u = new URL(normalized);
-                return u.searchParams.get('queue_token') || u.searchParams.get('queue_id');
-            } catch (_e) {
-                // ignore
-            }
-            const q = normalized.includes('?') ? normalized.split('?')[1] : normalized;
-            const p = new URLSearchParams(q);
-            return p.get('queue_token') || p.get('queue_id');
-        };
-
-        try {
-            const decoded = decodeURIComponent(raw);
-            const fromDecoded = parseFromString(decoded);
-            if (fromDecoded) {
-                return fromDecoded;
-            }
-        } catch (_e) {
-            // ignore
-        }
-
-        return parseFromString(raw);
-    }
-
-    function extractQueueTokenFromLocation(locationLike: Location | null): string | null {
-        if (!locationLike) {
-            return null;
-        }
-        const params = new URLSearchParams(locationLike.search || '');
-        const direct = params.get('queue_token') || params.get('queue_id');
-        if (direct) {
-            return direct;
-        }
-        return (
-            extractQueueFromRaw(locationLike.hash || '')
-            || extractQueueFromRaw(params.get('liff.state'))
-            || extractQueueFromRaw(params.get('state'))
-            || extractQueueFromRaw(params.get('liffRedirectUri'))
-        );
-    }
-
     function persistQueueTokenIfPresent(): void {
-        if (typeof window.sessionStorage === 'undefined') {
-            return;
-        }
         const token = extractQueueTokenFromLocation(window.location);
-        if (token) {
-            try {
-                window.sessionStorage.setItem(QUEUE_TOKEN_STORAGE_KEY, token);
-            } catch (_e) {
-                // ignore
-            }
-        }
-    }
-
-    function getStoredQueueToken(): string | null {
-        if (typeof window.sessionStorage === 'undefined') {
-            return null;
-        }
-        try {
-            return window.sessionStorage.getItem(QUEUE_TOKEN_STORAGE_KEY);
-        } catch (_e) {
-            return null;
+        if (token !== null) {
+            persistQueueToken(token);
         }
     }
 
@@ -281,15 +222,15 @@ function bootstrapLiffInit(): void {
                     kept.set(key, value);
                 }
             });
-            const hashQueue = extractQueueFromRaw(current.hash || '');
+            const hashQueue = extractQueueTokenFromString(current.hash || '');
             if (hashQueue && !kept.get('queue_token') && !kept.get('queue_id')) {
                 kept.set('queue_token', hashQueue);
             }
             if (!kept.get('queue_token') && !kept.get('queue_id')) {
-                const resolved = extractQueueFromRaw(current.searchParams.get('liff.state'))
-                    || extractQueueFromRaw(current.searchParams.get('state'))
-                    || extractQueueFromRaw(current.searchParams.get('liffRedirectUri'))
-                    || getStoredQueueToken();
+                const resolved = extractQueueTokenFromEncodedParam(current.searchParams.get('liff.state'))
+                    || extractQueueTokenFromEncodedParam(current.searchParams.get('state'))
+                    || extractQueueTokenFromEncodedParam(current.searchParams.get('liffRedirectUri'))
+                    || getPersistedQueueToken();
                 if (resolved) {
                     kept.set('queue_token', resolved);
                 }
