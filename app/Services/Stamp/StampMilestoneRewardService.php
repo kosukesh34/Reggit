@@ -22,12 +22,14 @@ class StampMilestoneRewardService
         int $previousBalance,
         int $newBalance,
         int $cycleIndex = 0,
+        ?string $issueSourceType = null,
+        ?string $issueSourceId = null,
     ): void {
         if ($newBalance <= $previousBalance) {
             return;
         }
         foreach ($this->reachedMilestones($stampCard, $previousBalance, $newBalance) as $milestone) {
-            $this->grantOne($member, $stampCard, $milestone, $cycleIndex);
+            $this->grantOne($member, $stampCard, $milestone, $cycleIndex, $issueSourceType, $issueSourceId);
         }
     }
 
@@ -53,11 +55,25 @@ class StampMilestoneRewardService
     }
 
     /** @param array{stamp_count?: int, reward_type?: string, coupon_id?: int} $milestone */
-    private function grantOne(Member $member, StampCard $stampCard, array $milestone, int $cycleIndex): void
-    {
+    private function grantOne(
+        Member $member,
+        StampCard $stampCard,
+        array $milestone,
+        int $cycleIndex,
+        ?string $issueSourceType,
+        ?string $issueSourceId,
+    ): void {
         $rewardType = (string) ($milestone['reward_type'] ?? '');
         if ($rewardType === StampRewardType::COUPON) {
-            $this->grantCoupon($member, (int) ($milestone['coupon_id'] ?? 0));
+            $this->grantCoupon(
+                $member,
+                $stampCard,
+                (int) ($milestone['coupon_id'] ?? 0),
+                (int) ($milestone['stamp_count'] ?? 0),
+                $cycleIndex,
+                $issueSourceType,
+                $issueSourceId,
+            );
 
             return;
         }
@@ -71,8 +87,15 @@ class StampMilestoneRewardService
         }
     }
 
-    private function grantCoupon(Member $member, int $couponId): void
-    {
+    private function grantCoupon(
+        Member $member,
+        StampCard $stampCard,
+        int $couponId,
+        int $stampCount,
+        int $cycleIndex,
+        ?string $issueSourceType,
+        ?string $issueSourceId,
+    ): void {
         if ($couponId <= 0) {
             return;
         }
@@ -84,6 +107,14 @@ class StampMilestoneRewardService
         if ($coupon === null) {
             return;
         }
-        $this->couponIssueService->issueIfEligible($member, $coupon);
+        $this->couponIssueService->issueForStampGrant(
+            $member,
+            $coupon,
+            $issueSourceType,
+            $issueSourceId,
+            (int) $stampCard->id,
+            $cycleIndex,
+            $stampCount,
+        );
     }
 }
