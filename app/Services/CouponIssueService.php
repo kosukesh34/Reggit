@@ -73,6 +73,11 @@ class CouponIssueService
         }
     }
 
+    public function issueIfEligible(Member $member, Coupon $coupon): void
+    {
+        $this->issueCouponsToMember($member, collect([$coupon]));
+    }
+
     /**
      * 管理画面またはバッチから手動でクーポンを1件発行する
      *

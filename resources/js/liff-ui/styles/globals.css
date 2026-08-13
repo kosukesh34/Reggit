@@ -1515,9 +1515,6 @@ body.reggit-liff-ui .membership-page .member-section.member-card-mount {
 .stamp-scanner__frame { position: absolute; inset: 50% auto auto 50%; display: grid; place-items: center; width: min(68%, 230px); aspect-ratio: 1; color: #fff; border: 2px solid rgb(255 255 255 / .9); border-radius: 18px; box-shadow: 0 0 0 999px rgb(0 0 0 / .22); transform: translate(-50%, -50%); pointer-events: none; }
 .stamp-scanner__frame svg { position: absolute; top: 50%; width: 72%; color: #77e1b8; filter: drop-shadow(0 2px 4px rgb(0 0 0 / .3)); animation: scanner-line 1.8s ease-in-out infinite; }
 .stamp-scanner__help { margin: 0; color: var(--color-text-secondary); font-size: 10px; line-height: 1.65; }
-.stamp-scanner__manual { display: grid; gap: 8px; padding-top: 12px; border-top: 1px solid var(--color-border); }
-.stamp-scanner__manual label { font-size: 9px; font-weight: 760; }
-.stamp-scanner__manual input { width: 100%; min-height: 48px; padding: 0 13px; font-size: 10px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 12px; outline: none; }
 
 .stamp-issue-page { padding-top: 24px; padding-bottom: 38px; }
 .stamp-issue-heading { display: grid; gap: 8px; }
@@ -1926,6 +1923,40 @@ body.reggit-liff-ui .membership-page .member-section.member-card-mount {
 .membership-layout-option strong { font-size: 11px; }
 .membership-layout-option small { color: #7b817c; font-size: 9px; }
 .membership-layout-option > svg { position: absolute; top: 5px; right: 5px; }
+.home-layout-preview { align-content: stretch; background: #f4f1ea; border: 1px solid #d7d2c6; box-shadow: none; }
+.home-layout-preview i { background: #c9c2b4; }
+.home-layout-preview i:nth-child(1) { width: 70%; height: 5px; background: #8f8778; }
+.home-layout-preview i:nth-child(2) { width: 100%; height: 16px; }
+.home-layout-preview i:nth-child(3) { width: 100%; height: 8px; }
+.home-layout-preview i:nth-child(4) { width: 62%; height: 6px; margin-top: 0; background: #b7b09f; }
+.home-layout-preview--wallet i:nth-child(1) { width: 100%; height: 14px; background: #20332a; }
+.home-layout-preview--wallet i:nth-child(2) { height: 8px; }
+.home-layout-preview--wallet i:nth-child(3) { height: 12px; }
+.home-layout-preview--magazine i:nth-child(1) { width: 100%; height: 22px; background: #5c5346; }
+.home-layout-preview--magazine i:nth-child(2) { height: 10px; }
+.home-layout-preview--magazine i:nth-child(3),
+.home-layout-preview--magazine i:nth-child(4) { display: none; }
+.home-layout-preview--minimal { gap: 5px; background: #f9faf9; }
+.home-layout-preview--minimal i:nth-child(1) { width: 48%; height: 4px; }
+.home-layout-preview--minimal i:nth-child(2) { height: 12px; }
+.home-layout-preview--minimal i:nth-child(3) { height: 12px; }
+.home-layout-preview--minimal i:nth-child(4) { display: none; }
+.home-page--layout-wallet .membership-summary {
+  box-shadow: 0 10px 28px color-mix(in srgb, var(--color-primary) 12%, transparent);
+}
+.home-page--layout-magazine .hero-banner__media {
+  height: 360px;
+}
+.home-page--layout-magazine.stack--lg {
+  gap: 22px;
+}
+.home-page--layout-minimal.stack--lg {
+  gap: 16px;
+}
+.home-page--layout-minimal .home-lead span {
+  display: none;
+}
+
 .tab-editor { display: grid; gap: 8px; }
 .tab-editor__row { display: grid; grid-template-columns: 26px 1fr 34px 34px 34px; gap: 6px; align-items: center; }
 .tab-editor__row > span { font-size: 10px; font-weight: 800; text-align: center; }

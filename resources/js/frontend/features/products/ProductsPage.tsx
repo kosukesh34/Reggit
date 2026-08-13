@@ -112,16 +112,26 @@ function ProductsShell({ fixed }: { fixed: boolean }): JSX.Element {
     );
 }
 
+function isPointExchangeLayout(blocks: unknown[]): boolean {
+    return blocks.some((block) => {
+        if (block === null || typeof block !== 'object') {
+            return false;
+        }
+        const text = (block as { text?: unknown }).text;
+        return text === '交換メニュー' || text === '特典で交換';
+    });
+}
+
 /**
  * オーダー: Designer レイアウトがあれば BuilderLayout、
- * 固定デモUI・未設定は React ProductsGrid。
+ * 固定デモUI・未設定・交換カタログ誤設定は React ProductsGrid。
  */
 export const ProductsPage = React.memo(function ProductsPage(): JSX.Element {
     if (isFixedUiShell()) {
         return <ProductsShell fixed />;
     }
     const blocks = getTabBlocks('products');
-    if (blocks !== null) {
+    if (blocks !== null && !isPointExchangeLayout(blocks)) {
         return <BuilderLayout tab="products" blocks={blocks} />;
     }
     return <ProductsShell fixed={false} />;

@@ -25,6 +25,8 @@ class StampGrantLimitTest extends TestCase
     public function test_有効期限は選択肢にない値をデフォルトに戻すこと(): void
     {
         $this->assertSame(60, StampGrantLimit::normalizeExpiresMinutes(60));
+        $this->assertSame(StampGrantLimit::NEVER_EXPIRES, StampGrantLimit::normalizeExpiresMinutes(0));
+        $this->assertSame(525600, StampGrantLimit::normalizeExpiresMinutes(525600));
         $this->assertSame(StampGrantLimit::DEFAULT_EXPIRES_MINUTES, StampGrantLimit::normalizeExpiresMinutes(7));
     }
 }

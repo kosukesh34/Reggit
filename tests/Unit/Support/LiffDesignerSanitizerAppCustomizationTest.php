@@ -15,6 +15,7 @@ class LiffDesignerSanitizerAppCustomizationTest extends TestCase
                 'app_customization' => [
                     'designPreset' => 'editorial',
                     'colors' => ['primary' => '#112233'],
+                    'home' => ['layout' => 'wallet'],
                     'header' => ['shortcut' => 'membership'],
                     'navigation' => [
                         'tabs' => [
@@ -29,6 +30,7 @@ class LiffDesignerSanitizerAppCustomizationTest extends TestCase
         $this->assertIsArray($result['_global']['app_customization']);
         $this->assertSame('editorial', $result['_global']['app_customization']['designPreset']);
         $this->assertSame('#112233', $result['_global']['app_customization']['colors']['primary']);
+        $this->assertSame('wallet', $result['_global']['app_customization']['home']['layout']);
         $this->assertSame('membership', $result['_global']['app_customization']['header']['shortcut']);
     }
 

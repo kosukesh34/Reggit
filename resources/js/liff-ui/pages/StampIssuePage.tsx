@@ -38,7 +38,7 @@ export function StampIssuePage() {
         <Card padding="lg" className="stamp-issue-live-note">
           <ShieldCheck size={34} />
           <h1>付与QRは管理画面で作成します</h1>
-          <p>実店舗用のQRには有効期限と署名が必要です。スタッフ権限のある管理画面から発行してください。</p>
+          <p>実店舗用のQRは、スタッフ権限のある管理画面から発行してください。</p>
           <a className="button button--solid button--lg" href={adminUrl}>スタンプ管理を開く <ExternalLink size={17} /></a>
         </Card>
         <Link className="stamp-issue-back" to="/stamp">スタンプ画面へ戻る</Link>
@@ -56,7 +56,7 @@ export function StampIssuePage() {
       <Card padding="lg" className="stamp-issue-card">
         <div className="stamp-issue-card__qr">{qrImage ? <img src={qrImage} alt="スタンプを1個付与するQRコード" /> : <span>QRを作成中…</span>}</div>
         <strong>{activeStore.brandName}</strong>
-        <p>このQRはデザイン確認用です。実店舗では管理画面の署名付きQRを使用してください。</p>
+        <p>このQRはデザイン確認用です。実店舗では管理画面から発行したQRを使用してください。</p>
       </Card>
       <Card padding="lg" className="stamp-issue-url">
         <label htmlFor="stamp-issue-url">付与URL</label>
