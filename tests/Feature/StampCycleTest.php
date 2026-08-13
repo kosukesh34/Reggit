@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\StampCycleMode;
 use App\Models\Member;
 use App\Models\MemberStamp;
+use App\Models\MemberStampTransaction;
 use App\Models\Project;
 use App\Models\StampCard;
 use App\Models\User;
@@ -44,6 +45,24 @@ class StampCycleTest extends TestCase
         $this->assertSame(1, (int) $result->cycle_count);
         $this->assertNull($result->completed_at);
         $this->assertSame(1, $result->cyclesCompletedNow);
+        $this->assertSame(1, MemberStampTransaction::query()->where('member_id', $member->id)->count());
+        $this->assertDatabaseHas('member_stamp_transactions', [
+            'member_id' => $member->id,
+            'delta' => 7,
+        ]);
+    }
+
+    public function test_繰り返すカードの減算は周回を巻き戻すこと(): void
+    {
+        [$member, $card] = $this->createCard(StampCycleMode::REPEAT, 5);
+        $service = resolve(MemberAdminService::class);
+        $service->addStampsToMember($member, (int) $card->id, 7);
+        $service->adjustStampsToMember($member, (int) $card->id, -3, '減算');
+
+        $stamp = MemberStamp::query()->where('member_id', $member->id)->where('stamp_card_id', $card->id)->first();
+        $this->assertNotNull($stamp);
+        $this->assertSame(4, (int) $stamp->current_stamps);
+        $this->assertSame(0, (int) $stamp->cycle_count);
     }
 
     public function test_次カード切替では達成後に余りが次のカードへ移ること(): void

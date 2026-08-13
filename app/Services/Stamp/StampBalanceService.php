@@ -85,6 +85,12 @@ class StampBalanceService
         ?string $description,
         ?int $orderId,
     ): void {
+        $mode = StampCycleMode::normalize($stampCard->cycle_mode);
+        if ($mode === StampCycleMode::REPEAT) {
+            $this->applyRepeatNegativeDelta($member, $stampCard, $memberStamp, $delta, $description, $orderId);
+
+            return;
+        }
         $previousBalance = (int) $memberStamp->current_stamps;
         $newBalance = max(0, $previousBalance + $delta);
         $appliedDelta = $newBalance - $previousBalance;
@@ -92,9 +98,8 @@ class StampBalanceService
             return;
         }
         $required = max(1, (int) $stampCard->required_stamps);
-        $mode = StampCycleMode::normalize($stampCard->cycle_mode);
         $completedAt = $memberStamp->completed_at;
-        if ($mode !== StampCycleMode::REPEAT && $newBalance >= $required && $completedAt === null) {
+        if ($newBalance >= $required && $completedAt === null) {
             $completedAt = now();
         } elseif ($newBalance < $required && $completedAt !== null) {
             $completedAt = null;
@@ -114,7 +119,7 @@ class StampBalanceService
         );
     }
 
-    private function applyRepeatDelta(
+    private function applyRepeatNegativeDelta(
         Member $member,
         StampCard $stampCard,
         MemberStamp $memberStamp,
@@ -125,53 +130,82 @@ class StampBalanceService
         $required = max(1, (int) $stampCard->required_stamps);
         $previousBalance = (int) $memberStamp->current_stamps;
         $cycleCount = (int) $memberStamp->cycle_count;
-        $cyclesCompletedNow = 0;
-        if ($previousBalance >= $required) {
-            $cycleCount += intdiv($previousBalance, $required);
-            $previousBalance = $previousBalance % $required;
+        $total = ($cycleCount * $required) + $previousBalance;
+        $newTotal = max(0, $total + $delta);
+        $appliedDelta = $newTotal - $total;
+        if ($appliedDelta === 0) {
+            return;
+        }
+        $this->writeBalance(
+            $member,
+            $stampCard,
+            $memberStamp,
+            $previousBalance,
+            $newTotal % $required,
+            $appliedDelta,
+            $description,
+            $orderId,
+            null,
+            intdiv($newTotal, $required),
+            0,
+        );
+    }
+
+    private function applyRepeatDelta(
+        Member $member,
+        StampCard $stampCard,
+        MemberStamp $memberStamp,
+        int $delta,
+        ?string $description,
+        ?int $orderId,
+    ): void {
+        $required = max(1, (int) $stampCard->required_stamps);
+        $startBalance = (int) $memberStamp->current_stamps;
+        $cycleCount = (int) $memberStamp->cycle_count;
+        if ($startBalance >= $required) {
+            $cycleCount += intdiv($startBalance, $required);
+            $startBalance = $startBalance % $required;
             $memberStamp->update([
-                'current_stamps' => $previousBalance,
+                'current_stamps' => $startBalance,
                 'cycle_count' => $cycleCount,
                 'completed_at' => null,
             ]);
         }
 
+        $cursor = $startBalance;
         $remaining = $delta;
+        $cyclesCompletedNow = 0;
         while ($remaining > 0) {
-            $step = min($remaining, $required - $previousBalance);
+            $step = min($remaining, $required - $cursor);
             if ($step <= 0) {
                 break;
             }
-            $newBalance = $previousBalance + $step;
-            $this->writeBalance(
-                $member,
-                $stampCard,
-                $memberStamp,
-                $previousBalance,
-                $newBalance,
-                $step,
-                $description,
-                $orderId,
-                null,
-                $cycleCount,
-                $cycleCount,
-            );
+            $next = $cursor + $step;
+            $this->stampMilestoneRewardService->grantReached($member, $stampCard, $cursor, $next, $cycleCount);
             $remaining -= $step;
-            if ($newBalance < $required) {
-                $previousBalance = $newBalance;
+            if ($next < $required) {
+                $cursor = $next;
 
                 continue;
             }
             $cycleCount++;
             $cyclesCompletedNow++;
-            $previousBalance = 0;
-            $memberStamp->update([
-                'current_stamps' => 0,
-                'cycle_count' => $cycleCount,
-                'completed_at' => null,
-            ]);
+            $cursor = 0;
         }
-        $memberStamp->refresh();
+        $this->writeBalance(
+            $member,
+            $stampCard,
+            $memberStamp,
+            $startBalance,
+            $cursor,
+            $delta,
+            $description,
+            $orderId,
+            null,
+            $cycleCount,
+            0,
+            false,
+        );
         $memberStamp->cyclesCompletedNow = $cyclesCompletedNow;
     }
 
@@ -269,6 +303,7 @@ class StampBalanceService
         DateTimeInterface|string|null $completedAt,
         ?int $cycleCount,
         int $milestoneCycleIndex,
+        bool $shouldGrantMilestones = true,
     ): void {
         $payload = ['current_stamps' => $newBalance];
         if ($completedAt !== $memberStamp->completed_at) {
@@ -289,7 +324,7 @@ class StampBalanceService
                 'order_id' => $orderId,
             ]);
         }
-        if ($appliedDelta > 0) {
+        if ($shouldGrantMilestones && $appliedDelta > 0) {
             $this->stampMilestoneRewardService->grantReached(
                 $member,
                 $stampCard,
