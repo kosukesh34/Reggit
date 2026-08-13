@@ -4,6 +4,8 @@ import {
   isStampGrantCode,
 } from "../../shared/utils/stampGrantToken";
 
+export const STAMP_GRANT_INVALID_QR_MESSAGE = 'スタンプ付与用のQRではありません';
+
 export interface StampGrantPayload {
   value: string;
   kind: "signed" | "demo" | "code";

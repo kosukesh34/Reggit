@@ -1764,6 +1764,12 @@ body.liff-fixed-ui .ios-stamp-card__reward, body.reggit-liff-ui .ios-stamp-card_
     opacity: 0.92;
 }
 
+body.liff-fixed-ui .ios-stamp-card__round, body.reggit-liff-ui .ios-stamp-card__round {
+    margin: 6px 0 0;
+    font-size: 12px;
+    opacity: 0.88;
+}
+
 body.liff-fixed-ui .ios-stamp-card__body, body.reggit-liff-ui .ios-stamp-card__body {
     padding: 16px;
 }

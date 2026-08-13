@@ -41,6 +41,7 @@ class StampController extends AdminBaseController
         return view('admin.stamps.create', [
             'coupons' => $output->coupons,
             'isGachaEnabled' => $output->isGachaEnabled,
+            'cycleTargetCards' => $output->cycleTargetCards,
         ]);
     }
 
@@ -52,6 +53,8 @@ class StampController extends AdminBaseController
             (int) ($request->query('expires_minutes') ?? StampGrantLimit::DEFAULT_EXPIRES_MINUTES),
             (int) ($request->query('amount') ?? 1),
             (string) $request->query('limit', ''),
+            (int) ($request->query('quota') ?? StampGrantLimit::DEFAULT_QUOTA),
+            (int) $request->session()->get('issued_grant_code_id', 0),
         );
 
         return view('admin.stamps.grant-qr', [
@@ -60,22 +63,26 @@ class StampController extends AdminBaseController
             'expiresMinutes' => $output->expiresMinutes,
             'amount' => $output->amount,
             'limit' => $output->limit,
+            'quota' => $output->quota,
+            'issuedCode' => $output->issuedCode,
         ]);
     }
 
     public function storeGrantQr(Request $request, string $projectKey, int $id, AdminStampGrantQrStoreUseCase $useCase)
     {
-        $useCase->handle(new AdminStampGrantQrInput(
+        $code = $useCase->handle(new AdminStampGrantQrInput(
             $this->resolveAdminProjectId(),
             $id,
             (int) ($request->input('expires_minutes') ?? StampGrantLimit::DEFAULT_EXPIRES_MINUTES),
             (int) ($request->input('amount') ?? 1),
             (string) $request->input('limit', ''),
+            (int) ($request->input('quota') ?? 1),
         ));
 
         return redirect()
             ->route('admin.stamps.grant-qr', array_merge($this->buildAdminRouteParams(), ['id' => $id]))
-            ->with('success', 'スタンプ付与QRを発行しました');
+            ->with('success', 'スタンプ付与QRを発行しました。この画面を離れるとQRは表示されません。')
+            ->with('issued_grant_code_id', $code->id);
     }
 
     public function storeStamp(StampStoreRequest $request)
@@ -94,6 +101,7 @@ class StampController extends AdminBaseController
             'stampCard' => $output->stampCard,
             'coupons' => $output->coupons,
             'isGachaEnabled' => $output->isGachaEnabled,
+            'cycleTargetCards' => $output->cycleTargetCards,
         ]);
     }
 

@@ -2,6 +2,7 @@ import jsQR from 'jsqr';
 import { X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { parseStampGrant, STAMP_GRANT_INVALID_QR_MESSAGE } from '../../utils/stampGrant';
 
 interface StampScannerPopupProps {
   open: boolean;
@@ -112,7 +113,7 @@ function stopScanLoop(): void {
   }
 }
 
-function startScanLoop(onDetected: (value: string) => void): void {
+function startScanLoop(onDetected: (value: string) => void, onInvalid: () => void): void {
   stopScanLoop();
   const video = videoEl;
   const canvas = scanCanvas;
@@ -135,6 +136,7 @@ function startScanLoop(onDetected: (value: string) => void): void {
     drawFrame = window.requestAnimationFrame(canvasUpdate);
   };
 
+  let lastInvalid = '';
   const checkImage = (): void => {
     if (canvas.width <= 0 || canvas.height <= 0) {
       scanTimer = window.setTimeout(checkImage, 500);
@@ -144,6 +146,14 @@ function startScanLoop(onDetected: (value: string) => void): void {
     const code = jsQR(image.data, canvas.width, canvas.height);
     const value = code?.data?.trim();
     if (value) {
+      if (parseStampGrant(value) === null) {
+        if (value !== lastInvalid) {
+          lastInvalid = value;
+          onInvalid();
+        }
+        scanTimer = window.setTimeout(checkImage, 800);
+        return;
+      }
       onDetected(value);
       return;
     }
@@ -157,6 +167,7 @@ function startScanLoop(onDetected: (value: string) => void): void {
 export function StampScannerPopup({ open, onClose, onDetected }: StampScannerPopupProps) {
   const onDetectedRef = useRef(onDetected);
   const [failed, setFailed] = useState(false);
+  const [scanError, setScanError] = useState('');
   onDetectedRef.current = onDetected;
 
   useEffect(() => {
@@ -164,6 +175,7 @@ export function StampScannerPopup({ open, onClose, onDetected }: StampScannerPop
       stopScanLoop();
       removeVideo();
       setFailed(false);
+      setScanError('');
       return;
     }
     if (!lastCameraOk || currentStream === null) {
@@ -172,7 +184,11 @@ export function StampScannerPopup({ open, onClose, onDetected }: StampScannerPop
       return;
     }
     setFailed(false);
-    startScanLoop((value) => onDetectedRef.current(value));
+    setScanError('');
+    startScanLoop(
+      (value) => onDetectedRef.current(value),
+      () => setScanError(STAMP_GRANT_INVALID_QR_MESSAGE),
+    );
     return () => {
       stopScanLoop();
     };
@@ -201,8 +217,12 @@ export function StampScannerPopup({ open, onClose, onDetected }: StampScannerPop
             onClick={() => {
               void startStampCamera().then((ok) => {
                 setFailed(!ok);
+                setScanError('');
                 if (ok) {
-                  startScanLoop((value) => onDetectedRef.current(value));
+                  startScanLoop(
+                    (value) => onDetectedRef.current(value),
+                    () => setScanError(STAMP_GRANT_INVALID_QR_MESSAGE),
+                  );
                 }
               });
             }}
@@ -211,7 +231,12 @@ export function StampScannerPopup({ open, onClose, onDetected }: StampScannerPop
           </button>
         </div>
       ) : (
-        <p className="stamp-scanner-root__help">店舗に表示されたスタンプ付与QRを枠内に合わせてください。</p>
+        <>
+          <p className="stamp-scanner-root__help">店舗に表示されたスタンプ付与QRを枠内に合わせてください。</p>
+          {scanError !== '' ? (
+            <p className="stamp-scanner-root__invalid" role="alert">{scanError}</p>
+          ) : null}
+        </>
       )}
     </div>,
     document.body,
