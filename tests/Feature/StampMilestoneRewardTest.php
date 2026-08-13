@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\LotteryRewardType;
 use App\Enums\LotterySourceType;
+use App\Enums\StampCycleMode;
 use App\Enums\StampRewardType;
 use App\Models\Coupon;
 use App\Models\Member;
@@ -43,7 +44,7 @@ class StampMilestoneRewardTest extends TestCase
             'member_id' => $member->id,
             'reward_type' => LotteryRewardType::GACHA,
             'source_type' => LotterySourceType::STAMP,
-            'source_id' => $card->id.':'.$member->id.':10',
+            'source_id' => $card->id.':'.$member->id.':0:10',
             'is_done' => false,
         ]);
         $this->assertSame(1, MemberCoupon::query()->where('member_id', $member->id)->count());
@@ -115,6 +116,7 @@ class StampMilestoneRewardTest extends TestCase
             'project_id' => $project->id,
             'required_stamps' => 10,
             'is_active' => true,
+            'cycle_mode' => StampCycleMode::ONCE,
             'reward_milestones' => [
                 [
                     'stamp_count' => 5,

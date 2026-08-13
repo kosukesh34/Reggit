@@ -27,16 +27,12 @@ class StampGrantController extends Controller
             (int) $request->query('amount', 1),
             (string) $request->query('limit', StampGrantLimit::PER_MEMBER),
             $this->queryExpiresAt($request),
+            (int) $request->query('quota', 1),
         ));
 
         $payload = ['error' => $result->message];
         if ($result->isSuccess) {
-            $payload = [
-                'message' => $result->message,
-                'stamp_card_id' => $result->stampCardId,
-                'current_stamps' => $result->currentStamps,
-                'granted_count' => $result->grantedCount,
-            ];
+            $payload = $result->successPayload();
         }
 
         return response()->json($payload, $result->status);

@@ -251,7 +251,8 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
         $this->assertDatabaseHas('member_stamps', [
             'member_id' => $member->id,
             'stamp_card_id' => $stampCard->id,
-            'current_stamps' => 20,
+            'current_stamps' => 0,
+            'cycle_count' => 2,
         ]);
     }
 
@@ -465,6 +466,7 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
             'member_id' => $member->id,
             'stamp_card_id' => $stampCard->id,
             'current_stamps' => 0,
+            'cycle_count' => 0,
         ]);
         $this->assertSame(
             1,
@@ -543,7 +545,8 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
         $this->assertDatabaseHas('member_stamps', [
             'member_id' => $member->id,
             'stamp_card_id' => $stampCard->id,
-            'current_stamps' => 10,
+            'current_stamps' => 0,
+            'cycle_count' => 1,
         ]);
         $this->assertSame(
             1,
@@ -654,7 +657,8 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
         $this->assertDatabaseHas('member_stamps', [
             'member_id' => $member->id,
             'stamp_card_id' => $stampCard->id,
-            'current_stamps' => 10,
+            'current_stamps' => 0,
+            'cycle_count' => 1,
         ]);
     }
 

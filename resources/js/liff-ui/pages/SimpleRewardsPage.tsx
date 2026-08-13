@@ -5,7 +5,7 @@ import { openStampScanner, StampScannerPopup } from "../components/stamp/StampSc
 import { BottomSheet } from "../components/ui/BottomSheet";
 import { CenterPopup } from "../components/ui/CenterPopup";
 import { useRuntimeData } from "../context/RuntimeDataContext";
-import { parseStampGrant } from "../utils/stampGrant";
+import { parseStampGrant, STAMP_GRANT_INVALID_QR_MESSAGE } from "../utils/stampGrant";
 
 export const SIMPLE_REWARDS_STORE_ID = "store_simple_rewards";
 
@@ -96,7 +96,10 @@ export function SimpleRewardsStamp() {
       return;
     }
     const payload = parseStampGrant(rawValue);
-    if (!payload) return;
+    if (payload === null) {
+      setError(STAMP_GRANT_INVALID_QR_MESSAGE);
+      return;
+    }
     setError("");
     try {
       await addStamp(payload.value);

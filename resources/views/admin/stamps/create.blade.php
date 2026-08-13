@@ -75,6 +75,8 @@
                     </div>
                 </div>
 
+                @include('admin.stamps._cycle_fields', ['stampCard' => null, 'cycleTargetCards' => $cycleTargetCards ?? collect()])
+
                 <div class="stamp-form-section">
                     <div class="stamp-form-section-head stamp-form-section-head-with-action">
                         <h4>達成特典（複数設定可）</h4>
