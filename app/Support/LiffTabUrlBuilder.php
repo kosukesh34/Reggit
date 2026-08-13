@@ -7,25 +7,29 @@ namespace App\Support;
  */
 class LiffTabUrlBuilder
 {
-    public static function build(int $projectId, string $projectKey, string $tab): string
+    /**
+     * @param  array<string, string>  $extra
+     */
+    public static function build(int $projectId, string $projectKey, string $tab, array $extra = []): string
     {
         $projectKey = ProjectKey::require($projectKey);
         $tab = trim($tab) !== '' ? trim($tab) : 'home';
         $baseUrl = QueueLiffUrlBuilder::resolveBaseUrl($projectId, $projectKey);
 
-        return self::appendTabParams($baseUrl, $projectKey, $tab);
+        return self::appendTabParams($baseUrl, $projectKey, $tab, $extra);
     }
 
-    private static function appendTabParams(string $baseUrl, string $projectKey, string $tab): string
+    /**
+     * @param  array<string, string>  $extra
+     */
+    private static function appendTabParams(string $baseUrl, string $projectKey, string $tab, array $extra = []): string
     {
+        $state = array_merge(['project_key' => $projectKey, 'tab' => $tab], $extra);
         $parts = parse_url($baseUrl);
         if ($parts === false) {
             $separator = str_contains($baseUrl, '?') ? '&' : '?';
 
-            return $baseUrl.$separator.http_build_query([
-                'project_key' => $projectKey,
-                'tab' => $tab,
-            ]);
+            return $baseUrl.$separator.http_build_query($state);
         }
 
         $host = isset($parts['host']) ? strtolower((string) $parts['host']) : '';
@@ -34,13 +38,8 @@ class LiffTabUrlBuilder
             $segments = explode('/', $path);
             $liffId = trim((string) end($segments));
             if ($liffId !== '') {
-                $liffState = http_build_query([
-                    'project_key' => $projectKey,
-                    'tab' => $tab,
-                ]);
-
                 return 'https://liff.line.me/'.$liffId.'?'.http_build_query([
-                    'liff.state' => $liffState,
+                    'liff.state' => http_build_query($state),
                 ]);
             }
         }
@@ -50,10 +49,10 @@ class LiffTabUrlBuilder
             parse_str((string) $parts['query'], $queryParams);
         }
         unset($queryParams['project_key'], $queryParams['tab'], $queryParams['liff.state']);
-        $orderedParams = array_merge(
-            ['project_key' => $projectKey, 'tab' => $tab],
-            $queryParams
-        );
+        foreach (array_keys($extra) as $extraKey) {
+            unset($queryParams[$extraKey]);
+        }
+        $orderedParams = array_merge($state, $queryParams);
         $query = http_build_query($orderedParams);
 
         $uri = '';

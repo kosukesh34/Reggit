@@ -35,7 +35,7 @@ class StampCard extends Model
 
     protected $fillable = [
         'project_id', 'name', 'required_stamps', 'reward_description', 'image_url',
-        'stamp_images', 'layout_style', 'valid_days', 'valid_until', 'reward_milestones', 'is_active',
+        'stamp_images', 'stamp_empty_images', 'layout_style', 'valid_days', 'valid_until', 'reward_milestones', 'is_active',
     ];
 
     /** @var array<string, string> */
@@ -45,6 +45,7 @@ class StampCard extends Model
         'valid_until' => 'date',
         'reward_milestones' => 'array',
         'stamp_images' => 'array',
+        'stamp_empty_images' => 'array',
         'is_active' => 'boolean',
     ];
 

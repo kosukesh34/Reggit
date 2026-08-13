@@ -59,6 +59,7 @@ function StampSlots({
     required,
     layoutStyle,
     stampImages,
+    stampEmptyImages,
     design,
     newFrom,
     newTo,
@@ -67,6 +68,7 @@ function StampSlots({
     required: number;
     layoutStyle?: string;
     stampImages?: Record<string, string> | null;
+    stampEmptyImages?: Record<string, string> | null;
     design: StampDesignSettings;
     newFrom?: number;
     newTo?: number;
@@ -99,7 +101,13 @@ function StampSlots({
                 : `${number}番目`;
         let content: React.ReactNode;
         if (!filled) {
-            content = <span className="stamp-slot-number">{number}</span>;
+            const emptyImageUrl = resolveStampImage(stampEmptyImages || null, i);
+            if (emptyImageUrl !== null) {
+                classes.push('stamp-slot--has-image');
+                content = <img src={emptyImageUrl} alt="" className="stamp-slot-image" loading="lazy" />;
+            } else {
+                content = <span className="stamp-slot-number">{number}</span>;
+            }
         } else {
             const imageUrl = design.filledStyle === 'image'
                 ? resolveStampImage(stampImages || null, i)
@@ -275,6 +283,7 @@ function ClassicStampCard({
                 required={required}
                 layoutStyle={layoutStyle}
                 stampImages={card.stamp_images || null}
+                stampEmptyImages={card.stamp_empty_images || null}
                 design={design}
                 newFrom={newFrom}
                 newTo={newTo}
@@ -455,6 +464,7 @@ export function StampsView(): JSX.Element {
             >
                 <i className="fas fa-camera" aria-hidden="true" /> カメラでQRを読み取る
             </button>
+            <p className="stamps-empty-sub">LINEのコードリーダーでも読み取れます</p>
             <StampScannerPopup
                 open={scannerOpen}
                 onClose={() => setScannerOpen(false)}
