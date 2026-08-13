@@ -7,7 +7,6 @@ use App\Http\Requests\MemberProfileRequest;
 use App\Services\UserService;
 use App\UseCases\Member\Data\MemberRegisterInput;
 use App\UseCases\Member\MemberRegisterUseCase;
-use App\Util\AdminContext;
 use App\Util\LogHelper;
 
 class MemberRegisterController extends BaseApiController
@@ -30,7 +29,6 @@ class MemberRegisterController extends BaseApiController
             return $this->success(['member' => $result->member->toArray()], '会員登録が完了しました', 201);
         } catch (\Exception $e) {
             LogHelper::error('[Member] register failed', [
-                'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'error' => $e->getMessage(),
             ]);
 

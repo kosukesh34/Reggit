@@ -17,7 +17,7 @@ class QueueRecallController extends Controller
     public function __invoke(Request $request, int $id)
     {
         try {
-            $dto = $this->recallUseCase->handle($id);
+            $dto = $this->recallUseCase->handle($id, AdminContext::requireCurrentProjectId());
             if ($dto === null) {
                 return response()->json(['error' => '受付が見つかりません'], 404);
             }
@@ -30,7 +30,6 @@ class QueueRecallController extends Controller
             return response()->json(['error' => $e->getMessage()], 422);
         } catch (\Exception $e) {
             LogHelper::error('[Queue] recall failed', [
-                'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'queue_id' => $id,
                 'error' => $e->getMessage(),
             ]);

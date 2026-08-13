@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Models\Order;
 use App\Services\UserService;
 use App\UseCases\Payment\PaymentConfirmUseCase;
 use App\UseCases\Payment\PaymentCreateIntentUseCase;
@@ -22,7 +21,7 @@ class PaymentController extends BaseApiController
 
     public function createPaymentIntent(Request $request)
     {
-        $projectId = AdminContext::getCurrentProjectId() ?? 1;
+        $projectId = AdminContext::requireCurrentProjectId();
         $request->validate([
             'order_id' => [
                 'required',
@@ -37,8 +36,11 @@ class PaymentController extends BaseApiController
         }
 
         try {
-            $order = Order::where('project_id', $projectId)->findOrFail((int) $request->order_id);
-            $dto = $this->createIntentUseCase->handle($order, (int) $user->id);
+            $dto = $this->createIntentUseCase->handle(
+                (int) $request->order_id,
+                $projectId,
+                (int) $user->id,
+            );
 
             return $this->success($dto->toArray());
         } catch (InvalidArgumentException $e) {
@@ -55,7 +57,7 @@ class PaymentController extends BaseApiController
 
     public function confirmPayment(Request $request)
     {
-        $projectId = AdminContext::getCurrentProjectId() ?? 1;
+        $projectId = AdminContext::requireCurrentProjectId();
         $request->validate([
             'payment_intent_id' => 'required|string',
             'order_id' => [

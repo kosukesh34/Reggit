@@ -12,7 +12,7 @@ class AnnouncementIndexUseCase
 {
     public function handle(?User $user): AnnouncementIndexView
     {
-        $projectId = AdminContext::getCurrentProjectId() ?? 1;
+        $projectId = AdminContext::requireCurrentProjectId();
 
         $announcements = Announcement::where('project_id', $projectId)
             ->whereNotNull('published_at')

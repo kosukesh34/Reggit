@@ -26,7 +26,7 @@ class QueueQrStatusController extends Controller
     public function __invoke(Request $request, string $token)
     {
         try {
-            $projectId = AdminContext::getCurrentProjectId() ?? 1;
+            $projectId = AdminContext::requireCurrentProjectId();
             $contextUser = $this->resolveContextUser($request);
             $deviceIdentifier = trim((string) ($request->header('X-Device-Identifier') ?? ''));
             $result = $this->qrStatusUseCase->handle(new QueueQrStatusInput(
@@ -55,14 +55,12 @@ class QueueQrStatusController extends Controller
             ]);
         } catch (\RuntimeException $e) {
             LogHelper::warning('[Queue] qr status blocked', [
-                'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'error' => $e->getMessage(),
             ]);
 
             return response()->json(['error' => $e->getMessage()], 403);
         } catch (\Exception $e) {
             LogHelper::error('[Queue] qr status failed', [
-                'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'error' => $e->getMessage(),
             ]);
 

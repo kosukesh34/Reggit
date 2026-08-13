@@ -17,7 +17,7 @@ class QueueStatusController extends Controller
     public function __invoke(Request $request, int $id)
     {
         try {
-            $projectId = AdminContext::getCurrentProjectId() ?? 1;
+            $projectId = AdminContext::requireCurrentProjectId();
             $dto = $this->queueStatusUseCase->handle($projectId, $id);
 
             if ($dto === null) {
@@ -30,7 +30,6 @@ class QueueStatusController extends Controller
             ]);
         } catch (\Exception $e) {
             LogHelper::error('[Queue] status failed', [
-                'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'queue_id' => $id,
                 'error' => $e->getMessage(),
             ]);

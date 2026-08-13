@@ -35,6 +35,14 @@ class QueueEntryFactory
         );
     }
 
+    public function findModel(int $entryId, int $projectId): ?QueueEntryModel
+    {
+        return QueueEntryModel::query()
+            ->where('project_id', $projectId)
+            ->whereKey($entryId)
+            ->first();
+    }
+
     private function formatDate($value): ?string
     {
         if ($value === null) {

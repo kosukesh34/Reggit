@@ -19,6 +19,7 @@ final class OrderMapper
             (string) $model->status,
             (int) $model->points_used,
             (int) $model->points_earned,
+            (int) round((float) $model->total_amount),
         );
     }
 }

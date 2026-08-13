@@ -3,14 +3,15 @@
 namespace App\UseCases\Liff;
 
 use App\Support\NativeApp;
+use App\UseCases\Liff\Data\LiffIndexInput;
 use Illuminate\Http\Response;
 
 /** LIFF トップ画面のレスポンスを組み立てる。 */
 class LiffIndexUseCase
 {
-    public function handle(): Response
+    public function handle(LiffIndexInput $input): Response
     {
-        $viewName = self::resolveViewName();
+        $viewName = $this->resolveViewName($input->userAgent);
 
         return response()
             ->view($viewName)
@@ -19,11 +20,9 @@ class LiffIndexUseCase
             ->header('Expires', '0');
     }
 
-    /** User-Agent からネイティブアプリか LINE LIFF かを判定し、対応するビュー名を返す。 */
-    public static function resolveViewName(): string
+    private function resolveViewName(string $userAgent): string
     {
-        $userAgent = request()->header('User-Agent', '');
-        $isNativeApp = $userAgent && preg_match(NativeApp::userAgentPattern(), $userAgent);
+        $isNativeApp = $userAgent !== '' && preg_match(NativeApp::userAgentPattern(), $userAgent) === 1;
 
         return $isNativeApp ? 'frontend.native' : 'frontend.line';
     }

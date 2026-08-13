@@ -37,6 +37,9 @@ export class DesignLabManager {
     }
 
     private _lotteryLog(event: string, payload: Record<string, unknown> = {}): void {
+        if (!isDemoDataMode()) {
+            return;
+        }
         const body = { event, ...payload, ts: Date.now() };
         // eslint-disable-next-line no-console
         console.info('[LotteryUI]', event, body);

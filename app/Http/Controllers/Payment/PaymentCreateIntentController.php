@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Payment;
 
 use App\Http\Controllers\Controller;
-use App\Models\Order;
 use App\Services\UserService;
 use App\UseCases\Payment\PaymentCreateIntentUseCase;
 use App\Util\AdminContext;
@@ -21,7 +20,7 @@ class PaymentCreateIntentController extends Controller
 
     public function __invoke(Request $request)
     {
-        $projectId = AdminContext::getCurrentProjectId() ?? 1;
+        $projectId = AdminContext::requireCurrentProjectId();
         $request->validate([
             'order_id' => [
                 'required',
@@ -36,8 +35,11 @@ class PaymentCreateIntentController extends Controller
         }
 
         try {
-            $order = Order::where('project_id', $projectId)->findOrFail((int) $request->order_id);
-            $dto = $this->createIntentUseCase->handle($order, (int) $user->id);
+            $dto = $this->createIntentUseCase->handle(
+                (int) $request->order_id,
+                $projectId,
+                (int) $user->id,
+            );
 
             return response()->json($dto->toArray());
         } catch (InvalidArgumentException $e) {

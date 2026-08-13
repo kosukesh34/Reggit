@@ -6,7 +6,6 @@ use App\Http\Controllers\Api\V1\BaseApiController;
 use App\Services\UserService;
 use App\UseCases\Reservation\Data\ReservationUpdateInput;
 use App\UseCases\Reservation\ReservationUpdateUseCase;
-use App\Util\AdminContext;
 use App\Util\LogHelper;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -47,7 +46,6 @@ class ReservationUpdateController extends BaseApiController
             return $this->success(['reservation' => $result->reservation], '予約を更新しました');
         } catch (\Exception $e) {
             LogHelper::error('[Reservation] update failed', [
-                'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'error' => $e->getMessage(),
             ]);
 

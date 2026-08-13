@@ -13,7 +13,7 @@ class AnnouncementMarkReadUseCase
     /** @return array{announcement_id: int, read_at: string} */
     public function handle(AnnouncementMarkReadInput $input): array
     {
-        $projectId = AdminContext::getCurrentProjectId() ?? 1;
+        $projectId = AdminContext::requireCurrentProjectId();
         $announcement = Announcement::where('project_id', $projectId)
             ->where('id', $input->announcementId)
             ->whereNotNull('published_at')
