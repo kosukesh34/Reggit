@@ -16,13 +16,18 @@ class StampMilestoneRewardService
         private LotteryEntitlementService $lotteryEntitlementService,
     ) {}
 
-    public function grantReached(Member $member, StampCard $stampCard, int $previousBalance, int $newBalance): void
-    {
+    public function grantReached(
+        Member $member,
+        StampCard $stampCard,
+        int $previousBalance,
+        int $newBalance,
+        int $cycleIndex = 0,
+    ): void {
         if ($newBalance <= $previousBalance) {
             return;
         }
         foreach ($this->reachedMilestones($stampCard, $previousBalance, $newBalance) as $milestone) {
-            $this->grantOne($member, $stampCard, $milestone);
+            $this->grantOne($member, $stampCard, $milestone, $cycleIndex);
         }
     }
 
@@ -48,7 +53,7 @@ class StampMilestoneRewardService
     }
 
     /** @param array{stamp_count?: int, reward_type?: string, coupon_id?: int} $milestone */
-    private function grantOne(Member $member, StampCard $stampCard, array $milestone): void
+    private function grantOne(Member $member, StampCard $stampCard, array $milestone, int $cycleIndex): void
     {
         $rewardType = (string) ($milestone['reward_type'] ?? '');
         if ($rewardType === StampRewardType::COUPON) {
@@ -61,6 +66,7 @@ class StampMilestoneRewardService
                 $member,
                 (int) $stampCard->id,
                 (int) ($milestone['stamp_count'] ?? 0),
+                $cycleIndex,
             );
         }
     }

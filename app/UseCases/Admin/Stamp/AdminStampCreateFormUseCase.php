@@ -17,6 +17,7 @@ class AdminStampCreateFormUseCase
             null,
             $this->stampAdminService->getCouponsForStampForm($projectId, null),
             $this->stampAdminService->isGachaEnabled($projectId),
+            $this->stampAdminService->getCycleTargetCards($projectId),
         );
     }
 }
