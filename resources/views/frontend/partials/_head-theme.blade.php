@@ -47,9 +47,7 @@
 }
 </style>
 @endif
-@if($applyStoreTheme && $themeBodyClasses !== [])
-<script>document.addEventListener('DOMContentLoaded',function(){document.body.classList.add.apply(document.body.classList,@json($themeBodyClasses));},{once:true});</script>
-@endif
+{{-- テーマ class は body に最初から付ける（DOMContentLoaded だと起動時にレイアウトが跳ぶ） --}}
 @php
     $bgImageUrl = ($applyStoreTheme) ? ($g['bg_image_url'] ?? null) : null;
     if ($applyStoreTheme && ($g['background_style'] ?? '') === 'image' && empty($bgImageUrl)) {
