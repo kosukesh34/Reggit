@@ -19,7 +19,7 @@ class ReservationAvailabilityService
 
     public function getAvailableDates(?int $excludeReservationId): ReservationAvailability
     {
-        $projectId = (int) (AdminContext::getCurrentProjectId() ?? 1);
+        $projectId = AdminContext::requireCurrentProjectId();
         $timeSlots = $this->shopSettingRepository->getReservationTimeSlots($projectId);
         $advanceDays = $this->shopSettingRepository->getAdvanceBookingDays($projectId);
         $reservationCapacity = $this->shopSettingRepository->getReservationCapacityPerSlot($projectId);
@@ -58,7 +58,7 @@ class ReservationAvailabilityService
 
     public function getAvailabilityError(Carbon $reservedAt, ?int $excludeReservationId): ?string
     {
-        $projectId = (int) (AdminContext::getCurrentProjectId() ?? 1);
+        $projectId = AdminContext::requireCurrentProjectId();
         $advanceDays = $this->shopSettingRepository->getAdvanceBookingDays($projectId);
         $timeSlots = $this->shopSettingRepository->getReservationTimeSlots($projectId);
         $reservationCapacity = $this->shopSettingRepository->getReservationCapacityPerSlot($projectId);

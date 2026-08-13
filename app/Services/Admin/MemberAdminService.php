@@ -29,6 +29,7 @@ use App\Services\Smaregi\SmaregiCustomerRankAssignmentService;
 use App\Services\Smaregi\SmaregiCustomerUpdatePayloadBuilder;
 use App\Services\UserService;
 use App\Support\MemberChannel;
+use App\Util\DateUtil;
 use App\Util\LogHelper;
 use App\Util\StrHelper;
 use Carbon\Carbon;
@@ -375,7 +376,10 @@ class MemberAdminService
         ?float $amount = null,
         ?string $smaregiTransactionHeadId = null,
     ): MemberVisit {
-        $visitedCarbon = Carbon::parse($visitedAt);
+        $visitedCarbon = DateUtil::nullableCarbon($visitedAt);
+        if ($visitedCarbon === null) {
+            throw new \InvalidArgumentException('来店日時が不正です');
+        }
         $visit = MemberVisit::create([
             'project_id' => $member->project_id,
             'member_id' => $member->id,

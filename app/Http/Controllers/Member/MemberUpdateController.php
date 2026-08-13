@@ -7,7 +7,6 @@ use App\Http\Requests\MemberProfileRequest;
 use App\Services\UserService;
 use App\UseCases\Member\Data\MemberUpdateInput;
 use App\UseCases\Member\MemberUpdateUseCase;
-use App\Util\AdminContext;
 use App\Util\LogHelper;
 use Illuminate\Validation\ValidationException;
 
@@ -31,7 +30,6 @@ class MemberUpdateController extends Controller
             throw $e;
         } catch (\Exception $e) {
             LogHelper::error('[Member] update failed', [
-                'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'error' => $e->getMessage(),
             ]);
 

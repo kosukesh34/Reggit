@@ -12,6 +12,10 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class AdminCouponDeliveryDetailUseCase
 {
+    public function __construct(
+        private ShopSettingRepository $shopSettingRepository,
+    ) {}
+
     public function handle(int $projectId, int $deliveryId): AdminCouponDeliveryDetailOutput
     {
         $delivery = CouponDelivery::query()
@@ -133,7 +137,7 @@ class AdminCouponDeliveryDetailUseCase
         if ($rankKey === '') {
             return '';
         }
-        foreach (app(ShopSettingRepository::class)->getMemberRankSettings($projectId) as $rank) {
+        foreach ($this->shopSettingRepository->getMemberRankSettings($projectId) as $rank) {
             if ((string) ($rank['key'] ?? '') === $rankKey) {
                 return (string) ($rank['label'] ?? $rankKey);
             }

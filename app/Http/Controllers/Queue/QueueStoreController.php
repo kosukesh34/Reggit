@@ -7,7 +7,6 @@ use App\Services\UserService;
 use App\Support\QueueRequestContext;
 use App\UseCases\Queue\Data\QueueStoreInput;
 use App\UseCases\Queue\QueueStoreUseCase;
-use App\Util\AdminContext;
 use App\Util\LogHelper;
 use Illuminate\Http\Request;
 
@@ -34,6 +33,7 @@ class QueueStoreController extends Controller
                 $validated['guest_name'] ?? null,
                 $validated['guest_phone'] ?? null,
                 QueueRequestContext::lineUserId($request) ?: null,
+                is_string($request->header('X-Queue-Client')) ? $request->header('X-Queue-Client') : null,
             ));
 
             if ($result->requiresMembership) {
@@ -50,7 +50,6 @@ class QueueStoreController extends Controller
             ], 201);
         } catch (\Exception $e) {
             LogHelper::error('[Queue] store failed', [
-                'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'error' => $e->getMessage(),
             ]);
 

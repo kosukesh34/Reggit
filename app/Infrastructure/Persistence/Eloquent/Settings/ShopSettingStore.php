@@ -111,7 +111,7 @@ class ShopSettingStore
 
     public static function getValue(string $key, $default = null, ?int $projectId = null)
     {
-        $projectId = $projectId ?? AdminContext::getCurrentProjectId() ?? 1;
+        $projectId = AdminContext::resolveProjectId($projectId);
         $modelClass = self::KEY_TO_MODEL[$key] ?? null;
         if ($modelClass === null) {
             return $default;
@@ -130,9 +130,9 @@ class ShopSettingStore
         return $value;
     }
 
-    public static function setValue(string $key, $value, string $type = 'string', ?int $projectId = 1): void
+    public static function setValue(string $key, $value, string $type = 'string', ?int $projectId = null): void
     {
-        $projectId = $projectId ?? AdminContext::getCurrentProjectId() ?? 1;
+        $projectId = AdminContext::resolveProjectId($projectId);
         $modelClass = self::KEY_TO_MODEL[$key] ?? null;
         if ($modelClass === null) {
             return;
@@ -150,7 +150,7 @@ class ShopSettingStore
         $row->save();
     }
 
-    public static function getBusinessHours(?int $projectId = 1): array
+    public static function getBusinessHours(?int $projectId = null): array
     {
         return [
             'start' => self::getValue('business_hours_start', '10:00', $projectId),
@@ -158,53 +158,53 @@ class ShopSettingStore
         ];
     }
 
-    public static function getReservationTimeSlots(?int $projectId = 1): array
+    public static function getReservationTimeSlots(?int $projectId = null): array
     {
         return self::getValue('reservation_time_slots', ['10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00'], $projectId);
     }
 
-    public static function getClosedDays(?int $projectId = 1): array
+    public static function getClosedDays(?int $projectId = null): array
     {
         return self::getValue('closed_days', [], $projectId);
     }
 
-    public static function getClosedDates(?int $projectId = 1): array
+    public static function getClosedDates(?int $projectId = null): array
     {
         return self::getValue('closed_dates', [], $projectId);
     }
 
-    public static function getAdvanceBookingDays(?int $projectId = 1): int
+    public static function getAdvanceBookingDays(?int $projectId = null): int
     {
         return self::getValue('advance_booking_days', 30, $projectId);
     }
 
-    public static function getReservationCapacityPerSlot(?int $projectId = 1): int
+    public static function getReservationCapacityPerSlot(?int $projectId = null): int
     {
         return self::getValue('reservation_capacity_per_slot', self::DEFAULT_RESERVATION_CAPACITY, $projectId);
     }
 
     /** 順番待ち 1組あたりの平均対応時間（分）。予測待ち時間の計算に使用。 */
-    public static function getQueueAvgServeMinutes(?int $projectId = 1): int
+    public static function getQueueAvgServeMinutes(?int $projectId = null): int
     {
         return self::getValue('queue_avg_serve_minutes', 10, $projectId);
     }
 
-    public static function getQueueRequireMembership(?int $projectId = 1): bool
+    public static function getQueueRequireMembership(?int $projectId = null): bool
     {
         return (bool) self::getValue('queue_require_membership', false, $projectId);
     }
 
-    public static function getQueueChannelLine(?int $projectId = 1): bool
+    public static function getQueueChannelLine(?int $projectId = null): bool
     {
         return (bool) self::getValue('queue_channel_line', true, $projectId);
     }
 
-    public static function getQueueChannelNative(?int $projectId = 1): bool
+    public static function getQueueChannelNative(?int $projectId = null): bool
     {
         return (bool) self::getValue('queue_channel_native', false, $projectId);
     }
 
-    public static function getLineThemeColors(?int $projectId = 1): array
+    public static function getLineThemeColors(?int $projectId = null): array
     {
         $primary = self::getValue('line_primary_color', '#0E7C66', $projectId);
 
@@ -250,7 +250,7 @@ class ShopSettingStore
     /** フロントメニュー項目を取得（ホーム設定で「表示する」にしたもののみ・order でソート） */
     public static function getFrontendMenuItems(?int $projectId = null): array
     {
-        $projectId = $projectId ?? 1;
+        $projectId = AdminContext::resolveProjectId($projectId);
         $items = self::getValue('frontend_menu_items', null, $projectId);
         if ($items === null || ! is_array($items)) {
             return self::defaultFrontendMenuItems();
@@ -319,7 +319,7 @@ class ShopSettingStore
     /** フロントメニュー項目を保存 */
     public static function setFrontendMenuItems(array $items, ?int $projectId = null): void
     {
-        $projectId = $projectId ?? 1;
+        $projectId = AdminContext::resolveProjectId($projectId);
         self::setValue('frontend_menu_items', $items, 'json', $projectId);
     }
 
@@ -690,7 +690,7 @@ class ShopSettingStore
     /** プロフィール項目設定を取得（会員登録・編集フォームの表示とバリデーションに使用） */
     public static function getProfileFieldSettings(?int $projectId = null): array
     {
-        $projectId = $projectId ?? 1;
+        $projectId = AdminContext::resolveProjectId($projectId);
         $raw = self::getValue('profile_field_settings', null, $projectId);
         if (! is_array($raw)) {
             return self::defaultProfileFieldSettings();
@@ -749,7 +749,7 @@ class ShopSettingStore
     /** プロフィール項目設定を保存 */
     public static function setProfileFieldSettings(array $settings, ?int $projectId = null): void
     {
-        $projectId = $projectId ?? 1;
+        $projectId = AdminContext::resolveProjectId($projectId);
         self::setValue('profile_field_settings', $settings, 'json', $projectId);
     }
 
@@ -887,7 +887,7 @@ class ShopSettingStore
 
     public static function setShowMemberCardForGuest(bool $value, ?int $projectId = null): void
     {
-        self::setValue('show_member_card_for_guest', $value, 'boolean', $projectId ?? 1);
+        self::setValue('show_member_card_for_guest', $value, 'boolean', AdminContext::resolveProjectId($projectId));
     }
 
     /** 会員証のレイアウトデザイン。default, logo_top, logo_center, logo_header, compact, split_banner, minimal_line, emblem */
@@ -901,7 +901,7 @@ class ShopSettingStore
     public static function setMemberCardDesign(string $value, ?int $projectId = null): void
     {
         $value = in_array($value, ['default', 'logo_top', 'logo_center', 'logo_header', 'compact', 'split_banner', 'minimal_line', 'emblem'], true) ? $value : 'default';
-        self::setValue('member_card_design', $value, 'string', $projectId ?? 1);
+        self::setValue('member_card_design', $value, 'string', AdminContext::resolveProjectId($projectId));
     }
 
     /** 会員証の表示形式。card=カード型（裏表あり）, sheet=シート型（1面表示） */
@@ -915,7 +915,7 @@ class ShopSettingStore
     public static function setMemberCardDisplayType(string $value, ?int $projectId = null): void
     {
         $value = in_array($value, ['card', 'sheet'], true) ? $value : 'card';
-        self::setValue('member_card_display_type', $value, 'string', $projectId ?? 1);
+        self::setValue('member_card_display_type', $value, 'string', AdminContext::resolveProjectId($projectId));
     }
 
     /** 会員証の会員番号表示。barcode=バーコード, qrcode=QRコード */
@@ -929,7 +929,7 @@ class ShopSettingStore
     public static function setMemberCardCodeType(string $value, ?int $projectId = null): void
     {
         $value = in_array($value, ['barcode', 'qrcode'], true) ? $value : 'barcode';
-        self::setValue('member_card_code_type', $value, 'string', $projectId ?? 1);
+        self::setValue('member_card_code_type', $value, 'string', AdminContext::resolveProjectId($projectId));
     }
 
     public static function getMemberRankSettings(?int $projectId = null): array
@@ -1039,12 +1039,12 @@ class ShopSettingStore
 
     public static function setWalletGoogleProgramLogoUrl(?string $url, ?int $projectId = null): void
     {
-        self::setValue('wallet_google_program_logo_url', trim((string) ($url ?? '')), 'string', $projectId ?? 1);
+        self::setValue('wallet_google_program_logo_url', trim((string) ($url ?? '')), 'string', AdminContext::resolveProjectId($projectId));
     }
 
     public static function setWalletGoogleHeroImageUrl(?string $url, ?int $projectId = null): void
     {
-        self::setValue('wallet_google_hero_image_url', trim((string) ($url ?? '')), 'string', $projectId ?? 1);
+        self::setValue('wallet_google_hero_image_url', trim((string) ($url ?? '')), 'string', AdminContext::resolveProjectId($projectId));
     }
 
     public static function getFrontendHeaderText(?int $projectId = null): ?string
@@ -1052,7 +1052,7 @@ class ShopSettingStore
         return self::getValue('frontend_header_text', null, $projectId);
     }
 
-    public static function isDateAvailable(string $date, ?int $projectId = 1): bool
+    public static function isDateAvailable(string $date, ?int $projectId = null): bool
     {
         $dayOfWeek = (int) date('w', strtotime($date));
         $closedDays = self::getClosedDays($projectId);

@@ -18,6 +18,7 @@ import { QueueView } from "../../frontend/features/queue/QueueView";
 import { ReservationsView } from "../../frontend/features/reservations/ReservationsView";
 import { GalleryView } from "../../frontend/features/gallery/GalleryView";
 import { OrdersView } from "../../frontend/features/orders/OrdersView";
+import { ProductsPage } from "../../frontend/features/products/ProductsPage";
 import { pathForLegacyTab } from "../navigation/tabPath";
 import { isLinkTabType } from "../types/app";
 import { LinkSitePage } from "./LinkSitePage";
@@ -156,6 +157,9 @@ export function FeaturePage() {
     }
     if (feature === "orderHistory") {
       return <div className="page feature-page"><OrdersView /></div>;
+    }
+    if (feature === "mobileOrder" || feature === "dineInOrder" || feature === "menu") {
+      return <div className="page feature-page"><ProductsPage /></div>;
     }
   }
 

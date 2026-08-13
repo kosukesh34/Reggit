@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Services\UserService;
 use App\UseCases\Reservation\Data\ReservationUpdateInput;
 use App\UseCases\Reservation\ReservationUpdateUseCase;
-use App\Util\AdminContext;
 use App\Util\LogHelper;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -56,7 +55,6 @@ class ReservationUpdateController extends Controller
             ]);
         } catch (\Exception $e) {
             LogHelper::error('[Reservation] update failed', [
-                'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'error' => $e->getMessage(),
             ]);
 

@@ -6,7 +6,6 @@ use App\Http\Controllers\Api\V1\BaseApiController;
 use App\Services\UserService;
 use App\UseCases\Reservation\Data\ReservationStoreInput;
 use App\UseCases\Reservation\ReservationStoreUseCase;
-use App\Util\AdminContext;
 use App\Util\LogHelper;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -46,7 +45,6 @@ class ReservationStoreController extends BaseApiController
             return $this->success(['reservation' => $result->reservation], '予約が完了しました', 201);
         } catch (\Exception $e) {
             LogHelper::error('[Reservation] store failed', [
-                'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'error' => $e->getMessage(),
             ]);
 

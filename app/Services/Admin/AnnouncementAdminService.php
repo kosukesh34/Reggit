@@ -4,9 +4,9 @@ namespace App\Services\Admin;
 
 use App\Models\Announcement;
 use App\Models\AnnouncementRead;
+use App\Util\DateUtil;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Carbon;
 
 class AnnouncementAdminService
 {
@@ -120,11 +120,17 @@ class AnnouncementAdminService
         }
 
         if ($filters['published_from'] !== '') {
-            $query->where('published_at', '>=', Carbon::parse($filters['published_from'])->startOfDay());
+            $from = DateUtil::nullableCarbon($filters['published_from']);
+            if ($from !== null) {
+                $query->where('published_at', '>=', $from->startOfDay());
+            }
         }
 
         if ($filters['published_to'] !== '') {
-            $query->where('published_at', '<=', Carbon::parse($filters['published_to'])->endOfDay());
+            $to = DateUtil::nullableCarbon($filters['published_to']);
+            if ($to !== null) {
+                $query->where('published_at', '<=', $to->endOfDay());
+            }
         }
 
         return $query;
@@ -137,11 +143,7 @@ class AnnouncementAdminService
             return null;
         }
 
-        try {
-            return Carbon::parse($normalized)->toDateString();
-        } catch (\Throwable) {
-            return null;
-        }
+        return DateUtil::nullableCarbon($normalized)?->toDateString();
     }
 
     public function create(int $projectId, array $data): Announcement

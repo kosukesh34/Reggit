@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Member;
 use App\Http\Controllers\Controller;
 use App\Services\UserService;
 use App\UseCases\Member\MemberWalletSummaryUseCase;
-use App\Util\AdminContext;
 use App\Util\LogHelper;
 use Illuminate\Http\Request;
 use RuntimeException;
@@ -29,7 +28,6 @@ class MemberWalletSummaryController extends Controller
             return response()->json(['message' => $e->getMessage()], $status);
         } catch (\Exception $e) {
             LogHelper::error('[Member] wallet summary failed', [
-                'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'error' => $e->getMessage(),
             ]);
 

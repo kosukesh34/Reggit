@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Reservation;
 
 use App\Http\Controllers\Controller;
 use App\UseCases\Reservation\ReservationAvailableDatesUseCase;
-use App\Util\AdminContext;
 use App\Util\LogHelper;
 use Illuminate\Http\Request;
 
@@ -31,7 +30,6 @@ class ReservationAvailableDatesController extends Controller
             ]);
         } catch (\Exception $e) {
             LogHelper::error('[Reservation] available dates failed', [
-                'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'error' => $e->getMessage(),
             ]);
 

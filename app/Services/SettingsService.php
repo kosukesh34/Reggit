@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Domain\Settings\ShopSettingKeys;
+use App\Util\AdminContext;
 
 class SettingsService
 {
@@ -19,7 +20,7 @@ class SettingsService
 
     public function getBasicSettings(?int $projectId = null): array
     {
-        $projectId = $projectId ?? 1;
+        $projectId = AdminContext::resolveProjectId($projectId);
         $repo = $this->shopSettingRepository;
 
         return [
@@ -37,14 +38,14 @@ class SettingsService
 
     public function getAdvancedSettings(?int $projectId = null): array
     {
-        $projectId = $projectId ?? 1;
+        $projectId = AdminContext::resolveProjectId($projectId);
 
         return ['lineTheme' => $this->shopSettingRepository->getLineThemeColors($projectId)];
     }
 
     public function updateReservationSettings(array $validated, ?int $projectId = null): void
     {
-        $projectId = $projectId ?? 1;
+        $projectId = AdminContext::resolveProjectId($projectId);
         $repo = $this->shopSettingRepository;
 
         $repo->setValue('business_hours_start', $validated['business_hours_start'], 'time', $projectId);
@@ -89,7 +90,7 @@ class SettingsService
     /** 予約設定のみ取得（予約メニュー下の設定用） */
     public function getReservationOnlySettings(?int $projectId = null): array
     {
-        $projectId = $projectId ?? 1;
+        $projectId = AdminContext::resolveProjectId($projectId);
         $repo = $this->shopSettingRepository;
 
         return [
@@ -104,7 +105,7 @@ class SettingsService
     /** 予約設定のみ更新（営業時間は基本設定で管理） */
     public function updateReservationOnlySettings(array $validated, ?int $projectId = null): void
     {
-        $projectId = $projectId ?? 1;
+        $projectId = AdminContext::resolveProjectId($projectId);
         $repo = $this->shopSettingRepository;
 
         $repo->setValue('reservation_time_slots', $validated['reservation_time_slots'] ?? [], 'json', $projectId);
@@ -117,7 +118,7 @@ class SettingsService
 
     public function updateLineThemeSettings(array $validated, ?int $projectId = null): void
     {
-        $projectId = $projectId ?? 1;
+        $projectId = AdminContext::resolveProjectId($projectId);
         $keys = [
             'line_primary_color' => 'line_primary_color',
             'line_primary_dark' => 'line_primary_dark',
@@ -134,7 +135,7 @@ class SettingsService
     /** @return array{smaregi_fields: array<string, mixed>, custom_fields: list<array<string, mixed>>, member_registration_mode: string} */
     public function getProfileSettings(?int $projectId = null): array
     {
-        $projectId = $projectId ?? 1;
+        $projectId = AdminContext::resolveProjectId($projectId);
         $repo = $this->shopSettingRepository;
 
         $settings = $repo->getProfileFieldSettings($projectId);

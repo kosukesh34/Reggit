@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Queue;
 
-use App\Enums\QueueStatus;
 use App\Http\Controllers\Controller;
 use App\UseCases\Queue\QueueCancelUseCase;
 use App\Util\AdminContext;
@@ -18,17 +17,18 @@ class QueueCancelController extends Controller
     public function __invoke(Request $request, int $id)
     {
         try {
-            $entry = $this->cancelUseCase->handle(
+            $result = $this->cancelUseCase->handle(
                 $id,
-                (int) (AdminContext::getCurrentProjectId() ?? 1),
+                AdminContext::requireCurrentProjectId(),
             );
-            if ($entry === null) {
+            if ($result->entry === null) {
                 return response()->json(['error' => '対象が見つかりません。'], 404);
             }
-
-            if (! in_array($entry->status, [QueueStatus::WAITING, QueueStatus::CALLED, QueueStatus::CANCELLED], true)) {
+            if ($result->isConflict) {
                 return response()->json(['error' => 'キャンセルできません。'], 409);
             }
+
+            $entry = $result->entry;
 
             return response()->json([
                 'message' => 'キャンセルしました',
@@ -43,7 +43,6 @@ class QueueCancelController extends Controller
             ]);
         } catch (\Exception $e) {
             LogHelper::error('[Queue] cancel failed', [
-                'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'error' => $e->getMessage(),
             ]);
 

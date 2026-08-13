@@ -7,7 +7,6 @@ use App\Http\Requests\MemberProfileRequest;
 use App\Services\UserService;
 use App\UseCases\Member\Data\MemberUpdateInput;
 use App\UseCases\Member\MemberUpdateUseCase;
-use App\Util\AdminContext;
 use App\Util\LogHelper;
 
 class MemberUpdateController extends BaseApiController
@@ -28,7 +27,6 @@ class MemberUpdateController extends BaseApiController
             return $this->success(['member' => $dto->toArray()], '更新しました');
         } catch (\Exception $e) {
             LogHelper::error('[Member] update failed', [
-                'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'error' => $e->getMessage(),
             ]);
 
