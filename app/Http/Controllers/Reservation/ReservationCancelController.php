@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Reservation;
 use App\Http\Controllers\Controller;
 use App\Services\UserService;
 use App\UseCases\Reservation\ReservationCancelUseCase;
-use App\Util\AdminContext;
 use App\Util\LogHelper;
 use Illuminate\Http\Request;
 
@@ -33,7 +32,6 @@ class ReservationCancelController extends Controller
             ]);
         } catch (\Exception $e) {
             LogHelper::error('[Reservation] cancel failed', [
-                'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'error' => $e->getMessage(),
             ]);
 

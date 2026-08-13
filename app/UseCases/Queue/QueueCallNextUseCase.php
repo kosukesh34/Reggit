@@ -3,11 +3,9 @@
 namespace App\UseCases\Queue;
 
 use App\Domain\Queue\Repositories\QueueEntryRepository;
-use App\Models\QueueEntry as QueueEntryModel;
 use App\Services\Admin\QueueAdminService;
 use App\UseCases\Queue\Data\QueueEntry;
 use App\UseCases\Queue\Data\QueueEntryFactory;
-use App\Util\AdminContext;
 
 class QueueCallNextUseCase
 {
@@ -18,10 +16,9 @@ class QueueCallNextUseCase
         private QueueEntryRepository $queueEntryRepository,
     ) {}
 
-    public function handle(): ?QueueEntry
+    public function handle(int $projectId): ?QueueEntry
     {
-        $projectId = AdminContext::getCurrentProjectId() ?? 1;
-        $aggregate = $this->queueEntryRepository->findNextWaiting((int) $projectId, now());
+        $aggregate = $this->queueEntryRepository->findNextWaiting($projectId, now());
         if ($aggregate === null) {
             return null;
         }
@@ -30,9 +27,14 @@ class QueueCallNextUseCase
         $this->queueEntryRepository->save($aggregate);
         $this->queueAdminService->notifyCalled($aggregate->id()->value());
 
-        $entry = QueueEntryModel::query()->findOrFail($aggregate->id()->value());
-        $stats = $this->statsService->getStats($projectId, $entry->queue_number);
+        $entry = $this->entryFactory->findModel($aggregate->id()->value(), $projectId);
+        if ($entry === null) {
+            return null;
+        }
 
-        return $this->entryFactory->create($entry, $stats);
+        return $this->entryFactory->create(
+            $entry,
+            $this->statsService->getStats($projectId, $entry->queue_number),
+        );
     }
 }

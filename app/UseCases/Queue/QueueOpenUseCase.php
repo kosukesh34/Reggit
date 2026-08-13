@@ -3,8 +3,8 @@
 namespace App\UseCases\Queue;
 
 use App\Domain\Settings\Repositories\ShopSettingRepository;
-use App\Models\Project;
 use App\Models\QueueEntry;
+use App\Repositories\Contracts\ProjectRepository;
 use App\Support\QueueLaunchUrlBuilder;
 use App\Support\QueueLiffUrlBuilder;
 use App\UseCases\Queue\Data\QueueOpenView;
@@ -14,6 +14,7 @@ class QueueOpenUseCase
 {
     public function __construct(
         private ShopSettingRepository $shopSettingRepository,
+        private ProjectRepository $projectRepository,
     ) {}
 
     public function handle(string $projectKey, string $token): QueueOpenView
@@ -25,10 +26,7 @@ class QueueOpenUseCase
             return new QueueOpenView('error', $projectKey, $token, null, null, '店舗が見つかりませんでした。');
         }
 
-        $project = Project::query()
-            ->where('project_key', $projectKey)
-            ->where('is_active', true)
-            ->first();
+        $project = $this->projectRepository->findActiveByProjectKey($projectKey);
 
         if ($project === null) {
             return new QueueOpenView('error', $projectKey, $token, null, null, '店舗が見つかりませんでした。');

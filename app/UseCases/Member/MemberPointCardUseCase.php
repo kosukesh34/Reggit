@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Services\MemberPointsExpiryCalculator;
 use App\Services\MemberRankCalculator;
 use App\UseCases\Member\Data\MemberPointCardView;
+use App\Util\AdminContext;
 
 class MemberPointCardUseCase
 {
@@ -26,7 +27,7 @@ class MemberPointCardUseCase
 
         $rankInfo = $this->rankCalculator->getRankInfo($member);
         $expiryInfo = $this->expiryCalculator->getExpiryInfo($member);
-        $projectId = $member->project_id ?? 1;
+        $projectId = AdminContext::resolveProjectId($member->project_id !== null ? (int) $member->project_id : null);
         $showPoints = $this->shopSettingRepository->getShowPointsDisplay($projectId);
         $showRankProgress = $this->shopSettingRepository->getShowRankProgress($projectId);
         $memberCardDesign = $this->shopSettingRepository->getMemberCardDesign($projectId);

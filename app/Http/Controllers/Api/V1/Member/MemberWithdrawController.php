@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api\V1\Member;
 use App\Http\Controllers\Api\V1\BaseApiController;
 use App\Services\UserService;
 use App\UseCases\Member\MemberWithdrawUseCase;
-use App\Util\AdminContext;
 use App\Util\LogHelper;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -34,14 +33,12 @@ class MemberWithdrawController extends BaseApiController
             return $this->success([], '退会が完了しました。');
         } catch (\RuntimeException $e) {
             LogHelper::error('[Member] withdraw failed (Smaregi or business)', [
-                'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'error' => $e->getMessage(),
             ]);
 
             return $this->error($e->getMessage(), 500);
         } catch (\Exception $e) {
             LogHelper::error('[Member] withdraw failed', [
-                'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'error' => $e->getMessage(),
             ]);
 

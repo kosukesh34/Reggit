@@ -21,7 +21,7 @@ class PaymentConfirmController extends Controller
 
     public function __invoke(Request $request)
     {
-        $projectId = AdminContext::getCurrentProjectId() ?? 1;
+        $projectId = AdminContext::requireCurrentProjectId();
         $request->validate([
             'payment_intent_id' => 'required|string',
             'order_id' => [

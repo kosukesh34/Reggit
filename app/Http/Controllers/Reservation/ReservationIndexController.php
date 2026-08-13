@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Reservation;
 use App\Http\Controllers\Controller;
 use App\Services\UserService;
 use App\UseCases\Reservation\ReservationIndexUseCase;
-use App\Util\AdminContext;
 use App\Util\LogHelper;
 use Illuminate\Http\Request;
 
@@ -30,7 +29,6 @@ class ReservationIndexController extends Controller
             return response()->json(['reservations' => $result->reservations]);
         } catch (\Exception $e) {
             LogHelper::error('[Reservation] index failed', [
-                'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'error' => $e->getMessage(),
             ]);
 

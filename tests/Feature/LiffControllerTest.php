@@ -35,4 +35,25 @@ class LiffControllerTest extends TestCase
 
         $response->assertStatus(200);
     }
+
+    public function test_liff_ネイティブ_u_aならnativeビューを返すこと(): void
+    {
+        $this->createProject();
+
+        $response = $this->withHeaders(['User-Agent' => 'Reggit/1.0 iOS'])
+            ->get('/liff?project_key=default');
+
+        $response->assertStatus(200);
+        $response->assertViewIs('frontend.native');
+    }
+
+    public function test_liff_通常_u_aならlineビューを返すこと(): void
+    {
+        $this->createProject();
+
+        $response = $this->get('/liff?project_key=default');
+
+        $response->assertStatus(200);
+        $response->assertViewIs('frontend.line');
+    }
 }

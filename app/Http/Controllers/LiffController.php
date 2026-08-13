@@ -2,20 +2,21 @@
 
 namespace App\Http\Controllers;
 
+use App\UseCases\Liff\Data\LiffIndexInput;
 use App\UseCases\Liff\LiffIndexUseCase;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
 
 class LiffController extends Controller
 {
-    private LiffIndexUseCase $liffIndexUseCase;
+    public function __construct(
+        private LiffIndexUseCase $liffIndexUseCase,
+    ) {}
 
-    public function __construct(LiffIndexUseCase $liffIndexUseCase)
+    public function index(Request $request): HttpResponse
     {
-        $this->liffIndexUseCase = $liffIndexUseCase;
-    }
-
-    public function index(): HttpResponse
-    {
-        return $this->liffIndexUseCase->handle();
+        return $this->liffIndexUseCase->handle(new LiffIndexInput(
+            (string) $request->userAgent(),
+        ));
     }
 }

@@ -55,11 +55,7 @@ class PaymentConfirmUseCase
             }
 
             $paidAmount = (int) ($intent['amount'] ?? 0);
-            $expectedAmount = (int) round((float) Order::query()
-                ->whereKey($orderId)
-                ->where('project_id', $projectId)
-                ->value('total_amount'));
-            if ($paidAmount !== $expectedAmount) {
+            if ($paidAmount !== $aggregate->totalAmount()) {
                 return new PaymentConfirmOutput(false, '決済金額と注文金額が一致しません', (string) $status, null);
             }
 

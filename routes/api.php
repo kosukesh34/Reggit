@@ -101,7 +101,7 @@ Route::post('/stamps/grant/{stampCard}', StampGrantController::class)
     ->name('api.stamps.grant');
 
 // API v1（Bearer トークン認証・モバイルアプリ用）※従来: トークンの project でコンテキスト設定
-Route::prefix('v1')->middleware([AuthenticateApiToken::class])->group(function () {
+Route::prefix('v1')->middleware(['bind.project', AuthenticateApiToken::class])->group(function () {
     Route::get('/products', [ApiV1ProductController::class, 'index']);
     Route::get('/products/{id}', [ApiV1ProductController::class, 'show']);
     Route::post('/orders', [ApiV1OrderController::class, 'store']);

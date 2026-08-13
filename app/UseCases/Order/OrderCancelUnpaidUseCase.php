@@ -6,6 +6,7 @@ use App\Domain\Order\Repositories\OrderRepository;
 use App\Models\Order;
 use App\Models\User;
 use App\Services\OrderService;
+use App\Util\AdminContext;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 
@@ -23,7 +24,7 @@ class OrderCancelUnpaidUseCase
             $aggregate = $this->orderRepository->findByIdAndUserIdForUpdate(
                 $orderId,
                 (int) $user->id,
-                (int) ($user->project_id ?? 1),
+                (int) (AdminContext::resolveProjectId($user->project_id !== null ? (int) $user->project_id : null)),
             );
             if ($aggregate === null) {
                 throw (new ModelNotFoundException)->setModel(Order::class, [$orderId]);

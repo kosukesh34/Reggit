@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api\V1;
 use App\Services\UserService;
 use App\UseCases\Coupon\CouponMyCouponsUseCase;
 use App\UseCases\Coupon\CouponUseMemberCouponUseCase;
-use App\Util\AdminContext;
 use App\Util\LogHelper;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -35,7 +34,6 @@ class CouponController extends BaseApiController
             ]);
         } catch (\Exception $e) {
             LogHelper::error('[Coupon] my coupons failed', [
-                'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'error' => $e->getMessage(),
             ]);
 
@@ -55,7 +53,6 @@ class CouponController extends BaseApiController
             return $this->error($message, 422, [], $e->errors());
         } catch (\Exception $e) {
             LogHelper::error('[Coupon] use failed', [
-                'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'member_coupon_id' => $id,
                 'error' => $e->getMessage(),
             ]);

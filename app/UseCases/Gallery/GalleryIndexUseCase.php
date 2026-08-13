@@ -11,7 +11,7 @@ class GalleryIndexUseCase
 {
     public function handle(?int $categoryId): GalleryIndexView
     {
-        $projectId = AdminContext::getCurrentProjectId() ?? 1;
+        $projectId = AdminContext::requireCurrentProjectId();
 
         $categories = GalleryCategory::where('project_id', $projectId)
             ->where('is_active', true)

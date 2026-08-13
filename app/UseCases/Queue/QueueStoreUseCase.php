@@ -34,13 +34,15 @@ class QueueStoreUseCase
         $user = $input->user;
         $member = $user->member;
 
-        $projectId = $member !== null ? $member->project_id : (AdminContext::getCurrentProjectId() ?? 1);
+        $projectId = $member !== null
+            ? (int) $member->project_id
+            : AdminContext::requireCurrentProjectId();
         $effectiveLineUserId = $this->resolveLineUserId($input->lineUserId, $user->line_user_id);
 
         if (
             $this->shopSettingRepository->getQueueRequireMembership($projectId)
             && $member === null
-            && ! $this->isWaitingSystemRequest()
+            && ! $this->isWaitingSystemRequest($input->queueClient)
         ) {
             return new QueueStoreOutput(true, null);
         }
@@ -61,11 +63,11 @@ class QueueStoreUseCase
     }
 
     /** iPad WaitingSystem からの店頭受付（会員必須の対象外） */
-    private function isWaitingSystemRequest(): bool
+    private function isWaitingSystemRequest(?string $queueClient): bool
     {
-        $client = trim((string) request()->header('X-Queue-Client', ''));
+        $client = trim((string) $queueClient);
 
-        return hash_equals(self::WAITING_SYSTEM_CLIENT, $client);
+        return $client !== '' && hash_equals(self::WAITING_SYSTEM_CLIENT, $client);
     }
 
     private function createEntryWithUniqueQueueNumber(
