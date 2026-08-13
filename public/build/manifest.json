@@ -1,34 +1,34 @@
 {
   "_browser-!~{003}~.js": {
-    "file": "assets/browser-D0vHqczW.css",
+    "file": "assets/browser-Beh5fuAQ.css",
     "src": "_browser-!~{003}~.js"
   },
-  "_browser-BTvyIWVX.js": {
-    "file": "assets/browser-BTvyIWVX.js",
+  "_browser-CYWdeq_y.js": {
+    "file": "assets/browser-CYWdeq_y.js",
     "name": "browser",
     "css": [
-      "assets/browser-D0vHqczW.css"
+      "assets/browser-Beh5fuAQ.css"
     ]
   },
   "resources/js/admin/main.tsx": {
-    "file": "assets/main-Bsl6uEgy.js",
+    "file": "assets/main-BGZphyuX.js",
     "name": "main",
     "src": "resources/js/admin/main.tsx",
     "isEntry": true,
     "imports": [
-      "_browser-BTvyIWVX.js"
+      "_browser-CYWdeq_y.js"
     ],
     "css": [
       "assets/main-MImg_wPW.css"
     ]
   },
   "resources/js/frontend/main.tsx": {
-    "file": "assets/main-B9DUC16_.js",
+    "file": "assets/main-CEf1FBYd.js",
     "name": "main",
     "src": "resources/js/frontend/main.tsx",
     "isEntry": true,
     "imports": [
-      "_browser-BTvyIWVX.js"
+      "_browser-CYWdeq_y.js"
     ],
     "css": [
       "assets/main-Hg2P_V_b.css"

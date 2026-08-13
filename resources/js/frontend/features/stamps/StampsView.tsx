@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { StampScannerPopup } from '../../../liff-ui/components/stamp/StampScannerPopup';
+import { openStampScanner, StampScannerPopup } from '../../../liff-ui/components/stamp/StampScannerPopup';
 import { useStampGrantFromUrl } from '../../../liff-ui/hooks/useStampGrantFromUrl';
 import { isFeatureUiShell } from '../../demo/demoMode';
 import {
@@ -460,7 +460,7 @@ export function StampsView(): JSX.Element {
                 type="button"
                 className="btn btn-primary stamp-grant-scan"
                 disabled={grant.phase === 'granting'}
-                onClick={() => setScannerOpen(true)}
+                onClick={() => openStampScanner(setScannerOpen)}
             >
                 <i className="fas fa-camera" aria-hidden="true" /> カメラでQRを読み取る
             </button>
