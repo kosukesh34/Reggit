@@ -241,8 +241,21 @@ class StampGrantTest extends TestCase
 
         $location = $this->get('/g/'.$code->token)->assertRedirect()->headers->get('Location');
         $this->assertNotNull($location);
-        $this->assertStringContainsString('tab=stamps', $location);
-        $this->assertStringContainsString('g='.$code->token, $location);
+        $query = parse_url($location, PHP_URL_QUERY) ?? '';
+        parse_str($query, $params);
+        $liffState = $params['liff.state'] ?? $params['liff_state'] ?? null;
+        if (is_string($liffState) && $liffState !== '') {
+            parse_str($liffState, $params);
+        }
+        $this->assertSame('stamps', $params['tab'] ?? null);
+        $this->assertSame($code->token, $params['g'] ?? null);
+        $this->assertSame('/g/'.$code->token, parse_url($code->openUrl(), PHP_URL_PATH));
+
+        $pathPattern = '/\/g\/([0-9a-f]{12})(?:[\/?#]|$)/i';
+        foreach ([$code->openUrl(), $code->openUrl().'?x=1', '/g/'.$code->token] as $raw) {
+            $this->assertSame(1, preg_match($pathPattern, $raw, $matches), $raw);
+            $this->assertSame($code->token, $matches[1]);
+        }
     }
 
     public function test_存在しない短縮トークンの公開urlは404になること(): void
