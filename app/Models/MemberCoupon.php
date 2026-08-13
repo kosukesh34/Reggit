@@ -23,6 +23,9 @@ class MemberCoupon extends Model
         'valid_until',
         'used_at',
         'order_id',
+        'issue_source_type',
+        'issue_source_id',
+        'issue_grant_key',
     ];
 
     /** @var array<string, string> */

@@ -18,6 +18,7 @@ use App\Domain\Order\ValueObjects\PendingOrder;
 use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
 use App\Enums\LotterySourceType;
+use App\Enums\MemberCouponSource;
 use App\Enums\MemberVisitSource;
 use App\Enums\OrderStatus;
 use App\Enums\OrderType;
@@ -380,7 +381,9 @@ class OrderService
                 $stampCardId,
                 $stampCount,
                 '注文によるスタンプ付与',
-                (int) $order->id
+                (int) $order->id,
+                MemberCouponSource::ORDER,
+                (string) $order->id,
             );
         }
     }
