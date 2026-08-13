@@ -17,12 +17,17 @@ class AdminStampGrantQrStoreUseCase
             ->findOrFail($input->stampCardId);
         $expiresMinutes = StampGrantLimit::normalizeExpiresMinutes($input->expiresMinutes);
 
+        $limit = StampGrantLimit::normalize($input->limit);
+
         return StampGrantCode::query()->create([
             'project_id' => $input->projectId,
             'stamp_card_id' => $stampCard->id,
             'token' => $this->newToken(),
             'amount' => StampGrantLimit::normalizeAmount($input->amount),
-            'usage_limit' => StampGrantLimit::normalize($input->limit),
+            'usage_limit' => $limit,
+            'usage_quota' => $limit === StampGrantLimit::ONCE
+                ? StampGrantLimit::normalizeQuota($input->quota)
+                : 1,
             'expires_at' => $expiresMinutes === StampGrantLimit::NEVER_EXPIRES
                 ? null
                 : now()->addMinutes($expiresMinutes),

@@ -17,12 +17,14 @@ class StampGrantCode extends Model
         'token',
         'amount',
         'usage_limit',
+        'usage_quota',
         'expires_at',
     ];
 
     /** @var array<string, string> */
     protected $casts = [
         'amount' => 'integer',
+        'usage_quota' => 'integer',
         'expires_at' => 'datetime',
     ];
 

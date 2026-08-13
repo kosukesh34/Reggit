@@ -26,6 +26,10 @@ export type StampCard = {
     name?: string;
     reward_description?: string | null;
     is_sample_preview?: boolean;
+    cycle_mode?: string;
+    cycle_count?: number;
+    is_archived?: boolean;
+    next_stamp_card_name?: string | null;
 };
 
 export type StampsLoadResult =

@@ -8,6 +8,7 @@ use Illuminate\Support\Collection;
 
 /**
  * @param  Collection<int, Coupon>  $coupons
+ * @param  Collection<int, StampCard>  $cycleTargetCards
  */
 class AdminStampFormOutput
 {
@@ -15,5 +16,6 @@ class AdminStampFormOutput
         public readonly ?StampCard $stampCard,
         public readonly Collection $coupons,
         public readonly bool $isGachaEnabled,
+        public readonly Collection $cycleTargetCards,
     ) {}
 }
