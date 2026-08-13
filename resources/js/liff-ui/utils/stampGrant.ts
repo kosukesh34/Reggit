@@ -1,6 +1,12 @@
+import {
+  extractStampGrantCodeFromString,
+  getStampGrantCodeFromUrl,
+  isStampGrantCode,
+} from "../../shared/utils/stampGrantToken";
+
 export interface StampGrantPayload {
   value: string;
-  kind: "signed" | "demo" | "manual";
+  kind: "signed" | "demo" | "code";
 }
 
 export function createDemoStampCode(): string {
@@ -15,6 +21,8 @@ export function buildDemoStampUrl(code: string): string {
 }
 
 function payloadFromParams(params: URLSearchParams): StampGrantPayload | null {
+  const code = params.get("g");
+  if (code !== null && isStampGrantCode(code)) return { value: code.trim().toLowerCase(), kind: "code" };
   const signed = params.get("grant");
   if (signed) return { value: signed, kind: "signed" };
   const demo = params.get("stampCode");
@@ -22,10 +30,13 @@ function payloadFromParams(params: URLSearchParams): StampGrantPayload | null {
   return null;
 }
 
-/** QRのURL・署名付き付与URL・手入力コードを、付与APIへ渡す値に正規化する。 */
+/** QRのURL・短縮トークン・署名付き付与URLを、付与APIへ渡す値に正規化する。 */
 export function parseStampGrant(rawValue: string): StampGrantPayload | null {
   const raw = rawValue.trim();
   if (raw === "") return null;
+
+  const fromWindowToken = extractStampGrantCodeFromString(raw);
+  if (fromWindowToken !== null) return { value: fromWindowToken, kind: "code" };
 
   try {
     const parsed = new URL(raw, typeof window === "undefined" ? "http://localhost" : window.location.origin);
@@ -40,9 +51,19 @@ export function parseStampGrant(rawValue: string): StampGrantPayload | null {
       if (fromHash) return fromHash;
     }
   } catch {
-    // URLでない認証コードはこの下で扱う。
+    // URLでない値はこの下で扱う。
   }
 
   if (raw.startsWith("REGGIT-STAMP:")) return { value: raw, kind: "demo" };
-  return { value: raw, kind: "manual" };
+  return null;
+}
+
+export function resolveStampGrantFromLocation(): StampGrantPayload | null {
+  if (typeof window === "undefined") return null;
+  const fromCode = getStampGrantCodeFromUrl();
+  if (fromCode !== null) return { value: fromCode, kind: "code" };
+  const hash = window.location.hash || "";
+  const hashQuery = hash.includes("?") ? hash.slice(hash.indexOf("?") + 1) : "";
+  return payloadFromParams(new URLSearchParams(window.location.search || ""))
+    ?? payloadFromParams(new URLSearchParams(hashQuery));
 }

@@ -1,4 +1,5 @@
 import { getQueueTokenFromUrl } from '../../shared/utils/queueToken';
+import { getStampGrantCodeFromUrl } from '../../shared/utils/stampGrantToken';
 
 /** 旧 ReggitApp.switchTab のタブ名 → liff-ui HashRouter パス */
 
@@ -100,6 +101,9 @@ export function resolveInitialHashPath(): string {
   }
   if (getQueueTokenFromUrl() !== null) {
     return '/queue';
+  }
+  if (getStampGrantCodeFromUrl() !== null) {
+    return '/stamp';
   }
   return '/home';
 }

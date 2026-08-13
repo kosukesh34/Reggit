@@ -100,6 +100,7 @@ class ShopSettingLiffDefaults
      *
      * ルール:
      * - タブが空ならデフォルトレイアウトを採用
+     * - products が交換カタログのコピーなら注文用デフォルトに置き換える
      * - 既存ブロックは順序を変えずに維持する
      *
      * @param  array<string, mixed>  $layouts
@@ -114,7 +115,7 @@ class ShopSettingLiffDefaults
             $rows = $layouts[$tab] ?? null;
             $blocks = is_array($rows) ? array_values(array_filter($rows, fn ($v) => is_array($v))) : [];
 
-            if ($blocks === []) {
+            if ($blocks === [] || ($tab === 'products' && self::isPointExchangeProductsLayout($blocks))) {
                 $normalized[$tab] = $defaultBlocks;
 
                 continue;
@@ -124,6 +125,23 @@ class ShopSettingLiffDefaults
         }
 
         return $normalized;
+    }
+
+    /**
+     * products タブはモバイル注文画面。会員OSの交換カタログコピーは注文UIに出さない。
+     *
+     * @param  array<int, array<string, mixed>>  $blocks
+     */
+    private static function isPointExchangeProductsLayout(array $blocks): bool
+    {
+        foreach ($blocks as $block) {
+            $text = (string) ($block['text'] ?? '');
+            if ($text === '交換メニュー' || $text === '特典で交換') {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public static function defaultLiffTabSettings(): array
