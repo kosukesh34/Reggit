@@ -151,6 +151,7 @@ docker compose exec app php artisan admin:sync-password
 
 - [本番デプロイ（`reggit deploy`）](docs/DEPLOY.md)
 - [機能一覧・仕様](docs/FEATURES_SPEC.md)
+- [スタンプカード・達成特典・取引キャンセル（CS / Q&A）](docs/STAMP_RALLY_CS_FAQ.md)
 - [権限一覧](docs/PERMISSIONS.md)
 - [URL 一覧](docs/URL_LIST.md)
 - [E2E テスト（Playwright / Maestro）](docs/E2E.md)
