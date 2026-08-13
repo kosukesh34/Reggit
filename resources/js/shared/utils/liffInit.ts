@@ -273,6 +273,7 @@ function bootstrapLiffInit(): void {
         if (typeof window.__mobileOrderLog === 'function') {
             window.__mobileOrderLog('liff-ready', { hasLineUserId: !!window.__LINE_USER_ID__ });
         }
+        window.__LIFF_READY__ = true;
         debug('liff_dispatch_ready', { hasLineUserId: !!window.__LINE_USER_ID__, isLiff: !!window.__IS_LIFF__ });
         shortenUrl();
         hideLiffLoading();

@@ -35,8 +35,8 @@
     position: fixed;
     inset: 0;
     z-index: 2147483646;
-    background: var(--primary-color, #ffffff);
-    pointer-events: none;
+    background: #ffffff;
+    pointer-events: auto;
   }
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
