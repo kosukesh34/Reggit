@@ -2,6 +2,7 @@
 
 namespace App\UseCases\Stamp;
 
+use App\Enums\StampCycleMode;
 use App\Enums\StampGrantLimit;
 use App\Models\StampCard;
 use App\Services\Admin\MemberAdminService;
@@ -14,6 +15,7 @@ class StampGrantUseCase
 {
     public function __construct(
         private MemberAdminService $memberAdminService,
+        private StampGrantOutcomeMapper $outcomeMapper,
     ) {}
 
     public function handle(StampGrantInput $input): StampGrantOutput
@@ -36,15 +38,28 @@ class StampGrantUseCase
             return new StampGrantOutput(false, 422, '付与QRが正しくありません');
         }
 
+        $existing = $this->outcomeMapper->existingStamp($member, $card);
+        if (StampCycleMode::isGrantClosed((string) $card->cycle_mode, $existing)) {
+            return $this->outcomeMapper->closed($card);
+        }
+
         $amount = StampGrantLimit::normalizeAmount($input->amount);
         $limit = StampGrantLimit::normalize($input->limit);
-        $redemptionKey = $this->redemptionKey($input->projectId, $nonce, $limit, (int) $member->id);
-        if ($redemptionKey !== null && ! Cache::add($redemptionKey, true, $this->cacheTtl($input->expiresAt))) {
-            $message = $limit === StampGrantLimit::ONCE
-                ? 'このQRは使用済みです'
-                : 'このQRからのスタンプは付与済みです';
+        $quota = StampGrantLimit::normalizeQuota($input->quota);
+        $ttl = $this->cacheTtl($input->expiresAt, $limit);
+        $nonceHash = hash('sha256', $nonce);
+        $memberId = (int) $member->id;
+        $redemptionKey = $this->redemptionKey($input->projectId, $nonceHash, $limit, $memberId);
+        $onceMemberKey = $limit === StampGrantLimit::ONCE
+            ? $this->onceMemberKey($input->projectId, $nonceHash, $memberId)
+            : null;
+        $onceCountKey = $limit === StampGrantLimit::ONCE
+            ? $this->onceCountKey($input->projectId, $nonceHash)
+            : null;
 
-            return new StampGrantOutput(false, 409, $message);
+        $blocked = $this->reserveSlot($limit, $quota, $ttl, $redemptionKey, $onceMemberKey, $onceCountKey);
+        if ($blocked !== null) {
+            return new StampGrantOutput(false, 409, $blocked);
         }
 
         try {
@@ -55,40 +70,95 @@ class StampGrantUseCase
                 '店舗QRから付与'
             );
         } catch (\Throwable $e) {
-            if ($redemptionKey !== null) {
-                Cache::forget($redemptionKey);
-            }
+            $this->releaseSlot($redemptionKey, $onceMemberKey, $onceCountKey);
             report($e);
 
             return new StampGrantOutput(false, 500, 'スタンプを追加できませんでした');
         }
 
-        return new StampGrantOutput(
-            true,
-            200,
-            'スタンプを'.$amount.'個追加しました',
-            (int) $card->id,
-            (int) $memberStamp->current_stamps,
-            $amount,
-        );
+        return $this->outcomeMapper->success($card, $memberStamp, $amount, $existing);
     }
 
-    private function redemptionKey(int $projectId, string $nonce, string $limit, int $memberId): ?string
-    {
+    private function reserveSlot(
+        string $limit,
+        int $quota,
+        \DateTimeInterface $ttl,
+        ?string $redemptionKey,
+        ?string $onceMemberKey,
+        ?string $onceCountKey,
+    ): ?string {
         if ($limit === StampGrantLimit::UNLIMITED) {
             return null;
         }
-        $nonceHash = hash('sha256', $nonce);
-        if ($limit === StampGrantLimit::ONCE) {
-            return sprintf('stamp-grant:%d:%s', $projectId, $nonceHash);
+        if ($onceMemberKey !== null && $onceCountKey !== null) {
+            if (! Cache::add($onceMemberKey, true, $ttl)) {
+                return StampGrantLimit::redeemedMessage(StampGrantLimit::PER_MEMBER);
+            }
+            Cache::add($onceCountKey, 0, $ttl);
+            $count = Cache::increment($onceCountKey);
+            if (is_int($count) === false || $count > $quota) {
+                Cache::decrement($onceCountKey);
+                Cache::forget($onceMemberKey);
+
+                return StampGrantLimit::redeemedMessage(StampGrantLimit::ONCE);
+            }
+
+            return null;
+        }
+        if ($redemptionKey !== null && ! Cache::add($redemptionKey, true, $ttl)) {
+            return StampGrantLimit::redeemedMessage($limit);
+        }
+
+        return null;
+    }
+
+    private function releaseSlot(?string $redemptionKey, ?string $onceMemberKey, ?string $onceCountKey): void
+    {
+        if ($onceMemberKey !== null) {
+            Cache::forget($onceMemberKey);
+        }
+        if ($onceCountKey !== null) {
+            Cache::decrement($onceCountKey);
+        }
+        if ($redemptionKey !== null) {
+            Cache::forget($redemptionKey);
+        }
+    }
+
+    private function redemptionKey(int $projectId, string $nonceHash, string $limit, int $memberId): ?string
+    {
+        if ($limit === StampGrantLimit::UNLIMITED || $limit === StampGrantLimit::ONCE) {
+            return null;
+        }
+        if ($limit === StampGrantLimit::DAILY) {
+            return sprintf('stamp-grant:%d:%s:%d:%s', $projectId, $nonceHash, $memberId, now()->toDateString());
         }
 
         return sprintf('stamp-grant:%d:%s:%d', $projectId, $nonceHash, $memberId);
     }
 
-    private function cacheTtl(?int $expiresAt): \DateTimeInterface
+    private function onceMemberKey(int $projectId, string $nonceHash, int $memberId): string
+    {
+        return sprintf('stamp-grant:%d:%s:%d', $projectId, $nonceHash, $memberId);
+    }
+
+    private function onceCountKey(int $projectId, string $nonceHash): string
+    {
+        return sprintf('stamp-grant:%d:%s:count', $projectId, $nonceHash);
+    }
+
+    private function cacheTtl(?int $expiresAt, string $limit): \DateTimeInterface
     {
         $until = $expiresAt !== null ? DateUtil::nullableCarbon('@'.$expiresAt) : null;
+        if ($until !== null && $until->lte(now())) {
+            $until = null;
+        }
+        if ($limit === StampGrantLimit::DAILY) {
+            $endOfDay = now()->endOfDay();
+            if ($until === null || $until->gt($endOfDay)) {
+                $until = $endOfDay;
+            }
+        }
         if ($until !== null && $until->gt(now())) {
             return $until;
         }

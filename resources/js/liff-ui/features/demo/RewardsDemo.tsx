@@ -32,7 +32,7 @@ import { Card } from "../../components/ui/Card";
 import type { CouponItem } from "../../types/app";
 import type { AppCustomization, CouponStatus } from "../../types/customization";
 import { useRuntimeData } from "../../context/RuntimeDataContext";
-import { parseStampGrant } from "../../utils/stampGrant";
+import { parseStampGrant, STAMP_GRANT_INVALID_QR_MESSAGE } from "../../utils/stampGrant";
 
 export function QueueDemo({ storeId }: { storeId: string }) {
   const { joinQueue, queueStatus } = useRuntimeData();
@@ -202,8 +202,8 @@ export function StampDemo({ config, storeId, brandName }: { config: AppCustomiza
 
   const grantStamp = useCallback(async (rawValue: string) => {
     const payload = parseStampGrant(rawValue);
-    if (!payload) {
-      setError("QRコードを確認してください。");
+    if (payload === null) {
+      setError(STAMP_GRANT_INVALID_QR_MESSAGE);
       return;
     }
     setSubmitting(true);

@@ -37,12 +37,7 @@ class StampGrantCodeController extends Controller
 
         $payload = ['error' => $result->message];
         if ($result->isSuccess) {
-            $payload = [
-                'message' => $result->message,
-                'stamp_card_id' => $result->stampCardId,
-                'current_stamps' => $result->currentStamps,
-                'granted_count' => $result->grantedCount,
-            ];
+            $payload = $result->successPayload();
         }
 
         return response()->json($payload, $result->status);

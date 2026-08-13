@@ -27,7 +27,7 @@ use App\Services\Smaregi\SmaregiApiService;
 use App\Services\Smaregi\SmaregiCustomerPointsInboundSyncService;
 use App\Services\Smaregi\SmaregiCustomerRankAssignmentService;
 use App\Services\Smaregi\SmaregiCustomerUpdatePayloadBuilder;
-use App\Services\Stamp\StampMilestoneRewardService;
+use App\Services\Stamp\StampBalanceService;
 use App\Services\UserService;
 use App\Support\MemberChannel;
 use App\Util\DateUtil;
@@ -52,7 +52,7 @@ class MemberAdminService
         private MemberCouponRepository $memberCouponRepository,
         private ShopSettingRepository $shopSettingRepository,
         private UserService $userService,
-        private StampMilestoneRewardService $stampMilestoneRewardService,
+        private StampBalanceService $stampBalanceService,
     ) {}
 
     public function getPaginatedList(int $projectId, int $perPage = 20, array $filters = []): LengthAwarePaginator
@@ -327,52 +327,14 @@ class MemberAdminService
         }
 
         $stampCard = StampCard::where('project_id', $member->project_id)->findOrFail($stampCardId);
-        $memberStamp = MemberStamp::firstOrCreate(
-            [
-                'project_id' => $member->project_id,
-                'member_id' => $member->id,
-                'stamp_card_id' => $stampCard->id,
-            ],
-            ['current_stamps' => 0]
+
+        return $this->stampBalanceService->adjust(
+            $member,
+            $stampCard,
+            $delta,
+            $description,
+            $orderId,
         );
-        if ($memberStamp->valid_until === null && $stampCard->valid_days !== null && (int) $stampCard->valid_days > 0) {
-            $memberStamp->update(['valid_until' => Carbon::now()->addDays((int) $stampCard->valid_days)]);
-        }
-
-        $previousBalance = (int) $memberStamp->current_stamps;
-        $newBalance = max(0, $previousBalance + $delta);
-        $appliedDelta = $newBalance - $previousBalance;
-        $memberStamp->update(['current_stamps' => $newBalance]);
-        $memberStamp->refresh();
-
-        $required = (int) $stampCard->required_stamps;
-        if ($newBalance >= $required && $memberStamp->completed_at === null) {
-            $memberStamp->update(['completed_at' => now()]);
-        } elseif ($newBalance < $required && $memberStamp->completed_at !== null) {
-            $memberStamp->update(['completed_at' => null]);
-        }
-
-        if ($appliedDelta !== 0) {
-            MemberStampTransaction::create([
-                'project_id' => $member->project_id,
-                'member_id' => $member->id,
-                'stamp_card_id' => $stampCard->id,
-                'delta' => $appliedDelta,
-                'balance_after' => $newBalance,
-                'description' => $description,
-                'order_id' => $orderId,
-            ]);
-        }
-        if ($appliedDelta > 0) {
-            $this->stampMilestoneRewardService->grantReached(
-                $member,
-                $stampCard,
-                $previousBalance,
-                $newBalance,
-            );
-        }
-
-        return $memberStamp->refresh();
     }
 
     /**

@@ -2,6 +2,7 @@
 
 namespace App\UseCases\Stamp;
 
+use App\Enums\StampCycleMode;
 use App\Enums\StampGrantLimit;
 use App\Models\StampGrantCode;
 use App\Models\StampGrantRedemption;
@@ -14,6 +15,7 @@ class StampGrantByCodeUseCase
 {
     public function __construct(
         private MemberAdminService $memberAdminService,
+        private StampGrantOutcomeMapper $outcomeMapper,
     ) {}
 
     public function handle(StampGrantByCodeInput $input): StampGrantOutput
@@ -48,12 +50,14 @@ class StampGrantByCodeUseCase
         }
 
         $limit = StampGrantLimit::normalize($code->usage_limit);
-        if ($this->isRedeemed($code, $limit, (int) $member->id)) {
-            $message = $limit === StampGrantLimit::ONCE
-                ? 'このQRは使用済みです'
-                : 'このQRからのスタンプは付与済みです';
+        $blocked = $this->blockedMessage($code, $limit, (int) $member->id);
+        if ($blocked !== null) {
+            return new StampGrantOutput(false, 409, $blocked);
+        }
 
-            return new StampGrantOutput(false, 409, $message);
+        $existing = $this->outcomeMapper->existingStamp($member, $card);
+        if (StampCycleMode::isGrantClosed((string) $card->cycle_mode, $existing)) {
+            return $this->outcomeMapper->closed($card);
         }
 
         $amount = StampGrantLimit::normalizeAmount((int) $code->amount);
@@ -72,26 +76,29 @@ class StampGrantByCodeUseCase
             ]);
         }
 
-        return new StampGrantOutput(
-            true,
-            200,
-            'スタンプを'.$amount.'個追加しました',
-            (int) $card->id,
-            (int) $memberStamp->current_stamps,
-            $amount,
-        );
+        return $this->outcomeMapper->success($card, $memberStamp, $amount, $existing);
     }
 
-    private function isRedeemed(StampGrantCode $code, string $limit, int $memberId): bool
+    private function blockedMessage(StampGrantCode $code, string $limit, int $memberId): ?string
     {
         if ($limit === StampGrantLimit::UNLIMITED) {
-            return false;
+            return null;
         }
-        $query = $code->redemptions();
-        if ($limit === StampGrantLimit::PER_MEMBER) {
-            $query->where('member_id', $memberId);
+        if ($limit === StampGrantLimit::ONCE) {
+            if ($code->redemptions()->where('member_id', $memberId)->exists()) {
+                return StampGrantLimit::redeemedMessage(StampGrantLimit::PER_MEMBER);
+            }
+            if ($code->redemptions()->count() >= StampGrantLimit::normalizeQuota((int) $code->usage_quota)) {
+                return StampGrantLimit::redeemedMessage(StampGrantLimit::ONCE);
+            }
+
+            return null;
+        }
+        $query = $code->redemptions()->where('member_id', $memberId);
+        if ($limit === StampGrantLimit::DAILY) {
+            $query->where('created_at', '>=', now()->startOfDay());
         }
 
-        return $query->exists();
+        return $query->exists() ? StampGrantLimit::redeemedMessage($limit) : null;
     }
 }

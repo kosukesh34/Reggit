@@ -64,7 +64,18 @@ class AdminStampsTest extends TestCase
             ->assertSee('QRの有効期限')
             ->assertSee('付与する個数')
             ->assertSee('利用上限')
+            ->assertSee('1日1回（お客様ごと）')
+            ->assertSee('1日1回までに制限する')
+            ->assertSee('レジ横に貼っておく来店スタンプ')
+            ->assertSee('お客様1人につき1回（再利用不可）')
+            ->assertSee('チラシ・DM・初回限定のQR')
+            ->assertSee('先着')
+            ->assertSee('data-stamp-grant-quota', false)
+            ->assertSee('オープニングキャンペーンの来店スタンプ')
+            ->assertSee('期限内は何度でも')
+            ->assertSee('動作確認や、連続で押す必要があるとき')
             ->assertSee('無期限')
+            ->assertSee('data-stamp-grant-daily-toggle', false)
             ->assertDontSee('grant=', false);
     }
 
@@ -86,6 +97,7 @@ class AdminStampsTest extends TestCase
                 'expires_minutes' => 60,
                 'amount' => 3,
                 'limit' => 'once',
+                'quota' => 30,
             ])
             ->assertRedirect(route('admin.stamps.grant-qr', [
                 'project_key' => $project->project_key,
@@ -98,9 +110,28 @@ class AdminStampsTest extends TestCase
                 'id' => $card->id,
             ]))
             ->assertOk()
+            ->assertSee('今回発行したQR')
+            ->assertSee('data-stamp-grant-qr', false)
+            ->assertSee('QRをダウンロード')
             ->assertSee('/g/', false)
             ->assertSee('1回 3 個')
-            ->assertSee('全体で1回だけ');
+            ->assertSee('先着30名');
+
+        $this->assertSame('once', StampGrantCode::query()->value('usage_limit'));
+        $this->assertSame(30, (int) StampGrantCode::query()->value('usage_quota'));
+
+        $this->actingAs($admin, 'admin')
+            ->get(route('admin.stamps.grant-qr', [
+                'project_key' => $project->project_key,
+                'id' => $card->id,
+            ]))
+            ->assertOk()
+            ->assertDontSee('今回発行したQR')
+            ->assertDontSee('data-stamp-grant-qr', false)
+            ->assertSee('発行履歴')
+            ->assertSee('1回 3 個')
+            ->assertSee('先着30名')
+            ->assertSee('0 / 30名');
     }
 
     public function test_付与qrを複数発行でき無期限も選べること(): void
@@ -133,6 +164,28 @@ class AdminStampsTest extends TestCase
         );
     }
 
+    public function test_付与qrの利用上限を省略すると1日1回で発行すること(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        $card = StampCard::factory()->create([
+            'project_id' => $project->id,
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($admin, 'admin')
+            ->post(route('admin.stamps.grant-qr.store', [
+                'project_key' => $project->project_key,
+                'id' => $card->id,
+            ]), [
+                'expires_minutes' => 15,
+                'amount' => 1,
+            ])
+            ->assertRedirect();
+
+        $this->assertSame('daily', StampGrantCode::query()->value('usage_limit'));
+    }
+
     public function test_作成画面でクーポンとガチャを特典に選べること(): void
     {
         $project = $this->createProject();
@@ -152,6 +205,7 @@ class AdminStampsTest extends TestCase
             ->assertSee('ドリンク無料券')
             ->assertSee('押す前')
             ->assertSee('押したあと')
+            ->assertSee('達成後の動き')
             ->assertDontSee('value="text"', false);
     }
 
@@ -412,5 +466,48 @@ class AdminStampsTest extends TestCase
 
         $card->refresh();
         $this->assertNull($card->reward_milestones);
+    }
+
+    public function test_達成後の動きを保存できること(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        $next = StampCard::factory()->create([
+            'project_id' => $project->id,
+            'name' => 'シルバーカード',
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($admin, 'admin')
+            ->post(route('admin.stamps.store', ['project_key' => $project->project_key]), [
+                'name' => 'ブロンズカード',
+                'required_stamps' => 10,
+                'is_active' => '1',
+                'cycle_mode' => 'next_card',
+                'next_stamp_card_id' => $next->id,
+            ])
+            ->assertRedirect(route('admin.stamps', ['project_key' => $project->project_key]));
+
+        $card = StampCard::query()->where('name', 'ブロンズカード')->first();
+        $this->assertNotNull($card);
+        $this->assertSame('next_card', $card->cycle_mode);
+        $this->assertSame((int) $next->id, (int) $card->next_stamp_card_id);
+    }
+
+    public function test_別カード切替では次のカードが必須であること(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+
+        $this->actingAs($admin, 'admin')
+            ->from(route('admin.stamps.create', ['project_key' => $project->project_key]))
+            ->post(route('admin.stamps.store', ['project_key' => $project->project_key]), [
+                'name' => 'ブロンズカード',
+                'required_stamps' => 10,
+                'cycle_mode' => 'next_card',
+            ])
+            ->assertRedirect(route('admin.stamps.create', ['project_key' => $project->project_key]))
+            ->assertSessionHasErrors('next_stamp_card_id');
+        $this->assertSame(0, StampCard::query()->where('name', 'ブロンズカード')->count());
     }
 }

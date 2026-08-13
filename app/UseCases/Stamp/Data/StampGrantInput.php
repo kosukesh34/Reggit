@@ -15,5 +15,6 @@ class StampGrantInput
         public readonly int $amount = 1,
         public readonly string $limit = StampGrantLimit::PER_MEMBER,
         public readonly ?int $expiresAt = null,
+        public readonly int $quota = 1,
     ) {}
 }

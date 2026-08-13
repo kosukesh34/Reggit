@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\StampCycleMode;
 use App\Models\StampCard;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -19,6 +20,7 @@ class StampCardFactory extends Factory
             'reward_milestones' => null,
             'image_url' => $this->faker->optional()->imageUrl(640, 480),
             'is_active' => true,
+            'cycle_mode' => StampCycleMode::REPEAT,
         ];
     }
 }

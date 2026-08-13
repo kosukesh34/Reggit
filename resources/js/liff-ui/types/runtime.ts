@@ -122,5 +122,9 @@ export interface OperationReceipt {
   stampCardId?: number;
   currentStamps?: number;
   grantedCount?: number;
+  completedNow?: boolean;
+  cycleCount?: number;
+  nextStampCardId?: number;
+  nextStampCardName?: string;
   message?: string;
 }
