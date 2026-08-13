@@ -10,6 +10,8 @@ use App\UseCases\Admin\Stamp\AdminStampGrantQrUseCase;
 use App\UseCases\Admin\Stamp\AdminStampIndexUseCase;
 use App\UseCases\Admin\Stamp\AdminStampStoreUseCase;
 use App\UseCases\Admin\Stamp\AdminStampUpdateUseCase;
+use App\UseCases\Admin\Stamp\Data\AdminStampGrantQrInput;
+use Illuminate\Http\Request;
 
 class StampController extends AdminBaseController
 {
@@ -33,14 +35,24 @@ class StampController extends AdminBaseController
         return view('admin.stamps.create');
     }
 
-    public function grantQr(string $projectKey, int $id, AdminStampGrantQrUseCase $useCase)
+    public function grantQr(Request $request, string $projectKey, int $id, AdminStampGrantQrUseCase $useCase)
     {
-        $output = $useCase->handle($this->resolveAdminProjectId(), $projectKey, $id);
+        $output = $useCase->handle(new AdminStampGrantQrInput(
+            $this->resolveAdminProjectId(),
+            $projectKey,
+            $id,
+            (int) $request->query('expires_minutes', 0),
+            (int) $request->query('amount', 1),
+            (string) $request->query('limit', ''),
+        ));
 
         return view('admin.stamps.grant-qr', [
             'stampCard' => $output->stampCard,
             'stampUrl' => $output->stampUrl,
             'expiresAt' => $output->expiresAt,
+            'expiresMinutes' => $output->expiresMinutes,
+            'amount' => $output->amount,
+            'limit' => $output->limit,
         ]);
     }
 
