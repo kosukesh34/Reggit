@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { additionalStores } from "../config/additionalStores";
 import { couponsByStore, memberProfileByStore, newsByStore, storeLocationsByStore, storeSummaryByStore } from "../mocks/content";
 import { reggitApi } from "../services/reggitApi";
@@ -70,6 +70,7 @@ export function RuntimeDataProvider({ children }: { children: ReactNode }) {
   const [mode, setMode] = useState<DataMode>(usePreviewData ? 'preview' : 'offline');
   const [loading, setLoading] = useState(reggitApi.configured && !usePreviewData);
   const [error, setError] = useState<string>();
+  const refreshGeneration = useRef(0);
 
   const localStore = localState[activeStore.storeId] ?? { usedCouponIds: [], stampCount: 6, receipts: [] };
   const mockData = useMemo<RuntimeBootstrap>(() => {
@@ -98,6 +99,8 @@ export function RuntimeDataProvider({ children }: { children: ReactNode }) {
   }, [activeStore.storeId, localStore.stampCount, localStore.usedCouponIds]);
 
   const refresh = useCallback(async () => {
+    const generation = refreshGeneration.current + 1;
+    refreshGeneration.current = generation;
     if (!reggitApi.configured || isDemoPreview || isMockShowcaseStore) {
       setRemoteData(undefined);
       setMode('preview');
@@ -108,33 +111,73 @@ export function RuntimeDataProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     try {
       const data = await reggitApi.bootstrap(activeStore.storeId);
+      if (generation !== refreshGeneration.current) {
+        return;
+      }
       setRemoteData(data);
       setMode('live');
       setError(undefined);
     } catch (caught) {
+      if (generation !== refreshGeneration.current) {
+        return;
+      }
       setRemoteData(undefined);
       setMode('offline');
       setError(caught instanceof Error ? caught.message : '店舗データを取得できませんでした');
     } finally {
-      setLoading(false);
+      if (generation === refreshGeneration.current) {
+        setLoading(false);
+      }
     }
   }, [activeStore.storeId, isDemoPreview, isMockShowcaseStore]);
 
   useEffect(() => {
-    void refresh();
-  }, [refresh]);
-
-  useEffect(() => {
-    const onReady = (): void => {
-      void refresh();
+    let cancelled = false;
+    const run = (): void => {
+      if (!cancelled) {
+        void refresh();
+      }
     };
-    document.addEventListener('liff-ready', onReady);
-    document.addEventListener('liff-member-reload', onReady);
-    document.addEventListener('liff-payment-completed', onReady);
+
+    const onReload = (): void => {
+      run();
+    };
+    document.addEventListener('liff-member-reload', onReload);
+    document.addEventListener('liff-payment-completed', onReload);
+
+    const waitForLiff = typeof window !== 'undefined'
+      && window.__IS_LIFF__ === true
+      && !window.__LINE_USER_ID__
+      && window.__LIFF_READY__ !== true;
+    if (waitForLiff) {
+      let timer = 0;
+      const onLiffReady = (): void => {
+        if (timer !== 0) {
+          window.clearTimeout(timer);
+          timer = 0;
+        }
+        run();
+      };
+      document.addEventListener('liff-ready', onLiffReady);
+      timer = window.setTimeout(run, 3000);
+      return () => {
+        cancelled = true;
+        document.removeEventListener('liff-ready', onLiffReady);
+        document.removeEventListener('liff-member-reload', onReload);
+        document.removeEventListener('liff-payment-completed', onReload);
+        if (timer !== 0) {
+          window.clearTimeout(timer);
+        }
+      };
+    }
+
+    run();
+    document.addEventListener('liff-ready', onReload);
     return () => {
-      document.removeEventListener('liff-ready', onReady);
-      document.removeEventListener('liff-member-reload', onReady);
-      document.removeEventListener('liff-payment-completed', onReady);
+      cancelled = true;
+      document.removeEventListener('liff-ready', onReload);
+      document.removeEventListener('liff-member-reload', onReload);
+      document.removeEventListener('liff-payment-completed', onReload);
     };
   }, [refresh]);
 

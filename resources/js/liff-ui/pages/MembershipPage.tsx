@@ -185,7 +185,7 @@ function LiveMembershipPage(): JSX.Element {
     [managerPayload, runtimeMember],
   );
 
-  if (booting || (loading && mode !== "live" && managerPayload === null)) {
+  if (booting || (mode !== "live" && !(mode === "offline" && !loading))) {
     return <MembershipPageSkeleton />;
   }
 
