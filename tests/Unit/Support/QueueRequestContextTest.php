@@ -64,4 +64,31 @@ class QueueRequestContextTest extends TestCase
 
         $this->assertSame('from-referer', QueueRequestContext::queueToken($request));
     }
+
+    public function test_queue_token_はliff_redirect_uriから取れること(): void
+    {
+        $request = Request::create('/api/queue/me', 'GET', [
+            'liffRedirectUri' => 'https://example.test/liff/default?queue_token=from-redirect&tab=queue',
+        ]);
+
+        $this->assertSame('from-redirect', QueueRequestContext::queueToken($request));
+    }
+
+    public function test_識別子が無いときはnullを返すこと(): void
+    {
+        $request = Request::create('/api/queue/me', 'GET');
+
+        $this->assertNull(QueueRequestContext::queueToken($request));
+        $this->assertNull(QueueRequestContext::queueId($request));
+    }
+
+    public function test_queue_id_はクエリを埋め込みより優先すること(): void
+    {
+        $request = Request::create('/api/queue/me', 'GET', [
+            'queue_id' => '9',
+            'liff_state' => 'queue_id=42&tab=queue',
+        ]);
+
+        $this->assertSame(9, QueueRequestContext::queueId($request));
+    }
 }

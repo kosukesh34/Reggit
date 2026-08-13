@@ -52,6 +52,27 @@ final class MobileWebShellViewModelTests: XCTestCase {
 
         XCTAssertEqual(viewModel.activeTab, "orders")
         XCTAssertTrue(scriptExecutor.executedScripts.contains { $0.contains("orders") })
+        XCTAssertTrue(scriptExecutor.executedScripts.contains { $0.contains("url.hash = \"/orderHistory\"") })
+    }
+
+    func testQueueDeepLinkSetsHashRouterPathWhenReady() {
+        let scriptExecutor = FakeWebViewScriptExecutor()
+        let whiteScreenMonitor = FakeWhiteScreenMonitor()
+        let viewModel = makeViewModel(
+            scriptExecutor: scriptExecutor,
+            whiteScreenMonitor: whiteScreenMonitor
+        )
+
+        viewModel.onAppear()
+        whiteScreenMonitor.simulateContentVisible()
+        scriptExecutor.resetExecutedScripts()
+
+        viewModel.handleQueueDeepLink(queueToken: "tok-queue-1")
+
+        XCTAssertEqual(viewModel.activeTab, "queue")
+        XCTAssertTrue(scriptExecutor.executedScripts.contains { $0.contains("url.hash = \"/queue\"") })
+        XCTAssertTrue(scriptExecutor.executedScripts.contains { $0.contains("mobile_order_pending_queue_token") })
+        XCTAssertTrue(scriptExecutor.executedScripts.contains { $0.contains("tok-queue-1") })
     }
 
     private func makeViewModel(
