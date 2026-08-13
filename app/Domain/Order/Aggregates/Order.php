@@ -25,6 +25,7 @@ final class Order
         private string $status,
         private int $pointsUsed,
         private int $pointsEarned,
+        private int $totalAmount,
     ) {}
 
     public function id(): OrderId
@@ -60,6 +61,16 @@ final class Order
     public function paymentMethod(): string
     {
         return $this->paymentMethod;
+    }
+
+    public function orderType(): string
+    {
+        return $this->orderType;
+    }
+
+    public function totalAmount(): int
+    {
+        return $this->totalAmount;
     }
 
     public function isCancelled(): bool

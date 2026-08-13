@@ -7,7 +7,6 @@ use App\Services\UserService;
 use App\UseCases\Lottery\MemberLotteryIndexUseCase;
 use App\UseCases\Lottery\NotifyLotteryWinUseCase;
 use App\UseCases\Lottery\PlayLotteryEntitlementUseCase;
-use App\Util\AdminContext;
 use App\Util\LogHelper;
 use Illuminate\Http\Request;
 use RuntimeException;
@@ -33,7 +32,6 @@ class MemberLotteryController extends Controller
             return response()->json(['message' => $e->getMessage()], $status);
         } catch (\Exception $e) {
             LogHelper::error('[Lottery] index failed', [
-                'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'error' => $e->getMessage(),
             ]);
 
@@ -56,7 +54,6 @@ class MemberLotteryController extends Controller
             ], $status);
         } catch (\Exception $e) {
             LogHelper::error('[Lottery] play failed', [
-                'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'entitlement_id' => $id,
                 'error' => $e->getMessage(),
             ]);
@@ -83,7 +80,6 @@ class MemberLotteryController extends Controller
             ], $status);
         } catch (\Exception $e) {
             LogHelper::error('[Lottery] notifyWin failed', [
-                'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'entitlement_id' => $id,
                 'error' => $e->getMessage(),
             ]);

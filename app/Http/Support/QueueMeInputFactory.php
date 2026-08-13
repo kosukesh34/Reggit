@@ -17,7 +17,7 @@ class QueueMeInputFactory
 
     public function fromRequest(Request $request, User $user): QueueMeInput
     {
-        $projectId = AdminContext::getCurrentProjectId() ?? 1;
+        $projectId = AdminContext::requireCurrentProjectId();
 
         return new QueueMeInput(
             $user,

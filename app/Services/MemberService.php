@@ -41,7 +41,7 @@ class MemberService
         $member = $user->member;
 
         if ($member === null) {
-            $projectId = $user->project_id ?? AdminContext::getCurrentProjectId() ?? 1;
+            $projectId = AdminContext::resolveProjectId($user->project_id !== null ? (int) $user->project_id : null);
             $profileSettings = $this->shopSettingRepository->getProfileFieldSettings($projectId);
             $profileFormFields = $this->buildProfileFormFields($profileSettings);
 
@@ -64,7 +64,7 @@ class MemberService
         $rankInfo = $this->getRankInfo($member);
         $expiryInfo = $this->getPointsExpiryInfo($member);
 
-        $projectId = $member->project_id ?? AdminContext::getCurrentProjectId() ?? 1;
+        $projectId = AdminContext::resolveProjectId($member->project_id !== null ? (int) $member->project_id : null);
         $profileSettings = $this->shopSettingRepository->getProfileFieldSettings($projectId);
         $profileFormFields = $this->buildProfileFormFields($profileSettings);
         $profileValues = $this->getProfileValues($member->user, $member);
@@ -296,7 +296,7 @@ class MemberService
             throw new \Exception('会員登録が必要です');
         }
 
-        $projectId = $member->project_id ?? AdminContext::getCurrentProjectId() ?? 1;
+        $projectId = AdminContext::resolveProjectId($member->project_id !== null ? (int) $member->project_id : null);
         $settings = $this->shopSettingRepository->getProfileFieldSettings($projectId);
 
         $userUpdates = [];
@@ -395,7 +395,7 @@ class MemberService
                 throw new \Exception('既に会員登録済みです');
             }
 
-            $projectId = $user->project_id ?? AdminContext::getCurrentProjectId() ?? 1;
+            $projectId = AdminContext::resolveProjectId($user->project_id !== null ? (int) $user->project_id : null);
             $memberNumber = $this->generateMemberNumber($projectId);
             $smaregiCustomerId = null;
             $rankSettings = $this->shopSettingRepository->getMemberRankSettings($projectId);

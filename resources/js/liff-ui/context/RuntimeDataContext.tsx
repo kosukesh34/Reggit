@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { additionalStores } from "../config/additionalStores";
 import { couponsByStore, memberProfileByStore, newsByStore, storeLocationsByStore, storeSummaryByStore } from "../mocks/content";
 import { reggitApi } from "../services/reggitApi";
 import type {
@@ -12,6 +13,11 @@ import type {
   RuntimeBootstrap,
 } from "../types/runtime";
 import { useAppConfig } from "./AppConfigContext";
+
+const MOCK_STORE_IDS = new Set([
+  ...Object.keys(storeSummaryByStore),
+  ...additionalStores.map((store) => store.storeId),
+]);
 
 const storageKey = "reggit-runtime-data-v2";
 
@@ -59,7 +65,7 @@ export function RuntimeDataProvider({ children }: { children: ReactNode }) {
   const [localState, setLocalState] = useState<LocalState>(loadLocalState);
   const [remoteData, setRemoteData] = useState<RuntimeBootstrap>();
   const isDemoPreview = typeof document !== 'undefined' && document.body.classList.contains('liff-demo-data');
-  const isMockShowcaseStore = activeStore.storeId.startsWith('store_');
+  const isMockShowcaseStore = MOCK_STORE_IDS.has(activeStore.storeId);
   const usePreviewData = isDemoPreview || isMockShowcaseStore || !reggitApi.configured;
   const [mode, setMode] = useState<DataMode>(usePreviewData ? 'preview' : 'offline');
   const [loading, setLoading] = useState(reggitApi.configured && !usePreviewData);

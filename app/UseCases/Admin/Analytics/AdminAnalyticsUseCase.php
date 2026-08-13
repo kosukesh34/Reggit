@@ -19,9 +19,11 @@ use App\Models\Reservation;
 use App\Models\User;
 use App\UseCases\Admin\Analytics\Data\AdminAnalyticsView;
 use App\Util\AdminStatusLabels;
+use App\Util\DateUtil;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 
 class AdminAnalyticsUseCase
 {
@@ -45,8 +47,11 @@ class AdminAnalyticsUseCase
 
     public function handle(int $projectId, string $start, string $end): AdminAnalyticsView
     {
-        $startDate = Carbon::parse($start)->startOfDay();
-        $endDate = Carbon::parse($end)->endOfDay();
+        $startDate = DateUtil::nullableCarbon($start)?->startOfDay();
+        $endDate = DateUtil::nullableCarbon($end)?->endOfDay();
+        if ($startDate === null || $endDate === null) {
+            throw new InvalidArgumentException('期間が不正です');
+        }
 
         $ordersBase = Order::where('project_id', $projectId)
             ->whereBetween('created_at', [$startDate, $endDate]);

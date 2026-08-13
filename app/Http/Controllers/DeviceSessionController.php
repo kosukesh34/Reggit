@@ -19,7 +19,7 @@ class DeviceSessionController extends Controller
 
     public function __invoke(Request $request): JsonResponse
     {
-        $projectId = AdminContext::getCurrentProjectId() ?? 1;
+        $projectId = AdminContext::requireCurrentProjectId();
         $deviceIdentifier = $request->header('X-Device-Identifier');
         $devicePrefix = is_string($deviceIdentifier) && trim($deviceIdentifier) !== ''
             ? substr(trim($deviceIdentifier), 0, 8)

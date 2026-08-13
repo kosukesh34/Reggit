@@ -4,10 +4,8 @@ namespace App\UseCases\Queue;
 
 use App\Domain\Queue\Repositories\QueueEntryRepository;
 use App\Enums\QueueStatus;
-use App\Models\QueueEntry as QueueEntryModel;
 use App\UseCases\Queue\Data\QueueEntry;
 use App\UseCases\Queue\Data\QueueEntryFactory;
-use App\Util\AdminContext;
 
 /** 呼び出し済み（または待機中）を入店済みにする。 */
 class QueueEnterUseCase
@@ -18,10 +16,9 @@ class QueueEnterUseCase
         private QueueEntryRepository $queueEntryRepository,
     ) {}
 
-    public function handle(int $entryId): ?QueueEntry
+    public function handle(int $entryId, int $projectId): ?QueueEntry
     {
-        $projectId = AdminContext::getCurrentProjectId() ?? 1;
-        $aggregate = $this->queueEntryRepository->findById($entryId, (int) $projectId);
+        $aggregate = $this->queueEntryRepository->findById($entryId, $projectId);
         if ($aggregate === null) {
             return null;
         }
@@ -33,9 +30,14 @@ class QueueEnterUseCase
         $aggregate->markAsEntered(now());
         $this->queueEntryRepository->save($aggregate);
 
-        $entry = QueueEntryModel::query()->with('user.devices')->findOrFail($entryId);
-        $stats = $this->statsService->getStats($projectId, $entry->queue_number);
+        $entry = $this->entryFactory->findModel($entryId, $projectId);
+        if ($entry === null) {
+            return null;
+        }
 
-        return $this->entryFactory->create($entry, $stats);
+        return $this->entryFactory->create(
+            $entry,
+            $this->statsService->getStats($projectId, $entry->queue_number),
+        );
     }
 }

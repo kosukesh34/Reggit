@@ -6,6 +6,7 @@ use App\Enums\ReservationStatus;
 use App\Models\Concerns\BelongsToProject;
 use App\Services\ReservationNumberAssigner;
 use App\Support\DailySequenceNumber;
+use App\Util\AdminContext;
 use Database\Factories\ReservationFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -51,7 +52,7 @@ class Reservation extends Model
 
         static::creating(function ($reservation) {
             if ($reservation->reservation_number === null || $reservation->reservation_number === '') {
-                $projectId = (int) ($reservation->project_id ?? 1);
+                $projectId = (int) (AdminContext::resolveProjectId($reservation->project_id !== null ? (int) $reservation->project_id : null));
                 $reservation->reservation_number = app(ReservationNumberAssigner::class)
                     ->buildNext($projectId);
             }

@@ -73,12 +73,6 @@ class AnnouncementController extends AdminBaseController
         }
         unset($validated['image_file']);
 
-        $validated['is_pinned'] = (bool) ($validated['is_active'] ?? false);
-        unset($validated['is_active']);
-        if (! isset($validated['published_at']) || $validated['published_at'] === null || $validated['published_at'] === '') {
-            $validated['published_at'] = now();
-        }
-
         $this->storeUseCase->handle($projectId, $validated);
 
         return redirect()->route('admin.announcements', $this->buildAdminRouteParams())

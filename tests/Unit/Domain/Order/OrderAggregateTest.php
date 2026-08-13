@@ -25,6 +25,7 @@ class OrderAggregateTest extends TestCase
             $status,
             0,
             0,
+            1000,
         );
     }
 

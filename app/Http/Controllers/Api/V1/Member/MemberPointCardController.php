@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api\V1\Member;
 use App\Http\Controllers\Api\V1\BaseApiController;
 use App\Services\UserService;
 use App\UseCases\Member\MemberPointCardUseCase;
-use App\Util\AdminContext;
 use App\Util\LogHelper;
 use Illuminate\Http\Request;
 
@@ -27,7 +26,6 @@ class MemberPointCardController extends BaseApiController
             return $this->success(['card' => $result->data]);
         } catch (\Exception $e) {
             LogHelper::error('[Member] point card failed', [
-                'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'error' => $e->getMessage(),
             ]);
 
