@@ -61,4 +61,60 @@ class EloquentMemberCouponRepositoryTest extends TestCase
             (int) $projectB->id,
         ));
     }
+
+    public function test_delete_unused_for_source_未使用のみ削除し他会員を残すこと(): void
+    {
+        $project = Project::factory()->create();
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $member = Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+        ]);
+        $otherUser = User::factory()->create(['project_id' => $project->id]);
+        $otherMember = Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => $otherUser->id,
+        ]);
+        $coupon = Coupon::factory()->create(['project_id' => $project->id]);
+        MemberCoupon::factory()->create([
+            'project_id' => $project->id,
+            'member_id' => $member->id,
+            'coupon_id' => $coupon->id,
+            'status' => MemberCouponAggregate::STATUS_UNUSED,
+            'issue_source_type' => 'smaregi_transaction',
+            'issue_source_id' => 'head-1',
+        ]);
+        $used = MemberCoupon::factory()->create([
+            'project_id' => $project->id,
+            'member_id' => $member->id,
+            'coupon_id' => $coupon->id,
+            'status' => MemberCouponAggregate::STATUS_USED,
+            'used_at' => now(),
+            'issue_source_type' => 'smaregi_transaction',
+            'issue_source_id' => 'head-1',
+        ]);
+        MemberCoupon::factory()->create([
+            'project_id' => $project->id,
+            'member_id' => $otherMember->id,
+            'coupon_id' => $coupon->id,
+            'status' => MemberCouponAggregate::STATUS_UNUSED,
+            'issue_source_type' => 'smaregi_transaction',
+            'issue_source_id' => 'head-1',
+        ]);
+
+        $deleted = app(EloquentMemberCouponRepository::class)->deleteUnusedForSource(
+            (int) $project->id,
+            (int) $member->id,
+            'smaregi_transaction',
+            'head-1',
+        );
+
+        $this->assertSame(1, $deleted);
+        $this->assertDatabaseHas('member_coupons', ['id' => $used->id]);
+        $this->assertSame(1, MemberCoupon::query()->where('member_id', $otherMember->id)->count());
+        $this->assertSame(0, MemberCoupon::query()
+            ->where('member_id', $member->id)
+            ->where('status', MemberCouponAggregate::STATUS_UNUSED)
+            ->count());
+    }
 }
