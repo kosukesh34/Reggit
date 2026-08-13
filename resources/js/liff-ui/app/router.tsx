@@ -1,4 +1,4 @@
-import { Component, type ErrorInfo, type ReactNode, useCallback } from "react";
+import { Component, type ErrorInfo, type ReactNode, useCallback, useRef, useState } from "react";
 import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { AppShell } from "../components/layout/AppShell";
 import { HomePage } from "../pages/HomePage";
@@ -84,33 +84,42 @@ function ScreenRoutes() {
   );
 }
 
-function MembershipGate() {
+function isStampGrantLocation(pathname: string, search: string): boolean {
+  return pathname === "/stamp"
+    && (
+      search.includes("g=")
+      || search.includes("grant=")
+      || search.includes("stampCode=")
+      || getStampGrantCodeFromUrl() !== null
+    );
+}
+
+function MembershipGate({ onSettled }: { onSettled: () => void }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const switchTab = useCallback((tab: string) => {
-    if (
-      location.pathname === "/stamp"
-      && (
-        location.search.includes("g=")
-        || location.search.includes("grant=")
-        || location.search.includes("stampCode=")
-        || getStampGrantCodeFromUrl() !== null
-      )
-    ) {
-      return;
+  const locationRef = useRef(location);
+  locationRef.current = location;
+  const switchTab = useCallback((tab: string): boolean => {
+    const current = locationRef.current;
+    if (isStampGrantLocation(current.pathname, current.search)) {
+      return false;
     }
-    const path = pathForLegacyTab(tab);
-    navigate(path ?? `/${tab}`);
-  }, [location.pathname, location.search, navigate]);
-  useMembershipGate(switchTab);
+    const path = pathForLegacyTab(tab) ?? `/${tab}`;
+    if (current.pathname !== path) {
+      navigate(path, { replace: true });
+    }
+    return true;
+  }, [navigate]);
+  useMembershipGate(switchTab, onSettled);
   return null;
 }
 
 export function AppRouter() {
   useLegacyTabBridge();
+  const [gateSettled, setGateSettled] = useState(false);
   return (
-    <AppShell>
-      <MembershipGate />
+    <AppShell gateSettled={gateSettled}>
+      <MembershipGate onSettled={() => setGateSettled(true)} />
       <ScreenRoutes />
     </AppShell>
   );
