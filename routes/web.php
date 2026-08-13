@@ -51,6 +51,7 @@ use App\Http\Controllers\Onboarding\OnboardingPageController;
 use App\Http\Controllers\Queue\QueueOpenController;
 use App\Http\Controllers\Smaregi\SmaregiIdpController;
 use App\Http\Controllers\Smaregi\SmaregiWebhookController;
+use App\Http\Controllers\StampGrantOpenController;
 use App\Http\Controllers\WalletAddPageController;
 use App\Models\Project;
 use Illuminate\Http\Request;
@@ -135,6 +136,12 @@ Route::get('/wallet-add', WalletAddPageController::class)
 Route::get('/google-wallet/save/{token}', GoogleWalletSaveRedirectController::class)
     ->middleware('bind.project')
     ->name('google-wallet.save');
+
+// スタンプ付与 QR（短い https URL。LINEのコードリーダーで開く）
+Route::get('/g/{token}', StampGrantOpenController::class)
+    ->where('token', '[0-9a-f]{12}')
+    ->middleware('throttle:60,1')
+    ->name('stamp.grant.open');
 
 // 順番待ち QR 起動（LINE / ネイティブ選択）
 Route::get('/queue/open/{project_key}/{token}', QueueOpenController::class)
@@ -232,6 +239,7 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'bind.admin.project', '
         Route::get('/stamps', [AdminStampController::class, 'stamps'])->name('admin.stamps')->middleware('admin.permission:stamps.view');
         Route::get('/stamps/create', [AdminStampController::class, 'createStamp'])->name('admin.stamps.create')->middleware('admin.permission:stamps.manage');
         Route::get('/stamps/{id}/grant-qr', [AdminStampController::class, 'grantQr'])->name('admin.stamps.grant-qr')->middleware('admin.permission:stamps.manage');
+        Route::post('/stamps/{id}/grant-qr', [AdminStampController::class, 'storeGrantQr'])->name('admin.stamps.grant-qr.store')->middleware('admin.permission:stamps.manage');
         Route::post('/stamps', [AdminStampController::class, 'storeStamp'])->name('admin.stamps.store')->middleware('admin.permission:stamps.manage');
         Route::get('/stamps/{id}/edit', [AdminStampController::class, 'editStamp'])->name('admin.stamps.edit')->middleware('admin.permission:stamps.manage');
         Route::put('/stamps/{id}', [AdminStampController::class, 'updateStamp'])->name('admin.stamps.update')->middleware('admin.permission:stamps.manage');

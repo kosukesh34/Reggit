@@ -1,4 +1,4 @@
-import { Camera, Check, ChevronRight, CreditCard, QrCode, Stamp, Ticket } from "lucide-react";
+import { Camera, Check, ChevronRight, CreditCard, Stamp, Ticket } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { StampScannerPopup } from "../components/stamp/StampScannerPopup";
@@ -110,7 +110,7 @@ export function SimpleRewardsStamp() {
   }, [addStamp, visibleCount]);
 
   useEffect(() => {
-    const grant = searchParams.get("grant") ?? searchParams.get("stampCode");
+    const grant = searchParams.get("g") ?? searchParams.get("grant") ?? searchParams.get("stampCode");
     if (!grant || queryHandled.current) return;
     queryHandled.current = true;
     void grantStamp(grant).finally(() => setSearchParams({}, { replace: true }));
@@ -129,7 +129,6 @@ export function SimpleRewardsStamp() {
         <p>{goal - visibleCount > 0 ? `特典まであと ${goal - visibleCount} 個です。` : "特典を獲得しました！"}</p>
       </section>
       <button className="simple-rewards__primary" type="button" disabled={visibleCount >= goal} onClick={() => setScannerOpen(true)}><Camera size={18} />カメラでQRを読み取る</button>
-      <Link className="simple-rewards__secondary-link" to="/stamp/issue"><QrCode size={17} />店舗用の付与QRを作成</Link>
       {message !== "" ? <p className="simple-rewards__message is-animated" role="status" key={animationKey}><Check size={16} />{message}</p> : null}
       {error !== "" ? <p className="form-error" role="alert">{error}</p> : null}
       <StampScannerPopup open={scannerOpen} onClose={() => setScannerOpen(false)} onDetected={handleDetected} />

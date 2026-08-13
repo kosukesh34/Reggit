@@ -344,7 +344,10 @@ class LiffAppStudioTemplates
     /** @return array<string, array<int, array<string, mixed>>> */
     public static function defaultLayouts(): array
     {
-        return self::loyaltyLayouts();
+        $layouts = self::loyaltyLayouts();
+        $layouts['products'] = self::orderLayouts()['products'];
+
+        return $layouts;
     }
 
     /** @return array<string, string> */

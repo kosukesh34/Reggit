@@ -186,4 +186,22 @@ class LiffAppStudioTemplatesStructureTest extends TestCase
             'stamp look signatures should vary across suites'
         );
     }
+
+    public function test_デフォルトのproductsは交換メニューではないこと(): void
+    {
+        $products = LiffAppStudioTemplates::defaultLayouts()['products'] ?? [];
+        $this->assertNotEmpty($products);
+        foreach ($products as $block) {
+            $this->assertIsArray($block);
+            $this->assertNotSame('交換メニュー', $block['text'] ?? null);
+            $this->assertNotSame('特典で交換', $block['text'] ?? null);
+        }
+    }
+
+    public function test_会員向けスイートのproductsは交換メニューのままであること(): void
+    {
+        $suite = $this->findTemplate('rg-suite-loyalty');
+        $this->assertIsArray($suite);
+        $this->assertSame('交換メニュー', $suite['layouts']['products'][0]['text'] ?? null);
+    }
 }

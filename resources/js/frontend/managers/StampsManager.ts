@@ -21,6 +21,7 @@ type StampCard = {
     layout_style?: string;
     image_url?: string | null;
     stamp_images?: Record<string, string> | null;
+    stamp_empty_images?: Record<string, string> | null;
     member_stamp_valid_until?: string | null;
     valid_until?: string | null;
     reward_milestones?: StampRewardMilestone[];
@@ -290,7 +291,7 @@ export class StampsManager {
                 <h1 class="liff-entity-detail__title">${DomHelper.escapeHtml(card.name || 'スタンプカード')}</h1>
                 <p class="liff-entity-detail__meta">${current} / ${required} スタンプ${validUntilDate ? ` · 有効期限: ${DomHelper.escapeHtml(validUntilDate)}` : ''}</p>
                 ${this.renderProgressSummary(current, required, completed)}
-                ${this.renderSlots(current, required, layoutStyle, card.stamp_images || null, design)}
+                ${this.renderSlots(current, required, layoutStyle, card.stamp_images || null, design, card.stamp_empty_images || null)}
                 ${this.renderRewardMilestones(Array.isArray(card.reward_milestones) ? card.reward_milestones : [], current)}
                 ${card.reward_description ? `<div class="liff-entity-detail__body">${DomHelper.escapeHtml(card.reward_description)}</div>` : ''}
             </div>
@@ -413,8 +414,13 @@ export class StampsManager {
         filled: boolean,
         stampImages: Record<string, string> | null,
         design: StampDesignSettings,
+        stampEmptyImages: Record<string, string> | null = null,
     ): string {
         if (!filled) {
+            const emptyImageUrl = this.resolveStampImage(stampEmptyImages, index);
+            if (emptyImageUrl !== null) {
+                return `<img src="${DomHelper.escapeHtml(emptyImageUrl)}" alt="" class="stamp-slot-image" loading="lazy">`;
+            }
             return `<span class="stamp-slot-number">${index + 1}</span>`;
         }
 
@@ -434,6 +440,7 @@ export class StampsManager {
         isNext: boolean,
         stampImages: Record<string, string> | null,
         design: StampDesignSettings,
+        stampEmptyImages: Record<string, string> | null = null,
     ): string {
         const number = index + 1;
         const classes = ['stamp-slot', `stamp-slot--shape-${design.slotStyle}`];
@@ -445,13 +452,16 @@ export class StampsManager {
         if (isNext) {
             classes.push('stamp-slot--next');
         }
+        if (!filled && this.resolveStampImage(stampEmptyImages, index) !== null) {
+            classes.push('stamp-slot--has-image');
+        }
         const label = filled
             ? `${number}番目（押印済み）`
             : isNext
                 ? `${number}番目（次はここ）`
                 : `${number}番目`;
 
-        return `<div class="${classes.join(' ')}" aria-label="${DomHelper.escapeHtml(label)}">${this.renderSlotContent(index, filled, stampImages, design)}</div>`;
+        return `<div class="${classes.join(' ')}" aria-label="${DomHelper.escapeHtml(label)}">${this.renderSlotContent(index, filled, stampImages, design, stampEmptyImages)}</div>`;
     }
 
     renderSlots(
@@ -460,13 +470,14 @@ export class StampsManager {
         layoutStyle?: string,
         stampImages?: Record<string, string> | null,
         design?: StampDesignSettings,
+        stampEmptyImages?: Record<string, string> | null,
     ): string {
         const settings = design || StampsManager.getStampDesignSettings();
         const slots = [];
         for (let i = 0; i < required; i++) {
             const filled = i < current;
             const isNext = !filled && i === current && current < required;
-            slots.push(this.renderSlot(i, filled, isNext, stampImages || null, settings));
+            slots.push(this.renderSlot(i, filled, isNext, stampImages || null, settings, stampEmptyImages || null));
         }
         const layout = layoutStyle || 'grid';
         const accentStyle = settings.accentColor !== ''
@@ -566,7 +577,7 @@ export class StampsManager {
                             </div>
                         </div>
                         ${this.renderProgressSummary(current, required, completed)}
-                        ${this.renderSlots(current, required, layoutStyle, card.stamp_images || null, design)}
+                        ${this.renderSlots(current, required, layoutStyle, card.stamp_images || null, design, card.stamp_empty_images || null)}
                         <div class="stamp-card-meta">
                             <p class="stamp-card-count">${current} / ${required} スタンプ</p>
                             ${validUntilDate ? `<p class="stamp-card-valid">有効期限: ${DomHelper.escapeHtml(validUntilDate)}</p>` : ''}

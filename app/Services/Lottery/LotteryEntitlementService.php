@@ -4,6 +4,7 @@ namespace App\Services\Lottery;
 
 use App\Enums\LotteryGrantTrigger;
 use App\Enums\LotteryRewardType;
+use App\Enums\LotterySourceType;
 use App\Models\CouponRedemption;
 use App\Models\Member;
 use App\Models\MemberCoupon;
@@ -36,6 +37,21 @@ class LotteryEntitlementService
             }
             $this->createIfMissing($member, $rewardType, $sourceType, $sourceId, $settings);
         }
+    }
+
+    public function grantForStamp(Member $member, int $stampCardId, int $stampCount): void
+    {
+        $settings = ProjectLotterySetting::query()->firstOrCreate(
+            ['project_id' => (int) $member->project_id],
+            ProjectLotterySetting::getDefaultAttributes()
+        );
+        $this->createIfMissing(
+            $member,
+            LotteryRewardType::GACHA,
+            LotterySourceType::STAMP,
+            $stampCardId.':'.(int) $member->id.':'.$stampCount,
+            $settings,
+        );
     }
 
     /**
