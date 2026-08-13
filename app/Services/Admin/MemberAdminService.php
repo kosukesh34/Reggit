@@ -297,7 +297,9 @@ class MemberAdminService
         int $stampCardId,
         int $count = 1,
         ?string $description = null,
-        ?int $orderId = null
+        ?int $orderId = null,
+        ?string $issueSourceType = null,
+        ?string $issueSourceId = null,
     ): MemberStamp {
         if ($count < 1) {
             throw new \InvalidArgumentException('スタンプ数は1以上を指定してください');
@@ -308,7 +310,9 @@ class MemberAdminService
             $stampCardId,
             $count,
             $description ?? 'スタンプ付与',
-            $orderId
+            $orderId,
+            $issueSourceType,
+            $issueSourceId,
         );
     }
 
@@ -320,7 +324,9 @@ class MemberAdminService
         int $stampCardId,
         int $delta,
         ?string $description = null,
-        ?int $orderId = null
+        ?int $orderId = null,
+        ?string $issueSourceType = null,
+        ?string $issueSourceId = null,
     ): MemberStamp {
         if ($delta === 0) {
             throw new \InvalidArgumentException('スタンプ数は0以外を指定してください');
@@ -334,6 +340,9 @@ class MemberAdminService
             $delta,
             $description,
             $orderId,
+            [],
+            $issueSourceType,
+            $issueSourceId,
         );
     }
 

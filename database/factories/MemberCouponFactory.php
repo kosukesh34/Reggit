@@ -24,6 +24,9 @@ class MemberCouponFactory extends Factory
             'valid_until' => now()->addDays(10),
             'used_at' => null,
             'order_id' => null,
+            'issue_source_type' => null,
+            'issue_source_id' => null,
+            'issue_grant_key' => null,
         ];
     }
 }

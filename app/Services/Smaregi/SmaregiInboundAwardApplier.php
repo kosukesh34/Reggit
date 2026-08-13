@@ -10,11 +10,13 @@ use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
 use App\Domain\Smaregi\Services\PurchasePointCalculator;
 use App\Domain\Smaregi\Services\SmaregiInboundAwardDescription;
 use App\Enums\LotterySourceType;
+use App\Enums\MemberCouponSource;
 use App\Enums\PointTransactionType;
 use App\Models\Member;
 use App\Models\MemberStampTransaction;
 use App\Models\PointTransaction;
 use App\Services\Admin\MemberAdminService;
+use App\Services\CouponIssueService;
 use App\Services\Lottery\LotteryEntitlementService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -60,11 +62,7 @@ class SmaregiInboundAwardApplier
     {
         $this->reverseAwardedPoints($member, $headId, SmaregiInboundAwardDescription::REASON_CANCEL);
         $this->reverseAwardedStamps($member, $headId, SmaregiInboundAwardDescription::REASON_CANCEL);
-        $this->lotteryEntitlementService->revokePendingForSource(
-            $member,
-            LotterySourceType::SMAREGI_TRANSACTION,
-            $headId,
-        );
+        $this->revokeIssuedRewards($member, $headId);
     }
 
     public function reverseForReturn(
@@ -87,11 +85,7 @@ class SmaregiInboundAwardApplier
             $headId,
             SmaregiInboundAwardDescription::REASON_RETURN,
         );
-        $this->lotteryEntitlementService->revokePendingForSource(
-            $member,
-            LotterySourceType::SMAREGI_TRANSACTION,
-            $headId,
-        );
+        $this->revokeIssuedRewards($member, $headId);
     }
 
     private function awardPoints(
@@ -193,7 +187,9 @@ class SmaregiInboundAwardApplier
             $stampCardId,
             $stampCount,
             $description,
-            $orderId
+            $orderId,
+            MemberCouponSource::SMAREGI_TRANSACTION,
+            $headId
         );
         Log::info('[Smaregi] Inbound transaction sync stamps awarded', [
             'member_id' => (int) $member->id,
@@ -376,5 +372,19 @@ class SmaregiInboundAwardApplier
             ->where('member_id', $member->id)
             ->where('description', $description)
             ->exists();
+    }
+
+    private function revokeIssuedRewards(Member $member, string $headId): void
+    {
+        $this->lotteryEntitlementService->revokePendingForSource(
+            $member,
+            LotterySourceType::SMAREGI_TRANSACTION,
+            $headId,
+        );
+        resolve(CouponIssueService::class)->revokeUnusedForSource(
+            $member,
+            MemberCouponSource::SMAREGI_TRANSACTION,
+            $headId,
+        );
     }
 }
