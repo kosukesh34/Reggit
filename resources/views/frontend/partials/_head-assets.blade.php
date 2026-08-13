@@ -30,6 +30,14 @@
 <style>
   #liff-loading { display: none !important; visibility: hidden !important; pointer-events: none !important; }
   body.reggit-liff-ui, .reggit-liff-ui-root { min-height: 100vh; }
+  body.reggit-liff-ui:not(.liff-ui-ready):not(.designer-live-preview-embed)::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 2147483646;
+    background: var(--primary-color, #ffffff);
+    pointer-events: none;
+  }
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

@@ -1,4 +1,4 @@
-import { useEffect, useRef, type PropsWithChildren } from "react";
+import { useEffect, useLayoutEffect, useRef, type PropsWithChildren } from "react";
 import { useLocation } from "react-router-dom";
 import { useAppConfig } from "../../context/AppConfigContext";
 import { themeMap } from "../../themes/themes";
@@ -13,6 +13,10 @@ export function AppShell({ children }: PropsWithChildren) {
   const theme = themeMap[activeThemeId] ?? themeMap[activeStore.themeId] ?? themeMap["minimal-light"];
   const showNavigationBelowHeader = customization.navigation.position === "top";
   const mainRef = useRef<HTMLElement>(null);
+
+  useLayoutEffect(() => {
+    document.body.classList.add("liff-ui-ready");
+  }, []);
 
   useEffect(() => {
     mainRef.current?.scrollTo({ top: 0, left: 0, behavior: "auto" });
