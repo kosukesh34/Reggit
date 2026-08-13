@@ -1518,11 +1518,13 @@ class ReggitApp {
             }
             const path = pathForLegacyTab(tab);
             if (path !== null) {
+                const hashPath = String(window.location.hash || '').split('?')[0];
                 const nextHash = '#' + path;
-                if (window.location.hash !== nextHash) {
+                // 同じ画面なら ?grant= などのクエリを消さない
+                if (hashPath !== nextHash) {
                     window.history.replaceState(null, '', nextHash);
+                    document.dispatchEvent(new CustomEvent(LIFF_UI_NAVIGATE, { detail: { path, replace: true } }));
                 }
-                document.dispatchEvent(new CustomEvent(LIFF_UI_NAVIGATE, { detail: { path, replace: true } }));
             }
             return Promise.resolve();
         }

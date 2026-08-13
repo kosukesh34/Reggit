@@ -29,15 +29,15 @@ export function parseStampGrant(rawValue: string): StampGrantPayload | null {
 
   try {
     const parsed = new URL(raw, typeof window === "undefined" ? "http://localhost" : window.location.origin);
+    if (/\/api\/stamps\/grant\/\d+$/.test(parsed.pathname)) {
+      return { value: raw, kind: "signed" };
+    }
     const direct = payloadFromParams(parsed.searchParams);
     if (direct) return direct;
     const question = parsed.hash.indexOf("?");
     if (question >= 0) {
       const fromHash = payloadFromParams(new URLSearchParams(parsed.hash.slice(question + 1)));
       if (fromHash) return fromHash;
-    }
-    if (/\/api\/stamps\/grant\//.test(parsed.pathname)) {
-      return { value: parsed.toString(), kind: "signed" };
     }
   } catch {
     // URLでない認証コードはこの下で扱う。

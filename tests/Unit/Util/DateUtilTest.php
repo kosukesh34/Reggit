@@ -34,4 +34,12 @@ class DateUtilTest extends TestCase
 
         $this->assertSame($original, DateUtil::nullableCarbon($original));
     }
+
+    public function test_unixタイムスタンプ文字列はcarbonを返すこと(): void
+    {
+        $carbon = DateUtil::nullableCarbon('@1710000000');
+
+        $this->assertInstanceOf(Carbon::class, $carbon);
+        $this->assertSame(1710000000, $carbon->getTimestamp());
+    }
 }
