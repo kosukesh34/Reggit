@@ -28,20 +28,7 @@ class QueueMeController extends BaseApiController
             );
             $this->sessionStore->applyMeOutput($request, $result);
 
-            if ($result->queueEntry === null) {
-                return $this->success([
-                    'queue_entry' => null,
-                    'message' => '待ち番号はありません',
-                    'waiting_count' => $result->waitingCount,
-                    'estimated_wait_minutes' => $result->estimatedWaitMinutes,
-                    'updated_at' => now()->toIso8601String(),
-                ]);
-            }
-
-            return $this->success([
-                'queue_entry' => $result->queueEntry->toArray(),
-                'updated_at' => now()->toIso8601String(),
-            ]);
+            return $this->success($result->toArray());
         } catch (\Exception $e) {
             LogHelper::error('[Queue] me failed', [
                 'project_id' => AdminContext::getCurrentProjectId() ?? 1,
