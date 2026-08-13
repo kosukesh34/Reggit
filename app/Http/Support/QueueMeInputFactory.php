@@ -22,11 +22,9 @@ class QueueMeInputFactory
         return new QueueMeInput(
             $user,
             $projectId,
-            QueueRequestContext::lineUserId($request),
             QueueRequestContext::queueToken($request),
             QueueRequestContext::queueId($request),
             $this->sessionStore->getEntryId($request, $projectId),
-            QueueRequestContext::embeddedRawParams($request),
         );
     }
 }
