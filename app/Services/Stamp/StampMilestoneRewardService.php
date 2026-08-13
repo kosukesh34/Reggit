@@ -50,7 +50,7 @@ class StampMilestoneRewardService
     /** @param array{stamp_count?: int, reward_type?: string, coupon_id?: int} $milestone */
     private function grantOne(Member $member, StampCard $stampCard, array $milestone): void
     {
-        $rewardType = StampRewardType::normalize((string) ($milestone['reward_type'] ?? ''));
+        $rewardType = (string) ($milestone['reward_type'] ?? '');
         if ($rewardType === StampRewardType::COUPON) {
             $this->grantCoupon($member, (int) ($milestone['coupon_id'] ?? 0));
 

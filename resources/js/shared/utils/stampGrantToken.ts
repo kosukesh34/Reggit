@@ -27,15 +27,20 @@ export function extractStampGrantCodeFromString(value: string | null | undefined
     if (isStampGrantCode(normalized)) {
         return normalized.toLowerCase();
     }
+    const fromPath = normalized.match(/\/g\/([0-9a-f]{12})(?:[/?#]|$)/i);
+    if (fromPath !== null && fromPath[1] !== undefined) {
+        return fromPath[1].toLowerCase();
+    }
     try {
         const full = new URL(normalized);
-        const fromPath = full.pathname.match(/\/g\/([0-9a-f]{12})$/i);
-        if (fromPath !== null && fromPath[1] !== undefined) {
-            return fromPath[1].toLowerCase();
-        }
         const fromQuery = extractStampGrantCodeFromParams(full.searchParams);
         if (fromQuery !== null) {
             return fromQuery;
+        }
+        const fromLiffState = extractStampGrantCodeFromEncodedParam(full.searchParams.get('liff.state'))
+            ?? extractStampGrantCodeFromEncodedParam(full.searchParams.get('state'));
+        if (fromLiffState !== null) {
+            return fromLiffState;
         }
         const hashQuery = full.hash.includes('?') ? full.hash.slice(full.hash.indexOf('?') + 1) : '';
         return extractStampGrantCodeFromParams(new URLSearchParams(hashQuery));
@@ -43,7 +48,9 @@ export function extractStampGrantCodeFromString(value: string | null | undefined
         // relative query or plain query
     }
     const query = normalized.includes('?') ? normalized.slice(normalized.indexOf('?') + 1) : normalized;
-    return extractStampGrantCodeFromParams(new URLSearchParams(query));
+    const params = new URLSearchParams(query);
+    return extractStampGrantCodeFromParams(params)
+        ?? extractStampGrantCodeFromEncodedParam(params.get('liff.state'));
 }
 
 export function extractStampGrantCodeFromEncodedParam(raw: string | null | undefined): string | null {

@@ -182,21 +182,7 @@ class StampAdminService
         if ($stampCount <= 0) {
             return null;
         }
-        $rewardType = StampRewardType::normalize((string) ($milestone['reward_type'] ?? StampRewardType::TEXT));
-        if ($rewardType === StampRewardType::COUPON) {
-            $couponId = (int) ($milestone['coupon_id'] ?? 0);
-            $name = trim((string) ($couponNames[$couponId] ?? ''));
-            if ($couponId <= 0 || $name === '') {
-                return null;
-            }
-
-            return [
-                'stamp_count' => $stampCount,
-                'reward_type' => $rewardType,
-                'coupon_id' => $couponId,
-                'description' => $name,
-            ];
-        }
+        $rewardType = StampRewardType::normalize((string) ($milestone['reward_type'] ?? ''));
         if ($rewardType === StampRewardType::GACHA) {
             return [
                 'stamp_count' => $stampCount,
@@ -204,15 +190,17 @@ class StampAdminService
                 'description' => StampRewardType::GACHA_DESCRIPTION,
             ];
         }
-        $description = trim((string) ($milestone['description'] ?? ''));
-        if ($description === '') {
+        $couponId = (int) ($milestone['coupon_id'] ?? 0);
+        $name = trim((string) ($couponNames[$couponId] ?? ''));
+        if ($couponId <= 0 || $name === '') {
             return null;
         }
 
         return [
             'stamp_count' => $stampCount,
-            'reward_type' => StampRewardType::TEXT,
-            'description' => $description,
+            'reward_type' => StampRewardType::COUPON,
+            'coupon_id' => $couponId,
+            'description' => $name,
         ];
     }
 
