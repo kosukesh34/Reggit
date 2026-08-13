@@ -1,7 +1,7 @@
 import { Camera, Check, ChevronRight, CreditCard, Stamp, Ticket } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { StampScannerPopup } from "../components/stamp/StampScannerPopup";
+import { openStampScanner, StampScannerPopup } from "../components/stamp/StampScannerPopup";
 import { BottomSheet } from "../components/ui/BottomSheet";
 import { CenterPopup } from "../components/ui/CenterPopup";
 import { useRuntimeData } from "../context/RuntimeDataContext";
@@ -128,7 +128,7 @@ export function SimpleRewardsStamp() {
         <div className="simple-stamp-grid">{Array.from({ length: goal }, (_, index) => <span className={`${index < visibleCount ? "is-filled" : ""}${index === newStampIndex ? " is-new" : ""}`} key={`${index}-${index === newStampIndex ? animationKey : 0}`}>{index < visibleCount ? <Check size={18} /> : index + 1}</span>)}</div>
         <p>{goal - visibleCount > 0 ? `特典まであと ${goal - visibleCount} 個です。` : "特典を獲得しました！"}</p>
       </section>
-      <button className="simple-rewards__primary" type="button" disabled={visibleCount >= goal} onClick={() => setScannerOpen(true)}><Camera size={18} />カメラでQRを読み取る</button>
+      <button className="simple-rewards__primary" type="button" disabled={visibleCount >= goal} onClick={() => openStampScanner(setScannerOpen)}><Camera size={18} />カメラでQRを読み取る</button>
       {message !== "" ? <p className="simple-rewards__message is-animated" role="status" key={animationKey}><Check size={16} />{message}</p> : null}
       {error !== "" ? <p className="form-error" role="alert">{error}</p> : null}
       <StampScannerPopup open={scannerOpen} onClose={() => setScannerOpen(false)} onDetected={handleDetected} />
