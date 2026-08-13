@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { isFixedUiShell } from '../../demo/demoMode';
 import {
     fetchGallery,
-    openGalleryDetail,
     type GalleryCategory,
     type GalleryItem,
 } from './api';
@@ -51,6 +50,7 @@ export function GalleryView({ embed = false }: GalleryViewProps): JSX.Element {
     const [categories, setCategories] = useState<GalleryCategory[]>([]);
     const [items, setItems] = useState<GalleryItem[]>([]);
     const [categoryId, setCategoryId] = useState<string | number | null>(null);
+    const [selected, setSelected] = useState<GalleryItem | null>(null);
 
     const load = useCallback(async (nextCategory: string | number | null) => {
         setState('loading');
@@ -70,8 +70,28 @@ export function GalleryView({ embed = false }: GalleryViewProps): JSX.Element {
     }, [load]);
 
     const onOpen = (id: string): void => {
-        openGalleryDetail(id);
+        const item = items.find((row) => String(row.id) === id);
+        if (item !== undefined) {
+            setSelected(item);
+        }
     };
+
+    if (selected !== null) {
+        return (
+            <div className="gallery-detail">
+                <button type="button" onClick={() => setSelected(null)}>
+                    ギャラリー一覧
+                </button>
+                {selected.image_url !== undefined && selected.image_url !== '' ? (
+                    <img src={selected.image_url} alt={selected.title || ''} />
+                ) : null}
+                <div className="gallery-detail__body">
+                    {selected.title !== undefined && selected.title !== '' ? <h2>{selected.title}</h2> : null}
+                    {selected.description !== undefined && selected.description !== '' ? <p>{selected.description}</p> : null}
+                </div>
+            </div>
+        );
+    }
 
     if (state === 'loading') {
         return (

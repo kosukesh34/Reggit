@@ -1,3 +1,5 @@
+import { getQueueTokenFromUrl } from '../../shared/utils/queueToken';
+
 /** 旧 ReggitApp.switchTab のタブ名 → liff-ui HashRouter パス */
 
 const TAB_PATHS: Record<string, string> = {
@@ -46,6 +48,62 @@ const PATH_TO_LEGACY_TAB: Record<string, string> = {
   '/link_3': 'link_3',
 };
 
+function pathForQueryTab(raw: string | null): string | null {
+  if (raw === null || raw === '') {
+    return null;
+  }
+  return TAB_PATHS[raw] ?? null;
+}
+
+function tabParamFromEncoded(raw: string | null): string | null {
+  if (raw === null || raw === '') {
+    return null;
+  }
+  let decoded = raw;
+  try {
+    decoded = decodeURIComponent(raw);
+  } catch {
+    decoded = raw;
+  }
+  const normalized = decoded.startsWith('?') ? decoded.slice(1) : decoded;
+  try {
+    const asUrl = new URL(normalized);
+    return pathForQueryTab(asUrl.searchParams.get('tab'));
+  } catch {
+    // query string
+  }
+  const query = normalized.includes('?') ? normalized.split('?')[1] : normalized;
+  return pathForQueryTab(new URLSearchParams(query).get('tab'));
+}
+
+/** クエリ / liff.state / ネイティブ指定 / 待ち順トークンから初期パスを決める */
+export function resolveInitialHashPath(): string {
+  if (typeof window === 'undefined') {
+    return '/home';
+  }
+  const params = new URLSearchParams(window.location.search || '');
+  const fromQuery = pathForQueryTab(params.get('tab'));
+  if (fromQuery !== null) {
+    return fromQuery;
+  }
+  const fromLiffState = tabParamFromEncoded(params.get('liff.state'))
+    ?? tabParamFromEncoded(params.get('state'));
+  if (fromLiffState !== null) {
+    return fromLiffState;
+  }
+  const nativeTab = window.__NATIVE_TARGET_TAB__ ?? window.__NATIVE_PENDING_TAB__;
+  if (typeof nativeTab === 'string' && nativeTab !== '') {
+    const fromNative = pathForQueryTab(nativeTab);
+    if (fromNative !== null) {
+      return fromNative;
+    }
+  }
+  if (getQueueTokenFromUrl() !== null) {
+    return '/queue';
+  }
+  return '/home';
+}
+
 /** HashRouter が解釈する前に旧 `#member` 形式を `#/membership` へ直す */
 export function normalizeLegacyLocationHash(): void {
   if (typeof window === 'undefined') {
@@ -54,7 +112,7 @@ export function normalizeLegacyLocationHash(): void {
   const raw = String(window.location.hash || '');
   const base = `${window.location.pathname}${window.location.search}`;
   if (raw === '' || raw === '#' || raw === '#/') {
-    window.history.replaceState(null, '', `${base}#/home`);
+    window.history.replaceState(null, '', `${base}#${resolveInitialHashPath()}`);
     return;
   }
 
@@ -63,7 +121,7 @@ export function normalizeLegacyLocationHash(): void {
   const query = queryParts.length > 0 ? `?${queryParts.join('?')}` : '';
   const key = String(pathPart || '').replace(/^\//, '').trim();
   if (key === '') {
-    window.history.replaceState(null, '', `${base}#/home${query}`);
+    window.history.replaceState(null, '', `${base}#${resolveInitialHashPath()}${query}`);
     return;
   }
 

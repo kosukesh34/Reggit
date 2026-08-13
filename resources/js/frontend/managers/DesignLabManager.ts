@@ -8,7 +8,7 @@ import {
     pickRandomPrize,
     saveDemoWonCoupon,
 } from '../demo/demoCoupons';
-import { isReactOwnedMount } from '../utils/reactOwnedMount';
+import type { LotteryEntitlement, LotteryState } from '../features/designlab/api';
 
 const CAPSULE_COLORS = ['#FF6F91', '#FFC93C', '#7B9BFF', '#5FD3B4', '#FF9A5A', '#B98CE0'];
 
@@ -24,19 +24,6 @@ type PlayResult = {
     is_win: boolean;
     entitlement_id: number;
     coupon: { id: number; name: string; description: string | null; image_url: string | null } | null;
-};
-
-type LotteryEntitlement = {
-    id: number;
-    reward_type: string;
-    expires_at: string | null;
-};
-
-type LotteryState = {
-    gacha_enabled: boolean;
-    scratch_enabled: boolean;
-    entitlements: LotteryEntitlement[];
-    prize_labels: { gacha: string[]; scratch: string[] };
 };
 
 /** ガチャ・スクラッチ（デモは localStorage、本番は DB entitlement） */
@@ -59,24 +46,7 @@ export class DesignLabManager {
     }
 
     async load(): Promise<void> {
-        const section = document.getElementById('designlabSection') as HTMLElement | null;
-        if (section === null) {
-            this._lotteryLog('load_skip_no_section');
-            return;
-        }
-        if (isReactOwnedMount(section)) {
-            this._lotteryLog('load_skip_react_owned');
-            return;
-        }
-        document.body.classList.add('liff-lottery-ui');
-        if (!isDemoDataMode()) {
-            await this._fetchState();
-        }
-        this.mount(section);
-        this._lotteryLog('load_done', {
-            pendingGacha: this._pending('gacha') !== null,
-            entitlementCount: this._state?.entitlements?.length ?? 0,
-        });
+        this._lotteryLog('load_skip_view_owned');
     }
 
     /** React DesignLabView 用: state 取得のみ */
@@ -188,30 +158,6 @@ export class DesignLabManager {
         }
         existing.classList.add('is-out');
         window.setTimeout(() => existing.remove(), 220);
-    }
-
-    mount(container: HTMLElement): void {
-        const showGacha = isDemoDataMode() || this._state?.gacha_enabled === true;
-        const showScratch = isDemoDataMode() || this._state?.scratch_enabled === true;
-        const needsRemount = container.dataset.designLabMounted !== '1'
-            || (showGacha && container.querySelector('.pp-gacha__dome') === null)
-            || (showGacha && container.querySelector('.pp-gacha__outlet .pp-gacha__chute') === null)
-            || (showScratch && container.querySelector('#designScratchImage') === null)
-            || (isDemoDataMode() && container.querySelector('.pp-roulette__lights') === null);
-        if (!needsRemount) {
-            this._applyAvailability(container);
-            this._paintRoulette(container);
-            this._focusPlayTarget(container);
-            return;
-        }
-        container.dataset.designLabMounted = '1';
-        container.innerHTML = this._html();
-        this._bind(container);
-        this._fillDomeCapsules(container);
-        this._paintRoulette(container);
-        this._initScratch(container);
-        this._applyAvailability(container);
-        this._focusPlayTarget(container);
     }
 
     private async _fetchState(): Promise<void> {
@@ -356,90 +302,6 @@ export class DesignLabManager {
                     </div>
                     <button type="button" class="pp-cta" id="designGachaBtn">レバーを回す</button>
                 </div>
-            </div>
-        `;
-    }
-
-    private _html(): string {
-        const isDemo = isDemoDataMode();
-        const chip = isDemo ? '体験' : 'プレイ可';
-        const showGacha = isDemo || this._state?.gacha_enabled === true;
-        const showScratch = isDemo || this._state?.scratch_enabled === true;
-        const gachaSection = showGacha
-            ? `<section class="design-lab__section" data-lottery-section="gacha" aria-label="ガチャ">${this._gachaMachineHtml(chip)}</section>`
-            : '';
-        const scratchSection = showScratch
-            ? `
-                <section class="design-lab__section" data-lottery-section="scratch" aria-label="スクラッチ">
-                    <h2 class="design-lab__section-title">スクラッチ</h2>
-                    <p class="design-lab__section-lead">円の銀面をこすってクーポンを開けます</p>
-                    <div class="pp-play-card">
-                        <div class="pp-play-card__top">
-                            <span class="pp-play-card__title">スクラッチくじ</span>
-                            <span class="pp-play-card__chip" data-scratch-chip>${chip}</span>
-                        </div>
-                        <p class="pp-play-card__rule">銀面をこすると、下のクーポンが見えてきます。</p>
-                        <div class="pp-scratch" id="designScratchStage" data-state="sealed">
-                            <div class="pp-scratch__circle" id="designScratchCircle">
-                                <div class="pp-scratch__prize" id="designScratchPrize">
-                                    <p class="pp-scratch__prize-mystery" id="designScratchMystery" aria-hidden="true" hidden>?</p>
-                                    <img class="pp-scratch__prize-image" id="designScratchImage" alt="" hidden>
-                                    <p class="pp-scratch__prize-eyebrow" id="designScratchEyebrow" hidden>あたり</p>
-                                    <p class="pp-scratch__prize-name" id="designScratchName"></p>
-                                    <p class="pp-scratch__prize-desc" id="designScratchDesc"></p>
-                                </div>
-                                <canvas class="pp-scratch__canvas" id="designScratchCanvas" width="360" height="360" aria-label="スクラッチ円"></canvas>
-                                <div class="pp-scratch__shine" aria-hidden="true"></div>
-                            </div>
-                            <div class="pp-scratch__progress-row">
-                                <div class="pp-scratch__track"><div class="pp-scratch__fill" id="designScratchFill"></div></div>
-                                <span class="pp-scratch__pct" id="designScratchProgress">0%</span>
-                            </div>
-                            <p class="pp-scratch__hint" id="designScratchHint">円の中をこすってください</p>
-                            ${isDemo ? '<button type="button" class="pp-cta pp-cta--ghost" id="designScratchReset">やり直す</button>' : ''}
-                        </div>
-                    </div>
-                </section>
-            `
-            : '';
-        const rouletteSection = isDemo
-            ? `
-                <section class="design-lab__section" data-lottery-section="roulette" aria-label="ルーレット">
-                    <h2 class="design-lab__section-title">ルーレット</h2>
-                    <p class="design-lab__section-lead">回して止まったマスのクーポンを獲得します</p>
-                    <div class="pp-play-card">
-                        <div class="pp-play-card__top">
-                            <span class="pp-play-card__title">クーポンルーレット</span>
-                            <span class="pp-play-card__chip">体験</span>
-                        </div>
-                        <p class="pp-play-card__rule">針の先に止まった景品が当たりです。</p>
-                        <div class="pp-roulette" id="designRouletteStage" data-state="idle">
-                            <div class="pp-roulette__stage">
-                                <div class="pp-roulette__frame">
-                                    <span class="pp-roulette__glow" aria-hidden="true"></span>
-                                    <div class="pp-roulette__lights" aria-hidden="true" id="designRouletteLights"></div>
-                                    <span class="pp-roulette__pointer" aria-hidden="true"></span>
-                                    <span class="pp-roulette__rim" aria-hidden="true"></span>
-                                    <div class="pp-roulette__wheel" id="designRouletteWheel" role="img" aria-label="ルーレット盤"></div>
-                                    <div class="pp-roulette__hub" aria-hidden="true"><span></span></div>
-                                </div>
-                                <div class="pp-roulette__pedestal" aria-hidden="true"></div>
-                            </div>
-                            <button type="button" class="pp-cta" id="designRouletteBtn">ルーレットを回す</button>
-                        </div>
-                    </div>
-                </section>
-            `
-            : '';
-        const emptyLead = !showGacha && !showScratch && !isDemo
-            ? '<p class="design-lab__section-lead">現在あそべるコンテンツはありません</p>'
-            : '';
-        return `
-            <div class="design-lab">
-                ${emptyLead}
-                ${gachaSection}
-                ${scratchSection}
-                ${rouletteSection}
             </div>
         `;
     }
