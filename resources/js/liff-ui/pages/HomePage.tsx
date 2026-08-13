@@ -58,7 +58,7 @@ export function HomePage() {
     return <OperationalHomePage variant="appointment" />;
   }
 
-  if (loading && mode !== "live" && mode !== "preview") {
+  if (mode !== "live" && mode !== "preview" && !(mode === "offline" && !loading)) {
     return <HomePageSkeleton />;
   }
 
