@@ -36,10 +36,15 @@ class StampApiV1Test extends TestCase
         $card = StampCard::factory()->create([
             'project_id' => 1,
             'stamp_images' => ['0' => 'https://example.com/stamp-filled.png'],
+            'stamp_empty_images' => ['0' => 'https://example.com/stamp-empty.png'],
         ]);
         $this->assertSame(
             ['0' => 'https://example.com/stamp-filled.png'],
             $card->fresh()->stamp_images
+        );
+        $this->assertSame(
+            ['0' => 'https://example.com/stamp-empty.png'],
+            $card->fresh()->stamp_empty_images
         );
 
         $response = $this->withoutMiddleware(AuthenticateApiToken::class)
@@ -60,6 +65,10 @@ class StampApiV1Test extends TestCase
         $this->assertSame(
             ['0' => 'https://example.com/stamp-filled.png'],
             $matched['stamp_images'] ?? null
+        );
+        $this->assertSame(
+            ['0' => 'https://example.com/stamp-empty.png'],
+            $matched['stamp_empty_images'] ?? null
         );
     }
 }

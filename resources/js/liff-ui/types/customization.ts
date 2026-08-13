@@ -23,6 +23,7 @@ export type MembershipAlignment = "left" | "center";
 export type StampStyle = "circles" | "squares" | "progress";
 export type NavigationPosition = "bottom" | "floating" | "top";
 export type PrimaryActionPlacement = "hero" | "belowHero" | "floating";
+export type HomeLayout = "standard" | "wallet" | "magazine" | "minimal";
 export type ButtonStyle = "filled" | "soft" | "outline";
 export type ContentDensity = "compact" | "standard" | "relaxed";
 export type HeaderShortcut = "news" | "membership" | "coupon" | "stamp" | "reservation" | "queue" | "mobileOrder" | "none";
@@ -43,6 +44,7 @@ export interface AppCustomization {
     density: ContentDensity;
   };
   home: {
+    layout: HomeLayout;
     primaryActionPlacement: PrimaryActionPlacement;
     quickActionColumns: 2 | 3 | 4;
     showHeroImage: boolean;

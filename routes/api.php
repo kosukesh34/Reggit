@@ -67,6 +67,7 @@ use App\Http\Controllers\Reservation\ReservationUpdateController;
 use App\Http\Controllers\Smaregi\SmaregiIdpController;
 use App\Http\Controllers\Smaregi\SmaregiWebhookController;
 use App\Http\Controllers\StampController;
+use App\Http\Controllers\StampGrantCodeController;
 use App\Http\Controllers\StampGrantController;
 use App\Http\Controllers\Wallet\AppleWalletPasskitController;
 use App\Http\Middleware\AuthenticateApiToken;
@@ -99,6 +100,10 @@ Route::post('/onboarding/projects', OnboardingProjectStoreController::class)
 Route::post('/stamps/grant/{stampCard}', StampGrantController::class)
     ->middleware(['bind.project', 'signed', 'throttle:60,1'])
     ->name('api.stamps.grant');
+Route::post('/stamps/grant-code/{token}', StampGrantCodeController::class)
+    ->where('token', '[0-9a-f]{12}')
+    ->middleware('throttle:60,1')
+    ->name('api.stamps.grant-code');
 
 // API v1（Bearer トークン認証・モバイルアプリ用）※従来: トークンの project でコンテキスト設定
 Route::prefix('v1')->middleware(['bind.project', AuthenticateApiToken::class])->group(function () {

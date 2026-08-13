@@ -27,6 +27,7 @@ use App\Services\Smaregi\SmaregiApiService;
 use App\Services\Smaregi\SmaregiCustomerPointsInboundSyncService;
 use App\Services\Smaregi\SmaregiCustomerRankAssignmentService;
 use App\Services\Smaregi\SmaregiCustomerUpdatePayloadBuilder;
+use App\Services\Stamp\StampMilestoneRewardService;
 use App\Services\UserService;
 use App\Support\MemberChannel;
 use App\Util\DateUtil;
@@ -51,6 +52,7 @@ class MemberAdminService
         private MemberCouponRepository $memberCouponRepository,
         private ShopSettingRepository $shopSettingRepository,
         private UserService $userService,
+        private StampMilestoneRewardService $stampMilestoneRewardService,
     ) {}
 
     public function getPaginatedList(int $projectId, int $perPage = 20, array $filters = []): LengthAwarePaginator
@@ -337,8 +339,9 @@ class MemberAdminService
             $memberStamp->update(['valid_until' => Carbon::now()->addDays((int) $stampCard->valid_days)]);
         }
 
-        $newBalance = max(0, (int) $memberStamp->current_stamps + $delta);
-        $appliedDelta = $newBalance - (int) $memberStamp->current_stamps;
+        $previousBalance = (int) $memberStamp->current_stamps;
+        $newBalance = max(0, $previousBalance + $delta);
+        $appliedDelta = $newBalance - $previousBalance;
         $memberStamp->update(['current_stamps' => $newBalance]);
         $memberStamp->refresh();
 
@@ -359,6 +362,14 @@ class MemberAdminService
                 'description' => $description,
                 'order_id' => $orderId,
             ]);
+        }
+        if ($appliedDelta > 0) {
+            $this->stampMilestoneRewardService->grantReached(
+                $member,
+                $stampCard,
+                $previousBalance,
+                $newBalance,
+            );
         }
 
         return $memberStamp->refresh();

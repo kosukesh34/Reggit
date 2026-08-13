@@ -1,6 +1,7 @@
 import { ApiClient } from '../../shared/utils/apiClient';
 import { AppConstants } from '../../shared/constants';
 import { ensureLiffIdentityForLoad } from '../../frontend/demo/ensureIdentity';
+import { isStampGrantCode } from '../../shared/utils/stampGrantToken';
 import type {
   ContactInput,
   NotificationSettings,
@@ -49,6 +50,18 @@ function receiptFrom(reference: string, extras?: Partial<OperationReceipt>): Ope
     status: 'accepted',
     ...extras,
   };
+}
+
+function stampGrantReceipt(payload: Record<string, unknown>): OperationReceipt {
+  const stampCardId = Number(payload.stamp_card_id);
+  const currentStamps = Number(payload.current_stamps);
+  const grantedCount = Number(payload.granted_count);
+  return receiptFrom(`STP-${String(payload.stamp_card_id ?? 'QR')}`, {
+    stampCardId: Number.isFinite(stampCardId) && stampCardId > 0 ? stampCardId : undefined,
+    currentStamps: Number.isFinite(currentStamps) && currentStamps >= 0 ? currentStamps : undefined,
+    grantedCount: Number.isFinite(grantedCount) && grantedCount > 0 ? grantedCount : 1,
+    message: typeof payload.message === 'string' ? payload.message : undefined,
+  });
 }
 
 function mapMember(payload: Record<string, unknown>): MemberProfile {
@@ -341,6 +354,13 @@ export const reggitApi = {
   async addStamp(_storeId: string, staffCode: string): Promise<OperationReceipt> {
     await ensureIdentity();
     const raw = staffCode.trim();
+    if (isStampGrantCode(raw)) {
+      const result = await client().post(withProject(`${AppConstants.API_BASE}/stamps/grant-code/${raw.toLowerCase()}`), {});
+      if (!result.success) {
+        throw new Error(('error' in result ? result.error : undefined) || 'スタンプを追加できませんでした');
+      }
+      return stampGrantReceipt(asRecord(result.data));
+    }
     let grantUrl: URL;
     try {
       grantUrl = new URL(raw, window.location.origin);
@@ -355,16 +375,7 @@ export const reggitApi = {
     if (!result.success) {
       throw new Error(('error' in result ? result.error : undefined) || 'スタンプを追加できませんでした');
     }
-    const payload = asRecord(result.data);
-    const stampCardId = Number(payload.stamp_card_id);
-    const currentStamps = Number(payload.current_stamps);
-    const grantedCount = Number(payload.granted_count);
-    return receiptFrom(`STP-${String(payload.stamp_card_id ?? 'QR')}`, {
-      stampCardId: Number.isFinite(stampCardId) && stampCardId > 0 ? stampCardId : undefined,
-      currentStamps: Number.isFinite(currentStamps) && currentStamps >= 0 ? currentStamps : undefined,
-      grantedCount: Number.isFinite(grantedCount) && grantedCount > 0 ? grantedCount : 1,
-      message: typeof payload.message === 'string' ? payload.message : undefined,
-    });
+    return stampGrantReceipt(asRecord(result.data));
   },
 
   async redeemPoints(_storeId: string, _points: number): Promise<OperationReceipt> {

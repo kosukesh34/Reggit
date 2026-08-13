@@ -259,6 +259,12 @@
     background: var(--surface-2);
 }
 
+.stamp-slot--empty.stamp-slot--has-image {
+    overflow: hidden;
+    padding: 0;
+    background: #ffffff;
+}
+
 .stamp-slot--filled {
     background: var(--stamp-accent-color);
     border-color: var(--stamp-accent-color);

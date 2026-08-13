@@ -6,6 +6,11 @@ import {
     getPersistedQueueToken,
     persistQueueToken,
 } from './queueToken';
+import {
+    extractStampGrantCodeFromEncodedParam,
+    extractStampGrantCodeFromString,
+    persistStampGrantCode,
+} from './stampGrantToken';
 
 declare const liff: any;
 
@@ -214,7 +219,7 @@ function bootstrapLiffInit(): void {
         }
         try {
             const current = new URL(window.location.href);
-            const keepParams = ['queue_id', 'queue_token', 'project_key'];
+            const keepParams = ['queue_id', 'queue_token', 'project_key', 'g'];
             const kept = new URLSearchParams();
             keepParams.forEach((key) => {
                 const value = current.searchParams.get(key);
@@ -235,11 +240,23 @@ function bootstrapLiffInit(): void {
                     kept.set('queue_token', resolved);
                 }
             }
+            if (!kept.get('g')) {
+                const grant = extractStampGrantCodeFromString(current.hash || '')
+                    || extractStampGrantCodeFromEncodedParam(current.searchParams.get('liff.state'))
+                    || extractStampGrantCodeFromEncodedParam(current.searchParams.get('state'));
+                if (grant) {
+                    kept.set('g', grant);
+                }
+            }
+            const grantKept = kept.get('g');
+            if (grantKept) {
+                persistStampGrantCode(grantKept);
+            }
             const search = kept.toString();
             const nextUrl = search
                 ? `${window.location.origin}${window.location.pathname}?${search}`
                 : `${window.location.origin}${window.location.pathname}`;
-            history.replaceState(null, '', nextUrl);
+            history.replaceState(null, '', `${nextUrl}${window.location.hash || ''}`);
         } catch (_e) {
             // ignore
         }
