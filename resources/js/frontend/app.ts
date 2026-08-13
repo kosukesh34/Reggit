@@ -971,7 +971,7 @@ class ReggitApp {
         }
     }
 
-    /** React ProductsGrid / CartPanel が DOM を所有しているか */
+    /** 旧 React 商品グリッドが DOM を所有しているか（liff-ui では未マウント） */
     _hasReactProducts(): boolean {
         return document.querySelector('[data-react-products]') !== null;
     }
@@ -1034,7 +1034,7 @@ class ReggitApp {
         }
     }
 
-    /** React ProductsGrid へ同期（レガシー HTML タブ描画は廃止） */
+    /** 商品グリッドへ同期（レガシー HTML タブ描画は廃止） */
     renderCategoryTabs() {
         this._dispatchProductsUpdated();
     }
@@ -1121,7 +1121,7 @@ class ReggitApp {
         this.setProductsViewMode(this.getProductsViewMode());
     }
 
-    /** React ProductsGrid / CartPanel へ同期（レガシー HTML 商品描画は廃止） */
+    /** 商品グリッドへ同期（レガシー HTML 商品描画は廃止） */
     renderProducts() {
         this._dispatchProductsUpdated();
         this._dispatchCartUpdated();
@@ -1197,7 +1197,7 @@ class ReggitApp {
     }
 
     updateCartUI() {
-        // カート行は CartPanel（React）。バッジ／合計／注文ボタンのみ同期する。
+        // バッジ／合計／注文ボタンを同期する。
         this._dispatchCartUpdated();
         this._dispatchProductsUpdated();
 
@@ -1261,8 +1261,7 @@ class ReggitApp {
         if (section === null) {
             return;
         }
-        // 中身は LiffDetailHost（ProductDetailPage）が hash で描画
-        document.dispatchEvent(new CustomEvent('liff-detail-changed'));
+        // liff-ui では HashRouter が画面を持つ。旧 DOM 詳細ホストは無い。
     }
 
     closeProductDetail() {
@@ -1371,8 +1370,7 @@ class ReggitApp {
         if (section === null) {
             return;
         }
-        // 中身は LiffDetailHost（OrderFlowPage）が hash で描画
-        document.dispatchEvent(new CustomEvent('liff-detail-changed'));
+        // liff-ui では HashRouter が画面を持つ。旧 DOM 詳細ホストは無い。
     }
 
     showCartNotification() {
