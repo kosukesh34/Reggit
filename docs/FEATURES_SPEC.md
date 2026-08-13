@@ -317,6 +317,9 @@
 | valid_until | timestamp, nullable | 有効期限 |
 | used_at | timestamp, nullable | 使用日時 |
 | order_id | bigint unsigned, nullable | 使用した注文ID（FK → orders.id） |
+| issue_source_type | string, nullable | 発行元種別（smaregi_transaction / order）。会計キャンセル時の未使用取消に使う |
+| issue_source_id | string, nullable | 発行元ID（スマレジ取引ID / 注文ID）。複数枚でも同じ取引なら同じ値 |
+| issue_grant_key | string, nullable | 周単位の配布キー。同じ会員・同じキーでは再発行しない |
 | created_at, updated_at | timestamp | 作成・更新日時 |
 
 #### coupon_redemptions（クーポン利用履歴）
@@ -361,6 +364,7 @@
 
 ## 8. 細かい仕様を決める際の参照先
 
+- **スタンプカードの達成・キャンセル・クーポン再発行（CS / Q&A）**: `docs/STAMP_RALLY_CS_FAQ.md`
 - **ルート一覧**: `docs/URL_LIST.md`
 - **全体仕様・アーキテクチャ**: `docs/SPECIFICATION.md`
 - **権限**: `docs/PERMISSIONS.md`

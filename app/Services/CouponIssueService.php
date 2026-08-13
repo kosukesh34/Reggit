@@ -8,7 +8,9 @@ use App\Domain\Coupon\ValueObjects\PendingIssuedCoupon;
 use App\Models\Coupon;
 use App\Models\Member;
 use App\Models\MemberCoupon;
+use App\Util\LogHelper;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class CouponIssueService
 {
@@ -29,14 +31,29 @@ class CouponIssueService
     }
 
     /** 指定スタンプカード達成時に発行 */
-    public function issueForStampCompleted(Member $member, int $stampCardId): void
-    {
+    public function issueForStampCompleted(
+        Member $member,
+        int $stampCardId,
+        ?string $issueSourceType = null,
+        ?string $issueSourceId = null,
+        int $cycleIndex = 0,
+    ): void {
         $coupons = Coupon::where('project_id', $member->project_id)
             ->where('is_active', true)
             ->where('issue_trigger', Coupon::ISSUE_TRIGGER_STAMP_COMPLETED)
             ->where('stamp_card_id', $stampCardId)
             ->get();
-        $this->issueCouponsToMember($member, $coupons);
+        foreach ($coupons as $coupon) {
+            $this->issueForStampGrant(
+                $member,
+                $coupon,
+                $issueSourceType,
+                $issueSourceId,
+                $stampCardId,
+                $cycleIndex,
+                0,
+            );
+        }
     }
 
     /** 誕生月に1回のみ発行（同日・同月に既に発行済みの同一クーポンはスキップ） */
@@ -76,6 +93,53 @@ class CouponIssueService
     public function issueIfEligible(Member $member, Coupon $coupon): void
     {
         $this->issueCouponsToMember($member, collect([$coupon]));
+    }
+
+    public function issueForStampGrant(
+        Member $member,
+        Coupon $coupon,
+        ?string $issueSourceType,
+        ?string $issueSourceId,
+        int $stampCardId,
+        int $cycleIndex,
+        int $stampCount,
+    ): void {
+        $now = now();
+        if ($this->couponIssuePolicy->isWithinIssuePeriod($coupon->start_at, $coupon->end_at, $now) === false) {
+            return;
+        }
+        $grantKey = $stampCardId.':'.$cycleIndex.':'.$stampCount.':'.(int) $coupon->id;
+        if ($this->memberCouponRepository->hasIssuedGrantKey(
+            (int) $member->id,
+            $grantKey,
+            (int) $member->project_id,
+        )) {
+            return;
+        }
+        $this->createMemberCoupon($member, $coupon, $now, $issueSourceType, $issueSourceId, $grantKey);
+    }
+
+    public function revokeUnusedForSource(Member $member, string $sourceType, string $sourceId): void
+    {
+        if ($sourceType === '' || $sourceId === '') {
+            return;
+        }
+        $deleted = (int) DB::transaction(fn (): int => $this->memberCouponRepository->deleteUnusedForSource(
+            (int) $member->project_id,
+            (int) $member->id,
+            $sourceType,
+            $sourceId,
+        ));
+        if ($deleted <= 0) {
+            return;
+        }
+        LogHelper::info('[Coupon] revoked unused issued coupons on cancel', [
+            'project_id' => (int) $member->project_id,
+            'member_id' => (int) $member->id,
+            'source_type' => $sourceType,
+            'source_id' => $sourceId,
+            'deleted' => $deleted,
+        ]);
     }
 
     /**
@@ -127,8 +191,14 @@ class CouponIssueService
         }
     }
 
-    private function createMemberCoupon(Member $member, Coupon $coupon, \DateTimeInterface $now): void
-    {
+    private function createMemberCoupon(
+        Member $member,
+        Coupon $coupon,
+        \DateTimeInterface $now,
+        ?string $issueSourceType = null,
+        ?string $issueSourceId = null,
+        ?string $issueGrantKey = null,
+    ): void {
         [$validFrom, $validUntil] = $this->couponIssuePolicy->resolveValidityWindow(
             $coupon->start_at,
             $coupon->end_at,
@@ -143,6 +213,9 @@ class CouponIssueService
             $now,
             $validFrom,
             $validUntil,
+            $issueSourceType,
+            $issueSourceId,
+            $issueGrantKey,
         ));
     }
 }
