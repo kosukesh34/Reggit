@@ -31,7 +31,6 @@ class StampStoreRequest extends FormRequest
             'reward_milestones.*.stamp_count' => 'nullable|integer|min:1|max:999',
             'reward_milestones.*.reward_type' => ['nullable', 'string', Rule::in(StampRewardType::keys())],
             'reward_milestones.*.coupon_id' => ['nullable', 'integer', $couponExists],
-            'reward_milestones.*.description' => 'nullable|string|max:500',
             'image_url' => 'nullable|string|url|max:500',
             'image_data' => 'nullable|string',
             'stamp_images_data' => 'nullable|string',
@@ -92,37 +91,26 @@ class StampStoreRequest extends FormRequest
     /** @param array<string, mixed> $milestone */
     private function isBlankMilestone(array $milestone): bool
     {
-        $rewardType = StampRewardType::normalize((string) ($milestone['reward_type'] ?? StampRewardType::TEXT));
-        if ($rewardType !== StampRewardType::TEXT) {
-            return false;
-        }
+        $stampCount = (int) ($milestone['stamp_count'] ?? 0);
+        $couponId = (int) ($milestone['coupon_id'] ?? 0);
+        $rewardType = (string) ($milestone['reward_type'] ?? '');
 
-        return (int) ($milestone['stamp_count'] ?? 0) <= 0
-            && trim((string) ($milestone['description'] ?? '')) === ''
-            && (int) ($milestone['coupon_id'] ?? 0) <= 0;
+        return $stampCount <= 0
+            && $couponId <= 0
+            && $rewardType !== StampRewardType::GACHA;
     }
 
     /** @param array<string, mixed> $milestone */
     private function validateMilestoneReward(Validator $validator, int $index, array $milestone): void
     {
-        $rewardType = StampRewardType::normalize((string) ($milestone['reward_type'] ?? StampRewardType::TEXT));
-        if ($rewardType === StampRewardType::COUPON) {
-            if ((int) ($milestone['coupon_id'] ?? 0) <= 0) {
-                $validator->errors()->add(
-                    "reward_milestones.{$index}.coupon_id",
-                    '特典クーポンを選択してください。'
-                );
-            }
-
-            return;
-        }
+        $rewardType = StampRewardType::normalize((string) ($milestone['reward_type'] ?? ''));
         if ($rewardType === StampRewardType::GACHA) {
             return;
         }
-        if (trim((string) ($milestone['description'] ?? '')) === '') {
+        if ((int) ($milestone['coupon_id'] ?? 0) <= 0) {
             $validator->errors()->add(
-                "reward_milestones.{$index}.description",
-                '特典内容を入力してください。'
+                "reward_milestones.{$index}.coupon_id",
+                '特典クーポンを選択してください。'
             );
         }
     }

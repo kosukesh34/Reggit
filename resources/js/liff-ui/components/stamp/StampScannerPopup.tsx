@@ -1,16 +1,7 @@
-import { Camera, ScanLine } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
-import { CenterPopup } from "../ui/CenterPopup";
-
-interface BarcodeDetectorResult {
-  rawValue: string;
-}
-
-interface BarcodeDetectorInstance {
-  detect: (source: CanvasImageSource) => Promise<BarcodeDetectorResult[]>;
-}
-
-type BarcodeDetectorConstructor = new (options?: { formats?: string[] }) => BarcodeDetectorInstance;
+import jsQR from 'jsqr';
+import { X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 interface StampScannerPopupProps {
   open: boolean;
@@ -18,96 +9,211 @@ interface StampScannerPopupProps {
   onDetected: (value: string) => void;
 }
 
+let videoEl: HTMLVideoElement | null = null;
+let currentStream: MediaStream | null = null;
+let lastCameraOk = false;
+let drawFrame = 0;
+let scanTimer: number | undefined;
+const scanCanvas = typeof document === 'undefined' ? null : document.createElement('canvas');
+
+function stopTracks(): void {
+  currentStream?.getTracks().forEach((track) => track.stop());
+  currentStream = null;
+}
+
+function removeVideo(): void {
+  stopTracks();
+  if (videoEl !== null) {
+    videoEl.srcObject = null;
+    videoEl.remove();
+    videoEl = null;
+  }
+}
+
+function ensureVideo(): HTMLVideoElement {
+  if (videoEl !== null && document.body.contains(videoEl)) {
+    return videoEl;
+  }
+  const video = document.createElement('video');
+  video.className = 'stamp-scanner__preload';
+  video.setAttribute('playsinline', 'true');
+  video.setAttribute('webkit-playsinline', 'true');
+  video.setAttribute('muted', '');
+  video.setAttribute('autoplay', '');
+  video.setAttribute('aria-label', 'QRコード読み取りカメラ');
+  video.muted = true;
+  video.defaultMuted = true;
+  video.autoplay = true;
+  video.playsInline = true;
+  document.body.appendChild(video);
+  videoEl = video;
+  return video;
+}
+
+function attachStream(video: HTMLVideoElement, stream: MediaStream): void {
+  video.srcObject = stream;
+  video.className = 'stamp-scanner__live';
+  video.onloadeddata = () => {
+    void video.play();
+  };
+}
+
+type LegacyGetUserMedia = (
+  constraints: MediaStreamConstraints,
+  success: (stream: MediaStream) => void,
+  error: (error: Error) => void,
+) => void;
+
+function requestUserMedia(constraints: MediaStreamConstraints): Promise<MediaStream> {
+  const modern = navigator.mediaDevices?.getUserMedia;
+  if (modern !== undefined) {
+    return modern.call(navigator.mediaDevices, constraints);
+  }
+  const nav = navigator as Navigator & { getUserMedia?: LegacyGetUserMedia; webkitGetUserMedia?: LegacyGetUserMedia };
+  const legacy = nav.webkitGetUserMedia ?? nav.getUserMedia;
+  if (legacy === undefined) {
+    return Promise.reject(new Error('unsupported'));
+  }
+  return new Promise((resolve, reject) => {
+    legacy.call(navigator, constraints, resolve, reject);
+  });
+}
+
+function startStampCamera(): Promise<boolean> {
+  const video = ensureVideo();
+  return requestUserMedia({ audio: false, video: { width: 640, height: 420, facingMode: 'environment' } })
+    .catch(() => requestUserMedia({ audio: false, video: true }))
+    .then((stream) => {
+      currentStream = stream;
+      attachStream(video, stream);
+      lastCameraOk = true;
+      return true;
+    })
+    .catch(() => {
+      lastCameraOk = false;
+      return false;
+    });
+}
+
+/** クリックの同期処理から getUserMedia する。iOS の LIFF は useEffect だとカメラを拒否する。 */
+export function openStampScanner(setOpen: (open: boolean) => void): void {
+  ensureVideo();
+  void startStampCamera().then(() => setOpen(true));
+}
+
+function stopScanLoop(): void {
+  if (drawFrame !== 0) {
+    window.cancelAnimationFrame(drawFrame);
+    drawFrame = 0;
+  }
+  if (scanTimer !== undefined) {
+    window.clearTimeout(scanTimer);
+    scanTimer = undefined;
+  }
+}
+
+function startScanLoop(onDetected: (value: string) => void): void {
+  stopScanLoop();
+  const video = videoEl;
+  const canvas = scanCanvas;
+  if (video === null || canvas === null) {
+    return;
+  }
+  const context = canvas.getContext('2d');
+  if (context === null) {
+    return;
+  }
+
+  const canvasUpdate = (): void => {
+    const width = video.videoWidth;
+    const height = video.videoHeight;
+    if (width > 0 && height > 0) {
+      canvas.width = width;
+      canvas.height = height;
+      context.drawImage(video, 0, 0, width, height);
+    }
+    drawFrame = window.requestAnimationFrame(canvasUpdate);
+  };
+
+  const checkImage = (): void => {
+    if (canvas.width <= 0 || canvas.height <= 0) {
+      scanTimer = window.setTimeout(checkImage, 500);
+      return;
+    }
+    const image = context.getImageData(0, 0, canvas.width, canvas.height);
+    const code = jsQR(image.data, canvas.width, canvas.height);
+    const value = code?.data?.trim();
+    if (value) {
+      onDetected(value);
+      return;
+    }
+    scanTimer = window.setTimeout(checkImage, 500);
+  };
+
+  canvasUpdate();
+  checkImage();
+}
+
 export function StampScannerPopup({ open, onClose, onDetected }: StampScannerPopupProps) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const streamRef = useRef<MediaStream>();
-  const frameRef = useRef<number>();
-  const detectedRef = useRef(false);
-  const [status, setStatus] = useState<"starting" | "scanning" | "unsupported" | "error">("starting");
+  const onDetectedRef = useRef(onDetected);
+  const [failed, setFailed] = useState(false);
+  onDetectedRef.current = onDetected;
 
   useEffect(() => {
-    if (!open) return;
-    detectedRef.current = false;
-    setStatus("starting");
-
-    const stop = () => {
-      if (frameRef.current !== undefined) cancelAnimationFrame(frameRef.current);
-      streamRef.current?.getTracks().forEach((track) => track.stop());
-      streamRef.current = undefined;
+    if (!open) {
+      stopScanLoop();
+      removeVideo();
+      setFailed(false);
+      return;
+    }
+    if (!lastCameraOk || currentStream === null) {
+      setFailed(true);
+      removeVideo();
+      return;
+    }
+    setFailed(false);
+    startScanLoop((value) => onDetectedRef.current(value));
+    return () => {
+      stopScanLoop();
     };
+  }, [open]);
 
-    const start = async () => {
-      const Detector = (window as typeof window & { BarcodeDetector?: BarcodeDetectorConstructor }).BarcodeDetector;
-      if (!Detector) {
-        setStatus("unsupported");
-        return;
-      }
-      try {
-        if (!navigator.mediaDevices?.getUserMedia) {
-          setStatus("unsupported");
-          return;
-        }
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: false,
-          video: { facingMode: { ideal: "environment" } },
-        });
-        streamRef.current = stream;
-        const video = videoRef.current;
-        if (!video) return;
-        video.srcObject = stream;
-        await video.play();
-        const detector = new Detector({ formats: ["qr_code"] });
-        setStatus("scanning");
+  useEffect(() => () => {
+    stopScanLoop();
+    removeVideo();
+  }, []);
 
-        const scan = async () => {
-          if (detectedRef.current || video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) {
-            frameRef.current = requestAnimationFrame(scan);
-            return;
-          }
-          try {
-            const results = await detector.detect(video);
-            const value = results[0]?.rawValue?.trim();
-            if (value) {
-              detectedRef.current = true;
-              stop();
-              onDetected(value);
-              return;
-            }
-          } catch {
-            // 次のフレームで再試行する。
-          }
-          frameRef.current = requestAnimationFrame(scan);
-        };
-        frameRef.current = requestAnimationFrame(scan);
-      } catch {
-        setStatus("error");
-      }
-    };
+  if (!open || typeof document === 'undefined') {
+    return null;
+  }
 
-    void start();
-    return stop;
-  }, [onDetected, open]);
-
-  return (
-    <CenterPopup open={open} onClose={onClose} title="スタンプQRを読み取る" className="stamp-scanner-popup">
-      <div className="stamp-scanner">
-        {status === "unsupported" || status === "error" ? (
-          <p className="stamp-scanner__help">
-            {status === "error"
-              ? "カメラを使用できませんでした。LINEのコードリーダーで店舗のQRを読み取ってください。"
-              : "この端末ではアプリ内カメラに対応していません。LINEのコードリーダーで店舗のQRを読み取ってください。"}
-          </p>
-        ) : (
-          <>
-            <div className="stamp-scanner__viewport">
-              <video ref={videoRef} muted playsInline aria-label="QRコード読み取りカメラ" />
-              <span className="stamp-scanner__frame"><ScanLine /></span>
-              {status === "starting" ? <p><Camera size={18} />カメラを起動しています…</p> : null}
-            </div>
-            <p className="stamp-scanner__help">店舗に表示されたスタンプ付与QRを枠内に合わせてください。</p>
-          </>
-        )}
-      </div>
-    </CenterPopup>
+  return createPortal(
+    <div className="stamp-scanner-root" role="dialog" aria-modal="true" aria-label="スタンプQRを読み取る">
+      <button className="stamp-scanner-root__close" type="button" aria-label="閉じる" onClick={onClose}>
+        <X size={19} />
+      </button>
+      {failed ? (
+        <div className="stamp-scanner-root__error">
+          <p>カメラを使用できませんでした。下のボタンから再試行するか、LINEのコードリーダーで店舗のQRを読み取ってください。</p>
+          <button
+            className="stamp-scanner-root__retry"
+            type="button"
+            onClick={() => {
+              void startStampCamera().then((ok) => {
+                setFailed(!ok);
+                if (ok) {
+                  startScanLoop((value) => onDetectedRef.current(value));
+                }
+              });
+            }}
+          >
+            カメラを起動する
+          </button>
+        </div>
+      ) : (
+        <p className="stamp-scanner-root__help">店舗に表示されたスタンプ付与QRを枠内に合わせてください。</p>
+      )}
+    </div>,
+    document.body,
   );
 }

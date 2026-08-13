@@ -74,7 +74,7 @@ class StampMilestoneRewardTest extends TestCase
         $this->assertSame(0, MemberLotteryEntitlement::query()->count());
     }
 
-    public function test_テキスト特典ではクーポンもガチャも付与しないこと(): void
+    public function test_未対応の特典タイプではクーポンもガチャも付与しないこと(): void
     {
         $project = Project::factory()->create();
         $user = User::factory()->create(['project_id' => $project->id]);
@@ -86,7 +86,7 @@ class StampMilestoneRewardTest extends TestCase
             'reward_milestones' => [
                 [
                     'stamp_count' => 5,
-                    'reward_type' => StampRewardType::TEXT,
+                    'reward_type' => 'text',
                     'description' => 'ドリンク1杯無料',
                 ],
             ],
