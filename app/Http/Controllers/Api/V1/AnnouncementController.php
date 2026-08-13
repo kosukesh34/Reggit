@@ -30,7 +30,6 @@ class AnnouncementController extends BaseApiController
             return $this->success(['announcements' => $result->announcements]);
         } catch (\Exception $e) {
             LogHelper::error('[Announcement] index failed', [
-                'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'error' => $e->getMessage(),
             ]);
 
@@ -51,7 +50,6 @@ class AnnouncementController extends BaseApiController
             return $this->error('対象のお知らせが見つかりません', Response::HTTP_NOT_FOUND, [], $e->errors());
         } catch (\Exception $e) {
             LogHelper::error('[Announcement] markRead failed', [
-                'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'announcement_id' => $id,
                 'error' => $e->getMessage(),
             ]);
@@ -62,7 +60,7 @@ class AnnouncementController extends BaseApiController
 
     public function cancelledIds()
     {
-        $projectId = AdminContext::getCurrentProjectId() ?? 1;
+        $projectId = AdminContext::requireCurrentProjectId();
         $payload = $this->cancelledIdsUseCase->handleByProjectId((int) $projectId);
 
         return $this->success($payload);

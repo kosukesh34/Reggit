@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Member;
 use App\Http\Controllers\Controller;
 use App\Services\UserService;
 use App\UseCases\Member\MemberPointsUseCase;
-use App\Util\AdminContext;
 use App\Util\LogHelper;
 use Illuminate\Http\Request;
 
@@ -32,7 +31,6 @@ class MemberPointsController extends Controller
             ]);
         } catch (\Exception $e) {
             LogHelper::error('[Member] points failed', [
-                'project_id' => AdminContext::getCurrentProjectId() ?? 1,
                 'error' => $e->getMessage(),
             ]);
 

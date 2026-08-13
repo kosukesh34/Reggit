@@ -46,6 +46,7 @@ class EloquentOrderRepositoryTest extends TestCase
         $this->assertNotNull($aggregate);
         $this->assertSame(10, $aggregate->pointsUsed());
         $this->assertSame(5, $aggregate->pointsEarned());
+        $this->assertSame(1000, $aggregate->totalAmount());
     }
 
     public function test_find_by_id_and_user_id_for_update_注文をドメイン集約として返すこと(): void
@@ -76,6 +77,7 @@ class EloquentOrderRepositoryTest extends TestCase
         $this->assertNotNull($aggregate);
         $this->assertSame(10, $aggregate->pointsUsed());
         $this->assertSame(5, $aggregate->pointsEarned());
+        $this->assertSame(1000, $aggregate->totalAmount());
     }
 
     public function test_save_ステータスを永続化すること(): void
@@ -102,6 +104,7 @@ class EloquentOrderRepositoryTest extends TestCase
             OrderStatus::CANCELLED,
             0,
             0,
+            500,
         );
 
         $repository = new EloquentOrderRepository;

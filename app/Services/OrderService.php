@@ -61,7 +61,7 @@ class OrderService
     {
         DB::beginTransaction();
         try {
-            $projectId = (int) ($user->project_id ?? AdminContext::getCurrentProjectId() ?? 1);
+            $projectId = (int) (AdminContext::resolveProjectId($user->project_id !== null ? (int) $user->project_id : null));
             $orderType = (string) ($orderData['order_type'] ?? OrderType::MOBILE);
             $paymentMethod = (string) ($orderData['payment_method'] ?? '');
 

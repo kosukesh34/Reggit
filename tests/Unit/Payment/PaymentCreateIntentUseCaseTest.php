@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Payment;
 
+use App\Domain\Order\Repositories\OrderRepository;
 use App\Enums\OrderStatus;
 use App\Enums\OrderType;
 use App\Enums\PaymentMethod;
@@ -37,9 +38,9 @@ class PaymentCreateIntentUseCaseTest extends TestCase
         ]);
 
         $gateway = new FakePaymentGateway;
-        $useCase = new PaymentCreateIntentUseCase($gateway);
+        $useCase = new PaymentCreateIntentUseCase($gateway, app(OrderRepository::class));
 
-        $dto = $useCase->handle($order, (int) $user->id);
+        $dto = $useCase->handle((int) $order->id, (int) $order->project_id, (int) $user->id);
 
         $this->assertSame('cs_test_123', $dto->clientSecret);
         $this->assertSame('pi_test_123', $dto->paymentIntentId);
@@ -66,9 +67,9 @@ class PaymentCreateIntentUseCaseTest extends TestCase
             'order_type' => OrderType::MOBILE,
         ]);
 
-        $useCase = new PaymentCreateIntentUseCase(new FakePaymentGateway);
+        $useCase = new PaymentCreateIntentUseCase(new FakePaymentGateway, app(OrderRepository::class));
 
         $this->expectException(InvalidArgumentException::class);
-        $useCase->handle($order, (int) $other->id);
+        $useCase->handle((int) $order->id, (int) $order->project_id, (int) $other->id);
     }
 }

@@ -22,7 +22,7 @@ class UserService
 
     public function findUser(Request $request): ?User
     {
-        $projectId = AdminContext::getCurrentProjectId() ?? 1;
+        $projectId = AdminContext::requireCurrentProjectId();
         $lineUserId = $this->normalizeLineUserId($request->header('X-Line-User-Id'));
         $deviceIdentifier = $this->normalizeDeviceIdentifier($request->header('X-Device-Identifier'));
 
@@ -86,7 +86,7 @@ class UserService
 
     public function getOrCreateUser(Request $request): User
     {
-        $projectId = AdminContext::getCurrentProjectId() ?? 1;
+        $projectId = AdminContext::requireCurrentProjectId();
         $lineUserId = $this->normalizeLineUserId($request->header('X-Line-User-Id'));
         $deviceIdentifier = $this->normalizeDeviceIdentifier($request->header('X-Device-Identifier'));
 
@@ -198,7 +198,7 @@ class UserService
     /** 現在プロジェクトのユーザーセッションを削除（退会時など） */
     public function clearUserSession(Request $request): void
     {
-        $projectId = AdminContext::getCurrentProjectId() ?? 1;
+        $projectId = AdminContext::requireCurrentProjectId();
         Session::forget($this->getSessionKey($projectId));
     }
 

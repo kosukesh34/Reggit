@@ -9,7 +9,7 @@ use App\Models\Coupon;
 use App\Models\CouponDelivery;
 use App\Services\Admin\CouponDeliveryTargetService;
 use App\Services\Admin\MemberAdminService;
-use Illuminate\Support\Carbon;
+use App\Util\DateUtil;
 
 class AdminCouponBulkIssueUseCase
 {
@@ -65,7 +65,10 @@ class AdminCouponBulkIssueUseCase
         $isScheduled = CouponDeliveryType::isScheduled($deliveryType);
 
         if ($isScheduled) {
-            $scheduledAt = Carbon::parse((string) $validated['scheduled_at']);
+            $scheduledAt = DateUtil::nullableCarbon((string) $validated['scheduled_at']);
+            if ($scheduledAt === null) {
+                throw new \InvalidArgumentException('配信日時が不正です');
+            }
             $delivery = CouponDelivery::create([
                 'project_id' => $projectId,
                 'coupon_id' => $couponId,

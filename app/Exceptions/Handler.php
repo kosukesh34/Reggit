@@ -19,6 +19,14 @@ class Handler extends ExceptionHandler
         $this->reportable(function (Throwable $e) {
             //
         });
+
+        $this->renderable(function (ProjectContextMissingException $e, $request) {
+            if ($request->expectsJson()) {
+                return response()->json(['error' => $e->getMessage()], 404);
+            }
+
+            return response($e->getMessage(), 404);
+        });
     }
 
     protected function unauthenticated($request, AuthenticationException $exception)

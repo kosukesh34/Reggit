@@ -15,5 +15,6 @@ class QueueStoreInput
         public readonly ?string $guestName,
         public readonly ?string $guestPhone,
         public readonly ?string $lineUserId,
+        public readonly ?string $queueClient,
     ) {}
 }
