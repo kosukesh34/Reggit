@@ -17,6 +17,10 @@ class MemberStamp extends Model
 
     public int $cyclesCompletedNow = 0;
 
+    public ?string $issueSourceType = null;
+
+    public ?string $issueSourceId = null;
+
     /** @var array<string, string> */
     protected $casts = [
         'current_stamps' => 'integer',

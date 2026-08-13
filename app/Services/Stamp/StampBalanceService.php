@@ -13,6 +13,10 @@ use Illuminate\Support\Facades\DB;
 
 class StampBalanceService
 {
+    private ?string $issueSourceType = null;
+
+    private ?string $issueSourceId = null;
+
     public function __construct(
         private StampMilestoneRewardService $stampMilestoneRewardService,
     ) {}
@@ -27,8 +31,12 @@ class StampBalanceService
         ?string $description,
         ?int $orderId,
         array $visitedCardIds = [],
+        ?string $issueSourceType = null,
+        ?string $issueSourceId = null,
     ): MemberStamp {
-        return DB::transaction(function () use ($member, $stampCard, $delta, $description, $orderId, $visitedCardIds) {
+        return DB::transaction(function () use ($member, $stampCard, $delta, $description, $orderId, $visitedCardIds, $issueSourceType, $issueSourceId) {
+            $this->issueSourceType = $issueSourceType;
+            $this->issueSourceId = $issueSourceId;
             $memberStamp = $this->ensureMemberStamp($member, $stampCard);
             $memberStamp->cyclesCompletedNow = 0;
             if ($delta < 0) {
@@ -181,7 +189,15 @@ class StampBalanceService
                 break;
             }
             $next = $cursor + $step;
-            $this->stampMilestoneRewardService->grantReached($member, $stampCard, $cursor, $next, $cycleCount);
+            $this->stampMilestoneRewardService->grantReached(
+                $member,
+                $stampCard,
+                $cursor,
+                $next,
+                $cycleCount,
+                $this->issueSourceType,
+                $this->issueSourceId,
+            );
             $remaining -= $step;
             if ($next < $required) {
                 $cursor = $next;
@@ -275,7 +291,16 @@ class StampBalanceService
             return;
         }
         $visitedCardIds[] = $cardId;
-        $this->adjust($member, $next, $remainder, $description, $orderId, $visitedCardIds);
+        $this->adjust(
+            $member,
+            $next,
+            $remainder,
+            $description,
+            $orderId,
+            $visitedCardIds,
+            $this->issueSourceType,
+            $this->issueSourceId,
+        );
     }
 
     private function resolveNextCard(StampCard $stampCard): ?StampCard
@@ -312,6 +337,8 @@ class StampBalanceService
         if ($cycleCount !== null) {
             $payload['cycle_count'] = $cycleCount;
         }
+        $memberStamp->issueSourceType = $this->issueSourceType;
+        $memberStamp->issueSourceId = $this->issueSourceId;
         $memberStamp->update($payload);
         if ($appliedDelta !== 0) {
             MemberStampTransaction::query()->create([
@@ -331,6 +358,8 @@ class StampBalanceService
                 $previousBalance,
                 $newBalance,
                 $milestoneCycleIndex,
+                $this->issueSourceType,
+                $this->issueSourceId,
             );
         }
     }

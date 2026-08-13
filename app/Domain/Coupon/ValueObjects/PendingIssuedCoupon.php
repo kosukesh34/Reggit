@@ -12,5 +12,8 @@ final class PendingIssuedCoupon
         public readonly \DateTimeInterface $issuedAt,
         public readonly \DateTimeInterface $validFrom,
         public readonly ?\DateTimeInterface $validUntil,
+        public readonly ?string $issueSourceType = null,
+        public readonly ?string $issueSourceId = null,
+        public readonly ?string $issueGrantKey = null,
     ) {}
 }

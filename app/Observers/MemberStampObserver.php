@@ -23,6 +23,12 @@ class MemberStampObserver
         if ($member === null) {
             return;
         }
-        $this->couponIssueService->issueForStampCompleted($member, (int) $memberStamp->stamp_card_id);
+        $this->couponIssueService->issueForStampCompleted(
+            $member,
+            (int) $memberStamp->stamp_card_id,
+            $memberStamp->issueSourceType,
+            $memberStamp->issueSourceId,
+            (int) $memberStamp->cycle_count,
+        );
     }
 }

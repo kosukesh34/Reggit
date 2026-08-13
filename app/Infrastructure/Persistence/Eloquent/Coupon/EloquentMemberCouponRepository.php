@@ -113,6 +113,45 @@ class EloquentMemberCouponRepository implements MemberCouponRepository
             'issued_at' => $pending->issuedAt,
             'valid_from' => $pending->validFrom,
             'valid_until' => $pending->validUntil,
+            'issue_source_type' => $pending->issueSourceType,
+            'issue_source_id' => $pending->issueSourceId,
+            'issue_grant_key' => $pending->issueGrantKey,
         ]);
+    }
+
+    public function hasIssuedGrantKey(int $memberId, string $grantKey, int $projectId): bool
+    {
+        return MemberCouponModel::query()
+            ->withoutGlobalScope(ProjectScope::class)
+            ->where('project_id', $projectId)
+            ->where('member_id', $memberId)
+            ->where('issue_grant_key', $grantKey)
+            ->exists();
+    }
+
+    public function deleteUnusedForSource(int $projectId, int $memberId, string $sourceType, string $sourceId): int
+    {
+        $issued = MemberCouponModel::query()
+            ->withoutGlobalScope(ProjectScope::class)
+            ->where('project_id', $projectId)
+            ->where('member_id', $memberId)
+            ->where('issue_source_type', $sourceType)
+            ->where('issue_source_id', $sourceId)
+            ->lockForUpdate()
+            ->get();
+
+        $deleted = 0;
+        foreach ($issued as $memberCoupon) {
+            if ($memberCoupon->isUsed()) {
+                continue;
+            }
+            CouponRedemption::query()
+                ->where('member_coupon_id', (int) $memberCoupon->id)
+                ->delete();
+            $memberCoupon->delete();
+            $deleted++;
+        }
+
+        return $deleted;
     }
 }
