@@ -20,7 +20,7 @@ class DeviceRegisterController extends Controller
     public function __invoke(DeviceRegisterRequest $request): JsonResponse
     {
         $validated = $request->validated();
-        $projectId = AdminContext::getCurrentProjectId() ?? 1;
+        $projectId = AdminContext::requireCurrentProjectId();
         $pushTokenRaw = $validated['push_token'] ?? null;
         $hasPushToken = is_string($pushTokenRaw) && trim($pushTokenRaw) !== '';
 

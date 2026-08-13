@@ -16,7 +16,7 @@ class DeviceService
 
     public function register(User $user, array $payload): UserDevice
     {
-        $projectId = (int) ($user->project_id ?? AdminContext::getCurrentProjectId() ?? 1);
+        $projectId = (int) (AdminContext::resolveProjectId($user->project_id !== null ? (int) $user->project_id : null));
         $deviceIdentifier = trim((string) ($payload['device_identifier'] ?? ''));
         $incomingPushToken = isset($payload['push_token']) && is_string($payload['push_token'])
             ? trim($payload['push_token'])

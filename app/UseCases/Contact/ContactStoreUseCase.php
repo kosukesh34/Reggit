@@ -11,7 +11,7 @@ class ContactStoreUseCase
     /** @param array<string, string|int|float|bool|array|null> $data お問い合わせフォームの入力（検証前） */
     public function handle(array $data): ContactStoreOutput
     {
-        $projectId = AdminContext::getCurrentProjectId() ?? 1;
+        $projectId = AdminContext::requireCurrentProjectId();
 
         ContactMessage::create([
             'project_id' => $projectId,

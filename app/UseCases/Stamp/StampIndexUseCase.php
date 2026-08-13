@@ -7,6 +7,7 @@ use App\Models\StampCard;
 use App\Models\User;
 use App\UseCases\Stamp\Data\StampCardView;
 use App\UseCases\Stamp\Data\StampListView;
+use App\Util\AdminContext;
 
 class StampIndexUseCase
 {
@@ -19,7 +20,7 @@ class StampIndexUseCase
         $member = $user->member;
 
         if ($member === null) {
-            $projectId = $user->project_id ?? 1;
+            $projectId = AdminContext::resolveProjectId($user->project_id !== null ? (int) $user->project_id : null);
             $defaultImageUrl = $this->shopSettingRepository->getStampDefaultImageUrl($projectId);
 
             return new StampListView([], $defaultImageUrl, true);
@@ -44,10 +45,10 @@ class StampIndexUseCase
             if ($memberStamp !== null && $memberStamp->completed_at !== null) {
                 $completedAt = $memberStamp->completed_at->toIso8601String();
             }
-            $memberStampValidUntil = $memberStamp && $memberStamp->valid_until
+            $memberStampValidUntil = $memberStamp !== null && $memberStamp->valid_until !== null
                 ? $memberStamp->valid_until->toIso8601String()
                 : null;
-            $validUntil = $card->valid_until ? $card->valid_until->format('Y-m-d') : null;
+            $validUntil = $card->valid_until !== null ? $card->valid_until->format('Y-m-d') : null;
 
             $stampImages = is_array($card->stamp_images) ? $card->stamp_images : [];
 
@@ -56,12 +57,12 @@ class StampIndexUseCase
                 (string) $card->name,
                 (int) $card->required_stamps,
                 $card->reward_description,
-                $this->normalizeRewardMilestones($card->reward_milestones),
+                $this->normalizeRewardMilestones(is_array($card->reward_milestones) ? $card->reward_milestones : null),
                 $card->image_url,
-                $memberStamp ? (int) $memberStamp->current_stamps : 0,
+                $memberStamp !== null ? (int) $memberStamp->current_stamps : 0,
                 $completedAt,
                 (string) ($card->layout_style ?? 'grid'),
-                $card->valid_days ? (int) $card->valid_days : null,
+                $card->valid_days !== null ? (int) $card->valid_days : null,
                 $validUntil,
                 $memberStampValidUntil,
                 $stampImages
@@ -72,11 +73,12 @@ class StampIndexUseCase
     }
 
     /**
+     * @param  array<int|string, array<string, int|string|null>>|null  $milestones
      * @return array<int, array{stamp_count: int, description: string}>
      */
-    private function normalizeRewardMilestones(mixed $milestones): array
+    private function normalizeRewardMilestones(?array $milestones): array
     {
-        if (! is_array($milestones)) {
+        if ($milestones === null) {
             return [];
         }
         $normalized = [];

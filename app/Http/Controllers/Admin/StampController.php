@@ -2,44 +2,24 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Http\Requests\Admin\StampStoreRequest;
 use App\Http\Requests\Admin\StampUpdateRequest;
-use App\Models\StampCard;
 use App\UseCases\Admin\Stamp\AdminStampDeleteUseCase;
 use App\UseCases\Admin\Stamp\AdminStampEditUseCase;
+use App\UseCases\Admin\Stamp\AdminStampGrantQrUseCase;
 use App\UseCases\Admin\Stamp\AdminStampIndexUseCase;
 use App\UseCases\Admin\Stamp\AdminStampStoreUseCase;
 use App\UseCases\Admin\Stamp\AdminStampUpdateUseCase;
-use Illuminate\Support\Facades\URL;
-use Illuminate\Support\Str;
 
 class StampController extends AdminBaseController
 {
-    private AdminStampIndexUseCase $indexUseCase;
-
-    private AdminStampStoreUseCase $storeUseCase;
-
-    private AdminStampEditUseCase $editUseCase;
-
-    private AdminStampUpdateUseCase $updateUseCase;
-
-    private AdminStampDeleteUseCase $deleteUseCase;
-
     public function __construct(
-        AdminStampIndexUseCase $indexUseCase,
-        AdminStampStoreUseCase $storeUseCase,
-        AdminStampEditUseCase $editUseCase,
-        AdminStampUpdateUseCase $updateUseCase,
-        AdminStampDeleteUseCase $deleteUseCase,
-        private ShopSettingRepository $shopSettingRepository,
-    ) {
-        $this->indexUseCase = $indexUseCase;
-        $this->storeUseCase = $storeUseCase;
-        $this->editUseCase = $editUseCase;
-        $this->updateUseCase = $updateUseCase;
-        $this->deleteUseCase = $deleteUseCase;
-    }
+        private AdminStampIndexUseCase $indexUseCase,
+        private AdminStampStoreUseCase $storeUseCase,
+        private AdminStampEditUseCase $editUseCase,
+        private AdminStampUpdateUseCase $updateUseCase,
+        private AdminStampDeleteUseCase $deleteUseCase,
+    ) {}
 
     public function stamps()
     {
@@ -53,26 +33,15 @@ class StampController extends AdminBaseController
         return view('admin.stamps.create');
     }
 
-    public function grantQr(string $projectKey, int $id)
+    public function grantQr(string $projectKey, int $id, AdminStampGrantQrUseCase $useCase)
     {
-        $projectId = $this->resolveAdminProjectId();
-        $stampCard = StampCard::query()
-            ->where('project_id', $projectId)
-            ->where('is_active', true)
-            ->findOrFail($id);
-        $nonce = Str::random(40);
-        $expiresAt = now()->addMinutes(15);
-        $grantUrl = URL::temporarySignedRoute('api.stamps.grant', $expiresAt, [
-            'stampCard' => $stampCard->id,
-            'nonce' => $nonce,
-            'project_key' => $projectKey,
-        ]);
-        $configuredLiffUrl = trim($this->shopSettingRepository->getLineLiffUrl($projectId));
-        $liffBaseUrl = $configuredLiffUrl !== '' ? $configuredLiffUrl : url('/liff/'.$projectKey);
-        $liffBaseUrl = preg_replace('/#.*$/', '', $liffBaseUrl) ?: url('/liff/'.$projectKey);
-        $stampUrl = $liffBaseUrl.'#/stamp?grant='.rawurlencode($grantUrl);
+        $output = $useCase->handle($this->resolveAdminProjectId(), $projectKey, $id);
 
-        return view('admin.stamps.grant-qr', compact('stampCard', 'stampUrl', 'expiresAt'));
+        return view('admin.stamps.grant-qr', [
+            'stampCard' => $output->stampCard,
+            'stampUrl' => $output->stampUrl,
+            'expiresAt' => $output->expiresAt,
+        ]);
     }
 
     public function storeStamp(StampStoreRequest $request)

@@ -8,6 +8,7 @@ use App\Models\Coupon;
 use App\Models\User;
 use App\UseCases\Coupon\Data\CouponListView;
 use App\UseCases\Coupon\Data\MemberCoupon;
+use App\Util\AdminContext;
 
 class CouponMyCouponsUseCase
 {
@@ -21,7 +22,7 @@ class CouponMyCouponsUseCase
         $member = $user->member;
 
         if ($member === null) {
-            $projectId = $user->project_id ?? 1;
+            $projectId = AdminContext::resolveProjectId($user->project_id !== null ? (int) $user->project_id : null);
             $defaultImageUrl = $this->shopSettingRepository->getCouponDefaultImageUrl($projectId);
 
             return new CouponListView([], $defaultImageUrl, true);
