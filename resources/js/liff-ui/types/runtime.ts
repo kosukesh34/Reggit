@@ -119,4 +119,8 @@ export interface OperationReceipt {
   orderId?: number;
   totalAmount?: number;
   needsPayment?: boolean;
+  stampCardId?: number;
+  currentStamps?: number;
+  grantedCount?: number;
+  message?: string;
 }

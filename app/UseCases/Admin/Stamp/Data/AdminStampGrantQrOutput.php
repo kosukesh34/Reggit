@@ -11,5 +11,8 @@ class AdminStampGrantQrOutput
         public readonly StampCard $stampCard,
         public readonly string $stampUrl,
         public readonly Carbon $expiresAt,
+        public readonly int $expiresMinutes,
+        public readonly int $amount,
+        public readonly string $limit,
     ) {}
 }
