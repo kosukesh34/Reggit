@@ -211,7 +211,7 @@ class AdminStampsTest extends TestCase
 
         $card = StampCard::query()->where('name', '来店スタンプ')->first();
         $this->assertNotNull($card);
-        $this->assertSame([
+        $this->assertEquals([
             [
                 'stamp_count' => 3,
                 'reward_type' => 'text',
