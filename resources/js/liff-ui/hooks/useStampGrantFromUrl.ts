@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useSearchParams } from "react-router-dom";
 import { useRuntimeData } from "../context/RuntimeDataContext";
-import { parseStampGrant, resolveStampGrantFromLocation } from "../utils/stampGrant";
+import { parseStampGrant, resolveStampGrantFromLocation, STAMP_GRANT_INVALID_QR_MESSAGE } from "../utils/stampGrant";
 import { clearStampGrantCodeFromUrl } from "../../shared/utils/stampGrantToken";
 
 export type StampGrantPhase = "idle" | "granting" | "success" | "error";
@@ -12,6 +12,10 @@ export interface StampGrantFromUrl {
   stampCardId: number | null;
   currentStamps: number | null;
   grantedCount: number;
+  completedNow: boolean;
+  cycleCount: number;
+  nextStampCardId: number | null;
+  nextStampCardName: string;
   animationKey: number;
   grantFromRaw: (raw: string) => Promise<boolean>;
 }
@@ -26,13 +30,17 @@ export function useStampGrantFromUrl(): StampGrantFromUrl {
   const [stampCardId, setStampCardId] = useState<number | null>(null);
   const [currentStamps, setCurrentStamps] = useState<number | null>(null);
   const [grantedCount, setGrantedCount] = useState(0);
+  const [completedNow, setCompletedNow] = useState(false);
+  const [cycleCount, setCycleCount] = useState(0);
+  const [nextStampCardId, setNextStampCardId] = useState<number | null>(null);
+  const [nextStampCardName, setNextStampCardName] = useState("");
   const [animationKey, setAnimationKey] = useState(0);
 
   const grantFromRaw = useCallback(async (raw: string): Promise<boolean> => {
     const payload = parseStampGrant(raw);
     if (payload === null) {
       setPhase("error");
-      setMessage("QRコードを確認してください。");
+      setMessage(STAMP_GRANT_INVALID_QR_MESSAGE);
       return false;
     }
     setPhase("granting");
@@ -43,6 +51,10 @@ export function useStampGrantFromUrl(): StampGrantFromUrl {
       setStampCardId(receipt.stampCardId ?? null);
       setCurrentStamps(receipt.currentStamps ?? null);
       setGrantedCount(count);
+      setCompletedNow(receipt.completedNow === true);
+      setCycleCount(receipt.cycleCount ?? 0);
+      setNextStampCardId(receipt.nextStampCardId ?? null);
+      setNextStampCardName(receipt.nextStampCardName ?? "");
       setMessage(receipt.message ?? `スタンプを${count}個追加しました`);
       setAnimationKey((current) => current + 1);
       setPhase("success");
@@ -72,5 +84,5 @@ export function useStampGrantFromUrl(): StampGrantFromUrl {
     });
   }, [grantFromRaw, location.pathname, mode, searchParams, setSearchParams]);
 
-  return { phase, message, stampCardId, currentStamps, grantedCount, animationKey, grantFromRaw };
+  return { phase, message, stampCardId, currentStamps, grantedCount, completedNow, cycleCount, nextStampCardId, nextStampCardName, animationKey, grantFromRaw };
 }

@@ -56,10 +56,16 @@ function stampGrantReceipt(payload: Record<string, unknown>): OperationReceipt {
   const stampCardId = Number(payload.stamp_card_id);
   const currentStamps = Number(payload.current_stamps);
   const grantedCount = Number(payload.granted_count);
+  const cycleCount = Number(payload.cycle_count);
+  const nextStampCardId = Number(payload.next_stamp_card_id);
   return receiptFrom(`STP-${String(payload.stamp_card_id ?? 'QR')}`, {
     stampCardId: Number.isFinite(stampCardId) && stampCardId > 0 ? stampCardId : undefined,
     currentStamps: Number.isFinite(currentStamps) && currentStamps >= 0 ? currentStamps : undefined,
     grantedCount: Number.isFinite(grantedCount) && grantedCount > 0 ? grantedCount : 1,
+    completedNow: payload.completed_now === true,
+    cycleCount: Number.isFinite(cycleCount) && cycleCount > 0 ? cycleCount : undefined,
+    nextStampCardId: Number.isFinite(nextStampCardId) && nextStampCardId > 0 ? nextStampCardId : undefined,
+    nextStampCardName: typeof payload.next_stamp_card_name === 'string' ? payload.next_stamp_card_name : undefined,
     message: typeof payload.message === 'string' ? payload.message : undefined,
   });
 }

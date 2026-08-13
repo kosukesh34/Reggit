@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Concerns\BelongsToProject;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class StampCard extends Model
@@ -36,6 +37,7 @@ class StampCard extends Model
     protected $fillable = [
         'project_id', 'name', 'required_stamps', 'reward_description', 'image_url',
         'stamp_images', 'stamp_empty_images', 'layout_style', 'valid_days', 'valid_until', 'reward_milestones', 'is_active',
+        'cycle_mode', 'next_stamp_card_id',
     ];
 
     /** @var array<string, string> */
@@ -47,6 +49,7 @@ class StampCard extends Model
         'stamp_images' => 'array',
         'stamp_empty_images' => 'array',
         'is_active' => 'boolean',
+        'next_stamp_card_id' => 'integer',
     ];
 
     public function project()
@@ -57,5 +60,24 @@ class StampCard extends Model
     public function memberStamps(): HasMany
     {
         return $this->hasMany(MemberStamp::class);
+    }
+
+    public function nextStampCard(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'next_stamp_card_id');
+    }
+
+    public function activeNextCard(): ?self
+    {
+        $nextId = (int) ($this->next_stamp_card_id ?? 0);
+        if ($nextId <= 0 || $nextId === (int) $this->id) {
+            return null;
+        }
+        $next = $this->nextStampCard;
+        if ($next === null || $next->is_active !== true || (int) $next->project_id !== (int) $this->project_id) {
+            return null;
+        }
+
+        return $next;
     }
 }

@@ -1505,6 +1505,17 @@ body.reggit-liff-ui .membership-page .member-section.member-card-mount {
 .stamp-grant-success > div { display: grid; gap: 3px; }
 .stamp-grant-success strong { font-size: 12px; }
 .stamp-grant-success p { margin: 0; color: #4d6d61; font-size: 9px; line-height: 1.55; }
+.stamp-complete-overlay { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 24px; background: rgba(15, 23, 42, .45); }
+.stamp-complete-card { display: grid; gap: 10px; width: min(100%, 340px); padding: 22px 20px 18px; text-align: center; background: #fff; border-radius: 22px; box-shadow: 0 18px 40px rgba(15, 23, 42, .18); }
+.stamp-complete-kicker { margin: 0; color: #3d8d6f; font-size: 11px; font-weight: 700; letter-spacing: .08em; }
+.stamp-complete-card h3 { margin: 0; font-size: 22px; }
+.stamp-complete-card p { margin: 0; color: #475569; font-size: 13px; line-height: 1.6; }
+.stamp-complete-next { font-weight: 700; color: #245c49 !important; }
+.stamp-complete-card .btn { margin-top: 6px; }
+.stamp-archive { margin: 8px 20px 16px; }
+.stamp-archive summary { cursor: pointer; color: #64748b; font-size: 13px; font-weight: 700; }
+.stamp-archive__list, .stamp-archive .stamps-list { margin-top: 12px; }
+.stamp-card-next-hint { margin: 8px 0 0; color: #3d8d6f; font-size: 12px; }
 .stamp-grid > div.is-new, .simple-stamp-grid span.is-new, .stamp-slot--new, .ios-stamp-dot.is-new { animation: stamp-pop .72s cubic-bezier(.16,.9,.26,1.35) both; }
 .stamp-progress span { transition: width .6s cubic-bezier(.2,.8,.2,1); }
 
@@ -1556,6 +1567,22 @@ body.reggit-liff-ui .membership-page .member-section.member-card-mount {
   line-height: 1.6;
   text-align: center;
   text-shadow: 0 1px 4px rgb(0 0 0 / .6);
+}
+.stamp-scanner-root__invalid {
+  position: absolute;
+  right: 18px;
+  bottom: max(72px, calc(env(safe-area-inset-bottom) + 56px));
+  left: 18px;
+  margin: 0;
+  padding: 10px 12px;
+  color: #fff;
+  background: rgb(153 27 27 / .88);
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.5;
+  text-align: center;
+  pointer-events: none;
 }
 .stamp-scanner-root__error {
   position: absolute;

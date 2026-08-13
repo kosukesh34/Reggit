@@ -24,12 +24,15 @@ function ProgressSummary({
     current,
     required,
     completed,
+    cycleCount,
 }: {
     current: number;
     required: number;
     completed: boolean;
+    cycleCount?: number;
 }): JSX.Element {
     const progress = Math.min(100, required > 0 ? (current / required) * 100 : 0);
+    const round = cycleCount !== undefined && cycleCount > 0 ? `${cycleCount}周達成 · ${cycleCount + 1}周目` : null;
     return (
         <div className={`stamp-progress-summary${completed ? ' stamp-progress-summary--completed' : ''}`}>
             <div className="stamp-progress-summary__ring" style={{ ['--stamp-progress' as string]: progress }}>
@@ -40,7 +43,7 @@ function ProgressSummary({
             </div>
             <div className="stamp-progress-summary__copy">
                 <strong>{completed ? '達成しました' : `あと ${Math.max(0, required - current)} 個`}</strong>
-                <span>スタンプを集めて特典をゲット</span>
+                <span>{round ?? 'スタンプを集めて特典をゲット'}</span>
             </div>
         </div>
     );
@@ -277,7 +280,7 @@ function ClassicStampCard({
                     ) : null}
                 </div>
             </div>
-            <ProgressSummary current={current} required={required} completed={completed} />
+            <ProgressSummary current={current} required={required} completed={completed} cycleCount={card.cycle_count} />
             <StampSlots
                 current={current}
                 required={required}
@@ -301,6 +304,9 @@ function ClassicStampCard({
                 milestones={Array.isArray(card.reward_milestones) ? card.reward_milestones : []}
                 current={current}
             />
+            {card.next_stamp_card_name ? (
+                <p className="stamp-card-next-hint">達成すると「{card.next_stamp_card_name}」に進みます</p>
+            ) : null}
             {card.reward_description ? <p className="stamp-card-reward">{card.reward_description}</p> : null}
         </button>
     );
@@ -352,6 +358,12 @@ function FixedStampCard({
                 </div>
                 <h3 className="ios-stamp-card__title">{card.name || 'スタンプカード'}</h3>
                 <p className="ios-stamp-card__reward">{reward}</p>
+                {card.cycle_count && card.cycle_count > 0 ? (
+                    <p className="ios-stamp-card__round">{card.cycle_count}周達成 · {card.cycle_count + 1}周目</p>
+                ) : null}
+                {card.next_stamp_card_name ? (
+                    <p className="ios-stamp-card__round">達成すると「{card.next_stamp_card_name}」へ</p>
+                ) : null}
             </div>
             <div className="ios-stamp-card__body">
                 <div className="ios-stamp-card__meter">
@@ -378,8 +390,9 @@ function popRangeFor(
     currentStamps: number | null,
     grantedCount: number,
     phase: string,
+    completedNow: boolean,
 ): { from: number; to: number } | undefined {
-    if (phase !== 'success' || stampCardId === null || currentStamps === null) {
+    if (completedNow || phase !== 'success' || stampCardId === null || currentStamps === null) {
         return undefined;
     }
     if (String(stampCardId) !== cardId) {
@@ -394,6 +407,7 @@ function popRangeFor(
 export function StampsView(): JSX.Element {
     const [view, setView] = useState<ViewState>({ kind: 'loading' });
     const [scannerOpen, setScannerOpen] = useState(false);
+    const [completeOpen, setCompleteOpen] = useState(false);
     const grant = useStampGrantFromUrl();
     const design = getStampDesignSettings();
 
@@ -425,8 +439,11 @@ export function StampsView(): JSX.Element {
         if (grant.phase !== 'success' || grant.animationKey === 0) {
             return;
         }
+        if (grant.completedNow) {
+            setCompleteOpen(true);
+        }
         void reload(true);
-    }, [grant.animationKey, grant.phase, reload]);
+    }, [grant.animationKey, grant.completedNow, grant.phase, reload]);
 
     const onOpen = (id: string): void => {
         if (view.kind !== 'ready') {
@@ -435,12 +452,42 @@ export function StampsView(): JSX.Element {
         openStampDetail(id, view.cards, view.defaultImage);
     };
 
+    const dismissComplete = (): void => {
+        setCompleteOpen(false);
+        if (grant.nextStampCardId === null) {
+            return;
+        }
+        const target = document.querySelector(`[data-stamp-id="${String(grant.nextStampCardId)}"]`);
+        if (target instanceof HTMLElement) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    };
+
     const grantBanner = (
         <>
+            {completeOpen ? (
+                <div className="stamp-complete-overlay" role="dialog" aria-labelledby="stamp-complete-title" aria-modal="true">
+                    <div className="stamp-complete-card">
+                        <p className="stamp-complete-kicker">スタンプカード</p>
+                        <h3 id="stamp-complete-title">カード達成！</h3>
+                        <p>{grant.message}</p>
+                        {grant.nextStampCardName !== '' ? (
+                            <p className="stamp-complete-next">次は「{grant.nextStampCardName}」です</p>
+                        ) : grant.cycleCount > 0 ? (
+                            <p className="stamp-complete-next">{grant.cycleCount + 1}周目が始まりました</p>
+                        ) : (
+                            <p className="stamp-complete-next">特典をお楽しみください</p>
+                        )}
+                        <button type="button" className="btn btn-primary" onClick={dismissComplete}>
+                            {grant.nextStampCardName !== '' ? '次のカードを見る' : '閉じる'}
+                        </button>
+                    </div>
+                </div>
+            ) : null}
             {grant.phase === 'granting' ? (
                 <p className="stamp-grant-status" role="status">スタンプを付与しています…</p>
             ) : null}
-            {grant.phase === 'success' ? (
+            {grant.phase === 'success' && completeOpen !== true ? (
                 <div className="stamp-grant-success" role="status" key={grant.animationKey}>
                     <span><i className="fas fa-check" aria-hidden="true" /></span>
                     <div>
@@ -543,7 +590,10 @@ export function StampsView(): JSX.Element {
         grant.currentStamps,
         grant.grantedCount,
         grant.phase,
+        grant.completedNow,
     );
+    const collecting = cards.filter((card) => card.is_archived !== true);
+    const archived = cards.filter((card) => card.is_archived === true);
 
     if (cards.length === 0) {
         if (fixed) {
@@ -577,7 +627,7 @@ export function StampsView(): JSX.Element {
                 </div>
                 {grantBanner}
                 <div className="ios-stamp-stack">
-                    {cards.map((card) => {
+                    {collecting.map((card) => {
                         const range = rangeOf(String(card.id ?? ''));
                         return (
                             <FixedStampCard
@@ -591,6 +641,21 @@ export function StampsView(): JSX.Element {
                         );
                     })}
                 </div>
+                {archived.length > 0 ? (
+                    <details className="stamp-archive">
+                        <summary>達成したカード（{archived.length}）</summary>
+                        <div className="ios-stamp-stack stamp-archive__list">
+                            {archived.map((card) => (
+                                <FixedStampCard
+                                    key={String(card.id)}
+                                    card={card}
+                                    defaultImage={defaultImage}
+                                    onOpen={onOpen}
+                                />
+                            ))}
+                        </div>
+                    </details>
+                ) : null}
                 {scanControls}
             </>
         );
@@ -609,7 +674,7 @@ export function StampsView(): JSX.Element {
             </div>
             {grantBanner}
             <div className={`stamps-list stamp-screen--${design.screenDesign}`} style={accentStyle}>
-                {cards.map((card) => {
+                {collecting.map((card) => {
                     const range = rangeOf(String(card.id ?? ''));
                     return (
                         <ClassicStampCard
@@ -624,6 +689,22 @@ export function StampsView(): JSX.Element {
                     );
                 })}
             </div>
+            {archived.length > 0 ? (
+                <details className="stamp-archive">
+                    <summary>達成したカード（{archived.length}）</summary>
+                    <div className={`stamps-list stamp-screen--${design.screenDesign}`} style={accentStyle}>
+                        {archived.map((card) => (
+                            <ClassicStampCard
+                                key={String(card.id)}
+                                card={card}
+                                defaultImage={defaultImage}
+                                design={design}
+                                onOpen={onOpen}
+                            />
+                        ))}
+                    </div>
+                </details>
+            ) : null}
             {scanControls}
         </>
     );
