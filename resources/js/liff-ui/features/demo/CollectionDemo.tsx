@@ -54,6 +54,7 @@ interface CollectionDemoProps {
   liveCatalog?: RuntimeCatalogItem[];
   history?: RuntimeHistoryItem[];
   onReadNews?: (announcementId: string) => Promise<void>;
+  isLive?: boolean;
 }
 
 function newsExcerpt(body: string, maxLen = 96): string {
@@ -64,15 +65,15 @@ function newsExcerpt(body: string, maxLen = 96): string {
   return `${text.slice(0, maxLen)}…`;
 }
 
-export function CollectionDemo({ feature, featureImage, heroImage, news, stores, storeId, orderPath, liveCatalog, history, onReadNews }: CollectionDemoProps) {
+export function CollectionDemo({ feature, featureImage, heroImage, news, stores, storeId, orderPath, liveCatalog, history, onReadNews, isLive = false }: CollectionDemoProps) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [favorites, setFavorites] = useState<string[]>(["p1", "p2"]);
   const [favoriteStore, setFavoriteStore] = useState(stores[0]?.name);
   const [selectedGallery, setSelectedGallery] = useState<number | null>(null);
   const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
-  const catalogItems = liveCatalog?.length
-    ? liveCatalog.map((item) => ({ ...item, price: `¥${item.price.toLocaleString()}` }))
+  const catalogItems = isLive || (liveCatalog !== undefined && liveCatalog.length > 0)
+    ? (liveCatalog ?? []).map((item) => ({ ...item, price: `¥${item.price.toLocaleString()}` }))
     : catalogItemsByStore[storeId] ?? defaultCatalogItems;
 
   const toggleFavorite = (id: string) => {
@@ -223,9 +224,32 @@ export function CollectionDemo({ feature, featureImage, heroImage, news, stores,
 
   if (feature === "purchaseHistory" || feature === "orderHistory") {
     const isOrder = feature === "orderHistory";
-    const liveHistory = history?.filter((item) => item.type === (isOrder ? "order" : "purchase"));
-    if (liveHistory?.length) {
-      return <div className="feature-card-list">{liveHistory.map((item) => <Card className="history-card" padding="lg" key={item.id}><div className="history-card__head"><span>{item.date}</span><b>{item.status}</b></div><h2>{item.title}</h2><p>{item.summary}</p><div className="history-card__footer"><strong>¥{item.total.toLocaleString()}</strong>{isOrder ? <Button variant="soft" size="sm" onClick={() => navigate(orderPath)}><RotateCcw size={15} />もう一度注文</Button> : null}</div></Card>)}</div>;
+    const liveHistory = (history ?? []).filter((item) => item.type === (isOrder ? "order" : "purchase"));
+    if (isLive || liveHistory.length > 0) {
+      if (liveHistory.length === 0) {
+        return (
+          <Card className="feature-empty" padding="lg">
+            <RotateCcw size={28} />
+            <h2>{isOrder ? "注文履歴はありません" : "購入履歴はありません"}</h2>
+            <p>{isOrder ? "注文すると、ここに履歴が表示されます。" : "購入すると、ここに明細が表示されます。"}</p>
+          </Card>
+        );
+      }
+      return (
+        <div className="feature-card-list">
+          {liveHistory.map((item) => (
+            <Card className="history-card" padding="lg" key={item.id}>
+              <div className="history-card__head"><span>{item.date}</span><b>{item.status}</b></div>
+              <h2>{item.title}</h2>
+              <p>{item.summary}</p>
+              <div className="history-card__footer">
+                <strong>¥{item.total.toLocaleString()}</strong>
+                {isOrder ? <Button variant="soft" size="sm" onClick={() => navigate(orderPath)}><RotateCcw size={15} />もう一度注文</Button> : null}
+              </div>
+            </Card>
+          ))}
+        </div>
+      );
     }
     return (
       <div className="feature-card-list">
@@ -254,7 +278,14 @@ export function CollectionDemo({ feature, featureImage, heroImage, news, stores,
           </Card>
         );
       })}
-      {visibleItems.length === 0 ? <Card className="feature-empty" padding="lg"><Heart size={28} /><h2>お気に入りはありません</h2><p>メニューから気になる商品を保存できます。</p><Button onClick={() => navigate("/menu")}>メニューを見る</Button></Card> : null}
+      {visibleItems.length === 0 ? (
+        <Card className="feature-empty" padding="lg">
+          <Heart size={28} />
+          <h2>{feature === "favorite" ? "お気に入りはありません" : "商品はありません"}</h2>
+          <p>{feature === "favorite" ? "メニューから気になる商品を保存できます。" : "商品が登録されると、ここに表示されます。"}</p>
+          {feature === "favorite" ? <Button onClick={() => navigate("/menu")}>メニューを見る</Button> : null}
+        </Card>
+      ) : null}
     </div>
   );
 }
