@@ -26,7 +26,7 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { BottomSheet } from "../../components/ui/BottomSheet";
-import { StampScannerPopup } from "../../components/stamp/StampScannerPopup";
+import { openStampScanner, StampScannerPopup } from "../../components/stamp/StampScannerPopup";
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import type { CouponItem } from "../../types/app";
@@ -249,7 +249,7 @@ export function StampDemo({ config, storeId, brandName }: { config: AppCustomiza
       </Card>
       {successMessage ? <div className="stamp-grant-success" role="status" key={animationKey}><span><Check size={19} /></span><div><strong>スタンプ付与完了</strong><p>{successMessage}</p></div></div> : null}
       {error ? <div className="form-error" role="alert">{error}</div> : null}
-      <Button size="lg" disabled={complete || submitting} onClick={() => { setError(undefined); setScannerOpen(true); }}><Camera size={19} />{complete ? "特典獲得済み" : "カメラでQRを読み取る"}</Button>
+      <Button size="lg" disabled={complete || submitting} onClick={() => { setError(undefined); openStampScanner(setScannerOpen); }}><Camera size={19} />{complete ? "特典獲得済み" : "カメラでQRを読み取る"}</Button>
       <StampScannerPopup open={scannerOpen} onClose={() => setScannerOpen(false)} onDetected={handleDetected} />
     </div>
   );
