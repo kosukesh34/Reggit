@@ -16,6 +16,8 @@ import { CouponsView } from "../../frontend/features/coupons/CouponsView";
 import { StampsView } from "../../frontend/features/stamps/StampsView";
 import { QueueView } from "../../frontend/features/queue/QueueView";
 import { ReservationsView } from "../../frontend/features/reservations/ReservationsView";
+import { GalleryView } from "../../frontend/features/gallery/GalleryView";
+import { OrdersView } from "../../frontend/features/orders/OrdersView";
 import { pathForLegacyTab } from "../navigation/tabPath";
 import { isLinkTabType } from "../types/app";
 import { LinkSitePage } from "./LinkSitePage";
@@ -149,6 +151,12 @@ export function FeaturePage() {
     if (feature === "reservation") {
       return <div className="page feature-page"><ReservationsView /></div>;
     }
+    if (feature === "gallery") {
+      return <div className="page feature-page"><GalleryView /></div>;
+    }
+    if (feature === "orderHistory") {
+      return <div className="page feature-page"><OrdersView /></div>;
+    }
   }
 
   const definition = featureDefinitionMap[feature];
@@ -196,6 +204,7 @@ export function FeaturePage() {
           liveCatalog={commerce?.items}
           history={history}
           onReadNews={markAnnouncementRead}
+          isLive={isLiveBound}
         />
       );
   }
