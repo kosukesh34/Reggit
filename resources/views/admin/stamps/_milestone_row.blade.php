@@ -3,12 +3,11 @@
     $isNamed = $isNamed ?? true;
     $idPrefix = $idPrefix ?? 'reward_milestones';
     $milestone = is_array($milestone ?? null) ? $milestone : [];
-    $rewardType = \App\Enums\StampRewardType::normalize((string) ($milestone['reward_type'] ?? \App\Enums\StampRewardType::TEXT));
+    $rewardType = \App\Enums\StampRewardType::normalize((string) ($milestone['reward_type'] ?? \App\Enums\StampRewardType::COUPON));
     $selectedCouponId = (int) ($milestone['coupon_id'] ?? 0);
     $coupons = $coupons ?? collect();
     $countId = $idPrefix.'_'.$index.'_stamp_count';
     $typeId = $idPrefix.'_'.$index.'_reward_type';
-    $descriptionId = $idPrefix.'_'.$index.'_description';
     $couponId = $idPrefix.'_'.$index.'_coupon_id';
 @endphp
 <div class="stamp-milestone-row" data-milestone-row>
@@ -26,11 +25,6 @@
         </select>
     </div>
     <div class="stamp-milestone-reward-wrap">
-        <div data-reward-text @if($rewardType !== \App\Enums\StampRewardType::TEXT) hidden @endif>
-            <label class="form-label" data-label-description @if($isNamed) for="{{ $descriptionId }}" @endif>特典内容</label>
-            <input type="text" maxlength="500" class="form-control milestone-description-input" placeholder="例）ドリンク1杯無料"
-                @if($isNamed) id="{{ $descriptionId }}" name="reward_milestones[{{ $index }}][description]" value="{{ $milestone['description'] ?? '' }}" @endif>
-        </div>
         <div data-reward-coupon @if($rewardType !== \App\Enums\StampRewardType::COUPON) hidden @endif>
             <label class="form-label" data-label-coupon @if($isNamed) for="{{ $couponId }}" @endif>クーポン</label>
             <select class="form-control milestone-coupon-input" @if($isNamed) id="{{ $couponId }}" name="reward_milestones[{{ $index }}][coupon_id]" @endif>
