@@ -113,6 +113,8 @@ class MemberUpdateRequest extends FormRequest
             'member_number.required' => '会員番号を入力してください',
             'member_number.unique' => 'この会員番号は既に使用されています',
             'status.in' => 'ステータスを選択してください',
+            'notification_preference.required' => 'お知らせ通知を選択してください',
+            'notification_preference.in' => 'お知らせ通知を選択してください',
             'kana_last.regex' => 'フリガナ（姓）はカタカナで入力してください',
             'kana_first.regex' => 'フリガナ（名）はカタカナで入力してください',
         ]);
