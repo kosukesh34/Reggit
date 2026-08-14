@@ -5,7 +5,7 @@
 
 @section('content')
 <nav class="breadcrumb" aria-label="パンくず">
-    <a href="{{ admin_route('admin.settings.basic') }}">設定</a>
+    <a href="{{ admin_route('admin.settings.index') }}">設定</a>
     <span class="breadcrumb-sep">/</span>
     <span>機能・カスタマイズ</span>
 </nav>
@@ -39,10 +39,10 @@
             <div class="form-group">
                 <label for="admin_sidebar_color" class="form-label">サイドバー背景色</label>
                 <div class="flex-row-gap-8">
-                    <input type="color" name="admin_sidebar_color" id="admin_sidebar_color" value="{{ $view->adminSidebarColor ?? '#2c3e50' }}" class="color-input">
-                    <input type="text" class="form-control input-max-200" value="{{ $view->adminSidebarColor ?? '' }}" placeholder="#2c3e50" oninput="document.getElementById('admin_sidebar_color').value=this.value">
+                    <input type="color" name="admin_sidebar_color" id="admin_sidebar_color" value="{{ $view->adminSidebarColor ?? '#ffffff' }}" class="color-input">
+                    <input type="text" class="form-control input-max-200" value="{{ $view->adminSidebarColor ?? '' }}" placeholder="#ffffff" oninput="document.getElementById('admin_sidebar_color').value=this.value">
                 </div>
-                <p class="form-text text-muted">空にするとデフォルトカラーが使用されます。</p>
+                <p class="form-text text-muted">ライトテーマでは背景は白のままです。アクセントカラーがメニューやボタンに使われます。</p>
             </div>
             <div class="form-group">
                 <label for="admin_header_color" class="form-label">ヘッダー背景色</label>
@@ -54,16 +54,19 @@
             <div class="form-group">
                 <label for="admin_primary_color" class="form-label">アクセントカラー</label>
                 <div class="flex-row-gap-8">
-                    <input type="color" name="admin_primary_color" id="admin_primary_color" value="{{ $view->adminPrimaryColor ?? '#0d9488' }}" class="color-input">
-                    <input type="text" class="form-control input-max-200" value="{{ $view->adminPrimaryColor ?? '' }}" placeholder="#0d9488" oninput="document.getElementById('admin_primary_color').value=this.value">
+                    <input type="color" name="admin_primary_color" id="admin_primary_color" value="{{ $view->adminPrimaryColor ?? '#2563eb' }}" class="color-input">
+                    <input type="text" class="form-control input-max-200" value="{{ $view->adminPrimaryColor ?? '' }}" placeholder="#2563eb" oninput="document.getElementById('admin_primary_color').value=this.value">
                 </div>
-                <p class="form-text text-muted">ボタンや強調表示の色に使用されます。</p>
+                <p class="form-text text-muted">ボタン、選択中メニュー、リンク色に使われます。</p>
             </div>
-            <div class="form-group">
-                <label for="stamp_default_image_url" class="form-label">スタンプデフォルト画像URL</label>
-                <input type="url" name="stamp_default_image_url" id="stamp_default_image_url" class="form-control" value="{{ $view->stampDefaultImageUrl ?? '' }}" placeholder="https://example.com/stamp-default.png">
-                <p class="form-text text-muted">スタンプカードに画像が設定されていない場合に使用されます。</p>
-            </div>
+            @include('admin.partials._frontend_logo_dropzone', [
+                'logoInputName' => 'stamp_default_image',
+                'logoClearName' => 'stamp_default_image_clear',
+                'logoFieldId' => 'stamp_default_image',
+                'logoCurrentUrl' => (string) ($view->stampDefaultImageUrl ?? ''),
+                'logoLabel' => 'スタンプデフォルト画像',
+                'logoHelp' => 'スタンプカードに画像が設定されていない場合に使用されます。',
+            ])
             <p class="form-text text-muted">クーポンのデフォルト画像は <a href="{{ admin_route('admin.settings.coupons') }}">クーポン設定</a> で変更できます。</p>
         </div>
     </div>

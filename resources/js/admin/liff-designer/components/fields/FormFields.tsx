@@ -92,28 +92,71 @@ export function ImageUrlField({
 }) {
     const trimmed = value.trim();
     const hasImage = isLikelyImageUrl(trimmed);
+    const fileRef = useRef<HTMLInputElement>(null);
+    const [isDragOver, setIsDragOver] = useState(false);
+
+    const applyFile = (file: File | undefined): void => {
+        if (file === undefined || !file.type.startsWith('image/')) {
+            return;
+        }
+        if (file.size > 2 * 1024 * 1024) {
+            window.alert('画像サイズは2MB以下にしてください');
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = () => {
+            if (typeof reader.result === 'string') {
+                onChange(reader.result);
+            }
+        };
+        reader.readAsDataURL(file);
+    };
 
     return (
         <FieldGroup
             label={label}
-            hint={hint !== undefined && hint !== '' ? hint : '画像のURLを入力するとプレビューに反映されます'}
+            hint={hint !== undefined && hint !== '' ? hint : 'クリックまたはドラッグ＆ドロップ、もしくはURLを入力'}
         >
-            <div className={`ld-image-field${compact ? ' ld-image-field--compact' : ''}`}>
-                <div className={`ld-image-field__preview${hasImage ? '' : ' is-empty'}`}>
+            <div className={`ld-image-field${compact ? ' ld-image-field--compact' : ''}${isDragOver ? ' is-dragover' : ''}`}>
+                <button
+                    type="button"
+                    className={`ld-image-field__preview${hasImage ? '' : ' is-empty'}`}
+                    onClick={() => fileRef.current?.click()}
+                    onDragOver={(e) => {
+                        e.preventDefault();
+                        setIsDragOver(true);
+                    }}
+                    onDragLeave={() => setIsDragOver(false)}
+                    onDrop={(e) => {
+                        e.preventDefault();
+                        setIsDragOver(false);
+                        applyFile(e.dataTransfer.files[0]);
+                    }}
+                >
                     {hasImage ? (
                         <img src={trimmed} alt="" />
                     ) : (
                         <span className="ld-image-field__placeholder">
-                            <i className="fas fa-image" />
-                            <span>画像未設定</span>
+                            <i className="fas fa-cloud-upload-alt" />
+                            <span>クリックまたはドラッグ＆ドロップ</span>
                         </span>
                     )}
-                </div>
+                </button>
+                <input
+                    ref={fileRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/gif,image/webp"
+                    hidden
+                    onChange={(e) => {
+                        applyFile(e.target.files?.[0]);
+                        e.target.value = '';
+                    }}
+                />
                 <div className="ld-image-field__controls">
                     <input
                         type="url"
                         className="ld-form-input"
-                        value={value}
+                        value={value.startsWith('data:image') ? '' : value}
                         placeholder="https://example.com/image.jpg"
                         onChange={(e) => onChange(e.target.value)}
                     />

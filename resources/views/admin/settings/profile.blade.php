@@ -6,7 +6,7 @@
 <nav class="breadcrumb">
     <a href="{{ admin_route('admin.dashboard') }}">ダッシュボード</a>
     <span class="breadcrumb-sep">/</span>
-    <span>設定</span>
+    <a href="{{ admin_route('admin.settings.index') }}">設定</a>
     <span class="breadcrumb-sep">/</span>
     <span>プロフィール設定</span>
 </nav>

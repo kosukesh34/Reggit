@@ -21,6 +21,8 @@ class UpdateFeatureSettingsUseCase
         array $payload,
         ?UploadedFile $frontendLogoFile = null,
         bool $clearFrontendLogo = false,
+        ?UploadedFile $stampDefaultImageFile = null,
+        bool $clearStampDefaultImage = false,
     ): void {
         $features = $this->shopSettingRepository->withPreservedLotteryManagedFlags($payload['features'] ?? [], $projectId);
         $this->shopSettingRepository->setFeatureFlags($features, $projectId);
@@ -28,8 +30,22 @@ class UpdateFeatureSettingsUseCase
         $this->shopSettingRepository->setValue('admin_sidebar_color', $payload['admin_sidebar_color'] ?? '', 'string', $projectId);
         $this->shopSettingRepository->setValue('admin_header_color', $payload['admin_header_color'] ?? '', 'string', $projectId);
         $this->shopSettingRepository->setValue('admin_primary_color', $payload['admin_primary_color'] ?? '', 'string', $projectId);
-        $this->shopSettingRepository->setValue('stamp_default_image_url', $payload['stamp_default_image_url'] ?? '', 'string', $projectId);
         $this->shopSettingRepository->setValue('frontend_header_text', $payload['frontend_header_text'] ?? '', 'string', $projectId);
+
+        if ($stampDefaultImageFile !== null) {
+            $this->shopSettingRepository->setValue(
+                'stamp_default_image_url',
+                $this->publicImageStorage->store(
+                    $stampDefaultImageFile,
+                    $projectId,
+                    PublicImageStorageService::DIR_STAMP_DEFAULT,
+                ),
+                'string',
+                $projectId,
+            );
+        } elseif ($clearStampDefaultImage) {
+            $this->shopSettingRepository->setValue('stamp_default_image_url', '', 'string', $projectId);
+        }
 
         if ($frontendLogoFile !== null) {
             $logoUrl = $this->publicImageStorage->store(

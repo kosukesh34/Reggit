@@ -9,7 +9,7 @@
 
 @section('content')
 <nav class="breadcrumb" aria-label="パンくず">
-    <a href="{{ admin_route('admin.settings.basic') }}">設定</a>
+    <a href="{{ admin_route('admin.settings.index') }}">設定</a>
     <span class="breadcrumb-sep">/</span>
     <span>ランク・ポイント</span>
 </nav>
@@ -321,7 +321,7 @@
 
     <div class="form-actions form-actions-ranks">
         <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> 保存</button>
-        <a href="{{ admin_route('admin.settings.basic') }}" class="btn btn-secondary">戻る</a>
+        <a href="{{ admin_route('admin.settings.index') }}" class="btn btn-secondary">戻る</a>
     </div>
 </form>
 
