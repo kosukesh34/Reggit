@@ -96,17 +96,10 @@ a.settings-hub-card {
     border-radius: var(--radius-lg);
     text-decoration: none;
     color: inherit;
-    box-shadow: var(--shadow-xs);
-    transition:
-        border-color var(--transition-fast),
-        box-shadow var(--transition-fast),
-        transform var(--transition-fast);
 }
 
 a.settings-hub-card:hover {
     border-color: var(--primary-light);
-    box-shadow: var(--shadow-sm);
-    transform: translateY(-1px);
     color: inherit;
     text-decoration: none;
 }

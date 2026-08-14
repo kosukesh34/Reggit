@@ -21,8 +21,8 @@ class AdminCouponStoreUseCase
             $validated['is_active'] = true;
             $validated['issue_trigger'] = Coupon::ISSUE_TRIGGER_MANUAL;
             $validated['use_display'] = $validated['use_display'] ?? Coupon::USE_DISPLAY_BARCODE;
-            $validated['design_template'] = Coupon::DESIGN_CLASSIC;
         }
+        $validated['design_template'] = Coupon::DESIGN_CLASSIC;
 
         return $this->couponAdminService->create($projectId, $validated);
     }
