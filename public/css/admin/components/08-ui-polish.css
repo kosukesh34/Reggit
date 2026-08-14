@@ -131,14 +131,6 @@ pre,
     transform: translateY(1px);
 }
 
-.btn-primary {
-    box-shadow: 0 6px 14px rgba(37, 99, 235, 0.18);
-}
-
-.btn-primary:hover {
-    box-shadow: 0 8px 18px rgba(37, 99, 235, 0.24);
-}
-
 /* テーブルの可読性 */
 .table thead th {
     background: var(--bg-tertiary);

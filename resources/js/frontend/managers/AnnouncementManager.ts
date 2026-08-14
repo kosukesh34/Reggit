@@ -2,6 +2,7 @@ import { isFixedUiShell } from '../demo/demoMode';
 import type { ApiClient } from '../../shared/utils/apiClient';
 import { AppConstants } from '../../shared/constants';
 import { DomHelper } from '../../shared/utils/domHelper';
+import { formatPublishedAt } from '../features/announcements/api';
 import { mountDetailLayoutChrome } from '../utils/detailLayoutMount';
 import { isReactOwnedMount } from '../utils/reactOwnedMount';
 
@@ -106,7 +107,7 @@ export class AnnouncementManager {
         }
         const preview = list.slice(0, 5);
         section.innerHTML = preview.map((a) => {
-            const date = a.published_at ? new Date(a.published_at).toLocaleDateString('ja-JP') : '';
+            const date = formatPublishedAt(a.published_at);
             const href = `#announcement/${DomHelper.escapeHtml(String(a.id ?? ''))}`;
             return `
                 <a href="${href}" class="ios-row" data-announcement-id="${DomHelper.escapeHtml(String(a.id ?? ''))}">
@@ -188,7 +189,7 @@ export class AnnouncementManager {
     }
 
     private renderListItem(a: Announcement, design: string, index: number): string {
-        const date = a.published_at ? new Date(a.published_at).toLocaleDateString('ja-JP') : '';
+        const date = formatPublishedAt(a.published_at);
         const isPinned = a.is_pinned === true;
         const isUnread = a.is_read !== true;
         const hasImage = typeof a.image_url === 'string' && a.image_url !== '';
@@ -272,7 +273,7 @@ export class AnnouncementManager {
     }
 
     private _renderClassicDetailBody(item: Announcement): string {
-        const date = item.published_at ? new Date(item.published_at).toLocaleString('ja-JP') : '';
+        const date = formatPublishedAt(item.published_at);
         const hasImage = typeof item.image_url === 'string' && item.image_url !== '';
         const isPinned = item.is_pinned === true;
         const image = hasImage
@@ -298,13 +299,7 @@ export class AnnouncementManager {
     }
 
     private _renderFixedUiDetailBody(item: Announcement): string {
-        const date = item.published_at
-            ? new Date(item.published_at).toLocaleDateString('ja-JP', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-            })
-            : '';
+        const date = formatPublishedAt(item.published_at);
         const rawImage = typeof item.image_url === 'string' && item.image_url !== ''
             ? item.image_url
             : '/images/liff/announce-hero.jpg';

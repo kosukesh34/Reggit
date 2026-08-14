@@ -7,7 +7,7 @@
 
 <div class="page-header">
     <h1 class="page-header-title"><i class="fas fa-users"></i> 会員管理</h1>
-    <p class="page-header-desc">会員情報の確認・編集・削除を行います</p>
+    <p class="page-header-desc">有効な会員の確認・編集・削除を行います。列名をクリックすると並び替えできます。</p>
 </div>
 
 @if(!empty($view->lineInviteUrl))
@@ -33,34 +33,60 @@
 <div class="card card-mb-16">
     <div class="card-header">
         <h3 class="card-title"><i class="fas fa-search"></i> 検索・絞り込み</h3>
-        @if(collect($view->filters)->filter()->isNotEmpty())
+        @if($view->hasSearchFilters())
         <a href="{{ admin_route('admin.members') }}" class="btn btn-sm btn-secondary">
             <i class="fas fa-times"></i> クリア
         </a>
         @endif
     </div>
     <form method="GET" action="{{ admin_route('admin.members') }}" class="member-search-form">
+        @if(($view->filters['sort'] ?? '') !== '')
+        <input type="hidden" name="sort" value="{{ $view->filters['sort'] }}">
+        @endif
+        @if(($view->filters['dir'] ?? '') !== '')
+        <input type="hidden" name="dir" value="{{ $view->filters['dir'] }}">
+        @endif
         <div class="filter-grid filter-grid--members">
             <div class="form-group">
-                <label class="form-label">名前・会員番号・電話番号</label>
-                <input type="text" name="keyword" class="form-control" placeholder="キーワードで検索" value="{{ $view->filters['keyword'] ?? '' }}">
+                <label class="form-label" for="member-keyword">キーワード</label>
+                <input type="text" name="keyword" id="member-keyword" class="form-control" placeholder="名前・会員番号・電話・メール・フリガナ" value="{{ $view->filters['keyword'] ?? '' }}">
             </div>
             <div class="form-group">
-                <label class="form-label">ステータス</label>
-                <select name="status" class="form-control">
+                <label class="form-label" for="member-rank">ランク</label>
+                <select name="rank" id="member-rank" class="form-control">
                     <option value="">すべて</option>
-                    <option value="active" {{ ($view->filters['status'] ?? '') === 'active' ? 'selected' : '' }}>有効</option>
-                    <option value="inactive" {{ ($view->filters['status'] ?? '') === 'inactive' ? 'selected' : '' }}>無効</option>
+                    @foreach($view->rankOptions as $rankKey => $rankLabel)
+                    <option value="{{ $rankKey }}" {{ ($view->filters['rank'] ?? '') === (string) $rankKey ? 'selected' : '' }}>{{ $rankLabel }}</option>
+                    @endforeach
                 </select>
             </div>
             <div class="form-group">
-                <label class="form-label">登録チャネル</label>
-                <select name="channel" class="form-control">
+                <label class="form-label" for="member-channel">登録チャネル</label>
+                <select name="channel" id="member-channel" class="form-control">
                     <option value="">すべて</option>
                     @foreach(\App\Support\MemberChannel::filterOptions() as $value => $label)
                         <option value="{{ $value }}" {{ ($view->filters['channel'] ?? '') === $value ? 'selected' : '' }}>{{ $label }}</option>
                     @endforeach
                 </select>
+            </div>
+            @if($view->tags->isNotEmpty())
+            <div class="form-group">
+                <label class="form-label" for="member-tag">タグ</label>
+                <select name="tag_id" id="member-tag" class="form-control">
+                    <option value="">すべて</option>
+                    @foreach($view->tags as $tag)
+                    <option value="{{ $tag->id }}" {{ (string) ($view->filters['tag_id'] ?? '') === (string) $tag->id ? 'selected' : '' }}>{{ $tag->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            @endif
+            <div class="form-group">
+                <label class="form-label" for="member-visited-from">最終来店（開始）</label>
+                <input type="date" name="visited_from" id="member-visited-from" class="form-control" value="{{ $view->filters['visited_from'] ?? '' }}">
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="member-visited-to">最終来店（終了）</label>
+                <input type="date" name="visited_to" id="member-visited-to" class="form-control" value="{{ $view->filters['visited_to'] ?? '' }}">
             </div>
             <div class="form-group form-group--action">
                 <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> 検索</button>
@@ -77,7 +103,7 @@
             <a href="{{ admin_route('admin.member-tags') }}" class="btn btn-sm btn-secondary">
                 <i class="fas fa-tags"></i> タグ
             </a>
-            <a href="{{ admin_route('admin.members.export', $view->filters) }}" class="btn btn-sm btn-secondary">
+            <a href="{{ admin_route('admin.members.export', $view->queryFilters()) }}" class="btn btn-sm btn-secondary">
                 <i class="fas fa-download"></i> CSV
             </a>
         </div>
@@ -86,13 +112,37 @@
         <table class="table">
             <thead>
                 <tr>
-                    <th>ID</th>
-                    <th>会員番号</th>
-                    <th>ユーザー名</th>
+                    <th>
+                        <a href="{{ $view->sortHref('id') }}" class="th-sort{{ $view->isSortedBy('id') ? ' is-active' : '' }}">
+                            ID <i class="{{ $view->sortIconClass('id') }}" aria-hidden="true"></i>
+                        </a>
+                    </th>
+                    <th>
+                        <a href="{{ $view->sortHref('name') }}" class="th-sort{{ $view->isSortedBy('name') ? ' is-active' : '' }}">
+                            会員名 <i class="{{ $view->sortIconClass('name') }}" aria-hidden="true"></i>
+                        </a>
+                    </th>
+                    <th>
+                        <a href="{{ $view->sortHref('rank') }}" class="th-sort{{ $view->isSortedBy('rank') ? ' is-active' : '' }}">
+                            ランク <i class="{{ $view->sortIconClass('rank') }}" aria-hidden="true"></i>
+                        </a>
+                    </th>
                     <th>登録チャネル</th>
-                    <th>ポイント</th>
-                    <th>ステータス</th>
-                    <th>登録日</th>
+                    <th>
+                        <a href="{{ $view->sortHref('points') }}" class="th-sort{{ $view->isSortedBy('points') ? ' is-active' : '' }}">
+                            ポイント <i class="{{ $view->sortIconClass('points') }}" aria-hidden="true"></i>
+                        </a>
+                    </th>
+                    <th>
+                        <a href="{{ $view->sortHref('last_visited_at') }}" class="th-sort{{ $view->isSortedBy('last_visited_at') ? ' is-active' : '' }}">
+                            最終来店 <i class="{{ $view->sortIconClass('last_visited_at') }}" aria-hidden="true"></i>
+                        </a>
+                    </th>
+                    <th>
+                        <a href="{{ $view->sortHref('created_at') }}" class="th-sort{{ $view->isSortedBy('created_at') ? ' is-active' : '' }}">
+                            登録日 <i class="{{ $view->sortIconClass('created_at') }}" aria-hidden="true"></i>
+                        </a>
+                    </th>
                     <th class="table-actions-cell">操作</th>
                 </tr>
             </thead>
@@ -100,10 +150,17 @@
                 @forelse($view->members as $member)
                 <tr>
                     <td><span class="id-badge">{{ $member->id }}</span></td>
-                    <td><code class="member-number">{{ $member->member_number }}</code></td>
                     <td>
                         <a href="{{ admin_route('admin.members.detail', ['id' => $member->id]) }}"><strong>{{ $member->user->name ?? 'N/A' }}</strong></a>
+                        @if($member->tags->isNotEmpty())
+                        <span class="table-cell-sub member-list-tags">
+                            @foreach($member->tags as $tag)
+                            <span class="member-tag-badge" style="background: {{ $tag->color }}">{{ $tag->name }}</span>
+                            @endforeach
+                        </span>
+                        @endif
                     </td>
+                    <td>{{ $view->rankLabel($member->rank) }}</td>
                     <td>
                         @php $channelLabel = \App\Support\MemberChannel::label($member->user); @endphp
                         @if($channelLabel === '—')
@@ -114,9 +171,11 @@
                     </td>
                     <td>{{ number_format($member->points) }}pt</td>
                     <td>
-                        <span class="badge badge-{{ $member->status === 'active' ? 'success' : 'danger' }}">
-                            {{ $member->status === 'active' ? '有効' : '無効' }}
-                        </span>
+                        @if($member->last_visited_at !== null)
+                            {{ $member->last_visited_at->format('Y/m/d H:i') }}
+                        @else
+                            <span class="text-muted">—</span>
+                        @endif
                     </td>
                     <td>{{ $member->created_at->format('Y/m/d') }}</td>
                     <td class="table-actions-cell">
@@ -125,11 +184,6 @@
                             @php $adminUser = auth('admin')->user(); @endphp
                             @if($adminUser === null || $adminUser->hasPermission('members.manage'))
                             <a href="{{ admin_route('admin.members.edit', ['id' => $member->id]) }}" class="btn btn-action btn-edit"><i class="fas fa-edit"></i> 編集</a>
-                            <form action="{{ admin_route('admin.members.delete', ['id' => $member->id]) }}" method="POST" class="d-inline delete-form" data-item-name="{{ $member->user->name ?? $member->member_number }}">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn btn-action btn-danger no-loading"><i class="fas fa-trash"></i> 削除</button>
-                            </form>
                             @endif
                         </div>
                     </td>
@@ -139,7 +193,7 @@
                     <td colspan="8" class="empty-state">
                         <i class="fas fa-user-slash"></i>
                         <p>
-                            @if(collect($view->filters)->filter()->isNotEmpty())
+                            @if($view->hasSearchFilters())
                                 検索条件に一致する会員がいません
                             @else
                                 会員がありません
@@ -151,6 +205,6 @@
             </tbody>
         </table>
     </div>
-    {{ $view->members->appends($view->filters)->links('vendor.pagination.admin') }}
+    {{ $view->members->appends($view->queryFilters())->links('vendor.pagination.admin') }}
 </div>
 @endsection
