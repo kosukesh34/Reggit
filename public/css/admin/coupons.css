@@ -36,14 +36,20 @@
 }
 
 .coupon-admin .btn-primary {
-    background: var(--cp-accent);
-    border-color: var(--cp-accent);
+    background: var(--cp-accent-soft);
+    border-color: var(--cp-accent-border);
+    color: var(--cp-accent);
+}
+
+.coupon-admin .btn-primary,
+.coupon-admin .btn-primary i {
+    color: var(--cp-accent) !important;
 }
 
 .coupon-admin .btn-primary:hover,
 .coupon-admin .btn-primary:focus {
-    background: var(--cp-accent-hover);
-    border-color: var(--cp-accent-hover);
+    background: color-mix(in srgb, var(--cp-accent) 14%, #fff);
+    border-color: var(--cp-accent);
 }
 
 .coupon-admin .btn-outline-primary {
