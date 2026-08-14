@@ -18,7 +18,8 @@ class MemberCoupon
         public ?string $themeColor = null,
         public ?string $description = null,
         public string $useDisplay = 'barcode',
-        public ?string $code = null
+        public ?string $code = null,
+        public string $imageFit = 'cover'
     ) {}
 
     /** @return array<string, mixed> */
@@ -38,6 +39,7 @@ class MemberCoupon
             'description' => $this->description,
             'use_display' => $this->useDisplay,
             'code' => $this->code,
+            'image_fit' => $this->imageFit,
         ];
     }
 }

@@ -12,7 +12,7 @@
     "src": "resources/css/app.css"
   },
   "resources/js/admin/main.tsx": {
-    "file": "assets/main-BnxmJPsk.js",
+    "file": "assets/main-DRcNg3XA.js",
     "name": "main",
     "src": "resources/js/admin/main.tsx",
     "isEntry": true,
@@ -21,7 +21,7 @@
     ]
   },
   "resources/js/frontend/main.tsx": {
-    "file": "assets/main-CulSKx0D.js",
+    "file": "assets/main-BJZ2dPLt.js",
     "name": "main",
     "src": "resources/js/frontend/main.tsx",
     "isEntry": true,

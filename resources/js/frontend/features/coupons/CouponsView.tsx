@@ -11,6 +11,7 @@ import {
     getDaysUntil,
     groupCoupons,
     isRecentlyIssued,
+    normalizeCouponImageFit,
     normalizeCouponStatus,
     normalizeUseDisplay,
     sortHistoryCoupons,
@@ -32,6 +33,15 @@ type CouponsManagerLike = {
 };
 
 type LoadState = 'idle' | 'loading' | 'ready' | 'login' | 'error';
+
+const COUPON_FORM_PREVIEW_ID = '__reggit_coupon_form_preview__';
+
+function adaptCouponMediaRatio(image: HTMLImageElement): void {
+    const media = image.parentElement;
+    if (media === null || image.naturalWidth <= 0 || image.naturalHeight <= 0) return;
+    const ratio = Math.min(3.2, Math.max(0.6, image.naturalWidth / image.naturalHeight));
+    media.style.setProperty('--coupon-media-aspect', String(ratio));
+}
 
 const STATUS_LABELS: Record<string, string> = {
     available: '利用可能',
@@ -111,6 +121,9 @@ async function fetchCoupons(): Promise<{
 }
 
 function openDetail(id: number | string): void {
+    if (String(id) === COUPON_FORM_PREVIEW_ID) {
+        return;
+    }
     const manager = getManager();
     if (manager !== null) {
         void manager.openDetail(id);
@@ -123,6 +136,9 @@ function useCoupon(opts: {
     useDisplay: string;
     code: string;
 }): void {
+    if (opts.memberCouponId === COUPON_FORM_PREVIEW_ID) {
+        return;
+    }
     const manager = getManager();
     if (manager !== null && typeof manager.useCouponFromUi === 'function') {
         void manager.useCouponFromUi(opts);
@@ -151,6 +167,7 @@ function ClassicCouponCard({
     else if (validUntil) validText = `有効期限: ${validUntil}`;
     else if (validFrom) validText = `${validFrom} から利用可能`;
     const imageUrl = cp.image_url || defaultImage;
+    const imageFit = normalizeCouponImageFit(cp.image_fit);
     const iconClass = design === 'barcode' ? 'fa-barcode' : design === 'qr' ? 'fa-qrcode' : 'fa-ticket-alt';
     const code = (cp.code && String(cp.code).trim()) ? cp.code : '';
     const useDisplay = normalizeUseDisplay(cp.use_display, code);
@@ -175,8 +192,8 @@ function ClassicCouponCard({
         );
     } else if (imageUrl) {
         imageBlock = (
-            <div className="coupon-item-image">
-                <img src={imageUrl} alt="クーポン" />
+            <div className={`coupon-item-image coupon-item-image--fit-${imageFit}`}>
+                <img src={imageUrl} alt="クーポン" onLoad={(event) => adaptCouponMediaRatio(event.currentTarget)} />
             </div>
         );
     } else {
@@ -290,6 +307,7 @@ function FixedCouponCard({
         '/images/liff/product-placeholder.jpg',
     ];
     const imageUrl = cp.image_url || defaultImage || fallbackImages[index % fallbackImages.length];
+    const imageFit = normalizeCouponImageFit(cp.image_fit);
     const code = (cp.code && String(cp.code).trim()) ? cp.code : '';
     const useDisplay = normalizeUseDisplay(cp.use_display, code);
     const canShowCode = useDisplay === 'barcode' || useDisplay === 'qr' || useDisplay === 'both';
@@ -319,11 +337,12 @@ function FixedCouponCard({
                 }
             }}
         >
-            <div className="ios-coupon__media">
+            <div className={`ios-coupon__media ios-coupon__media--fit-${imageFit}`}>
                 <img
                     src={imageUrl}
                     alt=""
                     loading="lazy"
+                    onLoad={(event) => adaptCouponMediaRatio(event.currentTarget)}
                     onError={(e) => {
                         e.currentTarget.src = '/images/liff/product-placeholder.jpg';
                     }}
@@ -368,8 +387,11 @@ type CouponsViewProps = {
 
 export function CouponsView({ className = 'coupons-data-mount' }: CouponsViewProps): JSX.Element {
     const fixed = isFeatureUiShell();
+    const isCouponFormPreview = window.__IS_DESIGNER_EMBED_PREVIEW__ === true
+        && window.__COUPON_FORM_PREVIEW__ === true;
     const [loadState, setLoadState] = useState<LoadState>('idle');
     const [coupons, setCoupons] = useState<CouponRecord[]>([]);
+    const [formPreviewCoupon, setFormPreviewCoupon] = useState<CouponRecord | null>(null);
     const [defaultImage, setDefaultImage] = useState<string | null>(null);
     const [errorMessage, setErrorMessage] = useState('');
     const [activeTab, setActiveTab] = useState<'available' | 'history'>('available');
@@ -435,7 +457,41 @@ export function CouponsView({ className = 'coupons-data-mount' }: CouponsViewPro
         };
     }, [reload]);
 
-    const groups = useMemo(() => groupCoupons(coupons), [coupons]);
+    useEffect(() => {
+        if (!isCouponFormPreview) {
+            return undefined;
+        }
+
+        const receiveCouponPreview = (event: MessageEvent): void => {
+            if (event.origin !== window.location.origin || event.data?.type !== 'reggit:coupon-form-preview:update') {
+                return;
+            }
+            const incoming = event.data.coupon as Partial<CouponRecord> | undefined;
+            if (incoming === undefined || incoming === null || typeof incoming !== 'object') {
+                return;
+            }
+            setFormPreviewCoupon({
+                ...incoming,
+                id: COUPON_FORM_PREVIEW_ID,
+                coupon_name: typeof incoming.coupon_name === 'string' ? incoming.coupon_name : 'クーポン名が入ります',
+                description: typeof incoming.description === 'string' ? incoming.description : '',
+                status: incoming.status === 'upcoming' ? 'upcoming' : 'available',
+            });
+            setActiveTab('available');
+        };
+
+        window.addEventListener('message', receiveCouponPreview);
+        if (window.parent !== window) {
+            window.parent.postMessage({ type: 'reggit:coupon-form-preview:ready' }, window.location.origin);
+        }
+        return () => window.removeEventListener('message', receiveCouponPreview);
+    }, [isCouponFormPreview]);
+
+    const displayCoupons = useMemo(
+        () => formPreviewCoupon !== null ? [formPreviewCoupon] : coupons,
+        [coupons, formPreviewCoupon],
+    );
+    const groups = useMemo(() => groupCoupons(displayCoupons), [displayCoupons]);
     const visibleCoupons = useMemo(
         () => sortVisibleCoupons(groups.available.concat(groups.upcoming)),
         [groups],
@@ -445,7 +501,7 @@ export function CouponsView({ className = 'coupons-data-mount' }: CouponsViewPro
         [groups],
     );
 
-    if (loadState === 'loading' || loadState === 'idle') {
+    if (formPreviewCoupon === null && (loadState === 'loading' || loadState === 'idle')) {
         return (
             <div className={className} data-react-coupons="1">
                 <div className="loading">
@@ -456,7 +512,7 @@ export function CouponsView({ className = 'coupons-data-mount' }: CouponsViewPro
         );
     }
 
-    if (loadState === 'login') {
+    if (formPreviewCoupon === null && loadState === 'login') {
         const isMobile = window.__MOBILE_APP_MODE__ === true;
         return (
             <div className={className} data-react-coupons="1">
@@ -489,7 +545,7 @@ export function CouponsView({ className = 'coupons-data-mount' }: CouponsViewPro
         );
     }
 
-    if (loadState === 'error') {
+    if (formPreviewCoupon === null && loadState === 'error') {
         return (
             <div className={className} data-react-coupons="1">
                 <div className="coupons-error">
@@ -503,7 +559,7 @@ export function CouponsView({ className = 'coupons-data-mount' }: CouponsViewPro
         );
     }
 
-    if (coupons.length === 0) {
+    if (displayCoupons.length === 0) {
         if (fixed) {
             return (
                 <div className={className} data-react-coupons="1">

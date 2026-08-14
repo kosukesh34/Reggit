@@ -2,6 +2,8 @@
 
 namespace App\Services\Smaregi;
 
+use App\Enums\CouponApplyConditionDivision;
+use App\Enums\CouponCombineDivision;
 use App\Models\Coupon;
 use App\Util\StrHelper;
 use Carbon\Carbon;
@@ -165,9 +167,9 @@ class SmaregiCouponSyncService
             'couponName' => mb_substr($couponName, 0, self::COUPON_NAME_MAX_LENGTH),
             'awardType' => $awardType,
             'awardValue' => (string) (int) round($value),
-            'applyConditionDivision' => '0',
+            'applyConditionDivision' => $this->normalizeApplyConditionDivision($data['apply_condition_division'] ?? null),
             'couponDivision' => '0',
-            'combineDivision' => '3',
+            'combineDivision' => $this->normalizeCombineDivision($data['combine_division'] ?? null),
         ];
         $summary = isset($data['description']) ? trim((string) $data['description']) : '';
         if ($summary !== '') {
@@ -176,6 +178,10 @@ class SmaregiCouponSyncService
         $minOrder = (int) ($data['min_order_amount'] ?? 0);
         if ($minOrder > 0 && $minOrder <= self::MIN_TARGET_PRICE_MAX) {
             $body['minTargetPrice'] = (string) $minOrder;
+        }
+        $maxOrder = (int) ($data['max_order_amount'] ?? 0);
+        if ($maxOrder > 0 && $maxOrder <= self::MIN_TARGET_PRICE_MAX) {
+            $body['maxTargetPrice'] = (string) $maxOrder;
         }
         $startAt = $data['start_at'] ?? null;
         if ($startAt !== null && $startAt !== '') {
@@ -213,5 +219,23 @@ class SmaregiCouponSyncService
         }
 
         return null;
+    }
+
+    private function normalizeApplyConditionDivision(mixed $value): string
+    {
+        $division = (string) ($value ?? CouponApplyConditionDivision::ALL);
+
+        return in_array($division, CouponApplyConditionDivision::keys(), true)
+            ? $division
+            : CouponApplyConditionDivision::ALL;
+    }
+
+    private function normalizeCombineDivision(mixed $value): string
+    {
+        $division = (string) ($value ?? CouponCombineDivision::ALLOWED);
+
+        return in_array($division, CouponCombineDivision::keys(), true)
+            ? $division
+            : CouponCombineDivision::ALLOWED;
     }
 }
