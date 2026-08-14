@@ -9,7 +9,6 @@
     $selectedCouponId = old('coupon_id', request('coupon_id'));
     $oldDeliveryType = old('delivery_type', $view->defaultDeliveryType ?? \App\Enums\CouponDeliveryType::IMMEDIATE_ALL);
     $createUrl = admin_route('admin.coupons.create', ['return' => 'bulk-issue']);
-    $hasMeta = ($view->scheduledDeliveries ?? collect())->isNotEmpty() || ($view->hasSmaregiContract ?? false);
 @endphp
 
 <div class="coupon-admin">
@@ -22,8 +21,8 @@
 </nav>
 
 <div class="page-header">
-    <h1 class="page-header-title"><i class="fas fa-gift"></i> クーポン配布</h1>
-    <p class="page-header-desc">クーポンを選び、配信条件を指定して配布します。同じクーポンを何度でも配信できます。</p>
+    <h1 class="page-header-title">クーポン配布</h1>
+    <p class="page-header-desc">配るクーポンと、だれに・いつ配るかを選んでください。</p>
 </div>
 
 @if(session('success'))
@@ -38,22 +37,6 @@
     </div>
 @endif
 
-<ol class="bulk-steps" aria-label="配布の手順">
-    <li class="bulk-step is-current" data-step="1">
-        <span class="bulk-step-num">1</span>
-        <span class="bulk-step-label">クーポン</span>
-    </li>
-    <li class="bulk-step" data-step="2">
-        <span class="bulk-step-num">2</span>
-        <span class="bulk-step-label">条件</span>
-    </li>
-    <li class="bulk-step" data-step="3">
-        <span class="bulk-step-num">3</span>
-        <span class="bulk-step-label">配布</span>
-    </li>
-</ol>
-
-@if($hasMeta)
 <div class="cp-toolbar">
     <span class="cp-stat">登録会員 <strong>{{ number_format($view->memberCount) }}</strong></span>
     @if($view->hasSmaregiContract ?? false)
@@ -97,167 +80,57 @@
     </details>
     @endif
 </div>
-@endif
 
 <form action="{{ admin_route('admin.coupons.bulk-issue.store') }}" method="POST" id="bulkIssueForm">
     @csrf
-    <input type="hidden" name="coupon_id" id="coupon_id" value="{{ $selectedCouponId }}">
     <input type="hidden" name="delivery_type" id="delivery_type" value="{{ $oldDeliveryType }}">
 
     <div class="cp-panel">
-        <section class="cp-section" id="couponSelectSection">
-            <div class="cp-section-head">
-                <div>
-                    <h2 class="cp-section-title"><span class="cp-section-num">1</span> クーポンを選ぶ</h2>
-                    <p class="cp-section-desc">配布するクーポンを1つ選択</p>
-                </div>
-                <a href="{{ $createUrl }}" class="btn btn-secondary btn-sm"><i class="fas fa-plus"></i> 新規作成</a>
-            </div>
-
-            @if($view->coupons->total() === 0 && ($view->couponSearch ?? '') === '')
+        <section class="cp-section" id="deliverySetupSection">
+            @if($view->coupons->isEmpty())
                 <div class="empty-state py-4">
                     <i class="fas fa-ticket-alt"></i>
-                    <p>有効なクーポンがありません</p>
-                    <p class="empty-state-hint">「新規作成」からクーポンを作成して、この画面に戻ってください</p>
-                    <a href="{{ $createUrl }}" class="btn btn-primary mt-2"><i class="fas fa-plus"></i> クーポンを作成</a>
+                    <p>クーポンを選ぶ前に、有効なクーポンを作成してください</p>
+                    <a href="{{ $createUrl }}" class="btn btn-primary mt-2"><i class="fas fa-plus"></i> 新規作成</a>
                 </div>
             @else
-                @if($view->selectedCoupon !== null)
-                <div class="coupon-picker-selected" id="couponPickerSelected">
-                    <span>選択中: <strong>{{ $view->selectedCoupon->name ?? '—' }}</strong>（{{ $view->selectedCoupon->code }}）</span>
-                    <a href="{{ admin_route('admin.coupons.redemptions', ['id' => $view->selectedCoupon->id]) }}" class="btn btn-outline-primary btn-sm">利用履歴</a>
+            <div class="cp-field-row">
+                <label for="coupon_id" class="form-label">クーポンを選ぶ <span class="text-danger">*</span></label>
+                <div class="cp-field-control">
+                    <select name="coupon_id" id="coupon_id" class="form-control" required>
+                        <option value="">選択してください</option>
+                        @foreach($view->coupons as $c)
+                            <option value="{{ $c->id }}" {{ (string) $selectedCouponId === (string) $c->id ? 'selected' : '' }}>
+                                {{ $c->name ?? '—' }}（{{ $c->code }}）
+                            </option>
+                        @endforeach
+                    </select>
+                    <a href="{{ $createUrl }}" class="btn btn-secondary btn-sm">新規作成</a>
                 </div>
-                @endif
-                <div class="coupon-picker-search-form" id="couponPickerSearchForm">
-                    <input type="search" id="couponPickerSearch" class="form-control form-control-sm cp-search" placeholder="名前・コードで絞り込み" value="{{ $view->couponSearch ?? '' }}" autocomplete="off">
-                    <button type="button" class="btn btn-secondary btn-sm" id="couponPickerSearchBtn">検索</button>
-                    @if(($view->couponSearch ?? '') !== '')
-                        <a href="{{ admin_route('admin.coupons.bulk-issue', array_filter(['coupon_id' => $selectedCouponId])) }}" class="btn btn-outline-secondary btn-sm">クリア</a>
-                    @endif
-                </div>
-                @if($view->coupons->total() === 0)
-                <div class="empty-state py-3">
-                    <p>条件に一致するクーポンがありません</p>
-                </div>
-                @else
-                <div class="coupon-picker-list" id="couponPickerList">
-                    @foreach($view->coupons as $c)
-                    @php $deliveryCount = (int) ($view->deliveryCountByCouponId[$c->id] ?? 0); @endphp
-                    <label class="coupon-picker-card {{ (string)$selectedCouponId === (string)$c->id ? 'is-selected' : '' }}"
-                        data-search="{{ strtolower(($c->name ?? '') . ' ' . $c->code) }}">
-                        <input type="radio" name="coupon_picker" value="{{ $c->id }}" class="coupon-picker-input" {{ (string)$selectedCouponId === (string)$c->id ? 'checked' : '' }}
-                            data-code="{{ $c->code }}"
-                            data-name="{{ $c->name }}"
-                            data-discount="{{ $c->type === 'percent' ? rtrim(rtrim(number_format((float)$c->value, 2, '.', ''), '0'), '.') . '%' : '¥' . number_format((float)$c->value) }}">
-                        <span class="coupon-picker-main">
-                            <span class="coupon-picker-name">{{ $c->name ?? '—' }}</span>
-                            <span class="coupon-picker-code">{{ $c->code }}</span>
-                        </span>
-                        <span class="coupon-picker-meta">
-                            {{ $c->type === 'percent' ? rtrim(rtrim(number_format((float)$c->value, 2, '.', ''), '0'), '.') . '% OFF' : '¥' . number_format((float)$c->value) . ' OFF' }}
-                            @if($view->hasSmaregiContract ?? false)
-                                · {{ $c->smaregi_coupon_id ? 'POS済' : '未連携' }}
-                            @endif
-                            · 配信{{ $deliveryCount }}回
-                            · 利用{{ (int) $c->used_count }}回
-                        </span>
-                        <a href="{{ admin_route('admin.coupons.redemptions', ['id' => $c->id]) }}" class="coupon-picker-redemptions" onclick="event.stopPropagation();">利用履歴</a>
-                    </label>
-                    @endforeach
-                </div>
-                {{ $view->coupons->appends(array_filter(['q' => $view->couponSearch ?? '', 'coupon_id' => $selectedCouponId]))->links('vendor.pagination.admin') }}
-                @endif
+            </div>
             @endif
-        </section>
 
-        <section class="cp-section" id="deliverySection">
-            <div class="cp-section-head">
-                <div>
-                    <h2 class="cp-section-title"><span class="cp-section-num">2</span> 配信条件</h2>
-                    <p class="cp-section-desc">配信種別を選んで条件を指定</p>
-                </div>
-            </div>
-
-            <div id="selectedCouponPreview" class="bulk-selected-coupon {{ $selectedCouponId ? '' : 'is-empty' }}">
-                <i class="fas fa-ticket-alt"></i>
-                <div>
-                    <span class="bulk-selected-label">選択中</span>
-                    <strong id="selectedCouponLabel">
-                        @if($selectedCouponId)
-                            @php $sel = $view->coupons->firstWhere('id', (int)$selectedCouponId); @endphp
-                            {{ $sel ? ($sel->name . '（' . $sel->code . '）') : '—' }}
-                        @else
-                            未選択 — 上でクーポンを選んでください
-                        @endif
-                    </strong>
-                </div>
-            </div>
-
-            <div class="form-group mb-0">
-                <label class="form-label">配信種別 <span class="text-danger">*</span></label>
-                <div class="delivery-mode-grid" id="deliveryModeOptions">
-                    <label class="delivery-mode-card">
-                        <input type="radio" name="delivery_mode" value="all" data-mode="all">
-                        <span class="delivery-mode-card-body">
-                            <span class="delivery-mode-icon"><i class="fas fa-users"></i></span>
-                            <span class="delivery-mode-title">全員にすぐ配布</span>
-                            <span class="delivery-mode-desc">{{ number_format($view->memberCount) }}人</span>
-                        </span>
+            <div class="cp-field-row">
+                <span class="form-label">だれに配るか <span class="text-danger">*</span></span>
+                <div class="cp-radio-row" id="audienceOptions">
+                    <label>
+                        <input type="radio" name="audience" value="all" checked>
+                        全員に配布（{{ number_format($view->memberCount) }}人）
                     </label>
-                    <label class="delivery-mode-card">
-                        <input type="radio" name="delivery_mode" value="segment" data-mode="segment">
-                        <span class="delivery-mode-card-body">
-                            <span class="delivery-mode-icon"><i class="fas fa-filter"></i></span>
-                            <span class="delivery-mode-title">セグメント配信</span>
-                            <span class="delivery-mode-desc">条件で絞り込み</span>
-                        </span>
+                    <label>
+                        <input type="radio" name="audience" value="segment">
+                        セグメント配信
                     </label>
-                    <label class="delivery-mode-card">
-                        <input type="radio" name="delivery_mode" value="personal" data-mode="personal">
-                        <span class="delivery-mode-card-body">
-                            <span class="delivery-mode-icon"><i class="fas fa-user"></i></span>
-                            <span class="delivery-mode-title">個人宛配信</span>
-                            <span class="delivery-mode-desc">指定会員のみ</span>
-                        </span>
+                    <label>
+                        <input type="radio" name="audience" value="personal">
+                        個人宛配信
                     </label>
-                    <label class="delivery-mode-card">
-                        <input type="radio" name="delivery_mode" value="scheduled" data-mode="scheduled">
-                        <span class="delivery-mode-card-body">
-                            <span class="delivery-mode-icon"><i class="fas fa-clock"></i></span>
-                            <span class="delivery-mode-title">予約配信</span>
-                            <span class="delivery-mode-desc">日時を指定</span>
-                        </span>
-                    </label>
-                </div>
-            </div>
-
-            <div id="scheduledBlock" class="delivery-option-block is-hidden">
-                <div class="form-group mb-3">
-                    <label for="scheduled_at" class="form-label">配布日時 <span class="text-danger">*</span></label>
-                    <input type="datetime-local" name="scheduled_at" id="scheduled_at" class="form-control" value="{{ old('scheduled_at') }}" min="{{ now()->addMinute()->format('Y-m-d\TH:i') }}" style="max-width:280px">
-                </div>
-                <div class="form-group mb-0">
-                    <label class="form-label">予約の配信対象 <span class="text-danger">*</span></label>
-                    <div class="delivery-type-options" id="scheduledAudienceOptions">
-                        <label class="radio-label">
-                            <input type="radio" name="scheduled_audience" value="all" {{ old('scheduled_audience', 'all') === 'all' ? 'checked' : '' }}>
-                            <span>全員</span>
-                        </label>
-                        <label class="radio-label">
-                            <input type="radio" name="scheduled_audience" value="segment" {{ old('scheduled_audience') === 'segment' ? 'checked' : '' }}>
-                            <span>セグメント</span>
-                        </label>
-                        <label class="radio-label">
-                            <input type="radio" name="scheduled_audience" value="personal" {{ old('scheduled_audience') === 'personal' ? 'checked' : '' }}>
-                            <span>個人宛</span>
-                        </label>
-                    </div>
                 </div>
             </div>
 
             <div id="personalBlock" class="delivery-option-block is-hidden">
                 <label class="form-label">配信対象の会員</label>
-                <p class="form-text text-muted mb-2">会員番号または名前で検索</p>
+                <p class="form-text text-muted mb-2">会員番号または名前で検索し、対象に追加します</p>
                 <input type="text" id="memberSearch" class="form-control mb-2" placeholder="会員番号・名前で検索..." autocomplete="off">
                 <div id="memberSearchResults" class="member-search-results is-hidden"></div>
                 <div id="selectedMembers" class="selected-members"></div>
@@ -265,20 +138,18 @@
             </div>
 
             <div id="segmentBlock" class="delivery-option-block is-hidden">
-                <label class="form-label">配信の絞り込み</label>
-                <p class="form-text text-muted mb-2">プリセットを選ぶか、詳細条件を組み合わせてください</p>
-
-                <div class="segment-preset-chips mb-3" id="segmentPresetChips" role="group" aria-label="配信プリセット">
-                    <button type="button" class="segment-preset-chip is-active" data-preset="">条件を自由に設定</button>
-                    <button type="button" class="segment-preset-chip" data-preset="rank">指定ランク</button>
-                    <button type="button" class="segment-preset-chip" data-preset="rank_up_arrival">ランクアップ達成配信</button>
-                    <button type="button" class="segment-preset-chip" data-preset="stamp">スタンプ累計</button>
-                    <button type="button" class="segment-preset-chip" data-preset="days_after_visit">最終来店からN日後</button>
-                    <button type="button" class="segment-preset-chip" data-preset="birthday">誕生月</button>
-                    <button type="button" class="segment-preset-chip" data-preset="new_members">新規会員</button>
-                    <button type="button" class="segment-preset-chip" data-preset="inactive">休眠会員</button>
-                </div>
-                <input type="hidden" name="segment_preset" id="segment_preset" value="{{ old('segment_preset', '') }}">
+                <label for="segment_preset" class="form-label">絞り込み条件</label>
+                <select name="segment_preset" id="segment_preset" class="form-control" style="max-width:320px">
+                    <option value="">条件を選んでください</option>
+                    <option value="rank">指定ランク</option>
+                    <option value="rank_up_arrival">ランクアップ達成配信</option>
+                    <option value="stamp">スタンプ累計</option>
+                    <option value="days_after_visit">最終来店からN日後</option>
+                    <option value="birthday">誕生月</option>
+                    <option value="new_members">新規会員</option>
+                    <option value="inactive">休眠会員</option>
+                    <option value="custom">詳細条件</option>
+                </select>
 
                 <div id="rankBlock" class="segment-preset-panel is-hidden">
                     <label for="target_rank" class="form-label" id="targetRankLabel">対象ランク <span class="text-danger">*</span></label>
@@ -354,7 +225,7 @@
                     </select>
                 </div>
 
-                <div id="customSegmentPanel" class="segment-custom-panel">
+                <div id="customSegmentPanel" class="segment-custom-panel is-hidden">
                     <h3 class="segment-section-title">基本属性</h3>
                     <div class="row mb-3">
                         <div class="col-md-4">
@@ -498,16 +369,35 @@
                 </div>
             </div>
 
-            <div class="bulk-target-preview" id="targetPreview">
-                <i class="fas fa-users"></i>
-                <span id="targetPreviewText">クーポンを選択すると発行予定人数が表示されます</span>
-                <button type="button" class="btn btn-outline-primary btn-sm ms-auto" id="previewMembersBtn" disabled>対象を確認</button>
+            <div class="cp-field-row" id="timingBlock">
+                <span class="form-label">いつ配るか <span class="text-danger">*</span></span>
+                <div class="cp-radio-row" id="timingOptions">
+                    <label>
+                        <input type="radio" name="timing" value="immediate" checked>
+                        今すぐ配布
+                    </label>
+                    <label>
+                        <input type="radio" name="timing" value="scheduled">
+                        日時指定
+                    </label>
+                </div>
             </div>
 
-            <p class="cp-hint"><i class="fas fa-bell"></i> 即時配布は完了後すぐに通知されます。予約配信は指定日時に自動実行されます。</p>
+            <p id="rankUpTimingNote" class="cp-inline-note is-hidden">ランクアップ達成配信は、指定ランクに到達したときに自動で発行します。日時指定は不要です。</p>
 
-            <div class="cp-actions form-actions">
-                <button type="submit" class="btn btn-primary" id="submitDeliveryBtn" disabled>
+            <div id="scheduledAtBlock" class="delivery-option-block is-hidden">
+                <div class="form-group mb-0">
+                    <label for="scheduled_at" class="form-label">配信日時 <span class="text-danger">*</span></label>
+                    <input type="datetime-local" name="scheduled_at" id="scheduled_at" class="form-control" value="{{ old('scheduled_at') }}" min="{{ now()->addMinute()->format('Y-m-d\TH:i') }}" style="max-width:280px">
+                </div>
+            </div>
+            <div class="cp-sticky-actions">
+                <div class="bulk-target-preview" id="targetPreview">
+                    <i class="fas fa-users"></i>
+                    <span id="targetPreviewText">クーポンを選ぶと人数が表示されます</span>
+                    <button type="button" class="btn btn-outline-primary btn-sm" id="previewMembersBtn" disabled>対象を確認</button>
+                </div>
+                <button type="submit" class="btn btn-primary" id="submitDeliveryBtn" {{ $selectedCouponId ? '' : 'disabled' }}>
                     <i class="fas fa-paper-plane"></i> <span id="submitDeliveryLabel">配布する</span>
                 </button>
                 <a href="{{ admin_route('admin.coupons') }}" class="btn btn-secondary">一覧に戻る</a>
@@ -519,7 +409,7 @@
 <section class="cp-history" id="deliveryHistorySection">
     <div class="cp-history-head">
         <h2><i class="fas fa-history"></i> 配信履歴</h2>
-        <p>配信ごとの記録。同じクーポンを使い回しても行が増えます。</p>
+        <p>これまでに配布した記録です。同じクーポンを何度配っても行が増えます。</p>
     </div>
     <div class="card-body">
         @if(count($view->deliveryHistories ?? []) === 0)

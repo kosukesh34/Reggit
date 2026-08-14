@@ -8,10 +8,48 @@
 @php
     $adminUser = auth('admin')->user();
     $canManage = $adminUser === null || $adminUser->hasPermission('members.manage');
-    $memberName = $view->member->user->name ?? $view->member->member_number;
-    $lineName = trim((string) ($view->member->user?->line_name ?? ''));
+    $user = $view->member->user;
+    $memberName = $user?->name ?? $view->member->member_number;
+    $lineName = trim((string) ($user?->line_name ?? ''));
+    $kana = trim((string) ($user?->kana ?? ''));
+    $phone = trim((string) ($user?->phone ?? ''));
+    $email = trim((string) ($user?->email ?? ''));
+    $rankLabel = $view->member->rank_label ?? ($view->member->rank ?? 'ランク未設定');
+    $statusLabel = \App\Enums\MemberStatus::getLabel((string) $view->member->status);
+    $isActive = $view->member->status === \App\Enums\MemberStatus::ACTIVE;
+    $channelLabel = \App\Support\MemberChannel::label($user);
+    $pointsExpiry = is_array($view->member->points_expiry) ? $view->member->points_expiry : [];
+    $pointsExpiring = (int) ($pointsExpiry['points_expiring'] ?? 0);
+    $pointsExpiryLabel = $pointsExpiry['expires_at_label'] ?? '—';
     $recentOrders = $view->purchaseSummary['recent_orders'] ?? collect();
     $orderListTotal = (int) ($view->purchaseSummary['order_list_total'] ?? $recentOrders->count());
+    $avatarChar = mb_substr($memberName !== '' ? $memberName : (string) $view->member->member_number, 0, 1);
+    $sexLabel = match ((string) ($view->member->sex ?? '')) {
+        '1' => '男性',
+        '2' => '女性',
+        '0' => '未設定',
+        default => '—',
+    };
+    $addressLabel = implode(' ', array_filter([
+        $view->member->postal_code !== null && $view->member->postal_code !== '' ? '〒'.$view->member->postal_code : '',
+        $view->member->prefecture,
+        $view->member->city,
+        $view->member->street,
+        $view->member->address,
+    ], fn ($part) => $part !== null && $part !== ''));
+    $firstStamp = $view->member->memberStamps->first();
+    $hasProfileExtras = $view->member->birthday !== null
+        || ($sexLabel !== '—' && $sexLabel !== '未設定')
+        || $addressLabel !== '';
+    $historyTabs = [
+        ['id' => 'orders', 'label' => '購入', 'count' => $orderListTotal],
+        ['id' => 'visits', 'label' => '来店', 'count' => $view->visits?->total() ?? 0],
+        ['id' => 'points', 'label' => 'ポイント', 'count' => $view->pointTransactions?->total() ?? 0],
+        ['id' => 'coupons', 'label' => 'クーポン発行', 'count' => $view->memberCoupons?->total() ?? 0],
+        ['id' => 'redemptions', 'label' => 'クーポン使用', 'count' => $view->couponRedemptions?->total() ?? 0],
+        ['id' => 'rank', 'label' => 'ランク', 'count' => $view->rankHistories?->total() ?? 0],
+        ['id' => 'stamps', 'label' => 'スタンプ', 'count' => $view->stampTransactions?->total() ?? 0],
+    ];
 @endphp
 
 <nav class="breadcrumb" aria-label="パンくず">
@@ -20,36 +58,77 @@
     <span>{{ $memberName }}</span>
 </nav>
 
-<div class="member-detail-head">
-    <div class="member-detail-head-main">
-        <p class="member-detail-kicker">会員</p>
-        <h1 class="member-detail-name">{{ $memberName }}</h1>
-        <p class="member-detail-meta">
-            <code class="member-number">{{ $view->member->member_number }}</code>
-            @if($lineName !== '')
-            <span class="member-detail-line-name"><i class="fab fa-line" aria-hidden="true"></i>{{ $lineName }}</span>
+<section class="member-identity" aria-labelledby="member-identity-name">
+    <div class="member-avatar" aria-hidden="true">{{ $avatarChar }}</div>
+    <div class="member-identity-main">
+        <div class="member-identity-top">
+            <div>
+                <h1 class="member-identity-name" id="member-identity-name">{{ $memberName }}</h1>
+                @if($kana !== '')
+                <p class="member-identity-kana">{{ $kana }}</p>
+                @endif
+                <p class="member-identity-registered">登録 {{ $view->member->created_at->format('Y/m/d') }}</p>
+                <div class="member-identity-meta">
+                    <code class="member-number">{{ $view->member->member_number }}</code>
+                    <span class="member-rank-chip" data-rank="{{ $view->member->rank ?? '' }}">{{ $rankLabel }}</span>
+                    <span class="badge badge-{{ $isActive ? 'success' : 'danger' }}">{{ $statusLabel }}</span>
+                    @if($lineName !== '')
+                    <span class="member-chip member-chip--line"><i class="fab fa-line" aria-hidden="true"></i>LINE名{{ $lineName !== $memberName ? ' '.$lineName : '' }}</span>
+                    @endif
+                    @if($channelLabel !== '—')
+                    <span class="member-chip">{{ $channelLabel }}</span>
+                    @endif
+                </div>
+            </div>
+            @if($canManage)
+            <div class="member-identity-actions">
+                <a href="{{ admin_route('admin.members.edit', ['id' => $view->member->id]) }}" class="btn btn-primary btn-sm">
+                    <i class="fas fa-edit"></i> 編集
+                </a>
+                <form action="{{ admin_route('admin.members.delete', ['id' => $view->member->id]) }}" method="POST" class="d-inline delete-form" data-item-name="{{ $memberName }}">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="btn btn-danger btn-sm no-loading"><i class="fas fa-trash"></i> 削除</button>
+                </form>
+            </div>
             @endif
-            <span>{{ $view->member->rank_label ?? ($view->member->rank ?? 'ランク未設定') }}</span>
-            <span class="badge badge-{{ $view->member->status === 'active' ? 'success' : 'danger' }}">
-                {{ $view->member->status === 'active' ? '有効' : '無効' }}
-            </span>
+        </div>
+        @if($phone !== '' || $email !== '')
+        <p class="member-identity-contact">
+            @if($phone !== '')
+            <a href="tel:{{ $phone }}"><i class="fas fa-phone" aria-hidden="true"></i>{{ $phone }}</a>
+            @endif
+            @if($email !== '')
+            <a href="mailto:{{ $email }}"><i class="fas fa-envelope" aria-hidden="true"></i>{{ $email }}</a>
+            @endif
         </p>
+        @endif
+        <div class="member-identity-stats">
+            <div class="member-identity-stat">
+                <div class="member-identity-stat-label">ポイント</div>
+                <div class="member-identity-stat-value">{{ number_format($view->member->points) }}<span>pt</span></div>
+                @if($pointsExpiring > 0)
+                <div class="member-identity-stat-sub">{{ $pointsExpiryLabel }}に {{ number_format($pointsExpiring) }}pt 期限切れ</div>
+                @endif
+            </div>
+            <div class="member-identity-stat">
+                <div class="member-identity-stat-label">来店回数</div>
+                <div class="member-identity-stat-value">{{ number_format((int) ($view->member->visits_count ?? 0)) }}<span>回</span></div>
+                <div class="member-identity-stat-sub">
+                    {{ $view->member->last_visited_at ? '最終 '.$view->member->last_visited_at->format('Y/m/d H:i') : '来店なし' }}
+                </div>
+            </div>
+            @if($firstStamp !== null)
+            <div class="member-identity-stat">
+                <div class="member-identity-stat-label">スタンプ</div>
+                <div class="member-identity-stat-value">{{ $firstStamp->current_stamps }}<span> / {{ $firstStamp->stampCard?->required_stamps ?? 0 }}</span></div>
+                <div class="member-identity-stat-sub">{{ $firstStamp->stampCard?->name ?? 'スタンプカード' }}{{ $firstStamp->completed_at ? '（達成済み）' : '' }}</div>
+            </div>
+            @endif
+        </div>
     </div>
-    @if($canManage)
-    <div class="member-detail-head-actions">
-        <a href="{{ admin_route('admin.members.edit', ['id' => $view->member->id]) }}" class="btn btn-primary btn-sm">
-            <i class="fas fa-edit"></i> 編集
-        </a>
-        <form action="{{ admin_route('admin.members.delete', ['id' => $view->member->id]) }}" method="POST" class="d-inline delete-form" data-item-name="{{ $memberName }}">
-            @csrf
-            @method('DELETE')
-            <button type="submit" class="btn btn-danger btn-sm no-loading"><i class="fas fa-trash"></i> 削除</button>
-        </form>
-    </div>
-    @endif
-</div>
+</section>
 
-{{-- 購買サマリーKPI --}}
 <div class="member-kpi-grid">
     <div class="member-kpi-card">
         <div class="member-kpi-icon member-kpi-icon--ltv"><i class="fas fa-yen-sign"></i></div>
@@ -88,90 +167,38 @@
     </div>
 </div>
 
-<div class="member-detail-split">
+<div class="member-detail-split{{ $hasProfileExtras ? '' : ' member-detail-split--single' }}">
+@if($hasProfileExtras)
 <div class="card">
     <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-user"></i> 会員情報</h3>
+        <h3 class="card-title"><i class="fas fa-id-card"></i> プロフィール</h3>
     </div>
     <div class="card-body">
-        <div class="info-grid">
-            <div class="info-item">
-                <div class="info-label">ID（内部）</div>
-                <div class="info-value"><span class="id-badge">{{ $view->member->id }}</span></div>
+        <dl class="member-dl">
+            @if($view->member->birthday)
+            <div class="member-dl-row">
+                <dt>生年月日</dt>
+                <dd>{{ $view->member->birthday->format('Y/m/d') }}</dd>
             </div>
-            <div class="info-item">
-                <div class="info-label">会員番号</div>
-                <div class="info-value"><code class="member-number">{{ $view->member->member_number }}</code></div>
+            @endif
+            @if($sexLabel !== '—' && $sexLabel !== '未設定')
+            <div class="member-dl-row">
+                <dt>性別</dt>
+                <dd>{{ $sexLabel }}</dd>
             </div>
-            <div class="info-item">
-                <div class="info-label">ユーザー名</div>
-                <div class="info-value">{{ $view->member->user->name ?? 'N/A' }}</div>
+            @endif
+            @if($addressLabel !== '')
+            <div class="member-dl-row">
+                <dt>住所</dt>
+                <dd>{{ $addressLabel }}</dd>
             </div>
-            <div class="info-item">
-                <div class="info-label">LINE名</div>
-                <div class="info-value">{{ $lineName !== '' ? $lineName : '—' }}</div>
-            </div>
-            <div class="info-item">
-                <div class="info-label">現在のポイント</div>
-                <div class="info-value">{{ number_format($view->member->points) }}pt</div>
-            </div>
-            <div class="info-item">
-                <div class="info-label">ランク</div>
-                <div class="info-value">{{ $view->member->rank_label ?? ($view->member->rank ?? '—') }}</div>
-            </div>
-            <div class="info-item">
-                <div class="info-label">ポイント有効期限</div>
-                <div class="info-value">
-                    {{ $view->member->points_expiry['expires_at_label'] ?? '—' }}
-                </div>
-            </div>
-            <div class="info-item">
-                <div class="info-label">期限切れ予定ポイント</div>
-                <div class="info-value">
-                    {{ number_format($view->member->points_expiry['points_expiring'] ?? 0) }}pt
-                </div>
-            </div>
-            <div class="info-item">
-                <div class="info-label">ステータス</div>
-                <div class="info-value">
-                    <span class="badge badge-{{ $view->member->status === 'active' ? 'success' : 'danger' }}">
-                        {{ $view->member->status === 'active' ? '有効' : '無効' }}
-                    </span>
-                </div>
-            </div>
-            <div class="info-item">
-                <div class="info-label">登録日</div>
-                <div class="info-value">{{ $view->member->created_at->format('Y/m/d H:i:s') }}</div>
-            </div>
-            <div class="info-item">
-                <div class="info-label">登録チャネル</div>
-                <div class="info-value">
-                    @php $channelLabel = \App\Support\MemberChannel::label($view->member->user); @endphp
-                    @if($channelLabel === '—')
-                        <span class="text-muted">—</span>
-                    @else
-                        <span class="badge badge-info">{{ $channelLabel }}</span>
-                    @endif
-                </div>
-            </div>
-            <div class="info-item">
-                <div class="info-label">最終来店日時</div>
-                <div class="info-value">
-                    {{ $view->member->last_visited_at ? $view->member->last_visited_at->format('Y/m/d H:i') : '—' }}
-                </div>
-            </div>
-            <div class="info-item">
-                <div class="info-label">来店回数</div>
-                <div class="info-value">{{ number_format((int) ($view->member->visits_count ?? 0)) }}回</div>
-            </div>
-        </div>
-        @if($canManage)
-        <p class="text-muted small mb-0 mt-3">ポイント・スタンプ・クーポン・来店の操作は<a href="{{ admin_route('admin.members.edit', ['id' => $view->member->id]) }}">編集画面</a>から行えます。</p>
-        @endif
+            @endif
+        </dl>
     </div>
 </div>
+@endif
 
-<div class="card">
+<div class="card member-staff-card">
     <div class="card-header">
         <h3 class="card-title"><i class="fas fa-tags"></i> タグ・メモ</h3>
         <a href="{{ admin_route('admin.member-tags') }}" class="btn btn-sm btn-secondary">
@@ -218,7 +245,7 @@
             @if($canManage)
             <form action="{{ admin_route('admin.members.memo', ['id' => $view->member->id]) }}" method="POST">
                 @csrf @method('PUT')
-                <textarea name="memo" class="form-control" rows="3" maxlength="2000" placeholder="スタッフ向けのメモを入力（会員には表示されません）">{{ old('memo', $view->member->memo) }}</textarea>
+                <textarea name="memo" class="form-control member-memo-input" rows="5" maxlength="2000" placeholder="スタッフ向けのメモを入力（会員には表示されません）">{{ old('memo', $view->member->memo) }}</textarea>
                 <div class="form-actions member-memo-save">
                     <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-save"></i> メモを保存</button>
                 </div>
@@ -231,8 +258,26 @@
 </div>
 </div>
 
-{{-- 購入履歴（最新10件。残りは注文詳細・注文一覧） --}}
-<div class="card">
+<section class="member-history-shell" aria-label="履歴">
+    <div class="member-history-tablist" role="tablist" aria-label="履歴の種類">
+        @foreach($historyTabs as $tab)
+        <button
+            type="button"
+            class="member-history-tab{{ $loop->first ? ' is-active' : '' }} no-loading"
+            role="tab"
+            id="member-history-tab-{{ $tab['id'] }}"
+            data-history-tab-btn="{{ $tab['id'] }}"
+            aria-selected="{{ $loop->first ? 'true' : 'false' }}"
+            aria-controls="member-history-{{ $tab['id'] }}"
+            tabindex="{{ $loop->first ? '0' : '-1' }}"
+        >
+            {{ $tab['label'] }}
+            <span class="member-history-tab-count">{{ number_format($tab['count']) }}</span>
+        </button>
+        @endforeach
+    </div>
+
+<div class="card" data-history-tab="orders" id="member-history-orders" role="tabpanel" aria-labelledby="member-history-tab-orders">
     <div class="card-header">
         <h3 class="card-title">
             <i class="fas fa-shopping-bag"></i> 購入履歴
@@ -368,6 +413,7 @@
     'member' => $view->member,
     'historyFilters' => $view->historyFilters,
 ])
+</section>
 @endsection
 
 @push('scripts')
@@ -375,5 +421,56 @@
 window.MemberDetailHistoryConfig = {
     memberId: {{ (int) $view->member->id }},
 };
+(function () {
+    const shell = document.querySelector('.member-history-shell');
+    if (shell === null) {
+        return;
+    }
+    const buttons = Array.from(shell.querySelectorAll('[data-history-tab-btn]'));
+    const panels = Array.from(shell.querySelectorAll('[data-history-tab]'));
+    if (buttons.length === 0 || panels.length === 0) {
+        return;
+    }
+    const sectionIds = panels.map((panel) => panel.getAttribute('data-history-tab') || '').filter((id) => id !== '');
+    const activate = (id) => {
+        buttons.forEach((button) => {
+            const isActive = button.getAttribute('data-history-tab-btn') === id;
+            button.classList.toggle('is-active', isActive);
+            button.setAttribute('aria-selected', isActive ? 'true' : 'false');
+            button.tabIndex = isActive ? 0 : -1;
+        });
+        panels.forEach((panel) => {
+            panel.hidden = panel.getAttribute('data-history-tab') !== id;
+        });
+        shell.classList.add('is-ready');
+    };
+    const params = new URLSearchParams(window.location.search);
+    const hash = window.location.hash.replace(/^#/, '');
+    let initial = sectionIds[0] || 'orders';
+    for (let i = 0; i < sectionIds.length; i++) {
+        const section = sectionIds[i];
+        if (
+            params.get(section + '_q') !== null
+            || params.get(section + '_from') !== null
+            || params.get(section + '_to') !== null
+            || params.get(section + '_page') !== null
+        ) {
+            initial = section;
+            break;
+        }
+    }
+    if (sectionIds.indexOf(hash) !== -1) {
+        initial = hash;
+    }
+    activate(initial);
+    buttons.forEach((button) => {
+        button.addEventListener('click', () => {
+            const id = button.getAttribute('data-history-tab-btn');
+            if (id) {
+                activate(id);
+            }
+        });
+    });
+})();
 </script>
 @endpush

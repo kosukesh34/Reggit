@@ -17,21 +17,15 @@ use Illuminate\Support\Collection;
 
 class AdminCouponBulkIssueFormUseCase
 {
-    private const COUPON_PICKER_PER_PAGE = 10;
-
     public function __construct(
         private CouponAdminService $couponAdminService,
         private SmaregiCouponSyncService $smaregiCouponSync,
         private ShopSettingRepository $shopSettingRepository,
     ) {}
 
-    public function handle(int $projectId, string $couponSearch = '', ?int $selectedCouponId = null): AdminCouponBulkIssueFormOutput
+    public function handle(int $projectId): AdminCouponBulkIssueFormOutput
     {
-        $coupons = $this->couponAdminService->getActiveCouponsForSelectPaginated(
-            $projectId,
-            $couponSearch,
-            self::COUPON_PICKER_PER_PAGE,
-        );
+        $coupons = $this->couponAdminService->getActiveCouponsForSelect($projectId);
 
         $activeCount = Coupon::query()
             ->where('project_id', $projectId)
@@ -87,15 +81,6 @@ class AdminCouponBulkIssueFormUseCase
             ];
         }
 
-        $selectedCoupon = null;
-        if ($selectedCouponId !== null && $selectedCouponId > 0) {
-            $selectedCoupon = Coupon::query()
-                ->where('project_id', $projectId)
-                ->where('is_active', true)
-                ->whereKey($selectedCouponId)
-                ->first();
-        }
-
         return new AdminCouponBulkIssueFormOutput(
             $coupons,
             $memberCount,
@@ -111,8 +96,6 @@ class AdminCouponBulkIssueFormUseCase
             $deliveryCountByCouponId,
             $stampCards,
             $rankOptions,
-            $couponSearch,
-            $selectedCoupon,
             CouponDeliveryType::IMMEDIATE_ALL,
         );
     }

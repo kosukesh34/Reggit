@@ -6,11 +6,10 @@ use App\Models\Coupon;
 use App\Models\CouponDelivery;
 use App\Models\Product;
 use App\Models\StampCard;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
 /**
- * @param  LengthAwarePaginator<int, Coupon>  $coupons
+ * @param  Collection<int, Coupon>  $coupons
  * @param  Collection<int, CouponDelivery>  $scheduledDeliveries
  * @param  list<array{
  *     id: int,
@@ -44,7 +43,7 @@ use Illuminate\Support\Collection;
 class AdminCouponBulkIssueFormOutput
 {
     public function __construct(
-        public LengthAwarePaginator $coupons,
+        public Collection $coupons,
         public int $memberCount,
         public bool $hasSmaregiContract = false,
         public int $smaregiLinkedCount = 0,
@@ -58,8 +57,6 @@ class AdminCouponBulkIssueFormOutput
         public array $deliveryCountByCouponId = [],
         public Collection $stampCards = new Collection,
         public array $rankOptions = [],
-        public string $couponSearch = '',
-        public ?Coupon $selectedCoupon = null,
         public string $defaultDeliveryType = '',
     ) {}
 }
