@@ -3,22 +3,23 @@
 namespace App\Http\Controllers\Onboarding;
 
 use App\Http\Controllers\Controller;
+use App\UseCases\Admin\Project\Data\ProjectFormView;
 use Illuminate\View\View;
 
 class OnboardingPageController extends Controller
 {
     public function __invoke(): View
     {
-        return view('onboarding.create', [
-            'project' => null,
-            'projectSettings' => [
+        return view('onboarding.create', ['view' => new ProjectFormView(
+            null,
+            [
                 'smaregi_contract_id' => '',
                 'smaregi_client_id' => '',
                 'smaregi_client_secret' => '',
             ],
-            'isOnboarding' => true,
-            'showAdminAccount' => true,
-            'requireSmaregi' => true,
-        ]);
+            true,
+            true,
+            true,
+        )]);
     }
 }

@@ -13,7 +13,7 @@
 <div class="page-header-row">
     <div class="page-header">
         <h1 class="page-header-title"><i class="fas fa-eye"></i> 既読一覧</h1>
-        <p class="page-header-desc">{{ $announcement->title }}</p>
+        <p class="page-header-desc">{{ $view->announcement->title }}</p>
     </div>
     <div class="page-header-actions">
         <a href="{{ admin_route('admin.announcements') }}" class="btn btn-secondary">一覧へ戻る</a>
@@ -23,10 +23,10 @@
 <div class="card">
     <div class="card-header">
         <h3 class="card-title">既読者</h3>
-        <span class="card-header-note">{{ $readCount }}人</span>
+        <span class="card-header-note">{{ $view->readCount }}人</span>
     </div>
     <div class="card-body">
-        @if($readCount === 0)
+        @if($view->readCount === 0)
         <div class="empty-state">
             <i class="fas fa-eye-slash"></i>
             <p>まだ既読がありません</p>
@@ -43,7 +43,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach($reads as $read)
+                    @foreach($view->reads as $read)
                     <tr>
                         <td>
                             @if($read['member_id'] !== null)

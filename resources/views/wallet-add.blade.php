@@ -19,18 +19,18 @@
 <body>
     <div class="card">
         <h1>Walletに追加</h1>
-        <p>下のボタンで会員証を{{ $typeLabel }}に追加してください。追加が完了したら「{{ $returnBackLabel }}」をタップしてください。</p>
-        @if($walletUrl)
-        <button type="button" class="btn btn-primary" id="walletAddButton">{{ $addButtonLabel }}</button>
+        <p>下のボタンで会員証を{{ $view->typeLabel }}に追加してください。追加が完了したら「{{ $view->returnBackLabel }}」をタップしてください。</p>
+        @if($view->walletUrl)
+        <button type="button" class="btn btn-primary" id="walletAddButton">{{ $view->addButtonLabel }}</button>
         @endif
-        @if($returnUrl)
-        <a href="{{ $returnUrl }}" class="btn btn-secondary">{{ $returnBackLabel }}</a>
+        @if($view->returnUrl)
+        <a href="{{ $view->returnUrl }}" class="btn btn-secondary">{{ $view->returnBackLabel }}</a>
         @endif
     </div>
-    @if($walletUrl)
+    @if($view->walletUrl)
     <script>
         (function () {
-            var target = @json($walletUrl);
+            var target = @json($view->walletUrl);
             if (!target) return;
 
             var opened = false;

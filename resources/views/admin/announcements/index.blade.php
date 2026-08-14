@@ -5,13 +5,13 @@
 
 @section('content')
 @php
-    $hasSearchFilters = ($filters['keyword'] ?? '') !== ''
-        || ($filters['published_from'] ?? '') !== ''
-        || ($filters['published_to'] ?? '') !== '';
+    $hasSearchFilters = ($view->filters['keyword'] ?? '') !== ''
+        || ($view->filters['published_from'] ?? '') !== ''
+        || ($view->filters['published_to'] ?? '') !== '';
     $tabQueryBase = array_filter([
-        'keyword' => $filters['keyword'] ?? '',
-        'published_from' => $filters['published_from'] ?? '',
-        'published_to' => $filters['published_to'] ?? '',
+        'keyword' => $view->filters['keyword'] ?? '',
+        'published_from' => $view->filters['published_from'] ?? '',
+        'published_to' => $view->filters['published_to'] ?? '',
     ], fn ($value) => $value !== '');
 @endphp
 <div class="page-header-row">
@@ -30,25 +30,25 @@
     <div class="card-header">
         <h3 class="card-title"><i class="fas fa-search"></i> 検索・絞り込み</h3>
         @if($hasSearchFilters)
-        <a href="{{ admin_route('admin.announcements', ['delivery_type' => $filters['delivery_type'] ?? 'all']) }}" class="btn btn-sm btn-secondary">
+        <a href="{{ admin_route('admin.announcements', ['delivery_type' => $view->filters['delivery_type'] ?? 'all']) }}" class="btn btn-sm btn-secondary">
             <i class="fas fa-times"></i> クリア
         </a>
         @endif
     </div>
     <form method="GET" action="{{ admin_route('admin.announcements') }}" class="member-search-form">
-        <input type="hidden" name="delivery_type" value="{{ $filters['delivery_type'] ?? 'all' }}">
+        <input type="hidden" name="delivery_type" value="{{ $view->filters['delivery_type'] ?? 'all' }}">
         <div class="filter-grid filter-grid--members">
             <div class="form-group">
                 <label class="form-label" for="keyword">タイトル</label>
-                <input type="text" name="keyword" id="keyword" class="form-control" placeholder="タイトルで検索" value="{{ $filters['keyword'] ?? '' }}">
+                <input type="text" name="keyword" id="keyword" class="form-control" placeholder="タイトルで検索" value="{{ $view->filters['keyword'] ?? '' }}">
             </div>
             <div class="form-group">
                 <label class="form-label" for="published_from">公開日（開始）</label>
-                <input type="date" name="published_from" id="published_from" class="form-control" value="{{ $filters['published_from'] ?? '' }}">
+                <input type="date" name="published_from" id="published_from" class="form-control" value="{{ $view->filters['published_from'] ?? '' }}">
             </div>
             <div class="form-group">
                 <label class="form-label" for="published_to">公開日（終了）</label>
-                <input type="date" name="published_to" id="published_to" class="form-control" value="{{ $filters['published_to'] ?? '' }}">
+                <input type="date" name="published_to" id="published_to" class="form-control" value="{{ $view->filters['published_to'] ?? '' }}">
             </div>
             <div class="form-group form-group--action">
                 <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> 検索</button>
@@ -62,11 +62,11 @@
         <h3 class="card-title"><i class="fas fa-filter"></i> 配信形態</h3>
     </div>
     <div class="status-filters">
-        @foreach($deliveryTypeLabels as $typeKey => $typeLabel)
+        @foreach($view->deliveryTypeLabels as $typeKey => $typeLabel)
         <a href="{{ admin_route('admin.announcements', array_merge($tabQueryBase, ['delivery_type' => $typeKey])) }}"
-           class="status-filter {{ ($filters['delivery_type'] ?? 'all') === $typeKey ? 'active' : '' }}">
+           class="status-filter {{ ($view->filters['delivery_type'] ?? 'all') === $typeKey ? 'active' : '' }}">
             {{ $typeLabel }}
-            <span class="badge">{{ $deliveryTypeCounts[$typeKey] ?? 0 }}</span>
+            <span class="badge">{{ $view->deliveryTypeCounts[$typeKey] ?? 0 }}</span>
         </a>
         @endforeach
     </div>
@@ -75,12 +75,12 @@
 <div class="card">
     <div class="card-header">
         <h3 class="card-title">お知らせ一覧</h3>
-        @if(!$announcements->isEmpty())
-        <span class="card-header-note">{{ $announcements->total() }}件</span>
+        @if(!$view->announcements->isEmpty())
+        <span class="card-header-note">{{ $view->announcements->total() }}件</span>
         @endif
     </div>
     <div class="card-body">
-        @if($announcements->isEmpty())
+        @if($view->announcements->isEmpty())
         <div class="empty-state">
             <i class="fas fa-bullhorn"></i>
             <p>お知らせがありません</p>
@@ -102,17 +102,17 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach($announcements as $a)
+                    @foreach($view->announcements as $a)
                     <tr>
                         <td><strong>{{ Str::limit($a->title, 40) }}</strong></td>
-                        <td><span class="badge badge-info">{{ $deliveryTypeLabels[$a->delivery_type] ?? '—' }}</span></td>
+                        <td><span class="badge badge-info">{{ $view->deliveryTypeLabels[$a->delivery_type] ?? '—' }}</span></td>
                         <td>
                             @if($a->delivery_status === 'sent')
-                                <span class="badge badge-success">{{ $deliveryStatusLabels['sent'] }}</span>
+                                <span class="badge badge-success">{{ $view->deliveryStatusLabels['sent'] }}</span>
                             @elseif($a->delivery_status === 'scheduled')
-                                <span class="badge badge-info">{{ $deliveryStatusLabels['scheduled'] }}</span>
+                                <span class="badge badge-info">{{ $view->deliveryStatusLabels['scheduled'] }}</span>
                             @else
-                                <span class="badge badge-secondary">{{ $deliveryStatusLabels['draft'] ?? '下書き' }}</span>
+                                <span class="badge badge-secondary">{{ $view->deliveryStatusLabels['draft'] ?? '下書き' }}</span>
                             @endif
                         </td>
                         <td>
@@ -136,7 +136,7 @@
                 </tbody>
             </table>
         </div>
-        {{ $announcements->links('vendor.pagination.admin') }}
+        {{ $view->announcements->links('vendor.pagination.admin') }}
         @endif
     </div>
 </div>

@@ -15,7 +15,7 @@
 <div class="page-header-row">
     <div class="page-header">
         <h1 class="page-header-title"><i class="fas fa-receipt"></i> 利用履歴</h1>
-        <p class="page-header-desc">{{ $coupon->name ?? $coupon->code }}</p>
+        <p class="page-header-desc">{{ $view->coupon->name ?? $view->coupon->code }}</p>
     </div>
     <div class="page-header-actions">
         <a href="{{ admin_route('admin.coupons') }}" class="btn btn-secondary">一覧へ戻る</a>
@@ -25,10 +25,10 @@
 <div class="card cp-list-card">
     <div class="card-header">
         <h3 class="card-title">利用者</h3>
-        <span class="card-header-note">{{ $redemptionCount }}人</span>
+        <span class="card-header-note">{{ $view->redemptionCount }}人</span>
     </div>
     <div class="card-body">
-        @if($redemptionCount === 0)
+        @if($view->redemptionCount === 0)
         <div class="empty-state">
             <i class="fas fa-receipt"></i>
             <p>まだ利用者がいません</p>
@@ -45,7 +45,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach($redemptions as $redemption)
+                    @foreach($view->redemptions as $redemption)
                     <tr>
                         <td>
                             @if($redemption['member_id'] !== null)
@@ -68,7 +68,7 @@
                 </tbody>
             </table>
         </div>
-        {{ $redemptions->links('vendor.pagination.admin') }}
+        {{ $view->redemptions->links('vendor.pagination.admin') }}
         @endif
     </div>
 </div>

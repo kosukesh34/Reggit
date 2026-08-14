@@ -57,18 +57,9 @@ class ReservationController extends AdminBaseController
             $projectId
         );
 
-        $payload = [
-            'reservations' => $output->reservations,
-            'statusCounts' => $output->statusCounts,
-            'selectedDate' => $output->selectedDate,
-            'selectedDateLabel' => $output->selectedDateLabel,
-            'dateStatusCounts' => $output->dateStatusCounts,
-            'timeSlotSummary' => $output->timeSlotSummary,
-            'reservationCapacity' => $output->reservationCapacity,
-        ];
         $output->reservations->appends($request->query());
 
-        return view('admin.reservations', $payload);
+        return view('admin.reservations', ['view' => $output]);
     }
 
     public function reservationDetail(string $projectKey, $id)

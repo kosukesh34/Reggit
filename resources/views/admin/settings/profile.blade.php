@@ -20,10 +20,10 @@
 <form action="{{ admin_route('admin.settings.profile.update') }}" method="POST">
     @csrf
     @php
-        $memberRegistrationMode = $settings['member_registration_mode'] ?? \App\Enums\MemberRegistrationMode::OPTIONAL;
-        $modeOptions = $memberRegistrationModeOptions ?? \App\Enums\MemberRegistrationMode::getValues();
+        $memberRegistrationMode = $view->settings['member_registration_mode'] ?? \App\Enums\MemberRegistrationMode::OPTIONAL;
+        $modeOptions = $view->memberRegistrationModeOptions ?? \App\Enums\MemberRegistrationMode::getValues();
         $customFieldMax = \App\Domain\Settings\ShopSettingKeys::PROFILE_CUSTOM_FIELD_MAX;
-        $inputTypeOptions = $customFieldInputTypeOptions ?? \App\Enums\ProfileCustomFieldInputType::getValues();
+        $inputTypeOptions = $view->customFieldInputTypeOptions ?? \App\Enums\ProfileCustomFieldInputType::getValues();
     @endphp
     <div class="card mb-4">
         <div class="card-header">
@@ -66,7 +66,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach($settings['smaregi_fields'] ?? [] as $key => $field)
+                    @foreach($view->settings['smaregi_fields'] ?? [] as $key => $field)
                     @php
                         $isName = $key === 'name';
                         $isLinked = \App\Domain\Settings\ShopSettingKeys::isSmaregiLinkedProfileField($key);
@@ -114,7 +114,7 @@
         <div class="card-body">
             <p class="text-muted small mb-3">会員プロフィールに独自の入力項目を追加できます（最大 {{ $customFieldMax }} 件）。入力タイプと選択肢を設定できます。キーは半角英数字とアンダースコアのみ（例: company_name）。追加項目はアプリ内のみで、スマレジには送信されません。</p>
             <div id="customFieldsContainer">
-                @foreach($settings['custom_fields'] ?? [] as $i => $cf)
+                @foreach($view->settings['custom_fields'] ?? [] as $i => $cf)
                 @php
                     $inputType = $cf['input_type'] ?? \App\Enums\ProfileCustomFieldInputType::TEXT;
                     $needsValues = \App\Enums\ProfileCustomFieldInputType::needsValues($inputType);

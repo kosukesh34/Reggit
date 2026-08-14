@@ -136,7 +136,7 @@ public function hasMember(): bool
 
 ## 7. Viewへのプロパティ渡し
 
-- Viewに渡すプロパティが4つ以上になる場合は、DTOを作成して渡す
+- Viewに渡すプロパティが3つ以上になる場合は、表示用クラス（`○○View`）を作成して渡す。クラス名に DTO は使わず、`app/UseCases/**/Data/` に置く
 - 複数のDTOに分けて渡してもOK
 - データ構造の整理・保守性の向上
 
