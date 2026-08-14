@@ -20,6 +20,7 @@
         <p class="page-header-desc">お客様へのお知らせの管理</p>
     </div>
     <div class="page-header-actions">
+        <a href="{{ admin_route('admin.after-registration-deliveries.index') }}" class="btn btn-secondary"><i class="fas fa-clock"></i> 登録後配信</a>
         <a href="{{ admin_route('admin.announcements.delivery.create') }}" class="btn btn-secondary"><i class="fas fa-paper-plane"></i> 配信</a>
         <a href="{{ admin_route('admin.announcements.create') }}" class="btn btn-primary"><i class="fas fa-plus"></i> 追加</a>
     </div>

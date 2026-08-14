@@ -13,6 +13,14 @@ class PublicImageStorageService
 
     public const DIR_FRONTEND_LOGO = 'frontend_logos';
 
+    public const DIR_PRODUCT = 'product_images';
+
+    public const DIR_GALLERY = 'gallery_images';
+
+    public const DIR_STAMP_DEFAULT = 'stamp_defaults';
+
+    public const DIR_COUPON_DEFAULT = 'coupon_defaults';
+
     public function store(UploadedFile $file, int $projectId, string $directory): string
     {
         $path = $file->store($directory.'/'.$projectId, 'public');

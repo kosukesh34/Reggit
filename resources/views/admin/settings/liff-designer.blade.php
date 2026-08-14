@@ -25,7 +25,7 @@
         'menuItems' => $menuItems ?? [],
         'formAction' => admin_route('admin.settings.liff-designer.update'),
         'csrfToken' => csrf_token(),
-        'backUrl' => admin_route('admin.settings.basic'),
+        'backUrl' => admin_route('admin.settings.index'),
     ];
 @endphp
 <script>

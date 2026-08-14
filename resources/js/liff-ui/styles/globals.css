@@ -2354,6 +2354,19 @@ body.reggit-liff-ui .membership-page .member-section.member-card-mount {
 .lp-member-shortcuts { display: grid; grid-template-columns: repeat(4, 1fr); margin-top: 3px; }.lp-member-shortcuts a { display: grid; place-items: center; gap: 8px; min-height: 78px; color: #006d57; border-right: 1px solid #e3e7e6; }.lp-member-shortcuts a:last-child { border-right: 0; }.lp-member-shortcuts a svg { width: 25px; }.lp-member-shortcuts a span { color: #1e2524; font-size: 10px; }
 .lp-member-terms-sheet { display: grid; gap: 13px; }.lp-member-terms-sheet strong { font-size: 17px; }.lp-member-terms-sheet p { margin: 0; color: #68716f; font-size: 11px; line-height: 1.8; }.lp-member-terms-sheet button { width: 100%; min-height: 50px; margin-top: 4px; color: #fff; font-size: 12px; font-weight: 700; background: #007b61; border-radius: 12px; }
 
+.landing-showcase--register { padding: 22px 26px 36px; }
+.lp-register-hero { display: grid; justify-items: center; gap: 8px; margin-bottom: 22px; text-align: center; }
+.lp-register-hero__mark { display: grid; place-items: center; width: 58px; height: 58px; color: #fff; background: linear-gradient(145deg, #09a17c, #006b55); border-radius: 50%; }
+.lp-register-hero h1 { margin: 4px 0 0; font-size: 26px; letter-spacing: -.035em; }
+.lp-register-hero p { margin: 0; color: #697177; font-size: 13px; line-height: 1.6; }
+.lp-register-hero b { color: #006c56; font-size: 12px; font-weight: 700; }
+.lp-register-form { display: grid; gap: 14px; }
+.lp-register-form label { display: grid; gap: 6px; }
+.lp-register-form label > span { color: #3f4846; font-size: 12px; font-weight: 700; }
+.lp-register-form input { width: 100%; min-height: 48px; padding: 0 14px; color: #1e2524; background: #fff; border: 1px solid #d7e0de; border-radius: 12px; }
+.lp-register-form__name { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.lp-register-form__submit { width: 100%; min-height: 52px; margin-top: 6px; color: #fff; font-size: 15px; font-weight: 700; background: linear-gradient(90deg, #009373, #00775f); border-radius: 12px; box-shadow: 0 10px 24px rgb(0 121 94 / .16); }
+
 /* Stamp card */
 .landing-showcase--stamp { padding: 30px 35px 42px; }
 .lp-stamp-brand { display: grid; justify-items: center; color: #005d4a; text-align: center; }.lp-stamp-brand > span { position: relative; display: block; }.lp-stamp-brand > span svg:last-child { position: absolute; right: -16px; bottom: -5px; }.lp-stamp-brand h1 { margin: 12px 0 0; font-family: Georgia, serif; font-size: clamp(34px, 10vw, 51px); font-weight: 550; letter-spacing: .06em; }.lp-stamp-brand p { display: flex; align-items: center; gap: 14px; margin: 7px 0 0; font-size: 19px; letter-spacing: .31em; }.lp-stamp-brand p i { width: 48px; height: 2px; background: currentColor; }

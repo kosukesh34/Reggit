@@ -5,7 +5,7 @@
 
 @section('content')
 <div class="card">
-    <form action="{{ isset($product) ? admin_route('admin.products.update', ['id' => $product->id]) : admin_route('admin.products.store') }}" method="POST">
+        <form action="{{ isset($product) ? admin_route('admin.products.update', ['id' => $product->id]) : admin_route('admin.products.store') }}" method="POST" enctype="multipart/form-data">
         @csrf
         @if(isset($product))
             @method('PUT')
@@ -37,11 +37,13 @@
             </select>
         </div>
 
-        <div class="form-group">
-            <label class="form-label"><i class="fas fa-image"></i> 画像URL</label>
-            <input type="url" name="image_url" class="form-control" value="{{ old('image_url', $product->image_url ?? '') }}" placeholder="https://...">
-            <small class="form-help"><i class="fas fa-info-circle"></i> 画像を追加後、php artisan products:download-images を実行してください</small>
-        </div>
+        @include('admin.partials._frontend_logo_dropzone', [
+            'logoInputName' => 'image',
+            'logoClearName' => 'image_clear',
+            'logoFieldId' => 'product_image',
+            'logoCurrentUrl' => (string) old('image_url', $product->image_url ?? ''),
+            'logoLabel' => '商品画像',
+        ])
 
         <div class="form-group">
             <div class="form-check mb-2">

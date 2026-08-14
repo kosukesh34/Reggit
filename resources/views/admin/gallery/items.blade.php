@@ -16,7 +16,7 @@
         <a href="{{ admin_route('admin.gallery.categories') }}" class="btn btn-secondary btn-sm"><i class="fas fa-tags"></i> カテゴリ管理</a>
     </div>
     <div class="card-body">
-        <form method="POST" action="{{ admin_route('admin.gallery.items.store') }}" class="form-inline form-inline-flex">
+        <form method="POST" action="{{ admin_route('admin.gallery.items.store') }}" class="form-inline form-inline-flex" enctype="multipart/form-data">
             @csrf
             <div class="form-group">
                 <label class="form-label">カテゴリ</label>
@@ -31,10 +31,15 @@
                 <label class="form-label">タイトル</label>
                 <input type="text" name="title" class="form-control" maxlength="150">
             </div>
-            <div class="form-group min-w-240">
-                <label class="form-label">画像URL</label>
-                <input type="url" name="image_url" class="form-control" required maxlength="500" placeholder="https://...">
-            </div>
+            @include('admin.partials._frontend_logo_dropzone', [
+                'logoInputName' => 'image',
+                'logoClearName' => 'image_clear',
+                'logoFieldId' => 'gallery_item_new',
+                'logoCurrentUrl' => '',
+                'logoLabel' => '画像',
+                'logoRequired' => true,
+                'logoCompact' => true,
+            ])
             <div class="form-group">
                 <label class="form-label">説明</label>
                 <input type="text" name="description" class="form-control" maxlength="1000">
@@ -81,7 +86,7 @@
         <tbody>
             @forelse($items as $item)
             <tr>
-                <form method="POST" action="{{ admin_route('admin.gallery.items.update', ['id' => $item->id]) }}">
+                <form method="POST" action="{{ admin_route('admin.gallery.items.update', ['id' => $item->id]) }}" enctype="multipart/form-data">
                     @csrf
                     @method('PUT')
                     <td>{{ $item->id }}</td>
@@ -99,7 +104,15 @@
                     <td>
                         <input type="text" name="title" class="form-control" value="{{ $item->title }}" maxlength="150">
                         <input type="text" name="description" class="form-control input-mt-6" value="{{ $item->description }}" maxlength="1000" placeholder="説明">
-                        <input type="url" name="image_url" class="form-control input-mt-6" value="{{ $item->image_url }}" maxlength="500">
+                        <input type="hidden" name="image_url" value="{{ $item->image_url }}">
+                        @include('admin.partials._frontend_logo_dropzone', [
+                            'logoInputName' => 'image',
+                            'logoClearName' => 'image_clear',
+                            'logoFieldId' => 'gallery_item_'.$item->id,
+                            'logoCurrentUrl' => (string) $item->image_url,
+                            'logoLabel' => '画像を差し替え',
+                            'logoCompact' => true,
+                        ])
                         <select name="size" class="form-control select-mt-6">
                             <option value="small" {{ $item->size === 'small' ? 'selected' : '' }}>小</option>
                             <option value="medium" {{ $item->size === 'medium' ? 'selected' : '' }}>中</option>
