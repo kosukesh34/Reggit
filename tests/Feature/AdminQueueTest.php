@@ -82,8 +82,8 @@ class AdminQueueTest extends TestCase
             ->get(route('admin.queue', ['project_key' => $project->project_key]));
 
         $response->assertOk();
-        $response->assertViewHas('entries', function ($entries) use ($recent, $old) {
-            $ids = $entries->pluck('id');
+        $response->assertViewHas('view', function ($view) use ($recent, $old) {
+            $ids = $view->entries->pluck('id');
 
             return $ids->contains($recent->id) && $ids->contains($old->id) === false;
         });
@@ -122,8 +122,8 @@ class AdminQueueTest extends TestCase
             ->get(route('admin.queue', ['project_key' => $project->project_key]));
 
         $response->assertOk();
-        $response->assertViewHas('entries', function ($entries) use ($recentEntered, $oldEntered) {
-            $ids = $entries->pluck('id');
+        $response->assertViewHas('view', function ($view) use ($recentEntered, $oldEntered) {
+            $ids = $view->entries->pluck('id');
 
             return $ids->contains($recentEntered->id) && $ids->contains($oldEntered->id) === false;
         });

@@ -45,10 +45,10 @@
 
 <div class="page-header">
     <h1 class="page-header-title"><i class="fas fa-qrcode"></i> スタンプ付与QR</h1>
-    <p class="page-header-desc">{{ $stampCard->name }}の付与QRをその都度発行します。QR画像は発行直後だけ表示され、履歴には条件だけが残ります。</p>
+    <p class="page-header-desc">{{ $view->stampCard->name }}の付与QRをその都度発行します。QR画像は発行直後だけ表示され、履歴には条件だけが残ります。</p>
 </div>
 
-<form method="POST" action="{{ admin_route('admin.stamps.grant-qr.store', ['id' => $stampCard->id]) }}" class="card stamp-grant-form">
+<form method="POST" action="{{ admin_route('admin.stamps.grant-qr.store', ['id' => $view->stampCard->id]) }}" class="card stamp-grant-form">
     @csrf
     <div class="card-header"><h2 class="card-title">新しいQRを発行</h2></div>
     <div class="card-body">
@@ -57,17 +57,17 @@
                 <label for="expires_minutes" class="form-label">QRの有効期限</label>
                 <select name="expires_minutes" id="expires_minutes" class="form-control">
                     @foreach(\App\Enums\StampGrantLimit::EXPIRES_OPTIONS as $minutes => $label)
-                        <option value="{{ $minutes }}" {{ (int) $expiresMinutes === (int) $minutes ? 'selected' : '' }}>{{ $label }}</option>
+                        <option value="{{ $minutes }}" {{ (int) $view->expiresMinutes === (int) $minutes ? 'selected' : '' }}>{{ $label }}</option>
                     @endforeach
                 </select>
             </div>
             <div class="form-group">
                 <label for="amount" class="form-label">付与する個数</label>
-                <input type="number" name="amount" id="amount" class="form-control" min="1" max="{{ \App\Enums\StampGrantLimit::MAX_AMOUNT }}" value="{{ $amount }}" required>
+                <input type="number" name="amount" id="amount" class="form-control" min="1" max="{{ \App\Enums\StampGrantLimit::MAX_AMOUNT }}" value="{{ $view->amount }}" required>
             </div>
             @php
                 $dailyCase = \App\Enums\StampGrantLimit::useCases()[\App\Enums\StampGrantLimit::DAILY];
-                $isDailyLimit = $limit === \App\Enums\StampGrantLimit::DAILY;
+                $isDailyLimit = $view->limit === \App\Enums\StampGrantLimit::DAILY;
             @endphp
             <div class="form-group stamp-grant-limit" data-stamp-grant-limit>
                 <label class="form-label">利用上限</label>
@@ -82,17 +82,17 @@
                         <span></span>
                     </label>
                 </div>
-                <input type="hidden" name="limit" value="{{ $limit }}" data-stamp-grant-limit-value>
+                <input type="hidden" name="limit" value="{{ $view->limit }}" data-stamp-grant-limit-value>
                 <div class="stamp-grant-other" data-stamp-grant-other {{ $isDailyLimit ? 'hidden' : '' }}>
                     @foreach(\App\Enums\StampGrantLimit::useCases() as $value => $useCase)
                         @if($value === \App\Enums\StampGrantLimit::DAILY)
                             @continue
                         @endif
                         <label class="stamp-grant-limit-option">
-                            <input type="radio" data-stamp-grant-other-limit value="{{ $value }}" {{ ($isDailyLimit === false && $limit === $value) || ($isDailyLimit && $value === \App\Enums\StampGrantLimit::PER_MEMBER) ? 'checked' : '' }}>
+                            <input type="radio" data-stamp-grant-other-limit value="{{ $value }}" {{ ($isDailyLimit === false && $view->limit === $value) || ($isDailyLimit && $value === \App\Enums\StampGrantLimit::PER_MEMBER) ? 'checked' : '' }}>
                             <span>
                                 @if($value === \App\Enums\StampGrantLimit::ONCE)
-                                    <strong>先着<input type="number" name="quota" class="stamp-grant-quota" min="1" max="{{ \App\Enums\StampGrantLimit::MAX_QUOTA }}" value="{{ $quota }}" data-stamp-grant-quota aria-label="先着人数">名</strong>
+                                    <strong>先着<input type="number" name="quota" class="stamp-grant-quota" min="1" max="{{ \App\Enums\StampGrantLimit::MAX_QUOTA }}" value="{{ $view->quota }}" data-stamp-grant-quota aria-label="先着人数">名</strong>
                                 @else
                                     <strong>{{ $useCase['label'] }}</strong>
                                 @endif
@@ -109,15 +109,15 @@
     </div>
 </form>
 
-@if($issuedCode !== null)
+@if($view->issuedCode !== null)
     @php
-        $openUrl = $issuedCode->openUrl();
-        $limitNote = \App\Enums\StampGrantLimit::displayLabel($issuedCode->usage_limit, (int) $issuedCode->usage_quota);
-        $expiresNote = $issuedCode->isExpired()
+        $openUrl = $view->issuedCode->openUrl();
+        $limitNote = \App\Enums\StampGrantLimit::displayLabel($view->issuedCode->usage_limit, (int) $view->issuedCode->usage_quota);
+        $expiresNote = $view->issuedCode->isExpired()
             ? '期限切れ'
-            : ($issuedCode->expires_at === null
+            : ($view->issuedCode->expires_at === null
                 ? '無期限'
-                : $issuedCode->expires_at->format('Y/m/d H:i').'まで');
+                : $view->issuedCode->expires_at->format('Y/m/d H:i').'まで');
     @endphp
     <div class="card">
         <div class="card-header"><h2 class="card-title">今回発行したQR</h2></div>
@@ -128,10 +128,10 @@
                     <label class="form-label" for="stampGrantUrlIssued">読み取り用URL</label>
                     <textarea id="stampGrantUrlIssued" class="form-control stamp-grant-url" readonly>{{ $openUrl }}</textarea>
                     <div class="stamp-grant-actions">
-                        <button type="button" class="btn btn-primary" data-download-stamp-grant-qr data-url="{{ $openUrl }}" data-filename="stamp-grant-{{ $stampCard->id }}-{{ $issuedCode->id }}.png"><i class="fas fa-download"></i> QRをダウンロード</button>
+                        <button type="button" class="btn btn-primary" data-download-stamp-grant-qr data-url="{{ $openUrl }}" data-filename="stamp-grant-{{ $view->stampCard->id }}-{{ $view->issuedCode->id }}.png"><i class="fas fa-download"></i> QRをダウンロード</button>
                         <button type="button" class="btn btn-outline" data-copy-stamp-grant-url data-copy-target="stampGrantUrlIssued"><i class="fas fa-copy"></i> URLをコピー</button>
                     </div>
-                    <p class="stamp-grant-note">この画面を離れるとQRは表示されません。印刷や保存が必要なら今ダウンロードしてください。<br>{{ $expiresNote }} / 1回 {{ $issuedCode->amount }} 個 / {{ $limitNote }}</p>
+                    <p class="stamp-grant-note">この画面を離れるとQRは表示されません。印刷や保存が必要なら今ダウンロードしてください。<br>{{ $expiresNote }} / 1回 {{ $view->issuedCode->amount }} 個 / {{ $limitNote }}</p>
                 </div>
             </div>
         </div>
@@ -141,7 +141,7 @@
 <div class="card">
     <div class="card-header"><h2 class="card-title">発行履歴</h2></div>
     <div class="card-body">
-        @if($codes->isEmpty())
+        @if($view->codes->isEmpty())
             <p class="stamp-grant-empty">まだQRはありません。上の条件で発行してください。</p>
         @else
             <table class="table stamp-grant-history">
@@ -156,7 +156,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach($codes as $code)
+                    @foreach($view->codes as $code)
                         @php
                             $openUrl = $code->openUrl();
                             $limitNote = \App\Enums\StampGrantLimit::displayLabel($code->usage_limit, (int) $code->usage_quota);
@@ -180,7 +180,7 @@
                             <td>{{ $expiresNote }}</td>
                             <td>{{ $usedLabel }}</td>
                             <td class="table-actions-cell">
-                                <button type="button" class="btn btn-action btn-outline" data-download-stamp-grant-qr data-url="{{ $openUrl }}" data-filename="stamp-grant-{{ $stampCard->id }}-{{ $code->id }}.png"><i class="fas fa-download"></i> ダウンロード</button>
+                                <button type="button" class="btn btn-action btn-outline" data-download-stamp-grant-qr data-url="{{ $openUrl }}" data-filename="stamp-grant-{{ $view->stampCard->id }}-{{ $code->id }}.png"><i class="fas fa-download"></i> ダウンロード</button>
                             </td>
                         </tr>
                     @endforeach

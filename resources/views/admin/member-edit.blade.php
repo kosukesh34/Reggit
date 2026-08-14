@@ -1,12 +1,12 @@
 @extends('admin.layout')
 @section('title', '会員編集')
-@section('page-title', '会員編集 #' . $member->id)
+@section('page-title', '会員編集 #' . $view->member->id)
 
 @section('content')
 <nav class="breadcrumb">
     <a href="{{ admin_route('admin.members') }}">会員一覧</a>
     <span class="breadcrumb-sep">/</span>
-    <a href="{{ admin_route('admin.members.detail', ['id' => $member->id]) }}">会員 #{{ $member->id }}</a>
+    <a href="{{ admin_route('admin.members.detail', ['id' => $view->member->id]) }}">会員 #{{ $view->member->id }}</a>
     <span class="breadcrumb-sep">/</span>
     <span>編集</span>
 </nav>
@@ -25,18 +25,18 @@
 <div class="card">
     <div class="card-header card-header-with-action">
         <h3 class="card-title"><i class="fas fa-user-edit"></i> 会員編集</h3>
-        <a href="{{ admin_route('admin.members.detail', ['id' => $member->id]) }}" class="btn btn-secondary btn-sm"><i class="fas fa-arrow-left"></i> 詳細に戻る</a>
+        <a href="{{ admin_route('admin.members.detail', ['id' => $view->member->id]) }}" class="btn btn-secondary btn-sm"><i class="fas fa-arrow-left"></i> 詳細に戻る</a>
     </div>
     <div class="card-body">
-        <form action="{{ admin_route('admin.members.update', ['id' => $member->id]) }}" method="POST">
+        <form action="{{ admin_route('admin.members.update', ['id' => $view->member->id]) }}" method="POST">
             @csrf
             @method('PUT')
 
             <section class="form-section mb-4">
                 <h4 class="form-section-title"><span class="form-section-num">1</span> ユーザー情報（登録情報）</h4>
                 @php
-                    [$nameLast, $nameFirst] = \App\Support\PersonNameParts::split(old('name', $member->user->name ?? ''));
-                    [$kanaLast, $kanaFirst] = \App\Support\PersonNameParts::split(old('kana', $member->user->kana ?? ''));
+                    [$nameLast, $nameFirst] = \App\Support\PersonNameParts::split(old('name', $view->member->user->name ?? ''));
+                    [$kanaLast, $kanaFirst] = \App\Support\PersonNameParts::split(old('kana', $view->member->user->kana ?? ''));
                     $nameLast = old('name_last', $nameLast);
                     $nameFirst = old('name_first', $nameFirst);
                     $kanaLast = old('kana_last', $kanaLast);
@@ -69,12 +69,12 @@
                 <div class="row">
                     <div class="col-md-6 form-group">
                         <label for="email" class="form-label">メールアドレス</label>
-                        <input type="email" name="email" id="email" class="form-control" value="{{ old('email', $member->user->email ?? '') }}" maxlength="255">
+                        <input type="email" name="email" id="email" class="form-control" value="{{ old('email', $view->member->user->email ?? '') }}" maxlength="255">
                         @error('email')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
                     </div>
                     <div class="col-md-6 form-group">
                         <label for="phone" class="form-label">電話番号</label>
-                        <input type="text" name="phone" id="phone" class="form-control" value="{{ old('phone', $member->user->phone ?? '') }}" maxlength="20">
+                        <input type="text" name="phone" id="phone" class="form-control" value="{{ old('phone', $view->member->user->phone ?? '') }}" maxlength="20">
                         @error('phone')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
                     </div>
                 </div>
@@ -85,70 +85,70 @@
                 <div class="row">
                     <div class="col-md-6 form-group">
                         <label for="member_number" class="form-label">会員番号 <span class="text-danger">*</span></label>
-                        <input type="text" name="member_number" id="member_number" class="form-control" value="{{ old('member_number', $member->member_number) }}" maxlength="64" required>
+                        <input type="text" name="member_number" id="member_number" class="form-control" value="{{ old('member_number', $view->member->member_number) }}" maxlength="64" required>
                         @error('member_number')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
                     </div>
                     <div class="col-md-3 form-group">
                         <label for="status" class="form-label">ステータス <span class="text-danger">*</span></label>
                         <select name="status" id="status" class="form-control" required>
-                            <option value="active" {{ old('status', $member->status) === 'active' ? 'selected' : '' }}>有効</option>
-                            <option value="inactive" {{ old('status', $member->status) === 'inactive' ? 'selected' : '' }}>無効</option>
+                            <option value="active" {{ old('status', $view->member->status) === 'active' ? 'selected' : '' }}>有効</option>
+                            <option value="inactive" {{ old('status', $view->member->status) === 'inactive' ? 'selected' : '' }}>無効</option>
                         </select>
                     </div>
                     <div class="col-md-3 form-group">
                         <label for="rank" class="form-label">ランク</label>
                         <select name="rank" id="rank" class="form-control">
                             <option value="">— 未設定 —</option>
-                            @foreach($rankOptions ?? [] as $key => $label)
-                            <option value="{{ $key }}" {{ old('rank', $member->rank) === $key ? 'selected' : '' }}>{{ $label }}</option>
+                            @foreach($view->rankOptions ?? [] as $key => $label)
+                            <option value="{{ $key }}" {{ old('rank', $view->member->rank) === $key ? 'selected' : '' }}>{{ $label }}</option>
                             @endforeach
                         </select>
                     </div>
                 </div>
                 <div class="form-group">
                     <label for="birthday" class="form-label">生年月日</label>
-                    <input type="date" name="birthday" id="birthday" class="form-control" value="{{ old('birthday', $member->birthday ? $member->birthday->format('Y-m-d') : '') }}">
+                    <input type="date" name="birthday" id="birthday" class="form-control" value="{{ old('birthday', $view->member->birthday ? $view->member->birthday->format('Y-m-d') : '') }}">
                     @error('birthday')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
                 </div>
                 <div class="form-group">
                     <label for="postal_code" class="form-label">郵便番号</label>
-                    <input type="text" name="postal_code" id="postal_code" class="form-control" value="{{ old('postal_code', $member->postal_code ?? '') }}" maxlength="8" placeholder="例: 100-0001">
+                    <input type="text" name="postal_code" id="postal_code" class="form-control" value="{{ old('postal_code', $view->member->postal_code ?? '') }}" maxlength="8" placeholder="例: 100-0001">
                     @error('postal_code')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
                 </div>
                 <div class="form-group">
                     <label for="prefecture" class="form-label">都道府県</label>
-                    <input type="text" name="prefecture" id="prefecture" class="form-control" value="{{ old('prefecture', $member->prefecture ?? '') }}" maxlength="64">
+                    <input type="text" name="prefecture" id="prefecture" class="form-control" value="{{ old('prefecture', $view->member->prefecture ?? '') }}" maxlength="64">
                     @error('prefecture')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
                 </div>
                 <div class="form-group">
                     <label for="city" class="form-label">市区町村</label>
-                    <input type="text" name="city" id="city" class="form-control" value="{{ old('city', $member->city ?? '') }}" maxlength="128">
+                    <input type="text" name="city" id="city" class="form-control" value="{{ old('city', $view->member->city ?? '') }}" maxlength="128">
                     @error('city')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
                 </div>
                 <div class="form-group">
                     <label for="street" class="form-label">番地・建物名</label>
-                    <input type="text" name="street" id="street" class="form-control" value="{{ old('street', $member->street ?? '') }}" maxlength="256">
+                    <input type="text" name="street" id="street" class="form-control" value="{{ old('street', $view->member->street ?? '') }}" maxlength="256">
                     @error('street')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
                 </div>
                 <div class="form-group">
                     <label for="address" class="form-label">住所（まとめ）</label>
-                    <textarea name="address" id="address" class="form-control" rows="2" maxlength="85">{{ old('address', $member->address ?? '') }}</textarea>
+                    <textarea name="address" id="address" class="form-control" rows="2" maxlength="85">{{ old('address', $view->member->address ?? '') }}</textarea>
                     @error('address')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
                 </div>
                 <div class="form-group">
                     <label for="sex" class="form-label">性別</label>
                     <select name="sex" id="sex" class="form-control">
                         <option value="">— 未設定 —</option>
-                        <option value="1" {{ old('sex', $member->sex) === '1' ? 'selected' : '' }}>男性</option>
-                        <option value="2" {{ old('sex', $member->sex) === '2' ? 'selected' : '' }}>女性</option>
+                        <option value="1" {{ old('sex', $view->member->sex) === '1' ? 'selected' : '' }}>男性</option>
+                        <option value="2" {{ old('sex', $view->member->sex) === '2' ? 'selected' : '' }}>女性</option>
                     </select>
                 </div>
                 <div class="form-group">
                     <label for="mail_receive_flag" class="form-label">店舗からの案内メールを受け取る</label>
                     <select name="mail_receive_flag" id="mail_receive_flag" class="form-control">
                         <option value="">— 未設定 —</option>
-                        <option value="1" {{ old('mail_receive_flag', $member->mail_receive_flag) === '1' ? 'selected' : '' }}>許可する</option>
-                        <option value="0" {{ old('mail_receive_flag', $member->mail_receive_flag) === '0' ? 'selected' : '' }}>許可しない</option>
+                        <option value="1" {{ old('mail_receive_flag', $view->member->mail_receive_flag) === '1' ? 'selected' : '' }}>許可する</option>
+                        <option value="0" {{ old('mail_receive_flag', $view->member->mail_receive_flag) === '0' ? 'selected' : '' }}>許可しない</option>
                     </select>
                 </div>
             </section>
@@ -177,18 +177,17 @@
                         <input type="text" name="point_description" id="point_description" class="form-control" value="{{ old('point_description') }}" maxlength="255" placeholder="例: 管理画面での調整">
                     </div>
                 </div>
-                <p class="text-muted small mb-0">現在のポイント: <strong>{{ number_format($member->points) }}pt</strong></p>
+                <p class="text-muted small mb-0">現在のポイント: <strong>{{ number_format($view->member->points) }}pt</strong></p>
             </section>
 
             @php
-                $customProfileFields = $customProfileFields ?? [];
-                $profileExtra = is_array($member->profile_extra) ? $member->profile_extra : [];
+                $profileExtra = is_array($view->member->profile_extra) ? $view->member->profile_extra : [];
             @endphp
-            @if($customProfileFields !== [])
+            @if($view->customProfileFields !== [])
             <section class="form-section mb-4">
                 <h4 class="form-section-title"><span class="form-section-num">4</span> 追加プロフィール項目</h4>
                 <p class="text-muted small mb-3">プロフィール設定で追加した項目です（アプリ内のみ・スマレジ非送信）。</p>
-                @foreach($customProfileFields as $cf)
+                @foreach($view->customProfileFields as $cf)
                     @php
                         $fieldKey = (string) ($cf['key'] ?? '');
                         $fieldLabel = (string) ($cf['label'] ?? $fieldKey);
@@ -249,7 +248,7 @@
 
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary"><i class="fas fa-check me-1"></i>変更を保存</button>
-                <a href="{{ admin_route('admin.members.detail', ['id' => $member->id]) }}" class="btn btn-secondary">キャンセル</a>
+                <a href="{{ admin_route('admin.members.detail', ['id' => $view->member->id]) }}" class="btn btn-secondary">キャンセル</a>
             </div>
         </form>
     </div>
@@ -260,24 +259,24 @@
         <h3 class="card-title"><i class="fas fa-stamp"></i> スタンプ操作</h3>
     </div>
     <div class="card-body">
-        @if($activeStampCards->isEmpty())
+        @if($view->activeStampCards->isEmpty())
             <p class="text-muted mb-0">スタンプカードがありません。<a href="{{ admin_route('admin.stamps.create') }}">スタンプカードを作成</a>してください。</p>
         @else
-            @if($member->memberStamps->isNotEmpty())
+            @if($view->member->memberStamps->isNotEmpty())
             <p class="text-muted small mb-3">現在:
-                @foreach($member->memberStamps as $ms)
+                @foreach($view->member->memberStamps as $ms)
                     {{ $ms->stampCard->name ?? '—' }} {{ $ms->current_stamps }} / {{ $ms->stampCard->required_stamps ?? 0 }}@if(!$loop->last)、@endif
                 @endforeach
             </p>
             @endif
-            <form action="{{ admin_route('admin.members.adjust-stamps', ['id' => $member->id]) }}" method="POST">
+            <form action="{{ admin_route('admin.members.adjust-stamps', ['id' => $view->member->id]) }}" method="POST">
                 @csrf
                 <div class="row">
                     <div class="col-md-4 form-group">
                         <label for="stamp_card_id" class="form-label">スタンプカード <span class="text-danger">*</span></label>
                         <select name="stamp_card_id" id="stamp_card_id" class="form-control" required>
                             <option value="">選択してください</option>
-                            @foreach($activeStampCards as $sc)
+                            @foreach($view->activeStampCards as $sc)
                                 <option value="{{ $sc->id }}">{{ $sc->name }}（{{ $sc->required_stamps }}個で達成）</option>
                             @endforeach
                         </select>
@@ -306,16 +305,16 @@
         <h3 class="card-title"><i class="fas fa-ticket-alt"></i> クーポン操作</h3>
     </div>
     <div class="card-body">
-        @if($activeCoupons->isEmpty())
+        @if($view->activeCoupons->isEmpty())
             <p class="text-muted">配布可能なクーポンがありません。<a href="{{ admin_route('admin.coupons.create') }}">クーポンを作成</a>してください。</p>
         @else
-            <form action="{{ admin_route('admin.members.issue-coupon', ['id' => $member->id]) }}" method="POST" class="form-inline mb-3">
+            <form action="{{ admin_route('admin.members.issue-coupon', ['id' => $view->member->id]) }}" method="POST" class="form-inline mb-3">
                 @csrf
                 <div class="form-group me-2">
                     <label for="coupon_id" class="form-label me-1">クーポン</label>
                     <select name="coupon_id" id="coupon_id" class="form-control" required>
                         <option value="">選択してください</option>
-                        @foreach($activeCoupons as $c)
+                        @foreach($view->activeCoupons as $c)
                             <option value="{{ $c->id }}">{{ $c->name }}（{{ $c->code }}）</option>
                         @endforeach
                     </select>
@@ -335,7 +334,7 @@
                 </tr>
             </thead>
             <tbody>
-                @forelse($member->memberCoupons as $mc)
+                @forelse($view->member->memberCoupons as $mc)
                 <tr>
                     <td>{{ $mc->coupon_name_snapshot ?? $mc->coupon->name ?? '—' }}</td>
                     <td>
@@ -346,7 +345,7 @@
                     <td>{{ $mc->issued_at ? $mc->issued_at->format('Y/m/d') : '—' }}</td>
                     <td class="table-actions-cell">
                         @if($mc->status === 'unused')
-                        <form action="{{ admin_route('admin.members.delete-coupon', ['id' => $member->id, 'memberCouponId' => $mc->id]) }}" method="POST" class="d-inline delete-form" data-item-name="{{ $mc->coupon_name_snapshot ?? 'クーポン' }}">
+                        <form action="{{ admin_route('admin.members.delete-coupon', ['id' => $view->member->id, 'memberCouponId' => $mc->id]) }}" method="POST" class="d-inline delete-form" data-item-name="{{ $mc->coupon_name_snapshot ?? 'クーポン' }}">
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="btn btn-sm btn-danger no-loading"><i class="fas fa-trash"></i> 削除</button>
@@ -374,7 +373,7 @@
         <h3 class="card-title"><i class="fas fa-store"></i> 来店登録</h3>
     </div>
     <div class="card-body">
-        <form action="{{ admin_route('admin.members.record-visit', ['id' => $member->id]) }}" method="POST">
+        <form action="{{ admin_route('admin.members.record-visit', ['id' => $view->member->id]) }}" method="POST">
             @csrf
             <div class="row">
                 <div class="col-md-4 form-group">

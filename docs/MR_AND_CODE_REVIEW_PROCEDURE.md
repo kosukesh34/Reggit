@@ -127,7 +127,7 @@ git push -u origin <ブランチ名>
 | 定数・Enum | マジックナンバー・文字列は Enum（EnumBase 継承）。定数化の過剰はしない |
 | 比較・判定 | `empty()` 極力禁止、`===`、`StrHelper` で null/空 |
 | 命名 | lowerCamel。bool は `isXxx` / `canXxx` / `hasXxx` 等。`xxxFlg` / `xxxBool` 禁止 |
-| View・DTO | 4 props 以上は DTO 化。View には表示用文字列（配列+キーでラベル組み立てない） |
+| View・DTO | 3 props 以上は `○○View` 化（クラス名に DTO は使わない）。View には表示用文字列（配列+キーでラベル組み立てない） |
 | 日付 | 比較は Carbon の `gt()` 等。表示用にだけ Carbon 化しない。`DateUtil::nullableCarbon` は導入済みなら使用 |
 | 例外 | Input を try で囲まない。catch は必要以上に細かくしない |
 | トランザクション | 複数テーブル更新時のみ |

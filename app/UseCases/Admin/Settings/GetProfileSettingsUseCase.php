@@ -2,7 +2,10 @@
 
 namespace App\UseCases\Admin\Settings;
 
+use App\Enums\MemberRegistrationMode;
+use App\Enums\ProfileCustomFieldInputType;
 use App\Services\SettingsService;
+use App\UseCases\Admin\Settings\Data\ProfileSettingsView;
 
 class GetProfileSettingsUseCase
 {
@@ -10,8 +13,12 @@ class GetProfileSettingsUseCase
         private SettingsService $settingsService,
     ) {}
 
-    public function handle(int $projectId): array
+    public function handle(int $projectId): ProfileSettingsView
     {
-        return $this->settingsService->getProfileSettings($projectId);
+        return new ProfileSettingsView(
+            $this->settingsService->getProfileSettings($projectId),
+            MemberRegistrationMode::getValues(),
+            ProfileCustomFieldInputType::getValues(),
+        );
     }
 }

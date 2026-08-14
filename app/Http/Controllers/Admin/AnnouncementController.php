@@ -46,13 +46,7 @@ class AnnouncementController extends AdminBaseController
         ]);
         $output->announcements->appends($request->query());
 
-        return view('admin.announcements.index', [
-            'announcements' => $output->announcements,
-            'filters' => $output->filters,
-            'deliveryTypeCounts' => $output->deliveryTypeCounts,
-            'deliveryTypeLabels' => $output->deliveryTypeLabels,
-            'deliveryStatusLabels' => $output->deliveryStatusLabels,
-        ]);
+        return view('admin.announcements.index', ['view' => $output]);
     }
 
     public function createAnnouncement()
@@ -121,22 +115,14 @@ class AnnouncementController extends AdminBaseController
     {
         $output = $this->readsUseCase->handle($id);
 
-        return view('admin.announcements.reads', [
-            'announcement' => $output->announcement,
-            'reads' => $output->reads,
-            'readCount' => $output->readCount,
-        ]);
+        return view('admin.announcements.reads', ['view' => $output]);
     }
 
     public function createDelivery()
     {
         $form = $this->deliveryFormUseCase->handle($this->resolveAdminProjectId());
 
-        return view('admin.announcements.delivery-create', [
-            'memberCount' => $form->memberCount,
-            'coupons' => $form->coupons,
-            'products' => $form->products,
-        ]);
+        return view('admin.announcements.delivery-create', ['view' => $form]);
     }
 
     public function segmentPreview(Request $request)

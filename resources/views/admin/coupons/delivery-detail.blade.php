@@ -17,7 +17,7 @@
 <div class="page-header-row">
     <div class="page-header">
         <h1 class="page-header-title"><i class="fas fa-list"></i> 配信詳細</h1>
-        <p class="page-header-desc">{{ $couponName }}（{{ $couponCode }}）</p>
+        <p class="page-header-desc">{{ $view->couponName }}（{{ $view->couponCode }}）</p>
     </div>
     <div class="page-header-actions">
         <a href="{{ admin_route('admin.coupons.bulk-issue') }}" class="btn btn-secondary">配布画面へ戻る</a>
@@ -31,15 +31,15 @@
     <div class="card-body">
         <dl class="row mb-0">
             <dt class="col-sm-3">配信種別</dt>
-            <dd class="col-sm-9">{{ $deliveryTypeLabel }}</dd>
+            <dd class="col-sm-9">{{ $view->deliveryTypeLabel }}</dd>
             <dt class="col-sm-3">状態</dt>
-            <dd class="col-sm-9"><span class="badge badge-{{ $statusBadge }}">{{ $statusLabel }}</span></dd>
+            <dd class="col-sm-9"><span class="badge badge-{{ $view->statusBadge }}">{{ $view->statusLabel }}</span></dd>
             <dt class="col-sm-3">日時</dt>
-            <dd class="col-sm-9">{{ $timingLabel }}</dd>
+            <dd class="col-sm-9">{{ $view->timingLabel }}</dd>
             <dt class="col-sm-3">発行数</dt>
-            <dd class="col-sm-9">{{ $issuedCountLabel }}</dd>
+            <dd class="col-sm-9">{{ $view->issuedCountLabel }}</dd>
             <dt class="col-sm-3">対象の説明</dt>
-            <dd class="col-sm-9">{{ $targetSummary }}</dd>
+            <dd class="col-sm-9">{{ $view->targetSummary }}</dd>
         </dl>
     </div>
 </div>
@@ -47,13 +47,13 @@
 <div class="card cp-list-card mb-4">
     <div class="card-header">
         <h3 class="card-title">対象会員</h3>
-        <span class="card-header-note">{{ count($members) }}人</span>
+        <span class="card-header-note">{{ count($view->members) }}人</span>
     </div>
     <div class="card-body">
-        @if(count($members) === 0)
+        @if(count($view->members) === 0)
         <div class="empty-state">
             <i class="fas fa-users"></i>
-            <p>{{ $isEventRankUp ? 'まだ発行された会員はいません' : '対象の会員が記録されていません' }}</p>
+            <p>{{ $view->isEventRankUp ? 'まだ発行された会員はいません' : '対象の会員が記録されていません' }}</p>
         </div>
         @else
         <div class="table-responsive">
@@ -67,7 +67,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach($members as $member)
+                    @foreach($view->members as $member)
                     <tr>
                         <td>
                             @if($member['member_id'] !== null)

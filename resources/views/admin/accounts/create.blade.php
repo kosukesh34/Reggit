@@ -5,7 +5,7 @@
 
 @section('content')
 <nav class="breadcrumb" aria-label="パンくず">
-    <a href="{{ route("{$routePrefix}.accounts.index", $routePrefix === 'admin' ? ['project_key' => request()->route('project_key')] : []) }}">アカウント管理</a>
+    <a href="{{ route("{$view->routePrefix}.accounts.index", $view->routePrefix === 'admin' ? ['project_key' => request()->route('project_key')] : []) }}">アカウント管理</a>
     <span class="breadcrumb-sep">/</span>
     <span>新規作成</span>
 </nav>
@@ -15,7 +15,7 @@
         <h3 class="card-title"><i class="fas fa-user-plus"></i> 新規管理者アカウント</h3>
     </div>
     <div class="card-body">
-        <form action="{{ route("{$routePrefix}.accounts.store", $routePrefix === 'admin' ? ['project_key' => request()->route('project_key')] : []) }}" method="POST">
+        <form action="{{ route("{$view->routePrefix}.accounts.store", $view->routePrefix === 'admin' ? ['project_key' => request()->route('project_key')] : []) }}" method="POST">
             @csrf
             <div class="form-group">
                 <label for="login_id" class="form-label">ログインID <span class="text-danger">*</span></label>
@@ -44,7 +44,7 @@
             <div class="form-group">
                 <label for="role" class="form-label">権限 <span class="text-danger">*</span></label>
                 <select name="role" id="role" class="form-control" required>
-                    @foreach($creatableRoles as $roleKey)
+                    @foreach($view->creatableRoles as $roleKey)
                         <option value="{{ $roleKey }}" {{ old('role') === $roleKey ? 'selected' : '' }}>{{ \App\Models\AdminUser::getRoleLabel($roleKey) }}</option>
                     @endforeach
                 </select>
@@ -55,7 +55,7 @@
                 <label class="form-label">担当プロジェクト <span class="text-danger">*</span></label>
                 <p class="form-text text-muted">複数プロジェクトを選択すると、ログイン後にプロジェクトを切り替えて管理できます。</p>
                 <div class="project-ids-checkboxes">
-                    @foreach($projects as $p)
+                    @foreach($view->projects as $p)
                         <label class="checkbox-label">
                             <input type="checkbox" name="project_ids[]" value="{{ $p->id }}" {{ in_array($p->id, old('project_ids', []), true) ? 'checked' : '' }}>
                             <span>{{ $p->name }}</span>
@@ -67,14 +67,14 @@
             <div class="form-group" id="permissions_group" style="display:none;">
                 <label class="form-label">スタッフ権限</label>
                 <p class="form-text text-muted">スタッフがアクセスできる機能を選択してください。</p>
-                @foreach($permissionGroups as $groupName => $groupPerms)
+                @foreach($view->permissionGroups as $groupName => $groupPerms)
                     <div class="permission-group" style="margin-bottom:12px;">
                         <strong>{{ $groupName }}</strong>
                         <div style="padding-left:16px; margin-top:4px;">
                             @foreach($groupPerms as $perm)
                                 <label class="checkbox-label" style="display:block; margin-bottom:4px;">
                                     <input type="checkbox" name="permissions[]" value="{{ $perm }}" {{ in_array($perm, old('permissions', []), true) ? 'checked' : '' }}>
-                                    <span>{{ $allPermissions[$perm] ?? $perm }}</span>
+                                    <span>{{ $view->allPermissions[$perm] ?? $perm }}</span>
                                 </label>
                             @endforeach
                         </div>
@@ -84,7 +84,7 @@
             </div>
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary">作成</button>
-                <a href="{{ route("{$routePrefix}.accounts.index", $routePrefix === 'admin' ? ['project_key' => request()->route('project_key')] : []) }}" class="btn btn-secondary">キャンセル</a>
+                <a href="{{ route("{$view->routePrefix}.accounts.index", $view->routePrefix === 'admin' ? ['project_key' => request()->route('project_key')] : []) }}" class="btn btn-secondary">キャンセル</a>
             </div>
         </form>
     </div>

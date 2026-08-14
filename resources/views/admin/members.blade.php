@@ -10,7 +10,7 @@
     <p class="page-header-desc">会員情報の確認・編集・削除を行います</p>
 </div>
 
-@if(!empty($lineInviteUrl))
+@if(!empty($view->lineInviteUrl))
 <div class="card card-mb-16" id="member-line-qr-card">
     <div class="card-header member-line-qr-header">
         <h3 class="card-title"><i class="fab fa-line"></i> LINE招待QR</h3>
@@ -19,10 +19,10 @@
         </button>
     </div>
     <div id="member-line-qr-panel" class="card-body member-line-qr-body" hidden>
-        <div id="member-line-qr" class="member-line-qr" data-url="{{ $lineInviteUrl }}" aria-label="LINE招待QRコード"></div>
+        <div id="member-line-qr" class="member-line-qr" data-url="{{ $view->lineInviteUrl }}" aria-label="LINE招待QRコード"></div>
         <div class="member-line-qr-meta">
-            <p class="form-label">{{ $lineInviteLabel ?? 'LINE URL' }}</p>
-            <code class="smaregi-url">{{ $lineInviteUrl }}</code>
+            <p class="form-label">{{ $view->lineInviteLabel ?? 'LINE URL' }}</p>
+            <code class="smaregi-url">{{ $view->lineInviteUrl }}</code>
             <p class="form-text text-muted mt-2">来店客にこのQRを読み取ってもらい、LINEアプリへ誘導できます。友だち追加URLは「LIFF設定」で変更できます。</p>
             <a href="{{ admin_route('admin.settings.liff-connection') }}" class="btn btn-sm btn-secondary mt-2">LIFF設定へ</a>
         </div>
@@ -33,7 +33,7 @@
 <div class="card card-mb-16">
     <div class="card-header">
         <h3 class="card-title"><i class="fas fa-search"></i> 検索・絞り込み</h3>
-        @if(collect($filters)->filter()->isNotEmpty())
+        @if(collect($view->filters)->filter()->isNotEmpty())
         <a href="{{ admin_route('admin.members') }}" class="btn btn-sm btn-secondary">
             <i class="fas fa-times"></i> クリア
         </a>
@@ -43,14 +43,14 @@
         <div class="filter-grid filter-grid--members">
             <div class="form-group">
                 <label class="form-label">名前・会員番号・電話番号</label>
-                <input type="text" name="keyword" class="form-control" placeholder="キーワードで検索" value="{{ $filters['keyword'] ?? '' }}">
+                <input type="text" name="keyword" class="form-control" placeholder="キーワードで検索" value="{{ $view->filters['keyword'] ?? '' }}">
             </div>
             <div class="form-group">
                 <label class="form-label">ステータス</label>
                 <select name="status" class="form-control">
                     <option value="">すべて</option>
-                    <option value="active" {{ ($filters['status'] ?? '') === 'active' ? 'selected' : '' }}>有効</option>
-                    <option value="inactive" {{ ($filters['status'] ?? '') === 'inactive' ? 'selected' : '' }}>無効</option>
+                    <option value="active" {{ ($view->filters['status'] ?? '') === 'active' ? 'selected' : '' }}>有効</option>
+                    <option value="inactive" {{ ($view->filters['status'] ?? '') === 'inactive' ? 'selected' : '' }}>無効</option>
                 </select>
             </div>
             <div class="form-group">
@@ -58,7 +58,7 @@
                 <select name="channel" class="form-control">
                     <option value="">すべて</option>
                     @foreach(\App\Support\MemberChannel::filterOptions() as $value => $label)
-                        <option value="{{ $value }}" {{ ($filters['channel'] ?? '') === $value ? 'selected' : '' }}>{{ $label }}</option>
+                        <option value="{{ $value }}" {{ ($view->filters['channel'] ?? '') === $value ? 'selected' : '' }}>{{ $label }}</option>
                     @endforeach
                 </select>
             </div>
@@ -73,11 +73,11 @@
     <div class="card-header">
         <h3 class="card-title"><i class="fas fa-id-card"></i> 会員一覧</h3>
         <div class="card-header-actions">
-            <span class="card-header-note">{{ $members->total() }}件</span>
+            <span class="card-header-note">{{ $view->members->total() }}件</span>
             <a href="{{ admin_route('admin.member-tags') }}" class="btn btn-sm btn-secondary">
                 <i class="fas fa-tags"></i> タグ
             </a>
-            <a href="{{ admin_route('admin.members.export', $filters) }}" class="btn btn-sm btn-secondary">
+            <a href="{{ admin_route('admin.members.export', $view->filters) }}" class="btn btn-sm btn-secondary">
                 <i class="fas fa-download"></i> CSV
             </a>
         </div>
@@ -97,7 +97,7 @@
                 </tr>
             </thead>
             <tbody>
-                @forelse($members as $member)
+                @forelse($view->members as $member)
                 <tr>
                     <td><span class="id-badge">{{ $member->id }}</span></td>
                     <td><code class="member-number">{{ $member->member_number }}</code></td>
@@ -139,7 +139,7 @@
                     <td colspan="8" class="empty-state">
                         <i class="fas fa-user-slash"></i>
                         <p>
-                            @if(collect($filters)->filter()->isNotEmpty())
+                            @if(collect($view->filters)->filter()->isNotEmpty())
                                 検索条件に一致する会員がいません
                             @else
                                 会員がありません
@@ -151,6 +151,6 @@
             </tbody>
         </table>
     </div>
-    {{ $members->appends($filters)->links('vendor.pagination.admin') }}
+    {{ $view->members->appends($view->filters)->links('vendor.pagination.admin') }}
 </div>
 @endsection

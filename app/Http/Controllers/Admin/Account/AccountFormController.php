@@ -23,13 +23,7 @@ class AccountFormController extends Controller
         $routeContext = $this->routeContextResolver->resolveFromRequest($request);
         $view = $this->formUseCase->getCreateView($me, $routeContext);
 
-        return view('admin.accounts.create', [
-            'routePrefix' => $view->routePrefix,
-            'creatableRoles' => $view->creatableRoles,
-            'projects' => $view->projects,
-            'permissionGroups' => $view->permissionGroups,
-            'allPermissions' => $view->allPermissions,
-        ]);
+        return view('admin.accounts.create', ['view' => $view]);
     }
 
     public function edit(Request $request, int $id)
@@ -39,14 +33,6 @@ class AccountFormController extends Controller
         $routeContext = $this->routeContextResolver->resolveFromRequest($request);
         $view = $this->formUseCase->getEditView($me, $id, $routeContext);
 
-        return view('admin.accounts.edit', [
-            'adminUser' => $view->adminUser,
-            'routePrefix' => $view->routePrefix,
-            'creatableRoles' => $view->creatableRoles,
-            'projects' => $view->projects,
-            'permissionGroups' => $view->permissionGroups,
-            'allPermissions' => $view->allPermissions,
-            'currentPermissions' => $view->currentPermissions,
-        ]);
+        return view('admin.accounts.edit', ['view' => $view]);
     }
 }
