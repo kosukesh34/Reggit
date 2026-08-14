@@ -7,6 +7,7 @@ use App\Http\Requests\Admin\AnnouncementStoreRequest;
 use App\Http\Requests\Admin\AnnouncementUpdateRequest;
 use App\Services\Admin\PublicImageStorageService;
 use App\UseCases\Admin\AdminSavePublicImageUseCase;
+use App\UseCases\Admin\Announcement\AdminAnnouncementAudiencePreviewUseCase;
 use App\UseCases\Admin\Announcement\AdminAnnouncementDeleteUseCase;
 use App\UseCases\Admin\Announcement\AdminAnnouncementDeliveryFormUseCase;
 use App\UseCases\Admin\Announcement\AdminAnnouncementEditUseCase;
@@ -31,6 +32,7 @@ class AnnouncementController extends AdminBaseController
         private AdminAnnouncementStoreDeliveryUseCase $storeDeliveryUseCase,
         private AdminAnnouncementDeliveryFormUseCase $deliveryFormUseCase,
         private AdminAnnouncementSegmentPreviewUseCase $segmentPreviewUseCase,
+        private AdminAnnouncementAudiencePreviewUseCase $audiencePreviewUseCase,
         private AdminMemberSearchByKeywordUseCase $searchMembersUseCase,
         private AdminSavePublicImageUseCase $saveImageUseCase,
         private AdminAnnouncementReadsUseCase $readsUseCase,
@@ -133,6 +135,16 @@ class AnnouncementController extends AdminBaseController
         );
 
         return response()->json(['count' => $count]);
+    }
+
+    public function audiencePreview(Request $request)
+    {
+        $preview = $this->audiencePreviewUseCase->handle(
+            $this->resolveAdminProjectId(),
+            $request->query(),
+        );
+
+        return response()->json($preview);
     }
 
     public function searchMembers(Request $request)
