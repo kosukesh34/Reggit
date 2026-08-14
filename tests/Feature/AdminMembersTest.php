@@ -205,6 +205,8 @@ class AdminMembersTest extends TestCase
         $detail->assertSee('来店履歴');
         $detail->assertSee('ポイント履歴');
         $detail->assertSee('購入履歴');
+        $detail->assertSee('member-history-shell');
+        $detail->assertSee('data-history-tab-btn', false);
 
         $edit = $this->actingAs($admin, 'admin')
             ->get(route('admin.members.edit', ['project_key' => $project->project_key, 'id' => $member->id]));
@@ -680,7 +682,7 @@ class AdminMembersTest extends TestCase
         $detail->assertStatus(200);
         $detail->assertSee('15:30');
         $detail->assertSee('来店回数');
-        $detail->assertSee('1回');
+        $detail->assertSee('1<span>回</span>', false);
     }
 
     public function test_不正なメールでも会員プロフィール更新が失敗しないこと(): void

@@ -1,54 +1,51 @@
 /* ===== ボタンバリエーション ===== */
 .btn-primary {
-    background: var(--primary-bg);
-    color: var(--primary);
-    border-color: color-mix(in srgb, var(--primary) 22%, #fff);
+    background: color-mix(in srgb, var(--primary) 7%, #fff);
+    color: color-mix(in srgb, var(--primary) 62%, #475569);
+    border-color: color-mix(in srgb, var(--primary) 14%, var(--border));
 }
 
 .btn-primary:hover {
-    background: var(--primary-bg-hover);
-    border-color: var(--primary-light);
-    box-shadow: var(--shadow-xs);
+    background: color-mix(in srgb, var(--primary) 11%, #fff);
+    border-color: color-mix(in srgb, var(--primary) 22%, var(--border));
 }
 
 .btn-primary,
 .btn-primary i {
-    color: var(--primary) !important;
+    color: color-mix(in srgb, var(--primary) 62%, #475569) !important;
 }
 
 .btn-success {
-    background: var(--success-bg);
-    color: var(--success);
-    border-color: color-mix(in srgb, var(--success) 22%, #fff);
+    background: color-mix(in srgb, var(--success) 7%, #fff);
+    color: color-mix(in srgb, var(--success) 62%, #475569);
+    border-color: color-mix(in srgb, var(--success) 14%, var(--border));
 }
 
 .btn-success:hover {
-    background: color-mix(in srgb, var(--success) 16%, #fff);
-    border-color: var(--success);
-    box-shadow: var(--shadow-xs);
+    background: color-mix(in srgb, var(--success) 12%, #fff);
+    border-color: color-mix(in srgb, var(--success) 22%, var(--border));
 }
 
 .btn-success,
 .btn-success i {
-    color: var(--success) !important;
+    color: color-mix(in srgb, var(--success) 62%, #475569) !important;
 }
 
 .btn-danger {
-    background: var(--danger-bg);
-    color: var(--danger);
-    border-color: color-mix(in srgb, var(--danger) 22%, #fff);
-    font-weight: 600;
+    background: color-mix(in srgb, var(--danger) 6%, #fff);
+    color: color-mix(in srgb, var(--danger) 58%, #64748b);
+    border-color: color-mix(in srgb, var(--danger) 12%, var(--border));
+    font-weight: 500;
 }
 
 .btn-danger:hover {
-    background: color-mix(in srgb, var(--danger) 16%, #fff);
-    border-color: var(--danger);
-    box-shadow: var(--shadow-xs);
+    background: color-mix(in srgb, var(--danger) 10%, #fff);
+    border-color: color-mix(in srgb, var(--danger) 20%, var(--border));
 }
 
 .btn-danger,
 .btn-danger i {
-    color: var(--danger) !important;
+    color: color-mix(in srgb, var(--danger) 58%, #64748b) !important;
 }
 
 .btn-secondary {
@@ -68,36 +65,35 @@
 }
 
 .btn-info {
-    background: var(--info-bg);
-    color: var(--info);
-    border-color: color-mix(in srgb, var(--info) 22%, #fff);
+    background: color-mix(in srgb, var(--info) 7%, #fff);
+    color: color-mix(in srgb, var(--info) 62%, #475569);
+    border-color: color-mix(in srgb, var(--info) 14%, var(--border));
 }
 
 .btn-info:hover {
-    background: color-mix(in srgb, var(--info) 16%, #fff);
-    border-color: var(--info);
-    box-shadow: var(--shadow-xs);
+    background: color-mix(in srgb, var(--info) 12%, #fff);
+    border-color: color-mix(in srgb, var(--info) 22%, var(--border));
 }
 
 .btn-info,
 .btn-info i {
-    color: var(--info) !important;
+    color: color-mix(in srgb, var(--info) 62%, #475569) !important;
 }
 
 .btn-warning {
-    background: var(--warning-bg);
-    color: var(--warning);
-    border-color: color-mix(in srgb, var(--warning) 22%, #fff);
+    background: color-mix(in srgb, var(--warning) 8%, #fff);
+    color: color-mix(in srgb, var(--warning) 62%, #475569);
+    border-color: color-mix(in srgb, var(--warning) 16%, var(--border));
 }
 
 .btn-warning:hover {
-    background: color-mix(in srgb, var(--warning) 16%, #fff);
-    border-color: var(--warning);
+    background: color-mix(in srgb, var(--warning) 13%, #fff);
+    border-color: color-mix(in srgb, var(--warning) 24%, var(--border));
 }
 
 .btn-warning,
 .btn-warning i {
-    color: var(--warning) !important;
+    color: color-mix(in srgb, var(--warning) 62%, #475569) !important;
 }
 
 .btn-outline-primary {
@@ -276,15 +272,14 @@
 }
 
 .btn-action.btn-edit {
-    background: var(--primary-bg);
-    color: var(--primary);
-    border: 1px solid color-mix(in srgb, var(--primary) 22%, #fff);
+    background: color-mix(in srgb, var(--primary) 7%, #fff);
+    color: color-mix(in srgb, var(--primary) 62%, #475569);
+    border: 1px solid color-mix(in srgb, var(--primary) 14%, var(--border));
 }
 
 .btn-action.btn-edit:hover {
-    background: var(--primary-bg-hover);
-    border-color: var(--primary-light);
-    box-shadow: var(--shadow-xs);
+    background: color-mix(in srgb, var(--primary) 11%, #fff);
+    border-color: color-mix(in srgb, var(--primary) 22%, var(--border));
 }
 
 .btn-action.btn-outline {
@@ -299,38 +294,36 @@
 }
 
 .btn-action.btn-success {
-    background: var(--success-bg);
-    color: var(--success);
-    border: 1px solid color-mix(in srgb, var(--success) 22%, #fff);
+    background: color-mix(in srgb, var(--success) 7%, #fff);
+    color: color-mix(in srgb, var(--success) 62%, #475569);
+    border: 1px solid color-mix(in srgb, var(--success) 14%, var(--border));
 }
 
 .btn-action.btn-success:hover {
-    background: color-mix(in srgb, var(--success) 16%, #fff);
-    border-color: var(--success);
-    box-shadow: var(--shadow-xs);
+    background: color-mix(in srgb, var(--success) 12%, #fff);
+    border-color: color-mix(in srgb, var(--success) 22%, var(--border));
 }
 
 .btn-action.btn-info {
-    background: var(--info-bg);
-    color: var(--info);
-    border: 1px solid color-mix(in srgb, var(--info) 22%, #fff);
+    background: color-mix(in srgb, var(--info) 7%, #fff);
+    color: color-mix(in srgb, var(--info) 62%, #475569);
+    border: 1px solid color-mix(in srgb, var(--info) 14%, var(--border));
 }
 
 .btn-action.btn-info:hover {
-    background: color-mix(in srgb, var(--info) 16%, #fff);
-    border-color: var(--info);
+    background: color-mix(in srgb, var(--info) 12%, #fff);
+    border-color: color-mix(in srgb, var(--info) 22%, var(--border));
 }
 
 .btn-action.btn-danger {
-    background: var(--danger-bg);
-    color: var(--danger);
-    border: 1px solid color-mix(in srgb, var(--danger) 22%, #fff);
+    background: color-mix(in srgb, var(--danger) 6%, #fff);
+    color: color-mix(in srgb, var(--danger) 58%, #64748b);
+    border: 1px solid color-mix(in srgb, var(--danger) 12%, var(--border));
 }
 
 .btn-action.btn-danger:hover {
-    background: color-mix(in srgb, var(--danger) 16%, #fff);
-    border-color: var(--danger);
-    box-shadow: var(--shadow-xs);
+    background: color-mix(in srgb, var(--danger) 10%, #fff);
+    border-color: color-mix(in srgb, var(--danger) 20%, var(--border));
 }
 
 .btn-action.btn-danger i {
@@ -405,7 +398,6 @@
     font-weight: 700;
 }
 
-/* ===== デザインピッカー ===== */
 .sr-only {
     position: absolute;
     width: 1px;
@@ -416,105 +408,6 @@
     clip: rect(0, 0, 0, 0);
     white-space: nowrap;
     border: 0;
-}
-.design-picker-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-    gap: 10px;
-}
-.design-picker-card {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 80px;
-    padding: 12px 8px;
-    border: 2px solid var(--border);
-    border-radius: var(--radius);
-    background: var(--bg-primary);
-    cursor: pointer;
-    transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
-}
-.design-picker-card:hover {
-    border-color: var(--primary);
-    background: var(--primary-bg);
-}
-.design-picker-card.is-selected {
-    border-color: var(--primary);
-    background: var(--primary-bg);
-    box-shadow: var(--primary-ring);
-}
-.design-picker-card .design-picker-radio:focus + .design-picker-icon,
-.design-picker-card:focus-within {
-    outline: none;
-}
-.design-picker-icon {
-    font-size: 1.25rem;
-    color: var(--text-secondary);
-    margin-bottom: 6px;
-}
-.design-picker-card.is-selected .design-picker-icon {
-    color: var(--primary);
-}
-.design-picker-label {
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--text-primary);
-    text-align: center;
-    line-height: 1.2;
-}
-.theme-swatch-wrap {
-    margin-top: 4px;
-}
-.theme-swatch-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    align-items: center;
-}
-.theme-swatch {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    border: 2px solid transparent;
-    padding: 0;
-    cursor: pointer;
-    background: var(--bg-secondary);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
-}
-.theme-swatch:hover {
-    transform: scale(1.08);
-}
-.theme-swatch-inner {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    background: var(--swatch-color, var(--border));
-}
-.theme-swatch-default .theme-swatch-inner {
-    background: var(--bg-tertiary);
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--text-tertiary);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.theme-swatch.is-selected {
-    border-color: var(--text-primary);
-    box-shadow: 0 0 0 2px var(--bg-primary), 0 0 0 4px var(--primary);
-}
-.theme-color-input {
-    width: 36px;
-    height: 36px;
-    padding: 2px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    cursor: pointer;
-    background: var(--bg-primary);
 }
 
 /* ===== フォームコントロール ===== */
