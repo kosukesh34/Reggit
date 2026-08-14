@@ -14,12 +14,18 @@ class AdminAnnouncementReadsUseCase
     public function handle(int $id): AdminAnnouncementReadsOutput
     {
         $announcement = $this->announcementAdminService->findOrFail($id);
-        $reads = $this->announcementAdminService->getReadsForAnnouncement($id);
+        $recipients = $this->announcementAdminService->getDeliveryRecipients($announcement);
+        $readCount = collect($recipients)->whereNotNull('read_at')->count();
+        $couponIssuedCount = collect($recipients)->whereIn('coupon_status', ['unused', 'used'])->count();
+        $couponUsedCount = collect($recipients)->where('coupon_status', 'used')->count();
 
         return new AdminAnnouncementReadsOutput(
             $announcement,
-            $reads,
-            count($reads),
+            $recipients,
+            count($recipients),
+            $readCount,
+            $couponIssuedCount,
+            $couponUsedCount,
         );
     }
 }

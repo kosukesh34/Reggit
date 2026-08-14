@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Admin;
 
 use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Enums\MemberNotificationPreference;
 use App\Enums\ProfileCustomFieldInputType;
 use App\Models\Member;
 use App\Models\Scopes\ProjectScope;
@@ -69,6 +70,7 @@ class MemberUpdateRequest extends FormRequest
             'street' => array_merge(['nullable'], $format['street']),
             'sex' => array_merge(['nullable'], $format['sex']),
             'mail_receive_flag' => array_merge(['nullable'], $format['mail_receive_flag']),
+            'notification_preference' => ['required', Rule::in(MemberNotificationPreference::keys())],
 
             'point_set' => ['nullable', 'integer', 'min:0', 'max:10000000'],
             'point_add' => ['nullable', 'integer', 'min:0'],

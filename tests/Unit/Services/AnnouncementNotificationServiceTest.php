@@ -3,8 +3,10 @@
 namespace Tests\Unit\Services;
 
 use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Enums\MemberNotificationPreference;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\Announcement;
+use App\Models\Coupon;
 use App\Models\Member;
 use App\Models\Project;
 use App\Models\User;
@@ -345,6 +347,62 @@ class AnnouncementNotificationServiceTest extends TestCase
         $this->assertSame(0, $result['line_sent']);
         $this->assertSame(0, $result['line_failed']);
         $this->assertSame(0, $result['line_skipped']);
+    }
+
+    public function test_send_line_respects_member_notification_preference(): void
+    {
+        $project = $this->createProject();
+        ShopSettingStore::setLineChannelAccessToken('test-token', $project->id);
+        $couponOnlyLineId = 'U'.str_repeat('e', 32);
+        $noneLineId = 'U'.str_repeat('f', 32);
+        $couponOnlyUser = User::factory()->create([
+            'project_id' => $project->id,
+            'line_user_id' => $couponOnlyLineId,
+        ]);
+        $noneUser = User::factory()->create([
+            'project_id' => $project->id,
+            'line_user_id' => $noneLineId,
+        ]);
+        $couponOnlyMember = Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => $couponOnlyUser->id,
+            'notification_preference' => MemberNotificationPreference::COUPON_ONLY,
+        ]);
+        $noneMember = Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => $noneUser->id,
+            'notification_preference' => MemberNotificationPreference::NONE,
+        ]);
+        $coupon = Coupon::factory()->create(['project_id' => $project->id]);
+
+        $withoutCoupon = Announcement::factory()->create([
+            'project_id' => $project->id,
+            'target_member_ids' => [$couponOnlyMember->id, $noneMember->id],
+            'delivery_coupon_id' => null,
+        ]);
+        $withCoupon = Announcement::factory()->create([
+            'project_id' => $project->id,
+            'target_member_ids' => [$couponOnlyMember->id, $noneMember->id],
+            'delivery_coupon_id' => $coupon->id,
+        ]);
+
+        $pushMock = Mockery::mock(PushNotificationService::class);
+        $pushMock->shouldReceive('sendAnnouncement')->twice()->andReturn([
+            'target_tokens' => 0,
+            'sent' => 0,
+            'failed' => 0,
+            'skipped' => 0,
+            'notification_ids' => [],
+        ]);
+        $lineMock = Mockery::mock(LineService::class);
+        $lineMock->shouldReceive('pushMessage')
+            ->once()
+            ->with($couponOnlyLineId, Mockery::type('array'), 'test-token')
+            ->andReturn([]);
+
+        $service = new AnnouncementNotificationService($pushMock, $lineMock, app(ShopSettingRepository::class));
+        $this->assertSame(0, $service->send($withoutCoupon)['line_sent']);
+        $this->assertSame(1, $service->send($withCoupon)['line_sent']);
     }
 
     private function createProject(): Project

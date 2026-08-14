@@ -11,6 +11,7 @@ import { tabLabelMap } from '../liff-ui/config/navigation';
 import type { AppCustomization } from '../liff-ui/types/customization';
 import './admin';
 import './couponForm';
+import './announcementDelivery';
 import './couponBulkIssue';
 import './memberDetailHistory';
 import './memberLineQr';

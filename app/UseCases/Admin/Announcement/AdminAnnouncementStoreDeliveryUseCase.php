@@ -2,6 +2,7 @@
 
 namespace App\UseCases\Admin\Announcement;
 
+use App\Enums\AnnouncementAudienceResolveMode;
 use App\Jobs\SendScheduledAnnouncementJob;
 use App\Models\Announcement;
 use App\Services\Admin\AnnouncementAdminService;
@@ -25,7 +26,8 @@ class AdminAnnouncementStoreDeliveryUseCase
 
     /**
      * @param array{
-     *     delivery_type: string,
+     *     audience_type: string,
+     *     delivery_timing: string,
      *     title: string,
      *     body?: string,
      *     is_pinned?: string,
@@ -37,30 +39,47 @@ class AdminAnnouncementStoreDeliveryUseCase
      *     segment_condition?: string,
      *     segment_min_amount?: string,
      *     delivery_coupon_id?: string,
+     *     audience_resolve_mode?: string,
      * } $validated
      */
     public function handle(int $projectId, array $validated): StoreDeliveryOutput
     {
-        $deliveryType = (string) $validated['delivery_type'];
-        $targetMemberIds = $this->resolveTargetMemberIds($projectId, $deliveryType, $validated);
+        $audienceType = (string) $validated['audience_type'];
+        $deliveryTiming = (string) $validated['delivery_timing'];
+        $locksAudience = $this->locksAudience($audienceType, $deliveryTiming, $validated);
+        $targetMemberIds = $this->resolveTargetMemberIds($projectId, $audienceType, $validated, $locksAudience);
 
         if ($targetMemberIds === null) {
             return new StoreDeliveryOutput(false, true, '指定された会員が見つかりません', 'target_member_ids');
         }
 
-        $announcement = $this->createAnnouncement($projectId, $deliveryType, $validated, $targetMemberIds);
+        $announcement = $this->createAnnouncement(
+            $projectId,
+            $audienceType,
+            $deliveryTiming,
+            $validated,
+            $targetMemberIds,
+            $locksAudience,
+        );
 
-        return $this->dispatchOrSend($announcement, $deliveryType);
+        return $this->dispatchOrSend($announcement, $deliveryTiming);
     }
 
     /**
      * @param  array<string, string|string[]>  $validated
      * @return Collection<int, int>|null null = バリデーションエラー
      */
-    private function resolveTargetMemberIds(int $projectId, string $deliveryType, array $validated): ?Collection
-    {
+    private function resolveTargetMemberIds(
+        int $projectId,
+        string $deliveryType,
+        array $validated,
+        bool $locksAudience,
+    ): ?Collection {
         if ($deliveryType === Announcement::DELIVERY_TYPE_PERSONAL) {
             return $this->resolvePersonalTargets($projectId, $validated);
+        }
+        if (! $locksAudience) {
+            return collect();
         }
 
         if ($deliveryType === Announcement::DELIVERY_TYPE_SEGMENT) {
@@ -72,7 +91,23 @@ class AdminAnnouncementStoreDeliveryUseCase
             return $this->memberSegmentService->getMemberIds($projectId, $criteria);
         }
 
-        return collect();
+        return $this->memberAdminService->getIdsByProject($projectId);
+    }
+
+    /**
+     * @param  array<string, string|string[]>  $validated
+     */
+    private function locksAudience(string $audienceType, string $deliveryTiming, array $validated): bool
+    {
+        if ($deliveryTiming !== Announcement::DELIVERY_TIMING_SCHEDULED) {
+            return true;
+        }
+        if ($audienceType === Announcement::DELIVERY_TYPE_PERSONAL) {
+            return true;
+        }
+
+        return (string) ($validated['audience_resolve_mode'] ?? AnnouncementAudienceResolveMode::SNAPSHOT)
+            !== AnnouncementAudienceResolveMode::AT_SEND;
     }
 
     /**
@@ -99,11 +134,13 @@ class AdminAnnouncementStoreDeliveryUseCase
      */
     private function createAnnouncement(
         int $projectId,
-        string $deliveryType,
+        string $audienceType,
+        string $deliveryTiming,
         array $validated,
-        Collection $targetMemberIds
+        Collection $targetMemberIds,
+        bool $locksAudience,
     ): Announcement {
-        $isScheduled = $deliveryType === Announcement::DELIVERY_TYPE_SCHEDULED;
+        $isScheduled = $deliveryTiming === Announcement::DELIVERY_TIMING_SCHEDULED;
         $scheduledAt = $isScheduled ? DateUtil::nullableCarbon((string) $validated['scheduled_at']) : null;
         $now = now();
 
@@ -113,24 +150,28 @@ class AdminAnnouncementStoreDeliveryUseCase
             'image_url' => $validated['image_url'] ?? null,
             'is_pinned' => (bool) ($validated['is_pinned'] ?? false),
             'expires_at' => $validated['expires_at'] ?? null,
-            'delivery_type' => $deliveryType,
+            'delivery_type' => $audienceType,
+            'delivery_timing' => $deliveryTiming,
             'scheduled_at' => $scheduledAt,
             'delivery_status' => $isScheduled
                 ? Announcement::DELIVERY_STATUS_SCHEDULED
                 : Announcement::DELIVERY_STATUS_SENT,
             'published_at' => $isScheduled ? null : $now,
             'sent_at' => $isScheduled ? null : $now,
-            'target_member_ids' => $targetMemberIds->isEmpty() ? null : $targetMemberIds->all(),
-            'segment_criteria' => $deliveryType === Announcement::DELIVERY_TYPE_SEGMENT
+            'target_member_ids' => $locksAudience ? $targetMemberIds->all() : null,
+            'audience_resolve_mode' => $locksAudience
+                ? AnnouncementAudienceResolveMode::SNAPSHOT
+                : AnnouncementAudienceResolveMode::AT_SEND,
+            'segment_criteria' => $audienceType === Announcement::DELIVERY_TYPE_SEGMENT
                 ? $this->memberSegmentService->buildCriteriaFromInput($validated)
                 : null,
             'delivery_coupon_id' => $this->resolveDeliveryCouponId($projectId, $validated),
         ]);
     }
 
-    private function dispatchOrSend(Announcement $announcement, string $deliveryType): StoreDeliveryOutput
+    private function dispatchOrSend(Announcement $announcement, string $deliveryTiming): StoreDeliveryOutput
     {
-        $isScheduled = $deliveryType === Announcement::DELIVERY_TYPE_SCHEDULED;
+        $isScheduled = $deliveryTiming === Announcement::DELIVERY_TIMING_SCHEDULED;
 
         if ($isScheduled && $announcement->scheduled_at !== null) {
             SendScheduledAnnouncementJob::dispatch($announcement->id)
@@ -142,7 +183,7 @@ class AdminAnnouncementStoreDeliveryUseCase
         }
 
         $result = $this->announcementNotificationService->send($announcement);
-        $this->issueCouponIfSet($announcement);
+        $this->announcementAdminService->issueDeliveryCouponIfSet($announcement);
 
         $sent = $result['sent'];
         $failed = $result['failed'];
@@ -171,31 +212,5 @@ class AdminAnnouncementStoreDeliveryUseCase
         }
 
         return $this->couponAdminService->existsForProject($projectId, $couponId) ? $couponId : null;
-    }
-
-    private function issueCouponIfSet(Announcement $announcement): void
-    {
-        if ($announcement->delivery_coupon_id === null) {
-            return;
-        }
-
-        $targetMemberIds = is_array($announcement->target_member_ids) && $announcement->target_member_ids !== []
-            ? $announcement->target_member_ids
-            : [];
-
-        $isTargeted = in_array($announcement->delivery_type, [
-            Announcement::DELIVERY_TYPE_PERSONAL,
-            Announcement::DELIVERY_TYPE_SEGMENT,
-            Announcement::DELIVERY_TYPE_AFTER_REGISTRATION,
-        ], true);
-        if ($isTargeted && $targetMemberIds === []) {
-            return;
-        }
-
-        $this->memberAdminService->issueCouponToMembers(
-            (int) $announcement->project_id,
-            (int) $announcement->delivery_coupon_id,
-            $targetMemberIds
-        );
     }
 }
