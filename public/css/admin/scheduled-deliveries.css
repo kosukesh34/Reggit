@@ -1,0 +1,60 @@
+.sd-choice-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.sd-choice {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    padding: 12px 14px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: #fff;
+    cursor: pointer;
+}
+
+.sd-choice.is-selected {
+    border-color: var(--primary, #2563eb);
+    background: var(--primary-bg, #eff6ff);
+}
+
+.sd-choice input {
+    margin: 0;
+}
+
+.sd-type-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.sd-type-list li {
+    padding: 6px 0;
+}
+
+.sd-type-list label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    cursor: pointer;
+}
+
+.sd-clock {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    max-width: 220px;
+}
+
+.sd-param.is-hidden,
+#scheduleTypeCondition.is-hidden,
+#scheduleTypeReservation.is-hidden,
+#announcementFields.is-hidden,
+#notifyFields.is-hidden,
+#pushClockFields.is-hidden {
+    display: none;
+}
