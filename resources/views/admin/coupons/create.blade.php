@@ -77,24 +77,17 @@
                     <p id="description-help" class="form-text text-muted">会員のマイクーポン画面に表示する説明文。使い方や注意事項を入力できます。</p>
                     @error('description')<span class="invalid-feedback">{{ $message }}</span>@enderror
                 </div>
+                @include('admin.partials._frontend_logo_dropzone', [
+                    'logoInputName' => 'image',
+                    'logoClearName' => 'image_clear',
+                    'logoFieldId' => 'coupon_image',
+                    'logoCurrentUrl' => (string) old('image_url', ''),
+                    'logoLabel' => 'クーポン画像',
+                    'logoHelp' => 'ファイルを選ぶか、下のURLを入力してください。ファイルがある場合はURLより優先されます。',
+                ])
                 <div class="form-group">
-                    <span class="form-label d-block">クーポン画像</span>
-                    <p class="text-muted small mb-2">画像をドラッグ＆ドロップするか、ファイルを選ぶか、URLを入力してください。</p>
-                    <div class="coupon-image-upload-wrap mb-2">
-                        <input type="file" name="image" id="coupon_image" class="d-none" accept="image/*">
-                        <label for="coupon_image" class="coupon-image-dropzone" id="coupon_image_dropzone">
-                            <span class="coupon-image-dropzone-icon"><i class="fas fa-cloud-upload-alt"></i></span>
-                            <span class="coupon-image-dropzone-text">クリックまたはドラッグ＆ドロップで画像を選択</span>
-                            <span class="coupon-image-dropzone-hint">PNG / JPG 2MBまで</span>
-                        </label>
-                        <div class="coupon-image-preview mt-2" id="coupon_image_preview" style="display:none;">
-                            <img id="coupon_image_preview_img" src="" alt="" style="max-width:200px;max-height:120px;object-fit:contain;">
-                            <button type="button" class="btn btn-sm btn-outline-secondary mt-1" id="coupon_image_clear">画像を解除</button>
-                        </div>
-                    </div>
-                    <label for="image_url" class="form-label small">または 画像URL</label>
+                    <label for="image_url" class="form-label">または 画像URL</label>
                     <input type="url" name="image_url" id="image_url" class="form-control" value="{{ old('image_url') }}" maxlength="500" placeholder="https://example.com/coupon.png">
-                    <p class="form-text text-muted">URLを入力しても画像を設定できます。ファイルを選択した場合はURLより優先されます。</p>
                     @error('image_url')<span class="invalid-feedback">{{ $message }}</span>@enderror
                     @error('image')<span class="invalid-feedback">{{ $message }}</span>@enderror
                 </div>
@@ -216,49 +209,6 @@ document.getElementById('issue_trigger').addEventListener('change', function() {
             if (typeof updateCouponPreview === 'function') updateCouponPreview();
         });
     });
-})();
-// 画像ドラッグ＆ドロップ・プレビュー
-(function() {
-    var fileInput = document.getElementById('coupon_image');
-    var dropzone = document.getElementById('coupon_image_dropzone');
-    var preview = document.getElementById('coupon_image_preview');
-    var previewImg = document.getElementById('coupon_image_preview_img');
-    var urlInput = document.getElementById('image_url');
-    var clearBtn = document.getElementById('coupon_image_clear');
-    if (!fileInput || !dropzone) return;
-    function showPreview(src) {
-        if (preview && previewImg) {
-            previewImg.src = src || '';
-            preview.style.display = src ? 'block' : 'none';
-        }
-    }
-    function readFile(file) {
-        if (!file || !file.type.match(/^image\//)) return;
-        var r = new FileReader();
-        r.onload = function() { showPreview(r.result); };
-        r.readAsDataURL(file);
-    }
-    dropzone.addEventListener('click', function(e) { if (e.target === dropzone || dropzone.contains(e.target)) fileInput.click(); });
-    dropzone.addEventListener('dragover', function(e) { e.preventDefault(); dropzone.classList.add('is-dragover'); });
-    dropzone.addEventListener('dragleave', function() { dropzone.classList.remove('is-dragover'); });
-    dropzone.addEventListener('drop', function(e) {
-        e.preventDefault();
-        dropzone.classList.remove('is-dragover');
-        var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
-        if (f) { fileInput.files = e.dataTransfer.files; readFile(f); if (typeof updateCouponPreview === 'function') updateCouponPreview(); }
-    });
-    fileInput.addEventListener('change', function() {
-        var f = this.files && this.files[0];
-        if (f) readFile(f);
-        else showPreview(null);
-        if (typeof updateCouponPreview === 'function') updateCouponPreview();
-    });
-    if (clearBtn) clearBtn.addEventListener('click', function() {
-        fileInput.value = '';
-        showPreview(null);
-        if (typeof updateCouponPreview === 'function') updateCouponPreview();
-    });
-    if (urlInput) urlInput.addEventListener('input', function() { if (typeof updateCouponPreview === 'function') updateCouponPreview(); });
 })();
 </script>
 </div>

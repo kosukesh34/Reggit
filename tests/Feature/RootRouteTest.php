@@ -17,6 +17,9 @@ class RootRouteTest extends TestCase
 
         $response->assertOk();
         $response->assertViewIs('landing');
+        $response->assertSee('screen-register.png', false);
+        $response->assertSee('会員登録画面');
+        $response->assertSee('会員登録');
     }
 
     public function test_root_ログイン済みは管理画面へリダイレクトすること(): void

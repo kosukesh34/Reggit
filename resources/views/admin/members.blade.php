@@ -74,6 +74,9 @@
         <h3 class="card-title"><i class="fas fa-id-card"></i> 会員一覧</h3>
         <div class="card-header-actions">
             <span class="card-header-note">{{ $members->total() }}件</span>
+            <a href="{{ admin_route('admin.member-tags') }}" class="btn btn-sm btn-secondary">
+                <i class="fas fa-tags"></i> タグ
+            </a>
             <a href="{{ admin_route('admin.members.export', $filters) }}" class="btn btn-sm btn-secondary">
                 <i class="fas fa-download"></i> CSV
             </a>
