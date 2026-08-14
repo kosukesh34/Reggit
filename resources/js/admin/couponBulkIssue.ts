@@ -20,14 +20,15 @@ type PreviewMember = {
     member_number: string;
 };
 
-type DeliveryMode = 'all' | 'personal' | 'segment' | 'scheduled';
-type ScheduledAudience = 'all' | 'personal' | 'segment';
+type Audience = 'all' | 'personal' | 'segment';
+type Timing = 'immediate' | 'scheduled';
 type SegmentPreset = '' | 'birthday' | 'new_members' | 'inactive' | 'rank' | 'rank_up_arrival' | 'stamp' | 'days_after_visit';
 
 function initCouponBulkIssue(): void {
     const cfg = (window.CouponBulkIssueConfig || {}) as CouponBulkIssueConfig;
     let selectedMembers = (cfg.initialSelectedMembers || []).map((id) => parseInt(String(id), 10)).filter((id) => id > 0);
     const memberCountTotal = typeof cfg.memberCount === 'number' ? cfg.memberCount : 0;
+    let showCustomFilters = false;
 
     function $(sel: string): HTMLElement | null {
         return document.querySelector(sel);
@@ -42,30 +43,28 @@ function initCouponBulkIssue(): void {
         if (el) el.classList.toggle('is-hidden', hidden);
     }
 
-    function getDeliveryMode(): DeliveryMode {
-        const el = document.querySelector('input[name="delivery_mode"]:checked') as HTMLInputElement | null;
-        return (el?.value as DeliveryMode) || 'all';
+    function getAudience(): Audience {
+        const el = document.querySelector('input[name="audience"]:checked') as HTMLInputElement | null;
+        return (el?.value as Audience) || 'all';
     }
 
-    function getScheduledAudience(): ScheduledAudience {
-        const el = document.querySelector('input[name="scheduled_audience"]:checked') as HTMLInputElement | null;
-        return (el?.value as ScheduledAudience) || 'all';
+    function getTiming(): Timing {
+        const el = document.querySelector('input[name="timing"]:checked') as HTMLInputElement | null;
+        return (el?.value as Timing) || 'immediate';
     }
 
     function getSegmentPreset(): SegmentPreset {
-        const el = $('#segment_preset') as HTMLInputElement | null;
-        return ((el?.value || '') as SegmentPreset);
+        const el = $('#segment_preset') as HTMLSelectElement | null;
+        const value = el?.value || '';
+        if (value === 'custom') {
+            return '';
+        }
+        return value as SegmentPreset;
     }
 
-    function setSegmentPreset(preset: SegmentPreset): void {
-        const el = $('#segment_preset') as HTMLInputElement | null;
-        if (el) el.value = preset;
-        $all('.segment-preset-chip').forEach((chip) => {
-            chip.classList.toggle('is-active', chip.getAttribute('data-preset') === preset);
-        });
-        togglePresetBlocks();
-        syncDeliveryType();
-        updateTargetPreview();
+    function syncCustomFilters(): void {
+        const el = $('#segment_preset') as HTMLSelectElement | null;
+        showCustomFilters = (el?.value || '') === 'custom';
     }
 
     function hasAttributeFilters(): boolean {
@@ -108,24 +107,16 @@ function initCouponBulkIssue(): void {
     }
 
     function syncDeliveryType(): string {
-        const mode = getDeliveryMode();
+        const audience = getAudience();
+        const isScheduled = getTiming() === 'scheduled';
         let deliveryType = 'immediate_all';
 
-        if (mode === 'all') {
-            deliveryType = 'immediate_all';
-        } else if (mode === 'personal') {
-            deliveryType = 'immediate_personal';
-        } else if (mode === 'segment') {
-            deliveryType = resolveSegmentDeliveryType(false);
-        } else if (mode === 'scheduled') {
-            const audience = getScheduledAudience();
-            if (audience === 'personal') {
-                deliveryType = 'scheduled_personal';
-            } else if (audience === 'segment') {
-                deliveryType = resolveSegmentDeliveryType(true);
-            } else {
-                deliveryType = 'scheduled_all';
-            }
+        if (audience === 'all') {
+            deliveryType = isScheduled ? 'scheduled_all' : 'immediate_all';
+        } else if (audience === 'personal') {
+            deliveryType = isScheduled ? 'scheduled_personal' : 'immediate_personal';
+        } else {
+            deliveryType = resolveSegmentDeliveryType(isScheduled);
         }
 
         const hidden = $('#delivery_type') as HTMLInputElement | null;
@@ -134,22 +125,22 @@ function initCouponBulkIssue(): void {
     }
 
     function applyInitialDeliveryType(deliveryType: string): void {
-        let mode: DeliveryMode = 'all';
-        let audience: ScheduledAudience = 'all';
+        let audience: Audience = 'all';
+        let timing: Timing = 'immediate';
         let preset: SegmentPreset = '';
 
         if (deliveryType.indexOf('scheduled_') === 0) {
-            mode = 'scheduled';
+            timing = 'scheduled';
             if (deliveryType === 'scheduled_personal') audience = 'personal';
             else if (deliveryType === 'scheduled_all') audience = 'all';
             else audience = 'segment';
         } else if (deliveryType === 'event_rank_up_arrival') {
-            mode = 'segment';
+            audience = 'segment';
             preset = 'rank_up_arrival';
         } else if (deliveryType === 'immediate_personal') {
-            mode = 'personal';
+            audience = 'personal';
         } else if (deliveryType !== 'immediate_all') {
-            mode = 'segment';
+            audience = 'segment';
         }
 
         if (deliveryType.indexOf('birthday') !== -1) preset = 'birthday';
@@ -160,99 +151,32 @@ function initCouponBulkIssue(): void {
         else if (deliveryType.indexOf('stamp') !== -1) preset = 'stamp';
         else if (deliveryType.indexOf('days_after_visit') !== -1) preset = 'days_after_visit';
 
-        const modeRadio = document.querySelector(`input[name="delivery_mode"][value="${mode}"]`) as HTMLInputElement | null;
-        if (modeRadio) modeRadio.checked = true;
-
-        const audienceRadio = document.querySelector(`input[name="scheduled_audience"][value="${audience}"]`) as HTMLInputElement | null;
+        const audienceRadio = document.querySelector(`input[name="audience"][value="${audience}"]`) as HTMLInputElement | null;
         if (audienceRadio) audienceRadio.checked = true;
 
-        const presetEl = $('#segment_preset') as HTMLInputElement | null;
-        if (presetEl) presetEl.value = preset;
-        $all('.segment-preset-chip').forEach((chip) => {
-            chip.classList.toggle('is-active', chip.getAttribute('data-preset') === preset);
-        });
+        const timingRadio = document.querySelector(`input[name="timing"][value="${timing}"]`) as HTMLInputElement | null;
+        if (timingRadio) timingRadio.checked = true;
+
+        const presetEl = $('#segment_preset') as HTMLSelectElement | null;
+        showCustomFilters = audience === 'segment' && preset === '';
+        if (presetEl) {
+            presetEl.value = showCustomFilters ? 'custom' : preset;
+        }
     }
 
     function updateSelectedCoupon(): void {
-        const checked = document.querySelector('.coupon-picker-input:checked') as HTMLInputElement | null;
-        const couponIdEl = $('#coupon_id') as HTMLInputElement | null;
-        const preview = $('#selectedCouponPreview');
-        const label = $('#selectedCouponLabel');
+        const couponIdEl = $('#coupon_id') as HTMLSelectElement | HTMLInputElement | null;
         const submitBtn = $('#submitDeliveryBtn') as HTMLButtonElement | null;
-
-        $all('.coupon-picker-card').forEach((card) => {
-            card.classList.toggle('is-selected', checked ? card.contains(checked) : false);
-        });
-
-        if (!checked) {
-            if (couponIdEl && couponIdEl.value) {
-                if (preview) preview.classList.remove('is-empty');
-                if (submitBtn) {
-                    submitBtn.disabled = false;
-                    submitBtn.title = '';
-                }
-                updateStepIndicator();
-                updateTargetPreview();
-                return;
-            }
-            if (preview) preview.classList.add('is-empty');
-            if (label) label.textContent = '未選択 — 上でクーポンを選んでください';
-            if (submitBtn) {
-                submitBtn.disabled = true;
-                submitBtn.title = '配布するクーポンを選択してください';
-            }
-            if (couponIdEl) couponIdEl.value = '';
-            updateStepIndicator();
-            updateTargetPreview();
-            return;
-        }
-
-        if (couponIdEl) couponIdEl.value = checked.value;
-        if (preview) preview.classList.remove('is-empty');
-        if (label) {
-            const discount = checked.getAttribute('data-discount') || '';
-            label.textContent = `${checked.getAttribute('data-name') || ''}（${checked.getAttribute('data-code') || ''}）${discount ? ` / ${discount}` : ''}`;
-        }
+        const hasCoupon = !!(couponIdEl && couponIdEl.value);
         if (submitBtn) {
-            submitBtn.disabled = false;
-            submitBtn.title = '';
+            submitBtn.disabled = !hasCoupon;
+            submitBtn.title = hasCoupon ? '' : '配布するクーポンを選択してください';
         }
-        $all('.pagination-admin a.pagination-item').forEach((link) => {
-            try {
-                const url = new URL((link as HTMLAnchorElement).href, window.location.origin);
-                url.searchParams.set('coupon_id', checked.value);
-                (link as HTMLAnchorElement).href = url.toString();
-            } catch (_e) {
-                // ignore invalid href
-            }
-        });
-        updateStepIndicator();
         updateTargetPreview();
     }
 
-    function updateStepIndicator(): void {
-        const couponIdEl = $('#coupon_id') as HTMLInputElement | null;
-        const hasCoupon = !!(couponIdEl && couponIdEl.value);
-        const step1 = document.querySelector('.bulk-step[data-step="1"]');
-        const step2 = document.querySelector('.bulk-step[data-step="2"]');
-        const step3 = document.querySelector('.bulk-step[data-step="3"]');
-        if (step1) {
-            step1.classList.toggle('is-done', hasCoupon);
-            step1.classList.toggle('is-current', !hasCoupon);
-        }
-        if (step2) {
-            step2.classList.toggle('is-current', hasCoupon);
-            step2.classList.toggle('is-done', false);
-        }
-        if (step3) {
-            step3.classList.toggle('is-current', false);
-            step3.classList.toggle('is-done', false);
-        }
-        const section = $('#deliverySection');
-        if (section) section.classList.toggle('is-disabled', !hasCoupon);
-    }
-
     function togglePresetBlocks(): void {
+        syncCustomFilters();
         const preset = getSegmentPreset();
         const showRank = preset === 'rank' || preset === 'rank_up_arrival';
         toggleBlock('rankBlock', !showRank);
@@ -261,7 +185,7 @@ function initCouponBulkIssue(): void {
         toggleBlock('birthdayBlock', preset !== 'birthday');
         toggleBlock('newMemberBlock', preset !== 'new_members');
         toggleBlock('inactiveBlock', preset !== 'inactive');
-        toggleBlock('customSegmentPanel', preset !== '');
+        toggleBlock('customSegmentPanel', !showCustomFilters);
 
         const rankLabel = $('#targetRankLabel');
         const rankHelp = $('#targetRankHelp');
@@ -284,17 +208,20 @@ function initCouponBulkIssue(): void {
     }
 
     function toggleDeliveryBlocks(): void {
-        const mode = getDeliveryMode();
-        const audience = getScheduledAudience();
+        const audience = getAudience();
+        const timing = getTiming();
         const preset = getSegmentPreset();
-        const isRankUpEvent = preset === 'rank_up_arrival' && (mode === 'segment' || (mode === 'scheduled' && audience === 'segment'));
-        const showScheduled = mode === 'scheduled' && !isRankUpEvent;
-        const showPersonal = mode === 'personal' || (showScheduled && audience === 'personal');
-        const showSegment = mode === 'segment' || (mode === 'scheduled' && audience === 'segment');
+        const isRankUpEvent = preset === 'rank_up_arrival' && audience === 'segment';
+        const showScheduled = timing === 'scheduled' && !isRankUpEvent;
+        const showPersonal = audience === 'personal';
+        const showSegment = audience === 'segment';
 
-        toggleBlock('scheduledBlock', !showScheduled);
+        toggleBlock('timingBlock', isRankUpEvent);
+        toggleBlock('scheduledAtBlock', !showScheduled);
         toggleBlock('personalBlock', !showPersonal);
         toggleBlock('segmentBlock', !showSegment);
+        const rankUpNote = $('#rankUpTimingNote');
+        if (rankUpNote) rankUpNote.classList.toggle('is-hidden', !isRankUpEvent);
         togglePresetBlocks();
         toggleSegmentMinAmount();
 
@@ -311,14 +238,15 @@ function initCouponBulkIssue(): void {
         updateTargetPreview();
     }
 
-    $all('.coupon-picker-input').forEach((input) => {
-        input.addEventListener('change', updateSelectedCoupon);
-    });
+    const couponSelect = $('#coupon_id');
+    if (couponSelect) {
+        couponSelect.addEventListener('change', updateSelectedCoupon);
+    }
 
-    $all('input[name="delivery_mode"]').forEach((radio) => {
+    $all('input[name="audience"]').forEach((radio) => {
         radio.addEventListener('change', toggleDeliveryBlocks);
     });
-    $all('input[name="scheduled_audience"]').forEach((radio) => {
+    $all('input[name="timing"]').forEach((radio) => {
         radio.addEventListener('change', toggleDeliveryBlocks);
     });
     $all('input[name="segment_condition"]').forEach((radio) => {
@@ -329,11 +257,10 @@ function initCouponBulkIssue(): void {
         });
     });
 
-    $all('.segment-preset-chip').forEach((chip) => {
-        chip.addEventListener('click', () => {
-            setSegmentPreset((chip.getAttribute('data-preset') || '') as SegmentPreset);
-        });
-    });
+    const presetSelect = $('#segment_preset');
+    if (presetSelect) {
+        presetSelect.addEventListener('change', toggleDeliveryBlocks);
+    }
 
     [
         'segment_period_days', 'segment_min_amount', 'birthday_month', 'new_member_days', 'inactive_days', 'scheduled_at',
@@ -660,38 +587,8 @@ function initCouponBulkIssue(): void {
                 const scheduledAt = $('#scheduled_at') as HTMLInputElement | null;
                 if (!scheduledAt || !scheduledAt.value) {
                     e.preventDefault();
-                    alert('予約配信では配布日時を指定してください');
+                    alert('日時指定では配信日時を指定してください');
                 }
-            }
-        });
-    }
-
-    const couponSearchBtn = $('#couponPickerSearchBtn') as HTMLButtonElement | null;
-    const couponSearchInput = $('#couponPickerSearch') as HTMLInputElement | null;
-
-    function navigateCouponPickerSearch(): void {
-        const baseUrl = cfg.bulkIssueUrl || window.location.pathname;
-        const params = new URLSearchParams();
-        const q = couponSearchInput ? couponSearchInput.value.trim() : '';
-        if (q !== '') {
-            params.set('q', q);
-        }
-        const couponIdEl = $('#coupon_id') as HTMLInputElement | null;
-        if (couponIdEl && couponIdEl.value) {
-            params.set('coupon_id', couponIdEl.value);
-        }
-        const query = params.toString();
-        window.location.href = query !== '' ? `${baseUrl}?${query}` : baseUrl;
-    }
-
-    if (couponSearchBtn) {
-        couponSearchBtn.addEventListener('click', navigateCouponPickerSearch);
-    }
-    if (couponSearchInput) {
-        couponSearchInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                navigateCouponPickerSearch();
             }
         });
     }

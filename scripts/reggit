@@ -715,6 +715,13 @@ mkdir -p storage/framework/{cache,sessions,views} storage/logs bootstrap/cache
 chmod -R u+rwX storage bootstrap/cache
 php /usr/bin/composer install --no-dev --optimize-autoloader --no-interaction
 /usr/bin/php8.4 artisan migrate --force
+CRON_LINE="* * * * * cd \$HOME/${DEPLOY_PATH} && /usr/bin/php8.4 artisan schedule:run >> /dev/null 2>&1"
+if crontab -l 2>/dev/null | grep -F "artisan schedule:run" >/dev/null; then
+  echo "crontab already has schedule:run"
+else
+  (crontab -l 2>/dev/null; echo "\$CRON_LINE") | crontab -
+  echo "crontab: added artisan schedule:run"
+fi
 /usr/bin/php8.4 artisan optimize:clear
 /usr/bin/php8.4 artisan config:cache
 /usr/bin/php8.4 artisan route:cache

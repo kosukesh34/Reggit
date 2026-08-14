@@ -170,9 +170,7 @@ class CouponController extends AdminBaseController
     public function bulkIssueForm()
     {
         $projectId = $this->resolveAdminProjectId();
-        $couponSearch = trim((string) request()->query('q', ''));
-        $selectedCouponId = request()->filled('coupon_id') ? (int) request()->query('coupon_id') : null;
-        $output = $this->bulkIssueFormUseCase->handle($projectId, $couponSearch, $selectedCouponId);
+        $output = $this->bulkIssueFormUseCase->handle($projectId);
 
         return view('admin.coupons.bulk-issue', ['view' => $output]);
     }

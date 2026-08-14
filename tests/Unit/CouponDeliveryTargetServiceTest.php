@@ -7,6 +7,7 @@ use App\Enums\CouponDeliveryType;
 use App\Models\Coupon;
 use App\Models\CouponDelivery;
 use App\Models\Member;
+use App\Models\MemberCoupon;
 use App\Models\MemberStamp;
 use App\Models\Project;
 use App\Models\StampCard;
@@ -92,6 +93,26 @@ class CouponDeliveryTargetServiceTest extends TestCase
             [$memberA->id, $memberB->id],
             array_values(array_map('intval', $delivery->issued_member_ids ?? [])),
         );
+    }
+
+    public function test_handle_予約配布は即時発行せず予約のまま残ること(): void
+    {
+        $project = $this->createProject();
+        $coupon = Coupon::factory()->create(['project_id' => $project->id]);
+        Member::factory()->create(['project_id' => $project->id]);
+
+        $result = app(AdminCouponBulkIssueUseCase::class)->handle($project->id, $coupon->id, [
+            'delivery_type' => CouponDeliveryType::SCHEDULED_ALL,
+            'scheduled_at' => now()->addHour()->format('Y-m-d H:i:s'),
+        ]);
+
+        $this->assertTrue($result['scheduled']);
+        $this->assertSame(0, $result['issued']);
+        $this->assertSame(0, MemberCoupon::query()->where('coupon_id', $coupon->id)->count());
+        $this->assertDatabaseHas('coupon_deliveries', [
+            'coupon_id' => $coupon->id,
+            'status' => CouponDeliveryStatus::SCHEDULED,
+        ]);
     }
 
     public function test_handle_ランクアップ達成配信は有効ステータスで登録されること(): void

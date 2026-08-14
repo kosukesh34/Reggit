@@ -106,27 +106,17 @@ class CouponAdminService
     }
 
     /**
-     * 配布画面用の有効クーポン（ページネーション）
+     * 配布画面用の有効クーポン
      *
-     * @return LengthAwarePaginator<int, Coupon>
+     * @return Collection<int, Coupon>
      */
-    public function getActiveCouponsForSelectPaginated(int $projectId, string $search = '', int $perPage = 10): LengthAwarePaginator
+    public function getActiveCouponsForSelect(int $projectId): Collection
     {
-        $query = Coupon::query()
+        return Coupon::query()
             ->where('project_id', $projectId)
             ->where('is_active', true)
-            ->orderBy('name');
-
-        $keyword = trim($search);
-        if ($keyword !== '') {
-            $like = '%'.$keyword.'%';
-            $query->where(function ($builder) use ($like): void {
-                $builder->where('name', 'like', $like)
-                    ->orWhere('code', 'like', $like);
-            });
-        }
-
-        return $query->paginate($perPage);
+            ->orderBy('name')
+            ->get();
     }
 
     /**
