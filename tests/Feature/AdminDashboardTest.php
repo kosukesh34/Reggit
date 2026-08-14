@@ -56,7 +56,7 @@ class AdminDashboardTest extends TestCase
         $response->assertDontSee('総ユーザー数', false);
     }
 
-    public function test_dashboard_サイドバーが運用と共通設定に分かれていること(): void
+    public function test_dashboard_サイドバーは日常操作と設定ハブに分かれていること(): void
     {
         $project = $this->createProject();
         $admin = AdminUser::factory()->create([
@@ -68,11 +68,14 @@ class AdminDashboardTest extends TestCase
             ->get(route('admin.dashboard', ['project_key' => $project->project_key]));
 
         $response->assertStatus(200);
+        $response->assertSee($project->name, false);
         $response->assertSee('運用', false);
-        $response->assertSee('共通設定', false);
-        $response->assertSee('アプリ・画面', false);
-        $response->assertSee('予約設定', false);
-        $response->assertSee('クーポン設定', false);
+        $response->assertSee('設定', false);
+        $response->assertSee(route('admin.settings.index', ['project_key' => $project->project_key], false), false);
+        $response->assertDontSee('共通設定', false);
+        $response->assertDontSee('アプリ・画面', false);
+        $response->assertDontSee('予約設定', false);
+        $response->assertDontSee('クーポン設定', false);
         $response->assertDontSee('注文（モバイル・店内）', false);
         $response->assertDontSee('注文・商品・画面導線', false);
     }

@@ -18,5 +18,9 @@ class SystemAdminDashboardTest extends TestCase
             ->get(route('system-admin.dashboard'));
 
         $response->assertStatus(200);
+        $response->assertSee('システム管理', false);
+        $response->assertSee('プロジェクト', false);
+        $response->assertSee('アカウント', false);
+        $response->assertDontSee('共通設定', false);
     }
 }
