@@ -37,6 +37,10 @@ class SmaregiCouponImportSyncServiceTest extends TestCase
                 'couponName' => '取り込み10%オフ',
                 'awardType' => '2',
                 'awardValue' => '10',
+                'applyConditionDivision' => '1',
+                'combineDivision' => '1',
+                'minTargetPrice' => '1000',
+                'maxTargetPrice' => '8000',
             ]],
         ]);
 
@@ -52,6 +56,8 @@ class SmaregiCouponImportSyncServiceTest extends TestCase
             'code' => 'IMPORT10',
             'smaregi_coupon_id' => 'sm-coupon-1',
             'type' => 'percent',
+            'apply_condition_division' => '1',
+            'combine_division' => '1',
         ]);
     }
 

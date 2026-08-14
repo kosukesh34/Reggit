@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Enums\CouponApplyConditionDivision;
+use App\Enums\CouponCombineDivision;
 use App\Enums\CouponDeliveryStatus;
 use App\Enums\CouponDeliveryType;
 use App\Models\AdminUser;
@@ -42,7 +44,8 @@ class AdminCouponsTest extends TestCase
         $response = $this->actingAs($admin, 'admin')
             ->get(route('admin.coupons', ['project_key' => $project->project_key]));
 
-        $response->assertStatus(200);
+        $response->assertStatus(200)
+            ->assertDontSee('お知らせで配布');
     }
 
     public function test_bulk_issue_一括配布画面にアクセスできること(): void
@@ -276,7 +279,7 @@ class AdminCouponsTest extends TestCase
         ]);
     }
 
-    public function test_create_from_bulk_issue_作成後に配布画面へ戻ること(): void
+    public function test_create_配布タイミングを設定せずクーポンだけを作成できること(): void
     {
         config(['smaregi.contract_id' => '']);
 
@@ -284,18 +287,27 @@ class AdminCouponsTest extends TestCase
         $admin = $this->createAdmin($project);
 
         $createPage = $this->actingAs($admin, 'admin')
-            ->get(route('admin.coupons.create', [
-                'project_key' => $project->project_key,
-                'return' => 'bulk-issue',
-            ]));
+            ->get(route('admin.coupons.create', ['project_key' => $project->project_key]));
         $createPage->assertStatus(200)
-            ->assertSee('name="return"', false)
-            ->assertSee('value="bulk-issue"', false)
+            ->assertDontSee('name="return"', false)
             ->assertSee('name="image"', false)
+            ->assertSee('name="image_fit"', false)
+            ->assertSee('枠いっぱい')
+            ->assertSee('画像全体')
             ->assertSee('ドラッグ＆ドロップ')
             ->assertSee('割引タイプ')
-            ->assertSee('name="issue_trigger"', false)
-            ->assertSee('渡し方');
+            ->assertSee('発行条件')
+            ->assertSee('適用条件区分')
+            ->assertSee('最低対象金額')
+            ->assertSee('最高対象金額')
+            ->assertSee('併用区分')
+            ->assertDontSee('name="issue_trigger"', false)
+            ->assertDontSee('渡すタイミング')
+            ->assertDontSee('NEW COUPON')
+            ->assertDontSee('また来たくなるきっかけを')
+            ->assertSee('id="couponLivePreview"', false)
+            ->assertSee('coupon_form_preview=1', false)
+            ->assertSee('店舗アプリと同じ画面・デザインです');
 
         $response = $this->actingAs($admin, 'admin')
             ->post(route('admin.coupons.store', ['project_key' => $project->project_key]), [
@@ -304,18 +316,51 @@ class AdminCouponsTest extends TestCase
                 'type' => 'fixed',
                 'value' => 100,
                 'is_active' => '1',
-                'issue_trigger' => Coupon::ISSUE_TRIGGER_MANUAL,
+                'issue_trigger' => Coupon::ISSUE_TRIGGER_BIRTHDAY,
                 'use_display' => Coupon::USE_DISPLAY_BARCODE,
-                'return' => 'bulk-issue',
+                'image_fit' => Coupon::IMAGE_FIT_CONTAIN,
             ]);
 
         $coupon = Coupon::where('project_id', $project->id)->where('code', 'ADMIN100')->first();
         $this->assertNotNull($coupon);
-        $response->assertRedirect(route('admin.coupons.bulk-issue', [
-            'project_key' => $project->project_key,
-            'coupon_id' => $coupon->id,
-        ]));
+        $response->assertRedirect(route('admin.coupons', ['project_key' => $project->project_key]));
+        $this->assertSame(Coupon::ISSUE_TRIGGER_MANUAL, $coupon->issue_trigger);
+        $this->assertNull($coupon->stamp_card_id);
         $this->assertSame(Coupon::USE_DISPLAY_BARCODE, $coupon->use_display);
+        $this->assertSame(Coupon::IMAGE_FIT_CONTAIN, $coupon->image_fit);
+        $this->assertSame(CouponApplyConditionDivision::ALL, $coupon->apply_condition_division);
+        $this->assertSame(CouponCombineDivision::ALLOWED, $coupon->combine_division);
+    }
+
+    public function test_create_スマレジと同じ発行条件を保存できること(): void
+    {
+        config(['smaregi.contract_id' => '']);
+
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+
+        $response = $this->actingAs($admin, 'admin')
+            ->post(route('admin.coupons.store', ['project_key' => $project->project_key]), [
+                'code' => 'SMAREGI-COND',
+                'name' => '発行条件クーポン',
+                'type' => 'percent',
+                'value' => 10,
+                'is_active' => '1',
+                'apply_condition_division' => CouponApplyConditionDivision::INCLUDE_TARGET_PRODUCT,
+                'min_order_amount' => 1000,
+                'max_order_amount' => 5000,
+                'combine_division' => CouponCombineDivision::FORBIDDEN,
+                'use_display' => Coupon::USE_DISPLAY_BARCODE,
+                'image_fit' => Coupon::IMAGE_FIT_COVER,
+            ]);
+
+        $coupon = Coupon::where('project_id', $project->id)->where('code', 'SMAREGI-COND')->first();
+        $this->assertNotNull($coupon);
+        $response->assertRedirect(route('admin.coupons', ['project_key' => $project->project_key]));
+        $this->assertSame(CouponApplyConditionDivision::INCLUDE_TARGET_PRODUCT, $coupon->apply_condition_division);
+        $this->assertSame('1000.00', (string) $coupon->min_order_amount);
+        $this->assertSame('5000.00', (string) $coupon->max_order_amount);
+        $this->assertSame(CouponCombineDivision::FORBIDDEN, $coupon->combine_division);
     }
 
     public function test_coupon_redemptions_利用者一覧を表示できること(): void
@@ -351,6 +396,7 @@ class AdminCouponsTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee('利用履歴');
+        $response->assertDontSee('お知らせで配布');
         $response->assertSee('利用履歴対象クーポン');
         $response->assertSee('山田太郎');
         $response->assertSee('M-USE-1');
@@ -442,6 +488,7 @@ class AdminCouponsTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee('利用履歴');
+        $response->assertDontSee('お知らせで配布');
         $response->assertSee(route('admin.coupons.redemptions', [
             'project_key' => $project->project_key,
             'id' => $coupon->id,
