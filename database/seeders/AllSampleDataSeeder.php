@@ -7,6 +7,9 @@ use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\ReservationStatus;
+use App\Enums\ScheduledDeliveryCategory;
+use App\Enums\ScheduledDeliveryContentType;
+use App\Enums\ScheduledDeliveryType;
 use App\Models\AfterRegistrationDelivery;
 use App\Models\Announcement;
 use App\Models\Coupon;
@@ -29,7 +32,7 @@ use Illuminate\Support\Facades\Log;
 
 /**
  * デモ・開発用の全サンプルデータを投入する。
- * プロジェクト・商品・クーポン・スタンプ・会員・注文・タグ・お知らせ・登録後配信・予約を含む。
+ * プロジェクト・商品・クーポン・スタンプ・会員・注文・タグ・お知らせ・スケジュール配信・予約を含む。
  */
 class AllSampleDataSeeder extends Seeder
 {
@@ -351,13 +354,17 @@ class AllSampleDataSeeder extends Seeder
 
         AfterRegistrationDelivery::create([
             'project_id' => $pid,
+            'category' => ScheduledDeliveryCategory::CONDITION,
+            'schedule_type' => ScheduledDeliveryType::NEW_USER_MINUTES,
+            'content_type' => ScheduledDeliveryContentType::ANNOUNCEMENT,
             'delay_minutes' => 5,
             'title' => 'ご登録ありがとうございます',
             'body' => '会員登録が完了しました。このメッセージとともにお得なクーポンをお届けします。',
             'coupon_id' => $coupon !== null ? $coupon->id : null,
+            'params' => ['delay_minutes' => 5],
             'is_active' => true,
         ]);
-        $this->command->info('登録後配信を投入しました');
+        $this->command->info('スケジュール配信を投入しました');
     }
 
     private function seedReservations(): void

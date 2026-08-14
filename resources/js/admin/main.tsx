@@ -13,6 +13,7 @@ import './admin';
 import './couponForm';
 import './announcementDelivery';
 import './couponBulkIssue';
+import './scheduledDelivery';
 import './memberDetailHistory';
 import './memberLineQr';
 import './stampGrantQr';
