@@ -346,8 +346,15 @@ class MemberAdminService
     }
 
     /** 会員にクーポンを1件発行（管理画面からの手動配布） */
-    public function issueCouponToMember(Member $member, int $couponId, ?\DateTimeInterface $validFrom = null, ?\DateTimeInterface $validUntil = null): MemberCoupon
-    {
+    public function issueCouponToMember(
+        Member $member,
+        int $couponId,
+        ?\DateTimeInterface $validFrom = null,
+        ?\DateTimeInterface $validUntil = null,
+        ?string $issueSourceType = null,
+        ?string $issueSourceId = null,
+        ?string $issueGrantKey = null,
+    ): MemberCoupon {
         $coupon = Coupon::where('project_id', $member->project_id)->findOrFail($couponId);
         $now = now();
         $validFrom = $validFrom ?? $now;
@@ -361,6 +368,9 @@ class MemberAdminService
             $now,
             $validFrom,
             $validUntil instanceof \DateTimeInterface ? $validUntil : null,
+            $issueSourceType,
+            $issueSourceId,
+            $issueGrantKey,
         ));
 
         return MemberCoupon::query()
@@ -376,8 +386,13 @@ class MemberAdminService
      * @param  list<int>  $memberIds
      * @return array{count: int, member_ids: list<int>}
      */
-    public function issueCouponToMembers(int $projectId, int $couponId, array $memberIds = []): array
-    {
+    public function issueCouponToMembers(
+        int $projectId,
+        int $couponId,
+        array $memberIds = [],
+        ?string $issueSourceType = null,
+        ?string $issueSourceId = null,
+    ): array {
         $coupon = Coupon::where('project_id', $projectId)->findOrFail($couponId);
         $query = Member::where('project_id', $projectId);
         if ($memberIds !== []) {
@@ -388,7 +403,13 @@ class MemberAdminService
         $now = now();
         $issuedMemberIds = [];
         foreach ($members as $member) {
-            if ($this->memberCouponRepository->hasUnusedValid(
+            $grantKey = null;
+            if ($issueSourceType !== null && $issueSourceId !== null) {
+                $grantKey = implode(':', [$issueSourceType, $issueSourceId, $couponId, (int) $member->id]);
+                if ($this->memberCouponRepository->hasIssuedGrantKey((int) $member->id, $grantKey, $projectId)) {
+                    continue;
+                }
+            } elseif ($this->memberCouponRepository->hasUnusedValid(
                 (int) $member->id,
                 $couponId,
                 $now,
@@ -396,7 +417,15 @@ class MemberAdminService
             )) {
                 continue;
             }
-            $this->issueCouponToMember($member, $couponId, null, $validUntil);
+            $this->issueCouponToMember(
+                $member,
+                $couponId,
+                null,
+                $validUntil,
+                $issueSourceType,
+                $issueSourceId,
+                $grantKey,
+            );
             $issuedMemberIds[] = (int) $member->id;
         }
 
@@ -520,6 +549,16 @@ class MemberAdminService
     public function getCountByProject(int $projectId): int
     {
         return Member::where('project_id', $projectId)->count();
+    }
+
+    /** @return Collection<int, int> */
+    public function getIdsByProject(int $projectId): Collection
+    {
+        return Member::where('project_id', $projectId)
+            ->orderBy('id')
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->values();
     }
 
     /**
@@ -649,7 +688,7 @@ class MemberAdminService
 
         $allowedMember = [
             'member_number', 'status', 'rank', 'birthday', 'address',
-            'postal_code', 'prefecture', 'city', 'street', 'sex', 'mail_receive_flag', 'profile_extra',
+            'postal_code', 'prefecture', 'city', 'street', 'sex', 'mail_receive_flag', 'notification_preference', 'profile_extra',
         ];
         $updateMember = array_intersect_key($memberData, array_flip($allowedMember));
         $updateMember = array_filter(

@@ -13,6 +13,8 @@ type AnnouncementViewProps = {
 
 type LoadState = 'loading' | 'ready' | 'error';
 
+const ANNOUNCEMENT_FORM_PREVIEW_ID = '__reggit_announcement_form_preview__';
+
 function excerpt(body: string, maxLen: number): string {
     const text = body.replace(/\s+/g, ' ').trim();
     if (text.length <= maxLen) {
@@ -30,6 +32,13 @@ function resolveListDesign(root: HTMLElement | null): string {
         return fromBlock;
     }
     return 'cards';
+}
+
+function adaptAnnouncementMediaRatio(image: HTMLImageElement): void {
+    const media = image.parentElement;
+    if (media === null || image.naturalWidth <= 0 || image.naturalHeight <= 0) return;
+    const ratio = Math.min(3.2, Math.max(0.6, image.naturalWidth / image.naturalHeight));
+    media.style.setProperty('--announcement-media-aspect', String(ratio));
 }
 
 function AnnouncementListItem({
@@ -75,7 +84,12 @@ function AnnouncementListItem({
         >
             {hasImage ? (
                 <div className="announcement-item__media">
-                    <img src={item.image_url || ''} alt="" loading="lazy" />
+                    <img
+                        src={item.image_url || ''}
+                        alt=""
+                        loading="lazy"
+                        onLoad={(event) => adaptAnnouncementMediaRatio(event.currentTarget)}
+                    />
                 </div>
             ) : (
                 <div className="announcement-item__media announcement-item__media--placeholder" aria-hidden="true">
@@ -109,8 +123,11 @@ function AnnouncementListItem({
 
 export function AnnouncementView({ iosHome = false }: AnnouncementViewProps): JSX.Element {
     const rootRef = useRef<HTMLDivElement>(null);
+    const isAnnouncementFormPreview = window.__IS_DESIGNER_EMBED_PREVIEW__ === true
+        && window.__ANNOUNCEMENT_FORM_PREVIEW__ === true;
     const [state, setState] = useState<LoadState>('loading');
     const [list, setList] = useState<Announcement[]>([]);
+    const [formPreviewAnnouncement, setFormPreviewAnnouncement] = useState<Announcement | null>(null);
     const [design, setDesign] = useState('cards');
 
     useEffect(() => {
@@ -136,7 +153,38 @@ export function AnnouncementView({ iosHome = false }: AnnouncementViewProps): JS
         };
     }, []);
 
+    useEffect(() => {
+        if (!isAnnouncementFormPreview) return undefined;
+
+        const receiveAnnouncementPreview = (event: MessageEvent): void => {
+            if (event.origin !== window.location.origin || event.data?.type !== 'reggit:announcement-form-preview:update') {
+                return;
+            }
+            const incoming = event.data.announcement as Partial<Announcement> | undefined;
+            if (incoming === undefined || incoming === null || typeof incoming !== 'object') return;
+            setFormPreviewAnnouncement({
+                ...incoming,
+                id: ANNOUNCEMENT_FORM_PREVIEW_ID,
+                title: typeof incoming.title === 'string' ? incoming.title : 'お知らせのタイトル',
+                body: typeof incoming.body === 'string' ? incoming.body : '',
+                published_at: typeof incoming.published_at === 'string' ? incoming.published_at : new Date().toISOString(),
+                is_read: false,
+            });
+            setDesign(resolveListDesign(rootRef.current));
+            setState('ready');
+        };
+
+        window.addEventListener('message', receiveAnnouncementPreview);
+        if (window.parent !== window) {
+            window.parent.postMessage({ type: 'reggit:announcement-form-preview:ready' }, window.location.origin);
+        }
+        return () => window.removeEventListener('message', receiveAnnouncementPreview);
+    }, [isAnnouncementFormPreview]);
+
+    const displayList = formPreviewAnnouncement !== null ? [formPreviewAnnouncement] : list;
+
     const onOpen = (id: string): void => {
+        if (id === ANNOUNCEMENT_FORM_PREVIEW_ID) return;
         openAnnouncementDetail(id);
         setList((prev) => prev.map((a) => (String(a.id) === id ? { ...a, is_read: true } : a)));
     };
@@ -160,7 +208,7 @@ export function AnnouncementView({ iosHome = false }: AnnouncementViewProps): JS
                 </div>
             );
         }
-        if (list.length === 0) {
+        if (displayList.length === 0) {
             return (
                 <div className="ios-row">
                     <div className="ios-row__body">
@@ -172,7 +220,7 @@ export function AnnouncementView({ iosHome = false }: AnnouncementViewProps): JS
         }
         return (
             <>
-                {list.slice(0, 5).map((a) => {
+                {displayList.slice(0, 5).map((a) => {
                     const id = String(a.id ?? '');
                     const date = formatPublishedAt(a.published_at);
                     return (
@@ -200,7 +248,7 @@ export function AnnouncementView({ iosHome = false }: AnnouncementViewProps): JS
         );
     }
 
-    if (state === 'error') {
+    if (formPreviewAnnouncement === null && state === 'error') {
         return (
             <div className="announcements announcements--empty">
                 <div className="announcement-empty">
@@ -213,7 +261,7 @@ export function AnnouncementView({ iosHome = false }: AnnouncementViewProps): JS
         );
     }
 
-    if (state === 'loading') {
+    if (formPreviewAnnouncement === null && state === 'loading') {
         return (
             <div className="loading">
                 <i className="fas fa-spinner fa-spin" />
@@ -222,7 +270,7 @@ export function AnnouncementView({ iosHome = false }: AnnouncementViewProps): JS
         );
     }
 
-    if (list.length === 0) {
+    if (displayList.length === 0) {
         return (
             <div ref={rootRef} className={`announcements announcements--empty announcements--design-${design}`}>
                 <div className="announcement-empty">
@@ -239,7 +287,7 @@ export function AnnouncementView({ iosHome = false }: AnnouncementViewProps): JS
     return (
         <div ref={rootRef} className={`announcements announcements--design-${design}`}>
             <div className="announcements-list">
-                {list.map((item, index) => (
+                {displayList.map((item, index) => (
                     <AnnouncementListItem
                         key={String(item.id ?? index)}
                         item={item}

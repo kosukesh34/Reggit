@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Enums\AnnouncementAudienceResolveMode;
 use App\Models\Announcement;
 use App\Services\Admin\MemberSegmentService;
 use App\Support\MemberChannel;
@@ -11,6 +12,32 @@ use Illuminate\Validation\Validator;
 
 class AnnouncementDeliveryStoreRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        $legacyType = (string) $this->input('delivery_type', '');
+        $audienceType = (string) $this->input('audience_type', '');
+        $deliveryTiming = (string) $this->input('delivery_timing', '');
+
+        if ($audienceType === '') {
+            $audienceType = $legacyType === Announcement::DELIVERY_TYPE_SCHEDULED
+                ? Announcement::DELIVERY_TYPE_IMMEDIATE_BULK
+                : $legacyType;
+        }
+        if ($deliveryTiming === '') {
+            $deliveryTiming = $legacyType === Announcement::DELIVERY_TYPE_SCHEDULED
+                ? Announcement::DELIVERY_TIMING_SCHEDULED
+                : Announcement::DELIVERY_TIMING_IMMEDIATE;
+        }
+
+        $this->merge([
+            'audience_type' => $audienceType,
+            'delivery_timing' => $deliveryTiming,
+            'audience_resolve_mode' => $this->input('audience_resolve_mode') === AnnouncementAudienceResolveMode::AT_SEND
+                ? AnnouncementAudienceResolveMode::AT_SEND
+                : AnnouncementAudienceResolveMode::SNAPSHOT,
+        ]);
+    }
+
     public function authorize(): bool
     {
         return true;
@@ -18,26 +45,32 @@ class AnnouncementDeliveryStoreRequest extends FormRequest
 
     public function rules(): array
     {
-        $deliveryType = (string) $this->input('delivery_type');
+        $audienceType = (string) $this->input('audience_type');
+        $deliveryTiming = (string) $this->input('delivery_timing');
 
         return [
             'title' => ['required', 'string', 'max:200'],
             'body' => ['nullable', 'string', 'max:5000'],
-            'delivery_type' => ['required', Rule::in([
+            'audience_type' => ['required', Rule::in([
                 Announcement::DELIVERY_TYPE_IMMEDIATE_BULK,
                 Announcement::DELIVERY_TYPE_PERSONAL,
-                Announcement::DELIVERY_TYPE_SCHEDULED,
                 Announcement::DELIVERY_TYPE_SEGMENT,
             ])],
+            'delivery_timing' => ['required', Rule::in([
+                Announcement::DELIVERY_TIMING_IMMEDIATE,
+                Announcement::DELIVERY_TIMING_SCHEDULED,
+            ])],
+            'audience_resolve_mode' => ['nullable', Rule::in(AnnouncementAudienceResolveMode::keys())],
+            'delivery_type' => ['nullable', 'string'],
             'target_member_ids' => [
-                Rule::requiredIf($deliveryType === Announcement::DELIVERY_TYPE_PERSONAL),
+                Rule::requiredIf($audienceType === Announcement::DELIVERY_TYPE_PERSONAL),
                 'nullable',
                 'array',
                 'min:1',
             ],
             'target_member_ids.*' => ['integer', 'min:1'],
             'scheduled_at' => [
-                Rule::requiredIf($deliveryType === Announcement::DELIVERY_TYPE_SCHEDULED),
+                Rule::requiredIf($deliveryTiming === Announcement::DELIVERY_TIMING_SCHEDULED),
                 'nullable',
                 'date',
                 'after:now',
@@ -48,6 +81,10 @@ class AnnouncementDeliveryStoreRequest extends FormRequest
                 MemberChannel::BOTH,
             ])],
             'segment_birthday_month' => ['nullable', 'integer', 'min:1', 'max:12'],
+            'segment_birthday_months' => ['nullable', 'array', 'max:12'],
+            'segment_birthday_months.*' => ['integer', 'min:1', 'max:12', 'distinct'],
+            'segment_tag_ids' => ['nullable', 'array'],
+            'segment_tag_ids.*' => ['integer', 'min:1', 'distinct'],
             'segment_visit_count_min' => ['nullable', 'integer', 'min:0'],
             'segment_visit_count_max' => ['nullable', 'integer', 'min:0'],
             'segment_lifetime_points_min' => ['nullable', 'integer', 'min:0'],
@@ -73,7 +110,7 @@ class AnnouncementDeliveryStoreRequest extends FormRequest
                 'numeric',
                 'min:0',
                 Rule::requiredIf(
-                    $deliveryType === Announcement::DELIVERY_TYPE_SEGMENT
+                    $audienceType === Announcement::DELIVERY_TYPE_SEGMENT
                     && $this->input('segment_condition') === 'min_amount'
                 ),
             ],
@@ -88,7 +125,7 @@ class AnnouncementDeliveryStoreRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator): void {
-            if ((string) $this->input('delivery_type') !== Announcement::DELIVERY_TYPE_SEGMENT) {
+            if ((string) $this->input('audience_type') !== Announcement::DELIVERY_TYPE_SEGMENT) {
                 return;
             }
 
@@ -116,7 +153,8 @@ class AnnouncementDeliveryStoreRequest extends FormRequest
     {
         return [
             'title.required' => 'タイトルを入力してください',
-            'delivery_type.in' => '配信種別を選択してください',
+            'audience_type.in' => '配信対象を選択してください',
+            'delivery_timing.in' => '配信タイミングを選択してください',
             'target_member_ids.required' => '個人宛配信では配信対象の会員を選択してください',
             'target_member_ids.min' => '個人宛配信では配信対象の会員を1人以上選択してください',
             'scheduled_at.required' => '予約配信では配信日時を指定してください',

@@ -84,6 +84,8 @@ declare global {
         __LIFF_TAB_LAYOUTS__?: Record<string, unknown[]>;
         __LIFF_TAB_SETTINGS__?: Record<string, unknown>;
         __IS_DESIGNER_EMBED_PREVIEW__?: boolean;
+        __COUPON_FORM_PREVIEW__?: boolean;
+        __ANNOUNCEMENT_FORM_PREVIEW__?: boolean;
         __MOBILE_DEVICE_INFO__?: { device_identifier?: string; [key: string]: unknown };
         __GOOGLE_WALLET_ENABLED__?: boolean;
         __WALLET_PASS_ENABLED__?: boolean;

@@ -670,7 +670,7 @@ a.announcement-item--link:active {
 
 .announcement-item__media {
     width: 100%;
-    aspect-ratio: 16 / 9;
+    aspect-ratio: var(--announcement-media-aspect, 16 / 9);
     overflow: hidden;
     background: var(--bg-muted, #f1f5f9);
 }
@@ -700,7 +700,7 @@ a.announcement-item--link:active .announcement-item__media img {
 }
 
 .announcement-item--featured .announcement-item__media {
-    aspect-ratio: 4 / 3;
+    aspect-ratio: var(--announcement-media-aspect, 4 / 3);
 }
 
 .announcement-item__content {

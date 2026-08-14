@@ -291,6 +291,7 @@ body.reggit-liff-ui .coupon-use-btn {
 
 body.reggit-liff-ui .coupon-item-image {
     width: 100%;
+    aspect-ratio: var(--coupon-media-aspect, 16 / 9);
     border-radius: 12px;
     overflow: hidden;
     margin-bottom: 12px;
@@ -300,11 +301,18 @@ body.reggit-liff-ui .coupon-item-image {
 body.reggit-liff-ui .coupon-item-image img {
     display: block;
     width: 100%;
-    height: 140px;
+    height: 100%;
     object-fit: cover;
 }
 
+body.reggit-liff-ui .coupon-item-image--fit-contain img,
+body.reggit-liff-ui .coupon-image--fit-contain img {
+    object-fit: contain;
+    background: var(--bg-secondary, #eef2f1);
+}
+
 body.reggit-liff-ui .coupon-item-image--icon {
+    aspect-ratio: auto;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -363,14 +371,21 @@ body.reggit-liff-ui .ios-coupon {
 
 body.reggit-liff-ui .ios-coupon__media {
     position: relative;
-    min-height: 120px;
+    min-height: 0;
+    aspect-ratio: var(--coupon-media-aspect, 16 / 9);
     background: linear-gradient(135deg, #0e7c66, #0a6b58);
 }
 
 body.reggit-liff-ui .ios-coupon__media img {
     width: 100%;
-    height: 140px;
+    height: 100%;
     object-fit: cover;
+}
+
+body.reggit-liff-ui .ios-coupon__media--fit-contain img,
+body.reggit-liff-ui .ios-detail__hero--fit-contain img {
+    object-fit: contain;
+    background: #f2f0e9;
 }
 
 body.reggit-liff-ui .ios-coupon__body {
