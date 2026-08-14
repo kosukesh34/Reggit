@@ -66,7 +66,8 @@ class CouponMyCouponsUseCase
                     $themeColor,
                     $memberCoupon->coupon?->description,
                     $useDisplay,
-                    $code
+                    $code,
+                    (string) ($memberCoupon->coupon?->image_fit ?? Coupon::IMAGE_FIT_COVER)
                 );
             })
             ->all();

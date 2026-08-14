@@ -12,6 +12,7 @@ export type CouponRecord = {
     issued_at?: string;
     used_at?: string;
     image_url?: string;
+    image_fit?: string;
     code?: string;
     use_display?: string;
     [key: string]: unknown;
@@ -26,6 +27,10 @@ export function normalizeCouponStatus(status: unknown): string {
         return value;
     }
     return 'available';
+}
+
+export function normalizeCouponImageFit(imageFit: unknown): 'cover' | 'contain' {
+    return imageFit === 'contain' ? 'contain' : 'cover';
 }
 
 export function formatCouponDate(value: string | undefined): string {
