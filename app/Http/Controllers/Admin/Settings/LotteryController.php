@@ -19,14 +19,7 @@ class LotteryController extends AdminBaseController
         $projectId = $this->resolveAdminProjectId();
         $view = $this->getLotterySettingsUseCase->handle($projectId);
 
-        return view('admin.settings.lottery', [
-            'settings' => $view->settings,
-            'prizes' => $view->prizes,
-            'coupons' => $view->coupons,
-            'grantTriggerOptions' => $view->grantTriggerOptions,
-            'rewardTypeOptions' => $view->rewardTypeOptions,
-            'stats' => $view->stats,
-        ]);
+        return view('admin.settings.lottery', ['view' => $view]);
     }
 
     public function update(LotterySettingsUpdateRequest $request)

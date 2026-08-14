@@ -22,15 +22,9 @@ class ProfileController extends AdminBaseController
     public function index()
     {
         $projectId = $this->resolveAdminProjectId();
-        $settings = $this->getProfileSettingsUseCase->handle($projectId);
-        $memberRegistrationModeOptions = MemberRegistrationMode::getValues();
-        $customFieldInputTypeOptions = ProfileCustomFieldInputType::getValues();
+        $view = $this->getProfileSettingsUseCase->handle($projectId);
 
-        return view('admin.settings.profile', compact(
-            'settings',
-            'memberRegistrationModeOptions',
-            'customFieldInputTypeOptions',
-        ));
+        return view('admin.settings.profile', ['view' => $view]);
     }
 
     public function update(Request $request)

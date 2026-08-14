@@ -1,7 +1,7 @@
 @extends('admin.layout')
 
 @section('title', '会員詳細')
-@section('page-title', '会員詳細 #' . $member->id)
+@section('page-title', '会員詳細 #' . $view->member->id)
 @section('page-kind', 'member-detail')
 
 @section('content')
@@ -12,31 +12,31 @@
         <div class="member-kpi-icon member-kpi-icon--ltv"><i class="fas fa-yen-sign"></i></div>
         <div class="member-kpi-body">
             <div class="member-kpi-label">累計購買額（LTV）</div>
-            <div class="member-kpi-value">¥{{ number_format($purchaseSummary['total_revenue'] ?? 0) }}</div>
+            <div class="member-kpi-value">¥{{ number_format($view->purchaseSummary['total_revenue'] ?? 0) }}</div>
         </div>
     </div>
     <div class="member-kpi-card">
         <div class="member-kpi-icon member-kpi-icon--orders"><i class="fas fa-shopping-cart"></i></div>
         <div class="member-kpi-body">
             <div class="member-kpi-label">総注文数</div>
-            <div class="member-kpi-value">{{ number_format($purchaseSummary['total_orders'] ?? 0) }}件</div>
+            <div class="member-kpi-value">{{ number_format($view->purchaseSummary['total_orders'] ?? 0) }}件</div>
         </div>
     </div>
     <div class="member-kpi-card">
         <div class="member-kpi-icon member-kpi-icon--avg"><i class="fas fa-chart-bar"></i></div>
         <div class="member-kpi-body">
             <div class="member-kpi-label">平均注文単価</div>
-            <div class="member-kpi-value">¥{{ number_format($purchaseSummary['avg_order_value'] ?? 0) }}</div>
+            <div class="member-kpi-value">¥{{ number_format($view->purchaseSummary['avg_order_value'] ?? 0) }}</div>
         </div>
     </div>
-    <div class="member-kpi-card {{ isset($purchaseSummary['days_since_last_order']) && $purchaseSummary['days_since_last_order'] > 90 ? 'member-kpi-card--alert' : '' }}">
-        <div class="member-kpi-icon member-kpi-icon--last {{ isset($purchaseSummary['days_since_last_order']) && $purchaseSummary['days_since_last_order'] > 90 ? 'member-kpi-icon--danger' : '' }}"><i class="fas fa-clock"></i></div>
+    <div class="member-kpi-card {{ isset($view->purchaseSummary['days_since_last_order']) && $view->purchaseSummary['days_since_last_order'] > 90 ? 'member-kpi-card--alert' : '' }}">
+        <div class="member-kpi-icon member-kpi-icon--last {{ isset($view->purchaseSummary['days_since_last_order']) && $view->purchaseSummary['days_since_last_order'] > 90 ? 'member-kpi-icon--danger' : '' }}"><i class="fas fa-clock"></i></div>
         <div class="member-kpi-body">
             <div class="member-kpi-label">最終購買日</div>
             <div class="member-kpi-value">
-                @if(isset($purchaseSummary['last_order_at']) && $purchaseSummary['last_order_at'])
-                    {{ $purchaseSummary['last_order_at']->format('Y/m/d') }}
-                    <span class="member-kpi-sub">{{ $purchaseSummary['days_since_last_order'] }}日前</span>
+                @if(isset($view->purchaseSummary['last_order_at']) && $view->purchaseSummary['last_order_at'])
+                    {{ $view->purchaseSummary['last_order_at']->format('Y/m/d') }}
+                    <span class="member-kpi-sub">{{ $view->purchaseSummary['days_since_last_order'] }}日前</span>
                 @else
                     <span class="text-muted">購買なし</span>
                 @endif
@@ -51,10 +51,10 @@
         <div>
             @php $adminUser = auth('admin')->user(); @endphp
             @if($adminUser === null || $adminUser->hasPermission('members.manage'))
-            <a href="{{ admin_route('admin.members.edit', ['id' => $member->id]) }}" class="btn btn-primary btn-sm me-1">
+            <a href="{{ admin_route('admin.members.edit', ['id' => $view->member->id]) }}" class="btn btn-primary btn-sm me-1">
                 <i class="fas fa-edit"></i> 編集
             </a>
-            <form action="{{ admin_route('admin.members.delete', ['id' => $member->id]) }}" method="POST" class="d-inline me-1 delete-form" data-item-name="{{ $member->user->name ?? $member->member_number }}">
+            <form action="{{ admin_route('admin.members.delete', ['id' => $view->member->id]) }}" method="POST" class="d-inline me-1 delete-form" data-item-name="{{ $view->member->user->name ?? $view->member->member_number }}">
                 @csrf
                 @method('DELETE')
                 <button type="submit" class="btn btn-danger btn-sm no-loading"><i class="fas fa-trash"></i> 削除</button>
@@ -69,52 +69,52 @@
         <div class="info-grid">
             <div class="info-item">
                 <div class="info-label">ID（内部）</div>
-                <div class="info-value"><span class="id-badge">{{ $member->id }}</span></div>
+                <div class="info-value"><span class="id-badge">{{ $view->member->id }}</span></div>
             </div>
             <div class="info-item">
                 <div class="info-label">会員番号</div>
-                <div class="info-value"><code class="member-number">{{ $member->member_number }}</code></div>
+                <div class="info-value"><code class="member-number">{{ $view->member->member_number }}</code></div>
             </div>
             <div class="info-item">
                 <div class="info-label">ユーザー名</div>
-                <div class="info-value">{{ $member->user->name ?? 'N/A' }}</div>
+                <div class="info-value">{{ $view->member->user->name ?? 'N/A' }}</div>
             </div>
             <div class="info-item">
                 <div class="info-label">現在のポイント</div>
-                <div class="info-value">{{ number_format($member->points) }}pt</div>
+                <div class="info-value">{{ number_format($view->member->points) }}pt</div>
             </div>
             <div class="info-item">
                 <div class="info-label">ランク</div>
-                <div class="info-value">{{ $member->rank_label ?? ($member->rank ?? '—') }}</div>
+                <div class="info-value">{{ $view->member->rank_label ?? ($view->member->rank ?? '—') }}</div>
             </div>
             <div class="info-item">
                 <div class="info-label">ポイント有効期限</div>
                 <div class="info-value">
-                    {{ $member->points_expiry['expires_at_label'] ?? '—' }}
+                    {{ $view->member->points_expiry['expires_at_label'] ?? '—' }}
                 </div>
             </div>
             <div class="info-item">
                 <div class="info-label">期限切れ予定ポイント</div>
                 <div class="info-value">
-                    {{ number_format($member->points_expiry['points_expiring'] ?? 0) }}pt
+                    {{ number_format($view->member->points_expiry['points_expiring'] ?? 0) }}pt
                 </div>
             </div>
             <div class="info-item">
                 <div class="info-label">ステータス</div>
                 <div class="info-value">
-                    <span class="badge badge-{{ $member->status === 'active' ? 'success' : 'danger' }}">
-                        {{ $member->status === 'active' ? '有効' : '無効' }}
+                    <span class="badge badge-{{ $view->member->status === 'active' ? 'success' : 'danger' }}">
+                        {{ $view->member->status === 'active' ? '有効' : '無効' }}
                     </span>
                 </div>
             </div>
             <div class="info-item">
                 <div class="info-label">登録日</div>
-                <div class="info-value">{{ $member->created_at->format('Y/m/d H:i:s') }}</div>
+                <div class="info-value">{{ $view->member->created_at->format('Y/m/d H:i:s') }}</div>
             </div>
             <div class="info-item">
                 <div class="info-label">登録チャネル</div>
                 <div class="info-value">
-                    @php $channelLabel = \App\Support\MemberChannel::label($member->user); @endphp
+                    @php $channelLabel = \App\Support\MemberChannel::label($view->member->user); @endphp
                     @if($channelLabel === '—')
                         <span class="text-muted">—</span>
                     @else
@@ -125,12 +125,12 @@
             <div class="info-item">
                 <div class="info-label">最終来店日</div>
                 <div class="info-value">
-                    {{ $member->last_visited_at ? $member->last_visited_at->format('Y/m/d') : '—' }}
+                    {{ $view->member->last_visited_at ? $view->member->last_visited_at->format('Y/m/d') : '—' }}
                 </div>
             </div>
         </div>
         @if($adminUser === null || $adminUser->hasPermission('members.manage'))
-        <p class="text-muted small mb-0 mt-3">ポイント・スタンプ・クーポン・来店の操作は<a href="{{ admin_route('admin.members.edit', ['id' => $member->id]) }}">編集画面</a>から行えます。</p>
+        <p class="text-muted small mb-0 mt-3">ポイント・スタンプ・クーポン・来店の操作は<a href="{{ admin_route('admin.members.edit', ['id' => $view->member->id]) }}">編集画面</a>から行えます。</p>
         @endif
     </div>
 </div>
@@ -150,11 +150,11 @@
                 <span class="form-label">付与中のタグ</span>
             </div>
             <div class="member-tag-list" id="member-tag-list">
-                @forelse($member->tags as $tag)
+                @forelse($view->member->tags as $tag)
                 <span class="member-tag-item">
                     <span class="member-tag-badge" style="background: {{ $tag->color }}">{{ $tag->name }}</span>
                     @if($canManage)
-                    <form action="{{ admin_route('admin.members.tags.detach', ['id' => $member->id, 'tagId' => $tag->id]) }}" method="POST" class="d-inline">
+                    <form action="{{ admin_route('admin.members.tags.detach', ['id' => $view->member->id, 'tagId' => $tag->id]) }}" method="POST" class="d-inline">
                         @csrf @method('DELETE')
                         <button type="submit" class="member-tag-remove" title="解除"><i class="fas fa-times"></i></button>
                     </form>
@@ -165,12 +165,12 @@
                 @endforelse
             </div>
             @if($canManage && $allTags->isNotEmpty())
-            <form action="{{ admin_route('admin.members.tags.attach', ['id' => $member->id]) }}" method="POST" class="member-tag-attach-form">
+            <form action="{{ admin_route('admin.members.tags.attach', ['id' => $view->member->id]) }}" method="POST" class="member-tag-attach-form">
                 @csrf
                 <select name="tag_id" class="form-control form-control-sm" required>
                     <option value="">タグを付与...</option>
                     @foreach($allTags as $tag)
-                    @if(!$member->tags->contains('id', $tag->id))
+                    @if(!$view->member->tags->contains('id', $tag->id))
                     <option value="{{ $tag->id }}">{{ $tag->name }}</option>
                     @endif
                     @endforeach
@@ -182,26 +182,26 @@
         <div class="member-memo-section">
             <div class="form-label">スタッフメモ</div>
             @if($canManage)
-            <form action="{{ admin_route('admin.members.memo', ['id' => $member->id]) }}" method="POST">
+            <form action="{{ admin_route('admin.members.memo', ['id' => $view->member->id]) }}" method="POST">
                 @csrf @method('PUT')
-                <textarea name="memo" class="form-control" rows="3" maxlength="2000" placeholder="スタッフ向けのメモを入力（会員には表示されません）">{{ old('memo', $member->memo) }}</textarea>
+                <textarea name="memo" class="form-control" rows="3" maxlength="2000" placeholder="スタッフ向けのメモを入力（会員には表示されません）">{{ old('memo', $view->member->memo) }}</textarea>
                 <div class="form-actions" style="margin-top:8px;">
                     <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-save"></i> メモを保存</button>
                 </div>
             </form>
             @else
-            <div class="form-control-static">{{ $member->memo ?? '—' }}</div>
+            <div class="form-control-static">{{ $view->member->memo ?? '—' }}</div>
             @endif
         </div>
     </div>
 </div>
 
 {{-- 直近注文履歴 --}}
-@if(!empty($purchaseSummary['recent_orders']) && $purchaseSummary['recent_orders']->isNotEmpty())
+@if(!empty($view->purchaseSummary['recent_orders']) && $view->purchaseSummary['recent_orders']->isNotEmpty())
 <div class="card">
     <div class="card-header">
         <h3 class="card-title"><i class="fas fa-shopping-bag"></i> 直近の注文</h3>
-        <a href="{{ admin_route('admin.orders', ['user_id' => $member->user_id]) }}" class="btn btn-sm btn-secondary">
+        <a href="{{ admin_route('admin.orders', ['user_id' => $view->member->user_id]) }}" class="btn btn-sm btn-secondary">
             <i class="fas fa-arrow-right"></i> すべての注文
         </a>
     </div>
@@ -216,7 +216,7 @@
             </tr>
         </thead>
         <tbody>
-            @foreach($purchaseSummary['recent_orders'] as $order)
+            @foreach($view->purchaseSummary['recent_orders'] as $order)
             <tr>
                 <td><a href="{{ admin_route('admin.orders.detail', ['id' => $order->id]) }}">{{ $order->formattedOrderNumber() }}</a></td>
                 <td>¥{{ number_format($order->total_amount) }}</td>
@@ -244,9 +244,9 @@
     'queryKey' => 'visits_q',
     'fromKey' => 'visits_from',
     'toKey' => 'visits_to',
-    'items' => $visits,
-    'member' => $member,
-    'historyFilters' => $historyFilters,
+    'items' => $view->visits,
+    'member' => $view->member,
+    'historyFilters' => $view->historyFilters,
 ])
 
 @include('admin.partials.member-history.panel', [
@@ -257,9 +257,9 @@
     'queryKey' => 'points_q',
     'fromKey' => 'points_from',
     'toKey' => 'points_to',
-    'items' => $pointTransactions,
-    'member' => $member,
-    'historyFilters' => $historyFilters,
+    'items' => $view->pointTransactions,
+    'member' => $view->member,
+    'historyFilters' => $view->historyFilters,
 ])
 
 @include('admin.partials.member-history.panel', [
@@ -270,9 +270,9 @@
     'queryKey' => 'coupons_q',
     'fromKey' => 'coupons_from',
     'toKey' => 'coupons_to',
-    'items' => $memberCoupons,
-    'member' => $member,
-    'historyFilters' => $historyFilters,
+    'items' => $view->memberCoupons,
+    'member' => $view->member,
+    'historyFilters' => $view->historyFilters,
 ])
 
 @include('admin.partials.member-history.panel', [
@@ -283,9 +283,9 @@
     'queryKey' => 'redemptions_q',
     'fromKey' => 'redemptions_from',
     'toKey' => 'redemptions_to',
-    'items' => $couponRedemptions,
-    'member' => $member,
-    'historyFilters' => $historyFilters,
+    'items' => $view->couponRedemptions,
+    'member' => $view->member,
+    'historyFilters' => $view->historyFilters,
 ])
 
 @include('admin.partials.member-history.panel', [
@@ -296,9 +296,9 @@
     'queryKey' => 'rank_q',
     'fromKey' => 'rank_from',
     'toKey' => 'rank_to',
-    'items' => $rankHistories,
-    'member' => $member,
-    'historyFilters' => $historyFilters,
+    'items' => $view->rankHistories,
+    'member' => $view->member,
+    'historyFilters' => $view->historyFilters,
 ])
 
 @include('admin.partials.member-history.panel', [
@@ -309,9 +309,9 @@
     'queryKey' => 'stamps_q',
     'fromKey' => 'stamps_from',
     'toKey' => 'stamps_to',
-    'items' => $stampTransactions,
-    'member' => $member,
-    'historyFilters' => $historyFilters,
+    'items' => $view->stampTransactions,
+    'member' => $view->member,
+    'historyFilters' => $view->historyFilters,
 ])
 
 <div class="form-actions">
@@ -324,7 +324,7 @@
 @push('scripts')
 <script>
 window.MemberDetailHistoryConfig = {
-    memberId: {{ (int) $member->id }},
+    memberId: {{ (int) $view->member->id }},
 };
 </script>
 @endpush

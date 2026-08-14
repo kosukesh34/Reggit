@@ -113,6 +113,7 @@ class AdminCouponBulkIssueFormUseCase
             $rankOptions,
             $couponSearch,
             $selectedCoupon,
+            CouponDeliveryType::IMMEDIATE_ALL,
         );
     }
 

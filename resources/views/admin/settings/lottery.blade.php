@@ -34,42 +34,42 @@
         <div class="stat-icon"><i class="fas fa-ticket-alt"></i></div>
         <div class="stat-content">
             <div class="stat-label">付与した権利（累計）</div>
-            <div class="stat-value">{{ number_format($stats->grantedTotal) }}</div>
+            <div class="stat-value">{{ number_format($view->stats->grantedTotal) }}</div>
         </div>
     </div>
     <div class="stat-card stat-card-warning">
         <div class="stat-icon"><i class="fas fa-hourglass-half"></i></div>
         <div class="stat-content">
             <div class="stat-label">未消化</div>
-            <div class="stat-value">{{ number_format($stats->pendingCount) }}</div>
+            <div class="stat-value">{{ number_format($view->stats->pendingCount) }}</div>
         </div>
     </div>
     <div class="stat-card stat-card-info">
         <div class="stat-icon"><i class="fas fa-play"></i></div>
         <div class="stat-content">
             <div class="stat-label">プレイ済み</div>
-            <div class="stat-value">{{ number_format($stats->playedCount) }}</div>
+            <div class="stat-value">{{ number_format($view->stats->playedCount) }}</div>
         </div>
     </div>
     <div class="stat-card stat-card-success">
         <div class="stat-icon"><i class="fas fa-gift"></i></div>
         <div class="stat-content">
             <div class="stat-label">当選</div>
-            <div class="stat-value">{{ number_format($stats->winCount) }}</div>
+            <div class="stat-value">{{ number_format($view->stats->winCount) }}</div>
         </div>
     </div>
     <div class="stat-card stat-card-secondary">
         <div class="stat-icon"><i class="fas fa-times-circle"></i></div>
         <div class="stat-content">
             <div class="stat-label">ハズレ</div>
-            <div class="stat-value">{{ number_format($stats->loseCount) }}</div>
+            <div class="stat-value">{{ number_format($view->stats->loseCount) }}</div>
         </div>
     </div>
     <div class="stat-card stat-card-success">
         <div class="stat-icon"><i class="fas fa-calendar-day"></i></div>
         <div class="stat-content">
             <div class="stat-label">本日のプレイ / 当選</div>
-            <div class="stat-value">{{ number_format($stats->todayPlayedCount) }} / {{ number_format($stats->todayWinCount) }}</div>
+            <div class="stat-value">{{ number_format($view->stats->todayPlayedCount) }} / {{ number_format($view->stats->todayWinCount) }}</div>
         </div>
     </div>
 </div>
@@ -92,7 +92,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach($stats->byRewardType as $row)
+                    @foreach($view->stats->byRewardType as $row)
                         <tr>
                             <td>{{ $row['reward_type_label'] }}</td>
                             <td class="text-right">{{ number_format($row['granted']) }}</td>
@@ -113,7 +113,7 @@
         <h3 class="card-title"><i class="fas fa-trophy"></i> 景品別の当選数</h3>
     </div>
     <div class="card-body">
-        @if(count($stats->winByCoupon) === 0)
+        @if(count($view->stats->winByCoupon) === 0)
             <p class="text-muted mb-0">まだプレイ実績がありません。</p>
         @else
             <div class="table-responsive">
@@ -126,7 +126,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach($stats->winByCoupon as $row)
+                        @foreach($view->stats->winByCoupon as $row)
                             <tr>
                                 <td>{{ $row['reward_type_label'] }}</td>
                                 <td>
@@ -168,10 +168,10 @@
     };
     $gachaPrizes = old('prizes')
         ? collect(old('prizes'))->where('reward_type', 'gacha')->values()
-        : $prizes->where('reward_type', 'gacha')->values();
+        : $view->prizes->where('reward_type', 'gacha')->values();
     $scratchPrizes = old('prizes')
         ? collect(old('prizes'))->where('reward_type', 'scratch')->values()
-        : $prizes->where('reward_type', 'scratch')->values();
+        : $view->prizes->where('reward_type', 'scratch')->values();
     $gachaPrizeInitial = $gachaPrizes->map($mapPrizeRow)->values();
     $scratchPrizeInitial = $scratchPrizes->map($mapPrizeRow)->values();
 @endphp
@@ -186,35 +186,35 @@
             <div class="form-group">
                 <label class="checkbox-label checkbox-block">
                     <input type="hidden" name="gacha_enabled" value="0">
-                    <input type="checkbox" name="gacha_enabled" value="1" {{ old('gacha_enabled', $settings->gacha_enabled) ? 'checked' : '' }}>
+                    <input type="checkbox" name="gacha_enabled" value="1" {{ old('gacha_enabled', $view->settings->gacha_enabled) ? 'checked' : '' }}>
                     <span>ガチャを有効にする</span>
                 </label>
             </div>
             <div class="form-group">
                 <label class="checkbox-label checkbox-block">
                     <input type="hidden" name="scratch_enabled" value="0">
-                    <input type="checkbox" name="scratch_enabled" value="1" {{ old('scratch_enabled', $settings->scratch_enabled) ? 'checked' : '' }}>
+                    <input type="checkbox" name="scratch_enabled" value="1" {{ old('scratch_enabled', $view->settings->scratch_enabled) ? 'checked' : '' }}>
                     <span>スクラッチを有効にする</span>
                 </label>
             </div>
             <div class="form-group">
                 <label for="grant_trigger" class="form-label">権利の付与タイミング</label>
                 <select name="grant_trigger" id="grant_trigger" class="form-control" required>
-                    @foreach($grantTriggerOptions as $value => $label)
-                        <option value="{{ $value }}" {{ old('grant_trigger', $settings->grant_trigger) === $value ? 'selected' : '' }}>{{ $label }}</option>
+                    @foreach($view->grantTriggerOptions as $value => $label)
+                        <option value="{{ $value }}" {{ old('grant_trigger', $view->settings->grant_trigger) === $value ? 'selected' : '' }}>{{ $label }}</option>
                     @endforeach
                 </select>
             </div>
-            <div class="form-group" id="min_amount_group" style="{{ old('grant_trigger', $settings->grant_trigger) === 'min_amount' ? '' : 'display:none;' }}">
+            <div class="form-group" id="min_amount_group" style="{{ old('grant_trigger', $view->settings->grant_trigger) === 'min_amount' ? '' : 'display:none;' }}">
                 <label for="min_amount" class="form-label">最低金額（円）</label>
                 <input type="number" step="1" min="0" name="min_amount" id="min_amount" class="form-control input-max-200"
-                       value="{{ old('min_amount', $settings->min_amount) }}" placeholder="例: 1000">
+                       value="{{ old('min_amount', $view->settings->min_amount) }}" placeholder="例: 1000">
                 <p class="form-text text-muted">この金額以上の取引で権利を付与します。</p>
             </div>
             <div class="form-group">
                 <label for="entitlement_expires_hours" class="form-label">権利の有効期限（時間）</label>
                 <input type="number" min="1" max="8760" name="entitlement_expires_hours" id="entitlement_expires_hours" class="form-control input-max-200"
-                       value="{{ old('entitlement_expires_hours', $settings->entitlement_expires_hours) }}" placeholder="空欄で無期限">
+                       value="{{ old('entitlement_expires_hours', $view->settings->entitlement_expires_hours) }}" placeholder="空欄で無期限">
                 <p class="form-text text-muted">未設定の場合は無期限です。例: 24 = 付与から24時間以内にプレイ。</p>
             </div>
         </div>
@@ -257,7 +257,7 @@
             <select data-field="coupon_id" class="form-control" required>
                 <option value="">選択してください</option>
                 <option value="lose">ハズレ（クーポンなし）</option>
-                @foreach($coupons as $coupon)
+                @foreach($view->coupons as $coupon)
                     <option value="{{ $coupon->id }}">{{ $coupon->name }}</option>
                 @endforeach
             </select>

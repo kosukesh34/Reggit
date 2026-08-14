@@ -7,9 +7,9 @@
 @section('content')
 @php
     $selectedCouponId = old('coupon_id', request('coupon_id'));
-    $oldDeliveryType = old('delivery_type', $defaultDeliveryType ?? \App\Enums\CouponDeliveryType::IMMEDIATE_ALL);
+    $oldDeliveryType = old('delivery_type', $view->defaultDeliveryType ?? \App\Enums\CouponDeliveryType::IMMEDIATE_ALL);
     $createUrl = admin_route('admin.coupons.create', ['return' => 'bulk-issue']);
-    $hasMeta = ($scheduledDeliveries ?? collect())->isNotEmpty() || ($hasSmaregiContract ?? false);
+    $hasMeta = ($view->scheduledDeliveries ?? collect())->isNotEmpty() || ($view->hasSmaregiContract ?? false);
 @endphp
 
 <div class="coupon-admin">
@@ -55,29 +55,29 @@
 
 @if($hasMeta)
 <div class="cp-toolbar">
-    <span class="cp-stat">登録会員 <strong>{{ number_format($memberCount) }}</strong></span>
-    @if($hasSmaregiContract ?? false)
-    <span class="cp-stat">POS連携 <strong>{{ $smaregiLinkedCount ?? 0 }}</strong></span>
+    <span class="cp-stat">登録会員 <strong>{{ number_format($view->memberCount) }}</strong></span>
+    @if($view->hasSmaregiContract ?? false)
+    <span class="cp-stat">POS連携 <strong>{{ $view->smaregiLinkedCount ?? 0 }}</strong></span>
     @endif
-    @if(($scheduledDeliveries ?? collect())->isNotEmpty())
-    <span class="cp-stat"><i class="fas fa-clock"></i> 予約中 <strong>{{ $scheduledDeliveries->count() }}</strong></span>
+    @if(($view->scheduledDeliveries ?? collect())->isNotEmpty())
+    <span class="cp-stat"><i class="fas fa-clock"></i> 予約中 <strong>{{ $view->scheduledDeliveries->count() }}</strong></span>
     @endif
     <span class="cp-toolbar-spacer"></span>
-    @if(($scheduledDeliveries ?? collect())->isNotEmpty())
+    @if(($view->scheduledDeliveries ?? collect())->isNotEmpty())
     <details>
         <summary>予約一覧を見る</summary>
         <div class="cp-scheduled-list">
-            @foreach($scheduledDeliveries as $sd)
+            @foreach($view->scheduledDeliveries as $sd)
             <div class="cp-scheduled-item">
                 <strong>{{ $sd->coupon?->name ?? $sd->coupon?->code }}</strong>
                 <span class="text-muted">{{ $sd->scheduled_at?->format('Y/m/d H:i') }}</span>
-                <span class="badge badge-info">{{ $deliveryTypeOptions[$sd->delivery_type] ?? $sd->delivery_type }}</span>
+                <span class="badge badge-info">{{ $view->deliveryTypeOptions[$sd->delivery_type] ?? $sd->delivery_type }}</span>
             </div>
             @endforeach
         </div>
     </details>
     @endif
-    @if($hasSmaregiContract ?? false)
+    @if($view->hasSmaregiContract ?? false)
     <details id="smaregi-sync">
         <summary><i class="fas fa-exchange-alt"></i> スマレジ POS</summary>
         <div class="cp-smaregi-actions">
@@ -87,7 +87,7 @@
             </form>
             <form action="{{ admin_route('admin.coupons.push-smaregi') }}" method="POST" onsubmit="return confirm('未連携をPOSへ反映します。よろしいですか？');">
                 @csrf
-                <button type="submit" class="btn btn-outline-primary btn-sm" @if(($smaregiUnlinkedCount ?? 0) === 0) disabled @endif><i class="fas fa-upload"></i> 反映（{{ $smaregiUnlinkedCount ?? 0 }}件）</button>
+                <button type="submit" class="btn btn-outline-primary btn-sm" @if(($view->smaregiUnlinkedCount ?? 0) === 0) disabled @endif><i class="fas fa-upload"></i> 反映（{{ $view->smaregiUnlinkedCount ?? 0 }}件）</button>
             </form>
             <form action="{{ admin_route('admin.coupons.full-sync-smaregi') }}" method="POST" onsubmit="return confirm('双方向同期します。よろしいですか？');">
                 @csrf
@@ -114,7 +114,7 @@
                 <a href="{{ $createUrl }}" class="btn btn-secondary btn-sm"><i class="fas fa-plus"></i> 新規作成</a>
             </div>
 
-            @if($coupons->total() === 0 && ($couponSearch ?? '') === '')
+            @if($view->coupons->total() === 0 && ($view->couponSearch ?? '') === '')
                 <div class="empty-state py-4">
                     <i class="fas fa-ticket-alt"></i>
                     <p>有効なクーポンがありません</p>
@@ -122,27 +122,27 @@
                     <a href="{{ $createUrl }}" class="btn btn-primary mt-2"><i class="fas fa-plus"></i> クーポンを作成</a>
                 </div>
             @else
-                @if($selectedCoupon !== null)
+                @if($view->selectedCoupon !== null)
                 <div class="coupon-picker-selected" id="couponPickerSelected">
-                    <span>選択中: <strong>{{ $selectedCoupon->name ?? '—' }}</strong>（{{ $selectedCoupon->code }}）</span>
-                    <a href="{{ admin_route('admin.coupons.redemptions', ['id' => $selectedCoupon->id]) }}" class="btn btn-outline-primary btn-sm">利用履歴</a>
+                    <span>選択中: <strong>{{ $view->selectedCoupon->name ?? '—' }}</strong>（{{ $view->selectedCoupon->code }}）</span>
+                    <a href="{{ admin_route('admin.coupons.redemptions', ['id' => $view->selectedCoupon->id]) }}" class="btn btn-outline-primary btn-sm">利用履歴</a>
                 </div>
                 @endif
                 <div class="coupon-picker-search-form" id="couponPickerSearchForm">
-                    <input type="search" id="couponPickerSearch" class="form-control form-control-sm cp-search" placeholder="名前・コードで絞り込み" value="{{ $couponSearch ?? '' }}" autocomplete="off">
+                    <input type="search" id="couponPickerSearch" class="form-control form-control-sm cp-search" placeholder="名前・コードで絞り込み" value="{{ $view->couponSearch ?? '' }}" autocomplete="off">
                     <button type="button" class="btn btn-secondary btn-sm" id="couponPickerSearchBtn">検索</button>
-                    @if(($couponSearch ?? '') !== '')
+                    @if(($view->couponSearch ?? '') !== '')
                         <a href="{{ admin_route('admin.coupons.bulk-issue', array_filter(['coupon_id' => $selectedCouponId])) }}" class="btn btn-outline-secondary btn-sm">クリア</a>
                     @endif
                 </div>
-                @if($coupons->total() === 0)
+                @if($view->coupons->total() === 0)
                 <div class="empty-state py-3">
                     <p>条件に一致するクーポンがありません</p>
                 </div>
                 @else
                 <div class="coupon-picker-list" id="couponPickerList">
-                    @foreach($coupons as $c)
-                    @php $deliveryCount = (int) ($deliveryCountByCouponId[$c->id] ?? 0); @endphp
+                    @foreach($view->coupons as $c)
+                    @php $deliveryCount = (int) ($view->deliveryCountByCouponId[$c->id] ?? 0); @endphp
                     <label class="coupon-picker-card {{ (string)$selectedCouponId === (string)$c->id ? 'is-selected' : '' }}"
                         data-search="{{ strtolower(($c->name ?? '') . ' ' . $c->code) }}">
                         <input type="radio" name="coupon_picker" value="{{ $c->id }}" class="coupon-picker-input" {{ (string)$selectedCouponId === (string)$c->id ? 'checked' : '' }}
@@ -155,7 +155,7 @@
                         </span>
                         <span class="coupon-picker-meta">
                             {{ $c->type === 'percent' ? rtrim(rtrim(number_format((float)$c->value, 2, '.', ''), '0'), '.') . '% OFF' : '¥' . number_format((float)$c->value) . ' OFF' }}
-                            @if($hasSmaregiContract ?? false)
+                            @if($view->hasSmaregiContract ?? false)
                                 · {{ $c->smaregi_coupon_id ? 'POS済' : '未連携' }}
                             @endif
                             · 配信{{ $deliveryCount }}回
@@ -165,7 +165,7 @@
                     </label>
                     @endforeach
                 </div>
-                {{ $coupons->appends(array_filter(['q' => $couponSearch ?? '', 'coupon_id' => $selectedCouponId]))->links('vendor.pagination.admin') }}
+                {{ $view->coupons->appends(array_filter(['q' => $view->couponSearch ?? '', 'coupon_id' => $selectedCouponId]))->links('vendor.pagination.admin') }}
                 @endif
             @endif
         </section>
@@ -184,7 +184,7 @@
                     <span class="bulk-selected-label">選択中</span>
                     <strong id="selectedCouponLabel">
                         @if($selectedCouponId)
-                            @php $sel = $coupons->firstWhere('id', (int)$selectedCouponId); @endphp
+                            @php $sel = $view->coupons->firstWhere('id', (int)$selectedCouponId); @endphp
                             {{ $sel ? ($sel->name . '（' . $sel->code . '）') : '—' }}
                         @else
                             未選択 — 上でクーポンを選んでください
@@ -201,7 +201,7 @@
                         <span class="delivery-mode-card-body">
                             <span class="delivery-mode-icon"><i class="fas fa-users"></i></span>
                             <span class="delivery-mode-title">全員にすぐ配布</span>
-                            <span class="delivery-mode-desc">{{ number_format($memberCount) }}人</span>
+                            <span class="delivery-mode-desc">{{ number_format($view->memberCount) }}人</span>
                         </span>
                     </label>
                     <label class="delivery-mode-card">
@@ -284,7 +284,7 @@
                     <label for="target_rank" class="form-label" id="targetRankLabel">対象ランク <span class="text-danger">*</span></label>
                     <select name="target_rank" id="target_rank" class="form-control" style="max-width:280px">
                         <option value="">選択してください</option>
-                        @foreach(($rankOptions ?? []) as $rank)
+                        @foreach(($view->rankOptions ?? []) as $rank)
                             <option value="{{ $rank['key'] }}" {{ old('target_rank', old('segment_rank')) === $rank['key'] ? 'selected' : '' }}>{{ $rank['label'] }}</option>
                         @endforeach
                     </select>
@@ -297,7 +297,7 @@
                             <label for="stamp_card_id" class="form-label">スタンプカード</label>
                             <select name="stamp_card_id" id="stamp_card_id" class="form-control">
                                 <option value="">すべてのカード</option>
-                                @foreach(($stampCards ?? []) as $card)
+                                @foreach(($view->stampCards ?? []) as $card)
                                     <option value="{{ $card->id }}" {{ (string) old('stamp_card_id', old('segment_stamp_card_id')) === (string) $card->id ? 'selected' : '' }}>
                                         {{ $card->name }}（目標 {{ $card->required_stamps }}）
                                     </option>
@@ -390,7 +390,7 @@
                             <label for="segment_rank" class="form-label">会員ランク</label>
                             <select name="segment_rank" id="segment_rank" class="form-control segment-filter">
                                 <option value="">指定しない</option>
-                                @foreach(($rankOptions ?? []) as $rank)
+                                @foreach(($view->rankOptions ?? []) as $rank)
                                     <option value="{{ $rank['key'] }}" {{ old('segment_rank') === $rank['key'] ? 'selected' : '' }}>{{ $rank['label'] }}</option>
                                 @endforeach
                             </select>
@@ -424,7 +424,7 @@
                             <label for="segment_product_id" class="form-label">購入した商品</label>
                             <select name="segment_product_id" id="segment_product_id" class="form-control segment-filter">
                                 <option value="">指定しない</option>
-                                @foreach(($products ?? []) as $product)
+                                @foreach(($view->products ?? []) as $product)
                                     <option value="{{ $product->id }}" {{ (string) old('segment_product_id') === (string) $product->id ? 'selected' : '' }}>{{ $product->name }}</option>
                                 @endforeach
                             </select>
@@ -447,7 +447,7 @@
                             <label for="segment_stamp_card_id" class="form-label">スタンプカード</label>
                             <select name="segment_stamp_card_id" id="segment_stamp_card_id" class="form-control segment-filter">
                                 <option value="">指定しない</option>
-                                @foreach(($stampCards ?? []) as $card)
+                                @foreach(($view->stampCards ?? []) as $card)
                                     <option value="{{ $card->id }}" {{ (string) old('segment_stamp_card_id') === (string) $card->id ? 'selected' : '' }}>{{ $card->name }}</option>
                                 @endforeach
                             </select>
@@ -522,7 +522,7 @@
         <p>配信ごとの記録。同じクーポンを使い回しても行が増えます。</p>
     </div>
     <div class="card-body">
-        @if(count($deliveryHistories ?? []) === 0)
+        @if(count($view->deliveryHistories ?? []) === 0)
         <div class="empty-state py-4">
             <i class="fas fa-history"></i>
             <p>まだ配信履歴がありません</p>
@@ -543,7 +543,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach($deliveryHistories as $history)
+                    @foreach($view->deliveryHistories as $history)
                     <tr>
                         <td>{{ $history['timing_label'] }}</td>
                         <td>
@@ -591,7 +591,7 @@ window.CouponBulkIssueConfig = {
     previewUrl: @json(admin_route('admin.coupons.delivery.preview')),
     previewMembersUrl: @json(admin_route('admin.coupons.delivery.preview-members')),
     bulkIssueUrl: @json(admin_route('admin.coupons.bulk-issue')),
-    memberCount: {{ (int)$memberCount }},
+    memberCount: {{ (int)$view->memberCount }},
     initialDeliveryType: @json($oldDeliveryType),
     initialSelectedMembers: @json(old('target_member_ids', [])),
 };

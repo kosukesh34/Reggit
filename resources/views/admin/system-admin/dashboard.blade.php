@@ -13,7 +13,7 @@
         <div class="stat-icon"><i class="fas fa-building"></i></div>
         <div class="stat-content">
             <div class="stat-label">プロジェクト</div>
-            <div class="stat-value">{{ $projectsCount ?? 0 }}</div>
+            <div class="stat-value">{{ $view->projectsCount ?? 0 }}</div>
             <div class="stat-link">一覧へ <i class="fas fa-chevron-right"></i></div>
         </div>
     </a>
@@ -21,7 +21,7 @@
         <div class="stat-icon"><i class="fas fa-user-cog"></i></div>
         <div class="stat-content">
             <div class="stat-label">アカウント</div>
-            <div class="stat-value">{{ $accountsCount ?? 0 }}</div>
+            <div class="stat-value">{{ $view->accountsCount ?? 0 }}</div>
             <div class="stat-link">一覧へ <i class="fas fa-chevron-right"></i></div>
         </div>
     </a>
@@ -29,7 +29,7 @@
         <div class="stat-icon"><i class="fas fa-key"></i></div>
         <div class="stat-content">
             <div class="stat-label">APIトークン</div>
-            <div class="stat-value">{{ $apiTokensCount ?? 0 }}</div>
+            <div class="stat-value">{{ $view->apiTokensCount ?? 0 }}</div>
             <div class="stat-link">一覧へ <i class="fas fa-chevron-right"></i></div>
         </div>
     </a>
