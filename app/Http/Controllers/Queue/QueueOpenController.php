@@ -21,13 +21,6 @@ class QueueOpenController extends Controller
             return redirect()->away($view->lineUrl);
         }
 
-        return view('queue.open', [
-            'mode' => $view->mode,
-            'projectKey' => $view->projectKey,
-            'token' => $view->token,
-            'lineUrl' => $view->lineUrl,
-            'nativeSchemeUrl' => $view->nativeSchemeUrl,
-            'errorMessage' => $view->errorMessage,
-        ]);
+        return view('queue.open', ['view' => $view]);
     }
 }

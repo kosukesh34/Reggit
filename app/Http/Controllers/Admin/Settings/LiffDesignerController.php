@@ -14,19 +14,9 @@ class LiffDesignerController extends AdminBaseController
 {
     public function index(GetLiffDesignerUseCase $useCase): View
     {
-        $dto = $useCase->handle($this->resolveAdminProjectId());
+        $view = $useCase->handle($this->resolveAdminProjectId());
 
-        return view('admin.settings.liff-designer', [
-            'layouts' => $dto->layouts,
-            'templates' => $dto->templates,
-            'customCss' => $dto->customCss,
-            'tabSettings' => $dto->tabSettings,
-            'featureFlags' => $dto->featureFlags,
-            'lineFriendAddUrl' => $dto->lineFriendAddUrl,
-            'menuItems' => $dto->menuItems,
-            'detailLayouts' => $dto->detailLayouts,
-            'previewData' => $dto->previewData,
-        ]);
+        return view('admin.settings.liff-designer', ['view' => $view]);
     }
 
     public function update(

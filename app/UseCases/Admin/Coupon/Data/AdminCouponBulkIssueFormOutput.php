@@ -39,6 +39,7 @@ use Illuminate\Support\Collection;
  * @param  array<int, int>  $deliveryCountByCouponId
  * @param  Collection<int, StampCard>  $stampCards
  * @param  list<array{key: string, label: string}>  $rankOptions
+ * @param  string  $defaultDeliveryType
  */
 class AdminCouponBulkIssueFormOutput
 {
@@ -59,5 +60,6 @@ class AdminCouponBulkIssueFormOutput
         public array $rankOptions = [],
         public string $couponSearch = '',
         public ?Coupon $selectedCoupon = null,
+        public string $defaultDeliveryType = '',
     ) {}
 }

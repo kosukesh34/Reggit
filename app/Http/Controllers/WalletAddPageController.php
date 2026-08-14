@@ -6,6 +6,7 @@ use App\Http\Support\RequestOrigin;
 use App\Support\NativeApp;
 use App\Support\ProjectKey;
 use App\Support\QueueLiffUrlBuilder;
+use App\UseCases\Member\WalletPass\Data\WalletAddView;
 use App\UseCases\Member\WalletPass\WalletPassUrlIssueUseCase;
 use App\Util\AdminContext;
 use Illuminate\Http\Request;
@@ -62,13 +63,13 @@ class WalletAddPageController extends Controller
             $projectKey ?? ''
         );
 
-        return view('wallet-add', [
-            'walletUrl' => $walletUrl,
-            'returnUrl' => $returnUrl,
-            'typeLabel' => $typeLabel,
-            'addButtonLabel' => $addButtonLabel,
-            'returnBackLabel' => $returnBackLabel,
-        ]);
+        return view('wallet-add', ['view' => new WalletAddView(
+            $walletUrl,
+            $returnUrl,
+            $typeLabel,
+            $addButtonLabel,
+            $returnBackLabel,
+        )]);
     }
 
     private function sanitizeWalletUrl(?string $url): ?string

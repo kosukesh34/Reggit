@@ -38,11 +38,7 @@ class StampController extends AdminBaseController
     {
         $output = $this->createFormUseCase->handle($this->resolveAdminProjectId());
 
-        return view('admin.stamps.create', [
-            'coupons' => $output->coupons,
-            'isGachaEnabled' => $output->isGachaEnabled,
-            'cycleTargetCards' => $output->cycleTargetCards,
-        ]);
+        return view('admin.stamps.create', ['view' => $output]);
     }
 
     public function grantQr(Request $request, string $projectKey, int $id, AdminStampGrantQrIndexUseCase $useCase)
@@ -57,15 +53,7 @@ class StampController extends AdminBaseController
             (int) $request->session()->get('issued_grant_code_id', 0),
         );
 
-        return view('admin.stamps.grant-qr', [
-            'stampCard' => $output->stampCard,
-            'codes' => $output->codes,
-            'expiresMinutes' => $output->expiresMinutes,
-            'amount' => $output->amount,
-            'limit' => $output->limit,
-            'quota' => $output->quota,
-            'issuedCode' => $output->issuedCode,
-        ]);
+        return view('admin.stamps.grant-qr', ['view' => $output]);
     }
 
     public function storeGrantQr(Request $request, string $projectKey, int $id, AdminStampGrantQrStoreUseCase $useCase)
@@ -97,12 +85,7 @@ class StampController extends AdminBaseController
     {
         $output = $this->editUseCase->handle($this->resolveAdminProjectId(), (int) $id);
 
-        return view('admin.stamps.edit', [
-            'stampCard' => $output->stampCard,
-            'coupons' => $output->coupons,
-            'isGachaEnabled' => $output->isGachaEnabled,
-            'cycleTargetCards' => $output->cycleTargetCards,
-        ]);
+        return view('admin.stamps.edit', ['view' => $output]);
     }
 
     public function updateStamp(StampUpdateRequest $request, string $projectKey, $id)

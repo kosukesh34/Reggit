@@ -9,12 +9,8 @@ class SystemAdminDashboardController extends AdminBaseController
 {
     public function dashboard(SystemAdminDashboardUseCase $useCase): View
     {
-        $dto = $useCase->handle();
+        $view = $useCase->handle();
 
-        return view('admin.system-admin.dashboard', [
-            'projectsCount' => $dto->projectsCount,
-            'accountsCount' => $dto->accountsCount,
-            'apiTokensCount' => $dto->apiTokensCount,
-        ]);
+        return view('admin.system-admin.dashboard', ['view' => $view]);
     }
 }

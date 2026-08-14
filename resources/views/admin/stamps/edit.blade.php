@@ -5,8 +5,7 @@
 @section('content')
 <nav class="breadcrumb"><a href="{{ admin_route('admin.stamps') }}">スタンプ</a><span class="breadcrumb-sep">/</span><span>編集</span></nav>
 @php($layoutOptions = \App\Models\StampCard::getLayoutOptions())
-@php($coupons = $coupons ?? collect())
-@php($milestones = old('reward_milestones', $stampCard->reward_milestones ?? [['stamp_count' => '']]))
+@php($milestones = old('reward_milestones', $view->stampCard->reward_milestones ?? [['stamp_count' => '']]))
 @if(!is_array($milestones) || $milestones === [])
     @php($milestones = [['stamp_count' => '']])
 @else
@@ -22,16 +21,16 @@
         @php($milestones = [['stamp_count' => '']])
     @endif
 @endif
-@php($existingStampImages = old('stamp_images_data') ? json_decode(old('stamp_images_data'), true) : ($stampCard->stamp_images ?? []))
+@php($existingStampImages = old('stamp_images_data') ? json_decode(old('stamp_images_data'), true) : ($view->stampCard->stamp_images ?? []))
 @if(!is_array($existingStampImages)) @php($existingStampImages = []) @endif
-@php($existingStampEmptyImages = old('stamp_empty_images_data') ? json_decode(old('stamp_empty_images_data'), true) : ($stampCard->stamp_empty_images ?? []))
+@php($existingStampEmptyImages = old('stamp_empty_images_data') ? json_decode(old('stamp_empty_images_data'), true) : ($view->stampCard->stamp_empty_images ?? []))
 @if(!is_array($existingStampEmptyImages)) @php($existingStampEmptyImages = []) @endif
 
 <div class="stamp-studio">
     <section class="card stamp-studio-form-card">
         <div class="card-header"><h3 class="card-title"><i class="fas fa-stamp"></i> スタンプカード編集</h3></div>
         <div class="card-body">
-            <form action="{{ admin_route('admin.stamps.update', ['id' => $stampCard->id]) }}" method="POST" data-stamp-edit-form>
+            <form action="{{ admin_route('admin.stamps.update', ['id' => $view->stampCard->id]) }}" method="POST" data-stamp-edit-form>
                 @csrf
                 @method('PUT')
                 <input type="hidden" name="valid_days" value="">
@@ -41,19 +40,19 @@
                     <div class="stamp-form-grid">
                         <div class="form-group stamp-form-col-span-2">
                             <label for="name" class="form-label">カード名 <span class="text-danger">*</span></label>
-                            <input type="text" name="name" id="name" class="form-control" value="{{ old('name', $stampCard->name) }}" required maxlength="255">
+                            <input type="text" name="name" id="name" class="form-control" value="{{ old('name', $view->stampCard->name) }}" required maxlength="255">
                             @error('name')<span class="invalid-feedback">{{ $message }}</span>@enderror
                         </div>
                         <div class="form-group">
                             <label for="required_stamps" class="form-label">必要スタンプ数 <span class="text-danger">*</span></label>
-                            <input type="number" name="required_stamps" id="required_stamps" class="form-control" value="{{ old('required_stamps', $stampCard->required_stamps) }}" min="1" max="999" required>
+                            <input type="number" name="required_stamps" id="required_stamps" class="form-control" value="{{ old('required_stamps', $view->stampCard->required_stamps) }}" min="1" max="999" required>
                             @error('required_stamps')<span class="invalid-feedback">{{ $message }}</span>@enderror
                         </div>
                         <div class="form-group">
                             <label for="layout_style" class="form-label">レイアウト</label>
                             <select name="layout_style" id="layout_style" class="form-control">
                                 @foreach($layoutOptions as $value => $label)
-                                    <option value="{{ $value }}" {{ old('layout_style', $stampCard->layout_style ?? 'grid') === $value ? 'selected' : '' }}>{{ $label }}</option>
+                                    <option value="{{ $value }}" {{ old('layout_style', $view->stampCard->layout_style ?? 'grid') === $value ? 'selected' : '' }}>{{ $label }}</option>
                                 @endforeach
                             </select>
                             @error('layout_style')<span class="invalid-feedback">{{ $message }}</span>@enderror
@@ -66,18 +65,18 @@
                     <div class="stamp-form-grid">
                         <div class="form-group">
                             <label for="valid_until" class="form-label">有効期限（日付）</label>
-                            <input type="date" name="valid_until" id="valid_until" class="form-control" value="{{ old('valid_until', $stampCard->valid_until?->format('Y-m-d')) }}">
+                            <input type="date" name="valid_until" id="valid_until" class="form-control" value="{{ old('valid_until', $view->stampCard->valid_until?->format('Y-m-d')) }}">
                             <p class="form-text text-muted">未設定の場合は無期限</p>
                             @error('valid_until')<span class="invalid-feedback">{{ $message }}</span>@enderror
                         </div>
                         <div class="form-group form-check stamp-form-check-wrap">
-                            <input type="checkbox" name="is_active" id="is_active" class="form-check-input" value="1" {{ ((bool) old('is_active', $stampCard->is_active)) ? 'checked' : '' }}>
+                            <input type="checkbox" name="is_active" id="is_active" class="form-check-input" value="1" {{ ((bool) old('is_active', $view->stampCard->is_active)) ? 'checked' : '' }}>
                             <label for="is_active" class="form-check-label">有効（公開）</label>
                         </div>
                     </div>
                 </div>
 
-                @include('admin.stamps._cycle_fields', ['stampCard' => $stampCard, 'cycleTargetCards' => $cycleTargetCards ?? collect()])
+                @include('admin.stamps._cycle_fields', ['stampCard' => $view->stampCard, 'cycleTargetCards' => $view->cycleTargetCards ?? collect()])
 
                 <div class="stamp-form-section">
                     <div class="stamp-form-section-head stamp-form-section-head-with-action">
@@ -89,14 +88,14 @@
                             @include('admin.stamps._milestone_row', [
                                 'index' => $index,
                                 'milestone' => is_array($milestone) ? $milestone : [],
-                                'coupons' => $coupons,
+                                'coupons' => $view->coupons,
                                 'isNamed' => true,
                                 'idPrefix' => 'edit_reward_milestones',
                             ])
                         @endforeach
                     </div>
                     <p class="form-text text-muted">到達時にクーポンまたはガチャ権利が自動で付与されます。</p>
-                    @if(($isGachaEnabled ?? false) !== true)
+                    @if(($view->isGachaEnabled ?? false) !== true)
                     <p class="form-text text-muted">ガチャ特典を使う場合は、設定のガチャを有効にしてください。</p>
                     @endif
                     @error('reward_milestones')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
@@ -106,7 +105,7 @@
 
                     <div class="form-group stamp-form-note-group">
                         <label for="reward_description" class="form-label">補足テキスト</label>
-                        <input type="text" name="reward_description" id="reward_description" class="form-control" value="{{ old('reward_description', $stampCard->reward_description) }}" maxlength="500">
+                        <input type="text" name="reward_description" id="reward_description" class="form-control" value="{{ old('reward_description', $view->stampCard->reward_description) }}" maxlength="500">
                         @error('reward_description')<span class="invalid-feedback">{{ $message }}</span>@enderror
                     </div>
                 </div>
@@ -119,19 +118,19 @@
                         <p class="form-text text-muted">ドラッグ＆ドロップまたはURLで画像を設定できます。</p>
                         <div class="si-dropzone" id="cardImageDropzone" tabindex="0">
                             <input type="file" class="si-file-input" id="cardImageFileInput" accept="image/png,image/jpeg,image/gif,image/webp">
-                            <div class="si-dropzone-content" id="cardImageDropzoneContent" @if($stampCard->image_url) hidden @endif>
+                            <div class="si-dropzone-content" id="cardImageDropzoneContent" @if($view->stampCard->image_url) hidden @endif>
                                 <span class="si-dropzone-icon"><i class="fas fa-cloud-upload-alt"></i></span>
                                 <span class="si-dropzone-text">クリックまたはドラッグ＆ドロップ</span>
                                 <span class="si-dropzone-hint">PNG / JPG 2MBまで</span>
                             </div>
-                            <div class="si-dropzone-preview" id="cardImagePreview" @if(!$stampCard->image_url) hidden @endif>
-                                <img id="cardImagePreviewImg" src="{{ $stampCard->image_url ?? '' }}" alt="">
+                            <div class="si-dropzone-preview" id="cardImagePreview" @if(!$view->stampCard->image_url) hidden @endif>
+                                <img id="cardImagePreviewImg" src="{{ $view->stampCard->image_url ?? '' }}" alt="">
                                 <button type="button" class="si-dropzone-clear" id="cardImageClear"><i class="fas fa-times"></i></button>
                             </div>
                         </div>
                         <div class="si-url-row">
                             <label for="image_url" class="form-label small">または URL</label>
-                            <input type="url" name="image_url" id="image_url" class="form-control" value="{{ old('image_url', $stampCard->image_url) }}" maxlength="500" placeholder="https://example.com/stamp-card.png">
+                            <input type="url" name="image_url" id="image_url" class="form-control" value="{{ old('image_url', $view->stampCard->image_url) }}" maxlength="500" placeholder="https://example.com/stamp-card.png">
                         </div>
                         <input type="hidden" name="image_data" id="imageData">
                         @error('image_url')<span class="invalid-feedback">{{ $message }}</span>@enderror
@@ -174,7 +173,7 @@
                 </div>
             </form>
 
-            <form action="{{ admin_route('admin.stamps.delete', ['id' => $stampCard->id]) }}" method="POST" class="mt-3" onsubmit="return confirm('このスタンプカードを削除しますか？');">
+            <form action="{{ admin_route('admin.stamps.delete', ['id' => $view->stampCard->id]) }}" method="POST" class="mt-3" onsubmit="return confirm('このスタンプカードを削除しますか？');">
                 @csrf @method('DELETE')
                 <button type="submit" class="btn btn-danger">削除</button>
             </form>
@@ -226,7 +225,7 @@
     @include('admin.stamps._milestone_row', [
         'index' => 0,
         'milestone' => [],
-        'coupons' => $coupons,
+        'coupons' => $view->coupons,
         'isNamed' => false,
         'idPrefix' => 'edit_reward_milestones',
     ])
