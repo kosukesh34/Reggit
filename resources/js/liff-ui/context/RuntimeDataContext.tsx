@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { additionalStores } from "../config/additionalStores";
 import { couponsByStore, memberProfileByStore, newsByStore, storeLocationsByStore, storeSummaryByStore } from "../mocks/content";
 import { reggitApi } from "../services/reggitApi";
+import type { NewsItem } from "../types/app";
 import type {
   ContactInput,
   DataMode,
@@ -62,8 +63,12 @@ function createReceipt(prefix: string): OperationReceipt {
 
 export function RuntimeDataProvider({ children }: { children: ReactNode }) {
   const { activeStore } = useAppConfig();
+  const isAnnouncementFormPreview = typeof window !== 'undefined'
+    && window.__IS_DESIGNER_EMBED_PREVIEW__ === true
+    && window.__ANNOUNCEMENT_FORM_PREVIEW__ === true;
   const [localState, setLocalState] = useState<LocalState>(loadLocalState);
   const [remoteData, setRemoteData] = useState<RuntimeBootstrap>();
+  const [announcementFormPreview, setAnnouncementFormPreview] = useState<NewsItem>();
   const isDemoPreview = typeof document !== 'undefined' && document.body.classList.contains('liff-demo-data');
   const isMockShowcaseStore = MOCK_STORE_IDS.has(activeStore.storeId);
   const usePreviewData = isDemoPreview || isMockShowcaseStore || !reggitApi.configured;
@@ -185,6 +190,30 @@ export function RuntimeDataProvider({ children }: { children: ReactNode }) {
     window.localStorage.setItem(storageKey, JSON.stringify(localState));
   }, [localState]);
 
+  useEffect(() => {
+    if (!isAnnouncementFormPreview) return undefined;
+    const receiveAnnouncementPreview = (event: MessageEvent): void => {
+      if (event.origin !== window.location.origin || event.data?.type !== 'reggit:announcement-form-preview:update') return;
+      const incoming = event.data.announcement as Record<string, unknown> | undefined;
+      if (incoming === undefined || incoming === null || typeof incoming !== 'object') return;
+      setAnnouncementFormPreview({
+        id: '__reggit_announcement_form_preview__',
+        title: typeof incoming.title === 'string' && incoming.title.trim() !== '' ? incoming.title : 'お知らせのタイトル',
+        date: typeof incoming.published_at === 'string' ? incoming.published_at : new Date().toISOString(),
+        category: incoming.is_pinned === true ? '重要' : 'お知らせ',
+        body: typeof incoming.body === 'string' ? incoming.body : '',
+        image: typeof incoming.image_url === 'string' && incoming.image_url !== '' ? incoming.image_url : undefined,
+        isRead: false,
+        isPinned: incoming.is_pinned === true,
+      });
+    };
+    window.addEventListener('message', receiveAnnouncementPreview);
+    if (window.parent !== window) {
+      window.parent.postMessage({ type: 'reggit:announcement-form-preview:ready' }, window.location.origin);
+    }
+    return () => window.removeEventListener('message', receiveAnnouncementPreview);
+  }, [isAnnouncementFormPreview]);
+
   const updateLocal = useCallback((updater: (current: LocalStoreState) => LocalStoreState) => {
     setLocalState((current) => {
       const storeState = current[activeStore.storeId] ?? { usedCouponIds: [], stampCount: 6, receipts: [] };
@@ -230,10 +259,14 @@ export function RuntimeDataProvider({ children }: { children: ReactNode }) {
     notificationCount: 0,
   }), [activeStore.storeName]);
 
-  const data = remoteData ?? (usePreviewData ? mockData : emptyLiveData);
+  const baseData = remoteData ?? (usePreviewData ? mockData : emptyLiveData);
+  const data = announcementFormPreview === undefined
+    ? baseData
+    : { ...baseData, news: [announcementFormPreview], notificationCount: 1 };
   // 初回ロード中はモック店舗データを画面に出さない（ユーザー困惑防止）
   const isBootstrapping = loading && remoteData === undefined && !usePreviewData;
   const markAnnouncementRead = useCallback(async (announcementId: string) => {
+    if (isAnnouncementFormPreview && announcementId === '__reggit_announcement_form_preview__') return;
     if (reggitApi.configured && !isDemoPreview && !isMockShowcaseStore) {
       if (mode !== 'live') throw new Error('店舗システムに接続できないため、既読状態を保存できません');
       await reggitApi.markAnnouncementRead(announcementId);
@@ -243,7 +276,7 @@ export function RuntimeDataProvider({ children }: { children: ReactNode }) {
       news: current.news.map((item) => item.id === announcementId ? { ...item, isRead: true } : item),
       notificationCount: Math.max(0, current.notificationCount - (current.news.some((item) => item.id === announcementId && item.isRead !== true) ? 1 : 0)),
     });
-  }, [isDemoPreview, isMockShowcaseStore, mode]);
+  }, [isAnnouncementFormPreview, isDemoPreview, isMockShowcaseStore, mode]);
 
   const value = useMemo<RuntimeDataContextValue>(() => ({
     ...data,

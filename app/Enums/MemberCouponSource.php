@@ -10,10 +10,13 @@ class MemberCouponSource extends EnumBase
 
     public const ORDER = 'order';
 
+    public const ANNOUNCEMENT = 'announcement';
+
     /** @var array<string, string> */
     protected static array $values = [
         self::SMAREGI_TRANSACTION => 'スマレジ取引',
         self::ORDER => 'アプリ注文',
+        self::ANNOUNCEMENT => 'お知らせ配信',
     ];
 
     /** @return list<string> */
