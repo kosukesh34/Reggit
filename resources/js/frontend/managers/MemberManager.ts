@@ -2845,6 +2845,27 @@ export class MemberManager {
                     '</div></fieldset>',
                 ];
             }
+            if (key === 'notification_preference') {
+                const preference = val || 'all';
+                const options = [
+                    ['all', 'すべて受け取る', '新着情報とクーポン情報'],
+                    ['coupon_only', 'クーポン情報のみ', 'クーポンが付く配信だけ'],
+                    ['none', 'すべて受け取らない', 'LINE・Push通知を送信しません'],
+                ];
+                const optionsHtml = options.map(function (option) {
+                    const checked = preference === option[0] ? ' checked' : '';
+                    return '<label class="member-form-notification-option">' +
+                        '<input type="radio" name="notification_preference" value="' + option[0] + '"' + checked + ' required>' +
+                        '<span><strong>' + option[1] + '</strong><small>' + option[2] + '</small></span></label>';
+                }).join('');
+                return [
+                    '<fieldset class="member-form-group member-form-group--choice">' +
+                    '<legend class="member-form-group-label">' + DomHelper.escapeHtml(label) + ' <span class="required">*</span></legend>' +
+                    '<div class="member-form-notification-options" role="radiogroup" aria-label="' + DomHelper.escapeHtml(label) + '">' + optionsHtml + '</div>' +
+                    description +
+                    '</fieldset>',
+                ];
+            }
             if (inputType === 'radio' && values.length > 0) {
                 const optionsHtml = values.map(function (option, optionIndex) {
                     const optionVal = String(option);
@@ -3219,11 +3240,11 @@ export class MemberManager {
                 payload[key] = checked.map((el) => (el.value || '').trim()).filter((v) => v !== '');
                 return;
             }
-            if (inputType === 'radio' || key === 'sex' || key === 'mail_receive_flag') {
+            if (inputType === 'radio' || key === 'sex' || key === 'mail_receive_flag' || key === 'notification_preference') {
                 const el = asInput(form.querySelector('[name="' + key.replace(/"/g, '\\"') + '"]:checked'));
                 if (el) {
                     const v = (el.value || '').trim();
-                    if (key === 'mail_receive_flag') {
+                    if (key === 'mail_receive_flag' || key === 'notification_preference') {
                         payload[key] = v;
                     } else {
                         payload[key] = v || null;

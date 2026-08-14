@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Enums\MemberNotificationPreference;
 use App\Models\Announcement;
 use App\Models\Member;
 use App\Models\Project;
@@ -152,6 +153,13 @@ class AnnouncementNotificationService
     {
         $query = Member::query()
             ->where('project_id', (int) $announcement->project_id)
+            ->where(function ($query) use ($announcement): void {
+                $query->whereNull('notification_preference')
+                    ->orWhereIn(
+                        'notification_preference',
+                        MemberNotificationPreference::eligibleValues($announcement->delivery_coupon_id !== null),
+                    );
+            })
             ->whereHas('user', function ($q): void {
                 $q->whereNotNull('line_user_id')
                     ->where('line_user_id', '!=', '')
@@ -159,15 +167,11 @@ class AnnouncementNotificationService
             })
             ->with('user');
 
-        $targetMemberIds = is_array($announcement->target_member_ids)
+        $hasTargetSnapshot = is_array($announcement->target_member_ids);
+        $targetMemberIds = $hasTargetSnapshot
             ? array_values(array_filter(array_map('intval', $announcement->target_member_ids), fn ($id) => $id > 0))
             : [];
-        $isTargeted = in_array($announcement->delivery_type, [
-            Announcement::DELIVERY_TYPE_PERSONAL,
-            Announcement::DELIVERY_TYPE_SEGMENT,
-            Announcement::DELIVERY_TYPE_AFTER_REGISTRATION,
-        ], true);
-        if ($isTargeted) {
+        if ($hasTargetSnapshot) {
             if ($targetMemberIds === []) {
                 return collect();
             }

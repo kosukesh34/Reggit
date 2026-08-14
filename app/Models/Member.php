@@ -39,6 +39,7 @@ class Member extends Model
         'street',
         'sex',
         'mail_receive_flag',
+        'notification_preference',
         'profile_extra',
         'memo',
     ];
