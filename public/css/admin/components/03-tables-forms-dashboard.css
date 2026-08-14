@@ -1,7 +1,7 @@
 /* ===== アクションボタンの色統一 ===== */
 .action-buttons .btn-primary i {
     font-size: 12px;
-    color: #fff !important;
+    color: var(--primary) !important;
     margin-right: 4px;
 }
 

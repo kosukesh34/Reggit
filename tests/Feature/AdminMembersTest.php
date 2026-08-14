@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\MemberStatus;
 use App\Enums\MemberVisitSource;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\AdminUser;
@@ -10,7 +11,9 @@ use App\Models\CouponRedemption;
 use App\Models\Member;
 use App\Models\MemberCoupon;
 use App\Models\MemberRankHistory;
+use App\Models\MemberTag;
 use App\Models\MemberVisit;
+use App\Models\Order;
 use App\Models\PointTransaction;
 use App\Models\Project;
 use App\Models\StampCard;
@@ -64,25 +67,144 @@ class AdminMembersTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee('タグ');
+        $response->assertSee('会員名');
+        $response->assertSee('ID');
         $response->assertSee('詳細');
         $response->assertSee('編集');
-        $response->assertSee('削除');
+        $response->assertDontSee('delete-form', false);
+        $response->assertSee('ランク');
+        $response->assertDontSee('ステータス');
+    }
+
+    public function test_members_有効会員のみ表示し検索と並び替えができること(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+
+        $goldUser = User::factory()->create([
+            'project_id' => $project->id,
+            'name' => 'ゴールド会員',
+            'email' => 'gold-search@example.com',
+        ]);
+        $gold = Member::factory()->create([
+            'user_id' => $goldUser->id,
+            'project_id' => $project->id,
+            'rank' => 'gold',
+            'points' => 200,
+            'status' => MemberStatus::ACTIVE,
+        ]);
+        $bronzeUser = User::factory()->create(['project_id' => $project->id, 'name' => 'ブロンズ会員']);
+        Member::factory()->create([
+            'user_id' => $bronzeUser->id,
+            'project_id' => $project->id,
+            'rank' => 'bronze',
+            'points' => 10,
+            'status' => MemberStatus::ACTIVE,
+        ]);
+        $silverUser = User::factory()->create(['project_id' => $project->id, 'name' => 'シルバー会員']);
+        Member::factory()->create([
+            'user_id' => $silverUser->id,
+            'project_id' => $project->id,
+            'rank' => 'silver',
+            'points' => 50,
+            'status' => MemberStatus::ACTIVE,
+        ]);
+        $inactiveUser = User::factory()->create(['project_id' => $project->id, 'name' => '無効会員']);
+        Member::factory()->create([
+            'user_id' => $inactiveUser->id,
+            'project_id' => $project->id,
+            'status' => MemberStatus::INACTIVE,
+        ]);
+        $tag = MemberTag::create([
+            'project_id' => $project->id,
+            'name' => '一覧VIP',
+            'color' => '#0d9488',
+        ]);
+        $gold->tags()->attach($tag->id);
+
+        $list = $this->actingAs($admin, 'admin')
+            ->get(route('admin.members', ['project_key' => $project->project_key]));
+        $list->assertStatus(200);
+        $list->assertSee('ゴールド会員');
+        $list->assertSee('ブロンズ会員');
+        $list->assertDontSee('無効会員');
+
+        $byRank = $this->actingAs($admin, 'admin')
+            ->get(route('admin.members', [
+                'project_key' => $project->project_key,
+                'rank' => 'gold',
+            ]));
+        $byRank->assertSee('ゴールド会員');
+        $byRank->assertDontSee('ブロンズ会員');
+
+        $byKeyword = $this->actingAs($admin, 'admin')
+            ->get(route('admin.members', [
+                'project_key' => $project->project_key,
+                'keyword' => 'gold-search@example.com',
+            ]));
+        $byKeyword->assertSee('ゴールド会員');
+        $byKeyword->assertDontSee('ブロンズ会員');
+
+        $byTag = $this->actingAs($admin, 'admin')
+            ->get(route('admin.members', [
+                'project_key' => $project->project_key,
+                'tag_id' => $tag->id,
+            ]));
+        $byTag->assertSee('ゴールド会員');
+        $byTag->assertDontSee('ブロンズ会員');
+
+        $sorted = $this->actingAs($admin, 'admin')
+            ->get(route('admin.members', [
+                'project_key' => $project->project_key,
+                'sort' => 'points',
+                'dir' => 'desc',
+            ]));
+        $sorted->assertSeeInOrder(['ゴールド会員', 'シルバー会員', 'ブロンズ会員']);
+
+        $byRankLevel = $this->actingAs($admin, 'admin')
+            ->get(route('admin.members', [
+                'project_key' => $project->project_key,
+                'sort' => 'rank',
+                'dir' => 'desc',
+            ]));
+        $byRankLevel->assertSeeInOrder(['ゴールド会員', 'シルバー会員', 'ブロンズ会員']);
+
+        $csv = $this->actingAs($admin, 'admin')
+            ->get(route('admin.members.export', [
+                'project_key' => $project->project_key,
+                'rank' => 'gold',
+            ]));
+        $csv->assertOk();
+        $csvContent = $csv->streamedContent();
+        $this->assertStringContainsString('ゴールド会員', $csvContent);
+        $this->assertStringContainsString('最終来店', $csvContent);
+        $this->assertStringNotContainsString('ブロンズ会員', $csvContent);
+        $this->assertStringNotContainsString('無効会員', $csvContent);
+        $this->assertStringNotContainsString('ステータス', $csvContent);
     }
 
     public function test_members_detail_and_edit_詳細と編集にアクセスできること(): void
     {
         $project = $this->createProject();
         $admin = $this->createAdmin($project);
-        $user = User::factory()->create(['project_id' => $project->id]);
+        $user = User::factory()->create([
+            'project_id' => $project->id,
+            'name' => '登録名太郎',
+            'line_name' => 'LINE表示名花子',
+        ]);
         $member = Member::factory()->create(['user_id' => $user->id, 'project_id' => $project->id]);
 
         $detail = $this->actingAs($admin, 'admin')
             ->get(route('admin.members.detail', ['project_key' => $project->project_key, 'id' => $member->id]));
         $detail->assertStatus(200);
+        $detail->assertSee('登録名太郎');
+        $detail->assertSee('LINE名');
+        $detail->assertSee('LINE表示名花子');
         $detail->assertSee('ランクアップ履歴');
         $detail->assertSee('クーポン使用履歴');
         $detail->assertSee('来店履歴');
         $detail->assertSee('ポイント履歴');
+        $detail->assertSee('購入履歴');
 
         $edit = $this->actingAs($admin, 'admin')
             ->get(route('admin.members.edit', ['project_key' => $project->project_key, 'id' => $member->id]));
@@ -152,6 +274,8 @@ class AdminMembersTest extends TestCase
         $detail->assertSee('data-history-toggle', false);
         $detail->assertSee('data-history-input', false);
         $detail->assertSee('data-history-from', false);
+        $detail->assertSee('pt-20');
+        $detail->assertDontSee('pt-0');
 
         $search = $this->actingAs($admin, 'admin')
             ->getJson(route('admin.members.history', [
@@ -183,7 +307,7 @@ class AdminMembersTest extends TestCase
                 'project_key' => $project->project_key,
                 'id' => $member->id,
                 'section' => 'points',
-                'page' => 2,
+                'page' => 3,
             ]));
         $page2->assertStatus(200);
         $page2->assertJsonPath('total', 21);
@@ -208,6 +332,52 @@ class AdminMembersTest extends TestCase
         $rank->assertStatus(200);
         $rank->assertJsonPath('total', 1);
         $this->assertStringContainsString('ゴールド', $rank->json('html'));
+    }
+
+    public function test_members_detail_購入履歴は最新10件に制限されること(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $member = Member::factory()->create(['user_id' => $user->id, 'project_id' => $project->id]);
+
+        for ($i = 0; $i < 11; $i++) {
+            $order = Order::create([
+                'project_id' => $project->id,
+                'user_id' => $user->id,
+                'order_number' => sprintf('hist-%02d', $i),
+                'order_type' => 'take_out',
+                'total_amount' => 100 + $i,
+                'status' => 'completed',
+                'payment_method' => 'cash',
+            ]);
+            $order->forceFill([
+                'created_at' => now()->subMinutes(11 - $i),
+                'updated_at' => now()->subMinutes(11 - $i),
+            ])->save();
+        }
+
+        $detail = $this->actingAs($admin, 'admin')
+            ->get(route('admin.members.detail', [
+                'project_key' => $project->project_key,
+                'id' => $member->id,
+            ]));
+        $detail->assertStatus(200);
+        $detail->assertSee('購入履歴');
+        $detail->assertSee('hist-10');
+        $detail->assertDontSee('hist-00');
+        $detail->assertSee('残りの1件を見る');
+        $detail->assertSee('すべての注文');
+
+        $orders = $this->actingAs($admin, 'admin')
+            ->get(route('admin.orders', [
+                'project_key' => $project->project_key,
+                'user_id' => $user->id,
+            ]));
+        $orders->assertStatus(200);
+        $orders->assertSee('hist-00');
+        $orders->assertSee('hist-10');
+        $orders->assertSee('会員の絞り込みを解除');
     }
 
     public function test_members_delete_会員を削除できること(): void
@@ -500,7 +670,17 @@ class AdminMembersTest extends TestCase
             'note' => '手動来店',
         ]);
         $member->refresh();
-        $this->assertSame('2026-07-18', $member->last_visited_at->format('Y-m-d'));
+        $this->assertSame('2026-07-18 15:30', $member->last_visited_at->format('Y-m-d H:i'));
+
+        $detail = $this->actingAs($admin, 'admin')
+            ->get(route('admin.members.detail', [
+                'project_key' => $project->project_key,
+                'id' => $member->id,
+            ]));
+        $detail->assertStatus(200);
+        $detail->assertSee('15:30');
+        $detail->assertSee('来店回数');
+        $detail->assertSee('1回');
     }
 
     public function test_不正なメールでも会員プロフィール更新が失敗しないこと(): void

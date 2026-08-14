@@ -11,6 +11,24 @@ export type Announcement = {
     is_read?: boolean;
 };
 
+export function formatPublishedAt(value: string | undefined | null): string {
+    if (value === undefined || value === null || value === '') {
+        return '';
+    }
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+        return '';
+    }
+
+    return date.toLocaleString('ja-JP', {
+        year: 'numeric',
+        month: 'numeric',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+}
+
 function client(): ApiClient {
     const app = window.app as { apiClient?: ApiClient } | undefined;
     return app?.apiClient ?? new ApiClient();

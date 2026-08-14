@@ -22,7 +22,7 @@
                 $productSummary .= ' 他'.($visit->items->count() - 3).'点';
             }
         @endphp
-        <tr class="clickable-row" onclick="window.location='{{ $rowHref }}'" style="cursor:pointer;">
+        <tr class="clickable-row" onclick="window.location='{{ $rowHref }}'">
             <td>{{ $visit->visited_at->format('Y/m/d H:i') }}</td>
             <td>{{ \App\Enums\MemberVisitSource::getLabel($visit->source) }}</td>
             <td>

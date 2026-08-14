@@ -5,6 +5,7 @@ namespace App\Services\Admin;
 use App\Domain\Coupon\Repositories\MemberCouponRepository;
 use App\Domain\Coupon\ValueObjects\PendingIssuedCoupon;
 use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Enums\MemberStatus;
 use App\Enums\MemberVisitSource;
 use App\Enums\OrderStatus;
 use App\Enums\PointTransactionType;
@@ -55,44 +56,153 @@ class MemberAdminService
         private StampBalanceService $stampBalanceService,
     ) {}
 
+    /** @var array<string, string> */
+    private const LIST_SORT_COLUMNS = [
+        'id' => 'members.id',
+        'name' => 'users.name',
+        'points' => 'members.points',
+        'last_visited_at' => 'members.last_visited_at',
+        'created_at' => 'members.created_at',
+    ];
+
+    /**
+     * @param  array<string, string|null>  $filters
+     */
     public function getPaginatedList(int $projectId, int $perPage = 20, array $filters = []): LengthAwarePaginator
     {
-        $query = Member::with(['user.devices'])
-            ->where('project_id', $projectId);
+        return $this->memberListQuery($projectId, $filters)
+            ->with(['user.devices', 'tags'])
+            ->paginate($perPage);
+    }
 
+    /**
+     * @param  array<string, string|null>  $filters
+     */
+    public function getFilteredMembers(int $projectId, array $filters = []): Collection
+    {
+        return $this->memberListQuery($projectId, $filters)
+            ->with(['user.devices'])
+            ->get();
+    }
+
+    /**
+     * @param  array<string, string|null>  $filters
+     */
+    private function memberListQuery(int $projectId, array $filters): Builder
+    {
+        $query = Member::query()
+            ->leftJoin('users', function ($join): void {
+                $join->on('users.id', '=', 'members.user_id')
+                    ->whereNull('users.deleted_at');
+            })
+            ->select('members.*')
+            ->where('members.project_id', $projectId)
+            ->where('members.status', MemberStatus::ACTIVE);
+        $this->applyMemberListFilters($query, $filters);
+        $this->applyMemberListSort($query, $projectId, $filters);
+
+        return $query;
+    }
+
+    /**
+     * @param  array<string, string|null>  $filters
+     */
+    private function applyMemberListFilters(Builder $query, array $filters): void
+    {
         $keyword = trim((string) ($filters['keyword'] ?? ''));
         if ($keyword !== '') {
-            $query->where(function ($q) use ($keyword) {
-                $q->where('member_number', 'like', '%'.$keyword.'%')
-                    ->orWhereHas('user', fn ($uq) => $uq->where('name', 'like', '%'.$keyword.'%')
-                        ->orWhere('phone', 'like', '%'.$keyword.'%'));
+            $like = '%'.$keyword.'%';
+            $query->where(function (Builder $q) use ($like, $keyword): void {
+                $q->where('members.member_number', 'like', $like)
+                    ->orWhere('users.name', 'like', $like)
+                    ->orWhere('users.kana', 'like', $like)
+                    ->orWhere('users.phone', 'like', $like)
+                    ->orWhere('users.email', 'like', $like);
+                if (ctype_digit($keyword)) {
+                    $q->orWhere('members.id', (int) $keyword);
+                }
             });
         }
 
-        $status = (string) ($filters['status'] ?? '');
-        if ($status !== '') {
-            $query->where('status', $status);
-        }
-
-        $rank = (string) ($filters['rank'] ?? '');
+        $rank = trim((string) ($filters['rank'] ?? ''));
         if ($rank !== '') {
-            $query->where('rank', $rank);
+            $query->where('members.rank', $rank);
         }
 
-        $channel = (string) ($filters['channel'] ?? '');
+        $this->applyMemberListChannelFilter($query, trim((string) ($filters['channel'] ?? '')));
+
+        $tagId = $filters['tag_id'] ?? '';
+        if (is_numeric($tagId) && (int) $tagId > 0) {
+            $query->whereHas('tags', fn (Builder $q) => $q->where('member_tags.id', (int) $tagId));
+        }
+
+        $visitedFrom = DateUtil::nullableCarbon($filters['visited_from'] ?? null);
+        if ($visitedFrom !== null) {
+            $query->where('members.last_visited_at', '>=', $visitedFrom->startOfDay());
+        }
+        $visitedTo = DateUtil::nullableCarbon($filters['visited_to'] ?? null);
+        if ($visitedTo !== null) {
+            $query->where('members.last_visited_at', '<=', $visitedTo->endOfDay());
+        }
+    }
+
+    private function applyMemberListChannelFilter(Builder $query, string $channel): void
+    {
         if ($channel === MemberChannel::LINE) {
-            $query->whereHas('user', function ($uq) {
-                $uq->whereRaw('line_user_id REGEXP ?', ['^U[0-9a-fA-F]{32}$']);
-            });
-        } elseif ($channel === MemberChannel::APP) {
-            $query->whereHas('user.devices');
-        } elseif ($channel === MemberChannel::BOTH) {
-            $query->whereHas('user', function ($uq) {
-                $uq->whereRaw('line_user_id REGEXP ?', ['^U[0-9a-fA-F]{32}$']);
-            })->whereHas('user.devices');
-        }
+            $query->whereRaw('users.line_user_id REGEXP ?', ['^U[0-9a-fA-F]{32}$']);
 
-        return $query->orderByDesc('created_at')->paginate($perPage);
+            return;
+        }
+        if ($channel === MemberChannel::APP) {
+            $query->whereHas('user.devices');
+
+            return;
+        }
+        if ($channel === MemberChannel::BOTH) {
+            $query->whereRaw('users.line_user_id REGEXP ?', ['^U[0-9a-fA-F]{32}$'])
+                ->whereHas('user.devices');
+        }
+    }
+
+    /**
+     * @param  array<string, string|null>  $filters
+     */
+    private function applyMemberListSort(Builder $query, int $projectId, array $filters): void
+    {
+        $sort = (string) ($filters['sort'] ?? 'created_at');
+        $dir = ($filters['dir'] ?? '') === 'asc' ? 'asc' : 'desc';
+        if ($sort === 'rank') {
+            $this->applyMemberListRankSort($query, $projectId, $dir);
+
+            return;
+        }
+        if (! array_key_exists($sort, self::LIST_SORT_COLUMNS)) {
+            $sort = 'created_at';
+        }
+        $query->orderBy(self::LIST_SORT_COLUMNS[$sort], $dir)
+            ->orderByDesc('members.id');
+    }
+
+    private function applyMemberListRankSort(Builder $query, int $projectId, string $dir): void
+    {
+        $sql = 'CASE members.rank';
+        $bindings = [];
+        foreach ($this->shopSettingRepository->getMemberRankSettings($projectId) as $rank) {
+            $key = trim((string) ($rank['key'] ?? ''));
+            if ($key === '') {
+                continue;
+            }
+            $sql .= ' WHEN ? THEN ?';
+            $bindings[] = $key;
+            $bindings[] = (int) ($rank['min_points'] ?? 0);
+        }
+        $sql .= ' ELSE 0 END';
+        if ($bindings === []) {
+            $query->orderBy('members.rank', $dir)->orderByDesc('members.id');
+
+            return;
+        }
+        $query->orderByRaw($sql.' '.$dir, $bindings)->orderByDesc('members.id');
     }
 
     public function findOrFail(int $id, ?int $projectId = null): Member
@@ -140,6 +250,7 @@ class MemberAdminService
         $rankInfo = $this->rankCalculator->getRankInfo($member);
         $member->setAttribute('rank_label', $rankInfo['current_rank_label'] ?? $member->rank);
         $member->setAttribute('points_expiry', $this->expiryCalculator->getExpiryInfo($member));
+        $member->setAttribute('visits_count', $member->visits()->count());
 
         return $member;
     }
@@ -154,7 +265,8 @@ class MemberAdminService
      *     avg_order_value: float,
      *     last_order_at: ?Carbon,
      *     days_since_last_order: int|null,
-     *     recent_orders: Collection
+     *     recent_orders: Collection,
+     *     order_list_total: int
      * }
      */
     public function getPurchaseSummary(Member $member): array
@@ -164,6 +276,7 @@ class MemberAdminService
         $orderCount = 0;
         $lastOrderAt = null;
         $recentOrders = collect();
+        $orderListTotal = 0;
 
         if ($userId !== null) {
             $baseQuery = Order::where('user_id', $userId)
@@ -178,8 +291,9 @@ class MemberAdminService
             $recentOrders = Order::with('items.product')
                 ->where('user_id', $userId)
                 ->orderByDesc('created_at')
-                ->limit(5)
+                ->limit(self::HISTORY_PER_PAGE)
                 ->get();
+            $orderListTotal = Order::where('user_id', $userId)->count();
         }
 
         $posVisits = MemberVisit::query()
@@ -209,6 +323,7 @@ class MemberAdminService
             'last_order_at' => $lastPurchaseAt,
             'days_since_last_order' => $daysSinceLastOrder,
             'recent_orders' => $recentOrders,
+            'order_list_total' => $orderListTotal,
         ];
     }
 
@@ -347,7 +462,7 @@ class MemberAdminService
     }
 
     /**
-     * 来店を記録し、最終来店日を更新する。
+     * 来店を記録し、最終来店日時を更新する。
      */
     public function recordVisit(
         Member $member,
@@ -373,10 +488,9 @@ class MemberAdminService
             'smaregi_transaction_head_id' => $smaregiTransactionHeadId,
         ]);
 
-        $visitedDate = $visitedCarbon->toDateString();
         $currentLast = $member->last_visited_at;
-        if ($currentLast === null || $visitedDate > $currentLast->format('Y-m-d')) {
-            $member->update(['last_visited_at' => $visitedDate]);
+        if ($currentLast === null || $visitedCarbon->gt($currentLast)) {
+            $member->update(['last_visited_at' => $visitedCarbon]);
             $member->refresh();
         }
 
@@ -603,7 +717,7 @@ class MemberAdminService
         }
     }
 
-    public const HISTORY_PER_PAGE = 20;
+    public const HISTORY_PER_PAGE = 10;
 
     public function getPaginatedVisits(
         int $memberId,
