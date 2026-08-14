@@ -3,9 +3,12 @@
 namespace App\Http\Controllers\Admin\Settings;
 
 use App\Http\Controllers\Admin\AdminBaseController;
+use App\Services\Admin\PublicImageStorageService;
+use App\UseCases\Admin\AdminSavePublicImageUseCase;
 use App\UseCases\Admin\Settings\GetCouponsSettingsUseCase;
 use App\UseCases\Admin\Settings\UpdateCouponsSettingsUseCase;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 
 class CouponsController extends AdminBaseController
 {
@@ -36,10 +39,25 @@ class CouponsController extends AdminBaseController
     {
         $projectId = $this->resolveAdminProjectId();
         $validated = $request->validate([
-            'coupon_default_image_url' => 'nullable|url|max:500',
+            'coupon_default_image' => 'nullable|image|mimes:png,jpg,jpeg,gif,webp|max:2048',
+            'coupon_default_image_clear' => 'nullable|in:0,1',
             'feature_coupons_enabled' => 'nullable|boolean',
         ]);
-        $this->updateCouponsSettingsUseCase->handle($projectId, $validated);
+        $imageUrl = (string) ($this->getCouponsSettingsUseCase->handle($projectId)->couponDefaultImageUrl ?? '');
+        $imageFile = $request->file('coupon_default_image');
+        if ($imageFile instanceof UploadedFile) {
+            $imageUrl = resolve(AdminSavePublicImageUseCase::class)->handle(
+                $imageFile,
+                $projectId,
+                PublicImageStorageService::DIR_COUPON_DEFAULT,
+            );
+        } elseif ($request->input('coupon_default_image_clear') === '1') {
+            $imageUrl = '';
+        }
+        $this->updateCouponsSettingsUseCase->handle($projectId, [
+            'coupon_default_image_url' => $imageUrl,
+            'feature_coupons_enabled' => $validated['feature_coupons_enabled'] ?? false,
+        ]);
 
         return redirect()->route('admin.settings.coupons', $this->buildAdminRouteParams())
             ->with('success', 'クーポン設定を更新しました');

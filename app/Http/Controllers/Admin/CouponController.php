@@ -25,6 +25,7 @@ use App\UseCases\Admin\Coupon\AdminCouponStoreUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponSyncFromSmaregiUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponUpdateUseCase;
 use App\UseCases\Admin\Member\AdminMemberSearchByKeywordUseCase;
+use Illuminate\Http\UploadedFile;
 
 class CouponController extends AdminBaseController
 {
@@ -72,9 +73,10 @@ class CouponController extends AdminBaseController
     {
         $projectId = $this->resolveAdminProjectId();
         $validated = $request->validated();
-        if ($request->hasFile('image')) {
+        $imageFile = $request->file('image');
+        if ($imageFile instanceof UploadedFile) {
             $validated['image_url'] = $this->saveImageUseCase->handle(
-                $request->file('image'),
+                $imageFile,
                 $projectId,
                 PublicImageStorageService::DIR_COUPON,
             );
@@ -121,9 +123,10 @@ class CouponController extends AdminBaseController
     {
         $projectId = $this->resolveAdminProjectId();
         $validated = $request->validated();
-        if ($request->hasFile('image')) {
+        $imageFile = $request->file('image');
+        if ($imageFile instanceof UploadedFile) {
             $validated['image_url'] = $this->saveImageUseCase->handle(
-                $request->file('image'),
+                $imageFile,
                 $projectId,
                 PublicImageStorageService::DIR_COUPON,
             );

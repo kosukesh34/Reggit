@@ -63,6 +63,7 @@ class AdminMembersTest extends TestCase
             ->get(route('admin.members', ['project_key' => $project->project_key]));
 
         $response->assertStatus(200);
+        $response->assertSee('タグ');
         $response->assertSee('詳細');
         $response->assertSee('編集');
         $response->assertSee('削除');

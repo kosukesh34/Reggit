@@ -68,6 +68,7 @@ class ViteReactAssetsTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('id="react-admin-root"', false);
         $response->assertSee('/build/assets/', false);
+        $response->assertSee('css/admin/admin.css', false);
     }
 
     public function test_liffデザイナー画面がreact管理エントリで表示されること(): void

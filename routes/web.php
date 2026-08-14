@@ -32,6 +32,7 @@ use App\Http\Controllers\Admin\Settings\CouponsController;
 use App\Http\Controllers\Admin\Settings\FeaturesController as SettingsFeaturesController;
 use App\Http\Controllers\Admin\Settings\GalleryController;
 use App\Http\Controllers\Admin\Settings\HomeController as SettingsHomeController;
+use App\Http\Controllers\Admin\Settings\IndexController as SettingsIndexController;
 use App\Http\Controllers\Admin\Settings\LiffConnectionController as SettingsLiffConnectionController;
 use App\Http\Controllers\Admin\Settings\LiffDesignerController as SettingsLiffDesignerController;
 use App\Http\Controllers\Admin\Settings\LotteryController as SettingsLotteryController;
@@ -285,7 +286,8 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'bind.admin.project', '
         Route::get('/queue', [AdminQueueController::class, 'queue'])->name('admin.queue')->middleware('admin.permission:queue.view');
         Route::post('/queue/{id}/status', [AdminQueueController::class, 'updateQueueStatus'])->name('admin.queue.status')->middleware('admin.permission:queue.update');
 
-        Route::get('/settings', [SettingsBasicController::class, 'index'])->name('admin.settings.basic')->middleware('admin.permission:settings.view');
+        Route::get('/settings', [SettingsIndexController::class, 'index'])->name('admin.settings.index');
+        Route::get('/settings/basic', [SettingsBasicController::class, 'index'])->name('admin.settings.basic')->middleware('admin.permission:settings.view');
         Route::post('/settings/basic', [SettingsBasicController::class, 'update'])->name('admin.settings.basic.update')->middleware('admin.permission:settings.manage');
         Route::post('/settings/kitchen-token/regenerate', [SettingsBasicController::class, 'regenerateKitchenToken'])->name('admin.settings.kitchen-token.regenerate')->middleware('admin.permission:settings.manage');
         Route::get('/settings/advanced', [SettingsAdvancedController::class, 'index'])->name('admin.settings.advanced')->middleware('admin.permission:settings.view');

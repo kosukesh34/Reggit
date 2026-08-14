@@ -10,7 +10,7 @@
 </div>
 @include('admin.settings._context', ['pageKey' => 'coupons'])
 @if(session('success'))<div class="alert alert-success"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>@endif
-<form action="{{ admin_route('admin.settings.coupons.update') }}" method="POST">
+<form action="{{ admin_route('admin.settings.coupons.update') }}" method="POST" enctype="multipart/form-data">
     @csrf
     <div class="card">
         <div class="card-body">
@@ -22,11 +22,14 @@
                     <span>クーポン機能を有効にする</span>
                 </label>
             </div>
-            <div class="form-group">
-                <label class="form-label">クーポン用デフォルト画像URL</label>
-                <input type="url" name="coupon_default_image_url" class="form-control" value="{{ old('coupon_default_image_url', $couponDefaultImageUrl) }}" maxlength="500" placeholder="https://...">
-                <small class="form-text text-muted">クーポンに画像を指定していない場合に表示する画像のURLです。</small>
-            </div>
+            @include('admin.partials._frontend_logo_dropzone', [
+                'logoInputName' => 'coupon_default_image',
+                'logoClearName' => 'coupon_default_image_clear',
+                'logoFieldId' => 'coupon_default_image',
+                'logoCurrentUrl' => (string) old('coupon_default_image_url', $couponDefaultImageUrl),
+                'logoLabel' => 'クーポン用デフォルト画像',
+                'logoHelp' => 'クーポンに画像を指定していない場合に表示する画像です。',
+            ])
             <div class="form-actions"><button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> 保存</button> <a href="{{ admin_route('admin.coupons') }}" class="btn btn-secondary">クーポン一覧へ</a></div>
         </div>
     </div>
