@@ -10,7 +10,7 @@
     <span>編集</span>
 </nav>
 <div class="page-header">
-    <p class="page-header-desc">割引と渡し方を更新します。すでに渡したクーポンには影響しません。</p>
+    <p class="page-header-desc">特典内容と利用条件を更新します。すでに配布したクーポンには影響しません。</p>
 </div>
 @if(session('error'))
 <div class="alert alert-danger" role="alert">{{ session('error') }}</div>
@@ -25,7 +25,6 @@
     @method('PUT')
     @include('admin.coupons._form', [
         'coupon' => $coupon,
-        'stampCards' => $stampCards ?? [],
         'submitLabel' => '変更を保存',
         'cancelUrl' => admin_route('admin.coupons'),
     ])
@@ -39,6 +38,6 @@
 </form>
 </div>
 @push('styles')
-<link rel="stylesheet" href="{{ asset('css/admin/coupons.css') }}?v={{ config('app.asset_version') }}">
+<link rel="stylesheet" href="{{ asset('css/admin/coupons.css') }}?v={{ (int) @filemtime(public_path('css/admin/coupons.css')) }}">
 @endpush
 @endsection

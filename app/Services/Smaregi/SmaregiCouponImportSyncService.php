@@ -2,6 +2,8 @@
 
 namespace App\Services\Smaregi;
 
+use App\Enums\CouponApplyConditionDivision;
+use App\Enums\CouponCombineDivision;
 use App\Models\Coupon;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
@@ -217,6 +219,15 @@ class SmaregiCouponImportSyncService
         $value = (float) ($row['awardValue'] ?? 0);
         $summary = isset($row['summary']) ? trim((string) $row['summary']) : null;
         $minTarget = isset($row['minTargetPrice']) ? (int) $row['minTargetPrice'] : 0;
+        $maxTarget = isset($row['maxTargetPrice']) ? (int) $row['maxTargetPrice'] : 0;
+        $applyCondition = (string) ($row['applyConditionDivision'] ?? CouponApplyConditionDivision::ALL);
+        if (! in_array($applyCondition, CouponApplyConditionDivision::keys(), true)) {
+            $applyCondition = CouponApplyConditionDivision::ALL;
+        }
+        $combineDivision = (string) ($row['combineDivision'] ?? CouponCombineDivision::ALLOWED);
+        if (! in_array($combineDivision, CouponCombineDivision::keys(), true)) {
+            $combineDivision = CouponCombineDivision::ALLOWED;
+        }
 
         $attrs = [
             'code' => mb_substr($code, 0, 64),
@@ -225,6 +236,9 @@ class SmaregiCouponImportSyncService
             'type' => $type,
             'value' => $value,
             'min_order_amount' => $minTarget > 0 ? $minTarget : 0,
+            'max_order_amount' => $maxTarget > 0 ? $maxTarget : null,
+            'apply_condition_division' => $applyCondition,
+            'combine_division' => $combineDivision,
             'is_active' => true,
             'issue_trigger' => Coupon::ISSUE_TRIGGER_MANUAL,
             'use_display' => Coupon::USE_DISPLAY_BARCODE,

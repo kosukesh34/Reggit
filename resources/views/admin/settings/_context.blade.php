@@ -56,10 +56,10 @@
         'coupons' => [
             'title' => 'クーポン設定の役割',
             'changes' => ['クーポン機能ON/OFF', '画像未設定時のデフォルト画像URL'],
-            'notes' => ['クーポンの作成・配布は「クーポン一覧 / 一括配布」で行います。'],
+            'notes' => ['クーポンの内容は「クーポン一覧」で管理し、会員への配布は「お知らせ配信」で行います。'],
             'links' => [
                 ['label' => 'クーポン一覧', 'url' => admin_route('admin.coupons'), 'permission' => 'coupons.view'],
-                ['label' => '一括配布', 'url' => admin_route('admin.coupons.bulk-issue'), 'permission' => 'coupons.manage'],
+                ['label' => 'お知らせで配布', 'url' => admin_route('admin.announcements.delivery.create'), 'permission' => 'announcements.manage'],
                 ['label' => 'ガチャ・スクラッチ', 'url' => admin_route('admin.settings.lottery'), 'permission' => 'coupons.view'],
             ],
         ],
@@ -78,7 +78,7 @@
             'notes' => ['実際の投稿と配信は「お知らせ一覧 / 配信」から行います。'],
             'links' => [
                 ['label' => 'お知らせ一覧', 'url' => admin_route('admin.announcements'), 'permission' => 'announcements.view'],
-                ['label' => '配信', 'url' => admin_route('admin.announcements.delivery.create'), 'permission' => 'announcements.manage'],
+                ['label' => 'お知らせを配信', 'url' => admin_route('admin.announcements.delivery.create'), 'permission' => 'announcements.manage'],
             ],
         ],
         'gallery' => [
