@@ -12,8 +12,8 @@
 <div class="card">
     <div class="card-header card-header-with-action">
         <h3 class="card-title"><i class="fas fa-user-cog"></i> 管理者アカウント一覧</h3>
-        @if($me->isStaff() === false)
-            <a href="{{ route("{$routePrefix}.accounts.create", $routePrefix === 'admin' ? ['project_key' => request()->route('project_key')] : []) }}" class="btn btn-primary"><i class="fas fa-plus"></i> 新規作成</a>
+        @if($view->me->isStaff() === false)
+            <a href="{{ route("{$view->routePrefix}.accounts.create", $view->routePrefix === 'admin' ? ['project_key' => request()->route('project_key')] : []) }}" class="btn btn-primary"><i class="fas fa-plus"></i> 新規作成</a>
         @endif
     </div>
     <table class="table">
@@ -29,7 +29,7 @@
             </tr>
         </thead>
         <tbody>
-            @forelse($adminUsers as $au)
+            @forelse($view->adminUsers as $au)
             <tr>
                 <td><span class="id-badge">{{ $au->id }}</span></td>
                 <td><code>{{ $au->login_id }}</code></td>
@@ -58,15 +58,15 @@
                 </td>
                 <td class="table-actions-cell">
                     <div class="table-actions">
-                        @if($me->canEditUser($au))
-                            <a href="{{ route("{$routePrefix}.accounts.edit", array_merge(
+                        @if($view->me->canEditUser($au))
+                            <a href="{{ route("{$view->routePrefix}.accounts.edit", array_merge(
                                 ['id' => $au->id],
-                                $routePrefix === 'admin' ? ['project_key' => request()->route('project_key')] : []
+                                $view->routePrefix === 'admin' ? ['project_key' => request()->route('project_key')] : []
                             )) }}" class="btn btn-action btn-edit"><i class="fas fa-edit"></i> 編集</a>
-                            @if($au->id !== $me->id)
-                                <form action="{{ route("{$routePrefix}.accounts.destroy", array_merge(
+                            @if($au->id !== $view->me->id)
+                                <form action="{{ route("{$view->routePrefix}.accounts.destroy", array_merge(
                                     ['id' => $au->id],
-                                    $routePrefix === 'admin' ? ['project_key' => request()->route('project_key')] : []
+                                    $view->routePrefix === 'admin' ? ['project_key' => request()->route('project_key')] : []
                                 )) }}" method="POST" class="d-inline" onsubmit="return confirm('このアカウントを削除しますか？');">
                                     @csrf
                                     @method('DELETE')
@@ -88,7 +88,7 @@
         </tbody>
     </table>
     <div class="pagination">
-        {{ $adminUsers->links('vendor.pagination.admin') }}
+        {{ $view->adminUsers->links('vendor.pagination.admin') }}
     </div>
 </div>
 @endsection
