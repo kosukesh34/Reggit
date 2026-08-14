@@ -53,7 +53,7 @@ class MemberController extends AdminBaseController
     public function members(Request $request)
     {
         $projectId = $this->resolveAdminProjectId();
-        $filters = $request->only(['keyword', 'status', 'rank', 'channel']);
+        $filters = $request->only(['keyword', 'rank', 'channel', 'tag_id', 'visited_from', 'visited_to', 'sort', 'dir']);
         $output = $this->listUseCase->handle($projectId, $filters);
         $extras = $this->memberListExtrasUseCase->handle($projectId);
 
@@ -62,6 +62,8 @@ class MemberController extends AdminBaseController
             $filters,
             $extras->lineInviteUrl,
             $extras->lineInviteLabel,
+            $output->rankOptions,
+            $this->tagIndexUseCase->handle($projectId),
         )]);
     }
 
@@ -304,7 +306,7 @@ class MemberController extends AdminBaseController
     public function export(Request $request)
     {
         $projectId = $this->resolveAdminProjectId();
-        $filters = $request->only(['keyword', 'status', 'channel']);
+        $filters = $request->only(['keyword', 'rank', 'channel', 'tag_id', 'visited_from', 'visited_to', 'sort', 'dir']);
         $rows = $this->exportUseCase->handle($projectId, $filters);
 
         $csvHeader = array_keys($rows->first() ?? []);

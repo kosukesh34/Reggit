@@ -3,48 +3,23 @@
 namespace App\UseCases\Admin\Member;
 
 use App\Models\Member;
+use App\Services\Admin\MemberAdminService;
 use App\Support\MemberChannel;
 use Illuminate\Support\Collection;
 
 class AdminMemberExportUseCase
 {
+    public function __construct(
+        private MemberAdminService $memberAdminService,
+    ) {}
+
     /**
-     * @param  array<string, string>  $filters
+     * @param  array<string, string|null>  $filters
      * @return Collection<int, array<string, string>>
      */
     public function handle(int $projectId, array $filters): Collection
     {
-        $query = Member::with(['user.devices'])
-            ->where('project_id', $projectId);
-
-        $keyword = trim((string) ($filters['keyword'] ?? ''));
-        if ($keyword !== '') {
-            $query->where(function ($q) use ($keyword): void {
-                $q->where('member_number', 'like', '%'.$keyword.'%')
-                    ->orWhereHas('user', fn ($uq) => $uq->where('name', 'like', '%'.$keyword.'%'));
-            });
-        }
-
-        $status = (string) ($filters['status'] ?? '');
-        if ($status !== '') {
-            $query->where('status', $status);
-        }
-
-        $channel = (string) ($filters['channel'] ?? '');
-        if ($channel === MemberChannel::LINE) {
-            $query->whereHas('user', function ($uq) {
-                $uq->whereRaw('line_user_id REGEXP ?', ['^U[0-9a-fA-F]{32}$']);
-            });
-        } elseif ($channel === MemberChannel::APP) {
-            $query->whereHas('user.devices');
-        } elseif ($channel === MemberChannel::BOTH) {
-            $query->whereHas('user', function ($uq) {
-                $uq->whereRaw('line_user_id REGEXP ?', ['^U[0-9a-fA-F]{32}$']);
-            })->whereHas('user.devices');
-        }
-
-        return $query->orderByDesc('created_at')
-            ->get()
+        return $this->memberAdminService->getFilteredMembers($projectId, $filters)
             ->map(function (Member $m): array {
                 $user = $m->user;
 
@@ -57,7 +32,7 @@ class AdminMemberExportUseCase
                     '電話番号' => (string) ($user !== null ? $user->phone : ''),
                     'ポイント' => (string) $m->getDisplayPoints(),
                     'ランク' => (string) ($m->rank ?? ''),
-                    'ステータス' => $m->status === 'active' ? '有効' : '無効',
+                    '最終来店' => $m->last_visited_at !== null ? $m->last_visited_at->format('Y/m/d H:i') : '',
                     '登録日' => $m->created_at->format('Y/m/d H:i'),
                 ];
             });

@@ -154,7 +154,7 @@ export function CollectionDemo({ feature, featureImage, heroImage, news, stores,
               <span className="news-article__category">{selectedNews.category}</span>
               <time className="news-article__date">
                 <CalendarDays size={14} aria-hidden="true" />
-                {formatDisplayDate(selectedNews.date, "yyyy年M月d日", selectedNews.date)}
+                {formatDisplayDate(selectedNews.date, "yyyy年M月d日 HH:mm", selectedNews.date)}
               </time>
             </div>
             <h1 className="news-article__title">{selectedNews.title}</h1>
@@ -187,7 +187,7 @@ export function CollectionDemo({ feature, featureImage, heroImage, news, stores,
               <div className="news-feed-item__body">
                 <div className="news-feed-item__meta">
                   <span>{item.category}</span>
-                  <time>{formatDisplayDate(item.date, "yyyy.MM.dd", item.date)}</time>
+                  <time>{formatDisplayDate(item.date, "yyyy.MM.dd HH:mm", item.date)}</time>
                   {item.isRead !== true ? <span className="news-feed-item__new">NEW</span> : null}
                 </div>
                 <h2 className="news-feed-item__title">{item.title}</h2>

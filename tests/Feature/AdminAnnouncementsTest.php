@@ -117,6 +117,7 @@ class AdminAnnouncementsTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee('夏のキャンペーン');
+        $response->assertSee('2026/07/10 10:00');
         $response->assertDontSee('冬のキャンペーン');
     }
 

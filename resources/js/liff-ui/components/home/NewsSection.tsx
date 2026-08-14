@@ -25,7 +25,7 @@ export function NewsSection({ news }: NewsSectionProps) {
                 <span className="news-row__category">{latest.category}</span>
                 <span className="news-row__date">
                   <Calendar size={12} />
-                  {formatDisplayDate(latest.date, "yyyy.MM.dd", "日付未設定")}
+                  {formatDisplayDate(latest.date, "yyyy.MM.dd HH:mm", "日付未設定")}
                 </span>
               </div>
               <div className="news-row__title">{latest.title}</div>
