@@ -11,7 +11,6 @@ use App\Services\Admin\PublicImageStorageService;
 use App\UseCases\Admin\AdminSavePublicImageUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponBulkIssueFormUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponBulkIssueUseCase;
-use App\UseCases\Admin\Coupon\AdminCouponCreateFormUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponDeleteUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponDeliveryDetailUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponDeliveryPreviewMembersUseCase;
@@ -31,7 +30,6 @@ class CouponController extends AdminBaseController
 {
     public function __construct(
         private AdminCouponIndexUseCase $indexUseCase,
-        private AdminCouponCreateFormUseCase $createFormUseCase,
         private AdminCouponStoreUseCase $storeUseCase,
         private AdminCouponEditFormUseCase $editFormUseCase,
         private AdminCouponUpdateUseCase $updateUseCase,
@@ -59,14 +57,9 @@ class CouponController extends AdminBaseController
 
     public function createCoupon()
     {
-        $projectId = $this->resolveAdminProjectId();
-        $output = $this->createFormUseCase->handle($projectId);
-        $returnTo = request('return') === 'bulk-issue' ? 'bulk-issue' : null;
+        $this->resolveAdminProjectId();
 
-        return view('admin.coupons.create', [
-            'stampCards' => $output->stampCards,
-            'returnTo' => $returnTo,
-        ]);
+        return view('admin.coupons.create');
     }
 
     public function storeCoupon(CouponStoreRequest $request)
@@ -82,27 +75,15 @@ class CouponController extends AdminBaseController
             );
         }
         unset($validated['image']);
-        $returnTo = $request->input('return') === 'bulk-issue' ? 'bulk-issue' : null;
         try {
             $coupon = $this->storeUseCase->handle($projectId, $validated);
         } catch (\RuntimeException $e) {
-            $createParams = $this->buildAdminRouteParams();
-            if ($returnTo === 'bulk-issue') {
-                $createParams['return'] = 'bulk-issue';
-            }
-
-            return redirect()->route('admin.coupons.create', $createParams)
+            return redirect()->route('admin.coupons.create', $this->buildAdminRouteParams())
                 ->withInput()
                 ->with('error', $e->getMessage());
         }
 
         $smaregiNote = $coupon->smaregi_coupon_id ? '（スマレジにも反映済み）' : '';
-
-        if ($returnTo === 'bulk-issue') {
-            return redirect()->route('admin.coupons.bulk-issue', array_merge($this->buildAdminRouteParams(), [
-                'coupon_id' => $coupon->id,
-            ]))->with('success', 'クーポンを作成しました'.$smaregiNote.'。続けて配布条件を設定してください。');
-        }
 
         return redirect()->route('admin.coupons', $this->buildAdminRouteParams())
             ->with('success', 'クーポンを作成しました'.$smaregiNote);

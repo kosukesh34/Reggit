@@ -9,6 +9,7 @@
 
 .coupon-item-image {
     width: 100%;
+    aspect-ratio: var(--coupon-media-aspect, 16 / 9);
     border-radius: 12px;
     overflow: hidden;
     margin-bottom: 12px;
@@ -18,11 +19,18 @@
 .coupon-item-image img {
     display: block;
     width: 100%;
-    height: 140px;
+    height: 100%;
     object-fit: cover;
 }
 
+.coupon-item-image--fit-contain img,
+.coupon-image--fit-contain img {
+    object-fit: contain;
+    background: var(--bg-secondary);
+}
+
 .coupon-item-image--icon {
+    aspect-ratio: auto;
     display: flex;
     align-items: center;
     justify-content: center;

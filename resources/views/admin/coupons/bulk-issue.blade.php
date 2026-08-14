@@ -8,7 +8,7 @@
 @php
     $selectedCouponId = old('coupon_id', request('coupon_id'));
     $oldDeliveryType = old('delivery_type', $view->defaultDeliveryType ?? \App\Enums\CouponDeliveryType::IMMEDIATE_ALL);
-    $createUrl = admin_route('admin.coupons.create', ['return' => 'bulk-issue']);
+    $createUrl = admin_route('admin.coupons.create');
 @endphp
 
 <div class="coupon-admin">

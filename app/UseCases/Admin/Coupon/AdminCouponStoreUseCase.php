@@ -19,9 +19,11 @@ class AdminCouponStoreUseCase
     {
         if ($isQuickCreate) {
             $validated['is_active'] = true;
-            $validated['issue_trigger'] = Coupon::ISSUE_TRIGGER_MANUAL;
             $validated['use_display'] = $validated['use_display'] ?? Coupon::USE_DISPLAY_BARCODE;
         }
+        // クーポン作成では配布条件を持たせない。配布はお知らせ配信から行う。
+        $validated['issue_trigger'] = Coupon::ISSUE_TRIGGER_MANUAL;
+        $validated['stamp_card_id'] = null;
         $validated['design_template'] = Coupon::DESIGN_CLASSIC;
 
         return $this->couponAdminService->create($projectId, $validated);
