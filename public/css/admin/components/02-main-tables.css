@@ -1,54 +1,54 @@
 /* ===== ボタンバリエーション ===== */
 .btn-primary {
-    background: var(--primary);
-    color: #fff;
-    border-color: var(--primary);
+    background: var(--primary-bg);
+    color: var(--primary);
+    border-color: color-mix(in srgb, var(--primary) 22%, #fff);
 }
 
 .btn-primary:hover {
-    background: var(--primary-hover);
-    border-color: var(--primary-hover);
+    background: var(--primary-bg-hover);
+    border-color: var(--primary-light);
     box-shadow: var(--shadow-xs);
 }
 
 .btn-primary,
 .btn-primary i {
-    color: #fff !important;
+    color: var(--primary) !important;
 }
 
 .btn-success {
-    background: var(--success);
-    color: #fff;
-    border-color: var(--success);
+    background: var(--success-bg);
+    color: var(--success);
+    border-color: color-mix(in srgb, var(--success) 22%, #fff);
 }
 
 .btn-success:hover {
-    background: var(--success-hover);
-    border-color: var(--success-hover);
+    background: color-mix(in srgb, var(--success) 16%, #fff);
+    border-color: var(--success);
     box-shadow: var(--shadow-xs);
 }
 
 .btn-success,
 .btn-success i {
-    color: #fff !important;
+    color: var(--success) !important;
 }
 
 .btn-danger {
-    background: var(--danger);
-    color: #fff;
-    border-color: var(--danger);
+    background: var(--danger-bg);
+    color: var(--danger);
+    border-color: color-mix(in srgb, var(--danger) 22%, #fff);
     font-weight: 600;
 }
 
 .btn-danger:hover {
-    background: var(--danger-hover);
-    border-color: var(--danger-hover);
+    background: color-mix(in srgb, var(--danger) 16%, #fff);
+    border-color: var(--danger);
     box-shadow: var(--shadow-xs);
 }
 
 .btn-danger,
 .btn-danger i {
-    color: #fff !important;
+    color: var(--danger) !important;
 }
 
 .btn-secondary {
@@ -68,36 +68,36 @@
 }
 
 .btn-info {
-    background: var(--info);
-    color: #fff;
-    border-color: var(--info);
+    background: var(--info-bg);
+    color: var(--info);
+    border-color: color-mix(in srgb, var(--info) 22%, #fff);
 }
 
 .btn-info:hover {
-    background: var(--info-hover);
-    border-color: var(--info-hover);
+    background: color-mix(in srgb, var(--info) 16%, #fff);
+    border-color: var(--info);
     box-shadow: var(--shadow-xs);
 }
 
 .btn-info,
 .btn-info i {
-    color: #fff !important;
+    color: var(--info) !important;
 }
 
 .btn-warning {
-    background: var(--warning);
-    color: #fff;
-    border-color: var(--warning);
+    background: var(--warning-bg);
+    color: var(--warning);
+    border-color: color-mix(in srgb, var(--warning) 22%, #fff);
 }
 
 .btn-warning:hover {
-    background: var(--warning-hover);
-    border-color: var(--warning-hover);
+    background: color-mix(in srgb, var(--warning) 16%, #fff);
+    border-color: var(--warning);
 }
 
 .btn-warning,
 .btn-warning i {
-    color: #fff !important;
+    color: var(--warning) !important;
 }
 
 .btn-outline-primary {
@@ -276,14 +276,14 @@
 }
 
 .btn-action.btn-edit {
-    background: var(--primary);
-    color: #fff;
-    border: 1px solid var(--primary);
+    background: var(--primary-bg);
+    color: var(--primary);
+    border: 1px solid color-mix(in srgb, var(--primary) 22%, #fff);
 }
 
 .btn-action.btn-edit:hover {
-    background: var(--primary-hover);
-    border-color: var(--primary-hover);
+    background: var(--primary-bg-hover);
+    border-color: var(--primary-light);
     box-shadow: var(--shadow-xs);
 }
 
@@ -299,42 +299,42 @@
 }
 
 .btn-action.btn-success {
-    background: var(--success);
-    color: #fff;
-    border: 1px solid var(--success);
+    background: var(--success-bg);
+    color: var(--success);
+    border: 1px solid color-mix(in srgb, var(--success) 22%, #fff);
 }
 
 .btn-action.btn-success:hover {
-    background: var(--success-hover);
-    border-color: var(--success-hover);
+    background: color-mix(in srgb, var(--success) 16%, #fff);
+    border-color: var(--success);
     box-shadow: var(--shadow-xs);
 }
 
 .btn-action.btn-info {
-    background: var(--info);
-    color: #fff;
-    border: 1px solid var(--info);
+    background: var(--info-bg);
+    color: var(--info);
+    border: 1px solid color-mix(in srgb, var(--info) 22%, #fff);
 }
 
 .btn-action.btn-info:hover {
-    background: var(--info-hover);
-    border-color: var(--info-hover);
+    background: color-mix(in srgb, var(--info) 16%, #fff);
+    border-color: var(--info);
 }
 
 .btn-action.btn-danger {
-    background: var(--danger);
-    color: #fff;
-    border: 1px solid var(--danger);
+    background: var(--danger-bg);
+    color: var(--danger);
+    border: 1px solid color-mix(in srgb, var(--danger) 22%, #fff);
 }
 
 .btn-action.btn-danger:hover {
-    background: var(--danger-hover);
-    border-color: var(--danger-hover);
+    background: color-mix(in srgb, var(--danger) 16%, #fff);
+    border-color: var(--danger);
     box-shadow: var(--shadow-xs);
 }
 
 .btn-action.btn-danger i {
-    color: #fff !important;
+    color: var(--danger) !important;
 }
 
 /* ===== Info Box ===== */
