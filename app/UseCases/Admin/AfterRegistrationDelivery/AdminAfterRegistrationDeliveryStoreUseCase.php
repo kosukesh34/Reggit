@@ -11,7 +11,7 @@ class AdminAfterRegistrationDeliveryStoreUseCase
         private AfterRegistrationDeliveryAdminService $service
     ) {}
 
-    /** @param array{delay_minutes: string, title: string, body?: string, coupon_id?: string, is_active?: string} $validated */
+    /** @param array<string, mixed> $validated */
     public function handle(int $projectId, array $validated): AfterRegistrationDelivery
     {
         return $this->service->create($projectId, $validated);
