@@ -26,12 +26,7 @@ class QueueController extends AdminBaseController
         $projectId = $this->resolveAdminProjectId();
         $output = $this->indexUseCase->handle($projectId);
 
-        return view('admin.queue.index', [
-            'entries' => $output->entries,
-            'waitingCount' => $output->waitingCount,
-            'estimatedWaitMinutes' => $output->estimatedWaitMinutes,
-            'waitingQueueNumbers' => $output->waitingQueueNumbers,
-        ]);
+        return view('admin.queue.index', ['view' => $output]);
     }
 
     public function updateQueueStatus(QueueStatusRequest $request, string $projectKey, int $id)

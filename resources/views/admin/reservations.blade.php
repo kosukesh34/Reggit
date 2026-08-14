@@ -34,7 +34,7 @@
             <div class="filter-grid">
                 <div class="form-group">
                     <label class="form-label">予約日</label>
-                    <input type="date" name="date" class="form-control" value="{{ $selectedDate }}">
+                    <input type="date" name="date" class="form-control" value="{{ $view->selectedDate }}">
                 </div>
                 <input type="hidden" name="status" value="{{ request('status', 'all') }}">
             </div>
@@ -72,27 +72,27 @@
         <a href="{{ admin_route('admin.reservations', array_merge($filterQuery, ['status' => 'all'])) }}" 
            class="status-filter {{ !request('status') || request('status') === 'all' ? 'active' : '' }}">
             <i class="fas fa-list"></i> すべて
-            <span class="badge">{{ $statusCounts['all'] }}</span>
+            <span class="badge">{{ $view->statusCounts['all'] }}</span>
         </a>
         <a href="{{ admin_route('admin.reservations', array_merge($filterQuery, ['status' => 'pending'])) }}" 
            class="status-filter {{ request('status') === 'pending' ? 'active' : '' }}">
             <i class="fas fa-clock"></i> 予約待ち
-            <span class="badge badge-warning">{{ $statusCounts['pending'] }}</span>
+            <span class="badge badge-warning">{{ $view->statusCounts['pending'] }}</span>
         </a>
         <a href="{{ admin_route('admin.reservations', array_merge($filterQuery, ['status' => 'confirmed'])) }}" 
            class="status-filter {{ request('status') === 'confirmed' ? 'active' : '' }}">
             <i class="fas fa-check-circle"></i> 確認済み
-            <span class="badge badge-info">{{ $statusCounts['confirmed'] }}</span>
+            <span class="badge badge-info">{{ $view->statusCounts['confirmed'] }}</span>
         </a>
         <a href="{{ admin_route('admin.reservations', array_merge($filterQuery, ['status' => 'completed'])) }}" 
            class="status-filter {{ request('status') === 'completed' ? 'active' : '' }}">
             <i class="fas fa-check-double"></i> 完了
-            <span class="badge badge-success">{{ $statusCounts['completed'] }}</span>
+            <span class="badge badge-success">{{ $view->statusCounts['completed'] }}</span>
         </a>
         <a href="{{ admin_route('admin.reservations', array_merge($filterQuery, ['status' => 'cancelled'])) }}" 
            class="status-filter {{ request('status') === 'cancelled' ? 'active' : '' }}">
             <i class="fas fa-times-circle"></i> キャンセル
-            <span class="badge badge-danger">{{ $statusCounts['cancelled'] }}</span>
+            <span class="badge badge-danger">{{ $view->statusCounts['cancelled'] }}</span>
         </a>
     </div>
 </div>
@@ -101,40 +101,40 @@
     <div class="card-header">
         <h3 class="card-title"><i class="fas fa-chart-bar"></i> 予約状況</h3>
         <span class="card-header-note">
-            1枠上限: {{ $reservationCapacity }}件
+            1枠上限: {{ $view->reservationCapacity }}件
         </span>
     </div>
     <div class="card-body">
-        @if($selectedDate && $dateStatusCounts)
+        @if($view->selectedDate && $view->dateStatusCounts)
             <div class="reservation-summary">
                 <div class="summary-date">
-                    <i class="fas fa-calendar-day"></i> {{ $selectedDateLabel }} の予約状況
+                    <i class="fas fa-calendar-day"></i> {{ $view->selectedDateLabel }} の予約状況
                 </div>
                 <div class="reservation-stats-row">
                     <div class="reservation-stat-pill reservation-stat-pill--total">
                         <span class="reservation-stat-pill-label">合計</span>
-                        <span class="reservation-stat-pill-value">{{ $dateStatusCounts['all'] }}</span>
+                        <span class="reservation-stat-pill-value">{{ $view->dateStatusCounts['all'] }}</span>
                     </div>
                     <div class="reservation-stat-pill reservation-stat-pill--pending">
                         <span class="reservation-stat-pill-label"><i class="fas fa-clock"></i> 予約待ち</span>
-                        <span class="reservation-stat-pill-value">{{ $dateStatusCounts['pending'] }}</span>
+                        <span class="reservation-stat-pill-value">{{ $view->dateStatusCounts['pending'] }}</span>
                     </div>
                     <div class="reservation-stat-pill reservation-stat-pill--confirmed">
                         <span class="reservation-stat-pill-label"><i class="fas fa-check-circle"></i> 確認済み</span>
-                        <span class="reservation-stat-pill-value">{{ $dateStatusCounts['confirmed'] }}</span>
+                        <span class="reservation-stat-pill-value">{{ $view->dateStatusCounts['confirmed'] }}</span>
                     </div>
                     <div class="reservation-stat-pill reservation-stat-pill--completed">
                         <span class="reservation-stat-pill-label"><i class="fas fa-check-double"></i> 完了</span>
-                        <span class="reservation-stat-pill-value">{{ $dateStatusCounts['completed'] }}</span>
+                        <span class="reservation-stat-pill-value">{{ $view->dateStatusCounts['completed'] }}</span>
                     </div>
                     <div class="reservation-stat-pill reservation-stat-pill--cancelled">
                         <span class="reservation-stat-pill-label"><i class="fas fa-times-circle"></i> キャンセル</span>
-                        <span class="reservation-stat-pill-value">{{ $dateStatusCounts['cancelled'] }}</span>
+                        <span class="reservation-stat-pill-value">{{ $view->dateStatusCounts['cancelled'] }}</span>
                     </div>
                 </div>
             </div>
             <div class="time-slot-grid">
-                @foreach($timeSlotSummary as $slot)
+                @foreach($view->timeSlotSummary as $slot)
                     <div class="time-slot-card {{ $slot['is_full'] ? 'is-full' : 'is-open' }}">
                         <div class="time-slot-time">{{ $slot['time'] }}</div>
                         <div class="time-slot-count">{{ $slot['count'] }} / {{ $slot['capacity'] }}件</div>
@@ -171,7 +171,7 @@
             </tr>
         </thead>
         <tbody>
-            @forelse($reservations as $reservation)
+            @forelse($view->reservations as $reservation)
             <tr>
                 <td><a href="{{ admin_route('admin.reservations.detail', ['id' => $reservation->id]) }}">{{ $reservation->formattedReservationNumber() }}</a></td>
                 <td>
@@ -241,7 +241,7 @@
         </tbody>
     </table>
     <div class="pagination">
-        {{ $reservations->links('vendor.pagination.admin') }}
+        {{ $view->reservations->links('vendor.pagination.admin') }}
     </div>
 </div>
 @endsection

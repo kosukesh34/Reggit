@@ -26,11 +26,7 @@ class AnnouncementsController extends AdminBaseController
         $projectId = $this->resolveAdminProjectId();
         $view = $this->getAnnouncementsSettingsUseCase->handle($projectId);
 
-        return view('admin.settings.announcements', [
-            'featureEnabled' => $view->featureEnabled,
-            'defaultPinned' => $view->defaultPinned,
-            'defaultExpiryDays' => $view->defaultExpiryDays,
-        ]);
+        return view('admin.settings.announcements', ['view' => $view]);
     }
 
     public function update(Request $request)

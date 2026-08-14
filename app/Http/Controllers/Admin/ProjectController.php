@@ -6,6 +6,7 @@ use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ProjectStoreRequest;
 use App\Http\Requests\Admin\ProjectUpdateRequest;
+use App\UseCases\Admin\Project\Data\ProjectFormView;
 use App\UseCases\Admin\Project\ProjectEditUseCase;
 use App\UseCases\Admin\Project\ProjectIndexUseCase;
 use App\UseCases\Admin\Project\ProjectStoreUseCase;
@@ -30,9 +31,9 @@ class ProjectController extends Controller
 
     public function create()
     {
-        return view('admin.projects.create', [
-            'project' => null,
-            'projectSettings' => [
+        return view('admin.projects.create', ['view' => new ProjectFormView(
+            null,
+            [
                 'line_liff_id' => trim((string) config('line.liff_id', '')),
                 'line_liff_url' => trim((string) config('line.liff_url', '')),
                 'frontend_header_text' => '',
@@ -44,7 +45,7 @@ class ProjectController extends Controller
                 'line_success_color' => '#000000',
                 'line_danger_color' => '#dc3545',
             ],
-        ]);
+        )]);
     }
 
     public function store(ProjectStoreRequest $request)
@@ -62,9 +63,9 @@ class ProjectController extends Controller
     {
         $project = $this->editUseCase->handle($id);
 
-        return view('admin.projects.edit', [
-            'project' => $project,
-            'projectSettings' => [
+        return view('admin.projects.edit', ['view' => new ProjectFormView(
+            $project,
+            [
                 'line_liff_id' => $this->shopSettingRepository->getLineLiffId((int) $project->id),
                 'line_liff_url' => $this->shopSettingRepository->getLineLiffUrl((int) $project->id),
                 'frontend_header_text' => (string) ($this->shopSettingRepository->getFrontendHeaderText((int) $project->id) ?? ''),
@@ -79,10 +80,7 @@ class ProjectController extends Controller
                 'smaregi_client_id' => (string) ($this->shopSettingRepository->getValue('smaregi_client_id', '', (int) $project->id) ?? ''),
                 'smaregi_client_secret' => '',
             ],
-            'isOnboarding' => false,
-            'showAdminAccount' => false,
-            'requireSmaregi' => false,
-        ]);
+        )]);
     }
 
     public function update(ProjectUpdateRequest $request, int $id)

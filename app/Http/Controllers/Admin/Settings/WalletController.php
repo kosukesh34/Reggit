@@ -24,13 +24,7 @@ class WalletController extends AdminBaseController
         $projectId = $this->resolveAdminProjectId();
         $view = $this->getWalletSettingsUseCase->handle($projectId);
 
-        return view('admin.settings.wallet', [
-            'googleProgramLogoUrl' => $view->googleProgramLogoUrl,
-            'googleHeroImageUrl' => $view->googleHeroImageUrl,
-            'appleAssetsSet' => $view->appleAssetsSet,
-            'appleIconUrl' => $view->appleIconUrl,
-            'appleLogoUrl' => $view->appleLogoUrl,
-        ]);
+        return view('admin.settings.wallet', ['view' => $view]);
     }
 
     public function update(Request $request)
