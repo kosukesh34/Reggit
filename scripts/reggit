@@ -723,7 +723,7 @@ CRON_LINE="* * * * * cd \$HOME/${DEPLOY_PATH} && /usr/bin/php8.4 artisan schedul
 if crontab -l 2>/dev/null | grep -F "artisan schedule:run" >/dev/null; then
   echo "crontab already has schedule:run"
 else
-  (crontab -l 2>/dev/null; echo "\$CRON_LINE") | crontab -
+  { crontab -l 2>/dev/null || true; echo "\$CRON_LINE"; } | crontab -
   echo "crontab: added artisan schedule:run"
 fi
 /usr/bin/php8.4 artisan optimize:clear
