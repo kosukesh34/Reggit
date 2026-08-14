@@ -10,7 +10,7 @@ class AdminAfterRegistrationDeliveryUpdateUseCase
         private AfterRegistrationDeliveryAdminService $service
     ) {}
 
-    /** @param array{delay_minutes: string, title: string, body?: string, coupon_id?: string, is_active?: string} $validated */
+    /** @param array<string, mixed> $validated */
     public function handle(int $projectId, int $id, array $validated): void
     {
         $this->service->update($projectId, $id, $validated);
