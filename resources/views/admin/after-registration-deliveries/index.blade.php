@@ -1,7 +1,7 @@
 @extends('admin.layout')
 
-@section('title', '登録後配信')
-@section('page-title', '登録後配信')
+@section('title', 'スケジュール配信')
+@section('page-title', 'スケジュール配信')
 
 @section('content')
 <nav class="breadcrumb" aria-label="パンくず">
@@ -9,12 +9,12 @@
     <span class="breadcrumb-sep">/</span>
     <a href="{{ admin_route('admin.announcements') }}">お知らせ</a>
     <span class="breadcrumb-sep">/</span>
-    <span>登録後配信</span>
+    <span>スケジュール配信</span>
 </nav>
 
 <div class="page-header">
-    <h1 class="page-header-title"><i class="fas fa-clock"></i> 登録後配信</h1>
-    <p class="page-header-desc">会員登録から指定分数後に、お知らせとクーポンを自動で配信します</p>
+    <h1 class="page-header-title"><i class="fas fa-clock"></i> スケジュール配信</h1>
+    <p class="page-header-desc">条件達成や予約日時に、お知らせとクーポンを自動で配信します</p>
 </div>
 
 @if(session('success'))
@@ -32,15 +32,16 @@
         @if($deliveries->isEmpty())
         <div class="empty-state">
             <i class="fas fa-clock"></i>
-            <p>登録後配信がありません</p>
-            <p class="empty-state-hint">「追加」から、会員登録から何分後に配信するかを設定できます</p>
+            <p>スケジュール配信がありません</p>
+            <p class="empty-state-hint">「追加」から、条件達成配信や予約配信を設定できます</p>
         </div>
         @else
         <table class="table">
             <thead>
                 <tr>
-                    <th>配信タイミング</th>
-                    <th>タイトル</th>
+                    <th>種類</th>
+                    <th>条件</th>
+                    <th>内容</th>
                     <th>クーポン</th>
                     <th>状態</th>
                     <th class="table-actions-cell">操作</th>
@@ -49,8 +50,15 @@
             <tbody>
                 @foreach($deliveries as $d)
                 <tr>
-                    <td>登録から {{ $d->delay_minutes }} 分後</td>
-                    <td>{{ Str::limit($d->title, 40) }}</td>
+                    <td>{{ \App\Enums\ScheduledDeliveryCategory::getLabel((string) $d->category) }}</td>
+                    <td>{{ $d->detailLabel() }}</td>
+                    <td>
+                        @if($d->isCouponOnly())
+                            クーポンのみ{{ $d->send_notification ? '（通知あり）' : '（通知なし）' }}
+                        @else
+                            {{ \Illuminate\Support\Str::limit((string) $d->title, 40) }}
+                        @endif
+                    </td>
                     <td>{{ $d->coupon ? $d->coupon->name : '—' }}</td>
                     <td>@if($d->is_active)<span class="badge badge-success">有効</span>@else<span class="badge badge-secondary">無効</span>@endif</td>
                     <td class="table-actions-cell">
