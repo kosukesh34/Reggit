@@ -6,13 +6,15 @@ use App\Models\AfterRegistrationDelivery;
 use App\Models\Coupon;
 use Illuminate\Support\Collection;
 
-class AfterRegistrationDeliveryEditOutput
+class AfterRegistrationDeliveryFormView
 {
     /**
      * @param  Collection<int, Coupon>  $coupons
+     * @param  list<array{key: string, label: string}>  $rankOptions
      */
     public function __construct(
-        public AfterRegistrationDelivery $delivery,
-        public Collection $coupons
+        public readonly Collection $coupons,
+        public readonly array $rankOptions,
+        public readonly ?AfterRegistrationDelivery $delivery = null,
     ) {}
 }
