@@ -1,0 +1,149 @@
+/* 管理画面クロム（サイドバーブランド・設定ハブ・重複タイトル） */
+
+.sidebar-kicker {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    margin: 0 0 6px;
+}
+
+.sidebar-header h1 {
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.sidebar-store-switcher {
+    display: block;
+}
+
+.sidebar-store-select {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 14px;
+    font-weight: 700;
+    padding: 8px 10px;
+    line-height: 1.3;
+}
+
+.sidebar-store-select:focus {
+    outline: none;
+    border-color: var(--primary-light);
+    box-shadow: var(--primary-ring);
+}
+
+.nav-separator {
+    height: 1px;
+    background: var(--border-light);
+    margin: 10px 8px;
+}
+
+.nav-group-label {
+    cursor: default;
+}
+
+.nav-group.is-collapsible .nav-group-label {
+    cursor: pointer;
+}
+
+.content-body .page-header-title {
+    display: none;
+}
+
+.content-body .page-header {
+    margin-bottom: 16px;
+}
+
+.content-body .page-header:not(:has(.page-header-desc)) {
+    display: none;
+}
+
+.settings-hub-lead {
+    margin: 0 0 24px;
+}
+
+.settings-hub-section {
+    margin-bottom: 28px;
+}
+
+.settings-hub-heading {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    margin: 0 0 12px;
+}
+
+.settings-hub-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 12px;
+}
+
+.settings-hub-card,
+a.settings-hub-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    text-decoration: none;
+    color: inherit;
+    box-shadow: var(--shadow-xs);
+    transition:
+        border-color var(--transition-fast),
+        box-shadow var(--transition-fast),
+        transform var(--transition-fast);
+}
+
+a.settings-hub-card:hover {
+    border-color: var(--primary-light);
+    box-shadow: var(--shadow-sm);
+    transform: translateY(-1px);
+    color: inherit;
+    text-decoration: none;
+}
+
+.settings-hub-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius);
+    background: var(--primary-bg);
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.settings-hub-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.settings-hub-copy strong {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.settings-hub-copy span {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+    .settings-hub-grid {
+        grid-template-columns: 1fr;
+    }
+}

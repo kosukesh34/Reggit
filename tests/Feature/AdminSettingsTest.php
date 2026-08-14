@@ -90,4 +90,21 @@ class AdminSettingsTest extends TestCase
 
         $response->assertStatus(200);
     }
+
+    public function test_settings_設定ハブにアクセスでき各設定への案内があること(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+
+        $response = $this->actingAs($admin, 'admin')
+            ->get(route('admin.settings.index', ['project_key' => $project->project_key]));
+
+        $response->assertStatus(200);
+        $response->assertSee('基本設定', false);
+        $response->assertSee('予約設定', false);
+        $response->assertSee('クーポン設定', false);
+        $response->assertSee('settings-hub-card', false);
+        $response->assertSee('css/admin/admin.css', false);
+        $response->assertSee(route('admin.settings.basic', ['project_key' => $project->project_key], false), false);
+    }
 }

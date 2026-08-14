@@ -291,7 +291,9 @@ class AdminCouponsTest extends TestCase
             ]));
         $createPage->assertStatus(200)
             ->assertSee('name="return"', false)
-            ->assertSee('value="bulk-issue"', false);
+            ->assertSee('value="bulk-issue"', false)
+            ->assertSee('name="image"', false)
+            ->assertSee('ドラッグ＆ドロップ');
 
         $response = $this->actingAs($admin, 'admin')
             ->post(route('admin.coupons.store', ['project_key' => $project->project_key]), [
