@@ -28,7 +28,7 @@
             <i class="fas fa-users"></i>
         </div>
         <div class="queue-stat-hero-content">
-            <div class="queue-stat-hero-value">{{ $waitingCount ?? 0 }}</div>
+            <div class="queue-stat-hero-value">{{ $view->waitingCount ?? 0 }}</div>
             <div class="queue-stat-hero-label">現在の待ち組数</div>
         </div>
     </div>
@@ -37,7 +37,7 @@
             <i class="fas fa-clock"></i>
         </div>
         <div class="queue-stat-hero-content">
-            <div class="queue-stat-hero-value">{{ $estimatedWaitMinutes ?? 0 }}<span class="queue-stat-hero-unit">分</span></div>
+            <div class="queue-stat-hero-value">{{ $view->estimatedWaitMinutes ?? 0 }}<span class="queue-stat-hero-unit">分</span></div>
             <div class="queue-stat-hero-label">予測待ち時間</div>
         </div>
     </div>
@@ -51,7 +51,7 @@
         <h2 class="card-title">待機中一覧</h2>
     </div>
     <div class="card-body">
-        @if($entries->isEmpty())
+        @if($view->entries->isEmpty())
         <div class="empty-state">
             <i class="fas fa-list-ol"></i>
             <p>待機中の方はいません</p>
@@ -72,12 +72,12 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach($entries as $e)
+                @foreach($view->entries as $e)
                 @php
                     $channelUser = $e->user ?? $e->member?->user;
                     $channelLabel = \App\Support\MemberChannel::label($channelUser);
-                    $aheadCount = ($e->status === 'waiting' && $e->created_at->gte(now()->subDay()) && isset($waitingQueueNumbers))
-                        ? $waitingQueueNumbers->filter(fn($n) => $n < ($e->queue_number ?? 0))->count()
+                    $aheadCount = ($e->status === 'waiting' && $e->created_at->gte(now()->subDay()) && isset($view->waitingQueueNumbers))
+                        ? $view->waitingQueueNumbers->filter(fn($n) => $n < ($e->queue_number ?? 0))->count()
                         : null;
                 @endphp
                 <tr>
@@ -159,7 +159,7 @@
                 @endforeach
             </tbody>
         </table>
-        {{ $entries->links('vendor.pagination.admin') }}
+        {{ $view->entries->links('vendor.pagination.admin') }}
         @endif
     </div>
 </div>

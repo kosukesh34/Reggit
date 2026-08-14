@@ -14,7 +14,7 @@
     <p class="page-header-desc">プロジェクトの基本情報・LINE連携・初期表示をこの画面で一括更新できます。</p>
 </div>
 
-<form action="{{ route('system-admin.projects.update', $project->id) }}" method="POST" enctype="multipart/form-data">
+<form action="{{ route('system-admin.projects.update', $view->project->id) }}" method="POST" enctype="multipart/form-data">
     @csrf
     @method('PUT')
     @include('admin.projects._form')

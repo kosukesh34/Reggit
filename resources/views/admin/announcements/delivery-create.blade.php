@@ -57,7 +57,7 @@
                     <label class="radio-label">
                         <input type="radio" name="delivery_type" value="immediate_bulk" {{ old('delivery_type', 'immediate_bulk') === 'immediate_bulk' ? 'checked' : '' }} data-target="bulk">
                         <span>一斉配信</span>
-                        <small class="d-block text-muted">登録会員全員（{{ number_format($memberCount) }}人）に即時配信</small>
+                        <small class="d-block text-muted">登録会員全員（{{ number_format($view->memberCount) }}人）に即時配信</small>
                     </label>
                     <label class="radio-label">
                         <input type="radio" name="delivery_type" value="personal" {{ old('delivery_type') === 'personal' ? 'checked' : '' }} data-target="personal">
@@ -130,7 +130,7 @@
                         <label for="segment_product_id" class="form-label">購入した商品</label>
                         <select name="segment_product_id" id="segment_product_id" class="form-control segment-filter">
                             <option value="">指定しない</option>
-                            @foreach(($products ?? []) as $product)
+                            @foreach(($view->products ?? []) as $product)
                                 <option value="{{ $product->id }}" {{ (string) old('segment_product_id') === (string) $product->id ? 'selected' : '' }}>
                                     {{ $product->name }}
                                 </option>
@@ -224,7 +224,7 @@
                 <label for="delivery_coupon_id" class="form-label">配信と同時にクーポンを配布（任意）</label>
                 <select name="delivery_coupon_id" id="delivery_coupon_id" class="form-control">
                     <option value="">配布しない</option>
-                    @foreach($coupons ?? [] as $coupon)
+                    @foreach($view->coupons ?? [] as $coupon)
                         <option value="{{ $coupon->id }}" {{ old('delivery_coupon_id') == $coupon->id ? 'selected' : '' }}>{{ $coupon->name }}</option>
                     @endforeach
                 </select>

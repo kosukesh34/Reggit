@@ -5,7 +5,6 @@
 @section('content')
 <nav class="breadcrumb"><a href="{{ admin_route('admin.stamps') }}">スタンプ</a><span class="breadcrumb-sep">/</span><span>新規</span></nav>
 @php($layoutOptions = \App\Models\StampCard::getLayoutOptions())
-@php($coupons = $coupons ?? collect())
 @php($oldMilestones = old('reward_milestones', [['stamp_count' => '']]))
 @if(!is_array($oldMilestones) || $oldMilestones === [])
     @php($oldMilestones = [['stamp_count' => '']])
@@ -75,7 +74,7 @@
                     </div>
                 </div>
 
-                @include('admin.stamps._cycle_fields', ['stampCard' => null, 'cycleTargetCards' => $cycleTargetCards ?? collect()])
+                @include('admin.stamps._cycle_fields', ['stampCard' => null, 'cycleTargetCards' => $view->cycleTargetCards ?? collect()])
 
                 <div class="stamp-form-section">
                     <div class="stamp-form-section-head stamp-form-section-head-with-action">
@@ -89,14 +88,14 @@
                             @include('admin.stamps._milestone_row', [
                                 'index' => $index,
                                 'milestone' => is_array($milestone) ? $milestone : [],
-                                'coupons' => $coupons,
+                                'coupons' => $view->coupons,
                                 'isNamed' => true,
                                 'idPrefix' => 'reward_milestones',
                             ])
                         @endforeach
                     </div>
                     <p class="form-text text-muted">例: 10個でクーポン、20個でガチャ のように段階特典を設定できます。到達時に自動で付与されます。</p>
-                    @if(($isGachaEnabled ?? false) !== true)
+                    @if(($view->isGachaEnabled ?? false) !== true)
                     <p class="form-text text-muted">ガチャ特典を使う場合は、設定のガチャを有効にしてください。</p>
                     @endif
                     @error('reward_milestones')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
@@ -232,7 +231,7 @@
     @include('admin.stamps._milestone_row', [
         'index' => 0,
         'milestone' => [],
-        'coupons' => $coupons,
+        'coupons' => $view->coupons,
         'isNamed' => false,
         'idPrefix' => 'reward_milestones',
     ])

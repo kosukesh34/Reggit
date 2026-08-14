@@ -62,33 +62,33 @@
         a.btn-native { background: var(--native); }
         .error { color: #b91c1c; }
     </style>
-    @if($mode === 'native' && $nativeSchemeUrl)
-        <meta http-equiv="refresh" content="0;url={{ $nativeSchemeUrl }}">
+    @if($view->mode === 'native' && $view->nativeSchemeUrl)
+        <meta http-equiv="refresh" content="0;url={{ $view->nativeSchemeUrl }}">
     @endif
 </head>
 <body>
     <div class="panel">
-        @if($mode === 'error')
+        @if($view->mode === 'error')
             <h1>開けませんでした</h1>
-            <p class="error">{{ $errorMessage }}</p>
-        @elseif($mode === 'native')
+            <p class="error">{{ $view->errorMessage }}</p>
+        @elseif($view->mode === 'native')
             <h1>アプリを起動しています</h1>
             <p>自動で開かない場合は下のボタンを押してください。</p>
             <div class="actions">
-                <a class="btn btn-native" href="{{ $nativeSchemeUrl }}">ネイティブアプリで開く</a>
+                <a class="btn btn-native" href="{{ $view->nativeSchemeUrl }}">ネイティブアプリで開く</a>
             </div>
             <script>
-                window.location.href = @json($nativeSchemeUrl);
+                window.location.href = @json($view->nativeSchemeUrl);
             </script>
         @else
             <h1>アプリを選択</h1>
             <p>順番待ちの確認に使うアプリを選んでください。</p>
             <div class="actions">
-                @if($lineUrl)
-                    <a class="btn btn-line" href="{{ $lineUrl }}">LINEで開く</a>
+                @if($view->lineUrl)
+                    <a class="btn btn-line" href="{{ $view->lineUrl }}">LINEで開く</a>
                 @endif
-                @if($nativeSchemeUrl)
-                    <a class="btn btn-native" href="{{ $nativeSchemeUrl }}">ネイティブアプリで開く</a>
+                @if($view->nativeSchemeUrl)
+                    <a class="btn btn-native" href="{{ $view->nativeSchemeUrl }}">ネイティブアプリで開く</a>
                 @endif
             </div>
         @endif

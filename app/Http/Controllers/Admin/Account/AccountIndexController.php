@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Support\RouteContextResolver;
 use App\Models\AdminUser;
 use App\UseCases\Admin\Account\AccountIndexUseCase;
+use App\UseCases\Admin\Account\Data\AccountIndexView;
 use Illuminate\Http\Request;
 
 class AccountIndexController extends Controller
@@ -23,10 +24,10 @@ class AccountIndexController extends Controller
         $result = $this->indexUseCase->handle($me);
         $routeContext = $this->routeContextResolver->resolveFromRequest($request);
 
-        return view('admin.accounts.index', [
-            'adminUsers' => $result['adminUsers'],
-            'me' => $me,
-            'routePrefix' => $routeContext->routePrefix,
-        ]);
+        return view('admin.accounts.index', ['view' => new AccountIndexView(
+            $result['adminUsers'],
+            $me,
+            $routeContext->routePrefix,
+        )]);
     }
 }
