@@ -336,7 +336,12 @@
         var nameEl = document.getElementById('name');
         var name = (nameEl && nameEl.value ? nameEl.value : '').trim() || 'クーポン名';
         var imgEl = document.getElementById('image_url');
+        var previewWrap = document.getElementById('coupon_image_preview');
+        var previewImg = document.getElementById('coupon_image_preview_img');
         var imageUrl = (imgEl && imgEl.value ? imgEl.value : '').trim();
+        if (previewWrap && !previewWrap.hidden && previewImg && previewImg.getAttribute('src')) {
+            imageUrl = previewImg.getAttribute('src') || imageUrl;
+        }
         var endAtEl = document.getElementById('end_at');
         var endAt = endAtEl ? endAtEl.value : '';
         var validUntil = '';
@@ -360,6 +365,8 @@
             var e = document.getElementById(id);
             if (e) { e.addEventListener('input', update); e.addEventListener('change', update); }
         });
+        var imageFile = document.getElementById('coupon_image');
+        if (imageFile) imageFile.addEventListener('admin-image-preview', update);
         document.querySelectorAll('input[name="design_template"]').forEach(function(radio) {
             radio.addEventListener('change', update);
         });

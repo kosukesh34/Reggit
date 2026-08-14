@@ -104,7 +104,55 @@ class AdminFeatureSettingsFrontendLogoUploadTest extends TestCase
             ->get(route('admin.settings.features', ['project_key' => $project->project_key]))
             ->assertStatus(200)
             ->assertSee('name="frontend_logo"', false)
+            ->assertSee('name="stamp_default_image"', false)
+            ->assertSee('ドラッグ＆ドロップ')
             ->assertDontSee('name="frontend_logo_url"', false)
+            ->assertDontSee('name="stamp_default_image_url"', false)
             ->assertDontSee('placeholder="https://example.com/logo.png"', false);
+    }
+
+    public function test_機能設定でスタンプデフォルト画像をアップロードできること(): void
+    {
+        Storage::fake('public');
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        $file = UploadedFile::fake()->image('stamp-default.png', 64, 64);
+
+        $this->actingAs($admin, 'admin')
+            ->post(route('admin.settings.features.update', ['project_key' => $project->project_key]), [
+                'features' => [
+                    'feature_orders_enabled' => '1',
+                    'feature_members_enabled' => '1',
+                ],
+                'stamp_default_image' => $file,
+                'frontend_header_text' => 'Demo',
+            ])
+            ->assertRedirect();
+
+        $savedUrl = ShopSettingStore::getStampDefaultImageUrl($project->id);
+        $this->assertNotNull($savedUrl);
+        $this->assertStringContainsString('storage/'.PublicImageStorageService::DIR_STAMP_DEFAULT.'/'.$project->id, (string) $savedUrl);
+        Storage::disk('public')->assertExists(
+            PublicImageStorageService::DIR_STAMP_DEFAULT.'/'.$project->id.'/'.$file->hashName()
+        );
+    }
+
+    public function test_機能設定でスタンプデフォルト画像をクリアできること(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        ShopSettingStore::setValue('stamp_default_image_url', 'https://example.com/old-stamp.png', 'string', $project->id);
+
+        $this->actingAs($admin, 'admin')
+            ->post(route('admin.settings.features.update', ['project_key' => $project->project_key]), [
+                'features' => [
+                    'feature_orders_enabled' => '1',
+                ],
+                'stamp_default_image_clear' => '1',
+                'frontend_header_text' => '',
+            ])
+            ->assertRedirect();
+
+        $this->assertSame('', (string) (ShopSettingStore::getStampDefaultImageUrl($project->id) ?? ''));
     }
 }

@@ -29,6 +29,8 @@ class ProductUpdateRequest extends FormRequest
             'description' => 'nullable|string|max:2000',
             'price' => 'required|numeric|min:0',
             'image_url' => 'nullable|string|url|max:500',
+            'image' => 'nullable|image|mimes:png,jpg,jpeg,gif,webp|max:2048',
+            'image_clear' => 'nullable|in:0,1',
             'category' => 'nullable|string|max:64',
             'is_available' => 'nullable|boolean',
             'stock_unlimited' => 'nullable|boolean',

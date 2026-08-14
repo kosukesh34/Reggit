@@ -91,7 +91,9 @@ export function Header() {
         ? "スタンプカード"
         : location.pathname === "/queue"
           ? "LAUREL & IVY"
-          : "Reggit";
+          : location.pathname === "/more"
+            ? "会員登録"
+            : "Reggit";
   const ShowcaseActionIcon = location.pathname === "/mobileOrder"
     ? ShoppingBag
     : location.pathname === "/home"
@@ -114,7 +116,7 @@ export function Header() {
             <button
               className="header__showcase-action"
               type="button"
-              aria-label={location.pathname === "/home" ? "LPデモを終了" : location.pathname === "/mobileOrder" ? "注文履歴を見る" : "登録情報を見る"}
+              aria-label={location.pathname === "/home" ? "LPデモを終了" : location.pathname === "/mobileOrder" ? "注文履歴を見る" : "会員登録を見る"}
               onClick={() => {
                 if (location.pathname === "/home") {
                   setActiveStoreId("store_cafe");

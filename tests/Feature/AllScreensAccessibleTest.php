@@ -128,6 +128,7 @@ class AllScreensAccessibleTest extends TestCase
             'after-registration-deliveries.create' => ['admin.after-registration-deliveries.create', ['project_key' => $key]],
             'after-registration-deliveries.edit' => ['admin.after-registration-deliveries.edit', ['project_key' => $key, 'id' => 1]],
             'queue' => ['admin.queue', ['project_key' => $key]],
+            'settings.index' => ['admin.settings.index', ['project_key' => $key]],
             'settings.basic' => ['admin.settings.basic', ['project_key' => $key]],
             'settings.advanced' => ['admin.settings.advanced', ['project_key' => $key]],
             // settings.menu はホーム設定へリダイレクトするため、画面テストからは除外（admin.settings.home で検証）

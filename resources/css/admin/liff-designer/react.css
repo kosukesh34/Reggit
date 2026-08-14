@@ -4992,9 +4992,18 @@
     border: 1px dashed rgba(28, 25, 23, 0.14);
     background: linear-gradient(135deg, #fafaf9, #f5f5f4);
     min-height: 120px;
+    width: 100%;
+    padding: 0;
     display: flex;
     align-items: center;
     justify-content: center;
+    cursor: pointer;
+}
+
+.ld-image-field.is-dragover .ld-image-field__preview,
+.ld-image-field__preview:hover {
+    border-color: var(--ld-accent, #0f172a);
+    background: #f8fafc;
 }
 
 .ld-image-field--compact .ld-image-field__preview {

@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ asset('css/landing.css') }}?v=38">
+    <link rel="stylesheet" href="{{ asset('css/landing.css') }}?v=39">
 </head>
 <body class="lp">
     <header class="lp-nav">
@@ -224,7 +224,7 @@
             <div class="lp-section lp-section--compact">
                 <p class="lp-section__eyebrow">App</p>
                 <h2 class="lp-section__title">お客様の手元で完結する体験</h2>
-                <p class="lp-section__lead">ホーム・注文・会員・スタンプ・順番待ちまで、LINE内の画面でつながります。</p>
+                <p class="lp-section__lead">ホーム・注文・会員登録・会員証・スタンプ・順番待ちまで、LINE内の画面でつながります。</p>
                 <a class="lp-screens__app-link" href="/liff">アプリを体験する</a>
             </div>
             <div class="lp-screens__rail">
@@ -235,6 +235,10 @@
                 <figure class="lp-screens__item">
                     <img src="{{ asset('images/landing/app/screen-order.png') }}?v=2" alt="注文画面" width="390" height="844" loading="lazy">
                     <figcaption>注文</figcaption>
+                </figure>
+                <figure class="lp-screens__item">
+                    <img src="{{ asset('images/landing/app/screen-register.png') }}?v=1" alt="会員登録画面" width="390" height="844" loading="lazy">
+                    <figcaption>会員登録</figcaption>
                 </figure>
                 <figure class="lp-screens__item">
                     <img src="{{ asset('images/landing/app/screen-member.png') }}?v=2" alt="会員証画面" width="390" height="844" loading="lazy">

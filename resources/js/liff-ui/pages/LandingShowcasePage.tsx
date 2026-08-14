@@ -111,7 +111,7 @@ export function LandingShowcaseHome() {
         </Link>
       </section>
 
-      <Link className="lp-app-member-banner" to="/membership">
+      <Link className="lp-app-member-banner" to="/more">
         <span><small>Reggit メンバー</small><strong>会員限定の特典を受け取ろう</strong><b>登録すると、ドリンク1杯サービス！</b></span>
         <span className="lp-app-member-banner__gift"><Gift size={48} /><i>★</i></span>
         <ChevronRight size={20} />
@@ -203,7 +203,7 @@ export function LandingShowcaseMembership() {
         <Link to="/coupon"><Ticket /><span>クーポン</span></Link>
         <Link to="/mobileOrder"><ShoppingBag /><span>注文</span></Link>
         <Link to="/orderHistory"><History /><span>利用履歴</span></Link>
-        <Link to="/more"><UserRound /><span>登録情報</span></Link>
+        <Link to="/more"><UserRound /><span>会員登録</span></Link>
       </section>
       <BottomSheet open={termsOpen} onClose={() => setTermsOpen(false)} title="ポイント利用規約">
         <div className="lp-member-terms-sheet"><strong>Reggit メンバー規約</strong><p>ポイントは対象店舗でのお会計時にためる・使うことができます。第三者への譲渡や換金はできません。</p><p>この画面はデモです。実際のサービスでは店舗が設定した規約が表示されます。</p><button type="button" onClick={() => setTermsOpen(false)}>確認しました</button></div>
@@ -253,6 +253,41 @@ export function LandingShowcaseQueue() {
       </button>
       <button className={`lp-queue-primary${requested ? " is-complete" : ""}`} type="button" onClick={() => setRequested((current) => !current)}><MessageSquareText size={21} />{requested ? "呼び出し通知を登録しました" : "席が用意できたら通知する"}</button>
       {requested ? <p className="lp-queue-feedback" role="status">通知登録済みです。もう一度押すと解除できます。</p> : null}
+    </div>
+  );
+}
+
+export function LandingShowcaseRegister() {
+  return (
+    <div className="landing-showcase landing-showcase--register">
+      <section className="lp-register-hero">
+        <span className="lp-register-hero__mark"><LeafMark size={28} /></span>
+        <h1>会員登録</h1>
+        <p>会員登録すると会員証・ポイント・クーポンをご利用いただけます。</p>
+        <b>登録すると、ドリンク1杯サービス！</b>
+      </section>
+      <form className="lp-register-form" onSubmit={(event) => event.preventDefault()}>
+        <label>
+          <span>お名前</span>
+          <span className="lp-register-form__name">
+            <input type="text" name="last_name" placeholder="山田" autoComplete="family-name" />
+            <input type="text" name="first_name" placeholder="太郎" autoComplete="given-name" />
+          </span>
+        </label>
+        <label>
+          <span>電話番号</span>
+          <input type="tel" name="phone" placeholder="09012345678" autoComplete="tel" />
+        </label>
+        <label>
+          <span>メールアドレス</span>
+          <input type="email" name="email" placeholder="you@example.com" autoComplete="email" />
+        </label>
+        <label>
+          <span>生年月日</span>
+          <input type="date" name="birthday" />
+        </label>
+        <button className="lp-register-form__submit" type="submit">登録する</button>
+      </form>
     </div>
   );
 }

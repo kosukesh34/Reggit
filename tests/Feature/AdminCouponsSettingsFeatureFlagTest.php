@@ -5,7 +5,10 @@ namespace Tests\Feature;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\AdminUser;
 use App\Models\Project;
+use App\Services\Admin\PublicImageStorageService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class AdminCouponsSettingsFeatureFlagTest extends TestCase
@@ -61,5 +64,53 @@ class AdminCouponsSettingsFeatureFlagTest extends TestCase
         $this->assertFalse(ShopSettingStore::isFeatureEnabled('feature_gallery_enabled', $project->id));
         $this->assertFalse(ShopSettingStore::isFeatureEnabled('feature_announcements_enabled', $project->id));
         $this->assertTrue(ShopSettingStore::isFeatureEnabled('feature_stamps_enabled', $project->id));
+    }
+
+    public function test_クーポン設定画面にドロップゾーンがあること(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+
+        $this->actingAs($admin, 'admin')
+            ->get(route('admin.settings.coupons', ['project_key' => $project->project_key]))
+            ->assertStatus(200)
+            ->assertSee('name="coupon_default_image"', false)
+            ->assertSee('ドラッグ＆ドロップ')
+            ->assertDontSee('name="coupon_default_image_url"', false);
+    }
+
+    public function test_クーポンデフォルト画像をアップロードできること(): void
+    {
+        Storage::fake('public');
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        $file = UploadedFile::fake()->image('coupon-default.png', 80, 80);
+
+        $this->actingAs($admin, 'admin')
+            ->post(route('admin.settings.coupons.update', ['project_key' => $project->project_key]), [
+                'feature_coupons_enabled' => '1',
+                'coupon_default_image' => $file,
+            ])
+            ->assertRedirect();
+
+        $savedUrl = ShopSettingStore::getCouponDefaultImageUrl($project->id);
+        $this->assertNotNull($savedUrl);
+        $this->assertStringContainsString('storage/'.PublicImageStorageService::DIR_COUPON_DEFAULT.'/'.$project->id, (string) $savedUrl);
+    }
+
+    public function test_クーポンデフォルト画像をクリアできること(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        ShopSettingStore::setValue('coupon_default_image_url', 'https://example.com/old-coupon.png', 'string', $project->id);
+
+        $this->actingAs($admin, 'admin')
+            ->post(route('admin.settings.coupons.update', ['project_key' => $project->project_key]), [
+                'feature_coupons_enabled' => '1',
+                'coupon_default_image_clear' => '1',
+            ])
+            ->assertRedirect();
+
+        $this->assertSame('', (string) (ShopSettingStore::getCouponDefaultImageUrl($project->id) ?? ''));
     }
 }

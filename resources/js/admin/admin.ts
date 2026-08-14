@@ -121,47 +121,108 @@ function initLoadingStates(): void {
     // click で disabled にするとブラウザがフォーム送信をキャンセルするため、ここには置かない。
 }
 
-function initSidebarCollapsibleGroups(): void {
-    const groups = document.querySelectorAll('.sidebar-nav .nav-group');
-    if (!groups.length) return;
-
+function initSidebarScrollRestore(): void {
     const nav = document.querySelector('.sidebar-nav') as HTMLElement | null;
-    if (nav) {
-        const savedScroll = sessionStorage.getItem('adminSidebarScroll');
-        if (savedScroll) {
-            nav.scrollTop = parseInt(savedScroll, 10);
-        }
-        nav.addEventListener('scroll', () => {
-            sessionStorage.setItem('adminSidebarScroll', String(nav.scrollTop));
-        });
+    if (nav === null) {
+        return;
     }
 
-    groups.forEach((groupEl) => {
-        const group = groupEl as HTMLElement;
-        const toggle = group.querySelector('.nav-group-label') as HTMLElement | null;
-        if (!toggle) return;
+    const savedScroll = sessionStorage.getItem('adminSidebarScroll');
+    if (savedScroll !== null) {
+        nav.scrollTop = parseInt(savedScroll, 10);
+    }
+    nav.addEventListener('scroll', () => {
+        sessionStorage.setItem('adminSidebarScroll', String(nav.scrollTop));
+    });
+}
 
-        group.classList.add('is-collapsible');
-        toggle.setAttribute('role', 'button');
-        toggle.setAttribute('tabindex', '0');
-
-        const hasActive = !!group.querySelector('.nav-item.active');
-        if (!hasActive) {
-            group.classList.add('is-collapsed');
+function initImageUploads(): void {
+    document.querySelectorAll<HTMLElement>('[data-image-upload]').forEach((root) => {
+        const fieldId = root.dataset.imageUpload;
+        if (fieldId === undefined || fieldId === '') {
+            return;
         }
-        toggle.setAttribute('aria-expanded', String(!group.classList.contains('is-collapsed')));
+        const fileInput = document.getElementById(fieldId);
+        const dropzone = document.getElementById(`${fieldId}_dropzone`);
+        const preview = document.getElementById(`${fieldId}_preview`);
+        const previewImg = document.getElementById(`${fieldId}_preview_img`) as HTMLImageElement | null;
+        const clearBtn = document.getElementById(`${fieldId}_clear`);
+        const clearFlag = document.getElementById(`${fieldId}_clear_flag`) as HTMLInputElement | null;
+        if (!(fileInput instanceof HTMLInputElement) || dropzone === null) {
+            return;
+        }
 
-        const toggleGroup = (): void => {
-            group.classList.toggle('is-collapsed');
-            toggle.setAttribute('aria-expanded', String(!group.classList.contains('is-collapsed')));
+        const showPreview = (src: string): void => {
+            if (preview === null || previewImg === null) {
+                return;
+            }
+            previewImg.src = src;
+            preview.hidden = src === '';
         };
 
-        toggle.addEventListener('click', toggleGroup);
-        toggle.addEventListener('keydown', (event) => {
-            if (event.key !== 'Enter' && event.key !== ' ') return;
-            event.preventDefault();
-            toggleGroup();
+        const readFile = (file: File | undefined): void => {
+            if (file === undefined || !file.type.startsWith('image/')) {
+                return;
+            }
+            if (file.size > 2 * 1024 * 1024) {
+                window.alert('画像サイズは2MB以下にしてください');
+                return;
+            }
+            if (clearFlag !== null) {
+                clearFlag.value = '0';
+            }
+            const reader = new FileReader();
+            reader.onload = () => {
+                showPreview(typeof reader.result === 'string' ? reader.result : '');
+                fileInput.dispatchEvent(new Event('admin-image-preview', { bubbles: true }));
+            };
+            reader.readAsDataURL(file);
+        };
+
+        dropzone.addEventListener('click', () => {
+            fileInput.click();
         });
+        dropzone.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                fileInput.click();
+            }
+        });
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.classList.add('is-dragover');
+        });
+        dropzone.addEventListener('dragleave', () => {
+            dropzone.classList.remove('is-dragover');
+        });
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('is-dragover');
+            const dropped = e.dataTransfer?.files[0];
+            if (dropped === undefined) {
+                return;
+            }
+            const transfer = new DataTransfer();
+            transfer.items.add(dropped);
+            fileInput.files = transfer.files;
+            readFile(dropped);
+        });
+        fileInput.addEventListener('change', () => {
+            const selected = fileInput.files?.[0];
+            if (selected !== undefined) {
+                readFile(selected);
+            }
+        });
+        if (clearBtn !== null) {
+            clearBtn.addEventListener('click', () => {
+                fileInput.value = '';
+                if (clearFlag !== null) {
+                    clearFlag.value = '1';
+                }
+                showPreview('');
+                fileInput.dispatchEvent(new Event('admin-image-preview', { bubbles: true }));
+            });
+        }
     });
 }
 
@@ -173,7 +234,8 @@ export function bootstrapAdminCommon(): void {
         initTooltips();
         initFormValidation();
         initLoadingStates();
-        initSidebarCollapsibleGroups();
+        initSidebarScrollRestore();
+        initImageUploads();
     };
 
     if (document.readyState === 'loading') {

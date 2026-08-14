@@ -1,11 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ArrowLeft, Check, ExternalLink, RotateCcw, Save } from 'lucide-react';
-import '../../css/app.css';
-import '../../css/admin/liff-designer/react.css';
-import '../liff-ui/styles/tokens.css';
-import '../liff-ui/styles/globals.css';
-import '../liff-ui/styles/design-layout-variants.css';
 import { AdminSidebar } from './components/AdminSidebar';
 import { exposeAdminLegacyGlobals } from '../shared/utils/exposeAdminLegacyGlobals';
 import { MemoryRouter } from 'react-router-dom';
@@ -293,6 +288,16 @@ function AdminCustomizeHost({ config }: { config: DesignerDomConfig }) {
   );
 }
 
+async function loadLiffDesignerStyles(): Promise<void> {
+  await Promise.all([
+    import('../../css/app.css'),
+    import('../../css/admin/liff-designer/react.css'),
+    import('../liff-ui/styles/tokens.css'),
+    import('../liff-ui/styles/globals.css'),
+    import('../liff-ui/styles/design-layout-variants.css'),
+  ]);
+}
+
 function mountLiffDesigner(): void {
   const root = document.getElementById('liff-designer-root');
   if (root === null) {
@@ -300,13 +305,15 @@ function mountLiffDesigner(): void {
   }
   const config = readDesignerConfigFromDom();
   document.body.classList.add('reggit-liff-ui', 'reggit-liff-ui--admin');
-  createRoot(root).render(
-    <MemoryRouter>
-      <AppConfigProvider isAdminStudio>
-        <AdminCustomizeHost config={config} />
-      </AppConfigProvider>
-    </MemoryRouter>,
-  );
+  void loadLiffDesignerStyles().then(() => {
+    createRoot(root).render(
+      <MemoryRouter>
+        <AppConfigProvider isAdminStudio>
+          <AdminCustomizeHost config={config} />
+        </AppConfigProvider>
+      </MemoryRouter>,
+    );
+  });
 }
 
 function AdminBootstrap(): null {

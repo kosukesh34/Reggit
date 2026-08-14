@@ -18,6 +18,7 @@ use App\UseCases\Admin\Announcement\AdminAnnouncementStoreUseCase;
 use App\UseCases\Admin\Announcement\AdminAnnouncementUpdateUseCase;
 use App\UseCases\Admin\Member\AdminMemberSearchByKeywordUseCase;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 
 class AnnouncementController extends AdminBaseController
 {
@@ -64,9 +65,10 @@ class AnnouncementController extends AdminBaseController
         $projectId = $this->resolveAdminProjectId();
         $validated = $request->validated();
 
-        if ($request->hasFile('image_file')) {
+        $imageFile = $request->file('image_file');
+        if ($imageFile instanceof UploadedFile) {
             $validated['image_url'] = $this->saveImageUseCase->handle(
-                $request->file('image_file'),
+                $imageFile,
                 $projectId,
                 PublicImageStorageService::DIR_ANNOUNCEMENT,
             );
@@ -91,9 +93,10 @@ class AnnouncementController extends AdminBaseController
         $projectId = $this->resolveAdminProjectId();
         $validated = $request->validated();
 
-        if ($request->hasFile('image_file')) {
+        $imageFile = $request->file('image_file');
+        if ($imageFile instanceof UploadedFile) {
             $validated['image_url'] = $this->saveImageUseCase->handle(
-                $request->file('image_file'),
+                $imageFile,
                 $projectId,
                 PublicImageStorageService::DIR_ANNOUNCEMENT,
             );
@@ -161,9 +164,10 @@ class AnnouncementController extends AdminBaseController
         $projectId = $this->resolveAdminProjectId();
         $validated = $request->validated();
 
-        if ($request->hasFile('image_file')) {
+        $imageFile = $request->file('image_file');
+        if ($imageFile instanceof UploadedFile) {
             $validated['image_url'] = $this->saveImageUseCase->handle(
-                $request->file('image_file'),
+                $imageFile,
                 $projectId,
                 PublicImageStorageService::DIR_ANNOUNCEMENT,
             );

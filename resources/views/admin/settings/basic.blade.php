@@ -12,6 +12,8 @@
 <nav class="breadcrumb" aria-label="パンくず">
     <a href="{{ admin_route('admin.dashboard') }}">ダッシュボード</a>
     <span class="breadcrumb-sep">/</span>
+    <a href="{{ admin_route('admin.settings.index') }}">設定</a>
+    <span class="breadcrumb-sep">/</span>
     <span>基本設定</span>
 </nav>
 
