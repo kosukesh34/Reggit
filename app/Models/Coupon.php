@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Enums\CouponApplyConditionDivision;
+use App\Enums\CouponCombineDivision;
 use App\Models\Concerns\BelongsToProject;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -53,6 +55,10 @@ class Coupon extends Model
 
     public const USE_DISPLAY_BOTH = 'both';
 
+    public const IMAGE_FIT_COVER = 'cover';
+
+    public const IMAGE_FIT_CONTAIN = 'contain';
+
     /** @return array<string, string> */
     public static function getUseDisplayOptions(): array
     {
@@ -79,11 +85,15 @@ class Coupon extends Model
     /** @var array<string, mixed> */
     protected $attributes = [
         'use_display' => self::USE_DISPLAY_BARCODE,
+        'image_fit' => self::IMAGE_FIT_COVER,
+        'apply_condition_division' => CouponApplyConditionDivision::ALL,
+        'combine_division' => CouponCombineDivision::ALLOWED,
     ];
 
     protected $fillable = [
-        'project_id', 'code', 'name', 'description', 'image_url', 'design_template', 'theme_color', 'use_display',
-        'type', 'value', 'min_order_amount', 'usage_limit', 'used_count', 'start_at', 'end_at', 'is_active', 'issue_trigger', 'stamp_card_id',
+        'project_id', 'code', 'name', 'description', 'image_url', 'image_fit', 'design_template', 'theme_color', 'use_display',
+        'type', 'value', 'min_order_amount', 'apply_condition_division', 'max_order_amount', 'combine_division',
+        'usage_limit', 'used_count', 'start_at', 'end_at', 'is_active', 'issue_trigger', 'stamp_card_id',
         'smaregi_coupon_id',
     ];
 
@@ -91,6 +101,7 @@ class Coupon extends Model
     protected $casts = [
         'value' => 'decimal:2',
         'min_order_amount' => 'decimal:2',
+        'max_order_amount' => 'decimal:2',
         'usage_limit' => 'integer',
         'used_count' => 'integer',
         'start_at' => 'datetime',

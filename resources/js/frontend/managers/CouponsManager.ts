@@ -268,13 +268,14 @@ export class CouponsManager {
         if (validFrom && validUntil) validText = `${validFrom} - ${validUntil}`;
         else if (validUntil) validText = `有効期限: ${validUntil}`;
         const imageUrl = cp.image_url || this.lastDefaultImage;
+        const imageFit = this.normalizeImageFit(cp.image_fit);
         const code = (cp.code && String(cp.code).trim()) ? cp.code : '';
         const useDisplay = this._normalizeUseDisplay(cp.use_display, code);
         const canShowCode = useDisplay === 'barcode' || useDisplay === 'qr' || useDisplay === 'both';
         const showUse = status === 'available' && (canShowCode || code);
         const bodyHtml = `
             <div class="liff-entity-detail coupon-detail-page">
-                ${imageUrl ? `<div class="liff-entity-detail__image"><img src="${DomHelper.escapeHtml(imageUrl)}" alt=""></div>` : ''}
+                ${imageUrl ? `<div class="liff-entity-detail__image coupon-image--fit-${imageFit}"><img src="${DomHelper.escapeHtml(imageUrl)}" alt=""></div>` : ''}
                 <h1 class="liff-entity-detail__title">${DomHelper.escapeHtml(cp.coupon_name || 'クーポン')}</h1>
                 <p class="liff-entity-detail__meta">状態: ${DomHelper.escapeHtml(status)} · デザイン: ${DomHelper.escapeHtml(design)}</p>
                 ${validText ? `<p class="liff-entity-detail__meta">${DomHelper.escapeHtml(validText)}</p>` : ''}
@@ -340,6 +341,7 @@ export class CouponsManager {
         const imageUrl = cp.image_url
             || this.lastDefaultImage
             || '/images/liff/coupon-drink.jpg';
+        const imageFit = this.normalizeImageFit(cp.image_fit);
         const code = (cp.code && String(cp.code).trim()) ? cp.code : '';
         const useDisplay = this._normalizeUseDisplay(cp.use_display, code);
         const canShowCode = useDisplay === 'barcode' || useDisplay === 'qr' || useDisplay === 'both';
@@ -347,7 +349,7 @@ export class CouponsManager {
         const desc = (cp.description && String(cp.description).trim()) ? String(cp.description).trim() : '';
         const bodyHtml = `
             <article class="ios-detail ios-detail--coupon">
-                <div class="ios-detail__hero">
+                <div class="ios-detail__hero ios-detail__hero--fit-${imageFit}">
                     <img src="${DomHelper.escapeHtml(imageUrl)}" alt="" onerror="this.src='/images/liff/product-placeholder.jpg'">
                     <div class="ios-detail__hero-shade"></div>
                     <div class="ios-detail__chips">
@@ -418,6 +420,10 @@ export class CouponsManager {
             return value;
         }
         return 'available';
+    }
+
+    normalizeImageFit(imageFit: unknown): 'cover' | 'contain' {
+        return imageFit === 'contain' ? 'contain' : 'cover';
     }
 
     formatDate(value: string): string {
@@ -500,6 +506,7 @@ export class CouponsManager {
                 ? `<span class="coupon-item-badge coupon-item-badge--urgent">あと${daysUntilExpiry}日</span>`
                 : '';
             const imageUrl = cp.image_url || defaultImage;
+            const imageFit = this.normalizeImageFit(cp.image_fit);
             const accentStyle = themeColor ? ` style="--coupon-accent: ${DomHelper.escapeHtml(themeColor)}"` : '';
             const iconClass = design === 'barcode' ? 'fa-barcode' : design === 'qr' ? 'fa-qrcode' : 'fa-ticket-alt';
             let imageBlock;
@@ -508,7 +515,7 @@ export class CouponsManager {
             } else if (design === 'qr') {
                 imageBlock = '<div class="coupon-item-qr"><div class="coupon-item-qr-grid"></div></div>';
             } else if (imageUrl) {
-                imageBlock = `<div class="coupon-item-image"><img src="${DomHelper.escapeHtml(imageUrl)}" alt="クーポン"></div>`;
+                imageBlock = `<div class="coupon-item-image coupon-item-image--fit-${imageFit}"><img src="${DomHelper.escapeHtml(imageUrl)}" alt="クーポン"></div>`;
             } else {
                 imageBlock = `<div class="coupon-item-image coupon-item-image--icon"><i class="fas ${iconClass}" aria-hidden="true"></i></div>`;
             }
@@ -592,6 +599,7 @@ export class CouponsManager {
             + `</div>`;
 
         section.innerHTML = html;
+        this._bindAdaptiveCouponMedia(section);
         this._bindLotteryPlayEntry(section);
         this._bindCouponTabs(section);
         this._bindUseButtons(section);
@@ -641,6 +649,7 @@ export class CouponsManager {
             const imageUrl = cp.image_url
                 || defaultImage
                 || fallbackImages[index % fallbackImages.length];
+            const imageFit = this.normalizeImageFit(cp.image_fit);
             const code = (cp.code && String(cp.code).trim()) ? cp.code : '';
             const useDisplay = this._normalizeUseDisplay(cp.use_display, code);
             const canShowCode = useDisplay === 'barcode' || useDisplay === 'qr' || useDisplay === 'both';
@@ -653,7 +662,7 @@ export class CouponsManager {
             const desc = (cp.description && String(cp.description).trim()) ? String(cp.description).trim() : '';
             return `
                 <article class="ios-coupon ios-coupon--${status}" data-coupon-id="${DomHelper.escapeHtml(String(cp.id))}" role="button" tabindex="0">
-                    <div class="ios-coupon__media">
+                    <div class="ios-coupon__media ios-coupon__media--fit-${imageFit}">
                         <img src="${DomHelper.escapeHtml(imageUrl)}" alt="" loading="lazy" onerror="this.src='/images/liff/product-placeholder.jpg'">
                         <div class="ios-coupon__media-shade"></div>
                         <div class="ios-coupon__chips">
@@ -717,6 +726,7 @@ export class CouponsManager {
             + `</div>`;
 
         section.innerHTML = html;
+        this._bindAdaptiveCouponMedia(section);
         this._bindLotteryPlayEntry(section);
         this._bindCouponTabs(section);
         this._bindUseButtons(section);
@@ -726,6 +736,19 @@ export class CouponsManager {
     _shouldShowLotteryEntry(): boolean {
         // クーポン画面ではガチャ・スクラッチ導線を出さない
         return false;
+    }
+
+    _bindAdaptiveCouponMedia(root: Element): void {
+        root.querySelectorAll<HTMLImageElement>('.coupon-item-image img, .ios-coupon__media img').forEach((image) => {
+            const applyRatio = (): void => {
+                const media = image.parentElement;
+                if (media === null || image.naturalWidth <= 0 || image.naturalHeight <= 0) return;
+                const ratio = Math.min(3.2, Math.max(0.6, image.naturalWidth / image.naturalHeight));
+                media.style.setProperty('--coupon-media-aspect', String(ratio));
+            };
+            if (image.complete) applyRatio();
+            else image.addEventListener('load', applyRatio, { once: true });
+        });
     }
 
     _renderLotteryPlayEntry(): string {

@@ -1,6 +1,4 @@
 function initCouponForm(): void {
-    const stampGroup = document.getElementById('stamp_card_group');
-    const stampSelect = document.getElementById('stamp_card_id') as HTMLSelectElement | null;
     const valueUnit = document.getElementById('valueUnit');
     const valueLabel = document.getElementById('valueLabel');
     const valueExample = document.getElementById('valueExample');
@@ -22,12 +20,6 @@ function initCouponForm(): void {
                 label.classList.toggle('is-selected', (input as HTMLInputElement).checked);
             }
         });
-    }
-
-    function syncStampCard(): void {
-        const isStamp = selectedValue('issue_trigger') === 'stamp_completed';
-        if (stampGroup) stampGroup.classList.toggle('is-hidden', !isStamp);
-        if (stampSelect) stampSelect.required = isStamp;
     }
 
     function syncValueUnit(): void {
@@ -65,25 +57,26 @@ function initCouponForm(): void {
         codeInput.focus();
     }
 
-    document.querySelectorAll('input[name="issue_trigger"]').forEach((input) => {
-        input.addEventListener('change', () => {
-            syncChoiceCards('issue_trigger');
-            syncStampCard();
-        });
-    });
     document.querySelectorAll('input[name="type"]').forEach((input) => {
         input.addEventListener('change', () => {
             syncChoiceCards('type');
             syncValueUnit();
         });
     });
+    document.querySelectorAll('input[name="image_fit"]').forEach((input) => {
+        input.addEventListener('change', () => syncChoiceCards('image_fit'));
+    });
+    document.querySelectorAll('input[name="apply_condition_division"]').forEach((input) => {
+        input.addEventListener('change', () => syncChoiceCards('apply_condition_division'));
+    });
     valueInput?.addEventListener('input', syncValueExample);
     nameInput?.addEventListener('input', () => syncCounter(nameInput, 'nameCounter', 255));
     descriptionInput?.addEventListener('input', () => syncCounter(descriptionInput, 'descriptionCounter', 2000));
     generateCodeButton?.addEventListener('click', generateCouponCode);
 
-    syncStampCard();
     syncValueUnit();
+    syncChoiceCards('image_fit');
+    syncChoiceCards('apply_condition_division');
     syncCounter(nameInput, 'nameCounter', 255);
     syncCounter(descriptionInput, 'descriptionCounter', 2000);
 }
