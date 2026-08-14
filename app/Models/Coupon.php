@@ -76,40 +76,6 @@ class Coupon extends Model
         ];
     }
 
-    /** @return array<string, string> */
-    public static function getDesignTemplateOptions(): array
-    {
-        return [
-            self::DESIGN_CLASSIC => 'クラシック',
-            self::DESIGN_MODERN => 'モダン',
-            self::DESIGN_MINIMAL => 'ミニマル',
-            self::DESIGN_GRADIENT => 'グラデーション',
-            self::DESIGN_CARD => 'カード風',
-            self::DESIGN_BARCODE => 'バーコード風',
-            self::DESIGN_QR => 'QRコード風',
-            self::DESIGN_STRIPE => 'ストライプ',
-            self::DESIGN_TICKET => 'チケット風',
-            self::DESIGN_VINTAGE => 'ヴィンテージ',
-            self::DESIGN_NEON => 'ネオン',
-        ];
-    }
-
-    /** @return array<string, string> 配色プリセット（管理画面用） */
-    public static function getThemeColorPresets(): array
-    {
-        return [
-            '' => '指定なし（デフォルト）',
-            '#059669' => '緑',
-            '#0d9488' => 'ティール',
-            '#0284c7' => '青',
-            '#7c3aed' => '紫',
-            '#dc2626' => '赤',
-            '#ea580c' => 'オレンジ',
-            '#ca8a04' => 'ゴールド',
-            '#0891b2' => 'シアン',
-        ];
-    }
-
     /** @var array<string, mixed> */
     protected $attributes = [
         'use_display' => self::USE_DISPLAY_BARCODE,
