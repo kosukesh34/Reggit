@@ -15,7 +15,11 @@
 @endphp
 <div
     class="card member-history-panel{{ $isSearchOpen ? ' is-search-open' : '' }}"
+    id="member-history-{{ $section }}"
+    role="tabpanel"
+    aria-labelledby="member-history-tab-{{ $section }}"
     data-section="{{ $section }}"
+    data-history-tab="{{ $section }}"
     data-query-key="{{ $queryKey }}"
     data-from-key="{{ $fromKey }}"
     data-to-key="{{ $toKey }}"

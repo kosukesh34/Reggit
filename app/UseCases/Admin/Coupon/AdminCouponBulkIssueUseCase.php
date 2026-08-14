@@ -4,7 +4,6 @@ namespace App\UseCases\Admin\Coupon;
 
 use App\Enums\CouponDeliveryStatus;
 use App\Enums\CouponDeliveryType;
-use App\Jobs\SendScheduledCouponDeliveryJob;
 use App\Models\Coupon;
 use App\Models\CouponDelivery;
 use App\Services\Admin\CouponDeliveryTargetService;
@@ -69,7 +68,7 @@ class AdminCouponBulkIssueUseCase
             if ($scheduledAt === null) {
                 throw new \InvalidArgumentException('配信日時が不正です');
             }
-            $delivery = CouponDelivery::create([
+            CouponDelivery::create([
                 'project_id' => $projectId,
                 'coupon_id' => $couponId,
                 'delivery_type' => $deliveryType,
@@ -78,8 +77,6 @@ class AdminCouponBulkIssueUseCase
                 'target_member_ids' => $this->normalizeMemberIds($memberIds),
                 'segment_criteria' => $resolved['segment_criteria'],
             ]);
-
-            SendScheduledCouponDeliveryJob::dispatch($delivery->id)->delay($scheduledAt);
 
             $count = $this->targetService->countTargets($projectId, $deliveryType, $validated);
             $formatted = $scheduledAt->format('Y/m/d H:i');

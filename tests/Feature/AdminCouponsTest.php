@@ -55,9 +55,9 @@ class AdminCouponsTest extends TestCase
 
         $response->assertStatus(200)
             ->assertSee('クーポンを選ぶ')
-            ->assertSee('全員にすぐ配布')
+            ->assertSee('全員に配布')
             ->assertSee('セグメント配信')
-            ->assertSee('予約配信')
+            ->assertSee('日時指定')
             ->assertSee('指定ランク')
             ->assertSee('ランクアップ達成配信')
             ->assertSee('スタンプ累計')
@@ -121,7 +121,6 @@ class AdminCouponsTest extends TestCase
         $response->assertSee('全員（12人）');
         $response->assertSee('配信先太郎');
         $response->assertSee('M-DELIVERY-1');
-        $response->assertSee('配信3回');
         $response->assertSee('詳細');
     }
 
@@ -293,7 +292,10 @@ class AdminCouponsTest extends TestCase
             ->assertSee('name="return"', false)
             ->assertSee('value="bulk-issue"', false)
             ->assertSee('name="image"', false)
-            ->assertSee('ドラッグ＆ドロップ');
+            ->assertSee('ドラッグ＆ドロップ')
+            ->assertSee('割引タイプ')
+            ->assertSee('name="issue_trigger"', false)
+            ->assertSee('渡し方');
 
         $response = $this->actingAs($admin, 'admin')
             ->post(route('admin.coupons.store', ['project_key' => $project->project_key]), [
@@ -304,7 +306,6 @@ class AdminCouponsTest extends TestCase
                 'is_active' => '1',
                 'issue_trigger' => Coupon::ISSUE_TRIGGER_MANUAL,
                 'use_display' => Coupon::USE_DISPLAY_BARCODE,
-                'design_template' => Coupon::DESIGN_CLASSIC,
                 'return' => 'bulk-issue',
             ]);
 
@@ -406,7 +407,7 @@ class AdminCouponsTest extends TestCase
         $page2->assertSee('利用者25');
     }
 
-    public function test_bulk_issue_クーポン一覧がページネーションされること(): void
+    public function test_bulk_issue_有効クーポンが選択できること(): void
     {
         $project = $this->createProject();
         $admin = $this->createAdmin($project);
@@ -419,19 +420,11 @@ class AdminCouponsTest extends TestCase
             ]);
         }
 
-        $page1 = $this->actingAs($admin, 'admin')
+        $response = $this->actingAs($admin, 'admin')
             ->get(route('admin.coupons.bulk-issue', ['project_key' => $project->project_key]));
-        $page1->assertStatus(200);
-        $page1->assertSee('配布クーポン01');
-        $page1->assertDontSee('配布クーポン12');
-
-        $page2 = $this->actingAs($admin, 'admin')
-            ->get(route('admin.coupons.bulk-issue', [
-                'project_key' => $project->project_key,
-                'page' => 2,
-            ]));
-        $page2->assertStatus(200);
-        $page2->assertSee('配布クーポン12');
+        $response->assertStatus(200);
+        $response->assertSee('配布クーポン01');
+        $response->assertSee('配布クーポン12');
     }
 
     public function test_coupons_一覧に利用履歴ボタンがあること(): void
