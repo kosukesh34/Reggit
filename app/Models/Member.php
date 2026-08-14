@@ -47,7 +47,7 @@ class Member extends Model
     protected $casts = [
         'points' => 'integer',
         'lifetime_granted_points' => 'integer',
-        'last_visited_at' => 'date',
+        'last_visited_at' => 'datetime',
         'birthday' => 'date',
         'profile_extra' => 'array',
     ];

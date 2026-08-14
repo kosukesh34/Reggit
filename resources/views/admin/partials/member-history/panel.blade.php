@@ -22,7 +22,10 @@
     data-history-url="{{ admin_route('admin.members.history', ['id' => $member->id, 'section' => $section]) }}"
 >
     <div class="card-header card-header-with-action">
-        <h3 class="card-title"><i class="{{ $icon }}"></i> {{ $title }}</h3>
+        <h3 class="card-title">
+            <i class="{{ $icon }}"></i> {{ $title }}
+            <span class="card-header-note">{{ $items->total() }}件</span>
+        </h3>
         <div class="member-history-actions">
             <form
                 id="member-history-search-{{ $section }}"

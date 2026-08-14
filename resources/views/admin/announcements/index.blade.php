@@ -118,8 +118,8 @@
                         <td>
                             <a href="{{ admin_route('admin.announcements.reads', ['id' => $a->id]) }}">{{ (int) ($a->reads_count ?? 0) }}人</a>
                         </td>
-                        <td>{{ $a->published_at ? $a->published_at->format('Y/m/d') : '—' }}</td>
-                        <td>{{ $a->expires_at ? $a->expires_at->format('Y/m/d') : '—' }}</td>
+                        <td>{{ $a->published_at ? $a->published_at->format('Y/m/d H:i') : '—' }}</td>
+                        <td>{{ $a->expires_at ? $a->expires_at->format('Y/m/d H:i') : '—' }}</td>
                         <td>@if($a->is_pinned)<span class="badge badge-info"><i class="fas fa-thumbtack"></i> 固定</span>@else<span class="text-muted">—</span>@endif</td>
                         <td class="table-actions-cell">
                             <div class="table-actions">

@@ -4,6 +4,14 @@
 @section('page-title', '取引詳細')
 
 @section('content')
+<nav class="breadcrumb" aria-label="パンくず">
+    <a href="{{ admin_route('admin.members') }}">会員一覧</a>
+    <span class="breadcrumb-sep">/</span>
+    <a href="{{ admin_route('admin.members.detail', ['id' => $member->id]) }}">{{ $member->user->name ?? ('会員 #'.$member->id) }}</a>
+    <span class="breadcrumb-sep">/</span>
+    <span>取引詳細</span>
+</nav>
+
 <div class="card">
     <div class="card-header">
         <h3 class="card-title"><i class="fas fa-info-circle"></i> 取引情報</h3>

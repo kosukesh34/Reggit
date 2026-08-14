@@ -16,10 +16,10 @@ class AdminOrderIndexUseCase
         $this->orderAdminService = $orderAdminService;
     }
 
-    public function handle(?string $status): AdminOrderIndexOutput
+    public function handle(?string $status, ?int $userId = null): AdminOrderIndexOutput
     {
-        $orders = $this->orderAdminService->getPaginatedList($status, self::PER_PAGE);
-        $statusCounts = $this->orderAdminService->getStatusCounts();
+        $orders = $this->orderAdminService->getPaginatedList($status, self::PER_PAGE, $userId);
+        $statusCounts = $this->orderAdminService->getStatusCounts($userId);
 
         return new AdminOrderIndexOutput($orders, $statusCounts);
     }

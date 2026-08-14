@@ -16,10 +16,16 @@ class AdminMemberListUseCase
         $this->memberAdminService = $memberAdminService;
     }
 
+    /**
+     * @param  array<string, string|null>  $filters
+     */
     public function handle(int $projectId, array $filters = []): AdminMemberListOutput
     {
         $members = $this->memberAdminService->getPaginatedList($projectId, self::PER_PAGE, $filters);
 
-        return new AdminMemberListOutput($members);
+        return new AdminMemberListOutput(
+            $members,
+            $this->memberAdminService->getRankOptionsForSelect($projectId),
+        );
     }
 }

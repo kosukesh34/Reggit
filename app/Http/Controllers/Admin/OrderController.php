@@ -34,7 +34,9 @@ class OrderController extends AdminBaseController
 
     public function orders(Request $request)
     {
-        $output = $this->indexUseCase->handle($request->query('status'));
+        $rawUserId = $request->query('user_id');
+        $userId = is_numeric($rawUserId) ? (int) $rawUserId : null;
+        $output = $this->indexUseCase->handle($request->query('status'), $userId);
         $output->orders->appends($request->query());
 
         return view('admin.orders', [

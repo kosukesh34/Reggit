@@ -4,6 +4,10 @@
 @section('page-title', '注文管理')
 
 @section('content')
+@php
+    $rawOrderUserId = request()->query('user_id');
+    $orderUserFilter = is_numeric($rawOrderUserId) ? ['user_id' => (int) $rawOrderUserId] : [];
+@endphp
 <div class="page-header">
     <h1 class="page-header-title"><i class="fas fa-shopping-cart"></i> 注文管理</h1>
     <p class="page-header-desc">モバイル注文・店内注文の確認とステータス管理を行います</p>
@@ -14,37 +18,37 @@
         <h3 class="card-title"><i class="fas fa-filter"></i> ステータスフィルター</h3>
     </div>
     <div class="status-filters">
-        <a href="{{ admin_route('admin.orders', ['status' => 'all']) }}" 
+        <a href="{{ admin_route('admin.orders', $orderUserFilter + ['status' => 'all']) }}" 
            class="status-filter {{ !request('status') || request('status') === 'all' ? 'active' : '' }}">
             <i class="fas fa-check-circle"></i> 決済済み
             <span class="badge">{{ $statusCounts['all'] }}</span>
         </a>
-        <a href="{{ admin_route('admin.orders', ['status' => 'pending']) }}" 
+        <a href="{{ admin_route('admin.orders', $orderUserFilter + ['status' => 'pending']) }}" 
            class="status-filter {{ request('status') === 'pending' ? 'active' : '' }}">
             <i class="fas fa-clock"></i> 未処理
             <span class="badge badge-warning">{{ $statusCounts['pending'] }}</span>
         </a>
-        <a href="{{ admin_route('admin.orders', ['status' => 'confirmed']) }}" 
+        <a href="{{ admin_route('admin.orders', $orderUserFilter + ['status' => 'confirmed']) }}" 
            class="status-filter {{ request('status') === 'confirmed' ? 'active' : '' }}">
             <i class="fas fa-check-circle"></i> 確認済み
             <span class="badge badge-info">{{ $statusCounts['confirmed'] }}</span>
         </a>
-        <a href="{{ admin_route('admin.orders', ['status' => 'preparing']) }}" 
+        <a href="{{ admin_route('admin.orders', $orderUserFilter + ['status' => 'preparing']) }}" 
            class="status-filter {{ request('status') === 'preparing' ? 'active' : '' }}">
             <i class="fas fa-utensils"></i> 準備中
             <span class="badge badge-info">{{ $statusCounts['preparing'] }}</span>
         </a>
-        <a href="{{ admin_route('admin.orders', ['status' => 'ready']) }}" 
+        <a href="{{ admin_route('admin.orders', $orderUserFilter + ['status' => 'ready']) }}" 
            class="status-filter {{ request('status') === 'ready' ? 'active' : '' }}">
             <i class="fas fa-check"></i> 準備完了
             <span class="badge badge-info">{{ $statusCounts['ready'] }}</span>
         </a>
-        <a href="{{ admin_route('admin.orders', ['status' => 'completed']) }}" 
+        <a href="{{ admin_route('admin.orders', $orderUserFilter + ['status' => 'completed']) }}" 
            class="status-filter {{ request('status') === 'completed' ? 'active' : '' }}">
             <i class="fas fa-check-double"></i> 完了
             <span class="badge badge-success">{{ $statusCounts['completed'] }}</span>
         </a>
-        <a href="{{ admin_route('admin.orders', ['status' => 'cancelled']) }}" 
+        <a href="{{ admin_route('admin.orders', $orderUserFilter + ['status' => 'cancelled']) }}" 
            class="status-filter {{ request('status') === 'cancelled' ? 'active' : '' }}">
             <i class="fas fa-times-circle"></i> キャンセル
             <span class="badge badge-danger">{{ $statusCounts['cancelled'] }}</span>
@@ -55,7 +59,12 @@
 <div class="card">
     <div class="card-header">
         <h3 class="card-title"><i class="fas fa-list"></i> 注文一覧</h3>
-        <span class="card-header-note">{{ $orders->total() }}件</span>
+        <div class="card-header-actions">
+            <span class="card-header-note">{{ $orders->total() }}件</span>
+            @if($orderUserFilter !== [])
+            <a href="{{ admin_route('admin.orders', array_filter(['status' => request()->query('status')])) }}" class="btn btn-sm btn-secondary">会員の絞り込みを解除</a>
+            @endif
+        </div>
     </div>
     <div class="table-responsive">
         <table class="table">
@@ -131,7 +140,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="7" class="empty-state">
+                    <td colspan="8" class="empty-state">
                         <i class="fas fa-inbox"></i>
                         <p>注文がありません</p>
                     </td>
