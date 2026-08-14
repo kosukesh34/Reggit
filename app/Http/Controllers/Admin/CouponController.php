@@ -163,11 +163,7 @@ class CouponController extends AdminBaseController
         $projectId = $this->resolveAdminProjectId();
         $output = $this->redemptionsUseCase->handle($projectId, (int) $id);
 
-        return view('admin.coupons.redemptions', [
-            'coupon' => $output->coupon,
-            'redemptions' => $output->redemptions,
-            'redemptionCount' => $output->redemptionCount,
-        ]);
+        return view('admin.coupons.redemptions', ['view' => $output]);
     }
 
     /** プレゼント配信（クーポン一括配布）画面 */
@@ -178,25 +174,7 @@ class CouponController extends AdminBaseController
         $selectedCouponId = request()->filled('coupon_id') ? (int) request()->query('coupon_id') : null;
         $output = $this->bulkIssueFormUseCase->handle($projectId, $couponSearch, $selectedCouponId);
 
-        return view('admin.coupons.bulk-issue', [
-            'coupons' => $output->coupons,
-            'memberCount' => $output->memberCount,
-            'hasSmaregiContract' => $output->hasSmaregiContract,
-            'smaregiLinkedCount' => $output->smaregiLinkedCount,
-            'smaregiUnlinkedCount' => $output->smaregiUnlinkedCount,
-            'scheduledDeliveries' => $output->scheduledDeliveries,
-            'deliveryHistories' => $output->deliveryHistories,
-            'deliveryCountByCouponId' => $output->deliveryCountByCouponId,
-            'deliveryTypeOptions' => $output->deliveryTypeOptions,
-            'deliveryGroups' => $output->deliveryGroups,
-            'deliveryTypeJsConfig' => $output->deliveryTypeJsConfig,
-            'products' => $output->products,
-            'stampCards' => $output->stampCards,
-            'rankOptions' => $output->rankOptions,
-            'couponSearch' => $output->couponSearch,
-            'selectedCoupon' => $output->selectedCoupon,
-            'defaultDeliveryType' => CouponDeliveryType::IMMEDIATE_ALL,
-        ]);
+        return view('admin.coupons.bulk-issue', ['view' => $output]);
     }
 
     /** 一括配布画面からのクイック作成（スマレジ契約ありの場合は POS にも登録） */
@@ -347,18 +325,7 @@ class CouponController extends AdminBaseController
         $projectId = $this->resolveAdminProjectId();
         $output = $this->deliveryDetailUseCase->handle($projectId, (int) $id);
 
-        return view('admin.coupons.delivery-detail', [
-            'couponName' => $output->couponName,
-            'couponCode' => $output->couponCode,
-            'deliveryTypeLabel' => $output->deliveryTypeLabel,
-            'statusLabel' => $output->statusLabel,
-            'statusBadge' => $output->statusBadge,
-            'timingLabel' => $output->timingLabel,
-            'issuedCountLabel' => $output->issuedCountLabel,
-            'targetSummary' => $output->targetSummary,
-            'members' => $output->members,
-            'isEventRankUp' => $output->isEventRankUp,
-        ]);
+        return view('admin.coupons.delivery-detail', ['view' => $output]);
     }
 
     /** @return array<string, mixed> */

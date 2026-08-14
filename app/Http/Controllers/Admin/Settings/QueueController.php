@@ -24,14 +24,9 @@ class QueueController extends AdminBaseController
     public function index()
     {
         $projectId = $this->resolveAdminProjectId();
-        $data = $this->getQueueSettingsUseCase->handle($projectId);
+        $view = $this->getQueueSettingsUseCase->handle($projectId);
 
-        return view('admin.settings.queue', [
-            'avgServeMinutes' => $data['avgServeMinutes'],
-            'requireMembership' => $data['requireMembership'],
-            'channelLine' => $data['channelLine'],
-            'channelNative' => $data['channelNative'],
-        ]);
+        return view('admin.settings.queue', ['view' => $view]);
     }
 
     public function update(SettingsQueueRequest $request)

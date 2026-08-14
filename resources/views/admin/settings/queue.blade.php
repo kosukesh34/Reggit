@@ -26,19 +26,19 @@
         <div class="card-body">
             <div class="form-group">
                 <label class="form-label">1組あたりの平均対応時間（分）</label>
-                <input type="number" name="queue_avg_serve_minutes" class="form-control" value="{{ old('queue_avg_serve_minutes', $avgServeMinutes) }}" min="1" max="120" required>
+                <input type="number" name="queue_avg_serve_minutes" class="form-control" value="{{ old('queue_avg_serve_minutes', $view->avgServeMinutes) }}" min="1" max="120" required>
                 <small class="form-text text-muted">例: 10 と入力すると、待ち人数×10分が目安待ち時間になります。</small>
             </div>
             <div class="form-group">
                 <label class="form-label">QR読み取り時の起動アプリ</label>
                 <input type="hidden" name="queue_channel_line" value="0">
                 <label class="checkbox-label">
-                    <input type="checkbox" name="queue_channel_line" value="1" {{ old('queue_channel_line', $channelLine ? '1' : '0') === '1' ? 'checked' : '' }}>
+                    <input type="checkbox" name="queue_channel_line" value="1" {{ old('queue_channel_line', $view->channelLine ? '1' : '0') === '1' ? 'checked' : '' }}>
                     <span>LINE</span>
                 </label>
                 <input type="hidden" name="queue_channel_native" value="0">
                 <label class="checkbox-label">
-                    <input type="checkbox" name="queue_channel_native" value="1" {{ old('queue_channel_native', $channelNative ? '1' : '0') === '1' ? 'checked' : '' }}>
+                    <input type="checkbox" name="queue_channel_native" value="1" {{ old('queue_channel_native', $view->channelNative ? '1' : '0') === '1' ? 'checked' : '' }}>
                     <span>ネイティブアプリ</span>
                 </label>
                 <small class="form-text text-muted">両方選択時はお客様が起動アプリを選べます。片方のみの場合はそのアプリを起動します。呼び出し通知をLINEで受け取るにはLINEにチェックを入れてください（お知らせ配信と同じ経路です）。</small>
@@ -46,10 +46,10 @@
             <div class="form-group">
                 <label class="form-label">会員登録</label>
                 <label class="radio-label-inline">
-                    <input type="radio" name="queue_require_membership" value="1" {{ old('queue_require_membership', $requireMembership ? '1' : '0') === '1' ? 'checked' : '' }}> 必須
+                    <input type="radio" name="queue_require_membership" value="1" {{ old('queue_require_membership', $view->requireMembership ? '1' : '0') === '1' ? 'checked' : '' }}> 必須
                 </label>
                 <label class="radio-label-inline">
-                    <input type="radio" name="queue_require_membership" value="0" {{ old('queue_require_membership', $requireMembership ? '1' : '0') === '0' ? 'checked' : '' }}> なし
+                    <input type="radio" name="queue_require_membership" value="0" {{ old('queue_require_membership', $view->requireMembership ? '1' : '0') === '0' ? 'checked' : '' }}> なし
                 </label>
                 <small class="form-text text-muted">必須の場合、会員登録していないと順番待ちに登録できません。</small>
             </div>

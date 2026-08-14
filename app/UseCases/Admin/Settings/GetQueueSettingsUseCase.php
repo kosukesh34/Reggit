@@ -3,6 +3,7 @@
 namespace App\UseCases\Admin\Settings;
 
 use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\UseCases\Admin\Settings\Data\QueueSettingsView;
 
 class GetQueueSettingsUseCase
 {
@@ -10,21 +11,13 @@ class GetQueueSettingsUseCase
         private ShopSettingRepository $shopSettingRepository,
     ) {}
 
-    /**
-     * @return array{
-     *     avgServeMinutes: int,
-     *     requireMembership: bool,
-     *     channelLine: bool,
-     *     channelNative: bool
-     * }
-     */
-    public function handle(int $projectId): array
+    public function handle(int $projectId): QueueSettingsView
     {
-        return [
-            'avgServeMinutes' => $this->shopSettingRepository->getQueueAvgServeMinutes($projectId),
-            'requireMembership' => $this->shopSettingRepository->getQueueRequireMembership($projectId),
-            'channelLine' => $this->shopSettingRepository->getQueueChannelLine($projectId),
-            'channelNative' => $this->shopSettingRepository->getQueueChannelNative($projectId),
-        ];
+        return new QueueSettingsView(
+            $this->shopSettingRepository->getQueueAvgServeMinutes($projectId),
+            $this->shopSettingRepository->getQueueRequireMembership($projectId),
+            $this->shopSettingRepository->getQueueChannelLine($projectId),
+            $this->shopSettingRepository->getQueueChannelNative($projectId),
+        );
     }
 }

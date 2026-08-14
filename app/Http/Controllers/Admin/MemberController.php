@@ -18,6 +18,7 @@ use App\UseCases\Admin\Member\AdminMemberRecordVisitUseCase;
 use App\UseCases\Admin\Member\AdminMemberUpdateMemoUseCase;
 use App\UseCases\Admin\Member\AdminMemberUpdateUseCase;
 use App\UseCases\Admin\Member\AdminMemberVisitDetailUseCase;
+use App\UseCases\Admin\Member\Data\AdminMemberListView;
 use App\UseCases\Admin\Member\Data\AdminMemberUpdateInput;
 use App\UseCases\Admin\Member\GetAdminMemberListExtrasUseCase;
 use App\UseCases\Admin\MemberTag\AdminMemberTagIndexUseCase;
@@ -56,12 +57,12 @@ class MemberController extends AdminBaseController
         $output = $this->listUseCase->handle($projectId, $filters);
         $extras = $this->memberListExtrasUseCase->handle($projectId);
 
-        return view('admin.members', [
-            'members' => $output->members,
-            'filters' => $filters,
-            'lineInviteUrl' => $extras->lineInviteUrl,
-            'lineInviteLabel' => $extras->lineInviteLabel,
-        ]);
+        return view('admin.members', ['view' => new AdminMemberListView(
+            $output->members,
+            $filters,
+            $extras->lineInviteUrl,
+            $extras->lineInviteLabel,
+        )]);
     }
 
     public function memberDetail(string $project_key, int $id)
@@ -79,16 +80,8 @@ class MemberController extends AdminBaseController
         $tags = $this->tagIndexUseCase->handle($projectId);
 
         return view('admin.member-detail', [
-            'member' => $output->member,
-            'purchaseSummary' => $output->purchaseSummary,
+            'view' => $output,
             'allTags' => $tags,
-            'visits' => $output->visits,
-            'pointTransactions' => $output->pointTransactions,
-            'memberCoupons' => $output->memberCoupons,
-            'stampTransactions' => $output->stampTransactions,
-            'rankHistories' => $output->rankHistories,
-            'couponRedemptions' => $output->couponRedemptions,
-            'historyFilters' => $output->historyFilters,
         ]);
     }
 
@@ -134,13 +127,7 @@ class MemberController extends AdminBaseController
         $projectId = $this->resolveAdminProjectId();
         $output = $this->editUseCase->handle($projectId, (int) $id);
 
-        return view('admin.member-edit', [
-            'member' => $output->member,
-            'rankOptions' => $output->rankOptions,
-            'activeCoupons' => $output->activeCoupons,
-            'activeStampCards' => $output->activeStampCards,
-            'customProfileFields' => $output->customProfileFields,
-        ]);
+        return view('admin.member-edit', ['view' => $output]);
     }
 
     public function updateMember(MemberUpdateRequest $request, string $project_key, int $id)
