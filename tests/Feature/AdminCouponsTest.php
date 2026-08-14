@@ -45,6 +45,7 @@ class AdminCouponsTest extends TestCase
             ->get(route('admin.coupons', ['project_key' => $project->project_key]));
 
         $response->assertStatus(200)
+            ->assertSee('作成')
             ->assertDontSee('お知らせで配布');
     }
 
@@ -289,6 +290,9 @@ class AdminCouponsTest extends TestCase
         $createPage = $this->actingAs($admin, 'admin')
             ->get(route('admin.coupons.create', ['project_key' => $project->project_key]));
         $createPage->assertStatus(200)
+            ->assertDontSee('LIVE PREVIEW')
+            ->assertDontSee('LINEプレビュー')
+            ->assertSee('会員アプリ')
             ->assertDontSee('name="return"', false)
             ->assertSee('name="image"', false)
             ->assertSee('name="image_fit"', false)
