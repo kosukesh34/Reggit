@@ -266,11 +266,7 @@
     <aside class="cp-studio-aside" aria-label="クーポンプレビュー">
         <div class="cp-preview-panel">
             <div class="cp-preview-head">
-                <div>
-                    <span class="cp-live-dot" aria-hidden="true"></span>
-                    <strong>LIVE PREVIEW</strong>
-                </div>
-                <span>会員アプリ</span>
+                <span class="cp-preview-head-label">会員アプリ</span>
             </div>
             @include('admin.coupons._preview')
         </div>
