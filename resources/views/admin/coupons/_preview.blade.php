@@ -13,12 +13,14 @@
             <span class="cp-device-button cp-device-button--volume-down" aria-hidden="true"></span>
             <span class="cp-device-button cp-device-button--power" aria-hidden="true"></span>
             <div class="cp-real-preview-frame">
-                <iframe
-                    id="couponLivePreview"
-                    title="実際の会員アプリのクーポン画面"
-                    src="{{ $couponPreviewUrl }}"
-                    loading="eager"
-                ></iframe>
+                <div class="cp-real-preview-screen">
+                    <iframe
+                        id="couponLivePreview"
+                        title="実際の会員アプリのクーポン画面"
+                        src="{{ $couponPreviewUrl }}"
+                        loading="eager"
+                    ></iframe>
+                </div>
             </div>
         </div>
         <p class="cp-real-preview-note"><i class="fas fa-circle-check" aria-hidden="true"></i> 店舗アプリと同じ画面・デザインです</p>
