@@ -72,6 +72,7 @@ export class AnnouncementManager {
                     </div>
                 </div>
             `;
+            this.bindAdaptiveMedia(section);
             this.bindListClicks(section);
         } catch (error) {
             // eslint-disable-next-line no-console
@@ -252,6 +253,19 @@ export class AnnouncementManager {
                 event.preventDefault();
                 void this.openDetail(id);
             });
+        });
+    }
+
+    private bindAdaptiveMedia(root: Element): void {
+        root.querySelectorAll<HTMLImageElement>('.announcement-item__media img').forEach((image) => {
+            const applyRatio = (): void => {
+                const media = image.parentElement;
+                if (media === null || image.naturalWidth <= 0 || image.naturalHeight <= 0) return;
+                const ratio = Math.min(3.2, Math.max(0.6, image.naturalWidth / image.naturalHeight));
+                media.style.setProperty('--announcement-media-aspect', String(ratio));
+            };
+            if (image.complete) applyRatio();
+            else image.addEventListener('load', applyRatio, { once: true });
         });
     }
 

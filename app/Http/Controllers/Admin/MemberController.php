@@ -156,6 +156,7 @@ class MemberController extends AdminBaseController
             'mail_receive_flag' => $request->input('mail_receive_flag') !== null && $request->input('mail_receive_flag') !== ''
                 ? (string) $request->input('mail_receive_flag')
                 : null,
+            'notification_preference' => (string) $request->input('notification_preference'),
         ];
         $profileExtra = $request->getProfileExtraArray();
         if ($profileExtra !== null) {

@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\MemberNotificationPreference;
 use App\Models\Member;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -18,6 +19,7 @@ class MemberFactory extends Factory
             'member_number' => (string) $this->faker->unique()->numerify('##########'),
             'points' => 0,
             'status' => 'active',
+            'notification_preference' => MemberNotificationPreference::ALL,
             'birthday' => $this->faker->optional()->date(),
             'address' => $this->faker->optional()->address(),
         ];

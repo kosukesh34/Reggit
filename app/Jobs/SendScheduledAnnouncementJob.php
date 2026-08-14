@@ -3,7 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\Announcement;
-use App\Services\Admin\MemberAdminService;
+use App\Services\Admin\AnnouncementAdminService;
 use App\Services\AnnouncementNotificationService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -19,32 +19,19 @@ class SendScheduledAnnouncementJob implements ShouldQueue
         public int $announcementId
     ) {}
 
-    public function handle(AnnouncementNotificationService $announcementNotificationService, MemberAdminService $memberAdminService): void
-    {
+    public function handle(
+        AnnouncementNotificationService $announcementNotificationService,
+        AnnouncementAdminService $announcementAdminService,
+    ): void {
         $announcement = Announcement::withoutGlobalScopes()->find($this->announcementId);
-        if (! $announcement || $announcement->delivery_status !== Announcement::DELIVERY_STATUS_SCHEDULED) {
+        if ($announcement === null || $announcement->delivery_status !== Announcement::DELIVERY_STATUS_SCHEDULED) {
             return;
         }
 
+        $announcementAdminService->finalizeAudienceForSend($announcement);
+        $announcement = $announcement->fresh() ?? $announcement;
         $announcementNotificationService->send($announcement);
-
-        if ($announcement->delivery_coupon_id) {
-            $targetMemberIds = is_array($announcement->target_member_ids) && $announcement->target_member_ids !== []
-                ? $announcement->target_member_ids
-                : [];
-            $isTargeted = in_array($announcement->delivery_type, [
-                Announcement::DELIVERY_TYPE_PERSONAL,
-                Announcement::DELIVERY_TYPE_SEGMENT,
-                Announcement::DELIVERY_TYPE_AFTER_REGISTRATION,
-            ], true);
-            if ($isTargeted === false || $targetMemberIds !== []) {
-                $memberAdminService->issueCouponToMembers(
-                    (int) $announcement->project_id,
-                    (int) $announcement->delivery_coupon_id,
-                    $targetMemberIds
-                );
-            }
-        }
+        $announcementAdminService->issueDeliveryCouponIfSet($announcement);
 
         $announcement->update([
             'delivery_status' => Announcement::DELIVERY_STATUS_SENT,

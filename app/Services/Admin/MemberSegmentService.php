@@ -37,12 +37,26 @@ class MemberSegmentService
             $criteria['channel'] = $channel;
         }
 
-        $birthdayMonth = $input['segment_birthday_month'] ?? $input['birthday_month'] ?? null;
-        if ($birthdayMonth !== null && $birthdayMonth !== '') {
-            $month = (int) $birthdayMonth;
-            if ($month >= 1 && $month <= 12) {
-                $criteria['birthday_month'] = $month;
+        $birthdayMonths = $this->normalizeIntList(
+            $input['segment_birthday_months'] ?? $input['birthday_months'] ?? [],
+            1,
+            12,
+        );
+        if ($birthdayMonths !== []) {
+            $criteria['birthday_months'] = $birthdayMonths;
+        } else {
+            $birthdayMonth = $input['segment_birthday_month'] ?? $input['birthday_month'] ?? null;
+            if ($birthdayMonth !== null && $birthdayMonth !== '') {
+                $month = (int) $birthdayMonth;
+                if ($month >= 1 && $month <= 12) {
+                    $criteria['birthday_month'] = $month;
+                }
             }
+        }
+
+        $tagIds = $this->normalizeIntList($input['segment_tag_ids'] ?? $input['tag_ids'] ?? []);
+        if ($tagIds !== []) {
+            $criteria['tag_ids'] = $tagIds;
         }
 
         $visitMin = $input['segment_visit_count_min'] ?? $input['visit_count_min'] ?? null;
@@ -138,6 +152,20 @@ class MemberSegmentService
             $sets[] = $this->targetRepository->findIdsByBirthdayMonth($projectId, (int) $criteria['birthday_month']);
         }
 
+        if (isset($criteria['birthday_months']) && is_array($criteria['birthday_months'])) {
+            $birthdayIds = collect($criteria['birthday_months'])
+                ->flatMap(fn ($month) => $this->targetRepository->findIdsByBirthdayMonth($projectId, (int) $month))
+                ->map(fn ($id) => (int) $id)
+                ->unique()
+                ->values()
+                ->all();
+            $sets[] = $birthdayIds;
+        }
+
+        if (isset($criteria['tag_ids']) && is_array($criteria['tag_ids'])) {
+            $sets[] = $this->targetRepository->findIdsByTagIds($projectId, $criteria['tag_ids']);
+        }
+
         $hasVisitMin = array_key_exists('visit_count_min', $criteria);
         $hasVisitMax = array_key_exists('visit_count_max', $criteria);
         if ($hasVisitMin || $hasVisitMax) {
@@ -221,5 +249,21 @@ class MemberSegmentService
     public function countMembers(int $projectId, array $criteria): int
     {
         return $this->getMemberIds($projectId, $criteria)->count();
+    }
+
+    /**
+     * @return list<int>
+     */
+    private function normalizeIntList(mixed $values, int $min = 1, ?int $max = null): array
+    {
+        $items = is_array($values) ? $values : [$values];
+
+        return collect($items)
+            ->map(fn ($value) => (int) $value)
+            ->filter(fn (int $value): bool => $value >= $min && ($max === null || $value <= $max))
+            ->unique()
+            ->sort()
+            ->values()
+            ->all();
     }
 }

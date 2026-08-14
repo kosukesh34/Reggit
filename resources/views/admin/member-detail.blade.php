@@ -40,7 +40,8 @@
     $firstStamp = $view->member->memberStamps->first();
     $hasProfileExtras = $view->member->birthday !== null
         || ($sexLabel !== '—' && $sexLabel !== '未設定')
-        || $addressLabel !== '';
+        || $addressLabel !== ''
+        || $view->member->notification_preference !== null;
     $historyTabs = [
         ['id' => 'orders', 'label' => '購入', 'count' => $orderListTotal],
         ['id' => 'visits', 'label' => '来店', 'count' => $view->visits?->total() ?? 0],
@@ -193,6 +194,10 @@
                 <dd>{{ $addressLabel }}</dd>
             </div>
             @endif
+            <div class="member-dl-row">
+                <dt>お知らせ通知</dt>
+                <dd>{{ \App\Enums\MemberNotificationPreference::getLabel(\App\Enums\MemberNotificationPreference::normalize($view->member->notification_preference)) }}</dd>
+            </div>
         </dl>
     </div>
 </div>

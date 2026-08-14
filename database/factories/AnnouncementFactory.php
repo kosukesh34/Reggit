@@ -18,6 +18,9 @@ class AnnouncementFactory extends Factory
             'published_at' => now()->subDay(),
             'expires_at' => null,
             'is_pinned' => false,
+            'delivery_type' => Announcement::DELIVERY_TYPE_IMMEDIATE_BULK,
+            'delivery_timing' => Announcement::DELIVERY_TIMING_IMMEDIATE,
+            'delivery_status' => Announcement::DELIVERY_STATUS_SENT,
         ];
     }
 }
