@@ -32,9 +32,9 @@ class AfterRegistrationDeliveryController extends AdminBaseController
     public function create()
     {
         $projectId = $this->resolveAdminProjectId();
-        $coupons = $this->createUseCase->handle($projectId);
+        $view = $this->createUseCase->handle($projectId);
 
-        return view('admin.after-registration-deliveries.create', compact('coupons'));
+        return view('admin.after-registration-deliveries.create', compact('view'));
     }
 
     public function store(AfterRegistrationDeliveryRequest $request)
@@ -43,18 +43,15 @@ class AfterRegistrationDeliveryController extends AdminBaseController
         $this->storeUseCase->handle($projectId, $request->validated());
 
         return redirect()->route('admin.after-registration-deliveries.index', $this->buildAdminRouteParams())
-            ->with('success', '登録後配信を追加しました');
+            ->with('success', 'スケジュール配信を追加しました');
     }
 
     public function edit(string $projectKey, int $id)
     {
         $projectId = $this->resolveAdminProjectId();
-        $output = $this->editUseCase->handle($projectId, $id);
+        $view = $this->editUseCase->handle($projectId, $id);
 
-        return view('admin.after-registration-deliveries.edit', [
-            'delivery' => $output->delivery,
-            'coupons' => $output->coupons,
-        ]);
+        return view('admin.after-registration-deliveries.edit', compact('view'));
     }
 
     public function update(AfterRegistrationDeliveryRequest $request, string $projectKey, int $id)
@@ -63,7 +60,7 @@ class AfterRegistrationDeliveryController extends AdminBaseController
         $this->updateUseCase->handle($projectId, $id, $request->validated());
 
         return redirect()->route('admin.after-registration-deliveries.index', $this->buildAdminRouteParams())
-            ->with('success', '登録後配信を更新しました');
+            ->with('success', 'スケジュール配信を更新しました');
     }
 
     public function destroy(string $projectKey, int $id)
@@ -72,6 +69,6 @@ class AfterRegistrationDeliveryController extends AdminBaseController
         $this->destroyUseCase->handle($projectId, $id);
 
         return redirect()->route('admin.after-registration-deliveries.index', $this->buildAdminRouteParams())
-            ->with('success', '登録後配信を削除しました');
+            ->with('success', 'スケジュール配信を削除しました');
     }
 }

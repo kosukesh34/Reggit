@@ -6,6 +6,7 @@ use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Enums\MemberNotificationPreference;
 use App\Enums\MemberStatus;
 use App\Enums\ProfileCustomFieldInputType;
+use App\Enums\ScheduledDeliveryType;
 use App\Jobs\SendAfterRegistrationJob;
 use App\Models\AfterRegistrationDelivery;
 use App\Models\Member;
@@ -36,6 +37,7 @@ class MemberService
         private MemberRankCalculator $rankCalculator,
         private ShopSettingRepository $shopSettingRepository,
         private IssueCouponOnRankUpUseCase $issueCouponOnRankUpUseCase,
+        private ScheduledDeliverySendService $scheduledDeliverySendService,
     ) {}
 
     public function getMemberData(User $user): array
@@ -477,10 +479,14 @@ class MemberService
 
             AfterRegistrationDelivery::where('project_id', $projectId)
                 ->where('is_active', true)
+                ->where('schedule_type', ScheduledDeliveryType::NEW_USER_MINUTES)
                 ->get()
                 ->each(function (AfterRegistrationDelivery $delivery) use ($member): void {
-                    SendAfterRegistrationJob::dispatch($member->id, $delivery->id)
-                        ->delay(now()->addMinutes($delivery->delay_minutes));
+                    $job = SendAfterRegistrationJob::dispatch($member->id, $delivery->id);
+                    $delay = $delivery->resolvedDelayMinutes();
+                    if ($delay > 0) {
+                        $job->delay(now()->addMinutes($delay));
+                    }
                 });
 
             $userUpdates = array_filter([
@@ -541,6 +547,7 @@ class MemberService
                 (string) ($rankInfo['current_rank_label'] ?? $newRank),
             );
             $this->issueCouponOnRankUpUseCase->handle($member->fresh() ?? $member, $previousRank, $newRank);
+            $this->scheduledDeliverySendService->sendRankUpArrival($member->fresh() ?? $member, $newRank);
             $this->smaregiCustomerRankAssignmentService->assignRankToCustomer($member, $newRank);
         }
     }
