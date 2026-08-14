@@ -13,11 +13,10 @@ class AdminAnnouncementIndexUseCase
     /** @var array<string, string> */
     private const DELIVERY_TYPE_LABELS = [
         'all' => 'すべて',
-        Announcement::DELIVERY_TYPE_IMMEDIATE_BULK => '一斉配信',
-        Announcement::DELIVERY_TYPE_PERSONAL => '個人宛配信',
-        Announcement::DELIVERY_TYPE_SCHEDULED => '予約配信',
-        Announcement::DELIVERY_TYPE_SEGMENT => 'セグメント配信',
-        Announcement::DELIVERY_TYPE_AFTER_REGISTRATION => '登録後配信',
+        Announcement::DELIVERY_TYPE_IMMEDIATE_BULK => '全会員',
+        Announcement::DELIVERY_TYPE_PERSONAL => '個別指定',
+        Announcement::DELIVERY_TYPE_SEGMENT => '条件指定',
+        Announcement::DELIVERY_TYPE_AFTER_REGISTRATION => 'スケジュール配信',
     ];
 
     /** @var array<string, string> */

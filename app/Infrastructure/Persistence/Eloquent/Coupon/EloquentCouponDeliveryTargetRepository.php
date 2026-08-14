@@ -25,6 +25,28 @@ class EloquentCouponDeliveryTargetRepository implements CouponDeliveryTargetRepo
             ->all();
     }
 
+    public function findIdsByTagIds(int $projectId, array $tagIds): array
+    {
+        $normalizedTagIds = array_values(array_unique(array_filter(
+            array_map('intval', $tagIds),
+            static fn (int $id): bool => $id > 0,
+        )));
+        if ($normalizedTagIds === []) {
+            return [];
+        }
+
+        return Member::query()
+            ->where('project_id', $projectId)
+            ->whereHas('tags', function ($query) use ($projectId, $normalizedTagIds): void {
+                $query->where('member_tags.project_id', $projectId)
+                    ->whereIn('member_tags.id', $normalizedTagIds);
+            })
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->values()
+            ->all();
+    }
+
     public function findIdsCreatedSince(int $projectId, \DateTimeInterface $since): array
     {
         return Member::query()

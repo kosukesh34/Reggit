@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\MemberNotificationPreference;
 use App\Http\Middleware\AuthenticateApiToken;
 use App\Models\Member;
 use App\Models\PointTransaction;
@@ -35,6 +36,7 @@ class MemberApiV1Test extends TestCase
             ->post('/api/v1/members/register', [
                 'name' => 'API会員',
                 'phone' => '090-1234-5678',
+                'notification_preference' => MemberNotificationPreference::COUPON_ONLY,
             ]);
 
         $response->assertCreated()
@@ -46,7 +48,10 @@ class MemberApiV1Test extends TestCase
             'line_user_id' => self::LINE_USER_ID,
             'name' => 'API会員',
         ]);
-        $this->assertDatabaseHas('members', ['project_id' => $project->id]);
+        $this->assertDatabaseHas('members', [
+            'project_id' => $project->id,
+            'notification_preference' => MemberNotificationPreference::COUPON_ONLY,
+        ]);
     }
 
     public function test_register_ライン名だけ送ってもプロフィール名は空のままであること(): void
