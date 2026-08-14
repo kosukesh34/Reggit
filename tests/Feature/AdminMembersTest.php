@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\MemberNotificationPreference;
 use App\Enums\MemberStatus;
 use App\Enums\MemberVisitSource;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
@@ -456,6 +457,7 @@ class AdminMembersTest extends TestCase
                 'name' => '大牟田 テスト',
                 'member_number' => 'M-ADMIN-1',
                 'status' => 'active',
+                'notification_preference' => MemberNotificationPreference::ALL,
                 'point_set' => 500,
             ]);
 
@@ -508,6 +510,7 @@ class AdminMembersTest extends TestCase
                 'name' => 'テスト会員',
                 'member_number' => 'M-ADMIN-LEDGER',
                 'status' => 'active',
+                'notification_preference' => MemberNotificationPreference::ALL,
                 'point_set' => 100,
             ]);
 
@@ -723,6 +726,7 @@ class AdminMembersTest extends TestCase
                 'email' => '',
                 'member_number' => 'M-ADMIN-2',
                 'status' => 'active',
+                'notification_preference' => MemberNotificationPreference::ALL,
             ]);
 
         $response->assertRedirect();
