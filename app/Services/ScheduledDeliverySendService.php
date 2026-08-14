@@ -1,0 +1,197 @@
+<?php
+
+namespace App\Services;
+
+use App\Enums\MemberCouponSource;
+use App\Enums\ScheduledDeliveryType;
+use App\Models\AfterRegistrationDelivery;
+use App\Models\Announcement;
+use App\Models\Member;
+use App\Models\MemberCoupon;
+use App\Models\ScheduledDeliverySend;
+use App\Services\Admin\MemberAdminService;
+use App\Util\LogHelper;
+use Carbon\Carbon;
+
+class ScheduledDeliverySendService
+{
+    public function __construct(
+        private ScheduledDeliveryTargetService $targetService,
+        private AnnouncementNotificationService $announcementNotificationService,
+        private MemberAdminService $memberAdminService,
+    ) {}
+
+    public function processDue(Carbon $now): int
+    {
+        $sent = 0;
+        $deliveries = AfterRegistrationDelivery::withoutGlobalScopes()
+            ->where('is_active', true)
+            ->get();
+
+        foreach ($deliveries as $delivery) {
+            if (! ScheduledDeliveryType::runsOnCron((string) $delivery->schedule_type)) {
+                continue;
+            }
+            if (ScheduledDeliveryType::needsClock((string) $delivery->schedule_type)
+                && ! $this->matchesClock($delivery, $now)) {
+                continue;
+            }
+            $sent += $this->sendToMatchingMembers($delivery, $now);
+        }
+
+        return $sent;
+    }
+
+    public function sendRankUpArrival(Member $member, string $newRank): int
+    {
+        if ($newRank === '') {
+            return 0;
+        }
+        $deliveries = AfterRegistrationDelivery::withoutGlobalScopes()
+            ->where('project_id', $member->project_id)
+            ->where('is_active', true)
+            ->where('schedule_type', ScheduledDeliveryType::RANK_UP_ARRIVAL)
+            ->get();
+
+        $count = 0;
+        foreach ($deliveries as $delivery) {
+            if ((string) $delivery->param('reach_rank', '') !== $newRank) {
+                continue;
+            }
+            if ($this->sendToMember($delivery, $member)) {
+                $count++;
+            }
+        }
+
+        return $count;
+    }
+
+    public function sendToMatchingMembers(AfterRegistrationDelivery $delivery, Carbon $now): int
+    {
+        $memberIds = $this->targetService->memberIds($delivery, $now);
+        $count = 0;
+        foreach ($memberIds as $memberId) {
+            $member = Member::query()
+                ->where('project_id', $delivery->project_id)
+                ->find($memberId);
+            if ($member === null) {
+                continue;
+            }
+            if ($this->sendToMember($delivery, $member, $now)) {
+                $count++;
+            }
+        }
+
+        return $count;
+    }
+
+    public function sendToMember(AfterRegistrationDelivery $delivery, Member $member, ?Carbon $now = null): bool
+    {
+        $now ??= now();
+        if (! $delivery->is_active) {
+            return false;
+        }
+        if ((int) $member->project_id !== (int) $delivery->project_id) {
+            return false;
+        }
+        $sendKey = $delivery->sendKey($now);
+        if ($this->alreadySent($delivery, (int) $member->id, $sendKey)) {
+            return false;
+        }
+
+        if ($delivery->isCouponOnly()) {
+            if ($delivery->coupon_id === null) {
+                return false;
+            }
+            $this->issueCoupon($delivery, $member, $now, $delivery->shouldSendNotification());
+        } else {
+            $this->sendAnnouncement($delivery, $member);
+            if ($delivery->coupon_id !== null) {
+                $this->issueCoupon($delivery, $member, $now, true);
+            }
+        }
+
+        ScheduledDeliverySend::query()->create([
+            'after_registration_delivery_id' => $delivery->id,
+            'member_id' => $member->id,
+            'send_key' => $sendKey,
+            'sent_at' => $now,
+        ]);
+
+        LogHelper::info('[ScheduledDelivery] sent', [
+            'project_id' => (int) $delivery->project_id,
+            'delivery_id' => (int) $delivery->id,
+            'member_id' => (int) $member->id,
+            'schedule_type' => (string) $delivery->schedule_type,
+        ]);
+
+        return true;
+    }
+
+    private function matchesClock(AfterRegistrationDelivery $delivery, Carbon $now): bool
+    {
+        return (int) $now->format('G') === (int) $delivery->push_hour
+            && (int) $now->format('i') === (int) $delivery->push_minute;
+    }
+
+    private function alreadySent(AfterRegistrationDelivery $delivery, int $memberId, string $sendKey): bool
+    {
+        return ScheduledDeliverySend::query()
+            ->where('after_registration_delivery_id', $delivery->id)
+            ->where('member_id', $memberId)
+            ->where('send_key', $sendKey)
+            ->exists();
+    }
+
+    private function sendAnnouncement(AfterRegistrationDelivery $delivery, Member $member): void
+    {
+        $title = trim((string) $delivery->title);
+        if ($title === '') {
+            return;
+        }
+        $announcement = Announcement::create([
+            'project_id' => $member->project_id,
+            'title' => $title,
+            'body' => $delivery->body,
+            'is_pinned' => false,
+            'delivery_type' => Announcement::DELIVERY_TYPE_AFTER_REGISTRATION,
+            'delivery_status' => Announcement::DELIVERY_STATUS_SENT,
+            'published_at' => now(),
+            'sent_at' => now(),
+            'target_member_ids' => [$member->id],
+            'delivery_coupon_id' => $delivery->coupon_id,
+        ]);
+        $this->announcementNotificationService->send($announcement);
+    }
+
+    private function issueCoupon(AfterRegistrationDelivery $delivery, Member $member, Carbon $now, bool $shouldNotify): void
+    {
+        $couponId = (int) $delivery->coupon_id;
+        if ($couponId <= 0) {
+            return;
+        }
+        $grantKey = implode(':', [
+            MemberCouponSource::SCHEDULED_DELIVERY,
+            (string) $delivery->id,
+            $delivery->sendKey($now),
+            (string) $member->id,
+        ]);
+        $issue = function () use ($member, $couponId, $delivery, $grantKey): void {
+            $this->memberAdminService->issueCouponToMember(
+                $member,
+                $couponId,
+                null,
+                null,
+                MemberCouponSource::SCHEDULED_DELIVERY,
+                (string) $delivery->id,
+                $grantKey,
+            );
+        };
+        if ($shouldNotify) {
+            $issue();
+
+            return;
+        }
+        MemberCoupon::withoutEvents($issue);
+    }
+}
