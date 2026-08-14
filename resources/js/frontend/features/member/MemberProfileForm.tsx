@@ -257,6 +257,43 @@ function ProfileFieldRows({
             return;
         }
 
+        if (key === 'notification_preference') {
+            const preference = val || 'all';
+            const options = [
+                { value: 'all', label: 'すべて受け取る', note: '新着情報とクーポン情報' },
+                { value: 'coupon_only', label: 'クーポン情報のみ', note: 'クーポンが付く配信だけ' },
+                { value: 'none', label: 'すべて受け取らない', note: 'LINE・Push通知を送信しません' },
+            ];
+            rowNodes.push({
+                key,
+                isAddress: false,
+                node: (
+                    <fieldset className="member-form-group member-form-group--choice" key={key}>
+                        <legend className="member-form-group-label">
+                            {label}
+                            <RequiredMark required={required} />
+                        </legend>
+                        <div className="member-form-notification-options" role="radiogroup" aria-label={label}>
+                            {options.map((option) => (
+                                <label className="member-form-notification-option" key={option.value}>
+                                    <input
+                                        type="radio"
+                                        name="notification_preference"
+                                        value={option.value}
+                                        defaultChecked={preference === option.value}
+                                        required
+                                    />
+                                    <span><strong>{option.label}</strong><small>{option.note}</small></span>
+                                </label>
+                            ))}
+                        </div>
+                        <FieldHint description={f.description} />
+                    </fieldset>
+                ),
+            });
+            return;
+        }
+
         if (inputType === 'radio' && values.length > 0) {
             rowNodes.push({
                 key,

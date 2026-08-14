@@ -21,7 +21,7 @@
     </div>
     <div class="page-header-actions">
         <a href="{{ admin_route('admin.after-registration-deliveries.index') }}" class="btn btn-secondary"><i class="fas fa-clock"></i> 登録後配信</a>
-        <a href="{{ admin_route('admin.announcements.delivery.create') }}" class="btn btn-secondary"><i class="fas fa-paper-plane"></i> 配信</a>
+        <a href="{{ admin_route('admin.announcements.delivery.create') }}" class="btn btn-secondary"><i class="fas fa-paper-plane"></i> お知らせを配信</a>
         <a href="{{ admin_route('admin.announcements.create') }}" class="btn btn-primary"><i class="fas fa-plus"></i> 追加</a>
     </div>
 </div>
@@ -59,7 +59,7 @@
 
 <div class="card">
     <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-filter"></i> 配信形態</h3>
+        <h3 class="card-title"><i class="fas fa-filter"></i> 配信対象</h3>
     </div>
     <div class="status-filters">
         @foreach($view->deliveryTypeLabels as $typeKey => $typeLabel)
@@ -92,9 +92,11 @@
                 <thead>
                     <tr>
                         <th>タイトル</th>
-                        <th>配信形態</th>
+                        <th>タイミング</th>
+                        <th>配信対象</th>
                         <th>状態</th>
-                        <th>既読数</th>
+                        <th>対象者</th>
+                        <th>既読</th>
                         <th>公開日</th>
                         <th>掲載終了</th>
                         <th>固定</th>
@@ -105,6 +107,13 @@
                     @foreach($view->announcements as $a)
                     <tr>
                         <td><strong>{{ Str::limit($a->title, 40) }}</strong></td>
+                        <td>
+                            @if(($a->delivery_timing ?? null) === \App\Models\Announcement::DELIVERY_TIMING_SCHEDULED || $a->delivery_type === \App\Models\Announcement::DELIVERY_TYPE_SCHEDULED)
+                                <span class="badge badge-info"><i class="far fa-clock"></i> 予約</span>
+                            @else
+                                <span class="badge badge-success"><i class="fas fa-bolt"></i> 即時</span>
+                            @endif
+                        </td>
                         <td><span class="badge badge-info">{{ $view->deliveryTypeLabels[$a->delivery_type] ?? '—' }}</span></td>
                         <td>
                             @if($a->delivery_status === 'sent')
@@ -116,6 +125,15 @@
                             @endif
                         </td>
                         <td>
+                            <a href="{{ admin_route('admin.announcements.reads', ['id' => $a->id]) }}">
+                                @if($a->delivery_status === \App\Models\Announcement::DELIVERY_STATUS_SCHEDULED && $a->shouldResolveAudienceAtSend())
+                                    配信時に確定
+                                @else
+                                    {{ is_array($a->target_member_ids) ? count($a->target_member_ids).'人' : '全員' }}
+                                @endif
+                            </a>
+                        </td>
+                        <td>
                             <a href="{{ admin_route('admin.announcements.reads', ['id' => $a->id]) }}">{{ (int) ($a->reads_count ?? 0) }}人</a>
                         </td>
                         <td>{{ $a->published_at ? $a->published_at->format('Y/m/d H:i') : '—' }}</td>
@@ -123,6 +141,7 @@
                         <td>@if($a->is_pinned)<span class="badge badge-info"><i class="fas fa-thumbtack"></i> 固定</span>@else<span class="text-muted">—</span>@endif</td>
                         <td class="table-actions-cell">
                             <div class="table-actions">
+                                <a href="{{ admin_route('admin.announcements.reads', ['id' => $a->id]) }}" class="btn btn-action btn-edit"><i class="fas fa-chart-bar"></i> 配信結果</a>
                                 <a href="{{ admin_route('admin.announcements.edit', ['id' => $a->id]) }}" class="btn btn-action btn-edit"><i class="fas fa-edit"></i> 編集</a>
                                 <form action="{{ admin_route('admin.announcements.delete', ['id' => $a->id]) }}" method="POST" class="d-inline delete-form" onsubmit="return confirm('削除しますか？\n配信済みのプッシュ通知も取り消されます。');">
                                     @csrf

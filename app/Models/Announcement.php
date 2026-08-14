@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\AnnouncementAudienceResolveMode;
 use App\Models\Concerns\BelongsToProject;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -26,6 +27,10 @@ class Announcement extends Model
 
     public const DELIVERY_STATUS_SCHEDULED = 'scheduled';
 
+    public const DELIVERY_TIMING_IMMEDIATE = 'immediate';
+
+    public const DELIVERY_TIMING_SCHEDULED = 'scheduled';
+
     protected $fillable = [
         'project_id',
         'title',
@@ -35,9 +40,11 @@ class Announcement extends Model
         'expires_at',
         'is_pinned',
         'delivery_type',
+        'delivery_timing',
         'scheduled_at',
         'sent_at',
         'target_member_ids',
+        'audience_resolve_mode',
         'segment_criteria',
         'delivery_coupon_id',
         'delivery_status',
@@ -70,4 +77,15 @@ class Announcement extends Model
         'segment_criteria' => 'array',
         'onesignal_notification_ids' => 'array',
     ];
+
+    /** @var array<string, mixed> */
+    protected $attributes = [
+        'audience_resolve_mode' => AnnouncementAudienceResolveMode::SNAPSHOT,
+    ];
+
+    public function shouldResolveAudienceAtSend(): bool
+    {
+        return $this->audience_resolve_mode === AnnouncementAudienceResolveMode::AT_SEND
+            && $this->delivery_type !== self::DELIVERY_TYPE_PERSONAL;
+    }
 }

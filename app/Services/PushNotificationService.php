@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\MemberNotificationPreference;
 use App\Models\Announcement;
 use App\Models\Member;
 use App\Models\UserDevice;
@@ -465,28 +466,33 @@ class PushNotificationService
             ->whereNotNull('push_token')
             ->where('push_token', '!=', '');
 
-        $targetMemberIds = is_array($announcement->target_member_ids)
+        $hasTargetSnapshot = is_array($announcement->target_member_ids);
+        $targetMemberIds = $hasTargetSnapshot
             ? array_values(array_filter(array_map('intval', $announcement->target_member_ids), fn ($id) => $id > 0))
             : [];
-        $isTargeted = in_array($announcement->delivery_type, [
-            Announcement::DELIVERY_TYPE_PERSONAL,
-            Announcement::DELIVERY_TYPE_SEGMENT,
-            Announcement::DELIVERY_TYPE_AFTER_REGISTRATION,
-        ], true);
-        if ($isTargeted) {
+        $memberQuery = Member::query()
+            ->where('project_id', (int) $announcement->project_id)
+            ->where(function ($query) use ($announcement): void {
+                $query->whereNull('notification_preference')
+                    ->orWhereIn(
+                        'notification_preference',
+                        MemberNotificationPreference::eligibleValues($announcement->delivery_coupon_id !== null),
+                    );
+            });
+        if ($hasTargetSnapshot) {
             if ($targetMemberIds === []) {
                 return [];
             }
-            $userIds = Member::where('project_id', (int) $announcement->project_id)
-                ->whereIn('id', $targetMemberIds)
-                ->pluck('user_id')
-                ->map(fn ($id) => (int) $id)
-                ->all();
-            if ($userIds === []) {
-                return [];
-            }
-            $query->whereIn('user_id', $userIds);
+            $memberQuery->whereIn('id', $targetMemberIds);
         }
+
+        $userIds = $memberQuery->pluck('user_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+        if ($userIds === []) {
+            return [];
+        }
+        $query->whereIn('user_id', $userIds);
 
         return $query->pluck('push_token')
             ->map(fn ($token) => trim((string) $token))

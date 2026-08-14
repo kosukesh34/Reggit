@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Enums\MemberNotificationPreference;
 use App\Enums\MemberStatus;
 use App\Enums\ProfileCustomFieldInputType;
 use App\Jobs\SendAfterRegistrationJob;
@@ -22,6 +23,7 @@ use App\Util\LogHelper;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class MemberService
 {
@@ -184,6 +186,7 @@ class MemberService
             );
         }
         $rules['line_name'] = ['nullable', 'string', 'max:'.ProfileValidationRules::NAME_MAX];
+        $rules['notification_preference'] = ['nullable', Rule::in(MemberNotificationPreference::keys())];
 
         return $rules;
     }
@@ -249,6 +252,19 @@ class MemberService
             ];
         }
 
+        $out = array_values(array_filter(
+            $out,
+            static fn (array $field): bool => ($field['key'] ?? '') !== 'notification_preference'
+        ));
+        $out[] = [
+            'key' => 'notification_preference',
+            'label' => 'お知らせ通知',
+            'required' => true,
+            'input_type' => ProfileCustomFieldInputType::RADIO,
+            'values' => MemberNotificationPreference::keys(),
+            'description' => '配信通知の受け取り方は、あとからプロフィール編集で変更できます。',
+        ];
+
         return $out;
     }
 
@@ -278,6 +294,7 @@ class MemberService
             'birthday' => $member->birthday ? $member->birthday->format('Y-m-d') : null,
             'sex' => $member->sex ?? null,
             'mail_receive_flag' => $member->mail_receive_flag ?? null,
+            'notification_preference' => MemberNotificationPreference::normalize($member->notification_preference),
         ];
         $extra = $member->profile_extra ?? [];
         if (is_array($extra)) {
@@ -315,7 +332,7 @@ class MemberService
             $userUpdates[$key] = $val === '' ? null : $val;
         }
 
-        $memberKeys = ['birthday', 'address', 'postal_code', 'prefecture', 'city', 'street', 'sex', 'mail_receive_flag'];
+        $memberKeys = ['birthday', 'address', 'postal_code', 'prefecture', 'city', 'street', 'sex', 'mail_receive_flag', 'notification_preference'];
         foreach ($memberKeys as $key) {
             if (! array_key_exists($key, $data)) {
                 continue;
@@ -323,6 +340,8 @@ class MemberService
             $val = $data[$key];
             if ($key === 'birthday') {
                 $memberUpdates[$key] = $val ?: null;
+            } elseif ($key === 'notification_preference') {
+                $memberUpdates[$key] = MemberNotificationPreference::normalize(is_string($val) ? $val : null);
             } else {
                 $memberUpdates[$key] = $val === '' ? null : $val;
             }
@@ -448,6 +467,9 @@ class MemberService
                 'street' => $data['street'] ?? null,
                 'sex' => $data['sex'] ?? null,
                 'mail_receive_flag' => $data['mail_receive_flag'] ?? null,
+                'notification_preference' => MemberNotificationPreference::normalize(
+                    isset($data['notification_preference']) ? (string) $data['notification_preference'] : null
+                ),
                 'profile_extra' => $this->extractCustomProfileExtra($projectId, $data),
             ]);
 

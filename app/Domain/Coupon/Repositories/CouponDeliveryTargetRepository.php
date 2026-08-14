@@ -10,6 +10,14 @@ interface CouponDeliveryTargetRepository
     /** @return list<int> */
     public function findIdsByBirthdayMonth(int $projectId, int $month): array;
 
+    /**
+     * 指定したタグのいずれかが付いている会員。
+     *
+     * @param  list<int>  $tagIds
+     * @return list<int>
+     */
+    public function findIdsByTagIds(int $projectId, array $tagIds): array;
+
     /** @return list<int> */
     public function findIdsCreatedSince(int $projectId, \DateTimeInterface $since): array;
 

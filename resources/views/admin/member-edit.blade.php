@@ -156,6 +156,15 @@
                         <option value="0" {{ old('mail_receive_flag', $view->member->mail_receive_flag) === '0' ? 'selected' : '' }}>許可しない</option>
                     </select>
                 </div>
+                <div class="form-group">
+                    <label for="notification_preference" class="form-label">お知らせ通知</label>
+                    <select name="notification_preference" id="notification_preference" class="form-control" required>
+                        @foreach(\App\Enums\MemberNotificationPreference::getValues() as $value => $label)
+                            <option value="{{ $value }}" {{ old('notification_preference', \App\Enums\MemberNotificationPreference::normalize($view->member->notification_preference)) === $value ? 'selected' : '' }}>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                    @error('notification_preference')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
+                </div>
             </section>
 
             <section class="form-section mb-4">

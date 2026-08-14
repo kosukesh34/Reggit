@@ -2,7 +2,10 @@
 
 namespace Tests\Unit\Services;
 
+use App\Enums\MemberNotificationPreference;
 use App\Models\Announcement;
+use App\Models\Coupon;
+use App\Models\Member;
 use App\Models\Project;
 use App\Models\User;
 use App\Models\UserDevice;
@@ -83,6 +86,7 @@ class PushNotificationServiceTest extends TestCase
     {
         [$project, $user] = $this->createProjectAndUser();
         $this->createUserDevice($project, $user, 'subscription-id-announcement');
+        Member::factory()->create(['project_id' => $project->id, 'user_id' => $user->id]);
         AdminContext::setCurrentProject($project);
 
         $announcement = Announcement::factory()->create([
@@ -110,10 +114,51 @@ class PushNotificationServiceTest extends TestCase
         $this->assertSame(['onesignal-notification-uuid-1'], $announcement->onesignal_notification_ids);
     }
 
+    public function test_send_announcement_filters_push_tokens_by_notification_preference(): void
+    {
+        [$project, $couponOnlyUser] = $this->createProjectAndUser();
+        $noneUser = User::factory()->create(['project_id' => $project->id]);
+        $this->createUserDevice($project, $couponOnlyUser, 'subscription-id-coupon-only');
+        $this->createUserDevice($project, $noneUser, 'subscription-id-none');
+        $couponOnlyMember = Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => $couponOnlyUser->id,
+            'notification_preference' => MemberNotificationPreference::COUPON_ONLY,
+        ]);
+        $noneMember = Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => $noneUser->id,
+            'notification_preference' => MemberNotificationPreference::NONE,
+        ]);
+        $coupon = Coupon::factory()->create(['project_id' => $project->id]);
+        $announcement = Announcement::factory()->create([
+            'project_id' => $project->id,
+            'delivery_coupon_id' => $coupon->id,
+            'target_member_ids' => [$couponOnlyMember->id, $noneMember->id],
+        ]);
+
+        /** @var Client&MockObject $http */
+        $http = $this->createMock(Client::class);
+        $http->expects($this->once())
+            ->method('post')
+            ->with(
+                'https://api.onesignal.com/notifications',
+                $this->callback(function (array $options): bool {
+                    return ($options['json']['include_subscription_ids'] ?? []) === ['subscription-id-coupon-only'];
+                })
+            )
+            ->willReturn(new Response(200, [], json_encode(['id' => 'preference-id', 'recipients' => 1])));
+
+        $result = (new PushNotificationService($http))->sendAnnouncement($announcement);
+
+        $this->assertSame(1, $result['target_tokens']);
+    }
+
     public function test_cancel_announcement_push_deletes_and_sends_collapse_cancel(): void
     {
         [$project, $user] = $this->createProjectAndUser();
         $this->createUserDevice($project, $user, 'subscription-id-cancel');
+        Member::factory()->create(['project_id' => $project->id, 'user_id' => $user->id]);
         AdminContext::setCurrentProject($project);
 
         $announcement = Announcement::factory()->create([
