@@ -3,6 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    image: reggit-app
     container_name: reggit_app
     restart: unless-stopped
     env_file:
@@ -52,6 +53,25 @@ services:
       - reggit_network
     depends_on:
       - app
+
+  scheduler:
+    image: reggit-app
+    container_name: reggit_scheduler
+    restart: unless-stopped
+    env_file:
+      - .env
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+      - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
+    command: ["sh", "-c", "while true; do php artisan schedule:run --no-interaction; sleep 60; done"]
+    networks:
+      - reggit_network
+    depends_on:
+      app:
+        condition: service_started
+      db:
+        condition: service_healthy
 
 volumes:
   reggit_db_data:
