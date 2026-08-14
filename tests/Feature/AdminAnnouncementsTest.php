@@ -9,8 +9,11 @@ use App\Models\Coupon;
 use App\Models\Member;
 use App\Models\Project;
 use App\Models\User;
+use App\Services\Admin\PublicImageStorageService;
 use App\Services\PushNotificationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class AdminAnnouncementsTest extends TestCase
@@ -49,6 +52,7 @@ class AdminAnnouncementsTest extends TestCase
             ->get(route('admin.announcements', ['project_key' => $project->project_key]));
 
         $response->assertStatus(200);
+        $response->assertSee('登録後配信');
         $response->assertSee('一斉配信');
         $response->assertSee('個人宛配信');
         $response->assertSee('セグメント配信');
@@ -124,7 +128,9 @@ class AdminAnnouncementsTest extends TestCase
         $response = $this->actingAs($admin, 'admin')
             ->get(route('admin.announcements.delivery.create', ['project_key' => $project->project_key]));
 
-        $response->assertStatus(200);
+        $response->assertStatus(200)
+            ->assertSee('name="image_file"', false)
+            ->assertSee('ドラッグ＆ドロップ');
     }
 
     public function test_store_delivery_一斉配信を登録できること(): void
@@ -295,6 +301,38 @@ class AdminAnnouncementsTest extends TestCase
             'image_url' => 'https://example.com/announcement.png',
             'is_pinned' => 1,
         ]);
+    }
+
+    public function test_update_画像ファイルをアップロードできること(): void
+    {
+        Storage::fake('public');
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        $announcement = Announcement::factory()->create([
+            'project_id' => $project->id,
+            'title' => '更新前',
+            'body' => '本文',
+            'image_url' => null,
+        ]);
+        $file = UploadedFile::fake()->image('announcement.png', 40, 40);
+
+        $this->actingAs($admin, 'admin')
+            ->put(route('admin.announcements.update', [
+                'project_key' => $project->project_key,
+                'id' => $announcement->id,
+            ]), [
+                'title' => '更新後',
+                'body' => '本文更新',
+                'image_file' => $file,
+                'is_pinned' => 1,
+            ])
+            ->assertRedirect(route('admin.announcements', ['project_key' => $project->project_key]));
+
+        $announcement->refresh();
+        $this->assertStringContainsString(
+            'storage/'.PublicImageStorageService::DIR_ANNOUNCEMENT.'/'.$project->id,
+            (string) $announcement->image_url
+        );
     }
 
     public function test_store_delivery_画像url付きで配信できること(): void

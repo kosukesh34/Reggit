@@ -206,6 +206,7 @@ class AdminStampsTest extends TestCase
             ->assertSee('押す前')
             ->assertSee('押したあと')
             ->assertSee('達成後の動き')
+            ->assertSee('ドラッグ＆ドロップ')
             ->assertDontSee('value="text"', false);
     }
 
