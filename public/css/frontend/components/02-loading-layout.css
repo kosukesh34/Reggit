@@ -176,11 +176,20 @@ body.native-app-embed .main-content > #announcementsTopBar {
     flex-shrink: 0;
 }
 
+html.designer-live-preview-embed,
+body.designer-live-preview-embed {
+    background: transparent !important;
+    overflow: hidden;
+    border-radius: 32px;
+}
+
 /* LIFFデザイナーの自動表示ライブプレビュー（埋め込み） */
-body.designer-live-preview-mode.designer-live-preview-embed .app-container {
+body.designer-live-preview-mode.designer-live-preview-embed .app-container,
+body.designer-live-preview-embed .app-container {
     max-width: 100%;
     margin: 0;
-    border-radius: 0;
+    overflow: hidden;
+    border-radius: 32px;
     box-shadow: none;
 }
 
