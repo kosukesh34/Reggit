@@ -9,6 +9,11 @@
     <span>タグ管理</span>
 </nav>
 
+<div class="page-header">
+    <h1 class="page-header-title">会員タグ管理</h1>
+    <p class="page-header-desc">会員に付けるタグの作成と削除を行います</p>
+</div>
+
 <div class="card card-mb-24">
     <div class="card-header">
         <h3 class="card-title"><i class="fas fa-plus-circle"></i> 新規タグ作成</h3>

@@ -3,13 +3,18 @@
 @section('page-title', '会員編集 #' . $view->member->id)
 
 @section('content')
-<nav class="breadcrumb">
+<nav class="breadcrumb" aria-label="パンくず">
     <a href="{{ admin_route('admin.members') }}">会員一覧</a>
     <span class="breadcrumb-sep">/</span>
-    <a href="{{ admin_route('admin.members.detail', ['id' => $view->member->id]) }}">会員 #{{ $view->member->id }}</a>
+    <a href="{{ admin_route('admin.members.detail', ['id' => $view->member->id]) }}">{{ $view->member->user->name ?? ('会員 #'.$view->member->id) }}</a>
     <span class="breadcrumb-sep">/</span>
     <span>編集</span>
 </nav>
+
+<div class="page-header">
+    <h1 class="page-header-title">会員編集</h1>
+    <p class="page-header-desc">登録情報・ポイント・スタンプ・クーポン・来店を更新します</p>
+</div>
 
 @if($errors->any())
 <div class="alert alert-danger" role="alert">

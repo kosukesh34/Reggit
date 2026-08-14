@@ -1,10 +1,53 @@
 @extends('admin.layout')
 
 @section('title', '会員詳細')
-@section('page-title', '会員詳細 #' . $view->member->id)
+@section('page-title', '会員詳細')
 @section('page-kind', 'member-detail')
 
 @section('content')
+@php
+    $adminUser = auth('admin')->user();
+    $canManage = $adminUser === null || $adminUser->hasPermission('members.manage');
+    $memberName = $view->member->user->name ?? $view->member->member_number;
+    $lineName = trim((string) ($view->member->user?->line_name ?? ''));
+    $recentOrders = $view->purchaseSummary['recent_orders'] ?? collect();
+    $orderListTotal = (int) ($view->purchaseSummary['order_list_total'] ?? $recentOrders->count());
+@endphp
+
+<nav class="breadcrumb" aria-label="パンくず">
+    <a href="{{ admin_route('admin.members') }}">会員一覧</a>
+    <span class="breadcrumb-sep">/</span>
+    <span>{{ $memberName }}</span>
+</nav>
+
+<div class="member-detail-head">
+    <div class="member-detail-head-main">
+        <p class="member-detail-kicker">会員</p>
+        <h1 class="member-detail-name">{{ $memberName }}</h1>
+        <p class="member-detail-meta">
+            <code class="member-number">{{ $view->member->member_number }}</code>
+            @if($lineName !== '')
+            <span class="member-detail-line-name"><i class="fab fa-line" aria-hidden="true"></i>{{ $lineName }}</span>
+            @endif
+            <span>{{ $view->member->rank_label ?? ($view->member->rank ?? 'ランク未設定') }}</span>
+            <span class="badge badge-{{ $view->member->status === 'active' ? 'success' : 'danger' }}">
+                {{ $view->member->status === 'active' ? '有効' : '無効' }}
+            </span>
+        </p>
+    </div>
+    @if($canManage)
+    <div class="member-detail-head-actions">
+        <a href="{{ admin_route('admin.members.edit', ['id' => $view->member->id]) }}" class="btn btn-primary btn-sm">
+            <i class="fas fa-edit"></i> 編集
+        </a>
+        <form action="{{ admin_route('admin.members.delete', ['id' => $view->member->id]) }}" method="POST" class="d-inline delete-form" data-item-name="{{ $memberName }}">
+            @csrf
+            @method('DELETE')
+            <button type="submit" class="btn btn-danger btn-sm no-loading"><i class="fas fa-trash"></i> 削除</button>
+        </form>
+    </div>
+    @endif
+</div>
 
 {{-- 購買サマリーKPI --}}
 <div class="member-kpi-grid">
@@ -45,25 +88,10 @@
     </div>
 </div>
 
+<div class="member-detail-split">
 <div class="card">
-    <div class="card-header card-header-with-action">
+    <div class="card-header">
         <h3 class="card-title"><i class="fas fa-user"></i> 会員情報</h3>
-        <div>
-            @php $adminUser = auth('admin')->user(); @endphp
-            @if($adminUser === null || $adminUser->hasPermission('members.manage'))
-            <a href="{{ admin_route('admin.members.edit', ['id' => $view->member->id]) }}" class="btn btn-primary btn-sm me-1">
-                <i class="fas fa-edit"></i> 編集
-            </a>
-            <form action="{{ admin_route('admin.members.delete', ['id' => $view->member->id]) }}" method="POST" class="d-inline me-1 delete-form" data-item-name="{{ $view->member->user->name ?? $view->member->member_number }}">
-                @csrf
-                @method('DELETE')
-                <button type="submit" class="btn btn-danger btn-sm no-loading"><i class="fas fa-trash"></i> 削除</button>
-            </form>
-            @endif
-            <a href="{{ admin_route('admin.members') }}" class="btn btn-secondary btn-sm">
-                <i class="fas fa-arrow-left"></i> 一覧に戻る
-            </a>
-        </div>
     </div>
     <div class="card-body">
         <div class="info-grid">
@@ -78,6 +106,10 @@
             <div class="info-item">
                 <div class="info-label">ユーザー名</div>
                 <div class="info-value">{{ $view->member->user->name ?? 'N/A' }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">LINE名</div>
+                <div class="info-value">{{ $lineName !== '' ? $lineName : '—' }}</div>
             </div>
             <div class="info-item">
                 <div class="info-label">現在のポイント</div>
@@ -123,20 +155,22 @@
                 </div>
             </div>
             <div class="info-item">
-                <div class="info-label">最終来店日</div>
+                <div class="info-label">最終来店日時</div>
                 <div class="info-value">
-                    {{ $view->member->last_visited_at ? $view->member->last_visited_at->format('Y/m/d') : '—' }}
+                    {{ $view->member->last_visited_at ? $view->member->last_visited_at->format('Y/m/d H:i') : '—' }}
                 </div>
             </div>
+            <div class="info-item">
+                <div class="info-label">来店回数</div>
+                <div class="info-value">{{ number_format((int) ($view->member->visits_count ?? 0)) }}回</div>
+            </div>
         </div>
-        @if($adminUser === null || $adminUser->hasPermission('members.manage'))
+        @if($canManage)
         <p class="text-muted small mb-0 mt-3">ポイント・スタンプ・クーポン・来店の操作は<a href="{{ admin_route('admin.members.edit', ['id' => $view->member->id]) }}">編集画面</a>から行えます。</p>
         @endif
     </div>
 </div>
 
-{{-- タグ・メモ --}}
-@php $adminUser = auth('admin')->user(); $canManage = $adminUser === null || $adminUser->hasPermission('members.manage'); @endphp
 <div class="card">
     <div class="card-header">
         <h3 class="card-title"><i class="fas fa-tags"></i> タグ・メモ</h3>
@@ -185,7 +219,7 @@
             <form action="{{ admin_route('admin.members.memo', ['id' => $view->member->id]) }}" method="POST">
                 @csrf @method('PUT')
                 <textarea name="memo" class="form-control" rows="3" maxlength="2000" placeholder="スタッフ向けのメモを入力（会員には表示されません）">{{ old('memo', $view->member->memo) }}</textarea>
-                <div class="form-actions" style="margin-top:8px;">
+                <div class="form-actions member-memo-save">
                     <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-save"></i> メモを保存</button>
                 </div>
             </form>
@@ -195,46 +229,67 @@
         </div>
     </div>
 </div>
+</div>
 
-{{-- 直近注文履歴 --}}
-@if(!empty($view->purchaseSummary['recent_orders']) && $view->purchaseSummary['recent_orders']->isNotEmpty())
+{{-- 購入履歴（最新10件。残りは注文詳細・注文一覧） --}}
 <div class="card">
     <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-shopping-bag"></i> 直近の注文</h3>
+        <h3 class="card-title">
+            <i class="fas fa-shopping-bag"></i> 購入履歴
+            <span class="card-header-note">{{ $orderListTotal }}件</span>
+        </h3>
+        @if($view->member->user_id !== null)
         <a href="{{ admin_route('admin.orders', ['user_id' => $view->member->user_id]) }}" class="btn btn-sm btn-secondary">
             <i class="fas fa-arrow-right"></i> すべての注文
         </a>
+        @endif
     </div>
-    <table class="table">
-        <thead>
-            <tr>
-                <th>注文番号</th>
-                <th>金額</th>
-                <th>ステータス</th>
-                <th>日時</th>
-                <th class="table-actions-cell">操作</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach($view->purchaseSummary['recent_orders'] as $order)
-            <tr>
-                <td><a href="{{ admin_route('admin.orders.detail', ['id' => $order->id]) }}">{{ $order->formattedOrderNumber() }}</a></td>
-                <td>¥{{ number_format($order->total_amount) }}</td>
-                <td>
-                    <span class="badge badge-{{ $order->status === 'completed' ? 'success' : ($order->status === 'pending' ? 'warning' : ($order->status === 'cancelled' ? 'danger' : 'info')) }}">
-                        {{ $order->status }}
-                    </span>
-                </td>
-                <td>{{ $order->created_at->format('Y/m/d H:i') }}</td>
-                <td class="table-actions-cell">
-                    <a href="{{ admin_route('admin.orders.detail', ['id' => $order->id]) }}" class="btn btn-action btn-edit"><i class="fas fa-eye"></i></a>
-                </td>
-            </tr>
-            @endforeach
-        </tbody>
-    </table>
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>注文番号</th>
+                    <th>金額</th>
+                    <th>ステータス</th>
+                    <th>日時</th>
+                    <th class="table-actions-cell">操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($recentOrders as $order)
+                <tr>
+                    <td><a href="{{ admin_route('admin.orders.detail', ['id' => $order->id]) }}">{{ $order->formattedOrderNumber() }}</a></td>
+                    <td>¥{{ number_format($order->total_amount) }}</td>
+                    <td>
+                        <span class="badge badge-{{ $order->status === \App\Enums\OrderStatus::COMPLETED ? 'success' : ($order->status === \App\Enums\OrderStatus::PENDING ? 'warning' : ($order->status === \App\Enums\OrderStatus::CANCELLED ? 'danger' : 'info')) }}">
+                            {{ \App\Enums\OrderStatus::getLabel($order->status) }}
+                        </span>
+                    </td>
+                    <td>{{ $order->created_at->format('Y/m/d H:i') }}</td>
+                    <td class="table-actions-cell">
+                        <a href="{{ admin_route('admin.orders.detail', ['id' => $order->id]) }}" class="btn btn-action btn-edit"><i class="fas fa-eye"></i> 詳細</a>
+                    </td>
+                </tr>
+                @empty
+                <tr>
+                    <td colspan="5" class="empty-state">
+                        <i class="fas fa-shopping-bag"></i>
+                        <p>購入履歴がありません</p>
+                    </td>
+                </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+    @if($orderListTotal > $recentOrders->count())
+    <p class="member-history-more">
+        最新{{ $recentOrders->count() }}件を表示しています。
+        @if($view->member->user_id !== null)
+        <a href="{{ admin_route('admin.orders', ['user_id' => $view->member->user_id]) }}">残りの{{ $orderListTotal - $recentOrders->count() }}件を見る</a>
+        @endif
+    </p>
+    @endif
 </div>
-@endif
 
 @include('admin.partials.member-history.panel', [
     'section' => 'visits',
@@ -313,12 +368,6 @@
     'member' => $view->member,
     'historyFilters' => $view->historyFilters,
 ])
-
-<div class="form-actions">
-    <a href="{{ admin_route('admin.members') }}" class="btn btn-secondary">
-        <i class="fas fa-arrow-left"></i> 戻る
-    </a>
-</div>
 @endsection
 
 @push('scripts')

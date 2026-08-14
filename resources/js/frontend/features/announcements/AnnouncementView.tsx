@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
     fetchAnnouncements,
+    formatPublishedAt,
     openAnnouncementDetail,
     type Announcement,
 } from './api';
@@ -42,7 +43,7 @@ function AnnouncementListItem({
     index: number;
     onOpen: (id: string) => void;
 }): JSX.Element {
-    const date = item.published_at ? new Date(item.published_at).toLocaleDateString('ja-JP') : '';
+    const date = formatPublishedAt(item.published_at);
     const isPinned = item.is_pinned === true;
     const isUnread = item.is_read !== true;
     const hasImage = typeof item.image_url === 'string' && item.image_url !== '';
@@ -173,7 +174,7 @@ export function AnnouncementView({ iosHome = false }: AnnouncementViewProps): JS
             <>
                 {list.slice(0, 5).map((a) => {
                     const id = String(a.id ?? '');
-                    const date = a.published_at ? new Date(a.published_at).toLocaleDateString('ja-JP') : '';
+                    const date = formatPublishedAt(a.published_at);
                     return (
                         <a
                             key={id}

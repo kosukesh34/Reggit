@@ -29,10 +29,13 @@ class OrderAdminService
         OrderStatus::COMPLETED,
     ];
 
-    public function getPaginatedList(?string $status, int $perPage = 20): LengthAwarePaginator
+    public function getPaginatedList(?string $status, int $perPage = 20, ?int $userId = null): LengthAwarePaginator
     {
         $query = Order::with('user.member')
             ->orderByDesc('created_at');
+        if ($userId !== null) {
+            $query->where('user_id', $userId);
+        }
         if ($status && $status !== 'all') {
             $query->where('status', $status);
         } else {
@@ -42,15 +45,19 @@ class OrderAdminService
         return $query->paginate($perPage);
     }
 
-    public function getStatusCounts(): array
+    public function getStatusCounts(?int $userId = null): array
     {
+        $base = Order::query();
+        if ($userId !== null) {
+            $base->where('user_id', $userId);
+        }
         $statuses = array_keys(OrderStatus::getValues());
         $counts = [
-            'all' => Order::whereIn('status', self::PAID_STATUSES)->count(),
-            'paid' => Order::whereIn('status', self::PAID_STATUSES)->count(),
+            'all' => (clone $base)->whereIn('status', self::PAID_STATUSES)->count(),
+            'paid' => (clone $base)->whereIn('status', self::PAID_STATUSES)->count(),
         ];
         foreach ($statuses as $status) {
-            $counts[$status] = Order::where('status', $status)->count();
+            $counts[$status] = (clone $base)->where('status', $status)->count();
         }
 
         return $counts;
