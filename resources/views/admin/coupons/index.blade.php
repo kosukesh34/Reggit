@@ -89,6 +89,6 @@
 </div>
 </div>
 @push('styles')
-<link rel="stylesheet" href="{{ asset('css/admin/coupons.css') }}?v={{ config('app.asset_version') }}">
+<link rel="stylesheet" href="{{ asset('css/admin/coupons.css') }}?v={{ (int) @filemtime(public_path('css/admin/coupons.css')) }}">
 @endpush
 @endsection
