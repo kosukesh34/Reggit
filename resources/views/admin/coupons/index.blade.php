@@ -24,23 +24,20 @@
 
 <div class="page-header">
     <h1 class="page-header-title"><i class="fas fa-ticket-alt"></i> クーポン</h1>
-    <p class="page-header-desc">クーポンの作成・管理・配布</p>
+    <p class="page-header-desc">クーポンの内容と利用条件を管理します。</p>
 </div>
 
 <div class="card cp-list-card">
     <div class="card-header card-header-with-action">
         <h2 class="card-title">クーポン一覧</h2>
-        <div>
-            <a href="{{ admin_route('admin.coupons.bulk-issue') }}" class="btn btn-outline-primary"><i class="fas fa-gift"></i> 配布</a>
-            <a href="{{ admin_route('admin.coupons.create') }}" class="btn btn-primary"><i class="fas fa-plus"></i> 作成</a>
-        </div>
+        <a href="{{ admin_route('admin.coupons.create') }}" class="btn btn-primary"><i class="fas fa-plus"></i> 作成</a>
     </div>
     <div class="card-body">
         @if($coupons->isEmpty())
         <div class="empty-state">
             <i class="fas fa-ticket-alt"></i>
             <p>クーポンがありません</p>
-            <p class="empty-state-hint">「作成」からクーポンを追加し、「配布」で会員へ届けられます</p>
+            <p class="empty-state-hint">「作成」からクーポンを追加できます</p>
         </div>
         @else
         <table class="table">
@@ -50,7 +47,6 @@
                     <th>名前</th>
                     <th>種別</th>
                     <th>値</th>
-                    <th>発行条件</th>
                     <th>利用回数</th>
                     <th>スマレジ</th>
                     <th>状態</th>
@@ -64,23 +60,6 @@
                     <td>{{ $coupon->name ?? '—' }}</td>
                     <td>{{ $coupon->type === 'percent' ? '％' : '円' }}</td>
                     <td>{{ $coupon->type === 'percent' ? $coupon->value . '%' : '¥' . number_format($coupon->value) }}</td>
-                    <td>
-                        @php $trigger = $coupon->issue_trigger ?? 'manual'; @endphp
-                        @if($trigger === 'first_registration')
-                            <span class="badge badge-info">入会時</span>
-                        @elseif($trigger === 'first_order')
-                            <span class="badge badge-info">初回注文時</span>
-                        @elseif($trigger === 'stamp_completed')
-                            <span class="badge badge-info">スタンプ達成</span>
-                            @if($coupon->stampCard)
-                                <small class="d-block text-muted">{{ $coupon->stampCard->name }}</small>
-                            @endif
-                        @elseif($trigger === 'birthday')
-                            <span class="badge badge-info">誕生月</span>
-                        @else
-                            <span class="badge badge-secondary">手動</span>
-                        @endif
-                    </td>
                     <td>
                         <a href="{{ admin_route('admin.coupons.redemptions', ['id' => $coupon->id]) }}">{{ $coupon->used_count }}{{ $coupon->usage_limit ? ' / ' . $coupon->usage_limit : '' }}</a>
                     </td>

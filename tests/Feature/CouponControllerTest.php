@@ -29,13 +29,22 @@ class CouponControllerTest extends TestCase
         $this->createProject();
         $user = User::factory()->create(['line_user_id' => self::LINE_USER_ID, 'project_id' => 1]);
         $member = Member::factory()->create(['user_id' => $user->id, 'project_id' => 1]);
-        MemberCoupon::factory()->create(['member_id' => $member->id, 'project_id' => 1]);
+        $coupon = Coupon::factory()->create([
+            'project_id' => 1,
+            'image_fit' => Coupon::IMAGE_FIT_CONTAIN,
+        ]);
+        MemberCoupon::factory()->create([
+            'member_id' => $member->id,
+            'project_id' => 1,
+            'coupon_id' => $coupon->id,
+        ]);
 
         $response = $this->withHeaders(['X-Line-User-Id' => self::LINE_USER_ID])
             ->get('/api/members/me/coupons?project_key=default');
 
         $response->assertStatus(200)
-            ->assertJsonStructure(['coupons', 'default_image_url']);
+            ->assertJsonStructure(['coupons', 'default_image_url'])
+            ->assertJsonPath('coupons.0.image_fit', Coupon::IMAGE_FIT_CONTAIN);
     }
 
     public function test_use_coupon_使用後にバーコード情報を返し使用済みにすること(): void

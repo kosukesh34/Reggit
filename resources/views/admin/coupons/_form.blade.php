@@ -4,6 +4,7 @@
     $name = old('name', $coupon?->name);
     $description = old('description', $coupon?->description);
     $imageUrl = old('image_url', $coupon?->image_url ?? '');
+    $imageFit = old('image_fit', $coupon?->image_fit ?? \App\Models\Coupon::IMAGE_FIT_COVER);
     $useDisplay = old('use_display', $coupon?->use_display ?? \App\Models\Coupon::USE_DISPLAY_BARCODE);
     $type = old('type', $coupon?->type ?? 'percent');
     if ($type !== 'percent' && $type !== 'fixed') {
@@ -11,19 +12,13 @@
     }
     $value = old('value', $coupon?->value ?? 10);
     $minOrderAmount = old('min_order_amount', $coupon?->min_order_amount);
+    $maxOrderAmount = old('max_order_amount', $coupon?->max_order_amount);
+    $applyConditionDivision = old('apply_condition_division', $coupon?->apply_condition_division ?? \App\Enums\CouponApplyConditionDivision::ALL);
+    $combineDivision = old('combine_division', $coupon?->combine_division ?? \App\Enums\CouponCombineDivision::ALLOWED);
     $usageLimit = old('usage_limit', $coupon?->usage_limit);
     $startAt = old('start_at', $coupon?->start_at?->format('Y-m-d\TH:i'));
     $endAt = old('end_at', $coupon?->end_at?->format('Y-m-d\TH:i'));
-    $issueTrigger = old('issue_trigger', $coupon?->issue_trigger ?? \App\Models\Coupon::ISSUE_TRIGGER_MANUAL);
-    $stampCardId = (int) old('stamp_card_id', $coupon?->stamp_card_id);
     $isActive = (bool) old('is_active', $coupon === null ? true : $coupon->is_active);
-    $triggerCards = [
-        \App\Models\Coupon::ISSUE_TRIGGER_MANUAL => ['title' => 'あとから配布', 'desc' => '作成後、配布画面から会員へ渡す', 'icon' => 'fa-hand-holding'],
-        \App\Models\Coupon::ISSUE_TRIGGER_FIRST_REGISTRATION => ['title' => '入会時', 'desc' => '会員登録が完了した直後に渡す', 'icon' => 'fa-user-plus'],
-        \App\Models\Coupon::ISSUE_TRIGGER_FIRST_ORDER => ['title' => '初回注文', 'desc' => '初めて会計したときに渡す', 'icon' => 'fa-shopping-bag'],
-        \App\Models\Coupon::ISSUE_TRIGGER_STAMP_COMPLETED => ['title' => 'スタンプ達成', 'desc' => 'スタンプカード達成時に渡す', 'icon' => 'fa-stamp'],
-        \App\Models\Coupon::ISSUE_TRIGGER_BIRTHDAY => ['title' => '誕生月', 'desc' => '誕生月になると自動で渡す', 'icon' => 'fa-birthday-cake'],
-    ];
 @endphp
 
 <div class="cp-studio">
@@ -87,6 +82,30 @@
                         @error('image')<span class="invalid-feedback">{{ $message }}</span>@enderror
                     </div>
                 </details>
+                <fieldset class="cp-image-fit">
+                    <legend class="form-label">画像の表示方法</legend>
+                    <div class="cp-image-fit-grid">
+                        <label class="cp-choice cp-image-fit-option {{ $imageFit === \App\Models\Coupon::IMAGE_FIT_COVER ? 'is-selected' : '' }}">
+                            <input type="radio" name="image_fit" value="{{ \App\Models\Coupon::IMAGE_FIT_COVER }}" {{ $imageFit === \App\Models\Coupon::IMAGE_FIT_COVER ? 'checked' : '' }}>
+                            <span class="cp-image-fit-sample cp-image-fit-sample--cover" aria-hidden="true"><i class="fas fa-image"></i></span>
+                            <span class="cp-choice-copy">
+                                <span class="cp-choice-title">枠いっぱい</span>
+                                <span class="cp-choice-desc">余白なく表示し、端をトリミング</span>
+                            </span>
+                            <span class="cp-choice-check"><i class="fas fa-check" aria-hidden="true"></i></span>
+                        </label>
+                        <label class="cp-choice cp-image-fit-option {{ $imageFit === \App\Models\Coupon::IMAGE_FIT_CONTAIN ? 'is-selected' : '' }}">
+                            <input type="radio" name="image_fit" value="{{ \App\Models\Coupon::IMAGE_FIT_CONTAIN }}" {{ $imageFit === \App\Models\Coupon::IMAGE_FIT_CONTAIN ? 'checked' : '' }}>
+                            <span class="cp-image-fit-sample cp-image-fit-sample--contain" aria-hidden="true"><i class="fas fa-image"></i></span>
+                            <span class="cp-choice-copy">
+                                <span class="cp-choice-title">画像全体</span>
+                                <span class="cp-choice-desc">画像を切らずに全体を表示</span>
+                            </span>
+                            <span class="cp-choice-check"><i class="fas fa-check" aria-hidden="true"></i></span>
+                        </label>
+                    </div>
+                    @error('image_fit')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
+                </fieldset>
             </div>
         </section>
 
@@ -137,54 +156,13 @@
             </div>
         </section>
 
-        <section class="cp-card" id="coupon-delivery" aria-labelledby="coupon-delivery-title">
-            <div class="cp-card-head">
-                <span class="cp-card-icon cp-card-icon--violet"><i class="fas fa-paper-plane" aria-hidden="true"></i></span>
-                <div>
-                    <p class="cp-card-step">STEP 03</p>
-                    <h2 id="coupon-delivery-title">渡すタイミングを選ぶ</h2>
-                    <p>手動配布は作成後に配布先を選べます。自動配布は条件を満たした会員へ届きます。</p>
-                </div>
-            </div>
-
-            <div class="form-group mb-0">
-                <span class="form-label">発行タイミング <span class="cp-required">必須</span></span>
-                <div class="cp-choice-grid cp-choice-grid--triggers">
-                    @foreach($triggerCards as $triggerValue => $card)
-                    <label class="cp-choice cp-choice--trigger {{ $issueTrigger === $triggerValue ? 'is-selected' : '' }}">
-                        <input type="radio" name="issue_trigger" value="{{ $triggerValue }}" {{ $issueTrigger === $triggerValue ? 'checked' : '' }} @if($loop->first) id="issue_trigger" @endif>
-                        <span class="cp-choice-icon"><i class="fas {{ $card['icon'] }}" aria-hidden="true"></i></span>
-                        <span class="cp-choice-copy">
-                            <span class="cp-choice-title">{{ $card['title'] }}</span>
-                            <span class="cp-choice-desc">{{ $card['desc'] }}</span>
-                        </span>
-                        <span class="cp-choice-check"><i class="fas fa-check" aria-hidden="true"></i></span>
-                    </label>
-                    @endforeach
-                </div>
-                @error('issue_trigger')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
-            </div>
-            <div class="form-group cp-dependent-field{{ $issueTrigger === 'stamp_completed' ? '' : ' is-hidden' }}" id="stamp_card_group">
-                <span class="cp-dependent-icon"><i class="fas fa-stamp" aria-hidden="true"></i></span>
-                <div>
-                    <label for="stamp_card_id" class="form-label">対象スタンプカード <span class="cp-required">必須</span></label>
-                    <select name="stamp_card_id" id="stamp_card_id" class="form-control">
-                        <option value="">選択してください</option>
-                        @foreach($stampCards ?? [] as $card)
-                        <option value="{{ $card->id }}" {{ $stampCardId === (int) $card->id ? 'selected' : '' }}>{{ $card->name }}（{{ $card->required_stamps }}個で達成）</option>
-                        @endforeach
-                    </select>
-                </div>
-            </div>
-        </section>
-
         <section class="cp-card" id="coupon-conditions" aria-labelledby="coupon-conditions-title">
             <div class="cp-card-head">
                 <span class="cp-card-icon cp-card-icon--green"><i class="fas fa-calendar-check" aria-hidden="true"></i></span>
                 <div>
-                    <p class="cp-card-step">STEP 04</p>
-                    <h2 id="coupon-conditions-title">使える期間と条件を整える</h2>
-                    <p>未入力の期間は無期限として扱われます。必要に応じて詳細条件を追加できます。</p>
+                    <p class="cp-card-step">STEP 03</p>
+                    <h2 id="coupon-conditions-title">発行条件を整える</h2>
+                    <p>スマレジと同じ項目です。未入力の期間・金額は制限なしとして扱われます。</p>
                 </div>
             </div>
 
@@ -202,6 +180,46 @@
                 </div>
             </div>
 
+            <fieldset class="cp-issue-conditions">
+                <legend class="form-label">適用条件区分 <span class="cp-required">必須</span></legend>
+                <div class="cp-choice-grid cp-choice-grid--2">
+                    @foreach(\App\Enums\CouponApplyConditionDivision::getValues() as $optionValue => $label)
+                        <label class="cp-choice {{ (string) $applyConditionDivision === (string) $optionValue ? 'is-selected' : '' }}">
+                            <input type="radio" name="apply_condition_division" value="{{ $optionValue }}" {{ (string) $applyConditionDivision === (string) $optionValue ? 'checked' : '' }}>
+                            <span class="cp-choice-copy">
+                                <span class="cp-choice-title">{{ $label }}</span>
+                                <span class="cp-choice-desc">{{ (string) $optionValue === \App\Enums\CouponApplyConditionDivision::ALL ? '会計全体に適用します' : '指定商品が含まれるときだけ適用します' }}</span>
+                            </span>
+                            <span class="cp-choice-check"><i class="fas fa-check" aria-hidden="true"></i></span>
+                        </label>
+                    @endforeach
+                </div>
+                @error('apply_condition_division')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
+            </fieldset>
+
+            <div class="cp-grid-2">
+                <div class="form-group">
+                    <label for="min_order_amount" class="form-label">最低対象金額</label>
+                    <div class="cp-input-suffix"><input type="number" name="min_order_amount" id="min_order_amount" class="form-control" value="{{ $minOrderAmount }}" min="0" step="1" placeholder="指定なし"><span>円</span></div>
+                    @error('min_order_amount')<span class="invalid-feedback">{{ $message }}</span>@enderror
+                </div>
+                <div class="form-group">
+                    <label for="max_order_amount" class="form-label">最高対象金額</label>
+                    <div class="cp-input-suffix"><input type="number" name="max_order_amount" id="max_order_amount" class="form-control" value="{{ $maxOrderAmount }}" min="0" step="1" placeholder="指定なし"><span>円</span></div>
+                    @error('max_order_amount')<span class="invalid-feedback">{{ $message }}</span>@enderror
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="combine_division" class="form-label">併用区分 <span class="cp-required">必須</span></label>
+                <select name="combine_division" id="combine_division" class="form-control">
+                    @foreach(\App\Enums\CouponCombineDivision::getValues() as $optionValue => $label)
+                        <option value="{{ $optionValue }}" {{ (string) $combineDivision === (string) $optionValue ? 'selected' : '' }}>{{ $label }}</option>
+                    @endforeach
+                </select>
+                @error('combine_division')<span class="invalid-feedback">{{ $message }}</span>@enderror
+            </div>
+
             <div class="cp-status-row">
                 <span class="cp-status-icon"><i class="fas fa-bolt" aria-hidden="true"></i></span>
                 <span class="cp-status-copy"><strong>作成後すぐに利用可能</strong><small>OFFにすると下書きとして保存されます</small></span>
@@ -212,23 +230,16 @@
                 </label>
             </div>
 
-            <details class="cp-details cp-advanced" @if($minOrderAmount || $usageLimit) open @endif>
+            <details class="cp-details cp-advanced" @if($usageLimit) open @endif>
                 <summary>
-                    <span><i class="fas fa-sliders" aria-hidden="true"></i> 詳細な利用条件</span>
-                    <small>最低金額・利用上限・レジ表示</small>
+                    <span><i class="fas fa-sliders" aria-hidden="true"></i> アプリ側の表示</span>
+                    <small>利用回数上限・レジ表示</small>
                 </summary>
                 <div class="cp-advanced-body">
-                    <div class="cp-grid-2">
-                        <div class="form-group">
-                            <label for="min_order_amount" class="form-label">最低注文金額</label>
-                            <div class="cp-input-suffix"><input type="number" name="min_order_amount" id="min_order_amount" class="form-control" value="{{ $minOrderAmount }}" min="0" step="1" placeholder="指定なし"><span>円</span></div>
-                            @error('min_order_amount')<span class="invalid-feedback">{{ $message }}</span>@enderror
-                        </div>
-                        <div class="form-group">
-                            <label for="usage_limit" class="form-label">全体の利用回数上限</label>
-                            <div class="cp-input-suffix"><input type="number" name="usage_limit" id="usage_limit" class="form-control" value="{{ $usageLimit }}" min="1" placeholder="指定なし"><span>回</span></div>
-                            @error('usage_limit')<span class="invalid-feedback">{{ $message }}</span>@enderror
-                        </div>
+                    <div class="form-group">
+                        <label for="usage_limit" class="form-label">全体の利用回数上限</label>
+                        <div class="cp-input-suffix"><input type="number" name="usage_limit" id="usage_limit" class="form-control" value="{{ $usageLimit }}" min="1" placeholder="指定なし"><span>回</span></div>
+                        @error('usage_limit')<span class="invalid-feedback">{{ $message }}</span>@enderror
                     </div>
                     <div class="form-group mb-0">
                         <label for="use_display" class="form-label">利用時にレジで表示するもの</label>
@@ -267,7 +278,6 @@
             <p class="cp-summary-title">設定サマリー</p>
             <dl>
                 <div><dt><i class="fas fa-tag" aria-hidden="true"></i> 特典</dt><dd id="couponSummaryDiscount">{{ $value }}{{ $type === 'fixed' ? '円' : '%' }} OFF</dd></div>
-                <div><dt><i class="fas fa-paper-plane" aria-hidden="true"></i> 渡し方</dt><dd id="couponSummaryTrigger">{{ $triggerCards[$issueTrigger]['title'] ?? 'あとから配布' }}</dd></div>
                 <div><dt><i class="far fa-calendar" aria-hidden="true"></i> 利用期間</dt><dd id="couponSummaryPeriod">期限なし</dd></div>
                 <div><dt><i class="fas fa-circle" aria-hidden="true"></i> ステータス</dt><dd id="couponSummaryStatus">{{ $isActive ? '有効' : '下書き' }}</dd></div>
             </dl>
