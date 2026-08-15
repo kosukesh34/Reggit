@@ -3,6 +3,7 @@
 namespace App\Services\Admin;
 
 use App\Domain\Coupon\Repositories\CouponDeliveryTargetRepository;
+use App\Enums\RfmSegment;
 use App\Support\MemberChannel;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
@@ -20,6 +21,7 @@ class MemberSegmentService
 
     public function __construct(
         private CouponDeliveryTargetRepository $targetRepository,
+        private RfmAnalysisService $rfmAnalysisService,
     ) {}
 
     /**
@@ -93,6 +95,11 @@ class MemberSegmentService
         $rank = trim((string) ($input['segment_rank'] ?? $input['rank'] ?? $input['target_rank'] ?? ''));
         if ($rank !== '') {
             $criteria['rank'] = $rank;
+        }
+
+        $rfmSegments = $this->normalizeRfmSegments($input['segment_rfm_segments'] ?? $input['rfm_segments'] ?? []);
+        if ($rfmSegments !== []) {
+            $criteria['rfm_segments'] = $rfmSegments;
         }
 
         $productId = $input['segment_product_id'] ?? $input['product_id'] ?? null;
@@ -202,6 +209,10 @@ class MemberSegmentService
             $sets[] = $this->targetRepository->findIdsByRank($projectId, $criteria['rank']);
         }
 
+        if (isset($criteria['rfm_segments']) && is_array($criteria['rfm_segments'])) {
+            $sets[] = $this->rfmAnalysisService->findMemberIdsBySegments($projectId, $criteria['rfm_segments']);
+        }
+
         if (isset($criteria['product_id'])) {
             $sets[] = $this->targetRepository->findIdsByPurchasedProduct($projectId, (int) $criteria['product_id']);
         }
@@ -249,6 +260,21 @@ class MemberSegmentService
     public function countMembers(int $projectId, array $criteria): int
     {
         return $this->getMemberIds($projectId, $criteria)->count();
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function normalizeRfmSegments(mixed $values): array
+    {
+        $items = is_array($values) ? $values : [$values];
+
+        return collect($items)
+            ->map(fn ($value): string => trim((string) $value))
+            ->filter(fn (string $value): bool => in_array($value, RfmSegment::keys(), true))
+            ->unique()
+            ->values()
+            ->all();
     }
 
     /**

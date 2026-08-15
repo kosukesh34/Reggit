@@ -392,6 +392,7 @@ class MemberAdminService
         array $memberIds = [],
         ?string $issueSourceType = null,
         ?string $issueSourceId = null,
+        bool $shouldNotify = true,
     ): array {
         $coupon = Coupon::where('project_id', $projectId)->findOrFail($couponId);
         $query = Member::where('project_id', $projectId);
@@ -417,15 +418,29 @@ class MemberAdminService
             )) {
                 continue;
             }
-            $this->issueCouponToMember(
+            $issue = function () use (
                 $member,
                 $couponId,
-                null,
                 $validUntil,
                 $issueSourceType,
                 $issueSourceId,
                 $grantKey,
-            );
+            ): void {
+                $this->issueCouponToMember(
+                    $member,
+                    $couponId,
+                    null,
+                    $validUntil,
+                    $issueSourceType,
+                    $issueSourceId,
+                    $grantKey,
+                );
+            };
+            if ($shouldNotify) {
+                $issue();
+            } else {
+                MemberCoupon::withoutEvents($issue);
+            }
             $issuedMemberIds[] = (int) $member->id;
         }
 

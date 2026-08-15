@@ -256,6 +256,8 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'bind.admin.project', '
         Route::post('/coupons/push-smaregi', [AdminCouponController::class, 'pushCouponsToSmaregi'])->name('admin.coupons.push-smaregi')->middleware('admin.permission:coupons.manage');
         Route::post('/coupons/full-sync-smaregi', [AdminCouponController::class, 'fullSyncCouponsWithSmaregi'])->name('admin.coupons.full-sync-smaregi')->middleware('admin.permission:coupons.manage');
         Route::get('/coupons/ajax/members', [AdminCouponController::class, 'searchMembers'])->name('admin.coupons.ajax.members')->middleware('admin.permission:coupons.manage');
+        Route::get('/coupons/segment-preview', [AdminCouponController::class, 'segmentPreview'])->name('admin.coupons.segment.preview')->middleware('admin.permission:coupons.manage');
+        Route::get('/coupons/audience-preview', [AdminCouponController::class, 'audiencePreview'])->name('admin.coupons.audience.preview')->middleware('admin.permission:coupons.manage');
         Route::get('/coupons/delivery-preview', [AdminCouponController::class, 'deliveryPreview'])->name('admin.coupons.delivery.preview')->middleware('admin.permission:coupons.manage');
         Route::get('/coupons/delivery-preview-members', [AdminCouponController::class, 'deliveryPreviewMembers'])->name('admin.coupons.delivery.preview-members')->middleware('admin.permission:coupons.manage');
         Route::get('/coupons/deliveries/{id}', [AdminCouponController::class, 'deliveryShow'])->name('admin.coupons.deliveries.show')->middleware('admin.permission:coupons.manage');
@@ -266,7 +268,6 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'bind.admin.project', '
 
         Route::get('/announcements', [AdminAnnouncementController::class, 'announcements'])->name('admin.announcements')->middleware('admin.permission:announcements.view');
         Route::get('/announcements/create', [AdminAnnouncementController::class, 'createAnnouncement'])->name('admin.announcements.create')->middleware('admin.permission:announcements.manage');
-        Route::post('/announcements', [AdminAnnouncementController::class, 'storeAnnouncement'])->name('admin.announcements.store')->middleware('admin.permission:announcements.manage');
         Route::get('/announcements/delivery', [AdminAnnouncementController::class, 'createDelivery'])->name('admin.announcements.delivery.create')->middleware(['admin.permission:announcements.manage', 'admin.plan:announcement_delivery']);
         Route::post('/announcements/delivery', [AdminAnnouncementController::class, 'storeDelivery'])->name('admin.announcements.delivery.store')->middleware(['admin.permission:announcements.manage', 'admin.plan:announcement_delivery']);
         Route::get('/announcements/ajax/members', [AdminAnnouncementController::class, 'searchMembers'])->name('admin.announcements.ajax.members')->middleware('admin.permission:announcements.view');
