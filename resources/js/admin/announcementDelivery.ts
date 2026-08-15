@@ -8,6 +8,7 @@ type DeliveryConfig = {
     audiencePreviewUrl: string;
     memberCount: number;
     selectedMemberIds: number[];
+    mode?: 'announcement' | 'coupon';
 };
 
 type MemberSearchResult = {
@@ -59,7 +60,9 @@ type SegmentConditionChip = {
 };
 
 function initAnnouncementDelivery(): void {
-    if (document.body.dataset.pageKind !== 'announcement-delivery') return;
+    const pageKind = document.body.dataset.pageKind;
+    if (pageKind !== 'announcement-delivery' && pageKind !== 'coupon-delivery') return;
+    const isCouponDelivery = pageKind === 'coupon-delivery';
 
     const form = document.getElementById('deliveryForm') as HTMLFormElement | null;
     const configElement = document.getElementById('announcementDeliveryConfig');
@@ -87,6 +90,7 @@ function initAnnouncementDelivery(): void {
     const imageUrlInput = field<HTMLInputElement>('image_url');
     const imageFileInput = field<HTMLInputElement>('ann_image');
     const pinInput = field<HTMLInputElement>('is_pinned');
+    const sendNotificationInput = field<HTMLInputElement>('send_notification');
     const couponToggle = field<HTMLInputElement>('attachCoupon');
     const couponPanel = field<HTMLElement>('couponPanel');
     const couponSelect = field<HTMLSelectElement>('delivery_coupon_id');
@@ -208,6 +212,7 @@ function initAnnouncementDelivery(): void {
         add('誕生月', 'いずれか', birthdayMonths.join('・'));
         add('性別', '=', selectedOptionText('segment_sex'));
         add('会員タグ', 'いずれか', checkedOptionLabels('segment_tag_ids[]').join('・'));
+        add('RFMセグメント', 'いずれか', checkedOptionLabels('segment_rfm_segments[]').join('・'));
 
         const visitMin = fieldValue('segment_visit_count_min');
         const visitMax = fieldValue('segment_visit_count_max');
@@ -226,9 +231,20 @@ function initAnnouncementDelivery(): void {
             add('最終来店', '=', `${formattedNumber(lastVisitDays)}日以上来店なし`);
         } else if (lastVisitMode === 'visited_within_days' && lastVisitDays !== '') {
             add('最終来店', '=', `${formattedNumber(lastVisitDays)}日以内に来店あり`);
+        } else if (lastVisitMode === 'days_after' && lastVisitDays !== '') {
+            add('最終来店', '=', `${formattedNumber(lastVisitDays)}日後`);
         }
 
         add('購入商品', '=', selectedOptionText('segment_product_id'));
+        if (field<HTMLInputElement>('event_rank_up')?.checked === true) {
+            add('ランクアップ達成', '=', fieldValue('segment_rank') || '対象ランクを指定');
+        }
+        add('スタンプカード', '=', selectedOptionText('stamp_card_id'));
+        const stampMin = fieldValue('stamp_count_min');
+        add('スタンプ累計', '≥', stampMin === '' ? '' : `${formattedNumber(stampMin)}個`);
+        if (field<HTMLInputElement>('stamp_completed')?.checked === true) {
+            add('スタンプ', '=', '達成済み');
+        }
 
         const salesCondition = document.querySelector<HTMLInputElement>('input[name="segment_condition"]:checked')?.value || '';
         const period = selectedOptionText('segment_period_days');
@@ -277,7 +293,12 @@ function initAnnouncementDelivery(): void {
         });
     }
 
+    function shouldSendNotification(): boolean {
+        return sendNotificationInput?.checked !== false;
+    }
+
     function notificationSummaryText(): string {
+        if (!shouldSendNotification()) return '送らない';
         if (notificationChannels === null) return '通知先を確認中…';
         const parts: string[] = [];
         if (notificationChannels.line > 0) parts.push(`LINE ${notificationChannels.line.toLocaleString('ja-JP')}人`);
@@ -302,12 +323,13 @@ function initAnnouncementDelivery(): void {
     }
 
     function couponOption(): HTMLOptionElement | null {
-        if (!couponSelect || !couponToggle?.checked || couponSelect.value === '') return null;
+        const attached = isCouponDelivery || couponToggle?.checked === true;
+        if (!couponSelect || !attached || couponSelect.value === '') return null;
         return couponSelect.selectedOptions[0] ?? null;
     }
 
     function syncCoupon(): void {
-        const enabled = couponToggle?.checked === true;
+        const enabled = isCouponDelivery || couponToggle?.checked === true;
         if (couponPanel) couponPanel.hidden = !enabled;
         if (couponSelect) {
             couponSelect.disabled = !enabled;
@@ -351,6 +373,8 @@ function initAnnouncementDelivery(): void {
     }
 
     function ensureAnnouncementLivePreview(): void {
+        const previewDetails = reviewModal?.querySelector<HTMLDetailsElement>('.ad-channel-preview-details');
+        if (previewDetails !== null && previewDetails !== undefined && !previewDetails.open) return;
         if (!livePreviewFrame) return;
         const currentSrc = livePreviewFrame.getAttribute('src') || '';
         if (currentSrc === '' || currentSrc === 'about:blank') {
@@ -553,14 +577,17 @@ function initAnnouncementDelivery(): void {
             'segment_lifetime_points_min', 'segment_lifetime_points_max', 'segment_last_visit_mode',
             'segment_last_visit_days', 'segment_sex', 'segment_rank', 'segment_product_id',
             'segment_period_days', 'segment_min_amount',
+            'stamp_card_id', 'stamp_count_min',
         ].forEach((id) => {
             const element = field<HTMLInputElement | HTMLSelectElement>(id);
             if (element && !element.disabled && element.value !== '') params.set(id, element.value);
         });
         checkedValues('segment_birthday_months[]').forEach((value) => params.append('segment_birthday_months[]', value));
         checkedValues('segment_tag_ids[]').forEach((value) => params.append('segment_tag_ids[]', value));
+        checkedValues('segment_rfm_segments[]').forEach((value) => params.append('segment_rfm_segments[]', value));
         const condition = document.querySelector<HTMLInputElement>('input[name="segment_condition"]:checked')?.value || '';
         if (condition !== '') params.set('segment_condition', condition);
+        if (field<HTMLInputElement>('stamp_completed')?.checked === true) params.set('stamp_completed', '1');
         return params;
     }
 
@@ -774,7 +801,12 @@ function initAnnouncementDelivery(): void {
         ].some((id) => (field<HTMLInputElement | HTMLSelectElement>(id)?.value || '').trim() !== '')
             || checkedValues('segment_birthday_months[]').length > 0
             || checkedValues('segment_tag_ids[]').length > 0
-            || (document.querySelector<HTMLInputElement>('input[name="segment_condition"]:checked')?.value || '') !== '';
+            || checkedValues('segment_rfm_segments[]').length > 0
+            || (document.querySelector<HTMLInputElement>('input[name="segment_condition"]:checked')?.value || '') !== ''
+            || field<HTMLInputElement>('event_rank_up')?.checked === true
+            || (field<HTMLInputElement | HTMLSelectElement>('stamp_card_id')?.value || '').trim() !== ''
+            || (field<HTMLInputElement>('stamp_count_min')?.value || '').trim() !== ''
+            || field<HTMLInputElement>('stamp_completed')?.checked === true;
     }
 
     function showFormError(message: string, target?: HTMLElement | null): void {
@@ -825,22 +857,29 @@ function initAnnouncementDelivery(): void {
         const reviewResolveRow = field<HTMLElement>('deliveryReviewResolveRow');
         if (reviewResolveRow) reviewResolveRow.hidden = !canChooseResolveMode();
         setText('deliveryReviewResolve', resolveModeText());
-        setText('deliveryReviewCoupon', couponOption()?.textContent?.trim() || '配布しない');
-        setText('deliveryReviewPinned', pinInput?.checked ? 'する' : 'しない');
+        setText('deliveryReviewCoupon', couponOption()?.textContent?.trim() || (isCouponDelivery ? '未選択' : '配布しない'));
+        if (pinInput) setText('deliveryReviewPinned', pinInput.checked ? 'する' : 'しない');
+        const sending = shouldSendNotification();
         setText('deliveryReviewLineCount', `${notificationChannels.line.toLocaleString('ja-JP')}人`);
         setText('deliveryReviewPushCount', `${notificationChannels.push.toLocaleString('ja-JP')}人`);
 
         const unreachable = field<HTMLElement>('deliveryReviewUnreachable');
+        const optedOut = field<HTMLElement>('deliveryReviewOptedOut');
+        const notifyOff = field<HTMLElement>('deliveryReviewNotifyOff');
+        const channelList = field<HTMLElement>('deliveryReviewChannelList');
+        const notifyNote = field<HTMLElement>('deliveryReviewNotifyNote');
+        if (notifyOff) notifyOff.hidden = sending;
+        if (channelList) channelList.hidden = !sending;
+        if (notifyNote) notifyNote.hidden = !sending;
         if (unreachable) {
-            unreachable.hidden = notificationChannels.unreachable === 0;
-            unreachable.textContent = notificationChannels.unreachable > 0
+            unreachable.hidden = !sending || notificationChannels.unreachable === 0;
+            unreachable.textContent = sending && notificationChannels.unreachable > 0
                 ? `${notificationChannels.unreachable.toLocaleString('ja-JP')}人はLINE・Push通知の送信先がありません。アプリ内のお知らせには掲載されます。`
                 : '';
         }
-        const optedOut = field<HTMLElement>('deliveryReviewOptedOut');
         if (optedOut) {
-            optedOut.hidden = notificationChannels.opted_out === 0;
-            optedOut.textContent = notificationChannels.opted_out > 0
+            optedOut.hidden = !sending || notificationChannels.opted_out === 0;
+            optedOut.textContent = sending && notificationChannels.opted_out > 0
                 ? `${notificationChannels.opted_out.toLocaleString('ja-JP')}人は本人の通知設定によりLINE・Pushを送りません。`
                 : '';
         }
@@ -849,16 +888,20 @@ function initAnnouncementDelivery(): void {
         const scheduled = selectedDeliveryTiming() === 'scheduled';
         const resolveAtSend = scheduled && canChooseResolveMode() && selectedResolveMode() === 'at_send';
         setText('deliveryReviewWarningTitle', scheduled ? '指定した日時に配信します' : '確認後すぐに配信します');
+        const couponVerb = isCouponDelivery
+            ? 'クーポンを配布'
+            : (sending ? 'お知らせと通知を送信' : 'お知らせを掲載');
         setText('deliveryReviewWarningText', resolveAtSend
-            ? `${formatDateTime(scheduledAt?.value || '')}に、その時点で条件へ一致する会員へお知らせと通知を送信します。`
+            ? `${formatDateTime(scheduledAt?.value || '')}に、その時点で条件へ一致する会員へ${couponVerb}します。`
             : (scheduled
-                ? `${formatDateTime(scheduledAt?.value || '')}に、いま確認した対象会員へお知らせと通知を送信します。`
-                : '確定すると対象会員へお知らせと通知を送信します。'));
+                ? `${formatDateTime(scheduledAt?.value || '')}に、いま確認した対象会員へ${couponVerb}します。`
+                : `確定すると対象会員へ${couponVerb}します。`));
         setText('deliveryReviewConfirmLabel', scheduled ? 'この内容で予約する' : 'この内容で今すぐ配信する');
 
+        const previewDetails = reviewModal.querySelector<HTMLDetailsElement>('.ad-channel-preview-details');
+        if (previewDetails) previewDetails.open = false;
         reviewModal.hidden = false;
         document.body.classList.add('ad-review-open');
-        ensureAnnouncementLivePreview();
         reviewModal.querySelector<HTMLButtonElement>('.ad-review-close')?.focus();
         window.requestAnimationFrame(() => {
             if (reviewBody) reviewBody.scrollTop = 0;
@@ -934,6 +977,16 @@ function initAnnouncementDelivery(): void {
         }
     });
     pinInput?.addEventListener('change', syncPreview);
+    sendNotificationInput?.addEventListener('change', renderNotificationSummary);
+    document.querySelectorAll<HTMLAnchorElement>('.ad-summary-audience-link, .ad-confirm-conditions-head a').forEach((link) => {
+        link.addEventListener('click', () => {
+            const details = field<HTMLDetailsElement>('audiencePreviewDetails');
+            if (details) details.open = true;
+        });
+    });
+    reviewModal?.querySelector('.ad-channel-preview-details')?.addEventListener('toggle', () => {
+        ensureAnnouncementLivePreview();
+    });
     scheduledAt?.addEventListener('change', () => {
         if (selectedDeliveryTiming() === 'scheduled') setText('deliverySummaryTiming', formatDateTime(scheduledAt.value));
     });
@@ -955,6 +1008,7 @@ function initAnnouncementDelivery(): void {
         reviewConfirm.disabled = true;
         setText('deliveryReviewConfirmLabel', selectedDeliveryTiming() === 'scheduled' ? '予約しています…' : '配信しています…');
         finalSubmitApproved = true;
+        applyCouponDeliveryType();
         closeDeliveryReview();
         form.requestSubmit();
     });
@@ -966,6 +1020,27 @@ function initAnnouncementDelivery(): void {
         }
         if (reviewModal?.hidden === false) closeDeliveryReview();
     });
+
+    function applyCouponDeliveryType(): void {
+        if (!isCouponDelivery) return;
+        const hidden = field<HTMLInputElement>('delivery_type');
+        if (hidden === null) return;
+        const scheduled = selectedDeliveryTiming() === 'scheduled';
+        const audience = selectedAudienceType();
+        if (field<HTMLInputElement>('event_rank_up')?.checked === true) {
+            hidden.value = 'event_rank_up_arrival';
+            return;
+        }
+        if (audience === 'personal') {
+            hidden.value = scheduled ? 'scheduled_personal' : 'immediate_personal';
+            return;
+        }
+        if (audience === 'segment') {
+            hidden.value = scheduled ? 'scheduled_segment_attributes' : 'immediate_segment_attributes';
+            return;
+        }
+        hidden.value = scheduled ? 'scheduled_all' : 'immediate_all';
+    }
 
     form.addEventListener('submit', (event) => {
         if (finalSubmitApproved) return;
@@ -981,11 +1056,12 @@ function initAnnouncementDelivery(): void {
             showFormError('セグメント配信では、絞り込み条件を1つ以上指定してください。', field('segment_channel'));
             return;
         }
-        if (couponToggle?.checked && (!couponSelect || couponSelect.value === '')) {
+        if ((isCouponDelivery || couponToggle?.checked) && (!couponSelect || couponSelect.value === '')) {
             event.preventDefault();
             showFormError('配布するクーポンを選択してください。', couponSelect);
             return;
         }
+        applyCouponDeliveryType();
         if (notificationChannels === null || resolvedAudienceCount === null) {
             event.preventDefault();
             showFormError('配信対象と通知先を確認しています。少し待ってからもう一度お試しください。', field('delivery-audience'));

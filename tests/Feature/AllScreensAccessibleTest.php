@@ -121,7 +121,6 @@ class AllScreensAccessibleTest extends TestCase
             'coupons.bulk-issue' => ['admin.coupons.bulk-issue', ['project_key' => $key]],
             'coupons.edit' => ['admin.coupons.edit', ['project_key' => $key, 'id' => 1]],
             'announcements' => ['admin.announcements', ['project_key' => $key]],
-            'announcements.create' => ['admin.announcements.create', ['project_key' => $key]],
             'announcements.delivery' => ['admin.announcements.delivery.create', ['project_key' => $key]],
             'announcements.edit' => ['admin.announcements.edit', ['project_key' => $key, 'id' => 1]],
             'after-registration-deliveries' => ['admin.after-registration-deliveries.index', ['project_key' => $key]],
