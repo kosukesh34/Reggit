@@ -47,6 +47,16 @@
 <script>
     window.__PROJECT_KEY__ = "{{ $projectKey ?? '' }}";
     window.__REVERB_APP_KEY__ = @json((string) config('broadcasting.connections.reverb.key', ''));
+    @php
+        $reverbWsHost = trim((string) config('broadcasting.client_ws_host', ''));
+        if ($reverbWsHost === '') {
+            $reverbWsHostFile = storage_path('app/reverb-ws-host');
+            if (is_file($reverbWsHostFile)) {
+                $reverbWsHost = trim((string) file_get_contents($reverbWsHostFile));
+            }
+        }
+    @endphp
+    window.__REVERB_WS_HOST__ = @json($reverbWsHost);
     (function () {
         var apiBaseMeta = document.querySelector('meta[name="api-base"]');
         window.__API_BASE__ = (apiBaseMeta ? apiBaseMeta.getAttribute('content') : null) || '/api';
