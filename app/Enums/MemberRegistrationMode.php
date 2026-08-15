@@ -7,14 +7,22 @@ use App\Util\EnumBase;
 class MemberRegistrationMode extends EnumBase
 {
     protected static array $values = [
-        self::OPTIONAL => 'そのまま使える',
-        self::PROMPT => '登録を促す（フォーム表示）',
-        self::FORCE => '会員登録を必須にする',
+        self::OPTIONAL => 'ゲスト可能',
+        self::POPUP => 'ポップアップを表示する',
+        self::PROMPT => '登録画面を表示する（任意登録）',
+        self::FORCE => '会員必須',
     ];
 
     public const OPTIONAL = 'optional';
 
+    public const POPUP = 'popup';
+
     public const PROMPT = 'prompt';
 
     public const FORCE = 'force';
+
+    public static function shouldAutoCreateMember(string $mode): bool
+    {
+        return $mode === self::OPTIONAL;
+    }
 }

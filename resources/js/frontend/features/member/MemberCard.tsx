@@ -127,6 +127,8 @@ export function ClassicMemberCard({ data }: { data: MemberPayload }): JSX.Elemen
     const currentRankKey = data.current_rank || 'bronze';
     const showPointsDisplay = data.show_points_display !== false;
     const showRankProgress = data.show_rank_progress !== false;
+    const rankUnit = data.rank_basis === 'stamps' ? '個' : 'pt';
+    const periodDays = data.days_required_for_next_rank != null ? Number(data.days_required_for_next_rank) : null;
     const isQR = design.codeType === 'qrcode';
     const isSheet = design.displayType === 'sheet';
     const isSample = data.is_sample_preview === true;
@@ -268,10 +270,15 @@ export function ClassicMemberCard({ data }: { data: MemberPayload }): JSX.Elemen
                                     <span className="idnect-card-points-label">ポイント</span>
                                 </div>
                             ) : null}
-                            {expiryText ? <p className="idnect-card-expiry">{expiryText}</p> : null}
+                            {showPointsDisplay && expiryText ? <p className="idnect-card-expiry">{expiryText}</p> : null}
                             {showRankProgress && nextRankLabel && pointsToNextRank !== null ? (
                                 <p className="idnect-card-next-rank">
-                                    次のランク（{nextRankLabel}）まで <strong>{Number(pointsToNextRank).toLocaleString()}</strong> pt
+                                    次のランク（{nextRankLabel}）まで <strong>{Number(pointsToNextRank).toLocaleString()}</strong> {rankUnit}
+                                </p>
+                            ) : null}
+                            {showRankProgress && periodDays !== null && Number.isFinite(periodDays) ? (
+                                <p className="idnect-card-next-rank idnect-card-days-to-rank">
+                                    集計期間: 過去 <strong>{periodDays}</strong> 日
                                 </p>
                             ) : null}
                             {showRankProgress && daysRequiredForNextRank !== null && daysToNextRank !== null ? (
@@ -431,14 +438,19 @@ export function IosWalletMemberCard({ data }: { data: MemberPayload }): JSX.Elem
     const pointsToNextRank = data.points_to_next_rank != null ? Number(data.points_to_next_rank) : null;
     const showPointsDisplay = data.show_points_display !== false;
     const showRankProgress = data.show_rank_progress !== false;
+    const rankUnit = data.rank_basis === 'stamps' ? '個' : 'pt';
+    const periodDays = data.days_required_for_next_rank != null ? Number(data.days_required_for_next_rank) : null;
+    const rankMetricRaw = data.rank_metric != null ? Number(data.rank_metric) : points;
+    const rankMetric = Number.isFinite(rankMetricRaw) ? rankMetricRaw : points;
     const isSample = data.is_sample_preview === true;
-    const progressTotal = pointsToNextRank !== null ? points + pointsToNextRank : Math.max(points, 1);
+    const progressTotal = pointsToNextRank !== null ? rankMetric + pointsToNextRank : Math.max(rankMetric, 1);
     const progressPct = pointsToNextRank !== null
-        ? Math.max(8, Math.min(100, Math.round((points / progressTotal) * 100)))
+        ? Math.max(8, Math.min(100, Math.round((rankMetric / progressTotal) * 100)))
         : 100;
     const progressText = nextRankLabel && pointsToNextRank !== null
-        ? `${nextRankLabel}まであと ${pointsToNextRank.toLocaleString('ja-JP')} pt`
-        : 'ポイントは失効しません';
+        ? `${nextRankLabel}まであと ${pointsToNextRank.toLocaleString('ja-JP')} ${rankUnit}`
+            + (periodDays !== null && Number.isFinite(periodDays) ? `（過去${periodDays}日）` : '')
+        : '最高ランクに到達しています';
 
     useEffect(() => {
         const el = rootRef.current;
@@ -574,7 +586,7 @@ export function IosWalletMemberCard({ data }: { data: MemberPayload }): JSX.Elem
                 </div>
             </article>
             <div className="ios-wallet-member__meta">
-                <p>ポイントは失効しません</p>
+                {showPointsDisplay ? <p>ポイント有効期限は店舗設定に従います</p> : <p />}
                 <button
                     type="button"
                     className="ios-wallet-member__enlarge"

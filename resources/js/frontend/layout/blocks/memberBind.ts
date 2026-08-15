@@ -27,6 +27,9 @@ export function formatStatsValue(field: string, data: Record<string, unknown> | 
         return '—';
     }
     if (field === 'points') {
+        if (data.show_points_display === false) {
+            return '—';
+        }
         const member = data.member as { points?: number } | undefined;
         const points = Number(data.points != null ? data.points : (member && member.points) || 0);
         return points.toLocaleString('ja-JP');
@@ -60,7 +63,8 @@ export function formatBannerPointsToNext(data: Record<string, unknown> | null): 
         return '最高ランクに到達しています';
     }
     const toNext = Number(data.points_to_next_rank).toLocaleString('ja-JP');
-    return `次の${nextRankLabel}まであと ${toNext} pt`;
+    const unit = data.rank_basis === 'stamps' ? '個' : 'pt';
+    return `次の${nextRankLabel}まであと ${toNext} ${unit}`;
 }
 
 let memberMeCache: Promise<Record<string, unknown> | null> | null = null;
