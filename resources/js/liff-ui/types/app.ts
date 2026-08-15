@@ -42,6 +42,7 @@ export type LinkTabType = "link_1" | "link_2" | "link_3";
 export type TabType =
   | "home"
   | "membership"
+  | "profile"
   | "mobileOrder"
   | "dineInOrder"
   | "reservation"

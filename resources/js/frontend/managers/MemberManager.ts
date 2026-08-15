@@ -285,7 +285,7 @@ export class MemberManager {
         const params = new URLSearchParams(window.location.search || '');
         if (params.get('designer_live_preview') !== '1') return false;
         const source = params.get('designer_source');
-        return source === 'member' || source === 'member_card';
+        return source === 'member' || source === 'member_card' || source === 'profile';
     }
 
     /** Apple Wallet ボタンを表示すべきか（iOS またはネイティブ iOS アプリかつ有効時） */
@@ -814,6 +814,10 @@ export class MemberManager {
         return DomHelper.getTabMount(
             AppConstants.TAB_MOUNTS.MEMBER,
             AppConstants.ELEMENT_IDS.MEMBER_SECTION,
+            { silent: true }
+        ) || DomHelper.getTabMount(
+            AppConstants.TAB_MOUNTS.MEMBER,
+            AppConstants.ELEMENT_IDS.PROFILE_SECTION,
             { silent: true }
         );
     }
@@ -2584,8 +2588,13 @@ export class MemberManager {
         }
     }
 
-    openProfileEdit(options: any = {}) {
+    async openProfileEdit(options: any = {}) {
         options = options || {};
+        try {
+            await this.fetchMemberContext({ force: true });
+        } catch (error) {
+            console.warn('fetchMemberContext for profile edit failed', error);
+        }
         if (!this.memberData) return;
         if (!options.skipHistory && !this.isEditPageMode()) {
             this._updateMemberScreenUrl('edit', false);
@@ -2602,6 +2611,11 @@ export class MemberManager {
     }
 
     async paintProfileEditInto(container: HTMLElement): Promise<void> {
+        try {
+            await this.fetchMemberContext({ force: true });
+        } catch (error) {
+            console.warn('fetchMemberContext for profile edit paint failed', error);
+        }
         if (!this.memberData) return;
         const user = this.memberData.user || (this.memberData.member && this.memberData.member.user);
         const member = this.memberData.member;
@@ -2755,12 +2769,9 @@ export class MemberManager {
             { key: 'kana', label: 'お名前（カナ）', required: false },
             { key: 'phone', label: '電話番号', required: false },
             { key: 'email', label: 'メールアドレス', required: false },
-            { key: 'birthday', label: '誕生日', required: false },
             { key: 'postal_code', label: '郵便番号', required: false },
-            { key: 'prefecture', label: '都道府県', required: false },
-            { key: 'city', label: '市区町村', required: false },
-            { key: 'street', label: '番地・建物名', required: false },
             { key: 'address', label: '住所', required: false },
+            { key: 'birthday', label: '誕生日', required: false },
             { key: 'sex', label: '性別', required: false },
         ];
         let profile = (this.memberData && this.memberData.profile && typeof this.memberData.profile === 'object') ? this.memberData.profile : (root && root.profile) ? root.profile : {};
@@ -2847,10 +2858,12 @@ export class MemberManager {
             }
             if (key === 'notification_preference') {
                 const preference = val || 'all';
+                const isNativeApp = typeof window !== 'undefined' && window.__MOBILE_APP_MODE__ === true;
+                const channelLabel = isNativeApp ? 'Push通知' : 'LINE通知';
                 const options = [
-                    ['all', 'すべて受け取る', '新着情報とクーポン情報'],
-                    ['coupon_only', 'クーポン情報のみ', 'クーポンが付く配信だけ'],
-                    ['none', 'すべて受け取らない', 'LINE・Push通知を送信しません'],
+                    ['all', 'すべて受け取る', '新着情報とクーポンを' + channelLabel + 'で受け取る'],
+                    ['coupon_only', 'クーポン情報のみ', 'クーポン配信だけ' + channelLabel + 'で受け取る'],
+                    ['none', '受け取らない', channelLabel + 'を受け取らない'],
                 ];
                 const optionsHtml = options.map(function (option) {
                     const checked = preference === option[0] ? ' checked' : '';
@@ -2862,7 +2875,6 @@ export class MemberManager {
                     '<fieldset class="member-form-group member-form-group--choice">' +
                     '<legend class="member-form-group-label">' + DomHelper.escapeHtml(label) + ' <span class="required">*</span></legend>' +
                     '<div class="member-form-notification-options" role="radiogroup" aria-label="' + DomHelper.escapeHtml(label) + '">' + optionsHtml + '</div>' +
-                    description +
                     '</fieldset>',
                 ];
             }
@@ -2934,7 +2946,7 @@ export class MemberManager {
             }
             return ['<div class="member-form-group"><label for="' + id + '">' + DomHelper.escapeHtml(label) + (f.required ? ' <span class="required">*</span>' : '') + '</label>' + input + description + '</div>'];
         });
-        const addressKeys = ['postal_code', 'prefecture', 'city', 'street', 'address'];
+        const addressKeys = ['postal_code', 'address'];
         const groupedRows = [];
         let addressChunk = [];
         const flushAddressChunk = function () {

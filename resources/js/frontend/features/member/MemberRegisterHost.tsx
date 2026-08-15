@@ -54,6 +54,11 @@ export function MemberRegisterHost({
                 mm._forcedRegister = forced === true;
                 mm._profileEditFullScreen = false;
             } else {
+                try {
+                    await mm.fetchMemberContext?.({ force: true });
+                } catch {
+                    /* ignore */
+                }
                 mm._registerFullScreen = false;
                 mm._profileEditFullScreen = true;
             }
