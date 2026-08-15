@@ -39,6 +39,7 @@ class Announcement extends Model
         'published_at',
         'expires_at',
         'is_pinned',
+        'send_notification',
         'delivery_type',
         'delivery_timing',
         'scheduled_at',
@@ -71,6 +72,7 @@ class Announcement extends Model
         'published_at' => 'datetime',
         'expires_at' => 'datetime',
         'is_pinned' => 'boolean',
+        'send_notification' => 'boolean',
         'scheduled_at' => 'datetime',
         'sent_at' => 'datetime',
         'target_member_ids' => 'array',
@@ -81,6 +83,7 @@ class Announcement extends Model
     /** @var array<string, mixed> */
     protected $attributes = [
         'audience_resolve_mode' => AnnouncementAudienceResolveMode::SNAPSHOT,
+        'send_notification' => true,
     ];
 
     public function shouldResolveAudienceAtSend(): bool

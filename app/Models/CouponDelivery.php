@@ -22,6 +22,7 @@ class CouponDelivery extends Model
         'issued_member_ids',
         'segment_criteria',
         'issued_count',
+        'send_notification',
         'error_message',
     ];
 
@@ -33,6 +34,12 @@ class CouponDelivery extends Model
         'issued_member_ids' => 'array',
         'segment_criteria' => 'array',
         'issued_count' => 'integer',
+        'send_notification' => 'boolean',
+    ];
+
+    /** @var array<string, mixed> */
+    protected $attributes = [
+        'send_notification' => true,
     ];
 
     public function isScheduledType(): bool

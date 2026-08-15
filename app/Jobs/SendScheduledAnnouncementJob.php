@@ -30,7 +30,9 @@ class SendScheduledAnnouncementJob implements ShouldQueue
 
         $announcementAdminService->finalizeAudienceForSend($announcement);
         $announcement = $announcement->fresh() ?? $announcement;
-        $announcementNotificationService->send($announcement);
+        if ($announcement->send_notification !== false) {
+            $announcementNotificationService->send($announcement);
+        }
         $announcementAdminService->issueDeliveryCouponIfSet($announcement);
 
         $announcement->update([

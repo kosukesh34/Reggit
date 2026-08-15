@@ -92,6 +92,36 @@ class RfmAnalysisServiceTest extends TestCase
         $this->assertSame('dormant', $rows->first()['segment']);
     }
 
+    public function test_find_member_ids_by_segments_指定セグメントの会員だけ返すこと(): void
+    {
+        $neverUser = User::factory()->create(['project_id' => $this->project->id]);
+        $neverMember = Member::factory()->create([
+            'project_id' => $this->project->id,
+            'user_id' => $neverUser->id,
+            'status' => 'active',
+        ]);
+        $activeUser = User::factory()->create(['project_id' => $this->project->id]);
+        $activeMember = Member::factory()->create([
+            'project_id' => $this->project->id,
+            'user_id' => $activeUser->id,
+            'status' => 'active',
+        ]);
+        $order = Order::create([
+            'project_id' => $this->project->id,
+            'user_id' => $activeUser->id,
+            'order_number' => 'ORD-'.uniqid(),
+            'order_type' => 'take_out',
+            'total_amount' => 1000,
+            'status' => OrderStatus::COMPLETED,
+        ]);
+        $order->forceFill(['created_at' => now()->subDays(5)])->save();
+
+        $ids = $this->service->findMemberIdsBySegments($this->project->id, ['never', 'invalid']);
+
+        $this->assertSame([$neverMember->id], $ids);
+        $this->assertNotContains($activeMember->id, $ids);
+    }
+
     public function test_analyze_by_project_他プロジェクトの会員は含まれない(): void
     {
         $otherProject = Project::firstOrCreate(
