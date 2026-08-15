@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\StampGrantLimit;
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\Member;
 use App\Models\Project;
 use App\Models\StampCard;
@@ -63,6 +64,22 @@ class StampGrantTest extends TestCase
         $this->withHeaders($headers)->postJson($grantUrl)
             ->assertStatus(409)
             ->assertJsonPath('error', 'このQRからのスタンプは付与済みです');
+    }
+
+    public function test_スタンプ機能オフならqr付与を拒否すること(): void
+    {
+        [$project, $member, $card] = $this->createGrantFixtures(self::LINE_USER_ID);
+        ShopSettingStore::setValue('use_stamps', false, 'boolean', (int) $project->id);
+        $grantUrl = $this->signedGrantUrl($project, $card, 'off-nonce', 1, StampGrantLimit::PER_MEMBER);
+
+        $this->withHeaders(['X-Line-User-Id' => self::LINE_USER_ID])->postJson($grantUrl)
+            ->assertStatus(403)
+            ->assertJsonPath('error', 'スタンプ機能は利用できません');
+
+        $this->assertDatabaseMissing('member_stamps', [
+            'member_id' => $member->id,
+            'stamp_card_id' => $card->id,
+        ]);
     }
 
     public function test_署名のない付与urlは拒否すること(): void

@@ -1,18 +1,19 @@
 /**
  * アプリ全体の会員登録ポリシー。
  * window.__MEMBER_REGISTRATION_MODE__ を優先する。
- * - optional: 未会員でも利用可
- * - prompt: 登録を促すが閉じられる
+ * - optional: ゲスト可能。ログイン時に会員を自動作成
+ * - popup: 起動時にログイン／登録ポップアップ
+ * - prompt: 起動時に登録画面（任意）
  * - force: 会員登録必須
  */
-export type MemberRegistrationMode = 'optional' | 'prompt' | 'force';
+export type MemberRegistrationMode = 'optional' | 'popup' | 'prompt' | 'force';
 
 export function getMemberRegistrationMode(): MemberRegistrationMode {
     const raw =
         typeof window !== 'undefined' && window.__MEMBER_REGISTRATION_MODE__
             ? String(window.__MEMBER_REGISTRATION_MODE__)
             : '';
-    if (raw === 'prompt' || raw === 'force' || raw === 'optional') {
+    if (raw === 'prompt' || raw === 'force' || raw === 'optional' || raw === 'popup') {
         return raw;
     }
     return 'optional';
@@ -23,7 +24,7 @@ export function syncMemberRegistrationModeFromPayload(payload: Record<string, un
         return;
     }
     const raw = payload.member_registration_mode;
-    if (raw === 'prompt' || raw === 'force' || raw === 'optional') {
+    if (raw === 'prompt' || raw === 'force' || raw === 'optional' || raw === 'popup') {
         window.__MEMBER_REGISTRATION_MODE__ = raw;
     }
 }
@@ -37,6 +38,14 @@ export function shouldShowRegistrationForm(): boolean {
         return !isRegistrationFormDismissed();
     }
     return false;
+}
+
+export function shouldShowStartupLoginPopup(): boolean {
+    return getMemberRegistrationMode() === 'popup' && !isRegistrationFormDismissed();
+}
+
+export function shouldAutoCreateMember(): boolean {
+    return getMemberRegistrationMode() === 'optional';
 }
 
 export function isRegistrationFormDismissed(): boolean {
@@ -64,7 +73,7 @@ export function getGuestRegisterMessage(): { title: string; subtitle: string; bu
             buttonClass: 'btn-primary',
         };
     }
-    if (mode === 'prompt') {
+    if (mode === 'prompt' || mode === 'popup') {
         return {
             title: '会員登録をおすすめします。',
             subtitle: '登録するとポイント・クーポン・予約履歴などがご利用いただけます。',
