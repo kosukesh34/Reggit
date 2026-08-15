@@ -1,6 +1,6 @@
 {
-  "_browser-Cf2aUzEl.js": {
-    "file": "assets/browser-Cf2aUzEl.js",
+  "_browser-BofJoqY0.js": {
+    "file": "assets/browser-BofJoqY0.js",
     "name": "browser"
   },
   "resources/css/admin/liff-designer/react.css": {
@@ -8,29 +8,29 @@
     "src": "resources/css/admin/liff-designer/react.css"
   },
   "resources/css/app.css": {
-    "file": "assets/app-Ff6usim8.css",
+    "file": "assets/app-Da4f1LNv.css",
     "src": "resources/css/app.css"
   },
   "resources/js/admin/main.tsx": {
-    "file": "assets/main-BT0_1jmL.js",
+    "file": "assets/main-BQQYkeio.js",
     "name": "main",
     "src": "resources/js/admin/main.tsx",
     "isEntry": true,
     "imports": [
-      "_browser-Cf2aUzEl.js"
+      "_browser-BofJoqY0.js"
     ]
   },
   "resources/js/frontend/main.tsx": {
-    "file": "assets/main-Fbc5OITR.js",
+    "file": "assets/main-c6v9d6kr.js",
     "name": "main",
     "src": "resources/js/frontend/main.tsx",
     "isEntry": true,
     "imports": [
-      "_browser-Cf2aUzEl.js"
+      "_browser-BofJoqY0.js"
     ],
     "css": [
       "assets/main-CaGWElG9.css",
-      "assets/app-Ff6usim8.css",
+      "assets/app-Da4f1LNv.css",
       "assets/tokens-CJDqh8yr.css",
       "assets/globals-BfaEBi2U.css",
       "assets/design-layout-variants-O2rPv7D6.css"

@@ -197,10 +197,42 @@ class SmaregiApiService
         return $this->request($contractId, 'POST', $path, $body);
     }
 
-    /** 会員1件取得（pos.customers:read） */
+    /** 会員1件取得（pos.customers:read）。自由項目も付与する。 */
     public function getCustomer(string $contractId, string $customerId): ?array
     {
-        return $this->request($contractId, 'GET', 'pos/customers/'.$customerId);
+        return $this->request($contractId, 'GET', 'pos/customers/'.$customerId, [
+            'with_custom_fields' => 'all',
+        ]);
+    }
+
+    /**
+     * 会員自由項目ラベル一覧取得（pos.customers:read）
+     *
+     * @param  array<string, int|string>  $query
+     */
+    public function getCustomerCustomFieldLabels(string $contractId, array $query = []): ?array
+    {
+        return $this->request($contractId, 'GET', 'pos/customers/custom_field_labels', $query);
+    }
+
+    /**
+     * 会員自由項目ラベル登録（pos.customers:write）
+     *
+     * @param  array<string, string>  $body
+     */
+    public function createCustomerCustomFieldLabel(string $contractId, array $body): ?array
+    {
+        return $this->request($contractId, 'POST', 'pos/customers/custom_field_labels', $body);
+    }
+
+    /**
+     * 会員自由項目ラベル更新（pos.customers:write）
+     *
+     * @param  array<string, string>  $body
+     */
+    public function updateCustomerCustomFieldLabel(string $contractId, int $no, array $body): ?array
+    {
+        return $this->request($contractId, 'PATCH', 'pos/customers/custom_field_labels/'.$no, $body);
     }
 
     /**

@@ -91,8 +91,7 @@ enum NativeInjectionScripts {
             }
             if (viewport) viewport.setAttribute('content', viewportContent);
 
-            // NativeTabBar は WebView 外なので、viewport 高さからタブバー分を引かない。
-            // （二重に引くとスクロール領域が短くなり、端での誤リロードが起きやすい）
+            // タブバーは WebView 内の .bottom-nav が担当する。viewport 高さは画面全体を使う。
             var viewportHeight = (typeof window.innerHeight === 'number' && window.innerHeight > 0)
                 ? window.innerHeight
                 : (typeof window.visualViewport !== 'undefined' && window.visualViewport && window.visualViewport.height > 0)
@@ -167,7 +166,6 @@ enum NativeInjectionScripts {
                         width: 100% !important;
                         max-width: 100vw !important;
                         box-sizing: border-box !important;
-                        padding-bottom: 0 !important;
                     }
                     .native-app-embed #react-frontend-tabs-root {
                         display: flex !important;
@@ -202,16 +200,7 @@ enum NativeInjectionScripts {
                         max-height: none !important;
                         overflow: visible !important;
                         touch-action: pan-y !important;
-                        padding-bottom: 24px !important;
                         box-sizing: border-box !important;
-                    }
-                    .native-app-embed .main-tabs,
-                    .native-app-embed .bottom-nav {
-                        display: none !important;
-                        visibility: hidden !important;
-                        height: 0 !important;
-                        overflow: hidden !important;
-                        pointer-events: none !important;
                     }
                     .native-app-embed .app-shell,
                     .native-app-embed .app-shell__frame,
@@ -229,7 +218,6 @@ enum NativeInjectionScripts {
                         overflow-y: auto !important;
                         overflow-x: hidden !important;
                         -webkit-overflow-scrolling: touch !important;
-                        padding-bottom: 24px !important;
                     }
                     .native-app-embed #app, .native-app-embed [data-v-app], .native-app-embed main {
                         width: 100% !important;
@@ -289,18 +277,6 @@ enum NativeInjectionScripts {
                 if (event.ctrlKey) event.preventDefault();
             }, { passive: false });
             window.__NATIVE_ZOOM_LOCK_INSTALLED__ = true;
-        };
-        """
-
-    static let hideWebTabBar = """
-        const hideWebTabBar = () => {
-            document.querySelectorAll('.main-tabs, .bottom-nav').forEach((el) => {
-                el.style.display = 'none';
-                el.style.visibility = 'hidden';
-                el.style.height = '0';
-                el.style.overflow = 'hidden';
-                el.style.pointerEvents = 'none';
-            });
         };
         """
 

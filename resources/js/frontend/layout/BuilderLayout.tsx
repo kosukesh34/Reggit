@@ -17,6 +17,7 @@ const DEFAULT_TAB_SOURCES: Record<string, string> = {
     coupons: 'coupons',
     queue: 'queue',
     member: 'member',
+    profile: 'member',
     reservations: 'reservations',
     gallery: 'gallery',
     announcements: 'announcements',
@@ -34,6 +35,9 @@ function hasDataBlock(blocks: BuilderBlockData[], source: string): boolean {
             return true;
         }
         if (source === 'member_card' && b.source === 'member') {
+            return true;
+        }
+        if (source === 'profile' && (b.source === 'member' || b.source === 'member_card')) {
             return true;
         }
         return false;

@@ -30,12 +30,10 @@
         '0' => '未設定',
         default => '—',
     };
+    $displayAddress = $view->member->displayAddress();
     $addressLabel = implode(' ', array_filter([
         $view->member->postal_code !== null && $view->member->postal_code !== '' ? '〒'.$view->member->postal_code : '',
-        $view->member->prefecture,
-        $view->member->city,
-        $view->member->street,
-        $view->member->address,
+        $displayAddress,
     ], fn ($part) => $part !== null && $part !== ''));
     $firstStamp = $view->member->memberStamps->first();
     $hasProfileExtras = $view->member->birthday !== null

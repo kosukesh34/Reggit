@@ -27,6 +27,13 @@ export const defaultCustomization: AppCustomization = {
     showNotifications: true,
     showStoreTheme: true,
     shortcut: "news",
+    rightButton: {
+      mode: "shortcut",
+      shortcut: "news",
+      label: "お知らせ",
+      path: "/news",
+      icon: "bell",
+    },
   },
   coupon: {
     showStatusTabs: true,
@@ -64,7 +71,7 @@ export const defaultCustomization: AppCustomization = {
     showRewardText: true,
   },
   navigation: {
-    tabs: ["home", "membership", "mobileOrder", "coupon", "more"],
+    tabs: ["home", "membership", "profile", "mobileOrder", "coupon", "more"],
     position: "bottom",
     showLabels: true,
     emphasizeCenterTab: false,
