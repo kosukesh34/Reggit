@@ -53,14 +53,16 @@ function MemberSummaryCard({ data, greeting, design }: {
     const showRank = data.show_rank_progress !== false;
     const nextRankLabel = data.next_rank_label != null ? String(data.next_rank_label) : '';
     const toNext = Number(data.points_to_next_rank != null ? data.points_to_next_rank : 0);
+    const rankUnit = data.rank_basis === 'stamps' ? '個' : 'pt';
+    const rankMetric = Number(data.rank_metric != null ? data.rank_metric : points);
     const hello = greeting !== '' ? greeting : (name !== '' ? `こんにちは、${name} さん` : 'おかえりなさい');
 
     let pct = 0;
     let progress: JSX.Element | null = null;
     let ring: JSX.Element | null = null;
     if (showRank && nextRankLabel !== '' && toNext > 0) {
-        const span = points + toNext;
-        pct = span > 0 ? Math.max(4, Math.min(100, Math.round((points / span) * 100))) : 0;
+        const span = rankMetric + toNext;
+        pct = span > 0 ? Math.max(4, Math.min(100, Math.round((rankMetric / span) * 100))) : 0;
         if (variant === 'rewards' || variant === 'glass') {
             ring = <MemberSummaryRing pct={pct} />;
         }
@@ -73,7 +75,7 @@ function MemberSummaryCard({ data, greeting, design }: {
                     <span className="ms-progress-goal">
                         次の<strong>{nextRankLabel}</strong>まで
                     </span>
-                    {' '}あと <strong>{toNext.toLocaleString('ja-JP')}</strong> pt
+                    {' '}あと <strong>{toNext.toLocaleString('ja-JP')}</strong> {rankUnit}
                 </p>
             </div>
         );

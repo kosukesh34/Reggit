@@ -1,6 +1,6 @@
 {
-  "_browser-BofJoqY0.js": {
-    "file": "assets/browser-BofJoqY0.js",
+  "_browser-Dl-E2G0L.js": {
+    "file": "assets/browser-Dl-E2G0L.js",
     "name": "browser"
   },
   "resources/css/admin/liff-designer/react.css": {
@@ -12,21 +12,21 @@
     "src": "resources/css/app.css"
   },
   "resources/js/admin/main.tsx": {
-    "file": "assets/main-BQQYkeio.js",
+    "file": "assets/main-B1CcelkK.js",
     "name": "main",
     "src": "resources/js/admin/main.tsx",
     "isEntry": true,
     "imports": [
-      "_browser-BofJoqY0.js"
+      "_browser-Dl-E2G0L.js"
     ]
   },
   "resources/js/frontend/main.tsx": {
-    "file": "assets/main-c6v9d6kr.js",
+    "file": "assets/main-Ch48hfLx.js",
     "name": "main",
     "src": "resources/js/frontend/main.tsx",
     "isEntry": true,
     "imports": [
-      "_browser-BofJoqY0.js"
+      "_browser-Dl-E2G0L.js"
     ],
     "css": [
       "assets/main-CaGWElG9.css",

@@ -53,6 +53,26 @@ services:
       - reggit_network
     depends_on:
       - app
+      - reverb
+
+  reverb:
+    image: reggit-app
+    container_name: reggit_reverb
+    restart: unless-stopped
+    env_file:
+      - .env
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+      - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
+    command: ["php", "artisan", "reverb:start", "--host=0.0.0.0", "--port=8081"]
+    networks:
+      - reggit_network
+    depends_on:
+      app:
+        condition: service_started
+      db:
+        condition: service_healthy
 
   scheduler:
     image: reggit-app

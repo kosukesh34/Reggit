@@ -373,7 +373,7 @@ class AnnouncementNotificationServiceTest extends TestCase
             'user_id' => $noneUser->id,
             'notification_preference' => MemberNotificationPreference::NONE,
         ]);
-        $coupon = Coupon::factory()->create(['project_id' => $project->id]);
+        $coupon = Coupon::factory()->create(['project_id' => $project->id, 'name' => '春の割引']);
 
         $withoutCoupon = Announcement::factory()->create([
             'project_id' => $project->id,
@@ -382,6 +382,8 @@ class AnnouncementNotificationServiceTest extends TestCase
         ]);
         $withCoupon = Announcement::factory()->create([
             'project_id' => $project->id,
+            'title' => '春のお知らせ',
+            'body' => 'キャンペーン本文です',
             'target_member_ids' => [$couponOnlyMember->id, $noneMember->id],
             'delivery_coupon_id' => $coupon->id,
         ]);
@@ -397,7 +399,22 @@ class AnnouncementNotificationServiceTest extends TestCase
         $lineMock = Mockery::mock(LineService::class);
         $lineMock->shouldReceive('pushMessage')
             ->once()
-            ->with($couponOnlyLineId, Mockery::type('array'), 'test-token')
+            ->with(
+                $couponOnlyLineId,
+                Mockery::on(function ($payload) use ($coupon): bool {
+                    $messages = isset($payload['type']) ? [$payload] : array_values($payload);
+                    if (count($messages) < 2) {
+                        return false;
+                    }
+                    $announcementJson = json_encode($messages[0], JSON_UNESCAPED_UNICODE) ?: '';
+                    $couponJson = json_encode($messages[1], JSON_UNESCAPED_UNICODE) ?: '';
+
+                    return str_contains($announcementJson, '春のお知らせ')
+                        && str_contains($announcementJson, 'キャンペーン本文です')
+                        && str_contains($couponJson, (string) $coupon->name);
+                }),
+                'test-token'
+            )
             ->andReturn([]);
 
         $service = new AnnouncementNotificationService($pushMock, $lineMock, app(ShopSettingRepository::class));

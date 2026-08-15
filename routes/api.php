@@ -31,6 +31,7 @@ use App\Http\Controllers\Diagnostics\ClientDebugController;
 use App\Http\Controllers\GalleryController;
 use App\Http\Controllers\LineWebhookController;
 use App\Http\Controllers\Member\GoogleWalletUrlController;
+use App\Http\Controllers\Member\LiffBroadcastAuthController;
 use App\Http\Controllers\Member\MemberLotteryController;
 use App\Http\Controllers\Member\MemberMeController;
 use App\Http\Controllers\Member\MemberPointCardController;
@@ -95,6 +96,9 @@ Route::match(['get', 'head', 'post'], '/smaregi/webhook', [SmaregiWebhookControl
 Route::post('/onboarding/projects', OnboardingProjectStoreController::class)
     ->middleware('throttle:onboarding')
     ->name('api.onboarding.projects.store');
+
+Route::post('/broadcasting/auth', LiffBroadcastAuthController::class)
+    ->middleware(['bind.project']);
 
 // 店舗管理画面で発行した期限付きQRから、会員本人へスタンプを付与する。
 Route::post('/stamps/grant/{stampCard}', StampGrantController::class)

@@ -436,6 +436,20 @@ export function StampsView(): JSX.Element {
     }, [reload]);
 
     useEffect(() => {
+        const onWalletSummary = (event: Event): void => {
+            const stampsTotal = Number((event as CustomEvent<{ stamps_total?: number }>).detail?.stamps_total);
+            if (!Number.isFinite(stampsTotal)) {
+                return;
+            }
+            void reload(true);
+        };
+        document.addEventListener('liff-wallet-summary-updated', onWalletSummary);
+        return () => {
+            document.removeEventListener('liff-wallet-summary-updated', onWalletSummary);
+        };
+    }, [reload]);
+
+    useEffect(() => {
         if (grant.phase !== 'success' || grant.animationKey === 0) {
             return;
         }

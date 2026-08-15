@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Enums\MemberNotificationPreference;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Jobs\SendCouponIssuedNotificationJob;
 use App\Models\Coupon;
@@ -297,6 +298,41 @@ class CouponNotificationTest extends TestCase
         $pushMock = Mockery::mock(PushNotificationService::class);
         $pushMock->shouldNotReceive('sendToUser');
 
+        $lineMock = Mockery::mock(LineService::class);
+        $lineMock->shouldNotReceive('pushMessage');
+
+        $service = new CouponNotificationService($pushMock, $lineMock, app(ShopSettingRepository::class));
+        $service->notifyIssued($memberCoupon);
+
+        $this->addToAssertionCount(2);
+    }
+
+    public function test_notify_issued_skips_when_notification_preference_is_none(): void
+    {
+        $project = $this->createProject();
+        ShopSettingStore::setLineChannelAccessToken('test-token', $project->id);
+        $lineUserId = 'U'.str_repeat('c', 32);
+        $user = User::factory()->create([
+            'project_id' => $project->id,
+            'line_user_id' => $lineUserId,
+        ]);
+        $member = Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+            'notification_preference' => MemberNotificationPreference::NONE,
+        ]);
+        $coupon = Coupon::factory()->create(['project_id' => $project->id, 'name' => '拒否テスト']);
+        $memberCoupon = MemberCoupon::withoutEvents(function () use ($project, $member, $coupon) {
+            return MemberCoupon::factory()->create([
+                'project_id' => $project->id,
+                'member_id' => $member->id,
+                'coupon_id' => $coupon->id,
+                'coupon_name_snapshot' => '拒否テスト',
+            ]);
+        });
+
+        $pushMock = Mockery::mock(PushNotificationService::class);
+        $pushMock->shouldNotReceive('sendToUser');
         $lineMock = Mockery::mock(LineService::class);
         $lineMock->shouldNotReceive('pushMessage');
 

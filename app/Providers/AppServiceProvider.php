@@ -31,10 +31,12 @@ use App\Infrastructure\Persistence\Eloquent\Queue\EloquentQueueEntryRepository;
 use App\Infrastructure\Persistence\Eloquent\Reservation\EloquentReservationRepository;
 use App\Infrastructure\Persistence\Eloquent\Settings\EloquentShopSettingRepository;
 use App\Models\MemberCoupon;
+use App\Models\MemberLotteryEntitlement;
 use App\Models\MemberStamp;
 use App\Models\PointTransaction;
 use App\Models\Project;
 use App\Observers\MemberCouponObserver;
+use App\Observers\MemberLotteryEntitlementObserver;
 use App\Observers\MemberStampObserver;
 use App\Observers\PointTransactionObserver;
 use App\Observers\ProjectObserver;
@@ -105,6 +107,8 @@ class AppServiceProvider extends ServiceProvider
         MemberStamp::observe(MemberStampObserver::class);
         MemberCoupon::observe(MemberCouponObserver::class);
         PointTransaction::observe(PointTransactionObserver::class);
+        MemberLotteryEntitlement::observe(MemberLotteryEntitlementObserver::class);
+        require base_path('routes/channels.php');
 
         if ($this->app->runningInConsole() === false) {
             if (request()->isSecure() ||
@@ -272,9 +276,14 @@ class AppServiceProvider extends ServiceProvider
             'current_rank_color' => isset($displayRank['card_color']) && $displayRank['card_color'] !== '' ? (string) $displayRank['card_color'] : null,
             'next_rank_label' => $nextRank !== null ? ($nextRank['label'] ?? null) : null,
             'points_to_next_rank' => $pointsToNext,
-            'days_to_next_rank' => 18,
-            'days_required_for_next_rank' => 30,
-            'show_points_display' => $settingsRepo->getShowPointsDisplay($projectId),
+            'days_to_next_rank' => null,
+            'days_required_for_next_rank' => $settingsRepo->getRankAggregationType($projectId) === 'period'
+                ? $settingsRepo->getRankPeriodDays($projectId)
+                : null,
+            'rank_basis' => $settingsRepo->getRankBasis($projectId),
+            'rank_aggregation_type' => $settingsRepo->getRankAggregationType($projectId),
+            'show_points_display' => $settingsRepo->getShowPointsDisplay($projectId)
+                && $settingsRepo->getUsePoints($projectId),
             'show_rank_progress' => $settingsRepo->getShowRankProgress($projectId),
             'member_card_design' => $settingsRepo->getMemberCardDesign($projectId),
             'member_card_logo_url' => $settingsRepo->getFrontendLogoUrl($projectId),

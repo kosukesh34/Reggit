@@ -30,6 +30,7 @@ use App\Models\Order;
 use App\Models\User;
 use App\Services\Admin\MemberAdminService;
 use App\Services\Lottery\LotteryEntitlementService;
+use App\Services\Stamp\MemberCurrentStampCardResolver;
 use App\Util\AdminContext;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -52,6 +53,8 @@ class OrderService
         private StampEarnPolicy $stampEarnPolicy,
         private OrderNumberAssigner $orderNumberAssigner,
         private LotteryEntitlementService $lotteryEntitlementService,
+        private MemberRankSyncService $memberRankSyncService,
+        private MemberCurrentStampCardResolver $memberCurrentStampCardResolver,
     ) {}
 
     private const DESC_REFUND_CANCEL = '注文キャンセルによる返却';
@@ -121,6 +124,7 @@ class OrderService
 
         // commit 後に同期する（失敗しても注文は残す。try/catch 外で rollBack しない）
         if ($paymentMethod !== PaymentMethod::STRIPE) {
+            $this->syncMemberRank($user);
             $this->domainEvents->dispatch(new OrderPointsSyncRequested(
                 (int) $order->id,
                 $projectId,
@@ -178,6 +182,7 @@ class OrderService
         }
 
         $this->awardLotteryEntitlements($user, $order, $finalAmount);
+        $this->syncMemberRank($user);
     }
 
     /**
@@ -300,6 +305,9 @@ class OrderService
     private function awardPoints(User $user, Order $order, float $finalAmount): void
     {
         $projectId = (int) ($user->project_id ?? 0);
+        if ($this->shopSettingRepository->getUsePoints($projectId) !== true) {
+            return;
+        }
         $member = $this->memberRepository->findByUserId((int) $user->id, $projectId);
         if ($member === null) {
             return;
@@ -367,10 +375,14 @@ class OrderService
         }
 
         $projectId = (int) ($user->project_id ?? 0);
-        $stampCardId = $this->shopSettingRepository->getOrderStampCardId($projectId);
-        $stampEarnPerAmount = $this->shopSettingRepository->getStampEarnPerAmount($projectId);
+        if ($this->shopSettingRepository->getUseStamps($projectId) !== true) {
+            return;
+        }
+        $stampCard = $this->memberCurrentStampCardResolver->resolve($member);
+        $rankKey = is_string($member->rank) ? $member->rank : null;
+        $stampEarnPerAmount = $this->shopSettingRepository->getStampEarnPerAmountForRank($projectId, $rankKey);
 
-        if ($stampCardId === null || $stampEarnPerAmount <= 0) {
+        if ($stampCard === null || $stampEarnPerAmount <= 0) {
             return;
         }
 
@@ -378,7 +390,7 @@ class OrderService
         if ($stampCount > 0) {
             $this->memberAdminService->addStampsToMember(
                 $member,
-                $stampCardId,
+                (int) $stampCard->id,
                 $stampCount,
                 '注文によるスタンプ付与',
                 (int) $order->id,
@@ -408,6 +420,16 @@ class OrderService
         $rate = $this->shopSettingRepository->getPointEarnRateForRank($projectId, $rankKey);
 
         return $rate > 0 ? $rate : self::DEFAULT_POINTS_EARN_RATE;
+    }
+
+    private function syncMemberRank(User $user): void
+    {
+        $member = $user->member;
+        if ($member === null) {
+            return;
+        }
+        $fresh = $member->fresh() ?? $member;
+        $this->memberRankSyncService->sync($fresh);
     }
 
     public function handleOrderCancellation(Order $order): void
@@ -448,6 +470,9 @@ class OrderService
             DB::rollBack();
             Log::error('Order cancellation handling failed: '.$e->getMessage(), ['order_id' => $order->id]);
             throw $e;
+        }
+        if ($order->user !== null) {
+            $this->syncMemberRank($order->user);
         }
         // 未決済キャンセル専用。作成時にスマレジ未同期のため差分同期しない。
     }

@@ -5,6 +5,7 @@ namespace App\Infrastructure\Persistence\Eloquent\Settings;
 use App\Domain\Settings\ShopSettingKeys;
 use App\Enums\MemberRegistrationMode;
 use App\Enums\ProfileCustomFieldInputType;
+use App\Enums\RankAggregationType;
 use App\Models\Settings\ProjectAdminUiSetting;
 use App\Models\Settings\ProjectAnnouncementSetting;
 use App\Models\Settings\ProjectBusinessSetting;
@@ -91,6 +92,12 @@ class ShopSettingStore
         'order_stamp_card_id' => ProjectMemberPointsSetting::class,
         'points_valid_days' => ProjectMemberPointsSetting::class,
         'member_rank_basis' => ProjectMemberRankSetting::class,
+        'use_stamps' => ProjectMemberRankSetting::class,
+        'use_transaction_stamps' => ProjectMemberRankSetting::class,
+        'use_points' => ProjectMemberRankSetting::class,
+        'member_rank_aggregation_type' => ProjectMemberRankSetting::class,
+        'member_rank_period_days' => ProjectMemberRankSetting::class,
+        'is_rank_down_enabled' => ProjectMemberRankSetting::class,
         'member_code_type' => ProjectMemberRankSetting::class,
         'member_code_format' => ProjectMemberRankSetting::class,
         'member_code_prefix' => ProjectMemberRankSetting::class,
@@ -835,6 +842,38 @@ class ShopSettingStore
         return (string) self::getValue('member_rank_basis', 'points', $projectId);
     }
 
+    public static function getUseStamps(?int $projectId = null): bool
+    {
+        return (bool) self::getValue('use_stamps', true, $projectId);
+    }
+
+    public static function getUseTransactionStamps(?int $projectId = null): bool
+    {
+        return self::getUseStamps($projectId) && (bool) self::getValue('use_transaction_stamps', true, $projectId);
+    }
+
+    public static function getUsePoints(?int $projectId = null): bool
+    {
+        return (bool) self::getValue('use_points', true, $projectId);
+    }
+
+    public static function getRankAggregationType(?int $projectId = null): string
+    {
+        return RankAggregationType::normalize((string) self::getValue('member_rank_aggregation_type', RankAggregationType::TOTAL, $projectId));
+    }
+
+    public static function getRankPeriodDays(?int $projectId = null): int
+    {
+        $days = (int) self::getValue('member_rank_period_days', 365, $projectId);
+
+        return $days > 0 ? $days : 365;
+    }
+
+    public static function getIsRankDownEnabled(?int $projectId = null): bool
+    {
+        return (bool) self::getValue('is_rank_down_enabled', false, $projectId);
+    }
+
     /** 会員コード生成: sequential=連番, random=ランダム */
     public static function getMemberCodeType(?int $projectId = null): string
     {
@@ -962,6 +1001,11 @@ class ShopSettingStore
                 'point_earn_rate' => isset($row['point_earn_rate']) && $row['point_earn_rate'] !== null && $row['point_earn_rate'] !== ''
                     ? (int) $row['point_earn_rate']
                     : null,
+                'stamp_earn_per_amount' => array_key_exists('stamp_earn_per_amount', $row)
+                    && $row['stamp_earn_per_amount'] !== null
+                    && $row['stamp_earn_per_amount'] !== ''
+                    ? (int) $row['stamp_earn_per_amount']
+                    : null,
                 'smaregi_rank_id' => isset($row['smaregi_rank_id']) && trim((string) $row['smaregi_rank_id']) !== ''
                     ? (string) $row['smaregi_rank_id']
                     : null,
@@ -999,6 +1043,29 @@ class ShopSettingStore
         return $default;
     }
 
+    /**
+     * ランク別のスタンプ付与レート（円/1スタンプ）。未設定時はプロジェクト全体のデフォルト。0 は付与しない。
+     */
+    public static function getStampEarnPerAmountForRank(?int $projectId, ?string $rankKey): int
+    {
+        $default = self::getStampEarnPerAmount($projectId);
+        if ($rankKey === null || $rankKey === '') {
+            return $default;
+        }
+        foreach (self::getMemberRankSettings($projectId) as $rank) {
+            if ((string) ($rank['key'] ?? '') !== $rankKey) {
+                continue;
+            }
+            if (! array_key_exists('stamp_earn_per_amount', $rank) || $rank['stamp_earn_per_amount'] === null) {
+                return $default;
+            }
+
+            return max(0, (int) $rank['stamp_earn_per_amount']);
+        }
+
+        return $default;
+    }
+
     public static function setMemberRankSettings(array $settings, ?int $projectId = null): void
     {
         self::setValue('member_rank_settings', $settings, 'json', $projectId);
@@ -1007,10 +1074,10 @@ class ShopSettingStore
     public static function defaultMemberRankSettings(): array
     {
         return [
-            ['key' => 'bronze', 'label' => 'ブロンズ', 'min_points' => 0, 'is_active' => true, 'icon_url' => null, 'stamp_background_url' => null, 'card_color' => '#cd7f32', 'order' => 1, 'point_earn_rate' => null, 'smaregi_rank_id' => null],
-            ['key' => 'silver', 'label' => 'シルバー', 'min_points' => 1000, 'is_active' => true, 'icon_url' => null, 'stamp_background_url' => null, 'card_color' => '#c0c0c0', 'order' => 2, 'point_earn_rate' => null, 'smaregi_rank_id' => null],
-            ['key' => 'gold', 'label' => 'ゴールド', 'min_points' => 5000, 'is_active' => true, 'icon_url' => null, 'stamp_background_url' => null, 'card_color' => '#ffd700', 'order' => 3, 'point_earn_rate' => null, 'smaregi_rank_id' => null],
-            ['key' => 'platinum', 'label' => 'プラチナ', 'min_points' => 10000, 'is_active' => true, 'icon_url' => null, 'stamp_background_url' => null, 'card_color' => '#e5e4e2', 'order' => 4, 'point_earn_rate' => null, 'smaregi_rank_id' => null],
+            ['key' => 'bronze', 'label' => 'ブロンズ', 'min_points' => 0, 'is_active' => true, 'icon_url' => null, 'stamp_background_url' => null, 'card_color' => '#cd7f32', 'order' => 1, 'point_earn_rate' => null, 'stamp_earn_per_amount' => null, 'smaregi_rank_id' => null],
+            ['key' => 'silver', 'label' => 'シルバー', 'min_points' => 1000, 'is_active' => true, 'icon_url' => null, 'stamp_background_url' => null, 'card_color' => '#c0c0c0', 'order' => 2, 'point_earn_rate' => null, 'stamp_earn_per_amount' => null, 'smaregi_rank_id' => null],
+            ['key' => 'gold', 'label' => 'ゴールド', 'min_points' => 5000, 'is_active' => true, 'icon_url' => null, 'stamp_background_url' => null, 'card_color' => '#ffd700', 'order' => 3, 'point_earn_rate' => null, 'stamp_earn_per_amount' => null, 'smaregi_rank_id' => null],
+            ['key' => 'platinum', 'label' => 'プラチナ', 'min_points' => 10000, 'is_active' => true, 'icon_url' => null, 'stamp_background_url' => null, 'card_color' => '#e5e4e2', 'order' => 4, 'point_earn_rate' => null, 'stamp_earn_per_amount' => null, 'smaregi_rank_id' => null],
         ];
     }
 

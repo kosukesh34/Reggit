@@ -10,6 +10,7 @@ export {};
 type LiffLike = {
     isLoggedIn?: () => boolean;
     getDecodedIDToken?: () => { sub?: string } | null;
+    login?: (opts?: { redirectUri?: string }) => void;
 };
 
 type QRCodeCtor = new (
@@ -66,6 +67,7 @@ type AppLike = {
 declare global {
     interface Window {
         __PROJECT_KEY__?: string;
+        __REVERB_APP_KEY__?: string;
         __REGGIT_LIFF_UI__?: boolean;
         __API_BASE__?: string;
         __API_TOKEN__?: string;
@@ -78,7 +80,7 @@ declare global {
         __LINE_PROFILE__?: { displayName?: string; [key: string]: unknown } | null;
         __FEATURE_FLAGS__?: Record<string, boolean>;
         __QUEUE_REQUIRE_MEMBERSHIP__?: boolean;
-        __MEMBER_REGISTRATION_MODE__?: 'optional' | 'prompt' | 'force' | string;
+        __MEMBER_REGISTRATION_MODE__?: 'optional' | 'popup' | 'prompt' | 'force' | string;
         __FRONTEND_MENU__?: Array<{ tab: string; label?: string; icon?: string; url?: string; open?: string }>;
         __FRONTEND_HEADER__?: { title?: string; logoUrl?: string | null; friendAddUrl?: string | null };
         __LIFF_TAB_LAYOUTS__?: Record<string, unknown[]>;

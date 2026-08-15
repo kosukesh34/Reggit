@@ -12,7 +12,7 @@ import { StampsManager } from './managers/StampsManager';
 import { CheckoutManager } from './managers/CheckoutManager';
 import { QueueManager } from './managers/QueueManager';
 import { CouponsManager } from './managers/CouponsManager';
-import { getMemberRegistrationMode, isMembershipRequired, isRegistrationFormDismissed, shouldShowRegistrationForm, syncMemberRegistrationModeFromPayload } from './utils/membershipPolicy';
+import { getMemberRegistrationMode, isMembershipRequired, isRegistrationFormDismissed, shouldAutoCreateMember, shouldShowRegistrationForm, shouldShowStartupLoginPopup, syncMemberRegistrationModeFromPayload } from './utils/membershipPolicy';
 import { LiffLayoutManager } from './managers/LiffLayoutManager';
 import { ReservationManager } from './managers/ReservationManager';
 import { DesignLabManager } from './managers/DesignLabManager';
@@ -289,14 +289,17 @@ class ReggitApp {
         if (this._memberRegistrationGateHandled) {
             return;
         }
-        const mode = getMemberRegistrationMode();
-        if (mode === 'optional') {
-            this._memberRegistrationGateHandled = true;
-            return;
-        }
+        const emitLoginPopup = (forced: boolean): void => {
+            document.dispatchEvent(new CustomEvent('liff-member-open-login-popup', { detail: { forced } }));
+        };
         try {
             await this.memberManager.ensureIdentityReady(1500);
             if (typeof window !== 'undefined' && window.__IS_LIFF__ && !window.__LINE_USER_ID__) {
+                const mode = getMemberRegistrationMode();
+                if (mode === 'popup' || mode === 'prompt' || mode === 'force') {
+                    emitLoginPopup(mode === 'force');
+                }
+                this._memberRegistrationGateHandled = true;
                 return;
             }
             if (typeof this.memberManager.fetchMemberContext === 'function') {
@@ -304,12 +307,27 @@ class ReggitApp {
             }
         } catch (e) {
             if (typeof window !== 'undefined' && window.__IS_LIFF__ && !window.__LINE_USER_ID__) {
+                const mode = getMemberRegistrationMode();
+                if (mode === 'popup' || mode === 'prompt' || mode === 'force') {
+                    emitLoginPopup(mode === 'force');
+                }
+                this._memberRegistrationGateHandled = true;
                 return;
             }
         }
         syncMemberRegistrationModeFromPayload(this.memberManager.getMemberData());
         const data = this.memberManager.getMemberData();
         if (data && data.is_member === true) {
+            this._memberRegistrationGateHandled = true;
+            return;
+        }
+        if (shouldAutoCreateMember() && this.memberManager.canAutoRegister()) {
+            await this.memberManager.autoRegister();
+            this._memberRegistrationGateHandled = true;
+            return;
+        }
+        if (shouldShowStartupLoginPopup()) {
+            emitLoginPopup(false);
             this._memberRegistrationGateHandled = true;
             return;
         }
@@ -320,6 +338,9 @@ class ReggitApp {
         this._memberRegistrationGateHandled = true;
         await this.switchTab(AppConstants.TABS.MEMBER);
         await this.loadMemberTab();
+        await this.memberManager.ensureRegistrationFormShown({
+            forced: getMemberRegistrationMode() === 'force',
+        });
     }
 
     isMemberRegistrationPromptDismissed(): boolean {

@@ -6,6 +6,7 @@ use App\Enums\AnnouncementAudienceResolveMode;
 use App\Enums\MemberCouponSource;
 use App\Enums\MemberNotificationPreference;
 use App\Enums\OrderStatus;
+use App\Jobs\SendCouponIssuedNotificationJob;
 use App\Jobs\SendScheduledAnnouncementJob;
 use App\Models\AdminUser;
 use App\Models\Announcement;
@@ -25,6 +26,7 @@ use App\Services\PushNotificationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -399,12 +401,32 @@ class AdminAnnouncementsTest extends TestCase
 
     public function test_store_delivery_配信と同時にクーポンを配布できること(): void
     {
+        Queue::fake();
         $project = $this->createDistributionProject();
         $admin = $this->createAdmin($project);
         $admin->projects()->sync([$project->id]);
         $user = User::factory()->create(['project_id' => $project->id]);
         $member = Member::factory()->create(['project_id' => $project->id, 'user_id' => $user->id]);
         $coupon = Coupon::factory()->create(['project_id' => $project->id]);
+        $this->mock(AnnouncementNotificationService::class, function ($mock) use ($member, $coupon): void {
+            $mock->shouldReceive('send')->once()->andReturnUsing(function () use ($member, $coupon): array {
+                $this->assertDatabaseHas('member_coupons', [
+                    'member_id' => $member->id,
+                    'coupon_id' => $coupon->id,
+                ]);
+
+                return [
+                    'target_tokens' => 0,
+                    'sent' => 0,
+                    'failed' => 0,
+                    'skipped' => 0,
+                    'notification_ids' => [],
+                    'line_sent' => 0,
+                    'line_failed' => 0,
+                    'line_skipped' => 0,
+                ];
+            });
+        });
 
         $response = $this->actingAs($admin, 'admin')
             ->post(route('admin.announcements.delivery.store', ['project_key' => $project->project_key]), [
@@ -427,6 +449,7 @@ class AdminAnnouncementsTest extends TestCase
             'issue_source_type' => MemberCouponSource::ANNOUNCEMENT,
             'issue_source_id' => (string) Announcement::where('title', 'クーポン付き配信')->value('id'),
         ]);
+        Queue::assertNotPushed(SendCouponIssuedNotificationJob::class);
     }
 
     public function test_store_delivery_属性セグメントで配信できること(): void
