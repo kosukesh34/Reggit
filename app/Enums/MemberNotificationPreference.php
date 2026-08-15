@@ -39,6 +39,11 @@ class MemberNotificationPreference extends EnumBase
         };
     }
 
+    public static function allowsCoupon(?string $value): bool
+    {
+        return self::normalize($value) !== self::NONE;
+    }
+
     /** @return list<string> */
     public static function eligibleValues(bool $hasCoupon): array
     {

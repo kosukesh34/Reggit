@@ -5,6 +5,7 @@ import { MemberView } from '../../features/member/MemberView';
 import { OrdersView } from '../../features/orders/OrdersView';
 import { QueueView } from '../../features/queue/QueueView';
 import { ReservationsView } from '../../features/reservations/ReservationsView';
+import { ProductsGrid } from '../../features/products/ProductsGrid';
 import { StampsView } from '../../features/stamps/StampsView';
 
 type DataBlockMountProps = {
@@ -12,7 +13,6 @@ type DataBlockMountProps = {
 };
 
 type AppLoaders = {
-    loadProducts?: () => void | Promise<void>;
     couponsManager?: { load?: () => void | Promise<void> };
 };
 
@@ -45,25 +45,9 @@ function runWhenAppReady(fn: (app: AppLoaders) => boolean): () => void {
 }
 
 function ProductsDataEmbed(): JSX.Element {
-    useEffect(() => runWhenAppReady((app) => {
-        if (typeof app.loadProducts !== 'function') {
-            return false;
-        }
-        void app.loadProducts();
-        return true;
-    }), []);
-
     return (
-        <div className="products-data-mount">
-            <div className="category-tabs products-category-tabs">
-                <button type="button" className="tab-btn active" data-category="all">
-                    <i className="fas fa-th-large" aria-hidden="true" />
-                    <span>すべて</span>
-                </button>
-            </div>
-            <div className="products-section">
-                <div className="products-grid products-data-grid" />
-            </div>
+        <div className="products-data-mount" data-react-products="1">
+            <ProductsGrid embed />
         </div>
     );
 }

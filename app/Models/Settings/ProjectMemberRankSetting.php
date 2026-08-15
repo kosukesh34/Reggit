@@ -17,6 +17,12 @@ class ProjectMemberRankSetting extends Model
     protected $fillable = [
         'project_id',
         'member_rank_basis',
+        'use_stamps',
+        'use_transaction_stamps',
+        'use_points',
+        'member_rank_aggregation_type',
+        'member_rank_period_days',
+        'is_rank_down_enabled',
         'member_code_type',
         'member_code_format',
         'member_code_prefix',
@@ -33,6 +39,11 @@ class ProjectMemberRankSetting extends Model
 
     /** @var array<string, string> */
     protected $casts = [
+        'use_stamps' => 'boolean',
+        'use_transaction_stamps' => 'boolean',
+        'use_points' => 'boolean',
+        'is_rank_down_enabled' => 'boolean',
+        'member_rank_period_days' => 'integer',
         'show_points_display' => 'boolean',
         'show_rank_progress' => 'boolean',
         'show_member_card_for_guest' => 'boolean',
@@ -49,6 +60,12 @@ class ProjectMemberRankSetting extends Model
     {
         return [
             'member_rank_basis' => 'points',
+            'use_stamps' => true,
+            'use_transaction_stamps' => true,
+            'use_points' => true,
+            'member_rank_aggregation_type' => 'total',
+            'member_rank_period_days' => 365,
+            'is_rank_down_enabled' => false,
             'member_code_type' => 'random',
             'member_code_format' => 'numeric',
             'member_code_length' => 10,

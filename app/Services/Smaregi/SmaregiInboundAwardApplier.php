@@ -18,6 +18,7 @@ use App\Models\PointTransaction;
 use App\Services\Admin\MemberAdminService;
 use App\Services\CouponIssueService;
 use App\Services\Lottery\LotteryEntitlementService;
+use App\Services\Stamp\MemberCurrentStampCardResolver;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -36,6 +37,7 @@ class SmaregiInboundAwardApplier
         private PurchasePointCalculator $pointCalculator,
         private SmaregiInboundAwardDescription $descriptions,
         private LotteryEntitlementService $lotteryEntitlementService,
+        private MemberCurrentStampCardResolver $memberCurrentStampCardResolver,
     ) {}
 
     public function awardForPurchase(
@@ -100,6 +102,9 @@ class SmaregiInboundAwardApplier
         }
 
         $projectId = (int) $member->project_id;
+        if ($this->shopSettingRepository->getUsePoints($projectId) !== true) {
+            return;
+        }
         $rankKey = is_string($member->rank) ? $member->rank : null;
         $rate = $this->shopSettingRepository->getPointEarnRateForRank($projectId, $rankKey);
         $points = $this->pointCalculator->calculate($amount, $rate);
@@ -166,9 +171,13 @@ class SmaregiInboundAwardApplier
         }
 
         $projectId = (int) $member->project_id;
-        $stampCardId = $this->shopSettingRepository->getOrderStampCardId($projectId);
-        $stampEarnPerAmount = $this->shopSettingRepository->getStampEarnPerAmount($projectId);
-        if ($stampCardId === null || $stampEarnPerAmount <= 0) {
+        if ($this->shopSettingRepository->getUseTransactionStamps($projectId) !== true) {
+            return;
+        }
+        $stampCard = $this->memberCurrentStampCardResolver->resolve($member);
+        $rankKey = is_string($member->rank) ? $member->rank : null;
+        $stampEarnPerAmount = $this->shopSettingRepository->getStampEarnPerAmountForRank($projectId, $rankKey);
+        if ($stampCard === null || $stampEarnPerAmount <= 0) {
             return;
         }
 
@@ -184,7 +193,7 @@ class SmaregiInboundAwardApplier
 
         $this->memberAdminService->addStampsToMember(
             $member,
-            $stampCardId,
+            (int) $stampCard->id,
             $stampCount,
             $description,
             $orderId,
@@ -237,6 +246,9 @@ class SmaregiInboundAwardApplier
         }
 
         $projectId = (int) $member->project_id;
+        if ($this->shopSettingRepository->getUsePoints($projectId) !== true) {
+            return;
+        }
         $rankKey = is_string($member->rank) ? $member->rank : null;
         $rate = $this->shopSettingRepository->getPointEarnRateForRank($projectId, $rankKey);
         $points = $this->pointCalculator->calculate($absAmount, $rate);
@@ -330,9 +342,13 @@ class SmaregiInboundAwardApplier
         }
 
         $projectId = (int) $member->project_id;
-        $stampCardId = $this->shopSettingRepository->getOrderStampCardId($projectId);
-        $stampEarnPerAmount = $this->shopSettingRepository->getStampEarnPerAmount($projectId);
-        if ($stampCardId === null || $stampEarnPerAmount <= 0) {
+        if ($this->shopSettingRepository->getUseTransactionStamps($projectId) !== true) {
+            return;
+        }
+        $stampCard = $this->memberCurrentStampCardResolver->resolve($member);
+        $rankKey = is_string($member->rank) ? $member->rank : null;
+        $stampEarnPerAmount = $this->shopSettingRepository->getStampEarnPerAmountForRank($projectId, $rankKey);
+        if ($stampCard === null || $stampEarnPerAmount <= 0) {
             return;
         }
         $stampCount = $this->stampEarnPolicy->calculateCount($absAmount, $stampEarnPerAmount);
@@ -342,7 +358,7 @@ class SmaregiInboundAwardApplier
 
         $this->memberAdminService->adjustStampsToMember(
             $member,
-            $stampCardId,
+            (int) $stampCard->id,
             -1 * $stampCount,
             $reverseDescription,
             null

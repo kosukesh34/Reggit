@@ -1147,7 +1147,8 @@ export class LiffLayoutManager {
             return '最高ランクに到達しています';
         }
         const toNext = Number(data.points_to_next_rank).toLocaleString('ja-JP');
-        return `次の${nextRankLabel}まであと ${toNext} pt`;
+        const unit = data.rank_basis === 'stamps' ? '個' : 'pt';
+        return `次の${nextRankLabel}まであと ${toNext} ${unit}`;
     }
 
     _buildMemberSummaryHtml(data: any, greeting: string, design: string): string {
