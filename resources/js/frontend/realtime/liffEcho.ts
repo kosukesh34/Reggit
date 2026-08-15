@@ -78,17 +78,21 @@ export function getLiffEcho(): LiffEcho | null {
         echo = null;
         return null;
     }
-    const scheme = window.location.protocol === 'https:' ? 'https' : 'http';
-    const port = window.location.port !== ''
-        ? Number(window.location.port)
-        : (scheme === 'https' ? 443 : 80);
+    const tunnelHost = String(window.__REVERB_WS_HOST__ ?? '').trim();
+    const wsHost = tunnelHost !== '' ? tunnelHost : window.location.hostname;
+    const forceTLS = tunnelHost !== '' || window.location.protocol === 'https:';
+    const port = tunnelHost !== ''
+        ? 443
+        : (window.location.port !== ''
+            ? Number(window.location.port)
+            : (forceTLS ? 443 : 80));
     echo = new Echo({
         broadcaster: 'reverb',
         key,
-        wsHost: window.location.hostname,
+        wsHost,
         wsPort: port,
         wssPort: port,
-        forceTLS: scheme === 'https',
+        forceTLS,
         enabledTransports: ['ws', 'wss'],
         Pusher,
         authEndpoint: '/api/broadcasting/auth',
