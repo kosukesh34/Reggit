@@ -38,6 +38,7 @@
             ['tab' => 'home', 'label' => 'ホーム', 'icon' => 'fa-house'],
             ['tab' => 'products', 'label' => 'オーダー', 'icon' => 'fa-utensils'],
             ['tab' => 'member', 'label' => 'カード', 'icon' => 'fa-id-card'],
+            ['tab' => 'profile', 'label' => 'プロフィール', 'icon' => 'fa-user'],
             ['tab' => 'queue', 'label' => '来店', 'icon' => 'fa-list-ol'],
         ]
         : array_values($filteredMenu);

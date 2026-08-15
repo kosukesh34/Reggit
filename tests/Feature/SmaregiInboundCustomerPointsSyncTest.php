@@ -177,6 +177,47 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
         $this->assertSame(20, $member->points);
     }
 
+    public function test_pos_customersの同期で任意項目がprofile_extraに反映されること(): void
+    {
+        $project = Project::factory()->create();
+        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        ShopSettingStore::setProfileFieldSettings([
+            'smaregi_fields' => [],
+            'custom_fields' => [
+                [
+                    'key' => 'nickname',
+                    'label' => 'ニックネーム',
+                    'required' => false,
+                    'smaregi_no' => 1,
+                ],
+            ],
+        ], (int) $project->id);
+
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $member = Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+            'member_number' => 'CF001',
+            'smaregi_customer_id' => '55',
+            'points' => 0,
+        ]);
+
+        $this->fakeSmaregiHttpSingleCustomer([
+            'customerId' => '55',
+            'customerCode' => 'CF001',
+            'customFields' => [
+                ['no' => 1, 'value' => 'たろう'],
+            ],
+            'point' => '0',
+        ]);
+
+        app(SmaregiCustomerPointsInboundSyncService::class)
+            ->syncByCustomerIds(self::CONTRACT_ID, ['55'], 'edited');
+
+        $member->refresh();
+        $this->assertSame(['nickname' => 'たろう'], $member->profile_extra);
+    }
+
     public function test_他プロジェクトの同一会員番号があってもcustomer_codeを反映できること(): void
     {
         $project = Project::factory()->create();

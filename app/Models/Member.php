@@ -114,6 +114,20 @@ class Member extends Model
         return (int) $this->memberStamps()->sum('current_stamps');
     }
 
+    public function displayAddress(): string
+    {
+        $address = trim((string) ($this->address ?? ''));
+        if ($address !== '') {
+            return $address;
+        }
+
+        return trim(implode('', array_filter([
+            trim((string) ($this->prefecture ?? '')),
+            trim((string) ($this->city ?? '')),
+            trim((string) ($this->street ?? '')),
+        ], static fn (string $part): bool => $part !== '')));
+    }
+
     public function getTotalPointsFromTransactions(): int
     {
         return (int) $this->pointTransactions()

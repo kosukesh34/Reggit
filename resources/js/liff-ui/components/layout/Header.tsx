@@ -1,4 +1,4 @@
-import { Bell, CalendarDays, Check, ChevronDown, CloudOff, CreditCard, Menu, QrCode, ShoppingBag, Stamp, Ticket, UserRound, X, type LucideIcon } from "lucide-react";
+import { Bell, CalendarDays, Check, ChevronDown, CloudOff, CreditCard, Home, Menu, MoreHorizontal, QrCode, ShoppingBag, Stamp, Ticket, UserRound, X, type LucideIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { designPresetMap } from "../../config/designPresets";
@@ -13,7 +13,7 @@ import { Card } from "../ui/Card";
 import { LANDING_SHOWCASE_STORE_ID } from "../../pages/LandingShowcasePage";
 import { SIMPLE_REWARDS_STORE_ID } from "../../pages/SimpleRewardsPage";
 import type { FeatureType } from "../../types/app";
-import type { HeaderShortcut } from "../../types/customization";
+import type { HeaderButtonIcon, HeaderShortcut } from "../../types/customization";
 
 const headerShortcutDefinitions: Record<Exclude<HeaderShortcut, "none">, {
   feature: FeatureType;
@@ -23,11 +23,26 @@ const headerShortcutDefinitions: Record<Exclude<HeaderShortcut, "none">, {
 }> = {
   news: { feature: "news", label: "お知らせ", path: "/news", icon: Bell },
   membership: { feature: "membership", label: "会員証", path: "/membership", icon: CreditCard },
+  profile: { feature: "membership", label: "プロフィール", path: "/profile", icon: UserRound },
   coupon: { feature: "coupon", label: "クーポン", path: "/coupon", icon: Ticket },
   stamp: { feature: "stamp", label: "スタンプ", path: "/stamp", icon: Stamp },
   reservation: { feature: "reservation", label: "予約", path: "/reservation", icon: CalendarDays },
   queue: { feature: "queue", label: "順番待ち", path: "/queue", icon: QrCode },
   mobileOrder: { feature: "mobileOrder", label: "モバイルオーダー", path: "/mobileOrder", icon: ShoppingBag },
+};
+
+const headerIconDefinitions: Record<HeaderButtonIcon, LucideIcon> = {
+  bell: Bell,
+  creditCard: CreditCard,
+  userRound: UserRound,
+  ticket: Ticket,
+  stamp: Stamp,
+  calendarDays: CalendarDays,
+  qrCode: QrCode,
+  shoppingBag: ShoppingBag,
+  menu: Menu,
+  home: Home,
+  moreHorizontal: MoreHorizontal,
 };
 
 export function Header() {
@@ -39,14 +54,42 @@ export function Header() {
   const canSwitchStore = stores.length > 1;
   const isLandingShowcase = activeStore.storeId === LANDING_SHOWCASE_STORE_ID;
   const isSimpleRewards = activeStore.storeId === SIMPLE_REWARDS_STORE_ID;
-  const shortcutKey = customization.header.showNotifications ? customization.header.shortcut : "none";
+  const headerButton = customization.header.rightButton;
+  const effectiveMode = headerButton.mode ?? (customization.header.showNotifications ? "shortcut" : "none");
+  const shortcutKey = effectiveMode === "shortcut" ? (headerButton.shortcut || customization.header.shortcut) : "none";
   const shortcut = shortcutKey === "none" ? null : headerShortcutDefinitions[shortcutKey];
   const visibleShortcut = shortcut !== null && activeStore.features[shortcut.feature] ? shortcut : null;
-  const ShortcutIcon = visibleShortcut?.icon;
+  const visibleCustomButton = effectiveMode === "custom"
+    ? {
+        label: headerButton.label.trim() || "ボタン",
+        path: headerButton.path.trim(),
+        icon: headerIconDefinitions[headerButton.icon],
+      }
+    : null;
+  const visibleButton = visibleShortcut !== null
+    ? { label: visibleShortcut.label, path: visibleShortcut.path, icon: visibleShortcut.icon, isNotification: shortcutKey === "news" }
+    : (visibleCustomButton !== null && visibleCustomButton.path !== ""
+        ? { ...visibleCustomButton, isNotification: false }
+        : null);
+
+  const openHeaderTarget = (path: string): void => {
+    if (path === "") {
+      return;
+    }
+    if (/^https?:\/\//i.test(path)) {
+      window.location.assign(path);
+      return;
+    }
+    const normalized = path.startsWith("/") ? path : `/${path.replace(/^\/+/, "")}`;
+    navigate(normalized);
+  };
 
   const title = useMemo(() => {
     if (location.pathname === "/membership") {
       return "会員証";
+    }
+    if (location.pathname === "/profile") {
+      return "プロフィール";
     }
     if (location.pathname === "/more") {
       return "その他";
@@ -144,10 +187,10 @@ export function Header() {
             )}
             <div className="header__actions">
               {mode === "offline" ? <span className="header__connection" aria-label="オフライン"><CloudOff size={14} /></span> : null}
-              {visibleShortcut !== null && ShortcutIcon !== undefined ? (
-                <Button className="header__notification header__shortcut" variant="ghost" size="icon" ariaLabel={`${visibleShortcut.label}を開く`} onClick={() => navigate(visibleShortcut.path)}>
-                  <ShortcutIcon size={18} />
-                  {shortcutKey === "news" && notificationCount > 0 ? <span className="header__notification-dot">{notificationCount}</span> : null}
+              {visibleButton !== null ? (
+                <Button className="header__notification header__shortcut" variant="ghost" size="icon" ariaLabel={`${visibleButton.label}を開く`} onClick={() => openHeaderTarget(visibleButton.path)}>
+                  <visibleButton.icon size={18} />
+                  {visibleButton.isNotification && notificationCount > 0 ? <span className="header__notification-dot">{notificationCount}</span> : null}
                 </Button>
               ) : null}
             </div>

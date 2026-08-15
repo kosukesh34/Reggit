@@ -242,8 +242,9 @@ class ShopSettingStore
             ['tab' => 'queue', 'label' => '順番待ち', 'icon' => 'fa-list-ol', 'order' => 5],
             ['tab' => 'reservations', 'label' => '予約', 'icon' => 'fa-calendar-check', 'order' => 6],
             ['tab' => 'member', 'label' => '会員証', 'icon' => 'fa-id-card', 'order' => 7],
-            ['tab' => 'gallery', 'label' => 'ギャラリー', 'icon' => 'fa-images', 'order' => 8],
-            ['tab' => 'announcements', 'label' => 'お知らせ', 'icon' => 'fa-bullhorn', 'order' => 9],
+            ['tab' => 'profile', 'label' => 'プロフィール', 'icon' => 'fa-user', 'order' => 8],
+            ['tab' => 'gallery', 'label' => 'ギャラリー', 'icon' => 'fa-images', 'order' => 9],
+            ['tab' => 'announcements', 'label' => 'お知らせ', 'icon' => 'fa-bullhorn', 'order' => 10],
         ];
     }
 
@@ -252,12 +253,20 @@ class ShopSettingStore
     {
         $projectId = AdminContext::resolveProjectId($projectId);
         $items = self::getValue('frontend_menu_items', null, $projectId);
-        if ($items === null || ! is_array($items)) {
-            return self::defaultFrontendMenuItems();
-        }
         $defaults = collect(self::defaultFrontendMenuItems())->keyBy('tab');
         $merged = [];
-        foreach ($items as $item) {
+        $saved = is_array($items) ? collect($items)->keyBy('tab') : collect();
+        foreach ($defaults as $tab => $default) {
+            $item = $saved->get($tab);
+            $row = $item !== null ? array_merge($default, $item) : $default;
+            if (isset($row['enabled']) && $row['enabled'] === false) {
+                continue;
+            }
+            $row['icon'] = self::normalizeFrontendMenuIcon((string) $tab, (string) ($row['icon'] ?? ''));
+            $row['label'] = (string) ($row['label'] ?? $default['label']);
+            $merged[] = $row;
+        }
+        foreach (is_array($items) ? $items : [] as $item) {
             $tab = $item['tab'] ?? null;
             $isLinkTab = in_array($tab, LiffDesignerSanitizer::LINK_MENU_TABS, true);
             if (StrHelper::isEmptyStringOrNull($tab) || ($defaults->has($tab) === false && $isLinkTab === false)) {
@@ -273,16 +282,7 @@ class ShopSettingStore
                 // リンクタブはアプリ内埋め込みを優先（旧デフォルト external も上書き）
                 $item['open'] = 'embed';
                 $merged[] = $item;
-
-                continue;
             }
-            $row = array_merge($defaults->get($tab), $item);
-            if (isset($row['enabled']) && $row['enabled'] === false) {
-                continue;
-            }
-            $row['icon'] = self::normalizeFrontendMenuIcon((string) $tab, (string) ($row['icon'] ?? ''));
-            $row['label'] = (string) ($row['label'] ?? $defaults->get($tab)['label']);
-            $merged[] = $row;
         }
         if ($merged === []) {
             return self::defaultFrontendMenuItems();
@@ -730,6 +730,8 @@ class ShopSettingStore
                 $values = array_slice($values, 0, ProfileCustomFieldInputType::VALUES_MAX);
             }
 
+            $smaregiNo = (int) ($cf['smaregi_no'] ?? 0);
+
             return [
                 'key' => (string) ($cf['key'] ?? ''),
                 'label' => (string) ($cf['label'] ?? ''),
@@ -737,6 +739,7 @@ class ShopSettingStore
                 'input_type' => $inputType,
                 'values' => $values,
                 'description' => isset($cf['description']) ? (string) $cf['description'] : '',
+                'smaregi_no' => $smaregiNo > 0 ? $smaregiNo : null,
             ];
         }, array_filter($custom, static fn ($row): bool => is_array($row)));
 

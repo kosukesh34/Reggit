@@ -8,7 +8,7 @@ class LiffDesignerSanitizer
 {
     private const ALLOWED_TABS = [
         'home', 'products', 'orders', 'stamps', 'coupons',
-        'queue', 'reservations', 'member', 'gallery', 'announcements',
+        'queue', 'reservations', 'member', 'profile', 'gallery', 'announcements',
     ];
 
     private const ALLOWED_BLOCK_TYPES = [
@@ -24,7 +24,7 @@ class LiffDesignerSanitizer
     /** タブメニュー（表示/非表示・並び替え・名前/アイコン変更）の対象タブ */
     private const MENU_TABS = [
         'home', 'products', 'orders', 'stamps', 'coupons',
-        'queue', 'reservations', 'member', 'gallery', 'announcements',
+        'queue', 'reservations', 'member', 'profile', 'gallery', 'announcements',
     ];
 
     /** 外部Webページタブ（管理者がURLを設定するカスタムタブ）のキー */

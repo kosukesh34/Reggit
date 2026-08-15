@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-
 import { AppShell } from "../components/layout/AppShell";
 import { HomePage } from "../pages/HomePage";
 import { MembershipPage } from "../pages/MembershipPage";
+import { ProfilePage } from "../pages/ProfilePage";
 import { MorePage } from "../pages/MorePage";
 import { ThemePreviewPage } from "../pages/ThemePreviewPage";
 import { FeaturePage } from "../pages/FeaturePage";
@@ -68,6 +69,7 @@ function ScreenRoutes() {
         <Route path="/membership" element={<MembershipPage />} />
         <Route path="/member" element={<Navigate to="/membership" replace />} />
         <Route path="/card" element={<Navigate to="/membership" replace />} />
+        <Route path="/profile" element={<ProfilePage />} />
         <Route path="/designlab" element={<div className="page feature-page"><DesignLabPage /></div>} />
         <Route path="/more" element={<MorePage />} />
         <Route path="/dev/themes" element={<ThemePreviewPage />} />

@@ -121,23 +121,8 @@
                     @error('postal_code')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
                 </div>
                 <div class="form-group">
-                    <label for="prefecture" class="form-label">都道府県</label>
-                    <input type="text" name="prefecture" id="prefecture" class="form-control" value="{{ old('prefecture', $view->member->prefecture ?? '') }}" maxlength="64">
-                    @error('prefecture')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
-                </div>
-                <div class="form-group">
-                    <label for="city" class="form-label">市区町村</label>
-                    <input type="text" name="city" id="city" class="form-control" value="{{ old('city', $view->member->city ?? '') }}" maxlength="128">
-                    @error('city')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
-                </div>
-                <div class="form-group">
-                    <label for="street" class="form-label">番地・建物名</label>
-                    <input type="text" name="street" id="street" class="form-control" value="{{ old('street', $view->member->street ?? '') }}" maxlength="256">
-                    @error('street')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
-                </div>
-                <div class="form-group">
-                    <label for="address" class="form-label">住所（まとめ）</label>
-                    <textarea name="address" id="address" class="form-control" rows="2" maxlength="85">{{ old('address', $view->member->address ?? '') }}</textarea>
+                    <label for="address" class="form-label">住所</label>
+                    <textarea name="address" id="address" class="form-control" rows="2" maxlength="85">{{ old('address', $view->member->displayAddress()) }}</textarea>
                     @error('address')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
                 </div>
                 <div class="form-group">
@@ -200,7 +185,7 @@
             @if($view->customProfileFields !== [])
             <section class="form-section mb-4">
                 <h4 class="form-section-title"><span class="form-section-num">4</span> 追加プロフィール項目</h4>
-                <p class="text-muted small mb-3">プロフィール設定で追加した項目です（アプリ内のみ・スマレジ非送信）。</p>
+                <p class="text-muted small mb-3">プロフィール設定で追加した項目です。スマレジの会員自由項目と連携します。</p>
                 @foreach($view->customProfileFields as $cf)
                     @php
                         $fieldKey = (string) ($cf['key'] ?? '');
