@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$(dirname "$0")/.."
+PHP_BIN="${PHP_BIN:-/usr/bin/php8.4}"
+EXT_DIR="$("$PHP_BIN" -r 'echo ini_get("extension_dir");')"
+PCNTL="${EXT_DIR}/pcntl.so"
+ARGS=(artisan reverb:start --host=127.0.0.1 --port=8081)
+if [[ -f "$PCNTL" ]]; then
+  exec "$PHP_BIN" -d "extension=${PCNTL}" "${ARGS[@]}"
+fi
+exec "$PHP_BIN" "${ARGS[@]}"
