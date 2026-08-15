@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\AnnouncementAudienceResolveMode;
 use App\Enums\MemberCouponSource;
 use App\Enums\MemberNotificationPreference;
+use App\Enums\OrderStatus;
 use App\Jobs\SendScheduledAnnouncementJob;
 use App\Models\AdminUser;
 use App\Models\Announcement;
@@ -13,6 +14,7 @@ use App\Models\Coupon;
 use App\Models\Member;
 use App\Models\MemberCoupon;
 use App\Models\MemberTag;
+use App\Models\Order;
 use App\Models\Project;
 use App\Models\User;
 use App\Models\UserDevice;
@@ -63,6 +65,8 @@ class AdminAnnouncementsTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee('スケジュール配信');
+        $response->assertSee('お知らせを配信');
+        $response->assertDontSee('> 追加</a>', false);
         $response->assertSee('全会員');
         $response->assertSee('個別指定');
         $response->assertSee('条件指定');
@@ -155,7 +159,9 @@ class AdminAnnouncementsTest extends TestCase
         $response->assertStatus(200)
             ->assertSee('name="image_file"', false)
             ->assertSee('ドラッグ＆ドロップ')
-            ->assertSee('お知らせの内容をつくる')
+            ->assertSee('タイトル')
+            ->assertDontSee('お知らせの内容をつくる')
+            ->assertDontSee('会員がひと目で内容を理解できる')
             ->assertSee('name="delivery_timing"', false)
             ->assertSee('即時配信')
             ->assertSee('予約配信')
@@ -164,6 +170,8 @@ class AdminAnnouncementsTest extends TestCase
             ->assertSee('name="audience_type"', false)
             ->assertSee('name="segment_birthday_months[]"', false)
             ->assertSee('name="segment_tag_ids[]"', false)
+            ->assertSee('name="segment_rfm_segments[]"', false)
+            ->assertSee('RFMセグメント')
             ->assertSee('複数選択可')
             ->assertSee('配信対象者一覧')
             ->assertSee('id="deliverySummaryConditionBlock"', false)
@@ -175,6 +183,8 @@ class AdminAnnouncementsTest extends TestCase
             ->assertDontSee('届け先とタイミングを選ぶ')
             ->assertDontSee('誰に、いつ届けるかを選択します。セグメントでは条件に合う人数を確認できます。')
             ->assertSee('入力内容')
+            ->assertSee('LINE・Push通知を送る')
+            ->assertSee('配信後の見え方をプレビュー')
             ->assertSee('配信内容の最終確認')
             ->assertSee('実際の会員アプリのお知らせ画面')
             ->assertSee('配信予定ユーザー')
@@ -186,6 +196,17 @@ class AdminAnnouncementsTest extends TestCase
             ->assertDontSee('STEP 01')
             ->assertDontSee('NEW DELIVERY')
             ->assertDontSee('届けたい会員へ');
+    }
+
+    public function test_create_form_追加画面は一覧へリダイレクトすること(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+
+        $response = $this->actingAs($admin, 'admin')
+            ->get(route('admin.announcements.create', ['project_key' => $project->project_key]));
+
+        $response->assertRedirect(route('admin.announcements', ['project_key' => $project->project_key]));
     }
 
     public function test_store_delivery_一斉配信を登録できること(): void
@@ -215,6 +236,33 @@ class AdminAnnouncementsTest extends TestCase
         ]);
         $announcement = Announcement::where('title', '配信テスト')->firstOrFail();
         $this->assertSame([$member->id], $announcement->target_member_ids);
+        $this->assertTrue($announcement->send_notification);
+    }
+
+    public function test_store_delivery_通知オフなら通知を送らないこと(): void
+    {
+        $this->mock(AnnouncementNotificationService::class, function ($mock): void {
+            $mock->shouldNotReceive('send');
+        });
+        $project = $this->createDistributionProject();
+        $admin = $this->createAdmin($project);
+        $user = User::factory()->create(['project_id' => $project->id]);
+        Member::factory()->create(['project_id' => $project->id, 'user_id' => $user->id]);
+
+        $response = $this->actingAs($admin, 'admin')
+            ->post(route('admin.announcements.delivery.store', ['project_key' => $project->project_key]), [
+                'title' => '通知オフ配信',
+                'body' => '本文',
+                'audience_type' => Announcement::DELIVERY_TYPE_IMMEDIATE_BULK,
+                'delivery_timing' => Announcement::DELIVERY_TIMING_IMMEDIATE,
+                'is_pinned' => 0,
+                'send_notification' => 0,
+            ]);
+
+        $response->assertRedirect(route('admin.announcements', ['project_key' => $project->project_key]));
+        $announcement = Announcement::where('title', '通知オフ配信')->firstOrFail();
+        $this->assertFalse($announcement->send_notification);
+        $this->assertSame(Announcement::DELIVERY_STATUS_SENT, $announcement->delivery_status);
     }
 
     public function test_store_delivery_予約配信を個別会員へ登録できること(): void
@@ -435,6 +483,69 @@ class AdminAnnouncementsTest extends TestCase
         $this->assertSame('line', $announcement->segment_criteria['channel'] ?? null);
         $this->assertSame([7, 8], $announcement->segment_criteria['birthday_months'] ?? null);
         $this->assertSame([$tag->id], $announcement->segment_criteria['tag_ids'] ?? null);
+    }
+
+    public function test_store_delivery_rfmセグメントで配信できること(): void
+    {
+        $project = $this->createDistributionProject();
+        $admin = $this->createAdmin($project);
+        $neverUser = User::factory()->create(['project_id' => $project->id]);
+        $neverMember = Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => $neverUser->id,
+            'status' => 'active',
+        ]);
+        $activeUser = User::factory()->create(['project_id' => $project->id]);
+        $activeMember = Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => $activeUser->id,
+            'status' => 'active',
+        ]);
+        $order = Order::create([
+            'project_id' => $project->id,
+            'user_id' => $activeUser->id,
+            'order_number' => 'ORD-'.uniqid(),
+            'order_type' => 'take_out',
+            'total_amount' => 1000,
+            'status' => OrderStatus::COMPLETED,
+        ]);
+        $order->forceFill(['created_at' => now()->subDays(5)])->save();
+
+        $response = $this->actingAs($admin, 'admin')
+            ->post(route('admin.announcements.delivery.store', ['project_key' => $project->project_key]), [
+                'title' => 'RFM未購買配信',
+                'body' => '本文',
+                'audience_type' => Announcement::DELIVERY_TYPE_SEGMENT,
+                'segment_rfm_segments' => ['never'],
+                'is_pinned' => 0,
+            ]);
+
+        $response->assertRedirect(route('admin.announcements', ['project_key' => $project->project_key]));
+        $announcement = Announcement::where('title', 'RFM未購買配信')->firstOrFail();
+        $this->assertSame(['never'], $announcement->segment_criteria['rfm_segments'] ?? null);
+        $this->assertSame([$neverMember->id], $announcement->target_member_ids);
+        $this->assertNotContains($activeMember->id, $announcement->target_member_ids ?? []);
+    }
+
+    public function test_segment_preview_rfm条件の件数を返すこと(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        $user = User::factory()->create(['project_id' => $project->id]);
+        Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+            'status' => 'active',
+        ]);
+
+        $response = $this->actingAs($admin, 'admin')
+            ->get(route('admin.announcements.segment.preview', [
+                'project_key' => $project->project_key,
+                'segment_rfm_segments' => ['never'],
+            ]));
+
+        $response->assertOk();
+        $response->assertJson(['count' => 1]);
     }
 
     public function test_segment_preview_属性条件の件数を返すこと(): void
