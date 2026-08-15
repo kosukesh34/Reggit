@@ -15,11 +15,16 @@ class SettingsRanksRequest extends FormRequest
     {
         return [
             'rank_basis' => 'required|in:points,stamps,max',
+            'rank_aggregation_type' => 'required|in:total,period',
+            'rank_period_days' => 'nullable|integer|min:1|max:3650',
+            'is_rank_down_enabled' => 'nullable|boolean',
+            'use_stamps' => 'nullable|boolean',
+            'use_transaction_stamps' => 'nullable|boolean',
+            'use_points' => 'nullable|boolean',
             'point_earn_rate' => 'required|integer|min:1|max:99999',
             'points_per_order' => 'nullable|integer|min:0|max:100000',
             'points_valid_days' => 'required|integer|min:1|max:3650',
             'stamp_earn_per_amount' => 'nullable|integer|min:0|max:10000000',
-            'order_stamp_card_id' => 'nullable|integer',
             'member_code_type' => 'nullable|in:sequential,random',
             'member_code_format' => 'nullable|in:numeric,alphanumeric',
             'member_code_length' => 'nullable|integer|min:1|max:20',
@@ -40,20 +45,28 @@ class SettingsRanksRequest extends FormRequest
             'ranks.*.stamp_background_url' => 'nullable|url|max:500',
             'ranks.*.card_color' => 'nullable|string|max:20|regex:/^#[0-9A-Fa-f]{3,6}$/',
             'ranks.*.point_earn_rate' => 'nullable|integer|min:1|max:99999',
+            'ranks.*.stamp_earn_per_amount' => 'nullable|integer|min:0|max:10000000',
         ];
     }
 
-    /** @return array{rank_basis: string, point_earn_rate: int, points_per_order?: int, points_valid_days: int, stamp_earn_per_amount?: int, order_stamp_card_id?: int|null, member_code_type?: string, ...} */
+    /** @return array{rank_basis: string, rank_aggregation_type: string, point_earn_rate: int, points_per_order?: int, points_valid_days: int, stamp_earn_per_amount?: int, member_code_type?: string, ...} */
     public function toPayload(): array
     {
         $v = $this->validated();
         $v['show_points_display'] = $this->boolean('show_points_display', true);
         $v['show_rank_progress'] = $this->boolean('show_rank_progress', true);
         $v['show_member_card_for_guest'] = $this->boolean('show_member_card_for_guest', true);
+        $v['use_stamps'] = $this->boolean('use_stamps', true);
+        $v['use_transaction_stamps'] = $this->boolean('use_transaction_stamps', true);
+        $v['use_points'] = $this->boolean('use_points', true);
+        $v['is_rank_down_enabled'] = $this->boolean('is_rank_down_enabled', false);
+        $v['rank_aggregation_type'] = (string) ($v['rank_aggregation_type'] ?? 'total');
+        $v['rank_period_days'] = (int) ($v['rank_period_days'] ?? 365);
+        if ($v['rank_period_days'] < 1) {
+            $v['rank_period_days'] = 365;
+        }
         $v['points_per_order'] = (int) ($v['points_per_order'] ?? 0);
         $v['stamp_earn_per_amount'] = (int) ($v['stamp_earn_per_amount'] ?? 0);
-        $orderStampCardId = $v['order_stamp_card_id'] ?? null;
-        $v['order_stamp_card_id'] = ($orderStampCardId !== null && $orderStampCardId !== '') ? (int) $orderStampCardId : null;
 
         return $v;
     }

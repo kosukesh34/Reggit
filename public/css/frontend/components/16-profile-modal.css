@@ -73,6 +73,13 @@
     font-weight: 700;
 }
 
+.member-form-field-hint {
+    margin: 6px 0 0;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--text-muted, #6e7976);
+}
+
 .member-form-group--choice {
     border: 0;
     margin: 0 0 var(--space-4, 16px);

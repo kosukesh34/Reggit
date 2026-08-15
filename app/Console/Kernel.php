@@ -14,6 +14,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('coupons:issue-birthday')->daily();
         $schedule->command('crm:winback')->daily();
         $schedule->command('crm:point-expiry-reminder')->daily();
+        $schedule->command('member-ranks:recalculate')->daily()->withoutOverlapping();
     }
 
     protected function commands(): void

@@ -109,17 +109,31 @@ export function MemberView(): JSX.Element {
         const onReload = (): void => {
             void reload();
         };
+        const onWalletSummary = (event: Event): void => {
+            const nextPoints = Number((event as CustomEvent<{ points?: number }>).detail?.points);
+            if (!Number.isFinite(nextPoints)) {
+                return;
+            }
+            setView((prev) => {
+                if (prev.kind !== 'member' || Number(prev.data.points) === nextPoints) {
+                    return prev;
+                }
+                return { kind: 'member', data: { ...prev.data, points: nextPoints } };
+            });
+        };
         document.addEventListener('liff-member-open-register', onRegister);
         document.addEventListener('liff-member-open-view', onView);
         document.addEventListener('liff-member-open-edit', onEdit);
         document.addEventListener('liff-member-reload', onReload);
         document.addEventListener('liff-ready', onReload);
+        document.addEventListener('liff-wallet-summary-updated', onWalletSummary);
         return () => {
             document.removeEventListener('liff-member-open-register', onRegister);
             document.removeEventListener('liff-member-open-view', onView);
             document.removeEventListener('liff-member-open-edit', onEdit);
             document.removeEventListener('liff-member-reload', onReload);
             document.removeEventListener('liff-ready', onReload);
+            document.removeEventListener('liff-wallet-summary-updated', onWalletSummary);
         };
     }, [reload]);
 

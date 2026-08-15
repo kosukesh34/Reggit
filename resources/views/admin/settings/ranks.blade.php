@@ -34,7 +34,30 @@
                     <h3 class="card-title"><i class="fas fa-cog"></i> 基本設定</h3>
                 </div>
                 <div class="card-body">
-                    <p class="ranks-settings-lead">会員コードの生成方法、ランクの判定基準、ポイント付与を設定します。</p>
+                    <p class="ranks-settings-lead">会員コード、機能の利用可否、ランクの判定方法、ポイント／スタンプの付与を設定します。</p>
+
+                    <div class="ranks-settings-subsection">
+                        <h4 class="ranks-settings-subtitle"><i class="fas fa-toggle-on"></i> 機能の利用</h4>
+                        <p class="form-text text-muted">オフにした機能は顧客画面に出さず、スマレジWebhookでも付与しません。</p>
+                        <div class="ranks-settings-checkboxes">
+                            <label class="checkbox-label checkbox-block">
+                                <input type="hidden" name="use_points" value="0">
+                                <input type="checkbox" name="use_points" id="use_points" value="1" {{ old('use_points', $view->usePoints ?? true) ? 'checked' : '' }}>
+                                <span>ポイント機能を利用する</span>
+                            </label>
+                            <label class="checkbox-label checkbox-block">
+                                <input type="hidden" name="use_stamps" value="0">
+                                <input type="checkbox" name="use_stamps" id="use_stamps" value="1" {{ old('use_stamps', $view->useStamps ?? true) ? 'checked' : '' }}>
+                                <span>スタンプ機能を利用する</span>
+                            </label>
+                            <label class="checkbox-label checkbox-block" id="use_transaction_stamps_wrap">
+                                <input type="hidden" name="use_transaction_stamps" value="0">
+                                <input type="checkbox" name="use_transaction_stamps" id="use_transaction_stamps" value="1" {{ old('use_transaction_stamps', $view->useTransactionStamps ?? true) ? 'checked' : '' }}>
+                                <span>取引連動スタンプを利用する</span>
+                            </label>
+                        </div>
+                        <p class="form-text text-muted">取引連動スタンプは、スマレジPOSの会計時にランク別レートで、会員が現在持っているスタンプラリーへ付与します。スタンプ機能がオフのときは使えません。</p>
+                    </div>
 
                     <div class="ranks-settings-subsection">
                         <h4 class="ranks-settings-subtitle"><i class="fas fa-id-card"></i> 会員コード</h4>
@@ -67,17 +90,43 @@
 
                     <div class="ranks-settings-subsection">
                         <h4 class="ranks-settings-subtitle"><i class="fas fa-layer-group"></i> ランク判定基準</h4>
-                        <div class="form-group" style="max-width: 320px;">
-                            <select name="rank_basis" id="rank_basis" class="form-control" required>
-                                <option value="points" {{ ($view->rankBasis ?? 'points') === 'points' ? 'selected' : '' }}>ポイント</option>
-                                <option value="stamps" {{ ($view->rankBasis ?? '') === 'stamps' ? 'selected' : '' }}>スタンプ</option>
-                                <option value="max" {{ ($view->rankBasis ?? '') === 'max' ? 'selected' : '' }}>ポイント/スタンプ（多い方）</option>
-                            </select>
-                            <p class="form-text text-muted">スタンプ基準は会員の現在スタンプ合計で判定します。</p>
+                        <div class="ranks-settings-fields">
+                            <div class="form-group">
+                                <label for="rank_basis" class="form-label">判定に使う指標</label>
+                                <select name="rank_basis" id="rank_basis" class="form-control" required>
+                                    <option value="points" {{ old('rank_basis', $view->rankBasis ?? 'points') === 'points' ? 'selected' : '' }}>ポイント</option>
+                                    <option value="stamps" {{ old('rank_basis', $view->rankBasis ?? '') === 'stamps' ? 'selected' : '' }}>スタンプ</option>
+                                    <option value="max" {{ old('rank_basis', $view->rankBasis ?? '') === 'max' ? 'selected' : '' }}>ポイント/スタンプ（多い方）</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">集計方法</label>
+                                <div class="ranks-settings-radios">
+                                    <label class="radio_text">
+                                        <input type="radio" name="rank_aggregation_type" value="total" {{ old('rank_aggregation_type', $view->rankAggregationType ?? 'total') === 'total' ? 'checked' : '' }}>
+                                        累計
+                                    </label>
+                                    <label class="radio_text">
+                                        <input type="radio" name="rank_aggregation_type" value="period" {{ old('rank_aggregation_type', $view->rankAggregationType ?? '') === 'period' ? 'checked' : '' }}>
+                                        期間
+                                    </label>
+                                </div>
+                                <p class="form-text text-muted">累計は現在の保有数、期間は直近N日間の獲得数で判定します。</p>
+                            </div>
+                            <div class="form-group" id="rank_period_fields">
+                                <label for="rank_period_days" class="form-label">集計期間（日）</label>
+                                <input type="number" name="rank_period_days" id="rank_period_days" class="form-control" value="{{ old('rank_period_days', $view->rankPeriodDays ?? 365) }}" min="1" max="3650">
+                                <label class="checkbox-label checkbox-block ranks-rank-down-toggle">
+                                    <input type="hidden" name="is_rank_down_enabled" value="0">
+                                    <input type="checkbox" name="is_rank_down_enabled" id="is_rank_down_enabled" value="1" {{ old('is_rank_down_enabled', $view->isRankDownEnabled ?? false) ? 'checked' : '' }}>
+                                    <span>期間の条件を満たさない場合はランクダウンする</span>
+                                </label>
+                                <p class="form-text text-muted">オフのときは期間中の獲得が減ってもランクは下がりません。日次の再判定（cron）で反映します。</p>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="ranks-settings-subsection">
+                    <div class="ranks-settings-subsection" id="points_settings_section">
                         <h4 class="ranks-settings-subtitle"><i class="fas fa-coins"></i> ポイント</h4>
                         <p class="form-text text-muted">{{ config('native_app.order_type_mobile_label', 'Reggit') }}で注文完了時に付与するポイントを設定します。</p>
                         <div class="ranks-settings-fields">
@@ -98,24 +147,14 @@
                         </div>
                     </div>
 
-                    <div class="ranks-settings-subsection">
-                        <h4 class="ranks-settings-subtitle"><i class="fas fa-stamp"></i> スタンプ（注文時付与）</h4>
-                        <p class="form-text text-muted">{{ config('native_app.order_type_mobile_label', 'Reggit') }}での注文完了時、およびスマレジPOSでの会計時にスタンプを付与する場合は設定します。未設定の場合は付与しません。</p>
+                    <div class="ranks-settings-subsection" id="stamps_settings_section">
+                        <h4 class="ranks-settings-subtitle"><i class="fas fa-stamp"></i> スタンプ（注文・取引連動）</h4>
+                        <p class="form-text text-muted">{{ config('native_app.order_type_mobile_label', 'Reggit') }}の注文完了時、および取引連動スタンプON時のスマレジ会計で、会員が現在持っているスタンプラリーに付与します。未開始の場合は表示中のカードから付与を開始します。ランク別レートが未入力のときはこのデフォルトを使います。</p>
                         <div class="ranks-settings-fields">
                             <div class="form-group">
                                 <label for="stamp_earn_per_amount" class="form-label">付与レート（円/1スタンプ）</label>
                                 <input type="number" name="stamp_earn_per_amount" id="stamp_earn_per_amount" class="form-control" value="{{ old('stamp_earn_per_amount', $view->stampEarnPerAmount ?? 0) }}" min="0" max="10000000" placeholder="0で無効">
-                                <p class="form-text text-muted">例: 1000 で1000円ごとに1スタンプ付与。0の場合は付与しません。</p>
-                            </div>
-                            <div class="form-group">
-                                <label for="order_stamp_card_id" class="form-label">付与先スタンプカード</label>
-                                <select name="order_stamp_card_id" id="order_stamp_card_id" class="form-control">
-                                    <option value="">付与しない</option>
-                                    @foreach($view->stampCardsForSelect ?? [] as $card)
-                                        <option value="{{ $card->id }}" {{ (string)old('order_stamp_card_id', $view->orderStampCardId ?? '') === (string)$card->id ? 'selected' : '' }}>{{ $card->name }}（{{ $card->required_stamps }}個で達成）</option>
-                                    @endforeach
-                                </select>
-                                <p class="form-text text-muted">スタンプカードが無い場合は <a href="{{ admin_route('admin.stamps.create') }}">スタンプ</a> から作成してください。</p>
+                                <p class="form-text text-muted">例: 1000 で1000円ごとに1スタンプ付与。0の場合は付与しません。スタンプカードが無い場合は <a href="{{ admin_route('admin.stamps.create') }}">スタンプ</a> から作成してください。</p>
                             </div>
                         </div>
                     </div>
@@ -135,15 +174,18 @@
                     <div class="ranks-settings-subsection">
                         <h4 class="ranks-settings-subtitle">表示オプション</h4>
                         <div class="ranks-settings-checkboxes">
-                            <label class="form-check">
+                            <label class="form-check" id="show_points_display_wrap">
+                                <input type="hidden" name="show_points_display" value="0">
                                 <input type="checkbox" name="show_points_display" value="1" {{ old('show_points_display', $view->showPointsDisplay ?? true) ? 'checked' : '' }}>
                                 ポイント数を表示する
                             </label>
                             <label class="form-check">
+                                <input type="hidden" name="show_rank_progress" value="0">
                                 <input type="checkbox" name="show_rank_progress" value="1" {{ old('show_rank_progress', $view->showRankProgress ?? true) ? 'checked' : '' }}>
                                 ランクアップまでの条件を表示する
                             </label>
                             <label class="form-check">
+                                <input type="hidden" name="show_member_card_for_guest" value="0">
                                 <input type="checkbox" name="show_member_card_for_guest" value="1" {{ old('show_member_card_for_guest', $view->showMemberCardForGuest ?? true) ? 'checked' : '' }}>
                                 ゲストにも会員証エリアを表示する
                             </label>
@@ -197,7 +239,7 @@
                     <button type="button" class="btn btn-primary btn-sm" id="addRankRow"><i class="fas fa-plus"></i> ランクを追加</button>
                 </div>
                 <div class="card-body">
-                    <p class="ranks-settings-lead">会員のランクを定義します。基準値は「ポイント基準」の場合は累計ポイント、「スタンプ基準」の場合はスタンプ数です。付与レートはランクごとに設定でき、未入力時はデフォルト付与レートを使います。</p>
+                    <p class="ranks-settings-lead">会員のランクを定義します。基準値は判定指標の累計または期間内獲得数です。付与レートはランクごとに設定でき、未入力時はデフォルトを使います。</p>
                     <div class="table-responsive">
                         <table class="table ranks-settings-table" id="rankSettingsTable">
                             <thead>
@@ -206,6 +248,7 @@
                                     <th scope="col" class="ranks-th-basic">表示名</th>
                                     <th scope="col" class="ranks-th-basic">基準値</th>
                                     <th scope="col" class="ranks-th-basic">付与レート<br><span class="ranks-th-sub">(円/1pt)</span></th>
+                                    <th scope="col" class="ranks-th-basic">スタンプ<br><span class="ranks-th-sub">(円/1個)</span></th>
                                     <th scope="col" class="ranks-th-basic ranks-th--center">有効</th>
                                     <th scope="col" class="ranks-th-design">カード色</th>
                                     <th scope="col" class="ranks-th-design">アイコンURL</th>
@@ -220,6 +263,7 @@
                                     <td><input type="text" name="ranks[{{ $i }}][label]" class="form-control form-control-sm" value="{{ old('ranks.' . $i . '.label', $rank['label'] ?? '') }}" placeholder="例: ゴールド"></td>
                                     <td><input type="number" name="ranks[{{ $i }}][min_points]" class="form-control form-control-sm" value="{{ old('ranks.' . $i . '.min_points', $rank['min_points'] ?? 0) }}" min="0"></td>
                                     <td><input type="number" name="ranks[{{ $i }}][point_earn_rate]" class="form-control form-control-sm" value="{{ old('ranks.' . $i . '.point_earn_rate', $rank['point_earn_rate'] ?? '') }}" min="1" max="99999" placeholder="{{ $view->pointEarnRate ?? 100 }}"></td>
+                                    <td><input type="number" name="ranks[{{ $i }}][stamp_earn_per_amount]" class="form-control form-control-sm" value="{{ old('ranks.' . $i . '.stamp_earn_per_amount', $rank['stamp_earn_per_amount'] ?? '') }}" min="0" max="10000000" placeholder="{{ $view->stampEarnPerAmount ?? 0 }}"></td>
                                     <td class="text-center"><input type="checkbox" name="ranks[{{ $i }}][is_active]" value="1" {{ ((bool) old('ranks.' . $i . '.is_active', $rank['is_active'] ?? true)) ? 'checked' : '' }}></td>
                                     <td><input type="text" name="ranks[{{ $i }}][card_color]" class="form-control form-control-sm ranks-input-color" value="{{ old('ranks.' . $i . '.card_color', $rank['card_color'] ?? '') }}" placeholder="#cd7f32" maxlength="20"></td>
                                     <td><input type="url" name="ranks[{{ $i }}][icon_url]" class="form-control form-control-sm" value="{{ old('ranks.' . $i . '.icon_url', $rank['icon_url'] ?? '') }}" placeholder="https://..."></td>
@@ -295,7 +339,7 @@
                                                             @endif
                                                             <span class="idnect-card-rank-badge" data-rank="{{ e($key) }}">{{ e($label) }}</span>
                                                         </div>
-                                                        <div class="idnect-card-points idnect-card-points--front">
+                                                        <div class="idnect-card-points idnect-card-points--front js-rank-preview-points">
                                                             <span class="idnect-card-points-value">1,234</span>
                                                             <span class="idnect-card-points-label">pt</span>
                                                         </div>
@@ -331,6 +375,7 @@
         <td><input type="text" name="__NAME__[label]" class="form-control form-control-sm" placeholder="例: ゴールド"></td>
         <td><input type="number" name="__NAME__[min_points]" class="form-control form-control-sm" value="0" min="0"></td>
         <td><input type="number" name="__NAME__[point_earn_rate]" class="form-control form-control-sm" min="1" max="99999" placeholder="{{ $view->pointEarnRate ?? 100 }}"></td>
+        <td><input type="number" name="__NAME__[stamp_earn_per_amount]" class="form-control form-control-sm" min="0" max="10000000" placeholder="{{ $view->stampEarnPerAmount ?? 0 }}"></td>
         <td class="text-center"><input type="checkbox" name="__NAME__[is_active]" value="1" checked></td>
         <td><input type="text" name="__NAME__[card_color]" class="form-control form-control-sm ranks-input-color" placeholder="#cd7f32" maxlength="20"></td>
         <td><input type="url" name="__NAME__[icon_url]" class="form-control form-control-sm" placeholder="https://..."></td>
@@ -361,6 +406,59 @@
             switchTab(id);
         });
     });
+})();
+
+(function() {
+    var useStamps = document.getElementById('use_stamps');
+    var useTx = document.getElementById('use_transaction_stamps');
+    var useTxWrap = document.getElementById('use_transaction_stamps_wrap');
+    var usePoints = document.getElementById('use_points');
+    var pointsSection = document.getElementById('points_settings_section');
+    var stampsSection = document.getElementById('stamps_settings_section');
+    var periodFields = document.getElementById('rank_period_fields');
+    var showPointsWrap = document.getElementById('show_points_display_wrap');
+
+    function isPeriod() {
+        var checked = document.querySelector('input[name="rank_aggregation_type"]:checked');
+        return checked !== null && checked.value === 'period';
+    }
+
+    function syncLoyaltyUi() {
+        var stampsOn = useStamps !== null && useStamps.checked;
+        var pointsOn = usePoints !== null && usePoints.checked;
+        if (useTxWrap !== null) {
+            useTxWrap.classList.toggle('is-hidden', !stampsOn);
+        }
+        if (useTx !== null && !stampsOn) {
+            useTx.checked = false;
+        }
+        if (pointsSection !== null) {
+            pointsSection.classList.toggle('is-hidden', !pointsOn);
+        }
+        if (showPointsWrap !== null) {
+            showPointsWrap.classList.toggle('is-hidden', !pointsOn);
+        }
+        document.querySelectorAll('.js-rank-preview-points').forEach(function(el) {
+            el.classList.toggle('is-hidden', !pointsOn);
+        });
+        if (stampsSection !== null) {
+            stampsSection.classList.toggle('is-hidden', !stampsOn);
+        }
+        if (periodFields !== null) {
+            periodFields.classList.toggle('is-hidden', !isPeriod());
+        }
+    }
+
+    if (useStamps !== null) {
+        useStamps.addEventListener('change', syncLoyaltyUi);
+    }
+    if (usePoints !== null) {
+        usePoints.addEventListener('change', syncLoyaltyUi);
+    }
+    document.querySelectorAll('input[name="rank_aggregation_type"]').forEach(function(radio) {
+        radio.addEventListener('change', syncLoyaltyUi);
+    });
+    syncLoyaltyUi();
 })();
 
 document.getElementById('addRankRow')?.addEventListener('click', function() {

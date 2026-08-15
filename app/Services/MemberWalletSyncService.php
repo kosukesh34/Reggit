@@ -15,10 +15,13 @@ class MemberWalletSyncService
         private WalletPassSyncService $walletPassSyncService,
         private AppleWalletPushService $appleWalletPushService,
         private GoogleWalletPassService $googleWalletPassService,
+        private MemberLiffWalletNotifier $liffWalletNotifier,
     ) {}
 
     public function syncAfterMemberChanged(Member $member, string $reason = 'member_changed'): void
     {
+        $this->liffWalletNotifier->notify($member);
+
         $appleCanSync = $this->canSyncAppleWallet();
         $googleCanSync = $this->googleWalletPassService->canSyncExistingObjects();
         if (! $appleCanSync && ! $googleCanSync) {

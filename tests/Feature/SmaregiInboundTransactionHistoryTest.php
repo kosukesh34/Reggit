@@ -52,6 +52,8 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
             'smaregi.id_base_url' => 'https://id.smaregi.dev',
             'smaregi.api_base_url' => 'https://api.smaregi.dev',
             'smaregi.contract_id' => '',
+            'smaregi.webhook_secret' => '',
+            'smaregi.webhook_secret_header' => '',
         ]);
     }
 
@@ -218,8 +220,6 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
             'required_stamps' => 10,
             'is_active' => true,
         ]);
-        ShopSettingStore::setValue('order_stamp_card_id', (int) $stampCard->id, 'integer', (int) $project->id);
-
         $user = User::factory()->create(['project_id' => $project->id]);
         $member = Member::factory()->create([
             'project_id' => $project->id,
@@ -419,8 +419,6 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
             'required_stamps' => 10,
             'is_active' => true,
         ]);
-        ShopSettingStore::setValue('order_stamp_card_id', (int) $stampCard->id, 'integer', (int) $project->id);
-
         $user = User::factory()->create(['project_id' => $project->id]);
         $member = Member::factory()->create([
             'project_id' => $project->id,
@@ -494,8 +492,6 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
             'required_stamps' => 10,
             'is_active' => true,
         ]);
-        ShopSettingStore::setValue('order_stamp_card_id', (int) $stampCard->id, 'integer', (int) $project->id);
-
         $user = User::factory()->create(['project_id' => $project->id]);
         $member = Member::factory()->create([
             'project_id' => $project->id,
@@ -611,8 +607,6 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
             'required_stamps' => 10,
             'is_active' => true,
         ]);
-        ShopSettingStore::setValue('order_stamp_card_id', (int) $stampCard->id, 'integer', (int) $project->id);
-
         $user = User::factory()->create(['project_id' => $project->id]);
         $member = Member::factory()->create([
             'project_id' => $project->id,
@@ -660,6 +654,146 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
             'current_stamps' => 0,
             'cycle_count' => 1,
         ]);
+    }
+
+    public function test_取引連動スタンプオフならスタンプを付与しないこと(): void
+    {
+        $project = Project::factory()->create();
+        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        ShopSettingStore::setValue('stamp_earn_per_amount', 100, 'integer', (int) $project->id);
+        ShopSettingStore::setValue('use_transaction_stamps', false, 'boolean', (int) $project->id);
+        StampCard::factory()->create([
+            'project_id' => $project->id,
+            'required_stamps' => 10,
+            'is_active' => true,
+        ]);
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $member = Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+            'smaregi_customer_id' => '259',
+        ]);
+
+        $this->fakeTransactionHttp([
+            'transactionHeadId' => '39',
+            'transactionHeadDivision' => SmaregiTransactionHeadDivision::NORMAL,
+            'cancelDivision' => SmaregiCancelDivision::NORMAL,
+            'customerId' => '259',
+            'total' => '2046',
+            'terminalTranDateTime' => '2026-07-19T01:44:25+09:00',
+        ]);
+
+        app(SmaregiTransactionInboundSyncService::class)
+            ->syncByTransactionHeadIds(self::CONTRACT_ID, ['39']);
+
+        $this->assertSame(0, MemberStampTransaction::query()->where('member_id', $member->id)->count());
+    }
+
+    public function test_ポイント機能オフならポイントを付与しないこと(): void
+    {
+        $project = Project::factory()->create();
+        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        ShopSettingStore::setValue('point_earn_rate', 100, 'integer', (int) $project->id);
+        ShopSettingStore::setValue('use_points', false, 'boolean', (int) $project->id);
+
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $member = Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+            'smaregi_customer_id' => '259',
+            'rank' => 'bronze',
+            'points' => 0,
+        ]);
+
+        $this->fakeTransactionHttp([
+            'transactionHeadId' => '39',
+            'transactionHeadDivision' => SmaregiTransactionHeadDivision::NORMAL,
+            'cancelDivision' => SmaregiCancelDivision::NORMAL,
+            'customerId' => '259',
+            'total' => '2046',
+            'terminalTranDateTime' => '2026-07-19T01:44:25+09:00',
+        ]);
+
+        app(SmaregiTransactionInboundSyncService::class)
+            ->syncByTransactionHeadIds(self::CONTRACT_ID, ['39']);
+
+        $this->assertSame(0, PointTransaction::query()->where('member_id', $member->id)->count());
+    }
+
+    public function test_ランク別スタンプ付与レートで付与すること(): void
+    {
+        $project = Project::factory()->create();
+        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        ShopSettingStore::setValue('stamp_earn_per_amount', 1000, 'integer', (int) $project->id);
+        ShopSettingStore::setMemberRankSettings([
+            ['key' => 'bronze', 'label' => 'ブロンズ', 'min_points' => 0, 'order' => 1, 'is_active' => true, 'stamp_earn_per_amount' => 500],
+            ['key' => 'gold', 'label' => 'ゴールド', 'min_points' => 100, 'order' => 2, 'is_active' => true, 'stamp_earn_per_amount' => 200],
+        ], (int) $project->id);
+        StampCard::factory()->create([
+            'project_id' => $project->id,
+            'required_stamps' => 20,
+            'is_active' => true,
+        ]);
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $member = Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+            'smaregi_customer_id' => '259',
+            'rank' => 'gold',
+        ]);
+
+        $this->fakeTransactionHttp([
+            'transactionHeadId' => '39',
+            'transactionHeadDivision' => SmaregiTransactionHeadDivision::NORMAL,
+            'cancelDivision' => SmaregiCancelDivision::NORMAL,
+            'customerId' => '259',
+            'total' => '1000',
+            'terminalTranDateTime' => '2026-07-19T01:44:25+09:00',
+        ]);
+
+        app(SmaregiTransactionInboundSyncService::class)
+            ->syncByTransactionHeadIds(self::CONTRACT_ID, ['39']);
+
+        $this->assertDatabaseHas('member_stamp_transactions', [
+            'member_id' => $member->id,
+            'delta' => 5,
+            'description' => 'スマレジ取引によるスタンプ付与 #39',
+        ]);
+    }
+
+    public function test_取引付与後にランクが上がること(): void
+    {
+        $project = Project::factory()->create();
+        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        ShopSettingStore::setValue('point_earn_rate', 100, 'integer', (int) $project->id);
+        ShopSettingStore::setValue('points_valid_days', 365, 'integer', (int) $project->id);
+        ShopSettingStore::setMemberRankSettings([
+            ['key' => 'bronze', 'label' => 'ブロンズ', 'min_points' => 0, 'order' => 1, 'is_active' => true],
+            ['key' => 'gold', 'label' => 'ゴールド', 'min_points' => 10, 'order' => 2, 'is_active' => true],
+        ], (int) $project->id);
+
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $member = Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+            'smaregi_customer_id' => '259',
+            'rank' => 'bronze',
+            'points' => 0,
+        ]);
+
+        $this->fakeTransactionHttp([
+            'transactionHeadId' => '39',
+            'transactionHeadDivision' => SmaregiTransactionHeadDivision::NORMAL,
+            'cancelDivision' => SmaregiCancelDivision::NORMAL,
+            'customerId' => '259',
+            'total' => '2046',
+            'terminalTranDateTime' => '2026-07-19T01:44:25+09:00',
+        ]);
+
+        app(SmaregiTransactionInboundSyncService::class)
+            ->syncByTransactionHeadIds(self::CONTRACT_ID, ['39']);
+
+        $this->assertSame('gold', $member->fresh()->rank);
     }
 
     /**

@@ -1,0 +1,117 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Enums\RankAggregationType;
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
+use App\Models\AdminUser;
+use App\Models\Project;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class AdminRankSettingsTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_ランク設定画面に機能トグルと期間設定があること(): void
+    {
+        $project = Project::factory()->create();
+        $admin = AdminUser::factory()->create([
+            'role' => AdminUser::ROLE_ADMIN,
+            'project_id' => $project->id,
+        ]);
+
+        $this->actingAs($admin, 'admin')
+            ->get(route('admin.settings.ranks', ['project_key' => $project->project_key]))
+            ->assertOk()
+            ->assertSee('ポイント機能を利用する', false)
+            ->assertSee('スタンプ機能を利用する', false)
+            ->assertSee('取引連動スタンプを利用する', false)
+            ->assertSee('name="rank_aggregation_type"', false)
+            ->assertSee('集計期間（日）', false)
+            ->assertSee('name="ranks[0][stamp_earn_per_amount]"', false)
+            ->assertSee('会員が現在持っているスタンプラリー', false)
+            ->assertDontSee('付与先スタンプカード', false);
+    }
+
+    public function test_ランク設定に機能トグルと期間を保存できること(): void
+    {
+        $project = Project::factory()->create();
+        $admin = AdminUser::factory()->create([
+            'role' => AdminUser::ROLE_ADMIN,
+            'project_id' => $project->id,
+        ]);
+
+        $this->actingAs($admin, 'admin')
+            ->post(route('admin.settings.ranks.update', ['project_key' => $project->project_key]), [
+                'rank_basis' => 'points',
+                'rank_aggregation_type' => RankAggregationType::PERIOD,
+                'rank_period_days' => 90,
+                'is_rank_down_enabled' => '1',
+                'use_points' => '1',
+                'use_stamps' => '1',
+                'use_transaction_stamps' => '1',
+                'point_earn_rate' => 100,
+                'points_valid_days' => 365,
+                'points_per_order' => 0,
+                'stamp_earn_per_amount' => 500,
+                'ranks' => [
+                    [
+                        'key' => 'bronze',
+                        'label' => 'ブロンズ',
+                        'min_points' => 0,
+                        'point_earn_rate' => 80,
+                        'stamp_earn_per_amount' => 300,
+                        'is_active' => '1',
+                        'order' => 1,
+                    ],
+                    [
+                        'key' => 'gold',
+                        'label' => 'ゴールド',
+                        'min_points' => 1000,
+                        'point_earn_rate' => 50,
+                        'stamp_earn_per_amount' => 200,
+                        'is_active' => '1',
+                        'order' => 2,
+                    ],
+                ],
+            ])
+            ->assertRedirect();
+
+        $this->assertTrue(ShopSettingStore::getUsePoints((int) $project->id));
+        $this->assertTrue(ShopSettingStore::getUseStamps((int) $project->id));
+        $this->assertTrue(ShopSettingStore::getUseTransactionStamps((int) $project->id));
+        $this->assertSame(RankAggregationType::PERIOD, ShopSettingStore::getRankAggregationType((int) $project->id));
+        $this->assertSame(90, ShopSettingStore::getRankPeriodDays((int) $project->id));
+        $this->assertTrue(ShopSettingStore::getIsRankDownEnabled((int) $project->id));
+        $this->assertSame(50, ShopSettingStore::getPointEarnRateForRank((int) $project->id, 'gold'));
+        $this->assertSame(200, ShopSettingStore::getStampEarnPerAmountForRank((int) $project->id, 'gold'));
+        $this->assertTrue(ShopSettingStore::isFeatureEnabled('feature_stamps_enabled', (int) $project->id));
+    }
+
+    public function test_スタンプ機能オフなら取引連動もオフになり機能フラグも落ちること(): void
+    {
+        $project = Project::factory()->create();
+        $admin = AdminUser::factory()->create([
+            'role' => AdminUser::ROLE_ADMIN,
+            'project_id' => $project->id,
+        ]);
+
+        $this->actingAs($admin, 'admin')
+            ->post(route('admin.settings.ranks.update', ['project_key' => $project->project_key]), [
+                'rank_basis' => 'points',
+                'rank_aggregation_type' => RankAggregationType::TOTAL,
+                'rank_period_days' => 365,
+                'use_points' => '1',
+                'use_stamps' => '0',
+                'use_transaction_stamps' => '1',
+                'point_earn_rate' => 100,
+                'points_valid_days' => 365,
+            ])
+            ->assertRedirect();
+
+        $this->assertFalse(ShopSettingStore::getUseStamps((int) $project->id));
+        $this->assertFalse(ShopSettingStore::getUseTransactionStamps((int) $project->id));
+        $this->assertFalse(ShopSettingStore::isFeatureEnabled('feature_stamps_enabled', (int) $project->id));
+    }
+}

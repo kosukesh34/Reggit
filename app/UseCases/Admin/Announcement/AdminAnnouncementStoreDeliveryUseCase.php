@@ -190,8 +190,8 @@ class AdminAnnouncementStoreDeliveryUseCase
             return new StoreDeliveryOutput(false, false, 'お知らせを掲載しました（通知は送信していません）');
         }
 
-        $result = $this->announcementNotificationService->send($announcement);
         $this->announcementAdminService->issueDeliveryCouponIfSet($announcement);
+        $result = $this->announcementNotificationService->send($announcement);
 
         $sent = $result['sent'];
         $failed = $result['failed'];

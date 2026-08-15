@@ -15,10 +15,6 @@ class GetRankSettingsUseCase
     public function handle(int $projectId): RankSettingsView
     {
         $this->ensureDefaultStampCardExists($projectId);
-        $stampCardsForSelect = StampCard::where('project_id', $projectId)
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->get();
 
         return new RankSettingsView(
             $this->shopSettingRepository->getMemberRankSettings($projectId),
@@ -38,8 +34,12 @@ class GetRankSettingsUseCase
             $this->shopSettingRepository->getMemberCardCodeType($projectId),
             $this->shopSettingRepository->getPointsPerOrder($projectId),
             $this->shopSettingRepository->getStampEarnPerAmount($projectId),
-            $this->shopSettingRepository->getOrderStampCardId($projectId),
-            $stampCardsForSelect
+            $this->shopSettingRepository->getUseStamps($projectId),
+            $this->shopSettingRepository->getUseTransactionStamps($projectId),
+            $this->shopSettingRepository->getUsePoints($projectId),
+            $this->shopSettingRepository->getRankAggregationType($projectId),
+            $this->shopSettingRepository->getRankPeriodDays($projectId),
+            $this->shopSettingRepository->getIsRankDownEnabled($projectId),
         );
     }
 

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Enums\MemberNotificationPreference;
 use App\Models\Coupon;
 use App\Models\Member;
 use App\Models\MemberCoupon;
@@ -27,6 +28,9 @@ class CouponNotificationService
         $member = $memberCoupon->member;
         $coupon = $memberCoupon->coupon;
         if ($member === null || $coupon === null) {
+            return;
+        }
+        if (! MemberNotificationPreference::allowsCoupon($member->notification_preference)) {
             return;
         }
 
@@ -60,14 +64,33 @@ class CouponNotificationService
 
             return;
         }
-        $this->sendLinePush(
-            $member,
-            $projectId,
-            $projectKey,
-            $title,
-            $body,
-            $couponName,
-            $this->resolveLineImageUrl($coupon, $projectId)
+        $this->sendLinePush($member, $projectId, $projectKey, $coupon, $couponName);
+    }
+
+    /**
+     * @return array{type: string, altText: string, contents: array<string, mixed>}|null
+     */
+    public function buildIssuedLineFlex(
+        Coupon $coupon,
+        int $projectId,
+        string $projectKey,
+        bool $includeImage = true,
+        ?string $couponName = null,
+    ): ?array {
+        if ($this->shopSettingRepository->isFeatureEnabled('feature_coupons_enabled', $projectId) === false) {
+            return null;
+        }
+        $name = trim((string) ($couponName ?: $coupon->name));
+        if ($name === '') {
+            $name = 'クーポン';
+        }
+
+        return $this->buildLineFlexMessage(
+            'クーポンが届きました',
+            $name.'を受け取りました。クーポンタブからご確認ください。',
+            $name,
+            CouponLiffUrlBuilder::buildCouponsTabUrl($projectId, $projectKey),
+            $includeImage ? $this->resolveLineImageUrl($coupon, $projectId) : null,
         );
     }
 
@@ -100,15 +123,8 @@ class CouponNotificationService
         }
     }
 
-    private function sendLinePush(
-        Member $member,
-        int $projectId,
-        string $projectKey,
-        string $title,
-        string $body,
-        string $couponName,
-        ?string $imageUrl
-    ): void {
+    private function sendLinePush(Member $member, int $projectId, string $projectKey, Coupon $coupon, string $couponName): void
+    {
         $lineUserId = trim((string) ($member->user?->line_user_id ?? ''));
         if ($lineUserId === '' || ! MemberChannel::isValidLineUserId($lineUserId)) {
             return;
@@ -123,34 +139,32 @@ class CouponNotificationService
             return;
         }
 
-        $couponsUrl = CouponLiffUrlBuilder::buildCouponsTabUrl($projectId, $projectKey);
         $channelAccessToken = $this->shopSettingRepository->getLineChannelAccessToken($projectId);
+        $message = $this->buildIssuedLineFlex($coupon, $projectId, $projectKey, true, $couponName);
+        if ($message === null) {
+            return;
+        }
 
         try {
-            $this->lineService->pushMessage(
-                $lineUserId,
-                $this->buildLineFlexMessage($title, $body, $couponName, $couponsUrl, $imageUrl),
-                $channelAccessToken
-            );
+            $this->lineService->pushMessage($lineUserId, $message, $channelAccessToken);
         } catch (\Throwable $e) {
-            if ($imageUrl !== null) {
+            if (isset($message['contents']['hero'])) {
                 LogHelper::warning('[Coupon] LINE push with image failed; retrying without image', [
                     'member_id' => $member->id,
                     'project_id' => $projectId,
                     'line_user_id' => $lineUserId,
-                    'image_url' => $imageUrl,
+                    'image_url' => $message['contents']['hero']['url'] ?? null,
                     'error' => $e->getMessage(),
                 ]);
-                try {
-                    $this->lineService->pushMessage(
-                        $lineUserId,
-                        $this->buildLineFlexMessage($title, $body, $couponName, $couponsUrl, null),
-                        $channelAccessToken
-                    );
+                $retryMessage = $this->buildIssuedLineFlex($coupon, $projectId, $projectKey, false, $couponName);
+                if ($retryMessage !== null) {
+                    try {
+                        $this->lineService->pushMessage($lineUserId, $retryMessage, $channelAccessToken);
 
-                    return;
-                } catch (\Throwable $retryError) {
-                    $e = $retryError;
+                        return;
+                    } catch (\Throwable $retryError) {
+                        $e = $retryError;
+                    }
                 }
             }
             LogHelper::error('[Coupon] LINE push failed', [
