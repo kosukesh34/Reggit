@@ -4,6 +4,7 @@ namespace App\UseCases\Admin\Coupon\Data;
 
 use App\Models\Coupon;
 use App\Models\CouponDelivery;
+use App\Models\MemberTag;
 use App\Models\Product;
 use App\Models\StampCard;
 use Illuminate\Support\Collection;
@@ -39,6 +40,8 @@ use Illuminate\Support\Collection;
  * @param  Collection<int, StampCard>  $stampCards
  * @param  list<array{key: string, label: string}>  $rankOptions
  * @param  string  $defaultDeliveryType
+ * @param  Collection<int, MemberTag>  $memberTags
+ * @param  array<string, array{label: string, color: string}>  $rfmSegments
  */
 class AdminCouponBulkIssueFormOutput
 {
@@ -58,5 +61,7 @@ class AdminCouponBulkIssueFormOutput
         public Collection $stampCards = new Collection,
         public array $rankOptions = [],
         public string $defaultDeliveryType = '',
+        public array $rfmSegments = [],
+        public Collection $memberTags = new Collection,
     ) {}
 }

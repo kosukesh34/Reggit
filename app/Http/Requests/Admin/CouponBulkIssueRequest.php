@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Admin;
 
 use App\Enums\CouponDeliveryType;
+use App\Enums\RfmSegment;
 use App\Util\AdminContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -13,6 +14,54 @@ class CouponBulkIssueRequest extends FormRequest
     public function authorize(): bool
     {
         return true;
+    }
+
+    protected function prepareForValidation(): void
+    {
+        if ($this->filled('target_rank') === false && $this->filled('segment_rank')) {
+            $this->merge(['target_rank' => $this->input('segment_rank')]);
+        }
+
+        if ($this->filled('audience_type')) {
+            $audience = (string) $this->input('audience_type', 'immediate_bulk');
+            $isScheduled = (string) $this->input('delivery_timing', 'immediate') === 'scheduled';
+            if ($this->boolean('event_rank_up')) {
+                $this->merge(['delivery_type' => CouponDeliveryType::EVENT_RANK_UP_ARRIVAL]);
+
+                return;
+            }
+
+            $this->merge(['delivery_type' => $this->resolveDeliveryType($audience, $isScheduled)]);
+
+            return;
+        }
+
+        if ($this->filled('delivery_type')) {
+            return;
+        }
+    }
+
+    private function resolveDeliveryType(string $audience, bool $isScheduled): string
+    {
+        if ($audience === 'personal') {
+            return $isScheduled ? CouponDeliveryType::SCHEDULED_PERSONAL : CouponDeliveryType::IMMEDIATE_PERSONAL;
+        }
+        if ($audience === 'segment') {
+            $salesOnly = in_array((string) $this->input('segment_condition', ''), ['min_amount', 'no_orders'], true)
+                && ! $this->filled('segment_channel')
+                && ! $this->filled('segment_sex')
+                && ! $this->filled('segment_rank')
+                && ! $this->filled('segment_rfm_segments')
+                && ! $this->filled('segment_tag_ids')
+                && ! $this->filled('segment_birthday_months');
+            if ($salesOnly) {
+                return $isScheduled ? CouponDeliveryType::SCHEDULED_SEGMENT_SALES : CouponDeliveryType::IMMEDIATE_SEGMENT_SALES;
+            }
+
+            return $isScheduled ? CouponDeliveryType::SCHEDULED_SEGMENT_ATTRIBUTES : CouponDeliveryType::IMMEDIATE_SEGMENT_ATTRIBUTES;
+        }
+
+        return $isScheduled ? CouponDeliveryType::SCHEDULED_ALL : CouponDeliveryType::IMMEDIATE_ALL;
     }
 
     public function rules(): array
@@ -27,6 +76,8 @@ class CouponBulkIssueRequest extends FormRequest
         }
 
         return [
+            'audience_type' => ['nullable', Rule::in(['immediate_bulk', 'personal', 'segment'])],
+            'delivery_timing' => ['nullable', Rule::in(['immediate', 'scheduled'])],
             'coupon_id' => ['required', 'integer', $couponExists],
             'delivery_type' => ['required', Rule::in(array_keys(CouponDeliveryType::getValues()))],
             'target_member_ids' => [
@@ -85,6 +136,12 @@ class CouponBulkIssueRequest extends FormRequest
             ],
             'segment_channel' => ['nullable', Rule::in(['line', 'app', 'both'])],
             'segment_birthday_month' => ['nullable', 'integer', 'min:1', 'max:12'],
+            'segment_birthday_months' => ['nullable', 'array', 'max:12'],
+            'segment_birthday_months.*' => ['integer', 'min:1', 'max:12', 'distinct'],
+            'segment_tag_ids' => ['nullable', 'array'],
+            'segment_tag_ids.*' => ['integer', 'min:1', 'distinct'],
+            'event_rank_up' => ['nullable'],
+            'send_notification' => ['nullable', 'boolean'],
             'segment_visit_count_min' => ['nullable', 'integer', 'min:0'],
             'segment_visit_count_max' => ['nullable', 'integer', 'min:0'],
             'segment_lifetime_points_min' => ['nullable', 'integer', 'min:0'],
@@ -93,6 +150,8 @@ class CouponBulkIssueRequest extends FormRequest
             'segment_last_visit_days' => ['nullable', 'integer', 'min:1', 'max:730'],
             'segment_sex' => ['nullable', Rule::in(['1', '2'])],
             'segment_rank' => ['nullable', 'string', 'max:64'],
+            'segment_rfm_segments' => ['nullable', 'array'],
+            'segment_rfm_segments.*' => ['string', Rule::in(RfmSegment::keys()), 'distinct'],
             'segment_product_id' => ['nullable', 'integer', 'min:1'],
             'segment_stamp_card_id' => ['nullable', 'integer', 'min:1'],
             'segment_stamp_count_min' => ['nullable', 'integer', 'min:0'],

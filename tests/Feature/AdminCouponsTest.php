@@ -6,14 +6,18 @@ use App\Enums\CouponApplyConditionDivision;
 use App\Enums\CouponCombineDivision;
 use App\Enums\CouponDeliveryStatus;
 use App\Enums\CouponDeliveryType;
+use App\Enums\OrderStatus;
+use App\Jobs\SendCouponIssuedNotificationJob;
 use App\Models\AdminUser;
 use App\Models\Coupon;
 use App\Models\CouponDelivery;
 use App\Models\CouponRedemption;
 use App\Models\Member;
+use App\Models\Order;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 class AdminCouponsTest extends TestCase
@@ -46,6 +50,8 @@ class AdminCouponsTest extends TestCase
 
         $response->assertStatus(200)
             ->assertSee('作成')
+            ->assertSee('クーポンを配信')
+            ->assertSee('配布履歴')
             ->assertDontSee('お知らせで配布');
     }
 
@@ -58,19 +64,58 @@ class AdminCouponsTest extends TestCase
             ->get(route('admin.coupons.bulk-issue', ['project_key' => $project->project_key]));
 
         $response->assertStatus(200)
-            ->assertSee('クーポンを選ぶ')
-            ->assertSee('全員に配布')
-            ->assertSee('セグメント配信')
-            ->assertSee('日時指定')
-            ->assertSee('指定ランク')
-            ->assertSee('ランクアップ達成配信')
-            ->assertSee('スタンプ累計')
-            ->assertSee('最終来店からN日後')
-            ->assertSee('新規作成')
-            ->assertSee('配信履歴');
+            ->assertSee('全会員')
+            ->assertSee('条件で絞る')
+            ->assertSee('予約配信')
+            ->assertSee('RFMセグメント')
+            ->assertSee('ランクアップ達成')
+            ->assertSee('累計スタンプ以上')
+            ->assertSee('最終来店')
+            ->assertSee('入力内容')
+            ->assertSee('クーポン発行時に通知を送る')
+            ->assertDontSee('配布するクーポンを選ぶ')
+            ->assertDontSee('同じ会員に1枚ずつ付与します')
+            ->assertDontSee('配信履歴');
     }
 
-    public function test_bulk_issue_配信履歴が表示されること(): void
+    public function test_segment_preview_rfm条件の件数を返すこと(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        Member::factory()->create(['project_id' => $project->id, 'status' => 'active']);
+
+        $response = $this->actingAs($admin, 'admin')
+            ->get(route('admin.coupons.segment.preview', [
+                'project_key' => $project->project_key,
+                'segment_rfm_segments' => ['never'],
+            ]));
+
+        $response->assertOk();
+        $response->assertJson(['count' => 1]);
+    }
+
+    public function test_audience_preview_配信対象会員の一覧を返すこと(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        $member = Member::factory()->create([
+            'project_id' => $project->id,
+            'member_number' => 'CPN-PREVIEW-1',
+        ]);
+
+        $response = $this->actingAs($admin, 'admin')
+            ->get(route('admin.coupons.audience.preview', [
+                'project_key' => $project->project_key,
+                'audience_type' => 'immediate_bulk',
+            ]));
+
+        $response->assertOk()
+            ->assertJsonPath('count', 1)
+            ->assertJsonPath('members.0.id', $member->id)
+            ->assertJsonPath('members.0.member_number', 'CPN-PREVIEW-1');
+    }
+
+    public function test_coupons_一覧に配布履歴が表示されること(): void
     {
         $project = $this->createProject();
         $admin = $this->createAdmin($project);
@@ -112,10 +157,10 @@ class AdminCouponsTest extends TestCase
         ]);
 
         $response = $this->actingAs($admin, 'admin')
-            ->get(route('admin.coupons.bulk-issue', ['project_key' => $project->project_key]));
+            ->get(route('admin.coupons', ['project_key' => $project->project_key]));
 
         $response->assertStatus(200);
-        $response->assertSee('配信履歴');
+        $response->assertSee('配布履歴');
         $response->assertSee('配信対象');
         $response->assertSee('再利用クーポン');
         $response->assertSee('REUSE10');
@@ -475,6 +520,79 @@ class AdminCouponsTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('配布クーポン01');
         $response->assertSee('配布クーポン12');
+    }
+
+    public function test_bulk_issue_rfmセグメントで配布できること(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        $coupon = Coupon::factory()->create(['project_id' => $project->id]);
+        $neverUser = User::factory()->create(['project_id' => $project->id]);
+        $neverMember = Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => $neverUser->id,
+            'status' => 'active',
+        ]);
+        $activeUser = User::factory()->create(['project_id' => $project->id]);
+        $activeMember = Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => $activeUser->id,
+            'status' => 'active',
+        ]);
+        $order = Order::create([
+            'project_id' => $project->id,
+            'user_id' => $activeUser->id,
+            'order_number' => 'ORD-'.uniqid(),
+            'order_type' => 'take_out',
+            'total_amount' => 1000,
+            'status' => OrderStatus::COMPLETED,
+        ]);
+        $order->forceFill(['created_at' => now()->subDays(5)])->save();
+
+        $response = $this->actingAs($admin, 'admin')
+            ->post(route('admin.coupons.bulk-issue.store', ['project_key' => $project->project_key]), [
+                'coupon_id' => $coupon->id,
+                'delivery_type' => CouponDeliveryType::IMMEDIATE_SEGMENT_ATTRIBUTES,
+                'segment_rfm_segments' => ['never'],
+            ]);
+
+        $response->assertRedirect();
+        $delivery = CouponDelivery::where('coupon_id', $coupon->id)->firstOrFail();
+        $this->assertSame(['never'], $delivery->segment_criteria['rfm_segments'] ?? null);
+        $this->assertSame([$neverMember->id], $delivery->issued_member_ids);
+        $this->assertNotContains($activeMember->id, $delivery->issued_member_ids ?? []);
+    }
+
+    public function test_bulk_issue_通知オフなら発行通知ジョブを積まないこと(): void
+    {
+        Queue::fake();
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        $coupon = Coupon::factory()->create(['project_id' => $project->id]);
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $member = Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+            'status' => 'active',
+        ]);
+
+        $response = $this->actingAs($admin, 'admin')
+            ->post(route('admin.coupons.bulk-issue.store', ['project_key' => $project->project_key]), [
+                'coupon_id' => $coupon->id,
+                'audience_type' => 'immediate_bulk',
+                'delivery_timing' => 'immediate',
+                'send_notification' => 0,
+            ]);
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('member_coupons', [
+            'project_id' => $project->id,
+            'member_id' => $member->id,
+            'coupon_id' => $coupon->id,
+        ]);
+        $delivery = CouponDelivery::where('coupon_id', $coupon->id)->firstOrFail();
+        $this->assertFalse($delivery->send_notification);
+        Queue::assertNotPushed(SendCouponIssuedNotificationJob::class);
     }
 
     public function test_coupons_一覧に利用履歴ボタンがあること(): void
