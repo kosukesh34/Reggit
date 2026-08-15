@@ -46,6 +46,7 @@
 <meta name="stripe-key" content="{{ config('services.stripe.key', '') }}">
 <script>
     window.__PROJECT_KEY__ = "{{ $projectKey ?? '' }}";
+    window.__REVERB_APP_KEY__ = @json((string) config('broadcasting.connections.reverb.key', ''));
     (function () {
         var apiBaseMeta = document.querySelector('meta[name="api-base"]');
         window.__API_BASE__ = (apiBaseMeta ? apiBaseMeta.getAttribute('content') : null) || '/api';

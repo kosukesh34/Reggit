@@ -108,6 +108,34 @@
     margin-top: 8px;
 }
 
+.ranks-settings-radios {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: center;
+    min-height: 38px;
+}
+
+.ranks-settings-radios label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.ranks-rank-down-toggle {
+    margin-top: 12px;
+}
+
+.ranks-settings-subsection.is-hidden,
+.ranks-settings-checkboxes .is-hidden,
+#rank_period_fields.is-hidden,
+.js-rank-preview-points.is-hidden {
+    display: none;
+}
+
 .ranks-card-header-with-action {
     display: flex;
     justify-content: space-between;
@@ -149,7 +177,7 @@
     vertical-align: middle;
 }
 
-.ranks-settings-table tbody td:nth-child(6) {
+.ranks-settings-table tbody td:nth-child(7) {
     border-left: 1px solid var(--border-light, #f0eeec);
 }
 

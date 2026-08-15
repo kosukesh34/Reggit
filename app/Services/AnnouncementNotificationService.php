@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Enums\MemberNotificationPreference;
 use App\Models\Announcement;
+use App\Models\Coupon;
 use App\Models\Member;
 use App\Models\Project;
 use App\Services\Line\LineService;
@@ -94,6 +95,7 @@ class AnnouncementNotificationService
         $sent = 0;
         $failed = 0;
         $skipped = 0;
+        $includeImages = true;
 
         foreach ($members as $member) {
             $lineUserId = trim((string) ($member->user?->line_user_id ?? ''));
@@ -103,31 +105,42 @@ class AnnouncementNotificationService
                 continue;
             }
 
+            $payload = $this->buildLinePayload(
+                $title,
+                $body,
+                $announcementsUrl,
+                $includeImages ? $imageUrl : null,
+                $announcement,
+                $projectId,
+                $projectKey,
+                $includeImages,
+            );
+
             try {
-                $this->lineService->pushMessage(
-                    $lineUserId,
-                    $this->buildFlexMessage($title, $body, $announcementsUrl, $imageUrl),
-                    $channelAccessToken
-                );
+                $this->lineService->pushMessage($lineUserId, $payload, $channelAccessToken);
                 $sent++;
             } catch (\Throwable $e) {
-                if ($imageUrl !== null) {
+                if ($includeImages && $this->linePayloadHasHero($payload)) {
                     LogHelper::warning('[Announcement] LINE push with image failed; retrying without image', [
                         'announcement_id' => $announcement->id,
                         'member_id' => $member->id,
                         'line_user_id' => $lineUserId,
-                        'image_url' => $imageUrl,
                         'error' => $e->getMessage(),
                     ]);
                     try {
-                        $this->lineService->pushMessage(
-                            $lineUserId,
-                            $this->buildFlexMessage($title, $body, $announcementsUrl, null),
-                            $channelAccessToken
+                        $retryPayload = $this->buildLinePayload(
+                            $title,
+                            $body,
+                            $announcementsUrl,
+                            null,
+                            $announcement,
+                            $projectId,
+                            $projectKey,
+                            false,
                         );
+                        $this->lineService->pushMessage($lineUserId, $retryPayload, $channelAccessToken);
                         $sent++;
-                        // 画像起因の失敗なら以降の会員にも同じ失敗を繰り返さない
-                        $imageUrl = null;
+                        $includeImages = false;
 
                         continue;
                     } catch (\Throwable $retryError) {
@@ -179,6 +192,72 @@ class AnnouncementNotificationService
         }
 
         return $query->get();
+    }
+
+    /**
+     * @return array{type: string, altText: string, contents: array<string, mixed>}|list<array{type: string, altText: string, contents: array<string, mixed>}>
+     */
+    private function buildLinePayload(
+        string $title,
+        string $body,
+        string $announcementsUrl,
+        ?string $imageUrl,
+        Announcement $announcement,
+        int $projectId,
+        string $projectKey,
+        bool $includeCouponImage,
+    ): array {
+        $messages = [$this->buildFlexMessage($title, $body, $announcementsUrl, $imageUrl)];
+        $couponMessage = $this->couponLineMessage($announcement, $projectId, $projectKey, $includeCouponImage);
+        if ($couponMessage !== null) {
+            $messages[] = $couponMessage;
+        }
+
+        return count($messages) === 1 ? $messages[0] : $messages;
+    }
+
+    /**
+     * @return array{type: string, altText: string, contents: array<string, mixed>}|null
+     */
+    private function couponLineMessage(
+        Announcement $announcement,
+        int $projectId,
+        string $projectKey,
+        bool $includeImage,
+    ): ?array {
+        if ($announcement->delivery_coupon_id === null) {
+            return null;
+        }
+        $coupon = Coupon::query()
+            ->where('project_id', $projectId)
+            ->find((int) $announcement->delivery_coupon_id);
+        if ($coupon === null) {
+            return null;
+        }
+
+        return resolve(CouponNotificationService::class)->buildIssuedLineFlex(
+            $coupon,
+            $projectId,
+            $projectKey,
+            $includeImage,
+        );
+    }
+
+    /**
+     * @param  array{type?: string, contents?: array<string, mixed>}|list<array{type?: string, contents?: array<string, mixed>}>  $payload
+     */
+    private function linePayloadHasHero(array $payload): bool
+    {
+        if (array_key_exists('type', $payload)) {
+            return isset($payload['contents']['hero']);
+        }
+        foreach ($payload as $message) {
+            if (isset($message['contents']['hero'])) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

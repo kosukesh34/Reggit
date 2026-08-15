@@ -14,6 +14,8 @@ class MemberMeUseCase
 
     public function handle(User $user): MemberData
     {
+        $this->memberService->ensureMemberWhenRegistrationOptional($user);
+
         return new MemberData($this->memberService->getMemberData($user));
     }
 }

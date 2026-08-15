@@ -177,7 +177,15 @@ interface ShopSettingRepository
 
     public function getStampEarnPerAmount(int $projectId): int;
 
+    public function getStampEarnPerAmountForRank(int $projectId, ?string $rankKey): int;
+
     public function getOrderStampCardId(int $projectId): ?int;
+
+    public function getUseStamps(int $projectId): bool;
+
+    public function getUseTransactionStamps(int $projectId): bool;
+
+    public function getUsePoints(int $projectId): bool;
 
     // ── 会員ランク ──
 
@@ -192,6 +200,7 @@ interface ShopSettingRepository
      *     card_color: string|null,
      *     order: int,
      *     point_earn_rate?: int|null,
+     *     stamp_earn_per_amount?: int|null,
      *     smaregi_rank_id?: string|null
      * }>
      */
@@ -201,6 +210,12 @@ interface ShopSettingRepository
     public function setMemberRankSettings(array $settings, int $projectId): void;
 
     public function getRankBasis(int $projectId): string;
+
+    public function getRankAggregationType(int $projectId): string;
+
+    public function getRankPeriodDays(int $projectId): int;
+
+    public function getIsRankDownEnabled(int $projectId): bool;
 
     /** @return list<array<string, mixed>> */
     public function defaultMemberRankSettings(): array;

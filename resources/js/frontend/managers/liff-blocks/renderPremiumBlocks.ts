@@ -294,18 +294,20 @@ const premium: PremiumRenderer = {
         const showRank = data.show_rank_progress !== false;
         const nextRankLabel = data.next_rank_label || '';
         const toNext = Number(data.points_to_next_rank != null ? data.points_to_next_rank : 0);
+        const rankUnit = data.rank_basis === 'stamps' ? '個' : 'pt';
+        const rankMetric = Number(data.rank_metric != null ? data.rank_metric : points);
         const hello = greeting ? esc(greeting) : (name ? `こんにちは、${esc(name)} さん` : 'おかえりなさい');
 
         let pct = 0;
         let progressHtml = '';
         let ringHtml = '';
         if (showRank && nextRankLabel && toNext > 0) {
-            const span = points + toNext;
-            pct = span > 0 ? Math.max(4, Math.min(100, Math.round((points / span) * 100))) : 0;
+            const span = rankMetric + toNext;
+            pct = span > 0 ? Math.max(4, Math.min(100, Math.round((rankMetric / span) * 100))) : 0;
             if (variant === 'rewards' || variant === 'glass') ringHtml = premium.memberSummaryRing(pct);
             progressHtml = `<div class="ms-progress">
                 <div class="ms-progress-track"><span class="ms-progress-fill" style="width:${pct}%;"></span></div>
-                <p class="ms-progress-text"><span class="ms-progress-goal">次の<strong>${esc(nextRankLabel)}</strong>まで</span> あと <strong>${toNext.toLocaleString('ja-JP')}</strong> pt</p>
+                <p class="ms-progress-text"><span class="ms-progress-goal">次の<strong>${esc(nextRankLabel)}</strong>まで</span> あと <strong>${toNext.toLocaleString('ja-JP')}</strong> ${rankUnit}</p>
             </div>`;
         }
         const designClass = `member-summary-card--design-${esc(variant)}`;

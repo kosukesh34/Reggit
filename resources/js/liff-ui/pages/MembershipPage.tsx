@@ -12,18 +12,26 @@ import { formatDisplayDate } from "../utils/date";
 import {
   getMemberManager,
   openProfileEdit,
-  openRegister,
   shouldShowAppleWallet,
   shouldShowGoogleWallet,
+  startLineLogin,
   walletPassUrl,
   type MemberPayload,
 } from "../../frontend/features/member/api";
+import { MemberRegisterHost } from "../../frontend/features/member/MemberRegisterHost";
+import { getMemberRegistrationMode } from "../../frontend/utils/membershipPolicy";
 import type { MemberProfile } from "../types/app";
+import { isDemoDataMode } from "../../frontend/demo/demoMode";
+import type { DataMode } from "../types/runtime";
 import { LANDING_SHOWCASE_STORE_ID, LandingShowcaseMembership } from "./LandingShowcasePage";
 import { SIMPLE_REWARDS_STORE_ID, SimpleRewardsMembership } from "./SimpleRewardsPage";
 
-function isDesignMockPreview(): boolean {
-  return typeof document !== "undefined" && document.body.classList.contains("liff-demo-data");
+function isDesignerEmbedPreview(): boolean {
+  return typeof window !== "undefined" && window.__IS_DESIGNER_EMBED_PREVIEW__ === true;
+}
+
+function shouldUsePreviewMembership(mode: DataMode): boolean {
+  return isDemoDataMode() || isDesignerEmbedPreview() || mode === "preview";
 }
 
 function toMemberProfile(payload: MemberPayload | null | undefined, fallback: MemberProfile): MemberProfile {
@@ -60,7 +68,13 @@ function toMemberProfile(payload: MemberPayload | null | undefined, fallback: Me
 
 function MembershipPageSkeleton(): JSX.Element {
   return (
-    <div className="page membership-page stack stack--lg" aria-busy="true" aria-label="会員証を読み込み中">
+    <div
+      id="memberSection"
+      className="page membership-page stack stack--lg member-section member-card-mount"
+      data-react-owned="1"
+      aria-busy="true"
+      aria-label="会員証を読み込み中"
+    >
       <div className="membership-skeleton">
         <Skeleton className="membership-skeleton__card" />
         <Skeleton className="membership-skeleton__line" />
@@ -108,7 +122,7 @@ function WalletButtons(): JSX.Element | null {
 
 function LiveMembershipPage(): JSX.Element {
   const { activeStore, customization } = useAppConfig();
-  const { member: runtimeMember, loading, mode, refresh } = useRuntimeData();
+  const { member: runtimeMember, mode, refresh } = useRuntimeData();
   const [barcodeOpen, setBarcodeOpen] = useState(false);
   const [managerPayload, setManagerPayload] = useState<MemberPayload | null>(null);
   const [booting, setBooting] = useState(true);
@@ -160,16 +174,38 @@ function LiveMembershipPage(): JSX.Element {
     };
     void load();
 
-    const onReload = (): void => {
+    const onMemberReload = (): void => {
       void load();
       void refresh();
     };
-    document.addEventListener("liff-member-reload", onReload);
-    document.addEventListener("liff-wallet-summary-updated", onReload);
+    const onWalletSummary = (event: Event): void => {
+      const detail = (event as CustomEvent<{ points?: number }>).detail;
+      if (detail?.points != null && Number.isFinite(Number(detail.points))) {
+        const nextPoints = Number(detail.points);
+        setManagerPayload((prev) => {
+          if (prev === null || Number(prev.points) === nextPoints) {
+            return prev;
+          }
+          return { ...prev, points: nextPoints };
+        });
+      }
+      const manager = getMemberManager();
+      if (manager === undefined || typeof manager.fetchMemberContext !== "function") {
+        return;
+      }
+      void manager.fetchMemberContext({ force: true }).then((payload) => {
+        if (cancelled || payload === null || payload === undefined) {
+          return;
+        }
+        setManagerPayload({ ...payload });
+      });
+    };
+    document.addEventListener("liff-member-reload", onMemberReload);
+    document.addEventListener("liff-wallet-summary-updated", onWalletSummary);
     return () => {
       cancelled = true;
-      document.removeEventListener("liff-member-reload", onReload);
-      document.removeEventListener("liff-wallet-summary-updated", onReload);
+      document.removeEventListener("liff-member-reload", onMemberReload);
+      document.removeEventListener("liff-wallet-summary-updated", onWalletSummary);
     };
   }, [refresh]);
 
@@ -185,17 +221,37 @@ function LiveMembershipPage(): JSX.Element {
     [managerPayload, runtimeMember],
   );
 
-  if (booting || (mode !== "live" && !(mode === "offline" && !loading))) {
+  if (booting) {
     return <MembershipPageSkeleton />;
   }
 
   if (!member.isMember && mode === "live") {
+    const hasIdentity = Boolean(window.__LINE_USER_ID__);
     return (
-      <div className="page membership-page stack stack--lg">
+      <div
+        id="memberSection"
+        className="page membership-page stack stack--lg member-section member-card-mount"
+        data-react-owned="1"
+      >
         <Card padding="lg" className="feature-success">
-          <h1>会員登録</h1>
-          <p>会員登録すると会員証・ポイント・クーポンをご利用いただけます。</p>
-          <Button variant="solid" onClick={() => openRegister(false)}>会員登録する</Button>
+          <h1>{hasIdentity ? "会員登録" : "ログイン"}</h1>
+          <p>
+            {hasIdentity
+              ? "会員登録すると会員証・ポイント・クーポンをご利用いただけます。"
+              : "LINEでログインすると会員証をご利用いただけます。"}
+          </p>
+          <Button
+            variant="solid"
+            onClick={() => {
+              if (hasIdentity) {
+                document.dispatchEvent(new CustomEvent("liff-member-open-register", { detail: { forced: false } }));
+                return;
+              }
+              startLineLogin();
+            }}
+          >
+            {hasIdentity ? "会員登録する" : "LINEでログイン"}
+          </Button>
         </Card>
       </div>
     );
@@ -362,6 +418,30 @@ function PreviewMembershipPage() {
 
 export function MembershipPage() {
   const { activeStore } = useAppConfig();
+  const { mode } = useRuntimeData();
+  const [register, setRegister] = useState<{ open: boolean; forced: boolean }>({ open: false, forced: false });
+
+  useEffect(() => {
+    const onRegister = (event: Event): void => {
+      const detail = (event as CustomEvent<{ forced?: boolean }>).detail;
+      setRegister({
+        open: true,
+        forced: detail?.forced === true || getMemberRegistrationMode() === "force",
+      });
+    };
+    const onReload = (): void => {
+      const mm = getMemberManager();
+      if (mm === undefined || mm._registerFullScreen !== true) {
+        setRegister({ open: false, forced: false });
+      }
+    };
+    document.addEventListener("liff-member-open-register", onRegister);
+    document.addEventListener("liff-member-reload", onReload);
+    return () => {
+      document.removeEventListener("liff-member-open-register", onRegister);
+      document.removeEventListener("liff-member-reload", onReload);
+    };
+  }, []);
 
   if (activeStore.storeId === LANDING_SHOWCASE_STORE_ID) {
     return <LandingShowcaseMembership />;
@@ -370,9 +450,23 @@ export function MembershipPage() {
     return <SimpleRewardsMembership />;
   }
 
+  if (register.open) {
+    return (
+      <MembershipErrorBoundary>
+        <div
+          id="memberSection"
+          className="page membership-page member-section member-card-mount"
+          data-react-owned="1"
+        >
+          <MemberRegisterHost mode="register" forced={register.forced} />
+        </div>
+      </MembershipErrorBoundary>
+    );
+  }
+
   return (
     <MembershipErrorBoundary>
-      {isDesignMockPreview() ? <PreviewMembershipPage /> : <LiveMembershipPage />}
+      {shouldUsePreviewMembership(mode) ? <PreviewMembershipPage /> : <LiveMembershipPage />}
     </MembershipErrorBoundary>
   );
 }
