@@ -289,10 +289,12 @@ class MemberService
             'phone' => $user->phone,
             'email' => $user->email,
             'postal_code' => $member->postal_code ?? null,
-            'prefecture' => $member->prefecture ?? null,
-            'city' => $member->city ?? null,
-            'street' => $member->street ?? null,
-            'address' => $member->address,
+            'address' => $this->smaregiCustomerUpdatePayloadBuilder->composeAddress([
+                'address' => $member->address,
+                'prefecture' => $member->prefecture,
+                'city' => $member->city,
+                'street' => $member->street,
+            ]),
             'birthday' => $member->birthday ? $member->birthday->format('Y-m-d') : null,
             'sex' => $member->sex ?? null,
             'mail_receive_flag' => $member->mail_receive_flag ?? null,
@@ -372,7 +374,10 @@ class MemberService
             $contractId = $this->smaregiApi->getContractIdForProject($projectId);
             $contractId = is_string($contractId) ? trim($contractId) : '';
             if ($contractId !== '') {
-                $body = $this->smaregiCustomerUpdatePayloadBuilder->buildFromProfileData($data);
+                $body = $this->smaregiCustomerUpdatePayloadBuilder->buildFromProfileData(
+                    $data,
+                    $settings['custom_fields'] ?? [],
+                );
                 if ($body !== []) {
                     $this->smaregiApi->clearLastErrorDetail();
                     $result = $this->smaregiApi->updateCustomer($contractId, $smaregiCustomerId, $body);
@@ -515,7 +520,12 @@ class MemberService
         ?string $rankKey = null,
         ?int $projectId = null,
     ): array {
-        $body = $this->smaregiCustomerUpdatePayloadBuilder->buildFromProfileData($data);
+        $body = $this->smaregiCustomerUpdatePayloadBuilder->buildFromProfileData(
+            $data,
+            $projectId !== null
+                ? ($this->shopSettingRepository->getProfileFieldSettings($projectId)['custom_fields'] ?? [])
+                : [],
+        );
         $body['customerCode'] = Str::limit($memberNumber, 20, '');
         $body['entryDate'] = now()->format('Y-m-d');
         if ($smaregiRankId !== null && $smaregiRankId !== '' && $rankKey !== null && $projectId !== null) {

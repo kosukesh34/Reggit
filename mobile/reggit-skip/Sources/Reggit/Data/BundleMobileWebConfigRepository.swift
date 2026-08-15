@@ -51,7 +51,8 @@ struct BundleMobileWebConfigRepository: MobileWebConfigRepository {
         let normalized = normalizeValue(platformProjectKey) ?? normalizeValue(sharedProjectKey) ?? ""
         let allowed = CharacterSet(charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-")
         if normalized.isEmpty || normalized.rangeOfCharacter(from: allowed.inverted) != nil {
-            return ""
+            // Android の Bundle.infoDictionary はマニフェスト meta-data を返さないことがある。
+            return Self.fallbackProjectKey
         }
         return normalized
     }
@@ -98,12 +99,9 @@ struct BundleMobileWebConfigRepository: MobileWebConfigRepository {
     }
 
     private static let fallbackBaseUrlIOS = "https://reggit.jp"
+    private static let fallbackProjectKey = "sb_skt733n4"
 
     private func defaultBaseUrl() -> String {
-        #if os(Android)
-        return "http://10.0.2.2:8080"
-        #else
-        return Self.fallbackBaseUrlIOS
-        #endif
+        Self.fallbackBaseUrlIOS
     }
 }

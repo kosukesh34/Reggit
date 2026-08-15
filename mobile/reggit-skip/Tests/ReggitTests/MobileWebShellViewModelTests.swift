@@ -46,6 +46,7 @@ final class MobileWebShellViewModelTests: XCTestCase {
 
         viewModel.onAppear()
         whiteScreenMonitor.simulateContentVisible()
+        XCTAssertFalse(viewModel.showNativeTabBar)
         scriptExecutor.resetExecutedScripts()
 
         viewModel.selectTab("orders")

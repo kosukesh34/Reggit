@@ -7,6 +7,7 @@ use App\Domain\Order\Events\OrderPointsSyncRequested;
 use App\Domain\Order\Repositories\OrderRepository;
 use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
+use App\Enums\ProfileCustomFieldInputType;
 use App\Enums\SmaregiWebhookAction;
 use App\Models\Member;
 use Illuminate\Support\Facades\DB;
@@ -357,7 +358,7 @@ class SmaregiCustomerPointsInboundSyncService
 
     /**
      * @param  array<string, string|int|float|bool|array<string, string|int|float|bool|null>|null>  $customer
-     * @return array<string, string|null>
+     * @return array<string, string|array<string, string|list<string>|null>|null>
      */
     private function buildMemberUpdates(Member $member, array $customer): array
     {
@@ -381,8 +382,82 @@ class SmaregiCustomerPointsInboundSyncService
         if (array_key_exists('mailReceiveFlag', $customer)) {
             $updates['mail_receive_flag'] = $this->stringOrNull($customer['mailReceiveFlag']);
         }
+        $extraUpdates = $this->profileExtraFromRemoteCustomFields($member, $customer);
+        if ($extraUpdates !== []) {
+            $updates['profile_extra'] = $extraUpdates;
+        }
 
         return $updates;
+    }
+
+    /**
+     * @param  array<string, string|int|float|bool|array<string, string|int|float|bool|null>|null>  $customer
+     * @return array<string, string|list<string>|null>
+     */
+    private function profileExtraFromRemoteCustomFields(Member $member, array $customer): array
+    {
+        $remoteFields = $customer['customFields'] ?? null;
+        if (! is_array($remoteFields) || $remoteFields === []) {
+            return [];
+        }
+        $defs = $this->shopSettingRepository->getProfileFieldSettings((int) $member->project_id)['custom_fields'] ?? [];
+        $keyByNo = [];
+        $typeByKey = [];
+        foreach ($defs as $cf) {
+            if (! is_array($cf)) {
+                continue;
+            }
+            $no = (int) ($cf['smaregi_no'] ?? 0);
+            $key = (string) ($cf['key'] ?? '');
+            if ($no < 1 || $key === '') {
+                continue;
+            }
+            $keyByNo[$no] = $key;
+            $typeByKey[$key] = (string) ($cf['input_type'] ?? '');
+        }
+        if ($keyByNo === []) {
+            return [];
+        }
+        $extra = is_array($member->profile_extra) ? $member->profile_extra : [];
+        $changed = false;
+        foreach ($remoteFields as $field) {
+            if (! is_array($field)) {
+                continue;
+            }
+            $key = $keyByNo[(int) ($field['no'] ?? 0)] ?? '';
+            if ($key === '') {
+                continue;
+            }
+            $value = $this->fromSmaregiCustomFieldValue(
+                $this->stringOrNull($field['value'] ?? null),
+                $typeByKey[$key] ?? '',
+            );
+            if (($extra[$key] ?? null) === $value) {
+                continue;
+            }
+            $extra[$key] = $value;
+            $changed = true;
+        }
+
+        return $changed ? $extra : [];
+    }
+
+    /**
+     * @return string|list<string>|null
+     */
+    private function fromSmaregiCustomFieldValue(?string $value, string $inputType): string|array|null
+    {
+        if ($value === null) {
+            return null;
+        }
+        if ($inputType !== ProfileCustomFieldInputType::CHECKBOX) {
+            return $value;
+        }
+
+        return array_values(array_filter(
+            explode('、', $value),
+            static fn (string $part): bool => $part !== '',
+        ));
     }
 
     /**

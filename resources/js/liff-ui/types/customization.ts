@@ -26,7 +26,17 @@ export type PrimaryActionPlacement = "hero" | "belowHero" | "floating";
 export type HomeLayout = "standard" | "wallet" | "magazine" | "minimal";
 export type ButtonStyle = "filled" | "soft" | "outline";
 export type ContentDensity = "compact" | "standard" | "relaxed";
-export type HeaderShortcut = "news" | "membership" | "coupon" | "stamp" | "reservation" | "queue" | "mobileOrder" | "none";
+export type HeaderShortcut = "news" | "membership" | "profile" | "coupon" | "stamp" | "reservation" | "queue" | "mobileOrder" | "none";
+export type HeaderButtonMode = "shortcut" | "custom" | "none";
+export type HeaderButtonIcon = "bell" | "creditCard" | "userRound" | "ticket" | "stamp" | "calendarDays" | "qrCode" | "shoppingBag" | "menu" | "home" | "moreHorizontal";
+
+export interface HeaderRightButton {
+  mode: HeaderButtonMode;
+  shortcut: Exclude<HeaderShortcut, "none">;
+  label: string;
+  path: string;
+  icon: HeaderButtonIcon;
+}
 
 export interface AppCustomization {
   designPreset: DesignPreset;
@@ -62,6 +72,7 @@ export interface AppCustomization {
     showNotifications: boolean;
     showStoreTheme: boolean;
     shortcut: HeaderShortcut;
+    rightButton: HeaderRightButton;
   };
   coupon: {
     showStatusTabs: boolean;

@@ -64,6 +64,38 @@ class SmaregiCustomerUpdatePayloadBuilderTest extends TestCase
         $this->assertSame('0', $body['mailReceiveFlag']);
     }
 
+    public function test_任意項目はスマレジ自由項目として送ること(): void
+    {
+        $body = $this->builder->buildFromProfileData(
+            [
+                'nickname' => 'たろう',
+                'colors' => ['赤', '青'],
+            ],
+            [
+                ['key' => 'nickname', 'smaregi_no' => 1],
+                ['key' => 'colors', 'smaregi_no' => 2],
+            ],
+        );
+
+        $this->assertSame([
+            ['no' => 1, 'value' => 'たろう'],
+            ['no' => 2, 'value' => '赤、青'],
+        ], $body['customFields']);
+    }
+
+    public function test_profile_extraの任意項目もスマレジ自由項目として送ること(): void
+    {
+        $body = $this->builder->buildFromAdminMemberData(
+            ['name' => '山田 太郎'],
+            ['profile_extra' => ['company' => '株式会社レジット']],
+            [['key' => 'company', 'smaregi_no' => 4]],
+        );
+
+        $this->assertSame([
+            ['no' => 4, 'value' => '株式会社レジット'],
+        ], $body['customFields']);
+    }
+
     public function test_自由入力住所がある場合はそれを優先すること(): void
     {
         $body = $this->builder->buildFromProfileData([
