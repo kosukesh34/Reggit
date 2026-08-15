@@ -752,9 +752,13 @@ class MemberAdminService
         }
 
         $mergedUser = array_merge($user->only(['name', 'kana', 'email', 'phone']), $updateUser);
-        $body = $this->smaregiCustomerUpdatePayloadBuilder->buildFromAdminMemberData($mergedUser, $member->only([
-            'member_number', 'birthday', 'address', 'postal_code', 'prefecture', 'city', 'street', 'sex', 'mail_receive_flag',
-        ]));
+        $customFieldDefs = $this->shopSettingRepository->getProfileFieldSettings((int) $member->project_id)['custom_fields'] ?? [];
+        $body = $this->smaregiCustomerUpdatePayloadBuilder->buildFromAdminMemberData($mergedUser, array_merge(
+            $member->only([
+                'member_number', 'birthday', 'address', 'postal_code', 'prefecture', 'city', 'street', 'sex', 'mail_receive_flag',
+            ]),
+            ['profile_extra' => $member->profile_extra],
+        ), $customFieldDefs);
         if ($body === []) {
             return;
         }

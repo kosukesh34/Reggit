@@ -60,10 +60,8 @@
         .header { display: block !important; visibility: visible !important; background: #000 !important; color: #fff !important; flex-shrink: 0 !important; }
         .main-content { visibility: visible !important; flex: 1 1 auto !important; min-height: 0 !important; overflow: hidden !important; display: flex !important; flex-direction: column !important; }
         #react-frontend-tabs-root { display: flex !important; flex-direction: column !important; flex: 1 1 auto !important; min-height: 0 !important; height: 100% !important; max-height: 100% !important; overflow: hidden !important; width: 100% !important; box-sizing: border-box !important; }
-        .main-tabs { display: none !important; visibility: hidden !important; height: 0 !important; overflow: hidden !important; pointer-events: none !important; }
         .tab-content.active { display: flex !important; flex-direction: column !important; flex: 1 1 auto !important; min-height: 0 !important; overflow-y: auto !important; overflow-x: hidden !important; -webkit-overflow-scrolling: touch !important; touch-action: pan-y !important; }
         .tab-content.active .tab-section { flex: 1 1 auto !important; min-height: 0 !important; height: auto !important; max-height: none !important; overflow-y: auto !important; overflow-x: hidden !important; -webkit-overflow-scrolling: touch !important; touch-action: pan-y !important; background: #fff !important; padding-bottom: 16px !important; box-sizing: border-box !important; }
-        .main-content { padding-bottom: 0 !important; }
     </style>
 </head>
 <body class="native-app-embed reggit-liff-ui {{ $isFixedUi ? 'liff-fixed-ui' : '' }} {{ $isDemoData ? 'liff-demo-data' : '' }} {{ $isDesignerEmbedPreview ? 'designer-live-preview-embed' : '' }} {{ implode(' ', $themeBodyClasses) }}">
@@ -85,9 +83,8 @@
             s.id = 'native-app-hide-loading';
             s.textContent = 'html.native-app-embed #liff-loading { display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; }' +
                 'html.native-app-embed .app-container { display: flex !important; visibility: visible !important; min-height: 100vh !important; background: #fff !important; overflow: hidden !important; }' +
-                'html.native-app-embed .main-content { min-height: 0 !important; overflow: hidden !important; padding-bottom: 0 !important; }' +
-                'html.native-app-embed .header { display: block !important; visibility: visible !important; }' +
-                'html.native-app-embed .main-tabs { display: none !important; visibility: hidden !important; height: 0 !important; pointer-events: none !important; }';
+                'html.native-app-embed .main-content { min-height: 0 !important; overflow: hidden !important; }' +
+                'html.native-app-embed .header { display: block !important; visibility: visible !important; }';
             (document.head || document.documentElement).appendChild(s);
         })();
         document.addEventListener('DOMContentLoaded', function() {

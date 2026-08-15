@@ -100,6 +100,9 @@ export function MemberView(): JSX.Element {
             const forced = detail?.forced === true || getMemberRegistrationMode() === 'force';
             setView({ kind: 'register', forced });
         };
+        const onView = (): void => {
+            void reload();
+        };
         const onEdit = (): void => {
             setView({ kind: 'edit' });
         };
@@ -107,11 +110,13 @@ export function MemberView(): JSX.Element {
             void reload();
         };
         document.addEventListener('liff-member-open-register', onRegister);
+        document.addEventListener('liff-member-open-view', onView);
         document.addEventListener('liff-member-open-edit', onEdit);
         document.addEventListener('liff-member-reload', onReload);
         document.addEventListener('liff-ready', onReload);
         return () => {
             document.removeEventListener('liff-member-open-register', onRegister);
+            document.removeEventListener('liff-member-open-view', onView);
             document.removeEventListener('liff-member-open-edit', onEdit);
             document.removeEventListener('liff-member-reload', onReload);
             document.removeEventListener('liff-ready', onReload);
