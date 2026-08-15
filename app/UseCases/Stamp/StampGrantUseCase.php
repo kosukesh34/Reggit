@@ -2,6 +2,7 @@
 
 namespace App\UseCases\Stamp;
 
+use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Enums\StampCycleMode;
 use App\Enums\StampGrantLimit;
 use App\Models\StampCard;
@@ -16,10 +17,14 @@ class StampGrantUseCase
     public function __construct(
         private MemberAdminService $memberAdminService,
         private StampGrantOutcomeMapper $outcomeMapper,
+        private ShopSettingRepository $shopSettingRepository,
     ) {}
 
     public function handle(StampGrantInput $input): StampGrantOutput
     {
+        if ($this->shopSettingRepository->getUseStamps($input->projectId) !== true) {
+            return new StampGrantOutput(false, 403, 'スタンプ機能は利用できません');
+        }
         $card = StampCard::query()
             ->where('project_id', $input->projectId)
             ->where('is_active', true)

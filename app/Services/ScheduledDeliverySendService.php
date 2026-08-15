@@ -105,10 +105,10 @@ class ScheduledDeliverySendService
             }
             $this->issueCoupon($delivery, $member, $now, $delivery->shouldSendNotification());
         } else {
-            $this->sendAnnouncement($delivery, $member);
             if ($delivery->coupon_id !== null) {
-                $this->issueCoupon($delivery, $member, $now, true);
+                $this->issueCoupon($delivery, $member, $now, false);
             }
+            $this->sendAnnouncement($delivery, $member);
         }
 
         ScheduledDeliverySend::query()->create([

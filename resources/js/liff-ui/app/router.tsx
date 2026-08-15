@@ -1,5 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode, useCallback, useRef, useState } from "react";
 import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
+import { LoginPromptPopup } from "../components/membership/LoginPromptPopup";
 import { AppShell } from "../components/layout/AppShell";
 import { HomePage } from "../pages/HomePage";
 import { MembershipPage } from "../pages/MembershipPage";
@@ -122,6 +123,7 @@ export function AppRouter() {
   return (
     <AppShell gateSettled={gateSettled}>
       <MembershipGate onSettled={() => setGateSettled(true)} />
+      <LoginPromptPopup />
       <ScreenRoutes />
     </AppShell>
   );

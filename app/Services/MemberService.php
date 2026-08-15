@@ -4,13 +4,13 @@ namespace App\Services;
 
 use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Enums\MemberNotificationPreference;
+use App\Enums\MemberRegistrationMode;
 use App\Enums\MemberStatus;
 use App\Enums\ProfileCustomFieldInputType;
 use App\Enums\ScheduledDeliveryType;
 use App\Jobs\SendAfterRegistrationJob;
 use App\Models\AfterRegistrationDelivery;
 use App\Models\Member;
-use App\Models\MemberRankHistory;
 use App\Models\PointTransaction;
 use App\Models\User;
 use App\Rules\ProfileValidationRules;
@@ -18,7 +18,7 @@ use App\Services\Smaregi\SmaregiApiService;
 use App\Services\Smaregi\SmaregiCustomerPointsInboundSyncService;
 use App\Services\Smaregi\SmaregiCustomerRankAssignmentService;
 use App\Services\Smaregi\SmaregiCustomerUpdatePayloadBuilder;
-use App\UseCases\Coupon\IssueCouponOnRankUpUseCase;
+use App\Support\MemberChannel;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
 use Illuminate\Support\Facades\Cache;
@@ -36,8 +36,7 @@ class MemberService
         private SmaregiCustomerRankAssignmentService $smaregiCustomerRankAssignmentService,
         private MemberRankCalculator $rankCalculator,
         private ShopSettingRepository $shopSettingRepository,
-        private IssueCouponOnRankUpUseCase $issueCouponOnRankUpUseCase,
-        private ScheduledDeliverySendService $scheduledDeliverySendService,
+        private MemberRankSyncService $memberRankSyncService,
     ) {}
 
     public function getMemberData(User $user): array
@@ -62,7 +61,7 @@ class MemberService
         $this->maybeSyncMemberPointsFromSmaregi($member);
         $member->refresh();
         $member->syncPointsLedger();
-        $this->syncMemberRank($member);
+        $this->memberRankSyncService->sync($member);
         $member->refresh();
 
         $rankInfo = $this->getRankInfo($member);
@@ -91,7 +90,8 @@ class MemberService
             'rank_basis' => $rankInfo['rank_basis'],
             'rank_metric' => $rankInfo['rank_metric'],
             'points_expiry' => $expiryInfo,
-            'show_points_display' => $this->shopSettingRepository->getShowPointsDisplay($projectId),
+            'show_points_display' => $this->shopSettingRepository->getShowPointsDisplay($projectId)
+                && $this->shopSettingRepository->getUsePoints($projectId),
             'show_rank_progress' => $this->shopSettingRepository->getShowRankProgress($projectId),
             'member_registration_mode' => $this->shopSettingRepository->getMemberRegistrationMode($projectId),
             'member_card_design' => $this->shopSettingRepository->getMemberCardDesign($projectId),
@@ -99,7 +99,46 @@ class MemberService
             'member_card_display_type' => $this->shopSettingRepository->getMemberCardDisplayType($projectId),
             'member_card_code_type' => $this->shopSettingRepository->getMemberCardCodeType($projectId),
             'rank_up_history' => $this->buildRankUpHistory($member),
+            'days_to_next_rank' => $rankInfo['days_to_next_rank'] ?? null,
+            'days_required_for_next_rank' => $rankInfo['days_required_for_next_rank'] ?? null,
+            'rank_aggregation_type' => $rankInfo['rank_aggregation_type'] ?? 'total',
         ];
+    }
+
+    public function ensureMemberWhenRegistrationOptional(User $user): void
+    {
+        if ($user->member !== null) {
+            return;
+        }
+        $lineUserId = is_string($user->line_user_id) ? trim($user->line_user_id) : '';
+        if ($lineUserId === '' || ! MemberChannel::isValidLineUserId($lineUserId)) {
+            return;
+        }
+        $projectId = AdminContext::resolveProjectId($user->project_id !== null ? (int) $user->project_id : null);
+        if (! MemberRegistrationMode::shouldAutoCreateMember(
+            $this->shopSettingRepository->getMemberRegistrationMode($projectId)
+        )) {
+            return;
+        }
+        $payload = [];
+        $lineName = is_string($user->line_name) ? trim($user->line_name) : '';
+        if ($lineName !== '') {
+            $payload['line_name'] = $lineName;
+        }
+        try {
+            $this->registerMember($user, $payload);
+        } catch (\Exception $e) {
+            if ($e->getMessage() !== '既に会員登録済みです') {
+                LogHelper::warning('[Member] auto create on login failed', [
+                    'user_id' => (int) $user->id,
+                    'error' => $e->getMessage(),
+                ]);
+
+                return;
+            }
+        }
+        $user->unsetRelation('member');
+        $user->load('member');
     }
 
     /**
@@ -540,58 +579,6 @@ class MemberService
         }
 
         return $this->smaregiCustomerUpdatePayloadBuilder->withRegisterNamePlaceholders($body);
-    }
-
-    private function syncMemberRank(Member $member): void
-    {
-        $previousRank = (string) ($member->rank ?? '');
-        $rankInfo = $this->getRankInfo($member);
-        $newRank = (string) ($rankInfo['current_rank'] ?? '');
-        if ($newRank !== '' && $newRank !== $previousRank) {
-            $member->update(['rank' => $newRank]);
-            $this->recordRankHistory(
-                $member,
-                $previousRank,
-                $newRank,
-                $this->resolveRankLabel((int) $member->project_id, $previousRank),
-                (string) ($rankInfo['current_rank_label'] ?? $newRank),
-            );
-            $this->issueCouponOnRankUpUseCase->handle($member->fresh() ?? $member, $previousRank, $newRank);
-            $this->scheduledDeliverySendService->sendRankUpArrival($member->fresh() ?? $member, $newRank);
-            $this->smaregiCustomerRankAssignmentService->assignRankToCustomer($member, $newRank);
-        }
-    }
-
-    private function recordRankHistory(
-        Member $member,
-        string $fromRank,
-        string $toRank,
-        string $fromLabel,
-        string $toLabel,
-    ): void {
-        MemberRankHistory::create([
-            'project_id' => (int) $member->project_id,
-            'member_id' => (int) $member->id,
-            'from_rank' => $fromRank !== '' ? $fromRank : null,
-            'to_rank' => $toRank,
-            'from_rank_label' => $fromRank !== '' ? $fromLabel : null,
-            'to_rank_label' => $toLabel,
-            'achieved_at' => now(),
-        ]);
-    }
-
-    private function resolveRankLabel(int $projectId, string $rankKey): string
-    {
-        if ($rankKey === '') {
-            return '—';
-        }
-        foreach ($this->shopSettingRepository->getMemberRankSettings($projectId) as $rank) {
-            if ((string) ($rank['key'] ?? '') === $rankKey) {
-                return (string) ($rank['label'] ?? $rankKey);
-            }
-        }
-
-        return $rankKey;
     }
 
     private function getRankInfo(Member $member): array

@@ -84,13 +84,47 @@ function FieldHint({ description }: { description?: string }): JSX.Element | nul
     return <p className="member-form-field-hint">{description}</p>;
 }
 
-function resolveNotificationPreferenceOptions(): Array<{ value: string; label: string; note: string }> {
-    const isNativeApp = typeof window !== 'undefined' && window.__MOBILE_APP_MODE__ === true;
-    const channelLabel = isNativeApp ? 'Push通知' : 'LINE通知';
+function ChoiceSelect({
+    id,
+    name,
+    label,
+    required,
+    defaultValue,
+    options,
+    includeBlank = true,
+    description,
+}: {
+    id: string;
+    name: string;
+    label: string;
+    required?: boolean;
+    defaultValue: string;
+    options: Array<{ value: string; label: string }>;
+    includeBlank?: boolean;
+    description?: string;
+}): JSX.Element {
+    return (
+        <div className="member-form-group">
+            <label htmlFor={id}>
+                {label}
+                <RequiredMark required={required} />
+            </label>
+            <select id={id} name={name} defaultValue={defaultValue} required={required}>
+                {includeBlank ? <option value="">未選択</option> : null}
+                {options.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+            </select>
+            <FieldHint description={description} />
+        </div>
+    );
+}
+
+function resolveNotificationPreferenceOptions(): Array<{ value: string; label: string }> {
     return [
-        { value: 'all', label: 'すべて受け取る', note: `新着情報とクーポンを${channelLabel}で受け取る` },
-        { value: 'coupon_only', label: 'クーポン情報のみ', note: `クーポン配信だけ${channelLabel}で受け取る` },
-        { value: 'none', label: '受け取らない', note: `${channelLabel}を受け取らない` },
+        { value: 'all', label: 'すべて受け取る' },
+        { value: 'coupon_only', label: 'クーポン情報のみ' },
+        { value: 'none', label: '受け取らない' },
     ];
 }
 
@@ -207,31 +241,21 @@ function ProfileFieldRows({
         }
 
         if (key === 'sex') {
-            const checked0 = !val || val === '0';
             rowNodes.push({
                 key,
                 isAddress: false,
                 node: (
-                    <fieldset className="member-form-group member-form-group--choice" key={key}>
-                        <legend className="member-form-group-label">
-                            {label}
-                            <RequiredMark required={required} />
-                        </legend>
-                        <div className="member-form-segment member-form-segment--cols-3" role="radiogroup" aria-label={label}>
-                            <label className="member-form-segment-btn">
-                                <input type="radio" id={`${id}_1`} name="sex" value="1" defaultChecked={val === '1'} required={required} />
-                                <span className="member-form-segment-btn-text">男性</span>
-                            </label>
-                            <label className="member-form-segment-btn">
-                                <input type="radio" id={`${id}_2`} name="sex" value="2" defaultChecked={val === '2'} required={required} />
-                                <span className="member-form-segment-btn-text">女性</span>
-                            </label>
-                            <label className="member-form-segment-btn">
-                                <input type="radio" id={`${id}_0`} name="sex" value="" defaultChecked={checked0} />
-                                <span className="member-form-segment-btn-text">未選択</span>
-                            </label>
-                        </div>
-                    </fieldset>
+                    <ChoiceSelect
+                        id={id}
+                        name="sex"
+                        label={label}
+                        required={required}
+                        defaultValue={val === '0' ? '' : val}
+                        options={[
+                            { value: '1', label: '男性' },
+                            { value: '2', label: '女性' },
+                        ]}
+                    />
                 ),
             });
             return;
@@ -242,109 +266,59 @@ function ProfileFieldRows({
                 key,
                 isAddress: false,
                 node: (
-                    <fieldset className="member-form-group member-form-group--choice" key={key}>
-                        <legend className="member-form-group-label">
-                            {label}
-                            <RequiredMark required={required} />
-                        </legend>
-                        <div className="member-form-segment member-form-segment--cols-2" role="radiogroup" aria-label={label}>
-                            <label className="member-form-segment-btn">
-                                <input type="radio" id={`${id}_1`} name="mail_receive_flag" value="1" defaultChecked={val === '1'} required={required} />
-                                <span className="member-form-segment-btn-text">許可する</span>
-                            </label>
-                            <label className="member-form-segment-btn">
-                                <input type="radio" id={`${id}_0`} name="mail_receive_flag" value="0" defaultChecked={val === '0'} required={required} />
-                                <span className="member-form-segment-btn-text">許可しない</span>
-                            </label>
-                        </div>
-                    </fieldset>
+                    <ChoiceSelect
+                        id={id}
+                        name="mail_receive_flag"
+                        label={label}
+                        required={required}
+                        defaultValue={val}
+                        options={[
+                            { value: '1', label: '許可する' },
+                            { value: '0', label: '許可しない' },
+                        ]}
+                    />
                 ),
             });
             return;
         }
 
         if (key === 'notification_preference') {
-            const preference = val || 'all';
             const options = resolveNotificationPreferenceOptions();
+            const isNativeApp = typeof window !== 'undefined' && window.__MOBILE_APP_MODE__ === true;
+            const channelLabel = isNativeApp ? 'Push通知' : 'LINE通知';
             rowNodes.push({
                 key,
                 isAddress: false,
                 node: (
-                    <fieldset className="member-form-group member-form-group--choice" key={key}>
-                        <legend className="member-form-group-label">
-                            {label}
-                            <RequiredMark required={required} />
-                        </legend>
-                        <div className="member-form-notification-options" role="radiogroup" aria-label={label}>
-                            {options.map((option) => (
-                                <label className="member-form-notification-option" key={option.value}>
-                                    <input
-                                        type="radio"
-                                        name="notification_preference"
-                                        value={option.value}
-                                        defaultChecked={preference === option.value}
-                                        required
-                                    />
-                                    <span><strong>{option.label}</strong><small>{option.note}</small></span>
-                                </label>
-                            ))}
-                        </div>
-                    </fieldset>
+                    <ChoiceSelect
+                        id={id}
+                        name="notification_preference"
+                        label={label}
+                        required
+                        defaultValue={val || 'all'}
+                        includeBlank={false}
+                        options={options}
+                        description={`${channelLabel}の受け取り範囲を選べます`}
+                    />
                 ),
             });
             return;
         }
 
-        if (inputType === 'radio' && values.length > 0) {
+        if ((inputType === 'radio' || inputType === 'selectbox') && values.length > 0) {
             rowNodes.push({
                 key,
                 isAddress: false,
                 node: (
-                    <fieldset className="member-form-group member-form-group--choice" key={key}>
-                        <legend className="member-form-group-label">
-                            {label}
-                            <RequiredMark required={required} />
-                        </legend>
-                        <div className="member-form-segment" role="radiogroup" aria-label={label}>
-                            {values.map((optionVal, optionIndex) => (
-                                <label className="member-form-segment-btn" key={`${key}_${optionIndex}`}>
-                                    <input
-                                        type="radio"
-                                        id={`${id}_${optionIndex}`}
-                                        name={key}
-                                        value={optionVal}
-                                        defaultChecked={val === optionVal}
-                                        required={required}
-                                    />
-                                    <span className="member-form-segment-btn-text">{optionVal}</span>
-                                </label>
-                            ))}
-                        </div>
-                        <FieldHint description={f.description} />
-                    </fieldset>
-                ),
-            });
-            return;
-        }
-
-        if (inputType === 'selectbox' && values.length > 0) {
-            rowNodes.push({
-                key,
-                isAddress: false,
-                node: (
-                    <div className="member-form-group" key={key}>
-                        <label htmlFor={id}>
-                            {label}
-                            <RequiredMark required={required} />
-                        </label>
-                        <select id={id} name={key} defaultValue={val} required={required}>
-                            <option value="">未選択</option>
-                            {values.map((optionVal) => (
-                                <option key={optionVal} value={optionVal}>{optionVal}</option>
-                            ))}
-                        </select>
-                        <FieldHint description={f.description} />
-                    </div>
+                    <ChoiceSelect
+                        id={id}
+                        name={key}
+                        label={label}
+                        required={required}
+                        defaultValue={val}
+                        options={values.map((optionVal) => ({ value: optionVal, label: optionVal }))}
+                        description={f.description}
+                    />
                 ),
             });
             return;

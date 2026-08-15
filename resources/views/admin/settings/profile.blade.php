@@ -28,12 +28,14 @@
             <h2 class="card-title">未会員時の扱い</h2>
         </div>
         <div class="card-body">
-            @foreach($modeOptions as $value => $label)
-            <label class="radio-label d-block mb-2">
-                <input type="radio" name="member_registration_mode" value="{{ $value }}" {{ $memberRegistrationMode === $value ? 'checked' : '' }} required>
-                <span>{{ $label }}</span>
-            </label>
-            @endforeach
+            <div class="form-group mb-0">
+                <label for="member_registration_mode" class="form-label">未会員でアプリを開いたとき</label>
+                <select name="member_registration_mode" id="member_registration_mode" class="form-control" required>
+                    @foreach($modeOptions as $value => $label)
+                        <option value="{{ $value }}" {{ $memberRegistrationMode === $value ? 'selected' : '' }}>{{ $label }}</option>
+                    @endforeach
+                </select>
+            </div>
         </div>
     </div>
 
@@ -172,6 +174,7 @@
                     <label class="profile-switch profile-switch--required" for="customFieldModalRequired">
                         <input type="checkbox" id="customFieldModalRequired" value="1">
                         <span aria-hidden="true"></span>
+                        <span class="profile-switch-label">必須にする</span>
                     </label>
                 </div>
                 <div class="form-group mb-0" id="customFieldModalValuesWrap">
@@ -325,6 +328,12 @@
         }
         .profile-switch--required {
             min-width: 44px;
+            gap: 10px;
+        }
+        .profile-switch-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #334155;
         }
     </style>
 
