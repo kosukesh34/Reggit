@@ -18,7 +18,7 @@ class AdminCouponBulkIssueUseCase
     ) {}
 
     /**
-     * @param  array<string, mixed>  $validated
+     * @param  array<string, string|string[]|int|bool|null>  $validated
      * @return array{issued: int, scheduled: bool, message: string}
      */
     public function handle(int $projectId, int $couponId, array $validated): array
@@ -29,6 +29,7 @@ class AdminCouponBulkIssueUseCase
 
         $deliveryType = (string) ($validated['delivery_type'] ?? CouponDeliveryType::IMMEDIATE_ALL);
         $resolved = $this->targetService->resolve($projectId, $deliveryType, $validated);
+        $sendNotification = $this->shouldSendNotification($validated);
 
         if ($resolved['error'] !== null) {
             throw new \InvalidArgumentException($resolved['error']);
@@ -52,6 +53,7 @@ class AdminCouponBulkIssueUseCase
                 'issued_member_ids' => null,
                 'segment_criteria' => $resolved['segment_criteria'],
                 'issued_count' => 0,
+                'send_notification' => $sendNotification,
             ]);
 
             return [
@@ -76,6 +78,7 @@ class AdminCouponBulkIssueUseCase
                 'scheduled_at' => $scheduledAt,
                 'target_member_ids' => $this->normalizeMemberIds($memberIds),
                 'segment_criteria' => $resolved['segment_criteria'],
+                'send_notification' => $sendNotification,
             ]);
 
             $count = $this->targetService->countTargets($projectId, $deliveryType, $validated);
@@ -92,7 +95,14 @@ class AdminCouponBulkIssueUseCase
             throw new \InvalidArgumentException('配布対象の会員がいません');
         }
 
-        $result = $this->memberAdminService->issueCouponToMembers($projectId, $couponId, $memberIds);
+        $result = $this->memberAdminService->issueCouponToMembers(
+            $projectId,
+            $couponId,
+            $memberIds,
+            null,
+            null,
+            $sendNotification,
+        );
 
         CouponDelivery::create([
             'project_id' => $projectId,
@@ -104,6 +114,7 @@ class AdminCouponBulkIssueUseCase
             'issued_member_ids' => $this->normalizeMemberIds($result['member_ids']),
             'segment_criteria' => $resolved['segment_criteria'],
             'issued_count' => $result['count'],
+            'send_notification' => $sendNotification,
         ]);
 
         return [
@@ -125,5 +136,18 @@ class AdminCouponBulkIssueUseCase
         ));
 
         return $normalized === [] ? null : $normalized;
+    }
+
+    /**
+     * @param  array<string, string|string[]|int|bool|null>  $validated
+     */
+    private function shouldSendNotification(array $validated): bool
+    {
+        if (! array_key_exists('send_notification', $validated)) {
+            return true;
+        }
+        $value = $validated['send_notification'];
+
+        return $value === true || $value === 1 || $value === '1';
     }
 }

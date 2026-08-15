@@ -69,9 +69,7 @@ class CouponDeliveryTargetService
         }
 
         if (in_array($deliveryType, CouponDeliveryType::attributeSegmentValues(), true) && $memberIds === []) {
-            $attributeParams = $params;
-            unset($attributeParams['segment_condition'], $attributeParams['segment_period_days'], $attributeParams['segment_min_amount']);
-            $criteria = $this->memberSegmentService->buildCriteriaFromInput($attributeParams);
+            $criteria = $this->memberSegmentService->buildCriteriaFromInput($params);
             if ($criteria === null) {
                 return ['member_ids' => [], 'segment_criteria' => null, 'error' => '属性絞り込みでは1つ以上の条件を指定してください'];
             }
@@ -84,9 +82,7 @@ class CouponDeliveryTargetService
         );
 
         if (in_array($deliveryType, CouponDeliveryType::attributeSegmentValues(), true)) {
-            $attributeParams = $params;
-            unset($attributeParams['segment_condition'], $attributeParams['segment_period_days'], $attributeParams['segment_min_amount']);
-            $segmentCriteria = $this->memberSegmentService->buildCriteriaFromInput($attributeParams);
+            $segmentCriteria = $this->memberSegmentService->buildCriteriaFromInput($params);
         }
 
         if (CouponDeliveryType::isEventRankUpArrival($deliveryType)) {
@@ -105,10 +101,7 @@ class CouponDeliveryTargetService
      */
     private function resolveAttributeSegmentMemberIds(int $projectId, array $params): array
     {
-        $attributeParams = $params;
-        unset($attributeParams['segment_condition'], $attributeParams['segment_period_days'], $attributeParams['segment_min_amount']);
-
-        $criteria = $this->memberSegmentService->buildCriteriaFromInput($attributeParams);
+        $criteria = $this->memberSegmentService->buildCriteriaFromInput($params);
         if ($criteria === null) {
             return [];
         }
@@ -360,6 +353,9 @@ class CouponDeliveryTargetService
                 if (array_key_exists($from, $criteria)) {
                     $params[$to] = $criteria[$from];
                 }
+            }
+            if (isset($criteria['rfm_segments']) && is_array($criteria['rfm_segments'])) {
+                $params['segment_rfm_segments'] = $criteria['rfm_segments'];
             }
             if (($criteria['stamp_completed'] ?? false) === true) {
                 $params['segment_stamp_completed'] = '1';

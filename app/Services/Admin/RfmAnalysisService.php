@@ -2,7 +2,9 @@
 
 namespace App\Services\Admin;
 
+use App\Enums\MemberStatus;
 use App\Enums\OrderStatus;
+use App\Enums\RfmSegment;
 use App\Models\Member;
 use App\Models\Order;
 use App\Util\DateUtil;
@@ -32,7 +34,7 @@ class RfmAnalysisService
     {
         $members = Member::with('user:id,name')
             ->where('project_id', $projectId)
-            ->where('status', 'active')
+            ->where('status', MemberStatus::ACTIVE)
             ->get(['id', 'user_id', 'member_number']);
 
         if ($members->isEmpty()) {
@@ -56,9 +58,46 @@ class RfmAnalysisService
                 'frequency' => $frequency,
                 'monetary' => $monetary,
                 'segment' => $segment,
-                'segment_label' => $this->segmentLabel($segment),
+                'segment_label' => RfmSegment::getLabel($segment),
             ];
         });
+    }
+
+    /**
+     * 指定RFMセグメントのいずれかに属する会員IDを返す。
+     *
+     * @param  list<string>  $segments
+     * @return list<int>
+     */
+    public function findMemberIdsBySegments(int $projectId, array $segments): array
+    {
+        $wanted = array_values(array_intersect($segments, RfmSegment::keys()));
+        if ($wanted === []) {
+            return [];
+        }
+
+        return $this->analyzeByProject($projectId)
+            ->filter(fn (array $row): bool => in_array($row['segment'], $wanted, true))
+            ->pluck('member_id')
+            ->map(fn ($id): int => (int) $id)
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return array<string, array{label: string, color: string}>
+     */
+    public function segmentOptions(): array
+    {
+        $options = [];
+        foreach (RfmSegment::keys() as $key) {
+            $options[$key] = [
+                'label' => RfmSegment::getLabel($key),
+                'color' => $this->segmentColor($key),
+            ];
+        }
+
+        return $options;
     }
 
     /**
@@ -114,47 +153,38 @@ class RfmAnalysisService
     private function resolveSegment(?int $recencyDays, int $frequency, float $monetary): string
     {
         if ($recencyDays === null) {
-            return 'never';
+            return RfmSegment::NEVER;
         }
         if ($recencyDays <= self::RECENCY_ACTIVE_DAYS && $frequency >= self::FREQUENCY_HIGH && $monetary >= self::MONETARY_HIGH) {
-            return 'champion';
+            return RfmSegment::CHAMPION;
         }
         if ($recencyDays <= self::RECENCY_ACTIVE_DAYS && $frequency >= self::FREQUENCY_HIGH) {
-            return 'loyal';
+            return RfmSegment::LOYAL;
         }
         if ($recencyDays <= self::RECENCY_ACTIVE_DAYS) {
-            return 'active';
+            return RfmSegment::ACTIVE;
         }
         if ($recencyDays <= self::RECENCY_SLEEPING_DAYS) {
-            return 'at_risk';
+            return RfmSegment::AT_RISK;
         }
 
-        return 'dormant';
+        return RfmSegment::DORMANT;
     }
 
     public function segmentLabel(string $segment): string
     {
-        $map = [
-            'champion' => '優良顧客',
-            'loyal' => 'ロイヤル顧客',
-            'active' => 'アクティブ',
-            'at_risk' => '離反リスク',
-            'dormant' => '休眠顧客',
-            'never' => '未購買',
-        ];
-
-        return $map[$segment] ?? $segment;
+        return RfmSegment::getLabel($segment);
     }
 
     public function segmentColor(string $segment): string
     {
         $map = [
-            'champion' => '#059669',
-            'loyal' => '#0891b2',
-            'active' => '#16a34a',
-            'at_risk' => '#ca8a04',
-            'dormant' => '#dc2626',
-            'never' => '#78716c',
+            RfmSegment::CHAMPION => '#059669',
+            RfmSegment::LOYAL => '#0891b2',
+            RfmSegment::ACTIVE => '#16a34a',
+            RfmSegment::AT_RISK => '#ca8a04',
+            RfmSegment::DORMANT => '#dc2626',
+            RfmSegment::NEVER => '#78716c',
         ];
 
         return $map[$segment] ?? '#6b7280';

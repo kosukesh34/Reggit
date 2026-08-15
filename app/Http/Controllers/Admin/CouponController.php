@@ -9,6 +9,8 @@ use App\Http\Requests\Admin\CouponStoreRequest;
 use App\Http\Requests\Admin\CouponUpdateRequest;
 use App\Services\Admin\PublicImageStorageService;
 use App\UseCases\Admin\AdminSavePublicImageUseCase;
+use App\UseCases\Admin\Announcement\AdminAnnouncementAudiencePreviewUseCase;
+use App\UseCases\Admin\Announcement\AdminAnnouncementSegmentPreviewUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponBulkIssueFormUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponBulkIssueUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponDeleteUseCase;
@@ -24,6 +26,7 @@ use App\UseCases\Admin\Coupon\AdminCouponStoreUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponSyncFromSmaregiUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponUpdateUseCase;
 use App\UseCases\Admin\Member\AdminMemberSearchByKeywordUseCase;
+use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 
 class CouponController extends AdminBaseController
@@ -45,6 +48,8 @@ class CouponController extends AdminBaseController
         private AdminCouponDeliveryDetailUseCase $deliveryDetailUseCase,
         private AdminMemberSearchByKeywordUseCase $searchMembersUseCase,
         private AdminCouponRedemptionsUseCase $redemptionsUseCase,
+        private AdminAnnouncementSegmentPreviewUseCase $segmentPreviewUseCase,
+        private AdminAnnouncementAudiencePreviewUseCase $audiencePreviewUseCase,
     ) {}
 
     public function coupons()
@@ -52,7 +57,10 @@ class CouponController extends AdminBaseController
         $projectId = $this->resolveAdminProjectId();
         $output = $this->indexUseCase->handle($projectId);
 
-        return view('admin.coupons.index', ['coupons' => $output->coupons]);
+        return view('admin.coupons.index', [
+            'coupons' => $output->coupons,
+            'deliveryHistories' => $output->deliveryHistories,
+        ]);
     }
 
     public function createCoupon()
@@ -261,17 +269,40 @@ class CouponController extends AdminBaseController
                 ->with('error', $e->getMessage());
         }
 
-        return redirect()->route('admin.coupons.bulk-issue', $this->buildAdminRouteParams())
+        return redirect()->route('admin.coupons', $this->buildAdminRouteParams())
             ->with('success', $result['message']);
     }
 
-    public function searchMembers()
+    public function searchMembers(Request $request)
     {
-        $projectId = $this->resolveAdminProjectId();
-        $keyword = (string) request()->query('q', '');
-        $results = $this->searchMembersUseCase->handle($projectId, $keyword);
+        $members = $this->searchMembersUseCase->handle(
+            $this->resolveAdminProjectId(),
+            (string) $request->query('q', ''),
+        );
 
-        return response()->json($results);
+        return response()->json(['data' => $members]);
+    }
+
+    public function segmentPreview(Request $request)
+    {
+        $count = $this->segmentPreviewUseCase->handle(
+            $this->resolveAdminProjectId(),
+            $request->query(),
+        );
+
+        return response()->json(['count' => $count]);
+    }
+
+    public function audiencePreview(Request $request)
+    {
+        $query = $request->query();
+        if (! isset($query['delivery_coupon_id']) && $request->filled('coupon_id')) {
+            $query['delivery_coupon_id'] = $request->query('coupon_id');
+        }
+
+        return response()->json(
+            $this->audiencePreviewUseCase->handle($this->resolveAdminProjectId(), $query),
+        );
     }
 
     public function deliveryPreview()
@@ -330,6 +361,9 @@ class CouponController extends AdminBaseController
             'segment_stamp_card_id',
             'segment_stamp_count_min',
             'segment_stamp_completed',
+            'segment_rfm_segments',
+            'segment_tag_ids',
+            'segment_birthday_months',
             'birthday_month',
             'new_member_days',
             'inactive_days',
