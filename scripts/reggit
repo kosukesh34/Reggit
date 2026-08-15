@@ -722,6 +722,21 @@ else
   { crontab -l 2>/dev/null || true; echo "\$CRON_LINE"; } | crontab -
   echo "crontab: added artisan schedule:run"
 fi
+chmod +x "\$HOME/${DEPLOY_PATH}/scripts/reverb-start" "\$HOME/${DEPLOY_PATH}/scripts/reverb-tunnel" 2>/dev/null || true
+if crontab -l 2>/dev/null | grep -F "artisan reverb:start" >/dev/null; then
+  echo "crontab already has reverb:start"
+else
+  REVERB_CRON="* * * * * flock -n \$HOME/${DEPLOY_PATH}/storage/framework/reverb.lock \$HOME/${DEPLOY_PATH}/scripts/reverb-start >> \$HOME/${DEPLOY_PATH}/storage/logs/reverb.log 2>&1"
+  { crontab -l 2>/dev/null || true; echo "\$REVERB_CRON"; } | crontab -
+  echo "crontab: added reverb-start keepalive"
+fi
+if crontab -l 2>/dev/null | grep -F "scripts/reverb-tunnel" >/dev/null; then
+  echo "crontab already has reverb-tunnel"
+else
+  TUNNEL_CRON="* * * * * flock -n \$HOME/${DEPLOY_PATH}/storage/framework/reverb-tunnel.lock \$HOME/${DEPLOY_PATH}/scripts/reverb-tunnel >> \$HOME/${DEPLOY_PATH}/storage/logs/reverb-tunnel.log 2>&1"
+  { crontab -l 2>/dev/null || true; echo "\$TUNNEL_CRON"; } | crontab -
+  echo "crontab: added reverb-tunnel keepalive"
+fi
 /usr/bin/php8.4 artisan optimize:clear
 /usr/bin/php8.4 artisan config:cache
 /usr/bin/php8.4 artisan route:cache

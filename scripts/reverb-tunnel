@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# cloudflared を本体にし、URL はログから拾う（grep がパイプを閉じるとトンネルが死ぬため）
+set -euo pipefail
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+BIN="${HOME}/bin/cloudflared"
+HOSTFILE="${ROOT}/storage/app/reverb-ws-host"
+LOG="${ROOT}/storage/logs/cloudflared.log"
+mkdir -p "${ROOT}/storage/app" "${ROOT}/storage/logs" "${HOME}/bin"
+if [[ ! -x "$BIN" ]]; then
+  curl -fsSL -o "$BIN" "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64"
+  chmod +x "$BIN"
+fi
+
+touch "$LOG"
+tail -n 0 -F "$LOG" | grep --line-buffered -Eo 'https://[a-z0-9-]+\.trycloudflare\.com' | while read -r url; do
+  printf '%s\n' "${url#https://}" > "${HOSTFILE}.tmp"
+  mv "${HOSTFILE}.tmp" "$HOSTFILE"
+done &
+watcher=$!
+
+"$BIN" tunnel --no-autoupdate --protocol http2 --url http://127.0.0.1:8081 >>"$LOG" 2>&1 &
+cfpid=$!
+trap 'kill "$watcher" "$cfpid" 2>/dev/null || true' EXIT
+wait "$cfpid"
