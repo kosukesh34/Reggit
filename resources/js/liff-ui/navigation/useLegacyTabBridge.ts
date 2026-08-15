@@ -55,7 +55,7 @@ export function useLegacyTabBridge(): void {
     app.switchTab = (tab: string) => {
       const path = pathForLegacyTab(tab);
       if (path !== null) {
-        app.currentTab = tab === 'membership' ? 'member' : tab;
+        app.currentTab = (tab === 'membership' || tab === 'profile') ? 'member' : tab;
         if (location.pathname !== path) {
           navigate(path);
         }

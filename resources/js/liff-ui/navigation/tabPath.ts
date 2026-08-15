@@ -7,6 +7,7 @@ const TAB_PATHS: Record<string, string> = {
   home: '/home',
   member: '/membership',
   membership: '/membership',
+  profile: '/profile',
   designlab: '/designlab',
   coupons: '/coupon',
   coupon: '/coupon',
@@ -34,6 +35,7 @@ const TAB_PATHS: Record<string, string> = {
 const PATH_TO_LEGACY_TAB: Record<string, string> = {
   '/home': 'home',
   '/membership': 'member',
+  '/profile': 'profile',
   '/designlab': 'designlab',
   '/coupon': 'coupons',
   '/stamp': 'stamps',

@@ -215,6 +215,7 @@ export const AppConstants = {
         GALLERY: 'gallery-data-mount',
         ANNOUNCEMENTS: 'announcements-data-mount',
         MEMBER: 'member-card-mount',
+        PROFILE: 'member-card-mount',
         DESIGNLAB: 'designlab-data-mount',
     },
 
@@ -253,6 +254,7 @@ export const AppConstants = {
         GALLERY_TAB: 'galleryTab',
         GALLERY_SECTION: 'gallerySection',
         ANNOUNCEMENTS_TAB: 'announcementsTab',
+        PROFILE_SECTION: 'profileSection',
     },
 
     CSS_CLASSES: {

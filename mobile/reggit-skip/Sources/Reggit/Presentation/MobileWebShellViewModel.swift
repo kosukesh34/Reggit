@@ -134,7 +134,7 @@ final class MobileWebShellViewModel: PushNotificationHandling {
 
     func switchToTab(_ tabKey: String) {
         activeTab = tabKey
-        guard showNativeTabBar, isWebContentReady else { return }
+        guard isWebContentReady else { return }
         scriptExecutor.run(MobileWebShellScripts.switchTab(tabKey))
     }
 
@@ -157,7 +157,7 @@ final class MobileWebShellViewModel: PushNotificationHandling {
 
     func handleNotificationDeepLink(tab: String, notificationType: String?) {
         activeTab = tab
-        guard showNativeTabBar, isWebContentReady else {
+        guard isWebContentReady else {
             pendingNotificationDeepLink = PendingNotificationDeepLink(tab: tab, notificationType: notificationType)
             return
         }
@@ -168,7 +168,7 @@ final class MobileWebShellViewModel: PushNotificationHandling {
         let token = queueToken.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !token.isEmpty else { return }
         activeTab = "queue"
-        guard showNativeTabBar, isWebContentReady else {
+        guard isWebContentReady else {
             pendingQueueToken = token
             return
         }
@@ -196,7 +196,7 @@ final class MobileWebShellViewModel: PushNotificationHandling {
     private func markWebContentReadyIfNeeded() {
         guard !isWebContentReady else { return }
         isWebContentReady = true
-        showNativeTabBar = true
+        showNativeTabBar = false
         onNavigationFinished(applyInitialTab: true)
         switchToTab(activeTab)
         flushPendingNotificationDeepLinkIfNeeded()

@@ -8,11 +8,14 @@ namespace App\Services\Smaregi;
  */
 class SmaregiCustomerUpdatePayloadBuilder
 {
+    public const CUSTOM_FIELD_VALUE_MAX = 85;
+
     /**
      * @param  array<string, mixed>  $data  name / kana / email / phone / 住所・生年月日等
-     * @return array<string, string>
+     * @param  list<array{key?: string, smaregi_no?: int|null}>  $customFieldDefs
+     * @return array<string, string|list<array{no: int, value: string|null}>>
      */
-    public function buildFromProfileData(array $data): array
+    public function buildFromProfileData(array $data, array $customFieldDefs = []): array
     {
         $body = [];
 
@@ -79,6 +82,11 @@ class SmaregiCustomerUpdatePayloadBuilder
             }
         }
 
+        $customFields = $this->buildSmaregiCustomFields($data, $customFieldDefs);
+        if ($customFields !== []) {
+            $body['customFields'] = $customFields;
+        }
+
         return $body;
     }
 
@@ -87,12 +95,13 @@ class SmaregiCustomerUpdatePayloadBuilder
      *
      * @param  array<string, mixed>  $userFields
      * @param  array<string, mixed>  $memberFields
-     * @return array<string, string>
+     * @param  list<array{key?: string, smaregi_no?: int|null}>  $customFieldDefs
+     * @return array<string, string|list<array{no: int, value: string|null}>>
      */
-    public function buildFromAdminMemberData(array $userFields, array $memberFields = []): array
+    public function buildFromAdminMemberData(array $userFields, array $memberFields = [], array $customFieldDefs = []): array
     {
         $merged = array_merge($userFields, $memberFields);
-        $body = $this->buildFromProfileData($merged);
+        $body = $this->buildFromProfileData($merged, $customFieldDefs);
 
         if (array_key_exists('member_number', $memberFields)) {
             $code = trim((string) ($memberFields['member_number'] ?? ''));
@@ -107,8 +116,8 @@ class SmaregiCustomerUpdatePayloadBuilder
     /**
      * 会員新規登録時用。氏名・カナが空のときスマレジ必須対策のプレースホルダを補う。
      *
-     * @param  array<string, string>  $body
-     * @return array<string, string>
+     * @param  array<string, string|list<array{no: int, value: string|null}>>  $body
+     * @return array<string, string|list<array{no: int, value: string|null}>>
      */
     public function withRegisterNamePlaceholders(array $body): array
     {
@@ -142,6 +151,90 @@ class SmaregiCustomerUpdatePayloadBuilder
             trim((string) ($data['city'] ?? '')),
             trim((string) ($data['street'] ?? '')),
         ], static fn (string $part): bool => $part !== '')));
+    }
+
+    /**
+     * @param  array<string, string|int|float|bool|array|null>  $data
+     * @param  list<array{key?: string, smaregi_no?: int|null}>  $customFieldDefs
+     * @return list<array{no: int, value: string|null}>
+     */
+    public function buildSmaregiCustomFields(array $data, array $customFieldDefs): array
+    {
+        $fields = [];
+        foreach ($customFieldDefs as $cf) {
+            $no = (int) ($cf['smaregi_no'] ?? 0);
+            $key = (string) ($cf['key'] ?? '');
+            if ($no < 1 || $key === '') {
+                continue;
+            }
+            $fields[] = [
+                'no' => $no,
+                'value' => $this->toSmaregiCustomFieldValue($this->customFieldValueFromData($data, $key)),
+            ];
+        }
+
+        return $fields;
+    }
+
+    /**
+     * @param  array<string, string|int|float|bool|array|null>  $data
+     * @return string|array<int, string>|null
+     */
+    private function customFieldValueFromData(array $data, string $key): string|array|null
+    {
+        if (array_key_exists($key, $data)) {
+            return $this->normalizeCustomFieldValue($data[$key]);
+        }
+        $extra = $data['profile_extra'] ?? null;
+        if (is_array($extra) && array_key_exists($key, $extra)) {
+            return $this->normalizeCustomFieldValue($extra[$key]);
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  string|int|float|bool|array<int|string, string|int|float|bool|null>|null  $value
+     * @return string|array<int, string>|null
+     */
+    private function normalizeCustomFieldValue(string|int|float|bool|array|null $value): string|array|null
+    {
+        if ($value === null || is_string($value)) {
+            return $value;
+        }
+        if (is_array($value)) {
+            $out = [];
+            foreach ($value as $item) {
+                $out[] = (string) $item;
+            }
+
+            return $out;
+        }
+
+        return (string) $value;
+    }
+
+    /**
+     * @param  string|array<int, string>|null  $value
+     */
+    private function toSmaregiCustomFieldValue(string|array|null $value): ?string
+    {
+        if (is_array($value)) {
+            $parts = [];
+            foreach ($value as $item) {
+                $item = trim($item);
+                if ($item !== '') {
+                    $parts[] = $item;
+                }
+            }
+            $value = implode('、', $parts);
+        }
+        $value = trim((string) ($value ?? ''));
+        if ($value === '') {
+            return null;
+        }
+
+        return mb_substr($value, 0, self::CUSTOM_FIELD_VALUE_MAX);
     }
 
     private function normalizeSmaregiKana(string $value): string

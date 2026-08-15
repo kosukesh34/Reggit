@@ -149,9 +149,6 @@ class MemberController extends AdminBaseController
             'birthday' => $request->input('birthday') ?: null,
             'address' => $request->input('address'),
             'postal_code' => $request->input('postal_code'),
-            'prefecture' => $request->input('prefecture'),
-            'city' => $request->input('city'),
-            'street' => $request->input('street'),
             'sex' => $request->input('sex') ?: null,
             'mail_receive_flag' => $request->input('mail_receive_flag') !== null && $request->input('mail_receive_flag') !== ''
                 ? (string) $request->input('mail_receive_flag')

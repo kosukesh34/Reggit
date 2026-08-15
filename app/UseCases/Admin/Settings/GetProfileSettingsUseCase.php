@@ -9,9 +9,13 @@ use App\UseCases\Admin\Settings\Data\ProfileSettingsView;
 
 class GetProfileSettingsUseCase
 {
+    private SettingsService $settingsService;
+
     public function __construct(
-        private SettingsService $settingsService,
-    ) {}
+        SettingsService $settingsService
+    ) {
+        $this->settingsService = $settingsService;
+    }
 
     public function handle(int $projectId): ProfileSettingsView
     {

@@ -41,7 +41,14 @@ function mergeCustomization(store: StoreAppConfig, patch?: AppCustomizationPatch
     colors: { ...base.colors, ...patch.colors },
     appearance: { ...base.appearance, ...patch.appearance },
     home: { ...base.home, ...patch.home },
-    header: { ...base.header, ...patch.header },
+    header: {
+      ...base.header,
+      ...patch.header,
+      rightButton: {
+        ...base.header.rightButton,
+        ...patch.header?.rightButton,
+      },
+    },
     coupon: {
       ...base.coupon,
       ...patch.coupon,
@@ -199,7 +206,14 @@ export function AppConfigProvider({ children, isAdminStudio = false }: { childre
               colors: { ...currentCustomization.colors, ...patch.colors },
               appearance: { ...currentCustomization.appearance, ...patch.appearance },
               home: { ...currentCustomization.home, ...patch.home },
-              header: { ...currentCustomization.header, ...patch.header },
+              header: {
+                ...currentCustomization.header,
+                ...patch.header,
+                rightButton: {
+                  ...currentCustomization.header.rightButton,
+                  ...patch.header?.rightButton,
+                },
+              },
               coupon: { ...currentCustomization.coupon, ...patch.coupon },
               order: { ...currentCustomization.order, ...patch.order },
               membership: { ...currentCustomization.membership, ...patch.membership },
