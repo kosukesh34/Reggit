@@ -3,7 +3,7 @@
 namespace App\UseCases\Admin\Settings;
 
 use App\Domain\Settings\Repositories\ShopSettingRepository;
-use App\Models\StampCard;
+use App\Enums\RankAggregationType;
 use App\Services\Smaregi\SmaregiCustomerRankAssignmentService;
 use App\Services\Smaregi\SmaregiCustomerRankSyncService;
 use App\Util\StrHelper;
@@ -19,6 +19,12 @@ class UpdateRankSettingsUseCase
     /**
      * @param  array{
      *     rank_basis: string,
+     *     rank_aggregation_type?: string,
+     *     rank_period_days?: int,
+     *     is_rank_down_enabled?: bool,
+     *     use_stamps?: bool,
+     *     use_transaction_stamps?: bool,
+     *     use_points?: bool,
      *     point_earn_rate: int,
      *     points_valid_days: int,
      *     ranks: array<int, array{
@@ -30,6 +36,7 @@ class UpdateRankSettingsUseCase
      *         icon_url?: string|null,
      *         stamp_background_url?: string|null,
      *         point_earn_rate?: int|string|null,
+     *         stamp_earn_per_amount?: int|string|null,
      *         card_color?: string|null
      *     }>
      * }  $payload 検証済みランク設定
@@ -52,6 +59,13 @@ class UpdateRankSettingsUseCase
                 if ($pointEarnRate !== null && $pointEarnRate < 1) {
                     $pointEarnRate = null;
                 }
+                $stampEarnPerAmount = $row['stamp_earn_per_amount'] ?? null;
+                $stampEarnPerAmount = ($stampEarnPerAmount !== null && $stampEarnPerAmount !== '')
+                    ? (int) $stampEarnPerAmount
+                    : null;
+                if ($stampEarnPerAmount !== null && $stampEarnPerAmount < 0) {
+                    $stampEarnPerAmount = null;
+                }
 
                 return [
                     'key' => $key,
@@ -63,6 +77,7 @@ class UpdateRankSettingsUseCase
                     'card_color' => $color !== null && $color !== '' ? (string) $color : null,
                     'order' => (int) ($row['order'] ?? ($index + 1)),
                     'point_earn_rate' => $pointEarnRate,
+                    'stamp_earn_per_amount' => $stampEarnPerAmount,
                     'smaregi_rank_id' => $existingSmaregiIds[$key] ?? null,
                 ];
             })
@@ -93,21 +108,20 @@ class UpdateRankSettingsUseCase
 
         $this->shopSettingRepository->setMemberRankSettings($rows, $projectId);
         $this->shopSettingRepository->setValue('member_rank_basis', (string) $payload['rank_basis'], 'string', $projectId);
+        $this->saveLoyaltyToggles($projectId, $payload);
+        $this->shopSettingRepository->setValue(
+            'member_rank_aggregation_type',
+            RankAggregationType::normalize((string) ($payload['rank_aggregation_type'] ?? RankAggregationType::TOTAL)),
+            'string',
+            $projectId,
+        );
+        $periodDays = (int) ($payload['rank_period_days'] ?? 365);
+        $this->shopSettingRepository->setValue('member_rank_period_days', $periodDays > 0 ? $periodDays : 365, 'integer', $projectId);
+        $this->shopSettingRepository->setValue('is_rank_down_enabled', (bool) ($payload['is_rank_down_enabled'] ?? false), 'boolean', $projectId);
         $this->shopSettingRepository->setValue('point_earn_rate', $defaultPointEarnRate, 'integer', $projectId);
         $this->shopSettingRepository->setValue('points_valid_days', (int) $payload['points_valid_days'], 'integer', $projectId);
         $this->shopSettingRepository->setValue('points_per_order', (int) ($payload['points_per_order'] ?? 0), 'integer', $projectId);
         $this->shopSettingRepository->setValue('stamp_earn_per_amount', (int) ($payload['stamp_earn_per_amount'] ?? 0), 'integer', $projectId);
-        $orderStampCardId = isset($payload['order_stamp_card_id']) && $payload['order_stamp_card_id'] !== '' && $payload['order_stamp_card_id'] !== null
-            ? (int) $payload['order_stamp_card_id']
-            : null;
-        if ($orderStampCardId !== null && ! StampCard::where('project_id', $projectId)->whereKey($orderStampCardId)->exists()) {
-            $orderStampCardId = null;
-        }
-        if ($orderStampCardId !== null) {
-            $this->shopSettingRepository->setValue('order_stamp_card_id', $orderStampCardId, 'integer', $projectId);
-        } else {
-            $this->shopSettingRepository->setValue('order_stamp_card_id', '', 'string', $projectId);
-        }
 
         if (isset($payload['member_code_type'])) {
             $this->shopSettingRepository->setValue('member_code_type', (string) $payload['member_code_type'], 'string', $projectId);
@@ -143,6 +157,23 @@ class UpdateRankSettingsUseCase
         if ($this->smaregiRankSync->hasSmaregiContract($projectId)) {
             $this->smaregiCustomerRankAssignmentService->syncPointRatesForProject($projectId);
         }
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function saveLoyaltyToggles(int $projectId, array $payload): void
+    {
+        $useStamps = (bool) ($payload['use_stamps'] ?? true);
+        $useTransactionStamps = $useStamps && (bool) ($payload['use_transaction_stamps'] ?? true);
+        $usePoints = (bool) ($payload['use_points'] ?? true);
+        $this->shopSettingRepository->setValue('use_stamps', $useStamps, 'boolean', $projectId);
+        $this->shopSettingRepository->setValue('use_transaction_stamps', $useTransactionStamps, 'boolean', $projectId);
+        $this->shopSettingRepository->setValue('use_points', $usePoints, 'boolean', $projectId);
+
+        $flags = $this->shopSettingRepository->getFeatureFlags($projectId);
+        $flags['feature_stamps_enabled'] = $useStamps;
+        $this->shopSettingRepository->setFeatureFlags($flags, $projectId);
     }
 
     /**

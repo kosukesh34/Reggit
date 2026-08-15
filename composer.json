@@ -9,6 +9,7 @@
         "firebase/php-jwt": "^7.0",
         "guzzlehttp/guzzle": "^7.0",
         "laravel/framework": "^12.0",
+        "laravel/reverb": "^1.11",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^3.0",
         "sentry/sentry-laravel": "^4.27",

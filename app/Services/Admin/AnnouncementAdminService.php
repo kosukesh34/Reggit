@@ -307,7 +307,7 @@ class AnnouncementAdminService
             $targetMemberIds,
             MemberCouponSource::ANNOUNCEMENT,
             (string) $announcement->id,
-            $announcement->send_notification !== false,
+            false,
         );
     }
 

@@ -29,6 +29,9 @@ export type MemberPayload = Record<string, unknown> & {
     current_rank?: string;
     show_points_display?: boolean;
     show_rank_progress?: boolean;
+    rank_basis?: string;
+    rank_aggregation_type?: string;
+    rank_metric?: number;
     member_card_design?: string;
     member_card_logo_url?: string | null;
     member_card_display_type?: string;
@@ -250,6 +253,15 @@ export async function loadMemberView(): Promise<MemberLoadResult> {
         }
         return { kind: 'error', message };
     }
+}
+
+export function startLineLogin(): void {
+    const liffSdk = typeof window !== 'undefined' ? window.liff : undefined;
+    if (window.__IS_LIFF__ === true && liffSdk !== undefined && typeof liffSdk.login === 'function') {
+        liffSdk.login();
+        return;
+    }
+    openRegister(false);
 }
 
 export function openRegister(forced = false): void {

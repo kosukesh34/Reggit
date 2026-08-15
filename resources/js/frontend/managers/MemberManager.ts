@@ -2,10 +2,11 @@ import { AppConstants } from '../../shared/constants';
 import { DomHelper } from '../../shared/utils/domHelper';
 import { ToastManager } from '../../shared/utils/toast';
 import { ConfirmDialog } from '../../shared/utils/confirmDialog';
-import { getGuestRegisterMessage, getMemberRegistrationMode, isMembershipRequired, shouldShowRegistrationForm, syncMemberRegistrationModeFromPayload } from '../utils/membershipPolicy';
+import { getGuestRegisterMessage, getMemberRegistrationMode, isMembershipRequired, shouldAutoCreateMember, shouldShowRegistrationForm, syncMemberRegistrationModeFromPayload } from '../utils/membershipPolicy';
 import { isDemoDataMode, isFixedUiShell } from '../demo/demoMode';
 import { buildBuiltinSampleMemberData } from '../demo/sampleData';
 import { isReactOwnedMount } from '../utils/reactOwnedMount';
+import { getLiffEcho } from '../realtime/liffEcho';
 
 declare const liff: any;
 declare const JsBarcode: any;
@@ -39,7 +40,7 @@ export class MemberManager {
     _appleWalletOpenUrlAt?: number;
     _appleWalletPassDownloadUrl?: string | null;
     _appleWalletPassDownloadUrlAt?: number;
-    _walletSummaryTimer: ReturnType<typeof setInterval> | null = null;
+    _walletEchoChannelName: string | null = null;
     _walletSummaryLast: { points: number; stamps_total: number; pending_lottery_count: number } | null = null;
     _walletSummaryLastFetchedAt: number = 0;
     _walletVisibilityBound = false;
@@ -605,8 +606,11 @@ export class MemberManager {
     canAutoRegister() {
         if (typeof window === 'undefined') return false;
         if (this.memberData && this.memberData.is_member === true) return false;
-        if (!this._lastMemberFetchWasNonMember) return false;
         if (!this._getLineUserIdForMemberApi()) return false;
+        if (shouldAutoCreateMember()) {
+            return true;
+        }
+        if (!this._lastMemberFetchWasNonMember) return false;
         return !!(window.__LINE_PROFILE__ && window.__LINE_PROFILE__.displayName);
     }
 
@@ -1152,6 +1156,8 @@ export class MemberManager {
         const currentRankKey = data.current_rank || 'bronze';
         const showPointsDisplay = data.show_points_display !== false;
         const showRankProgress = data.show_rank_progress !== false;
+        const rankUnit = data.rank_basis === 'stamps' ? '個' : 'pt';
+        const periodDays = data.days_required_for_next_rank != null ? Number(data.days_required_for_next_rank) : null;
         const availableDesigns = ['default', 'logo_top', 'logo_center', 'logo_header', 'compact', 'split_banner', 'minimal_line', 'emblem'];
         const blockOverride = container.closest('[data-card-design]')
             ? container.closest('[data-card-design]').getAttribute('data-card-design')
@@ -1249,8 +1255,9 @@ export class MemberManager {
                         <div class="idnect-card-back-inner">
                             <p class="idnect-card-back-title">会員情報</p>
                             ${showPointsDisplay ? '<div class="idnect-card-points idnect-card-points--large"><span class="idnect-card-points-value">' + points.toLocaleString() + '</span><span class="idnect-card-points-label">ポイント</span></div>' : ''}
-                            ${expiryText ? '<p class="idnect-card-expiry">' + DomHelper.escapeHtml(expiryText) + '</p>' : ''}
-                            ${showRankProgress && nextRankLabel && pointsToNextRank !== null ? '<p class="idnect-card-next-rank">次のランク（' + DomHelper.escapeHtml(nextRankLabel) + '）まで <strong>' + pointsToNextRank.toLocaleString() + '</strong> pt</p>' : ''}
+                            ${showPointsDisplay && expiryText ? '<p class="idnect-card-expiry">' + DomHelper.escapeHtml(expiryText) + '</p>' : ''}
+                            ${showRankProgress && nextRankLabel && pointsToNextRank !== null ? '<p class="idnect-card-next-rank">次のランク（' + DomHelper.escapeHtml(nextRankLabel) + '）まで <strong>' + pointsToNextRank.toLocaleString() + '</strong> ' + rankUnit + '</p>' : ''}
+                            ${showRankProgress && periodDays !== null && !isNaN(periodDays) ? '<p class="idnect-card-next-rank idnect-card-days-to-rank">集計期間: 過去 <strong>' + periodDays + '</strong> 日</p>' : ''}
                             ${showRankProgress && daysRequiredForNextRank !== null && daysToNextRank !== null ? '<p class="idnect-card-next-rank idnect-card-days-to-rank">次のランクまで あと <strong>' + daysToNextRank + '</strong> 日</p>' : ''}
                             <p class="idnect-card-tap-hint"><i class="fas fa-sync-alt idnect-card-tap-hint-icon" aria-hidden="true"></i> タップで表に戻る</p>
                         </div>
@@ -1399,15 +1406,18 @@ export class MemberManager {
         const pointsToNextRank = data.points_to_next_rank != null ? Number(data.points_to_next_rank) : null;
         const showPointsDisplay = data.show_points_display !== false;
         const showRankProgress = data.show_rank_progress !== false;
+        const rankUnit = data.rank_basis === 'stamps' ? '個' : 'pt';
         const isSample = data.is_sample_preview === true;
+        const rankMetricRaw = data.rank_metric != null ? Number(data.rank_metric) : points;
+        const rankMetric = Number.isFinite(rankMetricRaw) ? rankMetricRaw : points;
         const codeId = `member-code-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        const progressTotal = pointsToNextRank !== null ? points + pointsToNextRank : Math.max(points, 1);
+        const progressTotal = pointsToNextRank !== null ? rankMetric + pointsToNextRank : Math.max(rankMetric, 1);
         const progressPct = pointsToNextRank !== null
-            ? Math.max(8, Math.min(100, Math.round((points / progressTotal) * 100)))
+            ? Math.max(8, Math.min(100, Math.round((rankMetric / progressTotal) * 100)))
             : 100;
         const progressText = nextRankLabel && pointsToNextRank !== null
-            ? `${nextRankLabel}まであと ${pointsToNextRank.toLocaleString('ja-JP')} pt`
-            : 'ポイントは失効しません';
+            ? `${nextRankLabel}まであと ${pointsToNextRank.toLocaleString('ja-JP')} ${rankUnit}`
+            : '最高ランクに到達しています';
 
         container.innerHTML = `
             <div class="ios-wallet-member${isSample ? ' ios-wallet-member--demo' : ''}">
@@ -1452,8 +1462,8 @@ export class MemberManager {
                     </div>
                 </article>
 
-                <div class="ios-wallet-member__meta">
-                    <p>ポイントは失効しません</p>
+            <div class="ios-wallet-member__meta">
+                ${showPointsDisplay ? '<p>ポイント有効期限は店舗設定に従います</p>' : '<p></p>'}
                     <button type="button" class="ios-wallet-member__enlarge" data-member-number="${DomHelper.escapeHtml(memberNumber)}" data-code-type="barcode">会員証を拡大</button>
                 </div>
 
@@ -2820,81 +2830,47 @@ export class MemberManager {
             const id = 'profileEdit_' + key.replace(/[^a-z0-9_]/gi, '_');
             let input = '';
             if (key === 'sex') {
-                const checked0 = (!val || val === '0') ? ' checked' : '';
-                const checked1 = val === '1' ? ' checked' : '';
-                const checked2 = val === '2' ? ' checked' : '';
-                return [
-                    '<fieldset class="member-form-group member-form-group--choice">' +
-                    '<legend class="member-form-group-label">' + DomHelper.escapeHtml(label) + (f.required ? ' <span class="required">*</span>' : '') + '</legend>' +
-                    '<div class="member-form-segment member-form-segment--cols-3" role="radiogroup" aria-label="' + DomHelper.escapeHtml(label) + '">' +
-                    '<label class="member-form-segment-btn">' +
-                    '<input type="radio" id="' + id + '_1" name="sex" value="1"' + checked1 + required + '>' +
-                    '<span class="member-form-segment-btn-text">男性</span></label>' +
-                    '<label class="member-form-segment-btn">' +
-                    '<input type="radio" id="' + id + '_2" name="sex" value="2"' + checked2 + required + '>' +
-                    '<span class="member-form-segment-btn-text">女性</span></label>' +
-                    '<label class="member-form-segment-btn">' +
-                    '<input type="radio" id="' + id + '_0" name="sex" value=""' + checked0 + '>' +
-                    '<span class="member-form-segment-btn-text">未選択</span></label>' +
-                    '</div></fieldset>',
-                ];
+                const selected0 = (!val || val === '0') ? ' selected' : '';
+                const selected1 = val === '1' ? ' selected' : '';
+                const selected2 = val === '2' ? ' selected' : '';
+                input = '<select id="' + id + '" name="sex"' + required + '>' +
+                    '<option value=""' + selected0 + '>未選択</option>' +
+                    '<option value="1"' + selected1 + '>男性</option>' +
+                    '<option value="2"' + selected2 + '>女性</option>' +
+                    '</select>';
+                return ['<div class="member-form-group"><label for="' + id + '">' + DomHelper.escapeHtml(label) + (f.required ? ' <span class="required">*</span>' : '') + '</label>' + input + '</div>'];
             }
             if (key === 'mail_receive_flag') {
-                // 未設定はどちらも未選択のままにする（デフォルト許可で既存の拒否設定を上書きしない）
-                const checked1 = val === '1' ? ' checked' : '';
-                const checked0 = val === '0' ? ' checked' : '';
-                return [
-                    '<fieldset class="member-form-group member-form-group--choice">' +
-                    '<legend class="member-form-group-label">' + DomHelper.escapeHtml(label) + (f.required ? ' <span class="required">*</span>' : '') + '</legend>' +
-                    '<div class="member-form-segment member-form-segment--cols-2" role="radiogroup" aria-label="' + DomHelper.escapeHtml(label) + '">' +
-                    '<label class="member-form-segment-btn">' +
-                    '<input type="radio" id="' + id + '_1" name="mail_receive_flag" value="1"' + checked1 + required + '>' +
-                    '<span class="member-form-segment-btn-text">許可する</span></label>' +
-                    '<label class="member-form-segment-btn">' +
-                    '<input type="radio" id="' + id + '_0" name="mail_receive_flag" value="0"' + checked0 + required + '>' +
-                    '<span class="member-form-segment-btn-text">許可しない</span></label>' +
-                    '</div></fieldset>',
-                ];
+                const selected1 = val === '1' ? ' selected' : '';
+                const selected0 = val === '0' ? ' selected' : '';
+                input = '<select id="' + id + '" name="mail_receive_flag"' + required + '>' +
+                    '<option value="">未選択</option>' +
+                    '<option value="1"' + selected1 + '>許可する</option>' +
+                    '<option value="0"' + selected0 + '>許可しない</option>' +
+                    '</select>';
+                return ['<div class="member-form-group"><label for="' + id + '">' + DomHelper.escapeHtml(label) + (f.required ? ' <span class="required">*</span>' : '') + '</label>' + input + '</div>'];
             }
             if (key === 'notification_preference') {
                 const preference = val || 'all';
                 const isNativeApp = typeof window !== 'undefined' && window.__MOBILE_APP_MODE__ === true;
                 const channelLabel = isNativeApp ? 'Push通知' : 'LINE通知';
                 const options = [
-                    ['all', 'すべて受け取る', '新着情報とクーポンを' + channelLabel + 'で受け取る'],
-                    ['coupon_only', 'クーポン情報のみ', 'クーポン配信だけ' + channelLabel + 'で受け取る'],
-                    ['none', '受け取らない', channelLabel + 'を受け取らない'],
+                    ['all', 'すべて受け取る'],
+                    ['coupon_only', 'クーポン情報のみ'],
+                    ['none', '受け取らない'],
                 ];
                 const optionsHtml = options.map(function (option) {
-                    const checked = preference === option[0] ? ' checked' : '';
-                    return '<label class="member-form-notification-option">' +
-                        '<input type="radio" name="notification_preference" value="' + option[0] + '"' + checked + ' required>' +
-                        '<span><strong>' + option[1] + '</strong><small>' + option[2] + '</small></span></label>';
+                    const selected = preference === option[0] ? ' selected' : '';
+                    return '<option value="' + option[0] + '"' + selected + '>' + option[1] + '</option>';
                 }).join('');
+                input = '<select id="' + id + '" name="notification_preference" required>' + optionsHtml + '</select>';
                 return [
-                    '<fieldset class="member-form-group member-form-group--choice">' +
-                    '<legend class="member-form-group-label">' + DomHelper.escapeHtml(label) + ' <span class="required">*</span></legend>' +
-                    '<div class="member-form-notification-options" role="radiogroup" aria-label="' + DomHelper.escapeHtml(label) + '">' + optionsHtml + '</div>' +
-                    '</fieldset>',
+                    '<div class="member-form-group"><label for="' + id + '">' + DomHelper.escapeHtml(label) + ' <span class="required">*</span></label>' +
+                    input +
+                    '<p class="member-form-field-hint">' + channelLabel + 'の受け取り範囲を選べます</p></div>',
                 ];
             }
-            if (inputType === 'radio' && values.length > 0) {
-                const optionsHtml = values.map(function (option, optionIndex) {
-                    const optionVal = String(option);
-                    const checked = val === optionVal ? ' checked' : '';
-                    return '<label class="member-form-segment-btn">' +
-                        '<input type="radio" id="' + id + '_' + optionIndex + '" name="' + DomHelper.escapeHtml(key) + '" value="' + DomHelper.escapeHtml(optionVal) + '"' + checked + required + '>' +
-                        '<span class="member-form-segment-btn-text">' + DomHelper.escapeHtml(optionVal) + '</span></label>';
-                }).join('');
-                return [
-                    '<fieldset class="member-form-group member-form-group--choice">' +
-                    '<legend class="member-form-group-label">' + DomHelper.escapeHtml(label) + (f.required ? ' <span class="required">*</span>' : '') + '</legend>' +
-                    '<div class="member-form-segment" role="radiogroup" aria-label="' + DomHelper.escapeHtml(label) + '">' + optionsHtml + '</div>' +
-                    description +
-                    '</fieldset>',
-                ];
-            }
-            if (inputType === 'selectbox' && values.length > 0) {
+            if ((inputType === 'radio' || inputType === 'selectbox') && values.length > 0) {
                 const optionsHtml = ['<option value="">未選択</option>'].concat(values.map(function (option) {
                     const optionVal = String(option);
                     const selected = val === optionVal ? ' selected' : '';
@@ -3083,7 +3059,8 @@ export class MemberManager {
         if (this.isForcedRegistrationActive()) {
             return;
         }
-        if (getMemberRegistrationMode() === 'prompt') {
+        const mode = getMemberRegistrationMode();
+        if (mode === 'prompt' || mode === 'popup') {
             this._dismissMemberRegistrationPrompt();
         }
         this._registerFullScreen = false;
@@ -3252,8 +3229,9 @@ export class MemberManager {
                 payload[key] = checked.map((el) => (el.value || '').trim()).filter((v) => v !== '');
                 return;
             }
-            if (inputType === 'radio' || key === 'sex' || key === 'mail_receive_flag' || key === 'notification_preference') {
-                const el = asInput(form.querySelector('[name="' + key.replace(/"/g, '\\"') + '"]:checked'));
+            if (inputType === 'radio' || inputType === 'selectbox' || key === 'sex' || key === 'mail_receive_flag' || key === 'notification_preference') {
+                const checked = asInput(form.querySelector('[name="' + key.replace(/"/g, '\\"') + '"]:checked'));
+                const el = checked ?? asInput(form.querySelector('[name="' + key.replace(/"/g, '\\"') + '"]'));
                 if (el) {
                     const v = (el.value || '').trim();
                     if (key === 'mail_receive_flag' || key === 'notification_preference') {
@@ -3279,27 +3257,63 @@ export class MemberManager {
     }
 
     /**
-     * Wallet サマリーは起動時・フォアグラウンド復帰時のみ取得する。
-     * （旧: 2秒ポーリングで会員証 UI が毎回更新されていた）
+     * ポイント／スタンプ／ガチャ権利の変更を購読する（POS会計の即時反映用）。
      */
     startWalletSummaryPolling(): void {
-        this.refreshWalletSummaryOnLaunch();
-    }
-
-    refreshWalletSummaryOnLaunch(options: { force?: boolean } = {}): void {
         if (isDemoDataMode()) {
             return;
         }
-        this.stopWalletSummaryPolling();
-        void this._pollWalletSummaryOnce(options);
         this._bindWalletSummaryVisibilityRefresh();
+        this._subscribeLiffWalletChannel();
+        void this._pollWalletSummaryOnce({ force: true });
+    }
+
+    refreshWalletSummaryOnLaunch(options: { force?: boolean } = {}): void {
+        this.startWalletSummaryPolling();
+        if (options.force === true) {
+            void this._pollWalletSummaryOnce({ force: true });
+        }
     }
 
     stopWalletSummaryPolling(): void {
-        if (this._walletSummaryTimer !== null) {
-            window.clearInterval(this._walletSummaryTimer);
-            this._walletSummaryTimer = null;
+        this._leaveWalletEchoChannel();
+    }
+
+    _walletMemberId(): number {
+        const raw = this.memberData?.member?.id ?? this.memberData?.id;
+        const memberId = Number(raw);
+        return Number.isFinite(memberId) && memberId > 0 ? memberId : 0;
+    }
+
+    _subscribeLiffWalletChannel(): void {
+        const memberId = this._walletMemberId();
+        if (memberId <= 0) {
+            return;
         }
+        const echo = getLiffEcho();
+        if (echo === null) {
+            return;
+        }
+        const channelName = `liff.member.${memberId}`;
+        if (this._walletEchoChannelName === channelName) {
+            return;
+        }
+        this._leaveWalletEchoChannel();
+        this._walletEchoChannelName = channelName;
+        echo.private(channelName).listen('.wallet.updated', (payload: Record<string, unknown>) => {
+            this._applyNormalizedWalletSummary(payload);
+        });
+    }
+
+    _leaveWalletEchoChannel(): void {
+        if (this._walletEchoChannelName === null) {
+            return;
+        }
+        const echo = getLiffEcho();
+        if (echo !== null) {
+            echo.leave(this._walletEchoChannelName);
+        }
+        this._walletEchoChannelName = null;
     }
 
     _bindWalletSummaryVisibilityRefresh(): void {
@@ -3311,9 +3325,9 @@ export class MemberManager {
             if (document.visibilityState !== 'visible') {
                 return;
             }
+            this._subscribeLiffWalletChannel();
             void this._pollWalletSummaryOnce({ force: true });
         });
-        // 会計・ポイント付与直後に権利を即時反映（旧UIの体感に合わせる）
         document.addEventListener('liff-payment-completed', () => {
             void this._pollWalletSummaryOnce({ force: true });
         });
@@ -3338,72 +3352,70 @@ export class MemberManager {
     async _pollWalletSummary(): Promise<void> {
         try {
             const summary = await this.apiClient.get(AppConstants.API_ENDPOINTS.MEMBERS_WALLET_SUMMARY);
-            // wallet-summary も apiClient 経由なら data 包みの可能性あり
             const raw = summary && typeof summary === 'object' && 'data' in summary
                 ? (summary as { data?: Record<string, unknown> }).data
                 : null;
             const src = raw !== null && typeof raw === 'object' ? raw : summary;
-            const normalized = {
-                points: Number((src as any)?.points ?? 0),
-                stamps_total: Number((src as any)?.stamps_total ?? 0),
-                pending_lottery_count: Number((src as any)?.pending_lottery_count ?? 0),
-            };
-            const prev = this._walletSummaryLast;
-            this._walletSummaryLast = normalized;
-            if (prev !== null
-                && prev.points === normalized.points
-                && prev.stamps_total === normalized.stamps_total
-                && prev.pending_lottery_count === normalized.pending_lottery_count) {
-                return;
-            }
-
-            // eslint-disable-next-line no-console
-            console.info('[LotteryUI]', 'wallet_summary_changed', {
-                prev,
-                next: normalized,
-                ts: Date.now(),
-            });
-            if (typeof window.__clientDebugLog === 'function') {
-                window.__clientDebugLog('lottery_ui_wallet_summary_changed', {
-                    prev,
-                    next: normalized,
-                });
-            }
-
-            const displayedPoints = this.memberData !== null ? Number(this.memberData.points ?? 0) : null;
-            const pointsDifferFromUi = displayedPoints !== null && displayedPoints !== normalized.points;
-            const lotteryIncreased = prev !== null
-                && normalized.pending_lottery_count > prev.pending_lottery_count;
-            const hasPendingOnFirstPoll = prev === null
-                && normalized.pending_lottery_count > 0;
-
-            if (this.memberData !== null && pointsDifferFromUi) {
-                this.memberData.points = normalized.points;
-                if ((window.app as any)?.currentTab === AppConstants.TABS.MEMBER) {
-                    this.render(this.memberData);
-                }
-            }
-
-            const container = this.getContainer();
-            if (container !== null) {
-                this._renderLotteryCta(container, normalized.pending_lottery_count);
-            }
-            if (typeof document !== 'undefined') {
-                document.dispatchEvent(new CustomEvent('liff-wallet-summary-updated', {
-                    detail: { pending_lottery_count: normalized.pending_lottery_count, points: normalized.points },
-                }));
-            }
-
-            if (lotteryIncreased) {
-                ToastManager.success('ガチャの権利が付与されました');
-            }
-            if (lotteryIncreased || hasPendingOnFirstPoll) {
-                this._maybeOpenGachaPopupForPending(normalized.pending_lottery_count);
-            }
+            this._applyNormalizedWalletSummary(src as Record<string, unknown>);
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : 'unknown';
             // eslint-disable-next-line no-console
             console.warn('[LotteryUI]', 'wallet_summary_error', { message });
+        }
+    }
+
+    _applyNormalizedWalletSummary(src: Record<string, unknown> | null | undefined): void {
+        if (src === null || src === undefined) {
+            return;
+        }
+        const normalized = {
+            points: Number(src.points ?? 0),
+            stamps_total: Number(src.stamps_total ?? 0),
+            pending_lottery_count: Number(src.pending_lottery_count ?? 0),
+        };
+        const prev = this._walletSummaryLast;
+        this._walletSummaryLast = normalized;
+        const displayedPoints = this.memberData !== null ? Number(this.memberData.points ?? 0) : null;
+        const pointsDifferFromUi = displayedPoints !== null && displayedPoints !== normalized.points;
+        if (prev !== null
+            && prev.points === normalized.points
+            && prev.stamps_total === normalized.stamps_total
+            && prev.pending_lottery_count === normalized.pending_lottery_count) {
+            return;
+        }
+
+        const lotteryIncreased = prev !== null
+            && normalized.pending_lottery_count > prev.pending_lottery_count;
+        const hasPendingOnFirstPoll = prev === null
+            && normalized.pending_lottery_count > 0;
+
+        if (this.memberData !== null && pointsDifferFromUi) {
+            this.memberData.points = normalized.points;
+            if (!this._isReactOwnedMemberMount()
+                && (window.app as any)?.currentTab === AppConstants.TABS.MEMBER) {
+                this.render(this.memberData);
+            }
+        }
+
+        const container = this.getContainer();
+        if (container !== null) {
+            this._renderLotteryCta(container, normalized.pending_lottery_count);
+        }
+        if (typeof document !== 'undefined') {
+            document.dispatchEvent(new CustomEvent('liff-wallet-summary-updated', {
+                detail: {
+                    pending_lottery_count: normalized.pending_lottery_count,
+                    points: normalized.points,
+                    stamps_total: normalized.stamps_total,
+                },
+            }));
+        }
+
+        if (lotteryIncreased) {
+            ToastManager.success('ガチャの権利が付与されました');
+        }
+        if (lotteryIncreased || hasPendingOnFirstPoll) {
+            this._maybeOpenGachaPopupForPending(normalized.pending_lottery_count);
         }
     }
 

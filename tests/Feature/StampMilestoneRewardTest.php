@@ -214,7 +214,6 @@ class StampMilestoneRewardTest extends TestCase
     {
         [$member, $card, $coupon] = $this->createRewardFixtures(StampCycleMode::REPEAT, 10);
         ShopSettingStore::setValue('stamp_earn_per_amount', 100, 'integer', (int) $member->project_id);
-        ShopSettingStore::setValue('order_stamp_card_id', (int) $card->id, 'integer', (int) $member->project_id);
         resolve(MemberAdminService::class)->addStampsToMember($member, (int) $card->id, 9);
 
         $applier = resolve(SmaregiInboundAwardApplier::class);
@@ -332,7 +331,6 @@ class StampMilestoneRewardTest extends TestCase
     {
         [$member, $card, $coupon] = $this->createRewardFixtures(StampCycleMode::REPEAT, 10);
         ShopSettingStore::setValue('stamp_earn_per_amount', 100, 'integer', (int) $member->project_id);
-        ShopSettingStore::setValue('order_stamp_card_id', (int) $card->id, 'integer', (int) $member->project_id);
         resolve(MemberAdminService::class)->addStampsToMember($member, (int) $card->id, 9);
 
         $applier = resolve(SmaregiInboundAwardApplier::class);

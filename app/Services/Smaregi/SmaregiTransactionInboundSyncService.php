@@ -9,6 +9,7 @@ use App\Enums\OrderType;
 use App\Models\Member;
 use App\Models\Order;
 use App\Models\Scopes\ProjectScope;
+use App\Services\MemberRankSyncService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
@@ -26,6 +27,7 @@ class SmaregiTransactionInboundSyncService
         private SmaregiInboundAwardApplier $awardApplier,
         private SmaregiInboundOrderRecorder $orderRecorder,
         private OrderRepository $orderRepository,
+        private MemberRankSyncService $memberRankSyncService,
     ) {}
 
     /**
@@ -171,6 +173,7 @@ class SmaregiTransactionInboundSyncService
             $this->awardApplier->reverseForCancel($member, $headId);
             $this->visitRecorder->deleteForTransaction($member, $headId);
             $this->orderRecorder->cancelByTransactionHeadId((int) $member->project_id, $headId);
+            $this->syncMemberRank($member);
             Log::info('[Smaregi] Inbound transaction cancel reversed', [
                 'member_id' => (int) $member->id,
                 'project_id' => (int) $member->project_id,
@@ -208,6 +211,7 @@ class SmaregiTransactionInboundSyncService
             $inbound->hasSmaregiManagedPointDelta(),
             $order !== null ? (int) $order->id : null,
         );
+        $this->syncMemberRank($member);
         if ($visit !== null && $order !== null) {
             $this->visitRecorder->attachOrder($visit, (int) $order->id);
         }
@@ -233,6 +237,13 @@ class SmaregiTransactionInboundSyncService
             $inbound->hasSmaregiManagedPointDelta(),
         );
         $this->orderRecorder->cancelByTransactionHeadId((int) $member->project_id, $headId);
+        $this->syncMemberRank($member);
+    }
+
+    private function syncMemberRank(Member $member): void
+    {
+        $fresh = $member->fresh() ?? $member;
+        $this->memberRankSyncService->sync($fresh);
     }
 
     /**

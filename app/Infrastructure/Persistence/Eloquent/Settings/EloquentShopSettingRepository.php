@@ -337,9 +337,29 @@ class EloquentShopSettingRepository implements ShopSettingRepository
         return (int) ShopSettingStore::getStampEarnPerAmount($projectId);
     }
 
+    public function getStampEarnPerAmountForRank(int $projectId, ?string $rankKey): int
+    {
+        return (int) ShopSettingStore::getStampEarnPerAmountForRank($projectId, $rankKey);
+    }
+
     public function getOrderStampCardId(int $projectId): ?int
     {
         return ShopSettingStore::getOrderStampCardId($projectId);
+    }
+
+    public function getUseStamps(int $projectId): bool
+    {
+        return ShopSettingStore::getUseStamps($projectId);
+    }
+
+    public function getUseTransactionStamps(int $projectId): bool
+    {
+        return ShopSettingStore::getUseTransactionStamps($projectId);
+    }
+
+    public function getUsePoints(int $projectId): bool
+    {
+        return ShopSettingStore::getUsePoints($projectId);
     }
 
     // ── 会員ランク ──
@@ -357,6 +377,21 @@ class EloquentShopSettingRepository implements ShopSettingRepository
     public function getRankBasis(int $projectId): string
     {
         return ShopSettingStore::getRankBasis($projectId);
+    }
+
+    public function getRankAggregationType(int $projectId): string
+    {
+        return ShopSettingStore::getRankAggregationType($projectId);
+    }
+
+    public function getRankPeriodDays(int $projectId): int
+    {
+        return ShopSettingStore::getRankPeriodDays($projectId);
+    }
+
+    public function getIsRankDownEnabled(int $projectId): bool
+    {
+        return ShopSettingStore::getIsRankDownEnabled($projectId);
     }
 
     public function defaultMemberRankSettings(): array

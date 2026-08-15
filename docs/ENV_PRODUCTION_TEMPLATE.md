@@ -226,7 +226,16 @@
 | SESSION_LIFETIME | 120 | |
 | FILESYSTEM_DISK | local | |
 | QUEUE_CONNECTION | database（Xserver）または sqs（AWS） | 予約配信・スマレジ同期 Job はワーカー必須。`sync` は開発のみ |
-| BROADCAST_DRIVER | log | |
+| BROADCAST_CONNECTION | reverb | LIFF 会員証の即時反映。`php artisan reverb:start` と nginx の `/app` WebSocket プロキシが必要 |
+| BROADCAST_DRIVER | reverb | `BROADCAST_CONNECTION` と同じ値 |
+| REVERB_APP_ID | 1001 | ローカル `.env.example` と同じでよい。変えるなら `npm run build` 前に合わせる |
+| REVERB_APP_KEY | reggit-reverb-key | LIFF の `window.__REVERB_APP_KEY__` と一致させる |
+| REVERB_APP_SECRET | （本番用に生成） | サーバ間の署名用。公開しない |
+| REVERB_HOST | 127.0.0.1 | Laravel から Reverb への接続先。Docker なら `reverb` |
+| REVERB_PORT | 8081 | Reverb の待受ポート |
+| REVERB_SCHEME | http | nginx が TLS 終端するなら http のまま |
+| REVERB_SERVER_HOST | 0.0.0.0 | |
+| REVERB_SERVER_PORT | 8081 | |
 
 ### 使う場合だけ設定（Stripe・LINE・メール・プッシュなど）
 

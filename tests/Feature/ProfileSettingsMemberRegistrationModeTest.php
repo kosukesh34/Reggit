@@ -53,9 +53,10 @@ class ProfileSettingsMemberRegistrationModeTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee('未会員時の扱い');
-        $response->assertSee('そのまま使える');
-        $response->assertSee('登録を促す（フォーム表示）');
-        $response->assertSee('会員登録を必須にする');
+        $response->assertSee('ゲスト可能');
+        $response->assertSee('ポップアップを表示する');
+        $response->assertSee('登録画面を表示する（任意登録）');
+        $response->assertSee('会員必須');
     }
 
     public function test_会員登録モードをforceで保存できること(): void
@@ -73,6 +74,24 @@ class ProfileSettingsMemberRegistrationModeTest extends TestCase
         $response->assertSessionHas('success');
         $this->assertSame(
             MemberRegistrationMode::FORCE,
+            ShopSettingStore::getMemberRegistrationMode((int) $project->id)
+        );
+    }
+
+    public function test_会員登録モードをpopupで保存できること(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+
+        $response = $this->actingAs($admin, 'admin')
+            ->post(route('admin.settings.profile.update', ['project_key' => $project->project_key]), [
+                'member_registration_mode' => MemberRegistrationMode::POPUP,
+                'smaregi_fields' => $this->defaultSmaregiFieldsPayload(),
+            ]);
+
+        $response->assertRedirect(route('admin.settings.profile', ['project_key' => $project->project_key]));
+        $this->assertSame(
+            MemberRegistrationMode::POPUP,
             ShopSettingStore::getMemberRegistrationMode((int) $project->id)
         );
     }

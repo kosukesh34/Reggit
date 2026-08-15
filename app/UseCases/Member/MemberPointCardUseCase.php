@@ -28,7 +28,8 @@ class MemberPointCardUseCase
         $rankInfo = $this->rankCalculator->getRankInfo($member);
         $expiryInfo = $this->expiryCalculator->getExpiryInfo($member);
         $projectId = AdminContext::resolveProjectId($member->project_id !== null ? (int) $member->project_id : null);
-        $showPoints = $this->shopSettingRepository->getShowPointsDisplay($projectId);
+        $showPoints = $this->shopSettingRepository->getShowPointsDisplay($projectId)
+            && $this->shopSettingRepository->getUsePoints($projectId);
         $showRankProgress = $this->shopSettingRepository->getShowRankProgress($projectId);
         $memberCardDesign = $this->shopSettingRepository->getMemberCardDesign($projectId);
         $memberCardLogoUrl = $this->shopSettingRepository->getFrontendLogoUrl($projectId);
@@ -48,6 +49,11 @@ class MemberPointCardUseCase
             'show_rank_progress' => $showRankProgress,
             'points_to_next_rank' => $rankInfo['points_to_next_rank'] ?? null,
             'next_rank_label' => $rankInfo['next_rank_label'] ?? null,
+            'rank_basis' => $rankInfo['rank_basis'] ?? 'points',
+            'rank_metric' => $rankInfo['rank_metric'] ?? null,
+            'days_to_next_rank' => $rankInfo['days_to_next_rank'] ?? null,
+            'days_required_for_next_rank' => $rankInfo['days_required_for_next_rank'] ?? null,
+            'rank_aggregation_type' => $rankInfo['rank_aggregation_type'] ?? 'total',
             'member_card_design' => $memberCardDesign,
             'member_card_logo_url' => $memberCardLogoUrl,
             'member_card_display_type' => $memberCardDisplayType,

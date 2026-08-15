@@ -29,6 +29,15 @@ class StampIndexUseCase
             return new StampListView([], $defaultImageUrl, true);
         }
 
+        $projectId = (int) $member->project_id;
+        if ($this->shopSettingRepository->getUseStamps($projectId) !== true) {
+            return new StampListView(
+                [],
+                $this->shopSettingRepository->getStampDefaultImageUrl($projectId),
+                false,
+            );
+        }
+
         $today = now()->startOfDay();
         $cards = StampCard::query()
             ->where('project_id', $member->project_id)
