@@ -42,6 +42,9 @@ class IssueCouponOnRankUpUseCase
                 (int) $delivery->project_id,
                 (int) $delivery->coupon_id,
                 [(int) $member->id],
+                null,
+                null,
+                $delivery->send_notification !== false,
             );
             if ($result['count'] < 1) {
                 continue;

@@ -6,15 +6,16 @@
 
 @section('content')
 <div class="coupon-admin">
-@if(session('success'))
-<div class="alert alert-success" role="alert">
-    <i class="fas fa-check-circle"></i> {{ session('success') }}
-</div>
-@endif
 @if(session('warning'))
 <div class="alert alert-warning" role="alert">
     <i class="fas fa-exclamation-triangle"></i> {{ session('warning') }}
 </div>
+@endif
+@if(session('success'))
+<div class="alert alert-success" role="alert">{{ session('success') }}</div>
+@endif
+@if(session('error'))
+<div class="alert alert-danger" role="alert"><i class="fas fa-exclamation-triangle"></i> {{ session('error') }}</div>
 @endif
 <nav class="breadcrumb" aria-label="パンくず">
     <a href="{{ admin_route('admin.dashboard') }}">ダッシュボード</a>
@@ -30,7 +31,10 @@
 <div class="card cp-list-card">
     <div class="card-header card-header-with-action">
         <h2 class="card-title">クーポン一覧</h2>
-        <a href="{{ admin_route('admin.coupons.create') }}" class="btn btn-primary"><i class="fas fa-plus"></i> 作成</a>
+        <div class="table-actions">
+            <a href="{{ admin_route('admin.coupons.bulk-issue') }}" class="btn btn-secondary"><i class="fas fa-paper-plane"></i> クーポンを配信</a>
+            <a href="{{ admin_route('admin.coupons.create') }}" class="btn btn-primary"><i class="fas fa-plus"></i> 作成</a>
+        </div>
     </div>
     <div class="card-body">
         @if($coupons->isEmpty())
@@ -74,6 +78,7 @@
                     <td><span class="badge badge-{{ $coupon->is_active ? 'success' : 'danger' }}">{{ $coupon->is_active ? '有効' : '無効' }}</span></td>
                     <td class="table-actions-cell">
                         <div class="table-actions">
+                            <a href="{{ admin_route('admin.coupons.bulk-issue', ['coupon_id' => $coupon->id]) }}" class="btn btn-action btn-edit"><i class="fas fa-paper-plane"></i> 配布</a>
                             <a href="{{ admin_route('admin.coupons.redemptions', ['id' => $coupon->id]) }}" class="btn btn-action btn-edit"><i class="fas fa-receipt"></i> 利用履歴</a>
                             <a href="{{ admin_route('admin.coupons.edit', ['id' => $coupon->id]) }}" class="btn btn-action btn-edit"><i class="fas fa-edit"></i> 編集</a>
                             <form action="{{ admin_route('admin.coupons.delete', ['id' => $coupon->id]) }}" method="POST" class="d-inline" onsubmit="return confirm('削除しますか？');">@csrf @method('DELETE')<button type="submit" class="btn btn-action btn-danger"><i class="fas fa-trash"></i> 削除</button></form>
@@ -84,6 +89,55 @@
             </tbody>
         </table>
         {{ $coupons->links('vendor.pagination.admin') }}
+        @endif
+    </div>
+</div>
+
+<div class="card cp-list-card">
+    <div class="card-header">
+        <h2 class="card-title">配布履歴</h2>
+    </div>
+    <div class="card-body">
+        @if(($deliveryHistories ?? []) === [])
+        <div class="empty-state">
+            <i class="fas fa-history"></i>
+            <p>まだ配布履歴がありません</p>
+            <p class="empty-state-hint">「クーポンを配信」から配布すると、ここに履歴が表示されます</p>
+        </div>
+        @else
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>日時</th>
+                        <th>クーポン</th>
+                        <th>配信種別</th>
+                        <th>配信対象</th>
+                        <th>状態</th>
+                        <th>発行数</th>
+                        <th class="table-actions-cell">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($deliveryHistories as $history)
+                    <tr>
+                        <td>{{ $history['timing_label'] }}</td>
+                        <td>
+                            <strong>{{ $history['coupon_name'] }}</strong>
+                            <span class="d-block text-muted small"><code>{{ $history['coupon_code'] }}</code></span>
+                        </td>
+                        <td>{{ $history['delivery_type_label'] }}</td>
+                        <td title="{{ $history['recipients_title'] }}">{{ $history['recipients_label'] }}</td>
+                        <td><span class="badge badge-{{ $history['status_badge'] }}">{{ $history['status_label'] }}</span></td>
+                        <td>{{ $history['issued_count_label'] }}</td>
+                        <td class="table-actions-cell">
+                            <a href="{{ admin_route('admin.coupons.deliveries.show', ['id' => $history['id']]) }}" class="btn btn-action btn-edit"><i class="fas fa-eye"></i> 詳細</a>
+                        </td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
         @endif
     </div>
 </div>

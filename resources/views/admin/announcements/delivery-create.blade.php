@@ -14,6 +14,7 @@
         filled(old('segment_birthday_month')) ? [old('segment_birthday_month')] : []
     ))->map(fn ($month) => (int) $month)->filter(fn ($month) => $month >= 1 && $month <= 12)->unique()->values();
     $selectedTagIds = collect((array) old('segment_tag_ids', []))->map(fn ($id) => (int) $id)->filter()->unique()->values();
+    $selectedRfmSegments = collect((array) old('segment_rfm_segments', []))->map(fn ($key) => (string) $key)->filter()->unique()->values();
     $legacyDeliveryType = old('delivery_type', '');
     $oldAudienceType = old('audience_type', $legacyDeliveryType === \App\Models\Announcement::DELIVERY_TYPE_SCHEDULED
         ? \App\Models\Announcement::DELIVERY_TYPE_IMMEDIATE_BULK
@@ -55,15 +56,7 @@
         @csrf
         <div class="ad-studio">
             <div class="ad-studio-main">
-                <section class="ad-card" id="delivery-content" aria-labelledby="delivery-content-title">
-                    <div class="ad-card-head">
-                        <span class="ad-card-icon"><i class="fas fa-pen-nib" aria-hidden="true"></i></span>
-                        <div>
-                            <h2 id="delivery-content-title">お知らせの内容をつくる</h2>
-                            <span>会員がひと目で内容を理解できる、短く具体的な表現がおすすめです。</span>
-                        </div>
-                    </div>
-
+                <section class="ad-card" id="delivery-content" aria-label="お知らせの内容">
                     <div class="form-group">
                         <div class="ad-label-row">
                             <label for="title" class="form-label">タイトル <span class="ad-required">必須</span></label>
@@ -150,7 +143,7 @@
                             <label class="ad-delivery-choice {{ $oldAudienceType === 'segment' ? 'is-selected' : '' }}">
                                 <input type="radio" name="audience_type" value="segment" {{ $oldAudienceType === 'segment' ? 'checked' : '' }}>
                                 <span class="ad-choice-icon"><i class="fas fa-filter" aria-hidden="true"></i></span>
-                                <span><strong>条件で絞る</strong><small>属性・来店・購入条件で配信</small></span>
+                                <span><strong>条件で絞る</strong><small>属性・RFM・来店・購入条件で配信</small></span>
                                 <span class="ad-choice-badge" id="segmentChoiceCount">人数を確認</span>
                             </label>
                         </div>
@@ -201,6 +194,14 @@
                                     <option value="2" {{ old('segment_sex') === '2' ? 'selected' : '' }}>女性</option>
                                 </select>
                             </div>
+                            <fieldset class="ad-multi-filter ad-filter-group-wide mb-0">
+                                <legend class="form-label">RFMセグメント <small>複数選択可・いずれかに一致</small></legend>
+                                <div class="ad-multi-filter-options ad-multi-filter-options--tags">
+                                    @foreach($view->rfmSegments as $rfmKey => $rfm)
+                                        <label style="--ad-tag-color: {{ $rfm['color'] }}"><input type="checkbox" name="segment_rfm_segments[]" value="{{ $rfmKey }}" data-label="{{ $rfm['label'] }}" class="segment-filter" {{ $selectedRfmSegments->contains($rfmKey) ? 'checked' : '' }}><span><i aria-hidden="true"></i>{{ $rfm['label'] }}</span></label>
+                                    @endforeach
+                                </div>
+                            </fieldset>
                             <fieldset class="ad-multi-filter ad-filter-group-wide mb-0">
                                 <legend class="form-label">会員タグ <small>複数選択可・いずれかのタグに一致</small></legend>
                                 @if(($view->memberTags ?? collect())->isEmpty())
@@ -306,23 +307,25 @@
                         </div>
                     </div>
 
-                    <div class="ad-audience-preview" id="audiencePreviewPanel">
-                        <div class="ad-audience-preview-head">
+                    <details class="ad-audience-preview" id="audiencePreviewDetails">
+                        <summary class="ad-audience-preview-head">
                             <div><strong><i class="fas fa-list" aria-hidden="true"></i> 配信対象者一覧</strong><small id="audiencePreviewHint">この一覧の対象者を配信時点で保存します</small></div>
                             <span id="audiencePreviewCount">確認中…</span>
+                        </summary>
+                        <div id="audiencePreviewPanel">
+                            <div class="ad-audience-preview-table-wrap">
+                                <table class="ad-audience-preview-table">
+                                    <thead><tr><th>会員名</th><th>タグ</th><th>会員番号</th><th>通知可否</th><th>チャネル</th><th>ランク</th></tr></thead>
+                                    <tbody id="audiencePreviewRows"><tr><td colspan="6" class="ad-audience-loading">対象者を読み込んでいます…</td></tr></tbody>
+                                </table>
+                            </div>
+                            <div class="ad-audience-pagination">
+                                <button type="button" class="btn btn-sm btn-secondary" id="audiencePrevPage" disabled><i class="fas fa-chevron-left"></i> 前へ</button>
+                                <span id="audiencePageLabel">1 / 1ページ</span>
+                                <button type="button" class="btn btn-sm btn-secondary" id="audienceNextPage" disabled>次へ <i class="fas fa-chevron-right"></i></button>
+                            </div>
                         </div>
-                        <div class="ad-audience-preview-table-wrap">
-                            <table class="ad-audience-preview-table">
-                                <thead><tr><th>会員名</th><th>タグ</th><th>会員番号</th><th>通知可否</th><th>チャネル</th><th>ランク</th></tr></thead>
-                                <tbody id="audiencePreviewRows"><tr><td colspan="6" class="ad-audience-loading">対象者を読み込んでいます…</td></tr></tbody>
-                            </table>
-                        </div>
-                        <div class="ad-audience-pagination">
-                            <button type="button" class="btn btn-sm btn-secondary" id="audiencePrevPage" disabled><i class="fas fa-chevron-left"></i> 前へ</button>
-                            <span id="audiencePageLabel">1 / 1ページ</span>
-                            <button type="button" class="btn btn-sm btn-secondary" id="audienceNextPage" disabled>次へ <i class="fas fa-chevron-right"></i></button>
-                        </div>
-                    </div>
+                    </details>
                 </section>
 
                 <section class="ad-card" id="delivery-coupon" aria-label="クーポン設定">
@@ -372,6 +375,19 @@
                             <span><strong>お知らせを固定表示</strong><small>一覧の上部に優先して表示します</small></span>
                             <span class="ad-check-ui"><i class="fas fa-check" aria-hidden="true"></i></span>
                         </label>
+                        @php
+                            $notifyOld = old('send_notification');
+                            $isNotify = $notifyOld === null
+                                ? true
+                                : ($notifyOld === '1' || $notifyOld === 1 || $notifyOld === true);
+                        @endphp
+                        <label class="ad-pin-option">
+                            <input type="hidden" name="send_notification" value="0">
+                            <input type="checkbox" name="send_notification" id="send_notification" value="1" {{ $isNotify ? 'checked' : '' }}>
+                            <span class="ad-pin-icon"><i class="fas fa-bell" aria-hidden="true"></i></span>
+                            <span><strong>LINE・Push通知を送る</strong><small>オフにするとアプリ内掲載のみになります</small></span>
+                            <span class="ad-check-ui"><i class="fas fa-check" aria-hidden="true"></i></span>
+                        </label>
                         <div class="ad-expiry-option">
                             <span class="ad-pin-icon"><i class="far fa-calendar-xmark" aria-hidden="true"></i></span>
                             <div class="form-group mb-0">
@@ -384,7 +400,6 @@
 
                 <div class="ad-form-footer">
                     <a href="{{ admin_route('admin.announcements') }}" class="btn btn-secondary">キャンセル</a>
-                    <p><i class="fas fa-shield-halved" aria-hidden="true"></i> 右側の確認欄で内容と届け先を確認してから配信してください。</p>
                 </div>
             </div>
 
@@ -412,7 +427,7 @@
                         <span><i class="fas fa-eye" aria-hidden="true"></i> <span id="deliverySubmitLabel">確認画面へ</span></span>
                         <i class="fas fa-arrow-right" aria-hidden="true"></i>
                     </button>
-                    <p class="ad-submit-note"><i class="fas fa-circle-info" aria-hidden="true"></i> 次の画面で会員アプリ・LINEの見え方を確認できます</p>
+                    <p class="ad-submit-note"><i class="fas fa-circle-info" aria-hidden="true"></i> 確認画面で内容を最終チェックしてから配信します</p>
                 </div>
             </aside>
         </div>
@@ -430,7 +445,9 @@
                 </header>
 
                 <div class="ad-review-body" id="deliveryReviewBody">
-                    <div class="ad-channel-previews" aria-label="配信後の見え方">
+                    <details class="ad-details ad-channel-preview-details">
+                        <summary>配信後の見え方をプレビュー</summary>
+                        <div class="ad-channel-previews" aria-label="配信後の見え方">
                         <section class="ad-channel-preview-card">
                             <header><span><i class="fas fa-mobile-screen-button" aria-hidden="true"></i> 会員アプリ</span><small>実際の画面</small></header>
                             @if($announcementPreviewUrl !== null)
@@ -473,6 +490,7 @@
                             </div>
                         </section>
                     </div>
+                    </details>
 
                     <div class="ad-review-grid">
                         <section class="ad-review-card">
@@ -488,7 +506,8 @@
 
                         <section class="ad-review-card ad-review-notifications">
                             <h3><i class="fas fa-bell" aria-hidden="true"></i> 通知予定</h3>
-                            <div class="ad-review-channel-list">
+                            <p class="ad-review-notify-off" id="deliveryReviewNotifyOff" hidden>通知は送りません。アプリ内のお知らせには掲載されます。</p>
+                            <div class="ad-review-channel-list" id="deliveryReviewChannelList">
                                 <div class="ad-review-channel ad-review-channel--line">
                                     <span><i class="fab fa-line" aria-hidden="true"></i> LINE</span>
                                     <strong id="deliveryReviewLineCount">0人</strong>
@@ -498,7 +517,7 @@
                                     <strong id="deliveryReviewPushCount">0人</strong>
                                 </div>
                             </div>
-                            <p>両方を利用している会員には、LINEとPush通知の両方を送ります。</p>
+                            <p id="deliveryReviewNotifyNote">両方を利用している会員には、LINEとPush通知の両方を送ります。</p>
                             <p class="ad-review-unreachable" id="deliveryReviewOptedOut" hidden></p>
                             <p class="ad-review-unreachable" id="deliveryReviewUnreachable" hidden></p>
                         </section>

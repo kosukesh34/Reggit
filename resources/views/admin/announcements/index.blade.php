@@ -21,8 +21,7 @@
     </div>
     <div class="page-header-actions">
         <a href="{{ admin_route('admin.after-registration-deliveries.index') }}" class="btn btn-secondary"><i class="fas fa-clock"></i> スケジュール配信</a>
-        <a href="{{ admin_route('admin.announcements.delivery.create') }}" class="btn btn-secondary"><i class="fas fa-paper-plane"></i> お知らせを配信</a>
-        <a href="{{ admin_route('admin.announcements.create') }}" class="btn btn-primary"><i class="fas fa-plus"></i> 追加</a>
+        <a href="{{ admin_route('admin.announcements.delivery.create') }}" class="btn btn-primary"><i class="fas fa-paper-plane"></i> お知らせを配信</a>
     </div>
 </div>
 
@@ -84,7 +83,7 @@
         <div class="empty-state">
             <i class="fas fa-bullhorn"></i>
             <p>お知らせがありません</p>
-            <p class="empty-state-hint">条件を変えるか、「追加」「配信」から登録できます</p>
+            <p class="empty-state-hint">条件を変えるか、「お知らせを配信」から登録できます</p>
         </div>
         @else
         <div class="table-responsive">

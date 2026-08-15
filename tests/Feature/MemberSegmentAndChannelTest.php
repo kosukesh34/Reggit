@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\MemberVisitSource;
+use App\Enums\OrderStatus;
 use App\Infrastructure\Persistence\Eloquent\Coupon\EloquentCouponDeliveryTargetRepository;
 use App\Models\Member;
 use App\Models\MemberVisit;
@@ -382,5 +383,34 @@ class MemberSegmentAndChannelTest extends TestCase
         ]);
 
         $this->assertEqualsCanonicalizing([$buyer->id, $posMember->id], $ids->all());
+    }
+
+    public function test_rfm_segments_指定セグメントの会員を絞り込めること(): void
+    {
+        $project = $this->createProject();
+        $neverMember = Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => User::factory()->create(['project_id' => $project->id])->id,
+        ]);
+        $activeUser = User::factory()->create(['project_id' => $project->id]);
+        Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => $activeUser->id,
+        ]);
+        $order = Order::create([
+            'project_id' => $project->id,
+            'user_id' => $activeUser->id,
+            'order_number' => 'ORD-'.uniqid(),
+            'order_type' => 'take_out',
+            'total_amount' => 800,
+            'status' => OrderStatus::COMPLETED,
+        ]);
+        $order->forceFill(['created_at' => now()->subDays(3)])->save();
+
+        $ids = app(MemberSegmentService::class)->getMemberIds($project->id, [
+            'rfm_segments' => ['never'],
+        ]);
+
+        $this->assertSame([$neverMember->id], $ids->all());
     }
 }

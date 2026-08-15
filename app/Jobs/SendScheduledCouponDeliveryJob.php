@@ -86,7 +86,10 @@ class SendScheduledCouponDeliveryJob implements ShouldQueue
         $result = $memberAdminService->issueCouponToMembers(
             (int) $delivery->project_id,
             (int) $delivery->coupon_id,
-            $normalizedIds
+            $normalizedIds,
+            null,
+            null,
+            $delivery->send_notification !== false,
         );
 
         $delivery->update([
