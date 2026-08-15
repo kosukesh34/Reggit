@@ -281,14 +281,24 @@ export function openRegister(forced = false): void {
 export function openProfileEdit(): void {
     if (typeof window !== 'undefined' && window.__REGGIT_LIFF_UI__ === true) {
         document.dispatchEvent(new CustomEvent('liff-ui-navigate', {
-            detail: { path: '/membership' },
+            detail: { path: '/profile' },
         }));
-        window.setTimeout(() => {
-            document.dispatchEvent(new CustomEvent('liff-member-open-edit'));
-        }, 80);
         return;
     }
     document.dispatchEvent(new CustomEvent('liff-member-open-edit'));
+}
+
+export function openProfileView(): void {
+    if (typeof window !== 'undefined' && window.__REGGIT_LIFF_UI__ === true) {
+        document.dispatchEvent(new CustomEvent('liff-ui-navigate', {
+            detail: { path: '/profile' },
+        }));
+        return;
+    }
+    if (typeof window.app?.switchTab === 'function' && window.app.currentTab !== AppConstants.TABS.MEMBER) {
+        window.app.switchTab(AppConstants.TABS.MEMBER);
+    }
+    document.dispatchEvent(new CustomEvent('liff-member-open-view'));
 }
 
 function detectIosClient(): boolean {

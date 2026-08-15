@@ -15,7 +15,7 @@ class LiffAppStudioTemplates
 {
     private const MAIN_TABS = [
         'home', 'products', 'orders', 'stamps', 'coupons',
-        'queue', 'reservations', 'member', 'gallery', 'announcements',
+        'queue', 'reservations', 'member', 'profile', 'gallery', 'announcements',
     ];
 
     /** タブの既定ラベル（menu 生成で使用） */
@@ -28,6 +28,7 @@ class LiffAppStudioTemplates
         'queue' => '順番待ち',
         'reservations' => '予約',
         'member' => '会員証',
+        'profile' => 'プロフィール',
         'gallery' => 'ギャラリー',
         'announcements' => 'お知らせ',
     ];
@@ -42,6 +43,7 @@ class LiffAppStudioTemplates
         'queue' => 'fa-users',
         'reservations' => 'fa-calendar-check',
         'member' => 'fa-id-card',
+        'profile' => 'fa-user',
         'gallery' => 'fa-images',
         'announcements' => 'fa-bullhorn',
     ];

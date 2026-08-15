@@ -15,16 +15,12 @@ const DEFAULT_FIELDS: ProfileFieldSetting[] = [
     { key: 'kana', label: 'お名前（カナ）', required: false },
     { key: 'phone', label: '電話番号', required: false },
     { key: 'email', label: 'メールアドレス', required: false },
-    { key: 'birthday', label: '誕生日', required: false },
     { key: 'postal_code', label: '郵便番号', required: false },
-    { key: 'prefecture', label: '都道府県', required: false },
-    { key: 'city', label: '市区町村', required: false },
-    { key: 'street', label: '番地・建物名', required: false },
     { key: 'address', label: '住所', required: false },
+    { key: 'birthday', label: '誕生日', required: false },
     { key: 'sex', label: '性別', required: false },
 ];
-
-const ADDRESS_KEYS = ['postal_code', 'prefecture', 'city', 'street', 'address'];
+const ADDRESS_KEYS = ['postal_code', 'address'];
 
 function resolveFields(memberData: MemberPayload | null | undefined): ProfileFieldSetting[] {
     const root = (memberData && memberData.member) ? (memberData.member as MemberPayload) : memberData;
@@ -86,6 +82,16 @@ function FieldHint({ description }: { description?: string }): JSX.Element | nul
         return null;
     }
     return <p className="member-form-field-hint">{description}</p>;
+}
+
+function resolveNotificationPreferenceOptions(): Array<{ value: string; label: string; note: string }> {
+    const isNativeApp = typeof window !== 'undefined' && window.__MOBILE_APP_MODE__ === true;
+    const channelLabel = isNativeApp ? 'Push通知' : 'LINE通知';
+    return [
+        { value: 'all', label: 'すべて受け取る', note: `新着情報とクーポンを${channelLabel}で受け取る` },
+        { value: 'coupon_only', label: 'クーポン情報のみ', note: `クーポン配信だけ${channelLabel}で受け取る` },
+        { value: 'none', label: '受け取らない', note: `${channelLabel}を受け取らない` },
+    ];
 }
 
 function ProfileFieldRows({
@@ -259,11 +265,7 @@ function ProfileFieldRows({
 
         if (key === 'notification_preference') {
             const preference = val || 'all';
-            const options = [
-                { value: 'all', label: 'すべて受け取る', note: '新着情報とクーポン情報' },
-                { value: 'coupon_only', label: 'クーポン情報のみ', note: 'クーポンが付く配信だけ' },
-                { value: 'none', label: 'すべて受け取らない', note: 'LINE・Push通知を送信しません' },
-            ];
+            const options = resolveNotificationPreferenceOptions();
             rowNodes.push({
                 key,
                 isAddress: false,
@@ -287,7 +289,6 @@ function ProfileFieldRows({
                                 </label>
                             ))}
                         </div>
-                        <FieldHint description={f.description} />
                     </fieldset>
                 ),
             });

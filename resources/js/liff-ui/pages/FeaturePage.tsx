@@ -27,6 +27,7 @@ import { SIMPLE_REWARDS_STORE_ID, SimpleRewardsFeature } from "./SimpleRewardsPa
 
 const FEATURE_ALIASES: Record<string, string> = {
   member: "membership",
+  profile: "membership",
   coupons: "coupon",
   stamps: "stamp",
   reservations: "reservation",
@@ -67,6 +68,9 @@ export function FeaturePage() {
   const aliased = FEATURE_ALIASES[rawFeature];
   if (aliased === "membership" || rawFeature === "membership") {
     return <Navigate to="/membership" replace />;
+  }
+  if (rawFeature === "profile") {
+    return <Navigate to="/profile" replace />;
   }
 
   const legacyPath = pathForLegacyTab(rawFeature);

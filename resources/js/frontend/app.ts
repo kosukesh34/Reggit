@@ -95,7 +95,7 @@ class ReggitApp {
     }
 
     getInitialTab() {
-        const allowedTabs = new Set(['home', 'products', 'orders', 'stamps', 'coupons', 'designlab', 'queue', 'member', 'reservations', 'gallery', 'announcements']);
+        const allowedTabs = new Set(['home', 'products', 'orders', 'stamps', 'coupons', 'designlab', 'queue', 'member', 'profile', 'reservations', 'gallery', 'announcements']);
         if (typeof window.__NATIVE_TARGET_TAB__ !== 'undefined' && window.__NATIVE_TARGET_TAB__ && allowedTabs.has(window.__NATIVE_TARGET_TAB__)) {
             return window.__NATIVE_TARGET_TAB__;
         }
@@ -110,10 +110,11 @@ class ReggitApp {
 
     getTabFromUrl() {
         if (typeof window === 'undefined') return null;
-        const allowedTabs = new Set(['home', 'products', 'orders', 'stamps', 'coupons', 'designlab', 'queue', 'member', 'reservations', 'gallery', 'announcements']);
+        const allowedTabs = new Set(['home', 'products', 'orders', 'stamps', 'coupons', 'designlab', 'queue', 'member', 'profile', 'reservations', 'gallery', 'announcements']);
         const aliases: Record<string, string> = {
             order: 'products',
             card: 'member',
+            profile: 'profile',
             visit: 'queue',
             more: 'home',
         };
@@ -180,7 +181,7 @@ class ReggitApp {
         const params = new URLSearchParams(window.location.search || '');
         if (params.get('designer_live_preview') !== '1') return null;
         const source = params.get('designer_source');
-        const allowed = new Set(['products', 'orders', 'stamps', 'coupons', 'queue', 'reservations', 'member', 'member_card', 'gallery', 'announcements']);
+        const allowed = new Set(['products', 'orders', 'stamps', 'coupons', 'queue', 'reservations', 'member', 'member_card', 'profile', 'gallery', 'announcements']);
         if (!source || !allowed.has(source)) return null;
         return source;
     }
@@ -207,6 +208,7 @@ class ReggitApp {
             reservations: 'reservations',
             member: 'member',
             member_card: 'member',
+            profile: 'profile',
             gallery: 'gallery',
             announcements: 'announcements',
         };
@@ -402,7 +404,7 @@ class ReggitApp {
     /** ネイティブアプリ: プッシュ通知タップ等で指定タブを開く */
     setupNativePushDeepLink() {
         if (typeof window === 'undefined' || !window.__MOBILE_APP_MODE__) return;
-        const allowedTabs = new Set(['home', 'products', 'orders', 'stamps', 'coupons', 'designlab', 'queue', 'member', 'reservations', 'gallery', 'announcements']);
+        const allowedTabs = new Set(['home', 'products', 'orders', 'stamps', 'coupons', 'designlab', 'queue', 'member', 'profile', 'reservations', 'gallery', 'announcements']);
         window.__nativeOpenTab__ = (tabKey, options) => {
             options = options || {};
             const aliases: Record<string, string> = {
@@ -714,7 +716,7 @@ class ReggitApp {
     /** ネイティブアプリでデバイス情報が注入されたあと、初期タブへ切り替え・会員タブのウォレット表示を更新する */
     setupNativeAppEventListeners() {
         const app = this;
-        const allowedTabs = new Set(['home', 'products', 'orders', 'stamps', 'coupons', 'designlab', 'queue', 'member', 'reservations', 'gallery', 'announcements']);
+        const allowedTabs = new Set(['home', 'products', 'orders', 'stamps', 'coupons', 'designlab', 'queue', 'member', 'profile', 'reservations', 'gallery', 'announcements']);
         document.addEventListener('mobile-device-info-injected', () => {
             if (typeof window.__MOBILE_APP_MODE__ === 'undefined' || !window.__MOBILE_APP_MODE__) return;
             if (!window.__NATIVE_WEB_READY__) return;
@@ -843,6 +845,7 @@ class ReggitApp {
                 reservations: () => this.checkMembershipAndLoadReservations(),
                 member: () => this.loadMemberTab(this.designerPreviewSample),
                 member_card: () => this.loadMemberTab(this.designerPreviewSample),
+                profile: () => this.loadMemberTab(this.designerPreviewSample),
                 gallery: () => this.galleryManager.load(),
                 announcements: () => this.announcementManager.load(),
             };
@@ -862,6 +865,7 @@ class ReggitApp {
             coupons: 'couponsSection',
             queue: 'queueSection',
             member: 'memberSection',
+            profile: 'profileSection',
             reservations: 'reservationsSection',
             gallery: 'gallerySection',
             announcements: 'announcementsSection',
@@ -1512,7 +1516,7 @@ class ReggitApp {
         }
 
         if (typeof window !== 'undefined' && window.__REGGIT_LIFF_UI__ === true) {
-            this.currentTab = tab === 'membership' ? 'member' : tab;
+            this.currentTab = (tab === 'membership' || tab === 'profile') ? 'member' : tab;
             if (document.body !== null) {
                 document.body.classList.toggle('liff-lottery-ui', tab === 'designlab');
             }
@@ -1798,7 +1802,7 @@ class ReggitApp {
         } else if (typeof window !== 'undefined' && !window.__LINE_USER_ID__) {
             await this.memberManager.resolveLineUserIdForClient();
         }
-        const isDesignerPreviewMember = !!this.designerPreviewSource && (this.designerPreviewSource === 'member' || this.designerPreviewSource === 'member_card');
+        const isDesignerPreviewMember = !!this.designerPreviewSource && (this.designerPreviewSource === 'member' || this.designerPreviewSource === 'member_card' || this.designerPreviewSource === 'profile');
         if (isDesignerPreviewMember && useSample) {
             // デザイナー埋め込みプレビュー: バックエンドから渡されたランク設定ベースの実表示用ペイロードを優先（DBの会員証設定を反映）
             const payload = typeof window !== 'undefined' && window.__DESIGNER_PREVIEW_MEMBER_PAYLOAD__;

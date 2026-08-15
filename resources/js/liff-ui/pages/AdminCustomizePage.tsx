@@ -3,14 +3,25 @@ import {
   ArrowLeft,
   ArrowUp,
   Check,
+  Bell,
+  CalendarDays,
   Eye,
   ExternalLink,
+  CreditCard,
+  Home,
   LayoutGrid,
   Palette,
   Plus,
+  Menu,
+  MoreHorizontal,
+  QrCode,
   RotateCcw,
+  ShoppingBag,
   Settings2,
   SlidersHorizontal,
+  Stamp,
+  Ticket,
+  UserRound,
   Trash2,
   X,
 } from "lucide-react";
@@ -23,7 +34,7 @@ import { tabLabelMap, tabOptions } from "../config/navigation";
 import { useAppConfig } from "../context/AppConfigContext";
 import { themeMap } from "../themes/themes";
 import { isLinkTabType, type FeatureType, type TabType } from "../types/app";
-import type { AppCustomization, HeaderShortcut, HomeLayout } from "../types/customization";
+import type { AppCustomization, HeaderButtonIcon, HeaderButtonMode, HeaderRightButton, HeaderShortcut, HomeLayout } from "../types/customization";
 import { resolveCustomizationColors } from "../utils/customization";
 
 type DesignerSaveState = "saved" | "unsaved" | "saving" | "error";
@@ -49,12 +60,33 @@ const headerShortcutOptions: Array<{
 }> = [
   { value: "news", label: "お知らせ", feature: "news" },
   { value: "membership", label: "会員証", feature: "membership" },
+  { value: "profile", label: "プロフィール", feature: "membership" },
   { value: "coupon", label: "クーポン", feature: "coupon" },
   { value: "stamp", label: "スタンプ", feature: "stamp" },
   { value: "reservation", label: "予約", feature: "reservation" },
   { value: "queue", label: "順番待ち", feature: "queue" },
   { value: "mobileOrder", label: "モバイルオーダー", feature: "mobileOrder" },
   { value: "none", label: "表示しない" },
+];
+
+const headerButtonModeOptions: Array<{ value: HeaderButtonMode; label: string }> = [
+  { value: "shortcut", label: "既存ショートカット" },
+  { value: "custom", label: "カスタムボタン" },
+  { value: "none", label: "表示しない" },
+];
+
+const headerButtonIconOptions: Array<{ value: HeaderButtonIcon; label: string; icon: JSX.Element }> = [
+  { value: "bell", label: "お知らせ", icon: <Bell size={14} /> },
+  { value: "userRound", label: "プロフィール", icon: <UserRound size={14} /> },
+  { value: "creditCard", label: "会員証", icon: <CreditCard size={14} /> },
+  { value: "ticket", label: "クーポン", icon: <Ticket size={14} /> },
+  { value: "stamp", label: "スタンプ", icon: <Stamp size={14} /> },
+  { value: "calendarDays", label: "予約", icon: <CalendarDays size={14} /> },
+  { value: "qrCode", label: "順番待ち", icon: <QrCode size={14} /> },
+  { value: "shoppingBag", label: "モバイル注文", icon: <ShoppingBag size={14} /> },
+  { value: "menu", label: "メニュー", icon: <Menu size={14} /> },
+  { value: "home", label: "ホーム", icon: <Home size={14} /> },
+  { value: "moreHorizontal", label: "その他", icon: <MoreHorizontal size={14} /> },
 ];
 
 const saveStateLabels: Record<DesignerSaveState, string> = {
@@ -67,6 +99,7 @@ const saveStateLabels: Record<DesignerSaveState, string> = {
 const previewPathByTab: Record<TabType, string> = {
   home: "/home",
   membership: "/membership",
+  profile: "/profile",
   mobileOrder: "/mobileOrder",
   dineInOrder: "/dineInOrder",
   reservation: "/reservation",
@@ -145,6 +178,17 @@ export function AdminCustomizePage({
     window.addEventListener("message", handlePreviewReady);
     return () => window.removeEventListener("message", handlePreviewReady);
   }, [sendCustomizationToPreview]);
+
+  const updateHeaderRightButton = useCallback((patch: Partial<HeaderRightButton>) => {
+    const next = { ...customization.header.rightButton, ...patch };
+    updateCustomization({
+      header: {
+        rightButton: next,
+        showNotifications: next.mode !== "none",
+        shortcut: next.mode === "shortcut" ? next.shortcut : customization.header.shortcut,
+      },
+    });
+  }, [customization.header.rightButton, customization.header.shortcut, updateCustomization]);
 
   const requestReset = () => {
     if (window.confirm(`「${activeStore.storeName}」のデザイン設定を初期状態に戻しますか？\n保存するまでは店舗アプリに反映されません。`)) {
@@ -270,27 +314,89 @@ export function AdminCustomizePage({
               <SelectRow label="カード表示" value={customization.coupon.layout} onChange={(layout) => updateCustomization({ coupon: { layout: layout as AppCustomization["coupon"]["layout"] } })}><option value="cards">カード</option><option value="compact">コンパクトリスト</option></SelectRow>
             </SettingsGroup>
 
-            <SettingsGroup title="ヘッダー" description="店舗切替と右上ショートカットの表示">
+            <SettingsGroup title="ヘッダー" description="店舗切替と右上ボタンの表示">
               <ToggleRow label="店舗ロゴ" checked={customization.header.showLogo} onChange={(showLogo) => updateCustomization({ header: { showLogo } })} />
               <ToggleRow label="会員アプリ表記" checked={customization.header.showSubtitle} onChange={(showSubtitle) => updateCustomization({ header: { showSubtitle } })} />
               <SelectRow
-                label="右上ショートカット"
-                value={customization.header.showNotifications ? customization.header.shortcut : "none"}
+                label="右上ボタンの種類"
+                value={customization.header.rightButton.mode}
                 onChange={(value) => {
-                  const shortcut = value as HeaderShortcut;
-                  updateCustomization({ header: { shortcut, showNotifications: shortcut !== "none" } });
+                  const mode = value as HeaderButtonMode;
+                  if (mode === "shortcut") {
+                    updateHeaderRightButton({ mode, shortcut: customization.header.rightButton.shortcut });
+                    return;
+                  }
+                  if (mode === "custom") {
+                    updateHeaderRightButton({ mode });
+                    return;
+                  }
+                  updateHeaderRightButton({ mode });
                 }}
               >
-                {headerShortcutOptions.map((option) => (
-                  <option
-                    value={option.value}
-                    disabled={option.feature !== undefined && !activeStore.features[option.feature]}
-                    key={option.value}
-                  >
-                    {option.label}{option.feature !== undefined && !activeStore.features[option.feature] ? "（機能OFF）" : ""}
+                {headerButtonModeOptions.map((option) => (
+                  <option value={option.value} key={option.value}>
+                    {option.label}
                   </option>
                 ))}
               </SelectRow>
+
+              {customization.header.rightButton.mode === "shortcut" ? (
+                <SelectRow
+                  label="右上ショートカット"
+                  value={customization.header.rightButton.shortcut}
+                  onChange={(value) => {
+                    const shortcut = value as Exclude<HeaderShortcut, "none">;
+                    updateHeaderRightButton({ shortcut });
+                  }}
+                >
+                  {headerShortcutOptions
+                    .filter((option) => option.value !== "none")
+                    .map((option) => (
+                    <option
+                      value={option.value}
+                      disabled={option.feature !== undefined && !activeStore.features[option.feature]}
+                      key={option.value}
+                    >
+                      {option.label}{option.feature !== undefined && !activeStore.features[option.feature] ? "（機能OFF）" : ""}
+                    </option>
+                  ))}
+                </SelectRow>
+              ) : null}
+
+              {customization.header.rightButton.mode === "custom" ? (
+                <>
+                  <label className="admin-select">
+                    <span>ボタンラベル</span>
+                    <input
+                      type="text"
+                      value={customization.header.rightButton.label}
+                      placeholder="プロフィール"
+                      onChange={(event) => updateHeaderRightButton({ label: event.target.value })}
+                    />
+                  </label>
+                  <label className="admin-select">
+                    <span>遷移先パス</span>
+                    <input
+                      type="text"
+                      value={customization.header.rightButton.path}
+                      placeholder="/profile"
+                      onChange={(event) => updateHeaderRightButton({ path: event.target.value })}
+                    />
+                  </label>
+                  <SelectRow
+                    label="アイコン"
+                    value={customization.header.rightButton.icon}
+                    onChange={(icon) => updateHeaderRightButton({ icon: icon as HeaderButtonIcon })}
+                  >
+                    {headerButtonIconOptions.map((option) => (
+                      <option value={option.value} key={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </SelectRow>
+                </>
+              ) : null}
+
               <ToggleRow label="店舗切替にデザイン名" checked={customization.header.showStoreTheme} onChange={(showStoreTheme) => updateCustomization({ header: { showStoreTheme } })} />
             </SettingsGroup>
 

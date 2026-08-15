@@ -109,7 +109,7 @@ export function DataBlockMount({ source }: DataBlockMountProps): JSX.Element | n
             </div>
         );
     }
-    if (source === 'member' || source === 'member_card') {
+    if (source === 'member' || source === 'member_card' || source === 'profile') {
         return (
             <div className="member-section member-card-mount" data-react-owned="1">
                 <MemberView />

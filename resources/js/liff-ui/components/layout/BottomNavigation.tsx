@@ -1,4 +1,4 @@
-import { Home, CreditCard, CircleEllipsis, Ticket, Sparkles, CalendarDays, ShoppingBag, MapPinned, Stamp, ScanSearch, ExternalLink } from "lucide-react";
+import { Home, CreditCard, CircleEllipsis, Ticket, Sparkles, CalendarDays, ShoppingBag, MapPinned, Stamp, ScanSearch, ExternalLink, UserRound } from "lucide-react";
 import type { CSSProperties } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { tabLabelMap } from "../../config/navigation";
@@ -8,6 +8,7 @@ import type { TabConfig, TabType } from "../../types/app";
 const iconMap: Record<TabType, typeof Home> = {
   home: Home,
   membership: CreditCard,
+  profile: UserRound,
   mobileOrder: ShoppingBag,
   dineInOrder: ShoppingBag,
   reservation: CalendarDays,
@@ -27,6 +28,7 @@ const iconMap: Record<TabType, typeof Home> = {
 const pathByType: Record<TabType, string> = {
   home: "/home",
   membership: "/membership",
+  profile: "/profile",
   mobileOrder: "/mobileOrder",
   dineInOrder: "/dineInOrder",
   reservation: "/reservation",
@@ -55,6 +57,7 @@ export function BottomNavigation() {
   const location = useLocation();
   const featureByTab: Partial<Record<TabType, keyof typeof activeStore.features>> = {
     membership: "membership",
+    profile: "membership",
     mobileOrder: "mobileOrder",
     dineInOrder: "dineInOrder",
     reservation: "reservation",
