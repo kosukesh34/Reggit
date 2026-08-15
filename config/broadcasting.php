@@ -4,6 +4,9 @@ return [
 
     'default' => env('BROADCAST_CONNECTION', env('BROADCAST_DRIVER', 'null')),
 
+    // LIFF の wss 接続先。空なら同一オリジン。Xserver は nginx が WS 不可のためトンネルホストを入れる
+    'client_ws_host' => env('REVERB_CLIENT_HOST', ''),
+
     'connections' => [
 
         'reverb' => [
