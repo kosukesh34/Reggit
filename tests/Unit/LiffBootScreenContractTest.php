@@ -46,7 +46,7 @@ class LiffBootScreenContractTest extends TestCase
         );
     }
 
-    public function test_店舗オーダーはProductsPageではなくOrderDemoを使うこと(): void
+    public function test_店舗オーダーはプロダクトページではなくオーダーデモを使うこと(): void
     {
         $root = dirname(__DIR__, 2);
         $feature = (string) file_get_contents($root.'/resources/js/liff-ui/pages/FeaturePage.tsx');
