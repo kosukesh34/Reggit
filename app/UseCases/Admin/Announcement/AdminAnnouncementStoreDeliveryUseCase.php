@@ -40,6 +40,7 @@ class AdminAnnouncementStoreDeliveryUseCase
      *     segment_min_amount?: string,
      *     delivery_coupon_id?: string,
      *     audience_resolve_mode?: string,
+     *     send_notification?: string|int|bool,
      * } $validated
      */
     public function handle(int $projectId, array $validated): StoreDeliveryOutput
@@ -149,6 +150,7 @@ class AdminAnnouncementStoreDeliveryUseCase
             'body' => $validated['body'] ?? null,
             'image_url' => $validated['image_url'] ?? null,
             'is_pinned' => (bool) ($validated['is_pinned'] ?? false),
+            'send_notification' => $this->shouldSendNotification($validated),
             'expires_at' => $validated['expires_at'] ?? null,
             'delivery_type' => $audienceType,
             'delivery_timing' => $deliveryTiming,
@@ -182,6 +184,12 @@ class AdminAnnouncementStoreDeliveryUseCase
             return new StoreDeliveryOutput(true, false, "お知らせ配信を予約しました（{$formattedDate}）");
         }
 
+        if ($announcement->send_notification === false) {
+            $this->announcementAdminService->issueDeliveryCouponIfSet($announcement);
+
+            return new StoreDeliveryOutput(false, false, 'お知らせを掲載しました（通知は送信していません）');
+        }
+
         $result = $this->announcementNotificationService->send($announcement);
         $this->announcementAdminService->issueDeliveryCouponIfSet($announcement);
 
@@ -212,5 +220,18 @@ class AdminAnnouncementStoreDeliveryUseCase
         }
 
         return $this->couponAdminService->existsForProject($projectId, $couponId) ? $couponId : null;
+    }
+
+    /**
+     * @param  array<string, string|string[]|int|bool|null>  $validated
+     */
+    private function shouldSendNotification(array $validated): bool
+    {
+        if (! array_key_exists('send_notification', $validated)) {
+            return true;
+        }
+        $value = $validated['send_notification'];
+
+        return $value === true || $value === 1 || $value === '1';
     }
 }

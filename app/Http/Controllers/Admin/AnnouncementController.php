@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Requests\Admin\AnnouncementDeliveryStoreRequest;
-use App\Http\Requests\Admin\AnnouncementStoreRequest;
 use App\Http\Requests\Admin\AnnouncementUpdateRequest;
 use App\Services\Admin\PublicImageStorageService;
 use App\UseCases\Admin\AdminSavePublicImageUseCase;
@@ -15,7 +14,6 @@ use App\UseCases\Admin\Announcement\AdminAnnouncementIndexUseCase;
 use App\UseCases\Admin\Announcement\AdminAnnouncementReadsUseCase;
 use App\UseCases\Admin\Announcement\AdminAnnouncementSegmentPreviewUseCase;
 use App\UseCases\Admin\Announcement\AdminAnnouncementStoreDeliveryUseCase;
-use App\UseCases\Admin\Announcement\AdminAnnouncementStoreUseCase;
 use App\UseCases\Admin\Announcement\AdminAnnouncementUpdateUseCase;
 use App\UseCases\Admin\Member\AdminMemberSearchByKeywordUseCase;
 use Illuminate\Http\Request;
@@ -25,7 +23,6 @@ class AnnouncementController extends AdminBaseController
 {
     public function __construct(
         private AdminAnnouncementIndexUseCase $indexUseCase,
-        private AdminAnnouncementStoreUseCase $storeUseCase,
         private AdminAnnouncementEditUseCase $editUseCase,
         private AdminAnnouncementUpdateUseCase $updateUseCase,
         private AdminAnnouncementDeleteUseCase $deleteUseCase,
@@ -53,28 +50,7 @@ class AnnouncementController extends AdminBaseController
 
     public function createAnnouncement()
     {
-        return view('admin.announcements.create');
-    }
-
-    public function storeAnnouncement(AnnouncementStoreRequest $request)
-    {
-        $projectId = $this->resolveAdminProjectId();
-        $validated = $request->validated();
-
-        $imageFile = $request->file('image_file');
-        if ($imageFile instanceof UploadedFile) {
-            $validated['image_url'] = $this->saveImageUseCase->handle(
-                $imageFile,
-                $projectId,
-                PublicImageStorageService::DIR_ANNOUNCEMENT,
-            );
-        }
-        unset($validated['image_file']);
-
-        $this->storeUseCase->handle($projectId, $validated);
-
-        return redirect()->route('admin.announcements', $this->buildAdminRouteParams())
-            ->with('success', 'お知らせを追加しました');
+        return redirect()->route('admin.announcements', $this->buildAdminRouteParams());
     }
 
     public function editAnnouncement(string $projectKey, int $id)

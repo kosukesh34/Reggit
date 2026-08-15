@@ -22,9 +22,10 @@ type PreviewMember = {
 
 type Audience = 'all' | 'personal' | 'segment';
 type Timing = 'immediate' | 'scheduled';
-type SegmentPreset = '' | 'birthday' | 'new_members' | 'inactive' | 'rank' | 'rank_up_arrival' | 'stamp' | 'days_after_visit';
+type SegmentPreset = '' | 'birthday' | 'new_members' | 'inactive' | 'rank' | 'rank_up_arrival' | 'stamp' | 'days_after_visit' | 'rfm';
 
 function initCouponBulkIssue(): void {
+    if (document.body.dataset.pageKind === 'coupon-delivery') return;
     const cfg = (window.CouponBulkIssueConfig || {}) as CouponBulkIssueConfig;
     let selectedMembers = (cfg.initialSelectedMembers || []).map((id) => parseInt(String(id), 10)).filter((id) => id > 0);
     const memberCountTotal = typeof cfg.memberCount === 'number' ? cfg.memberCount : 0;
@@ -79,7 +80,8 @@ function initCouponBulkIssue(): void {
             return el !== null && String(el.value).trim() !== '';
         });
         const stampCompleted = $('#segment_stamp_completed') as HTMLInputElement | null;
-        return hasField || !!(stampCompleted && stampCompleted.checked);
+        const hasRfm = document.querySelectorAll<HTMLInputElement>('input[name="segment_rfm_segments[]"]:checked').length > 0;
+        return hasField || !!(stampCompleted && stampCompleted.checked) || hasRfm;
     }
 
     function getSalesCondition(): string {
@@ -96,6 +98,7 @@ function initCouponBulkIssue(): void {
         if (preset === 'rank') return isScheduled ? 'scheduled_rank' : 'immediate_rank';
         if (preset === 'stamp') return isScheduled ? 'scheduled_stamp' : 'immediate_stamp';
         if (preset === 'days_after_visit') return isScheduled ? 'scheduled_days_after_visit' : 'immediate_days_after_visit';
+        if (preset === 'rfm') return isScheduled ? 'scheduled_segment_attributes' : 'immediate_segment_attributes';
 
         if (hasAttributeFilters()) {
             return isScheduled ? 'scheduled_segment_attributes' : 'immediate_segment_attributes';
@@ -185,6 +188,7 @@ function initCouponBulkIssue(): void {
         toggleBlock('birthdayBlock', preset !== 'birthday');
         toggleBlock('newMemberBlock', preset !== 'new_members');
         toggleBlock('inactiveBlock', preset !== 'inactive');
+        toggleBlock('rfmBlock', preset !== 'rfm' && !showCustomFilters);
         toggleBlock('customSegmentPanel', !showCustomFilters);
 
         const rankLabel = $('#targetRankLabel');
@@ -283,6 +287,13 @@ function initCouponBulkIssue(): void {
         }
     });
 
+    document.querySelectorAll<HTMLInputElement>('input[name="segment_rfm_segments[]"]').forEach((input) => {
+        input.addEventListener('change', () => {
+            syncDeliveryType();
+            updateTargetPreview();
+        });
+    });
+
     let previewTimer: number | undefined;
     function buildPreviewParams(deliveryType: string): URLSearchParams {
         const params = new URLSearchParams();
@@ -306,6 +317,9 @@ function initCouponBulkIssue(): void {
         if (stampCompleted && stampCompleted.checked) params.set('stamp_completed', '1');
         const segmentStampCompleted = $('#segment_stamp_completed') as HTMLInputElement | null;
         if (segmentStampCompleted && segmentStampCompleted.checked) params.set('segment_stamp_completed', '1');
+        document.querySelectorAll<HTMLInputElement>('input[name="segment_rfm_segments[]"]:checked').forEach((input) => {
+            params.append('segment_rfm_segments[]', input.value);
+        });
         return params;
     }
 

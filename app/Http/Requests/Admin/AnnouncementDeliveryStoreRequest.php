@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Admin;
 
 use App\Enums\AnnouncementAudienceResolveMode;
+use App\Enums\RfmSegment;
 use App\Models\Announcement;
 use App\Services\Admin\MemberSegmentService;
 use App\Support\MemberChannel;
@@ -102,6 +103,8 @@ class AnnouncementDeliveryStoreRequest extends FormRequest
             ],
             'segment_sex' => ['nullable', Rule::in(['1', '2'])],
             'segment_rank' => ['nullable', 'string', 'max:64'],
+            'segment_rfm_segments' => ['nullable', 'array'],
+            'segment_rfm_segments.*' => ['string', Rule::in(RfmSegment::keys()), 'distinct'],
             'segment_product_id' => ['nullable', 'integer', 'min:1'],
             'segment_period_days' => ['nullable', 'integer', 'min:1', 'max:365'],
             'segment_condition' => ['nullable', Rule::in(['min_amount', 'no_orders'])],
@@ -116,6 +119,7 @@ class AnnouncementDeliveryStoreRequest extends FormRequest
             ],
             'delivery_coupon_id' => ['nullable', 'integer', 'min:1'],
             'is_pinned' => ['nullable', 'boolean'],
+            'send_notification' => ['nullable', 'boolean'],
             'expires_at' => ['nullable', 'date'],
             'image_url' => ['nullable', 'url', 'max:500'],
             'image_file' => ['nullable', 'image', 'max:2048'],

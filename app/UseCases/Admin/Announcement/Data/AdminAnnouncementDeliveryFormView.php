@@ -11,6 +11,7 @@ use Illuminate\Support\Collection;
  * @param  Collection<int, Coupon>  $coupons
  * @param  Collection<int, Product>  $products
  * @param  Collection<int, MemberTag>  $memberTags
+ * @param  array<string, array{label: string, color: string}>  $rfmSegments
  */
 class AdminAnnouncementDeliveryFormView
 {
@@ -19,5 +20,6 @@ class AdminAnnouncementDeliveryFormView
         public readonly Collection $coupons,
         public readonly Collection $products = new Collection,
         public readonly Collection $memberTags = new Collection,
+        public readonly array $rfmSegments = [],
     ) {}
 }

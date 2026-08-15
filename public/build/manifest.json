@@ -8,11 +8,11 @@
     "src": "resources/css/admin/liff-designer/react.css"
   },
   "resources/css/app.css": {
-    "file": "assets/app-Dqq-BYb3.css",
+    "file": "assets/app-Ff6usim8.css",
     "src": "resources/css/app.css"
   },
   "resources/js/admin/main.tsx": {
-    "file": "assets/main-_ieMoSs3.js",
+    "file": "assets/main-BT0_1jmL.js",
     "name": "main",
     "src": "resources/js/admin/main.tsx",
     "isEntry": true,
@@ -21,7 +21,7 @@
     ]
   },
   "resources/js/frontend/main.tsx": {
-    "file": "assets/main-BPMPFM3A.js",
+    "file": "assets/main-Fbc5OITR.js",
     "name": "main",
     "src": "resources/js/frontend/main.tsx",
     "isEntry": true,
@@ -30,7 +30,7 @@
     ],
     "css": [
       "assets/main-CaGWElG9.css",
-      "assets/app-Dqq-BYb3.css",
+      "assets/app-Ff6usim8.css",
       "assets/tokens-CJDqh8yr.css",
       "assets/globals-BfaEBi2U.css",
       "assets/design-layout-variants-O2rPv7D6.css"
