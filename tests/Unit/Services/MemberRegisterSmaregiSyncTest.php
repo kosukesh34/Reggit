@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Services;
 
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\Member;
 use App\Models\Project;
 use App\Models\User;
@@ -75,6 +76,49 @@ class MemberRegisterSmaregiSyncTest extends TestCase
             'smaregi_customer_id' => 'smaregi-123',
             'mail_receive_flag' => '1',
         ]);
+    }
+
+    public function test_register_member_任意項目をスマレジ自由項目として送ること(): void
+    {
+        $user = User::factory()->create(['project_id' => $this->project->id]);
+        ShopSettingStore::setProfileFieldSettings([
+            'smaregi_fields' => [],
+            'custom_fields' => [
+                [
+                    'key' => 'nickname',
+                    'label' => 'ニックネーム',
+                    'required' => false,
+                    'smaregi_no' => 1,
+                ],
+            ],
+        ], (int) $this->project->id);
+
+        $smaregiApi = Mockery::mock(SmaregiApiService::class);
+        $smaregiApi->shouldReceive('getContractIdForProject')->andReturn('sb_test_contract');
+        $smaregiApi->shouldReceive('clearLastErrorDetail')->once();
+        $smaregiApi->shouldReceive('createCustomer')
+            ->once()
+            ->withArgs(function (string $contractId, array $body): bool {
+                return $contractId === 'sb_test_contract'
+                    && ($body['customFields'] ?? null) === [
+                        ['no' => 1, 'value' => 'たろう'],
+                    ];
+            })
+            ->andReturn(['customerId' => 'smaregi-cf']);
+
+        $couponIssue = Mockery::mock(CouponIssueService::class);
+        $couponIssue->shouldReceive('issueForFirstRegistration')->once();
+
+        $this->app->instance(SmaregiApiService::class, $smaregiApi);
+        $this->app->instance(CouponIssueService::class, $couponIssue);
+
+        $member = app(MemberService::class)->registerMember($user, [
+            'name' => '山田 太郎',
+            'nickname' => 'たろう',
+        ]);
+
+        $this->assertSame('smaregi-cf', $member->smaregi_customer_id);
+        $this->assertSame(['nickname' => 'たろう'], $member->profile_extra);
     }
 
     public function test_register_member_スマレジ失敗時は_d_bに会員を作らないこと(): void

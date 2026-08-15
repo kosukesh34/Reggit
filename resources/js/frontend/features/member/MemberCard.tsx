@@ -1,8 +1,8 @@
 import React, { useEffect, useId, useRef } from 'react';
 import {
     getMemberManager,
-    openProfileEdit,
     openRegister,
+    openProfileEdit,
     pendingLotteryCount,
     resolveCardDesign,
     shouldShowAppleWallet,

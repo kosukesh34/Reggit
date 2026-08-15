@@ -2,6 +2,9 @@ import Foundation
 
 struct MobileProjectsAPIClient {
     func fetchProjects(baseURL: String) async throws -> [MobilePublicProject] {
+        #if os(Android)
+        return []
+        #else
         let trimmed = baseURL.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         guard let url = URL(string: "\(trimmed)/api/v1/projects") else {
             throw URLError(.badURL)
@@ -14,5 +17,6 @@ struct MobileProjectsAPIClient {
             throw URLError(.badServerResponse)
         }
         return try JSONDecoder().decode(MobilePublicProjectsResponse.self, from: data).projects
+        #endif
     }
 }

@@ -6,21 +6,38 @@ use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Enums\ProfileCustomFieldInputType;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\Project;
+use App\Services\Smaregi\SmaregiCustomerCustomFieldLabelSyncService;
 use App\UseCases\Admin\Settings\Data\UpdateProfileSettingsInput;
 use App\UseCases\Admin\Settings\UpdateProfileSettingsUseCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Mockery;
 use Tests\TestCase;
 
 class UpdateProfileSettingsUseCaseTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function tearDown(): void
+    {
+        Mockery::close();
+        parent::tearDown();
+    }
+
+    private function useCase(?SmaregiCustomerCustomFieldLabelSyncService $sync = null): UpdateProfileSettingsUseCase
+    {
+        if ($sync === null) {
+            $sync = Mockery::mock(SmaregiCustomerCustomFieldLabelSyncService::class);
+            $sync->shouldReceive('sync')->andReturn([]);
+        }
+
+        return new UpdateProfileSettingsUseCase(app(ShopSettingRepository::class), $sync);
+    }
+
     public function test_handle_プロフィール項目設定を保存できること(): void
     {
         $project = Project::factory()->create();
 
-        $useCase = new UpdateProfileSettingsUseCase(app(ShopSettingRepository::class));
-        $useCase->handle(new UpdateProfileSettingsInput(
+        $this->useCase()->handle(new UpdateProfileSettingsInput(
             projectId: (int) $project->id,
             rawSmaregiFields: [
                 'name' => ['enabled' => '1', 'required' => '1'],
@@ -40,6 +57,10 @@ class UpdateProfileSettingsUseCaseTest extends TestCase
         $this->assertSame('ニックネーム', $settings['custom_fields'][0]['label']);
         $this->assertTrue($settings['custom_fields'][0]['required']);
         $this->assertSame(ProfileCustomFieldInputType::TEXT, $settings['custom_fields'][0]['input_type']);
+        $this->assertArrayNotHasKey('prefecture', $settings['smaregi_fields']);
+        $this->assertArrayNotHasKey('city', $settings['smaregi_fields']);
+        $this->assertArrayNotHasKey('street', $settings['smaregi_fields']);
+        $this->assertArrayHasKey('address', $settings['smaregi_fields']);
         $this->assertSame('prompt', ShopSettingStore::getMemberRegistrationMode((int) $project->id));
     }
 
@@ -47,8 +68,7 @@ class UpdateProfileSettingsUseCaseTest extends TestCase
     {
         $project = Project::factory()->create();
 
-        $useCase = new UpdateProfileSettingsUseCase(app(ShopSettingRepository::class));
-        $useCase->handle(new UpdateProfileSettingsInput(
+        $this->useCase()->handle(new UpdateProfileSettingsInput(
             projectId: (int) $project->id,
             rawSmaregiFields: [
                 'name' => ['enabled' => '1', 'required' => '1'],
@@ -72,12 +92,32 @@ class UpdateProfileSettingsUseCaseTest extends TestCase
         $this->assertSame('任意の説明', $settings['custom_fields'][0]['description']);
     }
 
+    public function test_handle_スマレジ自由項目番号を保存できること(): void
+    {
+        $project = Project::factory()->create();
+        $sync = Mockery::mock(SmaregiCustomerCustomFieldLabelSyncService::class);
+        $sync->shouldReceive('sync')->once()->andReturn(['nickname' => 4]);
+
+        $this->useCase($sync)->handle(new UpdateProfileSettingsInput(
+            projectId: (int) $project->id,
+            rawSmaregiFields: [
+                'name' => ['enabled' => '1', 'required' => '1'],
+            ],
+            rawCustomFields: [
+                ['key' => 'nickname', 'label' => 'ニックネーム', 'required' => '0'],
+            ],
+            memberRegistrationMode: 'optional',
+        ));
+
+        $settings = ShopSettingStore::getProfileFieldSettings((int) $project->id);
+        $this->assertSame(4, $settings['custom_fields'][0]['smaregi_no']);
+    }
+
     public function test_handle_会員登録モードをforceで保存できること(): void
     {
         $project = Project::factory()->create();
 
-        $useCase = new UpdateProfileSettingsUseCase(app(ShopSettingRepository::class));
-        $useCase->handle(new UpdateProfileSettingsInput(
+        $this->useCase()->handle(new UpdateProfileSettingsInput(
             projectId: (int) $project->id,
             rawSmaregiFields: [
                 'name' => ['enabled' => '1', 'required' => '0'],

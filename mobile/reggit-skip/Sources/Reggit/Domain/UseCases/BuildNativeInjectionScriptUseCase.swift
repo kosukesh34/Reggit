@@ -23,12 +23,10 @@ struct BuildNativeInjectionScriptUseCase: NativeInjectionScriptBuilding {
 
             \(NativeInjectionScripts.viewportEnforcement)
             \(NativeInjectionScripts.zoomLock)
-            \(NativeInjectionScripts.hideWebTabBar)
             \(NativeInjectionScripts.applyInitialTab(activeTab: activeTab, applyInitialTab: applyInitialTab))
 
             enforceViewport();
             enforceNoZoom();
-            hideWebTabBar();
             if (applyInitialTab) {
                 window.__NATIVE_WEB_READY__ = true;
                 applyInitialTabIfNeeded();
