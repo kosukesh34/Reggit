@@ -42,7 +42,6 @@ export class MemberManager {
     _appleWalletPassDownloadUrlAt?: number;
     _walletEchoChannelName: string | null = null;
     _walletSummaryLast: { points: number; stamps_total: number; pending_lottery_count: number } | null = null;
-    _walletSummaryLastFetchedAt: number = 0;
     _walletVisibilityBound = false;
     /** 同一の pending 件数では自動ポップアップを繰り返さない */
     _gachaPopupOpenedForPendingCount: number | null = null;
@@ -3265,13 +3264,13 @@ export class MemberManager {
         }
         this._bindWalletSummaryVisibilityRefresh();
         this._subscribeLiffWalletChannel();
-        void this._pollWalletSummaryOnce({ force: true });
+        void this._pollWalletSummary();
     }
 
     refreshWalletSummaryOnLaunch(options: { force?: boolean } = {}): void {
         this.startWalletSummaryPolling();
         if (options.force === true) {
-            void this._pollWalletSummaryOnce({ force: true });
+            void this._pollWalletSummary();
         }
     }
 
@@ -3326,27 +3325,14 @@ export class MemberManager {
                 return;
             }
             this._subscribeLiffWalletChannel();
-            void this._pollWalletSummaryOnce({ force: true });
+            void this._pollWalletSummary();
         });
         document.addEventListener('liff-payment-completed', () => {
-            void this._pollWalletSummaryOnce({ force: true });
+            void this._pollWalletSummary();
         });
         document.addEventListener('liff-member-reload', () => {
-            void this._pollWalletSummaryOnce({ force: true });
+            void this._pollWalletSummary();
         });
-    }
-
-    async _pollWalletSummaryOnce(options: { force?: boolean } = {}): Promise<void> {
-        const force = options.force === true;
-        const now = Date.now();
-        const minIntervalMs = 5000;
-        if (!force
-            && this._walletSummaryLastFetchedAt > 0
-            && (now - this._walletSummaryLastFetchedAt) < minIntervalMs) {
-            return;
-        }
-        this._walletSummaryLastFetchedAt = now;
-        await this._pollWalletSummary();
     }
 
     async _pollWalletSummary(): Promise<void> {

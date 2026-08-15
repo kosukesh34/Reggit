@@ -66,7 +66,12 @@ class LiffBootScreenContractTest extends TestCase
         $this->assertStringContainsString("listen('.wallet.updated'", $manager);
         $this->assertStringContainsString('liff.member.', $manager);
         $this->assertStringContainsString('stamps_total: normalized.stamps_total', $manager);
-        $this->assertStringNotContainsString('_walletSummaryTimer = window.setInterval', $manager);
+        $this->assertStringNotContainsString('_walletSummaryTimer', $manager);
+        $this->assertStringNotContainsString('window.setInterval', $manager);
+        $echo = (string) file_get_contents($root.'/resources/js/frontend/realtime/liffEcho.ts');
+        $this->assertStringContainsString('__REVERB_WS_HOST__', $echo);
+        $scripts = (string) file_get_contents($root.'/resources/views/frontend/partials/_scripts-config.blade.php');
+        $this->assertStringContainsString('reverb-ws-host', $scripts);
         $this->assertStringContainsString('liff-wallet-summary-updated', $page);
         $this->assertStringContainsString('fetchMemberContext({ force: true })', $page);
         $this->assertStringContainsString("document.addEventListener('liff-wallet-summary-updated'", $stamps);
