@@ -12,6 +12,9 @@ use App\Models\PointTransaction;
 use App\Models\Project;
 use App\Models\StampCard;
 use App\Models\User;
+use Illuminate\Broadcasting\BroadcastManager;
+use Illuminate\Contracts\Broadcasting\Broadcaster;
+use Illuminate\Contracts\Broadcasting\Factory as BroadcastingFactory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Tests\TestCase;
@@ -56,6 +59,10 @@ class LiffWalletBroadcastTest extends TestCase
             'broadcasting.connections.reverb.options.scheme' => 'http',
             'broadcasting.connections.reverb.options.useTLS' => false,
         ]);
+        app()->forgetInstance(BroadcastManager::class);
+        app()->forgetInstance(BroadcastingFactory::class);
+        app()->forgetInstance(Broadcaster::class);
+        require base_path('routes/channels.php');
     }
 
     public function test_ポイント台帳の変更で会員ウォレット更新が配信されること(): void
