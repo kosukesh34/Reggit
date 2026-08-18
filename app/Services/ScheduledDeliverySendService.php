@@ -12,6 +12,8 @@ use App\Models\ScheduledDeliverySend;
 use App\Services\Admin\MemberAdminService;
 use App\Util\LogHelper;
 use Carbon\Carbon;
+use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Support\Facades\DB;
 
 class ScheduledDeliverySendService
 {
@@ -94,29 +96,43 @@ class ScheduledDeliverySendService
         if ((int) $member->project_id !== (int) $delivery->project_id) {
             return false;
         }
-        $sendKey = $delivery->sendKey($now);
-        if ($this->alreadySent($delivery, (int) $member->id, $sendKey)) {
+        if ($delivery->isCouponOnly() && $delivery->coupon_id === null) {
             return false;
         }
+        $sendKey = $delivery->sendKey($now);
+        $announcement = null;
+        try {
+            $claimed = DB::transaction(function () use ($delivery, $member, $now, $sendKey, &$announcement): bool {
+                if ($this->alreadySent($delivery, (int) $member->id, $sendKey)) {
+                    return false;
+                }
+                ScheduledDeliverySend::query()->create([
+                    'after_registration_delivery_id' => $delivery->id,
+                    'member_id' => $member->id,
+                    'send_key' => $sendKey,
+                    'sent_at' => $now,
+                ]);
+                if ($delivery->isCouponOnly()) {
+                    $this->issueCoupon($delivery, $member, $now, $delivery->shouldSendNotification());
 
-        if ($delivery->isCouponOnly()) {
-            if ($delivery->coupon_id === null) {
-                return false;
-            }
-            $this->issueCoupon($delivery, $member, $now, $delivery->shouldSendNotification());
-        } else {
-            if ($delivery->coupon_id !== null) {
-                $this->issueCoupon($delivery, $member, $now, false);
-            }
-            $this->sendAnnouncement($delivery, $member);
+                    return true;
+                }
+                if ($delivery->coupon_id !== null) {
+                    $this->issueCoupon($delivery, $member, $now, false);
+                }
+                $announcement = $this->createAnnouncement($delivery, $member);
+
+                return true;
+            });
+        } catch (UniqueConstraintViolationException) {
+            return false;
         }
-
-        ScheduledDeliverySend::query()->create([
-            'after_registration_delivery_id' => $delivery->id,
-            'member_id' => $member->id,
-            'send_key' => $sendKey,
-            'sent_at' => $now,
-        ]);
+        if ($claimed !== true) {
+            return false;
+        }
+        if ($announcement !== null) {
+            $this->announcementNotificationService->send($announcement);
+        }
 
         LogHelper::info('[ScheduledDelivery] sent', [
             'project_id' => (int) $delivery->project_id,
@@ -143,13 +159,14 @@ class ScheduledDeliverySendService
             ->exists();
     }
 
-    private function sendAnnouncement(AfterRegistrationDelivery $delivery, Member $member): void
+    private function createAnnouncement(AfterRegistrationDelivery $delivery, Member $member): ?Announcement
     {
         $title = trim((string) $delivery->title);
         if ($title === '') {
-            return;
+            return null;
         }
-        $announcement = Announcement::create([
+
+        return Announcement::create([
             'project_id' => $member->project_id,
             'title' => $title,
             'body' => $delivery->body,
@@ -161,7 +178,6 @@ class ScheduledDeliverySendService
             'target_member_ids' => [$member->id],
             'delivery_coupon_id' => $delivery->coupon_id,
         ]);
-        $this->announcementNotificationService->send($announcement);
     }
 
     private function issueCoupon(AfterRegistrationDelivery $delivery, Member $member, Carbon $now, bool $shouldNotify): void
