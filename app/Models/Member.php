@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
 
 class Member extends Model
 {
@@ -111,7 +112,11 @@ class Member extends Model
 
     public function getTotalStamps(): int
     {
-        return (int) $this->memberStamps()->sum('current_stamps');
+        return (int) $this->memberStamps()
+            ->join('stamp_cards', 'stamp_cards.id', '=', 'member_stamps.stamp_card_id')
+            ->sum(DB::raw(
+                'member_stamps.current_stamps + COALESCE(member_stamps.cycle_count, 0) * GREATEST(COALESCE(stamp_cards.required_stamps, 1), 1)'
+            ));
     }
 
     public function displayAddress(): string

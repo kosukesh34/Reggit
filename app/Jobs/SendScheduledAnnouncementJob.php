@@ -10,6 +10,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\DB;
 
 class SendScheduledAnnouncementJob implements ShouldQueue
 {
@@ -23,22 +24,27 @@ class SendScheduledAnnouncementJob implements ShouldQueue
         AnnouncementNotificationService $announcementNotificationService,
         AnnouncementAdminService $announcementAdminService,
     ): void {
-        $announcement = Announcement::withoutGlobalScopes()->find($this->announcementId);
-        if ($announcement === null || $announcement->delivery_status !== Announcement::DELIVERY_STATUS_SCHEDULED) {
-            return;
-        }
+        DB::transaction(function () use ($announcementNotificationService, $announcementAdminService): void {
+            $announcement = Announcement::withoutGlobalScopes()
+                ->whereKey($this->announcementId)
+                ->lockForUpdate()
+                ->first();
+            if ($announcement === null || $announcement->delivery_status !== Announcement::DELIVERY_STATUS_SCHEDULED) {
+                return;
+            }
 
-        $announcementAdminService->finalizeAudienceForSend($announcement);
-        $announcement = $announcement->fresh() ?? $announcement;
-        $announcementAdminService->issueDeliveryCouponIfSet($announcement);
-        if ($announcement->send_notification !== false) {
-            $announcementNotificationService->send($announcement);
-        }
+            $announcementAdminService->finalizeAudienceForSend($announcement);
+            $announcement = $announcement->fresh() ?? $announcement;
+            $announcementAdminService->issueDeliveryCouponIfSet($announcement);
+            if ($announcement->send_notification !== false) {
+                $announcementNotificationService->send($announcement);
+            }
 
-        $announcement->update([
-            'delivery_status' => Announcement::DELIVERY_STATUS_SENT,
-            'published_at' => $announcement->published_at ?? now(),
-            'sent_at' => now(),
-        ]);
+            $announcement->update([
+                'delivery_status' => Announcement::DELIVERY_STATUS_SENT,
+                'published_at' => $announcement->published_at ?? now(),
+                'sent_at' => now(),
+            ]);
+        });
     }
 }
