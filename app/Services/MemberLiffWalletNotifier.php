@@ -4,13 +4,12 @@ namespace App\Services;
 
 use App\Events\MemberWalletUpdated;
 use App\Models\Member;
-use App\UseCases\Member\MemberWalletSummaryUseCase;
 use App\Util\LogHelper;
 
 class MemberLiffWalletNotifier
 {
     public function __construct(
-        private MemberWalletSummaryUseCase $walletSummaryUseCase,
+        private MemberWalletSummaryService $walletSummaryService,
     ) {}
 
     public function notify(Member $member): void
@@ -21,7 +20,7 @@ class MemberLiffWalletNotifier
         }
 
         try {
-            $summary = $this->walletSummaryUseCase->handle($user);
+            $summary = $this->walletSummaryService->summarize($user);
             event(new MemberWalletUpdated(
                 (int) $member->project_id,
                 (int) $member->id,
