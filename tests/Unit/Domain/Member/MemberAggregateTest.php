@@ -44,6 +44,22 @@ class MemberAggregateTest extends TestCase
         $this->assertSame(-10, $entries[0]->signedPoints);
     }
 
+    public function test_reverse_earned_points_残高を超える取消は0までであること(): void
+    {
+        $member = new Member(
+            new MemberId(1),
+            1,
+            20,
+            '',
+        );
+
+        $member->reverseEarnedPoints(50, '取引取消', null);
+
+        $this->assertSame(0, $member->displayPoints());
+        $entries = $member->pullPendingEntries();
+        $this->assertSame(-20, $entries[0]->signedPoints);
+    }
+
     public function test_use_points_残高から減算されること(): void
     {
         $member = new Member(

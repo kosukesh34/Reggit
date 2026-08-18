@@ -110,4 +110,31 @@ class MemberRankMetricCalculatorTest extends TestCase
         $calculator = app(MemberRankMetricCalculator::class);
         $this->assertSame(2, $calculator->stamps($member, (int) $project->id));
     }
+
+    public function test_total_繰り返すカードは周回分を累計に含めること(): void
+    {
+        $project = Project::factory()->create();
+        AdminContext::setCurrentProject($project);
+        ShopSettingStore::setValue('member_rank_aggregation_type', RankAggregationType::TOTAL, 'string', (int) $project->id);
+
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $member = Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+        ]);
+        $card = StampCard::factory()->create([
+            'project_id' => $project->id,
+            'required_stamps' => 5,
+        ]);
+        MemberStamp::factory()->create([
+            'project_id' => $project->id,
+            'member_id' => $member->id,
+            'stamp_card_id' => $card->id,
+            'current_stamps' => 2,
+            'cycle_count' => 1,
+        ]);
+
+        $calculator = app(MemberRankMetricCalculator::class);
+        $this->assertSame(7, $calculator->stamps($member, (int) $project->id));
+    }
 }
