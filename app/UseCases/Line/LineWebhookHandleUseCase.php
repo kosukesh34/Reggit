@@ -2,19 +2,24 @@
 
 namespace App\UseCases\Line;
 
+use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Enums\MemberStatus;
+use App\Models\Project;
 use App\Models\User;
-use App\Repositories\Contracts\ProjectRepository;
 use App\Services\Line\LineService;
+use App\Services\Line\LineWebhookProjectResolver;
 use App\UseCases\Line\Data\LineWebhookInput;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
 
 class LineWebhookHandleUseCase
 {
+    private ?int $projectId = null;
+
     public function __construct(
         private LineService $lineService,
-        private ProjectRepository $projectRepository,
+        private LineWebhookProjectResolver $projectResolver,
+        private ShopSettingRepository $shopSettingRepository,
     ) {}
 
     public function handle(LineWebhookInput $input): array
@@ -31,8 +36,8 @@ class LineWebhookHandleUseCase
 
         $signature = $input->signature;
         $body = $input->body;
-
-        if ($this->lineService->verifySignature($body, $signature) === false) {
+        $projectId = $this->projectResolver->resolveProjectId($body, $signature);
+        if ($projectId === null) {
             LogHelper::warning('[LINE] invalid signature');
 
             return [
@@ -40,6 +45,12 @@ class LineWebhookHandleUseCase
                 'payload' => ['error' => 'Invalid signature'],
             ];
         }
+
+        $project = Project::query()->find($projectId);
+        if ($project !== null) {
+            AdminContext::setCurrentProject($project);
+        }
+        $this->projectId = $projectId;
 
         $events = json_decode($body, true)['events'] ?? [];
         foreach ($events as $event) {
@@ -77,8 +88,7 @@ class LineWebhookHandleUseCase
 
     private function handleFollow(array $event, string $userId): void
     {
-        $projectId = AdminContext::getCurrentProjectId()
-            ?? $this->projectRepository->findFirstActive()?->id;
+        $projectId = $this->projectId;
         if ($projectId === null) {
             LogHelper::warning('[LINE] follow skipped: no active project');
 
@@ -86,8 +96,10 @@ class LineWebhookHandleUseCase
         }
 
         $user = User::firstOrCreate(
-            ['line_user_id' => $userId],
-            ['project_id' => $projectId],
+            [
+                'project_id' => $projectId,
+                'line_user_id' => $userId,
+            ],
         );
 
         $profile = $this->lineService->getProfile($userId);
@@ -118,7 +130,7 @@ class LineWebhookHandleUseCase
         $message = $event['message'] ?? [];
         $text = $message['text'] ?? '';
 
-        $user = User::where('line_user_id', $userId)->first();
+        $user = $this->findUserByLineId($userId);
         if ($user === null) {
             return;
         }
@@ -164,7 +176,7 @@ class LineWebhookHandleUseCase
 
     private function sendMenu(string $replyToken, string $userId): void
     {
-        $liffUrl = env('LINE_LIFF_URL', url('/liff'));
+        $liffUrl = $this->resolveLiffUrl();
         $message = [
             'type' => 'flex',
             'altText' => 'メニューを表示',
@@ -220,11 +232,11 @@ class LineWebhookHandleUseCase
 
     private function sendMemberCard(string $replyToken, string $userId): void
     {
-        $user = User::where('line_user_id', $userId)->first();
+        $user = $this->findUserByLineId($userId);
         $member = $user?->member;
 
         if ($member === null) {
-            $liffUrl = env('LINE_LIFF_URL', url('/liff'));
+            $liffUrl = $this->resolveLiffUrl();
             $message = $this->lineService->createTextMessage(
                 "会員登録がまだです。\n".
                 "LIFFアプリで会員登録を行ってください。\n\n".
@@ -244,7 +256,7 @@ class LineWebhookHandleUseCase
 
     private function sendOrderHistory(string $replyToken, string $userId): void
     {
-        $user = User::where('line_user_id', $userId)->first();
+        $user = $this->findUserByLineId($userId);
         if ($user === null) {
             return;
         }
@@ -263,6 +275,34 @@ class LineWebhookHandleUseCase
         }
 
         $this->lineService->replyMessage($replyToken, $message);
+    }
+
+    private function findUserByLineId(string $userId): ?User
+    {
+        if ($this->projectId === null) {
+            return null;
+        }
+
+        return User::query()
+            ->where('project_id', $this->projectId)
+            ->where('line_user_id', $userId)
+            ->first();
+    }
+
+    private function resolveLiffUrl(): string
+    {
+        if ($this->projectId !== null) {
+            $projectUrl = trim($this->shopSettingRepository->getLineLiffUrl($this->projectId));
+            if ($projectUrl !== '') {
+                return $projectUrl;
+            }
+        }
+        $fallback = trim((string) config('line.liff_url', ''));
+        if ($fallback !== '') {
+            return $fallback;
+        }
+
+        return url('/liff');
     }
 
     private function sendDefaultMessage(string $replyToken): void
