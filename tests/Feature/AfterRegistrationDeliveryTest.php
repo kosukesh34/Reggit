@@ -12,6 +12,7 @@ use App\Models\AfterRegistrationDelivery;
 use App\Models\Announcement;
 use App\Models\Coupon;
 use App\Models\Member;
+use App\Models\MemberCoupon;
 use App\Models\Project;
 use App\Models\ScheduledDeliverySend;
 use App\Models\User;
@@ -246,5 +247,27 @@ class AfterRegistrationDeliveryTest extends TestCase
         } finally {
             Carbon::setTestNow();
         }
+    }
+
+    public function test_同じ会員への再送は1回だけ記録されること(): void
+    {
+        $project = $this->createProject();
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $member = Member::factory()->create(['project_id' => $project->id, 'user_id' => $user->id]);
+        $coupon = Coupon::factory()->create(['project_id' => $project->id]);
+        $delivery = AfterRegistrationDelivery::create([
+            'project_id' => $project->id,
+            'content_type' => ScheduledDeliveryContentType::COUPON_ONLY,
+            'coupon_id' => $coupon->id,
+            'send_notification' => false,
+            'is_active' => true,
+        ]);
+
+        $service = app(ScheduledDeliverySendService::class);
+        $this->assertTrue($service->sendToMember($delivery, $member));
+        $this->assertFalse($service->sendToMember($delivery, $member));
+
+        $this->assertSame(1, ScheduledDeliverySend::query()->count());
+        $this->assertSame(1, MemberCoupon::query()->where('member_id', $member->id)->count());
     }
 }
