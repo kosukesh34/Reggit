@@ -9,6 +9,7 @@ use App\Models\MemberStampTransaction;
 use App\Models\StampCard;
 use Carbon\Carbon;
 use DateTimeInterface;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 
 class StampBalanceService
@@ -70,19 +71,47 @@ class StampBalanceService
 
     private function ensureMemberStamp(Member $member, StampCard $stampCard): MemberStamp
     {
-        $memberStamp = MemberStamp::query()->firstOrCreate(
-            [
-                'project_id' => $member->project_id,
-                'member_id' => $member->id,
-                'stamp_card_id' => $stampCard->id,
-            ],
-            ['current_stamps' => 0, 'cycle_count' => 0]
-        );
+        $memberStamp = $this->lockMemberStamp($member, $stampCard);
         if ($memberStamp->valid_until === null && $stampCard->valid_days !== null && (int) $stampCard->valid_days > 0) {
             $memberStamp->update(['valid_until' => Carbon::now()->addDays((int) $stampCard->valid_days)]);
         }
 
         return $memberStamp->refresh();
+    }
+
+    private function lockMemberStamp(Member $member, StampCard $stampCard): MemberStamp
+    {
+        $memberStamp = $this->findMemberStampForUpdate($member, $stampCard);
+        if ($memberStamp !== null) {
+            return $memberStamp;
+        }
+        try {
+            MemberStamp::query()->create([
+                'project_id' => $member->project_id,
+                'member_id' => $member->id,
+                'stamp_card_id' => $stampCard->id,
+                'current_stamps' => 0,
+                'cycle_count' => 0,
+            ]);
+        } catch (UniqueConstraintViolationException) {
+            // 同時作成。ロックし直す。
+        }
+        $memberStamp = $this->findMemberStampForUpdate($member, $stampCard);
+        if ($memberStamp === null) {
+            throw new \RuntimeException('member_stamps row missing');
+        }
+
+        return $memberStamp;
+    }
+
+    private function findMemberStampForUpdate(Member $member, StampCard $stampCard): ?MemberStamp
+    {
+        return MemberStamp::query()
+            ->where('project_id', $member->project_id)
+            ->where('member_id', $member->id)
+            ->where('stamp_card_id', $stampCard->id)
+            ->lockForUpdate()
+            ->first();
     }
 
     private function applyNegativeDelta(

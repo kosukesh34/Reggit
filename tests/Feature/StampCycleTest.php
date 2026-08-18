@@ -45,6 +45,7 @@ class StampCycleTest extends TestCase
         $this->assertSame(1, (int) $result->cycle_count);
         $this->assertNull($result->completed_at);
         $this->assertSame(1, $result->cyclesCompletedNow);
+        $this->assertSame(7, $member->fresh()->getTotalStamps());
         $this->assertSame(1, MemberStampTransaction::query()->where('member_id', $member->id)->count());
         $this->assertDatabaseHas('member_stamp_transactions', [
             'member_id' => $member->id,
