@@ -399,6 +399,39 @@ class AdminAnnouncementsTest extends TestCase
         $this->assertSame([$member->id], $announcement->target_member_ids);
     }
 
+    public function test_予約配信ジョブを二度実行しても送信済みのままであること(): void
+    {
+        $project = $this->createDistributionProject();
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $member = Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+        ]);
+        $announcement = Announcement::factory()->create([
+            'project_id' => $project->id,
+            'title' => '二重実行防止',
+            'delivery_type' => Announcement::DELIVERY_TYPE_PERSONAL,
+            'delivery_timing' => Announcement::DELIVERY_TIMING_SCHEDULED,
+            'delivery_status' => Announcement::DELIVERY_STATUS_SCHEDULED,
+            'target_member_ids' => [$member->id],
+            'send_notification' => false,
+        ]);
+
+        $job = new SendScheduledAnnouncementJob($announcement->id);
+        $job->handle(
+            app(AnnouncementNotificationService::class),
+            app(AnnouncementAdminService::class),
+        );
+        $job->handle(
+            app(AnnouncementNotificationService::class),
+            app(AnnouncementAdminService::class),
+        );
+
+        $announcement->refresh();
+        $this->assertSame(Announcement::DELIVERY_STATUS_SENT, $announcement->delivery_status);
+        $this->assertSame([$member->id], $announcement->target_member_ids);
+    }
+
     public function test_store_delivery_配信と同時にクーポンを配布できること(): void
     {
         Queue::fake();
