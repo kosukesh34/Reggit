@@ -38,6 +38,7 @@ class SmaregiInboundAwardApplier
         private SmaregiInboundAwardDescription $descriptions,
         private LotteryEntitlementService $lotteryEntitlementService,
         private MemberCurrentStampCardResolver $memberCurrentStampCardResolver,
+        private CouponIssueService $couponIssueService,
     ) {}
 
     public function awardForPurchase(
@@ -187,19 +188,34 @@ class SmaregiInboundAwardApplier
         }
 
         $description = $this->descriptions->stampAward($headId);
-        if ($this->hasStampTransaction($member, $description)) {
-            return;
-        }
-
-        $this->memberAdminService->addStampsToMember(
+        $awarded = false;
+        DB::transaction(function () use (
             $member,
-            (int) $stampCard->id,
+            $stampCard,
             $stampCount,
             $description,
             $orderId,
-            MemberCouponSource::SMAREGI_TRANSACTION,
-            $headId
-        );
+            $headId,
+            &$awarded,
+        ): void {
+            Member::query()->withoutGlobalScopes()->whereKey($member->id)->lockForUpdate()->first();
+            if ($this->hasStampTransaction($member, $description)) {
+                return;
+            }
+            $this->memberAdminService->addStampsToMember(
+                $member,
+                (int) $stampCard->id,
+                $stampCount,
+                $description,
+                $orderId,
+                MemberCouponSource::SMAREGI_TRANSACTION,
+                $headId
+            );
+            $awarded = true;
+        });
+        if ($awarded !== true) {
+            return;
+        }
         Log::info('[Smaregi] Inbound transaction sync stamps awarded', [
             'member_id' => (int) $member->id,
             'project_id' => $projectId,
@@ -397,7 +413,7 @@ class SmaregiInboundAwardApplier
             LotterySourceType::SMAREGI_TRANSACTION,
             $headId,
         );
-        resolve(CouponIssueService::class)->revokeUnusedForSource(
+        $this->couponIssueService->revokeUnusedForSource(
             $member,
             MemberCouponSource::SMAREGI_TRANSACTION,
             $headId,

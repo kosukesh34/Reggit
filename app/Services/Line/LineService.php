@@ -31,14 +31,21 @@ class LineService
 
     public function verifySignature(string $body, ?string $signature): bool
     {
+        return $this->verifySignatureWithSecret($body, $signature, $this->channelSecret);
+    }
+
+    public function verifySignatureWithSecret(string $body, ?string $signature, ?string $secret): bool
+    {
         if ($signature === null || $signature === '') {
             return false;
         }
-        $this->ensureConfigured(true);
-        $hash = hash_hmac('sha256', $body, $this->channelSecret ?? '', true);
-        $expectedSignature = base64_encode($hash);
+        $trimmedSecret = trim((string) $secret);
+        if ($trimmedSecret === '') {
+            return false;
+        }
+        $hash = hash_hmac('sha256', $body, $trimmedSecret, true);
 
-        return hash_equals($expectedSignature, $signature);
+        return hash_equals(base64_encode($hash), $signature);
     }
 
     /** @param array<int, array{type: string, text?: string}>|array{type: string, text?: string} $messages */
