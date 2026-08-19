@@ -87,6 +87,11 @@ final class Member
             return;
         }
 
+        if ($this->ledgerBalance <= 0) {
+            return;
+        }
+
+        $points = min($points, $this->ledgerBalance);
         $this->pendingEntries[] = PointLedgerEntry::reversed($points, $description, $orderId);
         $this->ledgerBalance -= $points;
     }
