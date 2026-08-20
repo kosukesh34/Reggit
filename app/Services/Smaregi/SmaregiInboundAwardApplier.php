@@ -15,6 +15,7 @@ use App\Enums\PointTransactionType;
 use App\Models\Member;
 use App\Models\MemberStampTransaction;
 use App\Models\PointTransaction;
+use App\Models\StampCard;
 use App\Services\Admin\MemberAdminService;
 use App\Services\CouponIssueService;
 use App\Services\Lottery\LotteryEntitlementService;
@@ -198,7 +199,7 @@ class SmaregiInboundAwardApplier
             $headId,
             &$awarded,
         ): void {
-            Member::query()->withoutGlobalScopes()->whereKey($member->id)->lockForUpdate()->first();
+            $this->lockMember($member);
             if ($this->hasStampTransaction($member, $description)) {
                 return;
             }
@@ -314,33 +315,36 @@ class SmaregiInboundAwardApplier
     {
         $earnDescription = $this->descriptions->stampAward($headId);
         $reverseDescription = $this->descriptions->stampReverse($headId, $reasonLabel);
-        if ($this->hasStampTransaction($member, $reverseDescription)) {
-            return;
-        }
-
-        $earned = MemberStampTransaction::query()
-            ->where('project_id', $member->project_id)
-            ->where('member_id', $member->id)
-            ->where('description', $earnDescription)
-            ->where('delta', '>', 0)
-            ->get();
-        if ($earned->isEmpty()) {
-            return;
-        }
-
-        foreach ($earned as $tx) {
-            $delta = (int) $tx->delta;
-            if ($delta <= 0) {
-                continue;
+        DB::transaction(function () use ($member, $earnDescription, $reverseDescription): void {
+            $this->lockMember($member);
+            if ($this->hasStampTransaction($member, $reverseDescription)) {
+                return;
             }
-            $this->memberAdminService->adjustStampsToMember(
-                $member,
-                (int) $tx->stamp_card_id,
-                -1 * $delta,
-                $reverseDescription,
-                null
-            );
-        }
+
+            $earned = MemberStampTransaction::query()
+                ->where('project_id', $member->project_id)
+                ->where('member_id', $member->id)
+                ->where('description', $earnDescription)
+                ->where('delta', '>', 0)
+                ->get();
+            if ($earned->isEmpty()) {
+                return;
+            }
+
+            foreach ($earned as $tx) {
+                $delta = (int) $tx->delta;
+                if ($delta <= 0) {
+                    continue;
+                }
+                $this->memberAdminService->adjustStampsToMember(
+                    $member,
+                    (int) $tx->stamp_card_id,
+                    -1 * $delta,
+                    $reverseDescription,
+                    null
+                );
+            }
+        });
     }
 
     private function reverseStampsByAmount(
@@ -353,10 +357,6 @@ class SmaregiInboundAwardApplier
             return;
         }
         $reverseDescription = $this->descriptions->stampReverse($headId, $reasonLabel);
-        if ($this->hasStampTransaction($member, $reverseDescription)) {
-            return;
-        }
-
         $projectId = (int) $member->project_id;
         if ($this->shopSettingRepository->getUseTransactionStamps($projectId) !== true) {
             return;
@@ -372,13 +372,24 @@ class SmaregiInboundAwardApplier
             return;
         }
 
-        $this->memberAdminService->adjustStampsToMember(
-            $member,
-            (int) $stampCard->id,
-            -1 * $stampCount,
-            $reverseDescription,
-            null
-        );
+        $this->applyStampReversal($member, $stampCard, $stampCount, $reverseDescription);
+    }
+
+    private function applyStampReversal(Member $member, StampCard $stampCard, int $stampCount, string $reverseDescription): void
+    {
+        DB::transaction(function () use ($member, $stampCard, $stampCount, $reverseDescription): void {
+            $this->lockMember($member);
+            if ($this->hasStampTransaction($member, $reverseDescription)) {
+                return;
+            }
+            $this->memberAdminService->adjustStampsToMember(
+                $member,
+                (int) $stampCard->id,
+                -1 * $stampCount,
+                $reverseDescription,
+                null
+            );
+        });
     }
 
     private function hasPointReversal(Member $member, string $description): bool
@@ -395,6 +406,16 @@ class SmaregiInboundAwardApplier
             ->where('type', $type)
             ->where('description', $description)
             ->exists();
+    }
+
+    private function lockMember(Member $member): void
+    {
+        Member::query()
+            ->withoutGlobalScopes()
+            ->whereKey($member->id)
+            ->where('project_id', $member->project_id)
+            ->lockForUpdate()
+            ->first();
     }
 
     private function hasStampTransaction(Member $member, string $description): bool
