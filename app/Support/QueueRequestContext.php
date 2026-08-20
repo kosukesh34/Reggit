@@ -16,6 +16,13 @@ class QueueRequestContext
 
     public static function resolveLineUserId(Request $request, ?string $userLineUserId): string
     {
+        if ($userLineUserId !== null && trim($userLineUserId) !== '') {
+            return trim($userLineUserId);
+        }
+        if (config('line.verify_liff_id_token') === true) {
+            return '';
+        }
+
         $header = self::lineUserId($request);
         if ($header !== '') {
             return $header;
@@ -24,10 +31,6 @@ class QueueRequestContext
         $query = trim((string) ($request->query('line_user_id') ?? ''));
         if ($query !== '') {
             return $query;
-        }
-
-        if ($userLineUserId !== null && trim($userLineUserId) !== '') {
-            return trim($userLineUserId);
         }
 
         return '';
