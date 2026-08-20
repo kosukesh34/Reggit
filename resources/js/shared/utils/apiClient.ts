@@ -32,6 +32,25 @@ export class ApiClient {
         return `${ApiClient.LINE_USER_ID_STORAGE_KEY}_${pk || 'unknown'}`;
     }
 
+    getLiffIdToken(): string | null {
+        if (typeof window === 'undefined' || typeof window.liff === 'undefined') {
+            return null;
+        }
+        try {
+            if (typeof window.liff.isLoggedIn === 'function' && !window.liff.isLoggedIn()) {
+                return null;
+            }
+            const token =
+                typeof window.liff.getIDToken === 'function'
+                    ? window.liff.getIDToken()
+                    : null;
+            const trimmed = typeof token === 'string' ? token.trim() : '';
+            return trimmed !== '' ? trimmed : null;
+        } catch (_e) {
+            return null;
+        }
+    }
+
     getLiffTokenLineUserId(): string | null {
         if (typeof window === 'undefined' || typeof window.liff === 'undefined') {
             return null;
@@ -170,6 +189,10 @@ export class ApiClient {
         const lineUserId = this.resolveLineUserId();
         if (lineUserId) {
             requestHeaders['X-Line-User-Id'] = lineUserId;
+        }
+        const idToken = this.getLiffIdToken();
+        if (idToken) {
+            requestHeaders['X-Line-Id-Token'] = idToken;
         }
         this.debugLog('api_identity', {
             endpoint,

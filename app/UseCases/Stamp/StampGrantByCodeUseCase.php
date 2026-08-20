@@ -8,6 +8,7 @@ use App\Enums\StampGrantLimit;
 use App\Models\StampGrantCode;
 use App\Models\StampGrantRedemption;
 use App\Services\Admin\MemberAdminService;
+use App\Services\MemberRankSyncService;
 use App\UseCases\Stamp\Data\StampGrantByCodeInput;
 use App\UseCases\Stamp\Data\StampGrantOutput;
 use Illuminate\Support\Facades\DB;
@@ -18,17 +19,26 @@ class StampGrantByCodeUseCase
         private MemberAdminService $memberAdminService,
         private StampGrantOutcomeMapper $outcomeMapper,
         private ShopSettingRepository $shopSettingRepository,
+        private MemberRankSyncService $memberRankSyncService,
     ) {}
 
     public function handle(StampGrantByCodeInput $input): StampGrantOutput
     {
         try {
-            return DB::transaction(fn () => $this->grant($input));
+            $result = DB::transaction(fn () => $this->grant($input));
         } catch (\Throwable $e) {
             report($e);
 
             return new StampGrantOutput(false, 500, 'スタンプを追加できませんでした');
         }
+        if ($result->isSuccess) {
+            $member = $input->user->member()->where('project_id', $input->user->project_id)->first();
+            if ($member !== null) {
+                $this->memberRankSyncService->sync($member);
+            }
+        }
+
+        return $result;
     }
 
     private function grant(StampGrantByCodeInput $input): StampGrantOutput

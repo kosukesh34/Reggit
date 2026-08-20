@@ -34,6 +34,7 @@
         <env name="BROADCAST_DRIVER" value="log"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="LINE_LIFF_AUTO_MODULE_MODE" value="false"/>
+        <env name="LINE_VERIFY_LIFF_ID_TOKEN" value="false" force="true"/>
     </php>
 </phpunit>
 
