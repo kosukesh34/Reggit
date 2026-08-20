@@ -7,6 +7,7 @@ use App\Enums\StampCycleMode;
 use App\Enums\StampGrantLimit;
 use App\Models\StampCard;
 use App\Services\Admin\MemberAdminService;
+use App\Services\MemberRankSyncService;
 use App\UseCases\Stamp\Data\StampGrantInput;
 use App\UseCases\Stamp\Data\StampGrantOutput;
 use App\Util\DateUtil;
@@ -18,6 +19,7 @@ class StampGrantUseCase
         private MemberAdminService $memberAdminService,
         private StampGrantOutcomeMapper $outcomeMapper,
         private ShopSettingRepository $shopSettingRepository,
+        private MemberRankSyncService $memberRankSyncService,
     ) {}
 
     public function handle(StampGrantInput $input): StampGrantOutput
@@ -80,6 +82,8 @@ class StampGrantUseCase
 
             return new StampGrantOutput(false, 500, 'スタンプを追加できませんでした');
         }
+
+        $this->memberRankSyncService->sync($member);
 
         return $this->outcomeMapper->success($card, $memberStamp, $amount, $existing);
     }

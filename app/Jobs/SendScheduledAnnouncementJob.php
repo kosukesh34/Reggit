@@ -24,27 +24,32 @@ class SendScheduledAnnouncementJob implements ShouldQueue
         AnnouncementNotificationService $announcementNotificationService,
         AnnouncementAdminService $announcementAdminService,
     ): void {
-        DB::transaction(function () use ($announcementNotificationService, $announcementAdminService): void {
-            $announcement = Announcement::withoutGlobalScopes()
+        $shouldNotify = false;
+        $announcement = DB::transaction(function () use ($announcementAdminService, &$shouldNotify): ?Announcement {
+            $locked = Announcement::withoutGlobalScopes()
                 ->whereKey($this->announcementId)
                 ->lockForUpdate()
                 ->first();
-            if ($announcement === null || $announcement->delivery_status !== Announcement::DELIVERY_STATUS_SCHEDULED) {
-                return;
+            if ($locked === null || $locked->delivery_status !== Announcement::DELIVERY_STATUS_SCHEDULED) {
+                return null;
             }
 
-            $announcementAdminService->finalizeAudienceForSend($announcement);
-            $announcement = $announcement->fresh() ?? $announcement;
-            $announcementAdminService->issueDeliveryCouponIfSet($announcement);
-            if ($announcement->send_notification !== false) {
-                $announcementNotificationService->send($announcement);
-            }
-
-            $announcement->update([
+            $announcementAdminService->finalizeAudienceForSend($locked);
+            $locked = $locked->fresh() ?? $locked;
+            $announcementAdminService->issueDeliveryCouponIfSet($locked);
+            $shouldNotify = $locked->send_notification !== false;
+            $locked->update([
                 'delivery_status' => Announcement::DELIVERY_STATUS_SENT,
-                'published_at' => $announcement->published_at ?? now(),
+                'published_at' => $locked->published_at ?? now(),
                 'sent_at' => now(),
             ]);
+
+            return $locked->fresh() ?? $locked;
         });
+        if ($announcement === null || $shouldNotify !== true) {
+            return;
+        }
+
+        $announcementNotificationService->send($announcement);
     }
 }
