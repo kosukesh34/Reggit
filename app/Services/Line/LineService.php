@@ -49,13 +49,18 @@ class LineService
     }
 
     /** @param array<int, array{type: string, text?: string}>|array{type: string, text?: string} $messages */
-    public function replyMessage(string $replyToken, array $messages): array
+    public function replyMessage(string $replyToken, array $messages, ?string $channelAccessToken = null): array
     {
-        $this->ensureConfigured();
+        $token = $this->resolveAccessToken($channelAccessToken);
+        $this->ensureTokenConfigured($token);
         $normalizedMessages = $this->normalizeMessages($messages);
 
         try {
             $response = $this->client->post('bot/message/reply', [
+                'headers' => [
+                    'Authorization' => 'Bearer '.$token,
+                    'Content-Type' => 'application/json',
+                ],
                 'json' => [
                     'replyToken' => $replyToken,
                     'messages' => $normalizedMessages,
@@ -100,10 +105,18 @@ class LineService
     }
 
     /** @return array<string, mixed>|null */
-    public function getProfile(string $userId): ?array
+    public function getProfile(string $userId, ?string $channelAccessToken = null): ?array
     {
+        $token = $this->resolveAccessToken($channelAccessToken);
         try {
-            $response = $this->client->get("bot/profile/{$userId}");
+            $options = [];
+            if ($token !== null) {
+                $options['headers'] = [
+                    'Authorization' => 'Bearer '.$token,
+                    'Content-Type' => 'application/json',
+                ];
+            }
+            $response = $this->client->get("bot/profile/{$userId}", $options);
 
             return json_decode($response->getBody()->getContents(), true);
         } catch (\Exception $e) {
@@ -143,14 +156,6 @@ class LineService
                 'items' => $items,
             ],
         ];
-    }
-
-    private function ensureConfigured(bool $requireSecret = false): void
-    {
-        $this->ensureTokenConfigured($this->resolveAccessToken(null));
-        if ($requireSecret && StrHelper::isEmptyStringOrNull($this->channelSecret)) {
-            throw new RuntimeException('LINE Messaging API credentials are not configured.');
-        }
     }
 
     private function ensureTokenConfigured(?string $token): void
