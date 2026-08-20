@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\User;
 use App\Repositories\Contracts\UserDeviceRepository;
 use App\Repositories\Contracts\UserRepository;
+use App\Services\Line\LineIdTokenVerifier;
 use App\Support\MemberChannel;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
@@ -18,12 +19,13 @@ class UserService
     public function __construct(
         private UserDeviceRepository $userDeviceRepository,
         private UserRepository $userRepository,
+        private LineIdTokenVerifier $lineIdTokenVerifier,
     ) {}
 
     public function findUser(Request $request): ?User
     {
         $projectId = AdminContext::requireCurrentProjectId();
-        $lineUserId = $this->normalizeLineUserId($request->header('X-Line-User-Id'));
+        $lineUserId = $this->resolveVerifiedLineUserId($request);
         $deviceIdentifier = $this->normalizeDeviceIdentifier($request->header('X-Device-Identifier'));
 
         if ($lineUserId !== null) {
@@ -87,7 +89,7 @@ class UserService
     public function getOrCreateUser(Request $request): User
     {
         $projectId = AdminContext::requireCurrentProjectId();
-        $lineUserId = $this->normalizeLineUserId($request->header('X-Line-User-Id'));
+        $lineUserId = $this->resolveVerifiedLineUserId($request);
         $deviceIdentifier = $this->normalizeDeviceIdentifier($request->header('X-Device-Identifier'));
 
         if ($lineUserId !== null) {
@@ -200,6 +202,21 @@ class UserService
     {
         $projectId = AdminContext::requireCurrentProjectId();
         Session::forget($this->getSessionKey($projectId));
+    }
+
+    private function resolveVerifiedLineUserId(Request $request): ?string
+    {
+        $headerLineUserId = $this->normalizeLineUserId($request->header('X-Line-User-Id'));
+        if (config('line.verify_liff_id_token') !== true) {
+            return $headerLineUserId;
+        }
+
+        $idToken = trim((string) $request->header('X-Line-Id-Token', ''));
+        if ($idToken === '') {
+            return null;
+        }
+
+        return $this->lineIdTokenVerifier->verify($idToken, AdminContext::requireCurrentProjectId());
     }
 
     private function normalizeLineUserId(?string $lineUserId): ?string
