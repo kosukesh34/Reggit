@@ -130,11 +130,14 @@ class QueueStoreUseCase
 
     private function resolveLineUserId(?string $headerLineUserId, ?string $userLineUserId): ?string
     {
-        if (is_string($headerLineUserId) && MemberChannel::isValidLineUserId($headerLineUserId)) {
-            return $headerLineUserId;
-        }
         if (is_string($userLineUserId) && MemberChannel::isValidLineUserId($userLineUserId)) {
             return $userLineUserId;
+        }
+        if (config('line.verify_liff_id_token') === true) {
+            return null;
+        }
+        if (is_string($headerLineUserId) && MemberChannel::isValidLineUserId($headerLineUserId)) {
+            return $headerLineUserId;
         }
 
         return null;
