@@ -36,7 +36,6 @@ class MemberService
         private SmaregiCustomerRankAssignmentService $smaregiCustomerRankAssignmentService,
         private MemberRankCalculator $rankCalculator,
         private ShopSettingRepository $shopSettingRepository,
-        private MemberRankSyncService $memberRankSyncService,
     ) {}
 
     public function getMemberData(User $user): array
@@ -61,7 +60,6 @@ class MemberService
         $this->maybeSyncMemberPointsFromSmaregi($member);
         $member->refresh();
         $member->syncPointsLedger();
-        $this->memberRankSyncService->sync($member);
         $member->refresh();
 
         $rankInfo = $this->getRankInfo($member);
