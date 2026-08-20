@@ -3,11 +3,13 @@
 namespace App\UseCases\Admin\Member;
 
 use App\Services\Admin\MemberAdminService;
+use App\Services\MemberRankSyncService;
 
 class AdminMemberAdjustStampsUseCase
 {
     public function __construct(
-        private MemberAdminService $memberAdminService
+        private MemberAdminService $memberAdminService,
+        private MemberRankSyncService $memberRankSyncService,
     ) {}
 
     public function handle(int $projectId, int $memberId, int $stampCardId, int $add, int $subtract, ?string $description = null): void
@@ -24,5 +26,6 @@ class AdminMemberAdjustStampsUseCase
             $delta,
             $description ?? '管理画面での調整'
         );
+        $this->memberRankSyncService->sync($member);
     }
 }
