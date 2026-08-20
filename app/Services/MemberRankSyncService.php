@@ -20,7 +20,7 @@ class MemberRankSyncService
 
     public function sync(Member $member): bool
     {
-        return (bool) DB::transaction(function () use ($member): bool {
+        $changed = DB::transaction(function () use ($member): ?array {
             $locked = Member::query()
                 ->withoutGlobalScopes()
                 ->whereKey($member->id)
@@ -28,14 +28,14 @@ class MemberRankSyncService
                 ->lockForUpdate()
                 ->first();
             if ($locked === null) {
-                return false;
+                return null;
             }
 
             $previousRank = (string) ($locked->rank ?? '');
             $rankInfo = $this->rankCalculator->getRankInfo($locked);
             $newRank = (string) ($rankInfo['current_rank'] ?? '');
             if ($newRank === '' || $newRank === $previousRank) {
-                return false;
+                return null;
             }
 
             $locked->update(['rank' => $newRank]);
@@ -46,13 +46,28 @@ class MemberRankSyncService
                 $this->resolveRankLabel((int) $locked->project_id, $previousRank),
                 (string) ($rankInfo['current_rank_label'] ?? $newRank),
             );
-            $fresh = $locked->fresh() ?? $locked;
-            $this->issueCouponOnRankUpService->handle($fresh, $previousRank, $newRank, (int) $history->id);
-            $this->scheduledDeliverySendService->sendRankUpArrival($fresh, $newRank);
-            $this->smaregiCustomerRankAssignmentService->assignRankToCustomer($fresh, $newRank);
 
-            return true;
+            return [
+                'member' => $locked->fresh() ?? $locked,
+                'previousRank' => $previousRank,
+                'newRank' => $newRank,
+                'historyId' => (int) $history->id,
+            ];
         });
+        if ($changed === null) {
+            return false;
+        }
+
+        $this->issueCouponOnRankUpService->handle(
+            $changed['member'],
+            $changed['previousRank'],
+            $changed['newRank'],
+            $changed['historyId'],
+        );
+        $this->scheduledDeliverySendService->sendRankUpArrival($changed['member'], $changed['newRank']);
+        $this->smaregiCustomerRankAssignmentService->assignRankToCustomer($changed['member'], $changed['newRank']);
+
+        return true;
     }
 
     private function recordRankHistory(

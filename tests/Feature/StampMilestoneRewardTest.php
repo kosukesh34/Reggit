@@ -337,9 +337,11 @@ class StampMilestoneRewardTest extends TestCase
         $applier->awardForPurchase($member, 500, '39', true);
         $this->assertSame(1, MemberCoupon::query()->where('coupon_id', $coupon->id)->count());
         $applier->reverseForCancel($member, '39');
+        $stampsAfterFirst = $member->fresh()->getTotalStamps();
         $applier->reverseForCancel($member, '39');
 
         $this->assertSame(0, MemberCoupon::query()->where('member_id', $member->id)->count());
+        $this->assertSame($stampsAfterFirst, $member->fresh()->getTotalStamps());
     }
 
     /**

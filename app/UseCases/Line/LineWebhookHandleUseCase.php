@@ -16,6 +16,8 @@ class LineWebhookHandleUseCase
 {
     private ?int $projectId = null;
 
+    private ?string $channelAccessToken = null;
+
     public function __construct(
         private LineService $lineService,
         private LineWebhookProjectResolver $projectResolver,
@@ -51,6 +53,8 @@ class LineWebhookHandleUseCase
             AdminContext::setCurrentProject($project);
         }
         $this->projectId = $projectId;
+        $token = trim($this->shopSettingRepository->getLineChannelAccessToken($projectId));
+        $this->channelAccessToken = $token !== '' ? $token : null;
 
         $events = json_decode($body, true)['events'] ?? [];
         foreach ($events as $event) {
@@ -102,7 +106,7 @@ class LineWebhookHandleUseCase
             ],
         );
 
-        $profile = $this->lineService->getProfile($userId);
+        $profile = $this->lineService->getProfile($userId, $this->channelAccessToken);
         if ($profile !== null && $profile !== false) {
             $displayName = trim((string) ($profile['displayName'] ?? ''));
             $updates = [
@@ -122,7 +126,7 @@ class LineWebhookHandleUseCase
             '・注文履歴'
         );
 
-        $this->lineService->replyMessage($event['replyToken'] ?? '', $message);
+        $this->reply($event['replyToken'] ?? '', $message);
     }
 
     private function handleMessage(array $event, string $userId): void
@@ -227,7 +231,7 @@ class LineWebhookHandleUseCase
             ],
         ];
 
-        $this->lineService->replyMessage($replyToken, $message);
+        $this->reply($replyToken, $message);
     }
 
     private function sendMemberCard(string $replyToken, string $userId): void
@@ -251,7 +255,7 @@ class LineWebhookHandleUseCase
             );
         }
 
-        $this->lineService->replyMessage($replyToken, $message);
+        $this->reply($replyToken, $message);
     }
 
     private function sendOrderHistory(string $replyToken, string $userId): void
@@ -274,7 +278,7 @@ class LineWebhookHandleUseCase
             $message = $this->lineService->createTextMessage($text);
         }
 
-        $this->lineService->replyMessage($replyToken, $message);
+        $this->reply($replyToken, $message);
     }
 
     private function findUserByLineId(string $userId): ?User
@@ -305,6 +309,12 @@ class LineWebhookHandleUseCase
         return url('/liff');
     }
 
+    /** @param array<string, mixed> $message */
+    private function reply(string $replyToken, array $message): void
+    {
+        $this->lineService->replyMessage($replyToken, $message, $this->channelAccessToken);
+    }
+
     private function sendDefaultMessage(string $replyToken): void
     {
         $message = $this->lineService->createTextMessage(
@@ -314,6 +324,6 @@ class LineWebhookHandleUseCase
             '・注文 - 注文履歴を見る'
         );
 
-        $this->lineService->replyMessage($replyToken, $message);
+        $this->reply($replyToken, $message);
     }
 }

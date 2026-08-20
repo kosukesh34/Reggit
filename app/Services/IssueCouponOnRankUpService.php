@@ -19,7 +19,7 @@ class IssueCouponOnRankUpService
 
     public function handle(Member $member, string $previousRank, string $newRank, ?int $rankHistoryId = null): void
     {
-        if ($previousRank === $newRank || $newRank === '') {
+        if ($previousRank === '' || $previousRank === $newRank || $newRank === '') {
             return;
         }
 
