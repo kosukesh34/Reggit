@@ -9,7 +9,7 @@
 - **スタッフの権限**: スタッフのみ細かい権限（`admin_user_permissions`）で制御。それ以外のロールは全権限を持つ。
 
 ### API
-- **Web API（LIFF等）**: セッションまたは `X-Line-User-Id` 等で利用者を識別。`project_key` はクエリで指定。
+- **Web API（LIFF等）**: `X-Line-Id-Token` を LINE の Verify ID token API で検証し、`sub` を利用者 ID とする。`X-Line-User-Id` だけでは本人確認しない。ネイティブは `X-Device-Identifier`。`project_key` はクエリまたはヘッダ。
 - **API v1（モバイルアプリ）**: `Authorization: Bearer <token>` または `X-Api-Token`。`AuthenticateApiToken` でトークン検証し、`project_id` でスコープ。トークンは平文を保存せず `token_hash`（SHA-256）のみ保存。
 
 ### ログイン試行制限

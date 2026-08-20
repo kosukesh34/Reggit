@@ -10,6 +10,7 @@ export {};
 type LiffLike = {
     isLoggedIn?: () => boolean;
     getDecodedIDToken?: () => { sub?: string } | null;
+    getIDToken?: () => string | null;
     login?: (opts?: { redirectUri?: string }) => void;
 };
 

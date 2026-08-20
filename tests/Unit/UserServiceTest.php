@@ -2,13 +2,16 @@
 
 namespace Tests\Unit;
 
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\Member;
 use App\Models\Project;
 use App\Models\User;
+use App\Models\UserDevice;
 use App\Services\UserService;
 use App\Util\AdminContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Session;
 use Tests\TestCase;
 
@@ -159,5 +162,68 @@ class UserServiceTest extends TestCase
         $this->assertNotSame($sessionUser->id, $resolved->id);
         $this->assertSame(self::LINE_USER_ID, $resolved->line_user_id);
         $this->assertSame($resolved->id, (int) Session::get('mobile_order_user_id_'.$project->id));
+    }
+
+    public function test_idトークン検証時はヘッダのline_idを信じないこと(): void
+    {
+        config(['line.verify_liff_id_token' => true]);
+        $project = $this->createProject();
+        AdminContext::setCurrentProject($project);
+        ShopSettingStore::setLineLiffId('1234567890-AbCdEfGh', (int) $project->id);
+
+        $request = Request::create('/', 'GET');
+        $request->headers->set('X-Line-User-Id', self::LINE_USER_ID);
+
+        $resolved = app(UserService::class)->getOrCreateUser($request);
+
+        $this->assertNotSame(self::LINE_USER_ID, $resolved->line_user_id);
+    }
+
+    public function test_idトークン検証時はsubを利用者にすること(): void
+    {
+        config(['line.verify_liff_id_token' => true]);
+        $project = $this->createProject();
+        AdminContext::setCurrentProject($project);
+        ShopSettingStore::setLineLiffId('1234567890-AbCdEfGh', (int) $project->id);
+        Http::fake([
+            'https://api.line.me/oauth2/v2.1/verify' => Http::response([
+                'sub' => self::LINE_USER_ID,
+            ], 200),
+        ]);
+
+        $request = Request::create('/', 'GET');
+        $request->headers->set('X-Line-User-Id', self::OTHER_LINE_USER_ID);
+        $request->headers->set('X-Line-Id-Token', 'jwt-token');
+
+        $resolved = app(UserService::class)->getOrCreateUser($request);
+
+        $this->assertSame(self::LINE_USER_ID, $resolved->line_user_id);
+    }
+
+    public function test_idトークン検証時も端末識別子でユーザーを解決できること(): void
+    {
+        config(['line.verify_liff_id_token' => true]);
+        $project = $this->createProject();
+        AdminContext::setCurrentProject($project);
+        $user = User::factory()->create([
+            'project_id' => $project->id,
+            'line_user_id' => 'guest-native-1',
+        ]);
+        UserDevice::query()->create([
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+            'platform' => 'ios',
+            'device_identifier' => 'device-abc',
+            'last_used_at' => now(),
+        ]);
+
+        $request = Request::create('/', 'GET');
+        $request->headers->set('X-Line-User-Id', self::LINE_USER_ID);
+        $request->headers->set('X-Device-Identifier', 'device-abc');
+
+        $resolved = app(UserService::class)->findUser($request);
+
+        $this->assertSame($user->id, $resolved?->id);
+        $this->assertSame('guest-native-1', $resolved->line_user_id);
     }
 }

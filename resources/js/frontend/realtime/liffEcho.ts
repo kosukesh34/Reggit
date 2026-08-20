@@ -33,6 +33,14 @@ function identityHeaders(): Record<string, string> {
     if (typeof lineUserId === 'string' && lineUserId !== '') {
         headers['X-Line-User-Id'] = lineUserId;
     }
+    try {
+        const idToken = typeof window.liff?.getIDToken === 'function' ? window.liff.getIDToken() : null;
+        if (typeof idToken === 'string' && idToken.trim() !== '') {
+            headers['X-Line-Id-Token'] = idToken.trim();
+        }
+    } catch (_e) {
+        // ignore
+    }
     const apiToken = window.__API_TOKEN__;
     if (typeof apiToken === 'string' && apiToken !== '') {
         headers.Authorization = `Bearer ${apiToken}`;
