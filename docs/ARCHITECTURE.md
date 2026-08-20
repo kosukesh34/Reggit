@@ -222,8 +222,9 @@ flowchart TB
   end
 
   subgraph custAuth [顧客]
-    LIFFInit[LIFF init] --> LineId[X-Line-User-Id]
-    LineId --> UserSvc[UserService で User/Member 解決]
+    LIFFInit[LIFF init] --> IdToken[X-Line-Id-Token]
+    IdToken --> Verify[LINE verify ID token]
+    Verify --> UserSvc[UserService で User/Member 解決]
   end
 
   subgraph apiAuth [外部 API]
