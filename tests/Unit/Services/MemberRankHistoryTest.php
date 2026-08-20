@@ -8,6 +8,7 @@ use App\Models\MemberRankHistory;
 use App\Models\Project;
 use App\Models\User;
 use App\Services\Admin\MemberAdminService;
+use App\Services\MemberRankSyncService;
 use App\Services\MemberService;
 use App\Services\Smaregi\SmaregiApiService;
 use App\Util\AdminContext;
@@ -47,6 +48,7 @@ class MemberRankHistoryTest extends TestCase
         ]);
         $this->grantMemberPoints($member, 150, 'ランクアップ用');
 
+        app(MemberRankSyncService::class)->sync($member->fresh());
         $data = app(MemberService::class)->getMemberData($user->fresh(['member']));
 
         $this->assertTrue($data['is_member']);
@@ -61,6 +63,33 @@ class MemberRankHistoryTest extends TestCase
         $this->assertNotEmpty($data['rank_up_history']);
         $this->assertSame('ブロンズ', $data['rank_up_history'][0]['from_rank_label']);
         $this->assertSame('ゴールド', $data['rank_up_history'][0]['to_rank_label']);
+    }
+
+    public function test_get_member_dataはランクを書き換えないこと(): void
+    {
+        $project = Project::firstOrCreate(
+            ['project_key' => 'default'],
+            ['name' => 'Default Project', 'description' => 'Test', 'is_active' => true]
+        );
+        AdminContext::setCurrentProject($project);
+        ShopSettingStore::setMemberRankSettings([
+            ['key' => 'bronze', 'label' => 'ブロンズ', 'min_points' => 0, 'order' => 1, 'is_active' => true],
+            ['key' => 'gold', 'label' => 'ゴールド', 'min_points' => 100, 'order' => 2, 'is_active' => true],
+        ], $project->id);
+
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $member = Member::factory()->create([
+            'user_id' => $user->id,
+            'project_id' => $project->id,
+            'rank' => 'bronze',
+            'points' => 0,
+        ]);
+        $this->grantMemberPoints($member, 150, 'ランクアップ用');
+
+        app(MemberService::class)->getMemberData($user->fresh(['member']));
+
+        $this->assertSame('bronze', $member->fresh()->rank);
+        $this->assertSame(0, MemberRankHistory::where('member_id', $member->id)->count());
     }
 
     public function test_管理画面のランク変更で履歴が記録されること(): void
