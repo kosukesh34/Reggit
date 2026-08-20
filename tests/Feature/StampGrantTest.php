@@ -66,6 +66,23 @@ class StampGrantTest extends TestCase
             ->assertJsonPath('error', 'このQRからのスタンプは付与済みです');
     }
 
+    public function test_署名付きqr付与後にスタンプ基準のランクが更新されること(): void
+    {
+        [$project, $member, $card] = $this->createGrantFixtures(self::LINE_USER_ID);
+        $member->update(['rank' => 'bronze']);
+        ShopSettingStore::setValue('member_rank_basis', 'stamps', 'string', (int) $project->id);
+        ShopSettingStore::setMemberRankSettings([
+            ['key' => 'bronze', 'label' => 'ブロンズ', 'min_points' => 0, 'order' => 1, 'is_active' => true],
+            ['key' => 'gold', 'label' => 'ゴールド', 'min_points' => 1, 'order' => 2, 'is_active' => true],
+        ], (int) $project->id);
+        $grantUrl = $this->signedGrantUrl($project, $card, 'rank-nonce', 1, StampGrantLimit::PER_MEMBER);
+
+        $this->withHeaders(['X-Line-User-Id' => self::LINE_USER_ID])->postJson($grantUrl)
+            ->assertOk();
+
+        $this->assertSame('gold', $member->fresh()->rank);
+    }
+
     public function test_スタンプ機能オフならqr付与を拒否すること(): void
     {
         [$project, $member, $card] = $this->createGrantFixtures(self::LINE_USER_ID);
@@ -186,6 +203,27 @@ class StampGrantTest extends TestCase
             ->postJson('/api/stamps/grant-code/'.$code->token)
             ->assertStatus(409)
             ->assertJsonPath('error', 'このQRからのスタンプは付与済みです');
+    }
+
+    public function test_短縮トークン付与後にスタンプ基準のランクが更新されること(): void
+    {
+        [$project, $member, $card] = $this->createGrantFixtures(self::LINE_USER_ID);
+        $member->update(['rank' => 'bronze']);
+        ShopSettingStore::setValue('member_rank_basis', 'stamps', 'string', (int) $project->id);
+        ShopSettingStore::setMemberRankSettings([
+            ['key' => 'bronze', 'label' => 'ブロンズ', 'min_points' => 0, 'order' => 1, 'is_active' => true],
+            ['key' => 'gold', 'label' => 'ゴールド', 'min_points' => 1, 'order' => 2, 'is_active' => true],
+        ], (int) $project->id);
+        $code = $this->createGrantCode($project, $card, [
+            'amount' => 1,
+            'usage_limit' => StampGrantLimit::PER_MEMBER,
+        ]);
+
+        $this->withHeaders(['X-Line-User-Id' => self::LINE_USER_ID])
+            ->postJson('/api/stamps/grant-code/'.$code->token)
+            ->assertOk();
+
+        $this->assertSame('gold', $member->fresh()->rank);
     }
 
     public function test_短縮トークンの先着1名qrは別会員でも再利用できないこと(): void

@@ -432,6 +432,50 @@ class AdminAnnouncementsTest extends TestCase
         $this->assertSame([$member->id], $announcement->target_member_ids);
     }
 
+    public function test_予約配信ジョブは送信済みにしたあと通知すること(): void
+    {
+        $project = $this->createDistributionProject();
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $member = Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+        ]);
+        $announcement = Announcement::factory()->create([
+            'project_id' => $project->id,
+            'title' => '送信後通知',
+            'delivery_type' => Announcement::DELIVERY_TYPE_PERSONAL,
+            'delivery_timing' => Announcement::DELIVERY_TIMING_SCHEDULED,
+            'delivery_status' => Announcement::DELIVERY_STATUS_SCHEDULED,
+            'target_member_ids' => [$member->id],
+            'send_notification' => true,
+        ]);
+        $sentStatus = null;
+        $this->mock(AnnouncementNotificationService::class, function ($mock) use ($announcement, &$sentStatus): void {
+            $mock->shouldReceive('send')->once()->andReturnUsing(function () use ($announcement, &$sentStatus): array {
+                $sentStatus = $announcement->fresh()->delivery_status;
+
+                return [
+                    'target_tokens' => 0,
+                    'sent' => 0,
+                    'failed' => 0,
+                    'skipped' => 0,
+                    'notification_ids' => [],
+                    'line_sent' => 0,
+                    'line_failed' => 0,
+                    'line_skipped' => 0,
+                ];
+            });
+        });
+
+        (new SendScheduledAnnouncementJob($announcement->id))->handle(
+            app(AnnouncementNotificationService::class),
+            app(AnnouncementAdminService::class),
+        );
+
+        $this->assertSame(Announcement::DELIVERY_STATUS_SENT, $sentStatus);
+        $this->assertSame(Announcement::DELIVERY_STATUS_SENT, $announcement->fresh()->delivery_status);
+    }
+
     public function test_store_delivery_配信と同時にクーポンを配布できること(): void
     {
         Queue::fake();
