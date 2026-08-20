@@ -77,17 +77,12 @@ class Kernel extends HttpKernel
         'bind.admin.project' => BindAdminProject::class,
         'bind.project' => BindProjectFromRequest::class,
         'api.auth' => AuthenticateApiToken::class,
+        'api.token' => AuthenticateApiToken::class,
         'admin.audit' => AdminAuditLogger::class,
         'admin.permission' => CheckAdminPermission::class,
         'admin.plan' => EnsureProjectPlanFeature::class,
         'throttle' => ThrottleRequests::class,
         'verified' => EnsureEmailIsVerified::class,
-        // 管理画面用
-        'bind.admin.project' => BindAdminProject::class,
-        'admin.audit' => AdminAuditLogger::class,
-        'system.admin' => EnsureSystemAdmin::class,
-        'admin.permission' => CheckAdminPermission::class,
-        'api.token' => AuthenticateApiToken::class,
         'kitchen.auth' => AuthenticateKitchenToken::class,
         'verify.smaregi.webhook' => VerifySmaregiWebhookSecret::class,
     ];
