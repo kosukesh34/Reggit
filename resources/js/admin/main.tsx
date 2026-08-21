@@ -36,6 +36,9 @@ const memberCardDesignByTemplate: Record<AppCustomization['membership']['templat
   pointFocus: 'logo_top',
   pass: 'emblem',
   minimal: 'minimal_line',
+  simple: 'compact',
+  ticket: 'ticket',
+  wallet: 'wallet',
 };
 
 function customizationFingerprint(customization: AppCustomization): string {
@@ -294,7 +297,6 @@ function AdminCustomizeHost({ config }: { config: DesignerDomConfig }) {
 async function loadLiffDesignerStyles(): Promise<void> {
   await Promise.all([
     import('../../css/app.css'),
-    import('../../css/admin/liff-designer/react.css'),
     import('../liff-ui/styles/tokens.css'),
     import('../liff-ui/styles/globals.css'),
     import('../liff-ui/styles/design-layout-variants.css'),

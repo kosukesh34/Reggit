@@ -9,17 +9,14 @@ import { NewsSection } from "../components/home/NewsSection";
 import { QuickActions } from "../components/home/QuickActions";
 import { StoreSummaryCard } from "../components/home/StoreSummary";
 import { Skeleton } from "../components/ui/Skeleton";
-import { resolveHomeLayout } from "../config/customization";
+import { resolveAppBrand, resolveHomeLayout } from "../config/customization";
 import { useAppConfig } from "../context/AppConfigContext";
 import { useRuntimeData } from "../context/RuntimeDataContext";
 import type { HomeLayout } from "../types/customization";
-import { LANDING_SHOWCASE_STORE_ID, LandingShowcaseHome } from "./LandingShowcasePage";
-import { SIMPLE_REWARDS_STORE_ID, SimpleRewardsHome } from "./SimpleRewardsPage";
-import {
-  APPOINTMENT_OPERATIONS_STORE_ID,
-  COUNTER_OPERATIONS_STORE_ID,
-  OperationalHomePage,
-} from "./OperationalHomePage";
+import { IndustryGalleryHome } from "./IndustryGalleryHome";
+import { LandingShowcaseHome } from "./LandingShowcasePage";
+import { OperationalHomePage } from "./OperationalHomePage";
+import { SimpleRewardsHome } from "./SimpleRewardsPage";
 
 const HOME_SECTION_ORDER: Record<HomeLayout, string[]> = {
   standard: ["lead", "notice", "hero", "primaryBelow", "membership", "quick", "featured", "coupons", "news", "store", "floating"],
@@ -42,26 +39,31 @@ function HomePageSkeleton(): JSX.Element {
 }
 
 export function HomePage() {
-  const { activeStore, customization } = useAppConfig();
+  const { activeStore, customization, experienceId } = useAppConfig();
   const { member, coupons, news, stores, mode, error, refresh, loading } = useRuntimeData();
 
-  if (activeStore.storeId === LANDING_SHOWCASE_STORE_ID) {
+  if (experienceId === "landing-showcase") {
     return <LandingShowcaseHome />;
   }
-  if (activeStore.storeId === SIMPLE_REWARDS_STORE_ID) {
+  if (experienceId === "simple-rewards") {
     return <SimpleRewardsHome />;
   }
-  if (activeStore.storeId === COUNTER_OPERATIONS_STORE_ID) {
+  if (experienceId === "counter-operations") {
     return <OperationalHomePage variant="counter" />;
   }
-  if (activeStore.storeId === APPOINTMENT_OPERATIONS_STORE_ID) {
+  if (experienceId === "appointment-operations") {
     return <OperationalHomePage variant="appointment" />;
+  }
+  if (experienceId === "industry-gallery") {
+    return <IndustryGalleryHome />;
   }
 
   if (mode !== "live" && mode !== "preview" && !(mode === "offline" && !loading)) {
     return <HomePageSkeleton />;
   }
 
+  const brand = resolveAppBrand(activeStore, customization);
+  const heroContent = { ...activeStore.home, heroImage: brand.heroImage || activeStore.home.heroImage };
   const summary = stores[0];
   const { home } = customization;
   const layout = resolveHomeLayout(home.layout);
@@ -79,7 +81,7 @@ export function HomePage() {
   const byKey: Record<string, ReactNode> = {
     lead: (
       <section className="home-lead" key="lead">
-        <div><span>YOUR DAY, YOUR PLACE</span><strong>{guestName}さん、こんにちは。</strong></div>
+        <div><span>ホーム</span><strong>{guestName}さん</strong></div>
         <time>{new Intl.DateTimeFormat("ja-JP", { month: "short", day: "numeric", weekday: "short" }).format(new Date())}</time>
       </section>
     ),
@@ -91,9 +93,9 @@ export function HomePage() {
     hero: (
       <HeroBanner
         key="hero"
-        title={activeStore.heroTitle}
+        title={brand.appName}
         subtitle={activeStore.heroSubtitle}
-        content={activeStore.home}
+        content={heroContent}
         showImage={home.showHeroImage}
         showStatus={home.showHeroStatus}
         showCta={home.primaryActionPlacement === "hero" && primaryActionEnabled}
@@ -103,7 +105,17 @@ export function HomePage() {
       ? <PrimaryAction key="primary-action" className="home-primary-action" />
       : null,
     membership: home.showMembership && activeStore.features.membership
-      ? <MembershipSummary key="membership" member={member} showNextRank={customization.membership.showNextRank} />
+      ? (
+        <MembershipSummary
+          key="membership"
+          member={member}
+          showRank={customization.membership.showRank}
+          showPoints={customization.membership.showPoints}
+          showNextRank={customization.membership.showNextRank}
+          showBarcode={customization.membership.showBarcode}
+          showMemberName={customization.membership.showMemberName}
+        />
+      )
       : null,
     quick: home.showQuickActions && activeStore.quickActions.length > 0
       ? <QuickActions key="quick" actions={activeStore.quickActions} columns={home.quickActionColumns} />
@@ -129,5 +141,9 @@ export function HomePage() {
     .map((key) => byKey[key])
     .filter((node): node is ReactNode => node !== null && node !== undefined);
 
-  return <div className={`page home-page stack stack--lg home-page--layout-${layout}`}>{sections}</div>;
+  return (
+    <div className={`page home-page stack stack--lg home-page--layout-${layout}`}>
+      {sections}
+    </div>
+  );
 }

@@ -1,19 +1,15 @@
-import { Bell, CalendarDays, Check, ChevronDown, CloudOff, CreditCard, Home, Menu, MoreHorizontal, QrCode, ShoppingBag, Stamp, Ticket, UserRound, X, type LucideIcon } from "lucide-react";
-import { useMemo, useState } from "react";
+import { Bell, CalendarDays, ChevronDown, CloudOff, CreditCard, Home, Menu, MoreHorizontal, QrCode, ShoppingBag, Stamp, Ticket, UserRound, X, type LucideIcon } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { designPresetMap } from "../../config/designPresets";
+import { resolveAppBrand } from "../../config/customization";
 import { useAppConfig } from "../../context/AppConfigContext";
 import { useRuntimeData } from "../../context/RuntimeDataContext";
 import { featureDefinitionMap, isFeatureType } from "../../features/demo/featureCatalog";
 import { isUtilityType, utilityLabels } from "../../features/demo/UtilityDemo";
-import { themeMap } from "../../themes/themes";
-import { BottomSheet } from "../ui/BottomSheet";
-import { Button } from "../ui/Button";
-import { Card } from "../ui/Card";
-import { LANDING_SHOWCASE_STORE_ID } from "../../pages/LandingShowcasePage";
-import { SIMPLE_REWARDS_STORE_ID } from "../../pages/SimpleRewardsPage";
 import type { FeatureType } from "../../types/app";
 import type { HeaderButtonIcon, HeaderShortcut } from "../../types/customization";
+import { DesignPicker, OPEN_DESIGN_PICKER_EVENT } from "./DesignPicker";
+import { Button } from "../ui/Button";
 
 const headerShortcutDefinitions: Record<Exclude<HeaderShortcut, "none">, {
   feature: FeatureType;
@@ -46,14 +42,14 @@ const headerIconDefinitions: Record<HeaderButtonIcon, LucideIcon> = {
 };
 
 export function Header() {
-  const { activeStore, stores, setActiveStoreId, customization, getStoreCustomization } = useAppConfig();
+  const { activeStore, stores, setActiveStoreId, customization, experienceId } = useAppConfig();
   const { mode, notificationCount } = useRuntimeData();
   const [open, setOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const canSwitchStore = stores.length > 1;
-  const isLandingShowcase = activeStore.storeId === LANDING_SHOWCASE_STORE_ID;
-  const isSimpleRewards = activeStore.storeId === SIMPLE_REWARDS_STORE_ID;
+  const isLandingShowcase = canSwitchStore && experienceId === "landing-showcase";
+  const isSimpleRewards = experienceId === "simple-rewards";
   const headerButton = customization.header.rightButton;
   const effectiveMode = headerButton.mode ?? (customization.header.showNotifications ? "shortcut" : "none");
   const shortcutKey = effectiveMode === "shortcut" ? (headerButton.shortcut || customization.header.shortcut) : "none";
@@ -71,6 +67,12 @@ export function Header() {
     : (visibleCustomButton !== null && visibleCustomButton.path !== ""
         ? { ...visibleCustomButton, isNotification: false }
         : null);
+
+  useEffect(() => {
+    const openPicker = () => setOpen(true);
+    window.addEventListener(OPEN_DESIGN_PICKER_EVENT, openPicker);
+    return () => window.removeEventListener(OPEN_DESIGN_PICKER_EVENT, openPicker);
+  }, []);
 
   const openHeaderTarget = (path: string): void => {
     if (path === "") {
@@ -104,8 +106,8 @@ export function Header() {
     if (isUtilityType(feature)) {
       return utilityLabels[feature];
     }
-    return activeStore.storeName;
-  }, [activeStore.storeName, location.pathname]);
+    return resolveAppBrand(activeStore, customization).appName;
+  }, [activeStore, customization, location.pathname]);
 
   const logoUrl = typeof activeStore.logoUrl === 'string' && activeStore.logoUrl.trim() !== ''
     ? activeStore.logoUrl.trim()
@@ -119,7 +121,7 @@ export function Header() {
         </span>
       ) : null}
       <span className="header__text">
-        {customization.header.showSubtitle ? <span className="header__subtitle">REGGIT MEMBER</span> : null}
+        {customization.header.showSubtitle ? <span className="header__subtitle">{canSwitchStore ? "デザインを選ぶ" : "REGGIT MEMBER"}</span> : null}
         <span className="header__title">{title}</span>
       </span>
       {canSwitchStore ? <ChevronDown className="header__chevron" size={15} aria-hidden="true" /> : null}
@@ -135,7 +137,7 @@ export function Header() {
         : location.pathname === "/queue"
           ? "LAUREL & IVY"
           : location.pathname === "/more"
-            ? "会員登録"
+          ? "マイページ"
             : "Reggit";
   const ShowcaseActionIcon = location.pathname === "/mobileOrder"
     ? ShoppingBag
@@ -148,7 +150,7 @@ export function Header() {
       <header className={`header${isLandingShowcase ? " header--landing-showcase" : isSimpleRewards ? " header--simple-rewards" : ""}`}>
         {isLandingShowcase ? (
           <>
-            <button className="header__showcase-menu" onClick={() => setOpen(true)} type="button" aria-label="店舗を切り替える">
+            <button className="header__showcase-menu" onClick={() => setOpen(true)} type="button" aria-label="デザインを選ぶ">
               <Menu size={27} />
             </button>
             <div className="header__showcase-title">
@@ -159,7 +161,7 @@ export function Header() {
             <button
               className="header__showcase-action"
               type="button"
-              aria-label={location.pathname === "/home" ? "LPデモを終了" : location.pathname === "/mobileOrder" ? "注文履歴を見る" : "会員登録を見る"}
+              aria-label={location.pathname === "/home" ? "LPデモを終了" : location.pathname === "/mobileOrder" ? "注文履歴を見る" : "マイページを見る"}
               onClick={() => {
                 if (location.pathname === "/home") {
                   setActiveStoreId("store_cafe");
@@ -173,13 +175,19 @@ export function Header() {
             </button>
           </>
         ) : isSimpleRewards ? (
-          <button className="header__simple-brand" type="button" onClick={() => setOpen(true)} aria-label="店舗を切り替える">
-            <span>SIMPLE PASS</span><strong>{location.pathname === "/home" ? "ホーム" : title}</strong><ChevronDown size={15} />
-          </button>
+          canSwitchStore ? (
+            <button className="header__simple-brand" type="button" onClick={() => setOpen(true)} aria-label="デザインを選ぶ">
+              <span>SIMPLE PASS</span><strong>{location.pathname === "/home" ? "ホーム" : title}</strong><ChevronDown size={15} />
+            </button>
+          ) : (
+            <div className="header__simple-brand">
+              <span>SIMPLE PASS</span><strong>{location.pathname === "/home" ? "ホーム" : title}</strong>
+            </div>
+          )
         ) : (
           <>
             {canSwitchStore ? (
-              <button className="header__brand" onClick={() => setOpen(true)} type="button" aria-label="店舗を切り替える">
+              <button className="header__brand" onClick={() => setOpen(true)} type="button" aria-label="デザインを選ぶ">
                 {brandContent}
               </button>
             ) : (
@@ -198,55 +206,7 @@ export function Header() {
         )}
       </header>
 
-      {canSwitchStore ? (
-        <BottomSheet open={open} onClose={() => setOpen(false)} title="店舗を切り替える">
-          <div className="stack stack--sm">
-            {stores.map((store) => {
-              const storeCustomization = getStoreCustomization(store.storeId);
-              const storeTheme = themeMap[store.themeId];
-              const primary = storeCustomization.colors.primary ?? storeTheme?.colors.primary ?? "#17130f";
-              const accent = storeCustomization.colors.accent ?? storeTheme?.colors.accent ?? "#777777";
-              const active = store.storeId === activeStore.storeId;
-              const preset = designPresetMap[storeCustomization.designPreset];
-              return (
-                <Card key={store.storeId} className={`store-switcher${active ? " is-active" : ""}`} padding="md">
-                  {typeof store.logoUrl === 'string' && store.logoUrl.trim() !== '' ? (
-                    <span className="store-switcher__mark store-switcher__mark--image">
-                      <img src={store.logoUrl.trim()} alt="" />
-                    </span>
-                  ) : (
-                    <span className="store-switcher__mark" style={{ background: `linear-gradient(135deg, ${primary} 0 58%, ${accent} 58%)` }}>{store.logoText}</span>
-                  )}
-                  <div className="store-switcher__body">
-                    <div className="store-switcher__name">{store.storeName}</div>
-                    <div className="store-switcher__meta">{store.brandName}</div>
-                    {customization.header.showStoreTheme && preset !== undefined ? (
-                      <div className="store-switcher__theme">{
-                        store.themeId === "landing-showcase" ? "LPスマホUI"
-                          : store.themeId === "simple-rewards" ? "シンプルリワード"
-                            : store.themeId === "operations-counter" ? "店舗オペレーション・注文型"
-                              : store.themeId === "operations-booking" ? "店舗オペレーション・予約型"
-                                : preset.name
-                      }</div>
-                    ) : null}
-                  </div>
-                  <Button
-                    variant={active ? "solid" : "soft"}
-                    size="sm"
-                    onClick={() => {
-                      setActiveStoreId(store.storeId);
-                      setOpen(false);
-                      navigate("/home");
-                    }}
-                  >
-                    {active ? <><Check size={14} />選択中</> : "切り替え"}
-                  </Button>
-                </Card>
-              );
-            })}
-          </div>
-        </BottomSheet>
-      ) : null}
+      {canSwitchStore ? <DesignPicker open={open} onClose={() => setOpen(false)} /> : null}
     </>
   );
 }

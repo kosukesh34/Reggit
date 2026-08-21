@@ -245,7 +245,6 @@ class AppServiceProvider extends ServiceProvider
             'key' => 'bronze',
             'label' => 'ブロンズ',
             'min_points' => 0,
-            'icon_url' => null,
             'card_color' => '#cd7f32',
         ];
         $nextRank = null;
@@ -272,7 +271,7 @@ class AppServiceProvider extends ServiceProvider
             'points' => $samplePoints,
             'current_rank' => $displayRank['key'] ?? 'bronze',
             'current_rank_label' => $displayRank['label'] ?? 'ブロンズ',
-            'current_rank_icon' => $displayRank['icon_url'] ?? null,
+            'current_rank_icon' => null,
             'current_rank_color' => isset($displayRank['card_color']) && $displayRank['card_color'] !== '' ? (string) $displayRank['card_color'] : null,
             'next_rank_label' => $nextRank !== null ? ($nextRank['label'] ?? null) : null,
             'points_to_next_rank' => $pointsToNext,

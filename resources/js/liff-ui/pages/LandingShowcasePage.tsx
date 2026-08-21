@@ -79,7 +79,7 @@ export function LandingShowcaseHome() {
           <i /><b /><em />
         </div>
         <p className="lp-app-hero__wordmark">Reggit</p>
-        <h1>スマートに、心地よく、あなたの時間を。</h1>
+        <h1>注文・会員証・順番待ち</h1>
       </section>
 
       <Link className="lp-app-queue-card" to="/queue">
@@ -203,10 +203,10 @@ export function LandingShowcaseMembership() {
         <Link to="/coupon"><Ticket /><span>クーポン</span></Link>
         <Link to="/mobileOrder"><ShoppingBag /><span>注文</span></Link>
         <Link to="/orderHistory"><History /><span>利用履歴</span></Link>
-        <Link to="/more"><UserRound /><span>会員登録</span></Link>
+        <Link to="/more"><UserRound /><span>マイページ</span></Link>
       </section>
       <BottomSheet open={termsOpen} onClose={() => setTermsOpen(false)} title="ポイント利用規約">
-        <div className="lp-member-terms-sheet"><strong>Reggit メンバー規約</strong><p>ポイントは対象店舗でのお会計時にためる・使うことができます。第三者への譲渡や換金はできません。</p><p>この画面はデモです。実際のサービスでは店舗が設定した規約が表示されます。</p><button type="button" onClick={() => setTermsOpen(false)}>確認しました</button></div>
+        <div className="lp-member-terms-sheet"><strong>メンバー規約</strong><p>ポイントは対象店舗でのお会計時にためる・使うことができます。第三者への譲渡や換金はできません。</p><p>規約の内容は店舗の設定に従います。</p><button type="button" onClick={() => setTermsOpen(false)}>確認しました</button></div>
       </BottomSheet>
     </div>
   );
@@ -262,8 +262,8 @@ export function LandingShowcaseRegister() {
     <div className="landing-showcase landing-showcase--register">
       <section className="lp-register-hero">
         <span className="lp-register-hero__mark"><LeafMark size={28} /></span>
-        <h1>会員登録</h1>
-        <p>会員登録すると会員証・ポイント・クーポンをご利用いただけます。</p>
+        <h1>メンバー登録</h1>
+        <p>会員パスを発行すると、ポイントやクーポンを店舗で使えます。</p>
         <b>登録すると、ドリンク1杯サービス！</b>
       </section>
       <form className="lp-register-form" onSubmit={(event) => event.preventDefault()}>

@@ -1,16 +1,19 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { appConfig } from '../config/appConfig';
-import { createDefaultCustomization } from '../config/customization';
+import { createDefaultCustomization, resolveAppExperience } from '../config/customization';
 import { buildProjectStore, readServerCustomizationPatch } from '../config/projectStore';
 import { themeMap } from '../themes/themes';
 import type { StoreAppConfig } from '../types/app';
-import type { AppCustomization, AppCustomizationPatch, CouponStatus } from '../types/customization';
+import type { AppCustomization, AppCustomizationPatch, AppExperienceId, CouponStatus } from '../types/customization';
 
 const customizationStorageKey = 'reggit-app-customization-v3';
+const showcaseStoreStorageKey = 'reggit-showcase-store-id-v2';
+const SHOWCASE_DEFAULT_STORE_ID = 'store_cafe';
+const experienceVersion = 12;
 
 interface PersistedCustomizations {
   version: 3;
-  experienceVersion: 5;
+  experienceVersion: 12;
   byStore: Record<string, AppCustomizationPatch>;
 }
 
@@ -21,6 +24,7 @@ interface AppConfigContextValue {
   activeThemeId: string;
   setActiveThemeId: (themeId: string) => void;
   customization: AppCustomization;
+  experienceId: AppExperienceId;
   getStoreCustomization: (storeId: string) => AppCustomization;
   updateCustomization: (patch: AppCustomizationPatch) => void;
   resetCustomization: () => void;
@@ -38,8 +42,13 @@ function mergeCustomization(store: StoreAppConfig, patch?: AppCustomizationPatch
   return {
     ...base,
     ...patch,
+    designPreset: patch.designPreset ?? base.designPreset,
+    experienceId: patch.experienceId ?? base.experienceId,
+    themeId: patch.themeId ?? base.themeId,
+    appTemplateId: patch.appTemplateId ?? base.appTemplateId,
     colors: { ...base.colors, ...patch.colors },
     appearance: { ...base.appearance, ...patch.appearance },
+    brand: { ...base.brand, ...patch.brand },
     home: { ...base.home, ...patch.home },
     header: {
       ...base.header,
@@ -69,7 +78,7 @@ function mergeCustomization(store: StoreAppConfig, patch?: AppCustomizationPatch
 }
 
 /** /liff（プロジェクトキーなし）や ?demo=1 では業態モックを並べてデザイン切替できる */
-function isStoreShowcaseMode(): boolean {
+export function isDesignShowcaseMode(): boolean {
   if (typeof document !== 'undefined' && document.body.classList.contains('liff-demo-data')) {
     return true;
   }
@@ -80,12 +89,27 @@ function isStoreShowcaseMode(): boolean {
   return path === '/liff';
 }
 
+function readShowcaseStoreId(stores: StoreAppConfig[]): string {
+  const fallback = stores.some((store) => store.storeId === SHOWCASE_DEFAULT_STORE_ID)
+    ? SHOWCASE_DEFAULT_STORE_ID
+    : (stores[0]?.storeId ?? 'default');
+  try {
+    const saved = window.localStorage.getItem(showcaseStoreStorageKey);
+    if (saved !== null && stores.some((store) => store.storeId === saved)) {
+      return saved;
+    }
+  } catch {
+    return fallback;
+  }
+  return fallback;
+}
+
 function resolveStores(isAdminStudio: boolean): StoreAppConfig[] {
   if (isAdminStudio) {
     const projectStore = buildProjectStore();
     return [projectStore, ...appConfig.stores.filter((store) => store.storeId !== projectStore.storeId)];
   }
-  if (isStoreShowcaseMode()) {
+  if (isDesignShowcaseMode()) {
     return appConfig.stores;
   }
   return [buildProjectStore()];
@@ -97,7 +121,7 @@ function loadInitialCustomizations(stores: StoreAppConfig[]): Record<string, App
     const saved = window.localStorage.getItem(customizationStorageKey);
     if (saved) {
       const persisted = JSON.parse(saved) as PersistedCustomizations;
-      if (persisted.version === 3 && persisted.experienceVersion === 5) {
+      if (persisted.version === 3 && persisted.experienceVersion === experienceVersion) {
         byStore = persisted.byStore ?? {};
       }
     }
@@ -108,11 +132,14 @@ function loadInitialCustomizations(stores: StoreAppConfig[]): Record<string, App
   const projectKey = typeof window !== 'undefined' && window.__PROJECT_KEY__
     ? String(window.__PROJECT_KEY__)
     : '';
-  const serverTarget = stores.find((store) => store.storeId === projectKey) ?? stores[0];
-  if (serverTarget !== undefined) {
-    const serverPatch = readServerCustomizationPatch(serverTarget.storeId);
-    if (serverPatch !== undefined) {
-      byStore[serverTarget.storeId] = serverPatch;
+  // ショーケース（/liff）では実店舗の保存設定をデモ店に混ぜない
+  if (!isDesignShowcaseMode() && projectKey !== '') {
+    const serverTarget = stores.find((store) => store.storeId === projectKey);
+    if (serverTarget !== undefined) {
+      const serverPatch = readServerCustomizationPatch(serverTarget.storeId);
+      if (serverPatch !== undefined) {
+        byStore[serverTarget.storeId] = serverPatch;
+      }
     }
   }
 
@@ -122,19 +149,44 @@ function loadInitialCustomizations(stores: StoreAppConfig[]): Record<string, App
 export function AppConfigProvider({ children, isAdminStudio = false }: { children: ReactNode; isAdminStudio?: boolean }) {
   const stores = useMemo(() => resolveStores(isAdminStudio), [isAdminStudio]);
   const isDesignerEmbedPreview = !isAdminStudio && window.__IS_DESIGNER_EMBED_PREVIEW__ === true;
-  const [activeStoreId, setActiveStoreId] = useState(stores[0]?.storeId ?? 'default');
-  const [activeThemeId, setActiveThemeId] = useState(
-    themeMap[stores[0]?.themeId ?? 'minimal-light']?.id ?? 'minimal-light',
-  );
+  const [activeStoreId, setActiveStoreId] = useState(() => {
+    if (!isAdminStudio && isDesignShowcaseMode()) {
+      return readShowcaseStoreId(stores);
+    }
+    return stores[0]?.storeId ?? 'default';
+  });
   const [customizations, setCustomizations] = useState<Record<string, AppCustomization>>(() => loadInitialCustomizations(stores));
+  const [activeThemeId, setActiveThemeId] = useState(() => {
+    const loaded = loadInitialCustomizations(stores);
+    const initialStoreId = !isAdminStudio && isDesignShowcaseMode()
+      ? readShowcaseStoreId(stores)
+      : (stores[0]?.storeId ?? 'default');
+    const store = stores.find((item) => item.storeId === initialStoreId) ?? stores[0];
+    const savedTheme = store !== undefined ? loaded[store.storeId]?.themeId : undefined;
+    if (savedTheme !== undefined && themeMap[savedTheme] !== undefined) {
+      return savedTheme;
+    }
+    return themeMap[store?.themeId ?? 'minimal-light']?.id ?? 'minimal-light';
+  });
 
   useEffect(() => {
     if (isDesignerEmbedPreview) {
       return;
     }
-    const payload: PersistedCustomizations = { version: 3, experienceVersion: 5, byStore: customizations };
+    const payload: PersistedCustomizations = { version: 3, experienceVersion, byStore: customizations };
     window.localStorage.setItem(customizationStorageKey, JSON.stringify(payload));
   }, [customizations, isDesignerEmbedPreview]);
+
+  useEffect(() => {
+    if (isAdminStudio || isDesignerEmbedPreview || !isDesignShowcaseMode()) {
+      return;
+    }
+    try {
+      window.localStorage.setItem(showcaseStoreStorageKey, activeStoreId);
+    } catch {
+      return;
+    }
+  }, [activeStoreId, isAdminStudio, isDesignerEmbedPreview]);
 
   useEffect(() => {
     if (!isDesignerEmbedPreview) {
@@ -153,9 +205,13 @@ export function AppConfigProvider({ children, isAdminStudio = false }: { childre
       if (patch === undefined || patch === null || typeof patch !== 'object') {
         return;
       }
+      const next = mergeCustomization(previewStore, patch);
+      if (typeof next.themeId === 'string' && themeMap[next.themeId] !== undefined) {
+        setActiveThemeId(next.themeId);
+      }
       setCustomizations((current) => ({
         ...current,
-        [previewStore.storeId]: mergeCustomization(previewStore, patch),
+        [previewStore.storeId]: next,
       }));
     };
 
@@ -173,6 +229,9 @@ export function AppConfigProvider({ children, isAdminStudio = false }: { childre
   const customization = activeStore !== undefined
     ? (customizations[activeStore.storeId] ?? createDefaultCustomization(activeStore))
     : createDefaultCustomization(buildProjectStore());
+  const experienceId = activeStore !== undefined
+    ? resolveAppExperience(activeStore, customization)
+    : customization.experienceId;
 
   const value = useMemo<AppConfigContextValue>(() => {
     if (activeStore === undefined) {
@@ -184,18 +243,27 @@ export function AppConfigProvider({ children, isAdminStudio = false }: { childre
       setActiveStoreId: (storeId: string) => {
         setActiveStoreId(storeId);
         const nextStore = stores.find((store) => store.storeId === storeId);
-        if (nextStore !== undefined) {
-          setActiveThemeId(nextStore.themeId);
+        if (nextStore === undefined) {
+          return;
+        }
+        const saved = customizations[storeId] ?? createDefaultCustomization(nextStore);
+        const nextTheme = saved.themeId ?? nextStore.themeId;
+        if (themeMap[nextTheme] !== undefined) {
+          setActiveThemeId(nextTheme);
         }
       },
       activeThemeId,
       setActiveThemeId,
       customization,
+      experienceId,
       getStoreCustomization: (storeId: string) => {
         const store = stores.find((item) => item.storeId === storeId) ?? activeStore;
         return customizations[storeId] ?? createDefaultCustomization(store);
       },
       updateCustomization: (patch) => {
+        if (typeof patch.themeId === 'string' && themeMap[patch.themeId] !== undefined) {
+          setActiveThemeId(patch.themeId);
+        }
         setCustomizations((current) => {
           const currentCustomization = current[activeStore.storeId] ?? createDefaultCustomization(activeStore);
           return {
@@ -205,6 +273,7 @@ export function AppConfigProvider({ children, isAdminStudio = false }: { childre
               ...patch,
               colors: { ...currentCustomization.colors, ...patch.colors },
               appearance: { ...currentCustomization.appearance, ...patch.appearance },
+              brand: { ...currentCustomization.brand, ...patch.brand },
               home: { ...currentCustomization.home, ...patch.home },
               header: {
                 ...currentCustomization.header,
@@ -224,13 +293,17 @@ export function AppConfigProvider({ children, isAdminStudio = false }: { childre
         });
       },
       resetCustomization: () => {
+        const next = createDefaultCustomization(activeStore);
+        if (typeof next.themeId === 'string' && themeMap[next.themeId] !== undefined) {
+          setActiveThemeId(next.themeId);
+        }
         setCustomizations((current) => ({
           ...current,
-          [activeStore.storeId]: createDefaultCustomization(activeStore),
+          [activeStore.storeId]: next,
         }));
       },
     };
-  }, [activeStore, activeThemeId, customization, customizations, stores]);
+  }, [activeStore, activeThemeId, customization, customizations, experienceId, stores]);
 
   return <AppConfigContext.Provider value={value}>{children}</AppConfigContext.Provider>;
 }

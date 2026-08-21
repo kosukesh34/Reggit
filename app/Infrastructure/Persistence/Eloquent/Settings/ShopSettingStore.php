@@ -16,6 +16,7 @@ use App\Models\Settings\ProjectMemberRankSetting;
 use App\Models\Settings\ProjectProfileSmaregiSetting;
 use App\Models\Settings\ProjectWalletSetting;
 use App\Support\LiffDesignerSanitizer;
+use App\Support\MemberCardDesignMap;
 use App\Support\ShopSettingLiffDefaults;
 use App\Util\AdminContext;
 use App\Util\StrHelper;
@@ -428,8 +429,48 @@ class ShopSettingStore
     public static function getLiffTabSettings(?int $projectId = null): array
     {
         $settings = self::getValue('liff_tab_settings', null, $projectId);
+        $settings = is_array($settings) && $settings !== []
+            ? $settings
+            : ShopSettingLiffDefaults::defaultLiffTabSettings();
 
-        return is_array($settings) && $settings !== [] ? $settings : ShopSettingLiffDefaults::defaultLiffTabSettings();
+        return self::applyMemberCardRuntimeToTabSettings($settings, $projectId);
+    }
+
+    /**
+     * ランク設定の会員証デザインを LIFF タブ設定へ反映する（読み取り時の正）。
+     *
+     * @param  array<string, mixed>  $settings
+     * @return array<string, mixed>
+     */
+    public static function applyMemberCardRuntimeToTabSettings(array $settings, ?int $projectId = null): array
+    {
+        $global = isset($settings['_global']) && is_array($settings['_global']) ? $settings['_global'] : [];
+        $design = self::getMemberCardDesign($projectId);
+        $global['member_card_design'] = $design;
+        $global['member_card_display_type'] = self::getMemberCardDisplayType($projectId);
+        $global['member_card_code_type'] = self::getMemberCardCodeType($projectId);
+
+        $template = MemberCardDesignMap::templateForDesign($design);
+        if ($template !== null) {
+            $customization = $global['app_customization'] ?? [];
+            if (is_string($customization)) {
+                $decoded = json_decode($customization, true);
+                $customization = is_array($decoded) ? $decoded : [];
+            }
+            if (! is_array($customization)) {
+                $customization = [];
+            }
+            $membership = isset($customization['membership']) && is_array($customization['membership'])
+                ? $customization['membership']
+                : [];
+            $membership['template'] = $template;
+            $customization['membership'] = $membership;
+            $global['app_customization'] = $customization;
+        }
+
+        $settings['_global'] = $global;
+
+        return $settings;
     }
 
     public static function setLiffTabSettings(array $settings, ?int $projectId = null): void
@@ -932,17 +973,17 @@ class ShopSettingStore
         self::setValue('show_member_card_for_guest', $value, 'boolean', AdminContext::resolveProjectId($projectId));
     }
 
-    /** 会員証のレイアウトデザイン。default, logo_top, logo_center, logo_header, compact, split_banner, minimal_line, emblem */
+    /** 会員証のレイアウトデザイン（MemberCardDesignMap::DESIGNS） */
     public static function getMemberCardDesign(?int $projectId = null): string
     {
-        $v = self::getValue('member_card_design', 'default', $projectId);
+        $v = (string) self::getValue('member_card_design', 'default', $projectId);
 
-        return in_array($v, ['default', 'logo_top', 'logo_center', 'logo_header', 'compact', 'split_banner', 'minimal_line', 'emblem'], true) ? $v : 'default';
+        return MemberCardDesignMap::isValidDesign($v) ? $v : 'default';
     }
 
     public static function setMemberCardDesign(string $value, ?int $projectId = null): void
     {
-        $value = in_array($value, ['default', 'logo_top', 'logo_center', 'logo_header', 'compact', 'split_banner', 'minimal_line', 'emblem'], true) ? $value : 'default';
+        $value = MemberCardDesignMap::isValidDesign($value) ? $value : 'default';
         self::setValue('member_card_design', $value, 'string', AdminContext::resolveProjectId($projectId));
     }
 
@@ -994,8 +1035,6 @@ class ShopSettingStore
                 'label' => (string) ($row['label'] ?? $key),
                 'min_points' => (int) ($row['min_points'] ?? 0),
                 'is_active' => isset($row['is_active']) ? (bool) $row['is_active'] : true,
-                'icon_url' => $row['icon_url'] ?? null,
-                'stamp_background_url' => $row['stamp_background_url'] ?? null,
                 'card_color' => isset($row['card_color']) && $row['card_color'] !== '' ? (string) $row['card_color'] : null,
                 'order' => (int) ($row['order'] ?? 0),
                 'point_earn_rate' => isset($row['point_earn_rate']) && $row['point_earn_rate'] !== null && $row['point_earn_rate'] !== ''
@@ -1074,10 +1113,10 @@ class ShopSettingStore
     public static function defaultMemberRankSettings(): array
     {
         return [
-            ['key' => 'bronze', 'label' => 'ブロンズ', 'min_points' => 0, 'is_active' => true, 'icon_url' => null, 'stamp_background_url' => null, 'card_color' => '#cd7f32', 'order' => 1, 'point_earn_rate' => null, 'stamp_earn_per_amount' => null, 'smaregi_rank_id' => null],
-            ['key' => 'silver', 'label' => 'シルバー', 'min_points' => 1000, 'is_active' => true, 'icon_url' => null, 'stamp_background_url' => null, 'card_color' => '#c0c0c0', 'order' => 2, 'point_earn_rate' => null, 'stamp_earn_per_amount' => null, 'smaregi_rank_id' => null],
-            ['key' => 'gold', 'label' => 'ゴールド', 'min_points' => 5000, 'is_active' => true, 'icon_url' => null, 'stamp_background_url' => null, 'card_color' => '#ffd700', 'order' => 3, 'point_earn_rate' => null, 'stamp_earn_per_amount' => null, 'smaregi_rank_id' => null],
-            ['key' => 'platinum', 'label' => 'プラチナ', 'min_points' => 10000, 'is_active' => true, 'icon_url' => null, 'stamp_background_url' => null, 'card_color' => '#e5e4e2', 'order' => 4, 'point_earn_rate' => null, 'stamp_earn_per_amount' => null, 'smaregi_rank_id' => null],
+            ['key' => 'bronze', 'label' => 'ブロンズ', 'min_points' => 0, 'is_active' => true, 'card_color' => '#cd7f32', 'order' => 1, 'point_earn_rate' => null, 'stamp_earn_per_amount' => null, 'smaregi_rank_id' => null],
+            ['key' => 'silver', 'label' => 'シルバー', 'min_points' => 1000, 'is_active' => true, 'card_color' => '#c0c0c0', 'order' => 2, 'point_earn_rate' => null, 'stamp_earn_per_amount' => null, 'smaregi_rank_id' => null],
+            ['key' => 'gold', 'label' => 'ゴールド', 'min_points' => 5000, 'is_active' => true, 'card_color' => '#ffd700', 'order' => 3, 'point_earn_rate' => null, 'stamp_earn_per_amount' => null, 'smaregi_rank_id' => null],
+            ['key' => 'platinum', 'label' => 'プラチナ', 'min_points' => 10000, 'is_active' => true, 'card_color' => '#e5e4e2', 'order' => 4, 'point_earn_rate' => null, 'stamp_earn_per_amount' => null, 'smaregi_rank_id' => null],
         ];
     }
 

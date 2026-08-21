@@ -1,13 +1,170 @@
 import { isLinkTabType, type StoreAppConfig } from "../types/app";
-import type { AppCustomization, AppCustomizationPatch, DesignPreset, HomeLayout } from "../types/customization";
+import { isIndustryGalleryStoreId, resolveIndustryGalleryTemplate } from "./industryGallery";
+import type { AppCustomization, AppCustomizationPatch, AppExperienceId, DesignPreset, HomeLayout } from "../types/customization";
+
+export const SIMPLE_HOME_STORE_ID = "store_simple_home";
+
+const STORE_EXPERIENCE: Record<string, AppExperienceId> = {
+  store_simple_rewards: "simple-rewards",
+  store_landing_showcase: "landing-showcase",
+  store_counter_operations: "counter-operations",
+  store_appointment_operations: "appointment-operations",
+};
+
+const THEME_EXPERIENCE: Record<string, AppExperienceId> = {
+  "simple-rewards": "simple-rewards",
+  "landing-showcase": "landing-showcase",
+  "operations-counter": "counter-operations",
+  "operations-booking": "appointment-operations",
+};
+
+export function experienceIdForStore(store: StoreAppConfig): AppExperienceId {
+  if (isIndustryGalleryStoreId(store.storeId) || store.themeId.startsWith("gallery-")) {
+    return "industry-gallery";
+  }
+  return STORE_EXPERIENCE[store.storeId] ?? THEME_EXPERIENCE[store.themeId] ?? "standard";
+}
+
+export function resolveAppExperience(store: StoreAppConfig, customization: AppCustomization): AppExperienceId {
+  if (customization.experienceId !== undefined) {
+    return customization.experienceId;
+  }
+  return experienceIdForStore(store);
+}
+
+const SIMPLE_HOME_HOME: AppCustomization["home"] = {
+  layout: "minimal",
+  primaryActionPlacement: "belowHero",
+  quickActionColumns: 3,
+  showHeroImage: false,
+  showHeroStatus: false,
+  showMembership: true,
+  showQuickActions: true,
+  showFeatured: false,
+  showCoupons: true,
+  showNews: false,
+  showStoreInfo: false,
+};
+
+const extraHomeByStore: Record<string, Partial<AppCustomization["home"]>> = {
+  [SIMPLE_HOME_STORE_ID]: SIMPLE_HOME_HOME,
+  store_apparel: {
+    layout: "magazine",
+    showHeroStatus: false,
+    showQuickActions: false,
+    showStoreInfo: false,
+  },
+  store_salon: {
+    layout: "wallet",
+    showStoreInfo: false,
+  },
+  store_clinic: {
+    layout: "minimal",
+    showHeroImage: false,
+    showHeroStatus: false,
+    showFeatured: false,
+    showCoupons: false,
+    showNews: true,
+    showStoreInfo: true,
+  },
+  store_fitness: {
+    layout: "minimal",
+    showStoreInfo: false,
+    showCoupons: false,
+  },
+  store_hotel: {
+    layout: "magazine",
+    showQuickActions: true,
+  },
+  store_flower: {
+    layout: "magazine",
+    showHeroStatus: false,
+    showStoreInfo: false,
+  },
+  store_market: {
+    layout: "standard",
+    showMembership: false,
+  },
+  store_fastfood: {
+    layout: "minimal",
+    showMembership: false,
+    showNews: false,
+    showStoreInfo: false,
+  },
+  store_izakaya: {
+    layout: "wallet",
+  },
+  store_dining: {
+    layout: "wallet",
+  },
+  store_bakery: {
+    layout: "standard",
+    showNews: true,
+  },
+};
+
+function galleryBrand(store: StoreAppConfig): AppCustomization["brand"] {
+  if (!isIndustryGalleryStoreId(store.storeId)) {
+    return {
+      appName: store.storeName,
+      heroImage: store.home.heroImage,
+    };
+  }
+  const template = resolveIndustryGalleryTemplate(store.storeId);
+  return {
+    appName: template.appName,
+    heroImage: template.image,
+    radius: template.radius,
+    visualStyle: template.style,
+  };
+}
+
+function galleryHome(store: StoreAppConfig): Partial<AppCustomization["home"]> {
+  if (!isIndustryGalleryStoreId(store.storeId)) {
+    return {};
+  }
+  return { blocks: [...resolveIndustryGalleryTemplate(store.storeId).blocks] };
+}
+
+const clearedColors: AppCustomization["colors"] = {
+  primary: undefined,
+  secondary: undefined,
+  accent: undefined,
+  background: undefined,
+  surface: undefined,
+  textPrimary: undefined,
+  textSecondary: undefined,
+};
+
+export function appTemplatePatch(store: StoreAppConfig): AppCustomizationPatch {
+  const base = createDefaultCustomization(store);
+  return {
+    designPreset: base.designPreset,
+    appTemplateId: store.storeId,
+    experienceId: experienceIdForStore(store),
+    themeId: store.themeId,
+    colors: clearedColors,
+    appearance: base.appearance,
+    brand: base.brand,
+    home: base.home,
+    header: base.header,
+    coupon: base.coupon,
+    order: base.order,
+    membership: base.membership,
+    stamp: base.stamp,
+    navigation: base.navigation,
+  };
+}
 
 export const defaultCustomization: AppCustomization = {
   designPreset: "editorial",
+  experienceId: "standard",
   colors: {},
   appearance: {
     buttonStyle: "filled",
     density: "standard",
   },
+  brand: {},
   home: {
     layout: "standard",
     primaryActionPlacement: "hero",
@@ -64,6 +221,11 @@ export const defaultCustomization: AppCustomization = {
     showRank: true,
     showNextRank: true,
     showExpiry: true,
+    showDetailSection: true,
+    showWalletActions: true,
+    showProfileEdit: true,
+    showBarcodeEnlarge: true,
+    showUsageNote: true,
   },
   stamp: {
     style: "circles",
@@ -102,6 +264,7 @@ const storePresetMap: Record<string, DesignPreset> = {
   store_fastfood: "fastfood",
   store_landing_showcase: "editorial",
   store_simple_rewards: "minimal",
+  store_simple_home: "minimal",
   store_counter_operations: "airy",
   store_appointment_operations: "airy",
 };
@@ -120,20 +283,33 @@ const storeExperienceMap: Record<string, {
   store_cafe: { buttonStyle: "filled", density: "standard", primaryActionPlacement: "hero", quickActionColumns: 4, navigationPosition: "bottom", emphasizeCenterTab: false, membershipTemplate: "classic", stampStyle: "circles", stampGoal: 10 },
   store_apparel: { buttonStyle: "outline", density: "relaxed", primaryActionPlacement: "belowHero", quickActionColumns: 4, navigationPosition: "bottom", emphasizeCenterTab: false, membershipTemplate: "minimal", stampStyle: "progress", stampGoal: 5 },
   store_salon: { buttonStyle: "soft", density: "relaxed", primaryActionPlacement: "floating", quickActionColumns: 3, navigationPosition: "floating", emphasizeCenterTab: true, membershipTemplate: "barcodeFocus", stampStyle: "circles", stampGoal: 5 },
-  store_bakery: { buttonStyle: "soft", density: "standard", primaryActionPlacement: "belowHero", quickActionColumns: 2, navigationPosition: "bottom", emphasizeCenterTab: false, membershipTemplate: "split", stampStyle: "squares", stampGoal: 10 },
-  store_fitness: { buttonStyle: "filled", density: "compact", primaryActionPlacement: "floating", quickActionColumns: 4, navigationPosition: "top", emphasizeCenterTab: true, membershipTemplate: "pointFocus", stampStyle: "progress", stampGoal: 5 },
-  store_flower: { buttonStyle: "soft", density: "relaxed", primaryActionPlacement: "hero", quickActionColumns: 2, navigationPosition: "floating", emphasizeCenterTab: false, membershipTemplate: "pass", stampStyle: "circles", stampGoal: 5 },
-  store_hotel: { buttonStyle: "outline", density: "relaxed", primaryActionPlacement: "belowHero", quickActionColumns: 4, navigationPosition: "bottom", emphasizeCenterTab: false, membershipTemplate: "split", stampStyle: "squares", stampGoal: 5 },
-  store_pets: { buttonStyle: "filled", density: "standard", primaryActionPlacement: "floating", quickActionColumns: 2, navigationPosition: "floating", emphasizeCenterTab: true, membershipTemplate: "pointFocus", stampStyle: "circles", stampGoal: 10 },
-  store_clinic: { buttonStyle: "outline", density: "compact", primaryActionPlacement: "hero", quickActionColumns: 4, navigationPosition: "top", emphasizeCenterTab: false, membershipTemplate: "barcodeFocus", stampStyle: "progress", stampGoal: 5 },
+  store_bakery: { buttonStyle: "soft", density: "standard", primaryActionPlacement: "belowHero", quickActionColumns: 2, navigationPosition: "bottom", emphasizeCenterTab: false, membershipTemplate: "ticket", stampStyle: "squares", stampGoal: 10 },
+  store_fitness: { buttonStyle: "filled", density: "compact", primaryActionPlacement: "floating", quickActionColumns: 4, navigationPosition: "bottom", emphasizeCenterTab: false, membershipTemplate: "pointFocus", stampStyle: "progress", stampGoal: 5 },
+  store_flower: { buttonStyle: "soft", density: "relaxed", primaryActionPlacement: "hero", quickActionColumns: 2, navigationPosition: "bottom", emphasizeCenterTab: false, membershipTemplate: "pass", stampStyle: "circles", stampGoal: 5 },
+  store_hotel: { buttonStyle: "outline", density: "relaxed", primaryActionPlacement: "belowHero", quickActionColumns: 4, navigationPosition: "bottom", emphasizeCenterTab: false, membershipTemplate: "wallet", stampStyle: "squares", stampGoal: 5 },
+  store_pets: { buttonStyle: "filled", density: "standard", primaryActionPlacement: "floating", quickActionColumns: 2, navigationPosition: "bottom", emphasizeCenterTab: false, membershipTemplate: "pointFocus", stampStyle: "circles", stampGoal: 10 },
+  store_clinic: { buttonStyle: "outline", density: "compact", primaryActionPlacement: "hero", quickActionColumns: 4, navigationPosition: "bottom", emphasizeCenterTab: false, membershipTemplate: "barcodeFocus", stampStyle: "progress", stampGoal: 5 },
   store_market: { buttonStyle: "filled", density: "compact", primaryActionPlacement: "belowHero", quickActionColumns: 3, navigationPosition: "bottom", emphasizeCenterTab: true, membershipTemplate: "pass", stampStyle: "squares", stampGoal: 12 },
-  store_dining: { buttonStyle: "filled", density: "standard", primaryActionPlacement: "hero", quickActionColumns: 4, navigationPosition: "bottom", emphasizeCenterTab: false, membershipTemplate: "split", stampStyle: "squares", stampGoal: 5 },
-  store_izakaya: { buttonStyle: "filled", density: "standard", primaryActionPlacement: "hero", quickActionColumns: 4, navigationPosition: "bottom", emphasizeCenterTab: false, membershipTemplate: "split", stampStyle: "squares", stampGoal: 5 },
-  store_fastfood: { buttonStyle: "filled", density: "compact", primaryActionPlacement: "belowHero", quickActionColumns: 4, navigationPosition: "floating", emphasizeCenterTab: true, membershipTemplate: "pointFocus", stampStyle: "progress", stampGoal: 5 },
+  store_dining: { buttonStyle: "filled", density: "standard", primaryActionPlacement: "hero", quickActionColumns: 4, navigationPosition: "bottom", emphasizeCenterTab: false, membershipTemplate: "split", stampStyle: "squares", stampGoal: 15 },
+  store_izakaya: { buttonStyle: "filled", density: "standard", primaryActionPlacement: "hero", quickActionColumns: 4, navigationPosition: "bottom", emphasizeCenterTab: false, membershipTemplate: "split", stampStyle: "squares", stampGoal: 15 },
+  store_fastfood: { buttonStyle: "filled", density: "compact", primaryActionPlacement: "belowHero", quickActionColumns: 4, navigationPosition: "bottom", emphasizeCenterTab: true, membershipTemplate: "pointFocus", stampStyle: "progress", stampGoal: 5 },
   store_landing_showcase: { buttonStyle: "filled", density: "standard", primaryActionPlacement: "hero", quickActionColumns: 3, navigationPosition: "bottom", emphasizeCenterTab: false, membershipTemplate: "pointFocus", stampStyle: "circles", stampGoal: 10 },
-  store_simple_rewards: { buttonStyle: "filled", density: "compact", primaryActionPlacement: "belowHero", quickActionColumns: 3, navigationPosition: "bottom", emphasizeCenterTab: false, membershipTemplate: "barcodeFocus", stampStyle: "squares", stampGoal: 10 },
+  store_simple_rewards: { buttonStyle: "filled", density: "compact", primaryActionPlacement: "belowHero", quickActionColumns: 3, navigationPosition: "bottom", emphasizeCenterTab: false, membershipTemplate: "simple", stampStyle: "squares", stampGoal: 10 },
+  store_simple_home: { buttonStyle: "filled", density: "compact", primaryActionPlacement: "belowHero", quickActionColumns: 3, navigationPosition: "bottom", emphasizeCenterTab: false, membershipTemplate: "simple", stampStyle: "squares", stampGoal: 10 },
   store_counter_operations: { buttonStyle: "filled", density: "compact", primaryActionPlacement: "belowHero", quickActionColumns: 2, navigationPosition: "top", emphasizeCenterTab: false, membershipTemplate: "pointFocus", stampStyle: "progress", stampGoal: 5 },
   store_appointment_operations: { buttonStyle: "soft", density: "relaxed", primaryActionPlacement: "belowHero", quickActionColumns: 3, navigationPosition: "bottom", emphasizeCenterTab: false, membershipTemplate: "pass", stampStyle: "circles", stampGoal: 5 },
+};
+
+const GALLERY_EXPERIENCE = {
+  buttonStyle: "filled" as const,
+  density: "compact" as const,
+  primaryActionPlacement: "belowHero" as const,
+  quickActionColumns: 3 as const,
+  navigationPosition: "bottom" as const,
+  emphasizeCenterTab: false,
+  membershipTemplate: "classic" as const,
+  stampStyle: "squares" as const,
+  stampGoal: 10,
 };
 
 const designPresetExperienceMap: Record<DesignPreset, (typeof storeExperienceMap)[string]> = {
@@ -173,7 +349,7 @@ export function designPresetLayoutPatch(designPreset: DesignPreset): AppCustomiz
     },
     membership: {
       template: experience.membershipTemplate,
-      alignment: experience.membershipTemplate === "pass" || experience.membershipTemplate === "pointFocus" ? "center" : "left",
+      alignment: experience.membershipTemplate === "pass" || experience.membershipTemplate === "pointFocus" || experience.membershipTemplate === "simple" || experience.membershipTemplate === "wallet" ? "center" : "left",
     },
     stamp: { style: experience.stampStyle, goal: experience.stampGoal },
     navigation: {
@@ -192,14 +368,25 @@ export function createDefaultCustomization(store: StoreAppConfig): AppCustomizat
     .sort((a, b) => a.order - b.order)
     .map((tab) => tab.type)
     .slice(0, 6);
-  const experience = storeExperienceMap[store.storeId] ?? storeExperienceMap.store_cafe;
+  const experience = storeExperienceMap[store.storeId]
+    ?? (isIndustryGalleryStoreId(store.storeId) ? GALLERY_EXPERIENCE : storeExperienceMap.store_cafe);
 
   return {
     ...defaultCustomization,
     designPreset: storePresetMap[store.storeId] ?? defaultCustomization.designPreset,
+    appTemplateId: store.storeId,
+    experienceId: experienceIdForStore(store),
+    themeId: store.themeId,
     colors: {},
     appearance: { ...defaultCustomization.appearance, buttonStyle: experience.buttonStyle, density: experience.density },
-    home: { ...defaultCustomization.home, primaryActionPlacement: experience.primaryActionPlacement, quickActionColumns: experience.quickActionColumns },
+    brand: galleryBrand(store),
+    home: {
+      ...defaultCustomization.home,
+      primaryActionPlacement: experience.primaryActionPlacement,
+      quickActionColumns: experience.quickActionColumns,
+      ...(extraHomeByStore[store.storeId] ?? {}),
+      ...galleryHome(store),
+    },
     header: { ...defaultCustomization.header },
     coupon: { ...defaultCustomization.coupon },
     order: {
@@ -209,7 +396,10 @@ export function createDefaultCustomization(store: StoreAppConfig): AppCustomizat
     membership: {
       ...defaultCustomization.membership,
       template: experience.membershipTemplate,
-      alignment: experience.membershipTemplate === "pass" || experience.membershipTemplate === "pointFocus" ? "center" : "left",
+      alignment: experience.membershipTemplate === "pass" || experience.membershipTemplate === "pointFocus" || experience.membershipTemplate === "simple" || experience.membershipTemplate === "wallet" ? "center" : "left",
+      ...(experience.membershipTemplate === "simple"
+        ? { showDetailSection: false, showWalletActions: false, showUsageNote: false, showNextRank: false }
+        : {}),
     },
     stamp: { ...defaultCustomization.stamp, style: experience.stampStyle, goal: experience.stampGoal },
     navigation: {
@@ -223,5 +413,14 @@ export function createDefaultCustomization(store: StoreAppConfig): AppCustomizat
           .map((tab) => [tab.type, tab.url as string]),
       ),
     },
+  };
+}
+
+export function resolveAppBrand(store: StoreAppConfig, customization: AppCustomization): { appName: string; heroImage: string } {
+  const appName = customization.brand?.appName?.trim();
+  const heroImage = customization.brand?.heroImage?.trim();
+  return {
+    appName: appName !== undefined && appName !== "" ? appName : store.heroTitle || store.storeName,
+    heroImage: heroImage !== undefined && heroImage !== "" ? heroImage : store.home.heroImage,
   };
 }

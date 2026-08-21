@@ -67,24 +67,24 @@ export function getGuestRegisterMessage(): { title: string; subtitle: string; bu
     const mode = getMemberRegistrationMode();
     if (mode === 'force') {
         return {
-            title: '会員登録が必要です。',
-            subtitle: '登録するとアプリのすべての機能をご利用いただけます。',
-            buttonLabel: '会員登録する',
+            title: '会員パスの発行が必要です',
+            subtitle: '発行すると、アプリの機能をご利用いただけます。',
+            buttonLabel: '会員パスを発行',
             buttonClass: 'btn-primary',
         };
     }
     if (mode === 'prompt' || mode === 'popup') {
         return {
-            title: '会員登録をおすすめします。',
-            subtitle: '登録するとポイント・クーポン・予約履歴などがご利用いただけます。',
-            buttonLabel: '会員登録する',
+            title: '会員パスを発行できます',
+            subtitle: '発行すると、ポイントやクーポンを店舗で使えます。',
+            buttonLabel: '会員パスを発行',
             buttonClass: 'btn-primary',
         };
     }
     return {
-        title: '会員登録は任意です。',
-        subtitle: '登録するとポイント・クーポン・予約履歴を利用できます。',
-        buttonLabel: '任意で会員登録',
+        title: 'ゲストで閲覧中',
+        subtitle: '会員パスを発行すると、ポイントやクーポンを店舗で使えます。',
+        buttonLabel: '任意で発行',
         buttonClass: 'btn-secondary',
     };
 }

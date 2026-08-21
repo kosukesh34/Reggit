@@ -4,6 +4,7 @@ namespace App\Services\Admin;
 
 use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Support\LiffDesignerSanitizer;
+use App\Support\MemberCardDesignMap;
 
 /**
  * LIFF デザイナー・フロントメニュー設定の永続化と取得を担当する。
@@ -190,5 +191,36 @@ class LiffSettingsService
 
             return $item;
         }, $items)));
+    }
+
+    /**
+     * ランク設定の member_card_design を app_customization.membership.template へ同期する。
+     */
+    public function syncMembershipTemplateFromDesign(string $design, int $projectId): void
+    {
+        $template = MemberCardDesignMap::templateForDesign($design);
+        if ($template === null) {
+            return;
+        }
+
+        $settings = $this->getTabSettings($projectId);
+        $global = isset($settings['_global']) && is_array($settings['_global']) ? $settings['_global'] : [];
+        $customization = $global['app_customization'] ?? [];
+        if (is_string($customization)) {
+            $decoded = json_decode($customization, true);
+            $customization = is_array($decoded) ? $decoded : [];
+        }
+        if (! is_array($customization)) {
+            $customization = [];
+        }
+        $membership = isset($customization['membership']) && is_array($customization['membership'])
+            ? $customization['membership']
+            : [];
+        $membership['template'] = $template;
+        $customization['membership'] = $membership;
+        $global['app_customization'] = $customization;
+        $global['member_card_design'] = $design;
+        $settings['_global'] = $global;
+        $this->setTabSettings($settings, $projectId);
     }
 }

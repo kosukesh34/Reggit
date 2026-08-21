@@ -14,11 +14,27 @@ export type DesignPreset =
   | "restaurant"
   | "izakaya"
   | "fastfood";
+export type AppExperienceId =
+  | "standard"
+  | "simple-rewards"
+  | "landing-showcase"
+  | "counter-operations"
+  | "appointment-operations"
+  | "industry-gallery";
 export type CouponStatus = "available" | "ended";
 export type CouponLayout = "cards" | "compact";
 export type OrderCtaPosition = "inline" | "sticky";
 export type OrderCatalogLayout = "cards" | "compact";
-export type MembershipTemplate = "classic" | "minimal" | "barcodeFocus" | "split" | "pointFocus" | "pass";
+export type MembershipTemplate =
+  | "classic"
+  | "minimal"
+  | "barcodeFocus"
+  | "split"
+  | "pointFocus"
+  | "pass"
+  | "simple"
+  | "ticket"
+  | "wallet";
 export type MembershipAlignment = "left" | "center";
 export type StampStyle = "circles" | "squares" | "progress";
 export type NavigationPosition = "bottom" | "floating" | "top";
@@ -40,6 +56,10 @@ export interface HeaderRightButton {
 
 export interface AppCustomization {
   designPreset: DesignPreset;
+  /** /liff#/home の店舗切替とデザイナーテンプレを結ぶ */
+  appTemplateId?: string;
+  experienceId: AppExperienceId;
+  themeId?: string;
   colors: {
     primary?: string;
     secondary?: string;
@@ -53,6 +73,12 @@ export interface AppCustomization {
     buttonStyle: ButtonStyle;
     density: ContentDensity;
   };
+  brand: {
+    appName?: string;
+    heroImage?: string;
+    radius?: number;
+    visualStyle?: string;
+  };
   home: {
     layout: HomeLayout;
     primaryActionPlacement: PrimaryActionPlacement;
@@ -65,6 +91,7 @@ export interface AppCustomization {
     showCoupons: boolean;
     showNews: boolean;
     showStoreInfo: boolean;
+    blocks?: string[];
   };
   header: {
     showLogo: boolean;
@@ -103,6 +130,11 @@ export interface AppCustomization {
     showRank: boolean;
     showNextRank: boolean;
     showExpiry: boolean;
+    showDetailSection: boolean;
+    showWalletActions: boolean;
+    showProfileEdit: boolean;
+    showBarcodeEnlarge: boolean;
+    showUsageNote: boolean;
   };
   stamp: {
     style: StampStyle;
@@ -118,7 +150,7 @@ export interface AppCustomization {
   };
 }
 
-type NestedCustomizationKey = "colors" | "appearance" | "home" | "header" | "coupon" | "order" | "membership" | "stamp" | "navigation";
+type NestedCustomizationKey = "colors" | "appearance" | "brand" | "home" | "header" | "coupon" | "order" | "membership" | "stamp" | "navigation";
 
 export type AppCustomizationPatch = Partial<Omit<AppCustomization, NestedCustomizationKey>> & {
   [Key in NestedCustomizationKey]?: Partial<AppCustomization[Key]>;
