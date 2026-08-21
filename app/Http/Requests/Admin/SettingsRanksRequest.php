@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Support\MemberCardDesignMap;
 use Illuminate\Foundation\Http\FormRequest;
 
 class SettingsRanksRequest extends FormRequest
@@ -32,7 +33,7 @@ class SettingsRanksRequest extends FormRequest
             'show_points_display' => 'nullable|boolean',
             'show_rank_progress' => 'nullable|boolean',
             'show_member_card_for_guest' => 'nullable|boolean',
-            'member_card_design' => 'nullable|string|in:'.implode(',', \App\Support\MemberCardDesignMap::DESIGNS),
+            'member_card_design' => 'nullable|string|in:'.implode(',', MemberCardDesignMap::DESIGNS),
             'member_card_display_type' => 'nullable|string|in:card,sheet',
             'member_card_code_type' => 'nullable|string|in:barcode,qrcode',
             'ranks' => 'array',
