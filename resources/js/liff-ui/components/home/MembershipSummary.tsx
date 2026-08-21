@@ -1,4 +1,4 @@
-import { ArrowUpRight, ScanLine, UserPlus } from "lucide-react";
+import { ArrowUpRight, ScanLine } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { MemberProfile } from "../../types/app";
 import { Card } from "../ui/Card";
@@ -8,7 +8,11 @@ import { getMemberManager, openRegister } from "../../../frontend/features/membe
 
 interface MembershipSummaryProps {
   member: MemberProfile;
+  showRank?: boolean;
+  showPoints?: boolean;
   showNextRank?: boolean;
+  showBarcode?: boolean;
+  showMemberName?: boolean;
 }
 
 function resolveMemberNumber(member: MemberProfile): string {
@@ -27,23 +31,30 @@ function resolveMemberNumber(member: MemberProfile): string {
   return "";
 }
 
-export function MembershipSummary({ member, showNextRank = true }: MembershipSummaryProps) {
+export function MembershipSummary({
+  member,
+  showRank = true,
+  showPoints = true,
+  showNextRank = true,
+  showBarcode = true,
+  showMemberName = true,
+}: MembershipSummaryProps) {
   if (!member.isMember) {
     return (
       <Card className="membership-summary membership-summary--guest" padding="md">
         <div className="membership-summary__top">
           <div>
-            <div className="membership-summary__label">MEMBERSHIP</div>
-            <h2 className="membership-summary__name">会員登録</h2>
+            <div className="membership-summary__label">MEMBER PASS</div>
+            <h2 className="membership-summary__name">ゲスト</h2>
           </div>
         </div>
         <div className="membership-summary__body">
-          <div className="membership-summary__meta">登録するとポイント・クーポンなどがご利用いただけます。</div>
+          <div className="membership-summary__meta">会員パスを発行すると、ポイントやクーポンを店舗で使えます。</div>
           <Button
             onClick={() => openRegister(false)}
-            aria-label="会員登録する"
+            aria-label="会員パスを発行"
           >
-            <UserPlus size={16} /> 会員登録
+            会員パスを発行
           </Button>
         </div>
       </Card>
@@ -54,19 +65,20 @@ export function MembershipSummary({ member, showNextRank = true }: MembershipSum
   const progress = Math.min(100, Math.round((points / 3000) * 100));
   const memberName = typeof member.name === "string" && member.name !== "" ? member.name : "会員";
   const memberNumber = resolveMemberNumber(member);
+  const title = showRank ? (member.rank || "MEMBER") : (showMemberName ? memberName : "MEMBER");
 
   return (
     <Card className="membership-summary" padding="md">
       <div className="membership-summary__top">
         <div>
           <div className="membership-summary__label">MEMBER STATUS</div>
-          <h2 className="membership-summary__name">{member.rank || "MEMBER"}</h2>
+          <h2 className="membership-summary__name">{title}</h2>
         </div>
-        <span className="membership-summary__member">{memberName} 様</span>
+        {showMemberName && showRank ? <span className="membership-summary__member">{memberName} 様</span> : null}
       </div>
       <div className="membership-summary__body">
         <div>
-          <div className="membership-summary__points">{points.toLocaleString()} <span>pt</span></div>
+          {showPoints ? <div className="membership-summary__points">{points.toLocaleString()} <span>pt</span></div> : null}
           {showNextRank && member.nextRankLabel !== "" ? (
             <div className="membership-summary__meta">{member.nextRankLabel}</div>
           ) : null}
@@ -76,14 +88,16 @@ export function MembershipSummary({ member, showNextRank = true }: MembershipSum
           <ArrowUpRight size={14} aria-hidden="true" />
         </Link>
       </div>
-      {memberNumber !== "" ? (
+      {showBarcode && memberNumber !== "" ? (
         <div className="membership-summary__barcode">
           <MembershipBarcode value={memberNumber} />
         </div>
       ) : null}
-      <div className="membership-summary__track" aria-hidden="true">
-        <span style={{ width: `${progress}%` }} />
-      </div>
+      {showNextRank || showPoints ? (
+        <div className="membership-summary__track" aria-hidden="true">
+          <span style={{ width: `${progress}%` }} />
+        </div>
+      ) : null}
     </Card>
   );
 }

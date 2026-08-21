@@ -187,6 +187,7 @@ const presetTokens: Record<Exclude<DesignPreset, "editorial">, Record<string, st
 
 export function customizationToCssVars(customization: AppCustomization): CSSProperties {
   const tokens = customization.designPreset === "editorial" ? {} : presetTokens[customization.designPreset];
+  const radius = customization.brand?.radius;
   return {
     ...tokens,
     ...(customization.colors.primary ? { ["--color-primary" as string]: customization.colors.primary } : {}),
@@ -196,6 +197,11 @@ export function customizationToCssVars(customization: AppCustomization): CSSProp
     ...(customization.colors.surface ? { ["--color-surface" as string]: customization.colors.surface } : {}),
     ...(customization.colors.textPrimary ? { ["--color-text-primary" as string]: customization.colors.textPrimary } : {}),
     ...(customization.colors.textSecondary ? { ["--color-text-secondary" as string]: customization.colors.textSecondary } : {}),
+    ...(radius !== undefined ? {
+      ["--radius-card" as string]: `${radius}px`,
+      ["--radius-image" as string]: `${radius}px`,
+      ["--radius-button" as string]: `${Math.max(4, radius - 6)}px`,
+    } : {}),
   };
 }
 

@@ -50,12 +50,8 @@ function LineOnlyCard({
     return (
         <div className="member-card-container">
             <div className="member-card member-card--line-only">
-                <div className="member-card-header">
-                    <h2 className="member-card-title">
-                        <i className="fas fa-id-card" /> {title || '会員証'}
-                    </h2>
-                </div>
                 <div className="member-card-line-only-body">
+                    <p className="member-card-line-only-kicker">{title || 'MEMBER PASS'}</p>
                     <p className="member-card-line-only-message">{message}</p>
                     {sub ? <p className="member-card-line-only-sub">{sub}</p> : null}
                     {action ? (
@@ -65,7 +61,7 @@ function LineOnlyCard({
                             data-action="member-open-register"
                             onClick={action.onClick}
                         >
-                            <i className="fas fa-user-plus" /> {action.label}
+                            {action.label}
                         </button>
                     ) : null}
                 </div>
@@ -144,7 +140,7 @@ export function MemberView(): JSX.Element {
     if (view.kind === 'login') {
         return (
             <LineOnlyCard
-                message="ログインすると会員証をご利用いただけます。"
+                message="LINEでログインすると、会員パスをご利用いただけます。"
             />
         );
     }
@@ -152,10 +148,10 @@ export function MemberView(): JSX.Element {
     if (view.kind === 'guest_nocard') {
         return (
             <LineOnlyCard
-                message="会員登録されていません。"
-                sub="会員登録すると会員証が表示されます。"
+                message="会員パスはまだありません"
+                sub="発行すると、店舗でポイントやクーポンをご利用いただけます。"
                 action={{
-                    label: '会員登録する',
+                    label: '会員パスを発行',
                     buttonClass: 'btn-primary',
                     onClick: () => openRegister(false),
                 }}
