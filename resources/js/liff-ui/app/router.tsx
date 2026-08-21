@@ -1,4 +1,4 @@
-import { Component, type ErrorInfo, type ReactNode, useCallback, useRef, useState } from "react";
+import { Component, type ErrorInfo, type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { LoginPromptPopup } from "../components/membership/LoginPromptPopup";
 import { AppShell } from "../components/layout/AppShell";
@@ -97,6 +97,28 @@ function isStampGrantLocation(pathname: string, search: string): boolean {
     );
 }
 
+function useDesignerPreviewNavigate() {
+  const navigate = useNavigate();
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("designer_embed") !== "1" && params.get("designer_live_preview") !== "1") {
+      return undefined;
+    }
+    const onMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin || event.data?.type !== "reggit:designer-preview:navigate") {
+        return;
+      }
+      const path = typeof event.data.path === "string" ? event.data.path : "";
+      if (!path.startsWith("/")) {
+        return;
+      }
+      navigate(path);
+    };
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, [navigate]);
+}
+
 function MembershipGate({ onSettled }: { onSettled: () => void }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -119,6 +141,7 @@ function MembershipGate({ onSettled }: { onSettled: () => void }) {
 
 export function AppRouter() {
   useLegacyTabBridge();
+  useDesignerPreviewNavigate();
   const [gateSettled, setGateSettled] = useState(false);
   return (
     <AppShell gateSettled={gateSettled}>

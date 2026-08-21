@@ -6,23 +6,13 @@ use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Enums\MemberRegistrationMode;
 use App\Services\Admin\LiffSettingsService;
 use App\Support\LiffThemePresets;
+use App\Support\MemberCardDesignMap;
 use App\UseCases\Admin\Settings\Data\UpdateLiffDesignerInput;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
 class UpdateLiffDesignerUseCase
 {
-    private const MEMBER_CARD_DESIGNS = [
-        'default',
-        'logo_top',
-        'logo_center',
-        'logo_header',
-        'compact',
-        'split_banner',
-        'minimal_line',
-        'emblem',
-    ];
-
     public function __construct(
         private LiffSettingsService $liffSettingsService,
         private ShopSettingRepository $shopSettingRepository,
@@ -67,7 +57,7 @@ class UpdateLiffDesignerUseCase
         }
 
         $design = (string) ($global['member_card_design'] ?? '');
-        if (in_array($design, self::MEMBER_CARD_DESIGNS, true)) {
+        if (MemberCardDesignMap::isValidDesign($design)) {
             $this->shopSettingRepository->setMemberCardDesign($design, $projectId);
         }
 

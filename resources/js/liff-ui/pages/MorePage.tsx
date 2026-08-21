@@ -1,7 +1,7 @@
 import { ChevronRight, CircleHelp, FileText, Heart, History, LogOut, MapPin, MessageCircle, Settings, ShoppingBag, Sparkles, UserRound } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState } from "react";
-import { LANDING_SHOWCASE_STORE_ID, LandingShowcaseRegister } from "./LandingShowcasePage";
+import { LandingShowcaseRegister } from "./LandingShowcasePage";
 import { useAppConfig } from "../context/AppConfigContext";
 import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
@@ -26,10 +26,10 @@ const supportItems = [
 ];
 
 export function MorePage() {
-  const { activeStore } = useAppConfig();
+  const { activeStore, experienceId } = useAppConfig();
   const { member, mode, refresh } = useRuntimeData();
 
-  if (activeStore.storeId === LANDING_SHOWCASE_STORE_ID) {
+  if (experienceId === "landing-showcase") {
     return <LandingShowcaseRegister />;
   }
   const availableFeatures = featureDefinitions.filter((feature) => activeStore.features[feature.type]);
@@ -80,8 +80,8 @@ export function MorePage() {
         <div className="account-card__monogram">{activeStore.logoText}</div>
         <div>
           <div className="account-card__label">{member.isMember ? "会員情報" : "ゲスト"}</div>
-          <h2 className="account-card__title">{member.isMember ? `${member.name.trim() !== "" ? member.name : "会員"} 様` : "会員登録してください"}</h2>
-          <div className="account-card__meta">{member.isMember ? "会員証・プロフィールを確認" : "登録するとポイントやクーポンが使えます"}</div>
+          <h2 className="account-card__title">{member.isMember ? `${member.name.trim() !== "" ? member.name : "会員"} 様` : "ゲストで閲覧中"}</h2>
+          <div className="account-card__meta">{member.isMember ? "会員証・プロフィールを確認" : "会員パスを発行すると、ポイントやクーポンを店舗で使えます"}</div>
         </div>
         <ChevronRight size={18} />
       </Link>
@@ -97,7 +97,7 @@ export function MorePage() {
           ) : (
             <button type="button" className="menu-list__item" onClick={() => openRegister(false)}>
               <span className="menu-list__icon"><UserRound size={19} /></span>
-              <span>会員登録</span>
+              <span>会員パスを発行</span>
               <ChevronRight size={16} />
             </button>
           )}

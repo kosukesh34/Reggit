@@ -274,10 +274,12 @@ export function readServerCustomizationPatch(_storeId: string): AppCustomization
       logo_top: 'pointFocus',
       logo_center: 'pass',
       logo_header: 'barcodeFocus',
-      compact: 'barcodeFocus',
+      compact: 'simple',
+      ticket: 'ticket',
       split_banner: 'split',
       minimal_line: 'minimal',
       emblem: 'pass',
+      wallet: 'wallet',
     };
     const template = templateMap[design];
     return template === undefined ? {} : { template };
@@ -297,8 +299,8 @@ export function readServerCustomizationPatch(_storeId: string): AppCustomization
         : {}),
     },
     membership: {
-      ...legacyMemberCardTemplate,
       ...patch.membership,
+      ...legacyMemberCardTemplate,
     },
   });
   if (typeof raw === 'string') {

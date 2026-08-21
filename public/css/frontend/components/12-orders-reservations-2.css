@@ -96,31 +96,46 @@
 }
 
 .member-card--line-only .member-card-header {
-    margin-bottom: 0;
+    display: none;
 }
 
 .member-card-line-only-body {
-    text-align: center;
-    padding: 40px 24px;
+    text-align: left;
+    padding: 24px 20px 22px;
+    color: #fff;
+    border-radius: 18px;
+    background: linear-gradient(145deg, var(--primary-color, #2557d6), var(--accent-color, #3e9bc7));
 }
 
-.member-card-line-only-icon {
-    font-size: 48px;
-    color: #06c755;
-    margin: 0 0 16px 0;
+.member-card-line-only-kicker {
+    margin: 0 0 10px;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    opacity: 0.78;
 }
 
 .member-card-line-only-message {
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--text-primary);
+    font-size: 18px;
+    font-weight: 700;
+    color: #fff;
     margin: 0 0 8px 0;
+    letter-spacing: -0.03em;
 }
 
 .member-card-line-only-sub {
     font-size: 13px;
-    color: var(--text-secondary);
+    color: rgb(255 255 255 / .82);
     margin: 0;
+    line-height: 1.6;
+}
+
+.member-card-line-only-body .btn-primary,
+.member-card-line-only-body .btn-secondary {
+    margin-top: 16px;
+    color: var(--primary-color, #2557d6);
+    background: #fff;
+    border: 0;
 }
 
 .member-card--error .member-card-header {

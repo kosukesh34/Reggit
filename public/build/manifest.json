@@ -1,47 +1,43 @@
 {
-  "_browser-Dl-E2G0L.js": {
-    "file": "assets/browser-Dl-E2G0L.js",
+  "_browser-DzEoUhZ3.js": {
+    "file": "assets/browser-DzEoUhZ3.js",
     "name": "browser"
-  },
-  "resources/css/admin/liff-designer/react.css": {
-    "file": "assets/react-De4aM4Fa.css",
-    "src": "resources/css/admin/liff-designer/react.css"
   },
   "resources/css/app.css": {
     "file": "assets/app-Da4f1LNv.css",
     "src": "resources/css/app.css"
   },
   "resources/js/admin/main.tsx": {
-    "file": "assets/main-B1CcelkK.js",
+    "file": "assets/main-BRT1XUh7.js",
     "name": "main",
     "src": "resources/js/admin/main.tsx",
     "isEntry": true,
     "imports": [
-      "_browser-Dl-E2G0L.js"
+      "_browser-DzEoUhZ3.js"
     ]
   },
   "resources/js/frontend/main.tsx": {
-    "file": "assets/main-S0eUdPeE.js",
+    "file": "assets/main-B3MXt1Vy.js",
     "name": "main",
     "src": "resources/js/frontend/main.tsx",
     "isEntry": true,
     "imports": [
-      "_browser-Dl-E2G0L.js"
+      "_browser-DzEoUhZ3.js"
     ],
     "css": [
       "assets/main-CaGWElG9.css",
       "assets/app-Da4f1LNv.css",
       "assets/tokens-CJDqh8yr.css",
-      "assets/globals-BfaEBi2U.css",
-      "assets/design-layout-variants-O2rPv7D6.css"
+      "assets/globals-CkjeEpU5.css",
+      "assets/design-layout-variants-DsFha61Q.css"
     ]
   },
   "resources/js/liff-ui/styles/design-layout-variants.css": {
-    "file": "assets/design-layout-variants-O2rPv7D6.css",
+    "file": "assets/design-layout-variants-DsFha61Q.css",
     "src": "resources/js/liff-ui/styles/design-layout-variants.css"
   },
   "resources/js/liff-ui/styles/globals.css": {
-    "file": "assets/globals-BfaEBi2U.css",
+    "file": "assets/globals-CkjeEpU5.css",
     "src": "resources/js/liff-ui/styles/globals.css"
   },
   "resources/js/liff-ui/styles/tokens.css": {

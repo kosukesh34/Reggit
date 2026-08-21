@@ -331,7 +331,7 @@ body.member-screen-overlay .tab-content.active .tab-section {
     bottom: var(--main-tabs-height, 72px);
     display: flex;
     flex-direction: column;
-    background: var(--bg-canvas, #f5f4f0);
+    background: var(--color-background, var(--bg-canvas, #f4f6fb));
     z-index: 110;
     min-height: 0;
     padding-top: env(safe-area-inset-top, 0);
@@ -355,20 +355,21 @@ body.member-screen-overlay .member-register-fullscreen {
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 52px;
-    padding: 10px var(--content-padding, 18px);
-    border-bottom: 1px solid var(--border-color, #e7e5e4);
-    background: var(--surface, #fff);
+    min-height: 56px;
+    padding: 12px var(--content-padding, 18px);
+    border-bottom: 0;
+    background: linear-gradient(135deg, var(--color-primary, #2557d6), var(--color-accent, #3e9bc7));
+    color: #fff;
     flex-shrink: 0;
 }
 
 .member-register-fullscreen-title {
     margin: 0;
-    font-size: 17px;
+    font-size: 16px;
     font-weight: var(--font-weight-heading, 800);
-    letter-spacing: 0.02em;
+    letter-spacing: 0.04em;
     text-align: center;
-    color: var(--text-primary);
+    color: #fff;
 }
 
 .member-register-fullscreen-body {
@@ -379,7 +380,7 @@ body.member-screen-overlay .member-register-fullscreen {
     -webkit-overflow-scrolling: touch;
     padding: var(--space-4, 16px) var(--content-padding, 18px);
     padding-bottom: var(--space-4, 16px);
-    background: var(--bg-canvas, #f5f4f0);
+    background: var(--color-background, var(--bg-canvas, #f4f6fb));
 }
 
 .member-register-fullscreen-footer {
