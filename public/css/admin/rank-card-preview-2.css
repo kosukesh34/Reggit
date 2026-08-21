@@ -238,6 +238,50 @@
     bottom: 4px;
 }
 
+.rank-card-preview-wrap .idnect-card-wrapper--design-ticket .idnect-card-front-inner {
+    padding-top: 18px;
+}
+.rank-card-preview-wrap .idnect-card-wrapper--design-ticket .idnect-card-face--front {
+    background: #fffef8 !important;
+    color: #171717 !important;
+    border: 1px dashed #c4b59a;
+}
+.rank-card-preview-wrap .idnect-card-wrapper--design-ticket .idnect-card-face--front::before,
+.rank-card-preview-wrap .idnect-card-wrapper--design-ticket .idnect-card-face--front::after,
+.rank-card-preview-wrap .idnect-card-wrapper--design-ticket .idnect-card-shimmer {
+    display: none;
+}
+.rank-card-preview-wrap .idnect-card-wrapper--design-ticket .idnect-card-front-inner::before {
+    content: '';
+    position: absolute;
+    left: -8px;
+    top: 42%;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--bg-secondary, #fafaf9);
+    box-shadow: inset 0 0 0 1px #c4b59a;
+}
+.rank-card-preview-wrap .idnect-card-wrapper--design-ticket .idnect-card-rank-badge,
+.rank-card-preview-wrap .idnect-card-wrapper--design-ticket .idnect-card-points--front,
+.rank-card-preview-wrap .idnect-card-wrapper--design-ticket .idnect-card-display-name {
+    color: #171717 !important;
+}
+.rank-card-preview-wrap .idnect-card-wrapper--design-wallet .idnect-card-front-inner {
+    align-items: center;
+    text-align: center;
+}
+.rank-card-preview-wrap .idnect-card-wrapper--design-wallet .idnect-card-logo-wrap {
+    margin: 0 auto 8px;
+}
+.rank-card-preview-wrap .idnect-card-wrapper--design-wallet .idnect-card-meta-row {
+    width: 100%;
+    justify-content: center;
+}
+.rank-card-preview-wrap .idnect-card-wrapper--design-wallet .idnect-card-barcode-wrap {
+    margin-top: 10px;
+}
+
 .rank-card-preview-wrap {
     background: var(--bg-secondary, #fafaf9);
     border-radius: var(--radius-lg, 12px);

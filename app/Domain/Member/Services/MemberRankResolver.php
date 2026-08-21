@@ -59,8 +59,8 @@ final class MemberRankResolver
         return [
             'current_rank' => $resolved['key'] ?? 'bronze',
             'current_rank_label' => $resolved['label'] ?? ($resolved['key'] ?? 'bronze'),
-            'current_rank_icon' => $resolved['icon_url'] ?? null,
-            'current_rank_background' => $resolved['stamp_background_url'] ?? null,
+            'current_rank_icon' => null,
+            'current_rank_background' => null,
             'current_rank_color' => $resolved['card_color'] ?? null,
             'next_rank' => $next !== null ? ($next['key'] ?? null) : null,
             'next_rank_label' => $next !== null ? ($next['label'] ?? ($next['key'] ?? null)) : null,
