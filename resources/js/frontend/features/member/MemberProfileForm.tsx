@@ -511,7 +511,7 @@ export function MemberProfileForm({
         : '';
 
     const hideCancel = forced === true || (isRegister && mm?._forcedRegister === true);
-    const title = isRegister ? '会員登録' : 'プロフィール編集';
+    const title = isRegister ? '会員パスの発行' : 'プロフィール編集';
     const formId = isRegister ? 'registerForm' : 'profileEditForm';
     const submitLabel = isRegister ? '登録する' : '保存';
     const titleIcon = isRegister ? 'fa-user-plus' : 'fa-user-edit';

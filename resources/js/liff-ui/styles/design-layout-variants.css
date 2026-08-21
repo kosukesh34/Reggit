@@ -1518,31 +1518,31 @@
 }
 
 /* REGGIT COUNTER: 店頭で長時間使っても疲れにくい淡色オペレーション配色 */
-.app-shell[data-store-id="store_counter_operations"] .app-shell__frame {
+.app-shell:is([data-store-id="store_counter_operations"], [data-app-experience="counter-operations"]) .app-shell__frame {
   background: #f7f8f4;
   box-shadow: 0 0 0 1px rgb(49 95 85 / .08);
 }
 
-.app-shell[data-store-id="store_counter_operations"] .header {
+.app-shell:is([data-store-id="store_counter_operations"], [data-app-experience="counter-operations"]) .header {
   color: #233b35;
   background: rgb(255 255 255 / .96);
   border-bottom: 1px solid #e3e9e5;
   backdrop-filter: blur(18px);
 }
 
-.app-shell[data-store-id="store_counter_operations"] .header__subtitle,
-.app-shell[data-store-id="store_counter_operations"] .header__chevron {
+.app-shell:is([data-store-id="store_counter_operations"], [data-app-experience="counter-operations"]) .header__subtitle,
+.app-shell:is([data-store-id="store_counter_operations"], [data-app-experience="counter-operations"]) .header__chevron {
   color: #708079;
 }
 
-.app-shell[data-store-id="store_counter_operations"] .header__logo {
+.app-shell:is([data-store-id="store_counter_operations"], [data-app-experience="counter-operations"]) .header__logo {
   color: #315f55;
   background: #e6efeb;
   border: 1px solid #d5e4de;
   border-radius: 11px;
 }
 
-.app-shell[data-store-id="store_counter_operations"] .bottom-nav--top {
+.app-shell:is([data-store-id="store_counter_operations"], [data-app-experience="counter-operations"]) .bottom-nav--top {
   top: auto;
   color: #687872;
   background: #f9fbf8;
@@ -1550,37 +1550,37 @@
   box-shadow: 0 5px 18px rgb(49 95 85 / .05);
 }
 
-.app-shell[data-store-id="store_counter_operations"] .bottom-nav--top .bottom-nav__item.is-active {
+.app-shell:is([data-store-id="store_counter_operations"], [data-app-experience="counter-operations"]) .bottom-nav--top .bottom-nav__item.is-active {
   color: #315f55;
   background: #e2eee9;
 }
 
-.app-shell[data-store-id="store_counter_operations"] .app-shell__main > .page {
+.app-shell:is([data-store-id="store_counter_operations"], [data-app-experience="counter-operations"]) .app-shell__main > .page {
   padding-inline: 18px;
 }
 
-.app-shell[data-store-id="store_counter_operations"] .counter-status {
+.app-shell:is([data-store-id="store_counter_operations"], [data-app-experience="counter-operations"]) .counter-status {
   color: #233b35;
   background: #fff;
   border: 1px solid #dfe7e2;
   box-shadow: 0 8px 24px rgb(49 95 85 / .05);
 }
 
-.app-shell[data-store-id="store_counter_operations"] .counter-status > div { border-right-color: #e6ece8; }
-.app-shell[data-store-id="store_counter_operations"] .counter-status svg { color: #5f8a7e; }
-.app-shell[data-store-id="store_counter_operations"] .counter-status span { color: #71807a; }
-.app-shell[data-store-id="store_counter_operations"] .counter-status strong { color: #233b35; }
-.app-shell[data-store-id="store_counter_operations"] .counter-launcher__primary { color: #294d44; background: #dcece6; }
-.app-shell[data-store-id="store_counter_operations"] .counter-launcher__secondary { color: #5d4434 !important; background: #f2e4d8; }
-.app-shell[data-store-id="store_counter_operations"] .counter-launcher a { border: 1px solid rgb(49 95 85 / .08); box-shadow: 0 10px 24px rgb(49 95 85 / .06); }
-.app-shell[data-store-id="store_counter_operations"] .counter-service-panel { border-color: #dde6e1; box-shadow: 0 8px 24px rgb(49 95 85 / .04); }
-.app-shell[data-store-id="store_counter_operations"] .counter-service-list a > svg:first-child { color: #5b8177; }
-.app-shell[data-store-id="store_counter_operations"] .counter-store-strip { color: #314a43; background: #e9f0ec; border: 1px solid #dce7e1; }
+.app-shell:is([data-store-id="store_counter_operations"], [data-app-experience="counter-operations"]) .counter-status > div { border-right-color: #e6ece8; }
+.app-shell:is([data-store-id="store_counter_operations"], [data-app-experience="counter-operations"]) .counter-status svg { color: #5f8a7e; }
+.app-shell:is([data-store-id="store_counter_operations"], [data-app-experience="counter-operations"]) .counter-status span { color: #71807a; }
+.app-shell:is([data-store-id="store_counter_operations"], [data-app-experience="counter-operations"]) .counter-status strong { color: #233b35; }
+.app-shell:is([data-store-id="store_counter_operations"], [data-app-experience="counter-operations"]) .counter-launcher__primary { color: #294d44; background: #dcece6; }
+.app-shell:is([data-store-id="store_counter_operations"], [data-app-experience="counter-operations"]) .counter-launcher__secondary { color: #5d4434 !important; background: #f2e4d8; }
+.app-shell:is([data-store-id="store_counter_operations"], [data-app-experience="counter-operations"]) .counter-launcher a { border: 1px solid rgb(49 95 85 / .08); box-shadow: 0 10px 24px rgb(49 95 85 / .06); }
+.app-shell:is([data-store-id="store_counter_operations"], [data-app-experience="counter-operations"]) .counter-service-panel { border-color: #dde6e1; box-shadow: 0 8px 24px rgb(49 95 85 / .04); }
+.app-shell:is([data-store-id="store_counter_operations"], [data-app-experience="counter-operations"]) .counter-service-list a > svg:first-child { color: #5b8177; }
+.app-shell:is([data-store-id="store_counter_operations"], [data-app-experience="counter-operations"]) .counter-store-strip { color: #314a43; background: #e9f0ec; border: 1px solid #dce7e1; }
 
 @media (max-width: 390px) {
-  .app-shell[data-store-id="store_counter_operations"] .counter-status { grid-template-columns: 1fr; }
-  .app-shell[data-store-id="store_counter_operations"] .counter-status > div { min-height: 54px; border-right: 0; border-bottom: 1px solid #e6ece8; }
-  .app-shell[data-store-id="store_counter_operations"] .counter-status > div:last-child { border-bottom: 0; }
-  .app-shell[data-store-id="store_counter_operations"] .counter-launcher { grid-template-columns: 1fr; }
-  .app-shell[data-store-id="store_counter_operations"] .counter-launcher a { min-height: 144px; }
+  .app-shell:is([data-store-id="store_counter_operations"], [data-app-experience="counter-operations"]) .counter-status { grid-template-columns: 1fr; }
+  .app-shell:is([data-store-id="store_counter_operations"], [data-app-experience="counter-operations"]) .counter-status > div { min-height: 54px; border-right: 0; border-bottom: 1px solid #e6ece8; }
+  .app-shell:is([data-store-id="store_counter_operations"], [data-app-experience="counter-operations"]) .counter-status > div:last-child { border-bottom: 0; }
+  .app-shell:is([data-store-id="store_counter_operations"], [data-app-experience="counter-operations"]) .counter-launcher { grid-template-columns: 1fr; }
+  .app-shell:is([data-store-id="store_counter_operations"], [data-app-experience="counter-operations"]) .counter-launcher a { min-height: 144px; }
 }

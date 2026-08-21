@@ -55,8 +55,8 @@ final class MemberRankDownGuard
         $next = $this->nextRankAfter($ranks, $storedMin);
         $info['current_rank'] = (string) ($stored['key'] ?? $info['current_rank']);
         $info['current_rank_label'] = (string) ($stored['label'] ?? $info['current_rank']);
-        $info['current_rank_icon'] = $stored['icon_url'] ?? null;
-        $info['current_rank_background'] = $stored['stamp_background_url'] ?? null;
+        $info['current_rank_icon'] = null;
+        $info['current_rank_background'] = null;
         $info['current_rank_color'] = $stored['card_color'] ?? null;
         $info['next_rank'] = $next !== null ? ($next['key'] ?? null) : null;
         $info['next_rank_label'] = $next !== null ? ($next['label'] ?? ($next['key'] ?? null)) : null;

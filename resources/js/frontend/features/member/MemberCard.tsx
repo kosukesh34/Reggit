@@ -359,7 +359,7 @@ export function ClassicMemberCard({ data }: { data: MemberPayload }): JSX.Elemen
                         data-action="member-open-register"
                         onClick={() => openRegister(false)}
                     >
-                        会員登録する
+                        会員パスを発行
                     </button>
                 </div>
             ) : (
@@ -661,7 +661,7 @@ export function IosWalletMemberCard({ data }: { data: MemberPayload }): JSX.Elem
                         data-action="member-open-register"
                         onClick={() => openRegister(false)}
                     >
-                        会員登録する
+                        会員パスを発行
                     </button>
                 </div>
             ) : (

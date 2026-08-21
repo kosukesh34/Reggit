@@ -23,12 +23,12 @@ function CounterOperationsHome() {
   const waitingGroups = queueStatus?.waitingGroups ?? 3;
   const estimatedMinutes = queueStatus?.estimatedMinutes ?? 12;
 
-  return (
+    return (
     <div className="operational-home counter-home">
       <section className="counter-home__welcome">
         <span className="operational-kicker">REGGIT COUNTER</span>
         <h1>{member.name.split(/[\s　]/)[0]}さん、<br />今日はどうしますか？</h1>
-        <p>注文・順番待ち・受け取り確認を、ホームから迷わず操作できます。</p>
+        <p>注文・順番待ち・受け取りをホームから操作できます。</p>
       </section>
 
       <section className="counter-status" aria-label="現在の店舗状況">
@@ -73,10 +73,10 @@ function AppointmentOperationsHome() {
   const { member, stores } = useRuntimeData();
   const store = stores[0];
 
-  return (
+    return (
     <div className="operational-home appointment-home">
       <section className="appointment-hero">
-        <img src="/assets/salon-feature.webp" alt="落ち着いた店内" />
+        <img src="/images/beauty.jpg" alt="落ち着いた店内" />
         <div className="appointment-hero__shade" />
         <div className="appointment-hero__copy">
           <span className="operational-kicker">REGGIT STUDIO</span>
