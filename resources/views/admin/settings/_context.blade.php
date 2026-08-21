@@ -14,7 +14,7 @@
         'home' => [
             'title' => 'ホーム設定の役割',
             'changes' => ['LIFFで表示するタブのON/OFF', '並び順（ドラッグ）', 'ラベル・アイコン'],
-            'notes' => ['タブに表示される中身（UI部品）は「LIFFデザイン」で設定します。'],
+            'notes' => ['タブに表示される中身の見た目は「LIFFデザイン」で調整します。'],
             'links' => [
                 ['label' => 'LIFFデザイン', 'url' => admin_route('admin.settings.liff-designer'), 'permission' => 'liff_designer.manage'],
             ],
@@ -47,7 +47,7 @@
         'advanced' => [
             'title' => '詳細設定（配色）の役割',
             'changes' => ['成功色', '注意色'],
-            'notes' => ['メイン色（ブランド色）は LIFFデザインのテーマ／アクセント色が優先されます。タブの並びや表示内容は「ホーム設定」「LIFFデザイン」で調整します。'],
+            'notes' => ['メイン色（ブランド色）は LIFFデザインのテーマ／アクセント色が優先されます。'],
             'links' => [
                 ['label' => 'LIFFデザイン', 'url' => admin_route('admin.settings.liff-designer'), 'permission' => 'liff_designer.manage'],
                 ['label' => 'ホーム設定', 'url' => admin_route('admin.settings.home'), 'permission' => 'settings.view'],
@@ -56,9 +56,10 @@
         'coupons' => [
             'title' => 'クーポン設定の役割',
             'changes' => ['クーポン機能ON/OFF', '画像未設定時のデフォルト画像URL'],
-            'notes' => ['クーポンの内容は「クーポン一覧」で管理し、会員への配布は「お知らせ配信」で行います。'],
+            'notes' => ['クーポンの内容は「クーポン一覧」で管理し、会員への配布は「お知らせ配信」で行います。見た目の細部は LIFFデザインで調整できます。'],
             'links' => [
                 ['label' => 'クーポン一覧', 'url' => admin_route('admin.coupons'), 'permission' => 'coupons.view'],
+                ['label' => 'LIFFデザイン', 'url' => admin_route('admin.settings.liff-designer').'#coupon', 'permission' => 'liff_designer.manage'],
                 ['label' => 'お知らせで配布', 'url' => admin_route('admin.announcements.delivery.create'), 'permission' => 'announcements.manage'],
                 ['label' => 'ガチャ・スクラッチ', 'url' => admin_route('admin.settings.lottery'), 'permission' => 'coupons.view'],
             ],
@@ -107,8 +108,8 @@
         ],
         'ranks' => [
             'title' => 'ランク・ポイント設定の役割',
-            'changes' => ['ポイント／スタンプ／取引連動スタンプの利用', 'ランク判定（累計・期間）', 'ランク別付与レート', '会員証表示'],
-            'notes' => ['期間集計のランク再判定は日次cronで実行されます。会員への個別付与・調整は会員編集画面で行います。'],
+            'changes' => ['ポイント／スタンプ／取引連動スタンプの利用', 'ランク判定（累計・期間）', 'ランク別付与レート', '会員証レイアウト・表示形式', 'ランク別カード色・アイコン'],
+            'notes' => ['会員証のレイアウトとランク別の色は、この画面の「会員証表示」「ランク一覧」でまとめて設定します。'],
             'links' => [
                 ['label' => '会員管理', 'url' => admin_route('admin.members'), 'permission' => 'members.view'],
             ],
@@ -124,9 +125,10 @@
         'liff-connection' => [
             'title' => 'LIFF設定の役割',
             'changes' => ['LIFF ID', 'LIFF URL', 'Messaging API チャネルアクセストークン / シークレット'],
-            'notes' => ['画面レイアウトやタブの見た目は「LIFFデザイン」で設定します。'],
+            'notes' => ['画面レイアウトやタブの見た目は「LIFFデザイン」で設定します。会員証は「ランク設定」です。'],
             'links' => [
                 ['label' => 'LIFFデザイン', 'url' => admin_route('admin.settings.liff-designer'), 'permission' => 'liff_designer.manage'],
+                ['label' => 'ランク設定', 'url' => admin_route('admin.settings.ranks'), 'permission' => 'settings.view'],
                 ['label' => 'ホーム設定', 'url' => admin_route('admin.settings.home'), 'permission' => 'settings.view'],
             ],
         ],

@@ -5,6 +5,7 @@
 
 @push('styles')
 <link rel="stylesheet" href="{{ asset('css/admin/rank-card-preview.css') }}">
+<link rel="stylesheet" href="{{ asset('css/admin/liff-membership-preview.css') }}">
 @endpush
 
 @section('content')
@@ -13,7 +14,6 @@
     <span class="breadcrumb-sep">/</span>
     <span>ランク・ポイント</span>
 </nav>
-@include('admin.settings._context', ['pageKey' => 'ranks'])
 
 <form action="{{ admin_route('admin.settings.ranks.update') }}" method="POST" id="ranksSettingsForm">
     @csrf
@@ -194,38 +194,28 @@
                     </div>
 
                     <div class="ranks-settings-subsection">
-                        <h4 class="ranks-settings-subtitle">会員証デザイン</h4>
+                        <h4 class="ranks-settings-subtitle">デザイン・表示形式</h4>
+                        <p class="form-text text-muted" style="margin-top:0;">会員証レイアウトは「プレビュー」タブで一覧から選べます。こちらでは表示形式を設定します。</p>
                         <div class="ranks-settings-fields ranks-settings-fields--wide">
-                            <div class="form-group" style="grid-column: 1 / -1;">
-                                @php
-                                    $currentMemberCardDesign = old('member_card_design', $view->memberCardDesign ?? 'default');
-                                    $currentMemberCardDesignLabel = [
-                                        'default' => 'スタンダード',
-                                        'logo_top' => 'ポイント',
-                                        'logo_center' => 'デジタルパス',
-                                        'logo_header' => 'レジ提示',
-                                        'compact' => 'レジ提示',
-                                        'split_banner' => 'スプリット',
-                                        'minimal_line' => 'ミニマル',
-                                        'emblem' => 'デジタルパス',
-                                    ][$currentMemberCardDesign] ?? 'スタンダード';
-                                @endphp
-                                <p class="form-text" style="margin: 0 0 10px;">
-                                    レイアウトの選択と表示項目は「LIFFデザイン」に集約しています。この画面ではランク条件とランク別のカード色・アイコンを管理します。
-                                </p>
-                                <a class="btn btn-secondary btn-sm" href="{{ admin_route('admin.settings.liff-designer') }}#features">
-                                    <i class="fas fa-id-card"></i> 会員証デザインを変更
-                                </a>
-                                <p class="form-text text-muted" style="margin: 10px 0 0;">
-                                    現在: レイアウト「{{ $currentMemberCardDesignLabel }}」 /
-                                    表示「{{ ($view->memberCardDisplayType ?? 'card') === 'sheet' ? 'シート型' : 'カード型' }}」 /
-                                    番号「{{ ($view->memberCardCodeType ?? 'barcode') === 'qrcode' ? 'QRコード' : 'バーコード' }}」
-                                </p>
-                                <input type="hidden" name="member_card_design" value="{{ $currentMemberCardDesign }}">
-                                <input type="hidden" name="member_card_display_type" value="{{ old('member_card_display_type', $view->memberCardDisplayType ?? 'card') }}">
-                                <input type="hidden" name="member_card_code_type" value="{{ old('member_card_code_type', $view->memberCardCodeType ?? 'barcode') }}">
+                            <div class="form-group">
+                                <label for="member_card_display_type" class="form-label">表示形式</label>
+                                <select name="member_card_display_type" id="member_card_display_type" class="form-control">
+                                    <option value="card" {{ old('member_card_display_type', $view->memberCardDisplayType ?? 'card') === 'card' ? 'selected' : '' }}>カード型（裏表・タップで裏返し）</option>
+                                    <option value="sheet" {{ old('member_card_display_type', $view->memberCardDisplayType ?? '') === 'sheet' ? 'selected' : '' }}>シート型（1面）</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="member_card_code_type" class="form-label">会員番号の表示</label>
+                                <select name="member_card_code_type" id="member_card_code_type" class="form-control">
+                                    <option value="barcode" {{ old('member_card_code_type', $view->memberCardCodeType ?? 'barcode') === 'barcode' ? 'selected' : '' }}>バーコード</option>
+                                    <option value="qrcode" {{ old('member_card_code_type', $view->memberCardCodeType ?? '') === 'qrcode' ? 'selected' : '' }}>QRコード</option>
+                                </select>
                             </div>
                         </div>
+                        <p class="form-text text-muted">ロゴ画像は <a href="{{ admin_route('admin.settings.features') }}">機能設定</a> のヘッダー画像です。</p>
+                        <button type="button" class="btn btn-secondary btn-sm" id="ranksGotoDesignPreview">
+                            <i class="fas fa-id-card"></i> プレビューでデザインを選ぶ
+                        </button>
                     </div>
                 </div>
             </div>
@@ -251,8 +241,6 @@
                                     <th scope="col" class="ranks-th-basic">スタンプ<br><span class="ranks-th-sub">(円/1個)</span></th>
                                     <th scope="col" class="ranks-th-basic ranks-th--center">有効</th>
                                     <th scope="col" class="ranks-th-design">カード色</th>
-                                    <th scope="col" class="ranks-th-design">アイコンURL</th>
-                                    <th scope="col" class="ranks-th-design">スタンプ背景URL</th>
                                     <th scope="col" class="ranks-th-basic">順序</th>
                                 </tr>
                             </thead>
@@ -265,9 +253,24 @@
                                     <td><input type="number" name="ranks[{{ $i }}][point_earn_rate]" class="form-control form-control-sm" value="{{ old('ranks.' . $i . '.point_earn_rate', $rank['point_earn_rate'] ?? '') }}" min="1" max="99999" placeholder="{{ $view->pointEarnRate ?? 100 }}"></td>
                                     <td><input type="number" name="ranks[{{ $i }}][stamp_earn_per_amount]" class="form-control form-control-sm" value="{{ old('ranks.' . $i . '.stamp_earn_per_amount', $rank['stamp_earn_per_amount'] ?? '') }}" min="0" max="10000000" placeholder="{{ $view->stampEarnPerAmount ?? 0 }}"></td>
                                     <td class="text-center"><input type="checkbox" name="ranks[{{ $i }}][is_active]" value="1" {{ ((bool) old('ranks.' . $i . '.is_active', $rank['is_active'] ?? true)) ? 'checked' : '' }}></td>
-                                    <td><input type="text" name="ranks[{{ $i }}][card_color]" class="form-control form-control-sm ranks-input-color" value="{{ old('ranks.' . $i . '.card_color', $rank['card_color'] ?? '') }}" placeholder="#cd7f32" maxlength="20"></td>
-                                    <td><input type="url" name="ranks[{{ $i }}][icon_url]" class="form-control form-control-sm" value="{{ old('ranks.' . $i . '.icon_url', $rank['icon_url'] ?? '') }}" placeholder="https://..."></td>
-                                    <td><input type="url" name="ranks[{{ $i }}][stamp_background_url]" class="form-control form-control-sm" value="{{ old('ranks.' . $i . '.stamp_background_url', $rank['stamp_background_url'] ?? '') }}" placeholder="https://..."></td>
+                                    <td>
+                                        @php
+                                            $rawCardColor = (string) old('ranks.' . $i . '.card_color', $rank['card_color'] ?? '');
+                                            $pickerCardColor = '#cd7f32';
+                                            if (preg_match('/^#([0-9A-Fa-f]{6})$/', $rawCardColor, $m)) {
+                                                $pickerCardColor = '#' . $m[1];
+                                            } elseif (preg_match('/^#([0-9A-Fa-f])([0-9A-Fa-f])([0-9A-Fa-f])$/', $rawCardColor, $m)) {
+                                                $pickerCardColor = '#' . $m[1] . $m[1] . $m[2] . $m[2] . $m[3] . $m[3];
+                                            } elseif ($rawCardColor !== '') {
+                                                $pickerCardColor = '#cd7f32';
+                                            }
+                                            $hexCardColor = $rawCardColor !== '' ? $rawCardColor : $pickerCardColor;
+                                        @endphp
+                                        <div class="color-input-row ranks-color-row">
+                                            <input type="color" class="color-picker js-rank-color-picker" value="{{ $pickerCardColor }}" aria-label="カード色">
+                                            <input type="text" name="ranks[{{ $i }}][card_color]" class="form-control form-control-sm color-hex" value="{{ $hexCardColor }}" maxlength="7" placeholder="#cd7f32">
+                                        </div>
+                                    </td>
                                     <td><input type="number" name="ranks[{{ $i }}][order]" class="form-control form-control-sm" value="{{ old('ranks.' . $i . '.order', $rank['order'] ?? ($i + 1)) }}" min="0"></td>
                                 </tr>
                                 @endforeach
@@ -281,20 +284,21 @@
         {{-- プレビュー --}}
         @php
             $previewDesign = old('member_card_design', $view->memberCardDesign ?? 'default');
-            $previewLogoUrl = $view->memberCardLogoUrl ?? null;
-            $previewCodeType = old('member_card_code_type', $view->memberCardCodeType ?? 'barcode');
+            $previewTemplate = \App\Support\MemberCardDesignMap::templateForDesign($previewDesign) ?? 'classic';
             $designLabelMap = [
-                'default' => '標準',
-                'logo_top' => 'ロゴ上部',
+                'default' => 'スタンダード',
+                'logo_top' => 'ポイント',
                 'logo_center' => 'ロゴ中央',
-                'logo_header' => 'ロゴヘッダー',
-                'compact' => 'コンパクト',
-                'split_banner' => 'スプリットバナー',
-                'minimal_line' => 'ミニマルライン',
-                'emblem' => 'エンブレム',
+                'logo_header' => 'レジ提示',
+                'compact' => 'シンプル',
+                'ticket' => 'チケット',
+                'split_banner' => 'スプリット',
+                'minimal_line' => 'ミニマル',
+                'emblem' => 'デジタルパス',
+                'wallet' => 'ウォレット',
             ];
-            $previewDesignLabel = $designLabelMap[$previewDesign] ?? '標準';
-            $logoEnabledDesigns = ['logo_top', 'logo_center', 'logo_header', 'split_banner', 'emblem'];
+            $previewDesignLabel = $designLabelMap[$previewDesign] ?? 'スタンダード';
+            $allTemplates = ['classic', 'simple', 'ticket', 'minimal', 'split', 'barcodeFocus', 'pointFocus', 'wallet', 'pass'];
         @endphp
         <section class="ranks-settings-panel" id="panel-preview" role="tabpanel" aria-labelledby="tab-preview" hidden>
             <div class="card card-mb-24 ranks-preview-card">
@@ -303,62 +307,105 @@
                 </div>
                 <div class="card-body">
                     <div class="ranks-preview-section">
-                        <h4 class="ranks-preview-section-title">ランク別のカード色・アイコンを確認</h4>
-                        <p class="ranks-preview-desc">レイアウトはLIFFデザインで選択中の「{{ e($previewDesignLabel) }}」です。この画面では各ランクの色とアイコンの違いを確認できます。</p>
-                        <p class="ranks-preview-desc">ロゴ画像: {{ (isset($previewLogoUrl) && (string)$previewLogoUrl !== '') ? '設定済み（機能設定でアップロード）' : '未設定（機能設定でアップロード）' }}</p>
-                        <div class="rank-card-preview-wrap" data-preview-design="{{ e($previewDesign) }}">
-                            <div class="rank-card-preview-grid" id="rankCardPreviewGrid">
-                                @foreach($view->rankSettings as $rank)
-                                @php
-                                    $key = $rank['key'] ?? 'bronze';
-                                    $label = $rank['label'] ?? $key;
-                                    $cardColor = $rank['card_color'] ?? null;
-                                    $iconUrl = $rank['icon_url'] ?? null;
-                                    $wrapperAttr = $cardColor ? ' data-rank-color="true" style="--idnect-card-rank-color: ' . e($cardColor) . '"' : '';
-                                    $designClass = 'idnect-card-wrapper--design-' . $previewDesign;
-                                @endphp
-                                <div class="rank-card-preview-item rank-card-preview-item--static" data-rank-index="{{ $loop->index }}">
-                                    <div class="idnect-card-wrapper {{ $designClass }}" data-rank-key="{{ e($key) }}"{!! $wrapperAttr !!}>
-                                        <div class="idnect-card" data-rank="{{ e($key) }}">
-                                            <div class="idnect-card-shimmer" aria-hidden="true"></div>
-                                            <div class="idnect-card-face idnect-card-face--front">
-                                                <div class="idnect-card-front-inner">
-                                                    @if(in_array($previewDesign, $logoEnabledDesigns, true))
-                                                    <div class="idnect-card-logo-wrap">
-                                                        @if(isset($previewLogoUrl) && (string)$previewLogoUrl !== '')
-                                                        <img src="{{ $previewLogoUrl }}" class="idnect-card-logo" alt="" onerror="this.nextElementSibling?.classList.remove('d-none')">
-                                                        @endif
-                                                        <span class="idnect-card-logo-placeholder {{ (isset($previewLogoUrl) && (string)$previewLogoUrl !== '') ? 'd-none' : '' }}">ロゴ</span>
-                                                    </div>
-                                                    @endif
-                                                    <p class="idnect-card-display-name">会員名サンプル</p>
-                                                    <div class="idnect-card-meta-row">
-                                                        <div class="idnect-card-rank-wrap">
-                                                            @if(isset($iconUrl) && (string)$iconUrl !== '')
-                                                            <img src="{{ $iconUrl }}" class="idnect-card-rank-icon" alt="" onerror="this.style.display='none'">
-                                                            @endif
-                                                            <span class="idnect-card-rank-badge" data-rank="{{ e($key) }}">{{ e($label) }}</span>
-                                                        </div>
-                                                        <div class="idnect-card-points idnect-card-points--front js-rank-preview-points">
-                                                            <span class="idnect-card-points-value">1,234</span>
-                                                            <span class="idnect-card-points-label">pt</span>
-                                                        </div>
-                                                    </div>
-                                                    <div class="idnect-card-barcode-wrap idnect-card-code-wrap--{{ e($previewCodeType) }}">
-                                                        <div class="idnect-card-code-sample" aria-hidden="true"></div>
-                                                    </div>
-                                                    <p class="idnect-card-tap-hint">会員バーコードのサンプル表示</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <span class="rank-card-preview-label">{{ e($previewDesignLabel) }} / {{ e($label) }} <span class="rank-card-preview-key">（{{ e($key) }}）</span></span>
+                        <h4 class="ranks-preview-section-title">会員証デザインを選択</h4>
+                        <p class="ranks-preview-desc">お客様向け画面と同じテンプレートです。サイズ・レイアウトの違いを確認して選んでください。</p>
+                        @include('admin.settings._member_card_design_picker')
+                    </div>
+
+                    <div class="ranks-preview-section" style="margin-top:24px;">
+                        <h4 class="ranks-preview-section-title">ランク別のカード色を確認</h4>
+                        <p class="ranks-preview-desc">選択中「<span id="ranksPreviewDesignLabel">{{ e($previewDesignLabel) }}</span>」で、各ランクの色が会員証にどう映るかを確認できます。</p>
+                        <div class="rank-liff-preview-grid" id="rankCardPreviewGrid" data-preview-design="{{ e($previewDesign) }}" data-preview-template="{{ e($previewTemplate) }}">
+                            @foreach($view->rankSettings as $rank)
+                            @php
+                                $key = $rank['key'] ?? 'bronze';
+                                $label = $rank['label'] ?? $key;
+                                $cardColor = $rank['card_color'] ?? '#4b5563';
+                                if (!is_string($cardColor) || $cardColor === '') {
+                                    $cardColor = '#4b5563';
+                                }
+                            @endphp
+                            <div class="rank-liff-preview-item" data-rank-index="{{ $loop->index }}">
+                                <div class="js-rank-liff-card-host">
+                                    @include('admin.settings._liff_membership_card_preview', [
+                                        'template' => $previewTemplate,
+                                        'rankLabel' => $label,
+                                        'cardColor' => $cardColor,
+                                        'points' => 1234,
+                                        'showNextRank' => true,
+                                        'nextRankLabel' => '次のランクまで 766 pt',
+                                    ])
                                 </div>
-                                @endforeach
+                                <span class="rank-liff-preview-label"><span class="js-rank-preview-design-label">{{ e($previewDesignLabel) }}</span> / <span class="js-rank-preview-rank-label">{{ e($label) }}</span> <span class="rank-liff-preview-key">（{{ e($key) }}）</span></span>
+                            </div>
+                            @endforeach
+                        </div>
+                    </div>
+
+                    <div class="ranks-preview-section ranks-preview-extras-section" style="margin-top:28px;">
+                        <h4 class="ranks-preview-section-title">カード下の付属表示</h4>
+                        <p class="ranks-preview-desc">ホームの会員ステータスと、会員証ページの会員情報です。「ポイント表示」「次のランクまで」の設定に連動します。</p>
+                        <div class="liff-membership-extras js-rank-liff-extras ranks-preview-extras-stage">
+                            <div class="liff-preview-summary">
+                                <div class="liff-preview-summary__top">
+                                    <div>
+                                        <div class="liff-preview-summary__label">MEMBER STATUS</div>
+                                        <h2 class="liff-preview-summary__name js-preview-rank">ゴールド</h2>
+                                    </div>
+                                    <span class="liff-preview-summary__member">山田 太郎 様</span>
+                                </div>
+                                <div class="liff-preview-summary__body">
+                                    <div>
+                                        <div class="liff-preview-summary__points js-extras-points">1,234 <span>pt</span></div>
+                                        <div class="liff-preview-summary__meta js-extras-next-rank">次のランクまで 766 pt</div>
+                                    </div>
+                                </div>
+                                <div class="liff-preview-summary__track js-extras-track" aria-hidden="true"><span style="width:41%"></span></div>
+                            </div>
+                            <div class="liff-preview-detail">
+                                <h3 class="liff-preview-detail__title">会員情報</h3>
+                                <div class="liff-preview-detail__grid">
+                                    <div class="liff-preview-detail__row">
+                                        <div class="liff-preview-detail__label">会員番号</div>
+                                        <div class="liff-preview-detail__value">1000001234</div>
+                                    </div>
+                                    <div class="liff-preview-detail__row">
+                                        <div class="liff-preview-detail__label">有効期限</div>
+                                        <div class="liff-preview-detail__value">2027/12/31</div>
+                                    </div>
+                                    <div class="liff-preview-detail__row js-extras-points-row">
+                                        <div class="liff-preview-detail__label">現在ポイント</div>
+                                        <div class="liff-preview-detail__value">1,234 pt</div>
+                                    </div>
+                                    <div class="liff-preview-detail__row">
+                                        <div class="liff-preview-detail__label">ランク</div>
+                                        <div class="liff-preview-detail__value js-preview-rank-detail">ゴールド</div>
+                                    </div>
+                                    <div class="liff-preview-detail__row js-extras-next-rank-row" style="grid-column:1/-1">
+                                        <div class="liff-preview-detail__label">次のランク</div>
+                                        <div class="liff-preview-detail__value">次のランクまで 766 pt</div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
+            </div>
+
+            {{-- デザイン切替用テンプレート庫 --}}
+            <div id="liffPreviewCardLibrary" hidden aria-hidden="true">
+                @foreach($allTemplates as $libTemplate)
+                    <div data-library-template="{{ $libTemplate }}">
+                        @include('admin.settings._liff_membership_card_preview', [
+                            'template' => $libTemplate,
+                            'rankLabel' => '__RANK__',
+                            'cardColor' => '#4b5563',
+                            'points' => 1234,
+                            'showNextRank' => true,
+                            'nextRankLabel' => '次のランクまで 766 pt',
+                        ])
+                    </div>
+                @endforeach
             </div>
         </section>
     </div>
@@ -377,9 +424,12 @@
         <td><input type="number" name="__NAME__[point_earn_rate]" class="form-control form-control-sm" min="1" max="99999" placeholder="{{ $view->pointEarnRate ?? 100 }}"></td>
         <td><input type="number" name="__NAME__[stamp_earn_per_amount]" class="form-control form-control-sm" min="0" max="10000000" placeholder="{{ $view->stampEarnPerAmount ?? 0 }}"></td>
         <td class="text-center"><input type="checkbox" name="__NAME__[is_active]" value="1" checked></td>
-        <td><input type="text" name="__NAME__[card_color]" class="form-control form-control-sm ranks-input-color" placeholder="#cd7f32" maxlength="20"></td>
-        <td><input type="url" name="__NAME__[icon_url]" class="form-control form-control-sm" placeholder="https://..."></td>
-        <td><input type="url" name="__NAME__[stamp_background_url]" class="form-control form-control-sm" placeholder="https://..."></td>
+        <td>
+            <div class="color-input-row ranks-color-row">
+                <input type="color" class="color-picker js-rank-color-picker" value="#cd7f32" aria-label="カード色">
+                <input type="text" name="__NAME__[card_color]" class="form-control form-control-sm color-hex" value="#cd7f32" maxlength="7" placeholder="#cd7f32">
+            </div>
+        </td>
         <td><input type="number" name="__NAME__[order]" class="form-control form-control-sm" value="0" min="0"></td>
     </tr>
 </template>
@@ -477,8 +527,23 @@ document.getElementById('addRankRow')?.addEventListener('click', function() {
     var grid = document.getElementById('rankCardPreviewGrid');
     if (!table || !grid) return;
 
+    function applyCardColor(card, color) {
+        if (!card) return;
+        var template = card.getAttribute('data-template') || 'classic';
+        var isLight = template === 'simple' || template === 'ticket';
+        var safeColor = color || card.getAttribute('data-card-color') || '#4b5563';
+        card.setAttribute('data-card-color', safeColor);
+        if (isLight) {
+            card.style.background = template === 'ticket' ? '#fffef8' : '#ffffff';
+            card.style.color = '#171717';
+            return;
+        }
+        card.style.background = 'linear-gradient(135deg,' + safeColor + ',#1f2937)';
+        card.style.color = '#ffffff';
+    }
+
     function updatePreview(index) {
-        var item = grid.querySelector('.rank-card-preview-item[data-rank-index="' + index + '"]');
+        var item = grid.querySelector('.rank-liff-preview-item[data-rank-index="' + index + '"]');
         if (!item) return;
         var tbody = table.querySelector('tbody');
         var row = tbody && tbody.rows[index];
@@ -486,52 +551,27 @@ document.getElementById('addRankRow')?.addEventListener('click', function() {
         var keyInput = row.querySelector('input[name$="[key]"]');
         var labelInput = row.querySelector('input[name$="[label]"]');
         var colorInput = row.querySelector('input[name$="[card_color]"]');
-        var iconInput = row.querySelector('input[name$="[icon_url]"]');
         var key = (keyInput && keyInput.value) ? keyInput.value.trim() : '';
         var label = (labelInput && labelInput.value) ? labelInput.value.trim() : key;
         var color = (colorInput && colorInput.value) ? colorInput.value.trim() : '';
-        var iconUrl = (iconInput && iconInput.value) ? iconInput.value.trim() : '';
+        var rankText = label || key || 'MEMBER';
 
-        var wrapper = item.querySelector('.idnect-card-wrapper');
-        var card = item.querySelector('.idnect-card');
-        var badge = item.querySelector('.idnect-card-rank-badge');
-        var labelSpan = item.querySelector('.rank-card-preview-label');
-        var keySpan = item.querySelector('.rank-card-preview-key');
-        var iconImg = item.querySelector('.idnect-card-rank-icon');
+        applyCardColor(item.querySelector('.liff-membership-preview'), color);
+        item.querySelectorAll('.rank-badge.js-preview-rank').forEach(function(el) {
+            el.textContent = rankText + ' MEMBER';
+        });
+        var rankLabel = item.querySelector('.js-rank-preview-rank-label');
+        if (rankLabel) rankLabel.textContent = rankText;
+        var keySpan = item.querySelector('.rank-liff-preview-key');
+        if (keySpan) keySpan.textContent = key ? '（' + key + '）' : '';
 
-        if (card) card.setAttribute('data-rank', key || 'bronze');
-        if (badge) {
-            badge.textContent = label || key || '—';
-            badge.setAttribute('data-rank', key || 'bronze');
-        }
-        if (labelSpan) labelSpan.innerHTML = (label || key || '—') + (key ? ' <span class="rank-card-preview-key">（' + key + '）</span>' : '');
-
-        if (wrapper) {
-            if (color && /^#[0-9A-Fa-f]{3,6}$/.test(color)) {
-                wrapper.setAttribute('data-rank-color', 'true');
-                wrapper.style.setProperty('--idnect-card-rank-color', color);
-            } else {
-                wrapper.removeAttribute('data-rank-color');
-                wrapper.style.removeProperty('--idnect-card-rank-color');
-            }
-        }
-
-        var rankWrap = item.querySelector('.idnect-card-rank-wrap');
-        if (rankWrap) {
-            if (iconUrl) {
-                var img = iconImg;
-                if (!img) {
-                    img = document.createElement('img');
-                    img.className = 'idnect-card-rank-icon';
-                    img.alt = '';
-                    img.onerror = function() { this.style.display = 'none'; };
-                    rankWrap.insertBefore(img, badge);
-                }
-                img.src = iconUrl;
-                img.style.display = '';
-            } else if (iconImg) {
-                iconImg.remove();
-            }
+        if (index === 0) {
+            document.querySelectorAll('.ranks-preview-extras-stage .liff-preview-summary__name.js-preview-rank').forEach(function(el) {
+                el.textContent = rankText;
+            });
+            document.querySelectorAll('.ranks-preview-extras-stage .js-preview-rank-detail').forEach(function(el) {
+                el.textContent = rankText;
+            });
         }
     }
 
@@ -548,46 +588,172 @@ document.getElementById('addRankRow')?.addEventListener('click', function() {
         if (m) updatePreview(parseInt(m[1], 10));
     });
 
-    grid.querySelectorAll('.rank-card-preview-item[data-rank-index]').forEach(function(item) {
+    grid.querySelectorAll('.rank-liff-preview-item[data-rank-index]').forEach(function(item) {
         var idx = parseInt(item.getAttribute('data-rank-index') || '', 10);
         if (!isNaN(idx)) updatePreview(idx);
     });
+
+    window.__ranksUpdatePreview = updatePreview;
 })();
+
+function syncMembershipExtrasVisibility() {
+    var usePoints = document.getElementById('use_points');
+    var showPoints = document.querySelector('input[name="show_points_display"][value="1"]');
+    var showProgress = document.querySelector('input[name="show_rank_progress"][value="1"]');
+    var pointsOn = usePoints === null || usePoints.checked;
+    var showPointsOn = pointsOn && (showPoints === null || showPoints.checked);
+    var showProgressOn = showProgress === null || showProgress.checked;
+
+    document.querySelectorAll('.js-extras-points, .js-extras-points-row, .js-rank-preview-points').forEach(function(el) {
+        if (showPointsOn) {
+            el.removeAttribute('hidden');
+            el.classList.remove('is-hidden');
+        } else {
+            el.setAttribute('hidden', 'hidden');
+            el.classList.add('is-hidden');
+        }
+    });
+    document.querySelectorAll('.js-extras-next-rank, .js-extras-next-rank-row, .js-extras-track, .js-preview-next-rank').forEach(function(el) {
+        if (showProgressOn) {
+            el.removeAttribute('hidden');
+        } else {
+            el.setAttribute('hidden', 'hidden');
+        }
+    });
+}
 
 function updatePreviewDesign(design) {
     design = design || 'default';
-    var designSelect = document.getElementById('member_card_design');
-    var rankWrap = document.querySelector('.rank-card-preview-wrap[data-preview-design]');
-    var rankWrappers = document.querySelectorAll('#rankCardPreviewGrid .idnect-card-wrapper');
-    var designClasses = ['default', 'logo_top', 'logo_center', 'logo_header', 'compact', 'split_banner', 'minimal_line', 'emblem'];
-    if (designSelect) designSelect.value = design;
-    if (rankWrap) rankWrap.setAttribute('data-preview-design', design);
-    if (rankWrappers.length) {
-        rankWrappers.forEach(function(w) {
-            designClasses.forEach(function(c) { w.classList.remove('idnect-card-wrapper--design-' + c); });
-            w.classList.add('idnect-card-wrapper--design-' + design);
-        });
+    var designInputs = document.querySelectorAll('input[name="member_card_design"]');
+    var grid = document.getElementById('rankCardPreviewGrid');
+    var library = document.getElementById('liffPreviewCardLibrary');
+    var designLabels = {
+        default: 'スタンダード',
+        logo_top: 'ポイント',
+        logo_center: 'ロゴ中央',
+        logo_header: 'レジ提示',
+        compact: 'シンプル',
+        ticket: 'チケット',
+        split_banner: 'スプリット',
+        minimal_line: 'ミニマル',
+        emblem: 'デジタルパス',
+        wallet: 'ウォレット'
+    };
+    var template = 'classic';
+    designInputs.forEach(function(input) {
+        if (input.value === design) {
+            input.checked = true;
+            template = input.getAttribute('data-template') || 'classic';
+        }
+        var option = input.closest('.ranks-design-option');
+        if (option) {
+            option.classList.toggle('is-selected', input.value === design);
+        }
+    });
+    var label = designLabels[design] || 'スタンダード';
+    if (grid) {
+        grid.setAttribute('data-preview-design', design);
+        grid.setAttribute('data-preview-template', template);
     }
+    var titleLabel = document.getElementById('ranksPreviewDesignLabel');
+    if (titleLabel) titleLabel.textContent = label;
+    document.querySelectorAll('.js-rank-preview-design-label').forEach(function(el) {
+        el.textContent = label;
+    });
+
+    if (!grid || !library) return;
+    var source = library.querySelector('[data-library-template="' + template + '"] .liff-membership-preview');
+    if (!source) return;
+    grid.querySelectorAll('.rank-liff-preview-item').forEach(function(item) {
+        var host = item.querySelector('.js-rank-liff-card-host');
+        if (!host) return;
+        var clone = source.cloneNode(true);
+        host.innerHTML = '';
+        host.appendChild(clone);
+        var idx = parseInt(item.getAttribute('data-rank-index') || '', 10);
+        if (!isNaN(idx) && typeof window.__ranksUpdatePreview === 'function') {
+            window.__ranksUpdatePreview(idx);
+        }
+    });
+    syncMembershipExtrasVisibility();
 }
 
 (function() {
-    var designSelect = document.getElementById('member_card_design');
-    var rankWrap = document.querySelector('.rank-card-preview-wrap[data-preview-design]');
-    var rankWrappers = document.querySelectorAll('#rankCardPreviewGrid .idnect-card-wrapper');
-    if (!designSelect || !rankWrap || !rankWrappers.length) return;
-    designSelect.addEventListener('change', function() { updatePreviewDesign(this.value); });
+    var designInputs = document.querySelectorAll('input[name="member_card_design"]');
+    if (!designInputs.length) return;
+    designInputs.forEach(function(input) {
+        input.addEventListener('change', function() {
+            if (this.checked) updatePreviewDesign(this.value);
+        });
+        input.addEventListener('click', function() {
+            updatePreviewDesign(this.value);
+        });
+    });
 })();
 
 (function() {
-    var codeSelect = document.getElementById('member_card_code_type');
-    if (!codeSelect) return;
-    codeSelect.addEventListener('change', function() {
-        var val = this.value;
-        document.querySelectorAll('.rank-card-preview-wrap .idnect-card-barcode-wrap').forEach(function(wrap) {
-            wrap.classList.remove('idnect-card-code-wrap--barcode', 'idnect-card-code-wrap--qrcode');
-            wrap.classList.add('idnect-card-code-wrap--' + val);
-        });
+    var showPoints = document.querySelector('input[name="show_points_display"][value="1"]');
+    var showProgress = document.querySelector('input[name="show_rank_progress"][value="1"]');
+    var usePoints = document.getElementById('use_points');
+    if (showPoints) showPoints.addEventListener('change', syncMembershipExtrasVisibility);
+    if (showProgress) showProgress.addEventListener('change', syncMembershipExtrasVisibility);
+    if (usePoints) usePoints.addEventListener('change', syncMembershipExtrasVisibility);
+    syncMembershipExtrasVisibility();
+})();
+
+(function() {
+    var gotoBtn = document.getElementById('ranksGotoDesignPreview');
+    var previewTab = document.getElementById('tab-preview');
+    if (!gotoBtn || !previewTab) return;
+    gotoBtn.addEventListener('click', function() {
+        previewTab.click();
+        var picker = document.querySelector('.ranks-design-picker');
+        if (picker) picker.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
+})();
+
+(function() {
+    function expandHex(value) {
+        var v = (value || '').trim();
+        if (/^#[0-9A-Fa-f]{6}$/.test(v)) return v;
+        var m = v.match(/^#([0-9A-Fa-f])([0-9A-Fa-f])([0-9A-Fa-f])$/);
+        if (m) return '#' + m[1] + m[1] + m[2] + m[2] + m[3] + m[3];
+        return null;
+    }
+
+    function bindRankColorRow(row) {
+        if (!row) return;
+        var picker = row.querySelector('.js-rank-color-picker');
+        var hex = row.querySelector('.color-hex');
+        if (!picker || !hex) return;
+        picker.addEventListener('input', function() {
+            hex.value = picker.value;
+            hex.dispatchEvent(new Event('input', { bubbles: true }));
+        });
+        hex.addEventListener('input', function() {
+            var expanded = expandHex(hex.value);
+            if (expanded !== null) picker.value = expanded;
+        });
+        hex.addEventListener('change', function() {
+            var expanded = expandHex(hex.value);
+            if (expanded !== null) {
+                hex.value = expanded;
+                picker.value = expanded;
+            }
+        });
+    }
+
+    document.querySelectorAll('#rankSettingsTable .ranks-color-row').forEach(bindRankColorRow);
+
+    var addBtn = document.getElementById('addRankRow');
+    if (addBtn) {
+        addBtn.addEventListener('click', function() {
+            window.setTimeout(function() {
+                var rows = document.querySelectorAll('#rankSettingsTable .ranks-color-row');
+                if (rows.length) bindRankColorRow(rows[rows.length - 1]);
+            }, 0);
+        });
+    }
 })();
 </script>
 @endsection

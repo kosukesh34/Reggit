@@ -3,6 +3,7 @@ import { ArrowLeft, Info, UserRound } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
+import { GuestInviteCard } from "../components/membership/GuestInviteCard";
 import { getMemberManager, openRegister } from "../../frontend/features/member/api";
 import { MemberRegisterHost } from "../../frontend/features/member/MemberRegisterHost";
 import { useRuntimeData } from "../context/RuntimeDataContext";
@@ -76,13 +77,12 @@ export function ProfilePage(): JSX.Element {
   if (state === "guest") {
     return (
       <div className="page membership-page stack stack--lg">
-        <Card padding="lg" className="feature-success">
-          <h1>プロフィール</h1>
-          <p>会員登録するとプロフィールを編集できます。</p>
-          <Button variant="solid" onClick={() => openRegister(false)}>
-            会員登録する
-          </Button>
-        </Card>
+        <GuestInviteCard
+          title="プロフィールは会員パス発行後に編集できます"
+          body="発行すると、お名前や連絡先をアプリから変更できます。"
+          actionLabel="会員パスを発行"
+          onAction={() => openRegister(false)}
+        />
       </div>
     );
   }

@@ -9,10 +9,10 @@ import { Header } from "./Header";
 import { BottomNavigation } from "./BottomNavigation";
 
 export function AppShell({ children, gateSettled = true }: PropsWithChildren<{ gateSettled?: boolean }>) {
-  const { activeStore, activeThemeId, customization } = useAppConfig();
+  const { activeStore, activeThemeId, customization, experienceId } = useAppConfig();
   const { loading, mode } = useRuntimeData();
   const location = useLocation();
-  const theme = themeMap[activeThemeId] ?? themeMap[activeStore.themeId] ?? themeMap["minimal-light"];
+  const theme = themeMap[customization.themeId ?? ""] ?? themeMap[activeThemeId] ?? themeMap[activeStore.themeId] ?? themeMap["minimal-light"];
   const showNavigationBelowHeader = customization.navigation.position === "top";
   const mainRef = useRef<HTMLElement>(null);
   const dataSettled = mode === "preview" || mode === "live" || (mode === "offline" && !loading);
@@ -40,6 +40,8 @@ export function AppShell({ children, gateSettled = true }: PropsWithChildren<{ g
       className="app-shell"
       data-store-id={activeStore.storeId}
       data-design-preset={customization.designPreset}
+      data-app-experience={experienceId}
+      data-visual-style={customization.brand?.visualStyle ?? ""}
       data-nav-position={customization.navigation.position}
       data-button-style={customization.appearance.buttonStyle}
       data-density={customization.appearance.density}

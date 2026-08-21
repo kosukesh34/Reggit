@@ -195,8 +195,6 @@ interface ShopSettingRepository
      *     label: string,
      *     min_points: int,
      *     is_active: bool,
-     *     icon_url: string|null,
-     *     stamp_background_url?: string|null,
      *     card_color: string|null,
      *     order: int,
      *     point_earn_rate?: int|null,

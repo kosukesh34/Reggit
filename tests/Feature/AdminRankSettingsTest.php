@@ -34,6 +34,106 @@ class AdminRankSettingsTest extends TestCase
             ->assertDontSee('付与先スタンプカード', false);
     }
 
+    public function test_ランク設定画面で会員証デザインを選べること(): void
+    {
+        $project = Project::factory()->create();
+        $admin = AdminUser::factory()->create([
+            'role' => AdminUser::ROLE_ADMIN,
+            'project_id' => $project->id,
+        ]);
+
+        $this->actingAs($admin, 'admin')
+            ->get(route('admin.settings.ranks', ['project_key' => $project->project_key]))
+            ->assertOk()
+            ->assertSee('ranks-design-picker', false)
+            ->assertSee('name="member_card_design"', false)
+            ->assertSee('value="compact"', false)
+            ->assertSee('デジタルパス', false)
+            ->assertSee('liff-membership-preview', false)
+            ->assertSee('MEMBER STATUS', false)
+            ->assertSee('会員情報', false);
+    }
+
+    public function test_会員証デザイン保存が_lif_fタブ設定へ反映されること(): void
+    {
+        $project = Project::factory()->create();
+        $admin = AdminUser::factory()->create([
+            'role' => AdminUser::ROLE_ADMIN,
+            'project_id' => $project->id,
+        ]);
+
+        $this->actingAs($admin, 'admin')
+            ->post(route('admin.settings.ranks.update', ['project_key' => $project->project_key]), [
+                'rank_basis' => 'points',
+                'rank_aggregation_type' => RankAggregationType::TOTAL,
+                'rank_period_days' => 365,
+                'use_points' => '1',
+                'use_stamps' => '1',
+                'use_transaction_stamps' => '1',
+                'point_earn_rate' => 100,
+                'points_valid_days' => 365,
+                'member_card_design' => 'compact',
+                'member_card_display_type' => 'sheet',
+                'member_card_code_type' => 'qrcode',
+                'ranks' => [
+                    [
+                        'key' => 'bronze',
+                        'label' => 'ブロンズ',
+                        'min_points' => 0,
+                        'is_active' => '1',
+                        'order' => 1,
+                    ],
+                ],
+            ])
+            ->assertRedirect();
+
+        $this->assertSame('compact', ShopSettingStore::getMemberCardDesign((int) $project->id));
+        $this->assertSame('sheet', ShopSettingStore::getMemberCardDisplayType((int) $project->id));
+        $this->assertSame('qrcode', ShopSettingStore::getMemberCardCodeType((int) $project->id));
+
+        $tabSettings = ShopSettingStore::getLiffTabSettings((int) $project->id);
+        $this->assertSame('compact', $tabSettings['_global']['member_card_design'] ?? null);
+        $this->assertSame('sheet', $tabSettings['_global']['member_card_display_type'] ?? null);
+        $this->assertSame('qrcode', $tabSettings['_global']['member_card_code_type'] ?? null);
+        $this->assertSame('simple', $tabSettings['_global']['app_customization']['membership']['template'] ?? null);
+    }
+
+    public function test_チケット会員証デザインがテンプレートへ同期されること(): void
+    {
+        $project = Project::factory()->create();
+        $admin = AdminUser::factory()->create([
+            'role' => AdminUser::ROLE_ADMIN,
+            'project_id' => $project->id,
+        ]);
+
+        $this->actingAs($admin, 'admin')
+            ->post(route('admin.settings.ranks.update', ['project_key' => $project->project_key]), [
+                'rank_basis' => 'points',
+                'rank_aggregation_type' => RankAggregationType::TOTAL,
+                'rank_period_days' => 365,
+                'use_points' => '1',
+                'use_stamps' => '1',
+                'use_transaction_stamps' => '1',
+                'point_earn_rate' => 100,
+                'points_valid_days' => 365,
+                'member_card_design' => 'ticket',
+                'ranks' => [
+                    [
+                        'key' => 'bronze',
+                        'label' => 'ブロンズ',
+                        'min_points' => 0,
+                        'is_active' => '1',
+                        'order' => 1,
+                    ],
+                ],
+            ])
+            ->assertRedirect();
+
+        $tabSettings = ShopSettingStore::getLiffTabSettings((int) $project->id);
+        $this->assertSame('ticket', $tabSettings['_global']['member_card_design'] ?? null);
+        $this->assertSame('ticket', $tabSettings['_global']['app_customization']['membership']['template'] ?? null);
+    }
+
     public function test_ランク設定に機能トグルと期間を保存できること(): void
     {
         $project = Project::factory()->create();

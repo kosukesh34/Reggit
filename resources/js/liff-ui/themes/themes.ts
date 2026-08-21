@@ -1,3 +1,4 @@
+import { industryGalleryThemes } from "../config/industryGallery";
 import { ThemeConfig } from "../types/theme";
 
 export const minimalLightTheme: ThemeConfig = {
@@ -221,6 +222,7 @@ export const allThemes = [
   simpleRewardsTheme,
   operationsCounterTheme,
   operationsBookingTheme,
+  ...industryGalleryThemes,
 ] satisfies ThemeConfig[];
 
 export const themeMap = Object.fromEntries(allThemes.map((theme) => [theme.id, theme])) as Record<
