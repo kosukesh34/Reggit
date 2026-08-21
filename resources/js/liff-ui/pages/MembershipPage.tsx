@@ -6,6 +6,7 @@ import { BarcodeEnlargeView } from "../components/membership/BarcodeEnlargeView"
 import { CenterPopup } from "../components/ui/CenterPopup";
 import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
+import { GuestInviteCard } from "../components/membership/GuestInviteCard";
 import { useRuntimeData } from "../context/RuntimeDataContext";
 import { Skeleton } from "../components/ui/Skeleton";
 import { formatDisplayDate } from "../utils/date";
@@ -23,8 +24,8 @@ import { getMemberRegistrationMode } from "../../frontend/utils/membershipPolicy
 import type { MemberProfile } from "../types/app";
 import { isDemoDataMode } from "../../frontend/demo/demoMode";
 import type { DataMode } from "../types/runtime";
-import { LANDING_SHOWCASE_STORE_ID, LandingShowcaseMembership } from "./LandingShowcasePage";
-import { SIMPLE_REWARDS_STORE_ID, SimpleRewardsMembership } from "./SimpleRewardsPage";
+import { LandingShowcaseMembership } from "./LandingShowcasePage";
+import { SimpleRewardsMembership } from "./SimpleRewardsPage";
 
 function isDesignerEmbedPreview(): boolean {
   return typeof window !== "undefined" && window.__IS_DESIGNER_EMBED_PREVIEW__ === true;
@@ -121,9 +122,7 @@ function WalletButtons(): JSX.Element | null {
 }
 
 function LiveMembershipPage(): JSX.Element {
-  const { activeStore, customization } = useAppConfig();
   const { member: runtimeMember, mode, refresh } = useRuntimeData();
-  const [barcodeOpen, setBarcodeOpen] = useState(false);
   const [managerPayload, setManagerPayload] = useState<MemberPayload | null>(null);
   const [booting, setBooting] = useState(true);
 
@@ -233,31 +232,48 @@ function LiveMembershipPage(): JSX.Element {
         className="page membership-page stack stack--lg member-section member-card-mount"
         data-react-owned="1"
       >
-        <Card padding="lg" className="feature-success">
-          <h1>{hasIdentity ? "会員登録" : "ログイン"}</h1>
-          <p>
-            {hasIdentity
-              ? "会員登録すると会員証・ポイント・クーポンをご利用いただけます。"
-              : "LINEでログインすると会員証をご利用いただけます。"}
-          </p>
-          <Button
-            variant="solid"
-            onClick={() => {
-              if (hasIdentity) {
-                document.dispatchEvent(new CustomEvent("liff-member-open-register", { detail: { forced: false } }));
-                return;
-              }
-              startLineLogin();
-            }}
-          >
-            {hasIdentity ? "会員登録する" : "LINEでログイン"}
-          </Button>
-        </Card>
+        <GuestInviteCard
+          title={hasIdentity ? "会員パスを発行" : "LINEでログイン"}
+          body={hasIdentity
+            ? "発行すると、ポイントやクーポンを店舗で使えます。"
+            : "LINEでログインすると、会員パスをご利用いただけます。"}
+          actionLabel={hasIdentity ? "会員パスを発行" : "LINEでログイン"}
+          onAction={() => {
+            if (hasIdentity) {
+              document.dispatchEvent(new CustomEvent("liff-member-open-register", { detail: { forced: false } }));
+              return;
+            }
+            startLineLogin();
+          }}
+        />
       </div>
     );
   }
 
-  const barcodeValue = member.number && member.number !== "未発行" ? member.number : "";
+  return <MembershipMemberBody member={member} allowProfileEdit />;
+}
+
+function MembershipMemberBody({
+  member,
+  allowProfileEdit,
+}: {
+  member: MemberProfile;
+  allowProfileEdit: boolean;
+}) {
+  const { activeStore, customization } = useAppConfig();
+  const [barcodeOpen, setBarcodeOpen] = useState(false);
+  const m = customization.membership;
+  const barcodeValue = member.number !== "" && member.number !== "未発行" ? member.number : "";
+  const showBarcodeEnlarge = m.showBarcodeEnlarge && m.showBarcode && barcodeValue !== "";
+  const showProfileEdit = allowProfileEdit && m.showProfileEdit && member.isMember;
+  const showActions = showBarcodeEnlarge || showProfileEdit;
+  const showDetailNumber = m.showMemberNumber;
+  const hasDetailRows =
+    showDetailNumber
+    || m.showExpiry
+    || m.showPoints
+    || m.showRank
+    || (m.showNextRank && member.nextRankLabel !== "");
 
   return (
     <div className="page membership-page stack stack--lg">
@@ -267,61 +283,78 @@ function LiveMembershipPage(): JSX.Element {
           member={member}
           brandName={activeStore.brandName}
           logoText={activeStore.logoText}
-          customization={customization.membership}
+          customization={m}
           designPreset={customization.designPreset}
         />
       </div>
 
-      <WalletButtons />
+      {m.showWalletActions ? <WalletButtons /> : null}
 
-      <Card padding="lg">
-        <div className="section-head">
-          <h2 className="section-head__title">会員情報</h2>
-          <span className="section-head__meta">登録内容</span>
-        </div>
-        <div className="detail-grid">
-          <div>
-            <div className="detail-grid__label">会員番号</div>
-            <div className="detail-grid__value">{member.number || "—"}</div>
+      {m.showDetailSection && hasDetailRows ? (
+        <Card padding="lg">
+          <div className="section-head">
+            <h2 className="section-head__title">会員情報</h2>
+            <span className="section-head__meta">登録内容</span>
           </div>
-          {customization.membership.showExpiry ? (
-            <div>
-              <div className="detail-grid__label">有効期限</div>
-              <div className="detail-grid__value">{formatDisplayDate(member.expiration, "yyyy/MM/dd")}</div>
+          <div className="detail-grid">
+            {showDetailNumber ? (
+              <div>
+                <div className="detail-grid__label">会員番号</div>
+                <div className="detail-grid__value">{member.number || "—"}</div>
+              </div>
+            ) : null}
+            {m.showExpiry ? (
+              <div>
+                <div className="detail-grid__label">有効期限</div>
+                <div className="detail-grid__value">{formatDisplayDate(member.expiration, "yyyy/MM/dd")}</div>
+              </div>
+            ) : null}
+            {m.showPoints ? (
+              <div>
+                <div className="detail-grid__label">現在ポイント</div>
+                <div className="detail-grid__value">{Number(member.points || 0).toLocaleString()} pt</div>
+              </div>
+            ) : null}
+            {m.showRank ? (
+              <div>
+                <div className="detail-grid__label">会員ランク</div>
+                <div className="detail-grid__value">{member.rank}</div>
+              </div>
+            ) : null}
+            {m.showNextRank && member.nextRankLabel !== "" ? (
+              <div className="detail-grid__full">
+                <div className="detail-grid__label">次のランクまで</div>
+                <div className="detail-grid__value detail-grid__value--wrap">{member.nextRankLabel}</div>
+              </div>
+            ) : null}
+          </div>
+          {showActions ? (
+            <div className="actions-row">
+              {showBarcodeEnlarge ? (
+                <Button variant="solid" onClick={() => setBarcodeOpen(true)}>
+                  <Maximize2 size={17} /> バーコードを拡大
+                </Button>
+              ) : null}
+              {showProfileEdit ? (
+                <Button variant="outline" onClick={() => openProfileEdit()}>プロフィール編集</Button>
+              ) : null}
             </div>
           ) : null}
-          {customization.membership.showPoints ? (
-            <div>
-              <div className="detail-grid__label">現在ポイント</div>
-              <div className="detail-grid__value">{Number(member.points || 0).toLocaleString()} pt</div>
-            </div>
-          ) : null}
-          {customization.membership.showRank ? (
-            <div>
-              <div className="detail-grid__label">会員ランク</div>
-              <div className="detail-grid__value">{member.rank}</div>
-            </div>
-          ) : null}
-          {customization.membership.showNextRank && member.nextRankLabel !== "" ? (
-            <div className="detail-grid__full">
-              <div className="detail-grid__label">次のランクまで</div>
-              <div className="detail-grid__value detail-grid__value--wrap">{member.nextRankLabel}</div>
-            </div>
-          ) : null}
-        </div>
+        </Card>
+      ) : showActions ? (
         <div className="actions-row">
-          {customization.membership.showBarcode && barcodeValue !== "" ? (
+          {showBarcodeEnlarge ? (
             <Button variant="solid" onClick={() => setBarcodeOpen(true)}>
               <Maximize2 size={17} /> バーコードを拡大
             </Button>
           ) : null}
-          {member.isMember ? (
+          {showProfileEdit ? (
             <Button variant="outline" onClick={() => openProfileEdit()}>プロフィール編集</Button>
           ) : null}
         </div>
-      </Card>
+      ) : null}
 
-      {customization.membership.showBarcode ? (
+      {m.showUsageNote && m.showBarcode ? (
         <p className="page-note"><Info size={15} /> お会計時に会員証のバーコードをご提示ください。</p>
       ) : null}
 
@@ -360,64 +393,12 @@ class MembershipErrorBoundary extends Component<{ children: ReactNode }, { faile
 }
 
 function PreviewMembershipPage() {
-  const { activeStore, customization } = useAppConfig();
   const { member } = useRuntimeData();
-  const [barcodeOpen, setBarcodeOpen] = useState(false);
-  const barcodeValue = member.number && member.number !== "未発行" ? member.number : "";
-
-  return (
-    <div className="page membership-page stack stack--lg">
-      <MembershipCard
-        cardConfig={activeStore.membershipCard}
-        member={member}
-        brandName={activeStore.brandName}
-        logoText={activeStore.logoText}
-        customization={customization.membership}
-        designPreset={customization.designPreset}
-      />
-
-      <Card padding="lg">
-        <div className="section-head">
-          <h2 className="section-head__title">会員情報</h2>
-          <span className="section-head__meta">登録内容</span>
-        </div>
-        <div className="detail-grid">
-          <div>
-            <div className="detail-grid__label">会員番号</div>
-            <div className="detail-grid__value">{member.number}</div>
-          </div>
-          {customization.membership.showExpiry ? <div>
-            <div className="detail-grid__label">有効期限</div>
-            <div className="detail-grid__value">{formatDisplayDate(member.expiration, "yyyy/MM/dd")}</div>
-          </div> : null}
-          {customization.membership.showPoints ? <div>
-            <div className="detail-grid__label">現在ポイント</div>
-            <div className="detail-grid__value">{Number(member.points || 0).toLocaleString()} pt</div>
-          </div> : null}
-          {customization.membership.showRank ? <div>
-            <div className="detail-grid__label">会員ランク</div>
-            <div className="detail-grid__value">{member.rank}</div>
-          </div> : null}
-          {customization.membership.showNextRank && member.nextRankLabel !== "" ? <div className="detail-grid__full">
-            <div className="detail-grid__label">次のランクまで</div>
-            <div className="detail-grid__value detail-grid__value--wrap">{member.nextRankLabel}</div>
-          </div> : null}
-        </div>
-        {customization.membership.showBarcode && barcodeValue !== "" ? <div className="actions-row">
-          <Button variant="solid" onClick={() => setBarcodeOpen(true)}><Maximize2 size={17} /> バーコードを拡大</Button>
-        </div> : null}
-      </Card>
-      {customization.membership.showBarcode ? <p className="page-note"><Info size={15} /> お会計時に会員証のバーコードをご提示ください。</p> : null}
-
-      <CenterPopup open={barcodeOpen && barcodeValue !== ""} onClose={() => setBarcodeOpen(false)} title="会員バーコード" className="barcode-popup">
-        <BarcodeEnlargeView value={barcodeValue} />
-      </CenterPopup>
-    </div>
-  );
+  return <MembershipMemberBody member={member} allowProfileEdit={false} />;
 }
 
 export function MembershipPage() {
-  const { activeStore } = useAppConfig();
+  const { experienceId } = useAppConfig();
   const { mode } = useRuntimeData();
   const [register, setRegister] = useState<{ open: boolean; forced: boolean }>({ open: false, forced: false });
 
@@ -443,10 +424,10 @@ export function MembershipPage() {
     };
   }, []);
 
-  if (activeStore.storeId === LANDING_SHOWCASE_STORE_ID) {
+  if (!isDesignerEmbedPreview() && experienceId === "landing-showcase") {
     return <LandingShowcaseMembership />;
   }
-  if (activeStore.storeId === SIMPLE_REWARDS_STORE_ID) {
+  if (!isDesignerEmbedPreview() && experienceId === "simple-rewards") {
     return <SimpleRewardsMembership />;
   }
 

@@ -66,10 +66,7 @@ class LiffDesignerSanitizer
         'static', 'points', 'rank', 'points_to_next',
     ];
 
-    private const MEMBER_CARD_DESIGNS = [
-        'default', 'logo_top', 'logo_center', 'logo_header',
-        'compact', 'split_banner', 'minimal_line', 'emblem',
-    ];
+    private const MEMBER_CARD_DESIGNS = MemberCardDesignMap::DESIGNS;
 
     private const HERO_DESIGNS = ['editorial', 'minimal', 'split', 'centered', 'apple'];
 
