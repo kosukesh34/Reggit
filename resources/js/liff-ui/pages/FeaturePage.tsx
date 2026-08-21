@@ -21,8 +21,8 @@ import { OrdersView } from "../../frontend/features/orders/OrdersView";
 import { pathForLegacyTab } from "../navigation/tabPath";
 import { isLinkTabType } from "../types/app";
 import { LinkSitePage } from "./LinkSitePage";
-import { LANDING_SHOWCASE_STORE_ID, LandingShowcaseFeature } from "./LandingShowcasePage";
-import { SIMPLE_REWARDS_STORE_ID, SimpleRewardsFeature } from "./SimpleRewardsPage";
+import { LandingShowcaseFeature } from "./LandingShowcasePage";
+import { SimpleRewardsFeature } from "./SimpleRewardsPage";
 
 const FEATURE_ALIASES: Record<string, string> = {
   member: "membership",
@@ -50,7 +50,7 @@ function FeaturePageSkeleton(): JSX.Element {
 export function FeaturePage() {
   const { feature: rawFeature } = useParams();
   const [searchParams] = useSearchParams();
-  const { activeStore, customization } = useAppConfig();
+  const { activeStore, customization, experienceId } = useAppConfig();
   const { member, coupons, news, stores, commerce, history, mode, loading, error, refresh, markAnnouncementRead } = useRuntimeData();
   const activeVenue = stores[0];
   const orderPath = activeStore.features.mobileOrder ? "/mobileOrder" : activeStore.features.dineInOrder ? "/dineInOrder" : "/reservation";
@@ -85,10 +85,10 @@ export function FeaturePage() {
   const feature = aliased !== undefined ? aliased : rawFeature;
   const isNewsArticle = feature === "news" && searchParams.get("announcement") !== null;
 
-  if (activeStore.storeId === LANDING_SHOWCASE_STORE_ID && ["mobileOrder", "stamp", "queue"].includes(feature)) {
+  if (experienceId === "landing-showcase" && ["mobileOrder", "stamp", "queue"].includes(feature)) {
     return <LandingShowcaseFeature feature={feature} />;
   }
-  if (activeStore.storeId === SIMPLE_REWARDS_STORE_ID && ["coupon", "stamp"].includes(feature)) {
+  if (experienceId === "simple-rewards" && ["coupon", "stamp"].includes(feature)) {
     return <SimpleRewardsFeature feature={feature} />;
   }
 

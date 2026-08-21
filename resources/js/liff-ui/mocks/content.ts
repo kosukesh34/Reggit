@@ -34,19 +34,19 @@ export const memberProfileByStore: Record<string, MemberProfile> = {
 
 export const couponsByStore: Record<string, CouponItem[]> = {
   store_cafe: [
-    { id: "c1", title: "ドリンク 1杯 10% OFF", description: "ランチ後のカフェ利用に", validUntil: "2026-09-30", image: "/assets/cafe-hero.webp", featured: true },
-    { id: "c2", title: "焼き菓子セット 100円引き", description: "テイクアウトにも利用可", validUntil: "2026-10-10", image: "/assets/cafe-feature.webp" },
-    { id: "c3", title: "秋限定ブレンド 15% OFF", description: "9月から使える先行配信クーポン", validFrom: "2026-09-01", validUntil: "2026-10-31", image: "/assets/cafe-hero.webp" },
+    { id: "c1", title: "ドリンク 1杯 10% OFF", description: "ランチ後のカフェ利用に", validUntil: "2026-09-30", image: "/images/cafe.jpg", featured: true },
+    { id: "c2", title: "焼き菓子セット 100円引き", description: "テイクアウトにも利用可", validUntil: "2026-10-10", image: "/images/liff/coupon-dessert.jpg" },
+    { id: "c3", title: "秋限定ブレンド 15% OFF", description: "9月から使える先行配信クーポン", validFrom: "2026-09-01", validUntil: "2026-10-31", image: "/images/liff/menu-matcha.jpg" },
   ],
   store_apparel: [
-    { id: "c1", title: "新作アイテム 500円OFF", description: "店舗・アプリ共通で利用可能", validUntil: "2026-09-15", image: "/assets/apparel-hero.webp", featured: true },
-    { id: "c2", title: "2点以上購入でポイント2倍", description: "まとめ買いがお得", validUntil: "2026-09-30", image: "/assets/apparel-feature.webp" },
-    { id: "c3", title: "アウター先行フェア", description: "9月から使える会員限定特典", validFrom: "2026-09-01", validUntil: "2026-10-15", image: "/assets/apparel-hero.webp" },
+    { id: "c1", title: "新作アイテム 500円OFF", description: "店舗・アプリ共通で利用可能", validUntil: "2026-09-15", image: "/images/apparel.jpg", featured: true },
+    { id: "c2", title: "2点以上購入でポイント2倍", description: "まとめ買いがお得", validUntil: "2026-09-30", image: "/images/retail.jpg" },
+    { id: "c3", title: "アウター先行フェア", description: "9月から使える会員限定特典", validFrom: "2026-09-01", validUntil: "2026-10-15", image: "/images/apparel.jpg" },
   ],
   store_salon: [
-    { id: "c1", title: "前髪カット 15% OFF", description: "はじめての方にもおすすめ", validUntil: "2026-09-20", image: "/assets/salon-hero.webp", featured: true },
-    { id: "c2", title: "ヘッドスパ 5分延長無料", description: "予約時に自動適用", validUntil: "2026-10-31", image: "/assets/salon-feature.webp" },
-    { id: "c3", title: "秋の集中ケアご優待", description: "9月から利用できる先行特典", validFrom: "2026-09-01", validUntil: "2026-11-30", image: "/assets/salon-hero.webp" },
+    { id: "c1", title: "前髪カット 15% OFF", description: "はじめての方にもおすすめ", validUntil: "2026-09-20", image: "/images/beauty.jpg", featured: true },
+    { id: "c2", title: "ヘッドスパ 5分延長無料", description: "予約時に自動適用", validUntil: "2026-10-31", image: "/images/service.jpg" },
+    { id: "c3", title: "秋の集中ケアご優待", description: "9月から利用できる先行特典", validFrom: "2026-09-01", validUntil: "2026-11-30", image: "/images/beauty.jpg" },
   ],
   ...additionalCoupons,
 };

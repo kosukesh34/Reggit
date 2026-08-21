@@ -5,7 +5,7 @@ namespace App\UseCases\Admin\Settings\Data;
 /**
  * ランク設定画面用の表示データ。
  *
- * @param  array<int, array{key: string, label: string, min_points: int, order: int, is_active: bool, icon_url?: string|null, stamp_background_url?: string|null, card_color?: string|null, point_earn_rate?: int|null, stamp_earn_per_amount?: int|null}>  $rankSettings
+ * @param  array<int, array{key: string, label: string, min_points: int, order: int, is_active: bool, card_color?: string|null, point_earn_rate?: int|null, stamp_earn_per_amount?: int|null}>  $rankSettings
  */
 class RankSettingsView
 {

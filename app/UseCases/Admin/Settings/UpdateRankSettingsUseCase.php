@@ -4,8 +4,10 @@ namespace App\UseCases\Admin\Settings;
 
 use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Enums\RankAggregationType;
+use App\Services\Admin\LiffSettingsService;
 use App\Services\Smaregi\SmaregiCustomerRankAssignmentService;
 use App\Services\Smaregi\SmaregiCustomerRankSyncService;
+use App\Support\MemberCardDesignMap;
 use App\Util\StrHelper;
 
 class UpdateRankSettingsUseCase
@@ -14,6 +16,7 @@ class UpdateRankSettingsUseCase
         private SmaregiCustomerRankSyncService $smaregiRankSync,
         private SmaregiCustomerRankAssignmentService $smaregiCustomerRankAssignmentService,
         private ShopSettingRepository $shopSettingRepository,
+        private LiffSettingsService $liffSettingsService,
     ) {}
 
     /**
@@ -33,8 +36,6 @@ class UpdateRankSettingsUseCase
      *         min_points?: int,
      *         order?: int,
      *         is_active?: bool,
-     *         icon_url?: string|null,
-     *         stamp_background_url?: string|null,
      *         point_earn_rate?: int|string|null,
      *         stamp_earn_per_amount?: int|string|null,
      *         card_color?: string|null
@@ -44,11 +45,11 @@ class UpdateRankSettingsUseCase
     public function handle(int $projectId, array $payload): void
     {
         $defaultPointEarnRate = (int) $payload['point_earn_rate'];
-        $existingSmaregiIds = $this->existingSmaregiRankIdsByKey($projectId);
+        $existingByKey = $this->existingRankMetaByKey($projectId);
 
         $rows = collect($payload['ranks'] ?? [])
             ->filter(fn ($row) => ! StrHelper::isEmptyStringOrNull($row['key'] ?? null))
-            ->map(function ($row, $index) use ($existingSmaregiIds) {
+            ->map(function ($row, $index) use ($existingByKey) {
                 $isActive = $row['is_active'] ?? false;
                 $color = $row['card_color'] ?? null;
                 $key = (string) $row['key'];
@@ -66,19 +67,18 @@ class UpdateRankSettingsUseCase
                 if ($stampEarnPerAmount !== null && $stampEarnPerAmount < 0) {
                     $stampEarnPerAmount = null;
                 }
+                $existing = $existingByKey[$key] ?? null;
 
                 return [
                     'key' => $key,
                     'label' => (string) ($row['label'] ?? $row['key']),
                     'min_points' => (int) ($row['min_points'] ?? 0),
                     'is_active' => $isActive === true || $isActive === 1 || $isActive === '1',
-                    'icon_url' => $row['icon_url'] ?? null,
-                    'stamp_background_url' => $row['stamp_background_url'] ?? null,
                     'card_color' => $color !== null && $color !== '' ? (string) $color : null,
                     'order' => (int) ($row['order'] ?? ($index + 1)),
                     'point_earn_rate' => $pointEarnRate,
                     'stamp_earn_per_amount' => $stampEarnPerAmount,
-                    'smaregi_rank_id' => $existingSmaregiIds[$key] ?? null,
+                    'smaregi_rank_id' => is_array($existing) ? ($existing['smaregi_rank_id'] ?? null) : null,
                 ];
             })
             ->values()
@@ -144,8 +144,10 @@ class UpdateRankSettingsUseCase
         if (array_key_exists('show_member_card_for_guest', $payload)) {
             $this->shopSettingRepository->setShowMemberCardForGuest((bool) $payload['show_member_card_for_guest'], $projectId);
         }
-        if (array_key_exists('member_card_design', $payload) && in_array($payload['member_card_design'] ?? '', ['default', 'logo_top', 'logo_center', 'logo_header', 'compact', 'split_banner', 'minimal_line', 'emblem'], true)) {
-            $this->shopSettingRepository->setMemberCardDesign((string) $payload['member_card_design'], $projectId);
+        if (array_key_exists('member_card_design', $payload) && MemberCardDesignMap::isValidDesign((string) ($payload['member_card_design'] ?? ''))) {
+            $design = (string) $payload['member_card_design'];
+            $this->shopSettingRepository->setMemberCardDesign($design, $projectId);
+            $this->liffSettingsService->syncMembershipTemplateFromDesign($design, $projectId);
         }
         if (array_key_exists('member_card_display_type', $payload) && in_array($payload['member_card_display_type'] ?? '', ['card', 'sheet'], true)) {
             $this->shopSettingRepository->setMemberCardDisplayType((string) $payload['member_card_display_type'], $projectId);
@@ -177,20 +179,22 @@ class UpdateRankSettingsUseCase
     }
 
     /**
-     * @return array<string, string>
+     * @return array<string, array{smaregi_rank_id: string|null}>
      */
-    private function existingSmaregiRankIdsByKey(int $projectId): array
+    private function existingRankMetaByKey(int $projectId): array
     {
-        $ids = [];
+        $meta = [];
         foreach ($this->shopSettingRepository->getMemberRankSettings($projectId) as $rank) {
             $key = isset($rank['key']) ? (string) $rank['key'] : '';
-            $smaregiRankId = isset($rank['smaregi_rank_id']) ? trim((string) $rank['smaregi_rank_id']) : '';
-            if ($key === '' || $smaregiRankId === '') {
+            if ($key === '') {
                 continue;
             }
-            $ids[$key] = $smaregiRankId;
+            $smaregiRankId = isset($rank['smaregi_rank_id']) ? trim((string) $rank['smaregi_rank_id']) : '';
+            $meta[$key] = [
+                'smaregi_rank_id' => $smaregiRankId !== '' ? $smaregiRankId : null,
+            ];
         }
 
-        return $ids;
+        return $meta;
     }
 }

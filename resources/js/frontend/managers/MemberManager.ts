@@ -858,14 +858,12 @@ export class MemberManager {
         return `
             <div class="member-card-container">
                 <div class="member-card member-card--line-only">
-                    <div class="member-card-header">
-                        <h2 class="member-card-title"><i class="fas fa-id-card"></i> 会員証</h2>
-                    </div>
                     <div class="member-card-line-only-body">
-                        <p class="member-card-line-only-message">会員登録されていません。</p>
-                        <p class="member-card-line-only-sub">会員登録すると会員証が表示されます。</p>
+                        <p class="member-card-line-only-kicker">MEMBER PASS</p>
+                        <p class="member-card-line-only-message">会員パスはまだありません</p>
+                        <p class="member-card-line-only-sub">発行すると、店舗でポイントやクーポンをご利用いただけます。</p>
                         <button type="button" class="btn btn-primary mt-2 member-register-trigger" data-action="member-open-register" onclick="typeof window.app !== 'undefined' && window.app.memberManager && window.app.memberManager.navigateToRegisterPage()">
-                            <i class="fas fa-user-plus"></i> 会員登録する
+                            会員パスを発行
                         </button>
                     </div>
                 </div>
@@ -878,14 +876,12 @@ export class MemberManager {
         return `
             <div class="member-card-container">
                 <div class="member-card member-card--line-only">
-                    <div class="member-card-header">
-                        <h2 class="member-card-title"><i class="fas fa-id-card"></i> 会員証</h2>
-                    </div>
                     <div class="member-card-line-only-body">
+                        <p class="member-card-line-only-kicker">MEMBER PASS</p>
                         <p class="member-card-line-only-message">${DomHelper.escapeHtml(copy.title)}</p>
                         <p class="member-card-line-only-sub">${DomHelper.escapeHtml(copy.subtitle)}</p>
                         <button type="button" class="btn ${copy.buttonClass} mt-2 member-register-trigger" data-action="member-open-register" onclick="typeof window.app !== 'undefined' && window.app.memberManager && window.app.memberManager.navigateToRegisterPage()">
-                            <i class="fas fa-user-plus"></i> ${DomHelper.escapeHtml(copy.buttonLabel)}
+                            ${DomHelper.escapeHtml(copy.buttonLabel)}
                         </button>
                     </div>
                 </div>
@@ -1157,7 +1153,7 @@ export class MemberManager {
         const showRankProgress = data.show_rank_progress !== false;
         const rankUnit = data.rank_basis === 'stamps' ? '個' : 'pt';
         const periodDays = data.days_required_for_next_rank != null ? Number(data.days_required_for_next_rank) : null;
-        const availableDesigns = ['default', 'logo_top', 'logo_center', 'logo_header', 'compact', 'split_banner', 'minimal_line', 'emblem'];
+        const availableDesigns = ['default', 'logo_top', 'logo_center', 'logo_header', 'compact', 'split_banner', 'minimal_line', 'emblem', 'ticket', 'wallet'];
         const blockOverride = container.closest('[data-card-design]')
             ? container.closest('[data-card-design]').getAttribute('data-card-design')
             : '';
@@ -1166,6 +1162,10 @@ export class MemberManager {
         if (blockOverride && availableDesigns.indexOf(blockOverride) >= 0) {
             memberCardDesign = blockOverride;
         }
+        // ticket / wallet は新LIFF向けキー。旧カード描画は近いデザインにフォールバック
+        const memberCardCssDesign = memberCardDesign === 'ticket'
+            ? 'split_banner'
+            : (memberCardDesign === 'wallet' ? 'emblem' : memberCardDesign);
         const memberCardLogoUrl = data.member_card_logo_url || null;
         const memberCardDisplayType =
             MemberManager.getLiffGlobalSetting('member_card_display_type', '') ||
@@ -1205,9 +1205,9 @@ export class MemberManager {
         const cardStyle = cardStyleParts.length > 0
             ? ` data-rank-color="true" style="${cardStyleParts.join('; ')}"`
             : '';
-        const cardDesignClass = 'idnect-card-wrapper--design-' + (availableDesigns.indexOf(memberCardDesign) >= 0 ? memberCardDesign : 'default')
+        const cardDesignClass = 'idnect-card-wrapper--design-' + (availableDesigns.indexOf(memberCardCssDesign) >= 0 ? memberCardCssDesign : 'default')
             + ' idnect-card-wrapper--bg-' + (['solid', 'gradient', 'image'].indexOf(memberCardBgStyle) >= 0 ? memberCardBgStyle : 'gradient');
-        const showLogoOnCard = (memberCardDesign === 'logo_top' || memberCardDesign === 'logo_center' || memberCardDesign === 'logo_header' || memberCardDesign === 'split_banner' || memberCardDesign === 'emblem') && memberCardLogoUrl;
+        const showLogoOnCard = (memberCardCssDesign === 'logo_top' || memberCardCssDesign === 'logo_center' || memberCardCssDesign === 'logo_header' || memberCardCssDesign === 'split_banner' || memberCardCssDesign === 'emblem') && memberCardLogoUrl;
         const logoBlock = showLogoOnCard
             ? `<div class="idnect-card-logo-wrap"><img src="${DomHelper.escapeHtml(memberCardLogoUrl)}" class="idnect-card-logo" alt="" onerror="this.parentElement.style.display='none'"></div>`
             : '';
@@ -1307,7 +1307,7 @@ export class MemberManager {
                 ${data.is_sample_preview === true ? `
                     <div class="member-demo-actions">
                         <button type="button" class="btn btn-primary member-register-trigger" data-action="member-open-register">
-                            会員登録する
+                            会員パスを発行
                         </button>
                     </div>
                 ` : `
@@ -1486,7 +1486,7 @@ export class MemberManager {
                 ${isSample ? `
                     <div class="member-demo-actions">
                         <button type="button" class="btn btn-primary member-register-trigger" data-action="member-open-register">
-                            会員登録する
+                            会員パスを発行
                         </button>
                     </div>
                 ` : `
@@ -2951,7 +2951,7 @@ export class MemberManager {
             groupedRows.push(rowHtml);
         });
         flushAddressChunk();
-        const title = isRegister ? '会員登録' : 'プロフィール編集';
+        const title = isRegister ? '会員パスの発行' : 'プロフィール編集';
         const formId = isRegister ? 'registerForm' : 'profileEditForm';
         const submitLabel = isRegister ? '登録する' : '保存';
         const titleIcon = isRegister ? 'fa-user-plus' : 'fa-user-edit';
