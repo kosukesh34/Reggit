@@ -7,7 +7,6 @@
 
 <div class="page-header">
     <h1 class="page-header-title"><i class="fas fa-users"></i> 会員管理</h1>
-    <p class="page-header-desc">有効な会員の確認・編集・削除を行います。列名をクリックすると並び替えできます。</p>
 </div>
 
 @if(!empty($view->lineInviteUrl))

@@ -6,9 +6,7 @@
 <nav class="breadcrumb"><a href="{{ admin_route('admin.dashboard') }}">ダッシュボード</a><span class="breadcrumb-sep">/</span><a href="{{ admin_route('admin.queue') }}">順番待ち</a><span class="breadcrumb-sep">/</span><span>順番待ち設定</span></nav>
 <div class="page-header">
     <h1 class="page-header-title"><i class="fas fa-list-ol"></i> 順番待ち設定</h1>
-    <p class="page-header-desc">待ち時間の目安、QRからの起動アプリ、会員登録の要否を設定します。</p>
 </div>
-@include('admin.settings._context', ['pageKey' => 'queue'])
 @if(session('success'))<div class="alert alert-success"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>@endif
 @if($errors->any())
     <div class="alert alert-danger">
