@@ -10,7 +10,7 @@
 - LIFF 側のタブは非表示・遷移ロック（固定タブのみ表示）
 - 起動時に `window.__MOBILE_DEVICE_INFO__` へ端末情報を注入し、`/api/devices/register` へ送信
 - `window.__nativeSetPushToken(token)` を呼ぶと push token を更新して再登録
-- **OneSignal**: プッシュ通知は OneSignal で送信。アプリ側で取得した subscription ID を上記でバックエンドに送り、お知らせ配信時に OneSignal API で送信します。
+- **FCM**: プッシュは Firebase Cloud Messaging。FCM registration token を上記でバックエンドに送り配信する。
 
 ## URL設定
 
@@ -187,91 +187,17 @@ adb shell am start -n com.reggit.default/reggit.app.MainActivity
 
 ### プッシュ通知（FCM）
 
-- **バックエンド**: `.env` で `PUSH_FCM_ENABLED=true`、`PUSH_FCM_PROJECT_ID=reggit-dbb5a`、`PUSH_FCM_CREDENTIALS=storage/app/firebase/reggit-dbb5a-adminsdk.json`。`PUSH_ONESIGNAL_ENABLED=false`。
+- **バックエンド**: `.env` で `PUSH_FCM_ENABLED=true`、`PUSH_FCM_PROJECT_ID=reggit-dbb5a`、`PUSH_FCM_CREDENTIALS=storage/app/firebase/reggit-dbb5a-adminsdk.json`。
 - **iOS**: `GoogleService-Info.plist` + Firebase Messaging。APNs `.p8` は Firebase Console（Cloud Messaging → Reggit Skip）に登録。
 - **Android**: `google-services.json` + Firebase Messaging。`push_token` には FCM registration token を保存。
-- **テスト**: `php artisan push:fcm-test --force`
+- **テスト**: `docker compose exec app php artisan push:fcm-test --force`
 
-### プッシュ通知のテスト手順（実際に通知が届くか確認する）
+### プッシュ通知のテスト手順
 
-1. **アプリをビルド・起動**
-   - プロジェクトルートで: `./scripts/build-and-install-mobile.sh`
-   - または Xcode で「Reggit App」を実機／シミュレータに Run、Android の場合は実機／エミュレータに APK をインストールして起動。
-
-2. **通知を許可**
-   - 初回起動時（または権限リセット後）に OneSignal の通知許可ダイアログが出たら「許可」をタップ。
-   - **iOS**: 実機でのみプッシュが届きます。シミュレータでは通知は届きません。
-   - **Android**: エミュレータ・実機どちらでも FCM 経由で届きます（Google Play 入りイメージ推奨）。
-
-3. **登録完了を待つ**
-   - 許可後、アプリが OneSignal に端末を登録するまで数秒〜数十秒かかることがあります。アプリを開いたまま少し待つか、一度バックグラウンドにしてから再度開くと登録されやすいです。
-
-4. **テスト通知を送信**
-   - プロジェクトルートで（Docker 利用時）:
-     ```bash
-     docker compose exec app php artisan push:onesignal-test --title="テスト通知" --body="確認用です" --force
-     ```
-   - ローカルで PHP 8.2 以上がある場合:
-     ```bash
-     php artisan push:onesignal-test --title="テスト通知" --body="確認用です" --force
-     ```
-   - 出力の「配信先: N 件」が 1 以上なら送信成功。端末に通知が表示されるはずです。
-
-5. **届かない場合**
-   - OneSignal ダッシュボードの「Audience → Subscriptions」で端末が 1 件以上表示されているか確認。「Apple iOS (APNs)」が 0 の場合は iOS 側の設定を確認。
-   - **iOS**: 下記「Apple iOS (APNs) が 0 のとき」を参照。
-   - `.env` の `PUSH_ONESIGNAL_APP_ID` が `Skip.env` の `ONE_SIGNAL_APP_ID` と同一か確認。
-   - Android は `google-services.json` の package と `Skip.env` の `ANDROID_APPLICATION_ID` が一致しているか確認。
-
-### 「Apple iOS (APNs) が 0 人」と表示されるとき
-
-OneSignal の「Test for Subscribed Users」で「none specifically for the Apple iOS (APNs) platform」と出る場合は、次を順に確認してください。
-
-1. **実機で実行しているか**
-   - シミュレータでは APNs トークンが発行されないため、必ず実機でビルド・実行してください。
-
-2. **Xcode で Push Notifications が有効か**
-   - プロジェクトに **Push Notifications** の capability を追加済みです（`project.pbxproj` の `SystemCapabilities`）。
-   - Xcode で `mobile/reggit-skip/Darwin/Reggit.xcodeproj` を開く。
-   - 左の **TARGETS** から **Reggit**（または **Reggit App**）を選択 → **Signing & Capabilities** タブ。
-   - **Push Notifications** が一覧に表示されていれば有効です。無い場合は **+ Capability** → **Push Notifications** を追加する。
-   - `Darwin/Entitlements.plist` に `aps-environment` が入っていることも確認する。
-
-3. **Apple Developer で App ID に Push を有効にしたか**（「Push notifications are not enabled for this app」と出る場合）
-   - [Apple Developer](https://developer.apple.com/account) → **Certificates, Identifiers & Profiles** → **Identifiers**。
-   - 対象の **App ID**（例: `com.reggit.default`）を選択。
-   - **Push Notifications** にチェックを入れ、**Save** する。
-   - Xcode で **Automatically manage signing** を使っている場合は、プロビジョニングプロファイルが自動更新される。使っていない場合は、該当プロファイルを再生成する。
-
-4. **OneSignal ダッシュボードで APNs を設定しているか**
-   - OneSignal ダッシュボード → **Settings** → **Platforms** → **Apple iOS (APNs)**。
-   - **p8 Auth Key**（推奨）または **p12 Certificate** を未設定のままにしない。未設定だと端末が登録されても「Apple iOS (APNs)」としてカウントされません。
-
-5. **通知を許可し、アプリを開いたまま待つ**
-   - 実機でアプリ起動 → 通知許可ダイアログで「許可」をタップ。
-   - アプリを**開いたまま** 15〜20 秒待ってから、OneSignal の **Audience → Subscriptions** を再読み込みする。
-
-6. **クリーンビルドして再実行**
-   - Xcode で **Product → Clean Build Folder** のあと、実機で再度 **Run** する。
-
-### p8 を設定したのにプッシュが送れないとき
-
-OneSignal に p8 を登録済みなのに通知が届かない場合は、次を確認してください。
-
-1. **Bundle ID の一致（最も多い原因）**
-   - アプリの **Bundle ID** と、OneSignal の **Apple iOS (APNs)** で p8 を設定したときの **Bundle ID** が**完全に同一**である必要があります。
-   - このプロジェクトの Bundle ID は **Skip.env** の `PRODUCT_BUNDLE_IDENTIFIER` で決まります（例: `com.reggit.default`）。
-   - OneSignal ダッシュボード → **Settings** → **Platforms** → **Apple iOS (APNs)** を開き、**Bundle ID** が上記と 1 文字も違わないか確認する。
-   - Xcode で実際の値を確認する: ターゲット **Reggit App** → **General** → **Bundle Identifier**。
-
-2. **Apple Developer の App ID**
-   - その Bundle ID の **App ID** が Apple Developer の **Identifiers** に存在し、**Push Notifications** がオンになっているか確認する。
-
-3. **送信先が 0 件になっていないか**
-   - 送信時に「配信先: 0 件」の場合は、**Audience → Subscriptions** で「Apple iOS (APNs)」が 1 以上あるか確認する。0 の場合は端末がまだ OneSignal に登録されていないので、上記「Apple iOS (APNs) が 0 のとき」の手順を行う。
-
-4. **開発環境と p8 の環境**
-   - 実機で **Debug ビルド**で動かしている場合は、APNs は **development**（Sandbox）を使います。p8 は Sandbox & Production 両方に対応しているので、通常はそのままで問題ありません。**Archive（配布）** の場合は **production** になります。
+1. アプリを実機でビルド・起動し、通知を許可する（iOS シミュレータでは届かない）。
+2. ログインして FCM token が `user_devices` に入るまで待つ。
+3. `docker compose exec app php artisan push:fcm-test --force`（本番は `/usr/bin/php8.4 artisan push:fcm-test --force`）。
+4. 届かない場合: Firebase Console の APNs キー、Bundle ID、通知許可、DB の token 長さ（旧 OneSignal UUID 36文字は無効）を確認。
 
 ### Android で画面が真っ白な場合
 

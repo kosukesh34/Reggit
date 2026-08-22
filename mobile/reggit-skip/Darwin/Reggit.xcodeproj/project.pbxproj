@@ -16,10 +16,8 @@
 		496BDBEE2B8A7E9C00C09264 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 496BDBED2B8A7E9C00C09264 /* Localizable.xcstrings */; };
 		499CD43B2AC5B799001AE8D8 /* Main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49F90C2B2A52156200F06D93 /* Main.swift */; };
 		499CD4402AC5B799001AE8D8 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 49F90C2F2A52156300F06D93 /* Assets.xcassets */; };
-		49A1OSIG2E01000000000001 /* OneSignalFramework in Frameworks */ = {isa = PBXBuildFile; productRef = 49A1OSIG2E01000000000002 /* OneSignalFramework */; };
 		49AWLP012F01000000000001 /* AppleWalletPassAddHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49AWLP002F01000000000001 /* AppleWalletPassAddHelper.swift */; };
 		49NAUH012F02000000000001 /* NativeAppURLHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49NAUH002F02000000000001 /* NativeAppURLHandler.swift */; };
-		67FED78572EF0A70BABC27C6 /* OneSignalExtension in Frameworks */ = {isa = PBXBuildFile; productRef = 92C18129B4D82C697B2EA6FD /* OneSignalExtension */; };
 		BE26A638EB0F11C71DCC2239 /* OneSignalNotificationServiceExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 86A764DD0DDF76194EB5120B /* OneSignalNotificationServiceExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		F92AE356670C2E844842AF44 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 36FA31182FC72B45177D75A8 /* GoogleService-Info.plist */; };
 /* End PBXBuildFile section */
@@ -508,13 +506,6 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		49A1OSIG2E01000000000003 /* XCRemoteSwiftPackageReference "OneSignal-XCFramework" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/OneSignal/OneSignal-XCFramework";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 5.4.0;
-			};
 		};
 		6771E2D5ED207DE03D3F6E7C /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
 			isa = XCRemoteSwiftPackageReference;
@@ -536,20 +527,10 @@
 			isa = XCSwiftPackageProductDependency;
 			productName = Reggit;
 		};
-		49A1OSIG2E01000000000002 /* OneSignalFramework */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 49A1OSIG2E01000000000003 /* XCRemoteSwiftPackageReference "OneSignal-XCFramework" */;
-			productName = OneSignalFramework;
-		};
 		8E4E1E8FECB828014EE1CFEA /* FirebaseMessaging */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 6771E2D5ED207DE03D3F6E7C /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseMessaging;
-		};
-		92C18129B4D82C697B2EA6FD /* OneSignalExtension */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 49A1OSIG2E01000000000003 /* XCRemoteSwiftPackageReference "OneSignal-XCFramework" */;
-			productName = OneSignalExtension;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

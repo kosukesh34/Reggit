@@ -79,7 +79,7 @@ static let serverTarget: AppServerTarget = .local
 - 未完了注文ボード（引換番号・品目・数量）
 - ステータス操作（準備中 → 受取可 → 完了）
 - 8秒ポーリング＋新規注文時の音
-- Push 通知（端末登録。送信は `PUSH_KITCHEN_ONESIGNAL_*` 設定時）
+- Push 通知（FCM。端末は Firebase Messaging の registration token を登録）
 - 管理パスコード／スリープ防止
 
 ## セットアップ
